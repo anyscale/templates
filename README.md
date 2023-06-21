@@ -1,6 +1,6 @@
 # Anyscale Starter Templates
 
-These templates are a set of minimal examples & tutorial for customers to run on the anyscale platform.
+These templates are a set of minimal examples & tutorials for customers to run on the anyscale platform.
 
 ## Contributing Guide
 
