@@ -1,0 +1,12 @@
+name: anyscale-text-generation-template
+cluster_env: default_cluster_env_ml_2.5.1_py39:1
+ray_serve_config:
+  import_path: server:deployment
+  runtime_env:
+    # This working dir is relative to the working dir when we run this file
+    working_dir: "."
+    excludes: 
+    - "deploy"
+    - "aviary/frontend"
+    - "**.DS_Store"
+    - ".git"
