@@ -4,8 +4,3 @@ ray_serve_config:
   runtime_env:
     # This working dir is relative to the working dir when we run this file
     working_dir: "."
-    excludes: 
-    - "deploy"
-    - "aviary/frontend"
-    - "**.DS_Store"
-    - ".git"
