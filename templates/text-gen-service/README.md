@@ -4,7 +4,7 @@ This template provides an example of Anyscale LLM service to generate GPT2-outpu
 
 ## Running locally on Anyscale service
 
-After launching this template, within workspace terminal you can run following command to start the service.
+After launching this template, within the Workspace terminal you can run following command to start the service.
 
 `serve run server:deployment`
 
