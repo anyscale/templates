@@ -2,7 +2,7 @@
 
 This template provides an example of Anyscale LLM service to generate GPT2-outputs from a given prompt.
 
-## Running locally on Anyscale service
+## Running locally on an Anyscale Workspace
 
 After launching this template, within the Workspace terminal you can run following command to start the service.
 
