@@ -5,4 +5,4 @@ worker_node_types:
 - name: gpu_worker
   instance_type: g4dn.xlarge
   min_workers: 1
-  max_workers: 5
+  max_workers: 3
