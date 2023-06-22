@@ -1,0 +1,6 @@
+name: anyscale-text-generation-template
+ray_serve_config:
+  import_path: server:deployment
+  runtime_env:
+    # This working dir is relative to the working dir when we run this file
+    working_dir: "."
