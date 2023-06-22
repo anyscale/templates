@@ -8,7 +8,7 @@ After launching this template, within the Workspace terminal you can run followi
 
 `serve run server:deployment`
 
-Once the service is started succesfully, open another terminal and test the Service using following example.
+Once the service is started successfully, open another terminal and test the Service using following example.
 
 `python query.py "meaning of life is:"`
 
