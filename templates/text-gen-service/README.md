@@ -14,7 +14,7 @@ Once the service is started successfully, open another terminal and test the Ser
 
 ## Roll out as Anyscale service
 
-After launching the teamplate, open `service.yaml` file and change `name` field to give your Service a name. Then just run following command to launch a Anyscale Service.
+After launching the template, open `service.yaml` file and change `name` field to give your Service a name. Then just run following command to launch a Anyscale Service.
 
 `anyscale service rollout -f service.yaml`
 
