@@ -1,4 +1,4 @@
-# GPT-J-6B Fine-Tuning on Anyscale with DeepSpeed
+# Fine-Tuning on Anyscale with DeepSpeed
 
 In this application you will fine tune an LLM - GPTJ. GPT-J is a GPT-2-like causal language model trained on the Pile dataset. This particular model has 6 billion parameters. For more information on GPT-J, click [here](https://huggingface.co/docs/transformers/model_doc/gptj).
 
