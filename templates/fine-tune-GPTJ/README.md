@@ -1,10 +1,10 @@
 # GPT-J-6B Fine-Tuning on Anyscale with DeepSpeed
 
-In this example, we will showcase how to use Anyscale for **GPT-J fine-tuning**. GPT-J is a GPT-2-like causal language model trained on the Pile dataset. This particular model has 6 billion parameters. For more information on GPT-J, click [here](https://huggingface.co/docs/transformers/model_doc/gptj).
+In this application you will fine tune an LLM - GPTJ. GPT-J is a GPT-2-like causal language model trained on the Pile dataset. This particular model has 6 billion parameters. For more information on GPT-J, click [here](https://huggingface.co/docs/transformers/model_doc/gptj).
 
 We will use [Anyscale Workspaces](https://docs.anyscale.com/develop/workspaces/get-started) and Ray AIR (with the 🤗 Transformers integration) with a pretrained model from Hugging Face hub. Workspace is a fully managed development environment focused on developer productivity. With workspaces, ML practitioners and ML platform developers can quickly build distributed Ray applications and advance from research to development to production easily, all within single environment.
 
-Workspaces provide remote experience, so that you can program the cluster while working with familiar tools like JupyterLab notebooks or Visual Studio Code. Note that these tools enable you to easily adapt this example to use other similar models or your own data.
+Workspaces provide remote experience, so that you can program the cluster while working with familiar tools like JupyterLab notebooks or Visual Studio Code. **Note that these tools enable you to easily adapt this example to use other similar models or your own data**.
 
 To run this example, we've set up your Anyscale Workspace to have access to a head node with one GPU with 16 or more GBs of memory and 15 g4dn.4xlarge instances for the worker node group. This is done by defining a "compute configuration".  Learn more about [Compute Configs here] (https://docs.anyscale.com/configure/compute-configs/overview).  It is easy to change your Compute Config once you launch by clicking "Workspace" and Editing the selection.  
 
