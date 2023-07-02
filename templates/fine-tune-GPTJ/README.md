@@ -1,8 +1,8 @@
-# Fine-Tuning on Anyscale with DeepSpeed
+# Fine-Tuning LLMs on Anyscale with DeepSpeed
 
 In this application you will fine tune an LLM - GPTJ. GPT-J is a GPT-2-like causal language model trained on the Pile dataset. This particular model has 6 billion parameters. For more information on GPT-J, click [here](https://huggingface.co/docs/transformers/model_doc/gptj).
 
-The application can be used by developers and datascientists alike.  Users can leverage simple APIs to run fine tuning jobs on the cluster or dive in deeper to view the underlying code using familiar tools like JupyterLab notebooks or Visual Studio Code. **These tools enable you to easily adapt this example to use other similar models or your own data**.
+The application can be used by developers and datascientists alike.  Developers can leverage simple APIs to run fine tuning jobs on the cluster while data scientists and machine learning engineers can dive in deeper to view the underlying code using familiar tools like JupyterLab notebooks or Visual Studio Code. **These tools enable you to easily adapt this example to use other similar models or your own data**.
 
 ## Using this application
 You can use the application in one of two ways:
