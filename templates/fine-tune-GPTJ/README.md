@@ -12,10 +12,10 @@ You can use the application in one of two ways:
 anyscale job submit -- python gptj_deepspeed_fine_tuning.py
 ```
 Once submitted, you can navigate to the Job page and view the training progress with the Ray Dashboard. 
-![Ray Dashboard](https://github.com/anyscale/templates/releases/tag/media/raydash.png)
+![Ray Dashboard](https://github.com/anyscale/templates/releases/download/media/raydash.png)
 
 2. By using the interactive notebook which will go step by step through the process of loading data, tokenizing and splitting the data, loading the model, and performing fine tuning.  You can follow along in VSCode or Jupyter!   Note: You can also use the CLI command directly from the interactive notebook.  Take a look under the "Submitting an Anyscale Job" section of the notebook.
-![IDES](https://github.com/anyscale/templates/releases/tag/media/ides.png)
+![IDES](https://github.com/anyscale/templates/releases/download/media/ides.png)
 
 ### Next Steps
 
@@ -42,7 +42,7 @@ Within 2 minutes you will be fine-tuning GPT-J on a corpus of Shakspeare data!  
 This application makes use of [Anyscale Workspaces](https://docs.anyscale.com/develop/workspaces/get-started) and Ray AIR (with the 🤗 Transformers integration) to fine-tune an LLM. Workspace is a fully managed development environment focused on developer productivity. With workspaces, ML practitioners and ML platform developers can quickly build distributed Ray applications and advance from research to development to production easily, all within single environment.
 
 To run this example, we've set up your Anyscale Workspace to have access to a head node with one GPU with 16 or more GBs of memory and 15 g4dn.4xlarge instances for the worker node group. This is done by defining a "compute configuration".  Learn more about [Compute Configs here] (https://docs.anyscale.com/configure/compute-configs/overview).  It is easy to change your Compute Config once you launch by clicking "Workspace" and Editing the selection.  
-![Config](https://github.com/anyscale/templates/releases/tag/media/edit.png)
+![Config](https://github.com/anyscale/templates/releases/download/media/edit.png)
 
 
 When you run the fine tuning job we execute a python script thats distributed with Ray as an [Anyscale Job](https://docs.anyscale.com/productionize/jobs/get-started).   
