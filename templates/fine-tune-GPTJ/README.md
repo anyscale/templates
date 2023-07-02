@@ -23,7 +23,7 @@ Once submitted, you can navigate to the Job page and view the training progress 
 Once your application is ready and launched you may view the script with VSCode or Jupyter and modify to use your own data!  Read more about loading data with Ray [from your file store or database here](https://docs.ray.io/en/latest/data/loading-data.html).  Make sure the data you use has a similar structure to the [Shakespeare dataset we use.](https://huggingface.co/datasets/tiny_shakespeare)
 
 The lines of code to update look like the following:
-![Code](https://github.com/anyscale/templates/releases/tag/media/code.png)
+![Code](https://github.com/anyscale/templates/releases/download/media/code.png)
 
 Once the code is updated, run the same command as before:
 ```
