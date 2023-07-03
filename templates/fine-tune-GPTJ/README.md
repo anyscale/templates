@@ -30,8 +30,9 @@ Once the code is updated, run the same command as before:
 anyscale job submit -- python gptj_deepspeed_fine_tuning.py
 ```
 
-## Serving your model
-The fine tuning job saves checkpoints during training in your [default mounted user storage](https://docs.anyscale.com/develop/workspaces/storage#user-storage).  See the "Serving" Application to see how you can now deploy and serve this model for production traffic with [Anyscale Production Services](https://docs.anyscale.com/productionize/services/get-started).  
+## Saving your model
+The fine tuning job automatically saves checkpoints during training in your [default mounted user storage](https://docs.anyscale.com/develop/workspaces/storage#user-storage).  You can view the model by navigating to "Files" viewer and selecting "User Storage".
+![Files](https://github.com/anyscale/templates/releases/download/media/files.png)
 
 Within 2 minutes you will be fine-tuning GPT-J on a corpus of Shakspeare data!  Let's dive in and explore the power of Anyscale and Ray together.
 

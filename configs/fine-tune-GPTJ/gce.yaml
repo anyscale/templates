@@ -5,6 +5,6 @@ head_node_type:
 worker_node_types:
 - name: gpu_worker
   instance_type: n1-standard-16-nvidia-t4-16gb-1
-  min_workers: 15
+  min_workers: 1
   max_workers: 15
   use_spot: false
