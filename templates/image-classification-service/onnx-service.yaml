@@ -1,0 +1,6 @@
+name: "image-classifier-onnx"
+ray_serve_config:
+  import_path: onnx-resnet:model
+  runtime_env:
+    # This working dir is relative to the working dir when we run this file
+    working_dir: "."
