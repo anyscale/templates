@@ -33,6 +33,10 @@ cpus_per_worker = 8
 #---------------------EDIT AND UPDATE WITH YOUR DATASET HERE---------------------#
 current_dataset = load_dataset("tiny_shakespeare")
 ray_datasets = ray.data.from_huggingface(current_dataset)
+# Replace this with your own training dataset loading
+train_ds = ray_datasets["train"]
+#  Replace this with your own evaluation dataset loading
+eval_ds = ray_datasets["validation"]
 #---------------------EDIT AND UPDATE WITH YOUR DATASET HERE---------------------#
 
 block_size = 512
@@ -185,10 +189,7 @@ trainer = TransformersTrainer(
         storage_path="/mnt/user_storage",
         sync_config=tune.SyncConfig(syncer=None),
     ),
-    # TODO: Replace this with your own training dataset loading
-    train_ds = ray_datasets["train"]
-    # TODO: Replace this with your own evaluation dataset loading
-    eval_ds = ray_datasets["validation"]
+
     datasets={"train": train_ds, "evaluation": eval_ds},
     preprocessor=Chain(splitter, tokenizer),
 )
