@@ -185,7 +185,11 @@ trainer = TransformersTrainer(
         storage_path="/mnt/user_storage",
         sync_config=tune.SyncConfig(syncer=None),
     ),
-    datasets={"train": ray_datasets["train"], "evaluation": ray_datasets["validation"]},
+    # TODO: Replace this with your own training dataset loading
+    train_ds = ray_datasets["train"]
+    # TODO: Replace this with your own evaluation dataset loading
+    eval_ds = ray_datasets["validation"]
+    datasets={"train": train_ds, "evaluation": eval_ds},
     preprocessor=Chain(splitter, tokenizer),
 )
 
