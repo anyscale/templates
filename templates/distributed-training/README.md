@@ -1,14 +1,14 @@
-# Distributed Training With PyTorch and TensorFlow on Fashion MNIST 
+# Distributed Training With PyTorch on Fashion MNIST 
 
-In this tutorial you will train models with Fashion MNIST dataset using both PyTorch and TensorFlow.
+In this tutorial you will train models on the Fashion MNIST dataset using PyTorch.
 
 
 | Details | Description |
 | ---------------------- | ----------- |
-| Summary | This tutorial demonstrates how to set up distributed training with PyTorch or TensorFlow using the MNIST dataset and run on Anyscale|
+| Summary | This tutorial demonstrates how to set up distributed training with PyTorch using the MNIST dataset and run on Anyscale|
 | Time to Run | Less than 5 minutes |
 | Compute Requirements | We recommend at least 1 GPU node. The default will scale up to 3 worker nodes each with 1 NVIDIA T4 GPU. |
-| Cluster Environment | This template uses a docker image built on top of the latest Anyscale-provided Ray image using Python 3.10, which comes with PyTorch and TensorFlow: [`anyscale/ray-ml:2.5.1-py310-gpu`](https://docs.anyscale.com/reference/base-images/overview). See the appendix below for more details. |
+| Cluster Environment | This template uses a docker image built on top of the latest Anyscale-provided Ray image using Python 3.10, which comes with PyTorch: [`anyscale/ray-ml:2.5.1-py310-gpu`](https://docs.anyscale.com/reference/base-images/overview). See the appendix below for more details. |
 
 ## Running the tutorial
 ### Background
@@ -21,15 +21,11 @@ Anyscale requires 2 configs to start up a Workspace Cluster:
 Those have been set by default in this tutorial but can be edited and updated if needed and is covered in the appendix.
 
 ### Run
-There are two python scripts available with this tutorial - one for PyTorch and one for TensorFlow.  You can run these training scripts directly from the workspace terminal.
+The tutorial includes a pyton script with the code to do distributed training.  You can execute this training script directly from the workspace terminal.
 
-To run the PyTorch example:
+To run:
 ```bash
 python pytorch.py
-```
-And the TensorFlow version:
-```bash
-python tensorflow.py
 ```
 
 You'll see training iterations and metrics as the training executes.
