@@ -1,6 +1,7 @@
 import argparse
 from typing import Dict
 from ray.air import session
+import os
 
 import torch
 from torch import nn
@@ -115,13 +116,15 @@ def train_func(config: Dict):
         loss = validate_epoch(test_dataloader, model, loss_fn)
         session.report(dict(loss=loss))
 
+artifact_storage_path = os.environ['ANYSCALE_ARTIFACT_STORAGE'] +'/pytorch-tutorial'
+print(f"Storing artifacts in {artifact_storage_path}")
 
 def train_fashion_mnist(num_workers=2, use_gpu=True):
     trainer = TorchTrainer(
         train_loop_per_worker=train_func,
         train_loop_config={"lr": 1e-3, "batch_size": 64, "epochs": 4},
         scaling_config=ScalingConfig(num_workers=num_workers, use_gpu=use_gpu),
-        run_config=RunConfig(storage_path="$ANYSCALE_ARTIFACT_STORAGE")
+        run_config=RunConfig(storage_path=artifact_storage_path)
 
     )
     result = trainer.fit()
