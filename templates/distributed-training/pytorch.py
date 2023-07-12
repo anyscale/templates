@@ -114,7 +114,7 @@ def train_func(config: Dict):
         session.report(dict(loss=loss))
 
 
-def train_fashion_mnist(num_workers=2, use_gpu=False):
+def train_fashion_mnist(num_workers=2, use_gpu=True):
     trainer = TorchTrainer(
         train_loop_per_worker=train_func,
         train_loop_config={"lr": 1e-3, "batch_size": 64, "epochs": 4},
@@ -126,9 +126,7 @@ def train_fashion_mnist(num_workers=2, use_gpu=False):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--address", required=False, type=str, help="the address to use for Ray"
-    )
+ 
     parser.add_argument(
         "--num-workers",
         "-n",
@@ -137,7 +135,7 @@ if __name__ == "__main__":
         help="Sets number of workers for training.",
     )
     parser.add_argument(
-        "--use-gpu", action="store_true", default=False, help="Enables GPU training"
+        "--use-gpu", action="store_true", default=True, help="Enables GPU training"
     )
     parser.add_argument(
         "--smoke-test",
@@ -150,10 +148,5 @@ if __name__ == "__main__":
 
     import ray
 
-    if args.smoke_test:
-        # 2 workers + 1 for trainer.
-        ray.init(num_cpus=3)
-        train_fashion_mnist()
-    else:
-        ray.init(address=args.address)
-        train_fashion_mnist(num_workers=args.num_workers, use_gpu=args.use_gpu)
+    
+    train_fashion_mnist(num_workers=args.num_workers, use_gpu=args.use_gpu)

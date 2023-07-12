@@ -1,55 +1,84 @@
-# Fine-Tuning LLMs on Anyscale with DeepSpeed
+# Distributed Training With PyTorch and TensorFlow on Fashion MNIST 
 
-In this application you will fine tune an LLM - GPTJ. GPT-J is a GPT-2-like causal language model trained on the Pile dataset. This particular model has 6 billion parameters. For more information on GPT-J, click [here](https://huggingface.co/docs/transformers/model_doc/gptj).
+In this tutorial you will train models with Fashion MNIST dataset using both PyTorch and TensorFlow.
 
-The application can be used by developers and datascientists alike.  Developers can leverage simple APIs to run fine tuning jobs on the cluster while data scientists and machine learning engineers can dive in deeper to view the underlying code using familiar tools like JupyterLab notebooks or Visual Studio Code. **These tools enable you to easily adapt this example to use other similar models or your own data**.
 
-| App Details | Description |
+| Details | Description |
 | ---------------------- | ----------- |
-| Summary | This app loads a pretrained GPTJ model from HuggingFace and fine tunes it on new text data.  |
-| Time to Run | Around 20-40 minutes to fine tune on all of the data. |
-| Minimum Compute Requirements | At least 1 GPU node. The default is 1 node (the head), and up to 15 worker nodes each with 1 NVIDIA T4 GPU. |
-| Cluster Environment | This template uses a docker image built on top of the latest Anyscale-provided Ray image using Python 3.10: [`anyscale/ray:latest-py310-cu118`](https://docs.anyscale.com/reference/base-images/overview). See the appendix below for more details. |
+| Summary | This tutorial demonstrates how to set up distributed training with PyTorch or TensorFlow using the MNIST dataset and run on Anyscale|
+| Time to Run | Less than 5 minutes |
+| Compute Requirements | We recommend at least 1 GPU node. The default will scale up to 3 worker nodes each with 1 NVIDIA T4 GPU. |
+| Cluster Environment | This template uses a docker image built on top of the latest Anyscale-provided Ray image using Python 3.10, which comes with PyTorch and TensorFlow: [`anyscale/ray-ml:2.5.1-py310-gpu`](https://docs.anyscale.com/reference/base-images/overview). See the appendix below for more details. |
 
-## Using this application
-You can use the application via the CLI.  Navigate to the "terminal" once started and run the following command:
-```
-anyscale job submit -- python gptj_deepspeed_fine_tuning.py
-```
-Once submitted, you can navigate to the Job page and view the training progress with the Ray Dashboard. 
-![Ray Dashboard](https://github.com/anyscale/templates/releases/download/media/raydash.png)
+## Running the tutorial
+### Background
+The tutorial is run from an Anyscale Workspace.  Anyscale Workspaces is a fully managed development environment that enables ML practitioners to build distributed Ray applications and advance from research to development to production easily, all within a single environment. The Workspace provides developer friendly tools like VSCode and Jupyter backed by a remote scaling Ray Cluster for development.
 
-Note: This application is based on an example.  If you wish to go step by step and learn more please visit the [Ray docs tutorial](https://docs.ray.io/en/latest/ray-air/examples/gptj_deepspeed_fine_tuning.html)  
+Anyscale requires 2 configs to start up a Workspace Cluster:
+1. A cluster environment that handles dependencies.
+2. A compute configuration that determines how many nodes of each type to bring up. This also configures how many nodes are available for autoscaling.
+
+Those have been set by default in this tutorial but can be edited and updated if needed and is covered in the appendix.
+
+### Run
+There are two python scripts available with this tutorial - one for PyTorch and one for TensorFlow.  You can run these training scripts directly from the workspace terminal.
+
+To run the PyTorch example:
+```bash
+python pytorch.py
+```
+And the TensorFlow version:
+```bash
+python tensorflow.py
+```
+
+You'll see training iterations and metrics as the training executes.
+
+### Monitor
+After launching the script, you can look at the Ray dashboard. It can be accessed from the Workspace home page and enables users to track things like CPU/GPU utilization, GPU memory usage, remote task statuses, and more!
+
+![Dash](https://github.com/anyscale/templates/releases/download/media/workspacedash.png)
+
+[See here for more extensive documentation on the dashboard.](https://docs.ray.io/en/latest/ray-observability/getting-started.html)
+
+### Model Saving
+The model will be saved in the Anyscale Artifact Store, which is automatically set up and configured with your Anyscale deployment.
+
+For every Anyscale Cloud, a default object storage bucket is configured during the Cloud deployment. All the Workspaces, Jobs, and Services Clusters within an Anyscale Cloud have permission to read and write to its default bucket.
+
+Use the following environment variables to access the default bucket:
+
+ANYSCALE_CLOUD_STORAGE_BUCKET: the name of the bucket.
+ANYSCALE_CLOUD_STORAGE_BUCKET_REGION: the region of the bucket.
+ANYSCALE_ARTIFACT_STORAGE: the URI to the pre-generated folder for storing your artifacts while keeping them separate them from Anyscale-generated ones.
+AWS: s3://<org_id>/<cloud_id>/artifact_storage/
+GCP: gs://<org_id>/<cloud_id>/artifact_storage/
+
+### Submit as Anyscale Production Job
+From within your Anyscale Workspace, you can run your script as an Anyscale Job. This might be useful if you want to run things in production and have a long running job. You can test that each Anyscale Job will spin up its own cluster (with the same compute config and cluster environment as the Workspace) and run the script.  The Anyscale Job will automatically retry in event of failure and provides monitoring via the Ray Dashboard and Grafana. 
+
+To submit as a Production Job you can run:
+
+```bash
+anyscale job submit -- python pytorch.py
+```
+
+[You can learn more about Anyscale Jobs here.](https://docs.anyscale.com/productionize/jobs/get-started)
 
 ### Next Steps
 
 #### Training on your own data: Modifying the Script 
-Once your application is ready and launched you may view the script with VSCode or Jupyter and modify to use your own data!  Read more about loading data with Ray [from your file store or database here](https://docs.ray.io/en/latest/data/loading-data.html).  Make sure the data you use has a similar structure to the [Shakespeare dataset we use.](https://huggingface.co/datasets/tiny_shakespeare)
+You can easily modify the script in VSCode or Jupyter to use your own data, add data pre-processing logic, or change the model architecture!  Read more about loading data with Ray [from your file store or database here](https://docs.ray.io/en/latest/data/loading-data.html). 
 
-Modify the code under the 'loading data' section of the script to load your own fine-tuning dataset.
-
-Once the code is updated, run the same command as before:
+Once the code is updated, run the same command as before to kick off your training job:
+```bash
+anyscale job submit -- python pytorch.py
 ```
-anyscale job submit -- python gptj_deepspeed_fine_tuning.py
-```
-
-## Saving your model
-The fine tuning job automatically saves checkpoints during training in your [default mounted user storage](https://docs.anyscale.com/develop/workspaces/storage#user-storage).  You can view the model by navigating to "Files" viewer and selecting "User Storage".
-![Files](https://github.com/anyscale/templates/releases/download/media/files.png)
-
-Within 2 minutes you will be fine-tuning GPT-J on a corpus of Shakspeare data!  Let's dive in and explore the power of Anyscale and Ray together.
-
 
 ## Appendix
-
 ### Advanced - Workspaces and Configurations
-This application makes use of [Anyscale Workspaces](https://docs.anyscale.com/develop/workspaces/get-started) and Ray AIR (with the 🤗 Transformers integration) to fine-tune an LLM. Workspace is a fully managed development environment focused on developer productivity. With workspaces, ML practitioners and ML platform developers can quickly build distributed Ray applications and advance from research to development to production easily, all within single environment.
-
-To run this example, we've set up your Anyscale Workspace to have access to a head node with one GPU with 16 or more GBs of memory and 15 g4dn.4xlarge instances for the worker node group. This is done by defining a "compute configuration".  Learn more about [Compute Configs here](https://docs.anyscale.com/configure/compute-configs/overview).  It is easy to change your Compute Config once you launch by clicking "Workspace" and Editing the selection.  
+To run this example, we've set up your Anyscale Workspace to have access to a head node with CPUs and woker nodes with GPUs.This is done by defining a "compute configuration".  Learn more about [Compute Configs here](https://docs.anyscale.com/configure/compute-configs/overview).  It is easy to change your Compute Config once you launch by clicking "Workspace" and Editing the selection.  
 ![Config](https://github.com/anyscale/templates/releases/download/media/edit.png)
-
-
-When you run the fine tuning job we execute a python script thats distributed with Ray as an [Anyscale Job](https://docs.anyscale.com/productionize/jobs/get-started).   
 
 ### Advanced: Build off of this template's cluster environment
 #### Option 1: Build a new cluster environment on Anyscale
