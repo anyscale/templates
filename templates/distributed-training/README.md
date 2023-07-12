@@ -70,21 +70,3 @@ Once the code is updated, run the same command as before to kick off your traini
 ```bash
 anyscale job submit -- python pytorch.py
 ```
-
-## Appendix
-### Advanced - Workspaces and Configurations
-To run this example, we've set up your Anyscale Workspace to have access to a head node with CPUs and woker nodes with GPUs.This is done by defining a "compute configuration".  Learn more about [Compute Configs here](https://docs.anyscale.com/configure/compute-configs/overview).  It is easy to change your Compute Config once you launch by clicking "Workspace" and Editing the selection.  
-![Config](https://github.com/anyscale/templates/releases/download/media/edit.png)
-
-### Advanced: Build off of this template's cluster environment
-#### Option 1: Build a new cluster environment on Anyscale
-You'll find a cluster_env.yaml file in the working directory of the template. Feel free to modify this to include more requirements, then follow [this](https://docs.anyscale.com/configure/dependency-management/cluster-environments#creating-a-cluster-environment) guide to use the Anyscale CLI to create a new cluster environment.
-
-Finally, update your workspace's cluster environment to this new one after it's done building.
-
-#### Option 2: Build a new docker image with your own infrastructure
-Use the following docker pull command if you want to manually build a new Docker image based off of this one.
-
-```bash
-docker pull us-docker.pkg.dev/anyscale-workspace-templates/workspace-templates/fine-tune-gptj:latest
-```
