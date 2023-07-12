@@ -44,11 +44,21 @@ For every Anyscale Cloud, a default object storage bucket is configured during t
 
 Use the following environment variables to access the default bucket:
 
-ANYSCALE_CLOUD_STORAGE_BUCKET: the name of the bucket.
-ANYSCALE_CLOUD_STORAGE_BUCKET_REGION: the region of the bucket.
-ANYSCALE_ARTIFACT_STORAGE: the URI to the pre-generated folder for storing your artifacts while keeping them separate them from Anyscale-generated ones.
-AWS: s3://<org_id>/<cloud_id>/artifact_storage/
-GCP: gs://<org_id>/<cloud_id>/artifact_storage/
+1. ANYSCALE_CLOUD_STORAGE_BUCKET: the name of the bucket.
+2. ANYSCALE_CLOUD_STORAGE_BUCKET_REGION: the region of the bucket.
+3. ANYSCALE_ARTIFACT_STORAGE: the URI to the pre-generated folder for storing your artifacts while keeping them separate them from Anyscale-generated ones.
+
+
+You can view the saved model and artifacts by running:
+```bash
+aws s3 ls $ANYSCALE_ARTIFACT_STORAGE
+```
+
+Or, if you are on GCP:
+```bash
+gsutil ls $ANYSCALE_ARTIFACT_STORAGE
+```
+Authentication is automatcially handled by default.
 
 ### Submit as Anyscale Production Job
 From within your Anyscale Workspace, you can run your script as an Anyscale Job. This might be useful if you want to run things in production and have a long running job. You can test that each Anyscale Job will spin up its own cluster (with the same compute config and cluster environment as the Workspace) and run the script.  The Anyscale Job will automatically retry in event of failure and provides monitoring via the Ray Dashboard and Grafana. 
