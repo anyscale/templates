@@ -7,7 +7,6 @@ from typing import Dict
 
 import torch
 import time
-import torch_tensorrt
 import torchvision.models as models
 from torchvision.models import ResNet50_Weights
 from torchvision import transforms
@@ -22,6 +21,7 @@ app = FastAPI()
 @serve.ingress(app)
 class Classifier:
     def __init__(self):
+        import torch_tensorrt
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         resnet50 = models.resnet50(weights=ResNet50_Weights.DEFAULT).eval().to(self.device)
         batch_size = 1 # Batch size is 1 in this example but it can be modified
