@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ask me anything</title>
+    <!-- Add Bootstrap CSS Link -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="text-center display-4">Ask me anything</h1>
+        
+        <!-- Box for questions -->
+        <div class="row mt-5">
+            <div class="col-md-6 offset-md-3">
+                <div class="input-group mb-3">
+                    <input type="text" class="form-control" placeholder="Ask a question..." id="questionInput">
+                    <div class="input-group-append">
+                        <button class="btn btn-primary" onclick="askQuestion()">Ask</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Streaming response from API -->
+        <div class="row">
+            <div class="col-md-12 card mb-4 box-shadow card-header">
+                <div id="responseBox" class="p-3">
+                    <!-- Response from API will be displayed here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS and jQuery -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+    <script>
+        // JavaScript function to send a question to the API and display the response
+        async function askQuestion() {
+            const question = document.getElementById("questionInput").value;
+            const responseBox = document.getElementById("responseBox");
+            window.eventSource?.close();
+            window.eventSource = new EventSource(`/event?query="${question}"`);
+            responseBox.innerHTML = "";
+            eventSource.addEventListener('stream', (evt) => {
+                if (evt.data === "<<end>>") {
+                    window.eventSource?.close();
+                    window.eventSource = undefined;
+                    return;
+                }
+                responseBox.innerHTML += evt.data;
+            })
+        }
+    </script>
+</body>
+</html>
