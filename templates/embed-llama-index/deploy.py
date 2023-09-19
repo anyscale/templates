@@ -17,11 +17,15 @@ from sse_starlette.sse import EventSourceResponse
 import os
 
 from conf import RAY_BLOGS_INDEX, RAY_DOCS_INDEX
+from dotenv import load_dotenv
+
+load_dotenv()
 
 if "OPENAI_API_KEY" not in os.environ:
     raise RuntimeError("Please add the OPENAI_API_KEY environment variable to run this script. Run the following in your terminal `export OPENAI_API_KEY=...`")
 
-openai_api_key =  os.environ["OPENAI_API_KEY"]
+openai_api_key = os.environ["OPENAI_API_KEY"]
+
 
 from fastapi import FastAPI
 from starlette.responses import StreamingResponse

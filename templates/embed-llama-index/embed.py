@@ -14,8 +14,14 @@ import os
 from conf import RAY_DOCS_INDEX, RAY_BLOGS_INDEX
 
 
+from dotenv import load_dotenv
+
+load_dotenv()
+
 if "OPENAI_API_KEY" not in os.environ:
     raise RuntimeError("Please add the OPENAI_API_KEY environment variable to run this script. Run the following in your terminal `export OPENAI_API_KEY=...`")
+
+openai_api_key = os.environ["OPENAI_API_KEY"]
 
 
 # Step 1: Logic for loading and parsing the files into llama_index documents.
@@ -25,6 +31,7 @@ loader = UnstructuredReader()
 def load_and_parse_files(file_row: Dict[str, Path]) -> List[Dict[str, Document]]:
     documents = []
     file = file_row["path"]
+    print(f"parsing {file}")
     if file.is_dir():
         return []
     # Skip all non-html files like png, jpg, etc.
@@ -117,9 +124,9 @@ def embed_ray_blogs():
     # Repeat the same steps for the Anyscale blogs
     # Download the Anyscale blogs locally
     # wget -e robots=off --recursive --no-clobber --page-requisites --html-extension --convert-links --restrict-file-names=windows --domains anyscale.com --no-parent https://www.anyscale.com/blog
-    all_blogs_gen = Path("/mnt/user_storage/www.anyscale.com/").rglob("*")
+    all_blogs_gen = Path("/mnt/user_storage/www.anyscale.com/blog").rglob("*")
     all_blogs = [{"path": blog.resolve()} for blog in all_blogs_gen]
-
+    print(all_blogs)
     ds = ray.data.from_items(all_blogs)
     loaded_docs = ds.flat_map(load_and_parse_files)
     nodes = loaded_docs.flat_map(convert_documents_into_nodes)
@@ -143,10 +150,13 @@ def embed_ray_blogs():
 def embed_all():
     ray.init(runtime_env={
         "env_vars": {
-            "OPENAI_API_KEY":  os.environ["OPENAI_API_KEY"]
+            "OPENAI_API_KEY": openai_api_key
         }
     })
-    remotes = [embed_ray_blogs.remote(), embed_ray_docs.remote()]
+    remotes = [
+        embed_ray_blogs.remote(),
+        embed_ray_docs.remote()
+    ]
     ray.get(remotes)
 
 

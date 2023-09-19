@@ -20,6 +20,16 @@
                         <button class="btn btn-primary" onclick="askQuestion()">Ask</button>
                     </div>
                 </div>
+                <div class="input-group mb-3 d-flex justify-content-center">
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="engineRadio" id="blogRadio" value="blogs">
+                        <label class="form-check-label" for="blogRadio">Blogs</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="engineRadio" id="docsRadio" value="docs">
+                        <label class="form-check-label" for="docsRadio">Docs</label>
+                    </div>
+                </div>
             </div>
         </div>
         
@@ -42,9 +52,17 @@
         // JavaScript function to send a question to the API and display the response
         async function askQuestion() {
             const question = document.getElementById("questionInput").value;
+            const engineRadio = document.querySelector('input[name="engineRadio"]:checked');
+            const engine = engineRadio ? engineRadio.value : ""; // Get the selected engine
+
+            if (!question) {
+                alert("Please enter a question.");
+                return;
+            }
+
             const responseBox = document.getElementById("responseBox");
             window.eventSource?.close();
-            window.eventSource = new EventSource(`/event?query="${question}"`);
+            window.eventSource = new EventSource(`/event?query="${question}"&engine="${engine}"`);
             responseBox.innerHTML = "";
             eventSource.addEventListener('stream', (evt) => {
                 if (evt.data === "<<end>>") {
@@ -53,7 +71,7 @@
                     return;
                 }
                 responseBox.innerHTML += evt.data;
-            })
+            });
         }
     </script>
 </body>
