@@ -68,7 +68,7 @@ The serve YAML file runs the Llama-7B model. You can modify it to deploy any mod
 Run the following command in a separate terminal. 
 
 ```shell
-python deploy/_internal/backend/openai-sdk-query.py
+python query.py
 ```
 ```text
 Output:
@@ -100,11 +100,11 @@ The top rated restaurants in San Francisco include:
 To deploy an application with one model on an Anyscale Service you can run:
 
 ```shell
-anyscale service rollout -f deploy/_internal/backend/service.yaml --name {ENTER_NAME_FOR_SERVICE_HERE}
+anyscale service rollout -f service.yaml --name {ENTER_NAME_FOR_SERVICE_HERE}
 ```
 
-This is setup to run the Llama-2-7B model, but can be easily modified to run any of the other models in this repo.
-In order to query the endpoint, you can modify the `deploy/_internal/backend/request.py` script, replacing the query url with the Service URL found in the Service UI.
+This is setup to run the Llama-2-13B model, but can be easily modified to run any of the other models in this repo.
+In order to query the endpoint, you can modify the `query.py` script, replacing the query url with the Service URL found in the Service UI.
 
 Ansycale Services provide highly available fault tolerance for production LLM serving needs.  Learn more about [Anyscale Services](https://docs.anyscale.com/productionize/services/get-started)!
 
@@ -149,7 +149,7 @@ The easiest way is to copy the configuration of the existing model's YAML file a
 
 ## How do I deploy multiple models at once?
 
-You can append another application configuration to the YAML in `deploy/_internal/backend/serve.yaml` file. Alternatively, you can use the CLI linked above.
+You can append another application configuration to the YAML in `serve.yaml` file. Alternatively, you can use the CLI linked above.
 
 ## How do I deploy a model to multiple nodes?
 
