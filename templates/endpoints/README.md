@@ -48,7 +48,7 @@ Once deployed, LLM Developers can simply use an Open AI compatible api to intera
 
 ### Workspace Deployment
 
-In this guide, we will go over deploying a model locally using serve run as well as on an Anyscale Service. Alternatively, you can use the Endpoints CLI and OpenAI SDK on this workspace. The CLI can help you compare the outputs of different models directly, rank them by quality, get a cost and latency estimate, and more.
+In this guide, we will go over deploying a model locally using serve run as well as on an Anyscale Service. Once deployed you can use the OpenAI SDK to interact with the models ensuring an easy integration for your applications.  
 
 #### Using Ray Serve
 From the terminal use the Ray Serve CLI to deploy a model:
