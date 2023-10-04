@@ -1,0 +1,18 @@
+name: endpoints
+ray_serve_config:
+  applications:
+  - name: router
+    route_prefix: /
+    import_path: aviary.backend:router_application
+    runtime_env:
+      working_dir: "."
+    args:
+      models:
+        meta-llama/Llama-2-13b-chat-hf: ./models/meta-llama--Llama-2-13b-chat-hf.yaml
+  - name: meta-llama--Llama-2-13b-chat-hf
+    route_prefix: /meta-llama--Llama-2-13b-chat-hf
+    import_path: aviary.backend:llm_application
+    args:
+      model: "./models/meta-llama--Llama-2-13b-chat-hf.yaml" 
+    runtime_env:
+      working_dir: "."
