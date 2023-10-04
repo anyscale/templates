@@ -1,14 +1,14 @@
 # Endpoints - Deploy, configure, and serve LLMs 
 
-Based on Ray Serve and the foundation for [Anyscale-Hosted Endpoints solution](https://app.endpoints.anyscale.com/landing), the Endpoints template provides an easy to configure solution for ML Platform teams, Infrastructure engineers, and Developers who need more control over the application's resource usage, configuration, logic, or custom models.
+Based on Ray Serve and the foundation for [Anyscale-Hosted Endpoints](http://anyscale.com/endpoints), the Endpoints template provides an easy to configure solution for ML Platform teams, Infrastructure engineers, and Developers who need more control over the application's resource usage, configuration, logic, or custom models.
 
 If you are interested in a serverless one-click offering for deploying Endpoints in your account, reach out to the [Anyscale team to learn more](mailto:endpoints-help@anyscale.com?subject=Endpoints).
 
 | Template Specification | Description |
 | ---------------------- | ----------- |
 | Time to Run | Around 5 minutes to deploy a model. |
-| Minimum Compute Requirements | The default is a head node with 32 vCPU. Different models (ie LLama2-13B) have different compute requirements and accelerator requirements.  To run LLama2-70b requires the A100 accelerator and specific hardware, while smaller models like LLama2-7b require A10 accelerators.  Read more to learn how to change the default instance selections and accelerators.|
-| Cluster Environment | This template uses the latest Anyscale-provided 'Aviary docker image' (anyscale/aviary:022977e16498bdd6710ce3961699c8719fa94344). If you want to change to a different cluster environment, make sure that to follow the BYOD development flow and it is based off of this image. |
+| Minimum Compute Requirements | The default is a head node with 32 vCPU. Different models (ie LLama2-13B) have different compute requirements and accelerator requirements.  We recommend deploying LLama2-70b on A100 accelerators and specific hardware, while smaller models like LLama2-7b may use alternative accelerators like A10.  Read more to learn how to change the default instance selections and accelerators.|
+| Cluster Environment | This template uses the latest Anyscale-provided 'Aviary docker image' (anyscale/aviary:0.3.1). If you want to change to a different cluster environment, make sure that to follow the BYOD development flow and it is based off of this image. |
 
 
 ##  Endpoints Background
