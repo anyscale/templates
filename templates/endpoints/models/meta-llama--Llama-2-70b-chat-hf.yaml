@@ -14,8 +14,8 @@ deployment_config:
     resources:
       accelerator_type_a100: 0.01
 engine_config:
-  model_id: meta-llama/Llama-2-13b-chat-hf
-  hf_model_id: meta-llama/Llama-2-13b-chat-hf
+  model_id: meta-llama/Llama-2-70b-chat-hf
+  hf_model_id: meta-llama/Llama-2-70b-chat-hf
   type: VLLMEngine
   engine_kwargs:
     trust_remote_code: true
@@ -33,7 +33,7 @@ engine_config:
       default_system_message: ""
     stopping_sequences: ["<unk>"]
 scaling_config:
-  num_workers: 2
+  num_workers: 4
   num_gpus_per_worker: 1
   num_cpus_per_worker: 8
   placement_strategy: "STRICT_PACK"
