@@ -138,6 +138,13 @@ chat_completion = openai.ChatCompletion.create(
 print(chat_completion)
 ```
 
+# Application Examples
+See examples of building applications with your deployed endpoint on the [Anyscale Endpoints](https://docs.endpoints.anyscale.com/category/examples) page.
+
+Be sure to update the api_base and token for your private deployment.  This can be found under the "Serve deployments" tab on the "Query" button when deploying on your Workspace.
+
+When deploying on your production service the Service landing page has a "Query" button in the upper right hand corner with the url and token information.
+
 # Model Registry
 
 Endpoints allows you to easily add new models by adding a single configuration file.
