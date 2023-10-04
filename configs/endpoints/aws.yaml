@@ -74,7 +74,7 @@ worker_node_types:
     object_store_memory:
     custom_resources:
       worker_node: 1
-      accelerator_type_a100: 1
+      accelerator_type_a100_40g: 1
       accelerator_type_cpu: 1
   aws_advanced_configurations_json:
     BlockDeviceMappings:
