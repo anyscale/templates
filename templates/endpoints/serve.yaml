@@ -5,3 +5,6 @@ applications:
   args:
     models:
       - "./models/meta-llama--Llama-2-7b-chat-hf_a10.yaml"
+  runtime_env:
+    env_vars:
+      HUGGING_FACE_HUB_TOKEN: "UPDATE HF TOKEN HERE"

@@ -10,6 +10,10 @@ If you are interested in a serverless one-click offering for deploying Endpoints
 | Minimum Compute Requirements | The default is a head node with 32 vCPU. Different models (ie LLama2-13B) have different compute requirements and accelerator requirements.  We recommend deploying LLama2-70b on A100 accelerators and specific hardware, while smaller models like LLama2-7b may use alternative accelerators like A10.  Read more to learn how to change the default instance selections and accelerators.|
 | Cluster Environment | This template uses the latest Anyscale-provided 'Aviary docker image' (anyscale/aviary:0.3.1). If you want to change to a different cluster environment, make sure that to follow the BYOD development flow and it is based off of this image. |
 
+##  Prerequisites
+The Meta Llama-2 family of models need the HUGGING_FACE_HUB_TOKEN environment variable to be set to a Hugging Face Access Token for an account with permissions to download the model.
+
+To add your HUGGING_FACE_HUB_TOKEN go to the `serve.yaml` and `service.yaml` files and add your token in the Environment Variable place holder section.
 
 ##  Endpoints Background
 Endpoints makes it easy for LLM Developers to interact with OpenAI compatible APIs for their applications by providing an easy to manage backend for serving OSS LLMs.  It does this by:
