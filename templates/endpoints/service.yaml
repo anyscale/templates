@@ -16,3 +16,5 @@ ray_serve_config:
       model: "./models/meta-llama--Llama-2-13b-chat-hf.yaml" 
     runtime_env:
       working_dir: "."
+      env_vars:
+        HUGGING_FACE_HUB_TOKEN: "UPDATE HF TOKEN HERE"      
