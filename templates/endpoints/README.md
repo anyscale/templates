@@ -175,8 +175,6 @@ There can be several reasons for the deployment not starting or not working corr
 
 In general, [Ray Dashboard](https://docs.ray.io/en/latest/serve/monitoring.html#ray-dashboard) is a useful debugging tool, letting you monitor your application and access Ray logs.
 
-A good sanity check is deploying the test model in tests/models/. If that works, you know you can deploy _a_ model. 
-
 # Getting Help and Filing Bugs / Feature Requests
 
 We are eager to help you get started with Endpoints. You can get help on: 
