@@ -1,0 +1,12 @@
+name: endpoints
+ray_serve_config:
+  applications:
+  - name: meta-llama--Llama-2-7b-chat-hf
+    route_prefix: /
+    import_path: aviary.backend:router_application
+    args:
+      models:
+        - "./models/meta-llama--Llama-2-7b-chat-hf_a10.yaml"
+    runtime_env:
+      env_vars:
+        HUGGING_FACE_HUB_TOKEN: "UPDATE HF TOKEN HERE"
