@@ -22,6 +22,8 @@ engine_config:
     max_num_batched_tokens: 4096
     max_num_seqs: 64
     gpu_memory_utilization: 0.95
+    enable_cuda_graph: false
+    enable_custom_nccl: false
   max_total_tokens: 4096
   generation:
     prompt_format:
