@@ -25,6 +25,7 @@ engine_config:
     num_tokenizer_actors: 2
     enable_cuda_graph: false
     enable_custom_nccl: false
+    trust_remote_code: true
   max_total_tokens: 16384
   generation:
     prompt_format:
