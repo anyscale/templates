@@ -36,7 +36,7 @@ engine_config:
       default_system_message: ""
     stopping_sequences: ["<unk>"]
 scaling_config:
-  num_workers: 1
+  num_workers: 2
   num_gpus_per_worker: 1
   num_cpus_per_worker: 8
   placement_strategy: "STRICT_PACK"
