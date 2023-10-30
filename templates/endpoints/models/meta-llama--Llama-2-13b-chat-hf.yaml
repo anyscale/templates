@@ -9,7 +9,7 @@ deployment_config:
     smoothing_factor: 0.5
     downscale_delay_s: 300.0
     upscale_delay_s: 15.0
-  max_concurrent_queries: 48
+  max_concurrent_queries: 64
   ray_actor_options:
     resources:
       accelerator_type_a100_40g: 0.01
@@ -19,7 +19,7 @@ engine_config:
   type: VLLMEngine
   engine_kwargs:
     max_num_batched_tokens: 12288
-    max_num_seqs: 48
+    max_num_seqs: 64
     gpu_memory_utilization: 0.95
     num_tokenizer_actors: 2
     enable_cuda_graph: true
