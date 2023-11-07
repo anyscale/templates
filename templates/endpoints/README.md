@@ -41,6 +41,7 @@ RayLLM leverages Ray Serve, which has native support for autoscaling and multi-n
 - [Deploying as a Production Service](#deploying-on-anyscale-services)
 - [Using the OpenAI SDK](#using-the-openai-sdk) 
 - [Model Registry](#model-registry)
+- [Serving LoRA Models](#servomg-lora-models)
 - [Frequently Asked Questions](#frequently-asked-questions)
 
 ## Deploying Endpoints for Development
@@ -151,6 +152,28 @@ Endpoints allows you to easily add new models by adding a single configuration f
 To learn more about how to customize or add new models, 
 see the [Model Registry](models/README.md).
 
+# Serving LoRA Models
+
+`serve_lora.yaml` and `multiplex_lora_adapters/lora_config.yaml` are provided for you.
+Make sure you replace the `HUGGING_FACE_HUB_TOKEN` config in `serve_lora.yaml` and `bucket_uri` config in `lora_config.yaml` with your own values.
+
+To deploy the LoRA model, run:
+```shell
+# Deploy the Llama-7b + "lora-viggo-finetuned" loRA models.
+
+serve run serve_lora.yaml
+```
+
+To query the LoRA model, run:
+```shell
+
+python query_lora.py
+```
+
+A few tips for using LoRA:
+1. The config for the loRA base model in `multiplex_models` config require to have `engine_config.engine_kwargs.enable_lora` set to `true` to be able to use.
+1. Each `multiplex_lora_adapters` can be loaded from anywhere the workspace has access to. You can use an existing bucket where you have the loRA models or can use `$ANYSCALE_ARTIFACT_STORAGE` provided by Anyscale Workspace.
+1. The `model_id` in `multiplex_lora_adapters` will be exactly the model you use to run query for the loRA model. It has to be unique across all models.
 
 # Frequently Asked Questions
 
@@ -190,4 +213,3 @@ We are eager to help you get started with Endpoints. You can get help on:
 - Via [Discuss](https://discuss.ray.io/c/llms-generative-ai/27). 
 
 We have people in both US and European time zones who will help answer your questions. 
-
