@@ -155,7 +155,7 @@ see the [Model Registry](models/README.md).
 # Serving LoRA Models
 
 `serve_lora.yaml` and `multiplex_lora_adapters/lora_config.yaml` are provided for you.
-Make sure you replace the `HUGGING_FACE_HUB_TOKEN` config in `serve_lora.yaml` and `bucket_uri` config in `lora_config.yaml` with your own values.
+Make sure you replace the `HUGGING_FACE_HUB_TOKEN` config in `serve_lora.yaml` and `bucket_uri` config in `lora_mirror_config.lora_config.yaml` with your own values.
 
 To deploy the LoRA model, run:
 ```shell
@@ -164,16 +164,17 @@ To deploy the LoRA model, run:
 serve run serve_lora.yaml
 ```
 
+This will take up to a minute or so to load depending on the model size.
 To query the LoRA model, run:
 ```shell
-
 python query_lora.py
 ```
 
 A few tips for using LoRA:
-1. The config for the loRA base model in `multiplex_models` config require to have `engine_config.engine_kwargs.enable_lora` set to `true` to be able to use.
-1. Each `multiplex_lora_adapters` can be loaded from anywhere the workspace has access to. You can use an existing bucket where you have the loRA models or can use `$ANYSCALE_ARTIFACT_STORAGE` provided by Anyscale Workspace.
-1. The `model_id` in `multiplex_lora_adapters` will be exactly the model you use to run query for the loRA model. It has to be unique across all models.
+1. The `base_model_id` config for the loRA base model in `multiplex_lora_adapters/lora_config.yaml` defines the based model of the loRA. The base model defined in `models/meta-llama--Llama-2-7b-chat-hf_a10.yaml` requires to have `engine_config.engine_kwargs.enable_lora` set to `true` to be able to use.
+1. Each `multiplex_lora_adapters` in `serve_lora.yaml` can be loaded from any S3 buckets the workspace has access to. You can use an existing bucket where you have the loRA models or can use `$ANYSCALE_ARTIFACT_STORAGE` provided by Anyscale Workspace.
+1. The `model_id` in `lora_mirror_config.lora_config.yaml` will be exactly the model you use to run query for the loRA model. It has to be unique across all models.
+1. You can also run query directly on the base model by changing the `model` variable in `query_lora.py`.
 
 # Frequently Asked Questions
 
