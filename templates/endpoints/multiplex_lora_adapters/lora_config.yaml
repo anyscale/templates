@@ -1,0 +1,13 @@
+base_model_id: meta-llama/Llama-2-7b-chat-hf
+model_id: lora-viggo-finetuned
+generation:
+  prompt_format:
+    system: "<<SYS>>\n{instruction}\n<</SYS>>\n\n"
+    assistant: " {instruction} </s><s> "
+    trailing_assistant: " "
+    user: "[INST] {system}{instruction} [/INST]"
+    system_in_user: true
+    default_system_message: ""
+  stopping_sequences: ["<unk>"]
+lora_mirror_config:
+  bucket_uri: s3://your-own-model-bucket/lora-checkpoint-path/

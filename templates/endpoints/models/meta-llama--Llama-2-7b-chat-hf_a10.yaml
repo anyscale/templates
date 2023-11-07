@@ -25,6 +25,7 @@ engine_config:
     enable_cuda_graph: true
     enable_custom_nccl: false
     num_tokenizer_actors: 2
+    enable_lora: true
   max_total_tokens: 4096
   generation:
     prompt_format:
@@ -42,3 +43,5 @@ scaling_config:
   placement_strategy: "STRICT_PACK"
   resources_per_worker:
     accelerator_type_a10: 0.01
+multiplex_config:
+  max_num_models_per_replica: 24
