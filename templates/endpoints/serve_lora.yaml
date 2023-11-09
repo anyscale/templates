@@ -6,8 +6,7 @@ applications:
       models: []
       multiplex_models:
         - "./models/meta-llama--Llama-2-7b-chat-hf_a10.yaml"
-      multiplex_lora_adapters:
-        - "./multiplex_lora_adapters/lora_config.yaml"
+      dynamic_lora_loading_path: s3://your-own-model-bucket/lora-checkpoint-path/  # <-- change this to a bucket you have access to that contains the loRA checkpoint
     runtime_env:
       env_vars:
         HUGGING_FACE_HUB_TOKEN: "UPDATE HF TOKEN HERE"  # <-- change this to a real token

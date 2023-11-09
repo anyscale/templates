@@ -154,27 +154,52 @@ see the [Model Registry](models/README.md).
 
 # Serving LoRA Models
 
-`serve_lora.yaml` and `multiplex_lora_adapters/lora_config.yaml` are provided for you.
-Make sure you replace the `HUGGING_FACE_HUB_TOKEN` config in `serve_lora.yaml` and `bucket_uri` config in `lora_mirror_config.lora_config.yaml` with your own values.
+`serve_lora.yaml` and `query_lora.py` are provided for you.
+Make sure you replace `dynamic_lora_loading_path` and `HUGGING_FACE_HUB_TOKEN` config in `serve_lora.yaml` with your own values.
 
 To deploy the LoRA model, run:
 ```shell
-# Deploy the Llama-7b + "lora-viggo-finetuned" loRA models.
-
 serve run serve_lora.yaml
 ```
 
-This will take up to a minute or so to load depending on the model size.
+This will take up to a minute or so to load depending on the model size given the required worker type is already up.
+Make sure to have your LoRA checkpoint stored in `{base_path}/{base_model_id}/{suffix}/{id}` format and change the model id in `query_lora.py` 
 To query the LoRA model, run:
 ```shell
 python query_lora.py
+
+# Output:
+# {
+#     "id": "meta-llama/Llama-2-7b-chat-hf:lora-model:1234-472e56b56039273c260e783a80950816",
+#     "object": "text_completion",
+#     "created": 1699563681,
+#     "model": "meta-llama/Llama-2-7b-chat-hf:lora-model:1234",
+#     "choices": [
+#         {
+#             "message": {
+#                 "role": "assistant",
+#                 "content": " Sure, I can do that! Based on the target sentence you provided, I will construct the underlying meaning representation of the input sentence as a single function with attributes and attribute values.\n\nThe function I have constructed is:\n\n['inform', 'available_on_steam'] [1] [developer] [Slightly Mad Studios] [/]  \n\nThe attributes are:\n\n[1] [release_year] [2012]\n[developer] [Slightly Mad Studios]"
+#             },
+#             "index": 0,
+#             "finish_reason": "stop"
+#         }
+#     ],
+#     "usage": {
+#         "prompt_tokens": 285,
+#         "completion_tokens": 110,
+#         "total_tokens": 395
+#     }
+# }
 ```
 
 A few tips for using LoRA:
-1. The `base_model_id` config for the loRA base model in `multiplex_lora_adapters/lora_config.yaml` defines the based model of the loRA. The base model defined in `models/meta-llama--Llama-2-7b-chat-hf_a10.yaml` requires to have `engine_config.engine_kwargs.enable_lora` set to `true` to be able to use.
-1. Each `multiplex_lora_adapters` in `serve_lora.yaml` can be loaded from any S3 buckets the workspace has access to. You can use an existing bucket where you have the loRA models or can use `$ANYSCALE_ARTIFACT_STORAGE` provided by Anyscale Workspace.
-1. The `model_id` in `lora_mirror_config.lora_config.yaml` will be exactly the model you use to run query for the loRA model. It has to be unique across all models.
-1. You can also run query directly on the base model by changing the `model` variable in `query_lora.py`.
+1. LoRA base models should be passed in the serve config file `serve_lora.yaml` in the `multiplex_models` config.
+1. `dynamic_lora_loading_path` in `serve_lora.yaml` can be loaded from any AWS S3 or Google Cloud Storage bucket the workspace has access to. You can use an existing bucket where you have the loRA models or can use `$ANYSCALE_ARTIFACT_STORAGE` already provided by Anyscale Workspace.
+1. LoRA checkpoints can be added to the `dynamic_lora_loading_path` dynamically before and after the Serve is already started.
+1. LoRA checkpoints can to be stored in the `{base_path}/{base_model_id}/{suffix}/{id}` format, where the `base_path` is defined in `dynamic_lora_loading_path` config, `base_model_id` should match with one of the models in `multiplex_models` (e.g. `s3://your-own-model-bucket/lora-checkpoint-path/meta-llama/Llama-2-7b-chat-hf/lora-model/1234`).
+1. The `model` used in `query_lora.py` is expected to be in `{base_model_id}:{suffix}:{id}` format (e.g. `meta-llama/Llama-2-7b-chat-hf:lora-model:1234`).
+1. You can also run query directly on the base model by changing the `model` variable to the base model id in `query_lora.py`.
+
 
 # Frequently Asked Questions
 
