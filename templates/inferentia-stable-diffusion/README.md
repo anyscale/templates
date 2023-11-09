@@ -17,7 +17,9 @@ After launching this template, within the Workspace terminal you can run followi
 ## Running the model
 
 To launch the serve application:
+
 `cd serve`
+
 `serve run sd_serve:sd_app`
 
 Once the serve application has started successfully, open another terminal and test it using. The output is saved in `image.png`:
