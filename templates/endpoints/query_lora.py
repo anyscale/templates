@@ -1,8 +1,11 @@
 import openai
 
 
-# Use "meta-llama/Llama-2-7b-chat-hf" to see the result without the loRA adapter.
-model = "lora-viggo-finetuned"
+# Use "meta-llama/Llama-2-7b-chat-hf" to see the result of base model.
+# The LoRA model is in the format of {base_model_id}:{suffix}:{id}. This expects the
+# checkpoint to be stored in the following path:
+#     {base_path}/{base_model_id}/{suffix}/{id}
+model = "meta-llama/Llama-2-7b-chat-hf:lora-model:1234"
 system = ("Given a target sentence construct the underlying meaning representation\n"
           "of the input sentence as a single function with attributes and attribute\n"
           "values. This function should describe the target string accurately and the\n"
