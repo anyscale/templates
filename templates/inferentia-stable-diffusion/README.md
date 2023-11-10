@@ -14,6 +14,8 @@ After launching this template, within the Workspace terminal you can run followi
 
 `python compile.py`
 
+* Note - To avoid the workspace snapshotting failure due to the large files, run `git init` and add the output folder to .gitignore.
+
 ## Running the model
 
 To launch the serve application:
