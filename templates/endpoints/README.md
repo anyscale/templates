@@ -1,14 +1,14 @@
-# Endpoints - Deploy, configure, and serve LLMs 
+# Endpoints - Deploy, configure, and serve LLMs
 
 Based on Ray Serve and the foundation for [Anyscale-Hosted Endpoints](http://anyscale.com/endpoints), the Endpoints template provides an easy to configure solution for ML Platform teams, Infrastructure engineers, and Developers who need more control over the application's resource usage, configuration, logic, or custom models.
 
 If you are interested in a serverless one-click offering for deploying Endpoints in your account, reach out to the [Anyscale team to learn more](mailto:endpoints-help@anyscale.com?subject=Endpoints).
 
-| Template Specification | Description |
-| ---------------------- | ----------- |
-| Time to Run | Around 5 minutes to deploy a model. |
-| Minimum Compute Requirements | The default is a head node with 32 vCPU. Different models (ie LLama2-13B) have different compute requirements and accelerator requirements.  We recommend deploying LLama2-70b on A100 accelerators and specific hardware, while smaller models like LLama2-7b may use alternative accelerators like A10.  Read more to learn how to change the default instance selections and accelerators.|
-| Cluster Environment | This template uses the latest Anyscale-provided 'Aviary docker image' (anyscale/aviary:0.3.1). If you want to change to a different cluster environment, make sure to follow the BYOD development flow and the image is based off the anyscale/aviary images. |
+| Template Specification       | Description                                                                                                                                                                                                                                                                                                                                                                                   |
+| ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Time to Run                  | Around 5 minutes to deploy a model.                                                                                                                                                                                                                                                                                                                                                           |
+| Minimum Compute Requirements | The default is a head node with 32 vCPU. Different models (ie LLama2-13B) have different compute requirements and accelerator requirements.  We recommend deploying LLama2-70b on A100 accelerators and specific hardware, while smaller models like LLama2-7b may use alternative accelerators like A10.  Read more to learn how to change the default instance selections and accelerators. |
+| Cluster Environment          | This template uses the latest Anyscale-provided 'Aviary docker image' (anyscale/aviary:0.3.1). If you want to change to a different cluster environment, make sure to follow the BYOD development flow and the image is based off the anyscale/aviary images.                                                                                                                                 |
 
 ##  Prerequisites
 The Meta Llama-2 family of models need the HUGGING_FACE_HUB_TOKEN environment variable to be set to a Hugging Face Access Token for an account with permissions to download the model.
@@ -39,26 +39,26 @@ RayLLM leverages Ray Serve, which has native support for autoscaling and multi-n
   * [Query](#query)
     + [Model](#query-the-model)
 - [Deploying as a Production Service](#deploying-on-anyscale-services)
-- [Using the OpenAI SDK](#using-the-openai-sdk) 
+- [Using the OpenAI SDK](#using-the-openai-sdk)
 - [Model Registry](#model-registry)
 - [Frequently Asked Questions](#frequently-asked-questions)
 
 ## Deploying Endpoints for Development
 
-The guide below walks you through the steps required for deployment of Endpoints.  You can deploy any model in the `models` directory of this repo, 
+The guide below walks you through the steps required for deployment of Endpoints.  You can deploy any model in the `models` directory of this repo,
 or define your own model YAML file and run that instead.
 
 Once deployed, LLM Developers can simply use an Open AI compatible api to interact with the deployed models.
 
 ### Workspace Deployment
 
-In this guide, we will go over deploying a model locally using serve run as well as on an Anyscale Service. Once deployed you can use the OpenAI SDK to interact with the models ensuring an easy integration for your applications.  
+In this guide, we will go over deploying a model locally using serve run as well as on an Anyscale Service. Once deployed you can use the OpenAI SDK to interact with the models ensuring an easy integration for your applications.
 
 #### Using Ray Serve
 From the terminal use the Ray Serve CLI to deploy a model:
 
 ```shell
-# Deploy the Llama-7b model. 
+# Deploy the Llama-7b model.
 
 serve run serve.yaml
 ```
@@ -69,7 +69,7 @@ The serve YAML file runs the Llama-7B model. You can modify it to deploy any mod
 
 #### Query the model
 
-Run the following command in a separate terminal. 
+Run the following command in a separate terminal.
 
 ```shell
 python query.py
@@ -107,7 +107,7 @@ To deploy an application with one model on an Anyscale Service you can run:
 anyscale service rollout -f service.yaml --name {ENTER_NAME_FOR_SERVICE_HERE}
 ```
 
-This is setup to run the Llama-2-13B model, but can be easily modified to run any of the other models in this repo.
+This is setup to run the Llama-2-7B model, but can be easily modified to run any of the other models in this repo.
 In order to query the endpoint, you can modify the `query.py` script, replacing the query url with the Service URL found in the Service UI.
 
 Ansycale Services provide highly available fault tolerance for production LLM serving needs.  Learn more about [Anyscale Services](https://docs.anyscale.com/productionize/services/get-started)!
@@ -148,7 +148,7 @@ When deploying on your production service the Service landing page has a "Query"
 # Model Registry
 
 Endpoints allows you to easily add new models by adding a single configuration file.
-To learn more about how to customize or add new models, 
+To learn more about how to customize or add new models,
 see the [Model Registry](models/README.md).
 
 
@@ -170,7 +170,7 @@ All our default model configurations enforce a model to be deployed on one node 
 
 You can edit the Compute Configuration direclty on your Workspace.  [Compute configurations](https://docs.anyscale.com/configure/compute-configs/overview) define the shape of the cluster and what resources Anyscale will use to deploy models and serve traffic.  If you would like to edit the default compute configuration choose "Edit" on your workspace and update the configuration.  When moving to production and deploying as an Ansycale Service the new configuration will be used.
 
-Note that certain models require special accelerators.  Be aware that updating the resources make cause issues with your application.  
+Note that certain models require special accelerators.  Be aware that updating the resources make cause issues with your application.
 
 ## My deployment isn't starting/working correctly, how can I debug?
 
@@ -184,10 +184,10 @@ In general, [Ray Dashboard](https://docs.ray.io/en/latest/serve/monitoring.html#
 
 # Getting Help and Filing Bugs / Feature Requests
 
-We are eager to help you get started with Endpoints. You can get help on: 
+We are eager to help you get started with Endpoints. You can get help on:
 
-- Via Slack -- fill in [this form](https://docs.google.com/forms/d/e/1FAIpQLSfAcoiLCHOguOm8e7Jnn-JJdZaCxPGjgVCvFijHB5PLaQLeig/viewform) to sign up. 
-- Via [Discuss](https://discuss.ray.io/c/llms-generative-ai/27). 
+- Via Slack -- fill in [this form](https://docs.google.com/forms/d/e/1FAIpQLSfAcoiLCHOguOm8e7Jnn-JJdZaCxPGjgVCvFijHB5PLaQLeig/viewform) to sign up.
+- Via [Discuss](https://discuss.ray.io/c/llms-generative-ai/27).
 
-We have people in both US and European time zones who will help answer your questions. 
+We have people in both US and European time zones who will help answer your questions.
 
