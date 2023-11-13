@@ -10,7 +10,7 @@ import ray
 
 app = FastAPI()
 
-@serve.deployment(num_replicas=2, ray_actor_options={"resources": {"neuron_cores": 2}})
+@serve.deployment(num_replicas=1, ray_actor_options={"resources": {"neuron_cores": 2}})
 @serve.ingress(app)
 class Llama:
     def __init__(self):
