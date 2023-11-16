@@ -116,27 +116,28 @@ Ansycale Services provide highly available fault tolerance for production LLM se
 # Using the OpenAI SDK
 
 Endpoints uses an OpenAI-compatible API, allowing us to use the OpenAI
-SDK to access Endpoint backends. To do so, we need to set the `OPENAI_API_BASE` env var. From the terminal:
-
-```shell
-export OPENAI_API_BASE=http://localhost:8000/v1
-export OPENAI_API_KEY='not_a_real_key'
-```
+SDK to access Endpoint backends.
 
 ```python
-import openai
+from openai import OpenAI
+
+client = OpenAI(
+  base_url="http://localhost:8000/v1",
+  api_key="NOT A REAL KEY",
+)
 
 # List all models.
-models = openai.Model.list()
+models = client.models.list()
 print(models)
 
 # Note: not all arguments are currently supported and will be ignored by the backend.
-chat_completion = openai.ChatCompletion.create(
-    model="meta-llama/llama2-7b",
-    messages=[{"role": "system", "content": "You are a helpful assistant."}, {"role": "user", "content": "Say 'test'."}],
-    temperature=0.7
+chat_completion = client.chat.completions.create(
+  model="meta-llama/Llama-2-7b-chat-hf",
+  messages=[{"role": "system", "content": "You are a helpful assistant."}, {"role": "user", "content": "Say 'test'."}],
+  temperature=0.7,
 )
 print(chat_completion)
+
 ```
 
 # Application Examples
@@ -155,15 +156,20 @@ see the [Model Registry](models/README.md).
 # Serving LoRA Models
 
 `serve_lora.yaml` and `query_lora.py` are provided for you in this template.
-Make sure you replace `dynamic_lora_loading_path` and `HUGGING_FACE_HUB_TOKEN` config in `serve_lora.yaml` with your own values. And place the LoRA checkpoint in the `dynamic_lora_loading_path` bucket.
+- If you just want to deploy static LoRA models, you can list them in `multiplex_lora_adapters` config in the `serve_lora.yaml` file.
+- If you want to dynamically loading LoRA models to a running service, you can use `dynamic_lora_loading_path` config in the `serve_lora.yaml` file.
+- Both can be set at the same time and complement to each other.
 
-To deploy the LoRA model, run:
+Make sure you replace `dynamic_lora_loading_path` and `HUGGING_FACE_HUB_TOKEN` config in `serve_lora.yaml` with your own values. And place the LoRA checkpoint in the `dynamic_lora_loading_path` bucket.
+Also, if you are loading static LoRA models, replace `lora_mirror_config.bucket_uri` in `lora_config.yaml` with your own bucket uri.
+
+To deploy the LoRA models, run:
 ```shell
 serve run serve_lora.yaml
 ```
 
 This will take up to a minute or so to load depending on the model size given the required worker type is already up.
-Make sure to have your LoRA checkpoint stored in `{base_path}/{base_model_id}:{suffix}:{id}` and change the model id accordingly in `query_lora.py`.
+For dynamic LoRA models, make sure to have your LoRA checkpoint stored in `{base_path}/{base_model_id}:{suffix}:{id}` and change the model id accordingly in `query_lora.py`.
 
 To query the LoRA model, run:
 ```shell

@@ -1,9 +1,11 @@
-import openai
+from openai import OpenAI
 
 
 # Use "meta-llama/Llama-2-7b-chat-hf" to see the result of base model.
-# The LoRA model is in the format of {base_model_id}:{suffix}:{id}. This expects the
-# checkpoint to be stored in the following path:
+# Use "lora-finetuned" or the model id of your choice to see the result of static LoRA models.
+#
+# The dynamic LoRA model id should be in the format of {base_model_id}:{suffix}:{id}.
+# It also expects the checkpoint to be stored in the following path:
 #   {base_path}/{base_model_id}:{suffix}:{id}
 #   e.g. s3://my-bucket/my-lora-checkouts/meta-llama/Llama-2-7b-chat-hf:lora-model:1234
 model = "meta-llama/Llama-2-7b-chat-hf:lora-model:1234"
@@ -24,10 +26,13 @@ message = ("Here is the target sentence:\n"
            " Steam, Linux, or Mac release.")
 
 # Note: not all arguments are currently supported and will be ignored by the backend.
-chat_completion = openai.ChatCompletion.create(
-    api_base="http://localhost:8000/v1", api_key="NOT A REAL KEY",
+client = OpenAI(
+    base_url="http://localhost:8000/v1",
+    api_key="NOT A REAL KEY",
+)
+chat_completion = client.chat.completions.create(
     model=model,
     messages=[{"role": "system", "content": system}, {"role": "user", "content": message}],
-    temperature=0.01
+    temperature=0.01,
 )
 print(chat_completion)
