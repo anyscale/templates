@@ -155,13 +155,13 @@ see the [Model Registry](models/README.md).
 
 # Serving LoRA Models
 
-`serve_lora.yaml` and `query_lora.py` are provided for you in this template.
+`serve_lora.yaml` and `query_lora.py` are provided for you in this template. We support serving multiple LoRA adapters with a common base model in the same request batch. In addition, we use Serve multiplexing to reduce the number of swaps for LoRA adapters.
 - If you just want to deploy static LoRA models, you can list them in `multiplex_lora_adapters` config in the `serve_lora.yaml` file.
-- If you want to dynamically loading LoRA models to a running service, you can use `dynamic_lora_loading_path` config in the `serve_lora.yaml` file.
+- If you want to dynamically load LoRA models to a running service, you can use `dynamic_lora_loading_path` config in the `serve_lora.yaml` file.
 - Both can be set at the same time and complement to each other.
 
 Make sure you replace `dynamic_lora_loading_path` and `HUGGING_FACE_HUB_TOKEN` config in `serve_lora.yaml` with your own values. And place the LoRA checkpoint in the `dynamic_lora_loading_path` bucket.
-Also, if you are loading static LoRA models, replace `lora_mirror_config.bucket_uri` in `lora_config.yaml` with your own bucket uri.
+Also, if you are loading static LoRA models, replace `lora_mirror_config.bucket_uri` in `static_lora_adapter_config.yaml` with your own bucket uri.
 
 To deploy the LoRA models, run:
 ```shell
@@ -203,7 +203,7 @@ A few tips for serving LoRA models:
 1. LoRA base models should be passed in the serve config file `serve_lora.yaml` in the `multiplex_models` config.
 1. `dynamic_lora_loading_path` in `serve_lora.yaml` can be loaded from any AWS S3 or Google Cloud Storage bucket where the workspace has access to. You can use an existing bucket where you have the loRA models or can use `$ANYSCALE_ARTIFACT_STORAGE` already provided by Anyscale Workspace.
 1. LoRA checkpoints can be added to the `dynamic_lora_loading_path` dynamically before and after the Serve is already started.
-1. LoRA checkpoints can to be stored in the `{base_path}/{base_model_id}:{suffix}:{id}` format (e.g. `s3://my-bucket/my-lora-checkouts/meta-llama/Llama-2-7b-chat-hf:lora-model:1234`), where the `base_path` is defined in `dynamic_lora_loading_path` config and `base_model_id` should match with one of the models in `multiplex_models`.
+1. LoRA checkpoints have to be stored in the `{base_path}/{base_model_id}:{suffix}:{id}` format (e.g. `s3://my-bucket/my-lora-checkouts/meta-llama/Llama-2-7b-chat-hf:lora-model:1234`), where the `base_path` is defined in `dynamic_lora_loading_path` config and `base_model_id` should match with one of the models in `multiplex_models`.
 1. The `model` used in `query_lora.py` is expected to be in `{base_model_id}:{suffix}:{id}` format (e.g. `meta-llama/Llama-2-7b-chat-hf:lora-model:1234`).
 1. You can also run query directly on the base model by changing the `model` variable to the base model id in `query_lora.py`.
 
