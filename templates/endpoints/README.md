@@ -156,12 +156,8 @@ see the [Model Registry](models/README.md).
 # Serving LoRA Models
 
 `serve_lora.yaml` and `query_lora.py` are provided for you in this template. We support serving multiple LoRA adapters with a common base model in the same request batch. In addition, we use Serve multiplexing to reduce the number of swaps for LoRA adapters.
-- If you just want to deploy static LoRA models, you can list them in `multiplex_lora_adapters` config in the `serve_lora.yaml` file.
-- If you want to dynamically load LoRA models to a running service, you can use `dynamic_lora_loading_path` config in the `serve_lora.yaml` file.
-- Both can be set at the same time and complement to each other.
 
 Make sure you replace `dynamic_lora_loading_path` and `HUGGING_FACE_HUB_TOKEN` config in `serve_lora.yaml` with your own values. And place the LoRA checkpoint in the `dynamic_lora_loading_path` bucket.
-Also, if you are loading static LoRA models, replace `lora_mirror_config.bucket_uri` in `static_lora_adapter_config.yaml` with your own bucket uri.
 
 To deploy the LoRA models, run:
 ```shell

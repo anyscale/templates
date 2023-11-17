@@ -2,7 +2,6 @@ from openai import OpenAI
 
 
 # Use "meta-llama/Llama-2-7b-chat-hf" to see the result of base model.
-# Use "lora-finetuned" or the model id of your choice to see the result of static LoRA models.
 #
 # The dynamic LoRA model id should be in the format of {base_model_id}:{suffix}:{id}.
 # It also expects the checkpoint to be stored in the following path:
