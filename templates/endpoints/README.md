@@ -41,7 +41,7 @@ RayLLM leverages Ray Serve, which has native support for autoscaling and multi-n
 - [Deploying as a Production Service](#deploying-on-anyscale-services)
 - [Using the OpenAI SDK](#using-the-openai-sdk) 
 - [Model Registry](#model-registry)
-- [Serving LoRA Models](#servomg-lora-models)
+- [Serving LoRA Models](#serving-lora-models)
 - [Frequently Asked Questions](#frequently-asked-questions)
 
 ## Deploying Endpoints for Development
@@ -195,7 +195,7 @@ python query_lora.py
 # }
 ```
 
-A few tips for serving LoRA models:
+These are the requirements for serving LoRA models:
 1. LoRA base models should be passed in the serve config file `serve_lora.yaml` in the `multiplex_models` config.
 1. `dynamic_lora_loading_path` in `serve_lora.yaml` can be loaded from any AWS S3 or Google Cloud Storage bucket where the workspace has access to. You can use an existing bucket where you have the loRA models or can use `$ANYSCALE_ARTIFACT_STORAGE` already provided by Anyscale Workspace.
 1. LoRA checkpoints can be added to the `dynamic_lora_loading_path` dynamically before and after the Serve is already started.
