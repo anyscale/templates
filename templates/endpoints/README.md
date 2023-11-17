@@ -41,6 +41,7 @@ RayLLM leverages Ray Serve, which has native support for autoscaling and multi-n
 - [Deploying as a Production Service](#deploying-on-anyscale-services)
 - [Using the OpenAI SDK](#using-the-openai-sdk) 
 - [Model Registry](#model-registry)
+- [Serving LoRA Models](#serving-lora-models)
 - [Frequently Asked Questions](#frequently-asked-questions)
 
 ## Deploying Endpoints for Development
@@ -115,27 +116,28 @@ Ansycale Services provide highly available fault tolerance for production LLM se
 # Using the OpenAI SDK
 
 Endpoints uses an OpenAI-compatible API, allowing us to use the OpenAI
-SDK to access Endpoint backends. To do so, we need to set the `OPENAI_API_BASE` env var. From the terminal:
-
-```shell
-export OPENAI_API_BASE=http://localhost:8000/v1
-export OPENAI_API_KEY='not_a_real_key'
-```
+SDK to access Endpoint backends.
 
 ```python
-import openai
+from openai import OpenAI
+
+client = OpenAI(
+  base_url="http://localhost:8000/v1",
+  api_key="NOT A REAL KEY",
+)
 
 # List all models.
-models = openai.Model.list()
+models = client.models.list()
 print(models)
 
 # Note: not all arguments are currently supported and will be ignored by the backend.
-chat_completion = openai.ChatCompletion.create(
-    model="meta-llama/llama2-7b",
-    messages=[{"role": "system", "content": "You are a helpful assistant."}, {"role": "user", "content": "Say 'test'."}],
-    temperature=0.7
+chat_completion = client.chat.completions.create(
+  model="meta-llama/Llama-2-7b-chat-hf",
+  messages=[{"role": "system", "content": "You are a helpful assistant."}, {"role": "user", "content": "Say 'test'."}],
+  temperature=0.7,
 )
 print(chat_completion)
+
 ```
 
 # Application Examples
@@ -150,6 +152,56 @@ When deploying on your production service the Service landing page has a "Query"
 Endpoints allows you to easily add new models by adding a single configuration file.
 To learn more about how to customize or add new models, 
 see the [Model Registry](models/README.md).
+
+# Serving LoRA Models
+
+`serve_lora.yaml` and `query_lora.py` are provided for you in this template. We support serving multiple LoRA adapters with a common base model in the same request batch. In addition, we use Serve multiplexing to reduce the number of swaps for LoRA adapters.
+
+Make sure you replace `dynamic_lora_loading_path` and `HUGGING_FACE_HUB_TOKEN` config in `serve_lora.yaml` with your own values. And place the LoRA checkpoint in the `dynamic_lora_loading_path` bucket.
+
+To deploy the LoRA models, run:
+```shell
+serve run serve_lora.yaml
+```
+
+This will take up to a minute or so to load depending on the model size given the required worker type is already up.
+For dynamic LoRA models, make sure to have your LoRA checkpoint stored in `{base_path}/{base_model_id}:{suffix}:{id}` and change the model id accordingly in `query_lora.py`.
+
+To query the LoRA model, run:
+```shell
+python query_lora.py
+
+# Example output:
+# {
+#     "id": "meta-llama/Llama-2-7b-chat-hf:lora-model:1234-472e56b56039273c260e783a80950816",
+#     "object": "text_completion",
+#     "created": 1699563681,
+#     "model": "meta-llama/Llama-2-7b-chat-hf:lora-model:1234",
+#     "choices": [
+#         {
+#             "message": {
+#                 "role": "assistant",
+#                 "content": " Sure, I can do that! Based on the target sentence you provided, I will construct the underlying meaning representation of the input sentence as a single function with attributes and attribute values.\n\nThe function I have constructed is:\n\n['inform', 'available_on_steam'] [1] [developer] [Slightly Mad Studios] [/]  \n\nThe attributes are:\n\n[1] [release_year] [2012]\n[developer] [Slightly Mad Studios]"
+#             },
+#             "index": 0,
+#             "finish_reason": "stop"
+#         }
+#     ],
+#     "usage": {
+#         "prompt_tokens": 285,
+#         "completion_tokens": 110,
+#         "total_tokens": 395
+#     }
+# }
+```
+
+These are the requirements for serving LoRA models:
+1. LoRA base models should be passed in the serve config file `serve_lora.yaml` in the `multiplex_models` config.
+1. `dynamic_lora_loading_path` in `serve_lora.yaml` can be loaded from any AWS S3 or Google Cloud Storage bucket where the workspace has access to. You can use an existing bucket where you have the loRA models or can use `$ANYSCALE_ARTIFACT_STORAGE` already provided by Anyscale Workspace.
+1. LoRA checkpoints can be added to the `dynamic_lora_loading_path` dynamically before and after the Serve is already started.
+1. LoRA checkpoints have to be stored in the `{base_path}/{base_model_id}:{suffix}:{id}` format (e.g. `s3://my-bucket/my-lora-checkouts/meta-llama/Llama-2-7b-chat-hf:lora-model:1234`), where the `base_path` is defined in `dynamic_lora_loading_path` config and `base_model_id` should match with one of the models in `multiplex_models`.
+1. The `model` used in `query_lora.py` is expected to be in `{base_model_id}:{suffix}:{id}` format (e.g. `meta-llama/Llama-2-7b-chat-hf:lora-model:1234`).
+1. You can also run query directly on the base model by changing the `model` variable to the base model id in `query_lora.py`.
 
 
 # Frequently Asked Questions
@@ -190,4 +242,3 @@ We are eager to help you get started with Endpoints. You can get help on:
 - Via [Discuss](https://discuss.ray.io/c/llms-generative-ai/27). 
 
 We have people in both US and European time zones who will help answer your questions. 
-
