@@ -43,5 +43,5 @@ scaling_config:
   placement_strategy: "STRICT_PACK"
   resources_per_worker:
     accelerator_type_a10: 0.01
-multiplex_config:
+multiplex_config:  # <-- This is required to be used as a multiplexed model
   max_num_models_per_replica: 24
