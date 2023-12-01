@@ -16,7 +16,7 @@ To launch the serve application:
 
 `serve run serve.yaml`
 
-Once the serve application has started successfully, open another terminal and test it using. The output is saved in `image.png`:
+Once the serve application has started successfully, open another terminal and test it using:
 
 `python query.py`
 
