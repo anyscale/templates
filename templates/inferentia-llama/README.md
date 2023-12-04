@@ -16,14 +16,14 @@ To launch the serve application:
 
 `serve run serve.yaml`
 
-Once the serve application has started successfully, open another terminal and test it using. The output is saved in `image.png`:
+Once the serve application has started successfully, open another terminal and test it using:
 
 `python query.py`
 
 
 ## Roll out as Anyscale service
 
-This part is not covered in the template, but can be easily added on. In order to deploy to an Anyscale Service, you would first need to upload the compiled model files to an artifact storage, like S3, or add them into a docker image, since runtime environments cannot be larger than 500MB. Then, update the init method in the serve code to fetch the model from the right location. After those changes, run:
+In order to deploy the model to an Ansycale Service run:
 
 `anyscale service rollout -f srvc.yaml`
 
