@@ -23,7 +23,7 @@ worker_node_types:
       # change instance type when 24gb GPUs are available on GCP in Anyscale
       accelerator_type_a10: 1
   min_workers: 0
-  max_workers: 8
+  max_workers: 100
   use_spot: true
   fallback_to_ondemand: true
 - name: gpu-worker-v100
@@ -37,7 +37,7 @@ worker_node_types:
       worker_node: 1
       accelerator_type_v100: 1
   min_workers: 0
-  max_workers: 4
+  max_workers: 100
   use_spot: true
   fallback_to_ondemand: true
 - name: gpu-worker-a100-40g # 80gb GPUs not available in most accounts
@@ -52,7 +52,7 @@ worker_node_types:
       accelerator_type_a100_40g: 1
       accelerator_type_cpu: 1
   min_workers: 0
-  max_workers: 1
+  max_workers: 100
 - name: cpu-worker
   instance_type: n2-standard-4
   resources:
@@ -64,7 +64,7 @@ worker_node_types:
       worker_node: 1
       accelerator_type_cpu: 1
   min_workers: 0
-  max_workers: 16
+  max_workers: 100
   use_spot: false
 gcp_advanced_configurations_json:
   instance_properties:
