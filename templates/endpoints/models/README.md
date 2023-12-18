@@ -150,5 +150,15 @@ engine_config:
   model_id: YOUR_MODEL_NAME
   s3_mirror_config:
     bucket_uri: s3://YOUR_BUCKET_NAME/YOUR_MODEL_FOLDER
+    extra_files: []
+```
 
+For loading a model from Google Cloud Storage:
+
+```yaml
+engine_config:
+  model_id: YOUR_MODEL_NAME
+  s3_mirror_config:
+    bucket_uri: gs://YOUR_BUCKET_NAME/YOUR_MODEL_FOLDER
+    extra_files: []
 ```
