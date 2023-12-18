@@ -21,7 +21,7 @@ worker_node_types:
       worker_node: 1
       accelerator_type_cpu: 1
   min_workers: 0
-  max_workers: 16
+  max_workers: 100
   use_spot: false
 - name: gpu-worker-g5
   instance_type: g5.4xlarge
@@ -34,7 +34,7 @@ worker_node_types:
       worker_node: 1
       accelerator_type_a10: 1
   min_workers: 0
-  max_workers: 8
+  max_workers: 100
   use_spot: true
   fallback_to_ondemand: true
 - name: gpu-worker-g5-12
@@ -48,7 +48,7 @@ worker_node_types:
       worker_node: 1
       accelerator_type_a10: 1
   min_workers: 0
-  max_workers: 8
+  max_workers: 100
   use_spot: true
   fallback_to_ondemand: true
 - name: gpu-worker-p3
@@ -62,7 +62,7 @@ worker_node_types:
       worker_node: 1
       accelerator_type_v100: 1
   min_workers: 0
-  max_workers: 4
+  max_workers: 100
   use_spot: true
   fallback_to_ondemand: true
 - name: gpu-worker-p4d
@@ -88,4 +88,4 @@ worker_node_types:
       - Key: as-feature-multi-zone
         Value: "true"
   min_workers: 0
-  max_workers: 1
+  max_workers: 100
