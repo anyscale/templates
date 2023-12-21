@@ -23,7 +23,6 @@ engine_config:
     gpu_memory_utilization: 0.95
     num_tokenizer_actors: 2
     enable_cuda_graph: true
-    enable_custom_nccl: true
     trust_remote_code: true
   max_total_tokens: 4096
   generation:
