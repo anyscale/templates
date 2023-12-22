@@ -111,6 +111,8 @@ anyscale service rollout -f service.yaml --name {ENTER_NAME_FOR_SERVICE_HERE}
 This is setup to run the Llama-2-13B model, but can be easily modified to run any of the other models in this repo.
 In order to query the endpoint, you can modify the `query.py` script, replacing the query url with the Service URL found in the Service UI.
 
+Note: please make sure to include the path "/v1" at the end of the Service url.
+
 Ansycale Services provide highly available fault tolerance for production LLM serving needs.  Learn more about [Anyscale Services](https://docs.anyscale.com/productionize/services/get-started)!
 
 # Using the OpenAI SDK
