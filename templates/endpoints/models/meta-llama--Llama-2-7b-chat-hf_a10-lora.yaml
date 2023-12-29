@@ -25,6 +25,8 @@ engine_config:
     enable_cuda_graph: true
     num_tokenizer_actors: 2
     enable_lora: true  # <-- This is required to be used with the LoRA adapter
+    max_lora_rank: 32  # Max rank for the LoRA
+    max_loras: 24  # should be the same as multiplex_config.max_num_models_per_replica
   max_total_tokens: 4096
   generation:
     prompt_format:
