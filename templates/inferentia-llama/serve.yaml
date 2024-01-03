@@ -1,1 +1,3 @@
-import_path: llama-serve:lldep
+  applications:
+    - name: llama
+      import_path: llama-serve:lldep
