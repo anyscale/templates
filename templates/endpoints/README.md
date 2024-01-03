@@ -155,6 +155,10 @@ Endpoints allows you to easily add new models by adding a single configuration f
 To learn more about how to customize or add new models, 
 see the [Model Registry](models/README.md).
 
+# Serving Embedding Models
+
+See an example for serving embedding models in `serve_embedding.yaml`. Notably the serve arguments need to contain the `embedding_models` field. Sample configurations for embedding models can be found in the `models/embedding_models/` folder. You can use the OpenAI SDK to query the embedding models as in `query_embedding.py`.
+
 # Serving LoRA Models
 
 `serve_lora.yaml` and `query_lora.py` are provided for you in this template. We support serving multiple LoRA adapters with a common base model in the same request batch. In addition, we use Serve multiplexing to reduce the number of swaps for LoRA adapters.
