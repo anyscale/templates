@@ -1,1 +1,3 @@
-import_path: sd_serve:sd_app
+  applications:
+    - name: stable-diffusion
+      import_path: sd_serve:sd_app
