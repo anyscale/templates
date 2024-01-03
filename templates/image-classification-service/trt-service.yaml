@@ -1,6 +1,8 @@
 name: "image-classifier-tensorrt"
 ray_serve_config:
-  import_path: trt-resnet:model
-  runtime_env:
-    # This working dir is relative to the working dir when we run this file
-    working_dir: "."
+  applications:
+    - name: image-classification
+      import_path: trt-resnet:model
+      runtime_env:
+        # This working dir is relative to the working dir when we run this file
+        working_dir: "."
