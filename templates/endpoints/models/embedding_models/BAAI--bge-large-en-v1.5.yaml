@@ -1,0 +1,33 @@
+deployment_config:
+  autoscaling_config:
+    min_replicas: 1
+    initial_replicas: 1
+    max_replicas: 100
+    target_num_ongoing_requests_per_replica: 256
+    metrics_interval_s: 10.0
+    look_back_period_s: 30.0
+    smoothing_factor: 0.5
+    downscale_delay_s: 300.0
+    upscale_delay_s: 15.0
+  max_concurrent_queries: 512
+  ray_actor_options:
+    num_gpus: 1
+    num_cpus: 1
+    resources:
+      accelerator_type_t4_16g_aws: 0.01
+engine_config:
+  model_id: BAAI/bge-large-en-v1.5
+  hf_model_id: BAAI/bge-large-en-v1.5
+  tokenizer_id: BAAI/bge-large-en-v1.5
+  s3_mirror_config:
+    bucket_uri: s3://large-dl-models-mirror/models--BAAI--bge-large-en-v1.5/onnx-cuda
+  type: EmbeddingEngine
+  max_total_tokens: 512
+  max_batch_size: 256
+  batch_wait_timeout_s: 0.2
+  optimize: onnx
+scaling_config:
+  num_workers: 0
+  num_gpus_per_worker: 0
+  num_cpus_per_worker: 0
+  placement_strategy: "STRICT_PACK"
