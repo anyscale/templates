@@ -1,6 +1,6 @@
 name: "image-classifier-pytorch"
 ray_serve_config:
- applications:
+  applications:
     - name: image-classification
       import_path: pt-resnet:model
       runtime_env:
