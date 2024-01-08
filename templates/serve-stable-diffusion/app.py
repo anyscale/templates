@@ -15,6 +15,7 @@ class APIIngress:
     def __init__(self, diffusion_model_handle) -> None:
         self.handle = diffusion_model_handle
 
+    # Define the actual API endpoint to live at `/imagine`.
     @app.get(
         "/imagine",
         responses={200: {"content": {"image/png": {}}}},
@@ -31,7 +32,12 @@ class APIIngress:
 
 
 @serve.deployment(
+    # Set the number of GPUs required for each model replica
     ray_actor_options={"num_gpus": 1},
+
+    # The number of model replicas to keep active in our Ray cluster. 
+    # These model replicas can process incoming requests concurrently. 
+    # Autoscaling of model replicas is enabled below.
     autoscaling_config={"min_replicas": 1, "max_replicas": 99},
 )
 class StableDiffusionV2:
