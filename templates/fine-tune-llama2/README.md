@@ -7,7 +7,7 @@ This template shows you how to fine-tune Llama-2 models.
 - Run command below to kick off fine-tuning with dummy data, Grade School Math 8k (GSM8K) dataset.
 
 ```
-# The flag `--as-test` is for demo / testing purposes as it runs through only one forward and backward pass of the model and checkpoints the model. It will take 6-7 mins. Without this flag, it will take ~14 mins.
+# The flag `--as-test` is for demo / testing purposes as it runs through only one forward and backward pass of the model and checkpoints the model. It will take 6-7 mins. Without this flag, it will take ~42 mins (3 epochs).
 
 python train.py --size=7b --as-test
 ```
