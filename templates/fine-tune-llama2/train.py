@@ -715,8 +715,6 @@ def main():
     # Create the config with args for training.
     config = vars(args)
 
-    print(config)
-
     SIZE = "7B" # Default model size
     LR = 5e-6 # Default learning rate for full-parameter fine-tuning
 
@@ -768,7 +766,6 @@ def main():
             "test_path": args.test_path,
         }
     )
-    print(config)
 
     # Add LoRA config if needed
     if config["lora"]:
