@@ -2,6 +2,8 @@ from datasets import load_dataset
 import json
 import os
 
+# This script creates a fine-tuning dataset from the gsm8k dataset (https://huggingface.co/datasets/gsm8k).
+# It also defines an additional tokens.json with tokens used to structure the data. The tokens should be treated as special tokens by the model. You can use this script as a starting point to create your own dataset.
 dataset = load_dataset("gsm8k", "main")
 
 dataset_splits = {"train": dataset["train"], "test": dataset["test"]}
