@@ -36,6 +36,7 @@ class APIIngress:
 )
 class StableDiffusionV2:
     def __init__(self):
+        # Load the stable diffusion model inside a Ray Serve Deployment.
         model_id = "stabilityai/stable-diffusion-2"
 
         scheduler = EulerDiscreteScheduler.from_pretrained(

@@ -16,13 +16,13 @@ python query.py
 ## Step 3: Deploy the model as an Anyscale Service
 Deploy it as an Anyscale Service for staging or production traffic.
 
-Click the **Deploy** button on the top right corner to deploy a service
-
-![deploy-button](./assets/deploy_button.png)
+```bash
+serve run app:entrypoint --publish
+```
 
 
 ## Step 4: Query your Anyscale Service
-In the Service UI, click **Query** butoton to get detailed query instructions and intregate it into your own app.
+Navigate to Service UI with the URL generated from the previous step, click **Query** butoton to get detailed query instructions and intregate it into your own app.
 
 ![deploy-pop-up](./assets/query_instructions.png)
 
@@ -32,4 +32,4 @@ In the Service UI, click **Query** butoton to get detailed query instructions an
 ## What's next.   
 
 Vola! You have deployed a Stable Diffusion model. Want more than this? Check out more advanced tutorials below 
-- [Copmrehensive workthrough](./tutotrials/walkthrough.md)
+- [Comprehensive workthrough](./tutorials/walkthrough.md)
