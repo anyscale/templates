@@ -1,12 +1,10 @@
-import sys
-import subprocess
-
 import argparse
 from filelock import FileLock
 import functools
 import json
 import math
 import os
+import sys
 from pathlib import Path
 import re
 import tempfile
@@ -251,7 +249,6 @@ def training_function(kwargs: dict):
     seed = int(config["seed"])
     batch_size = int(config["batch_size"])
     gradient_accumulation_steps = int(config["grad_accum"])
-    num_devices = int(config["num_devices"])
 
 
     # Get deepspeed config to setup the batch size per device
@@ -360,14 +357,14 @@ def training_function(kwargs: dict):
     ):
         lr_scheduler = get_linear_schedule_with_warmup(
             optimizer=optimizer,
-            num_warmup_steps=NUM_WARMUP_STEPS * num_devices,
-            num_training_steps=total_training_steps * num_devices,
+            num_warmup_steps=NUM_WARMUP_STEPS * config["num_devices"],
+            num_training_steps=total_training_steps * config["num_devices"],
         )
     else:
         lr_scheduler = DummyScheduler(
             optimizer,
-            warmup_num_steps=NUM_WARMUP_STEPS * num_devices,
-            total_num_steps=total_training_steps * num_devices,
+            warmup_num_steps=NUM_WARMUP_STEPS * config["num_devices"],
+            total_num_steps=total_training_steps * config["num_devices"],
         )
 
     # Prepare everything
@@ -403,7 +400,7 @@ def training_function(kwargs: dict):
                 s_fwd = time.time()
                 outputs = model(**batch)
                 loss = outputs.loss
-                loss_sum += loss
+                loss_sum += loss.item()
                 e_fwd = time.time()
                 fwd_time = e_fwd - s_fwd
                 fwd_time_sum += fwd_time
