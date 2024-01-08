@@ -253,8 +253,6 @@ def training_function(kwargs: dict):
     gradient_accumulation_steps = int(config["grad_accum"])
     num_devices = int(config["num_devices"])
 
-    # Set other configs
-    mixed_precision=config["mixed_precision"]
 
     # Get deepspeed config to setup the batch size per device
     ds_plugin = config["ds_plugin"]
@@ -666,7 +664,7 @@ def parse_args():
             "if set to n>=1, the top n checkpoint with min. evaluation perplexity "
             "will be kept."
         ),
-        default=None,
+        default=1,
     )
 
     parser.add_argument(
@@ -720,6 +718,8 @@ def main():
     # Create the config with args for training.
     config = vars(args)
 
+    print(config)
+
     SIZE = "7B" # Default model size
     LR = 5e-6 # Default learning rate for full-parameter fine-tuning
 
@@ -771,6 +771,7 @@ def main():
             "test_path": args.test_path,
         }
     )
+    print(config)
 
     # Add LoRA config if needed
     if config["lora"]:
