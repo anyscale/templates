@@ -856,7 +856,7 @@ def main():
 
     except Exception as e:
         print("Failed to fine-tune the model. Exiting...")
-        # print(f"Error: {e}")
+        print(f"Error: {e}")
         exit()  # This will stop the script
 
 
