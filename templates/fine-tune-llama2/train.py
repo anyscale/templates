@@ -727,10 +727,14 @@ def main():
         elif arg == '--lora':
             LR = 1e-4
 
-    # Adjust batch size per device and node count according to model size
+    # Adjust batch size per device (BS) and number of devices (ND) according to model size
     if SIZE == "7b" or SIZE == "13b":
+        # ND is set on the basis of using Nvidia A10 and conducting full parameter fine-tuning (default context length).
+        # If Nvidia A100 is used. ND can be set to 8 instead.
         BS, ND = 16, 16
     elif SIZE == "70b":
+        # ND is set on the basis of using Nvidia A10 and conducting full parameter fine-tuning (default context length).
+        # If Nvidia A100 is used. ND can be set to 16 instead.
         BS, ND = 8, 32
     else:
         print(f"Invalid size: {SIZE}")
