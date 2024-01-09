@@ -6,10 +6,10 @@ This template shows you how to fine-tune Llama-2 models.
 - Run the command below to kick off fine-tuning with dummy data, Grade School Math 8k (GSM8K) dataset.
 
 ```
-# The flag `--as-test` is for demo / testing purposes as it runs through only one forward and backward pass of the model and checkpoints the model. It will take 6-7 mins. Without this flag, it will take ~42 mins (3 epochs for optimal model quality).
-
 python train.py --size=7b --as-test
 ```
+
+The flag `--as-test` is for testing purpose as it runs through only one forward and backward pass and checkpoints the model. It takes ~7 mins. Without this flag, it takes ~42 mins (3 epochs for optimal model quality).
 
 Model checkpoints will be stored under `{user's first name}/ft_llms_with_deepspeed/` in the cloud stroage bucket created for your Anyscale account. The full path will be printed in the output after the training is completed.
 
@@ -22,6 +22,8 @@ Model checkpoints will be stored under `{user's first name}/ft_llms_with_deepspe
 
 ![edit nodes](./assets/edit_nodes.png "Edit nodes")
 - Run the command below to kick off fine-tuning with new model size and worker nodes.
+    - 13b: ~9 mins for test run. ~60 mins for a full run (3 epochs)
+    - 13b: ~35 mins for test run. ~400 mins for a full run (3 epochs)
 
 ```
 python train.py --size=13b --as-test
@@ -33,6 +35,8 @@ python train.py --size=13b --as-test
 - (Optional) Replace the contents in `./data/test.jsonl` with your own test data if any.
 - (Optional) Add special token in `./data/tokens.json` if any.
 
+Use the same command to training with your own data.
+
 
 ------
 
@@ -40,5 +44,5 @@ python train.py --size=13b --as-test
 
 Voila! You have fine-tuned your own Llama-2 models. Want more than this? Check out advanced tutorials below 
 
-- [Comprehensive walkthrough](./tutorials/walkthrough.md)
+- [Walkthrough of this template](./tutorials/walkthrough.md)
 - [Fine-tune Llama-2 with LoRA adatpers](./tutorials/lora.md)

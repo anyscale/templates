@@ -728,12 +728,13 @@ def main():
             LR = 1e-4
 
     # Adjust batch size per device (BS) and number of devices (ND) according to model size
-    if SIZE == "7b" or SIZE == "13b":
-        # ND is set on the basis of using Nvidia A10 and conducting full parameter fine-tuning (default context length).
+    # Number of devices (ND) is determined by a combination of factors, context length, accelerator type, whether LoRA is used, etc.
+    if SIZE == "7b" or SIZE == "13b":  
+        # ND is et on the basis of using Nvidia A10 and conducting full parameter fine-tuning with default context length.
         # If Nvidia A100 is used. ND can be set to 8 instead.
         BS, ND = 16, 16
     elif SIZE == "70b":
-        # ND is set on the basis of using Nvidia A10 and conducting full parameter fine-tuning (default context length).
+        # ND is set on the basis of using Nvidia A10 and conducting full parameter fine-tuning with default context length.
         # If Nvidia A100 is used. ND can be set to 16 instead.
         BS, ND = 8, 32
     else:
@@ -791,7 +792,8 @@ def main():
                 "HF_HOME": "/mnt/local_storage/.cache/huggingface",
                 "RAY_AIR_LOCAL_CACHE_DIR": os.environ["RAY_AIR_LOCAL_CACHE_DIR"],
             },
-            "working_dir": ".",
+            # This is not needed to run in Workspace. However, it might be needed for other environments.
+            # "working_dir": ".",
         }
     )
 

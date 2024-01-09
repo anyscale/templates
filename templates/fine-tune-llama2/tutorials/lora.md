@@ -4,7 +4,7 @@ You can utilize [LoRA](https://arxiv.org/abs/2106.09685) to achieve more resourc
 To launch a LoRA fine-tuning, you can use the following command or similar commands for other model sizes:
 
 ```
-./run_llama_ft.sh --size=7b --lora
+python train.py --size=7b --lora
 ```
 
 Fine-tuning a model with LoRA results in a checkpoint containing only the fine-tuned weights.
