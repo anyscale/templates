@@ -6,9 +6,11 @@ from fastapi.responses import Response
 import torch
 from diffusers import EulerDiscreteScheduler, StableDiffusionPipeline
 
+# Create a FastAPI instance. Ray Serve has integration with FastAPI for complex HTTP handling logic. Learn more: https://docs.ray.io/en/latest/serve/http-guide.html#fastapi-http-deployments
 app = FastAPI()
 
-
+# A serve deployment contains business logic or an ML model to handle incoming requests.
+# It consists of a number of replicas that are individual copies of the class or function defined within it.
 @serve.deployment(num_replicas=1, route_prefix="/")
 @serve.ingress(app)
 class APIIngress:
@@ -35,10 +37,9 @@ class APIIngress:
     # Set the number of GPUs required for each model replica
     ray_actor_options={"num_gpus": 1},
 
-    # The number of model replicas to keep active in our Ray cluster. 
-    # These model replicas can process incoming requests concurrently. 
+    # The number of model replicas to keep active in the Ray cluster. These model replicas can process incoming requests concurrently. 
     # Autoscaling of model replicas is enabled below.
-    autoscaling_config={"min_replicas": 1, "max_replicas": 99},
+    autoscaling_config={"min_replicas": 2, "max_replicas": 99},
 )
 class StableDiffusionV2:
     def __init__(self):
@@ -61,5 +62,6 @@ class StableDiffusionV2:
 
         return image
 
-
+# Bind the deployments to arguments that will be passed into its constructor. 
+# This defines a Ray Serve application that we can run locally or deploy to production.
 entrypoint = APIIngress.bind(StableDiffusionV2.bind())
