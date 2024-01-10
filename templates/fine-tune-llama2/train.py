@@ -235,16 +235,12 @@ def training_function(kwargs: dict):
         s = time.time()
         lora_config = LoraConfig(**config["lora_config"])
 
-        expected_num_parameters = get_expected_lora_num_parameters(
-            lora_config=lora_config, model=model
-        )
 
         print(f"Attempting to apply LoRA config: {lora_config}")
 
         model.enable_input_require_grads()
         model = get_peft_model(model, lora_config)
 
-        num_parameters = get_number_of_params(model)
 
         if num_parameters != expected_num_parameters:
             raise ValueError(
@@ -256,8 +252,6 @@ def training_function(kwargs: dict):
             f"LoRA-ification done in {time.time() - s} seconds. Estimated checkpoint "
             f"size (fp16): {num_parameters * 2 / 1e6} MB"
         )
-
-    print(f"Number of checkpointed parameters: {get_number_of_params(model)}")
 
     print("Model initialized with pretrained weights. Training starting...")
     if not config["no_grad_ckpt"]:
@@ -648,17 +642,12 @@ def main():
     # Create the config with args for training.
     config = vars(args)
 
-    SIZE = "" # Variable to store the model size
+    SIZE = args.size # Variable to store the model size
     LR = 5e-6 # Default learning rate for full-parameter fine-tuning
 
-    # Process arguments
-    for arg in args.size[1:]:
-        # Adjust model size if provided
-        if '--size=' in arg:
-            SIZE = arg.split('=')[1]
-        # Adjust learning rate if LoRA is enabled
-        elif arg == '--lora':
-            LR = 1e-4
+    # Adjust learning rate if LoRA is enabled
+    if args.lora:
+        LR = 1e-4
 
     # Adjust batch size per device (BS) and number of devices (ND) according to model size
     # Number of devices (ND) is determined by a combination of factors, context length, accelerator type, whether LoRA is used, etc.
