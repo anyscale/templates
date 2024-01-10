@@ -737,10 +737,6 @@ def main():
         f"{artifact_storage}/{user_name}/ft_llms_with_deepspeed/{model_name}"
     )
 
-    # trial_name = f"{model_name}".split("/")[-1]
-    # if config["lora"]:
-    #     trial_name += "-lora"
-
     # set up Ray Train trainer
     trainer = TorchTrainer(
         training_function,
