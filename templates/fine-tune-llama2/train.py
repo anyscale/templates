@@ -52,69 +52,6 @@ OPTIM_WEIGHT_DECAY = 0.0
 ATTENTION_LAYER_NAME = "self_attn"
 
 
-def get_expected_lora_num_parameters(
-    model, lora_config: LoraConfig, attn_layer_name: str = ATTENTION_LAYER_NAME
-):
-    """Calculate the expected number of parameters for lora finetuning."""
-    sum_params = 0
-    num_attention_layers = 0
-    modules = model.named_modules()
-    loraified_modules = 0
-    # We calculate the number of parameters we need for lora finetuning by calculating
-    # the sizes of the deecomposed weight matrices according to the paper.
-    for full_name, target in modules:
-        layer_name = full_name.split(".")[-1]
-
-        if layer_name == attn_layer_name:
-            # Detected another attention layer (for example, llama 2 70b should have 80
-            # of these)
-            num_attention_layers += 1
-        elif layer_name in lora_config.modules_to_save:
-            # Detect another non-lora module to save, which will also contribute to the
-            # number of checkpointed parameters. This will result in one set of
-            # trainable parameters "<layer>.original_module.weight" and another one with
-            # "<layer>.modules_to_save.default.weight"
-            # Therefore, each layer contributes 2 x the number of actual elements in
-            # that layer.
-            sum_params += 2 * target.weight.numel()
-            print(
-                "Found non-lora-layer to checkpoint: ",
-                layer_name,
-                " with num params ",
-                target.weight.numel(),
-            )
-        else:
-            for module_name in lora_config.target_modules:
-                if layer_name == module_name:
-                    loraified_modules += 1
-                    if isinstance(target, nn.Linear):
-                        # Target is attention weight
-                        sum_params += (
-                            target.in_features + target.out_features
-                        ) * lora_config.r
-                    elif isinstance(target, nn.Embedding):
-                        # Target is linear weight
-                        sum_params += (
-                            target.embedding_dim + target.num_embeddings
-                        ) * lora_config.r
-
-    print(
-        f"Detected {num_attention_layers} attention layers, containing"
-        f" {loraified_modules} modules to modify according to LoRA's `target_modules`."
-        f" This should yield {sum_params} trainable parameters."
-    )
-
-    return sum_params
-
-
-def get_number_of_params(model: nn.Module):
-    sum = 0
-    for name, param in model.named_parameters():
-        if param.requires_grad:
-            sum += param.numel()
-    return sum
-
-
 def collate_fn(batch, tokenizer, block_size, device):
     out_batch = tokenizer(
         list(batch["input"]),
@@ -642,10 +579,6 @@ def parse_args():
         help="Path to output directory."
     )
 
-    # parser.add_argument(
-    #     "--model_name", default="meta-llama/Llama-2-7b-chat-hf", type=str
-    # )
-
     parser.add_argument(
         "--num-epochs", 
         type=int, 
@@ -715,11 +648,11 @@ def main():
     # Create the config with args for training.
     config = vars(args)
 
-    SIZE = "7B" # Default model size
+    SIZE = "" # Variable to store the model size
     LR = 5e-6 # Default learning rate for full-parameter fine-tuning
 
     # Process arguments
-    for arg in sys.argv[1:]:
+    for arg in args.size[1:]:
         # Adjust model size if provided
         if '--size=' in arg:
             SIZE = arg.split('=')[1]
@@ -792,8 +725,6 @@ def main():
                 "HF_HOME": "/mnt/local_storage/.cache/huggingface",
                 "RAY_AIR_LOCAL_CACHE_DIR": os.environ["RAY_AIR_LOCAL_CACHE_DIR"],
             },
-            # This is not needed to run in Workspace. However, it might be needed for other environments.
-            # "working_dir": ".",
         }
     )
 
@@ -863,7 +794,7 @@ def main():
     except Exception as e:
         print("Failed to fine-tune the model. Exiting...")
         print(f"Error: {e}")
-        exit()  # This will stop the script
+        sys.exit()  # This will stop the script
 
 
 
