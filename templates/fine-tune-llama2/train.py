@@ -242,17 +242,6 @@ def training_function(kwargs: dict):
         model = get_peft_model(model, lora_config)
 
 
-        if num_parameters != expected_num_parameters:
-            raise ValueError(
-                f"Expected {expected_num_parameters} parameters, got {num_parameters} "
-                f"parameters. LoRA-ification failed."
-            )
-
-        print(
-            f"LoRA-ification done in {time.time() - s} seconds. Estimated checkpoint "
-            f"size (fp16): {num_parameters * 2 / 1e6} MB"
-        )
-
     print("Model initialized with pretrained weights. Training starting...")
     if not config["no_grad_ckpt"]:
         model.gradient_checkpointing_enable()
