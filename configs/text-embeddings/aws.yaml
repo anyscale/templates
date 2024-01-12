@@ -4,5 +4,5 @@ head_node_type:
 worker_node_types:
 - name: gpu_worker
   instance_type: g5.xlarge
-  min_workers: 320
-  max_workers: 320
+  min_workers: 32
+  max_workers: 32
