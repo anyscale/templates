@@ -35,7 +35,7 @@ python train.py --size=13b --as-test
 - (Optional) Replace the contents in `./data/test.jsonl` with your own test data if any.
 - (Optional) Add special token in `./data/tokens.json` if any.
 
-Use the same command to training with your own data.
+Use the same command to train with your own data.
 
 
 ------
