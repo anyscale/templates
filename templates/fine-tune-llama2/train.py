@@ -631,48 +631,48 @@ def main():
     # Create the config with args for training.
     config = vars(args)
 
-    SIZE = args.size # Variable to store the model size
-    LR = 5e-6 # Default learning rate for full-parameter fine-tuning
+    size = args.size # Variable to store the model size
+    lr = 5e-6 # Default learning rate for full-parameter fine-tuning
 
     # Adjust learning rate if LoRA is enabled
     if args.lora:
-        LR = 1e-4
+        lr = 1e-4
 
     # Adjust batch size per device (BS) and number of devices (ND) according to model size
     # Number of devices (ND) is determined by a combination of factors, context length, accelerator type, whether LoRA is used, etc.
-    if SIZE == "7b" or SIZE == "13b":  
-        # ND is et on the basis of using Nvidia A10 and conducting full parameter fine-tuning with default context length.
+    if size == "7b" or size == "13b":  
+        # nd is set on the basis of using Nvidia A10 and conducting full parameter fine-tuning with default context length.
         # If Nvidia A100 is used. ND can be set to 8 instead.
-        BS, ND = 16, 16
-    elif SIZE == "70b":
-        # ND is set on the basis of using Nvidia A10 and conducting full parameter fine-tuning with default context length.
+        bs, nd = 16, 16
+    elif size == "70b":
+        # nd is set on the basis of using Nvidia A10 and conducting full parameter fine-tuning with default context length.
         # If Nvidia A100 is used. ND can be set to 16 instead.
-        BS, ND = 8, 32
+        bs, nd = 8, 32
     else:
-        print(f"Invalid size: {SIZE}")
+        print(f"Invalid size: {size}")
         sys.exit(1)
 
     # Pick model ID and deepspeed config based on model size
-    MODEL_ID = f"meta-llama/Llama-2-{SIZE}-hf"
-    CONFIG_DIR = f"./deepspeed_configs/zero_3_llama_2_{SIZE}.json"
+    model_id = f"meta-llama/Llama-2-{size}-hf"
+    config_dir = f"./deepspeed_configs/zero_3_llama_2_{size}.json"
 
     # Update the config with the adjusted parameters
     config.update(
         **{
             "as_test": args.as_test,
-            "batch_size": BS,
+            "batch_size": bs,
             "batch_size_per_device": args.batch_size_per_device,
             "block_size": args.ctx_len,
-            "ds_config": CONFIG_DIR,
+            "ds_config": config_dir,
             "eval_batch_size": args.eval_batch_size_per_device,
             "grad_accum": args.grad_accum,
             "lora": args.lora,
-            "lr": LR,
+            "lr": lr,
             "mixed_precision": args.mixed_precision,
-            "model_name": MODEL_ID,
+            "model_name": model_id,
             "no_grad_ckpt": args.no_grad_ckpt,
             "num_checkpoints_to_keep": args.num_checkpoints_to_keep,
-            "num_devices": ND,
+            "num_devices": nd,
             "num_epochs": args.num_epochs,
             "output_dir": args.output_dir,
             "seed": 42,
