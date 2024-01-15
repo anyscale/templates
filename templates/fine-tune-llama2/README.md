@@ -3,7 +3,7 @@ This template shows you how to fine-tune Llama-2 models.
 
 ## Step 1: Fine-tune Llama-2-7B model
 - Open a terminal in VS Code (ctl+shift+`). 
-- Run the command below to kick off fine-tuning with dummy data, Grade School Math 8k (GSM8K) dataset.
+- Run the command below to kick off fine-tuning with dummy data, [Grade School Math 8k (GSM8K) dataset](https://huggingface.co/datasets/gsm8k).
 
 ```
 python train.py --size=7b --as-test
