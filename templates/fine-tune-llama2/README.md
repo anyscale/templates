@@ -20,7 +20,7 @@ Model checkpoints will be stored under `{user's first name}/ft_llms_with_deepspe
     - use g5.12xlarge for 13b
     - use g5.48xlarge for 70b
 
-![edit nodes](./assets/edit_nodes.png "Edit nodes")
+![edit nodes](https://github.com/anyscale/templates/blob/main/templates/fine-tune-llama2/assets/edit_nodes.png "Edit nodes")
 - Run the command below to kick off fine-tuning with new model size and worker nodes.
     - 13b: ~9 mins for test run. ~60 mins for a full run (3 epochs)
     - 13b: ~35 mins for test run. ~400 mins for a full run (3 epochs)
