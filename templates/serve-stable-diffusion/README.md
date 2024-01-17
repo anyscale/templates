@@ -36,7 +36,7 @@ serve run app:entrypoint --publish
 ## Step 5: Query your Anyscale Service
 Navigate to Service UI with the URL generated from the previous step, click **Query** butoton to get detailed query instructions and intregate it into your own app.
 
-![deploy-pop-up](./assets/query_instructions.png)
+![deploy-pop-up](https://github.com/anyscale/templates/blob/main/templates/serve-stable-diffusion/assets/query_instructions.png?raw=true)
 
 The benefits of using Anyscale Services for staging/production traffic:
 - Zero-downtime upgrade
