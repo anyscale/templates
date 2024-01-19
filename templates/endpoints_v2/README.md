@@ -1,6 +1,17 @@
 # Endpoints - Deploy, configure, and serve LLMs 
 
-The guide below walks you through the steps required for deployment of LLM endpoints. Based on Ray Serve and RayLLM, the foundation for [Anyscale-Hosted Endpoints](http://anyscale.com/endpoints), the Endpoints template provides an easy to configure solution for ML Platform teams, Infrastructure engineers, and Developers who want to deploy optimized LLMs in production. You can deploy any model in the `models` directory of this repo, or define your own model YAML file and run that instead. Once deployed, LLM Developers can simply use an Open AI compatible api to interact with the deployed models.
+The guide below walks you through the steps required for deployment of LLM endpoints. Based on Ray Serve and RayLLM, the foundation for [Anyscale-Hosted Endpoints](http://anyscale.com/endpoints), the Endpoints template provides an easy to configure solution for ML Platform teams, Infrastructure engineers, and Developers who want to deploy optimized LLMs in production. 
+
+Endpoints makes it easy for LLM Developers to interact with OpenAI compatible APIs for their applications by providing an easy to manage backend for serving OSS LLMs.  It does this by:
+
+- Providing an extensive suite of pre-configured open source LLMs, with defaults that work out of the box. You can deploy any model in the `models` directory of this repo, or define your own model YAML file and run that instead. Once deployed, LLM Developers can simply use an Open AI compatible api to interact with the deployed models.
+- Supporting Transformer models hosted on Hugging Face Hub or present on local disk.
+- Simplifying the deployment of multiple LLMs
+- Simplifying the addition of new LLMs
+- Offering unique autoscaling support, including scale-to-zero.
+- Fully supporting multi-GPU & multi-node model deployments.
+- Offering high performance features like continuous batching, quantization and streaming.
+- Providing a REST API that is similar to OpenAI's to make it easy to migrate and integrate with other tools.
 
 # Workspace Development
 
