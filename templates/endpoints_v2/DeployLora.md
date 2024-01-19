@@ -2,7 +2,7 @@
 
 We support serving multiple LoRA adapters with a common base model in the same request batch which allows you to serve a wide variety of use-cases without increasing hardware spend. In addition, we use Serve multiplexing to reduce the number of swaps for LoRA adapters. There is a slight latency overhead to serving a LoRA model compared to the base model, typically 10-20%. 
 
-# Setup
+# Setup LoRA Model Deployment
 
 `serve_lora.yaml` and `query_lora.py` are provided for you in this template. 
 
@@ -16,6 +16,7 @@ To deploy the LoRA models, run:
 serve run serve_lora.yaml
 ```
 
+# Querying LoRA Models
 In order to query the model, update the model id in `query_lora.py`. The `model` used in `query_lora.py` is expected to be in `{base_model_id}:{suffix}:{id}` format (e.g. `meta-llama/Llama-2-7b-chat-hf:lora-model:1234`). You can also run query directly on the base model by changing the `model` variable to the base model id in `query_lora.py`. To query, run:
 
 ```shell
