@@ -2,7 +2,7 @@
 
 The guide below walks you through the steps required for deployment of LLM endpoints. Based on Ray Serve and RayLLM, the foundation for [Anyscale-Hosted Endpoints](http://anyscale.com/endpoints), the Endpoints template provides an easy to configure solution for ML Platform teams, Infrastructure engineers, and Developers who want to deploy optimized LLMs in production. You can deploy any model in the `models` directory of this repo, or define your own model YAML file and run that instead. Once deployed, LLM Developers can simply use an Open AI compatible api to interact with the deployed models.
 
-# Workspace Deployment
+# Workspace Development
 
 We will go over deploying a model locally using `serve run` as well as on an Anyscale Service. Once deployed you can use the OpenAI SDK to interact with the models, ensuring an easy integration for your applications.  
 
