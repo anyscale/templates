@@ -9,7 +9,7 @@ We will go over deploying a model locally using `serve run` as well as on an Any
 ## Deploy the model on Workspace
 
 The serve.yaml file in this example runs the Llama-7B model. There are 2 important configurations you would need to modify:
-1. The `models` config in `serve.yaml` contains a list of YAML files for the models you want to deploy. We have provided a number of examples for popular open-source models with different accelerator and tensor-parallelism configurations in the `models` directory. You can also define your own model YAML file in the `models/` directory and run that instead. Follow the CustomModels [guide](CustomModels.md) for that.
+1. The `models` config in `serve.yaml` contains a list of YAML files for the models you want to deploy. We have provided a number of examples for popular open-source models with different GPU accelerator and tensor-parallelism configurations in the `models` directory. You can also define your own model YAML file in the `models/` directory and run that instead. Follow the CustomModels [guide](CustomModels.md) for that.
 2. `HUGGING_FACE_HUB_TOKEN` - The Meta Llama-2 family of models need the HUGGING_FACE_HUB_TOKEN environment variable to be set to a Hugging Face Access Token for an account with permissions to download the model.
 
 From the terminal use the Ray Serve CLI to deploy a model:
@@ -68,6 +68,12 @@ Note: please make sure to include the path "/v1" at the end of the Service url.
 
 Ansycale Services provide highly available fault tolerance for production LLM serving needs.  Learn more about [Anyscale Services](https://docs.anyscale.com/productionize/services/get-started)!
 
+# Advanced Guides
+
+* [Deploy models for embedding generation](EmbeddingModels.md)
+* [Deploy multiple LoRA fine-tuned models](DeployLora.md)
+* [Learn how to bring your own models](CustomModels.md)
+* [Learn how to leverage different configurations that can optimize the latency and throughput of your models](CustomModels.md)
 
 # Application Examples
 See examples of building applications with your deployed endpoint on the [Anyscale Endpoints](https://docs.endpoints.anyscale.com/category/examples) page.
@@ -75,7 +81,6 @@ See examples of building applications with your deployed endpoint on the [Anysca
 Be sure to update the api_base and token for your private deployment.  This can be found under the "Serve deployments" tab on the "Query" button when deploying on your Workspace.
 
 When deploying on your production service the Service landing page has a "Query" button in the upper right hand corner with the url and token information.
-
 
 # Getting Help and Filing Bugs / Feature Requests
 
