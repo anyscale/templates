@@ -13,3 +13,4 @@ image = generate_image("twin peaks sf in basquiat painting style", 640)
 filename = "image.png"
 with open(filename, "wb") as f:
     f.write(image)
+    print(f"Generation completed! Check out the image at ./{filename}")
