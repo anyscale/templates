@@ -64,7 +64,7 @@ From the terminal use the Ray Serve CLI to deploy a model:
 serve run serve.yaml
 ```
 
-The serve YAML file runs the Llama-7B model. You can modify it to deploy any model in the `models` directory of this repo, provided you have the right GPU resources. You can also define your own model YAML file in the `models/` directory and run that instead. Follow the Model Registry [guide](models/README.md) for that.
+The serve.yaml file in this example runs the Llama-7B model. You can modify it to deploy number of models in the `models` directory of this repo, provided you have the right GPU resources. You can also define your own model YAML file in the `models/` directory and run that instead. Follow the Model Registry [guide](models/README.md) for that.
 
 ### Query
 
