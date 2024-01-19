@@ -53,7 +53,7 @@ The top rated restaurants in San Francisco include:
  • The Palace Cafe
 ```
 
-## Deploying on Anyscale Services
+# Deploying on Anyscale Services
 
 To deploy an application with one model on an Anyscale Service you can run:
 
