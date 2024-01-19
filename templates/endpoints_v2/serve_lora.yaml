@@ -1,5 +1,5 @@
 applications:
-  - name: llm_inference
+  - name: ray-llm
     route_prefix: /
     import_path: aviary_private_endpoints.backend.server.run:router_application
     args:
