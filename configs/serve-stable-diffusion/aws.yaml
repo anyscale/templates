@@ -6,3 +6,4 @@ worker_node_types:
   instance_type: g5.xlarge
   min_workers: 0
   max_workers: 100
+  use_spot: false
