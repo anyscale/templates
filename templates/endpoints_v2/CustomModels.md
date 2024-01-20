@@ -1,10 +1,12 @@
-# TODO
+# Adding a new model
 
-## Adding a new model
+RayLLM supports fine-tuned versions of models in the `models` directory as well as model architectures supported by [vLLM](https://docs.vllm.ai/en/latest/models/supported_models.html). You can either bring a model from HuggingFace or artifact storage like S3, GCS. 
+
+## Configuring a new model
 
 To add an entirely new model to the zoo, you will need to create a new YAML file.
 This file should follow the naming convention 
-`<organisation-name>--<model-name>-<model-parameters>-<extra-info>.yaml`. We recommend using one of the existing models as a template (ideally, one that is the same architecture as the model you are adding).
+`<organisation-name>--<model-name>-<model-parameters>-<extra-info>.yaml`. We recommend using one of the existing models as a template (ideally, one that is the same architecture and number of parameters as the model you are adding). The examples in the `models` directory should help you get started.
 
 ```yaml
 # true by default - you can set it to false to ignore this model
@@ -31,7 +33,7 @@ deployment_config:
 engine_config:
   # Model id - this is a RayLLM id
   model_id: mosaicml/mpt-7b-instruct
-  # Id of the model on Hugging Face Hub. Can also be a disk path. Defaults to model_id if not specified.
+  # Id of the model on Hugging Face Hub. Defaults to model_id if not specified.
   hf_model_id: mosaicml/mpt-7b-instruct
   # vLLM keyword arguments passed when constructing the model.
   engine_kwargs:
@@ -73,22 +75,11 @@ scaling_config:
 
 ```
 
-## Adding a private model
+## Adding a private model - TODO - instructions for artifact storage (and NFS?)
 
-To add a private model, you can either choose to use a filesystem path or an S3/GCS mirror.
+For loading a model from S3 or GCS, set `engine_config.s3_mirror_config.bucket_uri` or `engine_config.gcs_mirror_config.bucket_uri` to point to a folder containing your model and tokenizer files (`config.json`, `tokenizer_config.json`, `.bin`/`.safetensors` files, etc.) and set `engine_config.model_id` to any ID you desire in the `organization/model` format, eg. `myorganization/llama2-finetuned`. The model will be downloaded to a folder in the `<TRANSFORMERS_CACHE>/models--<organization-name>--<model-name>/snapshots/<HASH>` directory on each node in the cluster. `<HASH>` will be determined by the contents of `hash` file in the S3 folder, or default to `0000000000000000000000000000000000000000`. See the [HuggingFace transformers documentation](https://huggingface.co/docs/transformers/main/en/installation#cache-setup).
 
-- For loading a model from file system, set `engine_config.hf_model_id` to an absolute filesystem path accessible from every node in the cluster and set `engine_config.model_id` to any ID you desire in the `organization/model` format, eg. `myorganization/llama2-finetuned`.
-- For loading a model from S3 or GCS, set `engine_config.s3_mirror_config.bucket_uri` or `engine_config.gcs_mirror_config.bucket_uri` to point to a folder containing your model and tokenizer files (`config.json`, `tokenizer_config.json`, `.bin`/`.safetensors` files, etc.) and set `engine_config.model_id` to any ID you desire in the `organization/model` format, eg. `myorganization/llama2-finetuned`. The model will be downloaded to a folder in the `<TRANSFORMERS_CACHE>/models--<organization-name>--<model-name>/snapshots/<HASH>` directory on each node in the cluster. `<HASH>` will be determined by the contents of `hash` file in the S3 folder, or default to `0000000000000000000000000000000000000000`. See the [HuggingFace transformers documentation](https://huggingface.co/docs/transformers/main/en/installation#cache-setup).
-
-For loading a model from your local file system:
-
-```yaml
-engine_config:
-  model_id: YOUR_MODEL_NAME
-  hf_model_id: YOUR_MODEL_LOCAL_PATH
-```
-
-For loading a model from S3:
+For loading a model from an accessible S3 bucket:
 
 ```yaml
 engine_config:
@@ -98,7 +89,7 @@ engine_config:
     extra_files: []
 ```
 
-For loading a model from Google Cloud Storage:
+For loading a model from an accessible Google Cloud Storage bucket:
 
 ```yaml
 engine_config:
