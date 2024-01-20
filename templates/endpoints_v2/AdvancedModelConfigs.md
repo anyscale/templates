@@ -54,8 +54,6 @@ Finally, the `scaling_config` section specifies what resources should be used to
 * `placement_strategy` - Ray supports different [placement strategies](https://docs.ray.io/en/latest/ray-core/scheduling/placement-group.html#placement-strategy) for guiding the physical distribution of workers. To ensure all workers are on the same node, use "STRICT_PACK".
 * `resources_per_worker` - we use `resources_per_worker` to set [Ray custom resources](https://docs.ray.io/en/latest/ray-core/scheduling/resources.html#id1) and place the models on specific node types. An example configuration of `resources_per_worker` involves setting `accelerator_type_a10`: 0.01 for a Llama-2-7b model to be deployed on an A10 GPU. This must always be set to 0.01. The `num_gpus_per_worker` configuration along with number of GPUs available on the node will determine the number of workers Ray schedules on the node.  
 
-If you need to learn more about a specific configuration option, or need to add a new one, don't hesitate to reach out to the team.
-
 ## How can I configure the resources / instances being used or the scaling behavior of my service?
 
 You can edit the Compute Configuration direclty on your Workspace.  [Compute configurations](https://docs.anyscale.com/configure/compute-configs/overview) define the shape of the cluster and what resources Anyscale will use to deploy models and serve traffic.  If you would like to edit the default compute configuration choose "Edit" on your workspace and update the configuration.  When moving to production and deploying as an Ansycale Service the new configuration will be used.
