@@ -4,7 +4,7 @@ The guide below walks you through the steps required for deployment of LLM endpo
 
 Endpoints makes it easy for LLM Developers to interact with OpenAI compatible APIs for their applications by providing an easy to manage backend for serving OSS LLMs.  It does this by:
 
-- Providing an extensive suite of pre-configured open source LLMs, with defaults that work out of the box. You can deploy any model in the `models` directory of this repo, or define your own model YAML file and run that instead. Once deployed, LLM Developers can simply use an Open AI compatible api to interact with the deployed models.
+- Providing an extensive suite of pre-configured open source LLMs and embedding models, with defaults that work out of the box. You can deploy any model in the `models` directory of this repo, or define your own model YAML file and run that instead. Once deployed, LLM Developers can simply use an Open AI compatible api to interact with the deployed models.
 - Supporting Transformer models hosted on Hugging Face Hub or present on local disk.
 - Simplifying the deployment of multiple LLMs
 - Simplifying the addition of new LLMs
