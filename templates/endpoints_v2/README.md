@@ -33,19 +33,6 @@ The top rated restaurants in San Francisco include:
  • Mission Chinese Food
  • Sushi Nakazawa
  • The French Laundry
- • Delfina
- • Spices
- • Quince
- • Bistro L'Etoile
- • The Slanted Door
- • The Counter
- • The Chronicle
- • The Mint
- • The French Press
- • The Palace Cafe
- • The Inn at the Opera House
- • The Green Table
- • The Palace Cafe
 ```
 
 Endpoints uses an OpenAI-compatible API, allowing us to use the OpenAI SDK to access Endpoint backends.
