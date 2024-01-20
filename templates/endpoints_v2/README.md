@@ -89,7 +89,7 @@ print(chat_completion)
 
 ```
 
-# Deploying on Anyscale Services
+# Deploying a production service
 
 To deploy an application with one model on an Anyscale Service you can run:
 
