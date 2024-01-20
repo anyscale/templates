@@ -1,11 +1,11 @@
 # Endpoints - Deploy, configure, and serve LLMs 
 
-The guide below walks you through the steps required for deployment of LLM endpoints. Based on Ray Serve and RayLLM, the foundation for [Anyscale-Hosted Endpoints](http://anyscale.com/endpoints), the Endpoints template provides an easy to configure solution for ML Platform teams, Infrastructure engineers, and Developers who want to deploy optimized LLMs in production. 
+The guide below walks you through the steps required for deployment of LLM endpoints. Based on Ray Serve and RayLLM, the foundation for [Anyscale-Hosted Endpoints](http://anyscale.com/endpoints), the Endpoints template provides an easy to configure solution for ML Platform teams, Infrastructure engineers, and Developers who want to deploy optimized LLMs in production.  We have provided a number of examples for popular open-source models (Llama2, Mistral, Mixtral, embedding models, and more) with different GPU accelerator and tensor-parallelism configurations in the `models` directory. 
 
 # Deploy the model on Workspace
 
 The serve.yaml file in this example runs the Llama-7B model. There are 2 important configurations you would need to modify:
-1. The `models` config in `serve.yaml` contains a list of YAML files for the models you want to deploy. We have provided a number of examples for popular open-source models with different GPU accelerator and tensor-parallelism configurations in the `models` directory. You can also define your own model YAML file in the `models/` directory and run that instead. Follow the CustomModels [guide](CustomModels.md) for that.
+1. The `models` config in `serve.yaml` contains a list of YAML files for the models you want to deploy. You can any of the models in the `models` directory or define your own model YAML file and run that instead. Follow the CustomModels [guide](CustomModels.md) for bringing your own models.
 2. `HUGGING_FACE_HUB_TOKEN` - The Meta Llama-2 family of models need the HUGGING_FACE_HUB_TOKEN environment variable to be set to a Hugging Face Access Token for an account with permissions to download the model.
 
 From the terminal use the Ray Serve CLI to deploy a model:
