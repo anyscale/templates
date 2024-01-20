@@ -27,7 +27,7 @@ Ray Actors during deployments (using `ray_actor_options`). We recommend using th
 * `target_num_ongoing_requests_per_replica` - Guides the auto-scaling behavior. If the average number of ongoing requests across replicas is above this number, Ray Serve attempts to scale up the number of replicas, and vice-versa for downscaling. We typically set this to ~40% of the `max_concurrent_queries`.
 * `ray_actor_options` - Similar to the `resources_per_worker` configuration in the `scaling_config`. Refer to the `scaling_config` section for more guidance.
 
-### Engine config
+## Engine config
 
 Engine is the abstraction for interacting with a model. It is responsible for scheduling and running the model inside a Ray Actor worker group.
 
@@ -44,7 +44,7 @@ RayLLM supports continuous batching, meaning incoming requests are processed as 
 * `s3_mirror_config` is a dictionary that contains configuration for loading the model from S3 instead of Hugging Face Hub. You can use this to speed up downloads.
 * `gcs_mirror_config` is a dictionary that contains configuration for loading the model from Google Cloud Storage instead of Hugging Face Hub. You can use this to speed up downloads.
 
-### Scaling config
+## Scaling config
 
 Finally, the `scaling_config` section specifies what resources should be used to serve the model - this corresponds to Ray AIR [ScalingConfig](https://docs.ray.io/en/latest/train/api/doc/ray.train.ScalingConfig.html). Note that the `scaling_config` applies to each model replica, and not the entire model deployment (in other words, each replica will have `num_workers` workers).
 
