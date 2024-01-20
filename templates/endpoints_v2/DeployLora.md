@@ -45,3 +45,5 @@ python query_lora.py
 #     }
 # }
 ```
+
+# TODO - add instructions for uploading Lora models to artifact store
