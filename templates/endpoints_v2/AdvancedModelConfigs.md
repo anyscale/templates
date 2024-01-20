@@ -39,7 +39,7 @@ RayLLM supports continuous batching, meaning incoming requests are processed as 
 * `type` is the type of  inference engine. Only `VLLMEngine` is currently supported.
 * `engine_kwargs` and `max_total_tokens` are configuration options for the inference engine (e.g. gpu memory utilization, quantization, max number of concurrent sequences). These options may vary depending on the hardware accelerator type and model size. We have tuned the parameters in the configuration files included in RayLLM for you to use as reference. 
 * `generation` contains configurations related to default generation parameters such as `prompt_format` and `stopping_sequences`.
-* `hf_model_id` is the Hugging Face model ID. This can also be a path to a local directory. If not specified, defaults to `model_id`.
+* `hf_model_id` is the Hugging Face model ID. If not specified, defaults to `model_id`.
 * `runtime_env` is a dictionary that contains Ray runtime environment configuration. It allows you to set per-model pip packages and environment variables. See [Ray documentation on Runtime Environments](https://docs.ray.io/en/latest/ray-core/handling-dependencies.html#runtime-environments) for more information.
 * `s3_mirror_config` is a dictionary that contains configuration for loading the model from S3 instead of Hugging Face Hub. You can use this to speed up downloads.
 * `gcs_mirror_config` is a dictionary that contains configuration for loading the model from Google Cloud Storage instead of Hugging Face Hub. You can use this to speed up downloads.
