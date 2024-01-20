@@ -75,7 +75,7 @@ Note: please make sure to include the path "/v1" at the end of the Service url.
 
 Ansycale Services provide highly available fault tolerance for production LLM serving needs.  Learn more about [Anyscale Services](https://docs.anyscale.com/productionize/services/get-started)!
 
-# Advanced Guides
+# More Guides
 
 Endpoints makes it easy for LLM Developers to interact with OpenAI compatible APIs for their applications by providing an easy to manage backend for serving OSS LLMs.  It does this by:
 
