@@ -46,7 +46,7 @@ RayLLM supports continuous batching, meaning incoming requests are processed as 
 
 ## Scaling config
 
-Finally, the `scaling_config` section specifies what resources should be used to serve the model - this corresponds to Ray AIR [ScalingConfig](https://docs.ray.io/en/latest/train/api/doc/ray.train.ScalingConfig.html). Note that the `scaling_config` applies to each model replica, and not the entire model deployment (in other words, each replica will have `num_workers` workers).
+Finally, the `scaling_config` section specifies what resources should be used to serve the model - this corresponds to Ray [ScalingConfig](https://docs.ray.io/en/latest/train/api/doc/ray.train.ScalingConfig.html). Note that the `scaling_config` applies to each model replica, and not the entire model deployment (in other words, each replica will have `num_workers` workers).
 
 * `num_workers` - Number of workers (i.e. Ray Actors) for each replica of the model. This controls the tensor parallelism for the model.
 * `num_gpus_per_worker` - Number of GPUs to be allocated per worker. Typically, this should be 1. 
