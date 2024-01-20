@@ -5,7 +5,7 @@ applications:
     args:
       models: []
       multiplex_models:
-        - "./models/meta-llama--Llama-2-7b-chat-hf_a10-lora.yaml"
+        - "./models/llama/meta-llama--Llama-2-7b-chat-hf_l4-lora.yaml"
       dynamic_lora_loading_path: s3://my-bucket/my-lora-checkouts/  # <-- change this to a bucket you have access to that contains the loRA checkpoint to load dynamically
     runtime_env:
       env_vars:
