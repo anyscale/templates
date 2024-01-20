@@ -31,7 +31,6 @@ From the terminal use the Ray Serve CLI to deploy a model:
 serve run serve.yaml
 ```
 
-
 ## Query the model
 
 Run the following command in a separate terminal. 
@@ -62,6 +61,32 @@ The top rated restaurants in San Francisco include:
  • The Inn at the Opera House
  • The Green Table
  • The Palace Cafe
+```
+
+## Using the OpenAI SDK
+
+Endpoints uses an OpenAI-compatible API, allowing us to use the OpenAI SDK to access Endpoint backends.
+
+```python
+from openai import OpenAI
+
+client = OpenAI(
+  base_url="http://localhost:8000/v1",
+  api_key="NOT A REAL KEY",
+)
+
+# List all models.
+models = client.models.list()
+print(models)
+
+# Note: not all arguments are currently supported and will be ignored by the backend.
+chat_completion = client.chat.completions.create(
+  model="meta-llama/Llama-2-7b-chat-hf",
+  messages=[{"role": "system", "content": "You are a helpful assistant."}, {"role": "user", "content": "Say 'test'."}],
+  temperature=0.7,
+)
+print(chat_completion)
+
 ```
 
 # Deploying on Anyscale Services
