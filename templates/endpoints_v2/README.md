@@ -100,9 +100,10 @@ Endpoints makes it easy for LLM Developers to interact with OpenAI compatible AP
 - Offering high performance features like continuous batching, quantization and streaming.
 - Providing a REST API that is similar to OpenAI's to make it easy to migrate and integrate with other tools.
 
+Look at the following guides for more advanced use-cases -
 * [Deploy models for embedding generation](EmbeddingModels.md)
-* [Deploy multiple LoRA fine-tuned models](DeployLora.md)
 * [Learn how to bring your own models](CustomModels.md)
+* [Deploy multiple LoRA fine-tuned models](DeployLora.md)
 * [Learn how to leverage different configurations that can optimize the latency and throughput of your models](OptimizeModels.md)
 * [Learn how to fully configure your deployment including auto-scaling, prompt format](AdvancedModelConfigs.md)
 
