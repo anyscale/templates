@@ -105,7 +105,7 @@ Look at the following guides for more advanced use-cases -
 * [Learn how to bring your own models](CustomModels.md)
 * [Deploy multiple LoRA fine-tuned models](DeployLora.md)
 * [Learn how to leverage different configurations that can optimize the latency and throughput of your models](OptimizeModels.md)
-* [Learn how to fully configure your deployment including auto-scaling, prompt format](AdvancedModelConfigs.md)
+* [Learn how to fully configure your deployment including auto-scaling, optimization parameters and tensor-parallelism](AdvancedModelConfigs.md)
 
 # Application Examples
 See examples of building applications with your deployed endpoint on the [Anyscale Endpoints](https://docs.endpoints.anyscale.com/category/examples) page.
