@@ -2,22 +2,7 @@
 
 The guide below walks you through the steps required for deployment of LLM endpoints. Based on Ray Serve and RayLLM, the foundation for [Anyscale-Hosted Endpoints](http://anyscale.com/endpoints), the Endpoints template provides an easy to configure solution for ML Platform teams, Infrastructure engineers, and Developers who want to deploy optimized LLMs in production. 
 
-Endpoints makes it easy for LLM Developers to interact with OpenAI compatible APIs for their applications by providing an easy to manage backend for serving OSS LLMs.  It does this by:
-
-- Providing an extensive suite of pre-configured open source LLMs and embedding models, with defaults that work out of the box. You can deploy any model in the `models` directory of this repo, or define your own model YAML file and run that instead. Once deployed, LLM Developers can simply use an Open AI compatible api to interact with the deployed models.
-- Supporting Transformer models hosted on Hugging Face Hub or present on local disk.
-- Simplifying the deployment of multiple LLMs
-- Simplifying the addition of new LLMs
-- Offering unique autoscaling support, including scale-to-zero.
-- Fully supporting multi-GPU & multi-node model deployments.
-- Offering high performance features like continuous batching, quantization and streaming.
-- Providing a REST API that is similar to OpenAI's to make it easy to migrate and integrate with other tools.
-
-# Workspace Development
-
-We will go over deploying a model locally using `serve run` as well as on an Anyscale Service. Once deployed you can use the OpenAI SDK to interact with the models, ensuring an easy integration for your applications.  
-
-## Deploy the model on Workspace
+# Deploy the model on Workspace
 
 The serve.yaml file in this example runs the Llama-7B model. There are 2 important configurations you would need to modify:
 1. The `models` config in `serve.yaml` contains a list of YAML files for the models you want to deploy. We have provided a number of examples for popular open-source models with different GPU accelerator and tensor-parallelism configurations in the `models` directory. You can also define your own model YAML file in the `models/` directory and run that instead. Follow the CustomModels [guide](CustomModels.md) for that.
@@ -33,7 +18,7 @@ serve run serve.yaml
 
 ## Query the model
 
-Run the following command in a separate terminal. 
+Once deployed you can use the OpenAI SDK to interact with the models, ensuring an easy integration for your applications. Run the following command in a separate terminal to query. 
 
 ```shell
 python query.py
@@ -62,8 +47,6 @@ The top rated restaurants in San Francisco include:
  • The Green Table
  • The Palace Cafe
 ```
-
-## Using the OpenAI SDK
 
 Endpoints uses an OpenAI-compatible API, allowing us to use the OpenAI SDK to access Endpoint backends.
 
@@ -106,10 +89,21 @@ Ansycale Services provide highly available fault tolerance for production LLM se
 
 # Advanced Guides
 
+Endpoints makes it easy for LLM Developers to interact with OpenAI compatible APIs for their applications by providing an easy to manage backend for serving OSS LLMs.  It does this by:
+
+- Providing an extensive suite of pre-configured open source LLMs and embedding models, with defaults that work out of the box. 
+- Simplifying the addition of new LLMs. We support a variety of Transformer models hosted on Hugging Face Hub or present on local disk.
+- Simplifying the deployment of multiple LLMs
+- Offering unique autoscaling support, including scale-to-zero.
+- Fully supporting multi-GPU & multi-node model deployments.
+- Offering high performance features like continuous batching, quantization and streaming.
+- Providing a REST API that is similar to OpenAI's to make it easy to migrate and integrate with other tools.
+
 * [Deploy models for embedding generation](EmbeddingModels.md)
 * [Deploy multiple LoRA fine-tuned models](DeployLora.md)
 * [Learn how to bring your own models](CustomModels.md)
-* [Learn how to leverage different configurations that can optimize the latency and throughput of your models](CustomModels.md)
+* [Learn how to leverage different configurations that can optimize the latency and throughput of your models](OptimizeModels.md)
+* [Learn how to fully configure your deployment including auto-scaling, prompt format](AdvancedModelConfigs.md)
 
 # Application Examples
 See examples of building applications with your deployed endpoint on the [Anyscale Endpoints](https://docs.endpoints.anyscale.com/category/examples) page.
