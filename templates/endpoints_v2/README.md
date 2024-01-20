@@ -60,7 +60,7 @@ print(chat_completion)
 
 ```
 
-# Deploying a production service
+# Deploying a production service - TODO with new CLI
 
 To deploy an application with one model on an Anyscale Service you can run:
 
