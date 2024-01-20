@@ -73,7 +73,7 @@ scaling_config:
 
 ```
 
-### Adding a private model
+## Adding a private model
 
 To add a private model, you can either choose to use a filesystem path or an S3/GCS mirror.
 
