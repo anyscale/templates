@@ -80,7 +80,7 @@ Ansycale Services provide highly available fault tolerance for production LLM se
 Endpoints makes it easy for LLM Developers to interact with OpenAI compatible APIs for their applications by providing an easy to manage backend for serving OSS LLMs.  It does this by:
 
 - Providing an extensive suite of pre-configured open source LLMs and embedding models, with defaults that work out of the box. 
-- Simplifying the addition of new LLMs. We support a variety of Transformer models hosted on Hugging Face Hub or present on local disk.
+- Simplifying the addition of new LLMs.
 - Simplifying the deployment of multiple LLMs
 - Offering unique autoscaling support, including scale-to-zero.
 - Fully supporting multi-GPU & multi-node model deployments.
