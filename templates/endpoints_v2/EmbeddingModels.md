@@ -18,3 +18,15 @@ You can use the OpenAI SDK to query the embedding models. Batch queries are also
 ```shell
 python query_embedding.py
 ```
+
+# Optimizing Embedding Models
+
+We support optimizing embedding models with ONNX. In order to enable this, set the flag under `engine_config`: 
+
+```shell
+engine_config:
+  ...
+  optimize: onnx
+```
+
+By default, the embedding models are setup to run on CPU. You can modify the configuration to run it on GPU instead.
