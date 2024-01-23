@@ -8,10 +8,9 @@ We are actively working on supporting all the vllm-compatible
 models (list [here](https://github.com/vllm-project/vllm/blob/main/docs/source/models/supported_models.rst)) with our proprietary RayLLM.
 Currently it supports the below models:
 
-| Endpoint Version | Supported Model                                                                                                  |
-| ---------------- | ---------------------------------------------------------------------------------------------------------------- |
-| 0.3.1            | Llama-based-models: Yes<br />Mistral-based-models (non-quantized): Yes<br />Mistral-based-models (quantized): No |
-| 0.3.2            | Llama-based-models: Yes<br />Mistral-based-models (non-quantized): Yes<br />Mistral-based-models (quantized): No |
+| Supported Model                                                                                                  |
+| ---------------------------------------------------------------------------------------------------------------- |
+| Llama-based-models: Yes<br />Mistral-based-models (non-quantized): Yes<br />Mistral-based-models (quantized): No |
 
 ## Configuring a new model
 
