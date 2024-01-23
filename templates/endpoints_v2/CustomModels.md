@@ -2,11 +2,6 @@
 
 RayLLM supports fine-tuned versions of models in the `models` directory as well as model architectures supported by [vLLM](https://docs.vllm.ai/en/latest/models/supported_models.html). You can either bring a model from HuggingFace or artifact storage like S3, GCS. 
 
-## Supported models
-
-We are actively working on supporting all the vllm-compatible
-models (list [here](https://github.com/vllm-project/vllm/blob/main/docs/source/models/supported_models.rst)) with our proprietary RayLLM.
-
 ## Configuring a new model
 
 To add an entirely new model to the zoo, you will need to create a new YAML file.
