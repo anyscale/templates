@@ -11,7 +11,7 @@ models (list [here](https://github.com/vllm-project/vllm/blob/main/docs/source/m
 
 To add an entirely new model to the zoo, you will need to create a new YAML file.
 This file should follow the naming convention 
-`<organisation-name>--<model-name>-<model-parameters>-<extra-info>.yaml`. We recommend using one of the existing models as a template (ideally, one that is the same architecture and number of parameters as the model you are adding). The examples in the `models` directory should help you get started.
+`<organisation-name>--<model-name>-<model-parameters>-<extra-info>.yaml`. We recommend using one of the existing models as a template (ideally, one that is the same architecture and number of parameters as the model you are adding). The examples in the `models` directory should help you get started. You can look at the [Advanced Model Configs](../AdvancedModelConfigs.md) for more details on these configurations.
 
 ```yaml
 # true by default - you can set it to false to ignore this model
