@@ -2,6 +2,17 @@
 
 RayLLM supports fine-tuned versions of models in the `models` directory as well as model architectures supported by [vLLM](https://docs.vllm.ai/en/latest/models/supported_models.html). You can either bring a model from HuggingFace or artifact storage like S3, GCS. 
 
+## Supported models
+
+We are actively working on supporting all the vllm-compatible
+models (list [here](https://github.com/vllm-project/vllm/blob/main/docs/source/models/supported_models.rst)) with our proprietary RayLLM.
+Currently it supports the below models:
+
+| Endpoint Version | Supported Model                                                                                                  |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------- |
+| 0.3.1            | Llama-based-models: Yes<br />Mistral-based-models (non-quantized): Yes<br />Mistral-based-models (quantized): No |
+| 0.3.2            | Llama-based-models: Yes<br />Mistral-based-models (non-quantized): Yes<br />Mistral-based-models (quantized): No |
+
 ## Configuring a new model
 
 To add an entirely new model to the zoo, you will need to create a new YAML file.
@@ -97,4 +108,43 @@ engine_config:
   s3_mirror_config:
     bucket_uri: gs://YOUR_BUCKET_NAME/YOUR_MODEL_FOLDER
     extra_files: []
+```
+
+
+### Example prompt config (Llama-based model)
+
+```
+prompt_format:
+  system: "<<SYS>>\n{instruction}\n<</SYS>>\n\n"
+  assistant: " {instruction} </s><s>"
+  trailing_assistant: ""
+  user: "[INST] {system}{instruction} [/INST]"
+  system_in_user: true
+  default_system_message: ""
+stopping_sequences: []
+```
+
+### Example prompt config (Mistral-based-model)
+
+```
+prompt_format:
+  system: "<<SYS>>\n{instruction}\n<</SYS>>\n\n"
+  assistant: " {instruction} </s><s> "
+  trailing_assistant: " "
+  user: "[INST] {system}{instruction} [/INST]"
+  system_in_user: true
+  default_system_message: "Always assist with care, respect, and truth. Respond with utmost utility yet securely. Avoid harmful, unethical, prejudiced, or negative content. Ensure replies promote fairness and positivity."
+stopping_sequences: []
+```
+
+### Example prompt config (Falcon-based-model)
+
+```
+prompt_format:
+  system: "<|prefix_begin|>{instruction}<|prefix_end|>"
+  assistant: "<|assistant|>{instruction}<|endoftext|>"
+  trailing_assistant: "<|assistant|>"
+  user: "<|prompter|>{instruction}<|endoftext|>"
+  default_system_message: "Below are a series of dialogues between various people and an AI assistant. The AI tries to be helpful, polite, honest, sophisticated, emotionally aware, and humble-but-knowledgeable. The assistant is happy to help with almost anything, and will do its best to understand exactly what is needed. It also tries to avoid giving false or misleading information, and it caveats when it isn't entirely sure about the right answer. That said, the assistant is practical and really does its best, and doesn't let caution get too much in the way of being useful."
+stopping_sequences: ["<|prompter|>", "<|assistant|>", "<|endoftext|>"]
 ```
