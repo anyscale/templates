@@ -6,11 +6,6 @@ RayLLM supports fine-tuned versions of models in the `models` directory as well 
 
 We are actively working on supporting all the vllm-compatible
 models (list [here](https://github.com/vllm-project/vllm/blob/main/docs/source/models/supported_models.rst)) with our proprietary RayLLM.
-Currently it supports the below models:
-
-| Supported Model                                                                                                  |
-| ---------------------------------------------------------------------------------------------------------------- |
-| Llama-based-models: Yes<br />Mistral-based-models (non-quantized): Yes<br />Mistral-based-models (quantized): No |
 
 ## Configuring a new model
 
