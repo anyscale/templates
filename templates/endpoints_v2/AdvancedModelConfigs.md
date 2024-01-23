@@ -1,4 +1,3 @@
-# TODO
 # Advanced Model Configuration
 
 Each model is defined by a YAML configuration file in the `models` directory.
