@@ -4,23 +4,23 @@ We support serving multiple LoRA adapters with a common base model in the same r
 
 # Setup LoRA Model Deployment
 
-`serve_lora.yaml` and `query_lora.py` are provided for you in this template. 
+`lora-serve.yaml` and `lora-query.py` are provided for you in this template. 
 
-In order to deploy LoRA adapters you would need to update `serve_lora.yaml`:
+In order to deploy LoRA adapters you would need to update `lora-serve.yaml`:
 1. `dynamic_lora_loading_path` - The LoRA checkpoints are loaded from the artifact storage path specified in `dynamic_lora_loading_path`. The path to the checkpoints must be in the following format: `{dynamic_lora_loading_path}/{base_model_id}:{suffix}:{id}`, e.g. `s3://my-bucket/my-lora-checkouts/meta-llama/Llama-2-7b-chat-hf:lora-model:1234`. The models can be loaded from any accessible AWS S3 or Google Cloud Storage bucket. You can use an existing bucket where you have the LoRA models or can upload the models to `$ANYSCALE_ARTIFACT_STORAGE` already provided by Anyscale Workspace. New models can be uploaded to the `dynamic_lora_loading_path` dynamically before or after the Serve application is launched.
 2. LoRA model config YAML should be passed in the `multiplex_models` config field.
-3. `HUGGING_FACE_HUB_TOKEN` config in `serve_lora.yaml` with your own values. 
+3. `HUGGING_FACE_HUB_TOKEN` config in `lora-serve.yaml` with your own values. This is needed for Llama 2 models
 
 To deploy the LoRA models, run:
 ```shell
-serve run serve_lora.yaml
+serve run lora-serve.yaml
 ```
 
 # Querying LoRA Models
-In order to query the model, update the model id in `query_lora.py`. The `model` used in `query_lora.py` is expected to be in `{base_model_id}:{suffix}:{id}` format (e.g. `meta-llama/Llama-2-7b-chat-hf:lora-model:1234`). You can also run query directly on the base model by changing the `model` variable to the base model id in `query_lora.py`. To query, run:
+In order to query the model, update the model id in `lora-query.py`. The `model` used in `lora-query.py` is expected to be in `{base_model_id}:{suffix}:{id}` format (e.g. `meta-llama/Llama-2-7b-chat-hf:lora-model:1234`). You can also run query directly on the base model by changing the `model` variable to the base model id. To query, run:
 
 ```shell
-python query_lora.py
+python lora-query.py
 
 # Example output:
 # {
