@@ -4,16 +4,16 @@ The guide below walks you through the steps required for deployment of LLM endpo
 
 # Step 1 - Deploy the model on Workspace
 
-The serve.yaml file in this example runs the Mistral-7B model. There are 2 important configurations you would need to modify:
-1. The `models` config in `serve.yaml` contains a list of YAML files for the models you want to deploy. You can any of the models in the `models` directory or define your own model YAML file and run that instead. Follow the CustomModels [guide](CustomModels.md) for bringing your own models.
-2. `HUGGING_FACE_HUB_TOKEN` - The Meta Llama-2 family of models need the HUGGING_FACE_HUB_TOKEN environment variable to be set to a Hugging Face Access Token for an account with permissions to download the model.
+The llm-serve.yaml file in this example runs the Mistral-7B model. There are 2 important configurations you would need to modify:
+1. The `models` config in `llm-serve.yaml` contains a list of YAML files for the models you want to deploy. You can any of the models in the `models` directory or define your own model YAML file and run that instead. Follow the CustomModels [guide](CustomModels.md) for bringing your own models.
+2. `HUGGING_FACE_HUB_TOKEN` - The Meta Llama-2 family of models need the HUGGING_FACE_HUB_TOKEN variable to be set to a Hugging Face Access Token for an account with permissions to download the model.
 
 From the terminal use the Ray Serve CLI to deploy a model:
 
 ```shell
 # Deploy the Mistral-7b model. 
 
-serve run serve.yaml
+serve run llm-serve.yaml
 ```
 
 # Step 2 - Query the model
@@ -76,8 +76,6 @@ In order to query the endpoint, you can modify the `query.py` script, replacing 
 
 Note: please make sure to include the path "/v1" at the end of the Service url.
 
-Ansycale Services provide highly available fault tolerance for production LLM serving needs.  Learn more about [Anyscale Services](https://docs.anyscale.com/productionize/services/get-started)!
-
 # More Guides
 
 Endpoints makes it easy for LLM Developers to interact with OpenAI compatible APIs for their applications by providing an easy to manage backend for serving OSS LLMs.  It does this by:
@@ -101,15 +99,3 @@ Look at the following guides for more advanced use-cases -
 See examples of building applications with your deployed endpoint on the [Anyscale Endpoints](https://docs.endpoints.anyscale.com/category/examples) page.
 
 Be sure to update the api_base and token for your private deployment.  This can be found under the "Serve deployments" tab on the "Query" button when deploying on your Workspace.
-
-When deploying on your production service the Service landing page has a "Query" button in the upper right hand corner with the url and token information.
-
-# Getting Help and Filing Bugs / Feature Requests
-
-We are eager to help you get started with Endpoints. You can get help on: 
-
-- Via Slack -- fill in [this form](https://docs.google.com/forms/d/e/1FAIpQLSfAcoiLCHOguOm8e7Jnn-JJdZaCxPGjgVCvFijHB5PLaQLeig/viewform) to sign up. 
-- Via [Discuss](https://discuss.ray.io/c/llms-generative-ai/27). 
-
-We have people in both US and European time zones who will help answer your questions. 
-
