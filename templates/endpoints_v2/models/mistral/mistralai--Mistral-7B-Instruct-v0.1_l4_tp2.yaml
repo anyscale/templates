@@ -24,7 +24,7 @@ engine_config:
     max_num_seqs: 15
     gpu_memory_utilization: 0.92
     num_tokenizer_actors: 2
-  max_total_tokens: 4096
+  max_total_tokens: 16384
   generation:
     prompt_format:
       system: "{instruction} + "
