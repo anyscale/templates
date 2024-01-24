@@ -24,7 +24,7 @@ engine_config:
     gpu_memory_utilization: 0.92
     num_tokenizer_actors: 2
     enable_cuda_graph: true
-  max_total_tokens: 4096
+  max_total_tokens: 16384
   generation:
     prompt_format:
       system: "{instruction} + "
