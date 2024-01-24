@@ -24,7 +24,7 @@ worker_node_types:
   max_workers: 100
   use_spot: false
 - name: gpu-worker-t4-1
-  instance_type: n1-standard-16-nvidia-t4-16gb-1
+  instance_type: n1-standard-8-nvidia-t4-16gb-1
   resources:
     cpu:
     gpu:
