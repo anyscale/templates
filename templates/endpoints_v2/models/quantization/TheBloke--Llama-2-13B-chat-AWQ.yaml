@@ -12,7 +12,7 @@ deployment_config:
   max_concurrent_queries: 48
   ray_actor_options:
     resources:
-      accelerator_type_a100_40g: 0.01
+      "accelerator_type:NVIDIA_A100_40G": 0.01
 engine_config:
   model_id: TheBloke/Llama-2-13B-chat-AWQ
   hf_model_id: TheBloke/Llama-2-13B-chat-AWQ
@@ -37,4 +37,4 @@ scaling_config:
   num_cpus_per_worker: 8
   placement_strategy: "STRICT_PACK"
   resources_per_worker:
-    accelerator_type_a100_40g: 0.01
+    "accelerator_type:NVIDIA_A100_40G": 0.01
