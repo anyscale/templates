@@ -16,7 +16,7 @@ serve run embedding-serve.yaml
 You can use the OpenAI SDK to query the embedding models. Batch queries are also supported. In order to query the example above, run:
 
 ```shell
-python query_embedding.py
+python embedding-query.py
 ```
 
 # Optimizing Embedding Models
