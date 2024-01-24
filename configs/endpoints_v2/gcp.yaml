@@ -23,6 +23,20 @@ worker_node_types:
   min_workers: 0
   max_workers: 100
   use_spot: false
+- name: gpu-worker-t4-1
+  instance_type: n1-standard-16-nvidia-t4-16gb-1
+  resources:
+    cpu:
+    gpu:
+    memory:
+    object_store_memory:
+    custom_resources:
+      worker_node: 1
+      "accelerator_type:NVIDIA_TESLA_T4": 1
+  min_workers: 0
+  max_workers: 100
+  use_spot: true
+  fallback_to_ondemand: true
 - name: gpu-worker-l4-1
   instance_type: g2-standard-16-nvidia-l4-1
   resources:
