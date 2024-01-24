@@ -12,7 +12,7 @@ deployment_config:
   max_concurrent_queries: 64
   ray_actor_options:
     resources:
-      accelerator_type_l4: 0.01
+      "accelerator_type:NVIDIA_L4": 0.01
 engine_config:
   model_id: mistralai/Mistral-7B-Instruct-v0.1
   hf_model_id: mistralai/Mistral-7B-Instruct-v0.1
@@ -40,4 +40,4 @@ scaling_config:
   num_cpus_per_worker: 8
   placement_strategy: "STRICT_PACK"
   resources_per_worker:
-    accelerator_type_l4: 0.01
+    "accelerator_type:NVIDIA_L4": 0.01
