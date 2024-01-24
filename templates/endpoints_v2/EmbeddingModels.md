@@ -4,11 +4,11 @@ We support serving embedding models available in HuggingFace as well as optimizi
 
 # Setting up Model
 
-See an example for serving embedding models in `embedding_serve.yaml`. Notably the serve arguments need to contain the `embedding_models` field. 
+See an example for serving embedding models in `embedding-serve.yaml`. Notably the serve arguments need to contain the `embedding_models` field. 
 
 In order to deploy an embedding model run:
 ```shell
-serve run embedding_serve.yaml
+serve run embedding-serve.yaml
 ```
 
 # Querying Embedding Models
