@@ -14,7 +14,7 @@ deployment_config:
     num_gpus: 1
     num_cpus: 1
     resources:
-      accelerator_type_t4_16g_aws: 0.01
+      "accelerator_type:T4": 0.01
 engine_config:
   model_id: BAAI/bge-large-en-v1.5
   hf_model_id: BAAI/bge-large-en-v1.5
