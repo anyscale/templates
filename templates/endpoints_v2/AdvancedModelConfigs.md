@@ -49,7 +49,7 @@ Finally, the `scaling_config` section specifies what resources should be used to
 
 * `num_workers` - Number of workers (i.e. Ray Actors) for each replica of the model. This controls the tensor parallelism for the model.
 * `num_gpus_per_worker` - Number of GPUs to be allocated per worker. This should always be 1.
-* `num_cpus_per_worker` - Number of CPUs to be allocated per worker.
+* `num_cpus_per_worker` - Number of CPUs to be allocated per worker. Usually set to 8.
 * `placement_strategy` - Ray supports different [placement strategies](https://docs.ray.io/en/latest/ray-core/scheduling/placement-group.html#placement-strategy) for guiding the physical distribution of workers. To ensure all workers are on the same node, use "STRICT_PACK".
 * `resources_per_worker` - we use `resources_per_worker` to set [Ray custom resources](https://docs.ray.io/en/latest/ray-core/scheduling/resources.html#id1) and place the models on specific node types. An example configuration of `resources_per_worker` involves setting `accelerator_type:L4` to 0.01 for a Llama-2-7b model to be deployed on an L4 GPU. This must always be set to 0.01. The `num_gpus_per_worker` configuration along with number of GPUs available on the node will determine the number of workers Ray schedules on the node.  
 
