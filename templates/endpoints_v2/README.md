@@ -21,7 +21,7 @@ serve run llm-serve.yaml
 Once deployed you can use the OpenAI SDK to interact with the models, ensuring an easy integration for your applications. Run the following command in a separate terminal to query. 
 
 ```shell
-python query.py
+python llm-query.py
 ```
 ```text
 Output:
@@ -72,7 +72,7 @@ This is setup to run the Mistral-7B model, but can be easily modified to run any
 
 # Step 4 - Query the service endpoint
 
-In order to query the endpoint, you can modify the `query.py` script, replacing the query url with the Service URL found in the Service UI.
+In order to query the endpoint, you can modify the `llm-query.py` script, replacing the query url with the Service URL found in the Service UI.
 
 Note: please make sure to include the path "/v1" at the end of the Service url.
 
