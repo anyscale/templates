@@ -4,7 +4,7 @@ We support serving embedding models available in HuggingFace as well as optimizi
 
 # Setting up Model
 
-See an example for serving embedding models in `embedding-serve.yaml`. Notably the `args` field in the yaml file needs to contain the `embedding_models` field. This field contains a list of YAML files for the embedding models you want to deploy. 
+See an example for serving embedding models in `embedding-serve.yaml`. Notably the `args` field in the yaml file needs to contain the `embedding_models` field. This field contains a list of YAML files (in the `models` directory) for the embedding models you want to deploy. 
 
 In order to deploy an embedding model run:
 ```shell
@@ -21,7 +21,7 @@ python embedding-query.py
 
 # Optimizing Embedding Models
 
-We support optimizing embedding models with ONNX. In order to enable this, set the flag under `engine_config` in your model yaml file: 
+We support optimizing embedding models with ONNX. In order to enable this, set the flag under `engine_config` in your model yaml file. See `models/embedding_models\BAAI--bge-large-en-v1.5.yaml` for an example. 
 
 ```shell
 engine_config:
