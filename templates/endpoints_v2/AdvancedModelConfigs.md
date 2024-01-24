@@ -52,3 +52,12 @@ Finally, the `scaling_config` section specifies what resources should be used to
 * `num_cpus_per_worker` - Number of CPUs to be allocated per worker.
 * `placement_strategy` - Ray supports different [placement strategies](https://docs.ray.io/en/latest/ray-core/scheduling/placement-group.html#placement-strategy) for guiding the physical distribution of workers. To ensure all workers are on the same node, use "STRICT_PACK".
 * `resources_per_worker` - we use `resources_per_worker` to set [Ray custom resources](https://docs.ray.io/en/latest/ray-core/scheduling/resources.html#id1) and place the models on specific node types. An example configuration of `resources_per_worker` involves setting `accelerator_type_a10`: 0.01 for a Llama-2-7b model to be deployed on an A10 GPU. This must always be set to 0.01. The `num_gpus_per_worker` configuration along with number of GPUs available on the node will determine the number of workers Ray schedules on the node.  
+
+## My deployment isn't starting/working correctly, how can I debug?
+
+There can be several reasons for the deployment not starting or not working correctly. Here are some things to check:
+1. You might have specified an invalid model id.
+2. Your model is a gated Hugging Face model (eg. meta-llama). In that case, you need to set the `HUGGING_FACE_HUB_TOKEN` environment variable cluster-wide. You can do that either in the Ray cluster configuration or by setting it before running `serve run`.
+3. Your model may be running out of memory. You can usually spot this issue by looking for keywords related to "CUDA", "memory" and "NCCL" in the replica logs or `serve run` output. In that case, consider reducing the `max_batch_prefill_tokens` and `max_batch_total_tokens` (if applicable). See models/README.md for more information on those parameters.
+
+In general, [Ray Dashboard](https://docs.ray.io/en/latest/serve/monitoring.html#ray-dashboard) is a useful debugging tool, letting you monitor your application and access Ray logs.
