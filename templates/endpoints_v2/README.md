@@ -68,7 +68,7 @@ To deploy an application with one model on an Anyscale Service you can run:
 anyscale service rollout -f service.yaml --name {ENTER_NAME_FOR_SERVICE_HERE}
 ```
 
-This is setup to run the Llama-2-13B model, but can be easily modified to run any of the other models in this repo.
+This is setup to run the Mistral-7B model, but can be easily modified to run any of the other models in this repo.
 
 # Step 4 - Query the service endpoint
 
