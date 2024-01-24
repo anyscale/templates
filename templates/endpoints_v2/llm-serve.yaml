@@ -7,4 +7,4 @@ applications:
       - "./models/mistral/mistralai--Mistral-7B-Instruct-v0.1_l4_tp1.yaml"
   runtime_env:
     env_vars:
-      HUGGING_FACE_HUB_TOKEN: "UPDATE HF TOKEN HERE"
+      HUGGING_FACE_HUB_TOKEN: "UPDATE HF TOKEN HERE" # needed for Llama 2 models
