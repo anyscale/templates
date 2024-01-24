@@ -2,7 +2,7 @@
 
 The guide below walks you through the steps required for deployment of LLM endpoints. Based on Ray Serve and RayLLM, the foundation for [Anyscale-Hosted Endpoints](http://anyscale.com/endpoints), the Endpoints template provides an easy to configure solution for ML Platform teams, Infrastructure engineers, and Developers who want to deploy optimized LLMs in production.  We have provided a number of examples for popular open-source models (Llama2, Mistral, Mixtral, embedding models, and more) with different GPU accelerator and tensor-parallelism configurations in the `models` directory. 
 
-# Deploy the model on Workspace
+# Step 1 - Deploy the model on Workspace
 
 The serve.yaml file in this example runs the Llama-7B model. There are 2 important configurations you would need to modify:
 1. The `models` config in `serve.yaml` contains a list of YAML files for the models you want to deploy. You can any of the models in the `models` directory or define your own model YAML file and run that instead. Follow the CustomModels [guide](CustomModels.md) for bringing your own models.
@@ -16,7 +16,7 @@ From the terminal use the Ray Serve CLI to deploy a model:
 serve run serve.yaml
 ```
 
-## Query the model
+# Step 2 - Query the model
 
 Once deployed you can use the OpenAI SDK to interact with the models, ensuring an easy integration for your applications. Run the following command in a separate terminal to query. 
 
@@ -60,7 +60,7 @@ print(chat_completion)
 
 ```
 
-# Deploying a production service - TODO with new CLI
+# Step 3 - Deploying a production service - TODO with new CLI
 
 To deploy an application with one model on an Anyscale Service you can run:
 
@@ -69,6 +69,9 @@ anyscale service rollout -f service.yaml --name {ENTER_NAME_FOR_SERVICE_HERE}
 ```
 
 This is setup to run the Llama-2-13B model, but can be easily modified to run any of the other models in this repo.
+
+# Step 4 - Query the service endpoint
+
 In order to query the endpoint, you can modify the `query.py` script, replacing the query url with the Service URL found in the Service UI.
 
 Note: please make sure to include the path "/v1" at the end of the Service url.
