@@ -4,14 +4,14 @@ The guide below walks you through the steps required for deployment of LLM endpo
 
 # Step 1 - Deploy the model on Workspace
 
-The serve.yaml file in this example runs the Llama-7B model. There are 2 important configurations you would need to modify:
+The serve.yaml file in this example runs the Mistral-7B model. There are 2 important configurations you would need to modify:
 1. The `models` config in `serve.yaml` contains a list of YAML files for the models you want to deploy. You can any of the models in the `models` directory or define your own model YAML file and run that instead. Follow the CustomModels [guide](CustomModels.md) for bringing your own models.
 2. `HUGGING_FACE_HUB_TOKEN` - The Meta Llama-2 family of models need the HUGGING_FACE_HUB_TOKEN environment variable to be set to a Hugging Face Access Token for an account with permissions to download the model.
 
 From the terminal use the Ray Serve CLI to deploy a model:
 
 ```shell
-# Deploy the Llama-7b model. 
+# Deploy the Mistral-7b model. 
 
 serve run serve.yaml
 ```
@@ -51,7 +51,7 @@ print(models)
 
 # Note: not all arguments are currently supported and will be ignored by the backend.
 chat_completion = client.chat.completions.create(
-    model="meta-llama/Llama-2-7b-chat-hf",
+    model="mistralai/Mistral-7B-Instruct-v0.1",
     messages=[{"role": "system", "content": "You are a helpful assistant."}, {"role": "user", "content": "What are some of the highest rated restaurants in San Francisco?'."}],
     temperature=0.01
 )
