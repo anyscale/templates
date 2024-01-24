@@ -1,7 +1,7 @@
 # Optimize Models
 
 We have provided various model configurations for different accelerator types and tensor parallelism (or tp). The supported accelerator types are:
-NVIDIA_TESLA_T4, NVIDIA_L4, NVIDIA_TESLA_A10G, NVIDIA_A100_40G and NVIDIA_A100_80G. 
+T4, L4, A10G, A100-40G and A100-80G. 
 
 Tensor parallelism is a type of model parallelism in which specific model weights, gradients, and optimizer states are split across devices. This typically involves distributed computation of specific operations, modules, or layers of the model. A higher value for tensor parallelism will typically lead to lower latency at the cost of more GPUs per replica. 
 
