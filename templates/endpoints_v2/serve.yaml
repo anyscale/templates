@@ -4,7 +4,7 @@ applications:
   import_path: rayllm.backend:router_application
   args:
     models:
-      - "./models/llama/meta-llama--Llama-2-7b-chat-hf_l4_tp1.yaml"
+      - "./models/mistral/mistralai--Mistral-7B-Instruct-v0.1_l4_tp1.yaml"
   runtime_env:
     env_vars:
       HUGGING_FACE_HUB_TOKEN: "UPDATE HF TOKEN HERE"
