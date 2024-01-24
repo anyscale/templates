@@ -7,7 +7,7 @@ client = OpenAI(
     api_key="NOT A REAL KEY",
 )
 chat_completion = client.chat.completions.create(
-    model="mistralai/Mistral-7B-Instruct-v0.1",
+    model="meta-llama/Llama-2-7b-chat-hf",
     messages=[{"role": "system", "content": "You are a helpful assistant."}, {"role": "user", "content": "What are some of the highest rated restaurants in San Francisco?'."}],
     temperature=0.01
 )
