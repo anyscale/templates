@@ -146,4 +146,6 @@ aws:
     - ResourceType: instance
       Tags:
         - Key: as-feature-enable-multi-az-serve
-          Value: 1
+          Value: "true"
+        - Key: as-feature-multi-zone
+          Value: "true"
