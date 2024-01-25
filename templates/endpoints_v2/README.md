@@ -60,7 +60,7 @@ print(chat_completion)
 
 ```
 
-# Step 3 - Deploying a production service - TODO with new CLI
+# Step 3 - Deploying a production service - TODO : Update with new CLI
 
 To deploy an application with one model on an Anyscale Service you can run:
 
@@ -98,4 +98,4 @@ Look at the following guides for more advanced use-cases -
 # Application Examples
 See examples of building applications with your deployed endpoint on the [Anyscale Endpoints](https://docs.endpoints.anyscale.com/category/examples) page.
 
-Be sure to update the api_base and token for your private deployment.  This can be found under the "Serve deployments" tab on the "Query" button when deploying on your Workspace.
+Be sure to update the api_base and token for your private deployment. This can be found under the "Serve deployments" tab on the "Query" button when deploying on your Workspace.
