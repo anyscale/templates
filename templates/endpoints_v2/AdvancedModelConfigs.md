@@ -18,8 +18,7 @@ It's best to check out examples of existing models to see how they are configure
 The `deployment_config` section corresponds to
 [Ray Serve configuration](https://docs.ray.io/en/latest/serve/production-guide/config.html)
 and specifies how to [auto-scale the model](https://docs.ray.io/en/latest/serve/scaling-and-resource-allocation.html)
-(via `autoscaling_config`) and what specific options you may need for your
-Ray Actors during deployments (using `ray_actor_options`). We recommend using the values from our sample configuration files for `metrics_interval_s`, `look_back_period_s`, `smoothing_factor`, `downscale_delay_s` and `upscale_delay_s`. These are the configuration options you may want to modify:
+(via `autoscaling_config`) and what specific options you may need for your model deployments (using `ray_actor_options`). We recommend using the values from our sample configuration files for `metrics_interval_s`, `look_back_period_s`, `smoothing_factor`, `downscale_delay_s` and `upscale_delay_s`. These are the configuration options you may want to modify:
 
 * `min_replicas`, `initial_replicas`, `max_replicas` - Minimum, initial and maximum number of replicas of the model to deploy on your Ray cluster.
 * `max_concurrent_queries` - Maximum number of queries that a Ray Serve replica can process at a time. Additional queries are queued at the proxy.
@@ -28,7 +27,7 @@ Ray Actors during deployments (using `ray_actor_options`). We recommend using th
 
 ## Engine config
 
-Engine is the abstraction for interacting with a model. It is responsible for scheduling and running the model inside a Ray Actor worker group.
+Engine is the abstraction for interacting with a model. It is responsible for scheduling and running the model.
 
 The `engine_config` section specifies the Hugging Face model ID (`model_id`), how to initialize it and what parameters to use when generating tokens with an LLM.
 
@@ -47,7 +46,7 @@ RayLLM supports continuous batching, meaning incoming requests are processed as 
 
 Finally, the `scaling_config` section specifies what resources should be used to serve the model - this corresponds to Ray [ScalingConfig](https://docs.ray.io/en/latest/train/api/doc/ray.train.ScalingConfig.html). Note that the `scaling_config` applies to each model replica, and not the entire model deployment (in other words, each replica will have `num_workers` workers).
 
-* `num_workers` - Number of workers (i.e. Ray Actors) for each replica of the model. This controls the tensor parallelism for the model.
+* `num_workers` - Number of workers (created as Ray Actors) for each replica of the model. This controls the tensor parallelism for the model.
 * `num_gpus_per_worker` - Number of GPUs to be allocated per worker. This should always be 1.
 * `num_cpus_per_worker` - Number of CPUs to be allocated per worker. Usually set to 8.
 * `placement_strategy` - Ray supports different [placement strategies](https://docs.ray.io/en/latest/ray-core/scheduling/placement-group.html#placement-strategy) for guiding the physical distribution of workers. To ensure all workers are on the same node, use "STRICT_PACK".
