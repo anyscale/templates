@@ -17,7 +17,6 @@ worker_node_types:
     memory:
     object_store_memory:
     custom_resources:
-      worker_node: 1
   min_workers: 0
   max_workers: 100
   use_spot: false
@@ -29,7 +28,6 @@ worker_node_types:
     memory:
     object_store_memory:
     custom_resources:
-      worker_node: 1
       "accelerator_type:T4": 1
   min_workers: 0
   max_workers: 100
@@ -43,7 +41,6 @@ worker_node_types:
     memory:
     object_store_memory:
     custom_resources:
-      worker_node: 1
       "accelerator_type:L4": 1
   min_workers: 0
   max_workers: 100
@@ -57,7 +54,6 @@ worker_node_types:
     memory:
     object_store_memory:
     custom_resources:
-      worker_node: 1
       "accelerator_type:L4": 1
   min_workers: 0
   max_workers: 100
@@ -71,7 +67,6 @@ worker_node_types:
     memory:
     object_store_memory:
     custom_resources:
-      worker_node: 1
       "accelerator_type:L4": 1
   min_workers: 0
   max_workers: 100
@@ -85,7 +80,6 @@ worker_node_types:
     memory:
     object_store_memory:
     custom_resources:
-      worker_node: 1
       "accelerator_type:L4": 1
   min_workers: 0
   max_workers: 100
@@ -99,7 +93,6 @@ worker_node_types:
     memory:
     object_store_memory:
     custom_resources:
-      worker_node: 1
       "accelerator_type:V100": 1
   min_workers: 0
   max_workers: 100
@@ -113,7 +106,6 @@ worker_node_types:
     memory:
     object_store_memory:
     custom_resources:
-      worker_node: 1
       "accelerator_type:A100-40G": 1
   min_workers: 0
   max_workers: 100
@@ -125,7 +117,6 @@ worker_node_types:
     memory:
     object_store_memory:
     custom_resources:
-      worker_node: 1
       "accelerator_type:A100-40G": 1
   min_workers: 0
   max_workers: 100
@@ -137,7 +128,6 @@ worker_node_types:
     memory:
     object_store_memory:
     custom_resources:
-      worker_node: 1
       "accelerator_type:A100-40G": 1
   min_workers: 0
   max_workers: 100
@@ -149,7 +139,6 @@ worker_node_types:
     memory:
     object_store_memory:
     custom_resources:
-      worker_node: 1
       "accelerator_type:A100-40G": 1
   min_workers: 0
   max_workers: 100
@@ -161,7 +150,6 @@ worker_node_types:
     memory:
     object_store_memory:
     custom_resources:
-      worker_node: 1
       "accelerator_type:A100-80G": 1
   min_workers: 0
   max_workers: 100
@@ -173,7 +161,6 @@ worker_node_types:
     memory:
     object_store_memory:
     custom_resources:
-      worker_node: 1
       "accelerator_type:A100-80G": 1
   min_workers: 0
   max_workers: 100
@@ -185,7 +172,6 @@ worker_node_types:
     memory:
     object_store_memory:
     custom_resources:
-      worker_node: 1
       "accelerator_type:A100-80G": 1
   min_workers: 0
   max_workers: 100
@@ -197,7 +183,6 @@ worker_node_types:
     memory:
     object_store_memory:
     custom_resources:
-      worker_node: 1
       "accelerator_type:A100-80G": 1
   min_workers: 0
   max_workers: 100
