@@ -1,14 +1,13 @@
 head_node_type:
   name: head-node-type
-  instance_type: m5.4xlarge
+  instance_type: m5.xlarge
   resources:
-    cpu:
+    cpu: 0
     gpu:
     memory:
     object_store_memory:
     custom_resources:
       head_node: 1
-      accelerator_type_cpu: 1
 worker_node_types:
 - name: cpu-worker
   instance_type: m5.xlarge
@@ -19,7 +18,6 @@ worker_node_types:
     object_store_memory:
     custom_resources:
       worker_node: 1
-      accelerator_type_cpu: 1
   min_workers: 0
   max_workers: 100
   use_spot: false
@@ -103,7 +101,6 @@ worker_node_types:
     custom_resources:
       worker_node: 1
       "accelerator_type:A100-40G": 1
-      accelerator_type_cpu: 1
   aws_advanced_configurations_json:
     BlockDeviceMappings:
     - DeviceName: /dev/sda1
@@ -127,7 +124,6 @@ worker_node_types:
     custom_resources:
       worker_node: 1
       "accelerator_type:A100-80G": 1
-      accelerator_type_cpu: 1
   aws_advanced_configurations_json:
     BlockDeviceMappings:
     - DeviceName: /dev/sda1
