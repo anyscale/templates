@@ -62,7 +62,7 @@ engine_config:
     # Stopping sequences supplied by the user in a request will be appended to this.
     stopping_sequences: ["### Response:", "### End"]
 
-# Resources assigned to each model replica. This corresponds to Ray AIR ScalingConfig.
+# Resources assigned to each model replica.
 scaling_config:
   # If using multiple GPUs set num_gpus_per_worker to be 1 and then set num_workers to be the number of GPUs you want to use.
   num_workers: 1
@@ -71,7 +71,7 @@ scaling_config:
   resources_per_worker:
     # You can use custom resources to specify the instance type / accelerator type
     # to use for the model.
-    accelerator_type_a10: 0.01
+    "accelerator_type:A100-40G": 0.01
 
 ```
 
