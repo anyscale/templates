@@ -7,7 +7,6 @@ head_node_type:
     memory:
     object_store_memory:
     custom_resources:
-      head_node: 1
 worker_node_types:
 - name: cpu-worker
   instance_type: m5.xlarge
@@ -17,7 +16,6 @@ worker_node_types:
     memory:
     object_store_memory:
     custom_resources:
-      worker_node: 1
   min_workers: 0
   max_workers: 100
   use_spot: false
@@ -29,7 +27,6 @@ worker_node_types:
     memory:
     object_store_memory:
     custom_resources:
-      worker_node: 1
       "accelerator_type:T4": 1
   min_workers: 0
   max_workers: 100
@@ -43,7 +40,6 @@ worker_node_types:
     memory:
     object_store_memory:
     custom_resources:
-      worker_node: 1
       "accelerator_type:T4": 1
   min_workers: 0
   max_workers: 100
@@ -57,7 +53,6 @@ worker_node_types:
     memory:
     object_store_memory:
     custom_resources:
-      worker_node: 1
       "accelerator_type:A10G": 1
   min_workers: 0
   max_workers: 100
@@ -71,7 +66,6 @@ worker_node_types:
     memory:
     object_store_memory:
     custom_resources:
-      worker_node: 1
       "accelerator_type:A10G": 1
   min_workers: 0
   max_workers: 100
@@ -85,7 +79,6 @@ worker_node_types:
     memory:
     object_store_memory:
     custom_resources:
-      worker_node: 1
       "accelerator_type:V100": 1
   min_workers: 0
   max_workers: 100
@@ -99,7 +92,6 @@ worker_node_types:
     memory:
     object_store_memory:
     custom_resources:
-      worker_node: 1
       "accelerator_type:V100": 1
   min_workers: 0
   max_workers: 100
@@ -113,7 +105,6 @@ worker_node_types:
     memory:
     object_store_memory:
     custom_resources:
-      worker_node: 1
       "accelerator_type:A100-40G": 1
   aws_advanced_configurations_json:
     BlockDeviceMappings:
@@ -136,7 +127,6 @@ worker_node_types:
     memory:
     object_store_memory:
     custom_resources:
-      worker_node: 1
       "accelerator_type:A100-80G": 1
   aws_advanced_configurations_json:
     BlockDeviceMappings:
