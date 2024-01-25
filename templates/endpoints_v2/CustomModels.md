@@ -29,7 +29,7 @@ deployment_config:
     # Resources assigned to each model deployment. The deployment will be
     # initialized first, and then start prediction workers which actually hold the model.
     resources:
-      accelerator_type_cpu: 0.01
+      "accelerator_type:A100-40G": 0.01
 engine_config:
   # Model id - this is a RayLLM id
   model_id: mosaicml/mpt-7b-instruct
