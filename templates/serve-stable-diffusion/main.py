@@ -1,16 +1,19 @@
+import logging
 from io import BytesIO
 
-from ray import serve
-from fastapi import FastAPI
-from fastapi.responses import Response
 import torch
 from diffusers import EulerDiscreteScheduler, StableDiffusionPipeline
-import logging
+from fastapi import FastAPI, HTTPException
+from fastapi.responses import Response
 
-# Create a FastAPI instance. Ray Serve has integration with FastAPI for complex HTTP handling logic. Learn more: https://docs.ray.io/en/latest/serve/http-guide.html#fastapi-http-deployments
+from ray import serve
+from ray.serve.handle import DeploymentHandle
+
+# Create a FastAPI instance to handle HTTP parsing and validation.
+# Learn more: https://docs.ray.io/en/latest/serve/http-guide.html#fastapi-http-deployments.
 app = FastAPI()
 
-# Set up the Ray Serve logger
+# Set up the Ray Serve logger.
 logger = logging.getLogger("ray.serve")
 
 # A serve deployment contains business logic or an ML model to handle incoming requests.
@@ -21,14 +24,22 @@ class APIIngress:
     def __init__(self, diffusion_model_handle) -> None:
         self.handle = diffusion_model_handle
 
-    # Define the actual API endpoint to live at `/imagine`.
+    # Raise an error if a user sends a request to the root path.
+    @app.get("/")
+    async def generate(self):
+        raise HTTPException(
+            status_code=400, detail="'/' not supported, use '/imagine' instead."
+        )
+
+    # Handle API requests to the `/imagine` route.
     @app.get(
         "/imagine",
         responses={200: {"content": {"image/png": {}}}},
         response_class=Response,
     )
     async def generate(self, prompt: str, img_size: int = 512):
-        assert len(prompt), "prompt parameter cannot be empty"
+        if not prompt:
+            raise HTTPException(status_code=400, detail="Missing 'prompt' parameter.")
 
         image = await self.handle.generate.remote(prompt, img_size=img_size)
 
@@ -70,4 +81,4 @@ class StableDiffusionV2:
 
 # Bind the deployments to arguments that will be passed into its constructor. 
 # This defines a Ray Serve application that we can run locally or deploy to production.
-entrypoint = APIIngress.bind(StableDiffusionV2.bind())
+stable_diffusion_app = APIIngress.bind(StableDiffusionV2.bind())
