@@ -11,7 +11,7 @@ pip install diffusers==0.25.0 transformers==4.36.2 accelerate==0.25.0
 - Run the command below to deploy your model at http://localhost:8000.  
 
 ```bash
-serve run app:entrypoint
+serve run main:stable_diffusion_app
 ```
 
 ## Step 3: Send test requests to the running model
@@ -29,7 +29,7 @@ python query.py
 Deploy it as an Anyscale Service for staging or production traffic with `--publish` flag
 
 ```bash
-serve run app:entrypoint --publish
+serve run main:stable_diffusion_app --publish
 ```
 
 
@@ -47,6 +47,6 @@ The benefits of using Anyscale Services for staging/production traffic:
 You can make code changes in the same Workspace and deploy an upgrade to your Service without downtime using the same command.
 
 ```bash
-serve run app:entrypoint --publish
+serve run main:stable_diffusion_app --publish
 ```
 
