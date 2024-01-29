@@ -17,13 +17,14 @@ It's best to check out examples of existing models to see how they are configure
 
 The `deployment_config` section corresponds to
 [Ray Serve configuration](https://docs.ray.io/en/latest/serve/production-guide/config.html)
-and specifies how to [auto-scale the model](https://docs.ray.io/en/latest/serve/scaling-and-resource-allocation.html)
+and specifies how to [auto-scale the model](https://docs.ray.io/en/latest/serve/autoscaling-guide.html)
 (via `autoscaling_config`) and what specific options you may need for your model deployments (using `ray_actor_options`). We recommend using the values from our sample configuration files for `metrics_interval_s`, `look_back_period_s`, `smoothing_factor`, `downscale_delay_s` and `upscale_delay_s`. These are the configuration options you may want to modify:
 
 * `min_replicas`, `initial_replicas`, `max_replicas` - Minimum, initial and maximum number of replicas of the model to deploy on your Ray cluster.
 * `max_concurrent_queries` - Maximum number of queries that a Ray Serve replica can process at a time. Additional queries are queued at the proxy.
 * `target_num_ongoing_requests_per_replica` - Guides the auto-scaling behavior. If the average number of ongoing requests across replicas is above this number, Ray Serve attempts to scale up the number of replicas, and vice-versa for downscaling. We typically set this to ~40% of the `max_concurrent_queries`.
 * `ray_actor_options` - Similar to the `resources_per_worker` configuration in the `scaling_config`. Refer to the `scaling_config` section for more guidance.
+* `smoothing_factor` - The multiplicative factor to amplify or moderate each upscaling or downscaling decision. A value less than 1.0 will slow down the scaling decision made in each step. See [advanced auto-scaling guide](https://docs.ray.io/en/latest/serve/advanced-guides/advanced-autoscaling.html#optional-define-how-the-system-reacts-to-changing-traffic) for more details. 
 
 ## Engine config
 
