@@ -10,7 +10,7 @@ worker_node_types:
   max_workers: 100
   use_spot: false
 - name: gpu-worker-t4-1
-  instance_type: g4dn.2xlarge	
+  instance_type: g4dn.2xlarge
   resources:
     cpu:
     gpu:
@@ -23,7 +23,7 @@ worker_node_types:
   use_spot: true
   fallback_to_ondemand: true
 - name: gpu-worker-t4-4
-  instance_type: g4dn.12xlarge	
+  instance_type: g4dn.12xlarge
   resources:
     cpu:
     gpu:
