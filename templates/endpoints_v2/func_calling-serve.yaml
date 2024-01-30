@@ -4,8 +4,8 @@ applications:
     import_path: aviary_private_endpoints.backend.server.run:router_application
     args:
       models: []
-      vllm_base_models:
-        - "./models/mistral/mistralai--Mistral-7B-Instruct-v0.1_a10g_tp1.yaml"  # replace with models/mistral/mistralai--Mistral-7B-Instruct-v0.1_a10g_tp1.yaml for AWS
+      function_calling_models:
+        - "./models/mistral/mistralai--Mistral-7B-Instruct-v0.1_a10g_tp1.yaml"  # replace with models/mistral/mistralai--Mistral-7B-Instruct-v0.1_l4_tp1.yaml for GCE
     runtime_env:
       env_vars:
         HUGGING_FACE_HUB_TOKEN: "UPDATE HF TOKEN HERE"  # <-- change this to a real token
