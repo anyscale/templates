@@ -1,6 +1,6 @@
 # Serving Function calling Models
 
-You can support function calling models by using following steps.
+Anyscale Endpoints supports [function calling mode](https://www.anyscale.com/blog/anyscale-endpoints-json-mode-and-function-calling-features). You can serve function calling models by using following steps.
 
 # Step 1 - Configuring Function calling model
 
