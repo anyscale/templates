@@ -92,6 +92,7 @@ Look at the following guides for more advanced use-cases -
 * [Deploy models for embedding generation](EmbeddingModels.md)
 * [Learn how to bring your own models](CustomModels.md)
 * [Deploy multiple LoRA fine-tuned models](DeployLora.md)
+* [Deploy Function calling models](DeployFunctionCalling.md)
 * [Learn how to leverage different configurations that can optimize the latency and throughput of your models](OptimizeModels.md)
 * [Learn how to fully configure your deployment including auto-scaling, optimization parameters and tensor-parallelism](AdvancedModelConfigs.md)
 
