@@ -7,7 +7,7 @@ ray_serve_config:
     args:
       models:
         # Link to list of models you want to serve here. You can add more than one model
-        - "./models/mistral/mistralai--Mistral-7B-Instruct-v0.1_l4_tp1.yaml"
+        - "./models/mistral/mistralai--Mistral-7B-Instruct-v0.1_l4_tp1.yaml"  # replace with models/mistral/mistralai--Mistral-7B-Instruct-v0.1_a10g_tp1.yaml for AWS
     runtime_env:
       env_vars:
         HUGGING_FACE_HUB_TOKEN: "UPDATE HF TOKEN HERE"
