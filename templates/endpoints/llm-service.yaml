@@ -1,13 +1,13 @@
 name: endpoints
 ray_serve_config:
   applications:
-  - name: my-endpoints
+  - name: llm-endpoint
     route_prefix: /
     import_path: rayllm.backend:router_application
     args:
       models:
         # Link to list of models you want to serve here. You can add more than one model
-        - "./models/meta-llama--Llama-2-7b-chat-hf_a10.yaml"
+        - "./models/mistral/mistralai--Mistral-7B-Instruct-v0.1_l4_tp1.yaml"  # replace with models/mistral/mistralai--Mistral-7B-Instruct-v0.1_a10g_tp1.yaml for AWS
     runtime_env:
       env_vars:
         HUGGING_FACE_HUB_TOKEN: "UPDATE HF TOKEN HERE"
