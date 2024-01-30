@@ -1,14 +1,12 @@
 head_node_type:
   name: head-node-type
-  instance_type: m5.8xlarge
+  instance_type: m5.xlarge
   resources:
-    cpu:
+    cpu: 0
     gpu:
     memory:
     object_store_memory:
     custom_resources:
-      head_node: 1
-      accelerator_type_cpu: 1
 worker_node_types:
 - name: cpu-worker
   instance_type: m5.xlarge
@@ -18,12 +16,36 @@ worker_node_types:
     memory:
     object_store_memory:
     custom_resources:
-      worker_node: 1
-      accelerator_type_cpu: 1
   min_workers: 0
   max_workers: 100
   use_spot: false
-- name: gpu-worker-g5
+- name: gpu-worker-t4-1
+  instance_type: g4dn.2xlarge	
+  resources:
+    cpu:
+    gpu:
+    memory:
+    object_store_memory:
+    custom_resources:
+      "accelerator_type:T4": 1
+  min_workers: 0
+  max_workers: 100
+  use_spot: true
+  fallback_to_ondemand: true
+- name: gpu-worker-t4-4
+  instance_type: g4dn.12xlarge	
+  resources:
+    cpu:
+    gpu:
+    memory:
+    object_store_memory:
+    custom_resources:
+      "accelerator_type:T4": 1
+  min_workers: 0
+  max_workers: 100
+  use_spot: true
+  fallback_to_ondemand: true
+- name: gpu-worker-a10g-1
   instance_type: g5.4xlarge
   resources:
     cpu:
@@ -31,13 +53,12 @@ worker_node_types:
     memory:
     object_store_memory:
     custom_resources:
-      worker_node: 1
-      accelerator_type_a10: 1
+      "accelerator_type:A10G": 1
   min_workers: 0
   max_workers: 100
   use_spot: true
   fallback_to_ondemand: true
-- name: gpu-worker-g5-12
+- name: gpu-worker-a10g-4
   instance_type: g5.12xlarge
   resources:
     cpu:
@@ -45,13 +66,25 @@ worker_node_types:
     memory:
     object_store_memory:
     custom_resources:
-      worker_node: 1
-      accelerator_type_a10: 1
+      "accelerator_type:A10G": 1
   min_workers: 0
   max_workers: 100
   use_spot: true
   fallback_to_ondemand: true
-- name: gpu-worker-p3
+- name: gpu-worker-v100-1
+  instance_type: p3.2xlarge
+  resources:
+    cpu:
+    gpu:
+    memory:
+    object_store_memory:
+    custom_resources:
+      "accelerator_type:V100": 1
+  min_workers: 0
+  max_workers: 100
+  use_spot: true
+  fallback_to_ondemand: true
+- name: gpu-worker-v100-4
   instance_type: p3.8xlarge
   resources:
     cpu:
@@ -59,13 +92,12 @@ worker_node_types:
     memory:
     object_store_memory:
     custom_resources:
-      worker_node: 1
-      accelerator_type_v100: 1
+      "accelerator_type:V100": 1
   min_workers: 0
   max_workers: 100
   use_spot: true
   fallback_to_ondemand: true
-- name: gpu-worker-p4d
+- name: gpu-worker-a100-40g-8
   instance_type: p4d.24xlarge
   resources:
     cpu:
@@ -73,9 +105,7 @@ worker_node_types:
     memory:
     object_store_memory:
     custom_resources:
-      worker_node: 1
-      accelerator_type_a100_40g: 1
-      accelerator_type_cpu: 1
+      "accelerator_type:A100-40G": 1
   aws_advanced_configurations_json:
     BlockDeviceMappings:
     - DeviceName: /dev/sda1
@@ -89,3 +119,33 @@ worker_node_types:
         Value: "true"
   min_workers: 0
   max_workers: 100
+- name: gpu-worker-a100-80g-8
+  instance_type: p4de.24xlarge
+  resources:
+    cpu:
+    gpu:
+    memory:
+    object_store_memory:
+    custom_resources:
+      "accelerator_type:A100-80G": 1
+  aws_advanced_configurations_json:
+    BlockDeviceMappings:
+    - DeviceName: /dev/sda1
+      Ebs:
+        DeleteOnTermination: true
+        VolumeSize: 1000
+    TagSpecifications:
+    - ResourceType: instance
+      Tags:
+      - Key: as-feature-multi-zone
+        Value: "true"
+  min_workers: 0
+  max_workers: 100
+aws:
+  TagSpecifications:
+    - ResourceType: instance
+      Tags:
+        - Key: as-feature-enable-multi-az-serve
+          Value: "true"
+        - Key: as-feature-multi-zone
+          Value: "true"

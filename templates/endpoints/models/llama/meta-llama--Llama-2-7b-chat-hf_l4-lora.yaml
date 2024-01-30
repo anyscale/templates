@@ -14,21 +14,25 @@ deployment_config:
     resources:
       "accelerator_type:L4": 0.001
 engine_config:
-  model_id: squeeze-ai-lab/sq-llama-2-7b-w4-s0
-  hf_model_id: squeeze-ai-lab/sq-llama-2-7b-w4-s0
+  model_id: meta-llama/Llama-2-7b-chat-hf
+  hf_model_id: meta-llama/Llama-2-7b-chat-hf
   type: VLLMEngine
   engine_kwargs:
-    quantization: squeezellm
     trust_remote_code: true
     max_num_batched_tokens: 4096
     max_num_seqs: 64
-    gpu_memory_utilization: 0.9
+    gpu_memory_utilization: 0.95
+    enable_cuda_graph: true
+    num_tokenizer_actors: 2
+    enable_lora: true  # <-- This is required to be used with the LoRA adapter
+    max_lora_rank: 32  # Max rank for the LoRA
+    max_loras: 24  # should be the same as multiplex_config.max_num_models_per_replica
   max_total_tokens: 4096
   generation:
     prompt_format:
       system: "<<SYS>>\n{instruction}\n<</SYS>>\n\n"
-      assistant: " {instruction} </s><s>"
-      trailing_assistant: ""
+      assistant: " {instruction} </s><s> "
+      trailing_assistant: " "
       user: "[INST] {system}{instruction} [/INST]"
       system_in_user: true
       default_system_message: ""
@@ -40,3 +44,5 @@ scaling_config:
   placement_strategy: "STRICT_PACK"
   resources_per_worker:
     "accelerator_type:L4": 0.001
+multiplex_config:  # <-- This is required to be able to serve multiple LoRA adapters in the same replica
+  max_num_models_per_replica: 24
