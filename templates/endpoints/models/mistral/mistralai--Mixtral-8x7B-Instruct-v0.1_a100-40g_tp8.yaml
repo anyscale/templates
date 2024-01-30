@@ -25,6 +25,7 @@ engine_config:
     gpu_memory_utilization: 0.82
     num_tokenizer_actors: 2
     enable_cuda_graph: true
+    enable_json_logits_processors: true
   max_total_tokens: 32768
   generation:
     prompt_format:
@@ -42,3 +43,4 @@ scaling_config:
   placement_strategy: "STRICT_PACK"
   resources_per_worker:
     "accelerator_type:A100-40G": 0.001
+standalone_function_calling_model: true
