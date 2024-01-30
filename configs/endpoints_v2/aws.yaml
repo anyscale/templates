@@ -3,24 +3,14 @@ head_node_type:
   instance_type: m5.xlarge
   resources:
     cpu: 0
-    gpu:
-    memory:
-    object_store_memory:
-    custom_resources:
 worker_node_types:
 - name: cpu-worker
   instance_type: m5.xlarge
-  resources:
-    cpu:
-    gpu:
-    memory:
-    object_store_memory:
-    custom_resources:
   min_workers: 0
   max_workers: 100
   use_spot: false
 - name: gpu-worker-t4-1
-  instance_type: g4dn.2xlarge	
+  instance_type: g4dn.2xlarge
   resources:
     cpu:
     gpu:
@@ -33,7 +23,7 @@ worker_node_types:
   use_spot: true
   fallback_to_ondemand: true
 - name: gpu-worker-t4-4
-  instance_type: g4dn.12xlarge	
+  instance_type: g4dn.12xlarge
   resources:
     cpu:
     gpu:
