@@ -19,7 +19,7 @@ engine_config:
   type: VLLMEngine
   engine_kwargs:
     trust_remote_code: true
-    max_num_batched_tokens: 4096
+    max_num_batched_tokens: 16384
     max_num_seqs: 64
     gpu_memory_utilization: 0.95
     num_tokenizer_actors: 2
