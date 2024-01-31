@@ -8,7 +8,7 @@ The llm-serve.yaml file in this example runs the Mistral-7B model on an A10G GPU
 1. The `models` config in `llm-serve.yaml` contains a list of YAML files for the models you want to deploy. You can run any of the models in the `models` directory or define your own model YAML file and run that instead. Follow the CustomModels [guide](CustomModels.md) for bringing your own models.
 2. `HUGGING_FACE_HUB_TOKEN` - The Meta Llama-2 family of models need the HUGGING_FACE_HUB_TOKEN variable to be set to a Hugging Face Access Token for an account with permissions to download the model.
 
-* Note that AWS offers A10G GPUs while GCP offers L4. Please switch to the correct config file for the GPU type. All config files are in the format {model_name}_{accelerator_type}_{tensor_parallelism}
+* Note that AWS offers A10G GPUs while GCP offers L4. Please switch to the correct config file for the GPU type. All config files follow the naming convention {model_name}_{accelerator_type}_{tensor_parallelism}
 
 From the terminal use the Ray Serve CLI to deploy a model:
 
