@@ -1,0 +1,55 @@
+compute_config:
+  allowed_azs:
+    - any
+  cloud: my-cloud # You may specify `cloud_id` instead
+  head_node_type:
+    instance_type: m5.4xlarge
+    name: head_node
+  worker_node_types:
+    - instance_type: g5.4xlarge
+      max_workers: 16
+      min_workers: 0
+      name: g5_4x_worker_node
+      resources:
+        custom_resources:
+          g5.4xlarge: 1
+      use_spot: false
+    - instance_type: g5.12xlarge
+      max_workers: 4
+      min_workers: 0
+      name: g5_12x_worker_node
+      resources:
+        custom_resources:
+          g5.12xlarge: 4
+    - instance_type: g5.48xlarge
+      max_workers: 4
+      min_workers: 0
+      name: g5_48x_worker_node
+      resources:
+        custom_resources:
+          g5.48xlarge: 8
+    - instance_type: p4d.24xlarge
+      max_workers: 7
+      min_workers: 0
+      name: p4d_worker_node
+      resources:
+        custom_resources:
+          p4d.24xlarge: 8
+    - instance_type: p4de.24xlarge
+      max_workers: 8
+      min_workers: 0
+      name: p4de_worker_node
+      resources:
+        custom_resources:
+          p4de.24xlarge: 8
+  aws_advanced_configurations_json:
+    TagSpecifications:
+      - ResourceType: instance
+        Tags:
+          - Key: as-feature-multi-zone
+            Value: True
+runtime_env:
+  env_vars:
+    HF_HOME: /mnt/local_storage/.cache/huggingface
+    TUNE_RESULT_DIR: /mnt/local_storage
+max_retries: 0
