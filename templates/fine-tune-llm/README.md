@@ -21,7 +21,8 @@ directory for different base models and instance types. You can use these as a
 starting point for your own fine-tuning jobs.
 
 Please go to `job_configs/aws.yaml` or `job_configs/gcp.yaml`
-and specify your cloud name under the `cloud` field.
+and specify your cloud name under the `cloud` field. Next, you can
+launch a fine-tuning job.
 
 ```shell
 # Launch a fine-tuning job for Llama 7b with 16 g5.4xlarge instances
