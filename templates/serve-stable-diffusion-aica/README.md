@@ -2,8 +2,10 @@
 This template shows you how to develop and test the model locally and deploy it into production.
 
 ## Step 1: Deploy the model locally
-- Open a new terminal (ctl+shift+`) in VS Code. 
+- Open a new terminal. 
 - Run the command below to deploy your model at http://localhost:8000.  
+
+This template uses an A10G GPU by default. You can update the `accelerator_type` config in `main.py` to use the GPU desired. Note that A10G is not available on GCP and you would need to switch to L4.
 
 ```bash
 serve run main:stable_diffusion_app
