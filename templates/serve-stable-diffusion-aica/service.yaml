@@ -5,3 +5,7 @@ ray_serve_config:
       import_path: app:entrypoint
       runtime_env:
         working_dir: "."
+        pip:
+          - diffusers==0.25.0
+          - transformers==4.36.2
+          - accelerate==0.25.0
