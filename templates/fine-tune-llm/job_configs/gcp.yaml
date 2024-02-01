@@ -12,7 +12,7 @@ compute_config:
       name: g2_l4_worker_node
       resources:
         custom_resources:
-          g2-standard-24-nvidia-l4-2: 1
+          g2-standard-24-nvidia-l4-2: 2
       use_spot: false
     - instance_type: a2-highgpu-8g-nvidia-a100-40gb-8
       max_workers: 4
