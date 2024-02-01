@@ -1,9 +1,9 @@
-model_id: meta-llama/Llama-2-7b-hf
-train_path: s3://air-example-data/gsm8k/train.jsonl
-valid_path: s3://air-example-data/gsm8k/test.jsonl
-context_length: 512
+model_id: meta-llama/Llama-2-7b-hf # <-- change this to the model you want to fine-tune
+train_path: s3://air-example-data/gsm8k/train.jsonl # <-- change this to the path to your training data
+valid_path: s3://air-example-data/gsm8k/test.jsonl # <-- change this to the path to your validation data. This is optional
+context_length: 4096 # <-- change this to the context length you want to use
 num_devices: 16
-num_epochs: 10
+num_epochs: 10 # <-- change this to the number of epochs that you want to train for
 train_batch_size_per_device: 16
 eval_batch_size_per_device: 16
 learning_rate: 5e-6

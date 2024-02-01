@@ -13,7 +13,6 @@ This guide provides starter configurations if you would like to further customiz
 - meta-llama/Llama-2-13b-chat-hf
 - meta-llama/Llama-2-70b-hf
 - meta-llama/Llama-2-70b-chat-hf
-- codellama/CodeLlama-34b-Instruct-hf
 
 # Step 1 - Launch a fine-tuning job
 
@@ -41,3 +40,14 @@ anyscale-data-cld-id/org_id/cloud_id/artifact_storage/username/llmforge-finetuni
 ```
 
 You can go to models page and import this model by clicking the `Import` button.
+When entering the remote uri, please make sure to add the
+prefix `s3://` or `gs://`.
+
+For the generation config, you can reference example configs
+[here](https://docs.anyscale.com/endpoints/model-serving/import-model#generation-configuration-examples).
+
+# Step 3 - Deploy the model on Endpoints
+
+Once the model is imported, you can deploy it on Endpoints by creating a
+new endpoint or adding it to an existing endpoint. You can follow the
+endpoints page guide to query the endpoint.
