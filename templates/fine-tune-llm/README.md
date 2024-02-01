@@ -2,7 +2,7 @@
 
 Anyscale currently offers a simple CLI command to fine-tune LLM models via `anyscale fine-tuning submit`
 and you can take a look at the documentation [here](https://docs.anyscale.com/endpoints/fine-tuning/get-started).
-This guide provides starter configurations if you would like to customize the fine-tuning process.
+This guide provides starter configurations if you would like to further customize the fine-tuning process.
 
 ### Supported base models
 
@@ -15,4 +15,29 @@ This guide provides starter configurations if you would like to customize the fi
 - meta-llama/Llama-2-70b-chat-hf
 - codellama/CodeLlama-34b-Instruct-hf
 
-###
+# Step 1 - Launch a fine-tuning job
+
+We have provided different example configurations under the `training_configs`
+directory for different base models and instance types. You can use these as a
+starting point for your own fine-tuning jobs.
+
+```shell
+# Launch a fine-tuning job for Llama 7b with 16 g5.4xlarge instances
+
+llmforge dev launch job_configs/aws.yaml training_configs/llama-2-7b-512-16xg5_4xlarge.yaml.yaml
+```
+
+Once you submit the command, you can monitor the progress of the job in
+the provided job link. Generally a full-param fine-tuning job will take a few hours.
+
+# Step 2 - Import the model
+
+Once the fine-tuning job is complete, you can view the stored model weight at the very end of the job logs. Here is an example finetuning job output:
+
+```shell
+
+Best checkpoint is stored in:
+anyscale-data-cld-id/org_id/cloud_id/artifact_storage/username/llmforge-finetuning/meta-llama/Llama-2-70b-hf/TorchTrainer_2024-01-25_18-07-48/TorchTrainer_b3de9_00000_0_2024-01-25_18-07-48/checkpoint_000000
+```
+
+You can go to models page and import this model by clicking the `Import` button.
