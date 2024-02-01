@@ -20,6 +20,9 @@ We have provided different example configurations under the `training_configs`
 directory for different base models and instance types. You can use these as a
 starting point for your own fine-tuning jobs.
 
+Please go to `job_configs/aws.yaml` or `job_configs/gcp.yaml`
+and specify your cloud name under the `cloud` field.
+
 ```shell
 # Launch a fine-tuning job for Llama 7b with 16 g5.4xlarge instances
 
@@ -51,3 +54,28 @@ For the generation config, you can reference example configs
 Once the model is imported, you can deploy it on Endpoints by creating a
 new endpoint or adding it to an existing endpoint. You can follow the
 endpoints page guide to query the endpoint.
+
+# Frequently asked questions
+
+### How can I fine-tune using my own data?
+
+You can open the file under `training_configs` and update
+`train_path` and `valid_path` to your training and evaluation file.
+
+### How do I customize the fine-tuning job?
+
+You can edit the values, such as `context_length`, `num_epoched`,
+`train_batch_size_per_device` and `eval_batch_size_per_device`
+to customize the fine-tuning job.
+
+In addition, the deepspeed configs are provided in case you would
+like to customize them.
+
+### What if I want to use a different instance type?
+
+You can edit both job and training configs to use
+a different instance type. Note that the `num_devices` field
+under the `training_configs` file would need
+to be updated to be the total of GPUs that you expect to use.
+For instance, if you expect to fine-tune a model with 16 g5.4xlarge,
+the `num_devices` should be 16.
