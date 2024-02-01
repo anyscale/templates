@@ -3,7 +3,7 @@ This template shows you how to develop and test the model locally and deploy it 
 
 ## Step 1: Install python dependencies
 ```
-pip install diffusers==0.25.0 transformers==4.36.2 accelerate==0.25.0
+pip install --user diffusers==0.25.0 transformers==4.36.2 accelerate==0.25.0
 ```
 
 ## Step 2: Deploy the model locally
