@@ -1,0 +1,44 @@
+deployment_config:
+  autoscaling_config:
+    min_replicas: 1
+    initial_replicas: 1
+    max_replicas: 100
+    target_num_ongoing_requests_per_replica: 24
+    metrics_interval_s: 10.0
+    look_back_period_s: 30.0
+    smoothing_factor: 0.6
+    downscale_delay_s: 300.0
+    upscale_delay_s: 15.0
+  max_concurrent_queries: 64
+  ray_actor_options:
+    resources:
+      "accelerator_type:L4": 0.001
+engine_config:
+  model_id: HuggingFaceH4/zephyr-7b-beta
+  hf_model_id: HuggingFaceH4/zephyr-7b-beta
+  type: VLLMEngine
+  engine_kwargs:
+    trust_remote_code: true
+    enable_lora: false
+    max_num_batched_tokens: 16384
+    max_num_seqs: 64
+    gpu_memory_utilization: 0.90
+    num_tokenizer_actors: 2
+    enable_cuda_graph: true
+  max_total_tokens: 16384
+  generation:
+    prompt_format:
+      system: "<|system|>\n{instruction}</s>\n"
+      assistant: "<|assistant|>\n{instruction}</s>\n"
+      trailing_assistant: "<|assistant|>\n"
+      user: "<|user|>\n{instruction}</s>\n"
+      system_in_user: false
+      default_system_message: ""
+    stopping_sequences: []
+scaling_config:
+  num_workers: 1
+  num_gpus_per_worker: 1
+  num_cpus_per_worker: 8
+  placement_strategy: "STRICT_PACK"
+  resources_per_worker:
+    "accelerator_type:L4": 0.001

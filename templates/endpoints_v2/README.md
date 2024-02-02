@@ -5,7 +5,7 @@ The guide below walks you through the steps required for deployment of LLM endpo
 # Step 1 - Deploy the model on Workspace
 
 The llm-serve.yaml file in this example runs the Mistral-7B model. There are 2 important configurations you would need to modify:
-1. The `models` config in `llm-serve.yaml` contains a list of YAML files for the models you want to deploy. You can run any of the models in the `models` directory or define your own model YAML file and run that instead. Follow the CustomModels [guide](CustomModels.md) for bringing your own models.
+1. The `models` config in `llm-serve.yaml` contains a list of YAML files for the models you want to deploy. You can run any of the models in the `models` directory or define your own model YAML file and run that instead. All config files follow the naming convention `{model_name}_{accelerator_type}_{tensor_parallelism}`. Follow the CustomModels [guide](CustomModels.md) for bringing your own models.
 2. `HUGGING_FACE_HUB_TOKEN` - The Meta Llama-2 family of models need the HUGGING_FACE_HUB_TOKEN variable to be set to a Hugging Face Access Token for an account with permissions to download the model.
 
 From the terminal use the Ray Serve CLI to deploy a model:
@@ -92,6 +92,7 @@ Look at the following guides for more advanced use-cases -
 * [Deploy models for embedding generation](EmbeddingModels.md)
 * [Learn how to bring your own models](CustomModels.md)
 * [Deploy multiple LoRA fine-tuned models](DeployLora.md)
+* [Deploy Function calling models](DeployFunctionCalling.md)
 * [Learn how to leverage different configurations that can optimize the latency and throughput of your models](OptimizeModels.md)
 * [Learn how to fully configure your deployment including auto-scaling, optimization parameters and tensor-parallelism](AdvancedModelConfigs.md)
 
