@@ -2,6 +2,7 @@ compute_config:
   allowed_azs:
     - any
   cloud: my-cloud # You may specify `cloud_id` instead
+  region: any
   head_node_type:
     instance_type: m5.4xlarge
     name: head_node
@@ -42,7 +43,7 @@ compute_config:
       resources:
         custom_resources:
           p4de.24xlarge: 8
-  aws_advanced_configurations_json:
+  aws:
     TagSpecifications:
       - ResourceType: instance
         Tags:
