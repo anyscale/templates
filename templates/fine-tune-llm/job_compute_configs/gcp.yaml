@@ -2,6 +2,7 @@ compute_config:
   allowed_azs:
     - any
   cloud: my-cloud # You may specify `cloud_id` instead
+  region: any
   head_node_type:
     instance_type: n2-standard-4
     name: head_node
@@ -21,7 +22,7 @@ compute_config:
       resources:
         custom_resources:
           a2-highgpu-8g-nvidia-a100-40gb-8: 8
-  gcp_advanced_configurations_json:
+  gcp:
     instance_properties:
       labels:
         as-feature-multi-zone: "true"
