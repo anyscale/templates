@@ -45,4 +45,4 @@ Use the same command to train with your own data.
 Voila! You have fine-tuned your own Llama-2 models. Want more than this? Check out advanced tutorials below 
 
 - [Walkthrough of this template](./tutorials/walkthrough.md)
-- [Fine-tune Llama-2 with LoRA adatpers](./tutorials/lora.md)
+- [Fine-tune Llama-2 with LoRA adapters](./tutorials/lora.md)
