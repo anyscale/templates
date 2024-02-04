@@ -11,7 +11,7 @@ python train.py --size=7b --as-test
 
 The flag `--as-test` is for testing purpose as it runs through only one forward and backward pass and checkpoints the model. It takes ~7 mins. Without this flag, it takes ~42 mins (3 epochs for optimal model quality).
 
-Model checkpoints will be stored under `{user's first name}/ft_llms_with_deepspeed/` in the cloud stroage bucket created for your Anyscale account. The full path will be printed in the output after the training is completed.
+Model checkpoints will be stored under `{user's first name}/ft_llms_with_deepspeed/` in the cloud storage bucket created for your Anyscale account. The full path will be printed in the output after the training is completed.
 
 
 ## (Optional) Step 2: Switch to a different model size
