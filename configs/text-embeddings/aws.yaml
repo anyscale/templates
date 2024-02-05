@@ -80,7 +80,7 @@ worker_node_types:
       - Key: as-feature-multi-zone
         Value: "true"
   min_workers: 0
-  max_workers: 100
+  max_workers: 1
 
 # 96 vCPU, 8 NVIDIA A100 80GB GPUs, 1152 GiB memory
 - name: gpu-worker-a100-80g
@@ -114,3 +114,7 @@ aws:
           Value: "true"
         - Key: as-feature-multi-zone
           Value: "true"
+        - Key: as-feature-cross-group-min-count-custom_llm_gpu
+          Value: "2"
+        - Key: as-feature-cross-group-max-count-custom_llm_gpu
+          Value: "16"
