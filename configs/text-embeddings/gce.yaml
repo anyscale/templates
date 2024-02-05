@@ -95,3 +95,5 @@ gcp_advanced_configurations_json:
     labels:
       as-feature-multi-zone: 'true'
       as-feature-enable-multi-az-serve: 'true'
+      as-feature-cross-group-min-count-custom_llm_gpu: '2'
+      as-feature-cross-group-max-count-custom_llm_gpu: '16'
