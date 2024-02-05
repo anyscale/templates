@@ -1,0 +1,97 @@
+head_node_type:
+  name: head-node-type
+  instance_type: n2-standard-32
+  resources:
+    cpu: 0
+worker_node_types:
+- name: cpu-worker
+  instance_type: n2-standard-32
+  min_workers: 7
+  max_workers: 7
+  use_spot: false
+
+# 8 vCPU, 1 NVIDIA T4 GPU, 30 GiB memory
+- name: gpu-worker-t4
+  instance_type: n1-standard-8-nvidia-t4-16gb-1
+  resources:
+    cpu:
+    gpu:
+    memory:
+    object_store_memory:
+    custom_resources:
+      "accelerator_type:T4": 1
+  min_workers: 0
+  max_workers: 16
+  use_spot: true
+  fallback_to_ondemand: true
+
+# 8 vCPU, 1 NVIDIA L4 GPU, 32 GiB memory
+- name: gpu-worker-l4
+  instance_type: g2-standard-8-nvidia-l4-1
+  resources:
+    cpu:
+    gpu:
+    memory:
+    object_store_memory:
+    custom_resources:
+      "accelerator_type:L4": 1
+  min_workers: 0
+  max_workers: 16
+  use_spot: true
+  fallback_to_ondemand: true
+gcp_advanced_configurations_json:
+  instance_properties:
+    labels:
+      as-feature-multi-zone: 'true'
+      as-feature-enable-multi-az-serve: 'true'
+
+# 8 vCPU, 1 NVIDIA Tesla V100 16GB GPU, 30 GiB memory
+- name: gpu-worker-v100
+  instance_type: n1-standard-8-nvidia-v100-16gb-1
+  resources:
+    cpu:
+    gpu:
+    memory:
+    object_store_memory:
+    custom_resources:
+      "accelerator_type:V100": 1
+  min_workers: 0
+  max_workers: 16
+  use_spot: true
+  fallback_to_ondemand: true
+
+# 12 vCPU, 1 NVIDIA A100 40GB GPU, 85 GiB memory
+- name: gpu-worker-a100-40g
+  instance_type: a2-highgpu-1g-nvidia-a100-40gb-1
+  resources:
+    cpu:
+    gpu:
+    memory:
+    object_store_memory:
+    custom_resources:
+      "accelerator_type:A100-40G": 1
+  min_workers: 0
+  max_workers: 8
+gcp_advanced_configurations_json:
+  instance_properties:
+    labels:
+      as-feature-multi-zone: 'true'
+      as-feature-enable-multi-az-serve: 'true'
+
+# 12 vCPU, 1 NVIDIA A100 80GB GPU, 170 GiB memory
+- name: gpu-worker-a100-80g
+  instance_type: a2-ultragpu-1g-nvidia-a100-80gb-1
+  resources:
+    cpu:
+    gpu:
+    memory:
+    object_store_memory:
+    custom_resources:
+      "accelerator_type:A100-80G": 1
+  min_workers: 0
+  max_workers: 4
+gcp_advanced_configurations_json:
+  instance_properties:
+    labels:
+      as-feature-multi-zone: 'true'
+      as-feature-enable-multi-az-serve: 'true'
