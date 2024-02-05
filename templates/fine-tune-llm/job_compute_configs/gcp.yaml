@@ -1,0 +1,33 @@
+compute_config:
+  allowed_azs:
+    - any
+  cloud: my-cloud # You may specify `cloud_id` instead
+  region: any
+  head_node_type:
+    instance_type: n2-standard-4
+    name: head_node
+  worker_node_types:
+    - instance_type: g2-standard-24-nvidia-l4-2
+      max_workers: 16
+      min_workers: 0
+      name: g2_l4_worker_node
+      resources:
+        custom_resources:
+          g2-standard-24-nvidia-l4-2: 2
+      use_spot: false
+    - instance_type: a2-highgpu-8g-nvidia-a100-40gb-8
+      max_workers: 4
+      min_workers: 0
+      name: a2_a100_worker_node
+      resources:
+        custom_resources:
+          a2-highgpu-8g-nvidia-a100-40gb-8: 8
+  gcp:
+    instance_properties:
+      labels:
+        as-feature-multi-zone: "true"
+runtime_env:
+  env_vars:
+    HF_HOME: /mnt/local_storage/.cache/huggingface
+    TUNE_RESULT_DIR: /mnt/local_storage
+max_retries: 0
