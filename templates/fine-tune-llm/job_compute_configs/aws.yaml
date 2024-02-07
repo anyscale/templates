@@ -1,8 +1,8 @@
 compute_config:
   allowed_azs:
     - any
-  cloud: <your-cloud-name> # You may specify `cloud_id` instead
-  region: us-west-2
+  cloud: my-cloud # You may specify `cloud_id` instead
+  region: any
   head_node_type:
     instance_type: m5.4xlarge
     name: head_node
