@@ -1,0 +1,16 @@
+model_id: meta-llama/Llama-2-70b-hf # <-- change this to the model you want to fine-tune
+train_path: s3://anyscale-wapo-collab/finetune_full_train.json # <-- change this to the path to your training data
+valid_path: s3://anyscale-wapo-collab/finetune_full_val.json # <-- change this to the path to your validation data. This is optional
+context_length: 4096 # <-- change this to the context length you want to use
+num_devices: 8 # <-- change this to total number of GPUs that you want to use
+num_epochs: 10 # <-- change this to the number of epochs that you want to train for
+train_batch_size_per_device: 1
+eval_batch_size_per_device: 1
+learning_rate: 5e-6
+num_checkpoints_to_keep: 1
+output_dir: /mnt/local_storage
+deepspeed:
+  config_path: deepspeed_configs/zero_3_llama_2_70b.json
+flash_attention_2: True
+worker_resources:
+  p4de.24xlarge: 1 # <-- this maps to job_compute_configs file's custom_resources so the appropriate nodes can scale up
