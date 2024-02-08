@@ -53,6 +53,7 @@ def generate_config(
     result_filename = f"./models/{model_part}_{accelerator}_tp{tp}.yaml"
     with open(result_filename, mode="w") as f:
         yaml.dump(config_template, f)
+        print(f"Output model config file saved to {result_filename}")
 
 
 
