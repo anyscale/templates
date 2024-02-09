@@ -15,3 +15,22 @@ dataset_size_scaling_factor: 10000
 flash_attention_2: true
 worker_resources:
   g5.12xlarge: 1 # <-- this maps to job_compute_configs file's custom_resources so the appropriate nodes can scale up
+lora_config:
+  r: 8
+  lora_alpha: 16
+  lora_dropout: 0.05
+  target_modules: 
+    - q_proj
+    - v_proj
+    - k_proj
+    - o_proj
+    - gate_proj
+    - up_proj
+    - down_proj
+    - embed_tokens
+    - lm_head
+  task_type: "CAUSAL_LM"
+  modules_to_save: []
+  bias: "none"
+  fan_in_fan_out: false
+  init_lora_weights: true
