@@ -21,16 +21,16 @@ directory for different base models and instance types. You can use these as a
 starting point for your own fine-tuning jobs.
 
 First, please go to `job_compute_configs/aws.yaml` or `job_compute_configs/gcp.yaml`
-and specify your cloud name under the `cloud` field.
+and specify your cloud_id and region under the `cloud_id` and `region` fields.
 
-Then, please get an WandB API key from [WandB](https://wandb.ai/authorize).
+[Optional] you can get a WandB API key from [WandB](https://wandb.ai/authorize) to track the finetuning process.
 
 Next, you can launch a fine-tuning job where the WandB API key is passed as an environment variable.
 
 ```shell
 # Launch a fine-tuning job for Llama 7b with 16 g5.4xlarge instances
 
-WANDB_API_KEY={YOUR_WANDB_API_KEY} llmforge dev launch job_compute_configs/aws.yaml training_configs/llama-2-7b-512-16xg5_4xlarge.yaml
+WANDB_API_KEY={YOUR_WANDB_API_KEY} python train.py job_compute_configs/aws.yaml training_configs/full_param/llama-2-7b-512-16xg5_4xlarge.yaml
 ```
 
 Once you submit the command, you can monitor the progress of the job in

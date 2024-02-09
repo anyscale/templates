@@ -26,6 +26,10 @@ def main():
     job_config["entrypoint"] = entrypoint
     job_config["name"] = Path(finetune_config_path).stem
 
+    api_key = os.environ.get("WANDB_API_KEY")
+    if api_key:
+        job_config["runtime_env"]["env_vars"]["WANDB_API_KEY"] = api_key
+
     with tempfile.NamedTemporaryFile(
         mode="w+", delete=False, dir=".", suffix=".yaml"
     ) as temp_file:
