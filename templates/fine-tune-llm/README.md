@@ -28,17 +28,30 @@ and specify your cloud_id and region under the `cloud_id` and `region` fields.
 Next, you can launch a fine-tuning job where the WandB API key is passed as an environment variable.
 
 ```shell
-# Launch a fine-tuning job for Llama 7b with 16 g5.4xlarge instances
+# Launch a full-param fine-tuning job for Llama 7b with 16 g5.4xlarge instances
 
 WANDB_API_KEY={YOUR_WANDB_API_KEY} python train.py job_compute_configs/aws.yaml training_configs/full_param/llama-2-7b-512-16xg5_4xlarge.yaml
+
+# Launch a lora fine-tuning job for Llama 7b with 16 g5.4xlarge instances
+WANDB_API_KEY={YOUR_WANDB_API_KEY} python train.py job_compute_configs/aws.yaml training_configs/lora/llama-2-7b-512-16xg5_4xlarge.yaml
 ```
 
 Once you submit the command, you can monitor the progress of the job in
 the provided job link. Generally a full-param fine-tuning job will take a few hours.
 
-# Step 2 - Import the model
+Depending on whether you are running lora or full-param fine-tuning, you can continue
+with step 2(a) or step 2(b).
 
-Once the fine-tuning job is complete, you can view the stored model weight at the very end of the job logs. Here is an example finetuning job output:
+# Step 2(a) - Serve the Lora finetuned model
+
+When you run the fine-tuning job, you should get a checkpoint uri
+from the log `Note: Lora weights will also be stored under s3://anyscale-data-cld-id/org_id/cld_id/artifact_storage/fine_tuning/ to allow multi serving.`.
+Given this URI, you can specify it as the `dynamic_lora_loading_path` in the serving
+workspace template.
+
+# Step 2(b) - Serve the full-param finetuned model. Import the model
+
+Once the fine-tuning job is complete, you can view the stored full-param fine-tuned model weight at the very end of the job logs. Here is an example finetuning job output:
 
 ```shell
 
@@ -55,7 +68,7 @@ prefix `s3://` or `gs://`.
 For the generation config, you can reference example configs
 [here](https://docs.anyscale.com/endpoints/model-serving/import-model#generation-configuration-examples).
 
-# Step 3 - Deploy the model on Endpoints
+# Step 3 - Deploy the full-param finetuned model on Endpoints
 
 Once the model is imported, you can deploy it on Endpoints by creating a
 new endpoint or adding it to an existing endpoint. You can follow the
