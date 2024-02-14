@@ -12,8 +12,8 @@ def _read_yaml_file(file_path):
 
 
 def _get_lora_storage_uri() -> str:
-    artifact_storage = os.environ.get("ANYSCALE_CLOUD_STORAGE_BUCKET")
-    artifact_storage = artifact_storage.rstrp("/")
+    artifact_storage = os.environ.get("ANYSCALE_ARTIFACT_STORAGE")
+    artifact_storage = artifact_storage.rstrip("/")
     return f"{artifact_storage}/fine_tuning/"
 
 
@@ -41,12 +41,12 @@ def main():
     training_config = _read_yaml_file(finetune_config_path)
 
     is_lora = "lora_config" in training_config
+    entrypoint = f"llmforge dev finetune {finetune_config_path}"
     if is_lora:
-        storage_uri = _get_lora_storage_uri()
-        entrypoint = f"llmforge dev finetune {finetune_config_path} --forward-best-checkpoint-remote-uri={storage_uri}"
-        print(f"Note: Lora weights will also be stored under {storage_uri} to allow multi serving.")
+        lora_storage_uri = _get_lora_storage_uri()
+        entrypoint += f" --forward-best-checkpoint-remote-uri={lora_storage_uri}"
     else:
-        entrypoint = f"llmforge dev finetune {finetune_config_path}"
+        lora_storage_uri = None
 
     job_config["entrypoint"] = entrypoint
     job_config["name"] = Path(finetune_config_path).stem
@@ -66,6 +66,10 @@ def main():
     # Call `anyscale job submit` on the temporary YAML file
     try:
         subprocess.run(["anyscale", "job", "submit", temp_file_name], check=True)
+        if lora_storage_uri:
+            print(
+                f"Note: Lora weights will also be stored under {lora_storage_uri} to allow multi serving."
+            )
     finally:
         # Clean up by deleting the temporary file
         os.remove(temp_file_name)
