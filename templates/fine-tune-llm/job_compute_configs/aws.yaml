@@ -48,7 +48,7 @@ compute_config:
       - ResourceType: instance
         Tags:
           - Key: as-feature-multi-zone
-            Value: True
+            Value: "true"
 runtime_env:
   env_vars:
     HF_HOME: /mnt/local_storage/.cache/huggingface
