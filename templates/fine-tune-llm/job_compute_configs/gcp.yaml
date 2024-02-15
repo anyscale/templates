@@ -1,8 +1,8 @@
 compute_config:
   allowed_azs:
     - any
-  cloud: my-cloud # You may specify `cloud_id` instead
-  region: any
+  cloud_id: cld_id # You may specify `cloud_id` instead
+  region: us-west1
   head_node_type:
     instance_type: n2-standard-4
     name: head_node
@@ -22,10 +22,15 @@ compute_config:
       resources:
         custom_resources:
           a2-highgpu-8g-nvidia-a100-40gb-8: 8
-  gcp:
+  gcp_advanced_configurations_json:
     instance_properties:
       labels:
         as-feature-multi-zone: "true"
+      disks:
+        - boot: true
+          auto_delete: true
+          initialize_params:
+            disk_size_gb: 250
 runtime_env:
   env_vars:
     HF_HOME: /mnt/local_storage/.cache/huggingface

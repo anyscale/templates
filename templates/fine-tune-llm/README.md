@@ -49,6 +49,9 @@ from the log `Note: Lora weights will also be stored under s3://anyscale-data-cl
 Given this URI, you can specify it as the `dynamic_lora_loading_path` in the serving
 workspace template.
 
+The model id follows the convention of `{base_model_id}:{suffix}:{id}`.
+For instance, the model id `meta-llama/Llama-2-7b-chat-hf:my_lora:csdu5` would be stored under `s3://anyscale-data-cld-id/org_id/cld_id/artifact_storage/fine_tuning/meta-llama/Llama-2-7b-chat-hf:my_lora:csdu5`.
+
 # Step 2(b) - Serve the full-param finetuned model. Import the model
 
 Once the fine-tuning job is complete, you can view the stored full-param fine-tuned model weight at the very end of the job logs. Here is an example finetuning job output:
@@ -75,6 +78,11 @@ new endpoint or adding it to an existing endpoint. You can follow the
 endpoints page guide to query the endpoint ([docs](https://docs.anyscale.com/endpoints/model-serving/get-started#deploy-an-anyscale-private-endpoint)).
 
 # Frequently asked questions
+
+### Where can I view the bucket where my lora weights are stored?
+
+All the lora weights are stored under the uri `${ANYSCALE_ARTIFACT_STORAGE}/fine_tuning`
+where `ANYSCALE_ARTIFACT_STORAGE` is an environmental variable.
 
 ### How can I fine-tune using my own data?
 
