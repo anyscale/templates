@@ -69,7 +69,7 @@ class StableDiffusionV2:
             model_id, scheduler=scheduler, revision="fp16", torch_dtype=torch.float16
         )
         self.pipe = self.pipe.to("cuda")
-        
+
 
     def generate(self, prompt: str, img_size: int = 512):
         assert len(prompt), "prompt parameter cannot be empty"
@@ -79,6 +79,6 @@ class StableDiffusionV2:
 
         return image
 
-# Bind the deployments to arguments that will be passed into its constructor. 
+# Bind the deployments to arguments that will be passed into its constructor.
 # This defines a Ray Serve application that we can run locally or deploy to production.
 stable_diffusion_app = APIIngress.bind(StableDiffusionV2.bind())
