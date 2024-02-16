@@ -1,10 +1,10 @@
 # Serving LoRA Models
 
-We support serving multiple LoRA adapters with a common base model in the same request batch which allows you to serve a wide variety of use-cases without increasing hardware spend. In addition, we use Serve multiplexing to reduce the number of swaps for LoRA adapters. There is a slight latency overhead to serving a LoRA model compared to the base model, typically 10-20%. 
+We support serving multiple LoRA adapters with a common base model in the same request batch which allows you to serve a wide variety of use-cases without increasing hardware spend. In addition, we use Serve multiplexing to reduce the number of swaps for LoRA adapters. There is a slight latency overhead to serving a LoRA model compared to the base model, typically 10-20%.
 
 # Setup LoRA Model Deployment
 
-`lora-serve.yaml` and `lora-query.py` are provided for you in this template. 
+`lora-serve.yaml` and `lora-query.py` are provided for you in this template.
 
 In order to deploy LoRA adapters you would need to update `lora-serve.yaml`:
 1. `dynamic_lora_loading_path` - The LoRA checkpoints are loaded from the artifact storage path specified in `dynamic_lora_loading_path`. The path to the checkpoints must be in the following format: `{dynamic_lora_loading_path}/{base_model_id}:{suffix}:{id}`, e.g. `s3://my-bucket/my-lora-checkouts/meta-llama/Llama-2-7b-chat-hf:lora-model:1234`. The models can be loaded from any accessible AWS S3 or Google Cloud Storage bucket. You can use an existing bucket where you have the LoRA models or can upload the models to `$ANYSCALE_ARTIFACT_STORAGE` already provided by Anyscale Workspace. New models can be uploaded to the `dynamic_lora_loading_path` dynamically before or after the Serve application is launched.

@@ -12,7 +12,7 @@ import torchvision.models as models
 from torchvision.models import ResNet50_Weights
 from torchvision import transforms
 import io
-import onnxruntime 
+import onnxruntime
 import numpy as np
 from fastapi import FastAPI
 from fastapi.responses import Response
@@ -66,5 +66,5 @@ class Classifier:
         output = self.softmax(output)
         ind = np.argmax(output)
         return self.categories[ind]
-        
+
 model = Classifier.bind()
