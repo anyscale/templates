@@ -49,7 +49,7 @@ class APIIngress:
 
 
 @serve.deployment(
-    ray_actor_options={"num_gpus": 1, 
+    ray_actor_options={"num_gpus": 1,
         "num_cpus": 1,  # Set the number of GPUs and CPUs required for each model replica.
         "accelerator_type": "A10G"},   # Set accelerator type based on GPU type to use (T4, A10G, L4, V100, A100-40G or A100-80G)
     max_concurrent_queries=2,   # Maximum number of queries that are sent to a replica of this deployment without receiving a response.
@@ -71,7 +71,7 @@ class StableDiffusionV2:
             model_id, scheduler=scheduler, revision="fp16", torch_dtype=torch.float16
         )
         self.pipe = self.pipe.to("cuda")
-        
+
 
     def generate(self, prompt: str, img_size: int = 512):
         assert len(prompt), "prompt parameter cannot be empty"
@@ -81,6 +81,6 @@ class StableDiffusionV2:
 
         return image
 
-# Bind the deployments to arguments that will be passed into its constructor. 
+# Bind the deployments to arguments that will be passed into its constructor.
 # This defines a Ray Serve application that we can run locally or deploy to production.
 stable_diffusion_app = APIIngress.bind(StableDiffusionV2.bind())

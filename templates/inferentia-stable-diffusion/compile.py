@@ -1,5 +1,5 @@
 import os
- 
+
 import numpy as np
 import torch
 import torch.nn as nn
@@ -14,7 +14,7 @@ print(diffusers.__version__)
 from diffusers import DiffusionPipeline
 from diffusers.models.unet_2d_condition import UNet2DConditionOutput
 from diffusers.models.attention_processor import Attention
- 
+
 from matplotlib import pyplot as plt
 from matplotlib import image as mpimg
 import time
@@ -23,7 +23,7 @@ from IPython.display import clear_output
 
 clear_output(wait=False)
 
-def get_attention_scores_neuron(self, query, key, attn_mask):    
+def get_attention_scores_neuron(self, query, key, attn_mask):
     if(query.size() == key.size()):
         attention_scores = custom_badbmm(
             key,
@@ -39,21 +39,21 @@ def get_attention_scores_neuron(self, query, key, attn_mask):
             self.scale
         )
         attention_probs = attention_scores.softmax(dim=-1)
-  
+
     return attention_probs
- 
+
 
 def custom_badbmm(a, b, scale):
     bmm = torch.bmm(a, b)
     scaled = bmm * scale
     return scaled
- 
+
 
 class UNetWrap(nn.Module):
     def __init__(self, unet):
         super().__init__()
         self.unet = unet
- 
+
     def forward(self, sample, timestep, encoder_hidden_states, text_embeds=None, time_ids=None):
         out_tuple = self.unet(sample,
                               timestep,
@@ -61,8 +61,8 @@ class UNetWrap(nn.Module):
                               added_cond_kwargs={"text_embeds": text_embeds, "time_ids": time_ids},
                               return_dict=False)
         return out_tuple
-    
-    
+
+
 class NeuronUNet(nn.Module):
     def __init__(self, unetwrap):
         super().__init__()
@@ -71,7 +71,7 @@ class NeuronUNet(nn.Module):
         self.in_channels = unetwrap.unet.in_channels
         self.add_embedding = unetwrap.unet.add_embedding
         self.device = unetwrap.unet.device
- 
+
     def forward(self, sample, timestep, encoder_hidden_states, added_cond_kwargs=None, return_dict=False, cross_attention_kwargs=None):
         sample = self.unetwrap(sample,
                                timestep.float().expand((sample.shape[0],)),
@@ -80,7 +80,7 @@ class NeuronUNet(nn.Module):
                                added_cond_kwargs["time_ids"])[0]
         return UNet2DConditionOutput(sample=sample)
 
-    
+
 COMPILER_WORKDIR_ROOT = 'sdxl_base_and_refiner_compile_dir_1024'
 
 # Model ID for SD XL version pipeline
@@ -171,8 +171,8 @@ del pipe
 # # Compile vae decoder
 decoder_in = torch.randn([1, 4, 128, 128])
 decoder_neuron = torch_neuronx.trace(
-    decoder, 
-    decoder_in, 
+    decoder,
+    decoder_in,
     compiler_workdir=os.path.join(COMPILER_WORKDIR_ROOT, 'vae_decoder'),
 )
 
@@ -195,7 +195,7 @@ del pipe
 # Compile vae post_quant_conv
 post_quant_conv_in = torch.randn([1, 4, 128, 128])
 post_quant_conv_neuron = torch_neuronx.trace(
-    post_quant_conv, 
+    post_quant_conv,
     post_quant_conv_in,
     compiler_workdir=os.path.join(COMPILER_WORKDIR_ROOT, 'vae_post_quant_conv'),
 )
@@ -207,5 +207,3 @@ torch.jit.save(post_quant_conv_neuron, post_quant_conv_filename)
 # delete unused objects
 del post_quant_conv
 del post_quant_conv_neuron
-
-

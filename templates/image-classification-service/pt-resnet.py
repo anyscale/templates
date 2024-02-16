@@ -45,5 +45,5 @@ class Classifier:
             sm_output = torch.nn.functional.softmax(output[0], dim=0)
         ind = torch.argmax(sm_output)
         return self.categories[ind]
-        
+
 model = Classifier.bind()
