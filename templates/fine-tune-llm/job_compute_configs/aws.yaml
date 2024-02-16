@@ -1,8 +1,8 @@
 compute_config:
   allowed_azs:
     - any
-  cloud_id: cld_ldm5ez4edlp7yh4yiakp2u294w # You may specify `cloud_id` instead
-  region: us-west-2
+  cloud_id: cld_id # You should specify your `cloud_id` from the `clouds` page
+  region: us-west-2  # You should specify your `region`
   head_node_type:
     instance_type: m5.4xlarge
     name: head_node
@@ -48,7 +48,7 @@ compute_config:
       - ResourceType: instance
         Tags:
           - Key: as-feature-multi-zone
-            Value: True
+            Value: "true"
 runtime_env:
   env_vars:
     HF_HOME: /mnt/local_storage/.cache/huggingface
