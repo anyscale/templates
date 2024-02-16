@@ -23,6 +23,7 @@ def generate_model_tag(model_id: str) -> str:
     Constructs a finetuned model ID based on the Anyscale endpoints convention.
     """
     username = os.environ.get("ANYSCALE_USERNAME")
+    model_id = model_id.split("/")[-1]
     if username:
         username = username[:5]
     else:
