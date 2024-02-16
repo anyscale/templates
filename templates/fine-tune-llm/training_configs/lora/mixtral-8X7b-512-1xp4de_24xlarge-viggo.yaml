@@ -10,7 +10,7 @@ num_checkpoints_to_keep: 1
 no_gradient_checkpoint: False
 output_dir: /mnt/local_storage
 deepspeed:
-  config_path: deepspeed_configs/zero_3_llama_2_70b.json 
+  config_path: deepspeed_configs/zero_3_llama_2_70b.json
 worker_resources:
   p4d.24xlarge: 1
 flash_attention_2: True
@@ -19,7 +19,7 @@ lora_config:
   r: 8
   lora_alpha: 16
   lora_dropout: 0.05
-  target_modules: 
+  target_modules:
     - q_proj
     - v_proj
     - k_proj

@@ -87,7 +87,7 @@ worker_node_types:
   max_workers: 100
   use_spot: true
   fallback_to_ondemand: true
-- name: gpu-worker-a100-40g-1 
+- name: gpu-worker-a100-40g-1
   instance_type: a2-highgpu-1g-nvidia-a100-40gb-1
   resources:
     cpu:
@@ -98,7 +98,7 @@ worker_node_types:
       "accelerator_type:A100-40G": 1
   min_workers: 0
   max_workers: 100
-- name: gpu-worker-a100-40g-2 
+- name: gpu-worker-a100-40g-2
   instance_type: a2-highgpu-2g-nvidia-a100-40gb-2
   resources:
     cpu:
@@ -109,7 +109,7 @@ worker_node_types:
       "accelerator_type:A100-40G": 1
   min_workers: 0
   max_workers: 100
-- name: gpu-worker-a100-40g-4 
+- name: gpu-worker-a100-40g-4
   instance_type: a2-highgpu-4g-nvidia-a100-40gb-4
   resources:
     cpu:
@@ -120,7 +120,7 @@ worker_node_types:
       "accelerator_type:A100-40G": 1
   min_workers: 0
   max_workers: 100
-- name: gpu-worker-a100-40g-8 
+- name: gpu-worker-a100-40g-8
   instance_type: a2-highgpu-8g-nvidia-a100-40gb-8
   resources:
     cpu:
