@@ -6,6 +6,10 @@ These templates are a set of minimal examples & tutorials for customers to run o
 
 If the template is generic to Ray & Ray libraries, please consider adding the template in: https://github.com/ray-project/ray/tree/master/doc/source/templates
 
+To setup the environment:
+1. Install pre-commit `pip install pre-commit`
+2. Install the git hook scripts `pre-commit install`
+
 
 To add a template:
 
@@ -23,10 +27,8 @@ To add a template:
     Your template does not need to be a Jupyter notebook. It can also be presented as a
     Python script.
 
-    All templates MUST have a `README.md` file.
+    All templates MUST have a `README.md` or a `README.ipynb` file.
 
 2. Add your compute configuration under `configs/<your-template-name>` (for both AWS and GCE).
 
 3. Update the product repo `backend/workspace-templates.yaml` to point to the new template added here after being merged.
-
-4. Coming soon: update the integration tests in the product repo.
