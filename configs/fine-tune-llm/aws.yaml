@@ -1,0 +1,4 @@
+head_node_type:
+  name: head-node-type
+  instance_type: m5.xlarge
+worker_node_types: []

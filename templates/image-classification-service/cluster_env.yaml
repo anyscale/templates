@@ -10,10 +10,10 @@ python:
   pip_packages: []
   conda_packages: []
 
-post_build_cmds: 
-- pip uninstall -y onnxruntime 
+post_build_cmds:
+- pip uninstall -y onnxruntime
 - pip install -U torchvision
 - pip install -U onnxruntime-gpu
 - pip install -U torch_tensorrt
-- pip install -U tensorrt 
+- pip install -U tensorrt
 - pip install -U python-multipart

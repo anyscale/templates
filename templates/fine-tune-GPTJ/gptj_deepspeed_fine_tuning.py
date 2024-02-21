@@ -41,9 +41,9 @@ eval_ds = ray_datasets["validation"]
 #---------------------EDIT AND UPDATE WITH YOUR DATASET HERE---------------------#
 
 
-# Because the dataset is represented by a single large string, we will need to do some preprocessing. 
+# Because the dataset is represented by a single large string, we will need to do some preprocessing.
 # For that, we will define two Ray AIR Preprocessors using the BatchMapper API, allowing us to define functions that will be applied on batches of data.
-# The split_text function will take the single string and split it into separate lines, removing empty lines and character names ending with ‘:’ (eg. ‘ROMEO:’). 
+# The split_text function will take the single string and split it into separate lines, removing empty lines and character names ending with ‘:’ (eg. ‘ROMEO:’).
 # The tokenize function will take the lines and tokenize them using the 🤗 Tokenizer associated with the model, ensuring each entry has the same length (block_size) by padding and truncating.
 block_size = 512
 
@@ -75,12 +75,12 @@ def tokenize(batch: pd.DataFrame) -> dict:
 splitter = BatchMapper(split_text, batch_format="pandas")
 tokenizer = BatchMapper(tokenize, batch_format="pandas")
 
-# We can now configure Ray AIR's ray.train.huggingface.TransformersTrainer to perform distributed fine-tuning of the model. 
-# In order to do that, we specify a trainer_init_per_worker function, which creates a 🤗 Transformers Trainer that will be distributed by Ray using Distributed Data Parallelism (using PyTorch Distributed backend internally). 
+# We can now configure Ray AIR's ray.train.huggingface.TransformersTrainer to perform distributed fine-tuning of the model.
+# In order to do that, we specify a trainer_init_per_worker function, which creates a 🤗 Transformers Trainer that will be distributed by Ray using Distributed Data Parallelism (using PyTorch Distributed backend internally).
 # This means that each worker will have its own copy of the model, but operate on different data, At the end of each step, all the workers will sync gradients.
 
 # Because GPT-J is a relatively large model, it may not be possible to fit it on smaller GPU types (<=16 GB GRAM).
-#  To deal with that issue, we can use DeepSpeed, a library to optimize the training process and allow us to (among other things) offload and partition optimizer and parameter states, reducing GRAM usage. 
+#  To deal with that issue, we can use DeepSpeed, a library to optimize the training process and allow us to (among other things) offload and partition optimizer and parameter states, reducing GRAM usage.
 # Furthermore, DeepSpeed ZeRO Stage 3 allows us to load large models without running out of memory.
 
 
@@ -189,10 +189,10 @@ def trainer_init_per_worker(train_dataset, eval_dataset=None, **config):
     )
     return trainer
 
-# With our trainer_init_per_worker complete, we can now instantiate the ray.train.huggingface.TransformersTrainer. 
+# With our trainer_init_per_worker complete, we can now instantiate the ray.train.huggingface.TransformersTrainer.
 # Aside from the function, we set the scaling_config, controlling the amount of workers and resources used, and the datasets we will use for training and evaluation.
 
-# We pass the preprocessors we have defined earlier as an argument, wrapped in a ray.data.preprocessors.chain.Chain. 
+# We pass the preprocessors we have defined earlier as an argument, wrapped in a ray.data.preprocessors.chain.Chain.
 # The preprocessor will be included with the returned ray.air.checkpoint.Checkpoint, meaning it will also be applied during inference.
 
 trainer = TransformersTrainer(
@@ -215,6 +215,6 @@ trainer = TransformersTrainer(
     preprocessor=Chain(splitter, tokenizer),
 )
 
-#Finally, we call the ray.train.huggingface.TransformersTrainer.fit method to start training with Ray AIR. 
+#Finally, we call the ray.train.huggingface.TransformersTrainer.fit method to start training with Ray AIR.
 # We will save the ray.air.Result object to a variable so we can access metrics and checkpoints.
 results = trainer.fit()

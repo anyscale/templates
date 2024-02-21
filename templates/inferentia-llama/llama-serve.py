@@ -6,7 +6,7 @@ from fastapi import FastAPI
 from fastapi.responses import Response
 import time
 import copy
-import ray 
+import ray
 
 app = FastAPI()
 
@@ -16,7 +16,7 @@ class Llama:
     def __init__(self):
         self.model = NeuronModelForCausalLM.from_pretrained('aws-neuron/Llama-2-7b-hf-neuron-budget')
         self.tokenizer = AutoTokenizer.from_pretrained("aws-neuron/Llama-2-7b-hf-neuron-budget")
-    
+
     @app.get("/")
     def generate(self, prompt):
         inputs = self.tokenizer(prompt, return_tensors="pt")
@@ -28,6 +28,6 @@ class Llama:
                                      top_p=0.9)
         return self.tokenizer.batch_decode(outputs, skip_special_tokens=True)
 
-    
+
 
 lldep = Llama.bind()
