@@ -10,7 +10,7 @@ The high-level steps involved are:
 ![Embeddings Computation Overview](diagram.jpg "Embeddings Computation Overview")
 
 ## Running the code
-The provided script will work as-is; no need to modify anything the underlying script, unless you want to customize the logic to meet your specific requirements. 
+The provided script will work as-is; no need to modify anything the underlying script, unless you want to customize the logic to meet your specific requirements.
 
 Sample usage:
 ```
@@ -55,7 +55,7 @@ For example, if the input file contains columns `["text", "rank", "is_dupe"]`:
 - With `--output-text-embeddings-only` flag: output file would have columns `["id", "text", "values"]`.
 
 ## Sample Input / Output Files
-We have also provided **sample parquet files** under `sample_input/` and corresponding output files under `sample_output/` (both of the input files contain the same raw text so the output embeddings are the same, but the `-multi-column.parquet` file has additional metadata). 
+We have also provided **sample parquet files** under `sample_input/` and corresponding output files under `sample_output/` (both of the input files contain the same raw text so the output embeddings are the same, but the `-multi-column.parquet` file has additional metadata).
 
 Examining the sample input file:
 
@@ -64,7 +64,7 @@ Examining the sample input file:
 
 >>> sample_input
 Dataset(num_blocks=768, num_rows=10, schema={content: string})
-``` 
+```
 
 Examining the sample (expected) output file:
 
