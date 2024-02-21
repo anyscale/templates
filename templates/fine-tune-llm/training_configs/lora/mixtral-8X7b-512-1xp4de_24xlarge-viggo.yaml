@@ -1,0 +1,34 @@
+model_id: mistralai/Mixtral-8x7B-Instruct-v0.1
+train_path: s3://air-example-data/viggo/train.jsonl
+valid_path: s3://air-example-data/viggo/valid.jsonl
+context_length: 4096
+num_devices: 8
+train_batch_size_per_device: 4
+eval_batch_size_per_device: 4
+learning_rate: 1e-4
+num_checkpoints_to_keep: 1
+no_gradient_checkpoint: False
+output_dir: /mnt/local_storage
+deepspeed:
+  config_path: deepspeed_configs/zero_3_llama_2_70b.json
+worker_resources:
+  p4d.24xlarge: 1
+flash_attention_2: True
+padding: "max_length"
+lora_config:
+  r: 8
+  lora_alpha: 16
+  lora_dropout: 0.05
+  target_modules:
+    - q_proj
+    - v_proj
+    - k_proj
+    - o_proj
+    - embed_tokens
+    - lm_head
+  task_type: "CAUSAL_LM"
+  modules_to_save: []
+  bias: "none"
+  fan_in_fan_out: false
+  init_lora_weights: true
+dataset_size_scaling_factor: 1000

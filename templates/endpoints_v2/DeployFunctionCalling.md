@@ -21,11 +21,11 @@ For Example, you can see `models/mistral/mistralai--Mistral-7B-Instruct-v0.1_a10
     enable_json_logits_processors: true
 ```
 
-2. Set `standalone_function_calling_model: true` in top level configuration. 
+2. Set `standalone_function_calling_model: true` in top level configuration.
 
 # Step 2 - Deploying & Querying Function calling model
 
-`func_calling-serve.yaml` and `func_calling-query.py` are provided for you in this template. 
+`func_calling-serve.yaml` and `func_calling-query.py` are provided for you in this template.
 
 In order to deploy a model in function calling mode you need to edit `func_calling-serve.yaml`:
 Under `function_calling_models` add path to the model you want to use. You can add multiple model

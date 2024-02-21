@@ -5,10 +5,10 @@ Each model is defined by a YAML configuration file in the `models` directory.
 ## Modify an existing model
 
 To modify an existing model, simply edit the YAML file for that model.
-Each config file consists of three sections: 
+Each config file consists of three sections:
 
-- `deployment_config`, 
-- `engine_config`, 
+- `deployment_config`,
+- `engine_config`,
 - `scaling_config`.
 
 It's best to check out examples of existing models to see how they are configured.
@@ -24,7 +24,7 @@ and specifies how to [auto-scale the model](https://docs.ray.io/en/latest/serve/
 * `max_concurrent_queries` - Maximum number of queries that a Ray Serve replica can process at a time. Additional queries are queued at the proxy.
 * `target_num_ongoing_requests_per_replica` - Guides the auto-scaling behavior. If the average number of ongoing requests across replicas is above this number, Ray Serve attempts to scale up the number of replicas, and vice-versa for downscaling. We typically set this to ~40% of the `max_concurrent_queries`.
 * `ray_actor_options` - Similar to the `resources_per_worker` configuration in the `scaling_config`. Refer to the `scaling_config` section for more guidance.
-* `smoothing_factor` - The multiplicative factor to amplify or moderate each upscaling or downscaling decision. A value less than 1.0 will slow down the scaling decision made in each step. See [advanced auto-scaling guide](https://docs.ray.io/en/latest/serve/advanced-guides/advanced-autoscaling.html#optional-define-how-the-system-reacts-to-changing-traffic) for more details. 
+* `smoothing_factor` - The multiplicative factor to amplify or moderate each upscaling or downscaling decision. A value less than 1.0 will slow down the scaling decision made in each step. See [advanced auto-scaling guide](https://docs.ray.io/en/latest/serve/advanced-guides/advanced-autoscaling.html#optional-define-how-the-system-reacts-to-changing-traffic) for more details.
 
 ## Engine config
 
@@ -36,7 +36,7 @@ RayLLM supports continuous batching, meaning incoming requests are processed as 
 
 * `model_id` is the ID that refers to the model in the RayLLM or OpenAI API.
 * `type` is the type of  inference engine. Only `VLLMEngine` is currently supported.
-* `engine_kwargs` and `max_total_tokens` are configuration options for the inference engine (e.g. gpu memory utilization, quantization, max number of concurrent sequences). These options may vary depending on the hardware accelerator type and model size. We have tuned the parameters in the configuration files included in RayLLM for you to use as reference. 
+* `engine_kwargs` and `max_total_tokens` are configuration options for the inference engine (e.g. gpu memory utilization, quantization, max number of concurrent sequences). These options may vary depending on the hardware accelerator type and model size. We have tuned the parameters in the configuration files included in RayLLM for you to use as reference.
 * `generation` contains configurations related to default generation parameters such as `prompt_format` and `stopping_sequences`.
 * `hf_model_id` is the Hugging Face model ID. If not specified, defaults to `model_id`.
 * `runtime_env` is a dictionary that contains Ray runtime environment configuration. It allows you to set per-model pip packages and environment variables. See [Ray documentation on Runtime Environments](https://docs.ray.io/en/latest/ray-core/handling-dependencies.html#runtime-environments) for more information.
@@ -51,7 +51,7 @@ Finally, the `scaling_config` section specifies what resources should be used to
 * `num_gpus_per_worker` - Number of GPUs to be allocated per worker. This should always be 1.
 * `num_cpus_per_worker` - Number of CPUs to be allocated per worker. Usually set to 8.
 * `placement_strategy` - Ray supports different [placement strategies](https://docs.ray.io/en/latest/ray-core/scheduling/placement-group.html#placement-strategy) for guiding the physical distribution of workers. To ensure all workers are on the same node, use "STRICT_PACK".
-* `resources_per_worker` - we use `resources_per_worker` to set [Ray custom resources](https://docs.ray.io/en/latest/ray-core/scheduling/resources.html#id1) and place the models on specific node types. An example configuration of `resources_per_worker` involves setting `accelerator_type:L4` to 0.001 for a Llama-2-7b model to be deployed on an L4 GPU. This must always be set to 0.001. The `num_gpus_per_worker` configuration along with number of GPUs available on the node will determine the number of workers Ray schedules on the node. The supported accelerator types are: T4, L4, A10G, A100-40G and A100-80G.  
+* `resources_per_worker` - we use `resources_per_worker` to set [Ray custom resources](https://docs.ray.io/en/latest/ray-core/scheduling/resources.html#id1) and place the models on specific node types. An example configuration of `resources_per_worker` involves setting `accelerator_type:L4` to 0.001 for a Llama-2-7b model to be deployed on an L4 GPU. This must always be set to 0.001. The `num_gpus_per_worker` configuration along with number of GPUs available on the node will determine the number of workers Ray schedules on the node. The supported accelerator types are: T4, L4, A10G, A100-40G and A100-80G.
 
 ## My deployment isn't starting/working correctly, how can I debug?
 

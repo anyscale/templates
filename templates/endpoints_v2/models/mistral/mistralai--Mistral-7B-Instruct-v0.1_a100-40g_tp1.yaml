@@ -43,4 +43,3 @@ scaling_config:
   resources_per_worker:
     "accelerator_type:A100-40G": 0.001
 standalone_function_calling_model: true
-
