@@ -87,11 +87,12 @@ def main():
         subprocess.run(["anyscale", "job", "submit", temp_file_name], check=True)
         if lora_storage_uri:
             print(
-                f"Note: Lora weights will also be stored under {lora_storage_uri} to allow multi serving."
+                f"Note: Lora weights will also be stored in path {lora_storage_uri} under {model_tag} bucket."
             )
     finally:
         # Clean up by deleting the temporary file
         os.remove(temp_file_name)
+        pass
 
 
 if __name__ == "__main__":
