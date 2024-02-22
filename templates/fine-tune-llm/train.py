@@ -60,7 +60,7 @@ def main():
 
     model_tag = generate_model_tag(training_config["model_id"])
     entrypoint += f" --model-tag={model_tag}"
-    
+
     if is_lora:
         lora_storage_uri = _get_lora_storage_uri()
         entrypoint += f" --forward-best-checkpoint-remote-uri={lora_storage_uri}"
