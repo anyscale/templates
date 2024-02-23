@@ -8,6 +8,7 @@ train_batch_size_per_device: 8
 eval_batch_size_per_device: 8
 learning_rate: 5e-6
 num_checkpoints_to_keep: 1
+dataset_size_scaling_factor: 10000
 output_dir: /mnt/local_storage
 deepspeed:
   config_path: deepspeed_configs/zero_3_llama_2_13b.json
