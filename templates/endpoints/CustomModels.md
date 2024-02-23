@@ -1,11 +1,11 @@
 # Adding a new model
 
-RayLLM supports fine-tuned versions of models in the `models` directory as well as model architectures supported by [vLLM](https://docs.vllm.ai/en/latest/models/supported_models.html). You can either bring a model from HuggingFace or artifact storage like S3, GCS. 
+RayLLM supports fine-tuned versions of models in the `models` directory as well as model architectures supported by [vLLM](https://docs.vllm.ai/en/latest/models/supported_models.html). You can either bring a model from HuggingFace or artifact storage like S3, GCS.
 
 ## Configuring a new model
 
 To add an entirely new model to the zoo, you will need to create a new YAML file.
-This file should follow the naming convention 
+This file should follow the naming convention
 `<organisation-name>--<model-name>-<model-parameters>-<extra-info>.yaml`. We recommend using one of the existing models as a template (ideally, one that is the same architecture and number of parameters as the model you are adding). The examples in the `models` directory should help you get started. You can look at the [Advanced Model Configs](./AdvancedModelConfigs.md) for more details on these configurations.
 
 ```yaml
@@ -75,7 +75,7 @@ scaling_config:
 
 ```
 
-## Adding a private model 
+## Adding a private model
 
 For loading a model from S3 or GCS, set `engine_config.s3_mirror_config.bucket_uri` or `engine_config.gcs_mirror_config.bucket_uri` to point to a folder containing your model and tokenizer files (`config.json`, `tokenizer_config.json`, `.bin`/`.safetensors` files, etc.) and set `engine_config.model_id` to any ID you desire in the `organization/model` format, eg. `myorganization/llama2-finetuned`. The model will be downloaded to a folder in the `<TRANSFORMERS_CACHE>/models--<organization-name>--<model-name>/snapshots/<HASH>` directory on each node in the cluster. `<HASH>` will be determined by the contents of `hash` file in the S3 folder, or default to `0000000000000000000000000000000000000000`. See the [HuggingFace transformers documentation](https://huggingface.co/docs/transformers/main/en/installation#cache-setup).
 

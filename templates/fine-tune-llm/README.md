@@ -37,8 +37,11 @@ WANDB_API_KEY={YOUR_WANDB_API_KEY} python train.py job_compute_configs/aws.yaml 
 WANDB_API_KEY={YOUR_WANDB_API_KEY} python train.py job_compute_configs/aws.yaml training_configs/lora/llama-2-7b-512-16xg5_4xlarge.yaml
 ```
 
-Once you submit the command, you can monitor the progress of the job in
-the provided job link. Generally a full-param fine-tuning job will take a few hours.
+Once you submit the command, in the terminal you will seen the link to your finetuning job. Ex: 
+```
+View the job in the UI at https://console.anyscale.com/jobs/prodjob_62is21vur3fwl5y5xkc9u1t3ll
+```
+You can now monitor the progress of the job in the provided job link. Generally a full-param fine-tuning job will take a few hours.
 
 Depending on whether you are running lora or full-param fine-tuning, you can continue
 with step 2(a) or step 2(b).
@@ -47,11 +50,19 @@ with step 2(a) or step 2(b).
 
 When you run the fine-tuning job, you should get a checkpoint uri
 from the log `Note: Lora weights will also be stored under s3://anyscale-data-cld-id/org_id/cld_id/artifact_storage/fine_tuning/ to allow multi serving.`.
+
+You can see the full path at the very end of the job UI (see Step #1 for finding Jobs UI). Here is an example finetuning job output:
+
+```shell
+
+Successfully copied files to to bucket: anyscale-data-cld-id and path: org_id/cloud_id/artifact_storage/fine_tuning/mistralai/Mixtral-8x7B-Instruct-v0.1:abcde:fzmrr
+
+```
+
 Given this URI, you can specify it as the `dynamic_lora_loading_path` in the serving
 workspace template.
 
-The model id follows the convention of `{base_model_id}:{suffix}:{id}`.
-For instance, the model id `meta-llama/Llama-2-7b-chat-hf:my_lora:csdu5` would be stored under `s3://anyscale-data-cld-id/org_id/cld_id/artifact_storage/fine_tuning/meta-llama/Llama-2-7b-chat-hf:my_lora:csdu5`.
+The last part of the above URI is the model id. The model id follows the convention of `{base_model_id}:{suffix}:{id}`.
 
 # Step 2(b) - Serve the full-param finetuned model. Import the model
 

@@ -1,0 +1,20 @@
+default_stages: [commit, push]
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v3.2.0
+    hooks:
+      - id: check-added-large-files
+      - id: trailing-whitespace
+        # README might be auto-generated
+        exclude: templates/.+/README.md
+      - id: end-of-file-fixer
+        # README might be auto-generated
+        exclude: templates/.+/README.md
+  - repo: local
+    hooks:
+      - id: generate-readme
+        name: Auto generate README.md from README.ipynb
+        entry: ci/auto-generate-readme.sh
+        language: script
+        pass_filenames: false
+        dependencies: [jupyter]
