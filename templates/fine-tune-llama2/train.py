@@ -537,15 +537,15 @@ def parse_args():
     )
 
     parser.add_argument(
-        "--test_path", 
-        type=str, 
+        "--test_path",
+        type=str,
         default="./data/test.jsonl",
         help="Path to testing jsonl file"
     )
 
     parser.add_argument(
-        "--special_token_path", 
-        type=str, 
+        "--special_token_path",
+        type=str,
         default="./data/tokens.json",
         help="Path to token json file"
     )
@@ -556,16 +556,16 @@ def parse_args():
         help="If passed, will not use gradient checkpointing.",
     )
     parser.add_argument(
-        "--output_dir", 
-        type=str, 
+        "--output_dir",
+        type=str,
         default="/mnt/local_storage",
         help="Path to output directory."
     )
 
     parser.add_argument(
-        "--num-epochs", 
-        type=int, 
-        default=3, 
+        "--num-epochs",
+        type=int,
+        default=3,
         help="Number of epochs to train for."
     )
 
@@ -581,9 +581,9 @@ def parse_args():
     )
 
     parser.add_argument(
-        "--lr", 
-        type=float, 
-        default=5e-6, 
+        "--lr",
+        type=float,
+        default=5e-6,
         help="Learning rate to use."
     )
 
@@ -640,7 +640,7 @@ def main():
 
     # Adjust batch size per device (BS) and number of devices (ND) according to model size
     # Number of devices (ND) is determined by a combination of factors, context length, accelerator type, whether LoRA is used, etc.
-    if size == "7b" or size == "13b":  
+    if size == "7b" or size == "13b":
         # nd is set on the basis of using Nvidia A10 and conducting full parameter fine-tuning with default context length.
         # If Nvidia A100 is used. ND can be set to 8 instead.
         bs, nd = 16, 16
