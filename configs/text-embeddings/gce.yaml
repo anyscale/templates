@@ -20,7 +20,7 @@ worker_node_types:
     object_store_memory:
     custom_resources:
       "accelerator_type:T4": 1
-      custom_llm_gpu: 1
+      "custom_llm_gpu": 1
   min_workers: 0
   max_workers: 16
   use_spot: true
@@ -36,7 +36,7 @@ worker_node_types:
     object_store_memory:
     custom_resources:
       "accelerator_type:L4": 1
-      custom_llm_gpu: 1
+      "custom_llm_gpu": 1
   min_workers: 0
   max_workers: 16
   use_spot: true
@@ -57,7 +57,7 @@ gcp_advanced_configurations_json:
     object_store_memory:
     custom_resources:
       "accelerator_type:V100": 1
-      custom_llm_gpu: 1
+      "custom_llm_gpu": 1
   min_workers: 0
   max_workers: 16
   use_spot: true
@@ -73,7 +73,7 @@ gcp_advanced_configurations_json:
     object_store_memory:
     custom_resources:
       "accelerator_type:A100-40G": 1
-      custom_llm_gpu: 1
+      "custom_llm_gpu": 1
   min_workers: 0
   max_workers: 8
 gcp_advanced_configurations_json:
@@ -92,7 +92,7 @@ gcp_advanced_configurations_json:
     object_store_memory:
     custom_resources:
       "accelerator_type:A100-80G": 1
-      custom_llm_gpu: 1
+      "custom_llm_gpu": 1
   min_workers: 0
   max_workers: 4
 gcp_advanced_configurations_json:
