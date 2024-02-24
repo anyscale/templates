@@ -1,0 +1,18 @@
+model_id: mistralai/Mistral-7B-Instruct-v0.1 # <-- change this to the model you want to fine-tune
+train_path: s3://air-example-data/viggo/train.jsonl
+valid_path: s3://air-example-data/viggo/valid.jsonl
+context_length: 4096 # <-- change this to the context length you want to use
+num_devices: 16 # <-- change this to total number of GPUs that you want to use
+num_epochs: 1 # <-- change this to the number of epochs that you want to train for
+train_batch_size_per_device: 2
+eval_batch_size_per_device: 2
+learning_rate: 1e-4
+num_checkpoints_to_keep: 1
+no_gradient_checkpoint: False
+dataset_size_scaling_factor: 10000
+output_dir: /mnt/local_storage
+deepspeed:
+  config_path: deepspeed_configs/zero_3_mistral_7b.json
+flash_attention_2: True
+worker_resources:
+  g5.12xlarge: 1 # <-- this maps to job_compute_configs file's custom_resources so the appropriate nodes can scale up
