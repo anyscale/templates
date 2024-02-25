@@ -39,10 +39,6 @@ worker_node_types:
   max_workers: 16
   use_spot: true
   fallback_to_ondemand: true
-gcp_advanced_configurations_json:
-  instance_properties:
-    labels:
-      as-feature-multi-zone: 'true'
 
 # 8 vCPU, 1 NVIDIA Tesla V100 16GB GPU, 30 GiB memory
 - name: gpu-worker-v100
@@ -71,10 +67,6 @@ gcp_advanced_configurations_json:
       "accelerator_type:A100-40G": 1
   min_workers: 0
   max_workers: 8
-gcp_advanced_configurations_json:
-  instance_properties:
-    labels:
-      as-feature-multi-zone: 'true'
 
 # 12 vCPU, 1 NVIDIA A100 80GB GPU, 170 GiB memory
 - name: gpu-worker-a100-80g
