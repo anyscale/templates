@@ -15,12 +15,11 @@ worker_node_types:
   instance_type: n1-standard-8-nvidia-t4-16gb-1
   resources:
     cpu:
-    gpu:
+    gpu: 1
     memory:
     object_store_memory:
     custom_resources:
       "accelerator_type:T4": 1
-      "custom_llm_gpu": 1
   min_workers: 0
   max_workers: 16
   use_spot: true
@@ -31,12 +30,11 @@ worker_node_types:
   instance_type: g2-standard-8-nvidia-l4-1
   resources:
     cpu:
-    gpu:
+    gpu: 1
     memory:
     object_store_memory:
     custom_resources:
       "accelerator_type:L4": 1
-      "custom_llm_gpu": 1
   min_workers: 0
   max_workers: 16
   use_spot: true
@@ -45,19 +43,17 @@ gcp_advanced_configurations_json:
   instance_properties:
     labels:
       as-feature-multi-zone: 'true'
-      as-feature-enable-multi-az-serve: 'true'
 
 # 8 vCPU, 1 NVIDIA Tesla V100 16GB GPU, 30 GiB memory
 - name: gpu-worker-v100
   instance_type: n1-standard-8-nvidia-v100-16gb-1
   resources:
     cpu:
-    gpu:
+    gpu: 1
     memory:
     object_store_memory:
     custom_resources:
       "accelerator_type:V100": 1
-      "custom_llm_gpu": 1
   min_workers: 0
   max_workers: 16
   use_spot: true
@@ -68,37 +64,31 @@ gcp_advanced_configurations_json:
   instance_type: a2-highgpu-1g-nvidia-a100-40gb-1
   resources:
     cpu:
-    gpu:
+    gpu: 1
     memory:
     object_store_memory:
     custom_resources:
       "accelerator_type:A100-40G": 1
-      "custom_llm_gpu": 1
   min_workers: 0
   max_workers: 8
 gcp_advanced_configurations_json:
   instance_properties:
     labels:
       as-feature-multi-zone: 'true'
-      as-feature-enable-multi-az-serve: 'true'
 
 # 12 vCPU, 1 NVIDIA A100 80GB GPU, 170 GiB memory
 - name: gpu-worker-a100-80g
   instance_type: a2-ultragpu-1g-nvidia-a100-80gb-1
   resources:
     cpu:
-    gpu:
+    gpu: 1
     memory:
     object_store_memory:
     custom_resources:
       "accelerator_type:A100-80G": 1
-      "custom_llm_gpu": 1
   min_workers: 0
   max_workers: 4
 gcp_advanced_configurations_json:
   instance_properties:
     labels:
       as-feature-multi-zone: 'true'
-      as-feature-enable-multi-az-serve: 'true'
-      as-feature-cross-group-min-count-custom_llm_gpu: '2'
-      as-feature-cross-group-max-count-custom_llm_gpu: '16'
