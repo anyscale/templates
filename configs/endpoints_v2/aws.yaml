@@ -3,9 +3,19 @@ head_node_type:
   instance_type: m5.xlarge
   resources:
     cpu: 0
-worker_node_types: []
+
 auto_select_worker_config: true
-# TODO(shomil): remove once set by default in OA
+
+# This will be ignored since auto_select_worker_config is enabled,
+# but must be present to pass backend validation.
+# TODO (shomilj): Remove once validation is fixed.
+worker_node_types:
+- name: cpu-worker
+  instance_type: m5.xlarge
+  min_workers: 0
+  max_workers: 1
+
+# TODO(shomil): Remove once set by default in OA.
 aws:
   TagSpecifications:
     - ResourceType: instance
