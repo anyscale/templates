@@ -77,7 +77,7 @@ To deploy an application with one model as an Anyscale Service you can run:
 ```python
 # Deploy the serve app to production with a given service name.
 
-!serve deploy --name=my_service_name service.yaml
+!serve deploy --name=my_service_name llm-serve.yaml
 ```
 
 This is setup to run the Mistral-7B model, but can be easily modified to run any of the other models in this repo.
