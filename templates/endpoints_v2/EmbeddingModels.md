@@ -19,6 +19,14 @@ You can use the OpenAI SDK to query the embedding models. Batch queries are also
 python embedding-query.py
 ```
 
+# Deploying a production service
+
+To deploy an application with the embedding model as an Anyscale Service you can run:
+
+```shell
+serve deploy --name=my_service_name embedding-serve.yaml
+```
+
 # Optimizing Embedding Models
 
 We support optimizing embedding models with ONNX. In order to enable this, set the flag under `engine_config` in your model yaml file. See `models/embedding_models\BAAI--bge-large-en-v1.5.yaml` for an example.
