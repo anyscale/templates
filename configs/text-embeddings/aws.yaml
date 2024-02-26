@@ -18,7 +18,7 @@ worker_node_types:
   instance_type: g5.x2large
   resources:
     cpu:
-    gpu: 1
+    gpu:
     memory:
     object_store_memory:
     custom_resources:
@@ -33,7 +33,7 @@ worker_node_types:
   instance_type: g4dn.2xlarge
   resources:
     cpu:
-    gpu: 1
+    gpu:
     memory:
     object_store_memory:
     custom_resources:
@@ -48,7 +48,7 @@ worker_node_types:
   instance_type: p3.2xlarge
   resources:
     cpu:
-    gpu: 1
+    gpu:
     memory:
     object_store_memory:
     custom_resources:
@@ -63,7 +63,7 @@ worker_node_types:
   instance_type: p4d.24xlarge
   resources:
     cpu:
-    gpu: 8
+    gpu:
     memory:
     object_store_memory:
     custom_resources:
@@ -87,7 +87,7 @@ worker_node_types:
   instance_type: p4de.24xlarge
   resources:
     cpu:
-    gpu: 8
+    gpu:
     memory:
     object_store_memory:
     custom_resources:
