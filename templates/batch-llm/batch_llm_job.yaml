@@ -1,2 +1,6 @@
 name: batch_llm
 entrypoint: "python batch_llm.py"
+# You can manage the HF_TOKEN environment variable below instead of in the python file.
+# runtime_env:
+#   env_vars:
+#     HF_TOKEN: "<YOUR_HF_TOKEN>"
