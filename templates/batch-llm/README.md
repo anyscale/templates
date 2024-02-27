@@ -1,7 +1,7 @@
 # Batch LLM Inference using Anyscale Jobs and vLLM
 
 This template shows you how to:
-* Run a batch LLM inference workload using vLLM and Ray Data
+* Run a batch LLM inference workload using [vLLM](https://docs.vllm.ai/en/latest) and [Ray Data](https://docs.ray.io/en/latest/data/data.html)
 * Deploy the batch LLM workload as an Anyscale Service
 
 **Note**: This template can be run from this Workspace.
@@ -16,7 +16,7 @@ This Workspace Template includes an example `batch_llm_job.yaml` which can be us
 * Automated failure handling
 * Automated email alerting
 * Record and persist outputs such as logs
-*
+
 ### Step 1: Review the python code
 
 * Open the `batch_llm.py` file
