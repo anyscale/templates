@@ -3,6 +3,8 @@ import os
 import subprocess
 import tempfile
 import yaml
+import random
+import string
 from pathlib import Path
 
 
@@ -15,6 +17,19 @@ def _get_lora_storage_uri() -> str:
     artifact_storage = os.environ.get("ANYSCALE_ARTIFACT_STORAGE")
     artifact_storage = artifact_storage.rstrip("/")
     return f"{artifact_storage}/fine_tuning/"
+
+def generate_model_tag(model_id: str) -> str:
+    """
+    Constructs a finetuned model ID based on the Anyscale endpoints convention.
+    """
+    username = os.environ.get("ANYSCALE_USERNAME")
+    model_id = model_id.split("/")[-1]
+    if username:
+        username = username[:5]
+    else:
+        username = "".join(random.choice(string.ascii_lowercase) for _ in range(5))
+    suffix = "".join(random.choice(string.ascii_lowercase) for _ in range(5))
+    return f"{model_id}:{username}:{suffix}"
 
 
 def main():
@@ -42,6 +57,10 @@ def main():
 
     is_lora = "lora_config" in training_config
     entrypoint = f"llmforge dev finetune {finetune_config_path}"
+
+    model_tag = generate_model_tag(training_config["model_id"])
+    entrypoint += f" --model-tag={model_tag}"
+
     if is_lora:
         lora_storage_uri = _get_lora_storage_uri()
         entrypoint += f" --forward-best-checkpoint-remote-uri={lora_storage_uri}"
@@ -68,11 +87,12 @@ def main():
         subprocess.run(["anyscale", "job", "submit", temp_file_name], check=True)
         if lora_storage_uri:
             print(
-                f"Note: Lora weights will also be stored under {lora_storage_uri} to allow multi serving."
+                f"Note: Lora weights will also be stored in path {lora_storage_uri} under {model_tag} bucket."
             )
     finally:
         # Clean up by deleting the temporary file
         os.remove(temp_file_name)
+        pass
 
 
 if __name__ == "__main__":
