@@ -7,6 +7,7 @@ This guide provides starter configurations if you would like to further customiz
 ### Supported base models
 
 - mistralai/Mistral-7B-Instruct-v0.1
+- mistralai/Mixtral-8x7b
 - meta-llama/Llama-2-7b-hf
 - meta-llama/Llama-2-7b-chat-hf
 - meta-llama/Llama-2-13b-hf

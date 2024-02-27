@@ -1,0 +1,114 @@
+head_node_type:
+# 32 vCPU, 128 GiB memory
+  name: head-node-type
+  instance_type: m5.8xlarge
+  resources:
+    cpu: 0
+worker_node_types:
+
+# 32 vCPU, 128 GiB memory
+- name: cpu-worker
+  instance_type: m5.8xlarge
+  min_workers: 7
+  max_workers: 7
+  use_spot: false
+
+# 8 vCPU, 1 NVIDIA A10G GPU, 32 GiB memory
+- name: gpu-worker-a10
+  instance_type: g5.x2large
+  resources:
+    cpu:
+    gpu:
+    memory:
+    object_store_memory:
+    custom_resources:
+      "accelerator_type:A10G": 1
+  min_workers: 0
+  max_workers: 16
+  use_spot: true
+  fallback_to_ondemand: true
+
+# 8 vCPU, 1 NVIDIA T4 GPU, 32 GiB memory
+- name: gpu-worker-t4
+  instance_type: g4dn.2xlarge
+  resources:
+    cpu:
+    gpu:
+    memory:
+    object_store_memory:
+    custom_resources:
+      "accelerator_type:T4": 1
+  min_workers: 0
+  max_workers: 16
+  use_spot: true
+  fallback_to_ondemand: true
+
+# 8 vCPU, 1 NVIDIA Tesla V100 16GB GPU, 61 GiB memory
+- name: gpu-worker-v100
+  instance_type: p3.2xlarge
+  resources:
+    cpu:
+    gpu:
+    memory:
+    object_store_memory:
+    custom_resources:
+      "accelerator_type:V100": 1
+  min_workers: 0
+  max_workers: 16
+  use_spot: true
+  fallback_to_ondemand: true
+
+# 96 vCPU, 8 NVIDIA A100 40GB GPUs, 1152 GiB memory
+- name: gpu-worker-a100-40g
+  instance_type: p4d.24xlarge
+  resources:
+    cpu:
+    gpu:
+    memory:
+    object_store_memory:
+    custom_resources:
+      "accelerator_type:A100-40G": 1
+  aws_advanced_configurations_json:
+    BlockDeviceMappings:
+    - DeviceName: /dev/sda1
+      Ebs:
+        DeleteOnTermination: true
+        VolumeSize: 1000
+    TagSpecifications:
+    - ResourceType: instance
+      Tags:
+      - Key: as-feature-multi-zone
+        Value: "true"
+  min_workers: 0
+  max_workers: 1
+
+# 96 vCPU, 8 NVIDIA A100 80GB GPUs, 1152 GiB memory
+- name: gpu-worker-a100-80g
+  instance_type: p4de.24xlarge
+  resources:
+    cpu:
+    gpu:
+    memory:
+    object_store_memory:
+    custom_resources:
+      "accelerator_type:A100-80G": 1
+  aws_advanced_configurations_json:
+    BlockDeviceMappings:
+    - DeviceName: /dev/sda1
+      Ebs:
+        DeleteOnTermination: true
+        VolumeSize: 1000
+    TagSpecifications:
+    - ResourceType: instance
+      Tags:
+      - Key: as-feature-multi-zone
+        Value: "true"
+  min_workers: 0
+  max_workers: 1
+
+aws:
+  TagSpecifications:
+    - ResourceType: instance
+      Tags:
+        - Key: as-feature-multi-zone
+          Value: "true"

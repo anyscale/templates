@@ -34,39 +34,43 @@ The top rated restaurants in San Francisco include:
  • The French Laundry
 ```
 
-
-```python
-# Query the local service we just deployed.
-
-!python llm-query.py
-```
-
-Endpoints uses an OpenAI-compatible API, allowing us to use the OpenAI SDK to access Endpoint backends.
+Endpoints uses an OpenAI-compatible API, allowing us to use the OpenAI SDK to access Endpoint backends. The query is also available in `llm-query.py`.
 
 
 ```python
 from openai import OpenAI
 
-client = OpenAI(
-  base_url="http://localhost:8000/v1",
-  api_key="NOT A REAL KEY",
-)
+def query(base_url: str, api_key: str):
+    client = OpenAI(
+      base_url=base_url + "/v1",
+      api_key=api_key,
+    )
 
-# List all models.
-models = client.models.list()
-print(models)
+    # List all models.
+    models = client.models.list()
+    print(models)
 
-# Note: not all arguments are currently supported and will be ignored by the backend.
-chat_completion = client.chat.completions.create(
-    model="mistralai/Mistral-7B-Instruct-v0.1",
-    messages=[
-        {"role": "system", "content": "You are a helpful assistant."},
-        {"role": "user", "content": "What are some of the highest rated restaurants in San Francisco?'."},
-    ],
-    temperature=0.01
-)
+    # Note: not all arguments are currently supported and will be ignored by the backend.
+    chat_completions = client.chat.completions.create(
+        model="mistralai/Mistral-7B-Instruct-v0.1",
+        messages=[
+            {"role": "system", "content": "You are a helpful assistant."},
+            {"role": "user", "content": "What are some of the highest rated restaurants in San Francisco?'."},
+        ],
+        temperature=0.01,
+        stream=True
+    )
 
-print(chat_completion)
+    for chat in chat_completions:
+        if chat.choices[0].delta.content is not None:
+            print(chat.choices[0].delta.content, end="")
+```
+
+
+```python
+# Query the local serve application we just deployed.
+
+query("http://localhost:8000", "NOT A REAL KEY")
 ```
 
 # Step 3 - Deploying a production service
@@ -77,16 +81,21 @@ To deploy an application with one model as an Anyscale Service you can run:
 ```python
 # Deploy the serve app to production with a given service name.
 
-!serve deploy --name=my_service_name service.yaml
+!serve deploy --name=my_service_name llm-serve.yaml
 ```
 
 This is setup to run the Mistral-7B model, but can be easily modified to run any of the other models in this repo.
 
 # Step 4 - Query the service endpoint
 
-In order to query the endpoint, you can modify the `llm-query.py` script, replacing the query url with the Service URL found in the Service UI.
 
-Note: please make sure to include the path "/v1" at the end of the Service url.
+```python
+# Query the remote serve application we just deployed.
+
+query(service_url, service_bearer_token)
+```
+
+You can also modify the `llm-query.py` script, replacing the query url with the Service URL found in the Service UI.
 
 # More Guides
 
@@ -112,4 +121,3 @@ Look at the following guides for more advanced use-cases -
 See examples of building applications with your deployed endpoint on the [Anyscale Endpoints](https://docs.endpoints.anyscale.com/category/examples) page.
 
 Be sure to update the api_base and token for your private deployment. This can be found under the "Serve deployments" tab on the "Query" button when deploying on your Workspace.
-
