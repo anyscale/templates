@@ -3,7 +3,7 @@
 Welcome! You are currently in a Workspace, which is a persistent cloud IDE connected to a Ray cluster.
 
 In this tutorial, you will learn:
-1. Basic workspace features such as git repo persistence, NFS mounts, cloud storage, and SSH authentication.
+1. Basic workspace features such as git repo persistence, cloud storage, and SSH authentication.
 2. Ray cluster management features, such as adding multiple worker nodes.
 3. Ray monitoring features such as viewing tasks in the dashboard.
 4. Dependency management.
@@ -47,33 +47,24 @@ The public key to add is outputted by the following command:
 !cat ~/.ssh/id_rsa.pub
 ```
 
-### NFS Mounts
+### Cloud Storage
 
-Workspace local storage is limited to 1GB, so we recommend only using it to store git repos and smaller files. To persist larger files, you can save data to NFS mounts and cloud storage.
+Workspace local storage is limited to 1GB, so we recommend only using it to store git repos and smaller files. To persist larger files, you can save data to cloud storage.
 
-Here are a few handy NFS mounts included:
-- `/mnt/shared_storage` is a mount shared across all users of your organization
-- `/mnt/user_storage` is a mount for your user account
-
-NFS storage can be read and written from the workspace, as well as from any node in the Ray cluster:
-
-
-```python
-!echo "hello world" > /mnt/user_storage/persisted_file.txt && cat /mnt/user_storage/persisted_file.txt
-```
-
-#### Cloud Storage
+Cloud storage can be read and written from the workspace, as well as from any node in the Ray cluster.
 
 Access built-in cloud storage using the `$ANYSCALE_ARTIFACT_STORAGE` URI as a prefix:
 
 
 ```python
-!aws s3 cp /mnt/user_storage/persisted_file.txt $ANYSCALE_ARTIFACT_STORAGE/persisted_object.txt
+# Note: "gsutil cp" instead of "aws s3 cp" in GCP clouds.
+!echo "hello world" > /tmp/input.txt && aws s3 cp /tmp/input.txt $ANYSCALE_ARTIFACT_STORAGE/saved.txt
 ```
 
 
 ```python
-!aws s3 cp $ANYSCALE_ARTIFACT_STORAGE/persisted_object.txt /tmp/object.txt && cat /tmp/object.txt
+# Note: "gsutil cp" instead of "aws s3 cp" in GCP clouds.
+!aws s3 cp $ANYSCALE_ARTIFACT_STORAGE/saved.txt /tmp/output.txt && cat /tmp/output.txt
 ```
 
 ## Ray cluster management
@@ -96,9 +87,9 @@ To parallelize beyond the resources available to the workspace node, add additio
 <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/intro-workspaces/assets/add-node-type.png" height=300px/>
 <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/intro-workspaces/assets/add-node-dialog.png" height=300px/>
 
-### Using "Auto" workers mode
+### Using "Auto-select workers" mode
 
-To let Ray automatically select what kind of worker nodes to add to the cluster, check the "Auto-select machines" box. Ray will try to autoscale cluster worker nodes to balance cost and performance. In auto mode, you cannot configure worker node types, but the resources panel will show which node types have been launched.
+To let Ray automatically select what kind of worker nodes to add to the cluster, check the "Auto-select workers" box. Ray will try to autoscale cluster worker nodes to balance cost and performance. In auto mode, you cannot configure worker node types, but the resources panel will show which node types have been launched.
 
 We recommend using auto mode if you do not have specific cluster requirements, and are ok with waiting for the autoscaler to add nodes on-demand to the cluster.
 
