@@ -1,0 +1,61 @@
+head_node_type:
+  name: head-node
+  instance_type: n2-standard-4
+  resources:
+    cpu: 0
+worker_node_types:
+  - name: worker-g2standard4-nvidia-l4-1
+    instance_type: g2-standard-4-nvidia-l4-1
+    resources:
+      custom_resources:
+        "accelerator_type:L4": 1
+        custom_llm_gpu: 1
+    min_workers: 0
+    max_workers: 50
+    use_spot: true
+    fallback_to_ondemand: true
+  - name: worker-g2standard8-nvidia-l4-1
+    instance_type: g2-standard-8-nvidia-l4-1
+    resources:
+      custom_resources:
+        "accelerator_type:L4": 1
+        custom_llm_gpu: 1
+    min_workers: 0
+    max_workers: 50
+    use_spot: true
+    fallback_to_ondemand: true
+  - name: worker-g2standard12-nvidia-l4-1
+    instance_type: g2-standard-12-nvidia-l4-1
+    resources:
+      custom_resources:
+        "accelerator_type:L4": 1
+        custom_llm_gpu: 1
+    min_workers: 0
+    max_workers: 50
+    use_spot: true
+    fallback_to_ondemand: true
+  - name: worker-g2standard16-nvidia-l4-1
+    instance_type: g2-standard-16-nvidia-l4-1
+    resources:
+      custom_resources:
+        "accelerator_type:L4": 1
+        custom_llm_gpu: 1
+    min_workers: 0
+    max_workers: 50
+    use_spot: true
+    fallback_to_ondemand: true
+  - name: worker-g2standard24-nvidia-l4-2
+    instance_type: g2-standard-24-nvidia-l4-2
+    resources:
+      custom_resources:
+        "accelerator_type:L4": 1
+        custom_llm_gpu: 2
+    min_workers: 0
+    max_workers: 25
+    use_spot: true
+    fallback_to_ondemand: true
+gcp_advanced_configurations_json:
+  instance_properties:
+    labels:
+      as-feature-cross-group-min-count-custom_llm_gpu: "10"
+      as-feature-cross-group-max-count-custom_llm_gpu: "50"
