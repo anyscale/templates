@@ -7,4 +7,3 @@ worker_node_types:
   min_workers: 1
   max_workers: 1
   use_spot: false
-auto_select_worker_config: true
