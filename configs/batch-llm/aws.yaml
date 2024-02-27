@@ -72,3 +72,5 @@ aws:
           Value: "10"
         - Key: as-feature-cross-group-max-count-custom_llm_gpu
           Value: "50"
+        - Key: as-feature-multi-zone
+          Value: "true"

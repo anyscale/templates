@@ -59,3 +59,4 @@ gcp_advanced_configurations_json:
     labels:
       as-feature-cross-group-min-count-custom_llm_gpu: "10"
       as-feature-cross-group-max-count-custom_llm_gpu: "50"
+      as-feature-multi-zone: "true"
