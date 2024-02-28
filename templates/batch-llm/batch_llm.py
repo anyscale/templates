@@ -16,10 +16,13 @@ HF_MODEL = "meta-llama/Llama-2-7b-chat-hf"
 # from cloud storage (such as JSONL, Parquet, CSV, binary format).
 INPUT_PATH = "s3://anonymous@air-example-data/prompts.txt"
 
-# Initialize Ray with a Runtime Environment - used to set the Environment Variable `HF_TOKEN`
-# This line can be removed if setting the Environment Variable using a Cluster Environment or in the job yaml file.
-ray.init(runtime_env={"env_vars": {"HF_TOKEN": HF_TOKEN}})
-ds = ray.data.read_text(INPUT_PATH)
+# Initialize Ray with a Runtime Environment.
+ray.init(
+    runtime_env={
+        "env_vars": {"HF_TOKEN": HF_TOKEN},
+        "pip": ["vllm"],
+    }
+)
 
 # Create a sampling params object.
 sampling_params = SamplingParams(temperature=0)
@@ -47,6 +50,7 @@ class LLMPredictor:
 
 
 # Apply batch inference for all input data.
+ds = ray.data.read_text(INPUT_PATH)
 ds = ds.map_batches(
     LLMPredictor,
     # Set the concurrency to the number of LLM instances.
