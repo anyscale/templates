@@ -17,7 +17,7 @@ def get_cld_id() -> str:
 
 def get_region() -> str:
     return os.environ.get("ANYSCALE_CLOUD_STORAGE_BUCKET_REGION") or ""
-    
+
 def _get_lora_storage_uri() -> str:
     artifact_storage = os.environ.get("ANYSCALE_ARTIFACT_STORAGE")
     artifact_storage = artifact_storage.rstrip("/")
