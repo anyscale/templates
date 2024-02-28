@@ -20,8 +20,6 @@ worker_node_types:
       "accelerator_type:T4": 1
   min_workers: 0
   max_workers: 100
-  use_spot: true
-  fallback_to_ondemand: true
 - name: gpu-worker-t4-4
   instance_type: g4dn.12xlarge
   resources:
@@ -33,8 +31,6 @@ worker_node_types:
       "accelerator_type:T4": 1
   min_workers: 0
   max_workers: 100
-  use_spot: true
-  fallback_to_ondemand: true
 - name: gpu-worker-a10g-1
   instance_type: g5.4xlarge
   resources:
@@ -46,8 +42,6 @@ worker_node_types:
       "accelerator_type:A10G": 1
   min_workers: 0
   max_workers: 100
-  use_spot: true
-  fallback_to_ondemand: true
 - name: gpu-worker-a10g-4
   instance_type: g5.12xlarge
   resources:
@@ -59,8 +53,6 @@ worker_node_types:
       "accelerator_type:A10G": 1
   min_workers: 0
   max_workers: 100
-  use_spot: true
-  fallback_to_ondemand: true
 - name: gpu-worker-a10g-8
   instance_type: g5.48xlarge
   resources:
@@ -72,8 +64,6 @@ worker_node_types:
       "accelerator_type:A10G": 1
   min_workers: 0
   max_workers: 100
-  use_spot: true
-  fallback_to_ondemand: true
 - name: gpu-worker-v100-1
   instance_type: p3.2xlarge
   resources:
@@ -85,8 +75,6 @@ worker_node_types:
       "accelerator_type:V100": 1
   min_workers: 0
   max_workers: 100
-  use_spot: true
-  fallback_to_ondemand: true
 - name: gpu-worker-v100-4
   instance_type: p3.8xlarge
   resources:
@@ -98,8 +86,6 @@ worker_node_types:
       "accelerator_type:V100": 1
   min_workers: 0
   max_workers: 100
-  use_spot: true
-  fallback_to_ondemand: true
 - name: gpu-worker-a100-40g-8
   instance_type: p4d.24xlarge
   resources:
