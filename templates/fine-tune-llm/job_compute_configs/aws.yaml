@@ -1,8 +1,6 @@
 compute_config:
   allowed_azs:
     - any
-  cloud_id: cld_id # You should specify your `cloud_id` from the `clouds` page
-  region: us-west-2  # You should specify your `region`
   head_node_type:
     instance_type: m5.4xlarge
     name: head_node
