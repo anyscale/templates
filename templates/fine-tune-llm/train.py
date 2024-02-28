@@ -12,6 +12,11 @@ def _read_yaml_file(file_path):
     with open(file_path, "r") as stream:
         return yaml.safe_load(stream)
 
+def get_cld_id() -> str:
+    return os.environ.get("ANYSCALE_CLOUD_ID") or ""
+
+def get_region() -> str:
+    return os.environ.get("ANYSCALE_CLOUD_STORAGE_BUCKET_REGION") or ""
 
 def _get_lora_storage_uri() -> str:
     artifact_storage = os.environ.get("ANYSCALE_ARTIFACT_STORAGE")
@@ -23,7 +28,6 @@ def generate_model_tag(model_id: str) -> str:
     Constructs a finetuned model ID based on the Anyscale endpoints convention.
     """
     username = os.environ.get("ANYSCALE_USERNAME")
-    model_id = model_id.split("/")[-1]
     if username:
         username = username[:5]
     else:
@@ -54,6 +58,11 @@ def main():
 
     job_config = _read_yaml_file(job_config_path)
     training_config = _read_yaml_file(finetune_config_path)
+
+    cld_id = get_cld_id()
+    region = get_region()
+    job_config["compute_config"]["cloud_id"] = cld_id
+    job_config["compute_config"]["region"] = region
 
     is_lora = "lora_config" in training_config
     entrypoint = f"llmforge dev finetune {finetune_config_path}"
