@@ -20,8 +20,6 @@ worker_node_types:
       "accelerator_type:T4": 1
   min_workers: 0
   max_workers: 100
-  use_spot: true
-  fallback_to_ondemand: true
 - name: gpu-worker-l4-1
   instance_type: g2-standard-16-nvidia-l4-1
   resources:
@@ -33,8 +31,6 @@ worker_node_types:
       "accelerator_type:L4": 1
   min_workers: 0
   max_workers: 100
-  use_spot: true
-  fallback_to_ondemand: true
 - name: gpu-worker-l4-2
   instance_type: g2-standard-24-nvidia-l4-2
   resources:
@@ -46,8 +42,6 @@ worker_node_types:
       "accelerator_type:L4": 1
   min_workers: 0
   max_workers: 100
-  use_spot: true
-  fallback_to_ondemand: true
 - name: gpu-worker-l4-4
   instance_type: g2-standard-48-nvidia-l4-4
   resources:
@@ -59,8 +53,6 @@ worker_node_types:
       "accelerator_type:L4": 1
   min_workers: 0
   max_workers: 100
-  use_spot: true
-  fallback_to_ondemand: true
 - name: gpu-worker-l4-8
   instance_type: g2-standard-96-nvidia-l4-8
   resources:
@@ -72,8 +64,6 @@ worker_node_types:
       "accelerator_type:L4": 1
   min_workers: 0
   max_workers: 100
-  use_spot: true
-  fallback_to_ondemand: true
 - name: gpu-worker-v100-1
   instance_type: n1-standard-32-nvidia-v100-16gb-4
   resources:
@@ -85,8 +75,6 @@ worker_node_types:
       "accelerator_type:V100": 1
   min_workers: 0
   max_workers: 100
-  use_spot: true
-  fallback_to_ondemand: true
 - name: gpu-worker-a100-40g-1
   instance_type: a2-highgpu-1g-nvidia-a100-40gb-1
   resources:
