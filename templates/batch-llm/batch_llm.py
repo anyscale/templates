@@ -54,7 +54,7 @@ ds = ray.data.read_text(INPUT_PATH)
 ds = ds.map_batches(
     LLMPredictor,
     # Set the concurrency to the number of LLM instances.
-    concurrency=10,
+    concurrency=4,
     # Specify the number of GPUs required per LLM instance.
     num_gpus=1,
     # Specify the batch size for inference.
