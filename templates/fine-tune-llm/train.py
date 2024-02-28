@@ -67,10 +67,9 @@ def main():
     is_lora = "lora_config" in training_config
     entrypoint = f"llmforge dev finetune {finetune_config_path}"
 
-    model_tag = generate_model_tag(training_config["model_id"])
-    entrypoint += f" --model-tag={model_tag}"
-
     if is_lora:
+        model_tag = generate_model_tag(training_config["model_id"])
+        entrypoint += f" --model-tag={model_tag}"
         lora_storage_uri = _get_lora_storage_uri()
         entrypoint += f" --forward-best-checkpoint-remote-uri={lora_storage_uri}"
     else:
