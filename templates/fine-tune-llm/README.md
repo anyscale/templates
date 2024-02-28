@@ -21,9 +21,6 @@ We have provided different example configurations under the `training_configs`
 directory for different base models and instance types. You can use these as a
 starting point for your own fine-tuning jobs.
 
-First, please go to `job_compute_configs/aws.yaml` or `job_compute_configs/gcp.yaml`
-and specify your cloud_id and region under the `cloud_id` and `region` fields.
-
 [Optional] you can get a WandB API key from [WandB](https://wandb.ai/authorize) to track the finetuning process.
 
 Next, you can launch a fine-tuning job where the WandB API key is passed as an environment variable.
