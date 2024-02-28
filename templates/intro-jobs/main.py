@@ -1,9 +1,10 @@
 import ray
+import emoji
 import time
 
 @ray.remote
 def process(x):
-   print("Processing", x)
+   print(emoji.emojize("Processing :thumbs_up:"), x)
    time.sleep(1)
    return x * 2
 
