@@ -1,8 +1,6 @@
 compute_config:
   allowed_azs:
     - any
-  cloud_id: cld_id # You may specify `cloud_id` instead
-  region: us-west1
   head_node_type:
     instance_type: n2-standard-4
     name: head_node
