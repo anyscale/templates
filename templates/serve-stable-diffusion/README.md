@@ -47,7 +47,7 @@ def generate_image(prompt: str, image_size: int) -> bytes:
 
 
 ```python
-image = generate_image("twin peaks sf in basquiat painting style", 640)
+image = generate_image("anyscale logo valentines day card, professional quality art, surrounded by flowers, white envelope", 640)
 
 filename = "image.png"
 with open(filename, "wb") as f:
