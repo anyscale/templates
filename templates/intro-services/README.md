@@ -161,6 +161,10 @@ For example, suppose the Ray cluster was configured to have at most 100 CPUs, th
 
 For this reason, we generally recommend using the "Auto-select machines" cluster config for services (this is the default).
 
+#### Editing service cluster config
+
+When a service is first created, it will copy the cluster config from the workspace. After that, the service cluster config is decoupled from the workspace and can be edited independently.
+
 This concludes the services intro tutorial. To learn more, check out the model serving templates available in the template gallery, as well as the Ray Serve [documentation](https://docs.ray.io/en/latest/serve/index.html).
 
 ## Summary
