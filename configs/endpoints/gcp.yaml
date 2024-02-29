@@ -20,7 +20,7 @@ worker_node_types:
   min_workers: 0
   max_workers: 100
 - name: gpu-worker-l4-1
-  instance_type: g2-standard-16-nvidia-l4-1
+  instance_type: g2-standard-12-nvidia-l4-1
   resources:
     cpu:
     gpu:
