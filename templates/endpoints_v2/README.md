@@ -8,14 +8,13 @@ The llm-serve.yaml file in this example runs the Mistral-7B model. There are 2 i
 1. The `models` config in `llm-serve.yaml` contains a list of YAML files for the models you want to deploy. You can run any of the models in the `models` directory or define your own model YAML file and run that instead. All config files follow the naming convention `{model_name}_{accelerator_type}_{tensor_parallelism}`. Follow the CustomModels [guide](CustomModels.md) for bringing your own models.
 2. `HUGGING_FACE_HUB_TOKEN` - The Meta Llama-2 family of models need the HUGGING_FACE_HUB_TOKEN variable to be set to a Hugging Face Access Token for an account with permissions to download the model.
 
-From the terminal use the Ray Serve CLI to deploy a model. It will be run locally in this workspace's cluster:
 
 
-```python
-# Deploy the Mistral-7b model locally in the workspace.
+From the terminal (press Ctrl + ` to open terminal in VSCode)  use the Ray Serve CLI to deploy a model. It will be run locally in this workspace's cluster:
 
-!serve run --non-blocking llm-serve.yaml
-```
+NOTE: If you are deploying in GCP, you'd need to update the llm-serve.yaml file to deploy the model on an L4 instead of A10G
+
+`serve run llm-serve.yaml`
 
 
 # Step 2 - Query the model
@@ -42,7 +41,7 @@ from openai import OpenAI
 
 def query(base_url: str, api_key: str):
     client = OpenAI(
-      base_url=base_url + "/v1",
+      base_url=base_url + "v1",
       api_key=api_key,
     )
 
@@ -70,7 +69,7 @@ def query(base_url: str, api_key: str):
 ```python
 # Query the local serve application we just deployed.
 
-query("http://localhost:8000", "NOT A REAL KEY")
+query("http://localhost:8000/", "NOT A REAL KEY")
 ```
 
 # Step 3 - Deploying a production service
