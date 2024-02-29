@@ -1,6 +1,6 @@
 ## Serving a Stable Diffusion Model with Ray Serve
 This template shows you how to:
-1. Develop and run a Ray Serve application running a stable diffusion model.
+1. Develop and run a Ray Serve application running the SDXL diffusion model.
 2. Send test requests to the application running locally.
 3. Deploy the application to production as a service.
 4. Send requests to the application running in production as a service.
@@ -47,7 +47,7 @@ def generate_image(prompt: str, image_size: int) -> bytes:
 
 
 ```python
-image = generate_image("twin peaks sf in basquiat painting style", 640)
+image = generate_image("anyscale logo valentines day card, professional quality art, surrounded by flowers, white envelope", 640)
 
 filename = "image.png"
 with open(filename, "wb") as f:
