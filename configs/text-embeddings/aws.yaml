@@ -15,7 +15,7 @@ worker_node_types:
 
 # 8 vCPU, 1 NVIDIA A10G GPU, 32 GiB memory
 - name: gpu-worker-a10
-  instance_type: g5.x2large
+  instance_type: g5.2xlarge
   resources:
     cpu:
     gpu:
