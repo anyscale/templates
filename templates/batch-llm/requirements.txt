@@ -1,2 +1,0 @@
-# vllm package is used to run LLM inference
-vllm

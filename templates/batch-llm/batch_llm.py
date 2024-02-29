@@ -4,6 +4,8 @@ import numpy as np
 import ray
 import os
 
+from utils import generate_output_path
+
 # Set the Hugging Face token. Replace the following with your token.
 HF_TOKEN = os.environ.get("HF_TOKEN")
 if not HF_TOKEN:
@@ -12,15 +14,18 @@ if not HF_TOKEN:
 # Set to the model that you wish to use. Note that using the llama models will require a hugging face token to be set.
 HF_MODEL = "meta-llama/Llama-2-7b-chat-hf"
 
+# Input path to read input data.
 # Read one text file from S3. Ray Data supports reading multiple files
 # from cloud storage (such as JSONL, Parquet, CSV, binary format).
 INPUT_PATH = "s3://anonymous@air-example-data/prompts.txt"
+
+# Output path to write output result.
+output_path = generate_output_path(os.environ.get("ANYSCALE_ARTIFACT_STORAGE"), HF_MODEL)
 
 # Initialize Ray with a Runtime Environment.
 ray.init(
     runtime_env={
         "env_vars": {"HF_TOKEN": HF_TOKEN},
-        "pip": ["vllm"],
     }
 )
 
@@ -64,14 +69,14 @@ ds = ds.map_batches(
 # Write inference output data out as Parquet files to S3.
 # Multiple files would be written to the output destination,
 # and each task would write one or more files separately.
-output_path = os.environ.get("ANYSCALE_ARTIFACT_STORAGE") + "/result"
 ds.write_parquet(output_path)
 
+print(f"Batch inference result is written into {output_path}.")
 
 # Peek first 10 results.
-# NOTE: This is for local testing and debugging. For production use case,
-# one should write full result out as shown below.
-# outputs = ds.take(limit=10)
+# NOTE: This is for local testing and debugging.
+# output_ds = ray.data.read_parquet(output_path)
+# outputs = output_ds.take(limit=10)
 # for output in outputs:
 #     prompt = output["prompt"]
 #     generated_text = output["generated_text"]
