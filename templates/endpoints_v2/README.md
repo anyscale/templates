@@ -10,7 +10,7 @@ The llm-serve.yaml file in this example runs the Mistral-7B model. There are 2 i
 
 
 
-From the terminal (press Ctrl + ` to open terminal in VSCode), use the Ray Serve CLI to deploy a model. It will be run locally in this workspace's cluster:
+From the VSCode terminal (press Ctrl + ` in VSCode), use the Ray Serve CLI to deploy a model. It will be run locally in this workspace's cluster:
 
 NOTE: If you are deploying in GCP, you'd need to update the llm-serve.yaml file to deploy the model on an L4 instead of A10G
 
