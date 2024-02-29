@@ -245,8 +245,8 @@ That concludes our overview of Ray Tune in Anyscale. To learn more about Ray Tun
 ## Summary
 
 This notebook:
-- Run basic parallel grid sweeps in a workspace.
+- Ran basic parallel experiment grid sweeps in a workspace.
 - Showed how to configure Ray Tune's storage and scheduling options.
-- Demoed how to debug a CIFAR experiment run in the cluster using observability tools.
+- Demoed how to use observability tools on a CIFAR experiment run in the cluster.
 
 
