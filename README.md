@@ -32,14 +32,3 @@ To add a template:
 2. Add your compute configuration under `configs/<your-template-name>` (for both AWS and GCE).
 
 3. Update the product repo `backend/workspace-templates.yaml` to point to the new template added here after being merged.
-
-## Guidelines for Compute Configurations
-
-All head node configs should be standardized to:
-```yaml
-head_node_type:
-  name: head
-  instance_type: m5.2xlarge
-  resources:
-    cpu: 0
-```
