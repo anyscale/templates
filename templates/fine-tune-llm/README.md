@@ -33,7 +33,7 @@ WANDB_API_KEY={YOUR_WANDB_API_KEY} python train.py job_compute_configs/aws.yaml 
 WANDB_API_KEY={YOUR_WANDB_API_KEY} python train.py job_compute_configs/aws.yaml training_configs/lora/llama-2-7b-512-16xg5_4xlarge.yaml
 ```
 
-Once you submit the command, in the terminal you will seen the link to your finetuning job. Ex:
+Once you submit the command, in the terminal you will see the link to your finetuning job. Ex:
 
 ```
 View the job in the UI at https://console.anyscale.com/jobs/prodjob_62is21vur3fwl5y5xkc9u1t3ll
