@@ -68,62 +68,159 @@ import os
 os.listdir(results[0].path)
 ```
 
-## Configuring a larger-scale run
+## CIFAR parameter sweep
 
 Next, we'll configure Tune for a larger-scale run on a multi-node cluster. We'll customize the following parameters:
 - Resources to request for each trial
 - Saving results to cloud storage
 
-The code below walks through how to do this in Tune. Go ahead and run the cell, it will take a few minutes to complete on a multi-node cluster:
+We'll also update the function to do something more interesting: train a computer vision model. The following cell defines the training function for CIFAR (adapted from this more [complete example](https://docs.ray.io/en/latest/tune/examples/tune-pytorch-cifar.html)).
+
+Note that validation results are reported for each epoch:
+
+
+
+```python
+from cifar_utils import load_data, Net
+
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+import torch.optim as optim
+from torch.utils.data import random_split
+
+def train_cifar(config):
+    net = Net(config["l1"], config["l2"])
+
+    device = "cpu"
+    if torch.cuda.is_available():
+        device = "cuda:0"
+        if torch.cuda.device_count() > 1:
+            net = nn.DataParallel(net)
+    net.to(device)
+
+    criterion = nn.CrossEntropyLoss()
+    optimizer = optim.SGD(net.parameters(), lr=config["lr"], momentum=0.9)
+
+    trainset, _ = load_data()
+
+    test_abs = int(len(trainset) * 0.8)
+    train_subset, val_subset = random_split(
+        trainset, [test_abs, len(trainset) - test_abs])
+
+    trainloader = torch.utils.data.DataLoader(
+        train_subset,
+        batch_size=int(config["batch_size"]),
+        shuffle=True,
+        num_workers=0,
+    )
+    valloader = torch.utils.data.DataLoader(
+        val_subset,
+        batch_size=int(config["batch_size"]),
+        shuffle=True,
+        num_workers=0,
+    )
+
+    for epoch in range(10):  # loop over the dataset multiple times
+        running_loss = 0.0
+        epoch_steps = 0
+        for i, data in enumerate(trainloader):
+            # get the inputs; data is a list of [inputs, labels]
+            inputs, labels = data
+            inputs, labels = inputs.to(device), labels.to(device)
+
+            # zero the parameter gradients
+            optimizer.zero_grad()
+
+            # forward + backward + optimize
+            outputs = net(inputs)
+            loss = criterion(outputs, labels)
+            loss.backward()
+            optimizer.step()
+
+            # print statistics
+            running_loss += loss.item()
+            epoch_steps += 1
+            if i % 2000 == 1999:  # print every 2000 mini-batches
+                print("[%d, %5d] loss: %.3f" % (epoch + 1, i + 1,
+                                                running_loss / epoch_steps))
+                running_loss = 0.0
+
+        # Validation loss
+        val_loss = 0.0
+        val_steps = 0
+        total = 0
+        correct = 0
+        for i, data in enumerate(valloader, 0):
+            with torch.no_grad():
+                inputs, labels = data
+                inputs, labels = inputs.to(device), labels.to(device)
+
+                outputs = net(inputs)
+                _, predicted = torch.max(outputs.data, 1)
+                total += labels.size(0)
+                correct += (predicted == labels).sum().item()
+
+                loss = criterion(outputs, labels)
+                val_loss += loss.cpu().numpy()
+                val_steps += 1
+
+        train.report(
+            {"loss": (val_loss / val_steps), "accuracy": correct / total},
+        )
+    print("Finished Training")
+```
+
+The code below walks through how to parallelize the above training function in Tune. Go ahead and run the cell, it will take 5-10 minutes to complete on a multi-node cluster. While you're waiting, go ahead and proceed to the next section to learn how to monitor the execution.
+
+It will sweep across several choices for "l1", "l2", and "lr" of the net:
 
 
 ```python
 from ray import tune, train
 import os
-import time
-
-# Do a large scale run with 100 trials, each of which takes 60 seconds to run
-# and requests two CPU slots from Ray.
-# For example, each trial could be training a variation of a model.
-NUM_TRIALS = 100
-TIME_PER_TRIAL = 60
-CPUS_PER_TRIAL = 2
 
 # Define where results are stored. We'll use the Anyscale artifact storage path to
 # save results to cloud storage.
 STORAGE_PATH = os.environ["ANYSCALE_ARTIFACT_STORAGE"] + "/tune_results"
 
-def f(config):
-    # Import model libraries, etc...
-    # Load data and train model code here...
-    time.sleep(TIME_PER_TRIAL)
-
-    # Return final stats. You can also return intermediate progress
-    # using ray.train.report() if needed.
-    # To return your model, you could write it to storage and return its
-    # URI in this dict, or return it as a Tune Checkpoint:
-    # https://docs.ray.io/en/latest/tune/tutorials/tune-checkpoints.html
-    return {"my_result_metric": config["x"] ** 2, "other_data": ...}
-
-# Define trial parameters as a single grid sweep.
+# Define trial sweep parameters across l1, l2, and lr.
 trial_space = {
-    # This is an example parameter. You could replace it with filesystem paths,
-    # model types, or even full nested Python dicts of model configurations, etc.,
-    # that enumerate the set of trials to run.
-    "x": tune.grid_search(range(NUM_TRIALS)),
+    "l1": tune.grid_search([2, 4, 8, 16]),
+    "l2": tune.grid_search([2, 4, 8, 16]),
+    "lr": tune.grid_search([1e-4, 1e-1]),
+    "batch_size": 4,
 }
 
 # Can customize resources per trial, including CPUs and GPUs.
-f_wrapped = tune.with_resources(f, {"cpu": CPUS_PER_TRIAL})
+# You can try changing this to {"gpu": 1} to run on GPU.
+train_cifar = tune.with_resources(train_cifar, {"cpu": 2})
 
 # Start a Tune run and print the output.
 tuner = tune.Tuner(
-    f_wrapped,
+    train_cifar,
     param_space=trial_space,
     run_config=train.RunConfig(storage_path=STORAGE_PATH),
 )
 results = tuner.fit()
 print(results)
+```
+
+During and after the execution, Tune reports a table of current trial status and reported accuracy. You can see that the largest net with lowest ``lr`` gets the best accuracy on the validation set:
+
+<img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/intro-tune/assets/tune-output.png" width=600px/>
+
+
+### Persisted result storage
+
+Because we set ``storage_path`` to ``$ANYSCALE_ARTIFACT_STORAGE/tune_results``, Tune will upload trial results and artifacts to the specified storage.
+
+We didn't save any checkpoints in the example above, but if [you setup checkpointing](https://docs.ray.io/en/latest/tune/tutorials/tune-trial-checkpoints.html), the checkpoints would also be saved in this location:
+
+
+```python
+# Note: On GCP cloud use `gsutil ls` instead.
+!aws s3 ls $ANYSCALE_ARTIFACT_STORAGE/tune_results/
 ```
 
 ## Monitoring Tune execution in the cluster
@@ -143,13 +240,13 @@ Finally, we can observe the holistic execution of the job in the cluster in the 
 <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/intro-tune/assets/tune-metrics.png" width=800px/>
 
 
-That concludes our overview of Ray Tune in Anyscale. To learn more about advanced features of Tune and how it can improve your experiment management lifecycle, check out the [Ray Tune docs](https://docs.ray.io/en/latest/tune/index.html).
+That concludes our overview of Ray Tune in Anyscale. To learn more about Ray Tune and how it can improve your experiment management lifecycle, check out the [Ray Tune docs](https://docs.ray.io/en/latest/tune/index.html).
 
 ## Summary
 
 This notebook:
-- Run a basic parallel grid sweep experiment in a workspace.
+- Ran basic parallel experiment grid sweeps in a workspace.
 - Showed how to configure Ray Tune's storage and scheduling options.
-- Demoed how to debug an experiment run in the cluster using observability tools.
+- Demoed how to use observability tools on a CIFAR experiment run in the cluster.
 
 
