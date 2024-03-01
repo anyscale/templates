@@ -21,7 +21,7 @@ def get_region() -> str:
 def _get_lora_storage_uri() -> str:
     artifact_storage = os.environ.get("ANYSCALE_ARTIFACT_STORAGE")
     artifact_storage = artifact_storage.rstrip("/")
-    return f"{artifact_storage}/fine_tuning/"
+    return f"{artifact_storage}/lora_fine_tuning/"
 
 def generate_model_tag(model_id: str) -> str:
     """
