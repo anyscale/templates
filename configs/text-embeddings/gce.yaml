@@ -1,5 +1,5 @@
 head_node_type:
-  name: head-node-type
+  name: head
   instance_type: n2-standard-16
   resources:
     cpu: 0
