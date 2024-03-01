@@ -99,7 +99,7 @@ class HuggingFacePredictor:
     def __init__(self):
         from transformers import pipeline
         # Set "cuda:0" as the device so the Huggingface pipeline uses GPU.
-        self.model = pipeline("text-generation", model="gpt2", device="cuda:0")
+        self.model = pipeline("text-generation", model="gpt2", device=0)
 
     def __call__(self, batch: Dict[str, np.ndarray]) -> Dict[str, list]:
         predictions = self.model(list(batch["data"]), max_length=20, num_return_sequences=1)
@@ -139,11 +139,11 @@ import ray
 ds = ray.data.from_numpy(np.ones((10, 100)))
 
 def assert_batch(batch: Dict[str, np.ndarray]):
-    assert len(batch) == 2
+    assert len(batch["data"]) == 2, batch
     return batch
 
 # Specify that each input batch should be of size 2.
-ds.map_batches(assert_batch, batch_size=2)
+ds.map_batches(assert_batch, batch_size=2).show(limit=1)
 ```
 
 ### Handling GPU out-of-memory failures
