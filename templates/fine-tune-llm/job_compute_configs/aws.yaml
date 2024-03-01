@@ -2,7 +2,7 @@ compute_config:
   allowed_azs:
     - any
   head_node_type:
-    instance_type: m5.4xlarge
+    instance_type: m5.2xlarge
     name: head_node
   worker_node_types:
     - instance_type: g5.4xlarge
