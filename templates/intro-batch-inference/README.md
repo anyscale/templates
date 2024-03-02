@@ -72,6 +72,23 @@ In the Ray Dashboard tab, navigate to the Job page and open the "Ray Data Overvi
 
 
 
+## Scaling to a larger dataset
+
+Let's explore how to scale the above to a larger dataset, which will run on a cluster. Run the following cell to generate completions for 10000 rows with a concurrency of 20 actors. Ensure *Auto-select worker nodes* is checked in the cluster sidebar, and Anyscale will automatically add worker nodes to the cluster as needed to fit these actors:
+
+
+```python
+# Create a 10k row dataset.
+ds = ray.data.from_numpy(np.asarray(["Today's weather"] * 10000))
+
+# Ensure the dataset has enough blocks to be executed in parallel on many actors.
+ds = ds.repartition(1000)
+
+# Execute the batch inference.
+predictions = ds.map_batches(HuggingFacePredictor, concurrency=20)
+predictions.show()
+```
+
 ## Scaling with GPUs
 
 To use GPUs for inference, make the following changes to your code:
@@ -93,7 +110,7 @@ import numpy as np
 
 import ray
 
-ds = ray.data.from_numpy(np.asarray(["Complete this", "for me"]))
+ds = ray.data.from_numpy(np.asarray(["Large language models", "Text completion models"]))
 
 class HuggingFacePredictor:
     def __init__(self):
