@@ -74,7 +74,7 @@ In the Ray Dashboard tab, navigate to the Job page and open the "Ray Data Overvi
 
 ## Scaling to a larger dataset
 
-Let's explore how to scale the above to a larger dataset, which will run on a cluster. Run the following cell to generate completions for 10000 rows with a concurrency of 20 actors. Ensure *Auto-select worker nodes* is checked in the cluster sidebar, and Anyscale will automatically add worker nodes to the cluster as needed:
+Let's explore how to scale the above to a larger dataset, which will run on a cluster. Run the following cell to generate completions for 10000 rows with a concurrency of 20. Ensure *Auto-select worker nodes* is checked in the cluster sidebar, and Anyscale will automatically add worker nodes to the cluster as needed:
 
 
 ```python
