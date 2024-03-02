@@ -81,7 +81,7 @@ Let's explore how to scale the above to a larger dataset, which will run on a cl
 # Create a 10k row dataset.
 ds = ray.data.from_numpy(np.asarray(["Today's weather"] * 10000))
 
-# Ensure the dataset has enough blocks to be executed in parallel on many actors.
+# Ensure the dataset has enough blocks to be executed in parallel.
 ds = ds.repartition(1000)
 
 # Execute the batch inference.
