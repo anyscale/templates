@@ -5,7 +5,7 @@ applications:
     args:
       models: []
       vllm_base_models:
-        - "./models/mistral/mistralai--Mistral-7B-Instruct-v0.1_a10g_tp1.yaml"  # replace with models/mistral/mistralai--Mistral-7B-Instruct-v0.1_l4_tp1.yaml for GCP
+        - "./models/mistral/mistralai--Mistral-7B-Instruct-v0.1_a10g_tp1.yaml"
       multiplex_lora_adapters: []
       function_calling_models: []
     runtime_env:
