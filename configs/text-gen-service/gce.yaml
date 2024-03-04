@@ -1,5 +1,5 @@
 head_node_type:
-  name: head_node_type
+  name: head
   instance_type: n2-standard-8
 worker_node_types:
 - name: gpu_worker

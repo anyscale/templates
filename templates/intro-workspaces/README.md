@@ -89,7 +89,7 @@ To parallelize beyond the resources available to the workspace node, add additio
 
 ### Using "Auto-select workers" mode
 
-To let Ray automatically select what kind of worker nodes to add to the cluster, check the "Auto-select workers" box. Ray will try to autoscale cluster worker nodes to balance cost and performance. In auto mode, you cannot configure worker node types, but the resources panel will show which node types have been launched.
+To let Ray automatically select what kind of worker nodes to add to the cluster, check the "Auto-select workers" box. Ray will add worker nodes as needed to run submitted tasks and actors. In auto mode, you cannot configure workers, but the resources panel will show which nodes have been launched.
 
 We recommend using auto mode if you do not have specific cluster requirements, and are ok with waiting for the autoscaler to add nodes on-demand to the cluster.
 
