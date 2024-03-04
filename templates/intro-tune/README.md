@@ -121,7 +121,7 @@ def train_cifar(config):
         num_workers=0,
     )
 
-    for epoch in range(10):  # loop over the dataset multiple times
+    for epoch in range(5):  # loop over the dataset multiple times
         running_loss = 0.0
         epoch_steps = 0
         for i, data in enumerate(trainloader):
@@ -186,9 +186,9 @@ STORAGE_PATH = os.environ["ANYSCALE_ARTIFACT_STORAGE"] + "/tune_results"
 
 # Define trial sweep parameters across l1, l2, and lr.
 trial_space = {
-    "l1": tune.grid_search([2, 4, 8, 16]),
-    "l2": tune.grid_search([2, 4, 8, 16]),
-    "lr": tune.grid_search([1e-4, 1e-1]),
+    "l1": tune.grid_search([8, 16, 64]),
+    "l2": tune.grid_search([8, 16, 64]),
+    "lr": tune.grid_search([5e-4, 1e-3]),
     "batch_size": 4,
 }
 
@@ -206,7 +206,7 @@ results = tuner.fit()
 print(results)
 ```
 
-During and after the execution, Tune reports a table of current trial status and reported accuracy. You can see that the largest net with lowest ``lr`` gets the best accuracy on the validation set:
+During and after the execution, Tune reports a table of current trial status and reported accuracy. You can find the configuration that achieves the highest accuracy on the validation set:
 
 <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/intro-tune/assets/tune-output.png" width=600px/>
 
