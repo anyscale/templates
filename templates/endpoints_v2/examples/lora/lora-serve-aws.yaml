@@ -4,8 +4,9 @@ applications:
     import_path: aviary_private_endpoints.backend.server.run:router_application
     args:
       models: []
-      function_calling_models:
-        - "./models/mistral/mistralai--Mistral-7B-Instruct-v0.1_a10g_tp1.yaml"  # replace with models/mistral/mistralai--Mistral-7B-Instruct-v0.1_l4_tp1.yaml for GCE
+      multiplex_models:
+        - "./models/llama/meta-llama--Llama-2-7b-chat-hf_a10g_tp1.yaml"
+      dynamic_lora_loading_path: s3://my-bucket/my-lora-checkouts/  # <-- change this to a bucket you have access to that contains the loRA checkpoint to load dynamically
     runtime_env:
       env_vars:
         HUGGING_FACE_HUB_TOKEN: "UPDATE HF TOKEN HERE"  # <-- change this to a real token
