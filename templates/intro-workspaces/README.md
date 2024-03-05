@@ -1,5 +1,7 @@
 # Introduction to Workspaces
 
+**⏱️ Time to complete**: 10 min
+
 Welcome! You are currently in a Workspace, which is a persistent cloud IDE connected to a Ray cluster.
 
 In this tutorial, you will learn:

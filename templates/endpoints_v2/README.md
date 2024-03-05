@@ -1,5 +1,7 @@
 # Deploy, configure, and serve LLMs 
 
+**⏱️ Time to complete**: 5 min (15 on GCP)
+
 The guide below walks you through the steps required for deployment of LLM endpoints. Based on Ray Serve and RayLLM, the foundation for [Anyscale-Hosted Endpoints](http://anyscale.com/endpoints), the Endpoints template provides an easy to configure solution for ML Platform teams, Infrastructure engineers, and Developers who want to deploy optimized LLMs in production.  We have provided a number of examples for popular open-source models (Llama2, Mistral, Mixtral, embedding models, and more) with different GPU accelerator and tensor-parallelism configurations in the `models` directory.
 
 This template also includes more advanced tutorials in the `examples/` folder, including those for:
@@ -11,7 +13,7 @@ This template also includes more advanced tutorials in the `examples/` folder, i
 ## Step 1 - Run the model locally in the Workspace
 
 The llm-serve.yaml file in this example runs the Mistral-7B model. There are 2 important configurations you would need to modify:
-1. The `models` config in `llm-serve-*.yaml` contains a list of YAML files for the models you want to deploy. You can run any of the models in the `models` directory or define your own model YAML file and run that instead. All config files follow the naming convention `{model_name}_{accelerator_type}_{tensor_parallelism}`. Follow the CustomModels [guide](CustomModels.md) for bringing your own models.
+1. The `models` config in `llm-serve-*.yaml` contains a list of YAML files for the models you want to deploy. You can run any of the models in the `models` directory or define your own model YAML file and run that instead. All config files follow the naming convention `{model_name}_{accelerator_type}_{tensor_parallelism}`. Follow the CustomModels [guide](examples/CustomModels.ipynb) for bringing your own models.
 2. `HUGGING_FACE_HUB_TOKEN` - The Meta Llama-2 family of models need the HUGGING_FACE_HUB_TOKEN variable to be set to a Hugging Face Access Token for an account with permissions to download the model.
 
 
