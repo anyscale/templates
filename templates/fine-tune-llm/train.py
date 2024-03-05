@@ -12,16 +12,20 @@ def _read_yaml_file(file_path):
     with open(file_path, "r") as stream:
         return yaml.safe_load(stream)
 
+
 def get_cld_id() -> str:
     return os.environ.get("ANYSCALE_CLOUD_ID") or ""
 
+
 def get_region() -> str:
     return os.environ.get("ANYSCALE_CLOUD_STORAGE_BUCKET_REGION") or ""
+
 
 def _get_lora_storage_uri() -> str:
     artifact_storage = os.environ.get("ANYSCALE_ARTIFACT_STORAGE")
     artifact_storage = artifact_storage.rstrip("/")
     return f"{artifact_storage}/lora_fine_tuning/"
+
 
 def generate_model_tag(model_id: str) -> str:
     """
@@ -95,7 +99,7 @@ def main():
         subprocess.run(["anyscale", "job", "submit", temp_file_name], check=True)
         if lora_storage_uri:
             print(
-                f"Note: Lora weights will also be stored in path {lora_storage_uri} under {model_tag} bucket."
+                f"Note: LoRA weights will also be stored in path {lora_storage_uri} under {model_tag} bucket."
             )
     finally:
         # Clean up by deleting the temporary file
