@@ -94,13 +94,13 @@ endpoints page guide to query the endpoint ([docs](https://docs.anyscale.com/end
 
 ### Where can I view the bucket where my LoRA weights are stored?
 
-All the lora weights are stored under the uri `${ANYSCALE_ARTIFACT_STORAGE}/lora_fine_tuning`
+All the LoRA weights are stored under the URI `${ANYSCALE_ARTIFACT_STORAGE}/lora_fine_tuning`
 where `ANYSCALE_ARTIFACT_STORAGE` is an environmental variable.
 
 ### How can I serve the LoRA weights via the serving template?
 
-When you run the fine-tuning job, you should get a checkpoint uri
-from the log `Note: Lora weights will also be stored in path s3://anyscale-data-cld-id/org_id/cloud_id/artifact_storage/lora_fine_tuning under meta-llama/Llama-2-7b-chat-hf:sql:12345 bucket.`.
+When you run the fine-tuning job, you should get a checkpoint URI
+from the log `Note: LoRA weights will also be stored in path s3://anyscale-data-cld-id/org_id/cloud_id/artifact_storage/lora_fine_tuning under meta-llama/Llama-2-7b-chat-hf:sql:12345 bucket.`.
 
 Upon job success, you can specify this URI as the `dynamic_lora_loading_path` in the serving
 workspace template.
