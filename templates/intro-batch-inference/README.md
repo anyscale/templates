@@ -1,5 +1,7 @@
 # Batch Inference Basics
 
+**⏱️ Time to complete**: 10 min
+
 Offline batch inference is a process for generating model predictions on a fixed set of input data. [Ray Data](https://docs.ray.io/en/latest/data/data.html) offers a scalable solution for batch inference, providing optimized inference performance for deep learning applications.
 
 In this tutorial, you will learn:
