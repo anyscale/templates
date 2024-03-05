@@ -1,4 +1,7 @@
 # Introduction to Services
+
+**⏱️ Time to complete**: 5 min (15 on GCP)
+
 This tutorial shows you how to:
 1. Develop a simple Ray Serve application locally.
 2. Deploy the application to production as an Anyscale service.
