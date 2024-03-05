@@ -49,7 +49,7 @@ with step 2(a) or step 2(b).
 Upon the job submission, you can see the LoRA weight storage location and model ID in the log, such as the below:
 
 ```shell
-Note: Lora weights will also be stored in path s3://anyscale-data-cld-id/org_id/cloud_id/artifact_storage/lora_fine_tuning under meta-llama/Llama-2-7b-chat-hf:sql:12345 bucket.
+Note: LoRA weights will also be stored in path s3://anyscale-data-cld-id/org_id/cloud_id/artifact_storage/lora_fine_tuning under meta-llama/Llama-2-7b-chat-hf:sql:12345 bucket.
 ```
 
 Once the job is complete, you can deploy the _base model_ on Endpoints by creating a
