@@ -1,5 +1,7 @@
 # Running Experiments in Parallel with Tune
 
+**⏱️ Time to complete**: 10 min
+
 Ray Tune lets you easily run experiments in parallel across a cluster.
 
 In this tutorial, you will learn:
