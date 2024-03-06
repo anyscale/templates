@@ -50,6 +50,9 @@ from openai import OpenAI
 def query(base_url: str, api_key: str):
     if not base_url.endswith("/"):
         base_url += "/"
+    
+    if "/routes" in base_url:
+        raise ValueError("base_url must end with '.com'")
 
     client = OpenAI(
       base_url=base_url + "v1",
@@ -98,7 +101,7 @@ This is setup to run the Mistral-7B model, but can be easily modified to run any
 
 ## Step 4 - Query the service endpoint
 
-The above cell should print something like `(anyscale +2.9s) curl -H 'Authorization: Bearer XXXXXXXXX_XXXXXX-XXXXXXXXXXXX' https://YYYYYYYYYYYY.anyscaleuserdata.com/-/routes`, which contains information you need to fill out in the cell below to query the service.
+The above cell should print something like `(anyscale +2.9s) curl -H 'Authorization: Bearer XXXXXXXXX_XXXXXX-XXXXXXXXXXXX' https://YYYYYYYYYYYY.anyscaleuserdata.com`, which contains information you need to fill out in the cell below to query the service.
 
 You can also find this information by clicking the "Query" button in the Service UI.
 
