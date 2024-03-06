@@ -17,3 +17,13 @@ The RAG Developer Bootcamp is a 3-part training program designed to help develop
 - Part 2: RAG Development: embeddings at scale
 - Part 3: RAG Development: evaluations
 
+## Get Started
+
+1. Open a terminal and run the following command to download the training materials:
+
+```bash
+wget https://anyscale-materials.s3.us-west-2.amazonaws.com/rag-mar-2024.zip
+unzip rag-mar-2024.zip
+```
+
+2. Navigate to the `01_overview` folder and open the `notebook.ipynb` file to get started with the training program.
