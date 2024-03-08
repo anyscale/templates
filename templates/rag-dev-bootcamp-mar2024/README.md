@@ -30,13 +30,14 @@ unzip rag-mar-2024.zip
 
 ## Agenda
 
-* 10:00 am -> 10:20 am - Set up 
+* 10:00 am -> 10:20 am - Set up
 * 10:20 am -> 10:40 am - RAG overview
 * 10:40 am -> 11:10 am - Canopy
-* 11:10 am  -> 12:00 pm - Embeddings pipeline Part 1
-* 12:00 pm -> 12:45 pm - Lunch Break
-* 12:45 pm -> 1:45 pm - Embeddings pipeline Part 2
-* 1:45 pm  -> 2:45 pm - Evaluations Part 1
-* 2:45 pm -> 3 pm - Coffee break
-* 3 pm -> 4 pm - Evaluations Part 2
-* 4 pm -> 4:30 pm - Deployment Bonus
+* 11:10 am -> 11:20 am - Coffee break
+* 11:20 am -> 12:00 pm - Embeddings pipeline Part 1
+* 12:00 pm -> 1:00 pm - Lunch Break
+* 1:00 pm -> 2:00 pm - Embeddings pipeline Part 2
+* 2:00 pm -> 3:00 pm - Evaluations Part 1
+* 3:00 pm -> 3:15 pm - Coffee break
+* 3:15 pm -> 4:00 pm - Evaluations Part 2
+* 4:00 pm -> 4:30 pm - Bonus session (stay tuned)
