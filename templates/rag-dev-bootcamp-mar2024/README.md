@@ -23,7 +23,26 @@ The RAG Developer Bootcamp is a 3-part training program designed to help develop
 
 ```bash
 wget https://anyscale-materials.s3.us-west-2.amazonaws.com/rag-mar-2024.zip
+```
+
+2. unzip the files:
+
+```bash
 unzip rag-mar-2024.zip
 ```
 
-2. Navigate to the `01_overview` folder and open the `notebook.ipynb` file to get started with the training program.
+3. Navigate to the `01_overview` folder and open the `notebook.ipynb` file to get started with the training program.
+
+## Agenda
+
+* 10:00 am -> 10:20 am - Set up
+* 10:20 am -> 10:40 am - RAG overview
+* 10:40 am -> 11:10 am - Canopy
+* 11:10 am -> 11:20 am - Coffee break
+* 11:20 am -> 12:00 pm - Embeddings pipeline Part 1
+* 12:00 pm -> 1:00 pm - Lunch Break
+* 1:00 pm -> 2:00 pm - Embeddings pipeline Part 2
+* 2:00 pm -> 3:00 pm - Evaluations Part 1
+* 3:00 pm -> 3:15 pm - Coffee break
+* 3:15 pm -> 4:00 pm - Evaluations Part 2
+* 4:00 pm -> 4:30 pm - Bonus session (stay tuned)
