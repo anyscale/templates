@@ -29,19 +29,19 @@ inform(name[Dirt: Showdown], release_year[2012], esrb[E 10+ (for Everyone 10 and
 In order to deploy your own LoRA adapters you need to update the following fields in `lora-serve.yaml`:
 
 1. `dynamic_lora_loading_path`
-    - The base artifact storage path of your LoRA checkpoints. 
-    - The path to the checkpoints must be in the following format: `{dynamic_lora_loading_path}/{base_model_id}:{suffix}:{id}`, e.g. `s3://my-bucket/my-lora-checkouts/meta-llama/Llama-2-7b-chat-hf:lora-model:1234`. 
-    - The models can be loaded from any accessible AWS S3 or Google Cloud Storage bucket. You can use an existing bucket where you have the LoRA models or can upload the models to the `$ANYSCALE_ARTIFACT_STORAGE` already provided by Anyscale Workspace. 
+    - The base artifact storage path of your LoRA checkpoints.
+    - The path to the checkpoints must be in the following format: `{dynamic_lora_loading_path}/{base_model_id}:{suffix}:{id}`, e.g. `s3://my-bucket/my-lora-checkouts/meta-llama/Llama-2-7b-chat-hf:lora-model:1234`.
+    - The models can be loaded from any accessible AWS S3 or Google Cloud Storage bucket. You can use an existing bucket where you have the LoRA models or can upload the models to the `$ANYSCALE_ARTIFACT_STORAGE` already provided by Anyscale Workspace.
     - New models can be uploaded to the `dynamic_lora_loading_path` dynamically before or after the Serve application is launched.
 2. `multiplex_models
     - The path to the YAML for the base model deployment configuration.
-3. `HUGGING_FACE_HUB_TOKEN` 
+3. `HUGGING_FACE_HUB_TOKEN`
     - This is needed for Llama 2 models
 
 
 # Querying the default query
 
-You can update `lora-query.py` with your own query or query other models. To query other models, modify the `MODEL` field used in `lora-query.py`. 
+You can update `lora-query.py` with your own query or query other models. To query other models, modify the `MODEL` field used in `lora-query.py`.
 
 > Note: LoRA model IDs must always follow this format: `{base_model_id}:{suffix}:{id}`. (e.g. `meta-llama/Llama-2-7b-chat-hf:lora-model:1234`)
 
