@@ -23,10 +23,15 @@ The RAG Developer Bootcamp is a 3-part training program designed to help develop
 
 ```bash
 wget https://anyscale-materials.s3.us-west-2.amazonaws.com/rag-mar-2024.zip
+```
+
+2. unzip the files:
+
+```bash
 unzip rag-mar-2024.zip
 ```
 
-2. Navigate to the `01_overview` folder and open the `notebook.ipynb` file to get started with the training program.
+3. Navigate to the `01_overview` folder and open the `notebook.ipynb` file to get started with the training program.
 
 ## Agenda
 
