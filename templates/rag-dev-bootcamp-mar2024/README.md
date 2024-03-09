@@ -46,3 +46,9 @@ unzip rag-mar-2024.zip
 * 3:00 pm -> 3:15 pm - Coffee break
 * 3:15 pm -> 4:00 pm - Evaluations Part 2
 * 4:00 pm -> 4:30 pm - Bonus session (stay tuned)
+
+## Feedback survey
+
+Help us improve! We would greatly appreciate it if you could complete this brief survey so that we can enhance the experience for future events.
+
+[anonymous survey link](https://forms.gle/X18J4w5VypYKFTkm8)
