@@ -51,4 +51,4 @@ unzip rag-mar-2024.zip
 
 Help us improve! We would greatly appreciate it if you could complete this brief survey so that we can enhance the experience for future events.
 
-[Survey link](https://forms.gle/X18J4w5VypYKFTkm8)
+[anonymous survey link](https://forms.gle/X18J4w5VypYKFTkm8)
