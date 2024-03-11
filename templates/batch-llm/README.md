@@ -1,6 +1,6 @@
 ## LLM offline batch inference with Ray Data and vLLM
 
-**⏱️ Time to complete**: ? min
+**⏱️ Time to complete**: 5 min
 
 This template shows you how to:
 1. Read in data from in-memory samples or files on cloud storage. 
@@ -127,7 +127,7 @@ class LLMPredictor:
         }
 ```
 
-Apply batch inference for all input data with the Ray Data [`map_batches`](https://docs.ray.io/en/latest/data/api/doc/ray.data.Dataset.map_batches.html) method.
+Apply batch inference for all input data with the Ray Data [`map_batches`](https://docs.ray.io/en/latest/data/api/doc/ray.data.Dataset.map_batches.html) method. Here, you can easily configure Ray Data to scale the number of LLM instances and compute (number of GPUs to use).
 
 
 ```python
