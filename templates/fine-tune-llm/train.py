@@ -33,7 +33,10 @@ def generate_model_tag(model_id: str) -> str:
     """
     username = os.environ.get("ANYSCALE_USERNAME")
     if username:
-        username = username.strip().replace(" ", "_")[:5]
+        username = username.strip().replace(" ", "")[:5]
+        if len(username) < 5:
+            padding_char = username[-1] if username else 'a'
+            username += padding_char * (5 - len(username))
     else:
         username = "".join(random.choice(string.ascii_lowercase) for _ in range(5))
     suffix = "".join(random.choice(string.ascii_lowercase) for _ in range(5))
