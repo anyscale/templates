@@ -100,32 +100,12 @@ ds.take(1)
 ### Scaling to a larger dataset
 In the cell above, we created a Ray Dataset with 5 example prompts. Next, let's explore how to scale to a larger dataset based on files stored in cloud storage.
 
-Run the following cell to create a Dataset by reading in data from a text file stored on S3. The file contains 5800 example prompts.
+Run the following cell to create a Dataset with 100 example prompts, constructed by repeating the 5 examples above 20 times.
 
 
 ```python
-ds = ray.data.read_text("s3://anonymous@air-example-data/prompts.txt")
+ds = ray.data.from_items(prompts * 20)
 ds.count()
-```
-
-
-```python
-# Examine the first row of the read data.
-ds.take(1)
-```
-
-Examining the first row, we see that the Dataset contains a single column named `text`. To keep the data consistent with our previously constructed dataset, we can rename this column to `item` using the Ray Data [`map_batches`](https://docs.ray.io/en/latest/data/api/doc/ray.data.Dataset.map_batches.html) method.
-
-
-```python
-def rename_column(batch):
-    """Rename the `text` column to `item`."""
-    batch["item"] = batch["text"]
-    del batch["text"]
-    return batch
-
-ds = ds.map_batches(rename_column)
-ds.take(1)
 ```
 
 ### Step 4: Run Batch Inference with vLLM
@@ -162,7 +142,7 @@ Apply batch inference for all input data with the Ray Data [`map_batches`](https
 ds = ds.map_batches(
     LLMPredictor,
     # Set the concurrency to the number of LLM instances.
-    concurrency=1,
+    concurrency=4,
     # Specify the number of GPUs required per LLM instance.
     num_gpus=1,
     # Specify the batch size for inference.
