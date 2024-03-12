@@ -9,7 +9,9 @@ This template shows you how to:
 
 For a Python script version of the `.ipynb` notebook used for the workspace template, refer to `examples/main.py`.
 
-### How to decide between online VS offline inference for LLM
+**Note:** For a more general introduction to batch inference with Ray Data, check out the `Batch Inference Basics` workspace template.
+
+### How to decide between online vs offline inference for LLM
 Online LLM inference (e.g. Anyscale Endpoint) should be used when you want to get real-time response for prompt. Use online inference when you want to optimize latency of inference to be as quick as possible.
 
 On the other hand, offline LLM inference should be used when you want to get reponses for a large number of prompts within an end-to-end time requirement (e.g. minutes to hours granularity). Use offline inference when you want to optimize throughput of inference to use resource (e.g. GPU) as much as possible on large-scale input data.
