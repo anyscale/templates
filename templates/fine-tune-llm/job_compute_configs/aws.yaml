@@ -47,6 +47,4 @@ compute_config:
         Tags:
           - Key: as-feature-multi-zone
             Value: "true"
-          - Key: ttl-hours
-            Value: '200'
 max_retries: 0
