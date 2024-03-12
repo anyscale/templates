@@ -1,6 +1,6 @@
 ## LLM offline batch inference with Ray Data and vLLM
 
-**⏱️ Time to complete**: 5 min
+**⏱️ Time to complete**: 10 min
 
 This template shows you how to:
 1. Read in data from in-memory samples or files on cloud storage. 
@@ -69,7 +69,7 @@ ray.init(
 ```
 
 ### Step 3: Read input data with Ray Data
-Use Ray Data to read in your input data, either from some sample prompts directly as Python strings, or from input files on cloud storage.
+Use Ray Data to read in your input data from some sample prompts.
 
 
 ```python
@@ -92,12 +92,40 @@ The key to a happy life is ...
 """,
 ]
 ds = ray.data.from_items(prompts)
+
+# View one row of the Dataset.
+ds.take(1)
 ```
 
-_Note_: This notebook uses local text data defined above, but it can easily be expanded to read from input data stored in cloud storage. To read text files from cloud storage (e.g., AWS S3), you can instead define the dataset as:
+### Scaling to a larger dataset
+In the cell above, we created a Ray Dataset with 5 example prompts. Next, let's explore how to scale to a larger dataset based on files stored in cloud storage.
+
+Run the following cell to create a Dataset by reading in data from a text file stored on S3. The file contains 5800 example prompts.
+
 
 ```python
 ds = ray.data.read_text("s3://anonymous@air-example-data/prompts.txt")
+ds.count()
+```
+
+
+```python
+# Examine the first row of the read data.
+ds.take(1)
+```
+
+Examining the first row, we see that the Dataset contains a single column named `text`. To keep the data consistent with our previously constructed dataset, we can rename this column to `item` using the Ray Data [`map_batches`](https://docs.ray.io/en/latest/data/api/doc/ray.data.Dataset.map_batches.html) method.
+
+
+```python
+def rename_column(batch):
+    """Rename the `text` column to `item`."""
+    batch["item"] = batch["text"]
+    del batch["text"]
+    return batch
+
+ds = ds.map_batches(rename_column)
+ds.take(1)
 ```
 
 ### Step 4: Run Batch Inference with vLLM
