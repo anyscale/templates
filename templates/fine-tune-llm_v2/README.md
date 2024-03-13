@@ -1,8 +1,6 @@
 # Fine-tuning Llama-2/Mistral models with Anyscale
 
-Anyscale currently offers a simple CLI command to fine-tune LLM models via `anyscale fine-tuning submit`
-and you can take a look at the documentation [here](https://docs.anyscale.com/endpoints/fine-tuning/get-started).
-This guide provides starter configurations if you would like to further customize the fine-tuning process.
+This template offers starter configurations to fine-tune LLM models.
 
 ### Supported base models
 
@@ -119,11 +117,3 @@ to customize the fine-tuning job.
 In addition, the deepspeed configs are provided in case you would
 like to customize them.
 
-### What if I want to use a different instance type?
-
-You can edit both job and training configs to use
-a different instance type. Note that the `num_devices` field
-under the `training_configs` file would need
-to be updated to be the total of GPUs that you expect to use.
-For instance, if you expect to fine-tune a model with 4 g5.12xlarge,
-the `num_devices` should be 16.
