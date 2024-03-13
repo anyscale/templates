@@ -102,12 +102,20 @@ ds.take(1)
 ### Scaling to a larger dataset
 In the cell above, we created a Ray Dataset with 5 example prompts. Next, let's explore how to scale to a larger dataset based on files stored in cloud storage.
 
-Run the following cell to create a Dataset with 100 example prompts, constructed by repeating the 5 examples above 20 times.
+Run the following cell to create a Dataset from a text file stored on S3.
 
 
 ```python
-ds = ray.data.from_items(prompts * 20)
-ds.count()
+ds = ray.data.read_text("s3://anonymous@air-example-data/prompts.txt")
+print(ds)
+```
+
+This Dataset has 5800 rows, each row containing a single prompt in the `text` column. For the purposes of this workspace template, we will only run inference on the first 100 rows, which we can achieve using the [`limit`](https://docs.ray.io/en/latest/data/api/doc/ray.data.Dataset.limit.html)  method.
+
+
+```python
+ds = ds.limit(100)
+ds.take_all()
 ```
 
 ### Step 4: Run Batch Inference with vLLM
@@ -125,7 +133,7 @@ class LLMPredictor:
         # Generate texts from the prompts.
         # The output is a list of RequestOutput objects that contain the prompt,
         # generated text, and other information.
-        outputs = self.llm.generate(batch["item"], sampling_params)
+        outputs = self.llm.generate(batch["text"], sampling_params)
         prompt = []
         generated_text = []
         for output in outputs:
@@ -148,7 +156,7 @@ ds = ds.map_batches(
     # Specify the number of GPUs required per LLM instance.
     num_gpus=1,
     # Specify the batch size for inference.
-    batch_size=5,
+    batch_size=10,
 )
 ```
 
