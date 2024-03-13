@@ -8,3 +8,8 @@ gcp_advanced_configurations_json:
   instance_properties:
     labels:
       as-feature-multi-zone: 'true'
+    disks:
+      - boot: true
+        auto_delete: true
+        initialize_params:
+          disk_size_gb: 250
