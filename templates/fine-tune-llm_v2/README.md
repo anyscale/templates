@@ -25,42 +25,27 @@ Next, you can launch a fine-tuning job where the WandB API key is passed as an e
 
 ```shell
 # Launch a full-param fine-tuning job for Llama 7b with 16 g5.4xlarge instances
-WANDB_API_KEY={YOUR_WANDB_API_KEY} python train.py job_compute_configs/aws.yaml training_configs/full_param/llama-2-7b-512-16xg5_4xlarge.yaml
+WANDB_API_KEY={YOUR_WANDB_API_KEY} python train.py training_configs/full_param/llama-2-7b-512-16xa10.yaml
 
 # Launch a LoRA fine-tuning job for Llama 7b with 16 g5.4xlarge instances
-WANDB_API_KEY={YOUR_WANDB_API_KEY} python train.py job_compute_configs/aws.yaml training_configs/lora/llama-2-7b-512-16xg5_4xlarge.yaml
+WANDB_API_KEY={YOUR_WANDB_API_KEY} python train.py training_configs/lora/llama-2-7b-512-16xa10.yaml
 ```
 
-Once you submit the command, in the terminal you will see the link to your finetuning job. Ex:
-
-```
-View the job in the UI at https://console.anyscale.com/jobs/prodjob_62is21vur3fwl5y5xkc9u1t3ll
-```
-
-You can now monitor the progress of the job in the provided job link. Generally a full-param fine-tuning job will take a few hours.
+Once you submit the command, the fine-tuning job will start runnning in your workspace. Generally a full-param fine-tuning job will take a few hours.
 
 Depending on whether you are running LoRA or full-param fine-tuning, you can continue
 with step 2(a) or step 2(b).
 
 # Step 2(a) - Serve the LoRA finetuned model
 
-Upon the job submission, you can see the LoRA weight storage location and model ID in the log, such as the below:
+Upon the job completion, you can see the LoRA weight storage location and model ID in the log, such as the below:
 
 ```shell
 Note: LoRA weights will also be stored in path s3://anyscale-data-cld-id/org_id/cloud_id/artifact_storage/lora_fine_tuning under meta-llama/Llama-2-7b-chat-hf:sql:12345 bucket.
 ```
 
-Once the job is complete, you can deploy the _base model_ on Endpoints by creating a
-new endpoint or adding it to an existing endpoint
-([docs](https://docs.anyscale.com/endpoints/model-serving/get-started#deploy-an-anyscale-private-endpoint)).
-Then you can enable LoRA serving with the step
-[here](https://docs.anyscale.com/endpoints/model-serving/model-configuration#serving-lora-weights).
-Therefore, when you query the endpoint, the endpoint will load the LoRA adapter from the
-stored bucket dynamically.
-
-You can follow the endpoints page guide to query the endpoint
-([docs](https://docs.anyscale.com/endpoints/model-serving/get-started#step-4-query-the-model)).
-By updating the model ID to the LoRA model ID, you can query the LoRA model.
+You can specify this URI as the `dynamic_lora_loading_path` in the serving
+workspace template, and then query the endpoint.
 
 Note: Model IDs follow the format `{base_model_id}:{suffix}:{id}`
 
@@ -73,20 +58,8 @@ Best checkpoint is stored in:
 anyscale-data-cld-id/org_id/cloud_id/artifact_storage/username/llmforge-finetuning/meta-llama/Llama-2-70b-hf/TorchTrainer_2024-01-25_18-07-48/TorchTrainer_b3de9_00000_0_2024-01-25_18-07-48/checkpoint_000000
 ```
 
-You can go to models page and import this model by clicking the `Import` button.
-The checkpoint uri points to a remote bucket location where the model
-configs, weights and tokenizers are stored.
-When entering the remote uri, please make sure to add the
-prefix `s3://` or `gs://`.
-
-For the generation config, you can reference example configs
-[here](https://docs.anyscale.com/endpoints/model-serving/import-model#generation-configuration-examples).
-
-# Step 3 - Deploy the full-param finetuned model on Endpoints
-
-Once the model is imported, you can deploy it on Endpoints by creating a
-new endpoint or adding it to an existing endpoint. You can follow the
-endpoints page guide to query the endpoint ([docs](https://docs.anyscale.com/endpoints/model-serving/get-started#step-4-query-the-model)).
+You can follow the `Learn how to bring your own models` section under the endpoints template
+to serve this finetuned model with the specified storage uri.
 
 # Frequently asked questions
 
@@ -94,14 +67,6 @@ endpoints page guide to query the endpoint ([docs](https://docs.anyscale.com/end
 
 All the LoRA weights are stored under the URI `${ANYSCALE_ARTIFACT_STORAGE}/lora_fine_tuning`
 where `ANYSCALE_ARTIFACT_STORAGE` is an environmental variable.
-
-### How can I serve the LoRA weights via the serving template?
-
-When you run the fine-tuning job, you should get a checkpoint URI
-from the log `Note: LoRA weights will also be stored in path s3://anyscale-data-cld-id/org_id/cloud_id/artifact_storage/lora_fine_tuning under meta-llama/Llama-2-7b-chat-hf:sql:12345 bucket.`.
-
-Upon job success, you can specify this URI as the `dynamic_lora_loading_path` in the serving
-workspace template.
 
 ### How can I fine-tune using my own data?
 

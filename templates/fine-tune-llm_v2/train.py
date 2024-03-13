@@ -12,15 +12,6 @@ def _read_yaml_file(file_path):
     with open(file_path, "r") as stream:
         return yaml.safe_load(stream)
 
-
-def get_cld_id() -> str:
-    return os.environ.get("ANYSCALE_CLOUD_ID") or ""
-
-
-def get_region() -> str:
-    return os.environ.get("ANYSCALE_CLOUD_STORAGE_BUCKET_REGION") or ""
-
-
 def _get_lora_storage_uri() -> str:
     artifact_storage = os.environ.get("ANYSCALE_ARTIFACT_STORAGE")
     artifact_storage = artifact_storage.rstrip("/")
@@ -46,10 +37,7 @@ def generate_model_tag(model_id: str) -> str:
 def main():
     # Set up the argument parser
     parser = argparse.ArgumentParser(
-        description="Submit a job with configuration files"
-    )
-    parser.add_argument(
-        "job_config", type=str, help="Path to the job configuration YAML file"
+        description="Submit a job with a configuration file"
     )
     parser.add_argument(
         "finetune_config",
@@ -60,16 +48,8 @@ def main():
     # Parse arguments
     args = parser.parse_args()
 
-    job_config_path = args.job_config
     finetune_config_path = args.finetune_config
-
-    job_config = _read_yaml_file(job_config_path)
     training_config = _read_yaml_file(finetune_config_path)
-
-    cld_id = get_cld_id()
-    region = get_region()
-    job_config["compute_config"]["cloud_id"] = cld_id
-    job_config["compute_config"]["region"] = region
 
     is_lora = "lora_config" in training_config
     entrypoint = f"llmforge dev finetune {finetune_config_path}"
@@ -82,32 +62,14 @@ def main():
     else:
         lora_storage_uri = None
 
-    job_config["entrypoint"] = entrypoint
-    job_config["name"] = Path(finetune_config_path).stem
+    api_key = os.environ.get("WANDB_API_KEY", "")
+    wandb_api_runtime_arg = f"WANDB_API_KEY={api_key}" if api_key else ""
 
-    api_key = os.environ.get("WANDB_API_KEY")
-    if api_key:
-        job_config.setdefault("runtime_env", {}).setdefault("env_vars", {})[
-            "WANDB_API_KEY"
-        ] = api_key
-
-    with tempfile.NamedTemporaryFile(
-        mode="w+", delete=False, dir=".", suffix=".yaml"
-    ) as temp_file:
-        yaml.safe_dump(job_config, temp_file)
-        temp_file_name = temp_file.name
-
-    # Call `anyscale job submit` on the temporary YAML file
-    try:
-        subprocess.run(["anyscale", "job", "submit", temp_file_name], check=True)
-        if lora_storage_uri:
-            print(
-                f"Note: LoRA weights will also be stored in path {lora_storage_uri} under {model_tag} bucket."
-            )
-    finally:
-        # Clean up by deleting the temporary file
-        os.remove(temp_file_name)
-        pass
+    subprocess.run([wandb_api_runtime_arg, entrypoint], check=True)
+    if lora_storage_uri:
+        print(
+            f"Note: LoRA weights will also be stored in path {lora_storage_uri} under {model_tag} bucket."
+        )
 
 
 if __name__ == "__main__":
