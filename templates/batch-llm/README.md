@@ -12,9 +12,9 @@ For a Python script version of the `.ipynb` notebook used for the workspace temp
 **Note:** For a more general introduction to batch inference with Ray Data, check out the `Batch Inference Basics` workspace template.
 
 ### How to decide between online vs offline inference for LLM
-Online LLM inference (e.g. Anyscale Endpoint) should be used when you want to get real-time response for prompt. Use online inference when you want to optimize latency of inference to be as quick as possible.
+Online LLM inference (e.g. Anyscale Endpoint) should be used when you want to get real-time response for prompt or to interact with the LLM. Use online inference when you want to optimize latency of inference to be as quick as possible.
 
-On the other hand, offline LLM inference should be used when you want to get reponses for a large number of prompts within an end-to-end time requirement (e.g. minutes to hours granularity). Use offline inference when you want to optimize throughput of inference to use resource (e.g. GPU) as much as possible on large-scale input data.
+On the other hand, offline LLM inference should be used when you want to get reponses for a large number of prompts within some time frame, but not required to be real-time (minutes to hours granularity). Use offline inference when you want to (1) scale your workload to large-scale datasets, and (2) optimize inference throughput and resource usage (for example, maximizing GPU utilization).
 
 ### Step 1: Install Python dependencies
 Install additional required dependencies using `pip`.
@@ -173,6 +173,14 @@ Finally, write the inference output data out to Parquet files on S3.
 ```python
 ds.write_parquet(output_path)
 print(f"Batch inference result is written into {output_path}.")
+```
+
+We can also use Ray Data to read back the output files to ensure the results are as expected.
+
+
+```python
+ds_output = ray.data.read_parquet(output_path)
+ds_output.take(5)
 ```
 
 ### Summary
