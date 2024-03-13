@@ -51,7 +51,7 @@ Upon the job completion, you can see the LoRA weight storage location and model 
 Note: LoRA weights will also be stored in path s3://anyscale-data-cld-id/org_id/cloud_id/artifact_storage/lora_fine_tuning under meta-llama/Llama-2-7b-chat-hf:sql:12345 bucket.
 ```
 
-You can specify this URI as the [dynamic_lora_loading_path](../endpoints_v2/examples/lora/DeployLora.ipynb#setup-lora-model-deployment) in the llm serving template, and then query the endpoint.
+You can specify this URI as the dynamic_lora_loading_path ([docs](https://docs.endpoints.anyscale.com/preview/examples/deploy-llms/#more-guides) in the llm serving template, and then query the endpoint.
 
 Note: Model IDs follow the format `{base_model_id}:{suffix}:{id}`
 
@@ -64,7 +64,7 @@ Best checkpoint is stored in:
 anyscale-data-cld-id/org_id/cloud_id/artifact_storage/username/llmforge-finetuning/meta-llama/Llama-2-70b-hf/TorchTrainer_2024-01-25_18-07-48/TorchTrainer_b3de9_00000_0_2024-01-25_18-07-48/checkpoint_000000
 ```
 
-You can follow the [Learn how to bring your own models](../endpoints_v2/examples/CustomModels.ipynb#adding-a-private-model) section under the llm serving template to serve this finetuned model with the specified storage uri.
+You can follow the [Learn how to bring your own models](https://docs.endpoints.anyscale.com/preview/examples/deploy-llms/#more-guides) section under the llm serving template to serve this finetuned model with the specified storage uri.
 
 ## Frequently asked questions
 
