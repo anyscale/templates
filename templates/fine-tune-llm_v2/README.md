@@ -41,24 +41,6 @@ Next, you can launch a fine-tuning job where the WandB API key is passed as an e
 # !python main.py training_configs/lora/llama-2-7b-512-16xa10.yaml
 ```
 
-    [2024-03-13 15:34:50,020] [INFO] [real_accelerator.py:158:get_accelerator] Setting ds_accelerator to cuda (auto detect)
-    Downloading the tokenizer ...
-    RUN(['awsv2', 'configure', 'set', 's3.max_concurrent_requests', '32'])
-    RUN(['awsv2', 'configure', 'set', 'default.s3.preferred_transfer_client', 'crt'])
-    RUN(['awsv2', 'configure', 'set', 'default.s3.target_bandwidth', '100Gb/s'])
-    RUN(['awsv2', 'configure', 'set', 'default.s3.multipart_chunksize', '8MB'])
-    RUN(['awsv2', 's3', 'sync', '--no-sign-request', '--region', 'us-west-2', '--exclude', '*', '--include', '*token*', 's3://llama-2-weights/models--meta-llama--Llama-2-7b-chat-hf', '/home/ray/.cache/huggingface/hub/models--meta-llama--Llama-2-7b-chat-hf'])
-    download: s3://llama-2-weights/models--meta-llama--Llama-2-7b-chat-hf/snapshots/c1d3cabadba7ec7f1a9ef2ba5467ad31b3b84ff0/tokenizer_config.json to ../../../../.cache/huggingface/hub/models--meta-llama--Llama-2-7b-chat-hf/snapshots/c1d3cabadba7ec7f1a9ef2ba5467ad31b3b84ff0/tokenizer_config.json
-    download: s3://llama-2-weights/models--meta-llama--Llama-2-7b-chat-hf/snapshots/c1d3cabadba7ec7f1a9ef2ba5467ad31b3b84ff0/special_tokens_map.json to ../../../../.cache/huggingface/hub/models--meta-llama--Llama-2-7b-chat-hf/snapshots/c1d3cabadba7ec7f1a9ef2ba5467ad31b3b84ff0/special_tokens_map.json
-    download: s3://llama-2-weights/models--meta-llama--Llama-2-7b-chat-hf/snapshots/c1d3cabadba7ec7f1a9ef2ba5467ad31b3b84ff0/tokenizer.json to ../../../../.cache/huggingface/hub/models--meta-llama--Llama-2-7b-chat-hf/snapshots/c1d3cabadba7ec7f1a9ef2ba5467ad31b3b84ff0/tokenizer.json
-    download: s3://llama-2-weights/models--meta-llama--Llama-2-7b-chat-hf/snapshots/c1d3cabadba7ec7f1a9ef2ba5467ad31b3b84ff0/tokenizer.model to ../../../../.cache/huggingface/hub/models--meta-llama--Llama-2-7b-chat-hf/snapshots/c1d3cabadba7ec7f1a9ef2ba5467ad31b3b84ff0/tokenizer.model
-    done
-    Tokenizer init done.
-    ^C
-    
-    Aborted!
-
-
 Depending on whether you are running LoRA or full-param fine-tuning, you can continue with step 2(a) or step 2(b).
 
 ## Step 2(a) - Serving the LoRA finetuned model
