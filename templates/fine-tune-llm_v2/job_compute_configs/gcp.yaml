@@ -1,0 +1,18 @@
+compute_config:
+  allowed_azs:
+    - any
+  head_node_type:
+    instance_type: n2-standard-8
+    name: head_node
+  auto_select_worker_config: true
+  worker_node_types: []
+  gcp_advanced_configurations_json:
+    instance_properties:
+      labels:
+        as-feature-multi-zone: "true"
+      disks:
+        - boot: true
+          auto_delete: true
+          initialize_params:
+            disk_size_gb: 250
+max_retries: 0
