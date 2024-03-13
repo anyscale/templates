@@ -6,8 +6,6 @@ worker_node_types: []
 
 gcp_advanced_configurations_json:
   instance_properties:
-    labels:
-      as-feature-multi-zone: 'true'
     disks:
       - boot: true
         auto_delete: true
