@@ -1,11 +1,10 @@
 import argparse
 import os
 import subprocess
-import tempfile
+import shlex
 import yaml
 import random
 import string
-from pathlib import Path
 
 
 def _read_yaml_file(file_path):
@@ -63,9 +62,11 @@ def main():
         lora_storage_uri = None
 
     api_key = os.environ.get("WANDB_API_KEY", "")
-    wandb_api_runtime_arg = f"WANDB_API_KEY={api_key}" if api_key else ""
+    if api_key:
+        entrypoint = f"WANDB_API_KEY={api_key} {entrypoint}"
 
-    subprocess.run([wandb_api_runtime_arg, entrypoint], check=True)
+    parsed_args = shlex.split(entrypoint)
+    subprocess.run(parsed_args, check=True)
     if lora_storage_uri:
         print(
             f"Note: LoRA weights will also be stored in path {lora_storage_uri} under {model_tag} bucket."
