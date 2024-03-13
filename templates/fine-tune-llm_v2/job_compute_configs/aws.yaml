@@ -1,0 +1,17 @@
+compute_config:
+  allowed_azs:
+    - any
+  head_node_type:
+    instance_type: m5.4xlarge
+    name: head_node
+  auto_select_worker_config: true
+  worker_node_types: []
+  aws:
+    TagSpecifications:
+      - ResourceType: instance
+        Tags:
+          - Key: as-feature-multi-zone
+            Value: "true"
+          - Key: ttl-hours
+            Value: '200'
+max_retries: 0
