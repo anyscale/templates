@@ -118,8 +118,8 @@ stopping_sequences: []
 ```
 prompt_format:
   system: "<<SYS>>\n{instruction}\n<</SYS>>\n\n"
-  assistant: " {instruction} </s><s> "
-  trailing_assistant: " "
+  assistant: " {instruction} </s><s>"
+  trailing_assistant: ""
   user: "[INST] {system}{instruction} [/INST]"
   system_in_user: true
   default_system_message: "Always assist with care, respect, and truth. Respond with utmost utility yet securely. Avoid harmful, unethical, prejudiced, or negative content. Ensure replies promote fairness and positivity."
