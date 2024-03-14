@@ -47,8 +47,4 @@ compute_config:
         Tags:
           - Key: as-feature-multi-zone
             Value: "true"
-runtime_env:
-  env_vars:
-    HF_HOME: /mnt/local_storage/.cache/huggingface
-    TUNE_RESULT_DIR: /mnt/local_storage
 max_retries: 0
