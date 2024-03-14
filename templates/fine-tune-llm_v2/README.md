@@ -29,8 +29,6 @@ Next, you can launch a fine-tuning job where the WandB API key is passed as an e
 
 
 ```python
-# From the VSCode terminal (press [**Ctrl + `**] in VSCode), run the command to trigger a fine-tuning job. Generally, a fine-tuning job will take a few hours.
-
 # [Optional] You can set the WandB API key to track model performance
 # !export WANDB_API_KEY={YOUR_WANDB_API_KEY}
 
