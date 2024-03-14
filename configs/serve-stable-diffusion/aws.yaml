@@ -3,7 +3,7 @@ head_node_type:
   instance_type: m5.2xlarge
 worker_node_types:
 - name: gpu_worker
-  instance_type: g5.xlarge
+  instance_type: g4dn.2xlarge
   min_workers: 1
   max_workers: 1
   use_spot: false
