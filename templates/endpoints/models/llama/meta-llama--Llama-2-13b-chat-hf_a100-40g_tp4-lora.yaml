@@ -20,7 +20,7 @@ engine_config:
   engine_kwargs:
     trust_remote_code: true
     enable_lora: true
-    max_num_batched_tokens: 32768 # <-- This is should be at minimum the longest context length that was fine-tuned with
+    max_num_batched_tokens: 32768 # <-- This should be at minimum the longest context length that was fine-tuned with
     max_num_seqs: 64
     max_loras: 3
     gpu_memory_utilization: 0.88
