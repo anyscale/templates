@@ -33,6 +33,7 @@ class FastAPIDeployment:
         return f"Hello {name}!"
 
 my_app = FastAPIDeployment.bind()
+```
 
 ### Run the app locally
 Run the command below to run the serve app locally on `localhost:8000`.
