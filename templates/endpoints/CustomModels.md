@@ -103,7 +103,7 @@ A prompt format is used to convert a chat completions API input into a prompt to
 
 The string template should include the `{instruction}` keyword, which will be replaced with message content from the ChatCompletions API.
 
-For example, if a user sends the following message for llama2-7b-chat-hf ([prompt format](continuous_batching/meta-llama--Llama-2-7b-chat-hf.yaml#L27-L33)):
+For example, if a user sends the following message for llama2-7b-chat-hf ([prompt format](models/llama/meta-llama--Llama-2-7b-chat-hf_a10g_tp1.yaml#L30-L36)):
 ```json
 {
   "messages": [
