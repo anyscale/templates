@@ -14,7 +14,7 @@ This tutorial shows you how to:
 
  The fastest way to develop a Ray Serve app is locally within the workspace. A Serve app running within a workspace behaves identically to a Serve app running as a production service, only it does not have a stable DNS name or fault tolerance.
 
- To get started, create a file called `main.py` and fill it with the following skeleton code:
+ To get started, take a look at the `main.py` file, which has the following skeleton code:
 
 ```python
 import requests
