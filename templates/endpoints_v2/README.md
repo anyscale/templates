@@ -1,6 +1,6 @@
 # Deploy, configure, and serve LLMs 
 
-**⏱️ Time to complete**: 5 min (15 on GCP)
+**⏱️ Time to complete**: 10 min (20 on GCP)
 
 The guide below walks you through the steps required for deployment of LLM endpoints. Based on Ray Serve and RayLLM, the foundation for [Anyscale-Hosted Endpoints](http://anyscale.com/endpoints), the Endpoints template provides an easy to configure solution for ML Platform teams, Infrastructure engineers, and Developers who want to deploy optimized LLMs in production.  We have provided a number of examples for popular open-source models (Llama2, Mistral, Mixtral, embedding models, and more) with different GPU accelerator and tensor-parallelism configurations in the `models` directory.
 
@@ -88,7 +88,7 @@ query("http://localhost:8000", "NOT A REAL KEY")
 
 ## Step 3 - Deploying a production service
 
-To deploy an application with one model as an Anyscale Service you can run:
+To deploy an application with one model as an Anyscale Service, run the next cell. This is setup to run the Mistral-7B model, but can be easily modified to run any of the other models in this repo:
 
 
 ```python
@@ -97,13 +97,22 @@ To deploy an application with one model as an Anyscale Service you can run:
 !serve deploy --name=my_service_name llm-serve-aws.yaml
 ```
 
-This is setup to run the Mistral-7B model, but can be easily modified to run any of the other models in this repo.
+After the command runs, click the deploy notification (or navigate to ``Home > Services``) to access the Service UI:
+
+<img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/endpoints_v2/assets/service-notify.png" width=500px/>
+
+Navigate to the Service UI and wait for the service to reach "Active". It will begin in "Starting" state:
+
+<img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/endpoints_v2/assets/service-starting.png" width=600px/>
+
 
 ## Step 4 - Query the service endpoint
 
 The above cell should print something like `(anyscale +2.9s) curl -H 'Authorization: Bearer XXXXXXXXX_XXXXXX-XXXXXXXXXXXX' https://YYYYYYYYYYYY.anyscaleuserdata.com`, which contains information you need to fill out in the cell below to query the service.
 
 You can also find this information by clicking the "Query" button in the Service UI.
+
+<img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/endpoints_v2/assets/service-query.png" width=600px/>
 
 
 ```python
