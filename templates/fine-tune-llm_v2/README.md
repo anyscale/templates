@@ -39,7 +39,7 @@ Next, you can launch a fine-tuning job where the WandB API key is passed as an e
 # !python main.py training_configs/lora/llama-2-7b-512-16xa10.yaml
 ```
 
-After the command runs, you can monitor a number of built-in metrics out of the box in the `Metrics` tab under `Ray Dasboard`, such as the number of GPU nodes and GPU utilization.
+After the command runs, you can monitor a number of built-in metrics out of the box in the `Metrics` tab under `Ray Dashboard`, such as the number of GPU nodes and GPU utilization.
 
 <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/fine-tune-llm_v2/assets/gpu-usage.png" width=500px/>
 
