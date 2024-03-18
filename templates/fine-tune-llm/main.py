@@ -90,6 +90,7 @@ def main():
         job_config.setdefault("runtime_env", {}).setdefault("env_vars", {})[
             "WANDB_API_KEY"
         ] = api_key
+        job_config["runtime_env"]["env_vars"]["RAY_OVERRIDE_JOB_RUNTIME_ENV"] = "1"
 
     with tempfile.NamedTemporaryFile(
         mode="w+", delete=False, dir=".", suffix=".yaml"
