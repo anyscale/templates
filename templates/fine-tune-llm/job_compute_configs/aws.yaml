@@ -41,10 +41,4 @@ compute_config:
       resources:
         custom_resources:
           p4de.24xlarge: 8
-  aws:
-    TagSpecifications:
-      - ResourceType: instance
-        Tags:
-          - Key: as-feature-multi-zone
-            Value: "true"
 max_retries: 0
