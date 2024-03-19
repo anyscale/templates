@@ -23,7 +23,8 @@ Install additional required dependencies using `pip`.
 
 
 ```python
-!pip install -q vllm==0.3.3 && echo 'Install complete!'
+# Minimum transformers version compatible with Mixtral models.
+!pip install -q vllm==0.3.3 transformers>=4.38.0 && echo 'Install complete!'
 ```
 
 Next, import the dependencies used in this template.
@@ -119,10 +120,20 @@ Create a class to define batch inference logic.
 
 
 ```python
+# Mapping of model name to max_model_len supported by model.
+model_name_to_max_len = {
+    "mistralai/Mistral-7B-Instruct-v0.1": 16832,
+    "google/gemma-7b-it": 2432,
+    "mlabonne/NeuralHermes-2.5-Mistral-7B": 16800,
+}
+
 class LLMPredictor:
     def __init__(self):
         # Create an LLM.
-        self.llm = LLM(model=HF_MODEL)
+        self.llm = LLM(
+            model=HF_MODEL,
+            max_model_len=model_name_to_max_len.get(HF_MODEL, None),
+        )
 
     def __call__(self, batch: Dict[str, np.ndarray]) -> Dict[str, list]:
         # Generate texts from the prompts.
@@ -140,8 +151,6 @@ class LLMPredictor:
         }
 ```
 
-### Scaling with GPUs
-
 Apply batch inference for all input data with the Ray Data [`map_batches`](https://docs.ray.io/en/latest/data/api/doc/ray.data.Dataset.map_batches.html) method. Here, you can easily configure Ray Data to scale the number of LLM instances and compute (number of GPUs to use).
 
 
@@ -158,7 +167,9 @@ ds = ds.map_batches(
 )
 ```
 
-To use GPUs for inference in the Workspace, we specify `num_gpus=1` in the `ds.map_batches()` call above to indicate that each LLM instance should use 1 GPU. With `concurrency=4`, we have 4 LLM instances, each using 1 GPU, so we need 4 GPUs total.
+### Scaling with GPUs
+
+To use GPUs for inference in the Workspace, we specified `num_gpus=1` in the `ds.map_batches()` call above to indicate that each LLM instance should use 1 GPU. With `concurrency=4`, we have 4 LLM instances, each using 1 GPU, so we need 4 GPUs total.
 
 Finally, make sure to either enable *Auto-select worker nodes* or configure your workspace cluster to have GPU worker nodes:
 
@@ -170,6 +181,13 @@ Time to execute and view the results!
 ```python
 ds.take_all()
 ```
+
+### Handling GPU out-of-memory failures
+If you run into CUDA out of memory, your batch size is likely too large. Decrease the batch size as described above.
+
+If your batch size is already set to 1, then use either a smaller model or GPU devices with more memory.
+
+For advanced users working with large models, you can use model parallelism to shard the model across multiple GPUs.
 
 In the Ray Dashboard tab, navigate to the Job page and open the "Ray Data Overview" section to view the details of the batch inference execution:
 ![title](assets/ray-data-jobs.png)
