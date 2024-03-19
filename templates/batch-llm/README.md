@@ -9,12 +9,14 @@ This template shows you how to:
 
 For a Python script version of the `.ipynb` notebook used for the workspace template, refer to `examples/main.py`.
 
-**Note:** For a more general introduction to batch inference with Ray Data, check out the `Batch Inference Basics` workspace template.
+**Note:** This tutorial is run within a workspace. Please overview the `Introduction to Workspaces` template first before this tutorial.
 
 ### How to decide between online vs offline inference for LLM
 Online LLM inference (e.g. Anyscale Endpoint) should be used when you want to get real-time response for prompt or to interact with the LLM. Use online inference when you want to optimize latency of inference to be as quick as possible.
 
-On the other hand, offline LLM inference should be used when you want to get reponses for a large number of prompts within some time frame, but not required to be real-time (minutes to hours granularity). Use offline inference when you want to (1) scale your workload to large-scale datasets, and (2) optimize inference throughput and resource usage (for example, maximizing GPU utilization).
+On the other hand, offline LLM inference should be used when you want to get reponses for a large number of prompts within some time frame, but not required to be real-time (minutes to hours granularity). Use offline inference when you want to:
+1. Scale your workload to large-scale datasets
+2. optimize inference throughput and resource usage (for example, maximizing GPU utilization).
 
 ### Step 1: Install Python dependencies
 Install additional required dependencies using `pip`.
@@ -52,7 +54,7 @@ HF_TOKEN = "<REPLACE_WITH_YOUR_HUGGING_FACE_USER_TOKEN>"
 # Set to the model that you wish to use. Note that using the llama models will require a hugging face token to be set.
 HF_MODEL = "meta-llama/Llama-2-7b-chat-hf"
 # Create a sampling params object.
-sampling_params = SamplingParams(temperature=0, max_tokens=4096)
+sampling_params = SamplingParams(temperature=0, max_tokens=2048)
 # Output path to write output result. You can also change this to any cloud storage path, e.g. a specific S3 bucket.
 output_path = generate_output_path(os.environ.get("ANYSCALE_ARTIFACT_STORAGE"), HF_MODEL)
 ```
@@ -102,19 +104,12 @@ ds.take(1)
 ### Scaling to a larger dataset
 In the cell above, we created a Ray Dataset with 5 example prompts. Next, let's explore how to scale to a larger dataset based on files stored in cloud storage.
 
-Run the following cell to create a Dataset from a text file stored on S3.
+Run the following cell to create a Dataset from a text file stored on S3. This Dataset has 100 rows, with each row containing a single prompt in the `text` column.
 
 
 ```python
-ds = ray.data.read_text("s3://anonymous@air-example-data/prompts.txt")
-print(ds)
-```
-
-This Dataset has 5800 rows, each row containing a single prompt in the `text` column. For the purposes of this workspace template, we will only run inference on the first 100 rows, which we can achieve using the [`limit`](https://docs.ray.io/en/latest/data/api/doc/ray.data.Dataset.limit.html)  method.
-
-
-```python
-ds = ds.limit(100)
+# Specify 4 blocks to ensure that each of the 4 GPUs in this workspace get data to process, maximizing GPU utilization.
+ds = ray.data.read_text("s3://anonymous@air-example-data/prompts_100.txt", override_num_blocks=4)
 ds.take_all()
 ```
 
@@ -145,6 +140,8 @@ class LLMPredictor:
         }
 ```
 
+### Scaling with GPUs
+
 Apply batch inference for all input data with the Ray Data [`map_batches`](https://docs.ray.io/en/latest/data/api/doc/ray.data.Dataset.map_batches.html) method. Here, you can easily configure Ray Data to scale the number of LLM instances and compute (number of GPUs to use).
 
 
@@ -155,10 +152,17 @@ ds = ds.map_batches(
     concurrency=4,
     # Specify the number of GPUs required per LLM instance.
     num_gpus=1,
-    # Specify the batch size for inference.
+    # Specify the batch size for inference. Set the batch size to as large possible without running out of memory.
+    # If you encounter CUDA out-of-memory errors, decreasing batch_size may help.
     batch_size=10,
 )
 ```
+
+To use GPUs for inference in the Workspace, we specify `num_gpus=1` in the `ds.map_batches()` call above to indicate that each LLM instance should use 1 GPU. With `concurrency=4`, we have 4 LLM instances, each using 1 GPU, so we need 4 GPUs total.
+
+Finally, make sure to either enable *Auto-select worker nodes* or configure your workspace cluster to have GPU worker nodes:
+
+![title](assets/ray-data-gpu.png)
 
 Time to execute and view the results!
 
@@ -166,6 +170,9 @@ Time to execute and view the results!
 ```python
 ds.take_all()
 ```
+
+In the Ray Dashboard tab, navigate to the Job page and open the "Ray Data Overview" section to view the details of the batch inference execution:
+![title](assets/ray-data-jobs.png)
 
 Finally, write the inference output data out to Parquet files on S3.
 
