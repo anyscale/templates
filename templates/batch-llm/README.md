@@ -69,7 +69,7 @@ Depending on the model used for inference, we need to select the appropriate num
 if "-7b" in HF_MODEL.lower():
     num_llm_instances = 4
     num_gpus_per_instance = 1
-elif "-13b" in HF_MODEL.lower() or "-70b" in HF_MODEL.lower():
+elif "-13b" in HF_MODEL.lower() or "-70b" in HF_MODEL.lower() or "-8x7b" in HF_MODEL.lower():
     num_llm_instances = 1
     num_gpus_per_instance = 8
 else:
