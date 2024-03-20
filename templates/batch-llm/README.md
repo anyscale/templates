@@ -60,6 +60,28 @@ sampling_params = SamplingParams(temperature=0, max_tokens=2048)
 output_path = generate_output_path(os.environ.get("ANYSCALE_ARTIFACT_STORAGE"), HF_MODEL)
 ```
 
+Depending on the model used for inference, we need to select the appropriate number of LLM instances and the number of GPUs per LLM instance. 
+- For smaller (7B parameter) models, these can fit on a single T4 or A10 GPU. We can use multiple LLM instances to parallelize batch inference.
+- For larger (13B or 70B parameter) models, they require multiple, more powerful GPU instances, such as A100s. Since these GPUs are more difficult to acquire and need multiple GPUs per LLM instance, we will use a single LLM instance.
+
+
+```python
+if "-7b" in HF_MODEL.lower():
+    num_llm_instances = 4
+    num_gpus_per_instance = 1
+elif "-13b" in HF_MODEL.lower() or "-70b" in HF_MODEL.lower():
+    num_llm_instances = 1
+    num_gpus_per_instance = 8
+else:
+    raise ValueError(
+        "Could not auto-detect number of LLM instances and GPUs per instance based on model name. "
+        "You will need to explicitly define the `num_llm_instances` and `num_gpus_per_instance` in the above cell."
+    )
+    # If you run into this case, comment out the above ValueError, and fill in the appropriate values for your model below.
+    # num_llm_instances = ...
+    # num_gpus_per_instance = ...
+```
+
 Start up Ray, using the Hugging Face token as an environment variable so that it's made available to all nodes in the cluster.
 
 
@@ -109,8 +131,11 @@ Run the following cell to create a Dataset from a text file stored on S3. This D
 
 
 ```python
-# Specify 4 blocks to ensure that each of the 4 GPUs in this workspace get data to process, maximizing GPU utilization.
-ds = ray.data.read_text("s3://anonymous@air-example-data/prompts_100.txt", override_num_blocks=4)
+# Specify number of blocks to ensure that each GPU in this workspace get data blocks to process, maximizing GPU utilization.
+ds = ray.data.read_text(
+    "s3://anonymous@air-example-data/prompts_100.txt",
+    override_num_blocks=num_llm_instances,
+)
 ds.take_all()
 ```
 
@@ -121,10 +146,14 @@ Create a class to define batch inference logic.
 
 ```python
 # Mapping of model name to max_model_len supported by model.
-model_name_to_max_len = {
-    "mistralai/Mistral-7B-Instruct-v0.1": 16832,
-    "google/gemma-7b-it": 2432,
-    "mlabonne/NeuralHermes-2.5-Mistral-7B": 16800,
+model_name_to_args = {
+    "mistralai/Mistral-7B-Instruct-v0.1": {"max_model_len": 16832},
+    "google/gemma-7b-it": {"max_model_len": 2432},
+    "mlabonne/NeuralHermes-2.5-Mistral-7B": {"max_model_len": 16800},
+
+    "mistralai/Mixtral-8x7B-Instruct-v0.1": {"tensor_parallel_size": 8},
+    "meta-llama/Llama-2-70b-chat-hf": {"tensor_parallel_size": 8},
+    "codellama/CodeLlama-70b-Instruct-hf": {"tensor_parallel_size": 8},
 }
 
 class LLMPredictor:
@@ -132,7 +161,7 @@ class LLMPredictor:
         # Create an LLM.
         self.llm = LLM(
             model=HF_MODEL,
-            max_model_len=model_name_to_max_len.get(HF_MODEL, None),
+            **model_name_to_args.get(HF_MODEL, {}),
         )
 
     def __call__(self, batch: Dict[str, np.ndarray]) -> Dict[str, list]:
@@ -158,9 +187,9 @@ Apply batch inference for all input data with the Ray Data [`map_batches`](https
 ds = ds.map_batches(
     LLMPredictor,
     # Set the concurrency to the number of LLM instances.
-    concurrency=4,
+    concurrency=num_llm_instances,
     # Specify the number of GPUs required per LLM instance.
-    num_gpus=1,
+    num_gpus=num_gpus_per_instance,
     # Specify the batch size for inference. Set the batch size to as large possible without running out of memory.
     # If you encounter CUDA out-of-memory errors, decreasing batch_size may help.
     batch_size=10,
