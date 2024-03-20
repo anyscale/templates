@@ -24,7 +24,7 @@ Install additional required dependencies using `pip`.
 
 ```python
 # Minimum transformers version compatible with Mixtral models.
-!pip install -q vllm==0.3.3 transformers>=4.38.0 && echo 'Install complete!'
+!pip install -q vllm==0.3.3 "transformers>=4.38.0" && echo 'Install complete!'
 ```
 
 Next, import the dependencies used in this template.
@@ -44,7 +44,18 @@ from util.utils import generate_output_path
 ### Step 2: Set up model defaults
 Set up default values that will be used in the batch inference workflow:
 * Your [Hugging Face user access token](https://huggingface.co/docs/hub/en/security-tokens). This will be used to download the model.
-* The model to use for inference ([the list of supported models](https://docs.vllm.ai/en/latest/models/supported_models.html)).
+* The model to use for inference ([see the list of vLLM models](https://docs.vllm.ai/en/latest/models/supported_models.html)).
+    * This workspace template has been tested and verified with the following models:
+        * `meta-llama/Llama-2-7b-chat-hf`
+        * `mistralai/Mistral-7B-Instruct-v0.1`
+        * `google/gemma-7b-it`
+        * `mlabonne/NeuralHermes-2.5-Mistral-7B`
+    * Support for the following larger models are actively a work-in-progress, and will be supported very soon:
+        * `meta-llama/Llama-2-13b-chat-hf`
+        * `mistralai/Mixtral-8x7B-Instruct-v0.1`
+        * `meta-llama/Llama-2-70b-chat-hf`
+        * `codellama/CodeLlama-70b-Instruct-hf`
+
 * The [sampling parameters object](https://github.com/vllm-project/vllm/blob/main/vllm/sampling_params.py) used by vLLM.
 * The output path where results will be written as parquet files.
 
@@ -52,34 +63,24 @@ Set up default values that will be used in the batch inference workflow:
 ```python
 # Set the Hugging Face token. Replace the following with your token.
 HF_TOKEN = "<REPLACE_WITH_YOUR_HUGGING_FACE_USER_TOKEN>"
-# Set to the model that you wish to use. Note that using the llama models will require a hugging face token to be set.
+# Set to the model that you wish to use from the preceding list.
+# Note that using the Llama models will require a Hugging Face token to be set.
 HF_MODEL = "meta-llama/Llama-2-7b-chat-hf"
 # Create a sampling params object.
 sampling_params = SamplingParams(temperature=0, max_tokens=2048)
-# Output path to write output result. You can also change this to any cloud storage path, e.g. a specific S3 bucket.
+# Output path to write output result. You can also change this to any cloud storage path,
+# e.g. a specific S3 bucket.
 output_path = generate_output_path(os.environ.get("ANYSCALE_ARTIFACT_STORAGE"), HF_MODEL)
 ```
 
-Depending on the model used for inference, we need to select the appropriate number of LLM instances and the number of GPUs per LLM instance. 
-- For smaller (7B parameter) models, these can fit on a single T4 or A10 GPU. We can use multiple LLM instances to parallelize batch inference.
-- For larger (13B or 70B parameter) models, they require multiple, more powerful GPU instances, such as A100s. Since these GPUs are more difficult to acquire and need multiple GPUs per LLM instance, we will use a single LLM instance.
+Depending on the model used for inference, we need to select the appropriate number of LLM instances and the number of GPUs per LLM instance. For smaller (7B parameter) models, these can fit on a single T4 or A10 GPU. We can use multiple LLM instances to parallelize batch inference.
 
 
 ```python
-if "-7b" in HF_MODEL.lower():
-    num_llm_instances = 4
-    num_gpus_per_instance = 1
-elif "-13b" in HF_MODEL.lower() or "-70b" in HF_MODEL.lower() or "-8x7b" in HF_MODEL.lower():
-    num_llm_instances = 1
-    num_gpus_per_instance = 8
-else:
-    raise ValueError(
-        "Could not auto-detect number of LLM instances and GPUs per instance based on model name. "
-        "You will need to explicitly define the `num_llm_instances` and `num_gpus_per_instance` in the above cell."
-    )
-    # If you run into this case, comment out the above ValueError, and fill in the appropriate values for your model below.
-    # num_llm_instances = ...
-    # num_gpus_per_instance = ...
+# The number of LLM instances to use.
+num_llm_instances = 4
+# The number of GPUs to use per LLM instance.
+num_gpus_per_instance = 1
 ```
 
 Start up Ray, using the Hugging Face token as an environment variable so that it's made available to all nodes in the cluster.
@@ -150,10 +151,6 @@ model_name_to_args = {
     "mistralai/Mistral-7B-Instruct-v0.1": {"max_model_len": 16832},
     "google/gemma-7b-it": {"max_model_len": 2432},
     "mlabonne/NeuralHermes-2.5-Mistral-7B": {"max_model_len": 16800},
-
-    "mistralai/Mixtral-8x7B-Instruct-v0.1": {"tensor_parallel_size": 8},
-    "meta-llama/Llama-2-70b-chat-hf": {"tensor_parallel_size": 8},
-    "codellama/CodeLlama-70b-Instruct-hf": {"tensor_parallel_size": 8},
 }
 
 class LLMPredictor:
@@ -198,9 +195,9 @@ ds = ds.map_batches(
 
 ### Scaling with GPUs
 
-To use GPUs for inference in the Workspace, we specified `num_gpus=1` in the `ds.map_batches()` call above to indicate that each LLM instance should use 1 GPU. With `concurrency=4`, we have 4 LLM instances, each using 1 GPU, so we need 4 GPUs total.
+To use GPUs for inference in the Workspace, we specified `num_gpus` and `concurrency` in the `ds.map_batches()` call above to indicate the number of LLM instances and the number of GPUs per LLM instance, respectively. For example, with `concurrency=4` and `num_gpus=1`, we have 4 LLM instances, each using 1 GPU, so we need 4 GPUs total.
 
-Finally, make sure to either enable *Auto-select worker nodes* or configure your workspace cluster to have GPU worker nodes:
+Finally, make sure to either enable *Auto-select worker nodes* or configure your workspace cluster to have the appropriate GPU worker nodes:
 
 ![title](assets/ray-data-gpu.png)
 
@@ -211,6 +208,9 @@ Time to execute and view the results!
 ds.take_all()
 ```
 
+In the Ray Dashboard tab, navigate to the Job page and open the "Ray Data Overview" section to view the details of the batch inference execution:
+![title](assets/ray-data-jobs.png)
+
 ### Handling GPU out-of-memory failures
 If you run into CUDA out of memory, your batch size is likely too large. Decrease the batch size as described above.
 
@@ -218,9 +218,7 @@ If your batch size is already set to 1, then use either a smaller model or GPU d
 
 For advanced users working with large models, you can use model parallelism to shard the model across multiple GPUs.
 
-In the Ray Dashboard tab, navigate to the Job page and open the "Ray Data Overview" section to view the details of the batch inference execution:
-![title](assets/ray-data-jobs.png)
-
+### Output Results
 Finally, write the inference output data out to Parquet files on S3.
 
 
