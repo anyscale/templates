@@ -94,7 +94,7 @@ To deploy an application with one model as an Anyscale Service, run the next cel
 ```python
 # Deploy the serve app to production with a given service name.
 # Change to llm-serve-gcp.yaml if needed.
-!serve deploy --name=my_service_name llm-serve-aws.yaml
+!serve deploy --name=my_service_name -f llm-serve-aws.yaml
 ```
 
 After the command runs, click the deploy notification (or navigate to ``Home > Services``) to access the Service UI:
