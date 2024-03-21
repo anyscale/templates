@@ -33,7 +33,10 @@ def generate_model_tag(model_id: str) -> str:
     """
     username = os.environ.get("ANYSCALE_USERNAME")
     if username:
-        username = username[:5]
+        username = username.strip().replace(" ", "")[:5]
+        if len(username) < 5:
+            padding_char = username[-1] if username else 'a'
+            username += padding_char * (5 - len(username))
     else:
         username = "".join(random.choice(string.ascii_lowercase) for _ in range(5))
     suffix = "".join(random.choice(string.ascii_lowercase) for _ in range(5))
@@ -87,6 +90,7 @@ def main():
         job_config.setdefault("runtime_env", {}).setdefault("env_vars", {})[
             "WANDB_API_KEY"
         ] = api_key
+        job_config["runtime_env"]["env_vars"]["RAY_OVERRIDE_JOB_RUNTIME_ENV"] = "1"
 
     with tempfile.NamedTemporaryFile(
         mode="w+", delete=False, dir=".", suffix=".yaml"
