@@ -20,7 +20,7 @@ engine_config:
   engine_kwargs:
     max_num_batched_tokens: 65536
     max_num_seqs: 128
-    gpu_memory_utilization: 0.92
+    gpu_memory_utilization: 0.90
     num_tokenizer_actors: 2
     enable_cuda_graph: true
     trust_remote_code: true
