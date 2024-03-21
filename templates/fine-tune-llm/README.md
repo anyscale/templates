@@ -27,10 +27,10 @@ Next, you can launch a fine-tuning job where the WandB API key is passed as an e
 
 ```shell
 # Launch a full-param fine-tuning job for Llama 7b with 16 g5.4xlarge instances
-WANDB_API_KEY={YOUR_WANDB_API_KEY} python train.py job_compute_configs/aws.yaml training_configs/full_param/llama-2-7b-512-16xg5_4xlarge.yaml
+WANDB_API_KEY={YOUR_WANDB_API_KEY} python main.py job_compute_configs/aws.yaml training_configs/full_param/llama-2-7b-512-16xg5_4xlarge.yaml
 
 # Launch a LoRA fine-tuning job for Llama 7b with 16 g5.4xlarge instances
-WANDB_API_KEY={YOUR_WANDB_API_KEY} python train.py job_compute_configs/aws.yaml training_configs/lora/llama-2-7b-512-16xg5_4xlarge.yaml
+WANDB_API_KEY={YOUR_WANDB_API_KEY} python main.py job_compute_configs/aws.yaml training_configs/lora/llama-2-7b-512-16xg5_4xlarge.yaml
 ```
 
 Once you submit the command, in the terminal you will see the link to your finetuning job. Ex:
