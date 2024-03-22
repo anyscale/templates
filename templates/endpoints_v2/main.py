@@ -13,11 +13,11 @@ def main():
     cloud_provider = get_cloud_provider()
     model_id = get_model_id()
     gpu_type = get_gpu_type(model_id, cloud_provider)
-    
+
     config_file_path = MODEL_ID_TO_BASE_CONFIGS[model_id]
     base_config = read_yaml_file(config_file_path)
     tensor_parallelism = get_tensor_parallelism()
-    
+
     model_configs = populate_configs(base_config, model_id, gpu_type, tensor_parallelism)
 
     serve_config = read_yaml_file(_BASE_SERVE_CONFIG_PATH)

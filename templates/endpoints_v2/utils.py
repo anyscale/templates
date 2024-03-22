@@ -19,7 +19,7 @@ AVAILABLE_GPU_TYPES = {
     ("meta-llama/Llama-2-70b-chat-hf", CloudProvider.GCP): ["A100-40G", "A100-80G"],
     ("mistralai/Mistral-7B-Instruct-v0.1", CloudProvider.GCP): ["L4", "A100-40G", "A100-80G"],
     ("mistralai/Mixtral-8x7B-Instruct-v0.1", CloudProvider.GCP): ["A100-40G", "A100-80G"],
-} 
+}
 
 GPU_TYPE_TO_ACCELERATOR_TYPE_MAP = {
     "A10": "accelerator_type:A10G",
@@ -116,4 +116,3 @@ def populate_configs(base_config: Dict[str, Any], model_id: str, gpu_type: str, 
     base_config["scaling_config"]["resources_per_worker"][accelerator_type] = 0.001
     base_config["scaling_config"]["num_workers"] = int(tensor_parallelism)
     return base_config
-
