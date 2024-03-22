@@ -21,7 +21,7 @@ def main():
     model_configs = populate_configs(base_config, model_id, gpu_type, tensor_parallelism)
 
     serve_config = read_yaml_file(_BASE_SERVE_CONFIG_PATH)
-    serve_config["applications"][0]["args"]["vllm_base_models"] = model_configs
+    serve_config["applications"][0]["args"]["vllm_base_models"] = [model_configs]
 
     if model_id in LLAMA_MODELS:
         hf_token = get_hf_token()
@@ -36,7 +36,7 @@ def main():
 
     args = ["serve", "run", CONFIG_FILE]
 
-    print(f"\nRunning the command: {args}" )
+    print(f"\nRunning the command: {' '.join(args)}" )
     print("----------------")
     subprocess.run(args, check=True)
 

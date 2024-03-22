@@ -34,8 +34,8 @@ MODEL_ID_TO_BASE_CONFIGS = {
     "meta-llama/Llama-2-7b-chat-hf": "models/llama/meta-llama--Llama-2-7b-chat-hf.yaml",
     "meta-llama/Llama-2-13b-chat-hf": "models/llama/meta-llama--Llama-2-13b-chat-hf.yaml",
     "meta-llama/Llama-2-70b-chat-hf": "models/llama/meta-llama--Llama-2-70b-chat-hf.yaml",
-    "mistralai/Mistral-7B-Instruct-v0.1": "models/mistralai/mistralai--Mistral-7B-Instruct-v0.1.yaml",
-    "mistralai/Mixtral-8x7B-Instruct-v0.1": "models/mistralai--Mixtral-8x7B-Instruct-v0.1.yaml",
+    "mistralai/Mistral-7B-Instruct-v0.1": "models/mistral/mistralai--Mistral-7B-Instruct-v0.1.yaml",
+    "mistralai/Mixtral-8x7B-Instruct-v0.1": "models/mistral/mistralai--Mixtral-8x7B-Instruct-v0.1.yaml",
 }
 
 
