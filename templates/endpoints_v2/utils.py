@@ -1,9 +1,8 @@
 import os
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 from enum import Enum
 from typing import Dict
 import yaml
-import subprocess
 
 class CloudProvider(str, Enum):
     AWS = "AWS"
@@ -40,7 +39,7 @@ MODEL_ID_TO_BASE_CONFIGS = {
 }
 
 
-def get_model() -> str:
+def get_model_id() -> str:
     models = {
         1: "meta-llama/Llama-2-7b-chat-hf",
         2: "meta-llama/Llama-2-13b-chat-hf",
@@ -97,7 +96,7 @@ def get_hf_token() -> str:
         else:
             print("Invalid entry. Please enter a valid Hugging Face Access Token.")
 
-def _read_yaml_file(file_path):
+def read_yaml_file(file_path):
     with open(file_path, "r") as stream:
         return yaml.safe_load(stream)
 
@@ -117,4 +116,4 @@ def populate_configs(base_config: Dict[str, Any], model_id: str, gpu_type: str, 
     base_config["scaling_config"]["resources_per_worker"][accelerator_type] = 0.001
     base_config["scaling_config"]["num_workers"] = int(tensor_parallelism)
     return base_config
-    
+
