@@ -5,6 +5,7 @@ from typing import List, Optional
 import uuid
 
 import ray
+import ray.air.config
 
 
 @ray.remote(num_gpus=1, accelerator_type="A10G")
@@ -14,7 +15,7 @@ def generate(
     model_checkpoint_path: Optional[str] = None
 ) -> List[str]:
     """Load the SDXL pipeline and generate images as a GPU worker task.
-    
+
     Arguments:
         prompts: A list of string prompts to generate images for.
         args: Parsed arguments object from the command line args.
@@ -62,7 +63,7 @@ def generate(
 
     date_str = datetime.today().strftime("%Y-%m-%d_%H-%M-%S")
     image_dir = f"/mnt/cluster_storage/generated/{finetuned=}-{date_str}"
-    
+
     os.makedirs(image_dir, exist_ok=True)
 
     pipeline = pipeline.to("cuda")
