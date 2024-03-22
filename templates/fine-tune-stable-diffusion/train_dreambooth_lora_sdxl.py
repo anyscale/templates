@@ -1541,7 +1541,7 @@ def main(args):
         if args.resume_from_checkpoint != "latest":
             path = os.path.basename(args.resume_from_checkpoint)
         else:
-            # Get the mos recent checkpoint
+            # Get the most recent checkpoint
             dirs = os.listdir(args.output_dir)
             dirs = [d for d in dirs if d.startswith("checkpoint")]
             dirs = sorted(dirs, key=lambda x: int(x.split("-")[1]))
@@ -1903,6 +1903,8 @@ def main(args):
         # We'll load the fine-tuned model checkpoint and generate some samples
         # as a separate step in the notebook.
         # This step is skipped because not all the training state has been cleared
+        # at this point, even though training has finished.
+        # Loading a new pipeline from the latest checkpoint causes an A10G to run out of memory.
 
         # # Final inference
         # # Load previous pipeline
@@ -1957,6 +1959,20 @@ def main(args):
             )
 
     accelerator.end_training()
+
+    # MODIFICATION: Return the latest checkpoint path if one exists.
+    if not accelerator.is_main_process:
+        return
+
+    def get_latest_checkpoint_dir():
+        dirs = os.listdir(args.output_dir)
+        dirs = [d for d in dirs if d.startswith("checkpoint")]
+        dirs = sorted(dirs, key=lambda x: int(x.split("-")[1]))
+        path = dirs[-1] if len(dirs) > 0 else None
+        return os.path.join(args.output_dir, path) if path is not None else None
+
+    return get_latest_checkpoint_dir()
+
 
 
 if __name__ == "__main__":
