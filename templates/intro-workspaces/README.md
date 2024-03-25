@@ -51,7 +51,7 @@ The public key to add is outputted by the following command:
 
 ### Cloud Storage
 
-Workspace local storage is limited to 1GB, so we recommend only using it to store git repos and smaller files. To persist larger files, you can save data to cloud storage.
+Workspace local storage is limited to 10GB, so we recommend only using it to store git repos and smaller files. To persist larger files, you can save data to cloud storage.
 
 Cloud storage can be read and written from the workspace, as well as from any node in the Ray cluster.
 
