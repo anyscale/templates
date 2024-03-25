@@ -10,7 +10,7 @@ You can also find more advanced tutorials in the `examples/` folder, including t
 - Deploying LoRA and function-calling models
 - How to configure autoscaling and other optimization parameters
 
-**Note**: This guide is hosted within an Anyscale workspace, which provides easy access to compute resources. Please overview the `Introduction to Workspaces` tutorial first.
+**Note**: This guide is hosted within an Anyscale workspace, which provides easy access to compute resources. Check out the `Introduction to Workspaces` template for more details.
 
 ## Step 1 - Run the model locally in the Workspace
 
