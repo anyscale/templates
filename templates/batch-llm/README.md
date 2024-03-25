@@ -199,7 +199,7 @@ To use GPUs for inference in the Workspace, we specified `num_gpus` and `concurr
 
 Finally, make sure to either enable *Auto-select worker nodes* or configure your workspace cluster to have the appropriate GPU worker nodes:
 
-![title](assets/ray-data-gpu.png)
+<img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/batch-llm/assets/ray-data-gpu.png"/>
 
 Time to execute and view the results!
 
@@ -209,7 +209,7 @@ ds.take_all()
 ```
 
 In the Ray Dashboard tab, navigate to the Job page and open the "Ray Data Overview" section to view the details of the batch inference execution:
-![title](assets/ray-data-jobs.png)
+<img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/batch-llm/assets/ray-data-jobs.png"/>
 
 ### Handling GPU out-of-memory failures
 If you run into CUDA out of memory, your batch size is likely too large. Decrease the batch size as described above.
