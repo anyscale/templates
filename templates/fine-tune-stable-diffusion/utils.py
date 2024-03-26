@@ -1,19 +1,33 @@
 import argparse
 from datetime import datetime
 import os
+import tempfile
 from typing import List, Optional
 import uuid
 
+from filelock import FileLock
+from PIL import Image as PILImage
+import pyarrow.fs
+
 import ray
-import ray.air.config
+import ray.train
+
+
+def upload_to_cloud(local_path: str, cloud_uri: str):
+    pyarrow.fs.copy_files(source=local_path, destination=cloud_uri, use_threads=False)
+
+def download_from_cloud(cloud_uri: str, local_path: str):
+    os.makedirs(local_path, exist_ok=True)
+    with FileLock(local_path + ".lock"):
+        pyarrow.fs.copy_files(source=cloud_uri, destination=local_path)
 
 
 @ray.remote(num_gpus=1, accelerator_type="A10G")
 def generate(
     prompts: List[str],
     args: argparse.Namespace,
-    model_checkpoint_path: Optional[str] = None
-) -> List[str]:
+    model_checkpoint_path: Optional[str] = None,
+) -> List[PILImage.Image]:
     """Load the SDXL pipeline and generate images as a GPU worker task.
 
     Arguments:
@@ -24,7 +38,7 @@ def generate(
             If None, then this will generate images with the base SDXL model.
 
     Returns:
-        image_paths: List of generated image paths in `/mnt/cluster_storage/generated`.
+        images: List of generated images as PIL Image objects.
     """
     import torch
     from diffusers import AutoencoderKL, StableDiffusionXLPipeline
@@ -57,23 +71,30 @@ def generate(
 
     finetuned = False
     if model_checkpoint_path is not None:
-        # load fine-tuned LoRA weights
-        pipeline.load_lora_weights(model_checkpoint_path)
+        with tempfile.TemporaryDirectory(prefix="/mnt/local_storage/") as local_checkpoint_dir:
+            # Download model checkpoint to this temporary local directory.
+            download_from_cloud(model_checkpoint_path, local_checkpoint_dir)
+
+            # Load fine-tuned LoRA weights
+            pipeline.load_lora_weights(local_checkpoint_dir)
         finetuned = True
 
     date_str = datetime.today().strftime("%Y-%m-%d_%H-%M-%S")
-    image_dir = f"/mnt/cluster_storage/generated/{finetuned=}-{date_str}"
 
-    os.makedirs(image_dir, exist_ok=True)
+    # os.makedirs(image_dir, exist_ok=True)
+
+    # pipeline = pipeline.to("cuda")
+    # images = pipeline(prompt=prompts).images
+    # image_paths = []
+    # for i, image in enumerate(images):
+    #     image_path = os.path.join(
+    #         image_dir, f"{prompts[i].replace(' ', '_')}_{uuid.uuid4().hex[:4]}.jpg"
+    #     )
+    #     image.save(image_path)
+    #     image_paths.append(image_path)
+
+    # return image_paths
 
     pipeline = pipeline.to("cuda")
     images = pipeline(prompt=prompts).images
-    image_paths = []
-    for i, image in enumerate(images):
-        image_path = os.path.join(
-            image_dir, f"{prompts[i].replace(' ', '_')}_{uuid.uuid4().hex[:4]}.jpg"
-        )
-        image.save(image_path)
-        image_paths.append(image_path)
-
-    return image_paths
+    return images
