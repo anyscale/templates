@@ -1,9 +1,7 @@
 import argparse
-from datetime import datetime
 import os
 import tempfile
 from typing import List, Optional
-import uuid
 
 from filelock import FileLock
 from PIL import Image as PILImage
@@ -15,6 +13,7 @@ import ray.train
 
 def upload_to_cloud(local_path: str, cloud_uri: str):
     pyarrow.fs.copy_files(source=local_path, destination=cloud_uri, use_threads=False)
+
 
 def download_from_cloud(cloud_uri: str, local_path: str):
     os.makedirs(local_path, exist_ok=True)
@@ -69,7 +68,6 @@ def generate(
         torch_dtype=weight_dtype,
     )
 
-    finetuned = False
     if model_checkpoint_path is not None:
         with tempfile.TemporaryDirectory(prefix="/mnt/local_storage/") as local_checkpoint_dir:
             # Download model checkpoint to this temporary local directory.
@@ -77,23 +75,6 @@ def generate(
 
             # Load fine-tuned LoRA weights
             pipeline.load_lora_weights(local_checkpoint_dir)
-        finetuned = True
-
-    date_str = datetime.today().strftime("%Y-%m-%d_%H-%M-%S")
-
-    # os.makedirs(image_dir, exist_ok=True)
-
-    # pipeline = pipeline.to("cuda")
-    # images = pipeline(prompt=prompts).images
-    # image_paths = []
-    # for i, image in enumerate(images):
-    #     image_path = os.path.join(
-    #         image_dir, f"{prompts[i].replace(' ', '_')}_{uuid.uuid4().hex[:4]}.jpg"
-    #     )
-    #     image.save(image_path)
-    #     image_paths.append(image_path)
-
-    # return image_paths
 
     pipeline = pipeline.to("cuda")
     images = pipeline(prompt=prompts).images
