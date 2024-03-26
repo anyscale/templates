@@ -115,7 +115,6 @@ from train_dreambooth_lora_sdxl import parse_args
 
 # [Optional] Setup wandb to visualize generated samples during fine-tuning.
 # os.environ["WANDB_API_KEY"] = "YOUR_WANDB_API_KEY"
-os.environ["WANDB_API_KEY"] = "afee4ae3e5b07d9f76117a8ad9c62e930cd7a63d"
 
 # See `parse_args` in train_dreambooth_lora_sdxl.py to see all the possible configurations.
 cmd_line_args = [
@@ -163,10 +162,9 @@ print("Final checkpoint will be uploaded to: ", MODEL_CHECKPOINT_PATH)
 
 
 ```python
-from datetime import datetime
 import os
-import shutil
 
+import ray
 import ray.train
 from ray.train.torch import TorchTrainer
 
@@ -196,10 +194,8 @@ def train_fn_per_worker(config: dict):
 
 trainer = TorchTrainer(
     train_fn_per_worker,
-    train_loop_config={
-        # Pass command line arguments from the driver to the `config` dict of the `train_fn_per_worker`
-        "args": TRAINING_ARGS,
-    },
+    # Pass command line arguments from the driver to the `config` dict of the `train_fn_per_worker`
+    train_loop_config={"args": TRAINING_ARGS},
     scaling_config=ray.train.ScalingConfig(
         # Do data parallel training with A10G GPU workers
         num_workers=4, use_gpu=True, accelerator_type="A10G"
@@ -211,7 +207,7 @@ trainer = TorchTrainer(
 
 ```python
 # Launch the training.
-result = trainer.fit()
+trainer.fit()
 ```
 
 ## Step 3: Generate some images with your fine-tuned model!
