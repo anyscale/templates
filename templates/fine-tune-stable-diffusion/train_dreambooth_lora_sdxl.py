@@ -1584,7 +1584,6 @@ def main(args):
             sigma = sigma.unsqueeze(-1)
         return sigma
 
-    logs = {}
     for epoch in range(first_epoch, args.num_train_epochs):
         unet.train()
         if args.train_text_encoder:
@@ -1964,7 +1963,7 @@ def main(args):
     # MODIFICATION: Return the latest checkpoint path if one exists.
     # Also return the latest recorded metrics (loss).
     if not accelerator.is_main_process:
-        return None, logs
+        return None
 
     def get_latest_checkpoint_dir():
         dirs = os.listdir(args.output_dir)
@@ -1973,7 +1972,7 @@ def main(args):
         path = dirs[-1] if len(dirs) > 0 else None
         return os.path.join(args.output_dir, path) if path is not None else None
 
-    return get_latest_checkpoint_dir(), logs
+    return get_latest_checkpoint_dir()
 
 
 
