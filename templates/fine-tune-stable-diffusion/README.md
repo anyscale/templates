@@ -4,6 +4,8 @@
 
 This template shows you how to do [Dreambooth](https://arxiv.org/abs/2208.12242) fine-tuning, which is a method of personalizing a stable diffusion model on a few examples (3~5) of a subject.
 
+![Sample results](assets/finetune-sample-results.png)
+
 In this tutorial, you will learn about:
 1. How to easily scale out an existing HuggingFace `diffusers` example to run on a Ray cluster with minimal modifications.
 2. Basic features of [Ray Train](https://docs.ray.io/en/latest/train/train.html) such as specifying the number of training workers and the desired accelerator type.
@@ -15,14 +17,14 @@ The application requires a few extra Python dependencies. Install them using `pi
 
 
 ```python
-# !pip install -U accelerate==0.28.0 diffusers==0.27.2 peft==0.10.0 transformers==4.39.1
+!pip install -U accelerate==0.28.0 diffusers==0.27.2 peft==0.10.0 transformers==4.39.1
 ```
 
 ## Step 2: Set up a dataset of your subject
 
-First, provide some pictures of your subject.
+First, provide some images of the subject you want to fine-tune on.
 
-We'll use a sample dog dataset to demonstrate, but you can populate `SUBJECT_IMAGES_DIR` with pictures of your own subject.
+We'll use a sample dog dataset to demonstrate, but you can use pictures of your own subject.
 Fine-tuning works best if your images are all cropped to a square with your subject in the center!
 
 A few notes on these constants that you can modify when training on your own custom subject:
@@ -32,14 +34,14 @@ A few notes on these constants that you can modify when training on your own cus
 * `SUBJECT_CLASS` is the category that your subject falls into.
     * For example, if you have a human subject, the class could be `"man"` or `"woman"`.
     * This class combined with the `SUBJECT_TOKEN` can be used in a prompt to convey the meaning: "a dog named sks".
-* `SUBJECT_IMAGES_DIR` contains the training data of our subject used for fine-tuning.
-    * **This should stay in `/mnt/cluster_storage` so that all distributed workers can access the data!**
+* Put training images of your subject in `SUBJECT_IMAGES_PATH`. We'll later upload it to cloud storage so that all worker nodes can access the dataset.
+    * The easiest way to use your own images is to drag files into a folder in the VSCode file explorer, then moving the folder to `SUBJECT_IMAGES_PATH` in the command line. (Ex: `mv ./images /mnt/local_storage/subject_images`)
 
 
 ```python
 SUBJECT_TOKEN = "sks"
 SUBJECT_CLASS = "dog"
-SUBJECT_IMAGES_DIR = "/mnt/cluster_storage/subject_images"
+SUBJECT_IMAGES_PATH = "/mnt/local_storage/subject_images"
 ```
 
 
@@ -49,7 +51,7 @@ from huggingface_hub import snapshot_download
 
 snapshot_download(
     "diffusers/dog-example",
-    local_dir=SUBJECT_IMAGES_DIR, repo_type="dataset",
+    local_dir=SUBJECT_IMAGES_PATH, repo_type="dataset",
     ignore_patterns=".gitattributes",
 )
 ```
@@ -61,7 +63,20 @@ Take a look at the dataset!
 from IPython.display import Image, display
 from pathlib import Path
 
-display(*[Image(filename=image_path, width=250) for image_path in Path(SUBJECT_IMAGES_DIR).iterdir()])
+display(*[Image(filename=image_path, width=250) for image_path in Path(SUBJECT_IMAGES_PATH).iterdir()])
+```
+
+Next, upload the dataset to cloud storage so that we can download it on each worker node at the start of training.
+
+
+```python
+from utils import upload_to_cloud
+
+DATA_CLOUD_PATH = os.environ["ANYSCALE_ARTIFACT_STORAGE"] + "/subject_images"
+upload_to_cloud(
+    local_path=SUBJECT_IMAGES_PATH, cloud_uri=DATA_CLOUD_PATH
+)
+print("Uploaded data to: ", DATA_CLOUD_PATH)
 ```
 
 Let's come up with some prompts to test our model on after fine-tuning. Notice the `{SUBJECT_TOKEN} {SUBJECT_CLASS}` included in each of them.
@@ -106,7 +121,7 @@ os.environ["WANDB_API_KEY"] = "afee4ae3e5b07d9f76117a8ad9c62e930cd7a63d"
 cmd_line_args = [
     f"--pretrained_model_name_or_path=stabilityai/stable-diffusion-xl-base-1.0",
     f"--pretrained_vae_model_name_or_path=madebyollin/sdxl-vae-fp16-fix",
-    f"--instance_data_dir={SUBJECT_IMAGES_DIR}",
+    f"--instance_data_dir={SUBJECT_IMAGES_PATH}",
     "--output_dir=/mnt/local_storage/lora-trained-xl",
     "--mixed_precision=fp16",
     # A neutral prompt that serves as the caption for the subject image during training.
@@ -141,11 +156,14 @@ The result of this fine-tuning will be a fine-tuned LoRA model checkpoint at `MO
 
 
 ```python
-MODEL_CHECKPOINT_PATH = "/mnt/cluster_storage/checkpoint-final"
+MODEL_CHECKPOINT_PATH = os.environ["ANYSCALE_ARTIFACT_STORAGE"] + "/checkpoint-final"
+
+print("Final checkpoint will be uploaded to: ", MODEL_CHECKPOINT_PATH)
 ```
 
 
 ```python
+from datetime import datetime
 import os
 import shutil
 
@@ -153,32 +171,27 @@ import ray.train
 from ray.train.torch import TorchTrainer
 
 from train_dreambooth_lora_sdxl import main
+from utils import download_from_cloud, upload_to_cloud
 
-
-# Set the HuggingFace model cache to a shared location
-# so that model loading time is faster after the first time.
-os.environ["HF_HOME"] = "/mnt/cluster_storage/hf_cache"
 
 # Set environment variables across the entire cluster.
 ray.init(
     runtime_env={
-        "env_vars": {
-            "HF_HOME": os.environ.get("HF_HOME"),
-            "WANDB_API_KEY": os.environ.get("WANDB_API_KEY"),
-        }
+        "env_vars": {"WANDB_API_KEY": os.environ.get("WANDB_API_KEY")}
     },
     ignore_reinit_error=True,
 )
 
 
 def train_fn_per_worker(config: dict):
-    # See train_dreambooth_lora_sdxl.py for all of the training details.
-    final_checkpoint_path = main(config["args"])
+    download_from_cloud(cloud_uri=DATA_CLOUD_PATH, local_path=SUBJECT_IMAGES_PATH)
 
+    # See train_dreambooth_lora_sdxl.py for all of the training details.
+    final_checkpoint_path, final_metrics = main(config["args"])
+
+    # Upload final checkpoint to cloud. (Only the rank 0 worker will return a path here.)
     if final_checkpoint_path is not None:
-        destination_path = config["model_checkpoint_path"]
-        shutil.copytree(final_checkpoint_path, destination_path, dirs_exist_ok=True)
-        print(f"Copied the checkpoint to {destination_path} for later use!")
+        upload_to_cloud(local_path=final_checkpoint_path, cloud_uri=MODEL_CHECKPOINT_PATH)
 
 
 trainer = TorchTrainer(
@@ -186,8 +199,6 @@ trainer = TorchTrainer(
     train_loop_config={
         # Pass command line arguments from the driver to the `config` dict of the `train_fn_per_worker`
         "args": TRAINING_ARGS,
-        # This is where we can access the fine-tuned model checkpoint later.
-        "model_checkpoint_path": MODEL_CHECKPOINT_PATH,
     },
     scaling_config=ray.train.ScalingConfig(
         # Do data parallel training with A10G GPU workers
@@ -200,7 +211,7 @@ trainer = TorchTrainer(
 
 ```python
 # Launch the training.
-trainer.fit()
+result = trainer.fit()
 ```
 
 ## Step 3: Generate some images with your fine-tuned model!
@@ -224,16 +235,22 @@ from utils import generate
 ])
 ```
 
+### Images generated with the base model
+
 
 ```python
-print("\n".join(base_model_images))
-display(*[Image(filename=image_path, width=250) for image_path in base_model_images])
+from IPython.display import display
+
+display(*base_model_images)
 ```
 
+### Images generated with the finetuned model
+
+These images should resemble your subject. If the generated image quality is not satisfactory, refer to the tips in [this blog post](https://huggingface.co/blog/dreambooth#tldr-recommended-settings) to tweak your hyperparameters.
+
 
 ```python
-print("\n".join(finetuned_images))
-display(*[Image(filename=image_path, width=250) for image_path in finetuned_images])
+display(*finetuned_images)
 ```
 
 ## Summary
@@ -246,8 +263,3 @@ As a recap, this notebook:
 3. Compared the generated output results before and after fine-tuning.
 
 As a next step, you can take the fine-tuned model checkpoint and use it to serve the model. See the tutorial on serving stable diffusion on the home page to get started!
-
-
-```python
-
-```
