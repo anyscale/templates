@@ -1,7 +1,7 @@
 head_node_type:
-# 32 vCPU, 128 GiB memory
-  name: head-node-type
-  instance_type: m5.8xlarge
+# 16 vCPU, 64 GiB memory
+  name: head
+  instance_type: m5.2xlarge
   resources:
     cpu: 0
 worker_node_types:

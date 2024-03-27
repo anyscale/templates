@@ -1,5 +1,7 @@
 # Introduction to Workspaces
 
+**⏱️ Time to complete**: 10 min
+
 Welcome! You are currently in a Workspace, which is a persistent cloud IDE connected to a Ray cluster.
 
 In this tutorial, you will learn:
@@ -89,7 +91,7 @@ To parallelize beyond the resources available to the workspace node, add additio
 
 ### Using "Auto-select workers" mode
 
-To let Ray automatically select what kind of worker nodes to add to the cluster, check the "Auto-select workers" box. Ray will try to autoscale cluster worker nodes to balance cost and performance. In auto mode, you cannot configure worker node types, but the resources panel will show which node types have been launched.
+To let Ray automatically select what kind of worker nodes to add to the cluster, check the "Auto-select workers" box. Ray will add worker nodes as needed to run submitted tasks and actors. In auto mode, you cannot configure workers, but the resources panel will show which nodes have been launched.
 
 We recommend using auto mode if you do not have specific cluster requirements, and are ok with waiting for the autoscaler to add nodes on-demand to the cluster.
 
@@ -97,7 +99,11 @@ We recommend using auto mode if you do not have specific cluster requirements, a
 
 In this section, we'll author a simple Ray python script and go over the tools available to monitor its execution. Let's take the opportunity to create a `my_app.py` file in the `my_repo` git repo you created earlier.
 
-You can click on the "File Explorer" in the left pane of VSCode to create the new file. Copy paste the following program into the file:
+You can click on the "File Explorer" in the left pane of VSCode to create the new file.
+
+<img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/intro-workspaces/assets/file-explorer.png" height=400px/>
+
+Double click this cell to copy & paste the following program into the file :
 
 ```python
 import ray, time

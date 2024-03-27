@@ -1,6 +1,6 @@
 head_node_type:
-  name: head-node-type
-  instance_type: m5.xlarge
+  name: head
+  instance_type: m5.2xlarge
   resources:
     cpu: 0
 
@@ -11,7 +11,7 @@ auto_select_worker_config: true
 # TODO (shomilj): Remove once validation is fixed.
 worker_node_types:
 - name: cpu-worker
-  instance_type: m5.xlarge
+  instance_type: m5.2xlarge
   min_workers: 0
   max_workers: 1
 

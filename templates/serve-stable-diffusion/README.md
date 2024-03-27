@@ -1,11 +1,14 @@
-## Serving a Stable Diffusion Model with Ray Serve
+# Serving a Stable Diffusion Model with Ray Serve
+
+**⏱️ Time to complete**: 5 min (15 on GCP)
+
 This template shows you how to:
-1. Develop and run a Ray Serve application running a stable diffusion model.
+1. Develop and run a Ray Serve application running the SDXL diffusion model.
 2. Send test requests to the application running locally.
 3. Deploy the application to production as a service.
 4. Send requests to the application running in production as a service.
 
-### Step 1: Install python dependencies
+## Step 1: Install python dependencies
 
 The application requires a few extra Python dependencies. Install them using `pip` and they'll be saved in the workspace and picked up when deploying to production.
 
@@ -14,7 +17,7 @@ The application requires a few extra Python dependencies. Install them using `pi
 !pip install -q diffusers==0.25.0 transformers==4.36.2 accelerate==0.25.0 && echo 'Install complete!'
 ```
 
-### Step 2: Run the model locally
+## Step 2: Run the model locally
 - Run the command below in a VSCode terminal (Ctrl-`).
 - The model will be available at http://localhost:8000.
 - The command will block and print logs for the application.
@@ -24,7 +27,7 @@ The application requires a few extra Python dependencies. Install them using `pi
 $ serve run main:stable_diffusion_app
 ```
 
-### Step 3: Send a test request to the model running locally
+## Step 3: Send a test request to the model running locally
 
 The `generate_image` function sends an HTTP request to the model and saves the response as a local image.
 
@@ -47,7 +50,7 @@ def generate_image(prompt: str, image_size: int) -> bytes:
 
 
 ```python
-image = generate_image("twin peaks sf in basquiat painting style", 640)
+image = generate_image("anyscale logo valentines day card, professional quality art, surrounded by flowers, white envelope", 640)
 
 filename = "image.png"
 with open(filename, "wb") as f:
@@ -57,7 +60,7 @@ from IPython.display import Image
 Image(filename=filename)
 ```
 
-### Step 4: Deploy the model to production as a service
+## Step 4: Deploy the model to production as a service
 
 Deploy the model to production using the `serve deploy` command.
 
@@ -70,7 +73,7 @@ Local files and dependencies installed in the workspace are automatically includ
 !serve deploy --name stable_diffusion_service main:stable_diffusion_app
 ```
 
-### Step 5: Send a test request to the model running in the service
+## Step 5: Send a test request to the model running in the service
 
 Query the service using the same logic as when testing it locally, with two changes:
 1. Update the `HOST` to the service endpoint.

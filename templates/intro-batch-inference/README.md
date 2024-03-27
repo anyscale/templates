@@ -1,5 +1,7 @@
 # Batch Inference Basics
 
+**⏱️ Time to complete**: 10 min
+
 Offline batch inference is a process for generating model predictions on a fixed set of input data. [Ray Data](https://docs.ray.io/en/latest/data/data.html) offers a scalable solution for batch inference, providing optimized inference performance for deep learning applications.
 
 In this tutorial, you will learn:
@@ -72,6 +74,23 @@ In the Ray Dashboard tab, navigate to the Job page and open the "Ray Data Overvi
 
 
 
+## Scaling to a larger dataset
+
+Let's explore how to scale the above to a larger dataset, which will run on a cluster. Run the following cell to generate completions for 10000 rows with a concurrency of 20. Ensure *Auto-select worker nodes* is checked in the cluster sidebar, and Anyscale will automatically add worker nodes to the cluster as needed:
+
+
+```python
+# Create a 10k row dataset.
+ds = ray.data.from_numpy(np.asarray(["Today's weather"] * 10000))
+
+# Ensure the dataset has enough blocks to be executed in parallel.
+ds = ds.repartition(1000)
+
+# Execute the batch inference.
+predictions = ds.map_batches(HuggingFacePredictor, concurrency=20)
+predictions.show()
+```
+
 ## Scaling with GPUs
 
 To use GPUs for inference, make the following changes to your code:
@@ -93,13 +112,13 @@ import numpy as np
 
 import ray
 
-ds = ray.data.from_numpy(np.asarray(["Complete this", "for me"]))
+ds = ray.data.from_numpy(np.asarray(["Large language models", "Text completion models"]))
 
 class HuggingFacePredictor:
     def __init__(self):
         from transformers import pipeline
         # Set "cuda:0" as the device so the Huggingface pipeline uses GPU.
-        self.model = pipeline("text-generation", model="gpt2", device="cuda:0")
+        self.model = pipeline("text-generation", model="gpt2", device=0)
 
     def __call__(self, batch: Dict[str, np.ndarray]) -> Dict[str, list]:
         predictions = self.model(list(batch["data"]), max_length=20, num_return_sequences=1)
@@ -139,11 +158,11 @@ import ray
 ds = ray.data.from_numpy(np.ones((10, 100)))
 
 def assert_batch(batch: Dict[str, np.ndarray]):
-    assert len(batch) == 2
+    assert len(batch["data"]) == 2, batch
     return batch
 
 # Specify that each input batch should be of size 2.
-ds.map_batches(assert_batch, batch_size=2)
+ds.map_batches(assert_batch, batch_size=2).show(limit=1)
 ```
 
 ### Handling GPU out-of-memory failures
