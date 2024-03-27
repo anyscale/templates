@@ -1,6 +1,6 @@
 # Fine-tuning Stable Diffusion XL with Ray Train
 
-⏱️ Time to complete: 15 min
+⏱️ Time to complete: 10 min
 
 This template shows you how to do [Dreambooth](https://arxiv.org/abs/2208.12242) fine-tuning, which is a method of personalizing a stable diffusion model on a few examples (3~5) of a subject.
 
@@ -109,6 +109,8 @@ This script is built on HuggingFace Accelerate, and we will show how easy it is 
 The `diffusers` script is originally launched via the command line. Here, we'll launch it with Ray Train instead and pass in the parsed command line arguments, in order to make as few modifications to the training script as possible.
 
 
+
+
 ```python
 import os
 from train_dreambooth_lora_sdxl import parse_args
@@ -134,10 +136,16 @@ cmd_line_args = [
     "--max_train_steps=100",
     "--checkpointing_steps=100",
     # Use the first prompt as a sample to generate during training.
-    f"--validation_prompt={PROMPTS[0]}",
-    "--validation_epochs=25",
     "--seed=0",
-] + (["--report_to=wandb"] if os.environ.get("WANDB_API_KEY") else [])
+] + (
+    [
+        f"--validation_prompt={PROMPTS[0]}",
+        "--validation_epochs=25",
+        "--report_to=wandb",
+    ]
+    if os.environ.get("WANDB_API_KEY")
+    else []
+)
 
 TRAINING_ARGS = parse_args(input_args=cmd_line_args)
 ```
@@ -173,28 +181,29 @@ from utils import download_from_cloud, upload_to_cloud
 
 
 # Set environment variables across the entire cluster.
-ray.init(
-    runtime_env={
-        "env_vars": {"WANDB_API_KEY": os.environ.get("WANDB_API_KEY")}
-    },
-    ignore_reinit_error=True,
-)
+WANDB_API_KEY = os.environ.get("WANDB_API_KEY")
+if WANDB_API_KEY:
+    ray.init(
+        runtime_env={"env_vars": {"WANDB_API_KEY": WANDB_API_KEY}},
+        ignore_reinit_error=True,
+    )
 
 
 def train_fn_per_worker(config: dict):
     download_from_cloud(cloud_uri=DATA_CLOUD_PATH, local_path=SUBJECT_IMAGES_PATH)
 
     # See train_dreambooth_lora_sdxl.py for all of the training details.
-    final_checkpoint_path, final_metrics = main(config["args"])
+    final_checkpoint_path = main(config["args"])
 
     # Upload final checkpoint to cloud. (Only the rank 0 worker will return a path here.)
     if final_checkpoint_path is not None:
         upload_to_cloud(local_path=final_checkpoint_path, cloud_uri=MODEL_CHECKPOINT_PATH)
+        print("Final checkpoint has been uploaded to: ", MODEL_CHECKPOINT_PATH)
 
 
 trainer = TorchTrainer(
     train_fn_per_worker,
-    # Pass command line arguments from the driver to the `config` dict of the `train_fn_per_worker`
+    # Pass command line arguments to the `config` dict of the `train_fn_per_worker`
     train_loop_config={"args": TRAINING_ARGS},
     scaling_config=ray.train.ScalingConfig(
         # Do data parallel training with A10G GPU workers
@@ -202,12 +211,9 @@ trainer = TorchTrainer(
     ),
 )
 
-```
-
-
-```python
 # Launch the training.
 trainer.fit()
+print("Finished fine-tuning!")
 ```
 
 ## Step 3: Generate some images with your fine-tuned model!
