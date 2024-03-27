@@ -52,7 +52,7 @@ You should see the job state and its output on the overview page.
 
 <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/intro-jobs/assets/anyscale-job.png" height=400px>
 
-This concludes the Anyscale Jobs tutorial. To learn more about how to configure Anyscale Jobs, see the [Anyscale documentation](https://docs.endpoints.anyscale.com/preview/examples/intro-services).
+This concludes the Anyscale Jobs tutorial. To learn more about how to configure Anyscale Jobs, see the [Anyscale documentation](https://docs.endpoints.anyscale.com/preview/).
 
 ## Summary
 
