@@ -169,7 +169,7 @@ ds.take_all()
 ```
 
 ## Scaling to a larger dataset
-In the cell above, we created a Ray Dataset with 5 example prompts. Next, let's explore how to scale to a larger dataset based on files stored in cloud storage.
+In the example above, we performed batch inference for Ray Dataset with 5 example prompts. Next, let's explore how to scale to a larger dataset based on files stored in cloud storage.
 
 Run the following cell to create a Dataset from a text file stored on S3. This Dataset has 100 rows, with each row containing a single prompt in the `text` column.
 
@@ -221,7 +221,7 @@ If your batch size is already set to 1, then use either a smaller model or GPU d
 
 For advanced users working with large models, you can use model parallelism to shard the model across multiple GPUs.
 
-### Output Results
+## Output Results
 Finally, write the inference output data out to Parquet files on S3.
 
 
@@ -236,6 +236,15 @@ We can also use Ray Data to read back the output files to ensure the results are
 ```python
 ds_output = ray.data.read_parquet(output_path)
 ds_output.take(5)
+```
+
+## Submitting an Anyscale Job
+
+Now that we have successfully created this simple Ray task, let's convert it into an Anyscale Job. We can submit the Anyscale job using the Python version of this example (`examples/main.py`). Anyscale Jobs are the recommended way to run workloads (such as data processing, model training, or fine-tuning) in production. You can learn more about Anyscale Jobs [here](https://docs.anyscale.com/productionize/jobs/get-started).
+
+
+```python
+!anyscale job submit -- python examples/main.py
 ```
 
 ## Summary
