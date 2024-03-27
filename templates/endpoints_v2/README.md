@@ -14,17 +14,20 @@ You can also find more advanced tutorials in the `examples/` folder, including t
 
 ## Step 1 - Run the model locally in the Workspace
 
-The llm-serve.yaml file in this example runs the Mistral-7B model. There are 2 important configurations you would need to modify:
-1. The `models` config in `llm-serve-*.yaml` contains a list of YAML files for the models you want to deploy. You can run any of the models in the `models` directory or define your own model YAML file and run that instead. All config files follow the naming convention `{model_name}_{accelerator_type}_{tensor_parallelism}`. Follow the CustomModels [guide](examples/CustomModels.ipynb) for bringing your own models.
-2. `HUGGING_FACE_HUB_TOKEN` - The Meta Llama-2 family of models need the HUGGING_FACE_HUB_TOKEN variable to be set to a Hugging Face Access Token for an account with permissions to download the model.
+The following command will allow you to serve a model based on:
+- Model ID
+- GPU type
+- Tensor parallelism
+
+The script creates a YAML file and serves the model via ray serve. You can also run any of the models in the `models` directory or define your own model YAML file and run that instead. You can follow the CustomModels [guide](examples/CustomModels.ipynb) for bringing your own models.
+
+
+Please note that the Meta Llama-2 family of models need the HUGGING_FACE_HUB_TOKEN variable to be set to a Hugging Face Access Token for an account with permissions to download the model.
 
 
 
-From the VSCode terminal (press [**Ctrl + `**] in VSCode), use the Ray Serve CLI to deploy the model for testing. It will take a few minutes to initialize and download the model.
-
-```bash
-# Note: if using GCP cloud, use llm-serve-gcp.yaml instead to select L4 GPU instances.
-$ serve run llm-serve-aws.yaml
+```python
+!python main.py
 ```
 
 ## Step 2 - Query the model

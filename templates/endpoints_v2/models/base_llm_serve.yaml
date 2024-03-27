@@ -4,8 +4,7 @@ applications:
     import_path: aviary_private_endpoints.backend.server.run:router_application
     args:
       models: []
-      vllm_base_models:
-        - "./models/mistral/mistralai--Mistral-7B-Instruct-v0.1_a10g_tp1.yaml"
+      vllm_base_models: []
       multiplex_lora_adapters: []
       function_calling_models: []
     runtime_env:
