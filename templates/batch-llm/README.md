@@ -1,4 +1,4 @@
-## LLM offline batch inference with Ray Data and vLLM
+# LLM offline batch inference with Ray Data and vLLM
 
 **⏱️ Time to complete**: 10 min
 
@@ -7,7 +7,7 @@ This template shows you how to:
 2. Use Ray Data and vLLM to run batch inference of a LLM.
 3. Write the inference outputs to cloud storage.
 
-For a Python script version of the `.ipynb` notebook used for the workspace template, refer to `examples/main.py`.
+For a Python script version of the `.ipynb` notebook used for the workspace template, refer to `main.py`.
 
 **Note:** This tutorial is run within a workspace. Please overview the `Introduction to Workspaces` template first before this tutorial.
 
@@ -218,7 +218,7 @@ In the Ray Dashboard tab, navigate to the Job page and open the "Ray Data Overvi
 
 <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/batch-llm/assets/ray-data-jobs.png"/>
 
-### Handling GPU out-of-memory failures
+## Handling GPU out-of-memory failures
 If you run into CUDA out of memory, your batch size is likely too large. Decrease the batch size as described above.
 
 If your batch size is already set to 1, then use either a smaller model or GPU devices with more memory.
@@ -244,7 +244,7 @@ ds_output.take(5)
 
 ## Submitting an Anyscale Job
 
-Now that we have successfully created this simple Ray task, let's convert it into an Anyscale Job. We can submit the Anyscale job using the Python version of this example (`examples/main.py`). Anyscale Jobs are the recommended way to run workloads (such as data processing, model training, or fine-tuning) in production. You can learn more about Anyscale Jobs [here](https://docs.anyscale.com/productionize/jobs/get-started).
+Now that we have successfully created this simple Ray task, let's convert it into an Anyscale Job. We can submit the Anyscale job using the Python version of this example (`main.py`). Anyscale Jobs are the recommended way to run workloads (such as data processing, model training, or fine-tuning) in production. You can learn more about Anyscale Jobs [here](https://docs.anyscale.com/productionize/jobs/get-started).
 
 
 ```python
