@@ -12,16 +12,20 @@ def _read_yaml_file(file_path):
     with open(file_path, "r") as stream:
         return yaml.safe_load(stream)
 
+
 def get_cld_id() -> str:
     return os.environ.get("ANYSCALE_CLOUD_ID") or ""
+
 
 def get_region() -> str:
     return os.environ.get("ANYSCALE_CLOUD_STORAGE_BUCKET_REGION") or ""
 
+
 def _get_lora_storage_uri() -> str:
     artifact_storage = os.environ.get("ANYSCALE_ARTIFACT_STORAGE")
     artifact_storage = artifact_storage.rstrip("/")
-    return f"{artifact_storage}/fine_tuning/"
+    return f"{artifact_storage}/lora_fine_tuning/"
+
 
 def generate_model_tag(model_id: str) -> str:
     """
@@ -29,7 +33,10 @@ def generate_model_tag(model_id: str) -> str:
     """
     username = os.environ.get("ANYSCALE_USERNAME")
     if username:
-        username = username[:5]
+        username = username.strip().replace(" ", "")[:5]
+        if len(username) < 5:
+            padding_char = username[-1] if username else 'a'
+            username += padding_char * (5 - len(username))
     else:
         username = "".join(random.choice(string.ascii_lowercase) for _ in range(5))
     suffix = "".join(random.choice(string.ascii_lowercase) for _ in range(5))
@@ -83,6 +90,7 @@ def main():
         job_config.setdefault("runtime_env", {}).setdefault("env_vars", {})[
             "WANDB_API_KEY"
         ] = api_key
+        job_config["runtime_env"]["env_vars"]["RAY_OVERRIDE_JOB_RUNTIME_ENV"] = "1"
 
     with tempfile.NamedTemporaryFile(
         mode="w+", delete=False, dir=".", suffix=".yaml"
@@ -95,7 +103,7 @@ def main():
         subprocess.run(["anyscale", "job", "submit", temp_file_name], check=True)
         if lora_storage_uri:
             print(
-                f"Note: Lora weights will also be stored in path {lora_storage_uri} under {model_tag} bucket."
+                f"Note: LoRA weights will also be stored in path {lora_storage_uri} under {model_tag} bucket."
             )
     finally:
         # Clean up by deleting the temporary file

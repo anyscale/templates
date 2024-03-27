@@ -5,8 +5,10 @@ applications:
     args:
       models: []
       multiplex_models:
-        - "./models/llama/meta-llama--Llama-2-7b-chat-hf_l4-lora.yaml"
-      dynamic_lora_loading_path: s3://my-bucket/my-lora-checkouts/  # <-- change this to a bucket you have access to that contains the loRA checkpoint to load dynamically
+        - "./models/mistral/mistralai--Mistral-7B-Instruct-v0.1_a10g_tp1-lora.yaml"
+      multiplex_lora_adapters: []
+      function_calling_models: []
+      dynamic_lora_loading_path: s3://large-dl-models-mirror/endpoints_template/ # <-- change this to a bucket you have access to that contains the loRA checkpoint to load dynamically
     runtime_env:
       env_vars:
         HUGGING_FACE_HUB_TOKEN: "UPDATE HF TOKEN HERE"  # <-- change this to a real token

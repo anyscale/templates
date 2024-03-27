@@ -1,4 +1,7 @@
 # Introduction to Services
+
+**⏱️ Time to complete**: 5 min (15 on GCP)
+
 This tutorial shows you how to:
 1. Develop a simple Ray Serve application locally.
 2. Deploy the application to production as an Anyscale service.
@@ -11,7 +14,7 @@ This tutorial shows you how to:
 
  The fastest way to develop a Ray Serve app is locally within the workspace. A Serve app running within a workspace behaves identically to a Serve app running as a production service, only it does not have a stable DNS name or fault tolerance.
 
- To get started, create a file called `main.py` and fill it with the following skeleton code:
+ To get started, take a look at the `main.py` file, which has the following skeleton code:
 
 ```python
 import requests
@@ -30,6 +33,7 @@ class FastAPIDeployment:
         return f"Hello {name}!"
 
 my_app = FastAPIDeployment.bind()
+```
 
 ### Run the app locally
 Run the command below to run the serve app locally on `localhost:8000`.
@@ -160,6 +164,10 @@ When scaling your service, it is important to understand the interaction of the 
 For example, suppose the Ray cluster was configured to have at most 100 CPUs, then Serve would only be able to launch up to 100 replicas, no matter the deployment config.
 
 For this reason, we generally recommend using the "Auto-select machines" cluster config for services (this is the default).
+
+#### Editing service cluster config
+
+When a service is first created, it will copy the cluster config from the workspace. After that, the service cluster config is decoupled from the workspace and can be edited independently.
 
 This concludes the services intro tutorial. To learn more, check out the model serving templates available in the template gallery, as well as the Ray Serve [documentation](https://docs.ray.io/en/latest/serve/index.html).
 
