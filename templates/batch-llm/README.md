@@ -133,7 +133,7 @@ class LLMPredictor:
         # Generate texts from the prompts.
         # The output is a list of RequestOutput objects that contain the prompt,
         # generated text, and other information.
-        outputs = self.llm.generate(batch["text"], sampling_params)
+        outputs = self.llm.generate(batch[self.text_column], sampling_params)
         prompt = []
         generated_text = []
         for output in outputs:
@@ -145,23 +145,33 @@ class LLMPredictor:
         }
 ```
 
-Apply batch inference for all input data with the Ray Data [`map_batches`](https://docs.ray.io/en/latest/data/api/doc/ray.data.Dataset.map_batches.html) method. Here, you can easily configure Ray Data to scale the number of LLM instances.
+## Scaling with GPUs
+
+Apply batch inference for all input data with the Ray Data [`map_batches`](https://docs.ray.io/en/latest/data/api/doc/ray.data.Dataset.map_batches.html) method. When using vLLM, LLM instances require GPUs; here, we will demonstrate how to configure Ray Data to scale the number of LLM instances and GPUs needed.
+
+To use GPUs for inference in the Workspace, we can specify `num_gpus` and `concurrency` in the `ds.map_batches()` call below to indicate the number of LLM instances and the number of GPUs per LLM instance, respectively. For example, with `concurrency=4` and `num_gpus=1`, we have 4 LLM instances, each using 1 GPU, so we need 4 GPUs total.
 
 
 ```python
 ds = ds.map_batches(
     LLMPredictor,
     # Set the concurrency to the number of LLM instances.
-    concurrency=1,
+    concurrency=4,
+    # Specify the number of GPUs required per LLM instance.
+    num_gpus=1,
     # Specify the batch size for inference. Set the batch size to as large possible without running out of memory.
     # If you encounter out-of-memory errors, decreasing batch_size may help.
     batch_size=10,
     # Pass keyword arguments for the LLMPredictor class.
-    fn_kwargs={"text_column": "item"},
+    fn_constructor_kwargs={"text_column": "item"},
 )
 ```
 
-Run the following cell to start dataset execution and view the results:
+Finally, make sure to either enable *Auto-select worker nodes* or configure your workspace cluster to have the appropriate GPU worker nodes:
+
+<img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/batch-llm/assets/ray-data-gpu.png"/>
+
+Run the following cell to start dataset execution and view the results!
 
 
 ```python
@@ -176,12 +186,10 @@ Run the following cell to create a Dataset from a text file stored on S3. This D
 
 ```python
 ds = ray.data.read_text("s3://anonymous@air-example-data/prompts_100.txt")
-ds.take_all()
+ds.take(1)
 ```
 
-## Scaling with GPUs
-
-To use GPUs for inference in the Workspace, we can specify `num_gpus` and `concurrency` in the `ds.map_batches()` call below to indicate the number of LLM instances and the number of GPUs per LLM instance, respectively. For example, with `concurrency=4` and `num_gpus=1`, we have 4 LLM instances, each using 1 GPU, so we need 4 GPUs total.
+Similar to before, we apply batch inference for all input data with the Ray Data [`map_batches`](https://docs.ray.io/en/latest/data/api/doc/ray.data.Dataset.map_batches.html) method.
 
 
 ```python
@@ -195,13 +203,9 @@ ds = ds.map_batches(
     # If you encounter CUDA out-of-memory errors, decreasing batch_size may help.
     batch_size=10,
     # Pass keyword arguments for the LLMPredictor class.
-    fn_kwargs={"text_column": "text"},
+    fn_constructor_kwargs={"text_column": "text"},
 )
 ```
-
-Finally, make sure to either enable *Auto-select worker nodes* or configure your workspace cluster to have the appropriate GPU worker nodes:
-
-<img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/batch-llm/assets/ray-data-gpu.png"/>
 
 Time to execute and view the results!
 
@@ -244,7 +248,7 @@ Now that we have successfully created this simple Ray task, let's convert it int
 
 
 ```python
-!anyscale job submit -- python examples/main.py
+!anyscale job submit -- python main.py
 ```
 
 ## Summary
