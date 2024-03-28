@@ -99,7 +99,11 @@ We recommend using auto mode if you do not have specific cluster requirements, a
 
 In this section, we'll author a simple Ray python script and go over the tools available to monitor its execution. Let's take the opportunity to create a `my_app.py` file in the `my_repo` git repo you created earlier.
 
-You can click on the "File Explorer" in the left pane of VSCode to create the new file. Copy paste the following program into the file:
+You can click on the "File Explorer" in the left pane of VSCode to create the new file.
+
+<img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/intro-workspaces/assets/file-explorer.png" height=400px/>
+
+Double click this cell to copy & paste the following program into the file :
 
 ```python
 import ray, time
