@@ -38,12 +38,12 @@ import numpy as np
 import ray
 from vllm import LLM, SamplingParams
 
-from util.utils import generate_output_path
+from util.utils import generate_output_path, get_a10g_or_equivalent_accelerator_type
 ```
 
 ## Step 2: Set up model defaults
 Set up default values that will be used in the batch inference workflow:
-* Your [Hugging Face user access token](https://huggingface.co/docs/hub/en/security-tokens). This will be used to download the model.
+* Your [Hugging Face user access token](https://huggingface.co/docs/hub/en/security-tokens). This will be used to download the model and is required for Llama models.
 * The model to use for inference ([see the list of vLLM models](https://docs.vllm.ai/en/latest/models/supported_models.html)).
     * This workspace template has been tested and verified with the following models:
         * `meta-llama/Llama-2-7b-chat-hf`
@@ -145,7 +145,7 @@ class LLMPredictor:
         }
 ```
 
-## Scaling with GPUs
+### Scaling with GPUs
 
 Apply batch inference for all input data with the Ray Data [`map_batches`](https://docs.ray.io/en/latest/data/api/doc/ray.data.Dataset.map_batches.html) method. When using vLLM, LLM instances require GPUs; here, we will demonstrate how to configure Ray Data to scale the number of LLM instances and GPUs needed.
 
@@ -164,6 +164,8 @@ ds = ds.map_batches(
     batch_size=10,
     # Pass keyword arguments for the LLMPredictor class.
     fn_constructor_kwargs={"text_column": "item"},
+    # Select the accelerator type; A10G or L4.
+    accelerator_type=get_a10g_or_equivalent_accelerator_type(),
 )
 ```
 
@@ -178,7 +180,7 @@ Run the following cell to start dataset execution and view the results!
 ds.take_all()
 ```
 
-## Scaling to a larger dataset
+### Scaling to a larger dataset
 In the example above, we performed batch inference for Ray Dataset with 5 example prompts. Next, let's explore how to scale to a larger dataset based on files stored in cloud storage.
 
 Run the following cell to create a Dataset from a text file stored on S3. This Dataset has 100 rows, with each row containing a single prompt in the `text` column.
@@ -204,6 +206,8 @@ ds = ds.map_batches(
     batch_size=10,
     # Pass keyword arguments for the LLMPredictor class.
     fn_constructor_kwargs={"text_column": "text"},
+    # # Select the accelerator type; A10G or L4.
+    accelerator_type=get_a10g_or_equivalent_accelerator_type(),
 )
 ```
 
@@ -218,14 +222,14 @@ In the Ray Dashboard tab, navigate to the Job page and open the "Ray Data Overvi
 
 <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/batch-llm/assets/ray-data-jobs.png"/>
 
-## Handling GPU out-of-memory failures
+### Handling GPU out-of-memory failures
 If you run into CUDA out of memory, your batch size is likely too large. Decrease the batch size as described above.
 
 If your batch size is already set to 1, then use either a smaller model or GPU devices with more memory.
 
 For advanced users working with large models, you can use model parallelism to shard the model across multiple GPUs.
 
-## Output Results
+### Output Results
 Finally, write the inference output data out to Parquet files on S3.
 
 
@@ -240,15 +244,6 @@ We can also use Ray Data to read back the output files to ensure the results are
 ```python
 ds_output = ray.data.read_parquet(output_path)
 ds_output.take(5)
-```
-
-## Submitting an Anyscale Job
-
-Now that we have successfully created this simple Ray task, let's convert it into an Anyscale Job. We can submit the Anyscale job using the Python version of this example (`main.py`). Anyscale Jobs are the recommended way to run workloads (such as data processing, model training, or fine-tuning) in production. You can learn more about Anyscale Jobs [here](https://docs.anyscale.com/productionize/jobs/get-started).
-
-
-```python
-!anyscale job submit -- python main.py
 ```
 
 ## Summary
