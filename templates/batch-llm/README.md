@@ -169,7 +169,7 @@ ds = ds.map_batches(
 )
 ```
 
-Finally, make sure to either enable *Auto-select worker nodes* or configure your workspace cluster to have the appropriate GPU worker nodes:
+Finally, make sure to either enable *Auto-select worker nodes* or configure your workspace cluster to have the appropriate GPU worker nodes (A10G or L4):
 
 <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/batch-llm/assets/ray-data-gpu.png"/>
 
@@ -206,7 +206,7 @@ ds = ds.map_batches(
     batch_size=10,
     # Pass keyword arguments for the LLMPredictor class.
     fn_constructor_kwargs={"text_column": "text"},
-    # # Select the accelerator type; A10G or L4.
+    # Select the accelerator type; A10G or L4.
     accelerator_type=get_a10g_or_equivalent_accelerator_type(),
 )
 ```
