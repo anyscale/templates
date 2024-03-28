@@ -27,8 +27,14 @@ This template includes a simple processing job in **./main.py** that runs a few 
 
 
 ```python
-# First install the necessary `emoji` dependency, then run the Ray app
-!pip install emoji; python main.py
+# First install the necessary `emoji` dependency.
+!pip install emoji
+```
+
+
+```python
+# Then run the Ray app script.
+!python main.py
 ```
 
 Next, let's try submitting the app to Anyscale Jobs. Within a workspace, you can use the "ray job submit" (job runs will be managed by Anyscale Jobs) functionality for this.
