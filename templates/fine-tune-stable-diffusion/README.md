@@ -51,7 +51,8 @@ from huggingface_hub import snapshot_download
 
 snapshot_download(
     "diffusers/dog-example",
-    local_dir=SUBJECT_IMAGES_PATH, repo_type="dataset",
+    local_dir=SUBJECT_IMAGES_PATH,
+    repo_type="dataset",
     ignore_patterns=".gitattributes",
 )
 ```
@@ -70,12 +71,11 @@ Next, upload the dataset to cloud storage so that we can download it on each wor
 
 
 ```python
+import os
 from utils import upload_to_cloud
 
 DATA_CLOUD_PATH = os.environ["ANYSCALE_ARTIFACT_STORAGE"] + "/subject_images"
-upload_to_cloud(
-    local_path=SUBJECT_IMAGES_PATH, cloud_uri=DATA_CLOUD_PATH
-)
+upload_to_cloud(local_path=SUBJECT_IMAGES_PATH, cloud_uri=DATA_CLOUD_PATH)
 print("Uploaded data to: ", DATA_CLOUD_PATH)
 ```
 
@@ -112,7 +112,6 @@ The settings and hyperparameters below are taken from the [HuggingFace example](
 
 
 ```python
-import os
 from train_dreambooth_lora_sdxl import parse_args
 
 # [Optional] Setup wandb to visualize generated samples during fine-tuning.
@@ -172,23 +171,23 @@ print("Final checkpoint will be uploaded to: ", MODEL_CHECKPOINT_PATH)
 
 
 ```python
-import os
-
 import ray
 import ray.train
 from ray.train.torch import TorchTrainer
 
 from train_dreambooth_lora_sdxl import main
-from utils import download_from_cloud, upload_to_cloud, get_a10g_or_equivalent_accelerator_type
+from utils import (
+    download_from_cloud,
+    upload_to_cloud,
+    get_a10g_or_equivalent_accelerator_type,
+)
 
 
 # Set environment variables across the entire cluster.
 WANDB_API_KEY = os.environ.get("WANDB_API_KEY")
 if WANDB_API_KEY:
-    ray.init(
-        runtime_env={"env_vars": {"WANDB_API_KEY": WANDB_API_KEY}},
-        ignore_reinit_error=True,
-    )
+    ray.shutdown()
+    ray.init(runtime_env={"env_vars": {"WANDB_API_KEY": WANDB_API_KEY}})
 
 
 def train_fn_per_worker(config: dict):
@@ -199,7 +198,9 @@ def train_fn_per_worker(config: dict):
 
     # Upload final checkpoint to cloud. (Only the rank 0 worker will return a path here.)
     if final_checkpoint_path is not None:
-        upload_to_cloud(local_path=final_checkpoint_path, cloud_uri=MODEL_CHECKPOINT_PATH)
+        upload_to_cloud(
+            local_path=final_checkpoint_path, cloud_uri=MODEL_CHECKPOINT_PATH
+        )
         print("Final checkpoint has been uploaded to: ", MODEL_CHECKPOINT_PATH)
 
 
@@ -210,7 +211,9 @@ trainer = TorchTrainer(
     scaling_config=ray.train.ScalingConfig(
         # Do data parallel training with GPU workers
         # Request A10G GPUs (or L4 GPUs if running on GCP)
-        num_workers=4, use_gpu=True, accelerator_type=get_a10g_or_equivalent_accelerator_type()
+        num_workers=4,
+        use_gpu=True,
+        accelerator_type=get_a10g_or_equivalent_accelerator_type(),
     ),
 )
 
@@ -232,12 +235,16 @@ Note: If your cluster has already scaled down from the training job due to the w
 import ray
 from utils import generate
 
-[base_model_images, finetuned_images] = ray.get([
-    generate.remote(prompts=PROMPTS, args=TRAINING_ARGS),
-    generate.remote(
-        prompts=PROMPTS, args=TRAINING_ARGS, model_checkpoint_path=MODEL_CHECKPOINT_PATH
-    )
-])
+[base_model_images, finetuned_images] = ray.get(
+    [
+        generate.remote(prompts=PROMPTS, args=TRAINING_ARGS),
+        generate.remote(
+            prompts=PROMPTS,
+            args=TRAINING_ARGS,
+            model_checkpoint_path=MODEL_CHECKPOINT_PATH,
+        ),
+    ]
+)
 ```
 
 ### Images generated with the finetuned model
