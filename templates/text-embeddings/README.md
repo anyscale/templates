@@ -7,7 +7,7 @@ This template shows you how to:
 2. Chunk the raw input text using Ray Data and LangChain.
 3. Compute embeddings using a pre-trained HuggingFace model, and write the results to cloud storage.
 
-![Overview of Text Embeddings Pipeline](assets/diagram.jpg "Overview of Text Embeddings Pipeline")
+<img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/text-embeddings/assets/diagram.jpg "Overview of Text Embeddings Pipeline""/>
 
 For a Python script version of the `.ipynb` notebook used for the workspace template, refer to `main.py`.
 
