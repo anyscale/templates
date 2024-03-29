@@ -2,13 +2,15 @@
 
 **⏱️ Time to complete**: 10 min (20 on GCP)
 
-The guide below walks you through the steps required for deployment of LLM endpoints. Based on Ray Serve and RayLLM, the foundation for [Anyscale-Hosted Endpoints](http://anyscale.com/endpoints), the Endpoints template provides an easy to configure solution for ML Platform teams, Infrastructure engineers, and Developers who want to deploy optimized LLMs in production.  We have provided a number of examples for popular open-source models (Llama2, Mistral, Mixtral, embedding models, and more) with different GPU accelerator and tensor-parallelism configurations in the `models` directory.
+This guide walks you through how to deploy optimized LLM endpoints in Anyscale. It includes a number of pre-tuned configs for Llama2, Mistral, Mixtral, embedding models, and more in the `models` directory.
 
-This template also includes more advanced tutorials in the `examples/` folder, including those for:
+You can also find more advanced tutorials in the `examples/` folder, including those for:
 - Embedding generation
 - Deploying custom models
 - Deploying LoRA and function-calling models
 - How to configure autoscaling and other optimization parameters
+
+**Note**: This guide is hosted within an Anyscale workspace, which provides easy access to compute resources. Check out the `Introduction to Workspaces` template for more details.
 
 ## Step 1 - Run the model locally in the Workspace
 
