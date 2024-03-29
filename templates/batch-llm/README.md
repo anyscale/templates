@@ -18,16 +18,9 @@ On the other hand, offline LLM inference should be used when you want to get rep
 1. Scale your workload to large-scale datasets
 2. optimize inference throughput and resource usage (for example, maximizing GPU utilization).
 
-## Step 1: Install Python dependencies
-Install additional required dependencies using `pip`.
+## Step 1: Set up model defaults
 
-
-```python
-# Minimum transformers version compatible with Mixtral models.
-!pip install -q vllm==0.3.3 transformers>=4.38.0 && echo 'Install complete!'
-```
-
-Next, import the dependencies used in this template.
+First, import the dependencies used in this template.
 
 
 ```python
@@ -41,7 +34,6 @@ from vllm import LLM, SamplingParams
 from util.utils import generate_output_path, get_a10g_or_equivalent_accelerator_type
 ```
 
-## Step 2: Set up model defaults
 Set up default values that will be used in the batch inference workflow:
 * Your [Hugging Face user access token](https://huggingface.co/docs/hub/en/security-tokens). This will be used to download the model and is required for Llama models.
 * The model to use for inference ([see the list of vLLM models](https://docs.vllm.ai/en/latest/models/supported_models.html)).
@@ -86,7 +78,7 @@ ray.init(
 )
 ```
 
-## Step 3: Read input data with Ray Data
+## Step 2: Read input data with Ray Data
 Use Ray Data to read in your input data from some sample prompts.
 
 
@@ -105,7 +97,7 @@ ds = ray.data.from_items(prompts)
 ds.take(1)
 ```
 
-## Step 4: Run Batch Inference with vLLM
+## Step 3: Run Batch Inference with vLLM
 
 Create a class to define batch inference logic.
 
