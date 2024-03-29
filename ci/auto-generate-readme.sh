@@ -24,8 +24,10 @@ for readme_file in $readme_files; do
     if [[ "$OSTYPE" == "darwin"* ]]; then
         # macOS system
         sed -i '' "s|<img src=\"\([^\"http://][^\":/][^\"].*\)\"|<img src=\"${REPO_PREFIX}/${readme_dir}/\1\"|g" "$readme_file"
+        sed -i '' "s|!\[.*\](\(assets/.*\))|<img src=\"${REPO_PREFIX}/${readme_dir}/\1\"/>|g" "$readme_file"
     else
         # Assuming Linux
         sed -i "s|<img src=\"\([^\"http://][^\":/][^\"].*\)\"|<img src=\"${REPO_PREFIX}/${readme_dir}/\1\"|g" "$readme_file"
+        sed -i "s|!\[.*\](\(assets/.*\))|<img src=\"${REPO_PREFIX}/${readme_dir}/\1\"/>|g" "$readme_file"
     fi
 done
