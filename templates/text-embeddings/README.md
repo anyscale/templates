@@ -14,7 +14,29 @@ For a Python script version of the `.ipynb` notebook used for the workspace temp
 **Note:** This tutorial is run within a workspace. Please overview the `Introduction to Workspaces` template first before this tutorial.
 
 ## Step 1: Setup model defaults
-First, let's import the dependencies we will use in this template.
+
+First, install additional required dependencies using `pip`.
+
+
+```python
+!pip install -q optimum[onnxruntime-gpu] langchain && echo 'Install complete!
+```
+
+
+```python
+# Import utilities used during embeddings computation later (Step 4). This cell copies
+# the implementation into a local file located at `util/embedding_util.py`, which
+# you can choose to customize for your own use case.
+import inspect
+import shutil
+import ray.anyscale.data.embedding_util
+
+module_file_path = inspect.getfile(ray.anyscale.data.embedding_util)
+out_path = shutil.copy(module_file_path, 'util/embedding_util.py')
+print(f"File copied to {out_path}")
+```
+
+Let's import the dependencies we will use in this template.
 
 
 ```python
@@ -142,13 +164,13 @@ chunked_ds = ds.flat_map(
 ## Step 4: Compute Embeddings
 
 We define the `ComputeEmbeddings` class to compute embeddings using a pre-trained Hugging Face model. The full implementation
-is in `util/utils.py`.
+is in `util/embedding_util.py`, which you can choose to customize for your use case.
 
 Next, apply batch inference for all input data with the Ray Data [`map_batches`](https://docs.ray.io/en/latest/data/api/doc/ray.data.Dataset.map_batches.html) method. Here, you can easily configure Ray Data to scale the number of model instances.
 
 
 ```python
-from util.utils import ComputeEmbeddings
+from util.embedding_util import ComputeEmbeddings
 
 embedded_ds = chunked_ds.map_batches(
     ComputeEmbeddings,
@@ -245,6 +267,18 @@ We can also use Ray Data to read back the output files to ensure the results are
 ```python
 ds_output = ray.data.read_parquet(OUTPUT_PATH)
 ds_output.take(5)
+```
+
+### Submitting to Anyscale Jobs
+
+The script in `main.py` has the same code as this notebook; you can use `ray job submit` to submit the app in that file to Anyscale Jobs. Refer to [Introduction to Jobs](https://docs.endpoints.anyscale.com/preview/examples/intro-jobs/) for more details.
+
+
+Run the following cell to submit a job:
+
+
+```python
+!ray job submit -- python main.py
 ```
 
 ## Summary
