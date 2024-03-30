@@ -141,7 +141,9 @@ class LLMPredictor:
 
 Apply batch inference for all input data with the Ray Data [`map_batches`](https://docs.ray.io/en/latest/data/api/doc/ray.data.Dataset.map_batches.html) method. When using vLLM, LLM instances require GPUs; here, we will demonstrate how to configure Ray Data to scale the number of LLM instances and GPUs needed.
 
-To use GPUs for inference in the Workspace, we can specify `num_gpus` and `concurrency` in the `ds.map_batches()` call below to indicate the number of LLM instances and the number of GPUs per LLM instance, respectively. For example, with `concurrency=4` and `num_gpus=1`, we have 4 LLM instances, each using 1 GPU, so we need 4 GPUs total.
+To use GPUs for inference in the Workspace, we can specify `num_gpus` and `concurrency` in the `ds.map_batches()` call below to indicate the number of LLM instances and the number of GPUs per LLM instance, respectively. For example, if we want to use 4 LLM instances, with each requiring 1 GPU, we would set `concurrency=4` and `num_gpus=1`, requiring 4 total GPUs.
+
+Smaller models, such as `Llama-2-7b-chat-hf` and `Mistral-7B-Instruct-v0.1`, typically require 1 GPU per instance. Larger models, such as `Mixtral-8x7B-Instruct-v0.1` and `Llama-2-70b-chat-hf`, typically require multiple GPUs per instance. You should configure these parameters according to the compute needed by the model.
 
 
 ```python
@@ -236,6 +238,18 @@ We can also use Ray Data to read back the output files to ensure the results are
 ```python
 ds_output = ray.data.read_parquet(output_path)
 ds_output.take(5)
+```
+
+### Submitting to Anyscale Jobs
+
+The script in `main.py` has the same code as this notebook; you can use `ray job submit` to submit the app in that file to Anyscale Jobs. Refer to [Introduction to Jobs](https://docs.endpoints.anyscale.com/preview/examples/intro-jobs/) for more details.
+
+
+Run the following cell to submit a job:
+
+
+```python
+!ray job submit -- python main.py
 ```
 
 ## Summary
