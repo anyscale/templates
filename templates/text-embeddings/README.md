@@ -19,7 +19,7 @@ First, install additional required dependencies using `pip`.
 
 
 ```python
-!pip install -q optimum[onnxruntime-gpu] langchain && echo 'Install complete!'
+!pip install -q langchain && echo 'Install complete!'
 ```
 
 
