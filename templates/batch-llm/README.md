@@ -205,13 +205,16 @@ ds = ds.map_batches(
 )
 ```
 
-Time to execute and view the results!
+### Output Results
+Finally, write the inference output data out to Parquet files on S3. Running the following cell will trigger execution for the full Dataset:
 
 
 ```python
-ds.take_all()
+ds.write_parquet(output_path)
+print(f"Batch inference result is written into {output_path}.")
 ```
 
+### Monitoring Dataset execution
 In the Ray Dashboard tab, navigate to the Job page and open the "Ray Data Overview" section to view the details of the batch inference execution:
 
 <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/batch-llm/assets/ray-data-jobs.png"/>
@@ -223,15 +226,7 @@ If your batch size is already set to 1, then use either a smaller model or GPU d
 
 For advanced users working with large models, you can use model parallelism to shard the model across multiple GPUs.
 
-### Output Results
-Finally, write the inference output data out to Parquet files on S3.
-
-
-```python
-ds.write_parquet(output_path)
-print(f"Batch inference result is written into {output_path}.")
-```
-
+### Reading back results
 We can also use Ray Data to read back the output files to ensure the results are as expected.
 
 
