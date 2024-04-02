@@ -18,16 +18,9 @@ On the other hand, offline LLM inference should be used when you want to get rep
 1. Scale your workload to large-scale datasets
 2. optimize inference throughput and resource usage (for example, maximizing GPU utilization).
 
-## Step 1: Install Python dependencies
-Install additional required dependencies using `pip`.
+## Step 1: Set up model defaults
 
-
-```python
-# Minimum transformers version compatible with Mixtral models.
-!pip install -q vllm==0.3.3 transformers>=4.38.0 && echo 'Install complete!'
-```
-
-Next, import the dependencies used in this template.
+First, import the dependencies used in this template.
 
 
 ```python
@@ -41,7 +34,6 @@ from vllm import LLM, SamplingParams
 from util.utils import generate_output_path, get_a10g_or_equivalent_accelerator_type
 ```
 
-## Step 2: Set up model defaults
 Set up default values that will be used in the batch inference workflow:
 * Your [Hugging Face user access token](https://huggingface.co/docs/hub/en/security-tokens). This will be used to download the model and is required for Llama models.
 * The model to use for inference ([see the list of vLLM models](https://docs.vllm.ai/en/latest/models/supported_models.html)).
@@ -86,7 +78,7 @@ ray.init(
 )
 ```
 
-## Step 3: Read input data with Ray Data
+## Step 2: Read input data with Ray Data
 Use Ray Data to read in your input data from some sample prompts.
 
 
@@ -105,7 +97,7 @@ ds = ray.data.from_items(prompts)
 ds.take(1)
 ```
 
-## Step 4: Run Batch Inference with vLLM
+## Step 3: Run Batch Inference with vLLM
 
 Create a class to define batch inference logic.
 
@@ -149,7 +141,9 @@ class LLMPredictor:
 
 Apply batch inference for all input data with the Ray Data [`map_batches`](https://docs.ray.io/en/latest/data/api/doc/ray.data.Dataset.map_batches.html) method. When using vLLM, LLM instances require GPUs; here, we will demonstrate how to configure Ray Data to scale the number of LLM instances and GPUs needed.
 
-To use GPUs for inference in the Workspace, we can specify `num_gpus` and `concurrency` in the `ds.map_batches()` call below to indicate the number of LLM instances and the number of GPUs per LLM instance, respectively. For example, with `concurrency=4` and `num_gpus=1`, we have 4 LLM instances, each using 1 GPU, so we need 4 GPUs total.
+To use GPUs for inference in the Workspace, we can specify `num_gpus` and `concurrency` in the `ds.map_batches()` call below to indicate the number of LLM instances and the number of GPUs per LLM instance, respectively. For example, if we want to use 4 LLM instances, with each requiring 1 GPU, we would set `concurrency=4` and `num_gpus=1`, requiring 4 total GPUs.
+
+Smaller models, such as `Llama-2-7b-chat-hf` and `Mistral-7B-Instruct-v0.1`, typically require 1 GPU per instance. Larger models, such as `Mixtral-8x7B-Instruct-v0.1` and `Llama-2-70b-chat-hf`, typically require multiple GPUs per instance. You should configure these parameters according to the compute needed by the model.
 
 
 ```python
@@ -173,7 +167,14 @@ Finally, make sure to either enable *Auto-select worker nodes* or configure your
 
 <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/batch-llm/assets/ray-data-gpu.png"/>
 
+So far, we have defined two operations of the Dataset (`from_items()`, `map_batches()`), but have not executed the Dataset yet and don't see any results. Why is that?
+
+Ray Data uses [lazy, streaming execution](https://docs.ray.io/en/latest/data/data-internals.html#execution) by default, which means:
+- Datasets and any associated transformations are not executed until you call a consuming operation such as [`ds.take()`](https://docs.ray.io/en/latest/data/api/doc/ray.data.Dataset.take.html), [`ds.iter_batches()`](https://docs.ray.io/en/latest/data/api/doc/ray.data.DataIterator.iter_batches.html), or [`Dataset.write_parquet()`](https://docs.ray.io/en/latest/data/api/doc/ray.data.Dataset.write_parquet.html).
+- The entire Dataset is not stored in memory, but rather, the Dataset is executed incrementally on parts of data while overlapping execution of various operations in the Dataset. This allows Ray Data to execute batch transformations without needing to load the entire dataset into memory and overlap data preprocessing and model training steps during ML training.
+
 Run the following cell to start dataset execution and view the results!
+
 
 
 ```python
@@ -211,13 +212,18 @@ ds = ds.map_batches(
 )
 ```
 
-Time to execute and view the results!
+### Output Results
+Finally, write the inference output data out to Parquet files on S3. 
+
+Running the following cell will trigger execution for the full Dataset, which will execute all of the operations (`read_text()`, `map_batches(LLMPredictor)`, `write_parquet()`) at once:
 
 
 ```python
-ds.take_all()
+ds.write_parquet(output_path)
+print(f"Batch inference result is written into {output_path}.")
 ```
 
+### Monitoring Dataset execution
 In the Ray Dashboard tab, navigate to the Job page and open the "Ray Data Overview" section to view the details of the batch inference execution:
 
 <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/batch-llm/assets/ray-data-jobs.png"/>
@@ -229,21 +235,25 @@ If your batch size is already set to 1, then use either a smaller model or GPU d
 
 For advanced users working with large models, you can use model parallelism to shard the model across multiple GPUs.
 
-### Output Results
-Finally, write the inference output data out to Parquet files on S3.
-
-
-```python
-ds.write_parquet(output_path)
-print(f"Batch inference result is written into {output_path}.")
-```
-
+### Reading back results
 We can also use Ray Data to read back the output files to ensure the results are as expected.
 
 
 ```python
 ds_output = ray.data.read_parquet(output_path)
 ds_output.take(5)
+```
+
+### Submitting to Anyscale Jobs
+
+The script in `main.py` has the same code as this notebook; you can use `ray job submit` to submit the app in that file to Anyscale Jobs. Refer to [Introduction to Jobs](https://docs.endpoints.anyscale.com/preview/examples/intro-jobs/) for more details.
+
+
+Run the following cell to submit a job:
+
+
+```python
+!ray job submit -- python main.py
 ```
 
 ## Summary
