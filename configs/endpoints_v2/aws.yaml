@@ -15,12 +15,5 @@ worker_node_types:
   min_workers: 0
   max_workers: 1
 
-# TODO(shomil): Remove once set by default in OA.
-aws:
-  TagSpecifications:
-    - ResourceType: instance
-      Tags:
-        - Key: as-feature-enable-multi-az-serve
-          Value: "true"
-        - Key: as-feature-multi-zone
-          Value: "true"
+flags:
+  allow-cross-zone-autoscaling: true

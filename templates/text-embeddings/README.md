@@ -1,100 +1,257 @@
-# Computing Text Embeddings with Ray
-The Python file `ray_embeddings.py` is used to generate text embeddings using a pre-trained HuggingFace model. We also provide `ray_embeddings_notebook.ipynb` which has the same code logic, but in notebook form, in case you want to tinker and customize the logic.
-The high-level steps involved are:
+# Computing Text Embeddings with Ray Data
 
-0. Read in raw data from user-provided input parquet file paths.
-1. Preprocess the raw input text by chunking to rows of 512 words.
-2. Compute embeddings using a pre-trained HuggingFace model (default model is [`thenlper/gte-large`](https://huggingface.co/thenlper/gte-large)).
-3. Write computed embeddings to parquet files in the user-provided output path.
+**⏱️ Time to complete**: 10 min
 
-![Embeddings Computation Overview](diagram.jpg "Embeddings Computation Overview")
+This template shows you how to:
+1. Read in data from files on cloud storage using Ray Data.
+2. Chunk the raw input text using Ray Data and LangChain.
+3. Compute embeddings using a pre-trained HuggingFace model, and write the results to cloud storage.
 
-## Running the code
-The provided script will work as-is; no need to modify anything the underlying script, unless you want to customize the logic to meet your specific requirements.
+<img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/text-embeddings/assets/diagram.jpg "Overview of Text Embeddings Pipeline""/>
 
-Sample usage:
-```
-# Generate emeddings for a sample single-file parquet file containing 10 rows from the `falcon-refinedweb` HuggingFace dataset, using 1 GPU.
-python ray_embeddings.py \
-    --input-paths "sample_input/sample-input.parquet" \
-    --output-path  "/mnt/cluster_storage/embeddings-output/" \
-    --num-gpu-workers 1
-    --column-name <text column name> # required for multi-column input files
-```
+For a Python script version of the `.ipynb` notebook used for the workspace template, refer to `main.py`.
 
-Args for the script:
-- `--input-paths`: comma-separated string of input file paths containing raw text data, e.g. S3 bucket ("s3://..."), local directory, etc. Accepted file types: `.json`, `.jsonl`, `.parquet`, and text files.
-- `--output-paths`: output path for computed embeddings, e.g. S3 bucket ("s3://..."), local directory, etc.
-- `--hf-model-name`: name of pre-trained Hugging Face model used for computing embeddings. Default is `thenlper/gte-large`
-- `--num-gpu-workers`: number of GPU workers to use; this is typically the number of GPUs in the cluster
-- `--column-name`: name of column containing the text to generate embeddings. Required if the input files contain multiple columns.
-- `--output-text-embeddings-only`: optional; if used, the output files contain only text and embedding vector columns. Otherwise (by default), the output files will contain all columns from the input file, plus the embedding vectors in a column named `"values"`.
+**Note:** This tutorial is run within a workspace. Please overview the `Introduction to Workspaces` template first before this tutorial.
 
-To read back the computed embeddings, you can also use Ray Data:
-```
->>> import ray
->>> ds = ray.data.read_parquet("<embeddings_output_path>")
->>> ds.take(5)
+## Step 1: Setup model defaults
+First, let's import the dependencies we will use in this template.
+
+
+```python
+import os
+import ray
+import uuid
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+
+from util.utils import generate_output_path
 ```
 
-## Input / Output File Formats
-The script currently accepts `.json`, `.jsonl`, `.parquet`, and text files.
+Set up default values that will be used in the embeddings computation workflow:
+* The Hugging Face embedding model to use for computing embeddings. You can choose from one of the models on the [Massive Text Embedding Benchmark (MTEB) leaderboard](https://huggingface.co/spaces/mteb/leaderboard). This workspace template has been tested with the following models:
+  * [`thenlper/gte-large`](https://huggingface.co/thenlper/gte-large) (the default model)
+  * [`mixedbread-ai/mxbai-embed-large-v1`](https://huggingface.co/mixedbread-ai/mxbai-embed-large-v1)
+  * [`WhereIsAI/UAE-Large-V1`](https://huggingface.co/WhereIsAI/UAE-Large-V1)
+  * [`intfloat/multilingual-e5-large-instruct`](https://huggingface.co/intfloat/multilingual-e5-large-instruct)
+  * [`BAAI/bge-large-en-v1.5`](https://huggingface.co/BAAI/bge-large-en-v1.5)
+* The number of embedding model instances to run concurrently (when using GPUs, this is the total number of GPUs to use).
+* The output path where results will be written as parquet files.
 
-The **input files** should all follow the same schema:
-- A single column containing the raw input text. For a single-column file, the text column will automatically be inferred. For files with multiple columns, the text column should be specified with the `--column-name` flag.
-- Zero or more other columns, which will also be included in the output file unless the `--output-text-embeddings-only` is used.
 
-The **output files** will follow the following schema:
-- `id (string)`: UUID4 representing a unique ID for this row/embedding vector
-- `values (list[float32])`: embedding vector
-- a column containing the chunked text with the same column name as the raw text in the input file; this is the same as `--column-name` if provided (or the only column in a single-column input file)
-- all other columns from input file (if `--output-text-embeddings-only` is used, these columns are omitted).
-
-For example, if the input file contains columns `["text", "rank", "is_dupe"]`:
-- Without `--output-text-embeddings-only` flag: output file would have columns `["id", "values", "text", "rank", "is_dupe"]`.
-- With `--output-text-embeddings-only` flag: output file would have columns `["id", "text", "values"]`.
-
-## Sample Input / Output Files
-We have also provided **sample parquet files** under `sample_input/` and corresponding output files under `sample_output/` (both of the input files contain the same raw text so the output embeddings are the same, but the `-multi-column.parquet` file has additional metadata).
-
-Examining the sample input file:
-
-```
->>> sample_input = ray.data.read_parquet("sample_input/sample-input.parquet")
-
->>> sample_input
-Dataset(num_blocks=768, num_rows=10, schema={content: string})
+```python
+HF_MODEL_NAME = "thenlper/gte-large"
+# Some Hugging Face models require a token for access; if you choose one of these models, replace the following with your token.
+HF_TOKEN = "<REPLACE_WITH_YOUR_HUGGING_FACE_USER_TOKEN>"
+NUM_MODEL_INSTANCES = 4
+OUTPUT_PATH = generate_output_path(os.environ.get("ANYSCALE_ARTIFACT_STORAGE"), HF_MODEL_NAME)
 ```
 
-Examining the sample (expected) output file:
 
-```
->>> sample_output = ray.data.read_parquet("sample_output/sample-output.parquet")
+```python
+if ray.is_initialized():
+    ray.shutdown()
+ray.init(
+    runtime_env={
+        "env_vars": {
+            "HF_TOKEN": HF_TOKEN,
 
->>> sample_output
-Dataset(
-   num_blocks=768,
-   num_rows=15,
-   schema={
-      id: string,
-      content: string,
-      url: string,
-      dump: string,
-      segment: string,
-      __index_level_0__: int64,
-      values: list<item: float>
-   }
+            # Suppress noisy logging from external libraries
+            "TOKENIZERS_PARALLELISM": "false",
+            "COMET_API_KEY": "",
+        },
+    }
 )
 ```
 
-Examining the sample (expected) output file when using the `--output-text-embeddings-only` flag:
-```
->>> sample_output_embeddings_only = ray.data.read_parquet("sample_output/sample-output-embeddings-only.parquet")
+## Step 2: Read data files
 
->>> sample_output_embeddings_only
-Dataset(
-   num_blocks=768,
-   num_rows=15,
-   schema={id: string, content: string, values: list<item: float>}
+Use Ray Data to read in your input data from some sample text.
+
+
+```python
+sample_text = [
+    "This discussion is a very interesting experimental model for the elucidation of plaque rupture in acute coronary syndromes. The knowledge exists that there is a series of steps in develoiping atheromatous plaque. We also know that platelets and endothelium are the location of this pathological development. We don’t know exactly the role or mechanism of the contribution of hyperlipidemia, and what triggers plaque rupture. This work reported is an experimental rabbit model that sheds light on the triggering of plaque rupture.",
+    "the long (8-month) preparatory period. In addition, there is a need to replicate the findings of Constantinides and Chakravarti(13) from 30 years ago because of the biological variability of rabbit strains and RVV.', 'Methods', 'Of the 12 rabbits that died during the preparatory period, 5 were in group II, 2 in group III, and 5 in group IV. Seven of the 12 rabbits that died prematurely underwent an autopsy, and none had evidence of plaque disruption or arterial thrombosis. The causes of death included respiratory infection and liver failure from lipid infiltration.",
+    "The triggering agents RVV (Sigma Chemical Co) and histamine (Eli Lilly) were administered according to the method of Constantinides and Chakravarti.(13) RVV (0.15 mg/kg) was given by intraperitoneal injection 48 and 24 hours before the rabbits were killed. Thirty minutes after each RVV injection, histamine (0.02 mg/kg) was administered intravenously through an ear vein. Rabbits were killed by an overdose of intravenous pentobarbital and potassium chloride. The aorta and iliofemoral arteries were dissected and excised, and the intimal surface was exposed by an anterior longitudinal incision of the vessel.",
+    "The total surface area of the aorta, from the aortic arch to the distal common iliac branches, was measured. The surface area covered with atherosclerotic plaque and the surface area covered with antemortem thrombus were then determined. Images of the arterial surface were collected with a color charge-coupled device camera (TM 54, Pulnix) and digitized by an IBM PC/AT computer with a color image processing subsystem. The digitized images were calibrated by use of a graticule, and surface areas were measured by use of a customized quantitative image analysis package.",
+    "Tissue samples (1 cm in length) were taken from the thoracic aorta, 3 and 6 cm distal to the aortic valve; from the abdominal aorta, 7 and 4 cm proximal to the iliac bifurcation; and from the iliofemoral arteries. and prepared for and examined by light microscopy and they were examined by quantitative colorimetric assay. Electron microscopy was also carried out with a Hitachi 600 microscope.",
+]
+ds = ray.data.from_items(sample_text)
+
+# View one row of the Dataset.
+ds.take(1)
+```
+
+## Step 3: Preprocess (Chunk) Input Text
+
+Use Ray Data and LangChain to chunk the raw input text. We use LangChain's `RecursiveCharacterTextSplitter` to handle the chunking within `chunk_row()`. The chunking method and parameters can be modified below to fit your exact use case.
+
+
+```python
+CHUNK_SIZE = 512
+words_to_tokens = 1.2
+num_tokens = int(CHUNK_SIZE // words_to_tokens)
+num_words = lambda x: len(x.split())
+
+splitter = RecursiveCharacterTextSplitter(
+    chunk_size=num_tokens,
+    keep_separator=True,
+    length_function=num_words,
+    chunk_overlap=0,
+)
+
+def chunk_row(row, text_column_name):
+    """Main chunking logic."""
+    if not isinstance(row[text_column_name], str):
+        print(
+            "Found row with missing input text, "
+            f"skipping embeddings computation for this row: {row}"
+        )
+        return []
+
+    length = num_words(row[text_column_name]) * 1.2
+    if length < 20 or length > 4000:
+        return []
+    chunks = splitter.split_text(row[text_column_name])
+
+    new_rows = [
+        {
+            "id": str(uuid.uuid4()),
+            **row,
+            text_column_name: chunk,
+        } for chunk in chunks
+        # Only keep rows with valid input text
+        if isinstance(chunk, str)
+    ]
+    return new_rows
+
+```
+
+We use Ray Data's `flat_map()` method to apply the chunking function we defined above to each row of the input dataset. We use `flat_map()` as opposed to `map()` because the `chunk_row()` function may return more than one output row for each input row.
+
+*Note*: Because Ray Datasets are executed in a streaming fashion, running the cell below will not trigger execution because the dataset is not being consumed yet.
+
+
+```python
+chunked_ds = ds.flat_map(
+    chunk_row,
+    # Pass keyword arguments to the chunk_row function.
+    fn_kwargs={"text_column_name": "item"},
 )
 ```
+
+## Step 4: Compute Embeddings
+
+We define the `ComputeEmbeddings` class to compute embeddings using a pre-trained Hugging Face model. The full implementation
+is in `util/utils.py`.
+
+Next, apply batch inference for all input data with the Ray Data [`map_batches`](https://docs.ray.io/en/latest/data/api/doc/ray.data.Dataset.map_batches.html) method. Here, you can easily configure Ray Data to scale the number of model instances.
+
+
+```python
+from util.utils import ComputeEmbeddings
+
+embedded_ds = chunked_ds.map_batches(
+    ComputeEmbeddings,
+    # Total number of embedding model instances to use.
+    concurrency=NUM_MODEL_INSTANCES,
+    # Size of batches passed to embeddings actor. Set the batch size to as large possible
+    # without running out of memory. If you encounter out-of-memory errors, decreasing
+    # batch_size may help. 
+    batch_size=1, 
+    fn_constructor_kwargs={
+        "text_column_name": "item",
+        "model_name": HF_MODEL_NAME,
+        "device": "cpu",
+        "chunk_size": CHUNK_SIZE,
+    },
+)
+```
+
+Run the following cell to trigger execution of the Dataset and view the computed embeddings:
+
+
+```python
+embedded_ds.take_all()
+```
+
+### Scaling to a larger dataset
+In the example above, we computed embeddings for a Ray Dataset with 5 sample rows. Next, let's explore how to scale to a larger dataset from files stored in cloud storage.
+
+Run the following cell to create a Dataset from a text file stored on S3. This Dataset has 100 rows, with each row containing a single string in the `text` column.
+
+
+```python
+ds = ray.data.read_text("s3://anonymous@air-example-data/wikipedia-text-embeddings-100.txt")
+ds.take(1)
+```
+
+Apply the same chunking process on the new Dataset.
+
+
+```python
+chunked_ds = ds.flat_map(
+    chunk_row,
+    # Pass keyword arguments to the chunk_row function.
+    fn_kwargs={"text_column_name": "text"},
+)
+```
+
+### Scaling with GPUs
+
+To use GPUs for inference in the Workspace, we can specify `num_gpus` and `concurrency` in the `ds.map_batches()` call below to indicate the number of embedding models and the number of GPUs per model instance, respectively. For example, with `concurrency=4` and `num_gpus=1`, we have 4 embedding model instances, each using 1 GPU, so we need 4 GPUs total.
+
+
+```python
+embedded_ds = chunked_ds.map_batches(
+    ComputeEmbeddings,
+    # Total number of GPUs to use.
+    concurrency=NUM_MODEL_INSTANCES,
+    # Size of batches passed to embeddings actor. Set the batch size to as large possible
+    # without running out of memory. If you encounter CUDA out-of-memory errors, decreasing
+    # batch_size may help.
+    batch_size=25, 
+    fn_constructor_kwargs={
+        "text_column_name": "text",
+        "model_name": HF_MODEL_NAME,
+        "device": "cuda",
+        "chunk_size": CHUNK_SIZE,
+    },
+    # 1 GPU for each actor.
+    num_gpus=1,
+    # Reduce GPU idle time.
+    max_concurrency=2,
+)
+```
+
+### Handling GPU out-of-memory failures
+If you run into CUDA out of memory, your batch size is likely too large. Decrease the batch size as described above.
+
+If your batch size is already set to 1, then use either a smaller model or GPU devices with more memory.
+
+For advanced users working with large models, you can use model parallelism to shard the model across multiple GPUs.
+
+### Write results to cloud storage
+
+Finally, write the computed embeddings out to Parquet files on S3. Running the following cell will trigger execution of the Dataset, kicking off chunking and embeddings computation for all input text.
+
+
+```python
+embedded_ds.write_parquet(OUTPUT_PATH)
+```
+
+We can also use Ray Data to read back the output files to ensure the results are as expected.
+
+
+```python
+ds_output = ray.data.read_parquet(OUTPUT_PATH)
+ds_output.take(5)
+```
+
+## Summary
+
+This notebook:
+- Read in data from files on cloud storage using Ray Data.
+- Chunked the raw input text using Ray Data and LangChain.
+- Computed embeddings using a pre-trained HuggingFace model, and wrote the results to cloud storage.
+
+
