@@ -167,7 +167,14 @@ Finally, make sure to either enable *Auto-select worker nodes* or configure your
 
 <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/batch-llm/assets/ray-data-gpu.png"/>
 
+So far, we have defined two operations of the Dataset (`from_items()`, `map_batches()`), but have not executed the Dataset yet and don't see any results. Why is that?
+
+Ray Data uses [lazy, streaming execution](https://docs.ray.io/en/latest/data/data-internals.html#execution) by default, which means:
+- Datasets and any associated transformations are not executed until you call a consuming operation such as [`ds.take()`](https://docs.ray.io/en/latest/data/api/doc/ray.data.Dataset.take.html), [`ds.iter_batches()`](https://docs.ray.io/en/latest/data/api/doc/ray.data.DataIterator.iter_batches.html), or [`Dataset.write_parquet()`](https://docs.ray.io/en/latest/data/api/doc/ray.data.Dataset.write_parquet.html).
+- The entire Dataset is not stored in memory, but rather, the Dataset is executed incrementally on parts of data while overlapping execution of various operations in the Dataset. This allows Ray Data to execute batch transformations without needing to load the entire dataset into memory and overlap data preprocessing and model training steps during ML training.
+
 Run the following cell to start dataset execution and view the results!
+
 
 
 ```python
@@ -206,7 +213,9 @@ ds = ds.map_batches(
 ```
 
 ### Output Results
-Finally, write the inference output data out to Parquet files on S3. Running the following cell will trigger execution for the full Dataset:
+Finally, write the inference output data out to Parquet files on S3. 
+
+Running the following cell will trigger execution for the full Dataset, which will execute all of the operations (`read_text()`, `map_batches(LLMPredictor)`, `write_parquet()`) at once:
 
 
 ```python
