@@ -29,7 +29,7 @@ print("Success!", results)
 
 ## Workspace Basics
 
-An Anyscale Workspace is a cloud IDE where you can develop and test Ray programs. Let's get started by creating a new git repo in this workspace. Workspaces will persist the tracked files in this git repo across restarts (as well as files not in a git repos).
+An Anyscale Workspace is a cloud IDE where you can develop and test Ray programs. Let's get started by creating a new git repo in the workspace's project directory (`/home/ray/default`). Workspaces will persist the tracked files in this git repo across restarts (as well as other files in the project directory).
 
 We'll use the repo later on to author and run a simple Ray app.
 
@@ -51,7 +51,7 @@ The public key to add is outputted by the following command:
 
 ### Cloud Storage
 
-Workspace local storage is limited to 1GB, so we recommend only using it to store git repos and smaller files. To persist larger files, you can save data to cloud storage.
+Workspace storage in the persisted project directory (`/home/ray/default`) is limited to 1GB, so we recommend only using it to store git repos and smaller files. To learn more about options for files and storage, refer to the [documentation](https://docs.endpoints.anyscale.com/preview/platform/workspaces-files).
 
 Cloud storage can be read and written from the workspace, as well as from any node in the Ray cluster.
 
