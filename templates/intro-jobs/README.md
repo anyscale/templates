@@ -3,6 +3,7 @@
 This tutorial shows you how to:
 1. Run a Ray app non-interactively in Anyscale as an "Anyscale Job".
 2. Configure and debug Anyscale Jobs.
+3. Submit jobs from Anyscale Workspaces as well as other other machines.
 
 **Note**: This tutorial is run within a workspace. Please overview the `Introduction to Workspaces` template first before this tutorial.
 
@@ -58,6 +59,24 @@ You should see the job state and its output on the overview page.
 
 <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/intro-jobs/assets/anyscale-job.png" height=400px>
 
+## Submitting a Job programmatically
+
+In the above section, you submitted a Job from a workspace. By default, Jobs submitted from workspaces inherit the dependencies and compute config of the workspace.
+
+You can also submit jobs from other machines, using the Anyscale CLI. 
+
+Copy ``main.py`` to an empty folder on your **laptop**, and then run the following on your **laptop** to try this out:
+
+```bash
+# Make sure we have anyscale CLI installed.
+$ pip install -U anyscale
+
+# Note: will package all contents of your current working dir into the job deps.
+$ anyscale job submit --wait -- python main.py
+```
+
+Jobs submitted externally will run with the Anyscale default compute config and dependencies. To override these settings, use the ``--config-file``, ``--image-uri``, or ``--containerfile`` flags.
+
 This concludes the Anyscale Jobs tutorial. To learn more about how to configure Anyscale Jobs, see the [Anyscale documentation](https://docs.endpoints.anyscale.com/preview/).
 
 ## Summary
@@ -65,3 +84,4 @@ This concludes the Anyscale Jobs tutorial. To learn more about how to configure 
 This notebook:
 - Ran a simple Ray app in the local workspace.
 - Submitted the same Ray app as an Anyscale Job.
+- Walked through how to submit the same Job externally from a different machine.
