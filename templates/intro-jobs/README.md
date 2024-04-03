@@ -1,5 +1,7 @@
 # Introduction to Jobs
 
+**⏱️ Time to complete**: 10 min
+
 This tutorial shows you how to:
 1. Run a Ray app non-interactively in Anyscale as an "Anyscale Job".
 2. Configure and debug Anyscale Jobs.
@@ -71,8 +73,8 @@ Copy ``main.py`` to an empty folder on your **laptop**, and then run the followi
 # Make sure we have anyscale CLI installed.
 $ pip install -U anyscale
 
-# Note: will package all contents of your current working dir into the job deps.
-$ anyscale job submit --wait -- python main.py
+# Note: outside of workspaces, you must specify required files via --working-dir.
+$ anyscale job submit --working-dir=. --wait -- python main.py
 ```
 
 Jobs submitted externally will run with the Anyscale default compute config and dependencies. To override these settings, use the ``--config-file``, ``--image-uri``, or ``--containerfile`` flags.
