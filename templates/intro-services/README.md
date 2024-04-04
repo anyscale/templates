@@ -68,8 +68,6 @@ Use the following command to deploy your app as `my_service`.
 !serve deploy main:my_app --name=my_service
 ```
 
-**Tip**: if your app has PyPI dependencies added from the workspace, `serve deploy` will automatically compile these dependencies into a Docker image prior to deploying to optimize startup time.
-
 ### Service UI Overview
 
 Navigate to your newly created service in the Anyscale UI (`Home > Services > my_service`). It should be in "Starting" state. Click into it and wait for the service to enter "Active" state.
