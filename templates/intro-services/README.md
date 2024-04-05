@@ -3,18 +3,18 @@
 **⏱️ Time to complete**: 5 min (15 on GCP)
 
 This tutorial shows you how to:
-1. Develop a simple Ray Serve app locally.
-2. Deploy the application to production as an Anyscale service.
-3. Monitor the production application.
+1. Develop a simple Ray Serve app in a workspace.
+2. Deploy the app to production as an Anyscale Service.
+3. Monitor the production app.
 4. Configure service scaling.
 
-**Note**: This tutorial is run within a workspace. Please overview the `Introduction to Workspaces` template first before this tutorial.
+**Note**: This tutorial runs in a workspace. See `Introduction to Workspaces` before running this tutorial.
 
-## Develop a Serve app locally
+## Develop a Serve app in a workspace
 
- The fastest way to develop a Ray Serve app is locally within the workspace. A Serve app running within a workspace behaves identically to a Serve app running as a production service, only it does not have a stable DNS name or fault tolerance.
+ The fastest way to develop a Ray Serve app is in an Anyscale Workspace. A Serve app running within a workspace behaves almost identically to a Serve app running as a production service, except that it doesn't have a stable DNS name or fault tolerance.
 
- To get started, take a look at the `main.py` file, which has the following skeleton code:
+ Look at the `main.py` file, which has the following skeleton code:
 
 ```python
 import requests
@@ -26,8 +26,8 @@ fastapi = FastAPI()
 @serve.deployment
 @serve.ingress(fastapi)
 class FastAPIDeployment:
-    # FastAPI will automatically parse the HTTP request for us.
-    # Check out https://docs.ray.io/en/latest/serve/http-guide.html
+    # FastAPI automatically parses the HTTP request.
+    # See https://docs.ray.io/en/latest/serve/http-guide.html
     @fastapi.get("/hello")
     def say_hello(self, name: str) -> str:
         return f"Hello {name}!"
@@ -35,12 +35,12 @@ class FastAPIDeployment:
 my_app = FastAPIDeployment.bind()
 ```
 
-### Run the app locally
-Run the command below to run the serve app locally on `localhost:8000`.
+### Run the app in the workspace
+Use the command below to run the Serve app in the workspace on `localhost:8000`.
 
-If you want to deploy again, just run the command again to update the deployment.
+If you want to run it again, use the same command to update the app.
 
-**Tip**: to more easily view Serve backend logs, you may find it convenient to use `serve run main:my_app --blocking` in a new VSCode terminal. This will block and print out application logs (exceptions, etc.) in the terminal.
+**Tip**: Use `serve run main:my_app --blocking` in a new VSCode terminal to block and print out application logs (exceptions, etc.) in the terminal, allowing you to view Serve backend logs more easily.
 
 
 ```python
@@ -48,7 +48,7 @@ If you want to deploy again, just run the command again to update the deployment
 ```
 
 ### Send a test request
-Run the following cell to query the local serve app.
+Run the following cell to query the workspace Serve app.
 
 
 ```python
@@ -59,7 +59,7 @@ print(requests.get("http://localhost:8000/hello", params={"name": "Theodore"}).j
 
 ## Deploy to production as a service
 
-In order to enable fault tolerance and expose your app to the public internet, you must "Deploy" the application, which will create an Anyscale Service backed by a public load balancer. This service will run in a separate Ray cluster from the workspace, and will be monitored by the Anyscale control plane to recover on node failures. You will also be able to deploy rolling updates to the service without incurring downtime.
+To enable fault tolerance and expose your app to the public internet, you must "deploy" the app, which creates an Anyscale Service backed by a public load balancer. This service deploys in a separate Ray Cluster, not in the workspace, and the Anyscale control plane monitors it to recover on node failures. You can also deploy rolling updates to the service without incurring downtime.
 
 Use the following command to deploy your app as `my_service`.
 
@@ -68,31 +68,30 @@ Use the following command to deploy your app as `my_service`.
 !serve deploy main:my_app --name=my_service
 ```
 
-**Tip**: if your app has PyPI dependencies added from the workspace, `serve deploy` will automatically compile these dependencies into a Docker image prior to deploying to optimize startup time.
+**Tip**: If your app has PyPI dependencies that you added from the workspace, `serve deploy` automatically compiles these dependencies into a Docker image prior to deploying to optimize startup time.
 
-### Service UI Overview
+### Service Overview page in the console
 
-Navigate to your newly created service in the Anyscale UI (`Home > Services > my_service`). It should be in "Starting" state. Click into it and wait for the service to enter "Active" state.
+Navigate to your newly created service in the Anyscale console at **Home > Services > my_service**. It should be in the "Starting" state. Click the service name and wait for the service to enter the "Running" state.
 
-You should see the service state, key metrics, and system event logs on the overview page.
+You should see the service state, key metrics, and system event logs on the Overview page.
 
 <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/intro-services/assets/service-overview.png" height=400px>
 
-### Query from the public Internet
+### Query from the public internet
 
-Once the service is up, you can query the service from the public Internet using the same logic as when testing it locally, with two changes:
+Once the service is running, query the service from the public internet using similar logic from the test query in the development workspace. Make two changes:
 1. Update the `HOST` to the service endpoint.
 2. Add the authorization token as a header in the HTTP request.
 
-Both of these values are printed when you run `serve deploy`. You can also find them on the service page. For example, if the output looks like:
+To find the `HOST` and authorization token values, run `serve deploy`, or find them on the service page. For example, for the following output of `serve deploy`:
+- The service endpoint value is: `https://stable_diffusion_app-4rq8m.cld-ltw6mi8dxaebc3yf.s.anyscaleuserdata-staging.com`.
+- The authorization token value is: `26hTWi2kZwEz0Tdi1_CKRep4NLXbuuaSTDb3WMXK9DM`.
+ru
 ```bash
 (anyscale +4.0s) You can query the service endpoint using the curl request below:
 (anyscale +4.0s) curl -H 'Authorization: Bearer 26hTWi2kZwEz0Tdi1_CKRep4NLXbuuaSTDb3WMXK9DM' https://stable_diffusion_app-4rq8m.cld-ltw6mi8dxaebc3yf.s.anyscaleuserdata-staging.com
 ```
-
-Then:
-- The authorization token is `26hTWi2kZwEz0Tdi1_CKRep4NLXbuuaSTDb3WMXK9DM`.
-- The service endpoint is `https://stable_diffusion_app-4rq8m.cld-ltw6mi8dxaebc3yf.s.anyscaleuserdata-staging.com`.
 
 
 ```python
@@ -118,15 +117,15 @@ def send_request(name: str) -> str:
 print(send_request("Theodore"))
 ```
 
-## Monitoring production services
+## Monitor production services
 
-Along with the monitoring tools that come with workspaces, in services you also get a number of built-in metrics out of the box in the `Metrics` tab. This tab includes aggregated metrics across all rollouts for the service (possibly from multiple Ray clusters).
+Along with the monitoring tools that come with workspaces, services provide additional built-in metrics that you can find in the `Metrics` tab. This tab includes aggregated metrics across all rollouts for a service, possibly from multiple Ray clusters.
 
 <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/intro-services/assets/service-metrics.png" height=500px>
 
-## Configure Service Scaling
+## Configure service scaling
 
-By default, the service you created has a single replica. To change this, set the `num_replicas` argument in the [serve.deployment decorator](https://docs.ray.io/en/latest/serve/configure-serve-deployment.html) as follows in `main.py`. For more advanced scaling options, refer to [Serve Autoscaling](https://docs.ray.io/en/latest/serve/autoscaling-guide.html#serve-autoscaling).
+By default, a service has a single replica. To change this configuration, set the `num_replicas` argument in the [serve.deployment decorator](https://docs.ray.io/en/latest/serve/configure-serve-deployment.html) as follows in `main.py`.
 
 ```python
 @serve.deployment(num_replicas=4)
@@ -135,46 +134,48 @@ class FastAPIDeployment:
     ...
 ```
 
-Redeploy locally using `serve run`.
+ For more advanced scaling options, see [Serve Autoscaling](https://docs.ray.io/en/latest/serve/autoscaling-guide.html#serve-autoscaling).
+ 
+Rerun the service in the development workspace using `serve run`.
 
 
 ```python
 !serve run main:my_app --non-blocking
 ```
 
-You can check in the Ray Dashboard of the workspace that the number of replicas has been increased:
+Verify the increase in the number of replicas in the Ray Dashboard of the development workspace:
 
 <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/intro-services/assets/serve-replicas.png" height=400px/>
 
-We can also deploy the update to our production service. Make sure to include the `--name` option to specify which service to deploy to. This will trigger a staged rollout of the service:
+On the production service, deploy the update, making sure to include the `--name` option to specify which service to deploy to. This command triggers a staged rollout of the service:
 
 
 ```python
 !serve deploy main:my_app --name=my_service
 ```
 
-Monitor the status of the rollout in the service overview page. Once the new Ray cluster with the updated app config is running, the previous cluster will be shut down:
+Monitor the status of the rollout in the service Overview page. Once the new Ray Cluster with the updated app config is running, Ray Serve shuts down the previous cluster:
 
 <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/intro-services/assets/service-rollout.png" height=300px/>
 
-### Understanding Ray Serve vs Ray cluster config
+### Understanding Ray Serve scaling vs Ray cluster configs
 
-When scaling your service, it is important to understand the interaction of the Serve scaling config (i.e., contents of `@serve.deployment`), vs the Ray cluster config (i.e., number of Ray worker nodes). In general, you can think of the Ray cluster config as an upper bound on service scaling, since Ray Serve runs inside the Ray cluster.
+When scaling your service, the Serve scaling config, which contains the `@serve.deployment` parameters, interacts with the Ray Cluster config, which contains the number of Ray worker nodes. Generally, the Ray Cluster config is an upper bound on service scaling, because Ray Serve runs inside a Ray Cluster.
 
-For example, suppose the Ray cluster was configured to have at most 100 CPUs, then Serve would only be able to launch up to 100 replicas, no matter the deployment config.
+For example, if you configure the Ray Cluster to have at most 100 CPUs, then Serve can only launch up to 100 replicas, regardless of the scaling config.
 
-For this reason, we generally recommend using the "Auto-select machines" cluster config for services (this is the default).
+For this reason, enable the "Auto-select machines" cluster config for services. This setting is on by default.
 
-#### Editing service cluster config
+#### Edit a service cluster config
 
-When a service is first created, it will copy the cluster config from the workspace. After that, the service cluster config is decoupled from the workspace and can be edited independently.
+When Anyscale first creates a service, it copies the cluster config from the workspace. After that, Anyscale decouples the service cluster config from the workspace and you can edit it independently.
 
-This concludes the services intro tutorial. To learn more, check out the model serving templates available in the template gallery, as well as the Ray Serve [documentation](https://docs.ray.io/en/latest/serve/index.html).
+To learn more, try other model serving templates available in the template gallery, and the Ray Serve [documentation](https://docs.ray.io/en/latest/serve/index.html).
 
 ## Summary
 
-This notebook:
-- Developed and ran a simple serve app in the local workspace.
-- Deployed the application to production as a service.
-- Overviewed production monitoring.
-- Scaled the service and covered Ray Serve vs Ray cluster config.
+In this notebook you:
+- Developed and ran a simple Serve app in a development workspace.
+- Deployed the app to production as a service.
+- Monitored the service.
+- Scaled the service that uses both the Ray Serve config and Ray Cluster config together.
