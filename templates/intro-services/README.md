@@ -3,7 +3,7 @@
 **⏱️ Time to complete**: 5 min (15 on GCP)
 
 This tutorial shows you how to:
-1. Develop a simple Ray Serve application locally.
+1. Develop a simple Ray Serve app locally.
 2. Deploy the application to production as an Anyscale service.
 3. Monitor the production application.
 4. Configure service scaling.
