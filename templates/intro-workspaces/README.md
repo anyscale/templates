@@ -144,7 +144,7 @@ The resources panel provides basic stats about cluster utilization, as well as a
 
 **Ray dashboard > Jobs**
 
-To see the status of an active or previously run Ray job, navigate to `Ray Dashboard > Jobs` in the UI. Click a job to open the detail page where you can see an overview of job progress, logs, and even details about the individual tasks and actors.
+To see the status of an active or previously run Ray job, navigate to `Ray Dashboard > Jobs` in the UI. Click a job to open the detail page where you can see an overview of job progress, logs, etc.
 
 <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/intro-workspaces/assets/ray-dashboard-jobs.png" height=400px/>
 
