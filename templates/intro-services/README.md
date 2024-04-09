@@ -8,11 +8,11 @@ This tutorial shows you how to:
 3. Monitor the production app.
 4. Configure service scaling.
 
-**Note**: This tutorial runs in a workspace. See `Introduction to Workspaces` before running this tutorial.
+**Note**: This tutorial runs in a workspace. See `Intro to Workspaces` before running this tutorial.
 
-## Develop a Serve app in a workspace
+## Develop an app in a workspace
 
- The fastest way to develop a Ray Serve app is in an Anyscale Workspace. A Serve app running within a workspace behaves almost identically to a Serve app running as a production service, except that it doesn't have a stable DNS name or fault tolerance.
+ The fastest way to develop a Ray Serve app is in an Anyscale Workspace. A Ray Serve app running within a workspace behaves almost identically to deploying a Ray Serve app to production as a service, except that it doesn't have a stable DNS name or fault tolerance.
 
  Look at the `main.py` file, which has the following skeleton code:
 
@@ -36,7 +36,7 @@ my_app = FastAPIDeployment.bind()
 ```
 
 ### Run the app in the workspace
-Use the command below to run the Serve app in the workspace on `localhost:8000`.
+Use the command below to run the Ray Serve app in the workspace on `localhost:8000`.
 
 If you want to run it again, use the same command to update the app.
 
@@ -48,7 +48,7 @@ If you want to run it again, use the same command to update the app.
 ```
 
 ### Send a test request
-Run the following cell to query the workspace Serve app.
+Run the following cell to query the Ray Serve app running in the workspace.
 
 
 ```python
@@ -59,7 +59,7 @@ print(requests.get("http://localhost:8000/hello", params={"name": "Theodore"}).j
 
 ## Deploy to production as a service
 
-To enable fault tolerance and expose your app to the public internet, you must "deploy" the app, which creates an Anyscale Service backed by a public load balancer. This service deploys in a separate Ray Cluster, not in the workspace, and the Anyscale control plane monitors it to recover on node failures. You can also deploy rolling updates to the service without incurring downtime.
+To enable fault tolerance and expose your app to the public internet, you must "deploy" it, which creates an Anyscale Service backed by a public load balancer. Anyscale deploys the app in a new cluster, separate from the workspace cluster. The Anyscale control plane monitors the service to recover on node failures. You can also deploy rolling updates to the service without incurring downtime.
 
 Use the following command to deploy your app as `my_service`.
 
@@ -84,14 +84,22 @@ Once the service is running, query the service from the public internet using si
 1. Update the `HOST` to the service endpoint.
 2. Add the authorization token as a header in the HTTP request.
 
-To find the `HOST` and authorization token values, run `serve deploy`, or find them on the service page. For example, for the following output of `serve deploy`:
-- The service endpoint value is: `https://stable_diffusion_app-4rq8m.cld-ltw6mi8dxaebc3yf.s.anyscaleuserdata-staging.com`.
-- The authorization token value is: `26hTWi2kZwEz0Tdi1_CKRep4NLXbuuaSTDb3WMXK9DM`.
-ru
+Find the `HOST` and authorization token values in one of two ways:
+- Run `serve deploy`
+- Look on the service page
+
+For example, to find the values with `serve deploy`, look for the following output: 
+
 ```bash
 (anyscale +4.0s) You can query the service endpoint using the curl request below:
 (anyscale +4.0s) curl -H 'Authorization: Bearer 26hTWi2kZwEz0Tdi1_CKRep4NLXbuuaSTDb3WMXK9DM' https://stable_diffusion_app-4rq8m.cld-ltw6mi8dxaebc3yf.s.anyscaleuserdata-staging.com
 ```
+
+For the previous output:
+- The service endpoint value is: `https://stable_diffusion_app-4rq8m.cld-ltw6mi8dxaebc3yf.s.anyscaleuserdata-staging.com`.
+- The authorization token value is: `26hTWi2kZwEz0Tdi1_CKRep4NLXbuuaSTDb3WMXK9DM`.
+
+Replace the placeholder values in the following cell before running it:
 
 
 ```python
@@ -119,7 +127,7 @@ print(send_request("Theodore"))
 
 ## Monitor production services
 
-Along with the monitoring tools that come with workspaces, services provide additional built-in metrics that you can find in the `Metrics` tab. This tab includes aggregated metrics across all rollouts for a service, possibly from multiple Ray clusters.
+Along with the monitoring tools that come with workspaces, services provide additional built-in metrics that you can find in the `Metrics` tab. This tab includes aggregated metrics across all rollouts for a service, possibly from multiple clusters.
 
 <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/intro-services/assets/service-metrics.png" height=500px>
 
@@ -154,13 +162,13 @@ On the production service, deploy the update, making sure to include the `--name
 !serve deploy main:my_app --name=my_service
 ```
 
-Monitor the status of the rollout in the service Overview page. Once the new Ray Cluster with the updated app config is running, Ray Serve shuts down the previous cluster:
+Monitor the status of the rollout in the service Overview page. Once the new cluster with the updated app config is running, Ray Serve shuts down the previous cluster:
 
 <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/intro-services/assets/service-rollout.png" height=300px/>
 
-### Understanding Ray Serve scaling vs Ray cluster configs
+### Understanding Ray Serve autoscaling config vs compute config
 
-When scaling your service, the Serve scaling config, which contains the `@serve.deployment` parameters, interacts with the Ray Cluster config, which contains the number of Ray worker nodes. Generally, the Ray Cluster config is an upper bound on service scaling, because Ray Serve runs inside a Ray Cluster.
+When scaling your service, the Ray Serve scaling config, which contains the `@serve.deployment` parameters, interacts with the Ray Cluster config, which contains the number of Ray worker nodes. Generally, the Ray Cluster config is an upper bound on service scaling, because Ray Serve runs inside a Ray Cluster.
 
 For example, if you configure the Ray Cluster to have at most 100 CPUs, then Serve can only launch up to 100 replicas, regardless of the scaling config.
 
