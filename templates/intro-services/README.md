@@ -35,12 +35,14 @@ class FastAPIDeployment:
 my_app = FastAPIDeployment.bind()
 ```
 
+
+
 ### Run the app in the workspace
 Use the command below to run the Ray Serve app in the workspace on `localhost:8000`.
 
 If you want to run it again, use the same command to update the app.
 
-**Tip**: Use `serve run main:my_app --blocking` in a new VSCode terminal to block and print out application logs (exceptions, etc.) in the terminal, allowing you to view Serve backend logs more easily.
+**Tip**: Use `serve run main:my_app --blocking` in a new VSCode terminal to block and print out application logs (exceptions, etc.) in the terminal, allowing you to view Ray Serve backend logs more easily.
 
 
 ```python
