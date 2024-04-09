@@ -144,7 +144,7 @@ The resources panel provides basic stats about cluster utilization, as well as a
 
 **Ray dashboard > Jobs**
 
-To see the status of an active or previously run Ray job, navigate to `Ray Dashboard > Jobs` in the UI. Here you will see an overview of job progress, logs, and the ability to drill down into individual task and actors.
+To see the status of an active or previously run Ray job, navigate to `Ray Dashboard > Jobs` in the UI. Click a job to open the detail page where you can see an overview of job progress, logs, etc.
 
 <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/intro-workspaces/assets/ray-dashboard-jobs.png" height=400px/>
 
@@ -182,6 +182,7 @@ Run the following cell to check that the `emoji` package is successfully install
 import ray
 import emoji
 import time
+import os
 
 # Reset the Ray session in the notebook kernel to pick up new dependencies.
 if ray.is_initialized():
@@ -189,11 +190,30 @@ if ray.is_initialized():
 
 @ray.remote
 def f():
-    print(emoji.emojize('Dependencies are :thumbs_up:'))
+    my_emoji = os.environ.get("MY_EMOJI", ":thumbs_up:")
+    print(emoji.emojize(f"Dependencies are {my_emoji}"))
     time.sleep(5)
 
 ray.get([f.remote() for _ in range(100)])
 print("Done")
+```
+
+### Cluster env vars
+
+The dependencies tab also lets you set environment variables on cluster workers. Try it out by setting the ``MY_EMOJI`` env var and running the cell above again.
+
+Note that this does not set the env var in VSCode, only on the cluster workers.
+
+
+```python
+# First set MY_EMOJI=:palm_tree: in the Workspace > Dependencies tab.
+# The code below should then pick up your newly set env var.
+
+# Note: need to reinitialize Ray to clear worker state for this notebook.
+if ray.is_initialized():
+   ray.shutdown()
+
+ray.get([f.remote() for _ in range(100)])
 ```
 
 That's it! Now you know everything you need to build scalable Ray applications in Anyscale Workspaces. Check out the template gallery and Ray documentation to learn more about what you can do with Ray and Anyscale.
