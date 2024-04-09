@@ -142,7 +142,7 @@ class FastAPIDeployment:
     ...
 ```
 
- For more advanced scaling options, see [Serve Autoscaling](https://docs.ray.io/en/latest/serve/autoscaling-guide.html#serve-autoscaling).
+ For more advanced scaling options, see [Ray Serve Autoscaling](https://docs.ray.io/en/latest/serve/autoscaling-guide.html#serve-autoscaling).
  
 Rerun the service in the development workspace using `serve run`.
 
@@ -168,7 +168,7 @@ Monitor the status of the rollout in the service Overview page. Once the new clu
 
 ### Understanding Ray Serve autoscaling config vs compute config
 
-When scaling your service, the Ray Serve scaling config, which contains the `@serve.deployment` parameters, interacts with the Ray Cluster config, which contains the number of Ray worker nodes. Generally, the Ray Cluster config is an upper bound on service scaling, because Ray Serve runs inside a Ray Cluster.
+When scaling your service, the Serve autoscaling config, from `@serve.deployment`, interacts with the compute config, which contains the number of worker nodes. Generally, the compute config is an upper bound on service autoscaling, because Ray Serve runs inside an Anyscale Cluster.
 
 For example, if you configure the Ray Cluster to have at most 100 CPUs, then Serve can only launch up to 100 replicas, regardless of the scaling config.
 
@@ -183,7 +183,7 @@ To learn more, try other model serving templates available in the template galle
 ## Summary
 
 In this notebook you:
-- Developed and ran a simple Serve app in a development workspace.
+- Developed and ran a simple Ray Serve app in a development workspace.
 - Deployed the app to production as a service.
 - Monitored the service.
 - Scaled the service that uses both the Ray Serve config and Ray Cluster config together.
