@@ -2,13 +2,13 @@
 
 **⏱️ Time to complete**: 5 min (15 on GCP)
 
-This tutorial shows you how to:
+This example shows you how to:
 1. Develop a simple Ray Serve app in a workspace.
 2. Deploy the app to production as an Anyscale Service.
 3. Monitor the production app.
 4. Configure service scaling.
 
-**Note**: This tutorial runs in a workspace. See `Intro to Workspaces` before running this tutorial.
+**Note**: This example runs in a workspace. See [Intro to Workspaces](https://docs.endpoints.anyscale.com/preview/) before running this example.
 
 ## Develop an app in a workspace
 
@@ -35,14 +35,12 @@ class FastAPIDeployment:
 my_app = FastAPIDeployment.bind()
 ```
 
-
-
 ### Run the app in the workspace
 Use the command below to run the Ray Serve app in the workspace on `localhost:8000`.
 
 If you want to run it again, use the same command to update the app.
 
-**Tip**: Use `serve run main:my_app --blocking` in a new VSCode terminal to block and print out application logs (exceptions, etc.) in the terminal, allowing you to view Ray Serve backend logs more easily.
+**Tip**: Use `serve run main:my_app --blocking` in a new VSCode terminal to block and print out application logs (exceptions, etc.) in the terminal, allowing you to view Ray Serve application logs more easily.
 
 
 ```python
@@ -86,18 +84,18 @@ Once the service is running, query the service from the public internet using si
 1. Update the `HOST` to the service endpoint.
 2. Add the authorization token as a header in the HTTP request.
 
-Find the `HOST` and authorization token values in one of two ways:
-- Run `serve deploy`
-- Click the **Query** button on the service page
+Find the `HOST` and authorization token values in:
+- The output of `serve deploy`
+- On the service page by clicking on the **Query**
 
-For example, to find the values with `serve deploy`, look for the following output: 
+For example, look for the following in the `serve deploy` output: 
 
 ```bash
 (anyscale +4.0s) You can query the service endpoint using the curl request below:
 (anyscale +4.0s) curl -H 'Authorization: Bearer 26hTWi2kZwEz0Tdi1_CKRep4NLXbuuaSTDb3WMXK9DM' https://stable_diffusion_app-4rq8m.cld-ltw6mi8dxaebc3yf.s.anyscaleuserdata-staging.com
 ```
 
-For the previous output:
+In the previous output:
 - The service endpoint value is: `https://stable_diffusion_app-4rq8m.cld-ltw6mi8dxaebc3yf.s.anyscaleuserdata-staging.com`.
 - The authorization token value is: `26hTWi2kZwEz0Tdi1_CKRep4NLXbuuaSTDb3WMXK9DM`.
 
