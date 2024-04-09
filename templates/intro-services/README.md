@@ -133,7 +133,7 @@ Along with the monitoring tools that come with workspaces, services provide addi
 
 ## Configure service scaling
 
-By default, a service has a single replica. To change this configuration, set the `num_replicas` argument in the [serve.deployment decorator](https://docs.ray.io/en/latest/serve/configure-serve-deployment.html) as follows in `main.py`.
+By default, a service has a single replica. To change this configuration, set the `num_replicas` argument in the [serve.deployment decorator](https://docs.ray.io/en/latest/serve/configure-serve-deployment.html) as follows in `main.py`:
 
 ```python
 @serve.deployment(num_replicas=4)
@@ -166,17 +166,15 @@ Monitor the status of the rollout in the service Overview page. Once the new clu
 
 <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/intro-services/assets/service-rollout.png" height=300px/>
 
-### Understanding Ray Serve autoscaling config vs compute config
+### Ray Serve autoscaling config vs compute config
 
-When scaling your service, the Serve autoscaling config, from `@serve.deployment`, interacts with the compute config, which contains the number of worker nodes. Generally, the compute config is an upper bound on service autoscaling, because Ray Serve runs inside an Anyscale Cluster.
+ During service scaling, the Ray Serve autoscaling config interacts with the compute config of the cluster. The `@serve.deployment` decorater contains the autoscaling config, such as `num_replicas`, and the compute config sets the number of worker nodes. Generally, the compute config is an upper bound on service scaling because Ray Serve runs inside the cluster. For example, if you configure the cluster to have at most 100 CPUs, then Ray Serve can only launch up to 100 replicas, regardless of the autoscaling config.
 
-For example, if you configure the Ray Cluster to have at most 100 CPUs, then Serve can only launch up to 100 replicas, regardless of the scaling config.
+For this reason, enable the "Auto-select machines" compute config for services. This setting is on by default.
 
-For this reason, enable the "Auto-select machines" cluster config for services. This setting is on by default.
+#### Edit a compute config
 
-#### Edit a service cluster config
-
-When Anyscale first creates a service, it copies the cluster config from the workspace. After that, Anyscale decouples the service cluster config from the workspace and you can edit it independently.
+When Anyscale first creates a service, it copies the compute config from the workspace. After that, Anyscale decouples the service cluster's compute config from the workspace and you can edit it independently.
 
 To learn more, try other model serving templates available in the template gallery, and the Ray Serve [documentation](https://docs.ray.io/en/latest/serve/index.html).
 
@@ -186,4 +184,4 @@ In this notebook you:
 - Developed and ran a simple Ray Serve app in a development workspace.
 - Deployed the app to production as a service.
 - Monitored the service.
-- Scaled the service that uses both the Ray Serve config and Ray Cluster config together.
+- Scaled the service that uses both the Ray Serve autoscaling config and compute config together.
