@@ -88,7 +88,7 @@ Once the service is running, query the service from the public internet using si
 
 Find the `HOST` and authorization token values in one of two ways:
 - Run `serve deploy`
-- Look on the service page
+- Click the **Query** button on the service page
 
 For example, to find the values with `serve deploy`, look for the following output: 
 
