@@ -68,7 +68,7 @@ Use the following command to deploy your app as `my_service`.
 !serve deploy main:my_app --name=my_service
 ```
 
-### Service UI Overview
+### Service Overview page in the console
 
 Navigate to your newly created service in the Anyscale console at **Home > Services > my_service**. It should be in the "Starting" state. Click the service name and wait for the service to enter the "Running" state.
 
