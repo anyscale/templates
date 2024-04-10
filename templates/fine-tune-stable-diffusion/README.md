@@ -1,6 +1,6 @@
 # Fine-tuning Stable Diffusion XL with Ray Train
 
-⏱️ Time to complete: 10 min
+**⏱️ Time to complete**: 10 min
 
 This template shows you how to do [Dreambooth](https://arxiv.org/abs/2208.12242) fine-tuning, which is a method of personalizing a stable diffusion model on a few examples (3~5) of a subject.
 

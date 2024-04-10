@@ -1,4 +1,7 @@
 ## Fine-tuning Llama-2 models with Deepspeed, Accelerate, and Ray Train
+
+**⏱️ Time to complete**: 42 min
+
 This template shows you how to fine-tune Llama-2 models. 
 
 ### Step 1: Fine-tune Llama-2-7B model

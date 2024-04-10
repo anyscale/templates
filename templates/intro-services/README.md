@@ -1,6 +1,6 @@
 # Introduction to Services
 
-**⏱️ Time to complete**: 5 min (15 on GCP)
+**⏱️ Time to complete**: 10 min (15 on GCP)
 
 This example shows you how to:
 1. Develop a simple Ray Serve app in a workspace.
@@ -67,8 +67,6 @@ Use the following command to deploy your app as `my_service`.
 ```python
 !serve deploy main:my_app --name=my_service
 ```
-
-**Tip**: If your app has PyPI dependencies that you added from the workspace, `serve deploy` automatically compiles these dependencies into a Docker image prior to deploying to optimize startup time.
 
 ### Service Overview page in the console
 
