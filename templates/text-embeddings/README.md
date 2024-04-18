@@ -64,12 +64,15 @@ Set up default values that will be used in the embeddings computation workflow:
 
 ```python
 HF_MODEL_NAME = "thenlper/gte-large"
-# Optional: The models listed above do not require a Hugging Face token. 
+# Optional: The models listed above do not require a Hugging Face token, 
+# so there is no need to set this variable in that case.
 # If your model requires a token for access, replace the following with your user token.
 OPTIONAL_HF_TOKEN_FOR_MODEL = "<OPTIONAL_HUGGING_FACE_USER_TOKEN>"
 NUM_MODEL_INSTANCES = 4
 OUTPUT_PATH = generate_output_path(os.environ.get("ANYSCALE_ARTIFACT_STORAGE"), HF_MODEL_NAME)
 ```
+
+Start up Ray, using the Hugging Face token as an environment variable so that it's made available to all nodes in the cluster.
 
 
 ```python
