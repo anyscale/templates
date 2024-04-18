@@ -1,4 +1,7 @@
 ## Serving a Stable Diffusion Model with Ray Serve
+
+**⏱️ Time to complete**: 5 min (15 on GCP)
+
 This template shows you how to:
 1. Develop and run a Ray Serve application running a stable diffusion model.
 2. Send test requests to the application running locally.
