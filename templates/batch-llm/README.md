@@ -7,18 +7,20 @@ This template shows you how to:
 2. Use Ray Data and vLLM to run batch inference of a LLM.
 3. Write the inference outputs to cloud storage.
 
-For a Python script version of the `.ipynb` notebook used for the workspace template, refer to `main.py`.
+For a Python script version of the code in this workspace template, refer to `main.py`.
 
-**Note:** This tutorial is run within a workspace. Please overview the `Introduction to Workspaces` template first before this tutorial.
+**Note:** This tutorial is run within a workspace. Review the `Introduction to Workspaces` template before this tutorial.
 
 ### How to decide between online vs offline inference for LLM
 Online LLM inference (e.g. Anyscale Endpoint) should be used when you want to get real-time response for prompt or to interact with the LLM. Use online inference when you want to optimize latency of inference to be as quick as possible.
 
-On the other hand, offline LLM inference should be used when you want to get reponses for a large number of prompts within some time frame, but not required to be real-time (minutes to hours granularity). Use offline inference when you want to:
+On the other hand, offline LLM inference (also referred to as batch inference) should be used when you want to get reponses for a large number of prompts within some time frame, but not required to be real-time (minutes to hours granularity). Use offline inference when you want to:
 1. Scale your workload to large-scale datasets
-2. optimize inference throughput and resource usage (for example, maximizing GPU utilization).
+2. Optimize inference throughput and resource usage (for example, maximizing GPU utilization).
 
-## Step 1: Set up model defaults
+In this tutorial, we will focus on the latter, using offline LLM inference for a sentence completion task.
+
+## Step 1: Set up model configs
 
 First, import the dependencies used in this template.
 
@@ -34,8 +36,7 @@ from vllm import LLM, SamplingParams
 from util.utils import generate_output_path, get_a10g_or_equivalent_accelerator_type
 ```
 
-Set up default values that will be used in the batch inference workflow:
-* Your [Hugging Face user access token](https://huggingface.co/docs/hub/en/security-tokens). This will be used to download the model and is required for Llama models.
+Set up values that will be used in the batch inference workflow:
 * The model to use for inference ([see the list of vLLM models](https://docs.vllm.ai/en/latest/models/supported_models.html)).
     * This workspace template has been tested and verified with the following models:
         * `meta-llama/Llama-2-7b-chat-hf`
@@ -51,18 +52,39 @@ Set up default values that will be used in the batch inference workflow:
 * The [sampling parameters object](https://github.com/vllm-project/vllm/blob/main/vllm/sampling_params.py) used by vLLM.
 * The output path where results will be written as parquet files.
 
+*Note*: Some models will require you to input your [Hugging Face user access token](https://huggingface.co/docs/hub/en/security-tokens). This will be used to authenticate/download the model and **is required for LLaMA models**. You can use one of the other models which don't require a token if you don't have access to this model.
+
 
 ```python
-# Set the Hugging Face token. Replace the following with your token.
-HF_TOKEN = "<REPLACE_WITH_YOUR_HUGGING_FACE_USER_TOKEN>"
-# Set to the model that you wish to use from the preceding list.
-# Note that using the Llama models will require a Hugging Face token to be set.
-HF_MODEL = "mistralai/Mistral-7B-Instruct-v0.1"
+# Set to the name of the Hugging Face model that you wish to use from the preceding list.
+# Note that using the Llama models will prompt you to set your Hugging Face user token.
+HF_MODEL = "meta-llama/Llama-2-7b-chat-hf"
+
 # Create a sampling params object.
 sampling_params = SamplingParams(temperature=0, max_tokens=2048)
+
 # Output path to write output result. You can also change this to any cloud storage path,
 # e.g. a specific S3 bucket.
-output_path = generate_output_path(os.environ.get("ANYSCALE_ARTIFACT_STORAGE"), HF_MODEL)
+output_path = generate_output_path(
+    # `ANYSCALE_ARTIFACT_STORAGE` is the URI to the pre-generated folder for storing
+    # your artifacts while keeping them separate them from Anyscale-generated ones.
+    # See: https://docs.anyscale.com/workspaces/storage#object-storage-s3-or-gcs-buckets
+    os.environ.get("ANYSCALE_ARTIFACT_STORAGE"),
+    HF_MODEL,
+)
+
+# If your chosen model requires a user token for authentication, set the following
+# variable to `True` to trigger authentication.
+REQUIRE_HF_TOKEN = False
+
+if REQUIRE_HF_TOKEN OR "llama" in HF_MODEL.lower():
+    import huggingface_hub
+    # Starts authentication through VSCode overlay. 
+    # Token saved to: /home/ray/.cache/huggingface/token
+    huggingface_hub.interpreter_login()
+    
+    with open('/home/ray/.cache/huggingface/token', 'r') as file:
+        HF_TOKEN_FOR_LLAMA_MODELS = file.read()
 ```
 
 Start up Ray, using the Hugging Face token as an environment variable so that it's made available to all nodes in the cluster.
@@ -73,7 +95,7 @@ if ray.is_initialized():
     ray.shutdown()
 ray.init(
     runtime_env={
-        "env_vars": {"HF_TOKEN": HF_TOKEN},
+        "env_vars": {"HF_TOKEN": HF_TOKEN_FOR_LLAMA_MODELS},
     }
 )
 ```
@@ -83,7 +105,7 @@ Use Ray Data to read in your input data from some sample prompts.
 
 
 ```python
-# Create some sample prompts, and use Ray Data to create a dataset for it.
+# Create some sample sentences, and use Ray Data to create a dataset for it.
 prompts = [
     "I always wanted to be a ...",
     "The best way to learn a new language is ...",
@@ -95,6 +117,27 @@ ds = ray.data.from_items(prompts)
 
 # View one row of the Dataset.
 ds.take(1)
+```
+
+Construct the input prompts for your model using the format required by the specific model. Run the cell below to apply this prompt construction to each row in the Dataset with Ray Data's [`map`](https://docs.ray.io/en/latest/data/api/doc/ray.data.Dataset.map.html) method.
+
+
+```python
+model_name_to_input_prompt_format = {
+    "meta-llama/Llama-2-7b-chat-hf": "[INST] {} [/INST]",
+    "mistralai/Mistral-7B-Instruct-v0.1": "[INST] {} [/INST]",
+    "google/gemma-7b-it": "<start_of_turn>model\n{}<end_of_turn>\n",
+    "mlabonne/NeuralHermes-2.5-Mistral-7B": "<|im_start|>system\nYou are a helpful assistant that will complete the sentence in the given input prompt.<|im_end|>\n<|im_start|>user{}<|im_end|>\n<|im_start|>assistant",
+}
+
+def construct_input_prompt(row, text_column):
+    if "[INST]" not in row[text_column]:
+        prompt_format = model_name_to_input_prompt_format.get(HF_MODEL)
+        if prompt_format:
+            row[text_column] = prompt_format.format(row[text_column])
+    return row
+
+ds = ds.map(construct_input_prompt, fn_kwargs={"text_column": "item"})
 ```
 
 ## Step 3: Run Batch Inference with vLLM
@@ -139,7 +182,7 @@ class LLMPredictor:
 
 ### Scaling with GPUs
 
-Apply batch inference for all input data with the Ray Data [`map_batches`](https://docs.ray.io/en/latest/data/api/doc/ray.data.Dataset.map_batches.html) method. When using vLLM, LLM instances require GPUs; here, we will demonstrate how to configure Ray Data to scale the number of LLM instances and GPUs needed.
+Next, apply batch inference for all input data with the Ray Data [`map_batches`](https://docs.ray.io/en/latest/data/api/doc/ray.data.Dataset.map_batches.html) method. When using vLLM, LLM instances require GPUs; here, we will demonstrate how to configure Ray Data to scale the number of LLM instances and GPUs needed.
 
 To use GPUs for inference in the Workspace, we can specify `num_gpus` and `concurrency` in the `ds.map_batches()` call below to indicate the number of LLM instances and the number of GPUs per LLM instance, respectively. For example, if we want to use 4 LLM instances, with each requiring 1 GPU, we would set `concurrency=4` and `num_gpus=1`, requiring 4 total GPUs.
 
@@ -153,9 +196,9 @@ ds = ds.map_batches(
     concurrency=4,
     # Specify the number of GPUs required per LLM instance.
     num_gpus=1,
-    # Specify the batch size for inference. Set the batch size to as large possible without running out of memory.
+    # Specify the batch size for inference. Set the batch size to as large as possible without running out of memory.
     # If you encounter out-of-memory errors, decreasing batch_size may help.
-    batch_size=10,
+    batch_size=5,
     # Pass keyword arguments for the LLMPredictor class.
     fn_constructor_kwargs={"text_column": "item"},
     # Select the accelerator type; A10G or L4.
@@ -170,7 +213,7 @@ Finally, make sure to either enable *Auto-select worker nodes* or configure your
 So far, we have defined two operations of the Dataset (`from_items()`, `map_batches()`), but have not executed the Dataset yet and don't see any results. Why is that?
 
 Ray Data uses [lazy, streaming execution](https://docs.ray.io/en/latest/data/data-internals.html#execution) by default, which means:
-- Datasets and any associated transformations are not executed until you call a consuming operation such as [`ds.take()`](https://docs.ray.io/en/latest/data/api/doc/ray.data.Dataset.take.html), [`ds.iter_batches()`](https://docs.ray.io/en/latest/data/api/doc/ray.data.DataIterator.iter_batches.html), or [`Dataset.write_parquet()`](https://docs.ray.io/en/latest/data/api/doc/ray.data.Dataset.write_parquet.html).
+- Datasets and any associated transformations are not executed until you call a consuming operation such as [`ds.take()`](https://docs.ray.io/en/latest/data/api/doc/ray.data.Dataset.take.html), [`ds.take_all()`](https://docs.ray.io/en/latest/data/api/doc/ray.data.Dataset.take_all.html), [`ds.iter_batches()`](https://docs.ray.io/en/latest/data/api/doc/ray.data.DataIterator.iter_batches.html), or [`Dataset.write_parquet()`](https://docs.ray.io/en/latest/data/api/doc/ray.data.Dataset.write_parquet.html).
 - The entire Dataset is not stored in memory, but rather, the Dataset is executed incrementally on parts of data while overlapping execution of various operations in the Dataset. This allows Ray Data to execute batch transformations without needing to load the entire dataset into memory and overlap data preprocessing and model training steps during ML training.
 
 Run the following cell to start dataset execution and view the results!
@@ -196,6 +239,7 @@ Similar to before, we apply batch inference for all input data with the Ray Data
 
 
 ```python
+ds = ds.map(construct_input_prompt, fn_kwargs={"text_column": "text"})
 ds = ds.map_batches(
     LLMPredictor,
     # Set the concurrency to the number of LLM instances.
@@ -204,7 +248,7 @@ ds = ds.map_batches(
     num_gpus=1,
     # Specify the batch size for inference. Set the batch size to as large possible without running out of memory.
     # If you encounter CUDA out-of-memory errors, decreasing batch_size may help.
-    batch_size=10,
+    batch_size=5,
     # Pass keyword arguments for the LLMPredictor class.
     fn_constructor_kwargs={"text_column": "text"},
     # Select the accelerator type; A10G or L4.
@@ -224,7 +268,7 @@ print(f"Batch inference result is written into {output_path}.")
 ```
 
 ### Monitoring Dataset execution
-In the Ray Dashboard tab, navigate to the Job page and open the "Ray Data Overview" section to view the details of the batch inference execution:
+We can use the Ray Dashboard to monitor the Dataset execution. In the Ray Dashboard tab, navigate to the Job page and open the "Ray Data Overview" section. Click on the link for the running job, and open the "Ray Data Overview" section to view the details of the batch inference execution:
 
 <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/batch-llm/assets/ray-data-jobs.png"/>
 
