@@ -77,7 +77,7 @@ output_path = generate_output_path(
 # variable to `True` to trigger authentication.
 REQUIRE_HF_TOKEN = False
 
-if REQUIRE_HF_TOKEN OR "llama" in HF_MODEL.lower():
+if REQUIRE_HF_TOKEN or "llama" in HF_MODEL.lower():
     import huggingface_hub
     # Starts authentication through VSCode overlay. 
     # Token saved to: /home/ray/.cache/huggingface/token
