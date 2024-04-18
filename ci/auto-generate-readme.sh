@@ -5,6 +5,12 @@ notebook_files=$(find ../templates -name "README.ipynb")
 
 # Loop through each notebook file
 for notebook_file in $notebook_files; do
+    if [ $notebook_file != "../templates/templates/getting-started/README.ipynb" ] && ! grep -q "Time to complete" $notebook_file; then
+        echo "**********"
+        echo "LINT ERROR: $notebook_file must include 'Time to complete' statement, failing."
+        echo "**********"
+        exit 1
+    fi
     # Convert notebook file to README.md using nbconvert
     jupyter nbconvert --to markdown "$notebook_file" --output-dir "$(dirname "$notebook_file")"
 done
