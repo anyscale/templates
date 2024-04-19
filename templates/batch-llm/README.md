@@ -136,7 +136,7 @@ model_name_to_input_prompt_format = {
     "google/gemma-7b-it": "<start_of_turn>model\n{}<end_of_turn>\n",
     "mlabonne/NeuralHermes-2.5-Mistral-7B": "<|im_start|>system\nYou are a helpful assistant that will complete the sentence in the given input prompt.<|im_end|>\n<|im_start|>user{}<|im_end|>\n<|im_start|>assistant",
     "meta-llama/Meta-Llama-3-8B-Instruct": (
-        "<|start_header_id|>system<|end_header_id|>\n\nYou are a helpful assistant. Complete the given prompt in several concise sentences<|eot_id|>\n"
+        "<|start_header_id|>system<|end_header_id|>\n\nYou are a helpful assistant. Complete the given prompt in several concise sentences.<|eot_id|>\n"
         "<|start_header_id|>user<|end_header_id|>\n\n{}<|eot_id|>\n"
         "<|start_header_id|>assistant<|end_header_id|>\n\n"
     ),
