@@ -58,7 +58,7 @@ Set up values that will be used in the batch inference workflow:
 ```python
 # Set to the name of the Hugging Face model that you wish to use from the preceding list.
 # Note that using the Llama models will prompt you to set your Hugging Face user token.
-HF_MODEL = "meta-llama/Llama-2-7b-chat-hf"
+HF_MODEL = "mistralai/Mistral-7B-Instruct-v0.1"
 
 # Create a sampling params object.
 sampling_params = SamplingParams(temperature=0, max_tokens=2048)
