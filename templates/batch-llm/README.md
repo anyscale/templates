@@ -80,11 +80,14 @@ REQUIRE_HF_TOKEN = False
 
 hf_token_cache_path = "/home/ray/.cache/huggingface/token"
 try:
-    LLM(model=HF_MODEL)
+    # Try loading model config to check if Hugging Face token is required.
+    from transformers import AutoConfig
+    model = AutoConfig.from_pretrained(HF_MODEL)
 except OSError:
     # Model requires HF token to access. Get the token, either from
     # cached token or from user input.
     if not os.path.isfile(hf_token_cache_path):
+        print("No cached Hugging Face token found. Starting authentication")
         import huggingface_hub
         # Starts authentication through VSCode overlay. 
         # Token saved to `hf_token_cache_path`
@@ -92,6 +95,7 @@ except OSError:
     
     with open(hf_token_cache_path, "r") as file:
         os.environ["HF_TOKEN"] = file.read()
+        print("Successfully read Hugging Face token from file.")
 ```
 
 Start up Ray, using the Hugging Face token as an environment variable so that it's made available to all nodes in the cluster.
