@@ -6,8 +6,9 @@ import os
 
 from util.utils import generate_output_path, get_a10g_or_equivalent_accelerator_type
 
-# Set the Hugging Face token. Replace the following with your token.
-HF_TOKEN = os.environ.get("HF_TOKEN", "")
+# Replace the following string with your Hugging Face token if it is
+# not already set as an environment variable from the README.ipynb notebook.
+HF_TOKEN = os.environ.get("HF_TOKEN", "<REPLACE_WITH_YOUR_HF_TOKEN>")
 
 # Set to the model that you wish to use. Note that using the llama models will require a hugging face token to be set.
 HF_MODEL = "mistralai/Mistral-7B-Instruct-v0.1"
@@ -34,7 +35,12 @@ ray.init(
 )
 
 # Create a sampling params object.
-sampling_params = SamplingParams(temperature=0, max_tokens=2048)
+sampling_params = SamplingParams(
+    n=1,
+    temperature=0,
+    max_tokens=2048,
+    stop=["<|eot_id|>", "<|end_of_text|>"],
+)
 
 # The number of LLM instances to use.
 num_llm_instances = 4
@@ -54,16 +60,20 @@ model_name_to_input_prompt_format = {
     "mistralai/Mistral-7B-Instruct-v0.1": "[INST] {} [/INST]",
     "google/gemma-7b-it": "<start_of_turn>model\n{}<end_of_turn>\n",
     "mlabonne/NeuralHermes-2.5-Mistral-7B": "<|im_start|>system\nYou are a helpful assistant that will complete the sentence in the given input prompt.<|im_end|>\n<|im_start|>user{}<|im_end|>\n<|im_start|>assistant",
+    "meta-llama/Meta-Llama-3-8B-Instruct": (
+        "<|start_header_id|>system<|end_header_id|>\n\nYou are a helpful assistant. Complete the given prompt in several concise sentences.<|eot_id|>\n"
+        "<|start_header_id|>user<|end_header_id|>\n\n{}<|eot_id|>\n"
+        "<|start_header_id|>assistant<|end_header_id|>\n\n"
+    ),
 }
 
 
 def construct_input_prompt(row, text_column):
     """Given the input row with raw text in `text_column` column,
     construct the input prompt for the model."""
-    if "[INST]" not in row[text_column]:
-        prompt_format = model_name_to_input_prompt_format.get(HF_MODEL)
-        if prompt_format:
-            row[text_column] = prompt_format.format(row[text_column])
+    prompt_format = model_name_to_input_prompt_format.get(HF_MODEL)
+    if prompt_format:
+        row[text_column] = prompt_format.format(row[text_column])
     return row
 
 
