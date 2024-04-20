@@ -19,7 +19,7 @@ First, install additional required dependencies using `pip`.
 
 
 ```python
-!pip install -q langchain && echo 'Install complete!'
+!pip install -q langchain==0.1.16 && echo 'Install complete!'
 ```
 
 
@@ -32,8 +32,11 @@ import shutil
 import ray.anyscale.data.embedding_util
 
 module_file_path = inspect.getfile(ray.anyscale.data.embedding_util)
-out_path = shutil.copy(module_file_path, 'util/embedding_util.py')
-print(f"File copied to {out_path}")
+copy_dest_path = 'util/embedding_util.py'
+if not os.path.isfile(copy_dest_path):
+    # Only copy the file if it doesn't exist, so we don't overwrite any existing changes.
+    out_path = shutil.copy(module_file_path, copy_dest_path)
+    print(f"File copied to {out_path}")
 ```
 
 Let's import the dependencies we will use in this template.
@@ -61,11 +64,15 @@ Set up default values that will be used in the embeddings computation workflow:
 
 ```python
 HF_MODEL_NAME = "thenlper/gte-large"
-# Some Hugging Face models require a token for access; if you choose one of these models, replace the following with your token.
-HF_TOKEN = "<REPLACE_WITH_YOUR_HUGGING_FACE_USER_TOKEN>"
+# Optional: The models listed above do not require a Hugging Face token, 
+# so there is no need to set this variable in that case.
+# If your model requires a token for access, replace the following with your user token.
+OPTIONAL_HF_TOKEN_FOR_MODEL = "<OPTIONAL_HUGGING_FACE_USER_TOKEN>"
 NUM_MODEL_INSTANCES = 4
 OUTPUT_PATH = generate_output_path(os.environ.get("ANYSCALE_ARTIFACT_STORAGE"), HF_MODEL_NAME)
 ```
+
+Start up Ray, using the Hugging Face token as an environment variable so that it's made available to all nodes in the cluster.
 
 
 ```python
@@ -74,7 +81,8 @@ if ray.is_initialized():
 ray.init(
     runtime_env={
         "env_vars": {
-            "HF_TOKEN": HF_TOKEN,
+            # Set the user token on all nodes.
+            "HF_TOKEN": OPTIONAL_HF_TOKEN_FOR_MODEL,
 
             # Suppress noisy logging from external libraries
             "TOKENIZERS_PARALLELISM": "false",
@@ -150,7 +158,7 @@ def chunk_row(row, text_column_name):
 
 We use Ray Data's `flat_map()` method to apply the chunking function we defined above to each row of the input dataset. We use `flat_map()` as opposed to `map()` because the `chunk_row()` function may return more than one output row for each input row.
 
-*Note*: Because Ray Datasets are executed in a streaming fashion, running the cell below will not trigger execution because the dataset is not being consumed yet.
+*Note*: Because Ray Datasets are executed in a lazy and streaming fashion, running the cell below will not trigger execution because the dataset is not being consumed yet. See the [Ray Data docs](https://docs.ray.io/en/latest/data/data-internals.html#streaming-execution]) for more details.
 
 
 ```python
@@ -246,7 +254,7 @@ embedded_ds = chunked_ds.map_batches(
 ```
 
 ### Handling GPU out-of-memory failures
-If you run into CUDA out of memory, your batch size is likely too large. Decrease the batch size as described above.
+If you run into a `CUDA out of memory` error, your batch size is likely too large. Decrease the batch size as described above.
 
 If your batch size is already set to 1, then use either a smaller model or GPU devices with more memory.
 
