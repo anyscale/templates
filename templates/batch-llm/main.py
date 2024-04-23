@@ -4,17 +4,11 @@ import numpy as np
 import ray
 import os
 
-from util.utils import generate_output_path, get_a10g_or_equivalent_accelerator_type
+from util.utils import generate_output_path, get_a10g_or_equivalent_accelerator_type, read_hugging_face_token_from_cache
 
-# Replace the following string with your Hugging Face token if it is
-# not already set as an environment variable from the README.ipynb notebook.
-HF_TOKEN = os.environ.get("HF_TOKEN", "<REPLACE_WITH_YOUR_HF_TOKEN>")
 
 # Set to the model that you wish to use. Note that using the llama models will require a hugging face token to be set.
 HF_MODEL = "mistralai/Mistral-7B-Instruct-v0.1"
-
-if not HF_TOKEN and "llama" in HF_MODEL.lower():
-    raise ValueError("Please specify environment variable `HF_TOKEN` as Hugging Face token to access Llama models in Hugging Face.")
 
 # Input path to read input data.
 # Read one text file from S3. Ray Data supports reading multiple files
@@ -26,6 +20,9 @@ INPUT_TEXT_COLUMN = "text"
 
 # Output path to write output result.
 output_path = generate_output_path(os.environ.get("ANYSCALE_ARTIFACT_STORAGE"), HF_MODEL)
+
+# Read the Hugging Face token from cached file.
+HF_TOKEN = read_hugging_face_token_from_cache()
 
 # Initialize Ray with a Runtime Environment.
 ray.init(
