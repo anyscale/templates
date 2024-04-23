@@ -53,22 +53,28 @@ def prompt_for_hugging_face_token(hf_model: str) -> str:
         AutoConfig.from_pretrained(hf_model)
         # If config is loaded successfully, no need for token.
         return ""
-    except OSError:
-        # Model requires HF token to access. Get the token, either from
-        # cached token or from user input.
-        if not os.path.isfile(HF_TOKEN_CACHE_PATH):
-            print("No cached Hugging Face token found. Starting authentication")
-            # Starts authentication through VSCode overlay.
-            # Token saved to `HF_TOKEN_CACHE_PATH`
-            huggingface_hub.interpreter_login()
+    except OSError as e:
+        if "You are trying to access a gated repo." in str(e):
+            # Model requires HF token to access. Get the token, either from
+            # cached token or from user input.
+            if not os.path.isfile(HF_TOKEN_CACHE_PATH):
+                print("No cached Hugging Face token found. Starting authentication on VS Code overlay...")
+                # Starts authentication through VSCode overlay.
+                # Token saved to `HF_TOKEN_CACHE_PATH`
+                huggingface_hub.interpreter_login()
 
-        return read_hugging_face_token_from_cache()
+            return read_hugging_face_token_from_cache()
+        else:
+            # Some other error occurred, raise it.
+            raise e
 
 
 def read_hugging_face_token_from_cache() -> str:
     try:
         with open(HF_TOKEN_CACHE_PATH, "r") as file:
-            return file.read()
+            tkn = file.read()
+        print(f"Successfully read cached token at {HF_TOKEN_CACHE_PATH}.")
+        return tkn
     except FileNotFoundError:
         raise FileNotFoundError(
             f"Could not find Hugging Face token cached at {HF_TOKEN_CACHE_PATH}."
