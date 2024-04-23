@@ -33,7 +33,11 @@ import numpy as np
 import ray
 from vllm import LLM, SamplingParams
 
-from util.utils import generate_output_path, get_a10g_or_equivalent_accelerator_type
+from util.utils import (
+    generate_output_path,
+    get_a10g_or_equivalent_accelerator_type,
+    prompt_for_hugging_face_token,
+)
 ```
 
 Set up values that will be used in the batch inference workflow:
@@ -74,28 +78,8 @@ output_path = generate_output_path(
     HF_MODEL,
 )
 
-# If your chosen model requires a user token for authentication, set the following
-# variable to `True` to trigger authentication.
-REQUIRE_HF_TOKEN = False
-
-hf_token_cache_path = "/home/ray/.cache/huggingface/token"
-try:
-    # Try loading model config to check if Hugging Face token is required.
-    from transformers import AutoConfig
-    model = AutoConfig.from_pretrained(HF_MODEL)
-except OSError:
-    # Model requires HF token to access. Get the token, either from
-    # cached token or from user input.
-    if not os.path.isfile(hf_token_cache_path):
-        print("No cached Hugging Face token found. Starting authentication")
-        import huggingface_hub
-        # Starts authentication through VSCode overlay. 
-        # Token saved to `hf_token_cache_path`
-        huggingface_hub.interpreter_login()
-    
-    with open(hf_token_cache_path, "r") as file:
-        os.environ["HF_TOKEN"] = file.read()
-        print("Successfully read Hugging Face token from file.")
+# Prompts the user for Hugging Face token if required by the model.
+HF_TOKEN = prompt_for_hugging_face_token(HF_MODEL)
 ```
 
 Start up Ray, using the Hugging Face token as an environment variable so that it's made available to all nodes in the cluster.
@@ -106,7 +90,7 @@ if ray.is_initialized():
     ray.shutdown()
 ray.init(
     runtime_env={
-        "env_vars": {"HF_TOKEN": os.environ.get("HF_TOKEN", "")},
+        "env_vars": {"HF_TOKEN": HF_TOKEN},
     }
 )
 ```
