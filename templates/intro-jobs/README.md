@@ -48,7 +48,7 @@ The following cell should also run to completion within a few minutes and print 
 ```python
 # Second, submit the Ray app for execution on a new Ray cluster.
 # The execution will be managed by Anyscale Jobs.
-!ray job submit --wait -- python main.py
+!ray job submit --name my-job --wait -- python main.py
 
 # Tip: You can run any Ray app as a job by prefixing its entrypoint with "ray job submit --".
 ```
