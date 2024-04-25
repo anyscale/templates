@@ -18,7 +18,7 @@ We provide a starter command to run Llama-2 and Mistral-family models via Ray Se
 
 Currently tensor parallelism defaults to 1 if not specified.
 
-Please note that the Meta Llama-2 and Mistral family of models need the `hf_token` variable to be set to a Hugging Face Access Token for an account with permissions to download the model. You can get your token [here](https://huggingface.co/settings/tokens).
+**Note**: For the Meta Llama-2 and Mistral families of models you need to set the `hf_token` variable to a Hugging Face Access Token for an account with permissions to download the model. Get your token from [Hugging Face's website at **Settings > Access Tokens**](https://huggingface.co/settings/tokens) and accept the terms on the model page to access the repository. 
 
 Here is the list of currently supported model ID in the starter command:
 - mistralai/Mistral-7B-Instruct-v0.1
@@ -30,7 +30,7 @@ Here is the list of currently supported model ID in the starter command:
 
 ```python
 # Example command to serve Mistal-7B via A10 GPUs on AWS
-!serve run rayllm.start:endpoint model_id=mistralai/Mistral-7B-Instruct-v0.1 gpu_type=A10 hf_token=YOUR_TOKEN
+!serve run rayllm.start:endpoint model_id=mistralai/Mistral-7B-Instruct-v0.1 gpu_type=A10 hf_token=YOUR_TOKEN --non-blocking
 
 # Example command to serve Mistal-7B via L4 GPUs on GCP
 # !serve run rayllm.start:endpoint model_id=mistralai/Mistral-7B-Instruct-v0.1 gpu_type=L4 hf_token=YOUR_TOKEN
