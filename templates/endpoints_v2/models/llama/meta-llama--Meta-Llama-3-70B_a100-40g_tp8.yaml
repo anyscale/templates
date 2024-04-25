@@ -14,8 +14,8 @@ deployment_config:
     resources:
       "accelerator_type:A100-40G": 0.001
 engine_config:
-  model_id: meta-llama/Llama-2-70b-chat-hf
-  hf_model_id: meta-llama/Llama-2-70b-chat-hf
+  model_id: meta-llama/Meta-Llama-3-70B-Instruct
+  hf_model_id: meta-llama/Meta-Llama-3-70B-Instruct
   type: VLLMEngine
   engine_kwargs:
     max_num_batched_tokens: 65536
