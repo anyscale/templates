@@ -110,7 +110,7 @@ To deploy an application with one model as an Anyscale Service, run the next cel
 ```python
 # Deploy the serve app to production with a given service name.
 # Use the same "serve run" command. This is an command to serve Mistal-7B via A10 GPUs on AWS
-!serve deploy rayllm.start:endpoint model_id=mistralai/Mistral-7B-Instruct-v0.1 gpu_type=A10 hf_token=YOUR_TOKEN
+!anyscale service deploy rayllm.start:endpoint model_id=mistralai/Mistral-7B-Instruct-v0.1 gpu_type=A10 hf_token=YOUR_TOKEN
 
 # Example command to serve Mistal-7B via L4 GPUs on GCP
 # !serve run rayllm.start:endpoint model_id=mistralai/Mistral-7B-Instruct-v0.1 gpu_type=L4 hf_token=YOUR_TOKEN
