@@ -266,7 +266,7 @@ Finally, write the computed embeddings out to Parquet files on S3. Running the f
 
 
 ```python
-embedded_ds.write_parquet(OUTPUT_PATH)
+embedded_ds.write_parquet(OUTPUT_PATH, try_create_dir=False)
 ```
 
 We can also use Ray Data to read back the output files to ensure the results are as expected.
