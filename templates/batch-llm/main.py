@@ -128,7 +128,7 @@ ds = ds.map_batches(
 # Write inference output data out as Parquet files to S3.
 # Multiple files would be written to the output destination,
 # and each task would write one or more files separately.
-ds.write_parquet(output_path)
+ds.write_parquet(output_path, try_create_dir=False)
 
 print(f"Batch inference result is written into {output_path}.")
 
