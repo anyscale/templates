@@ -24,6 +24,13 @@ engine_config:
     gpu_memory_utilization: 0.95
     num_tokenizer_actors: 2
     enable_cuda_graph: true
+    # Spec decoding models currently don't support logprobs
+    max_log_probs: 0
+    spec_decode_skip_kv_regeneration: true
+    spec_decode_disable_by_queue_size: 16
+    enable_prompt_lookup: true
+    num_speculative_tokens: 7
+    max_ngram_size: 3
     enable_json_logits_processors: true
   max_total_tokens: 128000
   generation:
