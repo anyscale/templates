@@ -38,8 +38,8 @@ def generate_model_tag(model_id: str) -> str:
             padding_char = username[-1] if username else 'a'
             username += padding_char * (5 - len(username))
     else:
-        username = "".join(random.choice(string.ascii_lowercase) for _ in range(5))
-    suffix = "".join(random.choice(string.ascii_lowercase) for _ in range(5))
+        username = "".join(random.choices(string.ascii_lowercase, k=5))
+    suffix = "".join(random.choices(string.ascii_lowercase, k=5))
     return f"{model_id}:{username}:{suffix}"
 
 
