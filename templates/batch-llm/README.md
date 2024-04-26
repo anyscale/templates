@@ -266,7 +266,7 @@ Running the following cell will trigger execution for the full Dataset, which wi
 
 
 ```python
-ds.write_parquet(output_path)
+ds.write_parquet(output_path, try_create_dir=False)
 print(f"Batch inference result is written into {output_path}.")
 ```
 
