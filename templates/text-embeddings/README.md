@@ -28,6 +28,7 @@ First, install additional required dependencies using `pip`.
 # the implementation into a local file located at `util/embedding_util.py`, which
 # you can choose to customize for your own use case.
 import inspect
+import os
 import shutil
 import ray.anyscale.data.embedding_util
 
@@ -43,7 +44,6 @@ Let's import the dependencies we will use in this template.
 
 
 ```python
-import os
 import ray
 import uuid
 from langchain.text_splitter import RecursiveCharacterTextSplitter
