@@ -18,4 +18,3 @@ worker_node_types:
 
 flags:
   allow-cross-zone-autoscaling: true
-
