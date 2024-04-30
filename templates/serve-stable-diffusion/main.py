@@ -51,10 +51,10 @@ class APIIngress:
 @serve.deployment(
     ray_actor_options={
         # Set the number of GPUs and CPUs required for each model replica.
-        "num_gpus": 1, 
+        "num_gpus": 1,
         "num_cpus": 1,
         "accelerator_type": "A10G" # Set accelerator type based on GPU type to use (T4, A10G, L4, V100, A100-40G or A100-80G)
-    },  
+    },
     max_concurrent_queries=2,   # Maximum number of queries that are sent to a replica of this deployment without receiving a response.
     autoscaling_config={
         "min_replicas": 1,    # The minimum number of model replicas to keep active in the Ray cluster.
