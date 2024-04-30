@@ -57,8 +57,6 @@ Set up values that will be used in the batch inference workflow:
 * The [sampling parameters object](https://github.com/vllm-project/vllm/blob/main/vllm/sampling_params.py) used by vLLM.
 * The output path where results will be written as parquet files.
 
-*Note*: Some models will require you to input your [Hugging Face user access token](https://huggingface.co/docs/hub/en/security-tokens). This will be used to authenticate/download the model and **is required for official LLaMA, Mistral, and Gemma models**. You can use one of the other models which don't require a token if you don't have access to this model (for example, `mlabonne/NeuralHermes-2.5-Mistral-7B`).
-
 
 ```python
 # Set to the name of the Hugging Face model that you wish to use from the preceding list.
@@ -77,7 +75,14 @@ output_path = generate_output_path(
     os.environ.get("ANYSCALE_ARTIFACT_STORAGE"),
     HF_MODEL,
 )
+```
 
+Some models will require you to input your [Hugging Face user access token](https://huggingface.co/docs/hub/en/security-tokens). This will be used to authenticate/download the model and **is required for official LLaMA, Mistral, and Gemma models**. You can use one of the other models which don't require a token if you don't have access to this model (for example, `mlabonne/NeuralHermes-2.5-Mistral-7B`).
+
+Run the following cell to start the authentication flow. A VS Code overlay will appear and prompt you to enter your Hugging Face token if your selected model requires authentication. The token will be cached to a file in the workspace so it can be used to launch an Anyscale Job later without needing to re-authenticate.
+
+
+```python
 # Prompts the user for Hugging Face token if required by the model.
 HF_TOKEN = prompt_for_hugging_face_token(HF_MODEL)
 ```
@@ -279,8 +284,6 @@ We can use the Ray Dashboard to monitor the Dataset execution. In the Ray Dashbo
 If you run into CUDA out of memory, your batch size is likely too large. Decrease the batch size as described above.
 
 If your batch size is already set to 1, then use either a smaller model or GPU devices with more memory.
-
-For advanced users working with large models, you can use model parallelism to shard the model across multiple GPUs.
 
 ### Reading back results
 We can also use Ray Data to read back the output files to ensure the results are as expected.
