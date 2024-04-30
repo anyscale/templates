@@ -7,6 +7,7 @@ import huggingface_hub
 from transformers import AutoConfig
 
 HF_TOKEN_CACHE_PATH = "/home/ray/.cache/huggingface/token"
+HF_TOKEN_LOCAL_PATH = "huggingface_token.txt"
 
 
 def generate_output_path(output_path_prefix: str, model_id: str) -> str:
@@ -48,34 +49,36 @@ def prompt_for_hugging_face_token(hf_model: str) -> str:
     Returns the token as a string. If a token is not required by the model,
     returns an empty string."""
 
-    try:
-        # Try loading model config to check if Hugging Face token is required.
-        AutoConfig.from_pretrained(hf_model)
-        # If config is loaded successfully, no need for token.
+    url = f"https://huggingface.co/api/models/{hf_model}"
+
+    response = requests.get(url)
+    if response.status_code == 200:
         return ""
-    except OSError as e:
-        if "You are trying to access a gated repo." in str(e):
-            # Model requires HF token to access. Get the token, either from
-            # cached token or from user input.
-            if not os.path.isfile(HF_TOKEN_CACHE_PATH):
-                print("No cached Hugging Face token found. Starting authentication on VS Code overlay...")
-                # Starts authentication through VSCode overlay.
-                # Token saved to `HF_TOKEN_CACHE_PATH`
-                huggingface_hub.interpreter_login()
+    elif response.status_code == 401:
+        if os.path.isfile(HF_TOKEN_LOCAL_PATH):
+            return read_hugging_face_token_from_cache(HF_TOKEN_LOCAL_PATH)
+        if not os.path.isfile(HF_TOKEN_CACHE_PATH):
+            print("No cached Hugging Face token found. Starting authentication on VS Code overlay...")
+            # Starts authentication through VSCode overlay.
+            # Token saved to `HF_TOKEN_CACHE_PATH`
+            huggingface_hub.interpreter_login()
 
-            return read_hugging_face_token_from_cache()
-        else:
-            # Some other error occurred, raise it.
-            raise e
+        tkn = read_hugging_face_token_from_cache(HF_TOKEN_CACHE_PATH)
+        # Write the token to a local file, so it can be used by Ray job.
+        with open(HF_TOKEN_LOCAL_PATH, "w") as file:
+            file.write(tkn)
+        return tkn
+    else:
+        raise Exception(f"Failed to access the model. Status code: {response.status_code}")
 
 
-def read_hugging_face_token_from_cache() -> str:
+def read_hugging_face_token_from_cache(path) -> str:
     try:
-        with open(HF_TOKEN_CACHE_PATH, "r") as file:
+        with open(path, "r") as file:
             tkn = file.read()
-        print(f"Successfully read cached token at {HF_TOKEN_CACHE_PATH}.")
+        print(f"Successfully read cached token at {path}.")
         return tkn
     except FileNotFoundError:
         raise FileNotFoundError(
-            f"Could not find Hugging Face token cached at {HF_TOKEN_CACHE_PATH}."
+            f"Could not find Hugging Face token cached at {path}."
         )
