@@ -1,10 +1,21 @@
 head_node_type:
   name: head
-  instance_type: n1-standard-8
+  instance_type: n2-standard-8
+  resources:
+    cpu: 0
+
+auto_select_worker_config: true
+
+# This will be ignored since auto_select_worker_config is enabled,
+# but must be present to pass backend validation.
+# TODO (shomilj): Remove once validation is fixed.
 worker_node_types:
 - name: gpu_worker
   instance_type: n1-standard-8-nvidia-t4-16gb-1
   min_workers: 1
   max_workers: 1
   use_spot: false
-auto_select_worker_config: false
+
+flags:
+  allow-cross-zone-autoscaling: true
+
