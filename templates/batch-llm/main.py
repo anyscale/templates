@@ -4,7 +4,12 @@ import numpy as np
 import ray
 import os
 
-from util.utils import generate_output_path, get_a10g_or_equivalent_accelerator_type, read_hugging_face_token_from_cache
+from util.utils import (
+    HF_TOKEN_LOCAL_PATH,
+    generate_output_path,
+    get_a10g_or_equivalent_accelerator_type,
+    read_hugging_face_token_from_cache,
+)
 
 
 # Set to the model that you wish to use. Note that using the llama models will require a hugging face token to be set.
@@ -22,7 +27,7 @@ INPUT_TEXT_COLUMN = "text"
 output_path = generate_output_path(os.environ.get("ANYSCALE_ARTIFACT_STORAGE"), HF_MODEL)
 
 # Read the Hugging Face token from cached file.
-HF_TOKEN = read_hugging_face_token_from_cache()
+HF_TOKEN = read_hugging_face_token_from_cache(HF_TOKEN_LOCAL_PATH)
 
 # Initialize Ray with a Runtime Environment.
 ray.init(
