@@ -3,10 +3,7 @@ head_node_type:
   instance_type: n2-standard-8
   resources:
     cpu: 0
-
 auto_select_worker_config: true
-
 worker_node_types: []
-
 flags:
   allow-cross-zone-autoscaling: true
