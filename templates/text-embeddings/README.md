@@ -230,6 +230,12 @@ chunked_ds = ds.flat_map(
 
 To use GPUs for inference in the Workspace, we can specify `num_gpus` and `concurrency` in the `ds.map_batches()` call below to indicate the number of embedding models and the number of GPUs per model instance, respectively. For example, with `concurrency=4` and `num_gpus=1`, we have 4 embedding model instances, each using 1 GPU, so we need 4 GPUs total.
 
+You can also specify which accelerator type (for example, if your model requires a specific GPU) to use with the `accelerator_type` parameter. For a full list of supported accelerator types, see [the documentation](https://docs.ray.io/en/latest/ray-core/accelerator-types.html).
+
+If you do not need to select a particular instance type, you can omit this parameter and select "Auto-select worker nodes" under the compute configuration to have Ray select the best worker nodes from the available types:
+
+<img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/text-embeddings/assets/ray-data-gpu.png"/>
+
 
 ```python
 embedded_ds = chunked_ds.map_batches(
@@ -250,6 +256,9 @@ embedded_ds = chunked_ds.map_batches(
     num_gpus=1,
     # Reduce GPU idle time.
     max_concurrency=2,
+    # Uncomment the following line and specify a specific desired accelerator type.
+    # If not specified, Ray will choose the best worker nodes from the available types.
+    # accelerator_type="T4", # or "L4", "A10G", "A100", etc.
 )
 ```
 
@@ -257,8 +266,6 @@ embedded_ds = chunked_ds.map_batches(
 If you run into a `CUDA out of memory` error, your batch size is likely too large. Decrease the batch size as described above.
 
 If your batch size is already set to 1, then use either a smaller model or GPU devices with more memory.
-
-For advanced users working with large models, you can use model parallelism to shard the model across multiple GPUs.
 
 ### Write results to cloud storage
 
