@@ -62,7 +62,7 @@ Image(filename=filename)
 
 ## Step 4: Deploy the model to production as a service
 
-Deploy the model to production using the `serve deploy` command.
+Deploy the model to production using the `anyscale service deploy` command.
 
 This creates a long-running [service](https://docs.anyscale.com/services/get-started) with a stable endpoint to query the application.
 
@@ -70,7 +70,7 @@ Local files and dependencies installed in the workspace are automatically includ
 
 
 ```python
-!serve deploy --name stable_diffusion_service main:stable_diffusion_app
+!anyscale service deploy --name stable_diffusion_service main:stable_diffusion_app
 ```
 
 ## Step 5: Send a test request to the model running in the service
@@ -79,7 +79,7 @@ Query the service using the same logic as when testing it locally, with two chan
 1. Update the `HOST` to the service endpoint.
 2. Add the authorization token as a header in the HTTP request.
 
-Both of these values are printed when you run `serve deploy`. You can also find them on the service page. For example, if the output looks like:
+Both of these values are printed when you run `anyscale service deploy`. You can also find them on the service page. For example, if the output looks like:
 ```bash
 (anyscale +4.0s) You can query the service endpoint using the curl request below:
 (anyscale +4.0s) curl -H 'Authorization: Bearer 26hTWi2kZwEz0Tdi1_CKRep4NLXbuuaSTDb3WMXK9DM' https://stable_diffusion_app-4rq8m.cld-ltw6mi8dxaebc3yf.s.anyscaleuserdata-staging.com
