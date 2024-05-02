@@ -3,7 +3,7 @@ head_node_type:
   instance_type: n2-standard-8
   resources:
     cpu: 0
-auto_select_worker_config: false
+auto_select_worker_config: true
 worker_node_types:
 - name: gpu-worker-t4-1
   instance_type: n1-standard-8-nvidia-t4-16gb-1
@@ -14,7 +14,7 @@ worker_node_types:
     object_store_memory:
     custom_resources:
       "accelerator_type:T4": 1
-  min_workers: 1
+  min_workers: 0
   max_workers: 1
 flags:
   allow-cross-zone-autoscaling: false
