@@ -50,7 +50,7 @@ SUBJECT_IMAGES_PATH = "/mnt/local_storage/subject_images"
 !mkdir -p {SUBJECT_IMAGES_PATH} && cp ./assets/dog/*.jpeg {SUBJECT_IMAGES_PATH}
 ```
 
-Take a look at the dataset!
+Take a look at the dataset.
 
 
 ```python
