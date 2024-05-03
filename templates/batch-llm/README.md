@@ -296,14 +296,14 @@ ds_output.take(5)
 
 ### Submitting to Anyscale Jobs
 
-The script in `main.py` has the same code as this notebook; you can use `ray job submit` to submit the app in that file to Anyscale Jobs. Refer to [Introduction to Jobs](https://docs.endpoints.anyscale.com/preview/examples/intro-jobs/) for more details.
+The script in `main.py` has the same code as this notebook; you can use `anyscale job submit` to submit the app in that file to Anyscale Jobs. Refer to [Introduction to Jobs](https://docs.endpoints.anyscale.com/preview/examples/intro-jobs/) for more details.
 
 
 After modifying the configurations at the top of `main.py` (model name, input/output path, input text column), run the following cell to submit a job:
 
 
 ```python
-!ray job submit -- python main.py
+!anyscale job submit -- python main.py
 ```
 
 ## Summary
