@@ -65,7 +65,7 @@ Use the following command to deploy your app as `my_service`.
 
 
 ```python
-!serve deploy main:my_app --name=my_service
+!anyscale service deploy --name=my_service main:my_app
 ```
 
 ### Service Overview page in the console
@@ -83,10 +83,10 @@ Once the service is running, query the service from the public internet using si
 2. Add the authorization token as a header in the HTTP request.
 
 Find the `HOST` and authorization token values in:
-- The output of `serve deploy`
+- The output of `anyscale service deploy`
 - On the service page by clicking on the **Query**
 
-For example, look for the following in the `serve deploy` output: 
+For example, look for the following in the `anyscale service deploy` output: 
 
 ```bash
 (anyscale +4.0s) You can query the service endpoint using the curl request below:
@@ -157,7 +157,7 @@ On the production service, deploy the update, making sure to include the `--name
 
 
 ```python
-!serve deploy main:my_app --name=my_service
+!anyscale service deploy main:my_app --name=my_service
 ```
 
 Monitor the status of the rollout in the service Overview page. Once the new cluster with the updated app config is running, Ray Serve shuts down the previous cluster:
