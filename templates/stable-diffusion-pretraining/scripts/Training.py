@@ -12,6 +12,7 @@ from typing import Literal, Optional, cast
 import lightning.pytorch as pl  # type: ignore
 import numpy as np
 import ray.train
+import pyarrow.fs
 import torch
 import torch.nn.functional as F
 import typer
@@ -444,7 +445,7 @@ app = typer.Typer()
 artifact_storage = os.environ["ANYSCALE_ARTIFACT_STORAGE"]
 user_name = re.sub(r"\s+", "__", os.environ.get("ANYSCALE_USERNAME", "user"))
 anyscale_storage_path = f"{artifact_storage}/{user_name}"
-
+anyscale_storage_path = anyscale_storage_path.replace("s3://", "")
 
 @app.command()
 def train(
@@ -509,6 +510,9 @@ def train(
         if resume_from_checkpoint:
             checkpoint = Checkpoint(resume_from_checkpoint)
 
+        s3_fs = S3FileSystem()
+        fs = pyarrow.fs.PyFileSystem(pyarrow.fs.FSSpecHandler(s3_fs))
+
         trainer = TorchTrainer(
             train_func,
             train_loop_config={
@@ -540,6 +544,7 @@ def train(
             run_config=RunConfig(
                 name=experiment_name,
                 storage_path=storage_path,
+                storage_filesystem=fs,
                 failure_config=FailureConfig(max_failures=max_failures),
             ),
             datasets=ray_datasets,

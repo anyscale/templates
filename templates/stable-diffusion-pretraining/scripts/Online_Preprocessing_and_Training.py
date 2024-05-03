@@ -15,6 +15,7 @@ from PIL import Image
 import numpy as np
 import ray.train
 import pyarrow as pa  # type: ignore
+import pyarrow.fs
 import torchvision
 import torch
 import io
@@ -723,6 +724,7 @@ app = typer.Typer()
 artifact_storage = os.environ["ANYSCALE_ARTIFACT_STORAGE"]
 user_name = re.sub(r"\s+", "__", os.environ.get("ANYSCALE_USERNAME", "user"))
 anyscale_storage_path = f"{artifact_storage}/{user_name}"
+anyscale_storage_path =  anyscale_storage_path.replace("s3://", "")
 
 @app.command()
 def train(
@@ -833,6 +835,9 @@ def train(
         if resume_from_checkpoint:
             checkpoint = Checkpoint(resume_from_checkpoint)
 
+        s3_fs = S3FileSystem()
+        fs = pyarrow.fs.PyFileSystem(pyarrow.fs.FSSpecHandler(s3_fs))
+
         trainer = TorchTrainer(
             train_func,
             train_loop_config={
@@ -864,6 +869,7 @@ def train(
             run_config=RunConfig(
                 name=experiment_name,
                 storage_path=storage_path,
+                storage_filesystem=fs,
                 failure_config=FailureConfig(max_failures=max_failures),
             ),
             datasets=ray_datasets,
