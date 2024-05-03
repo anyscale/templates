@@ -1,0 +1,14 @@
+head_node_type:
+  name: head
+  instance_type: m5.2xlarge
+  resources:
+    cpu: 0
+# TODO - switch to true when slim image is used
+auto_select_worker_config: false
+worker_node_types:
+- name: 1xA10G:16CPU-64GB
+  instance_type: g5.4xlarge
+  min_workers: 1
+  max_workers: 1
+flags:
+  allow-cross-zone-autoscaling: false
