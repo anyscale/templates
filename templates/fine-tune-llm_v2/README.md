@@ -78,15 +78,9 @@ You can edit the values, such as `context_length`, `num_epoch`, `train_batch_siz
 In addition, the deepspeed configs are provided in case you would
 like to customize them.
 
-### How can I get more control?
-
-This template fine-tunes with Anyscale's library `llmforge`.
-You can study main.py to find out how we call the `lmforge dev finetune` API with a YAML that specifies the fine-tuning workload.
-You can call `lmforge dev finetune` yourself and gain control by modifying the training config YAMLs in this template.
-
 ### What's the full list of supported models?
 
-The following models can be fine-tuned with `llmforge`.
+The following models can currently be fine-tuned with this template.
 
 - mistralai/Mistral-7B-Instruct-v0.1
 - mistralai/Mixtral-8x7b
@@ -104,12 +98,36 @@ The following models can be fine-tuned with `llmforge`.
 
 The training configs provided in this template all train on the GSM8k which requires a context length of 512 tokens.
 How to ensure the correct format is described in https://docs.endpoints.anyscale.com/fine-tuning/dataset-prep.
-You can replace the s3 buckets in the training configs with paths to your own dataset.
+You can replace the s3 buckets in the training configs in this template with paths to your own dataset.
 
+### I have the right model, context length and everything. Can I optimize compute cost?
 
-### How can I use more or less compute?
+Optimizing your fine-tuning runs for compute cost is a non-trivial problem.
+The default configs in this template require the following compute:
+Llama-3-8B and Mistral require 16 A10Gs. Llama-3-70B and Mixtral require 32 A10Gs.
+If you want different compute, we *suggest* the following workflow to find a suitable configuration:
 
-The training configs provided in this template require 16 A10G GPUs by default.
-The compute requirements depend on things such as the model size, batch sizes and context length that are set in the training configs.
-You can change these paramters in the training configs and change the used compute within your workspace.
+* Select some model, context length, fine-tuning technique (LoRA or full-paramter), etc. that suit the problem you want to solve
+* Start off with compute that you think will give you good flops/$. If you are not sure, here is a rough guideline:
+ * g5 nodes for high availability
+ * p4d/p4de nodes for lower availability but better flops/$
+ * Anything more modern if you have the means of acquiring them
+* Do some iterations of trial and error on batch-size and deepspeed settings to fit the workload while keeping other settings fixed
+ * Start with batch sizes of 1
+ * Use deepspeed stage 3
+ * Try to use deepspeed offloading only if it reduces the minimum number of instances you have to use
+ * Use as few instances as possible
+ * Increase batch size as much as possible until your instances don't OOM
 
+We do not guarantee that this will give you optimal settings, but have found this workflow to be helpful ourselves in the past.
+
+### How can I get even more control?
+
+This template fine-tunes with Anyscale's library `llmforge`, which uses [DeepSpeed](https://github.com/microsoft/DeepSpeed) and [Ray Train](https://docs.ray.io/en/latest/train/train.html) for distributed training.
+You can study main.py to find out how we call the `lmforge dev finetune` API with a YAML that specifies the fine-tuning workload.
+You can call `lmforge dev finetune` yourself and gain control by modifying the training config YAMLs in this template.
+For anything that goes beyond using `llmforge`, you can build your own fine-tuning stack on Anyscale.
+
+### What's with the `main` file that is created when I fine-tuning?
+
+It's an artifact of our fine-tuning libraries. Please ignore it.
