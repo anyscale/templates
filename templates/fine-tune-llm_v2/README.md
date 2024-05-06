@@ -2,7 +2,7 @@
 
 **⏱️ Time to complete**: 2.5 hours for 7/8B models (9 hours for 13B, 25 hours for 70B)
 
-The guide below walks you through the steps required for fine-tuning of LLM models. This template provides an easy to configure solution for ML Platform teams, Infrastructure engineers, and Developers to fine-tune LLMs.
+The guide below walks you through the steps required for fine-tuning of LLMs. This template provides an easy to configure solution for ML Platform teams, Infrastructure engineers, and Developers to fine-tune LLMs.
 
 ### Popular base models to fine-tune
 
@@ -15,11 +15,11 @@ A full list of supported models is in the FAQ section.
 
 ## Step 1 - Launch a fine-tuning job
 
-We have provided different example configurations under the `training_configs` directory for different base models and accelerator types. You can use these as a starting point for your own fine-tuning jobs.
+We provide example configurations under the `training_configs` directory for different base models and accelerator types. You can use these as a starting point for your own fine-tuning jobs.
 
 [Optional] you can get a WandB API key from [WandB](https://wandb.ai/authorize) to track the fine-tuning process.
 
-Next, you can launch a fine-tuning job where the WandB API key is passed as an environment variable.
+Next, you can launch a fine-tuning job with your WandB API key passed as an environment variable.
 
 ```python
 # [Optional] You can set the WandB API key to track model performance
@@ -32,11 +32,12 @@ Next, you can launch a fine-tuning job where the WandB API key is passed as an e
 # !python main.py training_configs/lora/llama-3-8b.yaml
 ```
 
-As the command runs, you can monitor a number of built-in metrics out of the box in the `Metrics` tab under `Ray Dashboard`, such as the number of GPU nodes and GPU utilization.
+As the command runs, you can monitor a number of built-in metrics in the `Metrics` tab under `Ray Dashboard`, such as the number of GPU nodes and GPU utilization.
 
 <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/fine-tune-llm_v2/assets/gpu-usage.png" width=500px/>
 
 Depending on whether you are running LoRA or full-param fine-tuning, you can continue with step 2(a) or step 2(b).
+Find out more about full-paramter vs. LoRA fine-tuning in the FAQ section.
 
 ## Step 2(a) - Serving the LoRA fine-tuned model
 
@@ -65,15 +66,13 @@ Follow the [Learn how to bring your own models](https://docs.endpoints.anyscale.
 
 ### Where can I view the bucket where my LoRA weights are stored?
 
-All the LoRA weights are stored under the URI `${ANYSCALE_ARTIFACT_STORAGE}/lora_fine_tuning` where `ANYSCALE_ARTIFACT_STORAGE` is an environmental variable.
+All the LoRA weights are stored under the URI `${ANYSCALE_ARTIFACT_STORAGE}/lora_fine_tuning` where `ANYSCALE_ARTIFACT_STORAGE` is an environmental variable in your workspace.
 
 ### How can I fine-tune using my own data?
 
-The training configs provided in this template all train on the GSM8k which requires a context length of 512 tokens.
-How to ensure the correct format is described in https://docs.endpoints.anyscale.com/fine-tuning/dataset-prep.
-You can replace the s3 buckets in the training configs in this template with paths to your own dataset.
+The training configs provided in this template all train on the [GSM8k dataset](https://huggingface.co/datasets/gsm8k) which requires a context length of 512 tokens. How to ensure the correct format for your own dataset is described in https://docs.endpoints.anyscale.com/fine-tuning/dataset-prep.
 
-You can open the file under `training_configs` and update `train_path` and `valid_path` to your training and evaluation file.
+Open the file under `training_configs` and update `train_path` and `valid_path` to your training- and evaluation file.
 
 ### How do I customize the fine-tuning job?
 
@@ -136,7 +135,7 @@ If you want different compute, we *suggest* the following workflow to find a sui
         * Training single-node on A100s may end up cheaper than multi-node on A10s if availablity is not an issue
 * Be aware that evaluation and checkpointing introduce their own memory-requirements
    * If things look good, run fine-tuning for a full epoch.
-* After you have followed the steps above, increase batch size as much as possible until your instances don't OOM
+* After you have followed the steps above, increase batch size as much as possible without OOMing.
 
 We do not guarantee that this will give you optimal settings, but have found this workflow to be helpful ourselves in the past.
 
