@@ -109,15 +109,15 @@ If you want different compute, we *suggest* the following workflow to find a sui
 
 * Select some model, context length, fine-tuning technique (LoRA or full-paramter), etc. that suit the problem you want to solve
 * Start off with compute that you think will give you good flops/$. If you are not sure, here is a rough guideline:
- * g5 nodes for high availability
- * p4d/p4de nodes for lower availability but better flops/$
- * Anything more modern if you have the means of acquiring them
+    * g5 nodes for high availability
+    * p4d/p4de nodes for lower availability but better flops/$
+    * Anything more modern if you have the means of acquiring them
 * Do some iterations of trial and error on batch-size and deepspeed settings to fit the workload while keeping other settings fixed
- * Start with batch sizes of 1
- * Use deepspeed stage 3
- * Try to use deepspeed offloading only if it reduces the minimum number of instances you have to use
- * Use as few instances as possible
- * Increase batch size as much as possible until your instances don't OOM
+    * Start with batch sizes of 1
+    * Use deepspeed stage 3
+    * Try to use deepspeed offloading only if it reduces the minimum number of instances you have to use
+    * Use as few instances as possible
+    * Increase batch size as much as possible until your instances don't OOM
 
 We do not guarantee that this will give you optimal settings, but have found this workflow to be helpful ourselves in the past.
 
