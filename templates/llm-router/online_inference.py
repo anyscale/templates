@@ -1,12 +1,11 @@
 import pandas as pd
 import json
 import ray
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List
 import copy
 import openai
 import time
 import ray
-import re
 
 
 @ray.remote(num_cpus=0)
@@ -20,7 +19,6 @@ def get_llm_response(
     messages: List[Dict[str, str]],
     max_retries=1,
     retry_interval=60,
-    
 ) -> Dict[int, str]:
     """
     Use OpenAI's API to request completions from a specified LLM and manages request retries upon failures.
@@ -66,7 +64,9 @@ def generate_batch_responses(
         if len(in_progress) < max_concurrent_queries and queue:
             pidx, messages = queue.popitem()
             in_progress.append(
-                get_llm_response.remote(base_url, api_key, llm, temperature, max_tokens, pidx, messages)
+                get_llm_response.remote(
+                    base_url, api_key, llm, temperature, max_tokens, pidx, messages
+                )
             )
         ready, in_progress = ray.wait(in_progress, timeout=0.5)
         if verbose:
@@ -78,73 +78,4 @@ def generate_batch_responses(
 
     print(f"Done in {time.time() - start_time:.2f}sec.")
     return dict(responses)
-
-
-def to_openai_api_messages(messages, system_message=None):
-    """Convert the conversation to OpenAI chat completion format."""
-    ret = [
-        {
-            "role": "system",
-            "content": (
-                system_message if system_message else "You are a helpful assistant."
-            ),
-        }
-    ]
-    for i, turn in enumerate(messages):
-        if i % 2 == 0:
-            ret.append({"role": "user", "content": turn})
-        else:
-            ret.append({"role": "assistant", "content": turn})
-    return ret
-
-
-def prepare_llm_queries(dataset_df, system_message=None):
-    """Prepare queries for using LLM endpoints"""
-    queries = {}
-    for pidx, row in dataset_df.to_dict(orient="index").items():
-        prompt = row["prompt"]
-        if type(prompt) == str:
-            prompt = [prompt]
-        messages = to_openai_api_messages(prompt, system_message)
-        queries[pidx] = messages
-    return queries
-
-
-def format_judge_prompt(judge_template, question, answer, reference_answer):
-    """Format the prompt for the judge endpoint."""
-    return judge_template["prompt_template"].format(
-        instruction=judge_template["instruction"],
-        question=question,
-        answer=answer,
-        ref_answer_1=reference_answer,
-    )
-
-
-def prepare_llm_judge_queries(dataset_df, judge_template):
-    """Prepare queries for using LLM judge endpoint"""
-    queries = {}
-    for pidx, row in dataset_df.to_dict(orient="index").items():
-        prompt = format_judge_prompt(
-            judge_template, row["prompt"], row["mixtral"], row["gpt4"]
-        )
-        messages = to_openai_api_messages([prompt])
-        queries[pidx] = messages
-    return queries
-
-
-
-def parse_judge_responses(judge_responses):
-
-    labels, explanations = {}, {}
-    for pidx, response in judge_responses.items():
-        match = re.search(r"\[\[([\d\.]+)\]\]\n(.+)", response)
-        if match:
-            score, explanation = int(float(match.group(1))), match.group(2)
-        else:
-            score, explanation = -1, ""
-            
-        labels[pidx] = score
-        explanations[pidx] = explanation
-    return labels, explanations
-
 
