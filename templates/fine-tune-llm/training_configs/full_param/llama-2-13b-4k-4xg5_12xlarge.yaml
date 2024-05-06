@@ -11,7 +11,7 @@ num_checkpoints_to_keep: 1
 dataset_size_scaling_factor: 10000
 output_dir: /mnt/local_storage
 deepspeed:
-  config_path: deepspeed_configs/zero_3_llama_2_13b.json
+  config_path: deepspeed_configs/zero_3_13b.json
 dataset_size_scaling_factor: 10000 # internal flag. No need to change
 flash_attention_2: true
 worker_resources:
