@@ -5,7 +5,7 @@ context_length: 512 # <-- change this to the context length you want to use
 num_devices: 16 # <-- change this to total number of GPUs that you want to use
 num_epochs: 10 # <-- change this to the number of epochs that you want to train for
 train_batch_size_per_device: 8
-eval_batch_size_per_device: 16
+eval_batch_size_per_device: 8
 learning_rate: 5e-6
 num_checkpoints_to_keep: 1
 dataset_size_scaling_factor: 10000
