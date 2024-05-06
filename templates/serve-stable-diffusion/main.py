@@ -56,7 +56,7 @@ class APIIngress:
         # Set this to your desired GPU type (e.g. T4, A10G, L4, V100, A100-40G, A100-80G).
         "accelerator_type": "A10G"
     },
-    max_concurrent_queries=2,  # Maximum number of queries that are sent to a replica of this deployment without receiving a response.
+    max_concurrent_queries=1,  # Maximum number of queries that are sent to a replica of this deployment without receiving a response.
     autoscaling_config={
         "min_replicas": 1,    # The minimum number of model replicas to keep active in the Ray cluster.
         "max_replicas": 99,    # The maximum number of model replicas to keep active in the Ray cluster.
