@@ -11,7 +11,7 @@ num_checkpoints_to_keep: 1
 dataset_size_scaling_factor: 10000
 output_dir: /mnt/local_storage
 deepspeed:
-  config_path: deepspeed_configs/zero_3_llama_2_70b.json
+  config_path: deepspeed_configs/zero_3_offload_optim.json
 dataset_size_scaling_factor: 10000 # internal flag. No need to change
 flash_attention_2: true
 # Head node would have at least 200 GB memory
@@ -20,22 +20,3 @@ trainer_resources:
 worker_resources:
   memory: 53687091200 # 70 GB memory
   accelerator_type:A10G: 0.001
-lora_config:
-  r: 8
-  lora_alpha: 16
-  lora_dropout: 0.05
-  target_modules:
-    - q_proj
-    - v_proj
-    - k_proj
-    - o_proj
-    - gate_proj
-    - up_proj
-    - down_proj
-    - embed_tokens
-    - lm_head
-  task_type: "CAUSAL_LM"
-  modules_to_save: []
-  bias: "none"
-  fan_in_fan_out: false
-  init_lora_weights: true

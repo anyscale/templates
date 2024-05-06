@@ -11,7 +11,7 @@ num_checkpoints_to_keep: 1
 dataset_size_scaling_factor: 10000
 output_dir: /mnt/local_storage
 deepspeed:
-  config_path: deepspeed_configs/zero_3_llama_2_70b.json
+  config_path: deepspeed_configs/zero_3_70b.json
 flash_attention_2: True
 worker_resources:
   p4de.24xlarge: 1 # <-- this maps to job_compute_configs file's custom_resources so the appropriate nodes can scale up

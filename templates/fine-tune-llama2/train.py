@@ -600,7 +600,7 @@ def parse_args():
     parser.add_argument(
         "--ds-config",
         type=str,
-        default="./deepspeed_configs/zero_3_llama_2_7b.json",
+        default="./deepspeed_configs/zero_3_8b.json",
         help="Deepspeed config json to use.",
     )
 
@@ -614,9 +614,9 @@ def parse_args():
 
     parser.add_argument(
         "--size",
-        default="7b",
-        choices=["7b", "13b", "70b"],
-        help="Model size. Choose between 7b, 13b, and 70b",
+        default="8b",
+        choices=["8b", "70b"],
+        help="Model size. Choose between 8b and 70b",
     )
 
     args = parser.parse_args()
@@ -640,7 +640,7 @@ def main():
 
     # Adjust batch size per device (BS) and number of devices (ND) according to model size
     # Number of devices (ND) is determined by a combination of factors, context length, accelerator type, whether LoRA is used, etc.
-    if size == "7b" or size == "13b":
+    if size == "8b":
         # nd is set on the basis of using Nvidia A10 and conducting full parameter fine-tuning with default context length.
         # If Nvidia A100 is used. ND can be set to 8 instead.
         bs, nd = 16, 16
@@ -653,8 +653,8 @@ def main():
         sys.exit(1)
 
     # Pick model ID and deepspeed config based on model size
-    model_id = f"meta-llama/Llama-2-{size}-hf"
-    config_dir = f"./deepspeed_configs/zero_3_llama_2_{size}.json"
+    model_id = f"meta-llama/Llama-3-{size}-hf"
+    config_dir = f"./deepspeed_configs/zero_3_{size}.json"
 
     # Update the config with the adjusted parameters
     config.update(
