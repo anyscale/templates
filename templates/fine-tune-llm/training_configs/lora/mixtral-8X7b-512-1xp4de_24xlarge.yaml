@@ -11,7 +11,7 @@ dataset_size_scaling_factor: 10000
 no_gradient_checkpoint: False
 output_dir: /mnt/local_storage
 deepspeed:
-  config_path: deepspeed_configs/zero_3_70b.json
+  config_path: deepspeed_configs/zero_3_llama_2_70b.json
 worker_resources:
   p4d.24xlarge: 1
 flash_attention_2: True
