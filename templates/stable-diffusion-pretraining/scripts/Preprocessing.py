@@ -1,12 +1,16 @@
-"""Preprocessing script for Stable Diffusion v2 pre-training."""
+"""Preprocessing script for Stable Diffusion v2 pre-training.
+
+The script performs the following steps:
+1. Load images and text captions from a remote storage system using the read_data function.
+2. Transform images and text captions using the SDTransformer class.
+3. Encode images and text captions into latent spaces using the SDLatentEncoder class.
+"""
 
 import gc
 import io
 import logging
 import math
-import tempfile
 import time
-from contextlib import nullcontext
 from pathlib import Path
 from typing import Literal, Optional, cast
 
@@ -14,7 +18,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd  # type: ignore
 import pyarrow as pa  # type: ignore
-import ray
+import ray.data
 import torch
 import torchvision  # type: ignore
 import typer
@@ -35,12 +39,59 @@ IMAGE_LATENTS_256_KEY = "latents_256_bytes"
 IMAGE_LATENTS_512_KEY = "latents_512_bytes"
 
 
-#### Transformer ####
+############################################
+#### Step 1: Data Loading ####
+############################################
+def read_data(
+    input_uri: str,
+    caption_col: str,
+    caption_dtype: str,
+    height_col: str,
+    height_dtype: str,
+    width_col: str,
+    width_dtype: str,
+    image_col: str,
+    image_dtype: str,
+    image_hash_col: str,
+    image_hash_dtype: str,
+    concurrency: Optional[int] = None,
+    limit: Optional[int] = None,
+) -> ray.data.Dataset:
+    """Construct a ray data dataset from a parquet dataset."""
+    schema = pa.schema(
+        [
+            pa.field(image_hash_col, getattr(pa, image_hash_dtype)()),
+            pa.field(caption_col, getattr(pa, caption_dtype)()),
+            pa.field(height_col, getattr(pa, height_dtype)()),
+            pa.field(width_col, getattr(pa, width_dtype)()),
+            pa.field(image_col, getattr(pa, image_dtype)()),
+        ]
+    )
+
+    ds = ray.data.read_parquet(
+        input_uri,
+        schema=schema,
+        concurrency=concurrency,
+    )
+    if limit:
+        ds = ds.limit(limit)
+    return ds
+
+
+############################################
+#### Step 2: Transformation ####
+############################################
+
+
+#### Utils ####
 class LargestCenterSquare:
+    """Largest center square crop for images."""
+
     def __init__(self, size: int) -> None:
         self.size = size
 
     def __call__(self, img: Image.Image) -> Image.Image:
+        """Crop the largest center square from an image."""
         # First, resize the image such that the smallest side is self.size while preserving aspect ratio.
         img = torchvision.transforms.functional.resize(
             img=img,
@@ -61,6 +112,7 @@ class LargestCenterSquare:
         return img
 
 
+#### Transformer ####
 class SDTransformer:
     """Image and text transforms."""
 
@@ -82,11 +134,13 @@ class SDTransformer:
         )
 
     def image_transform(self, image: Image.Image) -> np.ndarray:
+        """Transform image to a square-sized normalized tensor."""
         image = self.crop(image)
         out = self.transforms(image)
         return convert_tensor_to_array(out)
 
     def text_tokenize(self, text: str) -> np.ndarray:
+        """Tokenize text using the CLIP tokenizer into a fixed-length sequence."""
         return self.text_tokenizer(
             text,
             padding="max_length",
@@ -96,6 +150,7 @@ class SDTransformer:
         )["input_ids"][0]
 
     def __call__(self, batch: dict[str, np.ndarray]) -> dict[str, np.ndarray]:
+        """Transform images and text captions."""
         final_batch: dict[str, list] = {
             "hash": [],
             "caption_ids": [],
@@ -142,13 +197,20 @@ class SDTransformer:
         return {k: np.array(v) for k, v in final_batch.items()}
 
 
-#### Encoder ####
+############################################
+#### Step 3: Encoding ####
+############################################
+
+
+#### Utils ####
 def convert_tensor_to_array(tensor: torch.Tensor, dtype=np.float32) -> np.ndarray:
+    """Convert a torch tensor to a numpy array."""
     array = tensor.detach().cpu().numpy()
     return array.astype(dtype)
 
 
 def supports_float16(device: torch.device) -> bool:
+    """Check if the device supports float16."""
     if device == torch.device("cuda"):
         properties = torch.cuda.get_device_properties(device)
         return properties.major >= 7  # Volta or newer
@@ -157,14 +219,15 @@ def supports_float16(device: torch.device) -> bool:
 
 
 def resolve_device() -> torch.device:
+    """Resolve to the first available device: cuda, mps, or cpu."""
     if torch.cuda.is_available():
         return torch.device("cuda")
-    elif torch.backends.mps.is_available():
+    if torch.backends.mps.is_available():
         return torch.device("mps")
-    else:
-        return torch.device("cpu")
+    return torch.device("cpu")
 
 
+#### Encoder ####
 class SDLatentEncoder:
     """Latent encoder to encode images and text."""
 
@@ -203,6 +266,7 @@ class SDLatentEncoder:
 
     @property
     def image_latents_key(self) -> str:
+        """Return the key for image latents based on resolution."""
         if self.resolution == 256:
             return IMAGE_LATENTS_256_KEY
         elif self.resolution == 512:
@@ -211,6 +275,7 @@ class SDLatentEncoder:
             raise ValueError(f"Unsupported resolution: {self.resolution}")
 
     def encode_images(self, images: np.ndarray) -> np.ndarray:
+        """Encode images into a latent space."""
         logger.info(f"Encoding images with shape: {images.shape}")
         input_images = torch.tensor(images, device=self.device)
 
@@ -225,6 +290,7 @@ class SDLatentEncoder:
         return convert_tensor_to_array(image_latents)
 
     def encode_text(self, caption_ids: np.ndarray) -> np.ndarray:
+        """Encode text captions into a latent space."""
         logger.info(f"Encoding text with shape: {caption_ids.shape}")
         caption_ids_tensor = torch.tensor(caption_ids, device=self.device)
         caption_latents_tensor = self.text_encoder(caption_ids_tensor)[0]
@@ -232,6 +298,7 @@ class SDLatentEncoder:
         return convert_tensor_to_array(caption_latents_tensor)
 
     def __call__(self, batch: dict[str, np.ndarray]) -> dict[str, np.ndarray]:
+        """Encode images and text captions."""
         with torch.no_grad():
             # Step 1: Encode images.
             input_images = batch[f"image_{self.resolution}"]
@@ -253,8 +320,11 @@ class SDLatentEncoder:
         return batch
 
 
-### Visualize ###
-def visualize_image(image_bytes, caption):
+############################################
+### Visualizing Outputs ###
+############################################
+def visualize_image(image_bytes: bytes, caption: str) -> None:
+    """Visualize an image with a caption."""
     img = Image.open(io.BytesIO(image_bytes))
     plt.imshow(img)
     plt.axis("off")
@@ -271,7 +341,8 @@ def visualize_image(image_bytes, caption):
     plt.show()
 
 
-def visualize_image_latents(image_latents):
+def visualize_image_latents(image_latents: np.ndarray) -> None:
+    """Visualize image latents."""
     nchannels = image_latents.shape[0]
     fig, axes = plt.subplots(1, nchannels, figsize=(10, 10))
     # Set figure title as image latents.
@@ -284,7 +355,8 @@ def visualize_image_latents(image_latents):
     plt.show()
 
 
-def visualize_text_embeddings(text_embeddings):
+def visualize_text_embeddings(text_embeddings: np.ndarray) -> None:
+    """Visualize text embeddings."""
     fig, ax = plt.subplots(1, 1, figsize=(10, 10))
     ax.imshow(text_embeddings, cmap="gray")
     ax.set_title("Caption Embeddings (Text Latents)")
@@ -296,6 +368,7 @@ def visualize_input_and_output(
     df_output: pd.DataFrame,
     df_input: pd.DataFrame,
 ) -> None:
+    """Visualize input and output data."""
     for _, row in df_output.iterrows():
         hash_ = row["hash"]
         print("Input:")
@@ -309,7 +382,9 @@ def visualize_input_and_output(
         print("\n\n")
 
 
-#### Processing ####
+##########################################################
+### Putting all data processing together ###
+##########################################################
 def get_laion_streaming_dataset(
     # Reader.
     input_uri: str,
@@ -335,23 +410,21 @@ def get_laion_streaming_dataset(
     limit: Optional[int],
 ) -> ray.data.Dataset:
     """Stream data through a transformer and encoder pipeline."""
-    schema = pa.schema(
-        [
-            pa.field(image_hash_col, getattr(pa, image_hash_dtype)()),
-            pa.field(caption_col, getattr(pa, caption_dtype)()),
-            pa.field(height_col, getattr(pa, height_dtype)()),
-            pa.field(width_col, getattr(pa, width_dtype)()),
-            pa.field(image_col, getattr(pa, image_dtype)()),
-        ]
-    )
-
-    ds = ray.data.read_parquet(
-        input_uri,
-        schema=schema,
+    ds = read_data(
+        input_uri=input_uri,
+        caption_col=caption_col,
+        caption_dtype=caption_dtype,
+        height_col=height_col,
+        height_dtype=height_dtype,
+        width_col=width_col,
+        width_dtype=width_dtype,
+        image_col=image_col,
+        image_dtype=image_dtype,
+        image_hash_col=image_hash_col,
+        image_hash_dtype=image_hash_dtype,
+        limit=limit,
         concurrency=num_transformers,
     )
-    if limit:
-        ds = ds.limit(limit)
 
     ds = ds.map_batches(
         SDTransformer,
@@ -373,9 +446,9 @@ def get_laion_streaming_dataset(
     return ds
 
 
-#### CLI ####
-
-
+###########################################################################
+### CLI to run the main function, storing the output, and visualizing it. ###
+###########################################################################
 app = typer.Typer()
 
 
@@ -426,8 +499,9 @@ def process(
     if output_path:
         output_uri = output_path
     else:
-        output_uri = Path("/mnt/cluster_storage/tmp/") / "output"
-        output_uri.mkdir(parents=True, exist_ok=True)
+        output_dir = Path("/mnt/cluster_storage/tmp/") / "output"
+        output_dir.mkdir(parents=True, exist_ok=True)
+        output_uri = str(output_dir.resolve())
 
     ds.write_parquet(
         output_uri,
@@ -450,7 +524,9 @@ def process(
             .to_pandas()
         )
         visualize_input_and_output(
-            resolution=resolution, df_output=df_output, df_input=df_input
+            resolution=cast(ResolutionDtype, resolution),
+            df_output=df_output,
+            df_input=df_input,
         )
 
 

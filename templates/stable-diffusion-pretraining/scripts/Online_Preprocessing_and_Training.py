@@ -1,5 +1,15 @@
-"""End-to-end online preprocessing and model training script for Stable Diffusion v2."""
+"""End-to-end online preprocessing and model training script for Stable Diffusion v2.
 
+The script performs the following steps:
+1. Load images and text captions from a remote storage system using the read_data function.
+2. Transform images and text captions using the SDTransformer class.
+3. Encode images and text captions into latent spaces using the SDLatentEncoder class.
+4. Build a Stable Diffusion model using the StableDiffusion class.
+5. Run the scalable training procedure with Ray Train using the train entry point.
+"""
+
+import gc
+import io
 import logging
 import math
 import os
@@ -8,32 +18,30 @@ import shutil
 import tempfile
 from contextlib import nullcontext
 from functools import partial
-from typing import Literal, Optional, cast
+from typing import Literal, Optional, cast, ContextManager, Mapping, Union, Any
 
 import lightning.pytorch as pl  # type: ignore
-from PIL import Image
 import numpy as np
-import ray.train
 import pyarrow as pa  # type: ignore
 import pyarrow.fs
-import torchvision
+import ray.train
 import torch
-import io
-import gc
 import torch.nn.functional as F
+import torchvision  # type: ignore
 import typer
-from diffusers.models import AutoencoderKL
 from diffusers import DDPMScheduler, UNet2DConditionModel
+from diffusers.models import AutoencoderKL
 from lightning.pytorch import seed_everything  # type: ignore
 from lightning.pytorch.callbacks import LearningRateMonitor  # type: ignore
 from lightning.pytorch.utilities.types import OptimizerLRScheduler  # type: ignore
+from PIL import Image
 from ray.train import Checkpoint, FailureConfig, RunConfig, ScalingConfig
 from ray.train.lightning import RayDDPStrategy, RayFSDPStrategy, RayLightningEnvironment
 from ray.train.torch import TorchTrainer, get_device
-from s3fs import S3FileSystem
+from s3fs import S3FileSystem  # type: ignore
 from torch.distributed.fsdp import BackwardPrefetch
 from torch.distributed.fsdp import FullyShardedDataParallel as FSDP
-from transformers import PretrainedConfig, get_linear_schedule_with_warmup, CLIPTokenizer, CLIPTextModel  # type: ignore
+from transformers import CLIPTextModel, CLIPTokenizer, PretrainedConfig, get_linear_schedule_with_warmup
 
 logger = logging.getLogger(__name__)
 
@@ -46,28 +54,59 @@ IMAGE_LATENTS_256_KEY = "latents_256_bytes"
 IMAGE_LATENTS_512_KEY = "latents_512_bytes"
 
 
-### Data Loading ###
-def get_training_columns(resolution: ResolutionDtype) -> list[str]:
-    key_list = [CAPTION_LATENTS_KEY]
-    if resolution == 256:
-        key_list.append(IMAGE_LATENTS_256_KEY)
-    elif resolution == 512:
-        key_list.append(IMAGE_LATENTS_512_KEY)
-    return key_list
+############################################
+#### Step 1: Data Loading ####
+############################################
+def read_data(
+    input_uri: str,
+    caption_col: str,
+    caption_dtype: str,
+    height_col: str,
+    height_dtype: str,
+    width_col: str,
+    width_dtype: str,
+    image_col: str,
+    image_dtype: str,
+    image_hash_col: str,
+    image_hash_dtype: str,
+    concurrency: Optional[int] = None,
+    limit: Optional[int] = None,
+) -> ray.data.Dataset:
+    """Construct a Ray Data dataset from a Parquet dataset."""
+    schema = pa.schema(
+        [
+            pa.field(image_hash_col, getattr(pa, image_hash_dtype)()),
+            pa.field(caption_col, getattr(pa, caption_dtype)()),
+            pa.field(height_col, getattr(pa, height_dtype)()),
+            pa.field(width_col, getattr(pa, width_dtype)()),
+            pa.field(image_col, getattr(pa, image_dtype)()),
+        ]
+    )
+
+    ds = ray.data.read_parquet(
+        input_uri,
+        schema=schema,
+        concurrency=concurrency,
+    )
+    if limit:
+        ds = ds.limit(limit)
+    return ds
 
 
-def convert_precision(batch: dict[str, np.ndarray]) -> dict[str, np.ndarray]:
-    for k, v in batch.items():
-        batch[k] = v.astype(np.float16)
-    return batch
+############################################
+#### Step 2: Transformation ####
+############################################
 
 
-#### Transformer ####
+#### Utils ####
 class LargestCenterSquare:
+    """Largest center square crop for images."""
+
     def __init__(self, size: int) -> None:
         self.size = size
 
     def __call__(self, img: Image.Image) -> Image.Image:
+        """Crop the largest center square from an image."""
         # First, resize the image such that the smallest side is self.size while preserving aspect ratio.
         img = torchvision.transforms.functional.resize(
             img=img,
@@ -88,32 +127,35 @@ class LargestCenterSquare:
         return img
 
 
+#### Transformer ####
 class SDTransformer:
     """Image and text transforms."""
 
     def __init__(
         self,
-        resolution: int = 256,
+        resolution: int,
         model_name: str = "stabilityai/stable-diffusion-2-base",
     ) -> None:
-        # image transforms
+        # Image transforms.
         self.resolution = resolution
         normalize = torchvision.transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
         self.crop = LargestCenterSquare(resolution)
         self.transforms = torchvision.transforms.Compose(
             [torchvision.transforms.ToTensor(), normalize]
         )
-        # text tokenizer
+        # Text tokenizer.
         self.text_tokenizer = CLIPTokenizer.from_pretrained(
             model_name, subfolder="tokenizer"
         )
 
     def image_transform(self, image: Image.Image) -> np.ndarray:
+        """Transform image to a square-sized normalized tensor."""
         image = self.crop(image)
         out = self.transforms(image)
         return convert_tensor_to_array(out)
 
     def text_tokenize(self, text: str) -> np.ndarray:
+        """Tokenize text using the CLIP tokenizer into a fixed-length sequence."""
         return self.text_tokenizer(
             text,
             padding="max_length",
@@ -123,6 +165,7 @@ class SDTransformer:
         )["input_ids"][0]
 
     def __call__(self, batch: dict[str, np.ndarray]) -> dict[str, np.ndarray]:
+        """Transform images and text captions."""
         final_batch: dict[str, list] = {
             "hash": [],
             "caption_ids": [],
@@ -165,17 +208,24 @@ class SDTransformer:
             final_batch[f"image_{self.resolution}"].append(image_arr)
             final_batch["caption_ids"].append(caption_ids)
 
-        logger.info("Finished executing image and text transforms")
+        logger.info("Finished executing image and text transforms.")
         return {k: np.array(v) for k, v in final_batch.items()}
 
 
-#### Encoder ####
+############################################
+#### Step 3: Encoding ####
+############################################
+
+
+#### Utils ####
 def convert_tensor_to_array(tensor: torch.Tensor, dtype=np.float32) -> np.ndarray:
+    """Convert a torch tensor to a numpy array."""
     array = tensor.detach().cpu().numpy()
     return array.astype(dtype)
 
 
 def supports_float16(device: torch.device) -> bool:
+    """Check if the device supports float16."""
     if device == torch.device("cuda"):
         properties = torch.cuda.get_device_properties(device)
         return properties.major >= 7  # Volta or newer
@@ -184,14 +234,15 @@ def supports_float16(device: torch.device) -> bool:
 
 
 def resolve_device() -> torch.device:
+    """Resolve to the first available device: CUDA, MPS, or CPU."""
     if torch.cuda.is_available():
         return torch.device("cuda")
-    elif torch.backends.mps.is_available():
+    if torch.backends.mps.is_available():
         return torch.device("mps")
-    else:
-        return torch.device("cpu")
+    return torch.device("cpu")
 
 
+#### Encoder ####
 class SDLatentEncoder:
     """Latent encoder to encode images and text."""
 
@@ -204,7 +255,7 @@ class SDLatentEncoder:
         self.device = torch.device(device) if device else resolve_device()
         self.resolution = resolution
 
-        # Image and text encoders
+        # Image and text encoders.
         self.vae = AutoencoderKL.from_pretrained(
             model_name,
             subfolder="vae",
@@ -220,7 +271,7 @@ class SDLatentEncoder:
             ),
         )
 
-        # Move the encoders to device
+        # Move the encoders to device.
         self.vae = self.vae.to(self.device)
         self.text_encoder = self.text_encoder.to(self.device)
 
@@ -230,6 +281,7 @@ class SDLatentEncoder:
 
     @property
     def image_latents_key(self) -> str:
+        """Return the key for image latents based on resolution."""
         if self.resolution == 256:
             return IMAGE_LATENTS_256_KEY
         elif self.resolution == 512:
@@ -238,6 +290,7 @@ class SDLatentEncoder:
             raise ValueError(f"Unsupported resolution: {self.resolution}")
 
     def encode_images(self, images: np.ndarray) -> np.ndarray:
+        """Encode images into a latent space."""
         logger.info(f"Encoding images with shape: {images.shape}")
         input_images = torch.tensor(images, device=self.device)
 
@@ -252,6 +305,7 @@ class SDLatentEncoder:
         return convert_tensor_to_array(image_latents)
 
     def encode_text(self, caption_ids: np.ndarray) -> np.ndarray:
+        """Encode text captions into a latent space."""
         logger.info(f"Encoding text with shape: {caption_ids.shape}")
         caption_ids_tensor = torch.tensor(caption_ids, device=self.device)
         caption_latents_tensor = self.text_encoder(caption_ids_tensor)[0]
@@ -259,8 +313,9 @@ class SDLatentEncoder:
         return convert_tensor_to_array(caption_latents_tensor)
 
     def __call__(self, batch: dict[str, np.ndarray]) -> dict[str, np.ndarray]:
+        """Encode images and text captions."""
         with torch.no_grad():
-            # Step 1: Encode images
+            # Step 1: Encode images.
             input_images = batch[f"image_{self.resolution}"]
             image_latents = self.encode_images(input_images)
             # Shape = [batch_size, 4, 32, 32]
@@ -269,7 +324,7 @@ class SDLatentEncoder:
             del batch[f"image_{self.resolution}"]
             gc.collect()
 
-            # Step 2: Encode captions
+            # Step 2: Encode captions.
             caption_ids = batch["caption_ids"]
             # Shape = [batch_size, 77, 1024]
             batch[CAPTION_LATENTS_KEY] = self.encode_text(caption_ids)
@@ -280,8 +335,20 @@ class SDLatentEncoder:
         return batch
 
 
+##########################################################
+### Putting all data processing together ###
+##########################################################
+def get_training_columns(resolution: ResolutionDtype) -> list[str]:
+    key_list = [CAPTION_LATENTS_KEY]
+    if resolution == 256:
+        key_list.append(IMAGE_LATENTS_256_KEY)
+    elif resolution == 512:
+        key_list.append(IMAGE_LATENTS_512_KEY)
+    return key_list
+
+
 def get_laion_streaming_dataset(
-    # reader
+    # Reader.
     input_uri: str,
     caption_col: str,
     caption_dtype: str,
@@ -294,10 +361,10 @@ def get_laion_streaming_dataset(
     image_hash_col: str,
     image_hash_dtype: str,
     resolution: ResolutionDtype,
-    # transformer
+    # Transformer.
     num_transformers: int,
     num_cpus_per_transformer: int,
-    # encoder
+    # Encoder.
     num_encoders: int,
     num_gpus_per_encoder: Optional[int],
     encoder_accelerator_type: Optional[str],
@@ -306,23 +373,21 @@ def get_laion_streaming_dataset(
     training_batch_size: int,
 ) -> ray.data.Dataset:
     """Stream data through a transformer and encoder pipeline."""
-    schema = pa.schema(
-        [
-            pa.field(image_hash_col, getattr(pa, image_hash_dtype)()),
-            pa.field(caption_col, getattr(pa, caption_dtype)()),
-            pa.field(height_col, getattr(pa, height_dtype)()),
-            pa.field(width_col, getattr(pa, width_dtype)()),
-            pa.field(image_col, getattr(pa, image_dtype)()),
-        ]
-    )
-
-    ds = ray.data.read_parquet(
-        input_uri,
-        schema=schema,
+    ds = read_data(
+        input_uri=input_uri,
+        caption_col=caption_col,
+        caption_dtype=caption_dtype,
+        height_col=height_col,
+        height_dtype=height_dtype,
+        width_col=width_col,
+        width_dtype=width_dtype,
+        image_col=image_col,
+        image_dtype=image_dtype,
+        image_hash_col=image_hash_col,
+        image_hash_dtype=image_hash_dtype,
+        limit=limit,
         concurrency=num_transformers,
     )
-    if limit:
-        ds = ds.limit(limit)
 
     ds = ds.map_batches(
         SDTransformer,
@@ -354,7 +419,12 @@ def get_laion_streaming_dataset(
 
     return ds
 
-### Model ###
+
+#############################################
+# Step 4: Build Stable Diffusion model.
+#############################################
+
+### Small model configuration ###
 small_unet_model_config = {
     "_class_name": "UNet2DConditionModel",
     "_diffusers_version": "0.2.2",
@@ -388,6 +458,7 @@ small_unet_model_config = {
 }
 
 
+### Model definition ###
 class StableDiffusion(pl.LightningModule):
     """Stable Diffusion U-Net model."""
 
@@ -410,7 +481,7 @@ class StableDiffusion(pl.LightningModule):
         super().__init__()
         self.save_hyperparameters()
 
-        # Initialize U-net
+        # Initialize U-Net.
         if init_from_pretrained:
             self.unet = UNet2DConditionModel.from_pretrained(
                 model_name, subfolder="unet"
@@ -425,22 +496,32 @@ class StableDiffusion(pl.LightningModule):
             self.unet = UNet2DConditionModel(**model_config)
 
         if use_xformers:
-            print("enable xformers memeff attention")
+            print("Enable xformers memeff attention.")
             self.unet.enable_xformers_memory_efficient_attention()
 
         if fsdp:
             self.unet = torch.compile(self.unet)
 
-        # Define the training noise schedulers
+        # Define the training noise schedulers.
         self.noise_scheduler = DDPMScheduler.from_pretrained(
             model_name, subfolder="scheduler"
         )
-        # Setup loss function
+        # Setup loss function.
         self.loss_fn = F.mse_loss
         self.current_training_steps = 0
 
+    @property
+    def image_latents_key(self) -> str:
+        """Return the key for image latents based on resolution."""
+        if self.resolution == 256:
+            return IMAGE_LATENTS_256_KEY
+        elif self.resolution == 512:
+            return IMAGE_LATENTS_512_KEY
+        else:
+            raise ValueError(f"Unsupported resolution: {self.resolution}")
+
     def on_fit_start(self) -> None:
-        # Move cumprod tensor to GPU in advance to avoid data movement on each step.
+        """Move cumprod tensor to GPU in advance to avoid data movement on each step."""
         self.noise_scheduler.alphas_cumprod = self.noise_scheduler.alphas_cumprod.to(
             get_device()
         )
@@ -453,25 +534,23 @@ class StableDiffusion(pl.LightningModule):
     def forward(
         self, batch: dict[str, torch.Tensor]
     ) -> tuple[torch.Tensor, torch.Tensor]:
-        # Use latents if specified and available. When specified, they might not exist during eval
-        if self.resolution == 256:
-            latents = batch[IMAGE_LATENTS_256_KEY]
-        elif self.resolution == 512:
-            latents = batch[IMAGE_LATENTS_512_KEY]
+        """Forward pass of the model."""
+        # Extract inputs.
+        latents = batch[self.image_latents_key]
         conditioning = batch[CAPTION_LATENTS_KEY]
-
-        # Sample the diffusion timesteps
+        # Sample the diffusion timesteps.
         timesteps = self._sample_timesteps(latents)
-        # Add noise to the inputs (forward diffusion)
+        # Add noise to the inputs (forward diffusion).
         noise = torch.randn_like(latents)
         noised_latents = self.noise_scheduler.add_noise(latents, noise, timesteps)
-        # Forward through the model
+        # Forward through the model.
         outputs = self.unet(noised_latents, timesteps, conditioning)["sample"]
         return outputs, noise
 
     def training_step(
         self, batch: dict[str, torch.Tensor], batch_idx: int
     ) -> torch.Tensor:
+        """Training step of the model."""
         outputs, targets = self.forward(batch)
         loss = self.loss_fn(outputs, targets)
         self.log(
@@ -481,6 +560,7 @@ class StableDiffusion(pl.LightningModule):
         return loss
 
     def validation_step(self, batch: dict[str, torch.Tensor], batch_idx: int) -> None:
+        """Validation step of the model."""
         outputs, targets = self.forward(batch)
         loss = self.loss_fn(outputs, targets)
         self.log(
@@ -493,12 +573,13 @@ class StableDiffusion(pl.LightningModule):
         )
 
     def configure_optimizers(self) -> OptimizerLRScheduler:
+        """Configure the optimizer and learning rate scheduler."""
         optimizer = torch.optim.AdamW(
-            self.trainer.model.parameters(),
+            self.trainer.model.parameters(),  # type: ignore [union-attr]
             lr=self.lr,
             weight_decay=self.weight_decay,
         )
-        # Set a large training steps here to keep lr constant after warm-up
+        # Set a large training step here to keep lr constant after warm-up.
         scheduler = get_linear_schedule_with_warmup(
             optimizer,
             num_warmup_steps=self.num_warmup_steps,
@@ -514,9 +595,19 @@ class StableDiffusion(pl.LightningModule):
         }
 
 
+##############################################
+# Step 5: Run the scalable training procedure.
+##############################################
+
+### Utils ###
+
+
 ### Callbacks ###
-def strategy_context(fsdp=False, model=None):
-    if fsdp:
+def strategy_context(
+    fsdp: bool = False, model: Optional[torch.nn.Module] = None
+) -> ContextManager:
+    """Context manager to summon full params for FSDP."""
+    if fsdp and model is not None:
         return FSDP.summon_full_params(model, writeback=False, recurse=False)
     else:
         return nullcontext()
@@ -538,14 +629,16 @@ class RayTrainReportCallback(pl.callbacks.Callback):
         self,
         trainer: pl.Trainer,
         pl_module: pl.LightningModule,
-        outputs: torch.Tensor,
+        outputs: Optional[Union[torch.Tensor, Mapping[str, Any]]],
         batch: dict[str, torch.Tensor],
         batch_idx: int,
     ) -> None:
+        """Report metrics and save checkpoints."""
         step = pl_module.current_training_steps
         if (step + 1) % self.every_n_train_steps != 0:
             return
 
+        # Create a local temporary directory to save the checkpoint.
         temp_checkpoint_dir = os.path.join(
             tempfile.gettempdir(),
             ray.train.get_context().get_trial_name(),
@@ -553,20 +646,21 @@ class RayTrainReportCallback(pl.callbacks.Callback):
         )
         os.makedirs(temp_checkpoint_dir, exist_ok=True)
 
-        # Fetch metrics
-        metrics = trainer.callback_metrics
-        metrics = {k: v.item() for k, v in metrics.items()}
+        # Fetch metrics.
+        callback_metrics = trainer.callback_metrics
+        metrics = {k: v.item() for k, v in callback_metrics.items()}
 
-        # (Optional) Add customized metrics
+        # (Optional) Add customized metrics.
         metrics["epoch"] = trainer.current_epoch
         metrics["step"] = trainer.global_step
 
-        # Save checkpoint to local
+        # Save checkpoint to local.
         ckpt_path = os.path.join(temp_checkpoint_dir, "checkpoint.ckpt")
 
         with strategy_context(fsdp=self.fsdp, model=trainer.model):
             trainer.save_checkpoint(ckpt_path, weights_only=False)
 
+        # Create a Checkpoint object.
         if self.checkpoint_sharding_strategy == "full":
             checkpoint = (
                 Checkpoint.from_directory(temp_checkpoint_dir)
@@ -582,33 +676,36 @@ class RayTrainReportCallback(pl.callbacks.Callback):
         else:
             raise ValueError(f"Not supported {self.checkpoint_sharding_strategy=}")
 
-        # Report to train session
+        # Report to train session.
         ray.train.report(metrics=metrics, checkpoint=checkpoint)
 
-        # Add a barrier to ensure all workers finished reporting here
+        # Add a barrier to ensure all workers finished reporting here.
         torch.distributed.barrier()
 
-        # Clean up the checkpoint, since it's already copied to storage.
+        # Clean up the checkpoint, because it's already copied to storage.
         if ray.train.get_context().get_local_rank() == 0:
             shutil.rmtree(temp_checkpoint_dir)
 
 
-### Training Function per Worker ###
-def default_collate_fn(
+### Collate function ###
+def move_to_device_collate_fn(
     batch: dict[str, np.ndarray], device: torch.device
 ) -> dict[str, torch.Tensor]:
+    """Move the batch to the device."""
     for k, v in batch.items():
-        batch[k] = torch.tensor(v).to(device)
-    return batch
+        batch[k] = torch.tensor(v).to(device)  # type: ignore [assignment]
+    return cast(dict[str, torch.Tensor], batch)
 
 
+### Training function per worker ###
 def train_func(config: dict) -> None:
+    """Training function for Stable Diffusion model."""
     seed = config["seed"]
     seed_everything(seed)
     trial_name = ray.train.get_context().get_trial_name()
 
-    # Prepare Ray datasets
-    collate_fn = partial(default_collate_fn, device=ray.train.torch.get_device())
+    # Prepare Ray datasets.
+    collate_fn = partial(move_to_device_collate_fn, device=ray.train.torch.get_device())
 
     train_ds = ray.train.get_dataset_shard("train")
     train_dataloader = train_ds.iter_torch_batches(
@@ -626,7 +723,7 @@ def train_func(config: dict) -> None:
         prefetch_batches=config["prefetch_batches"],
     )
 
-    # Initialize Stable Diffusion Model
+    # Initialize Stable Diffusion model.
     torch.set_float32_matmul_precision("high")
 
     if config["fsdp"]:
@@ -639,14 +736,14 @@ def train_func(config: dict) -> None:
     else:
         strategy = RayDDPStrategy()
 
-    # Initialize Lightning Callbacks
+    # Initialize Lightning callbacks.
     ray_train_reporter = RayTrainReportCallback(
         config["checkpoint_every_n_steps"], config["checkpoint_sharding_strategy"]
     )
     lr_monitor = LearningRateMonitor(logging_interval="step")
     callbacks = [ray_train_reporter, lr_monitor]
 
-    # Initialize Lightning Trainer
+    # Initialize Lightning Trainer.
     lightning_log_dir = os.path.join(
         tempfile.gettempdir(), "lightning_logs", trial_name
     )
@@ -680,13 +777,13 @@ def train_func(config: dict) -> None:
         num_warmup_steps=config["num_warmup_steps"],
     )
     if checkpoint:
-        # Continue training from a previous checkpoint
+        # Continue training from a previous checkpoint.
         with checkpoint.as_directory() as ckpt_dir:
             ckpt_path = os.path.join(ckpt_dir, "checkpoint.ckpt")
 
             if config["resume_from_checkpoint"]:
-                # Case 1: Start a new run
-                # Only restore the model weights, training starts from step 0
+                # Case 1: Start a new run.
+                # Only restore the model weights, training starts from step 0.
                 model = StableDiffusion.load_from_checkpoint(
                     ckpt_path, map_location=torch.device("cpu"), **model_kwargs
                 )
@@ -697,8 +794,8 @@ def train_func(config: dict) -> None:
                     val_dataloaders=validation_dataloader,
                 )
             else:
-                # Case 2: Restore from an interrupted/crashed run
-                # Restore both the model weights and the trainer states (optimizer, steps, callbacks)
+                # Case 2: Restore from an interrupted or crashed run.
+                # Restore both the model weights and the trainer states (optimizer, steps, callbacks).
                 model = StableDiffusion(**model_kwargs)
 
                 trainer.fit(
@@ -708,7 +805,7 @@ def train_func(config: dict) -> None:
                     ckpt_path=ckpt_path,
                 )
     else:
-        # Start a new run from scratch
+        # Start a new run from scratch.
         model = StableDiffusion(**model_kwargs)
 
         trainer.fit(
@@ -718,13 +815,16 @@ def train_func(config: dict) -> None:
         )
 
 
-### Training CLI ###
+#############################################
+# Main CLI: Entry point for training script.
+#############################################
 app = typer.Typer()
 
 artifact_storage = os.environ["ANYSCALE_ARTIFACT_STORAGE"]
 user_name = re.sub(r"\s+", "__", os.environ.get("ANYSCALE_USERNAME", "user"))
 anyscale_storage_path = f"{artifact_storage}/{user_name}"
-anyscale_storage_path =  anyscale_storage_path.replace("s3://", "")
+anyscale_storage_path = anyscale_storage_path.replace("s3://", "")
+
 
 @app.command()
 def train(
@@ -761,7 +861,7 @@ def train(
     use_small_unet: bool = True,
     accelerator_type: Optional[str] = None,
     train_data_uri: str = "s3://anyscale-materials/stable-diffusion/laion_art_sample_train.parquet",
-    validation_data_uri: str = "s3://anyscale-materials/stable-diffusion/laion_art_sample_valid.parquet"
+    validation_data_uri: str = "s3://anyscale-materials/stable-diffusion/laion_art_sample_valid.parquet",
 ):
     """Train a Stable Diffusion model."""
     ray.data.set_progress_bars(False)
@@ -872,12 +972,12 @@ def train(
                 storage_filesystem=fs,
                 failure_config=FailureConfig(max_failures=max_failures),
             ),
-            datasets=ray_datasets,
+            datasets=ray_datasets,  # type: ignore [arg-type]
             resume_from_checkpoint=checkpoint,
         )
     trainer.fit()
 
-    # show the produced model checkpoints under storage path
+    # Show the produced model checkpoints under storage path.
     fs = S3FileSystem()
     paths = fs.glob(f"{storage_path }/**/checkpoint.ckpt")
     print("Produced Model Checkpoints:")

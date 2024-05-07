@@ -1,4 +1,10 @@
-"""Training script for Stable Diffusion model v2."""
+"""Training script for Stable Diffusion model v2.
+
+The script performs the following steps:
+1. Load preprocessed data from S3 using the load_precomputed_dataset function.
+2. Build a Stable Diffusion model using the StableDiffusion class.
+3. Run the scalable training procedure with Ray Train using the train entry point.
+"""
 
 import logging
 import os
@@ -7,12 +13,12 @@ import shutil
 import tempfile
 from contextlib import nullcontext
 from functools import partial
-from typing import Literal, Optional, cast
+from typing import ContextManager, Literal, Optional, cast, Mapping, Any, Union
 
 import lightning.pytorch as pl  # type: ignore
 import numpy as np
-import ray.train
 import pyarrow.fs
+import ray.train
 import torch
 import torch.nn.functional as F
 import typer
@@ -23,7 +29,7 @@ from lightning.pytorch.utilities.types import OptimizerLRScheduler  # type: igno
 from ray.train import Checkpoint, FailureConfig, RunConfig, ScalingConfig
 from ray.train.lightning import RayDDPStrategy, RayFSDPStrategy, RayLightningEnvironment
 from ray.train.torch import TorchTrainer, get_device
-from s3fs import S3FileSystem
+from s3fs import S3FileSystem  # type: ignore
 from torch.distributed.fsdp import BackwardPrefetch
 from torch.distributed.fsdp import FullyShardedDataParallel as FSDP
 from transformers import PretrainedConfig, get_linear_schedule_with_warmup  # type: ignore
@@ -38,8 +44,12 @@ CAPTION_LATENTS_KEY = "caption_latents"
 IMAGE_LATENTS_256_KEY = "latents_256_bytes"
 IMAGE_LATENTS_512_KEY = "latents_512_bytes"
 
+#############################################
+# Step 1: Load preprocessed data from S3.
+#############################################
 
-### Data loading ###
+
+### Utils ###
 def get_training_columns(resolution: ResolutionDtype) -> list[str]:
     key_list = [CAPTION_LATENTS_KEY]
     if resolution == 256:
@@ -55,6 +65,7 @@ def convert_precision(batch: dict[str, np.ndarray]) -> dict[str, np.ndarray]:
     return batch
 
 
+### Data loading ###
 def load_precomputed_dataset(
     data_uri: str, num_data_loading_workers: int, resolution: ResolutionDtype
 ) -> ray.data.Dataset:
@@ -74,7 +85,11 @@ def load_precomputed_dataset(
     )
 
 
-### Model ###
+#############################################
+# Step 2: Build Stable Diffusion model.
+#############################################
+
+### Small model configuration ###
 small_unet_model_config = {
     "_class_name": "UNet2DConditionModel",
     "_diffusers_version": "0.2.2",
@@ -108,6 +123,7 @@ small_unet_model_config = {
 }
 
 
+### Model definition ###
 class StableDiffusion(pl.LightningModule):
     """Stable Diffusion U-Net model."""
 
@@ -159,8 +175,18 @@ class StableDiffusion(pl.LightningModule):
         self.loss_fn = F.mse_loss
         self.current_training_steps = 0
 
+    @property
+    def image_latents_key(self) -> str:
+        """Return the key for image latents based on resolution."""
+        if self.resolution == 256:
+            return IMAGE_LATENTS_256_KEY
+        elif self.resolution == 512:
+            return IMAGE_LATENTS_512_KEY
+        else:
+            raise ValueError(f"Unsupported resolution: {self.resolution}")
+
     def on_fit_start(self) -> None:
-        # Move cumprod tensor to GPU in advance to avoid data movement on each step.
+        """Move cumprod tensor to GPU in advance to avoid data movement on each step."""
         self.noise_scheduler.alphas_cumprod = self.noise_scheduler.alphas_cumprod.to(
             get_device()
         )
@@ -173,13 +199,10 @@ class StableDiffusion(pl.LightningModule):
     def forward(
         self, batch: dict[str, torch.Tensor]
     ) -> tuple[torch.Tensor, torch.Tensor]:
-        # Use latents if specified and available. When specified, they might not exist during eval.
-        if self.resolution == 256:
-            latents = batch[IMAGE_LATENTS_256_KEY]
-        elif self.resolution == 512:
-            latents = batch[IMAGE_LATENTS_512_KEY]
+        """Forward pass of the model."""
+        # Extract inputs.
+        latents = batch[self.image_latents_key]
         conditioning = batch[CAPTION_LATENTS_KEY]
-
         # Sample the diffusion timesteps.
         timesteps = self._sample_timesteps(latents)
         # Add noise to the inputs (forward diffusion).
@@ -192,6 +215,7 @@ class StableDiffusion(pl.LightningModule):
     def training_step(
         self, batch: dict[str, torch.Tensor], batch_idx: int
     ) -> torch.Tensor:
+        """Training step of the model."""
         outputs, targets = self.forward(batch)
         loss = self.loss_fn(outputs, targets)
         self.log(
@@ -201,6 +225,7 @@ class StableDiffusion(pl.LightningModule):
         return loss
 
     def validation_step(self, batch: dict[str, torch.Tensor], batch_idx: int) -> None:
+        """Validation step of the model."""
         outputs, targets = self.forward(batch)
         loss = self.loss_fn(outputs, targets)
         self.log(
@@ -213,8 +238,9 @@ class StableDiffusion(pl.LightningModule):
         )
 
     def configure_optimizers(self) -> OptimizerLRScheduler:
+        """Configure the optimizer and learning rate scheduler."""
         optimizer = torch.optim.AdamW(
-            self.trainer.model.parameters(),
+            self.trainer.model.parameters(),  # type: ignore [union-attr]
             lr=self.lr,
             weight_decay=self.weight_decay,
         )
@@ -234,9 +260,19 @@ class StableDiffusion(pl.LightningModule):
         }
 
 
+##############################################
+# Step 3: Run the scalable training procedure.
+##############################################
+
+### Utils ###
+
+
 ### Callbacks ###
-def strategy_context(fsdp=False, model=None):
-    if fsdp:
+def strategy_context(
+    fsdp: bool = False, model: Optional[torch.nn.Module] = None
+) -> ContextManager:
+    """Context manager to summon full params for FSDP."""
+    if fsdp and model is not None:
         return FSDP.summon_full_params(model, writeback=False, recurse=False)
     else:
         return nullcontext()
@@ -258,14 +294,16 @@ class RayTrainReportCallback(pl.callbacks.Callback):
         self,
         trainer: pl.Trainer,
         pl_module: pl.LightningModule,
-        outputs: torch.Tensor,
+        outputs: Optional[Union[torch.Tensor, Mapping[str, Any]]],
         batch: dict[str, torch.Tensor],
         batch_idx: int,
     ) -> None:
+        """Report metrics and save checkpoints."""
         step = pl_module.current_training_steps
         if (step + 1) % self.every_n_train_steps != 0:
             return
 
+        # Create a local temporary directory to save the checkpoint.
         temp_checkpoint_dir = os.path.join(
             tempfile.gettempdir(),
             ray.train.get_context().get_trial_name(),
@@ -274,8 +312,8 @@ class RayTrainReportCallback(pl.callbacks.Callback):
         os.makedirs(temp_checkpoint_dir, exist_ok=True)
 
         # Fetch metrics.
-        metrics = trainer.callback_metrics
-        metrics = {k: v.item() for k, v in metrics.items()}
+        callback_metrics = trainer.callback_metrics
+        metrics = {k: v.item() for k, v in callback_metrics.items()}
 
         # (Optional) Add customized metrics.
         metrics["epoch"] = trainer.current_epoch
@@ -287,6 +325,7 @@ class RayTrainReportCallback(pl.callbacks.Callback):
         with strategy_context(fsdp=self.fsdp, model=trainer.model):
             trainer.save_checkpoint(ckpt_path, weights_only=False)
 
+        # Create a Checkpoint object.
         if self.checkpoint_sharding_strategy == "full":
             checkpoint = (
                 Checkpoint.from_directory(temp_checkpoint_dir)
@@ -313,15 +352,17 @@ class RayTrainReportCallback(pl.callbacks.Callback):
             shutil.rmtree(temp_checkpoint_dir)
 
 
-### Training function per worker ###
-def default_collate_fn(
+### Collate function ###
+def move_to_device_collate_fn(
     batch: dict[str, np.ndarray], device: torch.device
 ) -> dict[str, torch.Tensor]:
+    """Move the batch to the device."""
     for k, v in batch.items():
-        batch[k] = torch.tensor(v).to(device)
-    return batch
+        batch[k] = torch.tensor(v).to(device)  # type: ignore [assignment]
+    return cast(dict[str, torch.Tensor], batch)
 
 
+### Training function per worker ###
 def train_func(config: dict) -> None:
     """Training function for Stable Diffusion model."""
     seed = config["seed"]
@@ -329,7 +370,7 @@ def train_func(config: dict) -> None:
     trial_name = ray.train.get_context().get_trial_name()
 
     # Prepare Ray datasets.
-    collate_fn = partial(default_collate_fn, device=ray.train.torch.get_device())
+    collate_fn = partial(move_to_device_collate_fn, device=ray.train.torch.get_device())
 
     train_ds = ray.train.get_dataset_shard("train")
     train_dataloader = train_ds.iter_torch_batches(
@@ -439,13 +480,16 @@ def train_func(config: dict) -> None:
         )
 
 
-### Training CLI ###
+#############################################
+# Main CLI: Entry point for training script.
+#############################################
 app = typer.Typer()
 
 artifact_storage = os.environ["ANYSCALE_ARTIFACT_STORAGE"]
 user_name = re.sub(r"\s+", "__", os.environ.get("ANYSCALE_USERNAME", "user"))
 anyscale_storage_path = f"{artifact_storage}/{user_name}"
 anyscale_storage_path = anyscale_storage_path.replace("s3://", "")
+
 
 @app.command()
 def train(
@@ -547,7 +591,7 @@ def train(
                 storage_filesystem=fs,
                 failure_config=FailureConfig(max_failures=max_failures),
             ),
-            datasets=ray_datasets,
+            datasets=ray_datasets,  # type: ignore [arg-type]
             resume_from_checkpoint=checkpoint,
         )
     trainer.fit()
