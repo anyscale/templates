@@ -54,9 +54,10 @@ IMAGE_LATENTS_256_KEY = "latents_256_bytes"
 IMAGE_LATENTS_512_KEY = "latents_512_bytes"
 
 
-############################################
-#### Step 1: Data Loading ####
-############################################
+########################
+# Step 1: Data Loading #
+########################
+
 def read_data(
     input_uri: str,
     caption_col: str,
@@ -93,10 +94,9 @@ def read_data(
     return ds
 
 
-############################################
-#### Step 2: Transformation ####
-############################################
-
+##########################
+# Step 2: Transformation #
+##########################
 
 #### Utils ####
 class LargestCenterSquare:
@@ -125,7 +125,6 @@ class LargestCenterSquare:
             width=self.size,
         )
         return img
-
 
 #### Transformer ####
 class SDTransformer:
@@ -212,10 +211,9 @@ class SDTransformer:
         return {k: np.array(v) for k, v in final_batch.items()}
 
 
-############################################
-#### Step 3: Encoding ####
-############################################
-
+####################
+# Step 3: Encoding #
+####################
 
 #### Utils ####
 def convert_tensor_to_array(tensor: torch.Tensor, dtype=np.float32) -> np.ndarray:
@@ -335,9 +333,10 @@ class SDLatentEncoder:
         return batch
 
 
-##########################################################
-### Putting all data processing together ###
-##########################################################
+########################################
+# Putting all data processing together #
+########################################
+
 def get_training_columns(resolution: ResolutionDtype) -> list[str]:
     key_list = [CAPTION_LATENTS_KEY]
     if resolution == 256:
@@ -420,9 +419,9 @@ def get_laion_streaming_dataset(
     return ds
 
 
-#############################################
-# Step 4: Build Stable Diffusion model.
-#############################################
+########################################
+# Step 4: Build Stable Diffusion model #
+########################################
 
 ### Small model configuration ###
 small_unet_model_config = {
@@ -595,12 +594,9 @@ class StableDiffusion(pl.LightningModule):
         }
 
 
-##############################################
-# Step 5: Run the scalable training procedure.
-##############################################
-
-### Utils ###
-
+###############################################
+# Step 5: Run the scalable training procedure #
+###############################################
 
 ### Callbacks ###
 def strategy_context(
@@ -816,8 +812,9 @@ def train_func(config: dict) -> None:
 
 
 #############################################
-# Main CLI: Entry point for training script.
+# Main CLI: Entry point for training script #
 #############################################
+
 app = typer.Typer()
 
 artifact_storage = os.environ["ANYSCALE_ARTIFACT_STORAGE"]
