@@ -14,5 +14,7 @@ deepspeed:
   config_path: deepspeed_configs/zero_3_offload_optim+param.json
 dataset_size_scaling_factor: 10000 # internal flag. No need to change
 flash_attention_2: true
+trainer_resources:
+  memory: 53687091200 # 50 GB memory
 worker_resources:
   accelerator_type:A10G: 0.001
