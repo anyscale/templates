@@ -39,9 +39,10 @@ IMAGE_LATENTS_256_KEY = "latents_256_bytes"
 IMAGE_LATENTS_512_KEY = "latents_512_bytes"
 
 
-############################################
-#### Step 1: Data Loading ####
-############################################
+########################
+# Step 1: Data Loading #
+########################
+
 def read_data(
     input_uri: str,
     caption_col: str,
@@ -78,10 +79,9 @@ def read_data(
     return ds
 
 
-############################################
-#### Step 2: Transformation ####
-############################################
-
+##########################
+# Step 2: Transformation #
+##########################
 
 #### Utils ####
 class LargestCenterSquare:
@@ -197,10 +197,9 @@ class SDTransformer:
         return {k: np.array(v) for k, v in final_batch.items()}
 
 
-############################################
-#### Step 3: Encoding ####
-############################################
-
+####################
+# Step 3: Encoding #
+####################
 
 #### Utils ####
 def convert_tensor_to_array(tensor: torch.Tensor, dtype=np.float32) -> np.ndarray:
@@ -320,9 +319,10 @@ class SDLatentEncoder:
         return batch
 
 
-############################################
-### Visualizing Outputs ###
-############################################
+#######################
+# Visualizing Outputs #
+#######################
+
 def visualize_image(image_bytes: bytes, caption: str) -> None:
     """Visualize an image with a caption."""
     img = Image.open(io.BytesIO(image_bytes))
@@ -382,9 +382,10 @@ def visualize_input_and_output(
         print("\n\n")
 
 
-##########################################################
-### Putting all data processing together ###
-##########################################################
+########################################
+# Putting all data processing together #
+########################################
+
 def get_laion_streaming_dataset(
     # Reader.
     input_uri: str,
@@ -442,15 +443,14 @@ def get_laion_streaming_dataset(
         concurrency=num_encoders,
         accelerator_type=encoder_accelerator_type,
     )
-
     return ds
 
 
-###########################################################################
-### CLI to run the main function, storing the output, and visualizing it. ###
-###########################################################################
-app = typer.Typer()
+########################################################################
+# CLI to run the main function, storing the output, and visualizing it #
+########################################################################
 
+app = typer.Typer()
 
 @app.command()
 def process(
