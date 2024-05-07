@@ -1,11 +1,6 @@
-from collections import OrderedDict
-import json
-import os
 import matplotlib.pyplot as plt
 import numpy as np
 import sklearn.metrics
-from pathlib import Path
-import fire
 from typing import Any, Dict
 
 
@@ -28,7 +23,7 @@ def calculate_average_score(oss_scores: np.ndarray, binary_predictions):
 
 
 def plot_quality_cost_curve(
-    oss_scores:  np.ndarray,
+    oss_scores: np.ndarray,
     closed_scores: np.ndarray,
     router_binary_predictions: Dict[str, Any],
     closed_model: str = "GPT-4",
@@ -70,20 +65,3 @@ def plot_quality_cost_curve(
     plt.title("Average score as routing to OSS model increases")
     plt.legend()
     plt.grid(True)
-
-
-def compute_aggregate_metrics(prediction_data):
-
-    score_labels = np.array([example["label"] for example in prediction_data])
-    binary_probs = np.array([example["binary_prob"] for example in prediction_data])
-    binary_predictions = binary_probs > 0.5
-    binary_labels = score_labels >= 4
-
-    metrics = OrderedDict()
-    metrics["bin_mean_ap"] = sklearn.metrics.average_precision_score(
-        binary_labels, binary_probs
-    )
-    metrics["bin_f1"] = sklearn.metrics.f1_score(binary_labels, binary_predictions)
-    _, _, metrics["average_score"] = calculate_average_score(score_labels, binary_probs)
-
-    return metrics
