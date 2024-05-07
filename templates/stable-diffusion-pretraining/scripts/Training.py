@@ -44,10 +44,9 @@ CAPTION_LATENTS_KEY = "caption_latents"
 IMAGE_LATENTS_256_KEY = "latents_256_bytes"
 IMAGE_LATENTS_512_KEY = "latents_512_bytes"
 
-#############################################
-# Step 1: Load preprocessed data from S3.
-#############################################
-
+##########################################
+# Step 1: Load preprocessed data from S3 #
+##########################################
 
 ### Utils ###
 def get_training_columns(resolution: ResolutionDtype) -> list[str]:
@@ -85,9 +84,9 @@ def load_precomputed_dataset(
     )
 
 
-#############################################
-# Step 2: Build Stable Diffusion model.
-#############################################
+########################################
+# Step 2: Build Stable Diffusion model #
+########################################
 
 ### Small model configuration ###
 small_unet_model_config = {
@@ -260,12 +259,9 @@ class StableDiffusion(pl.LightningModule):
         }
 
 
-##############################################
-# Step 3: Run the scalable training procedure.
-##############################################
-
-### Utils ###
-
+###############################################
+# Step 3: Run the scalable training procedure #
+###############################################
 
 ### Callbacks ###
 def strategy_context(
@@ -481,8 +477,9 @@ def train_func(config: dict) -> None:
 
 
 #############################################
-# Main CLI: Entry point for training script.
+# Main CLI: Entry point for training script #
 #############################################
+
 app = typer.Typer()
 
 artifact_storage = os.environ["ANYSCALE_ARTIFACT_STORAGE"]
