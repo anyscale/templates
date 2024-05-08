@@ -8,24 +8,24 @@ After implementing and testing your machine learning workloads, it’s time to m
 
 This example takes you through a common development to production workflow with services:
 1. Development
-    1. Develop a service in a workspace.
-    2. Run the app in a workspace.
-    3. Send a test request.
+    a. Develop a service in a workspace.
+    b. Run the app in a workspace.
+    c. Send a test request.
 2. Production
-    1. Deploy as an Anyscale Service.
-    2. Query the service.
-    3. Monitor the service.
-    4. Configure scaling.
-    5. Update the service.
-    6. Terminate the service.
+    a. Deploy as an Anyscale Service.
+    b. Query the service.
+    c. Monitor the service.
+    d. Configure scaling.
+    e. Update the service.
+    f. Terminate the service.
 
-**Note**: This example runs in a workspace. See [Intro to Workspaces](https://docs.endpoints.anyscale.com/preview/) before running this example.
+## Development
 
-## Develop an app in a workspace
+Start by writing your machine learning service using [Ray Serve](https://docs.ray.io/en/latest/serve/index.html), an open source distributed serving library for building online inference APIs.
 
- The fastest way to develop a Ray Serve app is in an Anyscale Workspace. A Ray Serve app running within a workspace behaves almost identically to deploying a Ray Serve app to production as a service, except that it doesn't have a stable DNS name or fault tolerance.
+### Develop a service in a workspace
 
- Look at the `main.py` file, which has the following skeleton code:
+ This example begins in an [Anyscale Workspace](https://docs.endpoints.anyscale.com/preview/platform/workspaces/), which is a fully managed development environment connected to a Ray cluster. Look at the following simple Ray Serve app created in `main.py`:
 
 ```python
 import requests
@@ -46,12 +46,19 @@ class FastAPIDeployment:
 my_app = FastAPIDeployment.bind()
 ```
 
-### Run the app in the workspace
-Use the command below to run the Ray Serve app in the workspace on `localhost:8000`.
+Here’s a breakdown of this code that integrates [Ray Serve with Fast API](https://docs.ray.io/en/latest/serve/http-guide.html):
 
-If you want to run it again, use the same command to update the app.
+- It defines a FastAPI app named **`fastapi`**.
+- **`@serve.deployment`** decorates the class **`FastAPIDeployment`**, indicating it's a [Ray Serve deployment](https://docs.ray.io/en/latest/serve/key-concepts.html#deployment).
+- **`@serve.ingress(fastapi)`** marks **`fastapi`** as the [entry point for incoming requests](https://docs.ray.io/en/latest/serve/key-concepts.html#ingress-deployment-http-handling) to this deployment.
+- **`say_hello`** method is a GET endpoint **`/hello`** in FastAPI, taking a **`name`** parameter and returning a greeting.
+- **`FastAPIDeployment.bind()`** binds the deployment to Ray Serve, making it ready to handle requests.
 
-**Tip**: Use `serve run main:my_app --blocking` in a new VSCode terminal to block and print out application logs (exceptions, etc.) in the terminal, allowing you to view Ray Serve application logs more easily.
+### Run the app in a workspace
+
+Execute the command below to run the Ray Serve app on the workspace cluster. This command takes in an import path to the deployment formatted as `module:application`.
+
+**Tip**: To stream logs to the console and debug the service, remove the `--non-blocking` flag. You can terminate the process with either the stop button in a notebook of Ctrl-C in the terminal.
 
 
 ```python
