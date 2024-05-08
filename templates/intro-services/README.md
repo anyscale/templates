@@ -7,17 +7,17 @@ Deploy your machine learning apps into production with Anyscale Services for sca
 After implementing and testing your machine learning workloads, it’s time to move them into production. An Anyscale Service packages your application code, dependencies, and compute configurations, deploying them behind a REST endpoint for easy integration and scalability.
 
 This example takes you through a common development to production workflow with services:
-1. Development
-    a. Develop a service in a workspace.
-    b. Run the app in a workspace.
-    c. Send a test request.
-2. Production
-    a. Deploy as an Anyscale Service.
-    b. Query the service.
-    c. Monitor the service.
-    d. Configure scaling.
-    e. Update the service.
-    f. Terminate the service.
+1. Development  
+    a. Develop a service in a workspace.  
+    b. Run the app in a workspace.  
+    c. Send a test request.  
+2. Production  
+    a. Deploy as an Anyscale Service.  
+    b. Query the service.  
+    c. Monitor the service.  
+    d. Configure scaling.  
+    e. Update the service.  
+    f. Terminate the service.  
 
 ## Development
 
