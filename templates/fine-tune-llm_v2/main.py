@@ -1,7 +1,6 @@
 import argparse
 import os
 import subprocess
-import shlex
 import yaml
 import random
 import string
@@ -65,8 +64,7 @@ def main():
     if api_key:
         entrypoint = f"WANDB_API_KEY={api_key} {entrypoint}"
 
-    parsed_args = shlex.split(entrypoint)
-    subprocess.run(parsed_args, check=True)
+    subprocess.run(entrypoint, check=True, shell=True)
     if lora_storage_uri:
         print(
             f"Note: LoRA weights will also be stored in path {lora_storage_uri} under {model_tag} bucket."
