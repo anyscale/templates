@@ -65,7 +65,7 @@ Use the following command to deploy your app as `my_service`.
 
 
 ```python
-!anyscale service deploy --name=my_service main:my_app
+!anyscale service deploy main:my_app --name=my_service
 ```
 
 ### Service Overview page in the console

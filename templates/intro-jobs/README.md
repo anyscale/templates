@@ -1,26 +1,19 @@
-# Introduction to Jobs
+# Introduction to Anyscale Jobs
+
+Submit your machine learning apps as [Anyscale Jobs](https://docs.anyscale.com/preview/preview/platform/jobs/) for scalability, programmability, fault tolerance, and persisting outputs like logs.
 
 **⏱️ Time to complete**: 10 min
 
-This tutorial shows you how to:
-1. Run a Ray app non-interactively in Anyscale as an "Anyscale Job".
-2. Configure and debug Anyscale Jobs.
-3. Submit jobs from Anyscale Workspaces as well as other other machines.
+After implementing and testing your machine learning workloads, it’s time to move them into production. An Anyscale Job packages your application code, dependencies, and compute configurations.
 
-**Note**: This tutorial is run within a workspace. Please overview the `Introduction to Workspaces` template first before this tutorial.
+This example takes you through a common development to production workflow with Anyscale Jobs:
 
-## Key features of Anyscale Jobs
-
-Typically, we recommend running batch Ray apps as Anyscale Jobs when moving to production. Like workspaces, Anyscale Jobs run with their own Ray cluster, so you can run the exact same Ray program in a workspace as a Job too.
-
-Key features of Anyscale Jobs:
-- Programmatic submission API
-- Automated failure handling
-- Automated email alerting
-- Record and persist outputs such as logs
-
-
-**Note**: Ray also has an internal concept of a "Ray job", which is created when running a Ray app. Anyscale Jobs, Workspaces, and Services all launch Ray jobs internally.
+1. Development
+    a. Run an app in a workspace.
+2. Production
+    a. Submit the app to Anyscale Jobs.
+    b. View the output.
+3. Submit the job externally from another machine.
 
 ## Walkthrough
 
@@ -40,7 +33,7 @@ This template includes a simple processing job in **./main.py** that runs a few 
 !python main.py
 ```
 
-Next, let's try submitting the app to Anyscale Jobs. Within a workspace, you can use the `anyscale job submit` (job runs will be managed by Anyscale Jobs) functionality for this.
+Next, let's try submitting the app to Anyscale Jobs. Within a workspace, you can use the "anyscale job submit" (job runs will be managed by Anyscale Jobs) functionality for this.
 
 The following cell should also run to completion within a few minutes and print the same result. Note however that the Ray app was not run within the workspace cluster (you can check the ``Ray Dashboard`` to verify). It was submitted to Anyscale for execution on a new Ray cluster.
 
@@ -50,7 +43,7 @@ The following cell should also run to completion within a few minutes and print 
 # The execution will be managed by Anyscale Jobs.
 !anyscale job submit --name my-job --wait -- python main.py
 
-# Tip: You can run any Ray app as a job by prefixing its entrypoint with `anyscale job submit --`.
+# Tip: You can run any Ray app as a job by prefixing its entrypoint with "anyscale job submit --".
 ```
 
 ### Job UI Overview
