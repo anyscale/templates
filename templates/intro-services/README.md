@@ -1,12 +1,23 @@
-# Introduction to Services
+# Introduction to Anyscale Services
 
-**⏱️ Time to complete**: 10 min (15 on GCP)
+Deploy your machine learning apps into production with Anyscale Services for scalability, fault tolerance, high availability, and zero downtime upgrades.
 
-This example shows you how to:
-1. Develop a simple Ray Serve app in a workspace.
-2. Deploy the app to production as an Anyscale Service.
-3. Monitor the production app.
-4. Configure service scaling.
+**⏱️ Time to complete**: 10 min
+
+After implementing and testing your machine learning workloads, it’s time to move them into production. An Anyscale Service packages your application code, dependencies, and compute configurations, deploying them behind a REST endpoint for easy integration and scalability.
+
+This example takes you through a common development to production workflow with services:
+1. Development
+    1. Develop a service in a workspace.
+    2. Run the app in a workspace.
+    3. Send a test request.
+2. Production
+    1. Deploy as an Anyscale Service.
+    2. Query the service.
+    3. Monitor the service.
+    4. Configure scaling.
+    5. Update the service.
+    6. Terminate the service.
 
 **Note**: This example runs in a workspace. See [Intro to Workspaces](https://docs.endpoints.anyscale.com/preview/) before running this example.
 
@@ -65,7 +76,7 @@ Use the following command to deploy your app as `my_service`.
 
 
 ```python
-!anyscale service deploy --name=my_service main:my_app
+!anyscale service deploy main:my_app --name=my_service
 ```
 
 ### Service Overview page in the console

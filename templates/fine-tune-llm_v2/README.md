@@ -21,15 +21,16 @@ We provide example configurations under the `training_configs` directory for dif
 
 Next, you can launch a fine-tuning job with your WandB API key passed as an environment variable.
 
+
 ```python
 # [Optional] You can set the WandB API key to track model performance
 # !export WANDB_API_KEY={YOUR_WANDB_API_KEY}
 
-# Launch a full-param fine-tuning job for Llama 3 8B with 16 A10s
-!python main.py training_configs/full_param/llama-3-8b.yaml
-
 # Launch a LoRA fine-tuning job for Llama 3 8B with 16 A10s
-# !python main.py training_configs/lora/llama-3-8b.yaml
+!python main.py training_configs/lora/llama-3-8b.yaml
+
+# Launch a full-param fine-tuning job for Llama 3 8B with 16 A10s
+# !python main.py training_configs/full_param/llama-3-8b.yaml
 ```
 
 As the command runs, you can monitor a number of built-in metrics in the `Metrics` tab under `Ray Dashboard`, such as the number of GPU nodes and GPU utilization.
@@ -149,3 +150,5 @@ For anything that goes beyond using `llmforge`, you can build your own fine-tuni
 ### What's with the `main` file that is created during fine-tuning?
 
 It's an artifact of our fine-tuning libraries. Please ignore it.
+
+
