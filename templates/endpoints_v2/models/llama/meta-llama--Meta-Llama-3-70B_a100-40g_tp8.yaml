@@ -27,13 +27,14 @@ engine_config:
   max_total_tokens: 4096
   generation:
     prompt_format:
-      system: "<<SYS>>\n{instruction}\n<</SYS>>\n\n"
-      assistant: " {instruction} </s><s>"
-      trailing_assistant: ""
-      user: "[INST] {system}{instruction} [/INST]"
-      system_in_user: true
+      system: "<|start_header_id|>system<|end_header_id|>\n\n{instruction}<|eot_id|>"
+      assistant: "<|start_header_id|>assistant<|end_header_id|>\n\n{instruction}<|eot_id|>"
+      trailing_assistant: "<|start_header_id|>assistant<|end_header_id|>\n\n"
+      user: "<|start_header_id|>user<|end_header_id|>\n\n{instruction}<|eot_id|>"
+      system_in_user: false
+      bos: "<|begin_of_text|>"
       default_system_message: ""
-    stopping_sequences: ["<unk>"]
+    stopping_sequences: ["<|end_of_text|>", "<|eot_id|>"]
 scaling_config:
   num_workers: 8
   num_gpus_per_worker: 1
