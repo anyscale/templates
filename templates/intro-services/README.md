@@ -1,23 +1,26 @@
 # Introduction to Anyscale Services
 
-Deploy your machine learning apps into production with Anyscale Services for scalability, fault tolerance, high availability, and zero downtime upgrades.
+Deploy your machine learning apps into production with [Anyscale Services](https://docs.endpoints.anyscale.com/preview/platform/services/) for scalability, fault tolerance, high availability, and zero downtime upgrades.
 
 **⏱️ Time to complete**: 10 min
 
+Prerequisite: Intro to Workspaces
+
 After implementing and testing your machine learning workloads, it’s time to move them into production. An Anyscale Service packages your application code, dependencies, and compute configurations, deploying them behind a REST endpoint for easy integration and scalability.
 
-This example takes you through a common development to production workflow with services:
-1. Development  
+This interactive example takes you through a common development to production workflow with services:
+1. Development
     a. Develop a service in a workspace.  
     b. Run the app in a workspace.  
     c. Send a test request.  
-2. Production  
+2. Production
     a. Deploy as an Anyscale Service.  
-    b. Query the service.  
-    c. Monitor the service.  
-    d. Configure scaling.  
-    e. Update the service.  
-    f. Terminate the service.  
+    b. Check the status of the service.  
+    c. Query the service.  
+    d. Monitor the service.  
+    e. Configure scaling.  
+    f. Update the service.  
+    g. Terminate the service.  
 
 ## Development
 
@@ -25,22 +28,24 @@ Start by writing your machine learning service using [Ray Serve](https://docs.ra
 
 ### Develop a service in a workspace
 
- This example begins in an [Anyscale Workspace](https://docs.endpoints.anyscale.com/preview/platform/workspaces/), which is a fully managed development environment connected to a Ray cluster. Look at the following simple Ray Serve app created in `main.py`:
+ This example begins in an [Anyscale Workspace](https://docs.endpoints.anyscale.com/preview/platform/workspaces/), which is a fully managed development environment connected to a Ray cluster. Look at the following simple Ray Serve application created in `main.py`:
 
 ```python
+import logging
 import requests
 from fastapi import FastAPI
 from ray import serve
 
 fastapi = FastAPI()
+logger = logging.getLogger("ray.serve")
 
 @serve.deployment
 @serve.ingress(fastapi)
 class FastAPIDeployment:
     # FastAPI automatically parses the HTTP request.
-    # See https://docs.ray.io/en/latest/serve/http-guide.html
     @fastapi.get("/hello")
     def say_hello(self, name: str) -> str:
+        logger.info("Handling request!")
         return f"Hello {name}!"
 
 my_app = FastAPIDeployment.bind()
@@ -48,25 +53,32 @@ my_app = FastAPIDeployment.bind()
 
 Here’s a breakdown of this code that integrates [Ray Serve with Fast API](https://docs.ray.io/en/latest/serve/http-guide.html):
 
-- It defines a FastAPI app named **`fastapi`**.
+- It defines a FastAPI app named **`fastapi`** and a logger named `**ray.serve**`.
 - **`@serve.deployment`** decorates the class **`FastAPIDeployment`**, indicating it's a [Ray Serve deployment](https://docs.ray.io/en/latest/serve/key-concepts.html#deployment).
 - **`@serve.ingress(fastapi)`** marks **`fastapi`** as the [entry point for incoming requests](https://docs.ray.io/en/latest/serve/key-concepts.html#ingress-deployment-http-handling) to this deployment.
-- **`say_hello`** method is a GET endpoint **`/hello`** in FastAPI, taking a **`name`** parameter and returning a greeting.
+- **`say_hello`** handles GET requests to the **`/hello`** endpoint in FastAPI, taking a **`name`** parameter, printing a log message, and returning a greeting.
 - **`FastAPIDeployment.bind()`** binds the deployment to Ray Serve, making it ready to handle requests.
 
 ### Run the app in a workspace
 
 Execute the command below to run the Ray Serve app on the workspace cluster. This command takes in an import path to the deployment formatted as `module:application`.
 
-**Tip**: To stream logs to the console and debug the service, remove the `--non-blocking` flag. You can terminate the process with either the stop button in a notebook of Ctrl-C in the terminal.
-
 
 ```python
 !serve run main:my_app --non-blocking
 ```
 
+**Note**: This command blocks and streams logs to the console for easier debugging in development. To terminate this service and continue with this example, either click the stop button in the notebook or Ctrl-C in the terminal.
+
 ### Send a test request
-Run the following cell to query the Ray Serve app running in the workspace.
+
+Your app is accessible through `localhost:8000` by default. Run the following to send a GET request to the `/hello` endpoint with query parameter `name` set to “Theodore.”
+
+```python
+import requests
+
+print(requests.get("http://localhost:8000/hello", params={"name": "Theodore"}).json())
+```
 
 
 ```python
@@ -75,16 +87,60 @@ import requests
 print(requests.get("http://localhost:8000/hello", params={"name": "Theodore"}).json())
 ```
 
-## Deploy to production as a service
+## Production
 
-To enable fault tolerance and expose your app to the public internet, you must "deploy" it, which creates an Anyscale Service backed by a public load balancer. Anyscale deploys the app in a new cluster, separate from the workspace cluster. The Anyscale control plane monitors the service to recover on node failures. You can also deploy rolling updates to the service without incurring downtime.
+To move into production, use Anyscale Services to deploy your Ray Serve app to a new separate cluster without any code modifications. Anyscale handles the scaling, fault tolerance, and load balancing of your services to ensure uninterrupted service across node failures, heavy traffic, and rolling updates.
 
-Use the following command to deploy your app as `my_service`.
+### Deploy as an Anyscale Service
+
+Use the following to deploy `my_service` in a single command:
 
 
 ```python
 !anyscale service deploy main:my_app --name=my_service
 ```
+
+**Note**: This Anyscale Service pulls the associated dependencies, compute config, and service config from the workspace. To define these explicitly, you can deploy from a `config.yaml` file using the `-f` flag. See ServiceConfig reference for details.
+
+### Check the status of the service
+
+To get the status of `my_service`, run the following:
+
+
+```python
+!anyscale service status --name=my_service
+```
+
+### Query the service
+
+When you deploy, you expose the service to a publicly accessible IP address which you can send requests to.
+
+In the preceding cell’s output, copy your `API_KEY` and `BASE_URL`. As an example, the values look like the following:
+- `API_KEY`: `NMv1Dq3f2pDxWjj-efKKqMUk9UO-xfU3Lo5OhpjAHlI`
+- `BASE_URL`: `https://my-service-jrvwy.cld-w3gg9qpy7ft3ayan.s.anyscaleuserdata.com/`
+
+Fill in the following placeholder values for the `BASE_URL` and `API_KEY` in the following Python requests object:
+
+
+```python
+import requests
+
+BASE_URL = "" # PASTE HERE
+API_KEY = "" # PASTE HERE
+
+def send_request(name: str) -> str:
+    response: requests.Response = requests.get(
+        f"{BASE_URL}/hello",
+        params={"name": name},
+        headers={
+            "Authorization": f"Bearer {API_KEY}",
+        },
+    )
+    response.raise_for_status()
+    return response.content
+```
+
+### Monitor the service
 
 ### Service Overview page in the console
 
