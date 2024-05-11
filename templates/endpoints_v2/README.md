@@ -14,31 +14,15 @@ You can also find more advanced tutorials in the `examples/` folder, including t
 
 ## Step 1 - Run the model locally in the Workspace
 
-We provide a starter command to run Llama-2 and Mistral-family models via Ray Serve. Specify the model ID, GPU type, and tensor parallelism with the command arguments. You can also follow the [guide](examples/CustomModels.ipynb) to bring your own models.
+We provide a starter command to run Llama and Mistral-family models via Ray Serve. You can specify the arguments, such as Lora, GPU type and tensor parallelism via the command. You can also follow the [guide](examples/CustomModels.ipynb) to bring your own models.
 
-Currently tensor parallelism defaults to 1 if not specified.
+The command will generate a separate model and serve config that you can reference and re-run in the future.
 
-**Note**: For the Meta Llama-2 and Mistral families of models you need to set the `hf_token` variable to a Hugging Face Access Token for an account with permissions to download the model. Get your token from [Hugging Face's website at **Settings > Access Tokens**](https://huggingface.co/settings/tokens) and accept the terms on the model page to access the repository. 
-
-Here is the list of currently supported model ID in the starter command:
-- mistralai/Mistral-7B-Instruct-v0.1
-- mistralai/Mixtral-8x7b
-- meta-llama/Llama-2-7b-chat-hf
-- meta-llama/Llama-2-13b-chat-hf
-- meta-llama/Llama-2-70b-chat-hf
+Please note that if you would like to serve a model whose architecture is different from the provided list of models, we highly recommend you manually going over the generated model config file to provide the correct values.
 
 
 ```python
-# Example command to serve Mistal-7B via A10 GPUs on AWS
-!serve run rayllm.start:endpoint model_id=mistralai/Mistral-7B-Instruct-v0.1 gpu_type=A10 hf_token=YOUR_TOKEN --non-blocking
-
-# Example command to serve Mistal-7B via L4 GPUs on GCP
-# !serve run rayllm.start:endpoint model_id=mistralai/Mistral-7B-Instruct-v0.1 gpu_type=L4 hf_token=YOUR_TOKEN
-
-# More example commands:
-# !serve run rayllm.start:endpoint model_id=meta-llama/Llama-2-13b-chat-hf gpu_type=A100_40G tensor_parallelism=2 hf_token=YOUR_TOKEN
-# !serve run rayllm.start:endpoint model_id=meta-llama/Llama-2-70b-chat-hf gpu_type=A100_80G tensor_parallelism=8 hf_token=YOUR_TOKEN
-# !serve run rayllm.start:endpoint model_id=mistralai/Mixtral-8x7B-Instruct-v0.1 gpu_type=A100_80G tensor_parallelism=8 hf_token=YOUR_TOKEN
+!python main.py
 ```
 
 ## Step 2 - Query the model
@@ -109,11 +93,8 @@ To deploy an application with one model as an Anyscale Service, run the next cel
 
 ```python
 # Deploy the serve app to production with a given service name.
-# Use the same "serve run" command. This is an command to serve Mistal-7B via A10 GPUs on AWS
-!anyscale service deploy rayllm.start:endpoint model_id=mistralai/Mistral-7B-Instruct-v0.1 gpu_type=A10 hf_token=YOUR_TOKEN
-
-# Example command to serve Mistal-7B via L4 GPUs on GCP
-# !serve run rayllm.start:endpoint model_id=mistralai/Mistral-7B-Instruct-v0.1 gpu_type=L4 hf_token=YOUR_TOKEN
+# Reference the serve file created in step 1
+!anyscale service deploy ./serve_TIMESTAMP.yaml
 ```
 
 After the command runs, click the deploy notification (or navigate to ``Home > Services``) to access the Service UI:
