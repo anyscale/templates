@@ -124,7 +124,7 @@ When you deploy, you expose the service to a publicly accessible IP address whic
 
 In the preceding cell’s output, copy your `API_KEY` and `BASE_URL`. As an example, the values look like the following:
 
-- `API_KEY`: `NMv1Dq3f2pDxWjj-efKKqMUk9UO-xfU3Lo5OhpjAHlI`
+- `API_KEY`: `NMv1Dq3f2pDxWjj-efKKqMUk9UO-xfU3Lo5OhpjAHiI`
 - `BASE_URL`: `https://my-service-jrvwy.cld-w3gg9qpy7ft3ayan.s.anyscaleuserdata.com/`
 
 Fill in the following placeholder values for the `BASE_URL` and `API_KEY` in the following Python requests object:
