@@ -94,7 +94,7 @@ To deploy an application with one model as an Anyscale Service, run the next cel
 ```python
 # Deploy the serve app to production with a given service name.
 # Reference the serve file created in step 1
-!anyscale service deploy ./serve_TIMESTAMP.yaml
+!anyscale service deploy -f ./serve_TIMESTAMP.yaml
 ```
 
 After the command runs, click the deploy notification (or navigate to ``Home > Services``) to access the Service UI:
