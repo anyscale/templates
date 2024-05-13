@@ -176,6 +176,7 @@ class LLMPredictor:
         self.llm = LLM(
             model=HF_MODEL,
             **model_name_to_args.get(HF_MODEL, {}),
+            # Note: add additional args to LLM constructor below.
         )
 
     def __call__(self, batch: Dict[str, np.ndarray]) -> Dict[str, list]:
@@ -242,6 +243,15 @@ Run the following cell to create a Dataset from a text file stored on S3. This D
 ds = ray.data.read_text("s3://anonymous@air-example-data/prompts_100.txt")
 ds.take(1)
 ```
+
+### Customizing your LLM instance
+If you wish to further customize vLLM, you can modify the `LLMPredictor` class defined earlier in Step 3 as follows:
+- Add kwargs for initializing the `LLM` object in `LLMPredictor.__init__()` as indicated by the comment, in Step 3.
+- Modify the `SamplingParams` object defined earlier in the notebook, in Step 1.
+- For a more advanced usage case of using a different `SamplingParams` for each `LLM.generate()` call, follow these steps:
+  1. Add a new argument to `LLMPredictor.__call__()`, which takes a function that returns a `SamplingParams` object to be used for the subsequent `LLM.generate()` call.
+  2. This function should be passed to `LLMPredictor` in the `fn_constructor_kwargs` argument of the `map_batches()` call in the next section. 
+  3. Finally, in `LLMPredictor.__call__()`, call this function, and pass the generated `SamplingParams` object to `LLM.generate()`.
 
 Similar to before, we apply batch inference for all input data with the Ray Data [`map_batches`](https://docs.ray.io/en/latest/data/api/doc/ray.data.Dataset.map_batches.html) method.
 
