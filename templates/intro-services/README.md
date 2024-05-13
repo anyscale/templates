@@ -35,7 +35,6 @@ Start by writing your machine learning service using [Ray Serve](https://docs.ra
 This example begins in an [Anyscale Workspace](https://docs.anyscale.com/preview/platform/workspaces/), which is a fully managed development environment connected to a Ray cluster. Look at the following simple Ray Serve app created in `main.py`:
 
 
-
 ```python
 import logging
 import requests
@@ -71,18 +70,15 @@ The following is a breakdown of this code that integrates [Ray Serve with Fast A
 Execute the command below to run the Ray Serve app on the workspace cluster. This command takes in an import path to the deployment formatted as `module:application`.
 
 
-
 ```python
 !serve run main:my_app --non-blocking
 ```
 
 **Note**: This command blocks and streams logs to the console for easier debugging in development. To terminate this service and continue with this example, either click the stop button in the notebook or `Ctrl-C` in the terminal.
 
-
 ### Send a test request
 
 Your app is accessible through `localhost:8000` by default. Run the following to send a GET request to the `/hello` endpoint with query parameter `name` set to “Theodore.”
-
 
 
 ```python
@@ -100,13 +96,11 @@ To move into production, use Anyscale Services to deploy your Ray Serve app to a
 Use the following to deploy `my_service` in a single command:
 
 
-
 ```python
 !anyscale service deploy main:my_app --name=my_service
 ```
 
 **Note**: This Anyscale Service pulls the associated dependencies, compute config, and service config from the workspace. To define these explicitly, you can deploy from a `config.yaml` file using the `-f` flag. See [ServiceConfig reference](https://docs.endpoints.anyscale.com/preview/reference/service-api#serviceconfig) for details.
-
 
 ### Check the status of the service
 
@@ -128,7 +122,6 @@ In the preceding cell’s output, copy your `API_KEY` and `BASE_URL`. As an exam
 - `BASE_URL`: `https://my-service-jrvwy.cld-w3gg9qpy7ft3ayan.s.anyscaleuserdata.com/`
 
 Fill in the following placeholder values for the `BASE_URL` and `API_KEY` in the following Python requests object:
-
 
 
 ```python
@@ -192,7 +185,6 @@ class FastAPIDeployment:
 my_app = FastAPIDeployment.bind()
 ```
 
-
 <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/intro-services/assets/service-replicas.png" height=400px>
 
 **Note**: This approach is a way to quickly modify scale for this example. As a best practice in production, define [autoscaling behavior](https://docs.anyscale.com/preview/platform/services/scale-a-service#autoscaling) in the [ServiceConfig](https://docs.anyscale.com/preview/reference/service-api#serviceconfig) contained in a `config.yaml` file. The number of worker nodes that Anyscale launches dynamically scales up and down in response to traffic and is scoped by the overall cluster compute config you define.
@@ -201,7 +193,6 @@ my_app = FastAPIDeployment.bind()
 ### Update the service
 
 To deploy the update, execute the following command to trigger a staged rollout of the new service with zero downtime:
-
 
 
 ```python
@@ -218,7 +209,6 @@ In the service overview page, you can monitor the status of the update and see R
 ### Terminate the service
 
 To tear down the service cluster, run the following command:
-
 
 
 ```python
@@ -239,4 +229,3 @@ In this example, you learned the basics of Anyscale Services:
   - Configure scaling.
   - Update the service.
   - Terminate the service.
-
