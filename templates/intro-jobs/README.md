@@ -40,7 +40,7 @@ This template includes a simple processing job in **./main.py** that runs a few 
 !python main.py
 ```
 
-Next, let's try submitting the app to Anyscale Jobs. Within a workspace, you can use the `anyscale job submit` (job runs will be managed by Anyscale Jobs) functionality for this.
+Next, let's try submitting the app to Anyscale Jobs. Within a workspace, you can use the "anyscale job submit" (job runs will be managed by Anyscale Jobs) functionality for this.
 
 The following cell should also run to completion within a few minutes and print the same result. Note however that the Ray app was not run within the workspace cluster (you can check the ``Ray Dashboard`` to verify). It was submitted to Anyscale for execution on a new Ray cluster.
 
@@ -50,7 +50,7 @@ The following cell should also run to completion within a few minutes and print 
 # The execution will be managed by Anyscale Jobs.
 !anyscale job submit --name my-job --wait -- python main.py
 
-# Tip: You can run any Ray app as a job by prefixing its entrypoint with `anyscale job submit --`.
+# Tip: You can run any Ray app as a job by prefixing its entrypoint with "anyscale job submit --".
 ```
 
 ### Job UI Overview
