@@ -11,4 +11,11 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - uses: actions/setup-python@v3
-    - uses: pre-commit/action@v3.0.1
+
+    # Install pre-commit dependencies
+    - name: Install pre-commit
+      run: pip install pre-commit jupyter
+
+    # Run pre-commit hooks with verbose logging
+    - name: Run pre-commit
+      run: pre-commit run --all-files --verbose

@@ -17,4 +17,3 @@ repos:
         entry: ci/auto-generate-readme.sh
         language: script
         pass_filenames: false
-        dependencies: [jupyter]
