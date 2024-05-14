@@ -22,7 +22,7 @@ Please note that if you would like to serve a model whose architecture is differ
 
 
 ```python
-!python main.py
+!python generate_config.py
 ```
 
 ## Step 2 - Query the model
