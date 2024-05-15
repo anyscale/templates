@@ -16,14 +16,20 @@ You can also find more advanced tutorials in the `examples/` folder, including t
 
 We provide a starter command to run Llama and Mistral-family models via Ray Serve. You can specify the arguments, such as Lora, GPU type and tensor parallelism via the command. You can also follow the [guide](examples/CustomModels.ipynb) to bring your own models.
 
-The command will generate a separate model and serve config that you can reference and re-run in the future.
+The command will generate 2 files - a model config file and a serve config file that you can reference and re-run in the future.
 
 Please note that if you would like to serve a model whose architecture is different from the provided list of models, we highly recommend you manually going over the generated model config file to provide the correct values.
-
 
 ```python
 !python generate_config.py
 ```
+
+If you didn't start the serve application in the previous step, you can start it using the following command (replace the file name with the generated `serve_` file name):
+
+```python
+!serve run serve_TIMESTAMP.yaml
+```
+
 
 ## Step 2 - Query the model
 
@@ -88,13 +94,13 @@ query("http://localhost:8000", "NOT A REAL KEY")
 
 ## Step 3 - Deploying a production service
 
-To deploy an application with one model as an Anyscale Service, run the next cell. This is setup to run the Mistral-7B model, but can be easily modified to run any of the other models in this repo:
+To deploy an application with one model as an Anyscale Service, update the file name to the generated one and run the following command :
 
 
 ```python
 # Deploy the serve app to production with a given service name.
 # Reference the serve file created in step 1
-!anyscale service deploy -f ./serve_TIMESTAMP.yaml
+!anyscale service deploy -f serve_TIMESTAMP.yaml
 ```
 
 After the command runs, click the deploy notification (or navigate to ``Home > Services``) to access the Service UI:
@@ -108,7 +114,7 @@ Navigate to the Service UI and wait for the service to reach "Active". It will b
 
 ## Step 4 - Query the service endpoint
 
-The above cell should print something like `(anyscale +2.9s) curl -H 'Authorization: Bearer XXXXXXXXX_XXXXXX-XXXXXXXXXXXX' https://YYYYYYYYYYYY.anyscaleuserdata.com`, which contains information you need to fill out in the cell below to query the service.
+The above command should print something like `(anyscale +2.9s) curl -H 'Authorization: Bearer XXXXXXXXX_XXXXXX-XXXXXXXXXXXX' https://YYYYYYYYYYYY.anyscaleuserdata.com`, which contains information you need to query the service.
 
 You can also find this information by clicking the "Query" button in the Service UI.
 
