@@ -16,7 +16,7 @@ You can also find more advanced tutorials in the `examples/` folder, including t
 
 We provide a starter command to run Llama and Mistral-family models via Ray Serve. You can specify the arguments, such as Lora, GPU type and tensor parallelism via the command. You can also follow the [guide](examples/CustomModels.ipynb) to bring your own models.
 
-The command will generate 2 files - a model config file and a serve config file that you can reference and re-run in the future.
+The command will generate 2 files - a model config file (saved in `model_config/`) and a serve config file (`serve_TIMESTAMP.yaml`) that you can reference and re-run in the future.
 
 Please note that if you would like to serve a model whose architecture is different from the provided list of models, we highly recommend you manually going over the generated model config file to provide the correct values.
 
@@ -29,7 +29,6 @@ If you didn't start the serve application in the previous step, you can start it
 ```python
 !serve run serve_TIMESTAMP.yaml
 ```
-
 
 ## Step 2 - Query the model
 
@@ -103,14 +102,11 @@ To deploy an application with one model as an Anyscale Service, update the file 
 !anyscale service deploy -f serve_TIMESTAMP.yaml
 ```
 
-After the command runs, click the deploy notification (or navigate to ``Home > Services``) to access the Service UI:
-
+After the command runs, click the deploy notification (or navigate to ``Home > Services``) to access the Service UI. 
 <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/endpoints_v2/assets/service-notify.png" width=500px/>
 
-Navigate to the Service UI and wait for the service to reach "Active". It will begin in "Starting" state:
-
+Navigate to the Service UI and wait for the service to reach "Active". It will begin in "Starting" state.
 <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/endpoints_v2/assets/service-starting.png" width=600px/>
-
 
 ## Step 4 - Query the service endpoint
 
@@ -119,7 +115,6 @@ The above command should print something like `(anyscale +2.9s) curl -H 'Authori
 You can also find this information by clicking the "Query" button in the Service UI.
 
 <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/endpoints_v2/assets/service-query.png" width=600px/>
-
 
 ```python
 # Query the remote serve application we just deployed.
@@ -156,6 +151,3 @@ Look at the following guides for more advanced use-cases:
 See examples of building applications with your deployed endpoint on the [Anyscale Endpoints](https://docs.endpoints.anyscale.com/category/examples) page.
 
 Be sure to update the `api_base` and `token` for your private deployment. This information can be found under the "Query" button in the Anyscale Service UI.
-
-
-
