@@ -12,7 +12,7 @@ from openai import OpenAI
 
 from fc_utils.function_extraction_utils import (
     FunctionCallNotFoundError,
-    get_tool_call_from_response,
+    get_tool_calls_from_response,
 )
 
 NUM_RETRIES = 5
@@ -57,28 +57,26 @@ class AnyscaleResponseParser:
         if response == ERROR_OUTPUT:
             processed_response = {
                 "content": ERROR_OUTPUT,
-                "tool_call": None,
+                "tool_calls": None,
                 "original_response": ERROR_OUTPUT,
             }
             return processed_response
         response_message_content = response.choices[0].message.content
         processed_response = {
             "content": response_message_content,
-            "tool_call": None,
+            "tool_calls": None,
             "original_response": response.choices[0].message,
         }
         if response_message_content and "<functioncall>" in response_message_content:
             try:
-                response_message_content, tool_call = get_tool_call_from_response(
-                    response_message_content, eos_present=False
-                )
+                response_message_content, tool_calls = get_tool_calls_from_response(response_message_content)
                 processed_response["content"] = response_message_content
-                processed_response["tool_call"] = tool_call
+                processed_response["tool_calls"] = tool_calls
             except (FunctionCallNotFoundError, json.JSONDecodeError):
                 # this handles either a function call not being found or the json not being decoded properly.
                 # one example for the second case can be missed commas/quotes in the arguments field.
                 processed_response["content"] = response_message_content
-                processed_response["tool_call"] = None
+                processed_response["tool_calls"] = None
         return processed_response
 
 
@@ -101,7 +99,7 @@ class OpenAIResponseParser:
         if response == ERROR_OUTPUT:
             processed_response = {
                 "content": ERROR_OUTPUT,
-                "tool_call": None,
+                "tool_calls": None,
                 "original_response": response,
             }
             return processed_response
@@ -109,18 +107,18 @@ class OpenAIResponseParser:
         tool_calls = response_message.tool_calls
         processed_response = {
             "content": response_message.content,
-            "tool_call": None,
+            "tool_calls": None,
             "original_response": response_message,
         }
         # process tool calls if present
         if tool_calls:
-            tool_call = tool_calls[0]
-            function_name = tool_call.function.name
-            try:
-                function_args = json.loads(tool_call.function.arguments)
-                output_function = {"name": function_name, "arguments": function_args}
-                processed_response["tool_call"] = output_function
-            except json.JSONDecodeError:
-                processed_response["tool_call"] = None
-
+            processed_response["tool_calls"] = []
+            for tool_call in tool_calls:
+                function_name = tool_call.function.name
+                try:
+                    function_args = json.loads(tool_call.function.arguments)
+                    output_function = {"name": function_name, "arguments": function_args}
+                    processed_response["tool_calls"].append(output_function)
+                except json.JSONDecodeError:
+                    continue
         return processed_response
