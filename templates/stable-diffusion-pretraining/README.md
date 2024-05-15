@@ -16,9 +16,9 @@ Dive into these interactive notebooks to see how you can implement Stable Diffus
 
 | Notebook | Description | Input | Output | Time to Run |
 | --- | --- | --- | --- | --- |
-| [Preprocessing.ipynb](./Preprocessing.ipynb) | Run a scalable data pipeline to process image and text data for Stable Diffusion pre-training. | Image and caption data | Image latents and caption embeddings  | 🕙 5 minutes |
-| [Training.ipynb](./Training.ipynb) | Initiate a scalable training pipeline to efficiently produce Stable Diffusion v2 models. | Image latents and caption embeddings | Trained model | 🕙 5 minutes|
-| [Online_Preprocessing_and_Training.ipynb](./Online_Preprocessing_and_Training.ipynb) | Create and run a scalable online processing and training pipeline for more complex training scenarios running on heterogeneous resources. | Image and caption data | Trained model | 🕙 5 minutes
+| [preprocessing.ipynb](./preprocessing.ipynb) | Run a scalable data pipeline to process image and text data for Stable Diffusion pre-training. | Image and caption data | Image latents and caption embeddings  | 🕙 5 minutes |
+| [training.ipynb](./training.ipynb) | Initiate a scalable training pipeline to efficiently produce Stable Diffusion v2 models. | Image latents and caption embeddings | Trained model | 🕙 5 minutes|
+| [online_preprocessing_and_training.ipynb](./online_preprocessing_and_training.ipynb) | Create and run a scalable online processing and training pipeline for more complex training scenarios running on heterogeneous resources. | Image and caption data | Trained model | 🕙 5 minutes
 
 
 ## Want to pre-train with custom data? 📈
