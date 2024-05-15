@@ -176,6 +176,7 @@ class LLMPredictor:
         self.llm = LLM(
             model=HF_MODEL,
             **model_name_to_args.get(HF_MODEL, {}),
+            # Note: add additional args to LLM constructor below.
         )
 
     def __call__(self, batch: Dict[str, np.ndarray]) -> Dict[str, list]:
@@ -243,6 +244,15 @@ ds = ray.data.read_text("s3://anonymous@air-example-data/prompts_100.txt")
 ds.take(1)
 ```
 
+### Customizing your LLM instance
+If you wish to further customize vLLM, you can modify the `LLMPredictor` class defined earlier in Step 3 as follows:
+- Add kwargs for initializing the `LLM` object in `LLMPredictor.__init__()` as indicated by the comment, in Step 3.
+- Modify the `SamplingParams` object defined earlier in the notebook, in Step 1.
+- For a more advanced usage case of using a different `SamplingParams` for each `LLM.generate()` call, follow these steps:
+  1. Add a new argument to `LLMPredictor.__call__()`, which takes a function that returns a `SamplingParams` object to be used for the subsequent `LLM.generate()` call.
+  2. This function should be passed to `LLMPredictor` in the `fn_constructor_kwargs` argument of the `map_batches()` call in the next section. 
+  3. Finally, in `LLMPredictor.__call__()`, call this function, and pass the generated `SamplingParams` object to `LLM.generate()`.
+
 Similar to before, we apply batch inference for all input data with the Ray Data [`map_batches`](https://docs.ray.io/en/latest/data/api/doc/ray.data.Dataset.map_batches.html) method.
 
 
@@ -296,14 +306,14 @@ ds_output.take(5)
 
 ### Submitting to Anyscale Jobs
 
-The script in `main.py` has the same code as this notebook; you can use `ray job submit` to submit the app in that file to Anyscale Jobs. Refer to [Introduction to Jobs](https://docs.endpoints.anyscale.com/preview/examples/intro-jobs/) for more details.
+The script in `main.py` has the same code as this notebook; you can use `anyscale job submit` to submit the app in that file to Anyscale Jobs. Refer to [Introduction to Jobs](https://docs.endpoints.anyscale.com/preview/examples/intro-jobs/) for more details.
 
 
 After modifying the configurations at the top of `main.py` (model name, input/output path, input text column), run the following cell to submit a job:
 
 
 ```python
-!ray job submit -- python main.py
+!anyscale job submit -- python main.py
 ```
 
 ## Summary

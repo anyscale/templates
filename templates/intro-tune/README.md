@@ -104,7 +104,7 @@ def train_cifar(config):
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.SGD(net.parameters(), lr=config["lr"], momentum=0.9)
 
-    trainset, _ = load_data()
+    trainset, _ = load_data("/mnt/local_storage/cifar_data")
 
     test_abs = int(len(trainset) * 0.8)
     train_subset, val_subset = random_split(
@@ -179,12 +179,14 @@ It will sweep across several choices for "l1", "l2", and "lr" of the net:
 
 
 ```python
+from filesystem_utils import get_path_and_fs
 from ray import tune, train
 import os
 
 # Define where results are stored. We'll use the Anyscale artifact storage path to
 # save results to cloud storage.
 STORAGE_PATH = os.environ["ANYSCALE_ARTIFACT_STORAGE"] + "/tune_results"
+storage_path, fs = get_path_and_fs(STORAGE_PATH)
 
 # Define trial sweep parameters across l1, l2, and lr.
 trial_space = {
@@ -202,7 +204,7 @@ train_cifar = tune.with_resources(train_cifar, {"cpu": 2})
 tuner = tune.Tuner(
     train_cifar,
     param_space=trial_space,
-    run_config=train.RunConfig(storage_path=STORAGE_PATH),
+    run_config=train.RunConfig(storage_path=storage_path, storage_filesystem=fs),
 )
 results = tuner.fit()
 print(results)

@@ -1,4 +1,5 @@
 #!/bin/bash
+echo "Auto-generating README files..."
 
 # Search for notebook files named "demo" in the ../templates directory
 notebook_files=$(find ../templates -name "README.ipynb")
