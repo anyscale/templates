@@ -2,7 +2,7 @@
 
 **⏱️ Time to complete**: 10 min (20 on GCP)
 
-This guide walks you through how to deploy optimized LLM endpoints in Anyscale. It includes a number of pre-tuned configs for Llama2, Mistral, Mixtral, embedding models, and more in the `models` directory.
+This guide walks you through how to deploy optimized LLMs in Anyscale. It includes a number of pre-tuned configs for Llama2, Mistral, Mixtral, embedding models, and more in the `models` directory.
 
 You can also find more advanced tutorials in the `examples/` folder, including those for:
 - Embedding generation
@@ -120,7 +120,7 @@ query(service_url, service_bearer_token)
 
 ## More Guides
 
-Endpoints makes it easy for LLM Developers to interact with OpenAI compatible APIs for their applications by providing an easy to manage backend for serving OSS LLMs.
+RayLLM makes it easy for LLM Developers to interact with OpenAI compatible APIs for their applications by providing an easy to manage backend for serving OSS LLMs.
 
 It provides a number of features making LLM development easy, including:
 - An extensive suite of pre-configured open source LLMs and embedding models.
