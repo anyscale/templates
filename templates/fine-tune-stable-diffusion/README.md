@@ -46,15 +46,8 @@ SUBJECT_IMAGES_PATH = "/mnt/local_storage/subject_images"
 
 
 ```python
-# Download the sample dog dataset -- feel free to comment this out.
-from huggingface_hub import snapshot_download
-
-snapshot_download(
-    "diffusers/dog-example",
-    local_dir=SUBJECT_IMAGES_PATH,
-    repo_type="dataset",
-    ignore_patterns=".gitattributes",
-)
+# Copy the sample dog dataset to the subject images path -- feel free to comment this out.
+!mkdir -p {SUBJECT_IMAGES_PATH} && cp ./assets/dog/*.jpeg {SUBJECT_IMAGES_PATH}
 ```
 
 Take a look at the dataset!
@@ -184,10 +177,14 @@ from utils import (
 
 
 # Set environment variables across the entire cluster.
+ENV_VARS = {"HF_HOME": "/mnt/local_storage/huggingface"}
+
 WANDB_API_KEY = os.environ.get("WANDB_API_KEY")
 if WANDB_API_KEY:
-    ray.shutdown()
-    ray.init(runtime_env={"env_vars": {"WANDB_API_KEY": WANDB_API_KEY}})
+    ENV_VARS["WANDB_API_KEY"] = WANDB_API_KEY
+
+ray.shutdown()
+ray.init(runtime_env={"env_vars": ENV_VARS})
 
 
 def train_fn_per_worker(config: dict):
