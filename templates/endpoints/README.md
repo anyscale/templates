@@ -16,7 +16,7 @@ You can also find more advanced tutorials in the `examples/` folder, including t
 
 We provide a starter command to run Llama and Mistral-family models via Ray Serve. You can specify the arguments, such as Lora, GPU type and tensor parallelism via the command. You can also follow the [guide](examples/CustomModels.ipynb) to bring your own models.
 
-The command will generate 2 files - a model config file and a serve config file that you can reference and re-run in the future.
+The command will generate 2 files - a model config file (saved in `model_config/`) and a serve config file (`serve_TIMESTAMP.yaml`) that you can reference and re-run in the future.
 
 Please note that if you would like to serve a model whose architecture is different from the provided list of models, we highly recommend you manually going over the generated model config file to provide the correct values.
 
@@ -29,7 +29,6 @@ If you didn't start the serve application in the previous step, you can start it
 ```python
 !serve run serve_TIMESTAMP.yaml
 ```
-
 
 ## Step 2 - Query the model
 
@@ -94,13 +93,12 @@ query("http://localhost:8000", "NOT A REAL KEY")
 
 ## Step 3 - Deploying a production service
 
-To deploy an application with one model as an Anyscale Service, update the file name to the generated one and run the following command :
-
+To deploy an application with one model as an Anyscale Service, copy the contents from `serve_TIMESTAMP.yaml` file under `ray_serve_config` in the `service.yaml` file and run:
 
 ```python
 # Deploy the serve app to production with a given service name.
 # Reference the serve file created in step 1
-!anyscale service deploy -f serve_TIMESTAMP.yaml
+!anyscale service rollout -f service.yaml
 ```
 
 After the command runs, click the deploy notification (or navigate to ``Home > Services``) to access the Service UI. Navigate to the Service UI and wait for the service to reach "Active". It will begin in "Starting" state.
