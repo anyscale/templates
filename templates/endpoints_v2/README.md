@@ -2,7 +2,7 @@
 
 **⏱️ Time to complete**: 10 min (20 on GCP)
 
-This guide walks you through how to deploy optimized LLM endpoints in Anyscale. It includes a number of pre-tuned configs for Llama2, Mistral, Mixtral, embedding models, and more in the `models` directory.
+This guide walks you through how to deploy optimized LLMs in Anyscale. It includes a number of pre-tuned configs for Llama2, Mistral, Mixtral, embedding models, and more in the `models` directory.
 
 You can also find more advanced tutorials in the `examples/` folder, including those for:
 - Embedding generation
@@ -46,7 +46,7 @@ The top rated restaurants in San Francisco include:
  • The French Laundry
 ```
 
-Endpoints uses an OpenAI-compatible API, allowing us to use the OpenAI SDK to access Endpoint backends.
+RayLLM uses an OpenAI-compatible API, allowing us to use the OpenAI SDK to access Endpoint backends.
 
 
 ```python
@@ -102,10 +102,10 @@ To deploy an application with one model as an Anyscale Service, update the file 
 !anyscale service deploy -f serve_TIMESTAMP.yaml
 ```
 
-After the command runs, click the deploy notification (or navigate to ``Home > Services``) to access the Service UI. 
+After the command runs, click the deploy notification (or navigate to ``Home > Services``) to access the Service UI:
 <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/endpoints_v2/assets/service-notify.png" width=500px/>
 
-Navigate to the Service UI and wait for the service to reach "Active". It will begin in "Starting" state.
+Navigate to the Service UI and wait for the service to reach "Active". It will begin in "Starting" state:
 <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/endpoints_v2/assets/service-starting.png" width=600px/>
 
 ## Step 4 - Query the service endpoint
@@ -127,7 +127,7 @@ query(service_url, service_bearer_token)
 
 ## More Guides
 
-Endpoints makes it easy for LLM Developers to interact with OpenAI compatible APIs for their applications by providing an easy to manage backend for serving OSS LLMs.
+RayLLM makes it easy for LLM Developers to interact with OpenAI compatible APIs for their applications by providing an easy to manage backend for serving OSS LLMs.
 
 It provides a number of features making LLM development easy, including:
 - An extensive suite of pre-configured open source LLMs and embedding models.
