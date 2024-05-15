@@ -20,11 +20,13 @@ The command will generate 2 files - a model config file (saved in `model_config/
 
 Please note that if you would like to serve a model whose architecture is different from the provided list of models, we highly recommend you manually going over the generated model config file to provide the correct values.
 
+
 ```python
 !python generate_config.py
 ```
 
 If you didn't start the serve application in the previous step, you can start it using the following command (replace the file name with the generated `serve_` file name):
+
 
 ```python
 !serve run serve_TIMESTAMP.yaml
@@ -95,6 +97,7 @@ query("http://localhost:8000", "NOT A REAL KEY")
 
 To deploy an application with one model as an Anyscale Service, update the file name to the generated one and run the following command:
 
+
 ```python
 # Deploy the serve app to production with a given service name.
 # Reference the serve file created in step 1
@@ -109,6 +112,7 @@ Navigate to the Service UI and wait for the service to reach "Active". It will b
 
 <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/endpoints_v2/assets/service-starting.png" width=600px/>
 
+
 ## Step 4 - Query the service endpoint
 
 The above command should print something like `(anyscale +2.9s) curl -H 'Authorization: Bearer XXXXXXXXX_XXXXXX-XXXXXXXXXXXX' https://YYYYYYYYYYYY.anyscaleuserdata.com`, which contains information you need to query the service.
@@ -116,6 +120,7 @@ The above command should print something like `(anyscale +2.9s) curl -H 'Authori
 You can also find this information by clicking the "Query" button in the Service UI.
 
 <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/endpoints_v2/assets/service-query.png" width=600px/>
+
 
 ```python
 # Query the remote serve application we just deployed.
@@ -152,3 +157,6 @@ Look at the following guides for more advanced use-cases:
 See examples of building applications with your deployed endpoint on the [Anyscale Endpoints](https://docs.endpoints.anyscale.com/category/examples) page.
 
 Be sure to update the `api_base` and `token` for your private deployment. This information can be found under the "Query" button in the Anyscale Service UI.
+
+
+
