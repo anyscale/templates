@@ -93,8 +93,7 @@ query("http://localhost:8000", "NOT A REAL KEY")
 
 ## Step 3 - Deploying a production service
 
-To deploy an application with one model as an Anyscale Service, update the file name to the generated one and run the following command :
-
+To deploy an application with one model as an Anyscale Service, update the file name to the generated one and run the following command:
 
 ```python
 # Deploy the serve app to production with a given service name.
