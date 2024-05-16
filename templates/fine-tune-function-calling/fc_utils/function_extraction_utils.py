@@ -5,7 +5,7 @@ Reference: https://gist.github.com/kouroshHakha/6cfbe2bf4aaafc5db733d408044f9902
 
 import json
 import re
-from fc_utils.preprocessing import TOOL_CALL_TAGS, TOOL_RESULT_TAGS, extract_functions
+from fc_utils.preprocessing import TOOL_CALL_TAGS, TOOL_RESULT_TAGS
 
 class FunctionCallNotFoundError(Exception):
     pass
@@ -63,22 +63,3 @@ def get_tool_calls_from_response(assistant_content):
         raise FunctionCallNotFoundError("No function call found in assistant response")
 
     return assistant_content, tool_calls
-
-
-if __name__ == "__main__":
-    assistant_content = " Sure let me get the weather for you [TOOL_CALLS] [{\"name\": \"weather\", \"arguments\": '{\"location\": \"New York\"}'}] [/TOOL_CALLS] "
-    assistant_content, tool_calls = get_tool_calls_from_response(assistant_content)
-    print(assistant_content, tool_calls)
-    assistant_content = "[TOOL_CALLS] [ {\"name\": \"calculate_tip\", \"arguments\": '{\"bill_total\": 50, \"tip_percentage\": 15}'} ] [/TOOL_CALLS]"
-    assistant_content, tool_calls = get_tool_calls_from_response(assistant_content)
-    print(assistant_content, tool_calls)
-    with open("/Users/sumanthrh/Documents/templates/templates/fine-tune-function-calling/glaiveai-function-calling-v2-test.jsonl", "r") as f:
-        ds = f.readlines()
-    messages  = json.loads(ds[0])["messages"]
-    breakpoint()
-    for msg in messages:
-        if  TOOL_CALL_TAGS[0] in msg["content"]:
-            print(msg)
-            assistant_content, tool_calls = get_tool_calls_from_response(msg["content"])
-            print(assistant_content, tool_calls)
-            breakpoint()
