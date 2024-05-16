@@ -32,12 +32,11 @@ from transformers import CLIPTextModel, CLIPTokenizer  # type: ignore
 ### Logging ###
 logger = logging.getLogger("ray.data")
 
-### Types ###
+### Type Definitions ###
 ResolutionDtype = Literal[256, 512]
 
 ### Constants ###
 CAPTION_LATENTS_KEY = "caption_latents"
-CAPTION_KEY = "caption"
 IMAGE_LATENTS_256_KEY = "latents_256_bytes"
 IMAGE_LATENTS_512_KEY = "latents_512_bytes"
 
@@ -61,7 +60,7 @@ def read_data(
     concurrency: Optional[int] = None,
     limit: Optional[int] = None,
 ) -> ray.data.Dataset:
-    """Construct a ray data dataset from a parquet dataset."""
+    """Construct a Ray Data dataset from a Parquet dataset."""
     schema = pa.schema(
         [
             pa.field(image_hash_col, getattr(pa, image_hash_dtype)()),
@@ -113,7 +112,6 @@ class LargestCenterSquare:
             width=self.size,
         )
         return img
-
 
 #### Transformer ####
 class SDTransformer:
@@ -221,7 +219,7 @@ def supports_float16(device: torch.device) -> bool:
 
 
 def resolve_device() -> torch.device:
-    """Resolve to the first available device: cuda, mps, or cpu."""
+    """Resolve to the first available device: CUDA, MPS, or CPU."""
     if torch.cuda.is_available():
         return torch.device("cuda")
     if torch.backends.mps.is_available():
@@ -322,69 +320,6 @@ class SDLatentEncoder:
         return batch
 
 
-#######################
-# Visualizing Outputs #
-#######################
-
-def visualize_image(image_bytes: bytes, caption: str) -> None:
-    """Visualize an image with a caption."""
-    img = Image.open(io.BytesIO(image_bytes))
-    plt.imshow(img)
-    plt.axis("off")
-    x_bounds, y_bounds = plt.xlim(), plt.ylim()
-    # Add a caption at the bottom of the image.
-    plt.text(
-        x_bounds[0],
-        y_bounds[0] + 50,
-        f"Caption: {caption}",
-        color="black",
-        backgroundcolor="white",
-        fontsize=12,
-    )
-    plt.show()
-
-
-def visualize_image_latents(image_latents: np.ndarray) -> None:
-    """Visualize image latents."""
-    nchannels = image_latents.shape[0]
-    fig, axes = plt.subplots(1, nchannels, figsize=(10, 10))
-    # Set figure title as image latents.
-    for idx, ax in enumerate(axes):
-        ax.imshow(image_latents[idx], cmap="gray")
-        ax.axis("off")
-    # Add a title in the center top of the image.
-    fig.suptitle("Image Latents", fontsize=16, x=0.5, y=0.625)
-    fig.tight_layout()
-    plt.show()
-
-
-def visualize_text_embeddings(text_embeddings: np.ndarray) -> None:
-    """Visualize text embeddings."""
-    fig, ax = plt.subplots(1, 1, figsize=(10, 10))
-    ax.imshow(text_embeddings, cmap="gray")
-    ax.set_title("Caption Embeddings (Text Latents)")
-    plt.show()
-
-
-def visualize_input_and_output(
-    resolution: ResolutionDtype,
-    df_output: pd.DataFrame,
-    df_input: pd.DataFrame,
-) -> None:
-    """Visualize input and output data."""
-    for _, row in df_output.iterrows():
-        hash_ = row["hash"]
-        print("Input:")
-        print(100 * "-")
-        input_record = df_input[df_input["hash"] == hash_].squeeze()
-        visualize_image(input_record["jpg"], input_record["caption"])
-        print("Output:")
-        print(100 * "-")
-        visualize_image_latents(row[f"latents_{resolution}_bytes"])
-        visualize_text_embeddings(row["caption_latents"])
-        print("\n\n")
-
-
 ########################################
 # Putting all data processing together #
 ########################################
@@ -449,9 +384,77 @@ def get_laion_streaming_dataset(
     return ds
 
 
+
+
+#######################
+# Visualizing Outputs #
+#######################
+
+def visualize_image(image_bytes: bytes, caption: str) -> None:
+    """Visualize an image with a caption."""
+    img = Image.open(io.BytesIO(image_bytes))
+    plt.imshow(img)
+    plt.axis("off")
+    x_bounds, y_bounds = plt.xlim(), plt.ylim()
+    # Add a caption at the bottom of the image.
+    plt.text(
+        x_bounds[0],
+        y_bounds[0] + 50,
+        f"Caption: {caption}",
+        color="black",
+        backgroundcolor="white",
+        fontsize=12,
+    )
+    plt.show()
+
+
+def visualize_image_latents(image_latents: np.ndarray) -> None:
+    """Visualize image latents."""
+    nchannels = image_latents.shape[0]
+    fig, axes = plt.subplots(1, nchannels, figsize=(10, 10))
+    # Set figure title as image latents.
+    for idx, ax in enumerate(axes):
+        ax.imshow(image_latents[idx], cmap="gray")
+        ax.axis("off")
+    # Add a title in the center top of the image.
+    fig.suptitle("Image Latents", fontsize=16, x=0.5, y=0.625)
+    fig.tight_layout()
+    plt.show()
+
+
+def visualize_text_embeddings(text_embeddings: np.ndarray) -> None:
+    """Visualize text embeddings."""
+    fig, ax = plt.subplots(1, 1, figsize=(10, 10))
+    ax.imshow(text_embeddings, cmap="gray")
+    ax.set_title("Caption Embeddings (Text Latents)")
+    plt.show()
+
+
+def visualize_input_and_output(
+    resolution: ResolutionDtype,
+    df_output: pd.DataFrame,
+    df_input: pd.DataFrame,
+) -> None:
+    """Visualize input and output data."""
+    for _, row in df_output.iterrows():
+        hash_ = row["hash"]
+        print("Input:")
+        print(100 * "-")
+        input_record = df_input[df_input["hash"] == hash_].squeeze()
+        visualize_image(input_record["jpg"], input_record["caption"])
+        print("Output:")
+        print(100 * "-")
+        visualize_image_latents(row[f"latents_{resolution}_bytes"])
+        visualize_text_embeddings(row["caption_latents"])
+        print("\n\n")
+
+
+
 ########################################################################
 # CLI to run the main function, storing the output, and visualizing it #
-########################################################################
+##################################################
+# Main CLI: Entry point for preprocessing script #
+##################################################
 
 app = typer.Typer()
 
