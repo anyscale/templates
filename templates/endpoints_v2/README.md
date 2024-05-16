@@ -2,7 +2,7 @@
 
 **⏱️ Time to complete**: 10 min (20 on GCP)
 
-This guide walks you through how to deploy optimized LLM endpoints in Anyscale. It includes a number of pre-tuned configs for Llama2, Mistral, Mixtral, embedding models, and more in the `models` directory.
+This guide walks you through how to deploy optimized LLMs in Anyscale. It includes a number of pre-tuned configs for Llama2, Mistral, Mixtral, embedding models, and more in the `models` directory.
 
 You can also find more advanced tutorials in the `examples/` folder, including those for:
 - Embedding generation
@@ -14,31 +14,22 @@ You can also find more advanced tutorials in the `examples/` folder, including t
 
 ## Step 1 - Run the model locally in the Workspace
 
-We provide a starter command to run Llama-2 and Mistral-family models via Ray Serve. Specify the model ID, GPU type, and tensor parallelism with the command arguments. You can also follow the [guide](examples/CustomModels.ipynb) to bring your own models.
+We provide a starter command to run Llama and Mistral-family models via Ray Serve. You can specify the arguments, such as Lora, GPU type and tensor parallelism via the command. You can also follow the [guide](examples/CustomModels.ipynb) to bring your own models.
 
-Currently tensor parallelism defaults to 1 if not specified.
+The command will generate 2 files - a model config file (saved in `model_config/`) and a serve config file (`serve_TIMESTAMP.yaml`) that you can reference and re-run in the future.
 
-**Note**: For the Meta Llama-2 and Mistral families of models you need to set the `hf_token` variable to a Hugging Face Access Token for an account with permissions to download the model. Get your token from [Hugging Face's website at **Settings > Access Tokens**](https://huggingface.co/settings/tokens) and accept the terms on the model page to access the repository. 
-
-Here is the list of currently supported model ID in the starter command:
-- mistralai/Mistral-7B-Instruct-v0.1
-- mistralai/Mixtral-8x7b
-- meta-llama/Llama-2-7b-chat-hf
-- meta-llama/Llama-2-13b-chat-hf
-- meta-llama/Llama-2-70b-chat-hf
+Please note that if you would like to serve a model whose architecture is different from the provided list of models, we highly recommend you manually going over the generated model config file to provide the correct values.
 
 
 ```python
-# Example command to serve Mistal-7B via A10 GPUs on AWS
-!serve run rayllm.start:endpoint model_id=mistralai/Mistral-7B-Instruct-v0.1 gpu_type=A10 hf_token=YOUR_TOKEN --non-blocking
+!python generate_config.py
+```
 
-# Example command to serve Mistal-7B via L4 GPUs on GCP
-# !serve run rayllm.start:endpoint model_id=mistralai/Mistral-7B-Instruct-v0.1 gpu_type=L4 hf_token=YOUR_TOKEN
+If you didn't start the serve application in the previous step, you can start it using the following command (replace the file name with the generated `serve_` file name):
 
-# More example commands:
-# !serve run rayllm.start:endpoint model_id=meta-llama/Llama-2-13b-chat-hf gpu_type=A100_40G tensor_parallelism=2 hf_token=YOUR_TOKEN
-# !serve run rayllm.start:endpoint model_id=meta-llama/Llama-2-70b-chat-hf gpu_type=A100_80G tensor_parallelism=8 hf_token=YOUR_TOKEN
-# !serve run rayllm.start:endpoint model_id=mistralai/Mixtral-8x7B-Instruct-v0.1 gpu_type=A100_80G tensor_parallelism=8 hf_token=YOUR_TOKEN
+
+```python
+!serve run serve_TIMESTAMP.yaml
 ```
 
 ## Step 2 - Query the model
@@ -57,7 +48,7 @@ The top rated restaurants in San Francisco include:
  • The French Laundry
 ```
 
-Endpoints uses an OpenAI-compatible API, allowing us to use the OpenAI SDK to access Endpoint backends.
+RayLLM uses an OpenAI-compatible API, allowing us to use the OpenAI SDK to query the LLMs.
 
 
 ```python
@@ -104,16 +95,13 @@ query("http://localhost:8000", "NOT A REAL KEY")
 
 ## Step 3 - Deploying a production service
 
-To deploy an application with one model as an Anyscale Service, run the next cell. This is setup to run the Mistral-7B model, but can be easily modified to run any of the other models in this repo:
+To deploy an application with one model as an Anyscale Service, update the file name to the generated one and run the following command:
 
 
 ```python
 # Deploy the serve app to production with a given service name.
-# Use the same "serve run" command. This is an command to serve Mistal-7B via A10 GPUs on AWS
-!anyscale service deploy rayllm.start:endpoint model_id=mistralai/Mistral-7B-Instruct-v0.1 gpu_type=A10 hf_token=YOUR_TOKEN
-
-# Example command to serve Mistal-7B via L4 GPUs on GCP
-# !serve run rayllm.start:endpoint model_id=mistralai/Mistral-7B-Instruct-v0.1 gpu_type=L4 hf_token=YOUR_TOKEN
+# Reference the serve file created in step 1
+!anyscale service deploy -f serve_TIMESTAMP.yaml
 ```
 
 After the command runs, click the deploy notification (or navigate to ``Home > Services``) to access the Service UI:
@@ -127,7 +115,7 @@ Navigate to the Service UI and wait for the service to reach "Active". It will b
 
 ## Step 4 - Query the service endpoint
 
-The above cell should print something like `(anyscale +2.9s) curl -H 'Authorization: Bearer XXXXXXXXX_XXXXXX-XXXXXXXXXXXX' https://YYYYYYYYYYYY.anyscaleuserdata.com`, which contains information you need to fill out in the cell below to query the service.
+The above command should print something like `(anyscale +2.9s) curl -H 'Authorization: Bearer XXXXXXXXX_XXXXXX-XXXXXXXXXXXX' https://YYYYYYYYYYYY.anyscaleuserdata.com`, which contains information you need to query the service.
 
 You can also find this information by clicking the "Query" button in the Service UI.
 
@@ -145,7 +133,7 @@ query(service_url, service_bearer_token)
 
 ## More Guides
 
-Endpoints makes it easy for LLM Developers to interact with OpenAI compatible APIs for their applications by providing an easy to manage backend for serving OSS LLMs.
+RayLLM makes it easy for LLM Developers to interact with OpenAI compatible APIs for their applications by providing an easy to manage backend for serving OSS LLMs.
 
 It provides a number of features making LLM development easy, including:
 - An extensive suite of pre-configured open source LLMs and embedding models.

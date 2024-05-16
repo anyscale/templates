@@ -1,10 +1,7 @@
-name: endpoints
+name: llm-service
 ray_serve_config:
   applications:
-  - name: llm-endpoint
-    route_prefix: /
-    import_path: aviary_private_endpoints.backend.server.run:router_application
-    args:
+  - args:
       models: []
       vllm_base_models:
         # Link to list of models you want to serve here. You can add more than one model
@@ -12,3 +9,6 @@ ray_serve_config:
     runtime_env:
       env_vars:
         HUGGING_FACE_HUB_TOKEN: "UPDATE HF TOKEN HERE"
+    import_path: aviary_private_endpoints.backend.server.run:router_application
+    route_prefix: /
+    name: llm-endpoint
