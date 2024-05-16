@@ -234,7 +234,7 @@ You can also specify which accelerator type (for example, if your model requires
 
 If you do not need to select a particular instance type, you can omit this parameter and select "Auto-select worker nodes" under the compute configuration to have Ray select the best worker nodes from the available types:
 
-<center><img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/text-embeddings/assets/ray-data-gpu.png" width="400"></center>
+<img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/text-embeddings/assets/ray-data-gpu.png" width="400">
 
 
 ```python
