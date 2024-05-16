@@ -1,4 +1,7 @@
-from typing import Union
+from typing import Union, Tuple, List
+from tqdm import tqdm
+from enum import Enum
+import ray.data
 
 from fc_utils.response_parsers import (
     ERROR_OUTPUT,
@@ -6,36 +9,46 @@ from fc_utils.response_parsers import (
     OpenAIResponseParser,
     INCORRECT_FORMAT
 )
-from tqdm import tqdm
-
-POSSIBLE_MISTAKES = ["Unwanted Function Call", "No Function Call", "Incorrect Function Format", "Incorrect Number of Function Calls" ,"Wrong Function Name", "Wrong Argument Value", "Missing Argument"]
 
 
-def is_match(response: dict, ground_truth: dict):
+class PossibleMistakes(Enum):
+    UNWANTED_FUNCTION_CALL = "Unwanted Function Call"
+    NO_FUNCTION_CALL = "No Function Call"
+    INCORRECT_FORMAT = "Incorrect Function Format"
+    INCORRECT_NUMBER_OF_FUNCTION_CALLS = "Incorrect Number of Function Calls"
+    WRONG_FUNCTION_NAME = "Wrong Function Name"
+    WRONG_ARGUMENT_VALUE = "Wrong Argument Value"
+    MISSING_ARGUMENT = "Missing Argument"
+
+    def values():
+        return [item.value for item in PossibleMistakes]
+
+def is_match(response: dict, ground_truth: dict) -> Tuple[bool, str]:
     """
-    Checks if the response matches the ground truth.
+    Checks if the response matches the ground truth. Returns a boolean and a string indicating the mistake type if any.
     """
     if ground_truth["tool_calls"] is None:
         if response["tool_calls"] is None:
             return True, ""
         else:  # explicit else for clarity
-            return False, POSSIBLE_MISTAKES[0]
+            return False, PossibleMistakes.UNWANTED_FUNCTION_CALL
 
     if response["tool_calls"] is None:
-        return False, POSSIBLE_MISTAKES[1]
-    if response["tool_calls"] == INCORRECT_FORMAT:
-        return False, POSSIBLE_MISTAKES[2]
-    if len(response["tool_calls"]) != len(ground_truth["tool_calls"]):
-        return False, POSSIBLE_MISTAKES[3]
+        return False, PossibleMistakes.NO_FUNCTION_CALL
+    elif response["tool_calls"] == INCORRECT_FORMAT: # error during parsing
+        return False, PossibleMistakes.INCORRECT_FORMAT
+    elif len(response["tool_calls"]) != len(ground_truth["tool_calls"]):
+        return False, PossibleMistakes.INCORRECT_NUMBER_OF_FUNCTION_CALLS
+
     for expected_tool_call, actual_tool_call in zip(ground_truth["tool_calls"], response["tool_calls"]):
         if "name" not in actual_tool_call or "arguments" not in actual_tool_call:
-            return False, POSSIBLE_MISTAKES[2] # incorrect format
+            return False, PossibleMistakes.INCORRECT_FORMAT
         if expected_tool_call["name"] != actual_tool_call["name"]:
-            return False, POSSIBLE_MISTAKES[4]
+            return False, PossibleMistakes.WRONG_FUNCTION_NAME
         elif expected_tool_call["arguments"] != actual_tool_call["arguments"]:
             if len(expected_tool_call["arguments"]) != len(actual_tool_call["arguments"]):
-                return False, POSSIBLE_MISTAKES[6]
-            return False, POSSIBLE_MISTAKES[5]
+                return False, PossibleMistakes.MISSING_ARGUMENT
+            return False, PossibleMistakes.WRONG_ARGUMENT_VALUE
     return True, ""
 
 
@@ -47,10 +60,9 @@ def parse_and_eval(
 ):
     """
     Parse and eval loop to parse the assistant responses and evaluate them against the ground truth in the conversation.
-    This assumes that an assistant response is expected after every user/tool message.
     Args:
     parser: OpenAIResponseParser or AnyscaleResponseParser object
-    messages: list of messages in the conversation. The messages with role 'assistant' are ignored
+    messages: list of messages in the conversation. The messages with role 'assistant' are ignored and triggers a chat completion call
     expected_responses: list of ground truth responses
     tools: list of tools to available, used by OpenAIResponseParser
     """
@@ -93,11 +105,14 @@ def parse_and_eval(
     return current_conv, match, mistake_type
 
 
-def evaluate_gpt(ds, openai_parser):
+def evaluate_gpt(ds: List[dict], openai_parser: OpenAIResponseParser):
+    """
+    Evaluates the GPT4 model on the test dataset.
+    """
     num_correct = 0
-    pbar = tqdm(total=len(ds), desc="Evaluating GPT4..")
     total_count = 0
     results = []
+    pbar = tqdm(total=len(ds), desc="Evaluating GPT4..")
     for example in ds:
         openai_messages = example["openai_messages"]
         openai_tools = [
@@ -116,10 +131,13 @@ def evaluate_gpt(ds, openai_parser):
 
         if openai_is_match:
             num_correct += 1
-    print("GPT accuracy: ", num_correct / total_count)
+    print("GPT4 accuracy: ", num_correct / total_count)
     return results
 
-def evaluate_finetuned(ds, anyscale_parser):
+def evaluate_finetuned(ds: List[dict], anyscale_parser: AnyscaleResponseParser):
+    """
+    Evaluates our fine-tuned model on the test dataset.
+    """
     anyscale_accuracy = 0
     total_count = 0
     results = []
@@ -137,5 +155,5 @@ def evaluate_finetuned(ds, anyscale_parser):
         result_dict = {"correct": anyscale_is_match, "mistake_type": mistake_type, "example": example, "conv": anyscale_conv}
 
         results.append(result_dict)
-    print("Anyscale accuracy: ", anyscale_accuracy / total_count)
+    print("Finetuned model accuracy: ", anyscale_accuracy / total_count)
     return results

@@ -1,8 +1,7 @@
-import fc_utils.eval_utils
-import importlib; importlib.reload(fc_utils.eval_utils)
-from fc_utils.eval_utils import POSSIBLE_MISTAKES
 import numpy as np
 import matplotlib.pyplot as plt
+
+from fc_utils.eval_utils import PossibleMistakes
 
 
 def plot_results(results_finetuned, results_gpt):
@@ -10,7 +9,7 @@ def plot_results(results_finetuned, results_gpt):
     Plots results for the finetuned model and GPT-4
     """
     # Data for plotting
-    flags = POSSIBLE_MISTAKES
+    flags = PossibleMistakes.values()
     results_finetuned = [result for result in results_finetuned if result["correct"] == False]
     results_gpt = [result for result in results_gpt if result["correct"] == False]
     total_mistakes_1 = len(results_finetuned)
@@ -26,7 +25,7 @@ def plot_results(results_finetuned, results_gpt):
     positions = np.arange(2)
 
     # Colors for different flags
-    colors = ['red', 'blue', 'green', 'orange', "yellow", "magenta", "cyan"]
+    colors = ['salmon', 'deepskyblue', 'springgreen', 'orange', "gold", "limegreen", "turquoise"]
 
     # Create the plot
     fig, ax = plt.subplots()

@@ -24,7 +24,7 @@ class InvalidSystemPromptError(Exception):
 class TagsNotFoundError(Exception):
     pass
 
-def extract_functions(system_str):
+def extract_functions_from_system_msg(system_str):
     # Extracting the functions using regex
     functions_match = re.findall(r"\{.*?\}(?=\s*\{|\s*$)", system_str, re.DOTALL)
 
@@ -48,7 +48,7 @@ def initial_mapper(example):
     tools = None
     system_prompt_prefixes = GLAIVEAI_TEMPLATE["system_prefixes"]
     if system_prompt_prefixes[0] in example["system"]:
-        tools = extract_functions(example["system"])
+        tools = extract_functions_from_system_msg(example["system"])
         tools = "["+ ",".join([json.dumps(tool) for tool in tools]) + "]"  # convert to string
     elif system_prompt_prefixes[1] not in example["system"]:
         raise InvalidSystemPromptError(
@@ -81,6 +81,7 @@ def combine_multiple_entries(assistant_content):
 
 
 def chat_str_to_messages(chat, tool_to_user=False):
+    # regex pattern to extract user, assistant and tool messages.
     tag_pattern = re.compile(
         r"(?:USER:\s*(?P<user>.*?)\s*(?=ASSISTANT|$)|ASSISTANT:\s*(?P<assistant>.*?)(?=\n\n\nFUNCTION RESPONSE|\n*(?=USER|$))|\n\n\nFUNCTION RESPONSE:\s*(?P<function_response>.*?)\s*(?=ASSISTANT|USER|$))",
         re.DOTALL,
@@ -137,7 +138,7 @@ def final_mapper(example):
     tools = ""
     system_prompt_prefixes = GLAIVEAI_TEMPLATE["system_prefixes"]
     if system_prompt_prefixes[0] in example["system"]:
-        tools = extract_functions(example["system"])
+        tools = extract_functions_from_system_msg(example["system"])
         tools= "["+ ",".join([json.dumps(tool) for tool in tools]) + "]"  # convert to string
         tools = (
             TOOL_LIST_TAGS[0] + " " + tools + " " + TOOL_LIST_TAGS[1]
@@ -226,16 +227,3 @@ def pprint_example(example,keys=[]):
 def save_to_jsonl(ds, filepath):
     df = ds.to_pandas()
     df.to_json(filepath, orient="records", lines=True)
-
-
-if __name__ == "__main__":
-    import datasets
-
-    hf_ds = datasets.load_dataset(
-        "glaiveai/glaive-function-calling-v2", split="train[:10%]"
-    )
-    hf_ds = hf_ds.map(final_mapper)
-    pprint_example(hf_ds[1])
-    test_string = """Sure, I can help you with that. Let me search for books by George Orwell. \n\n\nASSISTANT: <functioncall> [ {\"name\": \"search_books\", \"arguments\": '{\"query\": \"\", \"author\": \"George Orwell\"}'}]"""
-    print(combine_multiple_entries(test_string))
-    breakpoint()
