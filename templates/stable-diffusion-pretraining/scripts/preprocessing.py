@@ -4,6 +4,9 @@ The script performs the following steps:
 1. Load images and text captions from a remote storage system using the read_data function.
 2. Transform images and text captions using the SDTransformer class.
 3. Encode images and text captions into latent spaces using the SDLatentEncoder class.
+
+For an detailed explanation of the below code, check out our
+[guide here](https://www.anyscale.com/blog/processing-2-billion-images-for-stable-diffusion-model-training-definitive-guides-with-ray-series).
 """
 
 import gc
