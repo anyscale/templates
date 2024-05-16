@@ -234,12 +234,6 @@ if __name__ == "__main__":
     hf_ds = datasets.load_dataset(
         "glaiveai/glaive-function-calling-v2", split="train[:10%]"
     )
-    # hf_ds = hf_ds.select(range(10))
-    # ray_ds = ray.data.from_huggingface(hf_ds)
-    # hf_ds = hf_ds.map(mapper)
-    # hf_ds = hf_ds.filter(filter_func)
-    # hf_ds = hf_ds.remove_columns(["system", "chat"])  # drop the original columns
-    # new_ds = preprocess(ray_ds)
     hf_ds = hf_ds.map(final_mapper)
     pprint_example(hf_ds[1])
     test_string = """Sure, I can help you with that. Let me search for books by George Orwell. \n\n\nASSISTANT: <functioncall> [ {\"name\": \"search_books\", \"arguments\": '{\"query\": \"\", \"author\": \"George Orwell\"}'}]"""

@@ -14,11 +14,12 @@ from fc_utils.function_extraction_utils import (
     FunctionCallNotFoundError,
     get_tool_calls_from_response,
 )
+from fc_utils.preprocessing import TOOL_CALL_TAGS
 
 NUM_RETRIES = 5
 SLEEP_INTERVAL_BETWEEN_RETRIES = 10
 ERROR_OUTPUT = "$$RUNTIME_ERROR$$"
-
+INCORRECT_FORMAT = "$$INCORRECT_FORMAT$$"
 
 def get_completion(client, model, messages, tools=None):
     """
@@ -67,7 +68,7 @@ class AnyscaleResponseParser:
             "tool_calls": None,
             "original_response": response.choices[0].message,
         }
-        if response_message_content and "<functioncall>" in response_message_content:
+        if response_message_content and TOOL_CALL_TAGS[0] in response_message_content:
             try:
                 response_message_content, tool_calls = get_tool_calls_from_response(response_message_content)
                 processed_response["content"] = response_message_content
@@ -76,7 +77,7 @@ class AnyscaleResponseParser:
                 # this handles either a function call not being found or the json not being decoded properly.
                 # one example for the second case can be missed commas/quotes in the arguments field.
                 processed_response["content"] = response_message_content
-                processed_response["tool_calls"] = None
+                processed_response["tool_calls"] = INCORRECT_FORMAT
         return processed_response
 
 
@@ -120,5 +121,6 @@ class OpenAIResponseParser:
                     output_function = {"name": function_name, "arguments": function_args}
                     processed_response["tool_calls"].append(output_function)
                 except json.JSONDecodeError:
-                    continue
+                    processed_response["tool_calls"] = INCORRECT_FORMAT
+                    break
         return processed_response
