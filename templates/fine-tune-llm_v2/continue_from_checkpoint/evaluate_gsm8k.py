@@ -20,7 +20,7 @@ ENDPOINTS_KEY = "put key here if needed" # We don't need a key here since we que
 
 def batched_process_fn(batch):
     client = OpenAI(
-        base_url=ENDPOINTS_URL, 
+        base_url=ENDPOINTS_URL,
         api_key=ENDPOINTS_KEY
     )
 
@@ -34,7 +34,7 @@ def batched_process_fn(batch):
         messages=prompt
     )
     model_output = model_output.choices[0].message.content
-    
+
     batch["outputs"] = np.array([model_output])
 
     # Go through the model outputs, looking for the `####` that signifies the answer in the GSM8k dataset
@@ -46,7 +46,7 @@ def batched_process_fn(batch):
         actualanswer = label[label.find("####")+5:]
         if actualanswer == actualoutput:
             success = True
-    
+
     batch["successes"] = np.array([success])
     return batch
 
@@ -56,9 +56,9 @@ ds = ds.repartition(ds.count())
 ds = ds.map_batches(
     batched_process_fn,
     concurrency=20,
-    # Use batch size of 1 so that each 
+    # Use batch size of 1 so that each batch is a single sample
     batch_size=1,
-    num_cpus=0.5, 
+    num_cpus=0.5,
 )
 
 successes_dict = ds.take_all()
