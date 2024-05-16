@@ -1,3 +1,7 @@
+"""
+Evaluation utilities
+"""
+
 from typing import Union, Tuple, List
 from tqdm import tqdm
 from enum import Enum
