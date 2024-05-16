@@ -35,24 +35,24 @@ def is_match(response: dict, ground_truth: dict) -> Tuple[bool, str]:
         if response["tool_calls"] is None:
             return True, ""
         else:  # explicit else for clarity
-            return False, PossibleMistakes.UNWANTED_FUNCTION_CALL
+            return False, PossibleMistakes.UNWANTED_FUNCTION_CALL.value
 
     if response["tool_calls"] is None:
-        return False, PossibleMistakes.NO_FUNCTION_CALL
+        return False, PossibleMistakes.NO_FUNCTION_CALL.value
     elif response["tool_calls"] == INCORRECT_FORMAT: # error during parsing
-        return False, PossibleMistakes.INCORRECT_FORMAT
+        return False, PossibleMistakes.INCORRECT_FORMAT.value
     elif len(response["tool_calls"]) != len(ground_truth["tool_calls"]):
-        return False, PossibleMistakes.INCORRECT_NUMBER_OF_FUNCTION_CALLS
+        return False, PossibleMistakes.INCORRECT_NUMBER_OF_FUNCTION_CALLS.value
 
     for expected_tool_call, actual_tool_call in zip(ground_truth["tool_calls"], response["tool_calls"]):
         if "name" not in actual_tool_call or "arguments" not in actual_tool_call:
-            return False, PossibleMistakes.INCORRECT_FORMAT
+            return False, PossibleMistakes.INCORRECT_FORMAT.value
         if expected_tool_call["name"] != actual_tool_call["name"]:
-            return False, PossibleMistakes.WRONG_FUNCTION_NAME
+            return False, PossibleMistakes.WRONG_FUNCTION_NAME.value
         elif expected_tool_call["arguments"] != actual_tool_call["arguments"]:
             if len(expected_tool_call["arguments"]) != len(actual_tool_call["arguments"]):
-                return False, PossibleMistakes.MISSING_ARGUMENT
-            return False, PossibleMistakes.WRONG_ARGUMENT_VALUE
+                return False, PossibleMistakes.MISSING_ARGUMENT.value
+            return False, PossibleMistakes.WRONG_ARGUMENT_VALUE.value
     return True, ""
 
 
