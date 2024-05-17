@@ -1,11 +1,11 @@
 """
 Response parsers for Anyscale Endpoints and OpenAI models. We define two parser classes `AnyscaleResponseParser` and
-`OpenAIResponseParser` below to send messages to the respective endpoints and parse the result. With the
-`AnyscaleResponseParser`, we use the helper functions defined in `function_extraction_utils` to obtain the
-function call json from the response text.
+`OpenAIResponseParser` below to send messages to the respective endpoints and parse the result.
 """
 import json
 import time
+from abc import ABC, abstractmethod
+from typing import Dict, Any, List, Tuple
 
 import openai
 from openai import OpenAI
@@ -14,14 +14,13 @@ from fc_utils.function_extraction_utils import (
     FunctionCallNotFoundError,
     get_tool_calls_from_response,
 )
-from fc_utils.preprocessing import TOOL_CALL_TAGS
 
 NUM_RETRIES = 5
 SLEEP_INTERVAL_BETWEEN_RETRIES = 10
 ERROR_OUTPUT = "$$RUNTIME_ERROR$$"
 INCORRECT_FORMAT = "$$INCORRECT_FORMAT$$"
 
-def get_completion(client, model, messages, tools=None):
+def get_completion(client: OpenAI, model: str, messages: List[Dict[str, str]], tools: List[Dict[str, Any]]=None) -> "ChatCompletion":
     """
     Gets completion from the OpenAI ChatCompletion API for the provided OpenAI client and model
     """
@@ -43,34 +42,54 @@ def get_completion(client, model, messages, tools=None):
     return ERROR_OUTPUT  # error response
 
 
-# TODO: currently, if the response is as follows: "arguments": '{"text": "there is a "double quote" here"}', the json will not be decoded properly.
-class AnyscaleResponseParser:
-    def __init__(self, api_key, api_base, model):
+class ResponseParser(ABC):
+    """
+    Abstract base class for response parsers.
+    """
+    def __init__(self, api_key: str, api_base: str, model: str, tool_call_tags: Tuple[str, str] = None):
         self.client = OpenAI(api_key=api_key, base_url=api_base)
         self.model = model
+        self.tool_call_tags = tool_call_tags
 
-    def get_parsed_response(self, messages):
+    @abstractmethod
+    def get_parsed_response(self, messages: List[Dict[str, str]], tools: List[Dict[str, Any]]) -> Dict[str, Any]:
         """
         Gets completion for input messages and returns the processed response. Tool calls, if present
         are extracted and parsed as json.
+
+        Args:
+            messages: List of messages to send to the model
+            tools: List of tools available to the model
+
+        Returns:
+            processed_response: Dict containing the content of the parsed response, tool calls if present, and the original response
         """
+        pass
+
+
+# TODO: currently, if the response is as follows: "arguments": '{"text": "there is a "double quote" here"}', the json will not be decoded properly.
+class AnyscaleResponseParser(ResponseParser):
+    def get_parsed_response(self, messages, tools=None):
+        # tools is ignored as the tool list would be included in the system prompt
         response = get_completion(self.client, self.model, messages)
-        if response == ERROR_OUTPUT:
-            processed_response = {
+
+        # default error output
+        processed_response = {
                 "content": ERROR_OUTPUT,
                 "tool_calls": None,
-                "original_response": ERROR_OUTPUT,
+                "original_response": response,
             }
+        if response == ERROR_OUTPUT:
             return processed_response
+
         response_message_content = response.choices[0].message.content
-        processed_response = {
-            "content": response_message_content,
-            "tool_calls": None,
-            "original_response": response.choices[0].message,
-        }
-        if response_message_content and TOOL_CALL_TAGS[0] in response_message_content:
+        processed_response["content"] = response_message_content
+        processed_response["original_response"] = response.choices[0].message
+
+        # Check if the content includes tool call tags
+        if response_message_content and self.tool_call_tags[0] in response_message_content:
             try:
-                response_message_content, tool_calls = get_tool_calls_from_response(response_message_content)
+                response_message_content, tool_calls = get_tool_calls_from_response(response_message_content, self.tool_call_tags)
                 processed_response["content"] = response_message_content
                 processed_response["tool_calls"] = tool_calls
             except (FunctionCallNotFoundError, json.JSONDecodeError):
@@ -81,36 +100,28 @@ class AnyscaleResponseParser:
         return processed_response
 
 
-class OpenAIResponseParser:
-    def __init__(self, api_key, api_base, model):
-        self.client = OpenAI(api_key=api_key, base_url=api_base)
-        self.model = model
-
+class OpenAIResponseParser(ResponseParser):
     def get_parsed_response(self, messages, tools):
-        """
-        Gets completion for input messages and returns the processed response. Tool calls, if present
-        are extracted and parsed as json.
-        """
         response = get_completion(
             client=self.client,
             model=self.model,
             messages=messages,
             tools=tools if len(tools) else None,
         )
-        if response == ERROR_OUTPUT:
-            processed_response = {
+        # default error output
+        processed_response = {
                 "content": ERROR_OUTPUT,
                 "tool_calls": None,
                 "original_response": response,
             }
+        if response == ERROR_OUTPUT:
             return processed_response
+
         response_message = response.choices[0].message
+        processed_response["content"] = response_message.content,
+        processed_response["original_response"] = response_message,
+
         tool_calls = response_message.tool_calls
-        processed_response = {
-            "content": response_message.content,
-            "tool_calls": None,
-            "original_response": response_message,
-        }
         # process tool calls if present
         if tool_calls:
             processed_response["tool_calls"] = []

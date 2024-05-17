@@ -26,14 +26,15 @@ import datasets
 import ray.data 
 from tqdm import tqdm
 import openai
+from functools import partial
 ```
 
 
 ```python
-from fc_utils.preprocessing import initial_mapper, pprint_example, preprocess, save_to_jsonl
+from fc_utils.preprocessing import initial_mapper, pprint_example, preprocess, save_to_jsonl, TOOL_CALL_TAGS, TOOL_RESULT_TAGS
 from fc_utils.response_parsers import OpenAIResponseParser, AnyscaleResponseParser
-from fc_utils.eval_utils import evaluate_gpt, evaluate_finetuned
-from fc_utils.test_utils import test_data_mapper
+from fc_utils.eval_utils import evaluate_model
+from fc_utils.test_utils import get_evaluation_dataset
 from fc_utils.plot_utils import plot_results
 ```
 
@@ -47,7 +48,7 @@ hf_ds_subset =  hf_ds.select(range(int(len(hf_ds)*0.10))) # sample only 10% of t
 ray_ds = ray.data.from_huggingface(hf_ds_subset)
 ```
 
-    2024-05-15 17:18:55,438	INFO worker.py:1740 -- Started a local Ray instance. View the dashboard at [1m[32m127.0.0.1:8265 [39m[22m
+    2024-05-17 01:03:48,712	INFO worker.py:1740 -- Started a local Ray instance. View the dashboard at [1m[32m127.0.0.1:8266 [39m[22m
 
 
 
@@ -55,8 +56,9 @@ ray_ds = ray.data.from_huggingface(hf_ds_subset)
 pprint_example(ray_ds.take(1)[0])
 ```
 
-    2024-05-16 10:36:55,566	INFO streaming_executor.py:112 -- Starting execution of Dataset. Full logs are in /tmp/ray/session_2024-05-15_17-18-53_424889_8313/logs/ray-data
-    2024-05-16 10:36:55,567	INFO streaming_executor.py:113 -- Execution plan of Dataset: InputDataBuffer[Input] -> LimitOperator[limit=1]
+    2024-05-17 01:03:52,191	INFO dataset.py:2370 -- Tip: Use `take_batch()` instead of `take() / show()` to return records in pandas or numpy batch format.
+    2024-05-17 01:03:52,194	INFO streaming_executor.py:112 -- Starting execution of Dataset. Full logs are in /tmp/ray/session_2024-05-17_01-03-46_632348_53956/logs/ray-data
+    2024-05-17 01:03:52,194	INFO streaming_executor.py:113 -- Execution plan of Dataset: InputDataBuffer[Input] -> LimitOperator[limit=1]
 
 
 
@@ -128,8 +130,8 @@ openai_fmt_ds = ray_ds.map(initial_mapper)
 pprint_example(openai_fmt_ds.take(1)[0], keys=["messages", "tools"]) # inspect one example
 ```
 
-    2024-05-16 10:54:20,528	INFO streaming_executor.py:112 -- Starting execution of Dataset. Full logs are in /tmp/ray/session_2024-05-15_17-18-53_424889_8313/logs/ray-data
-    2024-05-16 10:54:20,529	INFO streaming_executor.py:113 -- Execution plan of Dataset: InputDataBuffer[Input] -> TaskPoolMapOperator[Map(initial_mapper)] -> LimitOperator[limit=1]
+    2024-05-17 01:08:30,192	INFO streaming_executor.py:112 -- Starting execution of Dataset. Full logs are in /tmp/ray/session_2024-05-17_01-03-46_632348_53956/logs/ray-data
+    2024-05-17 01:08:30,193	INFO streaming_executor.py:113 -- Execution plan of Dataset: InputDataBuffer[Input] -> TaskPoolMapOperator[Map(initial_mapper)] -> LimitOperator[limit=1]
 
 
 
@@ -162,8 +164,8 @@ processed_ds = preprocess(ray_ds)
 pprint_example(processed_ds.take(1)[0]) # inspect one example
 ```
 
-    2024-05-16 10:40:54,923	INFO streaming_executor.py:112 -- Starting execution of Dataset. Full logs are in /tmp/ray/session_2024-05-15_17-18-53_424889_8313/logs/ray-data
-    2024-05-16 10:40:54,924	INFO streaming_executor.py:113 -- Execution plan of Dataset: InputDataBuffer[Input] -> TaskPoolMapOperator[Map(final_mapper)->Filter(filter_func)->MapBatches(drop_columns)] -> LimitOperator[limit=1]
+    2024-05-17 01:08:32,700	INFO streaming_executor.py:112 -- Starting execution of Dataset. Full logs are in /tmp/ray/session_2024-05-17_01-03-46_632348_53956/logs/ray-data
+    2024-05-17 01:08:32,701	INFO streaming_executor.py:113 -- Execution plan of Dataset: InputDataBuffer[Input] -> TaskPoolMapOperator[Map(final_mapper)->Filter(filter_func)->MapBatches(drop_columns)] -> LimitOperator[limit=1]
 
 
 
@@ -199,18 +201,6 @@ Let's make a train, validation and test split and save the datasets in the `json
 train_ds, val_ds, test_ds = processed_ds.split_proportionately([0.8, 0.1])
 test_ds, _  = test_ds.split_at_indices([200]) # restrict to 200 examples for testing
 ```
-
-    2024-05-15 17:19:04,543	INFO streaming_executor.py:112 -- Starting execution of Dataset. Full logs are in /tmp/ray/session_2024-05-15_17-18-53_424889_8313/logs/ray-data
-    2024-05-15 17:19:04,543	INFO streaming_executor.py:113 -- Execution plan of Dataset: InputDataBuffer[Input] -> TaskPoolMapOperator[Map(final_mapper)->Filter(filter_func)->MapBatches(drop_columns)]
-
-
-
-    - Map(final_mapper)->Filter(filter_func)->MapBatches(drop_columns) 1:   0%|          | 0/1 [00:00<?, ?it/s]
-
-
-
-    Running 0:   0%|          | 0/1 [00:00<?, ?it/s]
-
 
 
 ```python
@@ -249,7 +239,10 @@ For this guide, we will use `Llama-3-8B-Instruct` as the base model for fine-tun
 
 Head over to the Anyscale Platform: https://console.anyscale.com/v2 and spin up the "Fine-tune LLMs" template (under "AI application templates")
 
-![image.png](README_files/image.png)
+<p align="center">
+  <img src="./assets/templates.png" alt="Templates">
+</p>
+
 
 
 Follow the instructions to run your fine-tuning job.
@@ -309,11 +302,17 @@ MODEL_ID = "ModelIdHere"
 
 To serve the fine-tuned model, you just need to navigate to the "Serving" section on the Anyscale Platform. Your fine-tuned model should already be visible in the list of available models! 
 
-![image.png](README_files/image.png)
+<p align="center">
+  <img src="./assets/serving_endpoints.png" alt="Serve Endpoints">
+</p>
+
 
 As in the above image, click on the three dots and then click on "Query". This will provide you the starter code to interact with the model via curl, python, etc. 
 
-![image-2.png](README_files/image-2.png)
+<p align="center">
+  <img src="./assets/serve_api_key.png" alt="API Key">
+</p>
+
 
 
 ```python
@@ -327,7 +326,9 @@ MODEL_ID = "yourModelIdHere" # make sure to not add a stray slash "/"" at the en
 
 You can try out your new model in the Playground: https://console.anyscale.com/v2/playground . In the model dropdown, you should be able to see your finetuned model as shown below
 
-![image.png](README_files/image.png)
+<p align="center">
+  <img src="./assets/playground.png" alt="Playground">
+</p>
 
 # Step 4: Evaluation
 
@@ -369,7 +370,7 @@ We process the test dataset to have the following fields:
 
 ```python
 # preprocess the test dataset for evaluation
-modified_ds = test_ds.map(test_data_mapper)
+modified_ds = get_evaluation_dataset(test_ds, TOOL_CALL_TAGS, TOOL_RESULT_TAGS)
 ```
 
 ## Evaluate
@@ -387,29 +388,31 @@ ANYSCALE_API_KEY = "yourApiKeyHere"
 
 ```python
 # initialize parsers
-openai_parser = OpenAIResponseParser(api_key=OPENAI_API_KEY, api_base="https://api.openai.com/v1", model="gpt-4")
-anyscale_parser = AnyscaleResponseParser(api_key=ANYSCALE_API_KEY, api_base=ANYSCALE_API_BASE, model=MODEL_ID) 
+openai_parser = OpenAIResponseParser(api_key=OPENAI_API_KEY, api_base="https://api.openai.com/v1", model="gpt-4", tool_call_tags=TOOL_CALL_TAGS)
+anyscale_parser = AnyscaleResponseParser(api_key=ANYSCALE_API_KEY, api_base=ANYSCALE_API_BASE, model=MODEL_ID, tool_call_tags=TOOL_CALL_TAGS) 
 ```
 
 
 ```python
 # evaluate both models and plot the results
-results_gpt = evaluate_gpt(modified_ds, openai_parser)
-results_finetuned = evaluate_finetuned(modified_ds, anyscale_parser)
+results_gpt, accuracy_gpt = evaluate_model(modified_ds, openai_parser, "gpt")
+results_finetuned, accuracy_finetuned = evaluate_model(modified_ds, anyscale_parser, "finetuned")
+print("GPT-4 Accuracy: ", accuracy_gpt)
+print("Fine-tuned Model Accuracy: ", accuracy_finetuned)
 plot_results(results_finetuned, results_gpt)
 ```
 
-
-    
-![png](README_files/README_35_0.png)
     
 
+Your final fine-tuned model should be able to rival GPT-4 level performance on this dataset. In fact, performance can be higher, due to the fact that the test dataset construction was straightforward. Here's how your error analysis plot might look like for `Llama-3-8B-Instruct`:
 
-As you can see, our fine-tuned model is able to match GPT-4 level performance on this dataset. 
+<p align="center">
+  <img src="./assets/error_analysis.png?version=1" alt="Error Analysis">
+</p>
 
 # Summary
 
-If you got to the end, congrats! You have now fine-tuned an open source model rival GPT-4 on function calling. As a quick recap, here's what we demonstrated in this notebook:
+Congrats! You have now fine-tuned an open source model that can rival GPT-4 on function calling. As a quick recap, here's what we demonstrated in this notebook:
 1. Preprocesing a function calling dataset into a conversational format
 2. Fine-tuning a language model through either the Anyscale Platform or through Anyscale Endpoints
 3. Serving the fine-tuned model on Anyscale
