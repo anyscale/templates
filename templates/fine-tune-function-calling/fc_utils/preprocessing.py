@@ -63,7 +63,8 @@ def initial_mapper(example: Dict[str, Any]) -> Dict[str, Any]:
     system_prompt_prefixes = GLAIVEAI_TEMPLATE["system_prefixes"]
     if system_prompt_prefixes[0] in example["system"]:
         tools = extract_functions_from_system_msg(example["system"])
-        tools = "["+ ",".join([json.dumps(tool) for tool in tools]) + "]"  # convert to string
+        # convert to string
+        tools = json.dumps(tools)
     elif system_prompt_prefixes[1] not in example["system"]:
         raise InvalidSystemPromptError(
             f"System prompt {example['system']} does not match expected prefixes"
@@ -111,9 +112,12 @@ def chat_str_to_messages(chat: str, tool_to_user=False) -> List[Dict[str, str]]:
 
     matches = tag_pattern.finditer(chat)
     user_content = assistant_content = None
+    # if no matches found, raise an error
     if not matches:
         raise TagsNotFoundError(f"No user/assistant/tool message found in {chat}")
+
     messages = []
+    # Loop through all matches and extract the respective roles and content
     for match in matches:
         if match.group("user"):
             user_content = match.group("user").strip()
@@ -121,26 +125,24 @@ def chat_str_to_messages(chat: str, tool_to_user=False) -> List[Dict[str, str]]:
         elif match.group("assistant"):
             assistant_content = match.group("assistant").strip()
             assistant_content = combine_multiple_entries(assistant_content)
+            # glaive dataset is full of single function calls.
+            # We convert the single function call into a list and add tool call tags
             if GLAIVEAI_TEMPLATE["tool_call_prefix"] in assistant_content:
                 # make function call a list and add tags
                 assistant_content = assistant_content.replace(
-                    GLAIVEAI_TEMPLATE["tool_call_prefix"], TOOL_CALL_TAGS[0] + " " + "["
+                    GLAIVEAI_TEMPLATE["tool_call_prefix"], f"{TOOL_CALL_TAGS[0]} ["
                 )
-                assistant_content += "]" + " " + TOOL_CALL_TAGS[1]
+                assistant_content += f"] {TOOL_CALL_TAGS[1]}"
             assistant_content = assistant_content.replace(GLAIVEAI_TEMPLATE["eos"], "")
             msg = {"role": "assistant", "content": assistant_content}
         elif match.group("function_response"):
             function_response = match.group("function_response").strip()
             role = "tool"
-            function_response = "[" + function_response + "]"
+            # convert function response to a list for generality and add tags
+            function_response = f"[{function_response}]"
             if tool_to_user:
-                function_response = (
-                    TOOL_RESULT_TAGS[0]
-                    + " "
-                    + function_response
-                    + " "
-                    + TOOL_RESULT_TAGS[1]
-                )
+                # add tool tags only if the tool response is to be converted to user role
+                function_response = f"{TOOL_RESULT_TAGS[0]} {function_response} {TOOL_RESULT_TAGS[1]}"
                 role = "user"
             msg = {"role": role, "content": function_response}
         messages.append(msg)
@@ -160,10 +162,9 @@ def final_mapper(example: Dict[str, Any]) -> Dict[str, Any]:
     system_prompt_prefixes = GLAIVEAI_TEMPLATE["system_prefixes"]
     if system_prompt_prefixes[0] in example["system"]:
         tools = extract_functions_from_system_msg(example["system"])
-        tools= "["+ ",".join([json.dumps(tool) for tool in tools]) + "]"  # convert to string
-        tools = (
-            TOOL_LIST_TAGS[0] + " " + tools + " " + TOOL_LIST_TAGS[1]
-        )  # add tags
+         # convert to string and add tags
+        tools_str= json.dumps(tools)
+        tools = f"{TOOL_LIST_TAGS[0]} {tools_str} {TOOL_LIST_TAGS[1]}"
     elif system_prompt_prefixes[1] not in example["system"]:
         raise InvalidSystemPromptError(
             f"System prompt {example['system']} does not match expected prefixes"
