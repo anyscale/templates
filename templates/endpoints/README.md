@@ -1,32 +1,41 @@
-# Endpoints - Deploy, configure, and serve LLMs 
+# Deploy, configure, and serve LLMs 
 
-The guide below walks you through the steps required for deployment of LLM endpoints. Based on Ray Serve and RayLLM, the foundation for [Anyscale-Hosted Endpoints](http://anyscale.com/endpoints), the Endpoints template provides an easy to configure solution for ML Platform teams, Infrastructure engineers, and Developers who want to deploy optimized LLMs in production.  We have provided a number of examples for popular open-source models (Llama2, Mistral, Mixtral, embedding models, and more) with different GPU accelerator and tensor-parallelism configurations in the `models` directory. 
+**⏱️ Time to complete**: 10 min (20 on GCP)
 
-# Step 1 - Deploy the model on Workspace
+This guide walks you through how to deploy optimized LLMs in Anyscale. It includes a number of pre-tuned configs for Llama2, Mistral, Mixtral, embedding models, and more in the `models` directory.
 
-The llm-serve.yaml file in this example runs the Mistral-7B model on an A10G GPU. There are 2 important configurations you would need to modify:
-1. The `models` config in `llm-serve.yaml` contains a list of YAML files for the models you want to deploy. You can run any of the models in the `models` directory or define your own model YAML file and run that instead. Follow the CustomModels [guide](CustomModels.md) for bringing your own models.
-2. `HUGGING_FACE_HUB_TOKEN` - The Meta Llama-2 family of models need the HUGGING_FACE_HUB_TOKEN variable to be set to a Hugging Face Access Token for an account with permissions to download the model.
+You can also find more advanced tutorials in the `examples/` folder, including those for:
+- Embedding generation
+- Deploying custom models
+- Deploying LoRA and function-calling models
+- How to configure autoscaling and other optimization parameters
 
-** Note that AWS offers A10G GPUs while GCP offers L4. Please switch to the correct config file for the GPU type. All config files follow the naming convention `{model_name}_{accelerator_type}_{tensor_parallelism}`. The supported accelerator types are: T4, L4, A10G, A100-40G and A100-80G. 
+**Note**: This guide is hosted within an Anyscale workspace, which provides easy access to compute resources. Check out the `Introduction to Workspaces` template for more details.
 
-From the terminal use the Ray Serve CLI to deploy a model:
+## Step 1 - Run the model locally in the Workspace
 
-```shell
-# Deploy the Mistral-7b model. 
+We provide a starter command to run Llama and Mistral-family models via Ray Serve. You can specify the arguments, such as Lora, GPU type and tensor parallelism via the command. You can also follow the [guide](examples/CustomModels.ipynb) to bring your own models.
 
-serve run llm-serve.yaml
+The command will generate 2 files - a model config file (saved in `model_config/`) and a serve config file (`serve_TIMESTAMP.yaml`) that you can reference and re-run in the future.
+
+Please note that if you would like to serve a model whose architecture is different from the provided list of models, we highly recommend you manually going over the generated model config file to provide the correct values.
+
+```python
+!python generate_config.py
 ```
 
-# Step 2 - Query the model
+If you didn't start the serve application in the previous step, you can start it using the following command (replace the file name with the generated `serve_` file name):
 
-Once deployed you can use the OpenAI SDK to interact with the models, ensuring an easy integration for your applications. Run the following command in a separate terminal to query. 
-
-```shell
-python llm-query.py
+```python
+!serve run serve_TIMESTAMP.yaml
 ```
-```text
-Output:
+
+## Step 2 - Query the model
+
+Once deployed you can use the OpenAI SDK to interact with the models, ensuring an easy integration for your applications.
+
+Run the following command to query. You should get the following output:
+```
 The top rated restaurants in San Francisco include:
  • Chez Panisse
  • Momofuku Noodle Bar
@@ -39,66 +48,99 @@ The top rated restaurants in San Francisco include:
 
 Endpoints uses an OpenAI-compatible API, allowing us to use the OpenAI SDK to access Endpoint backends.
 
+
 ```python
 from openai import OpenAI
 
-client = OpenAI(
-  base_url="http://localhost:8000/v1",
-  api_key="NOT A REAL KEY",
-)
+def query(base_url: str, api_key: str):
+    if not base_url.endswith("/"):
+        base_url += "/"
+    
+    if "/routes" in base_url:
+        raise ValueError("base_url must end with '.com'")
 
-# List all models.
-models = client.models.list()
-print(models)
+    client = OpenAI(
+      base_url=base_url + "v1",
+      api_key=api_key,
+    )
 
-# Note: not all arguments are currently supported and will be ignored by the backend.
-chat_completion = client.chat.completions.create(
-    model="mistralai/Mistral-7B-Instruct-v0.1",
-    messages=[{"role": "system", "content": "You are a helpful assistant."}, {"role": "user", "content": "What are some of the highest rated restaurants in San Francisco?'."}],
-    temperature=0.01
-)
+    # List all models.
+    models = client.models.list()
+    print(models)
 
-print(chat_completion)
+    # Note: not all arguments are currently supported and will be ignored by the backend.
+    chat_completions = client.chat.completions.create(
+        model="mistralai/Mistral-7B-Instruct-v0.1",
+        messages=[
+            {"role": "system", "content": "You are a helpful assistant."},
+            {"role": "user", "content": "What are some of the highest rated restaurants in San Francisco?'."},
+        ],
+        temperature=0.01,
+        stream=True
+    )
 
+    for chat in chat_completions:
+        if chat.choices[0].delta.content is not None:
+            print(chat.choices[0].delta.content, end="")
 ```
 
-# Step 3 - Deploying a production service
 
-To deploy an application with one model on an Anyscale Service you can run:
+```python
+# Query the local serve application we just deployed.
 
-```shell
-anyscale service rollout -f llm-service.yaml --name {ENTER_NAME_FOR_SERVICE_HERE}
+query("http://localhost:8000", "NOT A REAL KEY")
 ```
 
-This is setup to run the Mistral-7B model, but can be easily modified to run any of the other models in this repo.
+## Step 3 - Deploying a production service
 
-# Step 4 - Query the service endpoint
+To deploy an application with one model as an Anyscale Service, copy the contents from `serve_TIMESTAMP.yaml` file under `ray_serve_config` in the `service.yaml` file and run:
 
-In order to query the endpoint, you can modify the `llm-query.py` script, replacing the query url with the Service URL found in the Service UI.
+```python
+# Deploy the serve app to production with a given service name.
+# Reference the serve file created in step 1
+!anyscale service rollout -f service.yaml
+```
 
-Note: please make sure to include the path "/v1" at the end of the Service url.
+After the command runs, click the deploy notification (or navigate to ``Home > Services``) to access the Service UI. Navigate to the Service UI and wait for the service to reach "Active". It will begin in "Starting" state.
 
-# More Guides
+## Step 4 - Query the service endpoint
 
-Endpoints makes it easy for LLM Developers to interact with OpenAI compatible APIs for their applications by providing an easy to manage backend for serving OSS LLMs.  It does this by:
+The above command should print something like `(anyscale +2.9s) curl -H 'Authorization: Bearer XXXXXXXXX_XXXXXX-XXXXXXXXXXXX' https://YYYYYYYYYYYY.anyscaleuserdata.com`, which contains information you need to query the service.
 
-- Providing an extensive suite of pre-configured open source LLMs and embedding models, with defaults that work out of the box. 
-- Simplifying the addition of new LLMs.
-- Simplifying the deployment of multiple LLMs
-- Offering unique autoscaling support, including scale-to-zero.
-- Fully supporting multi-GPU & multi-node model deployments.
-- Offering high performance features like continuous batching, quantization and streaming.
-- Providing a REST API that is similar to OpenAI's to make it easy to migrate and integrate with other tools.
+You can also find this information by clicking the "Query" button in the Service UI.
 
-Look at the following guides for more advanced use-cases -
-* [Deploy models for embedding generation](EmbeddingModels.md)
-* [Learn how to bring your own models](CustomModels.md)
-* [Deploy multiple LoRA fine-tuned models](DeployLora.md)
-* [Deploy Function calling models](DeployFunctionCalling.md)
-* [Learn how to leverage different configurations that can optimize the latency and throughput of your models](OptimizeModels.md)
-* [Learn how to fully configure your deployment including auto-scaling, optimization parameters and tensor-parallelism](AdvancedModelConfigs.md)
+```python
+# Query the remote serve application we just deployed.
 
-# Application Examples
+service_url = "https://YYYYYYYYYYYYY.anyscaleuserdata.com"  # FILL ME IN
+service_bearer_token = "XXXXXXXXXX_XXXXXXX-XXXXXXXXXXXXXX"  # FILL ME IN
+
+query(service_url, service_bearer_token)
+```
+
+## More Guides
+
+RayLLM makes it easy for LLM Developers to interact with OpenAI compatible APIs for their applications by providing an easy to manage backend for serving OSS LLMs.
+
+It provides a number of features making LLM development easy, including:
+- An extensive suite of pre-configured open source LLMs and embedding models.
+- An OpenAI compatible REST API.
+
+As well as operational features for efficient scaling of LLM apps:
+- Optimizations such as continuous batching, quantization and streaming.
+- Production-grade autoscaling support, including scale-to-zero.
+- Native multi-GPU & multi-node model deployments.
+
+Look at the following guides for more advanced use-cases:
+* [Deploy models for embedding generation](examples/embedding/EmbeddingModels.ipynb)
+* [Learn how to bring your own models](examples/CustomModels.ipynb)
+* [Deploy multiple LoRA fine-tuned models](examples/lora/DeployLora.ipynb)
+* [Deploy Function calling models](examples/function_calling/DeployFunctionCalling.ipynb)
+* [Learn how to leverage different configurations that can optimize the latency and throughput of your models](examples/OptimizeModels.ipynb)
+* [Learn how to fully configure your deployment including auto-scaling, optimization parameters and tensor-parallelism](examples/AdvancedModelConfigs.ipynb)
+
+## Application Examples
+
 See examples of building applications with your deployed endpoint on the [Anyscale Endpoints](https://docs.endpoints.anyscale.com/category/examples) page.
 
-Be sure to update the api_base and token for your private deployment. This can be found under the "Serve deployments" tab on the "Query" button when deploying on your Workspace.
+Be sure to update the `api_base` and `token` for your private deployment. This information can be found under the "Query" button in the Anyscale Service UI.
