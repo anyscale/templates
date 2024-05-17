@@ -55,9 +55,11 @@ def extract_jsons(string: str) -> List[Dict[str, Any]]:
 def get_tool_calls_from_response(assistant_content: str, tool_call_tags: Tuple[str, str]) -> Tuple[str, List[ToolCallType]]:
     """
     Extracts tool calls from the assistant response.
+
     Args:
         assistant_content: The assistant response content
         tool_call_tags: Tuple containing the start and end tags for the tool call
+
     Returns:
         assistant_content: The assistant response content
         tool_calls: List of tool calls extracted from the assistant response

@@ -33,10 +33,10 @@ def test_data_mapper(example: Dict[str, Any], tool_call_tags: Tuple[str, str], t
     Preprocesses a test data sample for evaluation.
 
     The test example is processed to have the following fields:
-    1. `openai_messages` : the list of messages in the conversation for GPT-4. The user messages will be fed to the model one by one. The function responses are designated with the role "tool".
-    2. `anyscale_messages`: the list of messages in the conversation for our fine-tuned model.
-    3. `tools`: the list of tools to pass to the OpenAI model.
-    4. `expected_responses` : the list of ground truth assistant responses in the conversation.
+    1. openai_messages : the list of messages in the conversation for GPT-4. The user messages will be fed to the model one by one. The function responses are designated with the role "tool".
+    2. anyscale_messages: the list of messages in the conversation for our fine-tuned model.
+    3. tools: the list of tools to pass to the OpenAI model.
+    4. expected_responses : the list of ground truth assistant responses in the conversation.
 
     Args:
         example: The test example to preprocess
