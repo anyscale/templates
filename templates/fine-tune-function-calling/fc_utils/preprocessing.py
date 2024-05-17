@@ -4,6 +4,8 @@ Preprocessing utils for Glaive AI's function calling dataset
 
 import re
 import json
+from typing import Dict, Any, List
+import ray.data
 
 tags = {"user": "USER: ", "assistant": "ASSISTANT: ", "tool": "FUNCTION RESPONSE: "}
 
@@ -28,11 +30,19 @@ class InvalidSystemPromptError(Exception):
 class TagsNotFoundError(Exception):
     pass
 
-def extract_functions_from_system_msg(system_str):
+def extract_functions_from_system_msg(system_str: str) -> List[Dict[str, Any]]:
+    """
+    Extracts the functions from the system message with a simple regex pattern. If
+    the function is not a valid JSON, it is skipped.
+    Args:
+        system_str: The system message
+    Returns:
+        functions: List of functions successfully extracted from the system message
+    """
     # Extracting the functions using regex
     functions_match = re.findall(r"\{.*?\}(?=\s*\{|\s*$)", system_str, re.DOTALL)
-
     functions = []
+
     for fn in functions_match:
         try:
             # Convert string representation of dictionary to actual dictionary
@@ -43,7 +53,7 @@ def extract_functions_from_system_msg(system_str):
             continue
     return functions
 
-def initial_mapper(example):
+def initial_mapper(example: Dict[str, Any]) -> Dict[str, Any]:
     """
     Mapper function to process the glaive ai function calling dataset into the OpenAI format
     """
@@ -67,7 +77,7 @@ def initial_mapper(example):
     return example
 
 
-def combine_multiple_entries(assistant_content):
+def combine_multiple_entries(assistant_content: str) -> str:
     """
     Combines multiple entries of the assistant role into one entry when the function call is split into multiple entries.
     """
@@ -84,7 +94,15 @@ def combine_multiple_entries(assistant_content):
 
 
 
-def chat_str_to_messages(chat, tool_to_user=False):
+def chat_str_to_messages(chat: str, tool_to_user=False) -> List[Dict[str, str]]:
+    """
+    Helper function to convert the chat string into a list of messages with roles.
+    Args:
+        chat: The chat string
+        tool_to_user: Boolean indicating if the tool response should be converted to user role
+    Returns:
+        messages: List of messages with roles and content
+    """
     # regex pattern to extract user, assistant and tool messages.
     tag_pattern = re.compile(
         r"(?:USER:\s*(?P<user>.*?)\s*(?=ASSISTANT|$)|ASSISTANT:\s*(?P<assistant>.*?)(?=\n\n\nFUNCTION RESPONSE|\n*(?=USER|$))|\n\n\nFUNCTION RESPONSE:\s*(?P<function_response>.*?)\s*(?=ASSISTANT|USER|$))",
@@ -129,10 +147,9 @@ def chat_str_to_messages(chat, tool_to_user=False):
     return messages
 
 
-def final_mapper(example):
+def final_mapper(example: Dict[str, Any]) -> Dict[str, Any]:
     """
     Mapper function to process the glaive ai function calling dataset into Anyscale Endpoints compatible format.
-
     Preprocessing steps:
     1. Remove the used special tokens "USER: "<|endoftext|>" and bring them to a general format (since different models will have different special tokens for roles, end of text, etc).
     2. Process tool responses into "user" role. "FUNCTION RESPONSE: " entries are processed into the role "user"
@@ -162,7 +179,7 @@ def final_mapper(example):
     return example
 
 
-def filter_func(example):
+def filter_func(example: Dict[str, Any]) -> bool:
     """
     Simple filter function that returns False if the message list has two consecutive messages
     from the same role. If otherwise, the function returns True.
@@ -182,7 +199,7 @@ def filter_func(example):
     return is_good_entry
 
 
-def preprocess(ray_ds):
+def preprocess(ray_ds: ray.data.Dataset) -> ray.data.Dataset:
     """
     Preprocesses the Ray dataset into the messages format required by Anyscale Endpoints.
     """
@@ -192,9 +209,9 @@ def preprocess(ray_ds):
     return ray_ds
 
 
-def pprint_example(example,keys=[]):
+def pprint_example(example: Dict[str, Any],keys: List[str] = []) -> None:
     """
-    Pretty prints an example with messages and tools field with colors for different roles
+    Pretty prints an example with colors for different roles
     """
     if not keys:
         keys = example.keys()
@@ -228,6 +245,9 @@ def pprint_example(example,keys=[]):
     print(pprint_str)
 
 
-def save_to_jsonl(ds, filepath):
+def save_to_jsonl(ds: ray.data.Dataset, filepath: str) -> None:
+    """
+    Saves a Ray dataset to a jsonl file
+    """
     df = ds.to_pandas()
     df.to_json(filepath, orient="records", lines=True)
