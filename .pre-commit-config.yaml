@@ -4,7 +4,7 @@ repos:
     rev: v3.2.0
     hooks:
       - id: check-added-large-files
-        args: ['--maxkb=10000']
+        args: ['--maxkb=10000'] # fix max file size to 10MB
       - id: trailing-whitespace
         # README might be auto-generated
         exclude: templates/.+/README.md
