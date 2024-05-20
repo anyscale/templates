@@ -23,16 +23,15 @@ First, let's make the necessary imports
 ```python
 import datasets
 import ray.data 
-from tqdm import tqdm
 import openai
-from functools import partial
 ```
 
 
 ```python
-from fc_utils.preprocessing import initial_mapper, pprint_example, preprocess, save_to_jsonl, TOOL_CALL_TAGS, TOOL_RESULT_TAGS
+from fc_utils.data_format import TOOL_CALL_TAGS, TOOL_RESULT_TAGS, TOOL_LIST_TAGS, DatasetFormat
+from fc_utils.preprocessing import preprocess_to_openai_format, pprint_example, preprocess_to_anyscale_format, save_to_jsonl
 from fc_utils.response_parsers import OpenAIResponseParser, AnyscaleResponseParser
-from fc_utils.eval_utils import evaluate_model
+from fc_utils.eval_utils import evaluate_model, Model
 from fc_utils.test_utils import get_evaluation_dataset
 from fc_utils.plot_utils import plot_results
 ```
@@ -45,19 +44,13 @@ We'll use Ray Data for scalable data processing. First let's load the dataset fr
 hf_ds = datasets.load_dataset("glaiveai/glaive-function-calling-v2", split="train").shuffle(seed=21) 
 hf_ds_subset =  hf_ds.select(range(int(len(hf_ds)*0.10))) # sample only 10% of the dataset
 ray_ds = ray.data.from_huggingface(hf_ds_subset)
+first_ex = ray_ds.take(1)[0]
 ```
 
-    2024-05-17 01:03:48,712	INFO worker.py:1740 -- Started a local Ray instance. View the dashboard at [1m[32m127.0.0.1:8266 [39m[22m
-
-
-
-```python
-pprint_example(ray_ds.take(1)[0])
-```
-
-    2024-05-17 01:03:52,191	INFO dataset.py:2370 -- Tip: Use `take_batch()` instead of `take() / show()` to return records in pandas or numpy batch format.
-    2024-05-17 01:03:52,194	INFO streaming_executor.py:112 -- Starting execution of Dataset. Full logs are in /tmp/ray/session_2024-05-17_01-03-46_632348_53956/logs/ray-data
-    2024-05-17 01:03:52,194	INFO streaming_executor.py:113 -- Execution plan of Dataset: InputDataBuffer[Input] -> LimitOperator[limit=1]
+    2024-05-19 20:55:21,547	INFO worker.py:1740 -- Started a local Ray instance. View the dashboard at [1m[32m127.0.0.1:8265 [39m[22m
+    2024-05-19 20:55:25,061	INFO dataset.py:2370 -- Tip: Use `take_batch()` instead of `take() / show()` to return records in pandas or numpy batch format.
+    2024-05-19 20:55:25,063	INFO streaming_executor.py:112 -- Starting execution of Dataset. Full logs are in /tmp/ray/session_2024-05-19_20-55-19_472957_88751/logs/ray-data
+    2024-05-19 20:55:25,064	INFO streaming_executor.py:113 -- Execution plan of Dataset: InputDataBuffer[Input] -> LimitOperator[limit=1]
 
 
 
@@ -68,7 +61,12 @@ pprint_example(ray_ds.take(1)[0])
     Running 0:   0%|          | 0/1 [00:00<?, ?it/s]
 
 
-    [94msystem: [0mSYSTEM: You are a helpful assistant with access to the following functions. Use them if required -
+
+```python
+pprint_example(first_ex, dataset_format=DatasetFormat.GLAIVE)
+```
+
+    [91msystem: [0mSYSTEM: You are a helpful assistant with access to the following functions. Use them if required -
     {
         "name": "create_reminder",
         "description": "Create a reminder for a specific date and time",
@@ -124,17 +122,25 @@ If you notice, each sample has two entries: system and chat. This dataset is alr
 
 
 ```python
-# initial preprocessing to get to the conversation format
-openai_fmt_ds = ray_ds.map(initial_mapper)
-pprint_example(openai_fmt_ds.take(1)[0], keys=["messages", "tools"]) # inspect one example
+import fc_utils.preprocessing
+import importlib
+importlib.reload(fc_utils.preprocessing)
+from fc_utils.preprocessing import pprint_example
 ```
 
-    2024-05-17 01:08:30,192	INFO streaming_executor.py:112 -- Starting execution of Dataset. Full logs are in /tmp/ray/session_2024-05-17_01-03-46_632348_53956/logs/ray-data
-    2024-05-17 01:08:30,193	INFO streaming_executor.py:113 -- Execution plan of Dataset: InputDataBuffer[Input] -> TaskPoolMapOperator[Map(initial_mapper)] -> LimitOperator[limit=1]
+
+```python
+# initial preprocessing to get to the OpenAI format
+openai_fmt_ds = preprocess_to_openai_format(ray_ds)
+first_ex = openai_fmt_ds.take(1)[0] 
+```
+
+    2024-05-19 20:57:57,797	INFO streaming_executor.py:112 -- Starting execution of Dataset. Full logs are in /tmp/ray/session_2024-05-19_20-55-19_472957_88751/logs/ray-data
+    2024-05-19 20:57:57,798	INFO streaming_executor.py:113 -- Execution plan of Dataset: InputDataBuffer[Input] -> TaskPoolMapOperator[Map(glaive_to_openai)->Filter(<lambda>)->Filter(filter_func)] -> LimitOperator[limit=1]
 
 
 
-    - Map(initial_mapper) 1:   0%|          | 0/1 [00:00<?, ?it/s]
+    - Map(glaive_to_openai)->Filter(<lambda>)->Filter(filter_func) 1:   0%|          | 0/1 [00:00<?, ?it/s]
 
 
 
@@ -145,30 +151,52 @@ pprint_example(openai_fmt_ds.take(1)[0], keys=["messages", "tools"]) # inspect o
     Running 0:   0%|          | 0/1 [00:00<?, ?it/s]
 
 
-    [91msystem: [0mYou are a helpful assistant.
-    [92muser: [0mHi, I need help with calculating the tip for my bill. The total amount is $50 and I want to give a 20% tip.
-    [94massistant: [0m[TOOL_CALLS] [ {"name": "calculate_tip", "arguments": '{"total": 50, "tip_percentage": 20}'} ] [/TOOL_CALLS]
-    [93mtool: [0m[{"tip_amount": 10}]
-    [94massistant: [0mBased on the total bill amount of $50 and a tip percentage of 20%, the tip amount you should give is $10. 
-    [95mTool list: [0m[{"name": "calculate_tip", "description": "Calculate the tip amount based on bill total and tip percentage", "parameters": {"type": "object", "properties": {"total": {"type": "number", "description": "The total bill amount"}, "tip_percentage": {"type": "number", "description": "The percentage of tip to be given"}}, "required": ["total", "tip_percentage"]}}]
+
+```python
+import fc_utils.preprocessing
+import importlib
+importlib.reload(fc_utils.preprocessing)
+from fc_utils.preprocessing import pprint_example
+```
+
+
+```python
+pprint_example(first_ex, dataset_format=DatasetFormat.OPENAI) # inspect one example
+```
+
+    [92mMessages: [0m
+    	[91msystem: [0mYou are a helpful assistant.
+    	[92muser: [0mI need to set a reminder for my doctor's appointment.
+    	[94massistant: 
+    		content: [0mSure, I can help with that. Could you please provide me with the date and time of your appointment? 
+    		[94mtool_calls: [0m[]
+    	[92muser: [0mThe appointment is on 2022-09-15 at 10:00 AM.
+    	[94massistant: 
+    		content: [0m
+    		[94mtool_calls: [0m[{'function': {'arguments': '{"reminder_text": "Doctors appointment", "reminder_date": "2022-09-15", "reminder_time": "10:00"}', 'name': 'create_reminder'}, 'id': 'call_3d8bc9df5a3f47b9a836bdee', 'type': 'function'}]
+    	[93mtool: [0m{"name": "create_reminder", "content": "{\"status\": \"success\", \"message\": \"Reminder for 'Doctor's appointment' on 2022-09-15 at 10:00 AM has been created successfully.\"}", "tool_call_id": "call_3d8bc9df5a3f47b9a836bdee"}
+    	[94massistant: 
+    		content: [0mYour reminder for the doctor's appointment on 2022-09-15 at 10:00 AM has been created successfully. You will be notified at the specified time. 
+    		[94mtool_calls: [0m[]
+    [95mTools: [0m[{"type": "function", "function": {"name": "create_reminder", "description": "Create a reminder for a specific date and time", "parameters": {"type": "object", "properties": {"reminder_text": {"type": "string", "description": "The content of the reminder"}, "reminder_date": {"type": "string", "format": "date", "description": "The date of the reminder"}, "reminder_time": {"type": "string", "format": "time", "description": "The time of the reminder"}}, "required": ["reminder_text", "reminder_date", "reminder_time"]}}}]
     
 
 
-Notice how we made use of special indicators "\[TOOL_CALLS\]" and "\[/TOOL_CALLS\]" to denote a tool call (as supposed a regular JSON output from the model). We'll now further process this conversation format and make it compatible with Anyscale Endpoints. The role "tool" will be converted to the role "user" with a special indicator to highlight that this is a tool response. Further, the tool list will be included in the system prompt with special indicators. The following code block handles the necessary preprocessing.
+We'll now further process this conversation format and make it compatible with Anyscale Endpoints. We'll make sure of special indicators "\[TOOL_CALLS\]" and "\[/TOOL_CALLS\] to format assistant tool calls into the message "content" field. The role "tool" will be converted to the role "user" with a special indicator to highlight that this is a tool response. Further, the tool list will be included in the system prompt with special indicators. The following code block handles the necessary preprocessing.
 
 
 ```python
 # complete preprocessing step
-processed_ds = preprocess(ray_ds) 
-pprint_example(processed_ds.take(1)[0]) # inspect one example
+processed_ds = preprocess_to_anyscale_format(openai_fmt_ds)
+first_ex = processed_ds.take(1)[0]
 ```
 
-    2024-05-17 01:08:32,700	INFO streaming_executor.py:112 -- Starting execution of Dataset. Full logs are in /tmp/ray/session_2024-05-17_01-03-46_632348_53956/logs/ray-data
-    2024-05-17 01:08:32,701	INFO streaming_executor.py:113 -- Execution plan of Dataset: InputDataBuffer[Input] -> TaskPoolMapOperator[Map(final_mapper)->Filter(filter_func)->MapBatches(drop_columns)] -> LimitOperator[limit=1]
+    2024-05-19 21:00:20,978	INFO streaming_executor.py:112 -- Starting execution of Dataset. Full logs are in /tmp/ray/session_2024-05-19_20-55-19_472957_88751/logs/ray-data
+    2024-05-19 21:00:20,979	INFO streaming_executor.py:113 -- Execution plan of Dataset: InputDataBuffer[Input] -> TaskPoolMapOperator[Map(glaive_to_openai)->Filter(<lambda>)->Filter(filter_func)->Map(openai_to_anyscale)->Filter(filter_func)] -> LimitOperator[limit=1]
 
 
 
-    - Map(final_mapper)->Filter(filter_func)->MapBatches(drop_columns) 1:   0%|          | 0/1 [00:00<?, ?it/s]
+    - Map(glaive_to_openai)->Filter(<lambda>)->Filter(filter_func)->Map(openai_to_anyscale)->Filter(filter_func) 1…
 
 
 
@@ -179,17 +207,19 @@ pprint_example(processed_ds.take(1)[0]) # inspect one example
     Running 0:   0%|          | 0/1 [00:00<?, ?it/s]
 
 
-    [91msystem: [0mYou are a helpful assistant.[TOOL_LIST] [{"name": "get_stock_price", "description": "Get the current stock price", "parameters": {"type": "object", "properties": {"symbol": {"type": "string", "description": "The stock symbol, e.g. AAPL"}}, "required": ["symbol"]}},{"name": "calculate_mortgage_payment", "description": "Calculate the monthly mortgage payment based on loan details", "parameters": {"type": "object", "properties": {"loan_amount": {"type": "number", "description": "The amount of the loan"}, "interest_rate": {"type": "number", "description": "The annual interest rate"}, "loan_term": {"type": "integer", "description": "The loan term in years"}}, "required": ["loan_amount", "interest_rate", "loan_term"]}}] [/TOOL_LIST]
-    [92muser: [0mCan you tell me the current stock price of AAPL?
-    [94massistant: [0m[TOOL_CALLS] [ {"name": "get_stock_price", "arguments": '{"symbol": "AAPL"}'} ] [/TOOL_CALLS]
-    [92muser: [0m[TOOL_RESULTS] [{"status": "success", "data": {"symbol": "AAPL", "price": 150.75}}] [/TOOL_RESULTS]
-    [94massistant: [0mThe current stock price of AAPL is $150.75. 
-    [92muser: [0mWhat about the stock price of MSFT?
-    [94massistant: [0m[TOOL_CALLS] [ {"name": "get_stock_price", "arguments": '{"symbol": "MSFT"}'} ] [/TOOL_CALLS]
-    [92muser: [0m[TOOL_RESULTS] [{"status": "success", "data": {"symbol": "MSFT", "price": 295.40}}] [/TOOL_RESULTS]
-    [94massistant: [0mThe current stock price of MSFT is $295.40. 
-    [92muser: [0mThank you for the information.
-    [94massistant: [0mYou're welcome! If you have any other questions, feel free to ask. 
+
+```python
+pprint_example(first_ex, dataset_format=DatasetFormat.ANYSCALE) # inspect one example
+```
+
+    [92mMessages: [0m
+    	[91msystem: [0mYou are a helpful assistant.[TOOL_LIST] [{"type": "function", "function": {"name": "create_reminder", "description": "Create a reminder for a specific date and time", "parameters": {"type": "object", "properties": {"reminder_text": {"type": "string", "description": "The content of the reminder"}, "reminder_date": {"type": "string", "format": "date", "description": "The date of the reminder"}, "reminder_time": {"type": "string", "format": "time", "description": "The time of the reminder"}}, "required": ["reminder_text", "reminder_date", "reminder_time"]}}}] [/TOOL_LIST]
+    	[92muser: [0mI need to set a reminder for my doctor's appointment.
+    	[94massistant: [0mSure, I can help with that. Could you please provide me with the date and time of your appointment? 
+    	[92muser: [0mThe appointment is on 2022-09-15 at 10:00 AM.
+    	[94massistant: [0m[TOOL_CALLS] [{"function": {"arguments": "{\"reminder_text\": \"Doctors appointment\", \"reminder_date\": \"2022-09-15\", \"reminder_time\": \"10:00\"}", "name": "create_reminder"}, "id": "call_7d85fa44c8c54ede90954b4b", "type": "function"}] [/TOOL_CALLS]
+    	[92muser: [0m[TOOL_RESULT] {"name": "create_reminder", "content": "{\"status\": \"success\", \"message\": \"Reminder for 'Doctor's appointment' on 2022-09-15 at 10:00 AM has been created successfully.\"}", "tool_call_id": "call_7d85fa44c8c54ede90954b4b"} [/TOOL_RESULT]
+    	[94massistant: [0mYour reminder for the doctor's appointment on 2022-09-15 at 10:00 AM has been created successfully. You will be notified at the specified time. 
     
 
 
@@ -201,6 +231,18 @@ train_ds, val_ds, test_ds = processed_ds.split_proportionately([0.8, 0.1])
 test_ds, _  = test_ds.split_at_indices([200]) # restrict to 200 examples for testing
 ```
 
+    2024-05-19 21:00:38,320	INFO streaming_executor.py:112 -- Starting execution of Dataset. Full logs are in /tmp/ray/session_2024-05-19_20-55-19_472957_88751/logs/ray-data
+    2024-05-19 21:00:38,320	INFO streaming_executor.py:113 -- Execution plan of Dataset: InputDataBuffer[Input] -> TaskPoolMapOperator[Map(glaive_to_openai)->Filter(<lambda>)->Filter(filter_func)->Map(openai_to_anyscale)->Filter(filter_func)]
+
+
+
+    - Map(glaive_to_openai)->Filter(<lambda>)->Filter(filter_func)->Map(openai_to_anyscale)->Filter(filter_func) 1…
+
+
+
+    Running 0:   0%|          | 0/1 [00:00<?, ?it/s]
+
+
 
 ```python
 # inspect final counts
@@ -210,7 +252,7 @@ train_ds.count(), val_ds.count(), test_ds.count()
 
 
 
-    (9036, 1129, 200)
+    (9013, 1127, 200)
 
 
 
@@ -358,19 +400,39 @@ else
 
 
 ## Dataset formatting
-We follow the same preprocessing as during training for the finetuned model hosted on Anyscale. For GPT-4, the tool calls and tool responses are parsed and formatted in the OpenAI format. 
-
-We process the test dataset to have the following fields: 
-1. `openai_messages` : the list of messages in the conversation for GPT-4. The user messages will be fed to the model one by one. The function responses have to be designated with the role "tool" here.
-2. `anyscale_messages`: the list of messages in the conversation for our fine-tuned model.
-3. `tools`: the list of tools to pass to the OpenAI model. 
-4. `expected_responses` : the list of ground truth assistant responses in the conversation. 
+  
+We process our test dataset individually for our finetuned model on Anyscale and for GPT-4:
+- For GPT-4, we undo some of the preprocessing previously done to get back the conversation in each example into the OpenAI format. All expected assistant responses in the dataset are processed to have the `"content"` and the `"tool_calls"` field. 
+- We follow the same preprocessing as during training for the Anyscale hosted model. However, for the expected assistant response, we process it in the same way as GPT-4 (i.e parse all tool calls and store them in a separate `"tool_calls"` field).
 
 
 ```python
 # preprocess the test dataset for evaluation
-modified_ds = get_evaluation_dataset(test_ds, TOOL_CALL_TAGS, TOOL_RESULT_TAGS)
+eval_ds_openai = get_evaluation_dataset(test_ds, TOOL_CALL_TAGS, TOOL_RESULT_TAGS, TOOL_LIST_TAGS, DatasetFormat.OPENAI)
+eval_ds_anyscale = get_evaluation_dataset(test_ds, TOOL_CALL_TAGS, TOOL_RESULT_TAGS, TOOL_LIST_TAGS, DatasetFormat.ANYSCALE)
 ```
+
+
+```python
+pprint_example(eval_ds_anyscale[20], dataset_format=DatasetFormat.OPENAI)
+```
+
+    [92mMessages: [0m
+    	[91msystem: [0mYou are a helpful assistant.[TOOL_LIST] [{"type": "function", "function": {"name": "generate_qr_code", "description": "Generate a QR code for a given text", "parameters": {"type": "object", "properties": {"text": {"type": "string", "description": "The text to encode in the QR code"}}, "required": ["text"]}}}, {"type": "function", "function": {"name": "get_movie_details", "description": "Get the details of a movie", "parameters": {"type": "object", "properties": {"title": {"type": "string", "description": "The title of the movie"}, "year": {"type": "integer", "description": "The release year of the movie"}}, "required": ["title"]}}}] [/TOOL_LIST]
+    	[92muser: [0mHi, I need a QR code for my website. Can you help me with that?
+    	[94massistant: 
+    		content: [0mOf course, I can help you with that. Could you please provide me with the URL of your website? 
+    		[94mtool_calls: [0mNone
+    	[92muser: [0mSure, it's www.mywebsite.com.
+    	[94massistant: 
+    		content: [0mNone
+    		[94mtool_calls: [0m[{'function': {'arguments': {'text': 'www.mywebsite.com'}, 'name': 'generate_qr_code'}, 'id': 'call_646f0233411b4796a25bf5b8', 'type': 'function'}]
+    	[92muser: [0m[TOOL_RESULT] {"name": "generate_qr_code", "content": "{\"qr_code\": \"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAYAAACtWK6eAAAACXBIWXMAAAsTAAALEwEAmpwYAAAKT2lDQ1BQaG90b3Nob3AgSUN... (truncated)\"}", "tool_call_id": "call_646f0233411b4796a25bf5b8"} [/TOOL_RESULT]
+    	[94massistant: 
+    		content: [0mI have generated the QR code for your website. You can download it using this link: [QR Code](data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAYAAACtWK6eAAAACXBIWXMAAAsTAAALEwEAmpwYAAAKT2lDQ1BQaG90b3Nob3AgSUN... (truncated)) 
+    		[94mtool_calls: [0mNone
+    
+
 
 ## Evaluate
 
@@ -394,14 +456,12 @@ anyscale_parser = AnyscaleResponseParser(api_key=ANYSCALE_API_KEY, api_base=ANYS
 
 ```python
 # evaluate both models and plot the results
-results_gpt, accuracy_gpt = evaluate_model(modified_ds, openai_parser, "gpt")
-results_finetuned, accuracy_finetuned = evaluate_model(modified_ds, anyscale_parser, "finetuned")
+results_gpt, accuracy_gpt = evaluate_model(eval_ds_openai, openai_parser, Model.GPT)
+results_finetuned, accuracy_finetuned = evaluate_model(eval_ds_anyscale, anyscale_parser, Model.FINETUNED)
 print("GPT-4 Accuracy: ", accuracy_gpt)
 print("Fine-tuned Model Accuracy: ", accuracy_finetuned)
 plot_results(results_finetuned, results_gpt)
 ```
-
-    
 
 Your final fine-tuned model should be able to rival GPT-4 level performance on this dataset. In fact, performance can be higher, due to the fact that the test dataset construction was straightforward. Here's how your error analysis plot might look like for `Llama-3-8B-Instruct`:
 

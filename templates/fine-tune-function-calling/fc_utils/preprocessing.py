@@ -8,6 +8,7 @@ from typing import Dict, Any, List, Optional
 import ray.data
 from fc_utils.function_extraction_utils import (
     get_tool_calls_from_response,
+    extract_functions_from_system_msg,
     FunctionCallNotFoundError,
     DatasetFormat,
 )
@@ -28,39 +29,15 @@ class TagsNotFoundError(Exception):
     pass
 
 
-def extract_functions_from_system_msg(system_str: str) -> List[Dict[str, Any]]:
-    """Extracts the functions from the system message with a simple regex pattern.
-
-    If the function is not a valid JSON, it is skipped.
-
-    Args:
-        system_str: The system message
-
-    Returns:
-        functions: List of functions successfully extracted from the system message
-    """
-    # Extracting the functions using regex
-    functions_match = re.findall(r"\{.*?\}(?=\s*\{|\s*$)", system_str, re.DOTALL)
-    functions = []
-
-    for fn in functions_match:
-        try:
-            # Convert string representation of dictionary to actual dictionary
-            fn_dict = json.loads(fn)
-            functions.append(fn_dict)
-        except json.JSONDecodeError:
-            # In case the string is not a valid JSON, continue without adding it to the list
-            continue
-    return functions
-
-
 def glaive_to_openai(example: Dict[str, Any]) -> Dict[str, Any]:
-    """Mapper function to process the glaive ai function calling dataset into the OpenAI format"""
+    """Mapper function to process the glaive ai function calling dataset into the OpenAI format."""
     messages = []
     tools = None
     if GLAIVEAI_SYSTEM_WITH_TOOLS in example["system"]:
-        tools = extract_functions_from_system_msg(example["system"])
-        # convert to string
+        tools = extract_functions_from_system_msg(
+            example["system"], format=DatasetFormat.GLAIVE
+        )
+        # # convert to string for compatiblity with PyArrow
         tools = json.dumps(tools)
     elif GLAIVEAI_SYSTEM_NO_TOOLS not in example["system"]:
         # If an unexpected system prompt is found, raise an error to investigate
@@ -71,12 +48,7 @@ def glaive_to_openai(example: Dict[str, Any]) -> Dict[str, Any]:
     messages.append({"role": "system", "content": DEFAULT_SYSTEM_PROMPT})
     try:
         chat_messages = chat_str_to_messages(example["chat"])
-    except (
-        FunctionCallNotFoundError,
-        TagsNotFoundError,
-        json.JSONDecodeError,
-        UnboundLocalError,
-    ) as e:
+    except (FunctionCallNotFoundError, TagsNotFoundError, json.JSONDecodeError) as e:
         # For chat data format errors, propagate None types for filtering later
         logging.info(f"Error processing example {example['chat']} : {e}")
         return {"messages": None, "tools": None}
@@ -107,9 +79,11 @@ def combine_multiple_entries(assistant_content: str) -> str:
 
 def chat_str_to_messages(chat: str) -> List[MessageType]:
     """Helper function to convert the chat string into a list of messages with roles.
+
     Args:
         chat: The chat string
         tool_to_user: Boolean indicating if the tool response should be converted to user role
+
     Returns:
         messages: List of messages with roles and content
     """
@@ -149,8 +123,8 @@ def chat_str_to_messages(chat: str) -> List[MessageType]:
                 if assistant_content is None:
                     assistant_content = ""
                 for tool_call in tool_calls:
-                    # Mimick openai's unique id for the tool call with a 16-length uuid of the function name
-                    tool_call_id = f"call_{uuid.uuid4().hex[:16]}"
+                    # Mimick openai's unique id for the tool call with a 24-length uuid of the function name
+                    tool_call_id = f"call_{uuid.uuid4().hex[:24]}"
                     openai_fmt_tool_call = {
                         "id": tool_call_id,
                         "type": "function",
@@ -198,7 +172,7 @@ def chat_str_to_messages(chat: str) -> List[MessageType]:
 def openai_to_anyscale(example: Dict[str, Any]) -> Dict[str, Any]:
     """Mapper function to process an example in the OpenAI format into the Anyscale format.
 
-    Formats the tool list in the system message and adds tags to the tool calls and tool results.
+    Formats the tool list in the system message. Formats the tool calls and tool results in plain text with special indicator tags for all.
     """
     assert (
         example["messages"][0]["role"] == "system"
@@ -206,10 +180,12 @@ def openai_to_anyscale(example: Dict[str, Any]) -> Dict[str, Any]:
     anyscale_messages = []
     openai_messages = example["messages"]
     tools = example["tools"]
+    # Convert the stringified tools to a list of jsons
+    tools = json.loads(tools) if tools else []
     for message in openai_messages:
         if message["role"] == "system":
             anyscale_message = {"role": "system", "content": message["content"]}
-            if isinstance(tools, list) and len(tools):
+            if len(tools):
                 tools_str = json.dumps(tools)
                 tools_str_with_tags = (
                     f"{TOOL_LIST_TAGS[0]} {tools_str} {TOOL_LIST_TAGS[1]}"
@@ -244,15 +220,18 @@ def openai_to_anyscale(example: Dict[str, Any]) -> Dict[str, Any]:
         else:
             InvalidRoleError(f"Invalid role {message['role']} found in the messages")
         anyscale_messages.append(anyscale_message)
+    # if the last message is from the user, remove it
+    if anyscale_messages[-1]["role"] == "user":
+        anyscale_messages = anyscale_messages[:-1]
     return {"messages": anyscale_messages}
 
 
 def filter_func(example: Dict[str, Any]) -> bool:
-    """
-    Simple filter function that returns False if the message list has two consecutive messages
-    from the same role. If otherwise, the function returns True.
-    This is to remove erraneous entries that can look like:
-    {.......'content': 'Sure, let me help you with that. <functioncall> {"name": "track_package", "arguments": \'{"tracking_number": "123456789"}\'} ', 'role': 'assistant'}, {'content': '<functioncall> {"name": "track_package", "arguments": \'{"tracking_number": "123456789"}\'} ', 'role': 'assistant'.....}
+    """Simple filter function that returns False if the message list has two consecutive messages
+    from the same role, and True otherwise.
+
+    This is to remove erraneous entries where the function call can be repeated in consecutive entries. Example:
+    {.......'content': 'Sure, let me help you with that. <functioncall> {"name": "track_package", .....} ', 'role': 'assistant'}, {'content': '<functioncall> {"name": "track_package", ....} ', 'role': 'assistant'}, .....}
     """
     messages = example["messages"]
     is_good_entry = True
@@ -276,11 +255,8 @@ def preprocess_to_anyscale_format(ray_ds: ray.data.Dataset) -> ray.data.Dataset:
     The input dataset is expected to be in the OpenAI messages format.
     """
     ray_ds = ray_ds.map(openai_to_anyscale)
-    print("Converstion: ", ray_ds.take(1)[0])
-    print("count", ray_ds.count())
     # Filter for good measure
     ray_ds = ray_ds.filter(filter_func)
-    print("count after filter", ray_ds.count())
     return ray_ds
 
 
@@ -312,26 +288,33 @@ def pprint_example(example: Dict[str, Any], dataset_format: DatasetFormat) -> No
     }
     for key in example.keys():
         if key == "messages":
+            pprint_str += f"{colors['chat']}Messages: {reset}\n"
             for msg in example["messages"]:
                 role = msg["role"]
                 content = msg["content"]
                 color = colors.get(role, reset)
-                string = f"{color}{role}: {reset}{content}\n"
+                string = f"\t{color}{role}: {reset}{content}\n"
                 if role == "assistant" and dataset_format == DatasetFormat.OPENAI:
                     tool_calls = msg.get("tool_calls", "")
-                    string = f"{color}{role}: \n\tcontent: {reset}{content}\n"
-                    string += f"\n\t{color}tool_calls: {reset}{tool_calls}\n"
+                    string = f"\t{color}{role}: \n\t\tcontent: {reset}{content}\n"
+                    string += f"\t\t{color}tool_calls: {reset}{tool_calls}\n"
                 elif role == "tool":
                     name = msg.get("name", "")
                     if dataset_format == DatasetFormat.OPENAI:
-                        response_str = json.dumps({"name": name, "content": content})
+                        response_str = json.dumps(
+                            {
+                                "name": name,
+                                "content": content,
+                                "tool_call_id": msg["tool_call_id"],
+                            }
+                        )
                     else:
                         response_str = content
-                    string = f"{color}{role}: {reset}{response_str}\n"
+                    string = f"\t{color}{role}: {reset}{response_str}\n"
                 pprint_str += string
         else:
             color = colors.get(key, reset)
-            string = f"{color}{key}: {reset}{example[key]}\n"
+            string = f"{color}{key.capitalize()}: {reset}{example[key]}\n"
             pprint_str += string
     print(pprint_str)
 
@@ -340,26 +323,3 @@ def save_to_jsonl(ds: ray.data.Dataset, filepath: str) -> None:
     """Saves a Ray dataset to a jsonl file."""
     df = ds.to_pandas()
     df.to_json(filepath, orient="records", lines=True)
-
-
-if __name__ == "__main__":
-    import datasets
-
-    logging.getLogger().setLevel(logging.INFO)
-    hf_ds = datasets.load_dataset(
-        "glaiveai/glaive-function-calling-v2", split="train"
-    ).shuffle(seed=21)
-    hf_ds_subset = hf_ds.select(
-        range(int(len(hf_ds) * 0.10))
-    )  # sample only 10% of the dataset
-    ray_ds = ray.data.from_huggingface(hf_ds_subset)
-
-    # pprint_example(ray_ds.take(1)[0])
-    # examples = ray_ds.to_pandas().to_dict(orient="records")
-    # for example in hf_ds_subset:
-    #     glaive_to_openai(example)
-    openai_fmt_ds = preprocess_to_openai_format(ray_ds)
-    pprint_example(openai_fmt_ds.take(1)[0], DatasetFormat.OPENAI)
-    anyscale_fmt_ds = preprocess_to_anyscale_format(openai_fmt_ds)
-    pprint_example(anyscale_fmt_ds.take(1)[0], DatasetFormat.ANYSCALE)
-    breakpoint()

@@ -2,6 +2,7 @@
 Response parsers for Anyscale Endpoints and OpenAI models. We define two parser classes `AnyscaleResponseParser` and
 `OpenAIResponseParser` below to send messages to the respective endpoints and parse the result.
 """
+
 import json
 import time
 from abc import ABC, abstractmethod
@@ -14,13 +15,20 @@ from fc_utils.function_extraction_utils import (
     FunctionCallNotFoundError,
     get_tool_calls_from_response,
 )
+from fc_utils.data_format import IndicatorTags, DatasetFormat
 
 NUM_RETRIES = 5
 SLEEP_INTERVAL_BETWEEN_RETRIES = 10
 ERROR_OUTPUT = "$$RUNTIME_ERROR$$"
 INCORRECT_FORMAT = "$$INCORRECT_FORMAT$$"
 
-def get_completion(client: OpenAI, model: str, messages: List[Dict[str, str]], tools: List[Dict[str, Any]]=None) -> "ChatCompletion":
+
+def get_completion(
+    client: OpenAI,
+    model: str,
+    messages: List[Dict[str, str]],
+    tools: List[Dict[str, Any]] = None,
+) -> "ChatCompletion":
     """
     Gets completion from the OpenAI ChatCompletion API for the provided OpenAI client and model
     """
@@ -46,13 +54,22 @@ class ResponseParser(ABC):
     """
     Abstract base class for response parsers.
     """
-    def __init__(self, api_key: str, api_base: str, model: str, tool_call_tags: Tuple[str, str] = None):
+
+    def __init__(
+        self,
+        api_key: str,
+        api_base: str,
+        model: str,
+        tool_call_tags: IndicatorTags = None,
+    ):
         self.client = OpenAI(api_key=api_key, base_url=api_base)
         self.model = model
         self.tool_call_tags = tool_call_tags
 
     @abstractmethod
-    def get_parsed_response(self, messages: List[Dict[str, str]], tools: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def get_parsed_response(
+        self, messages: List[Dict[str, str]], tools: List[Dict[str, Any]]
+    ) -> Dict[str, Any]:
         """
         Gets completion for input messages and returns the processed response. Tool calls, if present
         are extracted and parsed as json.
@@ -67,7 +84,6 @@ class ResponseParser(ABC):
         pass
 
 
-# TODO: currently, if the response is as follows: "arguments": '{"text": "there is a "double quote" here"}', the json will not be decoded properly.
 class AnyscaleResponseParser(ResponseParser):
     def get_parsed_response(self, messages, tools=None):
         # tools is ignored as the tool list would be included in the system prompt
@@ -75,10 +91,10 @@ class AnyscaleResponseParser(ResponseParser):
 
         # default error output
         processed_response = {
-                "content": ERROR_OUTPUT,
-                "tool_calls": None,
-                "original_response": response,
-            }
+            "content": ERROR_OUTPUT,
+            "tool_calls": None,
+            "original_response": response,
+        }
         if response == ERROR_OUTPUT:
             return processed_response
 
@@ -87,9 +103,16 @@ class AnyscaleResponseParser(ResponseParser):
         processed_response["original_response"] = response.choices[0].message
 
         # Check if the content includes tool call tags
-        if response_message_content and self.tool_call_tags[0] in response_message_content:
+        if (
+            response_message_content
+            and self.tool_call_tags.start in response_message_content
+        ):
             try:
-                response_message_content, tool_calls = get_tool_calls_from_response(response_message_content, self.tool_call_tags)
+                response_message_content, tool_calls = get_tool_calls_from_response(
+                    response_message_content,
+                    self.tool_call_tags,
+                    format=DatasetFormat.ANYSCALE,
+                )
                 processed_response["content"] = response_message_content
                 processed_response["tool_calls"] = tool_calls
             except (FunctionCallNotFoundError, json.JSONDecodeError):
@@ -110,16 +133,16 @@ class OpenAIResponseParser(ResponseParser):
         )
         # default error output
         processed_response = {
-                "content": ERROR_OUTPUT,
-                "tool_calls": None,
-                "original_response": response,
-            }
+            "content": ERROR_OUTPUT,
+            "tool_calls": None,
+            "original_response": response,
+        }
         if response == ERROR_OUTPUT:
             return processed_response
 
         response_message = response.choices[0].message
-        processed_response["content"] = response_message.content,
-        processed_response["original_response"] = response_message,
+        processed_response["content"] = (response_message.content,)
+        processed_response["original_response"] = (response_message,)
 
         tool_calls = response_message.tool_calls
         # process tool calls if present
@@ -129,7 +152,10 @@ class OpenAIResponseParser(ResponseParser):
                 function_name = tool_call.function.name
                 try:
                     function_args = json.loads(tool_call.function.arguments)
-                    output_function = {"name": function_name, "arguments": function_args}
+                    output_function = {
+                        "name": function_name,
+                        "arguments": function_args,
+                    }
                     processed_response["tool_calls"].append(output_function)
                 except json.JSONDecodeError:
                     processed_response["tool_calls"] = INCORRECT_FORMAT
