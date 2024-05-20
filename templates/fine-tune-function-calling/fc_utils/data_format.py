@@ -1,13 +1,13 @@
 """
-Holds constants and data formats used in pre/post processing of the Glaive's function calling dataset.
+Holds constants and data format utilities in pre/post processing of the Glaive's function calling dataset.
 """
 
 from enum import Enum
-from typing import NamedTuple, Dict, Union
+from typing import NamedTuple, Dict, Union, Any, List
 from dataclasses import dataclass
 
 # define our custom type for tool call and messages
-ToolCallType = Dict[str, Union[str, Dict[str, str]]]
+ToolCallType = Dict[str, Union[str, Dict[str, Any]]]
 MessageType = Dict[str, str]
 
 
@@ -45,8 +45,28 @@ GLAIVEAI_TOOL_CALL_INDICATORS = IndicatorTags(GLAIVEAI_TOOL_CALL_PREFIX, GLAIVEA
 
 DEFAULT_SYSTEM_PROMPT = "You are a helpful assistant."
 
-# TODO: convert everythign to Tool call dataclass for easy access
+# TODO: convert everything to the Function call dataclass for easy access
 @dataclass
-class ToolCall:
+class FunctionCall:
     name: str
     arguments: Dict[str, str]
+
+
+def check_tool_call_format(tool_calls: List[ToolCallType]) -> bool:
+    """Checks if the tool call is in the correct format."""
+    for tool_call in tool_calls:
+        if "type" not in tool_call or tool_call["type"] != "function":
+            return False
+        if "function" not in tool_call:
+            return False
+        function_call = tool_call["function"]
+        # Tool call should have a "name" and "arguments" field
+        if "name" not in function_call or "arguments" not in function_call:
+            return False
+        # "arguments" entry should be a dictionary and "name" should be a string
+        elif not (
+            isinstance(function_call["arguments"], dict)
+            and isinstance(function_call["name"], str)
+        ):
+            return False
+    return True

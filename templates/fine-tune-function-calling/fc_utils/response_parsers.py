@@ -7,7 +7,7 @@ import json
 import time
 from abc import ABC, abstractmethod
 from typing import Dict, Any, List, Tuple
-
+from dataclasses import dataclass
 import openai
 from openai import OpenAI
 
@@ -15,13 +15,19 @@ from fc_utils.function_extraction_utils import (
     FunctionCallNotFoundError,
     get_tool_calls_from_response,
 )
-from fc_utils.data_format import IndicatorTags, DatasetFormat
+from fc_utils.data_format import IndicatorTags, DatasetFormat, ToolCallType
 
 NUM_RETRIES = 5
 SLEEP_INTERVAL_BETWEEN_RETRIES = 10
 ERROR_OUTPUT = "$$RUNTIME_ERROR$$"
 INCORRECT_FORMAT = "$$INCORRECT_FORMAT$$"
 
+# Dataclass to store the parsed response
+@dataclass
+class ParsedResponse:
+    content: str
+    tool_calls: List[ToolCallType]
+    original_response: Any
 
 def get_completion(
     client: OpenAI,
@@ -69,7 +75,7 @@ class ResponseParser(ABC):
     @abstractmethod
     def get_parsed_response(
         self, messages: List[Dict[str, str]], tools: List[Dict[str, Any]]
-    ) -> Dict[str, Any]:
+    ) -> ParsedResponse:
         """
         Gets completion for input messages and returns the processed response. Tool calls, if present
         are extracted and parsed as json.
@@ -90,17 +96,15 @@ class AnyscaleResponseParser(ResponseParser):
         response = get_completion(self.client, self.model, messages)
 
         # default error output
-        processed_response = {
-            "content": ERROR_OUTPUT,
-            "tool_calls": None,
-            "original_response": response,
-        }
+        processed_response = ParsedResponse(
+            content=ERROR_OUTPUT, tool_calls=None, original_response=response
+        )
         if response == ERROR_OUTPUT:
             return processed_response
 
         response_message_content = response.choices[0].message.content
-        processed_response["content"] = response_message_content
-        processed_response["original_response"] = response.choices[0].message
+        processed_response.content = response_message_content
+        processed_response.original_response = response.choices[0].message
 
         # Check if the content includes tool call tags
         if (
@@ -113,13 +117,14 @@ class AnyscaleResponseParser(ResponseParser):
                     self.tool_call_tags,
                     format=DatasetFormat.ANYSCALE,
                 )
-                processed_response["content"] = response_message_content
-                processed_response["tool_calls"] = tool_calls
+                processed_response.content = response_message_content
+                processed_response.tool_calls = tool_calls
             except (FunctionCallNotFoundError, json.JSONDecodeError):
                 # this handles either a function call not being found or the json not being decoded properly.
                 # one example for the second case can be missed commas/quotes in the arguments field.
-                processed_response["content"] = response_message_content
-                processed_response["tool_calls"] = INCORRECT_FORMAT
+                processed_response.content = response_message_content
+                processed_response.tool_calls = INCORRECT_FORMAT
+
         return processed_response
 
 
@@ -132,32 +137,33 @@ class OpenAIResponseParser(ResponseParser):
             tools=tools if len(tools) else None,
         )
         # default error output
-        processed_response = {
-            "content": ERROR_OUTPUT,
-            "tool_calls": None,
-            "original_response": response,
-        }
+        processed_response = ParsedResponse(
+            content=ERROR_OUTPUT, tool_calls=None, original_response=response
+        )
         if response == ERROR_OUTPUT:
             return processed_response
 
         response_message = response.choices[0].message
-        processed_response["content"] = (response_message.content,)
-        processed_response["original_response"] = (response_message,)
+        processed_response.content = (response_message.content,)
+        processed_response.original_response = (response_message,)
 
         tool_calls = response_message.tool_calls
         # process tool calls if present
         if tool_calls:
-            processed_response["tool_calls"] = []
+            processed_response.tool_calls = []
             for tool_call in tool_calls:
                 function_name = tool_call.function.name
                 try:
                     function_args = json.loads(tool_call.function.arguments)
-                    output_function = {
-                        "name": function_name,
-                        "arguments": function_args,
+                    output_tool = {
+                        "type": "function",
+                        "function": {
+                            "name": function_name,
+                            "arguments": function_args,
+                        }
                     }
-                    processed_response["tool_calls"].append(output_function)
+                    processed_response.tool_calls.append(output_tool)
                 except json.JSONDecodeError:
-                    processed_response["tool_calls"] = INCORRECT_FORMAT
+                    processed_response.tool_calls = INCORRECT_FORMAT
                     break
         return processed_response
