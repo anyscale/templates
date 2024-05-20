@@ -10,6 +10,8 @@ from dataclasses import dataclass
 from fc_utils.response_parsers import ERROR_OUTPUT, ResponseParser, INCORRECT_FORMAT, ParsedResponse
 from fc_utils.data_format import MessageType, ToolCallType, check_tool_call_format
 
+class ToolResponseIDNotFoundError(Exception):
+    pass
 
 class Mistakes(Enum):
     """Enum for different mistakes in the model's response."""
@@ -111,6 +113,26 @@ def compare_tool_calls(response_tool_calls: List[ToolCallType], ground_truth_too
             return is_match, reason
     return is_match, reason
 
+def get_matching_tool_call_id(message: Dict[str, Any], previous_tool_calls: List[MessageType]) -> str:
+    """Returns the tool call id from the previous assistant tool calls that matches the current tool response.
+
+    Args:
+        message: The current tool response
+        previous_tool_calls: The tool calls made in the previous assistant message
+
+    Returns:
+        tool_call_id: The tool call id from previous_assistant_message for the given tool response
+    """
+    if previous_tool_calls is None:
+        raise ToolResponseIDNotFoundError("Tool call found before any assistant response")
+    # Get the names of the tools called in the previous assistant messages
+    assistant_function_names = [previous_tool_calls["function"]["name"] for previous_tool_calls in previous_tool_calls]
+    # If the current tool's name is not found, raise an error
+    if message["name"] not in assistant_function_names:
+        raise ToolResponseIDNotFoundError("Tool call found with an unknown tool name")
+    tool_idx = assistant_function_names.index(message["name"])
+    tool_call_id = previous_tool_calls[tool_idx]["id"]
+    return tool_call_id
 
 def parse_and_eval(
     parser: ResponseParser, example: Dict[str, Any]
@@ -133,8 +155,16 @@ def parse_and_eval(
     tools = example.get("tools", None)
     is_match = True
     generated_conv = []
+    previous_assistant_tool_calls = None
     for message in messages:
-        if message["role"] != "assistant":
+        if message["role"] == "tool":
+            # we need to replace the dummy tool call id with the actual tool call id from the model response
+            try:
+                message["tool_call_id"] = get_matching_tool_call_id(message, previous_assistant_tool_calls)
+            except ToolResponseIDNotFoundError as e:
+                return None, None, Mistakes.NO_FUNCTION_CALL
+            generated_conv.append(message)
+        elif message["role"] != "assistant":
             generated_conv.append(message)
         else:
             # Get the model's response
@@ -147,12 +177,14 @@ def parse_and_eval(
             # Evaluate against the ground truth/ the current message
             _match, mistake_type = check_match(parsed_response, message)
             is_match = is_match and _match
-            original_assistant_response = parsed_response.original_response
             # Convert response object to dict and append to the current conversation
-            generated_conv.append(dict(original_assistant_response))
+            original_assistant_response = dict(parsed_response.original_response)
+            generated_conv.append(original_assistant_response)
+            previous_assistant_tool_calls = parsed_response.tool_calls
             # return right away if model output is incorrect
             if not is_match:
                 return generated_conv, is_match, mistake_type
+
     return generated_conv, is_match, mistake_type
 
 
@@ -186,9 +218,6 @@ def evaluate_model(
         "Evaluating GPT4..." if model == Model.GPT else "Evaluating Finetuned Model..."
     )
     pbar = tqdm(total=len(dataset), desc=pbar_desc)
-    messages = example["messages"]
-    # Use safe indexing since this entry is optional
-    tools = example.get("tools", None)
     for example in dataset:
         # entry is valid by default
         is_valid = False
@@ -197,7 +226,6 @@ def evaluate_model(
         conv, is_correct, mistake_type = parse_and_eval(parser, example)
 
         is_valid = conv is not None
-
         if is_valid:
             corrects.append(is_correct)
 
@@ -206,7 +234,7 @@ def evaluate_model(
             is_valid=is_valid,
             mistake_type=mistake_type,
             generated_conv=conv,
-            ground_truth_conv=messages,
+            ground_truth_conv=example["messages"],
         )
         results.append(result)
         pbar.update(1)
