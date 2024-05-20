@@ -4,8 +4,9 @@ Holds constants and data formats used in pre/post processing of the Glaive's fun
 
 from enum import Enum
 from typing import NamedTuple, Dict, Union
+from dataclasses import dataclass
 
-# define our custom type for a tool call
+# define our custom type for tool call and messages
 ToolCallType = Dict[str, Union[str, Dict[str, str]]]
 MessageType = Dict[str, str]
 
@@ -43,3 +44,9 @@ GLAIVEAI_EOS = "<|endoftext|>"
 GLAIVEAI_TOOL_CALL_INDICATORS = IndicatorTags(GLAIVEAI_TOOL_CALL_PREFIX, GLAIVEAI_EOS)
 
 DEFAULT_SYSTEM_PROMPT = "You are a helpful assistant."
+
+# TODO: convert everythign to Tool call dataclass for easy access
+@dataclass
+class ToolCall:
+    name: str
+    arguments: Dict[str, str]
