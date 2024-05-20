@@ -2,9 +2,9 @@
 
 **⏱️ Time to complete**: 5 hours for 7/8B models (11 hours for 13B, 27 hours for 70B)
 
-Function calling is an important capability of large language models. Connecting your model to external tools is at the heart of many LLM applications. In Anyscale Endpoints, you can use the [function calling API](https://docs.anyscale.com/preview/endpoints/text-generation/function-calling) to enable get a quick access on this feature on a select number of models. This is made possible [through JSON mode](https://www.anyscale.com/blog/anyscale-endpoints-json-mode-and-function-calling-features). However, it is beneficial to have *native* function calling capabilities in your model through fine-tuning on a relevant function calling dataset. JSON-mode-based function calling can only guarantee that the output is in the right schema, and can also be more expensive than a regular chat completion. However, fine-tuning on a function calling dataset can improve the model's capabilities with intent recognition (understanding when to call and when not to call a tool) and function call accuracy (employing the right function with accurate parameters) in addition to structured data formatting (formatting the function call json in the correct schema).  Fine-tuning would also be the only systematic way to improve performance on use-case-specific data. 
+Function calling is an important capability of large language models. Connecting your model to external tools is at the heart of many LLM applications. In Anyscale Endpoints, you can use the [function calling API](https://docs.anyscale.com/preview/endpoints/text-generation/function-calling) to enable any model to use external tools. This is made possible [through JSON mode](https://www.anyscale.com/blog/anyscale-endpoints-json-mode-and-function-calling-features). However, it is beneficial to have *native* function calling capabilities in your model through fine-tuning on a relevant function calling dataset. JSON-mode-based function calling can only guarantee that the output is in the right schema, and can also be more expensive than a regular chat completion. However, fine-tuning on a function calling dataset can improve the model's capabilities with intent recognition (understanding when to call and when not to call a tool) and function call accuracy (employing the right function with accurate parameters) in addition to structured data formatting (formatting the function call json in the correct schema).  Fine-tuning would also be the only systematic way to improve performance on use-case-specific data. 
 
-In this example, we demonstrate fine-tuning on [Glaive's function calling dataset](https://huggingface.co/datasets/glaiveai/glaive-function-calling-v2?row=0) using Anyscale Endpoints. The goal for this example is to serve as a blue-print for performing data processing, training, and evaluation on open source LLMs for specific tasks like function calling, in the most effective way. The mentioned dataset consists of about 113,000 examples of synthetically generated function calling data. The dataset composition is given below:
+In this example, we demonstrate fine-tuning on [Glaive's function calling dataset](https://huggingface.co/datasets/glaiveai/glaive-function-calling-v2?row=0) using Anyscale Endpoints. The dataset consists of about 113,000 examples of synthetically generated function calling data.  The dataset composition is given below:
 
 <p align="center">
   <img src="./assets/distr_glaive_pie.png" alt="Distribution">
@@ -12,10 +12,10 @@ In this example, we demonstrate fine-tuning on [Glaive's function calling datase
 
 
 # Table of Contents
-1. [Data Preprocessing](#step-1-data-preprocessing): In this section we will cover how we can use ray data to clean and format our raw dataset properly and create a train, valid, and test datasets.
-2. [Finetuning](#step-2-fine-tuning): This section will cover a few different ways you can fine-tune LLMs via Anyscale.
-3. [Serving](#step-3-serving): This section will cover how we can serve the fine-tuned model via Anyscale.
-4. [Evaluation](#step-4-evaluation): The section will cover blue-print for evaluation and comparison to closed source models like OpenAI GPT-4 models.
+1. [Data Preprocessing](#step-1-data-preprocessing)
+2. [Finetuning](#step-2-fine-tuning)
+3. [Serving](#step-3-serving)
+4. [Evaluation](#step-4-evaluation)
 
 First, let's make the necessary imports
 
