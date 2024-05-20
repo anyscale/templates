@@ -27,7 +27,7 @@ INCORRECT_FORMAT = "$$INCORRECT_FORMAT$$"
 class ParsedResponse:
     content: str
     tool_calls: List[ToolCallType]
-    original_response: Any
+    original_response: "ChatCompletionMessage"
 
 def get_completion(
     client: OpenAI,
@@ -145,7 +145,7 @@ class OpenAIResponseParser(ResponseParser):
 
         response_message = response.choices[0].message
         processed_response.content = (response_message.content,)
-        processed_response.original_response = (response_message,)
+        processed_response.original_response = response_message
 
         tool_calls = response_message.tool_calls
         # process tool calls if present
@@ -156,6 +156,7 @@ class OpenAIResponseParser(ResponseParser):
                 try:
                     function_args = json.loads(tool_call.function.arguments)
                     output_tool = {
+                        "id": tool_call.id,
                         "type": "function",
                         "function": {
                             "name": function_name,
