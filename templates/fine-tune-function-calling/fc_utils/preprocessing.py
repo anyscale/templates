@@ -122,9 +122,11 @@ def chat_str_to_messages(chat: str) -> List[MessageType]:
                 )
                 if assistant_content is None:
                     assistant_content = ""
-                for tool_call in tool_calls:
-                    # Mimick openai's unique id for the tool call with a 24-length uuid of the function name
-                    tool_call_id = f"call_{uuid.uuid4().hex[:24]}"
+                for i, tool_call in enumerate(tool_calls):
+                    # OpenAI's API assigns a 24-length uuid for a tool call
+                    # However, to train the model, we can assign a simple incremental id
+                    # This is also going to be used in the tool response
+                    tool_call_id = f"call_{i+1}"
                     openai_fmt_tool_call = {
                         "id": tool_call_id,
                         "type": "function",
@@ -142,10 +144,7 @@ def chat_str_to_messages(chat: str) -> List[MessageType]:
                 "content": assistant_content,
                 "tool_calls": openai_fmt_tool_calls,
             }
-            previous_tool_calls_info = [
-                (tool_call["id"], tool_call["function"]["name"])
-                for tool_call in openai_fmt_tool_calls
-            ]
+            previous_tool_calls_info = [(tool_call["id"], tool_call["function"]["name"]) for tool_call in openai_fmt_tool_calls]
         elif match.group("function_response"):
             function_response = match.group("function_response").strip()
             role = "tool"
@@ -220,7 +219,7 @@ def openai_to_anyscale(example: Dict[str, Any]) -> Dict[str, Any]:
         else:
             InvalidRoleError(f"Invalid role {message['role']} found in the messages")
         anyscale_messages.append(anyscale_message)
-    # if the last message is from the user, remove it
+    # if the last message is from the user, drop it
     if anyscale_messages[-1]["role"] == "user":
         anyscale_messages = anyscale_messages[:-1]
     return {"messages": anyscale_messages}
