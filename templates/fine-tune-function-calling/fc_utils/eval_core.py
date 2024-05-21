@@ -253,7 +253,7 @@ def evaluate_model(
 
     Args:
         dataset: List of examples to evaluate
-        openai_parser: ResponseParser object
+        parser: ResponseParser object
         model: Model enum indicating the model type to evaluate.
 
     Returns:

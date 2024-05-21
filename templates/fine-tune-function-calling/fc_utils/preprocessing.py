@@ -8,6 +8,7 @@ from typing import Dict, Any, List
 import logging
 
 import ray.data
+from colorama import Fore, Style
 
 from fc_utils.function_extraction_utils import (
     get_tool_calls_from_response,
@@ -305,14 +306,14 @@ def glaive_to_openai(ray_ds: ray.data.Dataset) -> ray.data.Dataset:
 def pprint_example(example: Dict[str, Any], dataset_format: DatasetFormat) -> None:
     """Pretty prints an example with colors for different roles."""
     pprint_str = ""
-    # ANSI escape code for blue, green, red, yellow and magenta colors
-    blue = "\033[94m"
-    reset = "\033[0m"
-    green = "\033[92m"
-    red = "\033[91m"
-    magenta = "\033[95m"
-    yellow = "\033[93m"
-    cyan = "\033[36m"
+    # Define colors used for different keys/roles
+    blue = Fore.BLUE
+    reset = Style.RESET_ALL
+    green = Fore.GREEN
+    red = Fore.RED
+    magenta = Fore.MAGENTA
+    yellow = Fore.YELLOW
+    cyan = Fore.CYAN
     colors = {
         "system": red,
         "user": green,

@@ -131,7 +131,7 @@ def test_mapper_anyscale(
     processed_messages = []
     for message in example["messages"]:
         # User messages should remain the same, but the ground truth assistant responses
-        # need to be converted to the OpenAI format
+        # Need to be converted to the OpenAI format
         if message["role"] in ["user", "system"]:
             processed_messages.append(message)
         elif message["role"] == "assistant":
@@ -148,7 +148,7 @@ def get_evaluation_dataset(
     tool_result_tags: IndicatorTags,
     tool_list_tags: IndicatorTags,
     format: DatasetFormat,
-):
+) -> list[Dict[str, Any]]:
     """
     Handles the preprocessing of the test dataset for evaluation.
 

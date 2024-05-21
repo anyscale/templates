@@ -95,7 +95,7 @@ def extract_functions_from_system_msg(
         )
 
 
-def _extract_functions_from_system_msg_glaive(system_str: str) -> List[ToolCallType]:
+def _extract_functions_from_system_msg_glaive(system_str: str) -> List[Dict[str, Any]]:
     """Extracts the functions from the system message with a simple regex pattern.
 
     If the function is not a valid JSON, it is skipped.
