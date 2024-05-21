@@ -4,40 +4,52 @@ Preprocessing utils for Glaive AI's function calling dataset
 
 import re
 import json
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List
+import logging
+
 import ray.data
+
 from fc_utils.function_extraction_utils import (
     get_tool_calls_from_response,
     extract_functions_from_system_msg,
-    FunctionCallNotFoundError,
+    FunctionCallFormatError,
     DatasetFormat,
+    FunctionFormatError,
 )
 from fc_utils.data_format import *
-import logging
-import uuid
 
 
 class InvalidSystemPromptError(Exception):
+    """Raised when an invalid system prompt is found."""
+
     pass
 
 
 class InvalidRoleError(Exception):
+    """Raised when an invalid role is found in a message."""
+
     pass
 
 
 class TagsNotFoundError(Exception):
+    """Raised when none of the expected tags are found in the chat string."""
+
     pass
 
 
-def glaive_to_openai(example: Dict[str, Any]) -> Dict[str, Any]:
+def _glaive_to_openai(example: Dict[str, Any]) -> Dict[str, Any]:
     """Mapper function to process the glaive ai function calling dataset into the OpenAI format."""
     messages = []
     tools = None
     if GLAIVEAI_SYSTEM_WITH_TOOLS in example["system"]:
-        tools = extract_functions_from_system_msg(
-            example["system"], format=DatasetFormat.GLAIVE
-        )
-        # # convert to string for compatiblity with PyArrow
+        try:
+            tools = extract_functions_from_system_msg(
+                example["system"], format=DatasetFormat.GLAIVE
+            )
+        except FunctionFormatError as e:
+            logging.info(f"Error processing example {example['system']} : {e}")
+            return {"messages": None, "tools": None}
+        # Convert to string for compatiblity with PyArrow
         tools = json.dumps(tools)
     elif GLAIVEAI_SYSTEM_NO_TOOLS not in example["system"]:
         # If an unexpected system prompt is found, raise an error to investigate
@@ -48,7 +60,7 @@ def glaive_to_openai(example: Dict[str, Any]) -> Dict[str, Any]:
     messages.append({"role": "system", "content": DEFAULT_SYSTEM_PROMPT})
     try:
         chat_messages = chat_str_to_messages(example["chat"])
-    except (FunctionCallNotFoundError, TagsNotFoundError, json.JSONDecodeError) as e:
+    except (FunctionCallFormatError, TagsNotFoundError, json.JSONDecodeError) as e:
         # For chat data format errors, propagate None types for filtering later
         logging.info(f"Error processing example {example['chat']} : {e}")
         return {"messages": None, "tools": None}
@@ -66,8 +78,9 @@ def combine_multiple_entries(assistant_content: str) -> str:
     ):
         return assistant_content
     else:
-        fn_call_pattern = r"([\s\S]*?)ASSISTANT: {}([\s\S]*)".format(
-            re.escape(GLAIVEAI_TOOL_CALL_PREFIX)
+        assistant_tag = GlaiveAIRoleTags.ASSISTANT.value
+        fn_call_pattern = r"([\s\S]*?){}\s+{}([\s\S]*)".format(
+            re.escape(assistant_tag), re.escape(GLAIVEAI_TOOL_CALL_PREFIX)
         )
         function_call_match = re.search(fn_call_pattern, assistant_content, re.DOTALL)
         if function_call_match:
@@ -78,18 +91,21 @@ def combine_multiple_entries(assistant_content: str) -> str:
 
 
 def chat_str_to_messages(chat: str) -> List[MessageType]:
-    """Helper function to convert the chat string into a list of messages with roles.
+    """Helper function to convert the chat string in the Glaive format into a list of messages in the OpenAI format.
 
     Args:
         chat: The chat string
         tool_to_user: Boolean indicating if the tool response should be converted to user role
 
     Returns:
-        messages: List of messages with roles and content
+        messages: List of messages in the OpenAI format
     """
+    user_tag = GlaiveAIRoleTags.USER.value
+    assistant_tag = GlaiveAIRoleTags.ASSISTANT.value
+    tool_tag = GlaiveAIRoleTags.TOOL.value
     # Regex pattern to extract user, assistant and tool messages.
     tag_pattern = re.compile(
-        r"(?:USER:\s*(?P<user>.*?)\s*(?=ASSISTANT|$)|ASSISTANT:\s*(?P<assistant>.*?)(?=\n\n\nFUNCTION RESPONSE|\n*(?=USER|$))|\n\n\nFUNCTION RESPONSE:\s*(?P<function_response>.*?)\s*(?=ASSISTANT|USER|$))",
+        rf"(?:{user_tag}\s*(?P<user>.*?)\s*(?={assistant_tag}|$)|{assistant_tag}\s*(?P<assistant>.*?)\s*(?={tool_tag}|{user_tag}|$)|{tool_tag}\s*(?P<function_response>.*?)\s*(?={tool_tag}|{assistant_tag}|$))",
         re.DOTALL,
     )
 
@@ -110,7 +126,7 @@ def chat_str_to_messages(chat: str) -> List[MessageType]:
             assistant_content = combine_multiple_entries(assistant_content)
 
             # Glaive dataset is full of single function calls.
-            # We extract the single function call and place it in the tool_calls field
+            # We extract the function call and place it in the tool_calls field
             openai_fmt_tool_calls = []
             if GLAIVEAI_TOOL_CALL_PREFIX in assistant_content:
                 # Get the function calls from the response.
@@ -124,11 +140,9 @@ def chat_str_to_messages(chat: str) -> List[MessageType]:
                     assistant_content = ""
                 for i, tool_call in enumerate(tool_calls):
                     # OpenAI's API assigns a 24-length uuid for a tool call
-                    # However, to train the model, we can assign a simple incremental id
-                    # This is also going to be used in the tool response
-                    tool_call_id = f"call_{i+1}"
+                    # However, we need not ask the model to generate this
+                    # and rather internally track the tool call by index
                     openai_fmt_tool_call = {
-                        "id": tool_call_id,
                         "type": "function",
                         "function": {
                             "name": tool_call["name"],
@@ -144,13 +158,21 @@ def chat_str_to_messages(chat: str) -> List[MessageType]:
                 "content": assistant_content,
                 "tool_calls": openai_fmt_tool_calls,
             }
-            previous_tool_calls_info = [(tool_call["id"], tool_call["function"]["name"]) for tool_call in openai_fmt_tool_calls]
+            previous_tool_calls_info = []
+            for i, tool_call in enumerate(openai_fmt_tool_calls):
+                # To train the model, we can assign a simple incremental id for a tool call
+                # This is going to be used in the tool response so that the model
+                # can track which tool call it corresponds to
+                tool_call_id = f"call_{i+1}"
+                previous_tool_calls_info.append(
+                    (f"call_{i+1}", tool_call["function"]["name"])
+                )
         elif match.group("function_response"):
             function_response = match.group("function_response").strip()
             role = "tool"
             # Get the previous tool call id. Raise an error if no tool call id is found
             if not len(previous_tool_calls_info):
-                raise FunctionCallNotFoundError(
+                raise FunctionCallFormatError(
                     "No tool call id found for the tool response"
                 )
             tool_call_id, tool_call_name = previous_tool_calls_info.pop(0)
@@ -168,7 +190,7 @@ def chat_str_to_messages(chat: str) -> List[MessageType]:
     return messages
 
 
-def openai_to_anyscale(example: Dict[str, Any]) -> Dict[str, Any]:
+def _openai_to_anyscale(example: Dict[str, Any]) -> Dict[str, Any]:
     """Mapper function to process an example in the OpenAI format into the Anyscale format.
 
     Formats the tool list in the system message. Formats the tool calls and tool results in plain text with special indicator tags for all.
@@ -185,16 +207,17 @@ def openai_to_anyscale(example: Dict[str, Any]) -> Dict[str, Any]:
         if message["role"] == "system":
             anyscale_message = {"role": "system", "content": message["content"]}
             if len(tools):
+                # Convert to string and add tool list tags
                 tools_str = json.dumps(tools)
                 tools_str_with_tags = (
                     f"{TOOL_LIST_TAGS[0]} {tools_str} {TOOL_LIST_TAGS[1]}"
                 )
                 anyscale_message["content"] += tools_str_with_tags
         elif message["role"] == "assistant":
-            # Convert list of tool_calls to string and add tool call tags
             tool_calls = message["tool_calls"]
             anyscale_message = {"role": "assistant", "content": message["content"]}
             if isinstance(tool_calls, list) and len(tool_calls):
+                # Convert list of tool_calls to string and add tool call tags
                 tool_calls_str = json.dumps(tool_calls)
                 tool_calls_str_with_tags = (
                     f"{TOOL_CALL_TAGS.start} {tool_calls_str} {TOOL_CALL_TAGS.end}"
@@ -236,7 +259,7 @@ def filter_func(example: Dict[str, Any]) -> bool:
     is_good_entry = True
     j = 0
     while j + 1 < len(messages):
-        # sometimes,a single message has the same assistant response repeated. We remove these entries along with the ones where we have consecutive assistant responses
+        # Sometimes,a single message has the same assistant response repeated. We remove these entries along with the ones where we have consecutive assistant responses
         if (
             messages[j]["role"] == messages[j + 1]["role"]
             or GlaiveAIRoleTags.ASSISTANT.value in messages[j]["content"]
@@ -248,20 +271,20 @@ def filter_func(example: Dict[str, Any]) -> bool:
     return is_good_entry
 
 
-def preprocess_to_anyscale_format(ray_ds: ray.data.Dataset) -> ray.data.Dataset:
+def openai_to_anyscale(ray_ds: ray.data.Dataset) -> ray.data.Dataset:
     """Preprocesses the input dataset into an Anyscale Endpoints-compatible format .
 
     The input dataset is expected to be in the OpenAI messages format.
     """
-    ray_ds = ray_ds.map(openai_to_anyscale)
+    ray_ds = ray_ds.map(_openai_to_anyscale)
     # Filter for good measure
     ray_ds = ray_ds.filter(filter_func)
     return ray_ds
 
 
-def preprocess_to_openai_format(ray_ds: ray.data.Dataset) -> ray.data.Dataset:
+def glaive_to_openai(ray_ds: ray.data.Dataset) -> ray.data.Dataset:
     """Preprocesses the input GlaiveAI dataset into the OpenAI format"""
-    ray_ds = ray_ds.map(glaive_to_openai)
+    ray_ds = ray_ds.map(_glaive_to_openai)
     ray_ds = ray_ds.filter(lambda x: x["messages"] is not None)
     ray_ds = ray_ds.filter(filter_func)
     return ray_ds
@@ -277,13 +300,14 @@ def pprint_example(example: Dict[str, Any], dataset_format: DatasetFormat) -> No
     red = "\033[91m"
     magenta = "\033[95m"
     yellow = "\033[93m"
+    cyan = "\033[36m"
     colors = {
         "system": red,
         "user": green,
         "assistant": blue,
         "tool": yellow,
         "tools": magenta,
-        "chat": green,
+        "chat": cyan,
     }
     for key in example.keys():
         if key == "messages":
@@ -293,23 +317,22 @@ def pprint_example(example: Dict[str, Any], dataset_format: DatasetFormat) -> No
                 content = msg["content"]
                 color = colors.get(role, reset)
                 string = f"\t{color}{role}: {reset}{content}\n"
-                if role == "assistant" and dataset_format == DatasetFormat.OPENAI:
-                    tool_calls = msg.get("tool_calls", "")
-                    string = f"\t{color}{role}: \n\t\tcontent: {reset}{content}\n"
-                    string += f"\t\t{color}tool_calls: {reset}{tool_calls}\n"
-                elif role == "tool":
-                    name = msg.get("name", "")
-                    if dataset_format == DatasetFormat.OPENAI:
+                if dataset_format == DatasetFormat.OPENAI:
+                    if role == "assistant":
+                        # If the format is OpenAI, include the tool_calls field
+                        tool_calls = msg.get("tool_calls", "")
+                        string = f"\t{color}{role}: \n\t\tcontent: {reset}{content}\n"
+                        string += f"\t\t{color}tool_calls: {reset}{tool_calls}\n"
+                    elif role == "tool":
+                        # If the format is OpenAI, include the name and tool_call_id fields
                         response_str = json.dumps(
                             {
-                                "name": name,
+                                "name": msg["name"],
                                 "content": content,
                                 "tool_call_id": msg["tool_call_id"],
                             }
                         )
-                    else:
-                        response_str = content
-                    string = f"\t{color}{role}: {reset}{response_str}\n"
+                        string = f"\t{color}{role}: {reset}{response_str}\n"
                 pprint_str += string
         else:
             color = colors.get(key, reset)
@@ -322,3 +345,29 @@ def save_to_jsonl(ds: ray.data.Dataset, filepath: str) -> None:
     """Saves a Ray dataset to a jsonl file."""
     df = ds.to_pandas()
     df.to_json(filepath, orient="records", lines=True)
+
+
+if __name__ == "__main__":
+    import datasets
+    import logging
+    import ray.data
+
+    logging.getLogger().setLevel(logging.INFO)
+    hf_ds = datasets.load_dataset(
+        "glaiveai/glaive-function-calling-v2", split="train"
+    ).shuffle(seed=21)
+    hf_ds_subset = hf_ds.select(
+        range(int(len(hf_ds) * 0.10))
+    )  # sample only 10% of the dataset
+    ray_ds = ray.data.from_huggingface(hf_ds_subset)
+
+    # pprint_example(ray_ds.take(1)[0])
+    # examples = ray_ds.to_pandas().to_dict(orient="records")
+    for example in hf_ds_subset:
+        _glaive_to_openai(example)
+    openai_fmt_ds = glaive_to_openai(ray_ds)
+    print("openai ds: ", openai_fmt_ds.count())
+    pprint_example(openai_fmt_ds.take(1)[0], DatasetFormat.OPENAI)
+    anyscale_fmt_ds = openai_to_anyscale(openai_fmt_ds)
+    pprint_example(anyscale_fmt_ds.take(1)[0], DatasetFormat.ANYSCALE)
+    breakpoint()

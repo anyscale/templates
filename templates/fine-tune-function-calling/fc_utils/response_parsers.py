@@ -12,7 +12,7 @@ import openai
 from openai import OpenAI
 
 from fc_utils.function_extraction_utils import (
-    FunctionCallNotFoundError,
+    FunctionCallFormatError,
     get_tool_calls_from_response,
 )
 from fc_utils.data_format import IndicatorTags, DatasetFormat, ToolCallType
@@ -22,12 +22,14 @@ SLEEP_INTERVAL_BETWEEN_RETRIES = 10
 ERROR_OUTPUT = "$$RUNTIME_ERROR$$"
 INCORRECT_FORMAT = "$$INCORRECT_FORMAT$$"
 
+
 # Dataclass to store the parsed response
 @dataclass
 class ParsedResponse:
     content: str
     tool_calls: List[ToolCallType]
     original_response: "ChatCompletionMessage"
+
 
 def get_completion(
     client: OpenAI,
@@ -119,7 +121,7 @@ class AnyscaleResponseParser(ResponseParser):
                 )
                 processed_response.content = response_message_content
                 processed_response.tool_calls = tool_calls
-            except (FunctionCallNotFoundError, json.JSONDecodeError):
+            except FunctionCallFormatError:
                 # this handles either a function call not being found or the json not being decoded properly.
                 # one example for the second case can be missed commas/quotes in the arguments field.
                 processed_response.content = response_message_content
@@ -144,7 +146,7 @@ class OpenAIResponseParser(ResponseParser):
             return processed_response
 
         response_message = response.choices[0].message
-        processed_response.content = (response_message.content,)
+        processed_response.content = response_message.content
         processed_response.original_response = response_message
 
         tool_calls = response_message.tool_calls
@@ -161,7 +163,7 @@ class OpenAIResponseParser(ResponseParser):
                         "function": {
                             "name": function_name,
                             "arguments": function_args,
-                        }
+                        },
                     }
                     processed_response.tool_calls.append(output_tool)
                 except json.JSONDecodeError:

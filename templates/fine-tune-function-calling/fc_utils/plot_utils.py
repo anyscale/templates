@@ -4,30 +4,28 @@ Plot utils for visualizing the results of the finetuned model and GPT-4.
 
 import numpy as np
 import matplotlib.pyplot as plt
-from typing import List
+from typing import List, Dict
 
-from fc_utils.eval_utils import Mistakes, Result
+from fc_utils.eval_core import Mistakes, Result
 
-# 10 colors for different flags
-COLORS = [
-    "salmon",
-    "deepskyblue",
-    "springgreen",
-    "orange",
-    "gold",
-    "limegreen",
-    "turquoise",
-    "blueviolet",
-    "darkred",
-    "darkorange",
-]
+# Colors for the different mistake types
+COLORS = {
+    Mistakes.UNWANTED_FUNCTION_CALL: "springgreen",
+    Mistakes.NO_FUNCTION_CALL: "limegreen",
+    Mistakes.INCORRECT_FORMAT: "deepskyblue",
+    Mistakes.INCORRECT_NUMBER_OF_FUNCTION_CALLS: "turquoise",
+    Mistakes.WRONG_FUNCTION_NAME: "gold",
+    Mistakes.WRONG_ARGUMENT_VALUE: "salmon",
+    Mistakes.MISSING_ARGUMENT: "orange",
+    Mistakes.NONE: "blueviolet",
+}
 
 
-def get_count_by_flag(results: List[Result], flags: List[str]):
+def get_count_by_flag(results: List[Result], flags: List[Mistakes]) -> Dict[str, int]:
     """Returns the count of mistakes by flag for the given results."""
     count_by_flag = {
         flag: len(
-            [result for result in results if result.mistake_type == Mistakes(flag)]
+            [result for result in results if result.mistake_type.value == flag.value]
         )
         for flag in flags
     }
@@ -41,15 +39,15 @@ def plot_results(results_finetuned: List[Result], results_gpt: List[Result]):
     Args:
         results_finetuned: List of results for the finetuned model
         results_gpt: List of results for GPT-4
-
     """
     # Data for plotting
     total_count = len(results_finetuned)
-    flags = Mistakes.values()
+    # Get all mistake types
+    flags = Mistakes.instances()
     results_finetuned = [
-        result for result in results_finetuned if result.correct == False
+        result for result in results_finetuned if result.is_correct == False
     ]
-    results_gpt = [result for result in results_gpt if result.correct == False]
+    results_gpt = [result for result in results_gpt if result.is_correct == False]
     total_incorrect_finetuned = len(results_finetuned)
     total_incorrect_gpt = len(results_gpt)
 
@@ -72,11 +70,16 @@ def plot_results(results_finetuned: List[Result], results_gpt: List[Result]):
 
     for i, flag in enumerate(flags):
         if mistakes_by_flag_1[i] == 0 and mistakes_by_flag_2[i] == 0:
-            continue  # skip if no mistakes of this type
+            # Skip if no mistakes of this type
+            continue
         bar_1 = ax.bar(
-            0, mistakes_by_flag_1[i], bottom=bottom_1, color=COLORS[i], label=f"{flag}"
+            0,
+            mistakes_by_flag_1[i],
+            bottom=bottom_1,
+            color=COLORS[flag],
+            label=f"{flag.value}",
         )
-        bar_2 = ax.bar(1, mistakes_by_flag_2[i], bottom=bottom_2, color=COLORS[i])
+        bar_2 = ax.bar(1, mistakes_by_flag_2[i], bottom=bottom_2, color=COLORS[flag])
         bottom_1 += mistakes_by_flag_1[i]
         bottom_2 += mistakes_by_flag_2[i]
 
@@ -86,6 +89,7 @@ def plot_results(results_finetuned: List[Result], results_gpt: List[Result]):
     ax.set_title("Error Analysis")
     ax.set_xticks(positions)
     ax.set_ylim(
+        # Set the y-axis limit to be at least 20% of the total count for a nicer plot
         ymax=max(total_incorrect_finetuned, total_incorrect_gpt, 0.2 * total_count)
     )
     ax.set_xticklabels(["Finetuned Model", "GPT-4"])
