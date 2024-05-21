@@ -209,6 +209,10 @@ def _parse_function_calls_openai(string: str) -> List[Dict[str, Any]]:
     if isinstance(json_list, dict):
         json_list = [json_list]
     for json_obj in json_list:
+        if "function" not in json_obj or "arguments" not in json_obj["function"]:
+            raise FunctionFormatError(
+                f"Function call not in the correct format in : {string}"
+            )
         json_obj["function"]["arguments"] = json.loads(
             json_obj["function"]["arguments"]
         )
