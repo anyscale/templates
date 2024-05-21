@@ -5,13 +5,14 @@ Function call json extraction utils.
 import json
 import re
 from typing import List, Dict, Any, Tuple, Union, Optional
+from enum import Enum
+
 from fc_utils.data_format import (
     IndicatorTags,
     ToolCallType,
     DatasetFormat,
     check_tool_calls_format,
 )
-from enum import Enum
 
 
 class FunctionCallFormatError(Exception):
