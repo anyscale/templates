@@ -114,22 +114,6 @@ openai_fmt_ds = glaive_to_openai(ray_ds)
 first_ex = openai_fmt_ds.take(1)[0] 
 ```
 
-    2024-05-20 19:34:06,329	INFO streaming_executor.py:112 -- Starting execution of Dataset. Full logs are in /tmp/ray/session_2024-05-20_19-34-00_028075_38463/logs/ray-data
-    2024-05-20 19:34:06,329	INFO streaming_executor.py:113 -- Execution plan of Dataset: InputDataBuffer[Input] -> TaskPoolMapOperator[Map(_glaive_to_openai)->Filter(<lambda>)->Filter(filter_func)] -> LimitOperator[limit=1]
-
-
-
-    - Map(_glaive_to_openai)->Filter(<lambda>)->Filter(filter_func) 1:   0%|          | 0/1 [00:00<?, ?it/s]
-
-
-
-    - limit=1 2:   0%|          | 0/1 [00:00<?, ?it/s]
-
-
-
-    Running 0:   0%|          | 0/1 [00:00<?, ?it/s]
-
-
 
 ```python
 # Inspect one example
