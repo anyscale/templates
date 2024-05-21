@@ -5,16 +5,78 @@ Function call json extraction utils.
 import json
 import re
 from typing import List, Dict, Any, Tuple, Union, Optional
-from fc_utils.data_format import IndicatorTags, ToolCallType, DatasetFormat
+from fc_utils.data_format import (
+    IndicatorTags,
+    ToolCallType,
+    DatasetFormat,
+    check_tool_calls_format,
+)
 from enum import Enum
 
 
-class FunctionCallNotFoundError(Exception):
+class FunctionCallFormatError(Exception):
+    """Raised when a function call is expected but not found/ in a wrong format in the assistant response."""
+
     pass
 
 
-class FunctionResponseNotFoundError(Exception):
+class FunctionResponseFormatError(Exception):
+    """Raised when a function response is not found/ in a wrong format in the given content."""
+
     pass
+
+
+class PatternNotFoundError(Exception):
+    """Raised when no content is not found based on the given string and tags."""
+
+    pass
+
+
+class FunctionFormatError(Exception):
+    """Raised when function is in the wrong format in the given string."""
+
+    pass
+
+
+def extract_segment_between_tags(
+    string: str, indicator_tags: IndicatorTags
+) -> Tuple[Optional[str], str]:
+    """
+    Parses string in the format <prefix> [indicator_tags.start] <special_content> [indicator_tags.end] or [indicator_tags.start] <special_content> [indicator_tags.end]
+
+    Returns the prefix if present and the content between the tags
+
+    Args:
+        string: The input string
+        indicator_tags: The tags used to format the string
+
+    Returns:
+        prefix: The prefix before the special content, if any
+        special_content: The content between the tags
+    """
+    string = string.strip()
+    escaped_tags = [re.escape(tag) for tag in indicator_tags]
+
+    if string.startswith(indicator_tags.start):
+        pattern = r"{}([\s\S]*?){}".format(*escaped_tags)
+        extract_prefix = False
+    else:
+        pattern = r"([\s\S]*?){}([\s\S]*?){}".format(*escaped_tags)
+        extract_prefix = True
+
+    pattern_match = re.search(pattern, string)
+    if not pattern_match:
+        raise PatternNotFoundError(
+            f"No content found in the string {string} with the given tags {indicator_tags}"
+        )
+    prefix, special_content = None, None
+    if extract_prefix:
+        prefix = pattern_match.group(1).strip()
+        special_content = pattern_match.group(2).strip()
+    else:
+        prefix = None
+        special_content = pattern_match.group(1).strip()
+    return prefix, special_content
 
 
 def extract_functions_from_system_msg(
@@ -33,7 +95,7 @@ def extract_functions_from_system_msg(
         )
 
 
-def _extract_functions_from_system_msg_glaive(system_str: str) -> List[Dict[str, Any]]:
+def _extract_functions_from_system_msg_glaive(system_str: str) -> List[ToolCallType]:
     """Extracts the functions from the system message with a simple regex pattern.
 
     If the function is not a valid JSON, it is skipped.
@@ -54,8 +116,10 @@ def _extract_functions_from_system_msg_glaive(system_str: str) -> List[Dict[str,
             fn_dict = json.loads(fn)
             functions.append(fn_dict)
         except json.JSONDecodeError:
-            # In case the string is not a valid JSON, continue without adding it to the list
-            continue
+            # In case the string is not a valid JSON, raise an error
+            raise FunctionFormatError(
+                f"Tool list not in the correct format in : {system_str}"
+            )
 
     # Some functions may not have parameters. Fix them
     for fn in functions:
@@ -65,13 +129,14 @@ def _extract_functions_from_system_msg_glaive(system_str: str) -> List[Dict[str,
                 "properties": {},
                 "required": [],
             }
+    # Bring it into the OpenAI tools format
     functions = [{"type": "function", "function": fn} for fn in functions]
     return functions
 
 
 def _extract_functions_from_system_msg_anyscale(
     system_msg: str, tool_list_tags: IndicatorTags
-) -> List[str]:
+) -> List[Dict[str, Any]]:
     """
     Extracts the tool list from the system message in the Anyscale format.
 
@@ -81,13 +146,10 @@ def _extract_functions_from_system_msg_anyscale(
     Returns:
         tools: The list of tools extracted from the system message
     """
-    escaped_tool_list_tags = [re.escape(tag) for tag in tool_list_tags]
-    system_msg_format = r"([\s\S]*?){}([\s\S]*){}".format(*escaped_tool_list_tags)
-    tool_list_match = re.search(system_msg_format, system_msg)
-    tools = []
-    if tool_list_match:
-        tool_list_str = tool_list_match.group(2).strip()
-        tools = json.loads(tool_list_str)
+    _, tool_list_str = extract_segment_between_tags(system_msg, tool_list_tags)
+    tools = json.loads(tool_list_str)
+    if not isinstance(tools, list):
+        tools = [tools]
     return tools
 
 
@@ -147,7 +209,9 @@ def _parse_function_calls_openai(string: str) -> List[Dict[str, Any]]:
     if isinstance(json_list, dict):
         json_list = [json_list]
     for json_obj in json_list:
-        json_obj["function"]["arguments"] = json.loads(json_obj["function"]["arguments"])
+        json_obj["function"]["arguments"] = json.loads(
+            json_obj["function"]["arguments"]
+        )
     return json_list
 
 
@@ -168,35 +232,21 @@ def get_tool_calls_from_response(
         response_text: The regular text content from the response
         tool_calls: List of tool calls extracted from the assistant response.
     """
-    # remove trailing whitespaces
-    raw_response = raw_response.strip()
-    escaped_tool_call_tags = [re.escape(tag) for tag in tool_call_tags]
-    if raw_response.startswith(tool_call_tags.start):
-        fn_call_pattern = r"{}([\s\S]*){}".format(*escaped_tool_call_tags)
-        extract_content = False
-    else:
-        fn_call_pattern = r"([\s\S]*?){}([\s\S]*){}".format(*escaped_tool_call_tags)
-        extract_content = True
-    # Extract the function call information
-    function_call_match = re.search(fn_call_pattern, raw_response)
-    # Correcting the JSON string format
-    response_text, tool_calls = None, []
-    if function_call_match:
-        if extract_content:
-            response_text = function_call_match.group(1).strip()
-            function_call_str = function_call_match.group(2).strip()
-        else:
-            response_text = None
-            function_call_str = function_call_match.group(1).strip()
+    try:
+        response_text, tool_calls_str = extract_segment_between_tags(
+            raw_response, tool_call_tags
+        )
+        tool_calls = parse_function_calls(tool_calls_str, format)
+    except (PatternNotFoundError, json.JSONDecodeError) as e:
+        # Propagate a custom exception for use later
+        raise FunctionCallFormatError(f"Tool calls could not be found : {e}")
 
-        tool_calls = parse_function_calls(function_call_str, format)
-    else:
-        raise FunctionCallNotFoundError("No function call found in assistant response")
-
+    if not check_tool_calls_format(tool_calls, format):
+        raise FunctionCallFormatError("Tool call is not in the correct format")
     return response_text, tool_calls
 
 
-def parse_tool_result(string: str, tool_result_tags: Tuple[str, str]) -> str:
+def parse_tool_result(string: str, tool_result_tags: Tuple[str, str]) -> Dict[str, Any]:
     """
     Extracts the tool result from the given string.
 
@@ -207,15 +257,10 @@ def parse_tool_result(string: str, tool_result_tags: Tuple[str, str]) -> str:
     Returns:
         tool_result: The extracted tool result
     """
-    escaped_tool_result_tags = [re.escape(tag) for tag in tool_result_tags]
-    # get the tool result in the pattern "RESULT_TAG1 tool_result RESULT_TAG2"
-    pattern = r"{}\s*([\s\S]*?)\s*{}".format(*escaped_tool_result_tags)
-    match = re.search(pattern, string)
-    if match:
-        try:
-            result = json.loads(match.group(1))
-            return result
-        except json.JSONDecodeError:
-            raise FunctionResponseNotFoundError("Invalid tool result format")
-    else:
-        raise FunctionResponseNotFoundError("Tool result not found in content")
+    try:
+        _, tool_result_str = extract_segment_between_tags(string, tool_result_tags)
+        result = json.loads(tool_result_str)
+    except (PatternNotFoundError, json.JSONDecodeError) as e:
+        # Propagate a custom exception for use later
+        raise FunctionResponseFormatError(f"Tool result could not be found : {e}")
+    return result

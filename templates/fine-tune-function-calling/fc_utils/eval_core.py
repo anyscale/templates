@@ -7,11 +7,18 @@ from tqdm import tqdm
 from enum import Enum
 from dataclasses import dataclass
 
-from fc_utils.response_parsers import ERROR_OUTPUT, ResponseParser, INCORRECT_FORMAT, ParsedResponse
-from fc_utils.data_format import MessageType, ToolCallType, check_tool_call_format
+from fc_utils.response_parsers import (
+    ERROR_OUTPUT,
+    ResponseParser,
+    INCORRECT_FORMAT,
+    ParsedResponse,
+)
+from fc_utils.data_format import MessageType, ToolCallType, check_tool_calls_format
+
 
 class ToolResponseIDNotFoundError(Exception):
     pass
+
 
 class Mistakes(Enum):
     """Enum for different mistakes in the model's response."""
@@ -28,7 +35,12 @@ class Mistakes(Enum):
     @classmethod
     def values(cls):
         """Returns a list of all mistake values."""
-        return [item.value for item in Mistakes]
+        return [item.value for item in cls]
+
+    @classmethod
+    def instances(cls):
+        """Returns a list of all mistake instances."""
+        return list(cls)
 
 
 class Model(Enum):
@@ -41,6 +53,7 @@ class Model(Enum):
 @dataclass
 class Result:
     """Dataclass to store the evaluation results."""
+
     is_correct: bool
     is_valid: bool
     mistake_type: Mistakes
@@ -67,7 +80,7 @@ def check_match(
         is_match = False
         reason = Mistakes.NO_FUNCTION_CALL
     # If the ground truth has tool calls, then the response tool call has to be in the correct format
-    elif response_tool_calls == INCORRECT_FORMAT or not check_tool_call_format(
+    elif response_tool_calls == INCORRECT_FORMAT or not check_tool_calls_format(
         response_tool_calls
     ):
         is_match = False
@@ -77,12 +90,37 @@ def check_match(
         is_match = False
         reason = Mistakes.INCORRECT_NUMBER_OF_FUNCTION_CALLS
     else:
-        is_match, reason = compare_tool_calls(response_tool_calls, ground_truth_tool_calls)
+        is_match, reason = compare_tool_calls(
+            response_tool_calls, ground_truth_tool_calls
+        )
     return is_match, reason
 
 
-def compare_tool_calls(response_tool_calls: List[ToolCallType], ground_truth_tool_calls: List[ToolCallType]):
+def compare_tool_calls(
+    response_tool_calls: List[ToolCallType], ground_truth_tool_calls: List[ToolCallType]
+) -> Tuple[bool, Mistakes]:
+    """Compares the tool calls in the response with the ground truth.
+
+    Assumes that the inputs are valid tool calls and have the same number of tool calls. Raises an error if not.
+
+    Args:
+        response_tool_calls: List of tool calls from the response
+        ground_truth_tool_calls: List of tool calls from the ground truth
+
+    Returns:
+        is_match: Boolean indicating if the tool calls match
+        reason: Mistakes enum indicating the type of mistake made by the model if any
+    """
+    if not check_tool_calls_format(response_tool_calls) or not check_tool_calls_format(
+        ground_truth_tool_calls
+    ):
+        raise ValueError("Tool calls are not in the correct format")
+    if len(response_tool_calls) != len(ground_truth_tool_calls):
+        raise ValueError(
+            "Response and ground truth should have the same number of tool calls"
+        )
     # Sort list of tool calls by function name
+    # Assumes that the tool calls have unique function names
     sorted_gt_tool_calls = sorted(
         ground_truth_tool_calls, key=lambda x: x["function"]["name"]
     )
@@ -104,16 +142,17 @@ def compare_tool_calls(response_tool_calls: List[ToolCallType], ground_truth_too
             return is_match, reason
         elif expected_function["arguments"] != actual_function["arguments"]:
             is_match = False
-            if len(expected_function["arguments"]) != len(
-                actual_function["arguments"]
-            ):
+            if len(expected_function["arguments"]) != len(actual_function["arguments"]):
                 reason = Mistakes.MISSING_ARGUMENT
             else:
                 reason = Mistakes.WRONG_ARGUMENT_VALUE
             return is_match, reason
     return is_match, reason
 
-def get_matching_tool_call_id(message: Dict[str, Any], previous_tool_calls: List[MessageType]) -> str:
+
+def get_matching_tool_call_id(
+    message: MessageType, previous_tool_calls: List[ToolCallType]
+) -> str:
     """Returns the tool call id from the previous assistant tool calls that matches the current tool response.
 
     Args:
@@ -124,19 +163,26 @@ def get_matching_tool_call_id(message: Dict[str, Any], previous_tool_calls: List
         tool_call_id: The tool call id from previous_assistant_message for the given tool response
     """
     if previous_tool_calls is None:
-        raise ToolResponseIDNotFoundError("Tool call found before any assistant response")
+        raise ToolResponseIDNotFoundError(
+            "Tool call found before any assistant response"
+        )
     # Get the names of the tools called in the previous assistant messages
-    assistant_function_names = [previous_tool_calls["function"]["name"] for previous_tool_calls in previous_tool_calls]
+    assistant_function_names = [
+        previous_tool_calls["function"]["name"]
+        for previous_tool_calls in previous_tool_calls
+    ]
     # If the current tool's name is not found, raise an error
     if message["name"] not in assistant_function_names:
         raise ToolResponseIDNotFoundError("Tool call found with an unknown tool name")
     tool_idx = assistant_function_names.index(message["name"])
-    tool_call_id = previous_tool_calls[tool_idx]["id"]
+    # Use the tool call id from the previous assistant message if present, else use a default id
+    tool_call_id = previous_tool_calls[tool_idx].get("id", f"call_{tool_idx}")
     return tool_call_id
+
 
 def parse_and_eval(
     parser: ResponseParser, example: Dict[str, Any]
-) -> Tuple[List[Dict[str, str]], bool, Mistakes]:
+) -> Tuple[List[MessageType], bool, Mistakes]:
     """
     Parse and eval loop to parse the assistant responses and evaluate them against the ground truth in the conversation.
 
@@ -145,6 +191,7 @@ def parse_and_eval(
     Args:
         parser: OpenAIResponseParser or AnyscaleResponseParser object
         example: Example to evaluate
+
     Returns:
         generated_conv: The full list of messages with model generated responses
         match: Boolean indicating if the generated conversation matches the ground truth
@@ -158,9 +205,12 @@ def parse_and_eval(
     previous_assistant_tool_calls = None
     for message in messages:
         if message["role"] == "tool":
-            # we need to replace the dummy tool call id with the actual tool call id from the model response
+            # This is only in the case of the OpenAI format.
+            # We need to replace the dummy tool call id with the actual tool call id from the model response
             try:
-                message["tool_call_id"] = get_matching_tool_call_id(message, previous_assistant_tool_calls)
+                message["tool_call_id"] = get_matching_tool_call_id(
+                    message, previous_assistant_tool_calls
+                )
             except ToolResponseIDNotFoundError as e:
                 return None, None, Mistakes.NO_FUNCTION_CALL
             generated_conv.append(message)
@@ -171,7 +221,7 @@ def parse_and_eval(
             parsed_response = parser.get_parsed_response(generated_conv, tools)
 
             if parsed_response.content == ERROR_OUTPUT:
-                # return None if there's an error
+                # Return None if there's an error
                 return None, None, None
 
             # Evaluate against the ground truth/ the current message
@@ -181,7 +231,7 @@ def parse_and_eval(
             original_assistant_response = dict(parsed_response.original_response)
             generated_conv.append(original_assistant_response)
             previous_assistant_tool_calls = parsed_response.tool_calls
-            # return right away if model output is incorrect
+            # Return right away if model output is incorrect
             if not is_match:
                 return generated_conv, is_match, mistake_type
 
@@ -190,7 +240,7 @@ def parse_and_eval(
 
 def evaluate_model(
     dataset: List[Dict[str, Any]], parser: ResponseParser, model: Model
-) -> Tuple[List[Dict[str, Any]], float]:
+) -> Tuple[List[Result], float]:
     """
     Evaluates the given model on the test dataset. The function returns a list of results and the accuracy.
 
@@ -219,10 +269,10 @@ def evaluate_model(
     )
     pbar = tqdm(total=len(dataset), desc=pbar_desc)
     for example in dataset:
-        # entry is valid by default
+        # Entry is valid by default
         is_valid = False
 
-        # query the model, parse and evaluate the generated responses
+        # Query the model, parse and evaluate the generated responses
         conv, is_correct, mistake_type = parse_and_eval(parser, example)
 
         is_valid = conv is not None

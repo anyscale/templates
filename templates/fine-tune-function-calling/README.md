@@ -1,10 +1,10 @@
 # Fine-tuning for Function calling on custom data.
 
-**⏱️ Time to complete**: 5 hours for 7/8B models (11 hours for 13B, 27 hours for 70B)
+**⏱️ Time to complete**: 5 hours
 
-Function calling is an important capability of large language models. Connecting your model to external tools is at the heart of many LLM applications. In Anyscale Endpoints, you can use the [function calling API](https://docs.anyscale.com/preview/endpoints/text-generation/function-calling) to enable any model to use external tools. This is made possible [through JSON mode](https://www.anyscale.com/blog/anyscale-endpoints-json-mode-and-function-calling-features). However, it is beneficial to have *native* function calling capabilities in your model through fine-tuning on a relevant function calling dataset. JSON-mode-based function calling can only guarantee that the output is in the right schema, and can also be more expensive than a regular chat completion. However, fine-tuning on a function calling dataset can improve the model's capabilities with intent recognition (understanding when to call and when not to call a tool) and function call accuracy (employing the right function with accurate parameters) in addition to structured data formatting (formatting the function call json in the correct schema).  Fine-tuning would also be the only systematic way to improve performance on use-case-specific data. 
+Function calling is an important capability of large language models. Connecting your model to external tools is at the heart of many LLM applications. In Anyscale Endpoints, you can use the [function calling API](https://docs.anyscale.com/preview/endpoints/text-generation/function-calling) to enable get a quick access on this feature on a select number of models. This is made possible [through JSON mode](https://www.anyscale.com/blog/anyscale-endpoints-json-mode-and-function-calling-features). However, it is beneficial to have *native* function calling capabilities in your model through fine-tuning on a relevant function calling dataset. JSON-mode-based function calling can only guarantee that the output is in the right schema, and can also be more expensive than a regular chat completion. However, fine-tuning on a function calling dataset can improve the model's capabilities with intent recognition (understanding when to call and when not to call a tool) and function call accuracy (employing the right function with accurate parameters) in addition to structured data formatting (formatting the function call json in the correct schema).  Fine-tuning would also be the only systematic way to improve performance on use-case-specific data. 
 
-In this example, we demonstrate fine-tuning on [Glaive's function calling dataset](https://huggingface.co/datasets/glaiveai/glaive-function-calling-v2?row=0) using Anyscale Endpoints. The dataset consists of about 113,000 examples of synthetically generated function calling data.  The dataset composition is given below:
+In this example, we demonstrate fine-tuning on [Glaive's function calling dataset](https://huggingface.co/datasets/glaiveai/glaive-function-calling-v2?row=0) using Anyscale Endpoints. The goal for this example is to serve as a blue-print for performing data processing, training, and evaluation on open source LLMs for specific tasks like function calling, in the most effective way. The mentioned dataset consists of about 113,000 examples of synthetically generated function calling data. The dataset composition is given below:
 
 <p align="center">
   <img src="./assets/distr_glaive_pie.png" alt="Distribution">
@@ -12,10 +12,10 @@ In this example, we demonstrate fine-tuning on [Glaive's function calling datase
 
 
 # Table of Contents
-1. [Data Preprocessing](#step-1-data-preprocessing)
-2. [Finetuning](#step-2-fine-tuning)
-3. [Serving](#step-3-serving)
-4. [Evaluation](#step-4-evaluation)
+1. [Data Preprocessing](#step-1-data-preprocessing): In this section we will cover how we can use Ray Data to clean and format our raw dataset properly and create our train, valid, and test datasets.
+2. [Finetuning](#step-2-fine-tuning): This section will cover a few different ways you can fine-tune LLMs via Anyscale.
+3. [Serving](#step-3-serving): This section will cover how we can serve the fine-tuned model via Anyscale.
+4. [Evaluation](#step-4-evaluation): The section will lay down a blue-print for evaluation and compare performance to that of closed source models like OpenAI's GPT-4.
 
 First, let's make the necessary imports
 
@@ -29,10 +29,10 @@ import openai
 
 ```python
 from fc_utils.data_format import TOOL_CALL_TAGS, TOOL_RESULT_TAGS, TOOL_LIST_TAGS, DatasetFormat
-from fc_utils.preprocessing import preprocess_to_openai_format, pprint_example, preprocess_to_anyscale_format, save_to_jsonl
+from fc_utils.preprocessing import glaive_to_openai, pprint_example, openai_to_anyscale, save_to_jsonl
 from fc_utils.response_parsers import OpenAIResponseParser, AnyscaleResponseParser
-from fc_utils.eval_utils import evaluate_model, Model
-from fc_utils.test_utils import get_evaluation_dataset
+from fc_utils.eval_core import evaluate_model, Model
+from fc_utils.eval_data_utils import get_evaluation_dataset
 from fc_utils.plot_utils import plot_results
 ```
 
@@ -42,31 +42,18 @@ We'll use Ray Data for scalable data processing. First let's load the dataset fr
 
 ```python
 hf_ds = datasets.load_dataset("glaiveai/glaive-function-calling-v2", split="train").shuffle(seed=21) 
-hf_ds_subset =  hf_ds.select(range(int(len(hf_ds)*0.10))) # sample only 10% of the dataset
+# Sample only 10% of the dataset
+hf_ds_subset =  hf_ds.select(range(int(len(hf_ds)*0.10))) 
 ray_ds = ray.data.from_huggingface(hf_ds_subset)
 first_ex = ray_ds.take(1)[0]
 ```
-
-    2024-05-19 20:55:21,547	INFO worker.py:1740 -- Started a local Ray instance. View the dashboard at [1m[32m127.0.0.1:8265 [39m[22m
-    2024-05-19 20:55:25,061	INFO dataset.py:2370 -- Tip: Use `take_batch()` instead of `take() / show()` to return records in pandas or numpy batch format.
-    2024-05-19 20:55:25,063	INFO streaming_executor.py:112 -- Starting execution of Dataset. Full logs are in /tmp/ray/session_2024-05-19_20-55-19_472957_88751/logs/ray-data
-    2024-05-19 20:55:25,064	INFO streaming_executor.py:113 -- Execution plan of Dataset: InputDataBuffer[Input] -> LimitOperator[limit=1]
-
-
-
-    - limit=1 1:   0%|          | 0/1 [00:00<?, ?it/s]
-
-
-
-    Running 0:   0%|          | 0/1 [00:00<?, ?it/s]
-
 
 
 ```python
 pprint_example(first_ex, dataset_format=DatasetFormat.GLAIVE)
 ```
 
-    [91msystem: [0mSYSTEM: You are a helpful assistant with access to the following functions. Use them if required -
+    [91mSystem: [0mSYSTEM: You are a helpful assistant with access to the following functions. Use them if required -
     {
         "name": "create_reminder",
         "description": "Create a reminder for a specific date and time",
@@ -96,7 +83,7 @@ pprint_example(first_ex, dataset_format=DatasetFormat.GLAIVE)
         }
     }
     
-    [92mchat: [0mUSER: I need to set a reminder for my doctor's appointment.
+    [36mChat: [0mUSER: I need to set a reminder for my doctor's appointment.
     
     
     ASSISTANT: Sure, I can help with that. Could you please provide me with the date and time of your appointment? <|endoftext|>
@@ -122,25 +109,17 @@ If you notice, each sample has two entries: system and chat. This dataset is alr
 
 
 ```python
-import fc_utils.preprocessing
-import importlib
-importlib.reload(fc_utils.preprocessing)
-from fc_utils.preprocessing import pprint_example
-```
-
-
-```python
-# initial preprocessing to get to the OpenAI format
-openai_fmt_ds = preprocess_to_openai_format(ray_ds)
+# Initial preprocessing to get to the OpenAI format
+openai_fmt_ds = glaive_to_openai(ray_ds)
 first_ex = openai_fmt_ds.take(1)[0] 
 ```
 
-    2024-05-19 20:57:57,797	INFO streaming_executor.py:112 -- Starting execution of Dataset. Full logs are in /tmp/ray/session_2024-05-19_20-55-19_472957_88751/logs/ray-data
-    2024-05-19 20:57:57,798	INFO streaming_executor.py:113 -- Execution plan of Dataset: InputDataBuffer[Input] -> TaskPoolMapOperator[Map(glaive_to_openai)->Filter(<lambda>)->Filter(filter_func)] -> LimitOperator[limit=1]
+    2024-05-20 19:34:06,329	INFO streaming_executor.py:112 -- Starting execution of Dataset. Full logs are in /tmp/ray/session_2024-05-20_19-34-00_028075_38463/logs/ray-data
+    2024-05-20 19:34:06,329	INFO streaming_executor.py:113 -- Execution plan of Dataset: InputDataBuffer[Input] -> TaskPoolMapOperator[Map(_glaive_to_openai)->Filter(<lambda>)->Filter(filter_func)] -> LimitOperator[limit=1]
 
 
 
-    - Map(glaive_to_openai)->Filter(<lambda>)->Filter(filter_func) 1:   0%|          | 0/1 [00:00<?, ?it/s]
+    - Map(_glaive_to_openai)->Filter(<lambda>)->Filter(filter_func) 1:   0%|          | 0/1 [00:00<?, ?it/s]
 
 
 
@@ -153,18 +132,11 @@ first_ex = openai_fmt_ds.take(1)[0]
 
 
 ```python
-import fc_utils.preprocessing
-import importlib
-importlib.reload(fc_utils.preprocessing)
-from fc_utils.preprocessing import pprint_example
+# Inspect one example
+pprint_example(first_ex, dataset_format=DatasetFormat.OPENAI) 
 ```
 
-
-```python
-pprint_example(first_ex, dataset_format=DatasetFormat.OPENAI) # inspect one example
-```
-
-    [92mMessages: [0m
+    [36mMessages: [0m
     	[91msystem: [0mYou are a helpful assistant.
     	[92muser: [0mI need to set a reminder for my doctor's appointment.
     	[94massistant: 
@@ -173,8 +145,8 @@ pprint_example(first_ex, dataset_format=DatasetFormat.OPENAI) # inspect one exam
     	[92muser: [0mThe appointment is on 2022-09-15 at 10:00 AM.
     	[94massistant: 
     		content: [0m
-    		[94mtool_calls: [0m[{'function': {'arguments': '{"reminder_text": "Doctors appointment", "reminder_date": "2022-09-15", "reminder_time": "10:00"}', 'name': 'create_reminder'}, 'id': 'call_3d8bc9df5a3f47b9a836bdee', 'type': 'function'}]
-    	[93mtool: [0m{"name": "create_reminder", "content": "{\"status\": \"success\", \"message\": \"Reminder for 'Doctor's appointment' on 2022-09-15 at 10:00 AM has been created successfully.\"}", "tool_call_id": "call_3d8bc9df5a3f47b9a836bdee"}
+    		[94mtool_calls: [0m[{'function': {'arguments': '{"reminder_text": "Doctors appointment", "reminder_date": "2022-09-15", "reminder_time": "10:00"}', 'name': 'create_reminder'}, 'type': 'function'}]
+    	[93mtool: [0m{"name": "create_reminder", "content": "{\"status\": \"success\", \"message\": \"Reminder for 'Doctor's appointment' on 2022-09-15 at 10:00 AM has been created successfully.\"}", "tool_call_id": "call_1"}
     	[94massistant: 
     		content: [0mYour reminder for the doctor's appointment on 2022-09-15 at 10:00 AM has been created successfully. You will be notified at the specified time. 
     		[94mtool_calls: [0m[]
@@ -182,43 +154,31 @@ pprint_example(first_ex, dataset_format=DatasetFormat.OPENAI) # inspect one exam
     
 
 
-We'll now further process this conversation format and make it compatible with Anyscale Endpoints. We'll make sure of special indicators "\[TOOL_CALLS\]" and "\[/TOOL_CALLS\] to format assistant tool calls into the message "content" field. The role "tool" will be converted to the role "user" with a special indicator to highlight that this is a tool response. Further, the tool list will be included in the system prompt with special indicators. The following code block handles the necessary preprocessing.
+If you notice, the tool calls are almost exactly in the OpenAI format, just short of the `id` entry provided by the OpenAI API. For training, we choose to leave the model out of ID generation. Internally, each tool call is kept track by its index in the list of tool calls made. This is used later in the tool response (In the above example, there is only one tool call made and the response has `tool_call_id` "call_1"). 
+
+## Preprocess to the Anyscale format
+We'll now further process this conversation format and make it compatible with Anyscale Endpoints. We'll make use of special indicators "\[TOOL_CALLS\]" and "\[/TOOL_CALLS\] to format assistant tool calls into the message "content" field. The role "tool" will be converted to the role "user" with a special indicator to highlight that this is a tool response. Further, the tool list will be included in the system prompt with special indicators. The following code block handles the necessary preprocessing.
 
 
 ```python
-# complete preprocessing step
-processed_ds = preprocess_to_anyscale_format(openai_fmt_ds)
+# Map to Anyscale format
+processed_ds = openai_to_anyscale(openai_fmt_ds)
 first_ex = processed_ds.take(1)[0]
 ```
 
-    2024-05-19 21:00:20,978	INFO streaming_executor.py:112 -- Starting execution of Dataset. Full logs are in /tmp/ray/session_2024-05-19_20-55-19_472957_88751/logs/ray-data
-    2024-05-19 21:00:20,979	INFO streaming_executor.py:113 -- Execution plan of Dataset: InputDataBuffer[Input] -> TaskPoolMapOperator[Map(glaive_to_openai)->Filter(<lambda>)->Filter(filter_func)->Map(openai_to_anyscale)->Filter(filter_func)] -> LimitOperator[limit=1]
-
-
-
-    - Map(glaive_to_openai)->Filter(<lambda>)->Filter(filter_func)->Map(openai_to_anyscale)->Filter(filter_func) 1…
-
-
-
-    - limit=1 2:   0%|          | 0/1 [00:00<?, ?it/s]
-
-
-
-    Running 0:   0%|          | 0/1 [00:00<?, ?it/s]
-
-
 
 ```python
-pprint_example(first_ex, dataset_format=DatasetFormat.ANYSCALE) # inspect one example
+# Inspect one example
+pprint_example(first_ex, dataset_format=DatasetFormat.ANYSCALE) 
 ```
 
-    [92mMessages: [0m
+    [36mMessages: [0m
     	[91msystem: [0mYou are a helpful assistant.[TOOL_LIST] [{"type": "function", "function": {"name": "create_reminder", "description": "Create a reminder for a specific date and time", "parameters": {"type": "object", "properties": {"reminder_text": {"type": "string", "description": "The content of the reminder"}, "reminder_date": {"type": "string", "format": "date", "description": "The date of the reminder"}, "reminder_time": {"type": "string", "format": "time", "description": "The time of the reminder"}}, "required": ["reminder_text", "reminder_date", "reminder_time"]}}}] [/TOOL_LIST]
     	[92muser: [0mI need to set a reminder for my doctor's appointment.
     	[94massistant: [0mSure, I can help with that. Could you please provide me with the date and time of your appointment? 
     	[92muser: [0mThe appointment is on 2022-09-15 at 10:00 AM.
-    	[94massistant: [0m[TOOL_CALLS] [{"function": {"arguments": "{\"reminder_text\": \"Doctors appointment\", \"reminder_date\": \"2022-09-15\", \"reminder_time\": \"10:00\"}", "name": "create_reminder"}, "id": "call_7d85fa44c8c54ede90954b4b", "type": "function"}] [/TOOL_CALLS]
-    	[92muser: [0m[TOOL_RESULT] {"name": "create_reminder", "content": "{\"status\": \"success\", \"message\": \"Reminder for 'Doctor's appointment' on 2022-09-15 at 10:00 AM has been created successfully.\"}", "tool_call_id": "call_7d85fa44c8c54ede90954b4b"} [/TOOL_RESULT]
+    	[94massistant: [0m[TOOL_CALLS] [{"function": {"arguments": "{\"reminder_text\": \"Doctors appointment\", \"reminder_date\": \"2022-09-15\", \"reminder_time\": \"10:00\"}", "name": "create_reminder"}, "type": "function"}] [/TOOL_CALLS]
+    	[92muser: [0m[TOOL_RESULT] {"name": "create_reminder", "content": "{\"status\": \"success\", \"message\": \"Reminder for 'Doctor's appointment' on 2022-09-15 at 10:00 AM has been created successfully.\"}", "tool_call_id": "call_1"} [/TOOL_RESULT]
     	[94massistant: [0mYour reminder for the doctor's appointment on 2022-09-15 at 10:00 AM has been created successfully. You will be notified at the specified time. 
     
 
@@ -227,41 +187,39 @@ Let's make a train, validation and test split and save the datasets in the `json
 
 
 ```python
+# 80/10/10 split
 train_ds, val_ds, test_ds = processed_ds.split_proportionately([0.8, 0.1])
-test_ds, _  = test_ds.split_at_indices([200]) # restrict to 200 examples for testing
+# Restrict to 200 examples for testing
+test_ds, _  = test_ds.split_at_indices([200]) 
 ```
-
-    2024-05-19 21:00:38,320	INFO streaming_executor.py:112 -- Starting execution of Dataset. Full logs are in /tmp/ray/session_2024-05-19_20-55-19_472957_88751/logs/ray-data
-    2024-05-19 21:00:38,320	INFO streaming_executor.py:113 -- Execution plan of Dataset: InputDataBuffer[Input] -> TaskPoolMapOperator[Map(glaive_to_openai)->Filter(<lambda>)->Filter(filter_func)->Map(openai_to_anyscale)->Filter(filter_func)]
-
-
-
-    - Map(glaive_to_openai)->Filter(<lambda>)->Filter(filter_func)->Map(openai_to_anyscale)->Filter(filter_func) 1…
-
-
-
-    Running 0:   0%|          | 0/1 [00:00<?, ?it/s]
-
 
 
 ```python
-# inspect final counts
+# Inspect final counts
 train_ds.count(), val_ds.count(), test_ds.count()
 ```
 
 
 
 
-    (9013, 1127, 200)
+    (9012, 1126, 200)
 
 
 
 
 ```python
-# save the datasets to jsonl format
-save_to_jsonl(train_ds, "glaiveai-function-calling-v2-train.jsonl")
-save_to_jsonl(val_ds, "glaiveai-function-calling-v2-val.jsonl")
-save_to_jsonl(test_ds, "glaiveai-function-calling-v2-test.jsonl")
+# Set up file save paths. Feel free to change these
+train_file_path = "glaiveai-function-calling-v2-train.jsonl"
+validation_file_path = "glaiveai-function-calling-v2-val.jsonl"
+test_file_path = "glaiveai-function-calling-v2-test.jsonl"
+```
+
+
+```python
+# Save the datasets to jsonl format
+save_to_jsonl(train_ds, train_file_path)
+save_to_jsonl(val_ds,  validation_file_path)
+save_to_jsonl(test_ds, test_file_path)
 ```
 
 # Step 2: Fine-tuning 
@@ -289,11 +247,12 @@ Head over to the Anyscale Platform: https://console.anyscale.com/v2 and spin up 
 Follow the instructions to run your fine-tuning job.
 
 ## Step 2(b): Fine-tuning through serverless endpoints
-First, obtain your credentials from the [Anyscale platform](https://console.anyscale.com/v2/) and upload the training and validation files in the [fine-tuning tab](https://console.anyscale.com/v2/fine-tuning?fine-tuning-tab=files). Make a note of the file IDs for each. This will be passed to the fine-tuning job.
+First, obtain your credentials from the [Anyscale platform](https://console.anyscale.com/credentials) and upload the training and validation files.
 
 
 ```python
-ANYSCALE_API_KEY = "esecret_yourKeyHere"  # from https://console.anyscale.com/credentials
+# Get your API key from https://console.anyscale.com/credentials
+ANYSCALE_API_KEY = "esecret_yourKeyHere"  
 ANYSCALE_API_BASE = "https://api.endpoints.anyscale.com/v1"
 ```
 
@@ -302,56 +261,84 @@ ANYSCALE_API_BASE = "https://api.endpoints.anyscale.com/v1"
 # Anyscale Endpoints are OpenAI compatible
 client = openai.OpenAI(
     base_url = ANYSCALE_API_BASE,
-    api_key = "esecret_yourKeyHere" 
+    api_key = ANYSCALE_API_KEY
 )
 ```
 
-Let's now launch a fine-tuning job for 4 epochs. The expected time for this job is < 3 hours.
+
+```python
+# Upload the files to Anyscale
+training_file_id = client.files.create(
+    file=open(train_file_path,'rb'),
+    purpose="fine-tune",
+).id
+
+valid_file_id = client.files.create(
+    file=open(validation_file_path,'rb'),
+    purpose="fine-tune",
+).id
+```
+
+Let's now launch a fine-tuning job for 4 epochs. The expected time for this job is < 3 hours. For instructions on viewing job status, other hyperparameters used, etc, you can refer to our [fine-tuning guide](https://docs.anyscale.com/preview/examples/e2e-finetune-and-serve-example#4-start-the-fine-tuning). 
 
 
 ```python
-# other parameters like context length will be chosen appropriately based on dataset size
-client.fine_tuning.jobs.create(
+# Create finetuning job. Other parameters like context length will be chosen appropriately based on dataset size
+fine_tuning_job_id = client.fine_tuning.jobs.create(
     model="meta-llama/Meta-Llama-3-8B-Instruct",
     hyperparameters={"n_epochs": 4},
-    # replace with the actual file ids!
-    training_file="file_trainingFileId",
-    validation_file="file_validationFileId",
-)
+    training_file=training_file_id,
+    validation_file=valid_file_id,
+).id
 ```
 
 # Step 3: Serving
 
 ## Step 3(a): Finetuned on the Anyscale Platform
 
-Make a note of the final checkpoint after fine-tuning (this should be the last line in the logs). You can now spin up the "Deploy LLMs" template which has all the instructions and required dependencies to serve your finetuned model efficiently. You will find the tutorials on [serving LoRA models](https://github.com/anyscale/templates/blob/main/templates/endpoints_v2/examples/lora/DeployLora.ipynb) (if applicable) and on deploying a [custom model](https://github.com/anyscale/templates/blob/main/templates/endpoints_v2/examples/CustomModels.ipynb) helpful. Once you have set up your fine-tuned model as an Anyscale Service, note down the base URL and API key and place them here.
+Make a note of the final checkpoint after fine-tuning (this should be the last line in the logs). You can now spin up the "Deploy LLMs" template which has all the instructions and required dependencies to serve your finetuned model efficiently. You will find the tutorials on [serving LoRA models](https://github.com/anyscale/templates/blob/main/templates/endpoints_v2/examples/lora/DeployLora.ipynb) (if applicable) and on deploying a [custom model](https://github.com/anyscale/templates/blob/main/templates/endpoints_v2/examples/CustomModels.ipynb) helpful. Once you have set up your fine-tuned model as an Anyscale Service, head over to the "Services" tab in the console and select your deployed service. 
+<p align="center">
+  <img src="./assets/services_list.png" alt="Services list">
+</p>
+
+
+Click on the "Query" drop down box to get instructions on how to query your deployed model. Note down the base URL and API key and place them here.
+
+<p align="center">
+  <img src="./assets/service_token.png" alt="Services token" width="600">
+</p>
+
 
 
 ```python
-# to be run only if you finetuned on the Anyscale platform
+## To be run only if you finetuned on the Anyscale platform
 ANYSCALE_API_KEY="service-api-key-here"
+# Example api base url: https://endpoints-v2-zzzz.s.anyscaleuserdata.com
 ANYSCALE_API_BASE="service-url-here" 
-if not ANYSCALE_API_BASE.endswith("/"):
-    ANYSCALE_API_BASE += "/"
-ANYSCALE_API_BASE += "v1"
-# enter the model id here. This would be different depending on whether you performed LoRA or full parameter fine-tuning.
+ANYSCALE_API_BASE = f"{ANYSCALE_API_BASE}/v1"
+# Enter the model id here. This would be different depending on whether you performed LoRA or full parameter fine-tuning.
 # Example: meta-llama/Meta-Llama-3-8B-Instruct:mysuffix:myid 
 MODEL_ID = "ModelIdHere"
 ```
 
 ## Step 3(b): Finetuned through serverless endpoints
 
-To serve the fine-tuned model, you just need to navigate to the "Serving" section on the Anyscale Platform. Your fine-tuned model should already be visible in the list of available models! 
+To serve the fine-tuned model, you just need to navigate to the "Serving" section on the Anyscale Platform. Your fine-tuned model should already be visible in the list of available models! Make sure to note down the model ID here.
 
 <p align="center">
   <img src="./assets/serving_endpoints.png" alt="Serve Endpoints">
 </p>
 
 
-As in the above image, click on the three dots and then click on "Query". This will provide you the starter code to interact with the model via curl, python, etc. 
+As in the above image, click on the three dots and then click on "Query". This will provide you the starter code to interact with the model via curl, python, etc. Note that the API key here is valid only for one hour. Since our evaluation can take up longer, we will generate a long-lived credential. 
 
 <p align="center">
-  <img src="./assets/serve_api_key.png" alt="API Key">
+  <img src="./assets/serve_api_key.png" alt="Serve API Key">
+</p>
+
+In the "API Keys" page, click on "Create" and note down the API key.
+<p align="center">
+  <img src="./assets/long_lived_api_key.png" alt="Long Lived API Key">
 </p>
 
 
@@ -360,12 +347,12 @@ As in the above image, click on the three dots and then click on "Query". This w
 ## This is only if you finetuned through serverless endpoints
 ANYSCALE_API_BASE = "https://api.endpoints.anyscale.com/v1"
 ANYSCALE_API_KEY = "esecret_yourKeyHere"
-MODEL_ID = "yourModelIdHere" # make sure to not add a stray slash "/"" at the end!
+MODEL_ID = "yourModelIdHere"
 ```
 
 ### (Optional) Try out the model via Playground
 
-You can try out your new model in the Playground: https://console.anyscale.com/v2/playground . In the model dropdown, you should be able to see your finetuned model as shown below
+(For Endpoints users) You can try out your new model in the Playground: https://console.anyscale.com/v2/playground . In the model dropdown, you should be able to see your finetuned model as shown below
 
 <p align="center">
   <img src="./assets/playground.png" alt="Playground">
@@ -379,10 +366,10 @@ Let's evaluate our trained model with GPT-4 as a baseline.
 ## Evaluation strategy
 
 Evaluation of function calling capability is non-trivial, given that we're looking to extract structured data from an inherently unpredictable and unstructured stream of text. We will use the following simple evaluation strategy: The models are evaluated on the accuracy metric and their responses are graded as accurate if their response for each assistant entry in the conversation is correct. An assistant response is graded as correct under the below conditions:
-1. In case the ground truth response contains no function call, then the model's response should also not have a function call. 
-2. In case the ground truth response contains a function call, then the model's response should also have a function call. We do not check for the content of the response here. The assistant function call should further have the correct function name and the correct function arguments. 
+1. In case the ground truth response contains no function call, then the model's response should not have a function call. 
+2. In case the ground truth response contains a function call, then the model's response should also have a function call. The assistant function call should further have the correct function name and the correct function arguments. 
 
-The following psuedocode shows some of the different branching conditions considered during evaluation:
+The following psuedocode shows the high-level branching conditions considered during evaluation:
 
 ```
 if(ground_truth has no function call):
@@ -398,7 +385,6 @@ else
 ```
 
 
-
 ## Dataset formatting
   
 We process our test dataset individually for our finetuned model on Anyscale and for GPT-4:
@@ -407,29 +393,34 @@ We process our test dataset individually for our finetuned model on Anyscale and
 
 
 ```python
-# preprocess the test dataset for evaluation
+# Preprocess the test dataset for evaluation
 eval_ds_openai = get_evaluation_dataset(test_ds, TOOL_CALL_TAGS, TOOL_RESULT_TAGS, TOOL_LIST_TAGS, DatasetFormat.OPENAI)
 eval_ds_anyscale = get_evaluation_dataset(test_ds, TOOL_CALL_TAGS, TOOL_RESULT_TAGS, TOOL_LIST_TAGS, DatasetFormat.ANYSCALE)
 ```
 
 
 ```python
-pprint_example(eval_ds_anyscale[20], dataset_format=DatasetFormat.OPENAI)
+# Inspect one example from the Anyscale format eval dataset
+pprint_example(eval_ds_anyscale[1], dataset_format=DatasetFormat.OPENAI)
 ```
 
-    [92mMessages: [0m
-    	[91msystem: [0mYou are a helpful assistant.[TOOL_LIST] [{"type": "function", "function": {"name": "generate_qr_code", "description": "Generate a QR code for a given text", "parameters": {"type": "object", "properties": {"text": {"type": "string", "description": "The text to encode in the QR code"}}, "required": ["text"]}}}, {"type": "function", "function": {"name": "get_movie_details", "description": "Get the details of a movie", "parameters": {"type": "object", "properties": {"title": {"type": "string", "description": "The title of the movie"}, "year": {"type": "integer", "description": "The release year of the movie"}}, "required": ["title"]}}}] [/TOOL_LIST]
-    	[92muser: [0mHi, I need a QR code for my website. Can you help me with that?
-    	[94massistant: 
-    		content: [0mOf course, I can help you with that. Could you please provide me with the URL of your website? 
-    		[94mtool_calls: [0mNone
-    	[92muser: [0mSure, it's www.mywebsite.com.
+    [36mMessages: [0m
+    	[91msystem: [0mYou are a helpful assistant.[TOOL_LIST] [{"type": "function", "function": {"name": "get_movie_info", "description": "Get information about a movie", "parameters": {"type": "object", "properties": {"title": {"type": "string", "description": "The title of the movie"}, "year": {"type": "integer", "description": "The release year of the movie"}}, "required": ["title"]}}}, {"type": "function", "function": {"name": "search_recipes", "description": "Search for recipes based on ingredients", "parameters": {"type": "object", "properties": {"ingredients": {"type": "array", "items": {"type": "string"}, "description": "The ingredients to search for"}, "cuisine": {"type": "string", "description": "The cuisine type"}, "dietary_restrictions": {"type": "array", "items": {"type": "string"}, "description": "Any dietary restrictions"}}, "required": ["ingredients"]}}}] [/TOOL_LIST]
+    	[92muser: [0mCan you tell me about the movie "Inception"?
     	[94massistant: 
     		content: [0mNone
-    		[94mtool_calls: [0m[{'function': {'arguments': {'text': 'www.mywebsite.com'}, 'name': 'generate_qr_code'}, 'id': 'call_646f0233411b4796a25bf5b8', 'type': 'function'}]
-    	[92muser: [0m[TOOL_RESULT] {"name": "generate_qr_code", "content": "{\"qr_code\": \"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAYAAACtWK6eAAAACXBIWXMAAAsTAAALEwEAmpwYAAAKT2lDQ1BQaG90b3Nob3AgSUN... (truncated)\"}", "tool_call_id": "call_646f0233411b4796a25bf5b8"} [/TOOL_RESULT]
+    		[94mtool_calls: [0m[{'function': {'arguments': {'title': 'Inception'}, 'name': 'get_movie_info'}, 'type': 'function'}]
+    	[92muser: [0m[TOOL_RESULT] {"name": "get_movie_info", "content": "{\"title\": \"Inception\", \"year\": 2010, \"director\": \"Christopher Nolan\", \"genre\": [\"Action\", \"Adventure\", \"Sci-Fi\"], \"plot\": \"A thief who steals corporate secrets through the use of dream-sharing technology is given the inverse task of planting an idea into the mind of a CEO.\"}", "tool_call_id": "call_1"} [/TOOL_RESULT]
     	[94massistant: 
-    		content: [0mI have generated the QR code for your website. You can download it using this link: [QR Code](data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAYAAACtWK6eAAAACXBIWXMAAAsTAAALEwEAmpwYAAAKT2lDQ1BQaG90b3Nob3AgSUN... (truncated)) 
+    		content: [0mThe movie "Inception" was released in 2010. It was directed by Christopher Nolan and falls under the genres of Action, Adventure, and Sci-Fi. The plot revolves around a thief who steals corporate secrets through the use of dream-sharing technology and is given the inverse task of planting an idea into the mind of a CEO. 
+    		[94mtool_calls: [0mNone
+    	[92muser: [0mWhat about the movie "The Godfather"?
+    	[94massistant: 
+    		content: [0mNone
+    		[94mtool_calls: [0m[{'function': {'arguments': {'title': 'The Godfather'}, 'name': 'get_movie_info'}, 'type': 'function'}]
+    	[92muser: [0m[TOOL_RESULT] {"name": "get_movie_info", "content": "{\"title\": \"The Godfather\", \"year\": 1972, \"director\": \"Francis Ford Coppola\", \"genre\": [\"Crime\", \"Drama\"], \"plot\": \"The aging patriarch of an organized crime dynasty transfers control of his clandestine empire to his reluctant son.\"}", "tool_call_id": "call_1"} [/TOOL_RESULT]
+    	[94massistant: 
+    		content: [0m"The Godfather" was released in 1972 and was directed by Francis Ford Coppola. It is a Crime and Drama movie. The plot is about the aging patriarch of an organized crime dynasty who transfers control of his clandestine empire to his reluctant son. 
     		[94mtool_calls: [0mNone
     
 
@@ -440,39 +431,69 @@ For evaluation, we initialise two parsers - one for each model - to handle obtai
 
 
 ```python
-# enter your openai key below.
+# Enter your OpenAI key below.
 OPENAI_API_KEY = "yourApiKeyHere" 
-# enter your Anyscale key below. If you finetuned through Anyscale endpoints, you can get the key here: https://console.anyscale.com/credentials. Otherwise, you should use the key from your Anyscale Service
+OPENAI_API_BASE = "https://api.openai.com/v1"
+# Enter your Anyscale key below. If you finetuned through Anyscale endpoints, you can get the key here: https://console.anyscale.com/credentials. Otherwise, you should use the key from your Anyscale Service
 ANYSCALE_API_KEY = "yourApiKeyHere" 
 ```
 
 
 ```python
-# initialize parsers
-openai_parser = OpenAIResponseParser(api_key=OPENAI_API_KEY, api_base="https://api.openai.com/v1", model="gpt-4", tool_call_tags=TOOL_CALL_TAGS)
+# Initialize parsers
+openai_parser = OpenAIResponseParser(api_key=OPENAI_API_KEY, api_base=OPENAI_API_BASE, model="gpt-4", tool_call_tags=TOOL_CALL_TAGS)
 anyscale_parser = AnyscaleResponseParser(api_key=ANYSCALE_API_KEY, api_base=ANYSCALE_API_BASE, model=MODEL_ID, tool_call_tags=TOOL_CALL_TAGS) 
 ```
 
 
 ```python
-# evaluate both models and plot the results
+# Evaluate gpt-4
 results_gpt, accuracy_gpt = evaluate_model(eval_ds_openai, openai_parser, Model.GPT)
-results_finetuned, accuracy_finetuned = evaluate_model(eval_ds_anyscale, anyscale_parser, Model.FINETUNED)
 print("GPT-4 Accuracy: ", accuracy_gpt)
+```
+
+    Evaluating Finetuned Model...:   0%|          | 0/5 [1:41:01<?, ?it/s]
+    Evaluating GPT4...: 100%|██████████| 200/200 [1:20:43<00:00, 24.22s/it]
+
+    GPT-4 Accuracy:  0.97
+
+
+    
+
+
+
+```python
+# Evaluate our finetuned model
+results_finetuned, accuracy_finetuned = evaluate_model(eval_ds_anyscale, anyscale_parser, Model.FINETUNED)
 print("Fine-tuned Model Accuracy: ", accuracy_finetuned)
+```
+
+    Evaluating Finetuned Model...: 100%|██████████| 200/200 [40:59<00:00, 12.30s/it] 
+
+    Fine-tuned Model Accuracy:  0.965
+
+
+    
+
+
+
+```python
+# Plot the results
 plot_results(results_finetuned, results_gpt)
 ```
 
-Your final fine-tuned model should be able to rival GPT-4 level performance on this dataset. In fact, performance can be higher, due to the fact that the test dataset construction was straightforward. Here's how your error analysis plot might look like for `Llama-3-8B-Instruct`:
+Your final fine-tuned model should be able to rival GPT-4 level performance on this dataset.  Here's how your plot might look like for `Llama-3-8B-Instruct`:
 
 <p align="center">
-  <img src="./assets/error_analysis.png?version=1" alt="Error Analysis">
+  <img src="./assets/error_analysis.png" alt="Error Analysis">
 </p>
+
+Note that the difference would be larger in a real-world setting, because our test dataset construction was straightforward and it is very similar to the training dataset.
 
 # Summary
 
 Congrats! You have now fine-tuned an open source model that can rival GPT-4 on function calling. As a quick recap, here's what we demonstrated in this notebook:
-1. Preprocesing a function calling dataset into a conversational format
+1. Preprocessing a function calling dataset into a conversational format
 2. Fine-tuning a language model through either the Anyscale Platform or through Anyscale Endpoints
 3. Serving the fine-tuned model on Anyscale
 4. Evaluating the model against GPT-4 and analysing the results.
