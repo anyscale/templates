@@ -49,10 +49,8 @@ def get_completion(
             return response
         except openai.AuthenticationError as e:
             raise e
-        except (
-            openai.OpenAIError
-        ) as e:
-        # This will capture all other errors, including rate limit errors and formatting errors
+        except openai.OpenAIError as e:
+            # This will capture all other errors, including rate limit errors and formatting errors
             print(f"Error: {e}")
             time.sleep(SLEEP_INTERVAL_BETWEEN_RETRIES)
     # Error response
@@ -98,6 +96,7 @@ class AnyscaleResponseParser(ResponseParser):
 
     Assumes that the model response has tool calls formatted between tool_call_tags.
     """
+
     def get_parsed_response(self, messages, tools=None):
         # Tools is ignored as the tool list would be included in the system prompt
         response = get_completion(self.client, self.model, messages)
@@ -137,6 +136,7 @@ class AnyscaleResponseParser(ResponseParser):
 
 class OpenAIResponseParser(ResponseParser):
     """Response parser for OpenAI models."""
+
     def get_parsed_response(self, messages, tools):
         response = get_completion(
             client=self.client,
