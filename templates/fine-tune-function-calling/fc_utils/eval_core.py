@@ -270,7 +270,7 @@ def evaluate_model(
     pbar = tqdm(total=len(dataset), desc=pbar_desc)
     for example in dataset:
         # Entry is valid by default
-        is_valid = False
+        is_valid = True
 
         # Query the model, parse and evaluate the generated responses
         conv, is_correct, mistake_type = parse_and_eval(parser, example)

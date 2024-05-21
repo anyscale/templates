@@ -29,11 +29,12 @@ import openai
 
 ```python
 from fc_utils.data_format import TOOL_CALL_TAGS, TOOL_RESULT_TAGS, TOOL_LIST_TAGS, DatasetFormat
-from fc_utils.preprocessing import glaive_to_openai, pprint_example, openai_to_anyscale, save_to_jsonl
+from fc_utils.preprocessing import glaive_to_openai, openai_to_anyscale, save_to_jsonl
 from fc_utils.response_parsers import OpenAIResponseParser, AnyscaleResponseParser
 from fc_utils.eval_core import evaluate_model, Model
 from fc_utils.eval_data_utils import get_evaluation_dataset
 from fc_utils.plot_utils import plot_results
+from fc_utils.print_utils import pprint_example
 ```
 
 # Step 1: Data Preprocessing
@@ -48,61 +49,134 @@ ray_ds = ray.data.from_huggingface(hf_ds_subset)
 first_ex = ray_ds.take(1)[0]
 ```
 
+    2024-05-21 16:23:52,291	INFO worker.py:1740 -- Started a local Ray instance. View the dashboard at [1m[32m127.0.0.1:8265 [39m[22m
+    2024-05-21 16:23:55,483	INFO dataset.py:2370 -- Tip: Use `take_batch()` instead of `take() / show()` to return records in pandas or numpy batch format.
+    2024-05-21 16:23:55,485	INFO streaming_executor.py:112 -- Starting execution of Dataset. Full logs are in /tmp/ray/session_2024-05-21_16-23-50_322452_48467/logs/ray-data
+    2024-05-21 16:23:55,486	INFO streaming_executor.py:113 -- Execution plan of Dataset: InputDataBuffer[Input] -> LimitOperator[limit=1]
+
+
+
+    - limit=1 1:   0%|          | 0/1 [00:00<?, ?it/s]
+
+
+
+    Running 0:   0%|          | 0/1 [00:00<?, ?it/s]
+
+
 
 ```python
 pprint_example(first_ex, dataset_format=DatasetFormat.GLAIVE)
 ```
 
-    [91mSystem: [0mSYSTEM: You are a helpful assistant with access to the following functions. Use them if required -
-    {
-        "name": "create_reminder",
-        "description": "Create a reminder for a specific date and time",
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "reminder_text": {
-                    "type": "string",
-                    "description": "The content of the reminder"
-                },
-                "reminder_date": {
-                    "type": "string",
-                    "format": "date",
-                    "description": "The date of the reminder"
-                },
-                "reminder_time": {
-                    "type": "string",
-                    "format": "time",
-                    "description": "The time of the reminder"
-                }
+
+<pre><span style="color: red;">System: </span>SYSTEM: You are a helpful assistant with access to the following functions. Use them if required -
+{
+    "name": "create_reminder",
+    "description": "Create a reminder for a specific date and time",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "reminder_text": {
+                "type": "string",
+                "description": "The content of the reminder"
             },
-            "required": [
-                "reminder_text",
-                "reminder_date",
-                "reminder_time"
-            ]
-        }
+            "reminder_date": {
+                "type": "string",
+                "format": "date",
+                "description": "The date of the reminder"
+            },
+            "reminder_time": {
+                "type": "string",
+                "format": "time",
+                "description": "The time of the reminder"
+            }
+        },
+        "required": [
+            "reminder_text",
+            "reminder_date",
+            "reminder_time"
+        ]
     }
-    
-    [36mChat: [0mUSER: I need to set a reminder for my doctor's appointment.
-    
-    
-    ASSISTANT: Sure, I can help with that. Could you please provide me with the date and time of your appointment? <|endoftext|>
-    
-    
-    USER: The appointment is on 2022-09-15 at 10:00 AM.
-    
-    
-    ASSISTANT: <functioncall> {"name": "create_reminder", "arguments": '{"reminder_text": "Doctor's appointment", "reminder_date": "2022-09-15", "reminder_time": "10:00"}'} <|endoftext|>
-    
-    
-    FUNCTION RESPONSE: {"status": "success", "message": "Reminder for 'Doctor's appointment' on 2022-09-15 at 10:00 AM has been created successfully."}
-    
-    
-    ASSISTANT: Your reminder for the doctor's appointment on 2022-09-15 at 10:00 AM has been created successfully. You will be notified at the specified time. <|endoftext|>
-    
-    
-    
-    
+}
+
+<span style="color: cyan;">Chat: </span>USER: I need to set a reminder for my doctor's appointment.
+
+
+ASSISTANT: Sure, I can help with that. Could you please provide me with the date and time of your appointment? <|endoftext|>
+
+
+USER: The appointment is on 2022-09-15 at 10:00 AM.
+
+
+ASSISTANT: <functioncall> {"name": "create_reminder", "arguments": '{"reminder_text": "Doctor's appointment", "reminder_date": "2022-09-15", "reminder_time": "10:00"}'} <|endoftext|>
+
+
+FUNCTION RESPONSE: {"status": "success", "message": "Reminder for 'Doctor's appointment' on 2022-09-15 at 10:00 AM has been created successfully."}
+
+
+ASSISTANT: Your reminder for the doctor's appointment on 2022-09-15 at 10:00 AM has been created successfully. You will be notified at the specified time. <|endoftext|>
+
+
+
+</pre>
+
+
+
+```python
+pprint_example(first_ex, dataset_format=DatasetFormat.GLAIVE)
+```
+
+
+<pre><span style="color: red;">System: </span>SYSTEM: You are a helpful assistant with access to the following functions. Use them if required -
+{
+    "name": "create_reminder",
+    "description": "Create a reminder for a specific date and time",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "reminder_text": {
+                "type": "string",
+                "description": "The content of the reminder"
+            },
+            "reminder_date": {
+                "type": "string",
+                "format": "date",
+                "description": "The date of the reminder"
+            },
+            "reminder_time": {
+                "type": "string",
+                "format": "time",
+                "description": "The time of the reminder"
+            }
+        },
+        "required": [
+            "reminder_text",
+            "reminder_date",
+            "reminder_time"
+        ]
+    }
+}
+
+<span style="color: cyan;">Chat: </span>USER: I need to set a reminder for my doctor's appointment.
+
+
+ASSISTANT: Sure, I can help with that. Could you please provide me with the date and time of your appointment? <|endoftext|>
+
+
+USER: The appointment is on 2022-09-15 at 10:00 AM.
+
+
+ASSISTANT: <functioncall> {"name": "create_reminder", "arguments": '{"reminder_text": "Doctor's appointment", "reminder_date": "2022-09-15", "reminder_time": "10:00"}'} <|endoftext|>
+
+
+FUNCTION RESPONSE: {"status": "success", "message": "Reminder for 'Doctor's appointment' on 2022-09-15 at 10:00 AM has been created successfully."}
+
+
+ASSISTANT: Your reminder for the doctor's appointment on 2022-09-15 at 10:00 AM has been created successfully. You will be notified at the specified time. <|endoftext|>
+
+
+
+</pre>
 
 
 If you notice, each sample has two entries: system and chat. This dataset is already formatted in specific way (e.g. using USER, \<|endoftext|\> and other tokens). To enable fine-tuning on various open source models we need to convert each row to a more general format like the OpenAI chat format, which is the preferred format for fine-tuning instruction-tuned models on Anyscale ([dataset format guide](https://docs.endpoints.anyscale.com/endpoints/fine-tuning/dataset-prep)). Let's first bring this dataset into the conversation format and inspect how that looks like:
@@ -114,28 +188,45 @@ openai_fmt_ds = glaive_to_openai(ray_ds)
 first_ex = openai_fmt_ds.take(1)[0] 
 ```
 
+    2024-05-21 16:24:05,885	INFO streaming_executor.py:112 -- Starting execution of Dataset. Full logs are in /tmp/ray/session_2024-05-21_16-23-50_322452_48467/logs/ray-data
+    2024-05-21 16:24:05,886	INFO streaming_executor.py:113 -- Execution plan of Dataset: InputDataBuffer[Input] -> TaskPoolMapOperator[Map(_glaive_to_openai)->Filter(<lambda>)->Filter(filter_func)] -> LimitOperator[limit=1]
+
+
+
+    - Map(_glaive_to_openai)->Filter(<lambda>)->Filter(filter_func) 1:   0%|          | 0/1 [00:00<?, ?it/s]
+
+
+
+    - limit=1 2:   0%|          | 0/1 [00:00<?, ?it/s]
+
+
+
+    Running 0:   0%|          | 0/1 [00:00<?, ?it/s]
+
+
 
 ```python
 # Inspect one example
-pprint_example(first_ex, dataset_format=DatasetFormat.OPENAI) 
+pprint_example(first_ex, dataset_format=DatasetFormat.OPENAI)
 ```
 
-    [36mMessages: [0m
-    	[91msystem: [0mYou are a helpful assistant.
-    	[92muser: [0mI need to set a reminder for my doctor's appointment.
-    	[94massistant: 
-    		content: [0mSure, I can help with that. Could you please provide me with the date and time of your appointment? 
-    		[94mtool_calls: [0m[]
-    	[92muser: [0mThe appointment is on 2022-09-15 at 10:00 AM.
-    	[94massistant: 
-    		content: [0m
-    		[94mtool_calls: [0m[{'function': {'arguments': '{"reminder_text": "Doctors appointment", "reminder_date": "2022-09-15", "reminder_time": "10:00"}', 'name': 'create_reminder'}, 'type': 'function'}]
-    	[93mtool: [0m{"name": "create_reminder", "content": "{\"status\": \"success\", \"message\": \"Reminder for 'Doctor's appointment' on 2022-09-15 at 10:00 AM has been created successfully.\"}", "tool_call_id": "call_1"}
-    	[94massistant: 
-    		content: [0mYour reminder for the doctor's appointment on 2022-09-15 at 10:00 AM has been created successfully. You will be notified at the specified time. 
-    		[94mtool_calls: [0m[]
-    [95mTools: [0m[{"type": "function", "function": {"name": "create_reminder", "description": "Create a reminder for a specific date and time", "parameters": {"type": "object", "properties": {"reminder_text": {"type": "string", "description": "The content of the reminder"}, "reminder_date": {"type": "string", "format": "date", "description": "The date of the reminder"}, "reminder_time": {"type": "string", "format": "time", "description": "The time of the reminder"}}, "required": ["reminder_text", "reminder_date", "reminder_time"]}}}]
-    
+
+<pre><span style="color: cyan;">Messages: </span>
+	<span style="color: red;">system: </span>You are a helpful assistant.
+	<span style="color: green;">user: </span>I need to set a reminder for my doctor's appointment.
+	<span style="color: blue;">assistant: 
+		content: </span>Sure, I can help with that. Could you please provide me with the date and time of your appointment? 
+		<span style="color: blue;">tool_calls: </span>[]
+	<span style="color: green;">user: </span>The appointment is on 2022-09-15 at 10:00 AM.
+	<span style="color: blue;">assistant: 
+		content: </span>
+		<span style="color: blue;">tool_calls: </span>[{'function': {'arguments': '{"reminder_text": "Doctors appointment", "reminder_date": "2022-09-15", "reminder_time": "10:00"}', 'name': 'create_reminder'}, 'type': 'function'}]
+	<span style="color: yellow;">tool: </span>{"name": "create_reminder", "content": "{\"status\": \"success\", \"message\": \"Reminder for 'Doctor's appointment' on 2022-09-15 at 10:00 AM has been created successfully.\"}", "tool_call_id": "call_1"}
+	<span style="color: blue;">assistant: 
+		content: </span>Your reminder for the doctor's appointment on 2022-09-15 at 10:00 AM has been created successfully. You will be notified at the specified time. 
+		<span style="color: blue;">tool_calls: </span>[]
+<span style="color: magenta;">Tools: </span>[{"type": "function", "function": {"name": "create_reminder", "description": "Create a reminder for a specific date and time", "parameters": {"type": "object", "properties": {"reminder_text": {"type": "string", "description": "The content of the reminder"}, "reminder_date": {"type": "string", "format": "date", "description": "The date of the reminder"}, "reminder_time": {"type": "string", "format": "time", "description": "The time of the reminder"}}, "required": ["reminder_text", "reminder_date", "reminder_time"]}}}]
+</pre>
 
 
 If you notice, the tool calls are almost exactly in the OpenAI format, just short of the `id` entry provided by the OpenAI API. For training, we choose to leave the model out of ID generation. Internally, each tool call is kept track by its index in the list of tool calls made. This is used later in the tool response (In the above example, there is only one tool call made and the response has `tool_call_id` "call_1"). 
@@ -150,21 +241,38 @@ processed_ds = openai_to_anyscale(openai_fmt_ds)
 first_ex = processed_ds.take(1)[0]
 ```
 
+    2024-05-21 16:24:15,769	INFO streaming_executor.py:112 -- Starting execution of Dataset. Full logs are in /tmp/ray/session_2024-05-21_16-23-50_322452_48467/logs/ray-data
+    2024-05-21 16:24:15,769	INFO streaming_executor.py:113 -- Execution plan of Dataset: InputDataBuffer[Input] -> TaskPoolMapOperator[Map(_glaive_to_openai)->Filter(<lambda>)->Filter(filter_func)->Map(_openai_to_anyscale)->Filter(filter_func)] -> LimitOperator[limit=1]
+
+
+
+    - Map(_glaive_to_openai)->Filter(<lambda>)->Filter(filter_func)->Map(_openai_to_anyscale)->Filter(filter_func)…
+
+
+
+    - limit=1 2:   0%|          | 0/1 [00:00<?, ?it/s]
+
+
+
+    Running 0:   0%|          | 0/1 [00:00<?, ?it/s]
+
+
 
 ```python
 # Inspect one example
-pprint_example(first_ex, dataset_format=DatasetFormat.ANYSCALE) 
+pprint_example(first_ex, dataset_format=DatasetFormat.ANYSCALE)
 ```
 
-    [36mMessages: [0m
-    	[91msystem: [0mYou are a helpful assistant.[TOOL_LIST] [{"type": "function", "function": {"name": "create_reminder", "description": "Create a reminder for a specific date and time", "parameters": {"type": "object", "properties": {"reminder_text": {"type": "string", "description": "The content of the reminder"}, "reminder_date": {"type": "string", "format": "date", "description": "The date of the reminder"}, "reminder_time": {"type": "string", "format": "time", "description": "The time of the reminder"}}, "required": ["reminder_text", "reminder_date", "reminder_time"]}}}] [/TOOL_LIST]
-    	[92muser: [0mI need to set a reminder for my doctor's appointment.
-    	[94massistant: [0mSure, I can help with that. Could you please provide me with the date and time of your appointment? 
-    	[92muser: [0mThe appointment is on 2022-09-15 at 10:00 AM.
-    	[94massistant: [0m[TOOL_CALLS] [{"function": {"arguments": "{\"reminder_text\": \"Doctors appointment\", \"reminder_date\": \"2022-09-15\", \"reminder_time\": \"10:00\"}", "name": "create_reminder"}, "type": "function"}] [/TOOL_CALLS]
-    	[92muser: [0m[TOOL_RESULT] {"name": "create_reminder", "content": "{\"status\": \"success\", \"message\": \"Reminder for 'Doctor's appointment' on 2022-09-15 at 10:00 AM has been created successfully.\"}", "tool_call_id": "call_1"} [/TOOL_RESULT]
-    	[94massistant: [0mYour reminder for the doctor's appointment on 2022-09-15 at 10:00 AM has been created successfully. You will be notified at the specified time. 
-    
+
+<pre><span style="color: cyan;">Messages: </span>
+	<span style="color: red;">system: </span>You are a helpful assistant.[TOOL_LIST] [{"type": "function", "function": {"name": "create_reminder", "description": "Create a reminder for a specific date and time", "parameters": {"type": "object", "properties": {"reminder_text": {"type": "string", "description": "The content of the reminder"}, "reminder_date": {"type": "string", "format": "date", "description": "The date of the reminder"}, "reminder_time": {"type": "string", "format": "time", "description": "The time of the reminder"}}, "required": ["reminder_text", "reminder_date", "reminder_time"]}}}] [/TOOL_LIST]
+	<span style="color: green;">user: </span>I need to set a reminder for my doctor's appointment.
+	<span style="color: blue;">assistant: </span>Sure, I can help with that. Could you please provide me with the date and time of your appointment? 
+	<span style="color: green;">user: </span>The appointment is on 2022-09-15 at 10:00 AM.
+	<span style="color: blue;">assistant: </span>[TOOL_CALLS] [{"function": {"arguments": "{\"reminder_text\": \"Doctors appointment\", \"reminder_date\": \"2022-09-15\", \"reminder_time\": \"10:00\"}", "name": "create_reminder"}, "type": "function"}] [/TOOL_CALLS]
+	<span style="color: green;">user: </span>[TOOL_RESULT] {"name": "create_reminder", "content": "{\"status\": \"success\", \"message\": \"Reminder for 'Doctor's appointment' on 2022-09-15 at 10:00 AM has been created successfully.\"}", "tool_call_id": "call_1"} [/TOOL_RESULT]
+	<span style="color: blue;">assistant: </span>Your reminder for the doctor's appointment on 2022-09-15 at 10:00 AM has been created successfully. You will be notified at the specified time. 
+</pre>
 
 
 Let's make a train, validation and test split and save the datasets in the `jsonl` format.
@@ -176,6 +284,18 @@ train_ds, val_ds, test_ds = processed_ds.split_proportionately([0.8, 0.1])
 # Restrict to 200 examples for testing
 test_ds, _  = test_ds.split_at_indices([200]) 
 ```
+
+    2024-05-21 16:24:22,309	INFO streaming_executor.py:112 -- Starting execution of Dataset. Full logs are in /tmp/ray/session_2024-05-21_16-23-50_322452_48467/logs/ray-data
+    2024-05-21 16:24:22,309	INFO streaming_executor.py:113 -- Execution plan of Dataset: InputDataBuffer[Input] -> TaskPoolMapOperator[Map(_glaive_to_openai)->Filter(<lambda>)->Filter(filter_func)->Map(_openai_to_anyscale)->Filter(filter_func)]
+
+
+
+    - Map(_glaive_to_openai)->Filter(<lambda>)->Filter(filter_func)->Map(_openai_to_anyscale)->Filter(filter_func)…
+
+
+
+    Running 0:   0%|          | 0/1 [00:00<?, ?it/s]
+
 
 
 ```python
@@ -372,7 +492,7 @@ else
 ## Dataset formatting
   
 We process our test dataset individually for our finetuned model on Anyscale and for GPT-4:
-- For GPT-4, we undo some of the preprocessing previously done to get back the conversation in each example into the OpenAI format. All expected assistant responses in the dataset are processed to have the `"content"` and the `"tool_calls"` field. 
+- For GPT-4, we undo some of the preprocessing previously done to get back the conversations in the OpenAI format. All expected assistant responses in the dataset are processed to have the `"content"` and the `"tool_calls"` field. 
 - We follow the same preprocessing as during training for the Anyscale hosted model. However, for the expected assistant response, we process it in the same way as GPT-4 (i.e parse all tool calls and store them in a separate `"tool_calls"` field).
 
 
@@ -388,25 +508,26 @@ eval_ds_anyscale = get_evaluation_dataset(test_ds, TOOL_CALL_TAGS, TOOL_RESULT_T
 pprint_example(eval_ds_anyscale[1], dataset_format=DatasetFormat.OPENAI)
 ```
 
-    [36mMessages: [0m
-    	[91msystem: [0mYou are a helpful assistant.[TOOL_LIST] [{"type": "function", "function": {"name": "get_movie_info", "description": "Get information about a movie", "parameters": {"type": "object", "properties": {"title": {"type": "string", "description": "The title of the movie"}, "year": {"type": "integer", "description": "The release year of the movie"}}, "required": ["title"]}}}, {"type": "function", "function": {"name": "search_recipes", "description": "Search for recipes based on ingredients", "parameters": {"type": "object", "properties": {"ingredients": {"type": "array", "items": {"type": "string"}, "description": "The ingredients to search for"}, "cuisine": {"type": "string", "description": "The cuisine type"}, "dietary_restrictions": {"type": "array", "items": {"type": "string"}, "description": "Any dietary restrictions"}}, "required": ["ingredients"]}}}] [/TOOL_LIST]
-    	[92muser: [0mCan you tell me about the movie "Inception"?
-    	[94massistant: 
-    		content: [0mNone
-    		[94mtool_calls: [0m[{'function': {'arguments': {'title': 'Inception'}, 'name': 'get_movie_info'}, 'type': 'function'}]
-    	[92muser: [0m[TOOL_RESULT] {"name": "get_movie_info", "content": "{\"title\": \"Inception\", \"year\": 2010, \"director\": \"Christopher Nolan\", \"genre\": [\"Action\", \"Adventure\", \"Sci-Fi\"], \"plot\": \"A thief who steals corporate secrets through the use of dream-sharing technology is given the inverse task of planting an idea into the mind of a CEO.\"}", "tool_call_id": "call_1"} [/TOOL_RESULT]
-    	[94massistant: 
-    		content: [0mThe movie "Inception" was released in 2010. It was directed by Christopher Nolan and falls under the genres of Action, Adventure, and Sci-Fi. The plot revolves around a thief who steals corporate secrets through the use of dream-sharing technology and is given the inverse task of planting an idea into the mind of a CEO. 
-    		[94mtool_calls: [0mNone
-    	[92muser: [0mWhat about the movie "The Godfather"?
-    	[94massistant: 
-    		content: [0mNone
-    		[94mtool_calls: [0m[{'function': {'arguments': {'title': 'The Godfather'}, 'name': 'get_movie_info'}, 'type': 'function'}]
-    	[92muser: [0m[TOOL_RESULT] {"name": "get_movie_info", "content": "{\"title\": \"The Godfather\", \"year\": 1972, \"director\": \"Francis Ford Coppola\", \"genre\": [\"Crime\", \"Drama\"], \"plot\": \"The aging patriarch of an organized crime dynasty transfers control of his clandestine empire to his reluctant son.\"}", "tool_call_id": "call_1"} [/TOOL_RESULT]
-    	[94massistant: 
-    		content: [0m"The Godfather" was released in 1972 and was directed by Francis Ford Coppola. It is a Crime and Drama movie. The plot is about the aging patriarch of an organized crime dynasty who transfers control of his clandestine empire to his reluctant son. 
-    		[94mtool_calls: [0mNone
-    
+
+<pre><span style="color: cyan;">Messages: </span>
+	<span style="color: red;">system: </span>You are a helpful assistant.[TOOL_LIST] [{"type": "function", "function": {"name": "get_movie_info", "description": "Get information about a movie", "parameters": {"type": "object", "properties": {"title": {"type": "string", "description": "The title of the movie"}, "year": {"type": "integer", "description": "The release year of the movie"}}, "required": ["title"]}}}, {"type": "function", "function": {"name": "search_recipes", "description": "Search for recipes based on ingredients", "parameters": {"type": "object", "properties": {"ingredients": {"type": "array", "items": {"type": "string"}, "description": "The ingredients to search for"}, "cuisine": {"type": "string", "description": "The cuisine type"}, "dietary_restrictions": {"type": "array", "items": {"type": "string"}, "description": "Any dietary restrictions"}}, "required": ["ingredients"]}}}] [/TOOL_LIST]
+	<span style="color: green;">user: </span>Can you tell me about the movie "Inception"?
+	<span style="color: blue;">assistant: 
+		content: </span>None
+		<span style="color: blue;">tool_calls: </span>[{'function': {'arguments': {'title': 'Inception'}, 'name': 'get_movie_info'}, 'type': 'function'}]
+	<span style="color: green;">user: </span>[TOOL_RESULT] {"name": "get_movie_info", "content": "{\"title\": \"Inception\", \"year\": 2010, \"director\": \"Christopher Nolan\", \"genre\": [\"Action\", \"Adventure\", \"Sci-Fi\"], \"plot\": \"A thief who steals corporate secrets through the use of dream-sharing technology is given the inverse task of planting an idea into the mind of a CEO.\"}", "tool_call_id": "call_1"} [/TOOL_RESULT]
+	<span style="color: blue;">assistant: 
+		content: </span>The movie "Inception" was released in 2010. It was directed by Christopher Nolan and falls under the genres of Action, Adventure, and Sci-Fi. The plot revolves around a thief who steals corporate secrets through the use of dream-sharing technology and is given the inverse task of planting an idea into the mind of a CEO. 
+		<span style="color: blue;">tool_calls: </span>None
+	<span style="color: green;">user: </span>What about the movie "The Godfather"?
+	<span style="color: blue;">assistant: 
+		content: </span>None
+		<span style="color: blue;">tool_calls: </span>[{'function': {'arguments': {'title': 'The Godfather'}, 'name': 'get_movie_info'}, 'type': 'function'}]
+	<span style="color: green;">user: </span>[TOOL_RESULT] {"name": "get_movie_info", "content": "{\"title\": \"The Godfather\", \"year\": 1972, \"director\": \"Francis Ford Coppola\", \"genre\": [\"Crime\", \"Drama\"], \"plot\": \"The aging patriarch of an organized crime dynasty transfers control of his clandestine empire to his reluctant son.\"}", "tool_call_id": "call_1"} [/TOOL_RESULT]
+	<span style="color: blue;">assistant: 
+		content: </span>"The Godfather" was released in 1972 and was directed by Francis Ford Coppola. It is a Crime and Drama movie. The plot is about the aging patriarch of an organized crime dynasty who transfers control of his clandestine empire to his reluctant son. 
+		<span style="color: blue;">tool_calls: </span>None
+</pre>
 
 
 ## Evaluate

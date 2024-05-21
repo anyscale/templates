@@ -8,7 +8,6 @@ from typing import Dict, Any, List
 import logging
 
 import ray.data
-from colorama import Fore, Style
 
 from fc_utils.function_extraction_utils import (
     get_tool_calls_from_response,
@@ -301,57 +300,6 @@ def glaive_to_openai(ray_ds: ray.data.Dataset) -> ray.data.Dataset:
     ray_ds = ray_ds.filter(lambda x: x["messages"] is not None)
     ray_ds = ray_ds.filter(filter_func)
     return ray_ds
-
-
-def pprint_example(example: Dict[str, Any], dataset_format: DatasetFormat) -> None:
-    """Pretty prints an example with colors for different roles."""
-    pprint_str = ""
-    # Define colors used for different keys/roles
-    blue = Fore.BLUE
-    reset = Style.RESET_ALL
-    green = Fore.GREEN
-    red = Fore.RED
-    magenta = Fore.MAGENTA
-    yellow = Fore.YELLOW
-    cyan = Fore.CYAN
-    colors = {
-        "system": red,
-        "user": green,
-        "assistant": blue,
-        "tool": yellow,
-        "tools": magenta,
-        "chat": cyan,
-    }
-    for key in example.keys():
-        if key == "messages":
-            pprint_str += f"{colors['chat']}Messages: {reset}\n"
-            for msg in example["messages"]:
-                role = msg["role"]
-                content = msg["content"]
-                color = colors.get(role, reset)
-                string = f"\t{color}{role}: {reset}{content}\n"
-                if dataset_format == DatasetFormat.OPENAI:
-                    if role == "assistant":
-                        # If the format is OpenAI, include the tool_calls field
-                        tool_calls = msg.get("tool_calls", "")
-                        string = f"\t{color}{role}: \n\t\tcontent: {reset}{content}\n"
-                        string += f"\t\t{color}tool_calls: {reset}{tool_calls}\n"
-                    elif role == "tool":
-                        # If the format is OpenAI, include the name and tool_call_id fields
-                        response_str = json.dumps(
-                            {
-                                "name": msg["name"],
-                                "content": content,
-                                "tool_call_id": msg["tool_call_id"],
-                            }
-                        )
-                        string = f"\t{color}{role}: {reset}{response_str}\n"
-                pprint_str += string
-        else:
-            color = colors.get(key, reset)
-            string = f"{color}{key.capitalize()}: {reset}{example[key]}\n"
-            pprint_str += string
-    print(pprint_str)
 
 
 def save_to_jsonl(ds: ray.data.Dataset, filepath: str) -> None:
