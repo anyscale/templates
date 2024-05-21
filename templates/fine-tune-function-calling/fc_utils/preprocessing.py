@@ -255,7 +255,7 @@ def _openai_to_anyscale(example: Dict[str, Any]) -> Dict[str, Any]:
         else:
             InvalidRoleError(f"Invalid role {message['role']} found in the messages")
         anyscale_messages.append(anyscale_message)
-    # if the last message is from the user, drop it
+    # If the last message is from the user, drop it
     if anyscale_messages[-1]["role"] == "user":
         anyscale_messages = anyscale_messages[:-1]
     return {"messages": anyscale_messages}

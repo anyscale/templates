@@ -1,10 +1,10 @@
 """
-Test data preprocessing utilities
+Preprocessing utilities for evaluation.
 """
 
 import re
 import ray.data
-from typing import Tuple, Dict, Any
+from typing import Tuple, Dict, Any, List
 from functools import partial
 
 from fc_utils.function_extraction_utils import (
@@ -148,7 +148,7 @@ def get_evaluation_dataset(
     tool_result_tags: IndicatorTags,
     tool_list_tags: IndicatorTags,
     format: DatasetFormat,
-) -> list[Dict[str, Any]]:
+) -> List[Dict[str, Any]]:
     """
     Handles the preprocessing of the test dataset for evaluation.
 
