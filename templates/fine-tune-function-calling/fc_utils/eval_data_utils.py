@@ -3,9 +3,10 @@ Preprocessing utilities for evaluation.
 """
 
 import re
-import ray.data
 from typing import Tuple, Dict, Any, List
 from functools import partial
+
+import ray.data
 
 from fc_utils.function_extraction_utils import (
     parse_tool_result,

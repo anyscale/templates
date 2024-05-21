@@ -6,7 +6,7 @@ Response parsers for Anyscale Endpoints and OpenAI models. We define two parser 
 import json
 import time
 from abc import ABC, abstractmethod
-from typing import Dict, Any, List, Tuple
+from typing import Dict, Any, List, Tuple, Optional
 from dataclasses import dataclass
 import openai
 from openai import OpenAI
@@ -40,7 +40,7 @@ def get_completion(
     """
     Gets completion from the OpenAI ChatCompletion API for the provided OpenAI client and model
     """
-    # simple way to handle rate limit errors with retries
+    # Simple way to handle rate limit errors with retries
     for _ in range(NUM_RETRIES):
         try:
             response = client.chat.completions.create(
@@ -51,11 +51,12 @@ def get_completion(
             raise e
         except (
             openai.OpenAIError
-        ) as e:  # this will capture all other errors, including rate limit errors and formatting errors
+        ) as e:
+        # This will capture all other errors, including rate limit errors and formatting errors
             print(f"Error: {e}")
             time.sleep(SLEEP_INTERVAL_BETWEEN_RETRIES)
-
-    return ERROR_OUTPUT  # error response
+    # Error response
+    return ERROR_OUTPUT
 
 
 class ResponseParser(ABC):
@@ -68,7 +69,7 @@ class ResponseParser(ABC):
         api_key: str,
         api_base: str,
         model: str,
-        tool_call_tags: IndicatorTags = None,
+        tool_call_tags: Optional[IndicatorTags] = None,
     ):
         self.client = OpenAI(api_key=api_key, base_url=api_base)
         self.model = model
@@ -93,11 +94,15 @@ class ResponseParser(ABC):
 
 
 class AnyscaleResponseParser(ResponseParser):
+    """Response parser for models hosted on Anyscale endpoints.
+
+    Assumes that the model response has tool calls formatted between tool_call_tags.
+    """
     def get_parsed_response(self, messages, tools=None):
-        # tools is ignored as the tool list would be included in the system prompt
+        # Tools is ignored as the tool list would be included in the system prompt
         response = get_completion(self.client, self.model, messages)
 
-        # default error output
+        # Default error output
         processed_response = ParsedResponse(
             content=ERROR_OUTPUT, tool_calls=None, original_response=response
         )
@@ -122,8 +127,8 @@ class AnyscaleResponseParser(ResponseParser):
                 processed_response.content = response_message_content
                 processed_response.tool_calls = tool_calls
             except FunctionCallFormatError:
-                # this handles either a function call not being found or the json not being decoded properly.
-                # one example for the second case can be missed commas/quotes in the arguments field.
+                # This handles either a function call not being found or the json not being decoded properly.
+                # One example for the second case can be missed commas/quotes in the arguments field.
                 processed_response.content = response_message_content
                 processed_response.tool_calls = INCORRECT_FORMAT
 
@@ -131,6 +136,7 @@ class AnyscaleResponseParser(ResponseParser):
 
 
 class OpenAIResponseParser(ResponseParser):
+    """Response parser for OpenAI models."""
     def get_parsed_response(self, messages, tools):
         response = get_completion(
             client=self.client,
@@ -138,7 +144,7 @@ class OpenAIResponseParser(ResponseParser):
             messages=messages,
             tools=tools if len(tools) else None,
         )
-        # default error output
+        # Default error output
         processed_response = ParsedResponse(
             content=ERROR_OUTPUT, tool_calls=None, original_response=response
         )
@@ -150,7 +156,7 @@ class OpenAIResponseParser(ResponseParser):
         processed_response.original_response = response_message
 
         tool_calls = response_message.tool_calls
-        # process tool calls if present
+        # Process tool calls if present
         if tool_calls:
             processed_response.tool_calls = []
             for tool_call in tool_calls:
