@@ -16,7 +16,19 @@ from fc_utils.function_extraction_utils import (
     DatasetFormat,
     FunctionFormatError,
 )
-from fc_utils.data_format import *
+from fc_utils.data_format import (
+    GLAIVEAI_SYSTEM_NO_TOOLS,
+    GLAIVEAI_SYSTEM_WITH_TOOLS,
+    GLAIVEAI_TOOL_CALL_INDICATORS,
+    GLAIVEAI_TOOL_CALL_PREFIX,
+    GLAIVEAI_EOS,
+    DEFAULT_SYSTEM_PROMPT,
+    GlaiveAIRoleTags,
+    MessageType,
+    TOOL_CALL_TAGS,
+    TOOL_RESULT_TAGS,
+    TOOL_LIST_TAGS,
+)
 
 
 class InvalidSystemPromptError(Exception):
@@ -210,7 +222,7 @@ def _openai_to_anyscale(example: Dict[str, Any]) -> Dict[str, Any]:
                 # Convert to string and add tool list tags
                 tools_str = json.dumps(tools)
                 tools_str_with_tags = (
-                    f"{TOOL_LIST_TAGS[0]} {tools_str} {TOOL_LIST_TAGS[1]}"
+                    f"{TOOL_LIST_TAGS.start} {tools_str} {TOOL_LIST_TAGS.end}"
                 )
                 anyscale_message["content"] += tools_str_with_tags
         elif message["role"] == "assistant":
@@ -345,29 +357,3 @@ def save_to_jsonl(ds: ray.data.Dataset, filepath: str) -> None:
     """Saves a Ray dataset to a jsonl file."""
     df = ds.to_pandas()
     df.to_json(filepath, orient="records", lines=True)
-
-
-if __name__ == "__main__":
-    import datasets
-    import logging
-    import ray.data
-
-    logging.getLogger().setLevel(logging.INFO)
-    hf_ds = datasets.load_dataset(
-        "glaiveai/glaive-function-calling-v2", split="train"
-    ).shuffle(seed=21)
-    hf_ds_subset = hf_ds.select(
-        range(int(len(hf_ds) * 0.10))
-    )  # sample only 10% of the dataset
-    ray_ds = ray.data.from_huggingface(hf_ds_subset)
-
-    # pprint_example(ray_ds.take(1)[0])
-    # examples = ray_ds.to_pandas().to_dict(orient="records")
-    for example in hf_ds_subset:
-        _glaive_to_openai(example)
-    openai_fmt_ds = glaive_to_openai(ray_ds)
-    print("openai ds: ", openai_fmt_ds.count())
-    pprint_example(openai_fmt_ds.take(1)[0], DatasetFormat.OPENAI)
-    anyscale_fmt_ds = openai_to_anyscale(openai_fmt_ds)
-    pprint_example(anyscale_fmt_ds.take(1)[0], DatasetFormat.ANYSCALE)
-    breakpoint()

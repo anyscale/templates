@@ -83,7 +83,9 @@ def _check_tool_call_format(
 def check_tool_calls_format(
     tool_calls: List[Dict[str, Any]], format: DatasetFormat = DatasetFormat.OPENAI
 ) -> bool:
-    """Checks if the tool call is in the correct format."""
+    """Checks if all tool calls in a list of tool calls the correct format."""
+    if not isinstance(tool_calls, list):
+        return ValueError("Tool calls should be a list.")
     for tool_call in tool_calls:
         # Check if the tool call is a function call. Only function calls are supported.
         if not _check_tool_call_format(tool_call, format):
