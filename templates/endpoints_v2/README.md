@@ -16,14 +16,15 @@ You can also find more advanced tutorials in the `examples/` folder, including t
 
 We provide a starter command to run Llama and Mistral-family models via Ray Serve. You can specify the arguments, such as Lora, GPU type and tensor parallelism via the command. You can also follow the [guide](examples/CustomModels.ipynb) to bring your own models.
 
-The command will generate 2 files - a model config file (saved in `model_config/`) and a serve config file (`serve_TIMESTAMP.yaml`) that you can reference and re-run in the future.
-
 Please note that if you would like to serve a model whose architecture is different from the provided list of models, we highly recommend you manually going over the generated model config file to provide the correct values.
 
-
-```python
-!python generate_config.py
+To generate the configuration file, run the following command directly in your terminal:
 ```
+python generate_config.py
+```
+**Note:** This command requires interactive inputs and should be executed directly in the terminal, not within a Jupyter notebook cell.
+
+The command will generate 2 files - a model config file (saved in `model_config/`) and a serve config file (`serve_TIMESTAMP.yaml`) that you can reference and re-run in the future.
 
 If you didn't start the serve application in the previous step, you can start it using the following command (replace the file name with the generated `serve_` file name):
 
