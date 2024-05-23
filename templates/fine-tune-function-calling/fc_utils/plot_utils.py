@@ -108,12 +108,14 @@ def plot_results(
     ax.set_ylabel("Number of Mistakes")
     ax.set_title("Error Analysis")
     ax.set_xticks(positions)
+    # add 5 to the max count for a nicer plot
+    max_count = (
+        max(total_incorrect_base, total_incorrect_finetuned, total_incorrect_gpt) + 5
+    )
     ax.set_ylim(
-        # Set the y-axis limit to be at least 20% of the total count for a nicer plot
+        # Set the y-axis limit to be at least 20% of the total count for a better plot
         ymax=max(
-            total_incorrect_base,
-            total_incorrect_finetuned,
-            total_incorrect_gpt,
+            max_count,
             0.2 * total_count,
         )
     )
