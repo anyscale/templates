@@ -48,6 +48,7 @@ class Model(Enum):
 
     GPT = "gpt"
     FINETUNED = "finetuned"
+    BASE = "base"
 
 
 @dataclass
@@ -119,8 +120,14 @@ def compare_tool_calls(
         raise ValueError(
             "Response and ground truth should have the same number of tool calls"
         )
+    # Assumes that the tool calls have unique function names and raises an error if not
+    ground_truth_tool_call_names = [
+        tool_call["function"]["name"] for tool_call in ground_truth_tool_calls
+    ]
+    if len(ground_truth_tool_call_names) != len(set(ground_truth_tool_call_names)):
+        raise ValueError("Expected tool calls should have unique function names")
+
     # Sort list of tool calls by function name
-    # Assumes that the tool calls have unique function names
     sorted_gt_tool_calls = sorted(
         ground_truth_tool_calls, key=lambda x: x["function"]["name"]
     )
@@ -140,13 +147,18 @@ def compare_tool_calls(
             is_match = False
             reason = Mistakes.WRONG_FUNCTION_NAME
             return is_match, reason
-        elif expected_function["arguments"] != actual_function["arguments"]:
-            is_match = False
-            if len(expected_function["arguments"]) != len(actual_function["arguments"]):
-                reason = Mistakes.MISSING_ARGUMENT
-            else:
-                reason = Mistakes.WRONG_ARGUMENT_VALUE
-            return is_match, reason
+        else:
+            # Check if all the parameters in the ground truth are present and correct in the response.
+            # The response can include optional parameters not present in the ground truth.
+            for param, value in expected_function["arguments"].items():
+                if param not in actual_function["arguments"]:
+                    is_match = False
+                    reason = Mistakes.MISSING_ARGUMENT
+                    return is_match, reason
+                elif actual_function["arguments"][param] != value:
+                    is_match = False
+                    reason = Mistakes.WRONG_ARGUMENT_VALUE
+                    return is_match, reason
     return is_match, reason
 
 
@@ -176,7 +188,7 @@ def get_matching_tool_call_id(
         raise ToolResponseIDNotFoundError("Tool call found with an unknown tool name")
     tool_idx = assistant_function_names.index(message["name"])
     # Use the tool call id from the previous assistant message if present, else use a default id
-    tool_call_id = previous_tool_calls[tool_idx].get("id", f"call_{tool_idx}")
+    tool_call_id = previous_tool_calls[tool_idx].get("id", f"call_{tool_idx+1}")
     return tool_call_id
 
 
@@ -264,9 +276,12 @@ def evaluate_model(
     results = []
     # Stores list of matches for valid results
     corrects = []
-    pbar_desc = (
-        "Evaluating GPT4..." if model == Model.GPT else "Evaluating Finetuned Model..."
-    )
+    if model == Model.GPT:
+        pbar_desc = "Evaluating GPT4..."
+    elif model == Model.FINETUNED:
+        pbar_desc = "Evaluating Finetuned Model..."
+    else:
+        pbar_desc = "Evaluating Base Model..."
     pbar = tqdm(total=len(dataset), desc=pbar_desc)
     for example in dataset:
         # Entry is valid by default
