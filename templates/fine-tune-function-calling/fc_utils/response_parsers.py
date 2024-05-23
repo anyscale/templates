@@ -36,15 +36,21 @@ def get_completion(
     model: str,
     messages: List[Dict[str, str]],
     tools: List[Dict[str, Any]] = None,
+    temperature: float = 0.0,
+    max_tokens: int = 256,
 ) -> "ChatCompletion":
     """
-    Gets completion from the OpenAI ChatCompletion API for the provided OpenAI client and model
+    Gets completion from the OpenAI ChatCompletion API for the provided OpenAI client and model.
     """
     # Simple way to handle rate limit errors with retries
     for _ in range(NUM_RETRIES):
         try:
             response = client.chat.completions.create(
-                model=model, messages=messages, tools=tools
+                model=model,
+                messages=messages,
+                tools=tools,
+                temperature=temperature,
+                max_tokens=max_tokens,
             )
             return response
         except openai.AuthenticationError as e:
@@ -97,9 +103,17 @@ class AnyscaleResponseParser(ResponseParser):
     Assumes that the model response has tool calls formatted between tool_call_tags.
     """
 
-    def get_parsed_response(self, messages, tools=None):
+    def get_parsed_response(
+        self, messages, tools=None, temperature=0.0, max_tokens=256
+    ):
         # Tools is ignored as the tool list would be included in the system prompt
-        response = get_completion(self.client, self.model, messages)
+        response = get_completion(
+            client=self.client,
+            model=self.model,
+            messages=messages,
+            temperature=temperature,
+            max_tokens=max_tokens,
+        )
 
         # Default error output
         processed_response = ParsedResponse(
@@ -137,12 +151,14 @@ class AnyscaleResponseParser(ResponseParser):
 class OpenAIResponseParser(ResponseParser):
     """Response parser for OpenAI models."""
 
-    def get_parsed_response(self, messages, tools):
+    def get_parsed_response(self, messages, tools, temperature=0.0, max_tokens=256):
         response = get_completion(
             client=self.client,
             model=self.model,
             messages=messages,
             tools=tools if len(tools) else None,
+            temperature=temperature,
+            max_tokens=max_tokens,
         )
         # Default error output
         processed_response = ParsedResponse(

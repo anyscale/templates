@@ -7,7 +7,7 @@ Function calling is an important capability of large language models. Connecting
 In this example, we demonstrate fine-tuning on [Glaive's function calling dataset](https://huggingface.co/datasets/glaiveai/glaive-function-calling-v2?row=0) using Anyscale Endpoints. The goal for this example is to serve as a blue-print for performing data processing, training, and evaluation on open source LLMs for specific tasks like function calling, in the most effective way. The mentioned dataset consists of about 113,000 examples of synthetically generated function calling data. The dataset composition is given below:
 
 <p align="center">
-  <img src="./assets/distr_glaive_pie.png" alt="Distribution">
+  <img src="./assets/distr_glaive_pie.png" alt="Distribution" width=800>
 </p>
 
 
@@ -22,7 +22,7 @@ First, let's make the necessary imports
 
 ```python
 import datasets
-import ray.data 
+import ray.data
 import openai
 ```
 
@@ -38,7 +38,16 @@ from fc_utils.print_utils import pprint_example
 ```
 
 # Step 1: Data Preprocessing
-We'll use Ray Data for scalable data processing. First let's load the dataset from the HuggingFace Hub and inspect a few entries
+Our data processing will occur in 2-stages, as shown in the below figure:
+
+<p align="center">
+  <img src="./assets/data_processing.png" alt="Data preprocessing" width=500>
+</p>
+
+
+Glaive's function calling dataset is formatted with specific indicators for roles and special tokens. We'll first map this dataset into the more general OpenAI chat format and then make it compatible with Anyscale Endpoints. 
+
+We'll use Ray Data for scalable data processing. First, let's load the dataset from the HuggingFace Hub and inspect it.
 
 
 ```python
@@ -49,10 +58,10 @@ ray_ds = ray.data.from_huggingface(hf_ds_subset)
 first_ex = ray_ds.take(1)[0]
 ```
 
-    2024-05-21 16:23:52,291	INFO worker.py:1740 -- Started a local Ray instance. View the dashboard at [1m[32m127.0.0.1:8265 [39m[22m
-    2024-05-21 16:23:55,483	INFO dataset.py:2370 -- Tip: Use `take_batch()` instead of `take() / show()` to return records in pandas or numpy batch format.
-    2024-05-21 16:23:55,485	INFO streaming_executor.py:112 -- Starting execution of Dataset. Full logs are in /tmp/ray/session_2024-05-21_16-23-50_322452_48467/logs/ray-data
-    2024-05-21 16:23:55,486	INFO streaming_executor.py:113 -- Execution plan of Dataset: InputDataBuffer[Input] -> LimitOperator[limit=1]
+    2024-05-22 22:19:43,434	INFO worker.py:1740 -- Started a local Ray instance. View the dashboard at [1m[32m127.0.0.1:8266 [39m[22m
+    2024-05-22 22:19:46,694	INFO dataset.py:2370 -- Tip: Use `take_batch()` instead of `take() / show()` to return records in pandas or numpy batch format.
+    2024-05-22 22:19:46,696	INFO streaming_executor.py:112 -- Starting execution of Dataset. Full logs are in /tmp/ray/session_2024-05-22_22-19-41_321721_15976/logs/ray-data
+    2024-05-22 22:19:46,697	INFO streaming_executor.py:113 -- Execution plan of Dataset: InputDataBuffer[Input] -> LimitOperator[limit=1]
 
 
 
@@ -71,115 +80,57 @@ pprint_example(first_ex, dataset_format=DatasetFormat.GLAIVE)
 
 <pre><span style="color: red;">System: </span>SYSTEM: You are a helpful assistant with access to the following functions. Use them if required -
 {
-    "name": "create_reminder",
-    "description": "Create a reminder for a specific date and time",
-    "parameters": {
-        "type": "object",
-        "properties": {
-            "reminder_text": {
-                "type": "string",
-                "description": "The content of the reminder"
+    &quot;name&quot;: &quot;create_reminder&quot;,
+    &quot;description&quot;: &quot;Create a reminder for a specific date and time&quot;,
+    &quot;parameters&quot;: {
+        &quot;type&quot;: &quot;object&quot;,
+        &quot;properties&quot;: {
+            &quot;reminder_text&quot;: {
+                &quot;type&quot;: &quot;string&quot;,
+                &quot;description&quot;: &quot;The content of the reminder&quot;
             },
-            "reminder_date": {
-                "type": "string",
-                "format": "date",
-                "description": "The date of the reminder"
+            &quot;reminder_date&quot;: {
+                &quot;type&quot;: &quot;string&quot;,
+                &quot;format&quot;: &quot;date&quot;,
+                &quot;description&quot;: &quot;The date of the reminder&quot;
             },
-            "reminder_time": {
-                "type": "string",
-                "format": "time",
-                "description": "The time of the reminder"
+            &quot;reminder_time&quot;: {
+                &quot;type&quot;: &quot;string&quot;,
+                &quot;format&quot;: &quot;time&quot;,
+                &quot;description&quot;: &quot;The time of the reminder&quot;
             }
         },
-        "required": [
-            "reminder_text",
-            "reminder_date",
-            "reminder_time"
+        &quot;required&quot;: [
+            &quot;reminder_text&quot;,
+            &quot;reminder_date&quot;,
+            &quot;reminder_time&quot;
         ]
     }
 }
 
-<span style="color: cyan;">Chat: </span>USER: I need to set a reminder for my doctor's appointment.
+<span style="color: cyan;">Chat: </span>USER: I need to set a reminder for my doctor&#x27;s appointment.
 
 
-ASSISTANT: Sure, I can help with that. Could you please provide me with the date and time of your appointment? <|endoftext|>
+ASSISTANT: Sure, I can help with that. Could you please provide me with the date and time of your appointment? &lt;|endoftext|&gt;
 
 
 USER: The appointment is on 2022-09-15 at 10:00 AM.
 
 
-ASSISTANT: <functioncall> {"name": "create_reminder", "arguments": '{"reminder_text": "Doctor's appointment", "reminder_date": "2022-09-15", "reminder_time": "10:00"}'} <|endoftext|>
+ASSISTANT: &lt;functioncall&gt; {&quot;name&quot;: &quot;create_reminder&quot;, &quot;arguments&quot;: &#x27;{&quot;reminder_text&quot;: &quot;Doctor&#x27;s appointment&quot;, &quot;reminder_date&quot;: &quot;2022-09-15&quot;, &quot;reminder_time&quot;: &quot;10:00&quot;}&#x27;} &lt;|endoftext|&gt;
 
 
-FUNCTION RESPONSE: {"status": "success", "message": "Reminder for 'Doctor's appointment' on 2022-09-15 at 10:00 AM has been created successfully."}
+FUNCTION RESPONSE: {&quot;status&quot;: &quot;success&quot;, &quot;message&quot;: &quot;Reminder for &#x27;Doctor&#x27;s appointment&#x27; on 2022-09-15 at 10:00 AM has been created successfully.&quot;}
 
 
-ASSISTANT: Your reminder for the doctor's appointment on 2022-09-15 at 10:00 AM has been created successfully. You will be notified at the specified time. <|endoftext|>
+ASSISTANT: Your reminder for the doctor&#x27;s appointment on 2022-09-15 at 10:00 AM has been created successfully. You will be notified at the specified time. &lt;|endoftext|&gt;
 
 
 
 </pre>
 
 
-
-```python
-pprint_example(first_ex, dataset_format=DatasetFormat.GLAIVE)
-```
-
-
-<pre><span style="color: red;">System: </span>SYSTEM: You are a helpful assistant with access to the following functions. Use them if required -
-{
-    "name": "create_reminder",
-    "description": "Create a reminder for a specific date and time",
-    "parameters": {
-        "type": "object",
-        "properties": {
-            "reminder_text": {
-                "type": "string",
-                "description": "The content of the reminder"
-            },
-            "reminder_date": {
-                "type": "string",
-                "format": "date",
-                "description": "The date of the reminder"
-            },
-            "reminder_time": {
-                "type": "string",
-                "format": "time",
-                "description": "The time of the reminder"
-            }
-        },
-        "required": [
-            "reminder_text",
-            "reminder_date",
-            "reminder_time"
-        ]
-    }
-}
-
-<span style="color: cyan;">Chat: </span>USER: I need to set a reminder for my doctor's appointment.
-
-
-ASSISTANT: Sure, I can help with that. Could you please provide me with the date and time of your appointment? <|endoftext|>
-
-
-USER: The appointment is on 2022-09-15 at 10:00 AM.
-
-
-ASSISTANT: <functioncall> {"name": "create_reminder", "arguments": '{"reminder_text": "Doctor's appointment", "reminder_date": "2022-09-15", "reminder_time": "10:00"}'} <|endoftext|>
-
-
-FUNCTION RESPONSE: {"status": "success", "message": "Reminder for 'Doctor's appointment' on 2022-09-15 at 10:00 AM has been created successfully."}
-
-
-ASSISTANT: Your reminder for the doctor's appointment on 2022-09-15 at 10:00 AM has been created successfully. You will be notified at the specified time. <|endoftext|>
-
-
-
-</pre>
-
-
-If you notice, each sample has two entries: system and chat. This dataset is already formatted in specific way (e.g. using USER, \<|endoftext|\> and other tokens). To enable fine-tuning on various open source models we need to convert each row to a more general format like the OpenAI chat format, which is the preferred format for fine-tuning instruction-tuned models on Anyscale ([dataset format guide](https://docs.endpoints.anyscale.com/endpoints/fine-tuning/dataset-prep)). Let's first bring this dataset into the conversation format and inspect how that looks like:
+Each sample in the dataset has two entries: system and chat. As mentioned, this dataset is formatted in a specific way (e.g. using USER, \<|endoftext|\> and other tokens). To enable fine-tuning on various open source models we need to convert each row to a more general format like the OpenAI chat format, which is the preferred format for fine-tuning instruction-tuned models on Anyscale ([dataset format guide](https://docs.endpoints.anyscale.com/endpoints/fine-tuning/dataset-prep)). The below code accomplishes the same.
 
 
 ```python
@@ -188,8 +139,8 @@ openai_fmt_ds = glaive_to_openai(ray_ds)
 first_ex = openai_fmt_ds.take(1)[0] 
 ```
 
-    2024-05-21 16:24:05,885	INFO streaming_executor.py:112 -- Starting execution of Dataset. Full logs are in /tmp/ray/session_2024-05-21_16-23-50_322452_48467/logs/ray-data
-    2024-05-21 16:24:05,886	INFO streaming_executor.py:113 -- Execution plan of Dataset: InputDataBuffer[Input] -> TaskPoolMapOperator[Map(_glaive_to_openai)->Filter(<lambda>)->Filter(filter_func)] -> LimitOperator[limit=1]
+    2024-05-22 22:19:47,239	INFO streaming_executor.py:112 -- Starting execution of Dataset. Full logs are in /tmp/ray/session_2024-05-22_22-19-41_321721_15976/logs/ray-data
+    2024-05-22 22:19:47,240	INFO streaming_executor.py:113 -- Execution plan of Dataset: InputDataBuffer[Input] -> TaskPoolMapOperator[Map(_glaive_to_openai)->Filter(<lambda>)->Filter(filter_func)] -> LimitOperator[limit=1]
 
 
 
@@ -213,26 +164,26 @@ pprint_example(first_ex, dataset_format=DatasetFormat.OPENAI)
 
 <pre><span style="color: cyan;">Messages: </span>
 	<span style="color: red;">system: </span>You are a helpful assistant.
-	<span style="color: green;">user: </span>I need to set a reminder for my doctor's appointment.
+	<span style="color: green;">user: </span>I need to set a reminder for my doctor&#x27;s appointment.
 	<span style="color: blue;">assistant: 
 		content: </span>Sure, I can help with that. Could you please provide me with the date and time of your appointment? 
 		<span style="color: blue;">tool_calls: </span>[]
 	<span style="color: green;">user: </span>The appointment is on 2022-09-15 at 10:00 AM.
 	<span style="color: blue;">assistant: 
 		content: </span>
-		<span style="color: blue;">tool_calls: </span>[{'function': {'arguments': '{"reminder_text": "Doctors appointment", "reminder_date": "2022-09-15", "reminder_time": "10:00"}', 'name': 'create_reminder'}, 'type': 'function'}]
-	<span style="color: yellow;">tool: </span>{"name": "create_reminder", "content": "{\"status\": \"success\", \"message\": \"Reminder for 'Doctor's appointment' on 2022-09-15 at 10:00 AM has been created successfully.\"}", "tool_call_id": "call_1"}
+		<span style="color: blue;">tool_calls: </span>[{&#x27;function&#x27;: {&#x27;arguments&#x27;: &#x27;{&quot;reminder_text&quot;: &quot;Doctors appointment&quot;, &quot;reminder_date&quot;: &quot;2022-09-15&quot;, &quot;reminder_time&quot;: &quot;10:00&quot;}&#x27;, &#x27;name&#x27;: &#x27;create_reminder&#x27;}, &#x27;type&#x27;: &#x27;function&#x27;}]
+	<span style="color: yellow;">tool: </span>{&quot;name&quot;: &quot;create_reminder&quot;, &quot;content&quot;: &quot;{\&quot;status\&quot;: \&quot;success\&quot;, \&quot;message\&quot;: \&quot;Reminder for &#x27;Doctor&#x27;s appointment&#x27; on 2022-09-15 at 10:00 AM has been created successfully.\&quot;}&quot;, &quot;tool_call_id&quot;: &quot;call_1&quot;}
 	<span style="color: blue;">assistant: 
-		content: </span>Your reminder for the doctor's appointment on 2022-09-15 at 10:00 AM has been created successfully. You will be notified at the specified time. 
+		content: </span>Your reminder for the doctor&#x27;s appointment on 2022-09-15 at 10:00 AM has been created successfully. You will be notified at the specified time. 
 		<span style="color: blue;">tool_calls: </span>[]
-<span style="color: magenta;">Tools: </span>[{"type": "function", "function": {"name": "create_reminder", "description": "Create a reminder for a specific date and time", "parameters": {"type": "object", "properties": {"reminder_text": {"type": "string", "description": "The content of the reminder"}, "reminder_date": {"type": "string", "format": "date", "description": "The date of the reminder"}, "reminder_time": {"type": "string", "format": "time", "description": "The time of the reminder"}}, "required": ["reminder_text", "reminder_date", "reminder_time"]}}}]
+<span style="color: magenta;">Tools: </span>[{&quot;type&quot;: &quot;function&quot;, &quot;function&quot;: {&quot;name&quot;: &quot;create_reminder&quot;, &quot;description&quot;: &quot;Create a reminder for a specific date and time&quot;, &quot;parameters&quot;: {&quot;type&quot;: &quot;object&quot;, &quot;properties&quot;: {&quot;reminder_text&quot;: {&quot;type&quot;: &quot;string&quot;, &quot;description&quot;: &quot;The content of the reminder&quot;}, &quot;reminder_date&quot;: {&quot;type&quot;: &quot;string&quot;, &quot;format&quot;: &quot;date&quot;, &quot;description&quot;: &quot;The date of the reminder&quot;}, &quot;reminder_time&quot;: {&quot;type&quot;: &quot;string&quot;, &quot;format&quot;: &quot;time&quot;, &quot;description&quot;: &quot;The time of the reminder&quot;}}, &quot;required&quot;: [&quot;reminder_text&quot;, &quot;reminder_date&quot;, &quot;reminder_time&quot;]}}}]
 </pre>
 
 
-If you notice, the tool calls are almost exactly in the OpenAI format, just short of the `id` entry provided by the OpenAI API. For training, we choose to leave the model out of ID generation. Internally, each tool call is kept track by its index in the list of tool calls made. This is used later in the tool response (In the above example, there is only one tool call made and the response has `tool_call_id` "call_1"). 
+If you notice, the tool calls are almost exactly in the OpenAI format, just short of the `id` entry provided by the OpenAI API. For training, we choose to leave the model out of ID generation. Internally, each tool call is kept track by its index in the list of tool calls made. This is used later in the tool response (In the above example, there is only one tool call made and the tool response has `tool_call_id` "call_1"). 
 
 ## Preprocess to the Anyscale format
-We'll now further process this conversation format and make it compatible with Anyscale Endpoints. We'll make use of special indicators "\[TOOL_CALLS\]" and "\[/TOOL_CALLS\] to format assistant tool calls into the message "content" field. The role "tool" will be converted to the role "user" with a special indicator to highlight that this is a tool response. Further, the tool list will be included in the system prompt with special indicators. The following code block handles the necessary preprocessing.
+We'll now further process this conversation format and make it compatible with Anyscale Endpoints. We'll make use of special indicators "\[TOOL_CALLS\]" and "\[/TOOL_CALLS\]" to format assistant tool calls into the message "content" field. The role "tool" will be converted to the role "user" with a special indicator to highlight that this is a tool response. Further, the tool list will be included in the system prompt with special indicators. The following code block handles the necessary preprocessing.
 
 
 ```python
@@ -241,12 +192,12 @@ processed_ds = openai_to_anyscale(openai_fmt_ds)
 first_ex = processed_ds.take(1)[0]
 ```
 
-    2024-05-21 16:24:15,769	INFO streaming_executor.py:112 -- Starting execution of Dataset. Full logs are in /tmp/ray/session_2024-05-21_16-23-50_322452_48467/logs/ray-data
-    2024-05-21 16:24:15,769	INFO streaming_executor.py:113 -- Execution plan of Dataset: InputDataBuffer[Input] -> TaskPoolMapOperator[Map(_glaive_to_openai)->Filter(<lambda>)->Filter(filter_func)->Map(_openai_to_anyscale)->Filter(filter_func)] -> LimitOperator[limit=1]
+    2024-05-22 22:19:52,031	INFO streaming_executor.py:112 -- Starting execution of Dataset. Full logs are in /tmp/ray/session_2024-05-22_22-19-41_321721_15976/logs/ray-data
+    2024-05-22 22:19:52,031	INFO streaming_executor.py:113 -- Execution plan of Dataset: InputDataBuffer[Input] -> TaskPoolMapOperator[Map(_glaive_to_openai)->Filter(<lambda>)->Filter(filter_func)->Map(_openai_to_anyscale)] -> LimitOperator[limit=1]
 
 
 
-    - Map(_glaive_to_openai)->Filter(<lambda>)->Filter(filter_func)->Map(_openai_to_anyscale)->Filter(filter_func)…
+    - Map(_glaive_to_openai)->Filter(<lambda>)->Filter(filter_func)->Map(_openai_to_anyscale) 1:   0%|          | …
 
 
 
@@ -265,13 +216,13 @@ pprint_example(first_ex, dataset_format=DatasetFormat.ANYSCALE)
 
 
 <pre><span style="color: cyan;">Messages: </span>
-	<span style="color: red;">system: </span>You are a helpful assistant.[TOOL_LIST] [{"type": "function", "function": {"name": "create_reminder", "description": "Create a reminder for a specific date and time", "parameters": {"type": "object", "properties": {"reminder_text": {"type": "string", "description": "The content of the reminder"}, "reminder_date": {"type": "string", "format": "date", "description": "The date of the reminder"}, "reminder_time": {"type": "string", "format": "time", "description": "The time of the reminder"}}, "required": ["reminder_text", "reminder_date", "reminder_time"]}}}] [/TOOL_LIST]
-	<span style="color: green;">user: </span>I need to set a reminder for my doctor's appointment.
+	<span style="color: red;">system: </span>You are a helpful assistant.[TOOL_LIST] [{&quot;type&quot;: &quot;function&quot;, &quot;function&quot;: {&quot;name&quot;: &quot;create_reminder&quot;, &quot;description&quot;: &quot;Create a reminder for a specific date and time&quot;, &quot;parameters&quot;: {&quot;type&quot;: &quot;object&quot;, &quot;properties&quot;: {&quot;reminder_text&quot;: {&quot;type&quot;: &quot;string&quot;, &quot;description&quot;: &quot;The content of the reminder&quot;}, &quot;reminder_date&quot;: {&quot;type&quot;: &quot;string&quot;, &quot;format&quot;: &quot;date&quot;, &quot;description&quot;: &quot;The date of the reminder&quot;}, &quot;reminder_time&quot;: {&quot;type&quot;: &quot;string&quot;, &quot;format&quot;: &quot;time&quot;, &quot;description&quot;: &quot;The time of the reminder&quot;}}, &quot;required&quot;: [&quot;reminder_text&quot;, &quot;reminder_date&quot;, &quot;reminder_time&quot;]}}}] [/TOOL_LIST]
+	<span style="color: green;">user: </span>I need to set a reminder for my doctor&#x27;s appointment.
 	<span style="color: blue;">assistant: </span>Sure, I can help with that. Could you please provide me with the date and time of your appointment? 
 	<span style="color: green;">user: </span>The appointment is on 2022-09-15 at 10:00 AM.
-	<span style="color: blue;">assistant: </span>[TOOL_CALLS] [{"function": {"arguments": "{\"reminder_text\": \"Doctors appointment\", \"reminder_date\": \"2022-09-15\", \"reminder_time\": \"10:00\"}", "name": "create_reminder"}, "type": "function"}] [/TOOL_CALLS]
-	<span style="color: green;">user: </span>[TOOL_RESULT] {"name": "create_reminder", "content": "{\"status\": \"success\", \"message\": \"Reminder for 'Doctor's appointment' on 2022-09-15 at 10:00 AM has been created successfully.\"}", "tool_call_id": "call_1"} [/TOOL_RESULT]
-	<span style="color: blue;">assistant: </span>Your reminder for the doctor's appointment on 2022-09-15 at 10:00 AM has been created successfully. You will be notified at the specified time. 
+	<span style="color: blue;">assistant: </span>[TOOL_CALLS] [{&quot;function&quot;: {&quot;arguments&quot;: &quot;{\&quot;reminder_text\&quot;: \&quot;Doctors appointment\&quot;, \&quot;reminder_date\&quot;: \&quot;2022-09-15\&quot;, \&quot;reminder_time\&quot;: \&quot;10:00\&quot;}&quot;, &quot;name&quot;: &quot;create_reminder&quot;}, &quot;type&quot;: &quot;function&quot;}] [/TOOL_CALLS]
+	<span style="color: green;">user: </span>[TOOL_RESULT] {&quot;name&quot;: &quot;create_reminder&quot;, &quot;content&quot;: &quot;{\&quot;status\&quot;: \&quot;success\&quot;, \&quot;message\&quot;: \&quot;Reminder for &#x27;Doctor&#x27;s appointment&#x27; on 2022-09-15 at 10:00 AM has been created successfully.\&quot;}&quot;, &quot;tool_call_id&quot;: &quot;call_1&quot;} [/TOOL_RESULT]
+	<span style="color: blue;">assistant: </span>Your reminder for the doctor&#x27;s appointment on 2022-09-15 at 10:00 AM has been created successfully. You will be notified at the specified time. 
 </pre>
 
 
@@ -285,12 +236,12 @@ train_ds, val_ds, test_ds = processed_ds.split_proportionately([0.8, 0.1])
 test_ds, _  = test_ds.split_at_indices([200]) 
 ```
 
-    2024-05-21 16:24:22,309	INFO streaming_executor.py:112 -- Starting execution of Dataset. Full logs are in /tmp/ray/session_2024-05-21_16-23-50_322452_48467/logs/ray-data
-    2024-05-21 16:24:22,309	INFO streaming_executor.py:113 -- Execution plan of Dataset: InputDataBuffer[Input] -> TaskPoolMapOperator[Map(_glaive_to_openai)->Filter(<lambda>)->Filter(filter_func)->Map(_openai_to_anyscale)->Filter(filter_func)]
+    2024-05-22 22:19:57,649	INFO streaming_executor.py:112 -- Starting execution of Dataset. Full logs are in /tmp/ray/session_2024-05-22_22-19-41_321721_15976/logs/ray-data
+    2024-05-22 22:19:57,650	INFO streaming_executor.py:113 -- Execution plan of Dataset: InputDataBuffer[Input] -> TaskPoolMapOperator[Map(_glaive_to_openai)->Filter(<lambda>)->Filter(filter_func)->Map(_openai_to_anyscale)]
 
 
 
-    - Map(_glaive_to_openai)->Filter(<lambda>)->Filter(filter_func)->Map(_openai_to_anyscale)->Filter(filter_func)…
+    - Map(_glaive_to_openai)->Filter(<lambda>)->Filter(filter_func)->Map(_openai_to_anyscale) 1:   0%|          | …
 
 
 
@@ -416,13 +367,13 @@ Click on the "Query" drop down box to get instructions on how to query your depl
 
 ```python
 ## To be run only if you finetuned on the Anyscale platform
-ANYSCALE_API_KEY="service-api-key-here"
+FINETUNED_MODEL_API_KEY="your-service-api-key-here"
 # Example api base url: https://endpoints-v2-zzzz.s.anyscaleuserdata.com
-ANYSCALE_API_BASE="service-url-here" 
-ANYSCALE_API_BASE = f"{ANYSCALE_API_BASE}/v1"
+FINETUNED_MODEL_API_BASE="your-service-url-here" 
+FINETUNED_MODEL_API_BASE = f"{FINETUNED_MODEL_API_BASE}/v1"
 # Enter the model id here. This would be different depending on whether you performed LoRA or full parameter fine-tuning.
 # Example: meta-llama/Meta-Llama-3-8B-Instruct:mysuffix:myid 
-MODEL_ID = "ModelIdHere"
+MODEL_ID = "your-model-id-here"
 ```
 
 ## Step 3(b): Finetuned through serverless endpoints
@@ -449,8 +400,8 @@ In the "API Keys" page, click on "Create" and note down the API key.
 
 ```python
 ## This is only if you finetuned through serverless endpoints
-ANYSCALE_API_BASE = "https://api.endpoints.anyscale.com/v1"
-ANYSCALE_API_KEY = "esecret_yourKeyHere"
+FINETUNED_MODEL_API_BASE = "https://api.endpoints.anyscale.com/v1"
+FINETUNED_MODEL_API_KEY = "esecret_yourKeyHere"
 MODEL_ID = "yourModelIdHere"
 ```
 
@@ -464,7 +415,7 @@ MODEL_ID = "yourModelIdHere"
 
 # Step 4: Evaluation
 
-Let's evaluate our trained model with GPT-4 as a baseline. 
+Let's evaluate our trained model. Here we'll use two baselines: (1) the base model before finetuning and (2) GPT-4. Note that in a real world setting, you would evaluate your base model *first* before going forward with fine-tuning. 
 
 
 ## Evaluation strategy
@@ -476,89 +427,140 @@ Evaluation of function calling capability is non-trivial, given that we're looki
 The following psuedocode shows the high-level branching conditions considered during evaluation:
 
 ```
+correct = True
 if(ground_truth has no function call):
     correct = (response has no function call)
 else
     if response has no function call: 
         correct = False
     else
-          if response.function_name != gt.function_name:
+          if response.function_name != ground_truth.function_name:
                 correct = False
           else
-                correct = (response.argument_dict == gt.argument_dict)
+               for every (param, value) in ground_truth.argument_dict:
+                    if (param, value) not in response.argument_dict:
+                        correct = False
 ```
 
 
 ## Dataset formatting
   
-We process our test dataset individually for our finetuned model on Anyscale and for GPT-4:
+We process our test dataset individually for each model as follows:
 - For GPT-4, we undo some of the preprocessing previously done to get back the conversations in the OpenAI format. All expected assistant responses in the dataset are processed to have the `"content"` and the `"tool_calls"` field. 
-- We follow the same preprocessing as during training for the Anyscale hosted model. However, for the expected assistant response, we process it in the same way as GPT-4 (i.e parse all tool calls and store them in a separate `"tool_calls"` field).
+- We follow the same preprocessing as during training for the finetuned model. However, for the expected assistant response, we process it in the same way as GPT-4 (i.e parse all tool calls and store them in a separate `"tool_calls"` field).
+- For the base model, we include a special system prompt that instructs it to output the tool calls, if any, in our pre-defined format (enclosing it in special indicators, etc) and further format tool responses in the same way as we did for the fine-tuned model. This lays out an even ground for comparison.
 
 
 ```python
 # Preprocess the test dataset for evaluation
-eval_ds_openai = get_evaluation_dataset(test_ds, TOOL_CALL_TAGS, TOOL_RESULT_TAGS, TOOL_LIST_TAGS, DatasetFormat.OPENAI)
-eval_ds_anyscale = get_evaluation_dataset(test_ds, TOOL_CALL_TAGS, TOOL_RESULT_TAGS, TOOL_LIST_TAGS, DatasetFormat.ANYSCALE)
+eval_ds_base =  get_evaluation_dataset(test_ds, TOOL_CALL_TAGS, TOOL_RESULT_TAGS, TOOL_LIST_TAGS, Model.BASE)
+eval_ds_finetuned = get_evaluation_dataset(test_ds, TOOL_CALL_TAGS, TOOL_RESULT_TAGS, TOOL_LIST_TAGS, Model.FINETUNED)
+eval_ds_gpt = get_evaluation_dataset(test_ds, TOOL_CALL_TAGS, TOOL_RESULT_TAGS, TOOL_LIST_TAGS, Model.GPT)
 ```
 
 
 ```python
-# Inspect one example from the Anyscale format eval dataset
-pprint_example(eval_ds_anyscale[1], dataset_format=DatasetFormat.OPENAI)
+# Inspect one example from the eval dataset for the finetuned model
+pprint_example(eval_ds_finetuned[1], dataset_format=DatasetFormat.OPENAI)
 ```
 
 
 <pre><span style="color: cyan;">Messages: </span>
-	<span style="color: red;">system: </span>You are a helpful assistant.[TOOL_LIST] [{"type": "function", "function": {"name": "get_movie_info", "description": "Get information about a movie", "parameters": {"type": "object", "properties": {"title": {"type": "string", "description": "The title of the movie"}, "year": {"type": "integer", "description": "The release year of the movie"}}, "required": ["title"]}}}, {"type": "function", "function": {"name": "search_recipes", "description": "Search for recipes based on ingredients", "parameters": {"type": "object", "properties": {"ingredients": {"type": "array", "items": {"type": "string"}, "description": "The ingredients to search for"}, "cuisine": {"type": "string", "description": "The cuisine type"}, "dietary_restrictions": {"type": "array", "items": {"type": "string"}, "description": "Any dietary restrictions"}}, "required": ["ingredients"]}}}] [/TOOL_LIST]
-	<span style="color: green;">user: </span>Can you tell me about the movie "Inception"?
+	<span style="color: red;">system: </span>You are a helpful assistant.[TOOL_LIST] [{&quot;type&quot;: &quot;function&quot;, &quot;function&quot;: {&quot;name&quot;: &quot;get_movie_info&quot;, &quot;description&quot;: &quot;Get information about a movie&quot;, &quot;parameters&quot;: {&quot;type&quot;: &quot;object&quot;, &quot;properties&quot;: {&quot;title&quot;: {&quot;type&quot;: &quot;string&quot;, &quot;description&quot;: &quot;The title of the movie&quot;}, &quot;year&quot;: {&quot;type&quot;: &quot;integer&quot;, &quot;description&quot;: &quot;The release year of the movie&quot;}}, &quot;required&quot;: [&quot;title&quot;]}}}, {&quot;type&quot;: &quot;function&quot;, &quot;function&quot;: {&quot;name&quot;: &quot;search_recipes&quot;, &quot;description&quot;: &quot;Search for recipes based on ingredients&quot;, &quot;parameters&quot;: {&quot;type&quot;: &quot;object&quot;, &quot;properties&quot;: {&quot;ingredients&quot;: {&quot;type&quot;: &quot;array&quot;, &quot;items&quot;: {&quot;type&quot;: &quot;string&quot;}, &quot;description&quot;: &quot;The ingredients to search for&quot;}, &quot;cuisine&quot;: {&quot;type&quot;: &quot;string&quot;, &quot;description&quot;: &quot;The cuisine type&quot;}, &quot;dietary_restrictions&quot;: {&quot;type&quot;: &quot;array&quot;, &quot;items&quot;: {&quot;type&quot;: &quot;string&quot;}, &quot;description&quot;: &quot;Any dietary restrictions&quot;}}, &quot;required&quot;: [&quot;ingredients&quot;]}}}] [/TOOL_LIST]
+	<span style="color: green;">user: </span>Can you tell me about the movie &quot;Inception&quot;?
 	<span style="color: blue;">assistant: 
 		content: </span>None
-		<span style="color: blue;">tool_calls: </span>[{'function': {'arguments': {'title': 'Inception'}, 'name': 'get_movie_info'}, 'type': 'function'}]
-	<span style="color: green;">user: </span>[TOOL_RESULT] {"name": "get_movie_info", "content": "{\"title\": \"Inception\", \"year\": 2010, \"director\": \"Christopher Nolan\", \"genre\": [\"Action\", \"Adventure\", \"Sci-Fi\"], \"plot\": \"A thief who steals corporate secrets through the use of dream-sharing technology is given the inverse task of planting an idea into the mind of a CEO.\"}", "tool_call_id": "call_1"} [/TOOL_RESULT]
+		<span style="color: blue;">tool_calls: </span>[{&#x27;function&#x27;: {&#x27;arguments&#x27;: {&#x27;title&#x27;: &#x27;Inception&#x27;}, &#x27;name&#x27;: &#x27;get_movie_info&#x27;}, &#x27;type&#x27;: &#x27;function&#x27;}]
+	<span style="color: green;">user: </span>[TOOL_RESULT] {&quot;name&quot;: &quot;get_movie_info&quot;, &quot;content&quot;: &quot;{\&quot;title\&quot;: \&quot;Inception\&quot;, \&quot;year\&quot;: 2010, \&quot;director\&quot;: \&quot;Christopher Nolan\&quot;, \&quot;genre\&quot;: [\&quot;Action\&quot;, \&quot;Adventure\&quot;, \&quot;Sci-Fi\&quot;], \&quot;plot\&quot;: \&quot;A thief who steals corporate secrets through the use of dream-sharing technology is given the inverse task of planting an idea into the mind of a CEO.\&quot;}&quot;, &quot;tool_call_id&quot;: &quot;call_1&quot;} [/TOOL_RESULT]
 	<span style="color: blue;">assistant: 
-		content: </span>The movie "Inception" was released in 2010. It was directed by Christopher Nolan and falls under the genres of Action, Adventure, and Sci-Fi. The plot revolves around a thief who steals corporate secrets through the use of dream-sharing technology and is given the inverse task of planting an idea into the mind of a CEO. 
+		content: </span>The movie &quot;Inception&quot; was released in 2010. It was directed by Christopher Nolan and falls under the genres of Action, Adventure, and Sci-Fi. The plot revolves around a thief who steals corporate secrets through the use of dream-sharing technology and is given the inverse task of planting an idea into the mind of a CEO. 
 		<span style="color: blue;">tool_calls: </span>None
-	<span style="color: green;">user: </span>What about the movie "The Godfather"?
+	<span style="color: green;">user: </span>What about the movie &quot;The Godfather&quot;?
 	<span style="color: blue;">assistant: 
 		content: </span>None
-		<span style="color: blue;">tool_calls: </span>[{'function': {'arguments': {'title': 'The Godfather'}, 'name': 'get_movie_info'}, 'type': 'function'}]
-	<span style="color: green;">user: </span>[TOOL_RESULT] {"name": "get_movie_info", "content": "{\"title\": \"The Godfather\", \"year\": 1972, \"director\": \"Francis Ford Coppola\", \"genre\": [\"Crime\", \"Drama\"], \"plot\": \"The aging patriarch of an organized crime dynasty transfers control of his clandestine empire to his reluctant son.\"}", "tool_call_id": "call_1"} [/TOOL_RESULT]
+		<span style="color: blue;">tool_calls: </span>[{&#x27;function&#x27;: {&#x27;arguments&#x27;: {&#x27;title&#x27;: &#x27;The Godfather&#x27;}, &#x27;name&#x27;: &#x27;get_movie_info&#x27;}, &#x27;type&#x27;: &#x27;function&#x27;}]
+	<span style="color: green;">user: </span>[TOOL_RESULT] {&quot;name&quot;: &quot;get_movie_info&quot;, &quot;content&quot;: &quot;{\&quot;title\&quot;: \&quot;The Godfather\&quot;, \&quot;year\&quot;: 1972, \&quot;director\&quot;: \&quot;Francis Ford Coppola\&quot;, \&quot;genre\&quot;: [\&quot;Crime\&quot;, \&quot;Drama\&quot;], \&quot;plot\&quot;: \&quot;The aging patriarch of an organized crime dynasty transfers control of his clandestine empire to his reluctant son.\&quot;}&quot;, &quot;tool_call_id&quot;: &quot;call_1&quot;} [/TOOL_RESULT]
 	<span style="color: blue;">assistant: 
-		content: </span>"The Godfather" was released in 1972 and was directed by Francis Ford Coppola. It is a Crime and Drama movie. The plot is about the aging patriarch of an organized crime dynasty who transfers control of his clandestine empire to his reluctant son. 
+		content: </span>&quot;The Godfather&quot; was released in 1972 and was directed by Francis Ford Coppola. It is a Crime and Drama movie. The plot is about the aging patriarch of an organized crime dynasty who transfers control of his clandestine empire to his reluctant son. 
 		<span style="color: blue;">tool_calls: </span>None
 </pre>
 
 
 ## Evaluate
 
-For evaluation, we initialise two parsers - one for each model - to handle obtaining chat completions from the respective API and parsing the result. Then, our evaluation logic takes care of matching the assistant response with the expected response and, if the response is incorrect, making note of the type of error (wrong intent, wrong function name, etc). Populate the API keys below and run the below code blocks to get evaluation results:
+For evaluation, we initialise parsers - one for each model - to handle obtaining chat completions from the respective API and parsing the result. Then, our evaluation logic takes care of matching the assistant response with the expected response and, if the response is incorrect, making note of the type of error (wrong intent, wrong function name, etc). A high-level overview of our evaluation code for the fine-tuned model is given below:
+
+
+<p align="center">
+  <img src="./assets/eval_logic_2.png" alt="Evaluation" width=800>
+</p>
+
+Internally, evaluation of each example (for the given parser) is handled by the function `parse_and_eval`. We'll use a dataset-level function `evaluate_model` that provides the full results along with model accuracy.
+
+Populate the API keys below (make sure you have already populated the API keys for your finetuned model) and run the below code blocks to get evaluation results:
+
 
 
 ```python
 # Enter your OpenAI key below.
-OPENAI_API_KEY = "yourApiKeyHere" 
+OPENAI_API_KEY = "your-openai-key-here" 
 OPENAI_API_BASE = "https://api.openai.com/v1"
-# Enter your Anyscale key below. If you finetuned through Anyscale endpoints, you can get the key here: https://console.anyscale.com/credentials. Otherwise, you should use the key from your Anyscale Service
-ANYSCALE_API_KEY = "yourApiKeyHere" 
+
+# Base model config 
+BASE_MODEL_API_BASE = "https://api.endpoints.anyscale.com/v1"
+BASE_MODEL_ID="meta-llama/Meta-Llama-3-8B-Instruct"
+# Enter your Endpoints API key below from https://console.anyscale.com/credentials
+BASE_MODEL_API_KEY = "your-endpoints-key-here" 
 ```
 
 
 ```python
 # Initialize parsers
+base_model_parser = AnyscaleResponseParser(api_key=BASE_MODEL_API_KEY, api_base=BASE_MODEL_API_BASE, model=BASE_MODEL_ID, tool_call_tags=TOOL_CALL_TAGS)
+
+finetuned_model_parser = AnyscaleResponseParser(api_key=FINETUNED_MODEL_API_KEY, api_base=FINETUNED_MODEL_API_BASE, model=MODEL_ID, tool_call_tags=TOOL_CALL_TAGS) 
+
 openai_parser = OpenAIResponseParser(api_key=OPENAI_API_KEY, api_base=OPENAI_API_BASE, model="gpt-4", tool_call_tags=TOOL_CALL_TAGS)
-anyscale_parser = AnyscaleResponseParser(api_key=ANYSCALE_API_KEY, api_base=ANYSCALE_API_BASE, model=MODEL_ID, tool_call_tags=TOOL_CALL_TAGS) 
 ```
 
 
 ```python
+# Evaluate base model 
+results_base, accuracy_base = evaluate_model(eval_ds_base, base_model_parser, Model.BASE)
+print("Base Model Accuracy: ", accuracy_base)
+```
+
+    Evaluating Base Model...: 100%|██████████| 200/200 [44:13<00:00, 13.27s/it] 
+
+    Base Model Accuracy:  0.725
+
+
+    
+
+
+
+```python
+# Evaluate our finetuned model
+results_finetuned, accuracy_finetuned = evaluate_model(eval_ds_finetuned, finetuned_model_parser, Model.FINETUNED)
+print("Fine-tuned Model Accuracy: ", accuracy_finetuned)
+```
+
+    Evaluating Finetuned Model...: 100%|██████████| 200/200 [32:57<00:00,  9.89s/it]
+
+    Fine-tuned Model Accuracy:  0.975
+
+
+    
+
+
+
+```python
 # Evaluate gpt-4
-results_gpt, accuracy_gpt = evaluate_model(eval_ds_openai, openai_parser, Model.GPT)
+results_gpt, accuracy_gpt = evaluate_model(eval_ds_gpt, openai_parser, Model.GPT)
 print("GPT-4 Accuracy: ", accuracy_gpt)
 ```
 
-    Evaluating Finetuned Model...:   0%|          | 0/5 [1:41:01<?, ?it/s]
-    Evaluating GPT4...: 100%|██████████| 200/200 [1:20:43<00:00, 24.22s/it]
+    Evaluating GPT4...: 100%|██████████| 200/200 [54:50<00:00, 16.45s/it] 
 
     GPT-4 Accuracy:  0.97
 
@@ -568,32 +570,17 @@ print("GPT-4 Accuracy: ", accuracy_gpt)
 
 
 ```python
-# Evaluate our finetuned model
-results_finetuned, accuracy_finetuned = evaluate_model(eval_ds_anyscale, anyscale_parser, Model.FINETUNED)
-print("Fine-tuned Model Accuracy: ", accuracy_finetuned)
-```
-
-    Evaluating Finetuned Model...: 100%|██████████| 200/200 [40:59<00:00, 12.30s/it] 
-
-    Fine-tuned Model Accuracy:  0.965
-
-
-    
-
-
-
-```python
 # Plot the results
-plot_results(results_finetuned, results_gpt)
+plot_results(results_base, results_finetuned, results_gpt)
 ```
 
-Your final fine-tuned model should be able to rival GPT-4 level performance on this dataset.  Here's how your plot might look like for `Llama-3-8B-Instruct`:
+Here's how your plot might look like for `Llama-3-8B-Instruct`:
 
 <p align="center">
   <img src="./assets/error_analysis.png" alt="Error Analysis">
 </p>
 
-Note that the difference would be larger in a real-world setting, because our test dataset construction was straightforward and it is very similar to the training dataset.
+The base model is a lot more trigger happy when tools are available and further makes a number of mistakes in formatting (generating tool calls with the right schema) and providing the right argument values (making accurate tool calls). A number of these issues are eliminated with fine-tuning and the final fine-tuned model rivals GPT-4 level performance on this dataset.  Note that the difference would be larger in a real-world setting, because our test dataset construction was straightforward and it is very similar to the training dataset.
 
 # Summary
 
