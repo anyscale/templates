@@ -1,7 +1,6 @@
 import argparse
 import os
 import subprocess
-from regex import B
 import yaml
 import random
 import string
