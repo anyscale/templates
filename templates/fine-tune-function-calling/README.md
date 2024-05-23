@@ -492,7 +492,7 @@ For evaluation, we initialise parsers - one for each model - to handle obtaining
 
 
 <p align="center">
-  <img src="./assets/eval_logic_2.png" alt="Evaluation" width=800>
+  <img src="./assets/eval_logic.png" alt="Evaluation" width=800>
 </p>
 
 Internally, evaluation of each example (for the given parser) is handled by the function `parse_and_eval`. We'll use a dataset-level function `evaluate_model` that provides the full results along with model accuracy.
