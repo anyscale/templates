@@ -11,9 +11,6 @@ def _read_yaml_file(file_path):
     with open(file_path, "r") as stream:
         return yaml.safe_load(stream)
 
-def _write_yaml_file(file_path):
-    with open(file_path, "w") as stream:
-        return yaml.dump(stream)
 
 def _get_lora_storage_uri() -> str:
     artifact_storage = os.environ.get("ANYSCALE_ARTIFACT_STORAGE")
@@ -64,17 +61,17 @@ def main():
         model_tag = None
         lora_storage_uri = None
 
-    entrypoint = f"llmforge dev finetune {finetune_config_path}"
-
-    api_key = os.environ.get("WANDB_API_KEY", "")
-    if api_key:
-        entrypoint = f"WANDB_API_KEY={api_key} {entrypoint}"
-
     with tempfile.NamedTemporaryFile(
         mode="w+", delete=False, dir=".", suffix=".yaml"
     ) as temp_file:
         yaml.safe_dump(training_config, temp_file)
         temp_file_name = temp_file.name
+
+    entrypoint = f"llmforge dev finetune {temp_file_name}"
+
+    api_key = os.environ.get("WANDB_API_KEY", "")
+    if api_key:
+        entrypoint = f"WANDB_API_KEY={api_key} {entrypoint}"
 
     try:
         subprocess.run(entrypoint, check=True, shell=True)
