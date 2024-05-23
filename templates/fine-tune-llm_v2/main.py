@@ -4,11 +4,16 @@ import subprocess
 import yaml
 import random
 import string
+import tempfile
 
 
 def _read_yaml_file(file_path):
     with open(file_path, "r") as stream:
         return yaml.safe_load(stream)
+
+def _write_yaml_file(file_path):
+    with open(file_path, "w") as stream:
+        return yaml.dump(stream)
 
 def _get_lora_storage_uri() -> str:
     artifact_storage = os.environ.get("ANYSCALE_ARTIFACT_STORAGE")
@@ -50,25 +55,37 @@ def main():
     training_config = _read_yaml_file(finetune_config_path)
 
     is_lora = "lora_config" in training_config
-    entrypoint = f"llmforge dev finetune {finetune_config_path}"
 
     if is_lora:
         model_tag = generate_model_tag(training_config["model_id"])
-        entrypoint += f" --model-tag={model_tag}"
         lora_storage_uri = _get_lora_storage_uri()
-        entrypoint += f" --forward-best-checkpoint-remote-uri={lora_storage_uri}"
+        training_config["forward_checkpoint_config"] = {"tag": model_tag, "remote_uri": lora_storage_uri}
     else:
+        model_tag = None
         lora_storage_uri = None
+
+    entrypoint = f"llmforge dev finetune {finetune_config_path}"
 
     api_key = os.environ.get("WANDB_API_KEY", "")
     if api_key:
         entrypoint = f"WANDB_API_KEY={api_key} {entrypoint}"
 
-    subprocess.run(entrypoint, check=True, shell=True)
-    if lora_storage_uri:
-        print(
-            f"Note: LoRA weights will also be stored in path {lora_storage_uri} under {model_tag} bucket."
-        )
+    with tempfile.NamedTemporaryFile(
+        mode="w+", delete=False, dir=".", suffix=".yaml"
+    ) as temp_file:
+        yaml.safe_dump(training_config, temp_file)
+        temp_file_name = temp_file.name
+
+    try:
+        subprocess.run(entrypoint, check=True, shell=True)
+        if lora_storage_uri and model_tag:
+            print(
+                f"Note: LoRA weights will also be stored in path {lora_storage_uri} under {model_tag} bucket."
+            )
+    finally:
+        # Clean up by deleting the temporary file
+        os.remove(temp_file_name)
+
 
 
 if __name__ == "__main__":
