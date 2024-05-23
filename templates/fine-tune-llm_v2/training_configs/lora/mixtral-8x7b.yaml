@@ -1,4 +1,5 @@
 model_id: mistralai/Mixtral-8x7B-Instruct-v0.1 # <-- change this to the model you want to fine-tune
+model_tag: "my_model_123" # <-- Change this to the model tag you'd like to use. 
 train_path: s3://air-example-data/gsm8k/train.jsonl # <-- change this to the path to your training data
 valid_path: s3://air-example-data/gsm8k/test.jsonl # <-- change this to the path to your validation data. This is optional
 context_length: 4096 # <-- change this to the context length you want to use
