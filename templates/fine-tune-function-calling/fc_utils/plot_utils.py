@@ -32,7 +32,11 @@ def get_count_by_flag(results: List[Result], flags: List[Mistakes]) -> Dict[str,
     return count_by_flag
 
 
-def plot_results(results_finetuned: List[Result], results_gpt: List[Result]):
+def plot_results(
+    results_base: List[Result],
+    results_finetuned: List[Result],
+    results_gpt: List[Result],
+):
     """
     Plots results for the finetuned model and GPT-4
 
@@ -44,44 +48,60 @@ def plot_results(results_finetuned: List[Result], results_gpt: List[Result]):
     total_count = len(results_finetuned)
     # Get all mistake types
     flags = Mistakes.instances()
+    results_base = [result for result in results_base if result.is_correct == False]
     results_finetuned = [
         result for result in results_finetuned if result.is_correct == False
     ]
     results_gpt = [result for result in results_gpt if result.is_correct == False]
+    total_incorrect_base = len(results_base)
     total_incorrect_finetuned = len(results_finetuned)
     total_incorrect_gpt = len(results_gpt)
 
-    counts_1 = get_count_by_flag(results_finetuned, flags)
-    counts_2 = get_count_by_flag(results_gpt, flags)
+    counts_base = get_count_by_flag(results_base, flags)
+    counts_finetuned = get_count_by_flag(results_finetuned, flags)
+    counts_gpt = get_count_by_flag(results_gpt, flags)
 
     # Data for stacked bars
-    mistakes_by_flag_1 = [counts_1[flag] for flag in flags]
-    mistakes_by_flag_2 = [counts_2[flag] for flag in flags]
+    mistakes_by_flag_base = [counts_base[flag] for flag in flags]
+    mistakes_by_flag_finetuned = [counts_finetuned[flag] for flag in flags]
+    mistakes_by_flag_gpt = [counts_gpt[flag] for flag in flags]
 
     # Bar positions
-    positions = np.arange(2)
+    positions = np.arange(3)
 
     # Create the plot
     fig, ax = plt.subplots()
 
     # Create stacked bars
-    bottom_1 = np.zeros(1)
-    bottom_2 = np.zeros(1)
+    bottom_base = np.zeros(1)
+    bottom_finetuned = np.zeros(1)
+    bottom_gpt = np.zeros(1)
 
     for i, flag in enumerate(flags):
-        if mistakes_by_flag_1[i] == 0 and mistakes_by_flag_2[i] == 0:
+        if (
+            mistakes_by_flag_base[i] == 0
+            and mistakes_by_flag_finetuned[i] == 0
+            and mistakes_by_flag_gpt[i] == 0
+        ):
             # Skip if no mistakes of this type
             continue
-        bar_1 = ax.bar(
+        ax.bar(
             0,
-            mistakes_by_flag_1[i],
-            bottom=bottom_1,
+            mistakes_by_flag_base[i],
+            bottom=bottom_base,
             color=COLORS[flag],
             label=f"{flag.value}",
         )
-        bar_2 = ax.bar(1, mistakes_by_flag_2[i], bottom=bottom_2, color=COLORS[flag])
-        bottom_1 += mistakes_by_flag_1[i]
-        bottom_2 += mistakes_by_flag_2[i]
+        ax.bar(
+            1,
+            mistakes_by_flag_finetuned[i],
+            bottom=bottom_finetuned,
+            color=COLORS[flag],
+        )
+        ax.bar(2, mistakes_by_flag_gpt[i], bottom=bottom_gpt, color=COLORS[flag])
+        bottom_base += mistakes_by_flag_base[i]
+        bottom_finetuned += mistakes_by_flag_finetuned[i]
+        bottom_gpt += mistakes_by_flag_gpt[i]
 
     # Add labels and title
     ax.set_xlabel("Results")
@@ -90,9 +110,14 @@ def plot_results(results_finetuned: List[Result], results_gpt: List[Result]):
     ax.set_xticks(positions)
     ax.set_ylim(
         # Set the y-axis limit to be at least 20% of the total count for a nicer plot
-        ymax=max(total_incorrect_finetuned, total_incorrect_gpt, 0.2 * total_count)
+        ymax=max(
+            total_incorrect_base,
+            total_incorrect_finetuned,
+            total_incorrect_gpt,
+            0.2 * total_count,
+        )
     )
-    ax.set_xticklabels(["Finetuned Model", "GPT-4"])
+    ax.set_xticklabels(["Base Model", "Finetuned Model", "GPT-4"])
     ax.legend()
 
     # Display the chart

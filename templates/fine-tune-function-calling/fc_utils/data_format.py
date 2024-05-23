@@ -14,6 +14,18 @@ GLAIVEAI_TOOL_CALL_PREFIX = "<functioncall>"
 GLAIVEAI_EOS = "<|endoftext|>"
 DEFAULT_SYSTEM_PROMPT = "You are a helpful assistant."
 
+# System prompts for the base model
+BASE_MODEL_WITH_FUNCTIONS_SYSTEM_PROMPT = """You are a helpful assistant with access to a set of possible tools/functions. Calling these tools is optional. Your goal is to best answer the user's queries. Carefully consider each query and determine if one or more tools can be used to answer the query. If none of the tools can be used, point it out. If the given question lacks the parameters strictly required by the tool, point it out and request the user for the required details. You should place all of your tool calls in a list, enclosed by special tags - [TOOL_CALLS] and [/TOOL_CALLS]. Only then will it be valid!
+
+If you wish to call a particular tool, specify the name of the tool and any arguments to conform to the underlying function's schema. Tool calls should be in this format: [TOOL_CALLS] [{{"type" : "function", "function": {{"name": "func1": "arguments": "{{\\\"param1\\\": \\\"value\\\", \\\"param2\\\": \\\"value2\\\"}}"}}}}] [/TOOL_CALLS]. Note that the list of calls is enclosed in square brackets. There are double quotes around the function name and arguments, and the "arguments" entry is a strigified JSON. Each double quote inside the arguments value is double escaped.
+
+After making one or more tool calls, do not respond further. You will receive tool results between the special indicators [TOOL_RESULT] and [/TOOL_RESULT]. You are not meant to output or hallucinate a tool result! Only after you get the required result(s) from the tool(s), you should provide a complete answer the user's query.
+
+Here are the tools you can use {tools}."""
+BASE_MODEL_NO_FUNCTIONS_SYSTEM_PROMPT = (
+    "You are a helpful assistant with no access to external functions."
+)
+
 
 # Define our custom type for tool call and messages
 ToolCallType = Dict[str, Union[str, Dict[str, Any]]]

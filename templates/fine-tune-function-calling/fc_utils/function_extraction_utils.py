@@ -34,7 +34,7 @@ class PatternNotFoundError(Exception):
 
 
 class FunctionFormatError(Exception):
-    """Raised when function is in the wrong format in the given string."""
+    """Raised when function definition is in the wrong format in the given string."""
 
     pass
 
@@ -80,26 +80,10 @@ def extract_segment_between_tags(
     return prefix, special_content
 
 
-def extract_functions_from_system_msg(
-    system_str: str,
-    format: DatasetFormat,
-    tool_list_tags: Optional[IndicatorTags] = None,
-) -> List[Dict[str, Any]]:
-    """Extracts functions from the system message based on the dataset format."""
-    if format == DatasetFormat.GLAIVE:
-        return _extract_functions_from_system_msg_glaive(system_str)
-    elif format == DatasetFormat.ANYSCALE:
-        return _extract_functions_from_system_msg_anyscale(system_str, tool_list_tags)
-    else:
-        raise NotImplementedError(
-            f"Function extraction for format {format} not implemented"
-        )
-
-
 def _extract_functions_from_system_msg_glaive(system_str: str) -> List[Dict[str, Any]]:
     """Extracts the functions from the system message with a simple regex pattern.
 
-    If the function is not a valid JSON, it is skipped.
+    If the function is not a valid JSON, an error is raised
 
     Args:
         system_str: The system message
@@ -154,20 +138,20 @@ def _extract_functions_from_system_msg_anyscale(
     return tools
 
 
-def parse_function_calls(string: str, format: DatasetFormat) -> List[Dict[str, Any]]:
-    """Parses the function calls from the string based on the dataset format provided.
-
-    Args:
-        string: The string containing the function calls.
-        format: The format used to stringify the function calls.
-
-    Returns:
-        json_list: List of JSONs representing the function calls.
-    """
+def extract_functions_from_system_msg(
+    system_str: str,
+    format: DatasetFormat,
+    tool_list_tags: Optional[IndicatorTags] = None,
+) -> List[Dict[str, Any]]:
+    """Extracts functions from the system message based on the dataset format."""
     if format == DatasetFormat.GLAIVE:
-        return _parse_function_calls_glaive(string)
+        return _extract_functions_from_system_msg_glaive(system_str)
+    elif format == DatasetFormat.ANYSCALE:
+        return _extract_functions_from_system_msg_anyscale(system_str, tool_list_tags)
     else:
-        return _parse_function_calls_openai(string)
+        raise NotImplementedError(
+            f"Function extraction for format {format} not implemented"
+        )
 
 
 def _parse_function_calls_glaive(string: str) -> List[Dict[str, Any]]:
@@ -211,13 +195,29 @@ def _parse_function_calls_openai(string: str) -> List[Dict[str, Any]]:
         json_list = [json_list]
     for json_obj in json_list:
         if "function" not in json_obj or "arguments" not in json_obj["function"]:
-            raise FunctionFormatError(
+            raise FunctionCallFormatError(
                 f"Function call not in the correct format in : {string}"
             )
         json_obj["function"]["arguments"] = json.loads(
             json_obj["function"]["arguments"]
         )
     return json_list
+
+
+def parse_function_calls(string: str, format: DatasetFormat) -> List[Dict[str, Any]]:
+    """Parses the function calls from the string based on the dataset format provided.
+
+    Args:
+        string: The string containing the function calls.
+        format: The format used to stringify the function calls.
+
+    Returns:
+        json_list: List of JSONs representing the function calls.
+    """
+    if format == DatasetFormat.GLAIVE:
+        return _parse_function_calls_glaive(string)
+    else:
+        return _parse_function_calls_openai(string)
 
 
 def get_tool_calls_from_response(

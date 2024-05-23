@@ -13,7 +13,14 @@ from fc_utils.function_extraction_utils import (
     get_tool_calls_from_response,
 )
 from fc_utils.preprocessing import extract_functions_from_system_msg, InvalidRoleError
-from fc_utils.data_format import IndicatorTags, DEFAULT_SYSTEM_PROMPT, DatasetFormat
+from fc_utils.data_format import (
+    IndicatorTags,
+    DEFAULT_SYSTEM_PROMPT,
+    DatasetFormat,
+    BASE_MODEL_NO_FUNCTIONS_SYSTEM_PROMPT,
+    BASE_MODEL_WITH_FUNCTIONS_SYSTEM_PROMPT,
+)
+from fc_utils.eval_core import Model
 
 
 def anyscale_to_openai_response(
@@ -115,7 +122,7 @@ def test_mapper_anyscale(
     example: Dict[str, Any], tool_call_tags: IndicatorTags
 ) -> Dict[str, Any]:
     """
-    Processes test data example for evaluation with an Anyscale Endpoints model.
+    Processes test data example for evaluation with a finetuned Anyscale Endpoints model.
 
     The input example is expected to be in the Anyscale format. In the output, the assistant messages are converted to the OpenAI format for evaluation.
     The user and system messages remain the same.
@@ -143,12 +150,54 @@ def test_mapper_anyscale(
     return {"messages": processed_messages}
 
 
+def test_mapper_base(
+    example: Dict[str, Any],
+    tool_call_tags: IndicatorTags,
+    tool_list_tags: IndicatorTags,
+) -> Dict[str, Any]:
+    """
+    Processes test data example for evaluation of a base model without native function calling support.
+
+    The input example is expected to be in the Anyscale format. In the output, the assistant messages are converted to the OpenAI format for evaluation.
+    The user messages remain the same, while the system messages are replaced with a special prompt to explain the expected behaviour with tools.
+
+    Args:
+        example: The test example to preprocess
+        tool_call_tags: Tuple containing the start and end tags for the tool call
+        tool_list_tags: Tuple containing the start and end tags for the tool list
+
+    Returns:
+        example: The preprocessed test example
+    """
+    if not example["messages"] or example["messages"][0]["role"] != "system":
+        raise ValueError("First message should be a system message")
+    # Get examples as you would for a fine-tuned model
+    processed_example = test_mapper_anyscale(
+        example=example, tool_call_tags=tool_call_tags
+    )
+    # Replace the system message with a special prompt
+    system_msg = processed_example["messages"][0]["content"]
+    if tool_list_tags.start in system_msg:
+        tools = extract_functions_from_system_msg(
+            system_msg,
+            format=DatasetFormat.ANYSCALE,
+            tool_list_tags=tool_list_tags,
+        )
+        # Replace with system prompt with tool calling instructions
+        system_msg = BASE_MODEL_WITH_FUNCTIONS_SYSTEM_PROMPT.format(tools=tools)
+    else:
+        # Replace with a default system prompt
+        system_msg = BASE_MODEL_NO_FUNCTIONS_SYSTEM_PROMPT
+    processed_example["messages"][0]["content"] = system_msg
+    return processed_example
+
+
 def get_evaluation_dataset(
     test_ds: ray.data.Dataset,
     tool_call_tags: IndicatorTags,
     tool_result_tags: IndicatorTags,
     tool_list_tags: IndicatorTags,
-    format: DatasetFormat,
+    model: Model,
 ) -> List[Dict[str, Any]]:
     """
     Handles the preprocessing of the test dataset for evaluation.
@@ -157,25 +206,30 @@ def get_evaluation_dataset(
         test_ds: The test dataset to preprocess
         tool_call_tags: Tuple containing the start and end tags for the tool call
         tool_result_tags: Tuple containing the start and end tags for the tool result
-        format: The expected output data format. OpenAI and Anyscale are supported.
+        tool_list_tags: Tuple containing the start and end tags for the tool list
+        format: The expected output data format. OpenAI and Anyscale are supported
 
     Returns:
         modified_ds: The preprocessed test dataset
     """
     # Converts test_ds to a list of dicts because the nested structure of the modified dataset is not supported by PyArrow
-    if format == DatasetFormat.ANYSCALE:
+    if model == Model.FINETUNED:
         test_data_mapper = partial(test_mapper_anyscale, tool_call_tags=tool_call_tags)
-    elif format == DatasetFormat.OPENAI:
+    elif model == Model.GPT:
         test_data_mapper = partial(
             test_mapper_openai,
             tool_call_tags=tool_call_tags,
             tool_result_tags=tool_result_tags,
             tool_list_tags=tool_list_tags,
         )
-    else:
-        raise NotImplementedError(
-            f"Data Format {format} is not supported for evaluation"
+    elif model == Model.BASE:
+        test_data_mapper = partial(
+            test_mapper_base,
+            tool_call_tags=tool_call_tags,
+            tool_list_tags=tool_list_tags,
         )
+    else:
+        raise NotImplementedError(f"Model {model} is not supported for evaluation")
     modified_ds = []
     for example in test_ds.iter_rows():
         modified_ds.append(test_data_mapper(example))

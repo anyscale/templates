@@ -289,8 +289,6 @@ def openai_to_anyscale(ray_ds: ray.data.Dataset) -> ray.data.Dataset:
     The input dataset is expected to be in the OpenAI messages format.
     """
     ray_ds = ray_ds.map(_openai_to_anyscale)
-    # Filter for good measure
-    ray_ds = ray_ds.filter(filter_func)
     return ray_ds
 
 

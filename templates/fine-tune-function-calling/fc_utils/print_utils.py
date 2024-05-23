@@ -3,6 +3,7 @@ Printing utilities
 """
 
 import json
+import html
 from typing import Dict, Any, Optional
 from IPython.display import display, HTML, DisplayHandle
 from colorama import Fore, Style
@@ -82,6 +83,9 @@ def pprint_example(
 ) -> Optional[DisplayHandle]:
     """Formats an example to pretty print in html."""
     pprint_str = _pprint_as_str(example, dataset_format)
+    # Escape < and > characters to display the HTML string
+    pprint_str = html.escape(pprint_str)
     html_str = colorama_to_css(pprint_str)
+
     html_str = f"<pre>{html_str}</pre>"
     return display(HTML(html_str))
