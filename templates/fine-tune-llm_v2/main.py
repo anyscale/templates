@@ -1,9 +1,11 @@
 import argparse
 import os
 import subprocess
+from regex import B
 import yaml
 import random
 import string
+from pathlib import Path
 
 
 def _read_yaml_file(file_path):
@@ -43,6 +45,13 @@ def main():
         help="Path to the fine-tuning configuration YAML file",
     )
 
+    parser.add_argument(
+        "--output_dir",
+        type=str,
+        default="./outputs",
+        help="Path to store the configs before job submission"
+    )
+
     # Parse arguments
     args = parser.parse_args()
 
@@ -50,16 +59,30 @@ def main():
     training_config = _read_yaml_file(finetune_config_path)
 
     is_lora = "lora_config" in training_config
-    entrypoint = f"llmforge dev finetune {finetune_config_path}"
 
     if is_lora:
         model_tag = generate_model_tag(training_config["model_id"])
-        entrypoint += f" --model-tag={model_tag}"
         lora_storage_uri = _get_lora_storage_uri()
-        entrypoint += f" --forward-best-checkpoint-remote-uri={lora_storage_uri}"
+        # Required for registering the model on Anyscale.
+        training_config.update({
+            "forward_checkpoint_config": {
+                "tag": model_tag,
+                "remote_uri": lora_storage_uri
+            }
+        })
     else:
-        lora_storage_uri = None
+        model_tag, lora_storage_uri = None, None
 
+    
+    output_dir = Path(args.output_dir)
+    output_dir.mkdir(exist_ok=True, parents=True)
+    llmforge_config_path = output_dir / Path(finetune_config_path).name 
+    entrypoint = f"llmforge dev finetune {llmforge_config_path}"
+    
+    
+    with open(llmforge_config_path, "w") as f:
+        yaml.dump(training_config, f)
+    
     api_key = os.environ.get("WANDB_API_KEY", "")
     if api_key:
         entrypoint = f"WANDB_API_KEY={api_key} {entrypoint}"
