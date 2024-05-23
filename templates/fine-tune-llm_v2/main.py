@@ -80,7 +80,7 @@ def main():
     
     
     with open(llmforge_config_path, "w") as f:
-        yaml.dump(training_config, f)
+        yaml.safe_dump(training_config, f)
     
     api_key = os.environ.get("WANDB_API_KEY", "")
     if api_key:
