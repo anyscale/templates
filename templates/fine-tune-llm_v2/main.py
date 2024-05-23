@@ -72,16 +72,16 @@ def main():
     else:
         model_tag, lora_storage_uri = None, None
 
-    
+
     output_dir = Path(args.output_dir)
     output_dir.mkdir(exist_ok=True, parents=True)
-    llmforge_config_path = output_dir / Path(finetune_config_path).name 
+    llmforge_config_path = output_dir / Path(finetune_config_path).name
     entrypoint = f"llmforge dev finetune {llmforge_config_path}"
-    
-    
+
+
     with open(llmforge_config_path, "w") as f:
         yaml.safe_dump(training_config, f)
-    
+
     api_key = os.environ.get("WANDB_API_KEY", "")
     if api_key:
         entrypoint = f"WANDB_API_KEY={api_key} {entrypoint}"
