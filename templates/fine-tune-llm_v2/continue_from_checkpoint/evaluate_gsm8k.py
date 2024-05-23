@@ -12,11 +12,10 @@ from openai import OpenAI
 import ray
 import numpy as np
 
-ADAPTER_NAME = None # Put the name of the adapter you want to test here
+ADAPTER_NAME = "test_model" # Put the name of the adapter you want to test here
 DATASET = "s3://air-example-data/gsm8k/test.jsonl"
 ENDPOINTS_URL = "http://127.0.0.1:8000/m/v1"
 ENDPOINTS_KEY = "put key here if needed" # We don't need a key here since we query localhost
-
 
 def batched_process_fn(batch):
     client = OpenAI(
@@ -29,6 +28,7 @@ def batched_process_fn(batch):
     messages = batch["messages"][0]
     prompt = [messages[0]]
     label = messages[1]["content"]
+    
     model_output = client.chat.completions.create(
         model=ADAPTER_NAME,
         messages=prompt
@@ -41,12 +41,12 @@ def batched_process_fn(batch):
     success = False
     idx = model_output.find("####")
     if idx != -1:
-        # 5 is the length of the "####" token.
+        # Chip away #s preceeding the answer
         actualoutput = model_output[idx+5:]
         actualanswer = label[label.find("####")+5:]
         if actualanswer == actualoutput:
             success = True
-
+    
     batch["successes"] = np.array([success])
     return batch
 
@@ -62,6 +62,7 @@ ds = ds.map_batches(
 )
 
 successes_dict = ds.take_all()
+# successes_dict = ds.take(200)
 
 successes = failures = 0
 for elem in successes_dict:

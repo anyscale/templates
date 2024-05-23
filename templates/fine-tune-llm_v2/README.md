@@ -152,7 +152,3 @@ For anything that goes beyond using `llmforge`, you can build your own fine-tuni
 It's an artifact of our fine-tuning libraries. Please ignore it.
 
 
-### Can I continue fine-tuning from another checkpoint?
-
-Yes! Please have a look at the readme in the folder `continue_from_checkpoint`.
-
