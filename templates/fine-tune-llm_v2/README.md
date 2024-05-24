@@ -27,10 +27,10 @@ Next, you can launch a fine-tuning job with your WandB API key passed as an envi
 # !export WANDB_API_KEY={YOUR_WANDB_API_KEY}
 
 # Launch a LoRA fine-tuning job for Llama 3 8B with 16 A10s
-!python main.py training_configs/lora/llama-3-8b.yaml
+!python llmforge finetune training_configs/lora/llama-3-8b.yaml
 
 # Launch a full-param fine-tuning job for Llama 3 8B with 16 A10s
-# !python main.py training_configs/full_param/llama-3-8b.yaml
+# !python llmforge finetune training_configs/full_param/llama-3-8b.yaml
 ```
 
 As the command runs, you can monitor a number of built-in metrics in the `Metrics` tab under `Ray Dashboard`, such as the number of GPU nodes and GPU utilization.
@@ -143,12 +143,8 @@ We do not guarantee that this will give you optimal settings, but have found thi
 ### How can I get even more control?
 
 This template fine-tunes with Anyscale's library `llmforge`, which uses [DeepSpeed](https://github.com/microsoft/DeepSpeed) and [Ray Train](https://docs.ray.io/en/latest/train/train.html) for distributed training.
-You can study main.py to find out how we call the `lmforge dev finetune` API with a YAML that specifies the fine-tuning workload.
-You can call `lmforge dev finetune` yourself and gain control by modifying the training config YAMLs in this template.
-For anything that goes beyond using `llmforge`, you can build your own fine-tuning stack on Anyscale.
+For anything that goes beyond using `llmforge`, you can build your own fine-tuning stack on Anyscale using libraries of your choice.
 
 ### What's with the `main` file that is created during fine-tuning?
 
 It's an artifact of our fine-tuning libraries. Please ignore it.
-
-
