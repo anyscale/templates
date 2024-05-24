@@ -1,6 +1,6 @@
 # Introduction to Anyscale Services
 
-Deploy your machine learning apps into production with [Anyscale Services](https://docs.endpoints.anyscale.com/preview/platform/services/) for scalability, fault tolerance, high availability, and zero downtime upgrades.
+Deploy your machine learning apps into production with [Anyscale Services](https://docs.anyscale.com/platform/services/) for scalability, fault tolerance, high availability, and zero downtime upgrades.
 
 ---
 
