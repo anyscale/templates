@@ -132,7 +132,7 @@ service_bearer_token = "XXXXXXXXXX_XXXXXXX-XXXXXXXXXXXXXX"  # FILL ME IN
 query(service_url, service_bearer_token)
 ```
 
-## More Guides
+## More guides
 
 RayLLM makes it easy for LLM Developers to interact with OpenAI compatible APIs for their applications by providing an easy to manage backend for serving OSS LLMs.
 
@@ -153,9 +153,9 @@ Look at the following guides for more advanced use-cases:
 * [Learn how to leverage different configurations that can optimize the latency and throughput of your models](examples/OptimizeModels.ipynb)
 * [Learn how to fully configure your deployment including auto-scaling, optimization parameters and tensor-parallelism](examples/AdvancedModelConfigs.ipynb)
 
-## Application Examples
+## Application examples
 
-See examples of building applications with your deployed endpoint on the [Anyscale Endpoints](https://docs.endpoints.anyscale.com/category/examples) page.
+See examples of building applications with your deployed endpoint on the [Anyscale Endpoints](https://docs.anyscale.com/examples) page.
 
 Be sure to update the `api_base` and `token` for your private deployment. This information can be found under the "Query" button in the Anyscale Service UI.
 
