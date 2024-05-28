@@ -4,6 +4,8 @@ import subprocess
 import yaml
 import random
 import string
+from typing import Dict, Any
+import datetime
 from pathlib import Path
 
 
@@ -32,6 +34,17 @@ def generate_model_tag(model_id: str) -> str:
     suffix = "".join(random.choices(string.ascii_lowercase, k=5))
     return f"{model_id}:{username}:{suffix}"
 
+def _get_webhook_config(model_tag: str, is_lora: bool) -> Dict[str, Any]:
+    base_url = os.environ.get("ANYSCALE_HOST")
+    webhook_base_url = f"{base_url}/v2"
+    ft_type = "lora" if is_lora else "full"
+    return {
+        "webhook_base_url": webhook_base_url,
+        "model_tag": model_tag,
+        "ft_type": ft_type,
+        "type": "PRIVATE_FINETUNING"
+    }
+
 
 def main():
     # Set up the argument parser
@@ -59,8 +72,9 @@ def main():
 
     is_lora = "lora_config" in training_config
 
+    model_tag = generate_model_tag(training_config["model_id"])
+    
     if is_lora:
-        model_tag = generate_model_tag(training_config["model_id"])
         lora_storage_uri = _get_lora_storage_uri()
         # Required for registering the model on Anyscale.
         training_config.update({
@@ -70,12 +84,23 @@ def main():
             }
         })
     else:
-        model_tag, lora_storage_uri = None, None
+        lora_storage_uri = None
 
+    webhook_config = _get_webhook_config(model_tag, is_lora)
+    training_config.update({
+        "webhook_config": webhook_config
+    })
 
     output_dir = Path(args.output_dir)
     output_dir.mkdir(exist_ok=True, parents=True)
-    llmforge_config_path = output_dir / Path(finetune_config_path).name
+
+    timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+    finetune_config_path_obj = Path(finetune_config_path)
+    filename = finetune_config_path_obj.stem
+    suffix = finetune_config_path_obj.suffix
+    
+    final_filename = f"{filename}_{timestamp}{suffix}"
+    llmforge_config_path = output_dir / final_filename
     entrypoint = f"llmforge dev finetune {llmforge_config_path}"
 
 
