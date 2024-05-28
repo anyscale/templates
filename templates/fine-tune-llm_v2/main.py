@@ -73,7 +73,7 @@ def main():
     is_lora = "lora_config" in training_config
 
     model_tag = generate_model_tag(training_config["model_id"])
-    
+
     if is_lora:
         lora_storage_uri = _get_lora_storage_uri()
         # Required for registering the model on Anyscale.
@@ -98,7 +98,7 @@ def main():
     finetune_config_path_obj = Path(finetune_config_path)
     filename = finetune_config_path_obj.stem
     suffix = finetune_config_path_obj.suffix
-    
+
     final_filename = f"{filename}_{timestamp}{suffix}"
     llmforge_config_path = output_dir / final_filename
     entrypoint = f"llmforge dev finetune {llmforge_config_path}"
