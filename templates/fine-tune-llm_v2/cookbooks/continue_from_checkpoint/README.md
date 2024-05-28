@@ -1,5 +1,7 @@
 # Continue fine-tuning from a previous checkpointing
 
+**⏱️ Time to complete**: 40 minutes
+
 This document assumes that you have familiarized yourself with the main fine-tuning guide of this template.
 In this folder of the template, we showcase how a checkpoint that was created earlier can be used to start a training from.
 We case use this, for example, if we think that starting from a given checkpoint will give us a performance advantage.
@@ -9,6 +11,7 @@ For starters, we advise against combining the two (by training a LoRA adapter on
 
 ## How to fine-tune from a previous checkpointing
 
+
 ```python
 # [Optional] You can set the WandB API key to track model performance
 # !export WANDB_API_KEY={YOUR_WANDB_API_KEY}
@@ -16,6 +19,9 @@ For starters, we advise against combining the two (by training a LoRA adapter on
 # Continue LoRA fine-tuning on the GSM8k dataset with Llama 3 8B
 !llmforge dev finetune llama-3-8b.yaml
 ```
+
+
+```python
 
 ## What we are fine-tuning on
 
@@ -46,3 +52,4 @@ This depends on your task and how many epochs have already been trained. If in d
 ### How can I fine-tune a model that I fine-tuned on Anyscale Endpoints?
 
 You have to download the model weights through Anyscale Endpoints, upload them to a bucket of your choice and reference the bucket as an initial checkpoint in the training config yaml.
+```
