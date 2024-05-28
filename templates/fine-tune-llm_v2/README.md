@@ -63,6 +63,11 @@ Best checkpoint is stored in:
 
 Follow the [Learn how to bring your own models](https://docs.endpoints.anyscale.com/preview/examples/deploy-llms/#more-guides) section under the llm serving template to serve this fine-tuned model with the specified storage uri.
 
+## Finally
+
+After you are with the above, you can find recipies that extend the functionality of this template under the cookbooks folder.
+Go into any of the folders and continue from there. Or modify this template to your purpose.
+
 ## Frequently asked questions
 
 ### Where can I view the bucket where my LoRA weights are stored?
@@ -78,6 +83,10 @@ Open the file under `training_configs` and update `train_path` and `valid_path` 
 ### How do I customize the fine-tuning job?
 
 You can edit the values, such as `context_length`, `num_epoch`, `train_batch_size_per_device` and `eval_batch_size_per_device` to customize the fine-tuning job. You may be able to reach higher model-quality if you tweak the learning rate but also possibly introduce learning instabilities that can be monitored in [WandB](https://wandb.ai/authorize). In addition, the deepspeed configs are provided within this template in case you want to customize them.
+
+## Can I continue fine-tuning on an already fine-tuned model?
+
+Yes, you can find instructions for that in the cookbooks section.
 
 ### What's the full list of supported models?
 
