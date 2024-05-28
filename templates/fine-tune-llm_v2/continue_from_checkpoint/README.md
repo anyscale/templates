@@ -13,8 +13,8 @@ For starters, we advise against combining the two (by training a LoRA adapter on
 # [Optional] You can set the WandB API key to track model performance
 # !export WANDB_API_KEY={YOUR_WANDB_API_KEY}
 
-# Launch a LoRA fine-tuning job with Mistral 7B using the llmforge API
-!python llmforge dev finetune mistral-7b-from-checkpoint.yaml
+# Continue LoRA fine-tuning on the GSM8k dataset with Llama 3 8B
+!python llmforge dev finetune llama-3-8b.yaml
 ```
 
 ## FAQ

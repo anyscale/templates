@@ -1,0 +1,18 @@
+base_model_id: meta-llama/Meta-Llama-3-8B-Instruct
+model_id: test_model
+max_total_tokens: 4096
+generation:
+  generate_kwargs:
+    do_sample: true
+    temperature: 0.0
+  prompt_format:
+    system: "<|start_header_id|>system<|end_header_id|>\n\n{instruction}<|eot_id|>"
+    assistant: "<|start_header_id|>assistant<|end_header_id|>\n\n{instruction}<|eot_id|>"
+    trailing_assistant: "<|start_header_id|>assistant<|end_header_id|>\n\n"
+    user: "<|start_header_id|>user<|end_header_id|>\n\n{instruction}<|eot_id|>"
+    system_in_user: false
+    bos: "<|begin_of_text|>"
+    default_system_message: ""
+  stopping_sequences: ["<|eot_id|>"]
+lora_mirror_config:
+  bucket_uri: s3://large-dl-models-mirror/finetuning_template/continued_ft_gsm8k_final_checkpoint # <-- Put your own checkpoint here. Be aware that the prompt format (above) has to fit the checkpoint
