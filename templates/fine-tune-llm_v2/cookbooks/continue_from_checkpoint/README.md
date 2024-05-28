@@ -20,14 +20,17 @@ For starters, we advise against combining the two (by training a LoRA adapter on
 !llmforge dev finetune llama-3-8b.yaml
 ```
 
-
-```python
-
 ## What we are fine-tuning on
 
 Running the above command will fine-tune on the [GSM8k dataset](https://huggingface.co/datasets/gsm8k). 
 In this example, we split the dataset into two halfs, each consisting of approximately 4.000 samples.
 The provided initial checkpoint has been trained on the first half and is already good at solving GSM8k. By running the above command, you continue fine-tuning from the provided checkpoint with the second half.
+
+## Inference and evaluation
+
+In order to evaluate the produced checkpoint, you need to serve it. You can do this with the LLM inference template.
+On the cluster that you are using to serve the fine-tuned model, you can use the provided script `evaluate_gsm8k.py` to evaluate.
+Don't forget to change the `ADAPTER_NAME` variable to fit the name of your model.
 
 # How to use this for your own purpose
 
