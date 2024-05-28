@@ -13,7 +13,7 @@ import ray
 import numpy as np
 
 ADAPTER_NAME = "test_model" # Put the name of the adapter you want to test here
-DATASET = "s3://air-example-data/gsm8k/test.jsonl"
+DATASET = "s3://large-dl-models-mirror/finetuning_template/test.jsonl"
 ENDPOINTS_URL = "http://127.0.0.1:8000/m/v1"
 ENDPOINTS_KEY = "put key here if needed" # We don't need a key here since we query localhost
 
