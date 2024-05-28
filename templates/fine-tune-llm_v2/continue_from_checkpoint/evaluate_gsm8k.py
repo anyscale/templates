@@ -28,7 +28,7 @@ def batched_process_fn(batch):
     messages = batch["messages"][0]
     prompt = [messages[0]]
     label = messages[1]["content"]
-    
+
     model_output = client.chat.completions.create(
         model=ADAPTER_NAME,
         messages=prompt
@@ -46,7 +46,7 @@ def batched_process_fn(batch):
         actualanswer = label[label.find("####")+5:]
         if actualanswer == actualoutput:
             success = True
-    
+
     batch["successes"] = np.array([success])
     return batch
 
