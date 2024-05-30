@@ -1,0 +1,10 @@
+head_node_type:
+  name: head
+  instance_type: n1-standard-16-nvidia-t4-16gb-1
+  resources:
+    cpu: 0
+worker_node_types:
+- name: 1xT4:16CPU-60GB
+  instance_type: n1-standard-16-nvidia-t4-16gb-1
+  min_workers: 0
+  max_workers: 1
