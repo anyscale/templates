@@ -88,6 +88,7 @@ or GCP Cloud Storage for serving later.
 
 Run this code to start a Triton server using the tmp directory as the model repository.
 
+
 ```python
 import tritonserver
 
@@ -104,6 +105,8 @@ Compile the model using Triton's Python backend. This will take 10-15 minutes on
 T4 GPU and 8-10 minutes on an A10 GPU. The model will be compiled and saved in the
 `model_repository` directory as TensorRT engine. Also keep in mind the model has to be
 built in the same type of GPU you are planning to serve the model on. 
+
+
 
 ```python
 import time
@@ -126,11 +129,13 @@ upload both the model config file `config.pbtxt` and the TensorRT engine model
 directory. Anyscale provides a environment variable `ANYSCALE_ARTIFACT_STORAGE` that
 can be used to store model artifacts. Use one of the following to upload the model.
 
+
 ```python
 # If running in AWS
 !aws s3 cp /tmp/workspace/diffusion-models/stable_diffusion_1_5/config.pbtxt $ANYSCALE_ARTIFACT_STORAGE/triton_model_repository/stable_diffusion_1_5/config.pbtxt
 !aws s3 cp /tmp/workspace/diffusion-models/stable_diffusion_1_5/1/1.5-engine-batch-size-1/ $ANYSCALE_ARTIFACT_STORAGE/triton_model_repository/stable_diffusion_1_5/1/1.5-engine-batch-size-1/ --recursive
 ```
+
 
 ```python
 # If running in GCP
@@ -148,6 +153,7 @@ addition, you can also do prompt engineering, apply business logics, or doing mo
 composition with Ray Serve before returning the response as image. Run the follow code
 to start Triton Server with Ray Serve.
 
+
 ```python
 !serve run deployment:triton_deployment --non-blocking
 ```
@@ -159,6 +165,7 @@ start the server.
 
 Once you see the message "Deployed app 'default' successfully.". You can run the
 following command to query the endpoint and save the image to a local file.
+
 
 ```python
 !curl "http://localhost:8000/generate?prompt=dogs%20in%20new%20york,%20realistic,%204k,%20photograph" > dogs_photo.jpg
@@ -174,6 +181,8 @@ The `config.yaml` is also included in the workspace for you. You can view the fi
 clicking on the `config.yaml` in the file explorer. Once you completed local
 development on the workspace and ready to move to production, you can deploy the
 service onto Anyscale Services by running the following command.
+
+
 
 ```python
 !anyscale service deploy -f config.yaml --name "triton-stable-diffusion"
@@ -199,11 +208,11 @@ change the bearer token and the base URL to the one showed from the above deploy
 This command will query against the newly deployed service and store the generated image
 locally.
 
+
 ```python
 !curl -H "Authorization: Bearer pnnHyxUG_v6hzLbUn7LLmgNjF5g3t0XAxa0TXoRFV6g" \
     "https://triton-stable-diffusion-bxauk.cld-kvedzwag2qa8i5bj.s.anyscaleuserdata.com/generate?prompt=dogs%20in%20new%20york,%20realistic,%204k,%20photograph" \
     > dogs_photo_service.jpg
-
 ```
 
 An example of generated image will look like the following
