@@ -36,7 +36,7 @@ def generate_model_tag(model_id: str) -> str:
 
 def _get_webhook_config(model_tag: str, is_lora: bool) -> Dict[str, Any]:
     base_url = os.environ.get("ANYSCALE_HOST")
-    webhook_base_url = f"{base_url}/v2"
+    webhook_base_url = f"{base_url}/api/v2"
     ft_type = "lora" if is_lora else "full"
     return {
         "webhook_base_url": webhook_base_url,
