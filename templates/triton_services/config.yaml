@@ -1,0 +1,4 @@
+applications:
+  - name: app
+    route_prefix: /
+    import_path: deployment:triton_deployment
