@@ -79,7 +79,7 @@ $ anyscale job submit --working-dir=. --wait -- python main.py
 
 Jobs submitted externally will run with the Anyscale default autoscaling compute config and dependencies. To override these settings, use the ``--config-file``, ``--image-uri``, or ``--containerfile`` flags.
 
-This concludes the Anyscale Jobs tutorial. To learn more about how to configure Anyscale Jobs, see the [Anyscale documentation](https://docs.endpoints.anyscale.com/preview/).
+This concludes the Anyscale Jobs tutorial. To learn more about how to configure Anyscale Jobs, see the [Anyscale documentation](https://docs.anyscale.com/platform/jobs/).
 
 ## Summary
 
