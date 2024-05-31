@@ -3,7 +3,7 @@
 **⏱️ Time to complete**: 40 minutes
 
 This document assumes that you have familiarized yourself with the main fine-tuning guide of this template.
-In this folder of the template, we showcase how a checkpoint that was created earlier can be used to start a training from.
+In this cookbook tutorial, we showcase how a checkpoint that was created earlier can be used as initialization for another round of fine-tuning.
 We case use this, for example, if we think that starting from a given checkpoint will give us a performance advantage.
 
 There are two types of checkpoints to considere here: Full-parameter checkpoints, and LoRA-adapter checkpoints.
