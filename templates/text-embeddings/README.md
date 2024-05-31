@@ -11,7 +11,9 @@ This template shows you how to:
 
 For a Python script version of the `.ipynb` notebook used for the workspace template, refer to `main.py`.
 
-**Note:** This tutorial is run within a workspace. Please overview the `Introduction to Workspaces` template first before this tutorial.
+**Note:** This tutorial is run within a workspace. See [Introduction to Workspaces](https://docs.anyscale.com/examples/intro-workspaces) for more details.
+
+
 
 ## Step 1: Setup model defaults
 
@@ -286,7 +288,7 @@ ds_output.take(5)
 
 ### Submitting to Anyscale Jobs
 
-The script in `main.py` has the same code as this notebook; you can use `anyscale job submit` to submit the app in that file to Anyscale Jobs. Refer to [Introduction to Jobs](https://docs.endpoints.anyscale.com/preview/examples/intro-jobs/) for more details.
+The script in `main.py` has the same code as this notebook; you can use `anyscale job submit` to submit the app in that file to Anyscale Jobs. Refer to [Introduction to Jobs](https://docs.anyscale.com/examples/intro-jobs/) for more details.
 
 
 Run the following cell to submit a job:
