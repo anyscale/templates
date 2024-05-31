@@ -4,7 +4,7 @@
 
 This document assumes that you have familiarized yourself with the main fine-tuning guide of this template.
 In this cookbook tutorial, we showcase how a checkpoint that was created earlier can be used as initialization for another round of fine-tuning.
-We case use this, for example, if we think that starting from a given checkpoint will give us a performance advantage.
+This allows us to sequentially combine fine-tuning on multiple datasets in order to get performance boost on the final task that we care about. 
 
 There are two types of checkpoints to considere here: Full-parameter checkpoints, and LoRA-adapter checkpoints.
 For starters, we advise against combining the two (by training a LoRA adapter ontop of a full-parameter checkpoint), because serving the resulting LoRA adapter will require the full-parameter checkpoint.
