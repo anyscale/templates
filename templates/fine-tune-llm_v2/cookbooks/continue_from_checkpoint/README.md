@@ -47,7 +47,7 @@ We advise to monitor training loss and evaluation loss of fine-tunes to find out
 
 In general, make sure the sequence of the fine-tuning is such that you end with the dataset that is closest to what you want during inference. If you are extending the context of the model beyond its native context length, you should start with the smallest context length end with the largest.
 
-### Should I extend the dataset samples or replace them with new ones when I continue fine-tuning
+### Should I extend the dataset samples or replace them with new ones when I continue fine-tuning?
 
 This depends on your task and how many epochs have already been trained. If in doubt, you can always watch the training and evaluation loss to see if you are overfitting.
 
