@@ -6,7 +6,7 @@ Deploy your machine learning apps into production with [Anyscale Services](https
 
 **⏱️ Time to complete**: 10 min
 
-**Prerequisite**: [Intro to Workspaces](https://console.anyscale.com/v2/template-preview/workspace-intro)
+**Prerequisite**: [Intro to Workspaces](https://console.anyscale.com/template-preview/workspace-intro)
 
 After implementing and testing your machine learning workloads, it’s time to move them into production. An Anyscale Service packages your application code, dependencies, and compute configurations, deploying them behind a REST endpoint for easy integration and scalability.
 
@@ -32,7 +32,7 @@ Start by writing your machine learning service using [Ray Serve](https://docs.ra
 
 ### Develop a service in a workspace
 
-This example begins in an [Anyscale Workspace](https://docs.anyscale.com/preview/platform/workspaces/), which is a fully managed development environment connected to a Ray cluster. Look at the following simple Ray Serve app created in `main.py`:
+This example begins in an [Anyscale Workspace](https://docs.anyscale.com/platform/workspaces/), which is a fully managed development environment connected to a Ray cluster. Look at the following simple Ray Serve app created in `main.py`:
 
 
 
@@ -105,7 +105,7 @@ Use the following to deploy `my_service` in a single command:
 !anyscale service deploy main:my_app --name=my_service
 ```
 
-**Note**: This Anyscale Service pulls the associated dependencies, compute config, and service config from the workspace. To define these explicitly, you can deploy from a `config.yaml` file using the `-f` flag. See [ServiceConfig reference](https://docs.endpoints.anyscale.com/preview/reference/service-api#serviceconfig) for details.
+**Note**: This Anyscale Service pulls the associated dependencies, compute config, and service config from the workspace. To define these explicitly, you can deploy from a `config.yaml` file using the `-f` flag. See [ServiceConfig reference](https://docs.anyscale.com/reference/service-api#serviceconfig) for details.
 
 
 ### Check the status of the service
@@ -156,7 +156,7 @@ print(send_request("Theodore"))
 
 ### Monitor the service
 
-To view the service, navigate to 🏠 **> Services > `my_service`**. On this page, inspect key metrics, events, and logs. With Anyscale’s monitoring dashboards, you can track performance and adjust configurations as needed without deep diving into infrastructure management. See [Monitor a service](https://docs.anyscale.com/preview/platform/services/monitoring).
+To view the service, navigate to 🏠 **> Services > `my_service`**. On this page, inspect key metrics, events, and logs. With Anyscale’s monitoring dashboards, you can track performance and adjust configurations as needed without deep diving into infrastructure management. See [Monitor a service](https://docs.anyscale.com/platform/services/monitoring).
 
 By clicking on the **Running** service, you can view the status of deployments and how many replicas each contains. For example, your `FastAPIDeployment` has `1` replica.
 
@@ -195,7 +195,7 @@ my_app = FastAPIDeployment.bind()
 
 <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/intro-services/assets/service-replicas.png" height=400px>
 
-**Note**: This approach is a way to quickly modify scale for this example. As a best practice in production, define [autoscaling behavior](https://docs.anyscale.com/preview/platform/services/scale-a-service#autoscaling) in the [ServiceConfig](https://docs.anyscale.com/preview/reference/service-api#serviceconfig) contained in a `config.yaml` file. The number of worker nodes that Anyscale launches dynamically scales up and down in response to traffic and is scoped by the overall cluster compute config you define.
+**Note**: This approach is a way to quickly modify scale for this example. As a best practice in production, define [autoscaling behavior](https://docs.anyscale.com/platform/services/scale-a-service#autoscaling) in the [ServiceConfig](https://docs.anyscale.com/reference/service-api#serviceconfig) contained in a `config.yaml` file. The number of worker nodes that Anyscale launches dynamically scales up and down in response to traffic and is scoped by the overall cluster compute config you define.
 
 
 ### Update the service
@@ -212,7 +212,7 @@ In the service overview page, you can monitor the status of the update and see R
 
 <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/intro-services/assets/service-rollout.png" height=400px>
 
-**Note**: Using this command triggers an automatic rollout which gradually shifts traffic from the previous cluster, or primary version, to the incoming cluster, or canary version. To learn more about configuring rollout behavior, see [Update a service](https://docs.endpoints.anyscale.com/preview/platform/services/update-a-service).
+**Note**: Using this command triggers an automatic rollout which gradually shifts traffic from the previous cluster, or primary version, to the incoming cluster, or canary version. To learn more about configuring rollout behavior, see [Update a service](https://docs.anyscale.com/platform/services/update-a-service).
 
 
 ### Terminate the service
