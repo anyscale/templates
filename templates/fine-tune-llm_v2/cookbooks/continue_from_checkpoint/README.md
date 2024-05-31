@@ -45,8 +45,7 @@ We advise to monitor training loss and evaluation loss of fine-tunes to find out
 
 ### In what order should I fine-tune?
 
-In general: Finish with the dataset that is closest to what you want during inference.
-If you are extending the context of the model beyond it's native context length, you should start with the smallest context length end with the largest.
+In general, make sure the sequence of the fine-tuning is such that you end with the dataset that is closest to what you want during inference. If you are extending the context of the model beyond its native context length, you should start with the smallest context length end with the largest.
 
 ### Should I extend the dataset samples or replace them with new ones when I continue fine-tuning
 
