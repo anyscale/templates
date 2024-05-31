@@ -3,8 +3,8 @@
 **⏱️ Time to complete**: 40 minutes
 
 This document assumes that you have familiarized yourself with the main fine-tuning guide of this template.
-In this cookbook tutorial, we showcase how a checkpoint that was created earlier can be used as initialization for another round of fine-tuning.
-This allows us to sequentially combine fine-tuning on multiple datasets in order to get performance boost on the final task that we care about. 
+In this folder of the template, we showcase how a checkpoint that was created earlier can be used to start a training from.
+We case use this, for example, if we think that starting from a given checkpoint will give us a performance advantage.
 
 There are two types of checkpoints to considere here: Full-parameter checkpoints, and LoRA-adapter checkpoints.
 For starters, we advise against combining the two (by training a LoRA adapter ontop of a full-parameter checkpoint), because serving the resulting LoRA adapter will require the full-parameter checkpoint.
@@ -26,6 +26,11 @@ Running the above command will fine-tune on the [GSM8k dataset](https://huggingf
 In this example, we split the dataset into two halfs, each consisting of approximately 4.000 samples.
 The provided initial checkpoint has been trained on the first half and is already good at solving GSM8k. By running the above command, you continue fine-tuning from the provided checkpoint with the second half.
 
+The following graphs from a prior fine-tuning job illustrate this. The first graph shows the evaluation loss on three epochs of training on the first half of the GSM8k dataset.
+<img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/fine-tune-llm_v2/assets/3epochs_1st_dataset.png" width=500px/>
+The second graph shows how the evaluation loss starts way lower than where it started in the first training and improving even further.
+<img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/fine-tune-llm_v2/assets/3epochs_2nd_dataset.png" width=500px/>
+a
 ## Inference and evaluation
 
 In order to evaluate the produced checkpoint, you need to serve it. You can do this with the LLM inference template.
@@ -45,9 +50,10 @@ We advise to monitor training loss and evaluation loss of fine-tunes to find out
 
 ### In what order should I fine-tune?
 
-In general, make sure the sequence of the fine-tuning is such that you end with the dataset that is closest to what you want during inference. If you are extending the context of the model beyond its native context length, you should start with the smallest context length end with the largest.
+In general: Finish with the dataset that is closest to what you want during inference.
+If you are extending the context of the model beyond it's native context length, you should start with the smallest context length end with the largest.
 
-### Should I extend the dataset samples or replace them with new ones when I continue fine-tuning?
+### Should I extend the dataset samples or replace them with new ones when I continue fine-tuning
 
 This depends on your task and how many epochs have already been trained. If in doubt, you can always watch the training and evaluation loss to see if you are overfitting.
 
