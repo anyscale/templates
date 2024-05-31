@@ -155,7 +155,7 @@ Look at the following guides for more advanced use-cases:
 
 ## Application examples
 
-See examples of building applications with your deployed endpoint on the [Anyscale Endpoints](https://docs.anyscale.com/examples) page.
+See examples of building applications with your deployed endpoint on the [Anyscale Endpoints](https://docs.anyscale.com/examples/work-with-openai) page.
 
 Be sure to update the `api_base` and `token` for your private deployment. This information can be found under the "Query" button in the Anyscale Service UI.
 
