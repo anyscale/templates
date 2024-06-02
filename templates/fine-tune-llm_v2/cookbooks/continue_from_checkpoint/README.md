@@ -21,21 +21,15 @@ To get started, we can run the following illustrative example:
 !llmforge dev finetune llama-3-8b.yaml
 ```
 
-## What we are fine-tuning on
-
 Running the above command will fine-tune on the [GSM8k dataset](https://huggingface.co/datasets/gsm8k). 
 In this example, we have splited the dataset into two halves, each consisting of approximately 4,000 samples.
 The provided initial checkpoint has been trained on the first half and is already good at solving GSM8k. By running the above command, you continue fine-tuning from the provided checkpoint with the second half.
 
-Note the following evaluation losses. The first graph shows the evaluation loss on three epochs of training on the first half of the GSM8k dataset.
+Note the following evaluation losses. The first three epochs of training where run on the first half of the GSM8k dataset. The second three epochs of training where run on the second half.
 
-<img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/fine-tune-llm_v2/cookbooks/continue_from_checkpoint/../../assets/3epochs_1st_dataset.png" alt="evaluation loss of 1st training" width="700"/>
+<img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/fine-tune-llm_v2/cookbooks/continue_from_checkpoint/../../assets/continue_ft.png" alt="evaluation losses" width="600"/>
 
-The second graph shows the evaluation loss on three epochs of training on the second half, starting with the fine-tuned weights of the first training.
-
-<img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/fine-tune-llm_v2/cookbooks/continue_from_checkpoint/../../assets/3epochs_2nd_dataset.png" alt="evaluation loss of 2nd training" width="700"/>
-
-Note that the evaluation loss starts way lower than where it starts or finishes in the first training.
+Note that on the first iteration of the second training (epoch 4), the evaluation loss starts off much lower than in the first training.
 
 ## What and how are we fine-tuning?
 
@@ -69,9 +63,9 @@ We advise to monitor training loss and evaluation loss of fine-tunes to find out
 ### In what order should I fine-tune?
 
 In general: Finish with the dataset that is closest to what you want during inference.
-If you are extending the context of the model beyond it's native context length, you should start with the smallest context length end with the largest.
+If you are extending the context of the model beyond its native context length, you should start with the smallest context length end with the largest.
 
-### Should I extend the dataset samples or replace them with new ones when I continue fine-tuning
+### Should I extend the dataset samples or replace them with new ones when I continue fine-tuning?
 
 This depends on your task and how many epochs have already been trained. If in doubt, you can always watch the training and evaluation loss to see if you are overfitting.
 
