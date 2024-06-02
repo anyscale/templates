@@ -22,7 +22,7 @@ To get started, we can run the following illustrative example:
 ## What we are fine-tuning on
 
 Running the above command will fine-tune on the [GSM8k dataset](https://huggingface.co/datasets/gsm8k). 
-In this example, we split the dataset into two halfs, each consisting of approximately 4.000 samples.
+In this example, we have splited the dataset into two halves, each consisting of approximately 4,000 samples.
 The provided initial checkpoint has been trained on the first half and is already good at solving GSM8k. By running the above command, you continue fine-tuning from the provided checkpoint with the second half.
 
 Note the following evaluation losses. The first graph shows the evaluation loss on three epochs of training on the first half of the GSM8k dataset.
