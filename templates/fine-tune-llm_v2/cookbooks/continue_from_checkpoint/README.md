@@ -9,7 +9,7 @@ This allows us to sequentially combine fine-tuning on multiple datasets in order
 We support both Full-parameter checkpoints, and LoRA-adapter checkpoints. However, we recommend not combining the two by training a full-parameter model followed by a LoRA adaptation, because serving the resulting LoRA adapter will require the full-parameter checkpoint. Unless you are fine-tuning many such LoRA adaptors for different tasks this serving architecture does not have the neither the economical benefits of LoRA nor the quality benefits of full-parameter.
 
 ## How to fine-tune from a previous checkpointing
-
+To get started, we can run the following illustrative example:
 
 ```python
 # [Optional] You can set the WandB API key to track model performance
