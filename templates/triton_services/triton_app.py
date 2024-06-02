@@ -11,7 +11,13 @@ MODEL_REPOSITORY = f'{os.environ["ANYSCALE_ARTIFACT_STORAGE"]}/triton_model_repo
 app = FastAPI()
 
 
-@serve.deployment(ray_actor_options={"num_gpus": 1})
+@serve.deployment(
+    ray_actor_options={
+        "num_gpus": 1,
+        "num_cpus": 1,
+        "accelerator_type": "T4"
+    },
+)
 @serve.ingress(app)
 class TritonDeployment:
     def __init__(self):
