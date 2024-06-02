@@ -2,14 +2,16 @@
 
 **⏱️ Time to complete**: 40 minutes
 
-This guide assumes that you have familiarized yourself with the main fine-tuning guide of this template.
+This guide assumes that you have familiarized yourself with the [main fine-tuning guide](../../README.md) of this template.
 In this cookbook tutorial, we showcase how a checkpoint that was created earlier can be used as initialization for another round of fine-tuning.
 This allows us to sequentially combine fine-tuning on multiple datasets in order to get performance boost on the final task that we care about. 
 
-We support both Full-parameter checkpoints, and LoRA-adapter checkpoints. However, we recommend not combining the two by training a full-parameter model followed by a LoRA adaptation, because serving the resulting LoRA adapter will require the full-parameter checkpoint. Unless you are fine-tuning many such LoRA adaptors for different tasks this serving architecture does not have the neither the economical benefits of LoRA nor the quality benefits of full-parameter.
+We support both Full-parameter checkpoints, and LoRA-adapter checkpoints. However, we recommend not to combine the two by training a full-parameter model followed by a LoRA adaptation. Serving the resulting LoRA adapter will require the base full-parameter checkpoint. Unless you are fine-tuning many such LoRA adaptors for different tasks, this serving architecture does not have the neither the economical benefits of LoRA nor the quality benefits of full-parameter.
 
 ## How to fine-tune from a previous checkpointing
+
 To get started, we can run the following illustrative example:
+
 
 ```python
 # [Optional] You can set the WandB API key to track model performance
@@ -51,7 +53,7 @@ train_path: s3://large-dl-models-mirror/finetuning_template/train_2.jsonl
 We fine-tune Llama 3 8B Instruct, but the initial weights of the LoRA adapter are loaded from our s3 mirror.
 It makes sense to keep those weights in a bucket so that they can be accessed from all nodes of your cluster.
 The train path `(.../train_2.jsonl)` points to the second part of the GSM8k dataset that we fine-tune on.
-If we were not fine-tuning with LoRA, we would not configure `initial_adapter_model_ckpt_path`, but `initial_base_model_ckpt_path` instead.
+If we wanted to continue the finetuning of a full-parameter checkpoint, we should configure `initial_base_model_ckpt_path` instead of `initial_adapter_model_ckpt_path`. 
 
 # How to use this for your own purpose
 
@@ -75,6 +77,5 @@ This depends on your task and how many epochs have already been trained. If in d
 
 ### How can I fine-tune a model that I fine-tuned on Anyscale Endpoints?
 
-You have to download the model weights through Anyscale Endpoints, upload them to a bucket of your choice and reference the bucket as an initial checkpoint in the training config yaml.
-
-
+You have to download the model weights through the `Serving` page, upload them to a bucket of your choice and reference the bucket as an initial checkpoint in the training config yaml.
+<img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/fine-tune-llm_v2/cookbooks/continue_from_checkpoint/../../assets/download.png" alt="downloading the model weights" width="700"/>
