@@ -26,9 +26,13 @@ In this example, we split the dataset into two halfs, each consisting of approxi
 The provided initial checkpoint has been trained on the first half and is already good at solving GSM8k. By running the above command, you continue fine-tuning from the provided checkpoint with the second half.
 
 Note the following evaluation losses. The first graph shows the evaluation loss on three epochs of training on the first half of the GSM8k dataset.
-<img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/fine-tune-llm_v2/assets/3epochs_1st_dataset.png" width=500px/>
+
+<img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/fine-tune-llm_v2/cookbooks/continue_from_checkpoint/../../assets/3epochs_1st_dataset.png" alt="evaluation loss of 1st training" width="700"/>
+
 The second graph shows the evaluation loss on three epochs of training on the second half, starting with the fine-tuned weights of the first training.
-<img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/fine-tune-llm_v2/assets/3epochs_2nd_dataset.png" width=500px/>
+
+<img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/fine-tune-llm_v2/cookbooks/continue_from_checkpoint/../../assets/3epochs_2nd_dataset.png" alt="evaluation loss of 2nd training" width="700"/>
+
 Note that the evaluation loss starts way lower than where it starts or finishes in the first training.
 
 ## What and how are we fine-tuning?
@@ -72,3 +76,5 @@ This depends on your task and how many epochs have already been trained. If in d
 ### How can I fine-tune a model that I fine-tuned on Anyscale Endpoints?
 
 You have to download the model weights through Anyscale Endpoints, upload them to a bucket of your choice and reference the bucket as an initial checkpoint in the training config yaml.
+
+
