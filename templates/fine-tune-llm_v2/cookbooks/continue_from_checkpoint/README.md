@@ -36,6 +36,24 @@ In order to evaluate the produced checkpoint, you need to serve it. You can do t
 On the cluster that you are using to serve the fine-tuned model, you can use the provided script `evaluate_gsm8k.py` to evaluate.
 Don't forget to change the `ADAPTER_NAME` variable to fit the name of your model.
 
+## What and how are we fine-tuning?
+
+The following is a snippet from the `llama-3-8b.yaml` file we use above. 
+
+```yaml
+# ...
+model_id: meta-llama/Meta-Llama-3-8B-Instruct
+# initial_base_model_ckpt_path: ...
+initial_adapter_model_ckpt_path: s3://large-dl-models-mirror/finetuning_template/continued_ft_gsm8k_checkpoint
+train_path: s3://large-dl-models-mirror/finetuning_template/train_2.jsonl
+# ...
+```
+
+We fine-tune Llama 3 8B Instruct, but the initial weights of the LoRA adapter are loaded from our s3 mirror.
+It makes sense to keep those weights in a bucket so that they can be accessed from all nodes of your cluster.
+The train path `(.../train_2.jsonl)` points to the second part of the GSM8k dataset that we fine-tune on.
+If we were not fine-tuning with LoRA, we would not configure `initial_adapter_model_ckpt_path`, but `initial_base_model_ckpt_path` instead.
+
 # How to use this for your own purpose
 
 The training and evaluation loss of the second, the continued, fine-tuning are lower than what we saw in the first run.
@@ -59,3 +77,5 @@ This depends on your task and how many epochs have already been trained. If in d
 ### How can I fine-tune a model that I fine-tuned on Anyscale Endpoints?
 
 You have to download the model weights through Anyscale Endpoints, upload them to a bucket of your choice and reference the bucket as an initial checkpoint in the training config yaml.
+
+
