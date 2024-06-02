@@ -25,16 +25,11 @@ Running the above command will fine-tune on the [GSM8k dataset](https://huggingf
 In this example, we split the dataset into two halfs, each consisting of approximately 4.000 samples.
 The provided initial checkpoint has been trained on the first half and is already good at solving GSM8k. By running the above command, you continue fine-tuning from the provided checkpoint with the second half.
 
-The following graphs from a prior fine-tuning job illustrate this. The first graph shows the evaluation loss on three epochs of training on the first half of the GSM8k dataset.
+Note the following evaluation losses. The first graph shows the evaluation loss on three epochs of training on the first half of the GSM8k dataset.
 <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/fine-tune-llm_v2/assets/3epochs_1st_dataset.png" width=500px/>
-The second graph shows how the evaluation loss starts way lower than where it started in the first training and improving even further.
+The second graph shows the evaluation loss on three epochs of training on the second half, starting with the fine-tuned weights of the first training.
 <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/fine-tune-llm_v2/assets/3epochs_2nd_dataset.png" width=500px/>
-a
-## Inference and evaluation
-
-In order to evaluate the produced checkpoint, you need to serve it. You can do this with the LLM inference template.
-On the cluster that you are using to serve the fine-tuned model, you can use the provided script `evaluate_gsm8k.py` to evaluate.
-Don't forget to change the `ADAPTER_NAME` variable to fit the name of your model.
+Note that the evaluation loss starts way lower than where it starts or finishes in the first training.
 
 ## What and how are we fine-tuning?
 
@@ -77,5 +72,3 @@ This depends on your task and how many epochs have already been trained. If in d
 ### How can I fine-tune a model that I fine-tuned on Anyscale Endpoints?
 
 You have to download the model weights through Anyscale Endpoints, upload them to a bucket of your choice and reference the bucket as an initial checkpoint in the training config yaml.
-
-
