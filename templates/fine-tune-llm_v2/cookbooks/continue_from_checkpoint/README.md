@@ -18,7 +18,7 @@ To get started, we can run the following illustrative example:
 # !export WANDB_API_KEY={YOUR_WANDB_API_KEY}
 
 # Continue LoRA fine-tuning on the GSM8k dataset with Llama 3 8B
-!llmforge dev finetune llama-3-8b.yaml
+!python main.py llama-3-8b.yaml
 ```
 
 Running the above command will fine-tune on the [GSM8k dataset](https://huggingface.co/datasets/gsm8k). 
