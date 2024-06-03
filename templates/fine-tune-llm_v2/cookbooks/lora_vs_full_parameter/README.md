@@ -15,7 +15,7 @@ Full-parameter fine-tuning takes the LLM "as is" and trains it on the given data
 
 You can find a more in-depth analysis of this topic [here](https://www.anyscale.com/blog/fine-tuning-llms-lora-or-full-parameter-an-in-depth-analysis-with-llama-2).
 
-## Comparing how to configure LoRA vs full-parameter fine-tuning
+## How to configure LoRA vs full-parameter fine-tuning jobs
 
 Both fine-tuning techniques require the same dataset format and result in a checkpoint that you can serve with Anyscale's serving template.
 Next, we illustrate this by showing you two commands that fine-tune on the same data - once with LoRA, once with full-parameter fine-tuning.
