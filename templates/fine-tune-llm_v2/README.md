@@ -67,7 +67,7 @@ Follow the [Learn how to bring your own models](https://docs.anyscale.com/exampl
 
 After you are with the above, you can find recipies that extend the functionality of this template under the cookbooks folder:
 
-* (Continue fine-tuning from a previous checkpoint)[cookbooks/continue_from_checkpoint/README.md]
+* [Continue fine-tuning from a previous checkpoint](cookbooks/continue_from_checkpoint/README.md)
 
 ## Frequently asked questions
 
