@@ -1,5 +1,4 @@
-head_node_type:
-  name: head
+head_node:
   instance_type: n1-standard-8
-worker_node_types: []
+worker_nodes: []
 auto_select_worker_config: true
