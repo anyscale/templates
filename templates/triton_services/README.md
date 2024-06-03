@@ -8,7 +8,7 @@ though running a Stable Diffusion 1.5 service.
 In this tutorial, you will learn:
 1. Build Docker image for Triton Server to run in Anyscale platform.
 2. Compile model using Triton's Python backend on Anyscale Workspaces.
-3. Run Triton Server locally on Anyscale Workspaces.
+3. Run Triton Server on Ray Serve locally on Anyscale Workspaces.
 4. Deploy the application on Anyscale Services.
 
 **Note**: This guide is not meant to substitute with the official Triton documentation.
@@ -98,7 +98,7 @@ can be used to store model artifacts. Use one of the following to upload the mod
 !gcloud storage cp /tmp/workspace/diffusion-models/stable_diffusion_1_5/1/1.5-engine-batch-size-1/ $ANYSCALE_ARTIFACT_STORAGE/triton_model_repository/stable_diffusion_1_5/1/1.5-engine-batch-size-1/ --recursive
 ```
 
-## Run Triton Server locally on Anyscale Workspaces
+## Run Triton Server on Ray Serve locally on Anyscale Workspaces
 
 The `triton_app.py` is included in this workspace for you. This file demonstrates using
 remote model repository to start triton serve, loading the specific Stable Diffusion
