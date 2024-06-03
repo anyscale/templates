@@ -1,7 +1,6 @@
-head_node_type:
-  name: head
+head_node:
   instance_type: n1-standard-16-nvidia-t4-16gb-1
   resources:
     cpu: 0
-worker_node_types: []
+worker_nodes: []
 auto_select_worker_config: true
