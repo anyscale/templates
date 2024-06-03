@@ -1,6 +1,6 @@
 # Fine-Tuning with LoRA vs full-parameter
 
-**⏱️ Time to complete**: 5 minutes
+**⏱️ Time to complete**: 45 minutes (for the LoRA fine-tuning)
 
 This guide assumes that you have familiarized yourself with the [main fine-tuning guide](../../README.md) of this template.
 In this cookbook, we explain the nuances of fine-tuning with [LoRA (Low-Rank Adaptation)](https://arxiv.org/abs/2106.09685) versus full-parameter fine-tuning.
@@ -33,6 +33,9 @@ You can look at the respective yaml files to see how they differ in their config
 ```
 
 ### How to launch a full-parameter fine-tuning job
+
+We advise against running this end-to-end, because it will take many hours on a default cluster.
+If you want to run this full-parameter fine-tuning end-to-end, consider configuring your workspace to use more capable GPUs like A100s or better.
 
 
 ```python
