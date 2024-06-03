@@ -48,7 +48,7 @@ Upon the job completion, you can see the LoRA weight storage location and model 
 Note: LoRA weights will also be stored in path {ANYSCALE_ARTIFACT_STORAGE}/lora_fine_tuning under meta-llama/Llama-2-8b-chat-hf:sql:12345 bucket.
 ```
 
-You can specify this URI as the dynamic_lora_loading_path ([docs](https://docs.endpoints.anyscale.com/preview/examples/deploy-llms/#more-guides) in the llm serving template, and then query the endpoint.
+You can specify this URI as the dynamic_lora_loading_path [docs](https://docs.anyscale.com/examples/deploy-llms#more-guides) in the llm serving template, and then query the endpoint.
 
 Note: Such LoRA model IDs follow the format `{base_model_id}:{suffix}:{id}`
 
@@ -61,7 +61,13 @@ Best checkpoint is stored in:
 {ANYSCALE_ARTIFACT_STORAGE}/username/llmforge-finetuning/meta-llama/Llama-2-70b-hf/TorchTrainer_2024-01-25_18-07-48/TorchTrainer_b3de9_00000_0_2024-01-25_18-07-48/checkpoint_000000
 ```
 
-Follow the [Learn how to bring your own models](https://docs.endpoints.anyscale.com/preview/examples/deploy-llms/#more-guides) section under the llm serving template to serve this fine-tuned model with the specified storage uri.
+Follow the [Learn how to bring your own models](https://docs.anyscale.com/examples/deploy-llms#more-guides) section under the llm serving template to serve this fine-tuned model with the specified storage uri.
+
+## Finally
+
+After you are with the above, you can find recipies that extend the functionality of this template under the cookbooks folder:
+
+* [Continue fine-tuning from a previous checkpoint](cookbooks/continue_from_checkpoint/README.md)
 
 ## Frequently asked questions
 
