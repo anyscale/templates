@@ -63,6 +63,12 @@ Best checkpoint is stored in:
 
 Follow the [Learn how to bring your own models](https://docs.anyscale.com/examples/deploy-llms#more-guides) section under the llm serving template to serve this fine-tuned model with the specified storage uri.
 
+## Finally
+
+After you are with the above, you can find recipies that extend the functionality of this template under the cookbooks folder:
+
+* [Continue fine-tuning from a previous checkpoint](cookbooks/continue_from_checkpoint/README.md)
+
 ## Frequently asked questions
 
 ### Where can I view the bucket where my LoRA weights are stored?
