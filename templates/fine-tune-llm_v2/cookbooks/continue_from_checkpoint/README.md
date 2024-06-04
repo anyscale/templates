@@ -22,7 +22,7 @@ The provided initial checkpoint has been trained on the first half and is alread
 
 Note the following evaluation losses. The first three epochs of training where run on the first half of the GSM8k dataset. The second three epochs of training where run on the second half.
 
-<img src="./assets/cookbooks/continue_from_checkpoint/continue_ft.png" alt="evaluation losses" width="600"/>
+<img src="./assets/continue_ft.png" alt="evaluation losses" width="600"/>
 
 Note that on the first iteration of the second training (epoch 4), the evaluation loss starts off much lower than in the first training.
 
@@ -69,4 +69,4 @@ This depends on your task and how many epochs have already been trained. If in d
 ### How can I fine-tune a model that I fine-tuned on Anyscale Endpoints?
 
 You have to download the model weights through the `Serving` page, upload them to a bucket of your choice and reference the bucket as an initial checkpoint in the training config yaml.
-<img src="./assets/cookbooks/continue_from_checkpoint/download.png" alt="downloading the model weights" width="500"/>
+<img src="./assets/download.png" alt="downloading the model weights" width="500"/>
