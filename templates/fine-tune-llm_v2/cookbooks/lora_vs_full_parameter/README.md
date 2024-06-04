@@ -1,6 +1,6 @@
 # Fine-Tuning with LoRA vs full-parameter
 
-**⏱️ Time to complete**: 20 minutes for the LoRA fine-tuning, 45 minutes for full-parameter fine-tuning
+**⏱️ Time to complete**: 60min for LoRA fine-tuning, 2.5h for full-parameter fine-tuning
 
 This guide assumes that you have familiarized yourself with the [main fine-tuning guide](../../README.md) of this template.
 In this cookbook, we explain the nuances of fine-tuning with [LoRA (Low-Rank Adaptation)](https://arxiv.org/abs/2106.09685) versus full-parameter fine-tuning.
@@ -9,11 +9,13 @@ In this cookbook, we explain the nuances of fine-tuning with [LoRA (Low-Rank Ada
 
 Full-parameter fine-tuning takes the LLM "as is" and trains it on the given dataset. In principle, this is regular supervised training like in the pretraining stage of the LLM. You can expect full-parameter fine-tuning to result in slightly higher model quality.
 
-[LoRA (Low-Rank Adaptation)](https://arxiv.org/abs/2106.09685) is a fine-tuning technique that freezes all the weights of your LLM and adds a few parameters to it that get fine-tuned instead. These additional parameters make up a LoRA checkpoint. There are two important things to take away from this:
+[LoRA (Low-Rank Adaptation)](https://arxiv.org/abs/2106.09685) is a fine-tuning technique that freezes all the weights of your LLM and adds a few parameters to it that get fine-tuned instead. These additional parameters make up a LoRA checkpoint. There are three important things to take away from this:
 1. Since all the original weights are frozen, they don't have to be optimized and therefore don't take up as many resources during fine-tuning. In practice, you can fine-tune on a smaller cluster.
 2. Since the checkpoint only consists of the few additional parameters, it is very small. If we load the original model into memory, we can swap out the fine-tuned weights quickly. Therefore, it makes for an efficient scheme for serving many fine-tuned models alongside each other.
+3. Optimizing few parameters has a regularization effect - "[it learns less and forgets less](https://arxiv.org/abs/2405.09673)"
 
 You can find a more in-depth analysis of this topic [here](https://www.anyscale.com/blog/fine-tuning-llms-lora-or-full-parameter-an-in-depth-analysis-with-llama-2).
+The domain also has an effect on LoRA's performance. Depending on the domain, it may perform the same or slightly worse than full-parameter fine-tuning.
 
 ## How to configure LoRA vs full-parameter fine-tuning jobs
 
@@ -60,7 +62,7 @@ lora_config:
   lora_alpha: 16
   # Rate at which LoRA weights are dropped out. Can act as a regularizer.
   lora_dropout: 0.05
-  # The modules of the LLM that we want to fine-tune with LoRA. 
+  # The modules of the LLM that we want to fine-tune with LoRA.
   target_modules:
     - q_proj
     - v_proj
@@ -75,6 +77,7 @@ lora_config:
 
 You generally don't need to change any of these parameters. In our experience, there is little or nothing to be gained from that.
 We advise to fine-tune LoRA with a learning rate of about 1e-4. You can increase it slightly if training is stable enough.
+LoRA is rather sensitive to the learning rate. For optimal performance, it's important to target all possible layers with LoRA, while choosing a higher rank gives very minor improvements ([link to paper](https://arxiv.org/abs/2405.09673)).
 
 ### Full-parameter fine-tuning
 
@@ -88,11 +91,11 @@ We advise to use a learning rate of about 1e-5 here. You can increase it slightl
 There is no general answer to this but here are some things to consider:
 
 - The quality of the fine-tuned models will, in most cases, be comparable if not the same
-- LoRA shines if...
-    - ... you want to serve many fine-tuned models at once yourself
-    - ... you want to rapidly experiment (because fine-tuning, downloading and serving the model take less time)
-- Full-parameter shines if...
-    - ... you want to make sure that your fine-tuned model has the maximum quality
-    - ... you want to serve only one fine-tuned version of the model
+- LoRA shines if:
+    - You want to serve many fine-tuned models at once yourself
+    - You want to rapidly experiment (because fine-tuning, downloading and serving the model take less time)
+- Full-parameter shines if:
+    - You want to make sure that your fine-tuned model has the maximum quality
+    - You want to serve only one fine-tuned version of the model
 
 There, you'll also find some guidance on the LoRA parameters and why, in most cases, you don't need to change them.
