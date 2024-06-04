@@ -45,14 +45,15 @@ It makes sense to keep those weights in a bucket so that they can be accessed fr
 The train path `(.../train_2.jsonl)` points to the second part of the GSM8k dataset that we fine-tune on.
 If we wanted to continue the finetuning of a full-parameter checkpoint, we should configure `initial_base_model_ckpt_path` instead of `initial_adapter_model_ckpt_path`. 
 
-# How to use this for your own purpose
+# Things to Notice
 
-The training and evaluation loss of the second, the continued, fine-tuning are lower than what we saw in the first run.
-For example, the checkpoint that you find in the llama-3-8b.yaml has an evaluation loss of 0.8886.
-After continued fine-tuning, we reach a checkpoint with an evaluation loss of 0.8668.
-Such loss values depend greatly on the task at hand - a difference of 0.0218 may be a big improvement on some tasks and a minor improvement on others.
+When comparing the training and evaluation loss of the second (continued) fine-tuning with the first run, you'll notice that the values are lower.
+For instance, the checkpoint in the llama-3-8b.yaml has an evaluation loss of 0.8886.
+After continued fine-tuning, we achieve a checkpoint with an evaluation loss of 0.8668.
+It's important to note that the significance of such loss values varies greatly depending on the task at hand. A difference of 0.0218 may represent a substantial improvement for some tasks, while it may only be a minor improvement for others.
 
-We advise to monitor training loss and evaluation loss of fine-tunes to find out if you are improving through the continued fine-tuning.
+To determine whether continued fine-tuning is beneficial for your specific task, we recommend monitoring the training and evaluation loss during the fine-tuning process.
+This will help you assess the impact of the additional fine-tuning on your model's performance.
 
 
 ## FAQs
