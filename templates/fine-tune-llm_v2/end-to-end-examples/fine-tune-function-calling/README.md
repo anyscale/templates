@@ -4,7 +4,9 @@
 
 Function calling is an important capability of large language models. Connecting your model to external tools is at the heart of many LLM applications. In Anyscale Endpoints, you can use the [function calling API](https://docs.anyscale.com/preview/endpoints/text-generation/function-calling) to enable get a quick access on this feature on a select number of models. This is made possible [through JSON mode](https://www.anyscale.com/blog/anyscale-endpoints-json-mode-and-function-calling-features). However, it is beneficial to have *native* function calling capabilities in your model through fine-tuning on a relevant function calling dataset. JSON-mode-based function calling can only guarantee that the output is in the right schema, and can also be more expensive than a regular chat completion. However, fine-tuning on a function calling dataset can improve the model's capabilities with intent recognition (understanding when to call and when not to call a tool) and function call accuracy (employing the right function with accurate parameters) in addition to structured data formatting (formatting the function call json in the correct schema).  Fine-tuning would also be the only systematic way to improve performance on use-case-specific data. 
 
-In this example, we demonstrate fine-tuning on [Glaive's function calling dataset](https://huggingface.co/datasets/glaiveai/glaive-function-calling-v2?row=0) using Anyscale Endpoints. The goal for this example is to serve as a blue-print for performing data processing, training, and evaluation on open source LLMs for specific tasks like function calling, in the most effective way. The mentioned dataset consists of about 113,000 examples of synthetically generated function calling data. The dataset composition is given below:
+In this example, we demonstrate fine-tuning on [Glaive's function calling dataset](https://huggingface.co/datasets/glaiveai/glaive-function-calling-v2?row=0) using Anyscale platform. The goal for this example is to serve as a blue-print for performing data processing, training, and evaluation on open source LLMs for specific tasks like function calling, in the most effective way.  During this guide we mainly use the [fine-tuning API](https://docs.anyscale.com/endpoints/fine-tuning/fine-tuning-api), but the same blue-print can also be used with [fine-tuning template](https://docs.anyscale.com/examples/finetune-llms). 
+
+The mentioned dataset consists of about 113,000 examples of synthetically generated function calling data. The dataset composition is given below:
 
 <p align="center">
   <img src="./assets/distr_glaive_pie.png" alt="Distribution" width=800>
@@ -21,9 +23,12 @@ First, let's make the necessary imports
 
 
 ```python
+import os
+import yaml
 import datasets
-import ray.data
 import openai
+
+import ray.data
 ```
 
 
@@ -45,7 +50,7 @@ Our data processing will occur in 2-stages, as shown in the below figure:
 </p>
 
 
-Glaive's function calling dataset is formatted with specific indicators for roles and special tokens. We'll first map this dataset into the more general OpenAI chat format and then make it compatible with Anyscale Endpoints. 
+Glaive's function calling dataset is formatted with specific indicators for roles and special tokens. We'll first map this dataset into the more general OpenAI chat format and then prepare it for fine-tuning with basic-chat template API supported by Anyscale. 
 
 We'll use Ray Data for scalable data processing. First, let's load the dataset from the HuggingFace Hub and inspect it.
 
@@ -55,30 +60,35 @@ hf_ds = datasets.load_dataset("glaiveai/glaive-function-calling-v2", split="trai
 # Sample only 10% of the dataset
 hf_ds_subset =  hf_ds.select(range(int(len(hf_ds)*0.10))) 
 ray_ds = ray.data.from_huggingface(hf_ds_subset)
-first_ex = ray_ds.take(1)[0]
+raw_example = ray_ds.take(1)[0]
 ```
-
-    2024-05-22 22:19:43,434	INFO worker.py:1740 -- Started a local Ray instance. View the dashboard at [1m[32m127.0.0.1:8266 [39m[22m
-    2024-05-22 22:19:46,694	INFO dataset.py:2370 -- Tip: Use `take_batch()` instead of `take() / show()` to return records in pandas or numpy batch format.
-    2024-05-22 22:19:46,696	INFO streaming_executor.py:112 -- Starting execution of Dataset. Full logs are in /tmp/ray/session_2024-05-22_22-19-41_321721_15976/logs/ray-data
-    2024-05-22 22:19:46,697	INFO streaming_executor.py:113 -- Execution plan of Dataset: InputDataBuffer[Input] -> LimitOperator[limit=1]
-
-
-
-    - limit=1 1:   0%|          | 0/1 [00:00<?, ?it/s]
-
-
-
-    Running 0:   0%|          | 0/1 [00:00<?, ?it/s]
-
 
 
 ```python
-pprint_example(first_ex, dataset_format=DatasetFormat.GLAIVE)
+pprint_example(raw_example, dataset_format=DatasetFormat.GLAIVE)
 ```
 
 
-<pre><span style="color: red;">System: </span>SYSTEM: You are a helpful assistant with access to the following functions. Use them if required -
+<pre><span style="color: cyan;">Chat: </span>USER: I need to set a reminder for my doctor&#x27;s appointment.
+
+
+ASSISTANT: Sure, I can help with that. Could you please provide me with the date and time of your appointment? &lt;|endoftext|&gt;
+
+
+USER: The appointment is on 2022-09-15 at 10:00 AM.
+
+
+ASSISTANT: &lt;functioncall&gt; {&quot;name&quot;: &quot;create_reminder&quot;, &quot;arguments&quot;: &#x27;{&quot;reminder_text&quot;: &quot;Doctor&#x27;s appointment&quot;, &quot;reminder_date&quot;: &quot;2022-09-15&quot;, &quot;reminder_time&quot;: &quot;10:00&quot;}&#x27;} &lt;|endoftext|&gt;
+
+
+FUNCTION RESPONSE: {&quot;status&quot;: &quot;success&quot;, &quot;message&quot;: &quot;Reminder for &#x27;Doctor&#x27;s appointment&#x27; on 2022-09-15 at 10:00 AM has been created successfully.&quot;}
+
+
+ASSISTANT: Your reminder for the doctor&#x27;s appointment on 2022-09-15 at 10:00 AM has been created successfully. You will be notified at the specified time. &lt;|endoftext|&gt;
+
+
+
+<span style="color: red;">System: </span>SYSTEM: You are a helpful assistant with access to the following functions. Use them if required -
 {
     &quot;name&quot;: &quot;create_reminder&quot;,
     &quot;description&quot;: &quot;Create a reminder for a specific date and time&quot;,
@@ -108,25 +118,6 @@ pprint_example(first_ex, dataset_format=DatasetFormat.GLAIVE)
     }
 }
 
-<span style="color: cyan;">Chat: </span>USER: I need to set a reminder for my doctor&#x27;s appointment.
-
-
-ASSISTANT: Sure, I can help with that. Could you please provide me with the date and time of your appointment? &lt;|endoftext|&gt;
-
-
-USER: The appointment is on 2022-09-15 at 10:00 AM.
-
-
-ASSISTANT: &lt;functioncall&gt; {&quot;name&quot;: &quot;create_reminder&quot;, &quot;arguments&quot;: &#x27;{&quot;reminder_text&quot;: &quot;Doctor&#x27;s appointment&quot;, &quot;reminder_date&quot;: &quot;2022-09-15&quot;, &quot;reminder_time&quot;: &quot;10:00&quot;}&#x27;} &lt;|endoftext|&gt;
-
-
-FUNCTION RESPONSE: {&quot;status&quot;: &quot;success&quot;, &quot;message&quot;: &quot;Reminder for &#x27;Doctor&#x27;s appointment&#x27; on 2022-09-15 at 10:00 AM has been created successfully.&quot;}
-
-
-ASSISTANT: Your reminder for the doctor&#x27;s appointment on 2022-09-15 at 10:00 AM has been created successfully. You will be notified at the specified time. &lt;|endoftext|&gt;
-
-
-
 </pre>
 
 
@@ -136,29 +127,13 @@ Each sample in the dataset has two entries: system and chat. As mentioned, this 
 ```python
 # Initial preprocessing to get to the OpenAI format
 openai_fmt_ds = glaive_to_openai(ray_ds)
-first_ex = openai_fmt_ds.take(1)[0] 
+openai_ex = openai_fmt_ds.take(1)[0] 
 ```
-
-    2024-05-22 22:19:47,239	INFO streaming_executor.py:112 -- Starting execution of Dataset. Full logs are in /tmp/ray/session_2024-05-22_22-19-41_321721_15976/logs/ray-data
-    2024-05-22 22:19:47,240	INFO streaming_executor.py:113 -- Execution plan of Dataset: InputDataBuffer[Input] -> TaskPoolMapOperator[Map(_glaive_to_openai)->Filter(<lambda>)->Filter(filter_func)] -> LimitOperator[limit=1]
-
-
-
-    - Map(_glaive_to_openai)->Filter(<lambda>)->Filter(filter_func) 1:   0%|          | 0/1 [00:00<?, ?it/s]
-
-
-
-    - limit=1 2:   0%|          | 0/1 [00:00<?, ?it/s]
-
-
-
-    Running 0:   0%|          | 0/1 [00:00<?, ?it/s]
-
 
 
 ```python
 # Inspect one example
-pprint_example(first_ex, dataset_format=DatasetFormat.OPENAI)
+pprint_example(openai_ex, dataset_format=DatasetFormat.OPENAI)
 ```
 
 
@@ -180,7 +155,7 @@ pprint_example(first_ex, dataset_format=DatasetFormat.OPENAI)
 </pre>
 
 
-If you notice, the tool calls are almost exactly in the OpenAI format, just short of the `id` entry provided by the OpenAI API. For training, we choose to leave the model out of ID generation. Internally, each tool call is kept track by its index in the list of tool calls made. This is used later in the tool response (In the above example, there is only one tool call made and the tool response has `tool_call_id` "call_1"). 
+If you notice, the tool calls are almost exactly in the OpenAI format, i.e. `assistant` messages can include `tool_calls` and `tool` is also a role just like `user` or `assistant`. The only slight difference is that it is short of the `id` entry provided by the OpenAI API. For training, we choose to leave the model out of ID generation. Internally, each tool call is kept track by its index in the list of tool calls made. This is used later in the tool response (In the above example, there is only one tool call made and the tool response has `tool_call_id` "call_1"). 
 
 ## Preprocess to the Anyscale format
 We'll now further process this conversation format and make it compatible with Anyscale Endpoints. We'll make use of special indicators "\[TOOL_CALLS\]" and "\[/TOOL_CALLS\]" to format assistant tool calls into the message "content" field. The role "tool" will be converted to the role "user" with a special indicator to highlight that this is a tool response. Further, the tool list will be included in the system prompt with special indicators. The following code block handles the necessary preprocessing.
@@ -189,29 +164,13 @@ We'll now further process this conversation format and make it compatible with A
 ```python
 # Map to Anyscale format
 processed_ds = openai_to_anyscale(openai_fmt_ds)
-first_ex = processed_ds.take(1)[0]
+anyscale_ex = processed_ds.take(1)[0]
 ```
-
-    2024-05-22 22:19:52,031	INFO streaming_executor.py:112 -- Starting execution of Dataset. Full logs are in /tmp/ray/session_2024-05-22_22-19-41_321721_15976/logs/ray-data
-    2024-05-22 22:19:52,031	INFO streaming_executor.py:113 -- Execution plan of Dataset: InputDataBuffer[Input] -> TaskPoolMapOperator[Map(_glaive_to_openai)->Filter(<lambda>)->Filter(filter_func)->Map(_openai_to_anyscale)] -> LimitOperator[limit=1]
-
-
-
-    - Map(_glaive_to_openai)->Filter(<lambda>)->Filter(filter_func)->Map(_openai_to_anyscale) 1:   0%|          | …
-
-
-
-    - limit=1 2:   0%|          | 0/1 [00:00<?, ?it/s]
-
-
-
-    Running 0:   0%|          | 0/1 [00:00<?, ?it/s]
-
 
 
 ```python
 # Inspect one example
-pprint_example(first_ex, dataset_format=DatasetFormat.ANYSCALE)
+pprint_example(anyscale_ex, dataset_format=DatasetFormat.ANYSCALE)
 ```
 
 
@@ -236,18 +195,6 @@ train_ds, val_ds, test_ds = processed_ds.split_proportionately([0.8, 0.1])
 test_ds, _  = test_ds.split_at_indices([200]) 
 ```
 
-    2024-05-22 22:19:57,649	INFO streaming_executor.py:112 -- Starting execution of Dataset. Full logs are in /tmp/ray/session_2024-05-22_22-19-41_321721_15976/logs/ray-data
-    2024-05-22 22:19:57,650	INFO streaming_executor.py:113 -- Execution plan of Dataset: InputDataBuffer[Input] -> TaskPoolMapOperator[Map(_glaive_to_openai)->Filter(<lambda>)->Filter(filter_func)->Map(_openai_to_anyscale)]
-
-
-
-    - Map(_glaive_to_openai)->Filter(<lambda>)->Filter(filter_func)->Map(_openai_to_anyscale) 1:   0%|          | …
-
-
-
-    Running 0:   0%|          | 0/1 [00:00<?, ?it/s]
-
-
 
 ```python
 # Inspect final counts
@@ -264,9 +211,9 @@ train_ds.count(), val_ds.count(), test_ds.count()
 
 ```python
 # Set up file save paths. Feel free to change these
-train_file_path = "glaiveai-function-calling-v2-train.jsonl"
-validation_file_path = "glaiveai-function-calling-v2-val.jsonl"
-test_file_path = "glaiveai-function-calling-v2-test.jsonl"
+train_file_path = "cleaned_data/glaiveai-function-calling-v2-train.jsonl"
+validation_file_path = "cleaned_data/glaiveai-function-calling-v2-val.jsonl"
+test_file_path = "cleaned_data/glaiveai-function-calling-v2-test.jsonl"
 ```
 
 
@@ -280,26 +227,75 @@ save_to_jsonl(test_ds, test_file_path)
 # Step 2: Fine-tuning 
 
 For fine-tuning, you have two options with Anyscale:
-1. Fine-tuning on the Anyscale Platform through our fine-tuning template 
+1. Fine-tuning on the Anyscale Platform through our [fine-tuning template](../../README.md)
     - This would be the preferred route for those wishing to get more flexibility in choice of models and hyperparameters, better monitoring, etc.
-2. Fine-tuning through Anyscale's serverless endpoints
-    - A quick and easy way to fine-tune a model via an OpenAI compatiable SDK.
+2. Fine-tuning through [Anyscale's serverless endpoints](https://docs.anyscale.com/endpoints/fine-tuning/fine-tuning-api)
+    - A quick and easy way to fine-tune a model via an OpenAI compatiable SDK, running on pre-defined harware configurations.
 
 For this guide, we will use `Llama-3-8B-Instruct` as the base model for fine-tuning.
 
-
-
 ## Step 2(a): Fine-tuning on the Anyscale Platform
 
-Head over to the Anyscale Platform: https://console.anyscale.com/v2 and spin up the "Fine-tune LLMs" template (under "AI application templates")
-
-<p align="center">
-  <img src="./assets/templates.png" alt="Templates">
-</p>
+You can follow similar steps outlined in the [template tutorial](../../README.md). We can first generate the config YAML we would like to use:
 
 
+```python
+# The path where this example code is located relative to `main.py`
+EXAMPLE_DIR = "end-to-end-examples/fine-tune-function-calling"
 
-Follow the instructions to run your fine-tuning job.
+config = {
+    "model_id": "meta-llama/Meta-Llama-3-8B-Instruct",
+    "train_path": os.path.join(EXAMPLE_DIR, train_file_path),
+    "valid_path": os.path.join(EXAMPLE_DIR, validation_file_path),
+    "num_epochs": 4,
+    "num_devices": 16, # Run on 16xA10s for 4 epochs
+    "learning_rate": 1e-4,
+    "deepspeed": {
+        "config_path": "deepspeed_configs/zero_3_offload_optim+param.json"
+    },
+    "trainer_resources": {
+        "memory": 50 << 30 # 50 GB memory
+    },
+    "worker_resources": {
+        "accelerator_type:A10G": 0.001
+    },
+    "lora_config": {
+        "r": 8,
+        "lora_alpha": 16,
+        "lora_dropout": 0.05,
+        "target_modules": [
+            "q_proj",
+            "v_proj",
+            "k_proj",
+            "o_proj",
+            "gate_proj",
+            "up_proj",
+            "down_proj",
+            "embed_tokens",
+            "lm_head",
+        ],
+        "task_type": "CAUSAL_LM",
+        "modules_to_save": [],
+        "bias": "none",
+        "fan_in_fan_out": False,
+        "init_lora_weights": True
+    },
+    "dataset_size_scaling_factor": 1e10, # Very large number
+}
+```
+
+
+```python
+os.makedirs("./gen_configs", exist_ok=True)
+with open("gen_configs/llama-3-8b.yaml", "w") as f:
+    yaml.dump(config, f)
+```
+
+You can now run the main.py command with this YAML config to start the fine-tuning job from the template directory (not the example directory) and follow the rest of the [template tutorial](../../README.md) for serving the model.
+
+```
+python main.py ./end-to-end-examples/fine-tune-function-calling/gen_configs/llama-3-8b.yaml
+```
 
 ## Step 2(b): Fine-tuning through serverless endpoints
 First, obtain your credentials from the [Anyscale platform](https://console.anyscale.com/credentials) and upload the training and validation files.
@@ -376,7 +372,7 @@ FINETUNED_MODEL_API_BASE = f"{FINETUNED_MODEL_API_BASE}/v1"
 MODEL_ID = "your-model-id-here"
 ```
 
-## Step 3(b): Finetuned through serverless endpoints
+## Step 3(b): Finetuned through serverless APIs
 
 To serve the fine-tuned model, you just need to navigate to the "Serving" section on the Anyscale Platform. Your fine-tuned model should already be visible in the list of available models! Make sure to note down the model ID here.
 
@@ -464,28 +460,6 @@ eval_ds_gpt = get_evaluation_dataset(test_ds, TOOL_CALL_TAGS, TOOL_RESULT_TAGS, 
 pprint_example(eval_ds_finetuned[1], dataset_format=DatasetFormat.OPENAI)
 ```
 
-
-<pre><span style="color: cyan;">Messages: </span>
-	<span style="color: red;">system: </span>You are a helpful assistant.[TOOL_LIST] [{&quot;type&quot;: &quot;function&quot;, &quot;function&quot;: {&quot;name&quot;: &quot;get_movie_info&quot;, &quot;description&quot;: &quot;Get information about a movie&quot;, &quot;parameters&quot;: {&quot;type&quot;: &quot;object&quot;, &quot;properties&quot;: {&quot;title&quot;: {&quot;type&quot;: &quot;string&quot;, &quot;description&quot;: &quot;The title of the movie&quot;}, &quot;year&quot;: {&quot;type&quot;: &quot;integer&quot;, &quot;description&quot;: &quot;The release year of the movie&quot;}}, &quot;required&quot;: [&quot;title&quot;]}}}, {&quot;type&quot;: &quot;function&quot;, &quot;function&quot;: {&quot;name&quot;: &quot;search_recipes&quot;, &quot;description&quot;: &quot;Search for recipes based on ingredients&quot;, &quot;parameters&quot;: {&quot;type&quot;: &quot;object&quot;, &quot;properties&quot;: {&quot;ingredients&quot;: {&quot;type&quot;: &quot;array&quot;, &quot;items&quot;: {&quot;type&quot;: &quot;string&quot;}, &quot;description&quot;: &quot;The ingredients to search for&quot;}, &quot;cuisine&quot;: {&quot;type&quot;: &quot;string&quot;, &quot;description&quot;: &quot;The cuisine type&quot;}, &quot;dietary_restrictions&quot;: {&quot;type&quot;: &quot;array&quot;, &quot;items&quot;: {&quot;type&quot;: &quot;string&quot;}, &quot;description&quot;: &quot;Any dietary restrictions&quot;}}, &quot;required&quot;: [&quot;ingredients&quot;]}}}] [/TOOL_LIST]
-	<span style="color: green;">user: </span>Can you tell me about the movie &quot;Inception&quot;?
-	<span style="color: blue;">assistant: 
-		content: </span>None
-		<span style="color: blue;">tool_calls: </span>[{&#x27;function&#x27;: {&#x27;arguments&#x27;: {&#x27;title&#x27;: &#x27;Inception&#x27;}, &#x27;name&#x27;: &#x27;get_movie_info&#x27;}, &#x27;type&#x27;: &#x27;function&#x27;}]
-	<span style="color: green;">user: </span>[TOOL_RESULT] {&quot;name&quot;: &quot;get_movie_info&quot;, &quot;content&quot;: &quot;{\&quot;title\&quot;: \&quot;Inception\&quot;, \&quot;year\&quot;: 2010, \&quot;director\&quot;: \&quot;Christopher Nolan\&quot;, \&quot;genre\&quot;: [\&quot;Action\&quot;, \&quot;Adventure\&quot;, \&quot;Sci-Fi\&quot;], \&quot;plot\&quot;: \&quot;A thief who steals corporate secrets through the use of dream-sharing technology is given the inverse task of planting an idea into the mind of a CEO.\&quot;}&quot;, &quot;tool_call_id&quot;: &quot;call_1&quot;} [/TOOL_RESULT]
-	<span style="color: blue;">assistant: 
-		content: </span>The movie &quot;Inception&quot; was released in 2010. It was directed by Christopher Nolan and falls under the genres of Action, Adventure, and Sci-Fi. The plot revolves around a thief who steals corporate secrets through the use of dream-sharing technology and is given the inverse task of planting an idea into the mind of a CEO. 
-		<span style="color: blue;">tool_calls: </span>None
-	<span style="color: green;">user: </span>What about the movie &quot;The Godfather&quot;?
-	<span style="color: blue;">assistant: 
-		content: </span>None
-		<span style="color: blue;">tool_calls: </span>[{&#x27;function&#x27;: {&#x27;arguments&#x27;: {&#x27;title&#x27;: &#x27;The Godfather&#x27;}, &#x27;name&#x27;: &#x27;get_movie_info&#x27;}, &#x27;type&#x27;: &#x27;function&#x27;}]
-	<span style="color: green;">user: </span>[TOOL_RESULT] {&quot;name&quot;: &quot;get_movie_info&quot;, &quot;content&quot;: &quot;{\&quot;title\&quot;: \&quot;The Godfather\&quot;, \&quot;year\&quot;: 1972, \&quot;director\&quot;: \&quot;Francis Ford Coppola\&quot;, \&quot;genre\&quot;: [\&quot;Crime\&quot;, \&quot;Drama\&quot;], \&quot;plot\&quot;: \&quot;The aging patriarch of an organized crime dynasty transfers control of his clandestine empire to his reluctant son.\&quot;}&quot;, &quot;tool_call_id&quot;: &quot;call_1&quot;} [/TOOL_RESULT]
-	<span style="color: blue;">assistant: 
-		content: </span>&quot;The Godfather&quot; was released in 1972 and was directed by Francis Ford Coppola. It is a Crime and Drama movie. The plot is about the aging patriarch of an organized crime dynasty who transfers control of his clandestine empire to his reluctant son. 
-		<span style="color: blue;">tool_calls: </span>None
-</pre>
-
-
 ## Evaluate
 
 For evaluation, we initialise parsers - one for each model - to handle obtaining chat completions from the respective API and parsing the result. Then, our evaluation logic takes care of matching the assistant response with the expected response and, if the response is incorrect, making note of the type of error (wrong intent, wrong function name, etc). A high-level overview of our evaluation code for the fine-tuned model is given below:
@@ -530,14 +504,6 @@ results_base, accuracy_base = evaluate_model(eval_ds_base, base_model_parser, Mo
 print("Base Model Accuracy: ", accuracy_base)
 ```
 
-    Evaluating Base Model...: 100%|██████████| 200/200 [44:13<00:00, 13.27s/it] 
-
-    Base Model Accuracy:  0.725
-
-
-    
-
-
 
 ```python
 # Evaluate our finetuned model
@@ -545,28 +511,12 @@ results_finetuned, accuracy_finetuned = evaluate_model(eval_ds_finetuned, finetu
 print("Fine-tuned Model Accuracy: ", accuracy_finetuned)
 ```
 
-    Evaluating Finetuned Model...: 100%|██████████| 200/200 [32:57<00:00,  9.89s/it]
-
-    Fine-tuned Model Accuracy:  0.975
-
-
-    
-
-
 
 ```python
 # Evaluate gpt-4
 results_gpt, accuracy_gpt = evaluate_model(eval_ds_gpt, openai_parser, Model.GPT)
 print("GPT-4 Accuracy: ", accuracy_gpt)
 ```
-
-    Evaluating GPT4...: 100%|██████████| 200/200 [54:50<00:00, 16.45s/it] 
-
-    GPT-4 Accuracy:  0.97
-
-
-    
-
 
 
 ```python
