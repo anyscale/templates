@@ -1,6 +1,6 @@
 # Fine-Tuning with LoRA vs full-parameter
 
-**⏱️ Time to complete**: 45 minutes (for the LoRA fine-tuning)
+**⏱️ Time to complete**: 20 minutes for the LoRA fine-tuning, 45 minutes for full-parameter fine-tuning
 
 This guide assumes that you have familiarized yourself with the [main fine-tuning guide](../../README.md) of this template.
 In this cookbook, we explain the nuances of fine-tuning with [LoRA (Low-Rank Adaptation)](https://arxiv.org/abs/2106.09685) versus full-parameter fine-tuning.
