@@ -6,20 +6,14 @@ This guide assumes that you have familiarized yourself with the [main fine-tunin
 In this cookbook tutorial, we showcase how a checkpoint that was created earlier can be used as initialization for another round of fine-tuning.
 This allows us to sequentially combine fine-tuning on multiple datasets in order to get performance boost on the final task that we care about. 
 
-We support both Full-parameter checkpoints, and LoRA-adapter checkpoints. However, we recommend not to combine the two by training a full-parameter model followed by a LoRA adaptation. Serving the resulting LoRA adapter will require th
-e base full-parameter checkpoint. Unless you are fine-tuning many such LoRA adaptors for different tasks, this serving architecture does not have the neither the economical benefits of LoRA nor the quality benefits of full-parameter.
+We support both Full-parameter checkpoints, and LoRA-adapter checkpoints. However, we recommend not to combine the two by training a full-parameter model followed by a LoRA adaptation. Serving the resulting LoRA adapter will require the base full-parameter checkpoint. Unless you are fine-tuning many such LoRA adaptors for different tasks, this serving architecture does not have the neither the economical benefits of LoRA nor the quality benefits of full-parameter.
 
 ## How to fine-tune from a previous checkpointing
 
-To get started, we can run the following illustrative example:
+To get started, we can run the following illustrative example. Run this command from where `main.py` is located.
 
-
-```python
-# [Optional] You can set the WandB API key to track model performance
-# !export WANDB_API_KEY={YOUR_WANDB_API_KEY}
-
-# Continue LoRA fine-tuning on the GSM8k dataset with Llama 3 8B
-!python main.py llama-3-8b.yaml
+```
+python main.py cookbooks/continue_from_checkpoint/llama-3-8b.yaml
 ```
 
 Running the above command will fine-tune on the [GSM8k dataset](https://huggingface.co/datasets/gsm8k). 
@@ -28,9 +22,10 @@ The provided initial checkpoint has been trained on the first half and is alread
 
 Note the following evaluation losses. The first three epochs of training where run on the first half of the GSM8k dataset. The second three epochs of training where run on the second half.
 
-<img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/fine-tune-llm_v2/cookbooks/continue_from_checkpoint/../../assets/cookbooks/continue_from_checkpoint/continue_ft.png" alt="evaluation losses" width="600"/>
+<img src="./assets/cookbooks/continue_from_checkpoint/continue_ft.png" alt="evaluation losses" width="600"/>
 
 Note that on the first iteration of the second training (epoch 4), the evaluation loss starts off much lower than in the first training.
+
 
 ## What and how are we fine-tuning?
 
@@ -59,7 +54,8 @@ Such loss values depend greatly on the task at hand - a difference of 0.0218 may
 
 We advise to monitor training loss and evaluation loss of fine-tunes to find out if you are improving through the continued fine-tuning.
 
-## FAQ
+
+## FAQs
 
 ### In what order should I fine-tune?
 
@@ -73,4 +69,4 @@ This depends on your task and how many epochs have already been trained. If in d
 ### How can I fine-tune a model that I fine-tuned on Anyscale Endpoints?
 
 You have to download the model weights through the `Serving` page, upload them to a bucket of your choice and reference the bucket as an initial checkpoint in the training config yaml.
-<img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/fine-tune-llm_v2/cookbooks/continue_from_checkpoint/../../assets/cookbooks/continue_from_checkpoint/download.png" alt="downloading the model weights" width="500"/>
+<img src="./assets/cookbooks/continue_from_checkpoint/download.png" alt="downloading the model weights" width="500"/>
