@@ -291,7 +291,7 @@ with open("gen_configs/llama-3-8b.yaml", "w") as f:
     yaml.dump(config, f)
 ```
 
-You can now run the main.py command with this YAML config to start the fine-tuning job from the template directory (not the example directory) and follow the rest of the [template tutorial](../../README.md) for serving the model.
+You can now run the main.py command with this YAML config to start the fine-tuning job from the root directory with `main.py` (not the subfolder with this notebook) and follow the rest of the [template tutorial](../../README.md) for serving the model.
 
 ```
 python main.py ./end-to-end-examples/fine-tune-function-calling/gen_configs/llama-3-8b.yaml
