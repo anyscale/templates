@@ -11,13 +11,13 @@ The guide below walks you through the steps required for fine-tuning of LLMs. Th
 - mistralai/Mistral-7B-Instruct-v0.1 (Full-param and LoRA)
 - mistralai/Mixtral-8x7b (LoRA only)
 
-A full list of supported models is in the [FAQ](#frequently-asked-questions) section. In the end we provide more guides in form of [cookbooks](#cookbooks) and [end-to-end examples](#end-to-end-examples) that provide more detailed information about using this template.
+A full list of supported models is in the [FAQ](#faqs) section. In the end we provide more guides in form of [cookbooks](#cookbooks) and [end-to-end examples](#end-to-end-examples) that provide more detailed information about using this template.
 
 # Quick start
 
 ## Step 1 - Launch a fine-tuning job
 
-We provide example configurations under the `./training_configs` directory for different base models and accelerator types. You can use these as a starting point for your own fine-tuning jobs. The full-list of public configurations that are customizable see [Anycsale docs](https://docs.anyscale.com/reference/finetuning-config-api).
+We provide example configurations under the `./training_configs` directory for different base models and accelerator types. You can use these as a starting point for your own fine-tuning jobs. The full-list of public configurations that are customizable see [Anyscale docs](https://docs.anyscale.com/reference/finetuning-config-api).
 
 **Optional**: You can get a WandB API key from [WandB](https://wandb.ai/authorize) to track the fine-tuning process. If not provided, you can only track the experiments through the standard output logs.
 
