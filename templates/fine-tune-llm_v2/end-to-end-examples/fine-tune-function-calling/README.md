@@ -230,7 +230,7 @@ For fine-tuning, you have two options with Anyscale:
 1. Fine-tuning on the Anyscale Platform through our [fine-tuning template](../../README.md)
     - This would be the preferred route for those wishing to get more flexibility in choice of models and hyperparameters, better monitoring, etc.
 2. Fine-tuning through [Anyscale's serverless endpoints](https://docs.anyscale.com/endpoints/fine-tuning/fine-tuning-api)
-    - A quick and easy way to fine-tune a model via an OpenAI compatiable SDK, running on pre-defined harware configurations.
+    - A quick and easy way to fine-tune a model via an OpenAI compatiable SDK, running on pre-defined hardware configurations.
 
 For this guide, we will use `Llama-3-8B-Instruct` as the base model for fine-tuning.
 
