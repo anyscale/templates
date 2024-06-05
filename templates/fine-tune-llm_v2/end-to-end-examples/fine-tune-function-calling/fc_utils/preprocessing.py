@@ -2,10 +2,12 @@
 Preprocessing utils for Glaive AI's function calling dataset
 """
 
+from typing import Dict, Any, List
+
 import re
 import json
-from typing import Dict, Any, List
 import logging
+from pathlib import Path
 
 import ray.data
 
@@ -302,5 +304,7 @@ def glaive_to_openai(ray_ds: ray.data.Dataset) -> ray.data.Dataset:
 
 def save_to_jsonl(ds: ray.data.Dataset, filepath: str) -> None:
     """Saves a Ray dataset to a jsonl file."""
+
+    Path(filepath).parent.mkdir(parents=True, exist_ok=True)
     df = ds.to_pandas()
     df.to_json(filepath, orient="records", lines=True)
