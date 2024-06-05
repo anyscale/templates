@@ -1,4 +1,4 @@
-model_id: meta-llama/Llama-2-70b-chat-hf # <-- change this to the model you want to fine-tune
+model_id: meta-llama/Meta-Llama-3-70B # <-- change this to the model you want to fine-tune
 train_path: s3://air-example-data/gsm8k/train.jsonl # <-- change this to the path to your training data
 valid_path: s3://air-example-data/gsm8k/test.jsonl # <-- change this to the path to your validation data. This is optional
 context_length: 4096 # <-- change this to the context length you want to use
