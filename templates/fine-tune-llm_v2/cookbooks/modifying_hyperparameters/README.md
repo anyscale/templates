@@ -6,9 +6,6 @@ This guide will focus on how you can customize your fine-tuning run by modifying
 
 We provide a number of options to configure via the training YAML.
 
-# Example YAML
-
-
 
 ## GPU resources
 
