@@ -51,7 +51,7 @@ The public key to add is outputted by the following command:
 
 ### Cloud Storage
 
-Workspace storage in the persisted project directory (`/home/ray/default`) is limited to 10 GB, so we recommend only using it to store git repos and smaller files. To learn more about options for files and storage, refer to the [documentation](https://docs.endpoints.anyscale.com/preview/platform/workspaces-files).
+Workspace storage in the persisted project directory (`/home/ray/default`) is limited to 10 GB, so we recommend only using it to store git repos and smaller files. To learn more about options for files and storage, see [documentation](https://docs.anyscale.com/platform/workspaces/workspaces-files).
 
 Cloud storage can be read and written from the workspace, as well as from any node in the Ray cluster.
 
