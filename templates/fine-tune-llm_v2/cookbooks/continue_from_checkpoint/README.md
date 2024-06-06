@@ -10,15 +10,10 @@ We support both Full-parameter checkpoints, and LoRA-adapter checkpoints. Howeve
 
 ## How to fine-tune from a previous checkpointing
 
-To get started, we can run the following illustrative example:
+To get started, we can run the following illustrative example. Run this command from where `main.py` is located.
 
-
-```python
-# [Optional] You can set the WandB API key to track model performance
-# !export WANDB_API_KEY={YOUR_WANDB_API_KEY}
-
-# Continue LoRA fine-tuning on the GSM8k dataset with Llama 3 8B
-!python main.py llama-3-8b.yaml
+```
+python main.py cookbooks/continue_from_checkpoint/llama-3-8b.yaml
 ```
 
 Running the above command will fine-tune on the [GSM8k dataset](https://huggingface.co/datasets/gsm8k). 
@@ -27,9 +22,10 @@ The provided initial checkpoint has been trained on the first half and is alread
 
 Note the following evaluation losses. The first three epochs of training where run on the first half of the GSM8k dataset. The second three epochs of training where run on the second half.
 
-<img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/fine-tune-llm_v2/cookbooks/continue_from_checkpoint/../../assets/cookbooks/continue_from_checkpoint/continue_ft.png" alt="evaluation losses" width="600"/>
+<img src="./assets/continue_ft.png" alt="evaluation losses" width="600"/>
 
 Note that on the first iteration of the second training (epoch 4), the evaluation loss starts off much lower than in the first training.
+
 
 ## What and how are we fine-tuning?
 
@@ -49,16 +45,18 @@ It makes sense to keep those weights in a bucket so that they can be accessed fr
 The train path `(.../train_2.jsonl)` points to the second part of the GSM8k dataset that we fine-tune on.
 If we wanted to continue the finetuning of a full-parameter checkpoint, we should configure `initial_base_model_ckpt_path` instead of `initial_adapter_model_ckpt_path`. 
 
-# How to use this for your own purpose
+# Things to Notice
 
-The training and evaluation loss of the second, the continued, fine-tuning are lower than what we saw in the first run.
-For example, the checkpoint that you find in the llama-3-8b.yaml has an evaluation loss of 0.8886.
-After continued fine-tuning, we reach a checkpoint with an evaluation loss of 0.8668.
-Such loss values depend greatly on the task at hand - a difference of 0.0218 may be a big improvement on some tasks and a minor improvement on others.
+When comparing the training and evaluation loss of the second (continued) fine-tuning with the first run, you'll notice that the values are lower.
+For instance, the checkpoint in the llama-3-8b.yaml has an evaluation loss of 0.8886.
+After continued fine-tuning, we achieve a checkpoint with an evaluation loss of 0.8668.
+It's important to note that the significance of such loss values varies greatly depending on the task at hand. A difference of 0.0218 may represent a substantial improvement for some tasks, while it may only be a minor improvement for others.
 
-We advise to monitor training loss and evaluation loss of fine-tunes to find out if you are improving through the continued fine-tuning.
+To determine whether continued fine-tuning is beneficial for your specific task, we recommend monitoring the training and evaluation loss during the fine-tuning process.
+This will help you assess the impact of the additional fine-tuning on your model's performance.
 
-## FAQ
+
+## FAQs
 
 ### In what order should I fine-tune?
 
@@ -72,4 +70,5 @@ This depends on your task and how many epochs have already been trained. If in d
 ### How can I fine-tune a model that I fine-tuned on Anyscale Endpoints?
 
 You have to download the model weights through the `Serving` page, upload them to a bucket of your choice and reference the bucket as an initial checkpoint in the training config yaml.
-<img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/fine-tune-llm_v2/cookbooks/continue_from_checkpoint/../../assets/cookbooks/continue_from_checkpoint/download.png" alt="downloading the model weights" width="500"/>
+
+<img src="./assets/download.png" alt="downloading the model weights" width="500"/>
