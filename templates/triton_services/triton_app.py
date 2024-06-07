@@ -47,7 +47,7 @@ class TritonDeployment:
             )
             image_ = Image.fromarray(generated_image)
 
-            # Stream back the image to the caller
+            # Stream back the image to the caller.
             buffer = io.BytesIO()
             image_.save(buffer, "JPEG")
             buffer.seek(0)
