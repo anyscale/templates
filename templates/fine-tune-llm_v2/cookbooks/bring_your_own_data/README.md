@@ -20,7 +20,7 @@ The most convenient option is to provide read permissions for your Anyscale work
 
 ### Option 2: Sync data into default cloud storage provided by Anyscale
 The other option you have is to sync your data into Anyscale-provided storage and then continue with fine-tuning. Let's consider private data on AWS S3. First, we'll need to configure your workspace to be able to access the data. Run `aws configure` or directly export relevant environment variables directly (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_SESSION_TOKEN`, etc) in your current terminal session. We recommend that you simply use environment variables since it's easier to revert this operation (you will see why later).  With that aside, what we want to do is to move this data into 
-the [default object storage bucket](https://docs.anyscale.com/platform/workspaces/workspaces-storage#object-storage-s3-or-gcs-buckets) provided by Anyscale (`$ANYSCALE_ARTIFACT_STORAGE`). That way, across runs/ workspace restarts, you don't have to repeat this process.
+the [default object storage bucket](https://docs.anyscale.com/platform/workspaces/workspaces-storage#object-storage-s3-or-gcs-buckets) provided by Anyscale (`$ANYSCALE_ARTIFACT_STORAGE`). That way, across runs/ workspace restarts, you don't have to repeat this process (compared to just downloading the files into your workspace).
 1. First, download the data into your workspace:  
     ```bash
     aws s3 sync s3://<bucket_name>/<path_to_data_dir>/ myfiles/
