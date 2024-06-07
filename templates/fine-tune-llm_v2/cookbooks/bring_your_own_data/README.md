@@ -26,17 +26,18 @@ the [default object storage bucket](https://docs.anyscale.com/platform/workspace
     aws s3 sync s3://<bucket_name>/<path_to_data_dir>/ myfiles/
     ```
 2. The default object storage bucket configured for you in your workspace uses Anyscale-managed credentials internally. It is recommended to reset the credentials you provided so as to not interfere with the Anyscale-managed access setup. For example, if your Anyscale hosted cloud is on AWS, then adding your AWS credentials means that `aws` can't access the default object storage bucket anymore. Thus, reset your credentials through the same method you used. If you simply exported relevant environment variables, it's simple to reset them (set to empty string). If you used `aws configure`, you'll need to delete the config and credential files `~/.aws/config` and `~/.aws/credentials`. 
-3. Next, you can upload your data to `$ANYSCALE_ARTIFACT_STORAGE` via the relevant cli (AWS S3/ GCS). For example:
+3. Next, you can upload your data to `$ANYSCALE_ARTIFACT_STORAGE` via the relevant cli (AWS S3/ GCS depending on your Anyscale Cloud). For example:
 
     GCP: 
     ```bash
-    gcloud storage cp myfiles/ $ANYSCALE_ARTIFACT_STORAGE/myfiles/
+    gcloud storage cp -r myfiles/ $ANYSCALE_ARTIFACT_STORAGE/myfiles/
     ```
 
     AWS:
     ```bash
     aws s3 sync myfiles/ $ANYSCALE_ARTIFACT_STORAGE/myfiles/
-    ```
+    ``` 
+
 4. Finally, you can update the training and validation paths in your training config YAML.
 
 # Data stored locally
