@@ -21,7 +21,7 @@ First, install additional required dependencies using `pip`.
 
 
 ```python
-!pip install -q langchain==0.1.17 && echo 'Install complete!'
+!pip install -q langchain==0.1.17 optimum[onnxruntime-gpu]==1.20.0 && echo 'Install complete!'
 ```
 
 
