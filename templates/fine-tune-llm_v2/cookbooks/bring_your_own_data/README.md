@@ -12,7 +12,7 @@ This guide focuses on how you can bring your own data to fine-tune your model on
 
 ## Example YAML
 
-We specify training and validation file paths in the `train_path` and `valid_path` entries in the config file as shown in the example YAML below. 
+We specify training and validation file paths in the `train_path` and `valid_path` entries in the config file as shown in the example YAML below. Validation file path is optional.
 
 ```yaml
 model_id: meta-llama/Meta-Llama-3-8B 
@@ -58,7 +58,7 @@ the [default object storage bucket](https://docs.anyscale.com/platform/workspace
     ```bash
     aws s3 sync s3://<bucket_name>/<path_to_data_dir>/ myfiles/
     ```
-2. The default object storage bucket configured for you in your workspace uses Anyscale-managed credentials internally. It is recommended to reset the credentials you provided so as to not interfere with the Anyscale-managed access setup. For example, if your Anyscale hosted cloud is on AWS, then adding your AWS credentials means that `aws` can't access the default object storage bucket anymore. Thus, reset your credentials by simply setting the relevant environment variables to the empty string.
+2. The default object storage bucket configured for you in your workspace uses Anyscale-managed credentials internally. It is recommended to reset the credentials you provided so as to not interfere with the Anyscale-managed access setup. For example, if your Anyscale hosted cloud is on AWS, then adding your AWS credentials to your private bucket means that `aws` can't access the default object storage bucket (`$ANYSCALE_ARTIFACT_STORAGE`) anymore. Thus, reset your credentials by simply setting the relevant environment variables to the empty string.
 3. Next, you can upload your data to `$ANYSCALE_ARTIFACT_STORAGE` via the relevant cli (AWS S3/ GCS depending on your Anyscale Cloud). For example:
 
     GCP: 
