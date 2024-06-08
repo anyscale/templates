@@ -71,8 +71,8 @@ Follow the [Learn how to bring your own models](https://docs.anyscale.com/exampl
 
 After you are with the above, you can find recipies that extend the functionality of this template under the cookbooks folder:
 
-* [Continue fine-tuning from a previous checkpoint](cookbooks/continue_from_checkpoint/README.md)
-* [Bring your own data](cookbooks/bring_your_own_data/README.md)
+* [Bring your own data](cookbooks/bring_your_own_data/README.md): Everything you need to know about using custom datasets for fine-tuning.
+* [Continue fine-tuning from a previous checkpoint](cookbooks/continue_from_checkpoint/README.md): A detailed guide on how you can use a previous checkpoint for another round of fine-tuning.
 
 ## End-to-end Examples
 
