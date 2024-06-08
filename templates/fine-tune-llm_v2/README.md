@@ -71,7 +71,9 @@ Follow the [Learn how to bring your own models](https://docs.anyscale.com/exampl
 
 After you are with the above, you can find recipies that extend the functionality of this template under the cookbooks folder:
 
+* [Optimizing Cost and Performance for Finetuning](cookbooks/optimize_cost/README.md)
 * [Continue fine-tuning from a previous checkpoint](cookbooks/continue_from_checkpoint/README.md)
+
 
 ## End-to-end Examples
 
@@ -130,34 +132,6 @@ There is no general answer to this but here are some things to consider:
 
 You can learn more about this in one of our [blogposts](https://www.anyscale.com/blog/fine-tuning-llms-lora-or-full-parameter-an-in-depth-analysis-with-llama-2).
 There, you'll also find some guidance on the LoRA parameters and why, in most cases, you don't need to change them.
-
-### I have the right model, context length and everything. Can I optimize compute cost?
-
-Optimizing your fine-tuning runs for compute cost is a non-trivial problem.
-The default configs in this template require the following compute:
-Llama-3-8B and Mistral require 16 A10Gs. Llama-3-70B and Mixtral require 32 A10Gs.
-
-Before optimizing for compute, make sure that you have selected a context length that is long enough for your dataset. If you have very few datapoints in your dataset that requires a much larger context than the others, consider removing them. The model of your choice and fine-tuning technique should also suit your data.
-
-If you want different compute, we *suggest* the following workflow to find a suitable configuration:
-
-* Start with a batch size of 1
-* Choose a GPU instance type that you think will give you good flops/$. If you are not sure, here is a rough guideline:
-    * g5 nodes for high availability
-    * p4d/p4de nodes for lower availability but better flops/$
-    * Anything higher-end if you have the means of acquiring them
-* Do some iterations of trial and error on instance types and deepspeed settings to fit the workload while keeping other settings fixed
-    * Use deepspeed stage 3 (all default configs in this template use stage 3)
-    * Try to use deepspeed offloading only if it reduces the minimum number of instances you have to use
-        * Deepspeed offloading slows down training but allows for larger batch sizes because of a more relaxed GRAM foot-print
-    * Use as few instances as possible. Fine-tune on the same machine if possible.
-        *  The GPU to GPU communication across machines is very expensive compared to the memory savings it could provide. You can use a cheap CPU-instance as a head-node for development and a GPU-instance that can scale down as a worker node for the heavy lifting.
-        * Training single-node on A100s may end up cheaper than multi-node on A10s if availablity is not an issue
-* Be aware that evaluation and checkpointing introduce their own memory-requirements
-   * If things look good, run fine-tuning for a full epoch.
-* After you have followed the steps above, increase batch size as much as possible without OOMing.
-
-We do not guarantee that this will give you optimal settings, but have found this workflow to be helpful ourselves in the past.
 
 ### How can I get even more control?
 
