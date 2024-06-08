@@ -72,6 +72,7 @@ Follow the [Learn how to bring your own models](https://docs.anyscale.com/exampl
 After you are with the above, you can find recipies that extend the functionality of this template under the cookbooks folder:
 
 * [Continue fine-tuning from a previous checkpoint](cookbooks/continue_from_checkpoint/README.md)
+* [Bring your own data](cookbooks/bring_your_own_data/README.md)
 
 ## End-to-end Examples
 
@@ -85,12 +86,6 @@ Here is a list of end-to-end examples that involve more steps such as data prepr
 ### Where can I view the bucket where my LoRA weights are stored?
 
 All the LoRA weights are stored under the URI `${ANYSCALE_ARTIFACT_STORAGE}/lora_fine_tuning` where `ANYSCALE_ARTIFACT_STORAGE` is an environmental variable in your workspace.
-
-### How can I fine-tune using my own data?
-
-The training configs provided in this template all train on the [GSM8k dataset](https://huggingface.co/datasets/gsm8k) which requires a context length of 512 tokens. How to ensure the correct format for your own dataset is described in https://docs.endpoints.anyscale.com/fine-tuning/dataset-prep.
-
-Open the file under `training_configs` and update `train_path` and `valid_path` to your training- and evaluation file.
 
 ### How do I customize the fine-tuning job?
 
