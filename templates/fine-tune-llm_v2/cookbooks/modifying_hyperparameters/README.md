@@ -17,7 +17,7 @@ worker_resources:
   accelerator_type:A10G: 0.001 # specifies GPU type available, and a minimum allocation per worker
 ```
 
-Internally, our fine-tuning code will launch Ray workers with each being allocated one GPU. The cluster will be auto-scaled if needed to meet the requirements. The different GPU types you can specify can depend on the specific Anyscale Cloud. The specific value you specify for the accelerator type (0.001 here) does not matter much, as long as it's non-zero (so that each worker is allocated a GPU) and less than or equal to 1 (so that the requested number of GPUs is the same as `num_devices`).
+Internally, our fine-tuning code will launch Ray workers with each being allocated one GPU. The cluster will be auto-scaled if needed to meet the requirements. The different GPU types you can specify can depend on the specific Anyscale Cloud. The value you specify for the accelerator type (0.001 here) does not matter much, as long as it is non-zero (so that each worker is allocated a GPU) and less than or equal to 1 (so that the requested number of GPUs is the same as `num_devices`).
 
 ## Learning rate
 
@@ -47,7 +47,7 @@ num_devices: 8
 train_batch_size_per_device: 16
 eval_batch_size_per_device: 16
 ```
-The effective batch size for training would be `train_batch_size_per_device * num_devices`. For the hardware you specify, the amount you can push `train_batch_size_per_device` / `eval_batch_size_per_device` depends on dataset statistics (average sequence length) and the context length used. For a context length of 512 and the default NVIDIA A10 GPUs, the per-device batch size of 16 is a good default for 7B/8B models. 
+The effective batch size for training would be `train_batch_size_per_device * num_devices`. For the hardware you specify, the amount you can push `train_batch_size_per_device` or `eval_batch_size_per_device` depends on dataset statistics (average sequence length) and the context length used. For a context length of 512 and the default NVIDIA A10 GPUs, the per-device batch size of 16 is a good default for 7B/8B models. 
 
 ## Number of epochs 
 The number of epochs is controlled by two parameters:
