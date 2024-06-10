@@ -156,12 +156,10 @@ If you want different compute, we *suggest* the following workflow to find a sui
 
 We do not guarantee that this will give you optimal settings, but have found this workflow to be helpful ourselves in the past.
 
-### I've gone over the customizable hyperparameters available. How can I get even more control?
+### I've reviewed the customizable hyperparameters available. How can I get even more control?
 
-This template fine-tunes with Anyscale's library `llmforge`, which uses [DeepSpeed](https://github.com/microsoft/DeepSpeed) and [Ray Train](https://docs.ray.io/en/latest/train/train.html) for distributed training. The full set of config parameters are documented in the [API reference](https://docs.anyscale.com/reference/finetuning-config-api), and we provide a [cookbook](cookbooks/modifying_hyperparameters/README.md) with some details on the important ones.  For anything that goes beyond using `llmforge`, you can build your own fine-tuning stack on Anyscale.
+This template fine-tunes with Anyscale's library `llmforge`, which uses [DeepSpeed](https://github.com/microsoft/DeepSpeed) and [Ray Train](https://docs.ray.io/en/latest/train/train.html) for distributed training. The full set of config parameters are documented in the [API reference](https://docs.anyscale.com/reference/finetuning-config-api), and we provide a [cookbook](cookbooks/modifying_hyperparameters/README.md) detailing on the important ones.  For anything that goes beyond using `llmforge`, you can build your own fine-tuning stack on Anyscale.
 
 ### What's with the `main` file that is created during fine-tuning?
 
 It's an artifact of our fine-tuning libraries. Please ignore it.
-
-
