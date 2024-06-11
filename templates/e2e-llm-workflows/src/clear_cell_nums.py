@@ -21,3 +21,4 @@ if __name__ == "__main__":
     notebook_fps = list(ROOT_DIR.glob("**/*.ipynb"))
     for fp in notebook_fps:
         clear_execution_numbers(fp)
+
