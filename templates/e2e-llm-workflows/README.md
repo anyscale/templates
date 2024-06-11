@@ -915,6 +915,7 @@ For example, suppose that we want to preprocess batches of new incoming data, fi
 
 ## Clean up
 
+<b style="background-color: yellow;">&nbsp;🛑 IMPORTANT&nbsp;</b>: Please `Terminate` your service from the Service page to avoid depleting your free trial credits.
 
 ```python
 # Clean up
