@@ -1,6 +1,6 @@
 # Fine-tuning Llama-3, Mistral and Mixtral with Anyscale
 
-**⏱️ Time to complete**: 2.5 hours for 7/8B models (9 hours for 13B, 25 hours for 70B)
+**⏱️ Time to complete**: 60min for 8B model with LoRA, 2.5h with full-parameter fine-tuning
 
 The guide below walks you through the steps required for fine-tuning of LLMs. This template provides an easy to configure solution for ML Platform teams, Infrastructure engineers, and Developers to fine-tune LLMs.
 
@@ -72,6 +72,7 @@ Follow the [Learn how to bring your own models](https://docs.anyscale.com/exampl
 After you are with the above, you can find recipies that extend the functionality of this template under the cookbooks folder:
 
 * [Continue fine-tuning from a previous checkpoint](cookbooks/continue_from_checkpoint/README.md)
+* [LoRA vs. full-parameter training](cookbooks/continue_from_checkpoint/README.jpynb)
 
 ## End-to-end Examples
 
@@ -115,21 +116,6 @@ This is a growing list but it includes the following models:
 In general, any model that is compatible with the architecture of these models can be fine-tuned using the same configs as the base models.
 
 NOTE: currently mixture of expert models (such as `mistralai/Mixtral-8x7B)` only support LoRA fine-tuning
-
-### Should I use LoRA or full-parameter fine-tuning?
-
-There is no general answer to this but here are some things to consider:
-
-- The quality of the fine-tuned models will, in most cases, be comparable if not the same
-- LoRA shines if...
-    - ... you want to serve many fine-tuned models at once yourself
-    - ... you want to rapidly experiment (because fine-tuning, downloading and serving the model take less time)
-- Full-parameter shines if...
-    - ... you want to make sure that your fine-tuned model has the maximum quality
-    - ... you want to serve only one fine-tuned version of the model
-
-You can learn more about this in one of our [blogposts](https://www.anyscale.com/blog/fine-tuning-llms-lora-or-full-parameter-an-in-depth-analysis-with-llama-2).
-There, you'll also find some guidance on the LoRA parameters and why, in most cases, you don't need to change them.
 
 ### I have the right model, context length and everything. Can I optimize compute cost?
 
