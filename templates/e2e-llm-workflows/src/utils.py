@@ -13,4 +13,3 @@ def download_files_from_bucket(bucket, path, local_dir):
             os.makedirs(os.path.dirname(local_path), exist_ok=True)
             s3.download_file(bucket, key, local_path)
             print(f"Downloaded {key} to {local_path}")
-
