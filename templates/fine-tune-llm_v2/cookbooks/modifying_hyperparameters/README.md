@@ -34,7 +34,7 @@ In the above config, the training run would use a cosine learning rate schedule 
 We support both `'linear'` and `'cosine'` schedules. The learning rate schedules have been plotted below with `num_warmup_steps=10` and for 1000 training steps.
 
 <p align="center">
-<img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/fine-tune-llm_v2/cookbooks/modifying_hyperparameters/../../assets/schedulers.png" alt="cosine" height="300"/>
+<img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/fine-tune-llm_v2/cookbooks/modifying_hyperparameters/../../assets/schedulers.png" alt="cosine" height="300px"/>
 </p>
 
 
