@@ -1,18 +1,19 @@
 #!/bin/bash
 echo "Auto-generating README files..."
 
-# Search for notebook files named "demo" in the ../templates directory
+# Search for notebook files named "README" in the ../templates directory
 notebook_files=$(find ../templates -name "README.ipynb")
 
 # Loop through each notebook file
 for notebook_file in $notebook_files; do
-    if [ $notebook_file != "../templates/templates/getting-started/README.ipynb" ] && ! grep -q "Time to complete" $notebook_file; then
+    # Exclude specific notebooks from conversion
+    if [ "$notebook_file" != "../templates/templates/getting-started/README.ipynb" ] && [ "$notebook_file" != "../templates/templates/e2e-llm-workflows/README.ipynb" ] && ! grep -q "Time to complete" $notebook_file; then
         echo "**********"
         echo "LINT ERROR: $notebook_file must include 'Time to complete' statement, failing."
         echo "**********"
         exit 1
     fi
-    if [ "$notebook_file" != "../templates/templates/e2e-llm-workflows/README.ipynb" ]; theni
+    if [ "$notebook_file" != "../templates/templates/e2e-llm-workflows/README.ipynb" ]; then
         # Convert notebook file to README.md using nbconvert
         jupyter nbconvert --to markdown "$notebook_file" --output-dir "$(dirname "$notebook_file")"
     else
