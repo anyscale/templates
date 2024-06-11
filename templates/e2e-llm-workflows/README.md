@@ -770,6 +770,7 @@ We'll start by generating the configuration for our service. We provide a conven
 
 We'll start by running the python command below to start the CLI workflow to generate the service yaml configuration:
 ```bash
+mkdir /home/ray/default/deploy/services
 cd /home/ray/default/deploy/services
 python /home/ray/default/src/generate_serve_config.py 
 ```
@@ -811,6 +812,7 @@ cd /home/ray/default/deploy/services
 serve run serve_{TIMESTAMP}.yaml
 ```
 
+**Note**: This will take a few minutes to spin up the first time since we're loading the model weights.
 
 ```python
 from openai import OpenAI
@@ -874,6 +876,7 @@ cd /home/ray/default/deploy/services
 anyscale service deploy -f serve_{TIMESTAMP}.yaml
 ```
 
+**Note**: This will take a few minutes to spin up the first time since we're loading the model weights.
 
 Go to `Home` > `Services` (left panel) to view the production service.
 
