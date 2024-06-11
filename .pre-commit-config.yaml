@@ -1,7 +1,7 @@
 default_stages: [commit, push]
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.6.0
+    rev: v3.2.0
     hooks:
       - id: check-added-large-files
         args: ['--maxkb=10000'] # fix max file size to 10MB to allow for large notebooks
