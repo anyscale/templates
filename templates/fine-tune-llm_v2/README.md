@@ -71,8 +71,9 @@ Follow the [Learn how to bring your own models](https://docs.anyscale.com/exampl
 
 After you are with the above, you can find recipies that extend the functionality of this template under the cookbooks folder:
 
-* [Continue fine-tuning from a previous checkpoint](cookbooks/continue_from_checkpoint/README.md)
-* [LoRA vs. full-parameter training](cookbooks/continue_from_checkpoint/README.jpynb)
+* [Bring your own data](cookbooks/bring_your_own_data/README.md): Everything you need to know about using custom datasets for fine-tuning.
+* [Continue fine-tuning from a previous checkpoint](cookbooks/continue_from_checkpoint/README.md): A detailed guide on how you can use a previous checkpoint for another round of fine-tuning.
+* [LoRA vs. full-parameter training](cookbooks/continue_from_checkpoint/README.md): Learn the differences between LoRA and full-parameter training and how to configure both
 
 ## End-to-end Examples
 
