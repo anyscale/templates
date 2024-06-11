@@ -30,8 +30,9 @@ You can look at the respective yaml files to see how they differ in their config
 # [Optional] You can set the WandB API key to track model performance
 # !export WANDB_API_KEY={YOUR_WANDB_API_KEY}
 
+# Run this command from the base directory of this template
 # Fine-tune Llama 3 8B with LoRA
-!python main.py llama-3-8b-lora.yaml
+!python main.py cookbooks/lora_vs_full_parameter/llama-3-8b-lora.yaml
 ```
 
 ### How to launch a full-parameter fine-tuning job
@@ -44,8 +45,9 @@ If you want to run this full-parameter fine-tuning end-to-end, consider configur
 # [Optional] You can set the WandB API key to track model performance
 # !export WANDB_API_KEY={YOUR_WANDB_API_KEY}
 
+# Run this command from the base directory of this template
 # Fine-tune Llama 3 8B with full-parameter fine-tuning
-!python main.py llama-3-8b-full-parameter.yaml
+!python main.py cookbooks/lora_vs_full_parameter/llama-3-8b-full-parameter.yaml
 ```
 
 ## Comparison of configurable parameters
