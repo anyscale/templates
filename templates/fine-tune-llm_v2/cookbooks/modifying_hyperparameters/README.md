@@ -6,6 +6,14 @@ This guide will focus on how you can customize your fine-tuning run by modifying
 
 We provide a number of options to configure via the training YAML. To view the full set of customizable parameters, head over to the [fine-tuning config API reference](https://docs.anyscale.com/reference/finetuning-config-api). Below, we'll take a closer look at some of the important hyperparameters.
 
+# Table of Contents
+1. [GPU Resources](#gpu-resources)
+2. [Learning rate](#learning-rate)
+3. [Batch size](#batch-size)
+4. [Number of epochs](#number-of-epochs)
+5. [Validation and checkpointing](#validation-and-checkpointing)
+6. [Lora config](#lora-config)
+
 
 ## GPU resources
 
@@ -71,7 +79,7 @@ num_checkpoints_to_keep: 1   # maximum number of checkpoints to keep
 
 By default, `checkpoint_every_n_epochs` is `None`, and in this case  `max_num_checkpoints` checkpointing events are triggered. While checkpointing, we keep only `num_checkpoints_to_keep` number of checkpoints, prioritizing those with lower values of validation loss/perplexity.
 
-## LoRA configs
+## LoRA config
 We support all the LoRA parameters you can configure in [🤗PEFT](https://huggingface.co/docs/peft/en/package_reference/lora#peft.LoraConfig):
 
 ```yaml
