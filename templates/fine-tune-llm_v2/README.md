@@ -71,9 +71,9 @@ Follow the [Learn how to bring your own models](https://docs.anyscale.com/exampl
 
 After you are with the above, you can find recipies that extend the functionality of this template under the cookbooks folder:
 
-* [Optimizing Cost and Performance for Finetuning](cookbooks/optimize_cost/README.md)
-* [Continue fine-tuning from a previous checkpoint](cookbooks/continue_from_checkpoint/README.md)
-
+* [Bring your own data](cookbooks/bring_your_own_data/README.md): Everything you need to know about using custom datasets for fine-tuning.
+* [Modifying hyperparameters](cookbooks/modifying_hyperparameters/README.md): A brief guide on tailoring your fine-tuning job.
+* [Continue fine-tuning from a previous checkpoint](cookbooks/continue_from_checkpoint/README.md): A detailed guide on how you can use a previous checkpoint for another round of fine-tuning.
 
 ## End-to-end Examples
 
@@ -87,16 +87,6 @@ Here is a list of end-to-end examples that involve more steps such as data prepr
 ### Where can I view the bucket where my LoRA weights are stored?
 
 All the LoRA weights are stored under the URI `${ANYSCALE_ARTIFACT_STORAGE}/lora_fine_tuning` where `ANYSCALE_ARTIFACT_STORAGE` is an environmental variable in your workspace.
-
-### How can I fine-tune using my own data?
-
-The training configs provided in this template all train on the [GSM8k dataset](https://huggingface.co/datasets/gsm8k) which requires a context length of 512 tokens. How to ensure the correct format for your own dataset is described in https://docs.endpoints.anyscale.com/fine-tuning/dataset-prep.
-
-Open the file under `training_configs` and update `train_path` and `valid_path` to your training- and evaluation file.
-
-### How do I customize the fine-tuning job?
-
-You can edit the values, such as `context_length`, `num_epoch`, `train_batch_size_per_device` and `eval_batch_size_per_device` to customize the fine-tuning job. You may be able to reach higher model-quality if you tweak the learning rate but also possibly introduce learning instabilities that can be monitored in [WandB](https://wandb.ai/authorize). In addition, the deepspeed configs are provided within this template in case you want to customize them.
 
 ### What's the full list of supported models?
 
@@ -133,12 +123,37 @@ There is no general answer to this but here are some things to consider:
 You can learn more about this in one of our [blogposts](https://www.anyscale.com/blog/fine-tuning-llms-lora-or-full-parameter-an-in-depth-analysis-with-llama-2).
 There, you'll also find some guidance on the LoRA parameters and why, in most cases, you don't need to change them.
 
-### How can I get even more control?
+### I have the right model, context length and everything. Can I optimize compute cost?
 
-This template fine-tunes with Anyscale's library `llmforge`, which uses [DeepSpeed](https://github.com/microsoft/DeepSpeed) and [Ray Train](https://docs.ray.io/en/latest/train/train.html) for distributed training.
-You can study main.py to find out how we call the `lmforge dev finetune` API with a YAML that specifies the fine-tuning workload.
-You can call `lmforge dev finetune` yourself and gain control by modifying the training config YAMLs in this template.
-For anything that goes beyond using `llmforge`, you can build your own fine-tuning stack on Anyscale.
+Optimizing your fine-tuning runs for compute cost is a non-trivial problem.
+The default configs in this template require the following compute:
+Llama-3-8B and Mistral require 16 A10Gs. Llama-3-70B and Mixtral require 32 A10Gs.
+
+Before optimizing for compute, make sure that you have selected a context length that is long enough for your dataset. If you have very few datapoints in your dataset that requires a much larger context than the others, consider removing them. The model of your choice and fine-tuning technique should also suit your data.
+
+If you want different compute, we *suggest* the following workflow to find a suitable configuration:
+
+* Start with a batch size of 1
+* Choose a GPU instance type that you think will give you good flops/$. If you are not sure, here is a rough guideline:
+    * g5 nodes for high availability
+    * p4d/p4de nodes for lower availability but better flops/$
+    * Anything higher-end if you have the means of acquiring them
+* Do some iterations of trial and error on instance types and deepspeed settings to fit the workload while keeping other settings fixed
+    * Use deepspeed stage 3 (all default configs in this template use stage 3)
+    * Try to use deepspeed offloading only if it reduces the minimum number of instances you have to use
+        * Deepspeed offloading slows down training but allows for larger batch sizes because of a more relaxed GRAM foot-print
+    * Use as few instances as possible. Fine-tune on the same machine if possible.
+        *  The GPU to GPU communication across machines is very expensive compared to the memory savings it could provide. You can use a cheap CPU-instance as a head-node for development and a GPU-instance that can scale down as a worker node for the heavy lifting.
+        * Training single-node on A100s may end up cheaper than multi-node on A10s if availablity is not an issue
+* Be aware that evaluation and checkpointing introduce their own memory-requirements
+   * If things look good, run fine-tuning for a full epoch.
+* After you have followed the steps above, increase batch size as much as possible without OOMing.
+
+We do not guarantee that this will give you optimal settings, but have found this workflow to be helpful ourselves in the past.
+
+### I've reviewed the customizable hyperparameters available. How can I get even more control?
+
+This template fine-tunes with Anyscale's library `llmforge`, which uses [DeepSpeed](https://github.com/microsoft/DeepSpeed) and [Ray Train](https://docs.ray.io/en/latest/train/train.html) for distributed training. The full set of config parameters are documented in the [API reference](https://docs.anyscale.com/reference/finetuning-config-api), and we provide a [cookbook](cookbooks/modifying_hyperparameters/README.md) detailing the important ones.  For anything that goes beyond using `llmforge`, you can build your own fine-tuning stack on Anyscale.
 
 ### What's with the `main` file that is created during fine-tuning?
 
