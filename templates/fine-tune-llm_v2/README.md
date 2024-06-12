@@ -1,6 +1,6 @@
 # Fine-tuning Llama-3, Mistral and Mixtral with Anyscale
 
-**⏱️ Time to complete**: 60min for 8B model with LoRA, 2.5h with full-parameter fine-tuning
+**⏱️ Time to complete**: 2.5 hours for 7/8B models (9 hours for 13B, 25 hours for 70B)
 
 The guide below walks you through the steps required for fine-tuning of LLMs. This template provides an easy to configure solution for ML Platform teams, Infrastructure engineers, and Developers to fine-tune LLMs.
 
@@ -73,7 +73,8 @@ After you are with the above, you can find recipies that extend the functionalit
 
 * [Bring your own data](cookbooks/bring_your_own_data/README.md): Everything you need to know about using custom datasets for fine-tuning.
 * [Continue fine-tuning from a previous checkpoint](cookbooks/continue_from_checkpoint/README.md): A detailed guide on how you can use a previous checkpoint for another round of fine-tuning.
-* [LoRA vs. full-parameter training](cookbooks/continue_from_checkpoint/README.md): Learn the differences between LoRA and full-parameter training and how to configure both.
+* [Modifying hyperparameters](cookbooks/modifying_hyperparameters/README.md): A brief guide on tailoring your fine-tuning job.
+* [Optimizing Cost and Performance for Finetuning](cookbooks/optimize_cost/README.md): A detailed guide on default performance-related parameters and how you can optimize throughput for training on your own data.
 
 ## End-to-end Examples
 
@@ -87,10 +88,6 @@ Here is a list of end-to-end examples that involve more steps such as data prepr
 ### Where can I view the bucket where my LoRA weights are stored?
 
 All the LoRA weights are stored under the URI `${ANYSCALE_ARTIFACT_STORAGE}/lora_fine_tuning` where `ANYSCALE_ARTIFACT_STORAGE` is an environmental variable in your workspace.
-
-### How do I customize the fine-tuning job?
-
-You can edit the values, such as `context_length`, `num_epoch`, `train_batch_size_per_device` and `eval_batch_size_per_device` to customize the fine-tuning job. You may be able to reach higher model-quality if you tweak the learning rate but also possibly introduce learning instabilities that can be monitored in [WandB](https://wandb.ai/authorize). In addition, the deepspeed configs are provided within this template in case you want to customize them.
 
 ### What's the full list of supported models?
 
@@ -111,6 +108,21 @@ This is a growing list but it includes the following models:
 In general, any model that is compatible with the architecture of these models can be fine-tuned using the same configs as the base models.
 
 NOTE: currently mixture of expert models (such as `mistralai/Mixtral-8x7B)` only support LoRA fine-tuning
+
+### Should I use LoRA or full-parameter fine-tuning?
+
+There is no general answer to this but here are some things to consider:
+
+- The quality of the fine-tuned models will, in most cases, be comparable if not the same
+- LoRA shines if...
+    - ... you want to serve many fine-tuned models at once yourself
+    - ... you want to rapidly experiment (because fine-tuning, downloading and serving the model take less time)
+- Full-parameter shines if...
+    - ... you want to make sure that your fine-tuned model has the maximum quality
+    - ... you want to serve only one fine-tuned version of the model
+
+You can learn more about this in one of our [blogposts](https://www.anyscale.com/blog/fine-tuning-llms-lora-or-full-parameter-an-in-depth-analysis-with-llama-2).
+There, you'll also find some guidance on the LoRA parameters and why, in most cases, you don't need to change them.
 
 ### I have the right model, context length and everything. Can I optimize compute cost?
 
@@ -140,12 +152,9 @@ If you want different compute, we *suggest* the following workflow to find a sui
 
 We do not guarantee that this will give you optimal settings, but have found this workflow to be helpful ourselves in the past.
 
-### How can I get even more control?
+### I've reviewed the customizable hyperparameters available. How can I get even more control?
 
-This template fine-tunes with Anyscale's library `llmforge`, which uses [DeepSpeed](https://github.com/microsoft/DeepSpeed) and [Ray Train](https://docs.ray.io/en/latest/train/train.html) for distributed training.
-You can study main.py to find out how we call the `lmforge dev finetune` API with a YAML that specifies the fine-tuning workload.
-You can call `lmforge dev finetune` yourself and gain control by modifying the training config YAMLs in this template.
-For anything that goes beyond using `llmforge`, you can build your own fine-tuning stack on Anyscale.
+This template fine-tunes with Anyscale's library `llmforge`, which uses [DeepSpeed](https://github.com/microsoft/DeepSpeed) and [Ray Train](https://docs.ray.io/en/latest/train/train.html) for distributed training. The full set of config parameters are documented in the [API reference](https://docs.anyscale.com/reference/finetuning-config-api), and we provide a [cookbook](cookbooks/modifying_hyperparameters/README.md) detailing the important ones.  For anything that goes beyond using `llmforge`, you can build your own fine-tuning stack on Anyscale.
 
 ### What's with the `main` file that is created during fine-tuning?
 
