@@ -10,7 +10,7 @@ LLMForge is an internal library developed at Anyscale which unifies the fine-tun
 ## Table of Content
 
 - [Overview](#overview)
-- [How to benchmark things yourself?](#how-do-you-benchmark-yourself) 
+- [How do you benchmark throughput yourself?](#how-do-you-benchmark-throughput-yourself)
 - [Configurations](#configurations)
     - [Instance type](#instance-type)
     - [Batch size and Context length](#batch-size-and-context-length)
@@ -32,14 +32,14 @@ When thinking about training models, there are two issues that come up in order 
 - What parameters should I set to make sure I do not run out of GPU Memory (hit CUDA OOM) during training?
 - What parameters would give me a better throughput and therefore reduce my cost?
 
-Now in order to fit a large model (say 70B sized model) the priority is first fitting the model. If the you cannot even train a model at batch size = 1, then trowing more hardware at it may not help. 
+Now in order to fit a large model (say 70B sized model) the priority is first fitting the model. If you cannot train the model even with batch size = 1, then throwing more hardware at it may not help.
 
 In this cookbook we will discuss the set of  configurations and how to change them from the default behavior to achieve a better cost. 
 Before that lets see how we can benchmark a certain configuration and measure efficiency measures like MFU.
 
-## How do you benchmark yourself?
+## How do you benchmark throughput yourself
 
-For benchmarking we want to fix context length to a constant value so that it does not vary accross different batches. To do this we need to make padding strategy `max_length` (the default is `longest`). If you use `longest`, you may observe that you did not OOM for a few iteration but then OOMed in a later iteration and you might miss that during initial profiling. This is because the context length of the batch can vary at every iteration and we want to remove that as a confounding factor, so in the config YAML make sure you have the following:
+For benchmarking we want to fix context length to a constant value so that it does not vary across different batches. To do this we need to make padding strategy `max_length` (the default is `longest`). If you use `longest`, you may observe that you did not OOM for a few iteration but then OOMed in a later iteration and you might miss that during initial profiling. This is because the context length of the batch can vary at every iteration and we want to remove that as a confounding factor, so in the config YAML make sure you have the following:
 
 
 ```
@@ -95,8 +95,8 @@ Here is some performance numbers we measured (in Jan 2024)
 
 
 
-### 1xP4DE.24xlarge
-The numbers below were measured on a 1xP4DE node with 8xA100-80G. 
+### 1xP4DE.24xlarge (LoRA)
+The numbers below were measured on a 1xP4DE node with 8xA100-80 for LoRA fine-tuning.
 The effective cost computed here is based on the hourly rate of on-demand price on AWS (i.e. $40.77/hr). The charge is still based on instance hours used, but this gives a good comparison basis to token-based pricing. This cost does not consider startup time, checkpointing, etc
 
 
@@ -160,7 +160,7 @@ worker_resources:
   accelerator_type:A100-80G: 0.001
 ```
 
-All of our default configs are setup for A10G machines due to their more accesibility.
+All of our default configs are setup for A10G machines due to better accesibility.
 
 #### Difference between `worker_resources` and `trainer_resources`
 
@@ -168,9 +168,9 @@ In LoRA training you can often ignore `trainer_resources` and just provide the G
 
 However, for full-parameter training on hetergoneous clusters (e.g. training 70B on A10G GPUs) it is a bit more convoluted. This is generally not recommended, but when you do not have access to X100 machines this is the only way you can still train super large models (fp16 and full-parameter).
 
-Ray Train allows users to specify a different set of resources for rank-0 vs. other ranks. Rank-0 is responsible for checkpoining and normally needs more CPU RAM than the other workers at the time of checkpointing, because of the implementation details around weight aggregation. In a heterogenous multi-node setting where you have both small nodes and large nodes with the same GPUs this can cause a problem, because it becomes important where rank-0 is stored and the cluster is not symetrically used all the time. 
+Ray Train allows users to specify a different set of resources for rank-0 vs. other ranks. Rank-0 is responsible for checkpoining and normally needs more CPU RAM than the other workers at the time of checkpointing, because of the implementation details around weight aggregation. In a heterogenous multi-node setting where you have both small nodes and large nodes with the same GPUs this can cause a problem, because it becomes important where rank-0 is stored and the cluster is not symmetrically used all the time. 
 
-A prime example is running fine-tuning on `A10G`s. On AWS `A10s` are available in `g5.4xlarge` with 1 GPU and small RAM capacity all the way to `g5.48xlarge` with 8 GPUs and large RAM. During checkpoining a large model like 70B, the CPU RAM on g5.4xlarge is not sufficient and hence we have to define `memory` requirement for `trained_resources` to ensure that the large instance gets picked for rank-0. For example let's look at `./training_configs/full_param/llama-3-70b.yaml`:
+A prime example is running fine-tuning on `A10G`s. On AWS `A10s` are available in `g5.4xlarge` with 1 GPU and small RAM capacity all the way to `g5.48xlarge` with 8 GPUs and large RAM. During checkpointing a large model like 70B, the CPU RAM on g5.4xlarge is not sufficient and hence we have to define `memory` requirement for `trained_resources` to ensure that the large instance gets picked for rank-0. For example let's look at `./training_configs/full_param/llama-3-70b.yaml`:
 
 ```
 num_devices: 32 
@@ -182,7 +182,7 @@ worker_resources:
   accelerator_type:A10G: 0.001
 ```
 
-This configs is asking for 32xA10G GPUs but does not specify the architecture (e.g. `g5.4xlarge` vs. `g5.48xlarge`). However, it specifies that there should be at least 130G of memory available for rank-0, which forces the Anyscale's instance manager to pick g5.48xlarge for rank-0 and any other A10s for other workers hence not hitting RAM OOM issues during checkpointing. This is much better than being forced to use `4xg5.48xlarge` nodes. They may not be available on-demand and might be more expensive too.
+This configs is asking for 32xA10G GPUs but does not specify the architecture (e.g. `g5.4xlarge` vs. `g5.48xlarge`). However, it specifies that there should be at least 130G of memory available for rank-0, which forces the Anyscale's instance manager to pick g5.48xlarge for rank-0 and any other A10s for other workers hence not hitting RAM OOM issues during checkpointing. This is much better than being forced to use `4xg5.48xlarge` nodes. They may not be available on-demand and might be more expensive too. The Anyscale autoscaler will prioritize instances with the highest number of GPUs to maximize locallity. If there is insufficient capacity, it will proceed to select multiple instances in decreasing order of their GPU count.
 
 ## Batch size and Context length
 
@@ -203,7 +203,7 @@ eval_batch_size_per_device: <bs>
 
 ## Deepspeed configs
 
-By default, we encourage everyone to use Zero-DP stage 3 with parameter and optimizare's state offloading to be the safest in terms of memory consumption. But this setting is not the fastest. You can find other typical deepseepd configurations under `deepspeed_Configs`. A complete doc on all the configurations can be found on [deepspeeds doc page](https://www.deepspeed.ai/docs/config-json/).
+By default, we encourage everyone to use Zero-DP stage 3 with parameter and optimizare's state offloading to be the safest in terms of memory consumption. But this setting is not the fastest. You can find other typical deepspeed configurations under `deepspeed_configs`. A complete doc on all the configurations can be found on [deepspeeds doc page](https://www.deepspeed.ai/docs/config-json/).
 
 You can try deactivating parameter offloading for smaller models to speed the training up, if you still have room before OOMing or your context length is small enough to leave some room for memory. You can also change the states of Zero-DP to see how they speed the training up for your use-case. In the YAML all you have to do is change something like:
 
@@ -225,8 +225,10 @@ no_gradient_checkpoint: True
 
 ### Gradient Accumulation
 
-Gradient accumulation is another way of increasing the batch size without using more instances. This can become useful when the increasing batch size directly would require going multi-node and the node-interconnects are slow. It might be better to increase the the gradient accumulation step in these cases to get less slower than going multi-node. To do this you can easily configure the `gradient_accumulation_steps` parameeter in the YAML:
+Gradient accumulation is another way of increasing the batch size without using more instances. This can become useful when the increasing batch size directly would require going multi-node and the node-interconnects are slow. It might be better to increase the the gradient accumulation step in these cases to get less slower than going multi-node. To do this you can easily configure the `gradient_accumulation_steps` parameter in the YAML:
 
 ```
 gradient_accumulation_steps: 2
 ```
+
+
