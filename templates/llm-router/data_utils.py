@@ -2,20 +2,47 @@ import re
 import matplotlib.pyplot as plt
 from collections import Counter
 import pandas as pd
+from IPython.display import display
+from datasets import load_dataset
+from typing import Dict, Any, List, Optional, Tuple
+
+pd.options.mode.chained_assignment = None
 
 
-def preprocess_nectar(df, model, model_name):
+def load_and_display_nectar(subset: str = "train") -> pd.DataFrame:
+    """
+    Load a Nectar dataset from Hugging Face and display the first few rows.
+    """
+    # Load the dataset
+    dataset = load_dataset("berkeley-nest/Nectar")
+    nectar_df = dataset[subset].to_pandas()
+
+    # Display 1 row
+    with pd.option_context("display.max_colwidth", None):
+        display(nectar_df.head(1))
+
+    # Compute the number of queries with GPT-4 responses
+    nectar_df_expanded = nectar_df.explode("answers")
+    nectar_df_expanded["model"] = nectar_df_expanded["answers"].apply(
+        lambda x: x["model"]
+    )
+    print(
+        f"Number of queries with GPT-4 responses: {len(nectar_df_expanded[nectar_df_expanded['model'] == 'gpt-4'])}"
+    )
+    return nectar_df
+
+
+def preprocess_nectar(df: pd.DataFrame, model: str, model_name: str) -> pd.DataFrame:
     """
     Specific preprocessing of the Nectar dataset.
     """
-
     # Filter to include only the first turn, good-natured responses, and responses that contain the specified model
     conditions = (
         (df["turns"] == 1)
         & df["good_natured"]
         & df["answers"].apply(lambda ans: any(model == a.get("model") for a in ans))
     )
-    filtered_df = df[conditions]
+    filtered_df = df[conditions].copy()
 
     # Extract the answer for the specified model from the list of all answers
     filtered_df[model_name] = filtered_df["answers"].apply(
@@ -40,7 +67,9 @@ def preprocess_nectar(df, model, model_name):
     return filtered_df
 
 
-def to_openai_api_messages(messages, system_message=None):
+def to_openai_api_messages(
+    messages: List[str], system_message: Optional[str] = None
+) -> List[Dict[str, str]]:
     """Convert the conversation to OpenAI chat completion format."""
     ret = [
         {
@@ -58,7 +87,9 @@ def to_openai_api_messages(messages, system_message=None):
     return ret
 
 
-def prepare_llm_queries(dataset_df, system_message=None):
+def prepare_llm_queries(
+    dataset_df: pd.DataFrame, system_message: Optional[str] = None
+) -> Dict[int, List[Dict[str, str]]]:
     """Prepare queries for using LLM endpoints"""
     queries = {}
     for pidx, row in dataset_df.to_dict(orient="index").items():
@@ -70,7 +101,9 @@ def prepare_llm_queries(dataset_df, system_message=None):
     return queries
 
 
-def format_judge_prompt(judge_template, question, answer, reference_answer):
+def format_judge_prompt(
+    judge_template: Dict[str, Any], question: str, answer: str, reference_answer: str
+) -> str:
     """Format the prompt for the judge endpoint."""
     return judge_template["prompt_template"].format(
         instruction=judge_template["instruction"],
@@ -80,7 +113,9 @@ def format_judge_prompt(judge_template, question, answer, reference_answer):
     )
 
 
-def prepare_llm_judge_queries(dataset_df, judge_template):
+def prepare_llm_judge_queries(
+    dataset_df: pd.DataFrame, judge_template: Dict[str, Any]
+) -> Dict[int, List[Dict[str, str]]]:
     """Prepare queries for using LLM judge endpoint"""
     queries = {}
     for pidx, row in dataset_df.to_dict(orient="index").items():
@@ -92,7 +127,9 @@ def prepare_llm_judge_queries(dataset_df, judge_template):
     return queries
 
 
-def parse_judge_responses(judge_responses):
+def parse_judge_responses(
+    judge_responses: Dict[int, str]
+) -> Tuple[Dict[int, int], Dict[int, str]]:
     """
     Parses the llm-judge responses and extracts the labels and explanations.
     """
@@ -109,7 +146,9 @@ def parse_judge_responses(judge_responses):
     return labels, explanations
 
 
-def split_dataset(dataset_df, validation_size=1000):
+def split_dataset(
+    dataset_df: pd.DataFrame, validation_size: int = 1000
+) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """
     Split the dataset into training and validation sets.
     """
@@ -119,11 +158,10 @@ def split_dataset(dataset_df, validation_size=1000):
     return train_df, validation_df
 
 
-def visualize_label_distribution(dataset_df, key):
+def visualize_label_distribution(dataset_df: pd.DataFrame, key: str) -> None:
     """
     Visualizes the label distribution of a dataset.
     """
-
     # Create a counter for the label distribution
     dataset_counter = Counter(dataset_df[key])
 
@@ -136,7 +174,9 @@ def visualize_label_distribution(dataset_df, key):
     plt.show()
 
 
-def balance_dataset(dataset_df, key, random_state=42):
+def balance_dataset(
+    dataset_df: pd.DataFrame, key: str, random_state: int = 42
+) -> pd.DataFrame:
     """
     Balance the dataset by oversampling the minority class.
     """
@@ -155,7 +195,7 @@ def balance_dataset(dataset_df, key, random_state=42):
     return balanced_df
 
 
-def prepare_ft_messages(dataset_df):
+def prepare_ft_messages(dataset_df: pd.DataFrame) -> pd.DataFrame:
     """
     Add messages for fine-tuning using the dataset dataframe, system message, and classifier message.
     """
