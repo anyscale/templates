@@ -73,6 +73,7 @@ After you are with the above, you can find recipies that extend the functionalit
 
 * [Bring your own data](cookbooks/bring_your_own_data/README.md): Everything you need to know about using custom datasets for fine-tuning.
 * [Continue fine-tuning from a previous checkpoint](cookbooks/continue_from_checkpoint/README.md): A detailed guide on how you can use a previous checkpoint for another round of fine-tuning.
+* [LoRA vs. full-parameter training](cookbooks/continue_from_checkpoint/README.md): Learn the differences between LoRA and full-parameter training and how to configure both.
 * [Modifying hyperparameters](cookbooks/modifying_hyperparameters/README.md): A brief guide on tailoring your fine-tuning job.
 * [Optimizing Cost and Performance for Finetuning](cookbooks/optimize_cost/README.md): A detailed guide on default performance-related parameters and how you can optimize throughput for training on your own data.
 
