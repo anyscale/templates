@@ -1,11 +1,16 @@
 import pandas as pd
 import json
 import ray
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Tuple
 import copy
 import openai
 import time
-import ray
+from IPython.display import display
+from data_utils import (
+    prepare_llm_queries,
+    prepare_llm_judge_queries,
+    parse_judge_responses,
+)
 
 
 @ray.remote(num_cpus=0)
@@ -17,9 +22,9 @@ def get_llm_response(
     max_tokens: int,
     pidx: int,
     messages: List[Dict[str, str]],
-    max_retries=1,
-    retry_interval=60,
-) -> Dict[int, str]:
+    max_retries: int = 1,
+    retry_interval: int = 60,
+) -> Tuple[int, str]:
     """
     Use OpenAI's API to request completions from a specified LLM and manages request retries upon failures.
     """
@@ -79,3 +84,81 @@ def generate_batch_responses(
     print(f"Done in {time.time() - start_time:.2f}sec.")
     return dict(responses)
 
+
+def generate_mixtral_responses(
+    dataset_df: pd.DataFrame,
+    api_key: str,
+    api_base: str = "https://api.endpoints.anyscale.com/v1",
+    out_fname: str = "assets/test_dataset.jsonl",
+) -> pd.DataFrame:
+    """
+    Generate Mixtral responses with Anyscale's public endpoint
+    """
+    # Preprocess endpoint queries
+    llm_queries = prepare_llm_queries(dataset_df)
+
+    # Online inference
+    mixtral_responses = generate_batch_responses(
+        api_base,
+        api_key,
+        "mistralai/Mixtral-8x7B-Instruct-v0.1",
+        llm_queries,
+        max_concurrent_queries=25,
+        temperature=0.7,
+        max_tokens=512,
+        verbose=True,
+    )
+
+    # Add Mixtral responses as a column to the dataset
+    dataset_df["mixtral"] = dataset_df.index.map(mixtral_responses)
+
+    print("Dataset overview with Mixtral responses:")
+    display(dataset_df.head())
+
+    print(f"Saving results to {out_fname}.")
+    dataset_df.to_json(out_fname, orient="records", lines=True)
+
+    return dataset_df
+
+
+def generate_llm_judge_labels(
+    dataset_df: pd.DataFrame,
+    api_key: str,
+    api_base: str = "https://api.openai.com/v1",
+    llm: str = "gpt-4",
+    out_fname: str = "assets/labeled_test_dataset.jsonl",
+) -> pd.DataFrame:
+    """
+    Generate LLM-as-a-judge labels with OpenAI's API
+    """
+    with open("assets/judge_template.json") as f:
+        judge_template = json.load(f)
+
+    # Preprocess LLM-judge queries
+    judge_queries = prepare_llm_judge_queries(dataset_df, judge_template)
+
+    # Generate GPT-4 as a judge labels with OpenAI API
+    judge_responses = generate_batch_responses(
+        api_base,
+        api_key,
+        llm,
+        judge_queries,
+        max_concurrent_queries=10,
+        temperature=0,
+        max_tokens=256,
+        verbose=True,
+    )
+
+    # Parse judge responses
+    labels, explanations = parse_judge_responses(judge_responses)
+
+    # Add judge score as a label column
+    dataset_df["label"] = dataset_df.index.map(labels)
+
+    print("Dataset overview with score labels:")
+    display(dataset_df.head())
+
+    print(f"Saving results to {out_fname}.")
+    dataset_df.to_json(out_fname, orient="records", lines=True)
+
+    return dataset_df
