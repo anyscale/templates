@@ -464,8 +464,11 @@ from src.utils import download_files_from_bucket
 ```python
 # Locations
 artifacts_dir = '/mnt/cluster_storage'  # storage accessible by head and worker nodes
-model = 'meta-llama/Meta-Llama-3-8B-Instruct:gokum:atyhk'  # REPLACE with your model ID (from Job logs)
-artifacts_path = f'org_7c1Kalm9WcX2bNIjW53GUT/cld_kvedZWag2qA8i5BjxUevf5i7/artifact_storage/lora_fine_tuning/{model}'
+model = 'meta-llama/Meta-Llama-3-8B-Instruct'
+uuid = 'goku_:ueewk'  # REPLACE with your NAME + MODEL ID (from Job logs)
+artifacts_path = (
+    f"{os.environ['ANYSCALE_ARTIFACT_STORAGE'].split(os.environ['ANYSCALE_CLOUD_STORAGE_BUCKET'])[-1][1:]}"
+    f"/lora_fine_tuning/{model}:{uuid}")
 ```
 
 
