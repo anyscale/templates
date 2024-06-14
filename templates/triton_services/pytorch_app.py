@@ -12,7 +12,7 @@ import torch
 
 from ray import serve
 from diffusers import DiffusionPipeline
-from fastapi.responses import StreamingResponse
+from fastapi.responses import PlainTextResponse
 
 app = FastAPI()
 
@@ -20,7 +20,6 @@ app = FastAPI()
 @serve.deployment(
     ray_actor_options={
         "num_gpus": 1,
-        "num_cpus": 1,
     },
 )
 @serve.ingress(app)
@@ -41,7 +40,7 @@ class PytorchDeployment:
             _ = self.pipe("test").images[0]
 
     @app.get("/generate")
-    async def generate(self, prompt: str) -> StreamingResponse:
+    def generate(self, prompt: str) -> PlainTextResponse:
         print(f"Generating image for prompt: {prompt}")
         image_ = self.pipe(prompt).images[0]
 
@@ -49,7 +48,7 @@ class PytorchDeployment:
         buffer = BytesIO()
         image_.save(buffer, "JPEG")
         buffer.seek(0)
-        return StreamingResponse(buffer, media_type="image/jpeg")
+        return PlainTextResponse(buffer.getvalue(), media_type="image/jpeg")
 
 
 pytorch_deployment = PytorchDeployment.bind(run_compile=False)
