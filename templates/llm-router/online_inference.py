@@ -1,16 +1,11 @@
 import pandas as pd
 import json
 import ray
-from typing import Dict, Any, List, Tuple
+from typing import Dict, Any, List
 import copy
 import openai
 import time
-from IPython.display import display
-from data_utils import (
-    prepare_llm_queries,
-    prepare_llm_judge_queries,
-    parse_judge_responses,
-)
+import ray
 
 
 @ray.remote(num_cpus=0)
@@ -22,9 +17,9 @@ def get_llm_response(
     max_tokens: int,
     pidx: int,
     messages: List[Dict[str, str]],
-    max_retries: int = 1,
-    retry_interval: int = 60,
-) -> Tuple[int, str]:
+    max_retries=1,
+    retry_interval=60,
+) -> Dict[int, str]:
     """
     Use OpenAI's API to request completions from a specified LLM and manages request retries upon failures.
     """
@@ -84,6 +79,7 @@ def generate_batch_responses(
     print(f"Done in {time.time() - start_time:.2f}sec.")
     return dict(responses)
 
+<<<<<<< HEAD
 
 def generate_mixtral_responses(
     dataset_df: pd.DataFrame,
@@ -163,3 +159,5 @@ def generate_llm_judge_labels(
     dataset_df.to_json(out_fname, orient="records", lines=True)
 
     return dataset_df
+=======
+>>>>>>> 5051e0ee4a3b023f441323da5cc572e473571712
