@@ -126,6 +126,7 @@ def generate_llm_judge_labels(
     api_key: str,
     api_base: str = "https://api.openai.com/v1",
     llm: str = "gpt-4",
+    label_key: str = "mixtral_score",
     out_fname: str = "assets/labeled_test_dataset.jsonl",
 ) -> pd.DataFrame:
     """
@@ -153,7 +154,7 @@ def generate_llm_judge_labels(
     labels, explanations = parse_judge_responses(judge_responses)
 
     # Add judge score as a label column
-    dataset_df["label"] = dataset_df.index.map(labels)
+    dataset_df[label_key] = dataset_df.index.map(labels)
 
     print("Dataset overview with score labels:")
     display(dataset_df.head())
