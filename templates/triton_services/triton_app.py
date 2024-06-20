@@ -44,12 +44,10 @@ class TritonDeployment:
                 .squeeze()
                 .astype(numpy.uint8)
             )
-            image_ = Image.fromarray(generated_image)
+            image = Image.fromarray(generated_image)
 
-            # Stream back the image to the caller.
             buffer = io.BytesIO()
-            image_.save(buffer, "JPEG")
-            buffer.seek(0)
+            image.save(buffer, "JPEG")
             return PlainTextResponse(buffer.getvalue(), media_type="image/jpeg")
 
 

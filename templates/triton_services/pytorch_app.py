@@ -42,12 +42,10 @@ class PytorchDeployment:
     @app.get("/generate")
     def generate(self, prompt: str) -> PlainTextResponse:
         print(f"Generating image for prompt: {prompt}")
-        image_ = self.pipe(prompt).images[0]
+        image = self.pipe(prompt).images[0]
 
-        # Stream back the image to the caller.
         buffer = BytesIO()
-        image_.save(buffer, "JPEG")
-        buffer.seek(0)
+        image.save(buffer, "JPEG")
         return PlainTextResponse(buffer.getvalue(), media_type="image/jpeg")
 
 
