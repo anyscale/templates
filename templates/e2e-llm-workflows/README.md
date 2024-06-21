@@ -464,8 +464,11 @@ from src.utils import download_files_from_bucket
 ```python
 # Locations
 artifacts_dir = '/mnt/cluster_storage'  # storage accessible by head and worker nodes
-model = 'meta-llama/Meta-Llama-3-8B-Instruct:gokum:atyhk'  # REPLACE with your model ID (from Job logs)
-artifacts_path = f'org_7c1Kalm9WcX2bNIjW53GUT/cld_kvedZWag2qA8i5BjxUevf5i7/artifact_storage/lora_fine_tuning/{model}'
+model = 'meta-llama/Meta-Llama-3-8B-Instruct'
+uuid = 'goku_:ueewk'  # REPLACE with your NAME + MODEL ID (from Job logs)
+artifacts_path = (
+    f"{os.environ['ANYSCALE_ARTIFACT_STORAGE'].split(os.environ['ANYSCALE_CLOUD_STORAGE_BUCKET'])[-1][1:]}"
+    f"/lora_fine_tuning/{model}:{uuid}")
 ```
 
 
@@ -716,6 +719,7 @@ matches / float(len(ft_pred))
     0.9399815327793167
 
 
+**Note**: you can train for more epochs (`num_epochs: 10`) to further improve the performance.
 
 Even our mismatches are not too far off and sometimes it might be worth a closer look because the dataset itself might have a few errors that the model may have identified.
 
@@ -807,6 +811,7 @@ This also generates a model configuration file that has all the information on a
 ### Local deployment
 
 We can now serve our model locally and query it. Run the follow in the terminal (change to your serve yaml config):
+
 ```bash
 cd /home/ray/default/deploy/services
 serve run serve_{TIMESTAMP}.yaml
@@ -832,7 +837,7 @@ def query(base_url: str, api_key: str):
 
     # Note: not all arguments are currently supported and will be ignored by the backend
     chat_completions = client.chat.completions.create(
-        model=model,  # with your unique model ID
+        model=f'{model}:{uuid}',  # with your unique model ID
         messages=[
             {"role": "system", "content": "Given a target sentence construct the underlying meaning representation of the input sentence as a single function with attributes and attribute values. This function should describe the target string accurately and the function must be one of the following ['inform', 'request', 'give_opinion', 'confirm', 'verify_attribute', 'suggest', 'request_explanation', 'recommend', 'request_attribute']. The attributes must be one of the following: ['name', 'exp_release_date', 'release_year', 'developer', 'esrb', 'rating', 'genres', 'player_perspective', 'has_multiplayer', 'platforms', 'available_on_steam', 'has_linux_release', 'has_mac_release', 'specifier']"},
             {"role": "user", "content": "I remember you saying you found Little Big Adventure to be average. Are you not usually that into single-player games on PlayStation?"},
