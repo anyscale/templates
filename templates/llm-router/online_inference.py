@@ -6,6 +6,7 @@ import copy
 import openai
 import time
 import ray
+from utils import prepare_llm_queries, prepare_llm_judge_queries, parse_judge_responses
 
 
 @ray.remote(num_cpus=0)
@@ -79,13 +80,12 @@ def generate_batch_responses(
     print(f"Done in {time.time() - start_time:.2f}sec.")
     return dict(responses)
 
-<<<<<<< HEAD
 
 def generate_mixtral_responses(
     dataset_df: pd.DataFrame,
     api_key: str,
     api_base: str = "https://api.endpoints.anyscale.com/v1",
-    out_fname: str = "assets/test_dataset.jsonl",
+    response_column: str = "mixtral_response",
 ) -> pd.DataFrame:
     """
     Generate Mixtral responses with Anyscale's public endpoint
@@ -106,14 +106,7 @@ def generate_mixtral_responses(
     )
 
     # Add Mixtral responses as a column to the dataset
-    dataset_df["mixtral"] = dataset_df.index.map(mixtral_responses)
-
-    print("Dataset overview with Mixtral responses:")
-    display(dataset_df.head())
-
-    print(f"Saving results to {out_fname}.")
-    dataset_df.to_json(out_fname, orient="records", lines=True)
-
+    dataset_df[response_column] = dataset_df.index.map(mixtral_responses)
     return dataset_df
 
 
@@ -121,9 +114,10 @@ def generate_llm_judge_labels(
     dataset_df: pd.DataFrame,
     api_key: str,
     api_base: str = "https://api.openai.com/v1",
-    llm: str = "gpt-4",
+    judge_llm: str = "gpt-4",
+    answer_key:str = "mixtral_response", 
+    reference_key:str = "gpt4_response",
     label_key: str = "mixtral_score",
-    out_fname: str = "assets/labeled_test_dataset.jsonl",
 ) -> pd.DataFrame:
     """
     Generate LLM-as-a-judge labels with OpenAI's API
@@ -132,13 +126,13 @@ def generate_llm_judge_labels(
         judge_template = json.load(f)
 
     # Preprocess LLM-judge queries
-    judge_queries = prepare_llm_judge_queries(dataset_df, judge_template)
+    judge_queries = prepare_llm_judge_queries(dataset_df, judge_template, answer_key, reference_key)
 
     # Generate GPT-4 as a judge labels with OpenAI API
     judge_responses = generate_batch_responses(
         api_base,
         api_key,
-        llm,
+        judge_llm,
         judge_queries,
         max_concurrent_queries=10,
         temperature=0,
@@ -152,12 +146,4 @@ def generate_llm_judge_labels(
     # Add judge score as a label column
     dataset_df[label_key] = dataset_df.index.map(labels)
 
-    print("Dataset overview with score labels:")
-    display(dataset_df.head())
-
-    print(f"Saving results to {out_fname}.")
-    dataset_df.to_json(out_fname, orient="records", lines=True)
-
     return dataset_df
-=======
->>>>>>> 5051e0ee4a3b023f441323da5cc572e473571712
