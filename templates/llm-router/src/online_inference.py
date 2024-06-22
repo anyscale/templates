@@ -6,7 +6,7 @@ import copy
 import openai
 import time
 import ray
-from utils import prepare_llm_queries, prepare_llm_judge_queries, parse_judge_responses
+from .utils import prepare_llm_queries, prepare_llm_judge_queries, parse_judge_responses
 
 
 @ray.remote(num_cpus=0)
@@ -115,8 +115,8 @@ def generate_llm_judge_labels(
     api_key: str,
     api_base: str = "https://api.openai.com/v1",
     judge_llm: str = "gpt-4",
-    answer_key:str = "mixtral_response", 
-    reference_key:str = "gpt4_response",
+    answer_key: str = "mixtral_response",
+    reference_key: str = "gpt4_response",
     label_key: str = "mixtral_score",
 ) -> pd.DataFrame:
     """
@@ -126,7 +126,9 @@ def generate_llm_judge_labels(
         judge_template = json.load(f)
 
     # Preprocess LLM-judge queries
-    judge_queries = prepare_llm_judge_queries(dataset_df, judge_template, answer_key, reference_key)
+    judge_queries = prepare_llm_judge_queries(
+        dataset_df, judge_template, answer_key, reference_key
+    )
 
     # Generate GPT-4 as a judge labels with OpenAI API
     judge_responses = generate_batch_responses(

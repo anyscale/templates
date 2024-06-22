@@ -5,7 +5,6 @@ import random
 import string
 
 
-
 def generate_model_tag(model_id: str) -> str:
     """
     Constructs a finetuned model ID based on the Anyscale endpoints convention.
@@ -14,7 +13,7 @@ def generate_model_tag(model_id: str) -> str:
     if username:
         username = username.strip().replace(" ", "")[:5]
         if len(username) < 5:
-            padding_char = username[-1] if username else 'a'
+            padding_char = username[-1] if username else "a"
             username += padding_char * (5 - len(username))
     else:
         username = "".join(random.choices(string.ascii_lowercase, k=5))

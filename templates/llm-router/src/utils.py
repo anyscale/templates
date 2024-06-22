@@ -232,6 +232,7 @@ def prepare_ft_messages(dataset_df: pd.DataFrame, label_key: str) -> pd.DataFram
         axis=1,
     )
 
+
 def inspect_instructions(dataset_df: pd.DataFrame) -> None:
     """
     Inspect the instructions used for instruction fine-tuning.
