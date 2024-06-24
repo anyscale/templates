@@ -28,7 +28,8 @@ You can look at the respective yaml files to see how they differ in their config
 
 ```python
 # [Optional] You can set the WandB API key to track model performance
-# !export WANDB_API_KEY={YOUR_WANDB_API_KEY}
+# import os
+# os.environ["WANDB_API_KEY"]="YOUR_WANDB_API_KEY"
 
 # Run this command from the base directory of this template
 # Fine-tune Llama 3 8B with LoRA
