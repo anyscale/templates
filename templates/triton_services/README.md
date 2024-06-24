@@ -13,6 +13,7 @@ This tutorial shows how to:
 2. Compile a model using Triton's Python backend in Anyscale Workspaces.
 3. Run Triton Server on Ray Serve locally in Anyscale Workspaces.
 4. Deploy the app using Anyscale Services.
+5. Performance benchmark.
 
 **Note**: This guide doesn't substitute the official Triton documentation.
 For more information, see
@@ -197,3 +198,87 @@ curl -H "Authorization: Bearer pnnHyxUG_v6hzLbUn7LLmgNjF5g3t0XAxa0TXoRFV6g" \
 The following is an example of a generated image:
 
 <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/triton_services/assets/dogs_photo_service.jpg"/>
+
+## Performance benchmark
+
+In this section, you can run a performance benchmark to compare the performance of
+Ray Serve with Triton vs. PyTorch vs. PyTorch Compile. The code to run a Ray Serve
+application with PyTorch is in the `pytorch_app.py` file. 
+
+To start the app with purely PyTorch, run the following command:
+```commandline
+serve run pytorch_app:pytorch_deployment --non-blocking
+```
+
+To start the app with PyTorch Compile, run the following command:
+```commandline
+serve run pytorch_app:pytorch_compiled_deployment --non-blocking
+```
+
+You can use [Locust](https://locust.io/) to run a performance benchmark. The
+`locustfile.py` file to setup the test is also shared in the workspace. To run the
+benchmark, follow these steps:
+1. install Locust: `pip install locust`
+2. make sure the Ray Serve app is running with one of Triton, PyTorch, or PyTorch
+Compile.
+3. run Locust: `locust --headless --users 1 --run-time 15m --stop-timeout 10s -H http://localhost:8000 -f locustfile.py RayServeUser`
+
+This is the output of the benchmark collected on a single A100 worker node:
+
+<Tabs>
+    <TabItem value="Triton" label="Triton" default>
+
+```commandline
+Type     Name                                                                          # reqs      # fails |    Avg     Min     Max    Med |   req/s  failures/s
+--------|----------------------------------------------------------------------------|-------|-------------|-------|-------|-------|-------|--------|-----------
+GET      /generate?prompt=dogs%20in%20new%20york,%20realistic,%204k,%20photograph        1076     0(0.00%) |    836     824     890    840 |    1.20        0.00
+--------|----------------------------------------------------------------------------|-------|-------------|-------|-------|-------|-------|--------|-----------
+         Aggregated                                                                      1076     0(0.00%) |    836     824     890    840 |    1.20        0.00
+
+Response time percentiles (approximated)
+Type     Name                                                                                  50%    66%    75%    80%    90%    95%    98%    99%  99.9% 99.99%   100% # reqs
+--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------
+GET      /generate?prompt=dogs%20in%20new%20york,%20realistic,%204k,%20photograph              840    840    840    840    840    840    850    850    860    890    890   1076
+--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------
+         Aggregated                                                                            840    840    840    840    840    840    850    850    860    890    890   1076
+```
+
+  </TabItem>
+  <TabItem value="PyTorch" label="PyTorch">
+
+```commandline
+Type     Name                                                                          # reqs      # fails |    Avg     Min     Max    Med |   req/s  failures/s
+--------|----------------------------------------------------------------------------|-------|-------------|-------|-------|-------|-------|--------|-----------
+GET      /generate?prompt=dogs%20in%20new%20york,%20realistic,%204k,%20photograph         519     0(0.00%) |   1734    1703    1769   1703 |    0.58        0.00
+--------|----------------------------------------------------------------------------|-------|-------------|-------|-------|-------|-------|--------|-----------
+         Aggregated                                                                       519     0(0.00%) |   1734    1703    1769   1703 |    0.58        0.00
+
+Response time percentiles (approximated)
+Type     Name                                                                                  50%    66%    75%    80%    90%    95%    98%    99%  99.9% 99.99%   100% # reqs
+--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------
+GET      /generate?prompt=dogs%20in%20new%20york,%20realistic,%204k,%20photograph             1700   1700   1700   1700   1800   1800   1800   1800   1800   1800   1800    519
+--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------
+         Aggregated                                                                           1700   1700   1700   1700   1800   1800   1800   1800   1800   1800   1800    519
+
+```
+
+  </TabItem>
+  <TabItem value="PyTorch Compile" label="PyTorch Compile">
+
+```commandline
+Type     Name                                                                          # reqs      # fails |    Avg     Min     Max    Med |   req/s  failures/s
+--------|----------------------------------------------------------------------------|-------|-------------|-------|-------|-------|-------|--------|-----------
+GET      /generate?prompt=dogs%20in%20new%20york,%20realistic,%204k,%20photograph         929     0(0.00%) |    968     954    1043    970 |    1.03        0.00
+--------|----------------------------------------------------------------------------|-------|-------------|-------|-------|-------|-------|--------|-----------
+         Aggregated                                                                       929     0(0.00%) |    968     954    1043    970 |    1.03        0.00
+
+Response time percentiles (approximated)
+Type     Name                                                                                  50%    66%    75%    80%    90%    95%    98%    99%  99.9% 99.99%   100% # reqs
+--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------
+GET      /generate?prompt=dogs%20in%20new%20york,%20realistic,%204k,%20photograph              970    970    970    970    980    980    980    980   1000   1000   1000    929
+--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------
+         Aggregated                                                                            970    970    970    970    980    980    980    980   1000   1000   1000    929
+```
+
+  </TabItem>
+</Tabs>
