@@ -3,4 +3,3 @@ entrypoint: python src/ft.py configs/ft_config_debug.yaml
 image_uri: localhost:5555/anyscale/llm-forge:0.5.0.0
 requirements: requirements.txt
 max_retries: 0
-
