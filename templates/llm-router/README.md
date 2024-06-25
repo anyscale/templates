@@ -31,8 +31,6 @@ More concretely, the objective of a smart router is to direct simple queries to 
 
 # Table of Contents
 
-### Steps to Train a Smart Router
-
 1. [**Prepare Labeled Data**](#generate-labeled-data): We describe how to generate synthetic labeled data to train the smart router model.
 
 2. [**Finetune a Router Model**](#finetune-router-model): We show how to train a smart router by finetuning an LLM classifier using Anyscale's finetuning API.
@@ -67,6 +65,18 @@ from src.utils import load_and_display_nectar
 
 nectar_df = load_and_display_nectar()
 ```
+
+
+    Downloading readme:   0%|          | 0.00/8.65k [00:00<?, ?B/s]
+
+
+
+    Downloading data:   0%|          | 0.00/517M [00:00<?, ?B/s]
+
+
+
+    Generating train split:   0%|          | 0/182954 [00:00<?, ? examples/s]
+
 
 
 <div>
@@ -280,10 +290,10 @@ dataset_df = generate_mixtral_responses(
     Starting batch inference on 30 queries...
 
 
-    2024-06-21 21:39:54,562	INFO worker.py:1568 -- Connecting to existing Ray cluster at address: 10.0.0.22:6379...
-    2024-06-21 21:39:54,570	INFO worker.py:1744 -- Connected to Ray cluster. View the dashboard at [1m[32mhttps://session-3mbbhc76us4jta3ixstn8kjsxy.i.anyscaleuserdata.com [39m[22m
-    2024-06-21 21:39:54,578	INFO packaging.py:358 -- Pushing file package 'gcs://_ray_pkg_02aabfd4c06e369679b61fd2766dee8f87ee232d.zip' (0.26MiB) to Ray cluster...
-    2024-06-21 21:39:54,580	INFO packaging.py:371 -- Successfully pushed file package 'gcs://_ray_pkg_02aabfd4c06e369679b61fd2766dee8f87ee232d.zip'.
+    2024-06-24 17:11:56,396	INFO worker.py:1568 -- Connecting to existing Ray cluster at address: 10.0.0.30:6379...
+    2024-06-24 17:11:56,404	INFO worker.py:1744 -- Connected to Ray cluster. View the dashboard at [1m[32mhttps://session-3mbbhc76us4jta3ixstn8kjsxy.i.anyscaleuserdata.com [39m[22m
+    2024-06-24 17:11:56,412	INFO packaging.py:358 -- Pushing file package 'gcs://_ray_pkg_e6620ba04eb087533e81bed1366800219d71d38a.zip' (0.49MiB) to Ray cluster...
+    2024-06-24 17:11:56,414	INFO packaging.py:371 -- Successfully pushed file package 'gcs://_ray_pkg_e6620ba04eb087533e81bed1366800219d71d38a.zip'.
 
 
     # queries un-processed: 29, in-progress: 1, ready: 0
@@ -294,56 +304,40 @@ dataset_df = generate_mixtral_responses(
     # queries un-processed: 24, in-progress: 6, ready: 0
     # queries un-processed: 23, in-progress: 7, ready: 0
     # queries un-processed: 22, in-progress: 8, ready: 0
-    # queries un-processed: 21, in-progress: 8, ready: 1
-    # queries un-processed: 20, in-progress: 9, ready: 0
-    # queries un-processed: 19, in-progress: 10, ready: 0
-    # queries un-processed: 18, in-progress: 11, ready: 0
-    # queries un-processed: 17, in-progress: 12, ready: 0
-    # queries un-processed: 16, in-progress: 13, ready: 0
-    # queries un-processed: 15, in-progress: 14, ready: 0
-    # queries un-processed: 14, in-progress: 15, ready: 0
-    # queries un-processed: 13, in-progress: 16, ready: 0
-    # queries un-processed: 12, in-progress: 17, ready: 0
-    # queries un-processed: 11, in-progress: 17, ready: 1
-    # queries un-processed: 10, in-progress: 18, ready: 0
-    # queries un-processed: 9, in-progress: 18, ready: 1
-    # queries un-processed: 8, in-progress: 19, ready: 0
+    # queries un-processed: 21, in-progress: 9, ready: 0
+    # queries un-processed: 20, in-progress: 10, ready: 0
+    # queries un-processed: 19, in-progress: 11, ready: 0
+    # queries un-processed: 18, in-progress: 12, ready: 0
+    # queries un-processed: 17, in-progress: 13, ready: 0
+    # queries un-processed: 16, in-progress: 14, ready: 0
+    # queries un-processed: 15, in-progress: 15, ready: 0
+    # queries un-processed: 14, in-progress: 16, ready: 0
+    # queries un-processed: 13, in-progress: 17, ready: 0
+    # queries un-processed: 12, in-progress: 18, ready: 0
+    # queries un-processed: 11, in-progress: 19, ready: 0
+    # queries un-processed: 10, in-progress: 19, ready: 1
+    # queries un-processed: 9, in-progress: 19, ready: 1
+    # queries un-processed: 8, in-progress: 19, ready: 1
     # queries un-processed: 7, in-progress: 20, ready: 0
     # queries un-processed: 6, in-progress: 21, ready: 0
-    # queries un-processed: 5, in-progress: 22, ready: 0
-    # queries un-processed: 4, in-progress: 22, ready: 1
-    # queries un-processed: 3, in-progress: 23, ready: 0
-    # queries un-processed: 2, in-progress: 23, ready: 1
-    # queries un-processed: 1, in-progress: 24, ready: 0
-    # queries un-processed: 0, in-progress: 25, ready: 0
-    # queries un-processed: 0, in-progress: 25, ready: 0
-    # queries un-processed: 0, in-progress: 24, ready: 1
-    # queries un-processed: 0, in-progress: 24, ready: 0
-    # queries un-processed: 0, in-progress: 24, ready: 0
-    # queries un-processed: 0, in-progress: 23, ready: 1
-    # queries un-processed: 0, in-progress: 23, ready: 0
-    # queries un-processed: 0, in-progress: 23, ready: 0
+    # queries un-processed: 5, in-progress: 21, ready: 1
+    # queries un-processed: 4, in-progress: 21, ready: 1
+    # queries un-processed: 3, in-progress: 21, ready: 1
+    # queries un-processed: 2, in-progress: 22, ready: 0
+    # queries un-processed: 1, in-progress: 22, ready: 1
     # queries un-processed: 0, in-progress: 23, ready: 0
     # queries un-processed: 0, in-progress: 22, ready: 1
-    # queries un-processed: 0, in-progress: 22, ready: 0
-    # queries un-processed: 0, in-progress: 22, ready: 0
     # queries un-processed: 0, in-progress: 21, ready: 1
-    # queries un-processed: 0, in-progress: 21, ready: 0
-    # queries un-processed: 0, in-progress: 21, ready: 0
-    # queries un-processed: 0, in-progress: 21, ready: 0
-    # queries un-processed: 0, in-progress: 21, ready: 0
     # queries un-processed: 0, in-progress: 20, ready: 1
     # queries un-processed: 0, in-progress: 19, ready: 1
+    # queries un-processed: 0, in-progress: 19, ready: 0
     # queries un-processed: 0, in-progress: 18, ready: 1
-    # queries un-processed: 0, in-progress: 18, ready: 0
-    # queries un-processed: 0, in-progress: 18, ready: 0
     # queries un-processed: 0, in-progress: 17, ready: 1
     # queries un-processed: 0, in-progress: 16, ready: 1
     # queries un-processed: 0, in-progress: 16, ready: 0
     # queries un-processed: 0, in-progress: 15, ready: 1
-    # queries un-processed: 0, in-progress: 15, ready: 0
-    # queries un-processed: 0, in-progress: 15, ready: 0
     # queries un-processed: 0, in-progress: 14, ready: 1
+    # queries un-processed: 0, in-progress: 14, ready: 0
     # queries un-processed: 0, in-progress: 13, ready: 1
     # queries un-processed: 0, in-progress: 12, ready: 1
     # queries un-processed: 0, in-progress: 11, ready: 1
@@ -354,20 +348,20 @@ dataset_df = generate_mixtral_responses(
     # queries un-processed: 0, in-progress: 8, ready: 1
     # queries un-processed: 0, in-progress: 7, ready: 1
     # queries un-processed: 0, in-progress: 6, ready: 1
+    # queries un-processed: 0, in-progress: 6, ready: 0
     # queries un-processed: 0, in-progress: 5, ready: 1
-    # queries un-processed: 0, in-progress: 5, ready: 0
-    # queries un-processed: 0, in-progress: 5, ready: 0
     # queries un-processed: 0, in-progress: 5, ready: 0
     # queries un-processed: 0, in-progress: 4, ready: 1
     # queries un-processed: 0, in-progress: 3, ready: 1
-    # queries un-processed: 0, in-progress: 3, ready: 0
     # queries un-processed: 0, in-progress: 2, ready: 1
+    # queries un-processed: 0, in-progress: 2, ready: 0
     # queries un-processed: 0, in-progress: 1, ready: 1
+    # queries un-processed: 0, in-progress: 1, ready: 0
     # queries un-processed: 0, in-progress: 0, ready: 1
-    Done in 30.71sec.
+    Done in 21.97sec.
 
 
-    [36m(autoscaler +1m48s)[0m Tip: use `ray status` to view detailed cluster status. To disable these messages, set RAY_SCHEDULER_EVENTS=0.
+    [36m(autoscaler +26m40s)[0m Tip: use `ray status` to view detailed cluster status. To disable these messages, set RAY_SCHEDULER_EVENTS=0.
 
 
 ### Dataset overview with Mixtral responses
@@ -409,7 +403,7 @@ display(dataset_df.head())
       <td>Based on the features mentioned, which hotel d...</td>
       <td>[evol_instruct]</td>
       <td>Based on the features mentioned, Hotel A seems...</td>
-      <td>Based on the information provided, I would sa...</td>
+      <td>Based on the information provided, I would ne...</td>
     </tr>
     <tr>
       <th>113830</th>
@@ -423,7 +417,7 @@ display(dataset_df.head())
       <td>What are the 10 largest cities in the US by po...</td>
       <td>[lmsys-chat-1m]</td>
       <td>As of the most recent data available, the 10 l...</td>
-      <td>Here are the 10 largest cities in the U.S. by...</td>
+      <td>I'm here to help! According to the most recen...</td>
     </tr>
     <tr>
       <th>169249</th>
@@ -437,7 +431,7 @@ display(dataset_df.head())
       <td>Q: You are provided with an "Event", "Intent" ...</td>
       <td>[flan_v2_niv2]</td>
       <td>PersonX might feel satisfied or content using ...</td>
-      <td>Person X seems confident and comfortable usin...</td>
+      <td>Person X probably feels comfortable and focus...</td>
     </tr>
   </tbody>
 </table>
@@ -468,7 +462,7 @@ inspect_llm_judge_queries(dataset_df)
     Confidence: 85%
     
     [Assistant Answer]
-     Person X seems confident and comfortable using his preferred writing implement in class. He likely appreciates being able to use a tool that helps him feel more at ease and perform at his best.
+     Person X probably feels comfortable and focused in class, as they are using their preferred writing implement. They might appreciate being able to use a tool that helps them express their thoughts and ideas more effectively.
     
     Guidelines for Rating:
      - High Rating (4-5): Reserved for responses that are very close to the quality of the reference or even better.
@@ -501,15 +495,14 @@ dataset_df = generate_llm_judge_labels(dataset_df, openai_api_key)
     # queries un-processed: 26, in-progress: 4, ready: 0
     # queries un-processed: 25, in-progress: 5, ready: 0
     # queries un-processed: 24, in-progress: 5, ready: 1
-    # queries un-processed: 23, in-progress: 6, ready: 0
-    # queries un-processed: 22, in-progress: 7, ready: 0
-    # queries un-processed: 21, in-progress: 7, ready: 1
-    # queries un-processed: 20, in-progress: 8, ready: 0
-    # queries un-processed: 19, in-progress: 8, ready: 1
-    # queries un-processed: 18, in-progress: 9, ready: 0
-    # queries un-processed: 17, in-progress: 9, ready: 1
+    # queries un-processed: 23, in-progress: 5, ready: 1
+    # queries un-processed: 22, in-progress: 6, ready: 0
+    # queries un-processed: 21, in-progress: 6, ready: 1
+    # queries un-processed: 20, in-progress: 7, ready: 0
+    # queries un-processed: 19, in-progress: 7, ready: 1
+    # queries un-processed: 18, in-progress: 8, ready: 0
+    # queries un-processed: 17, in-progress: 9, ready: 0
     # queries un-processed: 16, in-progress: 9, ready: 1
-    # queries un-processed: 15, in-progress: 10, ready: 0
     # queries un-processed: 15, in-progress: 9, ready: 1
     # queries un-processed: 14, in-progress: 9, ready: 1
     # queries un-processed: 13, in-progress: 9, ready: 1
@@ -518,31 +511,32 @@ dataset_df = generate_llm_judge_labels(dataset_df, openai_api_key)
     # queries un-processed: 10, in-progress: 9, ready: 1
     # queries un-processed: 9, in-progress: 9, ready: 1
     # queries un-processed: 8, in-progress: 9, ready: 1
+    # queries un-processed: 7, in-progress: 10, ready: 0
     # queries un-processed: 7, in-progress: 9, ready: 1
-    # queries un-processed: 6, in-progress: 10, ready: 0
     # queries un-processed: 6, in-progress: 9, ready: 1
     # queries un-processed: 5, in-progress: 10, ready: 0
+    # queries un-processed: 5, in-progress: 10, ready: 0
     # queries un-processed: 5, in-progress: 9, ready: 1
-    # queries un-processed: 4, in-progress: 10, ready: 0
     # queries un-processed: 4, in-progress: 9, ready: 1
     # queries un-processed: 3, in-progress: 9, ready: 1
     # queries un-processed: 2, in-progress: 9, ready: 1
     # queries un-processed: 1, in-progress: 9, ready: 1
-    # queries un-processed: 0, in-progress: 10, ready: 0
     # queries un-processed: 0, in-progress: 9, ready: 1
     # queries un-processed: 0, in-progress: 8, ready: 1
+    # queries un-processed: 0, in-progress: 8, ready: 0
+    # queries un-processed: 0, in-progress: 8, ready: 0
     # queries un-processed: 0, in-progress: 7, ready: 1
+    # queries un-processed: 0, in-progress: 7, ready: 0
     # queries un-processed: 0, in-progress: 6, ready: 1
     # queries un-processed: 0, in-progress: 5, ready: 1
     # queries un-processed: 0, in-progress: 4, ready: 1
+    # queries un-processed: 0, in-progress: 4, ready: 0
     # queries un-processed: 0, in-progress: 3, ready: 1
     # queries un-processed: 0, in-progress: 2, ready: 1
     # queries un-processed: 0, in-progress: 2, ready: 0
     # queries un-processed: 0, in-progress: 1, ready: 1
-    # queries un-processed: 0, in-progress: 1, ready: 0
-    # queries un-processed: 0, in-progress: 1, ready: 0
     # queries un-processed: 0, in-progress: 0, ready: 1
-    Done in 15.33sec.
+    Done in 14.12sec.
 
 
 ### Dataset overview with score labels
@@ -585,7 +579,7 @@ display(dataset_df.head())
       <td>Based on the features mentioned, which hotel d...</td>
       <td>[evol_instruct]</td>
       <td>Based on the features mentioned, Hotel A seems...</td>
-      <td>Based on the information provided, I would sa...</td>
+      <td>Based on the information provided, I would ne...</td>
       <td>5</td>
     </tr>
     <tr>
@@ -601,7 +595,7 @@ display(dataset_df.head())
       <td>What are the 10 largest cities in the US by po...</td>
       <td>[lmsys-chat-1m]</td>
       <td>As of the most recent data available, the 10 l...</td>
-      <td>Here are the 10 largest cities in the U.S. by...</td>
+      <td>I'm here to help! According to the most recen...</td>
       <td>5</td>
     </tr>
     <tr>
@@ -610,14 +604,14 @@ display(dataset_df.head())
       <td>[ultrachat]</td>
       <td>Title: A Comparative Analysis of Driving a Car...</td>
       <td>Title: The Great Debate: Driving a Car vs. Ri...</td>
-      <td>4</td>
+      <td>3</td>
     </tr>
     <tr>
       <th>116934</th>
       <td>Q: You are provided with an "Event", "Intent" ...</td>
       <td>[flan_v2_niv2]</td>
       <td>PersonX might feel satisfied or content using ...</td>
-      <td>Person X seems confident and comfortable usin...</td>
+      <td>Person X probably feels comfortable and focus...</td>
       <td>5</td>
     </tr>
   </tbody>
@@ -643,6 +637,26 @@ print(f"Validation size: {len(valid_df)}")
 display(train_df.head())
 visualize_label_distribution(train_df, key="mixtral_score")
 ```
+
+
+    Downloading readme:   0%|          | 0.00/31.0 [00:00<?, ?B/s]
+
+
+
+    Downloading data:   0%|          | 0.00/290M [00:00<?, ?B/s]
+
+
+
+    Downloading data:   0%|          | 0.00/26.7M [00:00<?, ?B/s]
+
+
+
+    Generating train split:   0%|          | 0/109101 [00:00<?, ? examples/s]
+
+
+
+    Generating validation split:   0%|          | 0/10000 [00:00<?, ? examples/s]
+
 
     Train size: 109101
     Validation size: 10000
@@ -722,7 +736,7 @@ visualize_label_distribution(train_df, key="mixtral_score")
 
 
     
-![png](README_files/README_23_2.png)
+![png](README_files/README_23_7.png)
     
 
 
@@ -774,7 +788,7 @@ inspect_instructions(train_df)
     [Question]
     {question}
     
-    Prediction: 
+    Prediction:
     
 
 
@@ -797,7 +811,7 @@ display(train_df["messages"].iloc[0])
     [{'role': 'system',
       'content': '[Instruction]\nBased on the question provided below, predict the score an expert evaluator would give to an AI assistant\'s response, considering its helpfulness, relevance, adherence to facts, depth, creativity, and detail. Your prediction should infer the level of proficiency needed to address the question effectively. Use a scale from 1 to 5, where a higher score indicates a higher anticipated quality of response. Provide your prediction as: "[[predicted rating]]".\n\nScore criteria:\n- **4-5**: The AI assistant can produce a very strong answer, showing deep understanding, creativity, detailed insight, and high relevance.\n- **3**: The AI assistant can provide an adequate answer with moderate detail, relevance, and factual accuracy.\n- **1-2**: The AI assistant will struggle to produce a strong answer due to the question\'s difficulty, vagueness, or the assistant\'s limitations.\n'},
      {'role': 'user',
-      'content': "[Question]\nI'll give you a review, can you extract the food aspects and the opinion words of these aspects and analyze the sentiment of these opinion from this review? the review is:They tore the old NAME_1 down then built another one...? Anyway, they sell wine and beer and snacks and have a seating area inside and outside to eat. Besides gas, the big draw is the Made to Order food. I ordered some tacos and French toast sticks both were pretty good. I think I'd like to try more snacks.And they're open 24/7.\n\nPrediction: \n"},
+      'content': "[Question]\nI'll give you a review, can you extract the food aspects and the opinion words of these aspects and analyze the sentiment of these opinion from this review? the review is:They tore the old NAME_1 down then built another one...? Anyway, they sell wine and beer and snacks and have a seating area inside and outside to eat. Besides gas, the big draw is the Made to Order food. I ordered some tacos and French toast sticks both were pretty good. I think I'd like to try more snacks.And they're open 24/7.\n\nPrediction:\n"},
      {'role': 'assistant', 'content': '[[4]]'}]
 
 
@@ -870,8 +884,6 @@ For this tutorial, we will perform full-parameter finetuning of Llama3-8B on the
 
 
 
-
-
 ```python
 # View job yaml config
 !cat configs/ft_job.yaml
@@ -882,7 +894,6 @@ For this tutorial, we will perform full-parameter finetuning of Llama3-8B on the
     image_uri: localhost:5555/anyscale/llm-forge:0.5.0.0
     requirements: requirements.txt
     max_retries: 0
-    
 
 
 
@@ -890,18 +901,18 @@ For this tutorial, we will perform full-parameter finetuning of Llama3-8B on the
 import os
 
 # Initialize WANDB API key
-os.environ['WANDB_API_KEY'] = ''  # <-- replace with your token
+os.environ['WANDB_API_KEY'] = '34b8f32abb7ba71277361c99f84d9bea484b5d3b'  # <-- replace with your token
 
 # Job submission
 !anyscale job submit --config-file configs/ft_job.yaml --exclude assets
 ```
 
     [1m[36mOutput[0m[0m
-    [0m[1m[36m(anyscale +1.0s)[0m [0m[0m[0m[0mSubmitting job with config JobConfig(name='llm-router-tutorial', image_uri='localhost:5555/anyscale/llm-forge:0.5.0.0', compute_config=None, env_vars=None, py_modules=None, cloud=None, project=None).[0m
-    [0m[1m[36m(anyscale +2.4s)[0m [0m[0m[0m[0mUploading local dir '.' to cloud storage.[0m
-    [0m[1m[36m(anyscale +4.1s)[0m [0m[0m[0m[0mJob 'llm-router-tutorial' submitted, ID: 'prodjob_dt971fk6g1smfzyrulp9g9nzfs'.[0m
-    [0m[1m[36m(anyscale +4.1s)[0m [0m[0m[0m[0mView the job in the UI: https://console.anyscale.com/jobs/prodjob_dt971fk6g1smfzyrulp9g9nzfs[0m
-    [0m[1m[36m(anyscale +4.1s)[0m [0m[0m[0m[0mUse `--wait` to wait for the job to run and stream logs.[0m
+    [0m[1m[36m(anyscale +1.1s)[0m [0m[0m[0m[0mSubmitting job with config JobConfig(name='llm-router-tutorial', image_uri='localhost:5555/anyscale/llm-forge:0.5.0.0', compute_config=None, env_vars=None, py_modules=None, cloud=None, project=None).[0m
+    [0m[1m[36m(anyscale +2.6s)[0m [0m[0m[0m[0mUploading local dir '.' to cloud storage.[0m
+    [0m[1m[36m(anyscale +4.0s)[0m [0m[0m[0m[0mJob 'llm-router-tutorial' submitted, ID: 'prodjob_fe4gwqv9spsqzgjf4es3e6r6rk'.[0m
+    [0m[1m[36m(anyscale +4.0s)[0m [0m[0m[0m[0mView the job in the UI: https://console.anyscale.com/jobs/prodjob_fe4gwqv9spsqzgjf4es3e6r6rk[0m
+    [0m[1m[36m(anyscale +4.0s)[0m [0m[0m[0m[0mUse `--wait` to wait for the job to run and stream logs.[0m
     [0m[0m
 
 TODO: Add some text and screenshot of Ray Dashboard
@@ -941,7 +952,7 @@ plot_quality_cost_curve(oss_model_scores, closed_model_scores, router_prediction
 
 
     
-![png](README_files/README_45_0.png)
+![png](README_files/README_44_0.png)
     
 
 

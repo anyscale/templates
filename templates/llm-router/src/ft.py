@@ -28,10 +28,6 @@ def main(ft_config_path):
 
     entrypoint = f"llmforge dev finetune {ft_config_path}"
 
-    api_key = os.environ.get("WANDB_API_KEY", "")
-    if api_key:
-        entrypoint = f"WANDB_API_KEY={api_key} {entrypoint}"
-
     result = subprocess.run(entrypoint, check=True, shell=True)
     assert result.returncode == 0, "Finetuning failed."
 

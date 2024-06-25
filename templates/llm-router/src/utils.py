@@ -6,6 +6,7 @@ from IPython.display import display
 from datasets import load_dataset
 from typing import Dict, Any, List, Optional, Tuple
 import json
+import yaml
 
 
 pd.options.mode.chained_assignment = None
@@ -244,3 +245,16 @@ def inspect_instructions(dataset_df: pd.DataFrame) -> None:
         classifier_message = f2.read()
 
     print("\n".join([system_message, classifier_message]))
+
+
+def update_yaml_with_env_vars(file_path, env_vars):
+    """
+    Updates the YAML file at file_path with the given environment variables.
+    """
+    with open(file_path) as file:
+        yaml_content = yaml.safe_load(file)
+
+    yaml_content["env_vars"] = env_vars
+
+    with open(file_path, "w") as file:
+        yaml.dump(yaml_content, file)
