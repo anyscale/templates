@@ -68,7 +68,7 @@ MODEL_REPOSITORY = [LOCAL_MODEL_PATH]
 S3_PREFIX = "s3://"
 
 
-@ray.remote(num_gpus=1)
+@ray.remote(num_gpus=1, accelerator_type="T4")
 class TritonModelCompiler:
     def __init__(self):
         self.triton_server = tritonserver.Server(
