@@ -1,5 +1,5 @@
 head_node:
-  instance_type: g5.4xlarge
+  instance_type: m5.2xlarge
   resources:
     cpu: 0
 worker_nodes: []

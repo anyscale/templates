@@ -51,80 +51,94 @@ Unlike Nvidia's tutorial, this tutorial doesn't include models in the Docker ima
 Instead, in this section, you build the model and upload the model to cloud
 storage such as AWS S3 or GCP Storage for serving later.
 
-Run this code to start a Triton server using the `/tmp/workspace/diffusion-models`
-directory as the model repository.
-
+Run this code in a notebook to define a Ray Actor with Triton server using the
+`/tmp/workspace/diffusion-models` directory as the model repository. The actor also
+includes the methods to compile and upload the models.
 
 ```python
 import tritonserver
+import time
+import datetime
+import ray
+import os
+from typing import List
 
-model_repository = ["/tmp/workspace/diffusion-models"]
+LOCAL_MODEL_PATH = "/tmp/workspace/diffusion-models"
+MODEL_REPOSITORY = [LOCAL_MODEL_PATH]
+S3_PREFIX = "s3://"
 
-triton_server = tritonserver.Server(
-    model_repository=model_repository,
-    model_control_mode=tritonserver.ModelControlMode.EXPLICIT,
-)
-triton_server.start(wait_until_ready=True)
+
+@ray.remote(num_gpus=1)
+class TritonModelCompiler:
+    def __init__(self):
+        self.triton_server = tritonserver.Server(
+            model_repository=MODEL_REPOSITORY,
+            model_control_mode=tritonserver.ModelControlMode.EXPLICIT,
+        )
+        self.triton_server.start(wait_until_ready=True)
+
+    def _use_aws(self) -> bool:
+        if os.environ["ANYSCALE_ARTIFACT_STORAGE"].startswith(S3_PREFIX):
+            return True
+
+        return False
+
+    def _upload_commands(self) -> List[str]:
+        if self._use_aws():
+            command_prefix = "aws s3 cp"
+        else:
+            command_prefix = "gcloud storage cp"
+
+        return [
+            f"{command_prefix} {LOCAL_MODEL_PATH}/stable_diffusion_1_5/config.pbtxt $ANYSCALE_ARTIFACT_STORAGE/triton_model_repository/stable_diffusion_1_5/config.pbtxt",
+            f"{command_prefix} {LOCAL_MODEL_PATH}/stable_diffusion_1_5/1/1.5-engine-batch-size-1/ $ANYSCALE_ARTIFACT_STORAGE/triton_model_repository/stable_diffusion_1_5/1/1.5-engine-batch-size-1/ --recursive"
+        ]
+
+    def upload_model(self):
+        for command in self._upload_commands():
+            os.system(command)
+
+    def build_model(self):
+        print(f"start time: {datetime.datetime.now()}")
+        t0 = time.time()
+        """
+        The line below executes TensorRT's diffusion backend to compile the model.
+        It loads the weights from Hugging Face. Export the model into ONNX format
+        into the model repository directory. Then compile the model into a TensorRT engine
+        and store the artifacts in the model repository directory. For more details,
+        see the `stable_diffusion_pipeline.py` file in the `diffusion` directory.
+        """
+        model = self.triton_server.load("stable_diffusion_1_5")
+        duration = time.time() - t0
+        print(f"Total duration: {duration}s")
+
+        # Unload the model and the server to free the memory.
+        self.triton_server.unload(model, wait_until_unloaded=True)
+        self.triton_server.stop()
+
+        # Upload the model to the artifact storage.
+        self.upload_model()
+
 ```
 
-Compile the model using Triton's Python backend. The compile takes 10-15 minutes on a
-T4 GPU and 8-10 minutes on an A10G GPU. The model saves TensorRT engine artifacts
-in the `model_repository` directory. Keep in mind that the model compiling needs to be
-in the same type of GPU you plan to serve the model on.
-
+Run the code below in another notebook cell to compile and upload the model using
+Triton's Python backend. The compile takes 10-15 minutes on a T4 GPU and 8-10 minutes
+on an A10G GPU. The model saves TensorRT engine artifacts in the `model_repository`
+directory. Keep in mind that the model compiling needs to be in the same type of GPU
+you plan to serve the model on.
 
 
 ```python
-import time
-import datetime
-
-
-print(f"start time: {datetime.datetime.now()}")
-t0 = time.time()
-"""
-The line below executes TensorRT's diffusion backend to compile the model.
-It loads the weights from Hugging Face. Export the model into ONNX format
-into the model repository directory. Then compile the model into a TensorRT engine
-and store the artifacts in the model repository directory. For more details,
-see the `stable_diffusion_pipeline.py` file in the `diffusion` directory.
-"""
-model = triton_server.load("stable_diffusion_1_5")
-duration = time.time() - t0
-print(f"Total duration: {duration}s")
-
-# Unload the model and the server to free the memory.
-triton_server.unload(model, wait_until_unloaded=True)
-triton_server.stop()
+actor = TritonModelCompiler.remote()
+actor.build_model.remote()
 ```
 
-After the model compile completes, the previous step generates some .py and onnx files
-in the same model repository. You only need to upload both the model config file
+The previous step generates some .py and onnx files in the same model repository on
+the GPU worker. You only need to upload both the model config file
 `config.pbtxt` and the TensorRT engine artifacts from the model repository. Anyscale
 provides an environment variable `ANYSCALE_ARTIFACT_STORAGE` for customers to store
 model artifacts. To learn more about the storage, see
 [Object Storage (S3 or GCS buckets)](https://docs.anyscale.com/1.0.0/services/storage/#object-storage-s3-or-gcs-buckets).
-
-Use one of the following tabs to upload the model:
-
-
-<Tabs>
-    <TabItem value="AWS" label="AWS" default>
-
-```python
-aws s3 cp /tmp/workspace/diffusion-models/stable_diffusion_1_5/config.pbtxt $ANYSCALE_ARTIFACT_STORAGE/triton_model_repository/stable_diffusion_1_5/config.pbtxt
-aws s3 cp /tmp/workspace/diffusion-models/stable_diffusion_1_5/1/1.5-engine-batch-size-1/ $ANYSCALE_ARTIFACT_STORAGE/triton_model_repository/stable_diffusion_1_5/1/1.5-engine-batch-size-1/ --recursive
-```
-
-  </TabItem>
-  <TabItem value="GCP" label="GCP">
-
-```python
-gcloud storage cp /tmp/workspace/diffusion-models/stable_diffusion_1_5/config.pbtxt $ANYSCALE_ARTIFACT_STORAGE/triton_model_repository/stable_diffusion_1_5/config.pbtxt
-gcloud storage cp /tmp/workspace/diffusion-models/stable_diffusion_1_5/1/1.5-engine-batch-size-1/ $ANYSCALE_ARTIFACT_STORAGE/triton_model_repository/stable_diffusion_1_5/1/1.5-engine-batch-size-1/ --recursive
-```
-
-  </TabItem>
-</Tabs>
 
 ## Run Triton Server on Ray Serve locally in Anyscale Workspaces
 
