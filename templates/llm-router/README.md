@@ -157,6 +157,9 @@ nectar_df = load_and_display_nectar()
 
     /home/ray/anaconda3/lib/python3.11/site-packages/tqdm/auto.py:21: TqdmWarning: IProgress not found. Please update jupyter and ipywidgets. See https://ipywidgets.readthedocs.io/en/stable/user_install.html
       from .autonotebook import tqdm as notebook_tqdm
+    Downloading readme: 100%|██████████| 8.65k/8.65k [00:00<00:00, 23.1MB/s]
+    Downloading data: 100%|██████████| 517M/517M [00:01<00:00, 261MB/s]  
+    Generating train split: 100%|██████████| 182954/182954 [00:05<00:00, 35394.33 examples/s]
 
 
 
@@ -356,6 +359,7 @@ There are two main steps in this process:
 
 ```python
 import yaml
+import os
 from src.online_inference import generate_mixtral_responses
 
 dataset_df = generate_mixtral_responses(
@@ -363,16 +367,16 @@ dataset_df = generate_mixtral_responses(
 )
 ```
 
-    2024-06-26 20:07:23,050	INFO util.py:154 -- Missing packages: ['ipywidgets']. Run `pip install -U ipywidgets`, then restart the notebook server for rich notebook output.
+    2024-06-27 23:25:17,010	INFO util.py:154 -- Missing packages: ['ipywidgets']. Run `pip install -U ipywidgets`, then restart the notebook server for rich notebook output.
 
 
     Starting batch inference on 30 queries...
 
 
-    2024-06-26 20:07:23,982	INFO worker.py:1585 -- Connecting to existing Ray cluster at address: 10.0.61.128:6379...
-    2024-06-26 20:07:23,991	INFO worker.py:1761 -- Connected to Ray cluster. View the dashboard at [1m[32mhttps://session-ie1npcvmhzhmlk4mnmeims7iv8.i.anyscaleuserdata.com [39m[22m
-    2024-06-26 20:07:23,998	INFO packaging.py:358 -- Pushing file package 'gcs://_ray_pkg_6acaf0ecb9adb695d3cb6773ab0c55a75bc59abe.zip' (0.59MiB) to Ray cluster...
-    2024-06-26 20:07:24,000	INFO packaging.py:371 -- Successfully pushed file package 'gcs://_ray_pkg_6acaf0ecb9adb695d3cb6773ab0c55a75bc59abe.zip'.
+    2024-06-27 23:25:17,811	INFO worker.py:1585 -- Connecting to existing Ray cluster at address: 10.0.153.206:6379...
+    2024-06-27 23:25:17,821	INFO worker.py:1761 -- Connected to Ray cluster. View the dashboard at [1m[32mhttps://session-ie1npcvmhzhmlk4mnmeims7iv8.i.anyscaleuserdata.com [39m[22m
+    2024-06-27 23:25:17,829	INFO packaging.py:358 -- Pushing file package 'gcs://_ray_pkg_5e0612db743e039a5cef9757da14bd577282352b.zip' (0.71MiB) to Ray cluster...
+    2024-06-27 23:25:17,832	INFO packaging.py:371 -- Successfully pushed file package 'gcs://_ray_pkg_5e0612db743e039a5cef9757da14bd577282352b.zip'.
 
 
     # queries un-processed: 29, in-progress: 1, ready: 0
@@ -392,58 +396,52 @@ dataset_df = generate_mixtral_responses(
     # queries un-processed: 15, in-progress: 15, ready: 0
     # queries un-processed: 14, in-progress: 16, ready: 0
     # queries un-processed: 13, in-progress: 17, ready: 0
-    # queries un-processed: 12, in-progress: 18, ready: 0
-    # queries un-processed: 11, in-progress: 18, ready: 1
-    # queries un-processed: 10, in-progress: 19, ready: 0
-    # queries un-processed: 9, in-progress: 19, ready: 1
-    # queries un-processed: 8, in-progress: 19, ready: 1
-    # queries un-processed: 7, in-progress: 19, ready: 1
-    # queries un-processed: 6, in-progress: 19, ready: 1
-    # queries un-processed: 5, in-progress: 19, ready: 1
+    # queries un-processed: 12, in-progress: 17, ready: 1
+    # queries un-processed: 11, in-progress: 17, ready: 1
+    # queries un-processed: 10, in-progress: 17, ready: 1
+    # queries un-processed: 9, in-progress: 18, ready: 0
+    # queries un-processed: 8, in-progress: 18, ready: 1
+    # queries un-processed: 7, in-progress: 18, ready: 1
+    # queries un-processed: 6, in-progress: 18, ready: 1
+    # queries un-processed: 5, in-progress: 19, ready: 0
     # queries un-processed: 4, in-progress: 19, ready: 1
-    # queries un-processed: 3, in-progress: 20, ready: 0
-    # queries un-processed: 2, in-progress: 21, ready: 0
-    # queries un-processed: 1, in-progress: 22, ready: 0
-    # queries un-processed: 0, in-progress: 22, ready: 1
-    # queries un-processed: 0, in-progress: 22, ready: 0
+    # queries un-processed: 3, in-progress: 19, ready: 1
+    # queries un-processed: 2, in-progress: 20, ready: 0
+    # queries un-processed: 1, in-progress: 21, ready: 0
     # queries un-processed: 0, in-progress: 21, ready: 1
     # queries un-processed: 0, in-progress: 20, ready: 1
     # queries un-processed: 0, in-progress: 20, ready: 0
     # queries un-processed: 0, in-progress: 19, ready: 1
+    # queries un-processed: 0, in-progress: 19, ready: 0
     # queries un-processed: 0, in-progress: 18, ready: 1
-    # queries un-processed: 0, in-progress: 18, ready: 0
-    # queries un-processed: 0, in-progress: 18, ready: 0
     # queries un-processed: 0, in-progress: 17, ready: 1
-    # queries un-processed: 0, in-progress: 17, ready: 0
     # queries un-processed: 0, in-progress: 16, ready: 1
     # queries un-processed: 0, in-progress: 15, ready: 1
+    # queries un-processed: 0, in-progress: 15, ready: 0
     # queries un-processed: 0, in-progress: 14, ready: 1
     # queries un-processed: 0, in-progress: 13, ready: 1
+    # queries un-processed: 0, in-progress: 13, ready: 0
     # queries un-processed: 0, in-progress: 12, ready: 1
+    # queries un-processed: 0, in-progress: 12, ready: 0
     # queries un-processed: 0, in-progress: 11, ready: 1
     # queries un-processed: 0, in-progress: 10, ready: 1
     # queries un-processed: 0, in-progress: 9, ready: 1
-    # queries un-processed: 0, in-progress: 9, ready: 0
     # queries un-processed: 0, in-progress: 8, ready: 1
-    # queries un-processed: 0, in-progress: 8, ready: 0
     # queries un-processed: 0, in-progress: 7, ready: 1
     # queries un-processed: 0, in-progress: 6, ready: 1
+    # queries un-processed: 0, in-progress: 6, ready: 0
+    # queries un-processed: 0, in-progress: 6, ready: 0
+    # queries un-processed: 0, in-progress: 6, ready: 0
     # queries un-processed: 0, in-progress: 5, ready: 1
-    # queries un-processed: 0, in-progress: 5, ready: 0
-    # queries un-processed: 0, in-progress: 5, ready: 0
     # queries un-processed: 0, in-progress: 4, ready: 1
     # queries un-processed: 0, in-progress: 3, ready: 1
+    # queries un-processed: 0, in-progress: 3, ready: 0
     # queries un-processed: 0, in-progress: 2, ready: 1
     # queries un-processed: 0, in-progress: 2, ready: 0
     # queries un-processed: 0, in-progress: 1, ready: 1
     # queries un-processed: 0, in-progress: 1, ready: 0
-    # queries un-processed: 0, in-progress: 1, ready: 0
-    # queries un-processed: 0, in-progress: 1, ready: 0
     # queries un-processed: 0, in-progress: 0, ready: 1
-    Done in 23.44sec.
-
-
-    [36m(autoscaler +1m13s)[0m Tip: use `ray status` to view detailed cluster status. To disable these messages, set RAY_SCHEDULER_EVENTS=0.
+    Done in 24.09sec.
 
 
 ### Dataset overview with Mixtral responses
@@ -485,7 +483,7 @@ display(dataset_df.head())
       <td>Based on the features mentioned, which hotel d...</td>
       <td>[evol_instruct]</td>
       <td>Based on the features mentioned, Hotel A seems...</td>
-      <td>Based on the information provided, I would su...</td>
+      <td>Based on the information provided, I would ne...</td>
     </tr>
     <tr>
       <th>113830</th>
@@ -513,7 +511,7 @@ display(dataset_df.head())
       <td>Q: You are provided with an "Event", "Intent" ...</td>
       <td>[flan_v2_niv2]</td>
       <td>PersonX might feel satisfied or content using ...</td>
-      <td>PersonX probably feels comfortable and focuse...</td>
+      <td>Person X probably feels comfortable and satis...</td>
     </tr>
   </tbody>
 </table>
@@ -544,7 +542,7 @@ inspect_llm_judge_queries(dataset_df)
     Confidence: 85%
     
     [Assistant Answer]
-     PersonX probably feels comfortable and focused in class, since they are using their preferred writing implement. This may help them to engage more actively in the class activities and to express their ideas more effectively.
+     Person X probably feels comfortable and satisfied using his preferred writing implement in class. He might appreciate the school's policy or the teacher's understanding, which allowed him to use his preferred tool for learning.
     
     Guidelines for Rating:
      - High Rating (4-5): Reserved for responses that are very close to the quality of the reference or even better.
@@ -718,8 +716,11 @@ display(train_df.head())
 visualize_label_distribution(train_df, key="mixtral_score")
 ```
 
-    /home/ray/anaconda3/lib/python3.11/site-packages/tqdm/auto.py:21: TqdmWarning: IProgress not found. Please update jupyter and ipywidgets. See https://ipywidgets.readthedocs.io/en/stable/user_install.html
-      from .autonotebook import tqdm as notebook_tqdm
+    Downloading readme: 100%|██████████| 31.0/31.0 [00:00<00:00, 277kB/s]
+    Downloading data: 100%|██████████| 290M/290M [00:01<00:00, 235MB/s]  
+    Downloading data: 100%|██████████| 26.7M/26.7M [00:00<00:00, 71.7MB/s]
+    Generating train split: 100%|██████████| 109101/109101 [00:00<00:00, 177897.52 examples/s]
+    Generating validation split: 100%|██████████| 10000/10000 [00:00<00:00, 172485.85 examples/s]
 
 
     Train size: 109101
@@ -1005,6 +1006,12 @@ Next, we will conduct an offline evaluation of the model trained on an out-of-do
 
     fatal: destination path '/home/ray/default/RouteLLM' already exists and is not an empty directory.
     /home/ray/default/RouteLLM
+
+
+    /home/ray/anaconda3/lib/python3.11/site-packages/IPython/core/magics/osm.py:417: UserWarning: This is now an optional IPython functionality, setting dhist requires you to install the `pickleshare` library.
+      self.shell.db['dhist'] = compress_dhist(dhist)[-100:]
+
+
     Obtaining file:///home/ray/default/RouteLLM
       Installing build dependencies ... [?25ldone
     [?25h  Checking if build backend supports build_editable ... [?25ldone
@@ -1014,16 +1021,23 @@ Next, we will conduct an offline evaluation of the model trained on an out-of-do
     Requirement already satisfied: pydantic in /home/ray/anaconda3/lib/python3.11/site-packages (2.5.0)
     Requirement already satisfied: numpy in /home/ray/anaconda3/lib/python3.11/site-packages (1.24.4)
     Requirement already satisfied: pandas in /home/ray/anaconda3/lib/python3.11/site-packages (1.5.3)
-    Requirement already satisfied: torch in /home/ray/anaconda3/lib/python3.11/site-packages (2.3.1)
+    Collecting torch
+      Downloading torch-2.3.1-cp311-cp311-manylinux1_x86_64.whl.metadata (26 kB)
     Requirement already satisfied: scikit-learn in /home/ray/anaconda3/lib/python3.11/site-packages (1.5.0)
     Requirement already satisfied: tqdm in /home/ray/anaconda3/lib/python3.11/site-packages (4.66.4)
     Requirement already satisfied: openai in /home/ray/anaconda3/lib/python3.11/site-packages (1.35.3)
-    Requirement already satisfied: transformers in /home/ray/anaconda3/lib/python3.11/site-packages (4.41.2)
-    Requirement already satisfied: tiktoken in /home/ray/anaconda3/lib/python3.11/site-packages (0.7.0)
+    Collecting transformers
+      Downloading transformers-4.42.1-py3-none-any.whl.metadata (43 kB)
+    [2K     [90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m43.6/43.6 kB[0m [31m3.4 MB/s[0m eta [36m0:00:00[0m
+    [?25hCollecting tiktoken
+      Downloading tiktoken-0.7.0-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (6.6 kB)
     Requirement already satisfied: datasets in /home/ray/anaconda3/lib/python3.11/site-packages (2.20.0)
     Requirement already satisfied: matplotlib in /home/ray/anaconda3/lib/python3.11/site-packages (3.9.0)
-    Requirement already satisfied: pandarallel in /home/ray/anaconda3/lib/python3.11/site-packages (1.6.5)
-    Requirement already satisfied: sglang in /home/ray/anaconda3/lib/python3.11/site-packages (0.1.17)
+    Collecting pandarallel
+      Downloading pandarallel-1.6.5.tar.gz (14 kB)
+      Preparing metadata (setup.py) ... [?25ldone
+    [?25hCollecting sglang
+      Downloading sglang-0.1.17-py3-none-any.whl.metadata (29 kB)
     Requirement already satisfied: filelock in /home/ray/anaconda3/lib/python3.11/site-packages (from datasets) (3.13.1)
     Requirement already satisfied: pyarrow>=15.0.0 in /home/ray/anaconda3/lib/python3.11/site-packages (from datasets) (16.1.0)
     Requirement already satisfied: pyarrow-hotfix in /home/ray/anaconda3/lib/python3.11/site-packages (from datasets) (0.6)
@@ -1054,25 +1068,43 @@ Next, we will conduct an offline evaluation of the model trained on an out-of-do
     Requirement already satisfied: scipy>=1.6.0 in /home/ray/anaconda3/lib/python3.11/site-packages (from scikit-learn) (1.11.4)
     Requirement already satisfied: joblib>=1.2.0 in /home/ray/anaconda3/lib/python3.11/site-packages (from scikit-learn) (1.4.2)
     Requirement already satisfied: threadpoolctl>=3.1.0 in /home/ray/anaconda3/lib/python3.11/site-packages (from scikit-learn) (3.5.0)
-    Requirement already satisfied: regex>=2022.1.18 in /home/ray/anaconda3/lib/python3.11/site-packages (from tiktoken) (2024.5.15)
-    Requirement already satisfied: sympy in /home/ray/anaconda3/lib/python3.11/site-packages (from torch) (1.12.1)
+    Collecting regex>=2022.1.18 (from tiktoken)
+      Downloading regex-2024.5.15-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (40 kB)
+    [2K     [90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m40.9/40.9 kB[0m [31m4.0 MB/s[0m eta [36m0:00:00[0m
+    [?25hCollecting sympy (from torch)
+      Downloading sympy-1.12.1-py3-none-any.whl.metadata (12 kB)
     Requirement already satisfied: networkx in /home/ray/anaconda3/lib/python3.11/site-packages (from torch) (3.2.1)
     Requirement already satisfied: jinja2 in /home/ray/anaconda3/lib/python3.11/site-packages (from torch) (3.1.2)
-    Requirement already satisfied: nvidia-cuda-nvrtc-cu12==12.1.105 in /home/ray/anaconda3/lib/python3.11/site-packages (from torch) (12.1.105)
-    Requirement already satisfied: nvidia-cuda-runtime-cu12==12.1.105 in /home/ray/anaconda3/lib/python3.11/site-packages (from torch) (12.1.105)
-    Requirement already satisfied: nvidia-cuda-cupti-cu12==12.1.105 in /home/ray/anaconda3/lib/python3.11/site-packages (from torch) (12.1.105)
-    Requirement already satisfied: nvidia-cudnn-cu12==8.9.2.26 in /home/ray/anaconda3/lib/python3.11/site-packages (from torch) (8.9.2.26)
-    Requirement already satisfied: nvidia-cublas-cu12==12.1.3.1 in /home/ray/anaconda3/lib/python3.11/site-packages (from torch) (12.1.3.1)
-    Requirement already satisfied: nvidia-cufft-cu12==11.0.2.54 in /home/ray/anaconda3/lib/python3.11/site-packages (from torch) (11.0.2.54)
-    Requirement already satisfied: nvidia-curand-cu12==10.3.2.106 in /home/ray/anaconda3/lib/python3.11/site-packages (from torch) (10.3.2.106)
-    Requirement already satisfied: nvidia-cusolver-cu12==11.4.5.107 in /home/ray/anaconda3/lib/python3.11/site-packages (from torch) (11.4.5.107)
-    Requirement already satisfied: nvidia-cusparse-cu12==12.1.0.106 in /home/ray/anaconda3/lib/python3.11/site-packages (from torch) (12.1.0.106)
-    Requirement already satisfied: nvidia-nccl-cu12==2.20.5 in /home/ray/anaconda3/lib/python3.11/site-packages (from torch) (2.20.5)
-    Requirement already satisfied: nvidia-nvtx-cu12==12.1.105 in /home/ray/anaconda3/lib/python3.11/site-packages (from torch) (12.1.105)
-    Requirement already satisfied: triton==2.3.1 in /home/ray/anaconda3/lib/python3.11/site-packages (from torch) (2.3.1)
-    Requirement already satisfied: nvidia-nvjitlink-cu12 in /home/ray/anaconda3/lib/python3.11/site-packages (from nvidia-cusolver-cu12==11.4.5.107->torch) (12.5.40)
-    Requirement already satisfied: tokenizers<0.20,>=0.19 in /home/ray/anaconda3/lib/python3.11/site-packages (from transformers) (0.19.1)
-    Requirement already satisfied: safetensors>=0.4.1 in /home/ray/anaconda3/lib/python3.11/site-packages (from transformers) (0.4.3)
+    Collecting nvidia-cuda-nvrtc-cu12==12.1.105 (from torch)
+      Downloading nvidia_cuda_nvrtc_cu12-12.1.105-py3-none-manylinux1_x86_64.whl.metadata (1.5 kB)
+    Collecting nvidia-cuda-runtime-cu12==12.1.105 (from torch)
+      Downloading nvidia_cuda_runtime_cu12-12.1.105-py3-none-manylinux1_x86_64.whl.metadata (1.5 kB)
+    Collecting nvidia-cuda-cupti-cu12==12.1.105 (from torch)
+      Downloading nvidia_cuda_cupti_cu12-12.1.105-py3-none-manylinux1_x86_64.whl.metadata (1.6 kB)
+    Collecting nvidia-cudnn-cu12==8.9.2.26 (from torch)
+      Downloading nvidia_cudnn_cu12-8.9.2.26-py3-none-manylinux1_x86_64.whl.metadata (1.6 kB)
+    Collecting nvidia-cublas-cu12==12.1.3.1 (from torch)
+      Downloading nvidia_cublas_cu12-12.1.3.1-py3-none-manylinux1_x86_64.whl.metadata (1.5 kB)
+    Collecting nvidia-cufft-cu12==11.0.2.54 (from torch)
+      Downloading nvidia_cufft_cu12-11.0.2.54-py3-none-manylinux1_x86_64.whl.metadata (1.5 kB)
+    Collecting nvidia-curand-cu12==10.3.2.106 (from torch)
+      Downloading nvidia_curand_cu12-10.3.2.106-py3-none-manylinux1_x86_64.whl.metadata (1.5 kB)
+    Collecting nvidia-cusolver-cu12==11.4.5.107 (from torch)
+      Downloading nvidia_cusolver_cu12-11.4.5.107-py3-none-manylinux1_x86_64.whl.metadata (1.6 kB)
+    Collecting nvidia-cusparse-cu12==12.1.0.106 (from torch)
+      Downloading nvidia_cusparse_cu12-12.1.0.106-py3-none-manylinux1_x86_64.whl.metadata (1.6 kB)
+    Collecting nvidia-nccl-cu12==2.20.5 (from torch)
+      Downloading nvidia_nccl_cu12-2.20.5-py3-none-manylinux2014_x86_64.whl.metadata (1.8 kB)
+    Collecting nvidia-nvtx-cu12==12.1.105 (from torch)
+      Downloading nvidia_nvtx_cu12-12.1.105-py3-none-manylinux1_x86_64.whl.metadata (1.7 kB)
+    Collecting triton==2.3.1 (from torch)
+      Downloading triton-2.3.1-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (1.4 kB)
+    Collecting nvidia-nvjitlink-cu12 (from nvidia-cusolver-cu12==11.4.5.107->torch)
+      Downloading nvidia_nvjitlink_cu12-12.5.40-py3-none-manylinux2014_x86_64.whl.metadata (1.5 kB)
+    Collecting tokenizers<0.20,>=0.19 (from transformers)
+      Downloading tokenizers-0.19.1-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (6.7 kB)
+    Collecting safetensors>=0.4.1 (from transformers)
+      Downloading safetensors-0.4.3-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (3.8 kB)
     Requirement already satisfied: idna>=2.8 in /home/ray/anaconda3/lib/python3.11/site-packages (from anyio<5,>=3.5.0->openai) (3.7)
     Requirement already satisfied: attrs>=17.3.0 in /home/ray/anaconda3/lib/python3.11/site-packages (from aiohttp->datasets) (23.2.0)
     Requirement already satisfied: charset-normalizer<4.0,>=2.0 in /home/ray/anaconda3/lib/python3.11/site-packages (from aiohttp->datasets) (3.3.2)
@@ -1087,19 +1119,63 @@ Next, we will conduct an offline evaluation of the model trained on an out-of-do
     Requirement already satisfied: six>=1.5 in /home/ray/anaconda3/lib/python3.11/site-packages (from python-dateutil>=2.7->matplotlib) (1.16.0)
     Requirement already satisfied: urllib3<3,>=1.21.1 in /home/ray/anaconda3/lib/python3.11/site-packages (from requests>=2.32.2->datasets) (1.26.18)
     Requirement already satisfied: MarkupSafe>=2.0 in /home/ray/anaconda3/lib/python3.11/site-packages (from jinja2->torch) (2.1.3)
-    Requirement already satisfied: mpmath<1.4.0,>=1.1.0 in /home/ray/anaconda3/lib/python3.11/site-packages (from sympy->torch) (1.3.0)
-    Checking if build backend supports build_editable ... [?25ldone
-    [?25hBuilding wheels for collected packages: routellm
+    Collecting mpmath<1.4.0,>=1.1.0 (from sympy->torch)
+      Downloading mpmath-1.3.0-py3-none-any.whl.metadata (8.6 kB)
+    Downloading sglang-0.1.17-py3-none-any.whl (192 kB)
+    [2K   [90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m192.6/192.6 kB[0m [31m6.7 MB/s[0m eta [36m0:00:00[0m
+    [?25hDownloading tiktoken-0.7.0-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (1.1 MB)
+    [2K   [90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m1.1/1.1 MB[0m [31m34.5 MB/s[0m eta [36m0:00:00[0m
+    [?25hDownloading torch-2.3.1-cp311-cp311-manylinux1_x86_64.whl (779.2 MB)
+    [2K   [90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m779.2/779.2 MB[0m [31m5.9 MB/s[0m eta [36m0:00:00[0m:00:01[0m00:01[0m
+    [?25hDownloading nvidia_cublas_cu12-12.1.3.1-py3-none-manylinux1_x86_64.whl (410.6 MB)
+    [2K   [90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m410.6/410.6 MB[0m [31m10.9 MB/s[0m eta [36m0:00:00[0m00:01[0m00:01[0m
+    [?25hDownloading nvidia_cuda_cupti_cu12-12.1.105-py3-none-manylinux1_x86_64.whl (14.1 MB)
+    [2K   [90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m14.1/14.1 MB[0m [31m102.3 MB/s[0m eta [36m0:00:00[0m00:01[0m00:01[0m
+    [?25hDownloading nvidia_cuda_nvrtc_cu12-12.1.105-py3-none-manylinux1_x86_64.whl (23.7 MB)
+    [2K   [90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m23.7/23.7 MB[0m [31m83.8 MB/s[0m eta [36m0:00:00[0m:00:01[0m00:01[0m
+    [?25hDownloading nvidia_cuda_runtime_cu12-12.1.105-py3-none-manylinux1_x86_64.whl (823 kB)
+    [2K   [90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m823.6/823.6 kB[0m [31m46.4 MB/s[0m eta [36m0:00:00[0m
+    [?25hDownloading nvidia_cudnn_cu12-8.9.2.26-py3-none-manylinux1_x86_64.whl (731.7 MB)
+    [2K   [90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m731.7/731.7 MB[0m [31m6.4 MB/s[0m eta [36m0:00:00[0m:00:01[0m00:01[0m
+    [?25hDownloading nvidia_cufft_cu12-11.0.2.54-py3-none-manylinux1_x86_64.whl (121.6 MB)
+    [2K   [90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m121.6/121.6 MB[0m [31m30.3 MB/s[0m eta [36m0:00:00[0m00:01[0m00:01[0m
+    [?25hDownloading nvidia_curand_cu12-10.3.2.106-py3-none-manylinux1_x86_64.whl (56.5 MB)
+    [2K   [90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m56.5/56.5 MB[0m [31m53.1 MB/s[0m eta [36m0:00:00[0m:00:01[0m00:01[0m
+    [?25hDownloading nvidia_cusolver_cu12-11.4.5.107-py3-none-manylinux1_x86_64.whl (124.2 MB)
+    [2K   [90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m124.2/124.2 MB[0m [31m30.7 MB/s[0m eta [36m0:00:00[0m00:01[0m00:01[0m
+    [?25hDownloading nvidia_cusparse_cu12-12.1.0.106-py3-none-manylinux1_x86_64.whl (196.0 MB)
+    [2K   [90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m196.0/196.0 MB[0m [31m20.8 MB/s[0m eta [36m0:00:00[0m00:01[0m00:01[0m
+    [?25hDownloading nvidia_nccl_cu12-2.20.5-py3-none-manylinux2014_x86_64.whl (176.2 MB)
+    [2K   [90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m176.2/176.2 MB[0m [31m22.4 MB/s[0m eta [36m0:00:00[0m00:01[0m00:01[0m
+    [?25hDownloading nvidia_nvtx_cu12-12.1.105-py3-none-manylinux1_x86_64.whl (99 kB)
+    [2K   [90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m99.1/99.1 kB[0m [31m12.2 MB/s[0m eta [36m0:00:00[0m
+    [?25hDownloading triton-2.3.1-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (168.1 MB)
+    [2K   [90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m168.1/168.1 MB[0m [31m23.8 MB/s[0m eta [36m0:00:00[0m00:01[0m00:01[0m
+    [?25hDownloading transformers-4.42.1-py3-none-any.whl (9.3 MB)
+    [2K   [90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m9.3/9.3 MB[0m [31m109.9 MB/s[0m eta [36m0:00:00[0m00:01[0m00:01[0m
+    [?25hDownloading regex-2024.5.15-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (785 kB)
+    [2K   [90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m785.0/785.0 kB[0m [31m52.3 MB/s[0m eta [36m0:00:00[0m
+    [?25hDownloading safetensors-0.4.3-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (1.2 MB)
+    [2K   [90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m1.2/1.2 MB[0m [31m63.7 MB/s[0m eta [36m0:00:00[0m
+    [?25hDownloading tokenizers-0.19.1-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (3.6 MB)
+    [2K   [90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m3.6/3.6 MB[0m [31m94.3 MB/s[0m eta [36m0:00:00[0m:00:01[0m
+    [?25hDownloading sympy-1.12.1-py3-none-any.whl (5.7 MB)
+    [2K   [90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m5.7/5.7 MB[0m [31m109.2 MB/s[0m eta [36m0:00:00[0m00:01[0m
+    [?25hDownloading mpmath-1.3.0-py3-none-any.whl (536 kB)
+    [2K   [90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m536.2/536.2 kB[0m [31m40.7 MB/s[0m eta [36m0:00:00[0m
+    [?25hDownloading nvidia_nvjitlink_cu12-12.5.40-py3-none-manylinux2014_x86_64.whl (21.3 MB)
+    [2K   [90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m21.3/21.3 MB[0m [31m90.6 MB/s[0m eta [36m0:00:00[0m:00:01[0m00:01[0m
+    [?25hChecking if build backend supports build_editable ... [?25ldone
+    [?25hBuilding wheels for collected packages: pandarallel, routellm
+      Building wheel for pandarallel (setup.py) ... [?25ldone
+    [?25h  Created wheel for pandarallel: filename=pandarallel-1.6.5-py3-none-any.whl size=16672 sha256=de020bca046f4767c58ea654908fefee8bf7fc4ee94e8f47f19db4a9735173f2
+      Stored in directory: /home/ray/.cache/pip/wheels/b9/c6/5a/829298789e94348b81af52ab42c19d49da007306bbcc983827
       Building editable for routellm (pyproject.toml) ... [?25ldone
-    [?25h  Created wheel for routellm: filename=routellm-0.0.1-0.editable-py3-none-any.whl size=10785 sha256=84ab8906055e504944a51cb000787d8af6ddd927baa6e21fc156c7069aed4a7e
-      Stored in directory: /tmp/pip-ephem-wheel-cache-martye5x/wheels/8e/10/db/07a53081bdd69bb23b6b05beaa6e47cdcb04d7af2d25d7f893
-    Successfully built routellm
-    Installing collected packages: routellm
-      Attempting uninstall: routellm
-        Found existing installation: routellm 0.0.1
-        Uninstalling routellm-0.0.1:
-          Successfully uninstalled routellm-0.0.1
-    Successfully installed routellm-0.0.1
+    [?25h  Created wheel for routellm: filename=routellm-0.0.1-0.editable-py3-none-any.whl size=10785 sha256=716d3f0891f6e2c3d882dfcdff37ffcf72963314dad332eaa890714267d2ca6f
+      Stored in directory: /tmp/pip-ephem-wheel-cache-donnz51o/wheels/8e/10/db/07a53081bdd69bb23b6b05beaa6e47cdcb04d7af2d25d7f893
+    Successfully built pandarallel routellm
+    Installing collected packages: mpmath, triton, sympy, safetensors, regex, nvidia-nvtx-cu12, nvidia-nvjitlink-cu12, nvidia-nccl-cu12, nvidia-curand-cu12, nvidia-cufft-cu12, nvidia-cuda-runtime-cu12, nvidia-cuda-nvrtc-cu12, nvidia-cuda-cupti-cu12, nvidia-cublas-cu12, tiktoken, sglang, nvidia-cusparse-cu12, nvidia-cudnn-cu12, tokenizers, pandarallel, nvidia-cusolver-cu12, transformers, torch, routellm
+    Successfully installed mpmath-1.3.0 nvidia-cublas-cu12-12.1.3.1 nvidia-cuda-cupti-cu12-12.1.105 nvidia-cuda-nvrtc-cu12-12.1.105 nvidia-cuda-runtime-cu12-12.1.105 nvidia-cudnn-cu12-8.9.2.26 nvidia-cufft-cu12-11.0.2.54 nvidia-curand-cu12-10.3.2.106 nvidia-cusolver-cu12-11.4.5.107 nvidia-cusparse-cu12-12.1.0.106 nvidia-nccl-cu12-2.20.5 nvidia-nvjitlink-cu12-12.5.40 nvidia-nvtx-cu12-12.1.105 pandarallel-1.6.5 regex-2024.5.15 routellm-0.0.1 safetensors-0.4.3 sglang-0.1.17 sympy-1.12.1 tiktoken-0.7.0 tokenizers-0.19.1 torch-2.3.1 transformers-4.42.1 triton-2.3.1
     [33mWARNING: 
     [93m#################
     
@@ -1179,17 +1255,19 @@ pprint(result)
     Loading model checkpoint from routellm/causal_llm_gpt4_augmented ...
 
 
-    Loading checkpoint shards: 100%|██████████| 4/4 [00:02<00:00,  1.73it/s]
+    Downloading shards: 100%|██████████| 4/4 [07:30<00:00, 112.51s/it]
+    Loading checkpoint shards: 100%|██████████| 4/4 [00:02<00:00,  1.49it/s]
     Special tokens have been added in the vocabulary, make sure the associated word embeddings are fine-tuned or trained.
 
 
-    Done loading model in 7.428065061569214 seconds.
+    Done loading model in 459.31830739974976 seconds.
 
 
-    /home/ray/anaconda3/lib/python3.11/site-packages/transformers/generation/configuration_utils.py:515: UserWarning: `do_sample` is set to `False`. However, `temperature` is set to `0.6` -- this flag is only used in sample-based generation modes. You should set `do_sample=True` or unset `temperature`.
+    /home/ray/anaconda3/lib/python3.11/site-packages/transformers/generation/configuration_utils.py:540: UserWarning: `do_sample` is set to `False`. However, `temperature` is set to `0.6` -- this flag is only used in sample-based generation modes. You should set `do_sample=True` or unset `temperature`.
       warnings.warn(
-    /home/ray/anaconda3/lib/python3.11/site-packages/transformers/generation/configuration_utils.py:520: UserWarning: `do_sample` is set to `False`. However, `top_p` is set to `0.9` -- this flag is only used in sample-based generation modes. You should set `do_sample=True` or unset `top_p`.
+    /home/ray/anaconda3/lib/python3.11/site-packages/transformers/generation/configuration_utils.py:545: UserWarning: `do_sample` is set to `False`. However, `top_p` is set to `0.9` -- this flag is only used in sample-based generation modes. You should set `do_sample=True` or unset `top_p`.
       warnings.warn(
+    The attention mask is not set and cannot be inferred from input because pad token is same as eos token.As a consequence, you may observe unexpected behavior. Please pass your input's `attention_mask` to obtain reliable results.
 
 
     {'binary_prob': 0.9662781,
