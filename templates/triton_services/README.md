@@ -140,6 +140,13 @@ provides an environment variable `ANYSCALE_ARTIFACT_STORAGE` for customers to st
 model artifacts. To learn more about the storage, see
 [Object Storage (S3 or GCS buckets)](https://docs.anyscale.com/1.0.0/services/storage/#object-storage-s3-or-gcs-buckets).
 
+After the model is compiled and uploaded, you should kill the actor to free the
+resources. Run the following code to kill the actor.
+
+```python
+ray.kill(actor)
+```
+
 ## Run Triton Server on Ray Serve locally in Anyscale Workspaces
 
 The `triton_app.py` in this workspace demonstrates how to use a remote model repository
