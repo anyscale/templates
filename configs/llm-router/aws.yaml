@@ -1,6 +1,6 @@
 head_node_type:
   name: head
-  instance_type: p4de.24xlarge
+  instance_type: g5.48xlarge
   resources:
     cpu: 8
 

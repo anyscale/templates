@@ -1,6 +1,6 @@
 head_node_type:
   name: head
-  instance_type: a2-ultragpu-4g
+  instance_type: g2-standard-48
   resources:
     cpu: 8
 
