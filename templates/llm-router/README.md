@@ -1,61 +1,66 @@
-```python
-%load_ext autoreload
-%autoreload 2
-```
+# Building an LLM Router for High-Quality and Cost-Effective Responses
 
-# Introduction
+## TLDR
+1. We introduce a state-of-the-art LLM Router, a model that dynamically directs queries to either high-quality closed LLMs or cost-effective open-source LLMs based on the complexity and domain specificity of the query, optimizing both response quality and cost.
 
-When building Large Language Model (LLM) applications, we strive to balance between achieving the highest response quality while adhering to a limited cost budget. Closed models like GPT-4 are renowned for their superior quality, but they can become prohibitively expensive, especially when handling a large volume of queries. On the other hand, Open Source Software (OSS) models are more cost-effective but may not deliver the same quality, particularly for complex or domain-specific queries.
+2. This tutorial provides an in-depth guide on building our LLM Router, from generating labeled data, to finetuning an LLM as a router with Anyscale's API, and finally running offline evaluations.
 
-A "smart router" addresses this challenge by processing user queries and deciding whether to route them to a closed LLM or an OSS LLM, depending on the query's complexity or domain. Here’s a schematic representation of a smart router:
+3. In collaboration with the Berkeley-LMSys group, we release an [arXiv paper](put link to arxiv paper) presenting extensive evaluations on standard benchmarks. We achieve the same performance as our baselines with up to a 70% cost reduction for MT Bench, a 30% cost reduction for MMLU, and a 40% cost reduction for GSM8K.
+
+
+# Background
+When developing applications using Large Language Models (LLMs), achieving high-quality responses while maintaining a budget is a key challenge. Closed models like GPT-4 provide superior quality but are costly, especially with a high volume of queries. Conversely, Open Source Software (OSS) models are more economical but may not match the quality, especially for complex or domain-specific queries.
+
+An **LLM Router** helps balance these aspects by deciding which queries are routed to a closed LLM and which to an OSS LLM based on the query's complexity or domain specificity. Below is a schematic representation of an LLM Router:
+
 
 <div style="text-align: center;">
-    <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/llm-router/assets/llm-router-flowchart_2.png" alt="Smart Router" width="800"/>
+    <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/llm-router/assets/llm-router-flowchart_2.png" alt="LLM Router" width="800"/>
 </div>
 
-Given a set of user queries, a smart router enables generating high-quality LLM responses while minimizing the overall cost.
+Given a set of user queries, an LLM router enables generating high-quality LLM responses while minimizing the overall cost.
 
 # Approach
 
-In this tutorial, we'll demonstrate how to train a smart router on the Anyscale platform. We make the following design choices:
+In this tutorial, we'll demonstrate how to train an LLM router on the Anyscale platform. We make the following design choices:
 
-1. **Model Choices**: We’ll use GPT-4 as an example of a closed LLM and Mixtral-8x7B as the OSS LLM, so our smart router will route between these two models.
+1. **Model Choices**: We’ll use GPT-4 as an example of a closed LLM and Mixtral-8x7B as the OSS LLM, so our llm router will route between these two models.
 2. **Response Quality Rating**: We'll quantify the quality of an LLM response on a scale of 1 to 5 stars, with higher scores indicating better quality. For simplicity, we'll assume that GPT-4 always achieves a 5-star rating, so it serves as a reference for Mixtral-8x7B.
-3. **Smart Router Model**: We'll finetune a Llama3-8B model as our smart router and leverage Anyscale's powerful API. Our research (see our [arXiv paper](put link to arxiv paper)) shows that this model offers superior routing performance compared to smaller architectures.
+3. **LLM Router Model**: We'll finetune a Llama3-8B model as our LLM router and leverage Anyscale's powerful API. Our research (see our [arXiv paper](put link to arxiv paper)) shows that this model offers superior routing performance compared to smaller architectures.
 
-More concretely, the objective of a smart router is to direct simple queries to Mixtral-8x7B, thereby maintaining high overall response quality (e.g., an average score of 4.8/5) while significantly reducing costs (e.g., by 50%).
+More concretely, the objective of an LLM router is to direct "simple" queries to Mixtral-8x7B, thereby maintaining high overall response quality (e.g., an average score of 4.8/5) while significantly reducing costs (e.g., by 50%). 
 
+We show that it's possible to build LLM routers that achieve outstanding performance. Below are results from our best-performing LLM routers, the Causal LLM and a Matrix Factorization (MF) model, evaluated on the MT Bench benchmark ([source](https://arxiv.org/pdf/2306.05685)), which demonstrate that our routers can achieve higher quality with lower costs (i.e., fewer calls to GPT-4) compared to the random baseline and public LLM routing systems from Unify AI and NotDiamond. For more details on these results and additional ones, refer to our paper.
 
+<div style="text-align: center;">
+    <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/llm-router/assets/indep-benchmark.png" alt="LLM Router" width="500"/>
+</div>
 
+In the following sections, we discuss the steps that enable anyone to build a strong LLM router, starting with data labeling, model training, and evaluation.
 
 
 # Table of Contents
 
-1. [**Prepare Labeled Data**](#generate-labeled-data): We describe how to generate synthetic labeled data to train the smart router model.
+1. [**Prepare Labeled Data**](#generate-labeled-data): The foundation of a robust LLM router is high-quality labeled data. In this section, we'll guide you through preparing this training data.
 
-2. [**Finetune a Router Model**](#finetune-router-model): We show how to train a smart router by finetuning an LLM classifier using Anyscale's finetuning API.
+2. [**Finetune a Router Model**](#finetune-router-model): We demonstrate how to finetune an LLM classifier using Anyscale's finetuning API, transforming it into an effective LLM router.
 
-3. [**Offline Evaluation**](#offline-eval): We run offline evaluation of the model on standard benchmarks.
+3. [**Offline Evaluation**](#offline-eval): Using the public codebase ([RouteLLM](https://github.com/lm-sys/RouteLLM)), we will walk through an offline evaluation of the model on standard benchmarks.
 
-**Time to complete**: 120 minutes including training on A10 machines
+**Time to complete**: Approximately 120 minutes, including time to train on a node with 8xA10 GPUs.
+
 
 
 ### Setup
 
 
 ```python
-import os
-
 # Install required packages
 !pip install -r requirements.txt
 
-# Load environment variables from .env file
+# Store your ANYSCALE_API_KEY and OPENAI_API_KEY in /home/ray/default/.env
 from dotenv import load_dotenv
 load_dotenv("/home/ray/default/.env")
-
-# Access environment variables
-anyscale_api_key = os.getenv('ANYSCALE_API_KEY')
-openai_api_key = os.getenv('OPENAI_API_KEY')
 
 ```
 
@@ -67,6 +72,7 @@ openai_api_key = os.getenv('OPENAI_API_KEY')
     Requirement already satisfied: pandas==1.5.3 in /home/ray/anaconda3/lib/python3.11/site-packages (from -r requirements.txt (line 6)) (1.5.3)
     Requirement already satisfied: scikit_learn==1.5.0 in /home/ray/anaconda3/lib/python3.11/site-packages (from -r requirements.txt (line 7)) (1.5.0)
     Requirement already satisfied: importlib_resources==6.4.0 in /home/ray/anaconda3/lib/python3.11/site-packages (from -r requirements.txt (line 8)) (6.4.0)
+    Requirement already satisfied: python-dotenv==1.0.1 in /home/ray/anaconda3/lib/python3.11/site-packages (from -r requirements.txt (line 9)) (1.0.1)
     Requirement already satisfied: filelock in /home/ray/anaconda3/lib/python3.11/site-packages (from datasets==2.20.0->-r requirements.txt (line 1)) (3.13.1)
     Requirement already satisfied: pyarrow>=15.0.0 in /home/ray/anaconda3/lib/python3.11/site-packages (from datasets==2.20.0->-r requirements.txt (line 1)) (16.1.0)
     Requirement already satisfied: pyarrow-hotfix in /home/ray/anaconda3/lib/python3.11/site-packages (from datasets==2.20.0->-r requirements.txt (line 1)) (0.6)
@@ -116,9 +122,16 @@ openai_api_key = os.getenv('OPENAI_API_KEY')
     Found credentials from IAM Role: cld_ldm5ez4edlp7yh4yiakp2u294w-cluster_node_role
 
 
+
+
+
+    True
+
+
+
 # Step 1: Prepare Labeled Data <a id="generate-labeled-data"></a>
 
-Our smart router essentially functions as a binary classifier, deciding whether to route a query to GPT-4 or Mixtral-8x7B based on the query text. Initially, we considered labeled data in the format `(query, routing_label)`, where `routing_label` is 1 if the query should be routed to Mixtral-8x7B and 0 if it should be routed to GPT-4.
+Our llm router essentially functions as a binary classifier, deciding whether to route a query to GPT-4 or Mixtral-8x7B based on the query text. Initially, we considered labeled data in the format `(query, routing_label)`, where `routing_label` is 1 if the query should be routed to Mixtral-8x7B and 0 if it should be routed to GPT-4.
 
 However, our early experiments revealed that *binary labels do not provide sufficient signal for training a robust router model*. Therefore, we adopted a different labeling approach using a *1-5 scoring system*, which reflects how well Mixtral-8x7B can effectively respond to the user's query. More specifically:
 
@@ -128,12 +141,12 @@ However, our early experiments revealed that *binary labels do not provide suffi
 
 We use labeled samples in the format `(query, score_label)`. The `routing_label` can be derived from the `score_label` by setting a score threshold for quality, i.e. `routing_label = 1 if score_label >= 4 else 0`.
 
-In the following, we will explain how we prepare our labeled dataset in detail.
+we'll dive into the detailed process of preparing our labeled dataset.
 
 
 ## 1.1: Query Dataset
 
-We want our smart router to be effective in open-ended chat domains. So, our first step is to collect a set of generic queries from the [Nectar dataset](https://huggingface.co/datasets/berkeley-nest/Nectar). We chose the Nectar dataset for two reasons: it combines queries from many different domains, including open-ended chat, and it has responses from many models, including over 191K responses from GPT-4.
+We want our llm router to be effective in open-ended chat domains. So, our first step is to collect a set of generic queries from the [Nectar dataset](https://huggingface.co/datasets/berkeley-nest/Nectar). We chose the Nectar dataset for two reasons: it combines queries from many different domains, including open-ended chat, and it has responses from many models, including over 191K responses from GPT-4.
 
 
 ```python
@@ -350,16 +363,16 @@ dataset_df = generate_mixtral_responses(
 )
 ```
 
-    2024-06-26 02:10:01,994	INFO util.py:154 -- Missing packages: ['ipywidgets']. Run `pip install -U ipywidgets`, then restart the notebook server for rich notebook output.
+    2024-06-26 20:07:23,050	INFO util.py:154 -- Missing packages: ['ipywidgets']. Run `pip install -U ipywidgets`, then restart the notebook server for rich notebook output.
 
 
     Starting batch inference on 30 queries...
 
 
-    2024-06-26 02:10:02,772	INFO worker.py:1585 -- Connecting to existing Ray cluster at address: 10.0.61.128:6379...
-    2024-06-26 02:10:02,781	INFO worker.py:1761 -- Connected to Ray cluster. View the dashboard at [1m[32mhttps://session-ie1npcvmhzhmlk4mnmeims7iv8.i.anyscaleuserdata.com [39m[22m
-    2024-06-26 02:10:02,788	INFO packaging.py:358 -- Pushing file package 'gcs://_ray_pkg_37ace4ed83a69ea0cbb652a947d90af52dee52dc.zip' (0.80MiB) to Ray cluster...
-    2024-06-26 02:10:02,791	INFO packaging.py:371 -- Successfully pushed file package 'gcs://_ray_pkg_37ace4ed83a69ea0cbb652a947d90af52dee52dc.zip'.
+    2024-06-26 20:07:23,982	INFO worker.py:1585 -- Connecting to existing Ray cluster at address: 10.0.61.128:6379...
+    2024-06-26 20:07:23,991	INFO worker.py:1761 -- Connected to Ray cluster. View the dashboard at [1m[32mhttps://session-ie1npcvmhzhmlk4mnmeims7iv8.i.anyscaleuserdata.com [39m[22m
+    2024-06-26 20:07:23,998	INFO packaging.py:358 -- Pushing file package 'gcs://_ray_pkg_6acaf0ecb9adb695d3cb6773ab0c55a75bc59abe.zip' (0.59MiB) to Ray cluster...
+    2024-06-26 20:07:24,000	INFO packaging.py:371 -- Successfully pushed file package 'gcs://_ray_pkg_6acaf0ecb9adb695d3cb6773ab0c55a75bc59abe.zip'.
 
 
     # queries un-processed: 29, in-progress: 1, ready: 0
@@ -381,49 +394,56 @@ dataset_df = generate_mixtral_responses(
     # queries un-processed: 13, in-progress: 17, ready: 0
     # queries un-processed: 12, in-progress: 18, ready: 0
     # queries un-processed: 11, in-progress: 18, ready: 1
-    # queries un-processed: 10, in-progress: 18, ready: 1
-    # queries un-processed: 9, in-progress: 18, ready: 1
-    # queries un-processed: 8, in-progress: 18, ready: 1
-    # queries un-processed: 7, in-progress: 18, ready: 1
-    # queries un-processed: 6, in-progress: 19, ready: 0
+    # queries un-processed: 10, in-progress: 19, ready: 0
+    # queries un-processed: 9, in-progress: 19, ready: 1
+    # queries un-processed: 8, in-progress: 19, ready: 1
+    # queries un-processed: 7, in-progress: 19, ready: 1
+    # queries un-processed: 6, in-progress: 19, ready: 1
     # queries un-processed: 5, in-progress: 19, ready: 1
     # queries un-processed: 4, in-progress: 19, ready: 1
-    # queries un-processed: 3, in-progress: 19, ready: 1
-    # queries un-processed: 2, in-progress: 20, ready: 0
-    # queries un-processed: 1, in-progress: 20, ready: 1
+    # queries un-processed: 3, in-progress: 20, ready: 0
+    # queries un-processed: 2, in-progress: 21, ready: 0
+    # queries un-processed: 1, in-progress: 22, ready: 0
+    # queries un-processed: 0, in-progress: 22, ready: 1
+    # queries un-processed: 0, in-progress: 22, ready: 0
+    # queries un-processed: 0, in-progress: 21, ready: 1
     # queries un-processed: 0, in-progress: 20, ready: 1
     # queries un-processed: 0, in-progress: 20, ready: 0
     # queries un-processed: 0, in-progress: 19, ready: 1
-    # queries un-processed: 0, in-progress: 19, ready: 0
     # queries un-processed: 0, in-progress: 18, ready: 1
     # queries un-processed: 0, in-progress: 18, ready: 0
+    # queries un-processed: 0, in-progress: 18, ready: 0
     # queries un-processed: 0, in-progress: 17, ready: 1
+    # queries un-processed: 0, in-progress: 17, ready: 0
     # queries un-processed: 0, in-progress: 16, ready: 1
     # queries un-processed: 0, in-progress: 15, ready: 1
     # queries un-processed: 0, in-progress: 14, ready: 1
     # queries un-processed: 0, in-progress: 13, ready: 1
-    # queries un-processed: 0, in-progress: 13, ready: 0
-    # queries un-processed: 0, in-progress: 13, ready: 0
     # queries un-processed: 0, in-progress: 12, ready: 1
     # queries un-processed: 0, in-progress: 11, ready: 1
     # queries un-processed: 0, in-progress: 10, ready: 1
     # queries un-processed: 0, in-progress: 9, ready: 1
+    # queries un-processed: 0, in-progress: 9, ready: 0
     # queries un-processed: 0, in-progress: 8, ready: 1
+    # queries un-processed: 0, in-progress: 8, ready: 0
     # queries un-processed: 0, in-progress: 7, ready: 1
     # queries un-processed: 0, in-progress: 6, ready: 1
     # queries un-processed: 0, in-progress: 5, ready: 1
     # queries un-processed: 0, in-progress: 5, ready: 0
+    # queries un-processed: 0, in-progress: 5, ready: 0
     # queries un-processed: 0, in-progress: 4, ready: 1
-    # queries un-processed: 0, in-progress: 4, ready: 0
     # queries un-processed: 0, in-progress: 3, ready: 1
     # queries un-processed: 0, in-progress: 2, ready: 1
     # queries un-processed: 0, in-progress: 2, ready: 0
     # queries un-processed: 0, in-progress: 1, ready: 1
+    # queries un-processed: 0, in-progress: 1, ready: 0
+    # queries un-processed: 0, in-progress: 1, ready: 0
+    # queries un-processed: 0, in-progress: 1, ready: 0
     # queries un-processed: 0, in-progress: 0, ready: 1
-    Done in 21.47sec.
+    Done in 23.44sec.
 
 
-    [36m(autoscaler +1m32s)[0m Tip: use `ray status` to view detailed cluster status. To disable these messages, set RAY_SCHEDULER_EVENTS=0.
+    [36m(autoscaler +1m13s)[0m Tip: use `ray status` to view detailed cluster status. To disable these messages, set RAY_SCHEDULER_EVENTS=0.
 
 
 ### Dataset overview with Mixtral responses
@@ -479,7 +499,7 @@ display(dataset_df.head())
       <td>What are the 10 largest cities in the US by po...</td>
       <td>[lmsys-chat-1m]</td>
       <td>As of the most recent data available, the 10 l...</td>
-      <td>Here are the 10 largest cities in the U.S. by...</td>
+      <td>Sure, I'd be happy to help with that! Here ar...</td>
     </tr>
     <tr>
       <th>169249</th>
@@ -493,7 +513,7 @@ display(dataset_df.head())
       <td>Q: You are provided with an "Event", "Intent" ...</td>
       <td>[flan_v2_niv2]</td>
       <td>PersonX might feel satisfied or content using ...</td>
-      <td>PersonX likely feels comfortable and focused,...</td>
+      <td>PersonX probably feels comfortable and focuse...</td>
     </tr>
   </tbody>
 </table>
@@ -524,7 +544,7 @@ inspect_llm_judge_queries(dataset_df)
     Confidence: 85%
     
     [Assistant Answer]
-     PersonX likely feels comfortable and focused, as they are using their preferred writing implement in class. This may help them engage more effectively with the material being taught.
+     PersonX probably feels comfortable and focused in class, since they are using their preferred writing implement. This may help them to engage more actively in the class activities and to express their ideas more effectively.
     
     Guidelines for Rating:
      - High Rating (4-5): Reserved for responses that are very close to the quality of the reference or even better.
@@ -553,51 +573,52 @@ dataset_df = generate_llm_judge_labels(dataset_df, os.getenv('OPENAI_API_KEY'))
     # queries un-processed: 25, in-progress: 5, ready: 0
     # queries un-processed: 24, in-progress: 6, ready: 0
     # queries un-processed: 23, in-progress: 7, ready: 0
-    # queries un-processed: 22, in-progress: 7, ready: 1
-    # queries un-processed: 21, in-progress: 7, ready: 1
-    # queries un-processed: 20, in-progress: 8, ready: 0
-    # queries un-processed: 19, in-progress: 8, ready: 1
-    # queries un-processed: 18, in-progress: 9, ready: 0
-    # queries un-processed: 17, in-progress: 10, ready: 0
+    # queries un-processed: 22, in-progress: 8, ready: 0
+    # queries un-processed: 21, in-progress: 8, ready: 1
+    # queries un-processed: 20, in-progress: 9, ready: 0
+    # queries un-processed: 19, in-progress: 9, ready: 1
+    # queries un-processed: 18, in-progress: 10, ready: 0
+    # queries un-processed: 18, in-progress: 9, ready: 1
     # queries un-processed: 17, in-progress: 9, ready: 1
     # queries un-processed: 16, in-progress: 9, ready: 1
     # queries un-processed: 15, in-progress: 9, ready: 1
+    # queries un-processed: 14, in-progress: 10, ready: 0
     # queries un-processed: 14, in-progress: 9, ready: 1
     # queries un-processed: 13, in-progress: 9, ready: 1
     # queries un-processed: 12, in-progress: 9, ready: 1
-    # queries un-processed: 11, in-progress: 10, ready: 0
     # queries un-processed: 11, in-progress: 9, ready: 1
-    # queries un-processed: 10, in-progress: 10, ready: 0
     # queries un-processed: 10, in-progress: 9, ready: 1
     # queries un-processed: 9, in-progress: 9, ready: 1
+    # queries un-processed: 8, in-progress: 10, ready: 0
     # queries un-processed: 8, in-progress: 9, ready: 1
     # queries un-processed: 7, in-progress: 9, ready: 1
+    # queries un-processed: 6, in-progress: 10, ready: 0
     # queries un-processed: 6, in-progress: 9, ready: 1
-    # queries un-processed: 5, in-progress: 10, ready: 0
     # queries un-processed: 5, in-progress: 9, ready: 1
     # queries un-processed: 4, in-progress: 10, ready: 0
-    # queries un-processed: 4, in-progress: 10, ready: 0
     # queries un-processed: 4, in-progress: 9, ready: 1
+    # queries un-processed: 3, in-progress: 10, ready: 0
     # queries un-processed: 3, in-progress: 9, ready: 1
-    # queries un-processed: 2, in-progress: 10, ready: 0
     # queries un-processed: 2, in-progress: 9, ready: 1
     # queries un-processed: 1, in-progress: 9, ready: 1
     # queries un-processed: 0, in-progress: 9, ready: 1
-    # queries un-processed: 0, in-progress: 9, ready: 0
     # queries un-processed: 0, in-progress: 8, ready: 1
+    # queries un-processed: 0, in-progress: 8, ready: 0
     # queries un-processed: 0, in-progress: 7, ready: 1
     # queries un-processed: 0, in-progress: 6, ready: 1
-    # queries un-processed: 0, in-progress: 6, ready: 0
     # queries un-processed: 0, in-progress: 5, ready: 1
+    # queries un-processed: 0, in-progress: 5, ready: 0
+    # queries un-processed: 0, in-progress: 5, ready: 0
+    # queries un-processed: 0, in-progress: 5, ready: 0
     # queries un-processed: 0, in-progress: 4, ready: 1
     # queries un-processed: 0, in-progress: 3, ready: 1
     # queries un-processed: 0, in-progress: 3, ready: 0
     # queries un-processed: 0, in-progress: 3, ready: 0
-    # queries un-processed: 0, in-progress: 3, ready: 0
     # queries un-processed: 0, in-progress: 2, ready: 1
+    # queries un-processed: 0, in-progress: 2, ready: 0
     # queries un-processed: 0, in-progress: 1, ready: 1
     # queries un-processed: 0, in-progress: 0, ready: 1
-    Done in 16.43sec.
+    Done in 16.60sec.
 
 
 ### Dataset overview with score labels
@@ -649,14 +670,14 @@ display(dataset_df.head())
       <td>[ultrachat]</td>
       <td>Sure, here's a simple step-by-step guide on ho...</td>
       <td>Sure, I'd be happy to help you make a homemad...</td>
-      <td>4</td>
+      <td>3</td>
     </tr>
     <tr>
       <th>138869</th>
       <td>What are the 10 largest cities in the US by po...</td>
       <td>[lmsys-chat-1m]</td>
       <td>As of the most recent data available, the 10 l...</td>
-      <td>Here are the 10 largest cities in the U.S. by...</td>
+      <td>Sure, I'd be happy to help with that! Here ar...</td>
       <td>5</td>
     </tr>
     <tr>
@@ -672,7 +693,7 @@ display(dataset_df.head())
       <td>Q: You are provided with an "Event", "Intent" ...</td>
       <td>[flan_v2_niv2]</td>
       <td>PersonX might feel satisfied or content using ...</td>
-      <td>PersonX likely feels comfortable and focused,...</td>
+      <td>PersonX probably feels comfortable and focuse...</td>
       <td>5</td>
     </tr>
   </tbody>
@@ -681,7 +702,7 @@ display(dataset_df.head())
 
 
 ### Full Dataset
-We have previously generated the full labeled datasets, created a train and validation splits, and published them as a public huggingface dataset `outellm/gpt4_dataset`. Let's load the dataset and explore the score distribution.
+We have previously generated the full labeled datasets, created a train and validation splits, and published them as a public huggingface dataset `routellm/gpt4_dataset`. Let's load the dataset and explore the score distribution.
 
 
 
@@ -691,16 +712,17 @@ from src.utils import visualize_label_distribution
 
 full_dataset_df = load_dataset("routellm/gpt4_dataset")
 train_df = full_dataset_df["train"].to_pandas()
-valid_df = full_dataset_df["validation"].to_pandas()
 
 print(f"Train size: {len(train_df)}")
-print(f"Validation size: {len(valid_df)}")
 display(train_df.head())
 visualize_label_distribution(train_df, key="mixtral_score")
 ```
 
+    /home/ray/anaconda3/lib/python3.11/site-packages/tqdm/auto.py:21: TqdmWarning: IProgress not found. Please update jupyter and ipywidgets. See https://ipywidgets.readthedocs.io/en/stable/user_install.html
+      from .autonotebook import tqdm as notebook_tqdm
+
+
     Train size: 109101
-    Validation size: 10000
 
 
 
@@ -777,7 +799,7 @@ visualize_label_distribution(train_df, key="mixtral_score")
 
 
     
-![png](README_files/README_25_2.png)
+![png](README_files/README_24_3.png)
     
 
 
@@ -791,28 +813,26 @@ Let us assume that if the score is >= 4, we will route to the OSS model (indicat
 train_df["routing_label"] = train_df["mixtral_score"].apply(
     lambda x: 1 if x >= 4 else 0
 )
-valid_df["routing_label"] = valid_df["mixtral_score"].apply(
-    lambda x: 1 if x >= 4 else 0
-)
+
 visualize_label_distribution(train_df, key="routing_label")
 ```
 
 
     
-![png](README_files/README_27_0.png)
+![png](README_files/README_26_0.png)
     
 
 
 # Step 2: Finetune a router model <a id="finetune-router-model"></a>
 
-In this section, we will explain how to finetune an LLM as a smart router. While our data contains `gpt4_response` and `mixtral_response`, we will only use the pair (`query`, `mixtral_score`) for training. The goal is for the smart router to rely solely on the query text to determine which model to route to. Our approach is straightforward: we train a 5-way classifier to predict the `mixtral_score` from the `query`. At inference time, we will route to Mixtral if our router predicts a high score (i.e., 4-5) and to GPT-4 otherwise.
+In this section, we will explain how to finetune an LLM as a router. While our data contains `gpt4_response` and `mixtral_response`, we will only use the pair (`query`, `mixtral_score`) for training. The goal is for the router to rely solely on the query text to determine which model to route to. Our approach is straightforward: we train a 5-way classifier to predict the `mixtral_score` from the `query`. At inference time, we will route to Mixtral if our router predicts a high score (i.e., 4-5) and to GPT-4 otherwise.
 
 
 ## 2.1 Data Preparation
-We will discuss a few preprocessing steps to prepare the data for finetuning an LLM to be a smart router.
+We will discuss a few preprocessing steps to prepare the data for finetuning an LLM to be a router.
 
 ### Task Instructions
-We use the instruction-following framework to finetune an LLM as a smart router. The task instructions guide the model to predict the score label for a given query. They ensure the model understands the evaluation criteria and can accurately assess the query's complexity and expected response quality.
+We use the instruction-following framework to finetune an LLM as a router. The task instructions guide the model to predict the score label for a given query. They ensure the model understands the evaluation criteria and can accurately assess the query's complexity and expected response quality.
 
 
 ```python
@@ -846,7 +866,6 @@ To finetune the model, we must format the data to be compatible with [Anyscale's
 from src.utils import prepare_ft_messages
 
 train_df["messages"] = prepare_ft_messages(train_df, "mixtral_score")
-valid_df["messages"] = prepare_ft_messages(valid_df, "mixtral_score")
 
 # here's what the API data format looks like:
 display(train_df["messages"].iloc[0])
@@ -870,13 +889,11 @@ For classification tasks, it's recommended to train on label-balanced datasets t
 from src.utils import balance_dataset
 
 balanced_train_df = balance_dataset(train_df, key="routing_label")
-balanced_valid_df = balance_dataset(valid_df, key="routing_label")
+
 print(f"Train size: {len(balanced_train_df)}")
-print(f"Valid size: {len(balanced_valid_df)}")
 ```
 
     Train size: 29504
-    Valid size: 2706
 
 
 ### Subsample and Store Data
@@ -894,7 +911,7 @@ subsampled_df.to_json(output_file, orient="records", lines=True)
 
 ## 2.2 Fine-tune with Anyscale API
 
-We will run a fine-tuning job using Anyscale's LLM finetuning API as an isolated job, similar to this [tutorial](https://github.com/anyscale/e2e-llm-workflows?tab=readme-ov-file#fine-tuning-1).
+We will run a fine-tuning job using Anyscale's LLM finetuning API as an isolated job, similar to our [end-to-end LLM workflows guide](https://github.com/anyscale/e2e-llm-workflows?tab=readme-ov-file#fine-tuning-1).
 
 For this tutorial, we will perform full-parameter finetuning of Llama3-8B on the same 1,000 samples we showed earlier to debug the training dynamics and ensure the model can fit the training set. Below, we present the training and job configurations before submitting the training job.
 
@@ -912,8 +929,8 @@ For this tutorial, we will perform full-parameter finetuning of Llama3-8B on the
     num_devices: 8
     num_epochs: 5
     checkpoint_every_n_epochs: 5
-    train_batch_size_per_device: 8
-    eval_batch_size_per_device: 8
+    train_batch_size_per_device: 4
+    eval_batch_size_per_device: 4
     lr_scheduler_type: constant
     learning_rate: 1e-5
     num_checkpoints_to_keep: 1
@@ -946,8 +963,6 @@ For this tutorial, we will perform full-parameter finetuning of Llama3-8B on the
 
 
 ```python
-import os
-
 # Job submission
 !anyscale job submit --config-file configs/ft_job.yaml --exclude assets
 ```
@@ -1076,8 +1091,8 @@ Next, we will conduct an offline evaluation of the model trained on an out-of-do
     Checking if build backend supports build_editable ... [?25ldone
     [?25hBuilding wheels for collected packages: routellm
       Building editable for routellm (pyproject.toml) ... [?25ldone
-    [?25h  Created wheel for routellm: filename=routellm-0.0.1-0.editable-py3-none-any.whl size=10785 sha256=4afd9ad9c758e07547a6e8c6330a82f8f88d2bf07476ae18d33918010302ed6b
-      Stored in directory: /tmp/pip-ephem-wheel-cache-g_ftltj1/wheels/8e/10/db/07a53081bdd69bb23b6b05beaa6e47cdcb04d7af2d25d7f893
+    [?25h  Created wheel for routellm: filename=routellm-0.0.1-0.editable-py3-none-any.whl size=10785 sha256=84ab8906055e504944a51cb000787d8af6ddd927baa6e21fc156c7069aed4a7e
+      Stored in directory: /tmp/pip-ephem-wheel-cache-martye5x/wheels/8e/10/db/07a53081bdd69bb23b6b05beaa6e47cdcb04d7af2d25d7f893
     Successfully built routellm
     Installing collected packages: routellm
       Attempting uninstall: routellm
@@ -1097,7 +1112,108 @@ Next, we will conduct an offline evaluation of the model trained on an out-of-do
     [0mFound credentials from IAM Role: cld_ldm5ez4edlp7yh4yiakp2u294w-cluster_node_role
 
 
-### Running Evaluation
+### Inference Example
+Let's show an example of loading the model and running inference with a single example sampled from our data. Note that you need to get access to `meta-llama/Meta-Llama-3-8B` in order to run these evaluations.  Let's first show how a formatted input looks like.
+
+
+```python
+# Store your `meta-llama` access token in /home/ray/default/.env with the name LLAMA2_HF_TOKEN
+from dotenv import load_dotenv
+load_dotenv("/home/ray/default/.env")
+
+from pprint import pprint
+
+# Sample one row from the DataFrame
+sampled_row = train_df.sample(n=1, random_state=42)
+
+# Convert the sampled row to a dictionary without the index
+input_example = sampled_row.to_dict(orient='records')[0]
+
+print("Prompt:", input_example['prompt'])
+print("Label:", input_example['mixtral_score'])
+print("Messages:")
+pprint(input_example['messages'])
+```
+
+    Prompt: What challenges did FDR face while in office
+    Label: 5
+    Messages:
+    [{'content': '[Instruction]\n'
+                 'Based on the question provided below, predict the score an '
+                 "expert evaluator would give to an AI assistant's response, "
+                 'considering its helpfulness, relevance, adherence to facts, '
+                 'depth, creativity, and detail. Your prediction should infer the '
+                 'level of proficiency needed to address the question effectively. '
+                 'Use a scale from 1 to 5, where a higher score indicates a higher '
+                 'anticipated quality of response. Provide your prediction as: '
+                 '"[[predicted rating]]".\n'
+                 '\n'
+                 'Score criteria:\n'
+                 '- **4-5**: The AI assistant can produce a very strong answer, '
+                 'showing deep understanding, creativity, detailed insight, and '
+                 'high relevance.\n'
+                 '- **3**: The AI assistant can provide an adequate answer with '
+                 'moderate detail, relevance, and factual accuracy.\n'
+                 '- **1-2**: The AI assistant will struggle to produce a strong '
+                 "answer due to the question's difficulty, vagueness, or the "
+                 "assistant's limitations.\n",
+      'role': 'system'},
+     {'content': '[Question]\n'
+                 'What challenges did FDR face while in office\n'
+                 '\n'
+                 'Prediction:\n',
+      'role': 'user'},
+     {'content': '[[5]]', 'role': 'assistant'}]
+
+
+Let's run inference with this example and examine the model's output.
+
+
+```python
+from src.offline_inference import single_example_inference
+
+result = single_example_inference(input_example)
+pprint(result)
+```
+
+    Loading model checkpoint from routellm/causal_llm_gpt4_augmented ...
+
+
+    Loading checkpoint shards: 100%|██████████| 4/4 [00:02<00:00,  1.73it/s]
+    Special tokens have been added in the vocabulary, make sure the associated word embeddings are fine-tuned or trained.
+
+
+    Done loading model in 7.428065061569214 seconds.
+
+
+    /home/ray/anaconda3/lib/python3.11/site-packages/transformers/generation/configuration_utils.py:515: UserWarning: `do_sample` is set to `False`. However, `temperature` is set to `0.6` -- this flag is only used in sample-based generation modes. You should set `do_sample=True` or unset `temperature`.
+      warnings.warn(
+    /home/ray/anaconda3/lib/python3.11/site-packages/transformers/generation/configuration_utils.py:520: UserWarning: `do_sample` is set to `False`. However, `top_p` is set to `0.9` -- this flag is only used in sample-based generation modes. You should set `do_sample=True` or unset `top_p`.
+      warnings.warn(
+
+
+    {'binary_prob': 0.9662781,
+     'output_ids': tensor([128006,  78191, 128007,    271, 128260, 128009]),
+     'output_str': '<|start_header_id|>assistant<|end_header_id|>\n'
+                   '\n'
+                   '[[5]]<|eot_id|>',
+     'output_tokens': ['<|start_header_id|>',
+                       'assistant',
+                       '<|end_header_id|>',
+                       'ĊĊ',
+                       '[[5]]',
+                       '<|eot_id|>'],
+     'score_logits': array([10.3125, 10.9375, 11.4375, 14.4375, 15.    ], dtype=float32),
+     'score_pred': 5,
+     'softmax_scores': array([0.00566901, 0.0105911 , 0.01746178, 0.3507292 , 0.6155489 ],
+          dtype=float32)}
+
+
+The model outputs the predicted score as a special token`[[5]]`, since it is trained to predict one of the 5 labels which we add as special tokens to the vocabulary. We extract softmax scores of each of 5 labels in `softmax_scores`, and compute the routing probability as `binary_prob = sum(softmax_scores[3:])`.
+
+To optimize inference speed, we can append the header tokens `<|start_header_id|>assistant<|end_header_id|>\n\n`  so the first token that the model outputs is the predicted label.
+
+### Benchmark Evaluation
 We will use the RouteLLM evaluation framework to measure the performance of our router against a random router on GSM8K. 
 We report the percentage of calls the router needs to send to GPT-4 in order to achieve `20%`, `50%` and `80%` of GPT-4 performance, along with area under curve. 
 See our paper for more details on the evalaution metrics.
@@ -1318,11 +1434,11 @@ display(Image(filename=image_path))
 
 
     
-![png](README_files/README_47_0.png)
+![png](README_files/README_51_0.png)
     
 
 
+This plot illustrates that as we relax the cost constraints (i.e., increase the percentage of GPT-4 calls), the performance improves. While the performance of a random router improves linearly with cost, our router achieves significantly better results at each cost level.
 
-```python
-
-```
+# Conclusion
+In this tutorial, we have successfully built and evaluated a finetuned-LLM router. We generated synthetic labeled data using the LLM-as-a-judge method to train the model, finetuned an LLM classifier using Anyscale's API, and conducted offline evaluation on a standard benchmark, demonstrating that our model is effective in out-of-domain generalization.
