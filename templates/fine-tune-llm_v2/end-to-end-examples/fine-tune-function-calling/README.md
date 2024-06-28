@@ -240,7 +240,7 @@ You can follow similar steps outlined in the [template tutorial](../../README.md
 
 
 ```python
-# The path where this example code is located relative to `main.py`
+# The path where this example code is located (relative to root)
 EXAMPLE_DIR = "end-to-end-examples/fine-tune-function-calling"
 
 config = {
@@ -291,10 +291,10 @@ with open("gen_configs/llama-3-8b.yaml", "w") as f:
     yaml.dump(config, f)
 ```
 
-You can now run the main.py command with this YAML config to start the fine-tuning job from the root directory with `main.py` (not the subfolder with this notebook) and follow the rest of the [template tutorial](../../README.md) for serving the model.
+You can now run the `llmforge` command with this YAML config to start the fine-tuning job from the root directory (not the subfolder with this notebook) and follow the rest of the [template tutorial](../../README.md) for serving the model.
 
 ```
-python main.py ./end-to-end-examples/fine-tune-function-calling/gen_configs/llama-3-8b.yaml
+llmforge anyscale finetune ./end-to-end-examples/fine-tune-function-calling/gen_configs/llama-3-8b.yaml
 ```
 
 ## Step 2(b): Fine-tuning through serverless endpoints
