@@ -1,0 +1,6 @@
+name: "llmforge-job"
+entrypoint: "llmforge anyscale finetune config/llama-3-8b.yaml"
+image_uri: localhost:5555/anyscale/llm-forge:0.5.0.1-ngmM6BdcEdhWo0nvedP7janPLKS9Cdz2
+requirements: []
+max_retries: 0
+working_dir: "."

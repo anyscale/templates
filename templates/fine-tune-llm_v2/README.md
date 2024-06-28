@@ -38,7 +38,7 @@ Next, you can launch a fine-tuning job with your WandB API key passed as an envi
 # !llmforge anyscale finetune  training_configs/full_param/llama-3-8b.yaml
 ```
 
-`llmforge anyscale finetune` is an Anyscale specific CLI and library that is installed on this workspace so that you can quickly experiment and customize various LLM finetuning experiments by simply modifying a config file. For extensive documentation around what is supported through the config refer to [docs](https://docs.anyscale.com/reference/finetuning-config-api/). 
+`LLMForge` is an Anyscale specific CLI and library that is installed on this workspace so that you can quickly experiment and customize various LLM finetuning experiments by simply modifying a config file. For extensive documentation around what is supported through the config refer to [docs](https://docs.anyscale.com/reference/finetuning-config-api/). 
 
 
 ```python
@@ -103,12 +103,21 @@ After you are with the above, you can find recipies that extend the functionalit
 * [LoRA vs. full-parameter training](cookbooks/continue_from_checkpoint/README.md): Learn the differences between LoRA and full-parameter training and how to configure both.
 * [Modifying hyperparameters](cookbooks/modifying_hyperparameters/README.md): A brief guide on tailoring your fine-tuning job.
 * [Optimizing Cost and Performance for Finetuning](cookbooks/optimize_cost/README.md): A detailed guide on default performance-related parameters and how you can optimize throughput for training on your own data.
+* [Run finetuning as Anyscale Job](cookbooks/run_llmforge_as_anyscale_jobs/README.md): A detailed guide on how to submit a finetuning workflow as a job (outside the context of workspaces.)
 
 ## End-to-end Examples
 
 Here is a list of end-to-end examples that involve more steps such as data preprocessing, evaluation, etc but with a main focus on improving model quality via fine-tuning.
 
 * [Fine-tuning for Function calling on custom data](end-to-end-examples/fine-tune-function-calling/README.md)
+
+## LLMForge Versions
+
+Here is a list of LLMForge image versions:
+
+| version | image_uri |
+|---------|-----------|
+| `0.5.0.1`  | `localhost:5555/anyscale/llm-forge:0.5.0.1-ngmM6BdcEdhWo0nvedP7janPLKS9Cdz2` |
 
 
 ## FAQs
