@@ -1,112 +1,150 @@
 # Bring your own weights 
-**⏱️ Time to complete**: 10 minutes
+**⏱️ Time to complete**: 60 minutes
 
-This guide focuses on how you can bring weights of a model similar in architecture to the Llama or Mistral family of models to fine-tune on the Anyscale Platform. Specifically, we will fine-tune the [Meta Llama Guard 2 model](https://llama.meta.com/docs/model-cards-and-prompt-formats/meta-llama-guard-2/). Make sure you have gone over the [basic fine-tuning guide](../../README.md) before going over this cookbook. 
+This guide extends the use-case of finetuning base models to showcase how you can bring (1) weights of other models similar in architecture to the Llama or Mistral family of models or (2) weights of models that have already been finetuned. The Anyscale platform is uniquely suited to support both of these use-cases. This guide assumes you have familiarized yourself with the [basic fine-tuning guide](../../README.md).
 
+The underlying principle of these use-cases is similar - using existing model weights or checkpoints for finetuning. This branches out from the basic fine-tuning guide in that it no longer demands the base model as a starting point in our templates.
 
 # Table of Contents
-1. [Model weights stored in remote storage](#model-weights-stored-in-remote-storage)
-    - [Public models](#public-model-weights)
-    - [Private models](#private-model-weights)
-2. [Model weights stored locally](#model-weights-stored-locally)
-3. [Specifying the right model ID and prompt format](#specifying-the-right-model-ID-and-prompt-format)
+1. [Bring models of the same architecture](#bring-models-of-the-same-architecture)
+    - [Exampe YAML](#example-YAML)
+    - [What do I need to change?](#what-do-I-need-to-change-?)
+        - [Specifying the right model ID and prompt format](#specifying-the-right-model-ID-and-prompt-format)
+        - [How do I bring my weights to Anyscale?](#how-do-I-bring-my-weights-to-Anyscale-?)
+2. [Bring models that have already been finetuned](#bring-models-that-have-already-been-finetuned)
+    - [How to fine-tune from a previous checkpoint](#how-to-fine-tune-from-a-previous-checkpoint)
+    - [What and how are we fine-tuning?](#what-and-how-are-we-fine-tuning-?)
+    - [Things to Notice](#things-to-notice)
+    - [FAQs](#FAQs)
+
+
+# Bring models of the same architecture
+
+This guide focuses on how you can bring weights of a model similar in architecture to the Llama or Mistral family of models to fine-tune on the Anyscale Platform. Specifically, we will fine-tune the [Meta Llama Guard 2 model](https://llama.meta.com/docs/model-cards-and-prompt-formats/meta-llama-guard-2/).
 
 ## Example YAML
-
-Along with the training and validation file paths, we specify the model that is similar in architecture `model_id` and point to the location of the model weights in an S3 bucket `initial_base_model_ckpt_path`. Additionally, given that this model could have a different prompt format, we add it to the configuration YAML as `prompt_format `.
 
 ```yaml
 model_id: meta-llama/Meta-Llama-3-8B
 initial_base_model_ckpt_path: s3://my-bucket/llama-guard-2
-train_path: s3://air-example-data/gsm8k/train.jsonl # <-- change this to the path to your training data
-valid_path: s3://air-example-data/gsm8k/test.jsonl # <-- change this to the path to your validation data. This is optional
+train_path: s3://air-example-data/gsm8k/train.jsonl
+valid_path: s3://air-example-data/gsm8k/test.jsonl
 generation_config:
   prompt_format:
-context_length: 512
-num_devices: 16 
-num_epochs: 10
-train_batch_size_per_device: 8
-eval_batch_size_per_device: 16
-learning_rate: 5e-6
-padding: "longest" 
-num_checkpoints_to_keep: 1
-dataset_size_scaling_factor: 10000
-output_dir: /mnt/local_storage
-deepspeed:
-  config_path: deepspeed_configs/zero_3_offload_optim+param.json
-dataset_size_scaling_factor: 10000 
-flash_attention_2: true
-trainer_resources:
-  memory: 53687091200
-worker_resources:
-  accelerator_type:A10G: 0.001
+    system: """{instruction}"""
+    user: """{instruction}"""
+    assistant: """{instruction}"""
+...
 ```
 
-# Model Weights stored in remote storage 
+## What do I need to change?
 
-## Public models
-For models configured for public access, you simply need to add the URI of the location of the model weights in your training YAML. We support loading from data stored on S3 and GCS.
+Along with the training and validation file paths, we specify the model that has the same architecture `model_id` and point to the location of the model weights in an S3 bucket `initial_base_model_ckpt_path`. Additionally, given that this model could have a different prompt format, we add it to the configuration YAML as `prompt_format `.
+
+### Specifying the right model ID and prompt format
+
+The overarching idea is that specifying a model ID will provide context to the architecture of the LLM, which will guide how the model will be further trained. It won't necessarily mean that the model that is specified here is the model that will be fine-tuned. For that, we will rely on the weights that are provided. Knowing that Llama 3 8B model (or any other Llama model for that matter) shares the same architecture as the Llama Guard 2 model makes it a suitable choice for the model ID.
+
+Different LLMs are trained with different prompt formats. Leveraging this format and continuing with it make the finetuning more effective. For Llama Guard 2, for instance, the format that data is trained with is the following:
+
+```<|begin_of_text|>[INST] Task: Check if there is unsafe content in '{{ role }}' messages in conversations according our safety policy with the below categories.
+<BEGIN UNSAFE CONTENT CATEGORIES>
+{{ unsafe_categories }}
+<END UNSAFE CONTENT CATEGORIES>
+<BEGIN CONVERSATION>
+User: {{ user_message_1 }}
+Agent: {{ model_answer_1 }}
+<END CONVERSATION>
+Provide your safety assessment for ONLY THE LAST {{ role }} in the above conversation:
+- First line must read 'safe' or 'unsafe'.
+- If unsafe, a second line must include a comma-separated list of violated categories. [/INST]
+```
+
+The format of your training data needs to map to the one above in order to maintain consistency and yield the best results from the finetuning run. Meaning, the data format that Anyscale's fine-tuning template demands (documented [here](https://docs.anyscale.com/endpoints/fine-tuning/dataset-prep/)) needs to be converted to this format. Fortunately, the syster/user/assistant format is highly flexible and adaptable to almost any prompt format.
+
+If the starting point is the Anyscale data format and the ending point is the Llama Guard 2 format, the following is one of the conversion schemas that you could apply:
+```
+  system: """{instruction}"""
+  user: """{instruction}"""
+  assistant: """{instruction}"""
+```
+where the instruction passed in to the system is simply the entire prompt, the instruction passed in to the user is empty, and the instruction passed in to the assistant is 'safe' or 'unsafe'.
+
+The idea of this prompt formatter is to simply map the input data format of Anyscale's fine-tuning template to the format corresponding to the model needing to be fine-tuned.
+
+### How do I bring my weights to Anyscale?
+
+For models configured for public access, you simply need to add the URI of the location of the model weights in your training YAML. We support loading models stored on S3 and GCS. For private models, you could configure the read permissions for your Workspace to pull from the bucket holding your model weights. Alternatively, you could sync your model weights to your Anyscale-provided storage. The [Bring your own data](../../cookbooks/bring_your_own_data/README.md) cookbook provides in-depth detail on these options.
+
+# Bring models that have already been finetuned
+
+This guide showcases how a checkpoint that was created earlier can be used as initialization for another round of fine-tuning. Specifically, we will fine-tune a fine-tuned [Meta Llama 3 8B model](https://llama.meta.com/docs/model-cards-and-prompt-formats/meta-llama-3). This allows us to sequentially combine fine-tuning on multiple datasets in order to get a performance boost on the final task that we care about.
+
+## How to fine-tune from a previous checkpoint
+
+To get started, we can run the following illustrative example. Run this command from where `main.py` is located.
+
+```
+python main.py cookbooks/continue_from_checkpoint/llama-3-8b.yaml
+```
+
+Running the above command will fine-tune on the [GSM8k dataset](https://huggingface.co/datasets/gsm8k). 
+In this example, we have splited the dataset into two halves, each consisting of approximately 4,000 samples.
+The provided initial checkpoint has been trained on the first half and is already good at solving GSM8k. By running the above command, you continue fine-tuning from the provided checkpoint with the second half.
+
+Note the following evaluation losses. The first three epochs of training where run on the first half of the GSM8k dataset. The second three epochs of training where run on the second half.
+
+<img src="./assets/continue_ft.png" alt="evaluation losses" width="600"/>
+
+Note that on the first iteration of the second training (epoch 4), the evaluation loss starts off much lower than in the first training.
 
 
-## Private models
-For private models, you have two options: 
+## What and how are we fine-tuning?
 
-### Option 1: Configure permissions directly in your cloud account
-The most convenient option is to provide read permissions for your Anyscale workspace to the specific bucket holding your model weights. You can follow our guide to do so [here](https://docs.anyscale.com/configuration/cloud-storage-buckets#access-private-cloud-storage).
+The following is a snippet from the `llama-3-8b.yaml` file we use above. 
+
+```yaml
+# ...
+model_id: meta-llama/Meta-Llama-3-8B-Instruct
+# initial_base_model_ckpt_path: ...
+initial_adapter_model_ckpt_path: s3://large-dl-models-mirror/finetuning_template/continued_ft_gsm8k_checkpoint
+train_path: s3://large-dl-models-mirror/finetuning_template/train_2.jsonl
+# ...
+```
+
+We fine-tune Llama 3 8B Instruct, but the initial weights of the LoRA adapter are loaded from our s3 mirror.
+It makes sense to keep those weights in a bucket so that they can be accessed from all nodes of your cluster.
+The train path `(.../train_2.jsonl)` points to the second part of the GSM8k dataset that we fine-tune on.
+If we wanted to continue the finetuning of a full-parameter checkpoint, we should configure `initial_base_model_ckpt_path` instead of `initial_adapter_model_ckpt_path`. 
+
+## Things to Notice
+
+When comparing the training and evaluation loss of the second (continued) fine-tuning with the first run, you'll notice that the values are lower.
+For instance, the checkpoint in the llama-3-8b.yaml has an evaluation loss of 0.8886.
+After continued fine-tuning, we achieve a checkpoint with an evaluation loss of 0.8668.
+It's important to note that the significance of such loss values varies greatly depending on the task at hand. A difference of 0.0218 may represent a substantial improvement for some tasks, while it may only be a minor improvement for others.
+
+To determine whether continued fine-tuning is beneficial for your specific task, we recommend monitoring the training and evaluation loss during the fine-tuning process.
+This will help you assess the impact of the additional fine-tuning on your model's performance.
 
 
-### Option 2: Sync data into default cloud storage provided by Anyscale
-The other option you have is to sync your mdoel weights into Anyscale-provided storage and then continue with fine-tuning. Let's consider private models in AWS S3. First, we'll need to configure your workspace to be able to access these model weights. We recommend that you simply export relevant environment variables directly (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_SESSION_TOKEN`, etc) into your current terminal session. Once that is done, you can copy over your model weight into 
-the [default object storage bucket](https://docs.anyscale.com/platform/workspaces/workspaces-storage#object-storage-s3-or-gcs-buckets) provided by Anyscale (`$ANYSCALE_ARTIFACT_STORAGE`). That way, across runs/ workspace restarts, you don't have to repeat this process (compared to just downloading the files into your workspace).
-1. First, download the model weights into your workspace:  
-    ```bash
-    aws s3 sync s3://<bucket_name>/<path_to_model_weights>/ mymodels/
-    ```
-2. The default object storage bucket configured for you in your workspace uses Anyscale-managed credentials internally. It is recommended to reset the credentials you provided so as to not interfere with the Anyscale-managed access setup. For example, if your Anyscale hosted cloud is on AWS, then adding your AWS credentials to your private bucket means that `aws` can't access the default object storage bucket (`$ANYSCALE_ARTIFACT_STORAGE`) anymore. Thus, reset your credentials by simply setting the relevant environment variables to the empty string.
-3. Next, you can upload your model weights to `$ANYSCALE_ARTIFACT_STORAGE` via the relevant cli (AWS S3/ GCS depending on your Anyscale Cloud). For example:
+## FAQs
 
-    GCP: 
-    ```bash
-    gcloud storage cp -r mymodels/ $ANYSCALE_ARTIFACT_STORAGE/mymodels/
-    ```
+### In what order should I fine-tune?
 
-    AWS:
-    ```bash
-    aws s3 sync mymodels/ $ANYSCALE_ARTIFACT_STORAGE/mymodels/
-    ``` 
+In general: Finish with the dataset that is closest to what you want during inference.
+If you are extending the context of the model beyond its native context length, you should start with the smallest context length end with the largest.
 
-4. Finally, you can update the `initial_base_model_ckpt_path` in your training config YAML.
+### Should I extend the dataset samples or replace them with new ones when I continue fine-tuning?
 
-# Model weights stored locally (--- to be edited)
+This depends on your task and how many epochs have already been trained. If in doubt, you can always watch the training and evaluation loss to see if you are overfitting.
 
-For local files you have two options: 
-1. Upload to remote storage and follow the instructions above (the more reliable option for large datasets). 
-2. Upload directly to your Anyscale workspace: This is the simplest option for small files. You can use the UI in your VSCode window (simply right click -> upload files/folder) and upload your training files. This data needs to be placed in the shared cluster storage `/mnt/cluster_storage` so that it's accessible by all the worker nodes. (For more on workspace storage, see our guide [here](https://docs.anyscale.com/platform/workspaces/workspaces-storage/)). For example, let's say I uploaded a folder `my_files` with the following structure:
+### How can I fine-tune a model that I fine-tuned on Anyscale Endpoints?
 
-    ```
-    myfiles/  
-    ├── train.jsonl
-    └── val.jsonl
-    ```
+You have to download the model weights through the `Serving` page, upload them to a bucket of your choice and reference the bucket as an initial checkpoint in the training config yaml.
 
-    I would now do:
+<img src="./assets/download.png" alt="downloading the model weights" width="500"/>
 
-    ```bash
-    mv myfiles /mnt/cluster_storage
-    ```
+### Can I combine a full-parameter finetuned model with PEFT, or vice-versa?
 
-    Next, update your training config YAML to point to the right training and validation files. 
-
-    ```yaml
-    train_path: /mnt/cluster_storage/myfiles/train.jsonl
-    valid_path: /mnt/cluster_storage/myfiles/test.jsonl
-    ```
-
-**Note:** If you anticipate to use the same dataset files for multiple runs/ across workspace sessions, you should upload the files to `$ANYSCALE_ARTIFACT_STORAGE`.
-
-# Specifying the right model ID and prompt format
-
-The overarching idea is that specifying a model ID will provide context to the architecture of the LLM, which will guide how the model will be further trained. It won't necessarily mean that the model that is specified here is the model that will be fine-tuned. For that, we will rely on the weights that are provided. Knowing that the Llama Guard 2 model shares the same architecture as the Llama 3 8B model (or any other Llama model for that matter) makes it a suitable choice for the model ID.
-
-Different LLMs are trained with varifying prompt formats. Leveraging this format and continuing with it make the finetuning more effective. 
-
+We support both Full-parameter checkpoints and LoRA-adapter checkpoints. However, we recommend not to combine the two by training a full-parameter model followed by a LoRA adaptation. Serving the resulting LoRA adapter will require the base full-parameter checkpoint. Unless you are fine-tuning many such LoRA adaptors for different tasks, this serving architecture does not have the neither the economical benefits of LoRA nor the quality benefits of full-parameter.
