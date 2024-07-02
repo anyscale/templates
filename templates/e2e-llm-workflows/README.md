@@ -1,4 +1,4 @@
-# End-to-end LLM Workflows Guide 
+# End-to-end LLM Workflows Guide
 
 In this guide, we'll learn how to execute the end-to-end LLM workflows to develop & productionize LLMs at scale.
 
@@ -18,7 +18,7 @@ Throughout these workloads we'll be using [Ray](https://github.com/ray-project/r
 
 ## Set up
 
-We can execute this notebook **entirely for free** (no credit card needed) by creating an [Anyscale account](https://console.anyscale.com/register/ha?utm_source=goku). Once you log in, you'll be directed to the main [console](https://console.anyscale.com/) where you'll see a collection of notebook templates. Click on the "End-to-end LLM Workflows" to open up our guide and click on the `README.ipynb` to get started. 
+We can execute this notebook **entirely for free** (no credit card needed) by creating an [Anyscale account](https://console.anyscale.com/register/ha?utm_source=goku). Once you log in, you'll be directed to the main [console](https://console.anyscale.com/) where you'll see a collection of notebook templates. Click on the "End-to-end LLM Workflows" to open up our guide and click on the `README.ipynb` to get started.
 
 > [Workspaces](https://docs.anyscale.com/workspaces/get-started/) are a fully managed development environment which allow us to use our favorite tools (VSCode, notebooks, terminal, etc.) on top of *infinite* compute (when we need it). In fact, by clicking on the compute at the top right (`✅ 1 node, 8 CPU`), we can see the cluster information:
 
@@ -43,7 +43,7 @@ warnings.filterwarnings("ignore")
 %autoreload 2
 ```
 
-We'll need a free [Hugging Face token](https://huggingface.co/settings/tokens) to load our base LLMs and tokenizers. And since we are using Llama models, we need to login and accept the terms and conditions [here](https://huggingface.co/meta-llama/Meta-Llama-3-8B-Instruct). 
+We'll need a free [Hugging Face token](https://huggingface.co/settings/tokens) to load our base LLMs and tokenizers. And since we are using Llama models, we need to login and accept the terms and conditions [here](https://huggingface.co/meta-llama/Meta-Llama-3-8B-Instruct).
 
 <b style="background-color: yellow;">&nbsp;🔄 REPLACE&nbsp;</b>: Place your unique HF token below. If you accidentally ran this code block before pasting your HF token, then click the `Restart` button up top to restart the notebook kernel.
 
@@ -73,7 +73,7 @@ For our task, we'll be using the [Viggo dataset](https://huggingface.co/datasets
 # Input (unstructured sentence):
 "Dirt: Showdown from 2012 is a sport racing game for the PlayStation, Xbox, PC rated E 10+ (for Everyone 10 and Older). It's not available on Steam, Linux, or Mac."
 
-# Output (intent + entities): 
+# Output (intent + entities):
 "inform(name[Dirt: Showdown], release_year[2012], esrb[E 10+ (for Everyone 10 and Older)], genres[driving/racing, sport], platforms[PlayStation, Xbox, PC], available_on_steam[no], has_linux_release[no], has_mac_release[no])"
 ```
 
@@ -300,7 +300,7 @@ ft_train_ds.take(1)
 
 ## Fine-tuning
 
-In this template, we'll fine-tune a large language model (LLM) using our dataset from the previous data preprocessing template. 
+In this template, we'll fine-tune a large language model (LLM) using our dataset from the previous data preprocessing template.
 
 **Note**: We normally would not jump straight to fine-tuning a model. We would first experiment with a base model and evaluate it so that we can have a baseline performance to compare it to.
 
@@ -422,30 +422,10 @@ This workload (we set to five epochs) will take ~45 min. to complete. As the job
 
 <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/e2e-llm-workflows/assets/tensorboard.png" width=800>
 
-**Note**: If we didn't want to have all this control and flexibility for our fine-tuning workload, there is also a much easier workflow with [Anyscale serverless endpoints](https://docs.anyscale.com/endpoints/fine-tuning/fine-tuning-api/).
-
-
-```python
-# Get your API key from https://console.anyscale.com/credentials
-ANYSCALE_API_KEY = "esecret_yourKeyHere"  
-ANYSCALE_API_BASE = "https://api.endpoints.anyscale.com/v1"
-
-# Anyscale Endpoints are OpenAI compatible
-client = openai.OpenAI(base_url = ANYSCALE_API_BASE, api_key = ANYSCALE_API_KEY)
-training_file_id = client.files.create(file=open(train_file_path,'rb'), purpose="fine-tune").id
-valid_file_id = client.files.create(file=open(validation_file_path,'rb'), purpose="fine-tune").id
-
-# Create finetuning job. Other parameters like context length will be chosen appropriately based on dataset size
-fine_tuning_job_id = client.fine_tuning.jobs.create(
-    model="meta-llama/Meta-Llama-3-8B-Instruct",
-    hyperparameters={"n_epochs": 4},
-    training_file=training_file_id,
-    validation_file=valid_file_id).id
-```
 
 ### Load artifacts
 
-From the very end of the logs, we can also see where our model artifacts are stored. For example: 
+From the very end of the logs, we can also see where our model artifacts are stored. For example:
 
 ```
 Successfully copied files to to bucket: anyscale-test-data-cld-i2w99rzq8b6lbjkke9y94vi5 and path: org_7c1Kalm9WcX2bNIjW53GUT/cld_kvedZWag2qA8i5BjxUevf5i7/artifact_storage/lora_fine_tuning/meta-llama/Meta-Llama-3-8B-Instruct:gokum:atyhk
@@ -475,8 +455,8 @@ artifacts_path = (
 ```python
 # Download artifacts
 download_files_from_bucket(
-    bucket=os.environ['ANYSCALE_CLOUD_STORAGE_BUCKET'], 
-    path=artifacts_path, 
+    bucket=os.environ['ANYSCALE_CLOUD_STORAGE_BUCKET'],
+    path=artifacts_path,
     local_dir=artifacts_dir)
 
 ```
@@ -488,7 +468,11 @@ download_files_from_bucket(
 
 ## Evaluation
 
-Now we'll evaluate our fine-tuned LLM to see how well it performs on our task. We'll perform offline batch inference where we will use our tuned model to generate the outputs.
+Now we'll evaluate our fine-tuned LLM to see how well it performs on our task. There are a lot of different ways to perform evaluation. For our task, we can use traditional metrics (ex. accuracy, precision, recall, etc.) since we know what the outputs should be (extracted intent and entities).
+
+However for many generative tasks, the outputs are very unstructured and highly subjective. For these scenarios, we can use [distance/entropy](https://github.com/huggingface/evaluate) based metrics like cosine, bleu, perplexity, etc. But, these metrics are often not very representative of the underlying task. A common strategy here is to use a larger LLM to [judge the quality](https://www.anyscale.com/blog/a-comprehensive-guide-for-building-rag-based-llm-applications-part-1#evaluation) of the generated outputs. We can ask the larger LLM to directly assess the quality of the response (ex. rate between `1-5`) with a set of rules or compare it to a golden / preferred output and rate it against that.
+
+We'll start by performing offline batch inference where we will use our tuned model to generate the outputs.
 
 <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/e2e-llm-workflows/assets/offline-overview.png" width=500>
 
@@ -569,9 +553,9 @@ print (chat_template)
 ```
 
     {% set loop_messages = messages %}{% for message in loop_messages %}{% set content = '<|start_header_id|>' + message['role'] + '<|end_header_id|>
-    
+
     '+ message['content'] | trim + '<|eot_id|>' %}{% if loop.index0 == 0 %}{% set content = bos_token + content %}{% endif %}{{ content }}{% endfor %}{% if add_generation_prompt %}{{ '<|start_header_id|>assistant<|end_header_id|>
-    
+
     ' }}{% endif %}
 
 
@@ -579,10 +563,10 @@ print (chat_template)
 ```python
 # Apply chat template
 test_input_prompts = [{'inputs': tokenizer.apply_chat_template(
-    conversation=inputs, 
-    chat_template=chat_template, 
-    add_generation_prompt=True, 
-    tokenize=False, 
+    conversation=inputs,
+    chat_template=chat_template,
+    add_generation_prompt=True,
+    tokenize=False,
     return_tensors='np'), 'outputs': outputs} for inputs, outputs in zip(test_inputs, test_outputs)]
 test_input_prompts_ds = ray.data.from_items(test_input_prompts)
 print (test_input_prompts_ds.take(1))
@@ -626,12 +610,12 @@ class LLMPredictor:
     def __call__(self, batch):
         if not self.lora_path:
             outputs = self.llm.generate(
-                prompts=batch['inputs'], 
+                prompts=batch['inputs'],
                 sampling_params=self.sampling_params)
         else:
             outputs = self.llm.generate(
-                prompts=batch['inputs'], 
-                sampling_params=self.sampling_params, 
+                prompts=batch['inputs'],
+                sampling_params=self.sampling_params,
                 lora_request=LoRARequest('lora_adapter', 1, self.lora_path))
         inputs = []
         generated_outputs = []
@@ -695,10 +679,6 @@ ft_pred[3]
 
 
 ### Evaluation
-
-There are a lot of different ways to perform evaluation. For our task, we can use traditional deterministic metrics (ex. accuracy, precsion, recall, etc.) since we know what the outputs should be (extracted intent and entities). 
-
-However for many generative tasks, the outputs are very unstructured and highly subjective. For these scenarios, we can use [distance/entropy](https://github.com/huggingface/evaluate) based metrics like cosine, bleu, perplexity, etc. But, these metrics are often not very representative of the underlying task. A common strategy here is to use a larger LLM to [judge the quality](https://www.anyscale.com/blog/a-comprehensive-guide-for-building-rag-based-llm-applications-part-1#evaluation) of the generated outputs. We can ask the larger LLM to directly assess the quality of the response (ex. rate between `1-5`) with a set of rules or compare it to a golden / preferred output and rate it against that.
 
 
 ```python
@@ -776,7 +756,7 @@ We'll start by running the python command below to start the CLI workflow to gen
 ```bash
 mkdir /home/ray/default/deploy/services
 cd /home/ray/default/deploy/services
-python /home/ray/default/src/generate_serve_config.py 
+python /home/ray/default/src/generate_serve_config.py
 ```
 
 <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/e2e-llm-workflows/assets/cli.png" width=500>
@@ -941,6 +921,7 @@ We have a lot more guides that address more nuanced use cases:
 - Function calling [fine-tuning](https://github.com/anyscale/templates/tree/main/templates/fine-tune-llm_v2/end-to-end-examples/fine-tune-function-calling) and [deployment](https://github.com/anyscale/templates/blob/main/templates/endpoints_v2/examples/function_calling/DeployFunctionCalling.ipynb)
 - [Configs to optimize the latency/throughput](https://github.com/anyscale/templates/blob/main/templates/endpoints_v2/examples/OptimizeModels.ipynb)
 - [Configs to control optimization parameters and tensor-parallelism](https://github.com/anyscale/templates/blob/main/templates/endpoints_v2/examples/AdvancedModelConfigs.ipynb)
+- Creating a [Router](https://github.com/anyscale/llm-router) between different models (base, fine-tuned, closed-source) to optimize for cost and quality.
 - Stable diffusion [fine-tuning](https://github.com/anyscale/templates/tree/main/templates/fine-tune-stable-diffusion) and [serving](https://github.com/anyscale/templates/tree/main/templates/serve-stable-diffusion)
 
 And if you're interested in using our hosted Anyscale or connecting it to your own cloud, reach out to us at [Anyscale](https://www.anyscale.com/get-started?utm_source=goku). And follow us on [Twitter](https://x.com/anyscalecompute) and [LinkedIn](https://www.linkedin.com/company/joinanyscale/) for more real-time updates on new features!
