@@ -4,7 +4,7 @@ import os
 import tritonserver
 from PIL import Image
 from fastapi import FastAPI
-from fastapi.responses import StreamingResponse
+from fastapi.responses import PlainTextResponse
 from ray import serve
 
 MODEL_REPOSITORY = f'{os.environ["ANYSCALE_ARTIFACT_STORAGE"]}/triton_model_repository'
@@ -14,7 +14,6 @@ app = FastAPI()
 @serve.deployment(
     ray_actor_options={
         "num_gpus": 1,
-        "num_cpus": 1,
         "accelerator_type": "T4"
     },
 )
@@ -37,7 +36,7 @@ class TritonDeployment:
                 raise Exception("Model not ready")
 
     @app.get("/generate")
-    def generate(self, prompt: str) -> StreamingResponse:
+    def generate(self, prompt: str) -> PlainTextResponse:
         print(f"Generating image for prompt: {prompt}")
         for response in self._model.infer(inputs={"prompt": [[prompt]]}):
             generated_image = (
@@ -45,13 +44,11 @@ class TritonDeployment:
                 .squeeze()
                 .astype(numpy.uint8)
             )
-            image_ = Image.fromarray(generated_image)
+            image = Image.fromarray(generated_image)
 
-            # Stream back the image to the caller.
             buffer = io.BytesIO()
-            image_.save(buffer, "JPEG")
-            buffer.seek(0)
-            return StreamingResponse(buffer, media_type="image/jpeg")
+            image.save(buffer, "JPEG")
+            return PlainTextResponse(buffer.getvalue(), media_type="image/jpeg")
 
 
 triton_deployment = TritonDeployment.bind()

@@ -26,7 +26,8 @@ Next, you can launch a fine-tuning job with your WandB API key passed as an envi
 
 ```python
 # [Optional] You can set the WandB API key to track model performance
-# !export WANDB_API_KEY={YOUR_WANDB_API_KEY}
+# import os
+# os.environ["WANDB_API_KEY"]="YOUR_WANDB_API_KEY"
 
 # Launch a LoRA fine-tuning job for Llama 3 8B with 16 A10s
 !python main.py training_configs/lora/llama-3-8b.yaml

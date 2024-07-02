@@ -21,7 +21,7 @@ First, install additional required dependencies using `pip`.
 
 
 ```python
-!pip install -q langchain==0.1.17 && echo 'Install complete!'
+!pip install -q langchain==0.1.17 optimum==1.19.2 && echo 'Install complete!'
 ```
 
 
