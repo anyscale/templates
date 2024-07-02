@@ -48,7 +48,7 @@ If you want to run this full-parameter fine-tuning end-to-end, consider configur
 
 # Run this command from the base directory of this template
 # Fine-tune Llama 3 8B with full-parameter fine-tuning
-!llmforge anyscale finetunetraining_configs/full_param/llama-3-8b.yaml
+!llmforge anyscale finetune training_configs/full_param/llama-3-8b.yaml
 ```
 
 ## Comparison of configurable parameters
