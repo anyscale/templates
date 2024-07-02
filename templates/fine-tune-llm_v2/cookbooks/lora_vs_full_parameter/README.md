@@ -33,7 +33,7 @@ You can look at the respective yaml files to see how they differ in their config
 
 # Run this command from the base directory of this template
 # Fine-tune Llama 3 8B with LoRA
-!python main.py training_configs/lora/llama-3-8b.yaml
+!llmforge anyscale finetune training_configs/lora/llama-3-8b.yaml
 ```
 
 ### How to launch a full-parameter fine-tuning job
@@ -48,7 +48,7 @@ If you want to run this full-parameter fine-tuning end-to-end, consider configur
 
 # Run this command from the base directory of this template
 # Fine-tune Llama 3 8B with full-parameter fine-tuning
-!python main.py training_configs/full_param/llama-3-8b.yaml
+!llmforge anyscale finetunetraining_configs/full_param/llama-3-8b.yaml
 ```
 
 ## Comparison of configurable parameters

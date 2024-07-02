@@ -38,7 +38,7 @@ Next, you can launch a fine-tuning job with your WandB API key passed as an envi
 # !llmforge anyscale finetune  training_configs/full_param/llama-3-8b.yaml
 ```
 
-`LLMForge` is an Anyscale specific CLI and library that is installed on this workspace so that you can quickly experiment and customize various LLM finetuning experiments by simply modifying a config file. For extensive documentation around what is supported through the config refer to [docs](https://docs.anyscale.com/reference/finetuning-config-api/). 
+`LLMForge` is an Anyscale CLI and library that is installed on this workspace so that you can quickly experiment and customize various LLM finetuning experiments by simply modifying a config file. For extensive documentation around what is supported through the config refer to [docs](https://docs.anyscale.com/reference/finetuning-config-api/). 
 
 
 ```python
@@ -101,9 +101,9 @@ After you are with the above, you can find recipies that extend the functionalit
 * [Bring your own data](cookbooks/bring_your_own_data/README.md): Everything you need to know about using custom datasets for fine-tuning.
 * [Continue fine-tuning from a previous checkpoint](cookbooks/continue_from_checkpoint/README.md): A detailed guide on how you can use a previous checkpoint for another round of fine-tuning.
 * [LoRA vs. full-parameter training](cookbooks/continue_from_checkpoint/README.md): Learn the differences between LoRA and full-parameter training and how to configure both.
-* [Modifying hyperparameters](cookbooks/modifying_hyperparameters/README.md): A brief guide on tailoring your fine-tuning job.
+* [Modifying hyperparameters](cookbooks/modifying_hyperparameters/README.md): A brief guide on customization of your fine-tuning job.
 * [Optimizing Cost and Performance for Finetuning](cookbooks/optimize_cost/README.md): A detailed guide on default performance-related parameters and how you can optimize throughput for training on your own data.
-* [Run finetuning as Anyscale Job](cookbooks/run_llmforge_as_anyscale_jobs/README.md): A detailed guide on how to submit a finetuning workflow as a job (outside the context of workspaces.)
+* [Run finetuning as Anyscale Job](cookbooks/launch_as_anyscale_job/README.md): A detailed guide on how to submit a finetuning workflow as a job (outside the context of workspaces.)
 
 ## End-to-end Examples
 
