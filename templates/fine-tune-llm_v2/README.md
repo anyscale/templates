@@ -4,18 +4,20 @@
 
 The guide below walks you through the steps required for fine-tuning of LLMs. This template provides an easy to configure solution for ML Platform teams, Infrastructure engineers, and Developers to fine-tune LLMs.
 
-### Popular base models to fine-tune
+### Popular base models to fine-tune*
 
-- meta-llama/Meta-Llama-3-8B-Instruct (Full-param and LoRA)
-- meta-llama/Meta-Llama-3-70B-Instruct (Full-param and LoRA)
-- mistralai/Mistral-7B-Instruct-v0.1 (Full-param and LoRA)
-- mistralai/Mixtral-8x7b (LoRA only)
+- meta-llama/Meta-Llama-3-8B (Full-param and LoRA)
+- meta-llama/Meta-Llama-3-70B (Full-param and LoRA)
+- mistralai/Mistral-7B (Full-param and LoRA)
+- mistralai/Mixtral-8x7B (LoRA only)
 
-A full list of supported models is in the [FAQ](#faqs) section. In the end we provide more guides in form of [cookbooks](#cookbooks) and [end-to-end examples](#end-to-end-examples) that provide more detailed information about using this template.
+*Any model that has the same architecture and parameter count as above can be finetuned. A subset of popular variants of these models are provided out of the box on this template. For this subset, the Huggingface model id is enough. But for models beyond this list, the location to the weights must be provided. 
+
+A full list of out-of-the-box supported models is in the [FAQ](#faqs) section. In the end we provide more guides in form of [cookbooks](#cookbooks) and [end-to-end examples](#end-to-end-examples) that provide more detailed information about using this template.
 
 # Quick start
 
-## Step 1 - Launch a fine-tuning job
+## Step 1 - Launch a fine-tuning run in [workspaces](https://docs.anyscale.com/platform/workspaces/)
 
 We provide example configurations under the `./training_configs` directory for different base models and accelerator types. You can use these as a starting point for your own fine-tuning jobs. The full-list of public configurations that are customizable see [Anyscale docs](https://docs.anyscale.com/reference/finetuning-config-api).
 
@@ -30,11 +32,35 @@ Next, you can launch a fine-tuning job with your WandB API key passed as an envi
 # os.environ["WANDB_API_KEY"]="YOUR_WANDB_API_KEY"
 
 # Launch a LoRA fine-tuning job for Llama 3 8B with 16 A10s
-!python main.py training_configs/lora/llama-3-8b.yaml
+!llmforge anyscale finetune training_configs/lora/llama-3-8b.yaml
 
 # Launch a full-param fine-tuning job for Llama 3 8B with 16 A10s
-# !python main.py training_configs/full_param/llama-3-8b.yaml
+# !llmforge anyscale finetune  training_configs/full_param/llama-3-8b.yaml
 ```
+
+`LLMForge` is an Anyscale CLI and library that is installed on this workspace so that you can quickly experiment and customize various LLM finetuning experiments by simply modifying a config file. For extensive documentation around what is supported through the config refer to [docs](https://docs.anyscale.com/reference/finetuning-config-api/). 
+
+
+```python
+# To get help on the CLI
+!llmforge anyscale finetune --help
+```
+
+    [2024-06-28 14:38:55,193] [INFO] [real_accelerator.py:191:get_accelerator] Setting ds_accelerator to cuda (auto detect)
+    Usage: llmforge anyscale finetune [OPTIONS] CONFIG
+    
+      Runs finetuning with LLMForge on a given configuration file.
+    
+      This is supposed to be used in the context of Anyscale platform either in
+      Workspace or as entrypoint of a job.
+    
+      Args:
+    
+          CONFIG: Path to the YAML configuration. See docs for more info.
+    
+    Options:
+      --help  Show this message and exit.
+
 
 As the command runs, you can monitor a number of built-in metrics in the `Metrics` tab under `Ray Dashboard`, such as the number of GPU nodes and GPU utilization.
 
@@ -75,14 +101,23 @@ After you are with the above, you can find recipies that extend the functionalit
 * [Bring your own data](cookbooks/bring_your_own_data/README.md): Everything you need to know about using custom datasets for fine-tuning.
 * [Continue fine-tuning from a previous checkpoint](cookbooks/continue_from_checkpoint/README.md): A detailed guide on how you can use a previous checkpoint for another round of fine-tuning.
 * [LoRA vs. full-parameter training](cookbooks/continue_from_checkpoint/README.md): Learn the differences between LoRA and full-parameter training and how to configure both.
-* [Modifying hyperparameters](cookbooks/modifying_hyperparameters/README.md): A brief guide on tailoring your fine-tuning job.
+* [Modifying hyperparameters](cookbooks/modifying_hyperparameters/README.md): A brief guide on customization of your fine-tuning job.
 * [Optimizing Cost and Performance for Finetuning](cookbooks/optimize_cost/README.md): A detailed guide on default performance-related parameters and how you can optimize throughput for training on your own data.
+* [Run finetuning as Anyscale Job](cookbooks/launch_as_anyscale_job/README.md): A detailed guide on how to submit a finetuning workflow as a job (outside the context of workspaces.)
 
 ## End-to-end Examples
 
 Here is a list of end-to-end examples that involve more steps such as data preprocessing, evaluation, etc but with a main focus on improving model quality via fine-tuning.
 
 * [Fine-tuning for Function calling on custom data](end-to-end-examples/fine-tune-function-calling/README.md)
+
+## LLMForge Versions
+
+Here is a list of LLMForge image versions:
+
+| version | image_uri |
+|---------|-----------|
+| `0.5.0.1`  | `localhost:5555/anyscale/llm-forge:0.5.0.1-ngmM6BdcEdhWo0nvedP7janPLKS9Cdz2` |
 
 
 ## FAQs
@@ -95,69 +130,26 @@ All the LoRA weights are stored under the URI `${ANYSCALE_ARTIFACT_STORAGE}/lora
 
 This is a growing list but it includes the following models:
 
-- mistralai/Mistral-7B-Instruct-v0.1
-- mistralai/Mixtral-8x7b
+- meta-llama/Meta-Llama-3-8B
+- meta-llama/Meta-Llama-3-8B-Instruct
+- meta-llama/Meta-Llama-3-70B
+- meta-llama/Meta-Llama-3-70B-Instruct
+- meta-llama/Llama-2-7b-hf
 - meta-llama/Llama-2-7b-chat-hf
 - meta-llama/Llama-2-13b-hf
 - meta-llama/Llama-2-13b-chat-hf
 - meta-llama/Llama-2-70b-hf
 - meta-llama/Llama-2-70b-chat-hf
-- meta-llama/Meta-Llama-3-8B
-- meta-llama/Meta-Llama-3-8B-Instruct
-- meta-llama/Meta-Llama-3-70B
-- meta-llama/Meta-Llama-3-70B-Instruct
+- codellama/CodeLlama-34b-Instruct-hf
+- mistralai/Mistral-7B-Instruct-v0.1
+- mistralai/Mixtral-8x7B-Instruct-v0.1
 
 In general, any model that is compatible with the architecture of these models can be fine-tuned using the same configs as the base models.
 
 NOTE: currently mixture of expert models (such as `mistralai/Mixtral-8x7B)` only support LoRA fine-tuning
 
-### Should I use LoRA or full-parameter fine-tuning?
-
-There is no general answer to this but here are some things to consider:
-
-- The quality of the fine-tuned models will, in most cases, be comparable if not the same
-- LoRA shines if...
-    - ... you want to serve many fine-tuned models at once yourself
-    - ... you want to rapidly experiment (because fine-tuning, downloading and serving the model take less time)
-- Full-parameter shines if...
-    - ... you want to make sure that your fine-tuned model has the maximum quality
-    - ... you want to serve only one fine-tuned version of the model
-
-You can learn more about this in one of our [blogposts](https://www.anyscale.com/blog/fine-tuning-llms-lora-or-full-parameter-an-in-depth-analysis-with-llama-2).
-There, you'll also find some guidance on the LoRA parameters and why, in most cases, you don't need to change them.
-
-### I have the right model, context length and everything. Can I optimize compute cost?
-
-Optimizing your fine-tuning runs for compute cost is a non-trivial problem.
-The default configs in this template require the following compute:
-Llama-3-8B and Mistral require 16 A10Gs. Llama-3-70B and Mixtral require 32 A10Gs.
-
-Before optimizing for compute, make sure that you have selected a context length that is long enough for your dataset. If you have very few datapoints in your dataset that requires a much larger context than the others, consider removing them. The model of your choice and fine-tuning technique should also suit your data.
-
-If you want different compute, we *suggest* the following workflow to find a suitable configuration:
-
-* Start with a batch size of 1
-* Choose a GPU instance type that you think will give you good flops/$. If you are not sure, here is a rough guideline:
-    * g5 nodes for high availability
-    * p4d/p4de nodes for lower availability but better flops/$
-    * Anything higher-end if you have the means of acquiring them
-* Do some iterations of trial and error on instance types and deepspeed settings to fit the workload while keeping other settings fixed
-    * Use deepspeed stage 3 (all default configs in this template use stage 3)
-    * Try to use deepspeed offloading only if it reduces the minimum number of instances you have to use
-        * Deepspeed offloading slows down training but allows for larger batch sizes because of a more relaxed GRAM foot-print
-    * Use as few instances as possible. Fine-tune on the same machine if possible.
-        *  The GPU to GPU communication across machines is very expensive compared to the memory savings it could provide. You can use a cheap CPU-instance as a head-node for development and a GPU-instance that can scale down as a worker node for the heavy lifting.
-        * Training single-node on A100s may end up cheaper than multi-node on A10s if availablity is not an issue
-* Be aware that evaluation and checkpointing introduce their own memory-requirements
-   * If things look good, run fine-tuning for a full epoch.
-* After you have followed the steps above, increase batch size as much as possible without OOMing.
-
-We do not guarantee that this will give you optimal settings, but have found this workflow to be helpful ourselves in the past.
-
-### I've reviewed the customizable hyperparameters available. How can I get even more control?
-
-This template fine-tunes with Anyscale's library `llmforge`, which uses [DeepSpeed](https://github.com/microsoft/DeepSpeed) and [Ray Train](https://docs.ray.io/en/latest/train/train.html) for distributed training. The full set of config parameters are documented in the [API reference](https://docs.anyscale.com/reference/finetuning-config-api), and we provide a [cookbook](cookbooks/modifying_hyperparameters/README.md) detailing the important ones.  For anything that goes beyond using `llmforge`, you can build your own fine-tuning stack on Anyscale.
-
 ### What's with the `main` file that is created during fine-tuning?
 
 It's an artifact of our fine-tuning libraries. Please ignore it.
+
+
