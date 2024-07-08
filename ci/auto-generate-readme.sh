@@ -36,9 +36,7 @@ find templates -name "README.md" | while read readme_file; do
         sed -i "s|<img src=\"\([^\"http://][^\":/][^\"].*\)\"|<img src=\"${REPO_PREFIX}/${readme_dir}/\1\"|g" "$readme_file"
         sed -i "s|!\[.*\](\(assets/.*\))|<img src=\"${REPO_PREFIX}/${readme_dir}/\1\"/>|g" "$readme_file"
     fi
-
-    git add "$readme_file"
 done
 
-# Ensure all changes are staged
-git add .
+# Stage all modified files
+git add -A
