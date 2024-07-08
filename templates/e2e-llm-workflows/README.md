@@ -25,11 +25,11 @@ We can execute this notebook **entirely for free** (no credit card needed) by cr
 - **Head node** (Workspace node): manages the cluster, distributes tasks, and hosts development tools.
 - **Worker nodes**: machines that execute work orchestrated by the head node and can scale back to 0.
 
-<img src="https://raw.githubusercontent.com/anyscale/templates/main/e2e-llm-workflows/assets/setup-compute.png" width=550>
+<img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/e2e-llm-workflows/assets/setup-compute.png" width=550>
 
 <b style="background-color: orange;">&nbsp;💡 INSIGHT&nbsp;</b>: Because we have `Auto-select worker nodes` enabled, that means that the required worker nodes (ex. GPU workers) will automagically be provisioned based on our workload's needs! They'll spin up, run the workload and then scale back to zero. This allows us to maintain a lean workspace environment (and only pay for compute when we need it) and completely remove the need to manage any infrastructure.
 
-<img src="https://raw.githubusercontent.com/anyscale/templates/main/e2e-llm-workflows/assets/auto-workers.png" width=350>
+<img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/e2e-llm-workflows/assets/auto-workers.png" width=350>
 
 **Note**: we can explore all the metrics (ex. hardware util), logs, dashboards, manage dependencies (ex. images, pip packages, etc.) on the menu bar above.
 
@@ -105,7 +105,7 @@ ray.init(runtime_env={'env_vars': {'HF_TOKEN': os.environ['HF_TOKEN']}})
 
 We'll start by preprocessing our data in preparation for fine-tuning our LLM. We'll use batch processing to apply our preprocessing across our dataset at scale.
 
-<img src="https://raw.githubusercontent.com/anyscale/templates/main/e2e-llm-workflows/assets/data-overview.png" width=500>
+<img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/e2e-llm-workflows/assets/data-overview.png" width=500>
 
 ### Dataset
 
@@ -241,7 +241,7 @@ To apply our function on our dataset at scale, we can pass it to [ray.data.Datas
 
 **Note**: If we want to distribute a workload across `batches` of our data instead of individual samples, we can use [ray.data.Dataset.map_batches](https://docs.ray.io/en/latest/data/api/doc/ray.data.Dataset.map_batches.html). We'll see this in action when we perform batch inference in our evaluation template. There are also many other [distributed operations](https://docs.ray.io/en/latest/data/api/doc/ray.data.Dataset.html) we can perform on our dataset.
 
-<img src="https://raw.githubusercontent.com/anyscale/templates/main/e2e-llm-workflows/assets/data-detailed.png" width=800>
+<img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/e2e-llm-workflows/assets/data-detailed.png" width=800>
 
 
 
@@ -336,7 +336,7 @@ In this template, we'll fine-tune a large language model (LLM) using our dataset
 
 **Note**: We normally would not jump straight to fine-tuning a model. We would first experiment with a base model and evaluate it so that we can have a baseline performance to compare it to.
 
-<img src="https://raw.githubusercontent.com/anyscale/templates/main/e2e-llm-workflows/assets/train-overview.png" width=500>
+<img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/e2e-llm-workflows/assets/train-overview.png" width=500>
 
 ### Configurations
 
@@ -398,7 +398,7 @@ This Workspace is still running on a small, lean head node. But based on the com
 
 <b style="background-color: orange;">&nbsp;💡 INSIGHT&nbsp;</b>: With [Ray](https://docs.ray.io/) we're able to execute a large, compute intensive workload like this using smaller, more available resources (ex. using `A10`s instead of waiting for elusive `A100`s). And Anyscale's smart instance manager will automatically provision the appropriate and available compute for the workload based on what's needed.
 
-<img src="https://raw.githubusercontent.com/anyscale/templates/main/e2e-llm-workflows/assets/train-detailed.png" width=550>
+<img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/e2e-llm-workflows/assets/train-detailed.png" width=550>
 
 While we could execute `python src/ft.py configs/training/lora/llama-3-8b.yaml` directly inside a Workspace notebook (see this [example](https://console.anyscale.com/v2/template-preview/finetuning_llms_v2)), we'll instead kick off the fine-tuning workload as an isolated job. An [Anyscale Job](https://docs.anyscale.com/jobs/get-started/) is a great way to scale and execute a specific workload. Here, we specify the command that needs to run (ex. `python [COMMAND][ARGS]`) along with the requirements (ex. docker image, additional, pip packages, etc.).
 
@@ -447,9 +447,9 @@ While we could execute `python src/ft.py configs/training/lora/llama-3-8b.yaml` 
 
 This workload (we set to five epochs) will take ~45 min. to complete. As the job runs, you can monitor logs, metrics, Ray dashboard, etc. by clicking on the generated Job link above (`https://console.anyscale.com/jobs/prodjob_...`)
 
-<img src="https://raw.githubusercontent.com/anyscale/templates/main/e2e-llm-workflows/assets/gpu-util.png" width=800>
+<img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/e2e-llm-workflows/assets/gpu-util.png" width=800>
 
-<img src="https://raw.githubusercontent.com/anyscale/templates/main/e2e-llm-workflows/assets/tensorboard.png" width=800>
+<img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/e2e-llm-workflows/assets/tensorboard.png" width=800>
 
 ### Load artifacts
 
@@ -507,7 +507,7 @@ However for many generative tasks, the outputs are very unstructured and highly 
 
 We'll start by performing offline batch inference where we will use our tuned model to generate the outputs.
 
-<img src="https://raw.githubusercontent.com/anyscale/templates/main/e2e-llm-workflows/assets/offline-overview.png" width=500>
+<img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/e2e-llm-workflows/assets/offline-overview.png" width=500>
 
 ### Load test data
 
@@ -611,7 +611,7 @@ print (test_input_prompts_ds.take(1))
 
 We will use [vLLM](https://github.com/vllm-project/vllm)'s offline LLM class to load the model and use it for inference. We can easily load our LoRA weights and merge them with the base model (just pass in `lora_path`). And we'll wrap all of this functionality in a class that we can pass to [ray.data.Dataset.map_batches`](https://docs.ray.io/en/latest/data/api/doc/ray.data.Dataset.map_batches.html) to apply batch inference at scale.
 
-<img src="https://raw.githubusercontent.com/anyscale/templates/main/e2e-llm-workflows/assets/offline-detailed.png" width=750>
+<img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/e2e-llm-workflows/assets/offline-detailed.png" width=750>
 
 
 ```python
@@ -906,7 +906,7 @@ mismatches[0:2]
 
 For model serving, we'll first serve it locally, test it and then launch a production grade service that can autoscale to meet any demand.
 
-<img src="https://raw.githubusercontent.com/anyscale/templates/main/e2e-llm-workflows/assets/online-overview.png" width=500>
+<img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/e2e-llm-workflows/assets/online-overview.png" width=500>
 
 We'll start by generating the configuration for our service. We provide a convenient CLI experience to generate this configuration but you can create one from scratch as well. Here we can specify where our model lives, autoscaling behavior, accelerators to use, lora adapters, etc.
 
@@ -924,7 +924,7 @@ cd /home/ray/default/deploy/services
 python /home/ray/default/src/generate_serve_config.py 
 ```
 
-<img src="https://raw.githubusercontent.com/anyscale/templates/main/e2e-llm-workflows/assets/cli.png" width=500>
+<img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/e2e-llm-workflows/assets/cli.png" width=500>
 
 <b style="background-color: yellow;">&nbsp;🔄 REPLACE&nbsp;</b>: Use the serve configuration generated for you.
 
@@ -1017,7 +1017,7 @@ Now we'll create a production service that can truly scale. We have full control
 
 <b style="background-color: orange;">&nbsp;💡 INSIGHT&nbsp;</b>: With Ray Serve and Anyscale, it's extremely easy to define our configuration that can scale to meet any demand but also scale back to zero to create the most efficient service possible. Check out this [guide](https://github.com/anyscale/templates/blob/main/templates/endpoints_v2/examples/OptimizeModels.ipynb) on how to optimize behavior around auto scaling, latency/throughout, etc.
 
-<img src="https://raw.githubusercontent.com/anyscale/templates/main/e2e-llm-workflows/assets/online-detailed.png" width=650>
+<img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/e2e-llm-workflows/assets/online-detailed.png" width=650>
 
 Stop the local service (Control + C) and run the following:
 ```bash
@@ -1030,7 +1030,7 @@ anyscale service deploy -f serve_{TIMESTAMP}.yaml
 
 Go to `Home` > `Services` (left panel) to view the production service.
 
-<img src="https://raw.githubusercontent.com/anyscale/templates/main/e2e-llm-workflows/assets/services.png" width=650>
+<img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/e2e-llm-workflows/assets/services.png" width=650>
 
 <b style="background-color: yellow;">&nbsp;🔄 REPLACE&nbsp;</b>: the `service_url` and `service_bearer_token` generated for your service (top right corner under the `Query` button on the Service's page).
 
@@ -1055,11 +1055,11 @@ query(service_url, service_bearer_token)
 
 We've now served our model into production via [Anyscale Services](https://docs.anyscale.com/examples/intro-services/) but we can just easily productionize our other workloads with [Anyscale Jobs](https://docs.anyscale.com/examples/intro-jobs/) (like we did for fine-tuning above) to execute this entire workflow completely programmatically outside of Workspaces.
 
-<img src="https://raw.githubusercontent.com/anyscale/templates/main/e2e-llm-workflows/assets/jobs.png" width=650>
+<img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/e2e-llm-workflows/assets/jobs.png" width=650>
 
 For example, suppose that we want to preprocess batches of new incoming data, fine-tune a model, evaluate it and then compare it to the existing production version. All of this can be productionized by simply launching the workload as a [Job](https://docs.anyscale.com/examples/intro-jobs), which can be triggered manually, periodically (cron) or event-based (via webhooks, etc.). We also provide integrations with your platform/tools to make all of this connect with your existing production workflows.
 
-<img src="https://raw.githubusercontent.com/anyscale/templates/main/e2e-llm-workflows/assets/ai-platform.png" width=650>
+<img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/e2e-llm-workflows/assets/ai-platform.png" width=650>
 
 <b style="background-color: orange;">&nbsp;💡 INSIGHT&nbsp;</b>: Most industry ML issues arise from a discrepancy between the development (ex. local laptop) and production (ex. large cloud clusters) environments. With Anyscale, your development and production environments can be exactly the same so there is little to no difference introduced. And with features like smart instance manager, the development environment can stay extremely lean while having the power to scale as needed.
 

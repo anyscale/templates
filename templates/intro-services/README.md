@@ -160,11 +160,11 @@ To view the service, navigate to 🏠 **> Services > `my_service`**. On this pag
 
 By clicking on the **Running** service, you can view the status of deployments and how many replicas each contains. For example, your `FastAPIDeployment` has `1` replica.
 
-<img src="https://raw.githubusercontent.com/anyscale/templates/main/intro-services/assets/service-overview.png" height=400px>
+<img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/intro-services/assets/service-overview.png" height=400px>
 
 In the Logs, you can search for the message “Handling request!” to view each request for easier debugging.
 
-<img src="https://raw.githubusercontent.com/anyscale/templates/main/intro-services/assets/service-logs.png" height=400px>
+<img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/intro-services/assets/service-logs.png" height=400px>
 
 
 ### Configure scaling
@@ -193,7 +193,7 @@ my_app = FastAPIDeployment.bind()
 ```
 
 
-<img src="https://raw.githubusercontent.com/anyscale/templates/main/intro-services/assets/service-replicas.png" height=400px>
+<img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/intro-services/assets/service-replicas.png" height=400px>
 
 **Note**: This approach is a way to quickly modify scale for this example. As a best practice in production, define [autoscaling behavior](https://docs.anyscale.com/platform/services/scale-a-service#autoscaling) in the [ServiceConfig](https://docs.anyscale.com/reference/service-api#serviceconfig) contained in a `config.yaml` file. The number of worker nodes that Anyscale launches dynamically scales up and down in response to traffic and is scoped by the overall cluster compute config you define.
 
@@ -210,7 +210,7 @@ To deploy the update, execute the following command to trigger a staged rollout 
 
 In the service overview page, you can monitor the status of the update and see Ray Serve shut down the previous cluster.
 
-<img src="https://raw.githubusercontent.com/anyscale/templates/main/intro-services/assets/service-rollout.png" height=400px>
+<img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/intro-services/assets/service-rollout.png" height=400px>
 
 **Note**: Using this command triggers an automatic rollout which gradually shifts traffic from the previous cluster, or primary version, to the incoming cluster, or canary version. To learn more about configuring rollout behavior, see [Update a service](https://docs.anyscale.com/platform/services/update-a-service).
 
