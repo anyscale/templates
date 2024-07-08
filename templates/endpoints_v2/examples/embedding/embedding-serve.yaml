@@ -4,4 +4,4 @@ applications:
   import_path: aviary_private_endpoints.backend.server.run:router_application
   args:
     embedding_models:
-      - "./models/embedding_models/thenlper--gte-large.yaml"
+      - "./sample_model_configs/embedding_models/thenlper--gte-large.yaml"
