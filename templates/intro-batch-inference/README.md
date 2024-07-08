@@ -70,7 +70,7 @@ Note that above we called ``ds.show()`` in order to print the results to the con
 
 In the Ray Dashboard tab, navigate to the Job page and open the "Ray Data Overview" section to view the details of the batch inference execution:
 
-<img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/intro-batch-inference/assets/ray-data-job.png" width=800px/>
+<img src="https://raw.githubusercontent.com/anyscale/templates/main/intro-batch-inference/assets/ray-data-job.png" width=800px/>
 
 
 
@@ -101,7 +101,7 @@ To use GPUs for inference, make the following changes to your code:
 
 The remaining is the same as in the code we ran above. To test this out, first make sure to either enable *Auto-select worker nodes* or configure your workspace cluster to have GPU worker nodes:
 
-<img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/intro-batch-inference/assets/ray-data-gpu.png" width=300px/>
+<img src="https://raw.githubusercontent.com/anyscale/templates/main/intro-batch-inference/assets/ray-data-gpu.png" width=300px/>
 
 Run the below cell to test out the new code using GPUs:
 

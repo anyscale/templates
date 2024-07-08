@@ -1,7 +1,7 @@
 default_stages: [commit, push]
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v3.2.0
+    rev: v4.6.0
     hooks:
       - id: check-added-large-files
         args: ['--maxkb=10000'] # fix max file size to 10MB to allow for large notebooks
@@ -16,5 +16,7 @@ repos:
       - id: generate-readme
         name: Auto generate README.md from README.ipynb
         entry: ci/auto-generate-readme.sh
-        language: script
+        language: system
+        always_run: true
+        stages: [commit]
         pass_filenames: false

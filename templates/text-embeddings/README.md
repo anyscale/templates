@@ -7,7 +7,7 @@ This template shows you how to:
 2. Chunk the raw input text using Ray Data and LangChain.
 3. Compute embeddings using a pre-trained HuggingFace model, and write the results to cloud storage.
 
-<img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/text-embeddings/assets/diagram.jpg"/>
+<img src="https://raw.githubusercontent.com/anyscale/templates/main/text-embeddings/assets/diagram.jpg"/>
 
 For a Python script version of the `.ipynb` notebook used for the workspace template, refer to `main.py`.
 
@@ -236,7 +236,7 @@ You can also specify which accelerator type (for example, if your model requires
 
 If you do not need to select a particular instance type, you can omit this parameter and select "Auto-select worker nodes" under the compute configuration to have Ray select the best worker nodes from the available types:
 
-<img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/text-embeddings/assets/ray-data-gpu.png" width="400"/>
+<img src="https://raw.githubusercontent.com/anyscale/templates/main/text-embeddings/assets/ray-data-gpu.png" width="400"/>
 
 
 ```python

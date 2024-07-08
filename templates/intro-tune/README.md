@@ -32,7 +32,7 @@ print(results)
 
 You should see during the run a table of the trials created by Tune. One trial is created for each individual value of `x` in the grid sweep. The table shows where the trial was run in the cluster, how long the trial took, and reported metrics:
 
-<img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/intro-tune/assets/tune-status.png" width=800px/>
+<img src="https://raw.githubusercontent.com/anyscale/templates/main/intro-tune/assets/tune-status.png" width=800px/>
 
 On completion, it returns a `ResultGrid` object that captures the experiment results. This includes the reported trial metrics, the path where trial results are saved:
 
@@ -53,7 +53,7 @@ ResultGrid<[
 
 To view the stdout and stderr of the trial, use the ``Logs`` tab in the Workspace UI. Navigate to the log page and search for "hello", and you'll be able to see the logs printed for each trial run in the cluster:
 
-<img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/intro-tune/assets/tune-logs.png" width=800px/>
+<img src="https://raw.githubusercontent.com/anyscale/templates/main/intro-tune/assets/tune-logs.png" width=800px/>
 
 Tune also saves a number of input and output metadata files for each trial to storage, you can view them by querying the returned result object:
 - ``params.json``: The input parameters of the trial
@@ -212,7 +212,7 @@ print(results)
 
 During and after the execution, Tune reports a table of current trial status and reported accuracy. You can find the configuration that achieves the highest accuracy on the validation set:
 
-<img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/intro-tune/assets/tune-output.png" width=600px/>
+<img src="https://raw.githubusercontent.com/anyscale/templates/main/intro-tune/assets/tune-output.png" width=600px/>
 
 
 ### Persisted result storage
@@ -233,15 +233,15 @@ Let's observe how the above run executed in the Ray cluster for the workspace. T
 
 First, let's view the run in the Jobs sub-tab and click through to into the job view. Here, you can see an overview of the job, and the status of the individual actors Tune has launched to parallelize the job:
 
-<img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/intro-tune/assets/tune-jobs-1.png" width=800px/>
+<img src="https://raw.githubusercontent.com/anyscale/templates/main/intro-tune/assets/tune-jobs-1.png" width=800px/>
 
 You can further click through to the actors sub-page and view the status of individual running actors. Inspect trial logs, CPU profiles, and memory profiles using this page:
 
-<img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/intro-tune/assets/tune-jobs-2.png" width=800px/>
+<img src="https://raw.githubusercontent.com/anyscale/templates/main/intro-tune/assets/tune-jobs-2.png" width=800px/>
 
 Finally, we can observe the holistic execution of the job in the cluster in the Metrics sub-tab. When running the above job on a 36-CPU cluster, we can see that Tune was able to launch ~16 concurrent actors for trial execution, with each actor assigned 2 CPU slots as configured:
 
-<img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/intro-tune/assets/tune-metrics.png" width=800px/>
+<img src="https://raw.githubusercontent.com/anyscale/templates/main/intro-tune/assets/tune-metrics.png" width=800px/>
 
 
 That concludes our overview of Ray Tune in Anyscale. To learn more about Ray Tune and how it can improve your experiment management lifecycle, check out the [Ray Tune docs](https://docs.ray.io/en/latest/tune/index.html).
