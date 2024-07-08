@@ -49,7 +49,7 @@ padding: "max_length"
 Then you want to run the template entry-point and run the job for a few iterations to note down the time it takes for different steps. In the logs, we print a table with what you need, but you also can go to WANDB and obtain the metrics from there. 
 
 ```
-python main.py <path_to_config.yaml>
+llmforge anyscale finetune <path_to_config.yaml>
 ```
 
 
