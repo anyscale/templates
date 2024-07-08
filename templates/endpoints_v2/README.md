@@ -1,4 +1,4 @@
-# Efficiently serve large language models
+# Deploy, configure, and serve LLMs
 
 **⏱️ Time to complete**: 10 min (20 on GCP)
 

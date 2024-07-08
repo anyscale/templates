@@ -1,16 +1,18 @@
 default_stages: [commit, push]
+
 repos:
+  # Pre-commit hooks from external repository
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.6.0
     hooks:
       - id: check-added-large-files
-        args: ['--maxkb=10000'] # fix max file size to 10MB to allow for large notebooks
+        args: ['--maxkb=10000']  # Set max file size to 10MB
       - id: trailing-whitespace
-        # README might be auto-generated
-        exclude: templates/.+/README.md
+        exclude: templates/.+/README.md  # Exclude auto-generated README files
       - id: end-of-file-fixer
-        # README might be auto-generated
-        exclude: templates/.+/README.md
+        exclude: templates/.+/README.md  # Exclude auto-generated README files
+
+  # Local pre-commit hook to generate README.md from README.ipynb
   - repo: local
     hooks:
       - id: generate-readme
