@@ -13,7 +13,7 @@ When developing applications using Large Language Models (LLMs), achieving high-
 An **LLM Router** helps balance these aspects by deciding which queries are routed to a closed LLM and which to an OSS LLM based on the query's complexity or domain specificity. Below is a schematic representation of an LLM Router:
 
 <div style="text-align: center;">
-    <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/llm-router/assets/llm-router-flowchart_2.png" alt="LLM Router" width="800"/>
+    <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/fine-tune-llm_v2/end-to-end-examples/llm-router/assets/llm-router-flowchart_2.png" alt="LLM Router" width="800"/>
 </div>
 
 Given a set of user queries, an LLM router enables generating high-quality LLM responses while minimizing the overall cost.
@@ -31,8 +31,8 @@ More concretely, the objective of the causal LLM classifier is to direct "simple
 We show that it's possible to build LLM routers that achieve outstanding performance. Below are results from our best-performing LLM routers, the Causal LLM and a Matrix Factorization (MF) model, evaluated on the [MT Bench benchmark](https://arxiv.org/pdf/2306.05685), which demonstrate that our routers can achieve higher quality with lower costs (i.e., fewer calls to GPT-4) compared to the random baseline and public LLM routing systems from Unify AI and Martian. For more details on these results and additional ones, refer to our paper.
 
 <div style="display: flex; justify-content: center; align-items: center; gap: 20px;">
-    <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/llm-router/assets/indep-benchmarks.png" alt="Benchmark 1" style="width: 400px;"/>
-    <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/llm-router/assets/indep-benchmarks-llama.png" alt="Benchmark 2" style="width: 400px;"/>
+    <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/fine-tune-llm_v2/end-to-end-examples/llm-router/assets/indep-benchmarks.png" alt="Benchmark 1" style="width: 400px;"/>
+    <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/fine-tune-llm_v2/end-to-end-examples/llm-router/assets/indep-benchmarks-llama.png" alt="Benchmark 2" style="width: 400px;"/>
 </div>
 
 In the following sections, we discuss the steps that enable anyone to build a strong LLM router.
