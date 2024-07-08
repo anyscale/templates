@@ -293,68 +293,6 @@ dataset_df = generate_mixtral_responses(
 )
 ```
 
-    Starting batch inference on 30 queries...
-    # queries un-processed: 29, in-progress: 1, ready: 0
-    # queries un-processed: 28, in-progress: 2, ready: 0
-    # queries un-processed: 27, in-progress: 2, ready: 1
-    # queries un-processed: 26, in-progress: 3, ready: 0
-    # queries un-processed: 25, in-progress: 4, ready: 0
-    # queries un-processed: 24, in-progress: 5, ready: 0
-    # queries un-processed: 23, in-progress: 6, ready: 0
-    # queries un-processed: 22, in-progress: 7, ready: 0
-    # queries un-processed: 21, in-progress: 8, ready: 0
-    # queries un-processed: 20, in-progress: 9, ready: 0
-    # queries un-processed: 19, in-progress: 10, ready: 0
-    # queries un-processed: 18, in-progress: 10, ready: 1
-    # queries un-processed: 17, in-progress: 11, ready: 0
-    # queries un-processed: 16, in-progress: 12, ready: 0
-    # queries un-processed: 15, in-progress: 13, ready: 0
-    # queries un-processed: 14, in-progress: 14, ready: 0
-    # queries un-processed: 13, in-progress: 14, ready: 1
-    # queries un-processed: 12, in-progress: 14, ready: 1
-    # queries un-processed: 11, in-progress: 14, ready: 1
-    # queries un-processed: 10, in-progress: 15, ready: 0
-    # queries un-processed: 9, in-progress: 15, ready: 1
-    # queries un-processed: 8, in-progress: 15, ready: 1
-    # queries un-processed: 7, in-progress: 15, ready: 1
-    # queries un-processed: 6, in-progress: 15, ready: 1
-    # queries un-processed: 5, in-progress: 16, ready: 0
-    # queries un-processed: 4, in-progress: 16, ready: 1
-    # queries un-processed: 3, in-progress: 17, ready: 0
-    # queries un-processed: 2, in-progress: 18, ready: 0
-    # queries un-processed: 1, in-progress: 18, ready: 1
-    # queries un-processed: 0, in-progress: 18, ready: 1
-    # queries un-processed: 0, in-progress: 17, ready: 1
-    # queries un-processed: 0, in-progress: 17, ready: 0
-    # queries un-processed: 0, in-progress: 16, ready: 1
-    # queries un-processed: 0, in-progress: 16, ready: 0
-    # queries un-processed: 0, in-progress: 15, ready: 1
-    # queries un-processed: 0, in-progress: 14, ready: 1
-    # queries un-processed: 0, in-progress: 13, ready: 1
-    # queries un-processed: 0, in-progress: 12, ready: 1
-    # queries un-processed: 0, in-progress: 11, ready: 1
-    # queries un-processed: 0, in-progress: 10, ready: 1
-    # queries un-processed: 0, in-progress: 9, ready: 1
-    # queries un-processed: 0, in-progress: 9, ready: 0
-    # queries un-processed: 0, in-progress: 8, ready: 1
-    # queries un-processed: 0, in-progress: 8, ready: 0
-    # queries un-processed: 0, in-progress: 7, ready: 1
-    # queries un-processed: 0, in-progress: 6, ready: 1
-    # queries un-processed: 0, in-progress: 6, ready: 0
-    # queries un-processed: 0, in-progress: 5, ready: 1
-    # queries un-processed: 0, in-progress: 5, ready: 0
-    # queries un-processed: 0, in-progress: 5, ready: 0
-    # queries un-processed: 0, in-progress: 5, ready: 0
-    # queries un-processed: 0, in-progress: 4, ready: 1
-    # queries un-processed: 0, in-progress: 3, ready: 1
-    # queries un-processed: 0, in-progress: 2, ready: 1
-    # queries un-processed: 0, in-progress: 2, ready: 0
-    # queries un-processed: 0, in-progress: 1, ready: 1
-    # queries un-processed: 0, in-progress: 1, ready: 0
-    # queries un-processed: 0, in-progress: 0, ready: 1
-    Done in 19.21sec.
-
-
 ### Dataset overview with Mixtral responses
 
 
@@ -394,7 +332,7 @@ display(dataset_df.head())
       <td>Based on the features mentioned, which hotel d...</td>
       <td>[evol_instruct]</td>
       <td>Based on the features mentioned, Hotel A seems...</td>
-      <td>Based on the information provided, I would sa...</td>
+      <td>Based on the information you've provided, I c...</td>
     </tr>
     <tr>
       <th>113830</th>
@@ -422,7 +360,7 @@ display(dataset_df.head())
       <td>Q: You are provided with an "Event", "Intent" ...</td>
       <td>[flan_v2_niv2]</td>
       <td>PersonX might feel satisfied or content using ...</td>
-      <td>PersonX probably feels comfortable and focuse...</td>
+      <td>PersonX likely feels comfortable and focused,...</td>
     </tr>
   </tbody>
 </table>
@@ -453,7 +391,7 @@ inspect_llm_judge_queries(dataset_df)
     Confidence: 85%
     
     [Assistant Answer]
-     PersonX probably feels comfortable and focused in class, as they are using their preferred writing implement. This may help them engage more effectively with the material being taught.
+     PersonX likely feels comfortable and focused, as they are using their preferred writing implement in class. This may help them engage more effectively with the material being taught and participate in the class more willingly.
     
     Guidelines for Rating:
      - High Rating (4-5): Reserved for responses that are very close to the quality of the reference or even better.
@@ -473,60 +411,6 @@ from src.online_inference import generate_llm_judge_labels
 
 dataset_df = generate_llm_judge_labels(dataset_df, os.getenv('OPENAI_API_KEY'))
 ```
-
-    Starting batch inference on 30 queries...
-    # queries un-processed: 29, in-progress: 1, ready: 0
-    # queries un-processed: 28, in-progress: 2, ready: 0
-    # queries un-processed: 27, in-progress: 3, ready: 0
-    # queries un-processed: 26, in-progress: 4, ready: 0
-    # queries un-processed: 25, in-progress: 5, ready: 0
-    # queries un-processed: 24, in-progress: 6, ready: 0
-    # queries un-processed: 23, in-progress: 6, ready: 1
-    # queries un-processed: 22, in-progress: 6, ready: 1
-    # queries un-processed: 21, in-progress: 7, ready: 0
-    # queries un-processed: 20, in-progress: 7, ready: 1
-    # queries un-processed: 19, in-progress: 7, ready: 1
-    # queries un-processed: 18, in-progress: 8, ready: 0
-    # queries un-processed: 17, in-progress: 9, ready: 0
-    # queries un-processed: 16, in-progress: 9, ready: 1
-    # queries un-processed: 15, in-progress: 9, ready: 1
-    # queries un-processed: 14, in-progress: 9, ready: 1
-    # queries un-processed: 13, in-progress: 10, ready: 0
-    # queries un-processed: 13, in-progress: 10, ready: 0
-    # queries un-processed: 13, in-progress: 9, ready: 1
-    # queries un-processed: 12, in-progress: 9, ready: 1
-    # queries un-processed: 11, in-progress: 9, ready: 1
-    # queries un-processed: 10, in-progress: 9, ready: 1
-    # queries un-processed: 9, in-progress: 9, ready: 1
-    # queries un-processed: 8, in-progress: 9, ready: 1
-    # queries un-processed: 7, in-progress: 9, ready: 1
-    # queries un-processed: 6, in-progress: 9, ready: 1
-    # queries un-processed: 5, in-progress: 9, ready: 1
-    # queries un-processed: 4, in-progress: 9, ready: 1
-    # queries un-processed: 3, in-progress: 10, ready: 0
-    # queries un-processed: 3, in-progress: 9, ready: 1
-    # queries un-processed: 2, in-progress: 10, ready: 0
-    # queries un-processed: 2, in-progress: 10, ready: 0
-    # queries un-processed: 2, in-progress: 9, ready: 1
-    # queries un-processed: 1, in-progress: 9, ready: 1
-    # queries un-processed: 0, in-progress: 9, ready: 1
-    # queries un-processed: 0, in-progress: 8, ready: 1
-    # queries un-processed: 0, in-progress: 7, ready: 1
-    # queries un-processed: 0, in-progress: 6, ready: 1
-    # queries un-processed: 0, in-progress: 6, ready: 0
-    # queries un-processed: 0, in-progress: 6, ready: 0
-    # queries un-processed: 0, in-progress: 5, ready: 1
-    # queries un-processed: 0, in-progress: 4, ready: 1
-    # queries un-processed: 0, in-progress: 3, ready: 1
-    # queries un-processed: 0, in-progress: 2, ready: 1
-    # queries un-processed: 0, in-progress: 2, ready: 0
-    # queries un-processed: 0, in-progress: 2, ready: 0
-    # queries un-processed: 0, in-progress: 1, ready: 1
-    # queries un-processed: 0, in-progress: 1, ready: 0
-    # queries un-processed: 0, in-progress: 1, ready: 0
-    # queries un-processed: 0, in-progress: 0, ready: 1
-    Done in 15.44sec.
-
 
 ### Dataset overview with score labels
 
@@ -568,7 +452,7 @@ display(dataset_df.head())
       <td>Based on the features mentioned, which hotel d...</td>
       <td>[evol_instruct]</td>
       <td>Based on the features mentioned, Hotel A seems...</td>
-      <td>Based on the information provided, I would sa...</td>
+      <td>Based on the information you've provided, I c...</td>
       <td>5</td>
     </tr>
     <tr>
@@ -577,7 +461,7 @@ display(dataset_df.head())
       <td>[ultrachat]</td>
       <td>Sure, here's a simple step-by-step guide on ho...</td>
       <td>Sure, I'd be happy to help you make a homemad...</td>
-      <td>3</td>
+      <td>4</td>
     </tr>
     <tr>
       <th>138869</th>
@@ -593,14 +477,14 @@ display(dataset_df.head())
       <td>[ultrachat]</td>
       <td>Title: A Comparative Analysis of Driving a Car...</td>
       <td>Title: The Great Debate: Driving a Car vs. Ri...</td>
-      <td>4</td>
+      <td>5</td>
     </tr>
     <tr>
       <th>116934</th>
       <td>Q: You are provided with an "Event", "Intent" ...</td>
       <td>[flan_v2_niv2]</td>
       <td>PersonX might feel satisfied or content using ...</td>
-      <td>PersonX probably feels comfortable and focuse...</td>
+      <td>PersonX likely feels comfortable and focused,...</td>
       <td>5</td>
     </tr>
   </tbody>
@@ -870,14 +754,6 @@ For this tutorial, we will perform full-parameter finetuning of Llama3-8B on the
 !anyscale job submit --config-file configs/ft_job.yaml --exclude assets
 ```
 
-    [1m[36mOutput[0m[0m
-    [0m[1m[36m(anyscale +1.0s)[0m [0m[0m[0m[0mSubmitting job with config JobConfig(name='llm-router-tutorial', image_uri='localhost:5555/anyscale/llm-forge:0.5.0.0', compute_config=None, env_vars=None, py_modules=None, cloud=None, project=None, ray_version=None).[0m
-    [0m[1m[36m(anyscale +2.1s)[0m [0m[0m[0m[0mUploading local dir '.' to cloud storage.[0m
-    [0m[1m[36m(anyscale +3.2s)[0m [0m[0m[0m[0mJob 'llm-router-tutorial' submitted, ID: 'prodjob_cj7ek1pc72672hq1htqg17ca15'.[0m
-    [0m[1m[36m(anyscale +3.2s)[0m [0m[0m[0m[0mView the job in the UI: https://console.anyscale.com/jobs/prodjob_cj7ek1pc72672hq1htqg17ca15[0m
-    [0m[1m[36m(anyscale +3.2s)[0m [0m[0m[0m[0mUse `--wait` to wait for the job to run and stream logs.[0m
-    [0m[0m
-
 The job takes around 10 minutes on `4xA100-80gb` and 1 hour on `8xA10-22gb` to finish. Training logs will show the final model checkpoint, e.g.:
 
 ```
@@ -964,20 +840,30 @@ Let's run inference with this example and examine the model's output.
 
 
 ```python
+import gc
+import torch
 from src.offline_inference import single_example_inference
 
 result = single_example_inference(input_example)
 pprint(result)
+
+# Free up GPU memory for next step
+del result
+gc.collect()
+torch.cuda.empty_cache() 
 ```
 
     Loading model checkpoint from routellm/causal_llm_gpt4_augmented ...
 
 
-    Loading checkpoint shards: 100%|██████████| 4/4 [00:02<00:00,  1.76it/s]
+
+    Loading checkpoint shards:   0%|          | 0/4 [00:00<?, ?it/s]
+
+
     Special tokens have been added in the vocabulary, make sure the associated word embeddings are fine-tuned or trained.
 
 
-    Done loading model in 5.628355264663696 seconds.
+    Done loading model in 5.880241394042969 seconds.
     {'binary_prob': 0.9662781,
      'output_ids': tensor([128006,  78191, 128007,    271, 128260, 128009]),
      'output_str': '<|start_header_id|>assistant<|end_header_id|>\n'
@@ -1008,206 +894,6 @@ See our [paper](https://arxiv.org/pdf/2406.18665) for more details on the evalau
 ```python
 !python -m routellm.evals.evaluate --config config.example.yaml --routers random causal_llm --benchmark gsm8k
 ```
-
-    Namespace(routers=['random', 'causal_llm'], benchmark='gsm8k', output='.', overwrite_cache=[], parallel=96, config='config.example.yaml', num_results=10)
-    INFO: Pandarallel will run on 96 workers.
-    INFO: Pandarallel will use Memory file system to transfer data between the main process and workers.
-    Running eval for GSM8k.
-    1307/1319 questions for GSM8K after decontamination.
-    Evaluating router: random with threshold 0.00024069652516689466...
-    
-    =============== random with threshold 0.00024069652516689466 on gsm8k ===============
-    Average accuracy: 85.769
-    Model counts: gpt-4-1106-preview: 1307
-    Model %: gpt-4-1106-preview: 100.000%
-    =====================================================================================
-    
-    Evaluating router: random with threshold 0.07792316246593108...
-    
-    =============== random with threshold 0.07792316246593108 on gsm8k ===============
-    Average accuracy: 83.168
-    Model counts: gpt-4-1106-preview: 1176, mistralai/Mixtral-8x7B-Instruct-v0.1: 131
-    Model %: gpt-4-1106-preview: 89.977%, mistralai/Mixtral-8x7B-Instruct-v0.1: 10.023%
-    ==================================================================================
-    
-    Evaluating router: random with threshold 0.18951071797526106...
-    
-    =============== random with threshold 0.18951071797526106 on gsm8k ===============
-    Average accuracy: 80.566
-    Model counts: gpt-4-1106-preview: 1045, mistralai/Mixtral-8x7B-Instruct-v0.1: 262
-    Model %: gpt-4-1106-preview: 79.954%, mistralai/Mixtral-8x7B-Instruct-v0.1: 20.046%
-    ==================================================================================
-    
-    Evaluating router: random with threshold 0.3032111564929487...
-    
-    =============== random with threshold 0.3032111564929487 on gsm8k ===============
-    Average accuracy: 78.653
-    Model counts: gpt-4-1106-preview: 915, mistralai/Mixtral-8x7B-Instruct-v0.1: 392
-    Model %: gpt-4-1106-preview: 70.008%, mistralai/Mixtral-8x7B-Instruct-v0.1: 29.992%
-    =================================================================================
-    
-    Evaluating router: random with threshold 0.4032666385017831...
-    
-    =============== random with threshold 0.4032666385017831 on gsm8k ===============
-    Average accuracy: 76.511
-    Model counts: gpt-4-1106-preview: 784, mistralai/Mixtral-8x7B-Instruct-v0.1: 523
-    Model %: gpt-4-1106-preview: 59.985%, mistralai/Mixtral-8x7B-Instruct-v0.1: 40.015%
-    =================================================================================
-    
-    Evaluating router: random with threshold 0.49540592491118873...
-    
-    =============== random with threshold 0.49540592491118873 on gsm8k ===============
-    Average accuracy: 73.986
-    Model counts: gpt-4-1106-preview: 654, mistralai/Mixtral-8x7B-Instruct-v0.1: 653
-    Model %: gpt-4-1106-preview: 50.038%, mistralai/Mixtral-8x7B-Instruct-v0.1: 49.962%
-    ==================================================================================
-    
-    Evaluating router: random with threshold 0.6083487669281045...
-    
-    =============== random with threshold 0.6083487669281045 on gsm8k ===============
-    Average accuracy: 72.303
-    Model counts: gpt-4-1106-preview: 523, mistralai/Mixtral-8x7B-Instruct-v0.1: 784
-    Model %: gpt-4-1106-preview: 40.015%, mistralai/Mixtral-8x7B-Instruct-v0.1: 59.985%
-    =================================================================================
-    
-    Evaluating router: random with threshold 0.700589475694727...
-    
-    =============== random with threshold 0.700589475694727 on gsm8k ===============
-    Average accuracy: 70.926
-    Model counts: gpt-4-1106-preview: 392, mistralai/Mixtral-8x7B-Instruct-v0.1: 915
-    Model %: gpt-4-1106-preview: 29.992%, mistralai/Mixtral-8x7B-Instruct-v0.1: 70.008%
-    ================================================================================
-    
-    Evaluating router: random with threshold 0.7977797711273282...
-    
-    =============== random with threshold 0.7977797711273282 on gsm8k ===============
-    Average accuracy: 68.248
-    Model counts: gpt-4-1106-preview: 262, mistralai/Mixtral-8x7B-Instruct-v0.1: 1045
-    Model %: gpt-4-1106-preview: 20.046%, mistralai/Mixtral-8x7B-Instruct-v0.1: 79.954%
-    =================================================================================
-    
-    Evaluating router: random with threshold 0.9028303733879693...
-    
-    =============== random with threshold 0.9028303733879693 on gsm8k ===============
-    Average accuracy: 65.264
-    Model counts: mistralai/Mixtral-8x7B-Instruct-v0.1: 1176, gpt-4-1106-preview: 131
-    Model %: mistralai/Mixtral-8x7B-Instruct-v0.1: 89.977%, gpt-4-1106-preview: 10.023%
-    =================================================================================
-    
-    Evaluating router: random with threshold 0.9998815592294843...
-    
-    =============== random with threshold 0.9998815592294843 on gsm8k ===============
-    Average accuracy: 63.734
-    Model counts: mistralai/Mixtral-8x7B-Instruct-v0.1: 1307
-    Model %: mistralai/Mixtral-8x7B-Instruct-v0.1: 100.000%
-    =================================================================================
-    
-    Loading model checkpoint from routellm/causal_llm_augmented ...
-    Loading checkpoint shards: 100%|██████████████████| 4/4 [00:02<00:00,  1.77it/s]
-    Special tokens have been added in the vocabulary, make sure the associated word embeddings are fine-tuned or trained.
-    Done loading model in 7.867060899734497 seconds.
-      0%|                                                  | 0/1307 [00:00<?, ?it/s]/home/ray/anaconda3/lib/python3.11/site-packages/transformers/generation/configuration_utils.py:540: UserWarning: `do_sample` is set to `False`. However, `temperature` is set to `0.6` -- this flag is only used in sample-based generation modes. You should set `do_sample=True` or unset `temperature`.
-      warnings.warn(
-    /home/ray/anaconda3/lib/python3.11/site-packages/transformers/generation/configuration_utils.py:545: UserWarning: `do_sample` is set to `False`. However, `top_p` is set to `0.9` -- this flag is only used in sample-based generation modes. You should set `do_sample=True` or unset `top_p`.
-      warnings.warn(
-    The attention mask is not set and cannot be inferred from input because pad token is same as eos token.As a consequence, you may observe unexpected behavior. Please pass your input's `attention_mask` to obtain reliable results.
-    100%|███████████████████████████████████████| 1307/1307 [06:31<00:00,  3.34it/s]
-    Evaluating router: causal_llm with threshold 0.14828628301620483...
-    
-    =============== causal_llm with threshold 0.14828628301620483 on gsm8k ===============
-    Average accuracy: 85.769
-    Model counts: gpt-4-1106-preview: 1307
-    Model %: gpt-4-1106-preview: 100.000%
-    ======================================================================================
-    
-    Evaluating router: causal_llm with threshold 0.2228175401687622...
-    
-    =============== causal_llm with threshold 0.2228175401687622 on gsm8k ===============
-    Average accuracy: 84.851
-    Model counts: mistralai/Mixtral-8x7B-Instruct-v0.1: 131, gpt-4-1106-preview: 1176
-    Model %: mistralai/Mixtral-8x7B-Instruct-v0.1: 10.023%, gpt-4-1106-preview: 89.977%
-    =====================================================================================
-    
-    Evaluating router: causal_llm with threshold 0.24563899040222167...
-    
-    =============== causal_llm with threshold 0.24563899040222167 on gsm8k ===============
-    Average accuracy: 84.009
-    Model counts: mistralai/Mixtral-8x7B-Instruct-v0.1: 262, gpt-4-1106-preview: 1045
-    Model %: mistralai/Mixtral-8x7B-Instruct-v0.1: 20.046%, gpt-4-1106-preview: 79.954%
-    ======================================================================================
-    
-    Evaluating router: causal_llm with threshold 0.26810282468795776...
-    
-    =============== causal_llm with threshold 0.26810282468795776 on gsm8k ===============
-    Average accuracy: 82.938
-    Model counts: mistralai/Mixtral-8x7B-Instruct-v0.1: 391, gpt-4-1106-preview: 916
-    Model %: mistralai/Mixtral-8x7B-Instruct-v0.1: 29.916%, gpt-4-1106-preview: 70.084%
-    ======================================================================================
-    
-    Evaluating router: causal_llm with threshold 0.28559954166412355...
-    
-    =============== causal_llm with threshold 0.28559954166412355 on gsm8k ===============
-    Average accuracy: 80.872
-    Model counts: mistralai/Mixtral-8x7B-Instruct-v0.1: 523, gpt-4-1106-preview: 784
-    Model %: mistralai/Mixtral-8x7B-Instruct-v0.1: 40.015%, gpt-4-1106-preview: 59.985%
-    ======================================================================================
-    
-    Evaluating router: causal_llm with threshold 0.3040478825569153...
-    
-    =============== causal_llm with threshold 0.3040478825569153 on gsm8k ===============
-    Average accuracy: 79.495
-    Model counts: mistralai/Mixtral-8x7B-Instruct-v0.1: 653, gpt-4-1106-preview: 654
-    Model %: mistralai/Mixtral-8x7B-Instruct-v0.1: 49.962%, gpt-4-1106-preview: 50.038%
-    =====================================================================================
-    
-    Evaluating router: causal_llm with threshold 0.3240053415298462...
-    
-    =============== causal_llm with threshold 0.3240053415298462 on gsm8k ===============
-    Average accuracy: 76.435
-    Model counts: mistralai/Mixtral-8x7B-Instruct-v0.1: 784, gpt-4-1106-preview: 523
-    Model %: mistralai/Mixtral-8x7B-Instruct-v0.1: 59.985%, gpt-4-1106-preview: 40.015%
-    =====================================================================================
-    
-    Evaluating router: causal_llm with threshold 0.34344909191131595...
-    
-    =============== causal_llm with threshold 0.34344909191131595 on gsm8k ===============
-    Average accuracy: 73.604
-    Model counts: mistralai/Mixtral-8x7B-Instruct-v0.1: 915, gpt-4-1106-preview: 392
-    Model %: mistralai/Mixtral-8x7B-Instruct-v0.1: 70.008%, gpt-4-1106-preview: 29.992%
-    ======================================================================================
-    
-    Evaluating router: causal_llm with threshold 0.37578885555267333...
-    
-    =============== causal_llm with threshold 0.37578885555267333 on gsm8k ===============
-    Average accuracy: 70.926
-    Model counts: mistralai/Mixtral-8x7B-Instruct-v0.1: 1045, gpt-4-1106-preview: 262
-    Model %: mistralai/Mixtral-8x7B-Instruct-v0.1: 79.954%, gpt-4-1106-preview: 20.046%
-    ======================================================================================
-    
-    Evaluating router: causal_llm with threshold 0.4104311227798462...
-    
-    =============== causal_llm with threshold 0.4104311227798462 on gsm8k ===============
-    Average accuracy: 67.559
-    Model counts: mistralai/Mixtral-8x7B-Instruct-v0.1: 1176, gpt-4-1106-preview: 131
-    Model %: mistralai/Mixtral-8x7B-Instruct-v0.1: 89.977%, gpt-4-1106-preview: 10.023%
-    =====================================================================================
-    
-    Evaluating router: causal_llm with threshold 0.6229617297649384...
-    
-    =============== causal_llm with threshold 0.6229617297649384 on gsm8k ===============
-    Average accuracy: 63.734
-    Model counts: mistralai/Mixtral-8x7B-Instruct-v0.1: 1307
-    Model %: mistralai/Mixtral-8x7B-Instruct-v0.1: 100.000%
-    =====================================================================================
-    
-    mistralai/Mixtral-8x7B-Instruct-v0.1 63.733741392501905
-    gpt-4-1106-preview 85.76893649579189
-    Saving plot to ./gsm8k.png
-    Metrics:
-            method 20% qual 50% qual 80% qual        AUC      APGR
-    1  causal_llm   11.75%   34.06%   62.38%  77.540277  0.626567
-    0      random   19.69%   53.05%   83.02%  74.436777  0.485725
-
 
 
 ```python

@@ -1,3 +1,5 @@
+import gc
+import torch
 from routellm.routers.causal_llm.configs import RouterModelConfig
 from routellm.routers.causal_llm.llm_utils import load_prompt_format
 from routellm.routers.causal_llm.model import CausalLLMClassifier
