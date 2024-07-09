@@ -5,3 +5,4 @@ applications:
   args:
     embedding_models:
       - "./sample_model_configs/embedding_models/thenlper--gte-large.yaml"
+    models: []
