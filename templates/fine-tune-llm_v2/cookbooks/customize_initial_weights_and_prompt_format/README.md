@@ -18,6 +18,8 @@ The Anyscale platform is uniquely suited to support both of these use-cases. Thi
             - [How do I bring my weights to Anyscale?](#how-do-I-bring-my-weights-to-Anyscale-?)
     - [Bring checkpoints from a previous finetuning run](#bring-checkpoints-from-a-previous-finetuning-run)
 2. [Customizing the prompt format (chat template)](#customizing-the-prompt-format)
+    - [How prompt formatting works in `llmforge`](#how-prompt-formatting-works-in-llmforge)
+    - [Customizing data preprocessing and the prompt format](#customizing-data-preprocessing-and-the-prompt-format)
 
 # Bring your own weights
 
