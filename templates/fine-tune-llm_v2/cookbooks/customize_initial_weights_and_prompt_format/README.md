@@ -1,12 +1,13 @@
 # Customize initial weights and prompt format
 **⏱️ Time to complete**: 60 minutes
 
-This guide extends the use-case of finetuning base models to showcase how to
-1. Bring your own weights - (1) weights of other models similar in architecture to the Llama or Mistral family of models or (2) weights from a previous finetuning run.
-2. Customize the chat template/ prompt format - Specify a custom prompt format for formatting input messages to easily fine-tune on _any_ data format.
+This guide will showcase how you can finetune a model with a similar architecture to the Llama or Mistral family and customize the chat template/ prompt format. We will focus on fine-tuning the [Meta Llama Guard 2 model](https://llama.meta.com/docs/model-cards-and-prompt-formats/meta-llama-guard-2/) throughput this cookbook. 
+
+The two capabilities showcased here are
+1. Bringing your own weights - (1) weights of other models similar in architecture to the Llama or Mistral family of models or (2) weights from a previous finetuning run. While we focus on (1) here, (2) is an important use-case of multi-step fine-tuning covered in depth in the cookbook [here](../continue_from_checkpoint/).
+2. Customizing the chat template/ prompt format - Specify a custom prompt format for formatting input messages to easily fine-tune on _any_ data format.
 
 The Anyscale platform is uniquely suited to support both of these use-cases. This guide assumes you have familiarized yourself with the [basic fine-tuning guide](../../README.md).
-We will focus on fine-tuning the [Meta Llama Guard 2 model](https://llama.meta.com/docs/model-cards-and-prompt-formats/meta-llama-guard-2/) throughput this cookbook. 
 
 
 # Table of Contents
@@ -15,6 +16,7 @@ We will focus on fine-tuning the [Meta Llama Guard 2 model](https://llama.meta.c
         - [Example YAML](#example-yaml)
         - [How do I configure access to my weights in remote storage??](#)
             - [How do I bring my weights to Anyscale?](#how-do-I-bring-my-weights-to-Anyscale-?)
+    - [Bring checkpoints from a previous finetuning run](#bring-checkpoints-from-a-previous-finetuning-run)
 2. [Customizing the prompt format (chat template)](#customizing-the-prompt-format)
 
 # Bring your own weights
@@ -46,9 +48,7 @@ For models configured for public access, you simply need to add the URI of the l
 
 ## Bring checkpoints from a previous finetuning run
 
-This is a similar use case where you want to customize the base model weights to start with or the adapter weights to continue fine-tuning on the Anyscale Platform. 
-
-Further, there are a number of other considerations here (What's the right order of datasets in a 2-stage fine-tuning run? How do differences in context length fit in? etc) all of which are covered in our [continue_from_checkpoint](../continue_from_checkpoint/) cookbook.
+This is the use case  of multi-step fine-tuning where you want to customize the base model weights to start with or the adapter weights to continue fine-tuning on the Anyscale Platform. Being able to provide the custom checkpoints for the second (or later) stage of fine-tuning is just one part of the equation. There are a number of other considerations here (What's the right order of datasets in a 2-stage fine-tuning run? How do differences in context length fit in? etc) all of which are covered in our [continue_from_checkpoint](../continue_from_checkpoint/) cookbook.
 
 # Customizing the prompt format
 
@@ -62,23 +62,25 @@ generation_config:
     system: 
     user: 
     assistant:
+    trailing_assistant:  # inference-only
     bos: # optional
     system_in_user: # optional
-    trailing_assistant:  # optional, inference-only
     default_system_message: # optional
 ```
+
+For the models in the [list of supported models](../../README.md#faqs), we have default generation config parameters. This means that `generation_config` need not be specified when you just want to finetune a model like  `meta-llama/Meta-Llama-3-8B-Instruct` directly. 
 
 ### Examples
 For `meta-llama/Meta-Llama-3-8B`, we use the following prompt format:
 ```yaml
 generation_config:
   prompt_format:
-    system: """"<|start_header_id|>system<|end_header_id|>\n\n{instruction}<|eot_id|>""""
-    user: """<|start_header_id|>user<|end_header_id|>\n\n{instruction}<|eot_id|>"""
-    assistant: """<|start_header_id|>assistant<|end_header_id|>\n\n{instruction}<|eot_id|>"""
-    bos: """<|begin_of_text|>""" 
+    system: "<|start_header_id|>system<|end_header_id|>\n\n{instruction}<|eot_id|>"
+    user: "<|start_header_id|>user<|end_header_id|>\n\n{instruction}<|eot_id|>"
+    assistant: """<|start_header_id|>assistant<|end_header_id|>\n\n{instruction}<|eot_id|>"
+    trailing_assistant: "<|start_header_id|>assistant<|end_header_id|>\n\n" # inference-only 
+    bos: "<|begin_of_text|>"
     system_in_user: False
-    trailing_assistant: """<|start_header_id|>assistant<|end_header_id|>\n\n""" # inference-only 
     default_system_message: ""
 ```
 
@@ -86,16 +88,16 @@ For `mistralai/Mistral-7B`, we the below prompt format:
 ```yaml
 generation_config:
   prompt_format:
-    system: """"{instruction} + """"
-    user: """[INST] {system}{instruction} [/INST]"""
-    assistant: """ {instruction}</s>"""
-    bos: """<s>""" 
-    system_in_user: True
+    system: "{instruction} + "
+    user: "[INST] {system}{instruction} [/INST]"
+    assistant: " {instruction}</s>"
     trailing_assistant: "" # inference-only 
+    bos: "<s>"
+    system_in_user: True
     default_system_message: ""
 ```
 
-You can find more information on each entry in the [config API reference](https://docs.anyscale.com/reference/finetuning-config-api). Each `system`, `user` and `asistant` entry must contain the format specifier `{instruction}` which will actually format the corresponding entry in `messages`. For example, if a `messages` entry was as follows while training Llama-3-8B:
+You can find more information on each entry in the [config API reference](https://docs.anyscale.com/reference/finetuning-config-api). Each `system`, `user` and `asistant` entry must contain the format specifier `{instruction}` which will actually format the corresponding entry in `messages`. For example, if a training example was as follows while training Llama-3-8B:
 
 ```json 
 {
@@ -134,7 +136,8 @@ Provide your safety assessment for ONLY THE LAST {{ role }} in the above convers
 This is wildly different from Llama-3's prompt format. Fortunately, the OpenAI conversation format is highly flexible and adaptable to almost any input. In a case like Llama Guard 2, it is beneficial to take control of the templating yourself and format your inputs beforehand in the data preprocessing stage. For example, here's one way your data can look:
 
 ```json
-{"system": "<|begin_of_text|>[INST] Task: Check if there is unsafe content in '{{ role }}' messages in conversations according our safety policy with the below categories.
+{"system": 
+"<|begin_of_text|>[INST] Task: Check if there is unsafe content in '{{ role }}' messages in conversations according our safety policy with the below categories.
 <BEGIN UNSAFE CONTENT CATEGORIES>
 {{ unsafe_categories }}
 <END UNSAFE CONTENT CATEGORIES>
@@ -157,8 +160,8 @@ generation_config:
     system: """{instruction}"""
     user: """{instruction}"""
     assistant: """{instruction}"""
-    bos: "" # optional, empty string by default
     trailing_assistant: ""
+    bos: "" # optional, empty string by default
 ```
 
 For the above example, the "instruction" passed in to the `system` template is simply the entire prompt, the "instruction" passed in to the `user` template is empty, and the "instruction" passed in to the `assistant` is the expected response ('safe' or 'unsafe'). Also note that we've specified only one of the many possibilites of `prompt_format` you can specify (with your data preprocessing changing accordingly).
