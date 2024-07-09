@@ -1,8 +1,8 @@
 # Customize initial weights and prompt format
 **⏱️ Time to complete**: 60 minutes
 
-This guide extends the use-case of finetuning base models to showcase 
-1. Bring your own weights - either weights of other models similar in architecture to the Llama or Mistral family of models or (2) weights of models that have already been finetuned. 
+This guide extends the use-case of finetuning base models to showcase how to
+1. Bring your own weights - (1) weights of other models similar in architecture to the Llama or Mistral family of models or (2) weights from a previous finetuning run.
 2. Customize the chat template/ prompt format - Specify a custom prompt format for formatting input messages to easily fine-tune on _any_ data format.
 
 The Anyscale platform is uniquely suited to support both of these use-cases. This guide assumes you have familiarized yourself with the [basic fine-tuning guide](../../README.md).
@@ -11,20 +11,15 @@ We will focus on fine-tuning the [Meta Llama Guard 2 model](https://llama.meta.c
 
 # Table of Contents
 1. [Bring your own weights](#bring-your-own-weights)
-    - Bring 
-    - [Exampe YAML](#example-YAML)
-    - [What do I need to change?](#what-do-I-need-to-change-?)
-        - [How do I bring my weights to Anyscale?](#how-do-I-bring-my-weights-to-Anyscale-?)
-2. [Customizing the prompt format (chat template)]
-2. [Bring models that have already been finetuned](#bring-models-that-have-already-been-finetuned)
-    - [How to fine-tune from a previous checkpoint](#how-to-fine-tune-from-a-previous-checkpoint)
-    - [What and how are we fine-tuning?](#what-and-how-are-we-fine-tuning-?)
-    - [Things to Notice](#things-to-notice)
-    - [FAQs](#FAQs)
+    - [Bring models of the same architecture](#bring-models-of-the-same-architecture)
+        - [Example YAML](#example-yaml)
+        - [How do I configure access to my weights in remote storage??](#)
+            - [How do I bring my weights to Anyscale?](#how-do-I-bring-my-weights-to-Anyscale-?)
+2. [Customizing the prompt format (chat template)](#customizing-the-prompt-format)
 
 # Bring your own weights
 
-This guide focuses on how you can bring your own weights while fine-tuning. In general, you can customize the initial weights in your fine-tuning run through two options in the YAML:
+In general, you can customize the initial weights in your fine-tuning run through two options in the YAML:
 - `initial_base_model_ckpt_path` : Path to the base model weights you wish to start with
 - `initial_adapter_model_ckpt_path`: Path to the adapter (LoRA) weights you wish to start with
 
@@ -53,7 +48,7 @@ For models configured for public access, you simply need to add the URI of the l
 
 This is a similar use case where you want to customize the base model weights to start with or the adapter weights to continue fine-tuning on the Anyscale Platform. 
 
-There are a number of considerations here (What's the right order of datasets in a 2-stage fine-tuning run? How do differences in context length fit in? etc) all of which are covered in our [continue_from_checkpoint](../continue_from_checkpoint/) cookbook.
+Further, there are a number of other considerations here (What's the right order of datasets in a 2-stage fine-tuning run? How do differences in context length fit in? etc) all of which are covered in our [continue_from_checkpoint](../continue_from_checkpoint/) cookbook.
 
 # Customizing the prompt format
 
@@ -118,8 +113,9 @@ The formatted text input to the model is:
 <|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\nYou are a helpful assistant<|eot_id|><|start_header_id|>user<|end_header_id|>\n\nWhat's the value of 1+1?<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\nThe value is 2<|eot_id|>
 ```
 
+## Customizing data preprocessing and the prompt format
 
-Different LLMs are trained with different prompt formats (or chat templates). In order to figure out the right way to format your data and choose the config parameters, we need to work backwords from the text input we desire. For Llama Guard 2, for instance, the format that the model is trained with is the following:
+Different LLMs are trained with different prompt formats (or chat templates). In order to figure out the right way to format your data and choose the config parameters, we need to work backwords from the text input to the model. For Llama Guard 2, for instance, the format that the model is trained with is the following:
 
 ```text
 <|begin_of_text|>[INST] Task: Check if there is unsafe content in '{{ role }}' messages in conversations according our safety policy with the below categories.
@@ -168,4 +164,4 @@ generation_config:
 For the above example, the "instruction" passed in to the `system` template is simply the entire prompt, the "instruction" passed in to the `user` template is empty, and the "instruction" passed in to the `assistant` is the expected response ('safe' or 'unsafe'). Also note that we've specified only one of the many possibilites of `prompt_format` you can specify (with your data preprocessing changing accordingly).
 
 
-With the change in the base model weights (`initial_base_model_ckpt_path`) and the change in `prompt_format`, you should be able to fine-tunea model like Llama Guard-2.
+With the change in the base model weights (`initial_base_model_ckpt_path`) and the change in `prompt_format`, you should be able to fine-tune a model like Llama Guard-2.
