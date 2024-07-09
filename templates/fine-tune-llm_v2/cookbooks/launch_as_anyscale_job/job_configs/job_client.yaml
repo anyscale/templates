@@ -1,0 +1,4 @@
+name: "llmforge-job"
+entrypoint: "llmforge anyscale finetune config/llama-3-8b.yaml"
+image_uri: <replace_with_llmforge_image_uri_value>
+max_retries: 0

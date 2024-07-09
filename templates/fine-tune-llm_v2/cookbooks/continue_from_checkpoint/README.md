@@ -10,10 +10,10 @@ We support both Full-parameter checkpoints, and LoRA-adapter checkpoints. Howeve
 
 ## How to fine-tune from a previous checkpointing
 
-To get started, we can run the following illustrative example. Run this command from where `main.py` is located.
+To get started, we can run the following illustrative example. Run this command from the root of the template.
 
 ```
-python main.py cookbooks/continue_from_checkpoint/llama-3-8b.yaml
+llmforge anyscale finetune cookbooks/continue_from_checkpoint/llama-3-8b.yaml
 ```
 
 Running the above command will fine-tune on the [GSM8k dataset](https://huggingface.co/datasets/gsm8k). 
