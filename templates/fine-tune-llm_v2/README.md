@@ -99,7 +99,8 @@ Follow the [Learn how to bring your own models](https://docs.anyscale.com/exampl
 After you are with the above, you can find recipies that extend the functionality of this template under the cookbooks folder:
 
 * [Bring your own data](cookbooks/bring_your_own_data/README.md): Everything you need to know about using custom datasets for fine-tuning.
-* [Bring your own weights](cookbooks/bring_your_own_weights/README.md): Bring weights of a model with a similar architecture to the Llama or Mistral family of open-source models for fine-tuning or continue fine-tuning a fine-tuned model.
+* [Customize initial weights and prompt format](cookbooks/customize_initial_weights_and_prompt_format/README.md): Learn how you can finetune a model with a similar architecture to the Llama or Mistral family and customize the chat template/ prompt format. 
+* [Continue fine-tuning from a previous checkpoint](cookbooks/continue_from_checkpoint/README.md): A detailed guide on how you can use a previous checkpoint for another round of fine-tuning.
 * [LoRA vs. full-parameter training](cookbooks/continue_from_checkpoint/README.md): Learn the differences between LoRA and full-parameter training and how to configure both.
 * [Modifying hyperparameters](cookbooks/modifying_hyperparameters/README.md): A brief guide on customization of your fine-tuning job.
 * [Optimizing Cost and Performance for Finetuning](cookbooks/optimize_cost/README.md): A detailed guide on default performance-related parameters and how you can optimize throughput for training on your own data.
