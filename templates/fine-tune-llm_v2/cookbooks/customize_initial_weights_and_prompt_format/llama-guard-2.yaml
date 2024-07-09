@@ -4,9 +4,9 @@ train_path: s3://my_bucket/path_to_preprocessed_data/train.jsonl # <-- change th
 valid_path: s3://my_bucket/path_to_preprocessed_data/valid.jsonl # <-- change this to the path to your preprocessed validation data. This is optional
 generation_config: # <-- Change the generation_config below according to your data preprocessing
   prompt_format:
-    system: """{instruction}""" # <-- required field
-    user: """{instruction}""" # <-- required field
-    assistant: """{instruction}""" # <-- required field
+    system: "{instruction}" # <-- required field
+    user: "{instruction}" # <-- required field
+    assistant: "{instruction}" # <-- required field
     trailing_assistant: "" # <-- required field, inference-only
     bos: "" # optional, empty by default
 context_length: 512 # <-- change this to the context length you want to use

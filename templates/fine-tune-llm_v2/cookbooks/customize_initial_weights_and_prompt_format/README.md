@@ -139,15 +139,15 @@ This is wildly different from Llama-3's prompt format. Fortunately, the OpenAI c
 
 ```json
 {"system": 
-"<|begin_of_text|>[INST] Task: Check if there is unsafe content in '{{ role }}' messages in conversations according our safety policy with the below categories.
+"<|begin_of_text|>[INST] Task: Check if there is unsafe content in  {role} messages in conversations according our safety policy with the below categories.
 <BEGIN UNSAFE CONTENT CATEGORIES>
-{{ unsafe_categories }}
+{ unsafe_categories }
 <END UNSAFE CONTENT CATEGORIES>
 <BEGIN CONVERSATION>
-User: {{ user_message_1 }}
-Agent: {{ model_answer_1 }}
+User: { user_message_1 }
+Agent: { model_answer_1 }
 <END CONVERSATION>
-Provide your safety assessment for ONLY THE LAST {{ role }} in the above conversation:
+Provide your safety assessment for ONLY THE LAST { role } in the above conversation:
 - First line must read 'safe' or 'unsafe'.
 - If unsafe, a second line must include a comma-separated list of violated categories. [/INST]", 
 "user": "", 
@@ -169,4 +169,4 @@ generation_config:
 For the above example, the "instruction" passed in to the `system` template is simply the entire prompt, the "instruction" passed in to the `user` template is empty, and the "instruction" passed in to the `assistant` is the expected response ('safe' or 'unsafe'). Also note that we've specified only one of the many possibilites of `prompt_format` you can specify (with your data preprocessing changing accordingly).
 
 
-With the change in the base model weights (`initial_base_model_ckpt_path`) and the change in `prompt_format`, you should be able to fine-tune a model like Llama Guard-2.
+With the change in the base model weights (`initial_base_model_ckpt_path`) and the change in `prompt_format`, you should be able to fine-tune a model like Llama Guard-2. An example YAML is provided in [llama-guard-2.yaml](./llama-guard-2.yaml). Note that the training dataset has to be preprocessed in the above format before being used with the provided generation config.
