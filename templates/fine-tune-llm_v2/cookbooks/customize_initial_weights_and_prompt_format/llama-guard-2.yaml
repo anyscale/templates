@@ -6,7 +6,7 @@ generation_config: # <-- Change the generation_config below according to your da
   prompt_format:
     system: "{instruction}" # <-- required field
     user: "{instruction}" # <-- required field
-    assistant: "{instruction}" # <-- required field
+    assistant: "{instruction}<|end_of_text|>" # <-- required field
     trailing_assistant: "" # <-- required field, inference-only
     bos: "" # optional, empty by default
 context_length: 4096 # <-- change this to the context length you want to use

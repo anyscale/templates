@@ -193,7 +193,7 @@ For the above example, the "instruction" (format specifier) passed in to the `sy
 With the change in the base model weights (`initial_base_model_ckpt_path`) and the change in `prompt_format`, you should be able to fine-tune a model like Llama Guard-2. An example YAML is provided in [llama-guard-2.yaml](./llama-guard-2.yaml). We've preprocessed [nvidia/Aegis-AI-Content-Safety-Dataset-1.0](https://huggingface.co/datasets/nvidia/Aegis-AI-Content-Safety-Dataset-1.0?row=0) to fine-tune Llama Guard 2. To get started, run 
 
 ```python
-llmforge anyscale finetune cookbooks/customize_initial_weights_and_prompt_format/llama-3-8b.yaml 
+llmforge anyscale finetune cookbooks/customize_initial_weights_and_prompt_format/llama-guard-2.yaml 
 ```
 
 
