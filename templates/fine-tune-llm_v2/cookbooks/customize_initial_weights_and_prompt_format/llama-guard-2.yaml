@@ -12,8 +12,8 @@ generation_config: # <-- Change the generation_config below according to your da
 context_length: 4096 # <-- change this to the context length you want to use
 num_devices: 16 # <-- change this to total number of GPUs that you want to use
 num_epochs: 3 # <-- change this to the number of epochs that you want to train for
-train_batch_size_per_device: 4 # <-- adjust this to maximize GPU utilization
-eval_batch_size_per_device: 4 # <-- adjust this to maximize GPU utilization
+train_batch_size_per_device: 4 # <-- change this to maximize GPU utilization
+eval_batch_size_per_device: 4 # <-- change this to maximize GPU utilization
 learning_rate: 1e-4 # <-- For LoRA, we recommend to default to 1e-4, for full-parameter training, we recommend 1e-5
 padding: "longest" # This will pad batches to the longest sequence. Use "max_length" when profiling to profile the worst case.
 num_checkpoints_to_keep: 1

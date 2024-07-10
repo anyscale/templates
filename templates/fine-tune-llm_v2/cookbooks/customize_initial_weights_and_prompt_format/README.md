@@ -27,8 +27,11 @@ In general, you can customize the initial weights in your fine-tuning run throug
 - `initial_base_model_ckpt_path` : Path to the base model weights you wish to start with
 - `initial_adapter_model_ckpt_path`: Path to the adapter (LoRA) weights you wish to start with
 
+Note that you can use the above parameters independent of one another. 
+
 ## Bring models of the same architecture
 You can fine-tune a model similar in architecture to the Llama or Mistral family of models to fine-tune on the Anyscale Platform. For example, [Llama-Guard-2](https://llama.meta.com/docs/model-cards-and-prompt-formats/meta-llama-guard-2/) is a model that is based on Llama-3-8B architecture that has been finetuned on a specific task of classifying human-AI conversations. To fine-tune Llama Guard 2, you can specify the model ID and `initial_base_model_ckpt_path` as below:
+
 ### Example YAML
 
 ```yaml
@@ -42,12 +45,12 @@ The overarching idea is that specifying a model ID will provide context to the a
 
 ### How do I configure access to my weights in remote storage?
 
-For models configured for public access, you simply need to add the URI of the location of the model weights in your training YAML. We support loading models stored on S3 (with GCS support coming soon). For private models, you could configure the read permissions for your Workspace to pull from the bucket holding your model weights. Alternatively, you could sync your model weights to your Anyscale-provided artifact storage, or even just keep it in shared storage in your workspace. The [Bring your own data](../../cookbooks/bring_your_own_data/README.md) cookbook, while focusing on datasets, provides in-depth detail on these options.
+For models configured for public access, you simply need to add the URI of the location of the model weights in your training YAML. We support loading models stored on S3 (with GCS support coming soon). For private models, you could configure the read permissions for your Workspace to pull from the bucket holding your model weights. Alternatively, you could sync your model weights to your Anyscale-provided artifact storage, or even just keep it on disk in shared storage in your workspace. The [Bring your own data](../../cookbooks/bring_your_own_data/README.md) cookbook, while focusing on datasets, provides in-depth detail on these options.
 
 
 ## Bring checkpoints from a previous finetuning run
 
-This is the use case  of multi-step fine-tuning where you want to customize the base model weights to start with or the adapter weights to continue fine-tuning on the Anyscale Platform. Being able to provide the custom checkpoints for the second (or later) stage of fine-tuning is just one part of the equation. There are a number of other considerations here (What's the right order of datasets in a 2-stage fine-tuning run? How do differences in context length fit in? etc) all of which are covered in our [continue_from_checkpoint](../continue_from_checkpoint/) cookbook.
+This is the use case  of multi-step fine-tuning where you want to customize the base model weights to start with or the adapter weights to continue fine-tuning on the Anyscale Platform. Being able to provide the custom checkpoints for the second (or later) stage of fine-tuning is just one part of the equation. There are a number of other considerations here (What's the right order of datasets in a 2-stage fine-tuning run? How do differences in context length fit in? etc) all of which are covered in our [continue from checkpoint](../continue_from_checkpoint/) cookbook.
 
 # Customizing the prompt format
 
@@ -122,13 +125,19 @@ Different LLMs are trained with different prompt formats (or chat templates). In
 
 ```text
 <|begin_of_text|>[INST] Task: Check if there is unsafe content in '{{ role }}' messages in conversations according our safety policy with the below categories.
+
 <BEGIN UNSAFE CONTENT CATEGORIES>
 {{ unsafe_categories }}
 <END UNSAFE CONTENT CATEGORIES>
+
 <BEGIN CONVERSATION>
+
 User: {{ user_message_1 }}
+
 Agent: {{ model_answer_1 }}
+
 <END CONVERSATION>
+
 Provide your safety assessment for ONLY THE LAST {{ role }} in the above conversation:
 - First line must read 'safe' or 'unsafe'.
 - If unsafe, a second line must include a comma-separated list of violated categories. [/INST]
@@ -137,34 +146,53 @@ Provide your safety assessment for ONLY THE LAST {{ role }} in the above convers
 This is wildly different from Llama-3's prompt format. Fortunately, the OpenAI conversation format is highly flexible and adaptable to almost any input. In a case like Llama Guard 2, it is beneficial to take control of the templating yourself and format your inputs beforehand in the data preprocessing stage. For example, here's one way your data can look:
 
 ```json
-{"system": 
-"<|begin_of_text|>[INST] Task: Check if there is unsafe content in  {role} messages in conversations according our safety policy with the below categories.
+{
+  "messages": [
+    {"role": "system", 
+    "content": 
+    "<|begin_of_text|>[INST] Task: Check if there is unsafe content in '{{ role }}' messages in conversations according our safety policy with the below categories.
+
 <BEGIN UNSAFE CONTENT CATEGORIES>
-{ unsafe_categories }
+{{ unsafe_categories }}
 <END UNSAFE CONTENT CATEGORIES>
+
 <BEGIN CONVERSATION>
-User: { user_message_1 }
-Agent: { model_answer_1 }
-<END CONVERSATION>", 
-"user": "Provide your safety assessment for ONLY THE LAST { role } in the above conversation:
+
+User: {{ user_message_1 }}
+
+Agent: {{ model_answer_1 }}
+
+<END CONVERSATION>
+
+",
+  }, 
+    {"role": "user", "content":  "Provide your safety assessment for ONLY THE LAST {{ role }} in the above conversation:
 - First line must read 'safe' or 'unsafe'.
-- If unsafe, a second line must include a comma-separated list of violated categories. [/INST]", 
-"assistant": "{expected_response}"}
+- If unsafe, a second line must include a comma-separated list of violated categories. [/INST]"}, 
+    {"role": "assistant", "content": "{expected_response}"}
+    ]
+  }
 ```
+
+Note: All the entries in the messages list need to have non-empty content, and at a minimum we expect one user and one assistant message. 
 
 Since we've taken care of the full templating ourselves, we just need the prompt formatter to verbatim concatenate the content in different roles. Thus, the generation config can look like:
 
 ```yaml
 generation_config:
   prompt_format:
-    system: """{instruction}"""
-    user: """{instruction}"""
-    assistant: """{instruction}"""
+    system: "{instruction}"
+    user: "{instruction}"
+    assistant: "{instruction}<|end_of_text|>"
     trailing_assistant: ""
     bos: "" # optional, empty string by default
 ```
 
-For the above example, the "instruction" passed in to the `system` template is simply the entire prompt, the "instruction" passed in to the `user` template is empty, and the "instruction" passed in to the `assistant` is the expected response ('safe' or 'unsafe'). Also note that we've specified only one of the many possibilites of `prompt_format` you can specify (with your data preprocessing changing accordingly).
+You can see how we make use of format specifiers to format the input chat. For the above example, the "instruction" (format specifier) passed in to the `system` template is almost the entire prompt (mainly problem context), the "instruction" passed in to the `user` template contains the specific instructions for the assistant, and the "instruction" passed in to the `assistant` template is the expected response ('safe' or 'unsafe'). Also note that this is only one of the many possibilites of `prompt_format` you can specify (with your data preprocessing changing accordingly). 
 
 
-With the change in the base model weights (`initial_base_model_ckpt_path`) and the change in `prompt_format`, you should be able to fine-tune a model like Llama Guard-2. An example YAML is provided in [llama-guard-2.yaml](./llama-guard-2.yaml). Note that the training dataset has to be preprocessed in the above format before being used with the provided generation config.
+With the change in the base model weights (`initial_base_model_ckpt_path`) and the change in `prompt_format`, you should be able to fine-tune a model like Llama Guard-2. An example YAML is provided in [llama-guard-2.yaml](./llama-guard-2.yaml). We've preprocessed [nvidia/Aegis-AI-Content-Safety-Dataset-1.0](https://huggingface.co/datasets/nvidia/Aegis-AI-Content-Safety-Dataset-1.0?row=0) to fine-tune Llama Guard 2. To get started, run 
+
+```python
+llmforge anyscale finetune cookbooks/customize_initial_weights_and_prompt_format/llama-3-8b.yaml 
+```
