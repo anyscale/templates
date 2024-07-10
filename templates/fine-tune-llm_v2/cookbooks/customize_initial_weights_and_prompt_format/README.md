@@ -1,11 +1,11 @@
 # Customize initial weights and prompt format
 **⏱️ Time to complete**: 60 minutes
 
-This guide will showcase how you can finetune a model with a similar architecture to the Llama or Mistral family and customize the chat template/ prompt format. We will focus on fine-tuning the [Meta Llama Guard 2 model](https://llama.meta.com/docs/model-cards-and-prompt-formats/meta-llama-guard-2/) throughput this cookbook. 
+This guide will showcase how you can finetune a model with a similar architecture to the Llama or Mistral family and customize the chat template or prompt format. We will focus on fine-tuning the [Meta Llama Guard 2 model](https://llama.meta.com/docs/model-cards-and-prompt-formats/meta-llama-guard-2/) throughput this cookbook. 
 
 The two capabilities showcased here are
 1. Bringing your own weights - (1) weights of other models similar in architecture to the Llama or Mistral family of models or (2) weights from a previous finetuning run. While we focus on (1) here, (2) is an important use-case of multi-step fine-tuning covered in depth in the cookbook [here](../continue_from_checkpoint/).
-2. Customizing the chat template/ prompt format - Specify a custom prompt format for formatting input messages to easily fine-tune on _any_ data format.
+2. Customizing the chat template or prompt format - Specify a custom prompt format for formatting input messages to easily fine-tune on _any_ data format.
 
 The Anyscale platform is uniquely suited to support both of these use-cases. This guide assumes you have familiarized yourself with the [basic fine-tuning guide](../../README.md).
 
@@ -88,7 +88,7 @@ generation_config:
     default_system_message: # optional
 ```
 
-For the models in the [list of supported models](../../README.md#faqs), we have default generation config parameters. This means that `generation_config` need not be specified when you just want to finetune a model like  `meta-llama/Meta-Llama-3-8B-Instruct` directly. 
+For the models in the [list of supported models](../../README.md#faqs), we have default generation config parameters. This means that `generation_config` need not be specified when you just want to finetune a model like `meta-llama/Meta-Llama-3-8B-Instruct` directly.  
 
 ### Examples
 For `meta-llama/Meta-Llama-3-8B`, we use the following prompt format:
@@ -196,3 +196,8 @@ With the change in the base model weights (`initial_base_model_ckpt_path`) and t
 ```python
 llmforge anyscale finetune cookbooks/customize_initial_weights_and_prompt_format/llama-3-8b.yaml 
 ```
+
+
+## Inference time behaviour
+
+After customizing the prompt format during fine-tuning, you need to make sure that the same format is being used at inference. You can use the [inference template](https://docs.anyscale.com/examples/deploy-llms) to deploy your fine-tuned model and specify the same prompt format parameters under  the `generation` entry in the YAML. 
