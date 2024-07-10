@@ -28,15 +28,12 @@ In general, you can customize the initial weights in your fine-tuning run throug
 - `initial_adapter_model_ckpt_path`: Path to the adapter (LoRA) weights you wish to start with
 
 ## Bring models of the same architecture
-You can fine-tune a model similar in architecture to the Llama or Mistral family of models to fine-tune on the Anyscale Platform. For example, to fine-tune Llama Guard 2, you can 
-specify the model ID and `initial_base_model_ckpt_path` as below:
+You can fine-tune a model similar in architecture to the Llama or Mistral family of models to fine-tune on the Anyscale Platform. For example, [Llama-Guard-2](https://llama.meta.com/docs/model-cards-and-prompt-formats/meta-llama-guard-2/) is a model that is based on Llama-3-8B architecture that has been finetuned on a specific task of classifying human-AI conversations. To fine-tune Llama Guard 2, you can specify the model ID and `initial_base_model_ckpt_path` as below:
 ### Example YAML
 
 ```yaml
 model_id: meta-llama/Meta-Llama-3-8B
 initial_base_model_ckpt_path: s3://my-bucket/llama-guard-2
-train_path: s3://air-example-data/gsm8k/train.jsonl
-valid_path: s3://air-example-data/gsm8k/test.jsonl
 ...
 ```
 
@@ -56,7 +53,25 @@ This is the use case  of multi-step fine-tuning where you want to customize the 
 
 ## How prompt formatting works in `llmforge`
 
-Here's a quick rundown of how prompt formatting/ chat templating works right now: the training/validation data needs to be formatted in the OpenAI messages format. Each example has a "messages" entry consisting a conversation with "system", "user" and "assistant" roles. For each role, depending on the model, we add certain tokens as headers/footers along with a BOS token at the start of the conversation and an EOS token at the end of each assistant response. The prompt format can be specified in our YAML as a part of the `generation_config` for the model (the same format is used in our inference code):
+Here's a quick rundown of how prompt formatting or chat templating works: the training or validation data needs to be formatted in the OpenAI messages format. Each example has a "messages" entry consisting a conversation with "system", "user" and "assistant" roles. For example:
+
+```json 
+{
+  "messages": [
+    {"role": "system", "content": "You are a helpful assistant"}, 
+    {"role": "user", "content": "What's the value of 1+1?"}, 
+    {"role": "assistant", "content": "The value is 2"}
+    ]
+  }
+```
+
+For each role, depending on the model, we add certain tokens as headers or footers along with a BOS token at the start of the conversation and an EOS token at the end of each assistant response. This templating/ formatting is a crucial preprocessing step in bringing the conversation format into a plain text input - which later tokenized and fed into the model. For Llama-3-8B, the above example would be formatted as follows:
+
+```text
+<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\nYou are a helpful assistant<|eot_id|><|start_header_id|>user<|end_header_id|>\n\nWhat's the value of 1+1?<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\nThe value is 2<|eot_id|>
+```
+
+The prompt format can be specified in our YAML as a part of the `generation_config` for the model (the same format is used in our inference code):
 
 ```yaml
 generation_config:
@@ -99,27 +114,11 @@ generation_config:
     default_system_message: ""
 ```
 
-You can find more information on each entry in the [config API reference](https://docs.anyscale.com/reference/finetuning-config-api). Each `system`, `user` and `asistant` entry must contain the format specifier `{instruction}` which will actually format the corresponding entry in `messages`. For example, if a training example was as follows while training Llama-3-8B:
-
-```json 
-{
-  "messages": [
-    {"role": "system", "content": "You are a helpful assistant"}, 
-    {"role": "user", "content": "What's the value of 1+1?"}, 
-    {"role": "assistant", "content": "The value is 2"}
-    ]
-  }
-```
-
-The formatted text input to the model is:
-
-```text
-<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\nYou are a helpful assistant<|eot_id|><|start_header_id|>user<|end_header_id|>\n\nWhat's the value of 1+1?<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\nThe value is 2<|eot_id|>
-```
+You can find more information on each entry in the [config API reference](https://docs.anyscale.com/reference/finetuning-config-api). Each `system`, `user` and `asistant` entry must contain the format specifier `{instruction}` which will actually format the corresponding entry in `messages`.  
 
 ## Customizing data preprocessing and the prompt format
 
-Different LLMs are trained with different prompt formats (or chat templates). In order to figure out the right way to format your data and choose the config parameters, we need to work backwords from the text input to the model. For Llama Guard 2, for instance, the format that the model is trained with is the following:
+Different LLMs are trained with different prompt formats (or chat templates). In order to figure out the right way to format your data and choose the config parameters, we need to work backwards from the text input to the model. For Llama Guard 2, for instance, the format that the model is trained with is the following:
 
 ```text
 <|begin_of_text|>[INST] Task: Check if there is unsafe content in '{{ role }}' messages in conversations according our safety policy with the below categories.
@@ -146,11 +145,10 @@ This is wildly different from Llama-3's prompt format. Fortunately, the OpenAI c
 <BEGIN CONVERSATION>
 User: { user_message_1 }
 Agent: { model_answer_1 }
-<END CONVERSATION>
-Provide your safety assessment for ONLY THE LAST { role } in the above conversation:
+<END CONVERSATION>", 
+"user": "Provide your safety assessment for ONLY THE LAST { role } in the above conversation:
 - First line must read 'safe' or 'unsafe'.
 - If unsafe, a second line must include a comma-separated list of violated categories. [/INST]", 
-"user": "", 
 "assistant": "{expected_response}"}
 ```
 
