@@ -7,15 +7,14 @@ The two capabilities showcased here are
 1. Bringing your own weights - (1) weights of other models similar in architecture to the Llama or Mistral family of models or (2) weights from a previous finetuning run. While we focus on (1) here, (2) is an important use-case of multi-step fine-tuning covered in depth in the cookbook [here](../continue_from_checkpoint/).
 2. Customizing the chat template or prompt format - Specify a custom prompt format for formatting input messages to easily fine-tune on _any_ data format.
 
-The Anyscale platform is uniquely suited to support both of these use-cases. This guide assumes you have familiarized yourself with the [basic fine-tuning guide](../../README.md).
+This guide assumes you have familiarized yourself with the [basic fine-tuning guide](../../README.md).
 
 
 # Table of Contents
 1. [Bring your own weights](#bring-your-own-weights)
     - [Bring models of the same architecture](#bring-models-of-the-same-architecture)
         - [Example YAML](#example-yaml)
-        - [How do I configure access to my weights in remote storage??](#)
-            - [How do I bring my weights to Anyscale?](#how-do-I-bring-my-weights-to-Anyscale-?)
+        - [How do I configure access to my weights in remote storage??](#how-do-i-configure-access-to-my-weights-in-remote-storage)
     - [Bring checkpoints from a previous finetuning run](#bring-checkpoints-from-a-previous-finetuning-run)
 2. [Customizing the prompt format (chat template)](#customizing-the-prompt-format)
     - [How prompt formatting works in `llmforge`](#how-prompt-formatting-works-in-llmforge)
@@ -41,7 +40,7 @@ initial_base_model_ckpt_path: s3://my-bucket/llama-guard-2
 ```
 
 
-The overarching idea is that specifying a model ID will provide context to the architecture of the LLM, which will guide how the model will be further trained. It won't necessarily mean that the model that is specified here is the model that will be fine-tuned. For that, we will rely on the weights that are provided. Knowing that Llama 3 8B model (or any other Llama model for that matter) shares the same architecture as the Llama Guard 2 model makes it a suitable choice for the model ID. However, note that this would still use the same chat-templating / prompt formatting as Llama-3 while starting to fine-tune with Llama Guard 2 weights. For the specific case of Llama Guard 2, we need customization even in the prompt format which will be outlined below. 
+The overarching idea is that specifying a model ID will provide context on the architecture of the LLM, which will guide how the model will be further trained. It won't necessarily mean that the model that is specified here is the model that will be fine-tuned. For that, we will rely on the weights that are provided. Knowing that Llama 3 8B model (or any other Llama model for that matter) shares the same architecture as the Llama Guard 2 model makes it a suitable choice for the model ID. However, note that this would still use the same chat-templating or prompt formatting as Llama-3 while starting to fine-tune with Llama Guard 2 weights. For the specific case of Llama Guard 2, we need customization even in the prompt format which will be outlined below. 
 
 ### How do I configure access to my weights in remote storage?
 
@@ -68,7 +67,7 @@ Here's a quick rundown of how prompt formatting or chat templating works: the tr
   }
 ```
 
-For each role, depending on the model, we add certain tokens as headers or footers along with a BOS token at the start of the conversation and an EOS token at the end of each assistant response. This templating/ formatting is a crucial preprocessing step in bringing the conversation format into a plain text input - which later tokenized and fed into the model. For Llama-3-8B, the above example would be formatted as follows:
+For each role, depending on the model, we add certain tokens as headers or footers along with a BOS token at the start of the conversation and an EOS token at the end of each assistant response. This templating/ formatting is a crucial preprocessing step in bringing the conversation format into a plain text input - which is later tokenized and fed into the model. For Llama-3-8B, the above example would be formatted as follows:
 
 ```text
 <|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\nYou are a helpful assistant<|eot_id|><|start_header_id|>user<|end_header_id|>\n\nWhat's the value of 1+1?<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\nThe value is 2<|eot_id|>
@@ -188,7 +187,7 @@ generation_config:
     bos: "" # optional, empty string by default
 ```
 
-You can see how we make use of format specifiers to format the input chat. For the above example, the "instruction" (format specifier) passed in to the `system` template is almost the entire prompt (mainly problem context), the "instruction" passed in to the `user` template contains the specific instructions for the assistant, and the "instruction" passed in to the `assistant` template is the expected response ('safe' or 'unsafe'). Also note that this is only one of the many possibilites of `prompt_format` you can specify (with your data preprocessing changing accordingly). 
+For the above example, the "instruction" (format specifier) passed in to the `system` template is almost the entire prompt (mainly problem context), the "instruction" passed in to the `user` template contains the specific instructions for the LLM, and the "instruction" passed in to the `assistant` template is the expected response ('safe' or 'unsafe'). Also note that this is only one of the many possibilites of `prompt_format` you can specify (with your data preprocessing changing accordingly). 
 
 
 With the change in the base model weights (`initial_base_model_ckpt_path`) and the change in `prompt_format`, you should be able to fine-tune a model like Llama Guard-2. An example YAML is provided in [llama-guard-2.yaml](./llama-guard-2.yaml). We've preprocessed [nvidia/Aegis-AI-Content-Safety-Dataset-1.0](https://huggingface.co/datasets/nvidia/Aegis-AI-Content-Safety-Dataset-1.0?row=0) to fine-tune Llama Guard 2. To get started, run 
