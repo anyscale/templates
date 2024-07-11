@@ -2,7 +2,7 @@ applications:
   - args:
       models: []
       vllm_base_models:
-        - "./models/mistral/mistralai--Mistral-7B-Instruct-v0.1_a10g_tp1.yaml"
+        - "./sample_model_configs/llama/codellama--CodeLlama-34b-Instruct-hf_a100-40g_tp4.yaml"
       multiplex_lora_adapters: []
       function_calling_models: []
     runtime_env:
