@@ -1,10 +1,12 @@
 # Fine-tuning on datasets with long context
 **⏱️ Time to complete**: 5 minutes
 
-This guide demonstrates how to prepare a dataset that results in particularely long context lengths. Make sure you have gone over the [basic fine-tuning guide](../../README.md) before going over this cookbook.
+This guide demonstrates how to prepare a dataset with long context lengths.
+Make sure you have gone over the [basic fine-tuning guide](../../README.md) before going over this cookbook.
 
 In the following example, we filter a hugginface dataset and assemble it into the right format.
-You case use this as a template for creating your own datasets.
+By estimating how many tokens an example from the dataset will result in, we can disgard examples that are too long.
+You can use this as a template for creating your own datasets.
 
 
 ```python
@@ -13,14 +15,14 @@ import pandas as pd
 from transformers import AutoTokenizer
 
 # Fill in your personal hugginface token with access to the tokenizer (You can use a similar tokenizer as a work-around)
-HHUGGINFACE_TOKEN = ...
+HHUGGINFACE_TOKEN = "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"
 # The name of the model you want to fine-tune with. We use this only for tokenization so models with the same tokenizer are interoperable here.
 MODEL_NAME = "meta-llama/Meta-Llama-3-8B-Instruct"
-# Your fine-tuning context length
+# Our target fine-tuning context length
 MAX_CONTEXT_LENGTH = 16384
 # Depending on your model, tokenized messages will have special tokens such as a "beginning of sequence" or "system message" token added.
-# The size of this "safety buffer" should be larger than what you expect these additional tokens to be in sum.
-# 500 is a conservative size for a single-turn user-assistant conversation.
+# The size of this "safety buffer" should be larger than what you expect these additional tokens to be in sum per example.
+# 500 is a conservative size for a single-turn user-assistant conversation. Have a look at dataset statistics when starting your fine-tuning job to check the minimum and maximum example size.
 SAFETY_BUFFER = 500
 # Design this to fit your dataset. This will help your model learn and converge to a better solution.
 SYSTEM_MESSAGE = "You are an expert for patent law who generates abstracts from patents. Base your answer solely on the provided patent."
@@ -39,7 +41,7 @@ def is_too_long(messages: dict):
     """Filters out rows that exceed MAX_CONTEXT_LENGTH in their total length"""
     return sum([len(tokenizer(m["content"])["input_ids"]) for m in messages["messages"]]) + SAFETY_BUFFER > MAX_CONTEXT_LENGTH
 
-for frame, output_file in [(TRAIN_DF, "train.jsonl"), (TEST_DF, "test.jsonl")]:
+for frame, output_file in [(TRAIN_DF, "/mnt/cluster_storage/train.jsonl"), (TEST_DF, "/mnt/cluster_storage/test.jsonl")]:
     with open(output_file, 'w') as f:
         for _, row in frame.iterrows():
             messages = to_messages_dict(row.to_dict())
@@ -48,8 +50,14 @@ for frame, output_file in [(TRAIN_DF, "train.jsonl"), (TEST_DF, "test.jsonl")]:
                 f.write(json_str + '\n')
 ```
 
+    /home/ray/anaconda3/lib/python3.10/site-packages/huggingface_hub/file_download.py:1132: FutureWarning: `resume_download` is deprecated and will be removed in version 1.0.0. Downloads always resume when possible. If you want to force a new download, use `force_download=True`.
+      warnings.warn(
+    Special tokens have been added in the vocabulary, make sure the associated word embeddings are fine-tuned or trained.
+
+
 We can now use this dataset to fine-tune an LLM that helps us with creating abstracts from patents.
-The fine-tuned model will have a context-length of 16384 tokens when fine-tuned on Anyscale Endpoints or the Anyscale platform.
+The fine-tuned model will have a context-length of 16384 tokens during fine-tuning.
+Check out the logs when fine-tuning to double-check every time you create a dataset this way!
 
 
 ## FAQ:
