@@ -1,8 +1,8 @@
 model_id: meta-llama/Meta-Llama-3-8B-Instruct # <-- change this to the model you want to fine-tune
 train_path: /mnt/cluster_storage/train.jsonl # <-- change this to the path to your training data
 valid_path: /mnt/cluster_storage/test.jsonl # <-- change this to the path to your validation data. This is optional
-context_length: 512 # <-- change this to the context length you want to use
-num_devices: 16 # <-- change this to total number of GPUs that you want to use
+context_length: 8192 # <-- change this to the context length you want to use
+num_devices: 8 # <-- change this to total number of GPUs that you want to use
 num_epochs: 1 # <-- change this to the number of epochs that you want to train for
 train_batch_size_per_device: 1
 eval_batch_size_per_device: 1
@@ -18,7 +18,7 @@ flash_attention_2: true
 trainer_resources:
   memory: 53687091200 # 50 GB memoryw
 worker_resources:
-  accelerator_type:A10G: 0.001
+  accelerator_type:A100-40GB: 0.001
 lora_config:
   r: 8
   lora_alpha: 16

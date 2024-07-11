@@ -15,7 +15,7 @@ import pandas as pd
 from transformers import AutoTokenizer
 
 # Fill in your personal hugginface token with access to the tokenizer (You can use a similar tokenizer as a work-around)
-HHUGGINFACE_TOKEN = "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"
+HHUGGINFACE_TOKEN = ""
 # The name of the model you want to fine-tune with. We use this only for tokenization so models with the same tokenizer are interoperable here.
 MODEL_NAME = "meta-llama/Meta-Llama-3-8B-Instruct"
 # Our target fine-tuning context length
@@ -49,11 +49,6 @@ for frame, output_file in [(TRAIN_DF, "/mnt/cluster_storage/train.jsonl"), (TEST
                 json_str = json.dumps(messages)
                 f.write(json_str + '\n')
 ```
-
-    /home/ray/anaconda3/lib/python3.10/site-packages/huggingface_hub/file_download.py:1132: FutureWarning: `resume_download` is deprecated and will be removed in version 1.0.0. Downloads always resume when possible. If you want to force a new download, use `force_download=True`.
-      warnings.warn(
-    Special tokens have been added in the vocabulary, make sure the associated word embeddings are fine-tuned or trained.
-
 
 We can now use this dataset to fine-tune an LLM that helps us with creating abstracts from patents.
 The fine-tuned model will have a context-length of 16384 tokens during fine-tuning.
