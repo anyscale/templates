@@ -13,6 +13,7 @@ This tutorial shows how to:
 2. Compile a model using Triton's Python backend in Anyscale Workspaces.
 3. Run Triton Server on Ray Serve locally in Anyscale Workspaces.
 4. Deploy the app using Anyscale Services.
+5. Performance benchmark.
 
 **Note**: This guide doesn't substitute the official Triton documentation.
 For more information, see
@@ -50,80 +51,101 @@ Unlike Nvidia's tutorial, this tutorial doesn't include models in the Docker ima
 Instead, in this section, you build the model and upload the model to cloud
 storage such as AWS S3 or GCP Storage for serving later.
 
-Run this code to start a Triton server using the `/tmp/workspace/diffusion-models`
-directory as the model repository.
-
+Run this code in a notebook to define a Ray Actor with Triton server using the
+`/tmp/workspace/diffusion-models` directory as the model repository. The actor also
+includes the methods to compile and upload the models.
 
 ```python
 import tritonserver
+import time
+import datetime
+import ray
+import os
+from typing import List
 
-model_repository = ["/tmp/workspace/diffusion-models"]
+LOCAL_MODEL_PATH = "/tmp/workspace/diffusion-models"
+MODEL_REPOSITORY = [LOCAL_MODEL_PATH]
+S3_PREFIX = "s3://"
 
-triton_server = tritonserver.Server(
-    model_repository=model_repository,
-    model_control_mode=tritonserver.ModelControlMode.EXPLICIT,
-)
-triton_server.start(wait_until_ready=True)
+
+@ray.remote(num_gpus=1, accelerator_type="T4")
+class TritonModelCompiler:
+    def __init__(self):
+        self.triton_server = tritonserver.Server(
+            model_repository=MODEL_REPOSITORY,
+            model_control_mode=tritonserver.ModelControlMode.EXPLICIT,
+        )
+        self.triton_server.start(wait_until_ready=True)
+
+    def _use_aws(self) -> bool:
+        if os.environ["ANYSCALE_ARTIFACT_STORAGE"].startswith(S3_PREFIX):
+            return True
+
+        return False
+
+    def _upload_commands(self) -> List[str]:
+        if self._use_aws():
+            command_prefix = "aws s3 cp"
+        else:
+            command_prefix = "gcloud storage cp"
+
+        return [
+            f"{command_prefix} {LOCAL_MODEL_PATH}/stable_diffusion_1_5/config.pbtxt $ANYSCALE_ARTIFACT_STORAGE/triton_model_repository/stable_diffusion_1_5/config.pbtxt",
+            f"{command_prefix} {LOCAL_MODEL_PATH}/stable_diffusion_1_5/1/1.5-engine-batch-size-1/ $ANYSCALE_ARTIFACT_STORAGE/triton_model_repository/stable_diffusion_1_5/1/1.5-engine-batch-size-1/ --recursive"
+        ]
+
+    def upload_model(self):
+        for command in self._upload_commands():
+            os.system(command)
+
+    def build_model(self):
+        print(f"start time: {datetime.datetime.now()}")
+        t0 = time.time()
+        """
+        The line below executes TensorRT's diffusion backend to compile the model.
+        It loads the weights from Hugging Face. Export the model into ONNX format
+        into the model repository directory. Then compile the model into a TensorRT engine
+        and store the artifacts in the model repository directory. For more details,
+        see the `stable_diffusion_pipeline.py` file in the `diffusion` directory.
+        """
+        model = self.triton_server.load("stable_diffusion_1_5")
+        duration = time.time() - t0
+        print(f"Total duration: {duration}s")
+
+        # Unload the model and the server to free the memory.
+        self.triton_server.unload(model, wait_until_unloaded=True)
+        self.triton_server.stop()
+
+        # Upload the model to the artifact storage.
+        self.upload_model()
+
 ```
 
-Compile the model using Triton's Python backend. The compile takes 10-15 minutes on a
-T4 GPU and 8-10 minutes on an A10G GPU. The model saves TensorRT engine artifacts
-in the `model_repository` directory. Keep in mind that the model compiling needs to be
-in the same type of GPU you plan to serve the model on.
-
+Run the code below in another notebook cell to compile and upload the model using
+Triton's Python backend. The compile takes 10-15 minutes on a T4 GPU and 8-10 minutes
+on an A10G GPU. The model saves TensorRT engine artifacts in the `model_repository`
+directory. Keep in mind that the model compiling needs to be in the same type of GPU
+you plan to serve the model on.
 
 
 ```python
-import time
-import datetime
-
-
-print(f"start time: {datetime.datetime.now()}")
-t0 = time.time()
-"""
-The line below executes TensorRT's diffusion backend to compile the model.
-It loads the weights from Hugging Face. Export the model into ONNX format
-into the model repository directory. Then compile the model into a TensorRT engine
-and store the artifacts in the model repository directory. For more details,
-see the `stable_diffusion_pipeline.py` file in the `diffusion` directory.
-"""
-model = triton_server.load("stable_diffusion_1_5")
-duration = time.time() - t0
-print(f"Total duration: {duration}s")
-
-# Unload the model and the server to free the memory.
-triton_server.unload(model, wait_until_unloaded=True)
-triton_server.stop()
+actor = TritonModelCompiler.remote()
+actor.build_model.remote()
 ```
 
-After the model compile completes, the previous step generates some .py and onnx files
-in the same model repository. You only need to upload both the model config file
+The previous step generates some .py and onnx files in the same model repository on
+the GPU worker. You only need to upload both the model config file
 `config.pbtxt` and the TensorRT engine artifacts from the model repository. Anyscale
 provides an environment variable `ANYSCALE_ARTIFACT_STORAGE` for customers to store
 model artifacts. To learn more about the storage, see
 [Object Storage (S3 or GCS buckets)](https://docs.anyscale.com/1.0.0/services/storage/#object-storage-s3-or-gcs-buckets).
 
-Use one of the following tabs to upload the model:
-
-
-<Tabs>
-    <TabItem value="AWS" label="AWS" default>
+After the model is compiled and uploaded, you should kill the actor to free the
+resources. Run the following code to kill the actor.
 
 ```python
-aws s3 cp /tmp/workspace/diffusion-models/stable_diffusion_1_5/config.pbtxt $ANYSCALE_ARTIFACT_STORAGE/triton_model_repository/stable_diffusion_1_5/config.pbtxt
-aws s3 cp /tmp/workspace/diffusion-models/stable_diffusion_1_5/1/1.5-engine-batch-size-1/ $ANYSCALE_ARTIFACT_STORAGE/triton_model_repository/stable_diffusion_1_5/1/1.5-engine-batch-size-1/ --recursive
+ray.kill(actor)
 ```
-
-  </TabItem>
-  <TabItem value="GCP" label="GCP">
-
-```python
-gcloud storage cp /tmp/workspace/diffusion-models/stable_diffusion_1_5/config.pbtxt $ANYSCALE_ARTIFACT_STORAGE/triton_model_repository/stable_diffusion_1_5/config.pbtxt
-gcloud storage cp /tmp/workspace/diffusion-models/stable_diffusion_1_5/1/1.5-engine-batch-size-1/ $ANYSCALE_ARTIFACT_STORAGE/triton_model_repository/stable_diffusion_1_5/1/1.5-engine-batch-size-1/ --recursive
-```
-
-  </TabItem>
-</Tabs>
 
 ## Run Triton Server on Ray Serve locally in Anyscale Workspaces
 
@@ -197,3 +219,87 @@ curl -H "Authorization: Bearer pnnHyxUG_v6hzLbUn7LLmgNjF5g3t0XAxa0TXoRFV6g" \
 The following is an example of a generated image:
 
 <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/triton_services/assets/dogs_photo_service.jpg"/>
+
+## Performance benchmark
+
+In this section, you can run a performance benchmark to compare the performance of
+Ray Serve with Triton vs. PyTorch vs. PyTorch Compile. The code to run a Ray Serve
+application with PyTorch is in the `pytorch_app.py` file. 
+
+To start the app with purely PyTorch, run the following command:
+```commandline
+serve run pytorch_app:pytorch_deployment --non-blocking
+```
+
+To start the app with PyTorch Compile, run the following command:
+```commandline
+serve run pytorch_app:pytorch_compiled_deployment --non-blocking
+```
+
+You can use [Locust](https://locust.io/) to run a performance benchmark. The
+`locustfile.py` file to setup the test is also shared in the workspace. To run the
+benchmark, follow these steps:
+1. install Locust: `pip install locust`
+2. make sure the Ray Serve app is running with one of Triton, PyTorch, or PyTorch
+Compile.
+3. run Locust: `locust --headless --users 1 --run-time 15m --stop-timeout 10s -H http://localhost:8000 -f locustfile.py RayServeUser`
+
+This is the output of the benchmark collected on a single A100 worker node:
+
+<Tabs>
+    <TabItem value="Triton" label="Triton" default>
+
+```commandline
+Type     Name                                                                          # reqs      # fails |    Avg     Min     Max    Med |   req/s  failures/s
+--------|----------------------------------------------------------------------------|-------|-------------|-------|-------|-------|-------|--------|-----------
+GET      /generate?prompt=dogs%20in%20new%20york,%20realistic,%204k,%20photograph        1076     0(0.00%) |    836     824     890    840 |    1.20        0.00
+--------|----------------------------------------------------------------------------|-------|-------------|-------|-------|-------|-------|--------|-----------
+         Aggregated                                                                      1076     0(0.00%) |    836     824     890    840 |    1.20        0.00
+
+Response time percentiles (approximated)
+Type     Name                                                                                  50%    66%    75%    80%    90%    95%    98%    99%  99.9% 99.99%   100% # reqs
+--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------
+GET      /generate?prompt=dogs%20in%20new%20york,%20realistic,%204k,%20photograph              840    840    840    840    840    840    850    850    860    890    890   1076
+--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------
+         Aggregated                                                                            840    840    840    840    840    840    850    850    860    890    890   1076
+```
+
+  </TabItem>
+  <TabItem value="PyTorch" label="PyTorch">
+
+```commandline
+Type     Name                                                                          # reqs      # fails |    Avg     Min     Max    Med |   req/s  failures/s
+--------|----------------------------------------------------------------------------|-------|-------------|-------|-------|-------|-------|--------|-----------
+GET      /generate?prompt=dogs%20in%20new%20york,%20realistic,%204k,%20photograph         519     0(0.00%) |   1734    1703    1769   1703 |    0.58        0.00
+--------|----------------------------------------------------------------------------|-------|-------------|-------|-------|-------|-------|--------|-----------
+         Aggregated                                                                       519     0(0.00%) |   1734    1703    1769   1703 |    0.58        0.00
+
+Response time percentiles (approximated)
+Type     Name                                                                                  50%    66%    75%    80%    90%    95%    98%    99%  99.9% 99.99%   100% # reqs
+--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------
+GET      /generate?prompt=dogs%20in%20new%20york,%20realistic,%204k,%20photograph             1700   1700   1700   1700   1800   1800   1800   1800   1800   1800   1800    519
+--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------
+         Aggregated                                                                           1700   1700   1700   1700   1800   1800   1800   1800   1800   1800   1800    519
+
+```
+
+  </TabItem>
+  <TabItem value="PyTorch Compile" label="PyTorch Compile">
+
+```commandline
+Type     Name                                                                          # reqs      # fails |    Avg     Min     Max    Med |   req/s  failures/s
+--------|----------------------------------------------------------------------------|-------|-------------|-------|-------|-------|-------|--------|-----------
+GET      /generate?prompt=dogs%20in%20new%20york,%20realistic,%204k,%20photograph         929     0(0.00%) |    968     954    1043    970 |    1.03        0.00
+--------|----------------------------------------------------------------------------|-------|-------------|-------|-------|-------|-------|--------|-----------
+         Aggregated                                                                       929     0(0.00%) |    968     954    1043    970 |    1.03        0.00
+
+Response time percentiles (approximated)
+Type     Name                                                                                  50%    66%    75%    80%    90%    95%    98%    99%  99.9% 99.99%   100% # reqs
+--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------
+GET      /generate?prompt=dogs%20in%20new%20york,%20realistic,%204k,%20photograph              970    970    970    970    980    980    980    980   1000   1000   1000    929
+--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------
+         Aggregated                                                                            970    970    970    970    980    980    980    980   1000   1000   1000    929
+```
+
+  </TabItem>
+</Tabs>
