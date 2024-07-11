@@ -8,6 +8,8 @@ In the following example, we filter a hugginface dataset and assemble it into th
 By estimating how many tokens an example from the dataset will result in, we can disgard examples that are too long.
 You can use this as a template for creating your own datasets.
 
+> **_NOTE:_** To fine-tune with a context length of 8k tokens and the llama-3-8b.yaml config in this cookbook, we require GCP A2 nodes. For that, you need to instantiate your workspace in a region such as GCP's `us-central1`  due to the relatively high availability. See [GCP's availability info](https://cloud.google.com/compute/docs/gpus/gpu-regions-zones) for more information. If you only want to generate the dataset, you can do that anywhere.
+
 
 ```python
 import json
@@ -53,7 +55,6 @@ for frame, output_file in [(TRAIN_DF, "/mnt/cluster_storage/train.jsonl"), (TEST
 We can now use this dataset to fine-tune an LLM that helps us with creating abstracts from patents.
 The fine-tuned model will have a context-length of 16384 tokens during fine-tuning.
 Check out the logs when fine-tuning to double-check every time you create a dataset this way!
-
 
 ## FAQ:
 
