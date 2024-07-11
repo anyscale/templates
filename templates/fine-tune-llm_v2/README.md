@@ -117,6 +117,7 @@ Here is a list of LLMForge image versions:
 
 | version | image_uri |
 |---------|-----------|
+| `0.5.1`  | `localhost:5555/anyscale/llm-forge:0.5.1` |
 | `0.5.0.1`  | `localhost:5555/anyscale/llm-forge:0.5.0.1-ngmM6BdcEdhWo0nvedP7janPLKS9Cdz2` |
 
 
