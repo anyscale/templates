@@ -1,0 +1,3 @@
+head_node_type:
+  name: head
+  instance_type: g5.48xlarge
