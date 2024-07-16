@@ -29,7 +29,7 @@ engine_config:
     # Speculative decoding arguments.
     speculative_disable_by_batch_size: 16
     ngram_prompt_lookup_max: 3
-    ngram_prompt_lookup_min: 1 
+    ngram_prompt_lookup_min: 1
     speculative_model: "[ngram]"
     num_speculative_tokens: 7
     use_v2_block_manager: true
