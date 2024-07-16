@@ -15,10 +15,6 @@ deployment_config:
   ray_actor_options:
     resources:
       "accelerator_type:A100-80G": 0.001
-    runtime_env:
-      pip:
-        - /home/ray/dist/vllm-project/vllm/vllm-latest-cp39-cp39-linux_x86_64.whl
-        - flash_attn~=2.5.6
 engine_config:
   model_id: databricks/dbrx-instruct
   hf_model_id: databricks/dbrx-instruct
@@ -33,10 +29,6 @@ engine_config:
       runtime_env:
         pip: null
   max_total_tokens: 32768
-  runtime_env:
-    pip:
-      - /home/ray/dist/vllm-project/vllm/vllm-latest-cp39-cp39-linux_x86_64.whl
-      - flash_attn~=2.5.6
   generation:
     prompt_format:
       system: "<|im_start|>system\n{instruction}<|im_end|>\n"
