@@ -26,7 +26,7 @@ engine_config:
     tokenizer_pool_extra_config:
       runtime_env:
         pip: null
-    # Spec decoding models currently don't support logprobs
+    # Speculative decoding arguments.
     speculative_disable_by_batch_size: 16
     ngram_prompt_lookup_max: 3
     ngram_prompt_lookup_min: 1 

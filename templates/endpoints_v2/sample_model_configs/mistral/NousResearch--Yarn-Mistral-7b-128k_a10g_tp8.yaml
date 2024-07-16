@@ -11,27 +11,40 @@ deployment_config:
     upscale_delay_s: 15.0
   max_ongoing_requests: 64
   ray_actor_options:
+    runtime_env:
+      env_vars:
+        ANYSCALE_VLLM_ENABLE_JSON_MODE: "1"
+        ANYSCALE_VLLM_USE_V2: "1"
+        RECREATE_FAILED_ACTORS: "1"
+        ANYSCALE_VLLM_NUM_PROCESSOR_WORKERS: "8"
     resources:
       "accelerator_type:A10G": 0.001
 engine_config:
   model_id: NousResearch/Yarn-Mistral-7b-128k
   hf_model_id: NousResearch/Yarn-Mistral-7b-128k
   type: VLLMEngine
+  runtime_env:
+    env_vars:
+      ANYSCALE_VLLM_ENABLE_JSON_MODE: "1"
+      ANYSCALE_VLLM_USE_V2: "1"
+      RECREATE_FAILED_ACTORS: "1"
+      ANYSCALE_VLLM_NUM_PROCESSOR_WORKERS: "8"
   engine_kwargs:
     trust_remote_code: true
     max_num_batched_tokens: 128000
     max_num_seqs: 64
     gpu_memory_utilization: 0.95
-    num_tokenizer_actors: 2
-    enable_cuda_graph: true
-    # Spec decoding models currently don't support logprobs
-    max_log_probs: 0
-    spec_decode_skip_kv_regeneration: true
-    spec_decode_disable_by_queue_size: 16
-    enable_prompt_lookup: true
+    tokenizer_pool_size: 2
+    tokenizer_pool_extra_config:
+      runtime_env:
+        pip: null
+    # Speculative decoding arguments.
+    speculative_disable_by_batch_size: 16
+    ngram_prompt_lookup_max: 3
+    ngram_prompt_lookup_min: 1 
+    speculative_model: "[ngram]"
     num_speculative_tokens: 7
-    max_ngram_size: 3
-    enable_json_logits_processors: true
+    use_v2_block_manager: true
   max_total_tokens: 128000
   generation:
     prompt_format:
