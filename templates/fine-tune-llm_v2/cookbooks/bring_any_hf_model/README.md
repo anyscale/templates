@@ -14,9 +14,8 @@ This guide assumes you have familiarized yourself with the [basic fine-tuning gu
 # Table of Contents
 1. [Config parameters](#config-parameters)
 2. [Example](#example)
-3. [Customizing the prompt format (chat template)](#customizing-the-prompt-format)
-    - [How prompt formatting works in `llmforge`](#how-prompt-formatting-works-in-llmforge)
-    - [Customizing data preprocessing and the prompt format](#customizing-data-preprocessing-and-the-prompt-format)
+3. [How prompt formatting works in `llmforge`](#how-prompt-formatting-works-in-llmforge)
+4. [Customizing data preprocessing and the prompt format](#customizing-data-preprocessing-and-the-prompt-format)
 
 ## Config parameters
 
