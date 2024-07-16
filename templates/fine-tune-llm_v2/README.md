@@ -99,7 +99,7 @@ Follow the [Learn how to bring your own models](https://docs.anyscale.com/exampl
 After you are with the above, you can find recipies that extend the functionality of this template under the cookbooks folder:
 
 * [Bring your own data](cookbooks/bring_your_own_data/README.md): Everything you need to know about using custom datasets for fine-tuning.
-* [Bring any huggingface model and prompt format](cookbooks/bring_any_hf_model/README.md): Learn how you can finetune any HF model with custom the prompt formats. 
+* [Bring any huggingface model and prompt format](cookbooks/bring_any_hf_model/README.md): Learn how you can finetune any 🤗Hugging Face model with a custom prompt format (chat template). 
 * [Continue fine-tuning from a previous checkpoint](cookbooks/continue_from_checkpoint/README.md): A detailed guide on how you can use a previous checkpoint for another round of fine-tuning.
 * [LoRA vs. full-parameter training](cookbooks/continue_from_checkpoint/README.md): Learn the differences between LoRA and full-parameter training and how to configure both.
 * [Modifying hyperparameters](cookbooks/modifying_hyperparameters/README.md): A brief guide on customization of your fine-tuning job.

@@ -2,7 +2,7 @@
 
 **⏱️ Time to complete**: 60 minutes
 
-This guide will showcase how you can finetune any transformer-based LLM found on hugging-face (HF) hub and customize the chat template or prompt format to finetune it on your own data. As an example we will show how to finetune [Meta Llama Guard 2](https://llama.meta.com/docs/model-cards-and-prompt-formats/meta-llama-guard-2/) model which has a non-chat based inference pattern.
+This guide will showcase how you can finetune any transformer-based LLM found on the Hugging Face (HF) hub and customize the chat template or prompt format to finetune it on your own data. As an example we will show how to finetune [Meta Llama Guard 2](https://llama.meta.com/docs/model-cards-and-prompt-formats/meta-llama-guard-2/) model which has a non-chat based inference pattern.
 
 The two capabilities showcased here are
 1. Support for any HF model.
@@ -23,7 +23,7 @@ This guide assumes you have familiarized yourself with the [basic fine-tuning gu
 * `model_id`: For the base model id we support any huggingface hub model id. For a sub-set of model_ids we have baked in both usability (e.g. using the default chat templates) and performance optimizations (e.g. such as fast model downloading), but beyond that set of natively supported model ids, we fall back to huggingface hub for retrieving the weights and tokenizer. You can find the list of natively supported models [here](../../README.md#whats-the-full-list-of-supported-models)
 * `generation_config`: For finetuning you can control the way chat messages are converted to sequence of text by modifying the `prompt_format` in this config. For base models that are on huggingface but are not natievely supported specifying the `generation_config` is required, but for native models it is optional.
 
-For more details about these configs read the config [docs](https://docs.anyscale.com/canary/reference/finetuning-config-api). `Llama-Guard-2` is not a native model. So in the next example we show how we can use these two config parameters to customize this model.  
+For more details about these configs read the config [docs](https://docs.anyscale.com/reference/finetuning-config-api). `Llama-Guard-2` is not a native model. So in the next example we show how we can use these two config parameters to customize this model.  
 
 ## Example
 
