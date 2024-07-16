@@ -8,7 +8,18 @@ This allows us to sequentially combine fine-tuning on multiple datasets in order
 
 We support both Full-parameter checkpoints, and LoRA-adapter checkpoints. However, we recommend not to combine the two by training a full-parameter model followed by a LoRA adaptation. Serving the resulting LoRA adapter will require the base full-parameter checkpoint. Unless you are fine-tuning many such LoRA adaptors for different tasks, this serving architecture does not have the neither the economical benefits of LoRA nor the quality benefits of full-parameter.
 
-## How to fine-tune from a previous checkpointing
+
+
+## Config parameters
+In general, you can customize the initial weights in your fine-tuning run through two options in the YAML:
+- `initial_base_model_ckpt_path` : Path to the base model weights you wish to start with
+- `initial_adapter_model_ckpt_path`: Path to the adapter (LoRA) weights you wish to start with
+
+Note that you can use the above parameters independent of one another. They can be a local cluster path, cloud storage path (`s3://` or `gs://`) or a huggingface repo (`{"repo_id": "my_org/my_model"}`). Read the config [docs](https://docs.anyscale.com/canary/reference/finetuning-config-api) for full details.
+
+
+
+## Example
 
 To get started, we can run the following illustrative example. Run this command from the root of the template.
 

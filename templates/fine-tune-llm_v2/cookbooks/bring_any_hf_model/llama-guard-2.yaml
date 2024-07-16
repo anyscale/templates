@@ -1,0 +1,44 @@
+model_id: meta-llama/Meta-Llama-Guard-2-8B
+train_path: s3://air-example-data/nvidia-aegis-llama-guard-defensive/nvidia-aegis-llama-guard-defensive-train.jsonl
+valid_path: s3://air-example-data/nvidia-aegis-llama-guard-defensive/nvidia-aegis-llama-guard-defensive-test.jsonl
+generation_config:
+  prompt_format:
+    system: "{instruction}"
+    user: "{instruction}"
+    assistant: "{instruction} </s>"
+    trailing_assistant: ""
+    bos: ""
+  stopping_sequences: ["</s>"]
+context_length: 4096 # <-- change this to the context length you want to use
+num_devices: 8 # <-- change this to total number of GPUs that you want to use
+train_batch_size_per_device: 1  # <-- change this to maximize GPU utilization
+eval_batch_size_per_device: 1 # <-- change this to maximize GPU utilization
+learning_rate: 1e-4 # <-- For LoRA, we recommend to default to 1e-4, for full-parameter training, we recommend 1e-5
+padding: "longest" # This will pad batches to the longest sequence. Use "max_length" when profiling to profile the worst case.
+num_checkpoints_to_keep: 1
+deepspeed:
+  config_path: deepspeed_configs/zero_3_offload_optim+param.json
+flash_attention_2: true
+trainer_resources:
+  memory: 53687091200 # 50 GB memory
+worker_resources:
+  accelerator_type:A10G: 0.001
+lora_config:
+  r: 8
+  lora_alpha: 16
+  lora_dropout: 0.05
+  target_modules:
+    - q_proj
+    - v_proj
+    - k_proj
+    - o_proj
+    - gate_proj
+    - up_proj
+    - down_proj
+    - embed_tokens
+    - lm_head
+  task_type: "CAUSAL_LM"
+  modules_to_save: []
+  bias: "none"
+  fan_in_fan_out: false
+  init_lora_weights: true
