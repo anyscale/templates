@@ -186,8 +186,7 @@ This is wildly different from Llama-3's prompt format. Fortunately, the OpenAI c
 {
   "messages": [
     {"role": "system", 
-    "content": 
-    "<|begin_of_text|>[INST] Task: Check if there is unsafe content in '{{ role }}' messages in conversations according our safety policy with the below categories.
+    "content": "<|begin_of_text|>[INST] Task: Check if there is unsafe content in '{{ role }}' messages in conversations according our safety policy with the below categories.
 
 <BEGIN UNSAFE CONTENT CATEGORIES>
 {{ unsafe_categories }}
