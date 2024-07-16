@@ -1,4 +1,4 @@
-# Fine-tuning Llama-3, Mistral and Mixtral with Anyscale
+# Fine-tuning Open-weight LLMs with Anyscale
 
 **⏱️ Time to complete**: 2.5 hours for 7/8B models (9 hours for 13B, 25 hours for 70B)
 
@@ -99,6 +99,7 @@ Follow the [Learn how to bring your own models](https://docs.anyscale.com/exampl
 After you are with the above, you can find recipies that extend the functionality of this template under the cookbooks folder:
 
 * [Bring your own data](cookbooks/bring_your_own_data/README.md): Everything you need to know about using custom datasets for fine-tuning.
+* [Bring any huggingface model and prompt format](cookbooks/bring_any_hf_model/README.md): Learn how you can finetune any 🤗Hugging Face model with a custom prompt format (chat template). 
 * [Continue fine-tuning from a previous checkpoint](cookbooks/continue_from_checkpoint/README.md): A detailed guide on how you can use a previous checkpoint for another round of fine-tuning.
 * [LoRA vs. full-parameter training](cookbooks/continue_from_checkpoint/README.md): Learn the differences between LoRA and full-parameter training and how to configure both.
 * [Modifying hyperparameters](cookbooks/modifying_hyperparameters/README.md): A brief guide on customization of your fine-tuning job.
@@ -149,9 +150,3 @@ This is a growing list but it includes the following models:
 In general, any model that is compatible with the architecture of these models can be fine-tuned using the same configs as the base models.
 
 NOTE: currently mixture of expert models (such as `mistralai/Mixtral-8x7B)` only support LoRA fine-tuning
-
-### What's with the `main` file that is created during fine-tuning?
-
-It's an artifact of our fine-tuning libraries. Please ignore it.
-
-
