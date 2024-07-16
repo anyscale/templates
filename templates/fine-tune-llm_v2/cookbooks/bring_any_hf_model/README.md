@@ -6,18 +6,15 @@ This guide will showcase how you can finetune any transformer-based LLM found on
 
 The two capabilities showcased here are
 1. Support for any HF model.
-2. Customizing the chat template or prompt format - Specify a custom prompt format for formatting input messages to easily fine-tune on _any_ data format.
+2. Customizing the chat template or prompt format
 
 This guide assumes you have familiarized yourself with the [basic fine-tuning guide](../../README.md).
 
 
 # Table of Contents
-1. [Bring your own weights](#bring-your-own-weights)
-    - [Bring models of the same architecture](#bring-models-of-the-same-architecture)
-        - [Example YAML](#example-yaml)
-        - [How do I configure access to my weights in remote storage??](#how-do-i-configure-access-to-my-weights-in-remote-storage)
-    - [Bring checkpoints from a previous finetuning run](#bring-checkpoints-from-a-previous-finetuning-run)
-2. [Customizing the prompt format (chat template)](#customizing-the-prompt-format)
+1. [Config parameters](#config-parameters)
+2. [Example](#example)
+3. [Customizing the prompt format (chat template)](#customizing-the-prompt-format)
     - [How prompt formatting works in `llmforge`](#how-prompt-formatting-works-in-llmforge)
     - [Customizing data preprocessing and the prompt format](#customizing-data-preprocessing-and-the-prompt-format)
 
