@@ -41,14 +41,14 @@ engine_config:
     # Speculative decoding arguments.
     speculative_disable_by_batch_size: 16
     ngram_prompt_lookup_max: 3
-    ngram_prompt_lookup_min: 1 
+    ngram_prompt_lookup_min: 1
     speculative_model: "[ngram]"
     num_speculative_tokens: 7
     use_v2_block_manager: true
   max_total_tokens: 128000
   generation:
     prompt_format:
-      system: "{instruction} + "
+      system: " {instruction} + "
       assistant: "{instruction}</s> "
       trailing_assistant: ""
       user: "[INST] {system}{instruction} [/INST]"
