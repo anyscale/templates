@@ -34,7 +34,7 @@ To get started, we can run the following illustrative example. Run this command 
 llmforge anyscale finetune cookbooks/bring_any_hf_model/llama-guard-2.yaml
 ```
 
-> **Note**: Running this example, requires having HF token that has access to Llama repositories. You can setup `HF_TOKEN` environment variable by defining it under dependencies in your cluster setup.
+> **Note**: Running this example, requires having HF token that has access to [Llama Guard 2](https://huggingface.co/meta-llama/Meta-Llama-Guard-2-8B) repository. You can setup `HF_TOKEN` environment variable by defining it under dependencies in your cluster setup.
 
 <img src="./assets/add_env_vars.png" alt="Add environment variable" height="300"/>
 
@@ -56,8 +56,8 @@ generation_config:
 
 A few notes:
 
-1. `meta-llama/Meta-Llama-Guard-2-8B` is not supported natively, so we see messages that show failure of AWS downloads and we will fall back to using HF for downloading the weights and tokenizer.
-2. The prompt format is configured such that no formating is applied during data ingestion. We are basically simply concatenating the message roles. Therefore the formatting of inputs is completely delegated to the examples in the data. 
+1. `meta-llama/Meta-Llama-Guard-2-8B` is not in the [list of native supported models](../../README.md#whats-the-full-list-of-supported-models). This is why we may see messages that show failure of AWS downloads and instead falling back to HF for downloading the weights and tokenizer.
+2. The prompt format is configured such that no formating is applied during data ingestion. We are simply concatenating the message roles. Therefore, the formatting of inputs is completely delegated to formatting of the examples in the dataset. 
 3. We need to format the data, to make it look like the Llama-Guard-2's original prompt format, so that we can maximally leverage its pre-trained weights. We can take a look at an example from this dataset. During inference we need to send our messages in the same way.
 
 
