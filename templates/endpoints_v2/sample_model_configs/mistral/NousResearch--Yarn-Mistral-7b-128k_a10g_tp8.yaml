@@ -48,7 +48,7 @@ engine_config:
   max_total_tokens: 128000
   generation:
     prompt_format:
-      system: " {instruction} + "
+      system: "{instruction} + "
       assistant: "{instruction}</s> "
       trailing_assistant: ""
       user: "[INST] {system}{instruction} [/INST]"
