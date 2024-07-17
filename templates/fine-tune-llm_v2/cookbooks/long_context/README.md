@@ -1,5 +1,5 @@
 # Fine-tuning on datasets with long context
-**⏱️ Time to complete**: 90 minutes (assuming GCP A2 nodes can be acquired immidiately)
+**⏱️ Time to complete**: 90 minutes (assuming A100 nodes can be acquired immidiately)
 
 This guide demonstrates how to prepare a dataset with long context lengths.
 Make sure you have gone over the [basic fine-tuning guide](../../README.md) before going over this cookbook.
