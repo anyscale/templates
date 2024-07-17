@@ -18,7 +18,7 @@ flash_attention_2: true
 trainer_resources:
   memory: 53687091200 # 50 GB memoryw
 worker_resources:
-  accelerator_type:A100-40G: 0.001 # <--- This is a GCP accelerator
+  accelerator_type:A100-40G: 0.001
 lora_config:
   r: 8
   lora_alpha: 16
