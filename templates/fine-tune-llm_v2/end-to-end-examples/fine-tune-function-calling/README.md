@@ -228,7 +228,7 @@ save_to_jsonl(test_ds, test_file_path)
 
 For fine-tuning, you can start with the [fine-tuning template](../../README.md). This would be the preferred route for those wishing to get more flexibility in choice of models and hyperparameters, better monitoring, etc.
 
-For this guide, we will use `Llama-3-8B-Instruct` as the base model for fine-tuning.
+For this guide, we will use `Llama-3-8B-Instruct` as the base model for fine-tuning and we will LoRA technique.
 
 You can follow similar steps outlined in the [template tutorial](../../README.md). We can first generate the config YAML we would like to use:
 
@@ -391,15 +391,14 @@ OPENAI_API_KEY = "your-openai-key-here"
 OPENAI_API_BASE = "https://api.openai.com/v1"
 
 # Base model config 
-BASE_MODEL_API_BASE = "<Put your service URL here>"
+# Note: In serving LoRA we have access to both the base and the finetuned models
 BASE_MODEL_ID="meta-llama/Meta-Llama-3-8B-Instruct"
-BASE_MODEL_API_KEY = "ANYTHING" 
 ```
 
 
 ```python
 # Initialize parsers
-base_model_parser = AnyscaleResponseParser(api_key=BASE_MODEL_API_KEY, api_base=BASE_MODEL_API_BASE, model=BASE_MODEL_ID, tool_call_tags=TOOL_CALL_TAGS)
+base_model_parser = AnyscaleResponseParser(api_key=FINETUNED_MODEL_API_BASE, api_base=FINETUNED_MODEL_API_KEY, model=BASE_MODEL_ID, tool_call_tags=TOOL_CALL_TAGS)
 
 finetuned_model_parser = AnyscaleResponseParser(api_key=FINETUNED_MODEL_API_KEY, api_base=FINETUNED_MODEL_API_BASE, model=MODEL_ID, tool_call_tags=TOOL_CALL_TAGS) 
 
