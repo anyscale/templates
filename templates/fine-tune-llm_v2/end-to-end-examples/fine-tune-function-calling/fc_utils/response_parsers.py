@@ -1,5 +1,5 @@
 """
-Response parsers for Anyscale Endpoints and OpenAI models. We define two parser classes `AnyscaleResponseParser` and
+Response parsers for Anyscale and OpenAI models. We define two parser classes `AnyscaleResponseParser` and
 `OpenAIResponseParser` below to send messages to the respective endpoints and parse the result.
 """
 
@@ -98,7 +98,7 @@ class ResponseParser(ABC):
 
 
 class AnyscaleResponseParser(ResponseParser):
-    """Response parser for models hosted on Anyscale endpoints.
+    """Response parser for models hosted on Anyscale.
 
     Assumes that the model response has tool calls formatted between tool_call_tags.
     """
