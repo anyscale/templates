@@ -228,7 +228,7 @@ save_to_jsonl(test_ds, test_file_path)
 
 For fine-tuning, you can start with the [fine-tuning template](../../README.md). This is an easy to use solution for data-scientists and ML engineers with flexibility in choice of models, hyperparameters, monitoring, etc.
 
-For this guide, we will use `Llama-3-8B-Instruct` as the base model for fine-tuning and we will LoRA technique.
+For this guide, we will use `Llama-3-8B-Instruct` as the base model for fine-tuning and we will use LoRA for efficient fine-tuning.
 
 You can follow similar steps outlined in the [template tutorial](../../README.md). We can first generate the config YAML we would like to use:
 
@@ -391,7 +391,7 @@ OPENAI_API_KEY = "your-openai-key-here"
 OPENAI_API_BASE = "https://api.openai.com/v1"
 
 # Base model config 
-# Note: In serving LoRA we have access to both the base and the finetuned models
+# Note: In serving LoRA we have access to both the base and the finetuned models. We will use the same url and api key as the finetuned model.
 BASE_MODEL_ID="meta-llama/Meta-Llama-3-8B-Instruct"
 ```
 
