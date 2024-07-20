@@ -1,4 +1,7 @@
 # Image Classification Batch Inference with PyTorch
+
+**⏱️ Time to complete**: 15 min
+
 In this example, we will introduce how to use [Ray Data](https://docs.ray.io/en/latest/data/data.html#data) for large-scale batch inference with multiple GPU workers.
 
 In particular, we will:
