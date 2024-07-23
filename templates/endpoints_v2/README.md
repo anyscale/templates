@@ -141,11 +141,11 @@ To deploy an application with one model as an Anyscale Service, update the file 
 
 After the command runs, click the deploy notification (or navigate to ``Home > Services``) to access the Service UI:
 
-<img src="assets/service-notify.png" width=500px/>
+<img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/endpoints_v2/assets/service-notify.png" width=500px/>
 
 Navigate to the Service UI and wait for the service to reach "Active". It will begin in "Starting" state:
 
-<img src="assets/service-starting.png" width=600px/>
+<img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/endpoints_v2/assets/service-starting.png" width=600px/>
 
 
 ## Step 4 - Query the service endpoint
@@ -154,7 +154,7 @@ The above command should print something like `(anyscale +2.9s) curl -H 'Authori
 
 You can also find this information by clicking the "Query" button in the Service UI.
 
-<img src="assets/service-query.png" width=600px/>
+<img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/endpoints_v2/assets/service-query.png" width=600px/>
 
 
 ```python
