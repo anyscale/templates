@@ -1,98 +1,291 @@
 # Fine-tuning Open-weight LLMs with Anyscale
 
-**⏱️ Time to complete**: 2.5 hours for 7/8B models (9 hours for 13B, 25 hours for 70B)
+**⏱️ Time to complete**: N/A
 
-The guide below walks you through the steps required for fine-tuning of LLMs. This template provides an easy to configure solution for ML Platform teams, Infrastructure engineers, and Developers to fine-tune LLMs.
+Fine-tuning LLMs is an easy and cost-effective way to tailor their capabilities towards niche applications with high-acccuracy. While Ray and RayTrain offer generic primitives for building such workloads, at Anyscale we have created a higher-level library called _LLMForge_ that builds on top of Ray and other open-source libraries to provide an easy to work with interface for fine-tuning and training LLMs. 
 
-### Popular base models to fine-tune*
-
-- meta-llama/Meta-Llama-3-8B (Full-param and LoRA)
-- meta-llama/Meta-Llama-3-70B (Full-param and LoRA)
-- mistralai/Mistral-7B (Full-param and LoRA)
-- mistralai/Mixtral-8x7B (LoRA only)
-
-*Any model that has the same architecture and parameter count as above can be finetuned. A subset of popular variants of these models are provided out of the box on this template. For this subset, the Huggingface model id is enough. But for models beyond this list, the location to the weights must be provided. 
-
-A full list of out-of-the-box supported models is in the [FAQ](#faqs) section. In the end we provide more guides in form of [cookbooks](#cookbooks) and [end-to-end examples](#end-to-end-examples) that provide more detailed information about using this template.
-
-# Quick start
-
-## Step 1 - Launch a fine-tuning run in [workspaces](https://docs.anyscale.com/platform/workspaces/)
-
-We provide example configurations under the `./training_configs` directory for different base models and accelerator types. You can use these as a starting point for your own fine-tuning jobs. The full-list of public configurations that are customizable see [Anyscale docs](https://docs.anyscale.com/reference/finetuning-config-api).
-
-**Optional**: You can get a WandB API key from [WandB](https://wandb.ai/authorize) to track the fine-tuning process. If not provided, you can only track the experiments through the standard output logs.
-
-Next, you can launch a fine-tuning job with your WandB API key passed as an environment variable.
+This template is a guide on how to use LLMForge for fine-tuning LLMs.
 
 
-```python
-# [Optional] You can set the WandB API key to track model performance
-# import os
-# os.environ["WANDB_API_KEY"]="YOUR_WANDB_API_KEY"
+### Table of contents
 
-# Launch a LoRA fine-tuning job for Llama 3 8B with 16 A10s
-!llmforge anyscale finetune training_configs/lora/llama-3-8b.yaml
+- [What is LLMForge?](#what-is-llmforge)
+  - [Configurations](#configurations)
+    - [Default Mode](#default-mode)
+    - [Custom Mode](#custom-mode)
+  - [Models Supported in default Mode](#models-supported-in-default-mode)
+- [Summary of Features in Custom Mode](#summary-of-features-in-custom-mode)
+- [Examples](#examples)
+  - [Default](#default)
+  - [Custom](#custom)
+- [Cookbooks](#cookbooks)
+- [End-to-end Examples](#end-to-end-examples)
+- [LLMForge Versions](#llmforge-versions)
 
-# Launch a full-param fine-tuning job for Llama 3 8B with 16 A10s
-# !llmforge anyscale finetune  training_configs/full_param/llama-3-8b.yaml
+## What is LLMForge?
+
+LLMForge is a library that implements a collection of design patterns that use Ray, RayTrain, and RayData in combination with other open-source libraries (e.g. Deepspeed, 🤗 Huggingface accelerate, transformers, etc.) to provide an easy to use library for fine-tuning LLMs. In addition to these design patterns, it offers tight integrations with the Anyscale platform, such as model registery, streamlined deployment, observability, Anyscale's job submission, etc.
+
+### Configurations
+
+LLMForge workloads are specified using YAML configurations ([documentation here](https://docs.anyscale.com/reference/finetuning-config-api)). The library offers two main modes: `default` and `custom`.
+
+#### Default Mode
+Similar to OpenAI's finetuning experience, the `default` mode provides a minimal and efficient setup. It allows you to quickly start a finetuning job by setting just a few parameters (`model_id` and `train_path`). All other settings are optional and will be automatically selected based on dataset statistics and predefined configurations.
+
+#### Custom Mode
+The `custom` mode offers more flexibility and control over the finetuning process, allowing for advanced optimizations and customizations. You need to provide more configurations to setup this mode (e.g. prompt format, hardware, batch size, etc.)
+
+Here's a comparison of the two modes:
+
+| Feature | Default Mode | Custom Mode |
+|---------|-----------|-------------|
+| Ideal For | Prototyping what's possible, focusing on dataset cleaning, finetuning, and evaluation pipeline | Optimizing model quality by controlling more parameters, hardware control |
+| Command | `llmforge anyscale finetune config.yaml --default` | `llmforge anyscale finetune config.yaml` |
+| Model Support | Popular models with their prompt format (e.g., `meta-llama/Meta-Llama-3-8B-Instruct`)* | Any HuggingFace model, any prompt format (e.g., `meta-llama/Meta-Llama-Guard-2-8B`) |
+| Task Support | Instruction tuning for multi-turn chat | Causal language modeling, Instruction tuning, Classification|
+| Data Format | Supports chat-style datasets, with fixed prompt formats per model | Supports chat-style datasets, with flexible prompt format |
+| Hardware | Automatically selected (limited by availability) | User-configurable |
+| Fine-tuning type| Only supports LoRA (Rank-8, all linear layers) | User-defined LoRA and Full-parameter |
+
+*NOTE: old models will get deprecated
+
+Choose the mode that best fits your project requirements and level of customization needed.
+
+### Models Supported in Default Mode
+
+Default mode supports a select list of models, with a fixed cluster type of 8xA100-80G. For each model we only support context lengths of 512 up to Max. context length in increments of 2x (i.e. 512, 1024, ...). Here are the supported models and their configurations:
+
+Model family | model_id(s) | Max. context lengths |
+|------------|----------|----------------------|
+|Llama-3.1| `meta-llama/Meta-Llama-3.1-8B-Instruct` | 4096 |
+|Llama-3.1| `meta-llama/Meta-Llama-3.1-70B-Instruct`  | 4096 |
+|Llama-3| `meta-llama/Meta-Llama-3-8B-Instruct` | 4096 |
+|Llama-3| `meta-llama/Meta-Llama-3-70B-Instruct`| 4096 |
+|Mistral| `mistralai/Mistral-Nemo-Instruct-2407`  | 4096 |
+|Mistral| `mistralai/Mistral-7B-Instruct-v0.3` | 4096 |
+|Mixtral| `mistralai/Mixtral-8x7B-Instruct-v0.1` | 4096 |
+
+
+Note: 
+- Cluster type for all models: 8xA100-80G
+- Supported context length for models: 512 up to max. context length of each model in powers of 2.
+
+## Summary of Features in Custom Mode
+
+### ✅ Support both Full parameter and LoRA
+
+* LoRA with different configurations, ranks, layers, etc. (Anything supported by huggingface transformers)
+* Full-parameter with multi-node training support
+    
+### ✅ State of the art performance related features:
+
+* Gradient checkpointing
+* Mixed precision training
+* Flash attention v2
+* Deepspeed support (zero-DDP sharding)
+
+### ✅ Unified chat data format with flexible prompt format support enabling finetuning for:
+
+
+#### Use-case: Multi-turn chat, Instruction tuning, Classification:
+
+Example data format (JSON):
+```json
+{
+    "messages: [
+        {"role": "system", "content": "You are a helpful assistant."},
+        {"role": "user", "content": "Hi"},
+        {"role": "assistant", "content": "Howdy!"},
+        {"role": "user", "content": "What is the type of this model?"},
+        # For classification we can define special tokens in the assistant message
+        {"role": "assistant", "content": "[[1]]"},
+        ...
+    ]
+}
 ```
 
-`LLMForge` is an Anyscale CLI and library that is installed on this workspace so that you can quickly experiment and customize various LLM finetuning experiments by simply modifying a config file. For extensive documentation around what is supported through the config refer to [docs](https://docs.anyscale.com/reference/finetuning-config-api/). 
+Prompt Format for llama-3-instruct (YAML):
 
-
-```python
-# To get help on the CLI
-!llmforge anyscale finetune --help
+```yaml
+system: "<|start_header_id|>system<|end_header_id|>\n\n{instruction}<|eot_id|>"
+user: "<|start_header_id|>user<|end_header_id|>\n\n{instruction}<|eot_id|>"
+assistant: "<|start_header_id|>assistant<|end_header_id|>\n\n{instruction}<|eot_id|>"
+system_in_user: False
 ```
 
-    [2024-06-28 14:38:55,193] [INFO] [real_accelerator.py:191:get_accelerator] Setting ds_accelerator to cuda (auto detect)
-    Usage: llmforge anyscale finetune [OPTIONS] CONFIG
-    
-      Runs finetuning with LLMForge on a given configuration file.
-    
-      This is supposed to be used in the context of Anyscale platform either in
-      Workspace or as entrypoint of a job.
-    
-      Args:
-    
-          CONFIG: Path to the YAML configuration. See docs for more info.
-    
-    Options:
-      --help  Show this message and exit.
+#### Use-case: Casual language modeling (aka continued pre-training), custom prompt formats (e.g. Llama-guard):
 
-
-As the command runs, you can monitor a number of built-in metrics in the `Metrics` tab under `Ray Dashboard`, such as the number of GPU nodes and GPU utilization.
-
-<img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/fine-tune-llm_v2/assets/gpu-usage.png" width=500px/>
-
-Depending on whether you are running LoRA or full-param fine-tuning, you can continue with step 2(a) or step 2(b). To learn more about LoRA vs. full-parameter, see the cookbooks.
-
-
-
-## Step 2(a) - Serving the LoRA fine-tuned model
-
-Upon the job completion, you can see the LoRA weight storage location and model ID in the log, such as the one below:
-
-```shell
-Note: LoRA weights will also be stored in path {ANYSCALE_ARTIFACT_STORAGE}/lora_fine_tuning under meta-llama/Llama-2-8b-chat-hf:sql:12345 bucket.
+Example Continued pre-training (JSON):
+```json
+{
+    "messages": [
+        # We don't do any formatting, just chunks of text
+        {"role": "user", "content": "Once upon a time ..."},
+    ],
+},
+{
+    "messages": [
+        {"role": "user", "content": "..."},
+    ],
+}
 ```
 
-You can specify this URI as the dynamic_lora_loading_path [docs](https://docs.anyscale.com/examples/deploy-llms#more-guides) in the llm serving template, and then query the endpoint.
+Prompt Format for doing nothing except concatenation:
 
-> Note: Such LoRA model IDs follow the format `{base_model_id}:{suffix}:{id}`
-
-
-## Step 2(b) - Serving the full-parameter fine-tuned model
-
-Once the fine-tuning job is complete, you can view the stored full-parameter fine-tuned checkpoint at the very end of the job logs. Here is an example fine-tuning job output:
-
-```shell
-Best checkpoint is stored in:
-{ANYSCALE_ARTIFACT_STORAGE}/username/llmforge-finetuning/meta-llama/Llama-2-70b-hf/TorchTrainer_2024-01-25_18-07-48/TorchTrainer_b3de9_00000_0_2024-01-25_18-07-48/checkpoint_000000
+```yaml
+system: "{instruction}"
+user: "{instruction}"
+assistant: "{instruction}"
+system_in_user: False
 ```
 
-Follow the [Learn how to bring your own models](https://docs.anyscale.com/examples/deploy-llms#more-guides) section under the llm serving template to serve this fine-tuned model with the specified storage uri.
+### ✅ Flexible task support: 
+
+* Causal language modeling: Each token predicted based on all past tokens.
+* Instruction tuning: Only assistant tokens are predicted based on past tokens.
+* Classification: Only special tokens in the assistant message are predicted based on past tokens.
+* (Coming soon) Preference tuning: Use the contrast between chosen and rejected messages to improve the model.
+
+### ✅ Support for multi-stage continuous fine-tuning
+
+* Fine-tune on one dataset, then continue fine-tuning on another dataset, for iterative improvements.
+* Do continued pre-training on one dataset, then chat-style fine-tuning on another dataset.
+* (Coming soon) Do continued pre-training on one dataset followed by iterations of supervised-finetuning and preference tuning on independent datasets.
+
+### ✅ Support for context length extension
+
+* Extend the context length of the model via methods like RoPE scaling.
+
+### ✅ Configurability of hyper-parameters
+
+* Full control over learning hyper-parameters such as learning rate, n_epochs, batch size, etc.
+
+### ✅ Anyscale and third-party integrations
+
+* (Coming soon) Model registery: 
+    * SDK for accessing finetuned models for creating automated pipelines 
+    * More streamlined deployment flow when finetuned on Anyscale
+* Monitoring and observability:
+    * Take advantage of standard logging frameworks such as Weights and Biases
+    * Use of ray dashboard and anyscale loggers for debugging and monitoring the training process
+* Anyscale jobs integration: Use Anyscale's job submission API to programitically submit long-running jobs through LLMForge
+
+
+## Examples
+
+Here are some examples for default mode and custom mode:
+
+### Default Mode
+
+
+--------- 
+**Task:** 
+
+Fine-tune llama-3-8b-instruct in default mode (LoRA rank 8). Just giving the dataset.
+
+**Command:**
+```bash
+llmforge anyscale finetune training_configs/default/llama-3-8b/simple.yaml --default
+```
+
+**Config:**
+
+```yaml
+model_id: meta-llama/Meta-Llama-3-8B-Instruct
+train_path: s3://...
+valid_path: s3://...
+num_epochs: 3
+learning_rate: 1e-4    
+```
+
+
+--------- 
+
+**Task:** 
+
+Fine-tune llama-3-8b-instruct in default mode but also control parameters like `learning_rate` and `num_epochs`. 
+
+**Command:**
+```bash
+llmforge anyscale finetune training_configs/default/llama-3-8b/custom.yaml --default
+```
+
+**Config:**
+
+```yaml
+model_id: meta-llama/Meta-Llama-3-8B-Instruct
+train_path: s3://...
+valid_path: s3://...      
+```
+
+
+### Custom
+
+---------
+**Task:** 
+
+Fine-tune llama-3-8b-instruct in custom mode (model is supported in default-mode) on 32xA10s (auto mode uses 8xA100-80G).
+
+
+**Command:** 
+
+```bash
+llmforge anyscale finetune training_configs/custom/meta-llama--Meta-Llama-3-8B-Instruct/lora/32xA10.yaml 
+```
+
+**Config:**
+
+```yaml
+model_id: meta-llama/Meta-Llama-3-8B-Instruct
+train_path: s3://...
+valid_path: s3://...
+num_epochs: 3
+learning_rate: 1e-4
+deepspeed:
+  config_path: configs/deepspeed/zero_3_llama_2_7b.json
+worker_resources:
+    accelerator: ...
+```
+
+
+---------
+**Task:** 
+
+Fine-tune gemma-2-27b in custom mode (model is not supported in default-mode) on 8xA100-80G.
+
+
+**Command:** 
+
+```bash
+llmforge anyscale finetune training_configs/custom/google--gemma-2-27b-it/lora/8xA100-80G.yaml 
+```
+
+**Config:**
+
+```yaml
+model_id: google/gemma-2-27b-it
+train_path: s3://...
+valid_path: s3://...
+num_epochs: 3
+learning_rate: 1e-4
+deepspeed:
+  config_path: configs/deepspeed/zero_3_llama_2_7b.json
+worker_resources:
+    accelerator: ...
+generation_config:
+  prompt_format:
+    system: "{instruction} + "
+    assistant: "<start_of_turn>model\n{instruction}<end_of_turn>\n"
+    trailing_assistant: "<start_of_turn>model\n"
+    user: "<start_of_turn>user\n{system}{instruction}<end_of_turn>\n"
+    system_in_user: True
+    bos: "<bos>"
+    default_system_message: ""
+  stopping_sequences: ["<end_of_turn>"]
+```
+
+More examples can be found in `./training_configs`. For specific features read [cookbooks](#cookbooks) and [end-to-end examples](#end-to-end-examples).
 
 ## Cookbooks
 
@@ -100,8 +293,8 @@ After you are with the above, you can find recipies that extend the functionalit
 
 * [Bring your own data](cookbooks/bring_your_own_data/README.md): Everything you need to know about using custom datasets for fine-tuning.
 * [Bring any huggingface model and prompt format](cookbooks/bring_any_hf_model/README.md): Learn how you can finetune any 🤗Hugging Face model with a custom prompt format (chat template). 
-* [Continue fine-tuning from a previous checkpoint](cookbooks/continue_from_checkpoint/README.md): A detailed guide on how you can use a previous checkpoint for another round of fine-tuning.
 * [LoRA vs. full-parameter training](cookbooks/continue_from_checkpoint/README.md): Learn the differences between LoRA and full-parameter training and how to configure both.
+* [Continue fine-tuning from a previous checkpoint](cookbooks/continue_from_checkpoint/README.md): A detailed guide on how you can use a previous checkpoint for another round of fine-tuning.
 * [Modifying hyperparameters](cookbooks/modifying_hyperparameters/README.md): A brief guide on customization of your fine-tuning job.
 * [Optimizing Cost and Performance for Finetuning](cookbooks/optimize_cost/README.md): A detailed guide on default performance-related parameters and how you can optimize throughput for training on your own data.
 * [Run finetuning as Anyscale Job](cookbooks/launch_as_anyscale_job/README.md): A detailed guide on how to submit a finetuning workflow as a job (outside the context of workspaces.)
@@ -123,30 +316,3 @@ Here is a list of LLMForge image versions:
 | `0.5.0.1`  | `localhost:5555/anyscale/llm-forge:0.5.0.1-ngmM6BdcEdhWo0nvedP7janPLKS9Cdz2` |
 
 
-## FAQs
-
-### Where can I view the bucket where my LoRA weights are stored?
-
-All the LoRA weights are stored under the URI `${ANYSCALE_ARTIFACT_STORAGE}/lora_fine_tuning` where `ANYSCALE_ARTIFACT_STORAGE` is an environmental variable in your workspace.
-
-### What's the full list of supported models?
-
-This is a growing list but it includes the following models:
-
-- meta-llama/Meta-Llama-3-8B
-- meta-llama/Meta-Llama-3-8B-Instruct
-- meta-llama/Meta-Llama-3-70B
-- meta-llama/Meta-Llama-3-70B-Instruct
-- meta-llama/Llama-2-7b-hf
-- meta-llama/Llama-2-7b-chat-hf
-- meta-llama/Llama-2-13b-hf
-- meta-llama/Llama-2-13b-chat-hf
-- meta-llama/Llama-2-70b-hf
-- meta-llama/Llama-2-70b-chat-hf
-- codellama/CodeLlama-34b-Instruct-hf
-- mistralai/Mistral-7B-Instruct-v0.1
-- mistralai/Mixtral-8x7B-Instruct-v0.1
-
-In general, any model that is compatible with the architecture of these models can be fine-tuned using the same configs as the base models.
-
-NOTE: currently mixture of expert models (such as `mistralai/Mixtral-8x7B)` only support LoRA fine-tuning
