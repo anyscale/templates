@@ -1,10 +1,10 @@
 # Fine-tuning Open-weight LLMs with Anyscale
 
-**⏱️ Time to complete**: N/A
+**⏱️ Time to complete**: 20 minutes
 
 Fine-tuning LLMs is an easy and cost-effective way to tailor their capabilities towards niche applications with high-acccuracy. While Ray and RayTrain offer generic primitives for building such workloads, at Anyscale we have created a higher-level library called _LLMForge_ that builds on top of Ray and other open-source libraries to provide an easy to work with interface for fine-tuning and training LLMs. 
 
-This template is a guide on how to use LLMForge for fine-tuning LLMs.
+This template is a guide on how to use LLMForge for fine-tuning LLMs. For serving finetuned models you can see the [LLM serving template](../endpoints_v2/README.md).
 
 
 ### Table of contents
@@ -186,7 +186,7 @@ Fine-tune llama-3-8b-instruct in default mode (LoRA rank 8). Just giving the dat
 
 **Command:**
 ```bash
-llmforge anyscale finetune training_configs/default/llama-3-8b/simple.yaml --default
+llmforge anyscale finetune training_configs/default/meta-llama/Meta-Llama-3-8B-Instruct-simple.yaml --default
 ```
 
 **Config:**
@@ -194,9 +194,6 @@ llmforge anyscale finetune training_configs/default/llama-3-8b/simple.yaml --def
 ```yaml
 model_id: meta-llama/Meta-Llama-3-8B-Instruct
 train_path: s3://...
-valid_path: s3://...
-num_epochs: 3
-learning_rate: 1e-4    
 ```
 
 
@@ -208,30 +205,7 @@ Fine-tune llama-3-8b-instruct in default mode but also control parameters like `
 
 **Command:**
 ```bash
-llmforge anyscale finetune training_configs/default/llama-3-8b/custom.yaml --default
-```
-
-**Config:**
-
-```yaml
-model_id: meta-llama/Meta-Llama-3-8B-Instruct
-train_path: s3://...
-valid_path: s3://...      
-```
-
-
-### Custom
-
----------
-**Task:** 
-
-Fine-tune llama-3-8b-instruct in custom mode (model is supported in default-mode) on 32xA10s (auto mode uses 8xA100-80G).
-
-
-**Command:** 
-
-```bash
-llmforge anyscale finetune training_configs/custom/meta-llama--Meta-Llama-3-8B-Instruct/lora/32xA10.yaml 
+llmforge anyscale finetune training_configs/default/meta-llama/Meta-Llama-3-8B-Instruct-custom.yaml --default
 ```
 
 **Config:**
@@ -241,11 +215,35 @@ model_id: meta-llama/Meta-Llama-3-8B-Instruct
 train_path: s3://...
 valid_path: s3://...
 num_epochs: 3
-learning_rate: 1e-4
+learning_rate: 1e-4         
+```
+
+
+### Custom
+
+---------
+**Task:** 
+
+Fine-tune llama-3-8b-instruct in custom mode (model is supported in default mode) on 16xA10s (auto mode uses 8xA100-80G) with context length of 512.
+
+
+**Command:** 
+
+```bash
+llmforge anyscale finetune training_configs/custom/meta-llama--Meta-Llama-3-8B-Instruct/lora/16xA10-512.yaml 
+```
+
+**Config:**
+
+```yaml
+model_id: meta-llama/Meta-Llama-3-8B-Instruct
+train_path: s3://...
+valid_path: s3://...
+context_length: 512
 deepspeed:
-  config_path: configs/deepspeed/zero_3_llama_2_7b.json
+  config_path: deepspeed_configs/zero_3_offload_optim+param.json
 worker_resources:
-    accelerator: ...
+  accelerator_type:A10G: 0.001
 ```
 
 
@@ -258,7 +256,7 @@ Fine-tune gemma-2-27b in custom mode (model is not supported in default-mode) on
 **Command:** 
 
 ```bash
-llmforge anyscale finetune training_configs/custom/google--gemma-2-27b-it/lora/8xA100-80G.yaml 
+llmforge anyscale finetune training_configs/custom/google--gemma-2-27b-it/lora/8xA100-80G-512.yaml 
 ```
 
 **Config:**
@@ -267,12 +265,9 @@ llmforge anyscale finetune training_configs/custom/google--gemma-2-27b-it/lora/8
 model_id: google/gemma-2-27b-it
 train_path: s3://...
 valid_path: s3://...
-num_epochs: 3
-learning_rate: 1e-4
-deepspeed:
-  config_path: configs/deepspeed/zero_3_llama_2_7b.json
+num_devices: 8
 worker_resources:
-    accelerator: ...
+  accelerator_type:A100-80G: 0.001
 generation_config:
   prompt_format:
     system: "{instruction} + "
