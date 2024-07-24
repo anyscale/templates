@@ -1,3 +1,6 @@
+# WARNING: This will run very slowly on A10 setup. 
+# You should use A100 setup if possible. 
+
 # Change this to the model you want to fine-tune
 model_id: meta-llama/Meta-Llama-3-70B-Instruct
 
@@ -18,8 +21,8 @@ num_devices: 32
 num_epochs: 3
 
 # Change this to the batch size that you want to use
-train_batch_size_per_device: 8
-eval_batch_size_per_device: 8
+train_batch_size_per_device: 1
+eval_batch_size_per_device: 1
 
 # Change this to the learning rate that you want to use
 learning_rate: 1e-4
@@ -57,3 +60,4 @@ lora_config:
     - lm_head
   task_type: "CAUSAL_LM"
   bias: "none"
+  modules_to_save: []

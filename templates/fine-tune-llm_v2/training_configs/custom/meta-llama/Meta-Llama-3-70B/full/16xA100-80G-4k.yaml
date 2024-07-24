@@ -12,17 +12,17 @@ valid_path: s3://air-example-data/gsm8k/test.jsonl
 context_length: 4096
 
 # Change this to total number of GPUs that you want to use
-num_devices: 32
+num_devices: 16
 
 # Change this to the number of epochs that you want to train for
 num_epochs: 3
 
 # Change this to the batch size that you want to use
-train_batch_size_per_device: 8
-eval_batch_size_per_device: 8
+train_batch_size_per_device: 2
+eval_batch_size_per_device: 2
 
 # Change this to the learning rate that you want to use
-learning_rate: 5e-6
+learning_rate: 1e-4
 
 # This will pad batches to the longest sequence. Use "max_length" when profiling to profile the worst case.
 padding: "longest"
@@ -34,14 +34,8 @@ num_checkpoints_to_keep: 1
 deepspeed:
   config_path: deepspeed_configs/zero_3_offload_optim+param.json
 
-# Rank-0 (aka trainer) should have 140 GB memory
-# This memory is required for weight aggregation.
-trainer_resources:
-  memory: 150_323_855_360 # 140 GB memory
-
 # Accelerator type, we value of 0.001 is not important, as long as it is 
 # beteween 0 and 1. This ensures that accelerator type is used per trainer 
 # worker.
 worker_resources:
-  memory: 53_687_091_200 # 50 GB memory
-  accelerator_type:A10G: 0.001
+  accelerator_type:A100-80G: 0.001
