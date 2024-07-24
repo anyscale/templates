@@ -1,5 +1,5 @@
-# WARNING: This will run very slowly on A10 setup. 
-# You should use A100 setup if possible. 
+# WARNING: This will run very slowly on A10 setup.
+# You should use A100 setup if possible.
 
 # Change this to the model you want to fine-tune
 model_id: meta-llama/Meta-Llama-3-70B-Instruct
@@ -10,7 +10,7 @@ train_path: s3://air-example-data/gsm8k/train.jsonl
 # Change this to the path to your validation data. This is optional
 valid_path: s3://air-example-data/gsm8k/test.jsonl
 
-# Change this to the context length you want to use. Examples with longer 
+# Change this to the context length you want to use. Examples with longer
 # context length will be truncated.
 context_length: 4096
 
@@ -37,8 +37,8 @@ num_checkpoints_to_keep: 1
 deepspeed:
   config_path: deepspeed_configs/zero_3_offload_optim+param.json
 
-# Accelerator type, we value of 0.001 is not important, as long as it is 
-# beteween 0 and 1. This ensures that accelerator type is used per trainer 
+# Accelerator type, we value of 0.001 is not important, as long as it is
+# beteween 0 and 1. This ensures that accelerator type is used per trainer
 # worker.
 worker_resources:
   accelerator_type:A10G: 0.001
