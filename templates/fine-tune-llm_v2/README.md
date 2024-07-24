@@ -93,14 +93,12 @@ Note:
 Example data format (JSON):
 ```json
 {
-    "messages: [
+    "messages": [
         {"role": "system", "content": "You are a helpful assistant."},
         {"role": "user", "content": "Hi"},
         {"role": "assistant", "content": "Howdy!"},
         {"role": "user", "content": "What is the type of this model?"},
-        # For classification we can define special tokens in the assistant message
         {"role": "assistant", "content": "[[1]]"},
-        ...
     ]
 }
 ```
@@ -120,7 +118,6 @@ Example Continued pre-training (JSON):
 ```json
 {
     "messages": [
-        # We don't do any formatting, just chunks of text
         {"role": "user", "content": "Once upon a time ..."},
     ],
 },
