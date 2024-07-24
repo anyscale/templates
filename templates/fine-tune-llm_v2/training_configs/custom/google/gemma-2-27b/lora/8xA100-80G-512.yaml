@@ -18,8 +18,8 @@ num_devices: 8
 num_epochs: 3
 
 # Change this to the batch size that you want to use
-train_batch_size_per_device: 8
-eval_batch_size_per_device: 8
+train_batch_size_per_device: 4
+eval_batch_size_per_device: 4
 
 # Change this to the learning rate that you want to use
 learning_rate: 1e-4
@@ -57,7 +57,7 @@ lora_config:
     - lm_head
   task_type: "CAUSAL_LM"
   bias: "none"
-
+  modules_to_save: []
 
 # Prompt format and generation config
 generation_config:
