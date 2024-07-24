@@ -18,8 +18,8 @@ num_devices: 16
 num_epochs: 3
 
 # Change this to the batch size that you want to use
-train_batch_size_per_device: 8
-eval_batch_size_per_device: 8
+train_batch_size_per_device: 4
+eval_batch_size_per_device: 4
 
 # Change this to the learning rate that you want to use
 learning_rate: 5e-6
@@ -34,6 +34,12 @@ num_checkpoints_to_keep: 1
 deepspeed:
   config_path: deepspeed_configs/zero_3_offload_optim+param.json
   
+# Rank-0 does fp32 aggregation, so we need 4x7B ~ 28GB of memory
+# Setting it to 35 GB to be safe
+# This should provision a large enough node to schedule rank-0
+trainer_resources:
+  memory: 37_580_963_840 
+
 # Accelerator type, we value of 0.001 is not important, as long as it is 
 # beteween 0 and 1. This ensures that accelerator type is used per trainer 
 # worker.
