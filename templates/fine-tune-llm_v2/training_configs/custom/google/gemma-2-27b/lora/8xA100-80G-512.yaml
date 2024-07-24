@@ -1,0 +1,72 @@
+# Change this to the model you want to fine-tune
+model_id: google/gemma-2-27b-it
+
+# Change this to the path to your training data
+train_path: s3://air-example-data/gsm8k/train.jsonl
+
+# Change this to the path to your validation data. This is optional
+valid_path: s3://air-example-data/gsm8k/test.jsonl
+
+# Change this to the context length you want to use. Examples with longer 
+# context length will be truncated.
+context_length: 512
+
+# Change this to total number of GPUs that you want to use
+num_devices: 8
+
+# Change this to the number of epochs that you want to train for
+num_epochs: 3
+
+# Change this to the batch size that you want to use
+train_batch_size_per_device: 8
+eval_batch_size_per_device: 8
+
+# Change this to the learning rate that you want to use
+learning_rate: 1e-4
+
+# This will pad batches to the longest sequence. Use "max_length" when profiling to profile the worst case.
+padding: "longest"
+
+# By default, we will keep the best checkpoint. You can change this to keep more checkpoints.
+num_checkpoints_to_keep: 1
+
+# Deepspeed configuration, you can provide your own deepspeed setup
+deepspeed:
+  config_path: deepspeed_configs/zero_3_offload_optim+param.json
+
+# Accelerator type, we value of 0.001 is not important, as long as it is 
+# beteween 0 and 1. This ensures that accelerator type is used per trainer 
+# worker.
+worker_resources:
+  accelerator_type:A100-80G: 0.001
+
+# Lora configuration
+lora_config:
+  r: 8
+  lora_alpha: 16
+  lora_dropout: 0.05
+  target_modules:
+    - q_proj
+    - v_proj
+    - k_proj
+    - o_proj
+    - gate_proj
+    - up_proj
+    - down_proj
+    - embed_tokens
+    - lm_head
+  task_type: "CAUSAL_LM"
+  bias: "none"
+
+
+# Prompt format and generation config
+generation_config:
+  prompt_format:
+    system: "{instruction} + "
+    assistant: "<start_of_turn>model\n{instruction}<end_of_turn>\n"
+    trailing_assistant: "<start_of_turn>model\n"
+    user: "<start_of_turn>user\n{system}{instruction}<end_of_turn>\n"
+    system_in_user: True
+    bos: "<bos>"
+    default_system_message: ""
+  stopping_sequences: ["<end_of_turn>"]
