@@ -9,7 +9,7 @@ This template shows you how to:
 
 For a Python script version of the code in this workspace template, refer to `main.py`.
 
-**Note:** This tutorial is run within a workspace. Review the `Introduction to Workspaces` template before this tutorial.
+**Note:** This tutorial runs within a workspace. Review the `Introduction to Workspaces` template before this tutorial.
 
 ### How to decide between online vs offline inference for LLM
 Online LLM inference (e.g. Anyscale Endpoint) should be used when you want to get real-time response for prompt or to interact with the LLM. Use online inference when you want to optimize latency of inference to be as quick as possible.
