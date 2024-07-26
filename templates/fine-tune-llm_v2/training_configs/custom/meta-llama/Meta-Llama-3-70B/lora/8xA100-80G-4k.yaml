@@ -34,8 +34,8 @@ num_checkpoints_to_keep: 1
 deepspeed:
   config_path: deepspeed_configs/zero_3_offload_optim+param.json
 
-# Accelerator type, we value of 0.001 is not important, as long as it is
-# beteween 0 and 1. This ensures that accelerator type is used per trainer
+# Accelerator type, the value of 0.001 is not important, as long as it is
+# between 0 and 1. This ensures that the given accelerator is available for each trainer
 # worker.
 worker_resources:
   accelerator_type:A100-80G: 0.001
