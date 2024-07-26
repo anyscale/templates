@@ -38,4 +38,5 @@ This is the path where the adapted weights are stored, you can use them fore inf
 
 Here is a list of end-to-end examples that involve more steps such as data preprocessing, evaluation, etc but with a main focus on improving model quality via fine-tuning.
 
-* [Fine-tuning for Function calling on custom data](end-to-end-examples/fine-tune-function-calling/README.md)
+* [Fine-tuning for Function calling on custom data](./end-to-end-examples/fine-tune-function-calling/README.md): This example demonstrates how to fine-tune a model on a custom dataset for function calling task.
+* [Router LLM](./end-to-end-examples/llm-router/README.md): This example demonstrates how to fine-tune a model to route queries to different models based on the query content.
