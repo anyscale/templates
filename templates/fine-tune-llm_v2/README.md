@@ -24,7 +24,7 @@ This template is a guide on how to use LLMForge for fine-tuning LLMs. For servin
 
 ## What is LLMForge?
 
-LLMForge is a library that implements a collection of design patterns that use Ray, RayTrain, and RayData in combination with other open-source libraries (e.g. Deepspeed, 🤗 Huggingface accelerate, transformers, etc.) to provide an easy to use library for fine-tuning LLMs. In addition to these design patterns, it offers tight integrations with the Anyscale platform, such as model registery, streamlined deployment, observability, Anyscale's job submission, etc.
+LLMForge is a library that implements a collection of design patterns that use Ray, RayTrain, and RayData in combination with other open-source libraries (e.g. Deepspeed, 🤗 Huggingface accelerate, transformers, etc.) to provide an easy to use library for fine-tuning LLMs. In addition to these design patterns, it offers tight integrations with the Anyscale platform, such as model registry, streamlined deployment, observability, Anyscale's job submission, etc.
 
 ### Configurations
 
@@ -54,9 +54,9 @@ Choose the mode that best fits your project requirements and level of customizat
 
 ### Models Supported in Default Mode
 
-Default mode supports a select list of models, with a fixed cluster type of 8xA100-80G. For each model we only support context lengths of 512 up to Max. context length in increments of 2x (i.e. 512, 1024, ...). Here are the supported models and their configurations:
+Default mode supports a list of "core" models, with a fixed cluster type of 8xA100-80G. For each model we only support context lengths of 512 up to Max. context length in increments of 2x (i.e. 512, 1024, ...). Here are the supported models and their configurations:
 
-Model family | model_id(s) | Max. context lengths |
+|Model family | model_id(s) | Max. context lengths |
 |------------|----------|----------------------|
 |Llama-3.1| `meta-llama/Meta-Llama-3.1-8B-Instruct` | 4096 |
 |Llama-3.1| `meta-llama/Meta-Llama-3.1-70B-Instruct`  | 4096 |
@@ -160,7 +160,7 @@ system_in_user: False
 
 ### ✅ Anyscale and third-party integrations
 
-* (Coming soon) Model registery: 
+* (Coming soon) Model registry: 
     * SDK for accessing finetuned models for creating automated pipelines 
     * More streamlined deployment flow when finetuned on Anyscale
 * Monitoring and observability:
@@ -221,7 +221,7 @@ learning_rate: 1e-4
 ---------
 **Task:** 
 
-Fine-tune llama-3-8b-instruct in custom mode (model is supported in default mode) on 16xA10s (auto mode uses 8xA100-80G) with context length of 512.
+Fine-tune llama-3-8b-instruct (a "core" model) in custom mode on 16xA10s (auto mode uses 8xA100-80G) with context length of 512.
 
 
 **Command:** 
@@ -247,7 +247,7 @@ worker_resources:
 ---------
 **Task:** 
 
-Fine-tune gemma-2-27b in custom mode (model is not supported in default-mode) on 8xA100-80G.
+Fine-tune gemma-2-27b in custom mode on 8xA100-80G.
 
 
 **Command:** 
