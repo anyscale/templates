@@ -122,7 +122,7 @@ def test_mapper_anyscale(
     example: Dict[str, Any], tool_call_tags: IndicatorTags
 ) -> Dict[str, Any]:
     """
-    Processes test data example for evaluation with a finetuned Anyscale Endpoints model.
+    Processes test data example for evaluation with a finetuned Anyscale model.
 
     The input example is expected to be in the Anyscale format. In the output, the assistant messages are converted to the OpenAI format for evaluation.
     The user and system messages remain the same.

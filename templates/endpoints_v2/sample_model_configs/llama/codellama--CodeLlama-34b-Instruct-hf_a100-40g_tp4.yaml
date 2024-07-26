@@ -3,7 +3,7 @@ deployment_config:
     min_replicas: 1
     initial_replicas: 1
     max_replicas: 100
-    target_num_ongoing_requests_per_replica: 32
+    target_ongoing_requests: 32
     metrics_interval_s: 10.0
     look_back_period_s: 30.0
     smoothing_factor: 0.6
@@ -22,9 +22,10 @@ engine_config:
     max_num_batched_tokens: 65536
     max_num_seqs: 128
     gpu_memory_utilization: 0.95
-    num_tokenizer_actors: 2
-    enable_cuda_graph: false
-    trust_remote_code: true
+    tokenizer_pool_size: 2
+    tokenizer_pool_extra_config:
+      runtime_env:
+        pip: null
   max_total_tokens: 16384
   generation:
     prompt_format:

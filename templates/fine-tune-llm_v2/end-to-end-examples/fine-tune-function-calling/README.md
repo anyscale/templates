@@ -2,9 +2,9 @@
 
 **⏱️ Time to complete**: 6 hours
 
-Function calling is an important capability of large language models. Connecting your model to external tools is at the heart of many LLM applications. In Anyscale Endpoints, you can use the [function calling API](https://docs.anyscale.com/preview/endpoints/text-generation/function-calling) to enable get a quick access on this feature on a select number of models. This is made possible [through JSON mode](https://www.anyscale.com/blog/anyscale-endpoints-json-mode-and-function-calling-features). However, it is beneficial to have *native* function calling capabilities in your model through fine-tuning on a relevant function calling dataset. JSON-mode-based function calling can only guarantee that the output is in the right schema, and can also be more expensive than a regular chat completion. However, fine-tuning on a function calling dataset can improve the model's capabilities with intent recognition (understanding when to call and when not to call a tool) and function call accuracy (employing the right function with accurate parameters) in addition to structured data formatting (formatting the function call json in the correct schema).  Fine-tuning would also be the only systematic way to improve performance on use-case-specific data. 
+Function calling is an important capability of large language models. Connecting your model to external tools is at the heart of many LLM applications. Anyscale's LLM deployment solution offers enabling function calling for all the models via [function calling API](https://docs.anyscale.com/preview/endpoints/text-generation/function-calling). This is made possible [through JSON mode](https://www.anyscale.com/blog/anyscale-endpoints-json-mode-and-function-calling-features). However, it is beneficial to have *native* function calling capabilities in your model through fine-tuning on a relevant function calling dataset. JSON-mode-based function calling can only guarantee that the output is in the right schema, and can also be more expensive than a regular chat completion. However, fine-tuning on a function calling dataset can improve the model's capabilities with intent recognition (understanding when to call and when not to call a tool) and function call accuracy (employing the right function with accurate parameters) in addition to structured data formatting (formatting the function call json in the correct schema).  Fine-tuning would also be the only systematic way to improve performance on use-case-specific data. 
 
-In this example, we demonstrate fine-tuning on [Glaive's function calling dataset](https://huggingface.co/datasets/glaiveai/glaive-function-calling-v2?row=0) using Anyscale platform. The goal for this example is to serve as a blue-print for performing data processing, training, and evaluation on open source LLMs for specific tasks like function calling, in the most effective way.  During this guide we mainly use the [fine-tuning API](https://docs.anyscale.com/endpoints/fine-tuning/fine-tuning-api), but the same blue-print can also be used with [fine-tuning template](https://docs.anyscale.com/examples/finetune-llms). 
+In this example, we demonstrate fine-tuning on [Glaive's function calling dataset](https://huggingface.co/datasets/glaiveai/glaive-function-calling-v2?row=0) on the Anyscale platform using the [fine-tuning template](https://docs.anyscale.com/examples/finetune-llms). The goal for this example is to serve as a blue-print for performing data processing, training, and evaluation on open source LLMs for specific tasks like function calling, in the most effective way. 
 
 The mentioned dataset consists of about 113,000 examples of synthetically generated function calling data. The dataset composition is given below:
 
@@ -158,7 +158,7 @@ pprint_example(openai_ex, dataset_format=DatasetFormat.OPENAI)
 If you notice, the tool calls are almost exactly in the OpenAI format, i.e. `assistant` messages can include `tool_calls` and `tool` is also a role just like `user` or `assistant`. The only slight difference is that it is short of the `id` entry provided by the OpenAI API. For training, we choose to leave the model out of ID generation. Internally, each tool call is kept track by its index in the list of tool calls made. This is used later in the tool response (In the above example, there is only one tool call made and the tool response has `tool_call_id` "call_1"). 
 
 ## Preprocess to the Anyscale format
-We'll now further process this conversation format and make it compatible with Anyscale Endpoints. We'll make use of special indicators "\[TOOL_CALLS\]" and "\[/TOOL_CALLS\]" to format assistant tool calls into the message "content" field. The role "tool" will be converted to the role "user" with a special indicator to highlight that this is a tool response. Further, the tool list will be included in the system prompt with special indicators. The following code block handles the necessary preprocessing.
+We'll now further process this conversation format and make it compatible with Anyscale format. We'll make use of special indicators "\[TOOL_CALLS\]" and "\[/TOOL_CALLS\]" to format assistant tool calls into the message "content" field. The role "tool" will be converted to the role "user" with a special indicator to highlight that this is a tool response. Further, the tool list will be included in the system prompt with special indicators. The following code block handles the necessary preprocessing.
 
 
 ```python
@@ -226,15 +226,9 @@ save_to_jsonl(test_ds, test_file_path)
 
 # Step 2: Fine-tuning 
 
-For fine-tuning, you have two options with Anyscale:
-1. Fine-tuning on the Anyscale Platform through our [fine-tuning template](../../README.md)
-    - This would be the preferred route for those wishing to get more flexibility in choice of models and hyperparameters, better monitoring, etc.
-2. Fine-tuning through [Anyscale's serverless endpoints](https://docs.anyscale.com/endpoints/fine-tuning/fine-tuning-api)
-    - A quick and easy way to fine-tune a model via an OpenAI compatiable SDK, running on pre-defined hardware configurations.
+For fine-tuning, you can start with the [fine-tuning template](../../README.md). This is an easy to use solution for data-scientists and ML engineers with flexibility in choice of models, hyperparameters, monitoring, etc.
 
-For this guide, we will use `Llama-3-8B-Instruct` as the base model for fine-tuning.
-
-## Step 2(a): Fine-tuning on the Anyscale Platform
+For this guide, we will use `Llama-3-8B-Instruct` as the base model for fine-tuning and we will use LoRA for efficient fine-tuning.
 
 You can follow similar steps outlined in the [template tutorial](../../README.md). We can first generate the config YAML we would like to use:
 
@@ -297,55 +291,8 @@ You can now run the `llmforge` command with this YAML config to start the fine-t
 llmforge anyscale finetune ./end-to-end-examples/fine-tune-function-calling/gen_configs/llama-3-8b.yaml
 ```
 
-## Step 2(b): Fine-tuning through serverless endpoints
-First, obtain your credentials from the [Anyscale platform](https://console.anyscale.com/credentials) and upload the training and validation files.
-
-
-```python
-# Get your API key from https://console.anyscale.com/credentials
-ANYSCALE_API_KEY = "esecret_yourKeyHere"  
-ANYSCALE_API_BASE = "https://api.endpoints.anyscale.com/v1"
-```
-
-
-```python
-# Anyscale Endpoints are OpenAI compatible
-client = openai.OpenAI(
-    base_url = ANYSCALE_API_BASE,
-    api_key = ANYSCALE_API_KEY
-)
-```
-
-
-```python
-# Upload the files to Anyscale
-training_file_id = client.files.create(
-    file=open(train_file_path,'rb'),
-    purpose="fine-tune",
-).id
-
-valid_file_id = client.files.create(
-    file=open(validation_file_path,'rb'),
-    purpose="fine-tune",
-).id
-```
-
-Let's now launch a fine-tuning job for 4 epochs. The expected time for this job is < 3 hours. For instructions on viewing job status, other hyperparameters used, etc, you can refer to our [fine-tuning guide](https://docs.anyscale.com/preview/examples/e2e-finetune-and-serve-example#4-start-the-fine-tuning). 
-
-
-```python
-# Create finetuning job. Other parameters like context length will be chosen appropriately based on dataset size
-fine_tuning_job_id = client.fine_tuning.jobs.create(
-    model="meta-llama/Meta-Llama-3-8B-Instruct",
-    hyperparameters={"n_epochs": 4},
-    training_file=training_file_id,
-    validation_file=valid_file_id,
-).id
-```
-
 # Step 3: Serving
 
-## Step 3(a): Finetuned on the Anyscale Platform
 
 Make a note of the final checkpoint after fine-tuning (this should be the last line in the logs). You can now spin up the "Deploy LLMs" template which has all the instructions and required dependencies to serve your finetuned model efficiently. You will find the tutorials on [serving LoRA models](https://github.com/anyscale/templates/blob/main/templates/endpoints_v2/examples/lora/DeployLora.ipynb) (if applicable) and on deploying a [custom model](https://github.com/anyscale/templates/blob/main/templates/endpoints_v2/examples/CustomModels.ipynb) helpful. Once you have set up your fine-tuned model as an Anyscale Service, head over to the "Services" tab in the console and select your deployed service. 
 <p align="center">
@@ -371,43 +318,6 @@ FINETUNED_MODEL_API_BASE = f"{FINETUNED_MODEL_API_BASE}/v1"
 # Example: meta-llama/Meta-Llama-3-8B-Instruct:mysuffix:myid 
 MODEL_ID = "your-model-id-here"
 ```
-
-## Step 3(b): Finetuned through serverless APIs
-
-To serve the fine-tuned model, you just need to navigate to the "Serving" section on the Anyscale Platform. Your fine-tuned model should already be visible in the list of available models! Make sure to note down the model ID here.
-
-<p align="center">
-  <img src="./assets/serving_endpoints.png" alt="Serve Endpoints">
-</p>
-
-
-As in the above image, click on the three dots and then click on "Query". This will provide you the starter code to interact with the model via curl, python, etc. Note that the API key here is valid only for one hour. Since our evaluation can take up longer, we will generate a long-lived credential. 
-
-<p align="center">
-  <img src="./assets/serve_api_key.png" alt="Serve API Key">
-</p>
-
-In the "API Keys" page, click on "Create" and note down the API key.
-<p align="center">
-  <img src="./assets/long_lived_api_key.png" alt="Long Lived API Key">
-</p>
-
-
-
-```python
-## This is only if you finetuned through serverless endpoints
-FINETUNED_MODEL_API_BASE = "https://api.endpoints.anyscale.com/v1"
-FINETUNED_MODEL_API_KEY = "esecret_yourKeyHere"
-MODEL_ID = "yourModelIdHere"
-```
-
-### (Optional) Try out the model via Playground
-
-(For Endpoints users) You can try out your new model in the Playground: https://console.anyscale.com/v2/playground . In the model dropdown, you should be able to see your finetuned model as shown below
-
-<p align="center">
-  <img src="./assets/playground.png" alt="Playground">
-</p>
 
 # Step 4: Evaluation
 
@@ -481,16 +391,14 @@ OPENAI_API_KEY = "your-openai-key-here"
 OPENAI_API_BASE = "https://api.openai.com/v1"
 
 # Base model config 
-BASE_MODEL_API_BASE = "https://api.endpoints.anyscale.com/v1"
+# Note: In serving LoRA we have access to both the base and the finetuned models. We will use the same url and api key as the finetuned model.
 BASE_MODEL_ID="meta-llama/Meta-Llama-3-8B-Instruct"
-# Enter your Endpoints API key below from https://console.anyscale.com/credentials
-BASE_MODEL_API_KEY = "your-endpoints-key-here" 
 ```
 
 
 ```python
 # Initialize parsers
-base_model_parser = AnyscaleResponseParser(api_key=BASE_MODEL_API_KEY, api_base=BASE_MODEL_API_BASE, model=BASE_MODEL_ID, tool_call_tags=TOOL_CALL_TAGS)
+base_model_parser = AnyscaleResponseParser(api_key=FINETUNED_MODEL_API_BASE, api_base=FINETUNED_MODEL_API_KEY, model=BASE_MODEL_ID, tool_call_tags=TOOL_CALL_TAGS)
 
 finetuned_model_parser = AnyscaleResponseParser(api_key=FINETUNED_MODEL_API_KEY, api_base=FINETUNED_MODEL_API_BASE, model=MODEL_ID, tool_call_tags=TOOL_CALL_TAGS) 
 
@@ -536,6 +444,6 @@ The base model is a lot more trigger happy when tools are available and further 
 
 Congrats! You have now fine-tuned an open source model that can rival GPT-4 on function calling. As a quick recap, here's what we demonstrated in this notebook:
 1. Preprocessing a function calling dataset into a conversational format
-2. Fine-tuning a language model through either the Anyscale Platform or through Anyscale Endpoints
+2. Fine-tuning a language model through either the Anyscale Platform
 3. Serving the fine-tuned model on Anyscale
 4. Evaluating the model against GPT-4 and analysing the results.
