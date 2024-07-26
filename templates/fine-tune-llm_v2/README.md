@@ -1,179 +1,37 @@
-# Fine-tuning Open-weight LLMs with Anyscale
+# Intro to Fine-tuning Open-weight LLMs with Anyscale
 
-**⏱️ Time to complete**: 20 minutes
-
-Fine-tuning LLMs is an easy and cost-effective way to tailor their capabilities towards niche applications with high-acccuracy. While Ray and RayTrain offer generic primitives for building such workloads, at Anyscale we have created a higher-level library called _LLMForge_ that builds on top of Ray and other open-source libraries to provide an easy to work with interface for fine-tuning and training LLMs. 
-
-This template is a guide on how to use LLMForge for fine-tuning LLMs. For serving finetuned models you can see the [LLM serving template](../endpoints_v2/README.md).
+**⏱️ Time to complete**: ~3 hours (includes the time for training the model)
 
 
-### Table of contents
-
-- [What is LLMForge?](#what-is-llmforge)
-  - [Configurations](#configurations)
-    - [Default Mode](#default-mode)
-    - [Custom Mode](#custom-mode)
-  - [Models Supported in default Mode](#models-supported-in-default-mode)
-- [Summary of Features in Custom Mode](#summary-of-features-in-custom-mode)
-- [Examples](#examples)
-  - [Default](#default)
-  - [Custom](#custom)
-- [Cookbooks](#cookbooks)
-- [End-to-end Examples](#end-to-end-examples)
-- [LLMForge Versions](#llmforge-versions)
-
-## What is LLMForge?
-
-LLMForge is a library that implements a collection of design patterns that use Ray, RayTrain, and RayData in combination with other open-source libraries (e.g. Deepspeed, 🤗 Huggingface accelerate, transformers, etc.) to provide an easy to use library for fine-tuning LLMs. In addition to these design patterns, it offers tight integrations with the Anyscale platform, such as model registry, streamlined deployment, observability, Anyscale's job submission, etc.
-
-### Configurations
-
-LLMForge workloads are specified using YAML configurations ([documentation here](https://docs.anyscale.com/reference/finetuning-config-api)). The library offers two main modes: `default` and `custom`.
-
-#### Default Mode
-Similar to OpenAI's finetuning experience, the `default` mode provides a minimal and efficient setup. It allows you to quickly start a finetuning job by setting just a few parameters (`model_id` and `train_path`). All other settings are optional and will be automatically selected based on dataset statistics and predefined configurations.
-
-#### Custom Mode
-The `custom` mode offers more flexibility and control over the finetuning process, allowing for advanced optimizations and customizations. You need to provide more configurations to setup this mode (e.g. prompt format, hardware, batch size, etc.)
-
-Here's a comparison of the two modes:
-
-| Feature | Default Mode | Custom Mode |
-|---------|-----------|-------------|
-| Ideal For | Prototyping what's possible, focusing on dataset cleaning, finetuning, and evaluation pipeline | Optimizing model quality by controlling more parameters, hardware control |
-| Command | `llmforge anyscale finetune config.yaml --default` | `llmforge anyscale finetune config.yaml` |
-| Model Support | Popular models with their prompt format (e.g., `meta-llama/Meta-Llama-3-8B-Instruct`)* | Any HuggingFace model, any prompt format (e.g., `meta-llama/Meta-Llama-Guard-2-8B`) |
-| Task Support | Instruction tuning for multi-turn chat | Causal language modeling, Instruction tuning, Classification|
-| Data Format | Supports chat-style datasets, with fixed prompt formats per model | Supports chat-style datasets, with flexible prompt format |
-| Hardware | Automatically selected (limited by availability) | User-configurable |
-| Fine-tuning type| Only supports LoRA (Rank-8, all linear layers) | User-defined LoRA and Full-parameter |
-
-*NOTE: old models will get deprecated
-
-Choose the mode that best fits your project requirements and level of customization needed.
-
-### Models Supported in Default Mode
-
-Default mode supports a list of "core" models, with a fixed cluster type of 8xA100-80G. For each model we only support context lengths of 512 up to Max. context length in increments of 2x (i.e. 512, 1024, ...). Here are the supported models and their configurations:
-
-|Model family | model_id(s) | Max. context lengths |
-|------------|----------|----------------------|
-|Llama-3.1| `meta-llama/Meta-Llama-3.1-8B-Instruct` | 4096 |
-|Llama-3.1| `meta-llama/Meta-Llama-3.1-70B-Instruct`  | 4096 |
-|Llama-3| `meta-llama/Meta-Llama-3-8B-Instruct` | 4096 |
-|Llama-3| `meta-llama/Meta-Llama-3-70B-Instruct`| 4096 |
-|Mistral| `mistralai/Mistral-Nemo-Instruct-2407`  | 4096 |
-|Mistral| `mistralai/Mistral-7B-Instruct-v0.3` | 4096 |
-|Mixtral| `mistralai/Mixtral-8x7B-Instruct-v0.1` | 4096 |
+This template comes with a installed library for training LLMs on Anyscale called LLMForge. It provides the fastest way to try out training LLMs with Ray on Anyscale. You can read more about this library and its features in the [docs](https://docs.anyscale.com/latest/llms/finetuning/intro). For learning on how to serve the model online or offline for doing batch inference you can refer to the [serving template](https://console.anyscale.com/v2/template-preview/endpoints_v2) or the [offline batch inference template](https://console.anyscale.com/v2/template-preview/batch-llm), respecitvely.
 
 
-Note: 
-- Cluster type for all models: 8xA100-80G
-- Supported context length for models: 512 up to max. context length of each model in powers of 2.
+## Getting Started
 
-## Summary of Features in Custom Mode
-
-### ✅ Support both Full parameter and LoRA
-
-* LoRA with different configurations, ranks, layers, etc. (Anything supported by huggingface transformers)
-* Full-parameter with multi-node training support
-    
-### ✅ State of the art performance related features:
-
-* Gradient checkpointing
-* Mixed precision training
-* Flash attention v2
-* Deepspeed support (zero-DDP sharding)
-
-### ✅ Unified chat data format with flexible prompt format support enabling finetuning for:
+You can find some tested config files examples in the `training_configs` directoy. LLMForge comes with a CLI that lets you pass in a config YAML file to start your training.
 
 
-#### Use-case: Multi-turn chat, Instruction tuning, Classification:
-
-Example data format (JSON):
-```json
-{
-    "messages": [
-        {"role": "system", "content": "You are a helpful assistant."},
-        {"role": "user", "content": "Hi"},
-        {"role": "assistant", "content": "Howdy!"},
-        {"role": "user", "content": "What is the type of this model?"},
-        {"role": "assistant", "content": "[[1]]"},
-    ]
-}
+```bash
+WANDB_API_KEY=<PUT_YOUR_WANDB_KEY_HERE> llmforge anyscale finetune training_configs/custom/meta-llama--Meta-Llama-3-8B-Instruct/lora/16xA10-512.yaml
 ```
 
-Prompt Format for llama-3-instruct (YAML):
+This code will run LoRA fine-tuning on the Meta-Llama-3-8B-Instruct model with 16xA10-512 configuration on a GSM-8k math dataset.
 
-```yaml
-system: "<|start_header_id|>system<|end_header_id|>\n\n{instruction}<|eot_id|>"
-user: "<|start_header_id|>user<|end_header_id|>\n\n{instruction}<|eot_id|>"
-assistant: "<|start_header_id|>assistant<|end_header_id|>\n\n{instruction}<|eot_id|>"
-system_in_user: False
-```
+When the training is done, you will see a message like this:
 
-#### Use-case: Casual language modeling (aka continued pre-training), custom prompt formats (e.g. Llama-guard):
+```bash
+Note: LoRA weights will also be stored in path <path>
+````
 
-Example Continued pre-training (JSON):
-```json
-{
-    "messages": [
-        {"role": "user", "content": "Once upon a time ..."},
-    ],
-},
-{
-    "messages": [
-        {"role": "user", "content": "..."},
-    ],
-}
-```
+This is the path where the adapted weights are stored, you can use them fore inference. You can also see the list of your fine-tuned models in the `serving` tab in the Anyscale console.
 
-Prompt Format for doing nothing except concatenation:
+# What is Next?
 
-```yaml
-system: "{instruction}"
-user: "{instruction}"
-assistant: "{instruction}"
-system_in_user: False
-```
-
-### ✅ Flexible task support: 
-
-* Causal language modeling: Each token predicted based on all past tokens.
-* Instruction tuning: Only assistant tokens are predicted based on past tokens.
-* Classification: Only special tokens in the assistant message are predicted based on past tokens.
-* (Coming soon) Preference tuning: Use the contrast between chosen and rejected messages to improve the model.
-
-### ✅ Support for multi-stage continuous fine-tuning
-
-* Fine-tune on one dataset, then continue fine-tuning on another dataset, for iterative improvements.
-* Do continued pre-training on one dataset, then chat-style fine-tuning on another dataset.
-* (Coming soon) Do continued pre-training on one dataset followed by iterations of supervised-finetuning and preference tuning on independent datasets.
-
-### ✅ Support for context length extension
-
-* Extend the context length of the model via methods like RoPE scaling.
-
-### ✅ Configurability of hyper-parameters
-
-* Full control over learning hyper-parameters such as learning rate, n_epochs, batch size, etc.
-
-### ✅ Anyscale and third-party integrations
-
-* (Coming soon) Model registry: 
-    * SDK for accessing finetuned models for creating automated pipelines 
-    * More streamlined deployment flow when finetuned on Anyscale
-* Monitoring and observability:
-    * Take advantage of standard logging frameworks such as Weights and Biases
-    * Use of ray dashboard and anyscale loggers for debugging and monitoring the training process
-* Anyscale jobs integration: Use Anyscale's job submission API to programitically submit long-running jobs through LLMForge
+* Make sure to checkout the [LLMForge documentation](https://docs.anyscale.com/latest/llms/finetuning/intro) and [user guides](https://docs.anyscale.com/latest/llms/finetuning/user-guides) for more information on how to use the library and the features it supports.
+* You can follow the [serving template](https://console.anyscale.com/v2/template-preview/endpoints_v2) to learn how to serve the model online.
+* You can follow the [offline batch inference template](https://console.anyscale.com/v2/template-preview/batch-llm) to learn how to do batch inference.
 
 
-## Examples
-
-Here are some examples for default mode and custom mode:
-
-### Default Mode
 
 
 --------- 
