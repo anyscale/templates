@@ -9,7 +9,7 @@ In this tutorial, you will learn:
 2. Features of the Ray Data parallelization API.
 3. Tips and tricks for improving performance and avoiding out of memory errors.
 
-**Note**: This tutorial is run within a workspace. Please overview the ``Introduction to Workspaces`` template first before this tutorial.
+**Note**: This tutorial runs within a workspace. Please overview the ``Introduction to Workspaces`` template first before this tutorial.
 
 ## Overview
 
