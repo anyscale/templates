@@ -1,0 +1,2 @@
+model_id: meta-llama/Meta-Llama-3-8B-Instruct
+train_path: s3://air-example-data/gsm8k/train.jsonl
