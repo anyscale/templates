@@ -22,7 +22,7 @@ train_batch_size_per_device: 2
 eval_batch_size_per_device: 2
 
 # Change this to the learning rate that you want to use
-learning_rate: 1e-4
+learning_rate: 5e-6
 
 # This will pad batches to the longest sequence. Use "max_length" when profiling to profile the worst case.
 padding: "longest"
