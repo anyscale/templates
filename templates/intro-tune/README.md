@@ -9,7 +9,7 @@ In this tutorial, you will learn:
 2. Basic Ray Tune features, including stats reporting and storing results.
 3. Monitoring cluster parallelism and execution using the Ray dashboard.
 
-**Note**: This tutorial is run within a workspace. Please overview the ``Introduction to Workspaces`` template first before this tutorial.
+**Note**: This tutorial runs within a workspace. Please overview the ``Introduction to Workspaces`` template first before this tutorial.
 
 ## Grid search hello world
 

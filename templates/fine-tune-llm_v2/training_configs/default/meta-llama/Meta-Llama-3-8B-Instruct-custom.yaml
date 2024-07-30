@@ -1,0 +1,6 @@
+model_id: meta-llama/Meta-Llama-3-8B-Instruct
+train_path: s3://air-example-data/gsm8k/train.jsonl
+valid_path: s3://air-example-data/gsm8k/test.jsonl
+context_length: 1024
+num_epochs: 3
+learning_rate: 1e-4
