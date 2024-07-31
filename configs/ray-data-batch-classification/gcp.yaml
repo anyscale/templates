@@ -1,8 +1,5 @@
 head_node_type:
   name: head
   instance_type: n1-standard-4-nvidia-t4-16gb-1
-worker_node_types:
-- name: gpu_worker
-  instance_type: n1-standard-4-nvidia-t4-16gb-1
-  min_workers: 1
-  max_workers: 3
+worker_node_types: []
+auto_select_worker_config: true
