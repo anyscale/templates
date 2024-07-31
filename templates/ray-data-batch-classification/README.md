@@ -8,11 +8,11 @@ In particular, we will:
 
 Load the Imagenette dataset from an S3 bucket and create a Ray Dataset.
 
-Load a pretrained ResNet model.
+- Load a pretrained ResNet model.
 
-Use Ray Data to preprocess the dataset and do model inference parallelizing across multiple GPUs
+- Use Ray Data to preprocess the dataset and do model inference parallelizing across multiple GPUs
 
-Evaluate the predictions and save results to S3/local disk.
+- Evaluate the predictions and save results to S3/local disk.
 
 This example will still work even if you do not have GPUs available, but overall performance will be slower.
 
