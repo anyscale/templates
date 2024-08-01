@@ -34,32 +34,6 @@ If you didn't start the serve application in the previous step, you can start it
 !serve run serve_TIMESTAMP.yaml
 ```
 
-    2024-07-22 18:31:24,455	INFO scripts.py:499 -- Running import path: 'serve_TIMESTAMP.yaml'.
-    Traceback (most recent call last):
-      File "/home/ray/anaconda3/bin/serve", line 8, in <module>
-        sys.exit(cli())
-      File "/home/ray/anaconda3/lib/python3.9/site-packages/click/core.py", line 1157, in __call__
-        return self.main(*args, **kwargs)
-      File "/home/ray/anaconda3/lib/python3.9/site-packages/click/core.py", line 1078, in main
-        rv = self.invoke(ctx)
-      File "/home/ray/anaconda3/lib/python3.9/site-packages/click/core.py", line 1688, in invoke
-        return _process_result(sub_ctx.command.invoke(sub_ctx))
-      File "/home/ray/anaconda3/lib/python3.9/site-packages/click/core.py", line 1434, in invoke
-        return ctx.invoke(self.callback, **ctx.params)
-      File "/home/ray/anaconda3/lib/python3.9/site-packages/click/core.py", line 783, in invoke
-        return __callback(*args, **kwargs)
-      File "/home/ray/anaconda3/lib/python3.9/site-packages/ray/serve/scripts.py", line 501, in run
-        import_attr(import_path), args_dict
-      File "/home/ray/anaconda3/lib/python3.9/site-packages/ray/_private/utils.py", line 1191, in import_attr
-        module = importlib.import_module(module_name)
-      File "/home/ray/anaconda3/lib/python3.9/importlib/__init__.py", line 127, in import_module
-        return _bootstrap._gcd_import(name[level:], package, level)
-      File "<frozen importlib._bootstrap>", line 1030, in _gcd_import
-      File "<frozen importlib._bootstrap>", line 1007, in _find_and_load
-      File "<frozen importlib._bootstrap>", line 984, in _find_and_load_unlocked
-    ModuleNotFoundError: No module named 'serve_TIMESTAMP'
-    [0m
-
 ## Step 2 - Query the model
 
 Once deployed you can use the OpenAI SDK to interact with the models, ensuring an easy integration for your applications.
@@ -113,13 +87,6 @@ def query(base_url: str, api_key: str):
         if chat.choices[0].delta.content is not None:
             print(chat.choices[0].delta.content, end="")
 ```
-
-    Exception ignored in: <bound method IPythonKernel._clean_thread_parent_frames of <ipykernel.ipkernel.IPythonKernel object at 0x706462744f40>>
-    Traceback (most recent call last):
-      File "/home/ray/anaconda3/lib/python3.9/site-packages/ipykernel/ipkernel.py", line 775, in _clean_thread_parent_frames
-        def _clean_thread_parent_frames(
-    KeyboardInterrupt: 
-
 
 
 ```python
