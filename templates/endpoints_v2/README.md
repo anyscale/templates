@@ -192,11 +192,9 @@ After you are done with the above, you can find recipies that extend the functio
 * [Learn how to fully configure your deployment including auto-scaling, optimization parameters and tensor-parallelism](cookbooks/AdvancedModelConfigs.ipynb)
 
 
-## Application examples
+## End-to-end Examples
 
-See examples of building applications with your deployed endpoint on the [Anyscale Endpoints](https://docs.anyscale.com/examples/work-with-openai) page.
+See examples of building applications with your deployed endpoint on Anyscale. Be sure to update the `api_base` and `token` for your private deployment. This information can be found under the "Query" button in the Anyscale Service UI.
 
-Be sure to update the `api_base` and `token` for your private deployment. This information can be found under the "Query" button in the Anyscale Service UI.
-
-
+* [Build Tool Calling Feature for Any LLM via JSON Mode](./end-to-end-examples/function_calling/README.md): This example demonstrates how to build a tool calling feature for any LLM via JSON mode.
 

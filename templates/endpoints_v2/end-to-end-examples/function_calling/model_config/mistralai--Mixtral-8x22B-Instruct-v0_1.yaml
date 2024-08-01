@@ -1,0 +1,50 @@
+deployment_config:
+  autoscaling_config:
+    target_ongoing_requests: 96
+  max_ongoing_requests: 192
+  ray_actor_options:
+    resources:
+      accelerator_type:H100: 0.001
+    runtime_env:
+      env_vars:
+        HUGGING_FACE_HUB_TOKEN: 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
+engine_config:
+  engine_kwargs:
+    max_num_batched_tokens: null
+    max_num_seqs: 192
+    tokenizer_pool_extra_config:
+      runtime_env:
+        pip: null
+    tokenizer_pool_size: 2
+    trust_remote_code: true
+  generation:
+    prompt_format:
+      add_system_tags_even_if_message_is_empty: false
+      assistant: '{tool_calls}{instruction} </s> '
+      bos: '<s> '
+      default_system_message: Always assist with care, respect, and truth. Respond
+        with utmost utility yet securely. Avoid harmful, unethical, prejudiced, or
+        negative content. Ensure replies promote fairness and positivity.
+      strip_whitespace: true
+      system: "{instruction}\n\n "
+      system_in_last_user: true
+      system_in_user: true
+      tool: '[TOOL_RESULTS] {instruction} [/TOOL_RESULTS]'
+      tool_calls: ' [TOOL_CALLS] {instruction}'
+      tools_list: '[AVAILABLE_TOOLS] {instruction} [/AVAILABLE_TOOLS] '
+      tools_list_in_last_user: true
+      tools_list_in_user: true
+      trailing_assistant: ''
+      user: '{tools_list}[INST] {system}{instruction} [/INST]'
+    stopping_sequences: []
+  hf_model_id: mistralai/Mixtral-8x22B-Instruct-v0.1
+  max_total_tokens: 65536
+  model_id: mistralai/Mixtral-8x22B-Instruct-v0.1
+  type: VLLMEngine
+scaling_config:
+  num_cpus_per_worker: 8
+  num_gpus_per_worker: 1
+  num_workers: 8
+  placement_strategy: STRICT_PACK
+  resources_per_worker:
+    accelerator_type:H100: 0.001
