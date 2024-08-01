@@ -24,17 +24,17 @@ class FunctionCallingClient:
         base_url: Optional[str] = None,
         api_key: Optional[str] = None
     ) -> None:
-        
+
         self._client = openai.Client(
             base_url=base_url,
             api_key=api_key
         )
-        
-        
+
+
     def _prepare_tool_choice_msgs(self, tools: List[Tool], messages: List[Message]) -> List[Message]:
-        
+
         msgs = copy.deepcopy(messages)
-        
+
         tool_strs = [
             json.dumps(
                 {
@@ -46,23 +46,23 @@ class FunctionCallingClient:
             )
             for tool in tools
         ]
-        
+
         tool_list_str = "\n\n" + "\n\n".join(tool_strs)
         no_tool_str = json.dumps({"tool_name": "none"})
         tool_use_str = str({"tool_name": "<name_of_the_tool>"})
-        
+
         input_msg_system = ""
         if msgs[0].role == "system":
             input_msg_system = msgs[0].content or ""
             msgs.pop(0)
 
-            
+
         if msgs[-1].role != "user":
             raise ValueError("The last message must be from the user")
-        
+
         # Make sure the last message has content
         msgs[-1].content = msgs[-1].content or ""
-            
+
         system_msg = TOOL_LIST_SYSTEM_PROMPT.format(
             input_msg_system=input_msg_system,
             tool_list_str=tool_list_str,
@@ -70,16 +70,16 @@ class FunctionCallingClient:
             tool_use_str=tool_use_str
         )
         msgs.insert(0, Message(role="system", content=system_msg))
-        
+
         msgs[-1].content += "\n\n" + EXTRA_USER_PROMPT.format(no_tool_str=no_tool_str)
-        
+
         return msgs
-        
-    
+
+
     def _predict_tool_choice(self, model: str, tools: List[Tool], messages: List[Message]) -> Optional[Tool]:
-        
+
         tool_names = [tool.function.name for tool in tools]
-        
+
         tool_choice_schema = json.dumps(
             {
                 "type": "object",
@@ -93,10 +93,10 @@ class FunctionCallingClient:
                 "required": ["tool_name"],
             }
         )
-        
+
         tool_choice_messages = self._prepare_tool_choice_msgs(tools, messages)
         tool_choice_messages = [msg.model_dump(exclude_none=True) for msg in tool_choice_messages]
-        
+
         completion = self._client.chat.completions.create(
             model=model,
             messages=tool_choice_messages,
@@ -105,26 +105,26 @@ class FunctionCallingClient:
                 "schema": tool_choice_schema,
             },
         )
-        
+
         returned_msg = completion.choices[-1].message.content or ""
         try:
             tool_name = json.loads(returned_msg)["tool_name"]
         except json.JSONDecodeError:
             raise ValueError(f"Error decoding tool choice response: {returned_msg}")
-        
+
         if tool_name == "none":
             return None
 
         selected_tool = next(tool for tool in tools if tool.function.name == tool_name)
         return selected_tool
-    
-    
-    
+
+
+
     def _replace_tool_assistant_message(self, messages: List[Message]) -> List[Message]:
         msgs = copy.deepcopy(messages)
-        
+
         for msg in msgs:
-            
+
             if msg.role == "tool":
                 msg.role = "user"
                 msg.content = TOOL_RESULTS_PROMPT.format(
@@ -132,27 +132,27 @@ class FunctionCallingClient:
                 )
 
         return msgs
-        
-        
+
+
     def _prepare_tool_args_msg(self, tool: Tool, messages: List[Message]) -> List[Message]:
         msgs = copy.deepcopy(messages)
-        
+
         extra_usr_msg = TOOL_ARGS_USER_PROMPT.format(tool=tool.function.model_dump_json())
         if isinstance(msgs[-1].content, str):
             msgs[-1].content = (
                 (msgs[-1].content or "") + " " + extra_usr_msg
             )
-        
+
         return msgs
 
     def _return_tool_arguments(self, messages: List[Message], selected_tool: Tool, **kwargs) -> Dict[str, Any]:
-        
-        
+
+
         tool_name = selected_tool.function.name
         arguments_schema = selected_tool.function.parameters
-        
+
         tool_arg_messages = self._prepare_tool_args_msg(selected_tool, messages)
-        
+
         tool_arg_schema = json.dumps(
             {
                 "type": "object",
@@ -172,7 +172,7 @@ class FunctionCallingClient:
                 "required": ["function"],
             }
         )
-        
+
         completion = self._client.chat.completions.create(
             messages=tool_arg_messages,
             response_format={
@@ -181,39 +181,37 @@ class FunctionCallingClient:
             },
             **kwargs,
         )
-        
+
         return completion
-        
+
 
 
     def create(self, **kwargs) -> Dict[str, Any]:
         tools = kwargs.pop("tools")
         tool_choice = kwargs.pop("tool_choice")
-        
+
         if tool_choice not in ["none", "auto"]:
             raise ValueError("tool_choice must be 'none' or 'auto'")
 
         if not tools or tool_choice == "none":
             return self._client.chat.completions.create(**kwargs)
-        
+
         messages = [
-            Message(**msg) for msg in 
+            Message(**msg) for msg in
             kwargs.pop("messages", [])
         ]
-        
-        # Replace the tool messages with user / assistant 
+
+        # Replace the tool messages with user / assistant
         # equivalents.
         tools = [Tool(**tool) for tool in tools]
 
         modified_messages = self._replace_tool_assistant_message(messages)
-        
+
         model = kwargs.get("model", "")
         selected_tool = self._predict_tool_choice(
             model=model, tools=tools, messages=modified_messages)
-        
+
         if selected_tool is None:
             return self._client.chat.completions.create(**kwargs, messages=modified_messages)
 
         return self._return_tool_arguments(modified_messages, selected_tool, **kwargs)
-
-    
