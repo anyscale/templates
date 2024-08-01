@@ -1,5 +1,5 @@
 head_node_type:
   name: head
-  instance_type: n1-standard-4-nvidia-t4-16gb-1
+  instance_type: n2-standard-8
 worker_node_types: []
 auto_select_worker_config: true
