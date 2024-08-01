@@ -1,4 +1,4 @@
-# End-to-end LLM Workflows Guide
+# End-to-end LLM Workflows Guide 
 
 In this guide, we'll learn how to execute the end-to-end LLM workflows to develop & productionize LLMs at scale.
 
@@ -18,7 +18,7 @@ Throughout these workloads we'll be using [Ray](https://github.com/ray-project/r
 
 ## Set up
 
-We can execute this notebook **entirely for free** (no credit card needed) by creating an [Anyscale account](https://console.anyscale.com/register/ha?utm_source=goku). Once you log in, you'll be directed to the main [console](https://console.anyscale.com/) where you'll see a collection of notebook templates. Click on the "End-to-end LLM Workflows" to open up our guide and click on the `README.ipynb` to get started.
+We can execute this notebook **entirely for free** (no credit card needed) by creating an [Anyscale account](https://console.anyscale.com/register/ha?utm_source=goku). Once you log in, you'll be directed to the main [console](https://console.anyscale.com/) where you'll see a collection of notebook templates. Click on the "End-to-end LLM Workflows" to open up our guide and click on the `README.ipynb` to get started. 
 
 > [Workspaces](https://docs.anyscale.com/workspaces/get-started/) are a fully managed development environment which allow us to use our favorite tools (VSCode, notebooks, terminal, etc.) on top of *infinite* compute (when we need it). In fact, by clicking on the compute at the top right (`✅ 1 node, 8 CPU`), we can see the cluster information:
 
@@ -43,7 +43,7 @@ warnings.filterwarnings("ignore")
 %autoreload 2
 ```
 
-We'll need a free [Hugging Face token](https://huggingface.co/settings/tokens) to load our base LLMs and tokenizers. And since we are using Llama models, we need to login and accept the terms and conditions [here](https://huggingface.co/meta-llama/Meta-Llama-3-8B-Instruct).
+We'll need a free [Hugging Face token](https://huggingface.co/settings/tokens) to load our base LLMs and tokenizers. And since we are using Llama models, we need to login and accept the terms and conditions [here](https://huggingface.co/meta-llama/Meta-Llama-3-8B-Instruct). 
 
 <b style="background-color: yellow;">&nbsp;🔄 REPLACE&nbsp;</b>: Place your unique HF token below. If you accidentally ran this code block before pasting your HF token, then click the `Restart` button up top to restart the notebook kernel.
 
@@ -54,10 +54,52 @@ os.environ['HF_TOKEN'] = ''  # <-- replace with your token
 ray.init(runtime_env={'env_vars': {'HF_TOKEN': os.environ['HF_TOKEN']}})
 ```
 
-```bash
-(autoscaler +15m27s) [autoscaler] Downscaling node i-0267f387d8cf66c2e (node IP: 10.0.21.202) due to node idle termination.
-(autoscaler +15m28s) [autoscaler] Cluster resized to {8 CPU, 0 GPU}.
-```
+    2024-06-12 16:52:33,877	INFO worker.py:1564 -- Connecting to existing Ray cluster at address: 10.0.46.70:6379...
+    2024-06-12 16:52:33,883	INFO worker.py:1740 -- Connected to Ray cluster. View the dashboard at [1m[32mhttps://session-zdbj1t4fe6firefy7rxgrcyj7c.i.anyscaleuserdata.com [39m[22m
+    2024-06-12 16:52:33,896	INFO packaging.py:358 -- Pushing file package 'gcs://_ray_pkg_f8c87dcbafb22dcfc23fd80fe43ba56d14d0593c.zip' (2.56MiB) to Ray cluster...
+    2024-06-12 16:52:33,906	INFO packaging.py:371 -- Successfully pushed file package 'gcs://_ray_pkg_f8c87dcbafb22dcfc23fd80fe43ba56d14d0593c.zip'.
+
+
+
+
+
+<div class="lm-Widget p-Widget lm-Panel p-Panel jp-Cell-outputWrapper">
+    <div style="margin-left: 50px;display: flex;flex-direction: row;align-items: center">
+        <div class="jp-RenderedHTMLCommon" style="display: flex; flex-direction: row;">
+  <svg viewBox="0 0 567 224" fill="none" xmlns="http://www.w3.org/2000/svg" style="height: 3em;">
+    <g clip-path="url(#clip0_4338_178347)">
+        <path d="M341.29 165.561H355.29L330.13 129.051C345.63 123.991 354.21 112.051 354.21 94.2307C354.21 71.3707 338.72 58.1807 311.88 58.1807H271V165.561H283.27V131.661H311.8C314.25 131.661 316.71 131.501 319.01 131.351L341.25 165.561H341.29ZM283.29 119.851V70.0007H311.82C331.3 70.0007 342.34 78.2907 342.34 94.5507C342.34 111.271 331.34 119.861 311.82 119.861L283.29 119.851ZM451.4 138.411L463.4 165.561H476.74L428.74 58.1807H416L367.83 165.561H380.83L392.83 138.411H451.4ZM446.19 126.601H398L422 72.1407L446.24 126.601H446.19ZM526.11 128.741L566.91 58.1807H554.35L519.99 114.181L485.17 58.1807H472.44L514.01 129.181V165.541H526.13V128.741H526.11Z" fill="var(--jp-ui-font-color0)"/>
+        <path d="M82.35 104.44C84.0187 97.8827 87.8248 92.0678 93.1671 87.9146C98.5094 83.7614 105.083 81.5067 111.85 81.5067C118.617 81.5067 125.191 83.7614 130.533 87.9146C135.875 92.0678 139.681 97.8827 141.35 104.44H163.75C164.476 101.562 165.622 98.8057 167.15 96.2605L127.45 56.5605C121.071 60.3522 113.526 61.6823 106.235 60.3005C98.9443 58.9187 92.4094 54.9203 87.8602 49.0574C83.3109 43.1946 81.0609 35.8714 81.5332 28.4656C82.0056 21.0599 85.1679 14.0819 90.4252 8.8446C95.6824 3.60726 102.672 0.471508 110.08 0.0272655C117.487 -0.416977 124.802 1.86091 130.647 6.4324C136.493 11.0039 140.467 17.5539 141.821 24.8501C143.175 32.1463 141.816 39.6859 138 46.0505L177.69 85.7505C182.31 82.9877 187.58 81.4995 192.962 81.4375C198.345 81.3755 203.648 82.742 208.33 85.3976C213.012 88.0532 216.907 91.9029 219.616 96.5544C222.326 101.206 223.753 106.492 223.753 111.875C223.753 117.258 222.326 122.545 219.616 127.197C216.907 131.848 213.012 135.698 208.33 138.353C203.648 141.009 198.345 142.375 192.962 142.313C187.58 142.251 182.31 140.763 177.69 138L138 177.7C141.808 184.071 143.155 191.614 141.79 198.91C140.424 206.205 136.44 212.75 130.585 217.313C124.731 221.875 117.412 224.141 110.004 223.683C102.596 223.226 95.6103 220.077 90.3621 214.828C85.1139 209.58 81.9647 202.595 81.5072 195.187C81.0497 187.779 83.3154 180.459 87.878 174.605C92.4405 168.751 98.9853 164.766 106.281 163.401C113.576 162.035 121.119 163.383 127.49 167.19L167.19 127.49C165.664 124.941 164.518 122.182 163.79 119.3H141.39C139.721 125.858 135.915 131.673 130.573 135.826C125.231 139.98 118.657 142.234 111.89 142.234C105.123 142.234 98.5494 139.98 93.2071 135.826C87.8648 131.673 84.0587 125.858 82.39 119.3H60C58.1878 126.495 53.8086 132.78 47.6863 136.971C41.5641 141.163 34.1211 142.972 26.7579 142.059C19.3947 141.146 12.6191 137.574 7.70605 132.014C2.79302 126.454 0.0813599 119.29 0.0813599 111.87C0.0813599 104.451 2.79302 97.2871 7.70605 91.7272C12.6191 86.1673 19.3947 82.5947 26.7579 81.6817C34.1211 80.7686 41.5641 82.5781 47.6863 86.7696C53.8086 90.9611 58.1878 97.2456 60 104.44H82.35ZM100.86 204.32C103.407 206.868 106.759 208.453 110.345 208.806C113.93 209.159 117.527 208.258 120.522 206.256C123.517 204.254 125.725 201.276 126.771 197.828C127.816 194.38 127.633 190.677 126.253 187.349C124.874 184.021 122.383 181.274 119.205 179.577C116.027 177.88 112.359 177.337 108.826 178.042C105.293 178.746 102.113 180.654 99.8291 183.44C97.5451 186.226 96.2979 189.718 96.3 193.32C96.2985 195.364 96.7006 197.388 97.4831 199.275C98.2656 201.163 99.4132 202.877 100.86 204.32ZM204.32 122.88C206.868 120.333 208.453 116.981 208.806 113.396C209.159 109.811 208.258 106.214 206.256 103.219C204.254 100.223 201.275 98.0151 197.827 96.97C194.38 95.9249 190.676 96.1077 187.348 97.4873C184.02 98.8669 181.274 101.358 179.577 104.536C177.879 107.714 177.337 111.382 178.041 114.915C178.746 118.448 180.653 121.627 183.439 123.911C186.226 126.195 189.717 127.443 193.32 127.44C195.364 127.443 197.388 127.042 199.275 126.259C201.163 125.476 202.878 124.328 204.32 122.88ZM122.88 19.4205C120.333 16.8729 116.981 15.2876 113.395 14.9347C109.81 14.5817 106.213 15.483 103.218 17.4849C100.223 19.4868 98.0146 22.4654 96.9696 25.9131C95.9245 29.3608 96.1073 33.0642 97.4869 36.3922C98.8665 39.7202 101.358 42.4668 104.535 44.1639C107.713 45.861 111.381 46.4036 114.914 45.6992C118.447 44.9949 121.627 43.0871 123.911 40.301C126.195 37.515 127.442 34.0231 127.44 30.4205C127.44 28.3772 127.038 26.3539 126.255 24.4664C125.473 22.5788 124.326 20.8642 122.88 19.4205ZM19.42 100.86C16.8725 103.408 15.2872 106.76 14.9342 110.345C14.5813 113.93 15.4826 117.527 17.4844 120.522C19.4863 123.518 22.4649 125.726 25.9127 126.771C29.3604 127.816 33.0638 127.633 36.3918 126.254C39.7198 124.874 42.4664 122.383 44.1635 119.205C45.8606 116.027 46.4032 112.359 45.6988 108.826C44.9944 105.293 43.0866 102.114 40.3006 99.8296C37.5145 97.5455 34.0227 96.2983 30.42 96.3005C26.2938 96.3018 22.337 97.9421 19.42 100.86ZM100.86 100.86C98.3125 103.408 96.7272 106.76 96.3742 110.345C96.0213 113.93 96.9226 117.527 98.9244 120.522C100.926 123.518 103.905 125.726 107.353 126.771C110.8 127.816 114.504 127.633 117.832 126.254C121.16 124.874 123.906 122.383 125.604 119.205C127.301 116.027 127.843 112.359 127.139 108.826C126.434 105.293 124.527 102.114 121.741 99.8296C118.955 97.5455 115.463 96.2983 111.86 96.3005C109.817 96.299 107.793 96.701 105.905 97.4835C104.018 98.2661 102.303 99.4136 100.86 100.86Z" fill="#00AEEF"/>
+    </g>
+    <defs>
+        <clipPath id="clip0_4338_178347">
+            <rect width="566.93" height="223.75" fill="white"/>
+        </clipPath>
+    </defs>
+  </svg>
+</div>
+
+        <table class="jp-RenderedHTMLCommon" style="border-collapse: collapse;color: var(--jp-ui-font-color1);font-size: var(--jp-ui-font-size1);">
+    <tr>
+        <td style="text-align: left"><b>Python version:</b></td>
+        <td style="text-align: left"><b>3.9.19</b></td>
+    </tr>
+    <tr>
+        <td style="text-align: left"><b>Ray version:</b></td>
+        <td style="text-align: left"><b>2.22.0</b></td>
+    </tr>
+    <tr>
+    <td style="text-align: left"><b>Dashboard:</b></td>
+    <td style="text-align: left"><b><a href="http://session-zdbj1t4fe6firefy7rxgrcyj7c.i.anyscaleuserdata.com" target="_blank">http://session-zdbj1t4fe6firefy7rxgrcyj7c.i.anyscaleuserdata.com</a></b></td>
+</tr>
+
+</table>
+
+    </div>
+</div>
+
+
+
 
 ## Data Preprocessing
 
@@ -73,7 +115,7 @@ For our task, we'll be using the [Viggo dataset](https://huggingface.co/datasets
 # Input (unstructured sentence):
 "Dirt: Showdown from 2012 is a sport racing game for the PlayStation, Xbox, PC rated E 10+ (for Everyone 10 and Older). It's not available on Steam, Linux, or Mac."
 
-# Output (intent + entities):
+# Output (intent + entities): 
 "inform(name[Dirt: Showdown], release_year[2012], esrb[E 10+ (for Everyone 10 and Older)], genres[driving/racing, sport], platforms[PlayStation, Xbox, PC], available_on_steam[no], has_linux_release[no], has_mac_release[no])"
 ```
 
@@ -111,16 +153,13 @@ print (f"test: {len(test_set)}")
 train_set[0]
 ```
 
-```json
-{
-  "gem_id": "viggo-train-0",
-  "meaning_representation": "inform(name[Dirt: Showdown], release_year[2012], esrb[E 10+ (for Everyone 10 and Older)], genres[driving/racing, sport], platforms[PlayStation, Xbox, PC], available_on_steam[no], has_linux_release[no], has_mac_release[no])",
-  "target": "Dirt: Showdown from 2012 is a sport racing game for the PlayStation, Xbox, PC rated E 10+ (for Everyone 10 and Older). It's not available on Steam, Linux, or Mac.",
-  "references": [
-    "Dirt: Showdown from 2012 is a sport racing game for the PlayStation, Xbox, PC rated E 10+ (for Everyone 10 and Older). It's not available on Steam, Linux, or Mac."
-  ]
-}
-```
+
+
+
+    {'gem_id': 'viggo-train-0',
+     'meaning_representation': 'inform(name[Dirt: Showdown], release_year[2012], esrb[E 10+ (for Everyone 10 and Older)], genres[driving/racing, sport], platforms[PlayStation, Xbox, PC], available_on_steam[no], has_linux_release[no], has_mac_release[no])',
+     'target': "Dirt: Showdown from 2012 is a sport racing game for the PlayStation, Xbox, PC rated E 10+ (for Everyone 10 and Older). It's not available on Steam, Linux, or Mac.",
+     'references': ["Dirt: Showdown from 2012 is a sport racing game for the PlayStation, Xbox, PC rated E 10+ (for Everyone 10 and Older). It's not available on Steam, Linux, or Mac."]}
 
 
 
@@ -140,20 +179,17 @@ train_ds = ray.data.from_items(train_set)
 train_ds.take(1)
 ```
 
+    2024-06-10 16:24:06,312	INFO streaming_executor.py:108 -- Starting execution of Dataset. Full logs are in /tmp/ray/session_2024-06-10_12-57-23_539567_2694/logs/ray-data
+    2024-06-10 16:24:06,313	INFO streaming_executor.py:109 -- Execution plan of Dataset: InputDataBuffer[Input] -> LimitOperator[limit=1]
 
 
-```json
-[
-  {
-    "gem_id": "viggo-train-0",
-    "meaning_representation": "inform(name[Dirt: Showdown], release_year[2012], esrb[E 10+ (for Everyone 10 and Older)], genres[driving/racing, sport], platforms[PlayStation, Xbox, PC], available_on_steam[no], has_linux_release[no], has_mac_release[no])",
-    "target": "Dirt: Showdown from 2012 is a sport racing game for the PlayStation, Xbox, PC rated E 10+ (for Everyone 10 and Older). It's not available on Steam, Linux, or Mac.",
-    "references": [
-      "Dirt: Showdown from 2012 is a sport racing game for the PlayStation, Xbox, PC rated E 10+ (for Everyone 10 and Older). It's not available on Steam, Linux, or Mac."
-    ]
-  }
-]
-```
+
+
+
+    [{'gem_id': 'viggo-train-0',
+      'meaning_representation': 'inform(name[Dirt: Showdown], release_year[2012], esrb[E 10+ (for Everyone 10 and Older)], genres[driving/racing, sport], platforms[PlayStation, Xbox, PC], available_on_steam[no], has_linux_release[no], has_mac_release[no])',
+      'target': "Dirt: Showdown from 2012 is a sport racing game for the PlayStation, Xbox, PC rated E 10+ (for Everyone 10 and Older). It's not available on Steam, Linux, or Mac.",
+      'references': ["Dirt: Showdown from 2012 is a sport racing game for the PlayStation, Xbox, PC rated E 10+ (for Everyone 10 and Older). It's not available on Steam, Linux, or Mac."]}]
 
 
 
@@ -215,26 +251,19 @@ ft_train_ds = train_ds.map(to_schema, fn_kwargs={'system_content': system_conten
 ft_train_ds.take(1)
 ```
 
-```json
-[
-  {
-    "messages": [
-      {
-        "content": "Given a target sentence construct the underlying meaning representation of the input sentence as a single function with attributes and attribute values. This function should describe the target string accurately and the function must be one of the following ['inform', 'request', 'give_opinion', 'confirm', 'verify_attribute', 'suggest', 'request_explanation', 'recommend', 'request_attribute']. The attributes must be one of the following: ['name', 'exp_release_date', 'release_year', 'developer', 'esrb', 'rating', 'genres', 'player_perspective', 'has_multiplayer', 'platforms', 'available_on_steam', 'has_linux_release', 'has_mac_release', 'specifier']",
-        "role": "system"
-      },
-      {
-        "content": "Dirt: Showdown from 2012 is a sport racing game for the PlayStation, Xbox, PC rated E 10+ (for Everyone 10 and Older). It's not available on Steam, Linux, or Mac.",
-        "role": "user"
-      },
-      {
-        "content": "inform(name[Dirt: Showdown], release_year[2012], esrb[E 10+ (for Everyone 10 and Older)], genres[driving/racing, sport], platforms[PlayStation, Xbox, PC], available_on_steam[no], has_linux_release[no], has_mac_release[no])",
-        "role": "assistant"
-      }
-    ]
-  }
-]
-```
+    2024-06-10 16:24:45,381	INFO streaming_executor.py:108 -- Starting execution of Dataset. Full logs are in /tmp/ray/session_2024-06-10_12-57-23_539567_2694/logs/ray-data
+    2024-06-10 16:24:45,382	INFO streaming_executor.py:109 -- Execution plan of Dataset: InputDataBuffer[Input] -> TaskPoolMapOperator[Map(to_schema)] -> LimitOperator[limit=1]
+
+
+
+
+
+    [{'messages': [{'content': "Given a target sentence construct the underlying meaning representation of the input sentence as a single function with attributes and attribute values. This function should describe the target string accurately and the function must be one of the following ['inform', 'request', 'give_opinion', 'confirm', 'verify_attribute', 'suggest', 'request_explanation', 'recommend', 'request_attribute']. The attributes must be one of the following: ['name', 'exp_release_date', 'release_year', 'developer', 'esrb', 'rating', 'genres', 'player_perspective', 'has_multiplayer', 'platforms', 'available_on_steam', 'has_linux_release', 'has_mac_release', 'specifier']",
+        'role': 'system'},
+       {'content': "Dirt: Showdown from 2012 is a sport racing game for the PlayStation, Xbox, PC rated E 10+ (for Everyone 10 and Older). It's not available on Steam, Linux, or Mac.",
+        'role': 'user'},
+       {'content': 'inform(name[Dirt: Showdown], release_year[2012], esrb[E 10+ (for Everyone 10 and Older)], genres[driving/racing, sport], platforms[PlayStation, Xbox, PC], available_on_steam[no], has_linux_release[no], has_mac_release[no])',
+        'role': 'assistant'}]}]
 
 
 
@@ -251,23 +280,33 @@ We can save our data locally and/or to remote storage to use later (training, ev
 
 
 ```python
+!pip install s3fs==0.4.2 -q
+import pyarrow
+from s3fs import S3FileSystem
 os.environ['ANYSCALE_ARTIFACT_STORAGE']
 ```
 
-
-
-
-    's3://anyscale-test-data-cld-i2w99rzq8b6lbjkke9y94vi5/org_7c1Kalm9WcX2bNIjW53GUT/cld_kvedZWag2qA8i5BjxUevf5i7/artifact_storage'
-
+    s3://anyscale-customer-dataplane-data-production-us-east-2/artifact_storage/org_2byxy1usultrdke7v3ys1cczet/cld_du8lgwhc3n26cjye7bw1ds62p7
 
 
 
 ```python
 # Write to cloud storage
-ft_train_ds.write_json(f"{os.environ['ANYSCALE_ARTIFACT_STORAGE']}/viggo/train.jsonl")
-ft_val_ds.write_json(f"{os.environ['ANYSCALE_ARTIFACT_STORAGE']}/viggo/val.jsonl")
-ft_test_ds.write_json(f"{os.environ['ANYSCALE_ARTIFACT_STORAGE']}/viggo/test.jsonl")
+fs = pyarrow.fs.PyFileSystem(pyarrow.fs.FSSpecHandler(S3FileSystem()))
+storage_path = os.environ['ANYSCALE_ARTIFACT_STORAGE'][len('s3://'):]
+ft_train_ds.write_json(f'{storage_path}/viggo/train.jsonl', filesystem=fs)
+ft_val_ds.write_json(f'{storage_path}/viggo/val.jsonl', filesystem=fs)
+ft_test_ds.write_json(f'{storage_path}/viggo/test.jsonl', filesystem=fs)
 ```
+
+    2024-06-10 16:24:49,437	INFO streaming_executor.py:108 -- Starting execution of Dataset. Full logs are in /tmp/ray/session_2024-06-10_12-57-23_539567_2694/logs/ray-data
+    2024-06-10 16:24:49,438	INFO streaming_executor.py:109 -- Execution plan of Dataset: InputDataBuffer[Input] -> TaskPoolMapOperator[Map(to_schema)->Write]
+    2024-06-10 16:24:57,190	INFO streaming_executor.py:108 -- Starting execution of Dataset. Full logs are in /tmp/ray/session_2024-06-10_12-57-23_539567_2694/logs/ray-data
+    2024-06-10 16:24:57,191	INFO streaming_executor.py:109 -- Execution plan of Dataset: InputDataBuffer[Input] -> TaskPoolMapOperator[Map(to_schema)->Write]
+    2024-06-10 16:25:04,008	INFO streaming_executor.py:108 -- Starting execution of Dataset. Full logs are in /tmp/ray/session_2024-06-10_12-57-23_539567_2694/logs/ray-data
+    2024-06-10 16:25:04,009	INFO streaming_executor.py:109 -- Execution plan of Dataset: InputDataBuffer[Input] -> TaskPoolMapOperator[Map(to_schema)->Write]
+
+
 
 ```python
 # Load from cloud storage
@@ -275,32 +314,25 @@ ft_train_ds = ray.data.read_json(f"{os.environ['ANYSCALE_ARTIFACT_STORAGE']}/vig
 ft_train_ds.take(1)
 ```
 
-```json
-[
-  {
-    "messages": [
-      {
-        "content": "Given a target sentence construct the underlying meaning representation of the input sentence as a single function with attributes and attribute values. This function should describe the target string accurately and the function must be one of the following ['inform', 'request', 'give_opinion', 'confirm', 'verify_attribute', 'suggest', 'request_explanation', 'recommend', 'request_attribute']. The attributes must be one of the following: ['name', 'exp_release_date', 'release_year', 'developer', 'esrb', 'rating', 'genres', 'player_perspective', 'has_multiplayer', 'platforms', 'available_on_steam', 'has_linux_release', 'has_mac_release', 'specifier']",
-        "role": "system"
-      },
-      {
-        "content": "Dirt: Showdown from 2012 is a sport racing game for the PlayStation, Xbox, PC rated E 10+ (for Everyone 10 and Older). It's not available on Steam, Linux, or Mac.",
-        "role": "user"
-      },
-      {
-        "content": "inform(name[Dirt: Showdown], release_year[2012], esrb[E 10+ (for Everyone 10 and Older)], genres[driving/racing, sport], platforms[PlayStation, Xbox, PC], available_on_steam[no], has_linux_release[no], has_mac_release[no])",
-        "role": "assistant"
-      }
-    ]
-  }
-]
-```
+    2024-06-10 16:25:27,747	INFO streaming_executor.py:108 -- Starting execution of Dataset. Full logs are in /tmp/ray/session_2024-06-10_12-57-23_539567_2694/logs/ray-data
+    2024-06-10 16:25:27,748	INFO streaming_executor.py:109 -- Execution plan of Dataset: InputDataBuffer[Input] -> TaskPoolMapOperator[ReadJSON] -> LimitOperator[limit=1]
+
+
+
+
+
+    [{'messages': [{'content': "Given a target sentence construct the underlying meaning representation of the input sentence as a single function with attributes and attribute values. This function should describe the target string accurately and the function must be one of the following ['inform', 'request', 'give_opinion', 'confirm', 'verify_attribute', 'suggest', 'request_explanation', 'recommend', 'request_attribute']. The attributes must be one of the following: ['name', 'exp_release_date', 'release_year', 'developer', 'esrb', 'rating', 'genres', 'player_perspective', 'has_multiplayer', 'platforms', 'available_on_steam', 'has_linux_release', 'has_mac_release', 'specifier']",
+        'role': 'system'},
+       {'content': "Dirt: Showdown from 2012 is a sport racing game for the PlayStation, Xbox, PC rated E 10+ (for Everyone 10 and Older). It's not available on Steam, Linux, or Mac.",
+        'role': 'user'},
+       {'content': 'inform(name[Dirt: Showdown], release_year[2012], esrb[E 10+ (for Everyone 10 and Older)], genres[driving/racing, sport], platforms[PlayStation, Xbox, PC], available_on_steam[no], has_linux_release[no], has_mac_release[no])',
+        'role': 'assistant'}]}]
 
 
 
 ## Fine-tuning
 
-In this template, we'll fine-tune a large language model (LLM) using our dataset from the previous data preprocessing template.
+In this template, we'll fine-tune a large language model (LLM) using our dataset from the previous data preprocessing template. 
 
 **Note**: We normally would not jump straight to fine-tuning a model. We would first experiment with a base model and evaluate it so that we can have a baseline performance to compare it to.
 
@@ -318,48 +350,46 @@ We also have recipes for [LoRA](https://arxiv.org/abs/2106.09685) (where we trai
 !cat configs/training/lora/llama-3-8b.yaml
 ```
 
-```yaml
-model_id: meta-llama/Meta-Llama-3-8B-Instruct # <-- change this to the model you want to fine-tune
-train_path: s3://llm-guide/data/viggo/train.jsonl # <-- change this to the path to your training data
-valid_path: s3://llm-guide/data/viggo/val.jsonl # <-- change this to the path to your validation data. This is optional
-context_length: 512 # <-- change this to the context length you want to use
-num_devices: 16 # <-- change this to total number of GPUs that you want to use
-num_epochs: 4 # <-- change this to the number of epochs that you want to train for
-train_batch_size_per_device: 16
-eval_batch_size_per_device: 16
-learning_rate: 1e-4
-padding: "longest" # This will pad batches to the longest sequence. Use "max_length" when profiling to profile the worst case.
-num_checkpoints_to_keep: 1
-dataset_size_scaling_factor: 10000
-output_dir: /mnt/local_storage
-deepspeed:
-    config_path: configs/deepspeed/zero_3_offload_optim+param.json
-dataset_size_scaling_factor: 10000 # internal flag. No need to change
-flash_attention_2: true
-trainer_resources:
-    memory: 53687091200 # 50 GB memory
-worker_resources:
-    accelerator_type:A10G: 0.001
-lora_config:
-    r: 8
-    lora_alpha: 16
-    lora_dropout: 0.05
-    target_modules:
-    - q_proj
-    - v_proj
-    - k_proj
-    - o_proj
-    - gate_proj
-    - up_proj
-    - down_proj
-    - embed_tokens
-    - lm_head
-    task_type: "CAUSAL_LM"
-    modules_to_save: []
-    bias: "none"
-    fan_in_fan_out: false
-    init_lora_weights: true
-```
+    model_id: meta-llama/Meta-Llama-3-8B-Instruct # <-- change this to the model you want to fine-tune
+    train_path: s3://llm-guide/data/viggo/train.jsonl # <-- change this to the path to your training data
+    valid_path: s3://llm-guide/data/viggo/val.jsonl # <-- change this to the path to your validation data. This is optional
+    context_length: 512 # <-- change this to the context length you want to use
+    num_devices: 16 # <-- change this to total number of GPUs that you want to use
+    num_epochs: 4 # <-- change this to the number of epochs that you want to train for
+    train_batch_size_per_device: 16
+    eval_batch_size_per_device: 16
+    learning_rate: 1e-4
+    padding: "longest" # This will pad batches to the longest sequence. Use "max_length" when profiling to profile the worst case.
+    num_checkpoints_to_keep: 1
+    dataset_size_scaling_factor: 10000
+    output_dir: /mnt/local_storage
+    deepspeed:
+      config_path: configs/deepspeed/zero_3_offload_optim+param.json
+    dataset_size_scaling_factor: 10000 # internal flag. No need to change
+    flash_attention_2: true
+    trainer_resources:
+      memory: 53687091200 # 50 GB memory
+    worker_resources:
+      accelerator_type:A10G: 0.001
+    lora_config:
+      r: 8
+      lora_alpha: 16
+      lora_dropout: 0.05
+      target_modules:
+        - q_proj
+        - v_proj
+        - k_proj
+        - o_proj
+        - gate_proj
+        - up_proj
+        - down_proj
+        - embed_tokens
+        - lm_head
+      task_type: "CAUSAL_LM"
+      modules_to_save: []
+      bias: "none"
+      fan_in_fan_out: false
+      init_lora_weights: true
 
 
 ### Fine-tuning
@@ -380,16 +410,16 @@ While we could execute `python src/ft.py configs/training/lora/llama-3-8b.yaml` 
 !cat deploy/jobs/ft.yaml
 ```
 
-```yaml
-name: llm-fine-tuning-guide
-entrypoint: python src/ft.py configs/training/lora/llama-3-8b.yaml
-image_uri: localhost:5555/anyscale/llm-forge:0.4.3.2
-requirements: []
-max_retries: 0
-```
+    name: llm-fine-tuning-guide
+    entrypoint: python src/ft.py configs/training/lora/llama-3-8b.yaml
+    image_uri: localhost:5555/anyscale/llm-forge:0.4.3.2
+    requirements: []
+    max_retries: 0
+    
 
 
 <b style="background-color: orange;">&nbsp;💡 INSIGHT&nbsp;</b>: When defining this [Job config](https://docs.anyscale.com/reference/job-api/), if we don't specify the [compute config](https://docs.anyscale.com/configure/compute-configs/overview/) to use, then Anyscale will autoselect based on the required compute. However, we also have the optionality to specify and even make highly cost effective decisions such as [spot to on-demand fallback](https://docs.anyscale.com/configure/compute-configs/ondemand-to-spot-fallback/) (or vice-versa).
+
 
 ```yaml
 # Sample compute config
@@ -407,14 +437,13 @@ max_retries: 0
 !anyscale job submit --config-file deploy/jobs/ft.yaml --exclude assets
 ```
 
-```bash
-Output
-(anyscale +0.8s) Submitting job with config JobConfig(name='llm-fine-tuning-guide', image_uri='localhost:5555/anyscale/llm-forge:0.4.3.2', compute_config=None, env_vars=None, py_modules=None).
-(anyscale +3.2s) Uploading local dir '.' to cloud storage.
-(anyscale +4.8s) Job 'llm-fine-tuning-guide' submitted, ID: 'prodjob_515se1nqf8ski7scytd52vx65e'.
-(anyscale +4.8s) View the job in the UI: https://console.anyscale.com/jobs/prodjob_515se1nqf8ski7scytd52vx65e
-(anyscale +4.8s) Use `--wait` to wait for the job to run and stream logs.
-```
+    [1m[36mOutput[0m[0m
+    [0m[1m[36m(anyscale +0.8s)[0m [0m[0m[0m[0mSubmitting job with config JobConfig(name='llm-fine-tuning-guide', image_uri='localhost:5555/anyscale/llm-forge:0.4.3.2', compute_config=None, env_vars=None, py_modules=None).[0m
+    [0m[1m[36m(anyscale +3.2s)[0m [0m[0m[0m[0mUploading local dir '.' to cloud storage.[0m
+    [0m[1m[36m(anyscale +4.8s)[0m [0m[0m[0m[0mJob 'llm-fine-tuning-guide' submitted, ID: 'prodjob_515se1nqf8ski7scytd52vx65e'.[0m
+    [0m[1m[36m(anyscale +4.8s)[0m [0m[0m[0m[0mView the job in the UI: https://console.anyscale.com/jobs/prodjob_515se1nqf8ski7scytd52vx65e[0m
+    [0m[1m[36m(anyscale +4.8s)[0m [0m[0m[0m[0mUse `--wait` to wait for the job to run and stream logs.[0m
+    [0m[0m
 
 This workload (we set to five epochs) will take ~45 min. to complete. As the job runs, you can monitor logs, metrics, Ray dashboard, etc. by clicking on the generated Job link above (`https://console.anyscale.com/jobs/prodjob_...`)
 
@@ -422,13 +451,12 @@ This workload (we set to five epochs) will take ~45 min. to complete. As the job
 
 <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/e2e-llm-workflows/assets/tensorboard.png" width=800>
 
-
 ### Load artifacts
 
-From the very end of the logs, we can also see where our model artifacts are stored. For example:
+From the very end of the logs, we can also see where our model artifacts are stored. For example: 
 
 ```
-Successfully copied files to to bucket: anyscale-test-data-cld-i2w99rzq8b6lbjkke9y94vi5 and path: org_7c1Kalm9WcX2bNIjW53GUT/cld_kvedZWag2qA8i5BjxUevf5i7/artifact_storage/lora_fine_tuning/meta-llama/Meta-Llama-3-8B-Instruct:gokum:atyhk
+Successfully copied files to to bucket: anyscale-customer-dataplane-data-production-us-east-2 and path: artifact_storage/org_2byxy1usultrdke7v3ys1cczet/cld_du8lgwhc3n26cjye7bw1ds62p7/lora_fine_tuning/meta-llama/Meta-Llama-3-8B-Instruct:goku_:ueewk
 ```
 
 We'll load these artifacts from cloud storage to a local [cluster storage](https://docs.anyscale.com/workspaces/storage/#cluster-storage) to use for other workloads.
@@ -461,8 +489,13 @@ download_files_from_bucket(
 
 ```
 
-    Downloaded org_7c1Kalm9WcX2bNIjW53GUT/cld_kvedZWag2qA8i5BjxUevf5i7/artifact_storage/lora_fine_tuning/meta-llama/Meta-Llama-3-8B-Instruct:gokum:atyhk/README.md to /mnt/cluster_storage/org_7c1Kalm9WcX2bNIjW53GUT/cld_kvedZWag2qA8i5BjxUevf5i7/
-    ...
+    Downloaded org_7c1Kalm9WcX2bNIjW53GUT/cld_kvedZWag2qA8i5BjxUevf5i7/artifact_storage/lora_fine_tuning/meta-llama/Meta-Llama-3-8B-Instruct:gokum:atyhk/README.md to /mnt/cluster_storage/org_7c1Kalm9WcX2bNIjW53GUT/cld_kvedZWag2qA8i5BjxUevf5i7/artifact_storage/lora_fine_tuning/meta-llama/Meta-Llama-3-8B-Instruct:gokum:atyhk/README.md
+    Downloaded org_7c1Kalm9WcX2bNIjW53GUT/cld_kvedZWag2qA8i5BjxUevf5i7/artifact_storage/lora_fine_tuning/meta-llama/Meta-Llama-3-8B-Instruct:gokum:atyhk/adapter_config.json to /mnt/cluster_storage/org_7c1Kalm9WcX2bNIjW53GUT/cld_kvedZWag2qA8i5BjxUevf5i7/artifact_storage/lora_fine_tuning/meta-llama/Meta-Llama-3-8B-Instruct:gokum:atyhk/adapter_config.json
+    Downloaded org_7c1Kalm9WcX2bNIjW53GUT/cld_kvedZWag2qA8i5BjxUevf5i7/artifact_storage/lora_fine_tuning/meta-llama/Meta-Llama-3-8B-Instruct:gokum:atyhk/adapter_model.safetensors to /mnt/cluster_storage/org_7c1Kalm9WcX2bNIjW53GUT/cld_kvedZWag2qA8i5BjxUevf5i7/artifact_storage/lora_fine_tuning/meta-llama/Meta-Llama-3-8B-Instruct:gokum:atyhk/adapter_model.safetensors
+    Downloaded org_7c1Kalm9WcX2bNIjW53GUT/cld_kvedZWag2qA8i5BjxUevf5i7/artifact_storage/lora_fine_tuning/meta-llama/Meta-Llama-3-8B-Instruct:gokum:atyhk/config.json to /mnt/cluster_storage/org_7c1Kalm9WcX2bNIjW53GUT/cld_kvedZWag2qA8i5BjxUevf5i7/artifact_storage/lora_fine_tuning/meta-llama/Meta-Llama-3-8B-Instruct:gokum:atyhk/config.json
+    Downloaded org_7c1Kalm9WcX2bNIjW53GUT/cld_kvedZWag2qA8i5BjxUevf5i7/artifact_storage/lora_fine_tuning/meta-llama/Meta-Llama-3-8B-Instruct:gokum:atyhk/new_embeddings.safetensors to /mnt/cluster_storage/org_7c1Kalm9WcX2bNIjW53GUT/cld_kvedZWag2qA8i5BjxUevf5i7/artifact_storage/lora_fine_tuning/meta-llama/Meta-Llama-3-8B-Instruct:gokum:atyhk/new_embeddings.safetensors
+    Downloaded org_7c1Kalm9WcX2bNIjW53GUT/cld_kvedZWag2qA8i5BjxUevf5i7/artifact_storage/lora_fine_tuning/meta-llama/Meta-Llama-3-8B-Instruct:gokum:atyhk/special_tokens_map.json to /mnt/cluster_storage/org_7c1Kalm9WcX2bNIjW53GUT/cld_kvedZWag2qA8i5BjxUevf5i7/artifact_storage/lora_fine_tuning/meta-llama/Meta-Llama-3-8B-Instruct:gokum:atyhk/special_tokens_map.json
+    Downloaded org_7c1Kalm9WcX2bNIjW53GUT/cld_kvedZWag2qA8i5BjxUevf5i7/artifact_storage/lora_fine_tuning/meta-llama/Meta-Llama-3-8B-Instruct:gokum:atyhk/tokenizer.json to /mnt/cluster_storage/org_7c1Kalm9WcX2bNIjW53GUT/cld_kvedZWag2qA8i5BjxUevf5i7/artifact_storage/lora_fine_tuning/meta-llama/Meta-Llama-3-8B-Instruct:gokum:atyhk/tokenizer.json
     Downloaded org_7c1Kalm9WcX2bNIjW53GUT/cld_kvedZWag2qA8i5BjxUevf5i7/artifact_storage/lora_fine_tuning/meta-llama/Meta-Llama-3-8B-Instruct:gokum:atyhk/tokenizer_config.json to /mnt/cluster_storage/org_7c1Kalm9WcX2bNIjW53GUT/cld_kvedZWag2qA8i5BjxUevf5i7/artifact_storage/lora_fine_tuning/meta-llama/Meta-Llama-3-8B-Instruct:gokum:atyhk/tokenizer_config.json
 
 
@@ -487,24 +520,19 @@ test_data[0]
 
 ```
 
-```json
-{
-  "messages": [
-    {
-      "content": "Given a target sentence construct the underlying meaning representation of the input sentence as a single function with attributes and attribute values. This function should describe the target string accurately and the function must be one of the following ['inform', 'request', 'give_opinion', 'confirm', 'verify_attribute', 'suggest', 'request_explanation', 'recommend', 'request_attribute']. The attributes must be one of the following: ['name', 'exp_release_date', 'release_year', 'developer', 'esrb', 'rating', 'genres', 'player_perspective', 'has_multiplayer', 'platforms', 'available_on_steam', 'has_linux_release', 'has_mac_release', 'specifier']",
-      "role": "system"
-    },
-    {
-      "content": "Have you ever given any games on PC but not on Steam a try, like The Sims?",
-      "role": "user"
-    },
-    {
-      "content": "suggest(name[The Sims], platforms[PC], available_on_steam[no])",
-      "role": "assistant"
-    }
-  ]
-}
-```
+    2024-06-10 16:26:57,300	INFO streaming_executor.py:108 -- Starting execution of Dataset. Full logs are in /tmp/ray/session_2024-06-10_12-57-23_539567_2694/logs/ray-data
+    2024-06-10 16:26:57,301	INFO streaming_executor.py:109 -- Execution plan of Dataset: InputDataBuffer[Input] -> TaskPoolMapOperator[ReadJSON]
+
+
+
+
+
+    {'messages': [{'content': "Given a target sentence construct the underlying meaning representation of the input sentence as a single function with attributes and attribute values. This function should describe the target string accurately and the function must be one of the following ['inform', 'request', 'give_opinion', 'confirm', 'verify_attribute', 'suggest', 'request_explanation', 'recommend', 'request_attribute']. The attributes must be one of the following: ['name', 'exp_release_date', 'release_year', 'developer', 'esrb', 'rating', 'genres', 'player_perspective', 'has_multiplayer', 'platforms', 'available_on_steam', 'has_linux_release', 'has_mac_release', 'specifier']",
+       'role': 'system'},
+      {'content': 'Have you ever given any games on PC but not on Steam a try, like The Sims?',
+       'role': 'user'},
+      {'content': 'suggest(name[The Sims], platforms[PC], available_on_steam[no])',
+       'role': 'assistant'}]}
 
 
 
@@ -553,9 +581,9 @@ print (chat_template)
 ```
 
     {% set loop_messages = messages %}{% for message in loop_messages %}{% set content = '<|start_header_id|>' + message['role'] + '<|end_header_id|>
-
+    
     '+ message['content'] | trim + '<|eot_id|>' %}{% if loop.index0 == 0 %}{% set content = bos_token + content %}{% endif %}{{ content }}{% endfor %}{% if add_generation_prompt %}{{ '<|start_header_id|>assistant<|end_header_id|>
-
+    
     ' }}{% endif %}
 
 
@@ -572,19 +600,11 @@ test_input_prompts_ds = ray.data.from_items(test_input_prompts)
 print (test_input_prompts_ds.take(1))
 ```
 
-```json
-[
-  {
-    "inputs": "system\n\nGiven a target sentence construct the underlying meaning representation of the input sentence as a single function with attributes and attribute values. This function should describe the target string accurately and the function must be one of the following ['inform', 'request', 'give_opinion', 'confirm', 'verify_attribute', 'suggest', 'request_explanation', 'recommend', 'request_attribute']. The attributes must be one of the following: ['name', 'exp_release_date', 'release_year', 'developer', 'esrb', 'rating', 'genres', 'player_perspective', 'has_multiplayer', 'platforms', 'available_on_steam', 'has_linux_release', 'has_mac_release', 'specifier']user\n\nHave you ever given any games on PC but not on Steam a try, like The Sims?assistant\n\n",
-    "outputs": [
-      {
-        "content": "suggest(name[The Sims], platforms[PC], available_on_steam[no])",
-        "role": "assistant"
-      }
-    ]
-  }
-]
-```
+    2024-06-10 16:27:20,604	INFO streaming_executor.py:108 -- Starting execution of Dataset. Full logs are in /tmp/ray/session_2024-06-10_12-57-23_539567_2694/logs/ray-data
+    2024-06-10 16:27:20,604	INFO streaming_executor.py:109 -- Execution plan of Dataset: InputDataBuffer[Input] -> LimitOperator[limit=1]
+
+
+    [{'inputs': "<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\nGiven a target sentence construct the underlying meaning representation of the input sentence as a single function with attributes and attribute values. This function should describe the target string accurately and the function must be one of the following ['inform', 'request', 'give_opinion', 'confirm', 'verify_attribute', 'suggest', 'request_explanation', 'recommend', 'request_attribute']. The attributes must be one of the following: ['name', 'exp_release_date', 'release_year', 'developer', 'esrb', 'rating', 'genres', 'player_perspective', 'has_multiplayer', 'platforms', 'available_on_steam', 'has_linux_release', 'has_mac_release', 'specifier']<|eot_id|><|start_header_id|>user<|end_header_id|>\n\nHave you ever given any games on PC but not on Steam a try, like The Sims?<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n", 'outputs': [{'content': 'suggest(name[The Sims], platforms[PC], available_on_steam[no])', 'role': 'assistant'}]}]
 
 
 ### Batch inference
@@ -656,25 +676,183 @@ ft_pred = ft_pred_ds.take_all()
 ft_pred[3]
 ```
 
-```bash
-(autoscaler +6m32s) Tip: use `ray status` to view detailed cluster status. To disable these messages, set RAY_SCHEDULER_EVENTS=0.
-(autoscaler +6m32s) [autoscaler] [4xA10G:48CPU-192GB] Upscaling 1 node(s).
-(autoscaler +6m33s) [autoscaler] [4xA10G:48CPU-192GB|g5.12xlarge] [us-west-2a] [on-demand] Launched 1 instances.
-(autoscaler +7m46s) [autoscaler] Cluster upscaled to {56 CPU, 4 GPU}.
-```
+    2024-06-10 16:27:26,007	INFO streaming_executor.py:108 -- Starting execution of Dataset. Full logs are in /tmp/ray/session_2024-06-10_12-57-23_539567_2694/logs/ray-data
+    2024-06-10 16:27:26,008	INFO streaming_executor.py:109 -- Execution plan of Dataset: InputDataBuffer[Input] -> ActorPoolMapOperator[MapBatches(LLMPredictor)]
 
-```json
-{
-  "prompt": "system\n\nGiven a target sentence construct the underlying meaning representation of the input sentence as a single function with attributes and attribute values. This function should describe the target string accurately and the function must be one of the following ['inform', 'request', 'give_opinion', 'confirm', 'verify_attribute', 'suggest', 'request_explanation', 'recommend', 'request_attribute']. The attributes must be one of the following: ['name', 'exp_release_date', 'release_year', 'developer', 'esrb', 'rating', 'genres', 'player_perspective', 'has_multiplayer', 'platforms', 'available_on_steam', 'has_linux_release', 'has_mac_release', 'specifier']user\n\nI like first person games normally, but not even that could make a music game fun for me. In fact in Guitar Hero: Smash Hits, I think the perspective somehow made an already bad game even worse.assistant\n\n",
-  "expected_output": [
-    {
-      "content": "give_opinion(name[Guitar Hero: Smash Hits], rating[poor], genres[music], player_perspective[first person])",
-      "role": "assistant"
-    }
-  ],
-  "generated_text": "give_opinion(name[Guitar Hero: Smash Hits], rating[poor], genres[music], player_perspective[first person])assistant\n\n"
-}
-```
+
+    [36m(autoscaler +6m32s)[0m Tip: use `ray status` to view detailed cluster status. To disable these messages, set RAY_SCHEDULER_EVENTS=0.
+    [36m(autoscaler +6m32s)[0m [autoscaler] [4xA10G:48CPU-192GB] Upscaling 1 node(s).
+    [36m(autoscaler +6m33s)[0m [autoscaler] [4xA10G:48CPU-192GB|g5.12xlarge] [us-west-2a] [on-demand] Launched 1 instances.
+    [36m(autoscaler +7m46s)[0m [autoscaler] Cluster upscaled to {56 CPU, 4 GPU}.
+
+
+    [36m(_MapWorker pid=2862, ip=10.0.21.202)[0m /home/ray/anaconda3/lib/python3.9/site-packages/huggingface_hub/file_download.py:1132: FutureWarning: `resume_download` is deprecated and will be removed in version 1.0.0. Downloads always resume when possible. If you want to force a new download, use `force_download=True`.
+    [36m(_MapWorker pid=2862, ip=10.0.21.202)[0m   warnings.warn(
+    [36m(_MapWorker pid=2862, ip=10.0.21.202)[0m Special tokens have been added in the vocabulary, make sure the associated word embeddings are fine-tuned or trained.
+    Processed prompts:   0%|          | 0/10 [00:00<?, ?it/s].0.21.202)[0m 
+    [36m(_MapWorker pid=2860, ip=10.0.21.202)[0m /home/ray/anaconda3/lib/python3.9/site-packages/huggingface_hub/file_download.py:1132: FutureWarning: `resume_download` is deprecated and will be removed in version 1.0.0. Downloads always resume when possible. If you want to force a new download, use `force_download=True`.[32m [repeated 3x across cluster] (Ray deduplicates logs by default. Set RAY_DEDUP_LOGS=0 to disable log deduplication, or see https://docs.ray.io/en/master/ray-observability/user-guides/configure-logging.html#log-deduplication for more options.)[0m
+    [36m(_MapWorker pid=2860, ip=10.0.21.202)[0m   warnings.warn([32m [repeated 3x across cluster][0m
+    [36m(MapWorker(MapBatches(LLMPredictor)) pid=2862, ip=10.0.21.202)[0m Special tokens have been added in the vocabulary, make sure the associated word embeddings are fine-tuned or trained.[32m [repeated 4x across cluster][0m
+    Processed prompts:  10%|█         | 1/10 [00:01<00:17,  2.00s/it]2)[0m 
+    Processed prompts: 100%|██████████| 10/10 [00:02<00:00,  4.09it/s])[0m 
+    Processed prompts: 100%|██████████| 1/1 [00:01<00:00,  1.12s/it]02)[0m 
+    Processed prompts:   0%|          | 0/10 [00:00<?, ?it/s][32m [repeated 11x across cluster][0m
+    [36m(MapWorker(MapBatches(LLMPredictor)) pid=2860, ip=10.0.21.202)[0m Special tokens have been added in the vocabulary, make sure the associated word embeddings are fine-tuned or trained.[32m [repeated 3x across cluster][0m
+    Processed prompts:  30%|███       | 3/10 [00:01<00:03,  1.82it/s][32m [repeated 19x across cluster][0m
+    Processed prompts: 100%|██████████| 10/10 [00:02<00:00,  4.17it/s][32m [repeated 4x across cluster][0m
+    Processed prompts: 100%|██████████| 1/1 [00:01<00:00,  1.91s/it][32m [repeated 8x across cluster][0m
+    Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s][32m [repeated 9x across cluster][0m
+    Processed prompts:  10%|█         | 1/10 [00:00<00:08,  1.01it/s][32m [repeated 14x across cluster][0m
+    Processed prompts: 100%|██████████| 10/10 [00:02<00:00,  3.61it/s][32m [repeated 4x across cluster][0m
+    Processed prompts: 100%|██████████| 10/10 [00:02<00:00,  4.57it/s][32m [repeated 7x across cluster][0m
+    Processed prompts:   0%|          | 0/10 [00:00<?, ?it/s][32m [repeated 12x across cluster][0m
+    Processed prompts:  40%|████      | 4/10 [00:01<00:02,  2.84it/s][32m [repeated 16x across cluster][0m
+    Processed prompts: 100%|██████████| 10/10 [00:02<00:00,  4.29it/s][32m [repeated 3x across cluster][0m
+    Processed prompts: 100%|██████████| 1/1 [00:01<00:00,  1.22s/it][32m [repeated 7x across cluster][0m
+    Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s][32m [repeated 9x across cluster][0m
+    Processed prompts: 100%|██████████| 10/10 [00:01<00:00,  5.34it/s])[0m 
+    Processed prompts:  60%|██████    | 6/10 [00:01<00:00,  5.80it/s][32m [repeated 14x across cluster][0m
+    Processed prompts: 100%|██████████| 10/10 [00:02<00:00,  4.89it/s][32m [repeated 3x across cluster][0m
+    Processed prompts: 100%|██████████| 1/1 [00:02<00:00,  2.39s/it][32m [repeated 8x across cluster][0m
+    Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s][32m [repeated 12x across cluster][0m
+    Processed prompts: 100%|██████████| 10/10 [00:02<00:00,  4.77it/s])[0m 
+    Processed prompts:  40%|████      | 4/10 [00:02<00:02,  2.03it/s][32m [repeated 13x across cluster][0m
+    Processed prompts: 100%|██████████| 10/10 [00:02<00:00,  3.48it/s][32m [repeated 2x across cluster][0m
+    Processed prompts: 100%|██████████| 1/1 [00:01<00:00,  1.45s/it][32m [repeated 5x across cluster][0m
+    Processed prompts:   0%|          | 0/10 [00:00<?, ?it/s][32m [repeated 12x across cluster][0m
+    Processed prompts:  40%|████      | 4/10 [00:01<00:02,  2.46it/s][32m [repeated 17x across cluster][0m
+    Processed prompts: 100%|██████████| 10/10 [00:02<00:00,  3.90it/s][32m [repeated 6x across cluster][0m
+    Processed prompts: 100%|██████████| 10/10 [00:02<00:00,  4.84it/s][32m [repeated 9x across cluster][0m
+    Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s][32m [repeated 12x across cluster][0m
+    Processed prompts:  60%|██████    | 6/10 [00:01<00:00,  4.87it/s][32m [repeated 21x across cluster][0m
+    Processed prompts: 100%|██████████| 10/10 [00:01<00:00,  5.24it/s][32m [repeated 4x across cluster][0m
+    Processed prompts: 100%|██████████| 1/1 [00:00<00:00,  1.89it/s][32m [repeated 7x across cluster][0m
+    Processed prompts: 100%|██████████| 10/10 [00:01<00:00,  5.20it/s])[0m 
+    Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s][32m [repeated 12x across cluster][0m
+    Processed prompts:  50%|█████     | 5/10 [00:02<00:01,  3.07it/s][32m [repeated 16x across cluster][0m
+    Processed prompts: 100%|██████████| 10/10 [00:01<00:00,  5.25it/s][32m [repeated 4x across cluster][0m
+    Processed prompts: 100%|██████████| 1/1 [00:00<00:00,  1.20it/s][32m [repeated 8x across cluster][0m
+    Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s][32m [repeated 12x across cluster][0m
+    Processed prompts:  80%|████████  | 8/10 [00:02<00:00,  5.75it/s][32m [repeated 15x across cluster][0m
+    Processed prompts: 100%|██████████| 10/10 [00:01<00:00,  5.06it/s][32m [repeated 5x across cluster][0m
+    Processed prompts: 100%|██████████| 10/10 [00:02<00:00,  4.01it/s][32m [repeated 6x across cluster][0m
+    Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s][32m [repeated 11x across cluster][0m
+    Processed prompts: 100%|██████████| 10/10 [00:01<00:00,  5.08it/s])[0m 
+    Processed prompts:  50%|█████     | 5/10 [00:02<00:01,  2.95it/s][32m [repeated 15x across cluster][0m
+    Processed prompts: 100%|██████████| 10/10 [00:01<00:00,  6.06it/s][32m [repeated 4x across cluster][0m
+    Processed prompts: 100%|██████████| 1/1 [00:00<00:00,  1.47it/s][32m [repeated 5x across cluster][0m
+    Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s][32m [repeated 14x across cluster][0m
+    Processed prompts:  70%|███████   | 7/10 [00:02<00:00,  3.33it/s][32m [repeated 13x across cluster][0m
+    Processed prompts: 100%|██████████| 10/10 [00:03<00:00,  3.33it/s][32m [repeated 5x across cluster][0m
+    Processed prompts: 100%|██████████| 1/1 [00:00<00:00,  1.05it/s][32m [repeated 9x across cluster][0m
+    Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s][32m [repeated 12x across cluster][0m
+    Processed prompts:  60%|██████    | 6/10 [00:02<00:01,  2.61it/s][32m [repeated 14x across cluster][0m
+    Processed prompts: 100%|██████████| 10/10 [00:02<00:00,  3.84it/s][32m [repeated 3x across cluster][0m
+    Processed prompts: 100%|██████████| 10/10 [00:02<00:00,  3.86it/s][32m [repeated 8x across cluster][0m
+    Processed prompts:   0%|          | 0/10 [00:00<?, ?it/s][32m [repeated 10x across cluster][0m
+    Processed prompts:  10%|█         | 1/10 [00:01<00:12,  1.34s/it][32m [repeated 11x across cluster][0m
+    Processed prompts: 100%|██████████| 10/10 [00:03<00:00,  3.33it/s][32m [repeated 3x across cluster][0m
+    Processed prompts: 100%|██████████| 1/1 [00:01<00:00,  1.33s/it][32m [repeated 5x across cluster][0m
+    Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s][32m [repeated 10x across cluster][0m
+    Processed prompts: 100%|██████████| 10/10 [00:02<00:00,  3.54it/s])[0m 
+    Processed prompts:  80%|████████  | 8/10 [00:02<00:00,  3.47it/s][32m [repeated 13x across cluster][0m
+    Processed prompts: 100%|██████████| 10/10 [00:02<00:00,  4.65it/s][32m [repeated 6x across cluster][0m
+    Processed prompts: 100%|██████████| 1/1 [00:01<00:00,  1.06s/it][32m [repeated 7x across cluster][0m
+    Processed prompts:   0%|          | 0/10 [00:00<?, ?it/s][32m [repeated 12x across cluster][0m
+    Processed prompts:  40%|████      | 4/10 [00:01<00:01,  3.37it/s][32m [repeated 21x across cluster][0m
+    Processed prompts: 100%|██████████| 10/10 [00:02<00:00,  4.34it/s][32m [repeated 3x across cluster][0m
+    Processed prompts: 100%|██████████| 10/10 [00:01<00:00,  5.05it/s][32m [repeated 6x across cluster][0m
+    Processed prompts:   0%|          | 0/10 [00:00<?, ?it/s][32m [repeated 11x across cluster][0m
+    Processed prompts: 100%|██████████| 10/10 [00:01<00:00,  5.15it/s])[0m 
+    Processed prompts:  10%|█         | 1/10 [00:01<00:09,  1.09s/it][32m [repeated 14x across cluster][0m
+    Processed prompts: 100%|██████████| 10/10 [00:02<00:00,  3.52it/s][32m [repeated 6x across cluster][0m
+    Processed prompts: 100%|██████████| 1/1 [00:01<00:00,  1.33s/it][32m [repeated 6x across cluster][0m
+    Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s][32m [repeated 10x across cluster][0m
+    Processed prompts:  10%|█         | 1/10 [00:01<00:12,  1.41s/it][32m [repeated 14x across cluster][0m
+    Processed prompts: 100%|██████████| 10/10 [00:01<00:00,  5.06it/s][32m [repeated 5x across cluster][0m
+    Processed prompts: 100%|██████████| 1/1 [00:01<00:00,  1.26s/it][32m [repeated 6x across cluster][0m
+    Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s][32m [repeated 13x across cluster][0m
+    Processed prompts:  10%|█         | 1/10 [00:01<00:15,  1.74s/it][32m [repeated 17x across cluster][0m
+    Processed prompts: 100%|██████████| 10/10 [00:02<00:00,  4.13it/s][32m [repeated 5x across cluster][0m
+    Processed prompts: 100%|██████████| 1/1 [00:02<00:00,  2.54s/it][32m [repeated 7x across cluster][0m
+    Processed prompts: 100%|██████████| 10/10 [00:01<00:00,  5.29it/s])[0m 
+    Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s][32m [repeated 11x across cluster][0m
+    Processed prompts:  40%|████      | 4/10 [00:01<00:01,  3.50it/s][32m [repeated 16x across cluster][0m
+    Processed prompts: 100%|██████████| 10/10 [00:01<00:00,  6.05it/s][32m [repeated 6x across cluster][0m
+    Processed prompts: 100%|██████████| 1/1 [00:01<00:00,  1.38s/it][32m [repeated 7x across cluster][0m
+    Processed prompts: 100%|██████████| 10/10 [00:01<00:00,  5.49it/s])[0m 
+    Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s][32m [repeated 13x across cluster][0m
+    Processed prompts: 100%|██████████| 10/10 [00:02<00:00,  4.60it/s])[0m 
+    Processed prompts:  10%|█         | 1/10 [00:01<00:15,  1.72s/it][32m [repeated 13x across cluster][0m
+    Processed prompts: 100%|██████████| 10/10 [00:02<00:00,  4.36it/s][32m [repeated 3x across cluster][0m
+    Processed prompts: 100%|██████████| 1/1 [00:01<00:00,  1.57s/it][32m [repeated 6x across cluster][0m
+    Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s][32m [repeated 10x across cluster][0m
+    Processed prompts:  80%|████████  | 8/10 [00:02<00:00,  5.73it/s][32m [repeated 18x across cluster][0m
+    Processed prompts: 100%|██████████| 10/10 [00:02<00:00,  3.84it/s][32m [repeated 4x across cluster][0m
+    Processed prompts: 100%|██████████| 1/1 [00:01<00:00,  1.73s/it][32m [repeated 7x across cluster][0m
+    Processed prompts:   0%|          | 0/10 [00:00<?, ?it/s][32m [repeated 10x across cluster][0m
+    Processed prompts:  40%|████      | 4/10 [00:01<00:01,  3.15it/s][32m [repeated 11x across cluster][0m
+    Processed prompts: 100%|██████████| 10/10 [00:02<00:00,  3.40it/s][32m [repeated 3x across cluster][0m
+    Processed prompts: 100%|██████████| 1/1 [00:01<00:00,  1.64s/it][32m [repeated 7x across cluster][0m
+    Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s][32m [repeated 11x across cluster][0m
+    Processed prompts:  50%|█████     | 5/10 [00:01<00:01,  4.49it/s][32m [repeated 15x across cluster][0m
+    Processed prompts: 100%|██████████| 10/10 [00:02<00:00,  4.60it/s][32m [repeated 5x across cluster][0m
+    Processed prompts: 100%|██████████| 1/1 [00:01<00:00,  1.45s/it][32m [repeated 5x across cluster][0m
+    Processed prompts:   0%|          | 0/10 [00:00<?, ?it/s][32m [repeated 11x across cluster][0m
+    Processed prompts:  10%|█         | 1/10 [00:02<00:21,  2.37s/it][32m [repeated 9x across cluster][0m
+    Processed prompts: 100%|██████████| 10/10 [00:03<00:00,  3.30it/s][32m [repeated 5x across cluster][0m
+    Processed prompts: 100%|██████████| 1/1 [00:01<00:00,  1.03s/it][32m [repeated 5x across cluster][0m
+    Processed prompts: 100%|██████████| 10/10 [00:03<00:00,  3.26it/s])[0m 
+    Processed prompts:   0%|          | 0/10 [00:00<?, ?it/s][32m [repeated 10x across cluster][0m
+    Processed prompts:  70%|███████   | 7/10 [00:02<00:00,  3.28it/s][32m [repeated 16x across cluster][0m
+    Processed prompts: 100%|██████████| 10/10 [00:02<00:00,  3.78it/s][32m [repeated 3x across cluster][0m
+    Processed prompts: 100%|██████████| 1/1 [00:02<00:00,  2.08s/it][32m [repeated 6x across cluster][0m
+    Processed prompts: 100%|██████████| 10/10 [00:02<00:00,  3.77it/s])[0m 
+    Processed prompts:   0%|          | 0/10 [00:00<?, ?it/s][32m [repeated 10x across cluster][0m
+    Processed prompts:  40%|████      | 4/10 [00:01<00:01,  3.90it/s][32m [repeated 15x across cluster][0m
+    Processed prompts: 100%|██████████| 10/10 [00:01<00:00,  5.63it/s][32m [repeated 4x across cluster][0m
+    Processed prompts: 100%|██████████| 10/10 [00:02<00:00,  4.16it/s][32m [repeated 7x across cluster][0m
+    Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s][32m [repeated 11x across cluster][0m
+    Processed prompts:  70%|███████   | 7/10 [00:01<00:00,  4.89it/s][32m [repeated 15x across cluster][0m
+    Processed prompts: 100%|██████████| 10/10 [00:02<00:00,  4.29it/s][32m [repeated 6x across cluster][0m
+    Processed prompts: 100%|██████████| 1/1 [00:01<00:00,  1.03s/it][32m [repeated 6x across cluster][0m
+    Processed prompts:   0%|          | 0/10 [00:00<?, ?it/s][32m [repeated 12x across cluster][0m
+    Processed prompts: 100%|██████████| 10/10 [00:01<00:00,  5.33it/s])[0m 
+    Processed prompts:  40%|████      | 4/10 [00:01<00:02,  2.84it/s][32m [repeated 9x across cluster][0m
+    Processed prompts: 100%|██████████| 10/10 [00:02<00:00,  3.92it/s][32m [repeated 2x across cluster][0m
+    Processed prompts: 100%|██████████| 1/1 [00:01<00:00,  1.26s/it][32m [repeated 6x across cluster][0m
+    Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s][32m [repeated 10x across cluster][0m
+    Processed prompts: 100%|██████████| 10/10 [00:02<00:00,  3.61it/s])[0m 
+    Processed prompts: 100%|██████████| 10/10 [00:02<00:00,  4.23it/s])[0m 
+    Processed prompts:  70%|███████   | 7/10 [00:01<00:00,  5.13it/s][32m [repeated 21x across cluster][0m
+    Processed prompts: 100%|██████████| 10/10 [00:01<00:00,  5.98it/s][32m [repeated 5x across cluster][0m
+    Processed prompts: 100%|██████████| 1/1 [00:01<00:00,  1.03s/it][32m [repeated 6x across cluster][0m
+    Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s][32m [repeated 11x across cluster][0m
+    Processed prompts: 100%|██████████| 10/10 [00:01<00:00,  5.23it/s])[0m 
+    Processed prompts:  10%|█         | 1/10 [00:01<00:13,  1.45s/it][32m [repeated 21x across cluster][0m
+    Processed prompts: 100%|██████████| 10/10 [00:02<00:00,  4.48it/s][32m [repeated 6x across cluster][0m
+    Processed prompts: 100%|██████████| 1/1 [00:01<00:00,  1.29s/it][32m [repeated 3x across cluster][0m
+    Processed prompts:   0%|          | 0/10 [00:00<?, ?it/s][32m [repeated 10x across cluster][0m
+    Processed prompts:  10%|█         | 1/10 [00:01<00:09,  1.03s/it][32m [repeated 27x across cluster][0m
+    Processed prompts: 100%|██████████| 10/10 [00:02<00:00,  4.74it/s][32m [repeated 8x across cluster][0m
+    Processed prompts: 100%|██████████| 10/10 [00:02<00:00,  4.83it/s][32m [repeated 2x across cluster][0m
+    Processed prompts:   0%|          | 0/10 [00:00<?, ?it/s][32m [repeated 10x across cluster][0m
+    Processed prompts:  80%|████████  | 8/10 [00:02<00:00,  4.66it/s][32m [repeated 27x across cluster][0m
+    Processed prompts: 100%|██████████| 10/10 [00:03<00:00,  3.28it/s][32m [repeated 6x across cluster][0m
+    Processed prompts: 100%|██████████| 10/10 [00:02<00:00,  3.40it/s])[0m 
+    Processed prompts: 100%|██████████| 10/10 [00:02<00:00,  4.13it/s])[0m 
+    Processed prompts: 100%|██████████| 10/10 [00:02<00:00,  3.55it/s])[0m 
+    Processed prompts:   0%|          | 0/10 [00:00<?, ?it/s][32m [repeated 8x across cluster][0m
+    Processed prompts: 100%|██████████| 10/10 [00:02<00:00,  4.42it/s])[0m 
+
+
+
+
+
+    {'prompt': "<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\nGiven a target sentence construct the underlying meaning representation of the input sentence as a single function with attributes and attribute values. This function should describe the target string accurately and the function must be one of the following ['inform', 'request', 'give_opinion', 'confirm', 'verify_attribute', 'suggest', 'request_explanation', 'recommend', 'request_attribute']. The attributes must be one of the following: ['name', 'exp_release_date', 'release_year', 'developer', 'esrb', 'rating', 'genres', 'player_perspective', 'has_multiplayer', 'platforms', 'available_on_steam', 'has_linux_release', 'has_mac_release', 'specifier']<|eot_id|><|start_header_id|>user<|end_header_id|>\n\nI like first person games normally, but not even that could make a music game fun for me. In fact in Guitar Hero: Smash Hits, I think the perspective somehow made an already bad game even worse.<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n",
+     'expected_output': array([{'content': 'give_opinion(name[Guitar Hero: Smash Hits], rating[poor], genres[music], player_perspective[first person])', 'role': 'assistant'}],
+           dtype=object),
+     'generated_text': 'give_opinion(name[Guitar Hero: Smash Hits], rating[poor], genres[music], player_perspective[first person])<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n'}
 
 
 
@@ -699,6 +877,7 @@ matches / float(len(ft_pred))
     0.9399815327793167
 
 
+
 **Note**: you can train for more epochs (`num_epochs: 10`) to further improve the performance.
 
 Even our mismatches are not too far off and sometimes it might be worth a closer look because the dataset itself might have a few errors that the model may have identified.
@@ -709,31 +888,17 @@ Even our mismatches are not too far off and sometimes it might be worth a closer
 mismatches[0:2]
 ```
 
-```json
-[
-  {
-    "prompt": "system\n\nGiven a target sentence construct the underlying meaning representation of the input sentence as a single function with attributes and attribute values. This function should describe the target string accurately and the function must be one of the following ['inform', 'request', 'give_opinion', 'confirm', 'verify_attribute', 'suggest', 'request_explanation', 'recommend', 'request_attribute']. The attributes must be one of the following: ['name', 'exp_release_date', 'release_year', 'developer', 'esrb', 'rating', 'genres', 'player_perspective', 'has_multiplayer', 'platforms', 'available_on_steam', 'has_linux_release', 'has_mac_release', 'specifier']user\n\nDance Dance Revolution Universe 3 got poor ratings when it came out in 2008. It might have been the worst multiplayer music game for the Xbox.assistant\n\n",
-    "expected_output": [
-      {
-        "content": "inform(name[Dance Dance Revolution Universe 3], release_year[2008], rating[poor], genres[music], has_multiplayer[yes], platforms[Xbox])",
-        "role": "assistant"
-      }
-    ],
-    "generated_text": "give_opinion(name[Dance Dance Revolution Universe 3], release_year[2008], rating[poor], has_multiplayer[yes], platforms[Xbox])assistant\n\n"
-  },
-  {
-    "prompt": "system\n\nGiven a target sentence construct the underlying meaning representation of the input sentence as a single function with attributes and attribute values. This function should describe the target string accurately and the function must be one of the following ['inform', 'request', 'give_opinion', 'confirm', 'verify_attribute', 'suggest', 'request_explanation', 'recommend', 'request_attribute']. The attributes must be one of the following: ['name', 'exp_release_date', 'release_year', 'developer', 'esrb', 'rating', 'genres', 'player_perspective', 'has_multiplayer', 'platforms', 'available_on_steam', 'has_linux_release', 'has_mac_release', 'specifier']user\n\nA first person game I recently got on Steam is Assetto Corsa. Have you heard of it?assistant\n\n",
-    "expected_output": [
-      {
-        "content": "recommend(name[Assetto Corsa], player_perspective[first person], available_on_steam[yes])",
-        "role": "assistant"
-      }
-    ],
-    "generated_text": "recommend(name[Assetto Corsa], available_on_steam[yes])assistant\n\n"
-  }
-]
 
-```
+
+
+    [{'prompt': "<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\nGiven a target sentence construct the underlying meaning representation of the input sentence as a single function with attributes and attribute values. This function should describe the target string accurately and the function must be one of the following ['inform', 'request', 'give_opinion', 'confirm', 'verify_attribute', 'suggest', 'request_explanation', 'recommend', 'request_attribute']. The attributes must be one of the following: ['name', 'exp_release_date', 'release_year', 'developer', 'esrb', 'rating', 'genres', 'player_perspective', 'has_multiplayer', 'platforms', 'available_on_steam', 'has_linux_release', 'has_mac_release', 'specifier']<|eot_id|><|start_header_id|>user<|end_header_id|>\n\nDance Dance Revolution Universe 3 got poor ratings when it came out in 2008. It might have been the worst multiplayer music game for the Xbox.<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n",
+      'expected_output': array([{'content': 'inform(name[Dance Dance Revolution Universe 3], release_year[2008], rating[poor], genres[music], has_multiplayer[yes], platforms[Xbox])', 'role': 'assistant'}],
+            dtype=object),
+      'generated_text': 'give_opinion(name[Dance Dance Revolution Universe 3], release_year[2008], rating[poor], has_multiplayer[yes], platforms[Xbox])<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n'},
+     {'prompt': "<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\nGiven a target sentence construct the underlying meaning representation of the input sentence as a single function with attributes and attribute values. This function should describe the target string accurately and the function must be one of the following ['inform', 'request', 'give_opinion', 'confirm', 'verify_attribute', 'suggest', 'request_explanation', 'recommend', 'request_attribute']. The attributes must be one of the following: ['name', 'exp_release_date', 'release_year', 'developer', 'esrb', 'rating', 'genres', 'player_perspective', 'has_multiplayer', 'platforms', 'available_on_steam', 'has_linux_release', 'has_mac_release', 'specifier']<|eot_id|><|start_header_id|>user<|end_header_id|>\n\nA first person game I recently got on Steam is Assetto Corsa. Have you heard of it?<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n",
+      'expected_output': array([{'content': 'recommend(name[Assetto Corsa], player_perspective[first person], available_on_steam[yes])', 'role': 'assistant'}],
+            dtype=object),
+      'generated_text': 'recommend(name[Assetto Corsa], available_on_steam[yes])<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n'}]
 
 
 
@@ -747,16 +912,16 @@ We'll start by generating the configuration for our service. We provide a conven
 
 <b style="background-color: orange;">&nbsp;💡 INSIGHT&nbsp;</b>: Ray Serve and Anyscale support [serving multiple LoRA adapters](https://github.com/anyscale/templates/blob/main/templates/endpoints_v2/examples/lora/DeployLora.ipynb) with a common base model in the same request batch which allows you to serve a wide variety of use-cases without increasing hardware spend. In addition, we use Serve multiplexing to reduce the number of swaps for LoRA adapters. There is a slight latency overhead to serving a LoRA model compared to the base model, typically 10-20%.
 
-**LoRA weights storage URI**: `s3://anyscale-test-data-cld-i2w99rzq8b6lbjkke9y94vi5/org_7c1Kalm9WcX2bNIjW53GUT/cld_kvedZWag2qA8i5BjxUevf5i7/artifact_storage/lora_fine_tuning`
+**LoRA weights storage URI**: `s3://anyscale-customer-dataplane-data-production-us-east-2 and path: artifact_storage/org_2byxy1usultrdke7v3ys1cczet/cld_du8lgwhc3n26cjye7bw1ds62p7/lora_fine_tuning`
 
-**model**: `meta-llama/Meta-Llama-3-8B-Instruct:gokum:atyhk`
+**model**: `meta-llama/Meta-Llama-3-8B-Instruct:goku_:ueewk`
 
 
 We'll start by running the python command below to start the CLI workflow to generate the service yaml configuration:
 ```bash
 mkdir /home/ray/default/deploy/services
 cd /home/ray/default/deploy/services
-python /home/ray/default/src/generate_serve_config.py
+python /home/ray/default/src/generate_serve_config.py 
 ```
 
 <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/e2e-llm-workflows/assets/cli.png" width=500>
@@ -769,21 +934,19 @@ python /home/ray/default/src/generate_serve_config.py
 !cat /home/ray/default/deploy/services/serve_{TIMESTAMP}.yaml
 ```
 
-```yaml
-applications:
-- args:
-    dynamic_lora_loading_path: s3://anyscale-test-data-cld-i2w99rzq8b6lbjkke9y94vi5/org_7c1Kalm9WcX2bNIjW53GUT/cld_kvedZWag2qA8i5BjxUevf5i7/artifact_storage/lora_fine_tuning
-    embedding_models: []
-    function_calling_models: []
-    models: []
-    multiplex_lora_adapters: []
-    multiplex_models:
-    - ./model_config/model_config_20240516095237.yaml
-    vllm_base_models: []
-    import_path: aviary_private_endpoints.backend.server.run:router_application
-    name: llm-endpoint
-    route_prefix: /
-```
+    applications:
+    - args:
+        dynamic_lora_loading_path: s3://anyscale-test-data-cld-i2w99rzq8b6lbjkke9y94vi5/org_7c1Kalm9WcX2bNIjW53GUT/cld_kvedZWag2qA8i5BjxUevf5i7/artifact_storage/lora_fine_tuning
+        embedding_models: []
+        function_calling_models: []
+        models: []
+        multiplex_lora_adapters: []
+        multiplex_models:
+        - ./model_config/model_config_20240516095237.yaml
+        vllm_base_models: []
+      import_path: aviary_private_endpoints.backend.server.run:router_application
+      name: llm-endpoint
+      route_prefix: /
 
 
 This also generates a model configuration file that has all the information on auto scaling, inference engine, workers, compute, etc. It will be located under `/home/ray/default/deploy/services/model_config/{MODEL_NAME}-{TIMESTAMP}.yaml`. This configuration also includes the `prompt_format` which seamlessly matches any formatting we did prior to fine-tuning and applies it during inference automatically.
@@ -798,6 +961,7 @@ serve run serve_{TIMESTAMP}.yaml
 ```
 
 **Note**: This will take a few minutes to spin up the first time since we're loading the model weights.
+
 
 ```python
 from openai import OpenAI
@@ -863,6 +1027,7 @@ anyscale service deploy -f serve_{TIMESTAMP}.yaml
 
 **Note**: This will take a few minutes to spin up the first time since we're loading the model weights.
 
+
 Go to `Home` > `Services` (left panel) to view the production service.
 
 <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/e2e-llm-workflows/assets/services.png" width=650>
@@ -901,6 +1066,7 @@ For example, suppose that we want to preprocess batches of new incoming data, fi
 ## Clean up
 
 <b style="background-color: yellow;">&nbsp;🛑 IMPORTANT&nbsp;</b>: Please `Terminate` your service from the Service page to avoid depleting your free trial credits.
+
 
 ```python
 # Clean up

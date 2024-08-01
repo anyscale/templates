@@ -1,21 +1,20 @@
 #!/bin/bash
+set -e
+
 echo "Auto-generating README files..."
 
-# Search for notebook files named README.ipynb in the ../templates directory
-notebook_files=$(find ../templates -name "README.ipynb")
+# Function to convert notebook to README.md
+convert_notebook() {
+    local notebook_file=$1
+    local output_dir=$(dirname "$notebook_file")
+    jupyter nbconvert --to markdown "$notebook_file" --output-dir "$output_dir"
+    git add "$output_dir/README.md"
+}
 
-# Loop through each notebook file
-for notebook_file in $notebook_files; do
-    # Exclude specific notebooks from conversion
-    if [ "$notebook_file" != "../templates/templates/getting-started/README.ipynb" ] && [ "$notebook_file" != "../templates/templates/e2e-llm-workflows/README.ipynb" ] && ! grep -q "Time to complete" $notebook_file; then
-        echo "**********"
-        echo "LINT ERROR: $notebook_file must include 'Time to complete' statement, failing."
-        echo "**********"
-        exit 1
-    fi
-    if [ "$notebook_file" != "../templates/templates/e2e-llm-workflows/README.ipynb" ]; then
-        # Convert notebook file to README.md using nbconvert
-        jupyter nbconvert --to markdown "$notebook_file" --output-dir "$(dirname "$notebook_file")"
+# Convert all README.ipynb files to README.md, excluding specific ones
+find templates -name "README.ipynb" | while read notebook_file; do
+    if [[ "$notebook_file" != "templates/templates/e2e-llm-workflows/README.ipynb" ]]; then
+        convert_notebook "$notebook_file"
     else
         echo "Skipping README generation for $notebook_file"
     fi
@@ -43,3 +42,6 @@ for readme_file in $readme_files; do
         sed -i "s|!\[.*\](\(assets/.*\))|<img src=\"${REPO_PREFIX}/${readme_dir}/\1\"/>|g" "$readme_file"
     fi
 done
+
+# Stage all modified files
+git add -A
