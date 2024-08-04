@@ -1,4 +1,5 @@
 import re
+from typing_extensions import override
 from tqdm import tqdm
 import ray
 import glob
@@ -46,11 +47,11 @@ HF_MODEL = "meta-llama/Meta-Llama-3-70B"
 # The number of LLM instances to use.
 NUM_LLM_INSTANCES = 2
 # The number of GPUs to use per LLM instance. NUM_GPUS_PER_INSTANCE > 1 will use tensor parallelism across all GPUs.
-NUM_GPUS_PER_INSTANCE = 8
+NUM_GPUS_PER_INSTANCE = 4
 # The type of GPU to use
-GPU_TYPE = get_a10g_or_equivalent_accelerator_type()
+GPU_TYPE = "H100" # use either H100 or A100 instances here
 # Batch size for each instance
-BATCH_SIZE = 1
+BATCH_SIZE = 16
 
 # Initialize Ray with a Runtime Environment.
 ray.init(
@@ -66,6 +67,7 @@ hf_ds_subset = hf_ds.select(range(100))
 hf_ds_subset.remove_columns(["highlights"])
 
 ds = ray.data.from_huggingface(hf_ds_subset)
+ds = ds.repartition(NUM_LLM_INSTANCES * 8)
 
 ds = ds.map(
     format_into_prompt_rawtext,
@@ -74,7 +76,7 @@ ds = ds.map(
         tokenizer=AutoTokenizer.from_pretrained(HF_MODEL),
         col_name="qa_generation_prompt"
     ),
-    num_cpus=0.01
+    num_cpus=0
 )
 
 ds = ds.map_batches(

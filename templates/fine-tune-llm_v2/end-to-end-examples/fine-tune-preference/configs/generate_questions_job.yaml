@@ -1,0 +1,4 @@
+name: preference-tuning-summarization-question-generation
+entrypoint: python utils/generate_questions.py
+image_uri: localhost:5555/anyscale/endpoints_aica:0.5.0-6402
+max_retries: 0
