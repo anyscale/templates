@@ -1,17 +1,9 @@
-import re
-from typing_extensions import override
-from tqdm import tqdm
 import ray
-import glob
-import requests
-import random
 import os
 
 from transformers import AutoTokenizer
 from synthetic_data_utils import LLMPredictor, format_into_prompt_rawtext, shuffle_qa
 import datasets
-
-from utils import get_a10g_or_equivalent_accelerator_type, prompt_for_hugging_face_token
 
 PROMPT_TEMPLATE_QUESTION_GENERATION = """Given the following text, generate five multiple choice questions with the following format. The questions must be simple enough to be answerable with only general important details that would be included in a short two sentence summary of the text. The questions must be only answerable when given the text and should not be answerable with common knowledge. Do not write questions about minute details in the text, only the most important points.
 
