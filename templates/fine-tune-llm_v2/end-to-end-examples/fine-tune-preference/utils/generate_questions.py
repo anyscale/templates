@@ -44,20 +44,18 @@ OUTPUT_PATH_TEST = OUTPUT_PATH + "_test"
 
 HF_MODEL = "meta-llama/Meta-Llama-3-70B"
 # The number of LLM instances to use.
-NUM_LLM_INSTANCES = 8
+NUM_LLM_INSTANCES = 2
 # The number of GPUs to use per LLM instance. NUM_GPUS_PER_INSTANCE > 1 will use tensor parallelism across all GPUs.
-NUM_GPUS_PER_INSTANCE = 4
+NUM_GPUS_PER_INSTANCE = 8
 # The type of GPU to use
 GPU_TYPE = get_a10g_or_equivalent_accelerator_type()
 # Batch size for each instance
 BATCH_SIZE = 1
 
-HF_TOKEN = prompt_for_hugging_face_token(HF_MODEL)
-
 # Initialize Ray with a Runtime Environment.
 ray.init(
     runtime_env={
-        "env_vars": {"HF_TOKEN": HF_TOKEN},
+        "env_vars": {"HF_TOKEN": os.environ["HF_TOKEN"], "HF_HOME": "/mnt/local_storage/.cache/huggingface"},
     }
 )
 
@@ -82,13 +80,14 @@ ds = ds.map(
 ds = ds.map_batches(
     LLMPredictor,
     fn_constructor_kwargs=dict(
+        model_location=HF_MODEL,
         col_in="qa_generation_prompt",
         col_out="qa_generation_raw_model_output",
         temperature=0,
         max_tokens=4096,
         vllm_settings=dict(
             tensor_parallel_size=NUM_GPUS_PER_INSTANCE,
-            max_model_len=16832,
+            max_model_len=8192,
         )
     ),
     concurrency=NUM_LLM_INSTANCES,
