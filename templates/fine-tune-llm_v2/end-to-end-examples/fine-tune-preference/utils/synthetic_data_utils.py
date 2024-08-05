@@ -22,25 +22,10 @@ def format_into_prompt_rawtext(row : Dict[str, Any], template : str, tokenizer :
     row[col_name] = tokenizer.apply_chat_template([{"content": template.format(**row), "role": "user"}], tokenize=False, add_generation_prompt=True)
     return row
 
-def infer_openai(row : Dict[str, Any], col_in : str, col_out : str, base_url : str, api_key : str):
-    """
-    Given an OpenAI-style request in the `col_in` key of the dataset row, make the request and output to the `col_out` key of `row`.
-    """
-
-    with requests.Session() as s:
-
-        url = f"{base_url}/chat/completions"
-        body = {
-            **row[col_in]
-        }
-
-        with s.post(url, headers={"Authorization": f"Bearer {api_key}"}, json=body) as resp:
-            try:
-                row[col_out] = resp.json()["choices"][0]["message"]["content"]
-            except Exception as e:
-                row[col_out] = None
-
-    return row
+def duplicate_rows(row, count, id_col):
+    return [
+        {**row, id_col: i} for i in range(count)
+    ]
 
 def process_question(text, num_questions=5, letter_choices=("A", "B", "C", "D", "E")):
     questions = []
@@ -78,13 +63,26 @@ def write_questions(questions, letter_choices=("A", "B", "C", "D", "E")):
 
             prompt += f"{letter_choices[j]}. " + choice_text + "\n"
         prompt += "\n"
-    return prompt, answers
+    return prompt, np.array(answers)
 
 def shuffle_qa(row, col_in, col_out_prompt, col_out_answers):
     try:
         row[col_out_prompt], row[col_out_answers] = write_questions(process_question(row[col_in]))
     except Exception as e:
         row[col_out_prompt], row[col_out_answers] = None, None
+    return row
+
+def extract_answers(row, col_in, col_out, num_questions):
+    text = row[col_in]
+    if text is None:
+        row[col_out] = ["No Judge Output"]
+        return row
+    answers = ["Unsure"] * num_questions
+    for line in text.split("\n"):
+        if m := re.match(r"Q(\d)\) ([A-E])", line.strip()):
+            answers[int(m.group(1)) - 1] = m.group(2)
+
+    row[col_out] = answers
     return row
 
 class LLMPredictor:

@@ -4,7 +4,6 @@ import requests
 import string
 
 import huggingface_hub
-from transformers import AutoConfig
 
 HF_TOKEN_CACHE_PATH = "/mnt/local_storage/data/cache/huggingface/token"
 HF_TOKEN_LOCAL_PATH = "huggingface_token.txt"
