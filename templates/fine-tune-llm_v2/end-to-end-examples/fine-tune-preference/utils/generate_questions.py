@@ -10,33 +10,9 @@ from utils.synthetic_data_utils import (LLMPredictor,
                                         format_into_prompt_rawtext, shuffle_qa)
 from utils.utils import init_logger
 
+from utils.prompt_templates import PROMPT_TEMPLATE_QUESTION_GENERATION
+
 logger = init_logger()
-
-PROMPT_TEMPLATE_QUESTION_GENERATION = """Given the following text, generate five multiple choice questions with the following format. The questions must be simple enough to be answerable with only general important details that would be included in a short two sentence summary of the text. The questions must be only answerable when given the text and should not be answerable with common knowledge. Do not write questions about minute details in the text, only the most important points.
-
-Format:
-Q1) Question
-A. Choice 1
-B. Choice 2
-C. Choice 3
-D. Choice 4
-E. Choice 5
-
-Q1 Answer: A/B/C/D/E
-
-Q2) Question
-A. Choice 1
-B. Choice 2
-C. Choice 3
-D. Choice 4
-E. Choice 5
-
-Q2 Answer: A/B/C/D/E
-
-etc...
-
-Text:
-{article}"""
 
 OUTPUT_PATH = f"{os.environ.get('ANYSCALE_ARTIFACT_STORAGE')}/preference_tuning_summarization_example/qa_annotations"
 OUTPUT_PATH_TRAIN = f"{OUTPUT_PATH}_train"
@@ -98,8 +74,9 @@ if __name__ == "__main__":
     hf_ds = datasets.load_dataset("abisee/cnn_dailymail", "3.0.0", split="train").shuffle(
         seed=21
     )
+    hf_ds = hf_ds.rename_columns({"article": "text"})
     # the resulting keys for the dataset are "article" (which contains the text) and "id" only
-    hf_ds.remove_columns(["highlights"])
+    hf_ds = hf_ds.remove_columns(["highlights"])
 
     ds = ray.data.from_huggingface(hf_ds)
     # By default, a HF dataset is converted to a Materialized dataset and the number of blocks can be low

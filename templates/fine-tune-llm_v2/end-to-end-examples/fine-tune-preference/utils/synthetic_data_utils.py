@@ -46,7 +46,6 @@ def duplicate_rows(row, count, id_col):
         {**row, id_col: i} for i in range(count)
     ]
 
-
 def process_question(text, num_questions=5, letter_choices=("A", "B", "C", "D", "E")):
     questions = []
     assert all(
@@ -109,7 +108,8 @@ def extract_answers(row, col_in, col_out, num_questions):
     answers = ["Unsure"] * num_questions
     for line in text.split("\n"):
         if m := re.match(r"Q(\d)\) ([A-E])", line.strip()):
-            answers[int(m.group(1)) - 1] = m.group(2)
+            if 1 <= int(m.group(1)) <= num_questions:
+                answers[int(m.group(1)) - 1] = m.group(2)
 
     row[col_out] = answers
     return row
