@@ -11,7 +11,7 @@ logger = init_logger()
 
 # summary model settings
 MODEL_LOCATION = "mistralai/Mistral-7B-Instruct-v0.1" # can be an NFS folder or huggingface model
-LORA_LOCATION = "fxwang-anyscale/dpo_mistral_instruct_lr_5e-06_beta_0.01_cpo_alpha_0.02_epoch1" # can be an NFS folder or huggingface model
+LORA_LOCATION = "fxwang-anyscale/dpo_beta_0.05_lr_5e-06_mistral_instruct" #"fxwang-anyscale/dpo_beta_0.03_lr_5e-06_mistral_instruct" # can be an NFS folder or huggingface model
 TOKENIZER_LOCATION = MODEL_LOCATION # optionally specify alternate tokenizer location for chat template
 
 # generation settings
@@ -20,7 +20,7 @@ NUM_GENERATIONS = 10 # use 1 generation for eval, 10 for training data generatio
 
 # summary generation compute settings
 # The number of LLM instances to use.
-NUM_LLM_INSTANCES = 8
+NUM_LLM_INSTANCES = 4
 # The number of GPUs to use per LLM instance. NUM_GPUS_PER_INSTANCE > 1 will use tensor parallelism across all GPUs.
 NUM_GPUS_PER_INSTANCE = 1
 # The type of GPU to use
@@ -29,14 +29,15 @@ GPU_TYPE = "H100" # get_a10g_or_equivalent_accelerator_type()
 BATCH_SIZE = 1024
 
 # judge model settings
-JUDGE_MODEL_LOCATION = "meta-llama/Meta-Llama-3.1-8B-Instruct"
-JUDGE_NUM_LLM_INSTANCES = 8
-JUDGE_NUM_GPUS_PER_INSTANCE = 1
+# JUDGE_MODEL_LOCATION = "meta-llama/Meta-Llama-3.1-8B-Instruct"
+JUDGE_MODEL_LOCATION = "meta-llama/Meta-Llama-3-70B-Instruct"
+JUDGE_NUM_LLM_INSTANCES = 6
+JUDGE_NUM_GPUS_PER_INSTANCE = 2
 JUDGE_GPU_TYPE = "H100"
 JUDGE_BATCH_SIZE = 1024
 
 INPUT_FOLDER = f"{os.environ.get('ANYSCALE_ARTIFACT_STORAGE')}/preference_tuning_summarization_example/qa_annotations_train_full"
-OUTPUT_FOLDER = f"{os.environ.get('ANYSCALE_ARTIFACT_STORAGE')}/preference_tuning_summarization_example/summary_generation_fxwang-anyscale-dpo_mistral_instruct_lr_5e-06_beta_0.01_cpo_alpha_0.02_epoch1_v4/"
+OUTPUT_FOLDER = f"{os.environ.get('ANYSCALE_ARTIFACT_STORAGE')}/preference_tuning_summarization_example/summary_training_generation_dpo_beta_0.05_lr_5e-06_mistral_instruct-70B-3-judge_v3/"
 
 NUM_MCQ_QUESTIONS = 5
 

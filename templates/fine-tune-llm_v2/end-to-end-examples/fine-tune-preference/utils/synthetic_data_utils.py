@@ -96,9 +96,9 @@ def shuffle_qa(row, col_in, col_out_prompt, col_out_answers):
         row[col_out_prompt], row[col_out_answers] = write_questions(
             process_question(row[col_in])
         )
+        return [row]
     except Exception as e:
-        row[col_out_prompt], row[col_out_answers] = None, None
-    return row
+        return []
 
 def extract_answers(row, col_in, col_out, num_questions):
     text = row[col_in]
@@ -135,7 +135,7 @@ class LLMPredictor:
             n=1,
             temperature=temperature,
             max_tokens=max_tokens,
-            stop=["<|eot_id|>", "<|end_of_text|>"],
+            stop=["<|eot_id|>", "<|end_of_text|>", "<|im_end|>"],
         )
 
         llm_args = dict(model=model_location)

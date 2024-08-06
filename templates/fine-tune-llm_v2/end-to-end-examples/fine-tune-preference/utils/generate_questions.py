@@ -26,7 +26,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument(
     "--model-id",
     type=str,
-    default="meta-llama/Meta-Llama-3-70B",
+    default="meta-llama/Meta-Llama-3-70B-Instruct",
     help="Model to use for generation",
 )
 parser.add_argument(
@@ -115,7 +115,7 @@ if __name__ == "__main__":
         batch_size=args.batch_size,
     )
 
-    ds = ds.map(
+    ds = ds.flat_map(
         shuffle_qa,
         fn_kwargs=dict(
             col_in=OUTPUT_RAW_GENERATION_FIELD,

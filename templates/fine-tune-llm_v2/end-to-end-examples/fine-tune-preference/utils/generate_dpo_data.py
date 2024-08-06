@@ -7,13 +7,15 @@ from utils.utils import init_logger
 
 logger = init_logger()
 
-INPUT_FOLDER = f"{os.environ.get('ANYSCALE_ARTIFACT_STORAGE')}/preference_tuning_summarization_example/summary_generation_fxwang-anyscale-dpo_mistral_instruct_lr_5e-06_beta_0.01_cpo_alpha_0.02_epoch1_v4/"
-OUTPUT_TRAIN_FILE = f"{os.environ.get('ANYSCALE_ARTIFACT_STORAGE')}/preference_tuning_summarization_example/training_data/train.jsonl"
-OUTPUT_VALID_FILE = f"{os.environ.get('ANYSCALE_ARTIFACT_STORAGE')}/preference_tuning_summarization_example/training_data/valid.jsonl"
+INPUT_FOLDER = f"{os.environ.get('ANYSCALE_ARTIFACT_STORAGE')}/preference_tuning_summarization_example/summary_generation_meta-llama-Meta-Llama-3.1-8B-Instruct/"
+OUTPUT_TRAIN_FILE = f"{os.environ.get('ANYSCALE_ARTIFACT_STORAGE')}/preference_tuning_summarization_example/training_data_summary_generation_meta-llama-Meta-Llama-3.1-8B-Instruct/train_geq_3_acc.jsonl"
+OUTPUT_VALID_FILE = f"{os.environ.get('ANYSCALE_ARTIFACT_STORAGE')}/preference_tuning_summarization_example/training_data_summary_generation_meta-llama-Meta-Llama-3.1-8B-Instruct/valid_geq_3_acc.jsonl"
 
 MAX_PAIRS_PER_ARTICLE = 3
 
 TRAIN_TEST_SPLIT = 0.01
+
+ACCURACY_THRESHOLD = 3
 
 def check_row(row):
     return row["summary_generation_raw_model_output"] is not None and row["qa_generation_answers"] is not None and row["judge_mc_answers"] is not None and "No Judge Output" not in row["judge_mc_answers"]
@@ -40,13 +42,13 @@ def compare(row1, row2):
     len_comp = comp_ternary(row1["num_words"], row2["num_words"], thresh=2) * -1 # shorter is better
     acc_comp = comp_ternary(row1["accuracy"], row2["accuracy"], thresh=0)
 
-    if min(row1["accuracy"], row2["accuracy"]) <= 2:
+    if min(row1["accuracy"], row2["accuracy"]) <= ACCURACY_THRESHOLD - 1:
         return acc_comp
     return len_comp
 
 def make_pairs(examples):
     pairs = []
-    prompt = [{"content": PROMPT_TEMPLATE_SUMMARY.format(**examples.iloc[0]), "role": "user"}]
+    prompt = {"content": PROMPT_TEMPLATE_SUMMARY.format(**examples.iloc[0]), "role": "user"}
     for i in range(len(examples)):
         for j in range(i + 1, len(examples)):
             comp = compare(examples.iloc[i], examples.iloc[j])
@@ -57,10 +59,8 @@ def make_pairs(examples):
             elif comp == -1:
                 pair = [examples.iloc[j], examples.iloc[i]]
             pairs.append(dict(
-                prompt=prompt,
-                chosen=[{"content": pair[0]["summary_generation_raw_model_output"].strip(), "role": "assistant"}],
-                rejected=[{"content": pair[1]["summary_generation_raw_model_output"].strip(), "role": "assistant"}],
-                messages=[prompt[0], {"content": pair[0]["summary_generation_raw_model_output"].strip(), "role": "assistant"}],
+                chosen=[prompt, {"content": pair[0]["summary_generation_raw_model_output"].strip(), "role": "assistant"}],
+                rejected=[prompt, {"content": pair[1]["summary_generation_raw_model_output"].strip(), "role": "assistant"}],
                 num_words_chosen=pair[0]["num_words"],
                 num_words_rejected=pair[1]["num_words"],
                 accuracy_chosen=pair[0]["accuracy"],
@@ -69,7 +69,6 @@ def make_pairs(examples):
 
     if len(pairs) == 0:
         return dict(
-            prompt=[],
             chosen=[],
             rejected=[],
             num_words_chosen=[],
