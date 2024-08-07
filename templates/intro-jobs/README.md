@@ -7,7 +7,7 @@ This tutorial shows you how to:
 2. Configure and debug Anyscale Jobs.
 3. Submit jobs from Anyscale Workspaces as well as other other machines.
 
-**Note**: This tutorial is run within a workspace. Please overview the `Introduction to Workspaces` template first before this tutorial.
+**Note**: This tutorial runs within a workspace. Please overview the `Introduction to Workspaces` template first before this tutorial.
 
 ## Key features of Anyscale Jobs
 

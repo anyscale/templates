@@ -11,7 +11,7 @@ This template shows you how to:
 
 For a Python script version of the `.ipynb` notebook used for the workspace template, refer to `main.py`.
 
-**Note:** This tutorial is run within a workspace. See [Introduction to Workspaces](https://docs.anyscale.com/examples/intro-workspaces) for more details.
+**Note:** This tutorial runs within a workspace. See [Introduction to Workspaces](https://docs.anyscale.com/examples/intro-workspaces) for more details.
 
 
 

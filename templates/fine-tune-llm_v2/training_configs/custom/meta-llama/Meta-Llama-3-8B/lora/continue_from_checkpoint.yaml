@@ -1,0 +1,43 @@
+# change this to the model you want to fine-tune
+model_id: meta-llama/Meta-Llama-3-8B-Instruct
+
+# Use this if you want to provide a checkpoint for the base-model to start from
+# initial_base_model_ckpt_path: ...
+
+# This checkpoint has been fine-tuned on the first half of the gsm8k dataset (s3://large-dl-models-mirror/finetuning_template/train_1.jsonl). Use initial_adapter_model_ckpt_path if you want to provide a checkpoint for the LoRA adapter to start from.
+initial_adapter_model_ckpt_path: s3://large-dl-models-mirror/finetuning_template/continued_ft_gsm8k_checkpoint
+
+
+# Change this to the path to your training data
+train_path: s3://large-dl-models-mirror/finetuning_template/train_2.jsonl
+
+# Change this to the path to your validation data. This is optional
+valid_path: s3://large-dl-models-mirror/finetuning_template/test.jsonl
+
+
+context_length: 512
+num_devices: 16
+num_epochs: 3
+train_batch_size_per_device: 16
+eval_batch_size_per_device: 16
+learning_rate: 1e-4
+deepspeed:
+  config_path: deepspeed_configs/zero_3_offload_optim+param.json
+worker_resources:
+  accelerator_type:A10G: 0.001
+lora_config:
+  r: 8
+  lora_alpha: 16
+  lora_dropout: 0.05
+  target_modules:
+    - q_proj
+    - v_proj
+    - k_proj
+    - o_proj
+    - gate_proj
+    - up_proj
+    - down_proj
+    - embed_tokens
+    - lm_head
+  task_type: "CAUSAL_LM"
+  modules_to_save: []
