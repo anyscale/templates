@@ -20,7 +20,10 @@ See [this guide on batch inference](https://docs.ray.io/en/latest/data/batch_inf
 
 To run this example, you will need the following packages:
 
-```!pip install -q "ray[data]" torch torchvision```
+
+```python
+!pip install -q "ray[data]" torch torchvision
+```
 
 ## Step 1: Reading the Dataset from S3
 
