@@ -22,7 +22,7 @@ To run this example, you will need the following packages:
 
 
 ```python
-pip install -q "ray[data]" torch torchvision
+!pip install -q "ray[data]" torch torchvision
 ```
 
 ## Step 1: Reading the Dataset from S3
