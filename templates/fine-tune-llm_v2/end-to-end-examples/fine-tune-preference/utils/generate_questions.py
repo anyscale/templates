@@ -14,7 +14,7 @@ from utils.prompt_templates import PROMPT_TEMPLATE_QUESTION_GENERATION
 
 logger = init_logger()
 
-OUTPUT_PATH = f"{os.environ.get('ANYSCALE_ARTIFACT_STORAGE')}/preference_tuning_summarization_example/qa_annotations"
+OUTPUT_PATH = f"{os.environ.get('ANYSCALE_ARTIFACT_STORAGE')}/preference_tuning_summarization_example/qa_annotations_full"
 OUTPUT_PATH_TRAIN = f"{OUTPUT_PATH}_train"
 OUTPUT_PATH_TEST = f"{OUTPUT_PATH}_test"
 # New output columns
@@ -26,7 +26,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument(
     "--model-id",
     type=str,
-    default="meta-llama/Meta-Llama-3-70B-Instruct",
+    default="meta-llama/Meta-Llama-3.1-70B-Instruct",
     help="Model to use for generation",
 )
 parser.add_argument(
@@ -56,6 +56,18 @@ parser.add_argument(
     default=1,
     help="Number of Ray data blocks per GPU device. If unsure, use the default value",
 )
+parser.add_argument(
+    "--num-total-samples",
+    type=int,
+    default=21000,
+    help="Number of articles to sample in total",
+)
+parser.add_argument(
+    "--train-test-split",
+    type=int,
+    default=0.01,
+    help="Percentage of articles to use for the test set",
+)
 
 if __name__ == "__main__":
     args = parser.parse_args()
@@ -77,6 +89,7 @@ if __name__ == "__main__":
     hf_ds = hf_ds.rename_columns({"article": "text"})
     # the resulting keys for the dataset are "article" (which contains the text) and "id" only
     hf_ds = hf_ds.remove_columns(["highlights"])
+    hf_ds = hf_ds.select(range(args.num_total_samples))
 
     ds = ray.data.from_huggingface(hf_ds)
     # By default, a HF dataset is converted to a Materialized dataset and the number of blocks can be low
@@ -125,7 +138,7 @@ if __name__ == "__main__":
         num_cpus=0,
     )
 
-    train_ds, test_ds = ds.train_test_split(test_size=0.05)
+    train_ds, test_ds = ds.train_test_split(test_size=args.train_test_split)
 
     train_ds.write_parquet(OUTPUT_PATH_TRAIN)
     test_ds.write_parquet(OUTPUT_PATH_TEST)
