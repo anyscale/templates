@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 import argparse
 import os
+from utils.synthetic_data_utils import check_num_bad_chars
 
 parser = argparse.ArgumentParser()
 
@@ -50,7 +51,7 @@ def eval_rows(row):
         **row,
         num_words = len(row["summary_generation_raw_model_output"].split()),
         accuracy = sum(row["qa_generation_answers"][i] == row["judge_mc_answers"][i] for i in range(len(row["qa_generation_answers"]))),
-        num_bad_chars = check_bad_chars(row["summary_generation_raw_model_output"], normalize=True)
+        num_bad_chars = check_num_bad_chars(row["summary_generation_raw_model_output"], normalize=True)
         # accuracy_filtered = sum(row["qa_generation_answers"][i] == row["judge_mc_answers"][i] for i in good_questions) / len(good_questions),
     )]
 
