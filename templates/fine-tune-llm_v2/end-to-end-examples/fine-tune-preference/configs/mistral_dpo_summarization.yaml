@@ -1,0 +1,45 @@
+model_id: mistralai/Mistral-7B-Instruct-v0.1
+# Example summarization dataset with 10k examples for training with an average of 2.2k tokens per sample
+train_path: s3://air-example-data/preference-tuning-summarization/train.jsonl
+valid_path: s3://air-example-data/preference-tuning-summarization/valid.jsonl
+task: "preference_tuning"
+context_length: 4096
+# For DPO, it is recommended to set a high `num_data_blocks_per_device` to not bottleneck the logp processor.
+# We recommend not going beyond 20 so as to not spawn too many Ray actors.
+num_data_blocks_per_device: 16
+num_devices: 6 # <--- runs training on 6 GPUs
+train_batch_size_per_device: 2
+eval_batch_size_per_device: 2
+learning_rate: 5e-6
+num_epochs: 3
+no_gradient_checkpoint: False
+output_dir: /mnt/local_storage/
+deepspeed:
+  config_path: deepspeed_configs/zero_3.json
+worker_resources:
+  accelerator_type:A10G: 1
+flash_attention_2: True
+padding: "longest"
+preference_tuning_config:
+  beta: 0.01
+  logprob_processor_scaling_config:
+    custom_resources:
+      accelerator_type:A10G: 1
+    concurrency: 2 # <--- runs reference model logp calculation on 2 GPUs
+    batch_size: 2
+lora_config:
+  r: 8
+  lora_alpha: 16
+  lora_dropout: 0.05
+  target_modules:
+    - q_proj
+    - k_proj
+    - v_proj
+    - o_proj
+    - gate_proj
+    - up_proj
+    - down_proj
+  modules_to_save: []
+  bias: "none"
+  fan_in_fan_out: false
+  init_lora_weights: true
