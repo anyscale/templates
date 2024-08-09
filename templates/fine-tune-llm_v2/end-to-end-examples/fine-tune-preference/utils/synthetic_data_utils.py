@@ -11,6 +11,24 @@ from vllm import LLM, SamplingParams
 from vllm.lora.request import LoRARequest
 
 from utils.utils import init_logger
+import unicodedata
+
+# make a regex out of the permitted letters
+import re
+import string
+# same as string.printable but explicit
+permitted_chars = string.ascii_letters + string.digits + string.whitespace + string.punctuation + '’‘–—“”…™°Ææ'
+
+pattern = re.compile(f"[^{re.escape(permitted_chars)}\\£|\\€]") # one of the characters not in permitted_chars
+
+def normalize_string(text: str) -> str:
+    nkfd_form = unicodedata.normalize("NFD", text)
+    return ''.join(c for c in nkfd_form if not unicodedata.combining(c))
+
+def check_num_bad_chars(text: str, normalize: bool = False) -> int:
+    if normalize:
+        text = normalize_string(text)
+    return len(pattern.findall(text))
 
 
 def format_into_prompt_openai(
@@ -122,6 +140,7 @@ class LLMPredictor:
         col_out,
         temperature,
         max_tokens,
+        top_p=1.0,
         lora_location=None,
         vllm_settings=None,
     ):
@@ -135,6 +154,7 @@ class LLMPredictor:
             n=1,
             temperature=temperature,
             max_tokens=max_tokens,
+            top_p=top_p,
             stop=["<|eot_id|>", "<|end_of_text|>", "<|im_end|>"],
         )
 

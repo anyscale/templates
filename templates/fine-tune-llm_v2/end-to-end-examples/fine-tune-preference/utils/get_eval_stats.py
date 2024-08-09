@@ -17,7 +17,7 @@ parser.add_argument(
     '--baseline-outputs-path',
     type=str,
     required=False,
-    default=f"{os.environ['ANYSCALE_ARTIFACT_STORAGE']}/preference_tuning_summarization_example/eval__cnn_qa_data_val_subset_1000_5_questions_easy__mistralai-Mistral-7B-Instruct-v0.1_BASELINE/",
+    default=f"{os.environ['ANYSCALE_ARTIFACT_STORAGE']}/preference_tuning_summarization_example/summary_eval_generation_mistralai_Mistral-7B-Instruct-v0.1_temp_0_judge_meta-llama_Meta-Llama-3.1-70B-Instruct/",
     help='Path to the folder with parquets for the baselien model to find win rate against.'
 )
 
@@ -36,7 +36,10 @@ parser.add_argument(
 
 args = parser.parse_args()
 
-ds = ray.data.read_parquet(args.outputs_path, file_extensions=["parquet"])
+try:
+    ds = ray.data.read_parquet(args.outputs_path, file_extensions=["parquet"])
+except Exception as e:
+    ds = ray.data.read_parquet(f"{os.environ['ANYSCALE_ARTIFACT_STORAGE']}/preference_tuning_summarization_example/" + args.outputs_path, file_extensions=["parquet"])
 ds_orig = ray.data.read_parquet(args.baseline_outputs_path, file_extensions=["parquet"])
 
 def eval_rows(row):
@@ -47,6 +50,7 @@ def eval_rows(row):
         **row,
         num_words = len(row["summary_generation_raw_model_output"].split()),
         accuracy = sum(row["qa_generation_answers"][i] == row["judge_mc_answers"][i] for i in range(len(row["qa_generation_answers"]))),
+        num_bad_chars = check_bad_chars(row["summary_generation_raw_model_output"], normalize=True)
         # accuracy_filtered = sum(row["qa_generation_answers"][i] == row["judge_mc_answers"][i] for i in good_questions) / len(good_questions),
     )]
 
@@ -81,7 +85,8 @@ if not args.disable_csv:
         "% Accuracy >=4": np.mean(merged_results["accuracy_x"] >= 4),
         "Median Compression": np.median(merged_results["num_words_x"] / lens),
         "Failed Compressions": np.mean(merged_results["summary_generation_raw_model_output_x"].str.len() >= merged_results["text"].str.len()),
-        "Num Contains /******/": np.mean(merged_results["summary_generation_raw_model_output_x"].str.find("/******/") != -1)
+        "Num Contains /******/": np.mean(merged_results["summary_generation_raw_model_output_x"].str.find("/******/") != -1),
+        "Num Contains Bad Characters": np.mean(merged_results["num_bad_chars_x"] > 0),
     }], index=[args.outputs_path.strip("/").split("/")[-1]])
 
     all_stats = new_row.combine_first(all_stats)
@@ -93,12 +98,13 @@ print("% Accuracy >=4:", np.mean(merged_results["accuracy_x"] >= 4))
 print("Median Compression:", np.median(merged_results["num_words_x"] / lens))
 print("Mean Compression:", np.mean(merged_results["num_words_x"] / lens))
 print("Failed Compressions:", np.mean(merged_results["summary_generation_raw_model_output_x"].str.len() >= merged_results["text"].str.len()))
-print("Invalid Chars:", np.mean(merged_results["summary_generation_raw_model_output_x"].str.find("/******/") != -1))
+print("Contains /******/:", np.mean(merged_results["summary_generation_raw_model_output_x"].str.find("/******/") != -1))
+print("Contains Bad Characters:", np.mean(merged_results["num_bad_chars_x"] > 0))
 
 print("Baseline % Accuracy >=3:", np.mean(merged_results["accuracy_y"] >= 3))
 print("Baseline % Accuracy >=4:", np.mean(merged_results["accuracy_y"] >= 4))
 print("Baseline Median Compression", np.median(merged_results["num_words_y"] / lens))
 print("Baseline Mean Compression", np.mean(merged_results["num_words_y"] / lens))
-# print("Baseline Failed Compressions:", np.mean(merged_results["num_words_y"] / lens >= 1))
 print("Baseline Failed Compressions:", np.mean(merged_results["summary_generation_raw_model_output_y"].str.len() >= merged_results["text"].str.len()))
-print("Baseline Invalid Chars:", np.mean(merged_results["summary_generation_raw_model_output_y"].str.find("/******/") != -1))
+print("Baseline Contains /******/:", np.mean(merged_results["summary_generation_raw_model_output_y"].str.find("/******/") != -1))
+print("Baseline Contains Bad Characters:", np.mean(merged_results["num_bad_chars_y"] > 0))

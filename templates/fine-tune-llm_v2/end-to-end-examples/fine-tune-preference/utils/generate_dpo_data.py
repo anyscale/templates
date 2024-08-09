@@ -5,20 +5,22 @@ import os
 from utils.prompt_templates import PROMPT_TEMPLATE_SUMMARY
 from utils.utils import init_logger
 
+from utils.synthetic_data_utils import check_num_bad_chars
+
 logger = init_logger()
 
-INPUT_FOLDER = f"{os.environ.get('ANYSCALE_ARTIFACT_STORAGE')}/preference_tuning_summarization_example/summary_generation_meta-llama-Meta-Llama-3.1-8B-Instruct/"
-OUTPUT_TRAIN_FILE = f"{os.environ.get('ANYSCALE_ARTIFACT_STORAGE')}/preference_tuning_summarization_example/training_data_summary_generation_meta-llama-Meta-Llama-3.1-8B-Instruct/train_geq_3_acc.jsonl"
-OUTPUT_VALID_FILE = f"{os.environ.get('ANYSCALE_ARTIFACT_STORAGE')}/preference_tuning_summarization_example/training_data_summary_generation_meta-llama-Meta-Llama-3.1-8B-Instruct/valid_geq_3_acc.jsonl"
+INPUT_FOLDER = f"{os.environ.get('ANYSCALE_ARTIFACT_STORAGE')}/preference_tuning_summarization_example/summary_train_generation_fxwang-anyscale_dpo_mistral_instruct_clean_v2_beta_0.03_lr_5e-6_rank_64_epoch_0_temp_0.8_judge_meta-llama_Meta-Llama-3.1-70B-Instruct/"
+OUTPUT_TRAIN_FILE = f"{os.environ.get('ANYSCALE_ARTIFACT_STORAGE')}/preference_tuning_summarization_example/training_data_summary_train_generation_fxwang-anyscale_dpo_mistral_instruct_clean_v2_beta_0.03_lr_5e-6_rank_64_epoch_0_temp_0.8_judge_meta-llama_Meta-Llama-3.1-70B-Instruct/train_geq_3_acc.jsonl"
+OUTPUT_VALID_FILE = f"{os.environ.get('ANYSCALE_ARTIFACT_STORAGE')}/preference_tuning_summarization_example/training_data_summary_train_generation_fxwang-anyscale_dpo_mistral_instruct_clean_v2_beta_0.03_lr_5e-6_rank_64_epoch_0_temp_0.8_judge_meta-llama_Meta-Llama-3.1-70B-Instruct/valid_geq_3_acc.jsonl"
 
 MAX_PAIRS_PER_ARTICLE = 3
 
-TRAIN_TEST_SPLIT = 0.01
+TRAIN_TEST_SPLIT = 0.02
 
 ACCURACY_THRESHOLD = 3
 
 def check_row(row):
-    return row["summary_generation_raw_model_output"] is not None and row["qa_generation_answers"] is not None and row["judge_mc_answers"] is not None and "No Judge Output" not in row["judge_mc_answers"]
+    return row["summary_generation_raw_model_output"] is not None and row["qa_generation_answers"] is not None and row["judge_mc_answers"] is not None and "No Judge Output" not in row["judge_mc_answers"] and check_num_bad_chars(row["summary_generation_raw_model_output"], normalize=True) == 0
 
 def eval_rows(row):
     return dict(
@@ -82,13 +84,13 @@ def make_pairs(examples):
         result = result.sample(MAX_PAIRS_PER_ARTICLE)
     return result
 
-ds = ray.data.read_parquet(INPUT_FOLDER)
+ds = ray.data.read_parquet(INPUT_FOLDER, file_extensions=["parquet"])
 
 ds = ds.filter(check_row, num_cpus=0)
 ds = ds.map(eval_rows, num_cpus=0)
-ds = ds.filter(lambda row : row["num_words"] < 200, num_cpus=0)
+ds = ds.filter(lambda row : 5 <= row["num_words"] < 200, num_cpus=0)
 
-ds = ds.groupby("file").map_groups(make_pairs, num_cpus=0, batch_format="pandas")
+ds = ds.groupby("id").map_groups(make_pairs, num_cpus=0, batch_format="pandas")
 
 train_ds, test_ds = ds.train_test_split(TRAIN_TEST_SPLIT)
 
