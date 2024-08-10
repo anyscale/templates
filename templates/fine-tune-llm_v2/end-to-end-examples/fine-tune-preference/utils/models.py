@@ -42,8 +42,8 @@ class OnlineInferenceConfig(StrictBaseModel):
     )
     temperature: float = Field(description="Temperature while sampling from the model")
     max_tokens: int = Field(default=4096, description="Max tokens for generation")
-    scaling_config: MapperScalingConfig = Field(
-        description="Scaling config for inference on the model. Internally, this is a Ray Data operation."
+    concurrency: int = Field(
+        description="Number of concurrent requests to send to the server."
     )
 
 

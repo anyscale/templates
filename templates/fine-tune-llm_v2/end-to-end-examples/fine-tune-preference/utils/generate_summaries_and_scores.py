@@ -97,9 +97,8 @@ def get_output_folder_name(model_config) -> str:
     return output_folder
 
 
-def get_data_with_summaries(ds, config: SummaryGenerationConfig):
-    model_config = config.model_inference_config
-    if config.inference_type == InferenceType.OFFLINE:
+def get_data_with_summaries(ds, model_config: Union[OnlineInferenceConfig, OfflineInferenceConfig]):
+    if isinstance(model_config, OfflineInferenceConfig):
         ds = ds.map_batches(
             OfflinePredictor,
             fn_constructor_kwargs=dict(
@@ -122,7 +121,7 @@ def get_data_with_summaries(ds, config: SummaryGenerationConfig):
                 col_out="summary_generation_raw_model_output",
                 model_config=model_config,
             ),
-            concurrency=model_config.scaling_config.concurrency,
+            concurrency=model_config.concurrency,
         )
     return ds
 
@@ -202,7 +201,9 @@ if __name__ == "__main__":
             ),
             num_cpus=0,
         )
-    ds = get_data_with_summaries(ds, config)
+    ds = get_data_with_summaries(ds, model_config)
+
+    # Input pre-processing for the judge model
     tokenizer_id_or_path = (
         judge_config.tokenizer_id_or_path
         if judge_config.tokenizer_id_or_path
@@ -218,7 +219,7 @@ if __name__ == "__main__":
         ),
         num_cpus=0,
     )
-
+    # Get scores
     ds = ds.map_batches(
         OfflinePredictor,
         fn_constructor_kwargs=dict(

@@ -10,7 +10,7 @@ model_inference_config:
     concurrency: 2
     num_gpus: 1
     custom_resources:
-      accelerator_type_h100_80g: 1
+      accelerator_type:H100: 1
 num_generations: 1
 judge_inference_config:
   model_id_or_path: meta-llama/Meta-Llama-3.1-70B-Instruct
@@ -20,5 +20,5 @@ judge_inference_config:
     concurrency: 3
     num_gpus: 2
     custom_resources:
-      accelerator_type_h100_80g: 1
+      accelerator_type:H100: 1
 num_mcq_questions: 5
