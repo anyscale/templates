@@ -1,157 +1,237 @@
-import ray
-import os
+"""
+Summary generation with support for offline and online inference.
 
+Offline batched inference is implemented with Ray Data and vLLM while Online inference expects an OpenAI-compatible server
+"""
+
+import argparse
+import os
+import re
+from enum import Enum
+from typing import Optional, Union
+
+import numpy as np
+import ray
+import yaml
+from pydantic import Field, model_validator
 from transformers import AutoTokenizer
 
-from utils.synthetic_data_utils import *
-
-from utils.prompt_templates import PROMPT_TEMPLATE_MCQ_ANSWERING, PROMPT_TEMPLATE_SUMMARY
+from utils.models import OfflineInferenceConfig, OnlineInferenceConfig, StrictBaseModel
+from utils.prompt_templates import (
+    PROMPT_TEMPLATE_MCQ_ANSWERING,
+    PROMPT_TEMPLATE_SUMMARY,
+)
+from utils.synthetic_data_utils import (
+    InferenceType,
+    OfflinePredictor,
+    OnlinePredictor,
+    duplicate_rows,
+    extract_answers,
+    format_into_prompt,
+    format_into_prompt_rawtext,
+)
+from utils.utils import init_logger
 
 logger = init_logger()
 
-# summary model settings
-MODEL_LOCATION = "mistralai/Mistral-7B-Instruct-v0.1" # can be an NFS folder or huggingface model
-LORA_LOCATION = "fxwang-anyscale/mistral-instruct-dpo-clean-v2-beta_0.1_alpha_0.1_lr_5e-06_mask_eos" #"fxwang-anyscale/mistral-instruct-dpo-lr-5e-5-beta-0.01-cleaned-data-epoch-0" #"fxwang-anyscale/dpo_mistral_instruct_beta_0.05_maskeos_lr_5e-5" #"fxwang-anyscale/llama3.1_dpo_beta_0.01_lr_5e-5_epoch_0" #None #"fxwang-anyscale/dpo_beta_0.05_lr_5e-06_mistral_instruct_merged-round3-epoch-0" #"fxwang-anyscale/dpo_beta_0.05_lr_5e-06_mistral_instruct_merged-round2-epoch-2" #"fxwang-anyscale/dpo_beta_0.05_lr_5e-06_mistral_instruct_merged-round2-epoch-1" #"fxwang-anyscale/dpo_beta_0.03_lr_5e-06_mistral_instruct" # can be an NFS folder or huggingface model
-TOKENIZER_LOCATION = MODEL_LOCATION # optionally specify alternate tokenizer location for chat template
 
-MODE = "eval"
+class Mode(Enum):
+    TRAIN = "train"
+    EVAL = "eval"
 
-# summary generation compute settings
-# The number of LLM instances to use.
-NUM_LLM_INSTANCES = 2
-# The number of GPUs to use per LLM instance. NUM_GPUS_PER_INSTANCE > 1 will use tensor parallelism across all GPUs.
-NUM_GPUS_PER_INSTANCE = 1
-# The type of GPU to use
-GPU_TYPE = "H100" # get_a10g_or_equivalent_accelerator_type()
 
-# judge model settings
-# JUDGE_MODEL_LOCATION = "meta-llama/Meta-Llama-3.1-8B-Instruct"
-JUDGE_MODEL_LOCATION = "meta-llama/Meta-Llama-3.1-70B-Instruct"
-JUDGE_NUM_LLM_INSTANCES = 3
-JUDGE_NUM_GPUS_PER_INSTANCE = 2
-JUDGE_GPU_TYPE = "H100"
+class SummaryGenerationConfig(StrictBaseModel):
+    mode: Mode = Field(description="Evaluation mode")
+    inference_type: InferenceType = Field(
+        default="offline",
+        description="Inference type. Can be online (through an OpenAI-compatible server) or Offline (Batched inference with Ray + vLLM)",
+    )
+    input_folder: str = Field(description="Input Folder")
+    model_inference_config: Union[OnlineInferenceConfig, OfflineInferenceConfig] = (
+        Field(description="inference config for the model being evaluated by the judge")
+    )
+    num_generations: int = Field(
+        default=1,
+        description="Number of generations to sample from the model being evaluated by the judge",
+    )
+    judge_inference_config: OfflineInferenceConfig = Field(
+        description="Batched inference config for the judge model"
+    )
+    num_mcq_questions: int = Field(
+        default=5,
+        description="Number of MCQ questions in the provided input dataset. Note that only those input dataset samples with `num_mcq_questions` questions will be used in evaluation.",
+    )
 
-if MODE == "eval":
-    # generation settings
-    TEMPERATURE = 0
-    NUM_GENERATIONS = 1
-    INPUT_FOLDER = f"{os.environ.get('ANYSCALE_ARTIFACT_STORAGE')}/preference_tuning_summarization_example/qa_annotations_full_test"
-    BATCH_SIZE = 128
-    JUDGE_BATCH_SIZE = 128
-elif MODE == "train":
-    # generation settings
-    TEMPERATURE = 0.8
-    NUM_GENERATIONS = 10
-    INPUT_FOLDER = f"{os.environ.get('ANYSCALE_ARTIFACT_STORAGE')}/preference_tuning_summarization_example/qa_annotations_full_train"
-    BATCH_SIZE = 1024
-    JUDGE_BATCH_SIZE = 1024
-else:
-    raise ValueError(f"Invalid Mode, must be `'train'` or `'eval'` but got {MODE}")
+    @model_validator(mode="after")
+    def validate_model_config_and_type(self):
+        if self.inference_type == InferenceType.OFFLINE:
+            assert isinstance(self.model_inference_config, OfflineInferenceConfig)
+        else:
+            assert isinstance(self.model_inference_config, OnlineInferenceConfig)
+        return self
 
-OUTPUT_MODEL_NAME = LORA_LOCATION if LORA_LOCATION is not None else MODEL_LOCATION
-OUTPUT_MODEL_NAME = OUTPUT_MODEL_NAME.replace("/", "_")
-OUTPUT_FOLDER = f"{os.environ.get('ANYSCALE_ARTIFACT_STORAGE')}/preference_tuning_summarization_example/summary_{MODE}_generation_{OUTPUT_MODEL_NAME}_temp_{TEMPERATURE}_judge_{JUDGE_MODEL_LOCATION.replace('/', '_')}/"
+    @classmethod
+    def from_yaml(cls, path: str):
+        with open(path, "r") as f:
+            config_dict = yaml.safe_load(f)
+        return cls(**config_dict)
 
-print("OUTPUT FOLDER:", OUTPUT_FOLDER)
 
-NUM_MCQ_QUESTIONS = 5
+def get_output_folder_name(model_config) -> str:
+    if isinstance(model_config, OfflineInferenceConfig):
+        output_model_name = (
+            model_config.adapter_id_or_path
+            if model_config.adapter_id_or_path is not None
+            else model_config.model_id_or_path
+        )
+    elif isinstance(model_config, OnlineInferenceConfig):
+        output_model_name = model_config.model_id
+    else:
+        raise NotImplementedError(
+            f"Model config type {type(model_config)} not supported"
+        )
+
+    output_model_name = output_model_name.replace("/", "_")
+    user_name = re.sub(r"\s+", "__", os.environ.get("ANYSCALE_USERNAME", "user"))
+    output_folder = f"{os.environ.get('ANYSCALE_ARTIFACT_STORAGE')}/{user_name}/preference_tuning_summarization_example/summary_{config.mode.value}_generation_{output_model_name}_temp_{model_config.temperature}_judge_{judge_config.model_id_or_path.replace('/', '_')}/"
+    return output_folder
+
+
+def get_data_with_summaries(ds, config: SummaryGenerationConfig):
+    model_config = config.model_inference_config
+    if config.inference_type == InferenceType.OFFLINE:
+        ds = ds.map_batches(
+            OfflinePredictor,
+            fn_constructor_kwargs=dict(
+                col_in="summary_generation_prompt",
+                col_out="summary_generation_raw_model_output",
+                model_config=model_config,
+            ),
+            num_gpus=model_config.scaling_config.num_gpus,
+            concurrency=model_config.scaling_config.concurrency,
+            batch_size=model_config.scaling_config.batch_size,
+            resources=model_config.scaling_config.custom_resources,
+            zero_copy_batch=True,
+            batch_format="numpy",
+        )
+    else:
+        ds = ds.map(
+            OnlinePredictor,
+            fn_constructor_kwargs=dict(
+                col_in="summary_generation_prompt",
+                col_out="summary_generation_raw_model_output",
+                model_config=model_config,
+            ),
+            concurrency=model_config.scaling_config.concurrency,
+        )
+    return ds
+
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(
+        description="A simple script for summary generation and scoring with support for offline and online inference."
+    )
+    parser.add_argument(
+        "config_path", help="Path to the config file for summary generation"
+    )
+    args = parser.parse_args()
+
+    config = SummaryGenerationConfig.from_yaml(args.config_path)
+    model_config = config.model_inference_config
+    judge_config = config.judge_inference_config
+
+    output_folder = get_output_folder_name(model_config)
 
     # Initialize Ray with a Runtime Environment.
-    ray.init(
-        runtime_env={
-            "env_vars": {"HF_TOKEN": os.environ["HF_TOKEN"], "HF_HOME": "/mnt/local_storage/.cache/huggingface"},
+    runtime_env = (
+        {}
+        if config.inference_type == InferenceType.OFFLINE
+        else {
+            config.model_inference_config.api_key_env_var: os.environ[
+                config.model_inference_config.api_key_env_var
+            ]
         }
     )
+    ray.init(
+        runtime_env={
+            "env_vars": {
+                "HF_TOKEN": os.environ["HF_TOKEN"],
+                "HF_HOME": "/mnt/local_storage/.cache/huggingface",
+                **runtime_env,
+            },
+        },
+        logging_config=ray.LoggingConfig(log_level="INFO"),
+    )
 
-    ds = ray.data.read_parquet(INPUT_FOLDER, file_extensions=["parquet"])
+    logger.info(f"OUTPUT FOLDER: {output_folder}")
+
+    ds = ray.data.read_parquet(config.input_folder, file_extensions=["parquet"])
 
     ds = ds.filter(
-        lambda row : row["qa_generation_answers"] is not None and len(row["qa_generation_answers"]) == NUM_MCQ_QUESTIONS,
-        num_cpus=0
+        lambda row: row["qa_generation_answers"] is not None
+        and len(row["qa_generation_answers"]) == config.num_mcq_questions,
+        num_cpus=0,
     )
 
-    def qa_generation_answers_to_numpy(row):
-        row["qa_generation_answers"] = np.array(row["qa_generation_answers"])
-        return row
-
-    ds = ds.map(qa_generation_answers_to_numpy, num_cpus=0)
+    tokenizer = None
+    if config.inference_type == InferenceType.OFFLINE:
+        tokenizer_id_or_path = (
+            model_config.tokenizer_id_or_path
+            if model_config.tokenizer_id_or_path
+            else model_config.model_id_or_path
+        )
+        tokenizer = AutoTokenizer.from_pretrained(tokenizer_id_or_path)
 
     ds = ds.map(
-        format_into_prompt_rawtext,
+        format_into_prompt,
         fn_kwargs=dict(
             template=PROMPT_TEMPLATE_SUMMARY,
-            tokenizer=AutoTokenizer.from_pretrained(TOKENIZER_LOCATION),
-            col_name="summary_generation_prompt"
+            type=config.inference_type,
+            tokenizer=tokenizer,
+            col_name="summary_generation_prompt",
         ),
-        num_cpus=0
+        num_cpus=0,
     )
 
-    if NUM_GENERATIONS > 1:
+    if config.num_generations > 1:
         ds = ds.flat_map(
             duplicate_rows,
             fn_kwargs=dict(
-                count=NUM_GENERATIONS,
+                count=config.num_generations,
                 id_col="response_num",
             ),
             num_cpus=0,
         )
-
-    ds = ds.repartition(NUM_LLM_INSTANCES * 32)
-
-    ds = ds.map_batches(
-        LLMPredictor,
-        fn_constructor_kwargs=dict(
-            col_in="summary_generation_prompt",
-            col_out="summary_generation_raw_model_output",
-            model_location=MODEL_LOCATION,
-            lora_location=LORA_LOCATION,
-            temperature=TEMPERATURE,
-            top_p=0.95,
-            max_tokens=4096,
-            vllm_settings=dict(
-                tensor_parallel_size=NUM_GPUS_PER_INSTANCE,
-                max_model_len=8192,
-            )
-        ),
-        num_gpus=NUM_GPUS_PER_INSTANCE,
-        accelerator_type=GPU_TYPE,
-        concurrency=NUM_LLM_INSTANCES,
-        batch_size=BATCH_SIZE,
-        zero_copy_batch=True,
-        batch_format="numpy"
+    ds = get_data_with_summaries(ds, config)
+    tokenizer_id_or_path = (
+        judge_config.tokenizer_id_or_path
+        if judge_config.tokenizer_id_or_path
+        else judge_config.model_id_or_path
     )
-
+    tokenizer = AutoTokenizer.from_pretrained(tokenizer_id_or_path)
     ds = ds.map(
         format_into_prompt_rawtext,
         fn_kwargs=dict(
             template=PROMPT_TEMPLATE_MCQ_ANSWERING,
-            tokenizer=AutoTokenizer.from_pretrained(JUDGE_MODEL_LOCATION),
-            col_name="judge_mc_prompt"
+            tokenizer=tokenizer,
+            col_name="judge_mc_prompt",
         ),
-        num_cpus=0
+        num_cpus=0,
     )
 
     ds = ds.map_batches(
-        LLMPredictor,
+        OfflinePredictor,
         fn_constructor_kwargs=dict(
             col_in="judge_mc_prompt",
             col_out="judge_mc_raw_model_output",
-            model_location=JUDGE_MODEL_LOCATION,
-            temperature=0,
-            max_tokens=4096,
-            vllm_settings=dict(
-                tensor_parallel_size=JUDGE_NUM_GPUS_PER_INSTANCE,
-                max_model_len=8192,
-            )
+            model_config=judge_config,
         ),
-        num_gpus=JUDGE_NUM_GPUS_PER_INSTANCE,
-        accelerator_type=JUDGE_GPU_TYPE,
-        concurrency=JUDGE_NUM_LLM_INSTANCES,
-        batch_size=JUDGE_BATCH_SIZE,
+        num_gpus=judge_config.scaling_config.num_gpus,
+        concurrency=judge_config.scaling_config.concurrency,
+        batch_size=judge_config.scaling_config.batch_size,
+        resources=judge_config.scaling_config.custom_resources,
         zero_copy_batch=True,
-        batch_format="numpy"
+        batch_format="numpy",
     )
 
     ds = ds.map(
@@ -159,9 +239,11 @@ if __name__ == "__main__":
         fn_kwargs=dict(
             col_in="judge_mc_raw_model_output",
             col_out="judge_mc_answers",
-            num_questions=NUM_MCQ_QUESTIONS,
+            num_questions=config.num_generations,
         ),
         num_cpus=0,
     )
 
-    ds.write_parquet(OUTPUT_FOLDER)
+    ds.write_parquet(output_folder)
+
+    logger.info(f"Dataset saved at: {output_folder}")

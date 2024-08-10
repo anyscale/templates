@@ -1,0 +1,69 @@
+from typing import Any, Dict, Optional
+
+import numpy as np
+from pydantic import BaseModel, ConfigDict, Field
+
+
+class StrictBaseModel(BaseModel):
+    # NOTE: We use attributes such as model_id, etc which start with model_, a protected namespace in pydantic
+    # We override this here to suppress pydantic's warnings
+    # We forbit extra entries in our models
+    model_config = ConfigDict(protected_namespaces=(), extra="forbid")
+
+
+class MapperScalingConfig(BaseModel):
+    concurrency: int = Field(
+        description="Number of Ray workers to use concurrently for the map operation."
+    )
+    batch_size: Optional[int] = Field(
+        default=None,
+        description="Batch size per worker for the map operation. If `None`, an entrie block of data is used as a batch.",
+    )
+    custom_resources: Dict[str, Any] = Field(
+        default_factory=dict,
+        description="Custom resources (per worker) to use. For running on GPUs, please specify accelerator type, with more details in https://docs.ray.io/en/latest/ray-core/scheduling/accelerators.html#accelerator-types ",
+    )
+    num_gpus: Optional[int] = Field(
+        default=None, description="Number of GPUs per instance"
+    )
+
+
+class OnlineInferenceConfig(StrictBaseModel):
+    model_id: str = Field(
+        default="gpt-4o", description="Model ID for the OpenAI-compatible endpoint"
+    )
+    base_url: str = Field(
+        default="https://api.openai.com/v1",
+        description="Base url for the OpenAI-compatible server",
+    )
+    api_key_env_var: str = Field(
+        default="OPENAI_API_KEY",
+        description="Environment variable to read the api key from",
+    )
+    temperature: float = Field(description="Temperature while sampling from the model")
+    max_tokens: int = Field(default=4096, description="Max tokens for generation")
+    scaling_config: MapperScalingConfig = Field(
+        description="Scaling config for inference on the model. Internally, this is a Ray Data operation."
+    )
+
+
+class OfflineInferenceConfig(StrictBaseModel):
+    model_id_or_path: str = Field(
+        description="Model ID or local path to model checkpoint for the base model weights"
+    )
+    tokenizer_id_or_path: Optional[str] = Field(
+        default=None,
+        description="model ID or local path for the tokenizer to use. This is optional and can be useful if the model to be evaluated does not have a chat template in its tokenizer config. For example, a merged model can sometimes not have a default chat template.",
+    )
+    scaling_config: MapperScalingConfig = Field(
+        description="Scaling config for batched inference on the model. Internally, this is a Ray Data operation."
+    )
+    adapter_id_or_path: Optional[str] = Field(
+        default=None, description="HuggingFace model ID or local path to LoRA weights"
+    )
+    temperature: float = Field(description="Temperature while sampling from the model")
+    top_p: float = Field(
+        default=1,
+        description="`top_p` sampling parameter controlling diversity of tokens sampled",
+    )
+    max_tokens: int = Field(default=4096, description="Max tokens for generation")

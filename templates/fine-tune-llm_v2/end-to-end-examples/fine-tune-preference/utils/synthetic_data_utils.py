@@ -1,57 +1,94 @@
 import logging
+import os
 import random
 import re
-from typing import Any, Dict
+import string
+import time
+import unicodedata
+from enum import Enum
+from typing import Any, Dict, List, Optional
 
 import numpy as np
+import openai
 import requests
 from huggingface_hub import repo_exists, snapshot_download
+from openai import OpenAI
+from pydantic import BaseModel, Field
 from transformers import PreTrainedTokenizerBase
 from vllm import LLM, SamplingParams
 from vllm.lora.request import LoRARequest
 
-from utils.utils import init_logger
-import unicodedata
+from utils.models import OfflineInferenceConfig, OnlineInferenceConfig
+from utils.utils import get_completion, init_logger
 
+logger = init_logger()
+
+# TODO: See if this parameter can be removed entirely
+VLLM_MAX_MODEL_LEN = 8192
+
+permitted_chars = (
+    string.ascii_letters
+    + string.digits
+    + string.whitespace
+    + string.punctuation
+    # TODO (sumanthrh): find a better solution for this
+    + "’‘–—“”…™°Ææ"
+)
 # make a regex out of the permitted letters
-import re
-import string
-# same as string.printable but explicit
-permitted_chars = string.ascii_letters + string.digits + string.whitespace + string.punctuation + '’‘–—“”…™°Ææ'
+pattern = re.compile(f"[^{re.escape(permitted_chars)}\\£|\\€]")
 
-pattern = re.compile(f"[^{re.escape(permitted_chars)}\\£|\\€]") # one of the characters not in permitted_chars
 
+class InferenceType(Enum):
+    ONLINE = "online"
+    OFFLINE = "offline"
+
+
+# TODO: check if needed
 def normalize_string(text: str) -> str:
     nkfd_form = unicodedata.normalize("NFD", text)
-    return ''.join(c for c in nkfd_form if not unicodedata.combining(c))
+    return "".join(c for c in nkfd_form if not unicodedata.combining(c))
 
+
+# TODO: check if needed
 def check_num_bad_chars(text: str, normalize: bool = False) -> int:
     if normalize:
         text = normalize_string(text)
     return len(pattern.findall(text))
 
 
-def format_into_prompt_openai(
-    row: Dict[str, Any], template: str, settings: Dict[str, Any], col_name: str
+def format_into_prompt(
+    row: Dict[str, Any],
+    template: str,
+    col_name: str,
+    type: InferenceType,
+    tokenizer: Optional[PreTrainedTokenizerBase] = None,
 ):
+    """Given a prompt template, formats the keys from the Dataset row based on the inference type
+
+    If `type` is offline, then the input is formatted into raw text by applying the tokenizer's default chat template
+    Else, the input is formatted into the OpenAI messages format
     """
-    Given a prompt template, format the keys from the Dataset row into the template as an OpenAI-style request
-    """
-    row[col_name] = dict(
-        **settings, messages=[{"content": template.format(**row), "role": "user"}]
-    )
+    if type == InferenceType.OFFLINE:
+        return format_into_prompt_rawtext(
+            row=row, template=template, col_name=col_name, tokenizer=tokenizer
+        )
+    else:
+        return format_into_prompt_openai(row=row, template=template, col_name=col_name)
+
+
+def format_into_prompt_openai(row: Dict[str, Any], template: str, col_name: str):
+    """Given a prompt template, format the keys from the Dataset row into the OpenAI messages format"""
+    row[col_name] = [{"content": template.format(**row), "role": "user"}]
     return row
 
 
 def format_into_prompt_rawtext(
     row: Dict[str, Any],
     template: str,
-    tokenizer: PreTrainedTokenizerBase,
     col_name: str,
+    tokenizer: PreTrainedTokenizerBase,
 ):
-    """
-    Given a prompt template, format the keys from the Dataset row into the template as plaintext using a tokenizer's chat template
-    """
+    """Given a prompt template, format the keys from the Dataset row into the template as plaintext using a tokenizer's chat template"""
     row[col_name] = tokenizer.apply_chat_template(
         [{"content": template.format(**row), "role": "user"}],
         tokenize=False,
@@ -59,11 +96,12 @@ def format_into_prompt_rawtext(
     )
     return row
 
-def duplicate_rows(row, count, id_col):
-    return [
-        {**row, id_col: i} for i in range(count)
-    ]
 
+def duplicate_rows(row, count, id_col):
+    return [{**row, id_col: i} for i in range(count)]
+
+
+# TODO: clean up
 def process_question(text, num_questions=5, letter_choices=("A", "B", "C", "D", "E")):
     questions = []
     assert all(
@@ -89,6 +127,7 @@ def process_question(text, num_questions=5, letter_choices=("A", "B", "C", "D", 
     return questions
 
 
+# TODO: clean up
 def write_questions(questions, letter_choices=("A", "B", "C", "D", "E")):
     random.shuffle(questions)
     prompt = ""
@@ -118,6 +157,7 @@ def shuffle_qa(row, col_in, col_out_prompt, col_out_answers):
     except Exception as e:
         return []
 
+
 def extract_answers(row, col_in, col_out, num_questions):
     text = row[col_in]
     if text is None:
@@ -132,33 +172,33 @@ def extract_answers(row, col_in, col_out, num_questions):
     row[col_out] = answers
     return row
 
-class LLMPredictor:
+
+class OfflinePredictor:
     def __init__(
         self,
-        model_location,
-        col_in,
-        col_out,
-        temperature,
-        max_tokens,
-        top_p=1.0,
-        lora_location=None,
-        vllm_settings=None,
+        model_config: OfflineInferenceConfig,
+        col_in: str,
+        col_out: str,
     ):
         logger = init_logger()
         self.col_in = col_in
         self.col_out = col_out
-        self.lora_location = lora_location
+        self.lora_location = model_config.adapter_id_or_path
+        self.vllm_settings = dict(
+            tensor_parallel_size=model_config.scaling_config.num_gpus,
+            max_model_len=VLLM_MAX_MODEL_LEN,
+        )
 
         # Create a sampling params object.
         self.sampling_params = SamplingParams(
             n=1,
-            temperature=temperature,
-            max_tokens=max_tokens,
-            top_p=top_p,
+            temperature=model_config.temperature,
+            max_tokens=model_config.max_tokens,
+            top_p=model_config.top_p,
             stop=["<|eot_id|>", "<|end_of_text|>", "<|im_end|>"],
         )
 
-        llm_args = dict(model=model_location)
+        llm_args = dict(model=model_config.model_id_or_path)
 
         if self.lora_location is not None:
             if repo_exists(self.lora_location):
@@ -172,8 +212,8 @@ class LLMPredictor:
                 )
             )
 
-        if vllm_settings is not None:
-            llm_args.update(vllm_settings)
+        if self.vllm_settings is not None:
+            llm_args.update(self.vllm_settings)
 
         # Create an LLM.
         self.llm = LLM(**llm_args)
@@ -199,3 +239,42 @@ class LLMPredictor:
             **batch,
             self.col_out: generated_text,
         }
+
+
+class OnlinePredictor:
+    def __init__(
+        self,
+        model_config: OnlineInferenceConfig,
+        col_in: str,
+        col_out: str,
+    ):
+        if not os.environ.get(model_config.api_key_env_var):
+            raise ValueError(
+                f"API Key must be set through {model_config.api_key_env_var}"
+            )
+        self.client = OpenAI(
+            base_url=model_config.base_url,
+            api_key=os.environ[model_config.api_key_env_var],
+        )
+        self.model = model_config.model_id
+        self.col_in = col_in
+        self.col_out = col_out
+        self.temperature = model_config.temperature
+        self.max_tokens = model_config.max_tokens
+
+    def __call__(self, example):
+        try:
+            resp = get_completion(
+                client=self.client,
+                model=self.model,
+                temperature=self.temperature,
+                max_tokens=self.max_tokens,
+                messages=list(example[self.col_in]),
+            )
+            example[self.col_out] = resp.choices[0].message.content
+        except Exception as e:
+            logger.error(
+                f"Error generating response:  {e} for input {example[self.col_in]}"
+            )
+            example[self.col_out] = None
+        return example
