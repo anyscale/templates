@@ -6,11 +6,13 @@ import datasets
 import ray
 from transformers import AutoTokenizer
 
-from utils.synthetic_data_utils import (LLMPredictor,
-                                        format_into_prompt_rawtext, shuffle_qa)
-from utils.utils import init_logger
-
 from utils.prompt_templates import PROMPT_TEMPLATE_QUESTION_GENERATION
+from utils.synthetic_data_utils import (
+    OfflinePredictor,
+    format_into_prompt_rawtext,
+    shuffle_qa,
+)
+from utils.utils import init_logger
 
 logger = init_logger()
 
@@ -83,9 +85,9 @@ if __name__ == "__main__":
         logging_config=ray.LoggingConfig(encoding="JSON", log_level="INFO"),
     )
 
-    hf_ds = datasets.load_dataset("abisee/cnn_dailymail", "3.0.0", split="train").shuffle(
-        seed=21
-    )
+    hf_ds = datasets.load_dataset(
+        "abisee/cnn_dailymail", "3.0.0", split="train"
+    ).shuffle(seed=21)
     hf_ds = hf_ds.rename_columns({"article": "text"})
     # the resulting keys for the dataset are "article" (which contains the text) and "id" only
     hf_ds = hf_ds.remove_columns(["highlights"])
@@ -109,7 +111,7 @@ if __name__ == "__main__":
         num_cpus=0,
     )
     ds = ds.map_batches(
-        LLMPredictor,
+        OfflinePredictor,
         fn_constructor_kwargs=dict(
             model_location=args.model_id,
             col_in=prompt_field,

@@ -1,0 +1,24 @@
+mode: eval
+# TODO: replace with a input folder in air example data
+input_folder: s3://anyscale-production-data-cld-hph1wut9q59u5n6pqjvvgazkv4/org_4snvy99zwbmh4gbtk64jfqggmj/cld_hph1wut9q59u5n6pqjvvgazkv4/artifact_storage/preference_tuning_summarization_example/qa_annotations_full_test
+model_inference_config:
+  model_id_or_path: mistralai/Mistral-7B-Instruct-v0.1 # <---  Add the path to your merged model here
+  temperature: 0
+  top_p: 0.95
+  scaling_config:
+    batch_size: 128
+    concurrency: 2
+    num_gpus: 1
+    custom_resources:
+      accelerator_type:H100: 1
+num_generations: 1
+judge_inference_config:
+  model_id_or_path: meta-llama/Meta-Llama-3.1-70B-Instruct
+  temperature: 0
+  scaling_config:
+    batch_size: 128
+    concurrency: 3
+    num_gpus: 2
+    custom_resources:
+      accelerator_type:H100: 1
+num_mcq_questions: 5
