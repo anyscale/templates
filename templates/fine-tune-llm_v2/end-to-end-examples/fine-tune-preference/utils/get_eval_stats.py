@@ -1,3 +1,6 @@
+"""
+Get evaluation statistics based on scores for the model-generated summaries
+"""
 import argparse
 import os
 

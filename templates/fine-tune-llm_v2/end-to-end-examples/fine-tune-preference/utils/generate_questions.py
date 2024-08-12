@@ -1,3 +1,7 @@
+"""
+Generates questions and answers to each article in the dataset using an LLM
+"""
+
 import argparse
 import logging
 import os

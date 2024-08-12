@@ -1,3 +1,7 @@
+"""
+Script to generate training data for DPO based on the generated summaries and scores.
+"""
+
 import os
 
 import pandas as pd
