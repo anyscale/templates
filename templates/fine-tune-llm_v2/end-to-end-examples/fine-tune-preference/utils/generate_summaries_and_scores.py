@@ -43,7 +43,7 @@ class Mode(Enum):
 class SummaryGenerationConfig(StrictBaseModel):
     mode: Mode = Field(description="Evaluation mode")
     inference_type: InferenceType = Field(
-        default="offline",
+        default=InferenceType.OFFLINE,
         description="Inference type. Can be online (through an OpenAI-compatible server) or Offline (Batched inference with Ray + vLLM)",
     )
     input_folder: str = Field(description="Input Folder")

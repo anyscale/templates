@@ -1,3 +1,6 @@
+"""
+Utilities for synthetic data generation
+"""
 import logging
 import os
 import random
