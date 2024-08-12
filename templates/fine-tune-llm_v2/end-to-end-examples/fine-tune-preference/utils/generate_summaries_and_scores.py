@@ -240,7 +240,7 @@ if __name__ == "__main__":
         fn_kwargs=dict(
             col_in="judge_mc_raw_model_output",
             col_out="judge_mc_answers",
-            num_questions=config.num_generations,
+            num_questions=config.num_mcq_questions,
         ),
         num_cpus=0,
     )
