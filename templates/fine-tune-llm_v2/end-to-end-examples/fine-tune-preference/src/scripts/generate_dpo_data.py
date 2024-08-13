@@ -17,7 +17,7 @@ from src.utils.models import BaseModelExtended, DataSchema
 
 logger = init_logger()
 
-# NOTE: For a pair of summaries where the accuracies are above the threshold, or they are tied, we compare them by length. We prefer smaller summaries. We set a minimum difference of 3 words for one example to be distinct from another.
+# NOTE: For a pair of summaries where the accuracies are above the threshold, we compare them by length. We prefer smaller summaries. We set a minimum difference of 3 words for one example to be distinct from another.
 MIN_LENGTH_DIFFERENCE = 3
 
 MIN_NUM_WORDS_IN_SUMMARY = 5
@@ -89,8 +89,9 @@ def compare_summaries(row1: Dict[str, Any], row2: Dict[str, Any], *, accuracy_th
             return 1
         elif row2[DataSchema.ACCURACY_FIELD] > row1[DataSchema.ACCURACY_FIELD]:
             return -1
+        return 0
 
-    # If accuracies are above the threshold, or they are tied, prefer the shorter summary
+    # If accuracies are above the threshold, prefer the shorter summary
     length_diff = row1[DataSchema.NUM_WORDS_FIELD] - row2[DataSchema.NUM_WORDS_FIELD]
     if abs(length_diff) >= MIN_LENGTH_DIFFERENCE:
         return -1 if length_diff > 0 else 1
