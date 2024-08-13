@@ -16,21 +16,20 @@ import yaml
 from pydantic import Field, model_validator
 from transformers import AutoTokenizer
 
-from utils.models import OfflineInferenceConfig, OnlineInferenceConfig, StrictBaseModel
-from utils.prompt_templates import (
+from src.utils.models import OfflineInferenceConfig, OnlineInferenceConfig, BaseModelExtended, DataSchema
+from src.utils.prompt_templates import (
     PROMPT_TEMPLATE_MCQ_ANSWERING,
     PROMPT_TEMPLATE_SUMMARY,
 )
-from utils.synthetic_data_utils import (
+from src.utils.synthetic_data_utils import (
     InferenceType,
-    OfflinePredictor,
-    OnlinePredictor,
     duplicate_rows,
     extract_answers,
     format_into_prompt,
     format_into_prompt_rawtext,
+    get_predictions_on_dataset,
 )
-from utils.utils import init_logger
+from src.utils.common import init_logger
 
 logger = init_logger()
 
@@ -40,7 +39,7 @@ class Mode(Enum):
     EVAL = "eval"
 
 
-class SummaryGenerationConfig(StrictBaseModel):
+class SummaryGenerationConfig(BaseModelExtended):
     mode: Mode = Field(description="Evaluation mode")
     inference_type: InferenceType = Field(
         default=InferenceType.OFFLINE,
@@ -70,12 +69,6 @@ class SummaryGenerationConfig(StrictBaseModel):
             assert isinstance(self.model_inference_config, OnlineInferenceConfig)
         return self
 
-    @classmethod
-    def from_yaml(cls, path: str):
-        with open(path, "r") as f:
-            config_dict = yaml.safe_load(f)
-        return cls(**config_dict)
-
 
 def get_output_folder_name(model_config) -> str:
     if isinstance(model_config, OfflineInferenceConfig):
@@ -97,35 +90,6 @@ def get_output_folder_name(model_config) -> str:
     return output_folder
 
 
-def get_data_with_summaries(ds, model_config: Union[OnlineInferenceConfig, OfflineInferenceConfig]):
-    if isinstance(model_config, OfflineInferenceConfig):
-        ds = ds.map_batches(
-            OfflinePredictor,
-            fn_constructor_kwargs=dict(
-                col_in="summary_generation_prompt",
-                col_out="summary_generation_raw_model_output",
-                model_config=model_config,
-            ),
-            num_gpus=model_config.scaling_config.num_gpus,
-            concurrency=model_config.scaling_config.concurrency,
-            batch_size=model_config.scaling_config.batch_size,
-            resources=model_config.scaling_config.custom_resources,
-            zero_copy_batch=True,
-            batch_format="numpy",
-        )
-    else:
-        ds = ds.map(
-            OnlinePredictor,
-            fn_constructor_kwargs=dict(
-                col_in="summary_generation_prompt",
-                col_out="summary_generation_raw_model_output",
-                model_config=model_config,
-            ),
-            concurrency=model_config.concurrency,
-        )
-    return ds
-
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="A simple script for summary generation and scoring with support for offline and online inference."
@@ -142,7 +106,7 @@ if __name__ == "__main__":
     output_folder = get_output_folder_name(model_config)
 
     # Initialize Ray with a Runtime Environment.
-    runtime_env = (
+    env_vars = (
         {}
         if config.inference_type == InferenceType.OFFLINE
         else {
@@ -156,7 +120,7 @@ if __name__ == "__main__":
             "env_vars": {
                 "HF_TOKEN": os.environ["HF_TOKEN"],
                 "HF_HOME": "/mnt/local_storage/.cache/huggingface",
-                **runtime_env,
+                **env_vars,
             },
         },
         logging_config=ray.LoggingConfig(log_level="INFO"),
@@ -167,8 +131,8 @@ if __name__ == "__main__":
     ds = ray.data.read_parquet(config.input_folder, file_extensions=["parquet"])
 
     ds = ds.filter(
-        lambda row: row["qa_generation_answers"] is not None
-        and len(row["qa_generation_answers"]) == config.num_mcq_questions,
+        lambda row: row[DataSchema.GROUND_TRUTH_MCQ_ANSWERS_FIELD] is not None
+        and len(row[DataSchema.GROUND_TRUTH_MCQ_ANSWERS_FIELD]) == config.num_mcq_questions,
         num_cpus=0,
     )
 
@@ -187,7 +151,7 @@ if __name__ == "__main__":
             template=PROMPT_TEMPLATE_SUMMARY,
             type=config.inference_type,
             tokenizer=tokenizer,
-            col_name="summary_generation_prompt",
+            col_name=DataSchema.SUMMARY_GENERATION_INPUT_FIELD,
         ),
         num_cpus=0,
     )
@@ -201,7 +165,7 @@ if __name__ == "__main__":
             ),
             num_cpus=0,
         )
-    ds = get_data_with_summaries(ds, model_config)
+    ds = get_predictions_on_dataset(ds, model_config, col_in=DataSchema.SUMMARY_GENERATION_INPUT_FIELD, col_out="summary_generation_raw_model_output")
 
     # Input pre-processing for the judge model
     tokenizer_id_or_path = (
@@ -215,31 +179,18 @@ if __name__ == "__main__":
         fn_kwargs=dict(
             template=PROMPT_TEMPLATE_MCQ_ANSWERING,
             tokenizer=tokenizer,
-            col_name="judge_mc_prompt",
+            col_name=DataSchema.JUDGE_MCQ_INPUT_FIELD,
         ),
         num_cpus=0,
     )
     # Get scores
-    ds = ds.map_batches(
-        OfflinePredictor,
-        fn_constructor_kwargs=dict(
-            col_in="judge_mc_prompt",
-            col_out="judge_mc_raw_model_output",
-            model_config=judge_config,
-        ),
-        num_gpus=judge_config.scaling_config.num_gpus,
-        concurrency=judge_config.scaling_config.concurrency,
-        batch_size=judge_config.scaling_config.batch_size,
-        resources=judge_config.scaling_config.custom_resources,
-        zero_copy_batch=True,
-        batch_format="numpy",
-    )
+    ds = get_predictions_on_dataset(ds, judge_config, col_in=DataSchema.JUDGE_MCQ_INPUT_FIELD, col_out=DataSchema.JUDGE_MCQ_RAW_OUTPUT_FIELD)
 
     ds = ds.map(
         extract_answers,
         fn_kwargs=dict(
-            col_in="judge_mc_raw_model_output",
-            col_out="judge_mc_answers",
+            col_in=DataSchema.JUDGE_MCQ_RAW_OUTPUT_FIELD,
+            col_out=DataSchema.JUDGE_MCQ_ANSWERS_FIELD,
             num_questions=config.num_mcq_questions,
         ),
         num_cpus=0,

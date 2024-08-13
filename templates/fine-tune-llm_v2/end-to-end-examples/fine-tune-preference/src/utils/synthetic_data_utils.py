@@ -9,7 +9,7 @@ import string
 import time
 import unicodedata
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 import numpy as np
 import openai
@@ -22,41 +22,16 @@ from vllm import LLM, SamplingParams
 from vllm.lora.request import LoRARequest
 
 from utils.models import OfflineInferenceConfig, OnlineInferenceConfig
-from utils.utils import get_completion, init_logger
+from utils.common import get_completion, init_logger
 
 logger = init_logger()
 
 # TODO: See if this parameter can be removed entirely
 VLLM_MAX_MODEL_LEN = 8192
 
-permitted_chars = (
-    string.ascii_letters
-    + string.digits
-    + string.whitespace
-    + string.punctuation
-    # TODO (sumanthrh): find a better solution for this
-    + "’‘–—“”…™°Ææ"
-)
-# make a regex out of the permitted letters
-pattern = re.compile(f"[^{re.escape(permitted_chars)}\\£|\\€]")
-
-
 class InferenceType(Enum):
     ONLINE = "online"
     OFFLINE = "offline"
-
-
-# TODO: check if needed
-def normalize_string(text: str) -> str:
-    nkfd_form = unicodedata.normalize("NFD", text)
-    return "".join(c for c in nkfd_form if not unicodedata.combining(c))
-
-
-# TODO: check if needed
-def check_num_bad_chars(text: str, normalize: bool = False) -> int:
-    if normalize:
-        text = normalize_string(text)
-    return len(pattern.findall(text))
 
 
 def format_into_prompt(
@@ -188,8 +163,9 @@ class OfflinePredictor:
         self.col_out = col_out
         self.lora_location = model_config.adapter_id_or_path
         self.vllm_settings = dict(
-            tensor_parallel_size=model_config.scaling_config.num_gpus,
+            tensor_parallel_size=model_config.scaling_config.num_gpus_per_instance,
             max_model_len=VLLM_MAX_MODEL_LEN,
+            dtype="bfloat16",
         )
 
         # Create a sampling params object.
@@ -281,3 +257,33 @@ class OnlinePredictor:
             )
             example[self.col_out] = None
         return example
+
+
+
+def get_predictions_on_dataset(ds, model_config: Union[OnlineInferenceConfig, OfflineInferenceConfig], col_in: str, col_out: str):
+    if isinstance(model_config, OfflineInferenceConfig):
+        ds = ds.map_batches(
+            OfflinePredictor,
+            fn_constructor_kwargs=dict(
+                col_in=col_in,
+                col_out=col_out,
+                model_config=model_config,
+            ),
+            num_gpus=model_config.scaling_config.num_gpus_per_instance,
+            concurrency=model_config.scaling_config.concurrency,
+            batch_size=model_config.scaling_config.batch_size,
+            resources=model_config.scaling_config.custom_resources,
+            zero_copy_batch=True,
+            batch_format="numpy",
+        )
+    else:
+        ds = ds.map(
+            OnlinePredictor,
+            fn_constructor_kwargs=dict(
+                col_in=col_in,
+                col_out=col_out,
+                model_config=model_config,
+            ),
+            concurrency=model_config.concurrency,
+        )
+    return ds
