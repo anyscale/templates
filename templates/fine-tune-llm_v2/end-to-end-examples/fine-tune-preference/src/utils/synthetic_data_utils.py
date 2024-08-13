@@ -29,34 +29,9 @@ logger = init_logger()
 # TODO: See if this parameter can be removed entirely
 VLLM_MAX_MODEL_LEN = 8192
 
-permitted_chars = (
-    string.ascii_letters
-    + string.digits
-    + string.whitespace
-    + string.punctuation
-    # TODO (sumanthrh): find a better solution for this
-    + "’‘–—“”…™°Ææ"
-)
-# make a regex out of the permitted letters
-pattern = re.compile(f"[^{re.escape(permitted_chars)}\\£|\\€]")
-
-
 class InferenceType(Enum):
     ONLINE = "online"
     OFFLINE = "offline"
-
-
-# TODO: check if needed
-def normalize_string(text: str) -> str:
-    nkfd_form = unicodedata.normalize("NFD", text)
-    return "".join(c for c in nkfd_form if not unicodedata.combining(c))
-
-
-# TODO: check if needed
-def check_num_bad_chars(text: str, normalize: bool = False) -> int:
-    if normalize:
-        text = normalize_string(text)
-    return len(pattern.findall(text))
 
 
 def format_into_prompt(

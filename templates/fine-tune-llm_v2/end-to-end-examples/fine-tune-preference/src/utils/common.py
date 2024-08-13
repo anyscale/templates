@@ -4,6 +4,8 @@ import random
 import string
 import time
 from typing import Any, Dict, List
+import re
+import unicodedata
 
 import openai
 from openai import OpenAI
@@ -15,6 +17,18 @@ HF_TOKEN_LOCAL_PATH = "huggingface_token.txt"
 NUM_RETRIES = 5
 SLEEP_INTERVAL_BETWEEN_RETRIES = 10
 ERROR_OUTPUT = "$$RUNTIME_ERROR$$"
+
+
+permitted_chars = (
+    string.ascii_letters
+    + string.digits
+    + string.whitespace
+    + string.punctuation
+    # TODO (sumanthrh): find a better solution for this
+    + "’‘–—“”…™°Ææ"
+)
+# make a regex out of the permitted letters
+pattern = re.compile(f"[^{re.escape(permitted_chars)}\\£|\\€]")
 
 
 def init_logger():
@@ -34,6 +48,18 @@ def generate_output_path(output_path_prefix: str, model_id: str) -> str:
     suffix = "".join(random.choices(string.ascii_lowercase, k=5))
     return f"{output_path_prefix}/{model_id}:{username}:{suffix}"
 
+
+# TODO: check if needed
+def normalize_string(text: str) -> str:
+    nkfd_form = unicodedata.normalize("NFD", text)
+    return "".join(c for c in nkfd_form if not unicodedata.combining(c))
+
+
+# TODO: check if needed
+def check_num_bad_chars(text: str, normalize: bool = False) -> int:
+    if normalize:
+        text = normalize_string(text)
+    return len(pattern.findall(text))
 
 def get_completion(
     client: OpenAI,

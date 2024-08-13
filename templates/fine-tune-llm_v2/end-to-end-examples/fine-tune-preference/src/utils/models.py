@@ -1,9 +1,20 @@
 from typing import Any, Dict, Optional
 import yaml
+from dataclasses import dataclass
 
 import numpy as np
 from pydantic import BaseModel, ConfigDict, Field
 
+@dataclass
+class DataSchema:
+    SUMMARY_GENERATION_RAW_OUTPUT_FIELD = "summary_generation_raw_model_output"
+    JUDGE_MCQ_ANSWERS_FIELD = "judge_mc_answers"
+    NUM_WORDS_FIELD = "num_words"
+    ACCURACY_FIELD = "accuracy"
+    GROUND_TRUTH_MCQ_ANSWERS_FIELD = "qa_generation_answers"
+    JUDGE_MCQ_RAW_OUTPUT_FIELD = "judge_mc_raw_model_output"
+    JUDGE_MCQ_INPUT_FIELD = "judge_mc_prompt"
+    SUMMARY_GENERATION_INPUT_FIELD = "summary_generation_prompt"
 
 class BaseModelExtended(BaseModel):
     # NOTE: We use attributes such as model_id, etc which start with model_, a protected namespace in pydantic

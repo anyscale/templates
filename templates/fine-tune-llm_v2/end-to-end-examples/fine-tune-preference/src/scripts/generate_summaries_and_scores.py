@@ -16,7 +16,7 @@ import yaml
 from pydantic import Field, model_validator
 from transformers import AutoTokenizer
 
-from src.utils.models import OfflineInferenceConfig, OnlineInferenceConfig, BaseModelExtended
+from src.utils.models import OfflineInferenceConfig, OnlineInferenceConfig, BaseModelExtended, DataSchema
 from src.utils.prompt_templates import (
     PROMPT_TEMPLATE_MCQ_ANSWERING,
     PROMPT_TEMPLATE_SUMMARY,
@@ -131,8 +131,8 @@ if __name__ == "__main__":
     ds = ray.data.read_parquet(config.input_folder, file_extensions=["parquet"])
 
     ds = ds.filter(
-        lambda row: row["qa_generation_answers"] is not None
-        and len(row["qa_generation_answers"]) == config.num_mcq_questions,
+        lambda row: row[DataSchema.GROUND_TRUTH_MCQ_ANSWERS_FIELD] is not None
+        and len(row[DataSchema.GROUND_TRUTH_MCQ_ANSWERS_FIELD]) == config.num_mcq_questions,
         num_cpus=0,
     )
 
@@ -151,7 +151,7 @@ if __name__ == "__main__":
             template=PROMPT_TEMPLATE_SUMMARY,
             type=config.inference_type,
             tokenizer=tokenizer,
-            col_name="summary_generation_prompt",
+            col_name=DataSchema.SUMMARY_GENERATION_INPUT_FIELD,
         ),
         num_cpus=0,
     )
@@ -165,7 +165,7 @@ if __name__ == "__main__":
             ),
             num_cpus=0,
         )
-    ds = get_predictions_on_dataset(ds, model_config, col_in="summary_generation_prompt", col_out="summary_generation_raw_model_output")
+    ds = get_predictions_on_dataset(ds, model_config, col_in=DataSchema.SUMMARY_GENERATION_INPUT_FIELD, col_out="summary_generation_raw_model_output")
 
     # Input pre-processing for the judge model
     tokenizer_id_or_path = (
@@ -179,18 +179,18 @@ if __name__ == "__main__":
         fn_kwargs=dict(
             template=PROMPT_TEMPLATE_MCQ_ANSWERING,
             tokenizer=tokenizer,
-            col_name="judge_mc_prompt",
+            col_name=DataSchema.JUDGE_MCQ_INPUT_FIELD,
         ),
         num_cpus=0,
     )
     # Get scores
-    ds = get_predictions_on_dataset(ds, judge_config, col_in="judge_mc_prompt", col_out="judge_mc_raw_model_output")
+    ds = get_predictions_on_dataset(ds, judge_config, col_in=DataSchema.JUDGE_MCQ_INPUT_FIELD, col_out=DataSchema.JUDGE_MCQ_RAW_OUTPUT_FIELD)
 
     ds = ds.map(
         extract_answers,
         fn_kwargs=dict(
-            col_in="judge_mc_raw_model_output",
-            col_out="judge_mc_answers",
+            col_in=DataSchema.JUDGE_MCQ_RAW_OUTPUT_FIELD,
+            col_out=DataSchema.JUDGE_MCQ_ANSWERS_FIELD,
             num_questions=config.num_mcq_questions,
         ),
         num_cpus=0,
