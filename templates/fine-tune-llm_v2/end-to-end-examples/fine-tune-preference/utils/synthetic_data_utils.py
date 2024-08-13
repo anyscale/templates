@@ -9,7 +9,7 @@ import string
 import time
 import unicodedata
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 import numpy as np
 import openai
@@ -281,3 +281,33 @@ class OnlinePredictor:
             )
             example[self.col_out] = None
         return example
+
+
+
+def get_predictions_on_dataset(ds, model_config: Union[OnlineInferenceConfig, OfflineInferenceConfig], col_in: str, col_out: str):
+    if isinstance(model_config, OfflineInferenceConfig):
+        ds = ds.map_batches(
+            OfflinePredictor,
+            fn_constructor_kwargs=dict(
+                col_in=col_in,
+                col_out=col_out,
+                model_config=model_config,
+            ),
+            num_gpus=model_config.scaling_config.num_gpus,
+            concurrency=model_config.scaling_config.concurrency,
+            batch_size=model_config.scaling_config.batch_size,
+            resources=model_config.scaling_config.custom_resources,
+            zero_copy_batch=True,
+            batch_format="numpy",
+        )
+    else:
+        ds = ds.map(
+            OnlinePredictor,
+            fn_constructor_kwargs=dict(
+                col_in=col_in,
+                col_out=col_out,
+                model_config=model_config,
+            ),
+            concurrency=model_config.concurrency,
+        )
+    return ds

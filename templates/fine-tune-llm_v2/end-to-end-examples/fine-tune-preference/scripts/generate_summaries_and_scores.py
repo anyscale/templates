@@ -23,12 +23,11 @@ from utils.prompt_templates import (
 )
 from utils.synthetic_data_utils import (
     InferenceType,
-    OfflinePredictor,
-    OnlinePredictor,
     duplicate_rows,
     extract_answers,
     format_into_prompt,
     format_into_prompt_rawtext,
+    get_predictions_on_dataset,
 )
 from utils.utils import init_logger
 
@@ -95,35 +94,6 @@ def get_output_folder_name(model_config) -> str:
     user_name = re.sub(r"\s+", "__", os.environ.get("ANYSCALE_USERNAME", "user"))
     output_folder = f"{os.environ.get('ANYSCALE_ARTIFACT_STORAGE')}/{user_name}/preference_tuning_summarization_example/summary_{config.mode.value}_generation_{output_model_name}_temp_{model_config.temperature}_judge_{judge_config.model_id_or_path.replace('/', '_')}/"
     return output_folder
-
-
-def get_data_with_summaries(ds, model_config: Union[OnlineInferenceConfig, OfflineInferenceConfig]):
-    if isinstance(model_config, OfflineInferenceConfig):
-        ds = ds.map_batches(
-            OfflinePredictor,
-            fn_constructor_kwargs=dict(
-                col_in="summary_generation_prompt",
-                col_out="summary_generation_raw_model_output",
-                model_config=model_config,
-            ),
-            num_gpus=model_config.scaling_config.num_gpus,
-            concurrency=model_config.scaling_config.concurrency,
-            batch_size=model_config.scaling_config.batch_size,
-            resources=model_config.scaling_config.custom_resources,
-            zero_copy_batch=True,
-            batch_format="numpy",
-        )
-    else:
-        ds = ds.map(
-            OnlinePredictor,
-            fn_constructor_kwargs=dict(
-                col_in="summary_generation_prompt",
-                col_out="summary_generation_raw_model_output",
-                model_config=model_config,
-            ),
-            concurrency=model_config.concurrency,
-        )
-    return ds
 
 
 if __name__ == "__main__":
@@ -201,7 +171,7 @@ if __name__ == "__main__":
             ),
             num_cpus=0,
         )
-    ds = get_data_with_summaries(ds, model_config)
+    ds = get_predictions_on_dataset(ds, model_config, col_in="summary_generation_prompt", col_out="summary_generation_raw_model_output")
 
     # Input pre-processing for the judge model
     tokenizer_id_or_path = (
@@ -220,20 +190,7 @@ if __name__ == "__main__":
         num_cpus=0,
     )
     # Get scores
-    ds = ds.map_batches(
-        OfflinePredictor,
-        fn_constructor_kwargs=dict(
-            col_in="judge_mc_prompt",
-            col_out="judge_mc_raw_model_output",
-            model_config=judge_config,
-        ),
-        num_gpus=judge_config.scaling_config.num_gpus,
-        concurrency=judge_config.scaling_config.concurrency,
-        batch_size=judge_config.scaling_config.batch_size,
-        resources=judge_config.scaling_config.custom_resources,
-        zero_copy_batch=True,
-        batch_format="numpy",
-    )
+    ds = get_predictions_on_dataset(ds, judge_config, col_in="judge_mc_prompt", col_out="judge_mc_raw_model_output")
 
     ds = ds.map(
         extract_answers,
