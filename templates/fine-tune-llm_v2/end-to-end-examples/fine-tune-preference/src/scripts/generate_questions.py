@@ -22,7 +22,7 @@ from src.utils.synthetic_data_utils import (
     get_predictions_on_dataset,
     InferenceType
 )
-from src.utils.utils import init_logger
+from src.utils.common import init_logger
 
 logger = init_logger()
 

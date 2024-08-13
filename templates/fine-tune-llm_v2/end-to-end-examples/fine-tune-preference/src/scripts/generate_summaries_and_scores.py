@@ -29,7 +29,7 @@ from src.utils.synthetic_data_utils import (
     format_into_prompt_rawtext,
     get_predictions_on_dataset,
 )
-from src.utils.utils import init_logger
+from src.utils.common import init_logger
 
 logger = init_logger()
 

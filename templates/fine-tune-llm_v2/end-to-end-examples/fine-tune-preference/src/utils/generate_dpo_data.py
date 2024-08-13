@@ -9,7 +9,7 @@ import ray
 
 from utils.prompt_templates import PROMPT_TEMPLATE_SUMMARY
 from utils.synthetic_data_utils import check_num_bad_chars
-from utils.utils import init_logger
+from utils.common import init_logger
 
 logger = init_logger()
 

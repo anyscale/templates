@@ -22,7 +22,7 @@ from vllm import LLM, SamplingParams
 from vllm.lora.request import LoRARequest
 
 from utils.models import OfflineInferenceConfig, OnlineInferenceConfig
-from utils.utils import get_completion, init_logger
+from utils.common import get_completion, init_logger
 
 logger = init_logger()
 
