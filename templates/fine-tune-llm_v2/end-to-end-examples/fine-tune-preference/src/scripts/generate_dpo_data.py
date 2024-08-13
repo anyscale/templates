@@ -148,14 +148,8 @@ def make_pairs(examples: pd.DataFrame, max_pairs_per_article: int, accuracy_thre
             )
 
     if len(pairs) == 0:
-        return dict(
-            chosen=[],
-            rejected=[],
-            num_words_chosen=[],
-            num_words_rejected=[],
-            accuracy_chosen=[],
-            accuracy_rejected=[],
-        )
+        # return empty dataframe
+        return pd.DataFrame(columns=["chosen", "rejected", "num_words_chosen", "num_words_rejected", "accuracy_chosen", "accuracy_rejected"])
 
     result = pd.DataFrame.from_records(pairs)
     if len(result) > max_pairs_per_article:
@@ -180,8 +174,7 @@ if __name__ == "__main__":
     ds = ds.map(eval_row, num_cpus=0)
     ds = ds.filter(lambda row: MIN_NUM_WORDS_IN_SUMMARY <= row[DataSchema.NUM_WORDS_FIELD] < MAX_NUM_WORDS_IN_SUMMARY, num_cpus=0)
 
-    mapper = partial(make_pairs, max_pairs_per_article=config.max_pairs_per_article, accuracy_threshold=config.accuracy_threshold)
-    ds = ds.groupby("id").map_groups(mapper, num_cpus=0, batch_format="pandas")
+    ds = ds.groupby("id").map_groups(make_pairs, fn_kwargs=dict(max_pairs_per_article=config.max_pairs_per_article, accuracy_threshold=config.accuracy_threshold), num_cpus=0, batch_format="pandas")
 
     train_ds, val_ds = ds.train_test_split(config.train_val_split)
 
