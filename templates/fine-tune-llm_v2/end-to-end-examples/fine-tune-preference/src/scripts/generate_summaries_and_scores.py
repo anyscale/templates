@@ -16,12 +16,12 @@ import yaml
 from pydantic import Field, model_validator
 from transformers import AutoTokenizer
 
-from utils.models import OfflineInferenceConfig, OnlineInferenceConfig, StrictBaseModel
-from utils.prompt_templates import (
+from src.utils.models import OfflineInferenceConfig, OnlineInferenceConfig, BaseModelExtended
+from src.utils.prompt_templates import (
     PROMPT_TEMPLATE_MCQ_ANSWERING,
     PROMPT_TEMPLATE_SUMMARY,
 )
-from utils.synthetic_data_utils import (
+from src.utils.synthetic_data_utils import (
     InferenceType,
     duplicate_rows,
     extract_answers,
@@ -29,7 +29,7 @@ from utils.synthetic_data_utils import (
     format_into_prompt_rawtext,
     get_predictions_on_dataset,
 )
-from utils.utils import init_logger
+from src.utils.utils import init_logger
 
 logger = init_logger()
 
@@ -39,7 +39,7 @@ class Mode(Enum):
     EVAL = "eval"
 
 
-class SummaryGenerationConfig(StrictBaseModel):
+class SummaryGenerationConfig(BaseModelExtended):
     mode: Mode = Field(description="Evaluation mode")
     inference_type: InferenceType = Field(
         default=InferenceType.OFFLINE,
@@ -68,12 +68,6 @@ class SummaryGenerationConfig(StrictBaseModel):
         else:
             assert isinstance(self.model_inference_config, OnlineInferenceConfig)
         return self
-
-    @classmethod
-    def from_yaml(cls, path: str):
-        with open(path, "r") as f:
-            config_dict = yaml.safe_load(f)
-        return cls(**config_dict)
 
 
 def get_output_folder_name(model_config) -> str:
@@ -112,7 +106,7 @@ if __name__ == "__main__":
     output_folder = get_output_folder_name(model_config)
 
     # Initialize Ray with a Runtime Environment.
-    runtime_env = (
+    env_vars = (
         {}
         if config.inference_type == InferenceType.OFFLINE
         else {
@@ -126,7 +120,7 @@ if __name__ == "__main__":
             "env_vars": {
                 "HF_TOKEN": os.environ["HF_TOKEN"],
                 "HF_HOME": "/mnt/local_storage/.cache/huggingface",
-                **runtime_env,
+                **env_vars,
             },
         },
         logging_config=ray.LoggingConfig(log_level="INFO"),

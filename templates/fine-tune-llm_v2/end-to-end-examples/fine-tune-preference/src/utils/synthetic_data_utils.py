@@ -188,8 +188,9 @@ class OfflinePredictor:
         self.col_out = col_out
         self.lora_location = model_config.adapter_id_or_path
         self.vllm_settings = dict(
-            tensor_parallel_size=model_config.scaling_config.num_gpus,
+            tensor_parallel_size=model_config.scaling_config.num_gpus_per_instance,
             max_model_len=VLLM_MAX_MODEL_LEN,
+            dtype="bfloat16",
         )
 
         # Create a sampling params object.
@@ -293,7 +294,7 @@ def get_predictions_on_dataset(ds, model_config: Union[OnlineInferenceConfig, Of
                 col_out=col_out,
                 model_config=model_config,
             ),
-            num_gpus=model_config.scaling_config.num_gpus,
+            num_gpus=model_config.scaling_config.num_gpus_per_instance,
             concurrency=model_config.scaling_config.concurrency,
             batch_size=model_config.scaling_config.batch_size,
             resources=model_config.scaling_config.custom_resources,
