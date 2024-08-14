@@ -2,25 +2,40 @@
 
 **⏱️ Time to complete**: 10 min
 
-This guide walks you through how to deploy LLMs in Anyscale through RayLLM.
+This template comes with a library for serving OSS LLMs on Anyscale called [RayLLM](http://https://docs.anyscale.com/llms/serving/intro).
+
+RayLLM provides a number of features that simplify LLM development, including:
+- An extensive suite of pre-configured open source LLMs.
+- An OpenAI-compatible REST API.
+
+As well as operational features to efficiently scale LLM apps:
+- Optimizations such as continuous batching, quantization and streaming.
+- Production-grade autoscaling support, including scale-to-zero.
+- Native multi-GPU & multi-node model deployments.
+
+This template explains how to set up, run, and query LLMs with RayLLM.
+
+To learn more about RayLLM, check out [the docs](http://https://docs.anyscale.com/llms/serving/intro). If you're interested in fine-tuning, check out the [fine-tuning template](../fine-tune-llm_v2/README.ipynb).
 
 **Note**: This guide is hosted within an Anyscale workspace, which provides easy access to compute resources. Check out the [`Introduction to Workspaces`](../intro-workspaces/README.ipynb) template for more details.
 
 ## Step 1 - Generate a RayLLM config
 
-Run the following command in the workspace terminal to generate a config:
+RayLLM takes in a config that specifies the model you wish to serve, as well as its settings.
 
-```
+Use the RayLLM CLI in the workspace terminal to generate the config:
+
+```bash
 rayllm gen-config
 ```
 
 **Note:** This command requires interactive inputs and should be executed directly in the terminal, not within a Jupyter notebook cell.
 
-This command lets you pick from a common set of OSS LLMs and helps you configure them. You can tune settings like LoRA, GPU type, and tensor parallelism. Check out [the docs](http://https://docs.anyscale.com/llms/serving/guides/bring_any_model) to learn how to bring your own models.
+This command lets you pick from a common set of OSS LLMs and helps you configure them. You can tune settings like GPU type, tensor parallelism, and autoscaling parameters. Check out [the docs](http://https://docs.anyscale.com/llms/serving/guides/bring_any_model) to learn how to bring your own models.
 
-Please note that if you would like to serve a model whose architecture is different from the provided list of models, we recommend that you closely review the generated model config file to provide the correct values.
+Please note that if you're configuring a model whose architecture is different from the provided list of models, we recommend that you closely review the generated model config file to provide the correct values.
 
-The command will generate 2 files - an llm config file (saved in `model_config/`) and a Ray Serve config file (`serve_TIMESTAMP.yaml`) that you can reference and re-run in the future.
+This command generates 2 files - an LLM config file (saved in `model_config/`) and a Ray Serve config file (`serve_TIMESTAMP.yaml`) that you can reference and re-run in the future.
 
 ## Step 2 - Run the model locally in the Workspace
 
@@ -31,7 +46,7 @@ If you didn't start the serve application in the previous step, you can start it
 !serve run serve_TIMESTAMP.yaml
 ```
 
-## Step 2 - Query the model
+## Step 3 - Query the model
 
 Once deployed you can use the OpenAI SDK to interact with the models, ensuring an easy integration for your applications.
 
@@ -95,7 +110,7 @@ def query(base_url: str, api_key: str):
 query("http://localhost:8000", "NOT A REAL KEY")
 ```
 
-## Step 3 - Deploying a production service
+## Step 4 - Deploying a production service
 
 To deploy an application with one model as an Anyscale Service, update the file name to the generated one and run the following command:
 
@@ -115,7 +130,7 @@ Navigate to the Service UI and wait for the service to reach "Active". It will b
 <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/endpoints_v2/assets/service-starting.png" width=600px/>
 
 
-## Step 4 - Query the service endpoint
+## Step 5 - Query the service endpoint
 
 The above command should print something like `(anyscale +2.9s) curl -H 'Authorization: Bearer XXXXXXXXX_XXXXXX-XXXXXXXXXXXX' https://YYYYYYYYYYYY.anyscaleuserdata.com`, which contains information you need to query the service.
 
@@ -133,22 +148,10 @@ service_bearer_token = "XXXXXXXXXX_XXXXXXX-XXXXXXXXXXXXXX"  # FILL ME IN
 query(service_url, service_bearer_token)
 ```
 
-## Final words on RayLLM
+## What's next?
 
-RayLLM makes it easy to offer OpenAI-compatible OSS LLM endpoints for applications.
-
-It provides a number of features that simplify LLM development, including:
-- An extensive suite of pre-configured open source LLMs.
-- An OpenAI-compatible REST API.
-
-As well as operational features for efficient scaling of LLM apps:
-- Optimizations such as continuous batching, quantization and streaming.
-- Production-grade autoscaling support, including scale-to-zero.
-- Native multi-GPU & multi-node model deployments.
-
-## Docs
-
-Check out the [RayLLM docs](http://https://docs.anyscale.com/llms/serving/intro) to learn more about how you can serve your LLMs.
+* Check out the [RayLLM docs](http://https://docs.anyscale.com/llms/serving/intro) to learn more about how you can serve your LLMs.
+* Try the [fine-tuning template](../fine-tune-llm_v2/README.ipynb) to tune some LLMs for your use case.
 
 
 
