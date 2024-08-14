@@ -1,13 +1,8 @@
 applications:
 - args:
-    embedding_models: []
-    function_calling_models:
+    llm_configs:
     - ./llm_configs/meta-llama--Meta-Llama-3_1-8B-Instruct.yaml
-    models: []
-    multiplex_lora_adapters: []
-    multiplex_models: []
-    vllm_base_models: []
-  import_path: aviary_private_endpoints.backend.server.run:router_application
+  import_path: rayllm:app
   name: llm-endpoint
   route_prefix: /
 query_auth_token_enabled: false
