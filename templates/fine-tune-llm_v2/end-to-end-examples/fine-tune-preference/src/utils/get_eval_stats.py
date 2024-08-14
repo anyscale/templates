@@ -3,9 +3,11 @@ Get evaluation statistics based on scores for the model-generated summaries
 """
 import argparse
 import os
+from typing import Dict, Any, Tuple
 
 import numpy as np
 import pandas as pd
+from tabulate import tabulate
 import ray
 
 from src.utils.common import check_num_bad_chars
@@ -35,33 +37,21 @@ parser.add_argument(
     default="all_results.csv",
     help="Path to the results folder.",
 )
+parser.add_argument("--accuracy-threshold", default=3, type=int, help="Score threshold to classify chosen and rejected samples.")
 
 parser.add_argument("--disable-csv", action="store_true")
 
-args = parser.parse_args()
 
-try:
-    ds = ray.data.read_parquet(args.outputs_path, file_extensions=["parquet"])
-except Exception as e:
-    ds = ray.data.read_parquet(
-        f"{os.environ['ANYSCALE_ARTIFACT_STORAGE']}/preference_tuning_summarization_example/"
-        + args.outputs_path,
-        file_extensions=["parquet"],
-    )
-ds_orig = ray.data.read_parquet(args.baseline_outputs_path, file_extensions=["parquet"])
-DataSchema.SUMMARY_GENERATION_RAW_OUTPUT
-
-def eval_rows(row):
-    if (
+def is_row_valid(row: Dict[str, Any]):
+    return not (
         row[DataSchema.SUMMARY_GENERATION_RAW_OUTPUT] is None
         or row[DataSchema.GROUND_TRUTH_MCQ_ANSWERS] is None
         or row[DataSchema.JUDGE_MCQ_ANSWERS] is None
         or "No Judge Output" in row[DataSchema.JUDGE_MCQ_ANSWERS]
-    ):
-        return []
+    )
 
-    return [
-        dict(
+def eval_row(row):
+    return dict(
             **row,
             num_words=len(row[DataSchema.SUMMARY_GENERATION_RAW_OUTPUT].split()),
             accuracy=sum(
@@ -73,120 +63,87 @@ def eval_rows(row):
             ),
             # accuracy_filtered = sum(row["qa_generation_answers"][i] == row["judge_mc_answers"][i] for i in good_questions) / len(good_questions),
         )
-    ]
 
+def compare(acc1: float, num1: int, acc2: float, num2: int, *, accuracy_threshold) -> bool:
+    """Compare two summaries based on accuracy (of judge responses) and length (of model summary) for evaluation.
 
-def compare(acc1, num1, acc2, num2):
-    if min(acc1, acc2) <= 2:
+    Args:
+        acc1: Accuracy (of judge responses based on the summary) for the first summary
+        num1: Number of words in the first summary
+        acc2: Accuracy (of judge responses based on the summary) for the second summary
+        num2: Number of words in the second summary
+
+    Returns:
+        Whether the first summary is preferred or not.
+    """
+    if min(acc1, acc2) <= accuracy_threshold - 1:
         if acc1 != acc2:
             return acc1 > acc2
     return num1 < num2
 
+def get_model_stats(merged_results: pd.DataFrame, suffix: str) -> Dict[str, float]:
+    lens = np.array([len(row["text"].split()) for _, row in merged_results.iterrows()])
+    return pd.Series({
+        "Accuracy >=3": np.mean(merged_results[f"{DataSchema.ACCURACY}{suffix}"] >= 3),
+        "Accuracy >=4": np.mean(merged_results[f"{DataSchema.ACCURACY}{suffix}"] >= 4),
+        "Median Compression": np.median(merged_results[f"{DataSchema.NUM_WORDS}{suffix}"] / lens),
+        "Mean Compression": np.mean(merged_results[f"{DataSchema.NUM_WORDS}{suffix}"] / lens),
+        "Failed Compressions": np.mean(merged_results[f"{DataSchema.SUMMARY_GENERATION_RAW_OUTPUT}{suffix}"].str.len() >= merged_results["text"].str.len()),
+        "Contains OOD Characters": np.mean(merged_results[f"num_bad_chars{suffix}"] > 0),
+    })
 
-ds = ds.flat_map(eval_rows)
-results = ds.to_pandas()
+def calculate_statistics(results: pd.DataFrame, baseline_results: pd.DataFrame, accuracy_threshold: int) -> Tuple[pd.DataFrame, float]:
+    merged_results = pd.merge(results, baseline_results, on="text", suffixes=("_x", "_y"))
 
-ds_orig = ds_orig.flat_map(eval_rows)
-results_orig = ds_orig.to_pandas()
+    wins = [compare(*vals, accuracy_threshold=accuracy_threshold)
+            for vals in zip(merged_results[f"{DataSchema.ACCURACY}_x"],
+                            merged_results[f"{DataSchema.NUM_WORDS}_x"],
+                            merged_results[f"{DataSchema.ACCURACY}_y"],
+                            merged_results[f"{DataSchema.NUM_WORDS}_y"])]
 
-print("NUM RESULTS:", len(results))
-print("NUM BASELINE RESULTS:", len(results_orig))
+    losses = [compare(*vals, accuracy_threshold=accuracy_threshold)
+              for vals in zip(merged_results[f"{DataSchema.ACCURACY}_y"],
+                              merged_results[f"{DataSchema.NUM_WORDS}_y"],
+                              merged_results[f"{DataSchema.ACCURACY}_x"],
+                              merged_results[f"{DataSchema.NUM_WORDS}_x"])]
 
-merged_results = pd.merge(results, results_orig, on="text", suffixes=("_x", "_y"))
+    win_rate = np.mean(wins) + 0.5 * (1 - np.mean(wins) - np.mean(losses))
+    stats_df = pd.DataFrame({
+        "Model": get_model_stats(merged_results, "_x"),
+        "Baseline": get_model_stats(merged_results, "_y"),
+    })
+    return stats_df, win_rate
 
-lens = np.array(
-    [len(merged_results.iloc[i]["text"].split()) for i in range(len(merged_results))]
-)
 
-wins = [
-    compare(*vals)
-    for vals in zip(
-        merged_results[f"{DataSchema.ACCURACY}_x"],
-        merged_results[f"{DataSchema.NUM_WORDS}_x"],
-        merged_results[f"{DataSchema.ACCURACY}_y"],
-        merged_results[f"{DataSchema.NUM_WORDS}_y"],
-    )
-]
-losses = [
-    compare(*vals)
-    for vals in zip(
-        merged_results[f"{DataSchema.ACCURACY}_y"],
-        merged_results[f"{DataSchema.NUM_WORDS}_y"],
-        merged_results[f"{DataSchema.ACCURACY}_x"],
-        merged_results[f"{DataSchema.NUM_WORDS}_x"],
-    )
-]
+# def style_dataframe(df: pd.DataFrame):
+#     return df.style.format("{:.4f}").set_properties(**{'text-align': 'center'}).to_string()
 
-if not args.disable_csv:
-    all_stats = pd.read_csv(args.results_dir, index_col=0)
+def style_dataframe(df: pd.DataFrame) -> str:
+    # Format the float values to 4 decimal places
+    formatted_df = df.map(lambda x: 100*x).map(lambda x: f"{x:.4f} %")
+    formatted_df.index.name = "Metric"
+    # Create a table using tabulate
+    table = tabulate(formatted_df, headers='keys', tablefmt='fancy_grid', stralign='center')
 
-    new_row = pd.DataFrame(
-        [
-            {
-                "Win Rate": np.mean(wins) + 0.5 * (1 - np.mean(wins) - np.mean(losses)),
-                "% Accuracy >=3": np.mean(merged_results[f"DataSchema.ACCURACY_x"] >= 3),
-                "% Accuracy >=4": np.mean(merged_results[f"DataSchema.ACCURACY_x"] >= 4),
-                "Median Compression": np.median(merged_results[f"{DataSchema.NUM_WORDS}_x"] / lens),
-                "Failed Compressions": np.mean(
-                    merged_results[f"{DataSchema.SUMMARY_GENERATION_RAW_OUTPUT}_x"].str.len()
-                    >= merged_results["text"].str.len()
-                ),
-                "Num Contains /******/": np.mean(
-                    merged_results[f"{DataSchema.SUMMARY_GENERATION_RAW_OUTPUT}_x"].str.find(
-                        "/******/"
-                    )
-                    != -1
-                ),
-                "Num Contains Bad Characters": np.mean(
-                    merged_results["num_bad_chars_x"] > 0
-                ),
-            }
-        ],
-        index=[args.outputs_path.strip("/").split("/")[-1]],
-    )
+    return table
 
-    all_stats = new_row.combine_first(all_stats)
-    all_stats.to_csv(args.results_dir, index_label="Name")
+if __name__ == "__main__":
+    args = parser.parse_args()
 
-print("Win Rate:", np.mean(wins) + 0.5 * (1 - np.mean(wins) - np.mean(losses)))
-print("% Accuracy >=3:", np.mean(merged_results[f"{DataSchema.ACCURACY}_x"] >= 3))
-print("% Accuracy >=4:", np.mean(merged_results[f"{DataSchema.ACCURACY}_x"] >= 4))
-print("Median Compression:", np.median(merged_results[f"{DataSchema.NUM_WORDS}_x"] / lens))
-print("Mean Compression:", np.mean(merged_results[f"{DataSchema.NUM_WORDS}_x"] / lens))
-print(
-    "Failed Compressions:",
-    np.mean(
-        merged_results[f"{DataSchema.SUMMARY_GENERATION_RAW_OUTPUT}_x"].str.len()
-        >= merged_results["text"].str.len()
-    ),
-)
-print(
-    "Contains /******/:",
-    np.mean(
-        merged_results[f"{DataSchema.SUMMARY_GENERATION_RAW_OUTPUT}_x"].str.find("/******/")
-        != -1
-    ),
-)
-print("Contains Bad Characters:", np.mean(merged_results["num_bad_chars_x"] > 0))
+    ds = ray.data.read_parquet(args.outputs_path, file_extensions=["parquet"])
+    ds_baseline = ray.data.read_parquet(args.baseline_outputs_path, file_extensions=["parquet"])
+    ds = ds.filter(is_row_valid)
+    ds = ds.map(eval_row)
+    results = ds.to_pandas()
 
-print("Baseline % Accuracy >=3:", np.mean(merged_results[f"{DataSchema.ACCURACY}_y"] >= 3))
-print("Baseline % Accuracy >=4:", np.mean(merged_results[f"{DataSchema.ACCURACY}_y"] >= 4))
-print("Baseline Median Compression", np.median(merged_results[f"{DataSchema.NUM_WORDS}_y"] / lens))
-print("Baseline Mean Compression", np.mean(merged_results[f"{DataSchema.NUM_WORDS}_y"] / lens))
-print(
-    "Baseline Failed Compressions:",
-    np.mean(
-        merged_results[f"{DataSchema.SUMMARY_GENERATION_RAW_OUTPUT}_y"].str.len()
-        >= merged_results["text"].str.len()
-    ),
-)
-print(
-    "Baseline Contains /******/:",
-    np.mean(
-        merged_results[f"{DataSchema.SUMMARY_GENERATION_RAW_OUTPUT}_y"].str.find("/******/")
-        != -1
-    ),
-)
-print(
-    "Baseline Contains Bad Characters:", np.mean(merged_results["num_bad_chars_y"] > 0)
-)
+    ds_baseline = ds_baseline.filter(is_row_valid)
+    ds_baseline = ds_baseline.map(eval_row)
+    results_baseline = ds_baseline.to_pandas()
+
+    print("Num Results:", len(results))
+    print("Num Baseline Results:", len(results_baseline))
+
+    accuracy_threshold = args.accuracy_threshold
+    stats_df, win_rate = calculate_statistics(results=results, baseline_results=results_baseline, accuracy_threshold=accuracy_threshold)
+    print(style_dataframe(stats_df))
+    print("\n\nModel Win Rate: ", win_rate)
