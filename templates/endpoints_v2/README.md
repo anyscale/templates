@@ -15,7 +15,7 @@ As well as operational features to efficiently scale LLM apps:
 
 This template explains how to set up, run, and query LLMs with RayLLM.
 
-To learn more about RayLLM, check out [the docs](http://https://docs.anyscale.com/llms/serving/intro). If you're interested in fine-tuning, check out the [fine-tuning template](../fine-tune-llm_v2/README.ipynb).
+To learn more about RayLLM, check out [the docs](http://https://docs.anyscale.com/llms/serving/intro). If you're interested in fine-tuning, check out the [fine-tuning template](https://console.anyscale.com/v2/template-preview/finetuning_llms_v2).
 
 **Note**: This guide is hosted within an Anyscale workspace, which provides easy access to compute resources. Check out the [`Introduction to Workspaces`](../intro-workspaces/README.ipynb) template for more details.
 
@@ -156,8 +156,6 @@ query(service_url, service_bearer_token)
 ## What's next?
 
 * Check out the [RayLLM docs](http://https://docs.anyscale.com/llms/serving/intro) to learn more about how you can serve your LLMs.
-* Try the [fine-tuning template](../fine-tune-llm_v2/README.ipynb) to tune some LLMs for your use case.
-* See the [offline batch inference template](../batch-llm/README.ipynb) to learn how to run LLMs for batch jobs.
-
-
+* Try the [fine-tuning template](https://console.anyscale.com/v2/template-preview/finetuning_llms_v2) to tune some LLMs for your use case.
+* See the [offline batch inference template](https://console.anyscale.com/v2/template-preview/batch-llm) to learn how to run LLMs for batch jobs.
 
