@@ -1,6 +1,6 @@
 # Deploy, configure, and serve LLMs 
 
-**⏱️ Time to complete**: 10 min (20 on GCP)
+**⏱️ Time to complete**: 10 min
 
 This guide walks you through how to deploy LLMs in Anyscale through RayLLM.
 
