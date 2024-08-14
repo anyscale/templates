@@ -1,0 +1,49 @@
+runtime_env:
+  env_vars:
+    HUGGING_FACE_HUB_TOKEN: insert_your_hf_token_here
+
+model_loading_config:
+  model_id: meta-llama/Meta-Llama-3.1-8B-Instruct
+  model_source: meta-llama/Meta-Llama-3.1-8B-Instruct
+
+generation_config:
+  prompt_format:
+    assistant: "<|start_header_id|>assistant<|end_header_id|>\n\n{instruction}<|eot_id|>"
+    bos: <|begin_of_text|>
+    default_system_message: ''
+    system: "<|start_header_id|>system<|end_header_id|>\n\n{instruction}<|eot_id|>"
+    system_in_user: false
+    trailing_assistant: "<|start_header_id|>assistant<|end_header_id|>\n\n"
+    user: "<|start_header_id|>user<|end_header_id|>\n\n{instruction}<|eot_id|>"
+  stopping_sequences:
+  - <|end_of_text|>
+  - <|eot_id|>
+
+input_modality: text
+
+llm_engine: VLLMEngine
+engine_kwargs:
+  enable_chunked_prefill: true
+  max_num_batched_tokens: 2048
+  max_num_seqs: 64
+  tokenizer_pool_extra_config:
+    runtime_env:
+      pip: null
+  tokenizer_pool_size: 2
+  trust_remote_code: true
+
+max_request_context_length: 8192
+
+accelerator_type: A10G
+tensor_parallelism:
+  degree: 1
+
+deployment_config:
+  autoscaling_config:
+    target_ongoing_requests: 32
+  max_ongoing_requests: 64
+
+json_mode:
+  enabled: true
+
+lora_config: null
