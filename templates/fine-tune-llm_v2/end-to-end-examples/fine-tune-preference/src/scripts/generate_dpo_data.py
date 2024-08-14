@@ -42,12 +42,12 @@ def is_row_valid(row: Dict[str, Any]) -> bool:
         row: A dict representing an entry from the input DataFrame.
     """
     return (
-        row[DataSchema.SUMMARY_GENERATION_RAW_OUTPUT_FIELD] is not None
-        and row[DataSchema.GROUND_TRUTH_MCQ_ANSWERS_FIELD] is not None
-        and row[DataSchema.JUDGE_MCQ_ANSWERS_FIELD] is not None
-        and "No Judge Output" not in row[DataSchema.JUDGE_MCQ_ANSWERS_FIELD]
+        row[DataSchema.SUMMARY_GENERATION_RAW_OUTPUT] is not None
+        and row[DataSchema.GROUND_TRUTH_MCQ_ANSWERS] is not None
+        and row[DataSchema.JUDGE_MCQ_ANSWERS] is not None
+        and "No Judge Output" not in row[DataSchema.JUDGE_MCQ_ANSWERS]
         and check_num_bad_chars(
-            row[DataSchema.SUMMARY_GENERATION_RAW_OUTPUT_FIELD], normalize=True
+            row[DataSchema.SUMMARY_GENERATION_RAW_OUTPUT], normalize=True
         )
         == 0
     )
@@ -63,10 +63,10 @@ def eval_row(row: Dict[str, Any]):
     """
     return dict(
         **row,
-        num_words=len(row[DataSchema.SUMMARY_GENERATION_RAW_OUTPUT_FIELD].split()),
+        num_words=len(row[DataSchema.SUMMARY_GENERATION_RAW_OUTPUT].split()),
         accuracy=sum(
-            row[DataSchema.GROUND_TRUTH_MCQ_ANSWERS_FIELD][i] == row[DataSchema.JUDGE_MCQ_ANSWERS_FIELD][i]
-            for i in range(len(row[DataSchema.JUDGE_MCQ_ANSWERS_FIELD]))
+            row[DataSchema.GROUND_TRUTH_MCQ_ANSWERS][i] == row[DataSchema.JUDGE_MCQ_ANSWERS][i]
+            for i in range(len(row[DataSchema.JUDGE_MCQ_ANSWERS]))
         ),
     )
 
@@ -83,16 +83,16 @@ def compare_summaries(row1: Dict[str, Any], row2: Dict[str, Any], *, accuracy_th
         1 if `row1` is preferred, -1 if `row2` is preferred, 0 if both are equivalent.
     """
     # If atleast one summary is worse than the threshold, choose based on the higher accuracy
-    if min(row1[DataSchema.ACCURACY_FIELD], row2[DataSchema.ACCURACY_FIELD]) <= accuracy_threshold - 1:
+    if min(row1[DataSchema.ACCURACY], row2[DataSchema.ACCURACY]) <= accuracy_threshold - 1:
         # First, compare based on accuracy
-        if row1[DataSchema.ACCURACY_FIELD] > row2[DataSchema.ACCURACY_FIELD]:
+        if row1[DataSchema.ACCURACY] > row2[DataSchema.ACCURACY]:
             return 1
-        elif row2[DataSchema.ACCURACY_FIELD] > row1[DataSchema.ACCURACY_FIELD]:
+        elif row2[DataSchema.ACCURACY] > row1[DataSchema.ACCURACY]:
             return -1
         return 0
 
     # If accuracies are above the threshold, prefer the shorter summary
-    length_diff = row1[DataSchema.NUM_WORDS_FIELD] - row2[DataSchema.NUM_WORDS_FIELD]
+    length_diff = row1[DataSchema.NUM_WORDS] - row2[DataSchema.NUM_WORDS]
     if abs(length_diff) >= MIN_LENGTH_DIFFERENCE:
         return -1 if length_diff > 0 else 1
 
@@ -126,7 +126,7 @@ def make_pairs(examples: pd.DataFrame, max_pairs_per_article: int, accuracy_thre
                         prompt,
                         {
                             "content": pair[0][
-                                DataSchema.SUMMARY_GENERATION_RAW_OUTPUT_FIELD
+                                DataSchema.SUMMARY_GENERATION_RAW_OUTPUT
                             ].strip(),
                             "role": "assistant",
                         },
@@ -135,15 +135,15 @@ def make_pairs(examples: pd.DataFrame, max_pairs_per_article: int, accuracy_thre
                         prompt,
                         {
                             "content": pair[1][
-                                DataSchema.SUMMARY_GENERATION_RAW_OUTPUT_FIELD
+                                DataSchema.SUMMARY_GENERATION_RAW_OUTPUT
                             ].strip(),
                             "role": "assistant",
                         },
                     ],
-                    num_words_chosen=pair[0][DataSchema.NUM_WORDS_FIELD],
-                    num_words_rejected=pair[1][DataSchema.NUM_WORDS_FIELD],
-                    accuracy_chosen=pair[0][DataSchema.ACCURACY_FIELD],
-                    accuracy_rejected=pair[1][DataSchema.ACCURACY_FIELD],
+                    num_words_chosen=pair[0][DataSchema.NUM_WORDS],
+                    num_words_rejected=pair[1][DataSchema.NUM_WORDS],
+                    accuracy_chosen=pair[0][DataSchema.ACCURACY],
+                    accuracy_rejected=pair[1][DataSchema.ACCURACY],
                 )
             )
 
@@ -172,7 +172,7 @@ if __name__ == "__main__":
 
     ds = ds.filter(is_row_valid, num_cpus=0)
     ds = ds.map(eval_row, num_cpus=0)
-    ds = ds.filter(lambda row: MIN_NUM_WORDS_IN_SUMMARY <= row[DataSchema.NUM_WORDS_FIELD] < MAX_NUM_WORDS_IN_SUMMARY, num_cpus=0)
+    ds = ds.filter(lambda row: MIN_NUM_WORDS_IN_SUMMARY <= row[DataSchema.NUM_WORDS] < MAX_NUM_WORDS_IN_SUMMARY, num_cpus=0)
 
     ds = ds.groupby("id").map_groups(make_pairs, fn_kwargs=dict(max_pairs_per_article=config.max_pairs_per_article, accuracy_threshold=config.accuracy_threshold), num_cpus=0, batch_format="pandas")
 

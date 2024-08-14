@@ -8,7 +8,8 @@ import numpy as np
 import pandas as pd
 import ray
 
-from utils.synthetic_data_utils import check_num_bad_chars
+from src.utils.common import check_num_bad_chars
+from src.utils.models import DataSchema
 
 parser = argparse.ArgumentParser()
 
@@ -48,27 +49,27 @@ except Exception as e:
         file_extensions=["parquet"],
     )
 ds_orig = ray.data.read_parquet(args.baseline_outputs_path, file_extensions=["parquet"])
-
+DataSchema.SUMMARY_GENERATION_RAW_OUTPUT
 
 def eval_rows(row):
     if (
-        row["summary_generation_raw_model_output"] is None
-        or row["qa_generation_answers"] is None
-        or row["judge_mc_answers"] is None
-        or "No Judge Output" in row["judge_mc_answers"]
+        row[DataSchema.SUMMARY_GENERATION_RAW_OUTPUT] is None
+        or row[DataSchema.GROUND_TRUTH_MCQ_ANSWERS] is None
+        or row[DataSchema.JUDGE_MCQ_ANSWERS] is None
+        or "No Judge Output" in row[DataSchema.JUDGE_MCQ_ANSWERS]
     ):
         return []
 
     return [
         dict(
             **row,
-            num_words=len(row["summary_generation_raw_model_output"].split()),
+            num_words=len(row[DataSchema.SUMMARY_GENERATION_RAW_OUTPUT].split()),
             accuracy=sum(
-                row["qa_generation_answers"][i] == row["judge_mc_answers"][i]
-                for i in range(len(row["qa_generation_answers"]))
+                row[DataSchema.GROUND_TRUTH_MCQ_ANSWERS][i] == row[DataSchema.JUDGE_MCQ_ANSWERS][i]
+                for i in range(len(row[DataSchema.GROUND_TRUTH_MCQ_ANSWERS]))
             ),
             num_bad_chars=check_num_bad_chars(
-                row["summary_generation_raw_model_output"], normalize=True
+                row[DataSchema.SUMMARY_GENERATION_RAW_OUTPUT], normalize=True
             ),
             # accuracy_filtered = sum(row["qa_generation_answers"][i] == row["judge_mc_answers"][i] for i in good_questions) / len(good_questions),
         )
@@ -91,7 +92,7 @@ results_orig = ds_orig.to_pandas()
 print("NUM RESULTS:", len(results))
 print("NUM BASELINE RESULTS:", len(results_orig))
 
-merged_results = pd.merge(results, results_orig, on="text")
+merged_results = pd.merge(results, results_orig, on="text", suffixes=("_x", "_y"))
 
 lens = np.array(
     [len(merged_results.iloc[i]["text"].split()) for i in range(len(merged_results))]
@@ -100,19 +101,19 @@ lens = np.array(
 wins = [
     compare(*vals)
     for vals in zip(
-        merged_results["accuracy_x"],
-        merged_results["num_words_x"],
-        merged_results["accuracy_y"],
-        merged_results["num_words_y"],
+        merged_results[f"{DataSchema.ACCURACY}_x"],
+        merged_results[f"{DataSchema.NUM_WORDS}_x"],
+        merged_results[f"{DataSchema.ACCURACY}_y"],
+        merged_results[f"{DataSchema.NUM_WORDS}_y"],
     )
 ]
 losses = [
     compare(*vals)
     for vals in zip(
-        merged_results["accuracy_y"],
-        merged_results["num_words_y"],
-        merged_results["accuracy_x"],
-        merged_results["num_words_x"],
+        merged_results[f"{DataSchema.ACCURACY}_y"],
+        merged_results[f"{DataSchema.NUM_WORDS}_y"],
+        merged_results[f"{DataSchema.ACCURACY}_x"],
+        merged_results[f"{DataSchema.NUM_WORDS}_x"],
     )
 ]
 
@@ -123,15 +124,15 @@ if not args.disable_csv:
         [
             {
                 "Win Rate": np.mean(wins) + 0.5 * (1 - np.mean(wins) - np.mean(losses)),
-                "% Accuracy >=3": np.mean(merged_results["accuracy_x"] >= 3),
-                "% Accuracy >=4": np.mean(merged_results["accuracy_x"] >= 4),
-                "Median Compression": np.median(merged_results["num_words_x"] / lens),
+                "% Accuracy >=3": np.mean(merged_results[f"DataSchema.ACCURACY_x"] >= 3),
+                "% Accuracy >=4": np.mean(merged_results[f"DataSchema.ACCURACY_x"] >= 4),
+                "Median Compression": np.median(merged_results[f"{DataSchema.NUM_WORDS}_x"] / lens),
                 "Failed Compressions": np.mean(
-                    merged_results["summary_generation_raw_model_output_x"].str.len()
+                    merged_results[f"{DataSchema.SUMMARY_GENERATION_RAW_OUTPUT}_x"].str.len()
                     >= merged_results["text"].str.len()
                 ),
                 "Num Contains /******/": np.mean(
-                    merged_results["summary_generation_raw_model_output_x"].str.find(
+                    merged_results[f"{DataSchema.SUMMARY_GENERATION_RAW_OUTPUT}_x"].str.find(
                         "/******/"
                     )
                     != -1
@@ -148,41 +149,41 @@ if not args.disable_csv:
     all_stats.to_csv(args.results_dir, index_label="Name")
 
 print("Win Rate:", np.mean(wins) + 0.5 * (1 - np.mean(wins) - np.mean(losses)))
-print("% Accuracy >=3:", np.mean(merged_results["accuracy_x"] >= 3))
-print("% Accuracy >=4:", np.mean(merged_results["accuracy_x"] >= 4))
-print("Median Compression:", np.median(merged_results["num_words_x"] / lens))
-print("Mean Compression:", np.mean(merged_results["num_words_x"] / lens))
+print("% Accuracy >=3:", np.mean(merged_results[f"{DataSchema.ACCURACY}_x"] >= 3))
+print("% Accuracy >=4:", np.mean(merged_results[f"{DataSchema.ACCURACY}_x"] >= 4))
+print("Median Compression:", np.median(merged_results[f"{DataSchema.NUM_WORDS}_x"] / lens))
+print("Mean Compression:", np.mean(merged_results[f"{DataSchema.NUM_WORDS}_x"] / lens))
 print(
     "Failed Compressions:",
     np.mean(
-        merged_results["summary_generation_raw_model_output_x"].str.len()
+        merged_results[f"{DataSchema.SUMMARY_GENERATION_RAW_OUTPUT}_x"].str.len()
         >= merged_results["text"].str.len()
     ),
 )
 print(
     "Contains /******/:",
     np.mean(
-        merged_results["summary_generation_raw_model_output_x"].str.find("/******/")
+        merged_results[f"{DataSchema.SUMMARY_GENERATION_RAW_OUTPUT}_x"].str.find("/******/")
         != -1
     ),
 )
 print("Contains Bad Characters:", np.mean(merged_results["num_bad_chars_x"] > 0))
 
-print("Baseline % Accuracy >=3:", np.mean(merged_results["accuracy_y"] >= 3))
-print("Baseline % Accuracy >=4:", np.mean(merged_results["accuracy_y"] >= 4))
-print("Baseline Median Compression", np.median(merged_results["num_words_y"] / lens))
-print("Baseline Mean Compression", np.mean(merged_results["num_words_y"] / lens))
+print("Baseline % Accuracy >=3:", np.mean(merged_results[f"{DataSchema.ACCURACY}_y"] >= 3))
+print("Baseline % Accuracy >=4:", np.mean(merged_results[f"{DataSchema.ACCURACY}_y"] >= 4))
+print("Baseline Median Compression", np.median(merged_results[f"{DataSchema.NUM_WORDS}_y"] / lens))
+print("Baseline Mean Compression", np.mean(merged_results[f"{DataSchema.NUM_WORDS}_y"] / lens))
 print(
     "Baseline Failed Compressions:",
     np.mean(
-        merged_results["summary_generation_raw_model_output_y"].str.len()
+        merged_results[f"{DataSchema.SUMMARY_GENERATION_RAW_OUTPUT}_y"].str.len()
         >= merged_results["text"].str.len()
     ),
 )
 print(
     "Baseline Contains /******/:",
     np.mean(
-        merged_results["summary_generation_raw_model_output_y"].str.find("/******/")
+        merged_results[f"{DataSchema.SUMMARY_GENERATION_RAW_OUTPUT}_y"].str.find("/******/")
         != -1
     ),
 )

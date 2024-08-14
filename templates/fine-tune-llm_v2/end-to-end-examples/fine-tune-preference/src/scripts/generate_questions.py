@@ -14,7 +14,7 @@ import ray
 from transformers import AutoTokenizer
 
 from src.utils.prompt_templates import PROMPT_TEMPLATE_QUESTION_GENERATION
-from src.utils.models import BaseModelExtended, OfflineInferenceConfig
+from src.utils.models import BaseModelExtended, OfflineInferenceConfig, DataSchema
 from src.utils.synthetic_data_utils import (
     OfflinePredictor,
     format_into_prompt_rawtext,
@@ -27,11 +27,6 @@ from src.utils.common import init_logger
 logger = init_logger()
 
 # New columns
-MODEL_PROMPT_FIELD = "qa_generation_prompt"
-OUTPUT_QUESTION_FIELD = "qa_generation_questions"
-OUTPUT_ANSWER_FIELD = "qa_generation_answers"
-OUTPUT_RAW_GENERATION_FIELD = "qa_generation_raw_model_output"
-
 parser = argparse.ArgumentParser()
 
 class QuestionGenerationConfig(BaseModelExtended):
@@ -93,18 +88,18 @@ if __name__ == "__main__":
         fn_kwargs=dict(
             template=PROMPT_TEMPLATE_QUESTION_GENERATION,
             tokenizer=AutoTokenizer.from_pretrained(model_config.model_id_or_path),
-            col_name=MODEL_PROMPT_FIELD,
+            col_name=DataSchema.QA_GENERATION_PROMPT,
         ),
         num_cpus=0,
     )
-    ds = get_predictions_on_dataset(ds, model_config, col_in=MODEL_PROMPT_FIELD, col_out=OUTPUT_RAW_GENERATION_FIELD)
+    ds = get_predictions_on_dataset(ds, model_config, col_in=DataSchema.QA_GENERATION_PROMPT, col_out=DataSchema.QA_GENERATION_RAW_OUTPUT)
 
     ds = ds.flat_map(
         shuffle_qa,
         fn_kwargs=dict(
-            col_in=OUTPUT_RAW_GENERATION_FIELD,
-            col_out_prompt=OUTPUT_QUESTION_FIELD,
-            col_out_answers=OUTPUT_ANSWER_FIELD,
+            col_in=DataSchema.QA_GENERATION_RAW_OUTPUT,
+            col_out_prompt=DataSchema.MCQ_QUESTIONS,
+            col_out_answers=DataSchema.GROUND_TRUTH_MCQ_ANSWERS,
         ),
         num_cpus=0,
     )
