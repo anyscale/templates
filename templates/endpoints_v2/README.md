@@ -37,7 +37,7 @@ Please note that if you're configuring a model whose architecture is different f
 
 This command generates 2 files - an LLM config file (saved in `model_config/`) and a Ray Serve config file (`serve_TIMESTAMP.yaml`) that you can reference and re-run in the future.
 
-## Step 2 - Run the model locally in the Workspace
+## Step 2 - Run the model locally in the workspace
 
 If you didn't start the serve application in the previous step, you can start it using the following command (replace the file name with the generated `serve_` file name):
 
@@ -147,6 +147,11 @@ service_bearer_token = "XXXXXXXXXX_XXXXXXX-XXXXXXXXXXXXXX"  # FILL ME IN
 
 query(service_url, service_bearer_token)
 ```
+
+## End-to-end examples
+
+* [Build Tool Calling Feature for Any LLM via JSON Mode](./end-to-end-examples/function_calling/README.md): This example demonstrates how to build a tool calling feature for any LLM via JSON mode.
+
 
 ## What's next?
 
