@@ -152,6 +152,7 @@ query(service_url, service_bearer_token)
 
 * Check out the [RayLLM docs](http://https://docs.anyscale.com/llms/serving/intro) to learn more about how you can serve your LLMs.
 * Try the [fine-tuning template](../fine-tune-llm_v2/README.ipynb) to tune some LLMs for your use case.
+* See the [offline batch inference template](../batch-llm/README.ipynb) to learn how to run LLMs for batch jobs.
 
 
 
