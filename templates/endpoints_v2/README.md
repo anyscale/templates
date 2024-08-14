@@ -4,7 +4,7 @@
 
 This guide walks you through how to deploy LLMs in Anyscale through RayLLM.
 
-**Note**: This guide is hosted within an Anyscale workspace, which provides easy access to compute resources. Check out the `Introduction to Workspaces` template for more details.
+**Note**: This guide is hosted within an Anyscale workspace, which provides easy access to compute resources. Check out the [`Introduction to Workspaces`](../intro-workspaces/README.ipynb) template for more details.
 
 ## Step 1 - Generate a RayLLM config
 
