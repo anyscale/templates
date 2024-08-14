@@ -5,6 +5,7 @@ import numpy as np
 from pydantic import BaseModel, ConfigDict, Field
 
 class DataSchema:
+    ARTICLE = "text"
     SUMMARY_GENERATION_RAW_OUTPUT = "summary_generation_raw_model_output"
     JUDGE_MCQ_ANSWERS = "judge_mc_answers"
     NUM_WORDS = "num_words"

@@ -114,11 +114,8 @@ def calculate_statistics(results: pd.DataFrame, baseline_results: pd.DataFrame, 
     })
     return stats_df, win_rate
 
-
-# def style_dataframe(df: pd.DataFrame):
-#     return df.style.format("{:.4f}").set_properties(**{'text-align': 'center'}).to_string()
-
-def style_dataframe(df: pd.DataFrame) -> str:
+def format_dataframe(df: pd.DataFrame) -> str:
+    """Formats the dataframe into a string"""
     # Format the float values to 4 decimal places
     formatted_df = df.map(lambda x: 100*x).map(lambda x: f"{x:.4f} %")
     formatted_df.index.name = "Metric"
@@ -145,5 +142,5 @@ if __name__ == "__main__":
 
     accuracy_threshold = args.accuracy_threshold
     stats_df, win_rate = calculate_statistics(results=results, baseline_results=results_baseline, accuracy_threshold=accuracy_threshold)
-    print(style_dataframe(stats_df))
+    print(format_dataframe(stats_df))
     print("\n\nModel Win Rate: ", win_rate)

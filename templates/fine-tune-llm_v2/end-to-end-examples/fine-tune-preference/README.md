@@ -26,6 +26,9 @@ import openai
 import ray.data
 
 import pprint
+import textwrap
+
+os.environ["PYTHONPATH"] = f"{os.environ.get('PYTHONPATH', '')}:src"
 ```
 
 # Step 1: Synthetic Data Generation
@@ -42,83 +45,415 @@ ray_ds = ray.data.from_huggingface(hf_ds_subset)
 raw_example = ray_ds.take(1)[0]
 ```
 
+    {"asctime": "2024-08-14 14:16:57,929", "levelname": "INFO", "message": "Snapshot is for job submit, omitting .git/ files.", "filename": "snapshot_util.py", "lineno": 773, "timestamp_ns": 1723670217929491372}
+    {"asctime": "2024-08-14 14:16:57,930", "levelname": "INFO", "message": "Zipping 43 files found in ..", "filename": "snapshot_util.py", "lineno": 863, "timestamp_ns": 1723670217930120890}
+    {"asctime": "2024-08-14 14:16:57,941", "levelname": "INFO", "message": "Created snapshot for . at /tmp/snapshot_2024-08-14T21:16:57.928386+00:00_m7kram8f.zip of size 874.35 KB in 0.013s.", "filename": "snapshot_util.py", "lineno": 876, "timestamp_ns": 1723670217941763768}
+    {"asctime": "2024-08-14 14:16:57,960", "levelname": "INFO", "message": "Found credentials from IAM Role: cld_1j41ls4gwkga4pwp8nbql6f239-cluster_node_role", "filename": "credentials.py", "lineno": 1075, "timestamp_ns": 1723670217960042235}
+    {"asctime": "2024-08-14 14:16:58,149", "levelname": "INFO", "message": "Updated runtime env to {'cgroupv2': {}, 'working_dir': '/tmp/ray_latest_runtime_env.zip', 'env_vars': {'WANDB_API_KEY': 'cbc4aed2de2d9c9acb21324a3297b85b7299479b'}, 'pip': ['pytest', 'pytest-timeout', 'allpairspy', 'inflect', 'flatten-dict', 'pre-commit', 'pip-tools', 'huggingface_hub', 'lilac', 'rich', 'black', 'isort'], 'ray_debugger': {'working_dir': '/home/ray/default/templates/templates/fine-tune-llm_v2/end-to-end-examples/fine-tune-preference'}}", "filename": "snapshot_util.py", "lineno": 1927, "timestamp_ns": 1723670218149612363}
+    2024-08-14 14:16:58,182	INFO worker.py:1596 -- Connecting to existing Ray cluster at address: 10.0.49.2:6379...
+    2024-08-14 14:16:58,189	INFO worker.py:1772 -- Connected to Ray cluster. View the dashboard at [1m[32mhttps://session-m4a38rehf7miww178mefsrumy2.i.anyscaleuserdata.com [39m[22m
+    2024-08-14 14:16:58,192	INFO packaging.py:358 -- Pushing file package 'gcs://_ray_pkg_4f5001de4e37d01c532945d2031d43362b8a2c10.zip' (0.85MiB) to Ray cluster...
+    2024-08-14 14:16:58,195	INFO packaging.py:371 -- Successfully pushed file package 'gcs://_ray_pkg_4f5001de4e37d01c532945d2031d43362b8a2c10.zip'.
+    2024-08-14 14:17:04,705	INFO dataset.py:2416 -- Tip: Use `take_batch()` instead of `take() / show()` to return records in pandas or numpy batch format.
+    2024-08-14 14:17:04,708	INFO streaming_executor.py:108 -- Starting execution of Dataset. Full logs are in /tmp/ray/session_2024-08-14_09-50-28_607133_2981/logs/ray-data
+    2024-08-14 14:17:04,708	INFO streaming_executor.py:109 -- Execution plan of Dataset: InputDataBuffer[Input] -> LimitOperator[limit=1]
+
+
+
+    - limit=1 1: 0 bundle [00:00, ? bundle/s]
+
+
+
+    Running 0: 0 bundle [00:00, ? bundle/s]
+
+
+    [36m(ReadParquet->SplitBlocks(5) pid=209343)[0m Traceback (most recent call last):
+    [36m(ReadParquet->SplitBlocks(5) pid=209343)[0m   File "pyarrow/public-api.pxi", line 128, in pyarrow.lib.pyarrow_wrap_data_type
+    [36m(ReadParquet->SplitBlocks(5) pid=209343)[0m   File "pyarrow/types.pxi", line 488, in pyarrow.lib.ListType.init
+    [36m(ReadParquet->SplitBlocks(5) pid=209343)[0m   File "pyarrow/types.pxi", line 200, in pyarrow.lib.DataType.init
+    [36m(ReadParquet->SplitBlocks(5) pid=209343)[0m   File "pyarrow/types.pxi", line 88, in pyarrow.lib._datatype_to_pep3118
+    [36m(ReadParquet->SplitBlocks(5) pid=209343)[0m   File "/home/ray/anaconda3/lib/python3.11/site-packages/ray/air/util/tensor_extensions/arrow.py", line 152, in __arrow_ext_deserialize__
+    [36m(ReadParquet->SplitBlocks(5) pid=209343)[0m     @classmethod
+    [36m(ReadParquet->SplitBlocks(5) pid=209343)[0m 
+    [36m(ReadParquet->SplitBlocks(5) pid=209343)[0m KeyboardInterrupt: 
+    [36m(ReadParquet->SplitBlocks(5) pid=209349)[0m 
+    [36m(ReadParquet->SplitBlocks(5) pid=209335)[0m 
+    [36m(ReadParquet->SplitBlocks(5) pid=209356)[0m 
+    [36m(ReadParquet->SplitBlocks(5) pid=209342)[0m 
+    [36m(ReadParquet->SplitBlocks(5) pid=209354)[0m 
+    [36m(ReadParquet->SplitBlocks(5) pid=209340)[0m 
+    [36m(ReadParquet->SplitBlocks(5) pid=209348)[0m 
+    [36m(ReadParquet->SplitBlocks(5) pid=209350)[0m 
+    [36m(ReadParquet->SplitBlocks(5) pid=209351)[0m 
+    [36m(ReadParquet->SplitBlocks(5) pid=209358)[0m 
+    [36m(ReadParquet->SplitBlocks(5) pid=209347)[0m 
+    [36m(ReadParquet->SplitBlocks(5) pid=209353)[0m 
+    [36m(ReadParquet->SplitBlocks(5) pid=209355)[0m 
+    [36m(ReadParquet->SplitBlocks(5) pid=209357)[0m 
+    [36m(ReadParquet->SplitBlocks(5) pid=209345)[0m 
+    [36m(ReadParquet->SplitBlocks(5) pid=209338)[0m 
+    [36m(ReadParquet->SplitBlocks(5) pid=209345)[0m Traceback (most recent call last):
+    [36m(ReadParquet->SplitBlocks(5) pid=209345)[0m   File "pyarrow/public-api.pxi", line 128, in pyarrow.lib.pyarrow_wrap_data_type
+    [36m(ReadParquet->SplitBlocks(5) pid=209345)[0m   File "pyarrow/types.pxi", line 488, in pyarrow.lib.ListType.init
+    [36m(ReadParquet->SplitBlocks(5) pid=209345)[0m   File "pyarrow/types.pxi", line 200, in pyarrow.lib.DataType.init
+    [36m(ReadParquet->SplitBlocks(5) pid=209345)[0m   File "pyarrow/types.pxi", line 88, in pyarrow.lib._datatype_to_pep3118
+    [36m(ReadParquet->SplitBlocks(5) pid=209345)[0m   File "/home/ray/anaconda3/lib/python3.11/site-packages/ray/air/util/tensor_extensions/arrow.py", line 152, in __arrow_ext_deserialize__
+    [36m(ReadParquet->SplitBlocks(5) pid=209345)[0m     @classmethod
+    [36m(ReadParquet->SplitBlocks(5) pid=209345)[0m 
+    [36m(ReadParquet->SplitBlocks(5) pid=209345)[0m KeyboardInterrupt: 
+    [36m(ReadParquet->SplitBlocks(5) pid=209358)[0m 
+    [36m(ReadParquet->SplitBlocks(5) pid=209349)[0m 
+    [36m(ReadParquet->SplitBlocks(5) pid=209355)[0m 
+    [36m(ReadParquet->SplitBlocks(5) pid=209340)[0m 
+    [36m(ReadParquet->SplitBlocks(5) pid=209343)[0m 
+    [36m(ReadParquet->SplitBlocks(5) pid=209352)[0m 
+    [36m(ReadParquet->SplitBlocks(5) pid=209356)[0m 
+    [36m(ReadParquet->SplitBlocks(48) pid=209356)[0m Traceback (most recent call last):
+    [36m(ReadParquet->SplitBlocks(48) pid=209356)[0m   File "pyarrow/public-api.pxi", line 128, in pyarrow.lib.pyarrow_wrap_data_type
+    [36m(ReadParquet->SplitBlocks(48) pid=209356)[0m   File "pyarrow/types.pxi", line 488, in pyarrow.lib.ListType.init
+    [36m(ReadParquet->SplitBlocks(48) pid=209356)[0m   File "pyarrow/types.pxi", line 200, in pyarrow.lib.DataType.init
+    [36m(ReadParquet->SplitBlocks(48) pid=209356)[0m   File "pyarrow/types.pxi", line 88, in pyarrow.lib._datatype_to_pep3118
+    [36m(ReadParquet->SplitBlocks(48) pid=209356)[0m   File "/home/ray/anaconda3/lib/python3.11/site-packages/ray/air/util/tensor_extensions/arrow.py", line 152, in __arrow_ext_deserialize__
+    [36m(ReadParquet->SplitBlocks(48) pid=209356)[0m     @classmethod
+    [36m(ReadParquet->SplitBlocks(48) pid=209356)[0m 
+    [36m(ReadParquet->SplitBlocks(48) pid=209356)[0m KeyboardInterrupt: 
+    [36m(ReadParquet->SplitBlocks(5) pid=209351)[0m Traceback (most recent call last):
+    [36m(ReadParquet->SplitBlocks(5) pid=209351)[0m   File "pyarrow/public-api.pxi", line 128, in pyarrow.lib.pyarrow_wrap_data_type
+    [36m(ReadParquet->SplitBlocks(5) pid=209351)[0m   File "pyarrow/types.pxi", line 488, in pyarrow.lib.ListType.init
+    [36m(ReadParquet->SplitBlocks(5) pid=209351)[0m   File "pyarrow/types.pxi", line 200, in pyarrow.lib.DataType.init
+    [36m(ReadParquet->SplitBlocks(5) pid=209351)[0m   File "pyarrow/types.pxi", line 88, in pyarrow.lib._datatype_to_pep3118
+    [36m(ReadParquet->SplitBlocks(5) pid=209351)[0m   File "/home/ray/anaconda3/lib/python3.11/site-packages/ray/air/util/tensor_extensions/arrow.py", line 152, in __arrow_ext_deserialize__
+    [36m(ReadParquet->SplitBlocks(5) pid=209351)[0m     @classmethod
+    [36m(ReadParquet->SplitBlocks(5) pid=209351)[0m 
+    [36m(ReadParquet->SplitBlocks(5) pid=209351)[0m KeyboardInterrupt: 
+    [36m(ReadParquet->SplitBlocks(5) pid=209347)[0m 
+    [36m(ReadParquet->SplitBlocks(5) pid=209342)[0m 
+    [36m(ReadParquet->SplitBlocks(5) pid=209353)[0m 
+    [36m(ReadParquet->SplitBlocks(5) pid=209339)[0m 
+    [36m(ReadParquet->SplitBlocks(5) pid=209354)[0m 
+    [36m(ReadParquet->SplitBlocks(5) pid=209341)[0m Traceback (most recent call last):
+    [36m(ReadParquet->SplitBlocks(5) pid=209341)[0m   File "pyarrow/public-api.pxi", line 128, in pyarrow.lib.pyarrow_wrap_data_type
+    [36m(ReadParquet->SplitBlocks(5) pid=209341)[0m   File "pyarrow/types.pxi", line 488, in pyarrow.lib.ListType.init
+    [36m(ReadParquet->SplitBlocks(5) pid=209341)[0m   File "pyarrow/types.pxi", line 200, in pyarrow.lib.DataType.init
+    [36m(ReadParquet->SplitBlocks(5) pid=209341)[0m   File "pyarrow/types.pxi", line 88, in pyarrow.lib._datatype_to_pep3118
+    [36m(ReadParquet->SplitBlocks(5) pid=209341)[0m   File "/home/ray/anaconda3/lib/python3.11/site-packages/ray/air/util/tensor_extensions/arrow.py", line 152, in __arrow_ext_deserialize__
+    [36m(ReadParquet->SplitBlocks(5) pid=209341)[0m     @classmethod
+    [36m(ReadParquet->SplitBlocks(5) pid=209341)[0m 
+    [36m(ReadParquet->SplitBlocks(5) pid=209341)[0m KeyboardInterrupt: 
+    [36m(ReadParquet->SplitBlocks(5) pid=208976)[0m 
+    [36m(ReadParquet->SplitBlocks(5) pid=209343)[0m 
+    [36m(ReadParquet->SplitBlocks(5) pid=209351)[0m 
+    [36m(ReadParquet->SplitBlocks(5) pid=209356)[0m 
+    [36m(ReadParquet->SplitBlocks(5) pid=209339)[0m 
+    [36m(ReadParquet->SplitBlocks(5) pid=209348)[0m 
+    [36m(ReadParquet->SplitBlocks(48) pid=209348)[0m Traceback (most recent call last):
+    [36m(ReadParquet->SplitBlocks(48) pid=209348)[0m   File "pyarrow/public-api.pxi", line 128, in pyarrow.lib.pyarrow_wrap_data_type
+    [36m(ReadParquet->SplitBlocks(48) pid=209348)[0m   File "pyarrow/types.pxi", line 488, in pyarrow.lib.ListType.init
+    [36m(ReadParquet->SplitBlocks(48) pid=209348)[0m   File "pyarrow/types.pxi", line 200, in pyarrow.lib.DataType.init
+    [36m(ReadParquet->SplitBlocks(48) pid=209348)[0m   File "pyarrow/types.pxi", line 88, in pyarrow.lib._datatype_to_pep3118
+    [36m(ReadParquet->SplitBlocks(48) pid=209348)[0m   File "/home/ray/anaconda3/lib/python3.11/site-packages/ray/air/util/tensor_extensions/arrow.py", line 152, in __arrow_ext_deserialize__
+    [36m(ReadParquet->SplitBlocks(48) pid=209348)[0m     @classmethod
+    [36m(ReadParquet->SplitBlocks(48) pid=209348)[0m 
+    [36m(ReadParquet->SplitBlocks(48) pid=209348)[0m KeyboardInterrupt: 
+    [36m(ReadParquet->SplitBlocks(48) pid=209339)[0m Traceback (most recent call last):
+    [36m(ReadParquet->SplitBlocks(48) pid=209339)[0m   File "pyarrow/public-api.pxi", line 128, in pyarrow.lib.pyarrow_wrap_data_type
+    [36m(ReadParquet->SplitBlocks(48) pid=209339)[0m   File "pyarrow/types.pxi", line 488, in pyarrow.lib.ListType.init
+    [36m(ReadParquet->SplitBlocks(48) pid=209339)[0m   File "pyarrow/types.pxi", line 200, in pyarrow.lib.DataType.init
+    [36m(ReadParquet->SplitBlocks(48) pid=209339)[0m   File "pyarrow/types.pxi", line 88, in pyarrow.lib._datatype_to_pep3118
+    [36m(ReadParquet->SplitBlocks(48) pid=209339)[0m   File "/home/ray/anaconda3/lib/python3.11/site-packages/ray/air/util/tensor_extensions/arrow.py", line 152, in __arrow_ext_deserialize__
+    [36m(ReadParquet->SplitBlocks(48) pid=209339)[0m     @classmethod
+    [36m(ReadParquet->SplitBlocks(48) pid=209339)[0m 
+    [36m(ReadParquet->SplitBlocks(48) pid=209339)[0m KeyboardInterrupt: 
+    [36m(ReadParquet->SplitBlocks(5) pid=208976)[0m Traceback (most recent call last):
+    [36m(ReadParquet->SplitBlocks(5) pid=208976)[0m   File "pyarrow/public-api.pxi", line 128, in pyarrow.lib.pyarrow_wrap_data_type
+    [36m(ReadParquet->SplitBlocks(5) pid=208976)[0m   File "pyarrow/types.pxi", line 488, in pyarrow.lib.ListType.init
+    [36m(ReadParquet->SplitBlocks(5) pid=208976)[0m   File "pyarrow/types.pxi", line 200, in pyarrow.lib.DataType.init
+    [36m(ReadParquet->SplitBlocks(5) pid=208976)[0m   File "pyarrow/types.pxi", line 88, in pyarrow.lib._datatype_to_pep3118
+    [36m(ReadParquet->SplitBlocks(5) pid=208976)[0m   File "/home/ray/anaconda3/lib/python3.11/site-packages/ray/air/util/tensor_extensions/arrow.py", line 152, in __arrow_ext_deserialize__
+    [36m(ReadParquet->SplitBlocks(5) pid=208976)[0m     @classmethod
+    [36m(ReadParquet->SplitBlocks(5) pid=208976)[0m 
+    [36m(ReadParquet->SplitBlocks(5) pid=208976)[0m KeyboardInterrupt: 
+    [36m(ReadParquet->SplitBlocks(5) pid=209338)[0m Traceback (most recent call last):
+    [36m(ReadParquet->SplitBlocks(5) pid=209338)[0m   File "pyarrow/public-api.pxi", line 128, in pyarrow.lib.pyarrow_wrap_data_type
+    [36m(ReadParquet->SplitBlocks(5) pid=209338)[0m   File "pyarrow/types.pxi", line 488, in pyarrow.lib.ListType.init
+    [36m(ReadParquet->SplitBlocks(5) pid=209338)[0m   File "pyarrow/types.pxi", line 200, in pyarrow.lib.DataType.init
+    [36m(ReadParquet->SplitBlocks(5) pid=209338)[0m   File "pyarrow/types.pxi", line 88, in pyarrow.lib._datatype_to_pep3118
+    [36m(ReadParquet->SplitBlocks(5) pid=209338)[0m   File "/home/ray/anaconda3/lib/python3.11/site-packages/ray/air/util/tensor_extensions/arrow.py", line 152, in __arrow_ext_deserialize__
+    [36m(ReadParquet->SplitBlocks(5) pid=209338)[0m     @classmethod
+    [36m(ReadParquet->SplitBlocks(5) pid=209338)[0m 
+    [36m(ReadParquet->SplitBlocks(5) pid=209338)[0m KeyboardInterrupt: 
+    [36m(ReadParquet->SplitBlocks(5) pid=209350)[0m 
+    [36m(ReadParquet->SplitBlocks(5) pid=209358)[0m 
+    [36m(ReadParquet->SplitBlocks(5) pid=226255)[0m 
+    [36m(ReadParquet->SplitBlocks(5) pid=209352)[0m 
+    [36m(ReadParquet->SplitBlocks(48) pid=209352)[0m Traceback (most recent call last):
+    [36m(ReadParquet->SplitBlocks(48) pid=209352)[0m   File "pyarrow/public-api.pxi", line 128, in pyarrow.lib.pyarrow_wrap_data_type
+    [36m(ReadParquet->SplitBlocks(48) pid=209352)[0m   File "pyarrow/types.pxi", line 488, in pyarrow.lib.ListType.init
+    [36m(ReadParquet->SplitBlocks(48) pid=209352)[0m   File "pyarrow/types.pxi", line 200, in pyarrow.lib.DataType.init
+    [36m(ReadParquet->SplitBlocks(48) pid=209352)[0m   File "pyarrow/types.pxi", line 88, in pyarrow.lib._datatype_to_pep3118
+    [36m(ReadParquet->SplitBlocks(48) pid=209352)[0m   File "/home/ray/anaconda3/lib/python3.11/site-packages/ray/air/util/tensor_extensions/arrow.py", line 152, in __arrow_ext_deserialize__
+    [36m(ReadParquet->SplitBlocks(48) pid=209352)[0m     @classmethod
+    [36m(ReadParquet->SplitBlocks(48) pid=209352)[0m 
+    [36m(ReadParquet->SplitBlocks(48) pid=209352)[0m KeyboardInterrupt: 
+    [36m(ReadParquet->SplitBlocks(48) pid=226255)[0m Traceback (most recent call last):
+    [36m(ReadParquet->SplitBlocks(48) pid=226255)[0m   File "pyarrow/public-api.pxi", line 128, in pyarrow.lib.pyarrow_wrap_data_type
+    [36m(ReadParquet->SplitBlocks(48) pid=226255)[0m   File "pyarrow/types.pxi", line 488, in pyarrow.lib.ListType.init
+    [36m(ReadParquet->SplitBlocks(48) pid=226255)[0m   File "pyarrow/types.pxi", line 200, in pyarrow.lib.DataType.init
+    [36m(ReadParquet->SplitBlocks(48) pid=226255)[0m   File "pyarrow/types.pxi", line 88, in pyarrow.lib._datatype_to_pep3118
+    [36m(ReadParquet->SplitBlocks(48) pid=226255)[0m   File "/home/ray/anaconda3/lib/python3.11/site-packages/ray/air/util/tensor_extensions/arrow.py", line 152, in __arrow_ext_deserialize__
+    [36m(ReadParquet->SplitBlocks(48) pid=226255)[0m     @classmethod
+    [36m(ReadParquet->SplitBlocks(48) pid=226255)[0m 
+    [36m(ReadParquet->SplitBlocks(48) pid=226255)[0m KeyboardInterrupt: 
+    [36m(ReadParquet pid=208976)[0m Traceback (most recent call last):
+    [36m(ReadParquet pid=208976)[0m   File "pyarrow/public-api.pxi", line 128, in pyarrow.lib.pyarrow_wrap_data_type
+    [36m(ReadParquet pid=208976)[0m   File "pyarrow/types.pxi", line 488, in pyarrow.lib.ListType.init
+    [36m(ReadParquet pid=208976)[0m   File "pyarrow/types.pxi", line 200, in pyarrow.lib.DataType.init
+    [36m(ReadParquet pid=208976)[0m   File "pyarrow/types.pxi", line 88, in pyarrow.lib._datatype_to_pep3118
+    [36m(ReadParquet pid=208976)[0m   File "/home/ray/anaconda3/lib/python3.11/site-packages/ray/air/util/tensor_extensions/arrow.py", line 152, in __arrow_ext_deserialize__
+    [36m(ReadParquet pid=208976)[0m     @classmethod
+    [36m(ReadParquet pid=208976)[0m 
+    [36m(ReadParquet pid=208976)[0m KeyboardInterrupt: 
+    [36m(ReadParquet pid=230447)[0m 
+    [36m(ReadParquet pid=230488)[0m 
+    [36m(ReadParquet pid=230480)[0m 
+    [36m(ReadParquet pid=230457)[0m 
+    [36m(ReadParquet pid=230483)[0m 
+    [36m(ReadParquet pid=230479)[0m 
+    [36m(ReadParquet pid=209343)[0m 
+    [36m(ReadParquet pid=226342)[0m 
+    [36m(ReadParquet pid=230453)[0m 
+    [36m(ReadParquet pid=230486)[0m 
+    [36m(ReadParquet pid=230482)[0m 
+    [36m(ReadParquet pid=230492)[0m 
+    [36m(ReadParquet pid=230487)[0m 
+    [36m(ReadParquet pid=230463)[0m 
+    [36m(ReadParquet pid=230484)[0m 
+    [36m(ReadParquet pid=230481)[0m 
+    [36m(ReadParquet pid=230491)[0m 
+    [36m(ReadParquet pid=230496)[0m 
+    [36m(ReadParquet pid=209353)[0m 
+    [36m(ReadParquet pid=230497)[0m 
+    [36m(ReadParquet pid=230494)[0m 
+    [36m(ReadParquet pid=230493)[0m 
+    [36m(ReadParquet pid=209338)[0m 
+    [36m(ReadParquet pid=230489)[0m 
+    [36m(ReadParquet pid=209358)[0m 
+    [36m(ReadParquet pid=209350)[0m Traceback (most recent call last):
+    [36m(ReadParquet pid=209350)[0m   File "pyarrow/public-api.pxi", line 128, in pyarrow.lib.pyarrow_wrap_data_type
+    [36m(ReadParquet pid=209350)[0m   File "pyarrow/types.pxi", line 488, in pyarrow.lib.ListType.init
+    [36m(ReadParquet pid=209350)[0m   File "pyarrow/types.pxi", line 200, in pyarrow.lib.DataType.init
+    [36m(ReadParquet pid=209350)[0m   File "pyarrow/types.pxi", line 88, in pyarrow.lib._datatype_to_pep3118
+    [36m(ReadParquet pid=209350)[0m   File "/home/ray/anaconda3/lib/python3.11/site-packages/ray/air/util/tensor_extensions/arrow.py", line 152, in __arrow_ext_deserialize__
+    [36m(ReadParquet pid=209350)[0m     @classmethod
+    [36m(ReadParquet pid=209350)[0m 
+    [36m(ReadParquet pid=209350)[0m KeyboardInterrupt: 
+    [36m(ReadParquet pid=209341)[0m 
+    [36m(ReadParquet pid=209335)[0m 
+    [36m(ReadParquet pid=209342)[0m 
+    [36m(ReadParquet pid=209357)[0m 
+    [36m(ReadParquet pid=209241)[0m 
+    [36m(ReadParquet pid=209338)[0m 
+    [36m(ReadParquet pid=209355)[0m 
+    [36m(ReadParquet pid=226342)[0m 
+    [36m(ReadParquet pid=230480)[0m 
+    [36m(ReadParquet pid=230479)[0m 
+    [36m(ReadParquet pid=230484)[0m 
+    [36m(ReadParquet pid=230481)[0m 
+    [36m(ReadParquet pid=230496)[0m 
+    [36m(ReadParquet pid=230490)[0m 
+    [36m(ReadParquet pid=226255)[0m 
+    [36m(ReadParquet pid=209340)[0m 
+    [36m(ReadParquet pid=209349)[0m 
+    [36m(ReadParquet pid=209352)[0m 
+    [36m(ReadParquet pid=209339)[0m 
+    [36m(ReadParquet pid=230457)[0m 
+    [36m(ReadParquet pid=230482)[0m 
+    [36m(ReadParquet pid=230492)[0m 
+    [36m(ReadParquet pid=230495)[0m 
+    [36m(ReadParquet pid=230489)[0m 
+    [36m(ReadParquet pid=209343)[0m 
+    [36m(ReadParquet pid=209358)[0m 
+    [36m(ReadParquet pid=209356)[0m 
+    [36m(ReadParquet pid=209354)[0m 
+    [36m(ReadParquet pid=209353)[0m 
+    [36m(ReadParquet pid=230488)[0m 
+    [36m(ReadParquet pid=230453)[0m 
+    [36m(ReadParquet pid=230497)[0m 
+    [36m(ReadParquet pid=230491)[0m 
+    [36m(ReadParquet pid=230476)[0m 
+    [36m(ReadParquet pid=230485)[0m 
+    [36m(ReadParquet pid=209351)[0m 
+    [36m(ReadParquet pid=209345)[0m 
+    [36m(ReadParquet pid=209344)[0m 
+    [36m(ReadParquet pid=208976)[0m 
+    [36m(ReadParquet pid=209348)[0m 
+    [36m(ReadParquet pid=230486)[0m 
+    [36m(ReadParquet pid=230487)[0m 
+    [36m(ReadParquet pid=209335)[0m Traceback (most recent call last):
+    [36m(ReadParquet pid=209335)[0m   File "pyarrow/public-api.pxi", line 128, in pyarrow.lib.pyarrow_wrap_data_type
+    [36m(ReadParquet pid=209335)[0m   File "pyarrow/types.pxi", line 488, in pyarrow.lib.ListType.init
+    [36m(ReadParquet pid=209335)[0m   File "pyarrow/types.pxi", line 200, in pyarrow.lib.DataType.init
+    [36m(ReadParquet pid=209335)[0m   File "pyarrow/types.pxi", line 88, in pyarrow.lib._datatype_to_pep3118
+    [36m(ReadParquet pid=209335)[0m   File "/home/ray/anaconda3/lib/python3.11/site-packages/ray/air/util/tensor_extensions/arrow.py", line 152, in __arrow_ext_deserialize__
+    [36m(ReadParquet pid=209335)[0m     @classmethod
+    [36m(ReadParquet pid=209335)[0m 
+    [36m(ReadParquet pid=209335)[0m KeyboardInterrupt: 
+    [36m(ReadParquet pid=230479)[0m 
+    [36m(ReadParquet pid=209343)[0m 
+    [36m(ReadParquet pid=209358)[0m 
+    [36m(ReadParquet pid=209344)[0m 
+    [36m(ReadParquet pid=209349)[0m 
+    [36m(ReadParquet pid=209356)[0m 
+    [36m(ReadParquet pid=230457)[0m 
+    [36m(ReadParquet pid=209345)[0m 
+    [36m(ReadParquet pid=209354)[0m 
+    [36m(ReadParquet pid=209357)[0m 
+    [36m(ReadParquet pid=208976)[0m 
+    [36m(ReadParquet pid=209241)[0m 
+    [36m(ReadParquet pid=209338)[0m 
+    [36m(ReadParquet pid=209355)[0m 
+    [36m(ReadParquet pid=230447)[0m 
+    [36m(ReadParquet pid=230480)[0m 
+    [36m(ReadParquet pid=230483)[0m 
+    [36m(ReadParquet pid=230482)[0m 
+    [36m(ReadParquet pid=230492)[0m 
+    [36m(ReadParquet pid=230489)[0m 
+    [36m(ReadParquet pid=230487)[0m 
+    [36m(ReadParquet pid=230484)[0m 
+    [36m(ReadParquet pid=230481)[0m 
+    [36m(ReadParquet pid=209350)[0m 
+    [36m(ReadParquet pid=209341)[0m 
+    [36m(ReadParquet pid=209342)[0m 
+    [36m(ReadParquet pid=209340)[0m 
+    [36m(ReadParquet pid=226255)[0m 
+    [36m(ReadParquet pid=230453)[0m 
+    [36m(ReadParquet pid=230463)[0m 
+    [36m(ReadParquet pid=230493)[0m 
+    [36m(ReadParquet pid=230496)[0m 
+    [36m(ReadParquet pid=230494)[0m 
+    [36m(ReadParquet pid=230485)[0m 
+    [36m(ReadParquet pid=230488)[0m 
+    [36m(ReadParquet pid=230486)[0m 
+    [36m(ReadParquet pid=230490)[0m 
+    [36m(ReadParquet pid=230497)[0m 
+    [36m(ReadParquet pid=230491)[0m 
+    [36m(ReadParquet pid=209339)[0m 
+    [36m(ReadParquet pid=209353)[0m 
+    [36m(ReadParquet pid=209348)[0m 
+    [36m(ReadParquet pid=209351)[0m 
+    [36m(ReadParquet pid=230476)[0m 
+    [36m(ReadParquet pid=209352)[0m 
+    [36m(ReadParquet pid=230495)[0m 
+    [36m(ReadParquet pid=226342)[0m 
+    [36m(ExpandPaths pid=209340)[0m Failed to interpret chosen as multi-dimensional arrays. It will be pickled.
+    [36m(ExpandPaths pid=209340)[0m Failed to interpret rejected as multi-dimensional arrays. It will be pickled.
+    [36m(ExpandPaths pid=209350)[0m Failed to interpret chosen as multi-dimensional arrays. It will be pickled.
+    [36m(ExpandPaths pid=209350)[0m Failed to interpret rejected as multi-dimensional arrays. It will be pickled.
+
+
 
 ```python
-pprint.pprint(raw_example, width=100)
+pprint.pprint(raw_example, width=80)
 ```
 
-    {'article': 'Scam: Lisa Harrison, 34, promised customers low currency rates on US dollars and '
-                'special deals . A wedding planner who stole £80,000 from couples in a bid to satisfy '
-                "an 'out-of-control' online gambling addiction has been jailed. Lisa Harrison, 34, "
-                'began taking money from her clients in summer 2013 by enticing them with low currency '
-                'rates on US dollars and flight upgrades. She took money from 19 couples who had '
-                'entrusted their savings to her after being promised the wedding of their dreams. It '
-                'is understood that the company she worked for, iPlan New York, specialised in '
-                'weddings in New York City. Her website iplannewyork.com, which has been taken down, '
-                "said: 'iPlan New York was set up to create and style the perfect tailor made wedding "
-                "for couples travelling to New York to get married! 'We are passionate about what we "
-                'do and passionate about New York! We have experience in planning NYC weddings for '
-                "couples from all over the world.' But she was arrested in December last year after "
-                'eventually coming clean to her victims in an email and saying she had been forced to '
-                'close her business. Police soon found she had taken £80,107 from the couples and '
-                'spent a staggering £77,933 on gambling sites Paddy Power and William Hill. The '
-                "business' Facebook page has also been deleted, but outraged victims have shared their "
-                "victims on a wedding forum. One victim called Jennifer wrote in November 2013: 'I had "
-                'previously given Lisa a positive review because our vow renewal went wonderful. '
-                "'Little did I know until last week that she didn't even pay the vendors that helped "
-                "with our ceremony. 'I am so disgusted and can't fathom such an act. We paid her in "
-                "full and to think that our photographer didn't even get paid is just astonishing to "
-                "me. 'I feel so horrible for the other couples that had their perfect day planned and "
-                "this woman decided to perform such an act. 'I pray for each of you in hopes that you "
-                'will be able to move on from this and live a healthy and happy life with your '
-                "significant other. 'I can't believe this woman took our money and did such an "
-                "unthinkable act. God bless all of you and I hope this mess gets corrected quickly.' "
-                'While another anonymous victim posted a copy of the email they claim they had been '
-                "sent by Harrison when she admitted the scam. It read: 'I have to announce the closure "
-                "of iPlan New York. 'For some time now I have been battling against a gambling "
-                'addiction that has seen me lose all of the company money including money paid to me '
-                "by you for services and dollars. 'I cannot go on another day with this situation as "
-                'this illness has taken me over completely and I have to both face up to the '
-                "consequences of my actions and seek help for the debilitating addiction. 'I am "
-                "extremely ill with it and need to seek help as soon as possible. 'I am completely "
-                'devastated that not only have I lost money of yours but betrayed your trust as a '
-                "wedding planner. 'Right now I am uncertain as to what the future holds with regards "
-                'to future weddings already planned, I will be in touch with the suppliers in NYC to '
-                'inform them also. Sentence: Harrison, of Earith, Cambridgeshire, was jailed for two '
-                "years at Peterborough Crown Court, above . 'I will today be having my computer and "
-                'all electronic devices ceased (sic) under an intervention and handing myself into the '
-                "police to give a statement and to tell them everything. 'No doubt you will be "
-                'informing the police too and for those purposes it will be the Cambridgeshire '
-                'Constabulary and my full name is Lisa Harrison and I will be handing myself in after '
-                "sending these emails. 'I won’t be able to reply to any emails or calls for the time "
-                "being as I will not have access. 'I am truly from the bottom of my heart so sorry for "
-                'everything, as with addictions I thought I had everything under control and was in '
-                'denial that I could put everything right, which I have been trying so desperately to '
-                "do. 'As soon as and if I am able to communicate further about any outstanding issues "
-                "I will do so. Lisa.' Posting on an online review site for the wedding service, one "
-                "former customer said: 'We are due to go in less than 48 hours and we have nothing!! "
-                "She has now closed down her website too! She has left us devastated!' Another, using "
-                "the name Shaun, wrote: 'Alarm bells rang for me when she asked for all our spending "
-                'money cos she had a deal on a currency card. While one woman, using the name Andrea, '
-                "said: 'I am absolutely devastated for anyone who has used iPlan New York and "
-                "subsequently been let down'. She added that she had a 'gut feeling' not to pay "
-                'upfront. Harrison, of Earith, Cambridgeshire, admitted fraudulent trading and was '
-                'jailed for two years at Peterborough Crown Court on Tuesday. Det Sgt Iain Moor, from '
-                "Cambridgeshire Constabulary, said: 'This was an extremely distressing case for the 19 "
-                "couples who lost life savings and had their dream day ruined by Harrison. 'I hope the "
-                'victims received some comfort in the prison sentence imposed on Harrison, meaning '
+    {'article': 'Scam: Lisa Harrison, 34, promised customers low currency rates on '
+                'US dollars and special deals . A wedding planner who stole '
+                "£80,000 from couples in a bid to satisfy an 'out-of-control' "
+                'online gambling addiction has been jailed. Lisa Harrison, 34, '
+                'began taking money from her clients in summer 2013 by enticing '
+                'them with low currency rates on US dollars and flight upgrades. '
+                'She took money from 19 couples who had entrusted their savings to '
+                'her after being promised the wedding of their dreams. It is '
+                'understood that the company she worked for, iPlan New York, '
+                'specialised in weddings in New York City. Her website '
+                "iplannewyork.com, which has been taken down, said: 'iPlan New "
+                'York was set up to create and style the perfect tailor made '
+                "wedding for couples travelling to New York to get married! 'We "
+                'are passionate about what we do and passionate about New York! We '
+                'have experience in planning NYC weddings for couples from all '
+                "over the world.' But she was arrested in December last year after "
+                'eventually coming clean to her victims in an email and saying she '
+                'had been forced to close her business. Police soon found she had '
+                'taken £80,107 from the couples and spent a staggering £77,933 on '
+                "gambling sites Paddy Power and William Hill. The business' "
+                'Facebook page has also been deleted, but outraged victims have '
+                'shared their victims on a wedding forum. One victim called '
+                "Jennifer wrote in November 2013: 'I had previously given Lisa a "
+                "positive review because our vow renewal went wonderful. 'Little "
+                "did I know until last week that she didn't even pay the vendors "
+                "that helped with our ceremony. 'I am so disgusted and can't "
+                'fathom such an act. We paid her in full and to think that our '
+                "photographer didn't even get paid is just astonishing to me. 'I "
+                'feel so horrible for the other couples that had their perfect day '
+                "planned and this woman decided to perform such an act. 'I pray "
+                'for each of you in hopes that you will be able to move on from '
+                'this and live a healthy and happy life with your significant '
+                "other. 'I can't believe this woman took our money and did such an "
+                'unthinkable act. God bless all of you and I hope this mess gets '
+                "corrected quickly.' While another anonymous victim posted a copy "
+                'of the email they claim they had been sent by Harrison when she '
+                "admitted the scam. It read: 'I have to announce the closure of "
+                "iPlan New York. 'For some time now I have been battling against a "
+                'gambling addiction that has seen me lose all of the company money '
+                "including money paid to me by you for services and dollars. 'I "
+                'cannot go on another day with this situation as this illness has '
+                'taken me over completely and I have to both face up to the '
+                'consequences of my actions and seek help for the debilitating '
+                "addiction. 'I am extremely ill with it and need to seek help as "
+                "soon as possible. 'I am completely devastated that not only have "
+                'I lost money of yours but betrayed your trust as a wedding '
+                "planner. 'Right now I am uncertain as to what the future holds "
+                'with regards to future weddings already planned, I will be in '
+                'touch with the suppliers in NYC to inform them also. Sentence: '
+                'Harrison, of Earith, Cambridgeshire, was jailed for two years at '
+                "Peterborough Crown Court, above . 'I will today be having my "
+                'computer and all electronic devices ceased (sic) under an '
+                'intervention and handing myself into the police to give a '
+                "statement and to tell them everything. 'No doubt you will be "
+                'informing the police too and for those purposes it will be the '
+                'Cambridgeshire Constabulary and my full name is Lisa Harrison and '
+                "I will be handing myself in after sending these emails. 'I won’t "
+                'be able to reply to any emails or calls for the time being as I '
+                "will not have access. 'I am truly from the bottom of my heart so "
+                'sorry for everything, as with addictions I thought I had '
+                'everything under control and was in denial that I could put '
+                'everything right, which I have been trying so desperately to do. '
+                "'As soon as and if I am able to communicate further about any "
+                "outstanding issues I will do so. Lisa.' Posting on an online "
+                'review site for the wedding service, one former customer said: '
+                "'We are due to go in less than 48 hours and we have nothing!! She "
+                "has now closed down her website too! She has left us devastated!' "
+                "Another, using the name Shaun, wrote: 'Alarm bells rang for me "
+                'when she asked for all our spending money cos she had a deal on a '
+                "currency card. While one woman, using the name Andrea, said: 'I "
+                'am absolutely devastated for anyone who has used iPlan New York '
+                "and subsequently been let down'. She added that she had a 'gut "
+                "feeling' not to pay upfront. Harrison, of Earith, Cambridgeshire, "
+                'admitted fraudulent trading and was jailed for two years at '
+                'Peterborough Crown Court on Tuesday. Det Sgt Iain Moor, from '
+                "Cambridgeshire Constabulary, said: 'This was an extremely "
+                'distressing case for the 19 couples who lost life savings and had '
+                "their dream day ruined by Harrison. 'I hope the victims received "
+                'some comfort in the prison sentence imposed on Harrison, meaning '
                 "they can now start to re-build their lives.'",
-     'highlights': 'Lisa Harrison enticed clients with low currency rates and flight upgrades .\n'
-                   'She took money from 19 couples who were promised dream weddings .\n'
-                   'Harrison spent nearly £78,000 on gambling sites including Paddy Power .\n'
-                   'She admitted the scam to victims in an email before handing herself in .\n'
-                   "Outraged victims say they are 'disgusted' and have been left 'devastated'\n"
-                   "In email Harrison says she will 'seek help for the debilitating addiction'\n"
-                   'She admitted fraudulent trading and was jailed for two years on Tuesday .',
+     'highlights': 'Lisa Harrison enticed clients with low currency rates and '
+                   'flight upgrades .\n'
+                   'She took money from 19 couples who were promised dream '
+                   'weddings .\n'
+                   'Harrison spent nearly £78,000 on gambling sites including '
+                   'Paddy Power .\n'
+                   'She admitted the scam to victims in an email before handing '
+                   'herself in .\n'
+                   "Outraged victims say they are 'disgusted' and have been left "
+                   "'devastated'\n"
+                   "In email Harrison says she will 'seek help for the "
+                   "debilitating addiction'\n"
+                   'She admitted fraudulent trading and was jailed for two years '
+                   'on Tuesday .',
      'id': '4feb82c680166f0b8f90bf3a6f9779b04f229325'}
 
 
-Now, we need to get preference data for pairs of summaries generated from the same article. Traditionally, this would involve generating summaries using the base model you wish to fine-tune and asking human annotators to provide a rating for each sample. In this example, we will employ a synthetic summary scoring method that scores the accuracy of a summary using the following metrics:
+Now, we need to get preference data for pairs of summaries generated from the same article. Traditionally, this would involve generating summaries using the base model you wish to fine-tune and asking human annotators to provide a rating for each sample. In this example, we will employ a _synthetic_ summary scoring method using an LLM as a judge. We score the correctness of a summary using the following metrics:
 
 **Summary Scoring Metrics**
 1. Multiple choice Q&A accuracy:
@@ -140,9 +475,9 @@ Combining all this together, our data pre-processing pipeline is going to look a
 
 ![preprocessing](./assets/preprocessing.png?1)
 
-# TODO: Instructions for pre-processing
-\<Provide a better descrption for the data preprocessing and the choices made.\>
 
+
+TODO
 \<We have the relevant preprocessing code in `utils/generate_questions.py` and `utils/generate_summaries_and_scores.py`. You can run data generation as an Anyscale job with configs/generate_questions_job.yaml and configs/generate_summaries_job.yaml.\>
 
 \<After preprocessing, here's an example for the Q&A generated by Llama 70B and here's an example for the summaries generated by Mistral 7B Instruct \>
@@ -154,166 +489,125 @@ Combining all this together, our data pre-processing pipeline is going to look a
 
 First, we will generate the multiple choice questions and answers for each article using `Llama-3.1-70B-Instruct`. Leveraging vLLM and Ray, we can very easily scale this generation process across multiple GPUs.
 
-The following command will run the `TODO` script, which generates the questions and answers as `.parquet` files.
+The following command will run the [src/scripts/generate_questions.py](./src/scripts/generate_questions.py) script, which generates the questions and answers and saves them in `.parquet` files.
 
 
 ```python
 !anyscale job submit -f configs/generate_questions_job.yaml
 ```
 
+    [1m[36mOutput[0m[0m
+    [0m[1m[36m(anyscale +1.4s)[0m [0m[0m[0m[0mSubmitting job with config JobConfig(name='preference-tuning-summarization-question-generation', image_uri='localhost:5555/anyscale/endpoints_aica:0.5.0-6402', compute_config=None, env_vars=None, py_modules=None, cloud=None, project=None, ray_version=None, job_queue_config=None).[0m
+    [0m[1m[36m(anyscale +3.6s)[0m [0m[0m[0m[0mUsing workspace runtime dependencies env vars: {'WANDB_API_KEY': 'cbc4aed2de2d9c9acb21324a3297b85b7299479b'}.[0m
+    [0m[1m[36m(anyscale +3.6s)[0m [0m[0m[0m[0mUploading local dir '.' to cloud storage.[0m
+    [0m[1m[36m(anyscale +5.0s)[0m [0m[0m[0m[0mIncluding workspace-managed pip dependencies.[0m
+    [0m[1m[36m(anyscale +5.6s)[0m [0m[0m[0m[0mJob 'preference-tuning-summarization-question-generation' submitted, ID: 'prodjob_sdaruzx8uu3c2bu3x5dn6gpf77'.[0m
+    [0m[1m[36m(anyscale +5.6s)[0m [0m[0m[0m[0mView the job in the UI: https://console.anyscale.com/jobs/prodjob_sdaruzx8uu3c2bu3x5dn6gpf77[0m
+    [0m[1m[36m(anyscale +5.6s)[0m [0m[0m[0m[0mUse `--wait` to wait for the job to run and stream logs.[0m
+    [0m[0m
+
+At the end of the job, you should see the remote path to the folder with Q&A. Make sure to make note to use it for the next steps! 
+
 
 ```python
-QA_FOLDER = f"{os.environ['ANYSCALE_ARTIFACT_STORAGE']}/preference_tuning_summarization_example/qa_annotations_full_test/"
-qa_ds = ray.data.read_parquet(QA_FOLDER)
-example_rows = qa_ds.take(3)
+qa_folder = f"s3://air-example-data/preference-tuning-summarization-example/qa_generation/qa_annotations_full_train/"
+qa_ds = ray.data.read_parquet(qa_folder)
+# The dataset is small, we can materalize it
+example_rows = qa_ds.materialize().take(3)
 ```
 
 
+    Parquet Files Sample 0:   0%|          | 0/2 [00:00<?, ? file/s]
+
+
+    2024-08-14 14:44:51,705	INFO streaming_executor.py:108 -- Starting execution of Dataset. Full logs are in /tmp/ray/session_2024-08-14_09-50-28_607133_2981/logs/ray-data
+    2024-08-14 14:44:51,705	INFO streaming_executor.py:109 -- Execution plan of Dataset: InputDataBuffer[Input] -> TaskPoolMapOperator[ReadParquet]
+
+
+
+    - ReadParquet->SplitBlocks(5) 1: 0 bundle [00:00, ? bundle/s]
+
+
+
+    Running 0: 0 bundle [00:00, ? bundle/s]
+
+
+    2024-08-14 14:44:54,660	INFO streaming_executor.py:108 -- Starting execution of Dataset. Full logs are in /tmp/ray/session_2024-08-14_09-50-28_607133_2981/logs/ray-data
+    2024-08-14 14:44:54,660	INFO streaming_executor.py:109 -- Execution plan of Dataset: InputDataBuffer[Input] -> LimitOperator[limit=3]
+
+
+
+    - limit=3 1: 0 bundle [00:00, ? bundle/s]
+
+
+
+    Running 0: 0 bundle [00:00, ? bundle/s]
+
+
+
 ```python
+from src.utils.models import DataSchema
+
 for row in example_rows:
     print("TEXT:")
-    print(row["text"])
-    print()
+    print(textwrap.fill(row[DataSchema.ARTICLE], width=80))
     print("QUESTIONS:")
-    print(row["qa_generation_questions"])
-    print()
+    print(textwrap.fill(row[DataSchema.MCQ_QUESTIONS], width=80))
     print("ANSWERS:")
-    print(list(row["qa_generation_answers"]))
-    print("=" * 100)
+    print(textwrap.fill(str(row[DataSchema.GROUND_TRUTH_MCQ_ANSWERS]), width=80))
+    pprint.pprint("=" * 100, width=80)
 ```
 
     TEXT:
-    By . Ashley Collman . PUBLISHED: . 08:43 EST, 12 July 2013 . | . UPDATED: . 09:20 EST, 12 July 2013 . Privileges reinstated: Dr Shakil Khan Afridi was allowed to see family last Wednesday after a 10-month ban on visitors following an interview he gave Fox News . The doctor who helped the CIA locate Osama Bin Laden is finally getting visits from his family at the Pakistani prison where he is being jailed. Dr Shakil Khan Afridi was convicted to 33 years in prison in May 2012 for 'acting against the state.' When the CIA was trying to confirm Bin Laden's presence in the Abbottabad compound, they sent Dr Afridi in under the auspices of giving out hepatitis B vaccinations. Investigators hoped the vaccinations would provide DNA evidence to confirm who was in the compound. While . Afridi was unsuccessful with the vaccinations, he was able to provide . enough details for the CIA to go through with their raid. When . the Pakistani government found out that one of their own was being used . as a spy for the U.S. agency, he was arrested and tried for treason. In . a surprising move, the Pakistanis tried him under a British-era . regulation that didn't carry the death sentence, unlike the standard . treason charge. He was convicted and has been serving his sentence at Central Prison in Peshawar. When he spoke to Fox News last year about his treatment by the Pakistanis, he was banned from all meetings. Imprisoned: Afridi is serving his 33-year sentence at Central Prison in Peshawar . Last month, that ban was lifted after 10 months. On Wednesday, Afridi was finally able to meet with his wife, Imrana Ghafur, and their three children, between the ages 10 and 15, according to Fox News. Other . sources told Fox that privileges such as being able to receive . food and clothing from family members have been reinstated for Afridi. Afridi's . brother, Jamil Afiridi has since tried to visit the prison but was told . that only the wife and children were on the list of approved visitors. Limited meetings: Afridi's brother Jamil attempted to visit him at the prison, but was turned away . Not even his lawyers are allowed to meet with their client. 'We . are not aware they met, and how did authorities get in touch with them . (the family) without notifying us?' one of Afridi's lawyers asked. But they remain optimistic that the doctor will have his sentence cut short. 'I . think things are changing and moving rapidly,' said the lawyer. 'I feel . that something good will happen soon and freedom (for Afridi) will be . achieved' Afridi's next hearing is on July 18. The U.S. has been pushing hard for Afridi's release ever since he was imprisoned. After Afridi's help with the raid, CIA agents told him that he should seek shelter in Afghanistan with his family. Pivotal: Dr Afridi gained important details from his visit to the compound where Bin Laden was hiding out - details that helped the CIA with their raid . Afridi . didn't want to risk traveling through the dangerous Pashtun tribal . region on the Pakistan -Afghanistan border, so he decided to stay in his . home country. He . didn't know that Bin Laden was in the facility he investigated, so he . didn't think he was at risk of angering the Pakistani government. Since his imprisonment several American officials have called for his release. 'The . doctor was never asked to spy on Pakistan,' a senior American official . told the New York Times. 'He was asked only to help locate Al Qaeda . terrorists, who threaten Pakistan and the U.S. He helped save Pakistani . and American lives.' Former . Secretary of State Hillary Clinton also called for Afridi's release. Last . September, Senator Rand Paul propositioned cutting off aid for Pakistan . if the doctor was not released to the U.S.
-    
+    (RollingStone.com) -- Jennifer Lawrence, the 20-year-old Oscar nominee for Best
+    Actress, is sitting in a fancy Manhattan hotel sipping tea and feeling a little
+    out of place. See, she grew up in Louisville, Kentucky, where her dad owned a
+    construction company and her mom ran a summer camp. They had land and horses.
+    She loved to fish. She was a total tomboy: field hockey, softball, basketball on
+    an all-boys team. ("I was so dykey.") One of her nicknames was Nitro. She lives
+    in Los Angeles now, but "little redneck things still come out." Like what? "I'm
+    attracted to my brother. Stuff like that." 10 Best Movies of 2010 . At 14, she
+    decided she wanted to be an actress and dragged her mom to New York for
+    auditions. The people at Reese's Peanut Butter Cups told her she was the best
+    they'd ever seen. Her mom told her they were lying. (Her mom didn't like showbiz
+    much.) She auditioned for the role of Bella in "Twilight," which would have been
+    perfect if Bella were a badass, but since she's a frightened waif, Lawrence
+    ended up not getting the part. Which was for the best because the role she did
+    get was for "Winter's Bone," in which she's fantastic: harrowing and tender as
+    the 17-year-old daughter of an Ozarks meth-cooker who's fighting to take care of
+    her little brother and sister. This article appears in the February 17, 2011
+    issue of Rolling Stone. The issue is available now on newsstands and will appear
+    in the online archive February 4. To prep for the part, Lawrence learned how to
+    shoot a gun and field-dress squirrels. She already knew how to chop wood: "I
+    went through a wood-chopping phase when I was nine or 10." She says she hasn't
+    even bothered preparing an Oscar speech: "I have been practicing my losing face,
+    though. Do you want to see it?" (For the record, it's a very good losing face.)
+    Peter Travers Reviews 'Winter's Bone' Later this year comes "X-Men: First
+    Class," where she'll play the mutant Mystique, blue-skinned and topless. ("Did I
+    feel naked being naked?" she asks, so you don't have to. "Yeah. Totally.") But
+    before that there's Jodie Foster's "The Beaver," premiering in May, in which she
+    appears alongside a certifiable Mel Gibson. Which means she has some crazy Mel
+    Gibson stories, right? She leans in close. "If I say, 'Off the record' -- that
+    means you can't print it, right?' " Right. "OK. So, off the record ..." She's
+    learning. Photos: 2011 Screen Actors Guild Award Winners . Copyright © 2011
+    Rolling Stone.
     QUESTIONS:
-    Q1) What is the current status of Dr. Afridi's privileges in prison?
-    A. He is still banned from meeting his family
-    B. He is allowed to meet his family, but not receive food and clothing from them
-    C. He is allowed to meet his lawyers, but not his family
-    D. He is allowed to meet his family and receive food and clothing from them
-    E. He is not allowed to meet anyone
-    
-    Q2) Why was Dr. Afridi banned from meeting his family for 10 months?
-    A. For treason
-    B. For speaking to Fox News about his treatment by the Pakistanis
-    C. For acting against the state
-    D. For helping the CIA locate Osama Bin Laden
-    E. For espionage
-    
-    Q3) What is the U.S. government's stance on Dr. Afridi's imprisonment?
-    A. They have cut off aid to Pakistan over his imprisonment
-    B. They are neutral on the matter
-    C. They have not commented on the matter
-    D. They support his conviction
-    E. They have been pushing hard for his release
-    
-    Q4) Why was Dr. Shakil Khan Afridi convicted in Pakistan?
-    A. For giving out hepatitis B vaccinations
-    B. For helping the CIA locate Osama Bin Laden
-    C. For acting against the state
-    D. For treason
-    E. For espionage
-    
-    Q5) What was the purpose of Dr. Afridi's hepatitis B vaccination program in the Abbottabad compound?
-    A. To provide DNA evidence to confirm who was in the compound
-    B. To provide medical aid to the residents
-    C. To confirm Osama Bin Laden's presence
-    D. To gather intelligence on the residents
-    E. To vaccinate the residents against hepatitis B
-    
-    
-    
+    Q1) Where did Jennifer Lawrence grow up? A. The Ozarks B. Manhattan C. Los
+    Angeles, California D. New York City, New York E. Louisville, Kentucky  Q2) What
+    is the name of the movie in which Jennifer Lawrence will play the mutant
+    Mystique? A. Winter's Bone B. X-Men: First Class C. The Beaver D. Twilight E.
+    The Hunger Games  Q3) What is one skill Jennifer Lawrence learned to prepare for
+    her role in "Winter's Bone"? A. How to play field hockey B. How to chop wood C.
+    How to ride a horse D. How to act like a frightened waif E. How to shoot a gun
+    Q4) Why did Jennifer Lawrence's mom take her to New York at the age of 14? A. To
+    visit relatives B. To attend a sports tournament C. To go shopping D. For
+    auditions E. For a family vacation  Q5) What was Jennifer Lawrence's role in the
+    movie "Winter's Bone"? A. A character in a Jodie Foster movie B. A mutant with
+    blue skin C. A character in a Reese's Peanut Butter Cups commercial D. A
+    frightened waif E. A 17-year-old daughter of an Ozarks meth-cooker
     ANSWERS:
-    ['D', 'B', 'E', 'C', 'A']
-    ====================================================================================================
-    TEXT:
-    (CNN) -- The wife of former International Monetary Fund chief Dominique Strauss-Kahn said she is closing down her popular French blog. Anne Sinclair, who has been writing about life in the United States on her blog, "Two or Three Things Seen in America" since 2008, wrote Monday: "You understand the circumstances which force me to temporarily suspend this blog." She closed by saying, "See you soon." Strauss-Kahn, who is awaiting a trial on sexual assault charges, was released on bail from the Rikers Island jail Friday. He is accused of trying to rape a maid this month in his suite at the Sofitel hotel in New York. He will stay with his wife. Strauss-Kahn faces two counts of criminal sexual act; two counts of sexual abuse; and one count each of attempt to commit rape, unlawful imprisonment and forcible touching. In the charge of criminal sexual act in the first degree, Strauss-Kahn is accused of having "engaged in oral sexual conduct with an individual ... by forcible compulsion," an indictment states. There appears to be growing popular sympathy for Sinclair, a former television broadcaster described by some as the "Barbara Walters" of France. "She is very courageous," said Jack Lang, one of the elders of France's Socialist Party, as well as a friend and neighbor of Strauss-Kahn. In her message to her blog readers, Sinclair said, "You have sent me very many messages. I cannot answer each one but know that they touched and helped me." CNN's Marilia Brocchetto contributed to this report.
-    
-    QUESTIONS:
-    Q1) What is the name of Anne Sinclair's blog?
-    A. "French Life in the US"
-    B. "Two or Three Things Seen in America"
-    C. "Life in America"
-    D. "A French Perspective"
-    E. "American Experiences"
-    
-    Q2) What is Anne Sinclair's profession?
-    A. Former television broadcaster
-    B. Former businesswoman
-    C. Former teacher
-    D. Former model
-    E. Former politician
-    
-    Q3) Where will Dominique Strauss-Kahn stay after being released on bail?
-    A. With his wife
-    B. In a halfway house
-    C. In a rehabilitation center
-    D. In a hotel
-    E. In a friend's house
-    
-    Q4) What is Dominique Strauss-Kahn accused of?
-    A. Murder and theft
-    B. Attempting to rape a maid
-    C. Embezzlement and tax evasion
-    D. Money laundering
-    E. Bribery and corruption
-    
-    Q5) Why is Anne Sinclair closing down her blog?
-    A. She is starting a new job
-    B. She is moving back to France
-    C. Due to the circumstances surrounding her husband
-    D. She is starting a new blog
-    E. She is taking a break from writing
-    
-    
-    
-    ANSWERS:
-    ['B', 'A', 'A', 'B', 'C']
-    ====================================================================================================
-    TEXT:
-    The home towns of the terrorists responsible for last week's attacks in France do not want to bury the gunmen amid fears their graves will become shrines for Islamic extremists. Town officials have admitted they want to 'avoid' burying Said and Cherif Kouachi, behind the massacre at Charlie Hebdo, and Amedy Coulibaly, shot dead after a siege at a Jewish deli in Paris. Under French law, the burials must take place either in the district where the deceased lived or the district where they were killed. Scroll down for video . Concerns are growing over where the terrorists responsible for the Charlie Hebdo massacre will be buried, with towns fearing the graves of Cherif (left) and Said Kouachi (right) could become Islamic extremist shrines . The hometown of Amedy Coulibaly, who killed four in the kosher deli in eastern Paris before being killed in a hail of police gunfire, isn't keen to bury the terrorist . The Kouachi brothers were shot dead by the police as they charged out of a printworks in Dammartin-en-Goele, north east of Paris, meaning they could be buried nearby. Their father died when they were young and they were taken into care, meaning they have no immediate family who wish to organise a possible funeral and burial elsewhere. A spokesman for Dammartin-en-Goele's local council told The Times: 'If we have to bury them here, we will obey the law, but we'd rather avoid it.' Chérif Kouachi lived in Gennevilliers, a suburb north of Paris, and his brother lived in  Reims, northeastern France. Both town councils refused to comment but it is understood that they want to avoid the terrorists being buried in their regions. Coulibaly died in a hail of police gunfire in Paris after murdering four of his hostages at the kosher supermarket. Funerals were held today for some of those killed in the Charlie Hebdo attack, including police officer Franck Brinsolaro . Officers applauded when the coffin of Brinsolaro was carried out of a church draped in the French flag . Hundreds gathered outside the town hall of Montreuil, Paris, for the funeral of Charlie Hebdo cartoonist Bernard 'Tignous' Verlhac . He lived in Fontenay-aux-Roses, a Paris suburb. A spokesman for the town's mayor said: 'If his family decide to bury him here, I don't think we'll be able to avoid it. The law is strict. But we hope he will be buried somewhere else.' Meanwhile funerals are being held for staff killed in the attack on satirical magazine Charlie Hebdo amid continued demand for its first edition since the massacre killed 12 people. Hundreds gathered for the ceremonies for Franck Brinsolaro, the killed police officer whose job it was to guard Charlie Hebdo editor and cartoonist Stéphane 'Charb' Charbonnier. Policemen broke into applause as the coffin of Mr Brinsolaro was carried into a church in the town of Bernay this morning. Otter funerals to take place were those of cartoonist Bernard 'Tignous' Verlhac and psychoanalyst and Charlie Hebdo columnist Elsa Cayat.
-    
-    QUESTIONS:
-    Q1) Why did the police applaud at the funeral of Franck Brinsolaro?
-    A. Because he was a celebrity
-    B. Because he was a cartoonist
-    C. Because he was a politician
-    D. Because he was a police officer who was killed in the line of duty
-    E. Because he was a terrorist
-    
-    Q2) Why do the hometowns of the terrorists not want to bury them?
-    A. They are worried about the cost of the burial
-    B. They do not have enough space in their cemeteries
-    C. They are angry at the terrorists' actions
-    D. They do not want to attract media attention
-    E. They are concerned the graves will become shrines for Islamic extremists
-    
-    Q3) What is happening to the bodies of the victims of the Charlie Hebdo attack?
-    A. They are being donated to science
-    B. They are being buried in their hometowns
-    C. They are being cremated
-    D. Funerals are being held for them
-    E. They are being buried in a mass grave
-    
-    Q4) Why do the Kouachi brothers not have immediate family to organize a funeral and burial elsewhere?
-    A. Their family is in a different country
-    B. Their family is in prison
-    C. Their father died when they were young and they were taken into care
-    D. Their family is too poor
-    E. Their family is in hiding
-    
-    Q5) Where must the burials of the terrorists take place according to French law?
-    A. In the district where the deceased was born
-    B. In a special cemetery for terrorists
-    C. In the district where the deceased lived or the district where they were killed
-    D. In a secret location
-    E. In the district where the deceased's family lives
-    
-    
-    
-    ANSWERS:
-    ['D', 'E', 'D', 'C', 'C']
-    ====================================================================================================
+    ['E' 'B' 'E' 'D' 'E']
+    '===================================================================================================='
 
 
 ### Generate Summaries + Scores
@@ -324,30 +618,40 @@ The following command will run the `TODO` script, which takes in the folder of q
 
 
 ```python
-!anyscale job submit -f `TODO`
+!anyscale job submit -f configs/generate_summaries_train_job.yaml
 ```
+
+    [1m[36mOutput[0m[0m
+    [0m[1m[36m(anyscale +1.1s)[0m [0m[0m[0m[0mSubmitting job with config JobConfig(name='preference-tuning-summarization-question-generation', image_uri='localhost:5555/anyscale/endpoints_aica:0.5.0-6402', compute_config=None, env_vars=None, py_modules=None, cloud=None, project=None, ray_version=None, job_queue_config=None).[0m
+    [0m[1m[36m(anyscale +3.5s)[0m [0m[0m[0m[0mUsing workspace runtime dependencies env vars: {'WANDB_API_KEY': 'cbc4aed2de2d9c9acb21324a3297b85b7299479b'}.[0m
+    [0m[1m[36m(anyscale +3.5s)[0m [0m[0m[0m[0mUploading local dir '.' to cloud storage.[0m
+    [0m[1m[36m(anyscale +4.5s)[0m [0m[0m[0m[0mIncluding workspace-managed pip dependencies.[0m
+    [0m[1m[36m(anyscale +5.1s)[0m [0m[0m[0m[0mJob 'preference-tuning-summarization-question-generation' submitted, ID: 'prodjob_8m2iu1lcd44s2e7q95rcrxvzzx'.[0m
+    [0m[1m[36m(anyscale +5.1s)[0m [0m[0m[0m[0mView the job in the UI: https://console.anyscale.com/jobs/prodjob_8m2iu1lcd44s2e7q95rcrxvzzx[0m
+    [0m[1m[36m(anyscale +5.1s)[0m [0m[0m[0m[0mUse `--wait` to wait for the job to run and stream logs.[0m
+    [0m[0m
 
 
 ```python
-SUMMARY_FOLDER = f"{os.environ['ANYSCALE_ARTIFACT_STORAGE']}/preference_tuning_summarization_example/summary_train_generation_mistralai_Mistral-7B-Instruct-v0.1_temp_0.8_judge_meta-llama_Meta-Llama-3.1-70B-Instruct/"
-summary_ds = ray.data.read_parquet(SUMMARY_FOLDER)
-example_rows = summary_ds.take(3)
+summary_folder = f"s3://air-example-data/preference-tuning-summarization-example/summary_generation_base/train/" # replace with the link to the generated summaries
+summary_ds = ray.data.read_parquet(summary_folder)
+example_rows = summary_ds.take(1)
 ```
 
 
     Parquet Files Sample 0:   0%|          | 0/2 [00:00<?, ? file/s]
 
 
-    2024-08-13 01:45:40,404	INFO streaming_executor.py:108 -- Starting execution of Dataset. Full logs are in /tmp/ray/session_2024-08-13_00-32-31_998940_2689/logs/ray-data
-    2024-08-13 01:45:40,405	INFO streaming_executor.py:109 -- Execution plan of Dataset: InputDataBuffer[Input] -> TaskPoolMapOperator[ReadParquet] -> LimitOperator[limit=3]
+    2024-08-14 15:10:29,124	INFO streaming_executor.py:108 -- Starting execution of Dataset. Full logs are in /tmp/ray/session_2024-08-14_09-50-28_607133_2981/logs/ray-data
+    2024-08-14 15:10:29,124	INFO streaming_executor.py:109 -- Execution plan of Dataset: InputDataBuffer[Input] -> TaskPoolMapOperator[ReadParquet] -> LimitOperator[limit=1]
 
 
 
-    - ReadParquet->SplitBlocks(3) 1: 0 bundle [00:00, ? bundle/s]
+    - ReadParquet 1: 0 bundle [00:00, ? bundle/s]
 
 
 
-    - limit=3 2: 0 bundle [00:00, ? bundle/s]
+    - limit=1 2: 0 bundle [00:00, ? bundle/s]
 
 
 
@@ -356,174 +660,70 @@ example_rows = summary_ds.take(3)
 
 
 ```python
+from src.utils.models import DataSchema
+
 for row in example_rows:
     print("TEXT:")
-    print(row["text"])
-    print()
+    print(textwrap.fill(row[DataSchema.ARTICLE], width=80))
     print("QUESTIONS:")
-    print(row["qa_generation_questions"])
-    print()
-    print("SUMMARY:")
-    print(row["summary_generation_raw_model_output"])
-    print()
-    print("GROUND TRUTH ANSWERS:")
-    print(list(row["qa_generation_answers"]))
-    print()
-    print("SUMMARY ANSWERS:")
-    print(list(row["judge_mc_answers"]))
-    print("=" * 100)
+    print(textwrap.fill(row[DataSchema.MCQ_QUESTIONS], width=80))
+    print("MODEL GENERATED SUMMARY:")
+    print(textwrap.fill(row[DataSchema.SUMMARY_GENERATION_RAW_OUTPUT], width=80))
+    print("ANSWERS:")
+    print(textwrap.fill(str(row[DataSchema.GROUND_TRUTH_MCQ_ANSWERS]), width=80))
+    print("JUDGE ANSWERS FROM SUMMARY:")
+    print(textwrap.fill(str(row[DataSchema.JUDGE_MCQ_ANSWERS]), width=80))
+    pprint.pprint("=" * 100, width=80)
 ```
 
     TEXT:
-    By . Riath Al-Samarrai . Follow @@riathalsam . Sergiy Stakhovsky has done it again. A year after dumping Roger Federer out of the second round at Wimbledon he sent Ernests Gulbis packing at the same stage. The world No 86 perhaps thought a posting on court 12 might keep him below the radar. But matches involving Gulbis are rarely quiet. And upsetting the 12th seed ensures he will inflate his reputation so long as he keeps his footing on grass. This was a performance of domination, a sustained beating that rarely, if ever, looked like letting up. He ultimately saw off the Latvian 6-4, 6-3, 7-6. Winner: Sergiy Stakhovsky of Ukraine is through to the third round of Wimbledon after beating Ernests Gulbis . Defeated: The Latvian reached the semi-finals of the French Open two weeks ago . It was impressive, but also a combustion of sorts from Gulbis, a man as volatile as he is gifted. The key moment came in the second set when, having already lost the first, Gulbis staved off a host of break points at 3-3. But he finally cracked, two straight double faults giving Stakhovsky the edge. ‘What is wrong with my serve?’ Gulbis shouted. It became a theme, until he later directed his self criticism at his handling of spin. It . was that sort of match for the French Open semi-finalist, but . Stakhovsky did not get distracted by the histrionics and closed out the . third-set tie break 7-5 for another impressive win. Throwback: Stakhovsky celebrating his victory over Roger Federer at Wimbledon last year . Shock result: The Swiss legend was the reigning champion at the time .
-    
+    A 43-year-old mother has died in a house fire in Mount Helen, near Ballarat.
+    Police originally feared the woman and her son and daughter, both 21, had died
+    in the blaze but they have been safely located, the Ballarat Courier reported. A
+    neighbour said she heard a 'whooshing' noise like a firecracker and a loud
+    explosion before the fire started at about 1.30am on Friday. Two women and a man
+    feared dead in house fire at Mount Helen, Victoria . Next-door neighbour
+    Margaret Bell witnessed the explosion and called 000. 'I got up to grab a drink
+    of water and I went back to bed,' Ms Bell told Daily Mail Australia. 'Then I
+    heard a noise, you know how when a firecracker goes off it makes that whooshing
+    sort of a noise, then that stopped and I heard a big explosion.' Ms Bell got out
+    of bed and looked out her window to see the house in flames so she called the
+    fire service. She added that the family had moved to Mount Helen from Ballarat
+    just over one week ago. 'I'd spoken to the lady and her son, she was telling me
+    a bit about herself,' she said. A body has reportedly been found but not
+    identified and a mother, 43, and her son and daughter, both 21, are still
+    unaccounted for . 'They'd moved out here because it's nice and quiet out here.
+    'It's really sad to think they might have been in the house.' Detective senior
+    sergeant Dave Hermit said two dogs were found dead at the property. The fire
+    took 20 firefighters 90 minutes to bring under control, and the house was
+    completely destroyed. Country Fire Authority operations officer Kade Dowie said
+    investigators believed the family were in the process of moving into the home.
+    'Investigations are continuing but the story from the neighbours is that they'd
+    only recently moved in, as in last weekend,' Mr Dowie told Daily Mail Australia.
+    Mr Dowie said the scene was handed over to the police forensics and arson squad
+    on Friday morning but crews struggled to access inside the property. 'The
+    intensity of the fire caused the ceiling and roof to collapse, which is causing
+    difficulty with extinguishing and accessing,' he said. The cause of the fire is
+    not yet known.
     QUESTIONS:
-    Q1) What was notable about Sergiy Stakhovsky's win over Ernests Gulbis?
-    A. It was a close match that went to five sets
-    B. The match was played on the main court
-    C. It was a dominating performance by Stakhovsky
-    D. Stakhovsky was seeded higher than Gulbis
-    E. Gulbis was injured during the match
-    
-    Q2) What was the result of the match between Sergiy Stakhovsky and Ernests Gulbis?
-    A. 4-6, 3-6, 6-7
-    B. 6-4, 6-3, 6-7
-    C. 6-7, 3-6, 4-6
-    D. 6-4, 6-3, 7-6
-    E. 7-6, 6-4, 3-6
-    
-    Q3) What was a key moment in the match that gave Stakhovsky an edge?
-    A. When Gulbis retired due to injury
-    B. When Stakhovsky won a long rally in the third set
-    C. When Gulbis hit an ace to win the first set
-    D. When Gulbis double-faulted twice in a row in the second set
-    E. When Stakhovsky hit a winner to break Gulbis' serve in the second set
-    
-    Q4) What was notable about Sergiy Stakhovsky's previous year at Wimbledon?
-    A. He beat Roger Federer in the second round
-    B. He did not participate
-    C. He lost to Roger Federer in the second round
-    D. He won the tournament
-    E. He was seeded number one
-    
-    Q5) Who did Sergiy Stakhovsky beat in the second round of Wimbledon?
-    A. Ernests Gulbis
-    B. Roger Federer
-    C. Rafael Nadal
-    D. Novak Djokovic
-    E. Andy Murray
-    
-    
-    
-    SUMMARY:
-    Sergiy Stakhovsky of Ukraine has defeated Ernests Gulbis, the 12th seed, 6-4, 6-3, 7-6 in the second round of Wimbledon, with an impressive performance that was marred by Gulbis's volatility. The key moment came in the second set when Gulbis staved off break points at 3-3, but eventually cracked and lost the match. Stakhovsky did not let Gulbis's histrionics distract him, winning the tiebreaker in the third set 7-5.
-    
-    GROUND TRUTH ANSWERS:
-    ['C', 'D', 'D', 'A', 'A']
-    
-    SUMMARY ANSWERS:
-    ['C', 'D', 'E', 'Unsure', 'A']
-    ====================================================================================================
-    TEXT:
-    By . Riath Al-Samarrai . Follow @@riathalsam . Sergiy Stakhovsky has done it again. A year after dumping Roger Federer out of the second round at Wimbledon he sent Ernests Gulbis packing at the same stage. The world No 86 perhaps thought a posting on court 12 might keep him below the radar. But matches involving Gulbis are rarely quiet. And upsetting the 12th seed ensures he will inflate his reputation so long as he keeps his footing on grass. This was a performance of domination, a sustained beating that rarely, if ever, looked like letting up. He ultimately saw off the Latvian 6-4, 6-3, 7-6. Winner: Sergiy Stakhovsky of Ukraine is through to the third round of Wimbledon after beating Ernests Gulbis . Defeated: The Latvian reached the semi-finals of the French Open two weeks ago . It was impressive, but also a combustion of sorts from Gulbis, a man as volatile as he is gifted. The key moment came in the second set when, having already lost the first, Gulbis staved off a host of break points at 3-3. But he finally cracked, two straight double faults giving Stakhovsky the edge. ‘What is wrong with my serve?’ Gulbis shouted. It became a theme, until he later directed his self criticism at his handling of spin. It . was that sort of match for the French Open semi-finalist, but . Stakhovsky did not get distracted by the histrionics and closed out the . third-set tie break 7-5 for another impressive win. Throwback: Stakhovsky celebrating his victory over Roger Federer at Wimbledon last year . Shock result: The Swiss legend was the reigning champion at the time .
-    
-    QUESTIONS:
-    Q1) What was notable about Sergiy Stakhovsky's win over Ernests Gulbis?
-    A. It was a close match that went to five sets
-    B. The match was played on the main court
-    C. It was a dominating performance by Stakhovsky
-    D. Stakhovsky was seeded higher than Gulbis
-    E. Gulbis was injured during the match
-    
-    Q2) What was the result of the match between Sergiy Stakhovsky and Ernests Gulbis?
-    A. 4-6, 3-6, 6-7
-    B. 6-4, 6-3, 6-7
-    C. 6-7, 3-6, 4-6
-    D. 6-4, 6-3, 7-6
-    E. 7-6, 6-4, 3-6
-    
-    Q3) What was a key moment in the match that gave Stakhovsky an edge?
-    A. When Gulbis retired due to injury
-    B. When Stakhovsky won a long rally in the third set
-    C. When Gulbis hit an ace to win the first set
-    D. When Gulbis double-faulted twice in a row in the second set
-    E. When Stakhovsky hit a winner to break Gulbis' serve in the second set
-    
-    Q4) What was notable about Sergiy Stakhovsky's previous year at Wimbledon?
-    A. He beat Roger Federer in the second round
-    B. He did not participate
-    C. He lost to Roger Federer in the second round
-    D. He won the tournament
-    E. He was seeded number one
-    
-    Q5) Who did Sergiy Stakhovsky beat in the second round of Wimbledon?
-    A. Ernests Gulbis
-    B. Roger Federer
-    C. Rafael Nadal
-    D. Novak Djokovic
-    E. Andy Murray
-    
-    
-    
-    SUMMARY:
-    Sergiy Stakhovsky of Ukraine has advanced to the third round of Wimbledon after defeating Ernests Gulbis of Latvia 6-4, 6-3, 7-6. Gulbis, who reached the semi-finals of the French Open two weeks ago, struggled to keep up with Stakhovsky's domination and ultimately surrendered. The match was marked by Gulbis' volatility and self-criticism, but Stakhovsky remained focused and closed out the third-set tiebreaker 7-5.
-    
-    GROUND TRUTH ANSWERS:
-    ['C', 'D', 'D', 'A', 'A']
-    
-    SUMMARY ANSWERS:
-    ['C', 'D', 'Unsure', 'Unsure', 'Unsure']
-    ====================================================================================================
-    TEXT:
-    By . Riath Al-Samarrai . Follow @@riathalsam . Sergiy Stakhovsky has done it again. A year after dumping Roger Federer out of the second round at Wimbledon he sent Ernests Gulbis packing at the same stage. The world No 86 perhaps thought a posting on court 12 might keep him below the radar. But matches involving Gulbis are rarely quiet. And upsetting the 12th seed ensures he will inflate his reputation so long as he keeps his footing on grass. This was a performance of domination, a sustained beating that rarely, if ever, looked like letting up. He ultimately saw off the Latvian 6-4, 6-3, 7-6. Winner: Sergiy Stakhovsky of Ukraine is through to the third round of Wimbledon after beating Ernests Gulbis . Defeated: The Latvian reached the semi-finals of the French Open two weeks ago . It was impressive, but also a combustion of sorts from Gulbis, a man as volatile as he is gifted. The key moment came in the second set when, having already lost the first, Gulbis staved off a host of break points at 3-3. But he finally cracked, two straight double faults giving Stakhovsky the edge. ‘What is wrong with my serve?’ Gulbis shouted. It became a theme, until he later directed his self criticism at his handling of spin. It . was that sort of match for the French Open semi-finalist, but . Stakhovsky did not get distracted by the histrionics and closed out the . third-set tie break 7-5 for another impressive win. Throwback: Stakhovsky celebrating his victory over Roger Federer at Wimbledon last year . Shock result: The Swiss legend was the reigning champion at the time .
-    
-    QUESTIONS:
-    Q1) What was notable about Sergiy Stakhovsky's win over Ernests Gulbis?
-    A. It was a close match that went to five sets
-    B. The match was played on the main court
-    C. It was a dominating performance by Stakhovsky
-    D. Stakhovsky was seeded higher than Gulbis
-    E. Gulbis was injured during the match
-    
-    Q2) What was the result of the match between Sergiy Stakhovsky and Ernests Gulbis?
-    A. 4-6, 3-6, 6-7
-    B. 6-4, 6-3, 6-7
-    C. 6-7, 3-6, 4-6
-    D. 6-4, 6-3, 7-6
-    E. 7-6, 6-4, 3-6
-    
-    Q3) What was a key moment in the match that gave Stakhovsky an edge?
-    A. When Gulbis retired due to injury
-    B. When Stakhovsky won a long rally in the third set
-    C. When Gulbis hit an ace to win the first set
-    D. When Gulbis double-faulted twice in a row in the second set
-    E. When Stakhovsky hit a winner to break Gulbis' serve in the second set
-    
-    Q4) What was notable about Sergiy Stakhovsky's previous year at Wimbledon?
-    A. He beat Roger Federer in the second round
-    B. He did not participate
-    C. He lost to Roger Federer in the second round
-    D. He won the tournament
-    E. He was seeded number one
-    
-    Q5) Who did Sergiy Stakhovsky beat in the second round of Wimbledon?
-    A. Ernests Gulbis
-    B. Roger Federer
-    C. Rafael Nadal
-    D. Novak Djokovic
-    E. Andy Murray
-    
-    
-    
-    SUMMARY:
-    Sergiy Stakhovsky, the world No 86, has advanced to the third round of Wimbledon by defeating Ernests Gulbis 6-4, 6-3, 7-6. The match was characterized by Gulbis's volatility, with the Latvian reaching the semi-finals of the French Open two weeks ago. The key moment came in the second set when Gulbis staved off break points, but eventually cracked under the pressure and lost the match.
-    
-    GROUND TRUTH ANSWERS:
-    ['C', 'D', 'D', 'A', 'A']
-    
-    SUMMARY ANSWERS:
-    ['C', 'D', 'E', 'Unsure', 'Unsure']
-    ====================================================================================================
+    Q1) What was the condition of the house after the fire? A. Partially damaged B.
+    Slightly damaged C. Unknown D. Completely destroyed E. Not affected  Q2) Where
+    did the house fire occur? A. Mount Helen B. Ballarat C. Sydney D. Melbourne E.
+    Perth  Q3) How long did it take firefighters to bring the fire under control? A.
+    30 minutes B. 2 hours C. 3 hours D. 60 minutes E. 90 minutes  Q4) What is the
+    current status of the cause of the fire? A. It is still unknown B. It was a
+    cooking accident C. It was a gas leak D. It was an electrical fault E. It was an
+    arson attack  Q5) What was the age of the mother who died in the house fire? A.
+    43 B. 21 C. 30 D. 50 E. 60
+    MODEL GENERATED SUMMARY:
+    A 43-year-old mother and her two children, aged 21, have died in a house fire in
+    Mount Helen, near Ballarat. The family had recently moved to the area. The cause
+    of the fire is not yet known.
+    ANSWERS:
+    ['D' 'A' 'E' 'A' 'A']
+    JUDGE ANSWERS FROM SUMMARY:
+    ['Unsure', 'A', 'Unsure', 'A', 'A']
+    '===================================================================================================='
 
 
 ### Generate Preference Tuning Data
@@ -534,54 +734,819 @@ The following command will run the `TODO` script, which takes in the folder of s
 
 
 ```python
-VALID_FILE = f"{os.environ['ANYSCALE_ARTIFACT_STORAGE']}/preference_tuning_summarization_example/training_data_summary_train_generation_mistralai_Mistral-7B-Instruct-v0.1_temp_0.8_judge_meta-llama_Meta-Llama-3.1-70B-Instruct/valid_geq_3_acc.jsonl/"
-valid_ds = ray.data.read_json(VALID_FILE)
-example_rows = valid_ds.take(3)
+!python src/scripts/generate_dpo_data.py configs/training_data_generation/mistral_8b.yaml
 ```
 
-    [36m(autoscaler +1h20m24s)[0m Tip: use `ray status` to view detailed cluster status. To disable these messages, set RAY_SCHEDULER_EVENTS=0.
-    [36m(autoscaler +1h20m24s)[0m Cluster is recovering (reason: failed to maintain minimum healthy node requirement).
-    [36m(autoscaler +1h20m26s)[0m [autoscaler] [8xH100-80GB:192CPU-2048GB] Upscaling 4 node(s).
-    [36m(autoscaler +1h20m26s)[0m [autoscaler] [8xH100-80GB:192CPU-2048GB|lambda-oci-h100-80g-x8] Allocated machine lambda-oci-tmint to cluster.
-    [36m(autoscaler +1h20m26s)[0m [autoscaler] [8xH100-80GB:192CPU-2048GB|lambda-oci-h100-80g-x8] Allocated machine lambda-oci-1qevg to cluster.
-    [36m(autoscaler +1h20m26s)[0m [autoscaler] [8xH100-80GB:192CPU-2048GB|lambda-oci-h100-80g-x8] Allocated machine lambda-oci-tk22k to cluster.
-    [36m(autoscaler +1h20m26s)[0m [autoscaler] [8xH100-80GB:192CPU-2048GB|lambda-oci-h100-80g-x8] Allocated machine lambda-oci-1skwg to cluster.
-    [36m(autoscaler +1h20m26s)[0m [autoscaler] [8xH100-80GB:192CPU-2048GB|lambda-oci-h100-80g-x8] [us-east-1a] [on-demand] Launched 4 instances.
-    [36m(autoscaler +1h21m24s)[0m [autoscaler] Cluster upscaled to {896 CPU, 32 GPU}.
-    [36m(autoscaler +1h30m55s)[0m [autoscaler] [8xH100-80GB:192CPU-2048GB] Upscaling 1 node(s).
-    [36m(autoscaler +1h30m55s)[0m [autoscaler] [8xH100-80GB:192CPU-2048GB|lambda-oci-h100-80g-x8] Allocated machine lambda-oci-5d8ub to cluster.
-    [36m(autoscaler +1h30m57s)[0m [autoscaler] [8xH100-80GB:192CPU-2048GB|lambda-oci-h100-80g-x8] [us-east-1a] [on-demand] Launched 1 instances.
-    [36m(autoscaler +1h31m54s)[0m [autoscaler] Cluster upscaled to {1120 CPU, 40 GPU}.
-    [36m(autoscaler +1h31m57s)[0m Cluster is running.
-    [36m(autoscaler +4h19m20s)[0m [autoscaler] Downscaling node p-zia6tdhymskhhtldo (node IP: 100.64.116.117) due to node idle termination.
-    [36m(autoscaler +4h19m20s)[0m [autoscaler] Downscaling node p-pvl9xcph2hq7njw9a (node IP: 100.116.107.104) due to node idle termination.
-    [36m(autoscaler +4h19m20s)[0m [autoscaler] Downscaling node p-mbl2pyf141u5zn9nc (node IP: 100.99.245.12) due to node idle termination.
-    [36m(autoscaler +4h19m20s)[0m [autoscaler] Downscaling node p-xd31dlmcwvo0xgacf (node IP: 100.120.237.53) due to node idle termination.
-    [36m(autoscaler +4h19m20s)[0m [autoscaler] Cluster resized to {224 CPU, 8 GPU}.
+    {"asctime": "2024-08-14 15:18:24,635", "levelname": "INFO", "message": "Snapshot is for job submit, omitting .git/ files.", "filename": "snapshot_util.py", "lineno": 773, "timestamp_ns": 1723673904635602458}
+    {"asctime": "2024-08-14 15:18:24,635", "levelname": "INFO", "message": "Zipping 43 files found in ..", "filename": "snapshot_util.py", "lineno": 863, "timestamp_ns": 1723673904635790551}
+    {"asctime": "2024-08-14 15:18:24,642", "levelname": "INFO", "message": "Created snapshot for . at /tmp/snapshot_2024-08-14T22:18:24.634309+00:00_kos1_esb.zip of size 887.42 KB in 0.008s.", "filename": "snapshot_util.py", "lineno": 876, "timestamp_ns": 1723673904642601456}
+    {"asctime": "2024-08-14 15:18:24,770", "levelname": "INFO", "message": "Found credentials from IAM Role: cld_1j41ls4gwkga4pwp8nbql6f239-cluster_node_role", "filename": "credentials.py", "lineno": 1075, "timestamp_ns": 1723673904770850447}
+    {"asctime": "2024-08-14 15:18:25,015", "levelname": "INFO", "message": "Updated runtime env to {'cgroupv2': {}, 'working_dir': '/tmp/ray_latest_runtime_env.zip', 'env_vars': {'WANDB_API_KEY': 'cbc4aed2de2d9c9acb21324a3297b85b7299479b'}, 'pip': ['pytest', 'pytest-timeout', 'allpairspy', 'inflect', 'flatten-dict', 'pre-commit', 'pip-tools', 'huggingface_hub', 'lilac', 'rich', 'black', 'isort'], 'ray_debugger': {'working_dir': '/home/ray/default/templates/templates/fine-tune-llm_v2/end-to-end-examples/fine-tune-preference'}}", "filename": "snapshot_util.py", "lineno": 1927, "timestamp_ns": 1723673905015169741}
+    2024-08-14 15:18:25,050	INFO worker.py:1596 -- Connecting to existing Ray cluster at address: 10.0.49.2:6379...
+    2024-08-14 15:18:25,057	INFO worker.py:1772 -- Connected to Ray cluster. View the dashboard at [1m[32mhttps://session-m4a38rehf7miww178mefsrumy2.i.anyscaleuserdata.com [39m[22m
+    2024-08-14 15:18:25,059	INFO packaging.py:358 -- Pushing file package 'gcs://_ray_pkg_22369df1395ab5b545d56441969b3685f3e2d85e.zip' (0.87MiB) to Ray cluster...
+    2024-08-14 15:18:25,062	INFO packaging.py:371 -- Successfully pushed file package 'gcs://_ray_pkg_22369df1395ab5b545d56441969b3685f3e2d85e.zip'.
+    Parquet Files Sample 0: 100%|██████████████████| 2/2 [00:02<00:00,  1.22s/ file]
+    2024-08-14 15:18:27,546	INFO streaming_executor.py:108 -- Starting execution of Dataset. Full logs are in /tmp/ray/session_2024-08-14_09-50-28_607133_2981/logs/ray-data
+    2024-08-14 15:18:27,547	INFO streaming_executor.py:109 -- Execution plan of Dataset: InputDataBuffer[Input] -> TaskPoolMapOperator[ReadParquet] -> TaskPoolMapOperator[Filter(is_row_valid)->Map(eval_row)->Filter(<lambda>)] -> AllToAllOperator[Sort] -> TaskPoolMapOperator[MapBatches(make_pairs)]
+    
+    - ReadParquet 1: 0 bundle [00:00, ? bundle/s][A
+    
+    - Filter(is_row_valid)->Map(eval_row)->Filter(<lambda>) 2: 0 bundle [00:00, ? bundle/s][A[A
+    
+    
+    - Sort 3: 0 bundle [00:00, ? bundle/s][A[A[A
+    
+    
+    
+    Sort Sample 4:   0%|                                 | 0/1 [00:00<?, ? bundle/s][A[A[A[A
+    
+    
+    
+    
+    Shuffle Map 5:   0%|                                 | 0/1 [00:00<?, ? bundle/s][A[A[A[A[A
+    
+    
+    
+    
+    
+    Shuffle Reduce 6:   0%|                              | 0/1 [00:00<?, ? bundle/s][A[A[A[A[A[A
+    
+    
+    
+    
+    
+    
+    Running: 47/48 CPU, 0/4 GPU, 1.8GB/13.8GB object_store_memory: : 0 bundle [00:02, ? bundle/s]
+    - ReadParquet: 48 active, 47 queued, [cpu: 48.0, objects: 1.8GB]: : 0 bundle [00:02, ? bundle/s][A
+    
+    Running: 47/48 CPU, 0/4 GPU, 2.4GB/13.8GB object_store_memory: : 0 bundle [00:04, ? bundle/s]ts: 512.0MB]: : 0 bundle [00:02, ? bundle/s][A[A
+    - ReadParquet: 48 active, 45 queued, [cpu: 48.0, objects: 1.9GB]: : 0 bundle [00:04, ? bundle/s][A
+    - ReadParquet: 48 active, 45 queued, [cpu: 48.0, objects: 1.9GB]:   0%| | 0/96 [                [A
+    - ReadParquet: 48 active, 45 queued, [cpu: 48.0, objects: 1.9GB]:   2%| | 2/96 [[A
+    
+    Running: 47/48 CPU, 0/4 GPU, 4.1GB/13.8GB object_store_memory: : 0 bundle [00:05, ? bundle/s]ts: 768.0MB]: : 0 bundle [00:04, ? bundle/s][A[A
+    - ReadParquet: 48 active, 18 queued, [cpu: 48.0, objects: 2.9GB]:   2%| | 2/96 [[A
+    - ReadParquet: 48 active, 18 queued, [cpu: 48.0, objects: 2.9GB]:   5%| | 5/96 [[A
+    
+    Running: 48/48 CPU, 0/4 GPU, 4.0GB/13.8GB object_store_memory: : 0 bundle [00:06, ? bundle/s]cts: 6.5GB]: : 0 bundle [00:05, ? bundle/s] [A[A
+    
+    - Filter(is_row_valid)->Map(eval_row)->Filter(<lambda>): 25 active, 0 queued, [cpu: 0.0, objects: 954.2MB]: : 0 bundle [00:07, ? bundle/s][A[A
+    
+    - Filter(is_row_valid)->Map(eval_row)->Filter(<lambda>): 25 active, 0 queued, [c                                                          [A[A
+    
+    - Filter(is_row_valid)->Map(eval_row)->Filter(<lambda>): 25 active, 0 queued, [c[A[A
+    - ReadParquet: 48 active, 13 queued, [cpu: 48.0, objects: 3.0GB]:   5%| | 5/96 [[A
+    Running: 48/48 CPU, 0/4 GPU, 3.9GB/13.8GB object_store_memory: : 0 bundle [00:08, ? bundle/s]
+    
+    - Filter(is_row_valid)->Map(eval_row)->Filter(<lambda>): 21 active, 0 queued, [c[A[A
+    
+    Running: 48/48 CPU, 0/4 GPU, 3.6GB/13.8GB object_store_memory: : 0 bundle [00:10, ? bundle/s]
+    - ReadParquet: 48 active, 11 queued, [cpu: 48.0, objects: 3.0GB]:  27%|▎| 26/96 [A
+    
+    Running: 45/48 CPU, 0/4 GPU, 4.0GB/13.8GB object_store_memory: : 0 bundle [00:11, ? bundle/s]
+    - ReadParquet: 32 active, 0 queued, [cpu: 32.0, objects: 3.3GB]:  27%|▎| 26/96 [[A
+    - ReadParquet: 32 active, 0 queued, [cpu: 32.0, objects: 3.3GB]:  32%|▎| 31/96 [[A
+    
+    Running: 23/48 CPU, 0/4 GPU, 3.9GB/13.8GB object_store_memory: : 0 bundle [00:12, ? bundle/s]
+    - ReadParquet: 14 active, 0 queued, [cpu: 14.0, objects: 2.7GB]:  32%|▎| 31/96 [[A
+    - ReadParquet: 14 active, 0 queued, [cpu: 14.0, objects: 2.7GB]:  33%|▎| 32/96 [[A
+    
+    - Filter(is_row_valid)->Map(eval_row)->Filter(<lambda>): 48 active, 0 queued, [c[A[A
+    
+    Running: 11/48 CPU, 0/4 GPU, 4.4GB/13.8GB object_store_memory: : 0 bundle [00:13, ? bundle/s]
+    - ReadParquet: 6 active, 0 queued, [cpu: 6.0, objects: 2.6GB]:  33%|▎| 32/96 [00[A
+    Running: 2/48 CPU, 0/4 GPU, 4.9GB/13.8GB object_store_memory: : 0 bundle [00:16, ? bundle/s] 
+    - ReadParquet: 2 active, 0 queued, [cpu: 2.0, objects: 2.6GB]:  86%|▊| 83/96 [00[A
+    - ReadParquet: 2 active, 0 queued, [cpu: 2.0, objects: 2.6GB]:  91%|▉| 87/96 [00[A
+    
+    - Filter(is_row_valid)->Map(eval_row)->Filter(<lambda>): 62 active, 0 queued, [c[A[A
+    
+    - Filter(is_row_valid)->Map(eval_row)->Filter(<lambda>): 62 active, 0 queued, [c[A[A
+    
+    - Filter(is_row_valid)->Map(eval_row)->Filter(<lambda>): 70 active, 0 queued, [c[A[A
+    
+    Running: 0/48 CPU, 0/4 GPU, 5.1GB/13.8GB object_store_memory: : 0 bundle [00:20, ? bundle/s]
+    
+    - Filter(is_row_valid)->Map(eval_row)->Filter(<lambda>): 68 active, 0 queued, [c[A[A
+    - ReadParquet: 0 active, 0 queued, [cpu: 0.0, objects: 2.5GB]:  91%|▉| 87/96 [00[A
+    Running: 0/48 CPU, 0/4 GPU, 4.8GB/13.8GB object_store_memory: : 0 bundle [00:22, ? bundle/s]
+    - ReadParquet: 0 active, 0 queued, [cpu: 0.0, objects: 2.3GB]: 100%|█| 96/96 [00[A
+    
+    - Filter(is_row_valid)->Map(eval_row)->Filter(<lambda>): 62 active, 0 queued, [c[A[A
+    
+    Running: 0/48 CPU, 0/4 GPU, 4.6GB/13.8GB object_store_memory: : 0 bundle [00:23, ? bundle/s]
+    - ReadParquet: 0 active, 0 queued, [cpu: 0.0, objects: 2.1GB]: 100%|█| 96/96 [00[A
+    
+    Running: 0/48 CPU, 0/4 GPU, 4.1GB/13.8GB object_store_memory: : 0 bundle [00:24, ? bundle/s]
+    - ReadParquet: 0 active, 0 queued, [cpu: 0.0, objects: 1.7GB]: 100%|█| 96/96 [00[A
+    
+    - Filter(is_row_valid)->Map(eval_row)->Filter(<lambda>): 45 active, 0 queued, [c[A[A
+    
+    Running: 0/48 CPU, 0/4 GPU, 3.6GB/13.8GB object_store_memory: : 0 bundle [00:25, ? bundle/s]
+    - ReadParquet: 0 active, 0 queued, [cpu: 0.0, objects: 1.2GB]: 100%|█| 96/96 [00[A
+    
+    - Filter(is_row_valid)->Map(eval_row)->Filter(<lambda>): 32 active, 0 queued, [c[A[A
+    
+    - Filter(is_row_valid)->Map(eval_row)->Filter(<lambda>): 21 active, 0 queued, [c[A[A
+    
+    Running: 0/48 CPU, 0/4 GPU, 2.6GB/13.8GB object_store_memory: : 0 bundle [00:26, ? bundle/s]
+    Running: 0/48 CPU, 0/4 GPU, 498.8MB/13.8GB object_store_memory: : 0 bundle [00:27, ? bundle/s]
+    - ReadParquet: 0 active, 0 queued, [cpu: 0.0, objects: 152.0MB]: 100%|█| 96/96 [[A
+    
+    - Filter(is_row_valid)->Map(eval_row)->Filter(<lambda>): 4 active, 0 queued, [cp[A[A
+    
+    Sort Sample 0: 100%|██████████████████████| 96/96 [00:00<00:00, 5436.70 block/s][A[A
+    
+    
+    
+    
+    
+      *- Shuffle Map:   0%|                              | 0/1 [00:28<?, ? bundle/s][A[A[A[A[A
+    
+    
+    
+    
+      *- Shuffle Map:   0%|                             | 0/63 [00:29<?, ? bundle/s][A[A[A[A[A
+    
+    
+    
+    
+      *- Shuffle Map: 100%|████████████████████| 63/63 [00:29<00:00,  2.13 bundle/s][A[A[A[A[A
+    
+    
+    
+    
+    
+      *- Shuffle Reduce:   0%|                           | 0/1 [00:30<?, ? bundle/s][A[A[A[A[A[A
+    
+    
+    
+    
+    
+      *- Shuffle Reduce: 100%|███████████████████| 1/1 [00:30<00:00, 30.31s/ bundle][A[A[A[A[A[A
+    - ReadParquet: 0 active, 0 queued, [cpu: 0.0, objects: 0.0B]: 100%|█| 96/96 [00:[A
+    
+    - Filter(is_row_valid)->Map(eval_row)->Filter(<lambda>): 0 active, 0 queued, [cp[A[A
+    
+    - Filter(is_row_valid)->Map(eval_row)->Filter(<lambda>): 0 active, 0 queued, [cp[A[A
+    
+    
+    Running: 0/48 CPU, 0/4 GPU, 3.6GB/13.8GB object_store_memory: : 0 bundle [00:31, ? bundle/s]  s][A[A[A
+    
+    
+    
+    
+    
+    
+    - MapBatches(make_pairs): 41 active, 55 queued, [cpu: 0.0, objects: 10.2GB]: : 0 bundle [00:31, ? bundle/s][A[A[A[A[A[A[A
+    
+    
+    
+    
+    
+    
+    - MapBatches(make_pairs): 90 active, 5 queued, [cpu: 0.0, objects: 6.4MB]: : 0 bundle [00:33, ? bundle/s]  [A[A[A[A[A[A[A
+    
+    
+    - Sort: 0 active, 0 queued, [cpu: 0.0, objects: 3.5GB], 0 output: : 0 bundle [00:33, ? bundle/s][A[A[A
+    
+    
+    - Sort: 0 active, 0 queued, [cpu: 0.0, objects: 3.5GB], 0 output:   0%| | 0/96 [                [A[A[A
+    
+    
+    Running: 0/48 CPU, 0/4 GPU, 3.3GB/13.8GB object_store_memory: : 0 bundle [00:34, ? bundle/s]
+    
+    
+    
+    
+    
+    
+    - MapBatches(make_pairs): 86 active, 0 queued, [cpu: 0.0, objects: 7.4MB]: : 0 bundle [00:34, ? bundle/s][A[A[A[A[A[A[A
+    
+    
+    Running: 0/48 CPU, 0/4 GPU, 3.1GB/13.8GB object_store_memory: : 0 bundle [00:35, ? bundle/s]
+    
+    
+    
+    
+    
+    
+    - MapBatches(make_pairs): 80 active, 0 queued, [cpu: 0.0, objects: 8.5MB]: : 0 bundle [00:35, ? bundle/s][A[A[A[A[A[A[A
+    
+    
+    
+    
+    
+    
+    Running: 0/48 CPU, 0/4 GPU, 2.6GB/13.8GB object_store_memory: : 0 bundle [00:36, ? bundle/s], ? bundle/s][A[A[A[A[A[A[A
+    
+    
+    - Sort: 0 active, 0 queued, [cpu: 0.0, objects: 2.6GB], 0 output: 100%|█| 96/96 [A[A[A
+    
+    
+    
+    
+    
+    
+    - MapBatches(make_pairs): 54 active, 0 queued, [cpu: 0.0, objects: 9.7MB]: : 0 bundle [00:37, ? bundle/s][A[A[A[A[A[A[A
+    
+    
+    
+    
+    
+    
+    - MapBatches(make_pairs): 54 active, 0 queued, [cpu: 0.0, objects: 9.7MB]:   0%|                         [A[A[A[A[A[A[A
+    
+    
+    
+    
+    
+    
+    Running: 0/48 CPU, 0/4 GPU, 2.0GB/13.8GB object_store_memory:   7%| | 7/96 [00:3            [A[A[A
+    
+    
+    - Sort: 0 active, 0 queued, [cpu: 0.0, objects: 2.0GB], 0 output: 100%|█| 96/96 [A[A[A
+    
+    
+    
+    
+    
+    
+    - MapBatches(make_pairs): 46 active, 0 queued, [cpu: 0.0, objects: 5.4MB]:   7%|[A[A[A[A[A[A[A
+    
+    
+    
+    
+    
+    
+    Running: 0/48 CPU, 0/4 GPU, 1.7GB/13.8GB object_store_memory:  48%|▍| 46/96 [00:[A[A[A[A[A[A[A
+    
+    
+    - Sort: 0 active, 0 queued, [cpu: 0.0, objects: 1.7GB], 0 output: 100%|█| 96/96 [A[A[A
+    
+    
+    
+    
+    
+    
+    Running: 0/48 CPU, 0/4 GPU, 1.4GB/13.8GB object_store_memory:  52%|▌| 50/96 [00:[A[A[A[A[A[A[A
+    
+    
+    - Sort: 0 active, 0 queued, [cpu: 0.0, objects: 1.4GB], 0 output: 100%|█| 96/96 [A[A[A
+    
+    
+    
+    
+    
+    
+    - MapBatches(make_pairs): 35 active, 0 queued, [cpu: 0.0, objects: 4.5MB]:  51%|[A[A[A[A[A[A[A
+    
+    
+    
+    
+    
+    
+    Running: 0/48 CPU, 0/4 GPU, 728.1MB/13.8GB object_store_memory:  52%|▌| 50/96 [0[A[A[A[A[A[A[A
+    
+    
+    - Sort: 0 active, 0 queued, [cpu: 0.0, objects: 723.7MB], 0 output: 100%|█| 96/9[A[A[A
+    
+    
+    
+    
+    
+    
+    - MapBatches(make_pairs): 13 active, 0 queued, [cpu: 0.0, objects: 4.4MB]:  52%|[A[A[A[A[A[A[A
+    
+    
+    
+    
+    
+    
+    - MapBatches(make_pairs): 4 active, 0 queued, [cpu: 0.0, objects: 3.4MB]:  52%|▌[A[A[A[A[A[A[A
+    
+    
+    
+    
+    
+    
+    Running: 0/48 CPU, 0/4 GPU, 68.4MB/13.8GB object_store_memory:  66%|▋| 63/96 [00[A[A[A[A[A[A[A
+    
+    
+    ✔️  Dataset execution finished in 43.14 seconds: 100%|█| 96/96 [00:43<00:00,  2.[A[A[A
+    - ReadParquet: 0 active, 0 queued, [cpu: 0.0, objects: 0.0B]: 100%|█| 96/96 [00:
+    - Filter(is_row_valid)->Map(eval_row)->Filter(<lambda>): 0 active, 0 queued, [cp
+    
+    
+    
+    - Sort: 0 active, 0 queued, [cpu: 0.0, objects: 0.0B], 0 output: 100%|█| 96/96 [[A[A[A
+    
+    
+    
+    
+      *- Sort Sample:   0%|                              | 0/1 [00:43<?, ? bundle/s][A[A[A[A
+    
+    
+    
+      *- Sort Sample: : 0 bundle [00:43, ? bundle/s]                                [A[A[A[A
+    
+    
+    
+    
+    
+      *- Shuffle Map:  66%|█████████████▏      | 63/96 [00:43<00:15,  2.13 bundle/s][A[A[A[A[A
+    
+    
+    
+    
+      *- Shuffle Map: 100%|████████████████████| 96/96 [00:43<00:00,  2.23 bundle/s][A[A[A[A[A
+    
+    
+    
+    
+    
+    
+      *- Shuffle Reduce:   1%|▏                 | 1/96 [00:43<47:59, 30.31s/ bundle][A[A[A[A[A[A
+    
+    
+    
+    
+    
+      *- Shuffle Reduce: 100%|█████████████████| 96/96 [00:43<00:00,  2.23 bundle/s][A[A[A[A[A[A
+    
+    
+    
+    
+    
+    
+    
+    - MapBatches(make_pairs): 0 active, 0 queued, [cpu: 0.0, objects: 1.7MB]:  67%|▋[A[A[A[A[A[A[A
+    
+    
+    
+    
+    
+    
+    - MapBatches(make_pairs): 0 active, 0 queued, [cpu: 0.0, objects: 1.7MB]: 100%|█[A[A[A[A[A[A[A
+    2024-08-14 15:19:10,706	INFO streaming_executor.py:108 -- Starting execution of Dataset. Full logs are in /tmp/ray/session_2024-08-14_09-50-28_607133_2981/logs/ray-data
+    2024-08-14 15:19:10,707	INFO streaming_executor.py:109 -- Execution plan of Dataset: InputDataBuffer[Input] -> TaskPoolMapOperator[ReadParquet] -> TaskPoolMapOperator[Filter(is_row_valid)->Map(eval_row)->Filter(<lambda>)] -> AllToAllOperator[Sort] -> TaskPoolMapOperator[MapBatches(make_pairs)]
+    
+    - ReadParquet 1: 0 bundle [00:00, ? bundle/s][A
+    
+    - Filter(is_row_valid)->Map(eval_row)->Filter(<lambda>) 2: 0 bundle [00:00, ? bundle/s][A[A
+    
+    
+    - Sort 3: 0 bundle [00:00, ? bundle/s][A[A[A
+    
+    
+    
+    Sort Sample 4:   0%|                                 | 0/1 [00:00<?, ? bundle/s][A[A[A[A
+    
+    
+    
+    
+    Shuffle Map 5:   0%|                                 | 0/1 [00:00<?, ? bundle/s][A[A[A[A[A
+    
+    
+    
+    
+    
+    Shuffle Reduce 6:   0%|                              | 0/1 [00:00<?, ? bundle/s][A[A[A[A[A[A
+    
+    
+    
+    
+    
+    
+    Running: 47/48 CPU, 0/4 GPU, 1.9GB/13.8GB object_store_memory: : 0 bundle [00:06, ? bundle/s]
+    Running: 47/48 CPU, 0/4 GPU, 3.5GB/13.8GB object_store_memory: : 0 bundle [00:08, ? bundle/s]/s][A
+    - ReadParquet: 48 active, 2 queued, [cpu: 48.0, objects: 3.5GB]: : 0 bundle [00:08, ? bundle/s] [A
+    
+    Running: 13/48 CPU, 0/4 GPU, 5.4GB/13.8GB object_store_memory: : 0 bundle [00:09, ? bundle/s]ts: 1.8GB]: : 0 bundle [00:08, ? bundle/s][A[A
+    - ReadParquet: 13 active, 0 queued, [cpu: 13.0, objects: 3.6GB]: : 0 bundle [00:09, ? bundle/s][A
+    - ReadParquet: 13 active, 0 queued, [cpu: 13.0, objects: 3.6GB]:   0%| | 0/96 [0               [A
+    - ReadParquet: 13 active, 0 queued, [cpu: 13.0, objects: 3.6GB]:   7%| | 7/96 [0[A
+    
+    Running: 2/48 CPU, 0/4 GPU, 14.1GB/13.8GB object_store_memory: : 0 bundle [00:10, ? bundle/s]ects: 10.5GB]: : 0 bundle [00:10, ? bundle/s][A[A
+    - ReadParquet: 2 active, 0 queued, [cpu: 2.0, objects: 3.6GB]:   7%| | 7/96 [00:[A
+    - ReadParquet: 2 active, 0 queued, [cpu: 2.0, objects: 3.6GB]:  65%|▋| 62/96 [00[A
+    
+    - Filter(is_row_valid)->Map(eval_row)->Filter(<lambda>): 42 active, 54 queued, [cpu: 0.0, objects: 10.5GB]: : 0 bundle [00:11, ? bundle/s][A[A
+    
+    - Filter(is_row_valid)->Map(eval_row)->Filter(<lambda>): 42 active, 54 queued, [                                                          [A[A
+    
+    Running: 0/48 CPU, 0/4 GPU, 5.1GB/13.8GB object_store_memory: : 0 bundle [00:13, ? bundle/s] 
+    - ReadParquet: 0 active, 0 queued, [cpu: 0.0, objects: 3.5GB]:  65%|▋| 62/96 [00[A
+    - ReadParquet: 0 active, 0 queued, [cpu: 0.0, objects: 3.5GB]: 100%|█| 96/96 [00[A
+    
+    - Filter(is_row_valid)->Map(eval_row)->Filter(<lambda>): 92 active, 0 queued, [c[A[A
+    
+    - Filter(is_row_valid)->Map(eval_row)->Filter(<lambda>): 92 active, 0 queued, [c[A[A
+    Running: 0/48 CPU, 0/4 GPU, 6.9GB/13.8GB object_store_memory: : 0 bundle [00:15, ? bundle/s]
+    
+    - Filter(is_row_valid)->Map(eval_row)->Filter(<lambda>): 91 active, 0 queued, [c[A[A
+    
+    Running: 0/48 CPU, 0/4 GPU, 6.8GB/13.8GB object_store_memory: : 0 bundle [00:17, ? bundle/s]
+    - ReadParquet: 0 active, 0 queued, [cpu: 0.0, objects: 3.3GB]: 100%|█| 96/96 [00[A
+    
+    - Filter(is_row_valid)->Map(eval_row)->Filter(<lambda>): 88 active, 0 queued, [c[A[A
+    
+    Running: 0/48 CPU, 0/4 GPU, 6.5GB/13.8GB object_store_memory: : 0 bundle [00:19, ? bundle/s]
+    - ReadParquet: 0 active, 0 queued, [cpu: 0.0, objects: 3.1GB]: 100%|█| 96/96 [00[A
+    
+    Running: 0/48 CPU, 0/4 GPU, 5.9GB/13.8GB object_store_memory: : 0 bundle [00:20, ? bundle/s]
+    - ReadParquet: 0 active, 0 queued, [cpu: 0.0, objects: 2.6GB]: 100%|█| 96/96 [00[A
+    
+    - Filter(is_row_valid)->Map(eval_row)->Filter(<lambda>): 69 active, 0 queued, [c[A[A
+    
+    Running: 0/48 CPU, 0/4 GPU, 5.4GB/13.8GB object_store_memory: : 0 bundle [00:21, ? bundle/s]
+    - ReadParquet: 0 active, 0 queued, [cpu: 0.0, objects: 2.3GB]: 100%|█| 96/96 [00[A
+    
+    - Filter(is_row_valid)->Map(eval_row)->Filter(<lambda>): 61 active, 0 queued, [c[A[A
+    
+    - Filter(is_row_valid)->Map(eval_row)->Filter(<lambda>): 61 active, 0 queued, [c[A[A
+    
+    - Filter(is_row_valid)->Map(eval_row)->Filter(<lambda>): 56 active, 0 queued, [c[A[A
+    
+    Running: 0/48 CPU, 0/4 GPU, 4.1GB/13.8GB object_store_memory: : 0 bundle [00:22, ? bundle/s]
+    - ReadParquet: 0 active, 0 queued, [cpu: 0.0, objects: 2.0GB]: 100%|█| 96/96 [00[A
+    
+    - Filter(is_row_valid)->Map(eval_row)->Filter(<lambda>): 53 active, 0 queued, [c[A[A
+    
+    Running: 0/48 CPU, 0/4 GPU, 4.0GB/13.8GB object_store_memory: : 0 bundle [00:23, ? bundle/s]
+    - ReadParquet: 0 active, 0 queued, [cpu: 0.0, objects: 1.9GB]: 100%|█| 96/96 [00[A
+    
+    Running: 0/48 CPU, 0/4 GPU, 3.5GB/13.8GB object_store_memory: : 0 bundle [00:28, ? bundle/s]
+    - ReadParquet: 0 active, 0 queued, [cpu: 0.0, objects: 1.6GB]: 100%|█| 96/96 [00[A
+    
+    - Filter(is_row_valid)->Map(eval_row)->Filter(<lambda>): 43 active, 0 queued, [c[A[A
+    
+    - Filter(is_row_valid)->Map(eval_row)->Filter(<lambda>): 43 active, 0 queued, [c[A[A
+    - ReadParquet: 0 active, 0 queued, [cpu: 0.0, objects: 1.3GB]: 100%|█| 96/96 [00[A
+    
+    - Filter(is_row_valid)->Map(eval_row)->Filter(<lambda>): 35 active, 0 queued, [c[A[A
+    
+    Running: 0/48 CPU, 0/4 GPU, 2.9GB/13.8GB object_store_memory: : 0 bundle [00:29, ? bundle/s]
+    - ReadParquet: 0 active, 0 queued, [cpu: 0.0, objects: 543.7MB]: 100%|█| 96/96 [[A
+    
+    - Filter(is_row_valid)->Map(eval_row)->Filter(<lambda>): 14 active, 0 queued, [c[A[A
+    
+    Running: 0/48 CPU, 0/4 GPU, 1.9GB/13.8GB object_store_memory: : 0 bundle [00:30, ? bundle/s]
+    - ReadParquet: 0 active, 0 queued, [cpu: 0.0, objects: 77.8MB]: 100%|█| 96/96 [0[A
+    
+    - Filter(is_row_valid)->Map(eval_row)->Filter(<lambda>): 2 active, 0 queued, [cp[A[A
+    
+    Sort Sample 0: 100%|██████████████████████| 96/96 [00:00<00:00, 3999.85 block/s][A[A
+    
+    
+    
+    
+    
+      *- Shuffle Map:   0%|                              | 0/1 [00:32<?, ? bundle/s][A[A[A[A[A
+    
+    
+    
+    
+      *- Shuffle Map:   0%|                             | 0/48 [00:33<?, ? bundle/s][A[A[A[A[A
+    
+    
+    
+    
+      *- Shuffle Map: 100%|████████████████████| 48/48 [00:33<00:00,  1.45 bundle/s][A[A[A[A[A
+    - ReadParquet: 0 active, 0 queued, [cpu: 0.0, objects: 77.8MB]: 100%|█| 96/96 [0[A
+    
+    
+    
+    
+    
+      *- Shuffle Reduce:   0%|                           | 0/1 [00:33<?, ? bundle/s][A[A[A[A[A[A
+    
+    
+    
+    
+    
+      *- Shuffle Reduce: 100%|███████████████████| 1/1 [00:33<00:00, 33.86s/ bundle][A[A[A[A[A[A
+    - ReadParquet: 0 active, 0 queued, [cpu: 0.0, objects: 0.0B]: 100%|█| 96/96 [00:[A
+    
+    - Filter(is_row_valid)->Map(eval_row)->Filter(<lambda>): 0 active, 0 queued, [cp[A[A
+    
+    - Filter(is_row_valid)->Map(eval_row)->Filter(<lambda>): 0 active, 0 queued, [cp[A[A
+    
+    
+    Running: 0/48 CPU, 0/4 GPU, 3.6GB/13.8GB object_store_memory: : 0 bundle [00:34, ? bundle/s]e/s][A[A[A
+    
+    
+    
+    
+    
+    
+    - MapBatches(make_pairs): 41 active, 55 queued, [cpu: 0.0, objects: 10.2GB]: : 0 bundle [00:34, ? bundle/s][A[A[A[A[A[A[A
+    
+    
+    
+    
+    
+    
+    - MapBatches(make_pairs): 90 active, 5 queued, [cpu: 0.0, objects: 5.5MB]: : 0 bundle [00:36, ? bundle/s]  [A[A[A[A[A[A[A
+    
+    
+    - Sort: 0 active, 0 queued, [cpu: 0.0, objects: 3.5GB], 0 output: : 0 bundle [00:36, ? bundle/s][A[A[A
+    
+    
+    - Sort: 0 active, 0 queued, [cpu: 0.0, objects: 3.5GB], 0 output:   0%| | 0/96 [                [A[A[A
+    
+    
+    - Sort: 0 active, 0 queued, [cpu: 0.0, objects: 3.5GB], 0 output: 100%|█| 96/96 [A[A[A
+    
+    
+    
+    
+    
+    
+    Running: 0/48 CPU, 0/4 GPU, 3.2GB/13.8GB object_store_memory: : 0 bundle [00:37, ? bundle/s], ? bundle/s][A[A[A[A[A[A[A
+    
+    
+    - Sort: 0 active, 0 queued, [cpu: 0.0, objects: 3.1GB], 0 output: 100%|█| 96/96 [A[A[A
+    
+    
+    
+    
+    
+    
+    - MapBatches(make_pairs): 75 active, 0 queued, [cpu: 0.0, objects: 8.2MB]: : 0 bundle [00:38, ? bundle/s][A[A[A[A[A[A[A
+    
+    
+    
+    
+    
+    
+    - MapBatches(make_pairs): 75 active, 0 queued, [cpu: 0.0, objects: 8.2MB]:   0%|                         [A[A[A[A[A[A[A
+    
+    
+    
+    
+    
+    
+    Running: 0/48 CPU, 0/4 GPU, 2.8GB/13.8GB object_store_memory:   2%| | 2/96 [00:3            [A[A[A
+    
+    
+    - Sort: 0 active, 0 queued, [cpu: 0.0, objects: 2.7GB], 0 output: 100%|█| 96/96 [A[A[A
+    
+    
+    
+    
+    
+    
+    - MapBatches(make_pairs): 61 active, 0 queued, [cpu: 0.0, objects: 9.1MB]:   2%|[A[A[A[A[A[A[A
+    
+    
+    
+    
+    
+    
+    Running: 0/48 CPU, 0/4 GPU, 2.3GB/13.8GB object_store_memory:   5%| | 5/96 [00:3[A[A[A[A[A[A[A
+    
+    
+    - Sort: 0 active, 0 queued, [cpu: 0.0, objects: 2.2GB], 0 output: 100%|█| 96/96 [A[A[A
+    
+    
+    
+    
+    
+    
+    - MapBatches(make_pairs): 54 active, 0 queued, [cpu: 0.0, objects: 8.5MB]:   5%|[A[A[A[A[A[A[A
+    
+    
+    
+    
+    
+    
+    Running: 0/48 CPU, 0/4 GPU, 1.8GB/13.8GB object_store_memory:  44%|▍| 42/96 [00:[A[A[A[A[A[A[A
+    
+    
+    
+    
+    
+    
+    - MapBatches(make_pairs): 44 active, 0 queued, [cpu: 0.0, objects: 4.8MB]:  16%|[A[A[A[A[A[A[A
+    
+    
+    
+    
+    
+    
+    Running: 0/48 CPU, 0/4 GPU, 1.7GB/13.8GB object_store_memory:  51%|▌| 49/96 [00:[A[A[A[A[A[A[A
+    
+    
+    - Sort: 0 active, 0 queued, [cpu: 0.0, objects: 1.7GB], 0 output: 100%|█| 96/96 [A[A[A
+    
+    
+    
+    
+    
+    
+    Running: 0/48 CPU, 0/4 GPU, 1.5GB/13.8GB object_store_memory:  51%|▌| 49/96 [00:[A[A[A[A[A[A[A
+    
+    
+    - Sort: 0 active, 0 queued, [cpu: 0.0, objects: 1.5GB], 0 output: 100%|█| 96/96 [A[A[A
+    
+    
+    
+    
+    
+    
+    - MapBatches(make_pairs): 11 active, 0 queued, [cpu: 0.0, objects: 4.5MB]:  51%|[A[A[A[A[A[A[A
+    
+    
+    
+    
+    
+    
+    Running: 0/48 CPU, 0/4 GPU, 326.5MB/13.8GB object_store_memory:  55%|▌| 53/96 [0[A[A[A[A[A[A[A
+    
+    
+    ✔️  Dataset execution finished in 46.47 seconds: 100%|█| 96/96 [00:46<00:00,  2.[A[A[A
+    - ReadParquet: 0 active, 0 queued, [cpu: 0.0, objects: 0.0B]: 100%|█| 96/96 [00:
+    - Filter(is_row_valid)->Map(eval_row)->Filter(<lambda>): 0 active, 0 queued, [cp
+    
+    
+    
+    - Sort: 0 active, 0 queued, [cpu: 0.0, objects: 0.0B], 0 output: 100%|█| 96/96 [[A[A[A
+    
+    
+    
+    
+      *- Sort Sample:   0%|                              | 0/1 [00:46<?, ? bundle/s][A[A[A[A
+    
+    
+    
+      *- Sort Sample: : 0 bundle [00:46, ? bundle/s]                                [A[A[A[A
+    
+    
+    
+    
+    
+      *- Shuffle Map:  50%|██████████          | 48/96 [00:46<00:33,  1.45 bundle/s][A[A[A[A[A
+    
+    
+    
+    
+      *- Shuffle Map: 100%|████████████████████| 96/96 [00:46<00:00,  2.07 bundle/s][A[A[A[A[A
+    
+    
+    
+    
+    
+    
+      *- Shuffle Reduce:   1%|▏                 | 1/96 [00:46<53:36, 33.86s/ bundle][A[A[A[A[A[A
+    
+    
+    
+    
+    
+      *- Shuffle Reduce: 100%|█████████████████| 96/96 [00:46<00:00,  2.07 bundle/s][A[A[A[A[A[A
+    
+    
+    
+    
+    
+    
+    
+    - MapBatches(make_pairs): 0 active, 0 queued, [cpu: 0.0, objects: 731.0KB]:  55%[A[A[A[A[A[A[A
+    
+    
+    
+    
+    
+    
+    - MapBatches(make_pairs): 0 active, 0 queued, [cpu: 0.0, objects: 731.0KB]: 100%[A[A[A[A[A[A[A
+    WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+    I0000 00:00:1723673997.220820  257035 config.cc:230] gRPC experiments enabled: call_status_override_on_cancellation, event_engine_dns, event_engine_listener, http2_stats_fix, monitoring_experiment, pick_first_new, trace_record_callops, work_serializer_clears_time_cache
+    {"asctime": "2024-08-14 15:19:57,782", "levelname": "INFO", "message": "Number of train examples: 57828", "filename": "generate_dpo_data.py", "lineno": 185, "timestamp_ns": 1723673997782789238, "job_id": "20000000", "worker_id": "20000000ffffffffffffffffffffffffffffffffffffffffffffffff", "node_id": "fb2470bca26f28d38012620897ceae9736dc62ea75645f1040983e13"}
+    {"asctime": "2024-08-14 15:19:57,782", "levelname": "INFO", "message": "Number of eval examples: 1181", "filename": "generate_dpo_data.py", "lineno": 186, "timestamp_ns": 1723673997782960211, "job_id": "20000000", "worker_id": "20000000ffffffffffffffffffffffffffffffffffffffffffffffff", "node_id": "fb2470bca26f28d38012620897ceae9736dc62ea75645f1040983e13"}
+    {"asctime": "2024-08-14 15:20:02,538", "levelname": "INFO", "message": "Found credentials from IAM Role: cld_1j41ls4gwkga4pwp8nbql6f239-cluster_node_role", "filename": "credentials.py", "lineno": 550, "timestamp_ns": 1723674002538991859, "job_id": "20000000", "worker_id": "20000000ffffffffffffffffffffffffffffffffffffffffffffffff", "node_id": "fb2470bca26f28d38012620897ceae9736dc62ea75645f1040983e13"}
+
+
+
+```python
+# Replace with the link to your validation file
+validation_file = f"s3://air-example-data/preference-tuning-summarization-example/dpo_training_data/valid.jsonl"
+
+valid_ds = ray.data.read_json(validation_file)
+example_rows = valid_ds.take(1)
+```
+
+    2024-08-14 15:25:18,568	INFO streaming_executor.py:108 -- Starting execution of Dataset. Full logs are in /tmp/ray/session_2024-08-14_09-50-28_607133_2981/logs/ray-data
+    2024-08-14 15:25:18,569	INFO streaming_executor.py:109 -- Execution plan of Dataset: InputDataBuffer[Input] -> TaskPoolMapOperator[ExpandPaths] -> TaskPoolMapOperator[ReadFiles] -> LimitOperator[limit=1]
+
+
+
+    - ExpandPaths 1: 0 bundle [00:00, ? bundle/s]
+
+
+
+    - ReadFiles 2: 0 bundle [00:00, ? bundle/s]
+
+
+
+    - limit=1 3: 0 bundle [00:00, ? bundle/s]
+
+
+
+    Running 0: 0 bundle [00:00, ? bundle/s]
 
 
 
 ```python
 for row in example_rows:
     print("PROMPT:")
-    print(row['chosen'][0]['content'])
+    print(textwrap.fill(row['chosen'][0]['content'], width=80))
+    print("\nCHOSEN RESPONSE: ")
+    print(textwrap.fill(row['chosen'][1]['content'], width=80))
+    print("\nREJECTED RESPONSE: ")
+    print(textwrap.fill(row['rejected'][1]['content'], width=80))
+
 ```
 
     PROMPT:
-    Given the following text, create a very short summary that is at most 2 sentences.
+    Given the following text, create a very short summary that is at most 2
+    sentences.  Text: By . Tamara Cohen, Political Reporter . PUBLISHED: . 18:32
+    EST, 27 January 2013 . | . UPDATED: . 08:48 EST, 28 January 2013 . Deputy Prime
+    Minister Nick Clegg and his wife Miriam are determined to keep the education of
+    their 11-year-old son 'out of politics' Nick Clegg yesterday defended the
+    possibility he may send his children to private schools as it emerged he and his
+    wife Miriam have not even visited their local state school. He said the
+    education of his 11-year-old son Antonio, who starts secondary school this year,
+    should not be used as 'a political football' and that the couple would do
+    'what's best' for their children although he was braced for criticism. Last week
+    the Liberal Democrat leader told listeners to his radio show he would send his
+    son to a private school if he failed to find a place in a good comprehensive,
+    saying he would use the state system 'if it works out', but that there is 'huge
+    competition' for places in London. But Mr Clegg, who attended Westminster public
+    school, has apparently not looked around nearby Ark Putney academy in south-west
+    London, it was revealed yesterday by its headmaster Mark Phillips. Mr Phillips
+    who has turned the school around since he was hired three years ago, said the
+    school which was once in special measures but is now lauded by the Government
+    for its improvements, could provide an 'exceptional' education for any child and
+    that there was no need to pay fees for schooling. Unless the Cleggs had visited
+    'under cover' he had not seen them, he said.'I am always very clear that all
+    parents living locally are welcome to choose our school and it is important that
+    every parent comes with their child and takes an objective look to see whether
+    what we offer will meet the needs of their child', he said. 'It wouldn't claim
+    to be the answer to every child and every parent. But I hope that if a parent
+    does come, and sees an environment their child will thrive in, they will pick
+    us...I am confident they will do exceptionally well. I don't believe you have to
+    pay for it.' Mr Clegg told the BBC's Andrew Marr Show yesterday that he and his
+    wife will do whatever is in the interests of their son . If he chooses to
+    educate his children . privately, Mr Clegg is likely to be accused of hypocrisy
+    after using a . speech last year to attack 'the great rift in our education
+    system' caused by many of the best schools being fee-paying and said it had a .
+    'corrosive' effect on society and the economy. In . an interview on BBC1's
+    Andrew Marr Show, he said: 'I accept that it's a . dilemma for anyone in public
+    life, particularly in politics, how do you . balance that with the fact Miriam
+    and I have small children, and the . approach Miriam and I took right from the
+    outset was to keep our . children completely out of politics. 'We . never put
+    them in front of the camera or to make them or their . education a political
+    football. 'I totally accept that when we make a . decision that'll be subject to
+    public commentary, criticism and so on, . but in the meantime we want to protect
+    the privacy of an 11-year-old boy . and make the decision that we as parents
+    think is best for our son.' The deadline for applying for entry to Ark Putney
+    for 2013-14 was last October. The school is part of the Ark academy chain, set
+    up in 2004, whose chairman is Paul Marshall, one of the Liberal Democrats'
+    biggest donors. Last year 62 per cent of pupils gained at least five good GCSEs,
+    prompting schools minister Nick Gibb to write to Mr Phillips to congratulate him
+    on the 'excellent results' saying the school was in the top 100 best-performing,
+    based on sustained improvements every year since 2008. However Michael Gove last
+    year approved the sale of five acres of playing fields at the school including
+    six tennis courts, a football pitch and a playground, to developers to fund
+    refurbishments, after a £40million revamp under the Building Schools for the
+    Future programme was cancelled. Alumni of Ark Putney, which used to be Elliott
+    School, include actor Pierce Brosnan, and 1960s England bowler Geoff Arnold.
+    Former Welsh secretary Peter Hain sent his children to the school, which was the
+    scene of the Christmas play in the film Love, Actually. David Cameron has said
+    his children will attend state school, but George Osborne has been criticised
+    for sending his to the fee-paying preparatory school in Kensington that he
+    attended.
     
-    Text:
-    By . Tamara Cohen, Political Reporter . PUBLISHED: . 18:32 EST, 27 January 2013 . | . UPDATED: . 08:48 EST, 28 January 2013 . Deputy Prime Minister Nick Clegg and his wife Miriam are determined to keep the education of their 11-year-old son 'out of politics' Nick Clegg yesterday defended the possibility he may send his children to private schools as it emerged he and his wife Miriam have not even visited their local state school. He said the education of his 11-year-old son Antonio, who starts secondary school this year, should not be used as 'a political football' and that the couple would do 'what's best' for their children although he was braced for criticism. Last week the Liberal Democrat leader told listeners to his radio show he would send his son to a private school if he failed to find a place in a good comprehensive, saying he would use the state system 'if it works out', but that there is 'huge competition' for places in London. But Mr Clegg, who attended Westminster public school, has apparently not looked around nearby Ark Putney academy in south-west London, it was revealed yesterday by its headmaster Mark Phillips. Mr Phillips who has turned the school around since he was hired three years ago, said the school which was once in special measures but is now lauded by the Government for its improvements, could provide an 'exceptional' education for any child and that there was no need to pay fees for schooling. Unless the Cleggs had visited 'under cover' he had not seen them, he said.'I am always very clear that all parents living locally are welcome to choose our school and it is important that every parent comes with their child and takes an objective look to see whether what we offer will meet the needs of their child', he said. 'It wouldn't claim to be the answer to every child and every parent. But I hope that if a parent does come, and sees an environment their child will thrive in, they will pick us...I am confident they will do exceptionally well. I don't believe you have to pay for it.' Mr Clegg told the BBC's Andrew Marr Show yesterday that he and his wife will do whatever is in the interests of their son . If he chooses to educate his children . privately, Mr Clegg is likely to be accused of hypocrisy after using a . speech last year to attack 'the great rift in our education system' caused by many of the best schools being fee-paying and said it had a . 'corrosive' effect on society and the economy. In . an interview on BBC1's Andrew Marr Show, he said: 'I accept that it's a . dilemma for anyone in public life, particularly in politics, how do you . balance that with the fact Miriam and I have small children, and the . approach Miriam and I took right from the outset was to keep our . children completely out of politics. 'We . never put them in front of the camera or to make them or their . education a political football. 'I totally accept that when we make a . decision that'll be subject to public commentary, criticism and so on, . but in the meantime we want to protect the privacy of an 11-year-old boy . and make the decision that we as parents think is best for our son.' The deadline for applying for entry to Ark Putney for 2013-14 was last October. The school is part of the Ark academy chain, set up in 2004, whose chairman is Paul Marshall, one of the Liberal Democrats' biggest donors. Last year 62 per cent of pupils gained at least five good GCSEs, prompting schools minister Nick Gibb to write to Mr Phillips to congratulate him on the 'excellent results' saying the school was in the top 100 best-performing, based on sustained improvements every year since 2008. However Michael Gove last year approved the sale of five acres of playing fields at the school including six tennis courts, a football pitch and a playground, to developers to fund refurbishments, after a £40million revamp under the Building Schools for the Future programme was cancelled. Alumni of Ark Putney, which used to be Elliott School, include actor Pierce Brosnan, and 1960s England bowler Geoff Arnold. Former Welsh secretary Peter Hain sent his children to the school, which was the scene of the Christmas play in the film Love, Actually. David Cameron has said his children will attend state school, but George Osborne has been criticised for sending his to the fee-paying preparatory school in Kensington that he attended.
-    PROMPT:
-    Given the following text, create a very short summary that is at most 2 sentences.
+    CHOSEN RESPONSE: 
+    Nick Clegg and his wife Miriam are considering sending their 11-year-old son
+    Antonio to a private school, despite their previous claims that they would use
+    the state system. Clegg has not visited Ark Putney Academy, a nearby state
+    school, but its headmaster, Mark Phillips, claims that the school could provide
+    an 'exceptional' education for any child and that there is no need to pay fees
+    for schooling. The deadline for applying to Ark Putney for 2013-14 was last
+    October and the school is part of the Ark academy chain, set up in 2004, whose
+    chairman is Paul Marshall, one of the Liberal Democrats' biggest donors.
     
-    Text:
-    By . Tamara Cohen, Political Reporter . PUBLISHED: . 18:32 EST, 27 January 2013 . | . UPDATED: . 08:48 EST, 28 January 2013 . Deputy Prime Minister Nick Clegg and his wife Miriam are determined to keep the education of their 11-year-old son 'out of politics' Nick Clegg yesterday defended the possibility he may send his children to private schools as it emerged he and his wife Miriam have not even visited their local state school. He said the education of his 11-year-old son Antonio, who starts secondary school this year, should not be used as 'a political football' and that the couple would do 'what's best' for their children although he was braced for criticism. Last week the Liberal Democrat leader told listeners to his radio show he would send his son to a private school if he failed to find a place in a good comprehensive, saying he would use the state system 'if it works out', but that there is 'huge competition' for places in London. But Mr Clegg, who attended Westminster public school, has apparently not looked around nearby Ark Putney academy in south-west London, it was revealed yesterday by its headmaster Mark Phillips. Mr Phillips who has turned the school around since he was hired three years ago, said the school which was once in special measures but is now lauded by the Government for its improvements, could provide an 'exceptional' education for any child and that there was no need to pay fees for schooling. Unless the Cleggs had visited 'under cover' he had not seen them, he said.'I am always very clear that all parents living locally are welcome to choose our school and it is important that every parent comes with their child and takes an objective look to see whether what we offer will meet the needs of their child', he said. 'It wouldn't claim to be the answer to every child and every parent. But I hope that if a parent does come, and sees an environment their child will thrive in, they will pick us...I am confident they will do exceptionally well. I don't believe you have to pay for it.' Mr Clegg told the BBC's Andrew Marr Show yesterday that he and his wife will do whatever is in the interests of their son . If he chooses to educate his children . privately, Mr Clegg is likely to be accused of hypocrisy after using a . speech last year to attack 'the great rift in our education system' caused by many of the best schools being fee-paying and said it had a . 'corrosive' effect on society and the economy. In . an interview on BBC1's Andrew Marr Show, he said: 'I accept that it's a . dilemma for anyone in public life, particularly in politics, how do you . balance that with the fact Miriam and I have small children, and the . approach Miriam and I took right from the outset was to keep our . children completely out of politics. 'We . never put them in front of the camera or to make them or their . education a political football. 'I totally accept that when we make a . decision that'll be subject to public commentary, criticism and so on, . but in the meantime we want to protect the privacy of an 11-year-old boy . and make the decision that we as parents think is best for our son.' The deadline for applying for entry to Ark Putney for 2013-14 was last October. The school is part of the Ark academy chain, set up in 2004, whose chairman is Paul Marshall, one of the Liberal Democrats' biggest donors. Last year 62 per cent of pupils gained at least five good GCSEs, prompting schools minister Nick Gibb to write to Mr Phillips to congratulate him on the 'excellent results' saying the school was in the top 100 best-performing, based on sustained improvements every year since 2008. However Michael Gove last year approved the sale of five acres of playing fields at the school including six tennis courts, a football pitch and a playground, to developers to fund refurbishments, after a £40million revamp under the Building Schools for the Future programme was cancelled. Alumni of Ark Putney, which used to be Elliott School, include actor Pierce Brosnan, and 1960s England bowler Geoff Arnold. Former Welsh secretary Peter Hain sent his children to the school, which was the scene of the Christmas play in the film Love, Actually. David Cameron has said his children will attend state school, but George Osborne has been criticised for sending his to the fee-paying preparatory school in Kensington that he attended.
-    PROMPT:
-    Given the following text, create a very short summary that is at most 2 sentences.
-    
-    Text:
-    Gary Lyon has been jailed for stealing from his own mother and conning people into giving him money by telling them his daughter was lying in hospital and he needed cash to get to see her . A conman who duped strangers into giving him money by pretending his 11-year-old daughter had cancer has been jailed for 18 months. Gary Lyon, 47, told generous well-wishers that his child was lying, gravely ill, in hospital in Manchester 'with tubes coming out of her arms.' In fact, a daughter of Lyon, who is now 15, had contracted leukaemia in 2009 when she was younger but had made a full recovery. Lyon scammed victims by falsely claiming he had run out of petrol on the way to see her in hospital. On one occasion he targeted an 80-year-old woman after he told her his bank card had snapped and he needed £20 to buy fuel. Graham Robinson, prosecuting, said: 'The first complainant... was was approached by the defendant who used a ruse he was to repeat many times, saying his daughter was in The Christie Hospital and he had run out of petrol.' The father of two from Sharston, near Wythenshawe, Manchester claimed he would repay the cash but gave a false name and telephone number. On another occasion, he was given £10 by a stranger after saying he needed to pick his daughter up from hospital following surgery to treat leukaemia. He even told the victim: 'Mate, that's really not enough. £20 will see me through.' In yet another incident, Lyon showed a tattoo of his daughter's name to a man and after getting £20 said: 'I swear on my daughter's life I will pay you back.' Lyon told a fourth victim who gave him £40: 'You are the kindest man I ever met.' Manchester Crown Court heard that in addition to the frauds, jobless Lyon, who has 42 previous convictions, repeatedly stole from his 70-year-old disabled mother, Anna. Whilst she was on holiday in America, Lyon stole her bank card and began plundering her funds in order to fund his £50-a-day crack cocaine habit. The court heard Lyon stole the bank card and used a mobility scooter before withdrawing £1,500 on 23 occasions using a telephone banking service. She returned from her holiday to find her son had taken £6,000 worth of jewellery which was later retrieved from a pawnbrokers. One of Lyon's victims admitted he was suspicious of Lyon's sob story and even told him: 'If you are lying, you will go to hell.' Lyon told  one of his victims that his daughter was in Manchester's Christie Hospital 'with tubes in her arms' He later told police: 'I didn't really believe a word but thought it's better to be conned than be wrong and this is someone genuinely in that situation.' Lyon pleaded guilty to four thefts, eight counts of fraud and one count of taking a vehicle without the owner's consent. In mitigation, defence counsel Tom McKail said: 'The offences committed by this defendant against the public are deplorable and he is disgusted and embarrassed by his behaviour. 'He has also taken advantage of a previously supporting and loving family and apologises to all parties who have been affected by his behaviour and selfish ways. 'At the end of 2012 the defendant's daughter did indeed suffer from leukaemia but recovered, but while given the all clear his relationship with his then-partner, the mother of his two daughters deteriorated. As a by-product he fell back into a way of life he believed he had left behind.' Sentencing Lyon, judge Miss Recorder Fiona Barry said: 'You repeatedly used your daughter's previous ill health to illicit sympathy and generosity to fund your drug addiction. Some victims were vulnerable and another was scared. It is not possible to suspend this sentence.'
+    REJECTED RESPONSE
+    Deputy Prime Minister Nick Clegg has defended the possibility of sending his
+    children to private schools, stating that their education should not be used as
+    a political football. He and his wife Miriam have not visited their local state
+    school, but the headmaster of Ark Putney academy in London, where they were
+    invited to attend, said the school could provide an "exceptional" education for
+    any child and that parents should come to see it firsthand before making a
+    decision.
 
 
 # Step 2: Fine-tuning
@@ -595,13 +1560,10 @@ While our implementation using Ray is asynchronous:
 
 <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/fine-tune-llm_v2/end-to-end-examples/fine-tune-preference/assets/anyscale_dpo.png"/>
 
-Further, our use of Ray Data also implies that the compute configuration for the reference model can be completely decoupled with the policy model. For example, reference model calculation can run on a different node with zero code changes needed. 
+Further, our use of Ray Data also implies that the compute configuration for the reference model can be completely decoupled with the policy model. For example, reference model calculation can run on a different node (with configurable number of GPUs, etc) with zero code changes needed. 
 
 
 To get started with DPO training, we provide the config for DPO in [configs/mistral_dpo_summarization.yaml](configs/mistral_dpo_summarization.yaml) . 
-
-
-TODO: The provided config uses 6 and 2 A10s and doesn't utilize GPUs properly. We should improve logprob processor
 
 
 ```python
@@ -665,16 +1627,59 @@ Let's evaluate our trained model. Here we'll use two baselines: (1) the base mod
 
 ## Evaluation strategy
 
-Our evaluation strategy involves the same Q&A scoring system as used while generating the preference data.
+Our evaluation strategy involves the same Q&A scoring system as used while generating the preference data. 
+
+<p align="center">
+  <img src="./assets/eval.png?" alt="Evaluation" width=800>
+</p>
+
+We evaluate the baseline model and the trained DPO model on the test set. 
+
+## Obtain summaries on the test set
+First, we'll need to obtain the summaries (and scores) for both the models on the given test set. 
+
+For the baseline model, you can simply run the below command:
 
 
+```python
+!anyscale job submit -f configs/generate_summaries_eval_baseline_job.yaml
+```
 
-\<TODO: Add a nice diagram similar to data preprocessing, but just for the evaluation flow \>
+For the fine-tuned DPO model, we provide a dummy config in [configs/summary_generation/mistral_finetuned_eval.yaml](configs/summary_generation/mistral_finetuned_eval.yaml). Make sure to replace `model_id_or_path` for the model inference config with the path to your merged model. 
 
 
-\<TODO: Add description\>
+```python
+!cat configs/summary_generation/mistral_finetuned_eval.yaml
+```
+
+    mode: eval
+    input_folder: s3://air-example-data/preference-tuning-summarization-example/qa_generation/qa_annotations_full_test/
+    model_inference_config:
+      model_id_or_path: mistralai/Mistral-7B-Instruct-v0.1 # <---  Add the path to your merged model here
+      temperature: 0
+      top_p: 0.95
+      scaling_config:
+        batch_size: 128
+        concurrency: 2
+        num_gpus: 1
+        custom_resources:
+          accelerator_type:H100: 1
+    num_generations: 1
+    judge_inference_config:
+      model_id_or_path: meta-llama/Meta-Llama-3.1-70B-Instruct
+      temperature: 0
+      scaling_config:
+        batch_size: 128
+        concurrency: 3
+        num_gpus: 2
+        custom_resources:
+          accelerator_type:H100: 1
+    num_mcq_questions: 5
 
 
+## Get Evaluation Statistics
+
+We've provided a convenient script `src/scripts/get_eval_stats.py` to get evaluation statistics and obtain the "win rate" of the DPO model (the percentage of times the DPO model performs better than the baseline). We've provided an example configuration below. Make sure to substitute the model results path 
 
 # Step 4: Iterative-DPO (optional)
 

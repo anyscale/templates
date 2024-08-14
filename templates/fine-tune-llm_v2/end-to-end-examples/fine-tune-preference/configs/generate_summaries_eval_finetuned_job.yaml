@@ -1,0 +1,5 @@
+name: preference-tuning-summarization-summary-generation
+entrypoint: python -m scripts.generate_summaries_and_scores configs/summary_generation/mistral_finetuned_eval.yaml
+image_uri: localhost:5555/anyscale/endpoints_aica:0.5.0-6402
+max_retries: 0
+working_dir: "."

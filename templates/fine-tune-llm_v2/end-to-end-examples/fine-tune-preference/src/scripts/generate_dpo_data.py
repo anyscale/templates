@@ -12,10 +12,9 @@ import ray
 from pydantic import Field
 
 from src.utils.prompt_templates import PROMPT_TEMPLATE_SUMMARY
-from src.utils.common import init_logger, check_num_bad_chars
+from src.utils.common import check_num_bad_chars
 from src.utils.models import BaseModelExtended, DataSchema
 
-logger = init_logger()
 
 # NOTE: For a pair of summaries where the accuracies are above the threshold, we compare them by length. We prefer smaller summaries. We set a minimum difference of 3 words for one example to be distinct from another.
 MIN_LENGTH_DIFFERENCE = 3
@@ -26,7 +25,7 @@ MAX_NUM_WORDS_IN_SUMMARY = 200
 
 
 class TrainingDataGenerationConfig(BaseModelExtended):
-    input_folder: str = Field(description="Input folder path with generated summaries and scores from the base model, relative to the base artifact storage path.The folder is expected to be compatible with `ray.data.read_parquet`.")
+    input_folder: str = Field(description="Full input folder path with generated summaries and scores from the base model. The folder is expected to be compatible with `ray.data.read_parquet`.")
     max_pairs_per_article: int = Field(default=3, description="Maximum number of chosen, rejected pairs to sample per article.")
     train_val_split: float = Field(default=0.02, description="Train validation split ratio")
     accuracy_threshold: int = Field(default=3, description="Score threshold to classify chosen and rejected samples.")
@@ -166,7 +165,7 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
     config = TrainingDataGenerationConfig.from_yaml(args.config_path)
-    input_folder = os.path.join(os.environ["ANYSCALE_ARTIFACT_STORAGE"], config.input_folder)
+    input_folder = config.input_folder
     output_folder = os.path.join(os.environ["ANYSCALE_ARTIFACT_STORAGE"], config.output_folder)
     ds = ray.data.read_parquet(input_folder, file_extensions=["parquet"])
 
@@ -182,8 +181,10 @@ if __name__ == "__main__":
     val_df = val_ds.to_pandas()
 
 
-    logger.info(f"Number of train examples: {len(train_df)}")
-    logger.info(f"Number of eval examples: {len(val_df)}")
+    print(f"Number of train examples: {len(train_df)}")
+    print(f"Number of eval examples: {len(val_df)}")
 
     train_df.to_json(os.path.join(output_folder, "train.jsonl"), orient="records", lines=True)
     val_df.to_json(os.path.join(output_folder, "val.jsonl"), orient="records", lines=True)
+
+    print(f"All files are saved to {output_folder}")

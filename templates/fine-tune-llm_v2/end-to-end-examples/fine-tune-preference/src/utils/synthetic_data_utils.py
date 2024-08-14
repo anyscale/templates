@@ -9,7 +9,7 @@ import string
 import time
 import unicodedata
 from enum import Enum
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union, TYPE_CHECKING
 
 import numpy as np
 import openai
@@ -23,6 +23,9 @@ from vllm.lora.request import LoRARequest
 
 from src.utils.models import OfflineInferenceConfig, OnlineInferenceConfig
 from src.utils.common import get_completion, init_logger
+
+if TYPE_CHECKING:
+    from ray.data import Dataset
 
 logger = init_logger()
 
@@ -260,7 +263,16 @@ class OnlinePredictor:
 
 
 
-def get_predictions_on_dataset(ds, model_config: Union[OnlineInferenceConfig, OfflineInferenceConfig], col_in: str, col_out: str):
+def get_predictions_on_dataset(ds: "Dataset", model_config: Union[OnlineInferenceConfig, OfflineInferenceConfig], col_in: str, col_out: str):
+    """Get predictions for a model on the given dataset using Ray data
+
+    Supports online/offline inference given the model config.
+    Args:
+        ds: The input dataset
+        model_config: Model inference config. Can be online/ offline.
+        col_in: Input column in the dataset.
+        col_out: Output column to write the results to.
+    """
     if isinstance(model_config, OfflineInferenceConfig):
         ds = ds.map_batches(
             OfflinePredictor,

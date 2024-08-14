@@ -1,5 +1,0 @@
-name: preference-tuning-summarization-question-generation
-entrypoint: python -m scripts.generate_summaries_and_scores configs/summary_generation/llama_70b.yaml
-image_uri: localhost:5555/anyscale/endpoints_aica:0.5.0-6402
-max_retries: 0
-working_dir: "."
