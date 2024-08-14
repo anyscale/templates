@@ -2,7 +2,7 @@ applications:
 - args:
     embedding_models: []
     function_calling_models:
-    - ./model_config/meta-llama--Meta-Llama-3_1-8B-Instruct.yaml
+    - ./llm_configs/meta-llama--Meta-Llama-3_1-8B-Instruct.yaml
     models: []
     multiplex_lora_adapters: []
     multiplex_models: []

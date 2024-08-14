@@ -150,7 +150,7 @@ query(service_url, service_bearer_token)
 
 ## End-to-end examples
 
-* [Build Tool Calling Feature for Any LLM via JSON Mode](./end-to-end-examples/function_calling/README.md): This example demonstrates how to build a tool calling feature for any LLM via JSON mode.
+* [Build Tool Calling Feature for Any LLM via JSON Mode](./end-to-end-examples/function_calling/README.ipynb): This example demonstrates how to build a tool calling feature for any LLM via JSON mode.
 
 
 ## What's next?
