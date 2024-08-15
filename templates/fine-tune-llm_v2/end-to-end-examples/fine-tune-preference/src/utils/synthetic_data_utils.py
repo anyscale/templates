@@ -9,7 +9,7 @@ import string
 import time
 import unicodedata
 from enum import Enum
-from typing import Any, Dict, List, Optional, Union, TYPE_CHECKING
+from typing import Any, Dict, List, Optional, Union, TYPE_CHECKING, Tuple
 
 import numpy as np
 import openai
@@ -78,12 +78,31 @@ def format_into_prompt_rawtext(
     return row
 
 
-def duplicate_rows(row, count, id_col):
+def duplicate_rows(row: Dict[str, Any], count: int, id_col: str) -> List[Dict[str, Any]]:
+    """Duplicates a row for the specified number of times.
+
+    Adds an additional column `id_col` to each duplicated row, containing a unique index.
+    Args:
+        row: A dict representing a row in the dataframe
+        count: The number of times to replicate a row
+        id_col: Column name for the new column with the duplication index.
+    Returns:
+        The list of duplicated rows
+    """
     return [{**row, id_col: i} for i in range(count)]
 
 
 # TODO: clean up
-def process_question(text, num_questions=5, letter_choices=("A", "B", "C", "D", "E")):
+def process_question(text: str, num_questions: int = 5, letter_choices: Tuple[str, ...] =("A", "B", "C", "D", "E")) -> List[Dict[str, Any]]:
+    """Parses raw text containing questions, options and answers into a list of dicionaries.
+
+    Args:
+        text: Raw string containing a list of questions and multiple choice options.
+        num_questions: Number of questions in the text
+        letter_choices: The list of letter choices for each question.
+    Returns:
+        questions: A list of dictionaries with keys "question", "answer" and "choices"
+    """
     questions = []
     assert all(
         len(choice) == 1 for choice in letter_choices
@@ -284,7 +303,7 @@ def get_predictions_on_dataset(ds: "Dataset", model_config: Union[OnlineInferenc
             num_gpus=model_config.scaling_config.num_gpus_per_instance,
             concurrency=model_config.scaling_config.concurrency,
             batch_size=model_config.scaling_config.batch_size,
-            resources=model_config.scaling_config.custom_resources,
+            accelerator_type=model_config.scaling_config.accelerator_type,
             zero_copy_batch=True,
             batch_format="numpy",
         )

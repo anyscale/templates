@@ -195,6 +195,7 @@ if __name__ == "__main__":
         ),
         num_cpus=0,
     )
+    breakpoint()
 
     ds.write_parquet(output_folder)
 

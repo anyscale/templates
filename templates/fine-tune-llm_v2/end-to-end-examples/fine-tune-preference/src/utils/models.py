@@ -50,9 +50,9 @@ class MapperScalingConfig(BaseModelExtended):
         default=None,
         description="Batch size per worker for the map operation. If `None`, an entrie block of data is used as a batch.",
     )
-    custom_resources: Dict[str, Any] = Field(
-        default_factory=dict,
-        description="Custom resources (per worker) to use. For running on GPUs, please specify accelerator type, with more details in https://docs.ray.io/en/latest/ray-core/scheduling/accelerators.html#accelerator-types ",
+    accelerator_type: Optional[str] = Field(
+        default=None,
+        description="Accelerator type for running on GPUs. More details in https://docs.ray.io/en/latest/ray-core/scheduling/accelerators.html#accelerator-types ",
     )
     num_gpus_per_instance: Optional[int] = Field(
         default=None, description="Number of GPUs per instance"

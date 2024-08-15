@@ -70,7 +70,7 @@ if __name__ == "__main__":
     hf_ds = hf_ds.rename_columns({"article": "text"})
     # the resulting keys for the dataset are "article" (which contains the text) and "id" only
     hf_ds = hf_ds.remove_columns(["highlights"])
-    hf_ds = hf_ds.select(range(args.num_total_samples))
+    hf_ds = hf_ds.select(range(config.num_samples_total))
 
     ds = ray.data.from_huggingface(hf_ds)
 

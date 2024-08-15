@@ -5,10 +5,9 @@ model_inference_config:
   max_tokens: 4096
   scaling_config:
     batch_size: 128
-    concurrency: 3
-    num_gpus: 4
-    custom_resources:
-      accelerator_type:H100: 1 # use either H100 or A100 instances here
-num_data_blocks_per_device: int
+    concurrency: 2
+    num_gpus_per_instance: 4
+    accelerator_type: H100 # use either H100/A100 here
+num_data_blocks_per_device: 2
 num_samples_total: 21000
 train_test_split: 0.01

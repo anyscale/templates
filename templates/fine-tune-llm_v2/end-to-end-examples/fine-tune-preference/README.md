@@ -203,6 +203,7 @@ At the end of the job, you should see the remote path to the folder with Q&A. Ma
 
 
 ```python
+# Replace this with the link to the output folder from the previous job
 qa_folder = f"s3://air-example-data/preference-tuning-summarization-example/qa_generation/qa_annotations_full_train/"
 qa_ds = ray.data.read_parquet(qa_folder)
 # The dataset is small, we can materalize it
@@ -298,7 +299,8 @@ The following command will run the `TODO` script, which takes in the folder of q
 
 
 ```python
-summary_folder = f"s3://air-example-data/preference-tuning-summarization-example/summary_generation_base/train/" # replace with the link to the generated summaries
+# replace with the link to the generated summaries
+summary_folder = f"s3://air-example-data/preference-tuning-summarization-example/summary_generation_base/train/" 
 summary_ds = ray.data.read_parquet(summary_folder)
 example_rows = summary_ds.take(1)
 ```

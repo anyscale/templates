@@ -138,7 +138,7 @@ def calculate_statistics(results: pd.DataFrame, baseline_results: pd.DataFrame, 
 def format_dataframe(df: pd.DataFrame) -> str:
     """Formats the dataframe into a string"""
     # Format the float values to 4 decimal places
-    formatted_df = df.map(lambda x: 100*x).map(lambda x: f"{x:.4f} %")
+    formatted_df = df.applymap(lambda x: 100*x).applymap(lambda x: f"{x:.4f} %")
     formatted_df.index.name = "Metric"
     # Create a table using tabulate
     table = tabulate(formatted_df, headers='keys', tablefmt='fancy_grid', stralign='center')
