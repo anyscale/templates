@@ -12,7 +12,6 @@ We will focus on the task of summarization for the [CNN/DailyMail](https://huggi
 1. [Data Preprocessing](#step-1-data-preprocessing): In this section we cover how we can prepare preference data for the summarization task using an LLM-as-a-judge. 
 2. [DPO Finetuning](#step-2-fine-tuning): This section will cover how you can fine-tune an open source model on the preference data on the Anyscale platform.
 3. [Evaluation](#step-3-evaluation): The section will lay down a blue-print for evaluation and compare performance to that of closed source models like OpenAI's GPT-4.
-4. [Iterative-DPO](#step-4-iterative): An optional step to further boost performance with iterative preference-tuning. 
 
 First, let's make the necessary imports
 
@@ -44,312 +43,6 @@ hf_ds_subset =  hf_ds.select(range(20000))
 ray_ds = ray.data.from_huggingface(hf_ds_subset)
 raw_example = ray_ds.take(1)[0]
 ```
-
-    {"asctime": "2024-08-14 14:16:57,929", "levelname": "INFO", "message": "Snapshot is for job submit, omitting .git/ files.", "filename": "snapshot_util.py", "lineno": 773, "timestamp_ns": 1723670217929491372}
-    {"asctime": "2024-08-14 14:16:57,930", "levelname": "INFO", "message": "Zipping 43 files found in ..", "filename": "snapshot_util.py", "lineno": 863, "timestamp_ns": 1723670217930120890}
-    {"asctime": "2024-08-14 14:16:57,941", "levelname": "INFO", "message": "Created snapshot for . at /tmp/snapshot_2024-08-14T21:16:57.928386+00:00_m7kram8f.zip of size 874.35 KB in 0.013s.", "filename": "snapshot_util.py", "lineno": 876, "timestamp_ns": 1723670217941763768}
-    {"asctime": "2024-08-14 14:16:57,960", "levelname": "INFO", "message": "Found credentials from IAM Role: cld_1j41ls4gwkga4pwp8nbql6f239-cluster_node_role", "filename": "credentials.py", "lineno": 1075, "timestamp_ns": 1723670217960042235}
-    {"asctime": "2024-08-14 14:16:58,149", "levelname": "INFO", "message": "Updated runtime env to {'cgroupv2': {}, 'working_dir': '/tmp/ray_latest_runtime_env.zip', 'env_vars': {'WANDB_API_KEY': 'cbc4aed2de2d9c9acb21324a3297b85b7299479b'}, 'pip': ['pytest', 'pytest-timeout', 'allpairspy', 'inflect', 'flatten-dict', 'pre-commit', 'pip-tools', 'huggingface_hub', 'lilac', 'rich', 'black', 'isort'], 'ray_debugger': {'working_dir': '/home/ray/default/templates/templates/fine-tune-llm_v2/end-to-end-examples/fine-tune-preference'}}", "filename": "snapshot_util.py", "lineno": 1927, "timestamp_ns": 1723670218149612363}
-    2024-08-14 14:16:58,182	INFO worker.py:1596 -- Connecting to existing Ray cluster at address: 10.0.49.2:6379...
-    2024-08-14 14:16:58,189	INFO worker.py:1772 -- Connected to Ray cluster. View the dashboard at [1m[32mhttps://session-m4a38rehf7miww178mefsrumy2.i.anyscaleuserdata.com [39m[22m
-    2024-08-14 14:16:58,192	INFO packaging.py:358 -- Pushing file package 'gcs://_ray_pkg_4f5001de4e37d01c532945d2031d43362b8a2c10.zip' (0.85MiB) to Ray cluster...
-    2024-08-14 14:16:58,195	INFO packaging.py:371 -- Successfully pushed file package 'gcs://_ray_pkg_4f5001de4e37d01c532945d2031d43362b8a2c10.zip'.
-    2024-08-14 14:17:04,705	INFO dataset.py:2416 -- Tip: Use `take_batch()` instead of `take() / show()` to return records in pandas or numpy batch format.
-    2024-08-14 14:17:04,708	INFO streaming_executor.py:108 -- Starting execution of Dataset. Full logs are in /tmp/ray/session_2024-08-14_09-50-28_607133_2981/logs/ray-data
-    2024-08-14 14:17:04,708	INFO streaming_executor.py:109 -- Execution plan of Dataset: InputDataBuffer[Input] -> LimitOperator[limit=1]
-
-
-
-    - limit=1 1: 0 bundle [00:00, ? bundle/s]
-
-
-
-    Running 0: 0 bundle [00:00, ? bundle/s]
-
-
-    [36m(ReadParquet->SplitBlocks(5) pid=209343)[0m Traceback (most recent call last):
-    [36m(ReadParquet->SplitBlocks(5) pid=209343)[0m   File "pyarrow/public-api.pxi", line 128, in pyarrow.lib.pyarrow_wrap_data_type
-    [36m(ReadParquet->SplitBlocks(5) pid=209343)[0m   File "pyarrow/types.pxi", line 488, in pyarrow.lib.ListType.init
-    [36m(ReadParquet->SplitBlocks(5) pid=209343)[0m   File "pyarrow/types.pxi", line 200, in pyarrow.lib.DataType.init
-    [36m(ReadParquet->SplitBlocks(5) pid=209343)[0m   File "pyarrow/types.pxi", line 88, in pyarrow.lib._datatype_to_pep3118
-    [36m(ReadParquet->SplitBlocks(5) pid=209343)[0m   File "/home/ray/anaconda3/lib/python3.11/site-packages/ray/air/util/tensor_extensions/arrow.py", line 152, in __arrow_ext_deserialize__
-    [36m(ReadParquet->SplitBlocks(5) pid=209343)[0m     @classmethod
-    [36m(ReadParquet->SplitBlocks(5) pid=209343)[0m 
-    [36m(ReadParquet->SplitBlocks(5) pid=209343)[0m KeyboardInterrupt: 
-    [36m(ReadParquet->SplitBlocks(5) pid=209349)[0m 
-    [36m(ReadParquet->SplitBlocks(5) pid=209335)[0m 
-    [36m(ReadParquet->SplitBlocks(5) pid=209356)[0m 
-    [36m(ReadParquet->SplitBlocks(5) pid=209342)[0m 
-    [36m(ReadParquet->SplitBlocks(5) pid=209354)[0m 
-    [36m(ReadParquet->SplitBlocks(5) pid=209340)[0m 
-    [36m(ReadParquet->SplitBlocks(5) pid=209348)[0m 
-    [36m(ReadParquet->SplitBlocks(5) pid=209350)[0m 
-    [36m(ReadParquet->SplitBlocks(5) pid=209351)[0m 
-    [36m(ReadParquet->SplitBlocks(5) pid=209358)[0m 
-    [36m(ReadParquet->SplitBlocks(5) pid=209347)[0m 
-    [36m(ReadParquet->SplitBlocks(5) pid=209353)[0m 
-    [36m(ReadParquet->SplitBlocks(5) pid=209355)[0m 
-    [36m(ReadParquet->SplitBlocks(5) pid=209357)[0m 
-    [36m(ReadParquet->SplitBlocks(5) pid=209345)[0m 
-    [36m(ReadParquet->SplitBlocks(5) pid=209338)[0m 
-    [36m(ReadParquet->SplitBlocks(5) pid=209345)[0m Traceback (most recent call last):
-    [36m(ReadParquet->SplitBlocks(5) pid=209345)[0m   File "pyarrow/public-api.pxi", line 128, in pyarrow.lib.pyarrow_wrap_data_type
-    [36m(ReadParquet->SplitBlocks(5) pid=209345)[0m   File "pyarrow/types.pxi", line 488, in pyarrow.lib.ListType.init
-    [36m(ReadParquet->SplitBlocks(5) pid=209345)[0m   File "pyarrow/types.pxi", line 200, in pyarrow.lib.DataType.init
-    [36m(ReadParquet->SplitBlocks(5) pid=209345)[0m   File "pyarrow/types.pxi", line 88, in pyarrow.lib._datatype_to_pep3118
-    [36m(ReadParquet->SplitBlocks(5) pid=209345)[0m   File "/home/ray/anaconda3/lib/python3.11/site-packages/ray/air/util/tensor_extensions/arrow.py", line 152, in __arrow_ext_deserialize__
-    [36m(ReadParquet->SplitBlocks(5) pid=209345)[0m     @classmethod
-    [36m(ReadParquet->SplitBlocks(5) pid=209345)[0m 
-    [36m(ReadParquet->SplitBlocks(5) pid=209345)[0m KeyboardInterrupt: 
-    [36m(ReadParquet->SplitBlocks(5) pid=209358)[0m 
-    [36m(ReadParquet->SplitBlocks(5) pid=209349)[0m 
-    [36m(ReadParquet->SplitBlocks(5) pid=209355)[0m 
-    [36m(ReadParquet->SplitBlocks(5) pid=209340)[0m 
-    [36m(ReadParquet->SplitBlocks(5) pid=209343)[0m 
-    [36m(ReadParquet->SplitBlocks(5) pid=209352)[0m 
-    [36m(ReadParquet->SplitBlocks(5) pid=209356)[0m 
-    [36m(ReadParquet->SplitBlocks(48) pid=209356)[0m Traceback (most recent call last):
-    [36m(ReadParquet->SplitBlocks(48) pid=209356)[0m   File "pyarrow/public-api.pxi", line 128, in pyarrow.lib.pyarrow_wrap_data_type
-    [36m(ReadParquet->SplitBlocks(48) pid=209356)[0m   File "pyarrow/types.pxi", line 488, in pyarrow.lib.ListType.init
-    [36m(ReadParquet->SplitBlocks(48) pid=209356)[0m   File "pyarrow/types.pxi", line 200, in pyarrow.lib.DataType.init
-    [36m(ReadParquet->SplitBlocks(48) pid=209356)[0m   File "pyarrow/types.pxi", line 88, in pyarrow.lib._datatype_to_pep3118
-    [36m(ReadParquet->SplitBlocks(48) pid=209356)[0m   File "/home/ray/anaconda3/lib/python3.11/site-packages/ray/air/util/tensor_extensions/arrow.py", line 152, in __arrow_ext_deserialize__
-    [36m(ReadParquet->SplitBlocks(48) pid=209356)[0m     @classmethod
-    [36m(ReadParquet->SplitBlocks(48) pid=209356)[0m 
-    [36m(ReadParquet->SplitBlocks(48) pid=209356)[0m KeyboardInterrupt: 
-    [36m(ReadParquet->SplitBlocks(5) pid=209351)[0m Traceback (most recent call last):
-    [36m(ReadParquet->SplitBlocks(5) pid=209351)[0m   File "pyarrow/public-api.pxi", line 128, in pyarrow.lib.pyarrow_wrap_data_type
-    [36m(ReadParquet->SplitBlocks(5) pid=209351)[0m   File "pyarrow/types.pxi", line 488, in pyarrow.lib.ListType.init
-    [36m(ReadParquet->SplitBlocks(5) pid=209351)[0m   File "pyarrow/types.pxi", line 200, in pyarrow.lib.DataType.init
-    [36m(ReadParquet->SplitBlocks(5) pid=209351)[0m   File "pyarrow/types.pxi", line 88, in pyarrow.lib._datatype_to_pep3118
-    [36m(ReadParquet->SplitBlocks(5) pid=209351)[0m   File "/home/ray/anaconda3/lib/python3.11/site-packages/ray/air/util/tensor_extensions/arrow.py", line 152, in __arrow_ext_deserialize__
-    [36m(ReadParquet->SplitBlocks(5) pid=209351)[0m     @classmethod
-    [36m(ReadParquet->SplitBlocks(5) pid=209351)[0m 
-    [36m(ReadParquet->SplitBlocks(5) pid=209351)[0m KeyboardInterrupt: 
-    [36m(ReadParquet->SplitBlocks(5) pid=209347)[0m 
-    [36m(ReadParquet->SplitBlocks(5) pid=209342)[0m 
-    [36m(ReadParquet->SplitBlocks(5) pid=209353)[0m 
-    [36m(ReadParquet->SplitBlocks(5) pid=209339)[0m 
-    [36m(ReadParquet->SplitBlocks(5) pid=209354)[0m 
-    [36m(ReadParquet->SplitBlocks(5) pid=209341)[0m Traceback (most recent call last):
-    [36m(ReadParquet->SplitBlocks(5) pid=209341)[0m   File "pyarrow/public-api.pxi", line 128, in pyarrow.lib.pyarrow_wrap_data_type
-    [36m(ReadParquet->SplitBlocks(5) pid=209341)[0m   File "pyarrow/types.pxi", line 488, in pyarrow.lib.ListType.init
-    [36m(ReadParquet->SplitBlocks(5) pid=209341)[0m   File "pyarrow/types.pxi", line 200, in pyarrow.lib.DataType.init
-    [36m(ReadParquet->SplitBlocks(5) pid=209341)[0m   File "pyarrow/types.pxi", line 88, in pyarrow.lib._datatype_to_pep3118
-    [36m(ReadParquet->SplitBlocks(5) pid=209341)[0m   File "/home/ray/anaconda3/lib/python3.11/site-packages/ray/air/util/tensor_extensions/arrow.py", line 152, in __arrow_ext_deserialize__
-    [36m(ReadParquet->SplitBlocks(5) pid=209341)[0m     @classmethod
-    [36m(ReadParquet->SplitBlocks(5) pid=209341)[0m 
-    [36m(ReadParquet->SplitBlocks(5) pid=209341)[0m KeyboardInterrupt: 
-    [36m(ReadParquet->SplitBlocks(5) pid=208976)[0m 
-    [36m(ReadParquet->SplitBlocks(5) pid=209343)[0m 
-    [36m(ReadParquet->SplitBlocks(5) pid=209351)[0m 
-    [36m(ReadParquet->SplitBlocks(5) pid=209356)[0m 
-    [36m(ReadParquet->SplitBlocks(5) pid=209339)[0m 
-    [36m(ReadParquet->SplitBlocks(5) pid=209348)[0m 
-    [36m(ReadParquet->SplitBlocks(48) pid=209348)[0m Traceback (most recent call last):
-    [36m(ReadParquet->SplitBlocks(48) pid=209348)[0m   File "pyarrow/public-api.pxi", line 128, in pyarrow.lib.pyarrow_wrap_data_type
-    [36m(ReadParquet->SplitBlocks(48) pid=209348)[0m   File "pyarrow/types.pxi", line 488, in pyarrow.lib.ListType.init
-    [36m(ReadParquet->SplitBlocks(48) pid=209348)[0m   File "pyarrow/types.pxi", line 200, in pyarrow.lib.DataType.init
-    [36m(ReadParquet->SplitBlocks(48) pid=209348)[0m   File "pyarrow/types.pxi", line 88, in pyarrow.lib._datatype_to_pep3118
-    [36m(ReadParquet->SplitBlocks(48) pid=209348)[0m   File "/home/ray/anaconda3/lib/python3.11/site-packages/ray/air/util/tensor_extensions/arrow.py", line 152, in __arrow_ext_deserialize__
-    [36m(ReadParquet->SplitBlocks(48) pid=209348)[0m     @classmethod
-    [36m(ReadParquet->SplitBlocks(48) pid=209348)[0m 
-    [36m(ReadParquet->SplitBlocks(48) pid=209348)[0m KeyboardInterrupt: 
-    [36m(ReadParquet->SplitBlocks(48) pid=209339)[0m Traceback (most recent call last):
-    [36m(ReadParquet->SplitBlocks(48) pid=209339)[0m   File "pyarrow/public-api.pxi", line 128, in pyarrow.lib.pyarrow_wrap_data_type
-    [36m(ReadParquet->SplitBlocks(48) pid=209339)[0m   File "pyarrow/types.pxi", line 488, in pyarrow.lib.ListType.init
-    [36m(ReadParquet->SplitBlocks(48) pid=209339)[0m   File "pyarrow/types.pxi", line 200, in pyarrow.lib.DataType.init
-    [36m(ReadParquet->SplitBlocks(48) pid=209339)[0m   File "pyarrow/types.pxi", line 88, in pyarrow.lib._datatype_to_pep3118
-    [36m(ReadParquet->SplitBlocks(48) pid=209339)[0m   File "/home/ray/anaconda3/lib/python3.11/site-packages/ray/air/util/tensor_extensions/arrow.py", line 152, in __arrow_ext_deserialize__
-    [36m(ReadParquet->SplitBlocks(48) pid=209339)[0m     @classmethod
-    [36m(ReadParquet->SplitBlocks(48) pid=209339)[0m 
-    [36m(ReadParquet->SplitBlocks(48) pid=209339)[0m KeyboardInterrupt: 
-    [36m(ReadParquet->SplitBlocks(5) pid=208976)[0m Traceback (most recent call last):
-    [36m(ReadParquet->SplitBlocks(5) pid=208976)[0m   File "pyarrow/public-api.pxi", line 128, in pyarrow.lib.pyarrow_wrap_data_type
-    [36m(ReadParquet->SplitBlocks(5) pid=208976)[0m   File "pyarrow/types.pxi", line 488, in pyarrow.lib.ListType.init
-    [36m(ReadParquet->SplitBlocks(5) pid=208976)[0m   File "pyarrow/types.pxi", line 200, in pyarrow.lib.DataType.init
-    [36m(ReadParquet->SplitBlocks(5) pid=208976)[0m   File "pyarrow/types.pxi", line 88, in pyarrow.lib._datatype_to_pep3118
-    [36m(ReadParquet->SplitBlocks(5) pid=208976)[0m   File "/home/ray/anaconda3/lib/python3.11/site-packages/ray/air/util/tensor_extensions/arrow.py", line 152, in __arrow_ext_deserialize__
-    [36m(ReadParquet->SplitBlocks(5) pid=208976)[0m     @classmethod
-    [36m(ReadParquet->SplitBlocks(5) pid=208976)[0m 
-    [36m(ReadParquet->SplitBlocks(5) pid=208976)[0m KeyboardInterrupt: 
-    [36m(ReadParquet->SplitBlocks(5) pid=209338)[0m Traceback (most recent call last):
-    [36m(ReadParquet->SplitBlocks(5) pid=209338)[0m   File "pyarrow/public-api.pxi", line 128, in pyarrow.lib.pyarrow_wrap_data_type
-    [36m(ReadParquet->SplitBlocks(5) pid=209338)[0m   File "pyarrow/types.pxi", line 488, in pyarrow.lib.ListType.init
-    [36m(ReadParquet->SplitBlocks(5) pid=209338)[0m   File "pyarrow/types.pxi", line 200, in pyarrow.lib.DataType.init
-    [36m(ReadParquet->SplitBlocks(5) pid=209338)[0m   File "pyarrow/types.pxi", line 88, in pyarrow.lib._datatype_to_pep3118
-    [36m(ReadParquet->SplitBlocks(5) pid=209338)[0m   File "/home/ray/anaconda3/lib/python3.11/site-packages/ray/air/util/tensor_extensions/arrow.py", line 152, in __arrow_ext_deserialize__
-    [36m(ReadParquet->SplitBlocks(5) pid=209338)[0m     @classmethod
-    [36m(ReadParquet->SplitBlocks(5) pid=209338)[0m 
-    [36m(ReadParquet->SplitBlocks(5) pid=209338)[0m KeyboardInterrupt: 
-    [36m(ReadParquet->SplitBlocks(5) pid=209350)[0m 
-    [36m(ReadParquet->SplitBlocks(5) pid=209358)[0m 
-    [36m(ReadParquet->SplitBlocks(5) pid=226255)[0m 
-    [36m(ReadParquet->SplitBlocks(5) pid=209352)[0m 
-    [36m(ReadParquet->SplitBlocks(48) pid=209352)[0m Traceback (most recent call last):
-    [36m(ReadParquet->SplitBlocks(48) pid=209352)[0m   File "pyarrow/public-api.pxi", line 128, in pyarrow.lib.pyarrow_wrap_data_type
-    [36m(ReadParquet->SplitBlocks(48) pid=209352)[0m   File "pyarrow/types.pxi", line 488, in pyarrow.lib.ListType.init
-    [36m(ReadParquet->SplitBlocks(48) pid=209352)[0m   File "pyarrow/types.pxi", line 200, in pyarrow.lib.DataType.init
-    [36m(ReadParquet->SplitBlocks(48) pid=209352)[0m   File "pyarrow/types.pxi", line 88, in pyarrow.lib._datatype_to_pep3118
-    [36m(ReadParquet->SplitBlocks(48) pid=209352)[0m   File "/home/ray/anaconda3/lib/python3.11/site-packages/ray/air/util/tensor_extensions/arrow.py", line 152, in __arrow_ext_deserialize__
-    [36m(ReadParquet->SplitBlocks(48) pid=209352)[0m     @classmethod
-    [36m(ReadParquet->SplitBlocks(48) pid=209352)[0m 
-    [36m(ReadParquet->SplitBlocks(48) pid=209352)[0m KeyboardInterrupt: 
-    [36m(ReadParquet->SplitBlocks(48) pid=226255)[0m Traceback (most recent call last):
-    [36m(ReadParquet->SplitBlocks(48) pid=226255)[0m   File "pyarrow/public-api.pxi", line 128, in pyarrow.lib.pyarrow_wrap_data_type
-    [36m(ReadParquet->SplitBlocks(48) pid=226255)[0m   File "pyarrow/types.pxi", line 488, in pyarrow.lib.ListType.init
-    [36m(ReadParquet->SplitBlocks(48) pid=226255)[0m   File "pyarrow/types.pxi", line 200, in pyarrow.lib.DataType.init
-    [36m(ReadParquet->SplitBlocks(48) pid=226255)[0m   File "pyarrow/types.pxi", line 88, in pyarrow.lib._datatype_to_pep3118
-    [36m(ReadParquet->SplitBlocks(48) pid=226255)[0m   File "/home/ray/anaconda3/lib/python3.11/site-packages/ray/air/util/tensor_extensions/arrow.py", line 152, in __arrow_ext_deserialize__
-    [36m(ReadParquet->SplitBlocks(48) pid=226255)[0m     @classmethod
-    [36m(ReadParquet->SplitBlocks(48) pid=226255)[0m 
-    [36m(ReadParquet->SplitBlocks(48) pid=226255)[0m KeyboardInterrupt: 
-    [36m(ReadParquet pid=208976)[0m Traceback (most recent call last):
-    [36m(ReadParquet pid=208976)[0m   File "pyarrow/public-api.pxi", line 128, in pyarrow.lib.pyarrow_wrap_data_type
-    [36m(ReadParquet pid=208976)[0m   File "pyarrow/types.pxi", line 488, in pyarrow.lib.ListType.init
-    [36m(ReadParquet pid=208976)[0m   File "pyarrow/types.pxi", line 200, in pyarrow.lib.DataType.init
-    [36m(ReadParquet pid=208976)[0m   File "pyarrow/types.pxi", line 88, in pyarrow.lib._datatype_to_pep3118
-    [36m(ReadParquet pid=208976)[0m   File "/home/ray/anaconda3/lib/python3.11/site-packages/ray/air/util/tensor_extensions/arrow.py", line 152, in __arrow_ext_deserialize__
-    [36m(ReadParquet pid=208976)[0m     @classmethod
-    [36m(ReadParquet pid=208976)[0m 
-    [36m(ReadParquet pid=208976)[0m KeyboardInterrupt: 
-    [36m(ReadParquet pid=230447)[0m 
-    [36m(ReadParquet pid=230488)[0m 
-    [36m(ReadParquet pid=230480)[0m 
-    [36m(ReadParquet pid=230457)[0m 
-    [36m(ReadParquet pid=230483)[0m 
-    [36m(ReadParquet pid=230479)[0m 
-    [36m(ReadParquet pid=209343)[0m 
-    [36m(ReadParquet pid=226342)[0m 
-    [36m(ReadParquet pid=230453)[0m 
-    [36m(ReadParquet pid=230486)[0m 
-    [36m(ReadParquet pid=230482)[0m 
-    [36m(ReadParquet pid=230492)[0m 
-    [36m(ReadParquet pid=230487)[0m 
-    [36m(ReadParquet pid=230463)[0m 
-    [36m(ReadParquet pid=230484)[0m 
-    [36m(ReadParquet pid=230481)[0m 
-    [36m(ReadParquet pid=230491)[0m 
-    [36m(ReadParquet pid=230496)[0m 
-    [36m(ReadParquet pid=209353)[0m 
-    [36m(ReadParquet pid=230497)[0m 
-    [36m(ReadParquet pid=230494)[0m 
-    [36m(ReadParquet pid=230493)[0m 
-    [36m(ReadParquet pid=209338)[0m 
-    [36m(ReadParquet pid=230489)[0m 
-    [36m(ReadParquet pid=209358)[0m 
-    [36m(ReadParquet pid=209350)[0m Traceback (most recent call last):
-    [36m(ReadParquet pid=209350)[0m   File "pyarrow/public-api.pxi", line 128, in pyarrow.lib.pyarrow_wrap_data_type
-    [36m(ReadParquet pid=209350)[0m   File "pyarrow/types.pxi", line 488, in pyarrow.lib.ListType.init
-    [36m(ReadParquet pid=209350)[0m   File "pyarrow/types.pxi", line 200, in pyarrow.lib.DataType.init
-    [36m(ReadParquet pid=209350)[0m   File "pyarrow/types.pxi", line 88, in pyarrow.lib._datatype_to_pep3118
-    [36m(ReadParquet pid=209350)[0m   File "/home/ray/anaconda3/lib/python3.11/site-packages/ray/air/util/tensor_extensions/arrow.py", line 152, in __arrow_ext_deserialize__
-    [36m(ReadParquet pid=209350)[0m     @classmethod
-    [36m(ReadParquet pid=209350)[0m 
-    [36m(ReadParquet pid=209350)[0m KeyboardInterrupt: 
-    [36m(ReadParquet pid=209341)[0m 
-    [36m(ReadParquet pid=209335)[0m 
-    [36m(ReadParquet pid=209342)[0m 
-    [36m(ReadParquet pid=209357)[0m 
-    [36m(ReadParquet pid=209241)[0m 
-    [36m(ReadParquet pid=209338)[0m 
-    [36m(ReadParquet pid=209355)[0m 
-    [36m(ReadParquet pid=226342)[0m 
-    [36m(ReadParquet pid=230480)[0m 
-    [36m(ReadParquet pid=230479)[0m 
-    [36m(ReadParquet pid=230484)[0m 
-    [36m(ReadParquet pid=230481)[0m 
-    [36m(ReadParquet pid=230496)[0m 
-    [36m(ReadParquet pid=230490)[0m 
-    [36m(ReadParquet pid=226255)[0m 
-    [36m(ReadParquet pid=209340)[0m 
-    [36m(ReadParquet pid=209349)[0m 
-    [36m(ReadParquet pid=209352)[0m 
-    [36m(ReadParquet pid=209339)[0m 
-    [36m(ReadParquet pid=230457)[0m 
-    [36m(ReadParquet pid=230482)[0m 
-    [36m(ReadParquet pid=230492)[0m 
-    [36m(ReadParquet pid=230495)[0m 
-    [36m(ReadParquet pid=230489)[0m 
-    [36m(ReadParquet pid=209343)[0m 
-    [36m(ReadParquet pid=209358)[0m 
-    [36m(ReadParquet pid=209356)[0m 
-    [36m(ReadParquet pid=209354)[0m 
-    [36m(ReadParquet pid=209353)[0m 
-    [36m(ReadParquet pid=230488)[0m 
-    [36m(ReadParquet pid=230453)[0m 
-    [36m(ReadParquet pid=230497)[0m 
-    [36m(ReadParquet pid=230491)[0m 
-    [36m(ReadParquet pid=230476)[0m 
-    [36m(ReadParquet pid=230485)[0m 
-    [36m(ReadParquet pid=209351)[0m 
-    [36m(ReadParquet pid=209345)[0m 
-    [36m(ReadParquet pid=209344)[0m 
-    [36m(ReadParquet pid=208976)[0m 
-    [36m(ReadParquet pid=209348)[0m 
-    [36m(ReadParquet pid=230486)[0m 
-    [36m(ReadParquet pid=230487)[0m 
-    [36m(ReadParquet pid=209335)[0m Traceback (most recent call last):
-    [36m(ReadParquet pid=209335)[0m   File "pyarrow/public-api.pxi", line 128, in pyarrow.lib.pyarrow_wrap_data_type
-    [36m(ReadParquet pid=209335)[0m   File "pyarrow/types.pxi", line 488, in pyarrow.lib.ListType.init
-    [36m(ReadParquet pid=209335)[0m   File "pyarrow/types.pxi", line 200, in pyarrow.lib.DataType.init
-    [36m(ReadParquet pid=209335)[0m   File "pyarrow/types.pxi", line 88, in pyarrow.lib._datatype_to_pep3118
-    [36m(ReadParquet pid=209335)[0m   File "/home/ray/anaconda3/lib/python3.11/site-packages/ray/air/util/tensor_extensions/arrow.py", line 152, in __arrow_ext_deserialize__
-    [36m(ReadParquet pid=209335)[0m     @classmethod
-    [36m(ReadParquet pid=209335)[0m 
-    [36m(ReadParquet pid=209335)[0m KeyboardInterrupt: 
-    [36m(ReadParquet pid=230479)[0m 
-    [36m(ReadParquet pid=209343)[0m 
-    [36m(ReadParquet pid=209358)[0m 
-    [36m(ReadParquet pid=209344)[0m 
-    [36m(ReadParquet pid=209349)[0m 
-    [36m(ReadParquet pid=209356)[0m 
-    [36m(ReadParquet pid=230457)[0m 
-    [36m(ReadParquet pid=209345)[0m 
-    [36m(ReadParquet pid=209354)[0m 
-    [36m(ReadParquet pid=209357)[0m 
-    [36m(ReadParquet pid=208976)[0m 
-    [36m(ReadParquet pid=209241)[0m 
-    [36m(ReadParquet pid=209338)[0m 
-    [36m(ReadParquet pid=209355)[0m 
-    [36m(ReadParquet pid=230447)[0m 
-    [36m(ReadParquet pid=230480)[0m 
-    [36m(ReadParquet pid=230483)[0m 
-    [36m(ReadParquet pid=230482)[0m 
-    [36m(ReadParquet pid=230492)[0m 
-    [36m(ReadParquet pid=230489)[0m 
-    [36m(ReadParquet pid=230487)[0m 
-    [36m(ReadParquet pid=230484)[0m 
-    [36m(ReadParquet pid=230481)[0m 
-    [36m(ReadParquet pid=209350)[0m 
-    [36m(ReadParquet pid=209341)[0m 
-    [36m(ReadParquet pid=209342)[0m 
-    [36m(ReadParquet pid=209340)[0m 
-    [36m(ReadParquet pid=226255)[0m 
-    [36m(ReadParquet pid=230453)[0m 
-    [36m(ReadParquet pid=230463)[0m 
-    [36m(ReadParquet pid=230493)[0m 
-    [36m(ReadParquet pid=230496)[0m 
-    [36m(ReadParquet pid=230494)[0m 
-    [36m(ReadParquet pid=230485)[0m 
-    [36m(ReadParquet pid=230488)[0m 
-    [36m(ReadParquet pid=230486)[0m 
-    [36m(ReadParquet pid=230490)[0m 
-    [36m(ReadParquet pid=230497)[0m 
-    [36m(ReadParquet pid=230491)[0m 
-    [36m(ReadParquet pid=209339)[0m 
-    [36m(ReadParquet pid=209353)[0m 
-    [36m(ReadParquet pid=209348)[0m 
-    [36m(ReadParquet pid=209351)[0m 
-    [36m(ReadParquet pid=230476)[0m 
-    [36m(ReadParquet pid=209352)[0m 
-    [36m(ReadParquet pid=230495)[0m 
-    [36m(ReadParquet pid=226342)[0m 
-    [36m(ExpandPaths pid=209340)[0m Failed to interpret chosen as multi-dimensional arrays. It will be pickled.
-    [36m(ExpandPaths pid=209340)[0m Failed to interpret rejected as multi-dimensional arrays. It will be pickled.
-    [36m(ExpandPaths pid=209350)[0m Failed to interpret chosen as multi-dimensional arrays. It will be pickled.
-    [36m(ExpandPaths pid=209350)[0m Failed to interpret rejected as multi-dimensional arrays. It will be pickled.
-
 
 
 ```python
@@ -517,34 +210,6 @@ example_rows = qa_ds.materialize().take(3)
 ```
 
 
-    Parquet Files Sample 0:   0%|          | 0/2 [00:00<?, ? file/s]
-
-
-    2024-08-14 14:44:51,705	INFO streaming_executor.py:108 -- Starting execution of Dataset. Full logs are in /tmp/ray/session_2024-08-14_09-50-28_607133_2981/logs/ray-data
-    2024-08-14 14:44:51,705	INFO streaming_executor.py:109 -- Execution plan of Dataset: InputDataBuffer[Input] -> TaskPoolMapOperator[ReadParquet]
-
-
-
-    - ReadParquet->SplitBlocks(5) 1: 0 bundle [00:00, ? bundle/s]
-
-
-
-    Running 0: 0 bundle [00:00, ? bundle/s]
-
-
-    2024-08-14 14:44:54,660	INFO streaming_executor.py:108 -- Starting execution of Dataset. Full logs are in /tmp/ray/session_2024-08-14_09-50-28_607133_2981/logs/ray-data
-    2024-08-14 14:44:54,660	INFO streaming_executor.py:109 -- Execution plan of Dataset: InputDataBuffer[Input] -> LimitOperator[limit=3]
-
-
-
-    - limit=3 1: 0 bundle [00:00, ? bundle/s]
-
-
-
-    Running 0: 0 bundle [00:00, ? bundle/s]
-
-
-
 ```python
 from src.utils.models import DataSchema
 
@@ -639,26 +304,6 @@ example_rows = summary_ds.take(1)
 ```
 
 
-    Parquet Files Sample 0:   0%|          | 0/2 [00:00<?, ? file/s]
-
-
-    2024-08-14 15:10:29,124	INFO streaming_executor.py:108 -- Starting execution of Dataset. Full logs are in /tmp/ray/session_2024-08-14_09-50-28_607133_2981/logs/ray-data
-    2024-08-14 15:10:29,124	INFO streaming_executor.py:109 -- Execution plan of Dataset: InputDataBuffer[Input] -> TaskPoolMapOperator[ReadParquet] -> LimitOperator[limit=1]
-
-
-
-    - ReadParquet 1: 0 bundle [00:00, ? bundle/s]
-
-
-
-    - limit=1 2: 0 bundle [00:00, ? bundle/s]
-
-
-
-    Running 0: 0 bundle [00:00, ? bundle/s]
-
-
-
 ```python
 from src.utils.models import DataSchema
 
@@ -737,697 +382,6 @@ The following command will run the `TODO` script, which takes in the folder of s
 !python src/scripts/generate_dpo_data.py configs/training_data_generation/mistral_8b.yaml
 ```
 
-    {"asctime": "2024-08-14 15:18:24,635", "levelname": "INFO", "message": "Snapshot is for job submit, omitting .git/ files.", "filename": "snapshot_util.py", "lineno": 773, "timestamp_ns": 1723673904635602458}
-    {"asctime": "2024-08-14 15:18:24,635", "levelname": "INFO", "message": "Zipping 43 files found in ..", "filename": "snapshot_util.py", "lineno": 863, "timestamp_ns": 1723673904635790551}
-    {"asctime": "2024-08-14 15:18:24,642", "levelname": "INFO", "message": "Created snapshot for . at /tmp/snapshot_2024-08-14T22:18:24.634309+00:00_kos1_esb.zip of size 887.42 KB in 0.008s.", "filename": "snapshot_util.py", "lineno": 876, "timestamp_ns": 1723673904642601456}
-    {"asctime": "2024-08-14 15:18:24,770", "levelname": "INFO", "message": "Found credentials from IAM Role: cld_1j41ls4gwkga4pwp8nbql6f239-cluster_node_role", "filename": "credentials.py", "lineno": 1075, "timestamp_ns": 1723673904770850447}
-    {"asctime": "2024-08-14 15:18:25,015", "levelname": "INFO", "message": "Updated runtime env to {'cgroupv2': {}, 'working_dir': '/tmp/ray_latest_runtime_env.zip', 'env_vars': {'WANDB_API_KEY': 'cbc4aed2de2d9c9acb21324a3297b85b7299479b'}, 'pip': ['pytest', 'pytest-timeout', 'allpairspy', 'inflect', 'flatten-dict', 'pre-commit', 'pip-tools', 'huggingface_hub', 'lilac', 'rich', 'black', 'isort'], 'ray_debugger': {'working_dir': '/home/ray/default/templates/templates/fine-tune-llm_v2/end-to-end-examples/fine-tune-preference'}}", "filename": "snapshot_util.py", "lineno": 1927, "timestamp_ns": 1723673905015169741}
-    2024-08-14 15:18:25,050	INFO worker.py:1596 -- Connecting to existing Ray cluster at address: 10.0.49.2:6379...
-    2024-08-14 15:18:25,057	INFO worker.py:1772 -- Connected to Ray cluster. View the dashboard at [1m[32mhttps://session-m4a38rehf7miww178mefsrumy2.i.anyscaleuserdata.com [39m[22m
-    2024-08-14 15:18:25,059	INFO packaging.py:358 -- Pushing file package 'gcs://_ray_pkg_22369df1395ab5b545d56441969b3685f3e2d85e.zip' (0.87MiB) to Ray cluster...
-    2024-08-14 15:18:25,062	INFO packaging.py:371 -- Successfully pushed file package 'gcs://_ray_pkg_22369df1395ab5b545d56441969b3685f3e2d85e.zip'.
-    Parquet Files Sample 0: 100%|██████████████████| 2/2 [00:02<00:00,  1.22s/ file]
-    2024-08-14 15:18:27,546	INFO streaming_executor.py:108 -- Starting execution of Dataset. Full logs are in /tmp/ray/session_2024-08-14_09-50-28_607133_2981/logs/ray-data
-    2024-08-14 15:18:27,547	INFO streaming_executor.py:109 -- Execution plan of Dataset: InputDataBuffer[Input] -> TaskPoolMapOperator[ReadParquet] -> TaskPoolMapOperator[Filter(is_row_valid)->Map(eval_row)->Filter(<lambda>)] -> AllToAllOperator[Sort] -> TaskPoolMapOperator[MapBatches(make_pairs)]
-    
-    - ReadParquet 1: 0 bundle [00:00, ? bundle/s][A
-    
-    - Filter(is_row_valid)->Map(eval_row)->Filter(<lambda>) 2: 0 bundle [00:00, ? bundle/s][A[A
-    
-    
-    - Sort 3: 0 bundle [00:00, ? bundle/s][A[A[A
-    
-    
-    
-    Sort Sample 4:   0%|                                 | 0/1 [00:00<?, ? bundle/s][A[A[A[A
-    
-    
-    
-    
-    Shuffle Map 5:   0%|                                 | 0/1 [00:00<?, ? bundle/s][A[A[A[A[A
-    
-    
-    
-    
-    
-    Shuffle Reduce 6:   0%|                              | 0/1 [00:00<?, ? bundle/s][A[A[A[A[A[A
-    
-    
-    
-    
-    
-    
-    Running: 47/48 CPU, 0/4 GPU, 1.8GB/13.8GB object_store_memory: : 0 bundle [00:02, ? bundle/s]
-    - ReadParquet: 48 active, 47 queued, [cpu: 48.0, objects: 1.8GB]: : 0 bundle [00:02, ? bundle/s][A
-    
-    Running: 47/48 CPU, 0/4 GPU, 2.4GB/13.8GB object_store_memory: : 0 bundle [00:04, ? bundle/s]ts: 512.0MB]: : 0 bundle [00:02, ? bundle/s][A[A
-    - ReadParquet: 48 active, 45 queued, [cpu: 48.0, objects: 1.9GB]: : 0 bundle [00:04, ? bundle/s][A
-    - ReadParquet: 48 active, 45 queued, [cpu: 48.0, objects: 1.9GB]:   0%| | 0/96 [                [A
-    - ReadParquet: 48 active, 45 queued, [cpu: 48.0, objects: 1.9GB]:   2%| | 2/96 [[A
-    
-    Running: 47/48 CPU, 0/4 GPU, 4.1GB/13.8GB object_store_memory: : 0 bundle [00:05, ? bundle/s]ts: 768.0MB]: : 0 bundle [00:04, ? bundle/s][A[A
-    - ReadParquet: 48 active, 18 queued, [cpu: 48.0, objects: 2.9GB]:   2%| | 2/96 [[A
-    - ReadParquet: 48 active, 18 queued, [cpu: 48.0, objects: 2.9GB]:   5%| | 5/96 [[A
-    
-    Running: 48/48 CPU, 0/4 GPU, 4.0GB/13.8GB object_store_memory: : 0 bundle [00:06, ? bundle/s]cts: 6.5GB]: : 0 bundle [00:05, ? bundle/s] [A[A
-    
-    - Filter(is_row_valid)->Map(eval_row)->Filter(<lambda>): 25 active, 0 queued, [cpu: 0.0, objects: 954.2MB]: : 0 bundle [00:07, ? bundle/s][A[A
-    
-    - Filter(is_row_valid)->Map(eval_row)->Filter(<lambda>): 25 active, 0 queued, [c                                                          [A[A
-    
-    - Filter(is_row_valid)->Map(eval_row)->Filter(<lambda>): 25 active, 0 queued, [c[A[A
-    - ReadParquet: 48 active, 13 queued, [cpu: 48.0, objects: 3.0GB]:   5%| | 5/96 [[A
-    Running: 48/48 CPU, 0/4 GPU, 3.9GB/13.8GB object_store_memory: : 0 bundle [00:08, ? bundle/s]
-    
-    - Filter(is_row_valid)->Map(eval_row)->Filter(<lambda>): 21 active, 0 queued, [c[A[A
-    
-    Running: 48/48 CPU, 0/4 GPU, 3.6GB/13.8GB object_store_memory: : 0 bundle [00:10, ? bundle/s]
-    - ReadParquet: 48 active, 11 queued, [cpu: 48.0, objects: 3.0GB]:  27%|▎| 26/96 [A
-    
-    Running: 45/48 CPU, 0/4 GPU, 4.0GB/13.8GB object_store_memory: : 0 bundle [00:11, ? bundle/s]
-    - ReadParquet: 32 active, 0 queued, [cpu: 32.0, objects: 3.3GB]:  27%|▎| 26/96 [[A
-    - ReadParquet: 32 active, 0 queued, [cpu: 32.0, objects: 3.3GB]:  32%|▎| 31/96 [[A
-    
-    Running: 23/48 CPU, 0/4 GPU, 3.9GB/13.8GB object_store_memory: : 0 bundle [00:12, ? bundle/s]
-    - ReadParquet: 14 active, 0 queued, [cpu: 14.0, objects: 2.7GB]:  32%|▎| 31/96 [[A
-    - ReadParquet: 14 active, 0 queued, [cpu: 14.0, objects: 2.7GB]:  33%|▎| 32/96 [[A
-    
-    - Filter(is_row_valid)->Map(eval_row)->Filter(<lambda>): 48 active, 0 queued, [c[A[A
-    
-    Running: 11/48 CPU, 0/4 GPU, 4.4GB/13.8GB object_store_memory: : 0 bundle [00:13, ? bundle/s]
-    - ReadParquet: 6 active, 0 queued, [cpu: 6.0, objects: 2.6GB]:  33%|▎| 32/96 [00[A
-    Running: 2/48 CPU, 0/4 GPU, 4.9GB/13.8GB object_store_memory: : 0 bundle [00:16, ? bundle/s] 
-    - ReadParquet: 2 active, 0 queued, [cpu: 2.0, objects: 2.6GB]:  86%|▊| 83/96 [00[A
-    - ReadParquet: 2 active, 0 queued, [cpu: 2.0, objects: 2.6GB]:  91%|▉| 87/96 [00[A
-    
-    - Filter(is_row_valid)->Map(eval_row)->Filter(<lambda>): 62 active, 0 queued, [c[A[A
-    
-    - Filter(is_row_valid)->Map(eval_row)->Filter(<lambda>): 62 active, 0 queued, [c[A[A
-    
-    - Filter(is_row_valid)->Map(eval_row)->Filter(<lambda>): 70 active, 0 queued, [c[A[A
-    
-    Running: 0/48 CPU, 0/4 GPU, 5.1GB/13.8GB object_store_memory: : 0 bundle [00:20, ? bundle/s]
-    
-    - Filter(is_row_valid)->Map(eval_row)->Filter(<lambda>): 68 active, 0 queued, [c[A[A
-    - ReadParquet: 0 active, 0 queued, [cpu: 0.0, objects: 2.5GB]:  91%|▉| 87/96 [00[A
-    Running: 0/48 CPU, 0/4 GPU, 4.8GB/13.8GB object_store_memory: : 0 bundle [00:22, ? bundle/s]
-    - ReadParquet: 0 active, 0 queued, [cpu: 0.0, objects: 2.3GB]: 100%|█| 96/96 [00[A
-    
-    - Filter(is_row_valid)->Map(eval_row)->Filter(<lambda>): 62 active, 0 queued, [c[A[A
-    
-    Running: 0/48 CPU, 0/4 GPU, 4.6GB/13.8GB object_store_memory: : 0 bundle [00:23, ? bundle/s]
-    - ReadParquet: 0 active, 0 queued, [cpu: 0.0, objects: 2.1GB]: 100%|█| 96/96 [00[A
-    
-    Running: 0/48 CPU, 0/4 GPU, 4.1GB/13.8GB object_store_memory: : 0 bundle [00:24, ? bundle/s]
-    - ReadParquet: 0 active, 0 queued, [cpu: 0.0, objects: 1.7GB]: 100%|█| 96/96 [00[A
-    
-    - Filter(is_row_valid)->Map(eval_row)->Filter(<lambda>): 45 active, 0 queued, [c[A[A
-    
-    Running: 0/48 CPU, 0/4 GPU, 3.6GB/13.8GB object_store_memory: : 0 bundle [00:25, ? bundle/s]
-    - ReadParquet: 0 active, 0 queued, [cpu: 0.0, objects: 1.2GB]: 100%|█| 96/96 [00[A
-    
-    - Filter(is_row_valid)->Map(eval_row)->Filter(<lambda>): 32 active, 0 queued, [c[A[A
-    
-    - Filter(is_row_valid)->Map(eval_row)->Filter(<lambda>): 21 active, 0 queued, [c[A[A
-    
-    Running: 0/48 CPU, 0/4 GPU, 2.6GB/13.8GB object_store_memory: : 0 bundle [00:26, ? bundle/s]
-    Running: 0/48 CPU, 0/4 GPU, 498.8MB/13.8GB object_store_memory: : 0 bundle [00:27, ? bundle/s]
-    - ReadParquet: 0 active, 0 queued, [cpu: 0.0, objects: 152.0MB]: 100%|█| 96/96 [[A
-    
-    - Filter(is_row_valid)->Map(eval_row)->Filter(<lambda>): 4 active, 0 queued, [cp[A[A
-    
-    Sort Sample 0: 100%|██████████████████████| 96/96 [00:00<00:00, 5436.70 block/s][A[A
-    
-    
-    
-    
-    
-      *- Shuffle Map:   0%|                              | 0/1 [00:28<?, ? bundle/s][A[A[A[A[A
-    
-    
-    
-    
-      *- Shuffle Map:   0%|                             | 0/63 [00:29<?, ? bundle/s][A[A[A[A[A
-    
-    
-    
-    
-      *- Shuffle Map: 100%|████████████████████| 63/63 [00:29<00:00,  2.13 bundle/s][A[A[A[A[A
-    
-    
-    
-    
-    
-      *- Shuffle Reduce:   0%|                           | 0/1 [00:30<?, ? bundle/s][A[A[A[A[A[A
-    
-    
-    
-    
-    
-      *- Shuffle Reduce: 100%|███████████████████| 1/1 [00:30<00:00, 30.31s/ bundle][A[A[A[A[A[A
-    - ReadParquet: 0 active, 0 queued, [cpu: 0.0, objects: 0.0B]: 100%|█| 96/96 [00:[A
-    
-    - Filter(is_row_valid)->Map(eval_row)->Filter(<lambda>): 0 active, 0 queued, [cp[A[A
-    
-    - Filter(is_row_valid)->Map(eval_row)->Filter(<lambda>): 0 active, 0 queued, [cp[A[A
-    
-    
-    Running: 0/48 CPU, 0/4 GPU, 3.6GB/13.8GB object_store_memory: : 0 bundle [00:31, ? bundle/s]  s][A[A[A
-    
-    
-    
-    
-    
-    
-    - MapBatches(make_pairs): 41 active, 55 queued, [cpu: 0.0, objects: 10.2GB]: : 0 bundle [00:31, ? bundle/s][A[A[A[A[A[A[A
-    
-    
-    
-    
-    
-    
-    - MapBatches(make_pairs): 90 active, 5 queued, [cpu: 0.0, objects: 6.4MB]: : 0 bundle [00:33, ? bundle/s]  [A[A[A[A[A[A[A
-    
-    
-    - Sort: 0 active, 0 queued, [cpu: 0.0, objects: 3.5GB], 0 output: : 0 bundle [00:33, ? bundle/s][A[A[A
-    
-    
-    - Sort: 0 active, 0 queued, [cpu: 0.0, objects: 3.5GB], 0 output:   0%| | 0/96 [                [A[A[A
-    
-    
-    Running: 0/48 CPU, 0/4 GPU, 3.3GB/13.8GB object_store_memory: : 0 bundle [00:34, ? bundle/s]
-    
-    
-    
-    
-    
-    
-    - MapBatches(make_pairs): 86 active, 0 queued, [cpu: 0.0, objects: 7.4MB]: : 0 bundle [00:34, ? bundle/s][A[A[A[A[A[A[A
-    
-    
-    Running: 0/48 CPU, 0/4 GPU, 3.1GB/13.8GB object_store_memory: : 0 bundle [00:35, ? bundle/s]
-    
-    
-    
-    
-    
-    
-    - MapBatches(make_pairs): 80 active, 0 queued, [cpu: 0.0, objects: 8.5MB]: : 0 bundle [00:35, ? bundle/s][A[A[A[A[A[A[A
-    
-    
-    
-    
-    
-    
-    Running: 0/48 CPU, 0/4 GPU, 2.6GB/13.8GB object_store_memory: : 0 bundle [00:36, ? bundle/s], ? bundle/s][A[A[A[A[A[A[A
-    
-    
-    - Sort: 0 active, 0 queued, [cpu: 0.0, objects: 2.6GB], 0 output: 100%|█| 96/96 [A[A[A
-    
-    
-    
-    
-    
-    
-    - MapBatches(make_pairs): 54 active, 0 queued, [cpu: 0.0, objects: 9.7MB]: : 0 bundle [00:37, ? bundle/s][A[A[A[A[A[A[A
-    
-    
-    
-    
-    
-    
-    - MapBatches(make_pairs): 54 active, 0 queued, [cpu: 0.0, objects: 9.7MB]:   0%|                         [A[A[A[A[A[A[A
-    
-    
-    
-    
-    
-    
-    Running: 0/48 CPU, 0/4 GPU, 2.0GB/13.8GB object_store_memory:   7%| | 7/96 [00:3            [A[A[A
-    
-    
-    - Sort: 0 active, 0 queued, [cpu: 0.0, objects: 2.0GB], 0 output: 100%|█| 96/96 [A[A[A
-    
-    
-    
-    
-    
-    
-    - MapBatches(make_pairs): 46 active, 0 queued, [cpu: 0.0, objects: 5.4MB]:   7%|[A[A[A[A[A[A[A
-    
-    
-    
-    
-    
-    
-    Running: 0/48 CPU, 0/4 GPU, 1.7GB/13.8GB object_store_memory:  48%|▍| 46/96 [00:[A[A[A[A[A[A[A
-    
-    
-    - Sort: 0 active, 0 queued, [cpu: 0.0, objects: 1.7GB], 0 output: 100%|█| 96/96 [A[A[A
-    
-    
-    
-    
-    
-    
-    Running: 0/48 CPU, 0/4 GPU, 1.4GB/13.8GB object_store_memory:  52%|▌| 50/96 [00:[A[A[A[A[A[A[A
-    
-    
-    - Sort: 0 active, 0 queued, [cpu: 0.0, objects: 1.4GB], 0 output: 100%|█| 96/96 [A[A[A
-    
-    
-    
-    
-    
-    
-    - MapBatches(make_pairs): 35 active, 0 queued, [cpu: 0.0, objects: 4.5MB]:  51%|[A[A[A[A[A[A[A
-    
-    
-    
-    
-    
-    
-    Running: 0/48 CPU, 0/4 GPU, 728.1MB/13.8GB object_store_memory:  52%|▌| 50/96 [0[A[A[A[A[A[A[A
-    
-    
-    - Sort: 0 active, 0 queued, [cpu: 0.0, objects: 723.7MB], 0 output: 100%|█| 96/9[A[A[A
-    
-    
-    
-    
-    
-    
-    - MapBatches(make_pairs): 13 active, 0 queued, [cpu: 0.0, objects: 4.4MB]:  52%|[A[A[A[A[A[A[A
-    
-    
-    
-    
-    
-    
-    - MapBatches(make_pairs): 4 active, 0 queued, [cpu: 0.0, objects: 3.4MB]:  52%|▌[A[A[A[A[A[A[A
-    
-    
-    
-    
-    
-    
-    Running: 0/48 CPU, 0/4 GPU, 68.4MB/13.8GB object_store_memory:  66%|▋| 63/96 [00[A[A[A[A[A[A[A
-    
-    
-    ✔️  Dataset execution finished in 43.14 seconds: 100%|█| 96/96 [00:43<00:00,  2.[A[A[A
-    - ReadParquet: 0 active, 0 queued, [cpu: 0.0, objects: 0.0B]: 100%|█| 96/96 [00:
-    - Filter(is_row_valid)->Map(eval_row)->Filter(<lambda>): 0 active, 0 queued, [cp
-    
-    
-    
-    - Sort: 0 active, 0 queued, [cpu: 0.0, objects: 0.0B], 0 output: 100%|█| 96/96 [[A[A[A
-    
-    
-    
-    
-      *- Sort Sample:   0%|                              | 0/1 [00:43<?, ? bundle/s][A[A[A[A
-    
-    
-    
-      *- Sort Sample: : 0 bundle [00:43, ? bundle/s]                                [A[A[A[A
-    
-    
-    
-    
-    
-      *- Shuffle Map:  66%|█████████████▏      | 63/96 [00:43<00:15,  2.13 bundle/s][A[A[A[A[A
-    
-    
-    
-    
-      *- Shuffle Map: 100%|████████████████████| 96/96 [00:43<00:00,  2.23 bundle/s][A[A[A[A[A
-    
-    
-    
-    
-    
-    
-      *- Shuffle Reduce:   1%|▏                 | 1/96 [00:43<47:59, 30.31s/ bundle][A[A[A[A[A[A
-    
-    
-    
-    
-    
-      *- Shuffle Reduce: 100%|█████████████████| 96/96 [00:43<00:00,  2.23 bundle/s][A[A[A[A[A[A
-    
-    
-    
-    
-    
-    
-    
-    - MapBatches(make_pairs): 0 active, 0 queued, [cpu: 0.0, objects: 1.7MB]:  67%|▋[A[A[A[A[A[A[A
-    
-    
-    
-    
-    
-    
-    - MapBatches(make_pairs): 0 active, 0 queued, [cpu: 0.0, objects: 1.7MB]: 100%|█[A[A[A[A[A[A[A
-    2024-08-14 15:19:10,706	INFO streaming_executor.py:108 -- Starting execution of Dataset. Full logs are in /tmp/ray/session_2024-08-14_09-50-28_607133_2981/logs/ray-data
-    2024-08-14 15:19:10,707	INFO streaming_executor.py:109 -- Execution plan of Dataset: InputDataBuffer[Input] -> TaskPoolMapOperator[ReadParquet] -> TaskPoolMapOperator[Filter(is_row_valid)->Map(eval_row)->Filter(<lambda>)] -> AllToAllOperator[Sort] -> TaskPoolMapOperator[MapBatches(make_pairs)]
-    
-    - ReadParquet 1: 0 bundle [00:00, ? bundle/s][A
-    
-    - Filter(is_row_valid)->Map(eval_row)->Filter(<lambda>) 2: 0 bundle [00:00, ? bundle/s][A[A
-    
-    
-    - Sort 3: 0 bundle [00:00, ? bundle/s][A[A[A
-    
-    
-    
-    Sort Sample 4:   0%|                                 | 0/1 [00:00<?, ? bundle/s][A[A[A[A
-    
-    
-    
-    
-    Shuffle Map 5:   0%|                                 | 0/1 [00:00<?, ? bundle/s][A[A[A[A[A
-    
-    
-    
-    
-    
-    Shuffle Reduce 6:   0%|                              | 0/1 [00:00<?, ? bundle/s][A[A[A[A[A[A
-    
-    
-    
-    
-    
-    
-    Running: 47/48 CPU, 0/4 GPU, 1.9GB/13.8GB object_store_memory: : 0 bundle [00:06, ? bundle/s]
-    Running: 47/48 CPU, 0/4 GPU, 3.5GB/13.8GB object_store_memory: : 0 bundle [00:08, ? bundle/s]/s][A
-    - ReadParquet: 48 active, 2 queued, [cpu: 48.0, objects: 3.5GB]: : 0 bundle [00:08, ? bundle/s] [A
-    
-    Running: 13/48 CPU, 0/4 GPU, 5.4GB/13.8GB object_store_memory: : 0 bundle [00:09, ? bundle/s]ts: 1.8GB]: : 0 bundle [00:08, ? bundle/s][A[A
-    - ReadParquet: 13 active, 0 queued, [cpu: 13.0, objects: 3.6GB]: : 0 bundle [00:09, ? bundle/s][A
-    - ReadParquet: 13 active, 0 queued, [cpu: 13.0, objects: 3.6GB]:   0%| | 0/96 [0               [A
-    - ReadParquet: 13 active, 0 queued, [cpu: 13.0, objects: 3.6GB]:   7%| | 7/96 [0[A
-    
-    Running: 2/48 CPU, 0/4 GPU, 14.1GB/13.8GB object_store_memory: : 0 bundle [00:10, ? bundle/s]ects: 10.5GB]: : 0 bundle [00:10, ? bundle/s][A[A
-    - ReadParquet: 2 active, 0 queued, [cpu: 2.0, objects: 3.6GB]:   7%| | 7/96 [00:[A
-    - ReadParquet: 2 active, 0 queued, [cpu: 2.0, objects: 3.6GB]:  65%|▋| 62/96 [00[A
-    
-    - Filter(is_row_valid)->Map(eval_row)->Filter(<lambda>): 42 active, 54 queued, [cpu: 0.0, objects: 10.5GB]: : 0 bundle [00:11, ? bundle/s][A[A
-    
-    - Filter(is_row_valid)->Map(eval_row)->Filter(<lambda>): 42 active, 54 queued, [                                                          [A[A
-    
-    Running: 0/48 CPU, 0/4 GPU, 5.1GB/13.8GB object_store_memory: : 0 bundle [00:13, ? bundle/s] 
-    - ReadParquet: 0 active, 0 queued, [cpu: 0.0, objects: 3.5GB]:  65%|▋| 62/96 [00[A
-    - ReadParquet: 0 active, 0 queued, [cpu: 0.0, objects: 3.5GB]: 100%|█| 96/96 [00[A
-    
-    - Filter(is_row_valid)->Map(eval_row)->Filter(<lambda>): 92 active, 0 queued, [c[A[A
-    
-    - Filter(is_row_valid)->Map(eval_row)->Filter(<lambda>): 92 active, 0 queued, [c[A[A
-    Running: 0/48 CPU, 0/4 GPU, 6.9GB/13.8GB object_store_memory: : 0 bundle [00:15, ? bundle/s]
-    
-    - Filter(is_row_valid)->Map(eval_row)->Filter(<lambda>): 91 active, 0 queued, [c[A[A
-    
-    Running: 0/48 CPU, 0/4 GPU, 6.8GB/13.8GB object_store_memory: : 0 bundle [00:17, ? bundle/s]
-    - ReadParquet: 0 active, 0 queued, [cpu: 0.0, objects: 3.3GB]: 100%|█| 96/96 [00[A
-    
-    - Filter(is_row_valid)->Map(eval_row)->Filter(<lambda>): 88 active, 0 queued, [c[A[A
-    
-    Running: 0/48 CPU, 0/4 GPU, 6.5GB/13.8GB object_store_memory: : 0 bundle [00:19, ? bundle/s]
-    - ReadParquet: 0 active, 0 queued, [cpu: 0.0, objects: 3.1GB]: 100%|█| 96/96 [00[A
-    
-    Running: 0/48 CPU, 0/4 GPU, 5.9GB/13.8GB object_store_memory: : 0 bundle [00:20, ? bundle/s]
-    - ReadParquet: 0 active, 0 queued, [cpu: 0.0, objects: 2.6GB]: 100%|█| 96/96 [00[A
-    
-    - Filter(is_row_valid)->Map(eval_row)->Filter(<lambda>): 69 active, 0 queued, [c[A[A
-    
-    Running: 0/48 CPU, 0/4 GPU, 5.4GB/13.8GB object_store_memory: : 0 bundle [00:21, ? bundle/s]
-    - ReadParquet: 0 active, 0 queued, [cpu: 0.0, objects: 2.3GB]: 100%|█| 96/96 [00[A
-    
-    - Filter(is_row_valid)->Map(eval_row)->Filter(<lambda>): 61 active, 0 queued, [c[A[A
-    
-    - Filter(is_row_valid)->Map(eval_row)->Filter(<lambda>): 61 active, 0 queued, [c[A[A
-    
-    - Filter(is_row_valid)->Map(eval_row)->Filter(<lambda>): 56 active, 0 queued, [c[A[A
-    
-    Running: 0/48 CPU, 0/4 GPU, 4.1GB/13.8GB object_store_memory: : 0 bundle [00:22, ? bundle/s]
-    - ReadParquet: 0 active, 0 queued, [cpu: 0.0, objects: 2.0GB]: 100%|█| 96/96 [00[A
-    
-    - Filter(is_row_valid)->Map(eval_row)->Filter(<lambda>): 53 active, 0 queued, [c[A[A
-    
-    Running: 0/48 CPU, 0/4 GPU, 4.0GB/13.8GB object_store_memory: : 0 bundle [00:23, ? bundle/s]
-    - ReadParquet: 0 active, 0 queued, [cpu: 0.0, objects: 1.9GB]: 100%|█| 96/96 [00[A
-    
-    Running: 0/48 CPU, 0/4 GPU, 3.5GB/13.8GB object_store_memory: : 0 bundle [00:28, ? bundle/s]
-    - ReadParquet: 0 active, 0 queued, [cpu: 0.0, objects: 1.6GB]: 100%|█| 96/96 [00[A
-    
-    - Filter(is_row_valid)->Map(eval_row)->Filter(<lambda>): 43 active, 0 queued, [c[A[A
-    
-    - Filter(is_row_valid)->Map(eval_row)->Filter(<lambda>): 43 active, 0 queued, [c[A[A
-    - ReadParquet: 0 active, 0 queued, [cpu: 0.0, objects: 1.3GB]: 100%|█| 96/96 [00[A
-    
-    - Filter(is_row_valid)->Map(eval_row)->Filter(<lambda>): 35 active, 0 queued, [c[A[A
-    
-    Running: 0/48 CPU, 0/4 GPU, 2.9GB/13.8GB object_store_memory: : 0 bundle [00:29, ? bundle/s]
-    - ReadParquet: 0 active, 0 queued, [cpu: 0.0, objects: 543.7MB]: 100%|█| 96/96 [[A
-    
-    - Filter(is_row_valid)->Map(eval_row)->Filter(<lambda>): 14 active, 0 queued, [c[A[A
-    
-    Running: 0/48 CPU, 0/4 GPU, 1.9GB/13.8GB object_store_memory: : 0 bundle [00:30, ? bundle/s]
-    - ReadParquet: 0 active, 0 queued, [cpu: 0.0, objects: 77.8MB]: 100%|█| 96/96 [0[A
-    
-    - Filter(is_row_valid)->Map(eval_row)->Filter(<lambda>): 2 active, 0 queued, [cp[A[A
-    
-    Sort Sample 0: 100%|██████████████████████| 96/96 [00:00<00:00, 3999.85 block/s][A[A
-    
-    
-    
-    
-    
-      *- Shuffle Map:   0%|                              | 0/1 [00:32<?, ? bundle/s][A[A[A[A[A
-    
-    
-    
-    
-      *- Shuffle Map:   0%|                             | 0/48 [00:33<?, ? bundle/s][A[A[A[A[A
-    
-    
-    
-    
-      *- Shuffle Map: 100%|████████████████████| 48/48 [00:33<00:00,  1.45 bundle/s][A[A[A[A[A
-    - ReadParquet: 0 active, 0 queued, [cpu: 0.0, objects: 77.8MB]: 100%|█| 96/96 [0[A
-    
-    
-    
-    
-    
-      *- Shuffle Reduce:   0%|                           | 0/1 [00:33<?, ? bundle/s][A[A[A[A[A[A
-    
-    
-    
-    
-    
-      *- Shuffle Reduce: 100%|███████████████████| 1/1 [00:33<00:00, 33.86s/ bundle][A[A[A[A[A[A
-    - ReadParquet: 0 active, 0 queued, [cpu: 0.0, objects: 0.0B]: 100%|█| 96/96 [00:[A
-    
-    - Filter(is_row_valid)->Map(eval_row)->Filter(<lambda>): 0 active, 0 queued, [cp[A[A
-    
-    - Filter(is_row_valid)->Map(eval_row)->Filter(<lambda>): 0 active, 0 queued, [cp[A[A
-    
-    
-    Running: 0/48 CPU, 0/4 GPU, 3.6GB/13.8GB object_store_memory: : 0 bundle [00:34, ? bundle/s]e/s][A[A[A
-    
-    
-    
-    
-    
-    
-    - MapBatches(make_pairs): 41 active, 55 queued, [cpu: 0.0, objects: 10.2GB]: : 0 bundle [00:34, ? bundle/s][A[A[A[A[A[A[A
-    
-    
-    
-    
-    
-    
-    - MapBatches(make_pairs): 90 active, 5 queued, [cpu: 0.0, objects: 5.5MB]: : 0 bundle [00:36, ? bundle/s]  [A[A[A[A[A[A[A
-    
-    
-    - Sort: 0 active, 0 queued, [cpu: 0.0, objects: 3.5GB], 0 output: : 0 bundle [00:36, ? bundle/s][A[A[A
-    
-    
-    - Sort: 0 active, 0 queued, [cpu: 0.0, objects: 3.5GB], 0 output:   0%| | 0/96 [                [A[A[A
-    
-    
-    - Sort: 0 active, 0 queued, [cpu: 0.0, objects: 3.5GB], 0 output: 100%|█| 96/96 [A[A[A
-    
-    
-    
-    
-    
-    
-    Running: 0/48 CPU, 0/4 GPU, 3.2GB/13.8GB object_store_memory: : 0 bundle [00:37, ? bundle/s], ? bundle/s][A[A[A[A[A[A[A
-    
-    
-    - Sort: 0 active, 0 queued, [cpu: 0.0, objects: 3.1GB], 0 output: 100%|█| 96/96 [A[A[A
-    
-    
-    
-    
-    
-    
-    - MapBatches(make_pairs): 75 active, 0 queued, [cpu: 0.0, objects: 8.2MB]: : 0 bundle [00:38, ? bundle/s][A[A[A[A[A[A[A
-    
-    
-    
-    
-    
-    
-    - MapBatches(make_pairs): 75 active, 0 queued, [cpu: 0.0, objects: 8.2MB]:   0%|                         [A[A[A[A[A[A[A
-    
-    
-    
-    
-    
-    
-    Running: 0/48 CPU, 0/4 GPU, 2.8GB/13.8GB object_store_memory:   2%| | 2/96 [00:3            [A[A[A
-    
-    
-    - Sort: 0 active, 0 queued, [cpu: 0.0, objects: 2.7GB], 0 output: 100%|█| 96/96 [A[A[A
-    
-    
-    
-    
-    
-    
-    - MapBatches(make_pairs): 61 active, 0 queued, [cpu: 0.0, objects: 9.1MB]:   2%|[A[A[A[A[A[A[A
-    
-    
-    
-    
-    
-    
-    Running: 0/48 CPU, 0/4 GPU, 2.3GB/13.8GB object_store_memory:   5%| | 5/96 [00:3[A[A[A[A[A[A[A
-    
-    
-    - Sort: 0 active, 0 queued, [cpu: 0.0, objects: 2.2GB], 0 output: 100%|█| 96/96 [A[A[A
-    
-    
-    
-    
-    
-    
-    - MapBatches(make_pairs): 54 active, 0 queued, [cpu: 0.0, objects: 8.5MB]:   5%|[A[A[A[A[A[A[A
-    
-    
-    
-    
-    
-    
-    Running: 0/48 CPU, 0/4 GPU, 1.8GB/13.8GB object_store_memory:  44%|▍| 42/96 [00:[A[A[A[A[A[A[A
-    
-    
-    
-    
-    
-    
-    - MapBatches(make_pairs): 44 active, 0 queued, [cpu: 0.0, objects: 4.8MB]:  16%|[A[A[A[A[A[A[A
-    
-    
-    
-    
-    
-    
-    Running: 0/48 CPU, 0/4 GPU, 1.7GB/13.8GB object_store_memory:  51%|▌| 49/96 [00:[A[A[A[A[A[A[A
-    
-    
-    - Sort: 0 active, 0 queued, [cpu: 0.0, objects: 1.7GB], 0 output: 100%|█| 96/96 [A[A[A
-    
-    
-    
-    
-    
-    
-    Running: 0/48 CPU, 0/4 GPU, 1.5GB/13.8GB object_store_memory:  51%|▌| 49/96 [00:[A[A[A[A[A[A[A
-    
-    
-    - Sort: 0 active, 0 queued, [cpu: 0.0, objects: 1.5GB], 0 output: 100%|█| 96/96 [A[A[A
-    
-    
-    
-    
-    
-    
-    - MapBatches(make_pairs): 11 active, 0 queued, [cpu: 0.0, objects: 4.5MB]:  51%|[A[A[A[A[A[A[A
-    
-    
-    
-    
-    
-    
-    Running: 0/48 CPU, 0/4 GPU, 326.5MB/13.8GB object_store_memory:  55%|▌| 53/96 [0[A[A[A[A[A[A[A
-    
-    
-    ✔️  Dataset execution finished in 46.47 seconds: 100%|█| 96/96 [00:46<00:00,  2.[A[A[A
-    - ReadParquet: 0 active, 0 queued, [cpu: 0.0, objects: 0.0B]: 100%|█| 96/96 [00:
-    - Filter(is_row_valid)->Map(eval_row)->Filter(<lambda>): 0 active, 0 queued, [cp
-    
-    
-    
-    - Sort: 0 active, 0 queued, [cpu: 0.0, objects: 0.0B], 0 output: 100%|█| 96/96 [[A[A[A
-    
-    
-    
-    
-      *- Sort Sample:   0%|                              | 0/1 [00:46<?, ? bundle/s][A[A[A[A
-    
-    
-    
-      *- Sort Sample: : 0 bundle [00:46, ? bundle/s]                                [A[A[A[A
-    
-    
-    
-    
-    
-      *- Shuffle Map:  50%|██████████          | 48/96 [00:46<00:33,  1.45 bundle/s][A[A[A[A[A
-    
-    
-    
-    
-      *- Shuffle Map: 100%|████████████████████| 96/96 [00:46<00:00,  2.07 bundle/s][A[A[A[A[A
-    
-    
-    
-    
-    
-    
-      *- Shuffle Reduce:   1%|▏                 | 1/96 [00:46<53:36, 33.86s/ bundle][A[A[A[A[A[A
-    
-    
-    
-    
-    
-      *- Shuffle Reduce: 100%|█████████████████| 96/96 [00:46<00:00,  2.07 bundle/s][A[A[A[A[A[A
-    
-    
-    
-    
-    
-    
-    
-    - MapBatches(make_pairs): 0 active, 0 queued, [cpu: 0.0, objects: 731.0KB]:  55%[A[A[A[A[A[A[A
-    
-    
-    
-    
-    
-    
-    - MapBatches(make_pairs): 0 active, 0 queued, [cpu: 0.0, objects: 731.0KB]: 100%[A[A[A[A[A[A[A
-    WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
-    I0000 00:00:1723673997.220820  257035 config.cc:230] gRPC experiments enabled: call_status_override_on_cancellation, event_engine_dns, event_engine_listener, http2_stats_fix, monitoring_experiment, pick_first_new, trace_record_callops, work_serializer_clears_time_cache
-    {"asctime": "2024-08-14 15:19:57,782", "levelname": "INFO", "message": "Number of train examples: 57828", "filename": "generate_dpo_data.py", "lineno": 185, "timestamp_ns": 1723673997782789238, "job_id": "20000000", "worker_id": "20000000ffffffffffffffffffffffffffffffffffffffffffffffff", "node_id": "fb2470bca26f28d38012620897ceae9736dc62ea75645f1040983e13"}
-    {"asctime": "2024-08-14 15:19:57,782", "levelname": "INFO", "message": "Number of eval examples: 1181", "filename": "generate_dpo_data.py", "lineno": 186, "timestamp_ns": 1723673997782960211, "job_id": "20000000", "worker_id": "20000000ffffffffffffffffffffffffffffffffffffffffffffffff", "node_id": "fb2470bca26f28d38012620897ceae9736dc62ea75645f1040983e13"}
-    {"asctime": "2024-08-14 15:20:02,538", "levelname": "INFO", "message": "Found credentials from IAM Role: cld_1j41ls4gwkga4pwp8nbql6f239-cluster_node_role", "filename": "credentials.py", "lineno": 550, "timestamp_ns": 1723674002538991859, "job_id": "20000000", "worker_id": "20000000ffffffffffffffffffffffffffffffffffffffffffffffff", "node_id": "fb2470bca26f28d38012620897ceae9736dc62ea75645f1040983e13"}
-
-
 
 ```python
 # Replace with the link to your validation file
@@ -1436,26 +390,6 @@ validation_file = f"s3://air-example-data/preference-tuning-summarization-exampl
 valid_ds = ray.data.read_json(validation_file)
 example_rows = valid_ds.take(1)
 ```
-
-    2024-08-14 15:25:18,568	INFO streaming_executor.py:108 -- Starting execution of Dataset. Full logs are in /tmp/ray/session_2024-08-14_09-50-28_607133_2981/logs/ray-data
-    2024-08-14 15:25:18,569	INFO streaming_executor.py:109 -- Execution plan of Dataset: InputDataBuffer[Input] -> TaskPoolMapOperator[ExpandPaths] -> TaskPoolMapOperator[ReadFiles] -> LimitOperator[limit=1]
-
-
-
-    - ExpandPaths 1: 0 bundle [00:00, ? bundle/s]
-
-
-
-    - ReadFiles 2: 0 bundle [00:00, ? bundle/s]
-
-
-
-    - limit=1 3: 0 bundle [00:00, ? bundle/s]
-
-
-
-    Running 0: 0 bundle [00:00, ? bundle/s]
-
 
 
 ```python
@@ -1638,6 +572,8 @@ We evaluate the baseline model and the trained DPO model on the test set.
 ## Obtain summaries on the test set
 First, we'll need to obtain the summaries (and scores) for both the models on the given test set. 
 
+>  **_NOTE:_**  The configs will by default use H100s for model scoring and summary generation. for faster processing. Feel free to change the accelerator type in [configs/summary_generation](configs/summary_generation/) but note that the speed would be much slower. 
+
 For the baseline model, you can simply run the below command:
 
 
@@ -1645,7 +581,7 @@ For the baseline model, you can simply run the below command:
 !anyscale job submit -f configs/generate_summaries_eval_baseline_job.yaml
 ```
 
-For the fine-tuned DPO model, we provide a dummy config in [configs/summary_generation/mistral_finetuned_eval.yaml](configs/summary_generation/mistral_finetuned_eval.yaml). Make sure to replace `model_id_or_path` for the model inference config with the path to your merged model. 
+For the fine-tuned DPO model, we provide a dummy config in [configs/summary_generation/mistral_finetuned_eval.yaml](configs/summary_generation/mistral_finetuned_eval.yaml). If you used the default training config provided, the model would be trained using LoRA and you should have a path to the LoRA weights. Make sure to download the weights locally (using `aws` or `gcloud` CLI depending on the remote path). Enter the local path to the weights in the config. (Make sure that the weights are in the same directory as the current notebook to be included in the job).  
 
 
 ```python
@@ -1653,9 +589,10 @@ For the fine-tuned DPO model, we provide a dummy config in [configs/summary_gene
 ```
 
     mode: eval
-    input_folder: s3://air-example-data/preference-tuning-summarization-example/qa_generation/qa_annotations_full_test/
+    input_folder: s3://air-example-data/preference-tuning-summarization-example/qa_generation/qa_annotations_full_test
     model_inference_config:
-      model_id_or_path: mistralai/Mistral-7B-Instruct-v0.1 # <---  Add the path to your merged model here
+      model_id_or_path: mistralai/Mistral-7B-Instruct-v0.1
+      adapter_id_or_path: <path to lora model> # <--- Add the local path to your lora weights here
       temperature: 0
       top_p: 0.95
       scaling_config:
@@ -1677,10 +614,62 @@ For the fine-tuned DPO model, we provide a dummy config in [configs/summary_gene
     num_mcq_questions: 5
 
 
+
+```python
+!anyscale job submit -f configs/summary_generation/mistral_finetuned_eval.yaml
+```
+
+In the logs for the above jobs, you should see the final path to the output summaries for both the models. 
+
+Optionally, you can also obtain the summaries and scores for the `gpt-4o` model from OpenAI. Simply run:
+
+
+```python
+!anyscale job submit -f configs/summary_generation/gpt4o_eval.yaml
+```
+
 ## Get Evaluation Statistics
 
-We've provided a convenient script `src/scripts/get_eval_stats.py` to get evaluation statistics and obtain the "win rate" of the DPO model (the percentage of times the DPO model performs better than the baseline). We've provided an example configuration below. Make sure to substitute the model results path 
+We've provided a convenient script `src/scripts/get_eval_stats.py` to get evaluation statistics and obtain the "win rate" of the DPO model (the percentage of times the DPO model performs better than the baseline). We've provided an example configuration below. 
 
-# Step 4: Iterative-DPO (optional)
 
-TODO
+```python
+# make sure to substitute -outputs-path with your path
+!python src/scripts/get_eval_stats.py --outputs-path s3://air-example-data/preference-tuning-summarization-example/summary_generation_dpo_model/test/ --baseline-outputs-path s3://air-example-data/preference-tuning-summarization-example/summary_generation_base/test/  
+
+# (Optional): if you obtained results for GPT-4o, you should uncomment and run the following command instead
+# !python src/scripts/get_eval_stats.py --outputs-path s3://air-example-data/preference-tuning-summarization-example/summary_generation_dpo_model/test/ --baseline-outputs-path s3://air-example-data/preference-tuning-summarization-example/summary_generation_base/test/  --gpt4o-outputs-path <add-path-to-gpt4o-results>
+```
+
+You should see the following results:
+
+```text 
+╒═════════════════════════╤═══════════╤════════════╤═══════════╕
+│         Metric          │   Model   │  Baseline  │  GPT-4o   │
+╞═════════════════════════╪═══════════╪════════════╪═══════════╡
+│      Accuracy >=3       │ 65.4286 % │ 43.0476 %  │ 37.2381 % │
+├─────────────────────────┼───────────┼────────────┼───────────┤
+│      Accuracy >=4       │ 25.7143 % │ 13.5238 %  │ 10.0000 % │
+├─────────────────────────┼───────────┼────────────┼───────────┤
+│   Median Compression    │ 11.5794 % │ 12.7316 %  │ 8.0496 %  │
+├─────────────────────────┼───────────┼────────────┼───────────┤
+│    Mean Compression     │ 13.0029 % │ 14.3444 %  │ 9.3554 %  │
+├─────────────────────────┼───────────┼────────────┼───────────┤
+│   Failed Compressions   │ 0.0000 %  │  0.0000 %  │ 0.0000 %  │
+├─────────────────────────┼───────────┼────────────┼───────────┤
+│ Contains OOD Characters │ 0.0000 %  │  0.0952 %  │ 0.0000 %  │
+╘═════════════════════════╧═══════════╧════════════╧═══════════╛
+
+
+Model Win Rate against Baseline: 74.0000 %
+GPT-4o Win Rate against Baseline: 64.8095 %
+```
+
+Our fine-tuned model is able to generate much better summaries, that are more concise (compression ratio is lower) with lesser out-of-distribution characters (gibberish tokens) than the baseline. You can see more details on the same in our blog!
+
+## Summary
+
+Congrats! You have now fine-tuned an open source model on preference data. As a quick recap, here's what we demonstrated in this notebook:
+1. Synthetically generating preference data for DPO 
+2. DPO fine-tuning of a language model on the Anyscale Platform
+4. Evaluating the model against the baseline and GPT-4o, and analysing the results.

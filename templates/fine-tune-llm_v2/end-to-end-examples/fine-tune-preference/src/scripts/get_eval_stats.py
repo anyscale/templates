@@ -3,7 +3,7 @@ Get evaluation statistics based on scores for the model-generated summaries
 """
 import argparse
 import os
-from typing import Dict, Any, Tuple
+from typing import Dict, Any, Tuple, Optional
 
 import numpy as np
 import pandas as pd
@@ -25,9 +25,15 @@ parser.add_argument(
 parser.add_argument(
     "--baseline-outputs-path",
     type=str,
+    required=True,
+    help="Path to the folder with parquets for the baseline model to find win rate against.",
+)
+parser.add_argument(
+    "--gpt4o-outputs-path",
+    default=None,
+    type=str,
     required=False,
-    default=f"{os.environ['ANYSCALE_ARTIFACT_STORAGE']}/preference_tuning_summarization_example/summary_eval_generation_mistralai_Mistral-7B-Instruct-v0.1_temp_0_judge_meta-llama_Meta-Llama-3.1-70B-Instruct/",
-    help="Path to the folder with parquets for the baselien model to find win rate against.",
+    help="Path to the folder with parquets for GPT-4o model. This is optional",
 )
 
 parser.add_argument(
@@ -38,9 +44,6 @@ parser.add_argument(
     help="Path to the results folder.",
 )
 parser.add_argument("--accuracy-threshold", default=3, type=int, help="Score threshold to classify chosen and rejected samples.")
-
-parser.add_argument("--disable-csv", action="store_true")
-
 
 def is_row_valid(row: Dict[str, Any]):
     return not (
@@ -61,7 +64,6 @@ def eval_row(row):
             num_bad_chars=check_num_bad_chars(
                 row[DataSchema.SUMMARY_GENERATION_RAW_OUTPUT], normalize=True
             ),
-            # accuracy_filtered = sum(row["qa_generation_answers"][i] == row["judge_mc_answers"][i] for i in good_questions) / len(good_questions),
         )
 
 def compare(acc1: float, num1: int, acc2: float, num2: int, *, accuracy_threshold) -> bool:
@@ -92,27 +94,46 @@ def get_model_stats(merged_results: pd.DataFrame, suffix: str) -> Dict[str, floa
         "Contains OOD Characters": np.mean(merged_results[f"num_bad_chars{suffix}"] > 0),
     })
 
-def calculate_statistics(results: pd.DataFrame, baseline_results: pd.DataFrame, accuracy_threshold: int) -> Tuple[pd.DataFrame, float]:
-    merged_results = pd.merge(results, baseline_results, on="text", suffixes=("_x", "_y"))
 
+def get_win_rate(merged_results: pd.DataFrame, suffix1: str, suffix2: str) -> float:
     wins = [compare(*vals, accuracy_threshold=accuracy_threshold)
-            for vals in zip(merged_results[f"{DataSchema.ACCURACY}_x"],
-                            merged_results[f"{DataSchema.NUM_WORDS}_x"],
-                            merged_results[f"{DataSchema.ACCURACY}_y"],
-                            merged_results[f"{DataSchema.NUM_WORDS}_y"])]
+            for vals in zip(merged_results[f"{DataSchema.ACCURACY}{suffix1}"],
+                            merged_results[f"{DataSchema.NUM_WORDS}{suffix1}"],
+                            merged_results[f"{DataSchema.ACCURACY}{suffix2}"],
+                            merged_results[f"{DataSchema.NUM_WORDS}{suffix2}"])]
 
     losses = [compare(*vals, accuracy_threshold=accuracy_threshold)
-              for vals in zip(merged_results[f"{DataSchema.ACCURACY}_y"],
-                              merged_results[f"{DataSchema.NUM_WORDS}_y"],
-                              merged_results[f"{DataSchema.ACCURACY}_x"],
-                              merged_results[f"{DataSchema.NUM_WORDS}_x"])]
+              for vals in zip(merged_results[f"{DataSchema.ACCURACY}{suffix2}"],
+                              merged_results[f"{DataSchema.NUM_WORDS}{suffix2}"],
+                              merged_results[f"{DataSchema.ACCURACY}{suffix1}"],
+                              merged_results[f"{DataSchema.NUM_WORDS}{suffix1}"])]
 
     win_rate = np.mean(wins) + 0.5 * (1 - np.mean(wins) - np.mean(losses))
-    stats_df = pd.DataFrame({
+    return 100*win_rate
+
+def calculate_statistics(results: pd.DataFrame, baseline_results: pd.DataFrame, gpt_4o_results: Optional[pd.DataFrame], accuracy_threshold: int) -> Tuple[pd.DataFrame, Dict[str, float]]:
+    merge_col = DataSchema.ARTICLE
+    merged_results = pd.merge(results, baseline_results, on=merge_col, suffixes=("_x", "_y"))
+    if gpt_4o_results is not None:
+        gpt_4o_results = gpt_4o_results.rename(columns= {col: f"{col}_z" for col in gpt_4o_results.columns if col != merge_col})
+        merged_results = pd.merge(merged_results, gpt_4o_results, on=merge_col, suffixes=(None, "_"))
+
+    # stores win rates against the baseline model
+    win_rates = {"Model": get_win_rate(merged_results, suffix1="_x", suffix2="_y")}
+
+    cols = {
         "Model": get_model_stats(merged_results, "_x"),
         "Baseline": get_model_stats(merged_results, "_y"),
-    })
-    return stats_df, win_rate
+    }
+    if gpt_4o_results is not None:
+        cols.update({
+            "GPT-4o": get_model_stats(merged_results, "_z")
+        })
+        win_rates.update({
+            "GPT-4o": get_win_rate(merged_results, suffix1="_z", suffix2="_y")
+        })
+    stats_df = pd.DataFrame(cols)
+    return stats_df, win_rates
 
 def format_dataframe(df: pd.DataFrame) -> str:
     """Formats the dataframe into a string"""
@@ -124,23 +145,33 @@ def format_dataframe(df: pd.DataFrame) -> str:
 
     return table
 
+def preprocess_ray_ds_for_eval(ds: ray.data.Dataset) -> pd.DataFrame:
+    ds = ds.filter(is_row_valid)
+    ds = ds.map(eval_row)
+    results = ds.to_pandas()
+    return results
+
 if __name__ == "__main__":
     args = parser.parse_args()
 
     ds = ray.data.read_parquet(args.outputs_path, file_extensions=["parquet"])
     ds_baseline = ray.data.read_parquet(args.baseline_outputs_path, file_extensions=["parquet"])
-    ds = ds.filter(is_row_valid)
-    ds = ds.map(eval_row)
-    results = ds.to_pandas()
 
-    ds_baseline = ds_baseline.filter(is_row_valid)
-    ds_baseline = ds_baseline.map(eval_row)
-    results_baseline = ds_baseline.to_pandas()
+    results = preprocess_ray_ds_for_eval(ds)
+
+    results_baseline = preprocess_ray_ds_for_eval(ds_baseline)
+
+    results_ds_gpt4o = None
+    if args.gpt4o_outputs_path:
+        ds_gpt4o = ray.data.read_parquet(args.gpt4o_outputs_path, file_extensions=["parquet"])
+        results_ds_gpt4o = preprocess_ray_ds_for_eval(ds_gpt4o)
 
     print("Num Results:", len(results))
     print("Num Baseline Results:", len(results_baseline))
 
     accuracy_threshold = args.accuracy_threshold
-    stats_df, win_rate = calculate_statistics(results=results, baseline_results=results_baseline, accuracy_threshold=accuracy_threshold)
+    stats_df, win_rates = calculate_statistics(results=results, baseline_results=results_baseline, gpt_4o_results=results_ds_gpt4o, accuracy_threshold=accuracy_threshold)
     print(format_dataframe(stats_df))
-    print("\n\nModel Win Rate: ", win_rate)
+    print("\n")
+    for name, win_rate in win_rates.items():
+        print(f"{name} Win Rate against Baseline: {win_rate:.4f} %")
