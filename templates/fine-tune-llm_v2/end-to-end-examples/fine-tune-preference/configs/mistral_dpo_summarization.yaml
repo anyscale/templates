@@ -25,7 +25,7 @@ preference_tuning_config:
   logprob_processor_scaling_config:
     custom_resources:
       accelerator_type:A10G: 1
-    concurrency: 2 # <--- runs reference model logp calculation on 2 GPUs
+    concurrency: 4 # <--- runs reference model logp calculation on 4 GPUs
     batch_size: 2
 lora_config:
   r: 8

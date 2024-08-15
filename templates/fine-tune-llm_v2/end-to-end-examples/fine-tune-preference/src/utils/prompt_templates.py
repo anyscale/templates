@@ -1,3 +1,5 @@
+from src.utils.models import DataSchema
+
 PROMPT_TEMPLATE_QUESTION_GENERATION = """Given the following text, generate five multiple choice questions with the following format. The questions must be simple enough to be answerable with only general important details that would be included in a short two sentence summary of the text. The questions must be only answerable when given the text and should not be answerable with common knowledge. Do not write questions about minute details in the text, only the most important points.
 
 Format:
@@ -33,11 +35,11 @@ PROMPT_TEMPLATE_MCQ_ANSWERING = """You will be given a text passage followed by 
 
 Here is the text:
 
-{summary_generation_raw_model_output}
+{{{SUMMARY_GENERATION_RAW_OUTPUT}}}
 
 Here are the questions:
 
-{qa_generation_questions}
+{{{MCQ_QUESTIONS}}}
 
 Carefully read the text and each question. For each question:
 
@@ -56,4 +58,4 @@ Remember:
 - Only use information explicitly stated in the given text.
 - Do not make inferences or use external knowledge.
 - If the text does not provide enough information to answer a question confidently, respond with "Unsure."
-- Provide only the letter of the correct answer (A, B, C, etc.) or "Unsure." for each question."""
+- Provide only the letter of the correct answer (A, B, C, etc.) or "Unsure." for each question.""".format(**DataSchema.get_all_items())

@@ -1,6 +1,5 @@
 mode: eval
-# TODO: replace with a input folder in air example data
-input_folder: s3://anyscale-production-data-cld-hph1wut9q59u5n6pqjvvgazkv4/org_4snvy99zwbmh4gbtk64jfqggmj/cld_hph1wut9q59u5n6pqjvvgazkv4/artifact_storage/preference_tuning_summarization_example/qa_annotations_full_test
+input_folder: s3://air-example-data/preference-tuning-summarization-example/qa_generation/qa_annotations_full_test
 model_inference_config:
   model_id_or_path: mistralai/Mistral-7B-Instruct-v0.1 # <---  Add the path to your merged model here
   temperature: 0

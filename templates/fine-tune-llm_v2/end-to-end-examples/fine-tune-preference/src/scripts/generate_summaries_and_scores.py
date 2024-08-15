@@ -131,8 +131,8 @@ if __name__ == "__main__":
     ds = ray.data.read_parquet(config.input_folder, file_extensions=["parquet"])
 
     ds = ds.filter(
-        lambda row: row[DataSchema.GROUND_TRUTH_MCQ_ANSWERS_FIELD] is not None
-        and len(row[DataSchema.GROUND_TRUTH_MCQ_ANSWERS_FIELD]) == config.num_mcq_questions,
+        lambda row: row[DataSchema.GROUND_TRUTH_MCQ_ANSWERS] is not None
+        and len(row[DataSchema.GROUND_TRUTH_MCQ_ANSWERS]) == config.num_mcq_questions,
         num_cpus=0,
     )
 
@@ -151,7 +151,7 @@ if __name__ == "__main__":
             template=PROMPT_TEMPLATE_SUMMARY,
             type=config.inference_type,
             tokenizer=tokenizer,
-            col_name=DataSchema.SUMMARY_GENERATION_INPUT_FIELD,
+            col_name=DataSchema.SUMMARY_GENERATION_INPUT,
         ),
         num_cpus=0,
     )
@@ -165,7 +165,7 @@ if __name__ == "__main__":
             ),
             num_cpus=0,
         )
-    ds = get_predictions_on_dataset(ds, model_config, col_in=DataSchema.SUMMARY_GENERATION_INPUT_FIELD, col_out="summary_generation_raw_model_output")
+    ds = get_predictions_on_dataset(ds, model_config, col_in=DataSchema.SUMMARY_GENERATION_INPUT, col_out=DataSchema.SUMMARY_GENERATION_RAW_OUTPUT)
 
     # Input pre-processing for the judge model
     tokenizer_id_or_path = (
@@ -179,18 +179,18 @@ if __name__ == "__main__":
         fn_kwargs=dict(
             template=PROMPT_TEMPLATE_MCQ_ANSWERING,
             tokenizer=tokenizer,
-            col_name=DataSchema.JUDGE_MCQ_INPUT_FIELD,
+            col_name=DataSchema.JUDGE_MCQ_INPUT,
         ),
         num_cpus=0,
     )
     # Get scores
-    ds = get_predictions_on_dataset(ds, judge_config, col_in=DataSchema.JUDGE_MCQ_INPUT_FIELD, col_out=DataSchema.JUDGE_MCQ_RAW_OUTPUT_FIELD)
+    ds = get_predictions_on_dataset(ds, judge_config, col_in=DataSchema.JUDGE_MCQ_INPUT, col_out=DataSchema.JUDGE_MCQ_RAW_OUTPUT)
 
     ds = ds.map(
         extract_answers,
         fn_kwargs=dict(
-            col_in=DataSchema.JUDGE_MCQ_RAW_OUTPUT_FIELD,
-            col_out=DataSchema.JUDGE_MCQ_ANSWERS_FIELD,
+            col_in=DataSchema.JUDGE_MCQ_RAW_OUTPUT,
+            col_out=DataSchema.JUDGE_MCQ_ANSWERS,
             num_questions=config.num_mcq_questions,
         ),
         num_cpus=0,

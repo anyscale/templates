@@ -1,20 +1,33 @@
 from typing import Any, Dict, Optional
 import yaml
-from dataclasses import dataclass
 
 import numpy as np
 from pydantic import BaseModel, ConfigDict, Field
 
-@dataclass
 class DataSchema:
-    SUMMARY_GENERATION_RAW_OUTPUT_FIELD = "summary_generation_raw_model_output"
-    JUDGE_MCQ_ANSWERS_FIELD = "judge_mc_answers"
-    NUM_WORDS_FIELD = "num_words"
-    ACCURACY_FIELD = "accuracy"
-    GROUND_TRUTH_MCQ_ANSWERS_FIELD = "qa_generation_answers"
-    JUDGE_MCQ_RAW_OUTPUT_FIELD = "judge_mc_raw_model_output"
-    JUDGE_MCQ_INPUT_FIELD = "judge_mc_prompt"
-    SUMMARY_GENERATION_INPUT_FIELD = "summary_generation_prompt"
+    ARTICLE = "text"
+    SUMMARY_GENERATION_RAW_OUTPUT = "summary_generation_raw_model_output"
+    JUDGE_MCQ_ANSWERS = "judge_mc_answers"
+    NUM_WORDS = "num_words"
+    ACCURACY = "accuracy"
+    QA_GENERATION_PROMPT = "qa_generation_prompt"
+    QA_GENERATION_RAW_OUTPUT = "qa_generation_raw_model_output"
+    MCQ_QUESTIONS = "qa_generation_questions"
+    GROUND_TRUTH_MCQ_ANSWERS = "qa_generation_answers"
+    JUDGE_MCQ_RAW_OUTPUT = "judge_mc_raw_model_output"
+    JUDGE_MCQ_INPUT = "judge_mc_prompt"
+    SUMMARY_GENERATION_INPUT = "summary_generation_prompt"
+
+    @classmethod
+    def get_all_items(cls):
+        return {key: value for key, value in vars(cls).items()
+                if not key.startswith("__") and not callable(getattr(cls, key))}
+
+    @classmethod
+    def get_all_values(cls):
+        return [value for key, value in vars(cls).items()
+                if not key.startswith("__") and not callable(getattr(cls, key))]
+
 
 class BaseModelExtended(BaseModel):
     # NOTE: We use attributes such as model_id, etc which start with model_, a protected namespace in pydantic
