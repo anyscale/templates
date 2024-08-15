@@ -26,7 +26,6 @@ from src.utils.common import init_logger
 
 logger = init_logger()
 
-# New columns
 parser = argparse.ArgumentParser()
 
 class QuestionGenerationConfig(BaseModelExtended):

@@ -55,7 +55,6 @@ def normalize_string(text: str) -> str:
     return "".join(c for c in nkfd_form if not unicodedata.combining(c))
 
 
-# TODO: check if needed
 def check_num_bad_chars(text: str, normalize: bool = False) -> int:
     if normalize:
         text = normalize_string(text)
