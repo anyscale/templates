@@ -3,22 +3,15 @@ Utilities for synthetic data generation
 """
 
 import json
-import logging
 import os
 import random
 import re
-import time
-import unicodedata
 from enum import Enum
-from operator import is_
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
-import openai
-import requests
 from huggingface_hub import repo_exists, snapshot_download
 from openai import OpenAI
-from pydantic import BaseModel, Field
 from transformers import PreTrainedTokenizerBase
 from vllm import LLM, SamplingParams
 from vllm.lora.request import LoRARequest
@@ -145,7 +138,6 @@ def write_questions(questions, letter_choices=("A", "B", "C", "D", "E")):
         options = list(question["choices"].items())
         random.shuffle(options)
         for j in range(len(letter_choices)):
-
             orig_letter, choice_text = options[j]
 
             if orig_letter == question["answer"]:
@@ -162,7 +154,7 @@ def shuffle_qa(row, col_in, col_out_prompt, col_out_answers):
             process_question(row[col_in])
         )
         return [row]
-    except Exception as e:
+    except Exception:
         return []
 
 

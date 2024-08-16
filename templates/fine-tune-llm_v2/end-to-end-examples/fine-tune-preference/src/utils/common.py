@@ -9,7 +9,6 @@ from typing import Any, Dict, List
 
 import openai
 from openai import OpenAI
-from pydantic import BaseModel, ConfigDict
 
 MODEL_HOME = "/mnt/local_storage/.cache/huggingface/"
 HF_TOKEN_CACHE_PATH = "/mnt/local_storage/data/cache/huggingface/token"
@@ -69,7 +68,7 @@ def get_completion(
     tools: List[Dict[str, Any]] = None,
     temperature: float = 0.0,
     max_tokens: int = 256,
-) -> "ChatCompletion":
+) -> "ChatCompletion": # noqa: F821
     """
     Gets completion from the OpenAI ChatCompletion API for the provided OpenAI client and model.
 

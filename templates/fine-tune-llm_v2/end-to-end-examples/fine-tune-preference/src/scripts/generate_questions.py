@@ -3,21 +3,18 @@ Generates questions and answers to each article in the dataset using an LLM
 """
 
 import argparse
-import logging
 import os
 import re
 
 import datasets
 import ray
-from pydantic import BaseModel, Field
+from pydantic import Field
 from transformers import AutoTokenizer
 
 from src.utils.common import init_logger
 from src.utils.models import BaseModelExtended, DataSchema, OfflineInferenceConfig
 from src.utils.prompt_templates import PROMPT_TEMPLATE_QUESTION_GENERATION
 from src.utils.synthetic_data_utils import (
-    InferenceType,
-    OfflinePredictor,
     format_into_prompt_rawtext,
     get_predictions_on_dataset,
     shuffle_qa,
