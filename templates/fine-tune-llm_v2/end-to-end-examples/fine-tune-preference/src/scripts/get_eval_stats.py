@@ -111,13 +111,13 @@ def get_model_stats(merged_results: pd.DataFrame, suffix: str) -> pd.Series:
             "Mean Compression": np.mean(
                 merged_results[f"{DataSchema.NUM_WORDS}{suffix}"] / lens
             ),
-            "Failed Compressions": np.mean(
+            "Summary Too Long": np.mean(
                 merged_results[
                     f"{DataSchema.SUMMARY_GENERATION_RAW_OUTPUT}{suffix}"
                 ].str.len()
                 >= merged_results["text"].str.len()
             ),
-            "Contains OOD Characters": np.mean(
+            "Contains Invalid Characters": np.mean(
                 merged_results[f"num_bad_chars{suffix}"] > 0
             ),
         }
