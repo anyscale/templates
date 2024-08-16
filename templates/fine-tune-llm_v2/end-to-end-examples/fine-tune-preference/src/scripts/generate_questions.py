@@ -12,7 +12,9 @@ from pydantic import Field
 from transformers import AutoTokenizer
 
 from src.utils.common import init_logger
-from src.utils.models import BaseModelExtended, DataSchema, OfflineInferenceConfig
+from src.utils.models import (
+    BaseModelExtended, DataSchema, OfflineInferenceConfig
+)
 from src.utils.prompt_templates import PROMPT_TEMPLATE_QUESTION_GENERATION
 from src.utils.synthetic_data_utils import (
     format_into_prompt_rawtext,
