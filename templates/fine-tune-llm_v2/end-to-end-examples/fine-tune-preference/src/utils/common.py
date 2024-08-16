@@ -68,7 +68,7 @@ def get_completion(
     tools: List[Dict[str, Any]] = None,
     temperature: float = 0.0,
     max_tokens: int = 256,
-) -> "ChatCompletion": # noqa: F821
+) -> "ChatCompletion":  # noqa: F821
     """
     Gets completion from the OpenAI ChatCompletion API for the provided OpenAI client and model.
 

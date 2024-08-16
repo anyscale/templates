@@ -283,7 +283,7 @@ The following command will run the `TODO` script, which takes in the folder of q
 ```python
 !anyscale job submit -f configs/jobs/8b_judge/generate_summaries_train_job.yaml 
 # Optional: use the 70b model for better performance (runs on A100s)
-# !anyscale job submit -f configs/jobs/70b_judge/generate_summaries_train_job.yaml 
+# !anyscale job submit -f configs/jobs/70b_judge/generate_summaries_train_job.yaml
 ```
 
     [1m[36mOutput[0m[0m

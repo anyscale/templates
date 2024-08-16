@@ -52,6 +52,10 @@ parser.add_argument(
 
 
 def is_row_valid(row: Dict[str, Any]):
+    """Checks if the row is valid.
+
+    Returns whether the row is a valid entry with expected non-null value and valid judge output.
+    """
     return not (
         row[DataSchema.SUMMARY_GENERATION_RAW_OUTPUT] is None
         or row[DataSchema.GROUND_TRUTH_MCQ_ANSWERS] is None
@@ -60,7 +64,11 @@ def is_row_valid(row: Dict[str, Any]):
     )
 
 
-def eval_row(row):
+def eval_row(row: Dict[str, Any]) -> Dict[str, Any]:
+    """Evaluates a row
+
+    Computes length of the summary and accuracy of judge responses based on the summary.
+    """
     return dict(
         **row,
         num_words=len(row[DataSchema.SUMMARY_GENERATION_RAW_OUTPUT].split()),
@@ -96,6 +104,12 @@ def compare(
 
 
 def get_model_stats(merged_results: pd.DataFrame, suffix: str) -> pd.Series:
+    """Get evaluation statitics for the model with the give suffix label
+
+    Args:
+        merged_results: The dataframe with the final merged results
+        suffix: Suffix label for columns corresonding to the given model assigned at the merge stage.
+    """
     lens = np.array([len(row["text"].split()) for _, row in merged_results.iterrows()])
     return pd.Series(
         {
@@ -124,7 +138,19 @@ def get_model_stats(merged_results: pd.DataFrame, suffix: str) -> pd.Series:
     )
 
 
-def get_win_rate(merged_results: pd.DataFrame, suffix1: str, suffix2: str) -> float:
+def get_win_rate(
+    merged_results: pd.DataFrame, suffix1: str, suffix2: str, accuracy_threshold: int
+) -> float:
+    """Returns the win rate based on the merged results.
+
+    Win rate calculated is for the first model over the second model.
+
+    Args:
+        merged_results: The dataframe with the final merged results
+        suffix1:  Suffix label for columns corresonding to the first model
+        suffix2:  Suffix label for columns corresonding to the second model
+        accuracy_threshold: Score threshold to classify chosen and rejected samples.
+    """
     wins = [
         compare(*vals, accuracy_threshold=accuracy_threshold)
         for vals in zip(
@@ -155,6 +181,7 @@ def calculate_statistics(
     gpt_4o_results: Optional[pd.DataFrame],
     accuracy_threshold: int,
 ) -> Tuple[pd.DataFrame, Dict[str, float]]:
+    """Calculates the evaluation statistics for the given models"""
     merge_col = DataSchema.ARTICLE
     merged_results = pd.merge(
         results, baseline_results, on=merge_col, suffixes=("_x", "_y")
@@ -170,7 +197,14 @@ def calculate_statistics(
         )
 
     # stores win rates against the baseline model
-    win_rates = {"Model": get_win_rate(merged_results, suffix1="_x", suffix2="_y")}
+    win_rates = {
+        "Model": get_win_rate(
+            merged_results,
+            suffix1="_x",
+            suffix2="_y",
+            accuracy_threshold=accuracy_threshold,
+        )
+    }
 
     cols = {
         "Model": get_model_stats(merged_results, "_x"),
@@ -179,7 +213,14 @@ def calculate_statistics(
     if gpt_4o_results is not None:
         cols.update({"GPT-4o": get_model_stats(merged_results, "_z")})
         win_rates.update(
-            {"GPT-4o": get_win_rate(merged_results, suffix1="_z", suffix2="_y")}
+            {
+                "GPT-4o": get_win_rate(
+                    merged_results,
+                    suffix1="_z",
+                    suffix2="_y",
+                    accuracy_threshold=accuracy_threshold,
+                )
+            }
         )
     stats_df = pd.DataFrame(cols)
     return stats_df, win_rates
@@ -199,6 +240,7 @@ def format_dataframe(df: pd.DataFrame) -> str:
 
 
 def preprocess_ray_ds_for_eval(ds: ray.data.Dataset) -> pd.DataFrame:
+    """Preprocess the input dataset into a dataframe for evaluation"""
     ds = ds.filter(is_row_valid)
     ds = ds.map(eval_row)
     results = ds.to_pandas()
