@@ -16,20 +16,26 @@ import yaml
 from pydantic import Field, model_validator
 from transformers import AutoTokenizer
 
-from src.utils.models import OfflineInferenceConfig, OnlineInferenceConfig, BaseModelExtended, DataSchema
+from src.utils.common import init_logger
+from src.utils.models import (
+    BaseModelExtended,
+    DataSchema,
+    OfflineInferenceConfig,
+    OnlineInferenceConfig,
+)
 from src.utils.prompt_templates import (
     PROMPT_TEMPLATE_MCQ_ANSWERING,
     PROMPT_TEMPLATE_SUMMARY,
 )
 from src.utils.synthetic_data_utils import (
     InferenceType,
+    dump_jsonl_to_string,
     duplicate_rows,
     extract_answers,
     format_into_prompt,
     format_into_prompt_rawtext,
     get_predictions_on_dataset,
 )
-from src.utils.common import init_logger
 
 logger = init_logger()
 
@@ -115,12 +121,18 @@ if __name__ == "__main__":
             ]
         }
     )
+    if (
+        config.inference_type == InferenceType.ONLINE
+        and config.model_inference_config.api_key_env_var
+    ):
+        env_var = config.model_inference_config.api_key_env_var
+        assert (
+            os.environ.get(env_var) is not None
+        ), f"Please set the environment variable {env_var} for online inference"
     ray.init(
         runtime_env={
             "env_vars": {
-                "HF_TOKEN": os.environ["HF_TOKEN"],
                 "HF_HOME": "/mnt/local_storage/.cache/huggingface",
-                **env_vars,
             },
         },
         logging_config=ray.LoggingConfig(log_level="INFO"),
@@ -165,7 +177,12 @@ if __name__ == "__main__":
             ),
             num_cpus=0,
         )
-    ds = get_predictions_on_dataset(ds, model_config, col_in=DataSchema.SUMMARY_GENERATION_INPUT, col_out=DataSchema.SUMMARY_GENERATION_RAW_OUTPUT)
+    ds = get_predictions_on_dataset(
+        ds,
+        model_config,
+        col_in=DataSchema.SUMMARY_GENERATION_INPUT,
+        col_out=DataSchema.SUMMARY_GENERATION_RAW_OUTPUT,
+    )
 
     # Input pre-processing for the judge model
     tokenizer_id_or_path = (
@@ -184,7 +201,12 @@ if __name__ == "__main__":
         num_cpus=0,
     )
     # Get scores
-    ds = get_predictions_on_dataset(ds, judge_config, col_in=DataSchema.JUDGE_MCQ_INPUT, col_out=DataSchema.JUDGE_MCQ_RAW_OUTPUT)
+    ds = get_predictions_on_dataset(
+        ds,
+        judge_config,
+        col_in=DataSchema.JUDGE_MCQ_INPUT,
+        col_out=DataSchema.JUDGE_MCQ_RAW_OUTPUT,
+    )
 
     ds = ds.map(
         extract_answers,
@@ -195,8 +217,12 @@ if __name__ == "__main__":
         ),
         num_cpus=0,
     )
-    breakpoint()
-
+    if config.inference_type == InferenceType.ONLINE:
+        # Dumps input prompt in Openai jsonl format to string. This is because pyarrow might not support this dtype
+        ds = ds.map(
+            dump_jsonl_to_string,
+            fn_kwargs=dict(col=DataSchema.SUMMARY_GENERATION_INPUT),
+        )
     ds.write_parquet(output_folder)
 
     logger.info(f"Dataset saved at: {output_folder}")

@@ -1,16 +1,17 @@
 import logging
 import os
 import random
+import re
 import string
 import time
-from typing import Any, Dict, List
-import re
 import unicodedata
+from typing import Any, Dict, List
 
 import openai
 from openai import OpenAI
 from pydantic import BaseModel, ConfigDict
 
+MODEL_HOME = "/mnt/local_storage/.cache/huggingface/"
 HF_TOKEN_CACHE_PATH = "/mnt/local_storage/data/cache/huggingface/token"
 HF_TOKEN_LOCAL_PATH = "huggingface_token.txt"
 
@@ -59,6 +60,7 @@ def check_num_bad_chars(text: str, normalize: bool = False) -> int:
     if normalize:
         text = normalize_string(text)
     return len(pattern.findall(text))
+
 
 def get_completion(
     client: OpenAI,

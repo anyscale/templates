@@ -1,5 +1,5 @@
-input_folder: s3://air-example-data/preference-tuning-summarization-example/summary_generation_base/train
-max_pairs_per_article: 3
-train_val_split: 0.02
-accuracy_threshold: 3
-output_folder: my_user_name/dpo_training_data # <---- replace with your username. Output folder is created in shared artifact storage
+input_folder: s3://air-example-data/preference-tuning-summarization-example/summary_generation_base/train # Full path to the input folder
+max_pairs_per_article: 3  # Maximum number of chosen, rejected pairs to sample per article.
+train_val_split: 0.02 # Train validation split ratio
+accuracy_threshold: 3 # Number of Ray data blocks per GPU device. If unsure, use the default value
+output_folder: dpo_training_data # <---- Output folder is created in shared artifact storage

@@ -1,8 +1,9 @@
 from typing import Any, Dict, Optional
-import yaml
 
 import numpy as np
+import yaml
 from pydantic import BaseModel, ConfigDict, Field
+
 
 class DataSchema:
     ARTICLE = "text"
@@ -20,13 +21,19 @@ class DataSchema:
 
     @classmethod
     def get_all_items(cls):
-        return {key: value for key, value in vars(cls).items()
-                if not key.startswith("__") and not callable(getattr(cls, key))}
+        return {
+            key: value
+            for key, value in vars(cls).items()
+            if not key.startswith("__") and not callable(getattr(cls, key))
+        }
 
     @classmethod
     def get_all_values(cls):
-        return [value for key, value in vars(cls).items()
-                if not key.startswith("__") and not callable(getattr(cls, key))]
+        return [
+            value
+            for key, value in vars(cls).items()
+            if not key.startswith("__") and not callable(getattr(cls, key))
+        ]
 
 
 class BaseModelExtended(BaseModel):

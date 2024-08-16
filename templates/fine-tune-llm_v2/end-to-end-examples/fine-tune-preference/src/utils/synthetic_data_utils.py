@@ -1,15 +1,17 @@
 """
 Utilities for synthetic data generation
 """
+
+import json
 import logging
 import os
 import random
 import re
-import string
 import time
 import unicodedata
 from enum import Enum
-from typing import Any, Dict, List, Optional, Union, TYPE_CHECKING, Tuple
+from operator import is_
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 import openai
@@ -21,8 +23,9 @@ from transformers import PreTrainedTokenizerBase
 from vllm import LLM, SamplingParams
 from vllm.lora.request import LoRARequest
 
-from src.utils.models import OfflineInferenceConfig, OnlineInferenceConfig
 from src.utils.common import get_completion, init_logger
+from src.utils.download import download_to_local, is_remote_path
+from src.utils.models import OfflineInferenceConfig, OnlineInferenceConfig
 
 if TYPE_CHECKING:
     from ray.data import Dataset
@@ -31,6 +34,7 @@ logger = init_logger()
 
 # TODO: See if this parameter can be removed entirely
 VLLM_MAX_MODEL_LEN = 8192
+
 
 class InferenceType(Enum):
     ONLINE = "online"
@@ -78,7 +82,9 @@ def format_into_prompt_rawtext(
     return row
 
 
-def duplicate_rows(row: Dict[str, Any], count: int, id_col: str) -> List[Dict[str, Any]]:
+def duplicate_rows(
+    row: Dict[str, Any], count: int, id_col: str
+) -> List[Dict[str, Any]]:
     """Duplicates a row for the specified number of times.
 
     Adds an additional column `id_col` to each duplicated row, containing a unique index.
@@ -92,8 +98,11 @@ def duplicate_rows(row: Dict[str, Any], count: int, id_col: str) -> List[Dict[st
     return [{**row, id_col: i} for i in range(count)]
 
 
-# TODO: clean up
-def process_question(text: str, num_questions: int = 5, letter_choices: Tuple[str, ...] =("A", "B", "C", "D", "E")) -> List[Dict[str, Any]]:
+def process_question(
+    text: str,
+    num_questions: int = 5,
+    letter_choices: Tuple[str, ...] = ("A", "B", "C", "D", "E"),
+) -> List[Dict[str, Any]]:
     """Parses raw text containing questions, options and answers into a list of dicionaries.
 
     Args:
@@ -127,7 +136,6 @@ def process_question(text: str, num_questions: int = 5, letter_choices: Tuple[st
     return questions
 
 
-# TODO: clean up
 def write_questions(questions, letter_choices=("A", "B", "C", "D", "E")):
     random.shuffle(questions)
     prompt = ""
@@ -158,7 +166,8 @@ def shuffle_qa(row, col_in, col_out_prompt, col_out_answers):
         return []
 
 
-def extract_answers(row, col_in, col_out, num_questions):
+def extract_answers(row: Dict[str, Any], col_in: str, col_out: str, num_questions: int):
+    """Extracts answers from the raw text column in the row"""
     text = row[col_in]
     if text is None:
         row[col_out] = ["No Judge Output"]
@@ -173,6 +182,22 @@ def extract_answers(row, col_in, col_out, num_questions):
     return row
 
 
+def dump_jsonl_to_string(row: Dict[str, Any], col: str) -> Dict[str, Any]:
+    """Converts the given column in the row in jsonl format to a string.
+
+    Useful to avoid serialization issues with pyarrow
+    """
+    row[col] = json.dumps(list(row[col]))
+    return row
+
+
+def download_model(path: str):
+    """Helper function to download a model given the path"""
+    if not is_remote_path(path):
+        return path
+    return download_to_local(path)
+
+
 class OfflinePredictor:
     def __init__(
         self,
@@ -181,9 +206,15 @@ class OfflinePredictor:
         col_out: str,
     ):
         logger = init_logger()
+
+        model_path = download_model(model_config.model_id_or_path)
+        adapter_path = None
+        if model_config.adapter_id_or_path:
+            adapter_path = download_model(model_config.adapter_id_or_path)
+
         self.col_in = col_in
         self.col_out = col_out
-        self.lora_location = model_config.adapter_id_or_path
+        self.lora_location = adapter_path
         self.vllm_settings = dict(
             tensor_parallel_size=model_config.scaling_config.num_gpus_per_instance,
             max_model_len=VLLM_MAX_MODEL_LEN,
@@ -199,12 +230,14 @@ class OfflinePredictor:
             stop=["<|eot_id|>", "<|end_of_text|>", "<|im_end|>"],
         )
 
-        llm_args = dict(model=model_config.model_id_or_path)
+        llm_args = dict(model=model_path)
 
         if self.lora_location is not None:
-            if repo_exists(self.lora_location):
-                self.lora_location = snapshot_download(self.lora_location)
+            # at this stage, lora_location should contain a local path or hf repo id
+            if not os.path.exists(self.lora_location):
+                repo_exists(self.lora_location)  # make sure it exists
                 logger.info("Downloading LoRA to:", self.lora_location)
+                self.lora_location = snapshot_download(self.lora_location)
             llm_args.update(
                 dict(
                     enable_lora=True,
@@ -281,8 +314,12 @@ class OnlinePredictor:
         return example
 
 
-
-def get_predictions_on_dataset(ds: "Dataset", model_config: Union[OnlineInferenceConfig, OfflineInferenceConfig], col_in: str, col_out: str):
+def get_predictions_on_dataset(
+    ds: "Dataset",
+    model_config: Union[OnlineInferenceConfig, OfflineInferenceConfig],
+    col_in: str,
+    col_out: str,
+):
     """Get predictions for a model on the given dataset using Ray data
 
     Supports online/offline inference given the model config.

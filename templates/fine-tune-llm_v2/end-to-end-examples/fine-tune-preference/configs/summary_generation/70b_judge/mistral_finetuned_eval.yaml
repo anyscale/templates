@@ -1,8 +1,9 @@
 mode: eval
 input_folder: s3://air-example-data/preference-tuning-summarization-example/qa_generation/qa_annotations_full_test
+inference_type: offline
 model_inference_config:
-  model_id_or_path: mistralai/Mistral-7B-Instruct-v0.1
-  adapter_id_or_path: <lora model path> # <--- Add the local path to your lora weights here
+  model_id_or_path: mistralai/Mistral-7B-Instruct-v0.1  # <---- Modify with s3 link to full param weights if you did full-param training
+  adapter_id_or_path: <lora model path> # <---  Add path to lora weights here. If you did full param training, you can instead remove this field.
   temperature: 0
   top_p: 0.95
   scaling_config:

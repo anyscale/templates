@@ -2,19 +2,19 @@
 Script to generate training data for DPO based on the generated summaries and scores.
 """
 
-import os
 import argparse
+import os
+import re
 from functools import partial
-from typing import Literal, Dict, Any
+from typing import Any, Dict, Literal
 
 import pandas as pd
 import ray
 from pydantic import Field
 
-from src.utils.prompt_templates import PROMPT_TEMPLATE_SUMMARY
 from src.utils.common import check_num_bad_chars
 from src.utils.models import BaseModelExtended, DataSchema
-
+from src.utils.prompt_templates import PROMPT_TEMPLATE_SUMMARY
 
 # NOTE: For a pair of summaries where the accuracies are above the threshold, we compare them by length. We prefer smaller summaries. We set a minimum difference of 3 words for one example to be distinct from another.
 MIN_LENGTH_DIFFERENCE = 3
@@ -23,13 +23,24 @@ MIN_NUM_WORDS_IN_SUMMARY = 5
 MAX_NUM_WORDS_IN_SUMMARY = 200
 
 
-
 class TrainingDataGenerationConfig(BaseModelExtended):
-    input_folder: str = Field(description="Full input folder path with generated summaries and scores from the base model. The folder is expected to be compatible with `ray.data.read_parquet`.")
-    max_pairs_per_article: int = Field(default=3, description="Maximum number of chosen, rejected pairs to sample per article.")
-    train_val_split: float = Field(default=0.02, description="Train validation split ratio")
-    accuracy_threshold: int = Field(default=3, description="Score threshold to classify chosen and rejected samples.")
-    output_folder: str = Field(description="Output folder path for train and validation files, relative to the base artifact storage path.")
+    input_folder: str = Field(
+        description="Full input folder path with generated summaries and scores from the base model. The folder is expected to be compatible with `ray.data.read_parquet`."
+    )
+    max_pairs_per_article: int = Field(
+        default=3,
+        description="Maximum number of chosen, rejected pairs to sample per article.",
+    )
+    train_val_split: float = Field(
+        default=0.02, description="Train validation split ratio"
+    )
+    accuracy_threshold: int = Field(
+        default=3,
+        description="Score threshold to classify chosen and rejected samples.",
+    )
+    output_folder: str = Field(
+        description="Output folder path for train and validation files, relative to the base artifact storage path."
+    )
 
 
 def is_row_valid(row: Dict[str, Any]) -> bool:
@@ -64,13 +75,16 @@ def eval_row(row: Dict[str, Any]):
         **row,
         num_words=len(row[DataSchema.SUMMARY_GENERATION_RAW_OUTPUT].split()),
         accuracy=sum(
-            row[DataSchema.GROUND_TRUTH_MCQ_ANSWERS][i] == row[DataSchema.JUDGE_MCQ_ANSWERS][i]
+            row[DataSchema.GROUND_TRUTH_MCQ_ANSWERS][i]
+            == row[DataSchema.JUDGE_MCQ_ANSWERS][i]
             for i in range(len(row[DataSchema.JUDGE_MCQ_ANSWERS]))
         ),
     )
 
 
-def compare_summaries(row1: Dict[str, Any], row2: Dict[str, Any], *, accuracy_threshold) -> Literal[0, 1, -1]:
+def compare_summaries(
+    row1: Dict[str, Any], row2: Dict[str, Any], *, accuracy_threshold
+) -> Literal[0, 1, -1]:
     """
     Compare two summaries based on accuracy (of judge responses) and length (of model summary).
 
@@ -82,7 +96,10 @@ def compare_summaries(row1: Dict[str, Any], row2: Dict[str, Any], *, accuracy_th
         1 if `row1` is preferred, -1 if `row2` is preferred, 0 if both are equivalent.
     """
     # If atleast one summary is worse than the threshold, choose based on the higher accuracy
-    if min(row1[DataSchema.ACCURACY], row2[DataSchema.ACCURACY]) <= accuracy_threshold - 1:
+    if (
+        min(row1[DataSchema.ACCURACY], row2[DataSchema.ACCURACY])
+        <= accuracy_threshold - 1
+    ):
         # First, compare based on accuracy
         if row1[DataSchema.ACCURACY] > row2[DataSchema.ACCURACY]:
             return 1
@@ -98,7 +115,10 @@ def compare_summaries(row1: Dict[str, Any], row2: Dict[str, Any], *, accuracy_th
     # If lengths are similar, consider them equivalent
     return 0
 
-def make_pairs(examples: pd.DataFrame, max_pairs_per_article: int, accuracy_threshold: int) -> pd.DataFrame:
+
+def make_pairs(
+    examples: pd.DataFrame, max_pairs_per_article: int, accuracy_threshold: int
+) -> pd.DataFrame:
     """Makes training input pairs for DPO for the given DataFrame.
 
     Args:
@@ -115,10 +135,18 @@ def make_pairs(examples: pd.DataFrame, max_pairs_per_article: int, accuracy_thre
     }
     for i in range(len(examples)):
         for j in range(i + 1, len(examples)):
-            comp = compare_summaries(examples.iloc[i], examples.iloc[j], accuracy_threshold=accuracy_threshold)
+            comp = compare_summaries(
+                examples.iloc[i],
+                examples.iloc[j],
+                accuracy_threshold=accuracy_threshold,
+            )
             if comp == 0:
                 continue
-            pair = [examples.iloc[i], examples.iloc[j]] if comp == 1 else [examples.iloc[j], examples.iloc[i]]
+            pair = (
+                [examples.iloc[i], examples.iloc[j]]
+                if comp == 1
+                else [examples.iloc[j], examples.iloc[i]]
+            )
             pairs.append(
                 dict(
                     chosen=[
@@ -148,7 +176,16 @@ def make_pairs(examples: pd.DataFrame, max_pairs_per_article: int, accuracy_thre
 
     if len(pairs) == 0:
         # return empty dataframe
-        return pd.DataFrame(columns=["chosen", "rejected", "num_words_chosen", "num_words_rejected", "accuracy_chosen", "accuracy_rejected"])
+        return pd.DataFrame(
+            columns=[
+                "chosen",
+                "rejected",
+                "num_words_chosen",
+                "num_words_rejected",
+                "accuracy_chosen",
+                "accuracy_rejected",
+            ]
+        )
 
     result = pd.DataFrame.from_records(pairs)
     if len(result) > max_pairs_per_article:
@@ -165,26 +202,47 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
     config = TrainingDataGenerationConfig.from_yaml(args.config_path)
+    # setup input and output paths
     input_folder = config.input_folder
-    output_folder = os.path.join(os.environ["ANYSCALE_ARTIFACT_STORAGE"], config.output_folder)
+    user_name = re.sub(r"\s+", "__", os.environ.get("ANYSCALE_USERNAME", "user"))
+    output_folder = os.path.join(
+        os.environ["ANYSCALE_ARTIFACT_STORAGE"], user_name, config.output_folder
+    )
+    # preprocess data
     ds = ray.data.read_parquet(input_folder, file_extensions=["parquet"])
 
     ds = ds.filter(is_row_valid, num_cpus=0)
     ds = ds.map(eval_row, num_cpus=0)
-    ds = ds.filter(lambda row: MIN_NUM_WORDS_IN_SUMMARY <= row[DataSchema.NUM_WORDS] < MAX_NUM_WORDS_IN_SUMMARY, num_cpus=0)
+    ds = ds.filter(
+        lambda row: MIN_NUM_WORDS_IN_SUMMARY
+        <= row[DataSchema.NUM_WORDS]
+        < MAX_NUM_WORDS_IN_SUMMARY,
+        num_cpus=0,
+    )
 
-    ds = ds.groupby("id").map_groups(make_pairs, fn_kwargs=dict(max_pairs_per_article=config.max_pairs_per_article, accuracy_threshold=config.accuracy_threshold), num_cpus=0, batch_format="pandas")
+    ds = ds.groupby("id").map_groups(
+        make_pairs,
+        fn_kwargs=dict(
+            max_pairs_per_article=config.max_pairs_per_article,
+            accuracy_threshold=config.accuracy_threshold,
+        ),
+        num_cpus=0,
+        batch_format="pandas",
+    )
 
     train_ds, val_ds = ds.train_test_split(config.train_val_split)
 
     train_df = train_ds.to_pandas()
     val_df = val_ds.to_pandas()
 
-
     print(f"Number of train examples: {len(train_df)}")
     print(f"Number of eval examples: {len(val_df)}")
 
-    train_df.to_json(os.path.join(output_folder, "train.jsonl"), orient="records", lines=True)
-    val_df.to_json(os.path.join(output_folder, "val.jsonl"), orient="records", lines=True)
+    train_df.to_json(
+        os.path.join(output_folder, "train.jsonl"), orient="records", lines=True
+    )
+    val_df.to_json(
+        os.path.join(output_folder, "val.jsonl"), orient="records", lines=True
+    )
 
     print(f"All files are saved to {output_folder}")

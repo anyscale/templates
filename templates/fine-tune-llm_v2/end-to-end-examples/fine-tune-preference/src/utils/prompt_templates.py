@@ -58,4 +58,6 @@ Remember:
 - Only use information explicitly stated in the given text.
 - Do not make inferences or use external knowledge.
 - If the text does not provide enough information to answer a question confidently, respond with "Unsure."
-- Provide only the letter of the correct answer (A, B, C, etc.) or "Unsure." for each question.""".format(**DataSchema.get_all_items())
+- Provide only the letter of the correct answer (A, B, C, etc.) or "Unsure." for each question.""".format(
+    **DataSchema.get_all_items()
+)
