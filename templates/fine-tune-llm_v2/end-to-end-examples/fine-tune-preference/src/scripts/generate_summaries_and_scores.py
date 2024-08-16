@@ -8,11 +8,9 @@ import argparse
 import os
 import re
 from enum import Enum
-from typing import Optional, Union
+from typing import Union
 
-import numpy as np
 import ray
-import yaml
 from pydantic import Field, model_validator
 from transformers import AutoTokenizer
 

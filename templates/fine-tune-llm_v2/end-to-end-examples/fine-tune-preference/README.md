@@ -18,9 +18,7 @@ First, let's make the necessary imports
 
 ```python
 import os
-import yaml
 import datasets
-import openai
 
 import ray.data
 
@@ -36,9 +34,11 @@ First, let's inspect the training dataset and look at an example.
 
 
 ```python
-hf_ds = datasets.load_dataset("abisee/cnn_dailymail", '3.0.0', split="train").shuffle(seed=21)
+hf_ds = datasets.load_dataset("abisee/cnn_dailymail", "3.0.0", split="train").shuffle(
+    seed=21
+)
 # extract a subset of 20000 articles
-hf_ds_subset =  hf_ds.select(range(20000))
+hf_ds_subset = hf_ds.select(range(20000))
 
 ray_ds = ray.data.from_huggingface(hf_ds_subset)
 raw_example = ray_ds.take(1)[0]
@@ -204,7 +204,7 @@ At the end of the job, you should see the remote path to the folder with Q&A. Ma
 
 ```python
 # Replace this with the link to the output folder from the previous job
-qa_folder = f"s3://air-example-data/preference-tuning-summarization-example/qa_generation/qa_annotations_full_train/"
+qa_folder = "s3://air-example-data/preference-tuning-summarization-example/qa_generation/qa_annotations_full_train/"
 qa_ds = ray.data.read_parquet(qa_folder)
 # The dataset is small, we can materalize it
 example_rows = qa_ds.materialize().take(3)
@@ -300,7 +300,7 @@ The following command will run the `TODO` script, which takes in the folder of q
 
 ```python
 # replace with the link to the generated summaries
-summary_folder = f"s3://air-example-data/preference-tuning-summarization-example/summary_generation_base/train/" 
+summary_folder = "s3://air-example-data/preference-tuning-summarization-example/summary_generation_base/train/"
 summary_ds = ray.data.read_parquet(summary_folder)
 example_rows = summary_ds.take(1)
 ```
@@ -387,7 +387,7 @@ The following command will run the `TODO` script, which takes in the folder of s
 
 ```python
 # Replace with the link to your validation file
-validation_file = f"s3://air-example-data/preference-tuning-summarization-example/dpo_training_data/valid.jsonl"
+validation_file = "s3://air-example-data/preference-tuning-summarization-example/dpo_training_data/valid.jsonl"
 
 valid_ds = ray.data.read_json(validation_file)
 example_rows = valid_ds.take(1)
@@ -397,12 +397,11 @@ example_rows = valid_ds.take(1)
 ```python
 for row in example_rows:
     print("PROMPT:")
-    print(textwrap.fill(row['chosen'][0]['content'], width=80))
+    print(textwrap.fill(row["chosen"][0]["content"], width=80))
     print("\nCHOSEN RESPONSE: ")
-    print(textwrap.fill(row['chosen'][1]['content'], width=80))
+    print(textwrap.fill(row["chosen"][1]["content"], width=80))
     print("\nREJECTED RESPONSE: ")
-    print(textwrap.fill(row['rejected'][1]['content'], width=80))
-
+    print(textwrap.fill(row["rejected"][1]["content"], width=80))
 ```
 
     PROMPT:

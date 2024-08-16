@@ -3,7 +3,6 @@ Get evaluation statistics based on scores for the model-generated summaries
 """
 
 import argparse
-import os
 from typing import Any, Dict, Optional, Tuple
 
 import numpy as np

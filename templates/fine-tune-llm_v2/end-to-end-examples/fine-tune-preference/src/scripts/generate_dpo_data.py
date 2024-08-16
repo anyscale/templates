@@ -5,7 +5,6 @@ Script to generate training data for DPO based on the generated summaries and sc
 import argparse
 import os
 import re
-from functools import partial
 from typing import Any, Dict, Literal
 
 import pandas as pd
