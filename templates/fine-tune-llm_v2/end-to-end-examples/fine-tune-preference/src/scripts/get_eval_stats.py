@@ -35,14 +35,6 @@ parser.add_argument(
     required=False,
     help="Path to the folder with parquets for GPT-4o model. This is optional",
 )
-
-parser.add_argument(
-    "--results-dir",
-    type=str,
-    required=False,
-    default="all_results.csv",
-    help="Path to the results folder.",
-)
 parser.add_argument(
     "--accuracy-threshold",
     default=3,

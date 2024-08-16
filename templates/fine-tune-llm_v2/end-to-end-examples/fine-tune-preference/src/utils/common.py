@@ -6,6 +6,7 @@ import string
 import time
 import unicodedata
 from typing import Any, Dict, List
+import textwrap
 
 import openai
 from openai import OpenAI
@@ -91,3 +92,9 @@ def get_completion(
             time.sleep(SLEEP_INTERVAL_BETWEEN_RETRIES)
     # Error response
     return ERROR_OUTPUT
+
+def print_wrapped(label, content, width=80):
+    """Simple utility to print `content` text-wrapped with label `label`"""
+    print(f"{label}:")
+    print(textwrap.fill(str(content), width=width))
+    print()

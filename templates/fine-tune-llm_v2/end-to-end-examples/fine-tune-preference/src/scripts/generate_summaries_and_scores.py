@@ -74,7 +74,7 @@ class SummaryGenerationConfig(BaseModelExtended):
         return self
 
 
-def get_output_folder_name(model_config) -> str:
+def get_output_folder_path(model_config) -> str:
     if isinstance(model_config, OfflineInferenceConfig):
         output_model_name = (
             model_config.adapter_id_or_path
@@ -90,8 +90,9 @@ def get_output_folder_name(model_config) -> str:
 
     output_model_name = output_model_name.replace("/", "_")
     user_name = re.sub(r"\s+", "__", os.environ.get("ANYSCALE_USERNAME", "user"))
-    output_folder = f"{os.environ.get('ANYSCALE_ARTIFACT_STORAGE')}/{user_name}/preference_tuning_summarization_example/summary_{config.mode.value}_generation_{output_model_name}_temp_{model_config.temperature}_judge_{judge_config.model_id_or_path.replace('/', '_')}/"
-    return output_folder
+    folder_name = f"summary_{config.mode.value}_generation_{output_model_name}_temp_{model_config.temperature}_judge_{judge_config.model_id_or_path.replace('/', '_')}"
+    folder_path = os.path.join(os.environ.get('ANYSCALE_ARTIFACT_STORAGE'), user_name, "preference_tuning_summarization_example", folder_name)
+    return folder_path
 
 
 if __name__ == "__main__":
@@ -107,7 +108,7 @@ if __name__ == "__main__":
     model_config = config.model_inference_config
     judge_config = config.judge_inference_config
 
-    output_folder = get_output_folder_name(model_config)
+    output_folder = get_output_folder_path(model_config)
 
     # Initialize Ray with a Runtime Environment.
     env_vars = (
