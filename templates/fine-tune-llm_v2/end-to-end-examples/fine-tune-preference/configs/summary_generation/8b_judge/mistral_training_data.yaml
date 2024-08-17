@@ -1,22 +1,48 @@
 mode: train # Data generation mode. Can be train or eval.
+
+# Input folder with Q&A generations. Replace with the path to your S3 URI
 input_folder: s3://air-example-data/preference-tuning-summarization-example/qa_generation/qa_annotations_full_train
-inference_type: offline # Inference type. Can be online (through an OpenAI-compatible server) or Offline (Batched inference with Ray + vLLM)
+
+# Inference type. Can be online (through an OpenAI-compatible server) or Offline (Batched inference with Ray + vLLM)
+inference_type: offline
+
+# Inference config for the reference model
 model_inference_config:
-  model_id_or_path: mistralai/Mistral-7B-Instruct-v0.1 # Model ID or remote (s3, gcs) path for offline inference.
-  temperature: 0.8 # Temperature for sampling from the model. We set this to a high value for sampling training data
-  top_p: 0.95 # top_p sampling parameter
-  scaling_config: # Ray Data `map_batches` config: https://docs.ray.io/en/latest/data/api/doc/ray.data.Dataset.map_batches.html
+  # Model ID or remote (s3, gcs) path for offline inference.
+  model_id_or_path: mistralai/Mistral-7B-Instruct-v0.1
+
+  # Temperature for sampling from the model. We set this to a high value for sampling training data
+  temperature: 0.8
+
+   # top_p sampling parameter
+  top_p: 0.95
+
+  # Ray Data `map_batches` config: https://docs.ray.io/en/latest/data/api/doc/ray.data.Dataset.map_batches.html
+  scaling_config:
     batch_size: 128
     concurrency: 4
     num_gpus_per_instance: 1
     accelerator_type: A10G
-num_generations: 10 # Number of generations to sample from the model being evaluated by the judge. For training this is high
+
+# Number of generations to sample from the model being evaluated by the judge. For training this is high
+num_generations: 10
+
+# Inference config for the judge model
 judge_inference_config:
-  model_id_or_path: meta-llama/Meta-Llama-3.1-8B-Instruct # Model ID or remote (s3, gcs) path for the judge model.
-  temperature: 0 # temperature for sampling
-  scaling_config: # Ray Data `map_batches` config: https://docs.ray.io/en/latest/data/api/doc/ray.data.Dataset.map_batches.html
+  # Model ID or remote (s3, gcs) path for the judge model.
+  model_id_or_path: meta-llama/Meta-Llama-3.1-8B-Instruct
+
+  # temperature for sampling
+  temperature: 0
+
+  # Ray Data `map_batches` config: https://docs.ray.io/en/latest/data/api/doc/ray.data.Dataset.map_batches.html
+  scaling_config:
     batch_size: 256
-    concurrency: 3 # number of Actors to run concurrently
-    num_gpus_per_instance: 2 # number of GPUs used per Actor. Each Ray Actor uses vLLM with tp enabled for efficient inference.
+    # number of Actors to run concurrently
+    concurrency: 3
+    # number of GPUs used per Actor. Each Ray Actor uses vLLM with tp enabled for efficient inference.
+    num_gpus_per_instance: 2
     accelerator_type: A10G
-num_mcq_questions: 5 # Number of multiple choice questions used in the scoring method
+
+# Number of multiple choice questions used in the scoring method
+num_mcq_questions: 5

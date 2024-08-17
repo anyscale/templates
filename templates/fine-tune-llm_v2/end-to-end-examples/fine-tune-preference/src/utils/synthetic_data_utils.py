@@ -8,16 +8,17 @@ import random
 import re
 from enum import Enum
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
+from pathlib import Path
 
+from filelock import FileLock
 import numpy as np
-from huggingface_hub import repo_exists, snapshot_download
 from openai import OpenAI
 from transformers import PreTrainedTokenizerBase
 from vllm import LLM, SamplingParams
 from vllm.lora.request import LoRARequest
 
-from src.utils.common import get_completion, init_logger
-from src.utils.download import download_to_local, is_remote_path
+from src.utils.common import get_completion, init_logger, MODEL_HOME
+from src.utils.download import download_model
 from src.utils.models import OfflineInferenceConfig, OnlineInferenceConfig
 
 if TYPE_CHECKING:
@@ -183,13 +184,6 @@ def dump_jsonl_to_string(row: Dict[str, Any], col: str) -> Dict[str, Any]:
     return row
 
 
-def download_model(path: str):
-    """Helper function to download a model given the path"""
-    if not is_remote_path(path):
-        return path
-    return download_to_local(path)
-
-
 class OfflinePredictor:
     def __init__(
         self,
@@ -199,9 +193,11 @@ class OfflinePredictor:
     ):
         logger = init_logger()
 
-        model_path = download_model(model_config.model_id_or_path)
+        model_id_or_path = download_model(model_config.model_id_or_path)
+
         adapter_path = None
         if model_config.adapter_id_or_path:
+            logger.info("Downloading LoRA:", self.lora_location)
             adapter_path = download_model(model_config.adapter_id_or_path)
 
         self.col_in = col_in
@@ -222,14 +218,9 @@ class OfflinePredictor:
             stop=["<|eot_id|>", "<|end_of_text|>", "<|im_end|>"],
         )
 
-        llm_args = dict(model=model_path)
+        llm_args = dict(model=model_id_or_path)
 
         if self.lora_location is not None:
-            # at this stage, lora_location should contain a local path or hf repo id
-            if not os.path.exists(self.lora_location):
-                repo_exists(self.lora_location)  # make sure it exists
-                logger.info("Downloading LoRA to:", self.lora_location)
-                self.lora_location = snapshot_download(self.lora_location)
             llm_args.update(
                 dict(
                     enable_lora=True,

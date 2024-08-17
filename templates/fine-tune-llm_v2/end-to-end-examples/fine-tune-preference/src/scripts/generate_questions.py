@@ -11,7 +11,7 @@ import ray
 from pydantic import Field
 from transformers import AutoTokenizer
 
-from src.utils.common import init_logger
+from src.utils.common import init_logger, MODEL_HOME
 from src.utils.models import (
     BaseModelExtended, DataSchema, OfflineInferenceConfig
 )
@@ -65,7 +65,7 @@ if __name__ == "__main__":
     ray.init(
         runtime_env={
             "env_vars": {
-                "HF_HOME": "/mnt/local_storage/.cache/huggingface",
+                "HF_HOME": MODEL_HOME,
             },
         },
         logging_config=ray.LoggingConfig(log_level="INFO"),

@@ -5,6 +5,7 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 from filelock import FileLock
+from huggingface_hub import repo_exists, snapshot_download
 
 from src.utils.common import MODEL_HOME, init_logger
 
@@ -73,3 +74,23 @@ def get_local_path(source_path: str):
     checkpoint_path_hash = hashlib.md5(source_path.encode()).hexdigest()
     local_path = os.path.join(MODEL_HOME, f"models--checkpoint--{checkpoint_path_hash}")
     return local_path
+
+
+def safe_hf_download(model_id: str):
+    """Helper function for safe download from huggingface"""
+    lock_path = Path(f"{MODEL_HOME}/{model_id.replace('/', '--')}.lock").expanduser()
+    lock_path.parent.mkdir(parents=True, exist_ok=True)
+    with FileLock(lock_path):
+        model_path = snapshot_download(repo_id=model_id)
+    return model_path
+
+def download_model(model_id_or_path: str):
+    """Helper function to download a model given the model id or remote path"""
+    if not is_remote_path(model_id_or_path):
+        if not os.path.exists(model_id_or_path):
+            # Make sure to download HF models in a thread-safe way explictly
+            # huggingface_hub >= 0.23.1 has introduced a race condition
+            repo_exists(model_id_or_path)  # make sure it exists
+            model_id_or_path = safe_hf_download(model_id_or_path)
+        return model_id_or_path
+    return download_to_local(model_id_or_path)

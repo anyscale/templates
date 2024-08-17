@@ -5,9 +5,9 @@ valid_path: s3://air-example-data/preference-tuning-summarization/valid.jsonl
 task: "preference_tuning"
 context_length: 4096
 # For DPO, it is recommended to set a high `num_data_blocks_per_device` to not bottleneck the logp processor.
-# We recommend not going beyond 20 so as to not spawn too many Ray actors.
-num_data_blocks_per_device: 16
-num_devices: 6 # <--- runs training on 6 GPUs
+num_data_blocks_per_device: 32
+# Runs training on 6 GPUs
+num_devices: 6
 train_batch_size_per_device: 2
 eval_batch_size_per_device: 2
 learning_rate: 5e-6
@@ -16,7 +16,7 @@ no_gradient_checkpoint: False
 output_dir: /mnt/local_storage/
 # Deepspeed configuration, you can provide your own deepspeed setup
 deepspeed:
-  config_path: deepspeed_configs/zero_3.json
+  config_path: configs/zero_3.json
 worker_resources:
   accelerator_type:A10G: 1
 flash_attention_2: True
@@ -26,7 +26,8 @@ preference_tuning_config:
   logprob_processor_scaling_config:
     custom_resources:
       accelerator_type:A10G: 1 # custom resource per worker.
-    concurrency: 4 # <--- runs reference model logp calculation on 4 GPUs
+    # Runs reference model logp calculation on 4 GPUs
+    concurrency: 4
     batch_size: 2
 lora_config:
   r: 8
