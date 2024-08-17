@@ -1,7 +1,9 @@
 model_id: mistralai/Mistral-7B-Instruct-v0.1
-# Example summarization dataset with 10k examples for training with an average of 2.2k tokens per sample
+# Example summarization dataset with 10k examples for training with an average of 2.2k tokens per sample.
+# Make sure to replace `train_path` and `valid_path` with the path to the files you generated
 train_path: s3://air-example-data/preference-tuning-summarization/train.jsonl
 valid_path: s3://air-example-data/preference-tuning-summarization/valid.jsonl
+
 task: "preference_tuning"
 context_length: 4096
 # For DPO, it is recommended to set a high `num_data_blocks_per_device` to not bottleneck the logp processor.

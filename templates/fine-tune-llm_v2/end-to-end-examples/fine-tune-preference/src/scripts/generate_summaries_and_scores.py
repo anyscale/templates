@@ -111,15 +111,6 @@ if __name__ == "__main__":
     output_folder = get_output_folder_path(model_config)
 
     # Initialize Ray with a Runtime Environment.
-    env_vars = (
-        {}
-        if config.inference_type == InferenceType.OFFLINE
-        else {
-            config.model_inference_config.api_key_env_var: os.environ[
-                config.model_inference_config.api_key_env_var
-            ]
-        }
-    )
     if (
         config.inference_type == InferenceType.ONLINE
         and config.model_inference_config.api_key_env_var

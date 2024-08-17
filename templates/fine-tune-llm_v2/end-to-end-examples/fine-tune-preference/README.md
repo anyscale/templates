@@ -122,7 +122,7 @@ This allows us to construct a simple preference function between two summaries:
 1. If both summary responses attain more than 3/5 multiple choice questions correct, we will prefer the shorter response. We do not care about Q&A accuracy beyond 3 correct answers, since the summary should not contain all information from the text.
 2. Otherwise, we select the response that leads to more correctly answered multiple choice questions.
 
-To generate the preference pairs, we will generate 10 summaries from each article using the model we wish to fine-tune. Then, we will randomly sample pairs of summaries and use our preference function to annotate the preference between them.
+We consider a subset of 21,000 articles in this example. To generate the preference pairs, we will generate 10 summaries from each article using the model we wish to fine-tune. Then, we will randomly sample pairs of summaries and use our preference function to annotate the preference between them.
 
 For this example, we will use `Mistral-7B-Instruct-v0.1` as the base model to fine-tune and `Llama-3.1-70B-Instruct` as a judge. Note that mistral-instruct is already instruction tuned, so that given a prompt to do summarization it might do a good job, but it may not be aligned with how we want the summarization to look like. We can use preference data to further align the instruct variant towards our specific needs.
 
@@ -148,7 +148,6 @@ Our synthetic preference data collection looks pretty involved at first glance. 
 
 First, we will generate the multiple choice questions and answers for each article using `Llama-3.1-8B-Instruct` (or `70B` if A100/H100s are available). Leveraging vLLM and Ray, we can very easily scale this generation process across multiple GPUs.
 
-
 >  **_NOTE:_**  We provide two sets of configs: One with an 8B parameter model as the judge, and another with the 70B model. Using the 8B model is recommended, since we make use of highly available A10Gs. For good performance, and to replicate the results in our blog, you should use the 70B judge model which uses A100s (but these are harder to obtain on-demand)
 
 The following command will run the [src/scripts/generate_questions.py](./src/scripts/generate_questions.py) script, which generates the questions and answers and saves them in `.parquet` files.
@@ -156,13 +155,12 @@ The following command will run the [src/scripts/generate_questions.py](./src/scr
 This step will take ~75 min for 8B running on A10s and ~?? for 70B running on A100s.
 
 💡 INSIGHT  
-We are running this script as an anyscale job. The resources required by each step are requested at runtime and provisioned by Anyscale's autoscaler based on availability and quotas. You can change the [qa_generation](./configs/qa_generation) however you want. Most important parameters regarding resources are `accelerator_type`, `num_gpus_per_instance`, and `concurrency`. This script will generate 5 multiple choice question and answer pairs per article for 21k examples. According to the [llama_8b](./configs/qa_generation/llama_8b.yaml) config we are requesting 3 replicas of 4xA10G machines processing a batch-size of 128 examples each which saturates the GPUs all the way through.
+We are running this script as an anyscale job. The resources required by each step are requested at runtime and provisioned by Anyscale's autoscaler based on availability and quotas. You are free to change the [qa_generation](./configs/qa_generation) config in any way. The important parameters regarding resources are `accelerator_type`, `num_gpus_per_instance`, and `concurrency`. This script will generate 5 multiple choice question and answer pairs per article for 21k examples. According to the [llama_8b](./configs/qa_generation/llama_8b.yaml) config we are requesting 3 replicas of 4xA10G machines processing a batch-size of 128 examples each which saturates the GPUs all the way through.
 
-
-```python
-!anyscale job submit -f configs/jobs/8b_judge/generate_questions_job.yaml
+```bash
+anyscale job submit -f configs/jobs/8b_judge/generate_questions_job.yaml
 # Optional: use the 70b model for better performance (runs on A100s)
-# !anyscale job submit -f configs/jobs/70b_judge/generate_questions_job.yaml
+# anyscale job submit -f configs/jobs/70b_judge/generate_questions_job.yaml
 ```
 
 At the end of the job, you should see the remote path to the folder with Q&A in the logs.
@@ -703,21 +701,25 @@ Further, our use of Ray Data also implies that the compute configuration for the
 
 To get started with DPO training, we provide the config for DPO in [configs/mistral_dpo_summarization.yaml](configs/mistral_dpo_summarization.yaml) . 
 
+ 🔄 REPLACE the training and validation file paths in the config with the output file paths in the previous step
+
 
 ```python
 !cat configs/mistral_dpo_summarization.yaml
 ```
 
     model_id: mistralai/Mistral-7B-Instruct-v0.1
-    # Example summarization dataset with 10k examples for training with an average of 2.2k tokens per sample
+    # Example summarization dataset with 10k examples for training with an average of 2.2k tokens per sample. 
+    # Make sure to replace `train_path` and `valid_path` with the path to the files you generated
     train_path: s3://air-example-data/preference-tuning-summarization/train.jsonl
     valid_path: s3://air-example-data/preference-tuning-summarization/valid.jsonl
+    
     task: "preference_tuning"
     context_length: 4096
     # For DPO, it is recommended to set a high `num_data_blocks_per_device` to not bottleneck the logp processor.
-    # We recommend not going beyond 20 so as to not spawn too many Ray actors.
-    num_data_blocks_per_device: 16
-    num_devices: 6 # <--- runs training on 6 GPUs
+    num_data_blocks_per_device: 32
+    # Runs training on 6 GPUs
+    num_devices: 6
     train_batch_size_per_device: 2
     eval_batch_size_per_device: 2
     learning_rate: 5e-6
@@ -726,7 +728,7 @@ To get started with DPO training, we provide the config for DPO in [configs/mist
     output_dir: /mnt/local_storage/
     # Deepspeed configuration, you can provide your own deepspeed setup
     deepspeed:
-      config_path: deepspeed_configs/zero_3.json
+      config_path: configs/zero_3.json
     worker_resources:
       accelerator_type:A10G: 1
     flash_attention_2: True
@@ -736,7 +738,8 @@ To get started with DPO training, we provide the config for DPO in [configs/mist
       logprob_processor_scaling_config:
         custom_resources:
           accelerator_type:A10G: 1 # custom resource per worker.
-        concurrency: 4 # <--- runs reference model logp calculation on 4 GPUs
+        # Runs reference model logp calculation on 4 GPUs
+        concurrency: 4
         batch_size: 2
     lora_config:
       r: 8
@@ -804,17 +807,17 @@ For the fine-tuned DPO model, we provide a dummy config in [configs/summary_gene
     inference_type: offline
     model_inference_config:
       # Modify with s3 link to full param weights if you did full-param training
-      model_id_or_path: mistralai/Mistral-7B-Instruct-v0.1 
+      model_id_or_path: mistralai/Mistral-7B-Instruct-v0.1
     
       # Add path to lora weights here. If you did full param training, you can instead remove this field.
       adapter_id_or_path: s3://large-dl-models-mirror/finetuning_template/mistral_dpo_summarization_lora
-      
+    
       temperature: 0
       top_p: 0.95
       scaling_config:
         batch_size: 64
         concurrency: 2
-        num_gpus_per_instance: 1
+        num_gpus_per_instance: 2
         accelerator_type: A10G
     num_generations: 1
     judge_inference_config:
