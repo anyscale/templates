@@ -197,7 +197,7 @@ class OfflinePredictor:
 
         adapter_path = None
         if model_config.adapter_id_or_path:
-            logger.info("Downloading LoRA:", self.lora_location)
+            logger.info("Downloading LoRA:", model_config.adapter_id_or_path)
             adapter_path = download_model(model_config.adapter_id_or_path)
 
         self.col_in = col_in

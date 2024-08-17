@@ -14,14 +14,14 @@ model_inference_config:
   # Temperature for sampling from the model. We set this to a high value for sampling training data
   temperature: 0.8
 
-   # top_p sampling parameter
+  # top_p sampling parameter
   top_p: 0.95
 
   # Ray Data `map_batches` config: https://docs.ray.io/en/latest/data/api/doc/ray.data.Dataset.map_batches.html
   scaling_config:
-    batch_size: 128
+    batch_size: 256
     concurrency: 4
-    num_gpus_per_instance: 1
+    num_gpus_per_instance: 2
     accelerator_type: A10G
 
 # Number of generations to sample from the model being evaluated by the judge. For training this is high

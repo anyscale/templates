@@ -16,5 +16,5 @@ judge_inference_config:
     batch_size: 128
     concurrency: 2
     num_gpus_per_instance: 2
-    accelerator_type: H100
+    accelerator_type: A100
 num_mcq_questions: 5
