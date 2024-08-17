@@ -12,8 +12,8 @@ model_inference_config:
   top_p: 0.95
   scaling_config:
     batch_size: 64
-    concurrency: 2
-    num_gpus_per_instance: 2
+    concurrency: 4
+    num_gpus_per_instance: 1
     accelerator_type: A10G
 num_generations: 1
 judge_inference_config:

@@ -135,7 +135,6 @@ if __name__ == "__main__":
     ds = ds.filter(
         lambda row: row[DataSchema.GROUND_TRUTH_MCQ_ANSWERS] is not None
         and len(row[DataSchema.GROUND_TRUTH_MCQ_ANSWERS]) == config.num_mcq_questions,
-        num_cpus=0,
     )
 
     tokenizer = None
@@ -155,7 +154,6 @@ if __name__ == "__main__":
             tokenizer=tokenizer,
             col_name=DataSchema.SUMMARY_GENERATION_INPUT,
         ),
-        num_cpus=0,
     )
 
     if config.num_generations > 1:
@@ -165,7 +163,6 @@ if __name__ == "__main__":
                 count=config.num_generations,
                 id_col="response_num",
             ),
-            num_cpus=0,
         )
     ds = get_predictions_on_dataset(
         ds,
@@ -188,7 +185,6 @@ if __name__ == "__main__":
             tokenizer=tokenizer,
             col_name=DataSchema.JUDGE_MCQ_INPUT,
         ),
-        num_cpus=0,
     )
     # Get scores
     ds = get_predictions_on_dataset(
@@ -205,7 +201,6 @@ if __name__ == "__main__":
             col_out=DataSchema.JUDGE_MCQ_ANSWERS,
             num_questions=config.num_mcq_questions,
         ),
-        num_cpus=0,
     )
     if config.inference_type == InferenceType.ONLINE:
         # Dumps input prompt in Openai jsonl format to string. This is because pyarrow might not support this dtype

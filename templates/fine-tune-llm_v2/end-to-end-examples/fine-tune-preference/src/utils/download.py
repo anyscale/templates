@@ -62,7 +62,7 @@ def download_from_gcs(remote_path: str, local_path: str):
     lock_file = get_lock_path(local_path)
     with FileLock(lock_file):
         result = subprocess.run(
-            ["gcloud", "storage", "cp", "--recursive", remote_path, local_path]
+            ["gcloud", "storage", "rsync", "--recursive", remote_path, local_path]
         )
         if result.returncode != 0:
             raise DownloadFailedError(

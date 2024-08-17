@@ -136,7 +136,7 @@ Combining all this together, our data pre-processing pipeline is going to look a
 
 ![preprocessing](./assets/preprocessing.png?1)
 
-💡 INSIGHT  
+💡 INSIGHT: 
 Our synthetic preference data collection looks pretty involved at first glance. The key ideas in plain English are as follows:
 - We use a combination of Q&A scoring + word length to indicate like/dislike (our preference function) given a pair of summaries.
 - Our ultimate goal is to generate (chosen, rejected) pairs to train our reference model and evaluate it based on this criteria.
@@ -152,16 +152,19 @@ First, we will generate the multiple choice questions and answers for each artic
 
 The following command will run the [src/scripts/generate_questions.py](./src/scripts/generate_questions.py) script, which generates the questions and answers and saves them in `.parquet` files.
 
-This step will take ~75 min for 8B running on A10s and ~?? for 70B running on A100s.
 
-💡 INSIGHT  
+💡 INSIGHT:  
 We are running this script as an anyscale job. The resources required by each step are requested at runtime and provisioned by Anyscale's autoscaler based on availability and quotas. You are free to change the [qa_generation](./configs/qa_generation) config in any way. The important parameters regarding resources are `accelerator_type`, `num_gpus_per_instance`, and `concurrency`. This script will generate 5 multiple choice question and answer pairs per article for 21k examples. According to the [llama_8b](./configs/qa_generation/llama_8b.yaml) config we are requesting 3 replicas of 4xA10G machines processing a batch-size of 128 examples each which saturates the GPUs all the way through.
+
+This step will take ~75 min for 8B running on A10s and ~?? for 70B running on A100s.
 
 ```bash
 anyscale job submit -f configs/jobs/8b_judge/generate_questions_job.yaml
 # Optional: use the 70b model for better performance (runs on A100s)
 # anyscale job submit -f configs/jobs/70b_judge/generate_questions_job.yaml
 ```
+
+> **NOTE**: We recommend that you execute all the commands in this notebook in a terminal. Make sure you `cd` into the directory of this notebook (and the `src` files) before executing the commands. 
 
 At the end of the job, you should see the remote path to the folder with Q&A in the logs.
 
@@ -172,7 +175,7 @@ At the end of the job, you should see the remote path to the folder with Q&A in 
 
  Make sure to make note to use it for the next steps! 
 
- 🔄 REPLACE the resulting s3 url here. If you want to skip the prior step, you can continue with the prepared example data below.
+ 🔄 REPLACE the resulting S3 URI here. If you want to skip the prior step, you can continue with the prepared example data below.
 
 
 ```python
@@ -462,7 +465,7 @@ anyscale job submit -f configs/jobs/8b_judge/generate_summaries_train_job.yaml
 
 💡 INSIGHT: If your job is unable to acquire the specified resources, it might indicate a lack of availability of GPUs. Try decreasing the `concurrency` argument for reference model or the judge. 
 
-🔄 REPLACE the below S3 URI with the link to the generated summaries from the job. 
+🔄 REPLACE the below S3 URI with the link to the generated summaries from the job. You can optionally skip the previous with the example dataset below.
 
 
 ```python
@@ -576,26 +579,6 @@ valid_ds = ray.data.read_json(validation_file)
 example_rows = valid_ds.take(1)
 ```
 
-    2024-08-16 15:28:20,813	INFO streaming_executor.py:108 -- Starting execution of Dataset. Full logs are in /tmp/ray/session_2024-08-16_13-49-43_360011_2410/logs/ray-data
-    2024-08-16 15:28:20,814	INFO streaming_executor.py:109 -- Execution plan of Dataset: InputDataBuffer[Input] -> TaskPoolMapOperator[ExpandPaths] -> TaskPoolMapOperator[ReadFiles] -> LimitOperator[limit=1]
-
-
-
-    - ExpandPaths 1:   0%|          | 0/1 [00:00<?, ?it/s]
-
-
-
-    - ReadFiles 2:   0%|          | 0/1 [00:00<?, ?it/s]
-
-
-
-    - limit=1 3:   0%|          | 0/1 [00:00<?, ?it/s]
-
-
-
-    Running 0:   0%|          | 0/1 [00:00<?, ?it/s]
-
-
 
 ```python
 for row in example_rows:
@@ -689,15 +672,16 @@ for row in example_rows:
 
 Now that we have the pre-processed dataset, we are ready to fine-tune `Mistral-7B-Instruct-v0.1` using DPO. On Anyscale, we've created an easy-to-use interface to do preference-tuning using DPO. We leverage Ray to overlap reference model log-probability calculation with model training to improve GPU utilization. Most implementations compute log probabilities synchronously with model training,
 
-<img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/fine-tune-llm_v2/end-to-end-examples/fine-tune-preference/assets/hf_dpo.png"/>
+![hf model](./assets/hf_dpo.png)
 
 While our implementation using Ray is asynchronous:  
 
 
-<img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/fine-tune-llm_v2/end-to-end-examples/fine-tune-preference/assets/anyscale_dpo.png"/>
+![assistant model](./assets/anyscale_dpo.png)
 
 Further, our use of Ray Data also implies that the compute configuration for the reference model can be completely decoupled with the policy model. For example, reference model calculation can run on a different node (with configurable number of GPUs, etc) with zero code changes needed. 
 
+> **NOTE** Make sure you've gove over the [user guides](https://docs.anyscale.com/category/fine-tuning-beta) for fine-tuning to understand the different configurations available
 
 To get started with DPO training, we provide the config for DPO in [configs/mistral_dpo_summarization.yaml](configs/mistral_dpo_summarization.yaml) . 
 
@@ -765,9 +749,9 @@ You can fine-tune the model now by submitting it as an Anyscale job:
 anyscale job submit configs/jobs/mistral_dpo_job.yaml
 ```
 
-This should take about `TODO` hours. 
+This should take about 8 hours. 
 
-💡 INSIGHT: This fine-tuning job inherits the compute configuration of the current workspace, with auto-scaling enabled. Sometimes, the nodes you get with auto-scaling can be in-efficient for fine-tuning due to inter-node communication costs (Say you get 2 4xA10 nodes instead of 8xA10s due to availability). You can explicitly set the compute configuration for the job with a set number of worker nodes to avoid this. More here: https://docs.anyscale.com/llms/finetuning/guides/optimize_cost#configurations 
+💡 INSIGHT: This fine-tuning job inherits the compute configuration of the current workspace - meaning the job runs on a CPU-only head node with auto-scaling enabled. Sometimes, the nodes you get with auto-scaling can be in-efficient for fine-tuning due to inter-node communication costs (Say you get 2 4xA10 nodes instead of 8xA10s due to availability). You can explicitly set the compute configuration for the job with a set number of worker nodes to avoid this. More on compute configurations here: https://docs.anyscale.com/configuration/compute-configuration 
 
 # Step 3: Evaluation
 
