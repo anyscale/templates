@@ -55,42 +55,6 @@ raw_example = hf_ds[0]
 ```
 
 
-    Downloading readme:   0%|          | 0.00/15.6k [00:00<?, ?B/s]
-
-
-
-    Downloading data:   0%|          | 0.00/257M [00:00<?, ?B/s]
-
-
-
-    Downloading data:   0%|          | 0.00/257M [00:00<?, ?B/s]
-
-
-
-    Downloading data:   0%|          | 0.00/259M [00:00<?, ?B/s]
-
-
-
-    Downloading data:   0%|          | 0.00/34.7M [00:00<?, ?B/s]
-
-
-
-    Downloading data:   0%|          | 0.00/30.0M [00:00<?, ?B/s]
-
-
-
-    Generating train split:   0%|          | 0/287113 [00:00<?, ? examples/s]
-
-
-
-    Generating validation split:   0%|          | 0/13368 [00:00<?, ? examples/s]
-
-
-
-    Generating test split:   0%|          | 0/11490 [00:00<?, ? examples/s]
-
-
-
 ```python
 pprint.pprint(raw_example, width=80)
 ```
@@ -221,46 +185,6 @@ qa_ds = ray.data.read_parquet(qa_folder)
 # The dataset is small, we can materalize it
 example_rows = qa_ds.materialize().take(3)
 ```
-
-    2024-08-17 21:47:51,384	INFO worker.py:1603 -- Connecting to existing Ray cluster at address: 10.0.5.82:6379...
-    2024-08-17 21:47:51,389	INFO worker.py:1779 -- Connected to Ray cluster. View the dashboard at [1m[32mhttps://session-ujamras9pcvamresjwww6p5jr4.i.anyscaleuserdata.com [39m[22m
-    2024-08-17 21:47:51,394	INFO packaging.py:358 -- Pushing file package 'gcs://_ray_pkg_fa430b7aa2c2bfb5e08af83c4f3059c768712aa0.zip' (1.65MiB) to Ray cluster...
-    2024-08-17 21:47:51,400	INFO packaging.py:371 -- Successfully pushed file package 'gcs://_ray_pkg_fa430b7aa2c2bfb5e08af83c4f3059c768712aa0.zip'.
-
-
-
-    Parquet Files Sample 0:   0%|          | 0/2 [00:00<?, ?it/s]
-
-
-    [36m(autoscaler +18s)[0m Tip: use `ray status` to view detailed cluster status. To disable these messages, set RAY_SCHEDULER_EVENTS=0.
-    [36m(autoscaler +18s)[0m [autoscaler] [48CPU-192GB] Upscaling 1 node(s).
-    [36m(autoscaler +19s)[0m [autoscaler] [48CPU-192GB|m5.12xlarge] [us-east-1a] [on-demand] Launched 1 instances.
-
-
-    2024-08-17 21:48:55,663	INFO streaming_executor.py:108 -- Starting execution of Dataset. Full logs are in /tmp/ray/session_2024-08-17_16-54-15_674403_2352/logs/ray-data
-    2024-08-17 21:48:55,664	INFO streaming_executor.py:109 -- Execution plan of Dataset: InputDataBuffer[Input] -> TaskPoolMapOperator[ReadParquet]
-
-
-
-    - ReadParquet->SplitBlocks(5) 1:   0%|          | 0/23 [00:00<?, ?it/s]
-
-
-
-    Running 0:   0%|          | 0/23 [00:00<?, ?it/s]
-
-
-    2024-08-17 21:49:01,020	INFO dataset.py:2373 -- Tip: Use `take_batch()` instead of `take() / show()` to return records in pandas or numpy batch format.
-    2024-08-17 21:49:01,022	INFO streaming_executor.py:108 -- Starting execution of Dataset. Full logs are in /tmp/ray/session_2024-08-17_16-54-15_674403_2352/logs/ray-data
-    2024-08-17 21:49:01,022	INFO streaming_executor.py:109 -- Execution plan of Dataset: InputDataBuffer[Input] -> LimitOperator[limit=3]
-
-
-
-    - limit=3 1:   0%|          | 0/115 [00:00<?, ?it/s]
-
-
-
-    Running 0:   0%|          | 0/115 [00:00<?, ?it/s]
-
 
 
 ```python
@@ -484,50 +408,6 @@ summary_ds = ray.data.read_parquet(summary_folder)
 example_rows = summary_ds.take(1)
 ```
 
-    2024-08-17 21:58:27,244	INFO worker.py:1603 -- Connecting to existing Ray cluster at address: 10.0.5.82:6379...
-    2024-08-17 21:58:27,250	INFO worker.py:1779 -- Connected to Ray cluster. View the dashboard at [1m[32mhttps://session-ujamras9pcvamresjwww6p5jr4.i.anyscaleuserdata.com [39m[22m
-    2024-08-17 21:58:27,255	INFO packaging.py:358 -- Pushing file package 'gcs://_ray_pkg_7f60f1e3ddd48b7c221662a3f26112ccad4e4eaf.zip' (1.65MiB) to Ray cluster...
-    2024-08-17 21:58:27,261	INFO packaging.py:371 -- Successfully pushed file package 'gcs://_ray_pkg_7f60f1e3ddd48b7c221662a3f26112ccad4e4eaf.zip'.
-
-
-
-    Parquet Files Sample 0:   0%|          | 0/2 [00:00<?, ?it/s]
-
-
-    2024-08-17 21:58:32,432	INFO dataset.py:2373 -- Tip: Use `take_batch()` instead of `take() / show()` to return records in pandas or numpy batch format.
-    2024-08-17 21:58:32,437	INFO streaming_executor.py:108 -- Starting execution of Dataset. Full logs are in /tmp/ray/session_2024-08-17_16-54-15_674403_2352/logs/ray-data
-    2024-08-17 21:58:32,438	INFO streaming_executor.py:109 -- Execution plan of Dataset: InputDataBuffer[Input] -> TaskPoolMapOperator[ReadParquet] -> LimitOperator[limit=1]
-
-
-
-    - ReadParquet 1:   0%|          | 0/96 [00:00<?, ?it/s]
-
-
-
-    - limit=1 2:   0%|          | 0/96 [00:00<?, ?it/s]
-
-
-
-    Running 0:   0%|          | 0/96 [00:00<?, ?it/s]
-
-
-    [36m(ReadParquet pid=11115, ip=10.0.6.34)[0m Traceback (most recent call last):
-    [36m(ReadParquet pid=11115, ip=10.0.6.34)[0m   File "pyarrow/public-api.pxi", line 128, in pyarrow.lib.pyarrow_wrap_data_type
-    [36m(ReadParquet pid=11115, ip=10.0.6.34)[0m   File "pyarrow/types.pxi", line 508, in pyarrow.lib.ListType.init
-    [36m(ReadParquet pid=11115, ip=10.0.6.34)[0m   File "pyarrow/types.pxi", line 220, in pyarrow.lib.DataType.init
-    [36m(ReadParquet pid=11115, ip=10.0.6.34)[0m   File "pyarrow/types.pxi", line 94, in pyarrow.lib._datatype_to_pep3118
-    [36m(ReadParquet pid=11115, ip=10.0.6.34)[0m   File "/home/ray/anaconda3/lib/python3.11/site-packages/ray/air/util/tensor_extensions/arrow.py", line 142, in __arrow_ext_deserialize__
-    [36m(ReadParquet pid=11115, ip=10.0.6.34)[0m     @classmethod
-    [36m(ReadParquet pid=11115, ip=10.0.6.34)[0m 
-    [36m(ReadParquet pid=11115, ip=10.0.6.34)[0m KeyboardInterrupt: 
-    [36m(ReadParquet pid=11116, ip=10.0.6.34)[0m 
-    [36m(ReadParquet pid=11324, ip=10.0.6.34)[0m 
-
-
-    [36m(autoscaler +4m27s)[0m Tip: use `ray status` to view detailed cluster status. To disable these messages, set RAY_SCHEDULER_EVENTS=0.
-    [36m(autoscaler +4m27s)[0m [autoscaler] Downscaling node i-0c2b50fb71a1a2e95 (node IP: 10.0.6.34) due to node idle termination.
-
-
 
 ```python
 for row in example_rows:
@@ -625,26 +505,6 @@ validation_file = "s3://air-example-data/preference-tuning-summarization-example
 valid_ds = ray.data.read_json(validation_file)
 example_rows = valid_ds.take(1)
 ```
-
-    2024-08-17 21:49:07,092	INFO streaming_executor.py:108 -- Starting execution of Dataset. Full logs are in /tmp/ray/session_2024-08-17_16-54-15_674403_2352/logs/ray-data
-    2024-08-17 21:49:07,093	INFO streaming_executor.py:109 -- Execution plan of Dataset: InputDataBuffer[Input] -> TaskPoolMapOperator[ExpandPaths] -> TaskPoolMapOperator[ReadFiles] -> LimitOperator[limit=1]
-
-
-
-    - ExpandPaths 1:   0%|          | 0/1 [00:00<?, ?it/s]
-
-
-
-    - ReadFiles 2:   0%|          | 0/1 [00:00<?, ?it/s]
-
-
-
-    - limit=1 3:   0%|          | 0/1 [00:00<?, ?it/s]
-
-
-
-    Running 0:   0%|          | 0/1 [00:00<?, ?it/s]
-
 
 
 ```python
@@ -750,7 +610,8 @@ Further, our use of Ray Data also implies that the compute configuration for the
 
 > **NOTE** Make sure you've gove over the [user guides](https://docs.anyscale.com/category/fine-tuning-beta) for fine-tuning to understand the different configurations available
 
-To get started with DPO training, we provide the config for DPO in [configs/mistral_dpo_summarization.yaml](configs/mistral_dpo_summarization.yaml) .
+To get started with DPO training, we provide the config for DPO in [configs/mistral_dpo_summarization.yaml](configs/mistral_dpo_summarization.yaml) . You can add your `WANDB_API_KEY` as an environment variable in the dependencies tab if you wish to track progress of your run on WandB.
+
 
  🔄 REPLACE the training and validation file paths in the config with the output file paths in the previous step
 
@@ -887,8 +748,6 @@ For the fine-tuned DPO model, we provide a dummy config in [configs/summary_gene
  🔄 REPLACE the `adapter_id_or_path` entry in the config with the path to your LoRA weights before proceeding (if you used the fine-tuning defaults). Alternatively, make sure to replace `model_id_or_path` entry (and remove the `adapter_id_or_path` entry) if you did full-param fine-tuning.
 
 We are now ready to evaluate our fine-tuned model: 
-
-> **NOTE**: Make sure to add your `WANDB_API_KEY` as an environment variable in the dependencies tab if you wish to track progress of your run on WandB.
 
 ```bash
 anyscale job submit -f configs/jobs/8b_judge/generate_summaries_eval_finetuned_job.yaml
