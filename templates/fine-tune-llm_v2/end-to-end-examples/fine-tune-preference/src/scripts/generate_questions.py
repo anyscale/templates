@@ -18,9 +18,9 @@ from src.utils.models import (
 from src.utils.prompt_templates import PROMPT_TEMPLATE_QUESTION_GENERATION
 from src.utils.synthetic_data_utils import (
     format_into_prompt_rawtext,
-    get_predictions_on_dataset,
     shuffle_qa,
 )
+from src.utils.predictors import get_predictions_on_dataset
 
 logger = init_logger()
 

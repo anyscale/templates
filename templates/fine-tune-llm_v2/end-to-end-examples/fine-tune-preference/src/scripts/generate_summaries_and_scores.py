@@ -32,8 +32,8 @@ from src.utils.synthetic_data_utils import (
     extract_answers,
     format_into_prompt,
     format_into_prompt_rawtext,
-    get_predictions_on_dataset,
 )
+from src.utils.predictors import get_predictions_on_dataset
 
 logger = init_logger()
 

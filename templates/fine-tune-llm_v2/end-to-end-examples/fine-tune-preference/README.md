@@ -1,6 +1,6 @@
 # Preference Tuning for Summarization using Synthetic Data
 
-**⏱️ Time to complete**: 10 hours
+**⏱️ Time to complete**: 10 hours+
 
 Alignment of LLMs has traditionally been broken down into two post-training stages: Supervised fine-tuning (SFT) followed by preference tuning (aka RLHF). SFT requires high quality data collection where each data sample illustrates behavior which we would like the LLM to imitate exactly. While for some tasks like SQL generation and math reasoning, it is feasible to collect the ground truth data, this approach does not always scale easily to align for subjective use cases (ex. chat, summarization, etc.). 
 
@@ -53,6 +53,42 @@ hf_ds = datasets.load_dataset("abisee/cnn_dailymail", "3.0.0", split="train")
 
 raw_example = hf_ds[0]
 ```
+
+
+    Downloading readme:   0%|          | 0.00/15.6k [00:00<?, ?B/s]
+
+
+
+    Downloading data:   0%|          | 0.00/257M [00:00<?, ?B/s]
+
+
+
+    Downloading data:   0%|          | 0.00/257M [00:00<?, ?B/s]
+
+
+
+    Downloading data:   0%|          | 0.00/259M [00:00<?, ?B/s]
+
+
+
+    Downloading data:   0%|          | 0.00/34.7M [00:00<?, ?B/s]
+
+
+
+    Downloading data:   0%|          | 0.00/30.0M [00:00<?, ?B/s]
+
+
+
+    Generating train split:   0%|          | 0/287113 [00:00<?, ? examples/s]
+
+
+
+    Generating validation split:   0%|          | 0/13368 [00:00<?, ? examples/s]
+
+
+
+    Generating test split:   0%|          | 0/11490 [00:00<?, ? examples/s]
+
 
 
 ```python
@@ -156,7 +192,7 @@ The following command will run the [src/scripts/generate_questions.py](./src/scr
 💡 INSIGHT:  
 We are running this script as an anyscale job. The resources required by each step are requested at runtime and provisioned by Anyscale's autoscaler based on availability and quotas. You are free to change the [qa_generation](./configs/qa_generation) config in any way. The important parameters regarding resources are `accelerator_type`, `num_gpus_per_instance`, and `concurrency`. This script will generate 5 multiple choice question and answer pairs per article for 21k examples. According to the [llama_8b](./configs/qa_generation/llama_8b.yaml) config we are requesting 3 replicas of 4xA10G machines processing a batch-size of 128 examples each which saturates the GPUs all the way through.
 
-This step will take ~75 min for 8B running on A10s and ~?? for 70B running on A100s.
+This step will take ~75 min for 8B running on A10s and  for 70B running on A100s.
 
 ```bash
 anyscale job submit -f configs/jobs/8b_judge/generate_questions_job.yaml
@@ -186,6 +222,46 @@ qa_ds = ray.data.read_parquet(qa_folder)
 example_rows = qa_ds.materialize().take(3)
 ```
 
+    2024-08-17 21:47:51,384	INFO worker.py:1603 -- Connecting to existing Ray cluster at address: 10.0.5.82:6379...
+    2024-08-17 21:47:51,389	INFO worker.py:1779 -- Connected to Ray cluster. View the dashboard at [1m[32mhttps://session-ujamras9pcvamresjwww6p5jr4.i.anyscaleuserdata.com [39m[22m
+    2024-08-17 21:47:51,394	INFO packaging.py:358 -- Pushing file package 'gcs://_ray_pkg_fa430b7aa2c2bfb5e08af83c4f3059c768712aa0.zip' (1.65MiB) to Ray cluster...
+    2024-08-17 21:47:51,400	INFO packaging.py:371 -- Successfully pushed file package 'gcs://_ray_pkg_fa430b7aa2c2bfb5e08af83c4f3059c768712aa0.zip'.
+
+
+
+    Parquet Files Sample 0:   0%|          | 0/2 [00:00<?, ?it/s]
+
+
+    [36m(autoscaler +18s)[0m Tip: use `ray status` to view detailed cluster status. To disable these messages, set RAY_SCHEDULER_EVENTS=0.
+    [36m(autoscaler +18s)[0m [autoscaler] [48CPU-192GB] Upscaling 1 node(s).
+    [36m(autoscaler +19s)[0m [autoscaler] [48CPU-192GB|m5.12xlarge] [us-east-1a] [on-demand] Launched 1 instances.
+
+
+    2024-08-17 21:48:55,663	INFO streaming_executor.py:108 -- Starting execution of Dataset. Full logs are in /tmp/ray/session_2024-08-17_16-54-15_674403_2352/logs/ray-data
+    2024-08-17 21:48:55,664	INFO streaming_executor.py:109 -- Execution plan of Dataset: InputDataBuffer[Input] -> TaskPoolMapOperator[ReadParquet]
+
+
+
+    - ReadParquet->SplitBlocks(5) 1:   0%|          | 0/23 [00:00<?, ?it/s]
+
+
+
+    Running 0:   0%|          | 0/23 [00:00<?, ?it/s]
+
+
+    2024-08-17 21:49:01,020	INFO dataset.py:2373 -- Tip: Use `take_batch()` instead of `take() / show()` to return records in pandas or numpy batch format.
+    2024-08-17 21:49:01,022	INFO streaming_executor.py:108 -- Starting execution of Dataset. Full logs are in /tmp/ray/session_2024-08-17_16-54-15_674403_2352/logs/ray-data
+    2024-08-17 21:49:01,022	INFO streaming_executor.py:109 -- Execution plan of Dataset: InputDataBuffer[Input] -> LimitOperator[limit=3]
+
+
+
+    - limit=3 1:   0%|          | 0/115 [00:00<?, ?it/s]
+
+
+
+    Running 0:   0%|          | 0/115 [00:00<?, ?it/s]
+
+
 
 ```python
 for row in example_rows:
@@ -196,251 +272,184 @@ for row in example_rows:
 ```
 
     TEXT:
-    From balloon-popping lasers to Wolverine-style claws, there are numerous concept
-    and protoype weapons designed by wannabe superhero inventors. But, a magician
-    has not only created a wristband that turns the wearer into Pyro from the Marvel
-    comics, he is selling it for $174 (£111) online. Named after the comic book
-    mutant, the Pyro band features four chambers that fires four fireballs, and it
-    can be controlled from the wrist or remotely. Scroll down for video . Pyro
-    (pictured) was designed by New Hampshire magician Adam Wilber. It features four
-    separate chambers for four multiple shots and can be controlled either from the
-    wrist or remotely . Its inventor, Adam Wilber explained: ‘Fire. Since the dawn
-    of time it has been the reward at the end of man's quest. Both creator and
-    destroyer, it has historically been the element hardest to control. ‘Until now.
-    Your quest is over. The power of fire in the palm of your hand. That's the power
-    of Pyro.' It is available from the Ellusionist site, and ships internationally.
-    The band resembles a watch and can be concealed under a sleeve. Pressing a
-    button on the device shoots the fireballs, or a remote control can be used to
-    fire them from a distance of up to 30ft (nine metres) away. The band resembles a
-    watch and can be concealed under a sleeve (pictured left). It uses so-called
-    Flash Cotton, or Flash Paper that fits inside the barrels. A heater coil then
-    ignites the material when the button is pressed, forcing the flame to fire from
-    the chambers . The device is named after Marvel comic book character Pyro,
-    played by Adam Burton in the X-Men franchise (pictured). In the series, Pyro is
-    a so-called Class 4 mutant that can create and control fire . If smartwatches
-    from the likes of Apple and Motorola don't appeal to you, a German inventor has
-    built a powerful alternative. Dubbed Bond Inspired LaserWatch, the timepiece was
-    designed at home by a hobbyist using a metal case, screws, and a built-in laser
-    pointer. The designer recently demonstrated the power of the laser by popping
-    balloons and lighting matches from around 3ft (one metre) away. It is the
-    brainchild of Wuppertal-based Patrick Priebe. It uses so-called Flash Cotton, or
-    Flash Paper that fits inside the barrels. A heater coil then ignites the
-    material when the button is pressed, forcing the flame to fire from the
-    chambers. The pack contains enough of this material for up to 50 uses. Refills
-    then start at $8 (£4). Flash material is used by magicians to create fast
-    burning flames for tricks. Mr Wilber describes Pryo as a ‘badass professional
-    device’, and as a result only over 18s are allowed to purchase or use the fire
-    shooter. The site ships internationally, but a disclaimer stresses that the
-    device ‘contains dangerous elements’ that are governed by the laws of the
-    country in which is it bought. Buyers have to agree to the terms and conditions,
-    and watch an instructional safety video by Adam Wilber, before buying the
-    device. It is recommended, and has been built for, magicians. ‘In the lead up to
-    release we sent a number of Pyro units out to some of the most creative up-and-
-    comers in the industry to put the unit through its paces,’ explained
-    Ellusionist. ‘Every single person that received Pyrocalled us up and raved about
-    it. Pyro has ignited an excitement within them. Pressing a button on the device
-    shoots the fireballs, or a remote control (pictured) can be used from up to 30ft
-    (nine metres) away. It costs $174 (£111) and ships internationally.  Buyers have
-    to agree to the terms and conditions, and watch a safety video before buying. It
-    is recommended, and has been built for, magicians . Mr Wilber (pictured in a
-    promotional video) describes Pryo as a ‘badass professional device’, and as a
-    result only over 18s are allowed to purchase or use the fire shooter .
+    By . Sean Poulter . PUBLISHED: . 20:04 EST, 10 March 2014 . | . UPDATED: . 04:33
+    EST, 11 March 2014 . Advances: The new system will make it easier to move money
+    around . Technology to allow direct payments between mobile phones was unveiled
+    by the big banks yesterday. The system cuts out the need to remember sort codes
+    and bank account details. Instead, you type on your phone the mobile number of
+    the person or business you want to pay. The ‘Paym’ transfers, which will be
+    password-protected, need your bank account to be linked to your own mobile
+    number. Users will simply tap in the number of the recipient on their phone to
+    authorise an electronic transfer from one account to another. The industry hopes
+    the system will replace cheques, which are expensive to transport and process.
+    At the same time it could provide a substitute for cash to make relatively small
+    payments to tradesmen, window cleaners or gardeners. The idea is that millions
+    of people will have their mobile phone number tied to their bank account – as a
+    substitute for the normal account number and sort code. There is a security
+    safeguard in that the name of the recipient will appear on the smartphone
+    screen, once the number has been tapped in, so confirming the cash is going to
+    the right person. Access to the Paym system will be covered by password or code
+    protection in an attempt to avoid the risk of the phone being stolen and used to
+    raid customers’ accounts. Paym has been devised by the finance industry’s
+    Payments Council, which is the trade body responsible for running the electronic
+    payments system on behalf of banks and building societies. The council’s chief
+    executive, Adrian Kamellard, said: ‘We’re all used to the idea of a ‘mobile
+    update’ to improve our apps - Paym is a mobile update for payments that means
+    you can pay securely using just a mobile number. ‘Paym will make it easier to
+    repay a friend for cinema tickets, split a restaurant bill or settle up for a
+    colleague’s birthday collection.’ Changes: The system 'has the potential to link
+    up every bank account in the country with a mobile number' He added: ‘Paym is a
+    great example of industry-wide collaboration that delivers tangible benefits for
+    customers. ‘The service has the potential to link up every bank account in the
+    country with a mobile number. ‘Millions of people will be able to use it this
+    year and we look forward to expanding Paym even further, so everyone can benefit
+    from this easy, secure new way to pay.’ Paym will be integrated into customers’
+    existing mobile banking or payment apps as an additional way to pay, making it
+    possible to send and receive payments using a mobile number. When it is launched
+    in the spring, customers of nine bank and building society brands – Lloyds,
+    HSBC, Barclays, Halifax, Santader, TSB, Bank of Scotland, Cumberland Building
+    Society, and Danske Bank - will be able to use the new service. The nine launch
+    brands will offer their customers the opportunity to register their mobile
+    number and select the current account they want payments made into before the
+    service goes live. This will immediately make the new system the most wide-
+    ranging payment service capable of moving funds directly from account to
+    account, without the need for sort codes or account numbers. Paym will expand
+    later this year to include First Direct, NatWest, RBS, Clydesdale Bank,
+    Yorkshire Bank and Isle of Man Bank. The Nationwide building society is
+    committed to joined in early 2015, while the Metro Bank and Ulster Bank are also
+    finalising their participation.
     
     QUESTIONS:
-    Q1) Who designed the Pyro wristband? A. Steve Jobs B. Patrick Priebe C. Adam
-    Wilber D. Adam Burton E. Elon Musk  Q2) What is the maximum distance from which
-    the Pyro wristband can be controlled remotely? A. 20ft B. 50ft C. 10ft D. 40ft
-    E. 30ft  Q3) What is the name of the wristband that shoots fireballs? A. Marvel
-    Band B. Fire Starter C. Fireball Wristband D. Pyro Band E. Flame Shooter  Q4)
-    What is the recommended use of the Pyro wristband? A. For magicians B. For
-    military use C. For outdoor events D. For personal protection E. For children's
-    parties  Q5) What is the price of the Pyro wristband? A. $174 B. $250 C. $50 D.
-    $200 E. $100
+    Q1) How will users initiate a payment using the 'Paym' system? A. By typing in
+    the recipient's sort code and account number B. By visiting a bank branch C. By
+    scanning a QR code D. By using a physical payment card E. By typing in the
+    recipient's mobile number  Q2) What is the main purpose of the new 'Paym'
+    system? A. To replace credit cards B. To increase the use of cheques C. To
+    reduce the use of cash D. To increase bank fees E. To make it easier to move
+    money around using mobile phones  Q3) How many bank and building society brands
+    will offer the 'Paym' service at launch? A. 9 B. 15 C. 12 D. 20 E. 5  Q4) Which
+    of the following is a potential benefit of the 'Paym' system? A. It will make it
+    easier to repay a friend for cinema tickets B. It will reduce the security of
+    mobile payments C. It will increase bank fees D. It will make it harder to split
+    a restaurant bill E. It will increase the use of cheques  Q5) What is the name
+    of the trade body responsible for devising the 'Paym' system? A. The Electronic
+    Payments Council B. The Banking Association C. The Mobile Payments Association
+    D. The Finance Industry Council E. The Payments Council
     
     ANSWERS:
-    ['C' 'E' 'D' 'A' 'A']
+    ['E' 'E' 'A' 'A' 'E']
     
     '================================================================================'
     TEXT:
-    Washington (CNN) -- When two focus groups met earlier this week -- conducted
-    using "Walmart moms" or women ages 29-54 who've shopped at the big-box retailer
-    recently, they revealed the secret behind how this crucial demographic decides
-    whom they vote for this year: Google. "You Google it," said participants from
-    North Carolina when asked about their voting decision process. "Probably the
-    night before," said another North Carolina woman, on when she looks up
-    information on candidates. The women were part of two, ten-person groups in
-    North Carolina and Louisiana on Monday night that were underwritten by Walmart.
-    In both states, female Democratic Senators are running in tight reelection
-    races, meaning that the women in the focus groups represent an essential
-    category of voters Democrats need to keep those seats and hold on to control of
-    the Senate. The racially, ethnically and educationally diverse group of mothers
-    expressed concern about the future throughout most of the three-hours of focus
-    grouping. Many were concerned about Ebola and less so about ISIS. They can
-    recall the negative ads in their respective Senate races, but on the whole,
-    don't know the candidates well. And even though Republicans have tried to tie
-    every Democrat to President Barack Obama, the women didn't see the unpopular
-    president as a campaign issue, even if they think he is doing a bad job. What
-    was most striking in the group, however, was how distant the Senate races in
-    each state felt to the women. According to the Center for Responsive Politics,
-    in Louisiana's Senate race, between Democrat Mary Landrieu, Republican Bill
-    Cassidy and independent Rob Maness, almost $40 million has been spent. Upwards
-    of $80 million has been spent in the race between Thom Tillis and Kay Hagan in
-    North Carolina. All that money, though, has bought very little with these women.
-    "Nothing is going to change," said Lauren, a 44-year old North Carolinian.
-    Politicians "stand where they stand. Nothing is going to change the next two
-    weeks. It is going to be like you are cramming for a test." Their interest
-    doesn't mean they aren't concerned, however. The Walmart moms of this particular
-    focus group say they are worried about the future, anxious about their children
-    and feel like politicians in Washington don't understand their daily struggle.
-    We are "out of site, out of mind," said Jennifer, a 38-year old cafeteria worker
-    and mother of one. "Unless you are out there serving that child at school, or
-    helping that student with just learning how to be nice with one another... or
-    you are getting up at 4:30 in the morning so you can beat the rush hour and get
-    to work on time." After a slight pause, she added. "They don't [understand],
-    they can't." When asked what one message they would communicate to leaders in
-    Washington, the women struck a similar tune: My representatives in Washington
-    have lost touch with their roots and don't understand my struggle. "I wish you
-    could have been in my shoes, and seen [the] struggle of a single parent," said
-    Theodosia, a 40-year old women who voted for Obama in 2012. "I remember where I
-    came from," said Andrea, a 32-year old mother of three who voted for Romney. "I
-    work hard for everything I have, tangible and intangible," said Jennifer. Her
-    comment resonated with the women, they nodded as she said it. In North Carolina,
-    most of the mothers recalled very little about Hagan or Tillis. Hagan, they
-    said, was trying to portray Tillis as unstable, while Tillis was trying to cast
-    Hagan as another vote for Obama, the women said. But other than that, not much
-    stuck. In Louisiana, where there was slightly more definition, the women
-    struggled to name all three candidates. The women could remember Landrieu's
-    positive ad -- including a "cute" one with her father -- and recalled attacks
-    that "she doesn't even live here any more." (Earlier this year, questions about
-    Landrieu's residency were raised by a story in the Washington Post that said the
-    senator doesn't own her own house in Louisiana and, instead, lives at her home
-    on Capitol Hill in Washington, D.C. The senator has vehemently denied the
-    charge.) "If she doesn't live here, how is she supposed to know what the true
-    problems are," said one woman. "How is she supposed to know?" But that is really
-    where the recollections ended. What did universally stick, however, was that all
-    the campaigning has been negative. "All I get from all of those [ads] is don't
-    vote for that person, because they are a bad person, vote for me," said one
-    woman in North Carolina. When asked what the Landrieu campaign wanted voters to
-    think about Cassidy, one woman in New Orleans put it this way: "That he is the
-    devil." The reason they feel disconnected, according to women in both North
-    Carolina and Louisiana, is that the people who represent them in Washington are
-    of little concern to them because those politicians could never fathom their
-    daily struggle. The women told stories about struggling to pay for their
-    children's education, their health care and their groceries. They talked about
-    dealing with their spouse's job loss or trying to make ends meet with little.
-    They also became animated when talking about the upcoming holidays and how they
-    plan to save money to provide all they can or their kids. And when reflecting on
-    all of this, the women said the same thing: The politicians asking for my vote
-    don't get all of this. "Moms say politicians 'don't get it' and need to 'walk in
-    my shoes,'" read a memo about the conversation from Neil Newhouse and Margie
-    Omero, two pollsters who helped organize the group. "This is a perennial Walmart
-    mom complaint that frankly only gets louder with each conversation." This
-    sentiment was encapsulated by Jennifer, the woman from North Carolina who said
-    she struggled for everything she has. "Once they go home to the farm, it isn't a
-    dirty farm," she said of when lawmakers leave North Carolina and go to
-    Washington. When they come home, she said, their farm "is a clean farm... with a
-    tractor that would make John Deere faint."
+    Jerusalem (CNN) -- Five Israeli right-wing extremists have been indicted by an
+    Israeli court which accused them of attempting to prevent the demolition of
+    illegal settlements in the West Bank, organizing a break-in at a military base
+    and planning riots. The extremists are also suspected of masterminding an attack
+    on an Israel Defense Forces base in the West Bank on December 13. In that
+    incident, about 50 extremists infiltrated and attacked the Ephraim Regional
+    Division Headquarters. The activists entered the base, damaged property, set
+    tires on fire, threw stones and damaged vehicles, according to an IDF statement
+    at the time. A commander's car was attacked, and he sustained minor injuries.
+    Israeli Prime Minister Benjamin Netanyahu said the incident "crossed all lines."
+    And Matan Vilnai, deputy defense minister, called the perpetrators "Jewish
+    terrorists" in an interview on army radio. Israeli media reported in December
+    that the attack came in response to rumors that Israeli security forces were
+    about to demolish two illegal outposts in the West Bank. The indictment alleges
+    the extremists operated from an apartment in Jerusalem, where they gathered
+    intelligence information through surveillance, lookouts and patrols of Israeli
+    troops. The intelligence was aimed at preventing "the evacuation of outposts by
+    illegal means" and to prevent IDF operations, said the indictment, which was
+    presented in court Sunday. "The indictment exposes the true and ugly face of the
+    prosecution that proves once again the blatant discrimination against the
+    settlers," said Adi Keidar, an attorney representing three of the five. The
+    suspects are also being questioned about "price tag" attacks against
+    Palestinians in the West Bank and Jerusalem, according to Israeli police. "Price
+    tag" is a term used to describe attacks by Israeli extremists against
+    Palestinians and Israeli security forces in retaliation for any action taken
+    against settlers.
     
     QUESTIONS:
-    Q1) What demographic was the focus of the two focus groups conducted in North
-    Carolina and Louisiana? A. Retirees B. Small business owners C. College students
-    D. Walmart moms (women ages 29-54 who've shopped at Walmart recently) E. Young
-    professionals  Q2) What was a common concern among the focus group participants?
-    A. The economy B. Healthcare C. The future and their children's well-being D.
-    Immigration E. Foreign policy  Q3) What message did the focus group participants
-    want to communicate to leaders in Washington? A. That they need to support a
-    specific policy B. That they need to focus on the economy C. That they need to
-    improve their negative ads D. That they have lost touch with their roots and
-    don't understand their daily struggle E. That they need to be more involved in
-    their communities  Q4) What was the primary way the focus group participants
-    said they decide whom to vote for? A. Google B. Watching debates C. Talking to
-    friends and family D. Reading newspapers E. Watching TV ads  Q5) How did the
-    focus group participants feel about the politicians running in their respective
-    Senate races? A. They were somewhat informed but neutral B. They were very
-    supportive of one candidate C. They were very opposed to all candidates D. They
-    didn't know the candidates well and felt disconnected E. They were very informed
-    and enthusiastic
+    Q1) What were the five Israeli right-wing extremists accused of attempting to
+    prevent? A. The establishment of a new Israeli government B. The demolition of
+    illegal settlements in the West Bank C. The expansion of a military base in the
+    West Bank D. The construction of new settlements in the West Bank E. The
+    relocation of Israeli troops  Q2) What was the result of the attack on the
+    Ephraim Regional Division Headquarters? A. The base was completely destroyed B.
+    A commander sustained minor injuries and property was damaged C. No one was
+    injured and no property was damaged D. A commander was killed and several
+    vehicles were damaged E. Several extremists were injured and no property was
+    damaged  Q3) What term is used to describe attacks by Israeli extremists against
+    Palestinians and Israeli security forces in retaliation for any action taken
+    against settlers? A. West Bank war B. Israeli resistance C. Price tag D.
+    Retaliation attack E. Settler strike  Q4) What was the reaction of Israeli Prime
+    Minister Benjamin Netanyahu to the attack on the Ephraim Regional Division
+    Headquarters? A. He remained silent on the issue B. He said the incident
+    "crossed all lines" C. He blamed the Palestinians for the attack D. He called
+    the perpetrators "Jewish terrorists" E. He praised the extremists for their
+    actions  Q5) Why did the extremists allegedly attack the Ephraim Regional
+    Division Headquarters? A. In response to the relocation of Israeli troops B. In
+    response to rumors of an impending Israeli military operation C. In response to
+    the construction of a new Palestinian settlement D. In response to rumors that
+    Israeli security forces were about to demolish two illegal outposts E. In
+    response to the establishment of a new Israeli government
     
     ANSWERS:
-    ['D' 'C' 'D' 'A' 'D']
+    ['B' 'B' 'C' 'B' 'D']
     
     '================================================================================'
     TEXT:
-    (CNN) -- Top British officials paid a visit Saturday to leaders of Libya's
-    opposition government, the beneficiary of the first NATO helicopter attacks on
-    ruler Moammar Gadhafi' military vehicles, equipment and forces. Foreign
-    Secretary William Hague and International Development Secretary Andrew Mitchell
-    traveled to Benghazi, where they reiterated support for the Transitional
-    National Council. According to a statement, Mitchell announced new support for
-    the clearing of mines in besieged cities, including Misrata. He and Hague
-    visited a Benghazi hospital treating those wounded in the conflict. The visit,
-    which included a discussion of the country's possible future, followed
-    helicopter attacks by British and French forces on the regime's military. "This
-    successful engagement demonstrates the unique capabilities brought to bear by
-    attack helicopters," said Lt. Gen. Charles Bouchard, who commands NATO's Libya
-    operation. "We will continue to use these assets whenever and wherever needed,
-    using the same precision as we do in all of our missions." British forces,
-    flying from the HMS Ocean, used Apache helicopters for the overnight strikes,
-    according to the Ministry of Defence. French helicopters took off from the
-    assault ship Tonnerre, the ministry said in a statement. The Apaches struck a
-    regime radar installation and a military checkpoint, both located around Brega,
-    a key oil town in the east, British officials said. Hellfire missiles and 30mm
-    cannon were used to destroy the targets, they said. Royal Air Force ground
-    attack aircraft destroyed another military installation, while a separate
-    mission hammered two ammunition bunkers in central Libya, according to the
-    statement. A French military spokesman said 20 targets, including vehicles, were
-    destroyed. Several helicopters responded to small-arms fire from the ground, but
-    none were hit, he said. "The use of attack helicopters provides the NATO
-    operation with additional flexibility to track and engage pro-Gadhafi forces who
-    deliberately target civilians and attempt to hide in populated areas," NATO said
-    in a statement. Meanwhile, a string of explosions -- at least 10 -- rocked the
-    Libyan capital of Tripoli early Saturday evening, CNN journalists reported. Six
-    more explosions were heard early Sunday. One of the explosions struck an old
-    military station about 25 kilometers (16 miles) south of the city, a government
-    official said. There also was fighting in the western city of Zintan. According
-    to Mamdouh Dardair, a rebel fighter, portions of the town were hit by a large
-    number of rockets fired by Gadhafi forces. The rockets damaged infrastructure,
-    but there were no immediate reports of injuries. CNN could not confirm the
-    account. On Friday, fighting continued in the western town of Yefren, where
-    NATO-allied aircraft destroyed government tanks and personnel carriers,
-    officials said. NATO warplanes belonging to the United Kingdom's Royal Air Force
-    fired Paveway guided bombs and destroyed two main battle tanks and two armored
-    personnel carriers belonging to Libya's military, said Maj. Gen. John Lorimer,
-    strategic communication officer for the chief of the defense staff. The
-    airstrikes occurred Thursday, he said. NATO reported that government forces were
-    continuing "to attack the peoples of the western highlands," Lorimer said.
-    Meanwhile, rebels claimed to liberate Yefren and the nearby town of Kikla, both
-    of which are about 25 miles (40 kilometers) east of their stronghold in Zintan,
-    one rebel fighter said. Talhat al-Jiwayli, a rebel on the front lines in Zintan,
-    also said that anti-Gadhafi forces were surrounding the town of al-Rayyana, more
-    than seven miles northeast of Zintan. A resolution approved by the U.N. Security
-    Council in March authorized member states "to take all necessary measures to
-    protect civilians under threat of attack in the country, including Benghazi,
-    while excluding a foreign occupation force of any form on any part of Libyan
-    territory." . CNN's Kareem Khadder and Michael Martinez contributed to this
-    report.
+    Photos of the police officer performing a sex act in uniform were leaked and an
+    investigation was launched by senior police bosses . Police in Puerto Rico have
+    suspended a female police officer after photos of her performing a sex act in
+    uniform ended up being leaked to fellow officers. According to a police insider,
+    the images were taken by a male colleague at the police station and were posted
+    onto social media. But not long after, they ended up on the phones of most
+    officers in the country and quickly went viral. When senior police officers
+    heard about it they launched an investigation to find out if the images were
+    genuine, and quickly identified the police officer as being a serving member of
+    the force. They said that the young woman, Cynthia Marrero Pomales, 29, was
+    serving in Carolina, a town in north-eastern Puerto Rico near the capital San
+    Juan. They added that she had been suspended while an investigation was carried
+    out over allegations that she had offended the honour of the police force and
+    damaged its reputation in public. She has reportedly been interviewed and given
+    a statement but no details were given to local media. In one of the pictures the
+    young woman also has the flag of the United States draped over part of her body.
+    She reportedly uploaded the pictures herself on social media although it is
+    understood that she had not intended for them to be shared outside of a small
+    private circle of friends. The superintendent of police in Puerto Rico, Jose
+    Luis Caldero Lopez, confirmed the authenticity of the images and announced that
+    the young policewoman has since been suspended. This is not the first time a sex
+    scandal has disgraced police in Puerto Rico. In 2014, photographs of two cops
+    performing a sex act inside the presidential palace were shared and published,
+    resulting in the officers being expelled from the force. Cynthia Marrero
+    Pomales, 29, was serving in  a town  near the capital San Juan when the images
+    emerged . She has now been suspended as police chiefs conduct an investigation
+    into the pictures . The police station in Carolina, north-eastern Puerto Rico,
+    where the incident is alleged to have occurred .
     
     QUESTIONS:
-    Q1) What type of helicopters did British forces use for the overnight strikes on
-    Gadhafi's military? A. French helicopters B. Royal Air Force helicopters C.
-    Apache helicopters D. NATO helicopters E. US helicopters  Q2) What was
-    authorized by the U.N. Security Council in March? A. The use of attack
-    helicopters by NATO B. The protection of civilians under threat of attack in
-    Libya C. The overthrow of Gadhafi's government D. A foreign occupation force in
-    Libya E. The establishment of a new government in Libya  Q3) Who visited the
-    leaders of Libya's opposition government in Benghazi? A. Libyan officials B. Top
-    British officials C. NATO officials D. US officials E. French officials  Q4)
-    What was the result of the NATO helicopter attacks on Gadhafi's military? A. The
-    attacks were unsuccessful B. Multiple targets, including vehicles and military
-    installations, were destroyed C. Gadhafi's forces surrendered D. Several
-    helicopters were destroyed E. No targets were hit  Q5) What was the purpose of
-    the visit by British officials to Benghazi? A. To reiterate support for the
-    Transitional National Council B. To discuss a ceasefire with Gadhafi C. To
-    provide humanitarian aid D. To negotiate a peace treaty E. To discuss a foreign
-    occupation force
+    Q1) What was the reason for the investigation launched by senior police bosses
+    in Puerto Rico? A. A police officer was accused of theft B. Photos of a police
+    officer performing a sex act in uniform were leaked C. A police officer was
+    accused of corruption D. A police officer was involved in a fight E. A police
+    officer was involved in a traffic accident  Q2) What was the consequence for the
+    police officer, Cynthia Marrero Pomales, after the investigation? A. She was
+    fired immediately B. She was given a warning C. She was suspended while an
+    investigation was carried out D. She was transferred to a different department
+    E. She was promoted to a higher rank  Q3) Where were the photos of the police
+    officer performing a sex act in uniform initially taken? A. At a public park B.
+    At the police station C. At a private residence D. At a hotel E. At a restaurant
+    Q4) Why did the police officer, Cynthia Marrero Pomales, upload the pictures on
+    social media? A. To share with the public B. To share with the media C. To share
+    with her colleagues D. To share with a small private circle of friends E. To
+    share with her family  Q5) What was the reaction of the superintendent of police
+    in Puerto Rico, Jose Luis Caldero Lopez, to the incident? A. He denied the
+    authenticity of the images B. He resigned from his position C. He launched a
+    separate investigation D. He confirmed the authenticity of the images and
+    announced the suspension of the police officer E. He ignored the incident
     
     ANSWERS:
-    ['C' 'B' 'B' 'B' 'A']
+    ['B' 'C' 'B' 'D' 'D']
     
     '================================================================================'
 
@@ -475,10 +484,52 @@ summary_ds = ray.data.read_parquet(summary_folder)
 example_rows = summary_ds.take(1)
 ```
 
+    2024-08-17 21:58:27,244	INFO worker.py:1603 -- Connecting to existing Ray cluster at address: 10.0.5.82:6379...
+    2024-08-17 21:58:27,250	INFO worker.py:1779 -- Connected to Ray cluster. View the dashboard at [1m[32mhttps://session-ujamras9pcvamresjwww6p5jr4.i.anyscaleuserdata.com [39m[22m
+    2024-08-17 21:58:27,255	INFO packaging.py:358 -- Pushing file package 'gcs://_ray_pkg_7f60f1e3ddd48b7c221662a3f26112ccad4e4eaf.zip' (1.65MiB) to Ray cluster...
+    2024-08-17 21:58:27,261	INFO packaging.py:371 -- Successfully pushed file package 'gcs://_ray_pkg_7f60f1e3ddd48b7c221662a3f26112ccad4e4eaf.zip'.
+
+
+
+    Parquet Files Sample 0:   0%|          | 0/2 [00:00<?, ?it/s]
+
+
+    2024-08-17 21:58:32,432	INFO dataset.py:2373 -- Tip: Use `take_batch()` instead of `take() / show()` to return records in pandas or numpy batch format.
+    2024-08-17 21:58:32,437	INFO streaming_executor.py:108 -- Starting execution of Dataset. Full logs are in /tmp/ray/session_2024-08-17_16-54-15_674403_2352/logs/ray-data
+    2024-08-17 21:58:32,438	INFO streaming_executor.py:109 -- Execution plan of Dataset: InputDataBuffer[Input] -> TaskPoolMapOperator[ReadParquet] -> LimitOperator[limit=1]
+
+
+
+    - ReadParquet 1:   0%|          | 0/96 [00:00<?, ?it/s]
+
+
+
+    - limit=1 2:   0%|          | 0/96 [00:00<?, ?it/s]
+
+
+
+    Running 0:   0%|          | 0/96 [00:00<?, ?it/s]
+
+
+    [36m(ReadParquet pid=11115, ip=10.0.6.34)[0m Traceback (most recent call last):
+    [36m(ReadParquet pid=11115, ip=10.0.6.34)[0m   File "pyarrow/public-api.pxi", line 128, in pyarrow.lib.pyarrow_wrap_data_type
+    [36m(ReadParquet pid=11115, ip=10.0.6.34)[0m   File "pyarrow/types.pxi", line 508, in pyarrow.lib.ListType.init
+    [36m(ReadParquet pid=11115, ip=10.0.6.34)[0m   File "pyarrow/types.pxi", line 220, in pyarrow.lib.DataType.init
+    [36m(ReadParquet pid=11115, ip=10.0.6.34)[0m   File "pyarrow/types.pxi", line 94, in pyarrow.lib._datatype_to_pep3118
+    [36m(ReadParquet pid=11115, ip=10.0.6.34)[0m   File "/home/ray/anaconda3/lib/python3.11/site-packages/ray/air/util/tensor_extensions/arrow.py", line 142, in __arrow_ext_deserialize__
+    [36m(ReadParquet pid=11115, ip=10.0.6.34)[0m     @classmethod
+    [36m(ReadParquet pid=11115, ip=10.0.6.34)[0m 
+    [36m(ReadParquet pid=11115, ip=10.0.6.34)[0m KeyboardInterrupt: 
+    [36m(ReadParquet pid=11116, ip=10.0.6.34)[0m 
+    [36m(ReadParquet pid=11324, ip=10.0.6.34)[0m 
+
+
+    [36m(autoscaler +4m27s)[0m Tip: use `ray status` to view detailed cluster status. To disable these messages, set RAY_SCHEDULER_EVENTS=0.
+    [36m(autoscaler +4m27s)[0m [autoscaler] Downscaling node i-0c2b50fb71a1a2e95 (node IP: 10.0.6.34) due to node idle termination.
+
+
 
 ```python
-from src.utils.models import DataSchema
-
 for row in example_rows:
     print_wrapped("TEXT", row[DataSchema.ARTICLE])
     print_wrapped("QUESTIONS", row[DataSchema.MCQ_QUESTIONS])
@@ -489,69 +540,65 @@ for row in example_rows:
 ```
 
     TEXT:
-    (RollingStone.com) -- Jennifer Lawrence, the 20-year-old Oscar nominee for Best
-    Actress, is sitting in a fancy Manhattan hotel sipping tea and feeling a little
-    out of place. See, she grew up in Louisville, Kentucky, where her dad owned a
-    construction company and her mom ran a summer camp. They had land and horses.
-    She loved to fish. She was a total tomboy: field hockey, softball, basketball on
-    an all-boys team. ("I was so dykey.") One of her nicknames was Nitro. She lives
-    in Los Angeles now, but "little redneck things still come out." Like what? "I'm
-    attracted to my brother. Stuff like that." 10 Best Movies of 2010 . At 14, she
-    decided she wanted to be an actress and dragged her mom to New York for
-    auditions. The people at Reese's Peanut Butter Cups told her she was the best
-    they'd ever seen. Her mom told her they were lying. (Her mom didn't like showbiz
-    much.) She auditioned for the role of Bella in "Twilight," which would have been
-    perfect if Bella were a badass, but since she's a frightened waif, Lawrence
-    ended up not getting the part. Which was for the best because the role she did
-    get was for "Winter's Bone," in which she's fantastic: harrowing and tender as
-    the 17-year-old daughter of an Ozarks meth-cooker who's fighting to take care of
-    her little brother and sister. This article appears in the February 17, 2011
-    issue of Rolling Stone. The issue is available now on newsstands and will appear
-    in the online archive February 4. To prep for the part, Lawrence learned how to
-    shoot a gun and field-dress squirrels. She already knew how to chop wood: "I
-    went through a wood-chopping phase when I was nine or 10." She says she hasn't
-    even bothered preparing an Oscar speech: "I have been practicing my losing face,
-    though. Do you want to see it?" (For the record, it's a very good losing face.)
-    Peter Travers Reviews 'Winter's Bone' Later this year comes "X-Men: First
-    Class," where she'll play the mutant Mystique, blue-skinned and topless. ("Did I
-    feel naked being naked?" she asks, so you don't have to. "Yeah. Totally.") But
-    before that there's Jodie Foster's "The Beaver," premiering in May, in which she
-    appears alongside a certifiable Mel Gibson. Which means she has some crazy Mel
-    Gibson stories, right? She leans in close. "If I say, 'Off the record' -- that
-    means you can't print it, right?' " Right. "OK. So, off the record ..." She's
-    learning. Photos: 2011 Screen Actors Guild Award Winners . Copyright © 2011
-    Rolling Stone.
+    A Newcastle man got the shock of his life while he was filming a lightning storm
+    in New South Wales. Rob McGee was watching the storm roll over the city - two
+    hours north of Sydney - when he captured the moment a lightning strike hit a
+    nearby gym. Mr McGee posted the video on social media just after 7.30pm on
+    Sunday. Scroll down for video . Rob McGee was watching the storm roll over
+    Newcastle - two hours north of Sydney - when he captured the moment a lightning
+    strike hit a nearby gym . 'Scared the crap out of me!' he wrote along with the
+    video. In the five-second footage, a deafening crack is heard when lightning
+    hits a building. Mr McGee told shocked friends who commented on the post that
+    the landing place was a gym behind Civic train station. 'Had a better look.....
+    it is gym behind the station. Bet a few people dropped a weight or two,' he
+    wrote. The landing place was a nearby gym behind Civic train station in
+    Newcastle . The storm that rolled in over NSW on Sunday followed hot weather
+    during the day . He added 'a few' others had hit his building but this was the
+    only one he had captured on camera. At the time of publication, Mr McGees' video
+    had attracted almost 70,000 views on social media. Sunday's hot weather during
+    the day was followed by thunderstorms late in the afternoon. In NSW, a number of
+    fires were believed to have been started by lightning strikes. At least 90
+    blazes were burning across the state, with more than half deemed out-of-control.
+    Most were caused by lightning strikes late Sunday that followed scorching
+    temperatures in Sydney and around the state, NSW Rural Fire Service spokesman
+    Ben Shepherd said. At the time of publication, Mr McGees' video had attracted
+    almost 70,000 views on social media . 'The good thing at this stage is there is
+    nothing impacting on any lives or property,' he told AAP on Monday. 'However,
+    given the remoteness of some of these fires, it is going to take a considerable
+    effort over coming days in order to actually start some containment on a number
+    of these fires.' Mr Shepherd said the RFS had sent out planes on Monday morning
+    to try to detect new outbreaks. 'We are expecting more [fires],' he said. About
+    430 firefighters were on the ground and more are on standby. 'We've probably got
+    a day or two at least of more favourable weather, which will assist in getting
+    some of these fires under control,' Mr Shepherd said. Sydney was set to reach a
+    top of 30 degrees Celsius on Monday while Wallsend, in the Hunter region, was
+    expected to peak at 38, and Penrith in Sydney's west had a maximum of 36. Total
+    fire bans remain in place for the lower central west plains, including Dubbo.
     
     QUESTIONS:
-    Q1) Where did Jennifer Lawrence grow up? A. The Ozarks B. Manhattan C. Los
-    Angeles, California D. New York City, New York E. Louisville, Kentucky  Q2) What
-    is the name of the movie in which Jennifer Lawrence will play the mutant
-    Mystique? A. Winter's Bone B. X-Men: First Class C. The Beaver D. Twilight E.
-    The Hunger Games  Q3) What is one skill Jennifer Lawrence learned to prepare for
-    her role in "Winter's Bone"? A. How to play field hockey B. How to chop wood C.
-    How to ride a horse D. How to act like a frightened waif E. How to shoot a gun
-    Q4) Why did Jennifer Lawrence's mom take her to New York at the age of 14? A. To
-    visit relatives B. To attend a sports tournament C. To go shopping D. For
-    auditions E. For a family vacation  Q5) What was Jennifer Lawrence's role in the
-    movie "Winter's Bone"? A. A character in a Jodie Foster movie B. A mutant with
-    blue skin C. A character in a Reese's Peanut Butter Cups commercial D. A
-    frightened waif E. A 17-year-old daughter of an Ozarks meth-cooker
+    Q1) What was the cause of at least 90 blazes burning across NSW? A. Wild animals
+    B. Drought C. Lightning strikes D. Human error E. Strong winds  Q2) How many
+    firefighters were on the ground to combat the fires? A. 200 B. 500 C. 430 D. 300
+    E. 100  Q3) Where did Rob McGee capture the moment a lightning strike hit a
+    nearby gym? A. Penrith B. Dubbo C. Newcastle D. Sydney E. Wallsend  Q4) What was
+    the approximate number of views on Rob McGee's video at the time of publication?
+    A. 70,000 B. 1,000 C. 7,000 D. 7,000,000 E. 700,000  Q5) What was the
+    temperature expected to reach in Sydney on Monday? A. 30 degrees Celsius B. 40
+    degrees Celsius C. 20 degrees Celsius D. 25 degrees Celsius E. 35 degrees
+    Celsius
     
-    MODEL GENERATED_SUMMARY:
-    Jennifer Lawrence, an Oscar-nominated actress from Kentucky, reflects on her
-    journey from a tomboy to a successful actress in Hollywood. She talks about her
-    love for field hockey, softball, and basketball, and her nickname "Nitro."
-    Lawrence auditioned for the role of Bella in "Twilight" but didn't get it, but
-    went on to star in "Winter's Bone," where she received critical acclaim. She
-    discusses her preparation for the role, including learning how to shoot a gun
-    and field-dress squirrels. Lawrence also talks about her upcoming roles in
-    "X-Men: First Class" and "The Beaver," and shares some crazy Mel Gibson stories.
+    MODEL GENERATED SUMMARY:
+    A Newcastle man captured a lightning strike hitting a nearby gym on camera while
+    filming a storm in New South Wales. The storm followed hot weather during the
+    day and caused multiple fires across the state. At least 90 blazes were burning,
+    with more than half out of control. The Rural Fire Service is working to contain
+    the fires and expects more to occur.
     
     ANSWERS:
-    ['E' 'B' 'E' 'D' 'E']
+    ['C' 'C' 'C' 'A' 'A']
     
     JUDGE ANSWERS FROM SUMMARY:
-    ['E', 'B', 'E', 'Unsure', 'Unsure']
+    ['C', 'Unsure', 'C', 'Unsure', 'Unsure']
     
     '===================================================================================================='
 
@@ -578,6 +625,26 @@ validation_file = "s3://air-example-data/preference-tuning-summarization-example
 valid_ds = ray.data.read_json(validation_file)
 example_rows = valid_ds.take(1)
 ```
+
+    2024-08-17 21:49:07,092	INFO streaming_executor.py:108 -- Starting execution of Dataset. Full logs are in /tmp/ray/session_2024-08-17_16-54-15_674403_2352/logs/ray-data
+    2024-08-17 21:49:07,093	INFO streaming_executor.py:109 -- Execution plan of Dataset: InputDataBuffer[Input] -> TaskPoolMapOperator[ExpandPaths] -> TaskPoolMapOperator[ReadFiles] -> LimitOperator[limit=1]
+
+
+
+    - ExpandPaths 1:   0%|          | 0/1 [00:00<?, ?it/s]
+
+
+
+    - ReadFiles 2:   0%|          | 0/1 [00:00<?, ?it/s]
+
+
+
+    - limit=1 3:   0%|          | 0/1 [00:00<?, ?it/s]
+
+
+
+    Running 0:   0%|          | 0/1 [00:00<?, ?it/s]
+
 
 
 ```python
@@ -683,7 +750,7 @@ Further, our use of Ray Data also implies that the compute configuration for the
 
 > **NOTE** Make sure you've gove over the [user guides](https://docs.anyscale.com/category/fine-tuning-beta) for fine-tuning to understand the different configurations available
 
-To get started with DPO training, we provide the config for DPO in [configs/mistral_dpo_summarization.yaml](configs/mistral_dpo_summarization.yaml) . 
+To get started with DPO training, we provide the config for DPO in [configs/mistral_dpo_summarization.yaml](configs/mistral_dpo_summarization.yaml) .
 
  🔄 REPLACE the training and validation file paths in the config with the output file paths in the previous step
 
@@ -693,7 +760,7 @@ To get started with DPO training, we provide the config for DPO in [configs/mist
 ```
 
     model_id: mistralai/Mistral-7B-Instruct-v0.1
-    # Example summarization dataset with 10k examples for training with an average of 2.2k tokens per sample. 
+    # Example summarization dataset with 10k examples for training with an average of 2.2k tokens per sample.
     # Make sure to replace `train_path` and `valid_path` with the path to the files you generated
     train_path: s3://air-example-data/preference-tuning-summarization/train.jsonl
     valid_path: s3://air-example-data/preference-tuning-summarization/valid.jsonl
@@ -701,9 +768,9 @@ To get started with DPO training, we provide the config for DPO in [configs/mist
     task: "preference_tuning"
     context_length: 4096
     # For DPO, it is recommended to set a high `num_data_blocks_per_device` to not bottleneck the logp processor.
-    num_data_blocks_per_device: 32
-    # Runs training on 6 GPUs
-    num_devices: 6
+    num_data_blocks_per_device: 16
+    # Runs training on 12 GPUs
+    num_devices: 16
     train_batch_size_per_device: 2
     eval_batch_size_per_device: 2
     learning_rate: 5e-6
@@ -749,9 +816,11 @@ You can fine-tune the model now by submitting it as an Anyscale job:
 anyscale job submit configs/jobs/mistral_dpo_job.yaml
 ```
 
-This should take about 8 hours. 
+This should take about 8 hours for the 8B model on A10Gs and 6 hours for the 70B model on A100s. 
 
-💡 INSIGHT: This fine-tuning job inherits the compute configuration of the current workspace - meaning the job runs on a CPU-only head node with auto-scaling enabled. Sometimes, the nodes you get with auto-scaling can be in-efficient for fine-tuning due to inter-node communication costs (Say you get 2 4xA10 nodes instead of 8xA10s due to availability). You can explicitly set the compute configuration for the job with a set number of worker nodes to avoid this. More on compute configurations here: https://docs.anyscale.com/configuration/compute-configuration 
+💡 INSIGHT: This fine-tuning job inherits the compute configuration of the current workspace - meaning the job runs on a CPU-only head node with auto-scaling enabled. Sometimes, the nodes you get with auto-scaling can be in-efficient for fine-tuning due to inter-node communication costs (Say you get 2 4xA10 nodes instead of 8xA10s due to availability). You can explicitly set the compute configuration for the job with a set number of worker nodes to avoid this.  
+ - More on compute configurations here: https://docs.anyscale.com/configuration/compute-configuration 
+ - The complete Anyscale Job API reference: https://docs.anyscale.com/reference/job-api#jobconfig 
 
 # Step 3: Evaluation
 
