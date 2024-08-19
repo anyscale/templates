@@ -27,7 +27,7 @@ This is the path where the adapted weights are stored, you can use them fore inf
 
 # What is Next?
 
-* Make sure to checkout the [LLMForge documentation](https://docs.anyscale.com/latest/llms/finetuning/intro) and [user guides](https://docs.anyscale.com/latest/llms/finetuning/user-guides) for more information on how to use the library.
+* Make sure to checkout the [LLMForge documentation](https://docs.anyscale.com/llms/finetuning/intro) and [user guides](https://docs.anyscale.com/category/fine-tuning-beta) for more information on how to use the library.
 * You can also check out more [end-to-end examples](#end-to-end-examples).
 * You can follow the [serving template](https://console.anyscale.com/v2/template-preview/endpoints_v2) to learn how to serve the model online.
 * You can follow the [offline batch inference template](https://console.anyscale.com/v2/template-preview/batch-llm) to learn how to do batch inference.
