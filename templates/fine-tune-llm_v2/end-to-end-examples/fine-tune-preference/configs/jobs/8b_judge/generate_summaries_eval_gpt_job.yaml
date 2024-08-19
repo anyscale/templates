@@ -1,0 +1,5 @@
+name: preference-tuning-summarization-summary-generation-gpt-4o
+entrypoint: python -m src.scripts.generate_summaries_and_scores configs/summary_generation/8b_judge/gpt4o_eval.yaml
+image_uri: localhost:5555/anyscale/endpoints_aica:1.0.0-7260
+max_retries: 0
+working_dir: "."

@@ -1,0 +1,26 @@
+# Output folder in artifact storage.
+output_folder: preference_tuning_summarization_example/qa_annotations_full
+# Inference config for the model
+model_inference_config:
+  # Model ID for question generation
+  model_id_or_path: meta-llama/Meta-Llama-3.1-70B-Instruct
+  # Temperature for sampling generations
+  temperature: 0
+  # Max tokens for generation
+  max_tokens: 4096
+  # Ray Data `map_batches` config: https://docs.ray.io/en/latest/data/api/doc/ray.data.Dataset.map_batches.html
+  scaling_config:
+    # Batch size per model instance
+    batch_size: 128
+    # Number of Ray Actors/ model instances to use
+    concurrency: 3
+    # Number of GPUs per instance. We use vLLM with tensor parallelism over efficient inference
+    num_gpus_per_instance: 4
+    # GPU type
+    accelerator_type: A100
+# Number of dataset blocks per GPU device.
+num_data_blocks_per_device: 2
+# Number of articles to sample in total
+num_samples_total: 21000
+# Percentage of articles to use for the test set
+train_test_split: 0.01
