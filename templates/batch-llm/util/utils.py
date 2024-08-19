@@ -52,9 +52,13 @@ def prompt_for_hugging_face_token(hf_model: str) -> str:
     url = f"https://huggingface.co/api/models/{hf_model}"
 
     response = requests.get(url)
-    if response.status_code == 200:
+    response_json = response.json()
+    is_private = response_json.get("private", False)
+    # possible gated response values: [False, "auto", "manual"]
+    is_gated = response_json.get("gated", False) in ("auto", "manual")
+    if response.status_code == 200 and not (is_private or is_gated):
         return ""
-    elif response.status_code == 401:
+    elif response.status_code == 401 or (is_private or is_gated):
         if os.path.isfile(HF_TOKEN_LOCAL_PATH):
             return read_hugging_face_token_from_cache(HF_TOKEN_LOCAL_PATH)
         if not os.path.isfile(HF_TOKEN_CACHE_PATH):
