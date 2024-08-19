@@ -156,7 +156,7 @@ The following command will run the [src/scripts/generate_questions.py](./src/scr
 💡 INSIGHT:  
 We are running this script as an anyscale job. The resources required by each step are requested at runtime and provisioned by Anyscale's autoscaler based on availability and quotas. You are free to change the [qa_generation](./configs/qa_generation) config in any way. The important parameters regarding resources are `accelerator_type`, `num_gpus_per_instance`, and `concurrency`. This script will generate 5 multiple choice question and answer pairs per article for 21k examples. According to the [llama_8b](./configs/qa_generation/llama_8b.yaml) config we are requesting 3 replicas of 4xA10G machines processing a batch-size of 128 examples each which saturates the GPUs all the way through.
 
-This step will take about 40 min for 8B running on 12 A10s (\~ \$10) and about 75 mins for 70B running on 8 A100s (\~ \$28). 
+This step will take about 40 min for 8B running on 12 A10s (\~ <span>$</span>10) and about 75 mins for 70B running on 8 A100s (\~ <span>$</span>28). 
 
 ```bash
 anyscale job submit -f configs/jobs/8b_judge/generate_questions_job.yaml
@@ -389,7 +389,7 @@ The following command will run the [generate_summaries_and_scores.py](src/script
 🔄 REPLACE the S3 URI in [`configs/summary_generation/8b_judge/mistral_finetuned_eval.yaml`](configs/summary_generation/8b_judge/mistral_finetuned_eval.yaml) with the path to the folder with generated questions from the previous job
 
 
-This job will take about 320 min for 8B on 14 A10Gs (\~ \$ 76) and about the same time for 70B model on A100s (\~ \$ 125)
+This job will take about 320 min for 8B on 14 A10Gs (\~ <span>$</span> 76) and about the same time for 70B model on A100s (\~ <span>$</span> 125)
 
 ```bash
 anyscale job submit -f configs/jobs/8b_judge/generate_summaries_train_job.yaml 
@@ -654,7 +654,7 @@ Further, our use of Ray Data also implies that the compute configuration for the
 
 > **NOTE** Make sure you've gove over the [user guides](https://docs.anyscale.com/category/fine-tuning-beta) for fine-tuning to understand the different configurations available
 
-To get started with DPO training, we provide the config for DPO in [configs/mistral_dpo_summarization.yaml](configs/mistral_dpo_summarization.yaml) . You can add your `WANDB_API_KEY` as an environment variable in the dependencies tab if you wish to track progress of your run on WandB.
+To get started with DPO training, we provide the config for DPO in [configs/dpo-training/](configs/dpo-training/) . You can add your `WANDB_API_KEY` as an environment variable in the dependencies tab if you wish to track progress of your run on WandB.
 
 
  🔄 REPLACE the training and validation file paths in the config with the output file paths in the previous step for replicating our results. 
@@ -753,7 +753,7 @@ anyscale job submit -f configs/jobs/8b_judge/generate_summaries_eval_baseline_jo
 # anyscale job submit -f configs/jobs/70b_judge/generate_summaries_eval_baseline_job.yaml 
 ```
 
-This should take about 10 min for the 8B model on 8 A10s ( < \$2) and the 70B model on A100s (< \$4).
+This should take about 10 min for the 8B model on 8 A10s ( < <span>$</span>2) and the 70B model on A100s (< <span>$</span>4).
 
 For the fine-tuned DPO model, we provide a dummy config in [configs/summary_generation/8b_judge/mistral_finetuned_eval.yaml](configs/summary_generation/8b_judge/mistral_finetuned_eval.yaml). If you used the default training config provided, the model would be trained using LoRA and you should have a path to the LoRA weights. 
 
@@ -811,7 +811,7 @@ anyscale job submit -f configs/jobs/8b_judge/generate_summaries_eval_gpt_job.yam
 # anyscale job submit -f configs/jobs/70b_judge/generate_summaries_eval_gpt_job.yaml
 ```
 
-This should take about about 10 min for the 8B model on 8 A10s  ( < \$2) and the 70B model on 8 A100s  (< \$4). 
+This should take about about 10 min for the 8B model on 8 A10s  ( < <span>$</span>2) and the 70B model on 8 A100s  (< <span>$</span>4). 
 
 ## Get Evaluation Statistics
 
