@@ -1,3 +1,0 @@
-name: "llmforge-mistral-dpo-summarization-job"
-entrypoint: "llmforge anyscale finetune configs/mistral_dpo_summarization.yaml"
-max_retries: 0

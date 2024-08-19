@@ -156,7 +156,7 @@ The following command will run the [src/scripts/generate_questions.py](./src/scr
 💡 INSIGHT:  
 We are running this script as an anyscale job. The resources required by each step are requested at runtime and provisioned by Anyscale's autoscaler based on availability and quotas. You are free to change the [qa_generation](./configs/qa_generation) config in any way. The important parameters regarding resources are `accelerator_type`, `num_gpus_per_instance`, and `concurrency`. This script will generate 5 multiple choice question and answer pairs per article for 21k examples. According to the [llama_8b](./configs/qa_generation/llama_8b.yaml) config we are requesting 3 replicas of 4xA10G machines processing a batch-size of 128 examples each which saturates the GPUs all the way through.
 
-This step will take ~40 min for 8B running on 12 A10s (~ $10) and ~75 mins for 70B running on 8 A100s (~ $28). 
+This step will take about 40 min for 8B running on 12 A10s (approx. $10) and about 75 mins for 70B running on 8 A100s (approx. $28). 
 
 ```bash
 anyscale job submit -f configs/jobs/8b_judge/generate_questions_job.yaml
@@ -389,7 +389,7 @@ The following command will run the [generate_summaries_and_scores.py](src/script
 🔄 REPLACE the S3 URI in [`configs/summary_generation/8b_judge/mistral_finetuned_eval.yaml`](configs/summary_generation/8b_judge/mistral_finetuned_eval.yaml) with the path to the folder with generated questions from the previous job
 
 
-This job will take \~ 320 min for 8B on 14 A10Gs (\~ $76) and for 70B on A100s (\~ $125) given the default configurations.
+This job will take about 320 min for 8B on 14 A10Gs (approx. $76) and for 70B on A100s (approx. $125) given the default configurations.
 
 
 ```bash
@@ -539,6 +539,8 @@ export PYTHONPATH=$PYTHONPATH:src
 python src/scripts/generate_dpo_data.py configs/training_data_generation/mistral_8b.yaml
 ```
 
+This should finish in a few minutes. 
+
 
 ```python
 # Inspect the results
@@ -656,11 +658,13 @@ Further, our use of Ray Data also implies that the compute configuration for the
 To get started with DPO training, we provide the config for DPO in [configs/mistral_dpo_summarization.yaml](configs/mistral_dpo_summarization.yaml) . You can add your `WANDB_API_KEY` as an environment variable in the dependencies tab if you wish to track progress of your run on WandB.
 
 
- 🔄 REPLACE the training and validation file paths in the config with the output file paths in the previous step
+ 🔄 REPLACE the training and validation file paths in the config with the output file paths in the previous step for replicating our results. 
 
 
 ```python
-!cat configs/mistral_dpo_summarization.yaml
+!cat configs/dpo-training/mistral_a10.yaml
+# Optionally, print out the A100 config
+# !cat configs/dpo-training/mistral_a100.yaml
 ```
 
     model_id: mistralai/Mistral-7B-Instruct-v0.1
@@ -715,10 +719,12 @@ To get started with DPO training, we provide the config for DPO in [configs/mist
 You can fine-tune the model now by submitting it as an Anyscale job: 
 
 ```bash
-anyscale job submit configs/jobs/mistral_dpo_job.yaml
+anyscale job submit configs/jobs/dpo-training/mistral_a10.yaml
+# Or on A100s:
+# anyscale job submit configs/jobs/dpo-training/mistral_a100.yaml
 ```
 
-This should take about 10 hours for the 8B model on 16 A10s (2 nodes with 8xA10), and about 7 hours for the 70B model on 8 A100s (1 node with 8xA100). 
+For the example dataset provided in the default configs, this should take about 10 hours on 16 A10s (2 nodes with 8xA10), and about 1 hour with 8 A100s (1 node with 8xA100). For fine-tuning on the complete dataset (i.e to replicate the results from the blog), we recommend using A100s, and the job would take about 6 hours on 8 A100s (1 node with 8xA100). 
 
 💡 INSIGHT: This fine-tuning job inherits the compute configuration of the current workspace - meaning the job runs on a CPU-only head node with auto-scaling enabled. Sometimes, the nodes you get with auto-scaling can be in-efficient for fine-tuning due to inter-node communication costs (Say you get 2 4xA10 nodes instead of 8xA10s due to availability). You can explicitly set the compute configuration for the job with a set number of worker nodes to avoid this (but this might involve more wait times).
  - More on compute configurations here: https://docs.anyscale.com/configuration/compute-configuration 
@@ -748,7 +754,7 @@ anyscale job submit -f configs/jobs/8b_judge/generate_summaries_eval_baseline_jo
 # anyscale job submit -f configs/jobs/70b_judge/generate_summaries_eval_baseline_job.yaml 
 ```
 
-This should take \~ 10 min for the 8B model on 8 A10s ( < $2) and the 70B model on A100s (< $4).
+This should take about 10 min for the 8B model on 8 A10s ( < $2) and the 70B model on A100s (< $4).
 
 For the fine-tuned DPO model, we provide a dummy config in [configs/summary_generation/8b_judge/mistral_finetuned_eval.yaml](configs/summary_generation/8b_judge/mistral_finetuned_eval.yaml). If you used the default training config provided, the model would be trained using LoRA and you should have a path to the LoRA weights. 
 
@@ -806,7 +812,7 @@ anyscale job submit -f configs/jobs/8b_judge/generate_summaries_eval_gpt_job.yam
 # anyscale job submit -f configs/jobs/70b_judge/generate_summaries_eval_gpt_job.yaml
 ```
 
-This should take about \~ 10 min for the 8B model on 8 A10s and the 70B model on 8 A100s. 
+This should take about about 10 min for the 8B model on 8 A10s and the 70B model on 8 A100s. 
 
 ## Get Evaluation Statistics
 
