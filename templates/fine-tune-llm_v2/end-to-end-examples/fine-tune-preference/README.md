@@ -389,7 +389,7 @@ The following command will run the [generate_summaries_and_scores.py](src/script
 🔄 REPLACE the S3 URI in [`configs/summary_generation/8b_judge/mistral_finetuned_eval.yaml`](configs/summary_generation/8b_judge/mistral_finetuned_eval.yaml) with the path to the folder with generated questions from the previous job
 
 
-This job will take ~320 min for 8B on 14 A10Gs (~ $76) and for 70B on A100s (~ $125) given the default configurations.
+This job will take \~ 320 min for 8B on 14 A10Gs (\~ $76) and for 70B on A100s (\~ $125) given the default configurations.
 
 
 ```bash
@@ -748,7 +748,7 @@ anyscale job submit -f configs/jobs/8b_judge/generate_summaries_eval_baseline_jo
 # anyscale job submit -f configs/jobs/70b_judge/generate_summaries_eval_baseline_job.yaml 
 ```
 
-This should take ~10 min for the 8B model on 8 A10s ( < $2) and the 70B model on A100s (< $4).
+This should take \~ 10 min for the 8B model on 8 A10s ( < $2) and the 70B model on A100s (< $4).
 
 For the fine-tuned DPO model, we provide a dummy config in [configs/summary_generation/8b_judge/mistral_finetuned_eval.yaml](configs/summary_generation/8b_judge/mistral_finetuned_eval.yaml). If you used the default training config provided, the model would be trained using LoRA and you should have a path to the LoRA weights. 
 
@@ -806,7 +806,7 @@ anyscale job submit -f configs/jobs/8b_judge/generate_summaries_eval_gpt_job.yam
 # anyscale job submit -f configs/jobs/70b_judge/generate_summaries_eval_gpt_job.yaml
 ```
 
-This should take about ~10 min for the 8B model on 8 A10s and the 70B model on 8 A100s. 
+This should take about \~ 10 min for the 8B model on 8 A10s and the 70B model on 8 A100s. 
 
 ## Get Evaluation Statistics
 
