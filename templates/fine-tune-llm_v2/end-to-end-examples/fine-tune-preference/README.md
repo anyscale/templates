@@ -156,7 +156,7 @@ The following command will run the [src/scripts/generate_questions.py](./src/scr
 💡 INSIGHT:  
 We are running this script as an anyscale job. The resources required by each step are requested at runtime and provisioned by Anyscale's autoscaler based on availability and quotas. You are free to change the [qa_generation](./configs/qa_generation) config in any way. The important parameters regarding resources are `accelerator_type`, `num_gpus_per_instance`, and `concurrency`. This script will generate 5 multiple choice question and answer pairs per article for 21k examples. According to the [llama_8b](./configs/qa_generation/llama_8b.yaml) config we are requesting 3 replicas of 4xA10G machines processing a batch-size of 128 examples each which saturates the GPUs all the way through.
 
-This step will take ~75 min for 8B running on A10s and  for 70B running on A100s.
+This step will take ~40 min for 8B running on 12 A10s (~ $10) and ~75 mins for 70B running on 8 A100s (~ $28). 
 
 ```bash
 anyscale job submit -f configs/jobs/8b_judge/generate_questions_job.yaml
@@ -165,6 +165,8 @@ anyscale job submit -f configs/jobs/8b_judge/generate_questions_job.yaml
 ```
 
 > **NOTE**: We recommend that you execute all the commands in this notebook in a terminal. Make sure you `cd` into the directory of this notebook (and the `src` files) before executing the commands. 
+
+> **NOTE**: The default configurations provided are not tuned for maximum throughput. Feel free to modify the scaling configs (i.e concurrency, num gpus per instance) etc as needed (and as permitted by availability).
 
 At the end of the job, you should see the remote path to the folder with Q&A in the logs.
 
@@ -387,7 +389,7 @@ The following command will run the [generate_summaries_and_scores.py](src/script
 🔄 REPLACE the S3 URI in [`configs/summary_generation/8b_judge/mistral_finetuned_eval.yaml`](configs/summary_generation/8b_judge/mistral_finetuned_eval.yaml) with the path to the folder with generated questions from the previous job
 
 
-This job will take ~420 min for 8B on A10Gs and ~300 min for 70B on A100s given the default configurations.
+This job will take ~320 min for 8B on 14 A10Gs (~ $76) and for 70B on A100s (~ $125) given the default configurations.
 
 
 ```bash
@@ -396,7 +398,7 @@ anyscale job submit -f configs/jobs/8b_judge/generate_summaries_train_job.yaml
 # anyscale job submit -f configs/jobs/70b_judge/generate_summaries_train_job.yaml
 ```
 
-💡 INSIGHT: If your job is unable to acquire the specified resources, it might indicate a lack of availability of GPUs. Try decreasing the `concurrency` argument for reference model or the judge. 
+💡 INSIGHT: Feel free to modify the `concurrency` argument to increase throughput and reduce overall time taken for job. Note that for high values the job might not acquire the specified resources and this indicates a lack of availability of GPUs. Try decreasing the `concurrency` argument for reference model or the judge.  
 
 🔄 REPLACE the below S3 URI with the link to the generated summaries from the job. You can optionally skip the previous with the example dataset below.
 
@@ -420,65 +422,105 @@ for row in example_rows:
 ```
 
     TEXT:
-    A Newcastle man got the shock of his life while he was filming a lightning storm
-    in New South Wales. Rob McGee was watching the storm roll over the city - two
-    hours north of Sydney - when he captured the moment a lightning strike hit a
-    nearby gym. Mr McGee posted the video on social media just after 7.30pm on
-    Sunday. Scroll down for video . Rob McGee was watching the storm roll over
-    Newcastle - two hours north of Sydney - when he captured the moment a lightning
-    strike hit a nearby gym . 'Scared the crap out of me!' he wrote along with the
-    video. In the five-second footage, a deafening crack is heard when lightning
-    hits a building. Mr McGee told shocked friends who commented on the post that
-    the landing place was a gym behind Civic train station. 'Had a better look.....
-    it is gym behind the station. Bet a few people dropped a weight or two,' he
-    wrote. The landing place was a nearby gym behind Civic train station in
-    Newcastle . The storm that rolled in over NSW on Sunday followed hot weather
-    during the day . He added 'a few' others had hit his building but this was the
-    only one he had captured on camera. At the time of publication, Mr McGees' video
-    had attracted almost 70,000 views on social media. Sunday's hot weather during
-    the day was followed by thunderstorms late in the afternoon. In NSW, a number of
-    fires were believed to have been started by lightning strikes. At least 90
-    blazes were burning across the state, with more than half deemed out-of-control.
-    Most were caused by lightning strikes late Sunday that followed scorching
-    temperatures in Sydney and around the state, NSW Rural Fire Service spokesman
-    Ben Shepherd said. At the time of publication, Mr McGees' video had attracted
-    almost 70,000 views on social media . 'The good thing at this stage is there is
-    nothing impacting on any lives or property,' he told AAP on Monday. 'However,
-    given the remoteness of some of these fires, it is going to take a considerable
-    effort over coming days in order to actually start some containment on a number
-    of these fires.' Mr Shepherd said the RFS had sent out planes on Monday morning
-    to try to detect new outbreaks. 'We are expecting more [fires],' he said. About
-    430 firefighters were on the ground and more are on standby. 'We've probably got
-    a day or two at least of more favourable weather, which will assist in getting
-    some of these fires under control,' Mr Shepherd said. Sydney was set to reach a
-    top of 30 degrees Celsius on Monday while Wallsend, in the Hunter region, was
-    expected to peak at 38, and Penrith in Sydney's west had a maximum of 36. Total
-    fire bans remain in place for the lower central west plains, including Dubbo.
+    By . Kerry Mcqueeney . UPDATED: . 04:15 EST, 6 March 2012 . The wife of a
+    British man facing arms dealing charges in the United States has described a
+    judge's decision to remand him in custody ahead of his trial in the United
+    States as 'heartbreaking'. Elaine Tappin said it was an 'outrage' that her
+    65-year-old husband Christopher was refused bail after he was extradited to the
+    United States two weeks ago. Judge Robert Castaneda ruled Tappin must remain in
+    custody after US prosecutors told the federal court in El Paso, Texas, he may be
+    a 'danger to the community' if released. Accused: An artist's impression of
+    Christopher Tappin at his bail hearing in the El Paso Federal Courthouse .
+    Heartbroken: Elaine Tappin with her husband Christopher, before he was
+    extradited to the U.S. Mrs Tappin, 62, of Orpington, Kent, said: 'This is an
+    outrage. God only knows how he'll bear up. It's heartbreaking.' Tappin has spent
+    23 hours a day locked in his cell at the Otero County detention centre in New
+    Mexico since he was extradited to America. His wife went on: 'I am shocked and
+    deeply disappointed. He's a man of his word and is certainly not at risk of
+    fleeing - where would he go? 'He doesn't have his passport or access to money.
+    Why has the British Government allowed him to be incarcerated in solitary
+    confinement for 23 hours a day before he's even been tried? 'Tony Blair helped
+    the NatWest Three, why can't David Cameron help Chris?' Denied bail: The prison
+    van carrying Christopher Tappin away from the federal courthouse after he was
+    remanded in custody . Mrs Tappin added: 'He's not a danger to anyone - he's a
+    65-year-old granddad. 'How is he supposed to prepare a proper defence when he's
+    only been allowed to communicate with his lawyers from behind a plastic screen?'
+    Tappin lost his two-year battle . against extradition to America two weeks ago
+    and denies attempting to . sell batteries for surface-to-air missiles which were
+    to be shipped from . the US to Tehran via the Netherlands. The . president of
+    the Kent Golf Union, who faces up to 35 years in jail if . convicted, was
+    escorted into the courtroom on Friday wearing an . orange-red prison jumpsuit,
+    with his feet and one hand shackled. Incarcerated: Christopher Tappin is a
+    65-year-old grandfather . US marshals allowed the other hand to remain free so
+    he could use a cane he needs to walk. Assistant US attorney Greg McDonald asked
+    the judge to keep Tappin in jail for the remainder of the proceedings. 'The risk
+    is not that he'll punch somebody in the face, but through the use of a computer
+    and the knowledge he has, he might pose a danger to the community,' Mr McDonald
+    said. Tappin has no ties to the US and failed to disclose to court officials his
+    frequent travels to Egypt, the United Arab Emirates and South Africa, he added.
+    But Kent Schaffer, representing Tappin, said if released, his client would have
+    complied with any restrictions imposed by the court and his family was ready to
+    post bail of 50,000 dollars (£31,600). His case fuelled the row over the
+    fairness of the extradition treaty between the UK and the US. Attorney General
+    Dominic Grieve QC said Tappin's extradition highlighted problems with the treaty
+    which were not 'readily curable', warning that many Britons were left uneasy
+    when faced with the seemingly harsh and disproportionate sentences in the
+    American justice system. Other critics of the 2003 treaty, including Deputy
+    Prime Minister Nick Clegg, have described it as 'one-sided', but an independent
+    review by retired Court of Appeal judge Sir Scott Baker last year found it was
+    both balanced and fair. Tappin's extradition follows an investigation which
+    started in 2005 when US agents asked technology providers about buyers who might
+    have raised red flags. Those customers were then approached by undercover
+    companies set up by government agencies. Caged: Tappin has spent 23 hours a day
+    locked in his cell at the Otero County detention centre in New Mexico (pictured)
+    since he was extradited to America . Briton Robert Gibson, an associate of
+    Tappin who agreed to co-operate, was jailed for 24 months after pleading guilty
+    to conspiracy to export defence articles. Gibson provided ICE agents with about
+    16,000 computer files and emails indicating that he and Tappin had long-standing
+    commercial ties with Iranian customers. American Robert Caldwell was also found
+    guilty of aiding and abetting the illegal transport of defence articles and
+    served 20 months in prison. In a brief telephone conversation with his wife,
+    Tappin told her he was shackled and confined in a cage for five hours before his
+    bail hearing on Friday, a family spokeswoman said. The judge agreed that
+    measures could be imposed to ensure Tappin is monitored if released, but he said
+    a discrepancy in Tappin's financial statement led to him being denied bail.
+    Daryl Fields, a spokesman for the US Attorney's office in the western district
+    of Texas, said Tappin was denied bail because he 'posed a flight risk'. His
+    trial will take place before US District Judge David Briones in El Paso, but no
+    date has been set.
     
     QUESTIONS:
-    Q1) What was the cause of at least 90 blazes burning across NSW? A. Wild animals
-    B. Drought C. Lightning strikes D. Human error E. Strong winds  Q2) How many
-    firefighters were on the ground to combat the fires? A. 200 B. 500 C. 430 D. 300
-    E. 100  Q3) Where did Rob McGee capture the moment a lightning strike hit a
-    nearby gym? A. Penrith B. Dubbo C. Newcastle D. Sydney E. Wallsend  Q4) What was
-    the approximate number of views on Rob McGee's video at the time of publication?
-    A. 70,000 B. 1,000 C. 7,000 D. 7,000,000 E. 700,000  Q5) What was the
-    temperature expected to reach in Sydney on Monday? A. 30 degrees Celsius B. 40
-    degrees Celsius C. 20 degrees Celsius D. 25 degrees Celsius E. 35 degrees
-    Celsius
+    Q1) What is the name of the treaty that has been criticized due to Christopher
+    Tappin's extradition? A. The UK-US Treaty of 2003 B. The Extradition Treaty
+    between the UK and the US C. The US-UK Extradition Treaty of 2003 D. The UK-US
+    Extradition Treaty E. The US-UK Treaty of 2003  Q2) Why was Christopher Tappin
+    denied bail in the US? A. Because he posed a physical threat to the community B.
+    Because he was a flight risk C. All of the above D. Due to his lack of ties to
+    the US and failure to disclose his frequent travels E. Due to a discrepancy in
+    his financial statement  Q3) What is the maximum sentence Christopher Tappin
+    faces if convicted? A. Life imprisonment B. 20 years in jail C. 50 years in jail
+    D. 35 years in jail E. 10 years in jail  Q4) How many hours a day is Christopher
+    Tappin currently spending in his cell at the Otero County detention centre? A.
+    24 hours B. 12 hours C. 20 hours D. 23 hours E. 18 hours  Q5) What is
+    Christopher Tappin accused of in the United States? A. Selling surface-to-air
+    missiles to the US military B. Conspiracy to export defence articles C.
+    Smuggling goods from the US to the Netherlands D. Aiding and abetting the
+    transport of defence articles E. Attempting to sell batteries for surface-to-air
+    missiles to be shipped to Tehran
     
     MODEL GENERATED SUMMARY:
-    A Newcastle man captured a lightning strike hitting a nearby gym on camera while
-    filming a storm in New South Wales. The storm followed hot weather during the
-    day and caused multiple fires across the state. At least 90 blazes were burning,
-    with more than half out of control. The Rural Fire Service is working to contain
-    the fires and expects more to occur.
+    British man Christopher Tappin, 65, has been denied bail and remanded in custody
+    in the US ahead of his trial on arms dealing charges. His wife, Elaine Tappin,
+    described the decision as 'heartbreaking' and an 'outrage'. Tappin has been in
+    solitary confinement for 23 hours a day since his extradition two weeks ago. The
+    trial will take place before US District Judge David Briones in El Paso, but no
+    date has been set.
     
     ANSWERS:
-    ['C' 'C' 'C' 'A' 'A']
+    ['B' 'C' 'D' 'D' 'E']
     
     JUDGE ANSWERS FROM SUMMARY:
-    ['C', 'Unsure', 'C', 'Unsure', 'Unsure']
+    ['Unsure', 'Unsure', 'Unsure', 'D', 'Unsure']
     
     '===================================================================================================='
 
@@ -493,6 +535,7 @@ The following command will run the [generate_dpo_data.py](src/scripts/generate_d
 
 Run the following command in the terminal to generate DPO data:
 ```bash
+export PYTHONPATH=$PYTHONPATH:src
 python src/scripts/generate_dpo_data.py configs/training_data_generation/mistral_8b.yaml
 ```
 
@@ -629,21 +672,19 @@ To get started with DPO training, we provide the config for DPO in [configs/mist
     task: "preference_tuning"
     context_length: 4096
     # For DPO, it is recommended to set a high `num_data_blocks_per_device` to not bottleneck the logp processor.
-    num_data_blocks_per_device: 16
+    num_data_blocks_per_device: 32
     # Runs training on 12 GPUs
-    num_devices: 16
+    num_devices: 12
     train_batch_size_per_device: 2
     eval_batch_size_per_device: 2
     learning_rate: 5e-6
     num_epochs: 3
     no_gradient_checkpoint: False
-    output_dir: /mnt/local_storage/
     # Deepspeed configuration, you can provide your own deepspeed setup
     deepspeed:
       config_path: configs/zero_3.json
     worker_resources:
       accelerator_type:A10G: 1
-    flash_attention_2: True
     padding: "longest"
     preference_tuning_config:
       beta: 0.01
@@ -677,9 +718,9 @@ You can fine-tune the model now by submitting it as an Anyscale job:
 anyscale job submit configs/jobs/mistral_dpo_job.yaml
 ```
 
-This should take about 8 hours for the 8B model on A10Gs and 6 hours for the 70B model on A100s. 
+This should take about 10 hours for the 8B model on 16 A10s (2 nodes with 8xA10), and about 7 hours for the 70B model on 8 A100s (1 node with 8xA100). 
 
-💡 INSIGHT: This fine-tuning job inherits the compute configuration of the current workspace - meaning the job runs on a CPU-only head node with auto-scaling enabled. Sometimes, the nodes you get with auto-scaling can be in-efficient for fine-tuning due to inter-node communication costs (Say you get 2 4xA10 nodes instead of 8xA10s due to availability). You can explicitly set the compute configuration for the job with a set number of worker nodes to avoid this.  
+💡 INSIGHT: This fine-tuning job inherits the compute configuration of the current workspace - meaning the job runs on a CPU-only head node with auto-scaling enabled. Sometimes, the nodes you get with auto-scaling can be in-efficient for fine-tuning due to inter-node communication costs (Say you get 2 4xA10 nodes instead of 8xA10s due to availability). You can explicitly set the compute configuration for the job with a set number of worker nodes to avoid this (but this might involve more wait times).
  - More on compute configurations here: https://docs.anyscale.com/configuration/compute-configuration 
  - The complete Anyscale Job API reference: https://docs.anyscale.com/reference/job-api#jobconfig 
 
@@ -707,7 +748,7 @@ anyscale job submit -f configs/jobs/8b_judge/generate_summaries_eval_baseline_jo
 # anyscale job submit -f configs/jobs/70b_judge/generate_summaries_eval_baseline_job.yaml 
 ```
 
-This should take ~10 min for the 8B model and the 70B model.
+This should take ~10 min for the 8B model on 8 A10s ( < $2) and the 70B model on A100s (< $4).
 
 For the fine-tuned DPO model, we provide a dummy config in [configs/summary_generation/8b_judge/mistral_finetuned_eval.yaml](configs/summary_generation/8b_judge/mistral_finetuned_eval.yaml). If you used the default training config provided, the model would be trained using LoRA and you should have a path to the LoRA weights. 
 
@@ -730,8 +771,8 @@ For the fine-tuned DPO model, we provide a dummy config in [configs/summary_gene
       top_p: 0.95
       scaling_config:
         batch_size: 64
-        concurrency: 2
-        num_gpus_per_instance: 2
+        concurrency: 4
+        num_gpus_per_instance: 1
         accelerator_type: A10G
     num_generations: 1
     judge_inference_config:
@@ -765,14 +806,16 @@ anyscale job submit -f configs/jobs/8b_judge/generate_summaries_eval_gpt_job.yam
 # anyscale job submit -f configs/jobs/70b_judge/generate_summaries_eval_gpt_job.yaml
 ```
 
-This should take about ~10 min for the 8B model and the 70B model
+This should take about ~10 min for the 8B model on 8 A10s and the 70B model on 8 A100s. 
 
 ## Get Evaluation Statistics
 
 We've provided a convenient script [get_eval_stats.py](src/scripts/get_eval_stats.py) to get evaluation statistics and obtain the "win rate" of the DPO model (the percentage of times the DPO model performs better than the baseline). We've provided an example configuration below. 
 
+🔄 REPLACE the `--outputs-path` field and optionally the `--gpt4o-outputs-path` with the paths you generated from the above jobs.
+
 ```bash 
-# make sure to substitute -outputs-path with your path
+# make sure to substitute --outputs-path with your path
 python src/scripts/get_eval_stats.py --outputs-path s3://air-example-data/preference-tuning-summarization-example/summary_generation_dpo_model/test/ --baseline-outputs-path s3://air-example-data/preference-tuning-summarization-example/summary_generation_base/test/  
 
 # (Optional): if you obtained results for GPT-4o, you should uncomment and run the following command instead

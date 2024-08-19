@@ -8,20 +8,18 @@ task: "preference_tuning"
 context_length: 4096
 # For DPO, it is recommended to set a high `num_data_blocks_per_device` to not bottleneck the logp processor.
 num_data_blocks_per_device: 32
-# Runs training on 6 GPUs
-num_devices: 6
+# Runs training on 12 GPUs
+num_devices: 12
 train_batch_size_per_device: 2
 eval_batch_size_per_device: 2
 learning_rate: 5e-6
 num_epochs: 3
 no_gradient_checkpoint: False
-output_dir: /mnt/local_storage/
 # Deepspeed configuration, you can provide your own deepspeed setup
 deepspeed:
   config_path: configs/zero_3.json
 worker_resources:
   accelerator_type:A10G: 1
-flash_attention_2: True
 padding: "longest"
 preference_tuning_config:
   beta: 0.01

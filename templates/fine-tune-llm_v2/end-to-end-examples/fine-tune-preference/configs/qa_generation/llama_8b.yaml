@@ -14,9 +14,9 @@ model_inference_config:
     # Batch size per model instance
     batch_size: 128
     # Number of Ray Actors/ model instances to use
-    concurrency: 3
+    concurrency: 6
     # Number of GPUs per instance. We use vLLM with tensor parallelism over efficient inference
-    num_gpus_per_instance: 4
+    num_gpus_per_instance: 2
     # GPU type
     accelerator_type: A10G
 # Number of Ray data blocks per GPU device.
