@@ -1,0 +1,20 @@
+mode: eval
+inference_type: online
+input_folder:  s3://air-example-data/preference-tuning-summarization-example/qa_generation/qa_annotations_full_test
+model_inference_config:
+  model_id: gpt-4o
+  base_url: https://api.openai.com/v1
+  api_key_env_var: OPENAI_API_KEY
+  temperature: 0
+  max_tokens: 4096
+  concurrency: 10
+num_generations: 1
+judge_inference_config:
+  model_id_or_path: meta-llama/Meta-Llama-3.1-70B-Instruct
+  temperature: 0
+  scaling_config:
+    batch_size: 128
+    concurrency: 2
+    num_gpus_per_instance: 2
+    accelerator_type: A100
+num_mcq_questions: 5

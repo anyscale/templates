@@ -39,3 +39,4 @@ This is the path where the adapted weights are stored, you can use them fore inf
 Here is a list of end-to-end examples that involve more steps such as data preprocessing, evaluation, etc but with a main focus on improving model quality via fine-tuning.
 
 * [Fine-tuning for Function calling on custom data](./end-to-end-examples/fine-tune-function-calling/README.md): This example demonstrates how to fine-tune a model on a custom dataset for function calling task.
+* [Preference tuning for summarization](./end-to-end-examples/fine-tune-preference/README.md): An example of Direct Preference Optimization (DPO) fine-tuning for summarization.

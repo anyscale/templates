@@ -1,0 +1,3 @@
+name: "llmforge-mistral-dpo-summarization-job"
+entrypoint: "llmforge anyscale finetune configs/dpo-training/mistral_a10.yaml"
+max_retries: 0
