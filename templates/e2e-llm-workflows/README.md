@@ -80,7 +80,7 @@ For our task, we'll be using the [Viggo dataset](https://huggingface.co/datasets
 
 ```python
 from datasets import load_dataset
-ray.data.set_progress_bars(enabled=False)
+ray.data.DataContext.get_current().enable_progress_bars = False
 ```
 
 
@@ -388,6 +388,8 @@ requirements: []
 max_retries: 0
 ```
 
+<b>Note</b>: Be sure to checkout the fine-tuning documentation for the latest on how to use our [API](https://docs.anyscale.com/llms/finetuning/intro) and additional [capabilities](https://docs.anyscale.com/category/fine-tuning-beta/).
+
 
 <b style="background-color: orange;">&nbsp;💡 INSIGHT&nbsp;</b>: When defining this [Job config](https://docs.anyscale.com/reference/job-api/), if we don't specify the [compute config](https://docs.anyscale.com/configure/compute-configs/overview/) to use, then Anyscale will autoselect based on the required compute. However, we also have the optionality to specify and even make highly cost effective decisions such as [spot to on-demand fallback](https://docs.anyscale.com/configure/compute-configs/ondemand-to-spot-fallback/) (or vice-versa).
 
@@ -416,7 +418,7 @@ Output
 (anyscale +4.8s) Use `--wait` to wait for the job to run and stream logs.
 ```
 
-This workload (we set to five epochs) will take ~45 min. to complete. As the job runs, you can monitor logs, metrics, Ray dashboard, etc. by clicking on the generated Job link above (`https://console.anyscale.com/jobs/prodjob_...`)
+As the job runs, you can monitor logs, metrics, Ray dashboard, etc. by clicking on the generated Job link above (`https://console.anyscale.com/jobs/prodjob_...`)
 
 <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/e2e-llm-workflows/assets/gpu-util.png" width=800>
 
@@ -445,7 +447,7 @@ from src.utils import download_files_from_bucket
 # Locations
 artifacts_dir = '/mnt/cluster_storage'  # storage accessible by head and worker nodes
 model = 'meta-llama/Meta-Llama-3-8B-Instruct'
-uuid = 'goku_:ueewk'  # REPLACE with your NAME + MODEL ID (from Job logs)
+uuid = 'gokum:ueewk'  # REPLACE with your NAME + MODEL ID (from Job logs)
 artifacts_path = (
     f"{os.environ['ANYSCALE_ARTIFACT_STORAGE'].split(os.environ['ANYSCALE_CLOUD_STORAGE_BUCKET'])[-1][1:]}"
     f"/lora_fine_tuning/{model}:{uuid}")
