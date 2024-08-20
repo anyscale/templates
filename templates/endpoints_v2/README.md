@@ -2,7 +2,7 @@
 
 **⏱️ Time to complete**: 10 min
 
-This template comes with a library for serving OSS LLMs on Anyscale called [RayLLM](http://https://docs.anyscale.com/llms/serving/intro).
+This template comes with a library for serving OSS LLMs on Anyscale called [RayLLM](https://docs.anyscale.com/llms/serving/intro).
 
 RayLLM provides a number of features that simplify LLM development, including:
 - An extensive suite of pre-configured open source LLMs.
@@ -15,9 +15,9 @@ As well as operational features to efficiently scale LLM apps:
 
 This template explains how to set up, run, and query LLMs with RayLLM.
 
-To learn more about RayLLM, check out [the docs](http://https://docs.anyscale.com/llms/serving/intro). If you're interested in fine-tuning, check out the [fine-tuning template](https://console.anyscale.com/v2/template-preview/finetuning_llms_v2).
+To learn more about RayLLM, check out [the docs](https://docs.anyscale.com/llms/serving/intro). If you're interested in fine-tuning, check out the [fine-tuning template](https://console.anyscale.com/v2/template-preview/finetuning_llms_v2).
 
-**Note**: This guide is hosted within an Anyscale workspace, which provides easy access to compute resources. Check out the [`Introduction to Workspaces`](../intro-workspaces/README.ipynb) template for more details.
+**Note**: This guide is hosted within an Anyscale workspace, which provides easy access to compute resources. Check out the [Introduction to Workspaces](https://docs.anyscale.com/examples/intro-workspaces/) template for more details.
 
 ## Step 1 - Generate a RayLLM config
 
@@ -31,7 +31,7 @@ rayllm gen-config
 
 **Note:** This command requires interactive inputs and should be executed directly in the terminal, not within a Jupyter notebook cell.
 
-This command lets you pick from a common set of OSS LLMs and helps you configure them. You can tune settings like GPU type, tensor parallelism, and autoscaling parameters. Check out [the docs](http://https://docs.anyscale.com/llms/serving/guides/bring_any_model) to learn how to bring your own models.
+This command lets you pick from a common set of OSS LLMs and helps you configure them. You can tune settings like GPU type, tensor parallelism, and autoscaling parameters. Check out [the docs](https://docs.anyscale.com/llms/serving/guides/bring_any_model) to learn how to bring your own models.
 
 Please note that if you're configuring a model whose architecture is different from the provided list of models, we recommend that you closely review the generated model config file to provide the correct values.
 
@@ -155,7 +155,7 @@ query(service_url, service_bearer_token)
 
 ## What's next?
 
-* Check out the [RayLLM docs](http://https://docs.anyscale.com/llms/serving/intro) to learn more about how you can serve your LLMs.
+* Check out the [RayLLM docs](https://docs.anyscale.com/llms/serving/intro) to learn more about how you can serve your LLMs.
 * Try the [fine-tuning template](https://console.anyscale.com/v2/template-preview/finetuning_llms_v2) to tune some LLMs for your use case.
 * See the [offline batch inference template](https://console.anyscale.com/v2/template-preview/batch-llm) to learn how to run LLMs for batch jobs.
 
