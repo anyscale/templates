@@ -12,10 +12,10 @@ You can find some tested config files examples in the `training_configs` directo
 
 
 ```bash
-WANDB_API_KEY=<PUT_YOUR_WANDB_KEY_HERE> llmforge anyscale finetune training_configs/custom/meta-llama--Meta-Llama-3-8B-Instruct/lora/16xA10-512.yaml
+WANDB_API_KEY=<PUT_YOUR_WANDB_KEY_HERE> llmforge anyscale finetune training_configs/custom/meta-llama/Meta-Llama-3-8B/lora/4xA10-512.yaml
 ```
 
-This code will run LoRA fine-tuning on the Meta-Llama-3-8B-Instruct model with 16xA10-512 configuration on a GSM-8k math dataset.
+This code will run LoRA fine-tuning on the Meta-Llama-3-8B-Instruct model with 4xA10-512 configuration on a GSM-8k math dataset.
 
 When the training is done, you will see a message like this:
 
