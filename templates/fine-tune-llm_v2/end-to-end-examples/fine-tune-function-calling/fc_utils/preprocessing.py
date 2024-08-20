@@ -286,7 +286,7 @@ def filter_func(example: Dict[str, Any]) -> bool:
 
 
 def openai_to_anyscale(ray_ds: ray.data.Dataset) -> ray.data.Dataset:
-    """Preprocesses the input dataset into an Anyscale Endpoints-compatible format .
+    """Preprocesses the input dataset into an Anyscale compatible format .
 
     The input dataset is expected to be in the OpenAI messages format.
     """

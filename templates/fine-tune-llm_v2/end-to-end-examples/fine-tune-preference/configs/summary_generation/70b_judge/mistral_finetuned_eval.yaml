@@ -1,0 +1,25 @@
+mode: eval
+input_folder: s3://air-example-data/preference-tuning-summarization-example/qa_generation/qa_annotations_full_test
+inference_type: offline
+model_inference_config:
+  # Modify with s3 link to full param weights if you did full-param training
+  model_id_or_path: mistralai/Mistral-7B-Instruct-v0.1
+  # Add path to lora weights here. If you did full param training, you can instead remove this field.
+  adapter_id_or_path: <lora model path>
+  temperature: 0
+  top_p: 0.95
+  scaling_config:
+    batch_size: 128
+    concurrency: 2
+    num_gpus_per_instance: 1
+    accelerator_type: A100
+num_generations: 1
+judge_inference_config:
+  model_id_or_path: meta-llama/Meta-Llama-3.1-70B-Instruct
+  temperature: 0
+  scaling_config:
+    batch_size: 128
+    concurrency: 3
+    num_gpus_per_instance: 2
+    accelerator_type: A100
+num_mcq_questions: 5
