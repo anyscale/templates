@@ -19,9 +19,13 @@ no_gradient_checkpoint: False
 deepspeed:
   config_path: configs/zero_3.json
 padding: "longest"
+worker_resources:
+  accelerator_type:A100-80G: 0.001
 preference_tuning_config:
   beta: 0.01
   logprob_processor_scaling_config:
+    custom_resources:
+      accelerator_type:A100-80G: 0.001
     # Runs reference model logp calculation on 2 GPUs
     concurrency: 2
     batch_size: 16
