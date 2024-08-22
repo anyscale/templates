@@ -687,13 +687,13 @@ To get started with DPO training, we provide the config for DPO in [configs/dpo-
     deepspeed:
       config_path: configs/zero_3.json
     worker_resources:
-      accelerator_type:A10G: 1
+      accelerator_type:A10G: 0.001
     padding: "longest"
     preference_tuning_config:
       beta: 0.01
       logprob_processor_scaling_config:
-        custom_resources:
-          accelerator_type:A10G: 1 # custom resource per worker.
+        worker_resources:
+          accelerator_type:A10G: 0.001 # custom resource per worker.
         # Runs reference model logp calculation on 4 GPUs
         concurrency: 4
         batch_size: 2
