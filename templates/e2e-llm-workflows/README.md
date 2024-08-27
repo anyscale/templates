@@ -754,11 +754,11 @@ We'll start by generating the configuration for our service. We provide a conven
 **model**: `meta-llama/Meta-Llama-3-8B-Instruct:gokum:atyhk`
 
 
-We'll start by running the python command below to start the CLI workflow to generate the service yaml configuration:
+We'll start by running the rayllm CLI command below to start the workflow to generate the service yaml configuration:
 ```bash
 mkdir /home/ray/default/deploy/services
 cd /home/ray/default/deploy/services
-python /home/ray/default/src/generate_serve_config.py
+rayllm gen-config
 ```
 
 <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/e2e-llm-workflows/assets/cli.png" width=500>
@@ -774,17 +774,12 @@ python /home/ray/default/src/generate_serve_config.py
 ```yaml
 applications:
 - args:
-    dynamic_lora_loading_path: s3://anyscale-test-data-cld-i2w99rzq8b6lbjkke9y94vi5/org_7c1Kalm9WcX2bNIjW53GUT/cld_kvedZWag2qA8i5BjxUevf5i7/artifact_storage/lora_fine_tuning
-    embedding_models: []
-    function_calling_models: []
-    models: []
-    multiplex_lora_adapters: []
-    multiplex_models:
-    - ./model_config/model_config_20240516095237.yaml
-    vllm_base_models: []
-    import_path: aviary_private_endpoints.backend.server.run:router_application
-    name: llm-endpoint
-    route_prefix: /
+    llm_configs:
+    - ./model_config/meta-llama--Meta-Llama-3-8B-Instruct_20240825011129.yaml
+  import_path: rayllm:app
+  name: llm-endpoint
+  route_prefix: /
+query_auth_token_enabled: false
 ```
 
 
