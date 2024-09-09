@@ -4,7 +4,7 @@
 
 This template shows you how to do [Dreambooth](https://arxiv.org/abs/2208.12242) fine-tuning, which is a method of personalizing a stable diffusion model on a few examples (3~5) of a subject.
 
-<img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/fine-tune-stable-diffusion/assets/finetune-sample-results.png"/>
+![Sample results](assets/finetune-sample-results.png)
 
 In this tutorial, you will learn about:
 1. How to easily scale out an existing HuggingFace `diffusers` example to run on a Ray cluster with minimal modifications.
