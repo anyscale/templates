@@ -1,5 +1,8 @@
+from contextlib import contextmanager
 import os
+from tempfile import TemporaryDirectory
 import boto3
+from ray.data import Dataset
 
 
 def download_files_from_bucket(bucket, path, local_dir):
@@ -13,3 +16,13 @@ def download_files_from_bucket(bucket, path, local_dir):
             os.makedirs(os.path.dirname(local_path), exist_ok=True)
             s3.download_file(bucket, key, local_path)
             print(f"Downloaded {key} to {local_path}")
+
+@contextmanager
+def get_dataset_file_path(dataset: Dataset):
+    """Transforms a Ray `Dataset` into a single temp. JSON file written on disk.
+    Yields the path to the file."""
+    with TemporaryDirectory() as temp_path:
+        dataset.repartition(1).write_json(temp_path)
+        assert len(os.listdir(temp_path)) == 1, "The dataset should be written to a single file"
+        dataset_file_path = os.listdir(temp_path)[0]
+        yield dataset_file_path
