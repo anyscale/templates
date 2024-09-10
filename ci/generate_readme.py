@@ -33,7 +33,7 @@ class Image(TypedDict):
 
 def _inline_image(img_file: str) -> str:
     with open(img_file, "rb") as f:
-        img_data = base64.urlsafe_b64encode(f.read()).decode("utf-8")
+        img_data = base64.standard_b64encode(f.read()).decode("utf-8")
 
     assert isinstance(img_data, str)
 
