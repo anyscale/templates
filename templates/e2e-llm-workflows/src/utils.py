@@ -24,5 +24,5 @@ def get_dataset_file_path(dataset: Dataset):
     with TemporaryDirectory() as temp_path:
         dataset.repartition(1).write_json(temp_path)
         assert len(os.listdir(temp_path)) == 1, "The dataset should be written to a single file"
-        dataset_file_path = os.listdir(temp_path)[0]
+        dataset_file_path = f"{temp_path}/{os.listdir(temp_path)[0]}"
         yield dataset_file_path
