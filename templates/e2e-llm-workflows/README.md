@@ -382,7 +382,7 @@ While we could execute `llmforge anyscale finetune configs/training/lora/llama-3
 
 ```yaml
 name: llm-fine-tuning-guide
-entrypoint: python src/ft.py configs/training/lora/llama-3-8b.yaml
+entrypoint: llmforge anyscale finetune configs/training/lora/llama-3-8b.yaml
 image_uri: localhost:5555/anyscale/llm-forge:0.4.3.2
 requirements: []
 max_retries: 0
