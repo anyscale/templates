@@ -54,14 +54,6 @@ os.environ['HF_TOKEN'] = ''  # <-- replace with your token
 ray.init(runtime_env={'env_vars': {'HF_TOKEN': os.environ['HF_TOKEN']}})
 ```
 
-    2024-06-12 16:52:33,877	INFO worker.py:1564 -- Connecting to existing Ray cluster at address: 10.0.46.70:6379...
-    2024-06-12 16:52:33,883	INFO worker.py:1740 -- Connected to Ray cluster. View the dashboard at [1m[32mhttps://session-zdbj1t4fe6firefy7rxgrcyj7c.i.anyscaleuserdata.com [39m[22m
-    2024-06-12 16:52:33,896	INFO packaging.py:358 -- Pushing file package 'gcs://_ray_pkg_f8c87dcbafb22dcfc23fd80fe43ba56d14d0593c.zip' (2.56MiB) to Ray cluster...
-    2024-06-12 16:52:33,906	INFO packaging.py:371 -- Successfully pushed file package 'gcs://_ray_pkg_f8c87dcbafb22dcfc23fd80fe43ba56d14d0593c.zip'.
-
-
-
-
 ## Data Preprocessing
 
 We'll start by preprocessing our data in preparation for fine-tuning our LLM. We'll use batch processing to apply our preprocessing across our dataset at scale.
@@ -118,10 +110,12 @@ train_set[0]
 
 ```json
 {
-  'gem_id': 'viggo-train-0',
-  'meaning_representation': 'inform(name[Dirt: Showdown], release_year[2012], esrb[E 10+ (for Everyone 10 and Older)], genres[driving/racing, sport], platforms[PlayStation, Xbox, PC], available_on_steam[no], has_linux_release[no], has_mac_release[no])',
-  'target': "Dirt: Showdown from 2012 is a sport racing game for the PlayStation, Xbox, PC rated E 10+ (for Everyone 10 and Older). It's not available on Steam, Linux, or Mac.",
-  'references': ["Dirt: Showdown from 2012 is a sport racing game for the PlayStation, Xbox, PC rated E 10+ (for Everyone 10 and Older). It's not available on Steam, Linux, or Mac."]
+  "gem_id": "viggo-train-0",
+  "meaning_representation": "inform(name[Dirt: Showdown], release_year[2012], esrb[E 10+ (for Everyone 10 and Older)], genres[driving/racing, sport], platforms[PlayStation, Xbox, PC], available_on_steam[no], has_linux_release[no], has_mac_release[no])",
+  "target": "Dirt: Showdown from 2012 is a sport racing game for the PlayStation, Xbox, PC rated E 10+ (for Everyone 10 and Older). It's not available on Steam, Linux, or Mac.",
+  "references": [
+    "Dirt: Showdown from 2012 is a sport racing game for the PlayStation, Xbox, PC rated E 10+ (for Everyone 10 and Older). It's not available on Steam, Linux, or Mac."
+  ]
 }
 ```
 
@@ -149,6 +143,7 @@ train_ds.take(1)
   }
 ]
 ```
+
 
 
 The preprocessing we'll do involves formatting our dataset into the schema required for fine-tuning (`system`, `user`, `assistant`) conversations.
@@ -212,6 +207,9 @@ from ray.data import Dataset
 ft_train_ds: Dataset = train_ds.map(to_schema, fn_kwargs={'system_content': system_content})
 ft_train_ds.take(1)
 ```
+
+
+
 ```json
 [
   {
@@ -235,6 +233,7 @@ ft_train_ds.take(1)
 
 
 
+
 ```python
 from ray.data import Dataset
 
@@ -250,7 +249,6 @@ We can save our data locally and/or to remote storage to use later (training, ev
 
 ```python
 import anyscale
-from anyscale.utils.name_utils import get_full_name
 import os
 from ray.data import Dataset
 from rich import print as rprint
@@ -262,16 +260,93 @@ def upload_dataset(dataset: Dataset, filename: str):
     with get_dataset_file_path(dataset) as dataset_file_path:
         dataset = anyscale.llm.dataset.upload(
             dataset_file_path,
-            # john_doe/e2e_llm/viggo/train.jsonl
-            name=f"{get_full_name()}/e2e_llm/viggo/{filename}",
+            # john_doe/viggo/train.jsonl
+            name=f"viggo/{filename}",
         )
     rprint(f"Metadata for '{filename}'")
     rprint(dataset)
+    return dataset
 
 train_dataset = upload_dataset(ft_train_ds, 'train.jsonl')
 val_dataset = upload_dataset(ft_val_ds, 'val.jsonl')
 test_dataset = upload_dataset(ft_test_ds, 'test.jsonl')
 ```
+
+
+<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace"><span style="color: #008000; text-decoration-color: #008000; font-weight: bold">Upload complete!</span>
+</pre>
+
+
+<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace"></pre>
+
+
+<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace">
+</pre>
+
+
+
+
+<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace">Metadata for <span style="color: #008000; text-decoration-color: #008000">'train.jsonl'</span>
+</pre>
+
+
+
+
+<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace"><span style="color: #800080; text-decoration-color: #800080; font-weight: bold">Dataset</span><span style="font-weight: bold">(</span>
+    <span style="color: #808000; text-decoration-color: #808000">id</span>=<span style="color: #008000; text-decoration-color: #008000">'dataset_gnw82eyahbevp8y6sb6l9lmrsu'</span>,
+    <span style="color: #808000; text-decoration-color: #808000">name</span>=<span style="color: #008000; text-decoration-color: #008000">'viggo/train.jsonl'</span>,
+    <span style="color: #808000; text-decoration-color: #808000">filename</span>=<span style="color: #008000; text-decoration-color: #008000">'28_000000_000000.json'</span>,
+    <span style="color: #808000; text-decoration-color: #808000">storage_uri</span>=<span style="color: #008000; text-decoration-color: #008000">'s3://anyscale-production-data-cld-puimr4zjusn646fbl9zvgdgbq9/org_qvrjku61be1xl1ebynlg5bzvge/cld_pu</span>
+<span style="color: #008000; text-decoration-color: #008000">imr4zjusn646fbl9zvgdgbq9/datasets/dataset_gnw82eyahbevp8y6sb6l9lmrsu/1/28_000000_000000.json'</span>,
+    <span style="color: #808000; text-decoration-color: #808000">version</span>=<span style="color: #008080; text-decoration-color: #008080; font-weight: bold">1</span>,
+    <span style="color: #808000; text-decoration-color: #808000">num_versions</span>=<span style="color: #008080; text-decoration-color: #008080; font-weight: bold">1</span>,
+    <span style="color: #808000; text-decoration-color: #808000">created_at</span>=<span style="color: #800080; text-decoration-color: #800080; font-weight: bold">datetime</span><span style="color: #800080; text-decoration-color: #800080; font-weight: bold">.datetime</span><span style="font-weight: bold">(</span><span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2024</span>, <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">9</span>, <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">12</span>, <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">17</span>, <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">31</span>, <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">14</span>, <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">718198</span>, <span style="color: #808000; text-decoration-color: #808000">tzinfo</span>=<span style="color: #800080; text-decoration-color: #800080; font-weight: bold">tzlocal</span><span style="font-weight: bold">())</span>,
+    <span style="color: #808000; text-decoration-color: #808000">creator_id</span>=<span style="color: #008000; text-decoration-color: #008000">'usr_buxzyw3dyfbvl5cxyb51mjsg4w'</span>,
+    <span style="color: #808000; text-decoration-color: #808000">project_id</span>=<span style="color: #008000; text-decoration-color: #008000">'prj_qc1twugbhy9mfegbcz7yw9ny3p'</span>,
+    <span style="color: #808000; text-decoration-color: #808000">cloud_id</span>=<span style="color: #008000; text-decoration-color: #008000">'cld_puimr4zjusn646fbl9zvgdgbq9'</span>,
+    <span style="color: #808000; text-decoration-color: #808000">description</span>=<span style="color: #800080; text-decoration-color: #800080; font-style: italic">None</span>
+<span style="font-weight: bold">)</span>
+</pre>
+
+
+<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace"><span style="color: #008000; text-decoration-color: #008000; font-weight: bold">Upload complete!</span>
+</pre>
+
+
+
+
+<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace"></pre>
+
+
+
+
+<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace">
+</pre>
+
+
+
+
+<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace">Metadata for <span style="color: #008000; text-decoration-color: #008000">'val.jsonl'</span>
+</pre>
+
+
+
+
+<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace"><span style="color: #800080; text-decoration-color: #800080; font-weight: bold">Dataset</span><span style="font-weight: bold">(</span>
+    <span style="color: #808000; text-decoration-color: #808000">id</span>=<span style="color: #008000; text-decoration-color: #008000">'dataset_tjvg63t3vqnk28sfhu4ew4izw3'</span>,
+    <span style="color: #808000; text-decoration-color: #808000">name</span>=<span style="color: #008000; text-decoration-color: #008000">'viggo/val.jsonl'</span>,
+    <span style="color: #808000; text-decoration-color: #808000">filename</span>=<span style="color: #008000; text-decoration-color: #008000">'32_000000_000000.json'</span>,
+    <span style="color: #808000; text-decoration-color: #808000">storage_uri</span>=<span style="color: #008000; text-decoration-color: #008000">'s3://anyscale-production-data-cld-puimr4zjusn646fbl9zvgdgbq9/org_qvrjku61be1xl1ebynlg5bzvge/cld_pu</span>
+<span style="color: #008000; text-decoration-color: #008000">imr4zjusn646fbl9zvgdgbq9/datasets/dataset_tjvg63t3vqnk28sfhu4ew4izw3/1/32_000000_000000.json'</span>,
+    <span style="color: #808000; text-decoration-color: #808000">version</span>=<span style="color: #008080; text-decoration-color: #008080; font-weight: bold">1</span>,
+    <span style="color: #808000; text-decoration-color: #808000">num_versions</span>=<span style="color: #008080; text-decoration-color: #008080; font-weight: bold">1</span>,
+    <span style="color: #808000; text-decoration-color: #808000">created_at</span>=<span style="color: #800080; text-decoration-color: #800080; font-weight: bold">datetime</span><span style="color: #800080; text-decoration-color: #800080; font-weight: bold">.datetime</span><span style="font-weight: bold">(</span><span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2024</span>, <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">9</span>, <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">12</span>, <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">17</span>, <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">31</span>, <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">16</span>, <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">308849</span>, <span style="color: #808000; text-decoration-color: #808000">tzinfo</span>=<span style="color: #800080; text-decoration-color: #800080; font-weight: bold">tzlocal</span><span style="font-weight: bold">())</span>,
+    <span style="color: #808000; text-decoration-color: #808000">creator_id</span>=<span style="color: #008000; text-decoration-color: #008000">'usr_buxzyw3dyfbvl5cxyb51mjsg4w'</span>,
+    <span style="color: #808000; text-decoration-color: #808000">project_id</span>=<span style="color: #008000; text-decoration-color: #008000">'prj_qc1twugbhy9mfegbcz7yw9ny3p'</span>,
+    <span style="color: #808000; text-decoration-color: #808000">cloud_id</span>=<span style="color: #008000; text-decoration-color: #008000">'cld_puimr4zjusn646fbl9zvgdgbq9'</span>,
+    <span style="color: #808000; text-decoration-color: #808000">description</span>=<span style="color: #800080; text-decoration-color: #800080; font-style: italic">None</span>
+<span style="font-weight: bold">)</span>
+</pre>
 
 
 ```python
@@ -299,7 +374,6 @@ ft_train_ds.take(1)
   }
 ]
 ```
-
 
 ## Fine-tuning
 
@@ -381,12 +455,14 @@ While we could execute `llmforge anyscale finetune configs/training/lora/llama-3
 !cat deploy/jobs/ft.yaml
 ```
 
+```yaml
     name: e2e-llm-workflows
     entrypoint: llmforge anyscale finetune configs/training/lora/llama-3-8b.yaml
     image_uri: localhost:5555/anyscale/llm-forge:0.5.4
     requirements: []
     max_retries: 1
-
+    excludes: ["assets"]
+```
 
 **Note**: Be sure to checkout the fine-tuning documentation for the latest on how to use our [API](https://docs.anyscale.com/llms/finetuning/intro) and additional [capabilities](https://docs.anyscale.com/category/fine-tuning-beta/).
 
@@ -405,17 +481,17 @@ While we could execute `llmforge anyscale finetune configs/training/lora/llama-3
 
 
 ```python
-# Job submission
+import anyscale
+from anyscale.job import JobConfig
 
-!anyscale job submit --config-file "deploy/jobs/ft.yaml" --exclude "assets"
+# Job submission
+job_config = JobConfig.from_yaml("deploy/jobs/ft.yaml")
+job_id = anyscale.job.submit(job_config)
 ```
 
-    Output
-    (anyscale +1.3s) Submitting job with config JobConfig(name='e2e-llm-workflows', image_uri='localhost:5555/anyscale/llm-forge:0.5.4', compute_config=None, env_vars=None, py_modules=None, cloud=None, project=None, ray_version=None, job_queue_config=None).
-    (anyscale +2.9s) Uploading local dir '.' to cloud storage.
-    (anyscale +4.4s) Job 'e2e-llm-workflows' submitted, ID: 'prodjob_5i8jpkxa6pyit9mzzzzry31iae'.
-    (anyscale +4.4s) View the job in the UI: https://console.anyscale.com/jobs/prodjob_5i8jpkxa6pyit9mzzzzry31iae
-    (anyscale +4.4s) Use `--wait` to wait for the job to run and stream logs.
+    (anyscale +17m7.0s) Uploading local dir '.' to cloud storage.
+    (anyscale +17m8.7s) Job 'e2e-llm-workflows' submitted, ID: 'prodjob_q1tzjcngnrwrp2yzpnbh4v7n8w'.
+    (anyscale +17m8.7s) View the job in the UI: https://console.anyscale.com/jobs/prodjob_q1tzjcngnrwrp2yzpnbh4v7n8w
 
 
 As the job runs, you can monitor logs, metrics, Ray dashboard, etc. by clicking on the generated Job link above (`https://console.anyscale.com/jobs/prodjob_...`)
@@ -433,7 +509,7 @@ To retrieve information about your fine-tuned model, Anyscale provides a conveni
 
 ```python
 import anyscale
-model_info = anyscale.llm.model.get(job_id="prodjob_5i8jpkxa6pyit9mzzzzry31iae")
+model_info = anyscale.llm.model.get(job_id=job_id)
 print(model_info)
 ```
 
@@ -707,6 +783,7 @@ ft_pred_ds = test_input_prompts_ds.map_batches(
 ft_pred = ft_pred_ds.take_all()
 ft_pred[3]
 ```
+
 ```json
 {
   "prompt": "<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\nGiven a target sentence construct the underlying meaning representation of the input sentence as a single function with attributes and attribute values. This function should describe the target string accurately and the function must be one of the following ['inform', 'request', 'give_opinion', 'confirm', 'verify_attribute', 'suggest', 'request_explanation', 'recommend', 'request_attribute']. The attributes must be one of the following: ['name', 'exp_release_date', 'release_year', 'developer', 'esrb', 'rating', 'genres', 'player_perspective', 'has_multiplayer', 'platforms', 'available_on_steam', 'has_linux_release', 'has_mac_release', 'specifier']<|eot_id|><|start_header_id|>user<|end_header_id|>\n\nI like first person games normally, but not even that could make a music game fun for me. In fact in Guitar Hero: Smash Hits, I think the perspective somehow made an already bad game even worse.<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n",
@@ -754,7 +831,6 @@ mismatches[0:2]
 ```
 
 
-
 ## Serving
 
 For model serving, we'll first serve it locally, test it and then launch a production grade service that can autoscale to meet any demand.
@@ -766,11 +842,11 @@ We'll start by generating the configuration for our service. We provide a conven
 <b style="background-color: orange;">&nbsp;💡 INSIGHT&nbsp;</b>: Ray Serve and Anyscale support [serving multiple LoRA adapters](https://github.com/anyscale/templates/blob/main/templates/endpoints_v2/examples/lora/DeployLora.ipynb) with a common base model in the same request batch which allows you to serve a wide variety of use-cases without increasing hardware spend. In addition, we use Serve multiplexing to reduce the number of swaps for LoRA adapters. There is a slight latency overhead to serving a LoRA model compared to the base model, typically 10-20%.
 
 
-We can use the model metadata `model_info` for the model ID as well the storage URI for the final lora weights.  
+We can use the model metadata `model_info` for the model ID. For serving, we'll use the root folder for the LoRA checkpoints.  
 
 **model**: `meta-llama/Meta-Llama-3-8B-Instruct:suman:cdrba` (`model_info.id`)
 
-**LoRA weights storage URI**: `s3://org_4snvy99zwbmh4gbtk64jfqggmj/cld_ldm5ez4edlp7yh4yiakp2u294w/artifact_storage/lora_fine_tuning/meta-llama/Meta-Llama-3-8B-Instruct:suman:cdrba` ( or `{ANYSCALE_ARTIFACT_STORAGE}/lora_fine_tuning/{model_id}`)
+**LoRA weights storage URI**: `s3://org_4snvy99zwbmh4gbtk64jfqggmj/cld_ldm5ez4edlp7yh4yiakp2u294w/artifact_storage/lora_fine_tuning` ( or `{ANYSCALE_ARTIFACT_STORAGE}/lora_fine_tuning`)
 
 We'll start by running the rayllm CLI command below to start the workflow to generate the service yaml configuration:
 ```bash
