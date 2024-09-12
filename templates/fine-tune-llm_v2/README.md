@@ -8,9 +8,14 @@ This template comes with a installed library for training LLMs on Anyscale calle
 
 ## Getting Started
 
-You can find some tested config files examples in the `training_configs` directoy. LLMForge comes with a CLI that lets you pass in a config YAML file to start your training.
+You can find some tested config files examples in the `training_configs` directory. LLMForge comes with a CLI that lets you pass in a config YAML file to start your training.
 
+First let's install WandB for logging metrics externally
+```bash
+pip install wandb
+```
 
+Then we can launch fine tuning by running the following command:
 ```bash
 WANDB_API_KEY=<PUT_YOUR_WANDB_KEY_HERE> llmforge anyscale finetune training_configs/custom/meta-llama/Meta-Llama-3-8B/lora/4xA10-512.yaml
 ```
@@ -24,6 +29,19 @@ Note: LoRA weights will also be stored in path <path>
 ````
 
 This is the path where the adapted weights are stored, you can use them fore inference. You can also see the list of your fine-tuned models in the `serving` tab in the Anyscale console.
+
+## Logging
+To alternatively log with MLflow instead of WandB, set the `MLFLOW_TRACKING_TOKEN` environment variable instead of `WANDB_API_KEY`. We've provided an example config at `training_configs/custom/meta-llama/Meta-Llama-3-8B/lora/4xA10-512-mlflow.yaml` showing how to configure the `logger` field with a `tracking_uri` and `experiment_name` (these values must be valid for your specific user).
+
+First we need to install MLflow.
+```bash
+pip install mlflow
+```
+
+Then we can launch finetuning as above with our modified config:
+```bash
+MLFLOW_TRACKING_TOKEN=<PUT_YOUR_MLFLOW_KEY_HERE> llmforge anyscale finetune training_configs/custom/meta-llama/Meta-Llama-3-8B/lora/4xA10-512-mlflow.yaml
+```
 
 # What is Next?
 

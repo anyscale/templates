@@ -35,7 +35,11 @@ deepspeed:
   config_path: deepspeed_configs/zero_3_offload_optim+param.json
 
 logger:
-  provider: wandb
+  provider: mlflow
+  provider_config:
+    tracking_uri: "https://*******.cloud.databricks.com"
+    experiment_name: "/Users/*******/llmforge"
+    create_experiment_if_not_exists: True
 
 # Accelerator type, we value of 0.001 is not important, as long as it is
 # beteween 0 and 1. This ensures that accelerator type is used per trainer
