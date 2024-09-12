@@ -35,8 +35,10 @@ def download_files_from_gcs(gcs_uri, local_dir):
     storage_client = storage.Client()
     bucket = storage_client.bucket(bucket_name)
     blobs = bucket.list_blobs(prefix=prefix)
-
     for blob in blobs:
+        # Skip in case the blob is the root folder
+        if blob.name.rstrip("/") == prefix:
+            continue
         local_path = os.path.join(local_dir, blob.name)
         os.makedirs(os.path.dirname(local_path), exist_ok=True)
         blob.download_to_filename(local_path)
