@@ -1,5 +1,5 @@
 name: e2e-llm-workflows
 entrypoint: llmforge anyscale finetune configs/training/lora/llama-3-8b.yaml
-image_uri: localhost:5555/anyscale/llm-forge:0.5.3
+image_uri: localhost:5555/anyscale/llm-forge:0.5.4
 requirements: []
 max_retries: 1

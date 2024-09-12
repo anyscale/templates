@@ -1,4 +1,4 @@
-# End-to-end LLM Workflows Guide
+# End-to-end LLM Workflows Guide 
 
 In this guide, we'll learn how to execute the end-to-end LLM workflows to develop & productionize LLMs at scale.
 
@@ -18,7 +18,7 @@ Throughout these workloads we'll be using [Ray](https://github.com/ray-project/r
 
 ## Set up
 
-We can execute this notebook **entirely for free** (no credit card needed) by creating an [Anyscale account](https://console.anyscale.com/register/ha?utm_source=goku). Once you log in, you'll be directed to the main [console](https://console.anyscale.com/) where you'll see a collection of notebook templates. Click on the "End-to-end LLM Workflows" to open up our guide and click on the `README.ipynb` to get started.
+We can execute this notebook **entirely for free** (no credit card needed) by creating an [Anyscale account](https://console.anyscale.com/register/ha?utm_source=goku). Once you log in, you'll be directed to the main [console](https://console.anyscale.com/) where you'll see a collection of notebook templates. Click on the "End-to-end LLM Workflows" to open up our guide and click on the `README.ipynb` to get started. 
 
 > [Workspaces](https://docs.anyscale.com/workspaces/get-started/) are a fully managed development environment which allow us to use our favorite tools (VSCode, notebooks, terminal, etc.) on top of *infinite* compute (when we need it). In fact, by clicking on the compute at the top right (`✅ 1 node, 8 CPU`), we can see the cluster information:
 
@@ -43,7 +43,7 @@ warnings.filterwarnings("ignore")
 %autoreload 2
 ```
 
-We'll need a free [Hugging Face token](https://huggingface.co/settings/tokens) to load our base LLMs and tokenizers. And since we are using Llama models, we need to login and accept the terms and conditions [here](https://huggingface.co/meta-llama/Meta-Llama-3-8B-Instruct).
+We'll need a free [Hugging Face token](https://huggingface.co/settings/tokens) to load our base LLMs and tokenizers. And since we are using Llama models, we need to login and accept the terms and conditions [here](https://huggingface.co/meta-llama/Meta-Llama-3-8B-Instruct). 
 
 <b style="background-color: yellow;">&nbsp;🔄 REPLACE&nbsp;</b>: Place your unique HF token below. If you accidentally ran this code block before pasting your HF token, then click the `Restart` button up top to restart the notebook kernel.
 
@@ -54,10 +54,13 @@ os.environ['HF_TOKEN'] = ''  # <-- replace with your token
 ray.init(runtime_env={'env_vars': {'HF_TOKEN': os.environ['HF_TOKEN']}})
 ```
 
-```bash
-(autoscaler +15m27s) [autoscaler] Downscaling node i-0267f387d8cf66c2e (node IP: 10.0.21.202) due to node idle termination.
-(autoscaler +15m28s) [autoscaler] Cluster resized to {8 CPU, 0 GPU}.
-```
+    2024-06-12 16:52:33,877	INFO worker.py:1564 -- Connecting to existing Ray cluster at address: 10.0.46.70:6379...
+    2024-06-12 16:52:33,883	INFO worker.py:1740 -- Connected to Ray cluster. View the dashboard at [1m[32mhttps://session-zdbj1t4fe6firefy7rxgrcyj7c.i.anyscaleuserdata.com [39m[22m
+    2024-06-12 16:52:33,896	INFO packaging.py:358 -- Pushing file package 'gcs://_ray_pkg_f8c87dcbafb22dcfc23fd80fe43ba56d14d0593c.zip' (2.56MiB) to Ray cluster...
+    2024-06-12 16:52:33,906	INFO packaging.py:371 -- Successfully pushed file package 'gcs://_ray_pkg_f8c87dcbafb22dcfc23fd80fe43ba56d14d0593c.zip'.
+
+
+
 
 ## Data Preprocessing
 
@@ -67,13 +70,13 @@ We'll start by preprocessing our data in preparation for fine-tuning our LLM. We
 
 ### Dataset
 
-For our task, we'll be using the [Viggo dataset](https://huggingface.co/datasets/GEM/viggo) dataset, where the input (`meaning_representation`) is a structured collection of the overall intent (ex. `inform`) and entities (ex. `release_year`) and the output (`target`) is an unstructured sentence that incorporates all the structured input information. But for our task, we'll **reverse** this task where the input will be the unstructured sentence and the output will be the structured information.
+For our task, we'll be using the [Viggo dataset](https://huggingface.co/datasets/GEM/viggo), where the input (`meaning_representation`) is a structured collection of the overall intent (ex. `inform`) and entities (ex. `release_year`) and the output (`target`) is an unstructured sentence that incorporates all the structured input information. But for our task, we'll **reverse** this task where the input will be the unstructured sentence and the output will be the structured information.
 
 ```python
 # Input (unstructured sentence):
 "Dirt: Showdown from 2012 is a sport racing game for the PlayStation, Xbox, PC rated E 10+ (for Everyone 10 and Older). It's not available on Steam, Linux, or Mac."
 
-# Output (intent + entities):
+# Output (intent + entities): 
 "inform(name[Dirt: Showdown], release_year[2012], esrb[E 10+ (for Everyone 10 and Older)], genres[driving/racing, sport], platforms[PlayStation, Xbox, PC], available_on_steam[no], has_linux_release[no], has_mac_release[no])"
 ```
 
@@ -85,8 +88,10 @@ ray.data.DataContext.get_current().enable_progress_bars = False
 
 
 ```python
+from datasets import DatasetDict
+
 # Load the VIGGO dataset
-dataset = load_dataset("GEM/viggo", trust_remote_code=True)
+dataset: DatasetDict = load_dataset("GEM/viggo", trust_remote_code=True)  # type: ignore
 ```
 
 
@@ -113,15 +118,12 @@ train_set[0]
 
 ```json
 {
-  "gem_id": "viggo-train-0",
-  "meaning_representation": "inform(name[Dirt: Showdown], release_year[2012], esrb[E 10+ (for Everyone 10 and Older)], genres[driving/racing, sport], platforms[PlayStation, Xbox, PC], available_on_steam[no], has_linux_release[no], has_mac_release[no])",
-  "target": "Dirt: Showdown from 2012 is a sport racing game for the PlayStation, Xbox, PC rated E 10+ (for Everyone 10 and Older). It's not available on Steam, Linux, or Mac.",
-  "references": [
-    "Dirt: Showdown from 2012 is a sport racing game for the PlayStation, Xbox, PC rated E 10+ (for Everyone 10 and Older). It's not available on Steam, Linux, or Mac."
-  ]
+  'gem_id': 'viggo-train-0',
+  'meaning_representation': 'inform(name[Dirt: Showdown], release_year[2012], esrb[E 10+ (for Everyone 10 and Older)], genres[driving/racing, sport], platforms[PlayStation, Xbox, PC], available_on_steam[no], has_linux_release[no], has_mac_release[no])',
+  'target': "Dirt: Showdown from 2012 is a sport racing game for the PlayStation, Xbox, PC rated E 10+ (for Everyone 10 and Older). It's not available on Steam, Linux, or Mac.",
+  'references': ["Dirt: Showdown from 2012 is a sport racing game for the PlayStation, Xbox, PC rated E 10+ (for Everyone 10 and Older). It's not available on Steam, Linux, or Mac."]
 }
 ```
-
 
 
 ### Data Preprocessing
@@ -130,17 +132,10 @@ We'll use [Ray](https://docs.ray.io/) to load our dataset and apply preprocessin
 
 
 ```python
-import re
-```
-
-
-```python
 # Load as a Ray Dataset
 train_ds = ray.data.from_items(train_set)
 train_ds.take(1)
 ```
-
-
 
 ```json
 [
@@ -154,7 +149,6 @@ train_ds.take(1)
   }
 ]
 ```
-
 
 
 The preprocessing we'll do involves formatting our dataset into the schema required for fine-tuning (`system`, `user`, `assistant`) conversations.
@@ -180,7 +174,8 @@ def to_schema(item, system_content):
     messages = [
         {'role': 'system', 'content': system_content},
         {'role': 'user', 'content': item['target']},
-        {'role': 'assistant', 'content': item['meaning_representation']}]
+        {'role': 'assistant', 'content': item['meaning_representation']}
+    ]
     return {'messages': messages}
 ```
 
@@ -197,7 +192,8 @@ system_content = (
     "'suggest', 'request_explanation', 'recommend', 'request_attribute']. The attributes "
     "must be one of the following: ['name', 'exp_release_date', 'release_year', 'developer', "
     "'esrb', 'rating', 'genres', 'player_perspective', 'has_multiplayer', 'platforms', "
-    "'available_on_steam', 'has_linux_release', 'has_mac_release', 'specifier']")
+    "'available_on_steam', 'has_linux_release', 'has_mac_release', 'specifier']"
+)
 
 ```
 
@@ -210,11 +206,12 @@ To apply our function on our dataset at scale, we can pass it to [ray.data.Datas
 
 
 ```python
+from ray.data import Dataset
+
 # Distributed preprocessing
-ft_train_ds = train_ds.map(to_schema, fn_kwargs={'system_content': system_content})
+ft_train_ds: Dataset = train_ds.map(to_schema, fn_kwargs={'system_content': system_content})
 ft_train_ds.take(1)
 ```
-
 ```json
 [
   {
@@ -238,11 +235,12 @@ ft_train_ds.take(1)
 
 
 
-
 ```python
+from ray.data import Dataset
+
 # Repeat the steps for other splits
-ft_val_ds = ray.data.from_items(val_set).map(to_schema, fn_kwargs={'system_content': system_content})
-ft_test_ds = ray.data.from_items(test_set).map(to_schema, fn_kwargs={'system_content': system_content})
+ft_val_ds: Dataset = ray.data.from_items(val_set).map(to_schema, fn_kwargs={'system_content': system_content})
+ft_test_ds: Dataset = ray.data.from_items(test_set).map(to_schema, fn_kwargs={'system_content': system_content})
 ```
 
 ### Save and load data
@@ -251,30 +249,36 @@ We can save our data locally and/or to remote storage to use later (training, ev
 
 
 ```python
-os.environ['ANYSCALE_ARTIFACT_STORAGE']
+import anyscale
+from anyscale.utils.name_utils import get_full_name
+import os
+from ray.data import Dataset
+from rich import print as rprint
+from src.utils import get_dataset_file_path
+
+
+# Upload as an Anyscale Dataset
+def upload_dataset(dataset: Dataset, filename: str):
+    with get_dataset_file_path(dataset) as dataset_file_path:
+        dataset = anyscale.llm.dataset.upload(
+            dataset_file_path,
+            # john_doe/e2e_llm/viggo/train.jsonl
+            name=f"{get_full_name()}/e2e_llm/viggo/{filename}",
+        )
+    rprint(f"Metadata for '{filename}'")
+    rprint(dataset)
+
+train_dataset = upload_dataset(ft_train_ds, 'train.jsonl')
+val_dataset = upload_dataset(ft_val_ds, 'val.jsonl')
+test_dataset = upload_dataset(ft_test_ds, 'test.jsonl')
 ```
 
 
-
-
-    's3://anyscale-test-data-cld-i2w99rzq8b6lbjkke9y94vi5/org_7c1Kalm9WcX2bNIjW53GUT/cld_kvedZWag2qA8i5BjxUevf5i7/artifact_storage'
-
-
-
-
 ```python
-# Write to cloud storage
-ft_train_ds.write_json(f"{os.environ['ANYSCALE_ARTIFACT_STORAGE']}/viggo/train.jsonl")
-ft_val_ds.write_json(f"{os.environ['ANYSCALE_ARTIFACT_STORAGE']}/viggo/val.jsonl")
-ft_test_ds.write_json(f"{os.environ['ANYSCALE_ARTIFACT_STORAGE']}/viggo/test.jsonl")
-```
-
-```python
-# Load from cloud storage
-ft_train_ds = ray.data.read_json(f"{os.environ['ANYSCALE_ARTIFACT_STORAGE']}/viggo/train.jsonl")
+# Download as an Anyscale Dataset
+ft_train_ds = ray.data.read_json(train_dataset.storage_uri)
 ft_train_ds.take(1)
 ```
-
 ```json
 [
   {
@@ -297,10 +301,9 @@ ft_train_ds.take(1)
 ```
 
 
-
 ## Fine-tuning
 
-In this template, we'll fine-tune a large language model (LLM) using our dataset from the previous data preprocessing template.
+In this template, we'll fine-tune a large language model (LLM) using our dataset from the previous data preprocessing template. 
 
 **Note**: We normally would not jump straight to fine-tuning a model. We would first experiment with a base model and evaluate it so that we can have a baseline performance to compare it to.
 
@@ -317,50 +320,48 @@ We also have recipes for [LoRA](https://arxiv.org/abs/2106.09685) (where we trai
 # View the training (LoRA) configuration for llama-3-8B
 !cat configs/training/lora/llama-3-8b.yaml
 ```
-
 ```yaml
-model_id: meta-llama/Meta-Llama-3-8B-Instruct # <-- change this to the model you want to fine-tune
-train_path: s3://llm-guide/data/viggo/train.jsonl # <-- change this to the path to your training data
-valid_path: s3://llm-guide/data/viggo/val.jsonl # <-- change this to the path to your validation data. This is optional
-context_length: 512 # <-- change this to the context length you want to use
-num_devices: 16 # <-- change this to total number of GPUs that you want to use
-num_epochs: 4 # <-- change this to the number of epochs that you want to train for
-train_batch_size_per_device: 16
-eval_batch_size_per_device: 16
-learning_rate: 1e-4
-padding: "longest" # This will pad batches to the longest sequence. Use "max_length" when profiling to profile the worst case.
-num_checkpoints_to_keep: 1
-dataset_size_scaling_factor: 10000
-output_dir: /mnt/local_storage
-deepspeed:
-    config_path: configs/deepspeed/zero_3_offload_optim+param.json
-dataset_size_scaling_factor: 10000 # internal flag. No need to change
-flash_attention_2: true
-trainer_resources:
-    memory: 53687091200 # 50 GB memory
-worker_resources:
-    accelerator_type:A10G: 0.001
-lora_config:
-    r: 8
-    lora_alpha: 16
-    lora_dropout: 0.05
-    target_modules:
-    - q_proj
-    - v_proj
-    - k_proj
-    - o_proj
-    - gate_proj
-    - up_proj
-    - down_proj
-    - embed_tokens
-    - lm_head
-    task_type: "CAUSAL_LM"
-    modules_to_save: []
-    bias: "none"
-    fan_in_fan_out: false
-    init_lora_weights: true
+    model_id: meta-llama/Meta-Llama-3-8B-Instruct # <-- change this to the model you want to fine-tune
+    train_path: s3://llm-guide/data/viggo/train.jsonl # <-- change this to the path to your training data
+    valid_path: s3://llm-guide/data/viggo/val.jsonl # <-- change this to the path to your validation data. This is optional
+    context_length: 512 # <-- change this to the context length you want to use
+    num_devices: 16 # <-- change this to total number of GPUs that you want to use
+    num_epochs: 4 # <-- change this to the number of epochs that you want to train for
+    train_batch_size_per_device: 16
+    eval_batch_size_per_device: 16
+    learning_rate: 1e-4
+    padding: "longest" # This will pad batches to the longest sequence. Use "max_length" when profiling to profile the worst case.
+    num_checkpoints_to_keep: 1
+    dataset_size_scaling_factor: 10000
+    output_dir: /mnt/local_storage
+    deepspeed:
+      config_path: configs/deepspeed/zero_3_offload_optim+param.json
+    dataset_size_scaling_factor: 10000 # internal flag. No need to change
+    flash_attention_2: true
+    trainer_resources:
+      memory: 53687091200 # 50 GB memory
+    worker_resources:
+      accelerator_type:A10G: 0.001
+    lora_config:
+      r: 8
+      lora_alpha: 16
+      lora_dropout: 0.05
+      target_modules:
+        - q_proj
+        - v_proj
+        - k_proj
+        - o_proj
+        - gate_proj
+        - up_proj
+        - down_proj
+        - embed_tokens
+        - lm_head
+      task_type: "CAUSAL_LM"
+      modules_to_save: []
+      bias: "none"
+      fan_in_fan_out: false
+      init_lora_weights: true
 ```
-
 
 ### Fine-tuning
 
@@ -370,7 +371,7 @@ This Workspace is still running on a small, lean head node. But based on the com
 
 <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/e2e-llm-workflows/assets/train-detailed.png" width=550>
 
-While we could execute `python src/ft.py configs/training/lora/llama-3-8b.yaml` directly inside a Workspace notebook (see this [example](https://console.anyscale.com/v2/template-preview/finetuning_llms_v2)), we'll instead kick off the fine-tuning workload as an isolated job. An [Anyscale Job](https://docs.anyscale.com/jobs/get-started/) is a great way to scale and execute a specific workload. Here, we specify the command that needs to run (ex. `python [COMMAND][ARGS]`) along with the requirements (ex. docker image, additional, pip packages, etc.).
+While we could execute `llmforge anyscale finetune configs/training/lora/llama-3-8b.yaml` directly inside a Workspace notebook (see this [example](https://console.anyscale.com/v2/template-preview/finetuning_llms_v2)), we'll instead kick off the fine-tuning workload as an isolated job. An [Anyscale Job](https://docs.anyscale.com/jobs/get-started/) is a great way to scale and execute a specific workload. Here, we specify the command that needs to run (ex. `python [COMMAND][ARGS]`) along with the requirements (ex. docker image, additional, pip packages, etc.).
 
 **Note**: Executing an Anyscale Job within a Workspace will ensure that files in the current working directory are available for the Job (unless excluded with `--exclude`). But we can also load files from anywhere (ex. Github repo, S3, etc.) if we want to launch a Job from anywhere.
 
@@ -380,18 +381,17 @@ While we could execute `python src/ft.py configs/training/lora/llama-3-8b.yaml` 
 !cat deploy/jobs/ft.yaml
 ```
 
-```yaml
-name: llm-fine-tuning-guide
-entrypoint: python src/ft.py configs/training/lora/llama-3-8b.yaml
-image_uri: localhost:5555/anyscale/llm-forge:0.4.3.2
-requirements: []
-max_retries: 0
-```
+    name: e2e-llm-workflows
+    entrypoint: llmforge anyscale finetune configs/training/lora/llama-3-8b.yaml
+    image_uri: localhost:5555/anyscale/llm-forge:0.5.4
+    requirements: []
+    max_retries: 1
 
-<b>Note</b>: Be sure to checkout the fine-tuning documentation for the latest on how to use our [API](https://docs.anyscale.com/llms/finetuning/intro) and additional [capabilities](https://docs.anyscale.com/category/fine-tuning-beta/).
 
+**Note**: Be sure to checkout the fine-tuning documentation for the latest on how to use our [API](https://docs.anyscale.com/llms/finetuning/intro) and additional [capabilities](https://docs.anyscale.com/category/fine-tuning-beta/).
 
 <b style="background-color: orange;">&nbsp;💡 INSIGHT&nbsp;</b>: When defining this [Job config](https://docs.anyscale.com/reference/job-api/), if we don't specify the [compute config](https://docs.anyscale.com/configure/compute-configs/overview/) to use, then Anyscale will autoselect based on the required compute. However, we also have the optionality to specify and even make highly cost effective decisions such as [spot to on-demand fallback](https://docs.anyscale.com/configure/compute-configs/ondemand-to-spot-fallback/) (or vice-versa).
+
 
 ```yaml
 # Sample compute config
@@ -406,17 +406,17 @@ max_retries: 0
 
 ```python
 # Job submission
-!anyscale job submit --config-file deploy/jobs/ft.yaml --exclude assets
+
+!anyscale job submit --config-file "deploy/jobs/ft.yaml" --exclude "assets"
 ```
 
-```bash
-Output
-(anyscale +0.8s) Submitting job with config JobConfig(name='llm-fine-tuning-guide', image_uri='localhost:5555/anyscale/llm-forge:0.4.3.2', compute_config=None, env_vars=None, py_modules=None).
-(anyscale +3.2s) Uploading local dir '.' to cloud storage.
-(anyscale +4.8s) Job 'llm-fine-tuning-guide' submitted, ID: 'prodjob_515se1nqf8ski7scytd52vx65e'.
-(anyscale +4.8s) View the job in the UI: https://console.anyscale.com/jobs/prodjob_515se1nqf8ski7scytd52vx65e
-(anyscale +4.8s) Use `--wait` to wait for the job to run and stream logs.
-```
+    Output
+    (anyscale +1.3s) Submitting job with config JobConfig(name='e2e-llm-workflows', image_uri='localhost:5555/anyscale/llm-forge:0.5.4', compute_config=None, env_vars=None, py_modules=None, cloud=None, project=None, ray_version=None, job_queue_config=None).
+    (anyscale +2.9s) Uploading local dir '.' to cloud storage.
+    (anyscale +4.4s) Job 'e2e-llm-workflows' submitted, ID: 'prodjob_5i8jpkxa6pyit9mzzzzry31iae'.
+    (anyscale +4.4s) View the job in the UI: https://console.anyscale.com/jobs/prodjob_5i8jpkxa6pyit9mzzzzry31iae
+    (anyscale +4.4s) Use `--wait` to wait for the job to run and stream logs.
+
 
 As the job runs, you can monitor logs, metrics, Ray dashboard, etc. by clicking on the generated Job link above (`https://console.anyscale.com/jobs/prodjob_...`)
 
@@ -424,20 +424,70 @@ As the job runs, you can monitor logs, metrics, Ray dashboard, etc. by clicking 
 
 <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/e2e-llm-workflows/assets/tensorboard.png" width=800>
 
-
 ### Load artifacts
 
-From the very end of the logs, we can also see where our model artifacts are stored. For example:
+To retrieve information about your fine-tuned model, Anyscale provides a convenient SDK. 
 
-```
-Successfully copied files to to bucket: anyscale-test-data-cld-i2w99rzq8b6lbjkke9y94vi5 and path: org_7c1Kalm9WcX2bNIjW53GUT/cld_kvedZWag2qA8i5BjxUevf5i7/artifact_storage/lora_fine_tuning/meta-llama/Meta-Llama-3-8B-Instruct:gokum:atyhk
-```
-
-We'll load these artifacts from cloud storage to a local [cluster storage](https://docs.anyscale.com/workspaces/storage/#cluster-storage) to use for other workloads.
+<b style="background-color: yellow;">&nbsp;🔄 REPLACE&nbsp;</b>:  Update the `job_id` field with the Anyscale job ID for your fine-tuning run.
 
 
 ```python
-from src.utils import download_files_from_bucket
+import anyscale
+model_info = anyscale.llm.model.get(job_id="prodjob_5i8jpkxa6pyit9mzzzzry31iae")
+print(model_info)
+```
+
+`model_info` has a number of helpful model metadata, such as the id `meta-llama/Meta-Llama-3-8B-Instruct:suman:cdrba` , the base model ID, storage URI for the final checkpoint, the model generation config, etc. 
+
+```
+FineTunedModel(
+    id='meta-llama/Meta-Llama-3-8B-Instruct:user:suffix',
+    base_model_id='meta-llama/Meta-Llama-3-8B-Instruct',
+    cloud_id='cld_123',
+    created_at=1726013024,
+    creator='test@anyscale.com',
+    ft_type='LORA',
+    generation_config={
+        'prompt_format': {
+            'system': '<|start_header_id|>system<|end_header_id|>\n\n{instruction}<|eot_id|>',
+            'assistant': '<|start_header_id|>assistant<|end_header_id|>\n\n{instruction}<|eot_id|>',
+            'trailing_assistant': '<|start_header_id|>assistant<|end_header_id|>\n\n',
+            'user': '<|start_header_id|>user<|end_header_id|>\n\n{instruction}<|eot_id|>',
+            'bos': '<|begin_of_text|>',
+            'default_system_message': '',
+            'add_system_tags_even_if_message_is_empty': False,
+            'system_in_user': False,
+            'system_in_last_user': False,
+            'strip_whitespace': True
+        },
+        'stopping_sequences': ['<|eot_id|>']
+    },
+    job_id='prodjob_123',
+    project_id='prj_123',
+    storage_uri='s3://my_bucket/my_folder',
+    workspace_id=None
+)
+```
+
+
+The storage URI for the best checkpoint can look like:
+
+```
+s3://anyscale-production-data-cld-ldm5ez4edlp7yh4yiakp2u294w/org_4snvy99zwbmh4gbtk64jfqggmj/cld_ldm5ez4edlp7yh4yiakp2u294w/artifact_storage/sumanth__hegde_ilziamlndopyvjolzuglmhzzmkkkfgeewbyk/llmforge-finetuning/meta-llama/Meta-Llama-3-8B-Instruct/TorchTrainer_2024-09-10_16-35-42/epoch-3
+```
+
+Note that with LoRA, we automatically forward this checkpoint to a common folder in [artifact storage](https://docs.anyscale.com/platform/workspaces/workspaces-storage#object-storage-s3-or-gcs-buckets): `{ANYSCALE_ARTIFACT_STORAGE}/lora_fine_tuning` . This becomes extremely helpful while serving LoRA checkpoints, which we'll see soon. 
+
+This information about the final checkpoint is also available in the logs for the job. For example, you might see: 
+```
+Successfully copied files to bucket: anyscale-customer-dataplane-data-production-us-east-2 and path: artifact_storage/org_4snvy99zwbmh4gbtk64jfqggmj/cld_ldm5ez4edlp7yh4yiakp2u294w/artifact_storage/lora_fine_tuning/meta-llama/Meta-Llama-3-8B-Instruct:suman:cdrba
+```
+
+We'll now load the checkpoint from cloud storage to a local [cluster storage](https://docs.anyscale.com/workspaces/storage/#cluster-storage) to use for other workloads.
+
+
+```python
+from src.utils import download_files_from_remote
 ```
 
 <b style="background-color: yellow;">&nbsp;🔄 REPLACE&nbsp;</b>: Update the information below for the specific model and artifacts path for our fine-tuned model (retrieved from the logs from the Anyscale Job we launched above).
@@ -446,26 +496,27 @@ from src.utils import download_files_from_bucket
 ```python
 # Locations
 artifacts_dir = '/mnt/cluster_storage'  # storage accessible by head and worker nodes
-model = 'meta-llama/Meta-Llama-3-8B-Instruct'
-uuid = 'gokum:ueewk'  # REPLACE with your NAME + MODEL ID (from Job logs)
-artifacts_path = (
-    f"{os.environ['ANYSCALE_ARTIFACT_STORAGE'].split(os.environ['ANYSCALE_CLOUD_STORAGE_BUCKET'])[-1][1:]}"
-    f"/lora_fine_tuning/{model}:{uuid}")
+model_id = model_info.id 
+artifacts_path = f"{os.environ['ANYSCALE_ARTIFACT_STORAGE']}/lora_fine_tuning/{model_id}"
 ```
 
 
 ```python
 # Download artifacts
-download_files_from_bucket(
-    bucket=os.environ['ANYSCALE_CLOUD_STORAGE_BUCKET'],
-    path=artifacts_path,
+download_files_from_remote(
+    uri=artifacts_path,
     local_dir=artifacts_dir)
-
 ```
 
-    Downloaded org_7c1Kalm9WcX2bNIjW53GUT/cld_kvedZWag2qA8i5BjxUevf5i7/artifact_storage/lora_fine_tuning/meta-llama/Meta-Llama-3-8B-Instruct:gokum:atyhk/README.md to /mnt/cluster_storage/org_7c1Kalm9WcX2bNIjW53GUT/cld_kvedZWag2qA8i5BjxUevf5i7/
-    ...
-    Downloaded org_7c1Kalm9WcX2bNIjW53GUT/cld_kvedZWag2qA8i5BjxUevf5i7/artifact_storage/lora_fine_tuning/meta-llama/Meta-Llama-3-8B-Instruct:gokum:atyhk/tokenizer_config.json to /mnt/cluster_storage/org_7c1Kalm9WcX2bNIjW53GUT/cld_kvedZWag2qA8i5BjxUevf5i7/artifact_storage/lora_fine_tuning/meta-llama/Meta-Llama-3-8B-Instruct:gokum:atyhk/tokenizer_config.json
+    Downloaded org_4snvy99zwbmh4gbtk64jfqggmj/cld_ldm5ez4edlp7yh4yiakp2u294w/artifact_storage/lora_fine_tuning/meta-llama/Meta-Llama-3-8B-Instruct:suman:cdrba/README.md to /mnt/cluster_storage/org_4snvy99zwbmh4gbtk64jfqggmj/cld_ldm5ez4edlp7yh4yiakp2u294w/artifact_storage/lora_fine_tuning/meta-llama/Meta-Llama-3-8B-Instruct:suman:cdrba/README.md
+    Downloaded org_4snvy99zwbmh4gbtk64jfqggmj/cld_ldm5ez4edlp7yh4yiakp2u294w/artifact_storage/lora_fine_tuning/meta-llama/Meta-Llama-3-8B-Instruct:suman:cdrba/adapter_config.json to /mnt/cluster_storage/org_4snvy99zwbmh4gbtk64jfqggmj/cld_ldm5ez4edlp7yh4yiakp2u294w/artifact_storage/lora_fine_tuning/meta-llama/Meta-Llama-3-8B-Instruct:suman:cdrba/adapter_config.json
+    Downloaded org_4snvy99zwbmh4gbtk64jfqggmj/cld_ldm5ez4edlp7yh4yiakp2u294w/artifact_storage/lora_fine_tuning/meta-llama/Meta-Llama-3-8B-Instruct:suman:cdrba/adapter_model.safetensors to /mnt/cluster_storage/org_4snvy99zwbmh4gbtk64jfqggmj/cld_ldm5ez4edlp7yh4yiakp2u294w/artifact_storage/lora_fine_tuning/meta-llama/Meta-Llama-3-8B-Instruct:suman:cdrba/adapter_model.safetensors
+    Downloaded org_4snvy99zwbmh4gbtk64jfqggmj/cld_ldm5ez4edlp7yh4yiakp2u294w/artifact_storage/lora_fine_tuning/meta-llama/Meta-Llama-3-8B-Instruct:suman:cdrba/config.json to /mnt/cluster_storage/org_4snvy99zwbmh4gbtk64jfqggmj/cld_ldm5ez4edlp7yh4yiakp2u294w/artifact_storage/lora_fine_tuning/meta-llama/Meta-Llama-3-8B-Instruct:suman:cdrba/config.json
+    Downloaded org_4snvy99zwbmh4gbtk64jfqggmj/cld_ldm5ez4edlp7yh4yiakp2u294w/artifact_storage/lora_fine_tuning/meta-llama/Meta-Llama-3-8B-Instruct:suman:cdrba/new_embeddings.safetensors to /mnt/cluster_storage/org_4snvy99zwbmh4gbtk64jfqggmj/cld_ldm5ez4edlp7yh4yiakp2u294w/artifact_storage/lora_fine_tuning/meta-llama/Meta-Llama-3-8B-Instruct:suman:cdrba/new_embeddings.safetensors
+    Downloaded org_4snvy99zwbmh4gbtk64jfqggmj/cld_ldm5ez4edlp7yh4yiakp2u294w/artifact_storage/lora_fine_tuning/meta-llama/Meta-Llama-3-8B-Instruct:suman:cdrba/rayllm_generation_config.json to /mnt/cluster_storage/org_4snvy99zwbmh4gbtk64jfqggmj/cld_ldm5ez4edlp7yh4yiakp2u294w/artifact_storage/lora_fine_tuning/meta-llama/Meta-Llama-3-8B-Instruct:suman:cdrba/rayllm_generation_config.json
+    Downloaded org_4snvy99zwbmh4gbtk64jfqggmj/cld_ldm5ez4edlp7yh4yiakp2u294w/artifact_storage/lora_fine_tuning/meta-llama/Meta-Llama-3-8B-Instruct:suman:cdrba/special_tokens_map.json to /mnt/cluster_storage/org_4snvy99zwbmh4gbtk64jfqggmj/cld_ldm5ez4edlp7yh4yiakp2u294w/artifact_storage/lora_fine_tuning/meta-llama/Meta-Llama-3-8B-Instruct:suman:cdrba/special_tokens_map.json
+    Downloaded org_4snvy99zwbmh4gbtk64jfqggmj/cld_ldm5ez4edlp7yh4yiakp2u294w/artifact_storage/lora_fine_tuning/meta-llama/Meta-Llama-3-8B-Instruct:suman:cdrba/tokenizer.json to /mnt/cluster_storage/org_4snvy99zwbmh4gbtk64jfqggmj/cld_ldm5ez4edlp7yh4yiakp2u294w/artifact_storage/lora_fine_tuning/meta-llama/Meta-Llama-3-8B-Instruct:suman:cdrba/tokenizer.json
+    Downloaded org_4snvy99zwbmh4gbtk64jfqggmj/cld_ldm5ez4edlp7yh4yiakp2u294w/artifact_storage/lora_fine_tuning/meta-llama/Meta-Llama-3-8B-Instruct:suman:cdrba/tokenizer_config.json to /mnt/cluster_storage/org_4snvy99zwbmh4gbtk64jfqggmj/cld_ldm5ez4edlp7yh4yiakp2u294w/artifact_storage/lora_fine_tuning/meta-llama/Meta-Llama-3-8B-Instruct:suman:cdrba/tokenizer_config.json
 
 
 ## Evaluation
@@ -483,10 +534,9 @@ We'll start by performing offline batch inference where we will use our tuned mo
 
 ```python
 # Load test set for eval
-ft_test_ds = ray.data.read_json(f"{os.environ['ANYSCALE_ARTIFACT_STORAGE']}/viggo/test.jsonl")
+ft_test_ds = ray.data.read_json(test_dataset.storage_uri)
 test_data = ft_test_ds.take_all()
 test_data[0]
-
 ```
 
 ```json
@@ -507,7 +557,6 @@ test_data[0]
   ]
 }
 ```
-
 
 
 
@@ -555,9 +604,9 @@ print (chat_template)
 ```
 
     {% set loop_messages = messages %}{% for message in loop_messages %}{% set content = '<|start_header_id|>' + message['role'] + '<|end_header_id|>
-
+    
     '+ message['content'] | trim + '<|eot_id|>' %}{% if loop.index0 == 0 %}{% set content = bos_token + content %}{% endif %}{{ content }}{% endfor %}{% if add_generation_prompt %}{{ '<|start_header_id|>assistant<|end_header_id|>
-
+    
     ' }}{% endif %}
 
 
@@ -577,7 +626,7 @@ print (test_input_prompts_ds.take(1))
 ```json
 [
   {
-    "inputs": "system\n\nGiven a target sentence construct the underlying meaning representation of the input sentence as a single function with attributes and attribute values. This function should describe the target string accurately and the function must be one of the following ['inform', 'request', 'give_opinion', 'confirm', 'verify_attribute', 'suggest', 'request_explanation', 'recommend', 'request_attribute']. The attributes must be one of the following: ['name', 'exp_release_date', 'release_year', 'developer', 'esrb', 'rating', 'genres', 'player_perspective', 'has_multiplayer', 'platforms', 'available_on_steam', 'has_linux_release', 'has_mac_release', 'specifier']user\n\nHave you ever given any games on PC but not on Steam a try, like The Sims?assistant\n\n",
+    "inputs": "<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\nGiven a target sentence construct the underlying meaning representation of the input sentence as a single function with attributes and attribute values. This function should describe the target string accurately and the function must be one of the following ['inform', 'request', 'give_opinion', 'confirm', 'verify_attribute', 'suggest', 'request_explanation', 'recommend', 'request_attribute']. The attributes must be one of the following: ['name', 'exp_release_date', 'release_year', 'developer', 'esrb', 'rating', 'genres', 'player_perspective', 'has_multiplayer', 'platforms', 'available_on_steam', 'has_linux_release', 'has_mac_release', 'specifier']<|eot_id|><|start_header_id|>user<|end_header_id|>\n\nHave you ever given any games on PC but not on Steam a try, like The Sims?<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n",
     "outputs": [
       {
         "content": "suggest(name[The Sims], platforms[PC], available_on_steam[no])",
@@ -646,7 +695,8 @@ ft_pred_ds = test_input_prompts_ds.map_batches(
     fn_constructor_kwargs={
         'hf_model': hf_model,
         'sampling_params': sampling_params,
-        'lora_path': os.path.join(artifacts_dir, artifacts_path)},
+        'lora_path': os.path.join(artifacts_dir, artifacts_path)
+    },
     accelerator_type='A10G',  # A10G or L4
 )
 ```
@@ -657,27 +707,18 @@ ft_pred_ds = test_input_prompts_ds.map_batches(
 ft_pred = ft_pred_ds.take_all()
 ft_pred[3]
 ```
-
-```bash
-(autoscaler +6m32s) Tip: use `ray status` to view detailed cluster status. To disable these messages, set RAY_SCHEDULER_EVENTS=0.
-(autoscaler +6m32s) [autoscaler] [4xA10G:48CPU-192GB] Upscaling 1 node(s).
-(autoscaler +6m33s) [autoscaler] [4xA10G:48CPU-192GB|g5.12xlarge] [us-west-2a] [on-demand] Launched 1 instances.
-(autoscaler +7m46s) [autoscaler] Cluster upscaled to {56 CPU, 4 GPU}.
-```
-
 ```json
 {
-  "prompt": "system\n\nGiven a target sentence construct the underlying meaning representation of the input sentence as a single function with attributes and attribute values. This function should describe the target string accurately and the function must be one of the following ['inform', 'request', 'give_opinion', 'confirm', 'verify_attribute', 'suggest', 'request_explanation', 'recommend', 'request_attribute']. The attributes must be one of the following: ['name', 'exp_release_date', 'release_year', 'developer', 'esrb', 'rating', 'genres', 'player_perspective', 'has_multiplayer', 'platforms', 'available_on_steam', 'has_linux_release', 'has_mac_release', 'specifier']user\n\nI like first person games normally, but not even that could make a music game fun for me. In fact in Guitar Hero: Smash Hits, I think the perspective somehow made an already bad game even worse.assistant\n\n",
+  "prompt": "<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\nGiven a target sentence construct the underlying meaning representation of the input sentence as a single function with attributes and attribute values. This function should describe the target string accurately and the function must be one of the following ['inform', 'request', 'give_opinion', 'confirm', 'verify_attribute', 'suggest', 'request_explanation', 'recommend', 'request_attribute']. The attributes must be one of the following: ['name', 'exp_release_date', 'release_year', 'developer', 'esrb', 'rating', 'genres', 'player_perspective', 'has_multiplayer', 'platforms', 'available_on_steam', 'has_linux_release', 'has_mac_release', 'specifier']<|eot_id|><|start_header_id|>user<|end_header_id|>\n\nI like first person games normally, but not even that could make a music game fun for me. In fact in Guitar Hero: Smash Hits, I think the perspective somehow made an already bad game even worse.<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n",
   "expected_output": [
     {
       "content": "give_opinion(name[Guitar Hero: Smash Hits], rating[poor], genres[music], player_perspective[first person])",
       "role": "assistant"
     }
   ],
-  "generated_text": "give_opinion(name[Guitar Hero: Smash Hits], rating[poor], genres[music], player_perspective[first person])assistant\n\n"
+  "generated_text": "give_opinion(name[Guitar Hero: Smash Hits], rating[poor], genres[music], player_perspective[first person])<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n"
 }
 ```
-
 
 
 ### Evaluation
@@ -701,6 +742,7 @@ matches / float(len(ft_pred))
     0.9399815327793167
 
 
+
 **Note**: you can train for more epochs (`num_epochs: 10`) to further improve the performance.
 
 Even our mismatches are not too far off and sometimes it might be worth a closer look because the dataset itself might have a few errors that the model may have identified.
@@ -709,32 +751,6 @@ Even our mismatches are not too far off and sometimes it might be worth a closer
 ```python
 # Inspect a few of the mismatches
 mismatches[0:2]
-```
-
-```json
-[
-  {
-    "prompt": "system\n\nGiven a target sentence construct the underlying meaning representation of the input sentence as a single function with attributes and attribute values. This function should describe the target string accurately and the function must be one of the following ['inform', 'request', 'give_opinion', 'confirm', 'verify_attribute', 'suggest', 'request_explanation', 'recommend', 'request_attribute']. The attributes must be one of the following: ['name', 'exp_release_date', 'release_year', 'developer', 'esrb', 'rating', 'genres', 'player_perspective', 'has_multiplayer', 'platforms', 'available_on_steam', 'has_linux_release', 'has_mac_release', 'specifier']user\n\nDance Dance Revolution Universe 3 got poor ratings when it came out in 2008. It might have been the worst multiplayer music game for the Xbox.assistant\n\n",
-    "expected_output": [
-      {
-        "content": "inform(name[Dance Dance Revolution Universe 3], release_year[2008], rating[poor], genres[music], has_multiplayer[yes], platforms[Xbox])",
-        "role": "assistant"
-      }
-    ],
-    "generated_text": "give_opinion(name[Dance Dance Revolution Universe 3], release_year[2008], rating[poor], has_multiplayer[yes], platforms[Xbox])assistant\n\n"
-  },
-  {
-    "prompt": "system\n\nGiven a target sentence construct the underlying meaning representation of the input sentence as a single function with attributes and attribute values. This function should describe the target string accurately and the function must be one of the following ['inform', 'request', 'give_opinion', 'confirm', 'verify_attribute', 'suggest', 'request_explanation', 'recommend', 'request_attribute']. The attributes must be one of the following: ['name', 'exp_release_date', 'release_year', 'developer', 'esrb', 'rating', 'genres', 'player_perspective', 'has_multiplayer', 'platforms', 'available_on_steam', 'has_linux_release', 'has_mac_release', 'specifier']user\n\nA first person game I recently got on Steam is Assetto Corsa. Have you heard of it?assistant\n\n",
-    "expected_output": [
-      {
-        "content": "recommend(name[Assetto Corsa], player_perspective[first person], available_on_steam[yes])",
-        "role": "assistant"
-      }
-    ],
-    "generated_text": "recommend(name[Assetto Corsa], available_on_steam[yes])assistant\n\n"
-  }
-]
-
 ```
 
 
@@ -749,16 +765,18 @@ We'll start by generating the configuration for our service. We provide a conven
 
 <b style="background-color: orange;">&nbsp;💡 INSIGHT&nbsp;</b>: Ray Serve and Anyscale support [serving multiple LoRA adapters](https://github.com/anyscale/templates/blob/main/templates/endpoints_v2/examples/lora/DeployLora.ipynb) with a common base model in the same request batch which allows you to serve a wide variety of use-cases without increasing hardware spend. In addition, we use Serve multiplexing to reduce the number of swaps for LoRA adapters. There is a slight latency overhead to serving a LoRA model compared to the base model, typically 10-20%.
 
-**LoRA weights storage URI**: `s3://anyscale-test-data-cld-i2w99rzq8b6lbjkke9y94vi5/org_7c1Kalm9WcX2bNIjW53GUT/cld_kvedZWag2qA8i5BjxUevf5i7/artifact_storage/lora_fine_tuning`
 
-**model**: `meta-llama/Meta-Llama-3-8B-Instruct:gokum:atyhk`
+We can use the model metadata `model_info` for the model ID as well the storage URI for the final lora weights.  
 
+**model**: `meta-llama/Meta-Llama-3-8B-Instruct:suman:cdrba` (`model_info.id`)
+
+**LoRA weights storage URI**: `s3://org_4snvy99zwbmh4gbtk64jfqggmj/cld_ldm5ez4edlp7yh4yiakp2u294w/artifact_storage/lora_fine_tuning/meta-llama/Meta-Llama-3-8B-Instruct:suman:cdrba` ( or `{ANYSCALE_ARTIFACT_STORAGE}/lora_fine_tuning/{model_id}`)
 
 We'll start by running the rayllm CLI command below to start the workflow to generate the service yaml configuration:
 ```bash
 mkdir /home/ray/default/deploy/services
 cd /home/ray/default/deploy/services
-rayllm gen-config
+rayllm gen-config 
 ```
 
 <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/e2e-llm-workflows/assets/cli.png" width=500>
@@ -771,16 +789,14 @@ rayllm gen-config
 !cat /home/ray/default/deploy/services/serve_{TIMESTAMP}.yaml
 ```
 
-```yaml
-applications:
-- args:
-    llm_configs:
-    - ./model_config/meta-llama--Meta-Llama-3-8B-Instruct_20240825011129.yaml
-  import_path: rayllm:app
-  name: llm-endpoint
-  route_prefix: /
-query_auth_token_enabled: false
-```
+    applications:
+    - args:
+        llm_configs:
+        - ./model_config/meta-llama--Meta-Llama-3-8B-Instruct_20240825011129.yaml
+      import_path: rayllm:app
+      name: llm-endpoint
+      route_prefix: /
+    query_auth_token_enabled: false
 
 
 This also generates a model configuration file that has all the information on auto scaling, inference engine, workers, compute, etc. It will be located under `/home/ray/default/deploy/services/model_config/{MODEL_NAME}-{TIMESTAMP}.yaml`. This configuration also includes the `prompt_format` which seamlessly matches any formatting we did prior to fine-tuning and applies it during inference automatically.
@@ -795,6 +811,7 @@ serve run serve_{TIMESTAMP}.yaml
 ```
 
 **Note**: This will take a few minutes to spin up the first time since we're loading the model weights.
+
 
 ```python
 from openai import OpenAI
@@ -814,7 +831,7 @@ def query(base_url: str, api_key: str):
 
     # Note: not all arguments are currently supported and will be ignored by the backend
     chat_completions = client.chat.completions.create(
-        model=f'{model}:{uuid}',  # with your unique model ID
+        model=model_info.id,  # with your unique model ID
         messages=[
             {"role": "system", "content": "Given a target sentence construct the underlying meaning representation of the input sentence as a single function with attributes and attribute values. This function should describe the target string accurately and the function must be one of the following ['inform', 'request', 'give_opinion', 'confirm', 'verify_attribute', 'suggest', 'request_explanation', 'recommend', 'request_attribute']. The attributes must be one of the following: ['name', 'exp_release_date', 'release_year', 'developer', 'esrb', 'rating', 'genres', 'player_perspective', 'has_multiplayer', 'platforms', 'available_on_steam', 'has_linux_release', 'has_mac_release', 'specifier']"},
             {"role": "user", "content": "I remember you saying you found Little Big Adventure to be average. Are you not usually that into single-player games on PlayStation?"},
@@ -834,7 +851,7 @@ def query(base_url: str, api_key: str):
 ```python
 # Generate response
 response = query("http://localhost:8000", "NOT A REAL KEY")
-print (response.split('<|eot_id|>')[0])
+print(response.split('<|eot_id|>')[0])
 ```
 
 
@@ -859,6 +876,7 @@ anyscale service deploy -f serve_{TIMESTAMP}.yaml
 ```
 
 **Note**: This will take a few minutes to spin up the first time since we're loading the model weights.
+
 
 Go to `Home` > `Services` (left panel) to view the production service.
 
@@ -898,6 +916,7 @@ For example, suppose that we want to preprocess batches of new incoming data, fi
 ## Clean up
 
 <b style="background-color: yellow;">&nbsp;🛑 IMPORTANT&nbsp;</b>: Please `Terminate` your service from the Service page to avoid depleting your free trial credits.
+
 
 ```python
 # Clean up
