@@ -11,6 +11,40 @@ def read_compute_config_file(path: str) -> dict:
     with open(path, "r") as f:
         return yaml.safe_load(f)
 
+
+class Builder:
+    def __init__(self, meta: dict):
+        name = meta.get("name", "")
+        if not name:
+            raise ValueError("missing name in meta")
+        input_dir = meta.get("dir", "")
+        if not input_dir:
+            raise ValueError("missing dir in meta")
+        
+        self._in = input_dir
+        self._meta = meta
+        self._name = name
+
+    def build(self, output_dir: str):
+        meta_yaml = yaml.dump(self._meta, default_flow_style=False)
+
+        files = []
+        for root, _, files in os.walk(dir):
+            for file in files:
+                file_path = os.path.join(root, file)
+                file_in_zip = os.path.relpath(file_path, dir)
+                if file_in_zip == "README.md":
+                    continue # skip README.md; it is drived from the notebook.
+                files.append(file_in_zip)
+        
+        output_zip = os.path.join(output_dir, self._name, "files.zip")
+        with zipfile.ZipFile(output_zip, "w") as z:
+            z.writestr(".meta/ray-app.yaml", meta_yaml)
+
+            for file in files:
+                z.write(os.path.join(self._in, file), file)
+
+
 def build_template(tmpl: dict, output_dir: str) -> None:
     name = tmpl.get("name")
     assert name is not None
@@ -27,29 +61,9 @@ def build_template(tmpl: dict, output_dir: str) -> None:
         config = read_compute_config_file(config_file)
         meta["compute_config"][cloud] = config
 
-    meta_yaml = yaml.dump(meta, default_flow_style=False)
-    output_zip = os.path.join(output_dir, f"{name}.zip")
+    builder = Builder(meta)
+    builder.build(output_dir)
 
-    dir = tmpl.get("dir")
-    if os.path.exists(output_zip) and os.path.isfile(output_zip):
-        os.remove(output_zip)
-
-    with zipfile.ZipFile(output_zip, "w") as z:
-        logln(f"[{name}] adding .meta/app.yaml")
-        z.writestr(".meta/app.yaml", meta_yaml)
-
-        logln(f"[{name}] walking files in {dir}")
-
-        if dir:
-            if not os.path.isdir(dir):
-                raise FileNotFoundError(f"directory {dir} not found")
-
-            for root, _, files in os.walk(dir):
-                for file in files:
-                    file_path = os.path.join(root, file)
-                    file_in_zip = os.path.relpath(file_path, dir)
-                    logln(f"[{name}] adding {file_in_zip}")
-                    z.write(file_path, file_in_zip)
 
 def build_all(build_file = "BUILD.yaml", output_dir = "_build") -> None:
     with open(build_file, "r") as f:
