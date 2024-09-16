@@ -54,7 +54,6 @@ def generate_readme(notebook: str, github_readme: str, doc_readme: str) -> None:
             "--to",
             "markdown",
             notebook,
-            "--embed-images",
             "--output-dir",
             tmpdir,
         ])

@@ -4,6 +4,7 @@ import (
 	"archive/zip"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"path/filepath"
 
@@ -16,6 +17,21 @@ type builder struct {
 
 	tmpl *Template
 }
+
+const (
+	// The name of the release zip file.
+	releaseDotZip = "release.zip"
+
+	// The main notebook file for the template.
+	readmeNotebook = "README.ipynb"
+
+	// A generated markdown file for GitHub rendering in the input directory,
+	// will not be included in the release zip.
+	readmeDotMD = "README.md"
+
+	// A generated markdown file for GitHub rendering in the output directory.
+	readmeGitHubMD = "README.github.md"
+)
 
 func newBuilder(t *Template, baseDir string) *builder {
 	tmplDir := filepath.Join(baseDir, t.Dir)
@@ -51,19 +67,7 @@ func addFileToZip(z *zip.Writer, file, path string) error {
 	return nil
 }
 
-func (b *builder) build(outputDir string) error {
-	if err := checkIsDir(b.tmplDir); err != nil {
-		return fmt.Errorf("check template input dir: %w", err)
-	}
-
-	// The name of the release zip file.
-	const releaseDotZip = "release.zip"
-
-	// A generated markdown file for GitHub rendering in the input directory,
-	// will not be included in the release zip.
-	const readmeDotMD = "README.md"
-	const readmeNotebook = "README.ipynb"
-
+func (b *builder) listFiles() ([]string, error) {
 	var files []string
 	if err := filepath.WalkDir(
 		b.tmplDir, func(p string, d os.DirEntry, err error) error {
@@ -84,14 +88,14 @@ func (b *builder) build(outputDir string) error {
 			return nil
 		},
 	); err != nil {
-		return fmt.Errorf("walk template dir: %w", err)
+		return nil, err
 	}
 
-	if err := os.MkdirAll(outputDir, 0755); err != nil {
-		return fmt.Errorf("create output dir: %w", err)
-	}
+	return files, nil
+}
 
-	zipFile, err := os.Create(filepath.Join(outputDir, releaseDotZip))
+func (b *builder) buildReleaseZip(path string, files []string) error {
+	zipFile, err := os.Create(path)
 	if err != nil {
 		return fmt.Errorf("create release zip file: %w", err)
 	}
@@ -109,6 +113,63 @@ func (b *builder) build(outputDir string) error {
 	if err := zipFile.Sync(); err != nil {
 		return fmt.Errorf("flush zip file to storage: %w", err)
 	}
+	return nil
+}
+
+func hasReadmeNotebook(files []string) bool {
+	for _, f := range files {
+		if f == readmeNotebook {
+			return true
+		}
+	}
+	return false
+}
+
+func (b *builder) build(outputDir string) error {
+	if err := checkIsDir(b.tmplDir); err != nil {
+		return fmt.Errorf("check template input dir: %w", err)
+	}
+
+	files, err := b.listFiles()
+	if err != nil {
+		return fmt.Errorf("list files: %w", err)
+	}
+
+	var readme *readmeFile
+	if hasReadmeNotebook(files) {
+		// Generate a markdown file for GitHub rendering.
+		nb := filepath.Join(b.tmplDir, readmeNotebook)
+		res, err := buildReadme(nb)
+		if err != nil {
+			return fmt.Errorf("build readme: %w", err)
+		}
+		readme = res
+	}
+
+	if err := os.MkdirAll(outputDir, 0755); err != nil {
+		return fmt.Errorf("create output dir: %w", err)
+	}
+
+	// Build the release zip file.
+	zipFile := filepath.Join(outputDir, releaseDotZip)
+	if err := b.buildReleaseZip(zipFile, files); err != nil {
+		return fmt.Errorf("save release zip file: %w", err)
+	}
+
+	if readme != nil {
+		if err := readme.writeGitHubMD(
+			filepath.Join(outputDir, readmeGitHubMD), b.tmplDir,
+		); err != nil {
+			return fmt.Errorf("write github readme file: %w", err)
+		}
+
+		if err := readme.writeReleaseMD(
+			filepath.Join(outputDir, readmeDotMD), b.tmplDir,
+		); err != nil {
+			return fmt.Errorf("write release readme file: %w", err)
+		}
+	}
+
 	return nil
 }
 
@@ -133,6 +194,7 @@ func BuildAll(yamlFile, baseDir, outputDir string) error {
 	}
 
 	for _, t := range tmpls {
+		log.Println("Building template:", t.Name)
 		b := newBuilder(t, baseDir)
 		tmplOutputDir := filepath.Join(outputDir, t.Name)
 		if err := b.build(tmplOutputDir); err != nil {
