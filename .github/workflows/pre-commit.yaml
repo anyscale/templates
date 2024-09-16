@@ -11,10 +11,12 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - uses: actions/setup-python@v3
+      with:
+        python-version: '3.9'
 
     # Install pre-commit dependencies
     - name: Install pre-commit
-      run: pip install pre-commit jupyter
+      run: pip install pre-commit==3.8.0 jupyter==1.1.1
 
     # Run pre-commit hooks with verbose logging
     - name: Run pre-commit
