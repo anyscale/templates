@@ -36,11 +36,14 @@ jobs:
     - name: Install pre-commit
       run: pip install jupyter==1.1.1
 
+    - name: Build
+      run: bash -ec "(cd ci; go install ./...)"
+
     - name: Check go format
-      run: bash -e -c "(cd ci; go fmt ./... ; git diff --exit-code)"
+      run: bash -ec "(cd ci; go fmt ./... ; git diff --exit-code)"
 
     - name: Test
-      run: bash -e -c "(cd ci; go test -v ./...)"
+      run: bash -ec "(cd ci; go test -v ./...)"
 
     - name: Build templates
       run: bash build.sh

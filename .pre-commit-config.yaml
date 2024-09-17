@@ -15,6 +15,6 @@ repos:
     hooks:
       - id: generate-readme
         name: Auto generate README.md from README.ipynb
-        entry: python ci/generate_readme.py
+        entry: ci/auto-generate-readme.sh
         language: script
         pass_filenames: false
