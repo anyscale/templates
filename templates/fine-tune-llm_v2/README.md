@@ -25,34 +25,7 @@ Note: LoRA weights will also be stored in path <path>
 
 This is the path where the adapted weights are stored, you can use them for inference. You can also see the list of your fine-tuned models in the `serving` tab in the Anyscale console.
 
-### Logging
-LLMForge supports logging metrics externally with WandB and MLflow.
-
-#### WandB
-To log with WandB we first need to install the `wandb` library
-
-```bash
-pip install wandb
-```
-
-Then we can launch finetuning by specifying `WANDB_API_KEY`, and specifying `wandb` as the `logger` in our config file. We've provided an example at `training_configs/custom/meta-llama/Meta-Llama-3-8B/lora/4xA10-512-wandb.yaml` with the minimum settings needed to get started logging with WandB.
-
-```bash
-WANDB_API_KEY=<PUT_YOUR_WANDB_KEY_HERE> llmforge anyscale finetune training_configs/custom/meta-llama/Meta-Llama-3-8B/lora/4xA10-512-wandb.yaml
-```
-
-#### MLflow
-To alternatively log with MLflow instead of WandB, we can first install MLflow:
-```bash
-pip install mlflow
-```
-
-Then we can set the `MLFLOW_TRACKING_TOKEN` environment variable instead of `WANDB_API_KEY`, and specify `mlflow` as the `logger` in the config. We've provided an example config at `training_configs/custom/meta-llama/Meta-Llama-3-8B/lora/4xA10-512-mlflow.yaml` showing how to additionally configure the `logger` field with a valid `tracking_uri` and `experiment_name`.
-
-Then we can launch finetuning as above with our modified config:
-```bash
-MLFLOW_TRACKING_TOKEN=<PUT_YOUR_MLFLOW_KEY_HERE> llmforge anyscale finetune training_configs/custom/meta-llama/Meta-Llama-3-8B/lora/4xA10-512-mlflow.yaml
-```
+LLMForge also supports logging metrics externally with WandB and MLflow. A user guide for setting up these logging integrations can be found in the [docs](https://docs.anyscale.com/llms/finetuning/guides/logging_integrations)
 
 # What is Next?
 
