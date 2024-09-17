@@ -23,9 +23,9 @@ When the training is done, you will see a message like this:
 Note: LoRA weights will also be stored in path <path>
 ````
 
-This is the path where the adapted weights are stored, you can use them for inference. You can also see the list of your fine-tuned models in the `serving` tab in the Anyscale console.
+This is the path where the adapted weights are stored, you can use them for inference. You can also see the list of your fine-tuned models in the `Models` tab in the Anyscale console.
 
-LLMForge also supports logging metrics externally with WandB and MLflow. A user guide for setting up these logging integrations can be found in the [docs](https://docs.anyscale.com/llms/finetuning/guides/logging_integrations)
+**Note**: To monitor training using experiment tracking tools like WandB or MLflow, see the guide on [logging integrations](https://docs.anyscale.com/llms/finetuning/guides/logging_integrations).
 
 # What is Next?
 
