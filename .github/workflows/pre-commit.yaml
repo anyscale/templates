@@ -30,13 +30,11 @@ jobs:
       with:
         go-version: 1.23
 
-    # Run tests
-    - name: Run tests
-      run: bash -e -c "(cd ci; go test -v ./...)"
-      
-    - name: Check format
+    - name: Check go format
       run: bash -e -c "(cd ci; go fmt ./... ; git diff --exit-code)"
 
-    # Build the templates
+    - name: Test
+      run: bash -e -c "(cd ci; go test -v ./...)"
+
     - name: Build templates
       run: bash build.sh
