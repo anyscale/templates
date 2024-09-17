@@ -34,10 +34,13 @@ num_checkpoints_to_keep: 1
 deepspeed:
   config_path: deepspeed_configs/zero_3_offload_optim+param.json
 
+# Logging config
 logger:
   provider: mlflow
   provider_config:
+     # Make sure to change this to your tracking uri! 
     tracking_uri: "https://*******.cloud.databricks.com"
+    # Make sure to change this to the path where experiments should be logged!
     experiment_name: "/Users/*******/llmforge"
     create_experiment_if_not_exists: True
 
