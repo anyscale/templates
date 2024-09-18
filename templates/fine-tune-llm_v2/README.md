@@ -8,11 +8,11 @@ This template comes with a installed library for training LLMs on Anyscale calle
 
 ## Getting Started
 
-You can find some tested config files examples in the `training_configs` directoy. LLMForge comes with a CLI that lets you pass in a config YAML file to start your training.
+You can find some tested config files examples in the `training_configs` directory. LLMForge comes with a CLI that lets you pass in a config YAML file to start your training.
 
-
+Then you can launch fine tuning by running the following command:
 ```bash
-WANDB_API_KEY=<PUT_YOUR_WANDB_KEY_HERE> llmforge anyscale finetune training_configs/custom/meta-llama/Meta-Llama-3-8B/lora/4xA10-512.yaml
+llmforge anyscale finetune training_configs/custom/meta-llama/Meta-Llama-3-8B/lora/4xA10-512.yaml
 ```
 
 This code will run LoRA fine-tuning on the Meta-Llama-3-8B-Instruct model with 4xA10-512 configuration on a GSM-8k math dataset.
@@ -23,7 +23,9 @@ When the training is done, you will see a message like this:
 Note: LoRA weights will also be stored in path <path>
 ````
 
-This is the path where the adapted weights are stored, you can use them fore inference. You can also see the list of your fine-tuned models in the `serving` tab in the Anyscale console.
+This is the path where the adapted weights are stored, you can use them for inference. You can also see the list of your fine-tuned models in the `Models` tab in the Anyscale console.
+
+**Note**: To monitor training using experiment tracking tools like WandB or MLflow, see the guide on [logging integrations](https://docs.anyscale.com/llms/finetuning/guides/logging_integrations).
 
 # What is Next?
 
