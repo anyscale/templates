@@ -133,5 +133,9 @@ func TestParseMdImages(t *testing.T) {
 				)
 			}
 		}
+
+		if imgs[0].start != 0 {
+			t.Errorf("first image start is %d, want 0", imgs[0].start)
+		}
 	}
 }
