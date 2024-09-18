@@ -1,4 +1,3 @@
-cloud: education-us-west-2
 head_node:
   instance_type: g5.4xlarge
   resources:
