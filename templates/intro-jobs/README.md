@@ -59,7 +59,7 @@ You can view active and historical job runs at (`Home > Jobs`). Click into the j
 
 You should see the job state and its output on the overview page.
 
-<img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/intro-jobs/assets/anyscale-job.png" height=400px>
+<img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/intro-jobs/assets/anyscale-job.png" height=400px />
 
 ## Submitting a Job programmatically
 
