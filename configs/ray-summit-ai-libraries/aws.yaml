@@ -1,12 +1,16 @@
-head_node_type:
-  name: head
+head_node:
   instance_type: g4dn.2xlarge
   resources:
-    cpu: 8
-    gpu: 1
-auto_select_worker_config: false
-worker_node_types:
-  - name: worker
-    instance_type: g4dn.2xlarge
+    CPU: 8
+    GPU: 1
+  flags: {}
+worker_nodes:
+  - instance_type: g4dn.2xlarge
+    flags: {}
+    name: '1xT4:8CPU-32GB'
+    min_nodes: 1
+    max_nodes: 1
+    market_type: ON_DEMAND
+enable_cross_zone_scaling: false
 flags:
   allow-cross-zone-autoscaling: false
