@@ -74,3 +74,11 @@ func TestReadTemplates(t *testing.T) {
 		t.Errorf("readTemplates(%q), got %+v, want %+v", f, got, want)
 	}
 }
+
+func TestReadTemplates_withError(t *testing.T) {
+	tmp := t.TempDir()
+	f := filepath.Join(tmp, "BUILD.yaml")
+	if _, err := readTemplates(f); err == nil {
+		t.Error("want error, got nil")
+	}
+}
