@@ -164,3 +164,7 @@ cython_debug/
 
 # Vim
 *.swp
+
+# Build output
+_build/
+ci/bin
