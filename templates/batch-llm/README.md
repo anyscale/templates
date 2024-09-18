@@ -288,7 +288,7 @@ print(f"Batch inference result is written into {output_path}.")
 ### Monitoring Dataset execution
 We can use the Ray Dashboard to monitor the Dataset execution. In the Ray Dashboard tab, navigate to the Job page and open the "Ray Data Overview" section. Click on the link for the running job, and open the "Ray Data Overview" section to view the details of the batch inference execution:
 
-<img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/batch-llm/assets/ray-data-jobs.png" width="900px"/>
+<img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/batch-llm/assets/ray-data-jobs.png" width=900px />
 
 ### Handling GPU out-of-memory failures
 If you run into CUDA out of memory, your batch size is likely too large. Decrease the batch size as described above.

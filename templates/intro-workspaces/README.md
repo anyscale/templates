@@ -73,21 +73,21 @@ Access built-in cloud storage using the `$ANYSCALE_ARTIFACT_STORAGE` URI as a pr
 
 This workspace is connected to a Ray cluster. Click on the resources bar on the top right corner of the screen to open the cluster control panel. This panel shows a summary of Ray resource utilization, and you can use this panel to configure the cluster resources.
 
-<img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/intro-workspaces/assets/resource-panel.png" height="400px"/>
+<img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/intro-workspaces/assets/resource-panel.png" height=400px />
 
 ### Configuring the Workspace node
 
 The workspace node is the machine this notebook is running inside. You may wish to change the instance type of the workspace node specifically, e.g., to increase the available memory or add a GPU. Click the pencil icon in order to change the workspace node. Note that changing the workspace node will restart the workspace IDE.
 
-<img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/intro-workspaces/assets/edit-workspace-node.png" height="300px"/>
-<img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/intro-workspaces/assets/edit-workspace-dialog.png" width="400px"/>
+<img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/intro-workspaces/assets/edit-workspace-node.png" height=300px />
+<img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/intro-workspaces/assets/edit-workspace-dialog.png" width=400px />
 
 ### Adding worker nodes
 
 To parallelize beyond the resources available to the workspace node, add additional worker nodes to the Ray cluster. Click "Add a node type" to add a number of nodes of a certain type to the cluster. While most use cases only require a single worker node type, you can add multiple distinct node types (e.g., high-CPU and GPU nodes) to the workspace as well.
 
-<img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/intro-workspaces/assets/add-node-type.png" height="300px"/>
-<img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/intro-workspaces/assets/add-node-dialog.png" height="300px"/>
+<img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/intro-workspaces/assets/add-node-type.png" height=300px />
+<img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/intro-workspaces/assets/add-node-dialog.png" height=300px />
 
 ### Using "Auto-select workers" mode
 
@@ -101,7 +101,7 @@ In this section, we'll author a simple Ray python script and go over the tools a
 
 You can click on the "File Explorer" in the left pane of VSCode to create the new file.
 
-<img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/intro-workspaces/assets/file-explorer.png" height="400px"/>
+<img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/intro-workspaces/assets/file-explorer.png" height=400px />
 
 Double click this cell to copy & paste the following program into the file :
 
@@ -140,25 +140,25 @@ Let's overview some of the tools available to monitor Ray program execution in w
 
 The resources panel provides basic stats about cluster utilization, as well as an indication of which worker nodes are being used. Use the resource panel as a quick overview of cluster status before diving deeper into the Ray dashboard.
 
-<img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/intro-workspaces/assets/resources-panel-stats.png" height="400px"/>
+<img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/intro-workspaces/assets/resources-panel-stats.png" height=400px />
 
 **Ray dashboard > Jobs**
 
 To see the status of an active or previously run Ray job, navigate to `Ray Dashboard > Jobs` in the UI. Click a job to open the detail page where you can see an overview of job progress, logs, etc.
 
-<img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/intro-workspaces/assets/ray-dashboard-jobs.png" height="400px"/>
+<img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/intro-workspaces/assets/ray-dashboard-jobs.png" height=400px />
 
 **Ray dashboard > Metrics**
 
 View the aggregate time-series metrics for the cluster in order to diagnose job execution efficiency. The `Ray Dashboard > Metrics` page offers metrics on Ray tasks, actors, as well as hardware resource utilization of the cluster.
 
-<img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/intro-workspaces/assets/ray-dashboard-metrics.png" height="400px"/>
+<img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/intro-workspaces/assets/ray-dashboard-metrics.png" height=400px />
 
 **Logs Tab**
 
 View and search over Ray cluster and application logs in the Logs tab.
 
-<img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/intro-workspaces/assets/logs-tab.png" height="400px"/>
+<img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/intro-workspaces/assets/logs-tab.png" height=400px />
 
 ## Dependency Management
 
@@ -173,7 +173,7 @@ To try this out, run the following command to install the `emoji` package. You'l
 
 Navigate to the `Dependencies` tab of the workspace, and you should see the `emoji` package in the list there. You can use this UI to edit the workspace runtime dependencies, or the UI.
 
-<img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/intro-workspaces/assets/dependencies-tab.png" height="400px"/>
+<img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/intro-workspaces/assets/dependencies-tab.png" height=400px />
 
 Run the following cell to check that the `emoji` package is successfully installed on the cluster (to check this properly, make sure the cluster has at least one worker node added).
 
