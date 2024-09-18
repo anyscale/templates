@@ -18,14 +18,14 @@ func checkIsDir(path string) error {
 	return nil
 }
 
-func addFileToZip(z *zip.Writer, file, path string) error {
+func addFileToZip(z *zip.Writer, file, pathInZip string) error {
 	f, err := os.Open(file)
 	if err != nil {
 		return fmt.Errorf("open file %q: %w", file, err)
 	}
 	defer f.Close()
 
-	w, err := z.Create(path)
+	w, err := z.Create(pathInZip)
 	if err != nil {
 		return fmt.Errorf("create file in zip: %w", err)
 	}
