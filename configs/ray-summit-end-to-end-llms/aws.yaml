@@ -1,0 +1,22 @@
+head_node:
+  instance_type: m5.4xlarge
+  resources:
+    CPU: 0
+    GPU: 0
+  flags: {}
+worker_nodes:
+  - instance_type: m5.4xlarge
+    flags: {}
+    name: 16CPU-64GB
+    min_nodes: 1
+    max_nodes: 1
+    market_type: ON_DEMAND
+  - instance_type: g5.4xlarge
+    flags: {}
+    name: '1xA10G:16CPU-64GB'
+    min_nodes: 0
+    max_nodes: 2
+    market_type: ON_DEMAND
+enable_cross_zone_scaling: false
+flags:
+  allow-cross-zone-autoscaling: false
