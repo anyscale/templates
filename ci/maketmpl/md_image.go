@@ -49,7 +49,10 @@ func inlineImgSrc(srcDir, src string) (string, error) {
 		return "", fmt.Errorf("unsupported image type: %s", src)
 	}
 
-	fp := filepath.Join(srcDir, src)
+	fp := src
+	if srcDir != "" {
+		fp = filepath.Join(srcDir, fp)
+	}
 	imgData, err := os.ReadFile(fp)
 	if err != nil {
 		return "", fmt.Errorf("read image file: %w", err)
