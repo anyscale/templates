@@ -1,0 +1,12 @@
+head_node_type:
+  name: head
+  instance_type: g4dn.2xlarge
+  resources:
+    cpu: 8
+    gpu: 1
+auto_select_worker_config: false
+worker_node_types:
+  - name: worker
+    instance_type: g4dn.2xlarge
+flags:
+  allow-cross-zone-autoscaling: false
