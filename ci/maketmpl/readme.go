@@ -16,7 +16,7 @@ type readmeFile struct {
 }
 
 func (f *readmeFile) writeInto(
-	w io.Writer, baseDir string, inlineImg bool,
+	w io.Writer, baseDir string, imgOpts *writeImgOptions,
 ) error {
 	cursor := 0
 	for i, img := range f.imgs {
@@ -26,7 +26,7 @@ func (f *readmeFile) writeInto(
 			}
 		}
 
-		if err := img.writeInto(w, baseDir, inlineImg); err != nil {
+		if err := img.writeInto(w, baseDir, imgOpts); err != nil {
 			return fmt.Errorf("write image %d: %w", i, err)
 		}
 
@@ -42,14 +42,16 @@ func (f *readmeFile) writeInto(
 	return nil
 }
 
-func (f *readmeFile) writeIntoFile(path, baseDir string, inlineImg bool) error {
+func (f *readmeFile) writeIntoFile(
+	path, baseDir string, imgOpts *writeImgOptions,
+) error {
 	out, err := os.Create(path)
 	if err != nil {
 		return fmt.Errorf("create output file: %w", err)
 	}
 	defer out.Close()
 
-	if err := f.writeInto(out, baseDir, inlineImg); err != nil {
+	if err := f.writeInto(out, baseDir, imgOpts); err != nil {
 		return err
 	}
 
@@ -65,11 +67,23 @@ func (f *readmeFile) writeIntoFile(path, baseDir string, inlineImg bool) error {
 }
 
 func (f *readmeFile) writeGitHubMD(path, baseDir string) error {
-	return f.writeIntoFile(path, baseDir, false /* inlineImg */)
+	// GitHub flavored markdown does not support inline images
+	// and forbids having inlined styles.
+	imgOpts := &writeImgOptions{
+		inlineSrc:   false,
+		sizeInStyle: false,
+	}
+	return f.writeIntoFile(path, baseDir, imgOpts)
 }
 
 func (f *readmeFile) writeReleaseMD(path, baseDir string) error {
-	return f.writeIntoFile(path, baseDir, true /* inlineImg */)
+	// This is for rendering in doc pages and other Web sites.
+	// and we want the file to be reliable, consistent and self-contained.
+	imgOpts := &writeImgOptions{
+		inlineSrc:   true,
+		sizeInStyle: true,
+	}
+	return f.writeIntoFile(path, baseDir, imgOpts)
 }
 
 func buildReadme(f string) (*readmeFile, error) {

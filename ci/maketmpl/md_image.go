@@ -59,22 +59,24 @@ func inlineImgSrc(srcDir, src string) (string, error) {
 	return fmt.Sprintf("data:%s;base64,%s", dataType, encoded), nil
 }
 
+type writeImgOptions struct {
+	inlineSrc   bool
+	sizeInStyle bool
+}
+
 func (i *mdImage) writeInto(
-	w io.Writer, srcDir string, inlineImg bool,
+	w io.Writer, srcDir string, opts *writeImgOptions,
 ) error {
-	style := i.style
-	if i.heightPx != "" {
-		style += fmt.Sprintf("; height: %spx", i.heightPx)
-	}
-	if i.widthPx != "" {
-		style += fmt.Sprintf("; width: %spx", i.widthPx)
+	var styles []string
+	if i.style != "" {
+		styles = []string{i.style}
 	}
 
 	buf := new(bytes.Buffer)
 
 	fmt.Fprint(buf, "<img ")
 	if src := i.src; src != "" {
-		if inlineImg {
+		if opts.inlineSrc {
 			inlinedSrc, err := inlineImgSrc(srcDir, src)
 			if err != nil {
 				return fmt.Errorf("inline image: %w", err)
@@ -86,13 +88,25 @@ func (i *mdImage) writeInto(
 	if v := i.alt; v != "" {
 		fmt.Fprintf(buf, `alt="%s" `, html.EscapeString(v))
 	}
-	if v := i.heightPx; v != "" {
-		fmt.Fprintf(buf, `height="%spx" `, html.EscapeString(v))
-	}
+
+	// add size. width first, height next.
 	if v := i.widthPx; v != "" {
-		fmt.Fprintf(buf, `width="%spx" `, html.EscapeString(v))
+		if opts.sizeInStyle {
+			styles = append(styles, fmt.Sprintf("width: %spx", i.widthPx))
+		} else {
+			fmt.Fprintf(buf, `width="%spx" `, html.EscapeString(v))
+		}
 	}
-	if style != "" {
+	if v := i.heightPx; v != "" {
+		if opts.sizeInStyle {
+			styles = append(styles, fmt.Sprintf("height: %spx", i.heightPx))
+		} else {
+			fmt.Fprintf(buf, `height="%spx" `, html.EscapeString(v))
+		}
+	}
+
+	if len(styles) > 0 {
+		style := strings.Join(styles, "; ")
 		fmt.Fprintf(buf, `style="%s" `, html.EscapeString(style))
 	}
 
