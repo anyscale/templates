@@ -1,6 +1,6 @@
 # Quickstart: Stable diffusion pre-training
 
-<img src="https://anyscale-materials.s3.us-west-2.amazonaws.com/stable-diffusion/end_to_end_architecture_v6.jpeg" width="1000px">
+<img src="https://anyscale-materials.s3.us-west-2.amazonaws.com/stable-diffusion/end_to_end_architecture_v6.jpeg" width=1000px />
 
 Above is the reference architecture for Stable Diffusion pre-training
 with Ray and Anyscale. You can view how to implement the architecture by
