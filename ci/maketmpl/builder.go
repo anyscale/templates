@@ -3,11 +3,8 @@ package maketmpl
 import (
 	"archive/zip"
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
-
-	yaml "gopkg.in/yaml.v2"
 )
 
 type builder struct {
@@ -138,38 +135,6 @@ func (b *builder) build(outputDir string) error {
 			filepath.Join(outputDir, readmeDotMD), b.tmplDir,
 		); err != nil {
 			return fmt.Errorf("write release readme file: %w", err)
-		}
-	}
-
-	return nil
-}
-
-func readTemplates(yamlFile string) ([]*Template, error) {
-	var tmpls []*Template
-
-	bs, err := os.ReadFile(yamlFile)
-	if err != nil {
-		return nil, fmt.Errorf("read file %q: %w", yamlFile, err)
-	}
-	if err := yaml.Unmarshal(bs, &tmpls); err != nil {
-		return nil, fmt.Errorf("unmarshal yaml: %w", err)
-	}
-	return tmpls, nil
-}
-
-// BuildAll builds all the templates defined in the YAML file.
-func BuildAll(yamlFile, baseDir, outputDir string) error {
-	tmpls, err := readTemplates(yamlFile)
-	if err != nil {
-		return fmt.Errorf("read templates: %w", err)
-	}
-
-	for _, t := range tmpls {
-		log.Println("Building template:", t.Name)
-		b := newBuilder(t, baseDir)
-		tmplOutputDir := filepath.Join(outputDir, t.Name)
-		if err := b.build(tmplOutputDir); err != nil {
-			return fmt.Errorf("build template %q: %w", t.Name, err)
 		}
 	}
 
