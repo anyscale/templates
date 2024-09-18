@@ -86,7 +86,24 @@ func (f *readmeFile) writeReleaseMD(path, baseDir string) error {
 	return f.writeIntoFile(path, baseDir, imgOpts)
 }
 
-func buildReadme(f string) (*readmeFile, error) {
+func readReadmeFile(path string) (*readmeFile, error) {
+	md, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("read file: %w", err)
+	}
+
+	imgs, err := parseMdImages(md)
+	if err != nil {
+		return nil, fmt.Errorf("parse images: %w", err)
+	}
+
+	return &readmeFile{
+		md:   md,
+		imgs: imgs,
+	}, nil
+}
+
+func readmeFromNotebook(f string) (*readmeFile, error) {
 	tmpDir, err := os.MkdirTemp("", "maketmpl_*")
 	if err != nil {
 		return nil, fmt.Errorf("create temp dir: %w", err)
@@ -106,20 +123,12 @@ func buildReadme(f string) (*readmeFile, error) {
 	}
 
 	outputFile := filepath.Join(tmpDir, "README.md")
-	md, err := os.ReadFile(outputFile)
+
+	readme, err := readReadmeFile(outputFile)
 	if err != nil {
-		return nil, fmt.Errorf("read output markdown file: %w", err)
+		return nil, err
 	}
+	readme.notebookFile = f
 
-	imgs, err := parseMdImages(md)
-	if err != nil {
-		return nil, fmt.Errorf("parse images: %w", err)
-	}
-
-	return &readmeFile{
-		notebookFile: f,
-
-		md:   md,
-		imgs: imgs,
-	}, nil
+	return readme, nil
 }

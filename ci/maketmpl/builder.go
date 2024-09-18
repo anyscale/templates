@@ -107,7 +107,7 @@ func (b *builder) build(outputDir string) error {
 	if hasReadmeNotebook(files) {
 		// Generate a markdown file for GitHub rendering.
 		nb := filepath.Join(b.tmplDir, readmeNotebook)
-		res, err := buildReadme(nb)
+		res, err := readmeFromNotebook(nb)
 		if err != nil {
 			return fmt.Errorf("build readme: %w", err)
 		}
