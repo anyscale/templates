@@ -102,11 +102,6 @@ func (i *mdImage) writeInto(
 	return err
 }
 
-var (
-	regexImageMd  = regexp.MustCompile(`!\[(.*)\]\((.*)\)`)
-	regexImageTag = regexp.MustCompile(`<img src=.*>`)
-)
-
 func parsePxValue(s string) string {
 	return strings.TrimSuffix(s, "px")
 }
@@ -158,6 +153,11 @@ func paresImgHTMLTag(s string) (*mdImage, error) {
 
 	return img, nil
 }
+
+var (
+	regexImageMd  = regexp.MustCompile(`!\[(.*)\]\((.*)\)`)
+	regexImageTag = regexp.MustCompile(`<img src=.*>`)
+)
 
 func parseMdImages(md []byte) ([]*mdImage, error) {
 	var imgs []*mdImage
