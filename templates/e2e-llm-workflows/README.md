@@ -1,4 +1,4 @@
-# End-to-end LLM Workflows Guide 
+# End-to-end LLM Workflows Guide
 
 In this guide, we'll learn how to execute the end-to-end LLM workflows to develop & productionize LLMs at scale.
 
@@ -18,7 +18,7 @@ Throughout these workloads we'll be using [Ray](https://github.com/ray-project/r
 
 ## Set up
 
-We can execute this notebook **entirely for free** (no credit card needed) by creating an [Anyscale account](https://console.anyscale.com/register/ha?utm_source=goku). Once you log in, you'll be directed to the main [console](https://console.anyscale.com/) where you'll see a collection of notebook templates. Click on the "End-to-end LLM Workflows" to open up our guide and click on the `README.ipynb` to get started. 
+We can execute this notebook **entirely for free** (no credit card needed) by creating an [Anyscale account](https://console.anyscale.com/register/ha?utm_source=goku). Once you log in, you'll be directed to the main [console](https://console.anyscale.com/) where you'll see a collection of notebook templates. Click on the "End-to-end LLM Workflows" to open up our guide and click on the `README.ipynb` to get started.
 
 > [Workspaces](https://docs.anyscale.com/workspaces/get-started/) are a fully managed development environment which allow us to use our favorite tools (VSCode, notebooks, terminal, etc.) on top of *infinite* compute (when we need it). In fact, by clicking on the compute at the top right (`✅ 1 node, 8 CPU`), we can see the cluster information:
 
@@ -43,7 +43,7 @@ warnings.filterwarnings("ignore")
 %autoreload 2
 ```
 
-We'll need a free [Hugging Face token](https://huggingface.co/settings/tokens) to load our base LLMs and tokenizers. And since we are using Llama models, we need to login and accept the terms and conditions [here](https://huggingface.co/meta-llama/Meta-Llama-3-8B-Instruct). 
+We'll need a free [Hugging Face token](https://huggingface.co/settings/tokens) to load our base LLMs and tokenizers. And since we are using Llama models, we need to login and accept the terms and conditions [here](https://huggingface.co/meta-llama/Meta-Llama-3-8B-Instruct).
 
 <b style="background-color: yellow;">&nbsp;🔄 REPLACE&nbsp;</b>: Place your unique HF token below. If you accidentally ran this code block before pasting your HF token, then click the `Restart` button up top to restart the notebook kernel.
 
@@ -68,7 +68,7 @@ For our task, we'll be using the [Viggo dataset](https://huggingface.co/datasets
 # Input (unstructured sentence):
 "Dirt: Showdown from 2012 is a sport racing game for the PlayStation, Xbox, PC rated E 10+ (for Everyone 10 and Older). It's not available on Steam, Linux, or Mac."
 
-# Output (intent + entities): 
+# Output (intent + entities):
 "inform(name[Dirt: Showdown], release_year[2012], esrb[E 10+ (for Everyone 10 and Older)], genres[driving/racing, sport], platforms[PlayStation, Xbox, PC], available_on_steam[no], has_linux_release[no], has_mac_release[no])"
 ```
 
@@ -301,7 +301,7 @@ ft_train_ds.take(1)
 
 ## Fine-tuning
 
-In this template, we'll fine-tune a large language model (LLM) using our dataset from the previous data preprocessing template. 
+In this template, we'll fine-tune a large language model (LLM) using our dataset from the previous data preprocessing template.
 
 **Note**: We normally would not jump straight to fine-tuning a model. We would first experiment with a base model and evaluate it so that we can have a baseline performance to compare it to.
 
@@ -426,7 +426,7 @@ As the job runs, you can monitor logs, metrics, Ray dashboard, etc. by clicking 
 
 ### Load artifacts
 
-To retrieve information about your fine-tuned model, Anyscale provides a convenient SDK. 
+To retrieve information about your fine-tuned model, Anyscale provides a convenient SDK.
 
 <b style="background-color: yellow;">&nbsp;🔄 REPLACE&nbsp;</b>:  Update the `job_id` field with the Anyscale job ID for your fine-tuning run.
 
@@ -437,7 +437,7 @@ model_info = anyscale.llm.model.get(job_id=job_id)
 print(model_info)
 ```
 
-`model_info` has a number of helpful model metadata, such as the id `meta-llama/Meta-Llama-3-8B-Instruct:suman:cdrba` , the base model ID, storage URI for the final checkpoint, the model generation config, etc. 
+`model_info` has a number of helpful model metadata, such as the id `meta-llama/Meta-Llama-3-8B-Instruct:suman:cdrba` , the base model ID, storage URI for the final checkpoint, the model generation config, etc.
 
 ```
 FineTunedModel(
@@ -476,9 +476,9 @@ The storage URI for the best checkpoint can look like:
 s3://anyscale-production-data-cld-ldm5ez4edlp7yh4yiakp2u294w/org_4snvy99zwbmh4gbtk64jfqggmj/cld_ldm5ez4edlp7yh4yiakp2u294w/artifact_storage/sumanth__hegde_ilziamlndopyvjolzuglmhzzmkkkfgeewbyk/llmforge-finetuning/meta-llama/Meta-Llama-3-8B-Instruct/TorchTrainer_2024-09-10_16-35-42/epoch-3
 ```
 
-Note that with LoRA, we automatically forward this checkpoint to a common folder in [artifact storage](https://docs.anyscale.com/platform/workspaces/workspaces-storage#object-storage-s3-or-gcs-buckets): `{ANYSCALE_ARTIFACT_STORAGE}/lora_fine_tuning` . This becomes extremely helpful while serving LoRA checkpoints, which we'll see soon. 
+Note that with LoRA, we automatically forward this checkpoint to a common folder in [artifact storage](https://docs.anyscale.com/platform/workspaces/workspaces-storage#object-storage-s3-or-gcs-buckets): `{ANYSCALE_ARTIFACT_STORAGE}/lora_fine_tuning` . This becomes extremely helpful while serving LoRA checkpoints, which we'll see soon.
 
-This information about the final checkpoint is also available in the logs for the job. For example, you might see: 
+This information about the final checkpoint is also available in the logs for the job. For example, you might see:
 ```
 Successfully copied files to bucket: anyscale-customer-dataplane-data-production-us-east-2 and path: artifact_storage/org_4snvy99zwbmh4gbtk64jfqggmj/cld_ldm5ez4edlp7yh4yiakp2u294w/artifact_storage/lora_fine_tuning/meta-llama/Meta-Llama-3-8B-Instruct:suman:cdrba
 ```
@@ -496,7 +496,7 @@ from src.utils import download_files_from_remote
 ```python
 # Locations
 artifacts_dir = '/mnt/cluster_storage'  # storage accessible by head and worker nodes
-model_id = model_info.id 
+model_id = model_info.id
 artifacts_path = f"{os.environ['ANYSCALE_ARTIFACT_STORAGE']}/lora_fine_tuning/{model_id}"
 ```
 
@@ -604,9 +604,9 @@ print (chat_template)
 ```
 
     {% set loop_messages = messages %}{% for message in loop_messages %}{% set content = '<|start_header_id|>' + message['role'] + '<|end_header_id|>
-    
+
     '+ message['content'] | trim + '<|eot_id|>' %}{% if loop.index0 == 0 %}{% set content = bos_token + content %}{% endif %}{{ content }}{% endfor %}{% if add_generation_prompt %}{{ '<|start_header_id|>assistant<|end_header_id|>
-    
+
     ' }}{% endif %}
 
 
@@ -640,7 +640,7 @@ print (test_input_prompts_ds.take(1))
 
 ### Batch inference
 
-We will use [vLLM](https://github.com/vllm-project/vllm)'s offline LLM class to load the model and use it for inference. We can easily load our LoRA weights and merge them with the base model (just pass in `lora_path`). And we'll wrap all of this functionality in a class that we can pass to [ray.data.Dataset.map_batches`](https://docs.ray.io/en/latest/data/api/doc/ray.data.Dataset.map_batches.html) to apply batch inference at scale.
+We will use [vLLM](https://github.com/vllm-project/vllm)'s offline LLM class to load the model and use it for inference. We can easily load our LoRA weights and merge them with the base model (just pass in `lora_path`). And we'll wrap all of this functionality in a class that we can pass to [`ray.data.Dataset.map_batches`](https://docs.ray.io/en/latest/data/api/doc/ray.data.Dataset.map_batches.html) to apply batch inference at scale.
 
 <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/e2e-llm-workflows/assets/offline-detailed.png" width=750>
 
@@ -766,7 +766,7 @@ We'll start by generating the configuration for our service. We provide a conven
 <b style="background-color: orange;">&nbsp;💡 INSIGHT&nbsp;</b>: Ray Serve and Anyscale support [serving multiple LoRA adapters](https://github.com/anyscale/templates/blob/main/templates/endpoints_v2/examples/lora/DeployLora.ipynb) with a common base model in the same request batch which allows you to serve a wide variety of use-cases without increasing hardware spend. In addition, we use Serve multiplexing to reduce the number of swaps for LoRA adapters. There is a slight latency overhead to serving a LoRA model compared to the base model, typically 10-20%.
 
 
-We can use the model metadata `model_info` for the model ID. For serving, we'll use the root folder for the LoRA checkpoints.  
+We can use the model metadata `model_info` for the model ID. For serving, we'll use the root folder for the LoRA checkpoints.
 
 **model**: `meta-llama/Meta-Llama-3-8B-Instruct:suman:cdrba` (`model_info.id`)
 
@@ -776,7 +776,7 @@ We'll start by running the rayllm CLI command below to start the workflow to gen
 ```bash
 mkdir /home/ray/default/deploy/services
 cd /home/ray/default/deploy/services
-rayllm gen-config 
+rayllm gen-config
 ```
 
 <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/e2e-llm-workflows/assets/cli.png" width=500>
