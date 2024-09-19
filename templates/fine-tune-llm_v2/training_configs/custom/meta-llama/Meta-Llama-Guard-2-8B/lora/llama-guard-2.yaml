@@ -25,8 +25,9 @@ context_length: 4096
 num_devices: 4
 
 # Change this to the batch size that you want to use
-train_batch_size_per_device: 4
+train_batch_size_per_device: 2
 eval_batch_size_per_device: 4
+gradient_accumulation_steps: 2
 
 # Change this to the learning rate that you want to use
 learning_rate: 1e-4
@@ -37,7 +38,7 @@ deepspeed:
 
 # Accelerator type
 worker_resources:
-  accelerator_type:A10G: 0.001
+  anyscale/accelerator_shape:4xA10G: 0.001
 
 # Lora configuration
 lora_config:
