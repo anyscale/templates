@@ -74,14 +74,12 @@ For our task, we'll be using the [Viggo dataset](https://huggingface.co/datasets
 
 
 ```python
-from datasets import load_dataset
+from datasets import DatasetDict, load_dataset
 ray.data.DataContext.get_current().enable_progress_bars = False
 ```
 
 
 ```python
-from datasets import DatasetDict
-
 # Load the VIGGO dataset
 dataset: DatasetDict = load_dataset("GEM/viggo", trust_remote_code=True)  # type: ignore
 ```
@@ -124,6 +122,9 @@ train_set[0]
 
 We'll use [Ray](https://docs.ray.io/) to load our dataset and apply preprocessing to batches of our data at scale.
 
+```python
+from ray.data import Dataset
+```
 
 ```python
 # Load as a Ray Dataset
@@ -201,8 +202,6 @@ To apply our function on our dataset at scale, we can pass it to [ray.data.Datas
 
 
 ```python
-from ray.data import Dataset
-
 # Distributed preprocessing
 ft_train_ds: Dataset = train_ds.map(to_schema, fn_kwargs={'system_content': system_content})
 ft_train_ds.take(1)
@@ -235,8 +234,6 @@ ft_train_ds.take(1)
 
 
 ```python
-from ray.data import Dataset
-
 # Repeat the steps for other splits
 ft_val_ds: Dataset = ray.data.from_items(val_set).map(to_schema, fn_kwargs={'system_content': system_content})
 ft_test_ds: Dataset = ray.data.from_items(test_set).map(to_schema, fn_kwargs={'system_content': system_content})
@@ -253,8 +250,9 @@ import os
 from ray.data import Dataset
 from rich import print as rprint
 from src.utils import get_dataset_file_path
+```
 
-
+```python
 # Upload as an Anyscale Dataset
 def upload_dataset(dataset: Dataset, filename: str):
     with get_dataset_file_path(dataset) as dataset_file_path:
@@ -266,7 +264,9 @@ def upload_dataset(dataset: Dataset, filename: str):
     rprint(f"Metadata for '{filename}'")
     rprint(dataset)
     return dataset
+```
 
+```python
 train_dataset = upload_dataset(ft_train_ds, 'train.jsonl')
 val_dataset = upload_dataset(ft_val_ds, 'val.jsonl')
 test_dataset = upload_dataset(ft_test_ds, 'test.jsonl')
@@ -407,7 +407,8 @@ While we could execute `llmforge anyscale finetune configs/training/lora/llama-3
 ```python
 import anyscale
 from anyscale.job import JobConfig
-
+```
+```python
 # Job submission
 job_config = JobConfig.from_yaml("deploy/jobs/ft.yaml")
 job_id = anyscale.job.submit(job_config)
@@ -428,7 +429,7 @@ As the job runs, you can monitor logs, metrics, Ray dashboard, etc. by clicking 
 
 To retrieve information about your fine-tuned model, Anyscale provides a convenient SDK.
 
-<b style="background-color: yellow;">&nbsp;🔄 REPLACE&nbsp;</b>:  Update the `job_id` field with the Anyscale job ID for your fine-tuning run.
+<b>Note</b>: Wait for your fine-tuning job to finish first and then run the code below to programatically retrieve the model information.
 
 
 ```python
@@ -489,9 +490,6 @@ We'll now load the checkpoint from cloud storage to a local [cluster storage](ht
 ```python
 from src.utils import download_files_from_remote
 ```
-
-<b style="background-color: yellow;">&nbsp;🔄 REPLACE&nbsp;</b>: Update the information below for the specific model and artifacts path for our fine-tuned model (retrieved from the logs from the Anyscale Job we launched above).
-
 
 ```python
 # Locations
@@ -647,7 +645,7 @@ We will use [vLLM](https://github.com/vllm-project/vllm)'s offline LLM class to 
 
 ```python
 from vllm import LLM, SamplingParams
-from vllm.anyscale.lora.utils import LoRARequest
+from vllm.lora.request import LoRARequest
 ```
 
 
@@ -930,14 +928,29 @@ For example, suppose that we want to preprocess batches of new incoming data, fi
 
 We have a lot more guides that address more nuanced use cases:
 
-- [Batch text embeddings with Ray data](https://github.com/anyscale/templates/tree/main/templates/text-embeddings)
+Fine-tuning:
+- [Control over 50+ hyperparameters](https://docs.anyscale.com/llms/finetuning/guides/modify_hyperparams/)
+- [Fine-tune any HF model](https://docs.anyscale.com/llms/finetuning/guides/bring_any_hf_model/)
+- [Full-parameter or LoRA fine-tuning](https://docs.anyscale.com/llms/finetuning/guides/lora_vs_full_param/)
+- [Classification fine-tuning / Routing](https://www.anyscale.com/blog/building-an-llm-router-for-high-quality-and-cost-effective-responses)
+- [Function calling fine-tuning](https://github.com/anyscale/templates/blob/main/templates/fine-tune-llm_v2/end-to-end-examples/fine-tune-function-calling/README.ipynb)
+- [Longer context fine-tuning](https://www.anyscale.com/blog/fine-tuning-llms-for-longer-context-and-better-rag-systems)
 - [Continued fine-tuning from checkpoint](https://github.com/anyscale/templates/tree/main/templates/fine-tune-llm_v2/cookbooks/continue_from_checkpoint)
-- [Serving multiple LoRA adapters with same base model](https://github.com/anyscale/templates/blob/main/templates/endpoints_v2/examples/lora/DeployLora.ipynb) (+ multiplexing)
-- [Deploy models for embedding generation](https://github.com/anyscale/templates/blob/main/templates/endpoints_v2/examples/embedding/EmbeddingModels.ipynb)
-- Function calling [fine-tuning](https://github.com/anyscale/templates/tree/main/templates/fine-tune-llm_v2/end-to-end-examples/fine-tune-function-calling) and [deployment](https://github.com/anyscale/templates/blob/main/templates/endpoints_v2/examples/function_calling/DeployFunctionCalling.ipynb)
-- [Configs to optimize the latency/throughput](https://github.com/anyscale/templates/blob/main/templates/endpoints_v2/examples/OptimizeModels.ipynb)
-- [Configs to control optimization parameters and tensor-parallelism](https://github.com/anyscale/templates/blob/main/templates/endpoints_v2/examples/AdvancedModelConfigs.ipynb)
-- Creating a [Router](https://github.com/anyscale/llm-router) between different models (base, fine-tuned, closed-source) to optimize for cost and quality.
+- Training on more available hardware (ex. A10s) with model parallelism
+- [End-to-end LLM workflows (including batch data processing, batch inference)](https://www.anyscale.com/blog/end-to-end-llm-workflows-guide)
+- Distillation (Coming in <2 weeks)
+
+Serving:
+- [Deploy with autoscaling + optimize for latency vs. throughput](https://docs.anyscale.com/examples/deploy-llms/)
+- [Serving multiple LoRA adapters](https://docs.anyscale.com/llms/serving/guides/multi_lora/)
+- [Migration from OpenAI](https://docs.anyscale.com/llms/serving/guides/openai_to_oss/)
+- [Spot to on-demand fallback (vice versa)](https://docs.anyscale.com/1.0.0/configure/compute-configs/ondemand-to-spot-fallback/)
+- [Batch inference with vLLM](https://docs.anyscale.com/examples/batch-llm/)
+
+And more!
+- [Batch text embeddings with Ray data](https://github.com/anyscale/templates/tree/main/templates/text-embeddings)
+- [Production RAG applications](https://www.anyscale.com/blog/a-comprehensive-guide-for-building-rag-based-llm-applications-part-1)
+- [Router](https://github.com/anyscale/llm-router) between different models (base, fine-tuned, closed-source) to optimize for cost and quality
 - Stable diffusion [fine-tuning](https://github.com/anyscale/templates/tree/main/templates/fine-tune-stable-diffusion) and [serving](https://github.com/anyscale/templates/tree/main/templates/serve-stable-diffusion)
 
 And if you're interested in using our hosted Anyscale or connecting it to your own cloud, reach out to us at [Anyscale](https://www.anyscale.com/get-started?utm_source=goku). And follow us on [Twitter](https://x.com/anyscalecompute) and [LinkedIn](https://www.linkedin.com/company/joinanyscale/) for more real-time updates on new features!
