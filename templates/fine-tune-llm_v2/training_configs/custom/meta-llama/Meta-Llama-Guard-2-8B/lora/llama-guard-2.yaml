@@ -37,7 +37,7 @@ deepspeed:
 
 # Accelerator type
 worker_resources:
-  accelerator_type:A10G: 0.001
+  anyscale/accelerator_shape:4xA10G: 0.001
 
 # Lora configuration
 lora_config:
