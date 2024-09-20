@@ -64,7 +64,7 @@ Image(filename=filename)
 
 Deploy the model to production using the `anyscale service rollout` command.
 
-This creates a long-running [service](https://docs.anyscale.com/services/get-started) with a stable endpoint to query the application.
+This creates a long-running [service](https://docs.anyscale.com/platform/services/) with a stable endpoint to query the application.
 
 Note that we installed some pip packages in the workspace that had to be added in to the runtime environment. For faster setup of your deployments, you can build a new [cluster environment](https://docs.anyscale.com/configure/dependency-management/cluster-environments) with these packages.
 
