@@ -12,4 +12,4 @@ worker_node_types:
     max_workers: 1
 
 flags:
-  allow-cross-zone-autoscaling: false
+  allow-cross-zone-autoscaling: true
