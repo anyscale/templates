@@ -1,17 +1,16 @@
-head_node:
+head_node_type:
   instance_type: m5.4xlarge
   resources:
-    CPU: 0
-    GPU: 0
+    cpu: 0
+    gpu: 0
     is_head_node: 1
-  flags: {}
-worker_nodes:
+
+worker_node_types:
   - instance_type: g5.4xlarge
-    flags: {}
     name: '1xA10G:16CPU-64GB'
-    min_nodes: 2
-    max_nodes: 2
+    min_workers: 2
+    max_workers: 2
     market_type: ON_DEMAND
-enable_cross_zone_scaling: false
+
 flags:
   allow-cross-zone-autoscaling: false
