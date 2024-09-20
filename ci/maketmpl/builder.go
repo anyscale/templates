@@ -7,13 +7,6 @@ import (
 	"path/filepath"
 )
 
-type builder struct {
-	baseDir string
-	tmplDir string
-
-	tmpl *Template
-}
-
 const (
 	// The name of the release zip file.
 	releaseDotZip = "release.zip"
@@ -29,9 +22,15 @@ const (
 	readmeGitHubMD = "README.github.md"
 )
 
+type builder struct {
+	baseDir string
+	tmplDir string
+
+	tmpl *Template
+}
+
 func newBuilder(t *Template, baseDir string) *builder {
 	tmplDir := filepath.Join(baseDir, t.Dir)
-
 	return &builder{tmpl: t, baseDir: baseDir, tmplDir: tmplDir}
 }
 
@@ -62,23 +61,23 @@ func (b *builder) listFiles() ([]string, error) {
 	return files, nil
 }
 
-func (b *builder) buildReleaseZip(path string, files []string) error {
-	zipFile, err := os.Create(path)
+func buildZip(dir string, files []string, out string) error {
+	outFile, err := os.Create(out)
 	if err != nil {
 		return fmt.Errorf("create release zip file: %w", err)
 	}
-	defer zipFile.Close()
+	defer outFile.Close()
 
-	z := zip.NewWriter(zipFile)
+	z := zip.NewWriter(outFile)
 	for _, f := range files {
-		if err := addFileToZip(z, filepath.Join(b.tmplDir, f), f); err != nil {
+		if err := addFileToZip(z, filepath.Join(dir, f), f); err != nil {
 			return fmt.Errorf("add file to zip: %w", err)
 		}
 	}
 	if err := z.Close(); err != nil {
 		return fmt.Errorf("close zip writer: %w", err)
 	}
-	if err := zipFile.Sync(); err != nil {
+	if err := outFile.Sync(); err != nil {
 		return fmt.Errorf("flush zip file to storage: %w", err)
 	}
 	return nil
@@ -120,7 +119,7 @@ func (b *builder) build(outputDir string) error {
 
 	// Build the release zip file.
 	zipFile := filepath.Join(outputDir, releaseDotZip)
-	if err := b.buildReleaseZip(zipFile, files); err != nil {
+	if err := buildZip(b.tmplDir, files, zipFile); err != nil {
 		return fmt.Errorf("save release zip file: %w", err)
 	}
 
