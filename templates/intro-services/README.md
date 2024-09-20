@@ -122,20 +122,18 @@ To get the status of `my_service`, run the following:
 
 When you deploy, you expose the service to a publicly accessible IP address which you can send requests to.
 
-In the preceding cell’s output, copy your `API_KEY` and `BASE_URL`. As an example, the values look like the following:
+In the preceding cell’s output, copy your `query_auth_token` and `query_url`. Set them as your `API_KEY` and `BASE_URL` respectively. As an example, the values look like the following:
 
 - `API_KEY`: `NMv1Dq3f2pDxWjj-efKKqMUk9UO-xfU3Lo5OhpjAHiI`
 - `BASE_URL`: `https://my-service-jrvwy.cld-w3gg9qpy7ft3ayan.s.anyscaleuserdata.com/`
 
 Fill in the following placeholder values for the `BASE_URL` and `API_KEY` in the following Python requests object:
 
-
-
 ```python
 import requests
 
-BASE_URL = "" # PASTE HERE
-API_KEY = "" # PASTE HERE
+BASE_URL = "" # PASTE query_url HERE
+API_KEY = "" # PASTE query_auth_token HERE
 
 def send_request(name: str) -> str:
     response: requests.Response = requests.get(
