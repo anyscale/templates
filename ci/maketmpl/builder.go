@@ -1,7 +1,6 @@
 package maketmpl
 
 import (
-	"archive/zip"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -59,28 +58,6 @@ func (b *builder) listFiles() ([]string, error) {
 	}
 
 	return files, nil
-}
-
-func buildZip(dir string, files []string, out string) error {
-	outFile, err := os.Create(out)
-	if err != nil {
-		return fmt.Errorf("create release zip file: %w", err)
-	}
-	defer outFile.Close()
-
-	z := zip.NewWriter(outFile)
-	for _, f := range files {
-		if err := addFileToZip(z, filepath.Join(dir, f), f); err != nil {
-			return fmt.Errorf("add file to zip: %w", err)
-		}
-	}
-	if err := z.Close(); err != nil {
-		return fmt.Errorf("close zip writer: %w", err)
-	}
-	if err := outFile.Sync(); err != nil {
-		return fmt.Errorf("flush zip file to storage: %w", err)
-	}
-	return nil
 }
 
 func hasReadmeNotebook(files []string) bool {
