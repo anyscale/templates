@@ -132,8 +132,8 @@ Fill in the following placeholder values for the `BASE_URL` and `API_KEY` in the
 ```python
 import requests
 
-BASE_URL = "" # PASTE query_url HERE
-API_KEY = "" # PASTE query_auth_token HERE
+BASE_URL = "" # PASTE `query_url` HERE
+API_KEY = "" # PASTE `query_auth_token` HERE
 
 def send_request(name: str) -> str:
     response: requests.Response = requests.get(
