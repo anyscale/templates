@@ -13,4 +13,4 @@ worker_node_types:
     market_type: ON_DEMAND
 
 flags:
-  allow-cross-zone-autoscaling: false
+  allow-cross-zone-autoscaling: true
