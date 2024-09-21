@@ -1,5 +1,8 @@
 head_node_type:
   instance_type: g5.4xlarge
+  resources:
+    cpu: 12
+    gpu: 1
 
 worker_nodes:
   - instance_type: g5.4xlarge
