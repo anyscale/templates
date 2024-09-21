@@ -10,24 +10,38 @@ func TestInlineImgSrc(t *testing.T) {
 	imageFile := []byte("fakeimg")
 
 	tests := []struct {
-		file    string
-		want    string
-		wantErr bool
+		file           string
+		want           string
+		skipFileCreate bool
+		wantErr        bool
 	}{
 		{file: "img.png", want: "data:image/png;base64,ZmFrZWltZw=="},
 		{file: "img.jpeg", want: "data:image/jpeg;base64,ZmFrZWltZw=="},
 		{file: "img.jpg", want: "data:image/jpeg;base64,ZmFrZWltZw=="},
 		{file: "img.gif", want: "data:image/gif;base64,ZmFrZWltZw=="},
+		{
+			file:           "http://example.com/a.png",
+			want:           "http://example.com/a.png",
+			skipFileCreate: true,
+		},
+		{
+			file:           "https://example.com/a.png",
+			want:           "https://example.com/a.png",
+			skipFileCreate: true,
+		},
 		{file: "img.svg", wantErr: true},
+		{file: "not-exist.png", skipFileCreate: true, wantErr: true},
 	}
 
 	for _, test := range tests {
 		t.Run(test.file, func(t *testing.T) {
 			tmp := t.TempDir()
 
-			img := filepath.Join(tmp, test.file)
-			if err := os.WriteFile(img, imageFile, 0o644); err != nil {
-				t.Fatalf("write fake png: %v", err)
+			if !test.skipFileCreate {
+				img := filepath.Join(tmp, test.file)
+				if err := os.WriteFile(img, imageFile, 0o644); err != nil {
+					t.Fatalf("write fake png: %v", err)
+				}
 			}
 
 			got, err := inlineImgSrc(tmp, test.file)
