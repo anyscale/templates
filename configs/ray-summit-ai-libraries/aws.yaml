@@ -1,9 +1,6 @@
 head_node_type:
   name: head
   instance_type: g4dn.2xlarge
-  resources:
-    cpu: 4
-    gpu: 1
 
 worker_node_types:
   - instance_type: g4dn.2xlarge
