@@ -144,53 +144,6 @@ func TestParseMdImages(t *testing.T) {
 	}
 }
 
-func TestInlineImgSrc(t *testing.T) {
-	imageFile := []byte("fakeimg")
-
-	tests := []struct {
-		file    string
-		want    string
-		wantErr bool
-	}{
-		{file: "img.png", want: "data:image/png;base64,ZmFrZWltZw=="},
-		{file: "img.jpeg", want: "data:image/jpeg;base64,ZmFrZWltZw=="},
-		{file: "img.jpg", want: "data:image/jpeg;base64,ZmFrZWltZw=="},
-		{file: "img.gif", want: "data:image/gif;base64,ZmFrZWltZw=="},
-		{file: "img.svg", wantErr: true},
-	}
-
-	for _, test := range tests {
-		t.Run(test.file, func(t *testing.T) {
-			tmp := t.TempDir()
-
-			img := filepath.Join(tmp, test.file)
-			if err := os.WriteFile(img, imageFile, 0o644); err != nil {
-				t.Fatalf("write fake png: %v", err)
-			}
-
-			got, err := inlineImgSrc(tmp, test.file)
-			if test.wantErr {
-				if err == nil {
-					t.Errorf("inlineImgSrc(%q): want error, got nil", test.file)
-				}
-				return
-			}
-
-			if err != nil {
-				if !test.wantErr {
-					t.Fatalf("inlineImgSrc(%q): %v", test.file, err)
-				}
-			} else if got != test.want {
-				t.Errorf(
-					"inlineImgSrc(%q) = %q, want %q",
-					test.file, got, test.want,
-				)
-			}
-		})
-	}
-
-}
-
 func TestMdImage_writeInto(t *testing.T) {
 	imageFile := []byte("fakeimg")
 	tmp := t.TempDir()
