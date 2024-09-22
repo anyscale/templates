@@ -171,13 +171,13 @@ def download_images(url: str, data_dir: str) -> None:
     img_name = f"{data_dir}/{img_name}"
     with open(img_name, "wb+") as f:
         f.write(img_data)
-        
+
 def insert_into_object_store(img_name:str):
     """
     Insert the image into the object store and return its object reference
     """
     import ray
-    
+
     img = Image.open(img_name)
     img_ref = ray.put(img)
     return img_ref
@@ -189,7 +189,7 @@ def transform_image(img_ref:object, fetch_image=True, verbose=False):
     to simulate a compute intensive image processing
     """
     import ray
-    
+
     # Only fetch the image from the object store if called serially.
     if fetch_image:
         img = ray.get(img_ref)
