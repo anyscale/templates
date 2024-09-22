@@ -102,7 +102,7 @@ func (b *builder) build(outputDir string) error {
 
 	if readme != nil {
 		if err := readme.writeGitHubMD(
-			filepath.Join(outputDir, readmeGitHubMD), b.tmplDir,
+			filepath.Join(outputDir, readmeGitHubMD),
 		); err != nil {
 			return fmt.Errorf("write github readme file: %w", err)
 		}

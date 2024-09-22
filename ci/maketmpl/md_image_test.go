@@ -205,7 +205,10 @@ func TestMdImage_writeInto(t *testing.T) {
 		name := fmt.Sprintf("write %+v with opt +%+v", test.want, test.opt)
 		t.Run(name, func(t *testing.T) {
 			buf := new(bytes.Buffer)
-			if err := test.img.writeInto(buf, tmp, test.opt); err != nil {
+			if test.opt.inlineSrc {
+				test.opt.inlineSrcDir = tmp
+			}
+			if err := test.img.writeInto(buf, test.opt); err != nil {
 				t.Fatalf("writeInto: %v", err)
 			}
 

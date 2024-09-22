@@ -29,13 +29,13 @@ type mdImage struct {
 }
 
 type writeImgOptions struct {
-	inlineSrc   bool
+	inlineSrc    bool
+	inlineSrcDir string
+
 	sizeInStyle bool
 }
 
-func (i *mdImage) writeInto(
-	w io.Writer, srcDir string, opts *writeImgOptions,
-) error {
+func (i *mdImage) writeInto(w io.Writer, opts *writeImgOptions) error {
 	var styles []string
 	if i.style != "" {
 		styles = []string{i.style}
@@ -46,7 +46,7 @@ func (i *mdImage) writeInto(
 	fmt.Fprint(buf, "<img ")
 	if src := i.src; src != "" {
 		if opts.inlineSrc {
-			inlinedSrc, err := inlineImgSrc(srcDir, src)
+			inlinedSrc, err := inlineImgSrc(opts.inlineSrcDir, src)
 			if err != nil {
 				return fmt.Errorf("inline image: %w", err)
 			}
