@@ -1,0 +1,10 @@
+name: mongo-search-front-middle
+applications:
+  - name: frontend
+    route_prefix: /
+    import_path: frontend:app
+  - name: backend
+    route_prefix: /backend
+    import_path: backend:app
+query_auth_token_enabled: false
+requirements: requirements.txt

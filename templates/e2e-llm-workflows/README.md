@@ -1,4 +1,4 @@
-# End-to-end LLM Workflows Guide 
+# End-to-end LLM Workflows Guide
 
 In this guide, we'll learn how to execute the end-to-end LLM workflows to develop & productionize LLMs at scale.
 
@@ -18,7 +18,7 @@ Throughout these workloads we'll be using [Ray](https://github.com/ray-project/r
 
 ## Set up
 
-We can execute this notebook **entirely for free** (no credit card needed) by creating an [Anyscale account](https://console.anyscale.com/register/ha?utm_source=goku). Once you log in, you'll be directed to the main [console](https://console.anyscale.com/) where you'll see a collection of notebook templates. Click on the "End-to-end LLM Workflows" to open up our guide and click on the `README.ipynb` to get started. 
+We can execute this notebook **entirely for free** (no credit card needed) by creating an [Anyscale account](https://console.anyscale.com/register/ha?utm_source=goku). Once you log in, you'll be directed to the main [console](https://console.anyscale.com/) where you'll see a collection of notebook templates. Click on the "End-to-end LLM Workflows" to open up our guide and click on the `README.ipynb` to get started.
 
 > [Workspaces](https://docs.anyscale.com/workspaces/get-started/) are a fully managed development environment which allow us to use our favorite tools (VSCode, notebooks, terminal, etc.) on top of *infinite* compute (when we need it). In fact, by clicking on the compute at the top right (`✅ 1 node, 8 CPU`), we can see the cluster information:
 
@@ -43,7 +43,7 @@ warnings.filterwarnings("ignore")
 %autoreload 2
 ```
 
-We'll need a free [Hugging Face token](https://huggingface.co/settings/tokens) to load our base LLMs and tokenizers. And since we are using Llama models, we need to login and accept the terms and conditions [here](https://huggingface.co/meta-llama/Meta-Llama-3-8B-Instruct). 
+We'll need a free [Hugging Face token](https://huggingface.co/settings/tokens) to load our base LLMs and tokenizers. And since we are using Llama models, we need to login and accept the terms and conditions [here](https://huggingface.co/meta-llama/Meta-Llama-3-8B-Instruct).
 
 <b style="background-color: yellow;">&nbsp;🔄 REPLACE&nbsp;</b>: Place your unique HF token below. If you accidentally ran this code block before pasting your HF token, then click the `Restart` button up top to restart the notebook kernel.
 
@@ -68,20 +68,18 @@ For our task, we'll be using the [Viggo dataset](https://huggingface.co/datasets
 # Input (unstructured sentence):
 "Dirt: Showdown from 2012 is a sport racing game for the PlayStation, Xbox, PC rated E 10+ (for Everyone 10 and Older). It's not available on Steam, Linux, or Mac."
 
-# Output (intent + entities): 
+# Output (intent + entities):
 "inform(name[Dirt: Showdown], release_year[2012], esrb[E 10+ (for Everyone 10 and Older)], genres[driving/racing, sport], platforms[PlayStation, Xbox, PC], available_on_steam[no], has_linux_release[no], has_mac_release[no])"
 ```
 
 
 ```python
-from datasets import load_dataset
+from datasets import DatasetDict, load_dataset
 ray.data.DataContext.get_current().enable_progress_bars = False
 ```
 
 
 ```python
-from datasets import DatasetDict
-
 # Load the VIGGO dataset
 dataset: DatasetDict = load_dataset("GEM/viggo", trust_remote_code=True)  # type: ignore
 ```
@@ -124,6 +122,9 @@ train_set[0]
 
 We'll use [Ray](https://docs.ray.io/) to load our dataset and apply preprocessing to batches of our data at scale.
 
+```python
+from ray.data import Dataset
+```
 
 ```python
 # Load as a Ray Dataset
@@ -201,8 +202,6 @@ To apply our function on our dataset at scale, we can pass it to [ray.data.Datas
 
 
 ```python
-from ray.data import Dataset
-
 # Distributed preprocessing
 ft_train_ds: Dataset = train_ds.map(to_schema, fn_kwargs={'system_content': system_content})
 ft_train_ds.take(1)
@@ -235,8 +234,6 @@ ft_train_ds.take(1)
 
 
 ```python
-from ray.data import Dataset
-
 # Repeat the steps for other splits
 ft_val_ds: Dataset = ray.data.from_items(val_set).map(to_schema, fn_kwargs={'system_content': system_content})
 ft_test_ds: Dataset = ray.data.from_items(test_set).map(to_schema, fn_kwargs={'system_content': system_content})
@@ -253,8 +250,9 @@ import os
 from ray.data import Dataset
 from rich import print as rprint
 from src.utils import get_dataset_file_path
+```
 
-
+```python
 # Upload as an Anyscale Dataset
 def upload_dataset(dataset: Dataset, filename: str):
     with get_dataset_file_path(dataset) as dataset_file_path:
@@ -266,7 +264,9 @@ def upload_dataset(dataset: Dataset, filename: str):
     rprint(f"Metadata for '{filename}'")
     rprint(dataset)
     return dataset
+```
 
+```python
 train_dataset = upload_dataset(ft_train_ds, 'train.jsonl')
 val_dataset = upload_dataset(ft_val_ds, 'val.jsonl')
 test_dataset = upload_dataset(ft_test_ds, 'test.jsonl')
@@ -301,7 +301,7 @@ ft_train_ds.take(1)
 
 ## Fine-tuning
 
-In this template, we'll fine-tune a large language model (LLM) using our dataset from the previous data preprocessing template. 
+In this template, we'll fine-tune a large language model (LLM) using our dataset from the previous data preprocessing template.
 
 **Note**: We normally would not jump straight to fine-tuning a model. We would first experiment with a base model and evaluate it so that we can have a baseline performance to compare it to.
 
@@ -407,7 +407,8 @@ While we could execute `llmforge anyscale finetune configs/training/lora/llama-3
 ```python
 import anyscale
 from anyscale.job import JobConfig
-
+```
+```python
 # Job submission
 job_config = JobConfig.from_yaml("deploy/jobs/ft.yaml")
 job_id = anyscale.job.submit(job_config)
@@ -426,9 +427,9 @@ As the job runs, you can monitor logs, metrics, Ray dashboard, etc. by clicking 
 
 ### Load artifacts
 
-To retrieve information about your fine-tuned model, Anyscale provides a convenient SDK. 
+To retrieve information about your fine-tuned model, Anyscale provides a convenient SDK.
 
-<b style="background-color: yellow;">&nbsp;🔄 REPLACE&nbsp;</b>:  Update the `job_id` field with the Anyscale job ID for your fine-tuning run.
+<b>Note</b>: Wait for your fine-tuning job to finish first and then run the code below to programatically retrieve the model information.
 
 
 ```python
@@ -437,7 +438,7 @@ model_info = anyscale.llm.model.get(job_id=job_id)
 print(model_info)
 ```
 
-`model_info` has a number of helpful model metadata, such as the id `meta-llama/Meta-Llama-3-8B-Instruct:suman:cdrba` , the base model ID, storage URI for the final checkpoint, the model generation config, etc. 
+`model_info` has a number of helpful model metadata, such as the id `meta-llama/Meta-Llama-3-8B-Instruct:gokum:yehli` , the base model ID, storage URI for the final checkpoint, the model generation config, etc.
 
 ```
 FineTunedModel(
@@ -473,14 +474,14 @@ FineTunedModel(
 The storage URI for the best checkpoint can look like:
 
 ```
-s3://anyscale-production-data-cld-ldm5ez4edlp7yh4yiakp2u294w/org_4snvy99zwbmh4gbtk64jfqggmj/cld_ldm5ez4edlp7yh4yiakp2u294w/artifact_storage/sumanth__hegde_ilziamlndopyvjolzuglmhzzmkkkfgeewbyk/llmforge-finetuning/meta-llama/Meta-Llama-3-8B-Instruct/TorchTrainer_2024-09-10_16-35-42/epoch-3
+s3://anyscale-production-data-cld-ldm5ez4edlp7yh4yiakp2u294w/org_4snvy99zwbmh4gbtk64jfqggmj/cld_ldm5ez4edlp7yh4yiakp2u294w/artifact_storage/goku__mohandas_gkdbtlxwnwirhpgqqzhawjazxxldhngwkxoi/llmforge-finetuning/meta-llama/Meta-Llama-3-8B-Instruct/TorchTrainer_2024-09-10_16-35-42/epoch-3
 ```
 
-Note that with LoRA, we automatically forward this checkpoint to a common folder in [artifact storage](https://docs.anyscale.com/platform/workspaces/workspaces-storage#object-storage-s3-or-gcs-buckets): `{ANYSCALE_ARTIFACT_STORAGE}/lora_fine_tuning` . This becomes extremely helpful while serving LoRA checkpoints, which we'll see soon. 
+Note that with LoRA, we automatically forward this checkpoint to a common folder in [artifact storage](https://docs.anyscale.com/platform/workspaces/workspaces-storage#object-storage-s3-or-gcs-buckets): `{ANYSCALE_ARTIFACT_STORAGE}/lora_fine_tuning` . This becomes extremely helpful while serving LoRA checkpoints, which we'll see soon.
 
-This information about the final checkpoint is also available in the logs for the job. For example, you might see: 
+This information about the final checkpoint is also available in the logs for the job. For example, you might see:
 ```
-Successfully copied files to bucket: anyscale-customer-dataplane-data-production-us-east-2 and path: artifact_storage/org_4snvy99zwbmh4gbtk64jfqggmj/cld_ldm5ez4edlp7yh4yiakp2u294w/artifact_storage/lora_fine_tuning/meta-llama/Meta-Llama-3-8B-Instruct:suman:cdrba
+Successfully copied files to bucket: anyscale-customer-dataplane-data-production-us-east-2 and path: artifact_storage/org_4snvy99zwbmh4gbtk64jfqggmj/cld_ldm5ez4edlp7yh4yiakp2u294w/artifact_storage/lora_fine_tuning/meta-llama/Meta-Llama-3-8B-Instruct:gokum:yehli
 ```
 
 We'll now load the checkpoint from cloud storage to a local [cluster storage](https://docs.anyscale.com/workspaces/storage/#cluster-storage) to use for other workloads.
@@ -490,13 +491,10 @@ We'll now load the checkpoint from cloud storage to a local [cluster storage](ht
 from src.utils import download_files_from_remote
 ```
 
-<b style="background-color: yellow;">&nbsp;🔄 REPLACE&nbsp;</b>: Update the information below for the specific model and artifacts path for our fine-tuned model (retrieved from the logs from the Anyscale Job we launched above).
-
-
 ```python
 # Locations
 artifacts_dir = '/mnt/cluster_storage'  # storage accessible by head and worker nodes
-model_id = model_info.id 
+model_id = model_info.id
 artifacts_path = f"{os.environ['ANYSCALE_ARTIFACT_STORAGE']}/lora_fine_tuning/{model_id}"
 ```
 
@@ -508,15 +506,15 @@ download_files_from_remote(
     local_dir=artifacts_dir)
 ```
 
-    Downloaded org_4snvy99zwbmh4gbtk64jfqggmj/cld_ldm5ez4edlp7yh4yiakp2u294w/artifact_storage/lora_fine_tuning/meta-llama/Meta-Llama-3-8B-Instruct:suman:cdrba/README.md to /mnt/cluster_storage/org_4snvy99zwbmh4gbtk64jfqggmj/cld_ldm5ez4edlp7yh4yiakp2u294w/artifact_storage/lora_fine_tuning/meta-llama/Meta-Llama-3-8B-Instruct:suman:cdrba/README.md
-    Downloaded org_4snvy99zwbmh4gbtk64jfqggmj/cld_ldm5ez4edlp7yh4yiakp2u294w/artifact_storage/lora_fine_tuning/meta-llama/Meta-Llama-3-8B-Instruct:suman:cdrba/adapter_config.json to /mnt/cluster_storage/org_4snvy99zwbmh4gbtk64jfqggmj/cld_ldm5ez4edlp7yh4yiakp2u294w/artifact_storage/lora_fine_tuning/meta-llama/Meta-Llama-3-8B-Instruct:suman:cdrba/adapter_config.json
-    Downloaded org_4snvy99zwbmh4gbtk64jfqggmj/cld_ldm5ez4edlp7yh4yiakp2u294w/artifact_storage/lora_fine_tuning/meta-llama/Meta-Llama-3-8B-Instruct:suman:cdrba/adapter_model.safetensors to /mnt/cluster_storage/org_4snvy99zwbmh4gbtk64jfqggmj/cld_ldm5ez4edlp7yh4yiakp2u294w/artifact_storage/lora_fine_tuning/meta-llama/Meta-Llama-3-8B-Instruct:suman:cdrba/adapter_model.safetensors
-    Downloaded org_4snvy99zwbmh4gbtk64jfqggmj/cld_ldm5ez4edlp7yh4yiakp2u294w/artifact_storage/lora_fine_tuning/meta-llama/Meta-Llama-3-8B-Instruct:suman:cdrba/config.json to /mnt/cluster_storage/org_4snvy99zwbmh4gbtk64jfqggmj/cld_ldm5ez4edlp7yh4yiakp2u294w/artifact_storage/lora_fine_tuning/meta-llama/Meta-Llama-3-8B-Instruct:suman:cdrba/config.json
-    Downloaded org_4snvy99zwbmh4gbtk64jfqggmj/cld_ldm5ez4edlp7yh4yiakp2u294w/artifact_storage/lora_fine_tuning/meta-llama/Meta-Llama-3-8B-Instruct:suman:cdrba/new_embeddings.safetensors to /mnt/cluster_storage/org_4snvy99zwbmh4gbtk64jfqggmj/cld_ldm5ez4edlp7yh4yiakp2u294w/artifact_storage/lora_fine_tuning/meta-llama/Meta-Llama-3-8B-Instruct:suman:cdrba/new_embeddings.safetensors
-    Downloaded org_4snvy99zwbmh4gbtk64jfqggmj/cld_ldm5ez4edlp7yh4yiakp2u294w/artifact_storage/lora_fine_tuning/meta-llama/Meta-Llama-3-8B-Instruct:suman:cdrba/rayllm_generation_config.json to /mnt/cluster_storage/org_4snvy99zwbmh4gbtk64jfqggmj/cld_ldm5ez4edlp7yh4yiakp2u294w/artifact_storage/lora_fine_tuning/meta-llama/Meta-Llama-3-8B-Instruct:suman:cdrba/rayllm_generation_config.json
-    Downloaded org_4snvy99zwbmh4gbtk64jfqggmj/cld_ldm5ez4edlp7yh4yiakp2u294w/artifact_storage/lora_fine_tuning/meta-llama/Meta-Llama-3-8B-Instruct:suman:cdrba/special_tokens_map.json to /mnt/cluster_storage/org_4snvy99zwbmh4gbtk64jfqggmj/cld_ldm5ez4edlp7yh4yiakp2u294w/artifact_storage/lora_fine_tuning/meta-llama/Meta-Llama-3-8B-Instruct:suman:cdrba/special_tokens_map.json
-    Downloaded org_4snvy99zwbmh4gbtk64jfqggmj/cld_ldm5ez4edlp7yh4yiakp2u294w/artifact_storage/lora_fine_tuning/meta-llama/Meta-Llama-3-8B-Instruct:suman:cdrba/tokenizer.json to /mnt/cluster_storage/org_4snvy99zwbmh4gbtk64jfqggmj/cld_ldm5ez4edlp7yh4yiakp2u294w/artifact_storage/lora_fine_tuning/meta-llama/Meta-Llama-3-8B-Instruct:suman:cdrba/tokenizer.json
-    Downloaded org_4snvy99zwbmh4gbtk64jfqggmj/cld_ldm5ez4edlp7yh4yiakp2u294w/artifact_storage/lora_fine_tuning/meta-llama/Meta-Llama-3-8B-Instruct:suman:cdrba/tokenizer_config.json to /mnt/cluster_storage/org_4snvy99zwbmh4gbtk64jfqggmj/cld_ldm5ez4edlp7yh4yiakp2u294w/artifact_storage/lora_fine_tuning/meta-llama/Meta-Llama-3-8B-Instruct:suman:cdrba/tokenizer_config.json
+    Downloaded org_4snvy99zwbmh4gbtk64jfqggmj/cld_ldm5ez4edlp7yh4yiakp2u294w/artifact_storage/lora_fine_tuning/meta-llama/Meta-Llama-3-8B-Instruct:gokum:yehli/README.md to /mnt/cluster_storage/org_4snvy99zwbmh4gbtk64jfqggmj/cld_ldm5ez4edlp7yh4yiakp2u294w/artifact_storage/lora_fine_tuning/meta-llama/Meta-Llama-3-8B-Instruct:gokum:yehli/README.md
+    Downloaded org_4snvy99zwbmh4gbtk64jfqggmj/cld_ldm5ez4edlp7yh4yiakp2u294w/artifact_storage/lora_fine_tuning/meta-llama/Meta-Llama-3-8B-Instruct:gokum:yehli/adapter_config.json to /mnt/cluster_storage/org_4snvy99zwbmh4gbtk64jfqggmj/cld_ldm5ez4edlp7yh4yiakp2u294w/artifact_storage/lora_fine_tuning/meta-llama/Meta-Llama-3-8B-Instruct:gokum:yehli/adapter_config.json
+    Downloaded org_4snvy99zwbmh4gbtk64jfqggmj/cld_ldm5ez4edlp7yh4yiakp2u294w/artifact_storage/lora_fine_tuning/meta-llama/Meta-Llama-3-8B-Instruct:gokum:yehli/adapter_model.safetensors to /mnt/cluster_storage/org_4snvy99zwbmh4gbtk64jfqggmj/cld_ldm5ez4edlp7yh4yiakp2u294w/artifact_storage/lora_fine_tuning/meta-llama/Meta-Llama-3-8B-Instruct:gokum:yehli/adapter_model.safetensors
+    Downloaded org_4snvy99zwbmh4gbtk64jfqggmj/cld_ldm5ez4edlp7yh4yiakp2u294w/artifact_storage/lora_fine_tuning/meta-llama/Meta-Llama-3-8B-Instruct:gokum:yehli/config.json to /mnt/cluster_storage/org_4snvy99zwbmh4gbtk64jfqggmj/cld_ldm5ez4edlp7yh4yiakp2u294w/artifact_storage/lora_fine_tuning/meta-llama/Meta-Llama-3-8B-Instruct:gokum:yehli/config.json
+    Downloaded org_4snvy99zwbmh4gbtk64jfqggmj/cld_ldm5ez4edlp7yh4yiakp2u294w/artifact_storage/lora_fine_tuning/meta-llama/Meta-Llama-3-8B-Instruct:gokum:yehli/new_embeddings.safetensors to /mnt/cluster_storage/org_4snvy99zwbmh4gbtk64jfqggmj/cld_ldm5ez4edlp7yh4yiakp2u294w/artifact_storage/lora_fine_tuning/meta-llama/Meta-Llama-3-8B-Instruct:gokum:yehli/new_embeddings.safetensors
+    Downloaded org_4snvy99zwbmh4gbtk64jfqggmj/cld_ldm5ez4edlp7yh4yiakp2u294w/artifact_storage/lora_fine_tuning/meta-llama/Meta-Llama-3-8B-Instruct:gokum:yehli/rayllm_generation_config.json to /mnt/cluster_storage/org_4snvy99zwbmh4gbtk64jfqggmj/cld_ldm5ez4edlp7yh4yiakp2u294w/artifact_storage/lora_fine_tuning/meta-llama/Meta-Llama-3-8B-Instruct:gokum:yehli/rayllm_generation_config.json
+    Downloaded org_4snvy99zwbmh4gbtk64jfqggmj/cld_ldm5ez4edlp7yh4yiakp2u294w/artifact_storage/lora_fine_tuning/meta-llama/Meta-Llama-3-8B-Instruct:gokum:yehli/special_tokens_map.json to /mnt/cluster_storage/org_4snvy99zwbmh4gbtk64jfqggmj/cld_ldm5ez4edlp7yh4yiakp2u294w/artifact_storage/lora_fine_tuning/meta-llama/Meta-Llama-3-8B-Instruct:gokum:yehli/special_tokens_map.json
+    Downloaded org_4snvy99zwbmh4gbtk64jfqggmj/cld_ldm5ez4edlp7yh4yiakp2u294w/artifact_storage/lora_fine_tuning/meta-llama/Meta-Llama-3-8B-Instruct:gokum:yehli/tokenizer.json to /mnt/cluster_storage/org_4snvy99zwbmh4gbtk64jfqggmj/cld_ldm5ez4edlp7yh4yiakp2u294w/artifact_storage/lora_fine_tuning/meta-llama/Meta-Llama-3-8B-Instruct:gokum:yehli/tokenizer.json
+    Downloaded org_4snvy99zwbmh4gbtk64jfqggmj/cld_ldm5ez4edlp7yh4yiakp2u294w/artifact_storage/lora_fine_tuning/meta-llama/Meta-Llama-3-8B-Instruct:gokum:yehli/tokenizer_config.json to /mnt/cluster_storage/org_4snvy99zwbmh4gbtk64jfqggmj/cld_ldm5ez4edlp7yh4yiakp2u294w/artifact_storage/lora_fine_tuning/meta-llama/Meta-Llama-3-8B-Instruct:gokum:yehli/tokenizer_config.json
 
 
 ## Evaluation
@@ -597,6 +595,7 @@ import json
 
 ```python
 # Extract chat template used during fine-tuning
+artifacts_path = artifacts_path.split('/', 3)[-1]
 with open(os.path.join(artifacts_dir, artifacts_path, 'tokenizer_config.json')) as file:
     tokenizer_config = json.load(file)
 chat_template = tokenizer_config['chat_template']
@@ -604,9 +603,9 @@ print (chat_template)
 ```
 
     {% set loop_messages = messages %}{% for message in loop_messages %}{% set content = '<|start_header_id|>' + message['role'] + '<|end_header_id|>
-    
+
     '+ message['content'] | trim + '<|eot_id|>' %}{% if loop.index0 == 0 %}{% set content = bos_token + content %}{% endif %}{{ content }}{% endfor %}{% if add_generation_prompt %}{{ '<|start_header_id|>assistant<|end_header_id|>
-    
+
     ' }}{% endif %}
 
 
@@ -640,14 +639,14 @@ print (test_input_prompts_ds.take(1))
 
 ### Batch inference
 
-We will use [vLLM](https://github.com/vllm-project/vllm)'s offline LLM class to load the model and use it for inference. We can easily load our LoRA weights and merge them with the base model (just pass in `lora_path`). And we'll wrap all of this functionality in a class that we can pass to [ray.data.Dataset.map_batches`](https://docs.ray.io/en/latest/data/api/doc/ray.data.Dataset.map_batches.html) to apply batch inference at scale.
+We will use [vLLM](https://github.com/vllm-project/vllm)'s offline LLM class to load the model and use it for inference. We can easily load our LoRA weights and merge them with the base model (just pass in `lora_path`). And we'll wrap all of this functionality in a class that we can pass to [ray.data.Dataset.map_batches](https://docs.ray.io/en/latest/data/api/doc/ray.data.Dataset.map_batches.html) to apply batch inference at scale.
 
 <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/e2e-llm-workflows/assets/offline-detailed.png" width=750>
 
 
 ```python
 from vllm import LLM, SamplingParams
-from vllm.anyscale.lora.utils import LoRARequest
+from vllm.lora.request import LoRARequest
 ```
 
 
@@ -766,9 +765,9 @@ We'll start by generating the configuration for our service. We provide a conven
 <b style="background-color: orange;">&nbsp;💡 INSIGHT&nbsp;</b>: Ray Serve and Anyscale support [serving multiple LoRA adapters](https://github.com/anyscale/templates/blob/main/templates/endpoints_v2/examples/lora/DeployLora.ipynb) with a common base model in the same request batch which allows you to serve a wide variety of use-cases without increasing hardware spend. In addition, we use Serve multiplexing to reduce the number of swaps for LoRA adapters. There is a slight latency overhead to serving a LoRA model compared to the base model, typically 10-20%.
 
 
-We can use the model metadata `model_info` for the model ID. For serving, we'll use the root folder for the LoRA checkpoints.  
+We can use the model metadata `model_info` for the model ID. For serving, we'll use the root folder for the LoRA checkpoints.
 
-**model**: `meta-llama/Meta-Llama-3-8B-Instruct:suman:cdrba` (`model_info.id`)
+**model**: `meta-llama/Meta-Llama-3-8B-Instruct:gokum:yehli` (`model_info.id`)
 
 **LoRA weights storage URI**: `s3://org_4snvy99zwbmh4gbtk64jfqggmj/cld_ldm5ez4edlp7yh4yiakp2u294w/artifact_storage/lora_fine_tuning` ( or `{ANYSCALE_ARTIFACT_STORAGE}/lora_fine_tuning`)
 
@@ -776,7 +775,7 @@ We'll start by running the rayllm CLI command below to start the workflow to gen
 ```bash
 mkdir /home/ray/default/deploy/services
 cd /home/ray/default/deploy/services
-rayllm gen-config 
+rayllm gen-config
 ```
 
 <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/e2e-llm-workflows/assets/cli.png" width=500>
@@ -930,14 +929,29 @@ For example, suppose that we want to preprocess batches of new incoming data, fi
 
 We have a lot more guides that address more nuanced use cases:
 
-- [Batch text embeddings with Ray data](https://github.com/anyscale/templates/tree/main/templates/text-embeddings)
+Fine-tuning:
+- [Control over 50+ hyperparameters](https://docs.anyscale.com/llms/finetuning/guides/modify_hyperparams/)
+- [Fine-tune any HF model](https://docs.anyscale.com/llms/finetuning/guides/bring_any_hf_model/)
+- [Full-parameter or LoRA fine-tuning](https://docs.anyscale.com/llms/finetuning/guides/lora_vs_full_param/)
+- [Classification fine-tuning / Routing](https://www.anyscale.com/blog/building-an-llm-router-for-high-quality-and-cost-effective-responses)
+- [Function calling fine-tuning](https://github.com/anyscale/templates/blob/main/templates/fine-tune-llm_v2/end-to-end-examples/fine-tune-function-calling/README.ipynb)
+- [Longer context fine-tuning](https://www.anyscale.com/blog/fine-tuning-llms-for-longer-context-and-better-rag-systems)
 - [Continued fine-tuning from checkpoint](https://github.com/anyscale/templates/tree/main/templates/fine-tune-llm_v2/cookbooks/continue_from_checkpoint)
-- [Serving multiple LoRA adapters with same base model](https://github.com/anyscale/templates/blob/main/templates/endpoints_v2/examples/lora/DeployLora.ipynb) (+ multiplexing)
-- [Deploy models for embedding generation](https://github.com/anyscale/templates/blob/main/templates/endpoints_v2/examples/embedding/EmbeddingModels.ipynb)
-- Function calling [fine-tuning](https://github.com/anyscale/templates/tree/main/templates/fine-tune-llm_v2/end-to-end-examples/fine-tune-function-calling) and [deployment](https://github.com/anyscale/templates/blob/main/templates/endpoints_v2/examples/function_calling/DeployFunctionCalling.ipynb)
-- [Configs to optimize the latency/throughput](https://github.com/anyscale/templates/blob/main/templates/endpoints_v2/examples/OptimizeModels.ipynb)
-- [Configs to control optimization parameters and tensor-parallelism](https://github.com/anyscale/templates/blob/main/templates/endpoints_v2/examples/AdvancedModelConfigs.ipynb)
-- Creating a [Router](https://github.com/anyscale/llm-router) between different models (base, fine-tuned, closed-source) to optimize for cost and quality.
+- Training on more available hardware (ex. A10s) with model parallelism
+- [End-to-end LLM workflows (including batch data processing, batch inference)](https://www.anyscale.com/blog/end-to-end-llm-workflows-guide)
+- Distillation (Coming in <2 weeks)
+
+Serving:
+- [Deploy with autoscaling + optimize for latency vs. throughput](https://docs.anyscale.com/examples/deploy-llms/)
+- [Serving multiple LoRA adapters](https://docs.anyscale.com/llms/serving/guides/multi_lora/)
+- [Migration from OpenAI](https://docs.anyscale.com/llms/serving/guides/openai_to_oss/)
+- [Spot to on-demand fallback (vice versa)](https://docs.anyscale.com/1.0.0/configure/compute-configs/ondemand-to-spot-fallback/)
+- [Batch inference with vLLM](https://docs.anyscale.com/examples/batch-llm/)
+
+And more!
+- [Batch text embeddings with Ray data](https://github.com/anyscale/templates/tree/main/templates/text-embeddings)
+- [Production RAG applications](https://www.anyscale.com/blog/a-comprehensive-guide-for-building-rag-based-llm-applications-part-1)
+- [Router](https://github.com/anyscale/llm-router) between different models (base, fine-tuned, closed-source) to optimize for cost and quality
 - Stable diffusion [fine-tuning](https://github.com/anyscale/templates/tree/main/templates/fine-tune-stable-diffusion) and [serving](https://github.com/anyscale/templates/tree/main/templates/serve-stable-diffusion)
 
 And if you're interested in using our hosted Anyscale or connecting it to your own cloud, reach out to us at [Anyscale](https://www.anyscale.com/get-started?utm_source=goku). And follow us on [Twitter](https://x.com/anyscalecompute) and [LinkedIn](https://www.linkedin.com/company/joinanyscale/) for more real-time updates on new features!
