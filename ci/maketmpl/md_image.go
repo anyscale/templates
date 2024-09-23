@@ -85,9 +85,7 @@ func (i *mdImage) writeInto(w io.Writer, opts *writeImgOptions) error {
 	return err
 }
 
-func parsePxValue(s string) string {
-	return strings.TrimSuffix(s, "px")
-}
+func parsePxValue(s string) string { return strings.TrimSuffix(s, "px") }
 
 func paresImgHTMLTag(s string) (*mdImage, error) {
 	if !strings.HasSuffix(s, "/>") {
