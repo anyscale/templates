@@ -9,8 +9,8 @@ worker_nodes:
     name: 16CPU-64GB
     min_workers: 1
     max_workers: 1
-  - instance_type: g5.4xlarge
-    name: '1xA10G:16CPU-64GB'
+  - instance_type: g6.4xlarge
+    name: '1xL4:16CPU-64GB'
     min_workers: 0
     max_workers: 2
 
