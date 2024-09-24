@@ -12,6 +12,7 @@ worker_node_types:
     name: '1xL4:16CPU-64GB'
     min_workers: 2
     max_workers: 2
-
+    allowed_azs:
+      - us-west-2a
 flags:
   allow-cross-zone-autoscaling: true
