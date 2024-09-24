@@ -4,7 +4,7 @@ head_node_type:
     cpu: 0
     gpu: 0
 
-worker_nodes:
+worker_node_types:
   - instance_type: m5.4xlarge
     name: 16CPU-64GB
     min_workers: 1

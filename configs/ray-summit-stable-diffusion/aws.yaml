@@ -4,7 +4,7 @@ head_node_type:
     cpu: 12
     gpu: 1
 
-worker_nodes:
+worker_node_types:
   - instance_type: g6.4xlarge
     name: '1xL4:16CPU-64GB'
     min_workers: 1
