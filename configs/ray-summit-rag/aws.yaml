@@ -1,5 +1,6 @@
 head_node_type:
   instance_type: m5.4xlarge
+  name: head_node
   resources:
     cpu: 0
     gpu: 0
