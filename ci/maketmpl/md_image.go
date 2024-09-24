@@ -1,8 +1,11 @@
 package maketmpl
 
 import (
+	"fmt"
 	"io"
 	"log"
+	"regexp"
+	"sort"
 	"strings"
 
 	htmlx "golang.org/x/net/html"
@@ -73,4 +76,45 @@ func paresImgHTMLTag(s string) (*mdImage, error) {
 	}
 
 	return img, nil
+}
+
+var (
+	regexImageMd  = regexp.MustCompile(`!\[(.*)\]\((.*)\)`)
+	regexImageTag = regexp.MustCompile(`<img src=.*>`)
+)
+
+func parseMdImages(md []byte) ([]*mdImage, error) {
+	var imgs []*mdImage
+
+	imgMds := regexImageMd.FindAllSubmatchIndex(md, -1)
+	for _, found := range imgMds {
+		imgs = append(imgs, &mdImage{
+			start:  found[0],
+			end:    found[1],
+			src:    string(md[found[4]:found[5]]),
+			alt:    string(md[found[2]:found[3]]),
+			isHTML: false,
+		})
+	}
+
+	imgTags := regexImageTag.FindAllIndex(md, -1)
+	for _, found := range imgTags {
+		s := string(md[found[0]:found[1]])
+		img, err := paresImgHTMLTag(s)
+		if err != nil {
+			return nil, fmt.Errorf("parse img tag %q: %w", s, err)
+		}
+		img.start = found[0]
+		img.end = found[1]
+		imgs = append(imgs, img)
+	}
+
+	sort.Slice(imgs, func(i, j int) bool {
+		if imgs[i].start == imgs[j].start {
+			return imgs[i].end < imgs[j].end
+		}
+		return imgs[i].start < imgs[j].start
+	})
+
+	return imgs, nil
 }

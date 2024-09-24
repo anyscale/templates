@@ -2,6 +2,7 @@ package maketmpl
 
 import (
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -74,6 +75,67 @@ func TestParseImgHTMLTag(t *testing.T) {
 				"parseImgHTMLTag(%q), got %+v, want %+v",
 				test.in, got, test.want,
 			)
+		}
+	}
+}
+
+func TestParseMdImages(t *testing.T) {
+	md := strings.Join([]string{
+		"![first image](img.png)",
+		"some random text",
+		`<img src=img2.png alt="second image" width=200px/>`,
+		"some more random text",
+		"![third image](img3.png)",
+	}, "\n")
+
+	imgs, err := parseMdImages([]byte(md))
+	if err != nil {
+		t.Fatalf("parseMdImages: %v", err)
+	}
+
+	want := []*mdImage{
+		{src: "img.png", alt: "first image"},
+		{src: "img2.png", alt: "second image", widthPx: "200", isHTML: true},
+		{src: "img3.png", alt: "third image"},
+	}
+
+	wantLens := []int{23, 50, 24}
+
+	if len(imgs) != len(want) {
+		t.Errorf("got %d images, want %d", len(imgs), len(want))
+	} else {
+		for i, img := range imgs {
+			want := want[i]
+			if img.src != want.src {
+				t.Errorf("img %d, got src %q, want %q", i, img.src, want.src)
+			}
+			if img.alt != want.alt {
+				t.Errorf("img %d, got alt %q, want %q", i, img.alt, want.alt)
+			}
+			if img.widthPx != want.widthPx {
+				t.Errorf(
+					"img %d, got width %q, want %q",
+					i, img.widthPx, want.widthPx,
+				)
+			}
+			if img.isHTML != want.isHTML {
+				t.Errorf(
+					"img %d, got isHTML %t, want %t",
+					i, img.isHTML, want.isHTML,
+				)
+			}
+
+			lenOfImg := img.end - img.start
+			if lenOfImg != wantLens[i] {
+				t.Errorf(
+					"img %d, got length %d, want %d",
+					i, lenOfImg, wantLens[i],
+				)
+			}
+		}
+
+		if imgs[0].start != 0 {
+			t.Errorf("first image start is %d, want 0", imgs[0].start)
 		}
 	}
 }
