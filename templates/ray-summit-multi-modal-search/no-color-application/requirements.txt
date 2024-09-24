@@ -1,0 +1,6 @@
+# base image: anyscale/ray:2.24.0-py311
+# frontend
+gradio==3.50.2
+# backend
+motor==3.5.0
+sentence-transformers==3.0.1
