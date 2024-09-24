@@ -4,7 +4,6 @@ head_node_type:
   resources:
     cpu: 0
     gpu: 0
-    is_head_node: 1
 
 worker_node_types:
   - instance_type: g6.4xlarge
