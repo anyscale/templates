@@ -1,7 +1,9 @@
 package maketmpl
 
 import (
+	"bytes"
 	"fmt"
+	"html"
 	"io"
 	"log"
 	"regexp"
@@ -26,9 +28,64 @@ type mdImage struct {
 	isHTML bool
 }
 
-func parsePxValue(s string) string {
-	return strings.TrimSuffix(s, "px")
+type writeImgOptions struct {
+	inlineSrc    bool
+	inlineSrcDir string
+
+	sizeInStyle bool
 }
+
+func (i *mdImage) writeInto(w io.Writer, opts *writeImgOptions) error {
+	var styles []string
+	if i.style != "" {
+		styles = []string{i.style}
+	}
+
+	buf := new(bytes.Buffer)
+
+	fmt.Fprint(buf, "<img ")
+	if src := i.src; src != "" {
+		if opts.inlineSrc {
+			inlinedSrc, err := inlineImgSrc(opts.inlineSrcDir, src)
+			if err != nil {
+				return fmt.Errorf("inline image: %w", err)
+			}
+			src = inlinedSrc
+		}
+		fmt.Fprintf(buf, `src="%s" `, html.EscapeString(src))
+	}
+	if v := i.alt; v != "" {
+		fmt.Fprintf(buf, `alt="%s" `, html.EscapeString(v))
+	}
+
+	// add size. width first, height next.
+	if v := i.widthPx; v != "" {
+		if opts.sizeInStyle {
+			styles = append(styles, fmt.Sprintf("width: %spx", i.widthPx))
+		} else {
+			fmt.Fprintf(buf, `width="%spx" `, html.EscapeString(v))
+		}
+	}
+	if v := i.heightPx; v != "" {
+		if opts.sizeInStyle {
+			styles = append(styles, fmt.Sprintf("height: %spx", i.heightPx))
+		} else {
+			fmt.Fprintf(buf, `height="%spx" `, html.EscapeString(v))
+		}
+	}
+
+	if len(styles) > 0 {
+		style := strings.Join(styles, "; ")
+		fmt.Fprintf(buf, `style="%s" `, html.EscapeString(style))
+	}
+
+	fmt.Fprint(buf, "/>")
+
+	_, err := w.Write(buf.Bytes())
+	return err
+}
+
+func parsePxValue(s string) string { return strings.TrimSuffix(s, "px") }
 
 func paresImgHTMLTag(s string) (*mdImage, error) {
 	if !strings.HasSuffix(s, "/>") {
