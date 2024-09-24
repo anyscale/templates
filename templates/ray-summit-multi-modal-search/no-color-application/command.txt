@@ -1,0 +1,1 @@
+anyscale service deploy -f app.yaml

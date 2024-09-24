@@ -1,0 +1,14 @@
+head_node_type:
+  instance_type: g6.4xlarge
+  resources:
+    cpu: 12
+    gpu: 1
+
+worker_nodes:
+  - instance_type: g6.4xlarge
+    name: '1xL4:16CPU-64GB'
+    min_workers: 1
+    max_workers: 1
+
+flags:
+  allow-cross-zone-autoscaling: true
