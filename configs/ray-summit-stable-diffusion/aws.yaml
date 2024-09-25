@@ -1,15 +1,18 @@
 head_node_type:
   name: head_node
-  instance_type: g6.4xlarge
+  instance_type: g5.4xlarge
   resources:
     cpu: 12
     gpu: 1
 
 worker_node_types:
-  - instance_type: g6.4xlarge
-    name: '1xL4:16CPU-64GB'
+  - instance_type: g5.4xlarge
+    name: '1xA10G:16CPU-64GB'
     min_workers: 1
     max_workers: 1
 
+allowed_azs:
+  - us-west-2a
+
 flags:
-  allow-cross-zone-autoscaling: true
+  allow-cross-zone-autoscaling: false

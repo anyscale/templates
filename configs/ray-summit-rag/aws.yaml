@@ -8,13 +8,13 @@ head_node_type:
       is_head_node: 1
 
 worker_node_types:
-  - instance_type: g6.4xlarge
-    name: '1xL4:16CPU-64GB'
+  - instance_type: g5.4xlarge
+    name: '1xA10G:16CPU-64GB'
     min_workers: 2
     max_workers: 2
 
 allowed_azs:
-  - us-west-2a
+  - us-west-2c
 
 flags:
-  allow-cross-zone-autoscaling: true
+  allow-cross-zone-autoscaling: false
