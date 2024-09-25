@@ -110,10 +110,8 @@ func TestReadmeFile_writeReleaseMD(t *testing.T) {
 
 func TestReadmeFromNotebook(t *testing.T) {
 	if _, err := exec.LookPath("jupyter"); err != nil {
-		if errors.Is(err, exec.ErrNotFound) {
-			if os.Getenv("CI") == "" {
-				t.Skip("jupyter not found; skip the test as it is not on CI.")
-			}
+		if errors.Is(err, exec.ErrNotFound) && os.Getenv("CI") == "" {
+			t.Skip("jupyter not found; skip the test as it is not on CI.")
 		}
 	}
 
