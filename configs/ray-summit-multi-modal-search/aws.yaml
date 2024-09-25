@@ -14,4 +14,4 @@ allowed_azs:
   - us-west-2c
 
 flags:
-  allow-cross-zone-autoscaling: true
+  allow-cross-zone-autoscaling: false
