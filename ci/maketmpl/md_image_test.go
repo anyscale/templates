@@ -1,6 +1,10 @@
 package maketmpl
 
 import (
+	"bytes"
+	"fmt"
+	"os"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
@@ -137,5 +141,81 @@ func TestParseMdImages(t *testing.T) {
 		if imgs[0].start != 0 {
 			t.Errorf("first image start is %d, want 0", imgs[0].start)
 		}
+	}
+}
+
+func TestMdImage_writeInto(t *testing.T) {
+	imageFile := []byte("fakeimg")
+	tmp := t.TempDir()
+
+	img := filepath.Join(tmp, "img.png")
+	if err := os.WriteFile(img, imageFile, 0o644); err != nil {
+		t.Fatalf("write fake png: %v", err)
+	}
+
+	tests := []struct {
+		img  *mdImage
+		opt  *writeImgOptions
+		want string
+	}{{
+		img:  &mdImage{src: "img.png"},
+		opt:  &writeImgOptions{},
+		want: `<img src="img.png" />`,
+	}, {
+		img:  &mdImage{src: "./img.png"},
+		opt:  &writeImgOptions{},
+		want: `<img src="./img.png" />`,
+	}, {
+		img:  &mdImage{src: "img.png", alt: "alt"},
+		opt:  &writeImgOptions{},
+		want: `<img src="img.png" alt="alt" />`,
+	}, {
+		img:  &mdImage{src: "img.png"},
+		opt:  &writeImgOptions{inlineSrc: true},
+		want: `<img src="data:image/png;base64,ZmFrZWltZw==" />`,
+	}, {
+		img:  &mdImage{src: "./img.png"},
+		opt:  &writeImgOptions{inlineSrc: true},
+		want: `<img src="data:image/png;base64,ZmFrZWltZw==" />`,
+	}, {
+		img:  &mdImage{src: "img.png", heightPx: "400", widthPx: "300"},
+		opt:  &writeImgOptions{},
+		want: `<img src="img.png" width="300px" height="400px" />`,
+	}, {
+		img:  &mdImage{src: "img.png", heightPx: "400", widthPx: "300"},
+		opt:  &writeImgOptions{sizeInStyle: true},
+		want: `<img src="img.png" style="width: 300px; height: 400px" />`,
+	}, {
+		img: &mdImage{
+			src: "img.png", heightPx: "400", widthPx: "300",
+			style: "border: 1px solid black",
+		},
+		opt:  &writeImgOptions{sizeInStyle: true},
+		want: `<img src="img.png" style="border: 1px solid black; width: 300px; height: 400px" />`,
+	}, {
+		img: &mdImage{
+			src: "img.png", heightPx: "400", widthPx: "300", alt: "alt",
+			style: "border: 1px solid black",
+		},
+		opt:  &writeImgOptions{inlineSrc: true, sizeInStyle: true},
+		want: `<img src="data:image/png;base64,ZmFrZWltZw==" alt="alt" style="border: 1px solid black; width: 300px; height: 400px" />`,
+	}}
+
+	for _, test := range tests {
+		name := fmt.Sprintf("write %+v with opt +%+v", test.want, test.opt)
+		t.Run(name, func(t *testing.T) {
+			buf := new(bytes.Buffer)
+			if test.opt.inlineSrc {
+				test.opt.inlineSrcDir = tmp
+			}
+			if err := test.img.writeInto(buf, test.opt); err != nil {
+				t.Fatalf("writeInto: %v", err)
+			}
+
+			got := buf.String()
+			if got != test.want {
+				t.Errorf("got %q, want %q", got, test.want)
+			}
+		})
 	}
 }
