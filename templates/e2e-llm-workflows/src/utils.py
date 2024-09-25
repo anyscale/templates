@@ -6,6 +6,7 @@ import boto3
 from urllib.parse import urlparse
 from ray.data import Dataset
 
+CLUSTER_STORAGE_PATH = "/mnt/cluster_storage"
 
 def download_files_from_s3(s3_uri, local_dir):
     parsed_uri = urlparse(s3_uri)
@@ -58,7 +59,7 @@ def download_files_from_remote(uri, local_dir):
 def get_dataset_file_path(dataset: Dataset):
     """Transforms a Ray `Dataset` into a single temp. JSON file written on disk.
     Yields the path to the file."""
-    with TemporaryDirectory() as temp_path:
+    with TemporaryDirectory(dir=CLUSTER_STORAGE_PATH) as temp_path:
         dataset.repartition(1).write_json(temp_path)
         assert len(os.listdir(temp_path)) == 1, "The dataset should be written to a single file"
         dataset_file_path = f"{temp_path}/{os.listdir(temp_path)[0]}"
