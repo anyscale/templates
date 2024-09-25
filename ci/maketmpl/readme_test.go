@@ -1,7 +1,9 @@
 package maketmpl
 
 import (
+	"errors"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -99,6 +101,51 @@ func TestReadmeFile_writeReleaseMD(t *testing.T) {
 			`<img src="data:image/png;base64,aW1nMg==" style="width: 400px" />`,
 			`extra text`,
 		}, ""),
+	}, "\n")
+
+	if string(got) != want {
+		t.Errorf("got:\n---\n%s\n---\nwant:\n---\n%s\n---\n", got, want)
+	}
+}
+
+func TestReadmeFromNotebook(t *testing.T) {
+	if _, err := exec.LookPath("jupyter"); err != nil {
+		if errors.Is(err, exec.ErrNotFound) {
+			if os.Getenv("CI") == "" {
+				t.Skip("jupyter not found; skip the test as it is not on CI.")
+			}
+		}
+	}
+
+	tmp := t.TempDir()
+
+	f, err := readmeFromNotebook("testdata/readme.ipynb")
+	if err != nil {
+		t.Fatal("read readme from notebook: ", err)
+	}
+
+	output := filepath.Join(tmp, "readme.github.md")
+	if err := f.writeGitHubMD(output); err != nil {
+		t.Fatal("write github md: ", err)
+	}
+
+	got, err := os.ReadFile(output)
+	if err != nil {
+		t.Fatal("read output: ", err)
+	}
+
+	want := strings.Join([]string{
+		"# Test example",
+		"",
+		`<img src="a.png" width="400px" />`,
+		"",
+		"and some text",
+		"",
+		"",
+		"```python",
+		`print("this is just an example")`,
+		"```",
+		"",
 	}, "\n")
 
 	if string(got) != want {

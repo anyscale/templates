@@ -3,6 +3,7 @@ package maketmpl
 import (
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -101,6 +102,14 @@ func readReadmeFile(path string) (*readmeFile, error) {
 }
 
 func readmeFromNotebook(f string) (*readmeFile, error) {
+	stat, err := os.Stat(f)
+	if err != nil {
+		return nil, fmt.Errorf("stat notebook file: %w", err)
+	}
+	if stat.IsDir() {
+		return nil, fmt.Errorf("notebook is a directory")
+	}
+
 	tmpDir, err := os.MkdirTemp("", "maketmpl_*")
 	if err != nil {
 		return nil, fmt.Errorf("create temp dir: %w", err)
@@ -114,6 +123,7 @@ func readmeFromNotebook(f string) (*readmeFile, error) {
 	)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
+	log.Println(cmd.Args)
 
 	if err := cmd.Run(); err != nil {
 		return nil, fmt.Errorf("convert notebook: %w", err)
