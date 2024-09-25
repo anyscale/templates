@@ -21,7 +21,7 @@ In this tutorial, we will focus on the latter, using offline LLM inference for a
 
 ## Step 1: Set up the workload
 
-RayLLM-Batch is a library for running batch inference for LLMs using Ray Data for data processing, and defines an easy and flexible interface for the user to define their own workload. In this tutorial, we will implement a workload based on the [`CNNDailyMail`](https://huggingface.co/datasets/abisee/cnn_dailymail) dataset, which is a collection of news articles. And we will summarize each article with our batch inferencing pipeline. We will cover more details on how to customize the workload in the later sections.
+RayLLM-Batch is a library for running batch inference for LLMs. It uses Ray Data for data processing and provides an easy and flexible interface for the user to define their own workload. In this tutorial, we will implement a workload based on the [`CNNDailyMail`](https://huggingface.co/datasets/abisee/cnn_dailymail) dataset, which is a collection of news articles. And we will summarize each article with our batch inferencing pipeline. We will cover more details on how to customize the workload in the later sections.
 
 
 
@@ -99,9 +99,13 @@ We will also need to define a yaml configuration file associated with the model 
 
 ```python
 from rayllm_batch import init_engine_from_config
+from util.utils import is_on_gcp_cloud
 # Read the model configs from the path.
-model_config_path = "configs/llama-3.1-8b-a10g.yaml" 
-# Use model_config_path="configs/llama-3.1-8b-l4.yaml" if on GCP.
+if is_on_gcp_cloud():
+    # There's no a10g on GCP. 
+    model_config_path = "configs/llama-3.1-8b-l4.yaml"
+else:
+    model_config_path = "configs/llama-3.1-8b-a10g.yaml" 
 
 # One could potentially override the engine configs by passing in a dictionary here.
 override = {"runtime_env": {"env_vars": {"HF_TOKEN": HF_TOKEN}}} # Override Ray's runtime env to include the Hugging Face token. Ray is being used under the hood to orchestrate the inference pipeline.

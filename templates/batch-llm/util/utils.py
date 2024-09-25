@@ -6,6 +6,14 @@ import huggingface_hub
 HF_TOKEN_CACHE_PATH = "/mnt/local_storage/data/cache/huggingface/token"
 HF_TOKEN_LOCAL_PATH = "huggingface_token.txt"
 
+def is_on_gcp_cloud() -> bool:
+    """Detects if the cluster is running on GCP."""
+    try:
+        resp = requests.get("http://metadata.google.internal")
+        return resp.headers["Metadata-Flavor"] == "Google"
+    except:  # noqa: E722
+        return False
+
 
 def prompt_for_hugging_face_token(hf_model: str) -> str:
     """Prompts the user for Hugging Face token if required by the model.
