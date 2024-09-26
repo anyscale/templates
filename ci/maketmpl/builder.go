@@ -47,9 +47,6 @@ func (b *builder) listFiles() ([]string, error) {
 			if err != nil {
 				return fmt.Errorf("get relative path for %q: %w", p, err)
 			}
-			if relPath == readmeDotMD {
-				return nil
-			}
 			files = append(files, relPath)
 			return nil
 		},
