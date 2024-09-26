@@ -92,8 +92,12 @@ func (b *builder) build(outputDir string) error {
 	}
 
 	// Build the release zip file.
-	zipFile := filepath.Join(outputDir, buildDotZip)
-	if err := buildZip(b.tmplDir, files, zipFile); err != nil {
+	zipOutput := filepath.Join(outputDir, buildDotZip)
+	var srcFiles []*zipFile
+	for _, f := range files {
+		srcFiles = append(srcFiles, &zipFile{path: f})
+	}
+	if err := buildZip(b.tmplDir, srcFiles, zipOutput); err != nil {
 		return fmt.Errorf("save release zip file: %w", err)
 	}
 

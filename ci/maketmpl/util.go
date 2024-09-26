@@ -19,6 +19,17 @@ func checkIsDir(path string) error {
 	return nil
 }
 
+func addToZip(z *zip.Writer, r io.Reader, pathInZip string) error {
+	w, err := z.Create(pathInZip)
+	if err != nil {
+		return fmt.Errorf("create file in zip: %w", err)
+	}
+	if _, err := io.Copy(w, r); err != nil {
+		return err
+	}
+	return nil
+}
+
 func addFileToZip(z *zip.Writer, file, pathInZip string) error {
 	f, err := os.Open(file)
 	if err != nil {
@@ -26,17 +37,18 @@ func addFileToZip(z *zip.Writer, file, pathInZip string) error {
 	}
 	defer f.Close()
 
-	w, err := z.Create(pathInZip)
-	if err != nil {
-		return fmt.Errorf("create file in zip: %w", err)
-	}
-	if _, err := io.Copy(w, f); err != nil {
-		return fmt.Errorf("copy file to zip: %w", err)
-	}
-	return nil
+	return addToZip(z, f, pathInZip)
 }
 
-func buildZip(dir string, files []string, out string) error {
+type zipFile struct {
+	// Path to use in the zip file.
+	path string
+
+	// Optional. If set, the content will be read from this reader.
+	rc io.ReadCloser
+}
+
+func buildZip(srcDir string, files []*zipFile, out string) error {
 	outFile, err := os.Create(out)
 	if err != nil {
 		return fmt.Errorf("create release zip file: %w", err)
@@ -45,8 +57,15 @@ func buildZip(dir string, files []string, out string) error {
 
 	z := zip.NewWriter(outFile)
 	for _, f := range files {
-		if err := addFileToZip(z, filepath.Join(dir, f), f); err != nil {
-			return fmt.Errorf("add file to zip: %w", err)
+		if f.rc == nil {
+			src := filepath.Join(srcDir, f.path)
+			if err := addFileToZip(z, src, f.path); err != nil {
+				return fmt.Errorf("add file %q to zip: %w", f, err)
+			}
+		} else {
+			if err := addToZip(z, f.rc, f.path); err != nil {
+				return fmt.Errorf("add %q to zip: %w", f.path, err)
+			}
 		}
 	}
 	if err := z.Close(); err != nil {

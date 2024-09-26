@@ -92,8 +92,9 @@ func TestBuildZip(t *testing.T) {
 		t.Fatalf("create directory %q: %v", tmplDir, err)
 	}
 
-	files := []string{"a.txt", "b.txt", "sub/c.txt"}
-	for _, f := range files {
+	fileNames := []string{"a.txt", "b.txt", "sub/c.txt"}
+	var files []*zipFile
+	for _, f := range fileNames {
 		content := []byte(f)
 		dir := filepath.Dir(f)
 		if dir != "." {
@@ -109,6 +110,8 @@ func TestBuildZip(t *testing.T) {
 		); err != nil {
 			t.Fatalf("create file %q: %v", f, err)
 		}
+
+		files = append(files, &zipFile{path: f})
 	}
 
 	z := filepath.Join(tmp, "out.zip")
@@ -142,11 +145,11 @@ func TestBuildZip(t *testing.T) {
 		got[f.Name] = content
 	}
 
-	if len(got) != len(files) {
-		t.Fatalf("want %d files in zip, got %d", len(files), len(got))
+	if len(got) != len(fileNames) {
+		t.Fatalf("want %d files in zip, got %d", len(fileNames), len(got))
 	}
 
-	for _, f := range files {
+	for _, f := range fileNames {
 		content, ok := got[f]
 		if !ok {
 			t.Errorf("want file %q in zip, not found", f)
