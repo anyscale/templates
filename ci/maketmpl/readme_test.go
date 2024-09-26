@@ -21,7 +21,7 @@ func TestReadmeFile_writeGitHubMD(t *testing.T) {
 		"some extra text",
 	}, "\n")
 
-	path := filepath.Join(tmp, "readme.md")
+	path := filepath.Join(tmp, "README.md")
 	if err := os.WriteFile(path, []byte(content), 0600); err != nil {
 		t.Fatal("write readme: ", err)
 	}
@@ -31,7 +31,7 @@ func TestReadmeFile_writeGitHubMD(t *testing.T) {
 		t.Fatal("read readme: ", err)
 	}
 
-	output := filepath.Join(tmp, "readme.github.md")
+	output := filepath.Join(tmp, "README.github.md")
 	if err := readme.writeGitHubMD(output); err != nil {
 		t.Fatal("write github md: ", err)
 	}
@@ -69,7 +69,7 @@ func TestReadmeFile_writeReleaseMD(t *testing.T) {
 	}{
 		{"img1.png", "img1"},
 		{"img2.png", "img2"},
-		{"readme.md", content},
+		{"README.md", content},
 	} {
 		path := filepath.Join(tmp, file.name)
 		if err := os.WriteFile(path, []byte(file.content), 0600); err != nil {
@@ -77,13 +77,13 @@ func TestReadmeFile_writeReleaseMD(t *testing.T) {
 		}
 	}
 
-	input := filepath.Join(tmp, "readme.md")
+	input := filepath.Join(tmp, "README.md")
 	readme, err := readReadmeFile(input)
 	if err != nil {
 		t.Fatal("read readme: ", err)
 	}
 
-	output := filepath.Join(tmp, "readme.release.md")
+	output := filepath.Join(tmp, "README.release.md")
 	if err := readme.writeReleaseMD(output, tmp); err != nil {
 		t.Fatal("write release md: ", err)
 	}
@@ -137,12 +137,12 @@ func TestReadmeFromNotebook(t *testing.T) {
 
 	tmp := t.TempDir()
 
-	f, err := readmeFromNotebook("testdata/readme.ipynb")
+	f, err := readmeFromNotebook("testdata/reefy-ray/README.ipynb")
 	if err != nil {
 		t.Fatal("read readme from notebook: ", err)
 	}
 
-	output := filepath.Join(tmp, "readme.github.md")
+	output := filepath.Join(tmp, "README.github.md")
 	if err := f.writeGitHubMD(output); err != nil {
 		t.Fatal("write github md: ", err)
 	}
