@@ -7,8 +7,8 @@ import (
 )
 
 const (
-	// The name of the release zip file.
-	releaseDotZip = "release.zip"
+	// The name of the build result zip file.
+	buildDotZip = "build.zip"
 
 	// The main notebook file for the template.
 	readmeNotebook = "README.ipynb"
@@ -95,7 +95,7 @@ func (b *builder) build(outputDir string) error {
 	}
 
 	// Build the release zip file.
-	zipFile := filepath.Join(outputDir, releaseDotZip)
+	zipFile := filepath.Join(outputDir, buildDotZip)
 	if err := buildZip(b.tmplDir, files, zipFile); err != nil {
 		return fmt.Errorf("save release zip file: %w", err)
 	}
