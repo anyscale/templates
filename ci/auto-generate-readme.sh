@@ -46,7 +46,9 @@ for TMPL in "${TEMPLATES_DIRS[@]}"; do
 
 	# Post-processing on README markdown files
 	README_FILE="${TMPL}/README.md"
-    if [[ -f "${TMPL}/README.md" ]]; then
+    if [[ ! -f "${TMPL}/README.md" ]]; then
+		echo "README.md file not found; skipping markdown processing."
+	else
         # Check the operating system
         if [[ "$OSTYPE" == "darwin"* ]]; then
             # macOS system
