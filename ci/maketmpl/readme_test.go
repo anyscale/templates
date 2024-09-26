@@ -108,12 +108,32 @@ func TestReadmeFile_writeReleaseMD(t *testing.T) {
 	}
 }
 
-func TestReadmeFromNotebook(t *testing.T) {
+func findJupyter() (bool, error) {
 	if _, err := exec.LookPath("jupyter"); err != nil {
-		if errors.Is(err, exec.ErrNotFound) && os.Getenv("CI") == "" {
+		if errors.Is(err, exec.ErrNotFound) {
+			return false, nil
+		}
+		return false, err
+	}
+	return true, nil
+}
+
+func checkJupyterOrSkipOnLocal(t *testing.T) {
+	t.Helper()
+
+	if ok, err := findJupyter(); err != nil {
+		t.Fatal(err)
+	} else if !ok {
+		if os.Getenv("CI") == "" {
 			t.Skip("jupyter not found; skip the test as it is not on CI.")
+		} else {
+			t.Fatal("jupyter not found")
 		}
 	}
+}
+
+func TestReadmeFromNotebook(t *testing.T) {
+	checkJupyterOrSkipOnLocal(t)
 
 	tmp := t.TempDir()
 
