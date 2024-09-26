@@ -17,21 +17,32 @@ type readmeFile struct {
 }
 
 func (f *readmeFile) writeInto(w io.Writer, imgOpts *writeImgOptions) error {
+	// Copies the markdown file into writer w, but rewrites all images
+	// in the markdown file following options in imgOpts
+
+	// cursor is the point where things have copied. It is an offset in the
+	// source markdown file, which is f.md
 	cursor := 0
+
 	for i, img := range f.imgs {
+		// Copy any part that is before the next image first.
+		// img.start is the starting point of the markdown image.
 		if cursor < img.start {
 			if _, err := w.Write(f.md[cursor:img.start]); err != nil {
 				return fmt.Errorf("write markdown: %w", err)
 			}
 		}
 
+		// Write out the image.
 		if err := img.writeInto(w, imgOpts); err != nil {
 			return fmt.Errorf("write image %d: %w", i, err)
 		}
 
+		// Forward the read cursor to the end of the image.
 		cursor = img.end
 	}
 
+	// Copy the rest.
 	if cursor < len(f.md) {
 		if _, err := w.Write(f.md[cursor:]); err != nil {
 			return fmt.Errorf("write markdown: %w", err)
