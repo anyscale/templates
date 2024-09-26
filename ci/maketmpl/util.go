@@ -41,11 +41,16 @@ func addFileToZip(z *zip.Writer, file, pathInZip string) error {
 }
 
 type zipFile struct {
-	// Path to use in the zip file.
+	// Path to use in the zip file. When srcFilePath is empty,
+	// the same file path will be used for finding the source file.
 	path string
 
 	// Optional. If set, the content will be read from this reader.
 	rc io.ReadCloser
+
+	// Optional. If set, the content will be read from this file.
+	// If rc is set, this field is ignored.
+	srcFilePath string
 }
 
 func buildZip(srcDir string, files []*zipFile, out string) error {
@@ -58,7 +63,10 @@ func buildZip(srcDir string, files []*zipFile, out string) error {
 	z := zip.NewWriter(outFile)
 	for _, f := range files {
 		if f.rc == nil {
-			src := filepath.Join(srcDir, f.path)
+			src := f.srcFilePath
+			if src == "" {
+				src = filepath.Join(srcDir, f.path)
+			}
 			if err := addFileToZip(z, src, f.path); err != nil {
 				return fmt.Errorf("add file %q to zip: %w", f, err)
 			}

@@ -114,6 +114,17 @@ func TestBuildZip(t *testing.T) {
 		files = append(files, &zipFile{path: f})
 	}
 
+	// Add an alias file.
+	files = append(files, &zipFile{
+		path:        "alias.txt",
+		srcFilePath: filepath.Join(tmplDir, "a.txt"),
+	})
+
+	files = append(files, &zipFile{
+		path: "inlined.txt",
+		rc:   io.NopCloser(bytes.NewReader([]byte("inlined"))),
+	})
+
 	z := filepath.Join(tmp, "out.zip")
 	if err := buildZip(tmplDir, files, z); err != nil {
 		t.Fatalf("buildZip: %v", err)
@@ -145,7 +156,16 @@ func TestBuildZip(t *testing.T) {
 		got[f.Name] = content
 	}
 
-	if len(got) != len(fileNames) {
+	want := map[string][]byte{
+		"inlined.txt": []byte("inlined"),
+		"a.txt":       []byte("a.txt"),
+		"b.txt":       []byte("b.txt"),
+		"sub/c.txt":   []byte("sub/c.txt"),
+		"alias.txt":   []byte("a.txt"),
+	}
+
+	// 2 extra files: alias.txt and inlined.txt
+	if len(got) != len(want) {
 		t.Fatalf("want %d files in zip, got %d", len(fileNames), len(got))
 	}
 
@@ -154,8 +174,8 @@ func TestBuildZip(t *testing.T) {
 		if !ok {
 			t.Errorf("want file %q in zip, not found", f)
 		}
-		if !bytes.Equal(content, []byte(f)) {
-			t.Errorf("content of %q: want %q, got %q", f, f, content)
+		if !bytes.Equal(content, want[f]) {
+			t.Errorf("content of %q: want %q, got %q", f, want[f], content)
 		}
 	}
 }
