@@ -5,6 +5,7 @@ from tempfile import TemporaryDirectory
 import boto3
 from urllib.parse import urlparse
 from ray.data import Dataset
+import yaml
 
 
 def download_files_from_s3(s3_uri, local_dir):
@@ -63,3 +64,20 @@ def get_dataset_file_path(dataset: Dataset):
         assert len(os.listdir(temp_path)) == 1, "The dataset should be written to a single file"
         dataset_file_path = f"{temp_path}/{os.listdir(temp_path)[0]}"
         yield dataset_file_path
+
+def set_key_value_in_config_file(config_path: str, key: str, value: str):
+    """Take a path to a .json config file and update the key to a value, then save the file"""
+    with open(config_path, 'r') as stream:
+        try:
+            loaded = yaml.safe_load(stream)
+        except yaml.YAMLError as exc:
+            print(exc)
+            exit()
+    # Modify the fields from the dict
+    loaded[key] = value
+    # Save it again
+    with open(config_path, 'w') as stream:
+        try:
+            yaml.dump(loaded, stream, default_flow_style=False)
+        except yaml.YAMLError as exc:
+            print(exc)
