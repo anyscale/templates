@@ -1,0 +1,57 @@
+accelerator_type: A10G
+deployment_config:
+  autoscaling_config:
+    target_ongoing_requests: 32
+  max_ongoing_requests: 64
+engine_kwargs:
+  enable_lora: true
+  max_lora_rank: 32
+  max_loras: 16
+  max_num_batched_tokens: 4096
+  max_num_seqs: 64
+  tokenizer_pool_extra_config:
+    runtime_env:
+      pip: null
+  tokenizer_pool_size: 2
+  trust_remote_code: true
+generation_config:
+  prompt_format:
+    assistant: '<|start_header_id|>assistant<|end_header_id|>
+
+
+      {instruction}<|eot_id|>'
+    bos: <|begin_of_text|>
+    default_system_message: ''
+    system: '<|start_header_id|>system<|end_header_id|>
+
+
+      {instruction}<|eot_id|>'
+    system_in_user: false
+    trailing_assistant: '<|start_header_id|>assistant<|end_header_id|>
+
+
+      '
+    user: '<|start_header_id|>user<|end_header_id|>
+
+
+      {instruction}<|eot_id|>'
+  stopping_sequences: []
+  stopping_tokens:
+  - 128001
+  - 128009
+input_modality: text
+json_mode:
+  enabled: false
+llm_engine: VLLMEngine
+lora_config:
+  dynamic_lora_loading_path: s3://anyscale-production-data-cld-91sl4yby42b2ivfp1inig5suuy/org_uhhav3lw5hg4risfz57ct1tg9s/cld_91sl4yby42b2ivfp1inig5suuy/artifact_storage/lora_fine_tuning
+  max_num_adapters_per_replica: 16
+max_request_context_length: 4096
+model_loading_config:
+  model_id: meta-llama/Meta-Llama-3-8B-Instruct
+  model_source: meta-llama/Meta-Llama-3-8B-Instruct
+runtime_env:
+  env_vars:
+    HUGGING_FACE_HUB_TOKEN:
+tensor_parallelism:
+  degree: 1
