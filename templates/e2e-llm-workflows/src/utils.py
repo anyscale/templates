@@ -73,7 +73,4 @@ def set_key_value_in_config_file(config_path: str, key: str, value: str):
     loaded[key] = value
     # Save it again
     with open(config_path, 'w') as stream:
-        try:
-            yaml.dump(loaded, stream, default_flow_style=False)
-        except yaml.YAMLError as exc:
-            print(exc)
+        yaml.dump(loaded, stream, default_flow_style=False)
