@@ -18,8 +18,10 @@ num_devices: 4
 num_epochs: 3
 
 # Change this to the batch size that you want to use
-train_batch_size_per_device: 4
+train_batch_size_per_device: 2
 eval_batch_size_per_device: 4
+gradient_accumulation_steps: 2
+
 
 # Change this to the learning rate that you want to use
 learning_rate: 1e-4
