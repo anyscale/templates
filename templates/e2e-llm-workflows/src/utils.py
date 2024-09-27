@@ -68,11 +68,7 @@ def get_dataset_file_path(dataset: Dataset):
 def set_key_value_in_config_file(config_path: str, key: str, value: str):
     """Take a path to a .json config file and update the key to a value, then save the file"""
     with open(config_path, 'r') as stream:
-        try:
-            loaded = yaml.safe_load(stream)
-        except yaml.YAMLError as exc:
-            print(exc)
-            exit()
+        loaded = yaml.safe_load(stream)
     # Modify the fields from the dict
     loaded[key] = value
     # Save it again
