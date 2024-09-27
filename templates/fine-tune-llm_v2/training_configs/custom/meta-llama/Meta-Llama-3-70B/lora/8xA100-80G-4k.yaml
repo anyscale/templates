@@ -39,3 +39,22 @@ deepspeed:
 # worker.
 worker_resources:
   accelerator_type:A100-80G: 0.001
+
+# Lora configuration
+lora_config:
+  r: 8
+  lora_alpha: 16
+  lora_dropout: 0.05
+  target_modules:
+    - q_proj
+    - v_proj
+    - k_proj
+    - o_proj
+    - gate_proj
+    - up_proj
+    - down_proj
+    - embed_tokens
+    - lm_head
+  task_type: "CAUSAL_LM"
+  bias: "none"
+  modules_to_save: []
