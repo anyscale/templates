@@ -9,7 +9,7 @@ worker_node_types:
     max_workers: 1
 
 allowed_azs:
-  - us-west-2d
+  - us-west-2a
 
 flags:
   allow-cross-zone-autoscaling: false
