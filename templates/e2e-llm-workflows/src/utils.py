@@ -107,7 +107,7 @@ def query(model: str, prompt: str):
     return response
 
 
-def to_schema(item):
+def to_llm_schema(item):
     messages = [
         {'role': 'system', 'content': SYSTEM_CONTENT},
         {'role': 'user', 'content': item['target']},
