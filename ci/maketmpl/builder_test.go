@@ -42,7 +42,7 @@ func fileNameList(files map[string][]byte) []string {
 }
 
 func TestBuilder(t *testing.T) {
-	if runtime.GOOS == "windows" {
+	if runtime.GOOS == "windows" { // Do not bother to check windows..
 		t.Skip("skipping on windows")
 	}
 
