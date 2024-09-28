@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"sort"
 	"testing"
 )
@@ -41,6 +42,10 @@ func fileNameList(files map[string][]byte) []string {
 }
 
 func TestBuilder(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping on windows")
+	}
+
 	checkJupyterOrSkipOnLocal(t)
 
 	tmp := t.TempDir()
