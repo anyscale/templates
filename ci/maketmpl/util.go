@@ -65,7 +65,7 @@ func buildZip(srcDir string, files []*zipFile, out string) error {
 		if f.rc == nil {
 			src := f.srcFilePath
 			if src == "" {
-				src = filepath.Join(srcDir, f.path)
+				src = filepath.Join(srcDir, filepath.FromSlash(f.path))
 			}
 			if err := addFileToZip(z, src, f.path); err != nil {
 				return fmt.Errorf("add file %q to zip: %w", f, err)
