@@ -12,9 +12,9 @@ type Template struct {
 	Name string `yaml:"name"`
 	Dir  string `yaml:"dir"`
 
-	Emoji       string `yaml:"emoji"`
-	Title       string `yaml:"title"`
-	Description string `yaml:"description"`
+	Emoji       string `yaml:"emoji,omitempty"`
+	Title       string `yaml:"title,omitempty"`
+	Description string `yaml:"description,omitempty"`
 
 	ClusterEnv map[string]any `yaml:"cluster_env"`
 
