@@ -1,3 +1,4 @@
+import json
 from google.cloud import storage
 from contextlib import contextmanager
 import os
@@ -6,8 +7,11 @@ import boto3
 from urllib.parse import urlparse
 from ray.data import Dataset
 from openai import OpenAI
+from anyscale.llm.model.models import FineTunedModel
 from anyscale.llm.dataset import Dataset as AnyscaleDataset
-from typing import Dict, Any
+from transformers import AutoTokenizer
+from typing import Dict, Any, List, Tuple
+import ray
 import yaml
 
 CLUSTER_STORAGE_PATH = "/mnt/cluster_storage"
@@ -132,3 +136,50 @@ def update_datasets_in_fine_tuning_config(
 
     # View the training (LoRA) configuration for llama-3-8B
     return config
+
+def get_lora_path(fine_tuned_model: FineTunedModel):
+      # Storage accessible by head and worker nodes
+    local_dir = f'/mnt/cluster_storage/{fine_tuned_model.id}'
+    return local_dir
+
+def get_test_prompts(fine_tuned_model: FineTunedModel, dataset: AnyscaleDataset):
+    # Model and tokenizer
+    tokenizer = AutoTokenizer.from_pretrained(fine_tuned_model.base_model_id)
+    local_dir = get_lora_path(fine_tuned_model)
+    tokenizer_config = json.load(open(os.path.join(local_dir, 'tokenizer_config.json')))
+    chat_template = tokenizer_config['chat_template']
+    
+    # Apply chat template
+    # Load test set for eval
+    test_data = ray.data.read_json(dataset.storage_uri).take_all()
+    test_inputs = [
+        [message for message in item['messages'] if message['role'] != 'assistant']
+        for item in test_data
+    ]
+    test_outputs = [
+        [message for message in item['messages'] if message['role'] == 'assistant']
+        for item in test_data
+    ]
+    test_input_prompts = [
+        {
+            'inputs': tokenizer.apply_chat_template(
+                conversation=inputs,
+                chat_template=chat_template,
+                add_generation_prompt=True,
+                tokenize=False,
+                return_tensors='np'
+            ),
+            'outputs': outputs
+        } for inputs, outputs in zip(test_inputs, test_outputs)
+    ]
+    return test_input_prompts
+
+def get_num_matches_and_mismatches(predictions: List[Dict[str, Any]]) -> Tuple[int, List[Dict[str, Any]]]:
+    num_matches = 0
+    mismatches = []
+    for p in predictions:
+        if p['expected_output'][0]['content'] == p['generated_text'].split('<|eot_id|>')[0]:
+            num_matches += 1
+        else:
+            mismatches.append(p)
+    return num_matches, mismatches
