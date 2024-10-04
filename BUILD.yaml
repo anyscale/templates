@@ -1,0 +1,26 @@
+# UNDER CONSTRUCTION: we in the process of adding template definitions
+# into this file. This file does not contain all the templates yet.
+
+# job-intro template is to be removed and replaced by
+# https://github.com/anyscale/first-job
+- name: job-intro
+  emoji: 🔰
+  title: Intro to Jobs
+  description: Introduction on how to use Anyscale Jobs
+  dir: templates/intro-jobs
+  cluster_env:
+    build_id: anyscaleray2340-py311
+  compute_config:
+    GCP: configs/basic-single-node/gce.yaml
+    AWS: configs/basic-single-node/aws.yaml
+
+- name: workspace-intro
+  emoji: 🔰
+  title: Intro to Workspaces
+  description: Introduction on how to use Anyscale Workspaces
+  dir: templates/intro-workspaces
+  cluster_env:
+    build_id: anyscaleray2340-py311
+  compute_config:
+    GCP: configs/basic-single-node/gce.yaml
+    AWS: configs/basic-single-node/aws.yaml
