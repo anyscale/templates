@@ -1,0 +1,105 @@
+{
+  "retrieve": {
+    "k": 3
+  },
+  "generate_query[0]": {
+    "lm": null,
+    "traces": [],
+    "train": [],
+    "demos": [
+      {
+        "augmented": true,
+        "context": [],
+        "question": "What type of water transportation system did both the Rapidan Dam Canal of the Rappahannock Navigation and the Main Line of Public Works work to establish?",
+        "rationale": "Rappahannock Navigation",
+        "search_query": "Rappahannock Navigation canal type"
+      },
+      {
+        "question": "Which actress born in 1974 stars in a 2010 remake of the 2008 French film \"Pour Elle\"?",
+        "answer": "Elizabeth Banks",
+        "dspy_uuid": "73cafbb9-452b-4cbf-a0ea-0bbdc7b85ead",
+        "dspy_split": "train"
+      },
+      {
+        "question": "What German born racing driver raced against lost the 1970 International Gold Cup to John Surtees and later dies during a practice for the Italian Grand Prix?",
+        "answer": "Jochen Rindt",
+        "dspy_uuid": "fae1e0aa-17f5-44b0-b006-b039c809689b",
+        "dspy_split": "train"
+      }
+    ],
+    "signature_instructions": "Given the fields `context`, `question`, produce the fields `search_query`.",
+    "signature_prefix": "Search Query:",
+    "extended_signature_instructions": "Given the fields `context`, `question`, produce the fields `search_query`.",
+    "extended_signature_prefix": "Search Query:"
+  },
+  "generate_query[1]": {
+    "lm": null,
+    "traces": [],
+    "train": [],
+    "demos": [
+      {
+        "augmented": true,
+        "context": [
+          "Rapidan Dam Canal of the Rappahannock Navigation | The Rapidan Dam Canal of the Rappahannock Navigation is a canal intended to safely carry Batteaus, sturdy flat-bottomed boats used primarily for transporting cargo, around the rapids at the confluence of the Rappahannock and Rapidan Rivers. The Rapidan Canal, funded and constructed by The Rappahannock Company, consists of two different canals (the Old Rapidan Canal and the Rapidan Canal) built at different times. All of the Rappahannock Navigation, of which the Rapidan Canal is a part, is located in the Piedmont region of Virginia. The Confluence, the name used on maps of the day and sometimes maps of today to denote where the two rivers meet, is located where the borders of the Virginia Counties of Spotsylvania, Stafford and Culpeper meet but is owned by the City of Fredericksburg, Virginia. The Rapidan Canal was listed on the Virginia Landmarks Register (VLR) on June 19, 1973, and on the National Register of Historic Places on July 26, 1973.",
+          "Lehigh Canal | The Lehigh Canal or the Lehigh Navigation Canal is a 'navigation' type canal. The canal begins at the mouth of Nesquehoning Creek on the Lehigh River in Eastern Pennsylvania.",
+          "USS Rappahannock (AF-6) | USS Rappahannock (AF-6) was an \"Rappahannock\"-class stores ship acquired by the U.S. Navy for use in World War I. She served in the dangerous North Atlantic Ocean, delivering animals, such as horses and steers on-the-hoof, to American Expeditionary Force troops in Europe."
+        ],
+        "question": "What type of water transportation system did both the Rapidan Dam Canal of the Rappahannock Navigation and the Main Line of Public Works work to establish?",
+        "rationale": "Rapidan Dam Canal of the Rappahannock Navigation and the Main Line of Public Works were both water transportation systems that worked to establish a canal to safely carry Batteaus, sturdy flat-bottomed boats used primarily for transporting cargo, around the rapids at the confluence of the Rappahannock and Rapidan Rivers.",
+        "search_query": "Rappahannock Navigation"
+      },
+      {
+        "question": "What German born racing driver raced against lost the 1970 International Gold Cup to John Surtees and later dies during a practice for the Italian Grand Prix?",
+        "answer": "Jochen Rindt",
+        "dspy_uuid": "fae1e0aa-17f5-44b0-b006-b039c809689b",
+        "dspy_split": "train"
+      },
+      {
+        "question": "Which actress born in 1974 stars in a 2010 remake of the 2008 French film \"Pour Elle\"?",
+        "answer": "Elizabeth Banks",
+        "dspy_uuid": "73cafbb9-452b-4cbf-a0ea-0bbdc7b85ead",
+        "dspy_split": "train"
+      }
+    ],
+    "signature_instructions": "Given the fields `context`, `question`, produce the fields `search_query`.",
+    "signature_prefix": "Search Query:",
+    "extended_signature_instructions": "Given the fields `context`, `question`, produce the fields `search_query`.",
+    "extended_signature_prefix": "Search Query:"
+  },
+  "generate_answer": {
+    "lm": null,
+    "traces": [],
+    "train": [],
+    "demos": [
+      {
+        "augmented": true,
+        "context": [
+          "Rapidan Dam Canal of the Rappahannock Navigation | The Rapidan Dam Canal of the Rappahannock Navigation is a canal intended to safely carry Batteaus, sturdy flat-bottomed boats used primarily for transporting cargo, around the rapids at the confluence of the Rappahannock and Rapidan Rivers. The Rapidan Canal, funded and constructed by The Rappahannock Company, consists of two different canals (the Old Rapidan Canal and the Rapidan Canal) built at different times. All of the Rappahannock Navigation, of which the Rapidan Canal is a part, is located in the Piedmont region of Virginia. The Confluence, the name used on maps of the day and sometimes maps of today to denote where the two rivers meet, is located where the borders of the Virginia Counties of Spotsylvania, Stafford and Culpeper meet but is owned by the City of Fredericksburg, Virginia. The Rapidan Canal was listed on the Virginia Landmarks Register (VLR) on June 19, 1973, and on the National Register of Historic Places on July 26, 1973.",
+          "Lehigh Canal | The Lehigh Canal or the Lehigh Navigation Canal is a 'navigation' type canal. The canal begins at the mouth of Nesquehoning Creek on the Lehigh River in Eastern Pennsylvania.",
+          "USS Rappahannock (AF-6) | USS Rappahannock (AF-6) was an \"Rappahannock\"-class stores ship acquired by the U.S. Navy for use in World War I. She served in the dangerous North Atlantic Ocean, delivering animals, such as horses and steers on-the-hoof, to American Expeditionary Force troops in Europe.",
+          "Rappahannock River | The Rappahannock River is a river in eastern Virginia, in the United States, approximately 195 mi in length. It traverses the entire northern part of the state, from the Blue Ridge Mountains in the west, across the Piedmont, to the Chesapeake Bay, south of the Potomac River.",
+          "Rappahannock River (New Zealand) | The Rappahannock River is a river of the Tasman Region of New Zealand's South Island. It flows predominantly north from its sources east of Maruia, reaching the Warwick River five kilometres from the latter's outflow into the Maruia River."
+        ],
+        "question": "What type of water transportation system did both the Rapidan Dam Canal of the Rappahannock Navigation and the Main Line of Public Works work to establish?",
+        "rationale": "Rapidan Dam Canal of the Rappahannock Navigation and the Main Line of Public Works were both water transportation systems that worked to establish a canal. The Main Line of Public Works was a canal system built in the 19th century to transport goods and people between the Chesapeake Bay and the Atlantic Ocean. The Rappahannock Navigation, on the other hand, is a canal system that was built to transport cargo around the rapids at the confluence of the Rappahannock and Rapidan Rivers. Both systems were used to facilitate trade and commerce in the region.",
+        "answer": "canal"
+      },
+      {
+        "question": "Which actress born in 1974 stars in a 2010 remake of the 2008 French film \"Pour Elle\"?",
+        "answer": "Elizabeth Banks",
+        "dspy_uuid": "73cafbb9-452b-4cbf-a0ea-0bbdc7b85ead",
+        "dspy_split": "train"
+      },
+      {
+        "question": "What German born racing driver raced against lost the 1970 International Gold Cup to John Surtees and later dies during a practice for the Italian Grand Prix?",
+        "answer": "Jochen Rindt",
+        "dspy_uuid": "fae1e0aa-17f5-44b0-b006-b039c809689b",
+        "dspy_split": "train"
+      }
+    ],
+    "signature_instructions": "Given the fields `context`, `question`, produce the fields `answer`.",
+    "signature_prefix": "Answer:",
+    "extended_signature_instructions": "Given the fields `context`, `question`, produce the fields `answer`.",
+    "extended_signature_prefix": "Answer:"
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "predictor": {
+    "lm": null,
+    "traces": [],
+    "train": [],
+    "demos": [
+      {
+        "augmented": true,
+        "sql_prompt": "What is the average price of items made from hemp?",
+        "sql_context": "CREATE TABLE item_prices (item_name VARCHAR(255), material VARCHAR(255), price DECIMAL(10,2)); INSERT INTO item_prices (item_name, material, price) VALUES ('T-Shirt', 'Organic Cotton', 25.00), ('Shirt', 'Organic Cotton', 30.00), ('Pants', 'Organic Cotton', 35.00), ('T-Shirt', 'Hemp', 28.00), ('Shirt', 'Hemp', 33.00), ('Pants', 'Hemp', 38.00);",
+        "rationale": "calculate the average price of items made from hemp. We need to filter the items made from hemp, then calculate the average price of these items.",
+        "sql": "SELECT AVG(price) FROM item_prices WHERE material = 'Hemp'",
+        "answer": "SELECT AVG(price) FROM item_prices WHERE material = 'Hemp'"
+      },
+      {
+        "augmented": true,
+        "sql_prompt": "Remove genre 'K-pop' from the Genres table",
+        "sql_context": "CREATE TABLE Genres (GenreID INT PRIMARY KEY AUTO_INCREMENT, Name VARCHAR(50));",
+        "rationale": "remove the 'K-pop' genre from the Genres table. We need to identify the GenreID of the 'K-pop' genre and then use the DELETE statement to remove it from the table. However, since we are not given the GenreID of 'K-pop', we will use the Name field to identify it.",
+        "sql": "DELETE FROM Genres WHERE Name = 'K-pop'",
+        "answer": "DELETE FROM Genres WHERE Name = 'K-pop'"
+      },
+      {
+        "sql_prompt": "get the number of fans who are male and over 40",
+        "sql_context": "CREATE TABLE fans (id INT PRIMARY KEY, name VARCHAR(100), age INT, gender VARCHAR(10), favorite_team VARCHAR(50));",
+        "sql": "SELECT COUNT(*) FROM fans WHERE gender = 'Male' AND age > 40;"
+      }
+    ],
+    "signature_instructions": "Transform a natural language query into a SQL query.",
+    "signature_prefix": "Sql:",
+    "extended_signature_instructions": "Transform a natural language query into a SQL query.",
+    "extended_signature_prefix": "Sql:"
+  }
+}

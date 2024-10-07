@@ -1,0 +1,35 @@
+{
+  "predictor": {
+    "lm": null,
+    "traces": [],
+    "train": [],
+    "demos": [
+      {
+        "augmented": true,
+        "sql_prompt": "What is the maximum distance of all satellites from the Earth's surface, organized by country of origin?",
+        "sql_context": "CREATE TABLE satellites (id INT, name VARCHAR(255), country_of_origin VARCHAR(255), avg_distance FLOAT);",
+        "rationale": "find the maximum distance of all satellites from the Earth's surface, organized by country of origin. We need to find the maximum average distance for each country of origin. This can be achieved by using the MAX function in combination with the GROUP BY clause to group the results by country of origin.",
+        "sql": "SELECT country_of_origin, MAX(avg_distance) FROM satellites GROUP BY country_of_origin",
+        "answer": "SELECT country_of_origin, MAX(avg_distance) FROM satellites GROUP BY country_of_origin"
+      },
+      {
+        "augmented": true,
+        "sql_prompt": "What is the total energy production (in MWh) of hydroelectric power plants in 'SouthAmerica' that were built before '2010'?",
+        "sql_context": "CREATE TABLE hydro_plants (id INT, name VARCHAR(50), region VARCHAR(50), built_year INT, production INT); INSERT INTO hydro_plants (id, name, region, built_year, production) VALUES (1, 'HydroPlant1', 'SouthAmerica', 2005, 1500), (2, 'HydroPlant2', 'SouthAmerica', 2015, 2000);",
+        "rationale": "calculate the total energy production of hydroelectric power plants in 'SouthAmerica' that were built before '2010'. We need to filter the plants by region and built year, then sum up their production.",
+        "sql": "SELECT SUM(production) FROM hydro_plants WHERE region = 'SouthAmerica' AND built_year < 2010",
+        "answer": "SELECT SUM(production) FROM hydro_plants WHERE region = 'SouthAmerica' AND built_year < 2010"
+      },
+      {
+        "sql_prompt": "What is the total number of public transportation projects in the \"projects\" table for projects with a budget less than $10 million?",
+        "sql_context": "CREATE TABLE projects (project_id INT, project_name VARCHAR(50), budget DECIMAL(10, 2), area VARCHAR(50)); INSERT INTO projects (project_id, project_name, budget, area) VALUES (1, 'ProjectT', 9000000.00, 'Urban'), (2, 'ProjectU', 7000000.00, 'Urban'), (3, 'ProjectV', 5000000.00, 'Urban');",
+        "sql": "SELECT COUNT(*) FROM projects WHERE budget < 10000000.00;",
+        "answer": "SELECT COUNT(*) FROM projects WHERE budget < 10000000.00;"
+      }
+    ],
+    "signature_instructions": "Transform a natural language query into a SQL query.",
+    "signature_prefix": "Sql:",
+    "extended_signature_instructions": "Translate the given natural language query into a structured SQL query, utilizing the provided database context to inform your translation and provide a clear, step-by-step rationale for the generation of the SQL query, including any relevant assumptions, logical deductions, or database schema considerations that guide your translation process.",
+    "extended_signature_prefix": "Sql:"
+  }
+}
