@@ -1,0 +1,51 @@
+accelerator_type: A100-80G
+deployment_config:
+  autoscaling_config:
+    initial_replicas: 1
+    max_replicas: 16
+    min_replicas: 1
+    target_ongoing_requests: 256
+  max_ongoing_requests: 256
+engine_kwargs:
+  enable_chunked_prefill: false
+  enable_lora: true
+  max_lora_rank: 32
+  max_loras: 16
+  max_num_batched_tokens: 16384
+  max_num_seqs: 256
+  tokenizer_pool_extra_config:
+    runtime_env:
+      pip: null
+  tokenizer_pool_size: 2
+  trust_remote_code: true
+generation_config:
+  prompt_format:
+    assistant: "<|start_header_id|>assistant<|end_header_id|>\n\n{instruction}<|eot_id|>"
+    bos: <|begin_of_text|>
+    default_system_message: ''
+    system: "<|start_header_id|>system<|end_header_id|>\n\n{instruction}<|eot_id|>"
+    system_in_user: false
+    trailing_assistant: "<|start_header_id|>assistant<|end_header_id|>\n\n"
+    user: "<|start_header_id|>user<|end_header_id|>\n\n{instruction}<|eot_id|>"
+  stopping_sequences: []
+  stopping_tokens:
+  - 128001
+  - 128009
+input_modality: text
+json_mode:
+  enabled: false
+llm_engine: VLLMEngine
+lora_config:
+  dynamic_lora_loading_path: gs://storage-bucket-cld-tffbxe9ia5phqr1unxhz4f7e1e/org_4snvy99zwbmh4gbtk64jfqggmj/cld_tffbxe9ia5phqr1unxhz4f7e1e/artifact_storage/lora_fine_tuning
+  max_num_adapters_per_replica: 16
+max_request_context_length: 8192
+model_loading_config:
+  anytensor_config:
+    model_path: https://models.cdn.endpoints.anyscale.com/anytensor/meta-llama/Meta-Llama-3.1-8B-Instruct/
+  model_id: meta-llama/Meta-Llama-3.1-8B-Instruct
+  model_source: meta-llama/Meta-Llama-3.1-8B-Instruct
+runtime_env:
+  env_vars:
+    HUGGING_FACE_HUB_TOKEN: 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
+tensor_parallelism:
+  degree: 1

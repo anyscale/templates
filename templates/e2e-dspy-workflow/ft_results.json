@@ -1,0 +1,86 @@
+{
+    "meta-llama\/Llama-3.2-1B-Instruct:epochs-1-total-trained-steps-30": {
+        "vanilla": {
+            "devset": 10.07,
+            "true_labels": 13.0,
+            "testset": 12.1
+        },
+        "bfrs": {
+            "devset": 30.93,
+            "true_labels": 25.0,
+            "testset": 33.9
+        }
+    },
+    "meta-llama\/Llama-3.2-1B-Instruct:epochs-0-total-trained-steps-15": {
+        "vanilla": {
+            "devset": 21.2,
+            "true_labels": 21.0,
+            "testset": 21.5
+        },
+        "bfrs": {
+            "devset": 35.4,
+            "true_labels": 36.0,
+            "testset": 32.3
+        }
+    },
+    "meta-llama\/Llama-3.2-1B-Instruct:epochs-4-total-trained-steps-75": {
+        "vanilla": {
+            "devset": 24.6,
+            "true_labels": 28.0,
+            "testset": 23.0
+        },
+        "bfrs": {
+            "devset": 39.67,
+            "true_labels": 34.0,
+            "testset": 39.1
+        }
+    },
+    "meta-llama\/Llama-3.2-1B-Instruct:epochs-5-total-trained-steps-90": {
+        "vanilla": {
+            "devset": 24.27,
+            "true_labels": 28.0,
+            "testset": 22.3
+        },
+        "bfrs": {
+            "devset": 38.67,
+            "true_labels": 36.0,
+            "testset": 38.1
+        }
+    },
+    "meta-llama\/Llama-3.2-1B-Instruct:epochs-3-total-trained-steps-60": {
+        "vanilla": {
+            "devset": 23.2,
+            "true_labels": 27.0,
+            "testset": 20.9
+        },
+        "bfrs": {
+            "devset": 40.87,
+            "true_labels": 37.0,
+            "testset": 41.6
+        }
+    },
+    "meta-llama\/Llama-3.2-1B-Instruct:epochs-2-total-trained-steps-45": {
+        "vanilla": {
+            "devset": 16.6,
+            "true_labels": 22.0,
+            "testset": 14.4
+        },
+        "bfrs": {
+            "devset": 41.27,
+            "true_labels": 36.0,
+            "testset": 40.2
+        }
+    },
+    "base": {
+        "vanilla": {
+            "devset": 2.73,
+            "true_labels": 5.0,
+            "testset": 3.0
+        },
+        "bfrs": {
+            "devset": 37.0,
+            "true_labels": 40.0,
+            "testset": 32.8
+        }
+    }
+}
