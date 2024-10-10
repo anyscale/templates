@@ -32,7 +32,7 @@ num_checkpoints_to_keep: 1
 
 # Deepspeed configuration, you can provide your own deepspeed setup
 deepspeed:
-  config_path: deepspeed_configs/zero_3_offload_optim+param.json
+  config_path: deepspeed_configs/zero_3_hpz.json
 
 # Accelerator type, we value of 0.001 is not important, as long as it is
 # beteween 0 and 1. This ensures that accelerator type is used per trainer
