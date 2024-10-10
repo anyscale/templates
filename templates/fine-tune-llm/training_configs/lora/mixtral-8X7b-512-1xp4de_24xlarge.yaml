@@ -8,7 +8,7 @@ eval_batch_size_per_device: 4
 learning_rate: 1e-4
 num_checkpoints_to_keep: 1
 dataset_size_scaling_factor: 10000
-no_gradient_checkpoint: False
+gradient_checkpointing: True
 output_dir: /mnt/local_storage
 deepspeed:
   config_path: deepspeed_configs/zero_3_llama_2_70b.json

@@ -682,7 +682,7 @@ To get started with DPO training, we provide the config for DPO in [configs/dpo-
     eval_batch_size_per_device: 2
     learning_rate: 5e-6
     num_epochs: 3
-    no_gradient_checkpoint: False
+    gradient_checkpointing: True
     # Deepspeed configuration, you can provide your own deepspeed setup
     deepspeed:
       config_path: configs/zero_3.json
