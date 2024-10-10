@@ -1,16 +1,16 @@
-# Serving a Stable Diffusion Model with Ray Serve
+# Serving a Stable Diffusion model with Ray Serve
 
 **⏱️ Time to complete**: 5 min (15 on GCP)
 
 This template shows you how to:
-1. Develop and run a Ray Serve application running the SDXL diffusion model.
-2. Send test requests to the application running locally.
-3. Deploy the application to production as a service.
-4. Send requests to the application running in production as a service.
+1. Develop and run a Ray Serve app running the SDXL diffusion model.
+2. Send test requests to the app running locally.
+3. Deploy the app to production as a service.
+4. Send requests to the app running in production as a service.
 
-## Step 1: Install python dependencies
+## Step 1: Install Python dependencies
 
-The application requires a few extra Python dependencies. Install them using `pip` and they'll be saved in the workspace and picked up when deploying to production.
+The app requires a few extra Python dependencies. Install them using `pip` and Anyscale saves them in the workspace and picks them up when deploying to production.
 
 
 ```python
@@ -18,12 +18,12 @@ The application requires a few extra Python dependencies. Install them using `pi
 ```
 
 ## Step 2: Run the model locally
-- Run the command below in a VSCode terminal (Ctrl-`).
-- The model will be available at http://localhost:8000.
-- The command will block and print logs for the application.
+- Run the command below in a VS Code terminal (Ctrl-`).
+- The model is available at http://localhost:8000.
+- The command blocks and prints logs for the app.
 
 ```bash
-# Run the following in a VSCode terminal because it's a blocking command.
+# Run the following in a VS Code terminal because it's a blocking command.
 $ serve run main:stable_diffusion_app
 ```
 
@@ -31,7 +31,7 @@ $ serve run main:stable_diffusion_app
 
 The `generate_image` function sends an HTTP request to the model and saves the response as a local image.
 
-As the request to generate the image runs, logs will be printed to the terminal that is running `serve run`.
+As the request to generate the image runs, Anyscale prints logs to the terminal that's running `serve run`.
 
 
 ```python
@@ -64,9 +64,9 @@ Image(filename=filename)
 
 Deploy the model to production using the `anyscale service deploy` command.
 
-This creates a long-running [service](https://docs.anyscale.com/services/get-started) with a stable endpoint to query the application.
+This command creates a long-running [service](https://docs.anyscale.com/services/get-started) with a stable endpoint to query the app.
 
-Local files and dependencies installed in the workspace are automatically included when the service is deployed.
+Local files and dependencies that you install in the workspace are automatically included when the service is deployed.
 
 
 ```python
@@ -79,7 +79,7 @@ Query the service using the same logic as when testing it locally, with two chan
 1. Update the `HOST` to the service endpoint.
 2. Add the authorization token as a header in the HTTP request.
 
-Both of these values are printed when you run `anyscale service deploy`. You can also find them on the service page. For example, if the output looks like:
+Anyscale prints both of these values you run `anyscale service deploy`. You can also find them on the service page. For example, if the output looks like:
 ```bash
 (anyscale +4.0s) You can query the service endpoint using the curl request below:
 (anyscale +4.0s) curl -H 'Authorization: Bearer 26hTWi2kZwEz0Tdi1_CKRep4NLXbuuaSTDb3WMXK9DM' https://stable_diffusion_app-4rq8m.cld-ltw6mi8dxaebc3yf.s.anyscaleuserdata-staging.com
@@ -123,9 +123,9 @@ Image(filename=filename)
 ## Summary
 
 This notebook:
-- Developed and ran a model serving application locally.
-- Sent a test request to the application locally.
-- Deployed the application to production as a service.
-- Sent another test request to the application running as a service.
+- Developed and ran a model serving app locally.
+- Sent a test request to the app locally.
+- Deployed the app to production as a service.
+- Sent another test request to the app running as a service.
 
 
