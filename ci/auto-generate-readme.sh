@@ -1,45 +1,63 @@
 #!/bin/bash
+
+set -euo pipefail
+
 echo "Auto-generating README files..."
 
-# Search for notebook files named README.ipynb in the ../templates directory
-notebook_files=$(find ../templates -name "README.ipynb")
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+if [[ "$(pwd)" != "${REPO_ROOT}" ]]; then
+	echo "Must run this script at repo's root directory".
+	exit 1
+fi
 
-# Loop through each notebook file
-for notebook_file in $notebook_files; do
-    # Exclude specific notebooks from conversion
-    if [ "$notebook_file" != "../templates/templates/getting-started/README.ipynb" ] && [ "$notebook_file" != "../templates/templates/e2e-llm-workflows/README.ipynb" ] && ! grep -q "Time to complete" $notebook_file; then
-        echo "**********"
-        echo "LINT ERROR: $notebook_file must include 'Time to complete' statement, failing."
-        echo "**********"
-        exit 1
-    fi
-    if [ "$notebook_file" != "../templates/templates/e2e-llm-workflows/README.ipynb" ]; then
-        # Convert notebook file to README.md using nbconvert
-        jupyter nbconvert --to markdown "$notebook_file" --output-dir "$(dirname "$notebook_file")"
-    else
-        echo "Skipping README generation for $notebook_file"
-    fi
-done
+# Search for notebook files named README.ipynb in the ../templates directory
+TEMPLATES_DIRS=($(find "templates" -mindepth 1 -maxdepth 1 -type d))
 
 # Define the repo prefix
 REPO_PREFIX="https://raw.githubusercontent.com/anyscale/templates/main"
 
-# Search for README.md in the ../templates directory
-readme_files=$(find ../templates -name "README.md")
+# Loop through each notebook file
+for TMPL in "${TEMPLATES_DIRS[@]}"; do
+	echo "===== Processing ${TMPL}"
 
-# Loop through each readme files
-for readme_file in $readme_files; do
-    # Extract the path of the directory containing the README file, relative to the repository root
-    readme_dir=$(dirname "$readme_file" | sed "s|\.\./templates/||")
+	if [[ ! -f "${TMPL}/README.ipynb" ]]; then
+		echo "README.ipynb file not found; skipping notebook conversion and checking."
+	else
+        # Exclude specific notebooks from conversion
+        TMPL_NAME="$(basename "${TMPL}")"
+        NOTEBOOK_FILE="${TMPL}/README.ipynb"
 
-    # Check the operating system
-    if [[ "$OSTYPE" == "darwin"* ]]; then
-        # macOS system
-        sed -i '' "s|<img src=\"\([^\"http://][^\":/][^\"].*\)\"|<img src=\"${REPO_PREFIX}/${readme_dir}/\1\"|g" "$readme_file"
-        sed -i '' "s|!\[.*\](\(assets/.*\))|<img src=\"${REPO_PREFIX}/${readme_dir}/\1\"/>|g" "$readme_file"
-    else
-        # Assuming Linux
-        sed -i "s|<img src=\"\([^\"http://][^\":/][^\"].*\)\"|<img src=\"${REPO_PREFIX}/${readme_dir}/\1\"|g" "$readme_file"
-        sed -i "s|!\[.*\](\(assets/.*\))|<img src=\"${REPO_PREFIX}/${readme_dir}/\1\"/>|g" "$readme_file"
+        if [[ "${TMPL_NAME}" == "getting-started" || "${TMPL_NAME}" == "e2e-llm-workflows" || "${TMPL_NAME}" == "ray-summit-multi-modal-search" ]]; then
+            echo "Skip 'Time to complete' checking for ${TMPL_NAME}"
+        elif ! grep -q "Time to complete" "${NOTEBOOK_FILE}" ; then
+            echo "**********"
+            echo "LINT ERROR: ${NOTEBOOK_FILE} must include 'Time to complete' statement, failing."
+            echo "**********"
+            exit 1
+        fi
+
+        if [[ "${TMPL_NAME}" != "e2e-llm-workflows" ]]; then
+            # Convert notebook file to README.md using nbconvert
+            jupyter nbconvert --to markdown "${NOTEBOOK_FILE}" --output-dir "${TMPL}"
+        else
+            echo "Skipping README generation for ${NOTEBOOK_FILE}"
+        fi
+    fi
+
+	# Post-processing on README markdown files
+	README_FILE="${TMPL}/README.md"
+    if [[ ! -f "${TMPL}/README.md" ]]; then
+		echo "README.md file not found; skipping markdown processing."
+	else
+        # Check the operating system
+        if [[ "$OSTYPE" == "darwin"* ]]; then
+            # macOS system
+            sed -i '' "s|<img src=\"\([^\"http://][^\":/][^\"].*\)\"|<img src=\"${REPO_PREFIX}/${TMPL}/\1\"|g" "$README_FILE"
+            sed -i '' "s|!\[.*\](\(assets/.*\))|<img src=\"${REPO_PREFIX}/${TMPL}/\1\"/>|g" "$README_FILE"
+        else
+            # Assuming Linux
+            sed -i "s|<img src=\"\([^\"http://][^\":/][^\"].*\)\"|<img src=\"${REPO_PREFIX}/${TMPL}/\1\"|g" "$README_FILE"
+            sed -i "s|!\[.*\](\(assets/.*\))|<img src=\"${REPO_PREFIX}/${TMPL}/\1\"/>|g" "$README_FILE"
+        fi
     fi
 done

@@ -43,7 +43,7 @@ jobs:
       run: bash -ec "(cd ci; go fmt ./... ; git diff --exit-code)"
 
     - name: Test
-      run: bash -ec "(cd ci; go test -v ./...)"
+      run: CI=1 bash -ec "(cd ci; go test -v ./...)"
 
     - name: Build templates
       run: bash build.sh
