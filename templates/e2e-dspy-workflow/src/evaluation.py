@@ -27,14 +27,14 @@ def evaluate_and_prompt_optimize(devset, optimizer_trainset, optimizer_valset, p
         ft_results[folder] = {}
         with dspy.context(lm=llama):
             evaluate_devset = dspy.Evaluate(devset=devset, metric=metric, num_threads=NUM_THREADS, display_progress=True, max_errors=MAX_ERRORS)
-            
+
             vanilla_program = IntentClassificationModule(labels_in_use)
             devset_result = evaluate_devset(vanilla_program)
             ft_results[folder]["vanilla"] = {"devset": devset_result}
 
             bfrs_finetuned_program = optimizer.compile(vanilla_program, trainset=optimizer_trainset, valset=optimizer_valset)
             bfrs_finetuned_program.save(f"simpleintent_1b_32_ft_bfrs_{MAX_BOOTSTRAPPED_DEMOS}_{MAX_LABELED_DEMOS}_{NUM_CANDIDATE_PROGRAMS}_{folder.split('/')[-1]}.json")
-            
+
             llama_8b_bfrs_finetuned_eval = evaluate_devset(bfrs_finetuned_program)
             ft_results[folder]["bfrs"] = {"devset": llama_8b_bfrs_finetuned_eval}
             print(f"Evaluation result for {folder} on devset: {llama_8b_bfrs_finetuned_eval}")
@@ -52,7 +52,7 @@ def run_testset_evaluation(ft_results, all_llamas, labels_in_use, testset):
     for folder, llama in base_and_best.items():
         print("Evaluating", folder)
         vanilla_program = IntentClassificationModule(labels_in_use)
-        
+
         with dspy.context(lm=llama):
             testset_result_vanilla = evaluate_testset(vanilla_program)
             ft_results[folder]["vanilla"]["testset"] = testset_result_vanilla

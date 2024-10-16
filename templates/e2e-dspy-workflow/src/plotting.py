@@ -14,7 +14,7 @@ def graph_testset_results(ft_results):
             models.append(f"Epoch {model.split(':')[1].split('-')[1]}")
         vanilla_testset.append(results['vanilla'].get('testset', None))
         bfrs_testset.append(results['bfrs'].get('testset', None))
-    
+
     vanilla_testset = [x if x is not None else 0 for x in vanilla_testset]
     bfrs_testset = [x if x is not None else 0 for x in bfrs_testset]
 

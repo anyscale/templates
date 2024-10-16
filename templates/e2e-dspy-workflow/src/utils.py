@@ -1,9 +1,5 @@
-import ujson
 import dspy
-import dsp
-from dspy.evaluate import answer_exact_match
 import os
-
 
 # -------------------------------
 
@@ -25,6 +21,7 @@ class IntentClassificationModule(dspy.Module):
         prediction = self.intent_classifier(intent=text)
         sanitized_prediction = dspy.Prediction(label=prediction.label.lower().strip().replace(" ", "_"), reasoning=prediction.reasoning)
         return sanitized_prediction
+
 # -------------------------------
 import litellm
 
@@ -118,6 +115,3 @@ finetuning_kwargs = {
     },
     "use_lora": True,
 }
-
-
-
