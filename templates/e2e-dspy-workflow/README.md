@@ -82,7 +82,6 @@ To change to use A100 GPUs, click the "1 active node" in the top right corner, t
 
 
 ```python
-# TODO: Pin to a certain branch of DSPy until merged into main
 import importlib.util
 
 if importlib.util.find_spec("dspy") is None:
@@ -104,8 +103,8 @@ import ujson
 from dotenv import load_dotenv
 load_dotenv()
 
-from src import set_dspy_cache
-set_dspy_cache()
+from src import set_dspy_cache_location
+set_dspy_cache_location("/home/ray/default/dspy/cache")
 ```
 
 In order to run this notebook, you need to have the following environment variables set:
@@ -209,6 +208,8 @@ The scenario we are emulating is that we only have 100 labeled examples to train
 
 
 ```python
+from src import common_kwargs
+
 shuffled_trainset = [d for d in full_trainset_filtered]
 rng.shuffle(shuffled_trainset)
 
@@ -217,6 +218,7 @@ ft_trainset = shuffled_trainset[:-100]
 labeled_trainset = shuffled_trainset[-100:]
 
 testset = full_testset_filtered
+evaluate_testset = dspy.Evaluate(devset=testset, **common_kwargs)
 ```
 
 This is a simple, 1 step Chain of Thought program.
@@ -275,19 +277,7 @@ print(inspect.getsource(IntentClassificationModule))
     
 
 
-Here we set up the metric and evaluator. We will be using the answer exact match metric.
-
-The `adjusted_exact_match` is because the default `answer_exact_match` metric checks that example.answer and pred.answer are equal rather than checking the label itself.
-
-
-```python
-# Prepare the metric and evaluator
-from src import common_kwargs
-
-evaluate_testset = dspy.Evaluate(devset=testset, **common_kwargs)
-```
-
-Lastly, we set up some parameters we will use throughout the notebook.
+Lastly, we set up some the vanilla program we will use throughout the notebook.
 
 
 ```python
@@ -412,17 +402,9 @@ else:
 
 We will use LLM Forge to fine-tune the 1B model.
 
-In order to do this, we need to format our data into the correct format (Follows OpenAI messaging format placed in a jsonl file).
+In order to do this, we need to format our data into the correct format (Follows OpenAI messaging format).
 
-We initially saved the data into a json file in prompt-completion format.
-
-In order to prepare for finetuning, we need to do three steps:
-1. Format the data into the correct format and verify that the data is valid
-2. Upload the data to GCP
-3. Generate the compute configuration file
-
-After the compute configuration file is generated, we can submit the job to LLM Forge, using either the command line or using the anyscale jobs sdk.
-TODO: Add the anyscale jobs sdk submit method
+We can let DSPy do the rest, where it will properly generate the config and run the finetuning.
 
 Be sure to checkout the fine-tuning documentation for the latest on how to use our [API](https://docs.anyscale.com/llms/finetuning/intro) and additional [capabilities](https://docs.anyscale.com/category/fine-tuning-beta/).
 
@@ -495,7 +477,9 @@ DSPy will automatically save the LoRA weights to a folder in your cloud environm
 
 Make sure to set your HF_TOKEN and HF_HOME environment variables, and run the following command to start the server:
 
-`serve run serve_1B.yaml`
+```bash
+serve run serve_1B.yaml
+```
 
 
 ```python
@@ -529,21 +513,24 @@ Now let's try optimizing the program with the finetuned model
 Now we know how well the base pipeline performs, let's run prompt optimization on the pipeline in order to juice up the performance.
 
 Let's go over what the hyperparameters mean:
-- MAX_BOOTSTRAPPED_DEMOS: DSPy will "bootstrap" the program by collecting examples at each step that are successful and reusing those in the pipeline. This means that it will automatically collect and add chains of thought to the pipeline.
-- MAX_LABELED_DEMOS: DSPy will also insert some labeled demonstrations from the training set. These would be unmodified examples from the training set that are just using the gold answer.
-- NUM_CANDIDATE_PROGRAMS: This is the number of candidate programs that the optimizer will generate. The actual number of programs that are created is this plus three, as DSPy will also try a program with no examples, a program with TODO (check)
-- OPTIMIZER_NUM_TRAIN and OPTIMIZER_NUM_VAL: These are the number of examples that the optimizer will use for training and validation. Note that we will be taking the "validation" set from the trainset so as the actual validation set is untouched.
+- max_bootstrapped_demos: DSPy will "bootstrap" the program by collecting examples at each step that are successful and reusing those in the pipeline. This means that it will automatically collect and add chains of thought to the pipeline.
+- max_labeled_demos: DSPy will also insert some labeled demonstrations from the training set. These would be unmodified examples from the training set that are just using the gold answer.
+- num_candidate_programs: This is the number of candidate programs that the optimizer will generate. The actual number of programs that are created is this plus three, as DSPy will also try a program with no examples, a program with just the labeled demonstrations, and a bootstrapped program with the first few examples.
+- optimizer_num_train and optimizer_num_val: These are the number of examples that the optimizer will use for training and validation. Note that we will be taking the all of these examples from our synthetic devset.
 
 
 ```python
-from dspy.teleprompt.random_search import BootstrapFewShotWithRandomSearch
 from src import bootstrap_fewshot_random_search_parameters, metric
 
-bfrs_optimizer = BootstrapFewShotWithRandomSearch(metric=metric, **bootstrap_fewshot_random_search_parameters)
+print("Parameters:")
+for k, v in bootstrap_fewshot_random_search_parameters.items():
+    print(f"{k}: {v}")
 ```
 
-    Going to sample between 1 and 3 traces per predictor.
-    Will attempt to bootstrap 6 candidate sets.
+    Parameters:
+    max_bootstrapped_demos: 3
+    max_labeled_demos: 3
+    num_candidate_programs: 6
 
 
 
@@ -556,7 +543,11 @@ def collected_data_to_example(data):
 collected_data_examples = [collected_data_to_example(x) for x in collected_data_filtered]
 
 devset_synthetic, ft_optimizer_trainset, ft_optimizer_devset = split_into_devset_and_optimizer_sets(collected_data_examples, dev_size=1000, optimizer_num_val=300)
-print(len(devset_synthetic), len(ft_optimizer_trainset), len(ft_optimizer_devset))
+print("Lengths:")
+print("Synthetic Devset: ", len(devset_synthetic))
+print("Optimizer Trainset: ", len(ft_optimizer_trainset))
+print("Optimizer Devset: ", len(ft_optimizer_devset))
+print("Example from synthetic devset:")
 print(devset_synthetic[0])
 ```
 
@@ -566,6 +557,7 @@ print(devset_synthetic[0])
 
 
 ```python
+%%capture
 COMPILE_PROGRAM = True
 
 from src import evaluate_and_prompt_optimize
@@ -581,7 +573,6 @@ evaluation_kwargs = {
 }
 
 ft_results = evaluate_and_prompt_optimize(**evaluation_kwargs)
-
 ```
 
     Going to sample between 1 and 3 traces per predictor.
@@ -4273,7 +4264,7 @@ graph_devset_results(ft_results)
 
 
     
-![png](README_files/README_54_0.png)
+![png](README_files/README_52_0.png)
     
 
 
@@ -5287,7 +5278,7 @@ graph_testset_results(ft_results_testset)
 
 
     
-![png](README_files/README_57_0.png)
+![png](README_files/README_55_0.png)
     
 
 

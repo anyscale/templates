@@ -39,13 +39,10 @@ def init_ray():
     ray.init(runtime_env={"env_vars": os.environ, "py_modules": [dspy, dsp]})
 
 # -------------------------------
-def set_dspy_cache():
-    cache_dir = "/home/ray/default/dspy/cache"
+def set_dspy_cache_location(local_cache_dir=None):
+    cache_dir = local_cache_dir if local_cache_dir is not None else "/home/ray/default/dspy/cache"
     if not os.path.exists(cache_dir):
         os.makedirs(cache_dir)
-
-    # I have included a .env.example with the necessary environment variables to be set
-    # You can also set them manually if you prefer
 
     os.environ["DSP_CACHEDIR"] = cache_dir
 
