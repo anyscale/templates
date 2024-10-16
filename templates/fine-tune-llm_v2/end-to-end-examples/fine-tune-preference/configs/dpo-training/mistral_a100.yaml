@@ -24,7 +24,7 @@ worker_resources:
 preference_tuning_config:
   beta: 0.01
   logprob_processor_scaling_config:
-    worker_resources:
+    custom_resources:
       accelerator_type:A100-80G: 0.001
     # Runs reference model logp calculation on 2 GPUs
     concurrency: 2
