@@ -39,6 +39,6 @@ model_loading_config:
   model_source: meta-llama/Meta-Llama-3.1-70B-Instruct
 runtime_env:
   env_vars:
-    HUGGING_FACE_HUB_TOKEN: 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
+    HUGGING_FACE_HUB_TOKEN: hf_1234567890
 tensor_parallelism:
   degree: 2
