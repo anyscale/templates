@@ -721,7 +721,7 @@ For this tutorial, we will perform full-parameter finetuning of Llama3-8B on the
     lr_scheduler_type: constant
     learning_rate: 1e-5
     num_checkpoints_to_keep: 1
-    no_gradient_checkpoint: False
+    gradient_checkpointing: True
     output_dir: /mnt/local_storage
     deepspeed:
       config_path: config_files/deepspeed/zero_3_optimizer_parameter_offload.json
