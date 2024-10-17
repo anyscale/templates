@@ -85,6 +85,11 @@ int_to_label_dict = {
 
 label_to_int_dict = {v: k for k, v in int_to_label_dict.items()}
 
+def valid_label_metric(example, prediction, trace=None, frac=1.0):
+    if prediction.label not in label_to_int_dict:
+        return False
+    return True
+
 # -------------------------------
 def delete_labels(dataset):
     for example in dataset:

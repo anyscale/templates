@@ -18,15 +18,16 @@ def split_into_devset_and_optimizer_sets(collected_data_examples, dev_size, opti
     return devset_synthetic, ft_optimizer_trainset, ft_optimizer_devset
 
 def evaluate_and_prompt_optimize(devset, optimizer_trainset, optimizer_valset, program, models, metric, labels_in_use):
-    MAX_ERRORS = 1000
+    MAX_ERRORS = 10000
+    NUM_THREADS = 300
 
-    optimizer = dspy.BootstrapFewShotWithRandomSearch(metric=metric, max_bootstrapped_demos=MAX_BOOTSTRAPPED_DEMOS, max_labeled_demos=MAX_LABELED_DEMOS, num_candidate_programs=NUM_CANDIDATE_PROGRAMS, num_threads=NUM_THREADS, max_errors=MAX_ERRORS)
     ft_results = {}
     for folder, llama in models.items():
+        optimizer = dspy.BootstrapFewShotWithRandomSearch(metric=metric, max_bootstrapped_demos=MAX_BOOTSTRAPPED_DEMOS, max_labeled_demos=MAX_LABELED_DEMOS, num_candidate_programs=NUM_CANDIDATE_PROGRAMS, num_threads=NUM_THREADS, max_errors=MAX_ERRORS)
         print("Evaluating", llama.model)
         ft_results[folder] = {}
         with dspy.context(lm=llama):
-            evaluate_devset = dspy.Evaluate(devset=devset, metric=metric, num_threads=NUM_THREADS, display_progress=True, max_errors=MAX_ERRORS)
+            evaluate_devset = dspy.Evaluate(devset=devset, metric=metric, num_threads=NUM_THREADS, display_progress=False, max_errors=MAX_ERRORS)
 
             vanilla_program = IntentClassificationModule(labels_in_use)
             devset_result = evaluate_devset(vanilla_program)
@@ -41,14 +42,15 @@ def evaluate_and_prompt_optimize(devset, optimizer_trainset, optimizer_valset, p
 
     return ft_results
 
-def run_testset_evaluation(ft_results, all_llamas, labels_in_use, testset):
+def run_testset_evaluation(ft_results, all_llamas, labels_in_use, testset, metric):
     MAX_ERRORS = 10000
+    NUM_THREADS = 300
 
     best_non_base_model = max([x for x in ft_results.keys() if x != "base"], key=lambda x: ft_results[x]["bfrs"]["devset"])
     print("Best non-base model:", best_non_base_model)
     base_and_best = {"base": all_llamas["base"], best_non_base_model: all_llamas[best_non_base_model]}
 
-    evaluate_testset = dspy.Evaluate(devset=testset, metric=metric, num_threads=NUM_THREADS, display_progress=True, max_errors=MAX_ERRORS)
+    evaluate_testset = dspy.Evaluate(devset=testset, metric=metric, num_threads=NUM_THREADS, display_progress=False, max_errors=MAX_ERRORS)
     for folder, llama in base_and_best.items():
         print("Evaluating", folder)
         vanilla_program = IntentClassificationModule(labels_in_use)
@@ -61,3 +63,22 @@ def run_testset_evaluation(ft_results, all_llamas, labels_in_use, testset):
             ft_results[folder]["bfrs"]["testset"] = testset_result
 
     return ft_results
+
+def update_serve_config_hf_token(serve_config_path: str):
+    import yaml
+    import os
+
+    with open(serve_config_path, "r") as f:
+        serve_config = yaml.safe_load(f)
+
+    model_config_location = serve_config["applications"][0]["args"]["llm_configs"][0]
+
+    with open(model_config_location, "r") as f:
+        model_config = yaml.safe_load(f)
+
+    if not os.environ.get("HUGGING_FACE_HUB_TOKEN") and not os.environ.get("HF_TOKEN"):
+        raise ValueError("HUGGING_FACE_HUB_TOKEN or HF_TOKEN must be set")
+    model_config["runtime_env"]["env_vars"]["HUGGING_FACE_HUB_TOKEN"] = os.environ.get("HUGGING_FACE_HUB_TOKEN") or os.environ.get("HF_TOKEN")
+
+    with open(model_config_location, "w") as f:
+        yaml.safe_dump(model_config, f)
