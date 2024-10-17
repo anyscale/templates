@@ -1,14 +1,5 @@
 import dspy
-from src import IntentClassificationModule
-
-bootstrap_fewshot_random_search_parameters = {
-    "max_bootstrapped_demos": 3,
-    "max_labeled_demos": 3,
-    "num_candidate_programs": 6,
-}
-MAX_BOOTSTRAPPED_DEMOS = bootstrap_fewshot_random_search_parameters["max_bootstrapped_demos"]
-MAX_LABELED_DEMOS = bootstrap_fewshot_random_search_parameters["max_labeled_demos"]
-NUM_CANDIDATE_PROGRAMS = bootstrap_fewshot_random_search_parameters["num_candidate_programs"]
+from constants import MAX_BOOTSTRAPPED_DEMOS, MAX_LABELED_DEMOS, NUM_CANDIDATE_PROGRAMS, NUM_THREADS, MAX_ERRORS
 
 def split_into_devset_and_optimizer_sets(collected_data_examples, dev_size, optimizer_num_val):
 
@@ -17,9 +8,7 @@ def split_into_devset_and_optimizer_sets(collected_data_examples, dev_size, opti
     ft_optimizer_trainset = collected_data_examples[dev_size+optimizer_num_val:]
     return devset_synthetic, ft_optimizer_trainset, ft_optimizer_devset
 
-def evaluate_and_prompt_optimize(devset, optimizer_trainset, optimizer_valset, program, models, metric, labels_in_use):
-    MAX_ERRORS = 10000
-    NUM_THREADS = 300
+def evaluate_and_prompt_optimize(devset, optimizer_trainset, optimizer_valset, module_class, models, metric, labels_in_use):
 
     ft_results = {}
     for folder, llama in models.items():
@@ -29,7 +18,7 @@ def evaluate_and_prompt_optimize(devset, optimizer_trainset, optimizer_valset, p
         with dspy.context(lm=llama):
             evaluate_devset = dspy.Evaluate(devset=devset, metric=metric, num_threads=NUM_THREADS, display_progress=False, max_errors=MAX_ERRORS)
 
-            vanilla_program = IntentClassificationModule(labels_in_use)
+            vanilla_program = module_class(labels_in_use)
             devset_result = evaluate_devset(vanilla_program)
             ft_results[folder]["vanilla"] = {"devset": devset_result}
 
@@ -42,9 +31,7 @@ def evaluate_and_prompt_optimize(devset, optimizer_trainset, optimizer_valset, p
 
     return ft_results
 
-def run_testset_evaluation(ft_results, all_llamas, labels_in_use, testset, metric):
-    MAX_ERRORS = 10000
-    NUM_THREADS = 300
+def run_testset_evaluation(ft_results, all_llamas, labels_in_use, testset, metric, module_class):
 
     best_non_base_model = max([x for x in ft_results.keys() if x != "base"], key=lambda x: ft_results[x]["bfrs"]["devset"])
     print("Best non-base model:", best_non_base_model)
@@ -53,7 +40,7 @@ def run_testset_evaluation(ft_results, all_llamas, labels_in_use, testset, metri
     evaluate_testset = dspy.Evaluate(devset=testset, metric=metric, num_threads=NUM_THREADS, display_progress=False, max_errors=MAX_ERRORS)
     for folder, llama in base_and_best.items():
         print("Evaluating", folder)
-        vanilla_program = IntentClassificationModule(labels_in_use)
+        vanilla_program = module_class(labels_in_use)
 
         with dspy.context(lm=llama):
             testset_result_vanilla = evaluate_testset(vanilla_program)
