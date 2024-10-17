@@ -1,70 +1,69 @@
 # End-to-end DSPy Workflows Guide 
 
-Time to complete: X Hours
+Time to complete: 1 hour
 
-## Problem
+## Building an Efficient LLM Pipeline with DSPy and Anyscale
 
-You are a bank, and you want to categorize customer support queries into one of 25 categories. You have hand labeled 100 examples and have collected 4,000 unlabeled examples.
+## Problem Statement
+You are a bank looking to categorize customer support queries into 25 categories. With only 100 hand-labeled examples and 4,000 unlabeled examples, traditional classifiers aren't viable. While Large Language Models (LLMs) could solve this, you need a cost-effective solution that doesn't compromise on accuracy.
 
-You want to use an LLM to solve this problem, because you don't have enough labeled data to train a traditional classifier.
+## Why DSPy and Anyscale?
+DSPy simplifies the complex workflow of:
+- Data Collection/Labeling
+- Fine-tuning
+- Prompt Optimization
+- Evaluation
+- Deployment
 
-You also don't want to spend a lot of money on inference. 
+The solution leverages DSPy on Anyscale to distill knowledge from a 70B model into a more cost-effective 1B model, making it practical for production deployment.
 
-## Motivation
+## Implementation Roadmap
 
-You decide to use DSPy to solve this problem because the following flow is fairly difficult to orchestrate manually:
-Data Collection/Labeling -> Fine-tuning -> Prompt Optimization -> Evaluation -> Deployment
+### 1. Setup
+- Install DSPy
+- Configure environment
+- Load dataset
+- Set up program, metric, and evaluator
 
-By using DSPy on Anyscale, you can easily orchestrate this flow and solve the problem.
+### 2. Data Processing and Labeling
+- Process 4,000 unlabeled customer queries
+- Use a 70B oracle model locally to generate labels
+- Incorporate Chains of Thought to capture reasoning patterns
+- Note: The 100 hand-labeled examples will be used in future iterations
 
-## Solution
+### 3. Model Fine-tuning
+- Use DSPy's fine-tuning tools to optimize a 1B model
+- Leverage Anyscale's LLMForge backend
+- Estimated runtime: 20 minutes on 4xA100-80GB GPUs
 
-You don't want pay to host a 70B model, so you will instead finetune a 1B model, which you can host and serve at a low cost using Anyscale's RayLLM offering.
+### 4. Evaluation and Optimization
+- Evaluate fine-tuned 1B model checkpoints against labeled dataset
+- Perform prompt optimization
+- Compare best checkpoint against un-finetuned 1B baseline
+- Generate comprehensive evaluation metrics
 
-In order to help the 1B model understand the reasoning behind why the 70B model makes certain classifications, you will use Chains of Thought to distill knowledge from the 70B model.
+### 5. Production Deployment
+- Deploy optimized 1B model using Anyscale's RayLLM
 
-So what will this look like?
+## Future Improvements
+- Optimize batch inference with DSPy pipeline
+- Explore alternative fine-tuning approaches
+- Conduct hyperparameter optimization
+- Integrate the hand-labeled dataset for validation
 
-1. Collect 4,000 unlabeled examples
-2. Label all of them with your 70B oracle model running locally
-3. Use the new DSPy finetuning tools to finetune a 1B model
-- This takes about 20 minutes on 4xA100-80GB GPUs, and uses Anyscale's LLMForge in the background to finetune the model
-4. Evaluate and prompt optimize your 1B model checkpoints against the labeled dataset
-5. Take the best performing 1B checkpoint and compare it to the un-finetuned 1B model on the true test set
-6. Deploy the optimized 1B model/DSPy pipeline to production using Anyscale's RayLLM # TODO
+## Technical Details
+The implementation follows these key processes:
+1. Knowledge distillation from 70B to 1B model
+2. Chain of Thought prompting for better reasoning
+3. Efficient model serving with RayLLM
+4. Continuous evaluation and optimization
 
-Note(isaac): we arent doing anything with the 100 labeled examples yet
-
-# Table of Contents
-
-## Set Up
-1. Installing DSPy
-2. Setting up the environment
-3. Loading the dataset
-4. Setting up the program, metric, and evaluator
-
-## Data Collection
-
-1. Collect 4,000 unlabeled examples
-2. Label all of them with your 70B oracle model running locally
-
-## Fine-tuning
-
-1. Use the new DSPy finetuning tools to finetune a 1B model
-- This takes about 20 minutes on 4xA100-80GB GPUs, and uses Anyscale's LLMForge in the background to finetune the model
-
-## Evaluation
-1. Evaluate and prompt optimize your 1B model checkpoints against the labeled dataset
-2. Find the best performing 1B checkpoint and compare it to the un-finetuned 1B model on the true test set
-
-## Serving
-1. Deploy the optimized 1B model/DSPy pipeline to production using Anyscale's RayLLM # TODO
-
-## Future Work and Open Questions
-- Efficient batch inference with a DSPy pipeline
-- Exploring different fine-tuning methods and hyperparameter sweeps
-
-This guide aims to provide a comprehensive overview of building, optimizing, and deploying LLM pipelines using DSPy and Anyscale.
+## Implementation Flow
+```
+Raw Data → Oracle Labeling → Fine-tuning → Optimization → Deployment
+    ↑                            ↓             ↓              ↓
+    └── Validation Dataset ←── Evaluation ── Metrics ── Production Serving
+```
 
 ## Set up
 
@@ -97,20 +96,6 @@ else:
     dspy is already installed
 
 
-
-```python
-import dspy
-dspy.settings.configure(experimental=True)
-
-import ujson
-
-from dotenv import load_dotenv
-load_dotenv()
-
-from src import set_dspy_cache_location
-set_dspy_cache_location("/home/ray/default/dspy/cache")
-```
-
 In order to run this notebook, you need to have the following environment variables set:
 - HF_TOKEN
 - HF_HOME=/mnt/local_storage/huggingface
@@ -128,17 +113,37 @@ check_env_vars()
 
 
 ```python
+import dspy
+dspy.settings.configure(experimental=True)
+
+import ujson
+
+from dotenv import load_dotenv
+load_dotenv()
+
+from src import set_dspy_cache_location
+set_dspy_cache_location("/home/ray/default/dspy/cache")
+```
+
+
+```python
 from src import init_ray
 init_ray()
 ```
 
-    2024-10-17 00:04:22,792	INFO worker.py:1601 -- Connecting to existing Ray cluster at address: 10.0.15.228:6379...
-    2024-10-17 00:04:22,801	INFO worker.py:1777 -- Connected to Ray cluster. View the dashboard at https://session-fkvdirx4bzefi53sjl55m7asad.i.anyscaleuserdata.com 
-    2024-10-17 00:04:22,828	INFO packaging.py:531 -- Creating a file package for local directory '/home/ray/default/dspy-1/dspy'.
-    2024-10-17 00:04:22,861	INFO packaging.py:359 -- Pushing file package 'gcs://_ray_pkg_60d0ad1165de7e97.zip' (0.99MiB) to Ray cluster...
-    2024-10-17 00:04:22,874	INFO packaging.py:372 -- Successfully pushed file package 'gcs://_ray_pkg_60d0ad1165de7e97.zip'.
-    2024-10-17 00:04:22,891	INFO packaging.py:359 -- Pushing file package 'gcs://_ray_pkg_d05820e7c6dcb20401954662cf7c7d09712b3a9d.zip' (2.90MiB) to Ray cluster...
-    2024-10-17 00:04:22,919	INFO packaging.py:372 -- Successfully pushed file package 'gcs://_ray_pkg_d05820e7c6dcb20401954662cf7c7d09712b3a9d.zip'.
+    2024-10-17 19:09:54,845	INFO worker.py:1601 -- Connecting to existing Ray cluster at address: 10.0.0.26:6379...
+    2024-10-17 19:09:54,853	INFO worker.py:1777 -- Connected to Ray cluster. View the dashboard at https://session-fkvdirx4bzefi53sjl55m7asad.i.anyscaleuserdata.com 
+    2024-10-17 19:09:54,879	INFO packaging.py:531 -- Creating a file package for local directory '/home/ray/default/dspy-1/dspy'.
+    2024-10-17 19:09:54,911	INFO packaging.py:359 -- Pushing file package 'gcs://_ray_pkg_5fc5e331042ead78.zip' (0.97MiB) to Ray cluster...
+    2024-10-17 19:09:54,921	INFO packaging.py:372 -- Successfully pushed file package 'gcs://_ray_pkg_5fc5e331042ead78.zip'.
+    2024-10-17 19:09:54,933	INFO packaging.py:531 -- Creating a file package for local directory '/home/ray/default/dspy-1/dsp'.
+    2024-10-17 19:09:54,952	INFO packaging.py:359 -- Pushing file package 'gcs://_ray_pkg_a394b6e352d271ad.zip' (0.52MiB) to Ray cluster...
+    2024-10-17 19:09:54,955	INFO packaging.py:372 -- Successfully pushed file package 'gcs://_ray_pkg_a394b6e352d271ad.zip'.
+    2024-10-17 19:09:54,959	INFO packaging.py:359 -- Pushing file package 'gcs://_ray_pkg_38bb029a563917497595e2870461df9817b47f69.zip' (1.86MiB) to Ray cluster...
+    2024-10-17 19:09:54,973	INFO packaging.py:372 -- Successfully pushed file package 'gcs://_ray_pkg_38bb029a563917497595e2870461df9817b47f69.zip'.
+
+
+    (autoscaler +18m58s) Tip: use `ray status` to view detailed cluster status. To disable these messages, set RAY_SCHEDULER_EVENTS=0.
 
 
 We will make use of a random number generator in this notebook. We are creating a Random object here to ensure that our notebook is reproducible.
@@ -192,12 +197,6 @@ print(f"Example test set: {full_testset_filtered[0]}")
     Example test set: Example({'label': 'card_arrival', 'text': 'How do I locate my card?'}) (input_keys={'text'})
 
 
-We need to pass the labels to the LLM somehow.
-
-In DSPy, we can do this by either including it in the docstring of the program or by adding it as an input field to the Signature.
-
-Here, we will add it to the docstring, because the set of labels is fixed.
-
 
 ```python
 labels_in_use = top_25_labels
@@ -230,7 +229,11 @@ This is a simple, 1 step Chain of Thought program.
 
 In DSPy, you define a Signature to show your inputs and outputs. You define a module to run the different steps of your program.
 
-Our signature has a note at the top containing a simple prompt along with the list of valid outputs.
+We need to pass the labels to the LLM somehow.
+
+In DSPy, we can do this by either including it in the docstring of the program or by adding it as an input field to the Signature.
+
+Here, we will add it to the docstring, because the set of labels is fixed.
 
 We then have an `intent` field which is the input to the program.
 
@@ -240,13 +243,14 @@ We give both of these fields a short description.
 
 
 ```python
-# We are setting the experimental flag to True to make use of the fine-tuning
-# features that are still in development.
-dspy.settings.configure(experimental=True)
-import inspect
-from src import IntentClassification, IntentClassificationModule
+class IntentClassification(dspy.Signature):
+    """As a part of a banking issue traiging system, classify the intent of a natural language query into one of the 25 labels.
+    The intent should exactly match one of the following:
+    ['card_payment_fee_charged', 'direct_debit_payment_not_recognised', 'balance_not_updated_after_cheque_or_cash_deposit', 'wrong_amount_of_cash_received', 'cash_withdrawal_charge', 'transaction_charged_twice', 'declined_cash_withdrawal', 'transfer_fee_charged', 'balance_not_updated_after_bank_transfer', 'transfer_not_received_by_recipient', 'request_refund', 'card_payment_not_recognised', 'card_payment_wrong_exchange_rate', 'extra_charge_on_statement', 'wrong_exchange_rate_for_cash_withdrawal', 'refund_not_showing_up', 'reverted_card_payment', 'cash_withdrawal_not_recognised', 'activate_my_card', 'pending_card_payment', 'cancel_transfer', 'beneficiary_not_allowed', 'card_arrival', 'declined_card_payment', 'pending_top_up']
+    """
 
-print(inspect.getsource(IntentClassification))
+    intent = dspy.InputField(desc="Intent of the query")
+    label = dspy.OutputField(desc="Type of the intent; Should just be one of the 25 labels with no other text")
 ```
 
     class IntentClassification(dspy.Signature):
@@ -267,7 +271,15 @@ Inside the forward method, we pass the text to the predictor, do a little cleani
 
 
 ```python
-print(inspect.getsource(IntentClassificationModule))
+class IntentClassificationModule(dspy.Module):
+    def __init__(self, labels_in_use):
+        self.intent_classifier = dspy.ChainOfThought(IntentClassification)
+        self.valid_labels = set(labels_in_use)
+
+    def forward(self, text):
+        prediction = self.intent_classifier(intent=text)
+        sanitized_prediction = dspy.Prediction(label=prediction.label.lower().strip().replace(" ", "_"), reasoning=prediction.reasoning)
+        return sanitized_prediction
 ```
 
     class IntentClassificationModule(dspy.Module):
@@ -313,7 +325,29 @@ Before running the 70B model:
 
 ## Parallelism Configuration
 
-We've chosen pipeline parallelism and tensor parallelism of 2 for the 70B model based on our current setup. Here's the reasoning:
+We've chosen pipeline parallelism = 2 and tensor parallelism = 2 for running the 70B model based on our current GPU setup.
+
+
+
+```python
+# Command for easy copying: 
+# `export HF_HOME=/mnt/local_storage/huggingface; vllm serve meta-llama/Meta-Llama-3.1-70B-Instruct --port 8000 --pipeline_parallel_size 2 --enable_prefix_caching --tensor_parallel_size 2`
+input("Press Enter once you have the vllm server running...")
+```
+
+
+
+
+    ''
+
+
+
+
+```python
+llama_70b = dspy.LM(model="openai/meta-llama/Meta-Llama-3.1-70B-Instruct", **MODEL_PARAMETERS, **LOCAL_API_PARAMETERS)
+```
+
+ Here's the reasoning:
 
 1. Model size: The 70B model has 30 parts of ~5 GB each (based on [HuggingFace documentation](https://huggingface.co/meta-llama/Meta-Llama-3.1-70B-Instruct/tree/main)).
    - Total size: 30 * 5 GB = 150 GB
@@ -335,24 +369,6 @@ This configuration allows us to run the 70B model efficiently across our availab
 Note that on Anyscale, you CANNOT download a 70B model without changing HF_HOME on most machines. The folder `/mnt/local_storage/' has enough space for a model download. It is not persisted across cluster restarts, but that is fine for model weights we don't need to save.
 
 
-```python
-# Command for easy copying: 
-# `export HF_HOME=/mnt/local_storage/huggingface; vllm serve meta-llama/Meta-Llama-3.1-70B-Instruct --port 8000 --pipeline_parallel_size 2 --enable_prefix_caching --tensor_parallel_size 2`
-input("Press Enter once you have the vllm server running...")
-```
-
-
-
-
-    ''
-
-
-
-
-```python
-llama_70b = dspy.LM(model="openai/meta-llama/Meta-Llama-3.1-70B-Instruct", **MODEL_PARAMETERS, **LOCAL_API_PARAMETERS)
-```
-
 
 ```python
 from src import sanity_check_program
@@ -367,7 +383,11 @@ sanity_check_program(llama_70b, vanilla_program, ft_trainset[0])
 ### Bootstrap Data
 
 
-In this section, we bootstrap data for fine-tuning. In the code block below, we are deciding which program should be used to collect the bootstraps. We are setting this to the prompt optimized program, but one could also set this to the vanilla program, though doing so would lead to lower quality bootstraps.
+In this section, we bootstrap data for fine-tuning.
+
+We delete all the true labels to be accurate to the scenario, and then collect data from the oracle LLM.
+
+We use a metric that checks if the prediction is in the set of labels we are using to get rid of any nonsense labels that the oracle LLM may hallucinate.
 
 
 ```python
@@ -378,7 +398,6 @@ from src.data_preprocess import valid_label_metric
 # For realism of this scenario, we are going to delete all our labels except for our test set(which is cheating and we wouldn't have in production) and our 100 true labeled examples
 ft_trainset_to_label = delete_labels(ft_trainset)
 
-
 with dspy.context(lm=llama_70b):
     collected_data = bootstrap_data(vanilla_program, ft_trainset_to_label, num_threads=NUM_THREADS, max_errors=10000, metric=valid_label_metric)
     # Make sure to only include the labels we are actively using or that arent hallucinated by the oracle
@@ -388,15 +407,15 @@ with dspy.context(lm=llama_70b):
 
     dataset_formatted = [{"messages": item} for item in dataset]
 
-print(dataset[0])
-print(len(dataset))
+print(dataset_formatted[0])
+print("Length of dataset:\t", len(dataset))
 ```
 
-    Average Metric: 4067 / 4071  (99.9): 100%|██████████| 4071/4071 [00:03<00:00, 1081.96it/s] 
+    Average Metric: 4067 / 4071  (99.9): 100%|██████████| 4071/4071 [00:03<00:00, 1190.38it/s]
 
 
-    [{'role': 'system', 'content': "Your input fields are:\n1. `intent` (str): Intent of the query\n\nYour output fields are:\n1. `reasoning` (str): ${produce the output fields}. We ...\n2. `label` (str): Type of the intent; Should just be one of the 25 labels with no other text\n\nAll interactions will be structured in the following way, with the appropriate values filled in.\n\n[[ ## intent ## ]]\n{intent}\n\n[[ ## reasoning ## ]]\n{reasoning}\n\n[[ ## label ## ]]\n{label}\n\n[[ ## completed ## ]]\n\nIn adhering to this structure, your objective is: \n        As a part of a banking issue traiging system, classify the intent of a natural language query into one of the 25 labels.\n        The intent should exactly match one of the following:\n        ['card_payment_fee_charged', 'direct_debit_payment_not_recognised', 'balance_not_updated_after_cheque_or_cash_deposit', 'wrong_amount_of_cash_received', 'cash_withdrawal_charge', 'transaction_charged_twice', 'declined_cash_withdrawal', 'transfer_fee_charged', 'balance_not_updated_after_bank_transfer', 'transfer_not_received_by_recipient', 'request_refund', 'card_payment_not_recognised', 'card_payment_wrong_exchange_rate', 'extra_charge_on_statement', 'wrong_exchange_rate_for_cash_withdrawal', 'refund_not_showing_up', 'reverted_card_payment', 'cash_withdrawal_not_recognised', 'activate_my_card', 'pending_card_payment', 'cancel_transfer', 'beneficiary_not_allowed', 'card_arrival', 'declined_card_payment', 'pending_top_up']"}, {'role': 'user', 'content': '[[ ## intent ## ]]\nI still have not received an answer as to why I was charged $1.00 in a transaction?\n\nRespond with the corresponding output fields, starting with the field `reasoning`, then `label`, and then ending with the marker for `completed`.'}, {'role': 'assistant', 'content': '[[ ## reasoning ## ]]\nThe user is inquiring about a transaction charge of $1.00, indicating they are seeking clarification on an extra fee associated with a transaction.\n\n[[ ## label ## ]]\nextra_charge_on_statement\n\n[[ ## completed ## ]]'}]
-    4065
+    {'messages': [{'role': 'system', 'content': "Your input fields are:\n1. `intent` (str): Intent of the query\n\nYour output fields are:\n1. `reasoning` (str): ${produce the output fields}. We ...\n2. `label` (str): Type of the intent; Should just be one of the 25 labels with no other text\n\nAll interactions will be structured in the following way, with the appropriate values filled in.\n\n[[ ## intent ## ]]\n{intent}\n\n[[ ## reasoning ## ]]\n{reasoning}\n\n[[ ## label ## ]]\n{label}\n\n[[ ## completed ## ]]\n\nIn adhering to this structure, your objective is: \n        As a part of a banking issue traiging system, classify the intent of a natural language query into one of the 25 labels.\n        The intent should exactly match one of the following:\n        ['card_payment_fee_charged', 'direct_debit_payment_not_recognised', 'balance_not_updated_after_cheque_or_cash_deposit', 'wrong_amount_of_cash_received', 'cash_withdrawal_charge', 'transaction_charged_twice', 'declined_cash_withdrawal', 'transfer_fee_charged', 'balance_not_updated_after_bank_transfer', 'transfer_not_received_by_recipient', 'request_refund', 'card_payment_not_recognised', 'card_payment_wrong_exchange_rate', 'extra_charge_on_statement', 'wrong_exchange_rate_for_cash_withdrawal', 'refund_not_showing_up', 'reverted_card_payment', 'cash_withdrawal_not_recognised', 'activate_my_card', 'pending_card_payment', 'cancel_transfer', 'beneficiary_not_allowed', 'card_arrival', 'declined_card_payment', 'pending_top_up']"}, {'role': 'user', 'content': '[[ ## intent ## ]]\nI still have not received an answer as to why I was charged $1.00 in a transaction?\n\nRespond with the corresponding output fields, starting with the field `reasoning`, then `label`, and then ending with the marker for `completed`.'}, {'role': 'assistant', 'content': '[[ ## reasoning ## ]]\nThe user is inquiring about a charge of $1.00 in a transaction, indicating they are seeking clarification on an extra charge on their statement.\n\n[[ ## label ## ]]\nextra_charge_on_statement\n\n[[ ## completed ## ]]'}]}
+    Length of dataset:	 4065
 
 
 
@@ -418,6 +437,8 @@ We will use LLM Forge to fine-tune the 1B model.
 
 In order to do this, we need to format our data into the correct format (Follows OpenAI messaging format).
 
+Anyscale now has a first class integration with DSPy for finetuning. Anyscale offers a tool for finetuning called LLMForge, which DSPy will interface with to do the actual finetuning using your own cluster on the task you defined above.
+
 We can let DSPy do the rest, where it will properly generate the config and run the finetuning.
 
 Be sure to checkout the fine-tuning documentation for the latest on how to use our [API](https://docs.anyscale.com/llms/finetuning/intro) and additional [capabilities](https://docs.anyscale.com/category/fine-tuning-beta/).
@@ -429,7 +450,7 @@ We also have recipes for [LoRA](https://arxiv.org/abs/2106.09685) (where we trai
 
 ```python
 from dspy.clients.lm import TrainingMethod
-from src import finetuning_kwargs
+from src import load_finetuning_kwargs
 
 train_data = dataset_formatted
 method = TrainingMethod.SFT
@@ -437,7 +458,7 @@ method = TrainingMethod.SFT
 finetuneable_lm = dspy.LM(model="meta-llama/Llama-3.2-1B-Instruct")
 
 try:
-    finetuning_job = finetuneable_lm.finetune(method, train_data, eval_data=None, provider="anyscale", train_kwargs=finetuning_kwargs)
+    finetuning_job = finetuneable_lm.finetune(method, train_data, eval_data=None, provider="anyscale", train_kwargs=load_finetuning_kwargs())
     finetuning_job.result()
     model_names = finetuning_job.model_names
 except Exception as e:
@@ -461,11 +482,15 @@ except Exception as e:
 
 ## Performance comparisons
 
-Synthetic Devset:
+**Synthetic Devset:**
 - 1B Non-finetuned
 - 1B Non-finetuned + Prompt Optimization
 - 1B Finetuned (all checkpoints)
 - 1B Finetuned (all checkpoints) + Prompt Optimization
+
+**Test set:**
+- 1B Non-finetuned + Prompt Optimization
+- 1B Finetuned + Prompt Optimization (best on devset)
 
 Note that for this task, where the eval loss of a checkpoint isn't necessarily informative of the downstream performance of the program, because there are chains of though inside output, we need to test all possible checkpoints to see which one performs best.
 
@@ -487,8 +512,9 @@ The second file, `\model_configs\meta-llama--Llama-3_2-1B-Instruct.yaml`, contai
 
 The important part of the second file is the "dynamic_lora_loading_path" field. This is the path to the folder where the LoRA weights are stored.
 
-DSPy will automatically save the LoRA weights to a folder in your cloud environment at $ANYSCALE_
+DSPy will automatically save the LoRA weights to a folder in your cloud environment at $ANYSCALE_HOME/dspy/{job_id} # TODO: check
 
+<b style="background-color: yellow;">&nbsp;🔄 REPLACE&nbsp;</b>:
 Make sure to set your HF_TOKEN and HF_HOME environment variables, and run the following command to start the server:
 
 ```bash
@@ -538,15 +564,20 @@ sanity_check_program(finetuned_llama, vanilla_program, ft_trainset[0])
     Program output label: card_payment_fee_charged
 
 
-Now let's try optimizing the program with the finetuned model
+We are going to be doing prompt optimization using DSPy's `BootstrapFewShotWithRandomSearch (BFRS)` function.
 
-Now we know how well the base pipeline performs, let's run prompt optimization on the pipeline in order to juice up the performance.
+BFRS will:
+- Collect a set of chains of thought from the oracle
+- Use these examples that lead to a correct prediction to "bootstrap" the program
+- See which set of examples lead to the most correct predictions across your evaluation metric
+- Continue this process for a set number of iterations, using the best performing programs to bootstrap the next iteration
+- Return the best program
 
 Let's go over what the hyperparameters mean:
-- max_bootstrapped_demos: DSPy will "bootstrap" the program by collecting examples at each step that are successful and reusing those in the pipeline. This means that it will automatically collect and add chains of thought to the pipeline.
-- max_labeled_demos: DSPy will also insert some labeled demonstrations from the training set. These would be unmodified examples from the training set that are just using the gold answer.
-- num_candidate_programs: This is the number of candidate programs that the optimizer will generate. The actual number of programs that are created is this plus three, as DSPy will also try a program with no examples, a program with just the labeled demonstrations, and a bootstrapped program with the first few examples.
-- optimizer_num_train and optimizer_num_val: These are the number of examples that the optimizer will use for training and validation. Note that we will be taking the all of these examples from our synthetic devset.
+- **max_bootstrapped_demos**: DSPy will "bootstrap" the program by collecting examples at each step that are successful and reusing those in the pipeline. This means that it will automatically collect and add chains of thought to the pipeline.
+- **max_labeled_demos**: DSPy will also insert some labeled demonstrations from the training set. These would be unmodified examples from the training set that are just using the given answer.
+- **num_candidate_programs**: This is the number of candidate programs that the optimizer will generate. The actual number of programs that are created is this plus three, as DSPy will also try a program with no examples, a program with just the labeled demonstrations, and a bootstrapped program with the first few examples.
+
 
 
 ```python
@@ -574,9 +605,9 @@ collected_data_examples = [collected_data_to_example(x) for x in collected_data_
 
 devset_synthetic, ft_optimizer_trainset, ft_optimizer_devset = split_into_devset_and_optimizer_sets(collected_data_examples, dev_size=1000, optimizer_num_val=300)
 print("Lengths:")
-print("Synthetic Devset: ", len(devset_synthetic))
-print("Optimizer Trainset: ", len(ft_optimizer_trainset))
-print("Optimizer Devset: ", len(ft_optimizer_devset))
+print("Synthetic Devset:\t", len(devset_synthetic))
+print("Optimizer Trainset:\t", len(ft_optimizer_trainset))
+print("Optimizer Devset:\t", len(ft_optimizer_devset))
 print("Example from synthetic devset:")
 print(devset_synthetic[0])
 ```
@@ -589,6 +620,10 @@ print(devset_synthetic[0])
     Example({'text': 'I still have not received an answer as to why I was charged $1.00 in a transaction?', 'label': 'extra_charge_on_statement'}) (input_keys={'text'})
 
 
+Now we will take all of our checkpoints and the base mode, prompt optimize them, and evaluate them on the synthetic devset.
+
+Note that there is a `%%capture` below. This is to suppress the output of the evaluation and prompt optimization because it is quite long. We will graph the results in the cell after. You can remove it to see the output.
+
 
 ```python
 %%capture
@@ -596,7 +631,7 @@ from src import evaluate_and_prompt_optimize
 
 evaluation_kwargs = {
     "models": all_llamas,
-    "program": vanilla_program,
+    "module_class": IntentClassificationModule,
     "optimizer_trainset": ft_optimizer_trainset,
     "optimizer_valset": ft_optimizer_devset,
     "devset": devset_synthetic,
@@ -626,7 +661,7 @@ graph_devset_results(ft_results)
 
 
     
-![png](README_files/README_53_0.png)
+![png](README_files/README_52_0.png)
     
 
 
@@ -643,7 +678,16 @@ We will now take this best performing model and evaluate it and our prompt optim
 # Now we need to evaluate the test set
 from src import run_testset_evaluation
 
-ft_results_testset = run_testset_evaluation(ft_results, all_llamas, labels_in_use, testset, metric=metric)
+testset_evaluation_kwargs = {
+    "ft_results": ft_results,
+    "all_llamas": all_llamas,
+    "labels_in_use": labels_in_use,
+    "testset": testset,
+    "metric": metric,
+    "module_class": IntentClassificationModule
+}
+
+ft_results_testset = run_testset_evaluation(**testset_evaluation_kwargs)
 ```
 
 
@@ -653,7 +697,7 @@ graph_testset_results(ft_results_testset)
 
 
     
-![png](README_files/README_56_0.png)
+![png](README_files/README_55_0.png)
     
 
 
