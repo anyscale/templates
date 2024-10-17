@@ -1,0 +1,18 @@
+finetuning_kwargs:
+  hyperparameters:
+    num_devices: 4
+    trainer_resources: null
+    worker_resources: null
+    generation_config:
+      prompt_format:
+        system: "<|start_header_id|>system<|end_header_id|>\n\n{instruction}<|eot_id|>"
+        user: "<|start_header_id|>user<|end_header_id|>\n{instruction}<|eot_id|>"
+        assistant: "<|start_header_id|>assistant<|end_header_id|>\n\n{instruction}<|eot_id|>"
+        trailing_assistant: "<|start_header_id|>assistant<|end_header_id|>\n\n"
+        bos: "<|begin_of_text|>"
+        system_in_user: false
+        default_system_message: ""
+    learning_rate: 3.0e-5
+    num_epochs: 6
+    train_batch_size_per_device: 32
+  use_lora: true
