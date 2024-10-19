@@ -5,6 +5,8 @@ import yaml
 
 import litellm
 
+from src.constants import LOCAL_API_PARAMETERS, MODEL_PARAMETERS
+
 litellm.set_verbose=False
 litellm.suppress_debug_info=True
 
@@ -45,5 +47,5 @@ def get_llama_lms_from_model_names(model_names):
     return all_llamas
 
 def load_finetuning_kwargs():
-    with open("finetuning_kwargs.yaml", "r") as f:
-        return yaml.load(f)
+    with open("src/finetuning_kwargs.yaml", "r") as f:
+        return yaml.safe_load(f)
