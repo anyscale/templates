@@ -1,5 +1,7 @@
 import dspy
 from src.constants import MAX_BOOTSTRAPPED_DEMOS, MAX_LABELED_DEMOS, NUM_CANDIDATE_PROGRAMS, NUM_THREADS, MAX_ERRORS
+import yaml
+import os
 
 def split_into_devset_and_optimizer_sets(collected_data_examples, dev_size, optimizer_num_val):
     devset_synthetic = collected_data_examples[:dev_size]
@@ -54,8 +56,7 @@ def run_testset_evaluation(ft_results, all_llamas, labels_in_use, testset, metri
     return ft_results, (best_program_path, best_model, best_score)
 
 def update_serve_config_hf_token(serve_config_path: str):
-    import yaml
-    import os
+    
 
     with open(serve_config_path, "r") as f:
         serve_config = yaml.safe_load(f)

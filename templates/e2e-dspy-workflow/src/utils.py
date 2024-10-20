@@ -2,19 +2,19 @@ import dspy
 import dsp
 import os
 import yaml
-
+import ray
 import litellm
+import warnings
 
 from src.constants import LOCAL_API_PARAMETERS, MODEL_PARAMETERS
 
 litellm.set_verbose=False
 litellm.suppress_debug_info=True
 
-import warnings
 warnings.filterwarnings("ignore", category=FutureWarning)
 
 def init_ray():
-    import ray
+    
 
     ray.init(runtime_env={"env_vars": os.environ, "py_modules": [dspy, dsp]})
 

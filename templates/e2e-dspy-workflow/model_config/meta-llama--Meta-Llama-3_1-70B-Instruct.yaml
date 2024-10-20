@@ -8,7 +8,7 @@ deployment_config:
   max_ongoing_requests: 300
 engine_kwargs:
   enable_chunked_prefill: true
-  max_num_batched_tokens: 2048
+  max_num_batched_tokens: 8192
   max_num_seqs: 256
   tokenizer_pool_extra_config:
     runtime_env:

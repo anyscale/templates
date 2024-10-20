@@ -1,7 +1,7 @@
 applications:
 - args:
     llm_configs:
-    - ./model_config/meta-llama--Meta-Llama-3_1-70B-Instruct_20241011003004.yaml
+    - ./model_config/meta-llama--Meta-Llama-3_1-70B-Instruct.yaml
   import_path: rayllm:app
   name: llm-endpoint
   route_prefix: /

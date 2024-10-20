@@ -1,6 +1,9 @@
 import ujson
 from dspy.evaluate import answer_exact_match
 from src.constants import INT_TO_LABEL_DICT, LABEL_TO_INT_DICT
+from collections import Counter
+import random
+
 
 def valid_label_metric(example, prediction, trace=None, frac=1.0):
     if prediction.label not in LABEL_TO_INT_DICT:
@@ -30,7 +33,6 @@ def adjusted_exact_match(example, pred, trace=None, frac=1.0):
 metric = adjusted_exact_match
 
 def set_random_seed(seed = 0):
-    import random
 
     rng = random.Random(seed)
     return rng
@@ -67,7 +69,6 @@ def load_data_from_huggingface():
     return full_trainset, full_testset
 
 def filter_to_top_n_labels(trainset, testset, n=25):
-    from collections import Counter
 
     label_counts = Counter(example['label'] for example in trainset)
 
