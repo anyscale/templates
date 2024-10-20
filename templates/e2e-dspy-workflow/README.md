@@ -4,74 +4,40 @@ Time to complete: 1 hour
 
 ## Building an Efficient LLM Pipeline with DSPy and Anyscale
 
-## Problem Statement
-You are a bank looking to categorize customer support queries into 25 categories. With only 100 hand-labeled examples and 4,000 unlabeled examples, traditional classifiers aren't viable. While Large Language Models (LLMs) could solve this, you need a cost-effective solution that doesn't compromise on accuracy.
-
 ## Why DSPy and Anyscale?
 DSPy simplifies the complex workflow of:
 - Data Collection/Labeling
 - Fine-tuning
 - Prompt Optimization
 - Evaluation
-- Deployment
 
 The solution leverages DSPy on Anyscale to distill knowledge from a 70B model into a more cost-effective 1B model, making it practical for production deployment.
 
-## Implementation Roadmap
+- DSPy simplifies complex LLM workflows, from data labeling to deployment
+- Anyscale offers scalable infrastructure for training and serving/deploying models
 
-### 1. Setup
-- Install DSPy
-- Configure environment
-- Load dataset
-- Set up program, metric, and evaluator
+## Scenario: Cost-Effective Customer Support Query Classification
 
-### 2. Data Processing and Labeling
-- Process 4,000 unlabeled customer queries
-- Use a 70B oracle model locally to generate labels
-- Incorporate Chains of Thought to capture reasoning patterns
-- Note: The 100 hand-labeled examples will be used in future iterations
+For a bank with limited labeled data (100 examples) and 4,000 unlabeled customer queries:
 
-### 3. Model Fine-tuning
-- Use DSPy's fine-tuning tools to optimize a 1B model
-- Leverage Anyscale's LLMForge backend
-- Estimated runtime: 20 minutes on 4xA100-80GB GPUs
+- DSPy enables easy creation of a pipeline for knowledge distillation from a 70B model to a 1B model in a low data environment
+- Anyscale's infrastructure supports efficient fine-tuning and deployment
+- Result: A cost-effective, accurate classification system for 25 categories
 
-### 4. Evaluation and Optimization
-- Evaluate fine-tuned 1B model checkpoints against labeled dataset
-- Perform prompt optimization
-- Compare best checkpoint against un-finetuned 1B baseline
-- Generate comprehensive evaluation metrics
+## Table of Contents
 
-### 5. Production Deployment
-- Deploy optimized 1B model using Anyscale's RayLLM
-
-## Future Improvements
-- Optimize batch inference with DSPy pipeline
-- Explore alternative fine-tuning approaches
-- Conduct hyperparameter optimization
-- Integrate the hand-labeled dataset for validation
-
-## Technical Details
-The implementation follows these key processes:
-1. Knowledge distillation from 70B to 1B model
-2. Chain of Thought prompting for better reasoning
-3. Efficient model serving with RayLLM
-4. Continuous evaluation and optimization
-
-## Implementation Flow
-```
-Raw Data → Oracle Labeling → Fine-tuning → Optimization → Deployment
-    ↑                            ↓             ↓              ↓
-    └── Validation Dataset ←── Evaluation ── Metrics ── Production Serving
-```
+1. Setup
+2. Data Processing and Labeling
+3. Model Fine-tuning
+4. Evaluation and Optimization
+5. Production Deployment
+6. Future Improvements
 
 ## Set up
 
-Node Set up:
+We will be running everything on A100-80GB GPUs. This is not necessary, especially for running a 1B model. You can edit the serving configuration files used throughout the notebook to use different GPUs if you do not have access to A100s.
 
-We will be running everything on a head node that uses 4xA100-80GB GPUs. I find that L4s are usually available and suitable for this usecase. You can also use any more powerful node.
-
-To change to use A100 GPUs, click the "1 active node" in the top right corner, then for workspace node, click the pencil icon and navigate to the A100 tab and select the 4xA100 option. If you do not see A100 in the list of GPUs, they may not be available on your cloud.
+We use Anyscale's Auto-select worker node feature to launch and manage child nodes that are running our LLM. You can also set your own compute configuration to autoscale different types of GPUs at different ranges.
 
 
 ```python
@@ -85,176 +51,27 @@ import importlib.util
 
 if importlib.util.find_spec("dspy") is None:
     print("Installing dspy")
-    !git clone https://github.com/stanfordnlp/dspy.git dspy-ai
-    !pip install ./dspy-ai
+    !pip install dspy-ai==2.5.14
 else:
     print("dspy is already installed")
 
 !pip install matplotlib
 ```
 
-    Installing dspy
-    Cloning into 'dspy-ai'...
-    remote: Enumerating objects: 38344, done.[K
-    remote: Counting objects: 100% (1777/1777), done.[K
-    remote: Compressing objects: 100% (690/690), done.[K
-    remote: Total 38344 (delta 1168), reused 1598 (delta 1067), pack-reused 36567 (from 1)[K
-    Receiving objects: 100% (38344/38344), 35.30 MiB | 31.60 MiB/s, done.
-    Resolving deltas: 100% (19370/19370), done.
-    Processing ./dspy-ai
-      Installing build dependencies ... [?25ldone
-    [?25h  Getting requirements to build wheel ... [?25ldone
-    [?25h  Preparing metadata (pyproject.toml) ... [?25ldone
-    [?25hCollecting backoff~=2.2 (from dspy==2.5.12)
-      Downloading backoff-2.2.1-py3-none-any.whl.metadata (14 kB)
-    Requirement already satisfied: joblib~=1.3 in /home/ray/anaconda3/lib/python3.9/site-packages (from dspy==2.5.12) (1.4.2)
-    Requirement already satisfied: openai in /home/ray/anaconda3/lib/python3.9/site-packages (from dspy==2.5.12) (1.45.0)
-    Requirement already satisfied: pandas in /home/ray/anaconda3/lib/python3.9/site-packages (from dspy==2.5.12) (1.5.3)
-    Requirement already satisfied: regex in /home/ray/anaconda3/lib/python3.9/site-packages (from dspy==2.5.12) (2024.9.11)
-    Collecting ujson (from dspy==2.5.12)
-      Downloading ujson-5.10.0-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (9.3 kB)
-    Requirement already satisfied: tqdm in /home/ray/anaconda3/lib/python3.9/site-packages (from dspy==2.5.12) (4.65.0)
-    Requirement already satisfied: datasets<3.0.0,>=2.14.6 in /home/ray/anaconda3/lib/python3.9/site-packages (from dspy==2.5.12) (2.19.2)
-    Requirement already satisfied: requests in /home/ray/anaconda3/lib/python3.9/site-packages (from dspy==2.5.12) (2.32.3)
-    Collecting optuna (from dspy==2.5.12)
-      Downloading optuna-4.0.0-py3-none-any.whl.metadata (16 kB)
-    Requirement already satisfied: pydantic~=2.0 in /home/ray/anaconda3/lib/python3.9/site-packages (from dspy==2.5.12) (2.9.1)
-    Requirement already satisfied: structlog in /home/ray/anaconda3/lib/python3.9/site-packages (from dspy==2.5.12) (24.4.0)
-    Requirement already satisfied: jinja2 in /home/ray/anaconda3/lib/python3.9/site-packages (from dspy==2.5.12) (3.1.2)
-    Collecting magicattr~=0.1.6 (from dspy==2.5.12)
-      Downloading magicattr-0.1.6-py2.py3-none-any.whl.metadata (3.2 kB)
-    Collecting litellm (from dspy==2.5.12)
-      Downloading litellm-1.50.0-py3-none-any.whl.metadata (32 kB)
-    Requirement already satisfied: diskcache in /home/ray/anaconda3/lib/python3.9/site-packages (from dspy==2.5.12) (5.6.3)
-    Requirement already satisfied: filelock in /home/ray/anaconda3/lib/python3.9/site-packages (from datasets<3.0.0,>=2.14.6->dspy==2.5.12) (3.13.1)
-    Requirement already satisfied: numpy>=1.17 in /home/ray/anaconda3/lib/python3.9/site-packages (from datasets<3.0.0,>=2.14.6->dspy==2.5.12) (1.23.5)
-    Requirement already satisfied: pyarrow>=12.0.0 in /home/ray/anaconda3/lib/python3.9/site-packages (from datasets<3.0.0,>=2.14.6->dspy==2.5.12) (12.0.1)
-    Requirement already satisfied: pyarrow-hotfix in /home/ray/anaconda3/lib/python3.9/site-packages (from datasets<3.0.0,>=2.14.6->dspy==2.5.12) (0.6)
-    Requirement already satisfied: dill<0.3.9,>=0.3.0 in /home/ray/anaconda3/lib/python3.9/site-packages (from datasets<3.0.0,>=2.14.6->dspy==2.5.12) (0.3.8)
-    Requirement already satisfied: xxhash in /home/ray/anaconda3/lib/python3.9/site-packages (from datasets<3.0.0,>=2.14.6->dspy==2.5.12) (3.5.0)
-    Requirement already satisfied: multiprocess in /home/ray/anaconda3/lib/python3.9/site-packages (from datasets<3.0.0,>=2.14.6->dspy==2.5.12) (0.70.16)
-    Requirement already satisfied: fsspec<=2024.3.1,>=2023.1.0 in /home/ray/anaconda3/lib/python3.9/site-packages (from fsspec[http]<=2024.3.1,>=2023.1.0->datasets<3.0.0,>=2.14.6->dspy==2.5.12) (2023.5.0)
-    Requirement already satisfied: aiohttp in /home/ray/anaconda3/lib/python3.9/site-packages (from datasets<3.0.0,>=2.14.6->dspy==2.5.12) (3.9.5)
-    Requirement already satisfied: huggingface-hub>=0.21.2 in /home/ray/anaconda3/lib/python3.9/site-packages (from datasets<3.0.0,>=2.14.6->dspy==2.5.12) (0.24.7)
-    Requirement already satisfied: packaging in /home/ray/anaconda3/lib/python3.9/site-packages (from datasets<3.0.0,>=2.14.6->dspy==2.5.12) (23.0)
-    Requirement already satisfied: pyyaml>=5.1 in /home/ray/anaconda3/lib/python3.9/site-packages (from datasets<3.0.0,>=2.14.6->dspy==2.5.12) (6.0.1)
-    Requirement already satisfied: annotated-types>=0.6.0 in /home/ray/anaconda3/lib/python3.9/site-packages (from pydantic~=2.0->dspy==2.5.12) (0.6.0)
-    Requirement already satisfied: pydantic-core==2.23.3 in /home/ray/anaconda3/lib/python3.9/site-packages (from pydantic~=2.0->dspy==2.5.12) (2.23.3)
-    Requirement already satisfied: typing-extensions>=4.6.1 in /home/ray/anaconda3/lib/python3.9/site-packages (from pydantic~=2.0->dspy==2.5.12) (4.12.2)
-    Requirement already satisfied: charset-normalizer<4,>=2 in /home/ray/anaconda3/lib/python3.9/site-packages (from requests->dspy==2.5.12) (3.3.2)
-    Requirement already satisfied: idna<4,>=2.5 in /home/ray/anaconda3/lib/python3.9/site-packages (from requests->dspy==2.5.12) (3.7)
-    Requirement already satisfied: urllib3<3,>=1.21.1 in /home/ray/anaconda3/lib/python3.9/site-packages (from requests->dspy==2.5.12) (1.26.19)
-    Requirement already satisfied: certifi>=2017.4.17 in /home/ray/anaconda3/lib/python3.9/site-packages (from requests->dspy==2.5.12) (2023.11.17)
-    Requirement already satisfied: MarkupSafe>=2.0 in /home/ray/anaconda3/lib/python3.9/site-packages (from jinja2->dspy==2.5.12) (2.1.3)
-    Requirement already satisfied: click in /home/ray/anaconda3/lib/python3.9/site-packages (from litellm->dspy==2.5.12) (8.1.7)
-    Requirement already satisfied: importlib-metadata>=6.8.0 in /home/ray/anaconda3/lib/python3.9/site-packages (from litellm->dspy==2.5.12) (6.11.0)
-    Collecting jsonschema<5.0.0,>=4.22.0 (from litellm->dspy==2.5.12)
-      Downloading jsonschema-4.23.0-py3-none-any.whl.metadata (7.9 kB)
-    Collecting openai (from dspy==2.5.12)
-      Downloading openai-1.52.0-py3-none-any.whl.metadata (24 kB)
-    Requirement already satisfied: python-dotenv>=0.2.0 in /home/ray/anaconda3/lib/python3.9/site-packages (from litellm->dspy==2.5.12) (1.0.1)
-    Requirement already satisfied: tiktoken>=0.7.0 in /home/ray/anaconda3/lib/python3.9/site-packages (from litellm->dspy==2.5.12) (0.7.0)
-    Requirement already satisfied: tokenizers in /home/ray/anaconda3/lib/python3.9/site-packages (from litellm->dspy==2.5.12) (0.19.1)
-    Requirement already satisfied: anyio<5,>=3.5.0 in /home/ray/anaconda3/lib/python3.9/site-packages (from openai->dspy==2.5.12) (3.7.1)
-    Requirement already satisfied: distro<2,>=1.7.0 in /home/ray/anaconda3/lib/python3.9/site-packages (from openai->dspy==2.5.12) (1.8.0)
-    Requirement already satisfied: httpx<1,>=0.23.0 in /home/ray/anaconda3/lib/python3.9/site-packages (from openai->dspy==2.5.12) (0.27.2)
-    Requirement already satisfied: jiter<1,>=0.4.0 in /home/ray/anaconda3/lib/python3.9/site-packages (from openai->dspy==2.5.12) (0.5.0)
-    Requirement already satisfied: sniffio in /home/ray/anaconda3/lib/python3.9/site-packages (from openai->dspy==2.5.12) (1.3.1)
-    Collecting alembic>=1.5.0 (from optuna->dspy==2.5.12)
-      Downloading alembic-1.13.3-py3-none-any.whl.metadata (7.4 kB)
-    Collecting colorlog (from optuna->dspy==2.5.12)
-      Downloading colorlog-6.8.2-py3-none-any.whl.metadata (10 kB)
-    Collecting sqlalchemy>=1.3.0 (from optuna->dspy==2.5.12)
-      Downloading SQLAlchemy-2.0.36-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (9.7 kB)
-    Requirement already satisfied: python-dateutil>=2.8.1 in /home/ray/anaconda3/lib/python3.9/site-packages (from pandas->dspy==2.5.12) (2.8.2)
-    Requirement already satisfied: pytz>=2020.1 in /home/ray/anaconda3/lib/python3.9/site-packages (from pandas->dspy==2.5.12) (2022.7.1)
-    Collecting Mako (from alembic>=1.5.0->optuna->dspy==2.5.12)
-      Downloading Mako-1.3.5-py3-none-any.whl.metadata (2.9 kB)
-    Requirement already satisfied: exceptiongroup in /home/ray/anaconda3/lib/python3.9/site-packages (from anyio<5,>=3.5.0->openai->dspy==2.5.12) (1.2.2)
-    Requirement already satisfied: aiosignal>=1.1.2 in /home/ray/anaconda3/lib/python3.9/site-packages (from aiohttp->datasets<3.0.0,>=2.14.6->dspy==2.5.12) (1.3.1)
-    Requirement already satisfied: attrs>=17.3.0 in /home/ray/anaconda3/lib/python3.9/site-packages (from aiohttp->datasets<3.0.0,>=2.14.6->dspy==2.5.12) (24.2.0)
-    Requirement already satisfied: frozenlist>=1.1.1 in /home/ray/anaconda3/lib/python3.9/site-packages (from aiohttp->datasets<3.0.0,>=2.14.6->dspy==2.5.12) (1.4.1)
-    Requirement already satisfied: multidict<7.0,>=4.5 in /home/ray/anaconda3/lib/python3.9/site-packages (from aiohttp->datasets<3.0.0,>=2.14.6->dspy==2.5.12) (6.0.5)
-    Requirement already satisfied: yarl<2.0,>=1.0 in /home/ray/anaconda3/lib/python3.9/site-packages (from aiohttp->datasets<3.0.0,>=2.14.6->dspy==2.5.12) (1.9.4)
-    Requirement already satisfied: async-timeout<5.0,>=4.0 in /home/ray/anaconda3/lib/python3.9/site-packages (from aiohttp->datasets<3.0.0,>=2.14.6->dspy==2.5.12) (4.0.3)
-    Requirement already satisfied: httpcore==1.* in /home/ray/anaconda3/lib/python3.9/site-packages (from httpx<1,>=0.23.0->openai->dspy==2.5.12) (1.0.5)
-    Requirement already satisfied: h11<0.15,>=0.13 in /home/ray/anaconda3/lib/python3.9/site-packages (from httpcore==1.*->httpx<1,>=0.23.0->openai->dspy==2.5.12) (0.14.0)
-    Requirement already satisfied: zipp>=0.5 in /home/ray/anaconda3/lib/python3.9/site-packages (from importlib-metadata>=6.8.0->litellm->dspy==2.5.12) (3.19.2)
-    Requirement already satisfied: jsonschema-specifications>=2023.03.6 in /home/ray/anaconda3/lib/python3.9/site-packages (from jsonschema<5.0.0,>=4.22.0->litellm->dspy==2.5.12) (2023.12.1)
-    Requirement already satisfied: referencing>=0.28.4 in /home/ray/anaconda3/lib/python3.9/site-packages (from jsonschema<5.0.0,>=4.22.0->litellm->dspy==2.5.12) (0.35.1)
-    Requirement already satisfied: rpds-py>=0.7.1 in /home/ray/anaconda3/lib/python3.9/site-packages (from jsonschema<5.0.0,>=4.22.0->litellm->dspy==2.5.12) (0.20.0)
-    Requirement already satisfied: six>=1.5 in /home/ray/anaconda3/lib/python3.9/site-packages (from python-dateutil>=2.8.1->pandas->dspy==2.5.12) (1.16.0)
-    Collecting greenlet!=0.4.17 (from sqlalchemy>=1.3.0->optuna->dspy==2.5.12)
-      Downloading greenlet-3.1.1-cp39-cp39-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl.metadata (3.8 kB)
-    Downloading backoff-2.2.1-py3-none-any.whl (15 kB)
-    Downloading magicattr-0.1.6-py2.py3-none-any.whl (4.7 kB)
-    Downloading litellm-1.50.0-py3-none-any.whl (6.3 MB)
-    [2K   [90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m6.3/6.3 MB[0m [31m106.1 MB/s[0m eta [36m0:00:00[0m
-    [?25hDownloading openai-1.52.0-py3-none-any.whl (386 kB)
-    Downloading optuna-4.0.0-py3-none-any.whl (362 kB)
-    Downloading ujson-5.10.0-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (53 kB)
-    Downloading alembic-1.13.3-py3-none-any.whl (233 kB)
-    Downloading jsonschema-4.23.0-py3-none-any.whl (88 kB)
-    Downloading SQLAlchemy-2.0.36-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (3.1 MB)
-    [2K   [90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m3.1/3.1 MB[0m [31m184.2 MB/s[0m eta [36m0:00:00[0m
-    [?25hDownloading colorlog-6.8.2-py3-none-any.whl (11 kB)
-    Downloading greenlet-3.1.1-cp39-cp39-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl (597 kB)
-    [2K   [90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m597.4/597.4 kB[0m [31m56.5 MB/s[0m eta [36m0:00:00[0m
-    [?25hDownloading Mako-1.3.5-py3-none-any.whl (78 kB)
-    Building wheels for collected packages: dspy
-      Building wheel for dspy (pyproject.toml) ... [?25ldone
-    [?25h  Created wheel for dspy: filename=dspy-2.5.12-py3-none-any.whl size=319214 sha256=26daf8ae2676163b5c6b451c1069e851350f0404af30963de3dcb4fa3dc8cddf
-      Stored in directory: /mnt/local_storage/data/cache/pip/wheels/89/3d/07/ce46fde97bfc61290dff1a025ff7d8e4142c4360d71c2a0fe5
-    Successfully built dspy
-    Installing collected packages: magicattr, ujson, Mako, greenlet, colorlog, backoff, sqlalchemy, openai, jsonschema, alembic, optuna, litellm, dspy
-      Attempting uninstall: backoff
-        Found existing installation: backoff 1.10.0
-        Uninstalling backoff-1.10.0:
-          Successfully uninstalled backoff-1.10.0
-      Attempting uninstall: openai
-        Found existing installation: openai 1.45.0
-        Uninstalling openai-1.45.0:
-          Successfully uninstalled openai-1.45.0
-      Attempting uninstall: jsonschema
-        Found existing installation: jsonschema 4.21.1
-        Uninstalling jsonschema-4.21.1:
-          Successfully uninstalled jsonschema-4.21.1
-    [31mERROR: pip's dependency resolver does not currently take into account all the packages that are installed. This behaviour is the source of the following dependency conflicts.
-    rayllm-oss 0.3.1 requires jsonschema~=4.21.1, but you have jsonschema 4.23.0 which is incompatible.
-    rayllm-oss 0.3.1 requires pydantic~=2.6.0, but you have pydantic 2.9.1 which is incompatible.[0m[31m
-    [0mSuccessfully installed Mako-1.3.5 alembic-1.13.3 backoff-2.2.1 colorlog-6.8.2 dspy-2.5.12 greenlet-3.1.1 jsonschema-4.23.0 litellm-1.50.0 magicattr-0.1.6 openai-1.52.0 optuna-4.0.0 sqlalchemy-2.0.36 ujson-5.10.0
-    
-    [93m#################
-    
-    ANYSCALE WARNING:
-    Local packages ./dspy-ai are not supported across cluster, please check our documentations for workarounds: https://docs.anyscale.com/configuration/dependency-management/dependency-development
-    
-    #################[0m
-    
-    
-    Requirement already satisfied: matplotlib in /home/ray/anaconda3/lib/python3.9/site-packages (3.9.2)
-    Requirement already satisfied: contourpy>=1.0.1 in /home/ray/anaconda3/lib/python3.9/site-packages (from matplotlib) (1.3.0)
-    Requirement already satisfied: cycler>=0.10 in /home/ray/anaconda3/lib/python3.9/site-packages (from matplotlib) (0.12.1)
-    Requirement already satisfied: fonttools>=4.22.0 in /home/ray/anaconda3/lib/python3.9/site-packages (from matplotlib) (4.54.1)
-    Requirement already satisfied: kiwisolver>=1.3.1 in /home/ray/anaconda3/lib/python3.9/site-packages (from matplotlib) (1.4.7)
-    Requirement already satisfied: numpy>=1.23 in /home/ray/anaconda3/lib/python3.9/site-packages (from matplotlib) (1.23.5)
-    Requirement already satisfied: packaging>=20.0 in /home/ray/anaconda3/lib/python3.9/site-packages (from matplotlib) (23.0)
-    Requirement already satisfied: pillow>=8 in /home/ray/anaconda3/lib/python3.9/site-packages (from matplotlib) (9.2.0)
-    Requirement already satisfied: pyparsing>=2.3.1 in /home/ray/anaconda3/lib/python3.9/site-packages (from matplotlib) (3.1.4)
-    Requirement already satisfied: python-dateutil>=2.7 in /home/ray/anaconda3/lib/python3.9/site-packages (from matplotlib) (2.8.2)
-    Requirement already satisfied: importlib-resources>=3.2.0 in /home/ray/anaconda3/lib/python3.9/site-packages (from matplotlib) (6.4.5)
-    Requirement already satisfied: zipp>=3.1.0 in /home/ray/anaconda3/lib/python3.9/site-packages (from importlib-resources>=3.2.0->matplotlib) (3.19.2)
-    Requirement already satisfied: six>=1.5 in /home/ray/anaconda3/lib/python3.9/site-packages (from python-dateutil>=2.7->matplotlib) (1.16.0)
-
-
 In order to run this notebook, you need to have the following environment variables set:
-- HF_TOKEN
 - HF_HOME=/mnt/local_storage/huggingface
+- HF_TOKEN
 - (optional) WANDB_API_KEY
 
 You can get a HF_TOKEN [here](https://huggingface.co/settings/tokens).
 
 You can get a WANDB_API_KEY [here](https://wandb.ai/authorize).
+
+In your workspace dashboard, click the "dependencies" tab and add the environment variables, as shown in the image below:
+
+![env_vars](README_files/env_vars.png)
+
+Note that you can separate the variables with a new line to add multiple at once.
 
 
 ```python
@@ -263,21 +80,19 @@ dspy.settings.configure(experimental=True)
 
 import ujson
 
-# Theoretically this isnt needed if the environment variables work correctly
-# from dotenv import load_dotenv
-# load_dotenv()
-
 from src import set_dspy_cache_location
 set_dspy_cache_location("/home/ray/default/dspy/cache2")
 ```
+
+<b style="background-color: yellow;">&nbsp;🔄 REPLACE&nbsp;</b>: It is a good idea to set the HF_TOKEN, HF_HOME, and WANDB_API_KEY environment variables in the notebook as well.
 
 
 ```python
 import os
 
-os.environ["HF_TOKEN"] = "hf_12345"
 os.environ["HF_HOME"] = "/mnt/local_storage/huggingface"
-os.environ["WANDB_API_KEY"] = "..."
+# os.environ["HF_TOKEN"] = "hf_12345"
+# os.environ["WANDB_API_KEY"] = "12345"
 ```
 
 
@@ -375,21 +190,21 @@ testset = full_testset_filtered
 evaluate_testset = dspy.Evaluate(devset=testset, **common_kwargs)
 ```
 
-This is a simple, 1 step Chain of Thought program.
+# Implementing a Simple Chain of Thought Program in DSPy
 
-In DSPy, you define a Signature to show your inputs and outputs. You define a module to run the different steps of your program.
+## Defining the Signature
 
-We need to pass the labels to the LLM somehow.
+At the heart of our DSPy program is the `Signature` class. This class serves as a blueprint, outlining the inputs and outputs of our language model task. Here's how we structure it:
 
-In DSPy, we can do this by either including it in the docstring of the program or by adding it as an input field to the Signature.
+1. **Docstring for Context**: We utilize the docstring to provide context to the LLM. In this case, we're passing our fixed set of 25 labels directly in the docstring. This approach is ideal when dealing with a static set of options.
 
-Here, we will add it to the docstring, because the set of labels is fixed.
+2. **Input Field**: We define an `intent` field as the input to our program. This will contain the natural language query we want to classify.
 
-We then have an `intent` field which is the input to the program.
+3. **Output Field**: The `label` field represents our desired output - the classified intent.
 
-Finally we have a `label` field which is the output of the program.
+Both input and output fields are accompanied by concise descriptions, just to help the LLM understand the task.
 
-We give both of these fields a short description.
+By structuring our program this way, we utilize DSPy's capabilities to create a clear, modular design that's both powerful and easy to maintain. 
 
 
 ```python
@@ -435,24 +250,92 @@ vanilla_program = IntentClassificationModule(labels_in_use)
 # This is useful if you have already collected data and want to start from finetuning or from evaluation
 ```
 
-We will be using a local VLLM instance to run the initial benchmarks and data collection.
+Note that by default, the cache directory used by HuggingFace is in the home directory (`/home/ray` here). We'll use `/mnt/local_storage` here for downloading large model weight files (140GB+)
 
-# Gathering training data and running the 70B Model
+# Deploying and Utilizing a 70B Language Model
+
+This section outlines the process of deploying and utilizing a 70B parameter language model for data gathering and training. Key steps include:
+
+1. Configuration: Use a pre-generated serve config file (created via `rayllm gen-config`) to configure the RayLLM instance.
+2. Infrastructure: Leverage Anyscale's RayLLM with Auto-select worker nodes for GPU allocation.
+
+Below we show the contents of the serve config and its corresponding model config file.
 
 
-## Preparation
+```python
+import yaml
+from src import get_serve_and_model_config
+```
 
-Before running the 70B model:
-1. Remember to set your HF_TOKEN and HF_HOME environment variables
-2. Use the following command to start the 70B server:
-
-   ```
-   vllm serve meta-llama/Meta-Llama-3.1-70B-Instruct --port 8000 --pipeline_parallel_size 2 --enable_prefix_caching --tensor_parallel_size 2
-   ```
-
-## Parallelism Configuration
-
-We've chosen pipeline parallelism = 2 and tensor parallelism = 2 for running the 70B model based on our current GPU setup.
+    serve_70B.yaml:
+    applications:
+    - args:
+        llm_configs:
+        - ./model_config/meta-llama--Meta-Llama-3_1-70B-Instruct.yaml
+      import_path: rayllm:app
+      name: llm-endpoint
+      route_prefix: /
+    query_auth_token_enabled: false
+    
+    ==================================================
+    model_config:
+    accelerator_type: A100-80G
+    deployment_config:
+      autoscaling_config:
+        initial_replicas: 1
+        max_replicas: 2
+        min_replicas: 0
+        target_ongoing_requests: 128
+      max_ongoing_requests: 300
+    engine_kwargs:
+      enable_chunked_prefill: true
+      max_num_batched_tokens: 8192
+      max_num_seqs: 256
+      tokenizer_pool_extra_config:
+        runtime_env:
+          pip: null
+      tokenizer_pool_size: 2
+      trust_remote_code: true
+    generation_config:
+      prompt_format:
+        assistant: '<|start_header_id|>assistant<|end_header_id|>
+    
+    
+          {instruction}<|eot_id|>'
+        bos: <|begin_of_text|>
+        default_system_message: ''
+        system: '<|start_header_id|>system<|end_header_id|>
+    
+    
+          {instruction}<|eot_id|>'
+        system_in_user: false
+        trailing_assistant: '<|start_header_id|>assistant<|end_header_id|>
+    
+    
+          '
+        user: '<|start_header_id|>user<|end_header_id|>
+    
+    
+          {instruction}<|eot_id|>'
+      stopping_sequences: []
+      stopping_tokens:
+      - 128001
+      - 128009
+    input_modality: text
+    json_mode:
+      enabled: false
+    llm_engine: VLLMEngine
+    lora_config: null
+    max_request_context_length: 8192
+    model_loading_config:
+      model_id: meta-llama/Meta-Llama-3.1-70B-Instruct
+      model_source: meta-llama/Meta-Llama-3.1-70B-Instruct
+    runtime_env:
+      env_vars:
+        HUGGING_FACE_HUB_TOKEN: hf_1234567890
+    tensor_parallelism:
+      degree: 4
+    
 
 
 
@@ -476,28 +359,6 @@ We've chosen pipeline parallelism = 2 and tensor parallelism = 2 for running the
 ```python
 llama_70b = dspy.LM(model="openai/meta-llama/Meta-Llama-3.1-70B-Instruct", **MODEL_PARAMETERS, **LOCAL_API_PARAMETERS)
 ```
-
- Here's the reasoning:
-
-1. Model size: The 70B model has 30 parts of ~5 GB each (based on [HuggingFace documentation](https://huggingface.co/meta-llama/Meta-Llama-3.1-70B-Instruct/tree/main)).
-   - Total size: 30 * 5 GB = 150 GB
-
-2. Available VRAM:
-   - Our GPUs: 80 GB VRAM x 4 = 320 GB
-   - Tensor parallelism: floor(320/150) = 2
-   - Pipeline parallelism: floor(num_gpus/2) = 2
-   - To use all 4 GPUs efficiently:
-     - Pipeline parallel size: 2
-     - Tensor parallelism: 2
-
-3. Alternative setup (8x24GB GPUs):
-   - Pipeline parallel size: 1
-   - Tensor parallelism: ceil(150/24) = 7
-
-This configuration allows us to run the 70B model efficiently across our available GPU resources.
-
-Note that on Anyscale, you CANNOT download a 70B model without changing HF_HOME on most machines. The folder `/mnt/local_storage/' has enough space for a model download. It is not persisted across cluster restarts, but that is fine for model weights we don't need to save.
-
 
 
 ```python
@@ -596,19 +457,6 @@ try:
 except Exception as e:
     print(e)
 ```
-
-    Copying file:///home/ray/.dspy_cache/finetune/anyscale_b73f7a0607473b52.jsonl to gs://storage-bucket-cld-tffbxe9ia5phqr1unxhz4f7e1e/org_4snvy99zwbmh4gbtk64jfqggmj/cld_tffbxe9ia5phqr1unxhz4f7e1e/artifact_storage/anyscale_b73f7a0607473b52.jsonl
-      
-    .
-    (anyscale +27m15.6s) Using workspace runtime dependencies env vars: {'HF_HOME': '/mnt/local_storage/huggingface', 'HF_TOKEN': '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', 'WANDB_API_KEY': 'c75a837e8271ce763121d06742fb9fc3fd2cc7f0'}.
-    (anyscale +27m15.6s) Uploading local dir '.' to cloud storage.
-    (anyscale +27m20.3s) Job 'dspy-llmforge-fine-tuning-job' submitted, ID: 'prodjob_j51vzutbhnsa63ngiraac98pcl'.
-    (anyscale +27m20.4s) View the job in the UI: https://console.anyscale.com/jobs/prodjob_j51vzutbhnsa63ngiraac98pcl
-    (anyscale +27m20.6s) Waiting for job 'prodjob_j51vzutbhnsa63ngiraac98pcl' to reach target state SUCCEEDED, currently in state: STARTING
-    (anyscale +29m14.7s) Job 'prodjob_j51vzutbhnsa63ngiraac98pcl' transitioned from STARTING to RUNNING
-    (anyscale +54m38.0s) Job 'prodjob_j51vzutbhnsa63ngiraac98pcl' transitioned from RUNNING to SUCCEEDED
-    (anyscale +54m38.0s) Job 'prodjob_j51vzutbhnsa63ngiraac98pcl' reached target state, exiting
-
 
 # Evaluation
 
@@ -795,7 +643,7 @@ graph_devset_results(ft_results)
 
 
     
-![png](README_files/README_53_0.png)
+![png](README_files/README_54_0.png)
     
 
 
@@ -833,7 +681,7 @@ graph_testset_results(ft_results_testset)
 
 
     
-![png](README_files/README_56_0.png)
+![png](README_files/README_57_0.png)
     
 
 

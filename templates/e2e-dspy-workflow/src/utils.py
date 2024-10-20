@@ -49,3 +49,19 @@ def get_llama_lms_from_model_names(model_names):
 def load_finetuning_kwargs():
     with open("src/finetuning_kwargs.yaml", "r") as f:
         return yaml.safe_load(f)
+
+def get_serve_and_model_config(serve_config_path):
+    with open(serve_config_path, 'r') as file:
+        config = yaml.safe_load(file)
+    print(f"{serve_config_path}:")
+    print(yaml.dump(config))
+    print("="*50)
+
+    model_config_path = config["applications"][0]["args"]["llm_configs"][0]
+
+    with open(model_config_path, 'r') as file:
+        model_config = yaml.safe_load(file)
+
+    print("model_config:")
+    print(yaml.dump(model_config))
+    return config, model_config
