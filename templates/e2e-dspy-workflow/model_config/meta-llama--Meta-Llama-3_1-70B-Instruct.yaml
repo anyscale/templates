@@ -1,9 +1,9 @@
 accelerator_type: A100-80G
 deployment_config:
   autoscaling_config:
-    initial_replicas: 2
+    initial_replicas: 1
     max_replicas: 2
-    min_replicas: 2
+    min_replicas: 0
     target_ongoing_requests: 128
   max_ongoing_requests: 300
 engine_kwargs:
@@ -41,4 +41,4 @@ runtime_env:
   env_vars:
     HUGGING_FACE_HUB_TOKEN: hf_1234567890
 tensor_parallelism:
-  degree: 2
+  degree: 4

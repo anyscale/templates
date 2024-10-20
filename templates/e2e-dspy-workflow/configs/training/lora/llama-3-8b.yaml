@@ -1,6 +1,4 @@
-model_id: meta-llama/Meta-Llama-3-8B-Instruct # <-- change this to the model you want to fine-tune
-train_path: s3://llm-guide/data/viggo/train.jsonl # <-- change this to the path to your training data
-valid_path: s3://llm-guide/data/viggo/val.jsonl # <-- change this to the path to your validation data. This is optional
+model_id: meta-llama/Meta-Llama-3-8B-Instruct # <-- change this to the model you want to fine-tunetrain_path: s3://llm-guide/data/viggo/train.jsonl # <-- change this to the path to your training data
 context_length: 512 # <-- change this to the context length you want to use
 num_devices: 16 # <-- change this to total number of GPUs that you want to use
 num_epochs: 4 # <-- change this to the number of epochs that you want to train for
