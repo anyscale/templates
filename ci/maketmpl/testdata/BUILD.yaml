@@ -1,0 +1,21 @@
+- name: reefy-ray
+  emoji: 🪸
+  title: Reefy Ray
+  description: The fastest Ray lives around coral reefs.
+  dir: reefy-ray
+  cluster_env:
+    build_id: anyscaleray2370-py311
+  compute_config:
+    GCP: configs/gcp.yaml
+    AWS: configs/aws.yaml
+
+- name: fishy-ray
+  emoji: 🐠
+  title: Fishy Ray
+  description: Ray that swims with the other fishes.
+  dir: fishy-ray
+  cluster_env:
+    build_id: anyscaleray2370-py311
+  compute_config:
+    GCP: configs/gcp.yaml
+    AWS: configs/aws.yaml
