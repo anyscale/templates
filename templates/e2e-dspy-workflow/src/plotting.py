@@ -55,11 +55,6 @@ def graph_testset_results(ft_results):
     ]
     ax.legend(handles=legend_elements)
 
-    # Add epoch information for best fine-tuned model
-    epoch_num = best_ft_model.split(':')[1].split('-')[1]
-    plt.figtext(0.99, 0.01, f'Best FT Model: Epoch {epoch_num}',
-                ha='right', va='bottom', fontsize=8, style='italic')
-
     plt.tight_layout()
     plt.show()
 
@@ -72,11 +67,11 @@ def graph_devset_results(ft_results):
         if model == "base":
             models.append("base")
         else:
-            models.append("Epoch " + model.split(':')[1].split('-')[1])  # Extract epoch information
+            models.append("fine-tuned")
         vanilla_devset.append(results['vanilla']['devset'])
         bfrs_devset.append(results['bfrs']['devset'])
 
-    # Sort the data by epoch, keeping "base" at the beginning
+    # Keep "base" at the beginning
     sorted_data = sorted(zip(models, vanilla_devset, bfrs_devset),
                          key=lambda x: (x[0] != "base", x[0]))
     models, vanilla_devset, bfrs_devset = zip(*sorted_data)
@@ -104,7 +99,7 @@ def graph_devset_results(ft_results):
 
     # Customize the plot
     ax.set_ylabel('Dev Set Scores')
-    ax.set_title('Model Performance Comparison Across Epochs (Synthetic Dev Set; N=1000)')
+    ax.set_title('Model Performance (Synthetic Dev Set; N=1000)')
     ax.set_xticks(x)
     ax.set_xticklabels(models, rotation=45, ha='right')
     ax.legend()
