@@ -56,8 +56,7 @@ def run_testset_evaluation(ft_results, all_llamas, labels_in_use, testset, metri
     return ft_results, (best_program_path, best_model, best_score)
 
 def update_serve_config_hf_token(serve_config_path: str):
-
-
+    """Helper function to update the provided serve config with the current HF_TOKEN env variable""" 
     with open(serve_config_path, "r") as f:
         serve_config = yaml.safe_load(f)
 

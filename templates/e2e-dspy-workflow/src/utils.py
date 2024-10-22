@@ -44,10 +44,6 @@ def get_llama_lms_from_model_names(model_names):
     all_llamas = {**finetuned_llamas_1b, "base": llama_1b}
     return all_llamas
 
-def load_finetuning_kwargs():
-    with open("src/finetuning_kwargs.yaml", "r") as f:
-        return yaml.safe_load(f)
-
 def get_serve_and_model_config(serve_config_path):
     with open(serve_config_path, 'r') as file:
         config = yaml.safe_load(file)

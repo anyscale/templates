@@ -17,13 +17,25 @@ engine_kwargs:
   trust_remote_code: true
 generation_config:
   prompt_format:
-    assistant: "<|start_header_id|>assistant<|end_header_id|>\n\n{instruction}<|eot_id|>"
+    assistant: '<|start_header_id|>assistant<|end_header_id|>
+
+
+      {instruction}<|eot_id|>'
     bos: <|begin_of_text|>
     default_system_message: ''
-    system: "<|start_header_id|>system<|end_header_id|>\n\n{instruction}<|eot_id|>"
+    system: '<|start_header_id|>system<|end_header_id|>
+
+
+      {instruction}<|eot_id|>'
     system_in_user: false
-    trailing_assistant: "<|start_header_id|>assistant<|end_header_id|>\n\n"
-    user: "<|start_header_id|>user<|end_header_id|>\n\n{instruction}<|eot_id|>"
+    trailing_assistant: '<|start_header_id|>assistant<|end_header_id|>
+
+
+      '
+    user: '<|start_header_id|>user<|end_header_id|>
+
+
+      {instruction}<|eot_id|>'
   stopping_sequences: []
   stopping_tokens:
   - 128001
@@ -39,6 +51,6 @@ model_loading_config:
   model_source: meta-llama/Meta-Llama-3.1-70B-Instruct
 runtime_env:
   env_vars:
-    HUGGING_FACE_HUB_TOKEN: hf_1234567890 # replace with your HF_TOKEN
+    HUGGING_FACE_HUB_TOKEN: Add your HF Token here
 tensor_parallelism:
   degree: 4

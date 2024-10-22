@@ -30,9 +30,6 @@ def adjusted_exact_match(example, pred, trace=None, frac=1.0):
     pred.answer = pred.label
     return answer_exact_match(example, pred, trace, frac)
 
-metric = adjusted_exact_match
-common_kwargs = dict(metric=adjusted_exact_match, num_threads=NUM_THREADS, display_progress=True, max_errors=10000)
-
 def set_random_seed(seed = 0):
 
     rng = random.Random(seed)
