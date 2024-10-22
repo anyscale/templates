@@ -5,9 +5,11 @@ Time to complete: 1.5 hours
 
 In this guide, we'll show how you can build an efficient pipeline covering synthetic data generation, data processing, fine-tuning, evaluation and serving with DSPy and Anyscale.
 
-What is DSPy?
+**What is DSPy?**
 
-DSPy is a framework for building and optimizing programs involving language models. It allows you to define a complex pipeline with simple Python code, and then optimize the pipeline for better performance on whatever your task is.
+DSPy is a framework for building and optimizing programs involving language models.
+
+It allows you to define a complex pipeline with simple Python code, and then optimize the pipeline for better performance on whatever your task is.
 
 See the [DSPy Documentation](https://dspy-docs.vercel.app/intro/) for more information.
 
@@ -55,7 +57,7 @@ import importlib.util
 
 if importlib.util.find_spec("dspy") is None:
     print("Installing dspy")
-    !pip install git+https://github.com/stanfordnlp/dspy.git@anyscale-ft-updates
+    !pip install git+https://github.com/stanfordnlp/dspy.git@main
 
 else:
     print("dspy is already installed")
