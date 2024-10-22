@@ -37,9 +37,6 @@ def set_random_seed(seed = 0):
     rng = random.Random(seed)
     return rng
 
-NUM_THREADS = 300
-common_kwargs = dict(metric=adjusted_exact_match, num_threads=NUM_THREADS, display_progress=True, max_errors=10000)
-
 def convert_int_label_to_string(trainset, testset):
     def convert_int_to_label(example):
         example["label"] = INT_TO_LABEL_DICT[example["label"]]
