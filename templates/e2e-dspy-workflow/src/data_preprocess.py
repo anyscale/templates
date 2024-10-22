@@ -1,6 +1,6 @@
 import ujson
 from dspy.evaluate import answer_exact_match
-from src.constants import INT_TO_LABEL_DICT, LABEL_TO_INT_DICT
+from src.constants import INT_TO_LABEL_DICT, LABEL_TO_INT_DICT, NUM_THREADS
 from collections import Counter
 import random
 
@@ -31,6 +31,7 @@ def adjusted_exact_match(example, pred, trace=None, frac=1.0):
     return answer_exact_match(example, pred, trace, frac)
 
 metric = adjusted_exact_match
+common_kwargs = dict(metric=adjusted_exact_match, num_threads=NUM_THREADS, display_progress=True, max_errors=10000)
 
 def set_random_seed(seed = 0):
 
