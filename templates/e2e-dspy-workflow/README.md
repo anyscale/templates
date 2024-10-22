@@ -409,11 +409,11 @@ Finally, we convert the filtered dataset into the OpenAI conversational format f
 ```python
 from dspy.teleprompt.finetune_teleprompter import bootstrap_data, convert_to_module_level_message_data
 from src import delete_labels, NUM_THREADS, write_jsonl
-from src.data_preprocess import valid_label_metric
+from src.data_preprocess import get_valid_label_metric_fn
 
 with dspy.context(lm=llama_70b):
     # Generate synthetic labels with `bootstrap_data`
-    collected_data = bootstrap_data(vanilla_program, ft_trainset_to_label, num_threads=NUM_THREADS, max_errors=10000, metric=valid_label_metric)
+    collected_data = bootstrap_data(vanilla_program, ft_trainset_to_label, num_threads=NUM_THREADS, max_errors=10000, metric=get_valid_label_metric_fn(labels_in_use))
     
     # Make sure to only include the labels we are actively using or that arent hallucinated by the oracle
     collected_data_filtered = [x for x in collected_data if x["prediction"]["label"] in labels_in_use]

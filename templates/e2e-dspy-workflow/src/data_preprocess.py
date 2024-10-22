@@ -5,10 +5,11 @@ from collections import Counter
 import random
 
 
-def valid_label_metric(example, prediction, trace=None, frac=1.0):
-    if prediction.label not in LABEL_TO_INT_DICT:
-        return False
-    return True
+def get_valid_label_metric_fn(labels_in_use):
+    def valid_label_metric(example, prediction, trace=None, frac=1.0):
+        if prediction.label not in labels_in_use:
+            return False
+        return True
 
 def delete_labels(dataset):
     for example in dataset:
