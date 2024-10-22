@@ -58,168 +58,7 @@ else:
 !pip install matplotlib python-dotenv
 ```
 
-    Installing dspy
-    Collecting git+https://github.com/stanfordnlp/dspy.git@anyscale-ft-updates
-      Cloning https://github.com/stanfordnlp/dspy.git (to revision anyscale-ft-updates) to /tmp/pip-req-build-oc8hwbky
-      Running command git clone --filter=blob:none --quiet https://github.com/stanfordnlp/dspy.git /tmp/pip-req-build-oc8hwbky
-      Running command git checkout -b anyscale-ft-updates --track origin/anyscale-ft-updates
-      Switched to a new branch 'anyscale-ft-updates'
-      Branch 'anyscale-ft-updates' set up to track remote branch 'anyscale-ft-updates' from 'origin'.
-      Resolved https://github.com/stanfordnlp/dspy.git to commit 027b1c540236e65ef1d1d7e6b2a8a2de6c43f515
-      Installing build dependencies ... [?25ldone
-    [?25h  Getting requirements to build wheel ... [?25ldone
-    [?25h  Preparing metadata (pyproject.toml) ... [?25ldone
-    [?25hCollecting backoff~=2.2 (from dspy==2.5.12)
-      Downloading backoff-2.2.1-py3-none-any.whl.metadata (14 kB)
-    Requirement already satisfied: joblib~=1.3 in /home/ray/anaconda3/lib/python3.9/site-packages (from dspy==2.5.12) (1.4.2)
-    Requirement already satisfied: openai in /home/ray/anaconda3/lib/python3.9/site-packages (from dspy==2.5.12) (1.45.0)
-    Requirement already satisfied: pandas in /home/ray/anaconda3/lib/python3.9/site-packages (from dspy==2.5.12) (1.5.3)
-    Requirement already satisfied: regex in /home/ray/anaconda3/lib/python3.9/site-packages (from dspy==2.5.12) (2024.9.11)
-    Collecting ujson (from dspy==2.5.12)
-      Downloading ujson-5.10.0-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (9.3 kB)
-    Requirement already satisfied: tqdm in /home/ray/anaconda3/lib/python3.9/site-packages (from dspy==2.5.12) (4.65.0)
-    Requirement already satisfied: datasets<3.0.0,>=2.14.6 in /home/ray/anaconda3/lib/python3.9/site-packages (from dspy==2.5.12) (2.19.2)
-    Requirement already satisfied: requests in /home/ray/anaconda3/lib/python3.9/site-packages (from dspy==2.5.12) (2.32.3)
-    Collecting optuna (from dspy==2.5.12)
-      Downloading optuna-4.0.0-py3-none-any.whl.metadata (16 kB)
-    Requirement already satisfied: pydantic~=2.0 in /home/ray/anaconda3/lib/python3.9/site-packages (from dspy==2.5.12) (2.9.1)
-    Requirement already satisfied: structlog in /home/ray/anaconda3/lib/python3.9/site-packages (from dspy==2.5.12) (24.4.0)
-    Requirement already satisfied: jinja2 in /home/ray/anaconda3/lib/python3.9/site-packages (from dspy==2.5.12) (3.1.2)
-    Collecting magicattr~=0.1.6 (from dspy==2.5.12)
-      Downloading magicattr-0.1.6-py2.py3-none-any.whl.metadata (3.2 kB)
-    Collecting litellm (from dspy==2.5.12)
-      Downloading litellm-1.50.1-py3-none-any.whl.metadata (32 kB)
-    Requirement already satisfied: diskcache in /home/ray/anaconda3/lib/python3.9/site-packages (from dspy==2.5.12) (5.6.3)
-    Requirement already satisfied: filelock in /home/ray/anaconda3/lib/python3.9/site-packages (from datasets<3.0.0,>=2.14.6->dspy==2.5.12) (3.13.1)
-    Requirement already satisfied: numpy>=1.17 in /home/ray/anaconda3/lib/python3.9/site-packages (from datasets<3.0.0,>=2.14.6->dspy==2.5.12) (1.23.5)
-    Requirement already satisfied: pyarrow>=12.0.0 in /home/ray/anaconda3/lib/python3.9/site-packages (from datasets<3.0.0,>=2.14.6->dspy==2.5.12) (12.0.1)
-    Requirement already satisfied: pyarrow-hotfix in /home/ray/anaconda3/lib/python3.9/site-packages (from datasets<3.0.0,>=2.14.6->dspy==2.5.12) (0.6)
-    Requirement already satisfied: dill<0.3.9,>=0.3.0 in /home/ray/anaconda3/lib/python3.9/site-packages (from datasets<3.0.0,>=2.14.6->dspy==2.5.12) (0.3.8)
-    Requirement already satisfied: xxhash in /home/ray/anaconda3/lib/python3.9/site-packages (from datasets<3.0.0,>=2.14.6->dspy==2.5.12) (3.5.0)
-    Requirement already satisfied: multiprocess in /home/ray/anaconda3/lib/python3.9/site-packages (from datasets<3.0.0,>=2.14.6->dspy==2.5.12) (0.70.16)
-    Requirement already satisfied: fsspec<=2024.3.1,>=2023.1.0 in /home/ray/anaconda3/lib/python3.9/site-packages (from fsspec[http]<=2024.3.1,>=2023.1.0->datasets<3.0.0,>=2.14.6->dspy==2.5.12) (2023.5.0)
-    Requirement already satisfied: aiohttp in /home/ray/anaconda3/lib/python3.9/site-packages (from datasets<3.0.0,>=2.14.6->dspy==2.5.12) (3.9.5)
-    Requirement already satisfied: huggingface-hub>=0.21.2 in /home/ray/anaconda3/lib/python3.9/site-packages (from datasets<3.0.0,>=2.14.6->dspy==2.5.12) (0.24.7)
-    Requirement already satisfied: packaging in /home/ray/anaconda3/lib/python3.9/site-packages (from datasets<3.0.0,>=2.14.6->dspy==2.5.12) (23.0)
-    Requirement already satisfied: pyyaml>=5.1 in /home/ray/anaconda3/lib/python3.9/site-packages (from datasets<3.0.0,>=2.14.6->dspy==2.5.12) (6.0.1)
-    Requirement already satisfied: annotated-types>=0.6.0 in /home/ray/anaconda3/lib/python3.9/site-packages (from pydantic~=2.0->dspy==2.5.12) (0.6.0)
-    Requirement already satisfied: pydantic-core==2.23.3 in /home/ray/anaconda3/lib/python3.9/site-packages (from pydantic~=2.0->dspy==2.5.12) (2.23.3)
-    Requirement already satisfied: typing-extensions>=4.6.1 in /home/ray/anaconda3/lib/python3.9/site-packages (from pydantic~=2.0->dspy==2.5.12) (4.12.2)
-    Requirement already satisfied: charset-normalizer<4,>=2 in /home/ray/anaconda3/lib/python3.9/site-packages (from requests->dspy==2.5.12) (3.3.2)
-    Requirement already satisfied: idna<4,>=2.5 in /home/ray/anaconda3/lib/python3.9/site-packages (from requests->dspy==2.5.12) (3.7)
-    Requirement already satisfied: urllib3<3,>=1.21.1 in /home/ray/anaconda3/lib/python3.9/site-packages (from requests->dspy==2.5.12) (1.26.19)
-    Requirement already satisfied: certifi>=2017.4.17 in /home/ray/anaconda3/lib/python3.9/site-packages (from requests->dspy==2.5.12) (2023.11.17)
-    Requirement already satisfied: MarkupSafe>=2.0 in /home/ray/anaconda3/lib/python3.9/site-packages (from jinja2->dspy==2.5.12) (2.1.3)
-    Requirement already satisfied: click in /home/ray/anaconda3/lib/python3.9/site-packages (from litellm->dspy==2.5.12) (8.1.7)
-    Requirement already satisfied: importlib-metadata>=6.8.0 in /home/ray/anaconda3/lib/python3.9/site-packages (from litellm->dspy==2.5.12) (6.11.0)
-    Collecting jsonschema<5.0.0,>=4.22.0 (from litellm->dspy==2.5.12)
-      Downloading jsonschema-4.23.0-py3-none-any.whl.metadata (7.9 kB)
-    Collecting openai (from dspy==2.5.12)
-      Downloading openai-1.52.0-py3-none-any.whl.metadata (24 kB)
-    Requirement already satisfied: python-dotenv>=0.2.0 in /home/ray/anaconda3/lib/python3.9/site-packages (from litellm->dspy==2.5.12) (1.0.1)
-    Requirement already satisfied: tiktoken>=0.7.0 in /home/ray/anaconda3/lib/python3.9/site-packages (from litellm->dspy==2.5.12) (0.7.0)
-    Requirement already satisfied: tokenizers in /home/ray/anaconda3/lib/python3.9/site-packages (from litellm->dspy==2.5.12) (0.19.1)
-    Requirement already satisfied: anyio<5,>=3.5.0 in /home/ray/anaconda3/lib/python3.9/site-packages (from openai->dspy==2.5.12) (3.7.1)
-    Requirement already satisfied: distro<2,>=1.7.0 in /home/ray/anaconda3/lib/python3.9/site-packages (from openai->dspy==2.5.12) (1.8.0)
-    Requirement already satisfied: httpx<1,>=0.23.0 in /home/ray/anaconda3/lib/python3.9/site-packages (from openai->dspy==2.5.12) (0.27.2)
-    Requirement already satisfied: jiter<1,>=0.4.0 in /home/ray/anaconda3/lib/python3.9/site-packages (from openai->dspy==2.5.12) (0.5.0)
-    Requirement already satisfied: sniffio in /home/ray/anaconda3/lib/python3.9/site-packages (from openai->dspy==2.5.12) (1.3.1)
-    Collecting alembic>=1.5.0 (from optuna->dspy==2.5.12)
-      Downloading alembic-1.13.3-py3-none-any.whl.metadata (7.4 kB)
-    Collecting colorlog (from optuna->dspy==2.5.12)
-      Downloading colorlog-6.8.2-py3-none-any.whl.metadata (10 kB)
-    Collecting sqlalchemy>=1.3.0 (from optuna->dspy==2.5.12)
-      Downloading SQLAlchemy-2.0.36-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (9.7 kB)
-    Requirement already satisfied: python-dateutil>=2.8.1 in /home/ray/anaconda3/lib/python3.9/site-packages (from pandas->dspy==2.5.12) (2.8.2)
-    Requirement already satisfied: pytz>=2020.1 in /home/ray/anaconda3/lib/python3.9/site-packages (from pandas->dspy==2.5.12) (2022.7.1)
-    Collecting Mako (from alembic>=1.5.0->optuna->dspy==2.5.12)
-      Downloading Mako-1.3.6-py3-none-any.whl.metadata (2.9 kB)
-    Requirement already satisfied: exceptiongroup in /home/ray/anaconda3/lib/python3.9/site-packages (from anyio<5,>=3.5.0->openai->dspy==2.5.12) (1.2.2)
-    Requirement already satisfied: aiosignal>=1.1.2 in /home/ray/anaconda3/lib/python3.9/site-packages (from aiohttp->datasets<3.0.0,>=2.14.6->dspy==2.5.12) (1.3.1)
-    Requirement already satisfied: attrs>=17.3.0 in /home/ray/anaconda3/lib/python3.9/site-packages (from aiohttp->datasets<3.0.0,>=2.14.6->dspy==2.5.12) (24.2.0)
-    Requirement already satisfied: frozenlist>=1.1.1 in /home/ray/anaconda3/lib/python3.9/site-packages (from aiohttp->datasets<3.0.0,>=2.14.6->dspy==2.5.12) (1.4.1)
-    Requirement already satisfied: multidict<7.0,>=4.5 in /home/ray/anaconda3/lib/python3.9/site-packages (from aiohttp->datasets<3.0.0,>=2.14.6->dspy==2.5.12) (6.0.5)
-    Requirement already satisfied: yarl<2.0,>=1.0 in /home/ray/anaconda3/lib/python3.9/site-packages (from aiohttp->datasets<3.0.0,>=2.14.6->dspy==2.5.12) (1.9.4)
-    Requirement already satisfied: async-timeout<5.0,>=4.0 in /home/ray/anaconda3/lib/python3.9/site-packages (from aiohttp->datasets<3.0.0,>=2.14.6->dspy==2.5.12) (4.0.3)
-    Requirement already satisfied: httpcore==1.* in /home/ray/anaconda3/lib/python3.9/site-packages (from httpx<1,>=0.23.0->openai->dspy==2.5.12) (1.0.5)
-    Requirement already satisfied: h11<0.15,>=0.13 in /home/ray/anaconda3/lib/python3.9/site-packages (from httpcore==1.*->httpx<1,>=0.23.0->openai->dspy==2.5.12) (0.14.0)
-    Requirement already satisfied: zipp>=0.5 in /home/ray/anaconda3/lib/python3.9/site-packages (from importlib-metadata>=6.8.0->litellm->dspy==2.5.12) (3.19.2)
-    Requirement already satisfied: jsonschema-specifications>=2023.03.6 in /home/ray/anaconda3/lib/python3.9/site-packages (from jsonschema<5.0.0,>=4.22.0->litellm->dspy==2.5.12) (2023.12.1)
-    Requirement already satisfied: referencing>=0.28.4 in /home/ray/anaconda3/lib/python3.9/site-packages (from jsonschema<5.0.0,>=4.22.0->litellm->dspy==2.5.12) (0.35.1)
-    Requirement already satisfied: rpds-py>=0.7.1 in /home/ray/anaconda3/lib/python3.9/site-packages (from jsonschema<5.0.0,>=4.22.0->litellm->dspy==2.5.12) (0.20.0)
-    Requirement already satisfied: six>=1.5 in /home/ray/anaconda3/lib/python3.9/site-packages (from python-dateutil>=2.8.1->pandas->dspy==2.5.12) (1.16.0)
-    Collecting greenlet!=0.4.17 (from sqlalchemy>=1.3.0->optuna->dspy==2.5.12)
-      Downloading greenlet-3.1.1-cp39-cp39-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl.metadata (3.8 kB)
-    Downloading backoff-2.2.1-py3-none-any.whl (15 kB)
-    Downloading magicattr-0.1.6-py2.py3-none-any.whl (4.7 kB)
-    Downloading litellm-1.50.1-py3-none-any.whl (6.3 MB)
-    [2K   [90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m6.3/6.3 MB[0m [31m96.8 MB/s[0m eta [36m0:00:00[0m
-    [?25hDownloading openai-1.52.0-py3-none-any.whl (386 kB)
-    Downloading optuna-4.0.0-py3-none-any.whl (362 kB)
-    Downloading ujson-5.10.0-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (53 kB)
-    Downloading alembic-1.13.3-py3-none-any.whl (233 kB)
-    Downloading jsonschema-4.23.0-py3-none-any.whl (88 kB)
-    Downloading SQLAlchemy-2.0.36-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (3.1 MB)
-    [2K   [90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m3.1/3.1 MB[0m [31m147.7 MB/s[0m eta [36m0:00:00[0m
-    [?25hDownloading colorlog-6.8.2-py3-none-any.whl (11 kB)
-    Downloading greenlet-3.1.1-cp39-cp39-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl (597 kB)
-    [2K   [90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m [32m597.4/597.4 kB[0m [31m37.4 MB/s[0m eta [36m0:00:00[0m
-    [?25hDownloading Mako-1.3.6-py3-none-any.whl (78 kB)
-    Building wheels for collected packages: dspy
-      Building wheel for dspy (pyproject.toml) ... [?25ldone
-    [?25h  Created wheel for dspy: filename=dspy-2.5.12-py3-none-any.whl size=320302 sha256=24670af68945237f14557e88176c414fac258aeb6047c9515e20dce0e834e7c0
-      Stored in directory: /tmp/pip-ephem-wheel-cache-b6cp87xb/wheels/6e/d5/f1/55b8676fe37b02d92ed85e7eada6847deb2034272134dfcb9b
-    Successfully built dspy
-    Installing collected packages: magicattr, ujson, Mako, greenlet, colorlog, backoff, sqlalchemy, openai, jsonschema, alembic, optuna, litellm, dspy
-      Attempting uninstall: backoff
-        Found existing installation: backoff 1.10.0
-        Uninstalling backoff-1.10.0:
-          Successfully uninstalled backoff-1.10.0
-      Attempting uninstall: openai
-        Found existing installation: openai 1.45.0
-        Uninstalling openai-1.45.0:
-          Successfully uninstalled openai-1.45.0
-      Attempting uninstall: jsonschema
-        Found existing installation: jsonschema 4.21.1
-        Uninstalling jsonschema-4.21.1:
-          Successfully uninstalled jsonschema-4.21.1
-    [31mERROR: pip's dependency resolver does not currently take into account all the packages that are installed. This behaviour is the source of the following dependency conflicts.
-    rayllm-oss 0.3.1 requires jsonschema~=4.21.1, but you have jsonschema 4.23.0 which is incompatible.
-    rayllm-oss 0.3.1 requires pydantic~=2.6.0, but you have pydantic 2.9.1 which is incompatible.[0m[31m
-    [0mSuccessfully installed Mako-1.3.6 alembic-1.13.3 backoff-2.2.1 colorlog-6.8.2 dspy-2.5.12 greenlet-3.1.1 jsonschema-4.23.0 litellm-1.50.1 magicattr-0.1.6 openai-1.52.0 optuna-4.0.0 sqlalchemy-2.0.36 ujson-5.10.0
-    Traceback (most recent call last):
-      File "/home/ray/anaconda3/lib/python3.9/site-packages/packaging/requirements.py", line 35, in __init__
-        parsed = parse_requirement(requirement_string)
-      File "/home/ray/anaconda3/lib/python3.9/site-packages/packaging/_parser.py", line 64, in parse_requirement
-        return _parse_requirement(Tokenizer(source, rules=DEFAULT_RULES))
-      File "/home/ray/anaconda3/lib/python3.9/site-packages/packaging/_parser.py", line 82, in _parse_requirement
-        url, specifier, marker = _parse_requirement_details(tokenizer)
-      File "/home/ray/anaconda3/lib/python3.9/site-packages/packaging/_parser.py", line 126, in _parse_requirement_details
-        marker = _parse_requirement_marker(
-      File "/home/ray/anaconda3/lib/python3.9/site-packages/packaging/_parser.py", line 147, in _parse_requirement_marker
-        tokenizer.raise_syntax_error(
-      File "/home/ray/anaconda3/lib/python3.9/site-packages/packaging/_tokenizer.py", line 163, in raise_syntax_error
-        raise ParserSyntaxError(
-    packaging._tokenizer.ParserSyntaxError: Expected end or semicolon (after name and no valid version specifier)
-        git+https://github.com/stanfordnlp/dspy.git@anyscale-ft-updates
-           ^
-    
-    The above exception was the direct cause of the following exception:
-    
-    Traceback (most recent call last):
-      File "/home/ray/anaconda3/bin/pip", line 15, in <module>
-        snapshot_util.add_python_dependency(sys.argv[2:])
-      File "/tmp/anyscale/ray_container/snapshot_util.py", line 2717, in add_python_dependency
-        new_packages = _parse_install_command(install_args)
-      File "/tmp/anyscale/ray_container/snapshot_util.py", line 2665, in _parse_install_command
-        [Requirement(pkg) for pkg in namespace.package if pkg not in local_packages]
-      File "/tmp/anyscale/ray_container/snapshot_util.py", line 2665, in <listcomp>
-        [Requirement(pkg) for pkg in namespace.package if pkg not in local_packages]
-      File "/home/ray/anaconda3/lib/python3.9/site-packages/packaging/requirements.py", line 37, in __init__
-        raise InvalidRequirement(str(e)) from e
-    packaging.requirements.InvalidRequirement: Expected end or semicolon (after name and no valid version specifier)
-        git+https://github.com/stanfordnlp/dspy.git@anyscale-ft-updates
-           ^
+    dspy is already installed
     Requirement already satisfied: matplotlib in /home/ray/anaconda3/lib/python3.9/site-packages (3.9.2)
     Requirement already satisfied: python-dotenv in /home/ray/anaconda3/lib/python3.9/site-packages (1.0.1)
     Requirement already satisfied: contourpy>=1.0.1 in /home/ray/anaconda3/lib/python3.9/site-packages (from matplotlib) (1.3.0)
@@ -273,6 +112,14 @@ os.environ["HF_TOKEN"] = "Add your HF Token here"
 # load_dotenv()
 ```
 
+We will make use of a random number generator in this notebook to ensure that our notebook is reproducible.
+
+
+```python
+from src import set_random_seed
+rng = set_random_seed()
+```
+
 
 ```python
 # Initialize ray
@@ -287,28 +134,15 @@ check_env_vars()
 init_ray()
 ```
 
-    2024-10-22 02:42:08,272	INFO worker.py:1601 -- Connecting to existing Ray cluster at address: 10.0.0.121:6379...
-    2024-10-22 02:42:08,279	INFO worker.py:1777 -- Connected to Ray cluster. View the dashboard at https://session-rvjx58jmwrc9n3vi27hu8y4rr8.i.anyscaleuserdata.com 
-    2024-10-22 02:42:08,308	INFO packaging.py:531 -- Creating a file package for local directory '/home/ray/anaconda3/lib/python3.9/site-packages/dspy'.
-    2024-10-22 02:42:08,350	INFO packaging.py:359 -- Pushing file package 'gcs://_ray_pkg_80c4e27190bc727d.zip' (1.17MiB) to Ray cluster...
-    2024-10-22 02:42:08,364	INFO packaging.py:372 -- Successfully pushed file package 'gcs://_ray_pkg_80c4e27190bc727d.zip'.
-    2024-10-22 02:42:08,383	INFO packaging.py:531 -- Creating a file package for local directory '/home/ray/anaconda3/lib/python3.9/site-packages/dsp'.
-    2024-10-22 02:42:08,406	INFO packaging.py:359 -- Pushing file package 'gcs://_ray_pkg_e4fe56ade2d2c5fb.zip' (0.55MiB) to Ray cluster...
-    2024-10-22 02:42:08,410	INFO packaging.py:372 -- Successfully pushed file package 'gcs://_ray_pkg_e4fe56ade2d2c5fb.zip'.
-    2024-10-22 02:42:08,423	INFO packaging.py:359 -- Pushing file package 'gcs://_ray_pkg_cf45e3d2dc2c3059d1d9c5eb8af3b440181fce16.zip' (7.25MiB) to Ray cluster...
-    2024-10-22 02:42:08,500	INFO packaging.py:372 -- Successfully pushed file package 'gcs://_ray_pkg_cf45e3d2dc2c3059d1d9c5eb8af3b440181fce16.zip'.
+    2024-10-22 04:24:54,123	INFO worker.py:1601 -- Connecting to existing Ray cluster at address: 10.0.15.195:6379...
+    2024-10-22 04:24:54,131	INFO worker.py:1777 -- Connected to Ray cluster. View the dashboard at https://session-czqbf1bhvhp98gnjubkguupgc2.i.anyscaleuserdata.com 
+    2024-10-22 04:24:54,170	INFO packaging.py:359 -- Pushing file package 'gcs://_ray_pkg_35a9d0fe2266e82d61610cec3410cccb8db7311f.zip' (0.61MiB) to Ray cluster...
+    2024-10-22 04:24:54,177	INFO packaging.py:372 -- Successfully pushed file package 'gcs://_ray_pkg_35a9d0fe2266e82d61610cec3410cccb8db7311f.zip'.
 
 
-    (autoscaler +19m16s) Tip: use `ray status` to view detailed cluster status. To disable these messages, set RAY_SCHEDULER_EVENTS=0.
+    (autoscaler +15m6s) Tip: use `ray status` to view detailed cluster status. To disable these messages, set RAY_SCHEDULER_EVENTS=0.
+    (autoscaler +15m6s) [autoscaler] Downscaling node g-e6223f10785080001 (node IP: 10.0.15.202) due to node idle termination.
 
-
-We will make use of a random number generator in this notebook to ensure that our notebook is reproducible.
-
-
-```python
-from src import set_random_seed
-rng = set_random_seed()
-```
 
 We will be using the `PolyAI/banking77` dataset for this tutorial. We use the built in dspy DataLoader to load the dataset from Huggingface as a list of dspy.Example objects.
 
@@ -520,7 +354,7 @@ update_serve_config_hf_token("serve_70B.yaml")
       model_source: meta-llama/Meta-Llama-3.1-70B-Instruct
     runtime_env:
       env_vars:
-        HUGGING_FACE_HUB_TOKEN: hf_1234567890
+        HUGGING_FACE_HUB_TOKEN: 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
     tensor_parallelism:
       degree: 4
     
@@ -531,14 +365,13 @@ update_serve_config_hf_token("serve_70B.yaml")
 !serve run --non-blocking serve_70B.yaml
 ```
 
-    2024-10-22 02:53:37,037	INFO scripts.py:489 -- Running config file: 'serve_70B.yaml'.
-    2024-10-22 02:53:37,471	INFO worker.py:1601 -- Connecting to existing Ray cluster at address: 10.0.0.121:6379...
-    2024-10-22 02:53:37,476	INFO worker.py:1777 -- Connected to Ray cluster. View the dashboard at https://session-rvjx58jmwrc9n3vi27hu8y4rr8.i.anyscaleuserdata.com 
-    2024-10-22 02:53:37,496	INFO packaging.py:359 -- Pushing file package 'gcs://_ray_pkg_8f4c4880f4aa88b05e861dc41262ee76bfcd6688.zip' (7.25MiB) to Ray cluster...
-    2024-10-22 02:53:37,583	INFO packaging.py:372 -- Successfully pushed file package 'gcs://_ray_pkg_8f4c4880f4aa88b05e861dc41262ee76bfcd6688.zip'.
-    INFO 2024-10-22 02:53:37,621 serve 60009 api.py:259 - Connecting to existing Serve app in namespace "serve". New http options will not be applied.
-    2024-10-22 02:53:37,626	SUCC scripts.py:540 -- Submitted deploy config successfully.
-    (ServeController pid=9667) INFO 2024-10-22 02:53:37,625 controller 9667 application_state.py:457 - Importing and building app 'llm-endpoint'.
+    2024-10-22 04:26:07,311	INFO scripts.py:489 -- Running config file: 'serve_70B.yaml'.
+    2024-10-22 04:26:07,617	INFO worker.py:1601 -- Connecting to existing Ray cluster at address: 10.0.15.195:6379...
+    2024-10-22 04:26:07,625	INFO worker.py:1777 -- Connected to Ray cluster. View the dashboard at https://session-czqbf1bhvhp98gnjubkguupgc2.i.anyscaleuserdata.com 
+    2024-10-22 04:26:07,628	INFO packaging.py:359 -- Pushing file package 'gcs://_ray_pkg_2968d3ecb4067053a80d60a7a5a3cba5271f9a88.zip' (0.61MiB) to Ray cluster...
+    2024-10-22 04:26:07,634	INFO packaging.py:372 -- Successfully pushed file package 'gcs://_ray_pkg_2968d3ecb4067053a80d60a7a5a3cba5271f9a88.zip'.
+    INFO 2024-10-22 04:26:07,663 serve 13336 api.py:259 - Connecting to existing Serve app in namespace "serve". New http options will not be applied.
+    2024-10-22 04:26:07,668	SUCC scripts.py:540 -- Submitted deploy config successfully.
 
 
 
@@ -558,342 +391,19 @@ sanity_check_program(llama_70b, vanilla_program, ft_trainset[0])
     Program input: Example({'text': 'I still have not received an answer as to why I was charged $1.00 in a transaction?'}) (input_keys={'text'})
 
 
-
-    ---------------------------------------------------------------------------
-
-    NotFoundError                             Traceback (most recent call last)
-
-    File ~/anaconda3/lib/python3.9/site-packages/litellm/llms/OpenAI/openai.py:841, in OpenAIChatCompletion.completion(self, model_response, timeout, optional_params, logging_obj, model, messages, print_verbose, api_key, api_base, acompletion, litellm_params, logger_fn, headers, custom_prompt_dict, client, organization, custom_llm_provider, drop_params)
-        840             else:
-    --> 841                 raise e
-        842 except OpenAIError as e:
-
-
-    File ~/anaconda3/lib/python3.9/site-packages/litellm/llms/OpenAI/openai.py:777, in OpenAIChatCompletion.completion(self, model_response, timeout, optional_params, logging_obj, model, messages, print_verbose, api_key, api_base, acompletion, litellm_params, logger_fn, headers, custom_prompt_dict, client, organization, custom_llm_provider, drop_params)
-        765 logging_obj.pre_call(
-        766     input=messages,
-        767     api_key=openai_client.api_key,
-       (...)
-        773     },
-        774 )
-        776 headers, response = (
-    --> 777     self.make_sync_openai_chat_completion_request(
-        778         openai_client=openai_client,
-        779         data=data,
-        780         timeout=timeout,
-        781     )
-        782 )
-        784 logging_obj.model_call_details["response_headers"] = headers
-
-
-    File ~/anaconda3/lib/python3.9/site-packages/litellm/llms/OpenAI/openai.py:636, in OpenAIChatCompletion.make_sync_openai_chat_completion_request(self, openai_client, data, timeout)
-        635 else:
-    --> 636     raise e
-
-
-    File ~/anaconda3/lib/python3.9/site-packages/litellm/llms/OpenAI/openai.py:618, in OpenAIChatCompletion.make_sync_openai_chat_completion_request(self, openai_client, data, timeout)
-        617 try:
-    --> 618     raw_response = openai_client.chat.completions.with_raw_response.create(
-        619         **data, timeout=timeout
-        620     )
-        622     if hasattr(raw_response, "headers"):
-
-
-    File ~/anaconda3/lib/python3.9/site-packages/openai/_legacy_response.py:356, in to_raw_response_wrapper.<locals>.wrapped(*args, **kwargs)
-        354 kwargs["extra_headers"] = extra_headers
-    --> 356 return cast(LegacyAPIResponse[R], func(*args, **kwargs))
-
-
-    File ~/anaconda3/lib/python3.9/site-packages/openai/_utils/_utils.py:274, in required_args.<locals>.inner.<locals>.wrapper(*args, **kwargs)
-        273     raise TypeError(msg)
-    --> 274 return func(*args, **kwargs)
-
-
-    File ~/anaconda3/lib/python3.9/site-packages/openai/resources/chat/completions.py:815, in Completions.create(self, messages, model, audio, frequency_penalty, function_call, functions, logit_bias, logprobs, max_completion_tokens, max_tokens, metadata, modalities, n, parallel_tool_calls, presence_penalty, response_format, seed, service_tier, stop, store, stream, stream_options, temperature, tool_choice, tools, top_logprobs, top_p, user, extra_headers, extra_query, extra_body, timeout)
-        814 validate_response_format(response_format)
-    --> 815 return self._post(
-        816     "/chat/completions",
-        817     body=maybe_transform(
-        818         {
-        819             "messages": messages,
-        820             "model": model,
-        821             "audio": audio,
-        822             "frequency_penalty": frequency_penalty,
-        823             "function_call": function_call,
-        824             "functions": functions,
-        825             "logit_bias": logit_bias,
-        826             "logprobs": logprobs,
-        827             "max_completion_tokens": max_completion_tokens,
-        828             "max_tokens": max_tokens,
-        829             "metadata": metadata,
-        830             "modalities": modalities,
-        831             "n": n,
-        832             "parallel_tool_calls": parallel_tool_calls,
-        833             "presence_penalty": presence_penalty,
-        834             "response_format": response_format,
-        835             "seed": seed,
-        836             "service_tier": service_tier,
-        837             "stop": stop,
-        838             "store": store,
-        839             "stream": stream,
-        840             "stream_options": stream_options,
-        841             "temperature": temperature,
-        842             "tool_choice": tool_choice,
-        843             "tools": tools,
-        844             "top_logprobs": top_logprobs,
-        845             "top_p": top_p,
-        846             "user": user,
-        847         },
-        848         completion_create_params.CompletionCreateParams,
-        849     ),
-        850     options=make_request_options(
-        851         extra_headers=extra_headers, extra_query=extra_query, extra_body=extra_body, timeout=timeout
-        852     ),
-        853     cast_to=ChatCompletion,
-        854     stream=stream or False,
-        855     stream_cls=Stream[ChatCompletionChunk],
-        856 )
-
-
-    File ~/anaconda3/lib/python3.9/site-packages/openai/_base_client.py:1277, in SyncAPIClient.post(self, path, cast_to, body, options, files, stream, stream_cls)
-       1274 opts = FinalRequestOptions.construct(
-       1275     method="post", url=path, json_data=body, files=to_httpx_files(files), **options
-       1276 )
-    -> 1277 return cast(ResponseT, self.request(cast_to, opts, stream=stream, stream_cls=stream_cls))
-
-
-    File ~/anaconda3/lib/python3.9/site-packages/openai/_base_client.py:954, in SyncAPIClient.request(self, cast_to, options, remaining_retries, stream, stream_cls)
-        952     retries_taken = 0
-    --> 954 return self._request(
-        955     cast_to=cast_to,
-        956     options=options,
-        957     stream=stream,
-        958     stream_cls=stream_cls,
-        959     retries_taken=retries_taken,
-        960 )
-
-
-    File ~/anaconda3/lib/python3.9/site-packages/openai/_base_client.py:1058, in SyncAPIClient._request(self, cast_to, options, retries_taken, stream, stream_cls)
-       1057     log.debug("Re-raising status error")
-    -> 1058     raise self._make_status_error_from_response(err.response) from None
-       1060 return self._process_response(
-       1061     cast_to=cast_to,
-       1062     options=options,
-       (...)
-       1066     retries_taken=retries_taken,
-       1067 )
-
-
-    NotFoundError: Error code: 404 - {'generated_text': None, 'tool_calls': None, 'embedding_outputs': None, 'logprobs': None, 'num_input_tokens': None, 'num_input_tokens_batch': None, 'num_generated_tokens': None, 'num_generated_tokens_batch': None, 'preprocessing_time': None, 'generation_time': None, 'timestamp': 1729565927.9633803, 'finish_reason': None, 'error': {'message': 'Unable to find meta-llama/Meta-Llama-3.1-70B-Instruct. Please ensure that the model exists and you have permission. (Request ID: 183ca495-8542-4f30-8f02-50ec2f5718af)', 'internal_message': 'rayllm_oss.backend.server.openai_compat.openai_exception.OpenAIHTTPException (Request ID: 183ca495-8542-4f30-8f02-50ec2f5718af)', 'code': 404, 'type': 'OpenAIHTTPException', 'param': {}}}
-
-    
-    During handling of the above exception, another exception occurred:
-
-
-    OpenAIError                               Traceback (most recent call last)
-
-    File ~/anaconda3/lib/python3.9/site-packages/litellm/main.py:1595, in completion(model, messages, timeout, temperature, top_p, n, stream, stream_options, stop, max_completion_tokens, max_tokens, modalities, audio, presence_penalty, frequency_penalty, logit_bias, user, response_format, seed, tools, tool_choice, logprobs, top_logprobs, parallel_tool_calls, deployment_id, extra_headers, functions, function_call, base_url, api_version, api_key, model_list, **kwargs)
-       1589     logging.post_call(
-       1590         input=messages,
-       1591         api_key=api_key,
-       1592         original_response=str(e),
-       1593         additional_args={"headers": headers},
-       1594     )
-    -> 1595     raise e
-       1597 if optional_params.get("stream", False):
-       1598     ## LOGGING
-
-
-    File ~/anaconda3/lib/python3.9/site-packages/litellm/main.py:1568, in completion(model, messages, timeout, temperature, top_p, n, stream, stream_options, stop, max_completion_tokens, max_tokens, modalities, audio, presence_penalty, frequency_penalty, logit_bias, user, response_format, seed, tools, tool_choice, logprobs, top_logprobs, parallel_tool_calls, deployment_id, extra_headers, functions, function_call, base_url, api_version, api_key, model_list, **kwargs)
-       1567     else:
-    -> 1568         response = openai_chat_completions.completion(
-       1569             model=model,
-       1570             messages=messages,
-       1571             headers=headers,
-       1572             model_response=model_response,
-       1573             print_verbose=print_verbose,
-       1574             api_key=api_key,
-       1575             api_base=api_base,
-       1576             acompletion=acompletion,
-       1577             logging_obj=logging,
-       1578             optional_params=optional_params,
-       1579             litellm_params=litellm_params,
-       1580             logger_fn=logger_fn,
-       1581             timeout=timeout,  # type: ignore
-       1582             custom_prompt_dict=custom_prompt_dict,
-       1583             client=client,  # pass AsyncOpenAI, OpenAI client
-       1584             organization=organization,
-       1585             custom_llm_provider=custom_llm_provider,
-       1586         )
-       1587 except Exception as e:
-       1588     ## LOGGING - log the original exception returned
-
-
-    File ~/anaconda3/lib/python3.9/site-packages/litellm/llms/OpenAI/openai.py:851, in OpenAIChatCompletion.completion(self, model_response, timeout, optional_params, logging_obj, model, messages, print_verbose, api_key, api_base, acompletion, litellm_params, logger_fn, headers, custom_prompt_dict, client, organization, custom_llm_provider, drop_params)
-        850     error_headers = getattr(error_response, "headers", None)
-    --> 851 raise OpenAIError(
-        852     status_code=status_code, message=error_text, headers=error_headers
-        853 )
-
-
-    OpenAIError: Error code: 404 - {'generated_text': None, 'tool_calls': None, 'embedding_outputs': None, 'logprobs': None, 'num_input_tokens': None, 'num_input_tokens_batch': None, 'num_generated_tokens': None, 'num_generated_tokens_batch': None, 'preprocessing_time': None, 'generation_time': None, 'timestamp': 1729565927.9633803, 'finish_reason': None, 'error': {'message': 'Unable to find meta-llama/Meta-Llama-3.1-70B-Instruct. Please ensure that the model exists and you have permission. (Request ID: 183ca495-8542-4f30-8f02-50ec2f5718af)', 'internal_message': 'rayllm_oss.backend.server.openai_compat.openai_exception.OpenAIHTTPException (Request ID: 183ca495-8542-4f30-8f02-50ec2f5718af)', 'code': 404, 'type': 'OpenAIHTTPException', 'param': {}}}
-
-    
-    During handling of the above exception, another exception occurred:
-
-
-    NotFoundError                             Traceback (most recent call last)
-
-    /home/ray/default/templates/templates/e2e-dspy-workflow/README.ipynb Cell 33 line 3
-          <a href='vscode-notebook-cell://vscode-session-rvjx58jmwrc9n3vi27hu8y4rr8.i.anyscaleuserdata.com/home/ray/default/templates/templates/e2e-dspy-workflow/README.ipynb#X46sdnNjb2RlLXJlbW90ZQ%3D%3D?line=0'>1</a> from src import sanity_check_program
-    ----> <a href='vscode-notebook-cell://vscode-session-rvjx58jmwrc9n3vi27hu8y4rr8.i.anyscaleuserdata.com/home/ray/default/templates/templates/e2e-dspy-workflow/README.ipynb#X46sdnNjb2RlLXJlbW90ZQ%3D%3D?line=2'>3</a> sanity_check_program(llama_70b, vanilla_program, ft_trainset[0])
-
-
-    File ~/default/templates/templates/e2e-dspy-workflow/src/utils.py:39, in sanity_check_program(model, program, item)
-         37 sample_input = item
-         38 print(f"Program input: {sample_input}")
-    ---> 39 print(f"Program output label: {program(**sample_input.inputs()).label}")
-
-
-    File ~/anaconda3/lib/python3.9/site-packages/dspy/primitives/program.py:20, in Module.__call__(self, *args, **kwargs)
-         19 def __call__(self, *args, **kwargs):
-    ---> 20     return self.forward(*args, **kwargs)
-
-
-    /home/ray/default/templates/templates/e2e-dspy-workflow/README.ipynb Cell 33 line 7
-          <a href='vscode-notebook-cell://vscode-session-rvjx58jmwrc9n3vi27hu8y4rr8.i.anyscaleuserdata.com/home/ray/default/templates/templates/e2e-dspy-workflow/README.ipynb#X46sdnNjb2RlLXJlbW90ZQ%3D%3D?line=5'>6</a> def forward(self, text):
-    ----> <a href='vscode-notebook-cell://vscode-session-rvjx58jmwrc9n3vi27hu8y4rr8.i.anyscaleuserdata.com/home/ray/default/templates/templates/e2e-dspy-workflow/README.ipynb#X46sdnNjb2RlLXJlbW90ZQ%3D%3D?line=6'>7</a>     prediction = self.intent_classifier(intent=text)
-          <a href='vscode-notebook-cell://vscode-session-rvjx58jmwrc9n3vi27hu8y4rr8.i.anyscaleuserdata.com/home/ray/default/templates/templates/e2e-dspy-workflow/README.ipynb#X46sdnNjb2RlLXJlbW90ZQ%3D%3D?line=7'>8</a>     sanitized_prediction = dspy.Prediction(label=prediction.label.lower().strip().replace(" ", "_"), reasoning=prediction.reasoning)
-          <a href='vscode-notebook-cell://vscode-session-rvjx58jmwrc9n3vi27hu8y4rr8.i.anyscaleuserdata.com/home/ray/default/templates/templates/e2e-dspy-workflow/README.ipynb#X46sdnNjb2RlLXJlbW90ZQ%3D%3D?line=8'>9</a>     return sanitized_prediction
-
-
-    File ~/anaconda3/lib/python3.9/site-packages/dspy/primitives/program.py:20, in Module.__call__(self, *args, **kwargs)
-         19 def __call__(self, *args, **kwargs):
-    ---> 20     return self.forward(*args, **kwargs)
-
-
-    File ~/anaconda3/lib/python3.9/site-packages/dspy/predict/chain_of_thought.py:44, in ChainOfThought.forward(self, **kwargs)
-         41 assert self.activated in [True, False]
-         43 signature = kwargs.pop("new_signature", self._predict.extended_signature if self.activated else self.signature)
-    ---> 44 return self._predict(signature=signature, **kwargs)
-
-
-    File ~/anaconda3/lib/python3.9/site-packages/dspy/predict/predict.py:118, in Predict.__call__(self, **kwargs)
-        117 def __call__(self, **kwargs):
-    --> 118     return self.forward(**kwargs)
-
-
-    File ~/anaconda3/lib/python3.9/site-packages/dspy/predict/predict.py:152, in Predict.forward(self, **kwargs)
-        149 import dspy
-        151 if isinstance(lm, dspy.LM):
-    --> 152     completions = v2_5_generate(lm, config, signature, demos, kwargs, _parse_values=self._parse_values)
-        153 else:
-        154     warn_once(
-        155         "\t*** In DSPy 2.5, all LM clients except `dspy.LM` are deprecated. ***\n"
-        156         f" \t\tYou are using the client {lm.__class__.__name__}, which will be removed in DSPy 2.6.\n"
-       (...)
-        160         " \t\thttps://github.com/stanfordnlp/dspy/blob/main/examples/migration.ipynb"
-        161     )
-
-
-    File ~/anaconda3/lib/python3.9/site-packages/dspy/predict/predict.py:260, in v2_5_generate(lm, lm_kwargs, signature, demos, inputs, _parse_values)
-        256 import dspy
-        258 adapter = dspy.settings.adapter or dspy.ChatAdapter()
-    --> 260 return adapter(
-        261     lm, lm_kwargs=lm_kwargs, signature=signature, demos=demos, inputs=inputs, _parse_values=_parse_values
-        262 )
-
-
-    File ~/anaconda3/lib/python3.9/site-packages/dspy/adapters/base.py:6, in Adapter.__call__(self, lm, lm_kwargs, signature, demos, inputs, _parse_values)
-          3 inputs = self.format(signature, demos, inputs)
-          4 inputs = dict(prompt=inputs) if isinstance(inputs, str) else dict(messages=inputs)
-    ----> 6 outputs = lm(**inputs, **lm_kwargs)
-          7 values = []
-          9 for output in outputs:
-
-
-    File ~/anaconda3/lib/python3.9/site-packages/dspy/clients/lm.py:67, in LM.__call__(self, prompt, messages, **kwargs)
-         64 else:
-         65     completion = cached_litellm_text_completion if cache else litellm_text_completion
-    ---> 67 response = completion(ujson.dumps(dict(model=self.model, messages=messages, **kwargs)))
-         68 outputs = [c.message.content if hasattr(c, "message") else c["text"] for c in response["choices"]]
-         70 # Logging, with removed api key & where `cost` is None on cache hit.
-
-
-    File ~/anaconda3/lib/python3.9/site-packages/dspy/clients/lm.py:154, in cached_litellm_completion(request)
-        152 @functools.lru_cache(maxsize=None)
-        153 def cached_litellm_completion(request):
-    --> 154     return litellm_completion(request, cache={"no-cache": False, "no-store": False})
-
-
-    File ~/anaconda3/lib/python3.9/site-packages/dspy/clients/lm.py:159, in litellm_completion(request, cache)
-        157 def litellm_completion(request, cache={"no-cache": True, "no-store": True}):
-        158     kwargs = ujson.loads(request)
-    --> 159     return litellm.completion(cache=cache, **kwargs)
-
-
-    File ~/anaconda3/lib/python3.9/site-packages/litellm/utils.py:1007, in client.<locals>.wrapper(*args, **kwargs)
-       1003 if logging_obj:
-       1004     logging_obj.failure_handler(
-       1005         e, traceback_exception, start_time, end_time
-       1006     )  # DO NOT MAKE THREADED - router retry fallback relies on this!
-    -> 1007 raise e
-
-
-    File ~/anaconda3/lib/python3.9/site-packages/litellm/utils.py:897, in client.<locals>.wrapper(*args, **kwargs)
-        895         print_verbose(f"Error while checking max token limit: {str(e)}")
-        896 # MODEL CALL
-    --> 897 result = original_function(*args, **kwargs)
-        898 end_time = datetime.datetime.now()
-        899 if "stream" in kwargs and kwargs["stream"] is True:
-
-
-    File ~/anaconda3/lib/python3.9/site-packages/litellm/main.py:3007, in completion(model, messages, timeout, temperature, top_p, n, stream, stream_options, stop, max_completion_tokens, max_tokens, modalities, audio, presence_penalty, frequency_penalty, logit_bias, user, response_format, seed, tools, tool_choice, logprobs, top_logprobs, parallel_tool_calls, deployment_id, extra_headers, functions, function_call, base_url, api_version, api_key, model_list, **kwargs)
-       3004     return response
-       3005 except Exception as e:
-       3006     ## Map to OpenAI Exception
-    -> 3007     raise exception_type(
-       3008         model=model,
-       3009         custom_llm_provider=custom_llm_provider,
-       3010         original_exception=e,
-       3011         completion_kwargs=args,
-       3012         extra_kwargs=kwargs,
-       3013     )
-
-
-    File ~/anaconda3/lib/python3.9/site-packages/litellm/litellm_core_utils/exception_mapping_utils.py:2116, in exception_type(model, original_exception, custom_llm_provider, completion_kwargs, extra_kwargs)
-       2114 if exception_mapping_worked:
-       2115     setattr(e, "litellm_response_headers", litellm_response_headers)
-    -> 2116     raise e
-       2117 else:
-       2118     for error_type in litellm.LITELLM_EXCEPTION_TYPES:
-
-
-    File ~/anaconda3/lib/python3.9/site-packages/litellm/litellm_core_utils/exception_mapping_utils.py:352, in exception_type(model, original_exception, custom_llm_provider, completion_kwargs, extra_kwargs)
-        350 elif original_exception.status_code == 404:
-        351     exception_mapping_worked = True
-    --> 352     raise NotFoundError(
-        353         message=f"NotFoundError: {exception_provider} - {message}",
-        354         model=model,
-        355         llm_provider=custom_llm_provider,
-        356         response=original_exception.response,
-        357         litellm_debug_info=extra_information,
-        358     )
-        359 elif original_exception.status_code == 408:
-        360     exception_mapping_worked = True
-
-
-    NotFoundError: litellm.NotFoundError: NotFoundError: OpenAIException - Error code: 404 - {'generated_text': None, 'tool_calls': None, 'embedding_outputs': None, 'logprobs': None, 'num_input_tokens': None, 'num_input_tokens_batch': None, 'num_generated_tokens': None, 'num_generated_tokens_batch': None, 'preprocessing_time': None, 'generation_time': None, 'timestamp': 1729565927.9633803, 'finish_reason': None, 'error': {'message': 'Unable to find meta-llama/Meta-Llama-3.1-70B-Instruct. Please ensure that the model exists and you have permission. (Request ID: 183ca495-8542-4f30-8f02-50ec2f5718af)', 'internal_message': 'rayllm_oss.backend.server.openai_compat.openai_exception.OpenAIHTTPException (Request ID: 183ca495-8542-4f30-8f02-50ec2f5718af)', 'code': 404, 'type': 'OpenAIHTTPException', 'param': {}}}
+    Program output label: extra_charge_on_statement
 
 
 ### Bootstrap Data
 
 
-In this section, we bootstrap data for fine-tuning.
+In this section, we bootstrap and prepare data for fine-tuning.
 
-We delete all the true labels to be accurate to the scenario, and then collect data from the oracle LLM.
+Recall that our dataset only contains 100 labelled examples. Using DSPy, we will now "bootstrap" our training dataset with these labelled examples and generate synthetic labels using the Llama 70B model. 
 
-We use a metric that checks if the prediction is in the set of labels we are using to get rid of any nonsense labels that the oracle LLM may hallucinate.
+As a part of data validation ("Is this a correct label?"), we will use a simple `metric`: we returns `True` if the prediction is in the desired set of labels, else we return `False`. Entries for which the `metric` is `False` are filtered out.
+
+Finally, we convert the filtered dataset into the OpenAI conversational format for use in fine-tuning.
 
 
 ```python
@@ -902,7 +412,9 @@ from src import delete_labels, NUM_THREADS, write_jsonl
 from src.data_preprocess import valid_label_metric
 
 with dspy.context(lm=llama_70b):
+    # Generate synthetic labels with `bootstrap_data`
     collected_data = bootstrap_data(vanilla_program, ft_trainset_to_label, num_threads=NUM_THREADS, max_errors=10000, metric=valid_label_metric)
+    
     # Make sure to only include the labels we are actively using or that arent hallucinated by the oracle
     collected_data_filtered = [x for x in collected_data if x["prediction"]["label"] in labels_in_use]
     
@@ -929,32 +441,28 @@ print("Length of dataset:\t", len(dataset))
 
 # Fine-tuning
 
-We will use LLM Forge to fine-tune the 1B model.
+We will use Anyscale's [LLMForge](docs.anyscale.com/llms/finetuning/intro) to fine-tune the 1B model.
 
-In order to do this, we need to format our data into the correct format (Follows OpenAI messaging format).
-
-Anyscale now has a first class integration with DSPy for finetuning. Anyscale offers a tool for finetuning called LLMForge, which DSPy will interface with to do the actual finetuning using your own cluster on the task you defined above.
-
-We can let DSPy do the rest, where it will properly generate the config and run the finetuning.
+Currently, our dataset is in the form of a DSPy `Dataset` object. To fine-tune with LLMForge, we  will make use of DSPy's native integration with Anyscale. We can simply pass the desired Anyscale job configuration and DSPy will handle the rest. 
 
 Be sure to checkout the fine-tuning documentation for the latest on how to use our [API](https://docs.anyscale.com/llms/finetuning/intro) and additional [capabilities](https://docs.anyscale.com/category/fine-tuning-beta/).
 
-We'll fine-tune our LLM by choosing a set of configurations. We have created recipes for different LLMs in the [`training configs`](configs/training/lora/llama-3-8b.yaml) folder which can be used as is or modified for experiments. These configurations provide flexibility over a broad range of parameters such as model, data paths, compute to use for training, number of training epochs, how often to save checkpoints, padding, loss, etc. We also include several [DeepSpeed](https://github.com/microsoft/DeepSpeed) [configurations](configs/deepspeed/zero_3_offload_optim+param.json) to choose from for further optimizations around data/model parallelism, mixed precision, checkpointing, etc.
-
-We also have recipes for [LoRA](https://arxiv.org/abs/2106.09685) (where we train a set of small low ranked matrices instead of the original attention and feed forward layers) or full parameter fine-tuning. We recommend starting with LoRA as it's less resource intensive and quicker to train.
+We will be starting out by fine-tuning using LoRA. 
 
 
 ```python
 from dspy.clients.lm import TrainingMethod
-from src import load_finetuning_kwargs
+from anyscale.job import JobConfig 
 
 train_data = dataset_formatted
 method = TrainingMethod.SFT
-
+job_path = "configs/job.yaml"
+llmforge_config_path = "configs/training/lora/llama-3-8b.yaml"
 finetuneable_lm = dspy.LM(model="meta-llama/Llama-3.2-1B-Instruct", **MODEL_PARAMETERS, **LOCAL_API_PARAMETERS)
 
+# TODO: verify that this works after making changes in the DSPy source code. 
 try:
-    finetuning_job = finetuneable_lm.finetune(train_data=train_data, train_kwargs=load_finetuning_kwargs(), train_method=method, provider="anyscale")
+    finetuning_job = finetuneable_lm.finetune(train_data=train_data, train_kwargs={"job_config": JobConfig.from_yaml(job_path), "llmforge_config_path": }, train_method=method, provider="anyscale")
     finetuned_llama = finetuning_job.result()
 except Exception as e:
     print(e)
@@ -1217,7 +725,7 @@ graph_devset_results(ft_results)
 
 
     
-![png](README_files/README_54_0.png)
+![png](README_files/README_53_0.png)
     
 
 
@@ -1255,7 +763,7 @@ graph_testset_results(ft_results_testset)
 
 
     
-![png](README_files/README_57_0.png)
+![png](README_files/README_56_0.png)
     
 
 
