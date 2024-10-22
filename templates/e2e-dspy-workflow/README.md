@@ -1,8 +1,7 @@
-# End-to-end DSPy Workflows Guide 
+# Building an Efficient LLM Pipeline with DSPy and Anyscale
 
 Time to complete: 1.5 hours
 
-## Building an Efficient LLM Pipeline with DSPy and Anyscale
 
 In this guide, we'll show how you can build an efficient pipeline covering synthetic data generation, data processing, fine-tuning, evaluation and serving with DSPy and Anyscale.
 
@@ -409,9 +408,13 @@ sanity_check_program(llama_70b, vanilla_program, ft_trainset[0])
 
 ### Bootstrap Data
 
-In this section, we collect our synthetic data for fine-tuning.
+In this section, we bootstrap and prepare data for fine-tuning.
 
-We use a metric, that checks if the prediction is in the set of labels we are using to get rid of any labels that the oracle LLM may hallucinate.
+Recall that our dataset only contains 100 labelled examples. Using DSPy, we will now "bootstrap" our training dataset with these labelled examples and generate synthetic labels using the Llama 70B model.
+
+As a part of data validation ("Is this a correct label?"), we will use a simple metric: we returns True if the prediction is in the desired set of labels, else we return False. Entries for which the metric is False are filtered out.
+
+Finally, we convert the filtered dataset into the OpenAI conversational format for use in fine-tuning.
 
 
 ```python
@@ -458,15 +461,14 @@ print("Length of dataset:\t", len(dataset))
 
 # Fine-tuning
 
-We will use LLM Forge to fine-tune the 1B model.
+We will use Anyscale's [LLMForge](https://docs.anyscale.com/llms/finetuning/intro) to fine-tune the 1B model.
 
-In order to do this, we need to format our data into the correct format (Follows OpenAI messaging format).
+To fine-tune with LLMForge, we will make use of DSPy's native integration with Anyscale. We can simply pass the desired Anyscale job configuration and DSPy will handle the rest.
 
-Anyscale now has a first class integration with DSPy for finetuning. Anyscale offers a tool for finetuning called LLMForge, which DSPy will interface with to do the actual finetuning using your own cluster on the task you defined above.
+Be sure to checkout the fine-tuning documentation for the latest on how to use our [API](https://docs.anyscale.com/llms/finetuning/intro) and additional [capabilities](https://www.anyscale.com/library/llmforge).
 
-We can let DSPy do the rest, where it will properly generate the config and run the finetuning.
 
-Be sure to checkout the fine-tuning documentation for the latest on how to use our [API](https://docs.anyscale.com/llms/finetuning/intro) and additional [capabilities](https://docs.anyscale.com/category/fine-tuning-beta/).
+We will be starting out by fine-tuning using LoRA.
 
 
 ```python
@@ -478,6 +480,7 @@ method = TrainingMethod.SFT
 # There are a few important files that we are providing for you in this template in order to finetune + serve using LLMForge and RayLLM
 job_config_path = "configs/job.yaml"
 llmforge_config_path = "configs/training/lora/llama-3-8b.yaml"
+# Optional: DSPY supports passing a serve config for serving the fine-tuned model. This particular config is generated
 serve_config_path = "serve_1B.yaml"
 ```
 
@@ -729,7 +732,7 @@ from src import MODEL_PARAMETERS, LOCAL_API_PARAMETERS
 
 non_ft_llama = dspy.LM(model="openai/meta-llama/Llama-3.2-1B-Instruct", **MODEL_PARAMETERS, **LOCAL_API_PARAMETERS)
 
-all_llamas = {"base": non_ft_llama, "ft": finetuned_llama}
+all_llamas = {"base": non_ft_llama, finetuned_llama.model: finetuned_llama}
 ```
 
 
@@ -905,7 +908,19 @@ print(f"Best testset result: \n{best_model} with score: {best_score}")
 
 # Serving
 
-# TODO: Add context about what we are doing
+The typical usecase for DSPy is for optimizing prompts and weights programmatically. DSPy allows you to define a complex pipeline with different components like a retriever and one or more LLMs. Often, we're interested in taking the same system we optimized during training to inference. 
+
+To deploy, we recommend you serve the optimized DSPy program directly: This is the simplest option to take your program to production. Since DSPy simply relies on a deployed inference endpoint for LLM calls, we can use it in conjunction with optimized serving libraries like RayLLM. We can leverage Ray Serve with our DSPy pipeline being our custom business logic while serving.
+
+NOTE: As of DSPy 2.5, there are scalability limitations for extremely high throughput scenarios with DSPy. DSPy compiled programs currently use threading for handling multiple queries in parallel, which might not scale as well as a native `async` implementation. A native `async` implementation is in the immediate roadmap for DSPy.
+
+
+If you choose not to deploy your model, you can run the following code to run the model locally.
+```
+serve run serve_1B.yaml
+```
+If you never took down your service from the previous section, there is no need to rerun the service run command.
+
 
 <b style="background-color: blue;">&nbsp;🔄 RUN (optional)&nbsp;</b>:
 You can optionally deploy your model to Anyscale in order to use it in production.
@@ -917,17 +932,14 @@ To do this, run the following command:
 
 Follow the URL in order to find your service URL and API key for your deployed service.
 
-If you choose not to deploy your model, you can run the following code to run the model locally.
-```
-serve run serve_1B.yaml
-```
-
-If you never took down your service from the previous section, there is no need to rerun the service run command.
 
 
 ```python
+# Run this if you want to deploy your model locally
+# !serve run serve_1B.yaml --non-blocking
+
+# Run this if you want to deploy an Anyscale service
 # !anyscale service deploy -f serve_1B.yaml
-# !serve run serve_1B.yaml
 ```
 
 <b style="background-color: yellow;">&nbsp;🔄 REPLACE&nbsp;</b>:
@@ -957,12 +969,6 @@ if ANYSCALE_SERVICE_BASE_URL and ANYSCALE_API_KEY:
 else:
     API_PARAMETERS = LOCAL_API_PARAMETERS
 ```
-
-The typical usecase for DSPy is for optimizing prompts and weights programmatically. DSPy allows you to define a complex pipeline with different components like a retriever and one or more LLMs. Often, we're interested in taking the same system we optimized during training to inference. 
-
-To deploy, we recommend you serve the optimized DSPy program directly: This is the simplest option to take your program to production. Since DSPy simply relies on a deployed inference endpoint for LLM calls, we can use it in conjunction with optimized serving libraries like RayLLM. We can leverage Ray Serve with our DSPy pipeline being our custom business logic while serving.
-
-NOTE: As of DSPy 2.5, there are scalability limitations for extremely high throughput scenarios with DSPy. DSPy compiled programs currently use threading for handling multiple queries in parallel, which might not scale as well as a native `async` implementation. A native `async` implementation is in the immediate roadmap for DSPy.
 
 
 ```python
