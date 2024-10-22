@@ -2,7 +2,7 @@
 # This is meant to be used with DSPy which will fill in the right details for us
 # model_id: Base model for fine-tuning
 # train_path: Path to training dataset
-context_length: 512 # <-- change this to the context length you want to use
+context_length: 2048 # <-- change this to the context length you want to use
 num_devices: 4 # <-- change this to total number of GPUs that you want to use
 num_epochs: 6 # <-- change this to the number of epochs that you want to train for
 train_batch_size_per_device: 32

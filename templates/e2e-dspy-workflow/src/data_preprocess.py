@@ -10,6 +10,7 @@ def get_valid_label_metric_fn(labels_in_use):
         if prediction.label not in labels_in_use:
             return False
         return True
+    return valid_label_metric
 
 def delete_labels(dataset):
     for example in dataset:
