@@ -83,3 +83,99 @@ func TestAddFileToZip(t *testing.T) {
 		t.Errorf("content in zip file: want %q, got %q", content, got)
 	}
 }
+
+func TestBuildZip(t *testing.T) {
+	tmp := t.TempDir()
+
+	tmplDir := filepath.Join(tmp, "tmpl")
+	if err := os.Mkdir(tmplDir, 0700); err != nil {
+		t.Fatalf("create directory %q: %v", tmplDir, err)
+	}
+
+	fileNames := []string{"a.txt", "b.txt", "sub/c.txt"}
+	var files []*zipFile
+	for _, f := range fileNames {
+		content := []byte(f)
+		dir := filepath.Dir(f)
+		if dir != "." {
+			if err := os.MkdirAll(
+				filepath.Join(tmplDir, dir), 0700,
+			); err != nil {
+				t.Fatalf("create directory for %q: %v", f, err)
+			}
+		}
+
+		if err := os.WriteFile(
+			filepath.Join(tmplDir, f), content, 0600,
+		); err != nil {
+			t.Fatalf("create file %q: %v", f, err)
+		}
+
+		files = append(files, &zipFile{path: f})
+	}
+
+	// Add an alias file.
+	files = append(files, &zipFile{
+		path:        "alias.txt",
+		srcFilePath: filepath.Join(tmplDir, "a.txt"),
+	})
+
+	files = append(files, &zipFile{
+		path: "inlined.txt",
+		rc:   io.NopCloser(bytes.NewReader([]byte("inlined"))),
+	})
+
+	z := filepath.Join(tmp, "out.zip")
+	if err := buildZip(tmplDir, files, z); err != nil {
+		t.Fatalf("buildZip: %v", err)
+	}
+
+	got := make(map[string][]byte)
+
+	r, err := zip.OpenReader(z)
+	if err != nil {
+		t.Fatalf("open zip file: %v", err)
+	}
+	defer r.Close()
+
+	for _, f := range r.File {
+		rc, err := f.Open()
+		if err != nil {
+			t.Fatalf("open file in zip: %v", err)
+		}
+
+		content, err := io.ReadAll(rc)
+		if err != nil {
+			t.Fatalf("read file in zip: %v", err)
+		}
+
+		if err := rc.Close(); err != nil {
+			t.Fatalf("close file in zip: %v", err)
+		}
+
+		got[f.Name] = content
+	}
+
+	want := map[string][]byte{
+		"inlined.txt": []byte("inlined"),
+		"a.txt":       []byte("a.txt"),
+		"b.txt":       []byte("b.txt"),
+		"sub/c.txt":   []byte("sub/c.txt"),
+		"alias.txt":   []byte("a.txt"),
+	}
+
+	// 2 extra files: alias.txt and inlined.txt
+	if len(got) != len(want) {
+		t.Fatalf("want %d files in zip, got %d", len(fileNames), len(got))
+	}
+
+	for _, f := range fileNames {
+		content, ok := got[f]
+		if !ok {
+			t.Errorf("want file %q in zip, not found", f)
+		}
+		if !bytes.Equal(content, want[f]) {
+			t.Errorf("content of %q: want %q, got %q", f, want[f], content)
+		}
+	}
+}
