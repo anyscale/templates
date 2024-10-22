@@ -14,8 +14,6 @@ litellm.suppress_debug_info=True
 warnings.filterwarnings("ignore", category=FutureWarning)
 
 def init_ray():
-
-
     ray.init(runtime_env={"env_vars": os.environ, "py_modules": [dspy, dsp]})
 
 def set_dspy_cache_location(local_cache_dir=None):

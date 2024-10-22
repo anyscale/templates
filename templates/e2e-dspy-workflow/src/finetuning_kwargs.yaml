@@ -24,7 +24,7 @@ serve_config_path: "serve_1B.yaml" # Required to update the model config
 logging_kwargs:
   provider: "wandb"
 
-compute_config:
+job_config:
   name: "dspy-llmforge-fine-tuning-job"
   entrypoint: "llmforge anyscale finetune {filename}"
   working_dir: "."
