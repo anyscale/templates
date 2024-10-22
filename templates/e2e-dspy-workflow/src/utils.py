@@ -44,7 +44,7 @@ def get_llama_lms_from_model_names(model_names):
     all_llamas = {**finetuned_llamas_1b, "base": llama_1b}
     return all_llamas
 
-def get_serve_and_model_config(serve_config_path):
+def print_serve_and_model_config(serve_config_path):
     with open(serve_config_path, 'r') as file:
         config = yaml.safe_load(file)
     print(f"{serve_config_path}:")
@@ -58,4 +58,3 @@ def get_serve_and_model_config(serve_config_path):
 
     print("model_config:")
     print(yaml.dump(model_config))
-    return config, model_config
