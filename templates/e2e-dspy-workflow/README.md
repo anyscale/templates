@@ -75,15 +75,6 @@ else:
     Requirement already satisfied: six>=1.5 in /home/ray/anaconda3/lib/python3.9/site-packages (from python-dateutil>=2.7->matplotlib) (1.16.0)
 
 
-In order to run this notebook, you need to have the following environment variables set:
-- HF_HOME=/mnt/local_storage/huggingface (By default, the cache directory used by HuggingFace is in the home directory -`/home/ray` in this workspace. We'll use `/mnt/local_storage` here for downloading large model weight files)
-- HF_TOKEN
-- (optional) WANDB_API_KEY
-
-You can get a HF_TOKEN [here](https://huggingface.co/settings/tokens). You will need to request access to the Meta-Llama-3.1-70B-Instruct model and the Llama-3.2-1B-Instruct model.
-
-You can get a WANDB_API_KEY [here](https://wandb.ai/authorize).
-
 
 ```python
 import dspy
@@ -95,6 +86,15 @@ from src import set_dspy_cache_location
 set_dspy_cache_location("/home/ray/default/dspy/cache")
 ```
 
+In order to run this notebook, you need to have the following environment variables set:
+- HF_HOME=/mnt/local_storage/huggingface (By default, the cache directory used by HuggingFace is in the home directory -`/home/ray` in this workspace. We'll use `/mnt/local_storage` here for downloading large model weight files)
+- HF_TOKEN
+- (optional) WANDB_API_KEY
+
+You can get a HF_TOKEN [here](https://huggingface.co/settings/tokens). You will need to request access to the Meta-Llama-3.1-70B-Instruct model and the Llama-3.2-1B-Instruct model.
+
+You can get a WANDB_API_KEY [here](https://wandb.ai/authorize).
+
 <b style="background-color: yellow;">&nbsp;🔄 REPLACE&nbsp;</b>: Set the HF_TOKEN, HF_HOME, and optionally the WANDB_API_KEY environment variables in the notebook.
 
 
@@ -103,16 +103,21 @@ import os
 import ray 
 
 os.environ["HF_HOME"] = "/mnt/local_storage/huggingface"
-os.environ["HF_TOKEN"] = "Add your HF Token here"
+os.environ["HF_TOKEN"] = "Add your HF token here"
 # Optional: Add your Wandb token
 # os.environ["WANDB_API_KEY"] = "12345"
 
 # You can also use a .env file to store your HF_TOKEN and WANDB_API_KEY
 # from dotenv import load_dotenv
-# load_dotenv()
+# load_dotenv(override=True)
 ```
 
-We will make use of a random number generator in this notebook to ensure that our notebook is reproducible.
+
+
+
+    True
+
+
 
 
 ```python
@@ -122,27 +127,25 @@ rng = set_random_seed()
 
 
 ```python
-# Initialize ray
 from src import check_env_vars
-from src import init_ray
 
 # Check if env vars are set correctly
 check_env_vars()
+```
 
 
-# initialize ray
+```python
+from src import init_ray
 init_ray()
 ```
 
-    2024-10-22 04:24:54,123	INFO worker.py:1601 -- Connecting to existing Ray cluster at address: 10.0.15.195:6379...
-    2024-10-22 04:24:54,131	INFO worker.py:1777 -- Connected to Ray cluster. View the dashboard at https://session-czqbf1bhvhp98gnjubkguupgc2.i.anyscaleuserdata.com 
-    2024-10-22 04:24:54,170	INFO packaging.py:359 -- Pushing file package 'gcs://_ray_pkg_35a9d0fe2266e82d61610cec3410cccb8db7311f.zip' (0.61MiB) to Ray cluster...
-    2024-10-22 04:24:54,177	INFO packaging.py:372 -- Successfully pushed file package 'gcs://_ray_pkg_35a9d0fe2266e82d61610cec3410cccb8db7311f.zip'.
+    [36m(autoscaler +1m49s)[0m Tip: use `ray status` to view detailed cluster status. To disable these messages, set RAY_SCHEDULER_EVENTS=0.
+    [36m(autoscaler +1m49s)[0m [autoscaler] [4xA100-80GB:48CPU-680GB] Upscaling 1 node(s).
+    [36m(autoscaler +3m26s)[0m [autoscaler] [4xA100-80GB:48CPU-680GB|a2-ultragpu-4g] [us-east5-b] [on-demand] Launched 1 instances.
+    [36m(autoscaler +23m55s)[0m [autoscaler] Downscaling node g-b285261c9a85d0001 (node IP: 10.0.15.193) due to node idle termination.
 
 
-    (autoscaler +15m6s) Tip: use `ray status` to view detailed cluster status. To disable these messages, set RAY_SCHEDULER_EVENTS=0.
-    (autoscaler +15m6s) [autoscaler] Downscaling node g-e6223f10785080001 (node IP: 10.0.15.202) due to node idle termination.
-
+We will make use of a random number generator in this notebook to ensure that our notebook is reproducible.
 
 We will be using the `PolyAI/banking77` dataset for this tutorial. We use the built in dspy DataLoader to load the dataset from Huggingface as a list of dspy.Example objects.
 
@@ -281,7 +284,6 @@ Below we show the contents of the serve config and its corresponding model confi
 
 
 ```python
-import yaml
 from src import get_serve_and_model_config, update_serve_config_hf_token
 
 get_serve_and_model_config("serve_70B.yaml")
@@ -294,13 +296,16 @@ update_serve_config_hf_token("serve_70B.yaml")
 !serve run --non-blocking serve_70B.yaml
 ```
 
-    2024-10-22 04:26:07,311	INFO scripts.py:489 -- Running config file: 'serve_70B.yaml'.
-    2024-10-22 04:26:07,617	INFO worker.py:1601 -- Connecting to existing Ray cluster at address: 10.0.15.195:6379...
-    2024-10-22 04:26:07,625	INFO worker.py:1777 -- Connected to Ray cluster. View the dashboard at https://session-czqbf1bhvhp98gnjubkguupgc2.i.anyscaleuserdata.com 
-    2024-10-22 04:26:07,628	INFO packaging.py:359 -- Pushing file package 'gcs://_ray_pkg_2968d3ecb4067053a80d60a7a5a3cba5271f9a88.zip' (0.61MiB) to Ray cluster...
-    2024-10-22 04:26:07,634	INFO packaging.py:372 -- Successfully pushed file package 'gcs://_ray_pkg_2968d3ecb4067053a80d60a7a5a3cba5271f9a88.zip'.
-    INFO 2024-10-22 04:26:07,663 serve 13336 api.py:259 - Connecting to existing Serve app in namespace "serve". New http options will not be applied.
-    2024-10-22 04:26:07,668	SUCC scripts.py:540 -- Submitted deploy config successfully.
+    2024-10-22 16:21:31,283	INFO scripts.py:489 -- Running config file: 'serve_70B.yaml'.
+    2024-10-22 16:21:31,636	INFO worker.py:1601 -- Connecting to existing Ray cluster at address: 10.0.0.43:6379...
+    2024-10-22 16:21:31,643	INFO worker.py:1777 -- Connected to Ray cluster. View the dashboard at [1m[32mhttps://session-14cq64yvhmxmst8dtpzxdpujh5.i.anyscaleuserdata.com [39m[22m
+    2024-10-22 16:21:31,646	INFO packaging.py:359 -- Pushing file package 'gcs://_ray_pkg_5a355eea28b0272e224cd7d876094fb507ce33f8.zip' (0.49MiB) to Ray cluster...
+    2024-10-22 16:21:31,651	INFO packaging.py:372 -- Successfully pushed file package 'gcs://_ray_pkg_5a355eea28b0272e224cd7d876094fb507ce33f8.zip'.
+    [36m(ProxyActor pid=10254)[0m INFO 2024-10-22 16:21:35,163 proxy 10.0.0.43 proxy.py:1235 - Proxy starting on node 49c58362668f0d85e4a767f866414e0b74c8b30946471a1ca7b270d6 (HTTP port: 8000).
+    INFO 2024-10-22 16:21:35,207 serve 10125 api.py:277 - Started Serve in namespace "serve".
+    2024-10-22 16:21:35,214	SUCC scripts.py:540 -- [32mSubmitted deploy config successfully.[39m
+    [0m[36m(ServeController pid=10198)[0m INFO 2024-10-22 16:21:35,210 controller 10198 application_state.py:881 - Deploying new app 'llm-endpoint'.
+    [36m(ServeController pid=10198)[0m INFO 2024-10-22 16:21:35,211 controller 10198 application_state.py:457 - Importing and building app 'llm-endpoint'.
 
 
 
@@ -318,32 +323,25 @@ sanity_check_program(llama_70b, vanilla_program, ft_trainset[0])
 ```
 
     Program input: Example({'text': 'I still have not received an answer as to why I was charged $1.00 in a transaction?'}) (input_keys={'text'})
-
-
     Program output label: extra_charge_on_statement
 
 
 ### Bootstrap Data
 
 
-In this section, we bootstrap and prepare data for fine-tuning.
+In this section, we bootstrap data for fine-tuning.
 
-Recall that our dataset only contains 100 labelled examples. Using DSPy, we will now "bootstrap" our training dataset with these labelled examples and generate synthetic labels using the Llama 70B model. 
+We delete all the true labels to be accurate to the scenario, and then collect data from the oracle LLM.
 
-As a part of data validation ("Is this a correct label?"), we will use a simple `metric`: we returns `True` if the prediction is in the desired set of labels, else we return `False`. Entries for which the `metric` is `False` are filtered out.
-
-Finally, we convert the filtered dataset into the OpenAI conversational format for use in fine-tuning.
+We use a metric that checks if the prediction is in the set of labels we are using to get rid of any nonsense labels that the oracle LLM may hallucinate.
 
 
 ```python
 from dspy.teleprompt.finetune_teleprompter import bootstrap_data, convert_to_module_level_message_data
-from src import delete_labels, NUM_THREADS, write_jsonl
-from src.data_preprocess import get_valid_label_metric_fn
+from src import NUM_THREADS, get_valid_label_metric_fn
 
 with dspy.context(lm=llama_70b):
-    # Generate synthetic labels with `bootstrap_data`
     collected_data = bootstrap_data(vanilla_program, ft_trainset_to_label, num_threads=NUM_THREADS, max_errors=10000, metric=get_valid_label_metric_fn(labels_in_use))
-    
     # Make sure to only include the labels we are actively using or that arent hallucinated by the oracle
     collected_data_filtered = [x for x in collected_data if x["prediction"]["label"] in labels_in_use]
     
@@ -355,11 +353,15 @@ print(dataset_formatted[0])
 print("Length of dataset:\t", len(dataset))
 ```
 
-    Average Metric: 4065 / 4071  (99.9): 100%|██████████| 4071/4071 [06:49<00:00,  9.93it/s]
+    Average Metric: 1 / 1  (100.0):   0%|          | 0/50 [00:00<?, ?it/s]
 
+    Average Metric: 50 / 50  (100.0): 100%|██████████| 50/50 [00:06<00:00,  7.34it/s]
 
     {'messages': [{'role': 'system', 'content': "Your input fields are:\n1. `intent` (str): Intent of the query\n\nYour output fields are:\n1. `reasoning` (str): ${produce the output fields}. We ...\n2. `label` (str): Type of the intent; Should just be one of the 25 labels with no other text\n\nAll interactions will be structured in the following way, with the appropriate values filled in.\n\n[[ ## intent ## ]]\n{intent}\n\n[[ ## reasoning ## ]]\n{reasoning}\n\n[[ ## label ## ]]\n{label}\n\n[[ ## completed ## ]]\n\nIn adhering to this structure, your objective is: \n        As a part of a banking issue traiging system, classify the intent of a natural language query into one of the 25 labels.\n        The intent should exactly match one of the following:\n        ['card_payment_fee_charged', 'direct_debit_payment_not_recognised', 'balance_not_updated_after_cheque_or_cash_deposit', 'wrong_amount_of_cash_received', 'cash_withdrawal_charge', 'transaction_charged_twice', 'declined_cash_withdrawal', 'transfer_fee_charged', 'balance_not_updated_after_bank_transfer', 'transfer_not_received_by_recipient', 'request_refund', 'card_payment_not_recognised', 'card_payment_wrong_exchange_rate', 'extra_charge_on_statement', 'wrong_exchange_rate_for_cash_withdrawal', 'refund_not_showing_up', 'reverted_card_payment', 'cash_withdrawal_not_recognised', 'activate_my_card', 'pending_card_payment', 'cancel_transfer', 'beneficiary_not_allowed', 'card_arrival', 'declined_card_payment', 'pending_top_up']"}, {'role': 'user', 'content': '[[ ## intent ## ]]\nI still have not received an answer as to why I was charged $1.00 in a transaction?\n\nRespond with the corresponding output fields, starting with the field `reasoning`, then `label`, and then ending with the marker for `completed`.'}, {'role': 'assistant', 'content': '[[ ## reasoning ## ]]\nThe user is inquiring about a $1.00 transaction charge and has not received an explanation for it, indicating a concern about an unexpected fee.\n\n[[ ## label ## ]]\nextra_charge_on_statement\n\n[[ ## completed ## ]]'}]}
-    Length of dataset:	 4062
+    Length of dataset:	 50
+
+
+    
 
 
 
@@ -368,45 +370,68 @@ print("Length of dataset:\t", len(dataset))
 !serve shutdown -y
 ```
 
+    2024-10-22 16:39:50,520	WARN scripts.py:132 -- [33mThe `RAY_AGENT_ADDRESS` env var has been deprecated in favor of the `RAY_DASHBOARD_ADDRESS` env var. The `RAY_AGENT_ADDRESS` is ignored.[39m
+    2024-10-22 16:39:50,724	SUCC scripts.py:747 -- [32mSent shutdown request; applications will be deleted asynchronously.[39m
+    [0m
+
 # Fine-tuning
 
-We will use Anyscale's [LLMForge](docs.anyscale.com/llms/finetuning/intro) to fine-tune the 1B model.
+We will use LLM Forge to fine-tune the 1B model.
 
-Currently, our dataset is in the form of a DSPy `Dataset` object. To fine-tune with LLMForge, we  will make use of DSPy's native integration with Anyscale. We can simply pass the desired Anyscale job configuration and DSPy will handle the rest. 
+In order to do this, we need to format our data into the correct format (Follows OpenAI messaging format).
+
+Anyscale now has a first class integration with DSPy for finetuning. Anyscale offers a tool for finetuning called LLMForge, which DSPy will interface with to do the actual finetuning using your own cluster on the task you defined above.
+
+We can let DSPy do the rest, where it will properly generate the config and run the finetuning.
 
 Be sure to checkout the fine-tuning documentation for the latest on how to use our [API](https://docs.anyscale.com/llms/finetuning/intro) and additional [capabilities](https://docs.anyscale.com/category/fine-tuning-beta/).
-
-We will be starting out by fine-tuning using LoRA. 
 
 
 ```python
 from dspy.clients.lm import TrainingMethod
-from anyscale.job import JobConfig 
 
 train_data = dataset_formatted
 method = TrainingMethod.SFT
 job_path = "configs/job.yaml"
 llmforge_config_path = "configs/training/lora/llama-3-8b.yaml"
+serve_config_path = "serve_1B.yaml"
+
 finetuneable_lm = dspy.LM(model="meta-llama/Llama-3.2-1B-Instruct", **MODEL_PARAMETERS, **LOCAL_API_PARAMETERS)
 
-# TODO: verify that this works after making changes in the DSPy source code. 
 try:
-    finetuning_job = finetuneable_lm.finetune(train_data=train_data, train_kwargs={"job_config": JobConfig.from_yaml(job_path), "llmforge_config_path": }, train_method=method, provider="anyscale")
+    finetuning_job = finetuneable_lm.finetune(train_data=train_data, train_kwargs={"job_config_path": job_path, "llmforge_config_path": llmforge_config_path, "serve_config_path": serve_config_path}, train_method=method, provider="anyscale")
     finetuned_llama = finetuning_job.result()
 except Exception as e:
     print(e)
 ```
 
-    Copying file:///home/ray/.dspy_cache/finetune/anyscale_02ce0cdfe3b0a1c7.jsonl to gs://storage-bucket-cld-tffbxe9ia5phqr1unxhz4f7e1e/org_4snvy99zwbmh4gbtk64jfqggmj/cld_tffbxe9ia5phqr1unxhz4f7e1e/artifact_storage/anyscale_02ce0cdfe3b0a1c7.jsonl
-      
-    .
-    (anyscale +15m49.8s) Uploading local dir '.' to cloud storage.
-    (anyscale +15m52.7s) Job 'dspy-llmforge-fine-tuning-job' submitted, ID: 'prodjob_wpvi522nrlcn95jw5btvyn26bn'.
-    (anyscale +15m52.7s) View the job in the UI: https://console.anyscale.com/jobs/prodjob_wpvi522nrlcn95jw5btvyn26bn
-    (anyscale +15m52.8s) Waiting for job 'prodjob_wpvi522nrlcn95jw5btvyn26bn' to reach target state SUCCEEDED, currently in state: STARTING
-    (anyscale +17m46.0s) Job 'prodjob_wpvi522nrlcn95jw5btvyn26bn' transitioned from STARTING to RUNNING
-    (anyscale +38m41.9s) Job 'prodjob_wpvi522nrlcn95jw5btvyn26bn' transitioned from RUNNING to SUCCEEDED
-    (anyscale +38m41.9s) Job 'prodjob_wpvi522nrlcn95jw5btvyn26bn' reached target state, exiting
+
+    Output()
+
+
+
+<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace"><span style="color: #008000; text-decoration-color: #008000; font-weight: bold">Upload complete!</span>
+</pre>
+
+
+
+
+<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace"></pre>
+
+
+
+
+<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace">
+</pre>
+
+
+
+    [1m[36m(anyscale +1h33m52.8s)[0m Uploading local dir '.' to cloud storage.
+    [1m[36m(anyscale +1h33m56.5s)[0m Including workspace-managed pip dependencies.
+    [1m[36m(anyscale +1h33m56.9s)[0m Job 'dspy-llmforge-fine-tuning-job' submitted, ID: 'prodjob_pvc4fnjee773klmwk9sj62sjm4'.
+    [1m[36m(anyscale +1h33m56.9s)[0m View the job in the UI: https://console.anyscale.com/jobs/prodjob_pvc4fnjee773klmwk9sj62sjm4
+    [1m[36m(anyscale +1h33m57.2s)[0m Waiting for job 'prodjob_pvc4fnjee773klmwk9sj62sjm4' to reach target state SUCCEEDED, currently in state: STARTING
+    [1m[36m(anyscale +1h35m40.8s)[0m Job 'prodjob_pvc4fnjee773klmwk9sj62sjm4' transitioned from STARTING to RUNNING
 
 
 # Evaluation
@@ -429,9 +454,6 @@ Note that we do not provide an eval set when finetuning, as the eval loss of a c
 ```python
 print(finetuned_llama.model)
 ```
-
-    openai/meta-llama/Llama-3.2-1B-Instruct:isaac:mgvdw
-
 
 We will run a local RayLLM instance that serves the model.
 
@@ -458,18 +480,6 @@ Run this command to start the 1B RayLLM server:
 !serve run --non-blocking serve_1B.yaml
 ```
 
-    2024-10-21 23:54:34,547	INFO scripts.py:489 -- Running config file: 'serve_1B.yaml'.
-    2024-10-21 23:54:34,846	INFO worker.py:1601 -- Connecting to existing Ray cluster at address: 10.0.0.48:6379...
-    2024-10-21 23:54:34,852	INFO worker.py:1777 -- Connected to Ray cluster. View the dashboard at https://session-fkvdirx4bzefi53sjl55m7asad.i.anyscaleuserdata.com 
-    2024-10-21 23:54:34,871	INFO packaging.py:359 -- Pushing file package 'gcs://_ray_pkg_89f1270a0f12aad17a8624b6b4057dceb301409b.zip' (8.74MiB) to Ray cluster...
-    2024-10-21 23:54:34,951	INFO packaging.py:372 -- Successfully pushed file package 'gcs://_ray_pkg_89f1270a0f12aad17a8624b6b4057dceb301409b.zip'.
-    INFO 2024-10-21 23:54:38,085 serve 83025 api.py:277 - Started Serve in namespace "serve".
-    2024-10-21 23:54:38,093	SUCC scripts.py:540 -- Submitted deploy config successfully.
-    (ServeController pid=83112) INFO 2024-10-21 23:54:38,089 controller 83112 application_state.py:881 - Deploying new app 'llm-endpoint'.
-    (ServeController pid=83112) INFO 2024-10-21 23:54:38,090 controller 83112 application_state.py:457 - Importing and building app 'llm-endpoint'.
-    (ProxyActor pid=83187) INFO 2024-10-21 23:54:38,064 proxy 10.0.0.48 proxy.py:1235 - Proxy starting on node 39aaccfad012a98a1715be32b64299b055e543234316e9325f797de3 (HTTP port: 8000).
-
-
 
 ```python
 from src import MODEL_PARAMETERS, LOCAL_API_PARAMETERS
@@ -490,14 +500,6 @@ except ValueError as e:
     # Sometimes the 1B model isn't capable of correctly outputting the label before prompt optimization, so we can just ignore this error.
     print(e)
 ```
-
-    Program input: Example({'text': 'I still have not received an answer as to why I was charged $1.00 in a transaction?'}) (input_keys={'text'})
-    Program output label: card_payment_not_recognised
-    Program input: Example({'text': 'I still have not received an answer as to why I was charged $1.00 in a transaction?'}) (input_keys={'text'})
-
-
-    Expected dict_keys(['reasoning', 'label']) but got dict_keys([])
-
 
 We are going to be doing prompt optimization using DSPy's `BootstrapFewShotWithRandomSearch (BFRS)` function.
 
@@ -523,12 +525,6 @@ for k, v in bootstrap_fewshot_random_search_parameters.items():
     print(f"{k}: {v}")
 ```
 
-    Parameters:
-    max_bootstrapped_demos: 3
-    max_labeled_demos: 3
-    num_candidate_programs: 6
-
-
 
 ```python
 from src import split_into_devset_and_optimizer_sets
@@ -546,14 +542,6 @@ print("Optimizer Devset:\t", len(ft_optimizer_devset))
 print("Example from synthetic devset:")
 print(devset_synthetic[0])
 ```
-
-    Lengths:
-    Synthetic Devset:	 1000
-    Optimizer Trainset:	 2762
-    Optimizer Devset:	 300
-    Example from synthetic devset:
-    Example({'text': 'I still have not received an answer as to why I was charged $1.00 in a transaction?', 'label': 'extra_charge_on_statement'}) (input_keys={'text'})
-
 
 Now we will our finetuned model and the base model, prompt optimize them, and evaluate them on the synthetic devset.
 
@@ -580,38 +568,6 @@ ft_results = evaluate_and_prompt_optimize(**evaluation_kwargs)
 ```
 
 
-    ---------------------------------------------------------------------------
-
-    ModuleNotFoundError                       Traceback (most recent call last)
-
-    /home/ray/default/templates/templates/e2e-dspy-workflow/README.ipynb Cell 54 line 2
-          <a href='vscode-notebook-cell://vscode-session-rvjx58jmwrc9n3vi27hu8y4rr8.i.anyscaleuserdata.com/home/ray/default/templates/templates/e2e-dspy-workflow/README.ipynb#Y104sdnNjb2RlLXJlbW90ZQ%3D%3D?line=0'>1</a> # %%capture
-    ----> <a href='vscode-notebook-cell://vscode-session-rvjx58jmwrc9n3vi27hu8y4rr8.i.anyscaleuserdata.com/home/ray/default/templates/templates/e2e-dspy-workflow/README.ipynb#Y104sdnNjb2RlLXJlbW90ZQ%3D%3D?line=1'>2</a> from src import evaluate_and_prompt_optimize
-          <a href='vscode-notebook-cell://vscode-session-rvjx58jmwrc9n3vi27hu8y4rr8.i.anyscaleuserdata.com/home/ray/default/templates/templates/e2e-dspy-workflow/README.ipynb#Y104sdnNjb2RlLXJlbW90ZQ%3D%3D?line=3'>4</a> evaluation_kwargs = {
-          <a href='vscode-notebook-cell://vscode-session-rvjx58jmwrc9n3vi27hu8y4rr8.i.anyscaleuserdata.com/home/ray/default/templates/templates/e2e-dspy-workflow/README.ipynb#Y104sdnNjb2RlLXJlbW90ZQ%3D%3D?line=4'>5</a>     "models": all_llamas,
-          <a href='vscode-notebook-cell://vscode-session-rvjx58jmwrc9n3vi27hu8y4rr8.i.anyscaleuserdata.com/home/ray/default/templates/templates/e2e-dspy-workflow/README.ipynb#Y104sdnNjb2RlLXJlbW90ZQ%3D%3D?line=5'>6</a>     "module_class": IntentClassificationModule,
-       (...)
-         <a href='vscode-notebook-cell://vscode-session-rvjx58jmwrc9n3vi27hu8y4rr8.i.anyscaleuserdata.com/home/ray/default/templates/templates/e2e-dspy-workflow/README.ipynb#Y104sdnNjb2RlLXJlbW90ZQ%3D%3D?line=10'>11</a>     "labels_in_use": labels_in_use
-         <a href='vscode-notebook-cell://vscode-session-rvjx58jmwrc9n3vi27hu8y4rr8.i.anyscaleuserdata.com/home/ray/default/templates/templates/e2e-dspy-workflow/README.ipynb#Y104sdnNjb2RlLXJlbW90ZQ%3D%3D?line=11'>12</a> }
-         <a href='vscode-notebook-cell://vscode-session-rvjx58jmwrc9n3vi27hu8y4rr8.i.anyscaleuserdata.com/home/ray/default/templates/templates/e2e-dspy-workflow/README.ipynb#Y104sdnNjb2RlLXJlbW90ZQ%3D%3D?line=13'>14</a> ft_results = evaluate_and_prompt_optimize(**evaluation_kwargs)
-
-
-    File ~/default/templates/templates/e2e-dspy-workflow/src/__init__.py:1
-    ----> 1 from .utils import *
-          2 from .data_preprocess import *
-          3 from .evaluation import *
-
-
-    File ~/default/templates/templates/e2e-dspy-workflow/src/utils.py:1
-    ----> 1 import dspy
-          2 import dsp
-          3 import os
-
-
-    ModuleNotFoundError: No module named 'dspy'
-
-
-
 ```python
 if True:
     import json
@@ -622,28 +578,9 @@ else:
 ```
 
 
-    ---------------------------------------------------------------------------
-
-    NameError                                 Traceback (most recent call last)
-
-    /home/ray/default/templates/templates/e2e-dspy-workflow/README.ipynb Cell 55 line 4
-          <a href='vscode-notebook-cell://vscode-session-rvjx58jmwrc9n3vi27hu8y4rr8.i.anyscaleuserdata.com/home/ray/default/templates/templates/e2e-dspy-workflow/README.ipynb#Y105sdnNjb2RlLXJlbW90ZQ%3D%3D?line=1'>2</a>     import json
-          <a href='vscode-notebook-cell://vscode-session-rvjx58jmwrc9n3vi27hu8y4rr8.i.anyscaleuserdata.com/home/ray/default/templates/templates/e2e-dspy-workflow/README.ipynb#Y105sdnNjb2RlLXJlbW90ZQ%3D%3D?line=2'>3</a>     with open("ft_results.json", "w") as f:
-    ----> <a href='vscode-notebook-cell://vscode-session-rvjx58jmwrc9n3vi27hu8y4rr8.i.anyscaleuserdata.com/home/ray/default/templates/templates/e2e-dspy-workflow/README.ipynb#Y105sdnNjb2RlLXJlbW90ZQ%3D%3D?line=3'>4</a>         json.dump(ft_results, f)
-          <a href='vscode-notebook-cell://vscode-session-rvjx58jmwrc9n3vi27hu8y4rr8.i.anyscaleuserdata.com/home/ray/default/templates/templates/e2e-dspy-workflow/README.ipynb#Y105sdnNjb2RlLXJlbW90ZQ%3D%3D?line=4'>5</a> else:
-          <a href='vscode-notebook-cell://vscode-session-rvjx58jmwrc9n3vi27hu8y4rr8.i.anyscaleuserdata.com/home/ray/default/templates/templates/e2e-dspy-workflow/README.ipynb#Y105sdnNjb2RlLXJlbW90ZQ%3D%3D?line=5'>6</a>     ft_results = json.load(open("ft_results.json"))
-
-
-    NameError: name 'ft_results' is not defined
-
-
-
 ```python
 print(ft_results)
 ```
-
-    {'base': {'vanilla': {'devset': 0.0}, 'bfrs': {'devset': 34.6}}, 'ft': {'vanilla': {'devset': 55.3}, 'bfrs': {'devset': 55.3}}}
-
 
 
 ```python
@@ -651,15 +588,6 @@ from src import graph_devset_results, graph_testset_results
 
 graph_devset_results(ft_results)
 ```
-
-
-    
-![png](README_files/README_53_0.png)
-    
-
-
-    Highest Dev Set Score: 55.3, Model: fine-tuned
-
 
 We see that the highest performing model is the final epoch with a score of 50.2 on our synthetic devset.
 
@@ -691,19 +619,9 @@ graph_testset_results(ft_results_testset)
 ```
 
 
-    
-![png](README_files/README_56_0.png)
-    
-
-
-
 ```python
 print(f"Best testset result: \n{best_model} with score: {best_score}")
 ```
-
-    Best testset result: 
-    meta-llama/Llama-3.2-1B-Instruct:epochs-4-total-trained-steps-160 with score: 54.0
-
 
 # Serving
 
@@ -801,14 +719,6 @@ llm_client = LLMClient.bind()
 llm_handle = serve.run(llm_client, route_prefix="/classify_intent", name="llm_client")
 ```
 
-    INFO 2024-10-19 01:34:51,639 serve 14470 api.py:259 - Connecting to existing Serve app in namespace "serve". New http options will not be applied.
-    WARNING 2024-10-19 01:34:51,641 serve 14470 api.py:85 - The new client HTTP config differs from the existing one in the following fields: ['host']. The new HTTP config is ignored.
-
-
-    INFO 2024-10-19 01:34:57,689 serve 14470 client.py:492 - Deployment 'LLMClient:xrueus8l' is ready at `http://0.0.0.0:8000/classify_intent`. component=serve deployment=LLMClient
-    INFO 2024-10-19 01:34:57,692 serve 14470 api.py:549 - Deployed app 'llm_client' successfully.
-
-
 
 ```python
 example_query = ft_trainset[1]["text"]
@@ -818,10 +728,6 @@ llm_response = await llm_handle.classify_intent.remote(
 print(example_query)
 print(llm_response)
 ```
-
-    My card was charged more than expected.
-    card_payment_fee_charged
-
 
 We can also query directly using HTTP requests, because we use the `@app` decorator on our FastAPI app.
 
@@ -834,9 +740,6 @@ try:
 except Exception as e:
     print(e)
 ```
-
-    card_payment_fee_charged
-
 
 <b style="background-color: yellow;">&nbsp;🛑 IMPORTANT&nbsp;</b>: Please `Terminate` your service from the Service page to avoid depleting your free trial credits.
 
