@@ -1,0 +1,15 @@
+applications:
+- args:
+    program_param_path: configs/deploy_params.json
+    rayllm_args:
+      route_prefix: /
+      api_base: "https://localhost:8000"
+      # we use a fake key since the rayllm service has "query_auth_token_enabled" false
+      api_key: "fake-key"
+  import_path: deploy:construct_app
+  name: dspy_client
+  route_prefix: /classify_intent
+  runtime_env:
+    pip: ["dspy", "matplotlib"]
+    working_dir: "."
+query_auth_token_enabled: false

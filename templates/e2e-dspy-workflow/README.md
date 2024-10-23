@@ -1981,7 +1981,12 @@ def update_rayllm_config(yaml_path, new_api_base=None, new_api_key=None, new_rou
 ```python
 # Run this if you deployed an Anyscale Service with RayLLM
 
-update_rayllm_config("configs/deploy_dspy.yaml", new_api_base=ANYSCALE_RAYLLM_SERVICE_BASE_URL, new_api_key=ANYSCALE_RAYLLM_API_KEY)
+update_rayllm_config("configs/anyscale_deploy.yaml", new_api_base=ANYSCALE_RAYLLM_SERVICE_BASE_URL, new_api_key=ANYSCALE_RAYLLM_API_KEY)
+```
+
+
+```python
+!anyscale service deploy -f configs/anyscale_deploy.yaml
 ```
 
 Great! We should now have a service which runs the compiled DSPy program. Let's query this new service. Make sure to enter the details here: 
