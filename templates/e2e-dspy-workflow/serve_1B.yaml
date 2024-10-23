@@ -1,0 +1,9 @@
+name: dspy-rayllm-service
+applications:
+- args:
+    llm_configs:
+    - ./model_config/meta-llama--Llama-3_2-1B-Instruct.yaml
+  import_path: rayllm:app
+  name: llm-endpoint
+  route_prefix: /
+query_auth_token_enabled: false
