@@ -18,7 +18,7 @@ def split_into_devset_and_optimizer_sets(collected_data_examples, dev_size, opti
 def evaluate_and_prompt_optimize(devset, optimizer_trainset, optimizer_valset, module_class, models, metric, labels_in_use):
     """
     Evaluates the performance of the models on the synthetic dev set and optimizes the BFRS program.
-    
+
     Takes in a dictionary of models and prompt optimizes a BFRS program for each model.
     """
     ft_results = {}
@@ -33,7 +33,7 @@ def evaluate_and_prompt_optimize(devset, optimizer_trainset, optimizer_valset, m
         )
         print(f"Evaluating {llama.model}")
         ft_results[folder] = {}
-        
+
         with dspy.context(lm=llama):
             evaluate_devset = dspy.Evaluate(
                 devset=devset,
@@ -64,12 +64,12 @@ def evaluate_and_prompt_optimize(devset, optimizer_trainset, optimizer_valset, m
 def run_testset_evaluation(ft_results, all_llamas, labels_in_use, testset, metric, module_class):
     best_non_base_model = max((x for x in ft_results if x != "base"), key=lambda x: ft_results[x]["bfrs"]["devset"])
     print(f"Best non-base model: {best_non_base_model}")
-    
+
     base_and_best = {"base": all_llamas["base"], best_non_base_model: all_llamas[best_non_base_model]}
     best_program_path, best_model, best_score = None, None, 0
-    
+
     evaluate_testset = dspy.Evaluate(devset=testset, metric=metric, num_threads=NUM_THREADS, display_progress=False, max_errors=MAX_ERRORS)
-    
+
     for folder, llama in base_and_best.items():
         print(f"Evaluating {folder}")
         vanilla_program = module_class(labels_in_use)
@@ -78,7 +78,7 @@ def run_testset_evaluation(ft_results, all_llamas, labels_in_use, testset, metri
             # Evaluate vanilla program
             testset_result_vanilla = evaluate_testset(vanilla_program)
             ft_results[folder]["vanilla"]["testset"] = testset_result_vanilla
-            
+
             if testset_result_vanilla > best_score:
                 best_score = testset_result_vanilla
                 best_model = folder
@@ -88,7 +88,7 @@ def run_testset_evaluation(ft_results, all_llamas, labels_in_use, testset, metri
             vanilla_program.load(program_path)
             testset_result_bfrs = evaluate_testset(vanilla_program)
             ft_results[folder]["bfrs"]["testset"] = testset_result_bfrs
-            
+
             if testset_result_bfrs > best_score:
                 best_score = testset_result_bfrs
                 best_program_path = program_path

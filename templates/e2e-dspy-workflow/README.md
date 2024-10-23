@@ -1625,8 +1625,6 @@ print(ft_results)
     {'base': {'vanilla': {'devset': 0.3}, 'bfrs': {'devset': 23.5}}, 'openai/meta-llama/Llama-3.2-1B-Instruct:isaac:ngffk': {'vanilla': {'devset': 56.3}, 'bfrs': {'devset': 56.3}}}
 
 
-# TODO: Make plots nicer and consistent
-
 
 ```python
 from src import graph_devset_results, graph_testset_results
@@ -1636,7 +1634,7 @@ graph_devset_results(ft_results)
 
 
     
-![png](README_files/README_64_0.png)
+![png](README_files/README_63_0.png)
     
 
 
@@ -1673,9 +1671,15 @@ graph_testset_results(ft_results_testset)
 ```
 
 
-    
-![png](README_files/README_67_0.png)
-    
+    ---------------------------------------------------------------------------
+
+    NameError                                 Traceback (most recent call last)
+
+    /home/ray/default/templates/templates/e2e-dspy-workflow/README.ipynb Cell 67 line 1
+    ----> <a href='vscode-notebook-cell://vscode-session-6frbgpfbuzs27m75xhz3c8vnde.i.anyscaleuserdata.com/home/ray/default/templates/templates/e2e-dspy-workflow/README.ipynb#Y124sdnNjb2RlLXJlbW90ZQ%3D%3D?line=0'>1</a> graph_testset_results(ft_results_testset)
+
+
+    NameError: name 'graph_testset_results' is not defined
 
 
 

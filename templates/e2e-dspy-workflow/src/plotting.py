@@ -3,7 +3,7 @@ import numpy as np
 
 def create_performance_graph(scores, labels, title, y_label):
     colors = ['skyblue', 'lightgreen', 'skyblue', 'lightgreen']
-    
+
     fig, ax = plt.subplots(figsize=(10, 6))
     bars = ax.bar(range(len(scores)), scores, color=colors)
 
@@ -39,7 +39,7 @@ def graph_testset_results(ft_results):
     }
     Currently only supports two models.
     """
-    best_ft_model = max((model for model in ft_results if model != "base"), 
+    best_ft_model = max((model for model in ft_results if model != "base"),
                         key=lambda m: ft_results[m]['bfrs'].get('testset', 0))
 
     labels = [
@@ -76,9 +76,9 @@ def graph_devset_results(ft_results):
                          key=lambda x: (x[0] != "Base Model", x[0] != "Fine-tuned", x[0]))
     labels, vanilla_scores, bfrs_scores = zip(*sorted_data)
 
-    all_labels = [f'{labels[0]} (No Opt)', f'{labels[0]} (BFRS)', 
+    all_labels = [f'{labels[0]} (No Opt)', f'{labels[0]} (BFRS)',
                   f'{labels[-1]} (No Opt)', f'{labels[-1]} (BFRS)']
-    all_scores = [vanilla_scores[0], bfrs_scores[0], 
+    all_scores = [vanilla_scores[0], bfrs_scores[0],
                   vanilla_scores[-1], bfrs_scores[-1]]
 
     create_performance_graph(all_scores, all_labels, 'Model Performance Comparison\n(Synthetic Dev Set; N=1000)', 'Dev Set Scores')
