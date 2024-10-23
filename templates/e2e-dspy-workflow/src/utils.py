@@ -33,12 +33,6 @@ def check_env_vars():
     for var in necessary_env_vars:
         assert os.environ[var], f"{var} is not set"
 
-def sanity_check_program(model, program, item):
-    with dspy.context(lm=model):
-        sample_input = item
-        print(f"Program input: {sample_input}")
-        print(f"Program output label: {program(**sample_input.inputs()).label}")
-
 def print_serve_and_model_config(serve_config_path):
     from rich import print as rprint
 

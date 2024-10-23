@@ -51,16 +51,16 @@ def load_data_from_huggingface():
 
     dl = DataLoader()
     full_trainset = dl.from_huggingface(
-        dataset_name="PolyAI/banking77", # Dataset name from Huggingface
-        fields=("label", "text"), # Fields needed
-        input_keys=("text",), # What our model expects to recieve to generate an output
+        dataset_name="PolyAI/banking77",
+        fields=("label", "text"),
+        input_keys=("text",),
         split="train"
     )
 
     full_testset = dl.from_huggingface(
-        dataset_name="PolyAI/banking77", # Dataset name from Huggingface
-        fields=("label", "text"), # Fields needed
-        input_keys=("text",), # What our model expects to recieve to generate an output
+        dataset_name="PolyAI/banking77",
+        fields=("label", "text"),
+        input_keys=("text",),
         split="test"
     )
     return full_trainset, full_testset
