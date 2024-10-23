@@ -1186,6 +1186,12 @@ else:
     card_payment_not_recognised
 
 
+
+```python
+# Now you can shutdown all the local services
+!serve shutdown -y
+```
+
 # Optional: Deploy DSPy program as an Anyscale Service
 
 You can optionally deploy your program to Anyscale in order to use it in production. We will repeat the same steps as above, but this time deploy the two applications as separate Anyscale services for convenience.
@@ -1320,8 +1326,7 @@ else:
 
 ```python
 # Clean up
-!python src/clear_cell_nums.py
 !find . | grep -E ".ipynb_checkpoints" | xargs rm -rf
 !find . | grep -E "(__pycache__|\.pyc|\.pyo)" | xargs rm -rf
-!rm -rf __pycache__ data .HF_TOKEN deploy/services
+!rm -rf __pycache__ dspy
 ```
