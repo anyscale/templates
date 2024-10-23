@@ -26,15 +26,14 @@ class IntentClassificationModule(dspy.Module):
         self.valid_labels = set(labels_in_use)
 
     def forward(self, text):
-        for i in range(5):
-            try:
-                prediction = self.intent_classifier(intent=text, temperature=0.1*i)
-                sanitized_prediction = dspy.Prediction(label=prediction.label.lower().strip().replace(" ", "_"), reasoning=prediction.reasoning)
-                if sanitized_prediction.label in self.valid_labels:
-                    return sanitized_prediction
-            except Exception as e:
-                continue
-        return dspy.Prediction(label="unknown")
+        try:
+            prediction = self.intent_classifier(intent=text)
+            sanitized_prediction = dspy.Prediction(label=prediction.label.lower().strip().replace(" ", "_"), reasoning=prediction.reasoning)
+            if sanitized_prediction.label in self.valid_labels:
+                return sanitized_prediction
+        except ValueError as e:
+            # If the model is unable to make a prediction in a valid format, return "unknown"
+            return dspy.Prediction(label="unknown")
 
 @serve.deployment(
     ray_actor_options={"num_cpus": 0.1},

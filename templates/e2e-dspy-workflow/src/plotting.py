@@ -20,7 +20,7 @@ def create_performance_graph(scores, labels, title, y_label):
 
     from matplotlib.patches import Patch
     legend_elements = [
-        Patch(facecolor='skyblue', label='No Prompt Optimization'),
+        Patch(facecolor='skyblue', label='No Prompt Optimization/Zero shot'),
         Patch(facecolor='lightgreen', label='BootstrapFewShotRandomSearch')
     ]
     ax.legend(handles=legend_elements)
@@ -45,9 +45,9 @@ def graph_testset_results(ft_results):
                              key=lambda m: ft_results[m]['bfrs'].get('testset', 0))
 
     labels = [
-        'Base Model (No Opt)',
+        'Base Model (Zero shot)',
         'Base Model (BFRS)',
-        'Best Fine-tuned (No Opt)',
+        'Best Fine-tuned (Zero shot)',
         'Best Fine-tuned (BFRS)'
     ]
     scores = [
@@ -78,8 +78,8 @@ def graph_devset_results(ft_results):
                          key=lambda x: (x[0] != "Base Model", x[0] != "Fine-tuned", x[0]))
     labels, vanilla_scores, bfrs_scores = zip(*sorted_data)
 
-    all_labels = [f'{labels[0]} (No Opt)', f'{labels[0]} (BFRS)',
-                  f'{labels[-1]} (No Opt)', f'{labels[-1]} (BFRS)']
+    all_labels = [f'{labels[0]} (Zero shot)', f'{labels[0]} (BFRS)',
+                  f'{labels[-1]} (Zero shot)', f'{labels[-1]} (BFRS)']
     all_scores = [vanilla_scores[0], bfrs_scores[0],
                   vanilla_scores[-1], bfrs_scores[-1]]
 
