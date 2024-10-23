@@ -123,7 +123,7 @@ init_ray()
 
 ```python
 from src import set_random_seed
-rng = set_random_seed(42)
+rng = set_random_seed()
 ```
 
 # Dataset Preparation
