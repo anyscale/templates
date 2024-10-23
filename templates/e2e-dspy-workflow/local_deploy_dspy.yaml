@@ -17,4 +17,5 @@ applications:
     - ./model_config/meta-llama--Llama-3_2-1B-Instruct.yaml
   import_path: rayllm:app
   route_prefix: /
+# NOTE: In production, you would want to enable authentication. For simplicity, we disable this for our service.
 query_auth_token_enabled: false
