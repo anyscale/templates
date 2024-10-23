@@ -57,7 +57,7 @@ import importlib.util
 
 if importlib.util.find_spec("dspy") is None:
     print("Installing dspy")
-    !pip install git+https://github.com/stanfordnlp/dspy.git@main
+    !pip install git+https://github.com/stanfordnlp/dspy.git@40d5e0229a3abadd313ff9b857f40e638effae56
 
 else:
     print("dspy is already installed")
@@ -108,12 +108,6 @@ We will make use of a random number generator in this notebook to ensure that ou
 
 
 ```python
-from src import set_random_seed
-rng = set_random_seed()
-```
-
-
-```python
 from src import check_env_vars
 
 # Check if env vars are set correctly
@@ -124,6 +118,12 @@ check_env_vars()
 ```python
 from src import init_ray
 init_ray()
+```
+
+
+```python
+from src import set_random_seed
+rng = set_random_seed(42)
 ```
 
 # Dataset Preparation
