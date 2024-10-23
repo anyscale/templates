@@ -40,6 +40,7 @@ class LLMClient:
     def __init__(self, param_path, serve_args):
         params = read_params(param_path)
         self.params = params
+        dspy.settings.configure(experimental=True)
         base_url = serve_args["api_base"]
         prefix = serve_args["route_prefix"]
         full_url = base_url + prefix.lstrip('/') if len(prefix.lstrip('/')) else base_url
