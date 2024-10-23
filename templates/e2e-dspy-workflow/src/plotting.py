@@ -39,20 +39,22 @@ def graph_testset_results(ft_results):
     }
     Currently only supports two models.
     """
-    best_ft_model = max((model for model in ft_results if model != "base"),
-                        key=lambda m: ft_results[m]['bfrs'].get('testset', 0))
+    best_ft_model_vanilla = max((model for model in ft_results if model != "base"),
+                                key=lambda m: ft_results[m]['vanilla'].get('testset', 0))
+    best_ft_model_bfrs = max((model for model in ft_results if model != "base"),
+                             key=lambda m: ft_results[m]['bfrs'].get('testset', 0))
 
     labels = [
         'Base Model (No Opt)',
         'Base Model (BFRS)',
-        'Fine-tuned (No Opt)',
-        'Fine-tuned (BFRS)'
+        'Best Fine-tuned (No Opt)',
+        'Best Fine-tuned (BFRS)'
     ]
     scores = [
         ft_results['base']['vanilla'].get('testset', 0),
         ft_results['base']['bfrs'].get('testset', 0),
-        ft_results[best_ft_model]['vanilla'].get('testset', 0),
-        ft_results[best_ft_model]['bfrs'].get('testset', 0)
+        ft_results[best_ft_model_vanilla]['vanilla'].get('testset', 0),
+        ft_results[best_ft_model_bfrs]['bfrs'].get('testset', 0)
     ]
 
     create_performance_graph(scores, labels, 'Model Performance Comparison\n(Real Test Set; N=1000)', 'Test Set Scores')
@@ -83,7 +85,11 @@ def graph_devset_results(ft_results):
 
     create_performance_graph(all_scores, all_labels, 'Model Performance Comparison\n(Synthetic Dev Set; N=1000)', 'Dev Set Scores')
 
-    highest_devset_score = max(bfrs_scores)
-    highest_score_model = labels[bfrs_scores.index(highest_devset_score)]
+    highest_vanilla_score = max(vanilla_scores)
+    highest_bfrs_score = max(bfrs_scores)
 
-    print(f"Highest Dev Set Score: {highest_devset_score:.1f}, Model: {highest_score_model}")
+    best_vanilla_model = labels[vanilla_scores.index(highest_vanilla_score)]
+    best_bfrs_model = labels[bfrs_scores.index(highest_bfrs_score)]
+
+    print(f"Highest Dev Set Score (No Opt): {highest_vanilla_score:.1f}, Model: {best_vanilla_model}")
+    print(f"Highest Dev Set Score (BFRS): {highest_bfrs_score:.1f}, Model: {best_bfrs_model}")

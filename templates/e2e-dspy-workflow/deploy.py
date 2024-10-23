@@ -25,12 +25,16 @@ class IntentClassificationModule(dspy.Module):
         self.intent_classifier = dspy.ChainOfThought(IntentClassification)
         self.valid_labels = set(labels_in_use)
 
-    def forward(self, text, **predictor_kwargs):
-        prediction = self.intent_classifier(intent=text, **predictor_kwargs)
-        sanitized_prediction = dspy.Prediction(label=prediction.label.lower().strip().replace(" ", "_"), reasoning=prediction.reasoning)
-        if sanitized_prediction.label not in self.valid_labels:
-            sanitized_prediction = dspy.Prediction(label="INVALID MODEL OUTPUT")
-        return sanitized_prediction
+    def forward(self, text):
+        for i in range(5):
+            try:
+                prediction = self.intent_classifier(intent=text, temperature=0.1*i)
+                sanitized_prediction = dspy.Prediction(label=prediction.label.lower().strip().replace(" ", "_"), reasoning=prediction.reasoning)
+                if sanitized_prediction.label in self.valid_labels:
+                    return sanitized_prediction
+            except Exception as e:
+                continue
+        return dspy.Prediction(label="unknown")
 
 @serve.deployment(
     ray_actor_options={"num_cpus": 0.1},
@@ -49,7 +53,7 @@ class LLMClient:
             "api_key": serve_args["api_key"]
         }
         print("API parameters", api_parameters)
-        self.llm = dspy.LM(model="openai/" + self.params["best_model"], **MODEL_PARAMETERS, **api_parameters)
+        self.llm = dspy.LM(model=self.params["best_model"], **MODEL_PARAMETERS, **api_parameters)
         self.program = IntentClassificationModule(params["labels_in_use"])
         self.program.load(params["best_program_path"])
 
