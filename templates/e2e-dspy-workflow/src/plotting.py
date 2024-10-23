@@ -60,57 +60,68 @@ def graph_testset_results(ft_results):
     plt.show()
 
 def graph_devset_results(ft_results):
-    models = []
-    vanilla_devset = []
-    bfrs_devset = []
+    # Prepare data for the graph
+    labels = []
+    vanilla_scores = []
+    bfrs_scores = []
 
     for model, results in ft_results.items():
-        if model == "base":
-            models.append("base")
-        else:
-            models.append("fine-tuned")
-        vanilla_devset.append(results['vanilla']['devset'])
-        bfrs_devset.append(results['bfrs']['devset'])
+        labels.append('Base Model' if model == 'base' else 'Fine-tuned')
+        vanilla_scores.append(results['vanilla']['devset'])
+        bfrs_scores.append(results['bfrs']['devset'])
 
-    # Keep "base" at the beginning
-    sorted_data = sorted(zip(models, vanilla_devset, bfrs_devset),
-                         key=lambda x: (x[0] != "base", x[0]))
-    models, vanilla_devset, bfrs_devset = zip(*sorted_data)
+    # Keep "Base Model" at the beginning and "Fine-tuned" at the end
+    sorted_data = sorted(zip(labels, vanilla_scores, bfrs_scores),
+                         key=lambda x: (x[0] != "Base Model", x[0] != "Fine-tuned", x[0]))
+    labels, vanilla_scores, bfrs_scores = zip(*sorted_data)
 
-    # Set up the plot
-    fig, ax = plt.subplots(figsize=(12, 6))
+    # Prepare data for the graph in the specified order
+    all_labels = [
+        f'{labels[0]} (No Opt)',
+        f'{labels[0]} (BFRS)',
+        f'{labels[-1]} (No Opt)',
+        f'{labels[-1]} (BFRS)'
+    ]
+    all_scores = [
+        vanilla_scores[0],
+        bfrs_scores[0],
+        vanilla_scores[-1],
+        bfrs_scores[-1]
+    ]
 
-    # Adjust bar positions and width
-    x = np.arange(len(models))
-    width = 0.35
+    # Create color list (alternating between vanilla and BFRS colors)
+    colors = ['skyblue', 'lightgreen', 'skyblue', 'lightgreen']
 
-    # Plot bars for Dev Set
-    vanilla_bars = ax.bar(x - width/2, vanilla_devset, width, label='No Prompt Optimization', color='skyblue')
-    bfrs_bars = ax.bar(x + width/2, bfrs_devset, width, label='BootstrapFewShotRandomSearch', color='lightgreen')
+    # Create the plot
+    fig, ax = plt.subplots(figsize=(10, 6))
+    bars = ax.bar(range(len(all_scores)), all_scores, color=colors)
 
     # Add value labels on top of each bar
-    def add_labels(bars):
-        for bar in bars:
-            height = bar.get_height()
-            ax.text(bar.get_x() + bar.get_width()/2, height, f'{height:.1f}',
-                    ha='center', va='bottom', fontsize=8)
-
-    add_labels(vanilla_bars)
-    add_labels(bfrs_bars)
+    for bar in bars:
+        height = bar.get_height()
+        ax.text(bar.get_x() + bar.get_width()/2, height, f'{height:.1f}',
+               ha='center', va='bottom', fontsize=10)
 
     # Customize the plot
     ax.set_ylabel('Dev Set Scores')
-    ax.set_title('Model Performance (Synthetic Dev Set; N=1000)')
-    ax.set_xticks(x)
-    ax.set_xticklabels(models, rotation=45, ha='right')
-    ax.legend()
+    ax.set_title('Model Performance Comparison\n(Synthetic Dev Set; N=1000)')
+    ax.set_xticks(range(len(all_labels)))
+    ax.set_xticklabels(all_labels, rotation=45, ha='right')
     ax.grid(True, axis='y', linestyle='--', alpha=0.7)
+
+    # Add legend
+    from matplotlib.patches import Patch
+    legend_elements = [
+        Patch(facecolor='skyblue', label='No Prompt Optimization'),
+        Patch(facecolor='lightgreen', label='BootstrapFewShotRandomSearch')
+    ]
+    ax.legend(handles=legend_elements)
 
     plt.tight_layout()
     plt.show()
 
     # Find the highest devset score and its corresponding model
-    highest_devset_score = max(bfrs_devset)
-    highest_score_model = models[bfrs_devset.index(highest_devset_score)]
+    highest_devset_score = max(bfrs_scores)
+    highest_score_model = labels[bfrs_scores.index(highest_devset_score)]
 
     print(f"Highest Dev Set Score: {highest_devset_score:.1f}, Model: {highest_score_model}")

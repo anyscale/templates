@@ -43,6 +43,11 @@ def run_testset_evaluation(ft_results, all_llamas, labels_in_use, testset, metri
 
         with dspy.context(lm=llama):
             testset_result_vanilla = evaluate_testset(vanilla_program)
+            if testset_result_vanilla > best_score:
+                best_score = testset_result_vanilla
+                best_program_path = program_path
+                best_model = folder
+
             ft_results[folder]["vanilla"]["testset"] = testset_result_vanilla
             program_path = f"simpleintent_1b_32_ft_bfrs_{MAX_BOOTSTRAPPED_DEMOS}_{MAX_LABELED_DEMOS}_{NUM_CANDIDATE_PROGRAMS}_{folder.split('/')[-1]}.json"
             vanilla_program.load(program_path)

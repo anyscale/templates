@@ -150,7 +150,651 @@ from src import init_ray
 init_ray()
 ```
 
-    (autoscaler +1h14m30s) [autoscaler] Downscaling node g-96a4b6c44579a0001 (node IP: 10.0.0.29) due to node idle termination.
+    2024-10-23 00:37:29,643	INFO worker.py:1601 -- Connecting to existing Ray cluster at address: 10.0.0.28:6379...
+    2024-10-23 00:37:29,654	INFO worker.py:1777 -- Connected to Ray cluster. View the dashboard at https://session-6frbgpfbuzs27m75xhz3c8vnde.i.anyscaleuserdata.com 
+    2024-10-23 00:37:29,686	INFO packaging.py:531 -- Creating a file package for local directory '/home/ray/anaconda3/lib/python3.9/site-packages/dspy'.
+    2024-10-23 00:37:29,730	INFO packaging.py:359 -- Pushing file package 'gcs://_ray_pkg_3456a89b1fcd9948.zip' (1.17MiB) to Ray cluster...
+    2024-10-23 00:37:29,744	INFO packaging.py:372 -- Successfully pushed file package 'gcs://_ray_pkg_3456a89b1fcd9948.zip'.
+    2024-10-23 00:37:29,759	INFO packaging.py:531 -- Creating a file package for local directory '/home/ray/anaconda3/lib/python3.9/site-packages/dsp'.
+    2024-10-23 00:37:29,779	INFO packaging.py:359 -- Pushing file package 'gcs://_ray_pkg_eac1031112d62b99.zip' (0.55MiB) to Ray cluster...
+    2024-10-23 00:37:29,787	INFO packaging.py:372 -- Successfully pushed file package 'gcs://_ray_pkg_eac1031112d62b99.zip'.
+    2024-10-23 00:37:29,790	INFO packaging.py:359 -- Pushing file package 'gcs://_ray_pkg_c62d21a49b226e4a53a17f9d7aa3bed4b56a5efb.zip' (0.83MiB) to Ray cluster...
+    2024-10-23 00:37:29,798	INFO packaging.py:372 -- Successfully pushed file package 'gcs://_ray_pkg_c62d21a49b226e4a53a17f9d7aa3bed4b56a5efb.zip'.
+
+
+    (autoscaler +1m53s) Tip: use `ray status` to view detailed cluster status. To disable these messages, set RAY_SCHEDULER_EVENTS=0.
+    (autoscaler +1m53s) [autoscaler] [4xA100-80GB:48CPU-680GB] Upscaling 1 node(s).
+    (autoscaler +3m32s) [autoscaler] [4xA100-80GB:48CPU-680GB|a2-ultragpu-4g] [us-east5-b] [on-demand] Launched 1 instances.
+    (autoscaler +17m6s) [autoscaler] Downscaling node g-f69c56902ddd40001 (node IP: 10.0.0.57) due to node idle termination.
+    (autoscaler +31m41s) [autoscaler] [1xA100-80GB:12CPU-170GB] Upscaling 1 node(s).
+    (autoscaler +32m27s) [autoscaler] [1xA100-80GB:12CPU-170GB|a2-ultragpu-1g] [us-east5-b] [on-demand] Launched 1 instances.
+    (autoscaler +40m35s) [autoscaler] [2xA100-80GB:24CPU-340GB] Upscaling 3 node(s).
+    (autoscaler +40m36s) [autoscaler] [2xA100-80GB:24CPU-340GB|a2-ultragpu-2g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-2g;num:3;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +40m39s) [autoscaler] [2xA100-80GB:24CPU-340GB] Upscaling 1 node(s).
+    (autoscaler +40m39s) [autoscaler] [4xA100-80GB:48CPU-680GB] Upscaling 1 node(s).
+    (autoscaler +40m39s) [autoscaler] [4xA100-80GB:48CPU-680GB|a2-ultragpu-4g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-4g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +40m40s) [autoscaler] [2xA100-80GB:24CPU-340GB|a2-ultragpu-2g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-2g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +40m41s) [autoscaler] [8xA100-80GB:96CPU-1360GB] Upscaling 1 node(s).
+    (autoscaler +40m42s) [autoscaler] [8xA100-80GB:96CPU-1360GB|a2-ultragpu-8g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-8g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +40m43s) [autoscaler] [1xA100-80GB:12CPU-170GB] Upscaling 6 node(s).
+    (autoscaler +40m44s) [autoscaler] [1xA100-80GB:12CPU-170GB|a2-ultragpu-1g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-1g;num:6;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +40m46s) [autoscaler] [4xA100-80GB:48CPU-680GB] Upscaling 1 node(s).
+    (autoscaler +40m46s) [autoscaler] [2xA100-80GB:24CPU-340GB] Upscaling 1 node(s).
+    (autoscaler +40m48s) [autoscaler] [2xA100-80GB:24CPU-340GB|a2-ultragpu-2g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-2g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +40m48s) [autoscaler] [4xA100-80GB:48CPU-680GB|a2-ultragpu-4g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-4g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +40m50s) [autoscaler] [8xA100-80GB:96CPU-1360GB] Upscaling 1 node(s).
+    (autoscaler +40m50s) [autoscaler] [8xA100-80GB:96CPU-1360GB|a2-ultragpu-8g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-8g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +40m51s) [autoscaler] [2xA100-80GB:24CPU-340GB] Upscaling 3 node(s).
+    (autoscaler +40m53s) [autoscaler] [2xA100-80GB:24CPU-340GB|a2-ultragpu-2g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-2g;num:3;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +40m54s) [autoscaler] [1xA100-80GB:12CPU-170GB] Upscaling 6 node(s).
+    (autoscaler +40m56s) [autoscaler] [1xA100-80GB:12CPU-170GB|a2-ultragpu-1g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-1g;num:6;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +40m57s) [autoscaler] [4xA100-80GB:48CPU-680GB] Upscaling 1 node(s).
+    (autoscaler +40m57s) [autoscaler] [2xA100-80GB:24CPU-340GB] Upscaling 1 node(s).
+    (autoscaler +40m58s) [autoscaler] [4xA100-80GB:48CPU-680GB|a2-ultragpu-4g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-4g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +40m58s) [autoscaler] [2xA100-80GB:24CPU-340GB|a2-ultragpu-2g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-2g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +40m58s) [autoscaler] [8xA100-80GB:96CPU-1360GB] Upscaling 1 node(s).
+    (autoscaler +40m59s) [autoscaler] [8xA100-80GB:96CPU-1360GB|a2-ultragpu-8g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-8g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +41m0s) [autoscaler] [4xA100-80GB:48CPU-680GB] Upscaling 1 node(s).
+    (autoscaler +41m1s) [autoscaler] [2xA100-80GB:24CPU-340GB] Upscaling 1 node(s).
+    (autoscaler +41m2s) [autoscaler] [2xA100-80GB:24CPU-340GB|a2-ultragpu-2g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-2g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +41m2s) [autoscaler] [4xA100-80GB:48CPU-680GB|a2-ultragpu-4g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-4g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +41m5s) [autoscaler] [8xA100-80GB:96CPU-1360GB] Upscaling 1 node(s).
+    (autoscaler +41m6s) [autoscaler] [8xA100-80GB:96CPU-1360GB|a2-ultragpu-8g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-8g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +41m7s) [autoscaler] [1xA100-80GB:12CPU-170GB] Upscaling 6 node(s).
+    (autoscaler +41m9s) [autoscaler] [1xA100-80GB:12CPU-170GB|a2-ultragpu-1g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-1g;num:6;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +41m10s) [autoscaler] [2xA100-80GB:24CPU-340GB] Upscaling 3 node(s).
+    (autoscaler +41m10s) [autoscaler] [2xA100-80GB:24CPU-340GB|a2-ultragpu-2g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-2g;num:3;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +41m13s) [autoscaler] [2xA100-80GB:24CPU-340GB] Upscaling 1 node(s).
+    (autoscaler +41m13s) [autoscaler] [4xA100-80GB:48CPU-680GB] Upscaling 1 node(s).
+    (autoscaler +41m14s) [autoscaler] [2xA100-80GB:24CPU-340GB|a2-ultragpu-2g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-2g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +41m14s) [autoscaler] [4xA100-80GB:48CPU-680GB|a2-ultragpu-4g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-4g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +41m15s) [autoscaler] [8xA100-80GB:96CPU-1360GB] Upscaling 1 node(s).
+    (autoscaler +41m16s) [autoscaler] [8xA100-80GB:96CPU-1360GB|a2-ultragpu-8g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-8g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +41m18s) [autoscaler] [1xA100-80GB:12CPU-170GB] Upscaling 6 node(s).
+    (autoscaler +41m19s) [autoscaler] [1xA100-80GB:12CPU-170GB|a2-ultragpu-1g] [us-east5-c] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-1g;num:6;all:true]: googleapi: Error 400: Invalid value for field 'resource.instanceProperties.machineType': 'a2-ultragpu-1g'. Machine type with name 'a2-ultragpu-1g' does not exist in zone 'us-east5-c'.
+    (autoscaler +41m19s) [autoscaler] [1xA100-80GB:12CPU-170GB|a2-ultragpu-1g] [us-east5-c] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-1g;num:6;all:false]: googleapi: Error 400: Invalid value for field 'resource.instanceProperties.machineType': 'a2-ultragpu-1g'. Machine type with name 'a2-ultragpu-1g' does not exist in zone 'us-east5-c'.
+    (autoscaler +41m22s) [autoscaler] [2xA100-80GB:24CPU-340GB] Upscaling 3 node(s).
+    (autoscaler +41m23s) [autoscaler] [2xA100-80GB:24CPU-340GB|a2-ultragpu-2g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-2g;num:3;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +41m25s) [autoscaler] [1xA100-80GB:12CPU-170GB] Upscaling 6 node(s).
+    (autoscaler +41m25s) [autoscaler] [1xA100-80GB:12CPU-170GB|a2-ultragpu-1g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-1g;num:6;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +41m27s) [autoscaler] [2xA100-80GB:24CPU-340GB] Upscaling 1 node(s).
+    (autoscaler +41m27s) [autoscaler] [4xA100-80GB:48CPU-680GB] Upscaling 1 node(s).
+    (autoscaler +41m28s) [autoscaler] [4xA100-80GB:48CPU-680GB|a2-ultragpu-4g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-4g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +41m28s) [autoscaler] [2xA100-80GB:24CPU-340GB|a2-ultragpu-2g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-2g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +41m31s) [autoscaler] [8xA100-80GB:96CPU-1360GB] Upscaling 1 node(s).
+    (autoscaler +41m32s) [autoscaler] [8xA100-80GB:96CPU-1360GB|a2-ultragpu-8g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-8g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +41m33s) [autoscaler] [1xA100-80GB:12CPU-170GB] Upscaling 6 node(s).
+    (autoscaler +41m33s) [autoscaler] [1xA100-80GB:12CPU-170GB|a2-ultragpu-1g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-1g;num:6;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +41m34s) [autoscaler] [4xA100-80GB:48CPU-680GB] Upscaling 1 node(s).
+    (autoscaler +41m34s) [autoscaler] [2xA100-80GB:24CPU-340GB] Upscaling 1 node(s).
+    (autoscaler +41m34s) [autoscaler] [2xA100-80GB:24CPU-340GB|a2-ultragpu-2g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-2g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +41m35s) [autoscaler] [4xA100-80GB:48CPU-680GB|a2-ultragpu-4g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-4g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +41m38s) [autoscaler] [8xA100-80GB:96CPU-1360GB] Upscaling 1 node(s).
+    (autoscaler +41m39s) [autoscaler] [8xA100-80GB:96CPU-1360GB|a2-ultragpu-8g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-8g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +41m40s) [autoscaler] [2xA100-80GB:24CPU-340GB] Upscaling 3 node(s).
+    (autoscaler +41m41s) [autoscaler] [2xA100-80GB:24CPU-340GB|a2-ultragpu-2g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-2g;num:3;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +41m44s) [autoscaler] [2xA100-80GB:24CPU-340GB] Upscaling 1 node(s).
+    (autoscaler +41m44s) [autoscaler] [4xA100-80GB:48CPU-680GB] Upscaling 1 node(s).
+    (autoscaler +41m44s) [autoscaler] [4xA100-80GB:48CPU-680GB|a2-ultragpu-4g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-4g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +41m44s) [autoscaler] [2xA100-80GB:24CPU-340GB|a2-ultragpu-2g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-2g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +41m46s) [autoscaler] [1xA100-80GB:12CPU-170GB] Upscaling 6 node(s).
+    (autoscaler +41m48s) [autoscaler] [1xA100-80GB:12CPU-170GB|a2-ultragpu-1g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-1g;num:6;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +41m49s) [autoscaler] [8xA100-80GB:96CPU-1360GB] Upscaling 1 node(s).
+    (autoscaler +41m49s) [autoscaler] [8xA100-80GB:96CPU-1360GB|a2-ultragpu-8g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-8g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +41m50s) [autoscaler] [4xA100-80GB:48CPU-680GB] Upscaling 1 node(s).
+    (autoscaler +41m50s) [autoscaler] [2xA100-80GB:24CPU-340GB] Upscaling 1 node(s).
+    (autoscaler +41m50s) [autoscaler] [2xA100-80GB:24CPU-340GB|a2-ultragpu-2g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-2g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +41m51s) [autoscaler] [4xA100-80GB:48CPU-680GB|a2-ultragpu-4g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-4g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +41m52s) [autoscaler] [8xA100-80GB:96CPU-1360GB] Upscaling 1 node(s).
+    (autoscaler +41m54s) [autoscaler] [8xA100-80GB:96CPU-1360GB|a2-ultragpu-8g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-8g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +41m57s) [autoscaler] [2xA100-80GB:24CPU-340GB] Upscaling 3 node(s).
+    (autoscaler +41m58s) [autoscaler] [2xA100-80GB:24CPU-340GB|a2-ultragpu-2g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-2g;num:3;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +41m59s) [autoscaler] [4xA100-80GB:48CPU-680GB] Upscaling 1 node(s).
+    (autoscaler +41m59s) [autoscaler] [2xA100-80GB:24CPU-340GB] Upscaling 1 node(s).
+    (autoscaler +42m0s) [autoscaler] [4xA100-80GB:48CPU-680GB|a2-ultragpu-4g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-4g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +42m0s) [autoscaler] [2xA100-80GB:24CPU-340GB|a2-ultragpu-2g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-2g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +42m2s) [autoscaler] [1xA100-80GB:12CPU-170GB] Upscaling 6 node(s).
+    (autoscaler +42m4s) [autoscaler] [1xA100-80GB:12CPU-170GB|a2-ultragpu-1g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-1g;num:6;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +42m6s) [autoscaler] [8xA100-80GB:96CPU-1360GB] Upscaling 1 node(s).
+    (autoscaler +42m7s) [autoscaler] [8xA100-80GB:96CPU-1360GB|a2-ultragpu-8g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-8g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +42m8s) [autoscaler] [4xA100-80GB:48CPU-680GB] Upscaling 1 node(s).
+    (autoscaler +42m8s) [autoscaler] [2xA100-80GB:24CPU-340GB] Upscaling 1 node(s).
+    (autoscaler +42m9s) [autoscaler] [4xA100-80GB:48CPU-680GB|a2-ultragpu-4g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-4g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +42m9s) [autoscaler] [2xA100-80GB:24CPU-340GB|a2-ultragpu-2g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-2g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +42m12s) [autoscaler] [1xA100-80GB:12CPU-170GB] Upscaling 6 node(s).
+    (autoscaler +42m12s) [autoscaler] [1xA100-80GB:12CPU-170GB|a2-ultragpu-1g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-1g;num:6;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +42m15s) [autoscaler] [8xA100-80GB:96CPU-1360GB] Upscaling 1 node(s).
+    (autoscaler +42m16s) [autoscaler] [8xA100-80GB:96CPU-1360GB|a2-ultragpu-8g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-8g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +42m17s) [autoscaler] [4xA100-80GB:48CPU-680GB] Upscaling 1 node(s).
+    (autoscaler +42m17s) [autoscaler] [2xA100-80GB:24CPU-340GB] Upscaling 1 node(s).
+    (autoscaler +42m17s) [autoscaler] [2xA100-80GB:24CPU-340GB|a2-ultragpu-2g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-2g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +42m18s) [autoscaler] [4xA100-80GB:48CPU-680GB|a2-ultragpu-4g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-4g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +42m19s) [autoscaler] [8xA100-80GB:96CPU-1360GB] Upscaling 1 node(s).
+    (autoscaler +42m21s) [autoscaler] [8xA100-80GB:96CPU-1360GB|a2-ultragpu-8g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-8g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +42m23s) [autoscaler] [2xA100-80GB:24CPU-340GB] Upscaling 3 node(s).
+    (autoscaler +42m24s) [autoscaler] [2xA100-80GB:24CPU-340GB|a2-ultragpu-2g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-2g;num:3;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +42m25s) [autoscaler] [1xA100-80GB:12CPU-170GB] Upscaling 6 node(s).
+    (autoscaler +42m25s) [autoscaler] [1xA100-80GB:12CPU-170GB|a2-ultragpu-1g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-1g;num:6;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +42m26s) [autoscaler] [2xA100-80GB:24CPU-340GB] Upscaling 1 node(s).
+    (autoscaler +42m26s) [autoscaler] [4xA100-80GB:48CPU-680GB] Upscaling 1 node(s).
+    (autoscaler +42m27s) [autoscaler] [2xA100-80GB:24CPU-340GB|a2-ultragpu-2g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-2g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +42m27s) [autoscaler] [4xA100-80GB:48CPU-680GB|a2-ultragpu-4g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-4g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +42m30s) [autoscaler] [8xA100-80GB:96CPU-1360GB] Upscaling 1 node(s).
+    (autoscaler +42m30s) [autoscaler] [8xA100-80GB:96CPU-1360GB|a2-ultragpu-8g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-8g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +42m31s) [autoscaler] [2xA100-80GB:24CPU-340GB] Upscaling 3 node(s).
+    (autoscaler +42m33s) [autoscaler] [2xA100-80GB:24CPU-340GB|a2-ultragpu-2g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-2g;num:3;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +42m34s) [autoscaler] [4xA100-80GB:48CPU-680GB] Upscaling 1 node(s).
+    (autoscaler +42m34s) [autoscaler] [2xA100-80GB:24CPU-340GB] Upscaling 1 node(s).
+    (autoscaler +42m35s) [autoscaler] [4xA100-80GB:48CPU-680GB|a2-ultragpu-4g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-4g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +42m35s) [autoscaler] [2xA100-80GB:24CPU-340GB|a2-ultragpu-2g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-2g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +42m37s) [autoscaler] [8xA100-80GB:96CPU-1360GB] Upscaling 1 node(s).
+    (autoscaler +42m39s) [autoscaler] [8xA100-80GB:96CPU-1360GB|a2-ultragpu-8g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-8g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +42m40s) [autoscaler] [1xA100-80GB:12CPU-170GB] Upscaling 6 node(s).
+    (autoscaler +42m41s) [autoscaler] [1xA100-80GB:12CPU-170GB|a2-ultragpu-1g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-1g;num:6;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +42m42s) [autoscaler] [4xA100-80GB:48CPU-680GB] Upscaling 1 node(s).
+    (autoscaler +42m42s) [autoscaler] [2xA100-80GB:24CPU-340GB] Upscaling 1 node(s).
+    (autoscaler +42m42s) [autoscaler] [4xA100-80GB:48CPU-680GB|a2-ultragpu-4g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-4g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +42m42s) [autoscaler] [2xA100-80GB:24CPU-340GB|a2-ultragpu-2g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-2g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +42m44s) [autoscaler] [8xA100-80GB:96CPU-1360GB] Upscaling 1 node(s).
+    (autoscaler +42m44s) [autoscaler] [8xA100-80GB:96CPU-1360GB|a2-ultragpu-8g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-8g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +42m47s) [autoscaler] [1xA100-80GB:12CPU-170GB] Upscaling 6 node(s).
+    (autoscaler +42m48s) [autoscaler] [1xA100-80GB:12CPU-170GB|a2-ultragpu-1g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-1g;num:6;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +42m49s) [autoscaler] [4xA100-80GB:48CPU-680GB] Upscaling 1 node(s).
+    (autoscaler +42m49s) [autoscaler] [2xA100-80GB:24CPU-340GB] Upscaling 1 node(s).
+    (autoscaler +42m50s) [autoscaler] [4xA100-80GB:48CPU-680GB|a2-ultragpu-4g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-4g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +42m51s) [autoscaler] [2xA100-80GB:24CPU-340GB|a2-ultragpu-2g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-2g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +42m51s) [autoscaler] [8xA100-80GB:96CPU-1360GB] Upscaling 1 node(s).
+    (autoscaler +42m53s) [autoscaler] [8xA100-80GB:96CPU-1360GB|a2-ultragpu-8g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-8g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +42m54s) [autoscaler] [2xA100-80GB:24CPU-340GB] Upscaling 3 node(s).
+    (autoscaler +42m56s) [autoscaler] [2xA100-80GB:24CPU-340GB|a2-ultragpu-2g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-2g;num:3;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +42m57s) [autoscaler] [1xA100-80GB:12CPU-170GB] Upscaling 6 node(s).
+    (autoscaler +42m58s) [autoscaler] [1xA100-80GB:12CPU-170GB|a2-ultragpu-1g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-1g;num:6;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +42m59s) [autoscaler] [4xA100-80GB:48CPU-680GB] Upscaling 1 node(s).
+    (autoscaler +42m59s) [autoscaler] [2xA100-80GB:24CPU-340GB] Upscaling 1 node(s).
+    (autoscaler +43m0s) [autoscaler] [4xA100-80GB:48CPU-680GB|a2-ultragpu-4g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-4g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +43m0s) [autoscaler] [2xA100-80GB:24CPU-340GB|a2-ultragpu-2g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-2g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +43m2s) [autoscaler] [8xA100-80GB:96CPU-1360GB] Upscaling 1 node(s).
+    (autoscaler +43m2s) [autoscaler] [8xA100-80GB:96CPU-1360GB|a2-ultragpu-8g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-8g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +43m5s) [autoscaler] [2xA100-80GB:24CPU-340GB] Upscaling 1 node(s).
+    (autoscaler +43m5s) [autoscaler] [4xA100-80GB:48CPU-680GB] Upscaling 1 node(s).
+    (autoscaler +43m5s) [autoscaler] [4xA100-80GB:48CPU-680GB|a2-ultragpu-4g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-4g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +43m6s) [autoscaler] [2xA100-80GB:24CPU-340GB|a2-ultragpu-2g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-2g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +43m8s) [autoscaler] [1xA100-80GB:12CPU-170GB] Upscaling 6 node(s).
+    (autoscaler +43m8s) [autoscaler] [1xA100-80GB:12CPU-170GB|a2-ultragpu-1g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-1g;num:6;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +43m10s) [autoscaler] [8xA100-80GB:96CPU-1360GB] Upscaling 1 node(s).
+    (autoscaler +43m12s) [autoscaler] [8xA100-80GB:96CPU-1360GB|a2-ultragpu-8g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-8g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +43m13s) [autoscaler] [4xA100-80GB:48CPU-680GB] Upscaling 1 node(s).
+    (autoscaler +43m13s) [autoscaler] [2xA100-80GB:24CPU-340GB] Upscaling 1 node(s).
+    (autoscaler +43m14s) [autoscaler] [2xA100-80GB:24CPU-340GB|a2-ultragpu-2g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-2g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +43m14s) [autoscaler] [4xA100-80GB:48CPU-680GB|a2-ultragpu-4g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-4g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +43m16s) [autoscaler] [1xA100-80GB:12CPU-170GB] Upscaling 6 node(s).
+    (autoscaler +43m16s) [autoscaler] [1xA100-80GB:12CPU-170GB|a2-ultragpu-1g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-1g;num:6;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +43m18s) [autoscaler] [8xA100-80GB:96CPU-1360GB] Upscaling 1 node(s).
+    (autoscaler +43m19s) [autoscaler] [8xA100-80GB:96CPU-1360GB|a2-ultragpu-8g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-8g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +43m22s) [autoscaler] [2xA100-80GB:24CPU-340GB] Upscaling 3 node(s).
+    (autoscaler +43m23s) [autoscaler] [2xA100-80GB:24CPU-340GB|a2-ultragpu-2g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-2g;num:3;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +43m25s) [autoscaler] [4xA100-80GB:48CPU-680GB] Upscaling 1 node(s).
+    (autoscaler +43m25s) [autoscaler] [2xA100-80GB:24CPU-340GB] Upscaling 1 node(s).
+    (autoscaler +43m25s) [autoscaler] [4xA100-80GB:48CPU-680GB|a2-ultragpu-4g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-4g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +43m25s) [autoscaler] [2xA100-80GB:24CPU-340GB|a2-ultragpu-2g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-2g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +43m27s) [autoscaler] [8xA100-80GB:96CPU-1360GB] Upscaling 1 node(s).
+    (autoscaler +43m29s) [autoscaler] [8xA100-80GB:96CPU-1360GB|a2-ultragpu-8g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-8g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +43m31s) [autoscaler] [1xA100-80GB:12CPU-170GB] Upscaling 6 node(s).
+    (autoscaler +43m31s) [autoscaler] [1xA100-80GB:12CPU-170GB|a2-ultragpu-1g] [us-east5-c] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-1g;num:6;all:true]: googleapi: Error 400: Invalid value for field 'resource.instanceProperties.machineType': 'a2-ultragpu-1g'. Machine type with name 'a2-ultragpu-1g' does not exist in zone 'us-east5-c'.
+    (autoscaler +43m32s) [autoscaler] [1xA100-80GB:12CPU-170GB|a2-ultragpu-1g] [us-east5-c] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-1g;num:6;all:false]: googleapi: Error 400: Invalid value for field 'resource.instanceProperties.machineType': 'a2-ultragpu-1g'. Machine type with name 'a2-ultragpu-1g' does not exist in zone 'us-east5-c'.
+    (autoscaler +43m33s) [autoscaler] [1xA100-80GB:12CPU-170GB] Upscaling 6 node(s).
+    (autoscaler +43m34s) [autoscaler] [1xA100-80GB:12CPU-170GB|a2-ultragpu-1g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-1g;num:6;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +43m35s) [autoscaler] [4xA100-80GB:48CPU-680GB] Upscaling 1 node(s).
+    (autoscaler +43m35s) [autoscaler] [2xA100-80GB:24CPU-340GB] Upscaling 1 node(s).
+    (autoscaler +43m36s) [autoscaler] [2xA100-80GB:24CPU-340GB|a2-ultragpu-2g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-2g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +43m36s) [autoscaler] [4xA100-80GB:48CPU-680GB|a2-ultragpu-4g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-4g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +43m39s) [autoscaler] [8xA100-80GB:96CPU-1360GB] Upscaling 1 node(s).
+    (autoscaler +43m40s) [autoscaler] [8xA100-80GB:96CPU-1360GB|a2-ultragpu-8g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-8g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +43m41s) [autoscaler] [1xA100-80GB:12CPU-170GB] Upscaling 6 node(s).
+    (autoscaler +43m43s) [autoscaler] [1xA100-80GB:12CPU-170GB|a2-ultragpu-1g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-1g;num:6;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +43m44s) [autoscaler] [2xA100-80GB:24CPU-340GB] Upscaling 3 node(s).
+    (autoscaler +43m46s) [autoscaler] [2xA100-80GB:24CPU-340GB|a2-ultragpu-2g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-2g;num:3;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +43m48s) [autoscaler] [2xA100-80GB:24CPU-340GB] Upscaling 1 node(s).
+    (autoscaler +43m48s) [autoscaler] [4xA100-80GB:48CPU-680GB] Upscaling 1 node(s).
+    (autoscaler +43m49s) [autoscaler] [4xA100-80GB:48CPU-680GB|a2-ultragpu-4g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-4g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +43m49s) [autoscaler] [2xA100-80GB:24CPU-340GB|a2-ultragpu-2g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-2g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +43m50s) [autoscaler] [8xA100-80GB:96CPU-1360GB] Upscaling 1 node(s).
+    (autoscaler +43m51s) [autoscaler] [8xA100-80GB:96CPU-1360GB|a2-ultragpu-8g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-8g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +43m53s) [autoscaler] [4xA100-80GB:48CPU-680GB] Upscaling 1 node(s).
+    (autoscaler +43m53s) [autoscaler] [2xA100-80GB:24CPU-340GB] Upscaling 1 node(s).
+    (autoscaler +43m53s) [autoscaler] [4xA100-80GB:48CPU-680GB|a2-ultragpu-4g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-4g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +43m55s) [autoscaler] [2xA100-80GB:24CPU-340GB|a2-ultragpu-2g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-2g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +43m57s) [autoscaler] [1xA100-80GB:12CPU-170GB] Upscaling 3 node(s).
+    (autoscaler +43m58s) [autoscaler] [1xA100-80GB:12CPU-170GB|a2-ultragpu-1g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-1g;num:3;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +43m59s) [autoscaler] [4xA100-80GB:48CPU-680GB] Upscaling 1 node(s).
+    (autoscaler +44m1s) [autoscaler] [4xA100-80GB:48CPU-680GB|a2-ultragpu-4g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-4g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +44m1s) [autoscaler] [4xA100-80GB:48CPU-680GB] Upscaling 1 node(s).
+    (autoscaler +44m2s) [autoscaler] [4xA100-80GB:48CPU-680GB|a2-ultragpu-4g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-4g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +44m5s) [autoscaler] [4xA100-80GB:48CPU-680GB] Upscaling 1 node(s).
+    (autoscaler +44m5s) [autoscaler] [4xA100-80GB:48CPU-680GB|a2-ultragpu-4g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-4g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +44m55s) [autoscaler] Downscaling node g-754bab5ac3b0b0002 (node IP: 10.0.0.46) due to node idle termination.
+    (autoscaler +44m55s) [autoscaler] Downscaling node g-754bab5ac3b0b0001 (node IP: 10.0.0.41) due to node idle termination.
+    (autoscaler +44m55s) [autoscaler] Downscaling node g-754bab5ac3b0b0003 (node IP: 10.0.0.45) due to node idle termination.
+    (autoscaler +44m57s) [autoscaler] Cluster resized to {12 CPU, 1 GPU}.
+    (autoscaler +1h1m41s) [autoscaler] [8xA100-80GB:96CPU-1360GB] Upscaling 1 node(s).
+    (autoscaler +1h1m41s) [autoscaler] [8xA100-80GB:96CPU-1360GB|a2-ultragpu-8g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-8g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h1m43s) [autoscaler] [2xA100-80GB:24CPU-340GB] Upscaling 2 node(s).
+    (autoscaler +1h1m43s) [autoscaler] [1xA100-80GB:12CPU-170GB] Upscaling 1 node(s).
+    (autoscaler +1h1m44s) [autoscaler] [1xA100-80GB:12CPU-170GB|a2-ultragpu-1g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-1g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h1m45s) [autoscaler] [2xA100-80GB:24CPU-340GB|a2-ultragpu-2g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-2g;num:2;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h1m48s) [autoscaler] [4xA100-80GB:48CPU-680GB] Upscaling 1 node(s).
+    (autoscaler +1h1m48s) [autoscaler] [1xA100-80GB:12CPU-170GB] Upscaling 1 node(s).
+    (autoscaler +1h1m48s) [autoscaler] [4xA100-80GB:48CPU-680GB|a2-ultragpu-4g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-4g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h1m48s) [autoscaler] Cluster upscaled to {48 CPU, 4 GPU}.
+    (autoscaler +1h1m48s) [autoscaler] [1xA100-80GB:12CPU-170GB|a2-ultragpu-1g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-1g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h1m50s) [autoscaler] [8xA100-80GB:96CPU-1360GB] Upscaling 1 node(s).
+    (autoscaler +1h1m51s) [autoscaler] [8xA100-80GB:96CPU-1360GB|a2-ultragpu-8g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-8g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h1m52s) [autoscaler] [2xA100-80GB:24CPU-340GB] Upscaling 2 node(s).
+    (autoscaler +1h1m53s) [autoscaler] [1xA100-80GB:12CPU-170GB] Upscaling 1 node(s).
+    (autoscaler +1h1m53s) [autoscaler] [2xA100-80GB:24CPU-340GB|a2-ultragpu-2g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-2g;num:2;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h1m53s) [autoscaler] [1xA100-80GB:12CPU-170GB|a2-ultragpu-1g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-1g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h1m57s) [autoscaler] [4xA100-80GB:48CPU-680GB] Upscaling 1 node(s).
+    (autoscaler +1h1m57s) [autoscaler] [1xA100-80GB:12CPU-170GB] Upscaling 1 node(s).
+    (autoscaler +1h1m57s) [autoscaler] [4xA100-80GB:48CPU-680GB|a2-ultragpu-4g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-4g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h1m57s) [autoscaler] [1xA100-80GB:12CPU-170GB|a2-ultragpu-1g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-1g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h1m59s) [autoscaler] [8xA100-80GB:96CPU-1360GB] Upscaling 1 node(s).
+    (autoscaler +1h1m59s) [autoscaler] [8xA100-80GB:96CPU-1360GB|a2-ultragpu-8g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-8g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h2m0s) [autoscaler] [2xA100-80GB:24CPU-340GB] Upscaling 2 node(s).
+    (autoscaler +1h2m0s) [autoscaler] [1xA100-80GB:12CPU-170GB] Upscaling 1 node(s).
+    (autoscaler +1h2m1s) [autoscaler] [1xA100-80GB:12CPU-170GB|a2-ultragpu-1g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-1g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h2m1s) [autoscaler] [2xA100-80GB:24CPU-340GB|a2-ultragpu-2g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-2g;num:2;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h2m4s) [autoscaler] [1xA100-80GB:12CPU-170GB] Upscaling 1 node(s).
+    (autoscaler +1h2m4s) [autoscaler] [4xA100-80GB:48CPU-680GB] Upscaling 1 node(s).
+    (autoscaler +1h2m5s) [autoscaler] [1xA100-80GB:12CPU-170GB|a2-ultragpu-1g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-1g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h2m5s) [autoscaler] [4xA100-80GB:48CPU-680GB|a2-ultragpu-4g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-4g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h2m7s) [autoscaler] [8xA100-80GB:96CPU-1360GB] Upscaling 1 node(s).
+    (autoscaler +1h2m7s) [autoscaler] [8xA100-80GB:96CPU-1360GB|a2-ultragpu-8g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-8g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h2m9s) [autoscaler] [2xA100-80GB:24CPU-340GB] Upscaling 2 node(s).
+    (autoscaler +1h2m9s) [autoscaler] [1xA100-80GB:12CPU-170GB] Upscaling 1 node(s).
+    (autoscaler +1h2m10s) [autoscaler] [2xA100-80GB:24CPU-340GB|a2-ultragpu-2g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-2g;num:2;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h2m10s) [autoscaler] [1xA100-80GB:12CPU-170GB|a2-ultragpu-1g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-1g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h2m11s) [autoscaler] [4xA100-80GB:48CPU-680GB] Upscaling 1 node(s).
+    (autoscaler +1h2m11s) [autoscaler] [1xA100-80GB:12CPU-170GB] Upscaling 1 node(s).
+    (autoscaler +1h2m13s) [autoscaler] [1xA100-80GB:12CPU-170GB|a2-ultragpu-1g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-1g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h2m13s) [autoscaler] [4xA100-80GB:48CPU-680GB|a2-ultragpu-4g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-4g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h2m15s) [autoscaler] [8xA100-80GB:96CPU-1360GB] Upscaling 1 node(s).
+    (autoscaler +1h2m16s) [autoscaler] [8xA100-80GB:96CPU-1360GB|a2-ultragpu-8g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-8g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h2m16s) [autoscaler] [2xA100-80GB:24CPU-340GB] Upscaling 2 node(s).
+    (autoscaler +1h2m16s) [autoscaler] [1xA100-80GB:12CPU-170GB] Upscaling 1 node(s).
+    (autoscaler +1h2m17s) [autoscaler] [1xA100-80GB:12CPU-170GB|a2-ultragpu-1g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-1g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h2m17s) [autoscaler] [2xA100-80GB:24CPU-340GB|a2-ultragpu-2g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-2g;num:2;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h2m18s) [autoscaler] [4xA100-80GB:48CPU-680GB] Upscaling 1 node(s).
+    (autoscaler +1h2m18s) [autoscaler] [1xA100-80GB:12CPU-170GB] Upscaling 1 node(s).
+    (autoscaler +1h2m19s) [autoscaler] [4xA100-80GB:48CPU-680GB|a2-ultragpu-4g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-4g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h2m19s) [autoscaler] [1xA100-80GB:12CPU-170GB|a2-ultragpu-1g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-1g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h2m23s) [autoscaler] [8xA100-80GB:96CPU-1360GB] Upscaling 1 node(s).
+    (autoscaler +1h2m24s) [autoscaler] [8xA100-80GB:96CPU-1360GB|a2-ultragpu-8g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-8g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h2m24s) [autoscaler] [2xA100-80GB:24CPU-340GB] Upscaling 2 node(s).
+    (autoscaler +1h2m25s) [autoscaler] [1xA100-80GB:12CPU-170GB] Upscaling 1 node(s).
+    (autoscaler +1h2m26s) [autoscaler] [1xA100-80GB:12CPU-170GB|a2-ultragpu-1g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-1g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h2m26s) [autoscaler] [2xA100-80GB:24CPU-340GB|a2-ultragpu-2g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-2g;num:2;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h2m28s) [autoscaler] [4xA100-80GB:48CPU-680GB] Upscaling 1 node(s).
+    (autoscaler +1h2m28s) [autoscaler] [1xA100-80GB:12CPU-170GB] Upscaling 1 node(s).
+    (autoscaler +1h2m28s) [autoscaler] [1xA100-80GB:12CPU-170GB|a2-ultragpu-1g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-1g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h2m30s) [autoscaler] [4xA100-80GB:48CPU-680GB|a2-ultragpu-4g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-4g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h2m31s) [autoscaler] [8xA100-80GB:96CPU-1360GB] Upscaling 1 node(s).
+    (autoscaler +1h2m32s) [autoscaler] [8xA100-80GB:96CPU-1360GB|a2-ultragpu-8g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-8g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h2m34s) [autoscaler] [1xA100-80GB:12CPU-170GB] Upscaling 1 node(s).
+    (autoscaler +1h2m34s) [autoscaler] [2xA100-80GB:24CPU-340GB] Upscaling 2 node(s).
+    (autoscaler +1h2m35s) [autoscaler] [1xA100-80GB:12CPU-170GB|a2-ultragpu-1g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-1g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h2m35s) [autoscaler] [2xA100-80GB:24CPU-340GB|a2-ultragpu-2g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-2g;num:2;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h2m37s) [autoscaler] [4xA100-80GB:48CPU-680GB] Upscaling 1 node(s).
+    (autoscaler +1h2m37s) [autoscaler] [1xA100-80GB:12CPU-170GB] Upscaling 1 node(s).
+    (autoscaler +1h2m37s) [autoscaler] [1xA100-80GB:12CPU-170GB|a2-ultragpu-1g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-1g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h2m39s) [autoscaler] [4xA100-80GB:48CPU-680GB|a2-ultragpu-4g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-4g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h2m40s) [autoscaler] [8xA100-80GB:96CPU-1360GB] Upscaling 1 node(s).
+    (autoscaler +1h2m41s) [autoscaler] [8xA100-80GB:96CPU-1360GB|a2-ultragpu-8g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-8g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h2m41s) [autoscaler] [2xA100-80GB:24CPU-340GB] Upscaling 2 node(s).
+    (autoscaler +1h2m41s) [autoscaler] [1xA100-80GB:12CPU-170GB] Upscaling 1 node(s).
+    (autoscaler +1h2m42s) [autoscaler] [1xA100-80GB:12CPU-170GB|a2-ultragpu-1g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-1g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h2m43s) [autoscaler] [2xA100-80GB:24CPU-340GB|a2-ultragpu-2g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-2g;num:2;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h2m44s) [autoscaler] [4xA100-80GB:48CPU-680GB] Upscaling 1 node(s).
+    (autoscaler +1h2m44s) [autoscaler] [1xA100-80GB:12CPU-170GB] Upscaling 1 node(s).
+    (autoscaler +1h2m45s) [autoscaler] [1xA100-80GB:12CPU-170GB|a2-ultragpu-1g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-1g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h2m45s) [autoscaler] [4xA100-80GB:48CPU-680GB|a2-ultragpu-4g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-4g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h2m49s) [autoscaler] [8xA100-80GB:96CPU-1360GB] Upscaling 1 node(s).
+    (autoscaler +1h2m49s) [autoscaler] [8xA100-80GB:96CPU-1360GB|a2-ultragpu-8g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-8g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h2m50s) [autoscaler] [1xA100-80GB:12CPU-170GB] Upscaling 1 node(s).
+    (autoscaler +1h2m50s) [autoscaler] [2xA100-80GB:24CPU-340GB] Upscaling 2 node(s).
+    (autoscaler +1h2m50s) [autoscaler] [2xA100-80GB:24CPU-340GB|a2-ultragpu-2g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-2g;num:2;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h2m50s) [autoscaler] [1xA100-80GB:12CPU-170GB|a2-ultragpu-1g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-1g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h2m52s) [autoscaler] [4xA100-80GB:48CPU-680GB] Upscaling 1 node(s).
+    (autoscaler +1h2m52s) [autoscaler] [1xA100-80GB:12CPU-170GB] Upscaling 1 node(s).
+    (autoscaler +1h2m53s) [autoscaler] [1xA100-80GB:12CPU-170GB|a2-ultragpu-1g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-1g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h2m53s) [autoscaler] [4xA100-80GB:48CPU-680GB|a2-ultragpu-4g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-4g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h2m56s) [autoscaler] [8xA100-80GB:96CPU-1360GB] Upscaling 1 node(s).
+    (autoscaler +1h2m57s) [autoscaler] [8xA100-80GB:96CPU-1360GB|a2-ultragpu-8g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-8g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h2m58s) [autoscaler] [2xA100-80GB:24CPU-340GB] Upscaling 2 node(s).
+    (autoscaler +1h2m58s) [autoscaler] [1xA100-80GB:12CPU-170GB] Upscaling 1 node(s).
+    (autoscaler +1h3m0s) [autoscaler] [1xA100-80GB:12CPU-170GB|a2-ultragpu-1g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-1g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h3m0s) [autoscaler] [2xA100-80GB:24CPU-340GB|a2-ultragpu-2g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-2g;num:2;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h3m2s) [autoscaler] [4xA100-80GB:48CPU-680GB] Upscaling 1 node(s).
+    (autoscaler +1h3m2s) [autoscaler] [1xA100-80GB:12CPU-170GB] Upscaling 1 node(s).
+    (autoscaler +1h3m2s) [autoscaler] [1xA100-80GB:12CPU-170GB|a2-ultragpu-1g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-1g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h3m2s) [autoscaler] [4xA100-80GB:48CPU-680GB|a2-ultragpu-4g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-4g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h3m5s) [autoscaler] [8xA100-80GB:96CPU-1360GB] Upscaling 1 node(s).
+    (autoscaler +1h3m6s) [autoscaler] [8xA100-80GB:96CPU-1360GB|a2-ultragpu-8g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-8g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h3m6s) [autoscaler] [2xA100-80GB:24CPU-340GB] Upscaling 2 node(s).
+    (autoscaler +1h3m7s) [autoscaler] [1xA100-80GB:12CPU-170GB] Upscaling 1 node(s).
+    (autoscaler +1h3m8s) [autoscaler] [1xA100-80GB:12CPU-170GB|a2-ultragpu-1g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-1g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h3m8s) [autoscaler] [2xA100-80GB:24CPU-340GB|a2-ultragpu-2g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-2g;num:2;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h3m9s) [autoscaler] [4xA100-80GB:48CPU-680GB] Upscaling 1 node(s).
+    (autoscaler +1h3m9s) [autoscaler] [1xA100-80GB:12CPU-170GB] Upscaling 1 node(s).
+    (autoscaler +1h3m11s) [autoscaler] [1xA100-80GB:12CPU-170GB|a2-ultragpu-1g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-1g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h3m11s) [autoscaler] [4xA100-80GB:48CPU-680GB|a2-ultragpu-4g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-4g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h3m14s) [autoscaler] [8xA100-80GB:96CPU-1360GB] Upscaling 1 node(s).
+    (autoscaler +1h3m14s) [autoscaler] [8xA100-80GB:96CPU-1360GB|a2-ultragpu-8g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-8g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h3m16s) [autoscaler] [1xA100-80GB:12CPU-170GB] Upscaling 1 node(s).
+    (autoscaler +1h3m16s) [autoscaler] [2xA100-80GB:24CPU-340GB] Upscaling 2 node(s).
+    (autoscaler +1h3m16s) [autoscaler] [1xA100-80GB:12CPU-170GB|a2-ultragpu-1g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-1g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h3m16s) [autoscaler] [2xA100-80GB:24CPU-340GB|a2-ultragpu-2g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-2g;num:2;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h3m17s) [autoscaler] [4xA100-80GB:48CPU-680GB] Upscaling 1 node(s).
+    (autoscaler +1h3m17s) [autoscaler] [1xA100-80GB:12CPU-170GB] Upscaling 1 node(s).
+    (autoscaler +1h3m18s) [autoscaler] [1xA100-80GB:12CPU-170GB|a2-ultragpu-1g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-1g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h3m18s) [autoscaler] [4xA100-80GB:48CPU-680GB|a2-ultragpu-4g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-4g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h3m21s) [autoscaler] [8xA100-80GB:96CPU-1360GB] Upscaling 1 node(s).
+    (autoscaler +1h3m22s) [autoscaler] [8xA100-80GB:96CPU-1360GB|a2-ultragpu-8g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-8g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h3m23s) [autoscaler] [2xA100-80GB:24CPU-340GB] Upscaling 2 node(s).
+    (autoscaler +1h3m23s) [autoscaler] [1xA100-80GB:12CPU-170GB] Upscaling 1 node(s).
+    (autoscaler +1h3m25s) [autoscaler] [1xA100-80GB:12CPU-170GB|a2-ultragpu-1g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-1g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h3m25s) [autoscaler] [2xA100-80GB:24CPU-340GB|a2-ultragpu-2g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-2g;num:2;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h3m27s) [autoscaler] [4xA100-80GB:48CPU-680GB] Upscaling 1 node(s).
+    (autoscaler +1h3m27s) [autoscaler] [1xA100-80GB:12CPU-170GB] Upscaling 1 node(s).
+    (autoscaler +1h3m27s) [autoscaler] [1xA100-80GB:12CPU-170GB|a2-ultragpu-1g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-1g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h3m27s) [autoscaler] [4xA100-80GB:48CPU-680GB|a2-ultragpu-4g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-4g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h3m30s) [autoscaler] [8xA100-80GB:96CPU-1360GB] Upscaling 1 node(s).
+    (autoscaler +1h3m30s) [autoscaler] [8xA100-80GB:96CPU-1360GB|a2-ultragpu-8g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-8g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h3m32s) [autoscaler] [1xA100-80GB:12CPU-170GB] Upscaling 1 node(s).
+    (autoscaler +1h3m32s) [autoscaler] [2xA100-80GB:24CPU-340GB] Upscaling 2 node(s).
+    (autoscaler +1h3m32s) [autoscaler] [1xA100-80GB:12CPU-170GB|a2-ultragpu-1g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-1g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h3m33s) [autoscaler] [2xA100-80GB:24CPU-340GB|a2-ultragpu-2g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-2g;num:2;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h3m33s) [autoscaler] [4xA100-80GB:48CPU-680GB] Upscaling 1 node(s).
+    (autoscaler +1h3m33s) [autoscaler] [1xA100-80GB:12CPU-170GB] Upscaling 1 node(s).
+    (autoscaler +1h3m34s) [autoscaler] [1xA100-80GB:12CPU-170GB|a2-ultragpu-1g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-1g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h3m35s) [autoscaler] [4xA100-80GB:48CPU-680GB|a2-ultragpu-4g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-4g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h3m36s) [autoscaler] [8xA100-80GB:96CPU-1360GB] Upscaling 1 node(s).
+    (autoscaler +1h3m39s) [autoscaler] [8xA100-80GB:96CPU-1360GB|a2-ultragpu-8g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-8g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h3m41s) [autoscaler] [2xA100-80GB:24CPU-340GB] Upscaling 2 node(s).
+    (autoscaler +1h3m41s) [autoscaler] [1xA100-80GB:12CPU-170GB] Upscaling 1 node(s).
+    (autoscaler +1h3m41s) [autoscaler] [2xA100-80GB:24CPU-340GB|a2-ultragpu-2g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-2g;num:2;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h3m41s) [autoscaler] [1xA100-80GB:12CPU-170GB|a2-ultragpu-1g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-1g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h3m42s) [autoscaler] [4xA100-80GB:48CPU-680GB] Upscaling 1 node(s).
+    (autoscaler +1h3m42s) [autoscaler] [1xA100-80GB:12CPU-170GB] Upscaling 1 node(s).
+    (autoscaler +1h3m42s) [autoscaler] [4xA100-80GB:48CPU-680GB|a2-ultragpu-4g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-4g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h3m42s) [autoscaler] [1xA100-80GB:12CPU-170GB|a2-ultragpu-1g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-1g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h3m43s) [autoscaler] [8xA100-80GB:96CPU-1360GB] Upscaling 1 node(s).
+    (autoscaler +1h3m44s) [autoscaler] [8xA100-80GB:96CPU-1360GB|a2-ultragpu-8g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-8g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h3m47s) [autoscaler] [2xA100-80GB:24CPU-340GB] Upscaling 2 node(s).
+    (autoscaler +1h3m47s) [autoscaler] [1xA100-80GB:12CPU-170GB] Upscaling 1 node(s).
+    (autoscaler +1h3m48s) [autoscaler] [1xA100-80GB:12CPU-170GB|a2-ultragpu-1g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-1g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h3m48s) [autoscaler] [2xA100-80GB:24CPU-340GB|a2-ultragpu-2g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-2g;num:2;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h3m50s) [autoscaler] [4xA100-80GB:48CPU-680GB] Upscaling 1 node(s).
+    (autoscaler +1h3m50s) [autoscaler] [1xA100-80GB:12CPU-170GB] Upscaling 1 node(s).
+    (autoscaler +1h3m51s) [autoscaler] [1xA100-80GB:12CPU-170GB|a2-ultragpu-1g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-1g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h3m51s) [autoscaler] [4xA100-80GB:48CPU-680GB|a2-ultragpu-4g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-4g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h3m53s) [autoscaler] [8xA100-80GB:96CPU-1360GB] Upscaling 1 node(s).
+    (autoscaler +1h3m53s) [autoscaler] [8xA100-80GB:96CPU-1360GB|a2-ultragpu-8g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-8g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h3m55s) [autoscaler] [2xA100-80GB:24CPU-340GB] Upscaling 2 node(s).
+    (autoscaler +1h3m55s) [autoscaler] [1xA100-80GB:12CPU-170GB] Upscaling 1 node(s).
+    (autoscaler +1h3m56s) [autoscaler] [2xA100-80GB:24CPU-340GB|a2-ultragpu-2g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-2g;num:2;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h3m57s) [autoscaler] [1xA100-80GB:12CPU-170GB|a2-ultragpu-1g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-1g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h3m58s) [autoscaler] [4xA100-80GB:48CPU-680GB] Upscaling 1 node(s).
+    (autoscaler +1h3m58s) [autoscaler] [1xA100-80GB:12CPU-170GB] Upscaling 1 node(s).
+    (autoscaler +1h3m59s) [autoscaler] [1xA100-80GB:12CPU-170GB|a2-ultragpu-1g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-1g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h3m59s) [autoscaler] [4xA100-80GB:48CPU-680GB|a2-ultragpu-4g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-4g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h4m0s) [autoscaler] [8xA100-80GB:96CPU-1360GB] Upscaling 1 node(s).
+    (autoscaler +1h4m2s) [autoscaler] [8xA100-80GB:96CPU-1360GB|a2-ultragpu-8g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-8g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h4m4s) [autoscaler] [1xA100-80GB:12CPU-170GB] Upscaling 1 node(s).
+    (autoscaler +1h4m4s) [autoscaler] [2xA100-80GB:24CPU-340GB] Upscaling 2 node(s).
+    (autoscaler +1h4m5s) [autoscaler] [2xA100-80GB:24CPU-340GB|a2-ultragpu-2g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-2g;num:2;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h4m5s) [autoscaler] [1xA100-80GB:12CPU-170GB|a2-ultragpu-1g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-1g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h4m6s) [autoscaler] [4xA100-80GB:48CPU-680GB] Upscaling 1 node(s).
+    (autoscaler +1h4m6s) [autoscaler] [1xA100-80GB:12CPU-170GB] Upscaling 1 node(s).
+    (autoscaler +1h4m7s) [autoscaler] [4xA100-80GB:48CPU-680GB|a2-ultragpu-4g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-4g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h4m7s) [autoscaler] [1xA100-80GB:12CPU-170GB|a2-ultragpu-1g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-1g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h4m9s) [autoscaler] [8xA100-80GB:96CPU-1360GB] Upscaling 1 node(s).
+    (autoscaler +1h4m9s) [autoscaler] [8xA100-80GB:96CPU-1360GB|a2-ultragpu-8g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-8g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h4m11s) [autoscaler] [1xA100-80GB:12CPU-170GB] Upscaling 1 node(s).
+    (autoscaler +1h4m11s) [autoscaler] [2xA100-80GB:24CPU-340GB] Upscaling 2 node(s).
+    (autoscaler +1h4m11s) [autoscaler] [2xA100-80GB:24CPU-340GB|a2-ultragpu-2g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-2g;num:2;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h4m13s) [autoscaler] [1xA100-80GB:12CPU-170GB|a2-ultragpu-1g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-1g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h4m15s) [autoscaler] [4xA100-80GB:48CPU-680GB] Upscaling 1 node(s).
+    (autoscaler +1h4m15s) [autoscaler] [1xA100-80GB:12CPU-170GB] Upscaling 1 node(s).
+    (autoscaler +1h4m15s) [autoscaler] [4xA100-80GB:48CPU-680GB|a2-ultragpu-4g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-4g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h4m15s) [autoscaler] [1xA100-80GB:12CPU-170GB|a2-ultragpu-1g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-1g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h4m16s) [autoscaler] [8xA100-80GB:96CPU-1360GB] Upscaling 1 node(s).
+    (autoscaler +1h4m17s) [autoscaler] [8xA100-80GB:96CPU-1360GB|a2-ultragpu-8g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-8g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h4m18s) [autoscaler] [2xA100-80GB:24CPU-340GB] Upscaling 2 node(s).
+    (autoscaler +1h4m18s) [autoscaler] [1xA100-80GB:12CPU-170GB] Upscaling 1 node(s).
+    (autoscaler +1h4m19s) [autoscaler] [2xA100-80GB:24CPU-340GB|a2-ultragpu-2g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-2g;num:2;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h4m21s) [autoscaler] [1xA100-80GB:12CPU-170GB|a2-ultragpu-1g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-1g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h4m22s) [autoscaler] [4xA100-80GB:48CPU-680GB] Upscaling 1 node(s).
+    (autoscaler +1h4m22s) [autoscaler] [1xA100-80GB:12CPU-170GB] Upscaling 1 node(s).
+    (autoscaler +1h4m24s) [autoscaler] [1xA100-80GB:12CPU-170GB|a2-ultragpu-1g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-1g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h4m24s) [autoscaler] [4xA100-80GB:48CPU-680GB|a2-ultragpu-4g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-4g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h4m25s) [autoscaler] [8xA100-80GB:96CPU-1360GB] Upscaling 1 node(s).
+    (autoscaler +1h4m25s) [autoscaler] [8xA100-80GB:96CPU-1360GB|a2-ultragpu-8g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-8g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h4m27s) [autoscaler] [2xA100-80GB:24CPU-340GB] Upscaling 2 node(s).
+    (autoscaler +1h4m27s) [autoscaler] [1xA100-80GB:12CPU-170GB] Upscaling 1 node(s).
+    (autoscaler +1h4m28s) [autoscaler] [1xA100-80GB:12CPU-170GB|a2-ultragpu-1g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-1g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h4m28s) [autoscaler] [2xA100-80GB:24CPU-340GB|a2-ultragpu-2g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-2g;num:2;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h4m31s) [autoscaler] [4xA100-80GB:48CPU-680GB] Upscaling 1 node(s).
+    (autoscaler +1h4m31s) [autoscaler] [1xA100-80GB:12CPU-170GB] Upscaling 1 node(s).
+    (autoscaler +1h4m31s) [autoscaler] [1xA100-80GB:12CPU-170GB|a2-ultragpu-1g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-1g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h4m31s) [autoscaler] [4xA100-80GB:48CPU-680GB|a2-ultragpu-4g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-4g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h4m32s) [autoscaler] [8xA100-80GB:96CPU-1360GB] Upscaling 1 node(s).
+    (autoscaler +1h4m32s) [autoscaler] [8xA100-80GB:96CPU-1360GB|a2-ultragpu-8g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-8g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h4m35s) [autoscaler] [2xA100-80GB:24CPU-340GB] Upscaling 2 node(s).
+    (autoscaler +1h4m35s) [autoscaler] [1xA100-80GB:12CPU-170GB] Upscaling 1 node(s).
+    (autoscaler +1h4m35s) [autoscaler] [1xA100-80GB:12CPU-170GB|a2-ultragpu-1g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-1g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h4m35s) [autoscaler] [2xA100-80GB:24CPU-340GB|a2-ultragpu-2g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-2g;num:2;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h4m38s) [autoscaler] [4xA100-80GB:48CPU-680GB] Upscaling 1 node(s).
+    (autoscaler +1h4m38s) [autoscaler] [1xA100-80GB:12CPU-170GB] Upscaling 1 node(s).
+    (autoscaler +1h4m39s) [autoscaler] [1xA100-80GB:12CPU-170GB|a2-ultragpu-1g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-1g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h4m40s) [autoscaler] [4xA100-80GB:48CPU-680GB|a2-ultragpu-4g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-4g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h4m41s) [autoscaler] [8xA100-80GB:96CPU-1360GB] Upscaling 1 node(s).
+    (autoscaler +1h4m41s) [autoscaler] [8xA100-80GB:96CPU-1360GB|a2-ultragpu-8g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-8g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h4m43s) [autoscaler] [1xA100-80GB:12CPU-170GB] Upscaling 1 node(s).
+    (autoscaler +1h4m43s) [autoscaler] [2xA100-80GB:24CPU-340GB] Upscaling 2 node(s).
+    (autoscaler +1h4m43s) [autoscaler] [2xA100-80GB:24CPU-340GB|a2-ultragpu-2g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-2g;num:2;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h4m45s) [autoscaler] [1xA100-80GB:12CPU-170GB|a2-ultragpu-1g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-1g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h4m46s) [autoscaler] [1xA100-80GB:12CPU-170GB] Upscaling 1 node(s).
+    (autoscaler +1h4m46s) [autoscaler] [4xA100-80GB:48CPU-680GB] Upscaling 1 node(s).
+    (autoscaler +1h4m47s) [autoscaler] [1xA100-80GB:12CPU-170GB|a2-ultragpu-1g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-1g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h4m47s) [autoscaler] [4xA100-80GB:48CPU-680GB|a2-ultragpu-4g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-4g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h4m49s) [autoscaler] [8xA100-80GB:96CPU-1360GB] Upscaling 1 node(s).
+    (autoscaler +1h4m50s) [autoscaler] [8xA100-80GB:96CPU-1360GB|a2-ultragpu-8g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-8g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h4m51s) [autoscaler] [2xA100-80GB:24CPU-340GB] Upscaling 2 node(s).
+    (autoscaler +1h4m51s) [autoscaler] [1xA100-80GB:12CPU-170GB] Upscaling 1 node(s).
+    (autoscaler +1h4m52s) [autoscaler] [2xA100-80GB:24CPU-340GB|a2-ultragpu-2g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-2g;num:2;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h4m52s) [autoscaler] [1xA100-80GB:12CPU-170GB|a2-ultragpu-1g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-1g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h4m53s) [autoscaler] [1xA100-80GB:12CPU-170GB] Upscaling 1 node(s).
+    (autoscaler +1h4m53s) [autoscaler] [4xA100-80GB:48CPU-680GB] Upscaling 1 node(s).
+    (autoscaler +1h4m53s) [autoscaler] [1xA100-80GB:12CPU-170GB|a2-ultragpu-1g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-1g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h4m55s) [autoscaler] [4xA100-80GB:48CPU-680GB|a2-ultragpu-4g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-4g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h4m57s) [autoscaler] [8xA100-80GB:96CPU-1360GB] Upscaling 1 node(s).
+    (autoscaler +1h4m57s) [autoscaler] [8xA100-80GB:96CPU-1360GB|a2-ultragpu-8g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-8g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h4m58s) [autoscaler] [2xA100-80GB:24CPU-340GB] Upscaling 2 node(s).
+    (autoscaler +1h4m58s) [autoscaler] [1xA100-80GB:12CPU-170GB] Upscaling 1 node(s).
+    (autoscaler +1h4m59s) [autoscaler] [2xA100-80GB:24CPU-340GB|a2-ultragpu-2g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-2g;num:2;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h4m59s) [autoscaler] [1xA100-80GB:12CPU-170GB|a2-ultragpu-1g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-1g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h5m0s) [autoscaler] [1xA100-80GB:12CPU-170GB] Upscaling 1 node(s).
+    (autoscaler +1h5m0s) [autoscaler] [4xA100-80GB:48CPU-680GB] Upscaling 1 node(s).
+    (autoscaler +1h5m1s) [autoscaler] [1xA100-80GB:12CPU-170GB|a2-ultragpu-1g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-1g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h5m1s) [autoscaler] [4xA100-80GB:48CPU-680GB|a2-ultragpu-4g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-4g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h5m3s) [autoscaler] [8xA100-80GB:96CPU-1360GB] Upscaling 1 node(s).
+    (autoscaler +1h5m4s) [autoscaler] [8xA100-80GB:96CPU-1360GB|a2-ultragpu-8g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-8g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h5m5s) [autoscaler] [2xA100-80GB:24CPU-340GB] Upscaling 2 node(s).
+    (autoscaler +1h5m5s) [autoscaler] [1xA100-80GB:12CPU-170GB] Upscaling 1 node(s).
+    (autoscaler +1h5m6s) [autoscaler] [2xA100-80GB:24CPU-340GB|a2-ultragpu-2g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-2g;num:2;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h5m6s) [autoscaler] [1xA100-80GB:12CPU-170GB|a2-ultragpu-1g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-1g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h5m8s) [autoscaler] [4xA100-80GB:48CPU-680GB] Upscaling 1 node(s).
+    (autoscaler +1h5m8s) [autoscaler] [1xA100-80GB:12CPU-170GB] Upscaling 1 node(s).
+    (autoscaler +1h5m8s) [autoscaler] [4xA100-80GB:48CPU-680GB|a2-ultragpu-4g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-4g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h5m9s) [autoscaler] [1xA100-80GB:12CPU-170GB|a2-ultragpu-1g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-1g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h5m12s) [autoscaler] [8xA100-80GB:96CPU-1360GB] Upscaling 1 node(s).
+    (autoscaler +1h5m13s) [autoscaler] [8xA100-80GB:96CPU-1360GB|a2-ultragpu-8g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-8g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h5m14s) [autoscaler] [2xA100-80GB:24CPU-340GB] Upscaling 2 node(s).
+    (autoscaler +1h5m14s) [autoscaler] [1xA100-80GB:12CPU-170GB] Upscaling 1 node(s).
+    (autoscaler +1h5m15s) [autoscaler] [2xA100-80GB:24CPU-340GB|a2-ultragpu-2g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-2g;num:2;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h5m15s) [autoscaler] [1xA100-80GB:12CPU-170GB|a2-ultragpu-1g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-1g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h5m16s) [autoscaler] [4xA100-80GB:48CPU-680GB] Upscaling 1 node(s).
+    (autoscaler +1h5m16s) [autoscaler] [1xA100-80GB:12CPU-170GB] Upscaling 1 node(s).
+    (autoscaler +1h5m17s) [autoscaler] [4xA100-80GB:48CPU-680GB|a2-ultragpu-4g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-4g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h5m17s) [autoscaler] [1xA100-80GB:12CPU-170GB|a2-ultragpu-1g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-1g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h5m19s) [autoscaler] [8xA100-80GB:96CPU-1360GB] Upscaling 1 node(s).
+    (autoscaler +1h5m21s) [autoscaler] [8xA100-80GB:96CPU-1360GB|a2-ultragpu-8g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-8g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h5m22s) [autoscaler] [2xA100-80GB:24CPU-340GB] Upscaling 2 node(s).
+    (autoscaler +1h5m22s) [autoscaler] [1xA100-80GB:12CPU-170GB] Upscaling 1 node(s).
+    (autoscaler +1h5m24s) [autoscaler] [2xA100-80GB:24CPU-340GB|a2-ultragpu-2g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-2g;num:2;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h5m24s) [autoscaler] [1xA100-80GB:12CPU-170GB|a2-ultragpu-1g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-1g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h5m25s) [autoscaler] [1xA100-80GB:12CPU-170GB] Upscaling 1 node(s).
+    (autoscaler +1h5m25s) [autoscaler] [4xA100-80GB:48CPU-680GB] Upscaling 1 node(s).
+    (autoscaler +1h5m25s) [autoscaler] [4xA100-80GB:48CPU-680GB|a2-ultragpu-4g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-4g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h5m26s) [autoscaler] [1xA100-80GB:12CPU-170GB|a2-ultragpu-1g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-1g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h5m28s) [autoscaler] [8xA100-80GB:96CPU-1360GB] Upscaling 1 node(s).
+    (autoscaler +1h5m28s) [autoscaler] [8xA100-80GB:96CPU-1360GB|a2-ultragpu-8g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-8g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h5m30s) [autoscaler] [2xA100-80GB:24CPU-340GB] Upscaling 2 node(s).
+    (autoscaler +1h5m31s) [autoscaler] [1xA100-80GB:12CPU-170GB] Upscaling 1 node(s).
+    (autoscaler +1h5m31s) [autoscaler] [2xA100-80GB:24CPU-340GB|a2-ultragpu-2g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-2g;num:2;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h5m31s) [autoscaler] [1xA100-80GB:12CPU-170GB|a2-ultragpu-1g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-1g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h5m32s) [autoscaler] [1xA100-80GB:12CPU-170GB] Upscaling 1 node(s).
+    (autoscaler +1h5m33s) [autoscaler] [4xA100-80GB:48CPU-680GB] Upscaling 1 node(s).
+    (autoscaler +1h5m33s) [autoscaler] [4xA100-80GB:48CPU-680GB|a2-ultragpu-4g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-4g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h5m33s) [autoscaler] [1xA100-80GB:12CPU-170GB|a2-ultragpu-1g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-1g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h5m35s) [autoscaler] [8xA100-80GB:96CPU-1360GB] Upscaling 1 node(s).
+    (autoscaler +1h5m35s) [autoscaler] [8xA100-80GB:96CPU-1360GB|a2-ultragpu-8g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-8g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h5m36s) [autoscaler] [2xA100-80GB:24CPU-340GB] Upscaling 2 node(s).
+    (autoscaler +1h5m36s) [autoscaler] [1xA100-80GB:12CPU-170GB] Upscaling 1 node(s).
+    (autoscaler +1h5m38s) [autoscaler] [2xA100-80GB:24CPU-340GB|a2-ultragpu-2g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-2g;num:2;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h5m38s) [autoscaler] [1xA100-80GB:12CPU-170GB|a2-ultragpu-1g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-1g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h5m41s) [autoscaler] [4xA100-80GB:48CPU-680GB] Upscaling 1 node(s).
+    (autoscaler +1h5m41s) [autoscaler] [1xA100-80GB:12CPU-170GB] Upscaling 1 node(s).
+    (autoscaler +1h5m41s) [autoscaler] [1xA100-80GB:12CPU-170GB|a2-ultragpu-1g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-1g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h5m41s) [autoscaler] [4xA100-80GB:48CPU-680GB|a2-ultragpu-4g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-4g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h5m43s) [autoscaler] [8xA100-80GB:96CPU-1360GB] Upscaling 1 node(s).
+    (autoscaler +1h5m44s) [autoscaler] [8xA100-80GB:96CPU-1360GB|a2-ultragpu-8g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-8g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h5m45s) [autoscaler] [2xA100-80GB:24CPU-340GB] Upscaling 2 node(s).
+    (autoscaler +1h5m45s) [autoscaler] [1xA100-80GB:12CPU-170GB] Upscaling 1 node(s).
+    (autoscaler +1h5m47s) [autoscaler] [2xA100-80GB:24CPU-340GB|a2-ultragpu-2g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-2g;num:2;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h5m47s) [autoscaler] [1xA100-80GB:12CPU-170GB|a2-ultragpu-1g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-1g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h5m48s) [autoscaler] [4xA100-80GB:48CPU-680GB] Upscaling 1 node(s).
+    (autoscaler +1h5m49s) [autoscaler] [1xA100-80GB:12CPU-170GB] Upscaling 1 node(s).
+    (autoscaler +1h5m49s) [autoscaler] [4xA100-80GB:48CPU-680GB|a2-ultragpu-4g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-4g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h5m49s) [autoscaler] [1xA100-80GB:12CPU-170GB|a2-ultragpu-1g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-1g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h5m52s) [autoscaler] [8xA100-80GB:96CPU-1360GB] Upscaling 1 node(s).
+    (autoscaler +1h5m52s) [autoscaler] [8xA100-80GB:96CPU-1360GB|a2-ultragpu-8g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-8g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h5m52s) [autoscaler] [2xA100-80GB:24CPU-340GB] Upscaling 2 node(s).
+    (autoscaler +1h5m52s) [autoscaler] [1xA100-80GB:12CPU-170GB] Upscaling 1 node(s).
+    (autoscaler +1h5m53s) [autoscaler] [2xA100-80GB:24CPU-340GB|a2-ultragpu-2g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-2g;num:2;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h5m53s) [autoscaler] [1xA100-80GB:12CPU-170GB|a2-ultragpu-1g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-1g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h5m57s) [autoscaler] [1xA100-80GB:12CPU-170GB] Upscaling 1 node(s).
+    (autoscaler +1h5m57s) [autoscaler] [4xA100-80GB:48CPU-680GB] Upscaling 1 node(s).
+    (autoscaler +1h5m58s) [autoscaler] [4xA100-80GB:48CPU-680GB|a2-ultragpu-4g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-4g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h5m58s) [autoscaler] [1xA100-80GB:12CPU-170GB|a2-ultragpu-1g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-1g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h5m59s) [autoscaler] [8xA100-80GB:96CPU-1360GB] Upscaling 1 node(s).
+    (autoscaler +1h5m59s) [autoscaler] [8xA100-80GB:96CPU-1360GB|a2-ultragpu-8g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-8g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h6m1s) [autoscaler] [2xA100-80GB:24CPU-340GB] Upscaling 2 node(s).
+    (autoscaler +1h6m1s) [autoscaler] [1xA100-80GB:12CPU-170GB] Upscaling 1 node(s).
+    (autoscaler +1h6m2s) [autoscaler] [2xA100-80GB:24CPU-340GB|a2-ultragpu-2g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-2g;num:2;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h6m2s) [autoscaler] [1xA100-80GB:12CPU-170GB|a2-ultragpu-1g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-1g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h6m5s) [autoscaler] [4xA100-80GB:48CPU-680GB] Upscaling 1 node(s).
+    (autoscaler +1h6m5s) [autoscaler] [1xA100-80GB:12CPU-170GB] Upscaling 1 node(s).
+    (autoscaler +1h6m5s) [autoscaler] [4xA100-80GB:48CPU-680GB|a2-ultragpu-4g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-4g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h6m5s) [autoscaler] [1xA100-80GB:12CPU-170GB|a2-ultragpu-1g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-1g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h6m7s) [autoscaler] [8xA100-80GB:96CPU-1360GB] Upscaling 1 node(s).
+    (autoscaler +1h6m8s) [autoscaler] [8xA100-80GB:96CPU-1360GB|a2-ultragpu-8g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-8g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h6m10s) [autoscaler] [1xA100-80GB:12CPU-170GB] Upscaling 1 node(s).
+    (autoscaler +1h6m10s) [autoscaler] [2xA100-80GB:24CPU-340GB] Upscaling 2 node(s).
+    (autoscaler +1h6m10s) [autoscaler] [1xA100-80GB:12CPU-170GB|a2-ultragpu-1g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-1g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h6m10s) [autoscaler] [2xA100-80GB:24CPU-340GB|a2-ultragpu-2g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-2g;num:2;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h6m11s) [autoscaler] [4xA100-80GB:48CPU-680GB] Upscaling 1 node(s).
+    (autoscaler +1h6m11s) [autoscaler] [1xA100-80GB:12CPU-170GB] Upscaling 1 node(s).
+    (autoscaler +1h6m13s) [autoscaler] [1xA100-80GB:12CPU-170GB|a2-ultragpu-1g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-1g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h6m14s) [autoscaler] [4xA100-80GB:48CPU-680GB|a2-ultragpu-4g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-4g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h6m16s) [autoscaler] [8xA100-80GB:96CPU-1360GB] Upscaling 1 node(s).
+    (autoscaler +1h6m16s) [autoscaler] [8xA100-80GB:96CPU-1360GB|a2-ultragpu-8g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-8g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h6m17s) [autoscaler] [1xA100-80GB:12CPU-170GB] Upscaling 1 node(s).
+    (autoscaler +1h6m17s) [autoscaler] [2xA100-80GB:24CPU-340GB] Upscaling 2 node(s).
+    (autoscaler +1h6m18s) [autoscaler] [2xA100-80GB:24CPU-340GB|a2-ultragpu-2g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-2g;num:2;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h6m18s) [autoscaler] [1xA100-80GB:12CPU-170GB|a2-ultragpu-1g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-1g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h6m21s) [autoscaler] [4xA100-80GB:48CPU-680GB] Upscaling 1 node(s).
+    (autoscaler +1h6m21s) [autoscaler] [1xA100-80GB:12CPU-170GB] Upscaling 1 node(s).
+    (autoscaler +1h6m21s) [autoscaler] [4xA100-80GB:48CPU-680GB|a2-ultragpu-4g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-4g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h6m22s) [autoscaler] [1xA100-80GB:12CPU-170GB|a2-ultragpu-1g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-1g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h6m22s) [autoscaler] [8xA100-80GB:96CPU-1360GB] Upscaling 1 node(s).
+    (autoscaler +1h6m24s) [autoscaler] [8xA100-80GB:96CPU-1360GB|a2-ultragpu-8g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-8g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h6m25s) [autoscaler] [1xA100-80GB:12CPU-170GB] Upscaling 1 node(s).
+    (autoscaler +1h6m25s) [autoscaler] [2xA100-80GB:24CPU-340GB] Upscaling 2 node(s).
+    (autoscaler +1h6m26s) [autoscaler] [1xA100-80GB:12CPU-170GB|a2-ultragpu-1g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-1g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h6m27s) [autoscaler] [2xA100-80GB:24CPU-340GB|a2-ultragpu-2g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-2g;num:2;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h6m28s) [autoscaler] [4xA100-80GB:48CPU-680GB] Upscaling 1 node(s).
+    (autoscaler +1h6m28s) [autoscaler] [1xA100-80GB:12CPU-170GB] Upscaling 1 node(s).
+    (autoscaler +1h6m30s) [autoscaler] [1xA100-80GB:12CPU-170GB|a2-ultragpu-1g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-1g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h6m30s) [autoscaler] [4xA100-80GB:48CPU-680GB|a2-ultragpu-4g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-4g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h6m32s) [autoscaler] [8xA100-80GB:96CPU-1360GB] Upscaling 1 node(s).
+    (autoscaler +1h6m33s) [autoscaler] [8xA100-80GB:96CPU-1360GB|a2-ultragpu-8g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-8g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h6m36s) [autoscaler] [1xA100-80GB:12CPU-170GB] Upscaling 1 node(s).
+    (autoscaler +1h6m36s) [autoscaler] [2xA100-80GB:24CPU-340GB] Upscaling 2 node(s).
+    (autoscaler +1h6m36s) [autoscaler] [1xA100-80GB:12CPU-170GB|a2-ultragpu-1g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-1g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h6m36s) [autoscaler] [2xA100-80GB:24CPU-340GB|a2-ultragpu-2g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-2g;num:2;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h6m38s) [autoscaler] [1xA100-80GB:12CPU-170GB] Upscaling 1 node(s).
+    (autoscaler +1h6m38s) [autoscaler] [4xA100-80GB:48CPU-680GB] Upscaling 1 node(s).
+    (autoscaler +1h6m38s) [autoscaler] [4xA100-80GB:48CPU-680GB|a2-ultragpu-4g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-4g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h6m38s) [autoscaler] [1xA100-80GB:12CPU-170GB|a2-ultragpu-1g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-1g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h6m40s) [autoscaler] [8xA100-80GB:96CPU-1360GB] Upscaling 1 node(s).
+    (autoscaler +1h6m40s) [autoscaler] [8xA100-80GB:96CPU-1360GB|a2-ultragpu-8g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-8g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h6m41s) [autoscaler] [2xA100-80GB:24CPU-340GB] Upscaling 2 node(s).
+    (autoscaler +1h6m41s) [autoscaler] [1xA100-80GB:12CPU-170GB] Upscaling 1 node(s).
+    (autoscaler +1h6m42s) [autoscaler] [2xA100-80GB:24CPU-340GB|a2-ultragpu-2g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-2g;num:2;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h6m42s) [autoscaler] [1xA100-80GB:12CPU-170GB|a2-ultragpu-1g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-1g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h6m44s) [autoscaler] [4xA100-80GB:48CPU-680GB] Upscaling 1 node(s).
+    (autoscaler +1h6m44s) [autoscaler] [1xA100-80GB:12CPU-170GB] Upscaling 1 node(s).
+    (autoscaler +1h6m47s) [autoscaler] [4xA100-80GB:48CPU-680GB|a2-ultragpu-4g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-4g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h6m47s) [autoscaler] [1xA100-80GB:12CPU-170GB|a2-ultragpu-1g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-1g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h6m48s) [autoscaler] [8xA100-80GB:96CPU-1360GB] Upscaling 1 node(s).
+    (autoscaler +1h6m48s) [autoscaler] [8xA100-80GB:96CPU-1360GB|a2-ultragpu-8g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-8g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h6m50s) [autoscaler] [2xA100-80GB:24CPU-340GB] Upscaling 2 node(s).
+    (autoscaler +1h6m50s) [autoscaler] [1xA100-80GB:12CPU-170GB] Upscaling 1 node(s).
+    (autoscaler +1h6m50s) [autoscaler] [2xA100-80GB:24CPU-340GB|a2-ultragpu-2g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-2g;num:2;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h6m50s) [autoscaler] [1xA100-80GB:12CPU-170GB|a2-ultragpu-1g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-1g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h6m52s) [autoscaler] [4xA100-80GB:48CPU-680GB] Upscaling 1 node(s).
+    (autoscaler +1h6m52s) [autoscaler] [1xA100-80GB:12CPU-170GB] Upscaling 1 node(s).
+    (autoscaler +1h6m52s) [autoscaler] [1xA100-80GB:12CPU-170GB|a2-ultragpu-1g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-1g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h6m52s) [autoscaler] [4xA100-80GB:48CPU-680GB|a2-ultragpu-4g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-4g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h6m54s) [autoscaler] [8xA100-80GB:96CPU-1360GB] Upscaling 1 node(s).
+    (autoscaler +1h6m56s) [autoscaler] [8xA100-80GB:96CPU-1360GB|a2-ultragpu-8g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-8g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h6m57s) [autoscaler] [2xA100-80GB:24CPU-340GB] Upscaling 2 node(s).
+    (autoscaler +1h6m57s) [autoscaler] [1xA100-80GB:12CPU-170GB] Upscaling 1 node(s).
+    (autoscaler +1h6m58s) [autoscaler] [2xA100-80GB:24CPU-340GB|a2-ultragpu-2g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-2g;num:2;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h6m58s) [autoscaler] [1xA100-80GB:12CPU-170GB|a2-ultragpu-1g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-1g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h7m0s) [autoscaler] [4xA100-80GB:48CPU-680GB] Upscaling 1 node(s).
+    (autoscaler +1h7m0s) [autoscaler] [1xA100-80GB:12CPU-170GB] Upscaling 1 node(s).
+    (autoscaler +1h7m1s) [autoscaler] [4xA100-80GB:48CPU-680GB|a2-ultragpu-4g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-4g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h7m1s) [autoscaler] [1xA100-80GB:12CPU-170GB|a2-ultragpu-1g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-1g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h7m5s) [autoscaler] [8xA100-80GB:96CPU-1360GB] Upscaling 1 node(s).
+    (autoscaler +1h7m5s) [autoscaler] [8xA100-80GB:96CPU-1360GB|a2-ultragpu-8g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-8g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h7m7s) [autoscaler] [2xA100-80GB:24CPU-340GB] Upscaling 1 node(s).
+    (autoscaler +1h7m7s) [autoscaler] [2xA100-80GB:24CPU-340GB|a2-ultragpu-2g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-2g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h7m8s) [autoscaler] [2xA100-80GB:24CPU-340GB] Upscaling 1 node(s).
+    (autoscaler +1h7m8s) [autoscaler] [2xA100-80GB:24CPU-340GB|a2-ultragpu-2g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-2g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h7m9s) [autoscaler] [2xA100-80GB:24CPU-340GB] Upscaling 1 node(s).
+    (autoscaler +1h7m11s) [autoscaler] [2xA100-80GB:24CPU-340GB|a2-ultragpu-2g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-2g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h7m11s) [autoscaler] [2xA100-80GB:24CPU-340GB] Upscaling 1 node(s).
+    (autoscaler +1h7m13s) [autoscaler] [2xA100-80GB:24CPU-340GB|a2-ultragpu-2g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-2g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h7m15s) [autoscaler] [2xA100-80GB:24CPU-340GB] Upscaling 1 node(s).
+    (autoscaler +1h7m15s) [autoscaler] [2xA100-80GB:24CPU-340GB|a2-ultragpu-2g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-2g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h7m16s) [autoscaler] [2xA100-80GB:24CPU-340GB] Upscaling 1 node(s).
+    (autoscaler +1h7m17s) [autoscaler] [2xA100-80GB:24CPU-340GB|a2-ultragpu-2g] [us-east5-b] [on-demand] Launching instances failed: NewInstances[a2-ultragpu-2g;num:1;all:false]: googleapi: Error 403: Quota 'NVIDIA_A100_80GB_GPUS' exceeded. Limit: 16.0 in region us-east5.
+    (autoscaler +1h8m4s) [autoscaler] Downscaling node g-93baa4121b79f0001 (node IP: 10.0.0.53) due to node idle termination.
+    (autoscaler +1h8m5s) [autoscaler] Cluster resized to {36 CPU, 3 GPU}.
+    (autoscaler +1h11m36s) [autoscaler] Downscaling node g-73bd411113f590001 (node IP: 10.0.0.22) due to node idle termination.
+    (autoscaler +1h11m37s) [autoscaler] Cluster resized to {12 CPU, 1 GPU}.
 
 
 # Dataset Preparation
@@ -198,7 +842,7 @@ from src import adjusted_exact_match, delete_labels, NUM_THREADS
 
 shuffled_trainset = [d for d in full_trainset_filtered]
 rng.shuffle(shuffled_trainset)
-
+ft_trainset = shuffled_trainset
 # For realism of this scenario, we are going to delete all our labels except for our test set
 ft_trainset_to_label = delete_labels(ft_trainset)
 
@@ -374,16 +1018,16 @@ The `serve run [file]` command is used in order to launch any ray serve deployme
 !serve run --non-blocking serve_70B.yaml
 ```
 
-    2024-10-22 19:26:09,320	INFO scripts.py:489 -- Running config file: 'serve_70B.yaml'.
-    2024-10-22 19:26:09,626	INFO worker.py:1601 -- Connecting to existing Ray cluster at address: 10.0.0.28:6379...
-    2024-10-22 19:26:09,634	INFO worker.py:1777 -- Connected to Ray cluster. View the dashboard at https://session-6frbgpfbuzs27m75xhz3c8vnde.i.anyscaleuserdata.com 
-    2024-10-22 19:26:09,637	INFO packaging.py:359 -- Pushing file package 'gcs://_ray_pkg_ffba39e2fd9b77762b656d5627e46788fbe81064.zip' (0.50MiB) to Ray cluster...
-    2024-10-22 19:26:09,642	INFO packaging.py:372 -- Successfully pushed file package 'gcs://_ray_pkg_ffba39e2fd9b77762b656d5627e46788fbe81064.zip'.
-    INFO 2024-10-22 19:26:13,340 serve 7960 api.py:277 - Started Serve in namespace "serve".
-    2024-10-22 19:26:13,351	SUCC scripts.py:540 -- Submitted deploy config successfully.
-    (ServeController pid=8037) INFO 2024-10-22 19:26:13,344 controller 8037 application_state.py:881 - Deploying new app 'llm-endpoint'.
-    (ServeController pid=8037) INFO 2024-10-22 19:26:13,345 controller 8037 application_state.py:457 - Importing and building app 'llm-endpoint'.
-    (ProxyActor pid=8098) INFO 2024-10-22 19:26:13,294 proxy 10.0.0.28 proxy.py:1235 - Proxy starting on node 76e2eab0a833e02208d948f67f54806e64e4d0b26f1a49507548855a (HTTP port: 8000).
+    2024-10-23 00:38:50,089	INFO scripts.py:489 -- Running config file: 'serve_70B.yaml'.
+    2024-10-23 00:38:50,418	INFO worker.py:1601 -- Connecting to existing Ray cluster at address: 10.0.0.28:6379...
+    2024-10-23 00:38:50,426	INFO worker.py:1777 -- Connected to Ray cluster. View the dashboard at https://session-6frbgpfbuzs27m75xhz3c8vnde.i.anyscaleuserdata.com 
+    2024-10-23 00:38:50,430	INFO packaging.py:359 -- Pushing file package 'gcs://_ray_pkg_fd90c1638cd32bfadef22fb05da8f982b8bee1ed.zip' (0.83MiB) to Ray cluster...
+    2024-10-23 00:38:50,439	INFO packaging.py:372 -- Successfully pushed file package 'gcs://_ray_pkg_fd90c1638cd32bfadef22fb05da8f982b8bee1ed.zip'.
+    (ProxyActor pid=143530) INFO 2024-10-23 00:38:54,251 proxy 10.0.0.28 proxy.py:1235 - Proxy starting on node 76e2eab0a833e02208d948f67f54806e64e4d0b26f1a49507548855a (HTTP port: 8000).
+    INFO 2024-10-23 00:38:54,280 serve 143394 api.py:277 - Started Serve in namespace "serve".
+    2024-10-23 00:38:54,288	SUCC scripts.py:540 -- Submitted deploy config successfully.
+    (ServeController pid=143461) INFO 2024-10-23 00:38:54,283 controller 143461 application_state.py:881 - Deploying new app 'llm-endpoint'.
+    (ServeController pid=143461) INFO 2024-10-23 00:38:54,284 controller 143461 application_state.py:457 - Importing and building app 'llm-endpoint'.
 
 
 Now we instantiate a `dspy.LM` object pointing at our RayLLM deployment. This will allow us to query it inside of DSPy programs.
@@ -415,6 +1059,10 @@ from src import sanity_check_program
 
 sanity_check_program(llama_70b, vanilla_program, ft_trainset[0])
 ```
+
+    Program input: Example({'text': "I was just giving the wrong amount by the ATM. How do I request cash back at this point? The app is showing the amount that I actually requested even though that's not what I got."}) (input_keys={'text'})
+    Program output label: wrong_amount_of_cash_received
+
 
 ### Bootstrap Data
 
@@ -448,7 +1096,7 @@ dataset = convert_to_module_level_message_data(collected_data_filtered, program=
 dataset_formatted = [{"messages": item} for item in dataset]
 ```
 
-    Average Metric: 4062 / 4071  (99.8): 100%|██████████| 4071/4071 [00:03<00:00, 1036.60it/s]
+    Average Metric: 4162 / 4171  (99.8): 100%|██████████| 4171/4171 [06:24<00:00, 10.85it/s]  
 
 
 
@@ -460,13 +1108,55 @@ print("Length of dataset:\t", len(dataset))
 ```
 
 
+<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace"><span style="font-weight: bold">{</span>
+    <span style="color: #008000; text-decoration-color: #008000">'messages'</span>: <span style="font-weight: bold">[</span>
+        <span style="font-weight: bold">{</span>
+            <span style="color: #008000; text-decoration-color: #008000">'role'</span>: <span style="color: #008000; text-decoration-color: #008000">'system'</span>,
+            <span style="color: #008000; text-decoration-color: #008000">'content'</span>: <span style="color: #008000; text-decoration-color: #008000">"Your input fields are:\n1. `intent` (str): Intent of the query\n\nYour output fields </span>
+<span style="color: #008000; text-decoration-color: #008000">are:\n1. `reasoning` (str): ${produce the output fields}. We ...\n2. `label` (str): Type of the intent; Should just</span>
+<span style="color: #008000; text-decoration-color: #008000">be one of the 25 labels with no other text\n\nAll interactions will be structured in the following way, with the </span>
+<span style="color: #008000; text-decoration-color: #008000">appropriate values filled in.\n\n[[ ## intent ## ]]\n{intent}\n\n[[ ## reasoning ## ]]\n{reasoning}\n\n[[ ## label </span>
+<span style="color: #008000; text-decoration-color: #008000">## ]]\n{label}\n\n[[ ## completed ## ]]\n\nIn adhering to this structure, your objective is: \n        As a part of</span>
+<span style="color: #008000; text-decoration-color: #008000">a banking issue traiging system, classify the intent of a natural language query into one of the 25 labels.\n      </span>
+<span style="color: #008000; text-decoration-color: #008000">The intent should exactly match one of the following:\n        ['card_payment_fee_charged', </span>
+<span style="color: #008000; text-decoration-color: #008000">'direct_debit_payment_not_recognised', 'balance_not_updated_after_cheque_or_cash_deposit', </span>
+<span style="color: #008000; text-decoration-color: #008000">'wrong_amount_of_cash_received', 'cash_withdrawal_charge', 'transaction_charged_twice', 'declined_cash_withdrawal',</span>
+<span style="color: #008000; text-decoration-color: #008000">'transfer_fee_charged', 'balance_not_updated_after_bank_transfer', 'transfer_not_received_by_recipient', </span>
+<span style="color: #008000; text-decoration-color: #008000">'request_refund', 'card_payment_not_recognised', 'card_payment_wrong_exchange_rate', 'extra_charge_on_statement', </span>
+<span style="color: #008000; text-decoration-color: #008000">'wrong_exchange_rate_for_cash_withdrawal', 'refund_not_showing_up', 'reverted_card_payment', </span>
+<span style="color: #008000; text-decoration-color: #008000">'cash_withdrawal_not_recognised', 'activate_my_card', 'pending_card_payment', 'cancel_transfer', </span>
+<span style="color: #008000; text-decoration-color: #008000">'beneficiary_not_allowed', 'card_arrival', 'declined_card_payment', 'pending_top_up']"</span>
+        <span style="font-weight: bold">}</span>,
+        <span style="font-weight: bold">{</span>
+            <span style="color: #008000; text-decoration-color: #008000">'role'</span>: <span style="color: #008000; text-decoration-color: #008000">'user'</span>,
+            <span style="color: #008000; text-decoration-color: #008000">'content'</span>: <span style="color: #008000; text-decoration-color: #008000">"[[ ## intent ## ]]\nI was just giving the wrong amount by the ATM. How do I request cash </span>
+<span style="color: #008000; text-decoration-color: #008000">back at this point? The app is showing the amount that I actually requested even though that's not what I </span>
+<span style="color: #008000; text-decoration-color: #008000">got.\n\nRespond with the corresponding output fields, starting with the field `reasoning`, then `label`, and then </span>
+<span style="color: #008000; text-decoration-color: #008000">ending with the marker for `completed`."</span>
+        <span style="font-weight: bold">}</span>,
+        <span style="font-weight: bold">{</span>
+            <span style="color: #008000; text-decoration-color: #008000">'role'</span>: <span style="color: #008000; text-decoration-color: #008000">'assistant'</span>,
+            <span style="color: #008000; text-decoration-color: #008000">'content'</span>: <span style="color: #008000; text-decoration-color: #008000">'[[ ## reasoning ## ]]\nThe user is reporting that they received the wrong amount of cash </span>
+<span style="color: #008000; text-decoration-color: #008000">from an ATM, and the amount shown on the app is different from what they actually received. They are asking how to </span>
+<span style="color: #008000; text-decoration-color: #008000">request cash back in this situation.\n\n[[ ## label ## ]]\nwrong_amount_of_cash_received\n\n[[ ## completed ## ]]'</span>
+        <span style="font-weight: bold">}</span>
+    <span style="font-weight: bold">]</span>
+<span style="font-weight: bold">}</span>
+</pre>
+
+
+
+    Length of dataset:	 4162
+
+
+
 ```python
 # Now we are done with the 70B model, so we can kill the server
 !serve shutdown -y
 ```
 
-    2024-10-22 19:41:10,127	WARN scripts.py:132 -- The `RAY_AGENT_ADDRESS` env var has been deprecated in favor of the `RAY_DASHBOARD_ADDRESS` env var. The `RAY_AGENT_ADDRESS` is ignored.
-    2024-10-22 19:41:13,759	SUCC scripts.py:747 -- Sent shutdown request; applications will be deleted asynchronously.
+    2024-10-23 00:50:14,214	WARN scripts.py:132 -- The `RAY_AGENT_ADDRESS` env var has been deprecated in favor of the `RAY_DASHBOARD_ADDRESS` env var. The `RAY_AGENT_ADDRESS` is ignored.
+    2024-10-23 00:50:16,880	SUCC scripts.py:747 -- Sent shutdown request; applications will be deleted asynchronously.
 
 
 # Fine-tuning
@@ -533,30 +1223,33 @@ rich.print(yaml.safe_load(open(llmforge_config_path)))
 
 <pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace"><span style="font-weight: bold">{</span>
     <span style="color: #008000; text-decoration-color: #008000">'context_length'</span>: <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2048</span>,
-    <span style="color: #008000; text-decoration-color: #008000">'dataset_size_scaling_factor'</span>: <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">10000</span>,
-    <span style="color: #008000; text-decoration-color: #008000">'deepspeed'</span>: <span style="font-weight: bold">{</span><span style="color: #008000; text-decoration-color: #008000">'config_path'</span>: <span style="color: #008000; text-decoration-color: #008000">'configs/deepspeed/zero_3.json'</span><span style="font-weight: bold">}</span>,
+    <span style="color: #008000; text-decoration-color: #008000">'num_devices'</span>: <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">4</span>,
+    <span style="color: #008000; text-decoration-color: #008000">'num_epochs'</span>: <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">6</span>,
+    <span style="color: #008000; text-decoration-color: #008000">'train_batch_size_per_device'</span>: <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">32</span>,
     <span style="color: #008000; text-decoration-color: #008000">'eval_batch_size_per_device'</span>: <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">16</span>,
+    <span style="color: #008000; text-decoration-color: #008000">'learning_rate'</span>: <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">3e-05</span>,
+    <span style="color: #008000; text-decoration-color: #008000">'padding'</span>: <span style="color: #008000; text-decoration-color: #008000">'longest'</span>,
+    <span style="color: #008000; text-decoration-color: #008000">'num_checkpoints_to_keep'</span>: <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">1</span>,
+    <span style="color: #008000; text-decoration-color: #008000">'dataset_size_scaling_factor'</span>: <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">10000</span>,
+    <span style="color: #008000; text-decoration-color: #008000">'output_dir'</span>: <span style="color: #008000; text-decoration-color: #008000">'/mnt/local_storage'</span>,
+    <span style="color: #008000; text-decoration-color: #008000">'deepspeed'</span>: <span style="font-weight: bold">{</span><span style="color: #008000; text-decoration-color: #008000">'config_path'</span>: <span style="color: #008000; text-decoration-color: #008000">'configs/deepspeed/zero_3.json'</span><span style="font-weight: bold">}</span>,
     <span style="color: #008000; text-decoration-color: #008000">'flash_attention_2'</span>: <span style="color: #00ff00; text-decoration-color: #00ff00; font-style: italic">True</span>,
+    <span style="color: #008000; text-decoration-color: #008000">'worker_resources'</span>: <span style="font-weight: bold">{</span><span style="color: #008000; text-decoration-color: #008000">'accelerator_type:A100-80G'</span>: <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">0.001</span><span style="font-weight: bold">}</span>,
     <span style="color: #008000; text-decoration-color: #008000">'generation_config'</span>: <span style="font-weight: bold">{</span>
         <span style="color: #008000; text-decoration-color: #008000">'prompt_format'</span>: <span style="font-weight: bold">{</span>
-            <span style="color: #008000; text-decoration-color: #008000">'assistant'</span>: <span style="color: #008000; text-decoration-color: #008000">'&lt;|start_header_id|&gt;assistant&lt;|end_header_id|&gt;\n\n{instruction}&lt;|eot_id|&gt;'</span><span style="color: #000000; text-decoration-color: #000000">,</span>
-<span style="color: #000000; text-decoration-color: #000000">            </span><span style="color: #008000; text-decoration-color: #008000">'bos'</span><span style="color: #000000; text-decoration-color: #000000">: </span><span style="color: #008000; text-decoration-color: #008000">'&lt;|begin_of_text|&gt;'</span><span style="color: #000000; text-decoration-color: #000000">,</span>
-<span style="color: #000000; text-decoration-color: #000000">            </span><span style="color: #008000; text-decoration-color: #008000">'default_system_message'</span><span style="color: #000000; text-decoration-color: #000000">: </span><span style="color: #008000; text-decoration-color: #008000">''</span><span style="color: #000000; text-decoration-color: #000000">,</span>
-<span style="color: #000000; text-decoration-color: #000000">            </span><span style="color: #008000; text-decoration-color: #008000">'system'</span><span style="color: #000000; text-decoration-color: #000000">: </span><span style="color: #008000; text-decoration-color: #008000">'&lt;|start_header_id|&gt;system&lt;|end_header_id|&gt;\n\n{instruction}&lt;|eot_id|&gt;'</span><span style="color: #000000; text-decoration-color: #000000">,</span>
-<span style="color: #000000; text-decoration-color: #000000">            </span><span style="color: #008000; text-decoration-color: #008000">'system_in_user'</span><span style="color: #000000; text-decoration-color: #000000">: </span><span style="color: #ff0000; text-decoration-color: #ff0000; font-style: italic">False</span><span style="color: #000000; text-decoration-color: #000000">,</span>
+            <span style="color: #008000; text-decoration-color: #008000">'system'</span>: <span style="color: #008000; text-decoration-color: #008000">'&lt;|start_header_id|&gt;system&lt;|end_header_id|&gt;\n\n{instruction}&lt;|eot_id|&gt;'</span><span style="color: #000000; text-decoration-color: #000000">,</span>
+<span style="color: #000000; text-decoration-color: #000000">            </span><span style="color: #008000; text-decoration-color: #008000">'user'</span><span style="color: #000000; text-decoration-color: #000000">: </span><span style="color: #008000; text-decoration-color: #008000">'&lt;|start_header_id|&gt;user&lt;|end_header_id|&gt;\n{instruction}&lt;|eot_id|&gt;'</span><span style="color: #000000; text-decoration-color: #000000">,</span>
+<span style="color: #000000; text-decoration-color: #000000">            </span><span style="color: #008000; text-decoration-color: #008000">'assistant'</span><span style="color: #000000; text-decoration-color: #000000">: </span><span style="color: #008000; text-decoration-color: #008000">'&lt;|start_header_id|&gt;assistant&lt;|end_header_id|&gt;\n\n{instruction}&lt;|eot_id|&gt;'</span><span style="color: #000000; text-decoration-color: #000000">,</span>
 <span style="color: #000000; text-decoration-color: #000000">            </span><span style="color: #008000; text-decoration-color: #008000">'trailing_assistant'</span><span style="color: #000000; text-decoration-color: #000000">: </span><span style="color: #008000; text-decoration-color: #008000">'&lt;|start_header_id|&gt;assistant&lt;|end_header_id|&gt;\n\n'</span><span style="color: #000000; text-decoration-color: #000000">,</span>
-<span style="color: #000000; text-decoration-color: #000000">            </span><span style="color: #008000; text-decoration-color: #008000">'user'</span><span style="color: #000000; text-decoration-color: #000000">: </span><span style="color: #008000; text-decoration-color: #008000">'&lt;|start_header_id|&gt;user&lt;|end_header_id|&gt;\n{instruction}&lt;|eot_id|&gt;'</span>
+<span style="color: #000000; text-decoration-color: #000000">            </span><span style="color: #008000; text-decoration-color: #008000">'bos'</span><span style="color: #000000; text-decoration-color: #000000">: </span><span style="color: #008000; text-decoration-color: #008000">'&lt;|begin_of_text|&gt;'</span>,
+            <span style="color: #008000; text-decoration-color: #008000">'system_in_user'</span>: <span style="color: #ff0000; text-decoration-color: #ff0000; font-style: italic">False</span>,
+            <span style="color: #008000; text-decoration-color: #008000">'default_system_message'</span>: <span style="color: #008000; text-decoration-color: #008000">''</span>
         <span style="font-weight: bold">}</span>
     <span style="font-weight: bold">}</span>,
-    <span style="color: #008000; text-decoration-color: #008000">'learning_rate'</span>: <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">3e-05</span>,
     <span style="color: #008000; text-decoration-color: #008000">'lora_config'</span>: <span style="font-weight: bold">{</span>
-        <span style="color: #008000; text-decoration-color: #008000">'bias'</span>: <span style="color: #008000; text-decoration-color: #008000">'none'</span>,
-        <span style="color: #008000; text-decoration-color: #008000">'fan_in_fan_out'</span>: <span style="color: #ff0000; text-decoration-color: #ff0000; font-style: italic">False</span>,
-        <span style="color: #008000; text-decoration-color: #008000">'init_lora_weights'</span>: <span style="color: #00ff00; text-decoration-color: #00ff00; font-style: italic">True</span>,
+        <span style="color: #008000; text-decoration-color: #008000">'r'</span>: <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">8</span>,
         <span style="color: #008000; text-decoration-color: #008000">'lora_alpha'</span>: <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">16</span>,
         <span style="color: #008000; text-decoration-color: #008000">'lora_dropout'</span>: <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">0.05</span>,
-        <span style="color: #008000; text-decoration-color: #008000">'modules_to_save'</span>: <span style="font-weight: bold">[]</span>,
-        <span style="color: #008000; text-decoration-color: #008000">'r'</span>: <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">8</span>,
         <span style="color: #008000; text-decoration-color: #008000">'target_modules'</span>: <span style="font-weight: bold">[</span>
             <span style="color: #008000; text-decoration-color: #008000">'q_proj'</span>,
             <span style="color: #008000; text-decoration-color: #008000">'v_proj'</span>,
@@ -568,19 +1261,12 @@ rich.print(yaml.safe_load(open(llmforge_config_path)))
             <span style="color: #008000; text-decoration-color: #008000">'embed_tokens'</span>,
             <span style="color: #008000; text-decoration-color: #008000">'lm_head'</span>
         <span style="font-weight: bold">]</span>,
-        <span style="color: #008000; text-decoration-color: #008000">'task_type'</span>: <span style="color: #008000; text-decoration-color: #008000">'CAUSAL_LM'</span>
-    <span style="font-weight: bold">}</span>,
-    <span style="color: #008000; text-decoration-color: #008000">'model_id'</span>: <span style="color: #008000; text-decoration-color: #008000">'meta-llama/Llama-3.2-1B-Instruct'</span>,
-    <span style="color: #008000; text-decoration-color: #008000">'num_checkpoints_to_keep'</span>: <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">1</span>,
-    <span style="color: #008000; text-decoration-color: #008000">'num_devices'</span>: <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">4</span>,
-    <span style="color: #008000; text-decoration-color: #008000">'num_epochs'</span>: <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">6</span>,
-    <span style="color: #008000; text-decoration-color: #008000">'output_dir'</span>: <span style="color: #008000; text-decoration-color: #008000">'/mnt/local_storage'</span>,
-    <span style="color: #008000; text-decoration-color: #008000">'padding'</span>: <span style="color: #008000; text-decoration-color: #008000">'longest'</span>,
-    <span style="color: #008000; text-decoration-color: #008000">'train_batch_size_per_device'</span>: <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">32</span>,
-    <span style="color: #008000; text-decoration-color: #008000">'train_path'</span>: 
-<span style="color: #008000; text-decoration-color: #008000">'gs://storage-bucket-cld-tffbxe9ia5phqr1unxhz4f7e1e/org_4snvy99zwbmh4gbtk64jfqggmj/cld_tffbxe9ia5phqr1unxhz4f7e1e/d</span>
-<span style="color: #008000; text-decoration-color: #008000">atasets/dataset_6wl61ndxii7crnaqcr58gp7d91/18/anyscale_7f76ca8a05f2c9d9.jsonl'</span>,
-    <span style="color: #008000; text-decoration-color: #008000">'worker_resources'</span>: <span style="font-weight: bold">{</span><span style="color: #008000; text-decoration-color: #008000">'accelerator_type:A100-80G'</span>: <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">0.001</span><span style="font-weight: bold">}</span>
+        <span style="color: #008000; text-decoration-color: #008000">'task_type'</span>: <span style="color: #008000; text-decoration-color: #008000">'CAUSAL_LM'</span>,
+        <span style="color: #008000; text-decoration-color: #008000">'modules_to_save'</span>: <span style="font-weight: bold">[]</span>,
+        <span style="color: #008000; text-decoration-color: #008000">'bias'</span>: <span style="color: #008000; text-decoration-color: #008000">'none'</span>,
+        <span style="color: #008000; text-decoration-color: #008000">'fan_in_fan_out'</span>: <span style="color: #ff0000; text-decoration-color: #ff0000; font-style: italic">False</span>,
+        <span style="color: #008000; text-decoration-color: #008000">'init_lora_weights'</span>: <span style="color: #00ff00; text-decoration-color: #00ff00; font-style: italic">True</span>
+    <span style="font-weight: bold">}</span>
 <span style="font-weight: bold">}</span>
 </pre>
 
@@ -597,6 +1283,84 @@ Serve config just points to the model config file that we want to serve.
 ```python
 print_serve_and_model_config(serve_config_path)
 ```
+
+
+<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace">serve_config:
+</pre>
+
+
+
+
+<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace"><span style="font-weight: bold">{</span>
+    <span style="color: #008000; text-decoration-color: #008000">'applications'</span>: <span style="font-weight: bold">[</span>
+        <span style="font-weight: bold">{</span>
+            <span style="color: #008000; text-decoration-color: #008000">'args'</span>: <span style="font-weight: bold">{</span><span style="color: #008000; text-decoration-color: #008000">'llm_configs'</span>: <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'./model_config/meta-llama--Llama-3_2-1B-Instruct.yaml'</span><span style="font-weight: bold">]}</span>,
+            <span style="color: #008000; text-decoration-color: #008000">'import_path'</span>: <span style="color: #008000; text-decoration-color: #008000">'rayllm:app'</span>,
+            <span style="color: #008000; text-decoration-color: #008000">'name'</span>: <span style="color: #008000; text-decoration-color: #008000">'llm-endpoint'</span>,
+            <span style="color: #008000; text-decoration-color: #008000">'route_prefix'</span>: <span style="color: #008000; text-decoration-color: #008000">'/'</span>
+        <span style="font-weight: bold">}</span>
+    <span style="font-weight: bold">]</span>,
+    <span style="color: #008000; text-decoration-color: #008000">'query_auth_token_enabled'</span>: <span style="color: #ff0000; text-decoration-color: #ff0000; font-style: italic">False</span>
+<span style="font-weight: bold">}</span>
+</pre>
+
+
+
+
+<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace">==================================================
+</pre>
+
+
+
+
+<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace">model_config:
+</pre>
+
+
+
+
+<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace"><span style="font-weight: bold">{</span>
+    <span style="color: #008000; text-decoration-color: #008000">'accelerator_type'</span>: <span style="color: #008000; text-decoration-color: #008000">'A100-80G'</span>,
+    <span style="color: #008000; text-decoration-color: #008000">'deployment_config'</span>: <span style="font-weight: bold">{</span><span style="color: #008000; text-decoration-color: #008000">'autoscaling_config'</span>: <span style="font-weight: bold">{</span><span style="color: #008000; text-decoration-color: #008000">'target_ongoing_requests'</span>: <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">32</span><span style="font-weight: bold">}</span>, <span style="color: #008000; text-decoration-color: #008000">'max_ongoing_requests'</span>: <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">64</span><span style="font-weight: bold">}</span>,
+    <span style="color: #008000; text-decoration-color: #008000">'engine_kwargs'</span>: <span style="font-weight: bold">{</span>
+        <span style="color: #008000; text-decoration-color: #008000">'enable_chunked_prefill'</span>: <span style="color: #ff0000; text-decoration-color: #ff0000; font-style: italic">False</span>,
+        <span style="color: #008000; text-decoration-color: #008000">'enable_lora'</span>: <span style="color: #00ff00; text-decoration-color: #00ff00; font-style: italic">True</span>,
+        <span style="color: #008000; text-decoration-color: #008000">'max_lora_rank'</span>: <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">32</span>,
+        <span style="color: #008000; text-decoration-color: #008000">'max_loras'</span>: <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">16</span>,
+        <span style="color: #008000; text-decoration-color: #008000">'max_num_batched_tokens'</span>: <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">8192</span>,
+        <span style="color: #008000; text-decoration-color: #008000">'max_num_seqs'</span>: <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">64</span>,
+        <span style="color: #008000; text-decoration-color: #008000">'tokenizer_pool_extra_config'</span>: <span style="font-weight: bold">{</span><span style="color: #008000; text-decoration-color: #008000">'runtime_env'</span>: <span style="font-weight: bold">{</span><span style="color: #008000; text-decoration-color: #008000">'pip'</span>: <span style="color: #800080; text-decoration-color: #800080; font-style: italic">None</span><span style="font-weight: bold">}}</span>,
+        <span style="color: #008000; text-decoration-color: #008000">'tokenizer_pool_size'</span>: <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2</span>,
+        <span style="color: #008000; text-decoration-color: #008000">'trust_remote_code'</span>: <span style="color: #00ff00; text-decoration-color: #00ff00; font-style: italic">True</span>
+    <span style="font-weight: bold">}</span>,
+    <span style="color: #008000; text-decoration-color: #008000">'generation_config'</span>: <span style="font-weight: bold">{</span>
+        <span style="color: #008000; text-decoration-color: #008000">'prompt_format'</span>: <span style="font-weight: bold">{</span>
+            <span style="color: #008000; text-decoration-color: #008000">'assistant'</span>: <span style="color: #008000; text-decoration-color: #008000">'&lt;|start_header_id|&gt;assistant&lt;|end_header_id|&gt;\n\n{instruction}&lt;|eot_id|&gt;'</span><span style="color: #000000; text-decoration-color: #000000">,</span>
+<span style="color: #000000; text-decoration-color: #000000">            </span><span style="color: #008000; text-decoration-color: #008000">'bos'</span><span style="color: #000000; text-decoration-color: #000000">: </span><span style="color: #008000; text-decoration-color: #008000">'&lt;|begin_of_text|&gt;'</span><span style="color: #000000; text-decoration-color: #000000">,</span>
+<span style="color: #000000; text-decoration-color: #000000">            </span><span style="color: #008000; text-decoration-color: #008000">'default_system_message'</span><span style="color: #000000; text-decoration-color: #000000">: </span><span style="color: #008000; text-decoration-color: #008000">''</span><span style="color: #000000; text-decoration-color: #000000">,</span>
+<span style="color: #000000; text-decoration-color: #000000">            </span><span style="color: #008000; text-decoration-color: #008000">'system'</span><span style="color: #000000; text-decoration-color: #000000">: </span><span style="color: #008000; text-decoration-color: #008000">'&lt;|start_header_id|&gt;system&lt;|end_header_id|&gt;\n\n{instruction}&lt;|eot_id|&gt;'</span><span style="color: #000000; text-decoration-color: #000000">,</span>
+<span style="color: #000000; text-decoration-color: #000000">            </span><span style="color: #008000; text-decoration-color: #008000">'system_in_user'</span><span style="color: #000000; text-decoration-color: #000000">: </span><span style="color: #ff0000; text-decoration-color: #ff0000; font-style: italic">False</span><span style="color: #000000; text-decoration-color: #000000">,</span>
+<span style="color: #000000; text-decoration-color: #000000">            </span><span style="color: #008000; text-decoration-color: #008000">'trailing_assistant'</span><span style="color: #000000; text-decoration-color: #000000">: </span><span style="color: #008000; text-decoration-color: #008000">'&lt;|start_header_id|&gt;assistant&lt;|end_header_id|&gt;\n\n'</span><span style="color: #000000; text-decoration-color: #000000">,</span>
+<span style="color: #000000; text-decoration-color: #000000">            </span><span style="color: #008000; text-decoration-color: #008000">'user'</span><span style="color: #000000; text-decoration-color: #000000">: </span><span style="color: #008000; text-decoration-color: #008000">'&lt;|start_header_id|&gt;user&lt;|end_header_id|&gt;\n\n{instruction}&lt;|eot_id|&gt;'</span>
+        <span style="font-weight: bold">}</span>,
+        <span style="color: #008000; text-decoration-color: #008000">'stopping_sequences'</span>: <span style="font-weight: bold">[]</span>,
+        <span style="color: #008000; text-decoration-color: #008000">'stopping_tokens'</span>: <span style="font-weight: bold">[</span><span style="color: #008080; text-decoration-color: #008080; font-weight: bold">128001</span>, <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">128009</span><span style="font-weight: bold">]</span>
+    <span style="font-weight: bold">}</span>,
+    <span style="color: #008000; text-decoration-color: #008000">'input_modality'</span>: <span style="color: #008000; text-decoration-color: #008000">'text'</span>,
+    <span style="color: #008000; text-decoration-color: #008000">'json_mode'</span>: <span style="font-weight: bold">{</span><span style="color: #008000; text-decoration-color: #008000">'enabled'</span>: <span style="color: #ff0000; text-decoration-color: #ff0000; font-style: italic">False</span><span style="font-weight: bold">}</span>,
+    <span style="color: #008000; text-decoration-color: #008000">'llm_engine'</span>: <span style="color: #008000; text-decoration-color: #008000">'VLLMEngine'</span>,
+    <span style="color: #008000; text-decoration-color: #008000">'lora_config'</span>: <span style="font-weight: bold">{</span><span style="color: #008000; text-decoration-color: #008000">'dynamic_lora_loading_path'</span>: <span style="color: #008000; text-decoration-color: #008000">'none'</span>, <span style="color: #008000; text-decoration-color: #008000">'max_num_adapters_per_replica'</span>: <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">32</span><span style="font-weight: bold">}</span>,
+    <span style="color: #008000; text-decoration-color: #008000">'max_request_context_length'</span>: <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">8192</span>,
+    <span style="color: #008000; text-decoration-color: #008000">'model_loading_config'</span>: <span style="font-weight: bold">{</span>
+        <span style="color: #008000; text-decoration-color: #008000">'model_id'</span>: <span style="color: #008000; text-decoration-color: #008000">'meta-llama/Llama-3.2-1B-Instruct'</span>,
+        <span style="color: #008000; text-decoration-color: #008000">'model_source'</span>: <span style="color: #008000; text-decoration-color: #008000">'meta-llama/Llama-3.2-1B-Instruct'</span>
+    <span style="font-weight: bold">}</span>,
+    <span style="color: #008000; text-decoration-color: #008000">'runtime_env'</span>: <span style="font-weight: bold">{</span><span style="color: #008000; text-decoration-color: #008000">'env_vars'</span>: <span style="font-weight: bold">{</span><span style="color: #008000; text-decoration-color: #008000">'HUGGING_FACE_HUB_TOKEN'</span>: <span style="color: #008000; text-decoration-color: #008000">'REDACTED'</span><span style="font-weight: bold">}}</span>,
+    <span style="color: #008000; text-decoration-color: #008000">'tensor_parallelism'</span>: <span style="font-weight: bold">{</span><span style="color: #008000; text-decoration-color: #008000">'degree'</span>: <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">1</span><span style="font-weight: bold">}</span>
+<span style="font-weight: bold">}</span>
+</pre>
+
+
 
 DSPy has an abstraction around LLMForge finetuning in order to allow you to pass in your configuration files and not have to worry about the details of how to interface with LLMForge.
 
@@ -663,15 +1427,17 @@ except Exception as e:
 
 
 
-    2024-10-22T19:41:21.335305Z [warning  ] model_id and train_path inside configs/training/lora/llama-3-8b.yaml are going to be overridden [dspy.clients.anyscale] filename=anyscale.py lineno=156
-    (anyscale +16m8.2s) Uploading local dir '.' to cloud storage.
-    (anyscale +16m10.4s) Including workspace-managed pip dependencies.
-    (anyscale +16m10.9s) Job 'dspy-llmforge-fine-tuning-job' submitted, ID: 'prodjob_pibnwgdk65vl1zevwtgtlfr8a1'.
-    (anyscale +16m10.9s) View the job in the UI: https://console.anyscale.com/jobs/prodjob_pibnwgdk65vl1zevwtgtlfr8a1
-    (anyscale +16m11.2s) Waiting for job 'prodjob_pibnwgdk65vl1zevwtgtlfr8a1' to reach target state SUCCEEDED, currently in state: STARTING
-    (anyscale +18m5.0s) Job 'prodjob_pibnwgdk65vl1zevwtgtlfr8a1' transitioned from STARTING to RUNNING
-    (anyscale +35m25.5s) Job 'prodjob_pibnwgdk65vl1zevwtgtlfr8a1' transitioned from RUNNING to SUCCEEDED
-    (anyscale +35m25.5s) Job 'prodjob_pibnwgdk65vl1zevwtgtlfr8a1' reached target state, exiting
+    (anyscale +13m39.4s) Uploading local dir '.' to cloud storage.
+    (anyscale +13m41.8s) Including workspace-managed pip dependencies.
+    (anyscale +13m42.5s) Job 'dspy-llmforge-fine-tuning-job' submitted, ID: 'prodjob_r4nwu2mlijl1ag7heb755cjw8x'.
+    (anyscale +13m42.5s) View the job in the UI: https://console.anyscale.com/jobs/prodjob_r4nwu2mlijl1ag7heb755cjw8x
+    (anyscale +13m42.7s) Waiting for job 'prodjob_r4nwu2mlijl1ag7heb755cjw8x' to reach target state SUCCEEDED, currently in state: STARTING
+    (anyscale +16m7.5s) Job 'prodjob_r4nwu2mlijl1ag7heb755cjw8x' transitioned from STARTING to RUNNING
+    (anyscale +29m42.0s) Job 'prodjob_r4nwu2mlijl1ag7heb755cjw8x' transitioned from RUNNING to SUCCEEDED
+    (anyscale +29m42.0s) Job 'prodjob_r4nwu2mlijl1ag7heb755cjw8x' reached target state, exiting
+
+
+    Finetuned Model ID: openai/meta-llama/Llama-3.2-1B-Instruct:isaac:ngffk
 
 
 # Evaluation
@@ -696,7 +1462,7 @@ Note that we do not provide an eval set when finetuning, as the eval loss of a c
 print(finetuned_llama.model)
 ```
 
-    openai/meta-llama/Llama-3.2-1B-Instruct:isaac:faoyo
+    openai/meta-llama/Llama-3.2-1B-Instruct:isaac:ngffk
 
 
 We will run a local RayLLM instance that serves the model.
@@ -721,16 +1487,16 @@ Run this command to start the 1B RayLLM server:
 !serve run --non-blocking serve_1B.yaml
 ```
 
-    2024-10-22 20:01:24,883	INFO scripts.py:489 -- Running config file: 'serve_1B.yaml'.
-    2024-10-22 20:01:25,215	INFO worker.py:1601 -- Connecting to existing Ray cluster at address: 10.0.0.28:6379...
-    2024-10-22 20:01:25,222	INFO worker.py:1777 -- Connected to Ray cluster. View the dashboard at https://session-6frbgpfbuzs27m75xhz3c8vnde.i.anyscaleuserdata.com 
-    2024-10-22 20:01:25,225	INFO packaging.py:359 -- Pushing file package 'gcs://_ray_pkg_014106e27015567ec4a30c5eabf06c9cfb9b351c.zip' (0.51MiB) to Ray cluster...
-    2024-10-22 20:01:25,230	INFO packaging.py:372 -- Successfully pushed file package 'gcs://_ray_pkg_014106e27015567ec4a30c5eabf06c9cfb9b351c.zip'.
-    INFO 2024-10-22 20:01:28,877 serve 24321 api.py:277 - Started Serve in namespace "serve".
-    2024-10-22 20:01:28,886	SUCC scripts.py:540 -- Submitted deploy config successfully.
-    (ServeController pid=24398) INFO 2024-10-22 20:01:28,880 controller 24398 application_state.py:881 - Deploying new app 'llm-endpoint'.
-    (ServeController pid=24398) INFO 2024-10-22 20:01:28,881 controller 24398 application_state.py:457 - Importing and building app 'llm-endpoint'.
-    (ProxyActor pid=24456) INFO 2024-10-22 20:01:28,851 proxy 10.0.0.28 proxy.py:1235 - Proxy starting on node 76e2eab0a833e02208d948f67f54806e64e4d0b26f1a49507548855a (HTTP port: 8000).
+    2024-10-23 01:08:39,710	INFO scripts.py:489 -- Running config file: 'serve_1B.yaml'.
+    2024-10-23 01:08:40,027	INFO worker.py:1601 -- Connecting to existing Ray cluster at address: 10.0.0.28:6379...
+    2024-10-23 01:08:40,035	INFO worker.py:1777 -- Connected to Ray cluster. View the dashboard at https://session-6frbgpfbuzs27m75xhz3c8vnde.i.anyscaleuserdata.com 
+    2024-10-23 01:08:40,039	INFO packaging.py:359 -- Pushing file package 'gcs://_ray_pkg_65f953c7794f5c3fb3b91d46cb1f7888057a961d.zip' (0.85MiB) to Ray cluster...
+    2024-10-23 01:08:40,048	INFO packaging.py:372 -- Successfully pushed file package 'gcs://_ray_pkg_65f953c7794f5c3fb3b91d46cb1f7888057a961d.zip'.
+    INFO 2024-10-23 01:08:43,956 serve 157622 api.py:277 - Started Serve in namespace "serve".
+    2024-10-23 01:08:43,965	SUCC scripts.py:540 -- Submitted deploy config successfully.
+    (ServeController pid=157685) INFO 2024-10-23 01:08:43,959 controller 157685 application_state.py:881 - Deploying new app 'llm-endpoint'.
+    (ServeController pid=157685) INFO 2024-10-23 01:08:43,960 controller 157685 application_state.py:457 - Importing and building app 'llm-endpoint'.
+    (ProxyActor pid=157763) INFO 2024-10-23 01:08:43,926 proxy 10.0.0.28 proxy.py:1235 - Proxy starting on node 76e2eab0a833e02208d948f67f54806e64e4d0b26f1a49507548855a (HTTP port: 8000).
 
 
 
@@ -758,8 +1524,12 @@ except ValueError as e:
     print("Fine-tuned model returned invalid output out and errored out with", e)
 ```
 
-    Program input: Example({'text': 'I still have not received an answer as to why I was charged $1.00 in a transaction?'}) (input_keys={'text'})
-    Expected dict_keys(['reasoning', 'label']) but got dict_keys([])
+    Program input: Example({'text': "I was just giving the wrong amount by the ATM. How do I request cash back at this point? The app is showing the amount that I actually requested even though that's not what I got."}) (input_keys={'text'})
+
+
+    Non fine-tuned model returned invalid output out and errored out with Expected dict_keys(['reasoning', 'label']) but got dict_keys([])
+    Program input: Example({'text': "I was just giving the wrong amount by the ATM. How do I request cash back at this point? The app is showing the amount that I actually requested even though that's not what I got."}) (input_keys={'text'})
+    Program output label: wrong_amount_of_cash_received
 
 
 ## Prompt Optimization with DSPy
@@ -815,10 +1585,10 @@ print(devset_synthetic[0])
 
     Lengths:
     Synthetic Devset:	 1000
-    Optimizer Trainset:	 2762
+    Optimizer Trainset:	 2862
     Optimizer Devset:	 300
     Example from synthetic devset:
-    Example({'text': 'I still have not received an answer as to why I was charged $1.00 in a transaction?', 'label': 'extra_charge_on_statement'}) (input_keys={'text'})
+    Example({'text': "I was just giving the wrong amount by the ATM. How do I request cash back at this point? The app is showing the amount that I actually requested even though that's not what I got.", 'label': 'wrong_amount_of_cash_received'}) (input_keys={'text'})
 
 
 Now we will evaluate our finetuned model and the base model, prompt optimize them, and evaluate them on the synthetic devset.
@@ -852,7 +1622,7 @@ ft_results = evaluate_and_prompt_optimize(**evaluation_kwargs)
 print(ft_results)
 ```
 
-    {'base': {'vanilla': {'devset': 0.0}, 'bfrs': {'devset': 36.2}}, 'ft': {'vanilla': {'devset': 9.5}, 'bfrs': {'devset': 48.6}}}
+    {'base': {'vanilla': {'devset': 0.3}, 'bfrs': {'devset': 23.5}}, 'openai/meta-llama/Llama-3.2-1B-Instruct:isaac:ngffk': {'vanilla': {'devset': 56.3}, 'bfrs': {'devset': 56.3}}}
 
 
 # TODO: Make plots nicer and consistent
@@ -870,10 +1640,10 @@ graph_devset_results(ft_results)
     
 
 
-    Highest Dev Set Score: 48.6, Model: fine-tuned
+    Highest Dev Set Score: 56.3, Model: Fine-tuned
 
 
-We see that the our finetuned model significantly outperforms the base model on the synthetic devset, even when prompt optimized.
+We see that the our finetuned model significantly outperforms the base model on the synthetic devset, and prompt optimization isn't enough to bring 1B all the way up to FT performance.
 
 We will now evaluate both the finetuned and base models on the real test set to see if we have improved performance. We will use the prompt optimized versions of the models that we created using the synthetic devset as our in context examples.
 
@@ -914,7 +1684,7 @@ print(f"Best testset result: \n{best_model} with score: {best_score}")
 ```
 
     Best testset result: 
-    ft with score: 43.8
+    openai/meta-llama/Llama-3.2-1B-Instruct:isaac:ngffk with score: 53.5
 
 
 We see that on the true test set, the prompt optimized pipeline using the finetuned model outperforms the prompt optimized pipeline using the non-finetuned model by approximately 12% in overall dataset accuracy. This is a relative performance improvement of almost 40%!
