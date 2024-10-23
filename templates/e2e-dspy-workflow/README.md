@@ -94,6 +94,7 @@ set_dspy_cache_location("/home/ray/default/dspy/cache")
 ```
 
 In order to run this notebook, you need to have the following environment variables set:
+# TODO: move the brackets thing to comment and remove this (we alrady set it)
 - HF_HOME=/mnt/local_storage/huggingface (By default, the cache directory used by HuggingFace is in the home directory -`/home/ray` in this workspace. We'll use `/mnt/local_storage` here for downloading large model weight files)
 - HF_TOKEN
 - (optional) WANDB_API_KEY
@@ -141,6 +142,8 @@ from src import check_env_vars
 # Check if env vars are set correctly
 check_env_vars()
 ```
+
+# TODO: Initialize ray with env vars
 
 
 ```python
@@ -259,12 +262,6 @@ Lastly, we set up some the vanilla program we will use throughout the notebook.
 ```python
 from src import MODEL_PARAMETERS, LOCAL_API_PARAMETERS
 vanilla_program = IntentClassificationModule(labels_in_use)
-```
-
-
-```python
-# Note: Run above this to do all setup without launching any models
-# This is useful if you have already collected data and want to start from finetuning or from evaluation
 ```
 
 # Deploying and Utilizing a 70B Language Model
@@ -699,9 +696,6 @@ The first file, `serve_1B.yaml`, contains the serve configuration to load the mo
 
 The second file, `model_configs/meta-llama--Llama-3_2-1B-Instruct.yaml`, contains the necessary configurations to run the 1B model.
 
-<b style="background-color: yellow;">&nbsp;🔄 REPLACE&nbsp;</b>:
-Make sure you set your HF_TOKEN and HF_HOME environment variables, and run the following command to start the server:
-
 
 ```python
 from src import update_serve_config_hf_token
@@ -756,6 +750,8 @@ except ValueError as e:
     Program input: Example({'text': 'I still have not received an answer as to why I was charged $1.00 in a transaction?'}) (input_keys={'text'})
     Expected dict_keys(['reasoning', 'label']) but got dict_keys([])
 
+
+## Prompt Optimization with DSPy
 
 We are going to be doing prompt optimization using DSPy's `BootstrapFewShotWithRandomSearch (BFRS)` function.
 
@@ -848,6 +844,8 @@ print(ft_results)
     {'base': {'vanilla': {'devset': 0.0}, 'bfrs': {'devset': 36.2}}, 'ft': {'vanilla': {'devset': 9.5}, 'bfrs': {'devset': 48.6}}}
 
 
+# TODO: Make plots nicer and consistent
+
 
 ```python
 from src import graph_devset_results, graph_testset_results
@@ -857,7 +855,7 @@ graph_devset_results(ft_results)
 
 
     
-![png](README_files/README_63_0.png)
+![png](README_files/README_65_0.png)
     
 
 
@@ -895,7 +893,7 @@ graph_testset_results(ft_results_testset)
 
 
     
-![png](README_files/README_66_0.png)
+![png](README_files/README_68_0.png)
     
 
 
@@ -908,6 +906,8 @@ print(f"Best testset result: \n{best_model} with score: {best_score}")
     ft with score: 43.8
 
 
+# TODO: ADD INTERPRETATION
+
 # Serving
 
 The typical usecase for DSPy is for optimizing prompts and weights programmatically. DSPy allows you to define a complex pipeline with different components like a retriever and one or more LLMs. Often, we're interested in taking the same system we optimized during training to inference. 
@@ -915,6 +915,10 @@ The typical usecase for DSPy is for optimizing prompts and weights programmatica
 To deploy, we recommend you serve the optimized DSPy program directly: This is the simplest option to take your program to production. Since DSPy simply relies on a deployed inference endpoint for LLM calls, we can use it in conjunction with optimized serving libraries like RayLLM. We can leverage Ray Serve with our DSPy pipeline being our custom business logic while serving.
 
 NOTE: As of DSPy 2.5, there are scalability limitations for extremely high throughput scenarios with DSPy. DSPy compiled programs currently use threading for handling multiple queries in parallel, which might not scale as well as a native `async` implementation. A native `async` implementation is in the immediate roadmap for DSPy.
+
+### TODO: Deploying your fine-tuned model with rayllm
+
+### TODO: Refactor and start with multi-app deployment
 
 
 If you choose not to deploy your model, you can run the following code to run the model locally.
@@ -971,6 +975,12 @@ if ANYSCALE_SERVICE_BASE_URL and ANYSCALE_API_KEY:
 else:
     API_PARAMETERS = LOCAL_API_PARAMETERS
 ```
+
+# TODO: Explain deployment of business logic with ray serve
+
+1. Save state as json to ingest into deploy.py
+2. Explain multi-app deployment with ray serve 
+3. verify script works with saved state as `serve run` and `anyscale service run` 
 
 
 ```python
