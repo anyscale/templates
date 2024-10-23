@@ -1625,8 +1625,6 @@ print(ft_results)
     {'base': {'vanilla': {'devset': 0.3}, 'bfrs': {'devset': 23.5}}, 'openai/meta-llama/Llama-3.2-1B-Instruct:isaac:ngffk': {'vanilla': {'devset': 56.3}, 'bfrs': {'devset': 56.3}}}
 
 
-# TODO: Make plots nicer and consistent
-
 
 ```python
 from src import graph_devset_results, graph_testset_results
@@ -1636,7 +1634,7 @@ graph_devset_results(ft_results)
 
 
     
-![png](README_files/README_64_0.png)
+![png](README_files/README_63_0.png)
     
 
 
@@ -1674,7 +1672,7 @@ graph_testset_results(ft_results_testset)
 
 
     
-![png](README_files/README_67_0.png)
+![png](README_files/README_66_0.png)
     
 
 
@@ -1710,19 +1708,13 @@ These two different parts can be served as two separate applications with differ
 - Single multi-app deployment: This is the simpler way for managing your DSPy program in production by deploying one service with two applications. This is recommended when all your Ray Serve logic lies in one repository.
 
 
-In this guide, we will deploy our DSPy program as two separate Ray Serve deployments. 
+In this guide, we will deploy our DSPy program as a single Ray Serve deployment. 
 
-## Step 1: Deploying our fine-tuned model with RayLLM
-
-
-Similar to our previous deployment for the 1B model, we will now 
-
-First, let's save some important state for our program into a JSON file for use in serving
+First, let's save some important state for the compiled program into a JSON file for use in serving
 
 
 ```python
 import json 
-
 
 # Note: there are some caveats to how `best_program_path` can look like. All files for use in serving should be in the working directory passed to the serve config. 
 # By default the working directory  is the current directory
@@ -1731,7 +1723,7 @@ with open("configs/deploy_params.json", "w") as f:
     json.dump(my_state)
 ```
 
-For the purpose of serving, we will need to place all our application logic in a python scripts. We've provided a script `deploy.py` which contains the DSPy application logic. For serving the fine-tuned model, we will leverage RayLLM, and use a similar application configuration as in `serve_1B.yaml` . 
+For the purpose of serving, it is recommended to place all the application logic in a python script. We've provided a script `deploy.py` which contains the DSPy application logic. 
 
 
 ```python
@@ -1796,10 +1788,12 @@ pretty_print_py("deploy.py")
 <span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822">        self</span><span style="color: #ff4689; text-decoration-color: #ff4689; background-color: #272822">.</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822">params </span><span style="color: #ff4689; text-decoration-color: #ff4689; background-color: #272822">=</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822"> params</span><span style="background-color: #272822">                                                                                       </span>
 <span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822">        base_url </span><span style="color: #ff4689; text-decoration-color: #ff4689; background-color: #272822">=</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822"> serve_args[</span><span style="color: #e6db74; text-decoration-color: #e6db74; background-color: #272822">"api_base"</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822">]</span><span style="background-color: #272822">                                                                          </span>
 <span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822">        prefix </span><span style="color: #ff4689; text-decoration-color: #ff4689; background-color: #272822">=</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822"> serve_args[</span><span style="color: #e6db74; text-decoration-color: #e6db74; background-color: #272822">"route_prefix"</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822">]</span><span style="background-color: #272822">                                                                        </span>
+<span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822">        full_url </span><span style="color: #ff4689; text-decoration-color: #ff4689; background-color: #272822">=</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822"> base_url </span><span style="color: #ff4689; text-decoration-color: #ff4689; background-color: #272822">+</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822"> prefix</span><span style="color: #ff4689; text-decoration-color: #ff4689; background-color: #272822">.</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822">lstrip(</span><span style="color: #e6db74; text-decoration-color: #e6db74; background-color: #272822">'/'</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822">) </span><span style="color: #66d9ef; text-decoration-color: #66d9ef; background-color: #272822">if</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822"> len(prefix</span><span style="color: #ff4689; text-decoration-color: #ff4689; background-color: #272822">.</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822">lstrip(</span><span style="color: #e6db74; text-decoration-color: #e6db74; background-color: #272822">'/'</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822">)) </span><span style="color: #66d9ef; text-decoration-color: #66d9ef; background-color: #272822">else</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822"> base_url</span><span style="background-color: #272822">                          </span>
 <span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822">        api_parameters </span><span style="color: #ff4689; text-decoration-color: #ff4689; background-color: #272822">=</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822"> {</span><span style="background-color: #272822">                                                                                         </span>
-<span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822">            </span><span style="color: #e6db74; text-decoration-color: #e6db74; background-color: #272822">"api_base"</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822">: </span><span style="color: #e6db74; text-decoration-color: #e6db74; background-color: #272822">f"{</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822">base_url</span><span style="color: #e6db74; text-decoration-color: #e6db74; background-color: #272822">}/{</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822">prefix</span><span style="color: #ff4689; text-decoration-color: #ff4689; background-color: #272822">.</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822">lstrip(</span><span style="color: #e6db74; text-decoration-color: #e6db74; background-color: #272822">'/'</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822">)</span><span style="color: #e6db74; text-decoration-color: #e6db74; background-color: #272822">}/v1"</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822">,</span><span style="background-color: #272822">                                                     </span>
+<span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822">            </span><span style="color: #e6db74; text-decoration-color: #e6db74; background-color: #272822">"api_base"</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822">: </span><span style="color: #e6db74; text-decoration-color: #e6db74; background-color: #272822">f"{</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822">full_url</span><span style="color: #e6db74; text-decoration-color: #e6db74; background-color: #272822">}/v1"</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822">,</span><span style="background-color: #272822">                                                                          </span>
 <span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822">            </span><span style="color: #e6db74; text-decoration-color: #e6db74; background-color: #272822">"api_key"</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822">: serve_args[</span><span style="color: #e6db74; text-decoration-color: #e6db74; background-color: #272822">"api_key"</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822">]</span><span style="background-color: #272822">                                                                       </span>
 <span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822">        }</span><span style="background-color: #272822">                                                                                                          </span>
+<span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822">        print(</span><span style="color: #e6db74; text-decoration-color: #e6db74; background-color: #272822">"API parameters"</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822">, api_parameters)</span><span style="background-color: #272822">                                                                    </span>
 <span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822">        self</span><span style="color: #ff4689; text-decoration-color: #ff4689; background-color: #272822">.</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822">llm </span><span style="color: #ff4689; text-decoration-color: #ff4689; background-color: #272822">=</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822"> dspy</span><span style="color: #ff4689; text-decoration-color: #ff4689; background-color: #272822">.</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822">LM(model</span><span style="color: #ff4689; text-decoration-color: #ff4689; background-color: #272822">=</span><span style="color: #e6db74; text-decoration-color: #e6db74; background-color: #272822">"openai/"</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822"> </span><span style="color: #ff4689; text-decoration-color: #ff4689; background-color: #272822">+</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822"> self</span><span style="color: #ff4689; text-decoration-color: #ff4689; background-color: #272822">.</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822">params[</span><span style="color: #e6db74; text-decoration-color: #e6db74; background-color: #272822">"best_model"</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822">], </span><span style="color: #ff4689; text-decoration-color: #ff4689; background-color: #272822">**</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822">MODEL_PARAMETERS, </span><span style="color: #ff4689; text-decoration-color: #ff4689; background-color: #272822">**</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822">api_parameters)</span><span style="background-color: #272822">      </span>
 <span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822">        self</span><span style="color: #ff4689; text-decoration-color: #ff4689; background-color: #272822">.</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822">program </span><span style="color: #ff4689; text-decoration-color: #ff4689; background-color: #272822">=</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822"> IntentClassificationModule(params[</span><span style="color: #e6db74; text-decoration-color: #e6db74; background-color: #272822">"labels_in_use"</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822">])</span><span style="background-color: #272822">                                         </span>
 <span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822">        self</span><span style="color: #ff4689; text-decoration-color: #ff4689; background-color: #272822">.</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822">program</span><span style="color: #ff4689; text-decoration-color: #ff4689; background-color: #272822">.</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822">load(params[</span><span style="color: #e6db74; text-decoration-color: #e6db74; background-color: #272822">"best_program_path"</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822">])</span><span style="background-color: #272822">                                                             </span>
@@ -1817,11 +1811,11 @@ pretty_print_py("deploy.py")
 
 
 
-As seen above, we've put our DSPy application logic in the `LLMClient` class. We've also passed in some basic resource requests and an autoscaling config. Internally, at initialization, each replica will run a copy of the DSPy program after reading in the saved parameters from `param_path` (`configs/deploy_params.json` here).
+As seen above, we've put our DSPy application logic in the `LLMClient` class. We've also passed in some basic configuration for resources and an autoscaling config. At initialization, each replica of `LLMClient` will run a copy of the DSPy program after reading in the saved parameters from `param_path` (`configs/deploy_params.json` here).
 
 The main entrypoint for the app is `construct_app`. 
 
-For serving the fine-tuning model, we simply make use of RayLLM, and our DSPy code will read in the API parameters through `args`
+Our DSPy code will read in the API parameters for the RayLLM service through `args`.
 
 Let's now go over the Ray Serve config for our DSPy deployment:
 
@@ -1829,7 +1823,7 @@ Let's now go over the Ray Serve config for our DSPy deployment:
 ```python
 import yaml 
 
-deploy_config_path = "configs/deploy_dspy.yaml"
+deploy_config_path = "configs/local_deploy_dspy.yaml"
 with open(deploy_config_path, "r") as f:
     config = yaml.safe_load(f)
 
@@ -1840,15 +1834,21 @@ rprint(config)
 <pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace"><span style="font-weight: bold">{</span>
     <span style="color: #008000; text-decoration-color: #008000">'applications'</span>: <span style="font-weight: bold">[</span>
         <span style="font-weight: bold">{</span>
+            <span style="color: #008000; text-decoration-color: #008000">'name'</span>: <span style="color: #008000; text-decoration-color: #008000">'dspy_client'</span>,
             <span style="color: #008000; text-decoration-color: #008000">'args'</span>: <span style="font-weight: bold">{</span>
                 <span style="color: #008000; text-decoration-color: #008000">'program_param_path'</span>: <span style="color: #008000; text-decoration-color: #008000">'configs/deploy_params.json'</span>,
-                <span style="color: #008000; text-decoration-color: #008000">'rayllm_route_prefix'</span>: <span style="color: #008000; text-decoration-color: #008000">'/llm'</span>,
-                <span style="color: #008000; text-decoration-color: #008000">'rayllm_args'</span>: <span style="font-weight: bold">{</span><span style="color: #008000; text-decoration-color: #008000">'route_prefix'</span>: <span style="color: #008000; text-decoration-color: #008000">'/'</span>, <span style="color: #008000; text-decoration-color: #008000">'api_base'</span>: <span style="color: #008000; text-decoration-color: #008000">'localhost:8000'</span>, <span style="color: #008000; text-decoration-color: #008000">'api_key'</span>: <span style="color: #008000; text-decoration-color: #008000">'fake-key'</span><span style="font-weight: bold">}</span>
+                <span style="color: #008000; text-decoration-color: #008000">'rayllm_args'</span>: <span style="font-weight: bold">{</span><span style="color: #008000; text-decoration-color: #008000">'route_prefix'</span>: <span style="color: #008000; text-decoration-color: #008000">'/'</span>, <span style="color: #008000; text-decoration-color: #008000">'api_base'</span>: <span style="color: #008000; text-decoration-color: #008000">'https://localhost:8000'</span>, <span style="color: #008000; text-decoration-color: #008000">'api_key'</span>: <span style="color: #008000; text-decoration-color: #008000">'fake-key'</span><span style="font-weight: bold">}</span>
             <span style="font-weight: bold">}</span>,
             <span style="color: #008000; text-decoration-color: #008000">'import_path'</span>: <span style="color: #008000; text-decoration-color: #008000">'deploy:construct_app'</span>,
-            <span style="color: #008000; text-decoration-color: #008000">'name'</span>: <span style="color: #008000; text-decoration-color: #008000">'dspy_client'</span>,
             <span style="color: #008000; text-decoration-color: #008000">'route_prefix'</span>: <span style="color: #008000; text-decoration-color: #008000">'/classify_intent'</span>,
-            <span style="color: #008000; text-decoration-color: #008000">'runtime_env'</span>: <span style="font-weight: bold">{</span><span style="color: #008000; text-decoration-color: #008000">'pip'</span>: <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'dspy'</span>, <span style="color: #008000; text-decoration-color: #008000">'matplotlib'</span><span style="font-weight: bold">]}</span>
+            <span style="color: #008000; text-decoration-color: #008000">'runtime_env'</span>: <span style="font-weight: bold">{</span><span style="color: #008000; text-decoration-color: #008000">'pip'</span>: <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'dspy'</span>, <span style="color: #008000; text-decoration-color: #008000">'matplotlib'</span><span style="font-weight: bold">]</span>, <span style="color: #008000; text-decoration-color: #008000">'working_dir'</span>: <span style="color: #008000; text-decoration-color: #008000">'.'</span><span style="font-weight: bold">}</span>
+        <span style="font-weight: bold">}</span>,
+        <span style="font-weight: bold">{</span>
+            <span style="color: #008000; text-decoration-color: #008000">'name'</span>: <span style="color: #008000; text-decoration-color: #008000">'llm-endpoint'</span>,
+            <span style="color: #008000; text-decoration-color: #008000">'args'</span>: <span style="font-weight: bold">{</span><span style="color: #008000; text-decoration-color: #008000">'llm_configs'</span>: <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'./model_config/meta-llama--Llama-3_2-1B-Instruct.yaml'</span><span style="font-weight: bold">]}</span>,
+            <span style="color: #008000; text-decoration-color: #008000">'import_path'</span>: <span style="color: #008000; text-decoration-color: #008000">'rayllm:app'</span>,
+            <span style="color: #008000; text-decoration-color: #008000">'route_prefix'</span>: <span style="color: #008000; text-decoration-color: #008000">'/'</span>,
+            <span style="color: #008000; text-decoration-color: #008000">'runtime_env'</span>: <span style="font-weight: bold">{</span><span style="color: #008000; text-decoration-color: #008000">'working_dir'</span>: <span style="color: #008000; text-decoration-color: #008000">'.'</span><span style="font-weight: bold">}</span>
         <span style="font-weight: bold">}</span>
     <span style="font-weight: bold">]</span>,
     <span style="color: #008000; text-decoration-color: #008000">'query_auth_token_enabled'</span>: <span style="color: #ff0000; text-decoration-color: #ff0000; font-style: italic">False</span>
@@ -1857,19 +1857,57 @@ rprint(config)
 
 
 
-We make use of application [args](https://docs.ray.io/en/latest/serve/advanced-guides/app-builder-guide.html) to provide the path to the json with program parameters and the RayLLM API 
+We make use of [application args](https://docs.ray.io/en/latest/serve/advanced-guides/app-builder-guide.html) to provide the path to the program state json and the RayLLM API parameters.
+
+We can now deploy the apps locally with
 
 
-If you choose not to deploy your model, you can run the following code to run the model locally.
+```python
+!serve run local_deploy_dspy.yaml --non-blocking
 ```
-serve run serve_1B.yaml
-```
-If you never took down your service from the previous section, there is no need to rerun the service run command.
 
+    2024-10-23 04:32:53,288	INFO scripts.py:489 -- Running config file: 'local_deploy_dspy.yaml'.
+    2024-10-23 04:32:53,643	INFO worker.py:1601 -- Connecting to existing Ray cluster at address: 10.0.0.25:6379...
+    2024-10-23 04:32:53,652	INFO worker.py:1777 -- Connected to Ray cluster. View the dashboard at [1m[32mhttps://session-czqbf1bhvhp98gnjubkguupgc2.i.anyscaleuserdata.com [39m[22m
+    2024-10-23 04:32:53,657	INFO packaging.py:359 -- Pushing file package 'gcs://_ray_pkg_1ceac2efe61277e59cd1273bb531c4dfe845e103.zip' (1.39MiB) to Ray cluster...
+    2024-10-23 04:32:53,674	INFO packaging.py:372 -- Successfully pushed file package 'gcs://_ray_pkg_1ceac2efe61277e59cd1273bb531c4dfe845e103.zip'.
+    INFO 2024-10-23 04:32:57,859 serve 249754 api.py:277 - Started Serve in namespace "serve".
+    2024-10-23 04:32:57,871	SUCC scripts.py:540 -- [32mSubmitted deploy config successfully.[39m
+    [0m[36m(ServeController pid=249826)[0m INFO 2024-10-23 04:32:57,862 controller 249826 application_state.py:881 - Deploying new app 'dspy_client'.
+    [36m(ServeController pid=249826)[0m INFO 2024-10-23 04:32:57,863 controller 249826 application_state.py:457 - Importing and building app 'dspy_client'.
+    [36m(ServeController pid=249826)[0m INFO 2024-10-23 04:32:57,867 controller 249826 application_state.py:881 - Deploying new app 'llm-endpoint'.
+    [36m(ServeController pid=249826)[0m INFO 2024-10-23 04:32:57,869 controller 249826 application_state.py:457 - Importing and building app 'llm-endpoint'.
+    [36m(ProxyActor pid=249884)[0m INFO 2024-10-23 04:32:57,827 proxy 10.0.0.25 proxy.py:1235 - Proxy starting on node 9085971e2ef1cdf0cd5515d8cb45a7cb716afef38ea4a1ed736c820d (HTTP port: 8000).
+
+
+## Query the deployed DSPy service
+
+We can query our app directly using HTTP requests.
+
+
+```python
+import requests
+response = requests.post("http://localhost:8000/classify_intent", json={"query": example_query})
+
+if not response.ok:
+    print("Got response: ", response)
+    print("Reason: ", response.reason)
+else:
+    print(response.json())
+```
+
+    Got response:  <Response [500]>
+    Reason:  Internal Server Error
+
+
+# Optional: Deploy DSPy program as an Anyscale Service
+
+You can optionally deploy your program to Anyscale in order to use it in production. We will repeat the same steps as above, but this time deploy the two applications as separate Anyscale services for convenience.
+
+## Step 1: Deploy RayLLM as a Anyscale Service
 
 <b style="background-color: blue;">&nbsp;🔄 RUN (optional)&nbsp;</b>:
-You can optionally deploy your model to Anyscale in order to use it in production.
-To do this, run the following command:
+To deploy the fine-tuned model as an Anyscale Service, run the following command:
 
 ```
 !anyscale service deploy -f serve_1B.yaml
@@ -1880,20 +1918,13 @@ Follow the URL in order to find your service URL and API key for your deployed s
 
 
 ```python
-# Run this if you want to deploy your model locally
-# !serve run serve_1B.yaml --non-blocking
-
 # Run this if you want to deploy an Anyscale service
-# !anyscale service deploy -f serve_1B.yaml
+!anyscale service deploy -f serve_1B.yaml
 ```
 
 <b style="background-color: yellow;">&nbsp;🔄 REPLACE&nbsp;</b>:
 Replace the following variables with your Anyscale service URL and API key.
 
-```
-ANYSCALE_SERVICE_BASE_URL = None
-ANYSCALE_API_KEY = None
-```
 
 You can find them by clicking the query button on the Anyscale dashboard for your service.
 
@@ -1902,80 +1933,76 @@ You can find them by clicking the query button on the Anyscale dashboard for you
 
 
 ```python
-ANYSCALE_SERVICE_BASE_URL = None
-ANYSCALE_API_KEY = None
+ANYSCALE_RAYLLM_SERVICE_BASE_URL = None
+ANYSCALE_RAYLLM_API_KEY = None
+```
+
+## Step 2: Deploy the DSPy program as a Anyscale Service
+
+To deploy our DSPy program, we first need to make sure we point to the Anyscale Service running RayLLM for the API parameters used. To do this, we should update the `rayllm_args` section of our config
+
+
+```python
+import yaml
+
+def update_rayllm_config(yaml_path, new_api_base=None, new_api_key=None, new_route_prefix=None):
+    """
+    Update the RayLLM configuration in the YAML file.
+    
+    Args:
+        yaml_path (str): Path to the YAML file
+        new_api_base (str, Optional): New API base URL
+        new_api_key (str, Optional): New API key
+        new_route_prefix (str, Optional): New route prefix
+    """
+    with open(yaml_path, 'r') as f:
+        config = yaml.safe_load(f)
+    
+    rayllm_args = config['applications'][0]['args']['rayllm_args']
+    
+    if new_api_base:
+        rayllm_args['api_base'] = new_api_base
+    if new_api_key:
+        rayllm_args['api_key'] = new_api_key
+    if new_route_prefix:
+        rayllm_args['route_prefix'] = new_route_prefix
+    
+    with open(yaml_path, 'w') as f:
+        yaml.safe_dump(config, f, default_flow_style=False)
 ```
 
 
 ```python
-from src import MODEL_PARAMETERS, LOCAL_API_PARAMETERS
-if ANYSCALE_SERVICE_BASE_URL and ANYSCALE_API_KEY:
-    API_PARAMETERS = {"api_base": ANYSCALE_SERVICE_BASE_URL, "api_key": ANYSCALE_API_KEY}
-else:
-    API_PARAMETERS = LOCAL_API_PARAMETERS
+# Run this if you deployed an Anyscale Service with RayLLM
+
+update_rayllm_config("configs/deploy_dspy.yaml", new_api_base=ANYSCALE_RAYLLM_SERVICE_BASE_URL, new_api_key=ANYSCALE_RAYLLM_API_KEY)
 ```
 
-# TODO: Explain deployment of business logic with ray serve
-
-1. Save state as json to ingest into deploy.py
-3. verify script works with saved state as `serve run` and `anyscale service run` 
+Great! We should now have a service which runs the compiled DSPy program. Let's query this new service. Make sure to enter the details here: 
 
 
 ```python
-from ray import serve
-from fastapi import FastAPI
-
-app = FastAPI()
-
-@serve.deployment(
-    ray_actor_options={"num_cpus": 0.1},
-    autoscaling_config=dict(min_replicas=1, max_replicas=3)
-)
-@serve.ingress(app)
-class LLMClient:
-    def __init__(self):
-        self.llm = dspy.LM(model="openai/" + best_model, **MODEL_PARAMETERS, **API_PARAMETERS)
-        dspy.settings.configure(experimental=True, lm=self.llm)
-        self.program = IntentClassificationModule(labels_in_use)
-        self.program.load(best_program_path)
-
-    @app.get("/")
-    async def classify_intent(
-        self,
-        query: str,
-    ):
-        """Answer the given question and provide sources."""
-        retrieval_response = self.program(query)
-
-        return retrieval_response.label
-
-llm_client = LLMClient.bind()
-llm_handle = serve.run(llm_client, route_prefix="/classify_intent", name="llm_client")
+ANYSCALE_DSPY_SERVICE_BASE_URL = None
+ANYSCALE_DSPY_API_KEY = None
 ```
-
-
-```python
-example_query = ft_trainset[1]["text"]
-llm_response = await llm_handle.classify_intent.remote(
-    query=example_query,
-)
-print(example_query)
-print(llm_response)
-```
-
-We can also query directly using HTTP requests, because we use the `@app` decorator on our FastAPI app.
 
 
 ```python
 import requests
+
+headers = {
+    "Authorization": f"Bearer {ANYSCALE_DSPY_API_KEY}"
+}
+
 try:
-    response = requests.get(f"http://localhost:8000/classify_intent?query={example_query}")
+    response = requests.get(f"{ANYSCALE_DSPY_SERVICE_BASE_URL}/classify_intent?query={example_query}", headers=headers)
     print(response.json())
 except Exception as e:
+    print("Error:")
     print(e)
 ```
 
-<b style="background-color: yellow;">&nbsp;🛑 IMPORTANT&nbsp;</b>: Please `Terminate` your service from the Service page to avoid depleting your free trial credits.
+<b style="background-color: yellow;">&nbsp;🛑 IMPORTANT&nbsp;</b>: Please `Terminate` your service from the Service page to avoid depleting your credits.
 
 
 ```python
