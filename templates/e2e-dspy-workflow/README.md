@@ -1671,9 +1671,15 @@ graph_testset_results(ft_results_testset)
 ```
 
 
-    
-![png](README_files/README_66_0.png)
-    
+    ---------------------------------------------------------------------------
+
+    NameError                                 Traceback (most recent call last)
+
+    /home/ray/default/templates/templates/e2e-dspy-workflow/README.ipynb Cell 67 line 1
+    ----> <a href='vscode-notebook-cell://vscode-session-6frbgpfbuzs27m75xhz3c8vnde.i.anyscaleuserdata.com/home/ray/default/templates/templates/e2e-dspy-workflow/README.ipynb#Y124sdnNjb2RlLXJlbW90ZQ%3D%3D?line=0'>1</a> graph_testset_results(ft_results_testset)
+
+
+    NameError: name 'graph_testset_results' is not defined
 
 
 

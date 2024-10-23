@@ -12,6 +12,10 @@ bootstrap_fewshot_random_search_parameters = {
     "max_labeled_demos": 3,
     "num_candidate_programs": 6,
 }
+MAX_BOOTSTRAPPED_DEMOS = bootstrap_fewshot_random_search_parameters["max_bootstrapped_demos"]
+MAX_LABELED_DEMOS = bootstrap_fewshot_random_search_parameters["max_labeled_demos"]
+NUM_CANDIDATE_PROGRAMS = bootstrap_fewshot_random_search_parameters["num_candidate_programs"]
+
 NUM_THREADS = 300
 MAX_ERRORS = 10000
 
@@ -96,7 +100,3 @@ INT_TO_LABEL_DICT = {
 }
 
 LABEL_TO_INT_DICT = {v: k for k, v in INT_TO_LABEL_DICT.items()}
-
-MAX_BOOTSTRAPPED_DEMOS = bootstrap_fewshot_random_search_parameters["max_bootstrapped_demos"]
-MAX_LABELED_DEMOS = bootstrap_fewshot_random_search_parameters["max_labeled_demos"]
-NUM_CANDIDATE_PROGRAMS = bootstrap_fewshot_random_search_parameters["num_candidate_programs"]
