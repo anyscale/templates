@@ -1326,6 +1326,7 @@ else:
 
 ```python
 # Clean up
+!python src/clear_cell_nums.py
 !find . | grep -E ".ipynb_checkpoints" | xargs rm -rf
 !find . | grep -E "(__pycache__|\.pyc|\.pyo)" | xargs rm -rf
 !rm -rf __pycache__ dspy
