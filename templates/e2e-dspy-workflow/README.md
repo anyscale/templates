@@ -62,7 +62,7 @@ if importlib.util.find_spec("dspy") is None:
 else:
     print("dspy is already installed")
 
-!pip install matplotlib python-dotenv
+!pip install matplotlib==3.9.2 python-dotenv==1.0.1
 ```
 
 
@@ -1326,6 +1326,7 @@ else:
 
 ```python
 # Clean up
+!python src/clear_cell_nums.py
 !find . | grep -E ".ipynb_checkpoints" | xargs rm -rf
 !find . | grep -E "(__pycache__|\.pyc|\.pyo)" | xargs rm -rf
 !rm -rf __pycache__ dspy
