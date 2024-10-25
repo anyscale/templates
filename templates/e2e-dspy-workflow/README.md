@@ -57,7 +57,7 @@ import importlib.util
 
 if importlib.util.find_spec("dspy") is None:
     print("Installing dspy")
-    !pip install git+https://github.com/stanfordnlp/dspy.git@40d5e0229a3abadd313ff9b857f40e638effae56
+    !pip install git+https://github.com/stanfordnlp/dspy.git@c5b4c6d4240d66cc23113c55addfd47313dd25fb
 
 else:
     print("dspy is already installed")
@@ -333,7 +333,7 @@ print_serve_and_model_config("serve_70B.yaml")
         <span style="color: #008000; text-decoration-color: #008000">'model_id'</span>: <span style="color: #008000; text-decoration-color: #008000">'meta-llama/Meta-Llama-3.1-70B-Instruct'</span>,
         <span style="color: #008000; text-decoration-color: #008000">'model_source'</span>: <span style="color: #008000; text-decoration-color: #008000">'meta-llama/Meta-Llama-3.1-70B-Instruct'</span>
     <span style="font-weight: bold">}</span>,
-    <span style="color: #008000; text-decoration-color: #008000">'runtime_env'</span>: <span style="font-weight: bold">{</span><span style="color: #008000; text-decoration-color: #008000">'env_vars'</span>: <span style="font-weight: bold">{</span><span style="color: #008000; text-decoration-color: #008000">'HUGGING_FACE_HUB_TOKEN'</span>: <span style="color: #008000; text-decoration-color: #008000">'Add your HF token here'</span><span style="font-weight: bold">}}</span>,
+    <span style="color: #008000; text-decoration-color: #008000">'runtime_env'</span>: <span style="font-weight: bold">{</span><span style="color: #008000; text-decoration-color: #008000">'env_vars'</span>: <span style="font-weight: bold">{</span><span style="color: #008000; text-decoration-color: #008000">'HUGGING_FACE_HUB_TOKEN'</span>: <span style="color: #008000; text-decoration-color: #008000">'REDACTED'</span><span style="font-weight: bold">}}</span>,
     <span style="color: #008000; text-decoration-color: #008000">'tensor_parallelism'</span>: <span style="font-weight: bold">{</span><span style="color: #008000; text-decoration-color: #008000">'degree'</span>: <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">4</span><span style="font-weight: bold">}</span>
 <span style="font-weight: bold">}</span>
 </pre>
@@ -378,6 +378,8 @@ sanity_check_program(llama_70b, vanilla_program, ft_trainset[0])
 ```
 
     Program input: Example({'text': 'I still have not received an answer as to why I was charged $1.00 in a transaction?'}) (input_keys={'text'})
+
+
     Program output label: extra_charge_on_statement
 
 
@@ -412,6 +414,9 @@ dataset = convert_to_module_level_message_data(collected_data_filtered, program=
 
 dataset_formatted = [{"messages": item} for item in dataset]
 ```
+
+    Average Metric: 4163 / 4171  (99.8): 100%|██████████| 4171/4171 [07:13<00:00,  9.62it/s]
+
 
 
 ```python
@@ -659,7 +664,7 @@ print_serve_and_model_config(serve_config_path)
     <span style="color: #008000; text-decoration-color: #008000">'input_modality'</span>: <span style="color: #008000; text-decoration-color: #008000">'text'</span>,
     <span style="color: #008000; text-decoration-color: #008000">'json_mode'</span>: <span style="font-weight: bold">{</span><span style="color: #008000; text-decoration-color: #008000">'enabled'</span>: <span style="color: #ff0000; text-decoration-color: #ff0000; font-style: italic">False</span><span style="font-weight: bold">}</span>,
     <span style="color: #008000; text-decoration-color: #008000">'llm_engine'</span>: <span style="color: #008000; text-decoration-color: #008000">'VLLMEngine'</span>,
-    <span style="color: #008000; text-decoration-color: #008000">'lora_config'</span>: <span style="font-weight: bold">{</span><span style="color: #008000; text-decoration-color: #008000">'dynamic_lora_loading_path'</span>: <span style="color: #008000; text-decoration-color: #008000">'none'</span>, <span style="color: #008000; text-decoration-color: #008000">'max_num_adapters_per_replica'</span>: <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">32</span><span style="font-weight: bold">}</span>,
+    <span style="color: #008000; text-decoration-color: #008000">'lora_config'</span>: <span style="font-weight: bold">{</span><span style="color: #008000; text-decoration-color: #008000">'dynamic_lora_loading_path'</span>: <span style="color: #008000; text-decoration-color: #008000">'none'</span>, <span style="color: #008000; text-decoration-color: #008000">'max_num_adapters_per_replica'</span>: <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">64</span><span style="font-weight: bold">}</span>,
     <span style="color: #008000; text-decoration-color: #008000">'max_request_context_length'</span>: <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">8192</span>,
     <span style="color: #008000; text-decoration-color: #008000">'model_loading_config'</span>: <span style="font-weight: bold">{</span>
         <span style="color: #008000; text-decoration-color: #008000">'model_id'</span>: <span style="color: #008000; text-decoration-color: #008000">'meta-llama/Llama-3.2-1B-Instruct'</span>,
@@ -888,10 +893,10 @@ rich.print(ft_results)
 
 
 <pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace"><span style="font-weight: bold">{</span>
-    <span style="color: #008000; text-decoration-color: #008000">'base'</span>: <span style="font-weight: bold">{</span><span style="color: #008000; text-decoration-color: #008000">'vanilla'</span>: <span style="font-weight: bold">{</span><span style="color: #008000; text-decoration-color: #008000">'devset'</span>: <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">0.1</span><span style="font-weight: bold">}</span>, <span style="color: #008000; text-decoration-color: #008000">'bfrs'</span>: <span style="font-weight: bold">{</span><span style="color: #008000; text-decoration-color: #008000">'devset'</span>: <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">37.2</span><span style="font-weight: bold">}}</span>,
-    <span style="color: #008000; text-decoration-color: #008000">'openai/meta-llama/Llama-3.2-1B-Instruct:isaac:fijif'</span>: <span style="font-weight: bold">{</span>
-        <span style="color: #008000; text-decoration-color: #008000">'vanilla'</span>: <span style="font-weight: bold">{</span><span style="color: #008000; text-decoration-color: #008000">'devset'</span>: <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">54.2</span><span style="font-weight: bold">}</span>,
-        <span style="color: #008000; text-decoration-color: #008000">'bfrs'</span>: <span style="font-weight: bold">{</span><span style="color: #008000; text-decoration-color: #008000">'devset'</span>: <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">53.5</span><span style="font-weight: bold">}</span>
+    <span style="color: #008000; text-decoration-color: #008000">'base'</span>: <span style="font-weight: bold">{</span><span style="color: #008000; text-decoration-color: #008000">'vanilla'</span>: <span style="font-weight: bold">{</span><span style="color: #008000; text-decoration-color: #008000">'devset'</span>: <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">0.0</span><span style="font-weight: bold">}</span>, <span style="color: #008000; text-decoration-color: #008000">'bfrs'</span>: <span style="font-weight: bold">{</span><span style="color: #008000; text-decoration-color: #008000">'devset'</span>: <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">36.7</span><span style="font-weight: bold">}}</span>,
+    <span style="color: #008000; text-decoration-color: #008000">'openai/meta-llama/Llama-3.2-1B-Instruct:isaac:qmmwc'</span>: <span style="font-weight: bold">{</span>
+        <span style="color: #008000; text-decoration-color: #008000">'vanilla'</span>: <span style="font-weight: bold">{</span><span style="color: #008000; text-decoration-color: #008000">'devset'</span>: <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">34.0</span><span style="font-weight: bold">}</span>,
+        <span style="color: #008000; text-decoration-color: #008000">'bfrs'</span>: <span style="font-weight: bold">{</span><span style="color: #008000; text-decoration-color: #008000">'devset'</span>: <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">58.0</span><span style="font-weight: bold">}</span>
     <span style="font-weight: bold">}</span>
 <span style="font-weight: bold">}</span>
 </pre>
@@ -911,8 +916,8 @@ graph_devset_results(ft_results)
     
 
 
-    Highest Dev Set Score (No Opt): 54.2, Model: Fine-tuned
-    Highest Dev Set Score (BFRS): 53.5, Model: Fine-tuned
+    Highest Dev Set Score (No Opt): 34.0, Model: Fine-tuned
+    Highest Dev Set Score (BFRS): 58.0, Model: Fine-tuned
 
 
 We see that the our finetuned model significantly outperforms the base model on the synthetic devset, and prompt optimization isn't enough to bring 1B all the way up to FT performance.
@@ -956,12 +961,12 @@ print(f"Best testset result: \n{best_model} with score: {best_score}")
 ```
 
     Best testset result: 
-    openai/meta-llama/Llama-3.2-1B-Instruct:isaac:fijif with score: 49.6
+    openai/meta-llama/Llama-3.2-1B-Instruct:isaac:qmmwc with score: 50.4
 
 
 We see that on the true test set, the prompt optimized pipeline using the finetuned model outperforms the prompt optimized pipeline using the non-finetuned model by approximately 15-20% in overall dataset accuracy.
 
-There is a significant drop between the "Best Fine-tuned (BFRS)" model's performance on the synthetic devset and on the testset. We believe this to be a gap in the generalized ability of the fine-tuned model: the model has seen the entirety of the synthetic devset before - the best checkpoint is chosen to be the one that minimizes the evaluation loss - but the testset is new and testing its capabilities on unseen data. However, with prompt optimization on top of fine-tuning, we clearly see the best test set performance.
+There is a drop between the "Best Fine-tuned (BFRS)" model's performance on the synthetic devset and on the testset. We believe this to be a gap in the generalized ability of the fine-tuned model: the model has seen the entirety of the synthetic devset before - the best checkpoint is chosen to be the one that minimizes the evaluation loss - but the testset is new and testing its capabilities on unseen data. However, with prompt optimization on top of fine-tuning, we clearly see the best test set performance.
 
 This is one small example of where DSPy optimization can be useful in terms of increasing task specific performance and helping you to get the most out of your LLM.
 
@@ -975,7 +980,7 @@ To deploy, you can serve the optimized DSPy program directly: This is the simple
 
 NOTE: As of DSPy 2.5, there are scalability limitations for high throughput scenarios with DSPy. DSPy compiled programs currently use threading for handling multiple queries in parallel, which might not scale as well as a native `async` implementation. A native `async` implementation is in the immediate roadmap for DSPy. If this is a concern, you can always try to stitch together the saved program from DSPy in native Python code. 
 
-## Serving a DSPy Pipeline as a Multi-App Serve Application
+## Serving a DSPy Pipeline using Ray Serve
 
 We can break down our program into two distinct parts: 1) Fine-tuned LLM served behind an OpenAI compatible endpoint and 2) The DSPy program (our business logic tying all components together)
 
@@ -1020,7 +1025,8 @@ pretty_print_py("deploy.py")
 ```
 
 
-<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace"><span style="color: #ff4689; text-decoration-color: #ff4689; background-color: #272822">import</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822"> dspy</span><span style="background-color: #272822">                                                                                                        </span>
+<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace"><span style="color: #e6db74; text-decoration-color: #e6db74; background-color: #272822">"""Ray Serve deployment code for our DSPy application"""</span><span style="background-color: #272822">                                                           </span>
+<span style="color: #ff4689; text-decoration-color: #ff4689; background-color: #272822">import</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822"> dspy</span><span style="background-color: #272822">                                                                                                        </span>
 <span style="color: #ff4689; text-decoration-color: #ff4689; background-color: #272822">from</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822"> ray </span><span style="color: #ff4689; text-decoration-color: #ff4689; background-color: #272822">import</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822"> serve</span><span style="background-color: #272822">                                                                                              </span>
 <span style="color: #ff4689; text-decoration-color: #ff4689; background-color: #272822">from</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822"> fastapi </span><span style="color: #ff4689; text-decoration-color: #ff4689; background-color: #272822">import</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822"> FastAPI</span><span style="background-color: #272822">                                                                                        </span>
 <span style="color: #ff4689; text-decoration-color: #ff4689; background-color: #272822">from</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822"> src </span><span style="color: #ff4689; text-decoration-color: #ff4689; background-color: #272822">import</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822"> MODEL_PARAMETERS</span><span style="background-color: #272822">                                                                                   </span>
@@ -1048,15 +1054,14 @@ pretty_print_py("deploy.py")
 <span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822">        self</span><span style="color: #ff4689; text-decoration-color: #ff4689; background-color: #272822">.</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822">valid_labels </span><span style="color: #ff4689; text-decoration-color: #ff4689; background-color: #272822">=</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822"> set(labels_in_use)</span><span style="background-color: #272822">                                                                     </span>
 <span style="background-color: #272822">                                                                                                                   </span>
 <span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822">    </span><span style="color: #66d9ef; text-decoration-color: #66d9ef; background-color: #272822">def</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822"> </span><span style="color: #a6e22e; text-decoration-color: #a6e22e; background-color: #272822">forward</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822">(self, text):</span><span style="background-color: #272822">                                                                                       </span>
-<span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822">        </span><span style="color: #66d9ef; text-decoration-color: #66d9ef; background-color: #272822">for</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822"> i </span><span style="color: #ff4689; text-decoration-color: #ff4689; background-color: #272822">in</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822"> range(</span><span style="color: #ae81ff; text-decoration-color: #ae81ff; background-color: #272822">5</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822">):</span><span style="background-color: #272822">                                                                                         </span>
-<span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822">            </span><span style="color: #66d9ef; text-decoration-color: #66d9ef; background-color: #272822">try</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822">:</span><span style="background-color: #272822">                                                                                                   </span>
-<span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822">                prediction </span><span style="color: #ff4689; text-decoration-color: #ff4689; background-color: #272822">=</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822"> self</span><span style="color: #ff4689; text-decoration-color: #ff4689; background-color: #272822">.</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822">intent_classifier(intent</span><span style="color: #ff4689; text-decoration-color: #ff4689; background-color: #272822">=</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822">text, temperature</span><span style="color: #ff4689; text-decoration-color: #ff4689; background-color: #272822">=</span><span style="color: #ae81ff; text-decoration-color: #ae81ff; background-color: #272822">0.1</span><span style="color: #ff4689; text-decoration-color: #ff4689; background-color: #272822">*</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822">i)</span><span style="background-color: #272822">                                </span>
-<span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822">                sanitized_prediction </span><span style="color: #ff4689; text-decoration-color: #ff4689; background-color: #272822">=</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822"> dspy</span><span style="color: #ff4689; text-decoration-color: #ff4689; background-color: #272822">.</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822">Prediction(label</span><span style="color: #ff4689; text-decoration-color: #ff4689; background-color: #272822">=</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822">prediction</span><span style="color: #ff4689; text-decoration-color: #ff4689; background-color: #272822">.</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822">label</span><span style="color: #ff4689; text-decoration-color: #ff4689; background-color: #272822">.</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822">lower()</span><span style="color: #ff4689; text-decoration-color: #ff4689; background-color: #272822">.</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822">strip()</span><span style="color: #ff4689; text-decoration-color: #ff4689; background-color: #272822">.</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822">replace(</span><span style="color: #e6db74; text-decoration-color: #e6db74; background-color: #272822">" "</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822">, </span><span style="color: #e6db74; text-decoration-color: #e6db74; background-color: #272822">"_"</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822">), re</span>
-<span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822">                </span><span style="color: #66d9ef; text-decoration-color: #66d9ef; background-color: #272822">if</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822"> sanitized_prediction</span><span style="color: #ff4689; text-decoration-color: #ff4689; background-color: #272822">.</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822">label </span><span style="color: #ff4689; text-decoration-color: #ff4689; background-color: #272822">in</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822"> self</span><span style="color: #ff4689; text-decoration-color: #ff4689; background-color: #272822">.</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822">valid_labels:</span><span style="background-color: #272822">                                                </span>
-<span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822">                    </span><span style="color: #66d9ef; text-decoration-color: #66d9ef; background-color: #272822">return</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822"> sanitized_prediction</span><span style="background-color: #272822">                                                                    </span>
-<span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822">            </span><span style="color: #66d9ef; text-decoration-color: #66d9ef; background-color: #272822">except</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822"> </span><span style="color: #a6e22e; text-decoration-color: #a6e22e; background-color: #272822">Exception</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822"> </span><span style="color: #66d9ef; text-decoration-color: #66d9ef; background-color: #272822">as</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822"> e:</span><span style="background-color: #272822">                                                                                 </span>
-<span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822">                </span><span style="color: #66d9ef; text-decoration-color: #66d9ef; background-color: #272822">continue</span><span style="background-color: #272822">                                                                                           </span>
-<span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822">        </span><span style="color: #66d9ef; text-decoration-color: #66d9ef; background-color: #272822">return</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822"> dspy</span><span style="color: #ff4689; text-decoration-color: #ff4689; background-color: #272822">.</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822">Prediction(label</span><span style="color: #ff4689; text-decoration-color: #ff4689; background-color: #272822">=</span><span style="color: #e6db74; text-decoration-color: #e6db74; background-color: #272822">"unknown"</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822">)</span><span style="background-color: #272822">                                                                    </span>
+<span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822">        </span><span style="color: #66d9ef; text-decoration-color: #66d9ef; background-color: #272822">try</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822">:</span><span style="background-color: #272822">                                                                                                       </span>
+<span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822">            prediction </span><span style="color: #ff4689; text-decoration-color: #ff4689; background-color: #272822">=</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822"> self</span><span style="color: #ff4689; text-decoration-color: #ff4689; background-color: #272822">.</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822">intent_classifier(intent</span><span style="color: #ff4689; text-decoration-color: #ff4689; background-color: #272822">=</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822">text)</span><span style="background-color: #272822">                                                       </span>
+<span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822">            sanitized_prediction </span><span style="color: #ff4689; text-decoration-color: #ff4689; background-color: #272822">=</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822"> dspy</span><span style="color: #ff4689; text-decoration-color: #ff4689; background-color: #272822">.</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822">Prediction(label</span><span style="color: #ff4689; text-decoration-color: #ff4689; background-color: #272822">=</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822">prediction</span><span style="color: #ff4689; text-decoration-color: #ff4689; background-color: #272822">.</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822">label</span><span style="color: #ff4689; text-decoration-color: #ff4689; background-color: #272822">.</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822">lower()</span><span style="color: #ff4689; text-decoration-color: #ff4689; background-color: #272822">.</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822">strip()</span><span style="color: #ff4689; text-decoration-color: #ff4689; background-color: #272822">.</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822">replace(</span><span style="color: #e6db74; text-decoration-color: #e6db74; background-color: #272822">" "</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822">, </span><span style="color: #e6db74; text-decoration-color: #e6db74; background-color: #272822">"_"</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822">), reason</span>
+<span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822">            </span><span style="color: #66d9ef; text-decoration-color: #66d9ef; background-color: #272822">if</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822"> sanitized_prediction</span><span style="color: #ff4689; text-decoration-color: #ff4689; background-color: #272822">.</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822">label </span><span style="color: #ff4689; text-decoration-color: #ff4689; background-color: #272822">in</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822"> self</span><span style="color: #ff4689; text-decoration-color: #ff4689; background-color: #272822">.</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822">valid_labels:</span><span style="background-color: #272822">                                                    </span>
+<span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822">                </span><span style="color: #66d9ef; text-decoration-color: #66d9ef; background-color: #272822">return</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822"> sanitized_prediction</span><span style="background-color: #272822">                                                                        </span>
+<span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822">        </span><span style="color: #66d9ef; text-decoration-color: #66d9ef; background-color: #272822">except</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822"> </span><span style="color: #a6e22e; text-decoration-color: #a6e22e; background-color: #272822">ValueError</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822"> </span><span style="color: #66d9ef; text-decoration-color: #66d9ef; background-color: #272822">as</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822"> e:</span><span style="background-color: #272822">                                                                                    </span>
+<span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822">            </span><span style="color: #959077; text-decoration-color: #959077; background-color: #272822"># If the model is unable to make a prediction in a valid format, return "unknown"</span><span style="background-color: #272822">                      </span>
+<span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822">            </span><span style="color: #66d9ef; text-decoration-color: #66d9ef; background-color: #272822">return</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822"> dspy</span><span style="color: #ff4689; text-decoration-color: #ff4689; background-color: #272822">.</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822">Prediction(label</span><span style="color: #ff4689; text-decoration-color: #ff4689; background-color: #272822">=</span><span style="color: #e6db74; text-decoration-color: #e6db74; background-color: #272822">"unknown"</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822">)</span><span style="background-color: #272822">                                                                </span>
 <span style="background-color: #272822">                                                                                                                   </span>
 <span style="color: #a6e22e; text-decoration-color: #a6e22e; background-color: #272822">@serve</span><span style="color: #ff4689; text-decoration-color: #ff4689; background-color: #272822">.</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822">deployment(</span><span style="background-color: #272822">                                                                                                 </span>
 <span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822">    ray_actor_options</span><span style="color: #ff4689; text-decoration-color: #ff4689; background-color: #272822">=</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822">{</span><span style="color: #e6db74; text-decoration-color: #e6db74; background-color: #272822">"num_cpus"</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822">: </span><span style="color: #ae81ff; text-decoration-color: #ae81ff; background-color: #272822">0.1</span><span style="color: #f8f8f2; text-decoration-color: #f8f8f2; background-color: #272822">},</span><span style="background-color: #272822">                                                                           </span>
@@ -1145,25 +1150,12 @@ We make use of [application args](https://docs.ray.io/en/latest/serve/advanced-g
 !serve shutdown -y
 ```
 
-    2024-10-23 17:06:59,677	WARN scripts.py:132 -- The `RAY_AGENT_ADDRESS` env var has been deprecated in favor of the `RAY_DASHBOARD_ADDRESS` env var. The `RAY_AGENT_ADDRESS` is ignored.
-    2024-10-23 17:06:59,686	SUCC scripts.py:747 -- Sent shutdown request; applications will be deleted asynchronously.
-
-
 We can now deploy the apps locally with
 
 
 ```python
 !serve run local_deploy_dspy.yaml --non-blocking
 ```
-
-    2024-10-23 17:10:49,026	INFO scripts.py:489 -- Running config file: 'local_deploy_dspy.yaml'.
-    2024-10-23 17:10:49,352	INFO worker.py:1601 -- Connecting to existing Ray cluster at address: 10.0.0.38:6379...
-    2024-10-23 17:10:49,359	INFO worker.py:1777 -- Connected to Ray cluster. View the dashboard at https://session-rrffq784rd7isilec3enpn8tqf.i.anyscaleuserdata.com 
-    2024-10-23 17:10:49,364	INFO packaging.py:359 -- Pushing file package 'gcs://_ray_pkg_7aa1baf78c230c6e25663bb0cf020412097a9e34.zip' (1.32MiB) to Ray cluster...
-    2024-10-23 17:10:49,377	INFO packaging.py:372 -- Successfully pushed file package 'gcs://_ray_pkg_7aa1baf78c230c6e25663bb0cf020412097a9e34.zip'.
-    INFO 2024-10-23 17:10:49,406 serve 83268 api.py:259 - Connecting to existing Serve app in namespace "serve". New http options will not be applied.
-    2024-10-23 17:10:49,413	SUCC scripts.py:540 -- Submitted deploy config successfully.
-
 
 ## Query the deployed DSPy service
 
@@ -1183,7 +1175,7 @@ else:
     print(response.text)
 ```
 
-    card_payment_not_recognised
+    request_refund
 
 
 
@@ -1213,15 +1205,6 @@ Follow the URL in order to find your service URL and API key for your deployed s
 # Run this if you want to deploy an Anyscale service
 !anyscale service deploy -f serve_1B.yaml
 ```
-
-    (anyscale +2.7s) Updating existing service 'dspy-rayllm-service'.
-    (anyscale +4.9s) Uploading local dir '.' to cloud storage.
-    (anyscale +7.2s) Including workspace-managed pip dependencies.
-    (anyscale +8.1s) Service 'dspy-rayllm-service' deployed.
-    (anyscale +8.1s) View the service in the UI: 'https://console.anyscale.com/services/service2_3kg2zf69v85dn3d6l3iluqkk4f'
-    (anyscale +8.1s) Query the service once it's running using the following curl command:
-    (anyscale +8.1s) curl https://dspy-rayllm-service-mglb8.cld-tffbxe9ia5phqr1u.s.anyscaleuserdata.com/
-
 
 <b style="background-color: yellow;">&nbsp;🔄 REPLACE&nbsp;</b>:
 Replace the following variables with your Anyscale service URL and API key.
@@ -1284,14 +1267,6 @@ update_rayllm_config("configs/anyscale_deploy.yaml", new_api_base=ANYSCALE_RAYLL
 !anyscale service deploy -f configs/anyscale_deploy.yaml
 ```
 
-    (anyscale +2.4s) Updating existing service 'dspy-service'.
-    (anyscale +4.5s) Uploading local dir '.' to cloud storage.
-    (anyscale +8.0s) Service 'dspy-service' deployed.
-    (anyscale +8.0s) View the service in the UI: 'https://console.anyscale.com/services/service2_l6ivxkmxypevqv5893bs3rq23e'
-    (anyscale +8.0s) Query the service once it's running using the following curl command:
-    (anyscale +8.0s) curl https://dspy-service-mglb8.cld-tffbxe9ia5phqr1u.s.anyscaleuserdata.com/
-
-
 Great! We should now have a service which runs the compiled DSPy program. Let's query this new service. Make sure to enter the details here: 
 
 
@@ -1299,6 +1274,8 @@ Great! We should now have a service which runs the compiled DSPy program. Let's 
 ANYSCALE_DSPY_SERVICE_BASE_URL = None
 ANYSCALE_DSPY_API_KEY = "fake-api-key" # Use the provided API key if query_auth_token_enabled is `True`
 ```
+
+Note: You may need to way a few minutes for the services to deploy and scale
 
 
 ```python
@@ -1318,7 +1295,7 @@ else:
     print(response.text)
 ```
 
-    request_refund
+    cash_withdrawal_not_recognised
 
 
 <b style="background-color: yellow;">&nbsp;🛑 IMPORTANT&nbsp;</b>: Please `Terminate` your service from the Service page to avoid depleting your credits.
