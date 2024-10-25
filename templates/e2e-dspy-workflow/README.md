@@ -976,7 +976,7 @@ To deploy, you can serve the optimized DSPy program directly: This is the simple
 
 NOTE: As of DSPy 2.5, there are scalability limitations for high throughput scenarios with DSPy. DSPy compiled programs currently use threading for handling multiple queries in parallel, which might not scale as well as a native `async` implementation. A native `async` implementation is in the immediate roadmap for DSPy. If this is a concern, you can always try to stitch together the saved program from DSPy in native Python code. 
 
-## Serving a DSPy Pipeline as a Ray Serve Application
+## Serving a DSPy Pipeline using Ray Serve
 
 We can break down our program into two distinct parts: 1) Fine-tuned LLM served behind an OpenAI compatible endpoint and 2) The DSPy program (our business logic tying all components together)
 
