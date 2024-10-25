@@ -378,8 +378,6 @@ sanity_check_program(llama_70b, vanilla_program, ft_trainset[0])
 ```
 
     Program input: Example({'text': 'I still have not received an answer as to why I was charged $1.00 in a transaction?'}) (input_keys={'text'})
-
-
     Program output label: extra_charge_on_statement
 
 
@@ -794,8 +792,6 @@ except ValueError as e:
 ```
 
     Program input: Example({'text': 'I still have not received an answer as to why I was charged $1.00 in a transaction?'}) (input_keys={'text'})
-
-
     Non fine-tuned model returned invalid output out and errored out with Expected dict_keys(['reasoning', 'label']) but got dict_keys([])
     Program input: Example({'text': 'I still have not received an answer as to why I was charged $1.00 in a transaction?'}) (input_keys={'text'})
     Fine-tuned model returned invalid output out and errored out with Expected dict_keys(['reasoning', 'label']) but got dict_keys([])
@@ -980,7 +976,7 @@ To deploy, you can serve the optimized DSPy program directly: This is the simple
 
 NOTE: As of DSPy 2.5, there are scalability limitations for high throughput scenarios with DSPy. DSPy compiled programs currently use threading for handling multiple queries in parallel, which might not scale as well as a native `async` implementation. A native `async` implementation is in the immediate roadmap for DSPy. If this is a concern, you can always try to stitch together the saved program from DSPy in native Python code. 
 
-## Serving a DSPy Pipeline as a Multi-App Serve Application
+## Serving a DSPy Pipeline as a Ray Serve Application
 
 We can break down our program into two distinct parts: 1) Fine-tuned LLM served behind an OpenAI compatible endpoint and 2) The DSPy program (our business logic tying all components together)
 
