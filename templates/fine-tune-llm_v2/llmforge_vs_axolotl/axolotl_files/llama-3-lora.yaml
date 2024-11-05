@@ -1,0 +1,74 @@
+base_model: meta-llama/Llama-3.1-8B-Instruct
+
+plugins:
+  - axolotl.integrations.liger.LigerPlugin
+liger_rope: true
+liger_rms_norm: true
+liger_swiglu: true
+liger_fused_linear_cross_entropy: true
+
+load_in_8bit: false
+load_in_4bit: false
+strict: false
+
+datasets:
+  - path: ./axolotl_files/alpaca.jsonl
+    type: input_output
+val_set_size: 0.05
+max_steps:
+output_dir: ./outputs/lora-out
+
+sequence_len: 2048
+sample_packing: false
+eval_sample_packing: False
+pad_to_sequence_len: true
+
+adapter: lora
+lora_model_dir:
+lora_r: 8
+lora_alpha: 16
+lora_dropout: 0.05
+lora_target_modules:
+  - gate_proj
+  - down_proj
+  - up_proj
+  - q_proj
+  - v_proj
+  - k_proj
+  - o_proj
+lora_fan_in_fan_out:
+
+gradient_accumulation_steps: 1
+micro_batch_size: 2
+num_epochs: 1
+optimizer: adamw_torch_fused
+lr_scheduler: cosine
+learning_rate: 1e-4
+
+train_on_inputs: false
+group_by_length: false
+bf16: auto
+fp16:
+tf32: false
+
+gradient_checkpointing: true
+gradient_checkpointing_kwargs:
+  use_reentrant: true
+early_stopping_patience:
+resume_from_checkpoint:
+logging_steps: 1
+xformers_attention:
+flash_attention: true
+
+warmup_steps: 10
+evals_per_epoch: 1
+eval_table_size:
+saves_per_epoch: 1
+save_strategy: "no"
+debug:
+deepspeed: ./deepspeed_configs/zero_2.json
+weight_decay: 0.0
+fsdp:
+fsdp_config:
+special_tokens:
+  pad_token: <|end_of_text|>
