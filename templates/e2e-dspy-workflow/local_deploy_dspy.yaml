@@ -1,0 +1,21 @@
+applications:
+- name: dspy_client
+  args:
+    program_param_path: configs/deploy_params.json
+    rayllm_args:
+      route_prefix: /
+      api_base: "http://localhost:8000"
+      # we use a fake key since the rayllm service has "query_auth_token_enabled" false
+      api_key: "fake-key"
+  import_path: deploy:construct_app
+  route_prefix: /classify_intent
+  runtime_env:
+    pip: ["dspy", "matplotlib"]
+- name: llm-endpoint
+  args:
+    llm_configs:
+    - ./model_config/meta-llama--Llama-3_2-1B-Instruct.yaml
+  import_path: rayllm:app
+  route_prefix: /
+# NOTE: In production, you would want to enable authentication. For simplicity, we disable this for our service.
+query_auth_token_enabled: false

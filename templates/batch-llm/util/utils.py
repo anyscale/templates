@@ -1,47 +1,18 @@
 import os
-import random
 import requests
-import string
 
 import huggingface_hub
-from transformers import AutoConfig
 
 HF_TOKEN_CACHE_PATH = "/mnt/local_storage/data/cache/huggingface/token"
 HF_TOKEN_LOCAL_PATH = "huggingface_token.txt"
 
-
-def generate_output_path(output_path_prefix: str, model_id: str) -> str:
-    """
-    Constructs unique output path to write data out.
-    """
-    username = os.environ.get("ANYSCALE_USERNAME")
-    if username:
-        username = username[:5]
-    else:
-        username = "".join(
-            random.choices(string.ascii_lowercase, k=5)
-        )
-    suffix = "".join(random.choices(string.ascii_lowercase, k=5))
-    return f"{output_path_prefix}/{model_id}:{username}:{suffix}"
-
-
-def _on_gcp_cloud() -> bool:
+def is_on_gcp_cloud() -> bool:
     """Detects if the cluster is running on GCP."""
     try:
         resp = requests.get("http://metadata.google.internal")
+        return resp.headers["Metadata-Flavor"] == "Google"
     except:  # noqa: E722
         return False
-    return resp.headers["Metadata-Flavor"] == "Google"
-
-
-def get_a10g_or_equivalent_accelerator_type() -> str:
-    """Returns an accelerator type string for an A10G (or equivalent) GPU.
-
-    Equivalence is determined by the amount of GPU memory in this case.
-    GCP doesn't provide instance types with A10G GPUs, so we request L4 GPUs
-    instead.
-    """
-    return "L4" if _on_gcp_cloud() else "A10G"
 
 
 def prompt_for_hugging_face_token(hf_model: str) -> str:

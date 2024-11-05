@@ -1,0 +1,18 @@
+applications:
+- args:
+    program_param_path: configs/deploy_params.json
+    rayllm_args:
+      api_base: "Enter URL for the RayLLM service here"
+      api_key: dummy-key
+      route_prefix: /
+  import_path: deploy:construct_app
+  name: dspy_client
+  route_prefix: /classify_intent
+  runtime_env:
+    pip:
+    - dspy
+    - matplotlib
+    working_dir: .
+name: dspy-service
+# NOTE: In a real-world scenario, you would enable authentication. For simplicity, we disable this for our service.
+query_auth_token_enabled: false

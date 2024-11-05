@@ -3,6 +3,7 @@
 
 # job-intro template is to be removed and replaced by
 # https://github.com/anyscale/first-job
+# owner: matthew owen
 - name: job-intro
   emoji: 🔰
   title: Intro to Jobs
@@ -14,6 +15,7 @@
     GCP: configs/basic-single-node/gce.yaml
     AWS: configs/basic-single-node/aws.yaml
 
+# owner: huaiwei
 - name: workspace-intro
   emoji: 🔰
   title: Intro to Workspaces
@@ -24,3 +26,15 @@
   compute_config:
     GCP: configs/basic-single-node/gce.yaml
     AWS: configs/basic-single-node/aws.yaml
+
+# owner: edward
+- name: service-intro
+  emoji: 🔰
+  title: Intro to Services
+  description: Introduction on how to use Anyscale Services
+  dir: templates/intro-services
+  cluster_env:
+    build_id: anyscaleray2210-py39
+  compute_config:
+    GCP: configs/basic-serverless-config/gce.yaml
+    AWS: configs/basic-serverless-config/aws.yaml
