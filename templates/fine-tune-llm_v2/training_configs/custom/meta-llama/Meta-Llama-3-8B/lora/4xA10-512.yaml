@@ -41,6 +41,7 @@ deepspeed:
 worker_resources:
   anyscale/accelerator_shape:4xA10G: 0.001
 
+# Liger kernel configuration
 liger_kernel:
   enabled: True
   kwargs:

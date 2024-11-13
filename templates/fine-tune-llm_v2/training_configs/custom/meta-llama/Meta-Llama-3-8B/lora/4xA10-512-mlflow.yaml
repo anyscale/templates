@@ -50,6 +50,16 @@ logger:
 worker_resources:
   anyscale/accelerator_shape:4xA10G: 0.001
 
+# Liger kernel configuration
+liger_kernel:
+  enabled: True
+  kwargs:
+    rms_norm: False
+    rope: True
+    swiglu: True
+    cross_entropy: True
+    fused_linear_cross_entropy: False
+
 # Lora configuration
 lora_config:
   r: 8
