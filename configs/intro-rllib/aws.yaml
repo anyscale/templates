@@ -1,0 +1,41 @@
+head_node_type:
+  name: head
+  instance_type: m5.2xlarge
+  resources:
+    cpu: 0
+worker_node_types:
+- name: cpu-worker
+  instance_type: m5.2xlarge
+  min_workers: 0
+  max_workers: 100
+  use_spot: false
+- name: gpu-worker-t4-1
+  instance_type: g4dn.2xlarge
+  resources:
+    cpu:
+    gpu:
+    memory:
+    object_store_memory:
+    custom_resources:
+      "accelerator_type:T4": 1
+  min_workers: 0
+  max_workers: 100
+- name: gpu-worker-t4-4
+  instance_type: g4dn.12xlarge
+  resources:
+    cpu:
+    gpu:
+    memory:
+    object_store_memory:
+    custom_resources:
+      "accelerator_type:T4": 1
+  min_workers: 0
+  max_workers: 100
+aws:
+  TagSpecifications:
+    - ResourceType: instance
+      Tags:
+        - Key: as-feature-enable-multi-az-serve
+          Value: "true"
+        - Key: as-feature-multi-zone
+          Value: "true"
