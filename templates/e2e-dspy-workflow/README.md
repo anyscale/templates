@@ -378,6 +378,8 @@ sanity_check_program(llama_70b, vanilla_program, ft_trainset[0])
 ```
 
     Program input: Example({'text': 'I still have not received an answer as to why I was charged $1.00 in a transaction?'}) (input_keys={'text'})
+
+
     Program output label: extra_charge_on_statement
 
 
@@ -792,6 +794,8 @@ except ValueError as e:
 ```
 
     Program input: Example({'text': 'I still have not received an answer as to why I was charged $1.00 in a transaction?'}) (input_keys={'text'})
+
+
     Non fine-tuned model returned invalid output out and errored out with Expected dict_keys(['reasoning', 'label']) but got dict_keys([])
     Program input: Example({'text': 'I still have not received an answer as to why I was charged $1.00 in a transaction?'}) (input_keys={'text'})
     Fine-tuned model returned invalid output out and errored out with Expected dict_keys(['reasoning', 'label']) but got dict_keys([])
