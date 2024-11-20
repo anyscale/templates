@@ -45,6 +45,18 @@ logger:
 worker_resources:
   anyscale/accelerator_shape:4xA10G: 0.001
 
+# Liger kernel configuration
+liger_kernel:
+  enabled: True
+  # You can further customize the individual liger kernel configurations here. By default,
+  # all the `kwargs` are `True` when liger is enabled.
+  # kwargs:
+  #   rms_norm: False
+  #   rope: True
+  #   swiglu: True
+  #   cross_entropy: True
+  #   fused_linear_cross_entropy: False
+
 # Lora configuration
 lora_config:
   r: 8
