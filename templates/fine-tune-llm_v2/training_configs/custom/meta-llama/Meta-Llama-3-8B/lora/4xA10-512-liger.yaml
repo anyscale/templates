@@ -51,11 +51,11 @@ liger_kernel:
   # You can further customize the individual liger kernel configurations here. By default,
   # all the `kwargs` are `True` when liger is enabled.
   # kwargs:
-  #   rms_norm: False
+  #   rms_norm: True
   #   rope: True
   #   swiglu: True
   #   cross_entropy: True
-  #   fused_linear_cross_entropy: False
+  #   fused_linear_cross_entropy: True
 
 # Lora configuration
 lora_config:
