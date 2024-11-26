@@ -1,3 +1,4 @@
+# Note(Artur): this lets us extract portions of the script on Anyscale
 # ws-template-imports-start
 import gymnasium as gym
 
@@ -8,10 +9,25 @@ from ray.rllib.connectors.learner.frame_stacking import FrameStackingLearner
 from ray.rllib.core.rl_module.default_model_config import DefaultModelConfig
 from ray.rllib.env.wrappers.atari_wrappers import wrap_atari_for_new_api_stack
 # ws-template-imports-end
+from ray.rllib.utils.test_utils import add_rllib_example_script_args
 
-NUM_LEARNERS = 4
-ENV = "ale_py:ALE/Pong-v5"
+parser = add_rllib_example_script_args(
+    default_reward=float("inf"),
+    default_timesteps=3000000,
+    default_iters=100000000000,
+)
+parser.set_defaults(
+    enable_new_api_stack=True,
+    env="ale_py:ALE/Pong-v5",
+)
+# Use `parser` to add your own custom command line options to this script
+# and (if needed) use their values to set up `config` below.
+args = parser.parse_args()
 
+NUM_LEARNERS = args.num_learners or 1
+ENV = args.env
+
+# Note(Artur): this lets us extract portions of the script on Anyscale
 # ws-template-code-start
 
 def _make_env_to_module_connector(env):
@@ -75,19 +91,6 @@ config = (
 # ws-template-code-end
 
 if __name__ == "__main__":
-    config.env_runners(num_env_runners=95)
-    config.learners(num_learners=4)
-    algorithm = config.build()
-    mean_reward = 0
-    import time
-    t0 = time.time()
-    t_delta = 0
-    while  mean_reward < 20 and t_delta < 10 * 60:
-        result = algorithm.step()
-        mean_reward = result["env_runners"]["episode_return_mean"]
-        t_delta = time.time() - t0
-        print(f"Mean reward after {t_delta} seconds: {mean_reward}")
+    from ray.rllib.utils.test_utils import run_rllib_example_script_experiment
 
-    result = algorithm.evaluate()
-    algorithm.stop()
-    print(f"Final reward: {result["env_runners"]["episode_return_mean"]}")
+    run_rllib_example_script_experiment(config, args=args)
