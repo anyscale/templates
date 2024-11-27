@@ -45,8 +45,8 @@ You should see results similar to the following in your console output:
 |          18.3034 | 28000 | 0.908918 |            12.9676 |
 +------------------+-------+----------+--------------------+
 """
-# ws-template-imports-start
 # Note(Artur): this lets us extract portions of the script on Anyscale
+# ws-template-imports-start
 import gymnasium as gym
 from gymnasium.spaces import Discrete, Box
 import numpy as np

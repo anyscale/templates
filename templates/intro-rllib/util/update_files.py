@@ -13,10 +13,10 @@ def update_file(file_name, url, tags_map):
         segment_lines = []
         in_segment = False
         end_tag = tags_map[start_tag]
-        if file_name == "atari_ppo.py":
+        if file_name == "../atari_ppo.py":
             _file_name = "original_atari.py"
         else:
-            _file_name = "original_custom_gym_env"
+            _file_name = "../custom_gym_env/custom_gym_env.py"
         with open(_file_name, 'r') as file:
             for line in file:
         # for line in response.iter_lines():
@@ -45,11 +45,11 @@ def update_file(file_name, url, tags_map):
             else:
                 lines.append(line)
             
-    with open(FILE, 'w') as file:
+    with open(file_name, 'w') as file:
         for line in lines:
             file.write(line)
 
-    print(f"File {FILE} created with {len(lines)} lines.")
+    print(f"File {file_name} created with {len(lines)} lines.")
 
 TAGS_MAP = {
         f"# ws-template-imports-start\n": f"# ws-template-imports-end\n",
@@ -58,14 +58,14 @@ TAGS_MAP = {
 
 # Update atari_ppo.py:
 update_file(
-    file_name="atari_ppo.py",
+    file_name="../atari_ppo.py",
     url=f"https://raw.githubusercontent.com/ray-project/ray/refs/heads/releases/{RAY_VERSION}/rllib/tuned_examples/ppo/atari_ppo.py",
     tags_map=TAGS_MAP
     )
 
 # Update custom_gym_env.py:
 update_file(
-    file_name="../custom_gym_env/atari_ppo.py",
+    file_name="../custom_gym_env/custom_gym_env.py",
     url=f"https://raw.githubusercontent.com/ray-project/ray/refs/heads/releases/{RAY_VERSION}/rllib/examples/envs/custom_gym_env.py",
     tags_map=TAGS_MAP
     )
