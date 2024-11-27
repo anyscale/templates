@@ -20,16 +20,8 @@ You can run the training script with the following command:
 python custom_gym_env.py
 ```
 
-While the training is running, have a look at the `custom_gym_env.py` file to see how we build a `config` and then call `config.build()` to build an algorithm object and interact with it. You don't have to get every aspect of it just now.
+While the training is running, have a look at the `custom_gym_env.py` file to see how we define our own environment and apply an algorithm to it. 
 
-Here is what you should learn from looking at `atari_ppo.py`:
-- RLlib uses a builder pattern to declare all aspects of your RL training in a config first. 
-    - We start by creating a config object of our algorithm of choice - in this case `PPOConfig()`. 
-    - With APIs like `config.training()`, we adjust it.
-- Creating an algorithm object from a config solidifies the configuration.
-    - Environments are created and resources requested.
-    - You can iterate on calling `algorithm.step()`, which will tell RLlib to step through the environment and learn on a set number of experiences before returning.
-    - Finally, you can evaluate the trained algorithm with `algorithm.evaluate()`.
-
-**NOTE:** You have already run distributed training now across 4 GPUs and 96 CPUs.
-The 4 GPUs are used to calculate updates to the Algorithm's ANNs while 95 CPUs are used to run the environments and collect experiences in parallel.
+Here is what you should learn from looking at `custom_gym_env.py`:
+- Environments for RLlib implement the (gym.Env API)[https://gymnasium.farama.org/api/env/]
+- You set an environment with `config.environment()`
