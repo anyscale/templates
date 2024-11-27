@@ -85,12 +85,11 @@ if __name__ == "__main__":
     import time
     t0 = time.time()
     t_delta = 0
-    while  mean_reward < 0.97 and t_delta < 5 * 60:
+    while  mean_reward < 0.9 and t_delta < 2 * 60:
         result = algorithm.step()
         mean_reward = result["env_runners"]["episode_return_mean"]
         t_delta = time.time() - t0
         print(f"Mean reward after {t_delta} seconds: {mean_reward}")
     
-    result = algorithm.evaluate()
     algorithm.stop()
-    print(f"Final reward: {result["env_runners"]["episode_return_mean"]}")
+    print(f"Final reward: {mean_reward}")

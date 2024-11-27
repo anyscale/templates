@@ -88,6 +88,5 @@ if __name__ == "__main__":
         t_delta = time.time() - t0
         print(f"Mean reward after {t_delta} seconds: {mean_reward}")
 
-    result = algorithm.evaluate()
     algorithm.stop()
-    print(f"Final reward: {result["env_runners"]["episode_return_mean"]}")
+    print(f"Final reward: {mean_reward}")
