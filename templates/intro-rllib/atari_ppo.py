@@ -76,15 +76,18 @@ config = (
 
 if __name__ == "__main__":
     config.env_runners(num_env_runners=95)
-    config.learners(num_learners=4)
+    config.learners(
+        num_learners=4,
+        num_gpus_per_learner=1,
+    )
     algorithm = config.build()
     mean_reward = 0
     import time
     t0 = time.time()
     t_delta = 0
     while  mean_reward < 20 and t_delta < 10 * 60:
-        result = algorithm.step()
-        mean_reward = result["env_runners"]["episode_return_mean"]
+        result = algorithm.train()
+        mean_reward = result["env_runners"].get("episode_return_mean", 0)
         t_delta = time.time() - t0
         print(f"Mean reward after {t_delta} seconds: {mean_reward}")
 
