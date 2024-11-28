@@ -8,6 +8,7 @@ from ray.rllib.connectors.learner.frame_stacking import FrameStackingLearner
 from ray.rllib.core.rl_module.default_model_config import DefaultModelConfig
 from ray.rllib.env.wrappers.atari_wrappers import wrap_atari_for_new_api_stack
 # ws-template-imports-end
+import numpy as np
 
 NUM_LEARNERS = 4
 ENV = "ale_py:ALE/Pong-v5"
@@ -77,7 +78,7 @@ config = (
 if __name__ == "__main__":
     config.env_runners(num_env_runners=95)
     config.learners(
-        num_learners=4,
+        num_learners=NUM_LEARNERS,
         num_gpus_per_learner=1,
     )
     algorithm = config.build()
@@ -85,9 +86,9 @@ if __name__ == "__main__":
     import time
     t0 = time.time()
     t_delta = 0
-    while  mean_reward < 20 and t_delta < 10 * 60:
+    while  mean_reward < -1 and t_delta < 15 * 60:
         result = algorithm.train()
-        mean_reward = result["env_runners"].get("episode_return_mean", 0)
+        mean_reward = result["env_runners"].get("episode_return_mean", np.nan)
         t_delta = time.time() - t0
         print(f"Mean reward after {t_delta} seconds: {mean_reward}")
 
