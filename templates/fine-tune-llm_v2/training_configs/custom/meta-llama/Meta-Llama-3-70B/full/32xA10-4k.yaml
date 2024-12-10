@@ -34,14 +34,10 @@ num_checkpoints_to_keep: 1
 deepspeed:
   config_path: deepspeed_configs/zero_3_offload_optim+param.json
 
-# Rank-0 (aka trainer) should have 140 GB memory
-# This memory is required for weight aggregation.
-trainer_resources:
-  memory: 150_323_855_360 # 140 GB memory
 
 # Accelerator type, the value of 0.001 is not important, as long as it is
 # between 0 and 1. This ensures that the given accelerator is available for each trainer
 # worker.
 worker_resources:
   memory: 53_687_091_200 # 50 GB memory
-  accelerator_type:A10G: 0.001
+  anyscale/accelerator_shape:4xA10G: 0.001
