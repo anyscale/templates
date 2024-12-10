@@ -34,14 +34,12 @@ num_checkpoints_to_keep: 1
 deepspeed:
   config_path: deepspeed_configs/zero_3_offload_optim+param.json
 
-# Rank-0 does fp32 aggregation, so we need 4x8B ~ 32GB of memory
-# Setting it to 35 GB to be safe
-# This should provision a large enough node to schedule rank-0
-trainer_resources:
-  memory: 37_580_963_840
-
 # Accelerator type, the value of 0.001 is not important, as long as it is
 # between 0 and 1. This ensures that the given accelerator is available for each trainer
 # worker.
+# For full param, we need to ensure that there is enough memory for fp32 aggregation, here that is 4x8B ~ 32GB of memory
+# A standard 4xA10G node in AWS or GCP will suffice. If needed, and additional "memory" entry can be added here with memory per worker in bytes
 worker_resources:
-  accelerator_type:A10G: 0.001
+  #  Optionally, enforce that 35 GB memory is available per rank.
+  #  memory: 37_580_963_840
+  anyscale/accelerator_shape:4xA10G: 0.001

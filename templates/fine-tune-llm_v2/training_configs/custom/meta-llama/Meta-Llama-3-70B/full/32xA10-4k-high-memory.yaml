@@ -34,14 +34,12 @@ num_checkpoints_to_keep: 1
 deepspeed:
   config_path: deepspeed_configs/zero_3_offload_optim+param.json
 
-# Rank-0 (aka trainer) should have 140 GB memory
-# This memory is required for weight aggregation.
-trainer_resources:
-  memory: 150_323_855_360 # 140 GB memory
 
 # Accelerator type, the value of 0.001 is not important, as long as it is
 # between 0 and 1. This ensures that the given accelerator is available for each trainer
 # worker.
+# For full param, we need to ensure that there is enough memory for fp32 aggregation, here that is 4x70B ~ 280GB of memory
+# in AWS, for example, you have two types of 4xA10G nodes, one with 192GB and another with 384GB RAM. We can explicitly request more "memory" per worker to ensure we get atleast 280GB in a node.
 worker_resources:
-  memory: 53_687_091_200 # 50 GB memory
-  accelerator_type:A10G: 0.001
+  memory: 75_161_927_680 # 70 GB memory per rank. With 4 GPUs in a node, that would be a request of atleast 280GB in a node
+  anyscale/accelerator_shape:4xA10G: 0.001

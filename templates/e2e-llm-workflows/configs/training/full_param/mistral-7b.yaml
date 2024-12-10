@@ -13,7 +13,5 @@ output_dir: /mnt/local_storage
 deepspeed:
   config_path: configs/deepspeed/zero_3_offload_optim+param.json
 flash_attention_2: true
-trainer_resources:
-  memory: 53687091200 # 50 GB memory
 worker_resources:
-  accelerator_type:A10G: 0.001
+  anyscale/accelerator_shape:4xA10G: 0.001
