@@ -38,4 +38,4 @@ deepspeed:
 # between 0 and 1. This ensures that the given accelerator is available for each trainer
 # worker.
 worker_resources:
-  accelerator_type:A10G: 0.001
+  anyscale/accelerator_shape:4xA10G: 0.001

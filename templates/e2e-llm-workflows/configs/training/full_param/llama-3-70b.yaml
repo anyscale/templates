@@ -13,6 +13,6 @@ output_dir: /mnt/local_storage
 deepspeed:
   config_path: configs/deepspeed/zero_3_offload_optim.json
 flash_attention_2: true
-# Head node would have at least 200 GB memory
+# Head node should have at least 280 GB memory
 worker_resources:
   anyscale/accelerator_shape:8xA10G: 0.001

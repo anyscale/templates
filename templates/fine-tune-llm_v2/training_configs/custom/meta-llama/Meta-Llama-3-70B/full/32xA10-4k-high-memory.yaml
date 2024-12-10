@@ -38,6 +38,8 @@ deepspeed:
 # Accelerator type, the value of 0.001 is not important, as long as it is
 # between 0 and 1. This ensures that the given accelerator is available for each trainer
 # worker.
+# For full param, we need to ensure that there is enough memory for fp32 aggregation, here that is 4x70B ~ 280GB of memory
+# in AWS, for example, you have two types of 4xA10G nodes, one with 192GB and another with 384GB RAM. We can explicitly request more "memory" per worker to ensure we get atleast 280GB in a node.
 worker_resources:
-  memory: 53_687_091_200 # 50 GB memory
+  memory: 75_161_927_680 # 70 GB memory per rank. With 4 GPUs in a node, that would be a request of atleast 280GB in a node
   anyscale/accelerator_shape:4xA10G: 0.001
