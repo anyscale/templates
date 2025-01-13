@@ -274,7 +274,6 @@ config = {
         "fan_in_fan_out": False,
         "init_lora_weights": True
     },
-    "dataset_size_scaling_factor": 1e10, # Very large number
 }
 ```
 

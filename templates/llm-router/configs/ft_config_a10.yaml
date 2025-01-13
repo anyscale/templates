@@ -4,13 +4,15 @@ valid_path: /mnt/user_storage/train_data_sample.jsonl
 context_length: 1024
 num_devices: 8
 num_epochs: 5
-checkpoint_every_n_epochs: 5
+checkpoint_and_evaluation_frequency:
+  unit: epochs
+  frequency: 5
 train_batch_size_per_device: 4
 eval_batch_size_per_device: 4
 lr_scheduler_type: constant
 learning_rate: 1e-5
 num_checkpoints_to_keep: 1
-no_gradient_checkpoint: False
+gradient_checkpointing: True
 output_dir: /mnt/local_storage
 deepspeed:
   config_path: config_files/deepspeed/zero_3_optimizer_parameter_offload.json

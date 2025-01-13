@@ -1,0 +1,77 @@
+# Change this to the model you want to fine-tune
+model_id: meta-llama/Meta-Llama-3-8B-Instruct
+
+# Change this to the path to your training data
+train_path: s3://air-example-data/gsm8k/train.jsonl
+
+# Change this to the path to your validation data. This is optional
+valid_path: s3://air-example-data/gsm8k/test.jsonl
+
+# Change this to the context length you want to use. Examples with longer
+# context length will be truncated.
+context_length: 512
+
+# Change this to total number of GPUs that you want to use
+num_devices: 4
+
+# Change this to the number of epochs that you want to train for
+num_epochs: 3
+
+# Change this to the batch size that you want to use
+train_batch_size_per_device: 2
+eval_batch_size_per_device: 4
+gradient_accumulation_steps: 2
+
+
+# Change this to the learning rate that you want to use
+learning_rate: 1e-4
+
+# This will pad batches to the longest sequence. Use "max_length" when profiling to profile the worst case.
+padding: "longest"
+
+# By default, we will keep the best checkpoint. You can change this to keep more checkpoints.
+num_checkpoints_to_keep: 1
+
+# Deepspeed configuration, you can provide your own deepspeed setup
+deepspeed:
+  config_path: deepspeed_configs/zero_2.json
+
+logger:
+  provider: wandb
+
+# Accelerator type, we value of 0.001 is not important, as long as it is
+# beteween 0 and 1. This ensures that accelerator type is used per trainer
+# worker.
+worker_resources:
+  anyscale/accelerator_shape:4xA10G: 0.001
+
+# Liger kernel configuration
+liger_kernel:
+  enabled: True
+  # You can further customize the individual liger kernel configurations here. By default,
+  # all the `kwargs` are `True` when liger is enabled.
+  # kwargs:
+  #   rms_norm: True
+  #   rope: True
+  #   swiglu: True
+  #   cross_entropy: True
+  #   fused_linear_cross_entropy: True
+
+# Lora configuration
+lora_config:
+  r: 8
+  lora_alpha: 16
+  lora_dropout: 0.05
+  target_modules:
+    - q_proj
+    - v_proj
+    - k_proj
+    - o_proj
+    - gate_proj
+    - up_proj
+    - down_proj
+    - embed_tokens
+    - lm_head
+  task_type: "CAUSAL_LM"
+  bias: "none"
+  modules_to_save: []

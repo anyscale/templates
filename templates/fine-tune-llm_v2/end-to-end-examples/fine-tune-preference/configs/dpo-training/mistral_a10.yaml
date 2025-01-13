@@ -14,7 +14,7 @@ train_batch_size_per_device: 2
 eval_batch_size_per_device: 2
 learning_rate: 5e-6
 num_epochs: 3
-no_gradient_checkpoint: False
+gradient_checkpointing: True
 # Deepspeed configuration, you can provide your own deepspeed setup
 deepspeed:
   config_path: configs/zero_3.json
@@ -24,7 +24,7 @@ padding: "longest"
 preference_tuning_config:
   beta: 0.01
   logprob_processor_scaling_config:
-    worker_resources:
+    custom_resources:
       accelerator_type:A10G: 0.001 # custom resource per worker.
     # Runs reference model logp calculation on 4 GPUs
     concurrency: 4

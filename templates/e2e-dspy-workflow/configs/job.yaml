@@ -1,0 +1,4 @@
+name: "dspy-llmforge-fine-tuning-job"
+entrypoint: "llmforge anyscale finetune configs/training/lora/llama-3-8b.yaml"
+working_dir: "."
+image_uri: "localhost:5555/anyscale/llm-forge:0.5.8"

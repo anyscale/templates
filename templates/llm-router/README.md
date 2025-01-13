@@ -715,13 +715,15 @@ For this tutorial, we will perform full-parameter finetuning of Llama3-8B on the
     context_length: 1024
     num_devices: 8
     num_epochs: 5
-    checkpoint_every_n_epochs: 5
+    checkpoint_and_evaluation_frequency: 
+      unit: epochs
+      frequency: 5
     train_batch_size_per_device: 4
     eval_batch_size_per_device: 4
     lr_scheduler_type: constant
     learning_rate: 1e-5
     num_checkpoints_to_keep: 1
-    no_gradient_checkpoint: False
+    gradient_checkpointing: True
     output_dir: /mnt/local_storage
     deepspeed:
       config_path: config_files/deepspeed/zero_3_optimizer_parameter_offload.json
@@ -911,6 +913,16 @@ display(Image(filename=image_path))
 
 
 This plot illustrates that as we relax the cost constraints (i.e., increase the percentage of GPT-4 calls), the performance improves. While the performance of a random router improves linearly with cost, our router achieves significantly better results at each cost level.
+
+## Cleanup
+
+
+```python
+# Cleanup
+!python src/clear_cell_nums.py
+!find . | grep -E ".ipynb_checkpoints" | xargs rm -rf
+!find . | grep -E "(__pycache__|\.pyc|\.pyo)" | xargs rm -rf
+```
 
 # Conclusion
 In this tutorial, we have successfully built and evaluated a finetuned-LLM router. We generated synthetic labeled data using the LLM-as-a-judge method to train the model, finetuned an LLM classifier using Anyscale's API, and conducted offline evaluation on a standard benchmark-- demonstrating that our model is effective in out-of-domain generalization.

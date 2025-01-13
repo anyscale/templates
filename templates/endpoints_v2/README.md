@@ -71,7 +71,7 @@ from openai import OpenAI
 # TODO: Replace this model ID with your own.
 MODEL_ID = "mistralai/Mistral-7B-Instruct-v0.1"
 
-def query(base_url: str, api_key: str):
+def query(base_url: str, api_key: str | None = None):
     if not base_url.endswith("/"):
         base_url += "/"
     
@@ -80,7 +80,7 @@ def query(base_url: str, api_key: str):
 
     client = OpenAI(
       base_url=base_url + "v1",
-      api_key=api_key,
+      api_key=api_key or "NOT A REAL KEY",
     )
 
     # List all models.

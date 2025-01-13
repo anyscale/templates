@@ -1,0 +1,49 @@
+# NOTE: this is a non-standard llmforge config with model_id and train_path not provided
+# This is meant to be used with DSPy which will fill in the right details for us
+# model_id: Base model for fine-tuning
+# train_path: Path to training dataset
+context_length: 2048 # <-- change this to the context length you want to use
+num_devices: 4 # <-- change this to total number of GPUs that you want to use
+num_epochs: 6 # <-- change this to the number of epochs that you want to train for
+train_batch_size_per_device: 32
+eval_batch_size_per_device: 16
+learning_rate: 3.0e-5
+padding: "longest" # This will pad batches to the longest sequence. Use "max_length" when profiling to profile the worst case.
+num_checkpoints_to_keep: 1
+output_dir: /mnt/local_storage
+deepspeed:
+  config_path: configs/deepspeed/zero_3.json
+flash_attention_2: true
+worker_resources:
+  accelerator_type:A100-80G: 0.001
+generation_config:
+  prompt_format:
+    system: "<|start_header_id|>system<|end_header_id|>\n\n{instruction}<|eot_id|>"
+    user: "<|start_header_id|>user<|end_header_id|>\n{instruction}<|eot_id|>"
+    assistant: "<|start_header_id|>assistant<|end_header_id|>\n\n{instruction}<|eot_id|>"
+    trailing_assistant: "<|start_header_id|>assistant<|end_header_id|>\n\n"
+    bos: "<|begin_of_text|>"
+    system_in_user: false
+    default_system_message: ""
+lora_config:
+  r: 8
+  lora_alpha: 16
+  lora_dropout: 0.05
+  target_modules:
+    - q_proj
+    - v_proj
+    - k_proj
+    - o_proj
+    - gate_proj
+    - up_proj
+    - down_proj
+    - embed_tokens
+    - lm_head
+  task_type: "CAUSAL_LM"
+  modules_to_save: []
+  bias: "none"
+  fan_in_fan_out: false
+  init_lora_weights: true
+# Optional: Use wandb/mflow for logging
+# logger:
+#   provider: wandb/mflow
