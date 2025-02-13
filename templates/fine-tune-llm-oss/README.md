@@ -6,7 +6,7 @@ Looking to get the most out of your LLM workloads? Fine-tuning pretrained LLMs c
 
 
 ## Getting started with LLaMA-Factory 
-First, we need to install the LLaMA-Factory code. You can view the latest changes at the [LLaMA-Factory github](https://github.com/hiyouga/LLaMA-Factory.git). 
+First, we need to install the LLaMA-Factory code. You can view the latest changes from the [LLaMA-Factory github](https://github.com/hiyouga/LLaMA-Factory.git). 
 
 ```bash
 git clone --depth 1 https://github.com/hiyouga/LLaMA-Factory.git
@@ -23,7 +23,7 @@ For example, you can launch a supervised finetuning job with ray by running the 
 cd .. # return to top level directory
 WANDB_API_KEY=<WANDB_KEY_HERE> USE_RAY=1 llamafactory-cli train llamafactory_configs/llama3_lora_sft_ray.yaml
 ```
-This will run an Instruction Tuning training job with `Meta-Llama-3-8B-Instruct` on an example subset of the alpaca dataset. Training statistics will be logged with Weights and Biases through the LLaMA-Factory integration.
+This will run an Instruction Tuning training job with `Meta-Llama-3-8B-Instruct` on an example subset of the alpaca dataset. Training statistics will by default be logged with all installed logging libraries (i.e. wandb, mlflow, comet, tensorboard), since LLaMA-Factory relies on HuggingFace's [Trainer integration](https://huggingface.co/docs/transformers/en/main_classes/trainer#transformers.TrainingArguments.report_to) for logging. To specify a single specific library to log with, set `report_to: <LIBRARY_NAME>` in the config YAML.
 
 ## Preparing your dataset
 
