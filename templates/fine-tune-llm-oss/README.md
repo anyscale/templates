@@ -1,6 +1,6 @@
 # Fine-tuning LLMs with LLaMA-Factory on Anyscale
 
-<!-- **⏱️ Time to complete**: ~3 hours (includes the time for training the model) -->
+**⏱️ Time to complete**: ~20 mins (includes the time for training the model)
 
 Looking to get the most out of your LLM workloads? Fine-tuning pretrained LLMs can often be the most cost effective way to improve your model's performance on the tasks that you care about. This template will walk you through how you can use the popular open source library [LLaMA-Factory](https://github.com/hiyouga/LLaMA-Factory) to fine-tune LLMs on Anyscale. LLaMA-Factory comes with a [Ray](https://www.ray.io/) integration for scaling training to multiple GPUs and nodes.
 

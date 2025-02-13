@@ -37,7 +37,7 @@ ddp_timeout: 180000000
 ### ray
 ray_run_name: llama3_8b_pretrain_lora
 ray_storage_path: /mnt/cluster_storage/
-ray_num_workers: 8  # number of GPUs to use
+ray_num_workers: 4  # number of GPUs to use
 resources_per_worker:
   GPU: 1
 placement_strategy: PACK
