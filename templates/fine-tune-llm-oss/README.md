@@ -6,7 +6,7 @@ Looking to get the most out of your LLM workloads? Fine-tuning pretrained LLMs c
 
 
 ## Getting started with LLaMA-Factory 
-First, we need to install the LLaMA-Factory code. You can view the latest changes from the [LLaMA-Factory github](https://github.com/hiyouga/LLaMA-Factory.git). 
+First, you need to install the LLaMA-Factory code. You can view the latest changes from the [LLaMA-Factory github](https://github.com/hiyouga/LLaMA-Factory.git). 
 
 ```bash
 git clone --depth 1 https://github.com/hiyouga/LLaMA-Factory.git
@@ -16,7 +16,21 @@ pip install torch jieba nltk rouge-chinese
 pip install -e .
 ```
 
+Next, you need to set your `HF_TOKEN` environment variable. You can do this via the [dependencies tab](https://docs.anyscale.com/configuration/dependency-management/dependency-development/) in Workspaces, by running `export HF_TOKEN=<HF_TOKEN_HERE>`, or by running `huggingface-cli login`.
+
+```bash
+huggingface-cli login
+```
+
+Additionally it is recommended to use `hf_transfer` for fast model downloading. You can do this by running `pip install hf_transfer`, and setting `HF_HUB_ENABLE_HF_TRANSFER=1`.
+
+```bash
+pip install hf_transfer
+export HF_HUB_ENABLE_HF_TRANSFER=1
+```
+
 You can find some example configs in the `llamafactory_config` directory. LLaMA-Factory provides a cli `llamafactory-cli` that allows you to launch training with a config yaml file.
+
 
 For example, you can launch a supervised finetuning job with ray by running the following command:
 ```bash
@@ -92,7 +106,5 @@ You can then submit use this image to run your job via the [Anyscale jobs cli](h
 ```bash
 anyscale job submit --wait --env USE_RAY=1 -- llamafactory-cli train llamafactory_configs/llama3_lora_sft_ray.yaml
 ```
-
-
 
 
