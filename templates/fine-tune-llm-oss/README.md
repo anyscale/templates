@@ -16,18 +16,12 @@ pip install torch jieba nltk rouge-chinese
 pip install -e .
 ```
 
-Next, you need to set your `HF_TOKEN` environment variable. You can do this via the [dependencies tab](https://docs.anyscale.com/configuration/dependency-management/dependency-development/) in Workspaces, by running `export HF_TOKEN=<HF_TOKEN_HERE>`, or by running `huggingface-cli login`.
+Next, you need to set your `HF_TOKEN` and `WANDB_API_KEY` environment variables. It is recommended to do this via the environment variables section of the [dependencies tab](https://docs.anyscale.com/configuration/dependency-management/dependency-development/#environment-variables) in Workspaces. Simply running `export HF_TOKEN=<HF_TOKEN_HERE>`, or `huggingface-cli login` will work for single node compute configurations, but will not propagate the environment variables to worker nodes.
 
-```bash
-huggingface-cli login
-```
+Additionally it is recommended to use `hf_transfer` for fast model downloading. You can do this by running `pip install hf_transfer`, and setting `HF_HUB_ENABLE_HF_TRANSFER=1` in the dependencies tab. An example of setting relevant environment variables in the dependencies tab is shown below.
 
-Additionally it is recommended to use `hf_transfer` for fast model downloading. You can do this by running `pip install hf_transfer`, and setting `HF_HUB_ENABLE_HF_TRANSFER=1`.
+<img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/fine-tune-llm-oss/assets/env_vars.png" width=500px />
 
-```bash
-pip install hf_transfer
-export HF_HUB_ENABLE_HF_TRANSFER=1
-```
 
 You can find some example configs in the `llamafactory_config` directory. LLaMA-Factory provides a cli `llamafactory-cli` that allows you to launch training with a config yaml file.
 
@@ -35,7 +29,7 @@ You can find some example configs in the `llamafactory_config` directory. LLaMA-
 For example, you can launch a supervised finetuning job with ray by running the following command:
 ```bash
 cd .. # return to top level directory
-WANDB_API_KEY=<WANDB_KEY_HERE> USE_RAY=1 llamafactory-cli train llamafactory_configs/llama3_lora_sft_ray.yaml
+USE_RAY=1 llamafactory-cli train llamafactory_configs/llama3_lora_sft_ray.yaml
 ```
 This will run an Instruction Tuning training job with `Meta-Llama-3-8B-Instruct` on an example subset of the alpaca dataset. Training statistics will by default be logged with all installed logging libraries (i.e. wandb, mlflow, comet, tensorboard), since LLaMA-Factory relies on HuggingFace's [Trainer integration](https://huggingface.co/docs/transformers/en/main_classes/trainer#transformers.TrainingArguments.report_to) for logging. To specify a single specific library to log with, set `report_to: <LIBRARY_NAME>` in the config YAML.
 
@@ -86,7 +80,7 @@ dataset_dir: /mnt/cluster_storage  # or use local absolute path
 To launch finetuning with this local dataset, you can run
 ```bash
 cd .. # return to top level directory
-WANDB_API_KEY=<WANDB_KEY_HERE> USE_RAY=1 llamafactory-cli train llamafactory_configs/llama3_lora_pretrain_ray.yaml
+USE_RAY=1 llamafactory-cli train llamafactory_configs/llama3_lora_pretrain_ray.yaml
 ```
 
 ## Running LLaMA-Factory in an Anyscale job
