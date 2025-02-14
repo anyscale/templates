@@ -18,7 +18,7 @@ pip install -e .
 
 Next, you need to set your `HF_TOKEN` and `WANDB_API_KEY` environment variables. It is recommended to do this via the environment variables section of the [dependencies tab](https://docs.anyscale.com/configuration/dependency-management/dependency-development/#environment-variables) in Workspaces. Simply running `export HF_TOKEN=<HF_TOKEN_HERE>`, or `huggingface-cli login` will work for single node compute configurations, but will not propagate the environment variables to worker nodes.
 
-Additionally it is recommended to use `hf_transfer` for fast model downloading. You can do this by running `pip install hf_transfer`, and setting `HF_HUB_ENABLE_HF_TRANSFER=1` in the dependencies tab. An example of setting relevant environment variables in the dependencies tab is shown below.
+Additionally it is recommended to use `hf_transfer` for fast model downloading. You can do this by running `pip install hf_transfer`, and setting `HF_HUB_ENABLE_HF_TRANSFER=1` in the dependencies tab. Setting `HF_HUB_ENABLE_HF_TRANSFER=1` without first installing `hf_transfer` will cause errors. An example of setting relevant environment variables in the dependencies tab is shown below. 
 
 <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/fine-tune-llm-oss/assets/env_vars.png" width=500px />
 
