@@ -11,7 +11,7 @@ lora_target: all
 
 ### dataset
 dataset: c4_demo
-dataset_dir: /mnt/cluster_storage/data # this is needed for ray!
+dataset_dir: /mnt/cluster_storage/ # this is needed for ray!
 cutoff_len: 2048
 max_samples: 1000
 overwrite_cache: true
