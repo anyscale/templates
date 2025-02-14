@@ -41,4 +41,3 @@ ray_storage_path: /mnt/cluster_storage/
 ray_num_workers: 4  # number of GPUs to use
 resources_per_worker:
   GPU: 1
-placement_strategy: PACK
