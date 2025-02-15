@@ -13,12 +13,8 @@ output_dir: /mnt/local_storage
 deepspeed:
   config_path: configs/deepspeed/zero_3.json
 flash_attention_2: true
-# Head node would have at least 200 GB memory
-trainer_resources:
-  memory: 161061273600 # 130 GB memory
 worker_resources:
-  memory: 53687091200 # 70 GB memory
-  accelerator_type:A10G: 0.001
+  anyscale/accelerator_shape:4xA10G: 0.001
 lora_config:
   r: 8
   lora_alpha: 16

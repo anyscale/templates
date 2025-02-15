@@ -334,10 +334,8 @@ We also have recipes for [LoRA](https://arxiv.org/abs/2106.09685) (where we trai
     deepspeed:
       config_path: configs/deepspeed/zero_3_offload_optim+param.json
     flash_attention_2: true
-    trainer_resources:
-      memory: 53687091200 # 50 GB memory
     worker_resources:
-      accelerator_type:A10G: 0.001
+      anyscale/accelerator_shape:4xA10G: 0.001
     lora_config:
       r: 8
       lora_alpha: 16

@@ -247,11 +247,8 @@ config = {
     "deepspeed": {
         "config_path": "deepspeed_configs/zero_3_offload_optim+param.json"
     },
-    "trainer_resources": {
-        "memory": 50 << 30 # 50 GB memory
-    },
     "worker_resources": {
-        "accelerator_type:A10G": 0.001
+        "anyscale/accelerator_shape:4xA10G": 0.001
     },
     "lora_config": {
         "r": 8,
