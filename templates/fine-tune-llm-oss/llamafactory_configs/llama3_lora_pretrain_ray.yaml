@@ -11,7 +11,7 @@ lora_target: all
 
 ### dataset
 dataset: c4_demo
-dataset_dir: /mnt/cluster_storage/ # this is needed for ray!
+dataset_dir: /mnt/cluster_storage/ # Ray needs this.
 cutoff_len: 2048
 max_samples: 1000
 overwrite_cache: true
@@ -40,6 +40,6 @@ ray_storage_path: /mnt/cluster_storage/
 ray_num_workers: 4  # number of GPUs to use
 resources_per_worker:
   GPU: 1
-  anyscale/accelerator_shape:4xL4: 0.001  # use this to specify a specific node shape
-  # accelerator_type:L4: 0.001            # or use this to simply specify a gpu type
+  anyscale/accelerator_shape:4xL4: 0.001  # Use this to specify a specific node shape,
+  # accelerator_type:L4: 0.001            # Or use this to simply specify a GPU type.
   # see https://docs.ray.io/en/master/ray-core/accelerator-types.html#accelerator-types for a full list of accelerator types
