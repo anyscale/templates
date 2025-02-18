@@ -1,5 +1,5 @@
 ### model
-model_name_or_path: meta-llama/Meta-Llama-3-8B-Instruct  # or use local absolute path
+model_name_or_path: meta-llama/Meta-Llama-3-8B-Instruct  # Or use local absolute path.
 trust_remote_code: true
 
 ### method
@@ -11,7 +11,7 @@ lora_target: all
 
 ### dataset
 dataset: identity,alpaca_en_demo
-dataset_dir: REMOTE:llamafactory/demo_data  # or use local absolute path
+dataset_dir: REMOTE:llamafactory/demo_data  # Or use local absolute path.
 template: llama3
 cutoff_len: 2048
 max_samples: 1000
@@ -38,9 +38,9 @@ ddp_timeout: 180000000
 ### ray
 ray_run_name: llama3_8b_sft_lora
 ray_storage_path: /mnt/cluster_storage/
-ray_num_workers: 4  # number of GPUs to use
+ray_num_workers: 4  # Number of GPUs to use.
 resources_per_worker:
   GPU: 1
-  anyscale/accelerator_shape:4xL4: 0.001  # use this to specify a specific node shape
-  # accelerator_type:L4: 0.001            # or use this to simply specify a gpu type
-  # see https://docs.ray.io/en/master/ray-core/accelerator-types.html#accelerator-types for a full list of accelerator types
+  anyscale/accelerator_shape:4xL4: 0.001  # Use this to specify a specific node shape.
+  # accelerator_type:L4: 0.001            # Or use this to simply specify a GPU type.
+  # See https://docs.ray.io/en/master/ray-core/accelerator-types.html#accelerator-types for a full list of accelerator types.
