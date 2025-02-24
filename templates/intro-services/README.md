@@ -181,7 +181,7 @@ from ray import serve
 fastapi = FastAPI()
 
 - @serve.deployment
-+ @serve.deployment(num_replicas=auto)
++ @serve.deployment(num_replicas="auto")
 @serve.ingress(fastapi)
 class FastAPIDeployment:
     # FastAPI automatically parses the HTTP request.
