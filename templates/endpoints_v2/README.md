@@ -2,9 +2,9 @@
 
 **⏱️ Time to complete**: 10 min
 
-This template comes with a library for serving OSS LLMs on Anyscale called [RayLLM](https://docs.anyscale.com/llms/serving/intro).
+This template comes with a library for serving OSS LLMs on Anyscale called [Ray Serve LLM](https://docs.ray.io/en/releases-2.43.0/serve/llm/overview.html).
 
-RayLLM provides a number of features that simplify LLM development, including:
+Ray Serve LLM provides a number of features that simplifies LLM development, including:
 - An extensive suite of pre-configured open source LLMs.
 - An OpenAI-compatible REST API.
 
@@ -13,25 +13,25 @@ As well as operational features to efficiently scale LLM apps:
 - Production-grade autoscaling support, including scale-to-zero.
 - Native multi-GPU & multi-node model deployments.
 
-This template explains how to set up, run, and query LLMs with RayLLM.
+This template explains how to set up, run, and query LLMs with Ray Serve LLM.
 
-To learn more about RayLLM, check out [the docs](https://docs.anyscale.com/llms/serving/intro). If you're interested in fine-tuning, check out the [fine-tuning template](https://console.anyscale.com/v2/template-preview/finetuning_llms_v2).
+To learn more about Ray Serve LLM, check out [the docs](https://docs.ray.io/en/releases-2.43.0/serve/llm/overview.html). If you're interested in fine-tuning, check out the [fine-tuning template](https://console.anyscale.com/v2/template-preview/finetuning_llms_v2).
 
 **Note**: This guide is hosted within an Anyscale workspace, which provides easy access to compute resources. Check out the [Introduction to Workspaces](https://docs.anyscale.com/examples/intro-workspaces/) template for more details.
 
-## Step 1 - Generate a RayLLM config
+## Step 1 - Generate a LLM config
 
-RayLLM takes in a config that specifies the model you wish to serve, as well as its settings.
+Ray Serve LLM takes in a config that specifies the model you wish to serve, as well as its settings.
 
-Use the RayLLM CLI in the workspace terminal to generate the config:
+Use the Ray Serve LLM CLI in the workspace terminal to generate the config:
 
 ```bash
-rayllm gen-config
+python -m ray.serve.llm.gen_config
 ```
 
 **Note:** This command requires interactive inputs and should be executed directly in the terminal, not within a Jupyter notebook cell.
 
-This command lets you pick from a common set of OSS LLMs and helps you configure them. You can tune settings like GPU type, tensor parallelism, and autoscaling parameters. Check out [the docs](https://docs.anyscale.com/llms/serving/guides/bring_any_model) to learn how to bring your own models.
+This command lets you pick from a common set of OSS LLMs and helps you configure them. You can tune settings like GPU type, tensor parallelism, and autoscaling parameters.
 
 Please note that if you're configuring a model whose architecture is different from the provided list of models, we recommend that you closely review the generated model config file to provide the correct values.
 
@@ -62,14 +62,14 @@ The top rated restaurants in San Francisco include:
  • The French Laundry
 ```
 
-RayLLM uses an OpenAI-compatible API, allowing us to use the OpenAI SDK to query the LLMs.
+Ray Serve LLM uses an OpenAI-compatible API, allowing us to use the OpenAI SDK to query the LLMs.
 
 
 ```python
 from openai import OpenAI
 
 # TODO: Replace this model ID with your own.
-MODEL_ID = "mistralai/Mistral-7B-Instruct-v0.1"
+MODEL_ID = "meta-llama/Meta-Llama-3.1-8B-Instruct"
 
 def query(base_url: str, api_key: str | None = None):
     if not base_url.endswith("/"):
@@ -132,7 +132,7 @@ Navigate to the Service UI and wait for the service to reach "Active". It will b
 
 ## Step 5 - Query the service endpoint
 
-The above command should print something like `(anyscale +2.9s) curl -H 'Authorization: Bearer XXXXXXXXX_XXXXXX-XXXXXXXXXXXX' https://YYYYYYYYYYYY.anyscaleuserdata.com`, which contains information you need to query the service.
+The above command should print something like `(anyscale +2.9s) curl -H 'Authorization: Bearer XXXXXXXXX_XXXXXXXXXXXXXXXXXX' https://YYYYYYYYYYYY.anyscaleuserdata.com`, which contains information you need to query the service.
 
 You can also find this information by clicking the "Query" button in the Service UI.
 
@@ -143,7 +143,7 @@ You can also find this information by clicking the "Query" button in the Service
 # Query the remote serve application we just deployed.
 
 service_url = "https://YYYYYYYYYYYYY.anyscaleuserdata.com"  # FILL ME IN
-service_bearer_token = "XXXXXXXXXX_XXXXXXX-XXXXXXXXXXXXXX"  # FILL ME IN
+service_bearer_token = "XXXXXXXXXX_XXXXXXXXXXXXXXXXXXXXX"  # FILL ME IN
 
 query(service_url, service_bearer_token)
 ```
@@ -155,7 +155,6 @@ query(service_url, service_bearer_token)
 
 ## What's next?
 
-* Check out the [RayLLM docs](https://docs.anyscale.com/llms/serving/intro) to learn more about how you can serve your LLMs.
 * Try the [fine-tuning template](https://console.anyscale.com/v2/template-preview/finetuning_llms_v2) to tune some LLMs for your use case.
 * See the [offline batch inference template](https://console.anyscale.com/v2/template-preview/batch-llm) to learn how to run LLMs for batch jobs.
 
