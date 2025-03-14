@@ -3,7 +3,7 @@
 
 **Tool calling** (aka **Function calling**) allows you to hook up external tools to an LLM, enabling it to use APIs and other functions to perform tasks. This feature is particularly useful when you want to extend the capabilities of an LLM beyond its internal knowledge base.
 
-This example explains how to use [JSON Mode](https://docs.ray.io/en/latest/serve/llm/overview.html#structured-output) to enable this capability for *any* LLM.
+This example explains how to use [JSON Mode](docs.anyscale.com/llms/serving/guides/json_mode) to enable this capability for *any* LLM. 
 
 
 ## How does tool calling work?
@@ -22,9 +22,35 @@ Tool calling can be enabled with one of the two following approaches:
 
 1. **Fine-tuning**: You can fine-tune an LLM to use tools when prompted in a specific way. Many recently released open-weight models have gone through some stages of post-training and come out-of-the-box with the capability to use tools. For examples, `mistralai/Mixtral-8x22B-Instruct-v0.1` and `meta-llama/Meta-Llama-3.1-8B-Instruct` natively support tool calling. They have been fine-tuned to do so when given a special prompt format. To use these models, you must specify the tool-compatible prompt format in your LLM config YAML. 
 
-For example, for `mistralai/Mixtral-8x22B-Instruct-v0.1`, see the full config [here](./llm_configs/mistralai--Mixtral-8x22B-Instruct-v0_1.yaml).
+For example, for `mistralai/Mixtral-8x22B-Instruct-v0.1`, here is the prompt format used to enable tool calling (see the full config [here](./llm_configs/mistralai--Mixtral-8x22B-Instruct-v0_1.yaml)):
 
-Ray Serve LLM can provide OpenAI API-compatible tool support for this model. The full config can be generated with the Ray Serve LLM CLI (`python -m ray.serve.llm.gen_config`).
+```yaml
+    prompt_format:
+        system: "{instruction}\n\n "
+        assistant: "{tool_calls}{instruction} </s> "
+        # Special part of assistant message (shows the previous assistant message that was a tool call).
+        tool_calls: " [TOOL_CALLS] {instruction}"
+        # Special new role that should trigger the model to ingest results of tool calls
+        tool: "[TOOL_RESULTS] {instruction} [/TOOL_RESULTS]"
+        # The format of the available tools that for mixtral goes into the last user message
+        tools_list: "[AVAILABLE_TOOLS] {instruction} [/AVAILABLE_TOOLS] "
+        trailing_assistant: ""
+        user: "{tools_list}[INST] {system}{instruction} [/INST]"
+        # Only one BOS is added at the beginning of the entire conversation
+        bos: "<s> "
+        system_in_user: true
+        # Similar to system_in_user, if true it preprends available tools to the user message.
+        tools_list_in_user: true
+        # If true it will only prepend this message to the last user. 
+        system_in_last_user: true
+        # If true it will only prepend this message to the last user. 
+        tools_list_in_last_user: true
+        add_system_tags_even_if_message_is_empty: false
+        strip_whitespace: true
+        default_system_message: "Always assist with care, respect, and truth. Respond with utmost utility yet securely. Avoid harmful, unethical, prejudiced, or negative content. Ensure replies promote fairness and positivity."
+```
+
+With this prompt format, RayLLM can provide OpenAI API-compatible tool support for this model. The full config can be generated with the RayLLM CLI (`rayllm gen-config`).
 
 2. **JSON mode**: Not all models come with tool calling capabilities out of the box. In such cases, you can use JSON mode to enable tool calling. JSON mode makes the LLM's output structured and predictable.
 
@@ -118,7 +144,7 @@ We then use the corresponding tool's schema to guarantee that the output matches
 
 ## Example usage
 
-The pre-requisite for the following code is to have a self-deployed model (e.g. `meta-llama/Meta-Llama-3.1-8B-Instruct`). To do so, you can follow the instructions in the [Ray Serve LLM documentation](https://docs.ray.io/en/latest/serve/llm/overview.html).
+The pre-requisite for the following code is to have a self-deployed model (e.g. `meta-llama/Meta-Llama-3.1-8B-Instruct`). To do so, you can follow the instructions in the [RayLLM documentation](https://docs.anyscale.com/llms/serving/intro).
 
 Alternatively, you can do `serve run serve_llama_3p1.yaml --non-blocking` to deploy a service locally on a 1xA10 GPU. Make sure to add your HuggingFace token to the [LLM config](./llm_configs/meta-llama--Meta-Llama-3_1-8B-Instruct.yaml) first.
 
@@ -189,7 +215,7 @@ for chunk in completion:
         print(text, end="")
 ```
 
-    {"function": {"name": "get_current_weather", "arguments": {"location": "Boston, MA", "unit": "fahrenheit"}}} 
+    {"function": {"name": "get_current_weather", "arguments": {"location": "Boston", "unit": "fahrenheit"}}} 
 
 Now that we have got the function, we can assume that we have called the `get_current_weather` tool and received the following response:
 
@@ -222,10 +248,12 @@ for chunk in completion:
         print(text, end="")
 ```
 
-    25 degrees.
+    Today in Boston, the temperature is 25 degrees and it is sunny.
 
 ## Conclusion
 
 In this example, we have shown how you can use JSON Mode to create a simple client that is capable of tool calling on Any Open-weight LLM, even if the LLM is not fine-tuned to natively support tool calling. 
 
 The implementation in [client.py](./client/client.py) is complete and you can read the code to cover all the details.
+
+
