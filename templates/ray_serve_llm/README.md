@@ -1,4 +1,4 @@
-# Deploy, configure, and serve LLMs 
+# Deploy LLMs with Ray serve on Anyscale
 
 **⏱️ Time to complete**: 10 min
 
@@ -15,7 +15,7 @@ As well as operational features to efficiently scale LLM apps:
 
 This template explains how to set up, run, and query LLMs with Ray Serve LLM.
 
-To learn more about Ray Serve LLM, check out [the docs](https://docs.ray.io/en/releases-2.43.0/serve/llm/overview.html). If you're interested in fine-tuning, check out the [fine-tuning template](https://console.anyscale.com/v2/template-preview/finetuning_llms_v2).
+To learn more about Ray Serve LLM, check out [the docs](https://docs.ray.io/en/releases-2.43.0/serve/llm/overview.html).
 
 **Note**: This guide is hosted within an Anyscale workspace, which provides easy access to compute resources. Check out the [Introduction to Workspaces](https://docs.anyscale.com/examples/intro-workspaces/) template for more details.
 
@@ -36,6 +36,9 @@ This command lets you pick from a common set of OSS LLMs and helps you configure
 Please note that if you're configuring a model whose architecture is different from the provided list of models, we recommend that you closely review the generated model config file to provide the correct values.
 
 This command generates 2 files - an LLM config file (saved in `model_config/`) and a Ray Serve config file (`serve_TIMESTAMP.yaml`) that you can reference and re-run in the future.
+
+You should read and check how the generated model config looks like. There is [vLLM Engine Config](https://docs.vllm.ai/en/latest/serving/engine_args.html) you can refer and further customize.
+
 
 ## Step 2 - Run the model locally in the workspace
 
