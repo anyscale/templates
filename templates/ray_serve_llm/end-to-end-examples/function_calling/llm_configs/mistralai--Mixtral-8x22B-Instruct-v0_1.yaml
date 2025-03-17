@@ -1,0 +1,25 @@
+runtime_env:
+  env_vars:
+    HUGGING_FACE_HUB_TOKEN: insert_your_hf_token_here
+
+model_loading_config:
+  model_id: mistralai/Mixtral-8x22B-Instruct-v0.1
+  model_source: mistralai/Mixtral-8x22B-Instruct-v0.1
+
+engine_kwargs:
+  max_num_batched_tokens: null
+  max_num_seqs: 192
+  tokenizer_pool_extra_config:
+    runtime_env:
+      pip: null
+  tokenizer_pool_size: 2
+  trust_remote_code: true
+  max_model_len: 65536
+  tensor_parallel_size: 8
+
+accelerator_type: H100
+
+deployment_config:
+  autoscaling_config:
+    target_ongoing_requests: 96
+  max_ongoing_requests: 192
