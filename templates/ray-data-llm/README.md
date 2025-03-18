@@ -55,10 +55,7 @@ We will also need to define a configuration associated with the model we want to
 
 ```python
 from ray.data.llm import vLLMEngineProcessorConfig
-from util.utils import is_on_gcp_cloud
 
-# There's no a10g on GCP.
-accelerator_type = "L4" if is_on_gcp_cloud() else "A10G"
 
 processor_config = vLLMEngineProcessorConfig(
     model_source="meta-llama/Meta-Llama-3.1-8B-Instruct",
@@ -76,7 +73,7 @@ processor_config = vLLMEngineProcessorConfig(
         ),
     ),
     batch_size=16,
-    accelerator_type=accelerator_type,
+    accelerator_type="L4",
     concurrency=1,
 )
 
