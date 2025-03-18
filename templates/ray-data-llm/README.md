@@ -13,15 +13,15 @@ This template shows you how to run batch inference for LLMs using Ray Data LLM.
 Online LLM inference (e.g. Anyscale Endpoint) should be used when you want to get real-time response for prompt or to interact with the LLM. Use online inference when you want to optimize latency of inference to be as quick as possible.
 
 On the other hand, offline LLM inference (also referred to as batch inference) should be used when you want to get reponses for a large number of prompts within some time frame, but not required to be real-time (minutes to hours granularity). Use offline inference when you want to:
-1. Scale your workload to large-scale datasets
+1. Process large-scale datasets
 2. Optimize inference throughput and resource usage (for example, maximizing GPU utilization).
 
 In this tutorial, we will focus on the latter, using offline LLM inference for a summarization task using real-world news articles.
 
 
-## Step 1: Set up the workload
+## Step 1: Prepare a Ray Data dataset
 
-Ray Data LLM is a library for running batch inference for LLMs. It uses Ray Data for data processing and provides an easy and flexible interface for the user to define their own workload. In this tutorial, we will implement a workload based on the [`CNNDailyMail`](https://huggingface.co/datasets/abisee/cnn_dailymail) dataset, which is a collection of news articles. And we will summarize each article with our batch inferencing pipeline. We will cover more details on how to customize the workload in the later sections.
+Ray Data LLM runs batch inference for LLMs on Ray Data datasets. In this tutorial, we will run batch inference with an LLM that summarizes news articles from [`CNNDailyMail`](https://huggingface.co/datasets/abisee/cnn_dailymail) dataset, which is a collection of news articles. And we will summarize each article with our batch inferencing pipeline. We will cover more details on how to customize the pipeline in the later sections.
 
 
 
@@ -29,8 +29,8 @@ Ray Data LLM is a library for running batch inference for LLMs. It uses Ray Data
 import ray 
 import datasets
 
-# Load the dataset from Hugging Face into Ray Data. If you're using your own dataset,
-# refer to Ray Data APIs https://docs.ray.io/en/latest/data/api/input_output.html to load it.
+# Load the dataset from Hugging Face into Ray Data. Refer to Ray Data APIs
+# https://docs.ray.io/en/latest/data/api/input_output.html for details.
 # For example, you can use ray.data.read_json(dataset_file) to load dataset in JSONL.
 
 df = datasets.load_dataset("cnn_dailymail", "3.0.0")
@@ -42,20 +42,15 @@ ds = ray.data.from_huggingface(df["train"])
 
 We will also need to define the model configs for the LLM engine, which configures the model and compute resources needed for inference. 
 
-Some models will require you to input your [Hugging Face user access token](https://huggingface.co/docs/hub/en/security-tokens). This will be used to authenticate/download the model and **is required for official LLaMA, Mistral, and Gemma models**. You can use one of the other models which don't require a token if you don't have access to this model (for example, `neuralmagic/Meta-Llama-3.1-8B-Instruct-FP8`).
-
-Run the following cell to start the authentication flow. A VS Code overlay will appear and prompt you to enter your Hugging Face token if your selected model requires authentication. If you are using a model that does not require a token, you can skip this step. For this example, we will be using the `meta-llama/Meta-Llama-3.1-8B-Instruct` model, which requires a token.
-
+Make sure to provide your [Hugging Face user access token](https://huggingface.co/docs/hub/en/security-tokens). This will be used to authenticate/download the model and **is required for official LLaMA, Mistral, and Gemma models**.
 
 
 ```python
-# Prompts the user for Hugging Face token if required by the model.
-from util.utils import prompt_for_hugging_face_token
-HF_TOKEN = prompt_for_hugging_face_token("meta-llama/Meta-Llama-3.1-8B-Instruct")
+HF_TOKEN = "insert your hugging face token here"
 ```
 
 In this example, we will be using the `meta-llama/Meta-Llama-3.1-8B-Instruct` model.
-We will also need to define a configuration associated with the model we want to use to configure the compute resources, engine arguments and other inference engine specific parameters. For more details on the the model configs, see the [API doc](https://docs.anyscale.com/llms/serving/guides/bring_any_model/) on bringing your own models.
+We will also need to define a configuration associated with the model we want to use to configure the compute resources, engine arguments and other inference engine specific parameters. For more details on the configs passed to vLLM engine, see [vLLM doc](https://docs.vllm.ai/en/latest/serving/engine_args.html).
 
 
 ```python
@@ -82,47 +77,57 @@ processor_config = vLLMEngineProcessorConfig(
     ),
     batch_size=16,
     accelerator_type=accelerator_type,
+    concurrency=1,
 )
 
 ```
 
-## Step 3: Define the preprocess and postprocess lambda
+## Step 3: Define the preprocess and postprocess functions
 
 
-We will need to define the preprocess lambda to convert input dataset to format that `vLLMEngineProcessor` can consume, and also postprocessor
-lambda that filter out the uninterested fields from vLLM engine.
+We will need to define the preprocess function to prepare `messages` and `sampling_params` for vLLM engine, and also postprocessor function to consume `generated_text`.
 
 
 ```python
-preprocess = lambda row: dict(
-    messages=[
-        {
-            "role": "system",
-            "content": "You are a commentator. Your task is to "
-            "summarize highlights from article.",
-        },
-        {
-            "role": "user",
-            "content": f"# Article:\n{row['article']}\n\n"
-            "#Instructions:\nIn clear and concise language, "
-            "summarize the highlights presented in the article.",
-        },
-    ],
-    sampling_params=dict(
-        temperature=0.3,
-        max_tokens=150,
-        detokenize=False,
-    ),
-)
-postprocess = lambda row: {
-    "resp": row["generated_text"],
-}
+from typing import Any
+
+# Preprocess function prepares `messages` and `sampling_params` for vLLM engine, and
+# all other fields will be ignored.
+def preprocess(row: dict[str, Any]) -> dict[str, Any]:
+    return dict(
+        messages=[
+            {
+                "role": "system",
+                "content": "You are a commentator. Your task is to "
+                "summarize highlights from article.",
+            },
+            {
+                "role": "user",
+                "content": f"# Article:\n{row['article']}\n\n"
+                "#Instructions:\nIn clear and concise language, "
+                "summarize the highlights presented in the article.",
+            },
+        ],
+        sampling_params=dict(
+            temperature=0.3,
+            max_tokens=150,
+            detokenize=False,
+        ),
+    )
+
+# Input row of postprocess function will have `generated_text`. Alse `**row` syntax
+# can be used to return all the original columns in the input dataset.
+def postprocess(row: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "resp": row["generated_text"],
+        **row,  # This will return all the original columns in the dataset.
+    }
 ```
 
 ## Step 4: Build and run the processor
 
 
-With the workload and configs defined, we can now build then run the processor
+With the processors and configs defined, we can now build then run the processor
 
 
 ```python
@@ -135,6 +140,10 @@ processor = build_llm_processor(
 )
 
 ds = processor(ds)
+# Materialize the dataset to memory. User can also use writing APIs like
+# `write_parquet`(https://docs.ray.io/en/latest/data/api/doc/ray.data.Dataset.write_parquet.html#ray.data.Dataset.write_parquet)
+# `write_csv`(https://docs.ray.io/en/latest/data/api/doc/ray.data.Dataset.write_csv.html#ray.data.Dataset.write_csv)
+# to persist the dataset.
 ds = ds.materialize()
 
 
@@ -147,7 +156,7 @@ print('\n'.join(sampled))
 
 ### Monitoring the execution
 
-RayLLM-Batch uses Ray Data to implement the execution of the batch inference pipeline, and one can use the Ray Dashboard to monitor the execution. In the Ray Dashboard tab, navigate to the Job page and open the "Ray Data Overview" section. Click on the link for the running job, and open the "Ray Data Overview" section to view the details of the batch inference execution:
+We can use the Ray Dashboard to monitor the execution. In the Ray Dashboard tab, navigate to the Job page and open the "Ray Data Overview" section. Click on the link for the running job, and open the "Ray Data Overview" section to view the details of the batch inference execution:
 
 <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/batch-llm/assets/ray-data-jobs.png" width=900px />
 
@@ -157,6 +166,6 @@ If you run into CUDA out of memory, your batch size is likely too large. Set an 
 ## Summary
 
 This notebook:
-- Created a custom workload for the CNN/DailyMail summarization task.
+- Created a custom processor for the CNN/DailyMail summarization task.
 - Defined the model configs for the Meta Llama 3.1 8B model.
 - Ran the batch inference through RayLLM-Batch and monitored the execution.
