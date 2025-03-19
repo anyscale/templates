@@ -26,6 +26,7 @@ Ray Data LLM runs batch inference for LLMs on Ray Data datasets. In this tutoria
 
 
 ```python
+# Install datasets library
 !pip install datasets
 ```
 
@@ -63,7 +64,7 @@ from ray.data.llm import vLLMEngineProcessorConfig
 
 
 processor_config = vLLMEngineProcessorConfig(
-    model_source="unsloth/Llama-3.1-8B-Instruct",
+    model_source="meta-llama/Meta-Llama-3.1-8B-Instruct",
     engine_kwargs=dict(
         tensor_parallel_size=1,
         pipeline_parallel_size=1,
@@ -141,16 +142,16 @@ processor = build_llm_processor(
     postprocess=postprocess,
 )
 
-ds = processor(ds)
+processed_ds = processor(ds)
 # Materialize the dataset to memory. User can also use writing APIs like
 # `write_parquet`(https://docs.ray.io/en/latest/data/api/doc/ray.data.Dataset.write_parquet.html#ray.data.Dataset.write_parquet)
 # `write_csv`(https://docs.ray.io/en/latest/data/api/doc/ray.data.Dataset.write_csv.html#ray.data.Dataset.write_csv)
 # to persist the dataset.
-ds = ds.materialize()
+processed_ds = processed_ds.materialize()
 
 
 # Peak the first 3 entries. 
-sampled = ds.take(3)
+sampled = processed_ds.take(3)
 print("==================GENERATED OUTPUT===============")
 print('\n'.join(sampled))
 ```
