@@ -26,6 +26,11 @@ Ray Data LLM runs batch inference for LLMs on Ray Data datasets. In this tutoria
 
 
 ```python
+!pip install datasets
+```
+
+
+```python
 import ray 
 import datasets
 
@@ -165,4 +170,4 @@ If you run into CUDA out of memory, your batch size is likely too large. Set an 
 This notebook:
 - Created a custom processor for the CNN/DailyMail summarization task.
 - Defined the model configs for the Meta Llama 3.1 8B model.
-- Ran the batch inference through RayLLM-Batch and monitored the execution.
+- Ran the batch inference through Ray Data LLM and monitored the execution.
