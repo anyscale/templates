@@ -26,6 +26,16 @@ Ray Data LLM runs batch inference for LLMs on Ray Data datasets. In this tutoria
 
 
 ```python
+# Install the datasets library
+!pip install datasets
+```
+
+    sh: 0: getcwd() failed: No such file or directory
+    The folder you are executing pip from can no longer be found.
+
+
+
+```python
 import ray 
 import datasets
 
@@ -58,7 +68,7 @@ from ray.data.llm import vLLMEngineProcessorConfig
 
 
 processor_config = vLLMEngineProcessorConfig(
-    model_source="meta-llama/Meta-Llama-3.1-8B-Instruct",
+    model_source="unsloth/Llama-3.1-8B-Instruct",
     engine_kwargs=dict(
         tensor_parallel_size=1,
         pipeline_parallel_size=1,
@@ -165,4 +175,4 @@ If you run into CUDA out of memory, your batch size is likely too large. Set an 
 This notebook:
 - Created a custom processor for the CNN/DailyMail summarization task.
 - Defined the model configs for the Meta Llama 3.1 8B model.
-- Ran the batch inference through RayLLM-Batch and monitored the execution.
+- Ran the batch inference through Ray Data LLM API and monitored the execution.
