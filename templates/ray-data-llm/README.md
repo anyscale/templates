@@ -64,7 +64,7 @@ from ray.data.llm import vLLMEngineProcessorConfig
 
 
 processor_config = vLLMEngineProcessorConfig(
-    model_source="meta-llama/Meta-Llama-3.1-8B-Instruct",
+    model_source="unsloth/Llama-3.1-8B-Instruct",
     engine_kwargs=dict(
         tensor_parallel_size=1,
         pipeline_parallel_size=1,
