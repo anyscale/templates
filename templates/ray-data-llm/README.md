@@ -180,7 +180,7 @@ vision_dataset_llms_lite = datasets.load_dataset("lmms-lab/LMMs-Eval-Lite", "coc
 vision_dataset = ray.data.from_huggingface(vision_dataset_llms_lite["lite"])
 
 vision_processor_config = vLLMEngineProcessorConfig(
-    model_source="mistral-community/pixtral-12b",
+    model_source="Qwen/Qwen2.5-VL-7B-Instruct",
     engine_kwargs=dict(
         tensor_parallel_size=1,
         pipeline_parallel_size=1,
@@ -230,7 +230,7 @@ IMPORTANT: Remember, to end your answer with Final Answer: <answer>.""",
                     },
                     {
                         "type": "text",
-                        "text": "\n\nChoices:\n" + "\n".join([f"{choice_indices[i]}. {choice}" for i, choice in enumerate(row["choices"])])
+                        "text": "\n\nChoices:\n" + "\n".join([f"{choice_indices[i]}. {choice}" for i, choice in enumerate(row["answer"])])
                     }
                 ]
             },
