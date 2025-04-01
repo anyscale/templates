@@ -164,6 +164,113 @@ Use the Ray Dashboard to monitor the execution. In the **Ray Dashboard** tab, na
 ### Handling GPU out-of-memory failures
 If you run into CUDA out of memory, your batch size is likely too large. Set an explicit small batch size or use a smaller model, or a larger GPU.
 
+## Advanced: Image query with a vision language model
+
+Ray Data LLM also supports running batch inference with vision language models. This example shows how
+to prepare a dataset with images and run batch inference with a vision language model.
+
+
+```python
+import ray 
+import datasets
+from ray.data.llm import vLLMEngineProcessorConfig
+
+# Load "LMMs-Eval-Lite" dataset from Hugging Face.
+vision_dataset_llms_lite = datasets.load_dataset("lmms-lab/LMMs-Eval-Lite", "coco2017_cap_val")
+vision_dataset = ray.data.from_huggingface(vision_dataset_llms_lite["lite"])
+
+vision_processor_config = vLLMEngineProcessorConfig(
+    model_source="mistral-community/pixtral-12b",
+    engine_kwargs=dict(
+        tensor_parallel_size=1,
+        pipeline_parallel_size=1,
+        max_model_len=16384,
+        enable_chunked_prefill=True,
+        max_num_batched_tokens=2048,
+    ),
+    # Override Ray's runtime env to include the Hugging Face token. Ray Data uses Ray under the hood to orchestrate the inference pipeline.
+    runtime_env=dict(
+        env_vars=dict(
+            HF_TOKEN=HF_TOKEN,
+            VLLM_USE_V1="1",
+        ),
+    ),
+    batch_size=16,
+    accelerator_type="L4",
+    concurrency=1,
+)
+
+def vision_preprocess(row: dict) -> dict:
+    choice_indices = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']
+    return dict(
+        messages=[
+            {
+                "role": "system",
+                "content": """Analyze the image and question carefully, using step-by-step reasoning.
+First, describe any image provided in detail. Then, present your reasoning. And finally your final answer in this format:
+Final Answer: <answer>
+where <answer> is:
+- The single correct letter choice A, B, C, D, E, F, etc. when options are provided. Only include the letter.
+- Your direct answer if no options are given, as a single phrase or number.
+- If your answer is a number, only include the number without any unit.
+- If your answer is a word or phrase, do not paraphrase or reformat the text you see in the image.
+- You cannot answer that the question is unanswerable. You must either pick an option or provide a direct answer.
+IMPORTANT: Remember, to end your answer with Final Answer: <answer>.""",
+            },
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": row["question"] + "\n\n"
+                    },
+                    {
+                        "type": "image",
+                        "image": row["image"]
+                    },
+                    {
+                        "type": "text",
+                        "text": "\n\nChoices:\n" + "\n".join([f"{choice_indices[i]}. {choice}" for i, choice in enumerate(row["choices"])])
+                    }
+                ]
+            },
+        ],
+        sampling_params=dict(
+            temperature=0.3,
+            max_tokens=150,
+            detokenize=False,
+        ),
+    )
+
+# Input row of postprocess function will have `generated_text`. Alse `**row` syntax
+# can be used to return all the original columns in the input dataset.
+def vision_postprocess(row: dict) -> dict:
+    return {
+        "resp": row["generated_text"],
+        **row,  # This will return all the original columns in the dataset.
+    }
+
+```
+
+
+```python
+from ray.data.llm import build_llm_processor
+
+vision_processor = build_llm_processor(
+    vision_processor_config,
+    preprocess=vision_preprocess,
+    postprocess=vision_postprocess,
+)
+
+vision_processed_ds = vision_processor(vision_dataset).materialize()
+
+
+# Peak the first 3 entries. 
+vision_sampled = vision_processed_ds.take(3)
+print("==================GENERATED OUTPUT===============")
+print('\n'.join(vision_sampled))
+```
+
 ## Summary
 
 This notebook:
