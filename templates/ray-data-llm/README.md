@@ -149,7 +149,7 @@ processed_ds = processor(ds)
 processed_ds = processed_ds.materialize()
 
 
-# Peak the first 3 entries. 
+# Peek the first 3 entries.
 sampled = processed_ds.take(3)
 print("==================GENERATED OUTPUT===============")
 print('\n'.join(sampled))
@@ -265,7 +265,7 @@ vision_processor = build_llm_processor(
 vision_processed_ds = vision_processor(vision_dataset).materialize()
 
 
-# Peak the first 3 entries. 
+# Peek the first 3 entries.
 vision_sampled = vision_processed_ds.take(3)
 print("==================GENERATED OUTPUT===============")
 print('\n'.join(vision_sampled))
