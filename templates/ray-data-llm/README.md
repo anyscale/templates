@@ -117,7 +117,7 @@ def preprocess(row: dict[str, Any]) -> dict[str, Any]:
         ),
     )
 
-# Input row of postprocess function will have `generated_text`. Alse `**row` syntax
+# Input row of postprocess function will have `generated_text`. Also `**row` syntax
 # can be used to return all the original columns in the input dataset.
 def postprocess(row: dict[str, Any]) -> dict[str, Any]:
     return {
@@ -169,10 +169,16 @@ If you run into CUDA out of memory, your batch size is likely too large. Set an 
 Ray Data LLM also supports running batch inference with vision language models. This example shows how
 to prepare a dataset with images and run batch inference with a vision language model.
 
+We applied 2 adjustments on top of the previous example:
+* set `has_image=True` in `vLLMEngineProcessorConfig`
+* prepare image input inside preprocessor
+
 
 ```python
 import ray 
 import datasets
+from io import BytesIO
+from PIL import Image
 from ray.data.llm import vLLMEngineProcessorConfig
 
 # Load "LMMs-Eval-Lite" dataset from Hugging Face.
@@ -180,11 +186,11 @@ vision_dataset_llms_lite = datasets.load_dataset("lmms-lab/LMMs-Eval-Lite", "coc
 vision_dataset = ray.data.from_huggingface(vision_dataset_llms_lite["lite"])
 
 vision_processor_config = vLLMEngineProcessorConfig(
-    model_source="Qwen/Qwen2.5-VL-7B-Instruct",
+    model_source="Qwen/Qwen2.5-VL-3B-Instruct",
     engine_kwargs=dict(
         tensor_parallel_size=1,
         pipeline_parallel_size=1,
-        max_model_len=16384,
+        max_model_len=4096,
         enable_chunked_prefill=True,
         max_num_batched_tokens=2048,
     ),
@@ -198,6 +204,7 @@ vision_processor_config = vLLMEngineProcessorConfig(
     batch_size=16,
     accelerator_type="L4",
     concurrency=1,
+    has_image=True,
 )
 
 def vision_preprocess(row: dict) -> dict:
@@ -226,7 +233,8 @@ IMPORTANT: Remember, to end your answer with Final Answer: <answer>.""",
                     },
                     {
                         "type": "image",
-                        "image": row["image"]
+                        # Ray Data accepts PIL Image or image URL.
+                        "image": Image.open(BytesIO(row["image"]["bytes"]))
                     },
                     {
                         "type": "text",
@@ -242,15 +250,14 @@ IMPORTANT: Remember, to end your answer with Final Answer: <answer>.""",
         ),
     )
 
-# Input row of postprocess function will have `generated_text`. Alse `**row` syntax
-# can be used to return all the original columns in the input dataset.
 def vision_postprocess(row: dict) -> dict:
     return {
         "resp": row["generated_text"],
-        **row,  # This will return all the original columns in the dataset.
     }
 
 ```
+
+Similar to previous example, build and run the processor.
 
 
 ```python
@@ -263,11 +270,16 @@ vision_processor = build_llm_processor(
 )
 
 vision_processed_ds = vision_processor(vision_dataset).materialize()
+```
+
+Similar to previous example, peek the first 3 entries.
 
 
+```python
 # Peek the first 3 entries.
 vision_sampled = vision_processed_ds.take(3)
 print("==================GENERATED OUTPUT===============")
+print(vision_sampled)
 print('\n'.join(vision_sampled))
 ```
 
