@@ -289,3 +289,7 @@ This notebook:
 - Created a custom processor for the CNN/DailyMail summarization task.
 - Defined the model configs for the Meta Llama 3.1 8B model.
 - Ran the batch inference through Ray Data LLM API and monitored the execution.
+- As an advanced usage, ran the batch vision query through Ray Data LLM API
+  * Constructed vision understanding task with COCO dataset
+  * Using Qwen2.5-VL-3B-Instruct model
+
