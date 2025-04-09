@@ -43,7 +43,7 @@ aws s3 cp  s3://viggo-ds/dataset_info.json /mnt/cluster_storage/viggo/
 
 ```bash
 %%bash
-head -n 1 /mnt/cluster_storage/viggo/train.jsonl | jq
+head -n 1 /mnt/cluster_storage/viggo/train.jsonl | python3 -m json.tool
 ```
 
 ```json
