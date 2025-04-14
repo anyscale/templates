@@ -19,7 +19,14 @@ api = FastAPI(
 )
 
 
-@serve.deployment(num_replicas="1", ray_actor_options={"num_cpus": 2, "num_gpus": 1})
+@serve.deployment(
+    num_replicas="1",
+    ray_actor_options={
+        "num_cpus": 2,
+        "num_gpus": 1,
+        "accelerator_type": "A10G",
+    },
+)
 class ClassPredictor:
     def __init__(self, artifacts_dir):
         """Initialize the model."""
@@ -46,7 +53,14 @@ class ClassPredictor:
         return probabilities
 
 
-@serve.deployment(num_replicas="1", ray_actor_options={"num_cpus": 2, "num_gpus": 1})
+@serve.deployment(
+    num_replicas="1",
+    ray_actor_options={
+        "num_cpus": 2,
+        "num_gpus": 1,
+        "accelerator_type": "A10G",
+    },
+)
 class EmbeddingSimilarity:
     def __init__(self, embeddings_path):
         self.embedding_generator = EmbeddingGenerator(model_id="openai/clip-vit-base-patch32")

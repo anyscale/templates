@@ -22,6 +22,11 @@ In this tutorial, we'll be implementing an image semantic search application tha
 We're developing our application on [Anyscale Workspaces](https://docs.anyscale.com/platform/workspaces/), which enables us to develop without thinking about infrastructure, just like we would on a laptop. Workspaces come with:
 - **Development tools**: Spin up a remote session from your local IDE (cursor, vscode, etc.) and start coding, using the same tools you love but with the power of Anyscale's compute.
 - **Dependencies**: Continue to install dependencies using familiar tools like pip. Anyscale will ensure dependencies are being propagated to your cluster.
+
+```bash
+pip install -q "matplotlib==3.10.0" "torch==2.5.1" "transformers==4.47.1" "scikit-learn==1.6.0" "mlflow==2.19.0" "ipywidgets"
+```
+
 - **Compute**: Leverage any reserved instance capacity, spot instance from any compute provider of your choice by deploying Anyscale into your account. Alternatively, you can use the Anyscale cloud for a full serverless experience.
   - Under the hood, a cluster will be spun up and smartly managed by Anyscale.
 - **Debugging**: Leverage a [distributed debugger](https://docs.anyscale.com/platform/workspaces/workspaces-debugging/#distributed-debugger) to get the same VSCode-like debugging experience.

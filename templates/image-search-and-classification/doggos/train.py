@@ -133,6 +133,7 @@ if __name__ == "__main__":
         num_workers=num_workers,
         use_gpu=True,
         resources_per_worker={"CPU": 8, "GPU": 2},
+        accelerator_type="A10G",
     )
 
     # Datasets

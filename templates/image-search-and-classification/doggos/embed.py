@@ -97,6 +97,7 @@ if __name__ == "__main__":
         concurrency=4,
         batch_size=64,
         num_gpus=1,
+        accelerator_type="A10G",
     )
     embeddings_ds = embeddings_ds.drop_columns(["image"])  # remove image column
 
