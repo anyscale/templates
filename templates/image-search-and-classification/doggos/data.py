@@ -33,6 +33,7 @@ class Preprocessor:
             concurrency=concurrency,
             batch_size=batch_size,
             num_gpus=num_gpus,
+            accelerator_type="A10G",
         )
         ds = ds.drop_columns(["image"])
         return ds
