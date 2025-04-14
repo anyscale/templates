@@ -27,7 +27,7 @@ for TMPL in "${TEMPLATES_DIRS[@]}"; do
         TMPL_NAME="$(basename "${TMPL}")"
         NOTEBOOK_FILE="${TMPL}/README.ipynb"
 
-        if [[ "${TMPL_NAME}" == "getting-started" || "${TMPL_NAME}" == "e2e-llm-workflows" || "${TMPL_NAME}" == "ray-summit-multi-modal-search" || "${TMPL_NAME}" == "image-search-and-classification" || "${TMPL_NAME}" == "entity-recognition-with-llms"]]; then
+        if [[ "${TMPL_NAME}" == "getting-started" || "${TMPL_NAME}" == "e2e-llm-workflows" || "${TMPL_NAME}" == "ray-summit-multi-modal-search" || "${TMPL_NAME}" == "image-search-and-classification" || "${TMPL_NAME}" == "entity-recognition-with-llms" ]]; then
             echo "Skip 'Time to complete' checking for ${TMPL_NAME}"
         elif ! grep -q "Time to complete" "${NOTEBOOK_FILE}" ; then
             echo "**********"
@@ -36,7 +36,7 @@ for TMPL in "${TEMPLATES_DIRS[@]}"; do
             exit 1
         fi
 
-        if [[ "${TMPL_NAME}" != "e2e-llm-workflows" && "${TMPL_NAME}" != "image-search-and-classification" && "${TMPL_NAME}" != "entity-recognition-with-llms"  ]]; then
+        if [[ "${TMPL_NAME}" != "e2e-llm-workflows" && "${TMPL_NAME}" != "image-search-and-classification" && "${TMPL_NAME}" != "entity-recognition-with-llms" ]]; then
             # Convert notebook file to README.md using nbconvert
             jupyter nbconvert --to markdown "${NOTEBOOK_FILE}" --output-dir "${TMPL}"
         else
