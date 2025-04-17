@@ -1,6 +1,6 @@
 head_node_type:
   name: head
-  instance_type:n2-standard-8
+  instance_type: n2-standard-8
   resources:
     cpu: 8
 worker_node_types: []
