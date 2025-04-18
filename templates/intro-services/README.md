@@ -151,6 +151,7 @@ def send_request(name: str) -> str:
 
 
 ```python
+# Note: make sure you have network connectivity to the public IP address
 print(send_request("Theodore"))
 ```
 
@@ -181,7 +182,7 @@ from ray import serve
 fastapi = FastAPI()
 
 - @serve.deployment
-+ @serve.deployment(num_replicas=auto)
++ @serve.deployment(num_replicas="auto")
 @serve.ingress(fastapi)
 class FastAPIDeployment:
     # FastAPI automatically parses the HTTP request.
