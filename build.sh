@@ -8,4 +8,4 @@ mkdir -p ci/bin
 
 echo "--- Building template releases"
 rm -rf _build
-exec ci/bin/maketmpl
+exec ci/bin/maketmpl "$@"
