@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"time"
 )
 
 func checkIsDir(path string) error {
@@ -19,8 +20,21 @@ func checkIsDir(path string) error {
 	return nil
 }
 
+// Use a fixed build time to make the zip file deterministic.
+// We cannot set use t=0 unix epoch time, because when the
+// time zone of the machine is different from UTC, some systems
+// can complain about file timestamp being invalid and
+// unsupported.
+var frozenTime = time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)
+
 func addToZip(z *zip.Writer, r io.Reader, pathInZip string) error {
-	w, err := z.Create(pathInZip)
+	h := &zip.FileHeader{
+		Name:     pathInZip,
+		Method:   zip.Deflate,
+		Modified: frozenTime,
+	}
+
+	w, err := z.CreateHeader(h)
 	if err != nil {
 		return fmt.Errorf("create file in zip: %w", err)
 	}
