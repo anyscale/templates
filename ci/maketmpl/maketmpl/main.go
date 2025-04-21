@@ -14,7 +14,16 @@ func main() {
 
 	flag.Parse()
 
-	if err := maketmpl.BuildAll(*buildFile, *base, *output); err != nil {
-		log.Fatal(err)
+	args := flag.Args()
+	if len(args) == 0 {
+		if err := maketmpl.BuildAll(*buildFile, *base, *output); err != nil {
+			log.Fatal(err)
+		}
+	} else if len(args) == 1 {
+		if err := maketmpl.Build(*buildFile, args[0], *base, *output); err != nil {
+			log.Fatal(err)
+		}
+	} else {
+		log.Fatal("too many arguments")
 	}
 }
