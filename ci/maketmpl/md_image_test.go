@@ -90,6 +90,7 @@ func TestParseMdImages(t *testing.T) {
 		`<img src=img2.png alt="second image" width=200px/>`,
 		"some more random text",
 		"![third image](img3.png)",
+		`<a><img src="img4.png"></a>`,
 	}, "\n")
 
 	imgs, err := parseMdImages([]byte(md))
@@ -101,9 +102,10 @@ func TestParseMdImages(t *testing.T) {
 		{src: "img.png", alt: "first image"},
 		{src: "img2.png", alt: "second image", widthPx: "200", isHTML: true},
 		{src: "img3.png", alt: "third image"},
+		{src: "img4.png", isHTML: true},
 	}
 
-	wantLens := []int{23, 50, 24}
+	wantLens := []int{23, 50, 24, 20}
 
 	if len(imgs) != len(want) {
 		t.Errorf("got %d images, want %d", len(imgs), len(want))
