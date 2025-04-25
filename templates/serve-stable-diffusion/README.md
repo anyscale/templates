@@ -17,8 +17,6 @@ The application requires a few extra Python dependencies. Install them using `pi
 !pip install -q diffusers==0.25.0 transformers==4.36.2 accelerate==0.25.0 huggingface-hub==0.25.2 && echo 'Install complete!'
 ```
 
-📝 **NOTE**: Once the pip command installs all the dependencies, the workspace will direct you to update the dependencies and rebuild the docker image in the "Dependencies" section. Once the new image is built, restart the ray head node/cluster with the newly baked docker image for rest of the steps to pick up the dependencies.
-
 ## Step 2: Run the model locally
 - Run the command below in a VSCode terminal (Ctrl-`).
 - The model will be available at http://localhost:8000.
