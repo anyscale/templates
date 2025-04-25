@@ -14,7 +14,7 @@ The application requires a few extra Python dependencies. Install them using `pi
 
 
 ```python
-!pip install -q diffusers==0.25.0 transformers==4.36.2 accelerate==0.25.0 && echo 'Install complete!'
+!pip install -q diffusers==0.25.0 transformers==4.36.2 accelerate==0.25.0 huggingface-hub==0.25.2 && echo 'Install complete!'
 ```
 
 ## Step 2: Run the model locally
