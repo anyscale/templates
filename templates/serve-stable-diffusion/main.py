@@ -54,12 +54,13 @@ class APIIngress:
         "num_gpus": 1,
         "num_cpus": 1,
         # Set this to your desired GPU type (e.g. T4, A10G, L4, V100, A100-40G, A100-80G).
-        "accelerator_type": "A10G"
+        "accelerator_type": "L4"
     },
+    max_ongoing_requests=1,  # Maximum number of queries that are sent to a replica of this deployment without receiving a response.
     autoscaling_config={
         "min_replicas": 1,    # The minimum number of model replicas to keep active in the Ray cluster.
         "max_replicas": 99,    # The maximum number of model replicas to keep active in the Ray cluster.
-        "target_num_ongoing_requests_per_replica": 1,   # Target number of ongoing requests in a replica. Serve compares the actual number agasint this value and upscales or downscales.
+        "target_ongoing_requests": 1,   # Target number of ongoing requests in a replica. Serve compares the actual number agasint this value and upscales or downscales.
     },
 )
 class StableDiffusionXL:
