@@ -1,26 +1,5 @@
 head_node_type:
   name: head
   instance_type: m5.2xlarge
-  resources:
-    CPU: 0
-    GPU: 0
-
-worker_node_types:
-- name: 8CPU-15GB
-  instance_type: c4.2xlarge
-  min_nodes: 0
-  max_nodes: 5
-  use_spot: false
-- name: 1xA10G:4CPU-16GB
-  instance_type: g5.xlarge
-  min_nodes: 0
-  max_nodes: 10
-  use_spot: false
-- name: 4xA10G:48CPU-192GB
-  instance_type: g5.12xlarge
-  min_nodes: 0
-  max_nodes: 1
-  use_spot: false
-
-flags:
-  allow-cross-zone-autoscaling: true
+worker_node_types: []
+auto_select_worker_config: true
