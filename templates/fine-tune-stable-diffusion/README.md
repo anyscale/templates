@@ -17,7 +17,7 @@ The application requires a few extra Python dependencies. Install them using `pi
 
 
 ```python
-!pip install -U accelerate==0.28.0 diffusers==0.27.2 peft==0.10.0 transformers==4.39.1
+!pip install -U accelerate==0.28.0 diffusers==0.27.2 peft==0.10.0 transformers==4.39.1 huggingface_hub==0.25.2
 ```
 
 ## Step 2: Set up a dataset of your subject
