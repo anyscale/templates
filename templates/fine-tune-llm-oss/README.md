@@ -8,7 +8,7 @@ Looking to get the most out of your LLM workloads? Fine-tuning pretrained LLMs c
 First, you need to install the LLaMA-Factory code. You can view the latest changes from the [LLaMA-Factory GitHub](https://github.com/hiyouga/LLaMA-Factory.git). 
 
 ```bash
-git clone --depth 1 https://github.com/hiyouga/LLaMA-Factory.git
+git clone --branch v0.9.2 --depth 1 https://github.com/hiyouga/LLaMA-Factory.git
 cd LLaMA-Factory
 # Install extras separately so Anyscale can track the dependencies on worker nodes.
 pip install torch jieba nltk rouge-chinese 
@@ -86,7 +86,7 @@ To run LLaMA-Factory as an Anyscale job, create a [custom container image](https
 # Start with an Anyscale base image.
 FROM anyscale/ray-ml:2.42.0-py310-gpu
 WORKDIR /app
-RUN git clone --depth 1 https://github.com/hiyouga/LLaMA-Factory.git && \
+RUN git clone --branch v0.9.2 --depth 1 https://github.com/hiyouga/LLaMA-Factory.git && \
     cd LLaMA-Factory && \
     pip install --no-cache-dir torch jieba nltk rouge-chinese && \
     pip install -e .
