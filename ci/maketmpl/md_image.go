@@ -137,7 +137,7 @@ func paresImgHTMLTag(s string) (*mdImage, error) {
 
 var (
 	regexImageMd  = regexp.MustCompile(`!\[(.*)\]\((.*)\)`)
-	regexImageTag = regexp.MustCompile(`<img src=.*>`)
+	regexImageTag = regexp.MustCompile(`<img src=[^<>]+>`)
 )
 
 func parseMdImages(md []byte) ([]*mdImage, error) {

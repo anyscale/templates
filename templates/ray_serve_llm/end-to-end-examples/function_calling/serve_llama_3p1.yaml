@@ -1,0 +1,8 @@
+applications:
+- args:
+    llm_configs:
+    - ./llm_configs/meta-llama--Meta-Llama-3_1-8B-Instruct.yaml
+  import_path: ray.serve.llm:build_openai_app
+  name: llm-endpoint
+  route_prefix: /
+query_auth_token_enabled: false

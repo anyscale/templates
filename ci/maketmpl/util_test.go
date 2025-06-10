@@ -65,6 +65,10 @@ func TestAddFileToZip(t *testing.T) {
 		t.Fatalf("want output zip file to have 1 file, got %d", len(r.File))
 	}
 
+	if got := r.File[0].Modified; got.Unix() != frozenTime.Unix() {
+		t.Errorf("got file timestamp to be %s, want %s", got, frozenTime)
+	}
+
 	rc, err := r.File[0].Open()
 	if err != nil {
 		t.Fatalf("open file in zip: %v", err)
