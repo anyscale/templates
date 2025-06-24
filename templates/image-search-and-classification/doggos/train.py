@@ -73,7 +73,12 @@ def train_loop_per_worker(config):
     val_ds = ray.train.get_dataset_shard("val")
 
     # Model
-    model = ClassificationModel(embedding_dim=embedding_dim, hidden_dim=hidden_dim, dropout_p=dropout_p, num_classes=num_classes)
+    model = ClassificationModel(
+        embedding_dim=embedding_dim,
+        hidden_dim=hidden_dim,
+        dropout_p=dropout_p,
+        num_classes=num_classes,
+    )
     model = ray.train.torch.prepare_model(model)
 
     # Training components
@@ -92,7 +97,11 @@ def train_loop_per_worker(config):
         # Checkpoint
         with tempfile.TemporaryDirectory() as dp:
             model.module.save(dp=dp)
-            metrics = dict(lr=optimizer.param_groups[0]["lr"], train_loss=train_loss, val_loss=val_loss)
+            metrics = dict(
+                lr=optimizer.param_groups[0]["lr"],
+                train_loss=train_loss,
+                val_loss=val_loss,
+            )
             with open(os.path.join(dp, "class_to_label.json"), "w") as fp:
                 json.dump(config["class_to_label"], fp, indent=4)
             if ray.train.get_context().get_world_rank() == 0:
@@ -133,7 +142,7 @@ if __name__ == "__main__":
         num_workers=num_workers,
         use_gpu=True,
         resources_per_worker={"CPU": 8, "GPU": 2},
-        accelerator_type="A10G",
+        accelerator_type="L4",
     )
 
     # Datasets
@@ -157,7 +166,7 @@ if __name__ == "__main__":
     val_ds = preprocessor.transform(ds=val_ds)
 
     # Write processed data to cloud storage
-    preprocessed_data_path = os.path.join("/mnt/user_storage", "doggos/preprocessed_data")
+    preprocessed_data_path = os.path.join("/mnt/cluster_storage", "doggos/preprocessed_data")
     if os.path.exists(preprocessed_data_path):
         shutil.rmtree(preprocessed_data_path)  # clean up
     preprocessed_train_path = os.path.join(preprocessed_data_path, "preprocessed_train")
