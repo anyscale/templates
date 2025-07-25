@@ -42,12 +42,19 @@ Read and check how the generated model config looks like. Refer to  [vLLM Engine
 
 ## Step 2 - Run the model locally in the workspace
 
-If you didn't start the serve app in the previous step, you can start it using the following command. Replace the file name with the generated `serve_` file name:
-
-
-```python
-!serve run serve_TIMESTAMP.yaml
+If you didn't start the serve app in the previous step, you can start it using the following command. Open a new terminal window and execute the following, replacing `serve_<TIMESTAMP>.yaml` with the file generated in the previous step:    
 ```
+serve run serve_<TIMESTAMP>.yaml
+```
+
+Wait for the serve application to start. You should see a message like the following when it's ready:
+```
+2025-07-25 13:21:49,036 INFO Replica(id='id_123', deployment='LLMDeployment:meta-llama--Meta-Llama-3_1-8B-Instruct', app='llm-endpoint') started successfully on node 'xxxx' after 102.2s (PID: yyyy). Replica constructor, reconfigure method, and initial health check took 91.5s.
+```
+
+From the Ray dashboard Serve tab, all deployments should be in the "Running" or "Healthy" states, like so:
+![Ray dashboard healthy](./assets/healthy_dashboard_example.png)
+
 
 ## Step 3 - Query the model
 
