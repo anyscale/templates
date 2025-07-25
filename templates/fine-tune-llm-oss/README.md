@@ -8,10 +8,11 @@ Looking to get the most out of your LLM workloads? Fine-tuning pretrained LLMs c
 First, you need to install the LLaMA-Factory code. You can view the latest changes from the [LLaMA-Factory GitHub](https://github.com/hiyouga/LLaMA-Factory.git). 
 
 ```bash
-git clone --branch v0.9.2 --depth 1 https://github.com/hiyouga/LLaMA-Factory.git
+git clone --branch v0.9.3 --depth 1 https://github.com/hiyouga/LLaMA-Factory.git
 cd LLaMA-Factory
 # Install extras separately so Anyscale can track the dependencies on worker nodes.
-pip install torch jieba nltk rouge-chinese 
+pip install torch==2.5.0 torchvision==0.20.0 torchaudio==2.5.0 --index-url https://download.pytorch.org/whl/cu121
+pip install deepspeed==0.16.4 transformers==4.51.3 jieba nltk rouge-chinese 
 pip install -e .
 ```
 
