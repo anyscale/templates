@@ -52,7 +52,12 @@ class ClassPredictor:
         probabilities = self.predictor.predict_probabilities(
             collate_fn({"embedding": embedding})
         )
-        return probabilities
+        raw_probabilities = outputs["probabilities"][0]
+        probabilities = {
+            k: float(v)  # convert np.float32 to native float
+            for k, v in raw_probabilities.items()
+        }
+        return {"probabilities": probabilities}
 
 
 @serve.deployment(num_replicas="1", ray_actor_options={"num_cpus": 2})
@@ -65,9 +70,7 @@ class Doggos:
     async def predict(self, request: Request):
         data = await request.json()
         probabilities = await self.classifier.get_probabilities.remote(url=data["url"])
-        return {
-            "probabilities": probabilities,
-        }
+        return probabilities
 
 
 # Model registry
