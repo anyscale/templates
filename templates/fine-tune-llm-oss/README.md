@@ -87,10 +87,11 @@ To run LLaMA-Factory as an Anyscale job, create a [custom container image](https
 # Start with an Anyscale base image.
 FROM anyscale/ray-ml:2.42.0-py310-gpu
 WORKDIR /app
-RUN git clone --branch v0.9.2 --depth 1 https://github.com/hiyouga/LLaMA-Factory.git && \
+RUN git clone --branch v0.9.3 --depth 1 https://github.com/hiyouga/LLaMA-Factory.git && \
     cd LLaMA-Factory && \
-    pip install --no-cache-dir torch jieba nltk rouge-chinese && \
-    pip install -e .
+    pip install torch==2.5.0 torchvision==0.20.0 torchaudio==2.5.0 --index-url https://download.pytorch.org/whl/cu121 && \
+    pip install --no-cache-dir deepspeed==0.16.4 transformers==4.51.3 jieba nltk rouge-chinese && \
+    pip install -e . 
 ```
 
 You can then use this image to run your job with the [Anyscale jobs CLI](https://docs.anyscale.com/platform/jobs/manage-jobs) locally or from a workspace. For example, from a workspace configured with the image built above, you could run the following command to launch fine-tuning as a job.
