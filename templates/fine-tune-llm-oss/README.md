@@ -94,9 +94,18 @@ RUN git clone --branch v0.9.3 --depth 1 https://github.com/hiyouga/LLaMA-Factory
     pip install -e . 
 ```
 
-You can then use this image to run your job with the [Anyscale jobs CLI](https://docs.anyscale.com/platform/jobs/manage-jobs) locally or from a workspace. For example, from a workspace configured with the image built above, you could run the following command to launch fine-tuning as a job.
+You can then use this image to run your job with the [Anyscale jobs CLI](https://docs.anyscale.com/platform/jobs/manage-jobs) locally or from a workspace. 
+
+For example, from a fresh workspace configured with the image built above, first make sure that relevant environment variables are set in the Dependencies tab (`WANDB_API_KEY` and `HF_TOKEN`), and that your compute config is set correctly.
+
+<img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/fine-tune-llm-oss/assets/job_workspace.png" width=500px />
+
+You could then copy over the config file corresponding to the workload you want to run, like `llama3_lora_sft_ray.yaml`, and then run the following command to submit your training workload as an Anyscale job.
+
 ```bash
-anyscale job submit --wait --env USE_RAY=1 -- llamafactory-cli train llamafactory_configs/llama3_lora_sft_ray.yaml
+anyscale job submit --wait --env USE_RAY=1 -- llamafactory-cli train llama3_lora_sft_ray.yaml
 ```
+
+
 
 
