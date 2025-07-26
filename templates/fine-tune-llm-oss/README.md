@@ -94,7 +94,7 @@ RUN git clone --branch v0.9.3 --depth 1 https://github.com/hiyouga/LLaMA-Factory
     pip install -e . 
 ```
 
-You can then use this new image to run your job with the [Anyscale jobs CLI](https://docs.anyscale.com/platform/jobs/manage-jobs) locally or from a workspace. We provide an example job config in `sft_job_config.yaml`, which contains the following:
+You can then use this new image to run your job with the [Anyscale jobs CLI](https://docs.anyscale.com/platform/jobs/manage-jobs) locally or from a workspace. We provide an example job config in `sft_job_config.yaml` for running a job from this workspace, which contains the following:
 
 ```yaml
 name: llama3-lora-sft-ray
