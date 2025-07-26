@@ -94,16 +94,27 @@ RUN git clone --branch v0.9.3 --depth 1 https://github.com/hiyouga/LLaMA-Factory
     pip install -e . 
 ```
 
-You can then use this image to run your job with the [Anyscale jobs CLI](https://docs.anyscale.com/platform/jobs/manage-jobs) locally or from a workspace. 
+You can then use this new image to run your job with the [Anyscale jobs CLI](https://docs.anyscale.com/platform/jobs/manage-jobs) locally or from a workspace. We provide an example job config in `sft_job_config.yaml`, which contains the following:
 
-For example, from a fresh workspace configured with the image built above, first make sure that relevant environment variables are set in the Dependencies tab (`WANDB_API_KEY` and `HF_TOKEN`), and that your compute config is set correctly.
+```yaml
+name: llama3-lora-sft-ray
+image_uri: <your_image_uri>:<version>
+requirements:
+  - hf_transfer
+env_vars:
+  WANDB_API_KEY: <your_wandb_api_key>
+  HF_HUB_ENABLE_HF_TRANSFER: '1'
+  HF_TOKEN: <your_hf_token>
+  USE_RAY: '1'
+cloud: <your-cloud-name>
+ray_version: 2.42.0
+entrypoint: llamafactory-cli train llamafactory_configs/llama3_lora_sft_ray.yaml
+max_retries: 1
+```
 
-<img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/fine-tune-llm-oss/assets/job_workspace.png" width=500px />
-
-You could then copy over the config file corresponding to the workload you want to run, like `llama3_lora_sft_ray.yaml`, and then run the following command to submit your training workload as an Anyscale job.
-
+Once you fill in the image uri of the image you created above, your WandB API key and HF token, and your cloud name, you can simply run the below command to start your training job! Note that the compute config and working directory for the job are inherited from the current workspace.
 ```bash
-anyscale job submit --wait --env USE_RAY=1 -- llamafactory-cli train llama3_lora_sft_ray.yaml
+anyscale job submit --wait --config-file sft_job_config.yaml
 ```
 
 
