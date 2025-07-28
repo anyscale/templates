@@ -143,7 +143,7 @@ processor = build_llm_processor(
     postprocess=postprocess,
 )
 
-processed_ds = processor(ds)
+processed_ds = processor(ds.limit(10_000))
 # Materialize the dataset to memory. User can also use writing APIs like
 # `write_parquet`(https://docs.ray.io/en/latest/data/api/doc/ray.data.Dataset.write_parquet.html#ray.data.Dataset.write_parquet)
 # `write_csv`(https://docs.ray.io/en/latest/data/api/doc/ray.data.Dataset.write_csv.html#ray.data.Dataset.write_csv)
