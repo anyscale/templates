@@ -81,9 +81,9 @@ USE_RAY=1 llamafactory-cli train llamafactory_configs/llama3_lora_pretrain_ray.y
 ```
 
 ## Running LLaMA-Factory in an Anyscale job
-To run LLaMA-Factory as an Anyscale job, create a [custom container image](https://docs.anyscale.com/configuration/dependency-management/dependency-container-images/#customizing-a-container-image()) that comes with LLaMA-Factory installed. You can specify the relevant packages in your dockerfile. For example, you could create an image using the `anyscale/ray-ml:2.42.0-py310-gpu` base image as follows.
+To run LLaMA-Factory as an Anyscale job, create a [custom container image](https://docs.anyscale.com/configuration/dependency-management/dependency-container-images/#customizing-a-container-image) that comes with LLaMA-Factory installed. You can specify the relevant packages in your dockerfile. For example, you could create an image using the `anyscale/ray-ml:2.42.0-py310-gpu` base image as follows.
 
-```dockerfile
+```docker
 # Start with an Anyscale base image.
 FROM anyscale/ray-ml:2.42.0-py310-gpu
 WORKDIR /app
@@ -116,5 +116,10 @@ Once you fill in the image uri of the image you created above, your WandB API ke
 ```bash
 anyscale job submit --wait --config-file sft_job_config.yaml
 ```
+
+The training job should take less than 15 minutes to start up and complete, after which you should see that the job status has been updated to "Succeeded"!
+
+<img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/fine-tune-llm-oss/assets/completed.png" width=500px />
+
 
 
