@@ -1,0 +1,13 @@
+name: llama3-lora-sft-ray
+image_uri: <your_image_uri>:<version>
+requirements:
+  - hf_transfer
+env_vars:
+  WANDB_API_KEY: <your_wandb_api_key>
+  HF_HUB_ENABLE_HF_TRANSFER: '1'
+  HF_TOKEN: <your_hf_token>
+  USE_RAY: '1'
+cloud: <your-cloud-name>
+ray_version: 2.42.0
+entrypoint: llamafactory-cli train llamafactory_configs/llama3_lora_sft_ray.yaml
+max_retries: 1
