@@ -8,10 +8,11 @@ Looking to get the most out of your LLM workloads? Fine-tuning pretrained LLMs c
 First, you need to install the LLaMA-Factory code. You can view the latest changes from the [LLaMA-Factory GitHub](https://github.com/hiyouga/LLaMA-Factory.git). 
 
 ```bash
-git clone --branch v0.9.2 --depth 1 https://github.com/hiyouga/LLaMA-Factory.git
+git clone --branch v0.9.3 --depth 1 https://github.com/hiyouga/LLaMA-Factory.git
 cd LLaMA-Factory
 # Install extras separately so Anyscale can track the dependencies on worker nodes.
-pip install torch jieba nltk rouge-chinese 
+pip install torch==2.5.0 torchvision==0.20.0 torchaudio==2.5.0 --index-url https://download.pytorch.org/whl/cu121
+pip install deepspeed==0.16.4 transformers==4.51.3 jieba nltk rouge-chinese 
 pip install -e .
 ```
 
@@ -80,21 +81,45 @@ USE_RAY=1 llamafactory-cli train llamafactory_configs/llama3_lora_pretrain_ray.y
 ```
 
 ## Running LLaMA-Factory in an Anyscale job
-To run LLaMA-Factory as an Anyscale job, create a [custom container image](https://docs.anyscale.com/configuration/dependency-management/dependency-container-images/#customizing-a-container-image()) that comes with LLaMA-Factory installed. You can specify the relevant packages in your dockerfile. For example, you could create an image using the `anyscale/ray-ml:2.42.0-py310-gpu` base image as follows.
+To run LLaMA-Factory as an Anyscale job, create a [custom container image](https://docs.anyscale.com/configuration/dependency-management/dependency-container-images/#customizing-a-container-image) that comes with LLaMA-Factory installed. You can specify the relevant packages in your dockerfile. For example, you could create an image using the `anyscale/ray-ml:2.42.0-py310-gpu` base image as follows.
 
-```dockerfile
+```docker
 # Start with an Anyscale base image.
 FROM anyscale/ray-ml:2.42.0-py310-gpu
 WORKDIR /app
-RUN git clone --branch v0.9.2 --depth 1 https://github.com/hiyouga/LLaMA-Factory.git && \
+RUN git clone --branch v0.9.3 --depth 1 https://github.com/hiyouga/LLaMA-Factory.git && \
     cd LLaMA-Factory && \
-    pip install --no-cache-dir torch jieba nltk rouge-chinese && \
-    pip install -e .
+    pip install torch==2.5.0 torchvision==0.20.0 torchaudio==2.5.0 --index-url https://download.pytorch.org/whl/cu121 && \
+    pip install --no-cache-dir deepspeed==0.16.4 transformers==4.51.3 jieba nltk rouge-chinese && \
+    pip install -e . 
 ```
 
-You can then use this image to run your job with the [Anyscale jobs CLI](https://docs.anyscale.com/platform/jobs/manage-jobs) locally or from a workspace. For example, from a workspace configured with the image built above, you could run the following command to launch fine-tuning as a job.
-```bash
-anyscale job submit --wait --env USE_RAY=1 -- llamafactory-cli train llamafactory_configs/llama3_lora_sft_ray.yaml
+You can then use this new image to run your job with the [Anyscale jobs CLI](https://docs.anyscale.com/platform/jobs/manage-jobs) locally or from a workspace. We provide an example job config in `sft_job_config.yaml` for running a job from this workspace, which contains the following:
+
+```yaml
+name: llama3-lora-sft-ray
+image_uri: <your_image_uri>:<version>
+requirements:
+  - hf_transfer
+env_vars:
+  WANDB_API_KEY: <your_wandb_api_key>
+  HF_HUB_ENABLE_HF_TRANSFER: '1'
+  HF_TOKEN: <your_hf_token>
+  USE_RAY: '1'
+cloud: <your-cloud-name>
+ray_version: 2.42.0
+entrypoint: llamafactory-cli train llamafactory_configs/llama3_lora_sft_ray.yaml
+max_retries: 1
 ```
+
+Once you fill in the image uri of the image you created above, your WandB API key and HF token, and your cloud name, you can simply run the below command to start your training job! Note that the compute config and working directory for the job are inherited from the current workspace.
+```bash
+anyscale job submit --wait --config-file sft_job_config.yaml
+```
+
+The training job should take less than 15 minutes to start up and complete, after which you should see that the job status has been updated to "Succeeded"!
+
+<img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/fine-tune-llm-oss/assets/completed.png" width=500px />
+
 
 

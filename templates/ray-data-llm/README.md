@@ -26,21 +26,23 @@ Ray Data LLM runs batch inference for LLMs on Ray Data datasets. This tutorial r
 
 ```python
 # Install datasets library.
-!pip install datasets
+!pip install "datasets<4"
 ```
 
 
 ```python
+from huggingface_hub import HfFileSystem
+
 import ray 
-import datasets
 
 # Load the dataset from Hugging Face into Ray Data. Refer to Ray Data APIs
 # https://docs.ray.io/en/latest/data/api/input_output.html for details.
 # For example, you can use ray.data.read_json(dataset_file) to load dataset in JSONL.
-
-df = datasets.load_dataset("cnn_dailymail", "3.0.0")
-ds = ray.data.from_huggingface(df["train"])
-
+ds = ray.data.read_parquet(
+    "hf://datasets/cnn_dailymail", 
+    file_extensions=["parquet"], 
+    filesystem=HfFileSystem()
+)
 ```
 
 ## Step 2: Define the processor config for the vLLM engine
@@ -141,7 +143,7 @@ processor = build_llm_processor(
     postprocess=postprocess,
 )
 
-processed_ds = processor(ds)
+processed_ds = processor(ds.limit(10_000))
 # Materialize the dataset to memory. User can also use writing APIs like
 # `write_parquet`(https://docs.ray.io/en/latest/data/api/doc/ray.data.Dataset.write_parquet.html#ray.data.Dataset.write_parquet)
 # `write_csv`(https://docs.ray.io/en/latest/data/api/doc/ray.data.Dataset.write_csv.html#ray.data.Dataset.write_csv)
