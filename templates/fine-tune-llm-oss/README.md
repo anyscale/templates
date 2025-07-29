@@ -20,7 +20,7 @@ Next, you need to set your `HF_TOKEN` and `WANDB_API_KEY` environment variables.
 
 Additionally it's recommended to use `hf_transfer` for fast model downloading by running `pip install hf_transfer`, and setting `HF_HUB_ENABLE_HF_TRANSFER=1` in the **Dependencies** tab. Setting `HF_HUB_ENABLE_HF_TRANSFER=1` without first installing `hf_transfer` will cause errors. An example of setting relevant environment variables in the **Dependencies** tab is shown below.
 
-<img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/fine-tune-llm-oss/assets/env_vars.png" width=500px />
+<img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/fine-tune-llm-oss/assets/env_vars.png" width=1500px />
 
 You can find some example configs that use Ray with LLaMA-Factory for pretraining and SFT (instruction tuning) in the `llamafactory_config` directory. Find a full set of examples with various models, tasks, and datasets on the [LLaMA-Factory GitHub](https://github.com/hiyouga/LLaMA-Factory/tree/main/examples). 
 
@@ -119,7 +119,7 @@ anyscale job submit --wait --config-file sft_job_config.yaml
 
 The training job should take less than 15 minutes to start up and complete, after which you should see that the job status has been updated to "Succeeded"!
 
-<img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/fine-tune-llm-oss/assets/completed.png" width=500px />
+<img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/fine-tune-llm-oss/assets/completed.png" width=1500px />
 
 
 
