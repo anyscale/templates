@@ -49,7 +49,7 @@ To specify new datasets that are accessible across Ray worker nodes, you must fi
 For example, if you wanted to run pretraining on the `c4_demo` dataset, first go through the following setup steps:
 ```bash
 # Create a copy of the data in /mnt/cluster_storage
-cp LLaMA-Factory/data/c4_demo.json /mnt/cluster_storage/
+cp LLaMA-Factory/data/c4_demo.jsonl /mnt/cluster_storage/
 ```
 
 
@@ -57,13 +57,13 @@ cp LLaMA-Factory/data/c4_demo.json /mnt/cluster_storage/
 # Create `/mnt/cluster_storage.dataset_info.json` containing:
 # {
 #     "c4_demo": {
-#         "file_name": "/mnt/cluster_storage/c4_demo.json",
+#         "file_name": "/mnt/cluster_storage/c4_demo.jsonl",
 #         "columns": {
 #         "prompt": "text"
 #         }
 #     },
 # }
-echo '{"c4_demo":{"file_name":"/mnt/cluster_storage/c4_demo.json","columns":{"prompt":"text"}}}' > /mnt/cluster_storage/dataset_info.json
+echo '{"c4_demo":{"file_name":"/mnt/cluster_storage/c4_demo.jsonl","columns":{"prompt":"text"}}}' > /mnt/cluster_storage/dataset_info.json
 ```
 
 In `llamafactory_configs/llama3_lora_pretrain_ray.yaml` the relevant `dataset_dir` argument is already specified.
