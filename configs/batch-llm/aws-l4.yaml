@@ -1,4 +1,11 @@
 head_node_type:
   name: head
-    # TODO(ricky): We need head node to have CUDA due to eager import from rayllm_batch now.
+  instance_type: m5.2xlarge
+  resources:
+    cpu: 0
+
+worker_node_types:
+- name: worker
   instance_type: g6.2xlarge
+  min_workers: 0
+  max_workers: 4
