@@ -20,29 +20,37 @@ This tutorial focuses on the latter, using offline LLM inference for a summariza
 
 ## Step 1: Prepare a Ray Data dataset
 
-Ray Data LLM runs batch inference for LLMs on Ray Data datasets. This tutorial runs batch inference with an LLM that summarizes news articles from [`CNNDailyMail`](https://huggingface.co/datasets/abisee/cnn_dailymail) dataset, which is a collection of news articles. It also summarizes each article with your batch inferencing pipeline. It covers more details on how to customize the pipeline in the later sections.
-
-
-
-```python
-# Install datasets library.
-!pip install "datasets<4"
-```
+Ray Data LLM runs batch inference for LLMs on Ray Data datasets. In this tutorial, we will perform batch inference with an LLM to reformat dates. Our source is a 2-million-row CSV file containing sample customer data.
+First, we load the data from a remote URL. Then, to ensure the workload can be distributed across multiple GPUs, we repartition the dataset. This step is crucial for achieving parallelism.
 
 
 ```python
-from huggingface_hub import HfFileSystem
+import ray
 
-import ray 
+# Define the path to the sample CSV file hosted on S3.
+# This dataset contains 2 million rows of synthetic customer data.
+path = "https://llm-guide.s3.us-west-2.amazonaws.com/data/ray-data-llm/customers-2000000.csv"
 
-# Load the dataset from Hugging Face into Ray Data. Refer to Ray Data APIs
-# https://docs.ray.io/en/latest/data/api/input_output.html for details.
-# For example, you can use ray.data.read_json(dataset_file) to load dataset in JSONL.
-ds = ray.data.read_parquet(
-    "hf://datasets/cnn_dailymail", 
-    file_extensions=["parquet"], 
-    filesystem=HfFileSystem()
-)
+# Load the CSV file into a Ray Dataset.
+print("Loading dataset from remote URL...")
+ds = ray.data.read_csv(path)
+
+# You can inspect the dataset schema and a few rows to verify it loaded correctly.
+# print(ds.schema())
+# ds.show(limit=2)
+
+# For this example, we'll limit the dataset to 100,000 rows for faster processing.
+print("Limiting dataset to 100,000 rows.")
+ds = ds.limit(100000)
+
+# Repartition the dataset to enable parallelism across multiple workers (e.g., GPUs).
+# By default, a large remote file might be read into a single block. Repartitioning
+# splits the data into a specified number of blocks, allowing Ray to process them
+# in parallel. 
+num_partitions = 128
+print(f"Repartitioning dataset into {num_partitions} blocks for parallelism...")
+ds = ds.repartition(num_blocks=num_partitions)
+
 ```
 
 ## Step 2: Define the processor config for the vLLM engine
@@ -69,25 +77,26 @@ processor_config = vLLMEngineProcessorConfig(
     engine_kwargs=dict(
         tensor_parallel_size=1,
         pipeline_parallel_size=1,
-        max_model_len=16384,
+        max_model_len=4096,
         enable_chunked_prefill=True,
         max_num_batched_tokens=2048,
     ),
-    # Override Ray's runtime env to include the Hugging Face token. Ray Data uses Ray under the hood to orchestrate the inference pipeline.
+    # Override Ray's runtime env to include the Hugging Face token. Ray is being used under the hood to orchestrate the inference pipeline.
     runtime_env=dict(
         env_vars=dict(
             HF_TOKEN=HF_TOKEN,
         ),
     ),
-    batch_size=16,
+    batch_size=256,
     accelerator_type="L4",
-    concurrency=1,
+    concurrency=4,
 )
 
 ```
 
 ## Step 3: Define the preprocess and postprocess functions
 
+The task is to format the `Subscription Date`as the format `MM-DD-YYY` using LLM. 
 
 Define the preprocess function to prepare `messages` and `sampling_params` for vLLM engine, and the postprocessor function to consume `generated_text`.
 
@@ -95,21 +104,14 @@ Define the preprocess function to prepare `messages` and `sampling_params` for v
 ```python
 from typing import Any
 
-# Preprocess function prepares `messages` and `sampling_params` for vLLM engine.
-# It ignores all other fields.
+# Preprocess function prepares `messages` and `sampling_params` for vLLM engine, and
+# all other fields will be ignored.
 def preprocess(row: dict[str, Any]) -> dict[str, Any]:
     return dict(
         messages=[
             {
-                "role": "system",
-                "content": "You are a commentator. Your task is to "
-                "summarize highlights from article.",
-            },
-            {
                 "role": "user",
-                "content": f"# Article:\n{row['article']}\n\n"
-                "#Instructions:\nIn clear and concise language, "
-                "summarize the highlights presented in the article.",
+                "content": f"Convert this date:\n{row['Subscription Date']}\n\n as the format:MM-DD-YYY"
             },
         ],
         sampling_params=dict(
@@ -136,6 +138,7 @@ With the processors and configs defined, you can now build then run the processo
 
 ```python
 from ray.data.llm import build_llm_processor
+from pprint import pprint
 
 processor = build_llm_processor(
     processor_config,
@@ -154,7 +157,8 @@ processed_ds = processed_ds.materialize()
 # Peek the first 3 entries.
 sampled = processed_ds.take(3)
 print("==================GENERATED OUTPUT===============")
-print('\n'.join(sampled))
+
+pprint(sampled)
 ```
 
 ### Monitoring the execution
@@ -174,6 +178,22 @@ to prepare a dataset with images and run batch inference with a vision language 
 We applied 2 adjustments on top of the previous example:
 * set `has_image=True` in `vLLMEngineProcessorConfig`
 * prepare image input inside preprocessor
+
+**Restart your Anyscale Workspace**
+
+To free up GPU memory held by the previously loaded LLM and prevent out-of-memory (OOM) errors, please restart your workspace before running your next job.
+
+
+```python
+# Install datasets library.
+!pip install "datasets<4"
+```
+
+
+```python
+# Use your HF token
+HF_TOKEN = "Insert your Hugging Face token here"
+```
 
 
 ```python
@@ -205,7 +225,7 @@ vision_processor_config = vLLMEngineProcessorConfig(
     ),
     batch_size=16,
     accelerator_type="L4",
-    concurrency=1,
+    concurrency=4,
     has_image=True,
 )
 
@@ -278,11 +298,13 @@ Similar to previous example, peek the first 3 entries.
 
 
 ```python
+from pprint import pprint
 # Peek the first 3 entries.
 vision_sampled = vision_processed_ds.take(3)
 print("==================GENERATED OUTPUT===============")
-print(vision_sampled)
-print('\n'.join(vision_sampled))
+pprint(vision_sampled)
+
+
 ```
 
 ## Summary
