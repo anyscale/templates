@@ -67,6 +67,8 @@ HF_TOKEN = "Insert your Hugging Face token here"
 This example uses the `meta-llama/Meta-Llama-3.1-8B-Instruct` model.
 You also need to define a configuration associated with the model you want to use to configure the compute resources, engine arguments, and other inference engine specific parameters. For more details on the configs you can pass to vLLM engine, see [vLLM doc](https://docs.vllm.ai/en/latest/serving/engine_args.html).
 
+Note that because our input prompts and expected output token lengths are small, we have set `batch_size=256` in this case. However, depending on your workload, a large batch size can lead to increased idle GPU time when decoding long sequences. Be sure to adjust this value to find the optimal trade-off between throughput and latency.
+
 
 ```python
 from ray.data.llm import vLLMEngineProcessorConfig
@@ -110,7 +112,7 @@ def preprocess(row: dict[str, Any]) -> dict[str, Any]:
     return dict(
         messages=[
             {
-                "role": "user",
+                "role": "system",
                 "content": f"Convert this date:\n{row['Subscription Date']}\n\n as the format:MM-DD-YYY"
             },
         ],
