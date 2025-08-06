@@ -72,7 +72,7 @@ llm_config = LLMConfig(
         "dtype": "auto",
         
         # Performance tuning
-        "max_num_seqs": 20,  # Concurrent requests
+        "max_num_seqs": 2,  # Concurrent requests
         "max_model_len": 2048,  # Max tokens per pass
         "enable_chunked_prefill": True,
         "enable_prefix_caching": True,
