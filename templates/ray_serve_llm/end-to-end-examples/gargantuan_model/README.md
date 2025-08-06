@@ -91,7 +91,7 @@ When you run the preceding code, Anyscale automatically provisions a cluster wit
 After running the preceding code, monitor the progress of the deployment in the Anyscale Console.
 You might encounter warnings about insufficient capacity in your cloud region. If you experience a GPU shortage, Anyscale continues to poll the cloud provider until enough capacity is available and launches all the nodes at once when possible.
 
-Because the model is so large, this process can take some time to download the model weights and split the model across the nodes.
+Because the model is so large, it takes 15-25 minutes to download the model weights and split the model across the nodes.
 
 ### Verify deployment
 
