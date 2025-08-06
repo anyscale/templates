@@ -141,7 +141,7 @@ The deployment provides a standard OpenAI API interface:
 To monitor metrics, access the **`Ray Dashboard`** for the following:
 - Real-time GPU utilization
 - Request latency metrics
-- Token generation throughput
+- Queries per second (QPS)
 - Error rates and logs
 
 
