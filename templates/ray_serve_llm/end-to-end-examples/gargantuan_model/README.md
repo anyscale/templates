@@ -6,7 +6,6 @@ Deploying the model also involves launching multiple nodes manually and configur
 
 Beware: this is an expensive deployment. At the time of writing, the deployment cost is around $52.50 USD per hour in the `us-west-2` AWS region.
 
-
 ## Prerequisites
 
 To launch nodes with 1000 GB disk capacity (instead of the default 150 GB), modify the **`Instance config`** field under **`Manage Cluster`** → **`Advanced settings`**.
@@ -77,7 +76,6 @@ llm_config = LLMConfig(
         "max_model_len": 2048,  # Max tokens per pass
         "enable_chunked_prefill": True,
         "enable_prefix_caching": True,
-        "trust_remote_code": False,
     },
 )
 
@@ -85,7 +83,6 @@ llm_config = LLMConfig(
 llm_app = build_openai_app({"llm_configs": [llm_config]})
 serve.run(llm_app)
 ```
-
 
 When you run the preceding code, Anyscale automatically provisions a cluster with the appropriate instance type and number of nodes.
 After running the preceding code, monitor the progress of the deployment in the Anyscale Console.
@@ -96,13 +93,13 @@ Because the model is so large, it takes 15-25 minutes to download the model weig
 ### Verify deployment
 
 The output should look like:
+
 ```
 INFO 2025-03-02 17:17:14,162 serve 61769 -- Application 'default' is ready at http://127.0.0.1:8000/
 INFO 2025-03-02 17:17:14,162 serve 61769 -- Deployed app 'default' successfully.
 ```
 
 DeepSeek R1 is running across multiple nodes, ready to serve requests.
-
 
 The deployment provides a standard OpenAI API interface:
 
@@ -139,11 +136,11 @@ The deployment provides a standard OpenAI API interface:
 ## Observability and monitoring
 
 To monitor metrics, access the **`Ray Dashboard`** for the following:
+
 - Real-time GPU utilization
 - Request latency metrics
 - Queries per second (QPS)
 - Error rates and logs
-
 
 ## Cleanup
 
