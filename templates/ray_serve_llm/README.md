@@ -5,10 +5,12 @@
 This template comes with a library for serving OSS LLMs on Anyscale called [Ray Serve LLM](https://docs.ray.io/en/latest/serve/llm/serving-llms.html).
 
 Ray Serve LLM provides a number of features that simplifies LLM development, including:
+
 - An extensive suite of pre-configured open source LLMs.
 - An OpenAI-compatible REST API.
 
 Ray Serve LLM also provides the following operational features to efficiently scale LLM apps:
+
 - Optimizations such as continuous batching, quantization and streaming.
 - Production-grade autoscaling support, including scale-to-zero.
 - Native multi-GPU and multi-node model deployments.
@@ -39,15 +41,16 @@ This command generates two files: an LLM config file, saved in `model_config/`, 
 
 Read and check how the generated model config looks like. Refer to  [vLLM Engine Config](https://docs.vllm.ai/en/latest/serving/engine_args.html) to further customize.
 
-
 ## Step 2 - Run the model locally in the workspace
 
-If you didn't start the serve app in the previous step, you can start it using the following command. Open a new terminal window and execute the following, replacing `serve_<TIMESTAMP>.yaml` with the file generated in the previous step:    
+If you didn't start the serve app in the previous step, you can start it using the following command. Open a new terminal window and execute the following, replacing `serve_<TIMESTAMP>.yaml` with the file generated in the previous step:
+
 ```
 serve run serve_<TIMESTAMP>.yaml
 ```
 
 Wait for the serve application to start. You should see a message like the following when it's ready:
+
 ```
 2025-07-25 13:21:49,036 INFO Replica(id='id_123', deployment='LLMDeployment:meta-llama--Meta-Llama-3_1-8B-Instruct', app='llm-endpoint') started successfully on node 'xxxx' after 102.2s (PID: yyyy). Replica constructor, reconfigure method, and initial health check took 91.5s.
 ```
@@ -55,13 +58,11 @@ Wait for the serve application to start. You should see a message like the follo
 From the Ray dashboard Serve tab, all deployments should be in the "Running" or "Healthy" states, like so:
 ![Ray dashboard healthy](./assets/healthy_dashboard_example.png)
 
-
 ## Step 3 - Query the model
 
 Once you deploy the model, you can use the OpenAI SDK to interact with the models, ensuring an easy integration for your apps.
 
 Ray Serve LLM uses an OpenAI-compatible API, allowing us to use the OpenAI SDK to query the LLMs.
-
 
 ```python
 from openai import OpenAI
@@ -101,7 +102,6 @@ def query(base_url: str, api_key: str | None = None):
             print(chat.choices[0].delta.content, end="")
 ```
 
-
 ```python
 # Query the local serve application we just deployed.
 
@@ -109,6 +109,7 @@ query("http://localhost:8000", "NOT A REAL KEY")
 ```
 
 Run the above command to query. You should get the following output:
+
 ```
 The top rated restaurants in San Francisco include:
  • Chez Panisse
@@ -123,7 +124,6 @@ The top rated restaurants in San Francisco include:
 ## Step 4 - Deploying a production service
 
 To deploy an app with one model as an Anyscale Service, update the filename to the generated one and run the following command:
-
 
 ```python
 # Deploy the serve app to production with a given service name.
@@ -140,7 +140,6 @@ Navigate to the Service UI and wait for the service to reach `Active`. It begins
 
 <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/ray_serve_llm/assets/service-starting.png" width=600px />
 
-
 ## Step 5 - Query the service endpoint
 
 The above command should print something like `(anyscale +2.9s) curl -H 'Authorization: Bearer XXXXXXXXX_XXXXXXXXXXXXXXXXXX' https://YYYYYYYYYYYY.anyscaleuserdata.com`, which contains information you need to query the service.
@@ -149,22 +148,22 @@ You can also find this information by clicking the **Query** button in the Servi
 
 <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/ray_serve_llm/assets/service-query.png" width=600px />
 
-
 ```python
 # Query the remote serve application we just deployed.
 
-service_url = "https://YYYYYYYYYYYYY.anyscaleuserdata.com"  # FILL ME IN
-service_bearer_token = "XXXXXXXXXX_XXXXXXXXXXXXXXXXXXXXX"  # FILL ME IN
+# TODO: Fill in using the values from the previous step.
+service_url = "https://YYYYYYYYYYYYY.anyscaleuserdata.com"
+service_bearer_token = "XXXXXXXXXX_XXXXXXXXXXXXXXXXXXXXX"
 
 query(service_url, service_bearer_token)
 ```
 
-## End-to-end example
+## End-to-end examples
 
-* [Build tool calling feature for any LLM via JSON mode](./end-to-end-examples/function_calling/README.ipynb): This example demonstrates how to build a tool calling feature for any LLM via JSON mode.
-
+- [Build tool calling feature for any LLM via JSON mode](./end-to-end-examples/function_calling/README.ipynb): This example demonstrates how to build a tool calling feature for any LLM via JSON mode.
+- [Deploy a gargantuan model (DeepSeek R1 670B) with Ray Serve LLM](./end-to-end-examples/gargantuan_model/README.ipynb): This example demonstrates how to deploy a model that is too large to fit on a single GPU, by parallelizing it across 5 nodes and 20 GPUs.
 
 ## Next steps
 
-* Try the [fine-tuning template](https://console.anyscale.com/v2/template-preview/finetuning_llms_v2) to tune some LLMs for your use case.
-* See the [offline batch inference template](https://console.anyscale.com/v2/template-preview/batch-llm) to learn how to run LLMs for batch jobs.
+- Try the [fine-tuning template](https://console.anyscale.com/v2/template-preview/finetuning_llms_v2) to tune some LLMs for your use case.
+- See the [offline batch inference template](https://console.anyscale.com/v2/template-preview/batch-llm) to learn how to run LLMs for batch jobs.
