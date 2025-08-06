@@ -1,6 +1,6 @@
 # Deploy a 670-billion-parameter reasoning model, DeepSeek R1
 
-Deploying a 670-billion-parameter model like DeepSeek R1 presents significant technical challenges. The model is too large to fit in a GPU or even a single node. This requires distributing the model across multiple GPUs and nodes using *tensor parallelism*, AKA intra-layer parallelism, and *pipeline parallelism*, AKA inter-layer parallelism. The Ray Serve LLM API automates this process.
+Deploying a 670B parameter model like DeepSeek R1 presents significant technical challenges. The model is too large to fit in a GPU, or even a single node. This requires distributing the model across multiple GPUs and nodes using *tensor parallelism*, AKA intra-layer parallelism, and *pipeline parallelism*, AKA inter-layer parallelism. The Ray Serve LLM API automates this process.
 
 Deploying the model also involves launching multiple nodes manually and configuring them to work together. Anyscale automates this process by autoscaling the cluster with the appropriate number of nodes and GPUs.
 
