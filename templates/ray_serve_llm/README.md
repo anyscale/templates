@@ -41,6 +41,7 @@ This command generates two files: an LLM config file, saved in `model_config/`, 
 
 Read and check how the generated model config looks like. Refer to  [vLLM Engine Config](https://docs.vllm.ai/en/latest/serving/engine_args.html) to further customize.
 
+
 ## Step 2 - Run the model locally in the workspace
 
 If you didn't start the serve app in the previous step, you can start it using the following command. Open a new terminal window and execute the following, replacing `serve_<TIMESTAMP>.yaml` with the file generated in the previous step:
@@ -63,6 +64,7 @@ From the Ray dashboard Serve tab, all deployments should be in the "Running" or 
 Once you deploy the model, you can use the OpenAI SDK to interact with the models, ensuring an easy integration for your apps.
 
 Ray Serve LLM uses an OpenAI-compatible API, allowing us to use the OpenAI SDK to query the LLMs.
+
 
 ```python
 from openai import OpenAI
@@ -102,6 +104,7 @@ def query(base_url: str, api_key: str | None = None):
             print(chat.choices[0].delta.content, end="")
 ```
 
+
 ```python
 # Query the local serve application we just deployed.
 
@@ -124,6 +127,7 @@ The top rated restaurants in San Francisco include:
 ## Step 4 - Deploying a production service
 
 To deploy an app with one model as an Anyscale Service, update the filename to the generated one and run the following command:
+
 
 ```python
 # Deploy the serve app to production with a given service name.
@@ -148,6 +152,7 @@ You can also find this information by clicking the **Query** button in the Servi
 
 <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/ray_serve_llm/assets/service-query.png" width=600px />
 
+
 ```python
 # Query the remote serve application we just deployed.
 
@@ -161,7 +166,8 @@ query(service_url, service_bearer_token)
 ## End-to-end examples
 
 - [Build tool calling feature for any LLM via JSON mode](./end-to-end-examples/function_calling/README.ipynb): This example demonstrates how to build a tool calling feature for any LLM via JSON mode.
-- [Deploy a gargantuan model (DeepSeek R1 670B) with Ray Serve LLM](./end-to-end-examples/gargantuan_model/README.ipynb): This example demonstrates how to deploy a model that is too large to fit on a single GPU, by parallelizing it across 5 nodes and 20 GPUs.
+- [Deploy a gargantuan model (DeepSeek R1 670B) with Ray Serve LLM](./end-to-end-examples/gargantuan_model/README.ipynb): This example demonstrates how to deploy a reasoning model that is too large to fit on a single GPU, by parallelizing it across 5 nodes and 20 GPUs.
+
 
 ## Next steps
 
