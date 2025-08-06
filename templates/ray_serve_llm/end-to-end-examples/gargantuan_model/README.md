@@ -4,6 +4,8 @@ Deploying a 670-billion-parameter model like DeepSeek R1 presents significant te
 
 Deploying the model also involves launching multiple nodes manually and configuring them to work together. Anyscale automates this process by autoscaling the cluster with the appropriate number of nodes and GPUs.
 
+Beware: this is an expensive deployment. At the time of writing, the deployment cost is around $52.50 USD per hour in the `us-west-2` AWS region.
+
 
 ## Prerequisites
 
@@ -31,8 +33,6 @@ In the case of AWS, the corresponding settings are:
 ```
 
 With this configuration, every launched node has 1000 GB disk capacity. This change may require restarting the cluster with new nodes, which Anyscale automatically handles.
-
-To deploy the 670-billion-parameter reasoning model with the Ray Serve LLM API, follow these steps:
 
 ## Start the deployment
 
