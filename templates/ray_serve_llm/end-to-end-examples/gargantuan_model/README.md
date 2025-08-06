@@ -5,6 +5,7 @@ Deploying a 670B parameter model like DeepSeek R1 presents significant technical
 Deploying the model also involves launching multiple nodes manually and configuring them to work together. Anyscale automates this process by autoscaling the cluster with the appropriate number of nodes and GPUs.
 
 Beware: this is an expensive deployment. At the time of writing, the deployment cost is around $52.50 USD per hour in the `us-west-2` AWS region.
+We recommend disabling cross-zone autoscaling because this deployment has a high amount of inter-node traffic, and cross-zone traffic is expensive (around $0.02 per GB). This demo is pre-configured with cross-zone autoscaling disabled for your convenience.
 
 ## Prerequisites
 
