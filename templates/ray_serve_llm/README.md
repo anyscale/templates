@@ -163,10 +163,9 @@ service_bearer_token = "XXXXXXXXXX_XXXXXXXXXXXXXXXXXXXXX"
 query(service_url, service_bearer_token)
 ```
 
-## End-to-end examples
+## End-to-end example
 
 - [Build tool calling feature for any LLM via JSON mode](./end-to-end-examples/function_calling/README.ipynb): This example demonstrates how to build a tool calling feature for any LLM via JSON mode.
-- [Deploy a gargantuan model (DeepSeek R1 670B) with Ray Serve LLM](./end-to-end-examples/gargantuan_model/README.ipynb): This example demonstrates how to deploy a reasoning model that is too large to fit on a single GPU, by parallelizing it across 5 nodes and 20 GPUs.
 
 
 ## Next steps
