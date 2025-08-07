@@ -34,6 +34,8 @@ In the case of AWS, the corresponding settings are:
 
 With this configuration, every launched node has 1000 GB disk capacity. This change may require restarting the cluster with new nodes, which Anyscale automatically handles.
 
+Next, switch the cluster configuration in **`Manage Cluster`** to use five `4xL40S:48CPU-384GB` worker nodes. This compute configuration is compatible with the `tensor_parallel_size` and `pipeline_parallel_size` settings in the code below, which splits the model layers across 4 GPUs per node, and distributes the model across 5 nodes.
+
 ## Start the deployment
 
 The following code deploys the DeepSeek R1 model using Ray Serve:
@@ -63,8 +65,6 @@ llm_config = LLMConfig(
     # Options passed through to the vLLM engine.
     engine_kwargs={
         # Automatic model parallelization across GPUs
-        # Used by the auto-scaler to select the appropriate instance type.
-        # In this case, it selects machines with 4x L40S GPUs.
         "tensor_parallel_size": 4,   # Splits model layers across 4 GPUs per node
         "pipeline_parallel_size": 5,  # Distributes across 5 nodes
         # Total: 4 GPUs × 5 nodes = 20 GPUs
