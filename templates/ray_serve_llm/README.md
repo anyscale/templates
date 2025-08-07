@@ -153,15 +153,17 @@ You can also find this information by clicking the **Query** button in the Servi
 ```python
 # Query the remote serve application we just deployed.
 
-service_url = "https://YYYYYYYYYYYYY.anyscaleuserdata.com"  # FILL ME IN
-service_bearer_token = "XXXXXXXXXX_XXXXXXXXXXXXXXXXXXXXX"  # FILL ME IN
+# TODO: Fill in with the values from the previous step
+service_url = "https://YYYYYYYYYYYYY.anyscaleuserdata.com"
+service_bearer_token = "XXXXXXXXXX_XXXXXXXXXXXXXXXXXXXXX"
 
 query(service_url, service_bearer_token)
 ```
 
-## End-to-end example
+## End-to-end examples
 
-* [Build tool calling feature for any LLM via JSON mode](./end-to-end-examples/function_calling/README.ipynb): This example demonstrates how to build a tool calling feature for any LLM via JSON mode.
+- [Build tool calling feature for any LLM via JSON mode](./end-to-end-examples/function_calling/README.ipynb): This example demonstrates how to build a tool calling feature for any LLM via JSON mode.
+- [Deploy a 670-billion-parameter reasoning model, DeepSeek R1](.end-to-end-examples/gargantuan_model/README.ipynb): This example demonstrates how to deploy a gargantuan reasoning model, DeepSeek R1, using tensor-parallelism and pipeline-parallelism across multiple nodes.
 
 
 ## Next steps
