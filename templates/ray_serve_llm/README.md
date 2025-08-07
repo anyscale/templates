@@ -156,7 +156,7 @@ You can also find this information by clicking the **Query** button in the Servi
 ```python
 # Query the remote serve application we just deployed.
 
-# TODO: Fill in with the values from the previous step
+# TODO: Fill in with the values from the previous step.
 service_url = "https://YYYYYYYYYYYYY.anyscaleuserdata.com"
 service_bearer_token = "XXXXXXXXXX_XXXXXXXXXXXXXXXXXXXXX"
 

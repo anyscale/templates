@@ -6,11 +6,11 @@ Deploying a 670B parameter model like DeepSeek R1 presents significant technical
 
 Deploying the model also involves launching multiple nodes manually and configuring them to work together. Anyscale automates this process by autoscaling the cluster with the appropriate number of nodes and GPUs.
 
-**Beware**: this is an expensive deployment. At the time of writing, the deployment cost is around $110 USD per hour in the `us-west-2` AWS region using on-demand instances. Because  this node has a high amount of inter-node traffic, and cross-zone traffic is expensive (around $0.02 per GB), we recommend *disabling cross-zone autoscaling*. This demo is pre-configured with cross-zone autoscaling disabled for your convenience.
+**Beware**: this is an expensive deployment. At the time of writing, the deployment cost is around $110 USD per hour in the `us-west-2` AWS region using on-demand instances. Because this node has a high amount of inter-node traffic, and cross-zone traffic is expensive (around $0.02 per GB), we recommend *disabling cross-zone autoscaling*. This demo is pre-configured with cross-zone autoscaling disabled for your convenience.
 
 ## Prerequisites
 
-This template only works on `H100` GPUs in your self-hosted Anyscale cloud—`H100` GPUs aren't available in Anyscale's public cloud. Setup the worker nodes with two spot H100 instances:
+This template only works on `H100` GPUs in your self-hosted Anyscale cloud; `H100` GPUs aren't available in Anyscale's public cloud. Setup the worker nodes with two spot H100 instances:
 
 ![Setup 2x spot H100](../../assets/2x-spot-H100-workers.png)
 
