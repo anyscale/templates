@@ -189,7 +189,7 @@ for chunk in completion:
         print(text, end="")
 ```
 
-    {"function": {"name": "get_current_weather", "arguments": {"location": "Boston, MA", "unit": "fahrenheit"}}} 
+    {"function": {"name": "get_current_weather", "arguments": {"location": "Boston, MA", "unit": "fahrenheit"}}}
 
 Now that we have got the function, we can assume that we have called the `get_current_weather` tool and received the following response:
 
