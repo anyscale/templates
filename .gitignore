@@ -169,3 +169,6 @@ cython_debug/
 # Build output
 _build/
 ci/bin
+
+# Other
+.DS_Store

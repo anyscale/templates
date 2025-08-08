@@ -68,11 +68,12 @@ The following is a breakdown of this code that integrates [Ray Serve with Fast A
 
 ### Run the app in a workspace
 
-Execute the command below to run the Ray Serve app on the workspace cluster. This command takes in an import path to the deployment formatted as `module:application`.
+Execute the commands below to start Ray Serve and run the Serve app on the workspace cluster. This command takes in an import path to the deployment formatted as `module:application`.
 
 
 
 ```python
+!serve start --http-port 8005
 !serve run main:my_app --non-blocking
 ```
 
@@ -81,14 +82,14 @@ Execute the command below to run the Ray Serve app on the workspace cluster. Thi
 
 ### Send a test request
 
-Your app is accessible through `localhost:8000` by default. Run the following to send a GET request to the `/hello` endpoint with query parameter `name` set to “Theodore.”
+Your app is accessible through `localhost:8005`. Run the following to send a GET request to the `/hello` endpoint with query parameter `name` set to “Theodore.”
 
 
 
 ```python
 import requests
 
-print(requests.get("http://localhost:8000/hello", params={"name": "Theodore"}).json())
+print(requests.get("http://localhost:8005/hello", params={"name": "Theodore"}).json())
 ```
 
 ## Production
