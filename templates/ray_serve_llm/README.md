@@ -156,7 +156,7 @@ You can also find this information by clicking the **Query** button in the Servi
 ```python
 # Query the remote serve application we just deployed.
 
-# TODO: Fill in using the values from the previous step.
+# TODO: Fill in with the values from the previous step.
 service_url = "https://YYYYYYYYYYYYY.anyscaleuserdata.com"
 service_bearer_token = "XXXXXXXXXX_XXXXXXXXXXXXXXXXXXXXX"
 
@@ -166,7 +166,7 @@ query(service_url, service_bearer_token)
 ## End-to-end examples
 
 - [Build tool calling feature for any LLM via JSON mode](./end-to-end-examples/function_calling/README.ipynb): This example demonstrates how to build a tool calling feature for any LLM via JSON mode.
-- [Deploy a gargantuan model (DeepSeek R1 670B) with Ray Serve LLM](./end-to-end-examples/gargantuan_model/README.ipynb): This example demonstrates how to deploy a reasoning model that is too large to fit on a single GPU, by parallelizing it across 5 nodes and 20 GPUs.
+- [Deploy a gargantuan model (DeepSeek R1 670B) with Ray Serve LLM](./end-to-end-examples/gargantuan_model/README.ipynb): This example demonstrates how to deploy a reasoning model that is too large to fit on a single node, using tensor-parallelism and pipeline-parallelism across multiple nodes.
 
 
 ## Next steps
