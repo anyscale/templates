@@ -1,0 +1,68 @@
+head_node_type:
+  name: head-node
+  instance_type: m5.2xlarge
+  resources:
+    cpu: 0
+worker_node_types:
+  # CPU-optimized workers for traditional ETL workloads
+  - name: worker-c5-2xlarge-cpu
+    instance_type: c5.2xlarge
+    resources:
+      cpu: 8
+    min_workers: 0
+    max_workers: 8
+    use_spot: true
+    fallback_to_ondemand: true
+  - name: worker-c5-4xlarge-cpu
+    instance_type: c5.4xlarge
+    resources:
+      cpu: 16
+    min_workers: 0
+    max_workers: 6
+    use_spot: true
+    fallback_to_ondemand: true
+  - name: worker-c5-9xlarge-cpu
+    instance_type: c5.9xlarge
+    resources:
+      cpu: 36
+    min_workers: 0
+    max_workers: 4
+    use_spot: true
+    fallback_to_ondemand: true
+  - name: worker-c5-18xlarge-cpu
+    instance_type: c5.18xlarge
+    resources:
+      cpu: 72
+    min_workers: 0
+    max_workers: 2
+    use_spot: true
+    fallback_to_ondemand: true
+  
+  # Memory-optimized workers for large dataset processing
+  - name: worker-r5-2xlarge-memory
+    instance_type: r5.2xlarge
+    resources:
+      cpu: 8
+    min_workers: 0
+    max_workers: 4
+    use_spot: true
+    fallback_to_ondemand: true
+  - name: worker-r5-4xlarge-memory
+    instance_type: r5.4xlarge
+    resources:
+      cpu: 16
+    min_workers: 0
+    max_workers: 3
+    use_spot: true
+    fallback_to_ondemand: true
+
+aws:
+  TagSpecifications:
+    - ResourceType: instance
+      Tags:
+        - Key: as-feature-multi-zone
+          Value: "true"
+        - Key: purpose
+          Value: "tpch-etl-ray-data"
+        - Key: workload
+          Value: "etl-processing"

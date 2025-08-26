@@ -1,0 +1,51 @@
+head_node_type:
+  name: head-node
+  machine_type: n2-standard-8
+  resources:
+    cpu: 0
+worker_node_types:
+  # CPU-optimized workers for traditional ETL workloads
+  - name: worker-c2-standard-8-cpu
+    machine_type: c2-standard-8
+    resources:
+      cpu: 8
+    min_workers: 0
+    max_workers: 8
+    use_spot: true
+  - name: worker-c2-standard-16-cpu
+    machine_type: c2-standard-16
+    resources:
+      cpu: 16
+    min_workers: 0
+    max_workers: 6
+    use_spot: true
+  - name: worker-c2-standard-30-cpu
+    machine_type: c2-standard-30
+    resources:
+      cpu: 30
+    min_workers: 0
+    max_workers: 4
+    use_spot: true
+  - name: worker-c2-standard-60-cpu
+    machine_type: c2-standard-60
+    resources:
+      cpu: 60
+    min_workers: 0
+    max_workers: 2
+    use_spot: true
+  
+  # Memory-optimized workers for large dataset processing
+  - name: worker-n2-standard-8-memory
+    machine_type: n2-standard-8
+    resources:
+      cpu: 8
+    min_workers: 0
+    max_workers: 4
+    use_spot: true
+  - name: worker-n2-standard-16-memory
+    machine_type: n2-standard-16
+    resources:
+      cpu: 16
+    min_workers: 0
+    max_workers: 3
+    use_spot: true
