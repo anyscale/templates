@@ -97,12 +97,17 @@ To move into production, use Anyscale Services to deploy your Ray Serve app to a
 
 ### Deploy as an Anyscale Service
 
-Use the following to deploy `my_service` in a single command:
-
-
+Use the following to deploy the Service in a single command:
 
 ```python
-!anyscale service deploy main:my_app --name=my_service
+import os
+service_name = f"my_service_{os.getenv("ANYSCALE_EXPERIMENTAL_USERNAME")}"
+os.environ["SERVICE_NAME"] = service_name
+!echo $SERVICE_NAME
+```
+
+```python
+!anyscale service deploy main:my_app --name=$SERVICE_NAME
 ```
 
 **Note**: This Anyscale Service pulls the associated dependencies, compute config, and service config from the workspace. To define these explicitly, you can deploy from a `config.yaml` file using the `-f` flag. See [ServiceConfig reference](https://docs.anyscale.com/reference/service-api#serviceconfig) for details.
@@ -110,12 +115,12 @@ Use the following to deploy `my_service` in a single command:
 
 ### Check the status of the service
 
-To get the status of `my_service`, run the following:
+To get the status of the Service, run the following:
 
 
 
 ```python
-!anyscale service status --name=my_service
+!anyscale service status --name=$SERVICE_NAME
 ```
 
 ### Query the service
@@ -157,7 +162,7 @@ print(send_request("Theodore"))
 
 ### Monitor the service
 
-To view the service, navigate to 🏠 **> Services > `my_service`**. On this page, inspect key metrics, events, and logs. With Anyscale’s monitoring dashboards, you can track performance and adjust configurations as needed without deep diving into infrastructure management. See [Monitor a service](https://docs.anyscale.com/platform/services/monitoring).
+To view the service, navigate to 🏠 **> Services > `$SERVICE_NAME`**. On this page, inspect key metrics, events, and logs. With Anyscale’s monitoring dashboards, you can track performance and adjust configurations as needed without deep diving into infrastructure management. See [Monitor a service](https://docs.anyscale.com/platform/services/monitoring).
 
 By clicking on the **Running** service, you can view the status of deployments and how many replicas each contains. For example, your `FastAPIDeployment` has `1` replica.
 
@@ -206,7 +211,7 @@ To deploy the update, execute the following command to trigger a staged rollout 
 
 
 ```python
-!anyscale service deploy main:my_app --name=my_service
+!anyscale service deploy main:my_app --name=$SERVICE_NAME
 ```
 
 In the service overview page, you can monitor the status of the update and see Ray Serve shut down the previous cluster.
@@ -223,7 +228,7 @@ To tear down the service cluster, run the following command:
 
 
 ```python
-!anyscale service terminate --name=my_service
+!anyscale service terminate --name=$SERVICE_NAME
 ```
 
 ## Summary
