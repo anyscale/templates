@@ -14,13 +14,13 @@ This tutorial provides a comprehensive, step-by-step guide on integrating PyTorc
 - GPU memory profiling with PyTorch Profiler
 - Loading a distributed model for inference
 
-**Note:** This notebook uses FSDP2's `fully_sharded` API. If you're currently using FSDP1's `FullyShardedDataParallel`, consider migrating to FSDP2 for improved performance and features. 
+**Note:** This notebook uses FSDP2's `fully_sharded` API. If you are currently using FSDP1's `FullyShardedDataParallel`, consider migrating to FSDP2 for improved performance and features such as lower memory usage and `DTensor` integration. 
 
 <div class="alert alert-block alert-warning">
 
 **Anyscale Specific Configuration**
 
-Note: This tutorial is optimized for the Anyscale platform. When running on open source Ray, additional configuration is required. For example, you’ll need to manually:
+Note: This tutorial is optimized for the Anyscale platform. When running on open source Ray, additional configuration is required. For example, you will need to manually:
 
 - **Configure your Ray Cluster**: Set up your multi-node environment and manage resource allocation without Anyscale's automation.
 - **Manage Dependencies**: Manually install and manage dependencies on each node.
@@ -30,9 +30,9 @@ Note: This tutorial is optimized for the Anyscale platform. When running on open
 
 ## Example Overview
 
-For demonstration purposes, we will integrate Ray Train with FSDP using a **Vision Transformer (ViT)** trained on the FashionMNIST dataset. We chose ViT because it has clear, repeatable block structures (transformer blocks) that are ideal for demonstrating FSDP's sharding capabilities. 
+For demonstration purposes, we will integrate Ray Train with FSDP2 using a **Vision Transformer (ViT)** trained on the FashionMNIST dataset. We chose ViT because it has clear, repeatable block structures (transformer blocks) that are ideal for demonstrating FSDP2's sharding capabilities. 
 
-While this is a relatively simple example, FSDP's complexity can lead to common challenges during training, such as out-of-memory (OOM) errors. Throughout this guide, we'll address these common issues and provide practical tips for improving performance and reducing memory utilization based on your specific use case. 
+While this is a relatively simple example, FSDP's complexity can lead to common challenges during training, such as out-of-memory (OOM) errors. Throughout this guide, we'll address these common issues by providing practical tips for improving performance and reducing memory utilization based on your specific use case. 
 
 ## 1. Package Setup
 
@@ -41,12 +41,69 @@ Install the required dependencies for this tutorial:
 
 ```bash
 %%bash
-pip install torch>=2.0.0
-pip install torchvision>=0.15.0
+pip install torch
+pip install torchvision
 pip install matplotlib
 ```
 
-    Requirement already satisfied: matplotlib in /home/ray/anaconda3/lib/python3.11/site-packages (3.10.5)
+    Requirement already satisfied: torch in /home/ray/anaconda3/lib/python3.11/site-packages (2.8.0)
+    Requirement already satisfied: filelock in /home/ray/anaconda3/lib/python3.11/site-packages (from torch) (3.17.0)
+    Requirement already satisfied: typing-extensions>=4.10.0 in /home/ray/anaconda3/lib/python3.11/site-packages (from torch) (4.12.2)
+    Requirement already satisfied: sympy>=1.13.3 in /home/ray/anaconda3/lib/python3.11/site-packages (from torch) (1.14.0)
+    Requirement already satisfied: networkx in /home/ray/anaconda3/lib/python3.11/site-packages (from torch) (3.5)
+    Requirement already satisfied: jinja2 in /home/ray/anaconda3/lib/python3.11/site-packages (from torch) (3.1.6)
+    Requirement already satisfied: fsspec in /home/ray/anaconda3/lib/python3.11/site-packages (from torch) (2023.5.0)
+    Requirement already satisfied: nvidia-cuda-nvrtc-cu12==12.8.93 in /home/ray/anaconda3/lib/python3.11/site-packages (from torch) (12.8.93)
+    Requirement already satisfied: nvidia-cuda-runtime-cu12==12.8.90 in /home/ray/anaconda3/lib/python3.11/site-packages (from torch) (12.8.90)
+    Requirement already satisfied: nvidia-cuda-cupti-cu12==12.8.90 in /home/ray/anaconda3/lib/python3.11/site-packages (from torch) (12.8.90)
+    Requirement already satisfied: nvidia-cudnn-cu12==9.10.2.21 in /home/ray/anaconda3/lib/python3.11/site-packages (from torch) (9.10.2.21)
+    Requirement already satisfied: nvidia-cublas-cu12==12.8.4.1 in /home/ray/anaconda3/lib/python3.11/site-packages (from torch) (12.8.4.1)
+    Requirement already satisfied: nvidia-cufft-cu12==11.3.3.83 in /home/ray/anaconda3/lib/python3.11/site-packages (from torch) (11.3.3.83)
+    Requirement already satisfied: nvidia-curand-cu12==10.3.9.90 in /home/ray/anaconda3/lib/python3.11/site-packages (from torch) (10.3.9.90)
+    Requirement already satisfied: nvidia-cusolver-cu12==11.7.3.90 in /home/ray/anaconda3/lib/python3.11/site-packages (from torch) (11.7.3.90)
+    Requirement already satisfied: nvidia-cusparse-cu12==12.5.8.93 in /home/ray/anaconda3/lib/python3.11/site-packages (from torch) (12.5.8.93)
+    Requirement already satisfied: nvidia-cusparselt-cu12==0.7.1 in /home/ray/anaconda3/lib/python3.11/site-packages (from torch) (0.7.1)
+    Requirement already satisfied: nvidia-nccl-cu12==2.27.3 in /home/ray/anaconda3/lib/python3.11/site-packages (from torch) (2.27.3)
+    Requirement already satisfied: nvidia-nvtx-cu12==12.8.90 in /home/ray/anaconda3/lib/python3.11/site-packages (from torch) (12.8.90)
+    Requirement already satisfied: nvidia-nvjitlink-cu12==12.8.93 in /home/ray/anaconda3/lib/python3.11/site-packages (from torch) (12.8.93)
+    Requirement already satisfied: nvidia-cufile-cu12==1.13.1.3 in /home/ray/anaconda3/lib/python3.11/site-packages (from torch) (1.13.1.3)
+    Requirement already satisfied: triton==3.4.0 in /home/ray/anaconda3/lib/python3.11/site-packages (from torch) (3.4.0)
+    Requirement already satisfied: setuptools>=40.8.0 in /home/ray/anaconda3/lib/python3.11/site-packages (from triton==3.4.0->torch) (80.9.0)
+    Requirement already satisfied: mpmath<1.4,>=1.1.0 in /home/ray/anaconda3/lib/python3.11/site-packages (from sympy>=1.13.3->torch) (1.3.0)
+    Requirement already satisfied: MarkupSafe>=2.0 in /home/ray/anaconda3/lib/python3.11/site-packages (from jinja2->torch) (2.1.3)
+    [92mSuccessfully registered `torch` package to be installed on all cluster nodes.[0m
+    [92mView and update dependencies here: https://console.anyscale.com/cld_kvedZWag2qA8i5BjxUevf5i7/prj_cz951f43jjdybtzkx1s5sjgz99/workspaces/expwrk_nktjw7a3j2l5c7af9rh3n5rskw?workspace-tab=dependencies[0m
+    Requirement already satisfied: torchvision in /home/ray/anaconda3/lib/python3.11/site-packages (0.23.0)
+    Requirement already satisfied: numpy in /home/ray/anaconda3/lib/python3.11/site-packages (from torchvision) (1.26.4)
+    Requirement already satisfied: torch==2.8.0 in /home/ray/anaconda3/lib/python3.11/site-packages (from torchvision) (2.8.0)
+    Requirement already satisfied: pillow!=8.3.*,>=5.3.0 in /home/ray/anaconda3/lib/python3.11/site-packages (from torchvision) (11.3.0)
+    Requirement already satisfied: filelock in /home/ray/anaconda3/lib/python3.11/site-packages (from torch==2.8.0->torchvision) (3.17.0)
+    Requirement already satisfied: typing-extensions>=4.10.0 in /home/ray/anaconda3/lib/python3.11/site-packages (from torch==2.8.0->torchvision) (4.12.2)
+    Requirement already satisfied: sympy>=1.13.3 in /home/ray/anaconda3/lib/python3.11/site-packages (from torch==2.8.0->torchvision) (1.14.0)
+    Requirement already satisfied: networkx in /home/ray/anaconda3/lib/python3.11/site-packages (from torch==2.8.0->torchvision) (3.5)
+    Requirement already satisfied: jinja2 in /home/ray/anaconda3/lib/python3.11/site-packages (from torch==2.8.0->torchvision) (3.1.6)
+    Requirement already satisfied: fsspec in /home/ray/anaconda3/lib/python3.11/site-packages (from torch==2.8.0->torchvision) (2023.5.0)
+    Requirement already satisfied: nvidia-cuda-nvrtc-cu12==12.8.93 in /home/ray/anaconda3/lib/python3.11/site-packages (from torch==2.8.0->torchvision) (12.8.93)
+    Requirement already satisfied: nvidia-cuda-runtime-cu12==12.8.90 in /home/ray/anaconda3/lib/python3.11/site-packages (from torch==2.8.0->torchvision) (12.8.90)
+    Requirement already satisfied: nvidia-cuda-cupti-cu12==12.8.90 in /home/ray/anaconda3/lib/python3.11/site-packages (from torch==2.8.0->torchvision) (12.8.90)
+    Requirement already satisfied: nvidia-cudnn-cu12==9.10.2.21 in /home/ray/anaconda3/lib/python3.11/site-packages (from torch==2.8.0->torchvision) (9.10.2.21)
+    Requirement already satisfied: nvidia-cublas-cu12==12.8.4.1 in /home/ray/anaconda3/lib/python3.11/site-packages (from torch==2.8.0->torchvision) (12.8.4.1)
+    Requirement already satisfied: nvidia-cufft-cu12==11.3.3.83 in /home/ray/anaconda3/lib/python3.11/site-packages (from torch==2.8.0->torchvision) (11.3.3.83)
+    Requirement already satisfied: nvidia-curand-cu12==10.3.9.90 in /home/ray/anaconda3/lib/python3.11/site-packages (from torch==2.8.0->torchvision) (10.3.9.90)
+    Requirement already satisfied: nvidia-cusolver-cu12==11.7.3.90 in /home/ray/anaconda3/lib/python3.11/site-packages (from torch==2.8.0->torchvision) (11.7.3.90)
+    Requirement already satisfied: nvidia-cusparse-cu12==12.5.8.93 in /home/ray/anaconda3/lib/python3.11/site-packages (from torch==2.8.0->torchvision) (12.5.8.93)
+    Requirement already satisfied: nvidia-cusparselt-cu12==0.7.1 in /home/ray/anaconda3/lib/python3.11/site-packages (from torch==2.8.0->torchvision) (0.7.1)
+    Requirement already satisfied: nvidia-nccl-cu12==2.27.3 in /home/ray/anaconda3/lib/python3.11/site-packages (from torch==2.8.0->torchvision) (2.27.3)
+    Requirement already satisfied: nvidia-nvtx-cu12==12.8.90 in /home/ray/anaconda3/lib/python3.11/site-packages (from torch==2.8.0->torchvision) (12.8.90)
+    Requirement already satisfied: nvidia-nvjitlink-cu12==12.8.93 in /home/ray/anaconda3/lib/python3.11/site-packages (from torch==2.8.0->torchvision) (12.8.93)
+    Requirement already satisfied: nvidia-cufile-cu12==1.13.1.3 in /home/ray/anaconda3/lib/python3.11/site-packages (from torch==2.8.0->torchvision) (1.13.1.3)
+    Requirement already satisfied: triton==3.4.0 in /home/ray/anaconda3/lib/python3.11/site-packages (from torch==2.8.0->torchvision) (3.4.0)
+    Requirement already satisfied: setuptools>=40.8.0 in /home/ray/anaconda3/lib/python3.11/site-packages (from triton==3.4.0->torch==2.8.0->torchvision) (80.9.0)
+    Requirement already satisfied: mpmath<1.4,>=1.1.0 in /home/ray/anaconda3/lib/python3.11/site-packages (from sympy>=1.13.3->torch==2.8.0->torchvision) (1.3.0)
+    Requirement already satisfied: MarkupSafe>=2.0 in /home/ray/anaconda3/lib/python3.11/site-packages (from jinja2->torch==2.8.0->torchvision) (2.1.3)
+    [92mSuccessfully registered `torchvision` package to be installed on all cluster nodes.[0m
+    [92mView and update dependencies here: https://console.anyscale.com/cld_kvedZWag2qA8i5BjxUevf5i7/prj_cz951f43jjdybtzkx1s5sjgz99/workspaces/expwrk_nktjw7a3j2l5c7af9rh3n5rskw?workspace-tab=dependencies[0m
+    Requirement already satisfied: matplotlib in /home/ray/anaconda3/lib/python3.11/site-packages (3.10.6)
     Requirement already satisfied: contourpy>=1.0.1 in /home/ray/anaconda3/lib/python3.11/site-packages (from matplotlib) (1.3.3)
     Requirement already satisfied: cycler>=0.10 in /home/ray/anaconda3/lib/python3.11/site-packages (from matplotlib) (0.12.1)
     Requirement already satisfied: fonttools>=4.22.0 in /home/ray/anaconda3/lib/python3.11/site-packages (from matplotlib) (4.59.2)
@@ -72,7 +129,7 @@ import ray
 import ray.train
 import ray.train.torch
 
-# PyTorch core and FSDP imports
+# PyTorch core and FSDP2 imports
 import torch
 from torch.distributed.fsdp import (
     fully_shard,
@@ -114,7 +171,7 @@ logger = logging.getLogger(__name__)
 
 ## 2. Define the Training Function
 
-Below is the main training function that orchestrates the FSDP training process. In the following sections, we'll implement each of the helper functions used within this training loop.
+Below is the main training function that orchestrates the FSDP2 training process. In the following sections, we'll implement each of the helper functions used within this training loop.
 
 ### 2a. GPU Memory Profiling
 
@@ -149,7 +206,7 @@ def train_func(config):
     torch.cuda.set_device(device)
     model.to(device)
 
-    # Step 2: Apply FSDP sharding to the model
+    # Step 2: Apply FSDP2 sharding to the model
     shard_model(model)
 
     # Step 3: Initialize loss function and optimizer
@@ -238,8 +295,6 @@ def train_func(config):
     save_model_for_inference(model, world_rank)
 ```
 
-## 3. Model Initialization
-
 The following function initializes a Vision Transformer (ViT) model configured for the FashionMNIST dataset:
 
 
@@ -274,13 +329,13 @@ def init_model() -> torch.nn.Module:
     return model
 ```
 
-## 4. Model Sharding with FSDP2
+## 3. Model Sharding with FSDP2
 
 PyTorch's `fully_shard` enables sharding at various granularities. At the most granular level, every layer can be sharded, but this increases communication costs between Ray Train workers. Experiment with different sharding granularities to find the optimal balance for your use case. In this demo, we shard only the encoder blocks—the largest layers in the Vision Transformer.
 
 Beyond sharding granularity, FSDP2 offers several configuration options to optimize performance and mitigate out-of-memory (OOM) errors:
 
-### 4a. CPU Offloading and `reshard_after_forward`
+### 3a. CPU Offloading 
 
 CPU offloading reduces GPU memory footprint by storing model components in the CPU. However, this comes with the trade-off of increased data transfer overhead between CPU and GPU during computation.
 
@@ -288,9 +343,6 @@ CPU offloading reduces GPU memory footprint by storing model components in the C
 - Sharded parameters, gradients, and optimizer states are stored on CPU
 - Sharded parameters are copied to GPU during forward/backward computation and freed after use
 - Computed gradients are copied to the CPU where the optimizer step is computed
-
-**`reshard_after_forward` optimization:**
-When enabled, all-gathered model weights are freed immediately after the forward pass. This reduces peak GPU memory usage but increases communication overhead during backward pass as parameters need to be all-gathered again.
 
 **When to use CPU offloading:**
 - When GPU memory is constrained
@@ -311,13 +363,32 @@ When enabled, all-gathered model weights are freed immediately after the forward
   </div>
 </div>
 
+It can be seen that CPU Offloading significantly reduces the amount of GPU memory occupied by model parameters. 
+
 Learn more about CPU offloading on the [PyTorch documentation](https://docs.pytorch.org/docs/stable/distributed.fsdp.fully_shard.html#torch.distributed.fsdp.CPUOffloadPolicy).
 
-### 4b. Mixed Precision
 
-Enabling mixed precision accelerates training and reduces GPU memory usage with minimal accuracy impact. Unlike other distributed approaches like DDP, FSDP already maintains high-precision copies of sharded parameters, so mixed precision requires no additional memory overhead.
+### 3b. `reshard_after_forward`  
+`fully_shard` has an `reshard_after_forward` flag that enables all-gathered model weights to be freed immediately after the forward pass. This reduces peak GPU memory usage but increases the communication overhead between workers during the backward pass as parameters need to be all-gathered again. If unsharded model parameters are able to completely fit on each worker and do not pose a memory bottleneck, there is no need to enable `reshard_after_forward`.
 
-**Benefits of mixed precision with FSDP:**
+<div style="display: flex; gap: 40px; align-items: flex-start;">
+  <div style="text-align: center;"> 
+    <h3><code>reshard_after_forward=False</code></h3>
+    <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/ray-train-fsdp/images/gpu_memory_profile.png" width="600"/>
+  </div>
+  <div style="text-align: center;">
+    <h3><code>reshard_after_forward=True</code></h3>
+    <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/ray-train-fsdp/images/reshard_after_forward_memory_profile.png" width="600"/>
+  </div>
+</div>
+
+With `reshard_after_forward=True`, we see that the memory allocated to model parameters drop after the forward step whereas it peaks without `reshard_after_forward=False`. This difference is not significant as we are using a small model where the activations are much larger than the model parmeters. The memory savings are more noticeable in settings with larger models. 
+
+### 3c. Mixed Precision
+
+Enabling mixed precision accelerates training and reduces GPU memory usage with minimal accuracy impact. Unlike other distributed approaches like DDP, FSDP2 already maintains high-precision copies of sharded parameters, so mixed precision requires no additional memory overhead. It is also important to note that in this demo, we use PyTorch's `float16` dtype for lower precision computation because we are utilizing older T4 GPUs that do not support the more stable `bfloat16` dtype. `bfloat16` is the more stable option over `float16` as its wider dynamic range avoids the need to ensure loss and gradient values are properly scaled in cases of underflow or overflow.
+
+**Benefits of mixed precision with FSDP2:**
 - Reduced memory usage for activations and intermediate computations
 - Faster computation on modern GPUs
 - Maintained numerical stability through selective precision
@@ -335,7 +406,7 @@ Enabling mixed precision accelerates training and reduces GPU memory usage with 
 
 Learn more about mixed precision configuration on the [PyTorch documentation](https://docs.pytorch.org/docs/stable/distributed.fsdp.fully_shard.html#torch.distributed.fsdp.MixedPrecisionPolicy).
 
-### 4c. Device Mesh Configuration
+### 3d. Device Mesh Configuration
 
 `init_device_mesh` configures a `DeviceMesh` that describes the training run's device topology. This demo uses a simple 1D mesh for data parallelism, but `DeviceMesh` also supports multi-dimensional parallelism approaches including tensor parallelism and pipeline parallelism.
 
@@ -373,26 +444,26 @@ def shard_model(model: torch.nn.Module):
         fully_shard(
             encoder_block, 
             mesh=mesh, 
-            reshard_after_forward=True,  # Free memory after forward pass
+            reshard_after_forward=True,   # Free memory after forward pass
             offload_policy=offload_policy, 
             mp_policy=mp_policy
         )
 
     # Step 5: Apply sharding to the root model
-    # This wraps the entire model and enables top-level FSDP functionality
+    # This wraps the entire model and enables top-level FSDP2 functionality
     fully_shard(
         model, 
         mesh=mesh, 
-        reshard_after_forward=True, 
+        reshard_after_forward=True,   # Free memory after forward pass
         offload_policy=offload_policy, 
         mp_policy=mp_policy
     )
     
 ```
 
-## 5. Distributed Checkpoint Wrapper Setup
+## 4. Distributed Checkpoint Wrapper Setup
 
-We create a checkpointing wrapper using PyTorch's `Stateful` API to simplify distributed checkpoint management. This wrapper handles the complexities of saving and loading FSDP model states across multiple workers.
+We create a checkpointing wrapper using PyTorch's `Stateful` API to simplify distributed checkpoint management. From the PyTorch docs, this basic wrapper handles the complexities of saving and loading FSDP2 model states across multiple workers.
 
 
 ```python
@@ -410,7 +481,7 @@ class AppState(Stateful):
         self.optimizer = optimizer
 
     def state_dict(self):
-        # this line automatically manages FSDP FQN's, as well as sets the default state dict type to FSDP.SHARDED_STATE_DICT
+        # this line automatically manages FSDP2 FQN's, as well as sets the default state dict type to FSDP.SHARDED_STATE_DICT
         model_state_dict, optimizer_state_dict = get_state_dict(self.model, self.optimizer)
         return {
             "model": model_state_dict,
@@ -428,7 +499,7 @@ class AppState(Stateful):
 
 ```
 
-## 6. Loading FSDP Model from Checkpoint
+## 5. Loading Distrbuted Model from Checkpoint
 
 Distributed checkpoints can be loaded using `dcp.load`, which automatically handles resharding when the number of workers changes between training runs. This flexibility allows you to resume training with different resource configurations. 
 
@@ -446,7 +517,7 @@ def load_fsdp_checkpoint(model: FSDPModule, optimizer: torch.optim.Optimizer, ck
         optimizer: The optimizer to load state into
         ckpt: Ray Train checkpoint containing the saved state
     """
-    logger.info("Loading FSDP checkpoint for resuming training...")
+    logger.info("Loading distributed checkpoint for resuming training...")
     
     try:
         with ckpt.as_directory() as checkpoint_dir:
@@ -459,13 +530,13 @@ def load_fsdp_checkpoint(model: FSDPModule, optimizer: torch.optim.Optimizer, ck
                 checkpoint_id=checkpoint_dir
             )
             
-        logger.info("Successfully loaded FSDP checkpoint")
+        logger.info("Successfully loaded distributed checkpoint")
     except Exception as e:
         logger.error(f"Failed to load checkpoint: {e}")
         raise RuntimeError(f"Checkpoint loading failed: {e}") from e
 ```
 
-## 7. Saving Model Checkpoints
+## 6. Saving Model Checkpoints
 
 The following function handles periodic checkpoint saving during training, combining metrics reporting with distributed checkpoint storage:
 
@@ -500,7 +571,7 @@ def report_metrics_and_save_fsdp_checkpoint(
     logger.info(f"Checkpoint saved successfully. Metrics: {metrics}")
 ```
 
-## 8. Saving Model for Inference
+## 7. Saving Model for Inference
 
 After training completes, we need to save the final model in an unsharded format for inference. This differs from regular checkpointing as it consolidates the model checkpoint into one file that is compatible with `torch.load`. The `get_model_state_dict` function performs an all-gather operation to reconstruct the complete model state on rank 0, which then saves and reports the full model checkpoint.
 
@@ -513,7 +584,7 @@ def save_model_for_inference(model: FSDPModule, world_rank: int) -> None:
     checkpoint file that can be used for inference without FSDP.
     
     Args:
-        model: The FSDP-wrapped model to save
+        model: The FSDP2-wrapped model to save
         world_rank: The rank of the current worker
     """
     logger.info("Preparing model for inference...")
@@ -550,7 +621,7 @@ def save_model_for_inference(model: FSDPModule, world_rank: int) -> None:
         )
 ```
 
-## 9. Launching the Distributed Training Job
+## 8. Launching the Distributed Training Job
 
 Now we'll configure and launch the distributed training job using Ray Train's TorchTrainer:
 
@@ -569,12 +640,15 @@ train_loop_config = {
     "batch_size": 128,
 }
 
+# Create experiment name
+experiment_name=f"fsdp_mnist_{uuid.uuid4().hex[:8]}"
+
 # Configure run settings and storage
 run_config = ray.train.RunConfig(
     # Persistent storage path accessible across all worker nodes
     storage_path="/mnt/cluster_storage/",
     # Unique experiment name (use consistent name to resume from checkpoints)
-    name=f"fsdp_mnist_{uuid.uuid4().hex[:8]}",
+    name=experiment_name,
     # Fault tolerance configuration
     failure_config=ray.train.FailureConfig(max_failures=1),
 )
@@ -587,7 +661,7 @@ trainer = ray.train.torch.TorchTrainer(
     run_config=run_config,
 )
 
-print("Starting FSDP training job...")
+print("Starting FSDP2 training job...")
 result = trainer.fit()
 print("Training completed successfully!")
 
@@ -596,97 +670,73 @@ print("Training completed successfully!")
     Starting FSDP training job...
 
 
-    2025-08-29 12:58:31,501	INFO worker.py:1768 -- Connecting to existing Ray cluster at address: 10.0.32.71:6379...
-    2025-08-29 12:58:31,513	INFO worker.py:1939 -- Connected to Ray cluster. View the dashboard at [1m[32mhttps://session-2tq4lu3kdll2ayzdmkgw6lzt3y.i.anyscaleuserdata.com [39m[22m
-    2025-08-29 12:58:31,714	INFO packaging.py:380 -- Pushing file package 'gcs://_ray_pkg_c9f407640d38da9de67604a90e9e88004763278a.zip' (82.15MiB) to Ray cluster...
-    2025-08-29 12:58:32,113	INFO packaging.py:393 -- Successfully pushed file package 'gcs://_ray_pkg_c9f407640d38da9de67604a90e9e88004763278a.zip'.
+    2025-09-02 15:11:17,955	INFO worker.py:1768 -- Connecting to existing Ray cluster at address: 10.0.32.199:6379...
+    2025-09-02 15:11:17,966	INFO worker.py:1939 -- Connected to Ray cluster. View the dashboard at [1m[32mhttps://session-2tq4lu3kdll2ayzdmkgw6lzt3y.i.anyscaleuserdata.com [39m[22m
+    2025-09-02 15:11:18,166	INFO packaging.py:380 -- Pushing file package 'gcs://_ray_pkg_c4de9e5c441192fff0b954842e098cddc401e524.zip' (82.24MiB) to Ray cluster...
+    2025-09-02 15:11:18,552	INFO packaging.py:393 -- Successfully pushed file package 'gcs://_ray_pkg_c4de9e5c441192fff0b954842e098cddc401e524.zip'.
     /home/ray/anaconda3/lib/python3.11/site-packages/ray/_private/worker.py:1987: FutureWarning: Tip: In future versions of Ray, Ray will no longer override accelerator visible devices env var if num_gpus=0 or num_gpus=None (default). To enable this behavior and turn off this error message, set RAY_ACCEL_ENV_VAR_OVERRIDE_ON_ZERO=0
       warnings.warn(
-    [36m(TrainController pid=33120)[0m [State Transition] INITIALIZING -> SCHEDULING.
-    [36m(TrainController pid=33120)[0m Attempting to start training worker group of size 2 with the following resources: [{'GPU': 1}] * 2
-    [36m(TrainController pid=33120)[0m Using blocking ray.get inside async actor. This blocks the event loop. Please use `await` on object ref with asyncio.gather if you want to yield execution to the event loop instead.
-    [36m(TrainController pid=33120)[0m [FailurePolicy] Decision: FailureDecision.RETRY, Error source: controller, Error count / maximum errors allowed: 1/inf, Error: Training failed due to controller error:
-    [36m(TrainController pid=33120)[0m The worker group startup timed out after 30.0 seconds waiting for 2 workers. Potential causes include: (1) temporary insufficient cluster resources while waiting for autoscaling (ignore this warning in this case), (2) infeasible resource request where the provided `ScalingConfig` cannot be satisfied), and (3) transient network issues. Set the RAY_TRAIN_WORKER_GROUP_START_TIMEOUT_S environment variable to increase the timeout.
-    [36m(TrainController pid=33120)[0m [State Transition] SCHEDULING -> RESCHEDULING.
-    [36m(TrainController pid=33120)[0m [State Transition] RESCHEDULING -> SCHEDULING.
-    [36m(TrainController pid=33120)[0m Attempting to start training worker group of size 2 with the following resources: [{'GPU': 1}] * 2
-    [36m(TrainController pid=33120)[0m [FailurePolicy] Decision: FailureDecision.RETRY, Error source: controller, Error count / maximum errors allowed: 2/inf, Error: Training failed due to controller error:
-    [36m(TrainController pid=33120)[0m The worker group startup timed out after 30.0 seconds waiting for 2 workers. Potential causes include: (1) temporary insufficient cluster resources while waiting for autoscaling (ignore this warning in this case), (2) infeasible resource request where the provided `ScalingConfig` cannot be satisfied), and (3) transient network issues. Set the RAY_TRAIN_WORKER_GROUP_START_TIMEOUT_S environment variable to increase the timeout.
-    [36m(TrainController pid=33120)[0m [State Transition] SCHEDULING -> RESCHEDULING.
-    [36m(TrainController pid=33120)[0m [State Transition] RESCHEDULING -> SCHEDULING.
-    [36m(TrainController pid=33120)[0m Attempting to start training worker group of size 2 with the following resources: [{'GPU': 1}] * 2
-    [36m(RayTrainWorker pid=11421, ip=10.0.24.158)[0m Setting up process group for: env:// [rank=0, world_size=2]
-    [36m(TrainController pid=33120)[0m Started training worker group of size 2: 
-    [36m(TrainController pid=33120)[0m - (ip=10.0.24.158, pid=11421) world_rank=0, local_rank=0, node_rank=0
-    [36m(TrainController pid=33120)[0m - (ip=10.0.63.54, pid=10437) world_rank=1, local_rank=0, node_rank=1
-    [36m(TrainController pid=33120)[0m [State Transition] SCHEDULING -> RUNNING.
-    [36m(RayTrainWorker pid=10437, ip=10.0.63.54)[0m Initializing Vision Transformer model...
-    [36m(RayTrainWorker pid=10437, ip=10.0.63.54)[0m Applying FSDP2 sharding to model...
-      0%|          | 0.00/26.4M [00:00<?, ?B/s]54)[0m 
-      0%|          | 32.8k/26.4M [00:00<01:51, 238kB/s]
-      0%|          | 65.5k/26.4M [00:00<01:51, 237kB/s]
-      0%|          | 98.3k/26.4M [00:00<01:51, 237kB/s]
-    100%|██████████| 26.4M/26.4M [00:02<00:00, 11.9MB/s]
-    100%|██████████| 29.5k/29.5k [00:00<00:00, 214kB/s] 
-    100%|██████████| 29.5k/29.5k [00:00<00:00, 214kB/s]
-    [36m(RayTrainWorker pid=11421, ip=10.0.24.158)[0m Initializing Vision Transformer model...
-    [36m(RayTrainWorker pid=11421, ip=10.0.24.158)[0m Applying FSDP2 sharding to model...
-      0%|          | 0.00/4.42M [00:00<?, ?B/s][32m [repeated 5x across cluster] (Ray deduplicates logs by default. Set RAY_DEDUP_LOGS=0 to disable log deduplication, or see https://docs.ray.io/en/master/ray-observability/user-guides/configure-logging.html#log-deduplication for more options.)[0m
-      2%|▏         | 98.3k/4.42M [00:00<00:18, 234kB/s][32m [repeated 41x across cluster][0m
-    [36m(RayTrainWorker pid=11421, ip=10.0.24.158)[0m /tmp/ray/session_2025-08-29_11-18-58_966078_2389/runtime_resources/pip/2dc646f4cea92923d9b211dd039da1e14fd3e129/virtualenv/lib/python3.11/site-packages/torch/profiler/profiler.py:509: UserWarning: Profiler won't be using warmup, this can skew profiler results
-    [36m(RayTrainWorker pid=11421, ip=10.0.24.158)[0m   warn("Profiler won't be using warmup, this can skew profiler results")
-    [36m(RayTrainWorker pid=11421, ip=10.0.24.158)[0m ERROR: External init callback must run in same thread as registerClient (-1282410944 != 1599129408)
-    [36m(RayTrainWorker pid=11421, ip=10.0.24.158)[0m Saving checkpoint and reporting metrics...
-    100%|██████████| 5.15k/5.15k [00:00<00:00, 42.6MB/s][32m [repeated 2x across cluster][0m
-    100%|██████████| 4.42M/4.42M [00:01<00:00, 3.15MB/s][32m [repeated 9x across cluster][0m
-    [36m(RayTrainWorker pid=10437, ip=10.0.63.54)[0m /tmp/ray/session_2025-08-29_11-18-58_966078_2389/runtime_resources/pip/2dc646f4cea92923d9b211dd039da1e14fd3e129/virtualenv/lib/python3.11/site-packages/torch/profiler/profiler.py:509: UserWarning: Profiler won't be using warmup, this can skew profiler results
-    [36m(RayTrainWorker pid=10437, ip=10.0.63.54)[0m   warn("Profiler won't be using warmup, this can skew profiler results")
-    [36m(RayTrainWorker pid=10437, ip=10.0.63.54)[0m ERROR: External init callback must run in same thread as registerClient (2139088448 != 843249472)
-    [36m(RayTrainWorker pid=10437, ip=10.0.63.54)[0m Checkpoint successfully created at: Checkpoint(filesystem=local, path=/mnt/cluster_storage/fsdp_mnist_ac7573f9/checkpoint_2025-08-29_13-00-50.598902)
-    [36m(RayTrainWorker pid=10437, ip=10.0.63.54)[0m Checkpoint saved successfully. Metrics: {'loss': 0.9074613530585106, 'epoch': 0}
-    [36m(RayTrainWorker pid=11421, ip=10.0.24.158)[0m {'loss': 0.9220723902925532, 'epoch': 0}
-    [36m(RayTrainWorker pid=11421, ip=10.0.24.158)[0m Saving checkpoint and reporting metrics...[32m [repeated 2x across cluster][0m
-    [36m(RayTrainWorker pid=11421, ip=10.0.24.158)[0m Checkpoint successfully created at: Checkpoint(filesystem=local, path=/mnt/cluster_storage/fsdp_mnist_ac7573f9/checkpoint_2025-08-29_13-00-50.598902)
-    [36m(RayTrainWorker pid=11421, ip=10.0.24.158)[0m Checkpoint saved successfully. Metrics: {'loss': 0.9220723902925532, 'epoch': 0}
-    [36m(RayTrainWorker pid=10437, ip=10.0.63.54)[0m Checkpoint successfully created at: Checkpoint(filesystem=local, path=/mnt/cluster_storage/fsdp_mnist_ac7573f9/checkpoint_2025-08-29_13-01-13.436430)
-    [36m(RayTrainWorker pid=10437, ip=10.0.63.54)[0m Checkpoint saved successfully. Metrics: {'loss': 0.6794438788231383, 'epoch': 1}
-    [36m(RayTrainWorker pid=11421, ip=10.0.24.158)[0m {'loss': 0.6911060089760638, 'epoch': 1}
-    [36m(RayTrainWorker pid=10437, ip=10.0.63.54)[0m Saving checkpoint and reporting metrics...[32m [repeated 2x across cluster][0m
-    [36m(RayTrainWorker pid=11421, ip=10.0.24.158)[0m Checkpoint successfully created at: Checkpoint(filesystem=local, path=/mnt/cluster_storage/fsdp_mnist_ac7573f9/checkpoint_2025-08-29_13-01-13.436430)
-    [36m(RayTrainWorker pid=11421, ip=10.0.24.158)[0m Checkpoint saved successfully. Metrics: {'loss': 0.6911060089760638, 'epoch': 1}
-    [36m(RayTrainWorker pid=10437, ip=10.0.63.54)[0m Checkpoint successfully created at: Checkpoint(filesystem=local, path=/mnt/cluster_storage/fsdp_mnist_ac7573f9/checkpoint_2025-08-29_13-01-37.358961)
-    [36m(RayTrainWorker pid=10437, ip=10.0.63.54)[0m Checkpoint saved successfully. Metrics: {'loss': 0.5813783036901595, 'epoch': 2}
-    [36m(RayTrainWorker pid=11421, ip=10.0.24.158)[0m {'loss': 0.5903209496897163, 'epoch': 2}
-    [36m(RayTrainWorker pid=10437, ip=10.0.63.54)[0m Saving checkpoint and reporting metrics...[32m [repeated 2x across cluster][0m
-    [36m(RayTrainWorker pid=11421, ip=10.0.24.158)[0m Checkpoint successfully created at: Checkpoint(filesystem=local, path=/mnt/cluster_storage/fsdp_mnist_ac7573f9/checkpoint_2025-08-29_13-01-37.358961)
-    [36m(RayTrainWorker pid=11421, ip=10.0.24.158)[0m Checkpoint saved successfully. Metrics: {'loss': 0.5903209496897163, 'epoch': 2}
-    [36m(RayTrainWorker pid=10437, ip=10.0.63.54)[0m Checkpoint successfully created at: Checkpoint(filesystem=local, path=/mnt/cluster_storage/fsdp_mnist_ac7573f9/checkpoint_2025-08-29_13-02-00.819530)
-    [36m(RayTrainWorker pid=10437, ip=10.0.63.54)[0m Checkpoint saved successfully. Metrics: {'loss': 0.5233754259474734, 'epoch': 3}
-    [36m(RayTrainWorker pid=11421, ip=10.0.24.158)[0m {'loss': 0.5298319065824468, 'epoch': 3}
-    [36m(RayTrainWorker pid=10437, ip=10.0.63.54)[0m Saving checkpoint and reporting metrics...[32m [repeated 2x across cluster][0m
-    [36m(RayTrainWorker pid=11421, ip=10.0.24.158)[0m Checkpoint successfully created at: Checkpoint(filesystem=local, path=/mnt/cluster_storage/fsdp_mnist_ac7573f9/checkpoint_2025-08-29_13-02-00.819530)
-    [36m(RayTrainWorker pid=11421, ip=10.0.24.158)[0m Checkpoint saved successfully. Metrics: {'loss': 0.5298319065824468, 'epoch': 3}
-    [36m(RayTrainWorker pid=10437, ip=10.0.63.54)[0m Checkpoint successfully created at: Checkpoint(filesystem=local, path=/mnt/cluster_storage/fsdp_mnist_ac7573f9/checkpoint_2025-08-29_13-02-23.764725)
-    [36m(RayTrainWorker pid=10437, ip=10.0.63.54)[0m Checkpoint saved successfully. Metrics: {'loss': 0.4832368891289894, 'epoch': 4}
-    [36m(RayTrainWorker pid=11421, ip=10.0.24.158)[0m {'loss': 0.4901455493683511, 'epoch': 4}
-    [36m(RayTrainWorker pid=11421, ip=10.0.24.158)[0m generated new fontManager
-    [36m(RayTrainWorker pid=11421, ip=10.0.24.158)[0m Saving checkpoint and reporting metrics...
-    [36m(RayTrainWorker pid=11421, ip=10.0.24.158)[0m Checkpoint successfully created at: Checkpoint(filesystem=local, path=/mnt/cluster_storage/fsdp_mnist_ac7573f9/checkpoint_2025-08-29_13-02-23.764725)
-    [36m(RayTrainWorker pid=11421, ip=10.0.24.158)[0m Checkpoint saved successfully. Metrics: {'loss': 0.4901455493683511, 'epoch': 4}
-    [36m(RayTrainWorker pid=11421, ip=10.0.24.158)[0m Preparing model for inference...
-    [36m(RayTrainWorker pid=11421, ip=10.0.24.158)[0m Successfully retrieved complete model state dict
-    [36m(RayTrainWorker pid=11421, ip=10.0.24.158)[0m Saved complete model to /tmp/tmp019hes64/full-model.pt
-    [36m(RayTrainWorker pid=11421, ip=10.0.24.158)[0m Checkpoint successfully created at: Checkpoint(filesystem=local, path=/mnt/cluster_storage/fsdp_mnist_ac7573f9/full_model)
-    [36m(TrainController pid=33120)[0m [State Transition] RUNNING -> FINISHED.
+    [36m(TrainController pid=70753)[0m [State Transition] INITIALIZING -> SCHEDULING.
+    [36m(TrainController pid=70753)[0m Attempting to start training worker group of size 2 with the following resources: [{'GPU': 1}] * 2
+    [36m(TrainController pid=70753)[0m Using blocking ray.get inside async actor. This blocks the event loop. Please use `await` on object ref with asyncio.gather if you want to yield execution to the event loop instead.
+    [36m(RayTrainWorker pid=12864, ip=10.0.129.25)[0m Setting up process group for: env:// [rank=0, world_size=2]
+    [36m(TrainController pid=70753)[0m Started training worker group of size 2: 
+    [36m(TrainController pid=70753)[0m - (ip=10.0.129.25, pid=12864) world_rank=0, local_rank=0, node_rank=0
+    [36m(TrainController pid=70753)[0m - (ip=10.0.175.234, pid=13196) world_rank=1, local_rank=0, node_rank=1
+    [36m(TrainController pid=70753)[0m [State Transition] SCHEDULING -> RUNNING.
+    [36m(RayTrainWorker pid=13196, ip=10.0.175.234)[0m Initializing Vision Transformer model...
+    [36m(RayTrainWorker pid=13196, ip=10.0.175.234)[0m Applying FSDP2 sharding to model...
+    [36m(RayTrainWorker pid=13196, ip=10.0.175.234)[0m /tmp/ray/session_2025-09-02_13-13-58_581141_2379/runtime_resources/pip/2dc646f4cea92923d9b211dd039da1e14fd3e129/virtualenv/lib/python3.11/site-packages/torch/profiler/profiler.py:509: UserWarning: Profiler won't be using warmup, this can skew profiler results
+    [36m(RayTrainWorker pid=13196, ip=10.0.175.234)[0m   warn("Profiler won't be using warmup, this can skew profiler results")
+    [36m(RayTrainWorker pid=13196, ip=10.0.175.234)[0m ERROR: External init callback must run in same thread as registerClient (322958912 != -1404328128)
+    [36m(RayTrainWorker pid=12864, ip=10.0.129.25)[0m Saving checkpoint and reporting metrics...
+    [36m(RayTrainWorker pid=12864, ip=10.0.129.25)[0m Initializing Vision Transformer model...
+    [36m(RayTrainWorker pid=12864, ip=10.0.129.25)[0m Applying FSDP2 sharding to model...
+    [36m(RayTrainWorker pid=12864, ip=10.0.129.25)[0m /tmp/ray/session_2025-09-02_13-13-58_581141_2379/runtime_resources/pip/2dc646f4cea92923d9b211dd039da1e14fd3e129/virtualenv/lib/python3.11/site-packages/torch/profiler/profiler.py:509: UserWarning: Profiler won't be using warmup, this can skew profiler results
+    [36m(RayTrainWorker pid=12864, ip=10.0.129.25)[0m   warn("Profiler won't be using warmup, this can skew profiler results")
+    [36m(RayTrainWorker pid=12864, ip=10.0.129.25)[0m ERROR: External init callback must run in same thread as registerClient (1982854720 != 467728192)
+    [36m(RayTrainWorker pid=12864, ip=10.0.129.25)[0m Checkpoint successfully created at: Checkpoint(filesystem=local, path=/mnt/cluster_storage/fsdp_mnist_b3d9097d/checkpoint_2025-09-02_15-11-51.471109)
+    [36m(RayTrainWorker pid=12864, ip=10.0.129.25)[0m Checkpoint saved successfully. Metrics: {'loss': 0.9100108045212766, 'epoch': 0}
+    [36m(RayTrainWorker pid=12864, ip=10.0.129.25)[0m {'loss': 0.9100108045212766, 'epoch': 0}
+    [36m(RayTrainWorker pid=12864, ip=10.0.129.25)[0m Saving checkpoint and reporting metrics...[32m [repeated 2x across cluster] (Ray deduplicates logs by default. Set RAY_DEDUP_LOGS=0 to disable log deduplication, or see https://docs.ray.io/en/master/ray-observability/user-guides/configure-logging.html#log-deduplication for more options.)[0m
+    [36m(RayTrainWorker pid=13196, ip=10.0.175.234)[0m Checkpoint successfully created at: Checkpoint(filesystem=local, path=/mnt/cluster_storage/fsdp_mnist_b3d9097d/checkpoint_2025-09-02_15-11-51.471109)
+    [36m(RayTrainWorker pid=13196, ip=10.0.175.234)[0m Checkpoint saved successfully. Metrics: {'loss': 0.8997600149601064, 'epoch': 0}
+    [36m(RayTrainWorker pid=13196, ip=10.0.175.234)[0m Checkpoint successfully created at: Checkpoint(filesystem=local, path=/mnt/cluster_storage/fsdp_mnist_b3d9097d/checkpoint_2025-09-02_15-12-05.978517)
+    [36m(RayTrainWorker pid=13196, ip=10.0.175.234)[0m Checkpoint saved successfully. Metrics: {'loss': 0.6765235413896277, 'epoch': 1}
+    [36m(RayTrainWorker pid=12864, ip=10.0.129.25)[0m {'loss': 0.684530314993351, 'epoch': 1}
+    [36m(RayTrainWorker pid=13196, ip=10.0.175.234)[0m Saving checkpoint and reporting metrics...[32m [repeated 2x across cluster][0m
+    [36m(RayTrainWorker pid=12864, ip=10.0.129.25)[0m Checkpoint successfully created at: Checkpoint(filesystem=local, path=/mnt/cluster_storage/fsdp_mnist_b3d9097d/checkpoint_2025-09-02_15-12-05.978517)
+    [36m(RayTrainWorker pid=12864, ip=10.0.129.25)[0m Checkpoint saved successfully. Metrics: {'loss': 0.684530314993351, 'epoch': 1}
+    [36m(RayTrainWorker pid=13196, ip=10.0.175.234)[0m Checkpoint successfully created at: Checkpoint(filesystem=local, path=/mnt/cluster_storage/fsdp_mnist_b3d9097d/checkpoint_2025-09-02_15-12-20.886031)
+    [36m(RayTrainWorker pid=13196, ip=10.0.175.234)[0m Checkpoint saved successfully. Metrics: {'loss': 0.5824656817929964, 'epoch': 2}
+    [36m(RayTrainWorker pid=12864, ip=10.0.129.25)[0m {'loss': 0.5844215771830674, 'epoch': 2}
+    [36m(RayTrainWorker pid=13196, ip=10.0.175.234)[0m Saving checkpoint and reporting metrics...[32m [repeated 2x across cluster][0m
+    [36m(RayTrainWorker pid=12864, ip=10.0.129.25)[0m Checkpoint successfully created at: Checkpoint(filesystem=local, path=/mnt/cluster_storage/fsdp_mnist_b3d9097d/checkpoint_2025-09-02_15-12-20.886031)
+    [36m(RayTrainWorker pid=12864, ip=10.0.129.25)[0m Checkpoint saved successfully. Metrics: {'loss': 0.5844215771830674, 'epoch': 2}
+    [36m(RayTrainWorker pid=13196, ip=10.0.175.234)[0m Checkpoint successfully created at: Checkpoint(filesystem=local, path=/mnt/cluster_storage/fsdp_mnist_b3d9097d/checkpoint_2025-09-02_15-12-35.190620)
+    [36m(RayTrainWorker pid=13196, ip=10.0.175.234)[0m Checkpoint saved successfully. Metrics: {'loss': 0.5248936429936835, 'epoch': 3}
+    [36m(RayTrainWorker pid=12864, ip=10.0.129.25)[0m {'loss': 0.5256989174700798, 'epoch': 3}
+    [36m(RayTrainWorker pid=12864, ip=10.0.129.25)[0m Saving checkpoint and reporting metrics...[32m [repeated 2x across cluster][0m
+    [36m(RayTrainWorker pid=12864, ip=10.0.129.25)[0m Checkpoint successfully created at: Checkpoint(filesystem=local, path=/mnt/cluster_storage/fsdp_mnist_b3d9097d/checkpoint_2025-09-02_15-12-35.190620)
+    [36m(RayTrainWorker pid=12864, ip=10.0.129.25)[0m Checkpoint saved successfully. Metrics: {'loss': 0.5256989174700798, 'epoch': 3}
+    [36m(RayTrainWorker pid=13196, ip=10.0.175.234)[0m Checkpoint successfully created at: Checkpoint(filesystem=local, path=/mnt/cluster_storage/fsdp_mnist_b3d9097d/checkpoint_2025-09-02_15-12-49.754653)
+    [36m(RayTrainWorker pid=13196, ip=10.0.175.234)[0m Checkpoint saved successfully. Metrics: {'loss': 0.4851354720744681, 'epoch': 4}
+    [36m(RayTrainWorker pid=12864, ip=10.0.129.25)[0m {'loss': 0.4869812790890957, 'epoch': 4}
+    [36m(RayTrainWorker pid=12864, ip=10.0.129.25)[0m Preparing model for inference...
+    [36m(RayTrainWorker pid=13196, ip=10.0.175.234)[0m Saving checkpoint and reporting metrics...
+    [36m(RayTrainWorker pid=12864, ip=10.0.129.25)[0m Checkpoint successfully created at: Checkpoint(filesystem=local, path=/mnt/cluster_storage/fsdp_mnist_b3d9097d/checkpoint_2025-09-02_15-12-49.754653)
+    [36m(RayTrainWorker pid=12864, ip=10.0.129.25)[0m Checkpoint saved successfully. Metrics: {'loss': 0.4869812790890957, 'epoch': 4}
+    [36m(RayTrainWorker pid=13196, ip=10.0.175.234)[0m Successfully retrieved complete model state dict
+    [36m(RayTrainWorker pid=12864, ip=10.0.129.25)[0m Saved complete model to /tmp/tmp0o12k1mn/full-model.pt
+    [36m(RayTrainWorker pid=12864, ip=10.0.129.25)[0m Checkpoint successfully created at: Checkpoint(filesystem=local, path=/mnt/cluster_storage/fsdp_mnist_b3d9097d/full_model)
+    [36m(TrainController pid=70753)[0m [State Transition] RUNNING -> FINISHED.
+    [36m(RayTrainWorker pid=13196, ip=10.0.175.234)[0m Preparing model for inference...
 
 
     Training completed successfully!
 
 
-    [36m(autoscaler +1h49m20s)[0m Tip: use `ray status` to view detailed cluster status. To disable these messages, set RAY_SCHEDULER_EVENTS=0.
-
-
-## 10. Loading the Trained Model for Inference
+## 9. Loading the Trained Model for Inference
 
 After training completes, we can load the saved model for inference on new data. The model is loaded in its unsharded form, ready for standard PyTorch inference.
 
@@ -694,7 +744,7 @@ After training completes, we can load the saved model for inference on new data.
 ```python
 # Update this path to match your trained model location
 # The path follows the pattern: /mnt/cluster_storage/{experiment_name}/full_model/full-model.pt
-PATH_TO_FULL_MODEL = "/mnt/cluster_storage/fsdp_mnist_16b0e0c2/full_model/full-model.pt"
+PATH_TO_FULL_MODEL = f"/mnt/cluster_storage/{experiment_name}/full_model/full-model.pt"
 ```
 
 
@@ -818,7 +868,6 @@ test_data
 
 ```python
 # Test model inference
-model.eval()
 with torch.no_grad():
     out = model(test_data.data[0].reshape(1, 1, 28, 28).float())
     predicted_label = out.argmax().item()
@@ -833,7 +882,7 @@ with torch.no_grad():
 
 In this tutorial, you: 
 
-- Trained an image classification model using FSDP and Ray Train
+- Trained an image classification model using FSDP2 and Ray Train
 - Learned how to load and save distributed checkpoints with PyTorch DCP
-- Gained insight on configuring FSDP to balance training performance and memory usage
+- Gained insight on configuring FSDP2 to balance training performance and memory usage
 - Unlocked multi-node GPU memory observability with PyTorch Profiler
