@@ -46,78 +46,6 @@ pip install torchvision
 pip install matplotlib
 ```
 
-    Requirement already satisfied: torch in /home/ray/anaconda3/lib/python3.11/site-packages (2.8.0)
-    Requirement already satisfied: filelock in /home/ray/anaconda3/lib/python3.11/site-packages (from torch) (3.17.0)
-    Requirement already satisfied: typing-extensions>=4.10.0 in /home/ray/anaconda3/lib/python3.11/site-packages (from torch) (4.12.2)
-    Requirement already satisfied: sympy>=1.13.3 in /home/ray/anaconda3/lib/python3.11/site-packages (from torch) (1.14.0)
-    Requirement already satisfied: networkx in /home/ray/anaconda3/lib/python3.11/site-packages (from torch) (3.5)
-    Requirement already satisfied: jinja2 in /home/ray/anaconda3/lib/python3.11/site-packages (from torch) (3.1.6)
-    Requirement already satisfied: fsspec in /home/ray/anaconda3/lib/python3.11/site-packages (from torch) (2023.5.0)
-    Requirement already satisfied: nvidia-cuda-nvrtc-cu12==12.8.93 in /home/ray/anaconda3/lib/python3.11/site-packages (from torch) (12.8.93)
-    Requirement already satisfied: nvidia-cuda-runtime-cu12==12.8.90 in /home/ray/anaconda3/lib/python3.11/site-packages (from torch) (12.8.90)
-    Requirement already satisfied: nvidia-cuda-cupti-cu12==12.8.90 in /home/ray/anaconda3/lib/python3.11/site-packages (from torch) (12.8.90)
-    Requirement already satisfied: nvidia-cudnn-cu12==9.10.2.21 in /home/ray/anaconda3/lib/python3.11/site-packages (from torch) (9.10.2.21)
-    Requirement already satisfied: nvidia-cublas-cu12==12.8.4.1 in /home/ray/anaconda3/lib/python3.11/site-packages (from torch) (12.8.4.1)
-    Requirement already satisfied: nvidia-cufft-cu12==11.3.3.83 in /home/ray/anaconda3/lib/python3.11/site-packages (from torch) (11.3.3.83)
-    Requirement already satisfied: nvidia-curand-cu12==10.3.9.90 in /home/ray/anaconda3/lib/python3.11/site-packages (from torch) (10.3.9.90)
-    Requirement already satisfied: nvidia-cusolver-cu12==11.7.3.90 in /home/ray/anaconda3/lib/python3.11/site-packages (from torch) (11.7.3.90)
-    Requirement already satisfied: nvidia-cusparse-cu12==12.5.8.93 in /home/ray/anaconda3/lib/python3.11/site-packages (from torch) (12.5.8.93)
-    Requirement already satisfied: nvidia-cusparselt-cu12==0.7.1 in /home/ray/anaconda3/lib/python3.11/site-packages (from torch) (0.7.1)
-    Requirement already satisfied: nvidia-nccl-cu12==2.27.3 in /home/ray/anaconda3/lib/python3.11/site-packages (from torch) (2.27.3)
-    Requirement already satisfied: nvidia-nvtx-cu12==12.8.90 in /home/ray/anaconda3/lib/python3.11/site-packages (from torch) (12.8.90)
-    Requirement already satisfied: nvidia-nvjitlink-cu12==12.8.93 in /home/ray/anaconda3/lib/python3.11/site-packages (from torch) (12.8.93)
-    Requirement already satisfied: nvidia-cufile-cu12==1.13.1.3 in /home/ray/anaconda3/lib/python3.11/site-packages (from torch) (1.13.1.3)
-    Requirement already satisfied: triton==3.4.0 in /home/ray/anaconda3/lib/python3.11/site-packages (from torch) (3.4.0)
-    Requirement already satisfied: setuptools>=40.8.0 in /home/ray/anaconda3/lib/python3.11/site-packages (from triton==3.4.0->torch) (80.9.0)
-    Requirement already satisfied: mpmath<1.4,>=1.1.0 in /home/ray/anaconda3/lib/python3.11/site-packages (from sympy>=1.13.3->torch) (1.3.0)
-    Requirement already satisfied: MarkupSafe>=2.0 in /home/ray/anaconda3/lib/python3.11/site-packages (from jinja2->torch) (2.1.3)
-    [92mSuccessfully registered `torch` package to be installed on all cluster nodes.[0m
-    [92mView and update dependencies here: https://console.anyscale.com/cld_kvedZWag2qA8i5BjxUevf5i7/prj_cz951f43jjdybtzkx1s5sjgz99/workspaces/expwrk_nktjw7a3j2l5c7af9rh3n5rskw?workspace-tab=dependencies[0m
-    Requirement already satisfied: torchvision in /home/ray/anaconda3/lib/python3.11/site-packages (0.23.0)
-    Requirement already satisfied: numpy in /home/ray/anaconda3/lib/python3.11/site-packages (from torchvision) (1.26.4)
-    Requirement already satisfied: torch==2.8.0 in /home/ray/anaconda3/lib/python3.11/site-packages (from torchvision) (2.8.0)
-    Requirement already satisfied: pillow!=8.3.*,>=5.3.0 in /home/ray/anaconda3/lib/python3.11/site-packages (from torchvision) (11.3.0)
-    Requirement already satisfied: filelock in /home/ray/anaconda3/lib/python3.11/site-packages (from torch==2.8.0->torchvision) (3.17.0)
-    Requirement already satisfied: typing-extensions>=4.10.0 in /home/ray/anaconda3/lib/python3.11/site-packages (from torch==2.8.0->torchvision) (4.12.2)
-    Requirement already satisfied: sympy>=1.13.3 in /home/ray/anaconda3/lib/python3.11/site-packages (from torch==2.8.0->torchvision) (1.14.0)
-    Requirement already satisfied: networkx in /home/ray/anaconda3/lib/python3.11/site-packages (from torch==2.8.0->torchvision) (3.5)
-    Requirement already satisfied: jinja2 in /home/ray/anaconda3/lib/python3.11/site-packages (from torch==2.8.0->torchvision) (3.1.6)
-    Requirement already satisfied: fsspec in /home/ray/anaconda3/lib/python3.11/site-packages (from torch==2.8.0->torchvision) (2023.5.0)
-    Requirement already satisfied: nvidia-cuda-nvrtc-cu12==12.8.93 in /home/ray/anaconda3/lib/python3.11/site-packages (from torch==2.8.0->torchvision) (12.8.93)
-    Requirement already satisfied: nvidia-cuda-runtime-cu12==12.8.90 in /home/ray/anaconda3/lib/python3.11/site-packages (from torch==2.8.0->torchvision) (12.8.90)
-    Requirement already satisfied: nvidia-cuda-cupti-cu12==12.8.90 in /home/ray/anaconda3/lib/python3.11/site-packages (from torch==2.8.0->torchvision) (12.8.90)
-    Requirement already satisfied: nvidia-cudnn-cu12==9.10.2.21 in /home/ray/anaconda3/lib/python3.11/site-packages (from torch==2.8.0->torchvision) (9.10.2.21)
-    Requirement already satisfied: nvidia-cublas-cu12==12.8.4.1 in /home/ray/anaconda3/lib/python3.11/site-packages (from torch==2.8.0->torchvision) (12.8.4.1)
-    Requirement already satisfied: nvidia-cufft-cu12==11.3.3.83 in /home/ray/anaconda3/lib/python3.11/site-packages (from torch==2.8.0->torchvision) (11.3.3.83)
-    Requirement already satisfied: nvidia-curand-cu12==10.3.9.90 in /home/ray/anaconda3/lib/python3.11/site-packages (from torch==2.8.0->torchvision) (10.3.9.90)
-    Requirement already satisfied: nvidia-cusolver-cu12==11.7.3.90 in /home/ray/anaconda3/lib/python3.11/site-packages (from torch==2.8.0->torchvision) (11.7.3.90)
-    Requirement already satisfied: nvidia-cusparse-cu12==12.5.8.93 in /home/ray/anaconda3/lib/python3.11/site-packages (from torch==2.8.0->torchvision) (12.5.8.93)
-    Requirement already satisfied: nvidia-cusparselt-cu12==0.7.1 in /home/ray/anaconda3/lib/python3.11/site-packages (from torch==2.8.0->torchvision) (0.7.1)
-    Requirement already satisfied: nvidia-nccl-cu12==2.27.3 in /home/ray/anaconda3/lib/python3.11/site-packages (from torch==2.8.0->torchvision) (2.27.3)
-    Requirement already satisfied: nvidia-nvtx-cu12==12.8.90 in /home/ray/anaconda3/lib/python3.11/site-packages (from torch==2.8.0->torchvision) (12.8.90)
-    Requirement already satisfied: nvidia-nvjitlink-cu12==12.8.93 in /home/ray/anaconda3/lib/python3.11/site-packages (from torch==2.8.0->torchvision) (12.8.93)
-    Requirement already satisfied: nvidia-cufile-cu12==1.13.1.3 in /home/ray/anaconda3/lib/python3.11/site-packages (from torch==2.8.0->torchvision) (1.13.1.3)
-    Requirement already satisfied: triton==3.4.0 in /home/ray/anaconda3/lib/python3.11/site-packages (from torch==2.8.0->torchvision) (3.4.0)
-    Requirement already satisfied: setuptools>=40.8.0 in /home/ray/anaconda3/lib/python3.11/site-packages (from triton==3.4.0->torch==2.8.0->torchvision) (80.9.0)
-    Requirement already satisfied: mpmath<1.4,>=1.1.0 in /home/ray/anaconda3/lib/python3.11/site-packages (from sympy>=1.13.3->torch==2.8.0->torchvision) (1.3.0)
-    Requirement already satisfied: MarkupSafe>=2.0 in /home/ray/anaconda3/lib/python3.11/site-packages (from jinja2->torch==2.8.0->torchvision) (2.1.3)
-    [92mSuccessfully registered `torchvision` package to be installed on all cluster nodes.[0m
-    [92mView and update dependencies here: https://console.anyscale.com/cld_kvedZWag2qA8i5BjxUevf5i7/prj_cz951f43jjdybtzkx1s5sjgz99/workspaces/expwrk_nktjw7a3j2l5c7af9rh3n5rskw?workspace-tab=dependencies[0m
-    Requirement already satisfied: matplotlib in /home/ray/anaconda3/lib/python3.11/site-packages (3.10.6)
-    Requirement already satisfied: contourpy>=1.0.1 in /home/ray/anaconda3/lib/python3.11/site-packages (from matplotlib) (1.3.3)
-    Requirement already satisfied: cycler>=0.10 in /home/ray/anaconda3/lib/python3.11/site-packages (from matplotlib) (0.12.1)
-    Requirement already satisfied: fonttools>=4.22.0 in /home/ray/anaconda3/lib/python3.11/site-packages (from matplotlib) (4.59.2)
-    Requirement already satisfied: kiwisolver>=1.3.1 in /home/ray/anaconda3/lib/python3.11/site-packages (from matplotlib) (1.4.9)
-    Requirement already satisfied: numpy>=1.23 in /home/ray/anaconda3/lib/python3.11/site-packages (from matplotlib) (1.26.4)
-    Requirement already satisfied: packaging>=20.0 in /home/ray/anaconda3/lib/python3.11/site-packages (from matplotlib) (23.0)
-    Requirement already satisfied: pillow>=8 in /home/ray/anaconda3/lib/python3.11/site-packages (from matplotlib) (11.3.0)
-    Requirement already satisfied: pyparsing>=2.3.1 in /home/ray/anaconda3/lib/python3.11/site-packages (from matplotlib) (3.1.1)
-    Requirement already satisfied: python-dateutil>=2.7 in /home/ray/anaconda3/lib/python3.11/site-packages (from matplotlib) (2.8.2)
-    Requirement already satisfied: six>=1.5 in /home/ray/anaconda3/lib/python3.11/site-packages (from python-dateutil>=2.7->matplotlib) (1.16.0)
-    [92mSuccessfully registered `matplotlib` package to be installed on all cluster nodes.[0m
-    [92mView and update dependencies here: https://console.anyscale.com/cld_kvedZWag2qA8i5BjxUevf5i7/prj_cz951f43jjdybtzkx1s5sjgz99/workspaces/expwrk_nktjw7a3j2l5c7af9rh3n5rskw?workspace-tab=dependencies[0m
-
-
 
 ```python
 # Enable Ray Train V2 for the latest train APIs
@@ -667,75 +595,6 @@ print("Training completed successfully!")
 
 ```
 
-    Starting FSDP training job...
-
-
-    2025-09-02 15:11:17,955	INFO worker.py:1768 -- Connecting to existing Ray cluster at address: 10.0.32.199:6379...
-    2025-09-02 15:11:17,966	INFO worker.py:1939 -- Connected to Ray cluster. View the dashboard at [1m[32mhttps://session-2tq4lu3kdll2ayzdmkgw6lzt3y.i.anyscaleuserdata.com [39m[22m
-    2025-09-02 15:11:18,166	INFO packaging.py:380 -- Pushing file package 'gcs://_ray_pkg_c4de9e5c441192fff0b954842e098cddc401e524.zip' (82.24MiB) to Ray cluster...
-    2025-09-02 15:11:18,552	INFO packaging.py:393 -- Successfully pushed file package 'gcs://_ray_pkg_c4de9e5c441192fff0b954842e098cddc401e524.zip'.
-    /home/ray/anaconda3/lib/python3.11/site-packages/ray/_private/worker.py:1987: FutureWarning: Tip: In future versions of Ray, Ray will no longer override accelerator visible devices env var if num_gpus=0 or num_gpus=None (default). To enable this behavior and turn off this error message, set RAY_ACCEL_ENV_VAR_OVERRIDE_ON_ZERO=0
-      warnings.warn(
-    [36m(TrainController pid=70753)[0m [State Transition] INITIALIZING -> SCHEDULING.
-    [36m(TrainController pid=70753)[0m Attempting to start training worker group of size 2 with the following resources: [{'GPU': 1}] * 2
-    [36m(TrainController pid=70753)[0m Using blocking ray.get inside async actor. This blocks the event loop. Please use `await` on object ref with asyncio.gather if you want to yield execution to the event loop instead.
-    [36m(RayTrainWorker pid=12864, ip=10.0.129.25)[0m Setting up process group for: env:// [rank=0, world_size=2]
-    [36m(TrainController pid=70753)[0m Started training worker group of size 2: 
-    [36m(TrainController pid=70753)[0m - (ip=10.0.129.25, pid=12864) world_rank=0, local_rank=0, node_rank=0
-    [36m(TrainController pid=70753)[0m - (ip=10.0.175.234, pid=13196) world_rank=1, local_rank=0, node_rank=1
-    [36m(TrainController pid=70753)[0m [State Transition] SCHEDULING -> RUNNING.
-    [36m(RayTrainWorker pid=13196, ip=10.0.175.234)[0m Initializing Vision Transformer model...
-    [36m(RayTrainWorker pid=13196, ip=10.0.175.234)[0m Applying FSDP2 sharding to model...
-    [36m(RayTrainWorker pid=13196, ip=10.0.175.234)[0m /tmp/ray/session_2025-09-02_13-13-58_581141_2379/runtime_resources/pip/2dc646f4cea92923d9b211dd039da1e14fd3e129/virtualenv/lib/python3.11/site-packages/torch/profiler/profiler.py:509: UserWarning: Profiler won't be using warmup, this can skew profiler results
-    [36m(RayTrainWorker pid=13196, ip=10.0.175.234)[0m   warn("Profiler won't be using warmup, this can skew profiler results")
-    [36m(RayTrainWorker pid=13196, ip=10.0.175.234)[0m ERROR: External init callback must run in same thread as registerClient (322958912 != -1404328128)
-    [36m(RayTrainWorker pid=12864, ip=10.0.129.25)[0m Saving checkpoint and reporting metrics...
-    [36m(RayTrainWorker pid=12864, ip=10.0.129.25)[0m Initializing Vision Transformer model...
-    [36m(RayTrainWorker pid=12864, ip=10.0.129.25)[0m Applying FSDP2 sharding to model...
-    [36m(RayTrainWorker pid=12864, ip=10.0.129.25)[0m /tmp/ray/session_2025-09-02_13-13-58_581141_2379/runtime_resources/pip/2dc646f4cea92923d9b211dd039da1e14fd3e129/virtualenv/lib/python3.11/site-packages/torch/profiler/profiler.py:509: UserWarning: Profiler won't be using warmup, this can skew profiler results
-    [36m(RayTrainWorker pid=12864, ip=10.0.129.25)[0m   warn("Profiler won't be using warmup, this can skew profiler results")
-    [36m(RayTrainWorker pid=12864, ip=10.0.129.25)[0m ERROR: External init callback must run in same thread as registerClient (1982854720 != 467728192)
-    [36m(RayTrainWorker pid=12864, ip=10.0.129.25)[0m Checkpoint successfully created at: Checkpoint(filesystem=local, path=/mnt/cluster_storage/fsdp_mnist_b3d9097d/checkpoint_2025-09-02_15-11-51.471109)
-    [36m(RayTrainWorker pid=12864, ip=10.0.129.25)[0m Checkpoint saved successfully. Metrics: {'loss': 0.9100108045212766, 'epoch': 0}
-    [36m(RayTrainWorker pid=12864, ip=10.0.129.25)[0m {'loss': 0.9100108045212766, 'epoch': 0}
-    [36m(RayTrainWorker pid=12864, ip=10.0.129.25)[0m Saving checkpoint and reporting metrics...[32m [repeated 2x across cluster] (Ray deduplicates logs by default. Set RAY_DEDUP_LOGS=0 to disable log deduplication, or see https://docs.ray.io/en/master/ray-observability/user-guides/configure-logging.html#log-deduplication for more options.)[0m
-    [36m(RayTrainWorker pid=13196, ip=10.0.175.234)[0m Checkpoint successfully created at: Checkpoint(filesystem=local, path=/mnt/cluster_storage/fsdp_mnist_b3d9097d/checkpoint_2025-09-02_15-11-51.471109)
-    [36m(RayTrainWorker pid=13196, ip=10.0.175.234)[0m Checkpoint saved successfully. Metrics: {'loss': 0.8997600149601064, 'epoch': 0}
-    [36m(RayTrainWorker pid=13196, ip=10.0.175.234)[0m Checkpoint successfully created at: Checkpoint(filesystem=local, path=/mnt/cluster_storage/fsdp_mnist_b3d9097d/checkpoint_2025-09-02_15-12-05.978517)
-    [36m(RayTrainWorker pid=13196, ip=10.0.175.234)[0m Checkpoint saved successfully. Metrics: {'loss': 0.6765235413896277, 'epoch': 1}
-    [36m(RayTrainWorker pid=12864, ip=10.0.129.25)[0m {'loss': 0.684530314993351, 'epoch': 1}
-    [36m(RayTrainWorker pid=13196, ip=10.0.175.234)[0m Saving checkpoint and reporting metrics...[32m [repeated 2x across cluster][0m
-    [36m(RayTrainWorker pid=12864, ip=10.0.129.25)[0m Checkpoint successfully created at: Checkpoint(filesystem=local, path=/mnt/cluster_storage/fsdp_mnist_b3d9097d/checkpoint_2025-09-02_15-12-05.978517)
-    [36m(RayTrainWorker pid=12864, ip=10.0.129.25)[0m Checkpoint saved successfully. Metrics: {'loss': 0.684530314993351, 'epoch': 1}
-    [36m(RayTrainWorker pid=13196, ip=10.0.175.234)[0m Checkpoint successfully created at: Checkpoint(filesystem=local, path=/mnt/cluster_storage/fsdp_mnist_b3d9097d/checkpoint_2025-09-02_15-12-20.886031)
-    [36m(RayTrainWorker pid=13196, ip=10.0.175.234)[0m Checkpoint saved successfully. Metrics: {'loss': 0.5824656817929964, 'epoch': 2}
-    [36m(RayTrainWorker pid=12864, ip=10.0.129.25)[0m {'loss': 0.5844215771830674, 'epoch': 2}
-    [36m(RayTrainWorker pid=13196, ip=10.0.175.234)[0m Saving checkpoint and reporting metrics...[32m [repeated 2x across cluster][0m
-    [36m(RayTrainWorker pid=12864, ip=10.0.129.25)[0m Checkpoint successfully created at: Checkpoint(filesystem=local, path=/mnt/cluster_storage/fsdp_mnist_b3d9097d/checkpoint_2025-09-02_15-12-20.886031)
-    [36m(RayTrainWorker pid=12864, ip=10.0.129.25)[0m Checkpoint saved successfully. Metrics: {'loss': 0.5844215771830674, 'epoch': 2}
-    [36m(RayTrainWorker pid=13196, ip=10.0.175.234)[0m Checkpoint successfully created at: Checkpoint(filesystem=local, path=/mnt/cluster_storage/fsdp_mnist_b3d9097d/checkpoint_2025-09-02_15-12-35.190620)
-    [36m(RayTrainWorker pid=13196, ip=10.0.175.234)[0m Checkpoint saved successfully. Metrics: {'loss': 0.5248936429936835, 'epoch': 3}
-    [36m(RayTrainWorker pid=12864, ip=10.0.129.25)[0m {'loss': 0.5256989174700798, 'epoch': 3}
-    [36m(RayTrainWorker pid=12864, ip=10.0.129.25)[0m Saving checkpoint and reporting metrics...[32m [repeated 2x across cluster][0m
-    [36m(RayTrainWorker pid=12864, ip=10.0.129.25)[0m Checkpoint successfully created at: Checkpoint(filesystem=local, path=/mnt/cluster_storage/fsdp_mnist_b3d9097d/checkpoint_2025-09-02_15-12-35.190620)
-    [36m(RayTrainWorker pid=12864, ip=10.0.129.25)[0m Checkpoint saved successfully. Metrics: {'loss': 0.5256989174700798, 'epoch': 3}
-    [36m(RayTrainWorker pid=13196, ip=10.0.175.234)[0m Checkpoint successfully created at: Checkpoint(filesystem=local, path=/mnt/cluster_storage/fsdp_mnist_b3d9097d/checkpoint_2025-09-02_15-12-49.754653)
-    [36m(RayTrainWorker pid=13196, ip=10.0.175.234)[0m Checkpoint saved successfully. Metrics: {'loss': 0.4851354720744681, 'epoch': 4}
-    [36m(RayTrainWorker pid=12864, ip=10.0.129.25)[0m {'loss': 0.4869812790890957, 'epoch': 4}
-    [36m(RayTrainWorker pid=12864, ip=10.0.129.25)[0m Preparing model for inference...
-    [36m(RayTrainWorker pid=13196, ip=10.0.175.234)[0m Saving checkpoint and reporting metrics...
-    [36m(RayTrainWorker pid=12864, ip=10.0.129.25)[0m Checkpoint successfully created at: Checkpoint(filesystem=local, path=/mnt/cluster_storage/fsdp_mnist_b3d9097d/checkpoint_2025-09-02_15-12-49.754653)
-    [36m(RayTrainWorker pid=12864, ip=10.0.129.25)[0m Checkpoint saved successfully. Metrics: {'loss': 0.4869812790890957, 'epoch': 4}
-    [36m(RayTrainWorker pid=13196, ip=10.0.175.234)[0m Successfully retrieved complete model state dict
-    [36m(RayTrainWorker pid=12864, ip=10.0.129.25)[0m Saved complete model to /tmp/tmp0o12k1mn/full-model.pt
-    [36m(RayTrainWorker pid=12864, ip=10.0.129.25)[0m Checkpoint successfully created at: Checkpoint(filesystem=local, path=/mnt/cluster_storage/fsdp_mnist_b3d9097d/full_model)
-    [36m(TrainController pid=70753)[0m [State Transition] RUNNING -> FINISHED.
-    [36m(RayTrainWorker pid=13196, ip=10.0.175.234)[0m Preparing model for inference...
-
-
-    Training completed successfully!
-
-
 ## 9. Loading the Trained Model for Inference
 
 After training completes, we can load the saved model for inference on new data. The model is loaded in its unsharded form, ready for standard PyTorch inference.
@@ -759,87 +618,6 @@ model.load_state_dict(state_dict)
 model.eval()
 ```
 
-    Loading trained model for inference...
-
-
-
-
-
-    VisionTransformer(
-      (conv_proj): Conv2d(1, 64, kernel_size=(7, 7), stride=(7, 7))
-      (encoder): Encoder(
-        (dropout): Dropout(p=0.0, inplace=False)
-        (layers): Sequential(
-          (encoder_layer_0): EncoderBlock(
-            (ln_1): LayerNorm((64,), eps=1e-06, elementwise_affine=True)
-            (self_attention): MultiheadAttention(
-              (out_proj): NonDynamicallyQuantizableLinear(in_features=64, out_features=64, bias=True)
-            )
-            (dropout): Dropout(p=0.0, inplace=False)
-            (ln_2): LayerNorm((64,), eps=1e-06, elementwise_affine=True)
-            (mlp): MLPBlock(
-              (0): Linear(in_features=64, out_features=128, bias=True)
-              (1): GELU(approximate='none')
-              (2): Dropout(p=0.0, inplace=False)
-              (3): Linear(in_features=128, out_features=64, bias=True)
-              (4): Dropout(p=0.0, inplace=False)
-            )
-          )
-          (encoder_layer_1): EncoderBlock(
-            (ln_1): LayerNorm((64,), eps=1e-06, elementwise_affine=True)
-            (self_attention): MultiheadAttention(
-              (out_proj): NonDynamicallyQuantizableLinear(in_features=64, out_features=64, bias=True)
-            )
-            (dropout): Dropout(p=0.0, inplace=False)
-            (ln_2): LayerNorm((64,), eps=1e-06, elementwise_affine=True)
-            (mlp): MLPBlock(
-              (0): Linear(in_features=64, out_features=128, bias=True)
-              (1): GELU(approximate='none')
-              (2): Dropout(p=0.0, inplace=False)
-              (3): Linear(in_features=128, out_features=64, bias=True)
-              (4): Dropout(p=0.0, inplace=False)
-            )
-          )
-          (encoder_layer_2): EncoderBlock(
-            (ln_1): LayerNorm((64,), eps=1e-06, elementwise_affine=True)
-            (self_attention): MultiheadAttention(
-              (out_proj): NonDynamicallyQuantizableLinear(in_features=64, out_features=64, bias=True)
-            )
-            (dropout): Dropout(p=0.0, inplace=False)
-            (ln_2): LayerNorm((64,), eps=1e-06, elementwise_affine=True)
-            (mlp): MLPBlock(
-              (0): Linear(in_features=64, out_features=128, bias=True)
-              (1): GELU(approximate='none')
-              (2): Dropout(p=0.0, inplace=False)
-              (3): Linear(in_features=128, out_features=64, bias=True)
-              (4): Dropout(p=0.0, inplace=False)
-            )
-          )
-          (encoder_layer_3): EncoderBlock(
-            (ln_1): LayerNorm((64,), eps=1e-06, elementwise_affine=True)
-            (self_attention): MultiheadAttention(
-              (out_proj): NonDynamicallyQuantizableLinear(in_features=64, out_features=64, bias=True)
-            )
-            (dropout): Dropout(p=0.0, inplace=False)
-            (ln_2): LayerNorm((64,), eps=1e-06, elementwise_affine=True)
-            (mlp): MLPBlock(
-              (0): Linear(in_features=64, out_features=128, bias=True)
-              (1): GELU(approximate='none')
-              (2): Dropout(p=0.0, inplace=False)
-              (3): Linear(in_features=128, out_features=64, bias=True)
-              (4): Dropout(p=0.0, inplace=False)
-            )
-          )
-        )
-        (ln): LayerNorm((64,), eps=1e-06, elementwise_affine=True)
-      )
-      (heads): Sequential(
-        (head): Linear(in_features=64, out_features=10, bias=True)
-      )
-    )
-
-
-
 
 ```python
 # Load the test data
@@ -851,21 +629,6 @@ test_data
 ```
 
 
-
-
-    Dataset FashionMNIST
-        Number of datapoints: 10000
-        Root location: .
-        Split: Test
-        StandardTransform
-    Transform: Compose(
-                   ToTensor()
-                   Normalize(mean=(0.5,), std=(0.5,))
-               )
-
-
-
-
 ```python
 # Test model inference
 with torch.no_grad():
@@ -874,9 +637,6 @@ with torch.no_grad():
     test_label = test_data.targets[0].item()
     print(f"{predicted_label=} {test_label=}")
 ```
-
-    predicted_label=8 test_label=9
-
 
 ## Summary
 
