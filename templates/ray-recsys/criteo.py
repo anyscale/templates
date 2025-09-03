@@ -41,7 +41,7 @@ S3_BUCKET = "ray-benchmark-data-internal-us-west-2"
 FEATURE_COUNT_PATH_PATTERN = "criteo/tsv.gz/categorical_feature_value_counts/{}-value_counts.json"
 CRITEO_S3_URI = f"s3://{S3_BUCKET}/criteo/tsv.gz"
 TRAIN_DATASET_PATH = f"{CRITEO_S3_URI}/train"
-VAL_DATASET_PATH = f"{CRITEO_S3_URI}/val"
+VAL_DATASET_PATH = f"{CRITEO_S3_URI}/valid"
 
 class DatasetKey:
     """Constants for dataset split names."""

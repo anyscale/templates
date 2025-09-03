@@ -552,6 +552,8 @@ class TorchRecWrapper:
 
     def run(self) -> None:
         for epoch in range(self.config.num_epochs):
+            if self.config.train_step_limit and self._current_step >= self.config.train_step_limit:
+                break
             self._train_epoch()
             if not self.config.skip_validation_at_epoch_end:
                 self._validate()

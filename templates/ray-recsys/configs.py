@@ -44,6 +44,7 @@ class RecsysConfig:
 
     # Training
     num_epochs: int = 1
+    train_step_limit: Optional[int] = None
     skip_train_step: bool = False
     # If None, use all days.
     train_day_list: Optional[List[int]] = None
