@@ -12,6 +12,10 @@ This report demonstrates training a DLRM model on the Criteo dataset using Ray T
 
 * To demonstrate Ray’s capability to support heterogeneous clusters, we use a setup consisting of two g5.12xlarge nodes and two r7i.12xlarge nodes.
 
+### Note
+
+The original model requires A100 GPUs to run. To enable execution on A10 GPUs, we manually reduced the embedding table size. This adjustment may lead to a degradation in model quality.
+
 ## Import the Configs
 
 
@@ -23,6 +27,7 @@ import os
 recsys_config = RecsysConfig()
 # We use 2 g5.12xlarge nodes
 recsys_config.num_workers = 8
+recsys_config.train_step_limit = 5000
 
 # Enable Ray Train V2
 os.environ['RAY_TRAIN_V2_ENABLED'] = '1'
@@ -119,6 +124,8 @@ We define the `TorchTrainer` and run `fit()`. Key points to note:
 * Setting `{"KINETO_USE_DAEMON": "1", "KINETO_DAEMON_INIT_DELAY_S": "5"}` according to [GPU profiling guidelines](https://docs.anyscale.com/monitoring/workload-debugging/profiling-tools) enables easy profiling of GPU events on any worker.
 * The remaining CPUs are allocated for Ray Data processing.
 
+We will run 5000 iterations and evaluate every 1000 iterations.
+
 
 ```python
 from ray.train.torch import TorchTrainer
@@ -130,7 +137,7 @@ logger = logging.getLogger(__name__)
 scaling_config = ScalingConfig(
     num_workers=recsys_config.num_workers,
     # reserve CPUs to the training workers can make the training more stable.
-    resources_per_worker={"GPU": 1, "CPU": 5},
+    resources_per_worker={"GPU": 1, "CPU": 1},
     use_gpu=True,
 )
 
@@ -173,7 +180,7 @@ logger.info(f"Final metrics: {result.metrics}")
 
 You can see how the workloads are distributed across GPU and CPU machines.
 
-![running_progress](running_progress.png)
+![running_progress](./images/running_progress.png)
 
 ## Ray Data Metrics
 
@@ -181,19 +188,19 @@ Ray Data metrics dashboards provide numerous useful tools for understanding the 
 
 For example, `Iteration Blocked Time` is a valuable metric for identifying data loading bottlenecks. If this value consistently increases over time, it indicates that the model is frequently waiting for data, suggesting that the training pipeline is bottlenecked by data loading.
 
-![example](data_metrics.png)
+![example](./images/data_metrics.png)
 
 ## GPU Profiling
 
 If you set the environment variables `"KINETO_USE_DAEMON": "1", "KINETO_DAEMON_INIT_DELAY_S": "5"`, you can profile GPU metrics with one click.
 
-![gpu profiling](gpu_profiling.png)
+![gpu profiling](./images/gpu_profiling.png)
 
 ## Model Quality
 
 We achieve comparable training loss and validation performance to the baseline. The training loss curve appears spiky due to the presence of numerous sparse features in the model.
 
-![wandb_curve](model_quality.png)
+![wandb_curve](./images/model_quality.png)
 
 ## Throughput Benchmark
 
@@ -218,11 +225,11 @@ We conduct two sets of experiments on `p3dn.24xlarge` machines.
 
 The throughput on 2 nodes is worse than on 1 node.
 
-![wandb_curve](no_efa.png)
+![wandb_curve](./images/no_efa.png)
 
 ### With EFA
 
 With EFA enabled, we observe clear scalability as the number of nodes increases.
 
-![wandb_curve](with_efa.png)
+![wandb_curve](./images/with_efa.png)
 
