@@ -101,7 +101,7 @@ Use the following to deploy the Service in a single command:
 
 ```python
 import os
-service_name = f"my_service_{os.getenv('ANYSCALE_EXPERIMENTAL_USERNAME')}"
+service_name = f"my_service_{os.getenv('ANYSCALE_EXPERIMENTAL_USERNAME')}"[:57]  # service name cannot exceed 57 chars
 os.environ["SERVICE_NAME"] = service_name
 !echo $SERVICE_NAME
 ```
