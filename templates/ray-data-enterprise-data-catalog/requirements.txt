@@ -1,0 +1,14 @@
+ray[data]>=2.8.0
+pandas>=2.0.0
+numpy>=1.24.0
+pyarrow>=12.0.0
+sqlalchemy>=2.0.0
+alembic>=1.11.0
+graphviz>=0.20.0
+fastapi>=0.100.0
+uvicorn>=0.23.0
+pydantic>=2.0.0
+elasticsearch>=8.8.0
+opensearch-py>=2.3.0
+boto3>=1.28.0
+requests>=2.31.0
