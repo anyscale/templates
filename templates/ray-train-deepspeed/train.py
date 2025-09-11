@@ -33,16 +33,16 @@ def log_rank0(message: str) -> None:
 def get_tokenizer(model_name: str, trust_remote_code: bool = True) -> Any:
     """
     Load and configure the tokenizer for the given model.
-    
+
     Args:
         model_name: Name of the model to load tokenizer for
         trust_remote_code: Whether to trust remote code
-        
+
     Returns:
         Configured tokenizer
     """
     tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=trust_remote_code)
-    
+
     # Set pad token if not already set
     if tokenizer.pad_token is None:
         if tokenizer.eos_token is not None:
@@ -61,11 +61,11 @@ def setup_dataloader(model_name: str, dataset_name: str, seq_length: int, batch_
 
     def tokenize_function(examples):
         return tokenizer(examples['text'], padding='max_length', max_length=seq_length, truncation=True)
-    
+
     tokenized_dataset = dataset.map(tokenize_function, batched=True, num_proc=1, keep_in_memory=True)
     tokenized_dataset.set_format(type='torch', columns=['input_ids', 'attention_mask'])
     data_loader = DataLoader(
-        tokenized_dataset, 
+        tokenized_dataset,
         batch_size=batch_size,
         shuffle=True
     )
