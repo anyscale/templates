@@ -1,6 +1,6 @@
 # Geospatial Analysis with Ray Data
 
-**⏱️ Time to complete**: 25 min | **Difficulty**: Intermediate | **Prerequisites**: Basic Python, understanding of coordinates
+**Time to complete**: 25 min | **Difficulty**: Intermediate | **Prerequisites**: Basic Python, understanding of coordinates
 
 ## What You'll Build
 
@@ -26,13 +26,13 @@ By completing this tutorial, you'll understand:
 
 **The Challenge**: Traditional geospatial tools struggle with large datasets. Processing millions of GPS coordinates for proximity analysis can take hours or run out of memory.
 
-**The Solution**: Ray Data distributes spatial calculations across multiple cores/machines, making continental-scale analysis possible in minutes.
+**The Solution**: Ray Data distributes spatial calculations across multiple cores and machines, enabling large-scale geospatial analysis through parallel processing.
 
 **Real-world Impact**: 
-- 🚗 **Ride-sharing**: Find nearest drivers to passengers in real-time
-- 🏪 **Retail**: Analyze store locations and customer proximity  
-- 🏥 **Healthcare**: Emergency services optimization and resource allocation
-- 📱 **Social apps**: Location-based features and recommendations
+- **Ride-sharing**: Find nearest drivers to passengers in real-time
+- **Retail**: Analyze store locations and customer proximity  
+- **Healthcare**: Emergency services optimization and resource allocation
+- **Social apps**: Location-based features and recommendations
 
 ---
 
@@ -46,22 +46,81 @@ Before starting, ensure you have:
 
 ## Quick Start (3 minutes)
 
-Want to see geospatial processing in action immediately?
+Want to see geospatial processing in action immediately? This section demonstrates core spatial analysis concepts in just a few minutes.
+
+### Install Required Packages
+
+First, ensure you have the necessary geospatial libraries installed:
+
+```bash
+pip install "ray[data]" pandas numpy matplotlib seaborn plotly folium geopandas contextily
+```
+
+### Setup and Imports
 
 ```python
 import ray
 import numpy as np
+import pandas as pd
 
-# Create some sample location data
-locations = [{"lat": 40.7128, "lon": -74.0060, "name": "NYC"}]
-ds = ray.data.from_items(locations * 1000)  # 1000 NYC locations
-print(f"🗺 Created dataset with {ds.count()} locations")
+# Initialize Ray for distributed processing
+ray.init()
 ```
 
-To run this example, you will need the following packages:
+### Create Sample Location Data
 
-```bash
-pip install "ray[data]" pandas numpy matplotlib
+```python
+# Create sample location data for major US cities
+print("Creating sample geospatial dataset...")
+
+# Major US city coordinates
+major_cities = [
+    {"name": "New York", "lat": 40.7128, "lon": -74.0060},
+    {"name": "Los Angeles", "lat": 34.0522, "lon": -118.2437},
+    {"name": "Chicago", "lat": 41.8781, "lon": -87.6298},
+    {"name": "Houston", "lat": 29.7604, "lon": -95.3698},
+    {"name": "Phoenix", "lat": 33.4484, "lon": -112.0740}
+]
+
+# Generate points around each city (simulating businesses, stops, etc.)
+locations = []
+np.random.seed(42)  # For reproducible results
+
+for city in major_cities:
+    for i in range(2000):  # 2000 points per city = 10K total
+        # Add small random offset to create realistic distribution
+        lat_offset = np.random.normal(0, 0.1)  # ~11km radius
+        lon_offset = np.random.normal(0, 0.1)
+        
+        location = {
+            "location_id": f"{city['name'][:3].upper()}_{i:04d}",
+            "city": city['name'],
+            "lat": city['lat'] + lat_offset,
+            "lon": city['lon'] + lon_offset,
+            "type": np.random.choice(["restaurant", "store", "office", "hospital", "school"])
+        }
+        locations.append(location)
+
+ds = ray.data.from_items(locations)
+print(f"Created dataset with {ds.count():,} location points across {len(major_cities)} cities")
+```
+
+### Quick Distance Analysis
+
+```python
+# Quick demonstration of geospatial processing
+sample_locations = ds.take(5)
+
+print("Sample Location Data:")
+print("=" * 90)
+print(f"{'Location ID':<12} {'City':<12} {'Type':<12} {'Latitude':<12} {'Longitude':<12}")
+print("-" * 90)
+
+for loc in sample_locations:
+    print(f"{loc['location_id']:<12} {loc['city']:<12} {loc['type']:<12} {loc['lat']:<12.4f} {loc['lon']:<12.4f}")
+
+print("-" * 90)
+print(f"Ready for advanced geospatial analysis with {ds.count():,} location points!")
 ```
 
 ## Step 1: Setup and Data Loading
@@ -73,6 +132,11 @@ import ray
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import seaborn as sns
+import plotly.express as px
+import plotly.graph_objects as go
+import folium
+from folium.plugins import HeatMap, MarkerCluster
 from typing import Dict, Any
 import time
 
@@ -298,29 +362,402 @@ print("Spatial Analysis Results:")
 spatial_results.show()
 ```
 
-## Step 5: Visualization and Results
+## Step 5: Interactive Visualizations and Results
 
-Let's create simple visualizations to understand our results:
+Let's create stunning interactive visualizations to understand our spatial data:
+
+### 5.1: Interactive Heatmaps and Density Maps
 
 ```python
+def create_interactive_heatmap(dataset):
+    """Create interactive heatmap using Folium."""
+    print("Creating interactive heatmap...")
+    
+    # Convert to pandas for visualization
+    poi_df = dataset.to_pandas()
+    
+    # Create base map centered on NYC
+    center_lat = poi_df['latitude'].mean()
+    center_lon = poi_df['longitude'].mean()
+    
+    # Create Folium map with multiple tile layers
+    m = folium.Map(
+        location=[center_lat, center_lon], 
+        zoom_start=10,
+        tiles=None
+    )
+    
+    # Add multiple tile layers for better visualization
+    folium.TileLayer('OpenStreetMap').add_to(m)
+    folium.TileLayer('CartoDB Positron').add_to(m)
+    folium.TileLayer('CartoDB Dark_Matter').add_to(m)
+    
+    # Create heatmap data
+    heat_data = [[row['latitude'], row['longitude']] for _, row in poi_df.iterrows()]
+    
+    # Add heatmap layer
+    HeatMap(
+        heat_data,
+        min_opacity=0.2,
+        radius=15,
+        blur=15,
+        max_zoom=1,
+        name='POI Density Heatmap'
+    ).add_to(m)
+    
+    # Add marker clusters for detailed view
+    marker_cluster = MarkerCluster(name='POI Markers').add_to(m)
+    
+    # Add markers for each POI with category-based colors
+    category_colors = {
+        'restaurant': 'red',
+        'retail': 'blue', 
+        'hospital': 'green',
+        'school': 'orange',
+        'bank': 'purple'
+    }
+    
+    for _, poi in poi_df.head(100).iterrows():  # Show first 100 for performance
+        color = category_colors.get(poi['category'], 'gray')
+        folium.Marker(
+            [poi['latitude'], poi['longitude']],
+            popup=f"<b>{poi['name']}</b><br>Category: {poi['category']}<br>Rating: {poi['rating']:.1f}",
+            tooltip=f"{poi['category']}: {poi['name']}",
+            icon=folium.Icon(color=color)
+        ).add_to(marker_cluster)
+    
+    # Add layer control
+    folium.LayerControl().add_to(m)
+    
+    # Save map
+    map_file = "poi_heatmap.html"
+    m.save(map_file)
+    print(f"Interactive heatmap saved as {map_file}")
+    
+    return m
+
+# Create the interactive heatmap
+heatmap = create_interactive_heatmap(poi_dataset)
+```
+
+### 5.2: 3D Density Visualization
+
+```python
+def create_3d_density_plot(dataset):
+    """Create 3D density visualization using Plotly."""
+    print("Creating 3D density visualization...")
+    
+    poi_df = dataset.to_pandas()
+    
+    # Create 3D scatter plot with density
+    fig = go.Figure()
+    
+    # Add scatter plot for each metro area
+    for metro in poi_df['metro_area'].unique():
+        metro_data = poi_df[poi_df['metro_area'] == metro]
+        
+        fig.add_trace(go.Scatter3d(
+            x=metro_data['longitude'],
+            y=metro_data['latitude'], 
+            z=metro_data['rating'],
+            mode='markers',
+            name=f'{metro} POIs',
+            marker=dict(
+                size=4,
+                opacity=0.7,
+                color=metro_data['rating'],
+                colorscale='Viridis',
+                showscale=True,
+                colorbar=dict(title="Rating")
+            ),
+            text=[f"Name: {name}<br>Category: {cat}<br>Rating: {rating:.1f}" 
+                  for name, cat, rating in zip(metro_data['name'], metro_data['category'], metro_data['rating'])],
+            hovertemplate="<b>%{text}</b><br>Lat: %{y:.4f}<br>Lon: %{x:.4f}<extra></extra>"
+        ))
+    
+    # Create density surface
+    fig.add_trace(go.Mesh3d(
+        x=poi_df['longitude'],
+        y=poi_df['latitude'],
+        z=poi_df['rating'],
+        alphahull=5,
+        opacity=0.1,
+        color='lightblue',
+        name='Density Surface'
+    ))
+    
+    fig.update_layout(
+        title="3D POI Distribution and Rating Analysis",
+        scene=dict(
+            xaxis_title="Longitude",
+            yaxis_title="Latitude", 
+            zaxis_title="Rating",
+            camera=dict(
+                up=dict(x=0, y=0, z=1),
+                center=dict(x=0, y=0, z=0),
+                eye=dict(x=1.5, y=1.5, z=1.5)
+            )
+        ),
+        width=800,
+        height=600
+    )
+    
+    # Save as HTML
+    fig.write_html("3d_poi_density.html")
+    print("3D visualization saved as 3d_poi_density.html")
+    
+    # Show the plot
+    fig.show()
+    
+    return fig
+
+# Create 3D density plot
+density_3d = create_3d_density_plot(poi_dataset)
+```
+
+### 5.3: Advanced Statistical Visualizations
+
+```python
+def create_statistical_visualizations(dataset):
+    """Create comprehensive statistical visualizations."""
+    print("Creating statistical visualizations...")
+    
 # Convert results to pandas for visualization
 spatial_df = spatial_results.to_pandas()
-
-# Create a simple plot
-fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
-
-# Plot 1: POI counts by metro
-ax1.bar(spatial_df['metro_area'], spatial_df['total_pois'])
-ax1.set_title('Total POIs by Metro Area')
-ax1.set_ylabel('Number of POIs')
-
-# Plot 2: Hospital density
-ax2.bar(spatial_df['metro_area'], spatial_df['hospital_density'])
-ax2.set_title('Hospital Density by Metro Area')
-ax2.set_ylabel('Hospitals per Total POIs')
-
-plt.tight_layout()
+    poi_df = dataset.to_pandas()
+    
+    # Set up the plotting style
+    plt.style.use('seaborn-v0_8')
+    sns.set_palette("husl")
+    
+    # Create comprehensive dashboard
+    fig = plt.figure(figsize=(20, 15))
+    
+    # 1. POI Distribution by Metro and Category (Heatmap)
+    ax1 = plt.subplot(3, 3, 1)
+    category_metro = poi_df.groupby(['metro_area', 'category']).size().unstack(fill_value=0)
+    sns.heatmap(category_metro, annot=True, fmt='d', cmap='YlOrRd', ax=ax1)
+    ax1.set_title('POI Distribution Heatmap\n(Metro Area vs Category)', fontsize=12, fontweight='bold')
+    
+    # 2. Rating Distribution by Category (Violin Plot)
+    ax2 = plt.subplot(3, 3, 2)
+    sns.violinplot(data=poi_df, x='category', y='rating', ax=ax2)
+    ax2.set_title('Rating Distribution by Category', fontsize=12, fontweight='bold')
+    ax2.tick_params(axis='x', rotation=45)
+    
+    # 3. Geographic Scatter with Density
+    ax3 = plt.subplot(3, 3, 3)
+    scatter = ax3.scatter(poi_df['longitude'], poi_df['latitude'], 
+                         c=poi_df['rating'], s=30, alpha=0.6, cmap='viridis')
+    ax3.set_title('Geographic Distribution with Ratings', fontsize=12, fontweight='bold')
+    ax3.set_xlabel('Longitude')
+    ax3.set_ylabel('Latitude')
+    plt.colorbar(scatter, ax=ax3, label='Rating')
+    
+    # 4. Total POIs by Metro (Enhanced Bar Chart)
+    ax4 = plt.subplot(3, 3, 4)
+    metro_counts = poi_df['metro_area'].value_counts()
+    bars = ax4.bar(metro_counts.index, metro_counts.values, 
+                   color=['#FF6B6B', '#4ECDC4', '#45B7D1'])
+    ax4.set_title('Total POIs by Metro Area', fontsize=12, fontweight='bold')
+    ax4.set_ylabel('Number of POIs')
+    
+    # Add value labels on bars
+    for bar in bars:
+        height = bar.get_height()
+        ax4.text(bar.get_x() + bar.get_width()/2., height + 10,
+                f'{int(height)}', ha='center', va='bottom', fontweight='bold')
+    
+    # 5. Hospital Density Analysis
+    ax5 = plt.subplot(3, 3, 5)
+    if len(spatial_df) > 0:
+        bars = ax5.bar(spatial_df['metro_area'], spatial_df['hospital_density'], 
+                       color=['#FF9F43', '#10AC84', '#5F27CD'])
+        ax5.set_title('Hospital Density by Metro Area', fontsize=12, fontweight='bold')
+        ax5.set_ylabel('Hospitals per Total POIs')
+        
+        # Add value labels
+        for bar in bars:
+            height = bar.get_height()
+            ax5.text(bar.get_x() + bar.get_width()/2., height + 0.001,
+                    f'{height:.3f}', ha='center', va='bottom', fontweight='bold')
+    
+    # 6. Rating vs Distance from Center
+    ax6 = plt.subplot(3, 3, 6)
+    # Calculate distance from center for each metro
+    for metro in poi_df['metro_area'].unique():
+        metro_data = poi_df[poi_df['metro_area'] == metro]
+        center_lat = metro_data['latitude'].mean()
+        center_lon = metro_data['longitude'].mean()
+        
+        distances = []
+        for _, poi in metro_data.iterrows():
+            dist = np.sqrt((poi['latitude'] - center_lat)**2 + 
+                          (poi['longitude'] - center_lon)**2) * 111  # km approximation
+            distances.append(dist)
+        
+        ax6.scatter(distances, metro_data['rating'], alpha=0.6, label=metro, s=20)
+    
+    ax6.set_title('Rating vs Distance from Center', fontsize=12, fontweight='bold')
+    ax6.set_xlabel('Distance from Center (km)')
+    ax6.set_ylabel('Rating')
+    ax6.legend()
+    
+    # 7. Category Distribution (Donut Chart)
+    ax7 = plt.subplot(3, 3, 7)
+    category_counts = poi_df['category'].value_counts()
+    colors = plt.cm.Set3(np.linspace(0, 1, len(category_counts)))
+    wedges, texts, autotexts = ax7.pie(category_counts.values, labels=category_counts.index, 
+                                      autopct='%1.1f%%', colors=colors, startangle=90,
+                                      wedgeprops=dict(width=0.5))
+    ax7.set_title('POI Category Distribution', fontsize=12, fontweight='bold')
+    
+    # 8. Rating Trends by Metro
+    ax8 = plt.subplot(3, 3, 8)
+    metro_ratings = poi_df.groupby('metro_area')['rating'].agg(['mean', 'std']).reset_index()
+    x_pos = np.arange(len(metro_ratings))
+    
+    bars = ax8.bar(x_pos, metro_ratings['mean'], yerr=metro_ratings['std'], 
+                   capsize=5, color=['#E17055', '#00B894', '#6C5CE7'])
+    ax8.set_title('Average Ratings by Metro Area', fontsize=12, fontweight='bold')
+    ax8.set_xlabel('Metro Area')
+    ax8.set_ylabel('Average Rating')
+    ax8.set_xticks(x_pos)
+    ax8.set_xticklabels(metro_ratings['metro_area'])
+    
+    # Add value labels
+    for i, bar in enumerate(bars):
+        height = bar.get_height()
+        ax8.text(bar.get_x() + bar.get_width()/2., height + 0.05,
+                f'{height:.2f}', ha='center', va='bottom', fontweight='bold')
+    
+    # 9. Correlation Matrix
+    ax9 = plt.subplot(3, 3, 9)
+    # Create correlation matrix for numerical columns
+    numeric_cols = poi_df.select_dtypes(include=[np.number]).columns
+    correlation_matrix = poi_df[numeric_cols].corr()
+    
+    sns.heatmap(correlation_matrix, annot=True, cmap='coolwarm', center=0, ax=ax9,
+                square=True, fmt='.2f')
+    ax9.set_title('Feature Correlation Matrix', fontsize=12, fontweight='bold')
+    
+    plt.tight_layout(pad=3.0)
+    plt.savefig('geospatial_analysis_dashboard.png', dpi=300, bbox_inches='tight')
 plt.show()
+    
+    print("Statistical visualizations saved as 'geospatial_analysis_dashboard.png'")
+
+# Create statistical visualizations
+create_statistical_visualizations(poi_dataset)
+```
+
+### 5.4: Interactive Plotly Dashboard
+
+```python
+def create_interactive_dashboard(dataset):
+    """Create interactive Plotly dashboard."""
+    print("Creating interactive Plotly dashboard...")
+    
+    poi_df = dataset.to_pandas()
+    
+    # Create subplots
+    from plotly.subplots import make_subplots
+    
+    fig = make_subplots(
+        rows=2, cols=2,
+        subplot_titles=('Geographic Distribution', 'Category Analysis', 
+                       'Rating Distribution', 'Metro Comparison'),
+        specs=[[{"type": "scattermapbox"}, {"type": "bar"}],
+               [{"type": "histogram"}, {"type": "box"}]]
+    )
+    
+    # 1. Geographic scatter map
+    fig.add_trace(
+        go.Scattermapbox(
+            lat=poi_df['latitude'],
+            lon=poi_df['longitude'],
+            mode='markers',
+            marker=dict(
+                size=8,
+                color=poi_df['rating'],
+                colorscale='Viridis',
+                showscale=True,
+                colorbar=dict(title="Rating", x=0.45)
+            ),
+            text=[f"Name: {name}<br>Category: {cat}<br>Rating: {rating:.1f}" 
+                  for name, cat, rating in zip(poi_df['name'], poi_df['category'], poi_df['rating'])],
+            hovertemplate="<b>%{text}</b><br>Lat: %{lat:.4f}<br>Lon: %{lon:.4f}<extra></extra>",
+            name="POIs"
+        ),
+        row=1, col=1
+    )
+    
+    # 2. Category bar chart
+    category_counts = poi_df['category'].value_counts()
+    fig.add_trace(
+        go.Bar(
+            x=category_counts.index,
+            y=category_counts.values,
+            marker_color='lightblue',
+            name="Categories"
+        ),
+        row=1, col=2
+    )
+    
+    # 3. Rating histogram
+    fig.add_trace(
+        go.Histogram(
+            x=poi_df['rating'],
+            nbinsx=20,
+            marker_color='lightgreen',
+            name="Rating Distribution"
+        ),
+        row=2, col=1
+    )
+    
+    # 4. Box plot by metro
+    for metro in poi_df['metro_area'].unique():
+        metro_data = poi_df[poi_df['metro_area'] == metro]
+        fig.add_trace(
+            go.Box(
+                y=metro_data['rating'],
+                name=metro,
+                boxpoints='all',
+                jitter=0.3,
+                pointpos=-1.8
+            ),
+            row=2, col=2
+        )
+    
+    # Update layout
+    fig.update_layout(
+        title_text="Interactive Geospatial Analysis Dashboard",
+        title_x=0.5,
+        height=800,
+        showlegend=False,
+        mapbox=dict(
+            style="open-street-map",
+            center=dict(lat=poi_df['latitude'].mean(), lon=poi_df['longitude'].mean()),
+            zoom=8
+        )
+    )
+    
+    # Update axes titles
+    fig.update_xaxes(title_text="Category", row=1, col=2)
+    fig.update_yaxes(title_text="Count", row=1, col=2)
+    fig.update_xaxes(title_text="Rating", row=2, col=1)
+    fig.update_yaxes(title_text="Frequency", row=2, col=1)
+    fig.update_yaxes(title_text="Rating", row=2, col=2)
+    
+    # Save and show
+    fig.write_html("interactive_geospatial_dashboard.html")
+    print("Interactive dashboard saved as 'interactive_geospatial_dashboard.html'")
+    fig.show()
+    
+    return fig
+
+# Create interactive dashboard
+dashboard = create_interactive_dashboard(poi_dataset)
 ```
 
 ## Step 6: Saving Results

@@ -1,6 +1,6 @@
 # Large-Scale ETL Optimization with Ray Data
 
-**⏱ Time to complete**: 35 min | **Difficulty**: Intermediate | **Prerequisites**: Understanding of ETL concepts, data processing experience
+**Time to complete**: 35 min | **Difficulty**: Intermediate | **Prerequisites**: Understanding of ETL concepts, data processing experience
 
 ## What You'll Build
 
@@ -18,7 +18,7 @@ Create a high-performance ETL pipeline that processes millions of records effici
 By completing this tutorial, you'll understand:
 
 - **Why ETL optimization matters**: The difference between fast and slow data pipelines at scale
-- **Ray Data's ETL capabilities**: Native operations that outperform traditional ETL tools through distributed processing
+- **Ray Data's ETL superpowers**: Native operations for distributed processing at scale
 - **Real-world patterns**: How companies like Netflix and Airbnb process petabytes of data daily
 - **Performance tuning**: Memory management, parallel processing, and resource optimization
 
@@ -26,13 +26,13 @@ By completing this tutorial, you'll understand:
 
 **The Challenge**: Traditional ETL tools struggle with modern data volumes. Processing terabytes of data can take days, creating bottlenecks in data-driven organizations.
 
-**The Solution**: Ray Data's distributed architecture and optimized operations enable processing large datasets more efficiently than traditional approaches.
+**The Solution**: Ray Data's distributed architecture and optimized operations enable efficient processing of large datasets through parallel computation.
 
 **Real-world Impact**:
-- 🏢 **Data Warehouses**: Companies like Snowflake process petabytes daily for business intelligence
-- 🛒 **E-commerce**: Amazon processes billions of transactions for real-time recommendations
-- 📱 **Social Media**: Facebook processes trillions of events for content ranking and ads
-- 🚗 **Ride Sharing**: Uber processes millions of trips for pricing and driver matching
+- **Data Warehouses**: Companies like Snowflake process petabytes daily for business intelligence
+- **E-commerce**: Amazon processes billions of transactions for real-time recommendations  
+- **Social Media**: Facebook processes trillions of events for content ranking and ads
+- **Ride Sharing**: Uber processes millions of trips for pricing and driver matching
 
 ---
 
@@ -46,17 +46,120 @@ Before starting, ensure you have:
 
 ## Quick Start (3 minutes)
 
-Want to see high-performance ETL immediately?
+Want to see high-performance ETL immediately? This section demonstrates the core concepts in just a few minutes.
+
+### Setup and Imports
 
 ```python
 import ray
 import pandas as pd
+import numpy as np
+import time
 
-# Create sample data for ETL processing
-orders = [{"order_id": i, "customer_id": i%1000, "amount": 100.0} for i in range(10000)]
-ds = ray.data.from_items(orders)
-print(f" Created ETL dataset with {ds.count()} records ready for processing")
+# Initialize Ray for distributed processing
+ray.init()
 ```
+
+### Create Sample ETL Dataset
+
+We'll generate realistic e-commerce transaction data to demonstrate ETL processing at scale.
+
+```python
+# Set up data generation parameters
+print("Creating sample ETL dataset...")
+start_time = time.time()
+np.random.seed(42)  # For reproducible results
+
+# Define realistic data generation parameters
+NUM_RECORDS = 100000
+NUM_CUSTOMERS = 10000
+NUM_PRODUCTS = 1000
+REGIONS = ["US-East", "US-West", "EU", "APAC"]
+```
+
+```python
+# Generate realistic e-commerce transaction data
+print(f"Generating {NUM_RECORDS:,} transaction records...")
+
+transactions = []
+for i in range(NUM_RECORDS):
+    transaction = {
+        "order_id": f"ORDER_{i:06d}",
+        "customer_id": f"CUST_{np.random.randint(1, NUM_CUSTOMERS):05d}",
+        "product_id": f"PROD_{np.random.randint(1, NUM_PRODUCTS):04d}",
+        "amount": round(np.random.lognormal(4, 1), 2),  # Realistic price distribution
+        "quantity": np.random.randint(1, 5),
+        "timestamp": pd.Timestamp.now() - pd.Timedelta(days=np.random.randint(0, 365)),
+        "region": np.random.choice(REGIONS)
+    }
+    transactions.append(transaction)
+
+print(f"Generated {len(transactions):,} transaction records")
+```
+
+```python
+# Create Ray Dataset for distributed processing
+ds = ray.data.from_items(transactions)
+creation_time = time.time() - start_time
+
+print(f"Created ETL dataset with {ds.count():,} records in {creation_time:.2f} seconds")
+print(f"Processing rate: ~{len(transactions)/creation_time:.0f} records/second")
+```
+
+**What just happened?**
+- Generated 100,000 realistic e-commerce transactions with proper data types
+- Created a Ray Dataset for distributed processing
+- Measured creation performance to understand baseline capabilities
+
+### Quick ETL Transformation
+
+```python
+# Quick ETL demonstration
+print("Running quick ETL transformation...")
+result = ds.map_batches(lambda batch: [
+    {**record, "total_value": record["amount"] * record["quantity"]} 
+    for record in batch
+], batch_size=1000)
+
+sample_results = result.take(5)
+```
+
+### Display Processed Results
+
+```python
+# Display results in a visually appealing table format
+print("Sample Processed Records:")
+print("=" * 80)
+print(f"{'Order ID':<12} {'Customer':<12} {'Product':<10} {'Qty':<4} {'Amount':<8} {'Total Value':<12}")
+print("-" * 80)
+
+for record in sample_results:
+    print(f"{record['order_id']:<12} {record['customer_id']:<12} {record['product_id']:<10} "
+          f"{record['quantity']:<4} ${record['amount']:<7.2f} ${record['total_value']:<11.2f}")
+
+print("-" * 80)
+print(f"Dataset Summary: {ds.count():,} total records ready for advanced ETL processing")
+```
+
+### Data Distribution Analysis
+
+```python
+# Show data distribution for better understanding
+regions = [r['region'] for r in sample_results]
+print(f"Regional Distribution (sample): {dict(pd.Series(regions).value_counts())}")
+
+# Calculate and display basic statistics
+amounts = [r['amount'] for r in sample_results]
+print(f"Amount Statistics (sample): Min=${min(amounts):.2f}, Max=${max(amounts):.2f}, Avg=${np.mean(amounts):.2f}")
+
+print(f"\nReady for advanced ETL processing!")
+```
+
+**Key takeaways from Quick Start:**
+- Ray Data handles large datasets efficiently through distributed processing
+- Simple transformations can be applied using `map_batches()` 
+- Results can be displayed in professional, readable formats
+- The same patterns scale from thousands to millions of records
 
 ## Why ETL Performance Matters
 
@@ -66,10 +169,13 @@ print(f" Created ETL dataset with {ds.count()} records ready for processing")
 - **Complexity**: Data comes from dozens of sources in different formats
 - **Cost**: Slow ETL means expensive compute resources running longer
 
-**Performance Impact**:
-- **Traditional ETL**: Process 1TB of data → 8-12 hours
-- **Ray Data ETL**: Process 1TB of data → 30-60 minutes
-- **Business Value**: Faster insights, lower costs, better decisions
+**Performance Considerations**:
+
+| ETL Approach | Characteristics | Business Impact |
+|--------------|----------------|-----------------|
+| **Traditional ETL** | Single-machine processing | Limited scalability, resource constraints |
+| **Ray Data ETL** | Distributed parallel processing | Horizontal scalability, efficient resource utilization |
+| **Key Difference** | Distributed vs. centralized | Better resource utilization and scalability |
 
 ## Use Case: E-commerce Data Warehouse ETL
 
@@ -88,14 +194,57 @@ The pipeline will:
 
 ## Architecture
 
+### **Ray Data ETL Processing Architecture**
+
 ```
-Data Sources → Ray Data → Parallel ETL → Optimized Transforms → Analytics Store
-     ↓           ↓           ↓              ↓                  ↓
-  Customer    Native Ops   Validation     Aggregations      Data Warehouse  
-  Orders      Distributed  Cleansing      Joins             OLAP Cubes
-  Products    Processing   Enrichment     Calculations      Reports
-  Behavioral  Memory Opt   Deduplication  Metrics           Dashboards
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                           Enterprise Data Sources                                │
+│  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐ ┌──────────────┐           │
+│  │   Customer   │ │    Orders    │ │   Products   │ │  Behavioral  │           │
+│  │     Data     │ │     Data     │ │     Data     │ │     Data     │           │
+│  │   (10M+)     │ │   (100M+)    │ │    (1M+)     │ │    (1B+)     │           │
+│  └──────────────┘ └──────────────┘ └──────────────┘ └──────────────┘           │
+└─────────────────────────────────────────────────────────────────────────────────┘
+                                        │
+                                        ▼
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                         Ray Data Ingestion Layer                                │
+│  • ray.data.read_parquet() • ray.data.read_csv() • ray.data.read_json()       │
+│  • Distributed loading across cluster • Automatic partitioning                │
+└─────────────────────────────────────────────────────────────────────────────────┘
+                                        │
+                                        ▼
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                     Parallel ETL Processing Engine                              │
+│  ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐                  │
+│  │   Validation    │ │   Cleansing     │ │   Enrichment    │                  │
+│  │ • Data quality  │ │ • Deduplication │ │ • Joins         │                  │
+│  │ • Schema checks │ │ • Normalization │ │ • Calculations  │                  │
+│  │ • Business rules│ │ • Type casting  │ │ • Aggregations  │                  │
+│  └─────────────────┘ └─────────────────┘ └─────────────────┘                  │
+└─────────────────────────────────────────────────────────────────────────────────┘
+                                        │
+                                        ▼
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                        Analytics & Storage Layer                                │
+│  ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐                  │
+│  │ Data Warehouse  │ │   OLAP Cubes    │ │    Reports      │                  │
+│  │ • Partitioned   │ │ • Aggregated    │ │ • Dashboards    │                  │
+│  │ • Optimized     │ │ • Indexed       │ │ • Alerts        │                  │
+│  │ • Compressed    │ │ • Cached        │ │ • Insights      │                  │
+│  └─────────────────┘ └─────────────────┘ └─────────────────┘                  │
+└─────────────────────────────────────────────────────────────────────────────────┘
 ```
+
+### **Ray Data Advantages for ETL**
+
+| Traditional ETL Approach | Ray Data ETL Approach | Key Difference |
+|---------------------------|----------------------|----------------|
+| **Single-machine processing** | Distributed across multiple CPU cores | Horizontal scalability |
+| **Sequential operations** | Parallel processing pipeline | Concurrent execution |
+| **Manual resource management** | Automatic scaling and load balancing | Simplified operations |
+| **Complex infrastructure setup** | Native Ray Data operations | Streamlined development |
+| **Limited fault tolerance** | Built-in error recovery and retries | Enhanced reliability |
 
 ## Key Components
 
@@ -136,56 +285,136 @@ Data Sources → Ray Data → Parallel ETL → Optimized Transforms → Analytic
 pip install ray[data] pyarrow fastparquet
 pip install numpy pandas
 pip install boto3 s3fs
+pip install matplotlib seaborn plotly networkx psutil
 ```
 
 ## Quick Start
 
 ### 1. **Load Large Datasets with Ray Data Native Operations**
 
+Let's load real-world datasets using Ray Data's native reading capabilities.
+
+**Import Required Libraries**
+
 ```python
-# Standard library imports (rule #302: Group imports by type)
+# Standard library imports
 from typing import Dict, Any
 import time
+from datetime import datetime, timedelta
 
 # Third-party imports
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+```
 
+```python
 # Ray Data imports
 import ray
 from ray.data import read_parquet, read_csv
 
+print("All libraries imported successfully")
+```
+
+**Initialize Ray with Optimized Configuration**
+
+```python
 # Initialize Ray with optimized configuration for large-scale ETL
 ray.init(
     object_store_memory=10_000_000_000,  # 10GB object store
     _memory=20_000_000_000               # 20GB heap memory
 )
 
-# Load large datasets using Ray Data native readers
-# NYC Taxi data - publicly available, large scale dataset
+print("Ray cluster initialized with optimized ETL configuration")
+print(f"Available resources: {ray.cluster_resources()}")
+```
+
+**Load NYC Taxi Data (Large-Scale Dataset)**
+
+```python
+# Load NYC Taxi data - publicly available, large scale dataset
+print("Loading NYC Taxi dataset...")
 taxi_data = read_parquet(
     "s3://anonymous@nyc-tlc/trip_data/",
     columns=["pickup_datetime", "dropoff_datetime", "passenger_count", 
              "trip_distance", "fare_amount", "total_amount"]
 )
 
-# Amazon product reviews - publicly available, text + structured data
+print(f"NYC Taxi data loaded: {taxi_data.count():,} trip records")
+```
+
+**Load Amazon Reviews Data (Text + Structured)**
+
+```python
+# Load Amazon product reviews - text + structured data
+print("Loading Amazon Reviews dataset...")
 reviews_data = read_parquet(
     "s3://anonymous@amazon-reviews-pds/parquet/",
     columns=["review_date", "star_rating", "review_body", "product_category"]
 )
 
-# US Census data - publicly available, demographic data
+print(f"Amazon Reviews loaded: {reviews_data.count():,} review records")
+```
+
+**Load US Census Data (Demographic Information)**
+
+```python
+# Load US Census data - demographic information
+print("Loading US Census dataset...")
 census_data = read_csv("s3://anonymous@uscensus-grp/acs/2021_5yr_data.csv")
 
-print(f"Taxi data: {taxi_data.count()} records")
-print(f"Reviews data: {reviews_data.count()} records") 
-print(f"Census data: {census_data.count()} records")
+print(f"US Census data loaded: {census_data.count():,} demographic records")
+```
+
+# Display dataset information with visual formatting
+datasets_info = [
+    ("Taxi Data", taxi_data.count(), taxi_data.schema()),
+    ("Reviews Data", reviews_data.count(), reviews_data.schema()),
+    ("Census Data", census_data.count(), census_data.schema())
+]
+
+print("Loaded Datasets Summary:")
+print("=" * 100)
+print(f"{'Dataset':<15} {'Record Count':<15} {'Schema Preview':<50}")
+print("-" * 100)
+
+for name, count, schema in datasets_info:
+    # Get first few column names for schema preview
+    schema_preview = str(schema)[:47] + "..." if len(str(schema)) > 50 else str(schema)
+    print(f"{name:<15} {count:<15,} {schema_preview:<50}")
+
+print("=" * 100)
+
+# Display sample records from each dataset
+print("\nSample Data Preview:")
+print("-" * 100)
+
+# Taxi data sample
+taxi_sample = taxi_data.take(2)
+print("Taxi Data Sample:")
+for i, record in enumerate(taxi_sample):
+    pickup = record.get('pickup_datetime', 'N/A')
+    fare = record.get('fare_amount', 0)
+    distance = record.get('trip_distance', 0)
+    print(f"  {i+1}. Pickup: {pickup}, Fare: ${fare:.2f}, Distance: {distance:.1f}mi")
+
+# Reviews data sample  
+reviews_sample = reviews_data.take(2)
+print("\nReviews Data Sample:")
+for i, record in enumerate(reviews_sample):
+    rating = record.get('star_rating', 'N/A')
+    category = record.get('product_category', 'N/A')
+    body_preview = str(record.get('review_body', ''))[:60] + "..." if len(str(record.get('review_body', ''))) > 60 else str(record.get('review_body', ''))
+    print(f"  {i+1}. Rating: {rating} stars, Category: {category}")
+    print(f"      Review: {body_preview}")
+
+print("-" * 100)
 
 # Data format efficiency demonstration (rule #295: Prefer Parquet over JSON/CSV)
-print("\n Data Format Efficiency:")
-print("✅ Using Parquet format for taxi and reviews data (optimal for analytics)")
-print("⚠️ Using CSV for census data (consider converting to Parquet for better performance)")
+print("\nData Format Efficiency:")
+print("Using Parquet format for taxi and reviews data (optimal for analytics)")
+print("Using CSV for census data (consider converting to Parquet for better performance)")
 
 # Example: Convert CSV to Parquet for better performance
 # census_parquet = census_data.write_parquet("s3://your-bucket/census_optimized/")
@@ -208,9 +437,9 @@ trip_stats = valid_taxi_trips.groupby("passenger_count").mean(["fare_amount", "t
 # Native sorting for ordered results  
 sorted_trips = valid_taxi_trips.sort("fare_amount", descending=True)
 
-print(f"✅ Filtered to {valid_taxi_trips.count()} valid trips")
-print(f"✅ Grouped statistics by passenger count")
-print(f"✅ Sorted trips by fare amount")
+print(f"Filtered to {valid_taxi_trips.count()} valid trips")
+print(f"Grouped statistics by passenger count")
+print(f"Sorted trips by fare amount")
 
 # Use Ray Data native operations for data quality checks
 def validate_taxi_data(batch):
@@ -260,6 +489,31 @@ validated_taxi = taxi_data.map_batches(
 clean_taxi_data = validated_taxi.filter(lambda record: record['is_valid'])
 
 print(f"Clean taxi data: {clean_taxi_data.count()} records")
+
+# Display data quality summary in a visual format
+print("\nData Quality Summary:")
+print("=" * 60)
+total_records = taxi_data.count()
+clean_records = clean_taxi_data.count()
+invalid_records = total_records - clean_records
+
+print(f"{'Metric':<25} {'Count':<10} {'Percentage':<12}")
+print("-" * 60)
+print(f"{'Total Records':<25} {total_records:<10,} {'100.0%':<12}")
+print(f"{'Valid Records':<25} {clean_records:<10,} {clean_records/total_records*100:<11.1f}%")
+print(f"{'Invalid Records':<25} {invalid_records:<10,} {invalid_records/total_records*100:<11.1f}%")
+print("=" * 60)
+
+# Sample clean records for inspection
+sample_clean = clean_taxi_data.take(3)
+print(f"\nSample Clean Records:")
+print("-" * 100)
+for i, record in enumerate(sample_clean):
+    fare = record.get('fare_amount', 0)
+    distance = record.get('trip_distance', 0)
+    passengers = record.get('passenger_count', 0)
+    print(f"{i+1}. Fare: ${fare:.2f}, Distance: {distance:.1f}mi, Passengers: {passengers}, Valid: {record.get('is_valid', False)}")
+print("-" * 100)
 ```
 
 ### 3. **Large-Scale Aggregations with Native GroupBy**
@@ -305,6 +559,26 @@ daily_metrics = clean_taxi_data.map_batches(
 )
 
 print(f"Daily metrics: {daily_metrics.count()} records")
+
+# Display daily metrics in a visually appealing format
+sample_metrics = daily_metrics.take(5)
+print("\nDaily Taxi Metrics Summary:")
+print("=" * 120)
+print(f"{'Date':<12} {'Trips':<8} {'Revenue':<10} {'Avg Fare':<10} {'Total Miles':<12} {'Avg Distance':<12}")
+print("-" * 120)
+
+for metric in sample_metrics:
+    date = metric.get('pickup_date', 'N/A')
+    trip_count = metric.get('fare_amount_count', 0)
+    revenue = metric.get('total_amount_sum', 0)
+    avg_fare = metric.get('fare_amount_mean', 0)
+    total_miles = metric.get('trip_distance_sum', 0)
+    avg_distance = metric.get('trip_distance_mean', 0)
+    
+    print(f"{str(date):<12} {trip_count:<8,} ${revenue:<9.0f} ${avg_fare:<9.2f} {total_miles:<11.1f}mi {avg_distance:<11.2f}mi")
+
+print("-" * 120)
+print("Note: This demonstrates Ray Data's native groupby aggregation capabilities")
 ```
 
 ### 4. **Cross-Dataset Joins and Enrichment**
@@ -358,6 +632,30 @@ enriched_reviews = reviews_data.map_batches(
 )
 
 print(f"Enriched reviews: {enriched_reviews.count()} records")
+
+# Display enrichment results with visual formatting
+sample_enriched = enriched_reviews.take(3)
+print("\nEnriched Review Data Sample:")
+print("=" * 100)
+
+for i, review in enumerate(sample_enriched):
+    print(f"\nReview {i+1}:")
+    print(f"  Rating: {review.get('star_rating', 'N/A')} stars")
+    print(f"  Sentiment: {review.get('sentiment', 'N/A').upper()} (score: {review.get('sentiment_score', 0):.2f})")
+    print(f"  Text Length: {review.get('review_length', 0)} characters ({review.get('word_count', 0)} words)")
+    print(f"  Preview: {str(review.get('review_body', ''))[:80]}...")
+    print("-" * 50)
+
+# Show sentiment distribution
+sentiments = [r.get('sentiment', 'unknown') for r in sample_enriched]
+sentiment_counts = pd.Series(sentiments).value_counts()
+print(f"\nSentiment Distribution (sample):")
+for sentiment, count in sentiment_counts.items():
+    bar_length = int(count * 20 / len(sample_enriched))
+    bar = "█" * bar_length + "░" * (20 - bar_length)
+    print(f"  {sentiment.capitalize():<10} {bar} {count}/{len(sample_enriched)}")
+
+print("=" * 100)
 ```
 
 ### 5. **Optimized Data Loading and Partitioning**
@@ -392,9 +690,30 @@ clean_taxi_data.write_parquet(
 
 print(f"All datasets written to: {output_dir}")
 
-# Optional: Write to cloud storage for production
-# daily_metrics.write_parquet("s3://your-bucket/etl-output/daily_metrics/")
-# enriched_reviews.write_parquet("s3://your-bucket/etl-output/enriched_reviews/")
+# Display file output summary with visual formatting
+import os
+print("\nETL Output Summary:")
+print("=" * 80)
+print(f"{'Dataset':<30} {'Location':<35} {'Status':<15}")
+print("-" * 80)
+
+datasets = [
+    ("Daily Taxi Metrics", f"{output_dir}/daily_taxi_metrics", "Complete"),
+    ("Enriched Reviews", f"{output_dir}/enriched_reviews", "Complete"), 
+    ("Clean Taxi Data", f"{output_dir}/clean_taxi_data", "Complete")
+]
+
+for name, path, status in datasets:
+    print(f"{name:<30} {path[-35:]:<35} {status:<15}")
+
+print("-" * 80)
+print("All ETL outputs saved successfully!")
+
+# Optional: Write to cloud storage for production (commented for demo)
+print("\nProduction Storage Options:")
+print("# daily_metrics.write_parquet('s3://your-bucket/etl-output/daily_metrics/')")
+print("# enriched_reviews.write_parquet('s3://your-bucket/etl-output/enriched_reviews/')")
+print("# clean_taxi_data.write_parquet('s3://your-bucket/etl-output/clean_taxi_data/')")
 ```
 
 ## Advanced ETL Patterns
@@ -684,23 +1003,682 @@ ray.init(
 4. Update analytical models and metrics
 5. Maintain data freshness and quality
 
-## Performance Benchmarks
+## Resource Planning and Configuration
 
-### **Processing Performance**
-- **Data Extraction**: 1M+ records/second from Parquet
-- **Data Transformation**: 500K+ records/second
-- **Data Aggregation**: 200K+ records/second
-- **Data Loading**: 800K+ records/second to Parquet
+### **ETL Processing Considerations**
 
-### **Scalability**
-- **5 Nodes**: 4.speedup
-- **10 Nodes**: 8.speedup
-- **20 Nodes**: 15.speedup
+| Operation Type | Resource Requirements | Ray Data Features | Cluster Configuration |
+|---------------|----------------------|-------------------|----------------------|
+| **Data Extraction** | I/O intensive | Parallel readers | Multiple worker nodes |
+| **Data Transformation** | CPU intensive | Distributed processing | High-CPU instances |
+| **Data Aggregation** | Memory intensive | In-memory operations | High-memory instances |
+| **Data Loading** | I/O intensive | Parallel writers | Multiple worker nodes |
 
-### **Memory Efficiency**
-- **Processing**: 4-8GB per worker
-- **Aggregations**: 6-12GB per worker
-- **Joins**: 8-16GB per worker
+### **Cluster Sizing Guidelines**
+
+| Cluster Size | Memory Capacity | Processing Capability | Suitable Workloads |
+|-------------|-----------------|----------------------|-------------------|
+| **5 Nodes** | 32-64GB total | Moderate throughput | Development/Testing |
+| **10 Nodes** | 64-128GB total | High throughput | Production workloads |
+| **20+ Nodes** | 128GB+ total | Very high throughput | Large-scale processing |
+
+### **Resource Utilization Patterns**
+
+| Workload Type | CPU Requirements | Memory Requirements | Storage Requirements | Recommended Instance |
+|--------------|------------------|-------------------|---------------------|---------------------|
+| **Light ETL** | 2-4 cores | 4-8GB | Standard | m5.xlarge |
+| **Heavy Transformations** | 4-8 cores | 6-12GB | Standard | c5.2xlarge |
+| **Complex Joins** | 2-4 cores | 8-16GB | High-memory | r5.xlarge |
+| **ML Feature Engineering** | 4-8 cores | 12-24GB | Standard | c5.4xlarge |
+
+## Interactive ETL Pipeline Visualizations
+
+Let's create comprehensive visualizations to monitor and analyze our ETL pipeline performance. These visualizations are designed to work excellently in Jupyter notebook environments:
+
+**Import Visualization Libraries**
+
+```python
+# Import visualization libraries for dashboard creation
+import matplotlib.pyplot as plt
+import seaborn as sns
+from datetime import datetime
+
+# Set up plotting style
+plt.style.use('default')
+sns.set_palette("husl")
+
+print("Visualization libraries imported and configured")
+```
+
+**Create ETL Performance Dashboard**
+
+```python
+def create_etl_dashboard(processed_data):
+    """Create a comprehensive ETL performance dashboard."""
+    
+    print("Creating ETL performance dashboard...")
+    
+    # Set up the dashboard layout
+    fig, axes = plt.subplots(2, 3, figsize=(18, 12))
+    fig.suptitle('ETL Pipeline Performance Dashboard', fontsize=16, fontweight='bold')
+    
+    # Convert Ray Dataset to pandas for visualization
+    sample_data = processed_data.take(1000)  # Sample for visualization
+    df = pd.DataFrame(sample_data)
+    
+    return fig, axes, df
+
+# Initialize dashboard components
+dashboard_fig, dashboard_axes, dashboard_data = create_etl_dashboard(business_processed)
+```
+
+**Dashboard Panel 1: Data Volume Analysis**
+
+```python
+# 1. Data Volume by Region
+if 'region' in dashboard_data.columns:
+    region_counts = dashboard_data['region'].value_counts()
+    dashboard_axes[0, 0].bar(region_counts.index, region_counts.values, color='skyblue')
+    dashboard_axes[0, 0].set_title('Data Volume by Region')
+    dashboard_axes[0, 0].set_xlabel('Region')
+    dashboard_axes[0, 0].set_ylabel('Record Count')
+    
+    # Add value labels on bars
+    for i, v in enumerate(region_counts.values):
+        dashboard_axes[0, 0].text(i, v + 0.01*max(region_counts.values), str(v), ha='center')
+
+print("Data volume analysis panel created")
+```
+
+**Dashboard Panel 2: Processing Time Analysis**
+
+```python
+# 2. Processing Time Distribution
+processing_times = np.random.normal(2.5, 0.8, len(dashboard_data))  # Simulated times
+dashboard_axes[0, 1].hist(processing_times, bins=20, color='lightgreen', alpha=0.7, edgecolor='black')
+dashboard_axes[0, 1].set_title('Processing Time Distribution')
+dashboard_axes[0, 1].set_xlabel('Processing Time (seconds)')
+dashboard_axes[0, 1].set_ylabel('Frequency')
+dashboard_axes[0, 1].axvline(np.mean(processing_times), color='red', linestyle='--', 
+                           label=f'Mean: {np.mean(processing_times):.2f}s')
+dashboard_axes[0, 1].legend()
+
+print("Processing time analysis panel created")
+```
+
+**Dashboard Panel 3: Data Quality Metrics**
+
+```python
+# 3. Data Quality Metrics
+quality_metrics = ['Valid Records', 'Invalid Records']
+quality_values = [85, 15]  # Example percentages
+colors = ['green', 'red']
+dashboard_axes[0, 2].pie(quality_values, labels=quality_metrics, colors=colors, 
+                       autopct='%1.1f%%', startangle=90)
+dashboard_axes[0, 2].set_title('Data Quality Distribution')
+
+print("Data quality metrics panel created")
+```
+
+**Display Complete Dashboard**
+
+```python
+# Finalize and display the dashboard
+plt.tight_layout()
+plt.show()
+
+print("ETL Performance Dashboard created successfully!")
+print("This dashboard provides insights into your ETL pipeline performance")
+```
+
+### **ETL Pipeline Status Monitoring**
+
+```python
+def display_pipeline_status(datasets_dict):
+    """Display comprehensive pipeline status in a visual format."""
+    
+    print("ETL Pipeline Status Monitor")
+    print("=" * 90)
+    print(f"{'Pipeline Stage':<25} {'Dataset':<20} {'Records':<12} {'Status':<15} {'Notes':<20}")
+    print("-" * 90)
+    
+    stages = [
+        ("Data Extraction", "Raw Taxi Data", taxi_data.count(), "Complete", "From S3 Parquet"),
+        ("Data Validation", "Validated Data", clean_taxi_data.count(), "Complete", "Business rules applied"),
+        ("Data Aggregation", "Daily Metrics", daily_metrics.count(), "Complete", "Grouped by date"),
+        ("Data Enrichment", "Enriched Reviews", enriched_reviews.count(), "Complete", "Sentiment analysis"),
+        ("Data Storage", "Final Output", "Multiple", "Complete", "Parquet format")
+    ]
+    
+    for stage, dataset, records, status, notes in stages:
+        record_str = f"{records:,}" if isinstance(records, int) else records
+        status_symbol = "[OK]" if status == "Complete" else "[WARN]"
+        print(f"{stage:<25} {dataset:<20} {record_str:<12} {status_symbol} {status:<14} {notes:<20}")
+    
+    print("-" * 90)
+    print("Pipeline Status: All stages completed successfully")
+    
+    # Resource utilization summary
+    cluster_resources = ray.cluster_resources()
+    print(f"\nCluster Resource Summary:")
+    print(f"  Available CPUs: {cluster_resources.get('CPU', 0)}")
+    print(f"  Available Memory: {cluster_resources.get('memory', 0) / 1e9:.1f}GB")
+    print(f"  Available GPUs: {cluster_resources.get('GPU', 0)}")
+    
+    return True
+
+# Display the pipeline status
+pipeline_status = display_pipeline_status({
+    "taxi_data": taxi_data,
+    "clean_taxi_data": clean_taxi_data,
+    "daily_metrics": daily_metrics,
+    "enriched_reviews": enriched_reviews
+})
+```
+
+### ETL Pipeline Flow Diagram
+
+```python
+def create_etl_pipeline_diagram():
+    """Create interactive ETL pipeline flow diagram."""
+    print("Creating ETL pipeline flow diagram...")
+    
+    # Create a network graph representing the ETL pipeline
+    G = nx.DiGraph()
+    
+    # Add nodes for different pipeline stages
+    pipeline_stages = {
+        'Data Sources': {'pos': (0, 2), 'color': 'lightblue', 'size': 3000},
+        'Extract': {'pos': (1, 2), 'color': 'lightgreen', 'size': 2500},
+        'Validate': {'pos': (2, 3), 'color': 'orange', 'size': 2000},
+        'Transform': {'pos': (2, 1), 'color': 'yellow', 'size': 2500},
+        'Aggregate': {'pos': (3, 2), 'color': 'lightcoral', 'size': 2000},
+        'Load': {'pos': (4, 2), 'color': 'lightpink', 'size': 2500},
+        'Data Warehouse': {'pos': (5, 2), 'color': 'lightgray', 'size': 3000}
+    }
+    
+    # Add nodes to graph
+    for stage, attrs in pipeline_stages.items():
+        G.add_node(stage, **attrs)
+    
+    # Add edges representing data flow
+    pipeline_edges = [
+        ('Data Sources', 'Extract'),
+        ('Extract', 'Validate'),
+        ('Extract', 'Transform'),
+        ('Validate', 'Aggregate'),
+        ('Transform', 'Aggregate'),
+        ('Aggregate', 'Load'),
+        ('Load', 'Data Warehouse')
+    ]
+    
+    G.add_edges_from(pipeline_edges)
+    
+    # Create visualization
+    plt.figure(figsize=(15, 10))
+    pos = nx.get_node_attributes(G, 'pos')
+    colors = [pipeline_stages[node]['color'] for node in G.nodes()]
+    sizes = [pipeline_stages[node]['size'] for node in G.nodes()]
+    
+    # Draw the network
+    nx.draw(G, pos, with_labels=True, node_color=colors, node_size=sizes,
+            font_size=12, font_weight='bold', arrows=True, arrowsize=20,
+            edge_color='gray', linewidths=2, arrowstyle='->')
+    
+    plt.title('ETL Pipeline Flow Diagram', fontsize=16, fontweight='bold', pad=20)
+    plt.axis('off')
+    plt.tight_layout()
+    plt.savefig('etl_pipeline_diagram.png', dpi=300, bbox_inches='tight')
+    plt.show()
+    
+    print("ETL pipeline diagram saved as 'etl_pipeline_diagram.png'")
+
+# Create pipeline diagram
+create_etl_pipeline_diagram()
+```
+
+### ETL Performance Dashboard
+
+```python
+def create_etl_performance_dashboard():
+    """Create comprehensive ETL performance monitoring dashboard."""
+    print("Creating ETL performance dashboard...")
+    
+    # Simulate performance metrics (in production, these would come from actual monitoring)
+    np.random.seed(42)
+    
+    # Generate sample performance data
+    time_points = pd.date_range(start='2024-01-01', periods=24, freq='H')
+    
+    performance_data = {
+        'timestamp': time_points,
+        'records_processed': np.random.randint(800000, 1200000, 24),
+        'processing_time': np.random.uniform(45, 90, 24),
+        'memory_usage': np.random.uniform(60, 85, 24),
+        'cpu_usage': np.random.uniform(70, 95, 24),
+        'error_rate': np.random.uniform(0, 2, 24),
+        'throughput': np.random.uniform(15000, 25000, 24)
+    }
+    
+    perf_df = pd.DataFrame(performance_data)
+    
+    # Create comprehensive dashboard
+    fig = make_subplots(
+        rows=3, cols=2,
+        subplot_titles=('Records Processed Over Time', 'Processing Time Trends',
+                       'Resource Usage', 'Throughput Analysis',
+                       'Error Rate Monitoring', 'Performance Correlation'),
+        specs=[[{"secondary_y": False}, {"secondary_y": False}],
+               [{"secondary_y": True}, {"secondary_y": False}],
+               [{"secondary_y": False}, {"secondary_y": False}]]
+    )
+    
+    # 1. Records processed over time
+    fig.add_trace(
+        go.Scatter(x=perf_df['timestamp'], y=perf_df['records_processed'],
+                  mode='lines+markers', name='Records Processed',
+                  line=dict(color='blue', width=3)),
+        row=1, col=1
+    )
+    
+    # 2. Processing time trends
+    fig.add_trace(
+        go.Scatter(x=perf_df['timestamp'], y=perf_df['processing_time'],
+                  mode='lines+markers', name='Processing Time (min)',
+                  line=dict(color='green', width=3)),
+        row=1, col=2
+    )
+    
+    # 3. Resource usage (dual axis)
+    fig.add_trace(
+        go.Scatter(x=perf_df['timestamp'], y=perf_df['memory_usage'],
+                  mode='lines', name='Memory Usage (%)',
+                  line=dict(color='red', width=2)),
+        row=2, col=1
+    )
+    
+    fig.add_trace(
+        go.Scatter(x=perf_df['timestamp'], y=perf_df['cpu_usage'],
+                  mode='lines', name='CPU Usage (%)',
+                  line=dict(color='orange', width=2)),
+        row=2, col=1, secondary_y=True
+    )
+    
+    # 4. Throughput analysis
+    fig.add_trace(
+        go.Bar(x=perf_df['timestamp'], y=perf_df['throughput'],
+               name='Throughput (records/sec)', marker_color='lightblue'),
+        row=2, col=2
+    )
+    
+    # 5. Error rate monitoring
+    fig.add_trace(
+        go.Scatter(x=perf_df['timestamp'], y=perf_df['error_rate'],
+                  mode='lines+markers', name='Error Rate (%)',
+                  line=dict(color='red', width=3),
+                  fill='tozeroy', fillcolor='rgba(255,0,0,0.1)'),
+        row=3, col=1
+    )
+    
+    # 6. Performance correlation heatmap
+    correlation_data = perf_df[['records_processed', 'processing_time', 'memory_usage', 
+                               'cpu_usage', 'throughput']].corr()
+    
+    fig.add_trace(
+        go.Heatmap(z=correlation_data.values,
+                  x=correlation_data.columns,
+                  y=correlation_data.index,
+                  colorscale='RdBu',
+                  zmid=0,
+                  text=correlation_data.round(2).values,
+                  texttemplate="%{text}",
+                  showscale=True),
+        row=3, col=2
+    )
+    
+    # Update layout
+    fig.update_layout(
+        title_text="ETL Performance Monitoring Dashboard",
+        height=1000,
+        showlegend=True
+    )
+    
+    # Update axes
+    fig.update_xaxes(title_text="Time", row=1, col=1)
+    fig.update_yaxes(title_text="Records", row=1, col=1)
+    fig.update_xaxes(title_text="Time", row=1, col=2)
+    fig.update_yaxes(title_text="Minutes", row=1, col=2)
+    fig.update_xaxes(title_text="Time", row=2, col=1)
+    fig.update_yaxes(title_text="Memory %", row=2, col=1)
+    fig.update_yaxes(title_text="CPU %", row=2, col=1, secondary_y=True)
+    fig.update_xaxes(title_text="Time", row=2, col=2)
+    fig.update_yaxes(title_text="Records/sec", row=2, col=2)
+    fig.update_xaxes(title_text="Time", row=3, col=1)
+    fig.update_yaxes(title_text="Error %", row=3, col=1)
+    
+    # Save and show
+    fig.write_html("etl_performance_dashboard.html")
+    print("ETL performance dashboard saved as 'etl_performance_dashboard.html'")
+    fig.show()
+    
+    return fig
+
+# Create performance dashboard
+performance_dashboard = create_etl_performance_dashboard()
+```
+
+### Data Quality Monitoring Visualizations
+
+```python
+def create_data_quality_dashboard():
+    """Create data quality monitoring dashboard."""
+    print("Creating data quality monitoring dashboard...")
+    
+    # Simulate data quality metrics
+    np.random.seed(42)
+    
+    # Create comprehensive quality metrics
+    fig, axes = plt.subplots(3, 3, figsize=(20, 15))
+    fig.suptitle('ETL Data Quality Monitoring Dashboard', fontsize=16, fontweight='bold')
+    
+    # 1. Data Completeness by Source
+    ax1 = axes[0, 0]
+    sources = ['Customer DB', 'Orders API', 'Product Feed', 'Analytics Events']
+    completeness = [95.2, 98.7, 92.1, 89.5]
+    colors = ['green' if x > 95 else 'orange' if x > 90 else 'red' for x in completeness]
+    
+    bars = ax1.bar(sources, completeness, color=colors, alpha=0.7)
+    ax1.set_title('Data Completeness by Source', fontweight='bold')
+    ax1.set_ylabel('Completeness (%)')
+    ax1.axhline(y=95, color='red', linestyle='--', alpha=0.5, label='Target: 95%')
+    ax1.legend()
+    
+    # Add value labels
+    for bar, value in zip(bars, completeness):
+        height = bar.get_height()
+        ax1.text(bar.get_x() + bar.get_width()/2., height + 0.5,
+                f'{value}%', ha='center', va='bottom', fontweight='bold')
+    
+    # 2. Data Freshness Trends
+    ax2 = axes[0, 1]
+    hours = list(range(24))
+    freshness_delay = np.random.exponential(2, 24)  # Exponential distribution for realistic delays
+    
+    ax2.plot(hours, freshness_delay, 'b-o', linewidth=2, markersize=4)
+    ax2.fill_between(hours, freshness_delay, alpha=0.3)
+    ax2.set_title('Data Freshness (Delay in Hours)', fontweight='bold')
+    ax2.set_xlabel('Hour of Day')
+    ax2.set_ylabel('Delay (hours)')
+    ax2.axhline(y=1, color='red', linestyle='--', alpha=0.5, label='SLA: 1 hour')
+    ax2.legend()
+    ax2.grid(True, alpha=0.3)
+    
+    # 3. Schema Validation Results
+    ax3 = axes[0, 2]
+    validation_results = ['Pass', 'Warning', 'Fail']
+    validation_counts = [850, 120, 30]
+    colors_validation = ['green', 'orange', 'red']
+    
+    wedges, texts, autotexts = ax3.pie(validation_counts, labels=validation_results, 
+                                      autopct='%1.1f%%', colors=colors_validation,
+                                      startangle=90)
+    ax3.set_title('Schema Validation Results', fontweight='bold')
+    
+    # 4. Data Volume Trends
+    ax4 = axes[1, 0]
+    days = pd.date_range(start='2024-01-01', periods=30, freq='D')
+    daily_volumes = np.random.normal(1000000, 150000, 30)  # ~1M records per day
+    
+    ax4.plot(days, daily_volumes/1000000, 'g-', linewidth=2)
+    ax4.fill_between(days, daily_volumes/1000000, alpha=0.3, color='green')
+    ax4.set_title('Daily Data Volume Trends', fontweight='bold')
+    ax4.set_xlabel('Date')
+    ax4.set_ylabel('Volume (Millions of Records)')
+    ax4.tick_params(axis='x', rotation=45)
+    ax4.grid(True, alpha=0.3)
+    
+    # 5. Data Type Distribution
+    ax5 = axes[1, 1]
+    data_types = ['String', 'Integer', 'Float', 'Date', 'Boolean', 'JSON']
+    type_counts = [35, 25, 20, 10, 5, 5]
+    
+    bars = ax5.barh(data_types, type_counts, color='skyblue', alpha=0.7)
+    ax5.set_title('Data Type Distribution', fontweight='bold')
+    ax5.set_xlabel('Percentage of Columns')
+    
+    # Add value labels
+    for bar, value in zip(bars, type_counts):
+        width = bar.get_width()
+        ax5.text(width + 0.5, bar.get_y() + bar.get_height()/2.,
+                f'{value}%', ha='left', va='center', fontweight='bold')
+    
+    # 6. Duplicate Detection
+    ax6 = axes[1, 2]
+    duplicate_sources = ['Customer', 'Product', 'Order', 'Event']
+    duplicate_rates = [2.1, 0.8, 1.5, 4.2]
+    colors_dup = ['red' if x > 3 else 'orange' if x > 1 else 'green' for x in duplicate_rates]
+    
+    bars = ax6.bar(duplicate_sources, duplicate_rates, color=colors_dup, alpha=0.7)
+    ax6.set_title('Duplicate Detection Rates', fontweight='bold')
+    ax6.set_ylabel('Duplicate Rate (%)')
+    ax6.axhline(y=1, color='orange', linestyle='--', alpha=0.5, label='Warning: 1%')
+    ax6.axhline(y=3, color='red', linestyle='--', alpha=0.5, label='Critical: 3%')
+    ax6.legend()
+    
+    # 7. Processing Error Trends
+    ax7 = axes[2, 0]
+    error_hours = list(range(24))
+    error_counts = np.random.poisson(5, 24)  # Poisson distribution for error counts
+    
+    ax7.bar(error_hours, error_counts, color='red', alpha=0.6, width=0.8)
+    ax7.set_title('Processing Errors by Hour', fontweight='bold')
+    ax7.set_xlabel('Hour of Day')
+    ax7.set_ylabel('Error Count')
+    ax7.grid(True, alpha=0.3)
+    
+    # 8. Data Quality Score Over Time
+    ax8 = axes[2, 1]
+    quality_days = pd.date_range(start='2024-01-01', periods=30, freq='D')
+    quality_scores = np.random.normal(92, 3, 30)  # Quality scores around 92%
+    quality_scores = np.clip(quality_scores, 80, 100)  # Clip to realistic range
+    
+    ax8.plot(quality_days, quality_scores, 'purple', linewidth=2, marker='o', markersize=3)
+    ax8.fill_between(quality_days, quality_scores, alpha=0.3, color='purple')
+    ax8.set_title('Overall Data Quality Score', fontweight='bold')
+    ax8.set_xlabel('Date')
+    ax8.set_ylabel('Quality Score (%)')
+    ax8.axhline(y=90, color='green', linestyle='--', alpha=0.5, label='Target: 90%')
+    ax8.legend()
+    ax8.tick_params(axis='x', rotation=45)
+    ax8.grid(True, alpha=0.3)
+    
+    # 9. ETL Stage Performance
+    ax9 = axes[2, 2]
+    etl_stages = ['Extract', 'Transform', 'Load']
+    avg_times = [12.5, 35.2, 18.7]  # Average processing times in minutes
+    std_times = [2.1, 5.8, 3.2]     # Standard deviations
+    
+    bars = ax9.bar(etl_stages, avg_times, yerr=std_times, capsize=5,
+                   color=['lightblue', 'lightgreen', 'lightcoral'], alpha=0.7)
+    ax9.set_title('ETL Stage Performance', fontweight='bold')
+    ax9.set_ylabel('Processing Time (minutes)')
+    
+    # Add value labels
+    for bar, value in zip(bars, avg_times):
+        height = bar.get_height()
+        ax9.text(bar.get_x() + bar.get_width()/2., height + 1,
+                f'{value:.1f}m', ha='center', va='bottom', fontweight='bold')
+    
+    plt.tight_layout()
+    plt.savefig('etl_data_quality_dashboard.png', dpi=300, bbox_inches='tight')
+    plt.show()
+    
+    print("ETL data quality dashboard saved as 'etl_data_quality_dashboard.png'")
+
+# Create data quality dashboard
+create_data_quality_dashboard()
+```
+
+### Real-time ETL Monitoring
+
+```python
+def create_realtime_etl_monitor():
+    """Create real-time ETL monitoring visualization."""
+    print("Creating real-time ETL monitoring system...")
+    
+    # Simulate real-time metrics
+    fig = go.Figure()
+    
+    # Create streaming-style data
+    time_points = pd.date_range(start='2024-01-01 00:00:00', periods=100, freq='1min')
+    
+    # Simulate different metrics
+    throughput = 15000 + 5000 * np.sin(np.linspace(0, 4*np.pi, 100)) + np.random.normal(0, 1000, 100)
+    latency = 50 + 20 * np.sin(np.linspace(0, 2*np.pi, 100)) + np.random.normal(0, 5, 100)
+    error_rate = np.maximum(0, 1 + 0.5 * np.sin(np.linspace(0, 6*np.pi, 100)) + np.random.normal(0, 0.3, 100))
+    
+    # Create subplot with secondary y-axis
+    fig = make_subplots(specs=[[{"secondary_y": True}]])
+    
+    # Add throughput trace
+    fig.add_trace(
+        go.Scatter(x=time_points, y=throughput,
+                  mode='lines', name='Throughput (records/min)',
+                  line=dict(color='blue', width=2)),
+        secondary_y=False,
+    )
+    
+    # Add latency trace
+    fig.add_trace(
+        go.Scatter(x=time_points, y=latency,
+                  mode='lines', name='Latency (ms)',
+                  line=dict(color='green', width=2)),
+        secondary_y=True,
+    )
+    
+    # Add error rate trace
+    fig.add_trace(
+        go.Scatter(x=time_points, y=error_rate,
+                  mode='lines', name='Error Rate (%)',
+                  line=dict(color='red', width=2),
+                  fill='tozeroy', fillcolor='rgba(255,0,0,0.1)'),
+        secondary_y=True,
+    )
+    
+    # Add threshold lines
+    fig.add_hline(y=10000, line_dash="dash", line_color="blue", 
+                  annotation_text="Min Throughput", secondary_y=False)
+    fig.add_hline(y=100, line_dash="dash", line_color="orange", 
+                  annotation_text="Max Latency", secondary_y=True)
+    fig.add_hline(y=5, line_dash="dash", line_color="red", 
+                  annotation_text="Max Error Rate", secondary_y=True)
+    
+    # Set y-axes titles
+    fig.update_yaxes(title_text="Throughput (records/min)", secondary_y=False)
+    fig.update_yaxes(title_text="Latency (ms) / Error Rate (%)", secondary_y=True)
+    
+    # Set x-axis title
+    fig.update_xaxes(title_text="Time")
+    
+    fig.update_layout(
+        title_text="Real-time ETL Pipeline Monitoring",
+        height=600,
+        hovermode='x unified'
+    )
+    
+    # Save and show
+    fig.write_html("realtime_etl_monitor.html")
+    print("Real-time ETL monitor saved as 'realtime_etl_monitor.html'")
+    fig.show()
+    
+    return fig
+
+# Create real-time monitor
+realtime_monitor = create_realtime_etl_monitor()
+```
+
+### System Resource Monitoring
+
+```python
+def create_system_resource_dashboard():
+    """Create system resource monitoring dashboard."""
+    print("Creating system resource monitoring dashboard...")
+    
+    # Get actual system information
+    cpu_percent = psutil.cpu_percent(interval=1, percpu=True)
+    memory = psutil.virtual_memory()
+    disk = psutil.disk_usage('/')
+    
+    # Create system resource visualization
+    fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(15, 10))
+    fig.suptitle('System Resource Monitoring for ETL Pipeline', fontsize=16, fontweight='bold')
+    
+    # 1. CPU Usage by Core
+    cores = [f'Core {i+1}' for i in range(len(cpu_percent))]
+    colors = ['red' if cpu > 80 else 'orange' if cpu > 60 else 'green' for cpu in cpu_percent]
+    
+    bars = ax1.bar(cores, cpu_percent, color=colors, alpha=0.7)
+    ax1.set_title('CPU Usage by Core', fontweight='bold')
+    ax1.set_ylabel('CPU Usage (%)')
+    ax1.axhline(y=80, color='red', linestyle='--', alpha=0.5, label='Critical: 80%')
+    ax1.axhline(y=60, color='orange', linestyle='--', alpha=0.5, label='Warning: 60%')
+    ax1.legend()
+    
+    # Add value labels
+    for bar, value in zip(bars, cpu_percent):
+        height = bar.get_height()
+        ax1.text(bar.get_x() + bar.get_width()/2., height + 1,
+                f'{value:.1f}%', ha='center', va='bottom', fontweight='bold')
+    
+    # 2. Memory Usage
+    memory_data = [
+        ('Used', memory.used / (1024**3), 'red'),
+        ('Available', memory.available / (1024**3), 'green'),
+        ('Cached', (memory.cached if hasattr(memory, 'cached') else 0) / (1024**3), 'blue')
+    ]
+    
+    labels, values, colors_mem = zip(*memory_data)
+    ax2.pie(values, labels=labels, colors=colors_mem, autopct='%1.1f%%', startangle=90)
+    ax2.set_title(f'Memory Usage (Total: {memory.total / (1024**3):.1f} GB)', fontweight='bold')
+    
+    # 3. Disk Usage
+    disk_data = [
+        ('Used', disk.used / (1024**3), 'red'),
+        ('Free', disk.free / (1024**3), 'green')
+    ]
+    
+    labels_disk, values_disk, colors_disk = zip(*disk_data)
+    ax3.pie(values_disk, labels=labels_disk, colors=colors_disk, autopct='%1.1f%%', startangle=90)
+    ax3.set_title(f'Disk Usage (Total: {disk.total / (1024**3):.1f} GB)', fontweight='bold')
+    
+    # 4. Resource Trends (simulated)
+    hours = list(range(24))
+    cpu_trend = 30 + 20 * np.sin(np.linspace(0, 2*np.pi, 24)) + np.random.normal(0, 5, 24)
+    memory_trend = 60 + 15 * np.sin(np.linspace(0, 4*np.pi, 24)) + np.random.normal(0, 3, 24)
+    
+    ax4.plot(hours, cpu_trend, 'b-o', label='CPU Usage (%)', linewidth=2, markersize=4)
+    ax4.plot(hours, memory_trend, 'r-s', label='Memory Usage (%)', linewidth=2, markersize=4)
+    ax4.set_title('24-Hour Resource Trends', fontweight='bold')
+    ax4.set_xlabel('Hour of Day')
+    ax4.set_ylabel('Usage (%)')
+    ax4.legend()
+    ax4.grid(True, alpha=0.3)
+    
+    plt.tight_layout()
+    plt.savefig('system_resource_dashboard.png', dpi=300, bbox_inches='tight')
+    plt.show()
+    
+    print("System resource dashboard saved as 'system_resource_dashboard.png'")
+    
+    # Print current system status
+    print(f"\nCurrent System Status:")
+    print(f"  CPU Usage: {psutil.cpu_percent():.1f}%")
+    print(f"  Memory Usage: {memory.percent:.1f}%")
+    print(f"  Disk Usage: {(disk.used / disk.total) * 100:.1f}%")
+
+# Create system resource dashboard
+create_system_resource_dashboard()
+```
 
 ## Troubleshooting
 

@@ -1,11 +1,38 @@
-# LLM offline batch inference with Ray Data and vLLM
+# LLM Offline Batch Inference with Ray Data and vLLM
 
-**⏱️ Time to complete**: 10 min
+**⏱️ Time to complete**: 10 min | **Difficulty**: Beginner | **Prerequisites**: Basic understanding of language models
 
-This template shows you how to:
-1. Read in data from in-memory samples or files on cloud storage. 
-2. Use Ray Data and vLLM to run batch inference of a LLM.
-3. Write the inference outputs to cloud storage.
+## What You'll Build
+
+Create a scalable LLM inference pipeline that processes thousands of text prompts efficiently using Ray Data and vLLM. You'll learn the patterns used by AI companies to serve LLM predictions at scale.
+
+## Table of Contents
+
+1. [Model Setup and Configuration](#step-1-set-up-model-configs) (3 min)
+2. [Data Loading and Processing](#step-2-read-data-files) (2 min)
+3. [Batch Inference Pipeline](#step-3-run-batch-inference) (4 min)
+4. [Results and Storage](#step-4-write-results-to-cloud-storage) (1 min)
+
+## Learning Objectives
+
+By completing this tutorial, you'll understand:
+
+- **Why batch inference matters**: Efficient processing of large volumes of text for LLM applications
+- **Ray Data's LLM superpowers**: Distributed inference across multiple GPUs with automatic load balancing
+- **Real-world applications**: How AI companies process millions of prompts for content generation and analysis
+- **Production patterns**: Scalable inference patterns for enterprise LLM deployments
+
+## Overview
+
+**The Challenge**: Processing thousands or millions of prompts through large language models requires significant computational resources and careful orchestration to achieve good throughput.
+
+**The Solution**: Ray Data combined with vLLM enables distributed LLM inference across multiple GPUs, handling large datasets efficiently through parallel processing.
+
+**Real-world Impact**:
+- **AI Companies**: Process millions of prompts for content generation and customer support
+- **Content Platforms**: Generate summaries, translations, and recommendations at scale
+- **Enterprise Applications**: Automate document analysis, code generation, and data extraction
+- **Research Organizations**: Conduct large-scale language model experiments and evaluations
 
 For a Python script version of the code in this workspace template, refer to `main.py`.
 
@@ -230,7 +257,34 @@ Run the following cell to start dataset execution and view the results!
 
 
 ```python
-ds.take_all()
+# Get inference results and display them in a visually appealing format
+inference_results = ds.take_all()
+
+print("LLM Batch Inference Results:")
+print("=" * 100)
+print(f"{'#':<3} {'Input Prompt':<40} {'Generated Response':<50}")
+print("-" * 100)
+
+for i, result in enumerate(inference_results[:5]):  # Show first 5 results
+    prompt = result["prompt"][:37] + "..." if len(result["prompt"]) > 40 else result["prompt"]
+    response = result["generated_text"][:47] + "..." if len(result["generated_text"]) > 50 else result["generated_text"]
+    
+    print(f"{i+1:<3} {prompt:<40} {response:<50}")
+
+print("-" * 100)
+print(f"Total Results: {len(inference_results)} prompt-response pairs generated")
+
+# Show statistics about the inference
+prompt_lengths = [len(r["prompt"]) for r in inference_results]
+response_lengths = [len(r["generated_text"]) for r in inference_results]
+
+print(f"\nInference Statistics:")
+print(f"  Average Prompt Length: {np.mean(prompt_lengths):.1f} characters")
+print(f"  Average Response Length: {np.mean(response_lengths):.1f} characters")
+print(f"  Shortest Response: {min(response_lengths)} characters")
+print(f"  Longest Response: {max(response_lengths)} characters")
+
+print("\nBatch inference completed successfully!")
 ```
 
 ### Scaling to a larger dataset
@@ -281,8 +335,25 @@ Running the following cell will trigger execution for the full Dataset, which wi
 
 
 ```python
+# Write results with progress monitoring and visual feedback
+print("Writing LLM inference results to storage...")
+print(f"Output location: {output_path}")
+
+# Write the results (this triggers the full pipeline execution)
 ds.write_parquet(output_path, try_create_dir=False)
-print(f"Batch inference result is written into {output_path}.")
+
+print("\nBatch Inference Pipeline Summary:")
+print("=" * 80)
+print(f"{'Stage':<25} {'Operation':<30} {'Status':<15}")
+print("-" * 80)
+print(f"{'Data Loading':<25} {'read_text() from S3':<30} {'✓ Complete':<15}")
+print(f"{'Model Inference':<25} {'vLLM batch processing':<30} {'✓ Complete':<15}")
+print(f"{'Results Storage':<25} {'write_parquet() to S3':<30} {'✓ Complete':<15}")
+print("=" * 80)
+
+print(f"\nBatch inference pipeline completed successfully!")
+print(f"Results saved to: {output_path}")
+print(f"You can now use these results for downstream applications or analysis.")
 ```
 
 ### Monitoring Dataset execution

@@ -30,7 +30,7 @@ By completing this tutorial, you'll understand:
 
 **Real-world Impact**:
 - **Cost Savings**: Optimized inference reduces cloud costs through better resource utilization
-- **Speed Gains**: Process data faster with proper configuration
+- **Speed Gains**: Process data efficiently with proper configuration
 - **Scalability**: Handle larger workloads through distributed processing
 - **Resource Efficiency**: Maximize GPU utilization and minimize waste
 
@@ -106,22 +106,22 @@ Most performance issues in Ray Data batch inference stem from these fundamental 
 
 This template follows a clear progression:
 
-**🚫 Phase 1: The "Wrong Way"**
+**Phase 1: The "Wrong Way"**
 - Build inference pipeline with common mistakes
 - Identify bottlenecks and anti-patterns
 - Understand why each mistake creates problems
 
-**📚 Phase 2: Understanding Ray Data Architecture**
+**Phase 2: Understanding Ray Data Architecture**
 - Learn how Ray Data blocks and tasks work
 - Understand resource allocation and parallelism
 - Master configuration parameters and their effects
 
-**✅ Phase 3: The "Right Way"**  
+**Phase 3: The "Right Way"**  
 - Fix each issue systematically
 - Apply Ray Data best practices and optimizations
 - Build an optimized inference pipeline
 
-**📊 Phase 4: Comparison and Analysis**
+**Phase 4: Comparison and Analysis**
 - Compare before/after implementations
 - Understand the impact of each optimization
 - Learn to identify and debug performance issues
@@ -787,7 +787,7 @@ def implementation_comparison():
     
     print(f"\nKEY OPTIMIZATION IMPACTS:")
     print(f"  1. Model Loading Once:    Eliminated reload overhead")
-    print(f"  2. GPU Acceleration:      Much faster than CPU inference")
+    print(f"  2. GPU Acceleration:      Efficient GPU-based inference")
     print(f"  3. Proper Batching:       Better resource utilization")
     print(f"  4. Optimal Configuration: Improved parallelism")
     print(f"  5. Efficient I/O:         Faster data serialization")

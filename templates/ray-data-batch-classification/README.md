@@ -1,6 +1,6 @@
 # Image Classification Batch Inference with PyTorch
 
-**⏱️ Time to complete**: 15 min | **Difficulty**: Beginner | **Prerequisites**: Basic Python, PyTorch familiarity
+**Time to complete**: 15 min | **Difficulty**: Beginner | **Prerequisites**: Basic Python, PyTorch familiarity
 
 ## What You'll Build
 
@@ -26,7 +26,7 @@ By completing this tutorial, you'll understand:
 
 **The Challenge**: Processing large image datasets with traditional approaches is slow and doesn't utilize available hardware efficiently.
 
-**The Solution**: Ray Data automatically distributes your inference workload across multiple workers, dramatically reducing processing time.
+**The Solution**: Ray Data automatically distributes your inference workload across multiple workers, enabling efficient processing of large image datasets.
 
 **Real-world Impact**: Companies like Uber and Netflix use similar patterns to process millions of images daily for recommendation systems and content analysis.
 
@@ -42,10 +42,17 @@ Before starting, make sure you have:
 
 ## Quick Start (5 minutes)
 
-Want to see results immediately? Run this minimal example:
+Want to see results immediately? This minimal example demonstrates the core concepts.
+
+### Setup and Data Loading
 
 ```python
 import ray
+
+# Initialize Ray for distributed processing
+ray.init()
+
+# Load sample images from public dataset
 ds = ray.data.read_images("s3://anonymous@air-example-data-2/imagenette2/train/")
 print(f"Loaded {ds.count()} images for processing")
 ```
@@ -254,7 +261,7 @@ print(f" Required transforms: {imagenet_transforms}")
 
 ** Key Concepts:**
 - **Pre-trained models**: Already trained on millions of images, ready to use
-- **Device selection**: GPU acceleration can be 10-faster than CPU
+- **Device selection**: GPU acceleration is much faster than CPU
 - **Evaluation mode**: Important for consistent inference results
 
 Now let's run inference on our small batch to see how it works:
@@ -320,7 +327,7 @@ Now comes the exciting part! We'll scale from 10 images to thousands, automatica
 ### Performance Comparison
 - **Traditional approach**: Process 10,000 images → ~45 minutes on single CPU
 - **Ray Data approach**: Process 10,000 images → ~3 minutes on 4 GPUs
-- **Scaling**: Add more GPUs → proportionally faster processing
+- **Scaling**: Add more GPUs → better processing throughput
 
 ### Preprocessing at Scale
 First, let's convert our preprocessing code to work with Ray Data's distributed processing. We'll create a function that Ray can run on multiple workers simultaneously.

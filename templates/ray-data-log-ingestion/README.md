@@ -1,6 +1,6 @@
 # Log Analytics and Security Monitoring with Ray Data
 
-**⏱️ Time to complete**: 30 min | **Difficulty**: Intermediate | **Prerequisites**: Understanding of log files, basic security concepts
+**Time to complete**: 30 min | **Difficulty**: Intermediate | **Prerequisites**: Understanding of log files, basic security concepts
 
 ## What You'll Build
 
@@ -29,10 +29,10 @@ By completing this tutorial, you'll understand:
 **The Solution**: Ray Data processes logs at massive scale, enabling real-time security monitoring, performance analysis, and operational intelligence.
 
 **Real-world Impact**:
-- 🛡️ **Security Operations**: SOC teams detect cyber attacks by analyzing billions of security logs
-- 📊 **DevOps**: Site reliability engineers monitor system health through application and infrastructure logs
-- 📋 **Compliance**: Organizations meet regulatory requirements by analyzing audit logs
-- 🚨 **Incident Response**: Rapid log analysis helps teams respond to outages and security incidents
+- **Security Operations**: SOC teams detect cyber attacks by analyzing billions of security logs
+- **DevOps**: Site reliability engineers monitor system health through application and infrastructure logs
+- **Compliance**: Organizations meet regulatory requirements by analyzing audit logs
+- **Incident Response**: Rapid log analysis helps teams respond to outages and security incidents
 
 ---
 
@@ -61,7 +61,7 @@ print(f"📋 Created log dataset with {ds.count()} log entries")
 To run this template, you will need the following packages:
 
 ```bash
-pip install ray[data] plotly pandas numpy
+pip install ray[data] plotly pandas numpy matplotlib seaborn networkx
 ```
 
 ## Overview
@@ -899,6 +899,475 @@ logging.basicConfig(level=logging.DEBUG)
 from ray.data.context import DataContext
 ctx = DataContext.get_current()
 ctx.enable_progress_bars = True
+```
+
+## Interactive Log Analytics Visualizations
+
+Let's create comprehensive visualizations for log analysis and security monitoring:
+
+### Security Operations Center (SOC) Dashboard
+
+```python
+def create_soc_dashboard(log_data):
+    """Create comprehensive Security Operations Center dashboard."""
+    print("Creating SOC dashboard...")
+    
+    import matplotlib.pyplot as plt
+    import seaborn as sns
+    import plotly.express as px
+    import plotly.graph_objects as go
+    from plotly.subplots import make_subplots
+    import numpy as np
+    import pandas as pd
+    from datetime import datetime, timedelta
+    
+    # Convert to pandas for visualization
+    if hasattr(log_data, 'to_pandas'):
+        logs_df = log_data.to_pandas()
+    else:
+        logs_df = pd.DataFrame(log_data)
+    
+    # Set security visualization style
+    plt.style.use('dark_background')  # SOC-style dark theme
+    sns.set_palette("rocket")
+    
+    # Create comprehensive SOC dashboard
+    fig, axes = plt.subplots(3, 3, figsize=(20, 15))
+    fig.patch.set_facecolor('black')
+    fig.suptitle('Security Operations Center Dashboard', fontsize=16, fontweight='bold', color='white')
+    
+    # 1. Threat Level Distribution
+    ax1 = axes[0, 0]
+    ax1.set_facecolor('black')
+    
+    if 'threat_level' in logs_df.columns:
+        threat_counts = logs_df['threat_level'].value_counts()
+    else:
+        # Simulate threat levels
+        threat_levels = ['Low', 'Medium', 'High', 'Critical']
+        threat_counts = pd.Series([1250, 450, 85, 15], index=threat_levels)
+    
+    colors_threat = ['green', 'yellow', 'orange', 'red']
+    bars = ax1.bar(threat_counts.index, threat_counts.values, color=colors_threat, alpha=0.8)
+    ax1.set_title('Threat Level Distribution', fontweight='bold', color='white')
+    ax1.set_ylabel('Number of Events', color='white')
+    ax1.tick_params(colors='white')
+    
+    # Add value labels
+    for bar, value in zip(bars, threat_counts.values):
+        height = bar.get_height()
+        ax1.text(bar.get_x() + bar.get_width()/2., height + 10,
+                f'{int(value)}', ha='center', va='bottom', fontweight='bold', color='white')
+    
+    # 2. Attack Types Analysis
+    ax2 = axes[0, 1]
+    ax2.set_facecolor('black')
+    
+    attack_types = ['Brute Force', 'SQL Injection', 'XSS', 'DDoS', 'Malware', 'Phishing']
+    attack_counts = [125, 78, 45, 32, 28, 19]
+    
+    bars = ax2.barh(attack_types, attack_counts, color='red', alpha=0.7)
+    ax2.set_title('Attack Types (Last 24h)', fontweight='bold', color='white')
+    ax2.set_xlabel('Number of Attacks', color='white')
+    ax2.tick_params(colors='white')
+    
+    # Add value labels
+    for i, bar in enumerate(bars):
+        width = bar.get_width()
+        ax2.text(width + 2, bar.get_y() + bar.get_height()/2.,
+                f'{int(width)}', ha='left', va='center', fontweight='bold', color='white')
+    
+    # 3. Geographic Attack Sources
+    ax3 = axes[0, 2]
+    ax3.set_facecolor('black')
+    
+    countries = ['Russia', 'China', 'USA', 'Brazil', 'India', 'Ukraine']
+    attack_origins = [45, 38, 25, 18, 15, 12]
+    
+    colors_geo = plt.cm.Reds(np.linspace(0.4, 1, len(countries)))
+    bars = ax3.bar(countries, attack_origins, color=colors_geo, alpha=0.8)
+    ax3.set_title('Attack Sources by Country', fontweight='bold', color='white')
+    ax3.set_ylabel('Attack Count', color='white')
+    ax3.tick_params(axis='x', rotation=45, colors='white')
+    ax3.tick_params(axis='y', colors='white')
+    
+    # 4. Hourly Attack Pattern
+    ax4 = axes[1, 0]
+    ax4.set_facecolor('black')
+    
+    hours = list(range(24))
+    np.random.seed(42)
+    # Simulate realistic attack pattern (higher at night)
+    hourly_attacks = 20 + 15 * np.sin(np.linspace(0, 2*np.pi, 24) + np.pi) + np.random.normal(0, 5, 24)
+    hourly_attacks = np.maximum(hourly_attacks, 0)
+    
+    ax4.plot(hours, hourly_attacks, 'r-o', linewidth=2, markersize=4, alpha=0.8)
+    ax4.fill_between(hours, hourly_attacks, alpha=0.3, color='red')
+    ax4.set_title('24-Hour Attack Timeline', fontweight='bold', color='white')
+    ax4.set_xlabel('Hour of Day', color='white')
+    ax4.set_ylabel('Attacks per Hour', color='white')
+    ax4.tick_params(colors='white')
+    ax4.grid(True, alpha=0.3)
+    
+    # 5. Top Targeted Services
+    ax5 = axes[1, 1]
+    ax5.set_facecolor('black')
+    
+    services = ['SSH', 'HTTP', 'HTTPS', 'FTP', 'SMTP', 'DNS']
+    service_attacks = [156, 143, 98, 67, 45, 32]
+    
+    wedges, texts, autotexts = ax5.pie(service_attacks, labels=services, autopct='%1.1f%%',
+                                      colors=plt.cm.Reds(np.linspace(0.4, 1, len(services))),
+                                      startangle=90)
+    ax5.set_title('Targeted Services', fontweight='bold', color='white')
+    
+    # Make text white
+    for text in texts + autotexts:
+        text.set_color('white')
+        text.set_fontweight('bold')
+    
+    # 6. Security Event Timeline
+    ax6 = axes[1, 2]
+    ax6.set_facecolor('black')
+    
+    # Simulate security events over time
+    dates = pd.date_range(start='2024-01-01', periods=30, freq='D')
+    events_per_day = np.random.poisson(50, 30) + np.random.normal(0, 10, 30)
+    events_per_day = np.maximum(events_per_day, 0)
+    
+    ax6.plot(dates, events_per_day, 'yellow', linewidth=2, alpha=0.8)
+    ax6.fill_between(dates, events_per_day, alpha=0.3, color='yellow')
+    ax6.set_title('30-Day Security Events Trend', fontweight='bold', color='white')
+    ax6.set_xlabel('Date', color='white')
+    ax6.set_ylabel('Events per Day', color='white')
+    ax6.tick_params(axis='x', rotation=45, colors='white')
+    ax6.tick_params(axis='y', colors='white')
+    ax6.grid(True, alpha=0.3)
+    
+    # 7. Response Time Analysis
+    ax7 = axes[2, 0]
+    ax7.set_facecolor('black')
+    
+    # Simulate response times
+    np.random.seed(42)
+    response_times = np.random.lognormal(2, 0.5, 1000)  # Log-normal distribution
+    
+    ax7.hist(response_times, bins=30, color='cyan', alpha=0.7, edgecolor='white')
+    ax7.axvline(response_times.mean(), color='red', linestyle='--', linewidth=2,
+               label=f'Mean: {response_times.mean():.1f} min')
+    ax7.set_title('Incident Response Times', fontweight='bold', color='white')
+    ax7.set_xlabel('Response Time (minutes)', color='white')
+    ax7.set_ylabel('Frequency', color='white')
+    ax7.tick_params(colors='white')
+    ax7.legend()
+    ax7.grid(True, alpha=0.3)
+    
+    # 8. Security Metrics
+    ax8 = axes[2, 1]
+    ax8.set_facecolor('black')
+    
+    metrics = ['Detection\nRate', 'False\nPositives', 'MTTR\n(minutes)', 'Coverage\n(%)']
+    values = [94.5, 2.8, 15.3, 98.2]
+    colors_metrics = ['green', 'red', 'orange', 'blue']
+    
+    bars = ax8.bar(metrics, values, color=colors_metrics, alpha=0.7)
+    ax8.set_title('Security KPIs', fontweight='bold', color='white')
+    ax8.set_ylabel('Value', color='white')
+    ax8.tick_params(colors='white')
+    
+    # Add value labels
+    for bar, value in zip(bars, values):
+        height = bar.get_height()
+        ax8.text(bar.get_x() + bar.get_width()/2., height + 1,
+                f'{value}', ha='center', va='bottom', fontweight='bold', color='white')
+    
+    # 9. Risk Score Heatmap
+    ax9 = axes[2, 2]
+    ax9.set_facecolor('black')
+    
+    # Create risk score matrix (services vs time)
+    services_short = ['SSH', 'HTTP', 'FTP', 'SMTP']
+    time_periods = ['00-06', '06-12', '12-18', '18-24']
+    
+    np.random.seed(42)
+    risk_matrix = np.random.rand(len(services_short), len(time_periods)) * 100
+    
+    im = ax9.imshow(risk_matrix, cmap='Reds', aspect='auto', alpha=0.8)
+    ax9.set_xticks(range(len(time_periods)))
+    ax9.set_xticklabels(time_periods, color='white')
+    ax9.set_yticks(range(len(services_short)))
+    ax9.set_yticklabels(services_short, color='white')
+    ax9.set_title('Risk Score Heatmap', fontweight='bold', color='white')
+    
+    # Add text annotations
+    for i in range(len(services_short)):
+        for j in range(len(time_periods)):
+            text = ax9.text(j, i, f'{risk_matrix[i, j]:.0f}',
+                           ha="center", va="center", color="white", fontweight='bold')
+    
+    plt.tight_layout()
+    plt.savefig('soc_dashboard.png', dpi=300, bbox_inches='tight', facecolor='black')
+    plt.show()
+    
+    print("SOC dashboard saved as 'soc_dashboard.png'")
+
+# Example usage
+# create_soc_dashboard(security_logs)
+```
+
+### Interactive Log Analytics Dashboard
+
+```python
+def create_interactive_log_dashboard(log_data):
+    """Create interactive log analytics dashboard using Plotly."""
+    print("Creating interactive log analytics dashboard...")
+    
+    # Create comprehensive interactive dashboard
+    fig = make_subplots(
+        rows=3, cols=2,
+        subplot_titles=('Log Volume Over Time', 'Error Rate Analysis',
+                       'Response Time Distribution', 'Service Health Status',
+                       'Geographic Log Sources', 'Log Level Breakdown'),
+        specs=[[{"secondary_y": False}, {"secondary_y": True}],
+               [{"secondary_y": False}, {"secondary_y": False}],
+               [{"type": "scattergeo"}, {"type": "pie"}]]
+    )
+    
+    # Simulate log data for demonstration
+    np.random.seed(42)
+    
+    # 1. Log volume over time
+    dates = pd.date_range(start='2024-01-01', periods=168, freq='H')  # 1 week hourly
+    log_volumes = 1000 + 500 * np.sin(np.linspace(0, 14*np.pi, 168)) + np.random.normal(0, 100, 168)
+    log_volumes = np.maximum(log_volumes, 0)
+    
+    fig.add_trace(
+        go.Scatter(x=dates, y=log_volumes,
+                  mode='lines', name='Log Volume',
+                  line=dict(color='blue', width=2)),
+        row=1, col=1
+    )
+    
+    # 2. Error rate analysis with dual axis
+    error_rates = 2 + np.random.normal(0, 0.5, 168)
+    error_rates = np.maximum(error_rates, 0)
+    
+    fig.add_trace(
+        go.Scatter(x=dates, y=error_rates,
+                  mode='lines', name='Error Rate (%)',
+                  line=dict(color='red', width=2)),
+        row=1, col=2, secondary_y=False
+    )
+    
+    # Success rate on secondary y-axis
+    success_rates = 100 - error_rates
+    fig.add_trace(
+        go.Scatter(x=dates, y=success_rates,
+                  mode='lines', name='Success Rate (%)',
+                  line=dict(color='green', width=2)),
+        row=1, col=2, secondary_y=True
+    )
+    
+    # 3. Response time distribution
+    response_times = np.random.lognormal(4, 0.5, 10000)  # Log-normal distribution
+    
+    fig.add_trace(
+        go.Histogram(x=response_times, nbinsx=50,
+                    marker_color='orange', name='Response Times'),
+        row=2, col=1
+    )
+    
+    # 4. Service health status
+    services = ['Web Server', 'Database', 'API Gateway', 'Cache', 'Queue']
+    health_scores = [98.5, 99.2, 97.8, 99.8, 98.1]
+    colors_health = ['green' if score > 99 else 'orange' if score > 95 else 'red' 
+                    for score in health_scores]
+    
+    fig.add_trace(
+        go.Bar(x=services, y=health_scores,
+              marker_color=colors_health, name='Health Score'),
+        row=2, col=2
+    )
+    
+    # 5. Geographic log sources
+    countries = ['USA', 'Germany', 'Japan', 'Brazil', 'India', 'Australia']
+    country_codes = ['USA', 'DEU', 'JPN', 'BRA', 'IND', 'AUS']
+    log_counts = [45000, 28000, 32000, 18000, 25000, 12000]
+    
+    fig.add_trace(
+        go.Scattergeo(
+            locations=country_codes,
+            text=countries,
+            mode='markers',
+            marker=dict(
+                size=[count/1000 for count in log_counts],
+                color=log_counts,
+                colorscale='Viridis',
+                showscale=True,
+                colorbar=dict(title="Log Count", x=0.45)
+            ),
+            name="Log Sources"
+        ),
+        row=3, col=1
+    )
+    
+    # 6. Log level breakdown
+    log_levels = ['INFO', 'WARN', 'ERROR', 'DEBUG', 'FATAL']
+    level_counts = [60000, 15000, 8000, 25000, 500]
+    
+    fig.add_trace(
+        go.Pie(labels=log_levels, values=level_counts,
+              name="Log Levels"),
+        row=3, col=2
+    )
+    
+    # Update layout
+    fig.update_layout(
+        title_text="Interactive Log Analytics Dashboard",
+        height=1000,
+        showlegend=True,
+        template="plotly_dark"  # Dark theme for operations dashboard
+    )
+    
+    # Update axes
+    fig.update_xaxes(title_text="Time", row=1, col=1)
+    fig.update_yaxes(title_text="Log Count", row=1, col=1)
+    fig.update_xaxes(title_text="Time", row=1, col=2)
+    fig.update_yaxes(title_text="Error Rate (%)", row=1, col=2, secondary_y=False)
+    fig.update_yaxes(title_text="Success Rate (%)", row=1, col=2, secondary_y=True)
+    fig.update_xaxes(title_text="Response Time (ms)", row=2, col=1)
+    fig.update_yaxes(title_text="Frequency", row=2, col=1)
+    fig.update_xaxes(title_text="Service", row=2, col=2)
+    fig.update_yaxes(title_text="Health Score (%)", row=2, col=2)
+    
+    # Save and show
+    fig.write_html("interactive_log_dashboard.html")
+    print("Interactive log dashboard saved as 'interactive_log_dashboard.html'")
+    fig.show()
+    
+    return fig
+
+# Create interactive dashboard
+interactive_dashboard = create_interactive_log_dashboard(None)
+```
+
+### Network Security Visualization
+
+```python
+def create_network_security_visualization():
+    """Create network security and traffic analysis visualization."""
+    print("Creating network security visualization...")
+    
+    import networkx as nx
+    
+    # Create network topology visualization
+    fig, axes = plt.subplots(2, 2, figsize=(16, 12))
+    fig.suptitle('Network Security Analysis', fontsize=16, fontweight='bold')
+    
+    # 1. Network topology with threats
+    ax1 = axes[0, 0]
+    
+    # Create network graph
+    G = nx.Graph()
+    
+    # Add nodes (network devices)
+    devices = {
+        'Firewall': {'pos': (0, 0), 'color': 'red', 'size': 1000},
+        'Router': {'pos': (1, 0), 'color': 'blue', 'size': 800},
+        'Switch': {'pos': (2, 0), 'color': 'green', 'size': 800},
+        'Server1': {'pos': (1, 1), 'color': 'orange', 'size': 600},
+        'Server2': {'pos': (1, -1), 'color': 'orange', 'size': 600},
+        'Workstation': {'pos': (3, 0), 'color': 'purple', 'size': 400},
+        'Threat': {'pos': (-1, 0), 'color': 'darkred', 'size': 800}
+    }
+    
+    for device, attrs in devices.items():
+        G.add_node(device, **attrs)
+    
+    # Add edges (connections)
+    connections = [
+        ('Threat', 'Firewall'),
+        ('Firewall', 'Router'),
+        ('Router', 'Switch'),
+        ('Router', 'Server1'),
+        ('Router', 'Server2'),
+        ('Switch', 'Workstation')
+    ]
+    G.add_edges_from(connections)
+    
+    # Draw network
+    pos = nx.get_node_attributes(G, 'pos')
+    colors = [devices[node]['color'] for node in G.nodes()]
+    sizes = [devices[node]['size'] for node in G.nodes()]
+    
+    nx.draw(G, pos, ax=ax1, node_color=colors, node_size=sizes,
+            with_labels=True, font_size=8, font_weight='bold',
+            edge_color='gray', arrows=True, arrowsize=20)
+    
+    ax1.set_title('Network Topology with Threat Sources', fontweight='bold')
+    ax1.axis('off')
+    
+    # 2. Attack flow analysis
+    ax2 = axes[0, 1]
+    
+    attack_stages = ['Reconnaissance', 'Initial Access', 'Execution', 'Persistence', 'Exfiltration']
+    attack_counts = [45, 23, 15, 8, 3]
+    colors_attack = ['yellow', 'orange', 'red', 'darkred', 'black']
+    
+    bars = ax2.bar(range(len(attack_stages)), attack_counts, color=colors_attack, alpha=0.7)
+    ax2.set_xticks(range(len(attack_stages)))
+    ax2.set_xticklabels(attack_stages, rotation=45, ha='right', fontsize=8)
+    ax2.set_title('Attack Kill Chain Analysis', fontweight='bold')
+    ax2.set_ylabel('Number of Events')
+    
+    # Add value labels
+    for bar, value in zip(bars, attack_counts):
+        height = bar.get_height()
+        ax2.text(bar.get_x() + bar.get_width()/2., height + 0.5,
+                f'{value}', ha='center', va='bottom', fontweight='bold')
+    
+    # 3. IP reputation analysis
+    ax3 = axes[1, 0]
+    
+    # Simulate IP reputation scores
+    np.random.seed(42)
+    reputation_scores = np.random.beta(2, 0.5, 1000) * 100  # Skewed towards high scores
+    
+    ax3.hist(reputation_scores, bins=30, color='lightblue', alpha=0.7, edgecolor='black')
+    ax3.axvline(50, color='red', linestyle='--', linewidth=2, label='Suspicious Threshold')
+    ax3.set_title('IP Reputation Score Distribution', fontweight='bold')
+    ax3.set_xlabel('Reputation Score')
+    ax3.set_ylabel('Number of IPs')
+    ax3.legend()
+    ax3.grid(True, alpha=0.3)
+    
+    # 4. Port scan detection
+    ax4 = axes[1, 1]
+    
+    ports = ['22', '23', '25', '53', '80', '135', '443', '993', '995']
+    scan_attempts = [156, 89, 67, 134, 245, 78, 189, 45, 23]
+    
+    bars = ax4.bar(ports, scan_attempts, color='red', alpha=0.7)
+    ax4.set_title('Port Scan Attempts by Port', fontweight='bold')
+    ax4.set_xlabel('Port Number')
+    ax4.set_ylabel('Scan Attempts')
+    ax4.tick_params(axis='x', rotation=45)
+    
+    # Add value labels for high-risk ports
+    for bar, value, port in zip(bars, scan_attempts, ports):
+        if value > 100:
+            height = bar.get_height()
+            ax4.text(bar.get_x() + bar.get_width()/2., height + 5,
+                    f'{value}', ha='center', va='bottom', fontweight='bold', color='red')
+    
+    plt.tight_layout()
+    plt.savefig('network_security_analysis.png', dpi=300, bbox_inches='tight')
+    plt.show()
+    
+    print("Network security visualization saved as 'network_security_analysis.png'")
+
+# Create network security visualization
+create_network_security_visualization()
 ```
 
 ## Next Steps

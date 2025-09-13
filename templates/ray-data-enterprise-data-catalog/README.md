@@ -1,6 +1,6 @@
 # Data Discovery and Catalog with Ray Data
 
-**⏱️ Time to complete**: 30 min | **Difficulty**: Intermediate | **Prerequisites**: Understanding of data management, metadata concepts
+**Time to complete**: 30 min | **Difficulty**: Intermediate | **Prerequisites**: Understanding of data management, metadata concepts
 
 ## What You'll Build
 
@@ -29,10 +29,10 @@ By completing this tutorial, you'll understand:
 **The Solution**: Ray Data automates data discovery, metadata extraction, and catalog management, making organizational data easily discoverable and usable.
 
 **Real-world Impact**:
-- 🎵 **Data Discovery**: Spotify helps teams find music and user data across 1000+ datasets
-- 📺 **Metadata Management**: Netflix automatically catalogs content and viewing data for recommendations
-- 🏢 **Enterprise Search**: LinkedIn enables employees to discover customer and business data quickly
-- 📈 **Analytics Acceleration**: Uber reduces time-to-insight by making ride and driver data discoverable
+- **Data Discovery**: Spotify helps teams find music and user data across 1000+ datasets
+- **Metadata Management**: Netflix automatically catalogs content and viewing data for recommendations
+- **Enterprise Search**: LinkedIn enables employees to discover customer and business data quickly
+- **Analytics Acceleration**: Uber reduces time-to-insight by making ride and driver data discoverable
 
 ---
 
@@ -115,7 +115,7 @@ Ray Data enables next-generation data catalog capabilities:
 | **Static metadata snapshots** | Real-time schema and lineage tracking | Always current information |
 | **Limited scalability** | Distributed metadata processing | Handle enterprise-scale catalogs |
 | **Complex integrations** | Native data pipeline integration | Seamless catalog updates |
-| **Expensive proprietary tools** | Open-source Ray Data foundation | 80% cost reduction |
+| **Expensive proprietary tools** | Open-source Ray Data foundation | Cost-effective approach |
 
 ### **Enterprise Data Catalog Architecture**
 
@@ -152,11 +152,11 @@ Organizations implementing comprehensive data catalogs achieve:
 
 | Business Metric | Before Data Catalog | After Data Catalog | Improvement |
 |----------------|-------------------|-------------------|-------------|
-| **Time to Find Data** | 2-4 weeks | 2-4 hours | faster |
-| **Data Reuse Rate** | 20% | 70% | 250% increase |
-| **Compliance Readiness** | 40% | 95% | improvement |
-| **Data Engineer Productivity** | 30% on data discovery | 80% on value creation | 167% more productive |
-| **Duplicate Data Processing** | cost savingsly | cost savingsly | 80% cost reduction |
+| **Time to Find Data** | 2-4 weeks | 2-4 hours | Much faster |
+| **Data Reuse Rate** | 20% | 70% | Significant increase |
+| **Compliance Readiness** | 40% | 95% | Major improvement |
+| **Data Engineer Productivity** | 30% on data discovery | 80% on value creation | Much more productive |
+| **Duplicate Data Processing** | Frequently | Rarely | Reduced duplication |
 
 ### **What You'll Build**
 
@@ -766,9 +766,9 @@ print("Compliance check results:", compliance_check)
 - **Policy Enforcement**: 5,000+ checks/second
 
 ### **Scalability**
-- **2 Nodes**: 1.speedup
-- **4 Nodes**: 3.speedup
-- **8 Nodes**: 5.speedup
+- **2 Nodes**: Linear scaling
+- **4 Nodes**: Good scaling
+- **8 Nodes**: Excellent scaling
 
 ### **Memory Efficiency**
 - **Metadata Storage**: 1-3GB per worker

@@ -1,6 +1,6 @@
 # ML Feature Engineering with Ray Data
 
-**⏱️ Time to complete**: 35 min | **Difficulty**: Intermediate | **Prerequisites**: ML experience, understanding of data preprocessing
+**Time to complete**: 35 min | **Difficulty**: Intermediate | **Prerequisites**: ML experience, understanding of data preprocessing
 
 ## What You'll Build
 
@@ -230,6 +230,7 @@ pip install ray[data] pandas numpy scikit-learn
 pip install category-encoders feature-engine
 pip install xgboost lightgbm catboost
 pip install torch torchvision
+pip install matplotlib seaborn plotly shap yellowbrick
 ```
 
 ## Quick Start
@@ -827,7 +828,7 @@ def validate_feature_quality(features_df):
     # Print validation summary
     print("Feature Quality Validation:")
     for metric, value in validation_results.items():
-        status = "✓" if value == 0 or metric == 'total_features' else "⚠"
+        status = "[OK]" if value == 0 or metric == 'total_features' else "[WARN]"
         print(f"  {status} {metric}: {value}")
     
     return validation_results
@@ -842,6 +843,448 @@ def validate_feature_quality(features_df):
 - **Feature Validation**: Implement comprehensive feature quality checks
 - **A/B Testing**: Test feature impact on model performance
 - **Documentation**: Maintain clear documentation for all features
+
+## Interactive Feature Engineering Visualizations
+
+Let's create comprehensive visualizations to analyze and understand our engineered features:
+
+### Feature Analysis Dashboard
+
+```python
+def create_feature_analysis_dashboard(features_df, target_column=None):
+    """Create comprehensive feature analysis dashboard."""
+    print("Creating feature analysis dashboard...")
+    
+    import matplotlib.pyplot as plt
+    import seaborn as sns
+    import plotly.express as px
+    import plotly.graph_objects as go
+    from plotly.subplots import make_subplots
+    import numpy as np
+    
+    # Set style
+    plt.style.use('seaborn-v0_8')
+    sns.set_palette("husl")
+    
+    # Create comprehensive dashboard
+    fig, axes = plt.subplots(3, 3, figsize=(20, 15))
+    fig.suptitle('Feature Engineering Analysis Dashboard', fontsize=16, fontweight='bold')
+    
+    # 1. Feature Type Distribution
+    ax1 = axes[0, 0]
+    numeric_cols = features_df.select_dtypes(include=[np.number]).columns
+    categorical_cols = features_df.select_dtypes(exclude=[np.number]).columns
+    
+    feature_types = ['Numeric', 'Categorical']
+    type_counts = [len(numeric_cols), len(categorical_cols)]
+    colors_types = ['lightblue', 'lightcoral']
+    
+    bars = ax1.bar(feature_types, type_counts, color=colors_types, alpha=0.7)
+    ax1.set_title('Feature Type Distribution', fontweight='bold')
+    ax1.set_ylabel('Number of Features')
+    
+    # Add value labels
+    for bar, value in zip(bars, type_counts):
+        height = bar.get_height()
+        ax1.text(bar.get_x() + bar.get_width()/2., height + 0.5,
+                f'{value}', ha='center', va='bottom', fontweight='bold')
+    
+    # 2. Missing Values Analysis
+    ax2 = axes[0, 1]
+    missing_data = features_df.isnull().sum()
+    top_missing = missing_data.nlargest(10)
+    
+    if len(top_missing) > 0 and top_missing.sum() > 0:
+        bars = ax2.barh(range(len(top_missing)), top_missing.values, color='red', alpha=0.7)
+        ax2.set_yticks(range(len(top_missing)))
+        ax2.set_yticklabels(top_missing.index, fontsize=8)
+        ax2.set_title('Top 10 Features with Missing Values', fontweight='bold')
+        ax2.set_xlabel('Missing Count')
+        
+        # Add value labels
+        for i, bar in enumerate(bars):
+            width = bar.get_width()
+            ax2.text(width + 0.5, bar.get_y() + bar.get_height()/2.,
+                    f'{int(width)}', ha='left', va='center', fontweight='bold')
+    else:
+        ax2.text(0.5, 0.5, 'No Missing Values Found', ha='center', va='center',
+                transform=ax2.transAxes, fontsize=12, fontweight='bold')
+        ax2.set_title('Missing Values Analysis', fontweight='bold')
+    
+    # 3. Feature Correlation Heatmap
+    ax3 = axes[0, 2]
+    if len(numeric_cols) > 1:
+        # Select a subset of numeric features for correlation
+        sample_numeric = numeric_cols[:15]  # Limit to 15 features for readability
+        corr_matrix = features_df[sample_numeric].corr()
+        
+        # Create heatmap
+        mask = np.triu(np.ones_like(corr_matrix, dtype=bool))
+        sns.heatmap(corr_matrix, mask=mask, annot=True, cmap='coolwarm', center=0,
+                   square=True, ax=ax3, cbar_kws={"shrink": .8}, fmt='.2f')
+        ax3.set_title('Feature Correlation Matrix', fontweight='bold')
+    else:
+        ax3.text(0.5, 0.5, 'Insufficient Numeric Features', ha='center', va='center',
+                transform=ax3.transAxes, fontsize=12)
+        ax3.set_title('Feature Correlation Matrix', fontweight='bold')
+    
+    # 4. Feature Importance (if target provided)
+    ax4 = axes[1, 0]
+    if target_column and target_column in features_df.columns:
+        from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
+        from sklearn.preprocessing import LabelEncoder
+        
+        # Prepare features and target
+        X = features_df[numeric_cols].fillna(0)
+        y = features_df[target_column]
+        
+        # Determine if classification or regression
+        if y.dtype == 'object' or len(y.unique()) < 20:
+            # Classification
+            le = LabelEncoder()
+            y_encoded = le.fit_transform(y.astype(str))
+            model = RandomForestClassifier(n_estimators=50, random_state=42)
+        else:
+            # Regression
+            y_encoded = y.fillna(y.mean())
+            model = RandomForestRegressor(n_estimators=50, random_state=42)
+        
+        # Fit model and get feature importance
+        model.fit(X, y_encoded)
+        importance_df = pd.DataFrame({
+            'feature': X.columns,
+            'importance': model.feature_importances_
+        }).sort_values('importance', ascending=False).head(10)
+        
+        bars = ax4.barh(range(len(importance_df)), importance_df['importance'], 
+                       color='lightgreen', alpha=0.7)
+        ax4.set_yticks(range(len(importance_df)))
+        ax4.set_yticklabels(importance_df['feature'], fontsize=8)
+        ax4.set_title('Top 10 Feature Importance', fontweight='bold')
+        ax4.set_xlabel('Importance Score')
+        
+        # Add value labels
+        for i, bar in enumerate(bars):
+            width = bar.get_width()
+            ax4.text(width + 0.001, bar.get_y() + bar.get_height()/2.,
+                    f'{width:.3f}', ha='left', va='center', fontweight='bold')
+    else:
+        ax4.text(0.5, 0.5, 'Target Column Not Provided', ha='center', va='center',
+                transform=ax4.transAxes, fontsize=12)
+        ax4.set_title('Feature Importance Analysis', fontweight='bold')
+    
+    # 5. Feature Distribution Analysis
+    ax5 = axes[1, 1]
+    if len(numeric_cols) > 0:
+        # Plot distribution of first few numeric features
+        sample_features = numeric_cols[:3]
+        for i, col in enumerate(sample_features):
+            values = features_df[col].dropna()
+            if len(values) > 0:
+                ax5.hist(values, alpha=0.6, label=col, bins=30)
+        
+        ax5.set_title('Feature Value Distributions', fontweight='bold')
+        ax5.set_xlabel('Feature Values')
+        ax5.set_ylabel('Frequency')
+        ax5.legend()
+    
+    # 6. Feature Sparsity Analysis
+    ax6 = axes[1, 2]
+    sparsity_data = []
+    for col in features_df.columns:
+        if features_df[col].dtype in [np.number]:
+            zero_count = (features_df[col] == 0).sum()
+            sparsity = zero_count / len(features_df) * 100
+            sparsity_data.append({'feature': col, 'sparsity': sparsity})
+    
+    if sparsity_data:
+        sparsity_df = pd.DataFrame(sparsity_data).sort_values('sparsity', ascending=False).head(10)
+        bars = ax6.barh(range(len(sparsity_df)), sparsity_df['sparsity'], 
+                       color='orange', alpha=0.7)
+        ax6.set_yticks(range(len(sparsity_df)))
+        ax6.set_yticklabels(sparsity_df['feature'], fontsize=8)
+        ax6.set_title('Feature Sparsity (% Zeros)', fontweight='bold')
+        ax6.set_xlabel('Sparsity Percentage')
+    
+    # 7. Feature Cardinality Analysis
+    ax7 = axes[2, 0]
+    cardinality_data = []
+    for col in features_df.columns:
+        unique_count = features_df[col].nunique()
+        cardinality_data.append({'feature': col, 'cardinality': unique_count})
+    
+    cardinality_df = pd.DataFrame(cardinality_data).sort_values('cardinality', ascending=False).head(10)
+    bars = ax7.bar(range(len(cardinality_df)), cardinality_df['cardinality'], 
+                   color='purple', alpha=0.7)
+    ax7.set_xticks(range(len(cardinality_df)))
+    ax7.set_xticklabels(cardinality_df['feature'], rotation=45, ha='right', fontsize=8)
+    ax7.set_title('Feature Cardinality (Unique Values)', fontweight='bold')
+    ax7.set_ylabel('Unique Count')
+    
+    # 8. Feature Quality Score
+    ax8 = axes[2, 1]
+    quality_scores = []
+    for col in features_df.columns:
+        if features_df[col].dtype in [np.number]:
+            # Calculate quality score based on completeness, variance, etc.
+            completeness = 1 - (features_df[col].isnull().sum() / len(features_df))
+            variance_score = min(1, features_df[col].var() / features_df[col].var() if features_df[col].var() > 0 else 0)
+            quality_score = (completeness + variance_score) / 2 * 100
+            quality_scores.append({'feature': col, 'quality': quality_score})
+    
+    if quality_scores:
+        quality_df = pd.DataFrame(quality_scores).sort_values('quality', ascending=False).head(10)
+        colors_quality = ['green' if q > 80 else 'orange' if q > 60 else 'red' for q in quality_df['quality']]
+        bars = ax8.bar(range(len(quality_df)), quality_df['quality'], 
+                       color=colors_quality, alpha=0.7)
+        ax8.set_xticks(range(len(quality_df)))
+        ax8.set_xticklabels(quality_df['feature'], rotation=45, ha='right', fontsize=8)
+        ax8.set_title('Feature Quality Scores', fontweight='bold')
+        ax8.set_ylabel('Quality Score (%)')
+        ax8.axhline(y=80, color='green', linestyle='--', alpha=0.5, label='Good: 80%')
+        ax8.axhline(y=60, color='orange', linestyle='--', alpha=0.5, label='Fair: 60%')
+        ax8.legend()
+    
+    # 9. Feature Engineering Pipeline Summary
+    ax9 = axes[2, 2]
+    pipeline_stats = {
+        'Original Features': len(features_df.columns) // 2,  # Estimate
+        'Engineered Features': len(features_df.columns) // 2,  # Estimate
+        'Numeric Features': len(numeric_cols),
+        'Categorical Features': len(categorical_cols),
+        'Total Features': len(features_df.columns)
+    }
+    
+    bars = ax9.bar(range(len(pipeline_stats)), list(pipeline_stats.values()), 
+                   color=['lightblue', 'lightgreen', 'orange', 'pink', 'lightgray'], alpha=0.7)
+    ax9.set_xticks(range(len(pipeline_stats)))
+    ax9.set_xticklabels(list(pipeline_stats.keys()), rotation=45, ha='right', fontsize=8)
+    ax9.set_title('Feature Engineering Summary', fontweight='bold')
+    ax9.set_ylabel('Count')
+    
+    # Add value labels
+    for bar, value in zip(bars, pipeline_stats.values()):
+        height = bar.get_height()
+        ax9.text(bar.get_x() + bar.get_width()/2., height + 0.5,
+                f'{value}', ha='center', va='bottom', fontweight='bold')
+    
+    plt.tight_layout()
+    plt.savefig('feature_analysis_dashboard.png', dpi=300, bbox_inches='tight')
+    plt.show()
+    
+    print("Feature analysis dashboard saved as 'feature_analysis_dashboard.png'")
+
+# Example usage (uncomment when you have actual features)
+# create_feature_analysis_dashboard(engineered_features, target_column='target')
+```
+
+### Interactive Feature Visualization
+
+```python
+def create_interactive_feature_dashboard(features_df):
+    """Create interactive feature exploration dashboard."""
+    print("Creating interactive feature dashboard...")
+    
+    # Create subplots
+    fig = make_subplots(
+        rows=2, cols=2,
+        subplot_titles=('Feature Distributions', 'Feature Correlations', 
+                       'Missing Value Patterns', 'Feature Importance'),
+        specs=[[{"type": "histogram"}, {"type": "heatmap"}],
+               [{"type": "bar"}, {"type": "bar"}]]
+    )
+    
+    numeric_cols = features_df.select_dtypes(include=[np.number]).columns
+    
+    # 1. Feature Distributions
+    if len(numeric_cols) > 0:
+        sample_col = numeric_cols[0]
+        fig.add_trace(
+            go.Histogram(x=features_df[sample_col].dropna(), 
+                        name=f'{sample_col} Distribution',
+                        marker_color='lightblue'),
+            row=1, col=1
+        )
+    
+    # 2. Feature Correlations
+    if len(numeric_cols) > 3:
+        sample_numeric = numeric_cols[:10]  # Limit for performance
+        corr_matrix = features_df[sample_numeric].corr()
+        
+        fig.add_trace(
+            go.Heatmap(z=corr_matrix.values,
+                      x=corr_matrix.columns,
+                      y=corr_matrix.index,
+                      colorscale='RdBu',
+                      zmid=0,
+                      text=corr_matrix.round(2).values,
+                      texttemplate="%{text}",
+                      showscale=True),
+            row=1, col=2
+        )
+    
+    # 3. Missing Value Patterns
+    missing_data = features_df.isnull().sum().sort_values(ascending=False).head(10)
+    if missing_data.sum() > 0:
+        fig.add_trace(
+            go.Bar(x=missing_data.values, y=missing_data.index,
+                  orientation='h', marker_color='red',
+                  name="Missing Values"),
+            row=2, col=1
+        )
+    
+    # 4. Feature Cardinality
+    cardinality_data = features_df.nunique().sort_values(ascending=False).head(10)
+    fig.add_trace(
+        go.Bar(x=cardinality_data.index, y=cardinality_data.values,
+              marker_color='green', name="Unique Values"),
+        row=2, col=2
+    )
+    
+    # Update layout
+    fig.update_layout(
+        title_text="Interactive Feature Engineering Dashboard",
+        height=800,
+        showlegend=False
+    )
+    
+    # Update axes
+    fig.update_xaxes(title_text="Value", row=1, col=1)
+    fig.update_yaxes(title_text="Frequency", row=1, col=1)
+    fig.update_xaxes(title_text="Missing Count", row=2, col=1)
+    fig.update_yaxes(title_text="Features", row=2, col=1)
+    fig.update_xaxes(title_text="Features", row=2, col=2)
+    fig.update_yaxes(title_text="Unique Count", row=2, col=2)
+    
+    # Save and show
+    fig.write_html("interactive_feature_dashboard.html")
+    print("Interactive feature dashboard saved as 'interactive_feature_dashboard.html'")
+    fig.show()
+    
+    return fig
+
+# Example usage (uncomment when you have actual features)
+# interactive_dashboard = create_interactive_feature_dashboard(engineered_features)
+```
+
+### Feature Quality Assessment
+
+```python
+def create_feature_quality_report(features_df):
+    """Create comprehensive feature quality assessment."""
+    print("Creating feature quality assessment report...")
+    
+    # Calculate quality metrics
+    quality_metrics = {}
+    
+    for col in features_df.columns:
+        metrics = {
+            'completeness': (1 - features_df[col].isnull().sum() / len(features_df)) * 100,
+            'uniqueness': features_df[col].nunique() / len(features_df) * 100,
+            'data_type': str(features_df[col].dtype)
+        }
+        
+        if features_df[col].dtype in [np.number]:
+            metrics.update({
+                'mean': features_df[col].mean(),
+                'std': features_df[col].std(),
+                'min': features_df[col].min(),
+                'max': features_df[col].max(),
+                'skewness': features_df[col].skew(),
+                'zero_percentage': (features_df[col] == 0).sum() / len(features_df) * 100
+            })
+        
+        quality_metrics[col] = metrics
+    
+    # Create quality report visualization
+    fig, axes = plt.subplots(2, 2, figsize=(15, 10))
+    fig.suptitle('Feature Quality Assessment Report', fontsize=16, fontweight='bold')
+    
+    # 1. Completeness scores
+    ax1 = axes[0, 0]
+    completeness_scores = [metrics['completeness'] for metrics in quality_metrics.values()]
+    feature_names = list(quality_metrics.keys())
+    
+    colors = ['green' if score > 95 else 'orange' if score > 80 else 'red' for score in completeness_scores]
+    bars = ax1.barh(range(len(feature_names[:15])), completeness_scores[:15], color=colors, alpha=0.7)
+    ax1.set_yticks(range(len(feature_names[:15])))
+    ax1.set_yticklabels(feature_names[:15], fontsize=8)
+    ax1.set_title('Feature Completeness Scores', fontweight='bold')
+    ax1.set_xlabel('Completeness (%)')
+    ax1.axvline(x=95, color='green', linestyle='--', alpha=0.5, label='Excellent: 95%')
+    ax1.axvline(x=80, color='orange', linestyle='--', alpha=0.5, label='Good: 80%')
+    ax1.legend()
+    
+    # 2. Uniqueness distribution
+    ax2 = axes[0, 1]
+    uniqueness_scores = [metrics['uniqueness'] for metrics in quality_metrics.values()]
+    ax2.hist(uniqueness_scores, bins=20, color='skyblue', alpha=0.7, edgecolor='black')
+    ax2.set_title('Feature Uniqueness Distribution', fontweight='bold')
+    ax2.set_xlabel('Uniqueness (%)')
+    ax2.set_ylabel('Number of Features')
+    ax2.axvline(x=np.mean(uniqueness_scores), color='red', linestyle='--', 
+               label=f'Mean: {np.mean(uniqueness_scores):.1f}%')
+    ax2.legend()
+    
+    # 3. Data type distribution
+    ax3 = axes[1, 0]
+    data_types = [metrics['data_type'] for metrics in quality_metrics.values()]
+    type_counts = pd.Series(data_types).value_counts()
+    
+    wedges, texts, autotexts = ax3.pie(type_counts.values, labels=type_counts.index, 
+                                      autopct='%1.1f%%', startangle=90)
+    ax3.set_title('Data Type Distribution', fontweight='bold')
+    
+    # 4. Quality score summary
+    ax4 = axes[1, 1]
+    # Calculate overall quality score
+    overall_scores = []
+    for col, metrics in quality_metrics.items():
+        score = metrics['completeness']  # Base score on completeness
+        if metrics['uniqueness'] > 1:  # Bonus for uniqueness
+            score += min(10, metrics['uniqueness'] / 10)
+        overall_scores.append(min(100, score))
+    
+    quality_categories = ['Excellent (90-100)', 'Good (80-90)', 'Fair (70-80)', 'Poor (<70)']
+    quality_counts = [
+        sum(1 for score in overall_scores if score >= 90),
+        sum(1 for score in overall_scores if 80 <= score < 90),
+        sum(1 for score in overall_scores if 70 <= score < 80),
+        sum(1 for score in overall_scores if score < 70)
+    ]
+    
+    colors_quality = ['green', 'lightgreen', 'orange', 'red']
+    bars = ax4.bar(range(len(quality_categories)), quality_counts, 
+                   color=colors_quality, alpha=0.7)
+    ax4.set_xticks(range(len(quality_categories)))
+    ax4.set_xticklabels(quality_categories, rotation=45, ha='right')
+    ax4.set_title('Overall Feature Quality Distribution', fontweight='bold')
+    ax4.set_ylabel('Number of Features')
+    
+    # Add value labels
+    for bar, value in zip(bars, quality_counts):
+        height = bar.get_height()
+        ax4.text(bar.get_x() + bar.get_width()/2., height + 0.1,
+                f'{value}', ha='center', va='bottom', fontweight='bold')
+    
+    plt.tight_layout()
+    plt.savefig('feature_quality_report.png', dpi=300, bbox_inches='tight')
+    plt.show()
+    
+    print("Feature quality report saved as 'feature_quality_report.png'")
+    
+    # Print summary statistics
+    print(f"\nFeature Quality Summary:")
+    print(f"  Total Features: {len(quality_metrics)}")
+    print(f"  Average Completeness: {np.mean(completeness_scores):.1f}%")
+    print(f"  Average Uniqueness: {np.mean(uniqueness_scores):.1f}%")
+    print(f"  High Quality Features (>90%): {quality_counts[0]}")
+    
+    return quality_metrics
+
+# Example usage (uncomment when you have actual features)
+# quality_report = create_feature_quality_report(engineered_features)
+```
 
 ### **Related Ray Data Templates**
 - **Ray Data Batch Inference Optimization**: Optimize feature-based model inference

@@ -60,7 +60,7 @@ print(f" Created dataset with {ds.count()} text samples")
 To run this template, you will need the following packages:
 
 ```bash
-pip install ray[data] transformers torch nltk
+pip install ray[data] transformers torch nltk wordcloud matplotlib seaborn plotly textstat
 ```
 
 ---
@@ -80,6 +80,15 @@ We'll create a realistic text dataset similar to product reviews or social media
 import ray
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+import plotly.express as px
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
+from wordcloud import WordCloud
+import textstat
+from collections import Counter
+import re
 
 # Initialize Ray for distributed processing
 ray.init()
@@ -185,11 +194,11 @@ The comprehensive NLP pipeline delivers:
 
 | Business Metric | Before Ray Data | After Ray Data | Improvement |
 |----------------|----------------|----------------|-------------|
-| **Processing Time** | 40+ hours | 2 hours | faster |
-| **Content Coverage** | 10% processed | 100% processed | 10x more coverage |
-| **Analysis Consistency** | Variable quality | Standardized insights | 95% more consistent |
-| **Response Time** | 24-48 hours | Real-time | faster response |
-| **Monthly Cost** | $200K+ | $20K | 90% cost reduction |
+| **Processing Time** | 40+ hours | 2 hours | Much faster |
+| **Content Coverage** | 10% processed | 100% processed | Complete coverage |
+| **Analysis Consistency** | Variable quality | Standardized insights | Much more consistent |
+| **Response Time** | 24-48 hours | Real-time | Much faster response |
+| **Monthly Cost** | $200K+ | $20K | Significant cost reduction |
 | **Insight Quality** | Basic sentiment | 10+ NLP functions | Comprehensive analysis |
 
 ### **Enterprise NLP Pipeline Capabilities**
@@ -407,6 +416,314 @@ for result in final_results:
     print(f"Text: {text}")
     print(f"Sentiment: {sentiment} (confidence: {confidence:.2f})")
     print("-" * 30)
+```
+
+## Interactive Text Analytics Visualizations
+
+Let's create stunning visualizations to analyze our text data:
+
+### Word Clouds and Text Analysis
+
+```python
+def create_text_visualizations(dataset):
+    """Create comprehensive text analytics visualizations."""
+    print("Creating text analytics visualizations...")
+    
+    # Convert to pandas for visualization
+    text_df = dataset.to_pandas()
+    
+    # Get sentiment results
+    sentiment_df = pd.DataFrame(final_results)
+    
+    # Create comprehensive dashboard
+    fig, axes = plt.subplots(3, 3, figsize=(20, 15))
+    fig.suptitle('Text Analytics Dashboard', fontsize=16, fontweight='bold')
+    
+    # 1. Sentiment Distribution
+    ax1 = axes[0, 0]
+    if 'sentiment' in sentiment_df.columns:
+        sentiment_counts = sentiment_df['sentiment'].value_counts()
+        colors = ['green' if s == 'positive' else 'red' if s == 'negative' else 'gray' 
+                 for s in sentiment_counts.index]
+        bars = ax1.bar(sentiment_counts.index, sentiment_counts.values, color=colors, alpha=0.7)
+        ax1.set_title('Sentiment Distribution', fontweight='bold')
+        ax1.set_ylabel('Number of Texts')
+        
+        # Add value labels
+        for bar in bars:
+            height = bar.get_height()
+            ax1.text(bar.get_x() + bar.get_width()/2., height + 5,
+                    f'{int(height)}', ha='center', va='bottom', fontweight='bold')
+    
+    # 2. Text Length Distribution
+    ax2 = axes[0, 1]
+    text_lengths = text_df['length'].values
+    ax2.hist(text_lengths, bins=30, color='skyblue', alpha=0.7, edgecolor='black')
+    ax2.set_title('Text Length Distribution', fontweight='bold')
+    ax2.set_xlabel('Character Count')
+    ax2.set_ylabel('Frequency')
+    ax2.axvline(np.mean(text_lengths), color='red', linestyle='--', 
+               label=f'Mean: {np.mean(text_lengths):.1f}')
+    ax2.legend()
+    
+    # 3. Word Cloud for Positive Sentiment
+    ax3 = axes[0, 2]
+    if 'sentiment' in sentiment_df.columns:
+        positive_texts = sentiment_df[sentiment_df['sentiment'] == 'positive']['text'].tolist()
+        if positive_texts:
+            positive_text = ' '.join(positive_texts)
+            wordcloud_pos = WordCloud(width=400, height=300, background_color='white',
+                                    colormap='Greens').generate(positive_text)
+            ax3.imshow(wordcloud_pos, interpolation='bilinear')
+            ax3.set_title('Positive Sentiment Word Cloud', fontweight='bold')
+            ax3.axis('off')
+    
+    # 4. Word Cloud for Negative Sentiment
+    ax4 = axes[1, 0]
+    if 'sentiment' in sentiment_df.columns:
+        negative_texts = sentiment_df[sentiment_df['sentiment'] == 'negative']['text'].tolist()
+        if negative_texts:
+            negative_text = ' '.join(negative_texts)
+            wordcloud_neg = WordCloud(width=400, height=300, background_color='white',
+                                    colormap='Reds').generate(negative_text)
+            ax4.imshow(wordcloud_neg, interpolation='bilinear')
+            ax4.set_title('Negative Sentiment Word Cloud', fontweight='bold')
+            ax4.axis('off')
+    
+    # 5. Most Common Words
+    ax5 = axes[1, 1]
+    all_text = ' '.join(text_df['text'].tolist())
+    # Simple word extraction (remove punctuation and convert to lowercase)
+    words = re.findall(r'\b[a-zA-Z]+\b', all_text.lower())
+    # Filter out common stop words
+    stop_words = {'the', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'is', 'are', 'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should', 'may', 'might', 'must', 'can', 'this', 'that', 'these', 'those', 'i', 'you', 'he', 'she', 'it', 'we', 'they', 'me', 'him', 'her', 'us', 'them', 'my', 'your', 'his', 'her', 'its', 'our', 'their'}
+    filtered_words = [word for word in words if word not in stop_words and len(word) > 2]
+    
+    if filtered_words:
+        word_counts = Counter(filtered_words).most_common(10)
+        words_list, counts_list = zip(*word_counts)
+        
+        bars = ax5.barh(range(len(words_list)), counts_list, color='lightcoral')
+        ax5.set_yticks(range(len(words_list)))
+        ax5.set_yticklabels(words_list)
+        ax5.set_title('Top 10 Most Common Words', fontweight='bold')
+        ax5.set_xlabel('Frequency')
+        
+        # Add value labels
+        for i, bar in enumerate(bars):
+            width = bar.get_width()
+            ax5.text(width + 0.5, bar.get_y() + bar.get_height()/2.,
+                    f'{int(width)}', ha='left', va='center', fontweight='bold')
+    
+    # 6. Text Complexity Analysis
+    ax6 = axes[1, 2]
+    if text_df['text'].notna().any():
+        # Calculate readability scores for a sample of texts
+        sample_texts = text_df['text'].dropna().head(100).tolist()
+        readability_scores = []
+        
+        for text in sample_texts:
+            try:
+                # Flesch Reading Ease Score (higher = easier to read)
+                score = textstat.flesch_reading_ease(text)
+                readability_scores.append(score)
+            except:
+                continue
+        
+        if readability_scores:
+            ax6.hist(readability_scores, bins=20, color='lightgreen', alpha=0.7, edgecolor='black')
+            ax6.set_title('Text Readability Distribution', fontweight='bold')
+            ax6.set_xlabel('Flesch Reading Ease Score')
+            ax6.set_ylabel('Frequency')
+            ax6.axvline(np.mean(readability_scores), color='red', linestyle='--',
+                       label=f'Mean: {np.mean(readability_scores):.1f}')
+            ax6.legend()
+    
+    # 7. Sentiment by Text Length
+    ax7 = axes[2, 0]
+    if 'sentiment' in sentiment_df.columns and 'length' in text_df.columns:
+        # Merge sentiment with original text data
+        merged_df = pd.merge(sentiment_df, text_df, left_on='text', right_on='text', how='inner')
+        
+        sentiment_colors = {'positive': 'green', 'negative': 'red', 'neutral': 'gray'}
+        for sentiment in merged_df['sentiment'].unique():
+            sentiment_data = merged_df[merged_df['sentiment'] == sentiment]
+            ax7.scatter(sentiment_data['length'], [sentiment]*len(sentiment_data), 
+                       c=sentiment_colors.get(sentiment, 'blue'), alpha=0.6, 
+                       label=sentiment, s=30)
+        
+        ax7.set_title('Sentiment vs Text Length', fontweight='bold')
+        ax7.set_xlabel('Text Length (characters)')
+        ax7.set_ylabel('Sentiment')
+        ax7.legend()
+    
+    # 8. Character Distribution
+    ax8 = axes[2, 1]
+    char_counts = {}
+    for text in text_df['text'].head(100):  # Sample for performance
+        for char in text.lower():
+            if char.isalpha():
+                char_counts[char] = char_counts.get(char, 0) + 1
+    
+    if char_counts:
+        sorted_chars = sorted(char_counts.items(), key=lambda x: x[1], reverse=True)[:15]
+        chars, counts = zip(*sorted_chars)
+        
+        bars = ax8.bar(chars, counts, color='lightblue', alpha=0.7)
+        ax8.set_title('Character Frequency Distribution', fontweight='bold')
+        ax8.set_xlabel('Characters')
+        ax8.set_ylabel('Frequency')
+        ax8.tick_params(axis='x', rotation=45)
+    
+    # 9. Sentiment Confidence (if available)
+    ax9 = axes[2, 2]
+    if 'confidence' in sentiment_df.columns:
+        confidence_scores = sentiment_df['confidence'].dropna()
+        ax9.hist(confidence_scores, bins=20, color='orange', alpha=0.7, edgecolor='black')
+        ax9.set_title('Sentiment Confidence Distribution', fontweight='bold')
+        ax9.set_xlabel('Confidence Score')
+        ax9.set_ylabel('Frequency')
+    else:
+        # Show text categories distribution instead
+        if 'true_sentiment' in text_df.columns:
+            category_counts = text_df['true_sentiment'].value_counts()
+            ax9.pie(category_counts.values, labels=category_counts.index, autopct='%1.1f%%',
+                   colors=['lightgreen', 'lightcoral', 'lightgray'])
+            ax9.set_title('True Sentiment Distribution', fontweight='bold')
+    
+    plt.tight_layout()
+    plt.savefig('text_analytics_dashboard.png', dpi=300, bbox_inches='tight')
+    plt.show()
+    
+    print("Text analytics dashboard saved as 'text_analytics_dashboard.png'")
+
+# Create text visualizations
+create_text_visualizations(text_dataset)
+```
+
+### Interactive Plotly Text Dashboard
+
+```python
+def create_interactive_text_dashboard(dataset):
+    """Create interactive text analytics dashboard using Plotly."""
+    print("Creating interactive text analytics dashboard...")
+    
+    text_df = dataset.to_pandas()
+    sentiment_df = pd.DataFrame(final_results)
+    
+    # Create subplots
+    fig = make_subplots(
+        rows=2, cols=3,
+        subplot_titles=('Sentiment Distribution', 'Text Length Analysis', 'Word Frequency',
+                       'Sentiment vs Length', 'Readability Scores', 'Text Categories'),
+        specs=[[{"type": "bar"}, {"type": "histogram"}, {"type": "bar"}],
+               [{"type": "scatter"}, {"type": "histogram"}, {"type": "pie"}]]
+    )
+    
+    # 1. Sentiment Distribution
+    if 'sentiment' in sentiment_df.columns:
+        sentiment_counts = sentiment_df['sentiment'].value_counts()
+        colors = ['green' if s == 'positive' else 'red' if s == 'negative' else 'orange' 
+                 for s in sentiment_counts.index]
+        
+        fig.add_trace(
+            go.Bar(x=sentiment_counts.index, y=sentiment_counts.values,
+                  marker_color=colors, name="Sentiment"),
+            row=1, col=1
+        )
+    
+    # 2. Text Length Distribution
+    fig.add_trace(
+        go.Histogram(x=text_df['length'], nbinsx=30, marker_color='skyblue', 
+                    name="Text Length"),
+        row=1, col=2
+    )
+    
+    # 3. Top Words Frequency
+    all_text = ' '.join(text_df['text'].tolist())
+    words = re.findall(r'\b[a-zA-Z]+\b', all_text.lower())
+    stop_words = {'the', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'is', 'are', 'was', 'were'}
+    filtered_words = [word for word in words if word not in stop_words and len(word) > 3]
+    
+    if filtered_words:
+        word_counts = Counter(filtered_words).most_common(10)
+        words_list, counts_list = zip(*word_counts)
+        
+        fig.add_trace(
+            go.Bar(x=list(words_list), y=list(counts_list), 
+                  marker_color='lightcoral', name="Word Frequency"),
+            row=1, col=3
+        )
+    
+    # 4. Sentiment vs Text Length Scatter
+    if 'sentiment' in sentiment_df.columns:
+        merged_df = pd.merge(sentiment_df, text_df, left_on='text', right_on='text', how='inner')
+        
+        for sentiment in merged_df['sentiment'].unique():
+            sentiment_data = merged_df[merged_df['sentiment'] == sentiment]
+            fig.add_trace(
+                go.Scatter(x=sentiment_data['length'], 
+                          y=[sentiment]*len(sentiment_data),
+                          mode='markers', name=sentiment,
+                          marker=dict(size=8, opacity=0.6)),
+                row=2, col=1
+            )
+    
+    # 5. Readability Scores
+    sample_texts = text_df['text'].dropna().head(50).tolist()
+    readability_scores = []
+    
+    for text in sample_texts:
+        try:
+            score = textstat.flesch_reading_ease(text)
+            readability_scores.append(score)
+        except:
+            continue
+    
+    if readability_scores:
+        fig.add_trace(
+            go.Histogram(x=readability_scores, nbinsx=15, marker_color='lightgreen',
+                        name="Readability"),
+            row=2, col=2
+        )
+    
+    # 6. Text Categories Pie Chart
+    if 'true_sentiment' in text_df.columns:
+        category_counts = text_df['true_sentiment'].value_counts()
+        fig.add_trace(
+            go.Pie(labels=category_counts.index, values=category_counts.values,
+                  name="Categories"),
+            row=2, col=3
+        )
+    
+    # Update layout
+    fig.update_layout(
+        title_text="Interactive Text Analytics Dashboard",
+        height=800,
+        showlegend=True
+    )
+    
+    # Update axes
+    fig.update_xaxes(title_text="Sentiment", row=1, col=1)
+    fig.update_yaxes(title_text="Count", row=1, col=1)
+    fig.update_xaxes(title_text="Text Length", row=1, col=2)
+    fig.update_yaxes(title_text="Frequency", row=1, col=2)
+    fig.update_xaxes(title_text="Words", row=1, col=3)
+    fig.update_yaxes(title_text="Frequency", row=1, col=3)
+    fig.update_xaxes(title_text="Text Length", row=2, col=1)
+    fig.update_yaxes(title_text="Sentiment", row=2, col=1)
+    fig.update_xaxes(title_text="Readability Score", row=2, col=2)
+    fig.update_yaxes(title_text="Frequency", row=2, col=2)
+    
+    # Save and show
+    fig.write_html("interactive_text_dashboard.html")
+    print("Interactive text dashboard saved as 'interactive_text_dashboard.html'")
+    fig.show()
+    
+    return fig
+
+# Create interactive dashboard
+interactive_dashboard = create_interactive_text_dashboard(text_dataset)
 
 print("Quick start completed! Run the full demo for advanced NLP features.")
 

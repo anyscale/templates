@@ -1,6 +1,6 @@
 # Multimodal AI Pipeline with Ray Data
 
-**⏱️ Time to complete**: 30 min | **Difficulty**: Advanced | **Prerequisites**: ML experience, understanding of computer vision and NLP
+**Time to complete**: 30 min | **Difficulty**: Advanced | **Prerequisites**: ML experience, understanding of computer vision and NLP
 
 ## What You'll Build
 
@@ -29,10 +29,10 @@ By completing this tutorial, you'll understand:
 **The Solution**: Ray Data enables processing multiple data types in parallel, then combining their insights for more accurate and comprehensive AI understanding.
 
 **Real-world Impact**:
-- 📱 **Social Media**: Analyze posts with images and captions for content moderation
-- 🛒 **E-commerce**: Match product images with descriptions for better search
-- 🎬 **Entertainment**: Understand video content with both visual and audio cues
-- 🏥 **Healthcare**: Combine medical images with patient text records
+- **Social Media**: Analyze posts with images and captions for content moderation
+- **E-commerce**: Match product images with descriptions for better search
+- **Entertainment**: Understand video content with both visual and audio cues
+- **Healthcare**: Combine medical images with patient text records
 
 ---
 
