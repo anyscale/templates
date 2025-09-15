@@ -57,7 +57,7 @@ def get_tokenizer(model_name: str, trust_remote_code: bool = True) -> Any:
 def setup_dataloader(model_name: str, dataset_name: str, seq_length: int, batch_size: int) -> DataLoader:
     tokenizer = get_tokenizer(model_name, trust_remote_code=True)
 
-    dataset = load_dataset(dataset_name, split=f"train[:100%]", download_config=DownloadConfig(disable_tqdm=True))
+    dataset = load_dataset(dataset_name, split=f"train[:1%]", download_config=DownloadConfig(disable_tqdm=True))
 
     def tokenize_function(examples):
         return tokenizer(examples['text'], padding='max_length', max_length=seq_length, truncation=True)
@@ -95,9 +95,12 @@ def report_metrics_and_save_checkpoint(
         os.makedirs(tmp_epoch, exist_ok=True)
         ds_engine.save_checkpoint(tmp_epoch)
         torch.distributed.barrier()
-        ray.train.report(metrics, checkpoint=Checkpoint.from_directory(tmp))
 
-    log_rank0(f"Checkpoint saved successfully. Metrics: {metrics}")
+        if ray.train.get_context().get_world_rank() == 0:
+            ray.train.report(metrics, checkpoint=Checkpoint.from_directory(tmp))
+        else:
+            ray.train.report(metrics, checkpoint=None)
+        log_rank0(f"Checkpoint saved successfully. Metrics: {metrics}")
 
 
 def load_checkpoint( ds_engine: deepspeed.runtime.engine.DeepSpeedEngine, ckpt: ray.train.Checkpoint):
@@ -114,13 +117,15 @@ def load_checkpoint( ds_engine: deepspeed.runtime.engine.DeepSpeedEngine, ckpt: 
 
 def train_loop(config: Dict[str, Any]) -> None:
 
+    ds_engine = setup_model_and_optimizer(config["model_name"], config["learning_rate"], config["ds_config"])
+
     # Load checkpoint if exists
     ckpt = ray.train.get_checkpoint()
     if ckpt:
         load_checkpoint(ds_engine, ckpt)
 
     train_loader = setup_dataloader(config["model_name"], config["dataset_name"], config["seq_length"], config["batch_size"])
-    ds_engine = setup_model_and_optimizer(config["model_name"], config["learning_rate"], config["ds_config"])
+    total_steps = len(train_loader) * config["epochs"]
     device = ray.train.torch.get_device()
 
     for epoch in range(config["epochs"]):
@@ -134,13 +139,17 @@ def train_loop(config: Dict[str, Any]) -> None:
             attention_mask = batch['attention_mask'].to(device)
             outputs = ds_engine(input_ids=input_ids, attention_mask=attention_mask, labels=input_ids, use_cache=False)
             loss = outputs.loss
-            log_rank0(f"step {step} loss: {loss.item()}")
+            log_rank0(f"Epoch: {epoch} Step: {step + 1}/{total_steps} Loss: {loss.item()}")
 
             ds_engine.backward(loss)
             ds_engine.step()
 
             running_loss += loss.item()
             num_batches += 1
+
+            if config["debug_steps"] > 0 and step + 1 >= config["debug_steps"]:
+                log_rank0(f"Debug steps finished. Stopping epoch {epoch}.")
+                break
 
         report_metrics_and_save_checkpoint(ds_engine, {"loss": running_loss / num_batches, "epoch": epoch})
 
@@ -171,11 +180,14 @@ def main():
         "model_name": args.model_name,
         "seq_length": args.seq_length,
         "dataset_name": args.dataset_name,
+        "debug_steps": args.debug_steps,
     }
 
+    name = f"deepspeed_sample_{uuid.uuid4().hex[:8]}" if args.resume_experiment is None else args.resume_experiment
+    print(f"Experiment name: {name}")
     run_config = RunConfig(
         storage_path="/mnt/cluster_storage/",
-        name=f"deepspeed_sample_{uuid.uuid4().hex[:8]}",
+        name=name,
     )
 
     trainer = TorchTrainer(
@@ -198,6 +210,8 @@ def get_args():
     parser.add_argument("--seq_length", type=int, default=512)
     parser.add_argument("--learning_rate", type=float, default=1e-6)
     parser.add_argument("--zero_stage", type=int, default=3)
+    parser.add_argument("--resume_experiment", type=str, default=None, help="Path to the experiment to resume from")
+    parser.add_argument("--debug_steps", type=int, default=0)
 
     return parser.parse_args()
 
