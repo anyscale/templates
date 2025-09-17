@@ -98,7 +98,7 @@ processor_config = vLLMEngineProcessorConfig(
 
 ## Step 3: Define the preprocess and postprocess functions
 
-The task is to format the `Subscription Date`as the format `MM-DD-YYY` using LLM. 
+The task is to format the `Subscription Date`as the format `MM-DD-YYYY` using LLM. 
 
 Define the preprocess function to prepare `messages` and `sampling_params` for vLLM engine, and the postprocessor function to consume `generated_text`.
 
@@ -113,7 +113,11 @@ def preprocess(row: dict[str, Any]) -> dict[str, Any]:
         messages=[
             {
                 "role": "system",
-                "content": f"Convert this date:\n{row['Subscription Date']}\n\n as the format:MM-DD-YYY"
+                "content": "You are a helpful assistant."
+            },
+            {
+                "role": "user",
+                "content": f"Convert this date:\n{row['Subscription Date']}\n\n as the format:MM-DD-YYYY"
             },
         ],
         sampling_params=dict(
