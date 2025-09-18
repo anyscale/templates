@@ -226,7 +226,7 @@ vision_processor_config = vLLMEngineProcessorConfig(
     # Override Ray's runtime env to include the Hugging Face token. Ray Data uses Ray under the hood to orchestrate the inference pipeline.
     runtime_env=dict(
         env_vars=dict(
-            # HF_TOKEN=HF_TOKEN,
+            # HF_TOKEN=HF_TOKEN, # Qwen model is not gated so HF token is not needed
             VLLM_USE_V1="1",
         ),
     ),
