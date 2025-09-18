@@ -1,0 +1,10 @@
+head_node_type:
+  name: head
+  instance_type: m5.2xlarge
+worker_node_types:
+  - instance_type: g5.2xlarge
+    min_workers: 2
+    max_workers: 2
+enable_cross_zone_scaling: false
+flags:
+  allow-cross-zone-autoscaling: false
