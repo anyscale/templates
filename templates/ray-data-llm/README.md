@@ -81,7 +81,8 @@ processor_config = vLLMEngineProcessorConfig(
         pipeline_parallel_size=1,
         max_model_len=4096,
         enable_chunked_prefill=True,
-        max_num_batched_tokens=2048,
+        max_num_batched_tokens=1024,
+        gpu_memory_utilization=0.85,
     ),
     # Override Ray's runtime env to include the Hugging Face token. Ray is being used under the hood to orchestrate the inference pipeline.
     runtime_env=dict(
@@ -225,7 +226,7 @@ vision_processor_config = vLLMEngineProcessorConfig(
     # Override Ray's runtime env to include the Hugging Face token. Ray Data uses Ray under the hood to orchestrate the inference pipeline.
     runtime_env=dict(
         env_vars=dict(
-            HF_TOKEN=HF_TOKEN,
+            # HF_TOKEN=HF_TOKEN,
             VLLM_USE_V1="1",
         ),
     ),
