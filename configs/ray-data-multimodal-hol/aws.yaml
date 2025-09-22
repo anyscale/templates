@@ -6,3 +6,5 @@ worker_node_types:
     instance_type: g5.2xlarge
     min_workers: 2
     max_workers: 2
+flags:
+  allow-cross-zone-autoscaling: true

@@ -6,3 +6,5 @@ worker_node_types:
     instance_type: g2-standard-8-nvidia-l4-1
     min_workers: 2
     max_workers: 2
+flags:
+  allow-cross-zone-autoscaling: true
