@@ -386,23 +386,19 @@ print("Optimization dataset ready for testing!")
 ```python
 def inefficient_inference(batch: Dict[str, Any]) -> Dict[str, Any]:
     """ANTI-PATTERN: Loading model inside each task - extremely slow!"""
-    import torch
-    import torchvision
+    import numpy as np
     
-    # MISTAKE: Loading model for every batch
-    model = torchvision.models.resnet50(pretrained=True)
-    model.eval()
+    # MISTAKE: Simulating expensive model loading for every batch
+    # In real scenarios, this would be loading a 25MB+ model file
+    expensive_model_params = np.random.randn(1000, 1000)  # Simulate large model
     
     results = []
     for sample in batch['features']:
-        # Simulate inference
-        with torch.no_grad():
-            # Convert features to tensor
-            input_tensor = torch.from_numpy(sample).unsqueeze(0)
-            output = model(input_tensor)
-            prediction = torch.argmax(output, dim=1).item()
-        
-        results.append({'prediction': prediction})
+        # MISTAKE: Processing samples individually instead of batch processing
+        # Simulate expensive computation per sample
+        processed_features = np.dot(sample, expensive_model_params[:512, :512])
+        prediction = np.argmax(processed_features[:10])
+        results.append({'prediction': int(prediction)})
     
     return {'results': results}
 
@@ -421,58 +417,41 @@ performance_tracker.set_baseline(inefficient_result)
 class OptimizedInferenceActor:
     """Stateful actor that loads model once and reuses it."""
     
-    def __init__(self, model_name: str = "resnet50"):
-        """Initialize actor with pre-loaded model."""
-        import torch
-        import torchvision
+    def __init__(self):
+        """Initialize actor with pre-loaded model parameters."""
+        import numpy as np
         
-        # Load model once during initialization
-        self.model = torchvision.models.resnet50(pretrained=True)
-        self.model.eval()
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.model.to(self.device)
+        # OPTIMIZATION: Load expensive model parameters once during initialization
+        # In production, this would be your actual model (ResNet, BERT, etc.)
+        self.model_params = np.random.randn(1000, 1000)  # Simulate loaded model
+        self.feature_transform = np.random.randn(512, 1000)  # Feature transformation matrix
         
-        # Pre-allocate tensors for efficiency
-        self.batch_tensor = None
-        
-        logger.info(f"Model loaded on {self.device}")
+        print("Model loaded once per actor - reused across all batches")
     
     def __call__(self, batch: Dict[str, Any]) -> Dict[str, Any]:
         """Optimized batch inference using pre-loaded model."""
-        import torch
+        import numpy as np
         
-        try:
-            batch_size = len(batch['features'])
-            
-            # Convert batch to tensor efficiently
-            features_array = np.stack(batch['features'])
-            input_tensor = torch.from_numpy(features_array).to(self.device)
-            
-            # Batch inference
-            with torch.no_grad():
-                outputs = self.model(input_tensor)
-                predictions = torch.argmax(outputs, dim=1).cpu().numpy()
-            
-            # Return results
-            results = [{'prediction': int(pred)} for pred in predictions]
-            return {'results': results}
-            
-        except Exception as e:
-            logger.error(f"Inference failed: {e}")
-            return {'results': [{'prediction': -1, 'error': str(e)}] * len(batch['features'])}
-
-# Use actor for optimized inference
-def optimized_inference_with_actor(batch: Dict[str, Any]) -> Dict[str, Any]:
-    """Use Ray actor for efficient model reuse."""
-    # Ray will automatically reuse the actor across batches
-    actor = OptimizedInferenceActor.remote()
-    return ray.get(actor.__call__.remote(batch))
+        # OPTIMIZATION: True batch processing - process entire batch at once
+        features_array = np.array(batch['features'])
+        
+        # Batch inference with pre-loaded model
+        transformed_features = np.dot(features_array, self.feature_transform)
+        batch_predictions = np.dot(transformed_features, self.model_params[:1000, :10])
+        final_predictions = np.argmax(batch_predictions, axis=1)
+        
+        return {'predictions': final_predictions.tolist()}
 
 # Time the optimized approach
 print("\nTesting Optimized Model Loading (loads model once per actor)")
 optimized_result = performance_tracker.time_operation(
     "Optimized Model Loading",
-    lambda: optimization_dataset.map_batches(optimized_inference_with_actor, batch_size=32, concurrency=4).take(100)
+    lambda: optimization_dataset.map_batches(
+        OptimizedInferenceActor,
+        batch_size=32, 
+        concurrency=4,
+        compute=ray.data.ActorPoolStrategy(size=2)
+    ).take(100)
 )
 
 comparison = performance_tracker.compare_to_baseline(optimized_result)
@@ -494,13 +473,16 @@ def test_batch_size_optimization():
     batch_sizes = [8, 16, 32, 64, 128, 256]
     results = {}
     
-    def simple_inference(batch):
-        """Simple inference function for batch size testing."""
-        # Simulate computational work instead of time.sleep()
+    def batch_size_test_inference(batch):
+        """Inference function optimized for batch size testing."""
         features_array = np.array(batch['features'])
-        # Actual computational work visible to Ray monitoring
-        processed = np.sum(features_array * np.random.randn(*features_array.shape), axis=1)
-        return {'predictions': processed.tolist()}
+        
+        # Matrix multiplication - computationally intensive and visible to monitoring
+        weight_matrix = np.random.randn(512, 100)
+        transformed = np.dot(features_array, weight_matrix)
+        predictions = np.argmax(transformed, axis=1)
+        
+        return {'predictions': predictions.tolist()}
     
     fastest_time = float('inf')
     optimal_batch_size = 32
@@ -512,7 +494,7 @@ def test_batch_size_optimization():
             result = performance_tracker.time_operation(
                 f"Batch Size {batch_size}",
                 lambda: optimization_dataset.map_batches(
-                    simple_inference,
+                    batch_size_test_inference,
                     batch_size=batch_size,
                     concurrency=4
                 ).take(1000)
@@ -605,37 +587,18 @@ def demonstrate_memory_optimization():
     
     # Memory-efficient streaming processing
     def memory_efficient_inference(batch: Dict[str, Any]) -> Dict[str, Any]:
-        """Memory-optimized inference with explicit cleanup."""
-        import gc
-        import torch
+        """Memory-optimized inference with efficient processing."""
+        features_array = np.array(batch['features'])
         
-        try:
-            # Process batch with memory management
-            batch_size = len(batch['features'])
-            predictions = []
-            
-            # Process in smaller chunks to manage memory
-            chunk_size = min(32, batch_size)
-            for i in range(0, batch_size, chunk_size):
-                chunk_features = batch['features'][i:i+chunk_size]
-                
-                # Simulate inference with memory cleanup
-                chunk_predictions = [np.random.randint(0, 1000) for _ in chunk_features]
-                predictions.extend(chunk_predictions)
-                
-                # Explicit cleanup for large objects
-                del chunk_features
-                if torch.cuda.is_available():
-                    torch.cuda.empty_cache()
-            
-            # Force garbage collection
-            gc.collect()
-            
-            return {'predictions': predictions}
-            
-        except Exception as e:
-            logger.error(f"Memory-efficient inference failed: {e}")
-            return {'predictions': [-1] * len(batch['features'])}
+        # Memory-efficient batch processing
+        # Process entire batch with optimized memory usage
+        weight_matrix = np.random.randn(512, 64)  # Smaller intermediate results
+        
+        # Efficient matrix operations that minimize memory allocation
+        transformed = np.dot(features_array, weight_matrix)
+        predictions = np.argmax(transformed, axis=1)
+        
+        return {'predictions': predictions.tolist()}
     
     # Test memory-efficient approach
     print("\nTesting Memory-Optimized Processing")
@@ -664,51 +627,30 @@ memory_result = demonstrate_memory_optimization()
 def gpu_optimization_example():
     """Demonstrate GPU-specific optimizations."""
     
-    if not torch.cuda.is_available():
-        print("GPU not available - skipping GPU optimization examples")
-        return None
-    
     class GPUOptimizedActor:
-        """GPU-optimized inference actor."""
+        """GPU-optimized inference actor for demonstration."""
         
         def __init__(self):
-            """Initialize with GPU optimizations."""
-            import torch
+            """Initialize with GPU-optimized model simulation."""
+            # Simulate GPU model with computational work
+            self.gpu_weight_matrix = np.random.randn(512, 256).astype(np.float32)
+            self.output_weights = np.random.randn(256, 10).astype(np.float32)
             
-            self.device = torch.device("cuda")
-            # Simulate loading a GPU model
-            self.model = torch.nn.Linear(512, 1000).to(self.device)
-            self.model.eval()
-            
-            # GPU memory optimization
-            torch.backends.cudnn.benchmark = True
-            torch.backends.cudnn.deterministic = False
-            
-            logger.info(f"GPU model loaded on {self.device}")
+            print("GPU-optimized model loaded (simulation)")
         
         def __call__(self, batch: Dict[str, Any]) -> Dict[str, Any]:
-            """GPU-optimized batch inference."""
-            import torch
+            """GPU-optimized batch inference simulation."""
+            features_array = np.array(batch['features'], dtype=np.float32)
             
-            try:
-                # Convert to GPU tensor efficiently
-                features = torch.from_numpy(np.stack(batch['features'])).to(self.device, non_blocking=True)
-                
-                # GPU inference
-                with torch.no_grad():
-                    outputs = self.model(features)
-                    predictions = torch.argmax(outputs, dim=1).cpu().numpy()
-                
-                return {'predictions': predictions.tolist()}
-                
-            except Exception as e:
-                logger.error(f"GPU inference failed: {e}")
-                return {'predictions': [-1] * len(batch['features'])}
-    
-    # Test GPU optimization
-    def gpu_inference(batch: Dict[str, Any]) -> Dict[str, Any]:
-        actor = GPUOptimizedActor.remote()
-        return ray.get(actor.__call__.remote(batch))
+            # Simulate GPU batch processing with matrix operations
+            # First layer simulation
+            hidden = np.tanh(np.dot(features_array, self.gpu_weight_matrix))
+            
+            # Output layer simulation  
+            outputs = np.dot(hidden, self.output_weights)
+            predictions = np.argmax(outputs, axis=1)
+            
+            return {'predictions': predictions.tolist()}
     
     print("\nTesting GPU-Optimized Processing")
     print("Monitor GPU utilization with: nvidia-smi -l 1 (in separate terminal)")
@@ -717,10 +659,11 @@ def gpu_optimization_example():
     gpu_result = performance_tracker.time_operation(
         "GPU Optimized",
         lambda: optimization_dataset.map_batches(
-            gpu_inference,
+            GPUOptimizedActor,
             batch_size=256,
             concurrency=2,
-            num_gpus=1
+            num_gpus=1 if ray.cluster_resources().get('GPU', 0) > 0 else 0,
+            compute=ray.data.ActorPoolStrategy(size=2)
         ).take(1000)
     )
     
@@ -904,45 +847,9 @@ def memory_efficient_inference(dataset):
     )
 ```
 
-## Learning Objectives
+## Optimization Demonstration
 
-By the end of this template, you'll understand:
-- Common Ray Data batch inference anti-patterns and their performance impact
-- Ray Data's block-based architecture and how it affects performance
-- Proper resource configuration for GPU-accelerated batch inference
-- Optimal batch sizing and memory management strategies
-- How to measure, profile, and optimize Ray Data pipelines
-- Production-ready patterns for scalable batch inference
-
-## Use Case: ImageNet Classification at Scale
-
-### **Real-World ML Inference Challenge**
-
-We'll use a realistic computer vision scenario: classifying thousands of ImageNet images using a pre-trained ResNet model. This represents a common production workload where:
-
-**Dataset Characteristics**
-- **Volume**: 50,000+ high-resolution images from ImageNet validation set
-- **Size**: ~6GB of image data requiring efficient loading and preprocessing
-- **Format**: JPEG images with varying dimensions requiring standardization
-- **Distribution**: Images stored in distributed storage (S3-compatible format)
-
-**Model Requirements**
-- **Architecture**: ResNet-50 pre-trained on ImageNet (25MB model)
-- **Input**: 224x224 RGB images with ImageNet normalization
-- **Output**: 1,000-class probability distributions
-- **Hardware**: GPU acceleration required for reasonable inference speed
-
-**Performance Expectations**
-- **Throughput**: Efficient processing of large image batches
-- **Latency**: Reasonable per-batch inference times
-- **Resource Utilization**: Good GPU utilization during inference
-- **Scalability**: Proper scaling with additional GPU workers
-
-This scenario mirrors real production ML workloads where performance optimization directly impacts business metrics like cost, user experience, and system capacity.
-
-## 5-Minute Quick Start
-
-Let's start by running the "wrong way" implementation to see common mistakes in action:
+This template demonstrates optimization through systematic performance testing using computational workloads that are visible to Ray monitoring.
 
 ```python
 import ray
@@ -2008,16 +1915,16 @@ def enable_debug_mode():
     
     # Example: Debug a problematic inference function
     def problematic_inference(batch: Dict[str, Any]) -> Dict[str, Any]:
-        """Simulate an inference function with issues."""
-        # Simulate random failures for debugging
-        if np.random.random() < 0.1:  # 10% failure rate
-            raise ValueError("Simulated inference failure")
+        """Inference function for debugging demonstration."""
+        features_array = np.array(batch['features'])
         
-        # Simulate variable processing time
-        processing_time = np.random.uniform(0.1, 0.5)
-        time.sleep(processing_time)  # Simulate actual computation work
+        # Simulate computational work for debugging analysis
+        # Varying computation intensity to show performance variation
+        computation_matrix = np.random.randn(512, np.random.randint(50, 200))
+        processed = np.dot(features_array, computation_matrix)
+        predictions = np.mean(processed, axis=1).astype(int)
         
-        return {'predictions': [1] * len(batch['features'])}
+        return {'predictions': predictions.tolist()}
     
     # Wrap with debugging
     debug_wrapper = DebugInferenceWrapper(problematic_inference, debug_level="DEBUG")

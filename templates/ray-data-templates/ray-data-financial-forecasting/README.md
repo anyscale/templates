@@ -82,93 +82,79 @@ print("Ray cluster initialized for financial analysis")
 print(f"Available resources: {ray.cluster_resources()}")
 ```
 
-### Load Real S&P 500 Dataset Using Ray Data Native Operations
+### Generate Financial Market Dataset
 
-Let's load real financial data using Ray Data's native reading capabilities.
+Let's create a comprehensive financial dataset for forecasting analysis:
 
 ```python
-# Start timing the data loading process
-print("Loading real S&P 500 financial dataset...")
+# Generate realistic financial market data for time series forecasting
+print("Generating comprehensive financial market dataset...")
 start_time = time.time()
 ```
 
-**Option 1: Load from Public S3 Bucket**
-
 ```python
-# Try to load from publicly available S&P 500 data on S3
-try:
-    # Use Ray Data native read_csv to load real S&P 500 data
-    sp500_data = ray.data.read_csv(
-        "s3://anonymous@kaggle-datasets/sp500_stocks.csv",
-        columns=["Date", "Symbol", "Open", "High", "Low", "Close", "Volume", "Name"]
-    )
+def generate_financial_dataset(num_companies: int = 50, days: int = 730) -> ray.data.Dataset:
+    """Generate realistic financial market data for forecasting analysis."""
     
-    print(f"Loaded S&P 500 dataset with {sp500_data.count():,} records from public S3 bucket")
-    data_source = "Public S3"
+    # Major company profiles for realistic simulation
+    companies = [
+        {'symbol': 'AAPL', 'name': 'Apple Inc', 'sector': 'Technology', 'base_price': 150, 'volatility': 0.25},
+        {'symbol': 'GOOGL', 'name': 'Alphabet Inc', 'sector': 'Technology', 'base_price': 2500, 'volatility': 0.30},
+        {'symbol': 'MSFT', 'name': 'Microsoft Corp', 'sector': 'Technology', 'base_price': 300, 'volatility': 0.28},
+        {'symbol': 'AMZN', 'name': 'Amazon.com Inc', 'sector': 'Consumer Discretionary', 'base_price': 3200, 'volatility': 0.35},
+        {'symbol': 'TSLA', 'name': 'Tesla Inc', 'sector': 'Consumer Discretionary', 'base_price': 800, 'volatility': 0.45},
+        {'symbol': 'NVDA', 'name': 'NVIDIA Corp', 'sector': 'Technology', 'base_price': 400, 'volatility': 0.40},
+        {'symbol': 'JPM', 'name': 'JPMorgan Chase', 'sector': 'Financial Services', 'base_price': 140, 'volatility': 0.20},
+        {'symbol': 'JNJ', 'name': 'Johnson & Johnson', 'sector': 'Healthcare', 'base_price': 160, 'volatility': 0.15},
+        {'symbol': 'V', 'name': 'Visa Inc', 'sector': 'Financial Services', 'base_price': 220, 'volatility': 0.18},
+        {'symbol': 'PG', 'name': 'Procter & Gamble', 'sector': 'Consumer Goods', 'base_price': 140, 'volatility': 0.12}
+    ]
     
-except Exception as e:
-    print(f"Public dataset not available: {e}")
-    print("Falling back to Yahoo Finance API for real data...")
-    sp500_data = None
-    data_source = "Yahoo Finance"
-```
-
-**Option 2: Fallback to Yahoo Finance API**
-
-```python
-# Fallback: Use Yahoo Finance for comprehensive real data
-if sp500_data is None:
-    symbols = ['AAPL', 'GOOGL', 'MSFT', 'AMZN', 'TSLA', 'NVDA', 'META', 'NFLX', 'CRM', 'ORCL']
-    end_date = datetime.now()
-    start_date = end_date - timedelta(days=730)  # 2 years of data
-    
-    print(f"Loading data for {len(symbols)} major stocks...")
     market_data = []
-```
-
-```python
-# Download real market data from Yahoo Finance
-for symbol in symbols:
-    try:
-        ticker = yf.Ticker(symbol)
-        hist = ticker.history(start=start_date, end=end_date)
-        info = ticker.info
+    base_date = datetime.now() - timedelta(days=days)
+    
+    for company in companies:
+        current_price = company['base_price']
         
-        print(f"  Loading {symbol} ({info.get('longName', symbol)[:30]}...)")
-        
-        # Convert to Ray Data format with comprehensive information
-        for date, row in hist.iterrows():
+        for day in range(days):
+            date = base_date + timedelta(days=day)
+            
+            # Realistic price movement with company-specific volatility
+            daily_return = np.random.normal(0.0005, company['volatility']/252**0.5)  # Annualized volatility
+            current_price *= (1 + daily_return)
+            
+            # Generate realistic OHLC data
+            open_price = current_price
+            high_price = open_price * (1 + abs(np.random.normal(0, 0.01)))
+            low_price = open_price * (1 - abs(np.random.normal(0, 0.01))) 
+            close_price = current_price
+            volume = int(np.random.lognormal(15, 0.5))
+            
             record = {
-                'Symbol': symbol,
-                'Name': info.get('longName', symbol),
+                'Symbol': company['symbol'],
+                'Name': company['name'],
                 'Date': date.strftime('%Y-%m-%d'),
-                'Open': float(row['Open']),
-                'High': float(row['High']),
-                'Low': float(row['Low']),
-                'Close': float(row['Close']),
-                'Volume': int(row['Volume']),
-                'Sector': info.get('sector', 'Technology'),
-                'Industry': info.get('industry', 'Software'),
-                'MarketCap': info.get('marketCap', 0),
-                'timestamp': date
+                'Open': round(open_price, 2),
+                'High': round(high_price, 2),
+                'Low': round(low_price, 2),
+                'Close': round(close_price, 2),
+                'Volume': volume,
+                'Sector': company['sector'],
+                'MarketCap': int(current_price * 1_000_000_000)
             }
             market_data.append(record)
-            
-        print(f"    {len(hist)} trading days loaded")
-        
-    except Exception as e:
-        print(f"    Error loading {symbol}: {e}")
-```
+    
+    # Create Ray Dataset
+    dataset = ray.data.from_items(market_data)
+    return dataset
 
-```python
-# Create Ray Dataset using native from_items operation
-if sp500_data is None:
-    sp500_data = ray.data.from_items(market_data)
+# Generate comprehensive financial dataset
+financial_data = generate_financial_dataset(num_companies=10, days=730)
 
 load_time = time.time() - start_time
-print(f"\nReal financial dataset loaded in {load_time:.2f} seconds")
-print(f"Dataset contains {sp500_data.count():,} records of real market data")
-print(f"Data source: {data_source}")
+print(f"Financial dataset generated in {load_time:.2f} seconds")
+print(f"Dataset contains {financial_data.count():,} records of market data")
+print(f"Dataset size: {financial_data.size_bytes() / (1024**2):.1f} MB")
 ```
 
 ### Load Financial News Data from Public Sources
