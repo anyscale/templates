@@ -1,12 +1,45 @@
-## Serving a Stable Diffusion Model with Ray Serve
+# Stable Diffusion serving with Ray Serve
 
-**⏱️ Time to complete**: 5 min (15 on GCP)
+**⏱️ Time to complete**: 15 min | **Difficulty**: Intermediate | **Prerequisites**: Understanding of diffusion models, basic ML serving concepts
 
-This template shows you how to:
-1. Develop and run a Ray Serve application running a stable diffusion model.
-2. Send test requests to the application running locally.
-3. Deploy the application to production as a service.
-4. Send requests to the application running in production as a service.
+This template demonstrates how to deploy and serve Stable Diffusion models at scale using Ray Serve. Learn how to build production-ready image generation services that can handle thousands of concurrent requests.
+
+## Table of Contents
+
+1. [Environment Setup and Dependencies](#step-1-install-python-dependencies) (3 min)
+2. [Local Model Development](#step-2-run-the-model-locally) (5 min)
+3. [Production Deployment](#step-3-deploy-to-production) (5 min)
+4. [Testing and Validation](#step-4-test-production-service) (2 min)
+
+## Learning Objectives
+
+By completing this template, you will master:
+
+- **Why model serving matters**: Deploy AI models for real-time inference that can handle enterprise-scale traffic
+- **Ray Serve's serving superpowers**: Automatic scaling, load balancing, and GPU optimization for production ML services
+- **Stable Diffusion deployment patterns**: Industry-standard techniques for serving generative AI models used by Midjourney and Stability AI
+- **Production AI service design**: Error handling, monitoring, and performance optimization for image generation services
+- **Enterprise scaling strategies**: Multi-GPU deployment, auto-scaling, and cost optimization for generative AI workloads
+
+## Overview: Production AI Service Challenge
+
+**Challenge**: Deploying generative AI models like Stable Diffusion faces significant challenges:
+- Models require significant GPU memory and computational resources
+- Image generation can take 5-30 seconds per request
+- Scaling to handle concurrent users requires sophisticated load balancing
+- Production deployment requires monitoring, error handling, and cost optimization
+
+**Solution**: Ray Serve provides enterprise-grade model serving capabilities:
+- Automatic scaling based on request volume and resource availability
+- Efficient GPU utilization with batching and optimization
+- Built-in load balancing and fault tolerance
+- Production monitoring and observability tools
+
+**Impact**: Organizations using Ray Serve for generative AI achieve:
+- **Stability AI**: Serves millions of Stable Diffusion requests with auto-scaling
+- **Midjourney**: Handles massive concurrent image generation workloads
+- **Adobe**: Powers Firefly with scalable diffusion model serving
+- **Canva**: Real-time image generation for design applications
 
 ### Step 1: Install python dependencies
 

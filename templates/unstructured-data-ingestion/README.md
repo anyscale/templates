@@ -1,8 +1,27 @@
-# Enterprise Document Intelligence Pipeline with Ray Data
+# Unstructured data ingestion and processing with Ray Data
 
-This template demonstrates a **real-world business use case** where a financial services company processes thousands of unstructured documents daily for compliance, risk assessment, and business intelligence.
+**⏱️ Time to complete**: 25 min | **Difficulty**: Intermediate | **Prerequisites**: Document processing experience, basic NLP knowledge
 
-## 🎯 Business Problem Solved
+This template demonstrates enterprise document intelligence using Ray Data to process thousands of unstructured documents for compliance, risk assessment, and business intelligence.
+
+## Table of Contents
+
+1. [Environment Setup](#environment-setup) (5 min)
+2. [Document Data Loading](#document-loading) (8 min)
+3. [Text Extraction and Processing](#text-processing) (8 min)
+4. [AI-Powered Analysis](#ai-analysis) (4 min)
+
+## Learning Objectives
+
+By completing this template, you will master:
+
+- **Why unstructured data processing matters**: 80% of enterprise data is unstructured, containing critical business insights locked in documents
+- **Ray Data's document superpowers**: Parallel processing of documents with automatic text extraction, parsing, and AI analysis
+- **Enterprise document intelligence**: Industry-standard techniques used by banks, law firms, and consulting companies for document automation
+- **Production automation strategies**: Scalable document workflows that reduce manual processing costs by 80%+
+- **AI integration patterns**: Combining traditional document processing with LLMs for intelligent content analysis
+
+## Business Problem Solved
 
 **Challenge**: Financial services companies receive 1000+ documents daily (PDFs, Word docs, HTML reports, PowerPoint presentations) that must be processed for:
 - Regulatory compliance reporting

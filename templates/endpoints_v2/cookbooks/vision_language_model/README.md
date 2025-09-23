@@ -1,10 +1,27 @@
-# Deploy vision language models
+# Vision language model deployment with Ray Serve
 
-**⏱️ Time to complete**: 10 min
+**⏱️ Time to complete**: 15 min | **Difficulty**: Intermediate | **Prerequisites**: Understanding of vision-language models, basic ML serving concepts
 
-In this example, we will use RayLLM to serve [llava-hf/llava-v1.6-mistral-7b-hf](https://huggingface.co/llava-hf/llava-v1.6-mistral-7b-hf). We will build an interesting application that brings art to life with ekphrasis, specially designed for kids. 
+This template demonstrates deploying vision-language models (VLMs) like LLaVA using Ray Serve for production image-text understanding applications. Learn how to build scalable multimodal AI services.
 
-**Note**: This guide assumes you have reviewed the contents of the ../../README.ipynb. It extends that guide by focusing on how to query a vision language model with images. Additionally, it provides an example for developing a Gradio application on Workspace.
+## Table of Contents
+
+1. [Model Configuration](#step-1-run-the-model-locally-in-the-workspace) (4 min)
+2. [Local Development](#step-2-query-the-model-locally) (6 min)
+3. [Production Deployment](#step-3-deploy-to-production) (3 min)
+4. [Testing and Applications](#step-4-query-the-production-model) (2 min)
+
+## Learning Objectives
+
+By completing this template, you will master:
+
+- **Why vision-language models matter**: Multimodal AI that understands both images and text enables new applications like visual search and content moderation
+- **Ray Serve's VLM superpowers**: Deploy large multimodal models with automatic GPU optimization and intelligent batching
+- **Production multimodal patterns**: Industry-standard techniques used by OpenAI, Google, and Anthropic for vision-language applications
+- **Enterprise AI service design**: Scalable deployment patterns for multimodal models in production environments
+- **Application development strategies**: Build interactive applications using Gradio and multimodal AI services
+
+**Note**: This guide extends the main Endpoints v2 documentation by focusing on vision-language model deployment and querying with images.
 
 ## Step 1 - Run the model locally in the Workspace
 
