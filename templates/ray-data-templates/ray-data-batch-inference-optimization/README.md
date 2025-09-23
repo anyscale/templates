@@ -212,163 +212,106 @@ Establish baseline performance and identify optimization opportunities in 5 minu
 ### Step 3: Performance Monitoring Infrastructure
 
 ```python
-@dataclass
-class PerformanceMetrics:
-    """Comprehensive performance metrics for optimization analysis."""
-    operation_name: str
-    execution_time: float
-    throughput: float
-    memory_usage_gb: float
-    cpu_utilization: float
-    gpu_utilization: Optional[float] = None
-    batch_size: int = 0
-    concurrency: int = 0
-    record_count: int = 0
-    error_rate: float = 0.0
-    timestamp: str = ""
-
-class InferenceOptimizer:
-    """Production-ready inference performance optimizer and monitor."""
+class SimplePerformanceTracker:
+    """Simplified performance tracking focused on timing and dashboard monitoring."""
     
     def __init__(self):
-        self.metrics_history: List[PerformanceMetrics] = []
-        self.optimization_results: Dict[str, Any] = {}
-        self.baseline_performance: Optional[PerformanceMetrics] = None
+        self.experiment_results = []
+        self.baseline_time = None
         
-    def benchmark_operation(self, 
-                          operation_name: str, 
-                          operation_func, 
-                          batch_size: int = 32,
-                          concurrency: int = 1,
-                          *args, **kwargs) -> PerformanceMetrics:
-        """Comprehensive benchmarking of Ray Data operations."""
-        logger.info(f"Benchmarking operation: {operation_name}")
+    def time_operation(self, operation_name: str, operation_func, *args, **kwargs) -> Dict[str, Any]:
+        """Simple timing of operations - use Ray dashboard for detailed metrics."""
+        print(f"\n🔄 Testing: {operation_name}")
+        print("📊 Monitor detailed performance in Ray Dashboard:")
+        print(f"   • Ray Dashboard: {ray.get_dashboard_url()}")
+        print(f"   • Look for: Task execution, memory usage, GPU utilization")
         
-        # Collect initial system state
         start_time = time.time()
-        initial_memory = psutil.virtual_memory().used / (1024**3)
-        initial_cpu = psutil.cpu_percent(interval=None)
-        
-        # GPU monitoring if available
-        gpu_util = None
-        if torch.cuda.is_available():
-            torch.cuda.reset_peak_memory_stats()
-            gpu_util = torch.cuda.utilization()
         
         try:
-            # Execute operation
             result = operation_func(*args, **kwargs)
+            execution_time = time.time() - start_time
             
-            # Collect final metrics
-            end_time = time.time()
-            final_memory = psutil.virtual_memory().used / (1024**3)
-            final_cpu = psutil.cpu_percent(interval=0.1)
+            # Simple result counting
+            result_count = len(result) if hasattr(result, '__len__') else 0
             
-            execution_time = end_time - start_time
-            memory_delta = final_memory - initial_memory
+            experiment_result = {
+                'name': operation_name,
+                'execution_time': execution_time,
+                'result_count': result_count,
+                'success': True
+            }
             
-            # Calculate throughput
-            record_count = 0
-            try:
-                if hasattr(result, 'count'):
-                    record_count = result.count()
-                elif hasattr(result, '__len__'):
-                    record_count = len(result)
-                elif isinstance(result, list):
-                    record_count = sum(len(batch) if isinstance(batch, list) else 1 for batch in result)
-            except:
-                record_count = 0
+            self.experiment_results.append(experiment_result)
             
-            throughput = record_count / execution_time if execution_time > 0 else 0
+            print(f"✅ {operation_name}: {execution_time:.2f} seconds")
+            print(f"   Processed {result_count} samples")
+            print(f"   👀 Check Ray Dashboard for detailed resource utilization")
             
-            # Create performance metrics
-            metrics = PerformanceMetrics(
-                operation_name=operation_name,
-                execution_time=execution_time,
-                throughput=throughput,
-                memory_usage_gb=memory_delta,
-                cpu_utilization=final_cpu,
-                gpu_utilization=gpu_util,
-                batch_size=batch_size,
-                concurrency=concurrency,
-                record_count=record_count,
-                error_rate=0.0,
-                timestamp=datetime.now().isoformat()
-            )
-            
-            self.metrics_history.append(metrics)
-            logger.info(f"Benchmark completed: {throughput:.1f} records/sec, {execution_time:.3f}s")
-            
-            return metrics
+            return experiment_result
             
         except Exception as e:
-            logger.error(f"Benchmark failed for {operation_name}: {e}")
-            error_metrics = PerformanceMetrics(
-                operation_name=operation_name,
-                execution_time=time.time() - start_time,
-                throughput=0.0,
-                memory_usage_gb=0.0,
-                cpu_utilization=0.0,
-                batch_size=batch_size,
-                concurrency=concurrency,
-                record_count=0,
-                error_rate=1.0,
-                timestamp=datetime.now().isoformat()
-            )
-            self.metrics_history.append(error_metrics)
-            return error_metrics
+            execution_time = time.time() - start_time
+            print(f"❌ {operation_name}: Failed after {execution_time:.2f}s - {str(e)}")
+            
+            experiment_result = {
+                'name': operation_name,
+                'execution_time': execution_time,
+                'result_count': 0,
+                'success': False,
+                'error': str(e)
+            }
+            
+            self.experiment_results.append(experiment_result)
+            return experiment_result
     
-    def set_baseline(self, metrics: PerformanceMetrics) -> None:
-        """Set baseline performance for comparison."""
-        self.baseline_performance = metrics
-        logger.info(f"Baseline set: {metrics.throughput:.1f} records/sec")
+    def set_baseline(self, experiment_result: Dict[str, Any]) -> None:
+        """Set baseline for comparison."""
+        if experiment_result['success']:
+            self.baseline_time = experiment_result['execution_time']
+            print(f"📍 Baseline set: {self.baseline_time:.2f} seconds")
     
-    def calculate_improvement(self, metrics: PerformanceMetrics) -> float:
-        """Calculate performance improvement over baseline."""
-        if not self.baseline_performance or self.baseline_performance.throughput == 0:
-            return 0.0
-        return (metrics.throughput - self.baseline_performance.throughput) / self.baseline_performance.throughput * 100
+    def compare_to_baseline(self, experiment_result: Dict[str, Any]) -> str:
+        """Compare current result to baseline."""
+        if not self.baseline_time or not experiment_result['success']:
+            return "No comparison available"
+        
+        improvement = (self.baseline_time - experiment_result['execution_time']) / self.baseline_time * 100
+        if improvement > 0:
+            return f"🚀 {improvement:.1f}% faster than baseline"
+        else:
+            return f"⚠️ {abs(improvement):.1f}% slower than baseline"
     
-    def generate_optimization_report(self) -> str:
-        """Generate comprehensive optimization report."""
-        if not self.metrics_history:
-            return "No performance data available"
+    def generate_summary(self) -> None:
+        """Generate simple summary - detailed metrics available in Ray Dashboard."""
+        print("\n" + "="*70)
+        print("OPTIMIZATION EXPERIMENT SUMMARY")
+        print("="*70)
         
-        report = ["", "="*80, "INFERENCE OPTIMIZATION REPORT", "="*80]
+        successful_experiments = [exp for exp in self.experiment_results if exp['success']]
         
-        if self.baseline_performance:
-            report.extend([
-                f"Baseline Performance:",
-                f"  Throughput: {self.baseline_performance.throughput:.1f} records/sec",
-                f"  Execution Time: {self.baseline_performance.execution_time:.3f}s",
-                f"  Memory Usage: {self.baseline_performance.memory_usage_gb:.2f}GB",
-                f"  CPU Utilization: {self.baseline_performance.cpu_utilization:.1f}%",
-                ""
-            ])
+        if successful_experiments:
+            fastest = min(successful_experiments, key=lambda x: x['execution_time'])
+            print(f"Fastest configuration: {fastest['name']}")
+            print(f"Execution time: {fastest['execution_time']:.2f} seconds")
+            
+            if self.baseline_time:
+                improvement = (self.baseline_time - fastest['execution_time']) / self.baseline_time * 100
+                print(f"Improvement over baseline: {improvement:.1f}%")
         
-        # Best performing operation
-        best_metrics = max(self.metrics_history, key=lambda m: m.throughput)
-        improvement = self.calculate_improvement(best_metrics)
+        print(f"\nTotal experiments: {len(self.experiment_results)}")
+        print(f"Successful: {len(successful_experiments)}")
+        print(f"Failed: {len(self.experiment_results) - len(successful_experiments)}")
         
-        report.extend([
-            f"Best Performance Achieved:",
-            f"  Operation: {best_metrics.operation_name}",
-            f"  Throughput: {best_metrics.throughput:.1f} records/sec",
-            f"  Improvement: {improvement:.1f}% over baseline",
-            f"  Configuration: batch_size={best_metrics.batch_size}, concurrency={best_metrics.concurrency}",
-            "",
-            f"Optimization Summary:",
-            f"  Total Experiments: {len(self.metrics_history)}",
-            f"  Best Throughput: {best_metrics.throughput:.1f} records/sec",
-            f"  Performance Range: {min(m.throughput for m in self.metrics_history):.1f} - {max(m.throughput for m in self.metrics_history):.1f} records/sec",
-            ""
-        ])
-        
-        return "\n".join(report)
+        print(f"\n📊 For detailed performance analysis:")
+        print(f"   • Ray Dashboard: {ray.get_dashboard_url()}")
+        print(f"   • Look for task timelines, resource usage, and bottlenecks")
+        print(f"   • Ray Data provides execution plans and operator-level metrics")
 
-# Initialize optimizer
-optimizer = InferenceOptimizer()
-print("Performance optimization infrastructure initialized!")
+# Initialize simple tracker
+performance_tracker = SimplePerformanceTracker()
+print("📊 Simple performance tracking initialized!")
+print(f"🔗 Ray Dashboard available at: {ray.get_dashboard_url()}")
 ```
 
 ### Step 4: Create Synthetic Dataset for Optimization Testing
@@ -463,14 +406,14 @@ def inefficient_inference(batch: Dict[str, Any]) -> Dict[str, Any]:
     
     return {'results': results}
 
-# Benchmark the inefficient approach
-inefficient_metrics = optimizer.benchmark_operation(
+# Time the inefficient approach
+print("\n❌ Testing Inefficient Model Loading (loads model for every batch)")
+inefficient_result = performance_tracker.time_operation(
     "Inefficient Model Loading",
     lambda: optimization_dataset.map_batches(inefficient_inference, batch_size=16, concurrency=2).take(100)
 )
 
-print(f"❌ Inefficient approach: {inefficient_metrics.throughput:.1f} records/sec")
-optimizer.set_baseline(inefficient_metrics)
+performance_tracker.set_baseline(inefficient_result)
 ```
 
 **✅ Correct Approach (High Performance):**
@@ -525,57 +468,74 @@ def optimized_inference_with_actor(batch: Dict[str, Any]) -> Dict[str, Any]:
     actor = OptimizedInferenceActor.remote()
     return ray.get(actor.__call__.remote(batch))
 
-# Benchmark the optimized approach
-optimized_metrics = optimizer.benchmark_operation(
+# Time the optimized approach
+print("\n✅ Testing Optimized Model Loading (loads model once per actor)")
+optimized_result = performance_tracker.time_operation(
     "Optimized Model Loading",
     lambda: optimization_dataset.map_batches(optimized_inference_with_actor, batch_size=32, concurrency=4).take(100)
 )
 
-improvement = optimizer.calculate_improvement(optimized_metrics)
-print(f"✅ Optimized approach: {optimized_metrics.throughput:.1f} records/sec ({improvement:.1f}% improvement)")
+comparison = performance_tracker.compare_to_baseline(optimized_result)
+print(f"📈 Performance comparison: {comparison}")
 ```
 
 ### Mistake 2: Poor Batch Size Configuration
 
 **❌ Wrong Approach (Sub-optimal Batching):**
 ```python
-def test_poor_batching():
-    """Demonstrate the impact of poor batch size choices."""
+def test_batch_size_optimization():
+    """Test different batch sizes to find optimal performance."""
     
-    batch_sizes = [1, 8, 16, 32, 64, 128, 256, 512, 1024]
+    print("\n📊 Batch Size Optimization Testing")
+    print("="*50)
+    print("💡 Monitor Ray Dashboard during each test for detailed metrics!")
+    print(f"🔗 Dashboard: {ray.get_dashboard_url()}")
+    
+    batch_sizes = [8, 16, 32, 64, 128, 256]
     results = {}
     
+    def simple_inference(batch):
+        """Simple inference function for batch size testing."""
+        # Simulate computational work instead of time.sleep()
+        features_array = np.array(batch['features'])
+        # Actual computational work visible to Ray monitoring
+        processed = np.sum(features_array * np.random.randn(*features_array.shape), axis=1)
+        return {'predictions': processed.tolist()}
+    
+    fastest_time = float('inf')
+    optimal_batch_size = 32
+    
     for batch_size in batch_sizes:
+        print(f"\n🧪 Testing batch_size={batch_size}")
+        
         try:
-            metrics = optimizer.benchmark_operation(
+            result = performance_tracker.time_operation(
                 f"Batch Size {batch_size}",
                 lambda: optimization_dataset.map_batches(
-                    lambda batch: {'predictions': [np.random.randint(0, 1000) for _ in batch['features']]},
+                    simple_inference,
                     batch_size=batch_size,
                     concurrency=4
-                ).take(1000),
-                batch_size=batch_size
+                ).take(1000)
             )
-            results[batch_size] = metrics.throughput
+            
+            if result['success'] and result['execution_time'] < fastest_time:
+                fastest_time = result['execution_time']
+                optimal_batch_size = batch_size
+                print(f"🏆 New best: {batch_size} (time: {fastest_time:.2f}s)")
+            
+            results[batch_size] = result['execution_time'] if result['success'] else float('inf')
             
         except Exception as e:
-            logger.error(f"Batch size {batch_size} failed: {e}")
-            results[batch_size] = 0
+            print(f"❌ Batch size {batch_size} failed: {e}")
+            results[batch_size] = float('inf')
     
-    # Find optimal batch size
-    optimal_batch_size = max(results, key=results.get)
-    optimal_throughput = results[optimal_batch_size]
+    print(f"\n✅ Optimal batch size found: {optimal_batch_size}")
+    print(f"📊 Best time: {fastest_time:.2f} seconds")
+    print(f"💡 Check Ray Dashboard for GPU utilization and memory usage patterns")
     
-    print("\nBatch Size Optimization Results:")
-    print("="*50)
-    for batch_size, throughput in results.items():
-        status = "🏆 OPTIMAL" if batch_size == optimal_batch_size else "⚠️ Sub-optimal"
-        print(f"Batch Size {batch_size:4d}: {throughput:8.1f} records/sec {status}")
-    
-    print(f"\n✅ Optimal batch size: {optimal_batch_size} (throughput: {optimal_throughput:.1f} records/sec)")
     return optimal_batch_size
 
-optimal_batch_size = test_poor_batching()
+optimal_batch_size = test_batch_size_optimization()
 ```
 
 ### Mistake 3: Inefficient Resource Allocation
@@ -585,39 +545,50 @@ optimal_batch_size = test_poor_batching()
 def test_concurrency_optimization():
     """Test different concurrency levels to find optimal settings."""
     
-    concurrency_levels = [1, 2, 4, 8, 16, 32]
-    results = {}
+    print(f"\n📊 Concurrency Optimization Testing")
+    print("="*50)
+    print("💡 Watch Ray Dashboard for task scheduling and resource usage!")
+    print(f"🔗 Dashboard: {ray.get_dashboard_url()}")
     
-    # Test with optimal batch size
+    concurrency_levels = [1, 2, 4, 8]
+    
+    def compute_intensive_inference(batch):
+        """Compute-intensive inference visible to Ray monitoring."""
+        features_array = np.array(batch['features'])
+        # Matrix operations visible to monitoring
+        result = np.linalg.norm(features_array, axis=1)
+        # Additional computation to make work visible
+        result = result * np.random.randn(len(result))
+        return {'predictions': result.tolist()}
+    
+    fastest_time = float('inf')
+    optimal_concurrency = 4
+    
     for concurrency in concurrency_levels:
+        print(f"\n🧪 Testing concurrency={concurrency}")
+        
         try:
-            metrics = optimizer.benchmark_operation(
+            result = performance_tracker.time_operation(
                 f"Concurrency {concurrency}",
                 lambda: optimization_dataset.map_batches(
-                    lambda batch: {'predictions': [np.random.randint(0, 1000) for _ in batch['features']]},
+                    compute_intensive_inference,
                     batch_size=optimal_batch_size,
                     concurrency=concurrency
-                ).take(1000),
-                batch_size=optimal_batch_size,
-                concurrency=concurrency
+                ).take(1000)
             )
-            results[concurrency] = metrics.throughput
+            
+            if result['success'] and result['execution_time'] < fastest_time:
+                fastest_time = result['execution_time']
+                optimal_concurrency = concurrency
+                print(f"🏆 New best: {concurrency} (time: {fastest_time:.2f}s)")
             
         except Exception as e:
-            logger.error(f"Concurrency {concurrency} failed: {e}")
-            results[concurrency] = 0
+            print(f"❌ Concurrency {concurrency} failed: {e}")
     
-    # Find optimal concurrency
-    optimal_concurrency = max(results, key=results.get)
-    optimal_throughput = results[optimal_concurrency]
+    print(f"\n✅ Optimal concurrency found: {optimal_concurrency}")
+    print(f"📊 Best time: {fastest_time:.2f} seconds")
+    print(f"💡 Ray Dashboard shows task distribution and worker utilization")
     
-    print("\nConcurrency Optimization Results:")
-    print("="*50)
-    for concurrency, throughput in results.items():
-        status = "🏆 OPTIMAL" if concurrency == optimal_concurrency else "⚠️ Sub-optimal"
-        print(f"Concurrency {concurrency:2d}: {throughput:8.1f} records/sec {status}")
-    
-    print(f"\n✅ Optimal concurrency: {optimal_concurrency} (throughput: {optimal_throughput:.1f} records/sec)")
     return optimal_concurrency
 
 optimal_concurrency = test_concurrency_optimization()
@@ -667,7 +638,10 @@ def demonstrate_memory_optimization():
             return {'predictions': [-1] * len(batch['features'])}
     
     # Test memory-efficient approach
-    memory_metrics = optimizer.benchmark_operation(
+    print("\n📊 Testing Memory-Optimized Processing")
+    print("💡 Monitor memory usage in Ray Dashboard - look for object store utilization")
+    
+    memory_result = performance_tracker.time_operation(
         "Memory Optimized",
         lambda: optimization_dataset.map_batches(
             memory_efficient_inference,
@@ -676,12 +650,12 @@ def demonstrate_memory_optimization():
         ).take(1000)
     )
     
-    print(f"Memory-optimized throughput: {memory_metrics.throughput:.1f} records/sec")
-    print(f"Memory usage: {memory_metrics.memory_usage_gb:.2f} GB")
+    print(f"📈 Memory optimization comparison: {performance_tracker.compare_to_baseline(memory_result)}")
+    print(f"📊 Ray Dashboard shows: memory usage patterns, garbage collection, object store stats")
     
-    return memory_metrics
+    return memory_result
 
-memory_metrics = demonstrate_memory_optimization()
+memory_result = demonstrate_memory_optimization()
 ```
 
 ### GPU Optimization (If Available)
@@ -736,7 +710,11 @@ def gpu_optimization_example():
         actor = GPUOptimizedActor.remote()
         return ray.get(actor.__call__.remote(batch))
     
-    gpu_metrics = optimizer.benchmark_operation(
+    print("\n📊 Testing GPU-Optimized Processing")
+    print("💡 Monitor GPU utilization with: nvidia-smi -l 1 (in separate terminal)")
+    print(f"💡 Ray Dashboard shows: GPU usage, memory allocation, task scheduling")
+    
+    gpu_result = performance_tracker.time_operation(
         "GPU Optimized",
         lambda: optimization_dataset.map_batches(
             gpu_inference,
@@ -746,17 +724,108 @@ def gpu_optimization_example():
         ).take(1000)
     )
     
-    print(f"GPU-optimized throughput: {gpu_metrics.throughput:.1f} records/sec")
-    return gpu_metrics
+    print(f"📈 GPU optimization comparison: {performance_tracker.compare_to_baseline(gpu_result)}")
+    print(f"🎯 Key metrics to check in dashboard: GPU utilization %, memory usage")
+    return gpu_result
 
-gpu_metrics = gpu_optimization_example()
+gpu_result = gpu_optimization_example()
 ```
 
-**Why Inference Optimization Matters**:
-- **Scale**: Production ML systems process millions of inputs daily
-- **Cost**: GPU time is expensive - optimization saves thousands monthly
-- **Latency**: Faster inference enables real-time applications
-- **Throughput**: Optimized systems handle 10-100x more requests
+### Dashboard Monitoring Guide
+
+**🎯 Key Metrics to Monitor in Ray Dashboard:**
+
+**1. Task Execution View:**
+```
+Navigate to: Ray Dashboard → Jobs → [Your Job] → Tasks
+Monitor: Task duration, success rate, resource usage per task
+```
+
+**2. Resource Utilization:**
+```
+Navigate to: Ray Dashboard → Cluster → Nodes
+Monitor: CPU usage %, Memory usage %, GPU utilization (if available)
+```
+
+**3. Ray Data Execution Plans:**
+```
+Look for: Operator fusion indicators, block processing patterns
+Key insight: Fused operators show as combined operations
+```
+
+**4. Object Store Usage:**
+```
+Navigate: Ray Dashboard → Cluster → Object Store
+Monitor: Memory usage, spill to disk, object creation rate
+```
+
+**📊 What Good Performance Looks Like:**
+- **Task Execution**: Consistent task duration, <5% task failures
+- **Resource Usage**: >70% CPU/GPU utilization during processing
+- **Memory**: Steady memory usage without excessive spilling
+- **Block Processing**: Even distribution across workers
+
+**🚨 Warning Signs in Dashboard:**
+- **Uneven Task Distribution**: Some workers idle while others overloaded
+- **High Task Failure Rate**: >5% task failures indicate configuration issues
+- **Memory Spilling**: Object store spilling to disk frequently
+- **Low Resource Utilization**: <30% GPU/CPU usage indicates poor configuration
+
+```python
+def setup_dashboard_monitoring():
+    """Set up monitoring and guide users to Ray Dashboard."""
+    
+    dashboard_url = ray.get_dashboard_url()
+    
+    print("="*70)
+    print("RAY DASHBOARD MONITORING SETUP")
+    print("="*70)
+    print(f"🔗 Ray Dashboard: {dashboard_url}")
+    print(f"📊 Ray Data provides detailed execution metrics automatically")
+    
+    monitoring_guide = {
+        'Task Performance': [
+            'View task execution timeline',
+            'Check task success/failure rates', 
+            'Monitor task resource consumption',
+            'Identify bottlenecks and slow tasks'
+        ],
+        'Resource Utilization': [
+            'CPU and GPU utilization percentages',
+            'Memory usage across cluster nodes',
+            'Network I/O for data transfer',
+            'Object store memory allocation'
+        ],
+        'Ray Data Specific': [
+            'Dataset block processing progress',
+            'Operator fusion visualization',
+            'Pipeline execution plans',
+            'Streaming execution metrics'
+        ],
+        'Optimization Insights': [
+            'Identify under-utilized resources',
+            'Find optimal batch sizes',
+            'Detect memory bottlenecks',
+            'Monitor scaling efficiency'
+        ]
+    }
+    
+    print(f"\n📋 Dashboard Monitoring Checklist:")
+    for category, metrics in monitoring_guide.items():
+        print(f"\n{category}:")
+        for metric in metrics:
+            print(f"  • {metric}")
+    
+    print(f"\n💡 Pro Tips:")
+    print(f"  • Keep dashboard open during optimization experiments")
+    print(f"  • Compare resource usage between different configurations")
+    print(f"  • Use timeline view to identify bottlenecks")
+    print(f"  • Monitor object store to prevent memory issues")
+    
+    return dashboard_url
+
+dashboard_url = setup_dashboard_monitoring()
+```
 
 ## Overview
 
@@ -1833,17 +1902,17 @@ if torch.cuda.is_available():
 ### Key Takeaways
 
 **Critical Performance Factors:**
-1. **Model initialization strategy** has the highest impact on performance
-2. **Resource allocation** must match available hardware for optimal utilization
-3. **Batch size optimization** can provide 4-20x throughput improvements
-4. **Memory management** prevents costly failures and ensures stable performance
-5. **Monitoring and profiling** are essential for maintaining optimal performance
+1. **Model initialization strategy** has the highest impact on performance - use actors to load models once
+2. **Resource allocation** must match available hardware - check Ray Dashboard for utilization
+3. **Batch size optimization** can provide significant improvements - test systematically and monitor in dashboard
+4. **Memory management** prevents costly failures - monitor object store usage in dashboard
+5. **Dashboard monitoring** is essential for understanding performance - use Ray Dashboard for all detailed metrics
 
 **Ray Data's Optimization Advantages:**
 - **Automatic operator fusion** reduces pipeline overhead without manual tuning
-- **Intelligent resource scheduling** maximizes cluster utilization automatically
+- **Intelligent resource scheduling** maximizes cluster utilization automatically  
 - **Built-in memory management** prevents OOM errors in large-scale processing
-- **Comprehensive monitoring** provides detailed performance insights and debugging
+- **Ray Dashboard integration** provides detailed performance insights and debugging
 - **Production-ready patterns** with fault tolerance and enterprise observability
 
 **Business Impact of Optimization:**
@@ -1856,18 +1925,18 @@ if torch.cuda.is_available():
 ### Action Items
 
 **Immediate Optimization Tasks:**
-1. **Audit existing pipelines** using the diagnostic tools and patterns provided
-2. **Benchmark current performance** to establish baseline metrics for improvement
+1. **Audit existing pipelines** using simple timing and Ray Dashboard monitoring
+2. **Establish baseline performance** using execution time measurements
 3. **Apply model loading optimizations** to eliminate the most common performance bottleneck
-4. **Tune batch sizes systematically** using the optimization framework from this template
-5. **Implement performance monitoring** with alerts for degradation detection
+4. **Tune batch sizes systematically** while monitoring resource utilization in Ray Dashboard
+5. **Set up Ray Dashboard monitoring** for ongoing performance tracking and optimization
 
 **Production Deployment Actions:**
-1. **Configure monitoring dashboards** with throughput, latency, and resource utilization metrics
-2. **Set up automated alerting** for performance regressions and resource exhaustion
-3. **Document optimal configurations** for your specific models and hardware setup
-4. **Train team members** on optimization best practices and troubleshooting procedures
-5. **Establish performance baselines** and regular optimization review processes
+1. **Set up Ray Dashboard access** for your team with proper authentication and monitoring
+2. **Document optimal configurations** discovered through dashboard analysis and timing tests
+3. **Train team members** on Ray Dashboard navigation and performance optimization techniques
+4. **Establish performance baselines** using simple timing and dashboard trend analysis
+5. **Create alerting** based on Ray Dashboard metrics and cluster resource utilization
 
 **Advanced Optimization Goals:**
 1. **Explore Anyscale platform** for enterprise-grade performance monitoring and RayTurbo optimizations
@@ -1954,7 +2023,8 @@ def enable_debug_mode():
     debug_wrapper = DebugInferenceWrapper(problematic_inference, debug_level="DEBUG")
     
     # Test with debugging enabled
-    debug_metrics = optimizer.benchmark_operation(
+    print("\n🐛 Testing Debug Mode - Check logs and Ray Dashboard")
+    debug_result = performance_tracker.time_operation(
         "Debug Mode Test",
         lambda: optimization_dataset.limit(100).map_batches(
             debug_wrapper,
@@ -2114,7 +2184,8 @@ def implement_security_best_practices():
     secure_inference = security_manager.secure_inference_wrapper(basic_inference)
     
     # Test secure inference
-    security_metrics = optimizer.benchmark_operation(
+    print("\n🔒 Testing Secure Inference - Monitor logs for security events")
+    security_result = performance_tracker.time_operation(
         "Secure Inference",
         lambda: optimization_dataset.limit(100).map_batches(
             secure_inference,
@@ -2125,9 +2196,10 @@ def implement_security_best_practices():
     
     security_report = security_manager.get_security_report()
     print(f"\nSecurity Implementation Results:")
-    print(f"  Throughput: {security_metrics.throughput:.1f} records/sec")
+    print(f"  Execution time: {security_result['execution_time']:.2f} seconds")
     print(f"  Security events: {security_report['total_security_events']}")
     print(f"  Security status: {security_report['security_status']}")
+    print(f"📊 Ray Dashboard shows: task execution with security overhead")
     
     return security_manager
 
@@ -2439,54 +2511,39 @@ anyscale_integration = demonstrate_anyscale_integration()
 def generate_final_optimization_report():
     """Generate comprehensive final report and clean up resources."""
     try:
-        # Generate detailed performance report
+        # Generate simple performance summary
         print("\n" + "="*80)
-        print("FINAL OPTIMIZATION REPORT")
+        print("OPTIMIZATION EXPERIMENT SUMMARY")
         print("="*80)
         
-        # Calculate total improvements
-        if optimizer.metrics_history:
-            best_performance = max(optimizer.metrics_history, key=lambda m: m.throughput)
-            baseline = optimizer.baseline_performance
-            
-            if baseline and baseline.throughput > 0:
-                total_improvement = (best_performance.throughput - baseline.throughput) / baseline.throughput * 100
-                cost_savings = min(80, total_improvement * 0.8)  # Estimate cost savings
-                
-                print(f"Performance Improvements Achieved:")
-                print(f"  Baseline throughput: {baseline.throughput:.1f} records/sec")
-                print(f"  Optimized throughput: {best_performance.throughput:.1f} records/sec")
-                print(f"  Total improvement: {total_improvement:.1f}%")
-                print(f"  Estimated cost savings: {cost_savings:.1f}%")
-                print(f"  Best configuration: batch_size={best_performance.batch_size}, concurrency={best_performance.concurrency}")
+        # Use simple performance tracker results
+        performance_tracker.generate_summary()
         
-        # Display optimization lessons learned
-        print(f"\nKey Optimization Lessons:")
-        print(f"1. Model loading optimization provides the largest performance gains")
-        print(f"2. Batch size tuning is critical for GPU utilization")
+        print(f"\n🔍 For Detailed Performance Analysis:")
+        print(f"📊 Ray Dashboard: {ray.get_dashboard_url()}")
+        print(f"   • Task execution timelines and resource usage")
+        print(f"   • Memory allocation and object store statistics") 
+        print(f"   • GPU utilization and compute efficiency")
+        print(f"   • Ray Data execution plans and operator fusion")
+        
+        print(f"\n💡 Key Dashboard Views for Optimization:")
+        print(f"   • Jobs tab: See task distribution and execution times")
+        print(f"   • Cluster tab: Monitor resource utilization across nodes")
+        print(f"   • Logs tab: Check for errors and performance warnings")
+        print(f"   • Metrics tab: Track throughput and latency over time")
+        
+        print(f"\n📈 Optimization Lessons Learned:")
+        print(f"1. Model loading optimization typically provides the largest gains")
+        print(f"2. Batch size tuning is critical for GPU/CPU utilization")
         print(f"3. Concurrency must match available hardware resources")
-        print(f"4. Memory management prevents costly production failures")
-        print(f"5. Continuous monitoring ensures sustained performance")
-        
-        # Production readiness checklist
-        print(f"\nProduction Readiness Status:")
-        checklist = [
-            ("Environment setup", "✅ Complete"),
-            ("Performance monitoring", "✅ Implemented"),
-            ("Optimization framework", "✅ Ready"),
-            ("Error handling", "✅ Robust"),
-            ("Resource management", "✅ Configured"),
-            ("Documentation", "✅ Comprehensive")
-        ]
-        
-        for item, status in checklist:
-            print(f"  {item}: {status}")
+        print(f"4. Ray Dashboard provides all the detailed metrics you need")
+        print(f"5. Simple timing + dashboard monitoring is more reliable than complex metrics")
         
         print(f"\n🎯 Next Steps:")
         print(f"  • Apply these optimizations to your production models")
-        print(f"  • Set up continuous performance monitoring")
-        print(f"  • Document optimal configurations for your team")
-        print(f"  • Consider Anyscale platform for enterprise features")
+        print(f"  • Use Ray Dashboard for ongoing performance monitoring")
+        print(f"  • Document optimal configurations based on dashboard insights")
+        print(f"  • Consider Anyscale platform for enterprise observability")
         
     except Exception as e:
         logger.error(f"Report generation failed: {e}")
