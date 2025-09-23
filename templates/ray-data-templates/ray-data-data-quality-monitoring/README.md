@@ -198,55 +198,25 @@ def create_quality_dashboard(dataset, sample_size=1000):
     ax_income.legend()
     ax_income.grid(True, alpha=0.3)
     
-    # 5. Category Distribution
-    ax_category = fig.add_subplot(gs[2, :2])
+    # Simple quality analysis and display
+    print("\nData Quality Analysis Results:")
+    print(f"Total records: {len(df):,}")
+    print(f"Complete records: {df.dropna().shape[0]:,}")
+    print(f"Data completeness: {(df.dropna().shape[0] / len(df) * 100):.1f}%")
+    
+    # Category distribution
     category_counts = df['category'].value_counts()
-    colors = plt.cm.Set3(np.linspace(0, 1, len(category_counts)))
+    print(f"\nCategory distribution:")
+    for category, count in category_counts.items():
+        print(f"  {category}: {count:,} ({count/len(df)*100:.1f}%)")
     
-    wedges, texts, autotexts = ax_category.pie(category_counts.values, labels=category_counts.index, 
-                                              autopct='%1.1f%%', colors=colors, startangle=90)
-    ax_category.set_title('Customer Category Distribution', fontsize=12, fontweight='bold')
-    
-    # 6. Score Distribution
-    ax_score = fig.add_subplot(gs[2, 2:])
-    valid_scores = df['score'].dropna()
-    ax_score.hist(valid_scores, bins=20, color='orange', alpha=0.7, edgecolor='black')
-    ax_score.axvline(valid_scores.mean(), color='red', linestyle='--', linewidth=2,
-                    label=f'Mean: {valid_scores.mean():.1f}')
-    ax_score.set_title('Customer Score Distribution', fontsize=12, fontweight='bold')
-    ax_score.set_xlabel('Score')
-    ax_score.set_ylabel('Frequency')
-    ax_score.legend()
-    ax_score.grid(True, alpha=0.3)
-    
-    # 7. Data Quality Score by Category
-    ax_quality = fig.add_subplot(gs[3, :2])
-    quality_by_category = df.groupby('category').apply(
-        lambda x: (x['age'].notna().sum() + x['income'].notna().sum() + 
-                  x['email'].str.contains('@', na=False).sum()) / (len(x) * 3) * 100
-    )
-    
-    bars = ax_quality.bar(range(len(quality_by_category)), quality_by_category.values,
-                         color=['#FF6B6B' if x < 70 else '#4ECDC4' if x < 90 else '#96CEB4' 
-                               for x in quality_by_category.values])
-    ax_quality.set_title('Data Quality Score by Category', fontsize=12, fontweight='bold')
-    ax_quality.set_ylabel('Quality Score (%)')
-    ax_quality.set_xticks(range(len(quality_by_category)))
-    ax_quality.set_xticklabels(quality_by_category.index, rotation=45)
-    ax_quality.set_ylim(0, 100)
-    
-    # Add quality score labels
-    for bar, score in zip(bars, quality_by_category.values):
-        height = bar.get_height()
-        ax_quality.text(bar.get_x() + bar.get_width()/2., height + 1,
-                       f'{score:.1f}%', ha='center', va='bottom', fontweight='bold')
-    
-    # 8. Sample Data Table
-    ax_table = fig.add_subplot(gs[3, 2:])
-    ax_table.axis('off')
-    
-    # Create sample data table
-    sample_df = df.head(8)[['customer_id', 'age', 'income', 'category', 'score']].copy()
+    # Quality metrics by category
+    print(f"\nQuality metrics by category:")
+    for category in df['category'].unique():
+        if pd.notna(category):
+            cat_data = df[df['category'] == category]
+            completeness = cat_data.dropna().shape[0] / len(cat_data) * 100
+            print(f"  {category}: {completeness:.1f}% complete")
     sample_df['age'] = sample_df['age'].fillna('NULL')
     sample_df['income'] = sample_df['income'].fillna('NULL')
     sample_df['income'] = sample_df['income'].apply(lambda x: f"${x:,.0f}" if x != 'NULL' else 'NULL')

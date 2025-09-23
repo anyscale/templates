@@ -263,49 +263,46 @@ def validate_data_quality(dataset: ray.data.Dataset, dataset_name: str) -> Dict[
 ### Performance Optimization
 
 ```python
-def optimize_batch_processing(dataset: ray.data.Dataset) -> Dict[str, Any]:
-    """Demonstrate batch size optimization for different operations."""
-    batch_sizes = [100, 500, 1000, 2000]
-    results = {}
+def demonstrate_batch_optimization(dataset: ray.data.Dataset):
+    """Demonstrate optimal batch processing with Ray Data."""
     
-    for batch_size in batch_sizes:
-        start_time = time.time()
-        test_ds = dataset.map_batches(
-            lambda batch: batch, 
-            batch_size=batch_size
-        )
-        result = test_ds.take(100)
-        execution_time = time.time() - start_time
-        
-        results[f"batch_{batch_size}"] = {
-            'execution_time': execution_time,
-            'throughput': len(result) / execution_time if execution_time > 0 else 0
-        }
+    def efficient_transform(batch):
+        """Efficient batch transformation example."""
+        df = pd.DataFrame(batch)
+        df['processed_value'] = df.get('income', [0] * len(batch)) * 1.1
+        return df.to_dict('records')
     
-    return results
+    # Demonstrate optimized batch processing
+    print("Testing batch processing optimization...")
+    start_time = time.time()
+    
+    optimized_result = dataset.map_batches(
+        efficient_transform,
+        batch_size=1000,  # Optimal batch size
+        concurrency=4     # Balanced concurrency
+    ).take(100)
+    
+    execution_time = time.time() - start_time
+    print(f"Batch processing completed in {execution_time:.2f} seconds")
+    print("Check Ray Dashboard for task distribution and resource utilization")
+    
+    return optimized_result
 ```
 
 ### Resource Monitoring
 
 ```python
-def monitor_cluster_resources() -> Dict[str, Any]:
-    """Monitor current cluster resource utilization."""
-    try:
-        resources = ray.cluster_resources()
-        nodes = ray.nodes()
-        
-        monitoring_data = {
-            'timestamp': datetime.now().isoformat(),
-            'total_cpus': resources.get('CPU', 0),
-            'total_memory_gb': resources.get('memory', 0) / (1024**3),
-            'num_nodes': len(nodes),
-            'dashboard_url': ray.get_dashboard_url()
-        }
-        
-        return monitoring_data
-        
-    except Exception as e:
-        return {'error': str(e)}
+def show_cluster_resources():
+    """Display cluster resources for monitoring."""
+    resources = ray.cluster_resources()
+    
+    print("Current cluster resources:")
+    print(f"  CPUs: {resources.get('CPU', 0)}")
+    print(f"  Memory: {resources.get('memory', 0) / (1024**3):.1f} GB")
+    print(f"  Object Store: {resources.get('object_store_memory', 0) / (1024**3):.1f} GB")
+    print(f"Ray Dashboard: {ray.get_dashboard_url()}")
+    
+    return resources
 ```
 
 ## Production Deployment
