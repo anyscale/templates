@@ -5,7 +5,7 @@ This collection contains comprehensive Ray Data templates that demonstrate distr
 ## Available Templates
 
 ### **Data Processing and ETL**
-- **[tpch-etl-ray-data](./tpch_etl_ray_data/)**: Comprehensive TPC-H ETL pipeline with enterprise patterns and optimization
+- **[ray-data-etl-tpch](./ray-data-etl-tpch/)**: Comprehensive TPC-H ETL pipeline with enterprise patterns and optimization
 - **[batch-inference-optimization](./ray-data-batch-inference-optimization/)**: Advanced optimization techniques for ML batch inference workloads
 - **[large-scale-etl-optimization](./ray-data-large-scale-etl-optimization/)**: Enterprise ETL pipeline optimization and performance tuning
 - **[data-quality-monitoring](./ray-data-data-quality-monitoring/)**: Automated data quality validation and monitoring systems

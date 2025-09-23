@@ -1,4 +1,4 @@
-# Enterprise ETL pipelines with Ray Data
+# TPC-H ETL benchmark with Ray Data
 
 **⏱️ Time to complete**: 35 min | **Difficulty**: Intermediate | **Prerequisites**: Python, data processing experience
 
