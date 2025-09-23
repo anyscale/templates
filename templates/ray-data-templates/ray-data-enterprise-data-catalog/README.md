@@ -1,6 +1,6 @@
 # Enterprise data catalog and discovery with Ray Data
 
-**⏱️ Time to complete**: 30 min | **Difficulty**: Intermediate | **Prerequisites**: Understanding of data management, metadata concepts
+**Time to complete**: 30 min | **Difficulty**: Intermediate | **Prerequisites**: Understanding of data management, metadata concepts
 
 ## What You'll Build
 
@@ -78,9 +78,9 @@ pip install matplotlib seaborn plotly
 - Network connectivity for accessing distributed data sources
 
 **Cross-Platform Support** (rule #197):
-- ✅ Linux (Ubuntu 18.04+, CentOS 7+)
-- ✅ macOS (10.14+) 
-- ✅ Windows 10+ (WSL2 recommended)
+- Linux (Ubuntu 18.04+, CentOS 7+)
+- macOS (10.14+) 
+- Windows 10+ (WSL2 recommended)
 
 ---
 

@@ -1,6 +1,6 @@
 # Financial time series forecasting with Ray Data
 
-**⏱️ Time to complete**: 30 min | **Difficulty**: Intermediate | **Prerequisites**: Basic finance knowledge, understanding of time series data
+**Time to complete**: 30 min | **Difficulty**: Intermediate | **Prerequisites**: Basic finance knowledge, understanding of time series data
 
 ## What You'll Build
 
@@ -2126,7 +2126,7 @@ risk_results = run_risk_analysis(enhanced_financial_data)
 - **Performance Monitoring**: Track model accuracy and financial performance metrics
 - **Regulatory Compliance**: Ensure all calculations meet financial industry standards
 
-**🚨 Common Pitfalls to Avoid**
+**Common Pitfalls to Avoid**
 - **Look-ahead Bias**: Never use future information in historical analysis
 - **Overfitting**: Validate models on out-of-sample data
 - **Ignoring Transaction Costs**: Include realistic trading costs in backtesting

@@ -1,6 +1,6 @@
 # NLP text analytics with Ray Data
 
-**⏱️ Time to complete**: 30 min | **Difficulty**: Intermediate | **Prerequisites**: Basic Python, familiarity with text processing
+**Time to complete**: 30 min | **Difficulty**: Intermediate | **Prerequisites**: Basic Python, familiarity with text processing
 
 ## What You'll Build
 

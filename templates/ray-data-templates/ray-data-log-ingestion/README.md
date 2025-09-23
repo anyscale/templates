@@ -1,6 +1,6 @@
 # Log analytics and security monitoring with Ray Data
 
-**⏱️ Time to complete**: 30 min | **Difficulty**: Intermediate | **Prerequisites**: Understanding of log files, basic security concepts
+**Time to complete**: 30 min | **Difficulty**: Intermediate | **Prerequisites**: Understanding of log files, basic security concepts
 
 ## What You'll Build
 

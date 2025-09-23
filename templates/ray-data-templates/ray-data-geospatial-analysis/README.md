@@ -1,6 +1,6 @@
 # Geospatial data analysis with Ray Data
 
-**⏱️ Time to complete**: 25 min | **Difficulty**: Intermediate | **Prerequisites**: Basic Python, understanding of coordinates
+**Time to complete**: 25 min | **Difficulty**: Intermediate | **Prerequisites**: Basic Python, understanding of coordinates
 
 ## What You'll Build
 

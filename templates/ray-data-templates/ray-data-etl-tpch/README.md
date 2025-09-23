@@ -1,6 +1,6 @@
 # TPC-H ETL benchmark with Ray Data
 
-**⏱️ Time to complete**: 35 min | **Difficulty**: Intermediate | **Prerequisites**: Python, data processing experience
+**Time to complete**: 35 min | **Difficulty**: Intermediate | **Prerequisites**: Python, data processing experience
 
 This comprehensive template demonstrates building production-ready ETL (Extract, Transform, Load) pipelines using Ray Data with the industry-standard TPC-H benchmark dataset. Learn how to process enterprise-scale data efficiently across distributed clusters.
 

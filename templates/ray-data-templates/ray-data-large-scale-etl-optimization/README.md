@@ -1,6 +1,6 @@
 # Large-scale ETL optimization with Ray Data
 
-**⏱️ Time to complete**: 35 min | **Difficulty**: Intermediate | **Prerequisites**: Understanding of ETL concepts, data processing experience
+**Time to complete**: 35 min | **Difficulty**: Intermediate | **Prerequisites**: Understanding of ETL concepts, data processing experience
 
 ## What You'll Build
 

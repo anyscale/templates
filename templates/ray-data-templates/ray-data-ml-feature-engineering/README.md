@@ -1,6 +1,6 @@
 # ML feature engineering with Ray Data
 
-**⏱️ Time to complete**: 35 min | **Difficulty**: Intermediate | **Prerequisites**: ML experience, understanding of data preprocessing
+**Time to complete**: 35 min | **Difficulty**: Intermediate | **Prerequisites**: ML experience, understanding of data preprocessing
 
 ## What You'll Build
 

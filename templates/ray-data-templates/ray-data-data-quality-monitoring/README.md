@@ -1,6 +1,6 @@
 # Data quality monitoring and validation with Ray Data
 
-**⏱️ Time to complete**: 25 min | **Difficulty**: Intermediate | **Prerequisites**: Data engineering experience, understanding of data quality concepts
+**Time to complete**: 25 min | **Difficulty**: Intermediate | **Prerequisites**: Data engineering experience, understanding of data quality concepts
 
 ## What You'll Build
 

@@ -1,6 +1,6 @@
 # Multimodal AI pipeline with Ray Data
 
-**⏱️ Time to complete**: 30 min | **Difficulty**: Advanced | **Prerequisites**: ML experience, understanding of computer vision and NLP
+**Time to complete**: 30 min | **Difficulty**: Advanced | **Prerequisites**: ML experience, understanding of computer vision and NLP
 
 ## What You'll Build
 

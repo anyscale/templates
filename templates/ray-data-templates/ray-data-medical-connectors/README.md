@@ -1,6 +1,6 @@
 # Medical data processing and HIPAA compliance with Ray Data
 
-**⏱️ Time to complete**: 35 min | **Difficulty**: Advanced | **Prerequisites**: Healthcare data familiarity, Python experience, HIPAA compliance knowledge
+**Time to complete**: 35 min | **Difficulty**: Advanced | **Prerequisites**: Healthcare data familiarity, Python experience, HIPAA compliance knowledge
 
 ## What You'll Build
 
@@ -334,7 +334,7 @@ anonymized_data = patient_data.map_batches(
 
 ### **Healthcare Data Processing Use Cases: Real-World Applications**
 
-**🚨 Emergency Department Analytics**
+**Emergency Department Analytics**
 - **Data Sources**: Real-time HL7 messages, vital signs, lab results, imaging orders
 - **Processing Challenge**: Sub-second processing for critical patient decisions
 - **Ray Data Solution**: Streaming medical data processing with automated clinical alerts
