@@ -1876,6 +1876,563 @@ if torch.cuda.is_available():
 4. **Scale to multi-cluster deployments** for massive inference workloads
 5. **Contribute optimizations** back to the Ray community for broader benefit
 
+### Debug Mode and Troubleshooting Tools
+
+```python
+def enable_debug_mode():
+    """Enable comprehensive debugging for inference optimization."""
+    
+    class DebugInferenceWrapper:
+        """Wrapper that adds debugging capabilities to any inference function."""
+        
+        def __init__(self, inference_func, debug_level: str = "INFO"):
+            self.inference_func = inference_func
+            self.debug_level = debug_level
+            self.call_count = 0
+            self.error_count = 0
+            self.timing_history = []
+        
+        def __call__(self, batch: Dict[str, Any]) -> Dict[str, Any]:
+            """Wrapped inference with comprehensive debugging."""
+            self.call_count += 1
+            call_start = time.time()
+            
+            try:
+                # Log batch information
+                if self.debug_level in ["DEBUG", "VERBOSE"]:
+                    logger.debug(f"Processing batch {self.call_count}: {len(batch.get('features', []))} samples")
+                    logger.debug(f"Memory before: {psutil.virtual_memory().used / (1024**3):.2f}GB")
+                
+                # Execute actual inference
+                result = self.inference_func(batch)
+                
+                # Log results
+                call_time = time.time() - call_start
+                self.timing_history.append(call_time)
+                
+                if self.debug_level in ["DEBUG", "VERBOSE"]:
+                    logger.debug(f"Batch {self.call_count} completed in {call_time:.3f}s")
+                    logger.debug(f"Memory after: {psutil.virtual_memory().used / (1024**3):.2f}GB")
+                
+                return result
+                
+            except Exception as e:
+                self.error_count += 1
+                logger.error(f"Batch {self.call_count} failed: {str(e)}")
+                
+                if self.debug_level == "VERBOSE":
+                    import traceback
+                    logger.error(f"Full traceback: {traceback.format_exc()}")
+                
+                # Return empty result to continue processing
+                return {'predictions': [], 'errors': [str(e)]}
+        
+        def get_debug_stats(self) -> Dict[str, Any]:
+            """Get debugging statistics."""
+            return {
+                'total_calls': self.call_count,
+                'error_count': self.error_count,
+                'error_rate': self.error_count / max(1, self.call_count),
+                'avg_call_time': sum(self.timing_history) / max(1, len(self.timing_history)),
+                'timing_history': self.timing_history[-10:]  # Last 10 calls
+            }
+    
+    # Example: Debug a problematic inference function
+    def problematic_inference(batch: Dict[str, Any]) -> Dict[str, Any]:
+        """Simulate an inference function with issues."""
+        # Simulate random failures for debugging
+        if np.random.random() < 0.1:  # 10% failure rate
+            raise ValueError("Simulated inference failure")
+        
+        # Simulate variable processing time
+        processing_time = np.random.uniform(0.1, 0.5)
+        time.sleep(processing_time)  # Simulate actual computation work
+        
+        return {'predictions': [1] * len(batch['features'])}
+    
+    # Wrap with debugging
+    debug_wrapper = DebugInferenceWrapper(problematic_inference, debug_level="DEBUG")
+    
+    # Test with debugging enabled
+    debug_metrics = optimizer.benchmark_operation(
+        "Debug Mode Test",
+        lambda: optimization_dataset.limit(100).map_batches(
+            debug_wrapper,
+            batch_size=16,
+            concurrency=2
+        ).take(50)
+    )
+    
+    # Display debug statistics
+    debug_stats = debug_wrapper.get_debug_stats()
+    print(f"\nDebug Mode Results:")
+    print(f"  Total function calls: {debug_stats['total_calls']}")
+    print(f"  Error count: {debug_stats['error_count']}")
+    print(f"  Error rate: {debug_stats['error_rate']:.1%}")
+    print(f"  Average call time: {debug_stats['avg_call_time']:.3f}s")
+    
+    return debug_wrapper
+
+debug_tools = enable_debug_mode()
+```
+
+### Security and Compliance Considerations
+
+```python
+def implement_security_best_practices():
+    """Implement security best practices for production inference."""
+    
+    class SecureInferenceManager:
+        """Security-enhanced inference manager for production deployment."""
+        
+        def __init__(self, 
+                     enable_input_validation: bool = True,
+                     enable_output_sanitization: bool = True,
+                     log_security_events: bool = True):
+            self.enable_input_validation = enable_input_validation
+            self.enable_output_sanitization = enable_output_sanitization
+            self.log_security_events = log_security_events
+            self.security_events = []
+        
+        def validate_input_security(self, batch: Dict[str, Any]) -> Tuple[bool, str]:
+            """Validate input for security concerns."""
+            try:
+                # Check batch size limits (prevent DoS)
+                if len(batch.get('features', [])) > 1000:
+                    return False, "Batch size exceeds security limit"
+                
+                # Validate feature dimensions (prevent injection)
+                for features in batch.get('features', []):
+                    if not isinstance(features, np.ndarray):
+                        return False, "Invalid feature type"
+                    if features.shape != (512,):
+                        return False, "Feature dimension mismatch"
+                    if np.any(np.abs(features) > 100):
+                        return False, "Feature values outside expected range"
+                
+                # Check for malicious content in text (if present)
+                if 'text' in batch:
+                    for text in batch['text']:
+                        if len(text) > 10000:  # Prevent extremely long inputs
+                            return False, "Text input too long"
+                        if any(suspicious in text.lower() for suspicious in ['<script>', 'javascript:', 'eval(']):
+                            return False, "Suspicious content detected"
+                
+                return True, "Input validation passed"
+                
+            except Exception as e:
+                return False, f"Validation error: {str(e)}"
+        
+        def sanitize_output(self, result: Dict[str, Any]) -> Dict[str, Any]:
+            """Sanitize output to prevent information leakage."""
+            try:
+                sanitized = {}
+                
+                # Only include expected fields
+                allowed_fields = ['predictions', 'confidences', 'metadata']
+                for field in allowed_fields:
+                    if field in result:
+                        sanitized[field] = result[field]
+                
+                # Remove any debug information that might leak internal state
+                if 'metadata' in sanitized:
+                    metadata = sanitized['metadata']
+                    if isinstance(metadata, dict):
+                        # Remove sensitive metadata
+                        safe_metadata = {k: v for k, v in metadata.items() 
+                                      if k not in ['model_path', 'internal_state', 'debug_info']}
+                        sanitized['metadata'] = safe_metadata
+                
+                return sanitized
+                
+            except Exception as e:
+                logger.error(f"Output sanitization failed: {e}")
+                return {'predictions': [], 'error': 'Output sanitization failed'}
+        
+        def secure_inference_wrapper(self, inference_func):
+            """Create secure wrapper for inference functions."""
+            
+            def secure_inference(batch: Dict[str, Any]) -> Dict[str, Any]:
+                """Secure inference with input validation and output sanitization."""
+                
+                # Input validation
+                if self.enable_input_validation:
+                    is_valid, validation_msg = self.validate_input_security(batch)
+                    if not is_valid:
+                        if self.log_security_events:
+                            security_event = {
+                                'timestamp': datetime.now().isoformat(),
+                                'event_type': 'input_validation_failed',
+                                'message': validation_msg,
+                                'batch_size': len(batch.get('features', []))
+                            }
+                            self.security_events.append(security_event)
+                            logger.warning(f"Security validation failed: {validation_msg}")
+                        
+                        return {'predictions': [], 'error': 'Input validation failed'}
+                
+                # Execute inference
+                try:
+                    result = inference_func(batch)
+                except Exception as e:
+                    if self.log_security_events:
+                        security_event = {
+                            'timestamp': datetime.now().isoformat(),
+                            'event_type': 'inference_error',
+                            'message': str(e),
+                            'batch_size': len(batch.get('features', []))
+                        }
+                        self.security_events.append(security_event)
+                    
+                    logger.error(f"Secure inference failed: {e}")
+                    return {'predictions': [], 'error': 'Inference failed'}
+                
+                # Output sanitization
+                if self.enable_output_sanitization:
+                    result = self.sanitize_output(result)
+                
+                return result
+            
+            return secure_inference
+        
+        def get_security_report(self) -> Dict[str, Any]:
+            """Generate security audit report."""
+            return {
+                'total_security_events': len(self.security_events),
+                'event_types': list(set(event['event_type'] for event in self.security_events)),
+                'recent_events': self.security_events[-5:],  # Last 5 events
+                'security_status': 'SECURE' if len(self.security_events) == 0 else 'ATTENTION_REQUIRED'
+            }
+    
+    # Test secure inference
+    security_manager = SecureInferenceManager()
+    
+    def basic_inference(batch: Dict[str, Any]) -> Dict[str, Any]:
+        """Basic inference for security testing."""
+        return {'predictions': [1] * len(batch['features'])}
+    
+    secure_inference = security_manager.secure_inference_wrapper(basic_inference)
+    
+    # Test secure inference
+    security_metrics = optimizer.benchmark_operation(
+        "Secure Inference",
+        lambda: optimization_dataset.limit(100).map_batches(
+            secure_inference,
+            batch_size=32,
+            concurrency=2
+        ).take(50)
+    )
+    
+    security_report = security_manager.get_security_report()
+    print(f"\nSecurity Implementation Results:")
+    print(f"  Throughput: {security_metrics.throughput:.1f} records/sec")
+    print(f"  Security events: {security_report['total_security_events']}")
+    print(f"  Security status: {security_report['security_status']}")
+    
+    return security_manager
+
+security_manager = implement_security_best_practices()
+```
+
+### Advanced Production Patterns
+
+```python
+def implement_advanced_production_patterns():
+    """Implement advanced patterns for enterprise production deployment."""
+    
+    class EnterpriseInferenceOrchestrator:
+        """Enterprise-grade inference orchestration with all production features."""
+        
+        def __init__(self):
+            self.performance_targets = {
+                'min_throughput': 100,      # Minimum acceptable throughput
+                'max_latency_p95': 5.0,     # Maximum P95 latency in seconds
+                'max_error_rate': 0.01,     # Maximum 1% error rate
+                'min_gpu_utilization': 60   # Minimum GPU utilization %
+            }
+            self.circuit_breaker_threshold = 5  # Failures before circuit break
+            self.circuit_breaker_count = 0
+            self.circuit_breaker_open = False
+        
+        def circuit_breaker_check(self) -> bool:
+            """Implement circuit breaker pattern for fault tolerance."""
+            if self.circuit_breaker_open:
+                logger.warning("Circuit breaker is open - blocking requests")
+                return False
+            return True
+        
+        def record_failure(self):
+            """Record failure for circuit breaker."""
+            self.circuit_breaker_count += 1
+            if self.circuit_breaker_count >= self.circuit_breaker_threshold:
+                self.circuit_breaker_open = True
+                logger.critical("Circuit breaker opened due to repeated failures")
+        
+        def record_success(self):
+            """Record success and potentially close circuit breaker."""
+            self.circuit_breaker_count = max(0, self.circuit_breaker_count - 1)
+            if self.circuit_breaker_count == 0:
+                self.circuit_breaker_open = False
+        
+        def enterprise_inference_pipeline(self, 
+                                        dataset: ray.data.Dataset,
+                                        inference_func,
+                                        config: Dict[str, Any]) -> Dict[str, Any]:
+            """Execute inference with enterprise patterns."""
+            
+            # Pre-flight checks
+            if not self.circuit_breaker_check():
+                return {'status': 'failed', 'reason': 'circuit_breaker_open'}
+            
+            # Health check before processing
+            health_check = self.perform_health_check()
+            if not health_check['healthy']:
+                return {'status': 'failed', 'reason': 'health_check_failed', 'details': health_check}
+            
+            try:
+                # Execute with monitoring
+                start_time = time.time()
+                
+                result = dataset.map_batches(
+                    inference_func,
+                    batch_size=config.get('batch_size', 64),
+                    concurrency=config.get('concurrency', 4),
+                    num_gpus=config.get('num_gpus', 0),
+                    compute=ray.data.ActorPoolStrategy(size=config.get('actor_pool_size', 2))
+                ).take(config.get('sample_size', 1000))
+                
+                execution_time = time.time() - start_time
+                throughput = len(result) / execution_time if execution_time > 0 else 0
+                
+                # Validate against performance targets
+                performance_check = self.validate_performance_targets(throughput, execution_time)
+                
+                if performance_check['meets_targets']:
+                    self.record_success()
+                    return {
+                        'status': 'success',
+                        'throughput': throughput,
+                        'execution_time': execution_time,
+                        'result_count': len(result),
+                        'performance_validation': performance_check
+                    }
+                else:
+                    self.record_failure()
+                    return {
+                        'status': 'degraded_performance',
+                        'throughput': throughput,
+                        'performance_issues': performance_check['issues']
+                    }
+                
+            except Exception as e:
+                self.record_failure()
+                logger.error(f"Enterprise inference pipeline failed: {e}")
+                return {'status': 'failed', 'error': str(e)}
+        
+        def perform_health_check(self) -> Dict[str, Any]:
+            """Comprehensive health check for inference system."""
+            health_status = {'healthy': True, 'checks': {}}
+            
+            # Check Ray cluster health
+            try:
+                cluster_resources = ray.cluster_resources()
+                available_cpus = cluster_resources.get('CPU', 0)
+                available_memory = cluster_resources.get('memory', 0)
+                
+                health_status['checks']['ray_cluster'] = {
+                    'status': 'healthy' if available_cpus > 0 else 'unhealthy',
+                    'available_cpus': available_cpus,
+                    'available_memory_gb': available_memory / (1024**3)
+                }
+                
+                if available_cpus == 0:
+                    health_status['healthy'] = False
+                
+            except Exception as e:
+                health_status['healthy'] = False
+                health_status['checks']['ray_cluster'] = {'status': 'error', 'error': str(e)}
+            
+            # Check GPU health (if available)
+            if torch.cuda.is_available():
+                try:
+                    gpu_count = torch.cuda.device_count()
+                    gpu_memory = torch.cuda.get_device_properties(0).total_memory / (1024**3)
+                    
+                    health_status['checks']['gpu'] = {
+                        'status': 'healthy',
+                        'gpu_count': gpu_count,
+                        'gpu_memory_gb': gpu_memory
+                    }
+                except Exception as e:
+                    health_status['checks']['gpu'] = {'status': 'error', 'error': str(e)}
+            
+            # Check system memory
+            memory_percent = psutil.virtual_memory().percent
+            health_status['checks']['system_memory'] = {
+                'status': 'healthy' if memory_percent < 90 else 'warning',
+                'usage_percent': memory_percent
+            }
+            
+            if memory_percent > 95:
+                health_status['healthy'] = False
+            
+            return health_status
+        
+        def validate_performance_targets(self, throughput: float, latency: float) -> Dict[str, Any]:
+            """Validate performance against enterprise targets."""
+            issues = []
+            
+            if throughput < self.performance_targets['min_throughput']:
+                issues.append(f"Throughput {throughput:.1f} below target {self.performance_targets['min_throughput']}")
+            
+            if latency > self.performance_targets['max_latency_p95']:
+                issues.append(f"Latency {latency:.2f}s exceeds target {self.performance_targets['max_latency_p95']}s")
+            
+            return {
+                'meets_targets': len(issues) == 0,
+                'issues': issues,
+                'performance_score': max(0, 100 - len(issues) * 25)
+            }
+    
+    # Test enterprise patterns
+    enterprise_orchestrator = EnterpriseInferenceOrchestrator()
+    
+    enterprise_config = {
+        'batch_size': 64,
+        'concurrency': 4,
+        'num_gpus': 1 if torch.cuda.is_available() else 0,
+        'actor_pool_size': 2,
+        'sample_size': 500
+    }
+    
+    def production_inference(batch: Dict[str, Any]) -> Dict[str, Any]:
+        """Production-ready inference function."""
+        return {'predictions': [np.random.randint(0, 1000) for _ in batch['features']]}
+    
+    enterprise_result = enterprise_orchestrator.enterprise_inference_pipeline(
+        optimization_dataset,
+        production_inference,
+        enterprise_config
+    )
+    
+    print(f"\nEnterprise Pattern Results:")
+    print(f"  Status: {enterprise_result['status']}")
+    if enterprise_result['status'] == 'success':
+        print(f"  Throughput: {enterprise_result['throughput']:.1f} records/sec")
+        print(f"  Performance score: {enterprise_result['performance_validation']['performance_score']}")
+
+implement_advanced_production_patterns()
+```
+
+### Anyscale Platform Integration
+
+```python
+def demonstrate_anyscale_integration():
+    """Show how to leverage Anyscale platform for enterprise inference optimization."""
+    
+    print("="*70)
+    print("ANYSCALE PLATFORM INTEGRATION")
+    print("="*70)
+    
+    # Anyscale-specific optimizations and features
+    anyscale_features = {
+        'rayturbo_optimizations': {
+            'description': 'RayTurbo runtime provides up to 5.1x performance improvements',
+            'benefits': [
+                'Automatic memory optimization',
+                'Advanced operator fusion',
+                'Intelligent scheduling',
+                'Zero-copy optimizations'
+            ]
+        },
+        'enterprise_monitoring': {
+            'description': 'Advanced observability and monitoring capabilities',
+            'features': [
+                'Real-time performance dashboards',
+                'Cost tracking and optimization',
+                'SLA monitoring and alerting',
+                'Resource utilization analytics'
+            ]
+        },
+        'governance_controls': {
+            'description': 'Enterprise governance and compliance features',
+            'capabilities': [
+                'Resource quotas and limits',
+                'Access control and authentication',
+                'Audit logging and compliance',
+                'Multi-tenant isolation'
+            ]
+        },
+        'auto_scaling': {
+            'description': 'Intelligent auto-scaling based on workload demands',
+            'features': [
+                'Predictive scaling algorithms',
+                'Cost-aware scaling decisions',
+                'Multi-zone high availability',
+                'Spot instance optimization'
+            ]
+        }
+    }
+    
+    # Display Anyscale advantages
+    print("Anyscale Platform Advantages for Inference Optimization:")
+    for feature_name, feature_info in anyscale_features.items():
+        print(f"\n{feature_name.replace('_', ' ').title()}:")
+        print(f"  {feature_info['description']}")
+        
+        key = 'benefits' if 'benefits' in feature_info else 'features' if 'features' in feature_info else 'capabilities'
+        for item in feature_info[key]:
+            print(f"    • {item}")
+    
+    # Production deployment configuration for Anyscale
+    anyscale_config = {
+        'cluster_config': {
+            'head_node_type': 'm5.2xlarge',
+            'worker_node_types': ['g4dn.2xlarge'],  # GPU nodes for inference
+            'min_workers': 2,
+            'max_workers': 10,
+            'auto_scaling': True
+        },
+        'inference_config': {
+            'batch_size': 128,              # Optimized for GPU memory
+            'concurrency': 'auto',          # Let Anyscale optimize
+            'enable_rayturbo': True,        # Enable RayTurbo optimizations
+            'monitoring_level': 'detailed'   # Full observability
+        },
+        'governance': {
+            'resource_limits': {
+                'max_gpu_hours_per_day': 100,
+                'max_cpu_hours_per_day': 500
+            },
+            'access_control': {
+                'require_authentication': True,
+                'allowed_users': ['ml-team', 'data-scientists']
+            }
+        }
+    }
+    
+    print(f"\n\nRecommended Anyscale Configuration:")
+    print(f"Cluster: {anyscale_config['cluster_config']}")
+    print(f"Inference: {anyscale_config['inference_config']}")
+    print(f"Governance: {anyscale_config['governance']}")
+    
+    # Cost optimization with Anyscale
+    estimated_savings = {
+        'rayturbo_performance': '3-5x throughput improvement',
+        'auto_scaling_efficiency': '40-60% cost reduction',
+        'spot_instance_usage': '60-80% compute cost savings',
+        'intelligent_scheduling': '20-30% resource optimization'
+    }
+    
+    print(f"\nEstimated Cost Savings with Anyscale:")
+    for optimization, savings in estimated_savings.items():
+        print(f"  {optimization.replace('_', ' ').title()}: {savings}")
+    
+    return anyscale_config
+
+anyscale_integration = demonstrate_anyscale_integration()
+```
+
 ### Resource Cleanup and Final Report
 
 ```python
