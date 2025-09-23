@@ -1,6 +1,6 @@
-# Batch Inference Performance Optimization with Ray Data
+# Batch inference optimization with Ray Data
 
-**⏱ Time to complete**: 30 min | **Difficulty**: Advanced | **Prerequisites**: ML inference experience, understanding of distributed systems
+**⏱️ Time to complete**: 25 min | **Difficulty**: Intermediate | **Prerequisites**: ML model deployment experience, performance optimization knowledge
 
 ## What You'll Build
 
@@ -1109,5 +1109,20 @@ The optimizations demonstrate several key improvements:
 - Start with single-node optimization
 - Scale horizontally with additional GPU nodes
 - Use Ray autoscaling for variable workloads
+
+## Cleanup and Resource Management
+
+Always clean up Ray resources when done:
+
+```python
+# Clean up Ray resources
+ray.shutdown()
+print("Ray cluster shutdown complete")
+
+# Clear GPU memory if using CUDA
+if torch.cuda.is_available():
+    torch.cuda.empty_cache()
+    print("GPU memory cleared")
+```
 
 This comprehensive guide should help you avoid common pitfalls and achieve optimal performance with Ray Data batch inference pipelines. The key is understanding the underlying architecture and applying systematic optimization techniques.

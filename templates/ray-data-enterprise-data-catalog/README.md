@@ -1,6 +1,6 @@
-# Data Discovery and Catalog with Ray Data
+# Enterprise data catalog and discovery with Ray Data
 
-**Time to complete**: 30 min | **Difficulty**: Intermediate | **Prerequisites**: Understanding of data management, metadata concepts
+**⏱️ Time to complete**: 30 min | **Difficulty**: Intermediate | **Prerequisites**: Understanding of data management, metadata concepts
 
 ## What You'll Build
 
@@ -807,6 +807,16 @@ warnings.filterwarnings("ignore")
 - [Data Catalog Best Practices](https://docs.ray.io/en/latest/data/best-practices.html)
 - [Apache Atlas Documentation](https://atlas.apache.org/)
 - [Data Governance Frameworks](https://www.databricks.com/blog/2020/01/30/data-governance.html)
+
+## Cleanup and Resource Management
+
+Always clean up Ray resources when done:
+
+```python
+# Clean up Ray resources
+ray.shutdown()
+print("Ray cluster shutdown complete")
+```
 
 ---
 

@@ -1,6 +1,6 @@
-# Large-Scale ETL Optimization with Ray Data
+# Large-scale ETL optimization with Ray Data
 
-**Time to complete**: 35 min | **Difficulty**: Intermediate | **Prerequisites**: Understanding of ETL concepts, data processing experience
+**⏱️ Time to complete**: 35 min | **Difficulty**: Intermediate | **Prerequisites**: Understanding of ETL concepts, data processing experience
 
 ## What You'll Build
 
@@ -1713,6 +1713,16 @@ ctx.enable_progress_bars = True
 - [Ray Data Performance Guide](https://docs.ray.io/en/latest/data/performance-tips.html)
 - [ETL Best Practices](https://docs.ray.io/en/latest/data/best-practices.html)
 - [Large-Scale Data Processing](https://docs.ray.io/en/latest/data/batch_inference.html)
+
+## Cleanup and Resource Management
+
+Always clean up Ray resources when done:
+
+```python
+# Clean up Ray resources
+ray.shutdown()
+print("Ray cluster shutdown complete")
+```
 
 ---
 

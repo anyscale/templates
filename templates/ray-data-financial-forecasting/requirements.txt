@@ -1,18 +1,33 @@
+# Core Ray Data requirements
 ray[data]>=2.8.0
+pyarrow>=12.0.0
+
+# Data processing and analysis
 pandas>=2.0.0
 numpy>=1.24.0
-pyarrow>=12.0.0
+
+# Machine learning and statistics
 scikit-learn>=1.3.0
 scipy>=1.11.0
 statsmodels>=0.14.0
-pmdarima>=2.0.0  # AutoARIMA
+
+# Time series forecasting
+pmdarima>=2.0.0
 prophet>=1.1.0
-tensorflow>=2.13.0
+
+# Deep learning
 torch>=2.0.0
+tensorflow>=2.13.0
+
+# Financial data APIs
 yfinance>=0.2.0
 alpha_vantage>=2.3.0
+
+# Visualization
 plotly>=5.15.0
 matplotlib>=3.7.0
 seaborn>=0.12.0
+
+# Cloud and utilities
 boto3>=1.28.0
 requests>=2.31.0

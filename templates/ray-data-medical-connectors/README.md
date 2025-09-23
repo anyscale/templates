@@ -1,6 +1,6 @@
-# Medical Data Processing with Ray Data
+# Medical data processing and HIPAA compliance with Ray Data
 
-**Time to complete**: 35 min | **Difficulty**: Advanced | **Prerequisites**: Healthcare data familiarity, Python experience
+**⏱️ Time to complete**: 35 min | **Difficulty**: Advanced | **Prerequisites**: Healthcare data familiarity, Python experience
 
 ## What You'll Build
 
@@ -2628,6 +2628,16 @@ Medical connectors enable research institutions to conduct **large-scale studies
 - [HL7 Standard Documentation](https://www.hl7.org/implement/standards/)
 - [DICOM Standard](https://www.dicomstandard.org/)
 - [Healthcare Data Processing Best Practices](https://docs.ray.io/en/latest/data/best-practices.html)
+
+## Cleanup and Resource Management
+
+Always clean up Ray resources when done:
+
+```python
+# Clean up Ray resources
+ray.shutdown()
+print("Ray cluster shutdown complete")
+```
 
 ---
 

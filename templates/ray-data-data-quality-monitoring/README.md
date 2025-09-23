@@ -1,6 +1,6 @@
-# Data Quality Monitoring with Ray Data
+# Data quality monitoring and validation with Ray Data
 
-**Time to complete**: 25 min | **Difficulty**: Intermediate | **Prerequisites**: Data analysis experience, understanding of data quality concepts
+**⏱️ Time to complete**: 25 min | **Difficulty**: Intermediate | **Prerequisites**: Data engineering experience, understanding of data quality concepts
 
 ## What You'll Build
 
@@ -106,29 +106,183 @@ print(f"Created Ray Dataset with {ds.count():,} records for quality monitoring")
 - Intentional quality issues: missing values, invalid data, outliers  
 - Ray Dataset ready for distributed quality analysis
 
-### Quick Quality Assessment
+### Comprehensive Data Quality Dashboard
 
 ```python
-# Quick data quality assessment
-sample_data = ds.take(5)
-
-print("Sample Data Quality Preview:")
-print("=" * 100)
-print(f"{'Customer ID':<12} {'Age':<5} {'Income':<10} {'Email':<20} {'Category':<10} {'Score':<8}")
-print("-" * 100)
-
-for record in sample_data:
-    age = str(record.get('age', 'NULL'))
-    income = f"${record.get('income', 0):,.0f}" if record.get('income', 0) > 0 else "INVALID"
-    email = record.get('email', 'NULL')[:18] + "..." if len(record.get('email', '')) > 20 else record.get('email', 'NULL')
-    category = record.get('category', 'NULL')
-    score = f"{record.get('score', 0):.1f}"
+# Create an engaging data quality visualization dashboard
+def create_quality_dashboard(dataset, sample_size=1000):
+    """Generate a comprehensive data quality analysis dashboard."""
+    import matplotlib.pyplot as plt
+    import seaborn as sns
+    import pandas as pd
+    import numpy as np
+    from collections import Counter
     
-    print(f"{record['customer_id']:<12} {age:<5} {income:<10} {email:<20} {category:<10} {score:<8}")
+    # Sample data for analysis
+    sample_data = dataset.take(sample_size)
+    df = pd.DataFrame(sample_data)
+    
+    # Create comprehensive dashboard
+    fig = plt.figure(figsize=(20, 16))
+    gs = fig.add_gridspec(4, 4, hspace=0.3, wspace=0.3)
+    
+    # 1. Data Overview Summary
+    ax_summary = fig.add_subplot(gs[0, :2])
+    ax_summary.axis('off')
+    
+    # Calculate quality metrics
+    total_records = len(df)
+    missing_age = df['age'].isna().sum()
+    missing_income = df['income'].isna().sum()
+    invalid_emails = df['email'].str.contains('@', na=False).sum()
+    valid_emails = (~df['email'].str.contains('@', na=False)).sum()
+    
+    quality_metrics = {
+        'Total Records': f"{total_records:,}",
+        'Missing Ages': f"{missing_age:,} ({missing_age/total_records*100:.1f}%)",
+        'Missing Income': f"{missing_income:,} ({missing_income/total_records*100:.1f}%)",
+        'Valid Emails': f"{invalid_emails:,} ({invalid_emails/total_records*100:.1f}%)",
+        'Invalid Emails': f"{valid_emails:,} ({valid_emails/total_records*100:.1f}%)"
+    }
+    
+    # Create summary table
+    summary_text = "Data Quality Overview\n" + "="*50 + "\n"
+    for metric, value in quality_metrics.items():
+        summary_text += f"{metric:<20}: {value}\n"
+    
+    ax_summary.text(0.05, 0.95, summary_text, transform=ax_summary.transAxes, 
+                   fontsize=12, verticalalignment='top', fontfamily='monospace',
+                   bbox=dict(boxstyle="round,pad=0.5", facecolor="lightblue", alpha=0.8))
+    
+    # 2. Missing Data Heatmap
+    ax_missing = fig.add_subplot(gs[0, 2:])
+    missing_data = df.isnull().sum()
+    missing_pct = (missing_data / len(df)) * 100
+    
+    bars = ax_missing.bar(range(len(missing_data)), missing_pct, 
+                         color=['#FF6B6B' if x > 10 else '#4ECDC4' for x in missing_pct])
+    ax_missing.set_title('Missing Data by Column', fontsize=14, fontweight='bold')
+    ax_missing.set_ylabel('Missing Data (%)')
+    ax_missing.set_xticks(range(len(missing_data)))
+    ax_missing.set_xticklabels(missing_data.index, rotation=45)
+    
+    # Add percentage labels
+    for bar, pct in zip(bars, missing_pct):
+        height = bar.get_height()
+        ax_missing.text(bar.get_x() + bar.get_width()/2., height + 0.5,
+                       f'{pct:.1f}%', ha='center', va='bottom', fontweight='bold')
+    
+    # 3. Age Distribution
+    ax_age = fig.add_subplot(gs[1, :2])
+    valid_ages = df['age'].dropna()
+    ax_age.hist(valid_ages, bins=30, color='skyblue', alpha=0.7, edgecolor='black')
+    ax_age.axvline(valid_ages.mean(), color='red', linestyle='--', linewidth=2, 
+                  label=f'Mean: {valid_ages.mean():.1f}')
+    ax_age.set_title('Age Distribution', fontsize=12, fontweight='bold')
+    ax_age.set_xlabel('Age')
+    ax_age.set_ylabel('Frequency')
+    ax_age.legend()
+    ax_age.grid(True, alpha=0.3)
+    
+    # 4. Income Distribution (Log Scale)
+    ax_income = fig.add_subplot(gs[1, 2:])
+    valid_income = df['income'].dropna()
+    valid_income = valid_income[valid_income > 0]  # Remove invalid incomes
+    
+    ax_income.hist(np.log10(valid_income), bins=30, color='lightgreen', alpha=0.7, edgecolor='black')
+    ax_income.axvline(np.log10(valid_income.mean()), color='red', linestyle='--', linewidth=2,
+                     label=f'Mean: ${valid_income.mean():,.0f}')
+    ax_income.set_title('Income Distribution (Log Scale)', fontsize=12, fontweight='bold')
+    ax_income.set_xlabel('Log10(Income)')
+    ax_income.set_ylabel('Frequency')
+    ax_income.legend()
+    ax_income.grid(True, alpha=0.3)
+    
+    # 5. Category Distribution
+    ax_category = fig.add_subplot(gs[2, :2])
+    category_counts = df['category'].value_counts()
+    colors = plt.cm.Set3(np.linspace(0, 1, len(category_counts)))
+    
+    wedges, texts, autotexts = ax_category.pie(category_counts.values, labels=category_counts.index, 
+                                              autopct='%1.1f%%', colors=colors, startangle=90)
+    ax_category.set_title('Customer Category Distribution', fontsize=12, fontweight='bold')
+    
+    # 6. Score Distribution
+    ax_score = fig.add_subplot(gs[2, 2:])
+    valid_scores = df['score'].dropna()
+    ax_score.hist(valid_scores, bins=20, color='orange', alpha=0.7, edgecolor='black')
+    ax_score.axvline(valid_scores.mean(), color='red', linestyle='--', linewidth=2,
+                    label=f'Mean: {valid_scores.mean():.1f}')
+    ax_score.set_title('Customer Score Distribution', fontsize=12, fontweight='bold')
+    ax_score.set_xlabel('Score')
+    ax_score.set_ylabel('Frequency')
+    ax_score.legend()
+    ax_score.grid(True, alpha=0.3)
+    
+    # 7. Data Quality Score by Category
+    ax_quality = fig.add_subplot(gs[3, :2])
+    quality_by_category = df.groupby('category').apply(
+        lambda x: (x['age'].notna().sum() + x['income'].notna().sum() + 
+                  x['email'].str.contains('@', na=False).sum()) / (len(x) * 3) * 100
+    )
+    
+    bars = ax_quality.bar(range(len(quality_by_category)), quality_by_category.values,
+                         color=['#FF6B6B' if x < 70 else '#4ECDC4' if x < 90 else '#96CEB4' 
+                               for x in quality_by_category.values])
+    ax_quality.set_title('Data Quality Score by Category', fontsize=12, fontweight='bold')
+    ax_quality.set_ylabel('Quality Score (%)')
+    ax_quality.set_xticks(range(len(quality_by_category)))
+    ax_quality.set_xticklabels(quality_by_category.index, rotation=45)
+    ax_quality.set_ylim(0, 100)
+    
+    # Add quality score labels
+    for bar, score in zip(bars, quality_by_category.values):
+        height = bar.get_height()
+        ax_quality.text(bar.get_x() + bar.get_width()/2., height + 1,
+                       f'{score:.1f}%', ha='center', va='bottom', fontweight='bold')
+    
+    # 8. Sample Data Table
+    ax_table = fig.add_subplot(gs[3, 2:])
+    ax_table.axis('off')
+    
+    # Create sample data table
+    sample_df = df.head(8)[['customer_id', 'age', 'income', 'category', 'score']].copy()
+    sample_df['age'] = sample_df['age'].fillna('NULL')
+    sample_df['income'] = sample_df['income'].fillna('NULL')
+    sample_df['income'] = sample_df['income'].apply(lambda x: f"${x:,.0f}" if x != 'NULL' else 'NULL')
+    
+    table_text = "Sample Data Records\n" + "="*80 + "\n"
+    table_text += f"{'ID':<12} {'Age':<6} {'Income':<12} {'Category':<12} {'Score':<8}\n"
+    table_text += "-"*80 + "\n"
+    
+    for _, row in sample_df.iterrows():
+        table_text += f"{row['customer_id']:<12} {str(row['age']):<6} {str(row['income']):<12} {row['category']:<12} {row['score']:<8}\n"
+    
+    ax_table.text(0.05, 0.95, table_text, transform=ax_table.transAxes, 
+                 fontsize=10, verticalalignment='top', fontfamily='monospace',
+                 bbox=dict(boxstyle="round,pad=0.5", facecolor="lightyellow", alpha=0.8))
+    
+    plt.suptitle('Data Quality Monitoring Dashboard', fontsize=18, fontweight='bold', y=0.95)
+    plt.tight_layout()
+    plt.show()
+    
+    # Print quality insights
+    print(f" Data Quality Insights:")
+    print(f"   • Overall completeness: {((len(df) - df.isnull().sum().sum()) / (len(df) * len(df.columns)) * 100):.1f}%")
+    print(f"   • Age data quality: {((len(df) - df['age'].isnull().sum()) / len(df) * 100):.1f}%")
+    print(f"   • Income data quality: {((len(df) - df['income'].isnull().sum()) / len(df) * 100):.1f}%")
+    print(f"   • Email validity: {(df['email'].str.contains('@', na=False).sum() / len(df) * 100):.1f}%")
+    print(f"   • Records with complete data: {(df.dropna().shape[0] / len(df) * 100):.1f}%")
 
-print("-" * 100)
-print("Notice: Some records have missing (NULL) or invalid values - this is intentional for demonstration")
+# Generate the quality dashboard
+create_quality_dashboard(ds)
 ```
+
+**Why This Dashboard Matters:**
+- **Visual Data Understanding**: See data patterns and quality issues at a glance
+- **Quality Metrics**: Quantify data completeness and validity across all columns
+- **Pattern Recognition**: Identify trends and anomalies in your dataset
+- **Actionable Insights**: Understand which data needs cleaning or validation
 
 ### Import Visualization Libraries
 
@@ -873,6 +1027,16 @@ ray.init(
     include_dashboard=False,
     _temp_dir="/secure/temp/path"  # Use secure temporary directory
 )
+```
+
+## Cleanup and Resource Management
+
+Always clean up Ray resources when done:
+
+```python
+# Clean up Ray resources
+ray.shutdown()
+print("Ray cluster shutdown complete")
 ```
 
 ## Resources

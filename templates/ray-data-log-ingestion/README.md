@@ -1,6 +1,6 @@
-# Log Analytics and Security Monitoring with Ray Data
+# Log analytics and security monitoring with Ray Data
 
-**Time to complete**: 30 min | **Difficulty**: Intermediate | **Prerequisites**: Understanding of log files, basic security concepts
+**⏱️ Time to complete**: 30 min | **Difficulty**: Intermediate | **Prerequisites**: Understanding of log files, basic security concepts
 
 ## What You'll Build
 
@@ -55,7 +55,7 @@ from datetime import datetime
 # Create sample log entries
 logs = [f"2024-01-01 12:00:00 INFO User login successful user_id=user_{i}" for i in range(10000)]
 ds = ray.data.from_items([{"log_line": log} for log in logs])
-print(f"📋 Created log dataset with {ds.count()} log entries")
+print(f"Created log dataset with {ds.count()} log entries")
 ```
 
 To run this template, you will need the following packages:
@@ -1457,6 +1457,16 @@ operational_pipeline = (logs
 - **Product Analytics**: Feature usage and adoption tracking
 - **Conversion Optimization**: Funnel analysis and improvement recommendations
 - **Revenue Impact**: Business metric correlation with operational events
+
+## Cleanup and Resource Management
+
+Always clean up Ray resources when done:
+
+```python
+# Clean up Ray resources
+ray.shutdown()
+print("Ray cluster shutdown complete")
+```
 
 ---
 
