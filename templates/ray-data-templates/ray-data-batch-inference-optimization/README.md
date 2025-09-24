@@ -13,10 +13,10 @@ Learn how to optimize ML batch inference by comparing inefficient and efficient 
 
 ## Learning Objectives
 
-**Ray Data batch processing**: Learn how `map_batches` improves inference efficiency  
-**Actor-based optimization**: Use Ray actors to avoid repeated model loading  
-**Batch size tuning**: Understand how batch size affects performance  
-**GPU utilization**: Optimize for distributed GPU workers in Ray clusters
+**Ray Data batch processing**: Learn how [`map_batches`](https://docs.ray.io/en/latest/data/api/doc/ray.data.Dataset.map_batches.html) - Ray Data's core transformation function - improves inference efficiency by processing data in optimized chunks  
+**Actor-based optimization**: Use [Ray actors](https://docs.ray.io/en/latest/ray-core/actors.html) - stateful distributed processes - to avoid repeated model loading across batches  
+**Batch size tuning**: Understand how [batch size configuration](https://docs.ray.io/en/latest/data/performance-tips.html#batch-size) affects performance and resource utilization  
+**GPU utilization**: Optimize for distributed GPU workers using Ray's [resource specification system](https://docs.ray.io/en/latest/ray-core/scheduling/resources.html)
 
 ## Overview
 
@@ -104,11 +104,13 @@ print("Watch Ray Dashboard to see the performance problems")
 start_time = time.time()
 
 # Run inefficient batch inference with small batches
+# map_batches: Ray Data's core transformation function for applying operations to data chunks
+# See: https://docs.ray.io/en/latest/data/api/doc/ray.data.Dataset.map_batches.html
 inefficient_results = dataset.limit(100).map_batches(
     inefficient_inference,
-    batch_size=4,  # Small batch size
-    concurrency=2
-).take(20)
+    batch_size=4,  # Small batch size demonstrates poor GPU utilization
+    concurrency=2  # Concurrency: number of parallel tasks processing batches simultaneously
+).take(20)  # take(): executes the lazy dataset and retrieves specified number of results
 
 inefficient_time = time.time() - start_time
 print(f"\nInefficient approach completed in: {inefficient_time:.2f} seconds")
@@ -133,6 +135,9 @@ Ray Data solves the model loading problem through integration with [Ray actors](
 
 ```python
 # EFFICIENT: Use Ray actors to load model once per worker
+# @ray.remote: decorator that converts a class into a distributed Ray actor
+# num_gpus=1: resource specification allocating one GPU per actor instance
+# See: https://docs.ray.io/en/latest/ray-core/actors.html
 @ray.remote(num_gpus=1)  # Allocate GPU to actor
 class OptimizedInferenceActor:
     """Stateful actor that loads model once and reuses it."""
@@ -166,6 +171,8 @@ class OptimizedInferenceActor:
 
 # Create actors for distributed inference
 print("Creating optimized inference actors...")
+# Actor pool: multiple actor instances for parallel processing
+# .remote(): creates a new actor instance on a distributed worker
 num_actors = 2
 actors = [OptimizedInferenceActor.remote() for _ in range(num_actors)]
 
@@ -175,7 +182,10 @@ def optimized_inference(batch):
     actor_idx = hash(str(batch)) % len(actors)
     actor = actors[actor_idx]
     
-    # Process entire batch efficiently
+    # Process entire batch efficiently using actor method
+    # ray.get(): retrieves results from remote actor function calls
+    # .remote(): executes actor method on the distributed worker
+    # See: https://docs.ray.io/en/latest/ray-core/actors.html#calling-actor-methods
     results = ray.get(actor.predict_batch.remote(batch["image"]))
     return results
 
@@ -185,11 +195,13 @@ print("Watch Ray Dashboard to see improved performance")
     start_time = time.time()
     
 # Run optimized batch inference with larger batches
+# Lazy execution: Ray Data builds execution plan without immediate processing
+# See: https://docs.ray.io/en/latest/data/key-concepts.html#lazy-execution
 optimized_results = dataset.limit(100).map_batches(
     optimized_inference,
-    batch_size=16,  # Larger batch size for efficiency
-    concurrency=4   # More concurrency for parallelism
-).take(20)
+    batch_size=16,  # Larger batch size for better GPU utilization
+    concurrency=4   # Higher concurrency for distributed parallelism
+).take(20)  # take(): triggers execution and retrieves results
 
 optimized_time = time.time() - start_time
 print(f"\nOptimized approach completed in: {optimized_time:.2f} seconds")
@@ -253,46 +265,27 @@ print("- GPU resource allocation for inference workers")
 print("- Distributed processing across cluster")
 ```
 
-### Batch Size Optimization
+### Optimized Batch Size Configuration
 
-Batch size is a critical parameter in Ray Data batch inference that affects both performance and resource utilization. The [performance tips guide](https://docs.ray.io/en/latest/data/performance-tips.html) provides detailed guidance on choosing optimal batch sizes.
+Batch size is a critical parameter in Ray Data batch inference that affects both performance and resource utilization. The [performance tips guide](https://docs.ray.io/en/latest/data/performance-tips.html#batch-size) provides detailed guidance on choosing optimal batch sizes.
 
-**Batch Size Considerations**: Larger batch sizes generally improve GPU utilization and throughput, but they also increase memory usage. The optimal batch size depends on your model size, available GPU memory, and dataset characteristics. Ray Data's [`map_batches`](https://docs.ray.io/en/latest/data/api/doc/ray.data.Dataset.map_batches.html) function allows you to experiment with different batch sizes easily.
+**Batch Size Best Practice**: For image classification models, batch sizes of 16-32 typically provide good GPU utilization while avoiding memory issues. Ray Data's [`map_batches`](https://docs.ray.io/en/latest/data/api/doc/ray.data.Dataset.map_batches.html) function handles batching automatically once you specify the size.
 
 ```python
-# Test different batch sizes to find optimal performance
-print("\nTesting different batch sizes:")
-print("This demonstrates how batch size affects inference performance")
+# Demonstrate optimal batch size configuration
+print("Using optimized batch size for better performance")
 
-batch_sizes = [4, 8, 16, 32]
-batch_performance = []
-    
-for batch_size in batch_sizes:
-    print(f"Testing batch size: {batch_size}")
-    start_time = time.time()
-    
-    # Test small sample for quick comparison
-    test_results = dataset.limit(80).map_batches(
-        optimized_inference,
-        batch_size=batch_size,
-        concurrency=2
-    ).take(40)
-    
-    batch_time = time.time() - start_time
-    throughput = 40 / batch_time if batch_time > 0 else 0
-    
-    batch_performance.append({
-        "batch_size": batch_size,
-        "time": batch_time,
-        "throughput": throughput
-    })
-    
-    print(f"  Time: {batch_time:.2f}s, Throughput: {throughput:.1f} images/sec")
+# Use batch_size=32 for optimal GPU utilization
+# limit(): creates a new dataset with only the first N elements (lazy operation)
+# See: https://docs.ray.io/en/latest/data/api/doc/ray.data.Dataset.limit.html
+optimized_batch_results = dataset.limit(200).map_batches(
+    optimized_inference,
+    batch_size=32,  # Optimal batch size for GPU memory and throughput balance
+    concurrency=4   # Higher concurrency leverages multiple distributed workers
+).take(100)  # take(): executes the pipeline and returns results
 
-# Find best performing batch size
-if batch_performance:
-    best_batch = max(batch_performance, key=lambda x: x["throughput"])
-    print(f"\nBest batch size: {best_batch['batch_size']} ({best_batch['throughput']:.1f} images/sec)")
+print("Optimized batch processing completed")
+print("Check Ray Dashboard to see improved task execution and GPU utilization")
 ```
 
 ### Ray Dashboard Monitoring
