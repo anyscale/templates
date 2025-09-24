@@ -159,13 +159,13 @@ Medical data comes in some of the most complex formats ever created, each design
 - **Ray Data Advantage**: Unified patient records across multiple EHR systems
 - **ROI Impact**: improvement in care coordination and reduction in medical errors
 
-**🩻 Medical Imaging (DICOM)**
+**Medical Imaging (DICOM)**
 - **Data Characteristics**: X-rays, MRIs, CT scans with embedded patient and technical metadata
 - **Business Applications**: Radiological AI, image quality assessment, diagnostic support
 - **Ray Data Advantage**: Distributed image processing and automated metadata extraction
 - **ROI Impact**: faster radiology workflows and improvement in diagnostic accuracy
 
-**💉 Laboratory Results (HL7)**
+**Laboratory Results (HL7)**
 - **Data Characteristics**: Lab values, test results, clinical observations, provider orders
 - **Business Applications**: Clinical analytics, quality monitoring, research data extraction
 - **Ray Data Advantage**: Real-time lab result processing and automated clinical alerts
@@ -201,13 +201,13 @@ Medical data comes in some of the most complex formats ever created, each design
 
 ### **Business Impact Across Healthcare Segments**
 
-** Hospitals and Health Systems**
+**Hospitals and Health Systems**
 - **Clinical Operations**: Real-time patient data integration for better care coordination
 - **Quality Improvement**: Population health analytics for outcome optimization
 - **Research Capabilities**: Clinical research data extraction and analysis
 - **Cost Reduction**: reduction in data integration and analytics infrastructure costs
 
-**💊 Pharmaceutical and Biotech**
+**Pharmaceutical and Biotech**
 - **Drug Discovery**: Accelerated compound screening and target identification
 - **Clinical Trials**: Faster patient recruitment and outcome analysis
 - **Regulatory Submission**: Automated data preparation for FDA submissions
@@ -219,7 +219,7 @@ Medical data comes in some of the most complex formats ever created, each design
 - **AI/ML Research**: Training datasets for medical AI and diagnostic algorithms
 - **Collaborative Research**: Multi-institutional data sharing and analysis platforms
 
-**💼 Healthcare Technology Companies**
+**Healthcare Technology Companies**
 - **Product Development**: Healthcare analytics platforms and clinical decision support tools
 - **Data Services**: Medical data processing and analytics as a service
 - **Integration Solutions**: Healthcare data interoperability and system integration

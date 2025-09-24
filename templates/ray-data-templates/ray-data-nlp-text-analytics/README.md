@@ -208,17 +208,19 @@ def create_nlp_dashboard(dataset, sample_size=1000):
     ax_length.legend()
     ax_length.grid(True, alpha=0.3)
     
-    # 3. Word Count Analysis
-    ax_words = fig.add_subplot(gs[1, :2])
+    # Simplified text analysis
     df['word_count'] = df['text'].str.split().str.len()
-    ax_words.hist(df['word_count'], bins=20, color='lightgreen', alpha=0.7, edgecolor='black')
-    ax_words.axvline(df['word_count'].mean(), color='red', linestyle='--', linewidth=2,
-                    label=f'Mean: {df["word_count"].mean():.1f} words')
-    ax_words.set_title('Word Count Distribution', fontsize=12, fontweight='bold')
-    ax_words.set_xlabel('Word Count')
-    ax_words.set_ylabel('Frequency')
-    ax_words.legend()
-    ax_words.grid(True, alpha=0.3)
+    
+    print("\nText Analytics Summary:")
+    print(f"Total reviews: {len(df):,}")
+    print(f"Average text length: {df['length'].mean():.1f} characters")
+    print(f"Average word count: {df['word_count'].mean():.1f} words")
+    
+    # Sentiment distribution
+    sentiment_dist = df['true_sentiment'].value_counts()
+    print(f"\nSentiment distribution:")
+    for sentiment, count in sentiment_dist.items():
+        print(f"  {sentiment}: {count:,} ({count/len(df)*100:.1f}%)")
     
     # 4. Sentiment vs Length Analysis
     ax_sent_length = fig.add_subplot(gs[1, 2:])
@@ -283,7 +285,7 @@ def create_nlp_dashboard(dataset, sample_size=1000):
     unique_words = len(set(' '.join(df['text']).lower().split()))
     sentiment_dist = df['true_sentiment'].value_counts()
     
-    stats_text = "📝 Text Analytics Summary\n" + "="*50 + "\n"
+    stats_text = "Text Analytics Summary\n" + "="*50 + "\n"
     stats_text += f"Total Reviews: {total_reviews:,}\n"
     stats_text += f"Average Length: {avg_length:.1f} characters\n"
     stats_text += f"Average Words: {avg_words:.1f} words\n"
