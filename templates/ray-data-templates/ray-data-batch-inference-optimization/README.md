@@ -1,173 +1,108 @@
 # ML batch inference optimization with Ray Data
 
-**Time to complete**: 35 min | **Difficulty**: Intermediate | **Prerequisites**: ML model deployment experience, performance optimization knowledge, distributed systems understanding
+**Time to complete**: 25 min | **Difficulty**: Intermediate | **Prerequisites**: Basic ML knowledge, Python experience
 
-This comprehensive template demonstrates advanced optimization techniques for batch inference workloads using Ray Data. Transform inefficient ML inference pipelines into high-performance systems that process millions of predictions efficiently while minimizing costs and maximizing throughput.
+Learn how to optimize ML batch inference using Ray Data. This template demonstrates practical optimization techniques for processing large datasets with machine learning models efficiently.
 
 ## Table of Contents
 
-1. [Environment Setup and Verification](#environment-setup-and-verification) (5 min)
-2. [Quick Start: Performance Baseline](#quick-start-performance-baseline) (5 min)
-3. [Common Performance Mistakes](#common-performance-mistakes) (8 min)
-4. [Advanced Optimization Techniques](#advanced-optimization-techniques) (6 min)
-5. [Ray Dashboard Monitoring](#ray-dashboard-monitoring) (4 min)
-6. [Optimization Best Practices](#optimization-best-practices) (4 min)
-7. [Key Takeaways and Next Steps](#key-takeaways-and-next-steps) (3 min)
+1. [Setup and Data Loading](#setup-and-installation) (5 min)
+2. [Quick Start: Basic Optimization](#quick-start-performance-baseline) (8 min)
+3. [Batch Size Optimization](#batch-size-optimization) (7 min)
+4. [Advanced Techniques](#advanced-optimization-techniques) (5 min)
 
 ## Learning Objectives
 
 By completing this template, you will master:
 
-- **Why inference optimization matters**: Understanding bottlenecks in distributed inference can improve throughput by 10x and reduce costs by 60-80%
-- **Ray Data's optimization superpowers**: Advanced features like operator fusion, intelligent batching, memory streaming, and automatic resource allocation for maximum efficiency
-- **Production optimization strategies**: Industry-standard techniques used by OpenAI, Anthropic, and Google to process billions of inference requests cost-effectively
-- **Performance engineering expertise**: Systematic approaches to profiling, benchmarking, and optimizing distributed ML workloads at enterprise scale
-- **Enterprise deployment mastery**: Production-ready optimization patterns with monitoring, alerting, and automated performance tuning
+**Ray Data optimization fundamentals**: Learn how Ray Data's batching, parallelism, and distributed processing improve ML inference performance  
+**Practical optimization techniques**: Hands-on experience with batch sizing, concurrency tuning, and GPU acceleration  
+**Real-world patterns**: Common optimization patterns used in production ML systems  
+**Performance analysis**: Understanding bottlenecks and measuring improvements using Ray Dashboard
 
 ## Overview: High-Performance ML Inference Challenge
 
-**Challenge**: Naive batch inference implementations suffer from critical performance bottlenecks:
-- Poor resource utilization leading to 5-10x higher infrastructure costs
-- Sub-optimal batch sizes causing GPU/CPU underutilization (often <30% utilization)
-- Memory bottlenecks that limit throughput and cause expensive OOM failures
-- Lack of performance monitoring leading to invisible degradation over time
-- Inefficient model loading patterns that waste compute resources
+**The Challenge**: Batch inference often suffers from performance bottlenecks that Ray Data can help solve.
 
-**Solution**: Ray Data provides sophisticated optimization capabilities that enterprises require:
-- Automatic operator fusion and pipeline optimization for reduced overhead
-- Dynamic batch sizing and intelligent resource allocation based on workload characteristics
-- Advanced memory management with streaming and efficient caching
-- Built-in performance profiling, monitoring, and automated optimization tools
-- Production-ready patterns with fault tolerance and enterprise observability
+Common issues include sub-optimal batch sizes, inefficient model loading, and poor resource utilization. These problems become more apparent when processing large datasets or using complex models.
 
-**Enterprise Optimization Success Stories**
+**Ray Data Solution**: Ray Data provides distributed processing capabilities and optimization features that address these challenges through intelligent batching, parallel processing, and efficient resource management.
 
-Leading technology companies demonstrate the profound impact of systematic inference optimization. OpenAI processes over 100 billion tokens daily using optimized batch inference techniques that reduce operational costs by 75% while maintaining response quality. Anthropic handles Claude inference at massive scale with sub-100ms P95 latency through sophisticated batching and resource allocation strategies.
+**Learning Focus**: This template demonstrates practical optimization techniques you can apply to your own ML inference workloads using Ray Data's built-in capabilities.
 
-Uber achieved 10x throughput improvements for ML-powered surge pricing and ETA prediction systems by implementing distributed inference optimization patterns. Netflix reduced recommendation inference costs by 80% while scaling to serve over 500 million users through strategic batch processing and caching optimizations. Shopify processes 50,000+ transactions per second for real-time fraud detection using optimized ML pipelines that balance accuracy with performance.
+**Why Optimization Matters**
+
+Batch inference optimization becomes important when processing large datasets or using complex models. Organizations across industries use similar optimization patterns to improve their ML inference performance and reduce processing time.
+
+**Ray Data Advantages**
+
+Ray Data provides several built-in features that help optimize batch inference including distributed processing, intelligent batching, and efficient resource utilization. These capabilities help you process more data faster while keeping resource usage reasonable.
 
 ```python
-# Example: Enterprise-grade inference optimization pattern
-def optimize_inference_pipeline(model, data_batch, optimization_config):
-    """Implement production inference optimization strategies."""
+# Example: Ray Data optimization pattern
+import time
+
+# Simple optimization demonstration
+def time_processing(dataset, batch_size):
+    """Measure processing time for different batch sizes."""
+    start_time = time.time()
     
-    # Dynamic batch sizing based on system resources
-    optimal_batch_size = min(
-        optimization_config.get('max_batch_size', 32),
-        len(data_batch)
+    # Process with specified batch size  
+    results = dataset.map_batches(
+        lambda batch: [{"processed": True} for _ in batch],
+        batch_size=batch_size
     )
     
-    # Process with optimized batching
-    results = []
-    for i in range(0, len(data_batch), optimal_batch_size):
-        batch = data_batch[i:i + optimal_batch_size]
-        
-        # Apply inference with resource monitoring
-        batch_results = model.predict(batch)
-        results.extend(batch_results)
+    # Take sample to trigger execution
+    results.take(100)
     
-    return {
-        'predictions': results,
-        'batch_size_used': optimal_batch_size,
-        'total_batches': len(results) // optimal_batch_size,
-        'optimization_applied': True
-    }
+    processing_time = time.time() - start_time
+    return processing_time
 
-print("Enterprise inference optimization patterns enabled")
+print("Ray Data optimization patterns ready for demonstration")
 ```
 
-These implementations showcase systematic approaches to achieving production-grade performance and cost efficiency in distributed ML inference systems.
+This example shows how to measure and compare different optimization approaches using Ray Data.
 
 ---
 
 ## Prerequisites Checklist
 
-Before starting this advanced template, ensure you have:
+Before starting, ensure you have:
 
-- [ ] **Python 3.8+** with extensive ML model deployment experience
-- [ ] **Deep understanding of ML inference** including model serving, batching, and optimization
-- [ ] **Performance optimization knowledge** including profiling, benchmarking, and resource management
-- [ ] **Distributed systems experience** with concepts like parallelism, concurrency, and resource allocation
-- [ ] **Access to multi-core or GPU environment** for realistic performance testing
-- [ ] **16GB+ RAM** for comprehensive optimization experiments and large batch processing
-- [ ] **ML framework expertise** with PyTorch, TensorFlow, or similar frameworks
-- [ ] **Production deployment experience** including monitoring, logging, and troubleshooting
+- [ ] **Python 3.8+** with basic ML framework experience
+- [ ] **Understanding of ML inference** concepts like batching and model loading  
+- [ ] **Familiarity with Ray Data** or completion of a basic Ray Data tutorial
+- [ ] **Access to compute environment** with multiple cores for parallelism testing
+- [ ] **8GB+ RAM** for processing demo datasets and model artifacts
 
 ### System Requirements
 
-**Minimum Requirements:**
-- CPU: 8 cores for meaningful parallelism testing
-- RAM: 16GB for larger batch size experiments
-- Storage: 5GB for model artifacts and datasets
-- Python: 3.8+ with ML frameworks installed
+**Minimum for Demo:**
+- CPU: 4+ cores for parallelism demonstration
+- RAM: 8GB for batch processing examples
+- Storage: 2GB for demo models and datasets
+- Python: 3.8+ with Ray Data installed
 
-**Recommended for Advanced Optimization:**
-- CPU: 16+ cores for comprehensive concurrency testing
-- GPU: 1+ NVIDIA GPU with 8GB+ VRAM for GPU optimization
-- RAM: 32GB+ for memory optimization experiments
-- Storage: 10GB+ for multiple model variants and datasets
+**Recommended for Full Experience:**
+- CPU: 8+ cores for comprehensive testing
+- GPU: Optional but helpful for GPU optimization examples
+- RAM: 16GB+ for larger batch experiments
 
-## Environment Setup and Verification
+## Setup and Installation
 
-### Step 1: Environment Verification and Dependency Installation
-
-```python
-import sys
-import os
-import time
-import logging
-from typing import Dict, List, Any, Optional, Union, Tuple
-from dataclasses import dataclass
-from datetime import datetime
-
-# Configure logging for tracking optimization experiments
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
-
-# Simple environment setup
-python_version = sys.version_info
-
-print(f"Environment ready for optimization:")
-print(f"  Python: {python_version.major}.{python_version.minor}")
-
-# Check for GPU availability
-import torch
-gpu_available = torch.cuda.is_available()
-gpu_count = torch.cuda.device_count() if gpu_available else 0
-print(f"  GPUs: {gpu_count} available" if gpu_available else "  GPUs: None detected")
-print("  Resource monitoring: Use Ray Dashboard for detailed metrics")
-```
-
-### Step 2: Ray Cluster Initialization with Optimization Settings
+### Simple Environment Setup
 
 ```python
 import ray
-from ray.data import DataContext
+import time
 
-# Initialize Ray with optimization settings
-if not ray.is_initialized():
-    ray.init(
-        object_store_memory=8_000_000_000,  # 8GB object store
-        include_dashboard=True
-    )
+# Initialize Ray for batch inference optimization demo
+ray.init()
 
-# Configure Ray Data for optimization testing
-ctx = DataContext.get_current()
-ctx.enable_progress_bars = False  # Cleaner output for benchmarking
-
-# Display cluster configuration
-resources = ray.cluster_resources()
-print("="*70)
-print("RAY DATA OPTIMIZATION ENVIRONMENT")
-print("="*70)
-print(f"Ray version: {ray.__version__}")
-print(f"Available CPUs: {resources.get('CPU', 0)}")
-print(f"Available memory: {resources.get('memory', 0) / (1024**3):.1f} GB")
-print(f"Ray dashboard: {ray.get_dashboard_url()}")
-print("="*70)
+print(f"Ray initialized successfully")
+print(f"Available resources: {ray.cluster_resources()}")
+print("Use Ray Dashboard for detailed cluster and worker monitoring")
 ```
 
 ## Quick Start: Performance Baseline
@@ -192,25 +127,18 @@ print("  • Ray Data execution plans and operator metrics")
 print("="*60)
 ```
 
-### Step 4: Create Synthetic Dataset for Optimization Testing
+### Load Real ImageNet Data for Optimization
 
 ```python
-import numpy as np
-import pandas as pd
-
-# Load real ImageNet dataset for batch inference optimization testing
+# Load real ImageNet dataset for batch inference optimization demo
 optimization_dataset = ray.data.read_images(
     "s3://ray-benchmark-data/imagenette2/train/",
     mode="RGB"
-).limit(10000)  # 10K images for optimization testing
+).limit(5000)  # 5K images for optimization demo
 
-print(f"Loaded real ImageNet dataset for optimization:")
-print(f"  Images: {optimization_dataset.count():,}")
-print(f"  Schema: {optimization_dataset.schema()}")
-print(f"  Dataset size: {optimization_dataset.size_bytes() / (1024**2):.1f} MB")
-print(f"  Blocks: {optimization_dataset.num_blocks()}")
-
-print("Optimization dataset ready for testing!")
+print("Loaded real ImageNet dataset for optimization demo")
+print("Dataset ready for batch inference testing")
+# Use Ray Dashboard to monitor actual dataset statistics and block information
 
 ### **Batch Inference Performance Analysis Dashboard**
 
