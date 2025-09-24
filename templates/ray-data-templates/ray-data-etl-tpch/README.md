@@ -86,23 +86,18 @@ customer_summary.show(5)
 ### Advanced Expression Transformations
 
 ```python
-# Create computed columns using map_batches (verified Ray Data approach)
+# Add computed columns using map_batches
 def add_customer_features(batch):
     """Add computed features to customer data."""
     import pandas as pd
     
     df = pd.DataFrame(batch)
-    
-    # Add customer tier based on account balance
     df['is_premium'] = df['c_acctbal'] > 5000
     df['balance_tier'] = (df['c_acctbal'] / 1000).astype(int)
-    
     return df.to_dict('records')
 
-enhanced_customers = customers.map_batches(
-    add_customer_features,
-    batch_format="pandas"
-)
+# Apply feature engineering to customers
+enhanced_customers = customers.map_batches(add_customer_features, batch_format="pandas")
 
 print("Enhanced customer data with computed columns:")
 enhanced_customers.show(5)
@@ -274,92 +269,85 @@ top_customers.show()
 import matplotlib.pyplot as plt
 import numpy as np
 
-def create_tpch_performance_dashboard():
-    """Create TPC-H ETL performance analysis dashboard."""
-    
-    # Create performance analysis dashboard
-    fig, axes = plt.subplots(2, 2, figsize=(16, 10))
-    fig.suptitle('TPC-H ETL Performance Analysis with Ray Data', fontsize=16, fontweight='bold')
-    
-    # 1. Sample data analysis (avoid materialization)
-    ax1 = axes[0, 0]
-    table_names = ['Customers', 'Orders', 'Line Items', 'Parts']
-    # Use sample sizes instead of full count to avoid materialization
-    sample_sizes = [1000, 5000, 25000, 2000]  # Representative sample sizes
-    
-    bars1 = ax1.bar(table_names, sample_sizes, color=['lightblue', 'lightgreen', 'coral', 'gold'])
-    ax1.set_title('TPC-H Table Sample Sizes', fontweight='bold')
-    ax1.set_ylabel('Sample Records Processed')
-    ax1.tick_params(axis='x', rotation=45)
-    
-    # Add value labels
-    for bar, size in zip(bars1, sample_sizes):
-        height = bar.get_height()
-        ax1.text(bar.get_x() + bar.get_width()/2., height + max(sample_sizes)*0.01,
-                f'{size:,}', ha='center', va='bottom', fontweight='bold')
-    
-    # 2. Processing time comparison
-    ax2 = axes[0, 1]
-    operations = ['Load Data', 'Filter', 'Join', 'Aggregate', 'Sort']
-    processing_times = [load_time, 2.1, 8.5, 4.2, 3.8]  # seconds
-    
-    bars2 = ax2.bar(operations, processing_times, color='mediumpurple')
-    ax2.set_title('ETL Operation Performance', fontweight='bold')
-    ax2.set_ylabel('Processing Time (seconds)')
-    ax2.tick_params(axis='x', rotation=45)
-    
-    # Add time labels
-    for bar, time in zip(bars2, processing_times):
-        height = bar.get_height()
-        ax2.text(bar.get_x() + bar.get_width()/2., height + 0.2,
-                f'{time:.1f}s', ha='center', va='bottom', fontweight='bold')
-    
-    # 3. Data transformation pipeline (conceptual)
-    ax3 = axes[1, 0]
-    pipeline_stages = ['Raw Data', 'Filtered', 'Joined', 'Aggregated', 'Final Output']
-    record_counts = [1000000, 800000, 650000, 1200, 50]  # Conceptual pipeline reduction
-    
-    ax3.plot(pipeline_stages, record_counts, 'o-', linewidth=3, markersize=8, color='darkgreen')
-    ax3.set_title('ETL Pipeline Data Flow', fontweight='bold')
-    ax3.set_ylabel('Record Count')
-    ax3.set_yscale('log')
-    ax3.tick_params(axis='x', rotation=45)
-    ax3.grid(True, alpha=0.3)
-    
-    # 4. Expression API performance
-    ax4 = axes[1, 1]
-    query_types = ['Simple Filter', 'Complex Filter', 'Aggregation', 'Multi-Join']
-    expression_times = [1.2, 3.4, 5.8, 12.1]  # seconds
-    traditional_times = [2.8, 8.9, 15.2, 34.7]  # seconds for comparison
-    
-    x = np.arange(len(query_types))
-    width = 0.35
-    
-    bars4a = ax4.bar(x - width/2, traditional_times, width, label='Traditional ETL', color='lightcoral')
-    bars4b = ax4.bar(x + width/2, expression_times, width, label='Ray Data Expressions', color='lightgreen')
-    
-    ax4.set_title('Expression API vs Traditional ETL', fontweight='bold')
-    ax4.set_ylabel('Processing Time (seconds)')
-    ax4.set_xticks(x)
-    ax4.set_xticklabels(query_types, rotation=45, ha='right')
-    ax4.legend()
-    
-    # Add speedup labels
-    for i, (trad_time, expr_time) in enumerate(zip(traditional_times, expression_times)):
-        speedup = trad_time / expr_time
-        ax4.text(i, expr_time + 1, f'{speedup:.1f}x faster', ha='center', fontweight='bold')
-    
-    plt.tight_layout()
-    plt.show()
-    
-    print("TPC-H ETL Performance Summary:")
-    print(f"- Data loading time: {load_time:.2f} seconds")
-    print(f"- Average operation time: {np.mean(processing_times):.2f} seconds")
-    print(f"- Expression API provides {np.mean([t/e for t, e in zip(traditional_times, expression_times)]):.1f}x speedup")
-    print("- Use Ray Dashboard for detailed cluster monitoring")
+# Create TPC-H ETL performance visualization
+fig, axes = plt.subplots(2, 2, figsize=(16, 10))
+fig.suptitle('TPC-H ETL Performance Analysis with Ray Data', fontsize=16, fontweight='bold')
 
-# Create TPC-H performance dashboard
-create_tpch_performance_dashboard()
+# 1. Table sample sizes
+ax1 = axes[0, 0]
+table_names = ['Customers', 'Orders', 'Line Items', 'Parts']
+sample_sizes = [1000, 5000, 25000, 2000]  # Representative sample sizes
+
+bars1 = ax1.bar(table_names, sample_sizes, color=['lightblue', 'lightgreen', 'coral', 'gold'])
+ax1.set_title('TPC-H Table Sample Sizes', fontweight='bold')
+ax1.set_ylabel('Sample Records Processed')
+ax1.tick_params(axis='x', rotation=45)
+
+# Add value labels
+for bar, size in zip(bars1, sample_sizes):
+    height = bar.get_height()
+    ax1.text(bar.get_x() + bar.get_width()/2., height + max(sample_sizes)*0.01,
+            f'{size:,}', ha='center', va='bottom', fontweight='bold')
+
+# 2. Processing time comparison
+ax2 = axes[0, 1]
+operations = ['Load Data', 'Filter', 'Join', 'Aggregate', 'Sort']
+processing_times = [load_time, 2.1, 8.5, 4.2, 3.8]  # seconds
+
+bars2 = ax2.bar(operations, processing_times, color='mediumpurple')
+ax2.set_title('ETL Operation Performance', fontweight='bold')
+ax2.set_ylabel('Processing Time (seconds)')
+ax2.tick_params(axis='x', rotation=45)
+
+# Add time labels
+for bar, time in zip(bars2, processing_times):
+    height = bar.get_height()
+    ax2.text(bar.get_x() + bar.get_width()/2., height + 0.2,
+            f'{time:.1f}s', ha='center', va='bottom', fontweight='bold')
+
+# 3. ETL pipeline flow
+ax3 = axes[1, 0]
+pipeline_stages = ['Raw Data', 'Filtered', 'Joined', 'Aggregated', 'Final Output']
+record_counts = [1000000, 800000, 650000, 1200, 50]  # Conceptual pipeline reduction
+
+ax3.plot(pipeline_stages, record_counts, 'o-', linewidth=3, markersize=8, color='darkgreen')
+ax3.set_title('ETL Pipeline Data Flow', fontweight='bold')
+ax3.set_ylabel('Record Count')
+ax3.set_yscale('log')
+ax3.tick_params(axis='x', rotation=45)
+ax3.grid(True, alpha=0.3)
+
+# 4. Expression API performance
+ax4 = axes[1, 1]
+query_types = ['Simple Filter', 'Complex Filter', 'Aggregation', 'Multi-Join']
+expression_times = [1.2, 3.4, 5.8, 12.1]  # seconds
+traditional_times = [2.8, 8.9, 15.2, 34.7]  # seconds for comparison
+
+x = np.arange(len(query_types))
+width = 0.35
+
+bars4a = ax4.bar(x - width/2, traditional_times, width, label='Traditional ETL', color='lightcoral')
+bars4b = ax4.bar(x + width/2, expression_times, width, label='Ray Data Expressions', color='lightgreen')
+
+ax4.set_title('Expression API vs Traditional ETL', fontweight='bold')
+ax4.set_ylabel('Processing Time (seconds)')
+ax4.set_xticks(x)
+ax4.set_xticklabels(query_types, rotation=45, ha='right')
+ax4.legend()
+
+# Add speedup labels
+for i, (trad_time, expr_time) in enumerate(zip(traditional_times, expression_times)):
+    speedup = trad_time / expr_time
+    ax4.text(i, expr_time + 1, f'{speedup:.1f}x faster', ha='center', fontweight='bold')
+
+plt.tight_layout()
+plt.show()
+
+print("TPC-H ETL Performance Summary:")
+print(f"- Data loading time: {load_time:.2f} seconds")
+print(f"- Average operation time: {np.mean(processing_times):.2f} seconds")
+print(f"- Expression API provides {np.mean([t/e for t, e in zip(traditional_times, expression_times)]):.1f}x speedup")
+print("- Use Ray Dashboard for detailed cluster monitoring")
 ```
 
 ### TPC-H Query Showcase
@@ -460,175 +448,111 @@ balance_stats.show()
 ### Data Quality Validation
 
 ```python
-# Use Ray Data for comprehensive data quality checks
-def validate_data_quality():
-    """Perform data quality validation using Ray Data."""
+# Check for null values using map_batches
+def check_nulls(batch):
+    """Check for null values in batch."""
+    import pandas as pd
+    df = pd.DataFrame(batch)
     
-    # Check for null values using map_batches
-    def check_nulls(batch):
-        """Check for null values in batch."""
-        import pandas as pd
-        df = pd.DataFrame(batch)
-        
-        return [{
-            "null_custkey": df["c_custkey"].isnull().sum(),
-            "null_name": df["c_name"].isnull().sum(), 
-            "null_balance": df["c_acctbal"].isnull().sum(),
-            "total_records": len(df)
-        }]
-    
-    null_stats = customers.map_batches(check_nulls, batch_format="pandas")
-    print("Data quality check results:")
-    null_stats.show()
-    
-    # Validate referential integrity using map_batches
-    def check_referential_integrity(batch):
-        """Check for orders without corresponding customers."""
-        import pandas as pd
-        
-        order_df = pd.DataFrame(batch)
-        customer_keys = set(customers.select(col("c_custkey")).to_pandas()["c_custkey"])
-        
-        orphaned = order_df[~order_df["o_custkey"].isin(customer_keys)]
-        
-        return [{
-            "orphaned_count": len(orphaned),
-            "total_orders": len(order_df),
-            "integrity_score": (len(order_df) - len(orphaned)) / len(order_df) * 100
-        }]
-    
-    integrity_stats = orders.map_batches(check_referential_integrity, batch_format="pandas")
-    print("Referential integrity check:")
-    integrity_stats.show()
-    
-    # Check data ranges and constraints
-    invalid_balances = customers.filter(col("c_acctbal") < lit(-999999))
-    print("Invalid balance check completed")
-    # Use .show() to see results without premature materialization
-    invalid_balances.show(5)
-    
-    return "Data quality validation completed"
+    return [{
+        "null_custkey": df["c_custkey"].isnull().sum(),
+        "null_name": df["c_name"].isnull().sum(), 
+        "null_balance": df["c_acctbal"].isnull().sum(),
+        "total_records": len(df)
+    }]
 
-# Perform data quality validation
-quality_results = validate_data_quality()
+# Apply null checking to customer data
+null_stats = customers.map_batches(check_nulls, batch_format="pandas")
+print("Data quality check results:")
+null_stats.show()
+
+# Check data ranges and constraints
+invalid_balances = customers.filter(col("c_acctbal") < lit(-999999))
+print("Invalid balance check:")
+invalid_balances.show(5)
+
+print("Data quality validation completed")
 ```
 
-### ETL Pipeline Assembly
+### Complete ETL Pipeline Demo
 
 ```python
-# Complete ETL pipeline demonstrating Ray Data capabilities
-def create_customer_analytics_pipeline():
-    """Create comprehensive customer analytics using Ray Data ETL."""
-    
-    print("Building customer analytics ETL pipeline...")
-    pipeline_start = time.time()
-    
-    # Step 1: Extract and enhance customer data
-    enhanced_customers = customers.select(
-        col("c_custkey"),
-        col("c_name"),
-        col("c_nationkey"),
-        col("c_mktsegment"),
-        col("c_acctbal"),
-        # Create customer segments using expressions
-        (col("c_acctbal") > lit(5000)).alias("is_premium"),
-        (col("c_acctbal") / lit(1000)).cast("int").alias("balance_tier")
-    )
-    
-    # Step 2: Transform - join with order history
-    customer_metrics = enhanced_customers.join(
-        orders.groupby(col("o_custkey")).agg(
-            col("o_totalprice").sum().alias("lifetime_value"),
-            col("o_orderkey").count().alias("order_count"),
-            col("o_orderdate").max().alias("last_order_date")
-        ),
-        left_on="c_custkey",
-        right_on="o_custkey",
-        join_type="left"
-    )
-    
-    # Step 3: Load - create final analytics dataset
-    final_analytics = customer_metrics.select(
-        col("c_custkey"),
-        col("c_name"),
-        col("c_mktsegment"),
-        col("is_premium"),
-        col("balance_tier"),
-        col("lifetime_value"),
-        col("order_count"),
-        # Calculate customer score using expressions
-        ((col("lifetime_value") * lit(0.7)) + (col("order_count") * lit(100))).alias("customer_score")
-    ).filter(
-        col("lifetime_value").isna() == lit(False)  # Only customers with orders
-    ).sort(col("customer_score"), descending=True)
-    
-    pipeline_time = time.time() - pipeline_start
-    
-    print(f"ETL pipeline completed in {pipeline_time:.2f} seconds")
-    print("Final analytics dataset created successfully")
-    
-    # Show top customers
-    print("\nTop 10 customers by score:")
-    final_analytics.limit(10).show()
-    
-    return final_analytics
+# Build customer analytics ETL pipeline step by step
+print("Building customer analytics ETL pipeline...")
+pipeline_start = time.time()
 
-# Execute complete ETL pipeline
-customer_analytics = create_customer_analytics_pipeline()
+# Step 1: Extract and enhance customer data
+enhanced_customers = customers.select(
+    col("c_custkey"),
+    col("c_name"),
+    col("c_nationkey"),
+    col("c_mktsegment"),
+    col("c_acctbal")
+)
+
+# Step 2: Create order summary for each customer
+order_summary = orders.groupby("o_custkey").sum("o_totalprice")
+
+# Step 3: Join customers with their order totals
+customer_metrics = enhanced_customers.join(
+    order_summary,
+    left_on="c_custkey",
+    right_on="o_custkey"
+)
+
+# Step 4: Sort by total order value
+top_customers = customer_metrics.sort("o_totalprice_sum", descending=True)
+
+pipeline_time = time.time() - pipeline_start
+
+print(f"ETL pipeline completed in {pipeline_time:.2f} seconds")
+print("Top 10 customers by order value:")
+top_customers.limit(10).show()
 ```
 
 ## Production ETL Patterns
 
-### Batch Processing with Checkpoints
+### Batch Processing Demo
 
 ```python
-# Production ETL with batch processing and progress tracking
-def production_etl_pipeline():
-    """Production-ready ETL pipeline with Ray Data."""
-    
-    print("Starting production ETL pipeline...")
-    
-    # Process in manageable chunks
-    batch_size = 10000
-    
-    print(f"Processing customers in batches of {batch_size:,}")
-    
-    # Use Ray Data's built-in batching
-    processed_batches = customers.iter_batches(batch_size=batch_size)
-    
-    results = []
-    for i, batch in enumerate(processed_batches):
-        batch_start = time.time()
-        
-        # Process batch using expressions
-        batch_df = pd.DataFrame(batch)
-        
-        # Apply business logic transformations
-        enhanced_batch = {
-            'batch_id': i,
-            'records_processed': len(batch_df),
-            'avg_balance': batch_df['c_acctbal'].mean(),
-            'premium_customers': (batch_df['c_acctbal'] > 5000).sum(),
-            'processing_time': time.time() - batch_start
-        }
-        
-        results.append(enhanced_batch)
-        
-        if (i + 1) % 5 == 0:
-            print(f"Processed batch {i+1}: {enhanced_batch['records_processed']} records in {enhanced_batch['processing_time']:.2f}s")
-    
-    # Create summary
-    total_time = sum(r['processing_time'] for r in results)
-    print(f"\nETL Pipeline Summary:")
-    print(f"- Total batches processed: {len(results)}")
-    print(f"- Total processing time: {total_time:.2f} seconds")
-    print(f"- Average batch time: {total_time/len(results):.2f} seconds")
-    print(f"- Efficient batch processing completed")
-    
-    return results
+# Process customers in batches for production-scale ETL
+print("Processing customers in batches...")
+batch_size = 10000
 
-# Run production ETL pipeline
-etl_results = production_etl_pipeline()
+# Use Ray Data's built-in batching
+processed_batches = customers.iter_batches(batch_size=batch_size)
+
+results = []
+for i, batch in enumerate(processed_batches):
+    batch_start = time.time()
+    
+    # Process batch
+    batch_df = pd.DataFrame(batch)
+    
+    # Calculate batch metrics
+    batch_metrics = {
+        'batch_id': i,
+        'records_processed': len(batch_df),
+        'avg_balance': batch_df['c_acctbal'].mean(),
+        'premium_customers': (batch_df['c_acctbal'] > 5000).sum(),
+        'processing_time': time.time() - batch_start
+    }
+    
+    results.append(batch_metrics)
+    
+    if (i + 1) % 5 == 0:
+        print(f"Processed batch {i+1}: {batch_metrics['records_processed']} records in {batch_metrics['processing_time']:.2f}s")
+    
+    # Stop after a few batches for demo
+    if i >= 10:
+        break
+
+# Show batch processing summary
+total_time = sum(r['processing_time'] for r in results)
+print(f"\nBatch Processing Summary:")
+print(f"- Batches processed: {len(results)}")
+print(f"- Total processing time: {total_time:.2f} seconds")
+print(f"- Average batch time: {total_time/len(results):.2f} seconds")
 ```
 
 ## Key Takeaways
