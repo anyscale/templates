@@ -20,11 +20,9 @@ Learn how to optimize ML batch inference by comparing inefficient and efficient 
 
 ## Overview
 
-**The Problem**: Naive batch inference approaches suffer from inefficient model loading, poor batching, and resource waste. Traditional approaches often load models repeatedly, use suboptimal batch sizes, and fail to leverage distributed computing resources effectively.
+**The Problem**: Naive batch inference approaches suffer from inefficient model loading, poor batching, and resource waste.
 
-**The Solution**: Ray Data provides distributed batch processing capabilities that address these common inefficiencies. Through its [`map_batches`](https://docs.ray.io/en/latest/data/api/doc/ray.data.Dataset.map_batches.html) function and integration with [Ray actors](https://docs.ray.io/en/latest/ray-core/actors.html), Ray Data enables efficient model loading, optimal batching, and distributed resource utilization.
-
-**Key Ray Data Features for Inference**: Ray Data's [batch inference capabilities](https://docs.ray.io/en/latest/data/batch_inference.html) are specifically designed for ML workloads, providing automatic optimization and scalability that traditional data processing frameworks lack.
+**The Solution**: Ray Data provides distributed batch processing that optimizes model loading, batching, and resource utilization automatically.
 
 ## Setup
 
@@ -43,13 +41,11 @@ print("Use Ray Dashboard to monitor performance")
 
 ### Load Demo Dataset
 
-Ray Data provides native support for [reading images](https://docs.ray.io/en/latest/data/loading-data.html#loading-images) directly from cloud storage. We'll use the Imagenette dataset, which is a subset of ImageNet with 10 classes, perfect for demonstrating batch inference optimization patterns.
-
 ```python
-# Load real ImageNet dataset using Ray Data's native image reader
+# Load real ImageNet dataset for batch inference
 dataset = ray.data.read_images(
     "s3://ray-benchmark-data/imagenette2/train/",
-    mode="RGB"  # Load as RGB color images
+    mode="RGB"
 ).limit(1000)  # 1K images for demo
 
 print("Loaded ImageNet dataset for batch inference demo")
@@ -57,26 +53,21 @@ print("Sample dataset:")
 sample_batch = dataset.take_batch(3)
 print(f"Batch contains {len(sample_batch['image'])} images")
 print(f"Image shape: {sample_batch['image'][0].shape}")
-
-# Ray Data automatically handles image loading and format conversion
-# See Ray Data documentation: https://docs.ray.io/en/latest/data/working-with-images.html
 ```
 
 ## Inefficient Approach
 
 ### The Wrong Way: Loading Model in Every Batch
 
-This approach demonstrates a common anti-pattern in batch inference that leads to severe performance problems. Understanding why this approach fails helps illustrate the value of Ray Data's optimization features.
-
-**The Core Problem**: Loading machine learning models is expensive - it involves reading large files from disk, initializing neural networks, and allocating GPU memory. When this happens repeatedly for every batch, it creates massive overhead that dominates inference time.
+This approach demonstrates common mistakes that lead to poor performance:
 
 ```python
 def inefficient_inference(batch):
     """INEFFICIENT: Loads model for every single batch."""
     # This is very slow - model loads repeatedly!
     from transformers import pipeline
-import time
-
+    import time
+    
     print("Loading model... (this happens for every batch!)")
     start_load = time.time()
     
@@ -124,12 +115,6 @@ print("Problems: Model loads repeatedly, poor batching, wasted resources")
 ## Optimized Approach
 
 ### The Right Way: Actor-Based Model Loading
-
-Ray Data solves the model loading problem through integration with [Ray actors](https://docs.ray.io/en/latest/ray-core/actors.html). Actors are stateful processes that can load a model once and reuse it across many batches, eliminating the repeated loading overhead.
-
-**Actor Benefits for Batch Inference**: Ray actors provide persistent state across multiple function calls, making them ideal for batch inference where you want to load expensive models once and reuse them. The [Ray Data batch inference guide](https://docs.ray.io/en/latest/data/batch_inference.html) explains these patterns in detail.
-
-**GPU Resource Allocation**: Ray's [resource allocation system](https://docs.ray.io/en/latest/ray-core/scheduling/resources.html) allows you to specify GPU requirements for actors using the `num_gpus` parameter, ensuring efficient GPU utilization across distributed workers.
 
 ```python
 # EFFICIENT: Use Ray actors to load model once per worker
@@ -181,9 +166,9 @@ def optimized_inference(batch):
 
 print("Testing optimized approach...")
 print("Watch Ray Dashboard to see improved performance")
-    
-    start_time = time.time()
-    
+
+start_time = time.time()
+
 # Run optimized batch inference with larger batches
 optimized_results = dataset.limit(100).map_batches(
     optimized_inference,
@@ -255,18 +240,13 @@ print("- Distributed processing across cluster")
 
 ### Batch Size Optimization
 
-Batch size is a critical parameter in Ray Data batch inference that affects both performance and resource utilization. The [performance tips guide](https://docs.ray.io/en/latest/data/performance-tips.html) provides detailed guidance on choosing optimal batch sizes.
-
-**Batch Size Considerations**: Larger batch sizes generally improve GPU utilization and throughput, but they also increase memory usage. The optimal batch size depends on your model size, available GPU memory, and dataset characteristics. Ray Data's [`map_batches`](https://docs.ray.io/en/latest/data/api/doc/ray.data.Dataset.map_batches.html) function allows you to experiment with different batch sizes easily.
-
 ```python
 # Test different batch sizes to find optimal performance
 print("\nTesting different batch sizes:")
-print("This demonstrates how batch size affects inference performance")
 
 batch_sizes = [4, 8, 16, 32]
 batch_performance = []
-    
+
 for batch_size in batch_sizes:
     print(f"Testing batch size: {batch_size}")
     start_time = time.time()
@@ -297,34 +277,23 @@ if batch_performance:
 
 ### Ray Dashboard Monitoring
 
-The [Ray Dashboard](https://docs.ray.io/en/latest/ray-observability/getting-started.html) provides comprehensive monitoring capabilities specifically designed for distributed Ray workloads. For batch inference, the dashboard is invaluable for understanding performance characteristics and identifying optimization opportunities.
-
-**Key Dashboard Features for Batch Inference**: The [Ray Data section](https://docs.ray.io/en/latest/ray-observability/user-guides/add-app-metrics.html) of the dashboard shows execution plans, block processing statistics, and operator performance. The [Jobs page](https://docs.ray.io/en/latest/ray-observability/getting-started.html#jobs-view) displays task execution timelines and resource utilization across workers.
-
 ```python
 # Ray Dashboard provides comprehensive monitoring
 print("\nRay Dashboard Monitoring:")
 print("The Ray Dashboard shows detailed performance metrics:")
 print("- Task execution timelines and worker utilization")
-print("- GPU utilization across distributed workers (when available)")
+print("- GPU utilization across distributed workers")
 print("- Memory usage and object store statistics")
-print("- Ray Data execution plans and block processing optimization")
-print("\nAccess your dashboard to see real-time performance insights")
-print("Dashboard URL available via ray.get_dashboard_url()")
-
-# The dashboard automatically tracks all the metrics you need
-# No custom monitoring code required - Ray handles everything!
+print("- Ray Data execution plans and optimization details")
+print("\nNo custom monitoring needed - Ray Dashboard handles everything!")
 ```
 
 ## Key Takeaways
 
-**Actor pattern is essential**: Ray's [stateful actors](https://docs.ray.io/en/latest/ray-core/actors.html) enable loading models once per worker, providing significant performance improvements over repeated model loading. This pattern is fundamental to efficient distributed inference.
-
-**Batch size optimization**: Proper batch sizing affects both performance and resource utilization. The [Ray Data performance guide](https://docs.ray.io/en/latest/data/performance-tips.html#batch-size) provides detailed guidance on choosing optimal batch sizes for your workload.
-
-**Resource allocation**: Ray's [resource specification system](https://docs.ray.io/en/latest/ray-core/scheduling/resources.html) allows precise control over GPU allocation using parameters like `num_gpus=1`, ensuring efficient resource utilization across distributed workers.
-
-**Ray Dashboard monitoring**: The [Ray observability system](https://docs.ray.io/en/latest/ray-observability/getting-started.html) provides comprehensive monitoring without requiring custom performance tracking code.
+**Actor pattern is essential**: Loading models once per worker using Ray actors provides significant performance improvements  
+**Batch size optimization**: Larger batch sizes generally improve GPU utilization and throughput  
+**Resource allocation**: Use `num_gpus=1` to properly allocate GPU resources to inference tasks  
+**Ray Dashboard monitoring**: Leverage built-in monitoring instead of custom performance tracking  
 
 ## Action Items
 
@@ -335,14 +304,10 @@ print("Dashboard URL available via ray.get_dashboard_url()")
 
 ## Next Steps
 
-**Advanced Ray Data features**: Explore Ray Data's [streaming execution](https://docs.ray.io/en/latest/data/performance-tips.html#streaming-execution) and [pipeline optimization](https://docs.ray.io/en/latest/data/performance-tips.html#optimizing-performance) capabilities for even better performance.
-
-**Ray Serve integration**: Learn [Ray Serve](https://docs.ray.io/en/latest/serve/index.html) for real-time model serving and online inference applications that complement batch processing workflows.
-
-**Multi-GPU scaling**: Scale inference across multiple GPU workers using Ray's [resource management](https://docs.ray.io/en/latest/ray-core/scheduling/resources.html) for larger workloads and more complex models.
-
-**Production deployment**: Explore [Ray clustering](https://docs.ray.io/en/latest/cluster/getting-started.html) options for deploying optimized batch inference pipelines at scale.
+**Advanced Ray Data features**: Explore streaming inference and pipeline optimization  
+**Ray Serve integration**: Learn about real-time model serving with Ray Serve  
+**Multi-model workflows**: Process multiple models in the same Ray Data pipeline  
 
 ---
 
-*The [Ray Dashboard](https://docs.ray.io/en/latest/ray-observability/getting-started.html) provides all the performance monitoring you need - focus on optimizing your Ray Data usage patterns.*
+*Ray Dashboard provides all the performance monitoring you need - focus on optimizing your Ray Data usage patterns.*
