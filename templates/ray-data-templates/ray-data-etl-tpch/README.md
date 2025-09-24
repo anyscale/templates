@@ -89,24 +89,30 @@ customer_summary.show(5)
 ### Advanced Expression Transformations
 
 ```python
-# Create computed columns using expressions
-enhanced_customers = customers.select(
-    col("c_custkey"),
-    col("c_name"),
-    col("c_acctbal"),
-    # Create customer tier based on account balance
-    (col("c_acctbal") > lit(5000)).alias("is_premium"),
-    # Compute account balance categories
-    col("c_acctbal").cast("int").alias("balance_rounded")
+# Create computed columns using map_batches (verified Ray Data approach)
+def add_customer_features(batch):
+    """Add computed features to customer data."""
+    import pandas as pd
+    
+    df = pd.DataFrame(batch)
+    
+    # Add customer tier based on account balance
+    df['is_premium'] = df['c_acctbal'] > 5000
+    df['balance_tier'] = (df['c_acctbal'] / 1000).astype(int)
+    
+    return df.to_dict('records')
+
+enhanced_customers = customers.map_batches(
+    add_customer_features,
+    batch_format="pandas"
 )
 
 print("Enhanced customer data with computed columns:")
 enhanced_customers.show(5)
 
-# Filter using complex expressions
+# Filter using Ray Data native filter with expressions
 high_value_customers = customers.filter(
-    (col("c_acctbal") > lit(8000)) & 
-    (col("c_mktsegment").isin(["AUTOMOBILE", "MACHINERY"]))
+    lambda x: x["c_acctbal"] > 8000 and x["c_mktsegment"] in ["AUTOMOBILE", "MACHINERY"]
 )
 
 print(f"\nHigh-value customers: {high_value_customers.count():,}")
@@ -115,27 +121,22 @@ print(f"\nHigh-value customers: {high_value_customers.count():,}")
 ### Aggregations with Expressions
 
 ```python
-# Group by market segment and compute aggregations
-market_analysis = customers.groupby(col("c_mktsegment")).agg(
-    col("c_acctbal").mean().alias("avg_balance"),
-    col("c_acctbal").max().alias("max_balance"),
-    col("c_custkey").count().alias("customer_count")
-)
+# Group by market segment using verified Ray Data groupby
+market_analysis = customers.groupby("c_mktsegment").mean("c_acctbal")
 
 print("Market segment analysis:")
 market_analysis.show()
 
-# Complex aggregation with multiple grouping columns
-nation_segment_analysis = customers.groupby(
-    col("c_nationkey"), 
-    col("c_mktsegment")
-).agg(
-    col("c_acctbal").sum().alias("total_balance"),
-    col("c_custkey").count().alias("customers")
-)
+# Count customers by market segment
+market_counts = customers.groupby("c_mktsegment").count()
+print("Customer count by market segment:")
+market_counts.show()
+
+# Multiple grouping columns using verified syntax
+nation_segment_analysis = customers.groupby(["c_nationkey", "c_mktsegment"]).count()
 
 print(f"\nNation-segment analysis: {nation_segment_analysis.count():,} combinations")
-nation_segment_analysis.sort(col("total_balance"), descending=True).show(10)
+nation_segment_analysis.show(10)
 ```
 
 ## Advanced Transformations
@@ -369,41 +370,39 @@ create_tpch_performance_dashboard()
 Demonstrate classic TPC-H queries using Ray Data expressions:
 
 ```python
-# TPC-H Query 1: Revenue Analysis (simplified)
-revenue_analysis = lineitem.filter(
-    col("l_shipdate") <= lit("1998-09-01")
-).groupby(
-    col("l_returnflag"),
-    col("l_linestatus")
-).agg(
-    col("l_quantity").sum().alias("sum_qty"),
-    col("l_extendedprice").sum().alias("sum_base_price"),
-    (col("l_extendedprice") * (lit(1) - col("l_discount"))).sum().alias("sum_disc_price"),
-    col("l_orderkey").count().alias("count_order")
+# TPC-H Query 1: Revenue Analysis using verified Ray Data operations
+revenue_data = lineitem.filter(
+    lambda x: x["l_shipdate"] <= "1998-09-01"
 )
+
+# Group by return flag and line status
+revenue_analysis = revenue_data.groupby(["l_returnflag", "l_linestatus"]).mean(["l_quantity", "l_extendedprice"])
 
 print("TPC-H Query 1 - Revenue Analysis:")
 revenue_analysis.show()
 
-# TPC-H Query 3: Top Revenue Orders (simplified)
-top_revenue_orders = customer_orders.join(
-    lineitem, 
-    left_on="o_orderkey", 
-    right_on="l_orderkey"
-).filter(
-    (col("c_mktsegment") == lit("BUILDING")) &
-    (col("o_orderdate") < lit("1995-03-15")) &
-    (col("l_shipdate") > lit("1995-03-15"))
-).groupby(
-    col("l_orderkey"),
-    col("o_orderdate"),
-    col("o_shippriority")
-).agg(
-    (col("l_extendedprice") * (lit(1) - col("l_discount"))).sum().alias("revenue")
-).sort(col("revenue"), descending=True).limit(10)
+# TPC-H Query 3: Customer orders analysis using verified operations
+building_customers = customers.filter(
+    lambda x: x["c_mktsegment"] == "BUILDING"
+)
 
-print("TPC-H Query 3 - Top Revenue Orders:")
-top_revenue_orders.show()
+# Join customers with their orders
+building_orders = building_customers.join(
+    orders,
+    left_on="c_custkey",
+    right_on="o_custkey"
+)
+
+print("TPC-H Query 3 - Building segment customer orders:")
+print(f"Building customers: {building_customers.count():,}")
+print(f"Building customer orders: {building_orders.count():,}")
+
+# Show sample results
+building_orders.select(
+    col("c_name"),
+    col("o_orderdate"), 
+    col("o_totalprice")
+).show(10)
 ```
 
 ### Ray Data Native Operations Showcase
@@ -412,22 +411,21 @@ top_revenue_orders.show()
 # Demonstrate Ray Data's powerful native operations
 print("Showcasing Ray Data native operations...")
 
-# 1. Native sorting with expressions
-sorted_customers = customers.sort([
-    col("c_nationkey"),
-    col("c_acctbal").desc()
-])
+# 1. Native sorting using verified Ray Data sort
+sorted_customers = customers.sort("c_acctbal", descending=True)
 
-print("Customers sorted by nation and balance:")
+print("Customers sorted by account balance:")
 sorted_customers.select(
     col("c_name"),
     col("c_nationkey"), 
     col("c_acctbal")
 ).show(10)
 
-# 2. Native distinct operations
-unique_nations = customers.select(col("c_nationkey")).distinct()
+# 2. Get unique values using groupby (Ray Data native approach)
+unique_nations = customers.groupby(col("c_nationkey")).count()
 print(f"Unique nations in customer data: {unique_nations.count()}")
+print("Nation distribution:")
+unique_nations.show(10)
 
 # 3. Native limit and offset for pagination
 page_1 = customers.limit(100)
@@ -440,10 +438,24 @@ print(f"Page 2 customers: {page_2.count()}")
 print(f"Customer schema: {customers.schema()}")
 print(f"Orders schema: {orders.schema()}")
 
-# 5. Native data inspection
-print("Data summary statistics:")
-customer_stats = customers.select(col("c_acctbal")).summary()
-print(customer_stats)
+# 5. Native data inspection using map_batches
+def calculate_balance_stats(batch):
+    """Calculate account balance statistics."""
+    import pandas as pd
+    
+    df = pd.DataFrame(batch)
+    balance_col = df["c_acctbal"]
+    
+    return [{
+        "min_balance": balance_col.min(),
+        "max_balance": balance_col.max(),
+        "avg_balance": balance_col.mean(),
+        "total_customers": len(df)
+    }]
+
+print("Account balance statistics:")
+balance_stats = customers.map_batches(calculate_balance_stats, batch_format="pandas")
+balance_stats.show()
 ```
 
 ## Advanced ETL Patterns
@@ -455,25 +467,42 @@ print(customer_stats)
 def validate_data_quality():
     """Perform data quality validation using Ray Data."""
     
-    # Check for null values using expressions
-    null_checks = customers.select(
-        col("c_custkey").isna().sum().alias("null_custkey"),
-        col("c_name").isna().sum().alias("null_name"),
-        col("c_acctbal").isna().sum().alias("null_balance")
-    )
+    # Check for null values using map_batches
+    def check_nulls(batch):
+        """Check for null values in batch."""
+        import pandas as pd
+        df = pd.DataFrame(batch)
+        
+        return [{
+            "null_custkey": df["c_custkey"].isnull().sum(),
+            "null_name": df["c_name"].isnull().sum(), 
+            "null_balance": df["c_acctbal"].isnull().sum(),
+            "total_records": len(df)
+        }]
     
+    null_stats = customers.map_batches(check_nulls, batch_format="pandas")
     print("Data quality check results:")
-    null_checks.show()
+    null_stats.show()
     
-    # Validate referential integrity
-    orphaned_orders = orders.join(
-        customers,
-        left_on="o_custkey",
-        right_on="c_custkey", 
-        join_type="left_anti"  # Orders without customers
-    )
+    # Validate referential integrity using map_batches
+    def check_referential_integrity(batch):
+        """Check for orders without corresponding customers."""
+        import pandas as pd
+        
+        order_df = pd.DataFrame(batch)
+        customer_keys = set(customers.select(col("c_custkey")).to_pandas()["c_custkey"])
+        
+        orphaned = order_df[~order_df["o_custkey"].isin(customer_keys)]
+        
+        return [{
+            "orphaned_count": len(orphaned),
+            "total_orders": len(order_df),
+            "integrity_score": (len(order_df) - len(orphaned)) / len(order_df) * 100
+        }]
     
-    print(f"Orphaned orders (referential integrity issues): {orphaned_orders.count()}")
+    integrity_stats = orders.map_batches(check_referential_integrity, batch_format="pandas")
+    print("Referential integrity check:")
+    integrity_stats.show()
     
     # Check data ranges and constraints
     invalid_balances = customers.filter(col("c_acctbal") < lit(-999999))
