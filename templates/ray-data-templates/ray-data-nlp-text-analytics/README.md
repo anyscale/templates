@@ -2318,23 +2318,12 @@ from transformers import logging as transformers_logging
 logging.basicConfig(level=logging.DEBUG)
 transformers_logging.set_verbosity_info()
 
-# Monitor system resources
-def monitor_resources():
-    """Monitor system resources during processing."""
-    import psutil
-    
-    # CPU and memory monitoring
-    cpu_percent = psutil.cpu_percent(interval=1)
-    memory = psutil.virtual_memory()
-    
-    print(f"CPU Usage: {cpu_percent:.1f}%")
-    print(f"Memory Usage: {memory.percent:.1f}% ({memory.used / 1e9:.1f}GB / {memory.total / 1e9:.1f}GB)")
-    
-    # GPU monitoring if available
-    if torch.cuda.is_available():
-        gpu_memory = torch.cuda.memory_allocated(0) / 1e9
-        gpu_total = torch.cuda.get_device_properties(0).total_memory / 1e9
-        print(f"GPU Memory: {gpu_memory:.1f}GB / {gpu_total:.1f}GB ({gpu_memory/gpu_total*100:.1f}%)")
+# Simple timing for performance tracking
+def track_processing_time():
+    """Track processing time for performance analysis."""
+    return time.time()
+
+print("Use Ray Dashboard for detailed resource monitoring and cluster metrics")
 
 # Enable progress tracking
 class ProgressTracker:

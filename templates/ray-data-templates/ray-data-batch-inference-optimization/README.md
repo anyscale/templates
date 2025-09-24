@@ -116,37 +116,29 @@ import sys
 import os
 import time
 import logging
-import psutil
 from typing import Dict, List, Any, Optional, Union, Tuple
 from dataclasses import dataclass
 from datetime import datetime
 
-# Configure comprehensive logging for optimization tracking
+# Configure logging for tracking optimization experiments
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.StreamHandler(),
-        logging.FileHandler('inference_optimization.log')
-    ]
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
 
 # Simple environment setup
 python_version = sys.version_info
-memory_gb = psutil.virtual_memory().total / (1024**3)
-cpu_count = psutil.cpu_count()
 
 print(f"Environment ready for optimization:")
 print(f"  Python: {python_version.major}.{python_version.minor}")
-print(f"  Memory: {memory_gb:.1f}GB")
-print(f"  CPUs: {cpu_count}")
 
 # Check for GPU availability
 import torch
 gpu_available = torch.cuda.is_available()
 gpu_count = torch.cuda.device_count() if gpu_available else 0
 print(f"  GPUs: {gpu_count} available" if gpu_available else "  GPUs: None detected")
+print("  Resource monitoring: Use Ray Dashboard for detailed metrics")
 ```
 
 ### Step 2: Ray Cluster Initialization with Optimization Settings
@@ -260,38 +252,37 @@ def create_inference_optimization_dashboard():
                 xytext=(batch_sizes[optimal_cpu]*2, throughput_cpu[optimal_cpu]+50),
                 arrowprops=dict(arrowstyle='->', color='blue'))
     
-    # 2. Memory usage by batch size
+    # 2. Processing time by batch size
     ax2 = axes[0, 1]
-    memory_usage = [0.5, 1.8, 3.2, 6.1, 11.8, 22.4, 43.2]  # GB
-    memory_efficiency = [t/m for t, m in zip(throughput_gpu, memory_usage)]
+    processing_times_cpu = [8.5, 2.8, 1.9, 1.2, 0.9, 0.8, 0.9]  # seconds
+    processing_times_gpu = [4.2, 1.1, 0.7, 0.4, 0.3, 0.2, 0.2]  # seconds
     
-    ax2_twin = ax2.twinx()
-    bars = ax2.bar(range(len(batch_sizes)), memory_usage, alpha=0.7, color='lightcoral')
-    line = ax2_twin.plot(range(len(batch_sizes)), memory_efficiency, 'go-', linewidth=3, markersize=8)
-    
-    ax2.set_title('Memory Usage vs Efficiency', fontweight='bold')
+    ax2.plot(batch_sizes, processing_times_cpu, 'o-', label='CPU Processing Time', linewidth=3, markersize=8)
+    ax2.plot(batch_sizes, processing_times_gpu, 's-', label='GPU Processing Time', linewidth=3, markersize=8)
+    ax2.set_title('Processing Time by Batch Size', fontweight='bold')
     ax2.set_xlabel('Batch Size')
-    ax2.set_ylabel('Memory Usage (GB)', color='red')
-    ax2_twin.set_ylabel('Efficiency (imgs/sec/GB)', color='green')
-    ax2.set_xticks(range(len(batch_sizes)))
-    ax2.set_xticklabels(batch_sizes)
+    ax2.set_ylabel('Processing Time (seconds)')
+    ax2.set_xscale('log', base=2)
+    ax2.legend()
+    ax2.grid(True, alpha=0.3)
     
     # 3. Concurrency optimization
     ax3 = axes[0, 2]
     concurrency_levels = [1, 2, 4, 8, 16, 32]
     processing_times = [45.2, 23.1, 12.8, 8.4, 7.9, 8.2]  # seconds
-    cpu_utilization = [25, 48, 85, 92, 96, 98]  # percent
     
-    ax3_twin = ax3.twinx()
     bars3 = ax3.bar(range(len(concurrency_levels)), processing_times, alpha=0.7, color='skyblue')
-    line3 = ax3_twin.plot(range(len(concurrency_levels)), cpu_utilization, 'ro-', linewidth=3, markersize=8)
-    
-    ax3.set_title('Concurrency vs Performance', fontweight='bold')
+    ax3.set_title('Concurrency vs Processing Time', fontweight='bold')
     ax3.set_xlabel('Concurrency Level')
-    ax3.set_ylabel('Processing Time (sec)', color='blue')
-    ax3_twin.set_ylabel('CPU Utilization (%)', color='red')
+    ax3.set_ylabel('Processing Time (seconds)')
     ax3.set_xticks(range(len(concurrency_levels)))
     ax3.set_xticklabels(concurrency_levels)
+    
+    # Add time labels on bars
+    for bar, time in zip(bars3, processing_times):
+        height = bar.get_height()
+        ax3.text(bar.get_x() + bar.get_width()/2., height + 1,
+                f'{time:.1f}s', ha='center', va='bottom', fontweight='bold')
     
     # Mark optimal concurrency
     optimal_concurrency = np.argmin(processing_times)
@@ -344,32 +335,36 @@ def create_inference_optimization_dashboard():
         speedup = cpu_time / gpu_time
         ax5.text(i, gpu_time * 1.5, f'{speedup:.1f}x', ha='center', fontweight='bold')
     
-    # 6. Resource utilization optimization
+    # 6. End-to-end optimization timeline
     ax6 = axes[1, 2]
     optimization_stages = ['Baseline', 'Batching', '+ GPU', '+ Actors', '+ Caching']
-    throughput_improvement = [100, 340, 780, 1250, 1560]  # relative to baseline
-    resource_efficiency = [15, 42, 68, 82, 89]  # percent
+    processing_times = [156.3, 45.9, 20.1, 12.5, 10.0]  # seconds for same workload
     
-    ax6_twin = ax6.twinx()
-    bars6 = ax6.bar(range(len(optimization_stages)), throughput_improvement, alpha=0.7, color='gold')
-    line6 = ax6_twin.plot(range(len(optimization_stages)), resource_efficiency, 'mo-', linewidth=3, markersize=8)
-    
-    ax6.set_title('Optimization Impact Analysis', fontweight='bold')
+    bars6 = ax6.bar(range(len(optimization_stages)), processing_times, alpha=0.7, color='gold')
+    ax6.set_title('End-to-End Processing Time by Optimization', fontweight='bold')
     ax6.set_xlabel('Optimization Stage')
-    ax6.set_ylabel('Relative Throughput (%)', color='orange')
-    ax6_twin.set_ylabel('Resource Efficiency (%)', color='purple')
+    ax6.set_ylabel('Processing Time (seconds)')
     ax6.set_xticks(range(len(optimization_stages)))
     ax6.set_xticklabels(optimization_stages, rotation=45, ha='right')
+    
+    # Add speedup annotations
+    baseline_time = processing_times[0]
+    for i, (bar, time) in enumerate(zip(bars6, processing_times)):
+        speedup = baseline_time / time
+        height = bar.get_height()
+        ax6.text(bar.get_x() + bar.get_width()/2., height + 5,
+                f'{speedup:.1f}x faster', ha='center', va='bottom', fontweight='bold')
     
     plt.tight_layout()
     plt.show()
     
     print("Batch Inference Optimization Insights:")
     print(f"- Optimal batch size for GPU: {batch_sizes[optimal_gpu]} (throughput: {throughput_gpu[optimal_gpu]} imgs/sec)")
-    print(f"- Optimal concurrency: {concurrency_levels[optimal_concurrency]} workers")
-    print(f"- Ray Actors provide {baseline/strategy_times[-1]:.1f}x speedup over naive approach")
+    print(f"- Optimal concurrency: {concurrency_levels[optimal_concurrency]} workers ({processing_times[optimal_concurrency]:.1f}s processing time)")
+    print(f"- Ray Actors provide {strategy_times[0]/strategy_times[-1]:.1f}x speedup over naive approach")
     print(f"- GPU provides {cpu_times[-1]/gpu_times[-1]:.1f}x speedup for large datasets")
-    print(f"- Full optimization achieves {throughput_improvement[-1]/throughput_improvement[0]:.1f}x performance improvement")
+    print(f"- End-to-end optimization achieves {processing_times[0]/processing_times[-1]:.1f}x speedup")
+    print("- Use Ray Dashboard for detailed resource monitoring and cluster metrics")
 
 # Create batch inference optimization dashboard
 create_inference_optimization_dashboard()
