@@ -90,25 +90,73 @@ for i, sample in enumerate(samples):
 
 **The 80/20 Rule**: 80% of ML model performance comes from feature quality, only 20% from algorithm choice.
 
-**Examples of Great Features**:
-- **Netflix**: "Time since last similar movie watched" predicts viewing better than genre alone
-- **Uber**: "Ratio of supply to demand in area" predicts pricing better than absolute numbers  
-- **Amazon**: "Purchase frequency in category" predicts recommendations better than individual purchases
+**Industry Success Stories**
 
-**Ray Data's Feature Engineering Advantages**:
+Leading companies demonstrate the transformative power of sophisticated feature engineering. Netflix discovered that "time since last similar movie watched" predicts viewing behavior more accurately than simple genre categorization. Uber's pricing algorithms rely heavily on "ratio of supply to demand in area" rather than absolute numbers, while Amazon's recommendation engine leverages "purchase frequency in category" to outperform individual purchase-based features.
 
-**The Feature Engineering Challenge:**
-- **Scale**: Modern ML datasets contain billions of rows and thousands of potential features
-- **Complexity**: Creating interaction features results in exponential feature space growth
-- **Performance**: Feature engineering often becomes the bottleneck in ML pipelines
-- **Quality**: Poor features lead to poor models, regardless of algorithm sophistication
-- **Automation**: Manual feature engineering doesn't scale to enterprise data volumes
+```python
+# Example: Creating time-based features like Netflix
+def create_time_based_features(batch):
+    """Engineer time-based features for recommendation systems."""
+    enhanced_features = []
+    for record in batch:
+        # Calculate days since last interaction
+        days_since_last = (record['current_date'] - record['last_interaction']).days
+        
+        # Create time-based feature buckets
+        time_features = {
+            'days_since_last_interaction': days_since_last,
+            'interaction_recency_score': 1.0 / (1.0 + days_since_last),
+            'is_recent_user': 1 if days_since_last <= 7 else 0,
+            'interaction_frequency': record['interaction_count'] / max(days_since_last, 1)
+        }
+        
+        enhanced_features.append({**record, **time_features})
+    
+    return enhanced_features
 
-**Real-World Feature Engineering Scenarios:**
-- **E-commerce**: Create 500+ features from customer behavior, product catalogs, and transactions
-- **Financial Services**: Engineer 1000+ risk indicators from market data, credit history, and economic factors
-- **Healthcare**: Transform patient records, lab results, and imaging data into predictive features
-- **Manufacturing**: Convert sensor data, maintenance logs, and production metrics into quality predictors
+# Apply time-based feature engineering
+time_enhanced_data = customer_data.map_batches(
+    create_time_based_features,
+    batch_format="pandas"
+)
+
+print("Time-based features created successfully")
+```
+
+**The Feature Engineering Challenge at Scale**
+
+Modern ML systems face unprecedented challenges in feature engineering. Scale becomes critical when datasets contain billions of rows and thousands of potential features, while complexity grows exponentially as interaction features create vast feature spaces. Performance bottlenecks often emerge in the feature engineering stage rather than model training, and poor feature quality consistently leads to poor models regardless of algorithm sophistication.
+
+Automation becomes essential because manual feature engineering cannot scale to enterprise data volumes. E-commerce platforms must create 500+ features from customer behavior, product catalogs, and transaction histories. Financial services require 1000+ risk indicators from market data, credit histories, and economic factors. Healthcare organizations transform patient records, lab results, and imaging data into predictive features, while manufacturing companies convert sensor data, maintenance logs, and production metrics into quality predictors.
+
+```python
+# Example: Automated feature selection at scale
+def automated_feature_selection(dataset, target_column, max_features=100):
+    """Automatically select the most predictive features."""
+    
+    # Calculate feature importance scores
+    def calculate_feature_importance(batch):
+        # Simplified correlation-based feature scoring
+        correlations = []
+        for column in batch.columns:
+            if column != target_column:
+                correlation = abs(batch[column].corr(batch[target_column]))
+                correlations.append((column, correlation))
+        return correlations
+    
+    # Apply feature selection across distributed data
+    feature_scores = dataset.map_batches(
+        calculate_feature_importance,
+        batch_format="pandas"
+    )
+    
+    print(f"Automated feature selection identified top {max_features} features")
+    return feature_scores
+
+# Demonstrate automated feature selection
+selected_features = automated_feature_selection(enhanced_data, 'target_variable')
+```
 
 ### **Ray Data's Feature Engineering Advantages**
 

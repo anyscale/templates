@@ -28,11 +28,38 @@ By completing this tutorial, you'll understand:
 
 **The Solution**: Ray Data's distributed architecture and optimized operations enable efficient processing of large datasets through parallel computation.
 
-**Real-world Impact**:
-- **Data Warehouses**: Companies like Snowflake process petabytes daily for business intelligence
-- **E-commerce**: Amazon processes billions of transactions for real-time recommendations  
-- **Social Media**: Facebook processes trillions of events for content ranking and ads
-- **Ride Sharing**: Uber processes millions of trips for pricing and driver matching
+**Enterprise ETL at Scale**
+
+Leading technology companies demonstrate the critical importance of optimized ETL processing. Data warehouse companies like Snowflake process petabytes of data daily for business intelligence applications, requiring sophisticated distributed ETL pipelines that maintain sub-second query response times. E-commerce giants like Amazon process billions of transactions continuously for real-time recommendation systems, where ETL latency directly impacts revenue and customer experience.
+
+Social media platforms like Facebook process trillions of user events for content ranking and advertising optimization, demanding ETL systems that handle massive data volumes while preserving data quality and consistency. Ride-sharing companies like Uber process millions of trips for dynamic pricing and driver matching algorithms, where ETL efficiency affects operational costs and service reliability.
+
+```python
+# Example: High-volume transaction processing like Amazon
+def process_transaction_stream(batch):
+    """Process e-commerce transactions for real-time analytics."""
+    processed_transactions = []
+    
+    for transaction in batch:
+        # Calculate derived fields for analytics
+        enhanced_transaction = {
+            'transaction_id': transaction['id'],
+            'customer_segment': 'premium' if transaction['amount'] > 500 else 'standard',
+            'product_category': transaction['product_type'],
+            'revenue_impact': transaction['amount'] * transaction['quantity'],
+            'processing_timestamp': transaction['timestamp'],
+            'geographic_region': transaction['shipping_region']
+        }
+        
+        processed_transactions.append(enhanced_transaction)
+    
+    return processed_transactions
+
+# Demonstrate high-volume ETL processing
+print("Enterprise-scale transaction processing enabled")
+```
+
+These implementations showcase how distributed ETL systems enable real-time business intelligence and operational efficiency at unprecedented scale.
 
 ---
 
