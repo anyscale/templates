@@ -140,201 +140,65 @@ print("Loaded real ImageNet dataset for optimization demo")
 print("Dataset ready for batch inference testing")
 # Use Ray Dashboard to monitor actual dataset statistics and block information
 
-### **Batch Inference Performance Analysis Dashboard**
-
-Let's create comprehensive visualizations to understand inference optimization patterns:
+### Load Demo Model for Testing
 
 ```python
-# Create engaging batch inference performance analysis dashboard
-import matplotlib.pyplot as plt
-import numpy as np
-import time
+# Simple demo model for batch inference optimization
+class DemoImageClassifier:
+    """Simple demo model for testing Ray Data optimization patterns."""
+    
+    def __init__(self):
+        """Initialize a simple demo model."""
+        print("Loading demo image classifier...")
+        # Simulate model loading time
+        import time
+        time.sleep(1)  # Simulate model loading
+        self.loaded = True
+        print("Demo model loaded successfully")
+    
+    def predict(self, images):
+        """Predict on batch of images."""
+        # Simulate inference computation
+        predictions = []
+        for img in images:
+            # Simple prediction simulation
+            prediction = {"class": "demo_class", "confidence": 0.95}
+            predictions.append(prediction)
+        return predictions
 
-def create_inference_optimization_dashboard():
-    """Generate comprehensive batch inference optimization analysis dashboard."""
-    
-    # Create comprehensive analysis dashboard
-    fig, axes = plt.subplots(2, 3, figsize=(20, 12))
-    fig.suptitle('Batch Inference Optimization: Performance Analysis Dashboard', fontsize=16, fontweight='bold')
-    
-    # 1. Batch size vs throughput analysis
-    ax1 = axes[0, 0]
-    batch_sizes = [1, 4, 8, 16, 32, 64, 128]
-    throughput_cpu = [12, 45, 78, 142, 235, 298, 312]  # Images/second
-    throughput_gpu = [25, 89, 156, 298, 485, 672, 758]  # Images/second
-    
-    ax1.plot(batch_sizes, throughput_cpu, 'o-', label='CPU Inference', linewidth=3, markersize=8)
-    ax1.plot(batch_sizes, throughput_gpu, 's-', label='GPU Inference', linewidth=3, markersize=8)
-    ax1.set_title('Batch Size vs Inference Throughput', fontweight='bold')
-    ax1.set_xlabel('Batch Size')
-    ax1.set_ylabel('Throughput (images/sec)')
-    ax1.set_xscale('log', base=2)
-    ax1.legend()
-    ax1.grid(True, alpha=0.3)
-    
-    # Add optimal points
-    optimal_cpu = np.argmax(throughput_cpu)
-    optimal_gpu = np.argmax(throughput_gpu)
-    ax1.annotate(f'Optimal CPU: {batch_sizes[optimal_cpu]}', 
-                xy=(batch_sizes[optimal_cpu], throughput_cpu[optimal_cpu]),
-                xytext=(batch_sizes[optimal_cpu]*2, throughput_cpu[optimal_cpu]+50),
-                arrowprops=dict(arrowstyle='->', color='blue'))
-    
-    # 2. Processing time by batch size
-    ax2 = axes[0, 1]
-    processing_times_cpu = [8.5, 2.8, 1.9, 1.2, 0.9, 0.8, 0.9]  # seconds
-    processing_times_gpu = [4.2, 1.1, 0.7, 0.4, 0.3, 0.2, 0.2]  # seconds
-    
-    ax2.plot(batch_sizes, processing_times_cpu, 'o-', label='CPU Processing Time', linewidth=3, markersize=8)
-    ax2.plot(batch_sizes, processing_times_gpu, 's-', label='GPU Processing Time', linewidth=3, markersize=8)
-    ax2.set_title('Processing Time by Batch Size', fontweight='bold')
-    ax2.set_xlabel('Batch Size')
-    ax2.set_ylabel('Processing Time (seconds)')
-    ax2.set_xscale('log', base=2)
-    ax2.legend()
-    ax2.grid(True, alpha=0.3)
-    
-    # 3. Concurrency optimization
-    ax3 = axes[0, 2]
-    concurrency_levels = [1, 2, 4, 8, 16, 32]
-    processing_times = [45.2, 23.1, 12.8, 8.4, 7.9, 8.2]  # seconds
-    
-    bars3 = ax3.bar(range(len(concurrency_levels)), processing_times, alpha=0.7, color='skyblue')
-    ax3.set_title('Concurrency vs Processing Time', fontweight='bold')
-    ax3.set_xlabel('Concurrency Level')
-    ax3.set_ylabel('Processing Time (seconds)')
-    ax3.set_xticks(range(len(concurrency_levels)))
-    ax3.set_xticklabels(concurrency_levels)
-    
-    # Add time labels on bars
-    for bar, time in zip(bars3, processing_times):
-        height = bar.get_height()
-        ax3.text(bar.get_x() + bar.get_width()/2., height + 1,
-                f'{time:.1f}s', ha='center', va='bottom', fontweight='bold')
-    
-    # Mark optimal concurrency
-    optimal_concurrency = np.argmin(processing_times)
-    ax3.annotate(f'Optimal: {concurrency_levels[optimal_concurrency]}', 
-                xy=(optimal_concurrency, processing_times[optimal_concurrency]),
-                xytext=(optimal_concurrency+1, processing_times[optimal_concurrency]+5),
-                arrowprops=dict(arrowstyle='->', color='blue'))
-    
-    # 4. Model loading strategies comparison
-    ax4 = axes[1, 0]
-    strategies = ['Load Per Batch', 'Load Per Worker', 'Shared Memory', 'Ray Actors']
-    strategy_times = [156.3, 23.7, 12.4, 8.9]  # seconds
-    colors = ['red', 'orange', 'lightgreen', 'darkgreen']
-    
-    bars4 = ax4.bar(strategies, strategy_times, color=colors, alpha=0.8)
-    ax4.set_title('Model Loading Strategy Performance', fontweight='bold')
-    ax4.set_ylabel('Processing Time (seconds)')
-    ax4.tick_params(axis='x', rotation=45)
-    
-    # Add speedup annotations
-    baseline = strategy_times[0]
-    for i, (bar, time) in enumerate(zip(bars4, strategy_times)):
-        speedup = baseline / time
-        height = bar.get_height()
-        ax4.text(bar.get_x() + bar.get_width()/2., height + 5,
-                f'{speedup:.1f}x faster', ha='center', va='bottom', fontweight='bold')
-    
-    # 5. GPU vs CPU scaling analysis
-    ax5 = axes[1, 1]
-    data_sizes = ['1K', '10K', '100K', '1M']
-    cpu_times = [5.2, 48.7, 425.8, 4120.3]
-    gpu_times = [2.1, 12.4, 89.6, 892.1]
-    
-    x = np.arange(len(data_sizes))
-    width = 0.35
-    
-    bars5a = ax5.bar(x - width/2, cpu_times, width, label='CPU', color='lightblue')
-    bars5b = ax5.bar(x + width/2, gpu_times, width, label='GPU', color='lightgreen')
-    
-    ax5.set_title('CPU vs GPU Scaling', fontweight='bold')
-    ax5.set_ylabel('Processing Time (seconds)')
-    ax5.set_xlabel('Dataset Size')
-    ax5.set_xticks(x)
-    ax5.set_xticklabels(data_sizes)
-    ax5.set_yscale('log')
-    ax5.legend()
-    
-    # Add speedup labels
-    for i, (cpu_time, gpu_time) in enumerate(zip(cpu_times, gpu_times)):
-        speedup = cpu_time / gpu_time
-        ax5.text(i, gpu_time * 1.5, f'{speedup:.1f}x', ha='center', fontweight='bold')
-    
-    # 6. End-to-end optimization timeline
-    ax6 = axes[1, 2]
-    optimization_stages = ['Baseline', 'Batching', '+ GPU', '+ Actors', '+ Caching']
-    processing_times = [156.3, 45.9, 20.1, 12.5, 10.0]  # seconds for same workload
-    
-    bars6 = ax6.bar(range(len(optimization_stages)), processing_times, alpha=0.7, color='gold')
-    ax6.set_title('End-to-End Processing Time by Optimization', fontweight='bold')
-    ax6.set_xlabel('Optimization Stage')
-    ax6.set_ylabel('Processing Time (seconds)')
-    ax6.set_xticks(range(len(optimization_stages)))
-    ax6.set_xticklabels(optimization_stages, rotation=45, ha='right')
-    
-    # Add speedup annotations
-    baseline_time = processing_times[0]
-    for i, (bar, time) in enumerate(zip(bars6, processing_times)):
-        speedup = baseline_time / time
-        height = bar.get_height()
-        ax6.text(bar.get_x() + bar.get_width()/2., height + 5,
-                f'{speedup:.1f}x faster', ha='center', va='bottom', fontweight='bold')
-    
-    plt.tight_layout()
-    plt.show()
-    
-    print("Batch Inference Optimization Insights:")
-    print(f"- Optimal batch size for GPU: {batch_sizes[optimal_gpu]} (throughput: {throughput_gpu[optimal_gpu]} imgs/sec)")
-    print(f"- Optimal concurrency: {concurrency_levels[optimal_concurrency]} workers ({processing_times[optimal_concurrency]:.1f}s processing time)")
-    print(f"- Ray Actors provide {strategy_times[0]/strategy_times[-1]:.1f}x speedup over naive approach")
-    print(f"- GPU provides {cpu_times[-1]/gpu_times[-1]:.1f}x speedup for large datasets")
-    print(f"- End-to-end optimization achieves {processing_times[0]/processing_times[-1]:.1f}x speedup")
-    print("- Use Ray Dashboard for detailed resource monitoring and cluster metrics")
-
-# Create batch inference optimization dashboard
-create_inference_optimization_dashboard()
+# Initialize demo model
+demo_model = DemoImageClassifier()
+print("Demo model ready for batch inference optimization")
 ```
 
-This dashboard provides crucial insights for optimizing batch inference performance across different dimensions and configurations.
-```
+The Ray Data dashboard will show you detailed performance metrics as we run optimization experiments.
 
-## Common Performance Mistakes
+## Batch Size Optimization
 
-### Mistake 1: Loading Models Inside Each Task
+### Demonstrating Batch Size Impact
 
-**Wrong Approach (Poor Performance):**
+Let's test different batch sizes to see how they affect performance:
+
 ```python
-def inefficient_inference(batch: Dict[str, Any]) -> Dict[str, Any]:
-    """ANTI-PATTERN: Loading model inside each task - extremely slow!"""
-    import numpy as np
-    
-    # MISTAKE: Simulating expensive model loading for every batch
-    # In real scenarios, this would be loading a 25MB+ model file
-    expensive_model_params = np.random.randn(1000, 1000)  # Simulate large model
-    
-    results = []
-    for sample in batch['features']:
-        # MISTAKE: Processing samples individually instead of batch processing
-        # Simulate expensive computation per sample
-        processed_features = np.dot(sample, expensive_model_params[:512, :512])
-        prediction = np.argmax(processed_features[:10])
-        results.append({'prediction': int(prediction)})
-    
-    return {'results': results}
+# Test small batch size
+def process_images_small_batch(batch):
+    """Process images with small batch size."""
+    # Use our demo model to process the batch
+    results = demo_model.predict(batch["image"])
+    return {"predictions": results}
 
-# Time the inefficient approach
-print("\nTesting Inefficient Model Loading (loads model for every batch)")
-print("Monitor in Ray Dashboard: task execution and resource usage")
-
+print("Testing small batch size (batch_size=4):")
 start_time = time.time()
-inefficient_result = optimization_dataset.map_batches(inefficient_inference, batch_size=16, concurrency=2).take(100)
-inefficient_time = time.time() - start_time
 
-print(f"Inefficient approach: {inefficient_time:.2f} seconds")
-print("Note poor performance in Ray Dashboard - check task execution timeline")
+small_batch_results = optimization_dataset.map_batches(
+    process_images_small_batch,
+    batch_size=4,
+    concurrency=2
+).take(100)
+
+small_batch_time = time.time() - start_time
+print(f"Small batch processing time: {small_batch_time:.2f} seconds")
+print("Check Ray Dashboard for task execution details")
 ```
 
 **Correct Approach (High Performance):**
