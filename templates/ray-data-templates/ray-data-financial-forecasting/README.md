@@ -133,6 +133,153 @@ print(f"  Date range: 2 years of daily market data")
 
 load_time = time.time() - start_time
 print(f"Real financial data loaded in {load_time:.2f} seconds")
+
+### **Financial Market Analysis Dashboard**
+
+Let's create comprehensive visualizations to understand market patterns and trends:
+
+```python
+# Create engaging financial market analysis dashboard
+import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
+import seaborn as sns
+import numpy as np
+
+def create_financial_analysis_dashboard():
+    """Generate comprehensive financial market analysis dashboard."""
+    
+    # Convert Ray dataset to pandas for visualization
+    financial_df = financial_data.to_pandas()
+    
+    # Ensure date column is datetime
+    if 'date' in financial_df.columns:
+        financial_df['date'] = pd.to_datetime(financial_df['date'])
+    
+    # Create comprehensive analysis dashboard
+    fig, axes = plt.subplots(2, 3, figsize=(20, 12))
+    fig.suptitle('S&P 500 Financial Market Analysis Dashboard', fontsize=16, fontweight='bold')
+    
+    # 1. Stock price trends over time
+    ax1 = axes[0, 0]
+    if 'close' in financial_df.columns and 'date' in financial_df.columns:
+        # Sample data for cleaner visualization
+        sample_df = financial_df.sample(min(1000, len(financial_df))).sort_values('date')
+        ax1.plot(sample_df['date'], sample_df['close'], linewidth=1.5, color='blue', alpha=0.7)
+        ax1.set_title('S&P 500 Price Trends', fontweight='bold')
+        ax1.set_ylabel('Closing Price ($)')
+        ax1.grid(True, alpha=0.3)
+        ax1.tick_params(axis='x', rotation=45)
+    
+    # 2. Volume distribution analysis
+    ax2 = axes[0, 1]
+    if 'volume' in financial_df.columns:
+        volumes = financial_df['volume'].dropna()
+        ax2.hist(volumes, bins=50, color='lightgreen', alpha=0.7, edgecolor='black')
+        ax2.set_title('Trading Volume Distribution', fontweight='bold')
+        ax2.set_xlabel('Volume')
+        ax2.set_ylabel('Frequency')
+        ax2.set_yscale('log')  # Log scale for better visualization
+    
+    # 3. Daily returns volatility
+    ax3 = axes[0, 2]
+    if 'close' in financial_df.columns:
+        # Calculate daily returns
+        financial_df['daily_return'] = financial_df['close'].pct_change()
+        returns = financial_df['daily_return'].dropna()
+        
+        ax3.hist(returns, bins=50, color='coral', alpha=0.7, edgecolor='black')
+        ax3.axvline(returns.mean(), color='red', linestyle='--', 
+                   label=f'Mean: {returns.mean():.4f}')
+        ax3.axvline(returns.std(), color='orange', linestyle='--', 
+                   label=f'Std: {returns.std():.4f}')
+        ax3.set_title('Daily Returns Distribution', fontweight='bold')
+        ax3.set_xlabel('Daily Return (%)')
+        ax3.set_ylabel('Frequency')
+        ax3.legend()
+    
+    # 4. Moving averages analysis
+    ax4 = axes[1, 0]
+    if 'close' in financial_df.columns and 'date' in financial_df.columns:
+        # Calculate moving averages
+        sample_df = financial_df.sample(min(500, len(financial_df))).sort_values('date')
+        sample_df['ma_20'] = sample_df['close'].rolling(window=20).mean()
+        sample_df['ma_50'] = sample_df['close'].rolling(window=50).mean()
+        
+        ax4.plot(sample_df['date'], sample_df['close'], label='Close Price', linewidth=1, alpha=0.7)
+        ax4.plot(sample_df['date'], sample_df['ma_20'], label='20-day MA', linewidth=2)
+        ax4.plot(sample_df['date'], sample_df['ma_50'], label='50-day MA', linewidth=2)
+        ax4.set_title('Moving Averages Analysis', fontweight='bold')
+        ax4.set_ylabel('Price ($)')
+        ax4.legend()
+        ax4.grid(True, alpha=0.3)
+        ax4.tick_params(axis='x', rotation=45)
+    
+    # 5. High-Low volatility analysis
+    ax5 = axes[1, 1]
+    if all(col in financial_df.columns for col in ['high', 'low', 'close']):
+        # Calculate daily volatility
+        financial_df['volatility'] = (financial_df['high'] - financial_df['low']) / financial_df['close']
+        volatility = financial_df['volatility'].dropna()
+        
+        ax5.boxplot([volatility], labels=['Daily Volatility'])
+        ax5.set_title('Market Volatility Analysis', fontweight='bold')
+        ax5.set_ylabel('Volatility Ratio')
+        ax5.grid(True, alpha=0.3)
+        
+        # Add summary statistics
+        ax5.text(0.7, volatility.quantile(0.75), 
+                f'Mean: {volatility.mean():.4f}\nStd: {volatility.std():.4f}',
+                fontsize=10, fontweight='bold',
+                bbox=dict(boxstyle="round,pad=0.3", facecolor="lightblue"))
+    
+    # 6. Market performance metrics
+    ax6 = axes[1, 2]
+    metrics = ['Mean Return', 'Volatility', 'Sharpe Ratio', 'Max Drawdown']
+    
+    # Calculate key metrics
+    if 'daily_return' in financial_df.columns:
+        daily_returns = financial_df['daily_return'].dropna()
+        mean_return = daily_returns.mean() * 252  # Annualized
+        volatility_annual = daily_returns.std() * np.sqrt(252)
+        sharpe_ratio = mean_return / volatility_annual if volatility_annual > 0 else 0
+        
+        # Calculate max drawdown
+        cumulative_returns = (1 + daily_returns).cumprod()
+        rolling_max = cumulative_returns.expanding().max()
+        drawdown = (cumulative_returns / rolling_max) - 1
+        max_drawdown = drawdown.min()
+        
+        values = [mean_return * 100, volatility_annual * 100, sharpe_ratio, max_drawdown * 100]
+        colors = ['green' if v > 0 else 'red' for v in values]
+        
+        bars = ax6.bar(metrics, values, color=colors, alpha=0.7)
+        ax6.set_title('Key Performance Metrics', fontweight='bold')
+        ax6.set_ylabel('Value (%)')
+        ax6.tick_params(axis='x', rotation=45)
+        
+        # Add value labels
+        for bar, value in zip(bars, values):
+            height = bar.get_height()
+            ax6.text(bar.get_x() + bar.get_width()/2., height + (0.1 if height > 0 else -0.3),
+                    f'{value:.2f}%', ha='center', va='bottom' if height > 0 else 'top',
+                    fontweight='bold')
+    
+    plt.tight_layout()
+    plt.show()
+    
+    print("Financial Market Analysis Summary:")
+    if 'daily_return' in financial_df.columns:
+        print(f"- Average daily return: {daily_returns.mean():.4f} ({daily_returns.mean()*252:.2%} annualized)")
+        print(f"- Market volatility: {daily_returns.std():.4f} ({volatility_annual:.2%} annualized)")
+        print(f"- Sharpe ratio: {sharpe_ratio:.2f}")
+        print(f"- Maximum drawdown: {max_drawdown:.2%}")
+    print(f"- Total trading days analyzed: {len(financial_df):,}")
+
+# Create financial analysis dashboard
+create_financial_analysis_dashboard()
+```
+
+This comprehensive dashboard provides key insights into market trends, volatility patterns, and performance metrics essential for financial forecasting.
 ```
 
 ### Load Financial News Data from Public Sources
