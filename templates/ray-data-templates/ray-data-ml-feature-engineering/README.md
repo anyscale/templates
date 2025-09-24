@@ -54,74 +54,201 @@ import ray
 import pandas as pd
 import time
 
-# Create sample dataset with realistic variation
-print(" Creating sample dataset for feature engineering...")
+# Load real Titanic dataset for feature engineering demonstration
+print("Loading Titanic dataset for feature engineering...")
 start_time = time.time()
 
-# Generate realistic customer data with variation
-np.random.seed(42)  # For reproducible results
-data = []
-cities = ["NYC", "LA", "Chicago", "Houston", "Phoenix"]
+# Load Titanic dataset from Ray benchmark bucket
+titanic_data = ray.data.read_csv(
+    "s3://ray-benchmark-data/ml-datasets/titanic.csv"
+)
 
-for i in range(10000):  # Larger dataset to show Ray Data's value
-    data.append({
-        "customer_id": f"CUST_{i:05d}",
-        "age": int(np.random.normal(35, 12)),  # Realistic age distribution
-        "income": int(np.random.lognormal(11, 0.5)),  # Realistic income distribution
-        "city": np.random.choice(cities),
-        "purchase_amount": round(np.random.exponential(50), 2),
-        "days_since_signup": int(np.random.exponential(100))
-    })
+load_time = time.time() - start_time
 
-ds = ray.data.from_items(data)
-creation_time = time.time() - start_time
+print(f"Loaded Titanic dataset in {load_time:.2f} seconds")
+print(f"Dataset size: {titanic_data.count():,} passengers")
+print(f"Schema: {titanic_data.schema()}")
 
-print(f" Created dataset with {ds.count():,} samples in {creation_time:.2f} seconds")
-print(f" Sample rate: ~{len(data)/creation_time:.0f} records/second")
-
-# Show sample data to verify it looks realistic
-print("\n👥 Sample customer data:")
-samples = ds.take(3)
+# Show sample data to understand the structure
+print("\nSample passenger data:")
+samples = titanic_data.take(3)
 for i, sample in enumerate(samples):
-    print(f"  {i+1}. {sample['customer_id']}: Age {sample['age']}, Income ${sample['income']:,}, City {sample['city']}")
+    print(f"  {i+1}. Passenger {sample.get('PassengerId', 'N/A')}: Age {sample.get('Age', 'N/A')}, "
+          f"Class {sample.get('Pclass', 'N/A')}, Survived: {sample.get('Survived', 'N/A')}")
+
+# Use this real dataset for feature engineering demonstrations
+ds = titanic_data
 ```
 
 ## Why Feature Engineering is the Secret to ML Success
 
 **The 80/20 Rule**: 80% of ML model performance comes from feature quality, only 20% from algorithm choice.
 
+### **Titanic Dataset Exploration and Feature Insights**
+
+Let's explore the Titanic dataset to understand feature relationships and engineering opportunities:
+
+```python
+# Create comprehensive Titanic dataset visualization
+import matplotlib.pyplot as plt
+import seaborn as sns
+import numpy as np
+
+def create_titanic_feature_analysis():
+    """Analyze Titanic dataset features for engineering insights."""
+    
+    # Convert Ray dataset to pandas for visualization
+    titanic_df = ds.to_pandas()
+    
+    # Create comprehensive analysis dashboard
+    fig, axes = plt.subplots(2, 3, figsize=(18, 12))
+    fig.suptitle('Titanic Dataset: Feature Engineering Opportunities', fontsize=16, fontweight='bold')
+    
+    # 1. Survival rate by passenger class
+    ax1 = axes[0, 0]
+    survival_by_class = titanic_df.groupby('Pclass')['Survived'].mean()
+    bars1 = ax1.bar(survival_by_class.index, survival_by_class.values, 
+                   color=['#2E8B57', '#4682B4', '#CD853F'])
+    ax1.set_title('Survival Rate by Passenger Class', fontweight='bold')
+    ax1.set_xlabel('Passenger Class')
+    ax1.set_ylabel('Survival Rate')
+    ax1.set_ylim(0, 1)
+    
+    # Add percentage labels
+    for bar, rate in zip(bars1, survival_by_class.values):
+        height = bar.get_height()
+        ax1.text(bar.get_x() + bar.get_width()/2., height + 0.02,
+                f'{rate:.1%}', ha='center', va='bottom', fontweight='bold')
+    
+    # 2. Age distribution by survival
+    ax2 = axes[0, 1]
+    ages_survived = titanic_df[titanic_df['Survived'] == 1]['Age'].dropna()
+    ages_died = titanic_df[titanic_df['Survived'] == 0]['Age'].dropna()
+    
+    ax2.hist(ages_died, bins=20, alpha=0.7, label='Did not survive', color='coral')
+    ax2.hist(ages_survived, bins=20, alpha=0.7, label='Survived', color='lightblue')
+    ax2.set_title('Age Distribution by Survival', fontweight='bold')
+    ax2.set_xlabel('Age')
+    ax2.set_ylabel('Number of Passengers')
+    ax2.legend()
+    
+    # 3. Fare distribution analysis
+    ax3 = axes[0, 2]
+    fare_survived = titanic_df[titanic_df['Survived'] == 1]['Fare'].dropna()
+    fare_died = titanic_df[titanic_df['Survived'] == 0]['Fare'].dropna()
+    
+    ax3.boxplot([fare_died, fare_survived], labels=['Did not survive', 'Survived'])
+    ax3.set_title('Fare Distribution by Survival', fontweight='bold')
+    ax3.set_ylabel('Fare (£)')
+    ax3.set_yscale('log')  # Log scale due to fare range
+    
+    # 4. Family size feature engineering opportunity
+    ax4 = axes[1, 0]
+    titanic_df['Family_Size'] = titanic_df['SibSp'] + titanic_df['Parch'] + 1
+    family_survival = titanic_df.groupby('Family_Size')['Survived'].mean()
+    
+    bars4 = ax4.bar(family_survival.index, family_survival.values, color='lightgreen')
+    ax4.set_title('Survival Rate by Family Size\n(Engineered Feature)', fontweight='bold')
+    ax4.set_xlabel('Family Size')
+    ax4.set_ylabel('Survival Rate')
+    ax4.set_ylim(0, 1)
+    
+    # 5. Title extraction feature engineering
+    ax5 = axes[1, 1]
+    titanic_df['Title'] = titanic_df['Name'].str.extract(' ([A-Za-z]+)\.', expand=False)
+    title_survival = titanic_df.groupby('Title')['Survived'].mean().sort_values(ascending=False).head(6)
+    
+    bars5 = ax5.bar(range(len(title_survival)), title_survival.values, color='mediumpurple')
+    ax5.set_title('Survival Rate by Title\n(Extracted from Name)', fontweight='bold')
+    ax5.set_xticks(range(len(title_survival)))
+    ax5.set_xticklabels(title_survival.index, rotation=45, ha='right')
+    ax5.set_ylabel('Survival Rate')
+    ax5.set_ylim(0, 1)
+    
+    # 6. Feature correlation heatmap
+    ax6 = axes[1, 2]
+    numeric_features = ['Survived', 'Pclass', 'Age', 'SibSp', 'Parch', 'Fare', 'Family_Size']
+    correlation_matrix = titanic_df[numeric_features].corr()
+    
+    im = ax6.imshow(correlation_matrix, cmap='RdBu_r', aspect='auto', vmin=-1, vmax=1)
+    ax6.set_title('Feature Correlation Matrix', fontweight='bold')
+    ax6.set_xticks(range(len(numeric_features)))
+    ax6.set_yticks(range(len(numeric_features)))
+    ax6.set_xticklabels(numeric_features, rotation=45, ha='right')
+    ax6.set_yticklabels(numeric_features)
+    
+    # Add correlation values
+    for i in range(len(numeric_features)):
+        for j in range(len(numeric_features)):
+            text = ax6.text(j, i, f'{correlation_matrix.iloc[i, j]:.2f}',
+                           ha="center", va="center", color="black", fontweight='bold')
+    
+    plt.tight_layout()
+    plt.show()
+    
+    print("Key Feature Engineering Insights:")
+    print(f"- First class passengers had {survival_by_class[1]:.1%} survival rate vs {survival_by_class[3]:.1%} for third class")
+    print(f"- Family size of 2-4 shows highest survival rates")
+    print(f"- Titles like 'Mrs' and 'Miss' correlate with higher survival")
+    print(f"- Age and fare show moderate correlation with survival")
+    
+    return titanic_df
+
+# Create Titanic feature analysis
+enhanced_titanic = create_titanic_feature_analysis()
+```
+
+This analysis reveals powerful feature engineering opportunities that we'll demonstrate throughout this template.
+
 **Industry Success Stories**
 
 Leading companies demonstrate the transformative power of sophisticated feature engineering. Netflix discovered that "time since last similar movie watched" predicts viewing behavior more accurately than simple genre categorization. Uber's pricing algorithms rely heavily on "ratio of supply to demand in area" rather than absolute numbers, while Amazon's recommendation engine leverages "purchase frequency in category" to outperform individual purchase-based features.
 
 ```python
-# Example: Creating time-based features like Netflix
-def create_time_based_features(batch):
-    """Engineer time-based features for recommendation systems."""
+# Example: Creating family and social features from Titanic data
+def create_family_features(batch):
+    """Engineer family and social features from Titanic dataset."""
     enhanced_features = []
-    for record in batch:
-        # Calculate days since last interaction
-        days_since_last = (record['current_date'] - record['last_interaction']).days
+    for passenger in batch:
+        # Calculate family size
+        family_size = passenger['SibSp'] + passenger['Parch'] + 1
         
-        # Create time-based feature buckets
-        time_features = {
-            'days_since_last_interaction': days_since_last,
-            'interaction_recency_score': 1.0 / (1.0 + days_since_last),
-            'is_recent_user': 1 if days_since_last <= 7 else 0,
-            'interaction_frequency': record['interaction_count'] / max(days_since_last, 1)
+        # Extract title from name
+        name = passenger.get('Name', '')
+        title = 'Unknown'
+        if 'Mr.' in name:
+            title = 'Mr'
+        elif 'Mrs.' in name:
+            title = 'Mrs'
+        elif 'Miss.' in name:
+            title = 'Miss'
+        elif 'Master.' in name:
+            title = 'Master'
+        elif 'Dr.' in name:
+            title = 'Dr'
+        
+        # Create feature-engineered passenger record
+        family_features = {
+            'family_size': family_size,
+            'is_alone': 1 if family_size == 1 else 0,
+            'large_family': 1 if family_size > 4 else 0,
+            'title': title,
+            'is_child': 1 if passenger.get('Age', 999) < 16 else 0,
+            'fare_per_person': passenger.get('Fare', 0) / max(family_size, 1)
         }
         
-        enhanced_features.append({**record, **time_features})
+        enhanced_features.append({**passenger, **family_features})
     
     return enhanced_features
 
-# Apply time-based feature engineering
-time_enhanced_data = customer_data.map_batches(
-    create_time_based_features,
+# Apply family feature engineering to Titanic data
+family_enhanced_data = ds.map_batches(
+    create_family_features,
     batch_format="pandas"
 )
 
-print("Time-based features created successfully")
+print("Family and social features created successfully")
+print(f"Enhanced dataset size: {family_enhanced_data.count():,} passengers")
 ```
 
 **The Feature Engineering Challenge at Scale**

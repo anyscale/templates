@@ -119,74 +119,103 @@ import re
 # Initialize Ray for distributed processing
 ray.init()
 
-def create_sample_text_data():
-    """Create realistic sample text data for analysis."""
-    print(" Creating sample text dataset...")
+def load_real_text_data():
+    """Load real Amazon product reviews for text analytics."""
+    print("Loading real Amazon product review dataset...")
     
-    # Sample review texts with different sentiments
-    positive_reviews = [
-        "This product is absolutely amazing! Best purchase ever.",
-        "Fantastic quality and fast shipping. Highly recommend!",
-        "Love it! Exactly what I was looking for.",
-        "Outstanding customer service and great product.",
-        "Perfect! Works exactly as described."
-    ]
-    
-    negative_reviews = [
-        "Terrible quality, broke after one day.",
-        "Worst purchase ever. Complete waste of money.",
-        "Poor customer service and defective product.",
-        "Not as described. Very disappointed.",
-        "Cheaply made and doesn't work properly."
-    ]
-    
-    neutral_reviews = [
-        "It's okay, nothing special but does the job.",
-        "Average product, met basic expectations.",
-        "Decent quality for the price point.",
-        "Works fine, no major complaints.",
-        "Pretty standard, what you'd expect."
-    ]
-    
-    # Create a larger dataset by combining and repeating
-    all_reviews = []
-    
-    # Add multiple copies with slight variations
-    for i in range(1000):  # Create 1000 reviews total
-        # Randomly select review type
-        review_type = np.random.choice(['positive', 'negative', 'neutral'])
+    # Load real Amazon product reviews from public dataset
+    try:
+        # Load Amazon reviews parquet data
+        text_dataset = ray.data.read_parquet(
+            "s3://amazon-reviews-pds/parquet/product_category=Books/",
+            columns=["review_body", "star_rating", "product_title", "verified_purchase"]
+        ).limit(10000)  # Limit to 10K reviews for processing efficiency
         
-        if review_type == 'positive':
-            text = np.random.choice(positive_reviews)
-            sentiment = 'positive'
-        elif review_type == 'negative':
-            text = np.random.choice(negative_reviews) 
-            sentiment = 'negative'
-        else:
-            text = np.random.choice(neutral_reviews)
-            sentiment = 'neutral'
+        print(f"Successfully loaded {text_dataset.count():,} Amazon book reviews")
         
-        all_reviews.append({
-            'review_id': f'review_{i:04d}',
-            'text': text,
-            'true_sentiment': sentiment,  # We'll use this to check our analysis
-            'length': len(text)
-        })
-    
-    return ray.data.from_items(all_reviews)
+        # Transform to consistent format
+        def transform_amazon_reviews(batch):
+            """Transform Amazon reviews to consistent format."""
+            transformed = []
+            for review in batch:
+                # Map star rating to sentiment
+                rating = review.get('star_rating', 3)
+                if rating >= 4:
+                    sentiment = 'positive'
+                elif rating <= 2:
+                    sentiment = 'negative'
+                else:
+                    sentiment = 'neutral'
+                
+                transformed.append({
+                    'text': review.get('review_body', ''),
+                    'sentiment': sentiment,
+                    'star_rating': rating,
+                    'product_title': review.get('product_title', ''),
+                    'verified_purchase': review.get('verified_purchase', False),
+                    'length': len(str(review.get('review_body', '')))
+                })
+            
+            return transformed
+        
+        # Apply transformation
+        text_dataset = text_dataset.map_batches(
+            transform_amazon_reviews,
+            batch_format="pandas"
+        )
+        
+        return text_dataset
+        
+    except Exception as e:
+        print(f"Could not load Amazon reviews: {e}")
+        print("Using alternative news dataset...")
+        
+        # Fallback to news headlines if Amazon data unavailable
+        text_dataset = ray.data.read_text(
+            "s3://ray-benchmark-data/text/news_headlines.txt"
+        ).limit(5000)
+        
+        def transform_news_data(batch):
+            """Transform news data to consistent format."""
+            transformed = []
+            for item in batch:
+                text = item.get('text', '')
+                # Simple sentiment heuristic for news
+                sentiment = 'neutral'
+                if any(word in text.lower() for word in ['great', 'good', 'success', 'win', 'positive']):
+                    sentiment = 'positive'
+                elif any(word in text.lower() for word in ['bad', 'fail', 'crisis', 'problem', 'negative']):
+                    sentiment = 'negative'
+                
+                transformed.append({
+                    'text': text,
+                    'sentiment': sentiment,
+                    'length': len(text),
+                    'source': 'news'
+                })
+            
+            return transformed
+        
+        text_dataset = text_dataset.map_batches(
+            transform_news_data,
+            batch_format="pandas"
+        )
+        
+        return text_dataset
 
-# Create our text dataset
-text_dataset = create_sample_text_data()
+# Load real text dataset
+text_dataset = load_real_text_data()
 
 # Display basic information about our dataset
-print(f" Created dataset with {text_dataset.count()} text samples")
-print(f" Schema: {text_dataset.schema()}")
+print(f"Loaded dataset with {text_dataset.count():,} text samples")
+print(f"Schema: {text_dataset.schema()}")
 
-# Show a few sample reviews
-print("\n Sample reviews:")
+# Show a few sample texts
+print("\nSample texts:")
 samples = text_dataset.take(3)
 for i, sample in enumerate(samples):
-    print(f"{i+1}. {sample['text'][:50]}... (sentiment: {sample['true_sentiment']})")
+    text_preview = sample['text'][:100] + "..." if len(sample['text']) > 100 else sample['text']
+    print(f"{i+1}. {text_preview} (sentiment: {sample.get('sentiment', 'unknown')})")
 ```
 
 ### Interactive NLP Text Analytics Dashboard
