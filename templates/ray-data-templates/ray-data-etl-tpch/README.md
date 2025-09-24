@@ -108,7 +108,7 @@ load_time = time.time() - start_time
 
 print(f"TPC-H customer data loaded in {load_time:.2f} seconds")
 print("Sample customer records:")
-customers_ds.take(3)
+customers_ds.limit(3).to_pandas()
 ```
 
 ### Advanced Filtering Techniques
@@ -125,7 +125,7 @@ high_value_customers = customers_ds.filter(
 )
 
 print("High-value automotive customers:")
-high_value_customers.show(5)
+high_value_customers.limit(5).to_pandas()
 
 # Multi-criteria filtering for market analysis
 premium_segments = customers_ds.filter(
@@ -133,7 +133,7 @@ premium_segments = customers_ds.filter(
 )
 
 print("Premium market segments:")
-premium_segments.show(5)
+premium_segments.limit(5).to_pandas()
 
 # Geographic filtering for regional analysis
 def filter_by_region(batch):
@@ -156,7 +156,7 @@ regional_analysis = customers_ds.map_batches(
 )
 
 print("Regional customer analysis:")
-regional_analysis.show(5)
+regional_analysis.limit(5).to_pandas()
 ```
 
 ## Part 3: Transform - Processing TPC-H Data
@@ -175,7 +175,7 @@ segment_analysis = customers_ds.groupby("c_mktsegment").aggregate(
 ).rename_columns(["c_mktsegment", "customer_count", "avg_account_balance"])
 
 print("Customer Market Segment Distribution:")
-segment_analysis.show()
+segment_analysis.limit(10).to_pandas()
 ```
 
 ### Geographic Reference Data Integration
@@ -193,7 +193,7 @@ nation_ds = (
 )
 
 print("Sample nation records:")
-nation_ds.show(5)
+nation_ds.limit(5).to_pandas()
 ```
 
 ### Customer Demographics by Nation - Advanced Joins
@@ -215,7 +215,7 @@ customer_nation_analysis = (customers_ds
 )
 
 print("Customer distribution by nation:")
-customer_nation_analysis.sort("customer_count", descending=True).show(10)
+customer_nation_analysis.sort("customer_count", descending=True).limit(10).to_pandas()
 ```
 
 ## Part 4: High-Volume Transaction Processing
@@ -243,10 +243,16 @@ orders_ds = (orders_ds
 
 print("TPC-H Orders Data:")
 print("Sample order records:")
-orders_ds.show(5)
+orders_ds.limit(5).to_pandas()
 ```
 
 ### Business Logic Transformations
+
+:::tip GPU Acceleration Option
+For even faster performance on large datasets, you can replace `pandas` with **NVIDIA RAPIDS cuDF** in the `map_batches` function below. cuDF provides GPU-accelerated DataFrame operations that can significantly speed up complex transformations, especially beneficial for high-volume TPC-H processing.
+
+Simply replace `import pandas as pd` with `import cudf as pd` to leverage GPU acceleration for the pandas operations.
+:::
 
 ```python
 # Apply business transformations to order data
@@ -278,7 +284,7 @@ enriched_orders = orders_ds.map_batches(
 )
 
 print("Enriched order data with business logic:")
-enriched_orders.show(5)
+enriched_orders.limit(5).to_pandas()
 ```
 
 ### Advanced Filtering for Business Intelligence
@@ -293,7 +299,7 @@ urgent_large_orders = enriched_orders.filter(
 )
 
 print("Urgent large orders requiring expedited processing:")
-urgent_large_orders.show(10)
+urgent_large_orders.limit(10).to_pandas()
 
 # Filter orders by time period for trend analysis
 recent_orders = enriched_orders.filter(
@@ -301,11 +307,15 @@ recent_orders = enriched_orders.filter(
 )
 
 print("Recent orders for trend analysis:")
-recent_orders.show(5)
+recent_orders.limit(5).to_pandas()
 
 # Complex business filtering for operational insights
 def complex_business_filter(batch):
-    """Apply complex business filtering logic."""
+    """Apply complex business filtering logic.
+    
+    Note: For GPU acceleration, replace 'import pandas as pd' with 'import cudf as pd'
+    to leverage NVIDIA RAPIDS for faster DataFrame operations on large datasets.
+    """
     df = pd.DataFrame(batch)
     
     # Multi-criteria business filtering
@@ -324,7 +334,7 @@ peak_performance_orders = enriched_orders.map_batches(
 )
 
 print("Peak season high-value completed orders:")
-peak_performance_orders.show(10)
+peak_performance_orders.limit(10).to_pandas()
 ```
 
 ## Part 5: Aggregations and Analytics
@@ -351,7 +361,7 @@ executive_summary = (enriched_orders
 )
 
 print("Quarterly Business Performance:")
-executive_summary.show()
+executive_summary.limit(10).to_pandas()
 ```
 
 ### Operational Analytics
@@ -376,7 +386,7 @@ operational_metrics = (enriched_orders
 )
 
 print("Performance by Revenue Tier:")
-operational_metrics.show()
+operational_metrics.limit(10).to_pandas()
 
 # Priority-based analysis for order management
 priority_performance = (enriched_orders
@@ -395,7 +405,7 @@ priority_performance = (enriched_orders
 )
 
 print("Performance by Order Priority:")
-priority_performance.sort("priority_revenue", descending=True).show()
+priority_performance.sort("priority_revenue", descending=True).limit(10).to_pandas()
 ```
 
 ## Part 6: Advanced ETL Patterns
@@ -432,7 +442,7 @@ lineitem_ds = (lineitem_ds
 )
 
 print("Sample line item records:")
-lineitem_ds.show(3)
+lineitem_ds.limit(3).to_pandas()
 ```
 
 ### Revenue Analysis with Complex Filtering
@@ -464,7 +474,7 @@ revenue_analysis = revenue_eligible_items.groupby(["l_returnflag", "l_linestatus
 ])
 
 print("Revenue analysis results:")
-revenue_analysis.show()
+revenue_analysis.limit(10).to_pandas()
 ```
 
 ### Customer Order Analysis with Joins
@@ -490,7 +500,7 @@ building_segment_orders = customer_orders.filter(
 )
 
 print("Building segment high-value orders:")
-building_segment_orders.show(10)
+building_segment_orders.limit(10).to_pandas()
 
 # Customer spending analysis with aggregations
 customer_spending = customer_orders.groupby("c_custkey").aggregate(
@@ -509,82 +519,10 @@ customer_spending = customer_orders.groupby("c_custkey").aggregate(
 # Find top spending customers
 top_customers = customer_spending.sort("total_spent", descending=True)
 print("Top customers by spending:")
-top_customers.show(10)
+top_customers.limit(10).to_pandas()
 ```
 
-## Part 7: Performance Analysis and Visualization
-
-### TPC-H ETL Performance Dashboard
-
-```python
-import matplotlib.pyplot as plt
-import numpy as np
-
-# Create TPC-H ETL performance visualization
-fig, axes = plt.subplots(2, 2, figsize=(16, 10))
-fig.suptitle('TPC-H ETL Performance Analysis with Ray Data', fontsize=16, fontweight='bold')
-
-# 1. Processing operation performance
-ax1 = axes[0, 0]
-operations = ['Data Load', 'Filter', 'Join', 'Aggregate', 'Sort']
-processing_times = [load_time, 2.3, 8.7, 4.1, 3.2]  # seconds
-
-bars1 = ax1.bar(operations, processing_times, color='lightblue')
-ax1.set_title('ETL Operation Performance', fontweight='bold')
-ax1.set_ylabel('Processing Time (seconds)')
-ax1.tick_params(axis='x', rotation=45)
-
-for bar, time in zip(bars1, processing_times):
-    height = bar.get_height()
-    ax1.text(bar.get_x() + bar.get_width()/2., height + 0.1,
-            f'{time:.1f}s', ha='center', va='bottom', fontweight='bold')
-
-# 2. Market segment distribution
-ax2 = axes[0, 1]
-segments = ['AUTOMOBILE', 'BUILDING', 'FURNITURE', 'MACHINERY', 'HOUSEHOLD']
-segment_counts = [2500, 2300, 2400, 2200, 2600]  # Sample counts
-
-bars2 = ax2.bar(segments, segment_counts, color='lightgreen')
-ax2.set_title('Customer Market Segments', fontweight='bold')
-ax2.set_ylabel('Customer Count')
-ax2.tick_params(axis='x', rotation=45)
-
-# 3. Revenue tier analysis
-ax3 = axes[1, 0]
-revenue_tiers = ['Small', 'Medium', 'Large', 'Enterprise']
-tier_revenues = [45000, 125000, 275000, 850000]  # Sample revenues
-
-bars3 = ax3.bar(revenue_tiers, tier_revenues, color='coral')
-ax3.set_title('Revenue by Order Tier', fontweight='bold')
-ax3.set_ylabel('Average Revenue ($)')
-
-for bar, revenue in zip(bars3, tier_revenues):
-    height = bar.get_height()
-    ax3.text(bar.get_x() + bar.get_width()/2., height + 10000,
-            f'${revenue:,}', ha='center', va='bottom', fontweight='bold')
-
-# 4. Processing efficiency trends
-ax4 = axes[1, 1]
-data_sizes = ['1K', '10K', '100K', '1M']
-processing_efficiency = [0.1, 0.8, 7.2, 65.4]  # seconds
-
-ax4.plot(data_sizes, processing_efficiency, 'o-', linewidth=3, markersize=8, color='purple')
-ax4.set_title('Ray Data Scaling Performance', fontweight='bold')
-ax4.set_ylabel('Processing Time (seconds)')
-ax4.set_xlabel('Dataset Size')
-ax4.grid(True, alpha=0.3)
-
-plt.tight_layout()
-plt.show()
-
-print("TPC-H ETL Performance Summary:")
-print(f"- Data loading time: {load_time:.2f} seconds")
-print(f"- Average operation time: {np.mean(processing_times):.2f} seconds")
-print("- Ray Data handles TPC-H benchmark scale efficiently")
-print("- Use Ray Dashboard for detailed cluster monitoring")
-```
-
-## Part 8: Load - Writing Processed Data
+## Part 7: Load - Writing Processed Data
 
 The **Load** phase writes the processed TPC-H data to various destinations for business intelligence and analytics.
 
