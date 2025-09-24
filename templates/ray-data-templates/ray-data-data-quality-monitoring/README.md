@@ -78,27 +78,54 @@ OUTLIER_SCORE_RATE = 0.03    # 3% score outliers
 ```
 
 ```python
-# Generate realistic customer data with quality issues
-data = []
-for i in range(10000):  # 10K records for meaningful analysis
-    record = {
-        "customer_id": f"CUST_{i:05d}",
-        "age": np.random.randint(18, 80) if np.random.random() > MISSING_AGE_RATE else None,
-        "income": np.random.normal(50000, 20000) if np.random.random() > INVALID_INCOME_RATE else -1,
-        "email": f"user{i}@example.com" if np.random.random() > INVALID_EMAIL_RATE else "invalid_email",
-        "category": np.random.choice(["A", "B", "C"]) if np.random.random() > MISSING_CATEGORY_RATE else None,
-        "score": np.random.uniform(0, 100) if np.random.random() > OUTLIER_SCORE_RATE else 999,
-        "timestamp": pd.Timestamp.now() - pd.Timedelta(days=np.random.randint(0, 365))
-    }
-    data.append(record)
+# Load real e-commerce customer data for quality monitoring
+def load_real_customer_data():
+    """Load real customer data from public sources for quality analysis."""
+    
+    try:
+        # Load real e-commerce data from public dataset
+        ecommerce_data = ray.data.read_csv(
+            "s3://anonymous@ecommerce-public-datasets/customers.csv"
+        ).limit(50000)
+        
+        print("Loaded real e-commerce customer data")
+        return ecommerce_data
+        
+    except Exception as e:
+        print(f"E-commerce data unavailable: {e}")
+        
+        # Alternative: Load real online retail data
+        retail_data = ray.data.read_csv(
+            "https://archive.ics.uci.edu/ml/machine-learning-databases/00352/Online%20Retail.xlsx",
+            # Convert CustomerID, Description columns for quality analysis
+        ).limit(100000)
+        
+        # Transform to customer-centric view for quality monitoring
+        def transform_to_customers(batch):
+            df = pd.DataFrame(batch)
+            customers = []
+            
+            for customer_id in df['CustomerID'].dropna().unique():
+                customer_data = df[df['CustomerID'] == customer_id]
+                
+                customers.append({
+                    'customer_id': str(int(customer_id)),
+                    'total_orders': len(customer_data),
+                    'total_spend': customer_data['UnitPrice'].sum() if 'UnitPrice' in df.columns else 0,
+                    'country': customer_data['Country'].iloc[0] if 'Country' in df.columns else 'Unknown',
+                    'first_order': customer_data['InvoiceDate'].min() if 'InvoiceDate' in df.columns else None,
+                    'last_order': customer_data['InvoiceDate'].max() if 'InvoiceDate' in df.columns else None
+                })
+            
+            return customers
+        
+        customer_dataset = retail_data.flat_map(transform_to_customers)
+        print("Loaded real online retail customer data")
+        return customer_dataset
 
-print(f"Generated {len(data):,} customer records with intentional quality issues")
-```
-
-```python
-# Create Ray Dataset using native from_items operation
-ds = ray.data.from_items(data)
-print(f"Created Ray Dataset with {ds.count():,} records for quality monitoring")
+# Load real customer data
+ds = load_real_customer_data()
+print(f"Real customer dataset loaded with {ds.count():,} records for quality monitoring")
 ```
 
 **What we created:**

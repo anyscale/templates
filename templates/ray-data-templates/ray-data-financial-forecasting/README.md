@@ -93,68 +93,56 @@ start_time = time.time()
 ```
 
 ```python
-def generate_financial_dataset(num_companies: int = 50, days: int = 730) -> ray.data.Dataset:
-    """Generate realistic financial market data for forecasting analysis."""
+def load_real_financial_dataset() -> ray.data.Dataset:
+    """Load real financial market data using Yahoo Finance API."""
+    import yfinance as yf
     
-    # Major company profiles for realistic simulation
-    companies = [
-        {'symbol': 'AAPL', 'name': 'Apple Inc', 'sector': 'Technology', 'base_price': 150, 'volatility': 0.25},
-        {'symbol': 'GOOGL', 'name': 'Alphabet Inc', 'sector': 'Technology', 'base_price': 2500, 'volatility': 0.30},
-        {'symbol': 'MSFT', 'name': 'Microsoft Corp', 'sector': 'Technology', 'base_price': 300, 'volatility': 0.28},
-        {'symbol': 'AMZN', 'name': 'Amazon.com Inc', 'sector': 'Consumer Discretionary', 'base_price': 3200, 'volatility': 0.35},
-        {'symbol': 'TSLA', 'name': 'Tesla Inc', 'sector': 'Consumer Discretionary', 'base_price': 800, 'volatility': 0.45},
-        {'symbol': 'NVDA', 'name': 'NVIDIA Corp', 'sector': 'Technology', 'base_price': 400, 'volatility': 0.40},
-        {'symbol': 'JPM', 'name': 'JPMorgan Chase', 'sector': 'Financial Services', 'base_price': 140, 'volatility': 0.20},
-        {'symbol': 'JNJ', 'name': 'Johnson & Johnson', 'sector': 'Healthcare', 'base_price': 160, 'volatility': 0.15},
-        {'symbol': 'V', 'name': 'Visa Inc', 'sector': 'Financial Services', 'base_price': 220, 'volatility': 0.18},
-        {'symbol': 'PG', 'name': 'Procter & Gamble', 'sector': 'Consumer Goods', 'base_price': 140, 'volatility': 0.12}
-    ]
+    # Major S&P 500 companies for realistic financial analysis
+    symbols = ['AAPL', 'GOOGL', 'MSFT', 'AMZN', 'TSLA', 'NVDA', 'META', 'NFLX', 'CRM', 'ORCL']
+    end_date = datetime.now()
+    start_date = end_date - timedelta(days=730)  # 2 years of data
     
+    print(f"Loading real market data for {len(symbols)} major stocks...")
     market_data = []
-    base_date = datetime.now() - timedelta(days=days)
     
-    for company in companies:
-        current_price = company['base_price']
+    for symbol in symbols:
+        print(f"  Downloading {symbol} historical data...")
+        ticker = yf.Ticker(symbol)
+        hist = ticker.history(start=start_date, end=end_date)
+        info = ticker.info
         
-        for day in range(days):
-            date = base_date + timedelta(days=day)
-            
-            # Realistic price movement with company-specific volatility
-            daily_return = np.random.normal(0.0005, company['volatility']/252**0.5)  # Annualized volatility
-            current_price *= (1 + daily_return)
-            
-            # Generate realistic OHLC data
-            open_price = current_price
-            high_price = open_price * (1 + abs(np.random.normal(0, 0.01)))
-            low_price = open_price * (1 - abs(np.random.normal(0, 0.01))) 
-            close_price = current_price
-            volume = int(np.random.lognormal(15, 0.5))
-            
+        # Convert to Ray Data format
+        for date, row in hist.iterrows():
             record = {
-                'Symbol': company['symbol'],
-                'Name': company['name'],
+                'Symbol': symbol,
+                'Name': info.get('longName', symbol),
                 'Date': date.strftime('%Y-%m-%d'),
-                'Open': round(open_price, 2),
-                'High': round(high_price, 2),
-                'Low': round(low_price, 2),
-                'Close': round(close_price, 2),
-                'Volume': volume,
-                'Sector': company['sector'],
-                'MarketCap': int(current_price * 1_000_000_000)
+                'Open': float(row['Open']),
+                'High': float(row['High']),
+                'Low': float(row['Low']),
+                'Close': float(row['Close']),
+                'Volume': int(row['Volume']),
+                'Sector': info.get('sector', 'Technology'),
+                'MarketCap': info.get('marketCap', 0)
             }
             market_data.append(record)
     
-    # Create Ray Dataset
+    # Create Ray Dataset using native from_items
     dataset = ray.data.from_items(market_data)
+    
+    print(f"Real financial dataset loaded:")
+    print(f"  Records: {dataset.count():,}")
+    print(f"  Companies: {len(symbols)}")
+    print(f"  Date range: {start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')}")
+    print(f"  Dataset size: {dataset.size_bytes() / (1024**2):.1f} MB")
+    
     return dataset
 
-# Generate comprehensive financial dataset
-financial_data = generate_financial_dataset(num_companies=10, days=730)
+# Load real financial data
+financial_data = load_real_financial_dataset()
 
 load_time = time.time() - start_time
-print(f"Financial dataset generated in {load_time:.2f} seconds")
-print(f"Dataset contains {financial_data.count():,} records of market data")
-print(f"Dataset size: {financial_data.size_bytes() / (1024**2):.1f} MB")
+print(f"Real financial data loaded in {load_time:.2f} seconds")
 ```
 
 ### Load Financial News Data from Public Sources

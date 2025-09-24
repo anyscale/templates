@@ -320,60 +320,63 @@ print(f"Ray Dashboard available at: {ray.get_dashboard_url()}")
 import numpy as np
 import pandas as pd
 
-def create_optimization_dataset(num_samples: int = 50000, 
-                              feature_dim: int = 512,
-                              include_images: bool = True,
-                              include_text: bool = True) -> ray.data.Dataset:
-    """Create comprehensive synthetic dataset for optimization testing."""
-    logger.info(f"Generating optimization dataset with {num_samples:,} samples...")
+def load_real_optimization_dataset() -> ray.data.Dataset:
+    """Load real dataset for optimization testing using Ray Data native operations."""
     
-    sample_data = []
-    
-    # Generate realistic ML inference data
-    for i in range(num_samples):
-        sample = {
-            'id': i,
-            'timestamp': datetime.now().isoformat(),
-            # Numeric features (common in ML)
-            'features': np.random.randn(feature_dim).astype(np.float32),
-            'metadata': {
-                'source': 'synthetic',
-                'version': '1.0',
-                'quality_score': np.random.uniform(0.7, 1.0)
-            }
-        }
+    # Use real ImageNet data for computer vision optimization
+    try:
+        # Load real images from public ImageNet subset
+        image_dataset = ray.data.read_images(
+            "s3://anonymous@air-example-data-2/imagenette2/train/",
+            mode="RGB"
+        ).limit(10000)  # 10K images for optimization testing
         
-        # Add image data if requested
-        if include_images:
-            sample['image_data'] = np.random.randint(0, 255, (224, 224, 3), dtype=np.uint8)
+        print(f"Loaded real ImageNet dataset for optimization:")
+        print(f"  Images: {image_dataset.count():,}")
+        print(f"  Schema: {image_dataset.schema()}")
+        print(f"  Dataset size: {image_dataset.size_bytes() / (1024**2):.1f} MB")
+        print(f"  Blocks: {image_dataset.num_blocks()}")
         
-        # Add text data if requested  
-        if include_text:
-            text_length = np.random.randint(50, 500)
-            sample['text'] = ' '.join([f'word_{j}' for j in range(text_length)])
+        return image_dataset
         
-        sample_data.append(sample)
-    
-    # Create Ray dataset
-    dataset = ray.data.from_items(sample_data)
-    
-    # Display dataset information
-    print(f"Created optimization dataset:")
-    print(f"  Samples: {dataset.count():,}")
-    print(f"  Schema: {dataset.schema()}")
-    print(f"  Estimated size: {dataset.size_bytes() / (1024**2):.1f} MB")
-    print(f"  Blocks: {dataset.num_blocks()}")
-    
-    logger.info(f"Dataset creation completed: {num_samples:,} samples")
-    return dataset
+    except Exception as e:
+        print(f"ImageNet data unavailable: {e}")
+        
+        # Alternative: Use real text data from public sources
+        text_dataset = ray.data.read_text(
+            "s3://anonymous@ray-data-examples/text/*.txt"
+        ).limit(50000)  # 50K text samples
+        
+        # Add feature extraction for optimization testing
+        def extract_text_features(batch):
+            """Extract features from real text for optimization testing."""
+            features = []
+            for text in batch['text']:
+                # Simple feature extraction from real text
+                text_lower = text.lower()
+                feature_vector = [
+                    len(text),
+                    len(text.split()),
+                    text.count('a'), text.count('e'), text.count('i'), text.count('o'), text.count('u'),
+                    text.count('.'), text.count(','), text.count('!'), text.count('?'),
+                    text_lower.count('the'), text_lower.count('and'), text_lower.count('is')
+                ]
+                # Pad to 512 dimensions
+                feature_vector.extend([0.0] * (512 - len(feature_vector)))
+                features.append(feature_vector[:512])
+            
+            return {'features': features, 'text': batch['text']}
+        
+        processed_dataset = text_dataset.map_batches(extract_text_features, batch_size=1000)
+        
+        print(f"Using real text dataset for optimization:")
+        print(f"  Text samples: {processed_dataset.count():,}")
+        print(f"  Features extracted: 512-dimensional vectors from real text")
+        
+        return processed_dataset
 
-# Create test dataset
-optimization_dataset = create_optimization_dataset(
-    num_samples=50000,
-    feature_dim=512,
-    include_images=True,
-    include_text=True
-)
+# Load real dataset for optimization
+optimization_dataset = load_real_optimization_dataset()
 
 print("Optimization dataset ready for testing!")
 ```

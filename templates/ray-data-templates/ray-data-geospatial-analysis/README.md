@@ -93,35 +93,73 @@ ray.init()
 print("Creating sample geospatial dataset...")
 
 # Major US city coordinates
-major_cities = [
-    {"name": "New York", "lat": 40.7128, "lon": -74.0060},
-    {"name": "Los Angeles", "lat": 34.0522, "lon": -118.2437},
-    {"name": "Chicago", "lat": 41.8781, "lon": -87.6298},
-    {"name": "Houston", "lat": 29.7604, "lon": -95.3698},
-    {"name": "Phoenix", "lat": 33.4484, "lon": -112.0740}
-]
-
-# Generate points around each city (simulating businesses, stops, etc.)
-locations = []
-np.random.seed(42)  # For reproducible results
-
-for city in major_cities:
-    for i in range(2000):  # 2000 points per city = 10K total
-        # Add small random offset to create realistic distribution
-        lat_offset = np.random.normal(0, 0.1)  # ~11km radius
-        lon_offset = np.random.normal(0, 0.1)
+# Load real geospatial data from public sources
+def load_real_geospatial_data():
+    """Load real geospatial datasets for spatial analysis."""
+    
+    # Load real NYC taxi trip data for geospatial analysis
+    try:
+        taxi_data = ray.data.read_parquet(
+            "s3://anonymous@nyc-tlc/trip data/yellow_tripdata_2023-01.parquet"
+        ).limit(50000)  # 50K trips for analysis
         
-        location = {
-            "location_id": f"{city['name'][:3].upper()}_{i:04d}",
-            "city": city['name'],
-            "lat": city['lat'] + lat_offset,
-            "lon": city['lon'] + lon_offset,
-            "type": np.random.choice(["restaurant", "store", "office", "hospital", "school"])
-        }
-        locations.append(location)
+        # Extract location points from real taxi data
+        def extract_taxi_locations(batch):
+            df = pd.DataFrame(batch)
+            locations = []
+            
+            for _, row in df.iterrows():
+                # Extract pickup and dropoff locations
+                if (pd.notna(row.get('pickup_longitude')) and pd.notna(row.get('pickup_latitude')) and
+                    -74.5 <= row['pickup_longitude'] <= -73.5 and 40.4 <= row['pickup_latitude'] <= 41.0):
+                    
+                    locations.append({
+                        'location_id': f"pickup_{row.name}",
+                        'lat': float(row['pickup_latitude']),
+                        'lon': float(row['pickup_longitude']),
+                        'type': 'taxi_pickup',
+                        'borough': 'NYC',
+                        'trip_distance': float(row.get('trip_distance', 0))
+                    })
+            
+            return locations
+        
+        location_points = taxi_data.flat_map(extract_taxi_locations)
+        
+        print(f"Loaded real NYC taxi location data: {location_points.count():,} location points")
+        return location_points
+        
+    except Exception as e:
+        print(f"NYC taxi data unavailable: {e}")
+        
+        # Alternative: Load real earthquake data from USGS
+        earthquake_data = ray.data.read_csv(
+            "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_month.csv"
+        )
+        
+        def process_earthquake_locations(batch):
+            df = pd.DataFrame(batch)
+            locations = []
+            
+            for _, row in df.iterrows():
+                if pd.notna(row.get('latitude')) and pd.notna(row.get('longitude')):
+                    locations.append({
+                        'location_id': f"eq_{row.name}",
+                        'lat': float(row['latitude']),
+                        'lon': float(row['longitude']),
+                        'type': 'earthquake',
+                        'magnitude': float(row.get('mag', 0)),
+                        'place': str(row.get('place', 'Unknown'))
+                    })
+            
+            return locations
+        
+        location_points = earthquake_data.flat_map(process_earthquake_locations)
+        print(f"Loaded real earthquake location data: {location_points.count():,} location points")
+        return location_points
 
-ds = ray.data.from_items(locations)
-print(f"Created dataset with {ds.count():,} location points across {len(major_cities)} cities")
+ds = load_real_geospatial_data()
+print(f"Real geospatial dataset ready for spatial analysis")
 ```
 
 ### Interactive Geospatial Visualization Dashboard
