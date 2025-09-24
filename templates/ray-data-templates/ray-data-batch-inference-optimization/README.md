@@ -101,55 +101,21 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-def verify_optimization_environment() -> bool:
-    """Comprehensive environment verification for optimization work."""
-    try:
-        # Check Python version
-        python_version = sys.version_info
-        if python_version.major < 3 or (python_version.major == 3 and python_version.minor < 8):
-            logger.error(f"Python 3.8+ required for optimization features, found {python_version.major}.{python_version.minor}")
-            return False
-        
-        # Check system resources
-        memory_gb = psutil.virtual_memory().total / (1024**3)
-        cpu_count = psutil.cpu_count()
-        
-        if memory_gb < 16:
-            logger.warning(f"Low memory detected: {memory_gb:.1f}GB. 16GB+ recommended for optimization experiments.")
-        
-        if cpu_count < 8:
-            logger.warning(f"Limited CPU cores: {cpu_count}. 8+ cores recommended for parallelism testing.")
-        
-        # Check for GPU availability
-        gpu_available = False
-        try:
-            import torch
-            gpu_available = torch.cuda.is_available()
-            gpu_count = torch.cuda.device_count() if gpu_available else 0
-            logger.info(f"GPU Status: {gpu_count} GPUs available" if gpu_available else "No GPUs detected")
-        except ImportError:
-            logger.warning("PyTorch not available - GPU optimization examples will be skipped")
-        
-        # Check Ray availability
-        try:
-            import ray
-            logger.info(f"Ray version: {ray.__version__}")
-        except ImportError:
-            logger.error("Ray not installed - please install ray[data] for optimization features")
-            return False
-        
-        logger.info(f"Environment verification passed - Python {python_version.major}.{python_version.minor}, {memory_gb:.1f}GB RAM, {cpu_count} CPUs")
-        return True
-        
-    except Exception as e:
-        logger.error(f"Environment verification failed: {e}")
-        return False
+# Simple environment setup
+python_version = sys.version_info
+memory_gb = psutil.virtual_memory().total / (1024**3)
+cpu_count = psutil.cpu_count()
 
-# Verify environment before proceeding
-if not verify_optimization_environment():
-    raise RuntimeError("Environment verification failed. Please check prerequisites and install required packages.")
+print(f"Environment ready for optimization:")
+print(f"  Python: {python_version.major}.{python_version.minor}")
+print(f"  Memory: {memory_gb:.1f}GB")
+print(f"  CPUs: {cpu_count}")
 
-print("Environment verification completed successfully!")
+# Check for GPU availability
+import torch
+gpu_available = torch.cuda.is_available()
+gpu_count = torch.cuda.device_count() if gpu_available else 0
+print(f"  GPUs: {gpu_count} available" if gpu_available else "  GPUs: None detected")
 ```
 
 ### Step 2: Ray Cluster Initialization with Optimization Settings
@@ -158,51 +124,27 @@ print("Environment verification completed successfully!")
 import ray
 from ray.data import DataContext
 
-def initialize_ray_for_optimization() -> bool:
-    """Initialize Ray with optimal settings for performance testing."""
-    try:
-        if not ray.is_initialized():
-            # Production-optimized Ray initialization
-            ray.init(
-                # Resource allocation for optimization testing
-                object_store_memory=8_000_000_000,  # 8GB object store
-                _memory=16_000_000_000,             # 16GB heap memory
-                log_to_driver=True,
-                configure_logging=True,
-                logging_level=logging.INFO,
-                include_dashboard=True
-            )
-        
-        # Configure Ray Data for optimization testing
-        ctx = DataContext.get_current()
-        ctx.enable_progress_bars = False  # Cleaner output for benchmarking
-        ctx.enable_tensor_extension_serialization = True  # Better performance
-        
-        # Display cluster configuration
-        resources = ray.cluster_resources()
-        logger.info("Ray cluster initialized for optimization testing")
-        logger.info(f"Available resources: {resources}")
-        
-        print("="*70)
-        print("RAY DATA OPTIMIZATION ENVIRONMENT")
-        print("="*70)
-        print(f"Ray version: {ray.__version__}")
-        print(f"Python version: {sys.version}")
-        print(f"Available CPUs: {resources.get('CPU', 0)}")
-        print(f"Available memory: {resources.get('memory', 0) / (1024**3):.1f} GB")
-        print(f"Object store memory: {resources.get('object_store_memory', 0) / (1024**3):.1f} GB")
-        print(f"Ray dashboard: {ray.get_dashboard_url()}")
-        print("="*70)
-        
-        return True
-        
-    except Exception as e:
-        logger.error(f"Ray initialization failed: {e}")
-        return False
+# Initialize Ray with optimization settings
+if not ray.is_initialized():
+    ray.init(
+        object_store_memory=8_000_000_000,  # 8GB object store
+        include_dashboard=True
+    )
 
-# Initialize Ray cluster
-if not initialize_ray_for_optimization():
-    raise RuntimeError("Failed to initialize Ray cluster for optimization testing")
+# Configure Ray Data for optimization testing
+ctx = DataContext.get_current()
+ctx.enable_progress_bars = False  # Cleaner output for benchmarking
+
+# Display cluster configuration
+resources = ray.cluster_resources()
+print("="*70)
+print("RAY DATA OPTIMIZATION ENVIRONMENT")
+print("="*70)
+print(f"Ray version: {ray.__version__}")
+print(f"Available CPUs: {resources.get('CPU', 0)}")
+print(f"Available memory: {resources.get('memory', 0) / (1024**3):.1f} GB")
+print(f"Ray dashboard: {ray.get_dashboard_url()}")
+print("="*70)
 ```
 
 ## Quick Start: Performance Baseline
@@ -228,42 +170,26 @@ class SimplePerformanceTracker:
         
         start_time = time.time()
         
-        try:
-            result = operation_func(*args, **kwargs)
-            execution_time = time.time() - start_time
-            
-            # Simple result counting
-            result_count = len(result) if hasattr(result, '__len__') else 0
-            
-            experiment_result = {
-                'name': operation_name,
-                'execution_time': execution_time,
-                'result_count': result_count,
-                'success': True
-            }
-            
-            self.experiment_results.append(experiment_result)
-            
-            print(f"SUCCESS {operation_name}: {execution_time:.2f} seconds")
-            print(f"   Processed {result_count} samples")
-            print(f"   Check Ray Dashboard for detailed resource utilization")
-            
-            return experiment_result
-            
-        except Exception as e:
-            execution_time = time.time() - start_time
-            print(f"FAILED {operation_name}: Failed after {execution_time:.2f}s - {str(e)}")
-            
-            experiment_result = {
-                'name': operation_name,
-                'execution_time': execution_time,
-                'result_count': 0,
-                'success': False,
-                'error': str(e)
-            }
-            
-            self.experiment_results.append(experiment_result)
-            return experiment_result
+        result = operation_func(*args, **kwargs)
+        execution_time = time.time() - start_time
+        
+        # Simple result counting
+        result_count = len(result) if hasattr(result, '__len__') else 0
+        
+        experiment_result = {
+            'name': operation_name,
+            'execution_time': execution_time,
+            'result_count': result_count,
+            'success': True
+        }
+        
+        self.experiment_results.append(experiment_result)
+        
+        print(f"SUCCESS {operation_name}: {execution_time:.2f} seconds")
+        print(f"   Processed {result_count} samples")
+        print(f"   Check Ray Dashboard for detailed resource utilization")
+        
+        return experiment_result
     
     def set_baseline(self, experiment_result: Dict[str, Any]) -> None:
         """Set baseline for comparison."""
@@ -320,63 +246,17 @@ print(f"Ray Dashboard available at: {ray.get_dashboard_url()}")
 import numpy as np
 import pandas as pd
 
-def load_real_optimization_dataset() -> ray.data.Dataset:
-    """Load real dataset for optimization testing using Ray Data native operations."""
-    
-    # Use real ImageNet data for computer vision optimization
-    try:
-        # Load real images from public ImageNet subset
-        image_dataset = ray.data.read_images(
-            "s3://anonymous@air-example-data-2/imagenette2/train/",
-            mode="RGB"
-        ).limit(10000)  # 10K images for optimization testing
-        
-        print(f"Loaded real ImageNet dataset for optimization:")
-        print(f"  Images: {image_dataset.count():,}")
-        print(f"  Schema: {image_dataset.schema()}")
-        print(f"  Dataset size: {image_dataset.size_bytes() / (1024**2):.1f} MB")
-        print(f"  Blocks: {image_dataset.num_blocks()}")
-        
-        return image_dataset
-        
-    except Exception as e:
-        print(f"ImageNet data unavailable: {e}")
-        
-        # Alternative: Use real text data from public sources
-        text_dataset = ray.data.read_text(
-            "s3://anonymous@ray-data-examples/text/*.txt"
-        ).limit(50000)  # 50K text samples
-        
-        # Add feature extraction for optimization testing
-        def extract_text_features(batch):
-            """Extract features from real text for optimization testing."""
-            features = []
-            for text in batch['text']:
-                # Simple feature extraction from real text
-                text_lower = text.lower()
-                feature_vector = [
-                    len(text),
-                    len(text.split()),
-                    text.count('a'), text.count('e'), text.count('i'), text.count('o'), text.count('u'),
-                    text.count('.'), text.count(','), text.count('!'), text.count('?'),
-                    text_lower.count('the'), text_lower.count('and'), text_lower.count('is')
-                ]
-                # Pad to 512 dimensions
-                feature_vector.extend([0.0] * (512 - len(feature_vector)))
-                features.append(feature_vector[:512])
-            
-            return {'features': features, 'text': batch['text']}
-        
-        processed_dataset = text_dataset.map_batches(extract_text_features, batch_size=1000)
-        
-        print(f"Using real text dataset for optimization:")
-        print(f"  Text samples: {processed_dataset.count():,}")
-        print(f"  Features extracted: 512-dimensional vectors from real text")
-        
-        return processed_dataset
+# Load real ImageNet dataset for batch inference optimization testing
+optimization_dataset = ray.data.read_images(
+    "s3://ray-benchmark-data/imagenette2/train/",
+    mode="RGB"
+).limit(10000)  # 10K images for optimization testing
 
-# Load real dataset for optimization
-optimization_dataset = load_real_optimization_dataset()
+print(f"Loaded real ImageNet dataset for optimization:")
+print(f"  Images: {optimization_dataset.count():,}")
+print(f"  Schema: {optimization_dataset.schema()}")
+print(f"  Dataset size: {optimization_dataset.size_bytes() / (1024**2):.1f} MB")
+print(f"  Blocks: {optimization_dataset.num_blocks()}")
 
 print("Optimization dataset ready for testing!")
 ```
@@ -493,26 +373,19 @@ def test_batch_size_optimization():
     for batch_size in batch_sizes:
         print(f"\nTesting batch_size={batch_size}")
         
-        try:
-            result = performance_tracker.time_operation(
-                f"Batch Size {batch_size}",
-                lambda: optimization_dataset.map_batches(
-                    batch_size_test_inference,
-                    batch_size=batch_size,
-                    concurrency=4
-                ).take(1000)
-            )
-            
-            if result['success'] and result['execution_time'] < fastest_time:
-                fastest_time = result['execution_time']
-                optimal_batch_size = batch_size
-                print(f"New best: {batch_size} (time: {fastest_time:.2f}s)")
-            
-            results[batch_size] = result['execution_time'] if result['success'] else float('inf')
-            
-        except Exception as e:
-            print(f"Batch size {batch_size} failed: {e}")
-            results[batch_size] = float('inf')
+        result = performance_tracker.time_operation(
+            f"Batch Size {batch_size}",
+            lambda: optimization_dataset.map_batches(
+                batch_size_test_inference,
+                batch_size=batch_size,
+                concurrency=4
+            ).take(1000)
+        )
+        
+        if result['execution_time'] < fastest_time:
+            fastest_time = result['execution_time']
+            optimal_batch_size = batch_size
+            print(f"New best: {batch_size} (time: {fastest_time:.2f}s)")
     
     print(f"\nOptimal batch size found: {optimal_batch_size}")
     print(f"Best time: {fastest_time:.2f} seconds")
@@ -552,23 +425,19 @@ def test_concurrency_optimization():
     for concurrency in concurrency_levels:
         print(f"\nTesting concurrency={concurrency}")
         
-        try:
-            result = performance_tracker.time_operation(
-                f"Concurrency {concurrency}",
-                lambda: optimization_dataset.map_batches(
-                    compute_intensive_inference,
-                    batch_size=optimal_batch_size,
-                    concurrency=concurrency
-                ).take(1000)
-            )
-            
-            if result['success'] and result['execution_time'] < fastest_time:
-                fastest_time = result['execution_time']
-                optimal_concurrency = concurrency
-                print(f"New best: {concurrency} (time: {fastest_time:.2f}s)")
-            
-        except Exception as e:
-            print(f"Concurrency {concurrency} failed: {e}")
+        result = performance_tracker.time_operation(
+            f"Concurrency {concurrency}",
+            lambda: optimization_dataset.map_batches(
+                compute_intensive_inference,
+                batch_size=optimal_batch_size,
+                concurrency=concurrency
+            ).take(1000)
+        )
+        
+        if result['execution_time'] < fastest_time:
+            fastest_time = result['execution_time']
+            optimal_concurrency = concurrency
+            print(f"New best: {concurrency} (time: {fastest_time:.2f}s)")
     
     print(f"\nOptimal concurrency found: {optimal_concurrency}")
     print(f"Best time: {fastest_time:.2f} seconds")

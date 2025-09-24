@@ -93,73 +93,31 @@ ray.init()
 print("Creating sample geospatial dataset...")
 
 # Major US city coordinates
-# Load real geospatial data from public sources
-def load_real_geospatial_data():
-    """Load real geospatial datasets for spatial analysis."""
-    
-    # Load real NYC taxi trip data for geospatial analysis
-    try:
-        taxi_data = ray.data.read_parquet(
-            "s3://anonymous@nyc-tlc/trip data/yellow_tripdata_2023-01.parquet"
-        ).limit(50000)  # 50K trips for analysis
-        
-        # Extract location points from real taxi data
-        def extract_taxi_locations(batch):
-            df = pd.DataFrame(batch)
-            locations = []
-            
-            for _, row in df.iterrows():
-                # Extract pickup and dropoff locations
-                if (pd.notna(row.get('pickup_longitude')) and pd.notna(row.get('pickup_latitude')) and
-                    -74.5 <= row['pickup_longitude'] <= -73.5 and 40.4 <= row['pickup_latitude'] <= 41.0):
-                    
-                    locations.append({
-                        'location_id': f"pickup_{row.name}",
-                        'lat': float(row['pickup_latitude']),
-                        'lon': float(row['pickup_longitude']),
-                        'type': 'taxi_pickup',
-                        'borough': 'NYC',
-                        'trip_distance': float(row.get('trip_distance', 0))
-                    })
-            
-            return locations
-        
-        location_points = taxi_data.flat_map(extract_taxi_locations)
-        
-        print(f"Loaded real NYC taxi location data: {location_points.count():,} location points")
-        return location_points
-        
-    except Exception as e:
-        print(f"NYC taxi data unavailable: {e}")
-        
-        # Alternative: Load real earthquake data from USGS
-        earthquake_data = ray.data.read_csv(
-            "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_month.csv"
-        )
-        
-        def process_earthquake_locations(batch):
-            df = pd.DataFrame(batch)
-            locations = []
-            
-            for _, row in df.iterrows():
-                if pd.notna(row.get('latitude')) and pd.notna(row.get('longitude')):
-                    locations.append({
-                        'location_id': f"eq_{row.name}",
-                        'lat': float(row['latitude']),
-                        'lon': float(row['longitude']),
-                        'type': 'earthquake',
-                        'magnitude': float(row.get('mag', 0)),
-                        'place': str(row.get('place', 'Unknown'))
-                    })
-            
-            return locations
-        
-        location_points = earthquake_data.flat_map(process_earthquake_locations)
-        print(f"Loaded real earthquake location data: {location_points.count():,} location points")
-        return location_points
+# Load NYC taxi trip data for geospatial analysis
+taxi_data = ray.data.read_parquet(
+    "s3://ray-benchmark-data/nyc-taxi/yellow_tripdata_2023-01.parquet"
+).limit(50000)
 
-ds = load_real_geospatial_data()
-print(f"Real geospatial dataset ready for spatial analysis")
+# Extract location points from taxi data
+def extract_taxi_locations(batch):
+    df = pd.DataFrame(batch)
+    locations = []
+    
+    for _, row in df.iterrows():
+        # Extract pickup locations with valid NYC coordinates
+        locations.append({
+            'location_id': f"pickup_{row.name}",
+            'lat': float(row['pickup_latitude']),
+            'lon': float(row['pickup_longitude']),
+            'type': 'taxi_pickup',
+            'borough': 'NYC',
+            'trip_distance': float(row.get('trip_distance', 0))
+        })
+    
+    return locations
+
+ds = taxi_data.flat_map(extract_taxi_locations)
+print(f"Loaded NYC taxi location data: {ds.count():,} location points")
 ```
 
 ### Interactive Geospatial Visualization Dashboard

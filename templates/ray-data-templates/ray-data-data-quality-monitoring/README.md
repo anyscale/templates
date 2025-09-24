@@ -79,53 +79,15 @@ OUTLIER_SCORE_RATE = 0.03    # 3% score outliers
 
 ```python
 # Load real e-commerce customer data for quality monitoring
-def load_real_customer_data():
-    """Load real customer data from public sources for quality analysis."""
-    
-    try:
-        # Load real e-commerce data from public dataset
-        ecommerce_data = ray.data.read_csv(
-            "s3://anonymous@ecommerce-public-datasets/customers.csv"
-        ).limit(50000)
-        
-        print("Loaded real e-commerce customer data")
-        return ecommerce_data
-        
-    except Exception as e:
-        print(f"E-commerce data unavailable: {e}")
-        
-        # Alternative: Load real online retail data
-        retail_data = ray.data.read_csv(
-            "https://archive.ics.uci.edu/ml/machine-learning-databases/00352/Online%20Retail.xlsx",
-            # Convert CustomerID, Description columns for quality analysis
-        ).limit(100000)
-        
-        # Transform to customer-centric view for quality monitoring
-        def transform_to_customers(batch):
-            df = pd.DataFrame(batch)
-            customers = []
-            
-            for customer_id in df['CustomerID'].dropna().unique():
-                customer_data = df[df['CustomerID'] == customer_id]
-                
-                customers.append({
-                    'customer_id': str(int(customer_id)),
-                    'total_orders': len(customer_data),
-                    'total_spend': customer_data['UnitPrice'].sum() if 'UnitPrice' in df.columns else 0,
-                    'country': customer_data['Country'].iloc[0] if 'Country' in df.columns else 'Unknown',
-                    'first_order': customer_data['InvoiceDate'].min() if 'InvoiceDate' in df.columns else None,
-                    'last_order': customer_data['InvoiceDate'].max() if 'InvoiceDate' in df.columns else None
-                })
-            
-            return customers
-        
-        customer_dataset = retail_data.flat_map(transform_to_customers)
-        print("Loaded real online retail customer data")
-        return customer_dataset
+customer_dataset = ray.data.read_parquet(
+    "s3://ray-benchmark-data/ecommerce/online_retail_customers.parquet"
+)
 
-# Load real customer data
-ds = load_real_customer_data()
-print(f"Real customer dataset loaded with {ds.count():,} records for quality monitoring")
+print(f"Loaded real customer dataset:")
+print(f"  Records: {customer_dataset.count():,}")
+print(f"  Schema: {customer_dataset.schema()}")
+
+ds = customer_dataset
 ```
 
 **What we created:**

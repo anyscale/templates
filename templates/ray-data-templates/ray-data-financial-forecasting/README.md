@@ -93,53 +93,16 @@ start_time = time.time()
 ```
 
 ```python
-def load_real_financial_dataset() -> ray.data.Dataset:
-    """Load real financial market data using Yahoo Finance API."""
-    import yfinance as yf
-    
-    # Major S&P 500 companies for realistic financial analysis
-    symbols = ['AAPL', 'GOOGL', 'MSFT', 'AMZN', 'TSLA', 'NVDA', 'META', 'NFLX', 'CRM', 'ORCL']
-    end_date = datetime.now()
-    start_date = end_date - timedelta(days=730)  # 2 years of data
-    
-    print(f"Loading real market data for {len(symbols)} major stocks...")
-    market_data = []
-    
-    for symbol in symbols:
-        print(f"  Downloading {symbol} historical data...")
-        ticker = yf.Ticker(symbol)
-        hist = ticker.history(start=start_date, end=end_date)
-        info = ticker.info
-        
-        # Convert to Ray Data format
-        for date, row in hist.iterrows():
-            record = {
-                'Symbol': symbol,
-                'Name': info.get('longName', symbol),
-                'Date': date.strftime('%Y-%m-%d'),
-                'Open': float(row['Open']),
-                'High': float(row['High']),
-                'Low': float(row['Low']),
-                'Close': float(row['Close']),
-                'Volume': int(row['Volume']),
-                'Sector': info.get('sector', 'Technology'),
-                'MarketCap': info.get('marketCap', 0)
-            }
-            market_data.append(record)
-    
-    # Create Ray Dataset using native from_items
-    dataset = ray.data.from_items(market_data)
-    
-    print(f"Real financial dataset loaded:")
-    print(f"  Records: {dataset.count():,}")
-    print(f"  Companies: {len(symbols)}")
-    print(f"  Date range: {start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')}")
-    print(f"  Dataset size: {dataset.size_bytes() / (1024**2):.1f} MB")
-    
-    return dataset
+# Load real S&P 500 financial data from Ray benchmark bucket
+financial_data = ray.data.read_parquet(
+    "s3://ray-benchmark-data/financial/sp500_daily_2years.parquet"
+)
 
-# Load real financial data
-financial_data = load_real_financial_dataset()
+print(f"Loaded real S&P 500 financial dataset:")
+print(f"  Records: {financial_data.count():,}")
+print(f"  Schema: {financial_data.schema()}")
+print(f"  Dataset size: {financial_data.size_bytes() / (1024**2):.1f} MB")
+print(f"  Date range: 2 years of daily market data")
 
 load_time = time.time() - start_time
 print(f"Real financial data loaded in {load_time:.2f} seconds")
