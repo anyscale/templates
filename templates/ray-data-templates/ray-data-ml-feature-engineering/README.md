@@ -254,49 +254,49 @@ titanic_data = ray.data.read_csv(
 
 print(f"Loaded real Titanic dataset: {titanic_data.count()} records")
 print(f"Schema: {titanic_data.schema()}")
-print("Dataset ready for feature engineering")
-    import numpy as np
-    
-    sample_data = []
-    for i in range(2000):
-        record = {
-            'PassengerId': i + 1,
-            'Survived': np.random.choice([0, 1], p=[0.62, 0.38]),
-            'Pclass': np.random.choice([1, 2, 3], p=[0.24, 0.21, 0.55]),
-            'Sex': np.random.choice(['male', 'female'], p=[0.65, 0.35]),
-            'Age': np.random.normal(29, 14) if np.random.random() > 0.2 else None,
-            'SibSp': np.random.choice([0, 1, 2, 3, 4], p=[0.68, 0.23, 0.06, 0.02, 0.01]),
-            'Parch': np.random.choice([0, 1, 2, 3], p=[0.76, 0.13, 0.08, 0.03]),
-            'Fare': np.random.lognormal(3.2, 1.0) if np.random.random() > 0.1 else None,
-            'Embarked': np.random.choice(['S', 'C', 'Q'], p=[0.72, 0.19, 0.09])
-        }
-        sample_data.append(record)
-    
-    # Use Ray Data native from_items API
-    titanic_data = ray.data.from_items(sample_data)
-    print(f"Generated Titanic-style data: {titanic_data.count()} records")
+print("Real Titanic dataset ready for feature engineering")
 
-# Alternative: Load from public datasets using native APIs
-print(f"ML dataset ready for feature engineering")
+# Display dataset structure
+print("Titanic Dataset Overview:")
+print(f"  Total records: {titanic_data.count():,}")
+print("  Sample records:")
+titanic_data.show(3)
 ```
 
 ### 2. **Categorical Feature Engineering**
 
 ```python
-import category_encoders as ce
-from sklearn.preprocessing import LabelEncoder
+# Categorical Feature Engineering using Ray Data native operations
+def engineer_categorical_features(batch):
+    """Create categorical features using pandas within Ray Data."""
+    df = pd.DataFrame(batch)
+    
+    # One-hot encoding for categorical variables
+    categorical_cols = ['Sex', 'Embarked', 'Pclass']
+    
+    for col in categorical_cols:
+        if col in df.columns:
+            # Create dummy variables
+            dummies = pd.get_dummies(df[col], prefix=col)
+            df = pd.concat([df, dummies], axis=1)
+    
+    # Create family size feature
+    if 'SibSp' in df.columns and 'Parch' in df.columns:
+        df['family_size'] = df['SibSp'] + df['Parch'] + 1
+        df['is_alone'] = (df['family_size'] == 1).astype(int)
+    
+    return df.to_dict('records')
 
-class CategoricalFeatureEngineer:
-    """Engineer categorical features using various encoding strategies."""
-    
-    def __init__(self):
-        self.encoders = {}
-        self.label_encoders = {}
-    
-    def __call__(self, batch):
-        """Engineer categorical features for a batch."""
-        if not batch:
-            return {"categorical_features": []}
+# Apply categorical feature engineering
+categorical_features = titanic_data.map_batches(
+    engineer_categorical_features,
+    batch_format="pandas",
+    batch_size=1000
+)
+
+print("Categorical feature engineering completed")
+print("Sample engineered features:")
+categorical_features.show(2)
         
         # Convert batch to DataFrame
         df = pd.DataFrame(batch)

@@ -107,49 +107,53 @@ else:
 
 print(f" Using device: {device}")
 
-def create_multimodal_dataset():
-    """Create realistic multimodal data combining images and text."""
-    print(" Creating multimodal dataset...")
+# Load real multimodal dataset for AI pipeline processing
+def load_multimodal_dataset():
+    """Load real image and text data for multimodal AI processing."""
+    print("Loading real multimodal dataset...")
     
-    # Sample image descriptions that might appear with photos
-    image_captions = [
-        "Beautiful sunset over the mountains with orange and pink sky",
-        "Delicious homemade pizza with cheese and pepperoni",
-        "Cute golden retriever playing in the park with a ball",
-        "Modern city skyline at night with illuminated buildings",
-        "Fresh vegetables and fruits at the farmer's market",
-        "Cozy coffee shop interior with wooden tables and warm lighting",
-        "Snow-covered forest path during winter season",
-        "Colorful flowers blooming in a spring garden",
-        "Ocean waves crashing against rocky cliffs",
-        "Vintage car parked on a quiet street"
-    ]
+    # Load real images from ImageNet subset
+    image_dataset = ray.data.read_images(
+        "s3://ray-benchmark-data/imagenette2/train/",
+        mode="RGB"
+    ).limit(5000)  # 5K images for multimodal processing
     
-    # Create multimodal data pairs
-    multimodal_data = []
+    # Load real text data for captions
+    text_dataset = ray.data.read_text(
+        "s3://ray-benchmark-data/text/captions.txt"
+    ).limit(5000)  # 5K text captions
     
-    for i in range(1000):  # Create 1000 multimodal samples
-        # Create a simple synthetic image (colored square)
-        # In real applications, you'd load actual images
-        color = np.random.randint(0, 256, 3)  # Random RGB color
-        image = np.full((64, 64, 3), color, dtype=np.uint8)  # 64x64 colored square
+    # Combine images and text into multimodal dataset
+    def create_multimodal_pairs(batch):
+        """Pair images with text captions for multimodal processing."""
+        import random
         
-        # Select a caption and add some variation
-        base_caption = np.random.choice(image_captions)
-        caption = f"{base_caption} (sample {i+1})"
+        # Get text samples for pairing
+        text_samples = text_dataset.take(len(batch['image']))
         
-        multimodal_data.append({
-            'item_id': f'item_{i:04d}',
-            'image': image,
-            'text': caption,
-            'category': np.random.choice(['nature', 'food', 'urban', 'animals']),
-            'length': len(caption)
-        })
+        pairs = []
+        for i, image in enumerate(batch['image']):
+            text_content = text_samples[i]['text'] if i < len(text_samples) else "No caption available"
+            
+            pairs.append({
+                'item_id': f'item_{i:04d}',
+                'image': image,
+                'text': text_content,
+                'image_shape': image.shape
+            })
+        
+        return pairs
     
-    return ray.data.from_items(multimodal_data)
+    # Create multimodal pairs
+    multimodal_dataset = image_dataset.map_batches(
+        create_multimodal_pairs,
+        batch_size=100
+    )
+    
+    return multimodal_dataset
 
-# Create our multimodal dataset
-multimodal_dataset = create_multimodal_dataset()
+# Load real multimodal dataset
+multimodal_dataset = load_multimodal_dataset()
 
 # Display dataset information
 print(f" Created multimodal dataset: {multimodal_dataset.count():,} items")

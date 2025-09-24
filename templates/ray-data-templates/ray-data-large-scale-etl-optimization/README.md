@@ -1033,102 +1033,64 @@ ray.init(
 
 ## Interactive ETL Pipeline Visualizations
 
-Let's create comprehensive visualizations to monitor and analyze our ETL pipeline performance. These visualizations are designed to work excellently in Jupyter notebook environments:
-
-**Import Visualization Libraries**
+Let's display our ETL pipeline results using Ray Data's native capabilities for clean, readable output:
 
 ```python
-# Import visualization libraries for dashboard creation
-import matplotlib.pyplot as plt
-import seaborn as sns
-from datetime import datetime
+# Display ETL results using Ray Data native operations
+def display_etl_results(dataset, title="ETL Results"):
+    """Display ETL pipeline results in a clean, professional format."""
+    
+    print("="*60)
+    print(f"{title.upper()}")
+    print("="*60)
+    print(f"Total records: {dataset.count():,}")
+    print(f"Schema: {dataset.schema()}")
+    print(f"Dataset size: {dataset.size_bytes() / (1024**2):.1f} MB")
+    
+    print(f"\nSample records:")
+    dataset.show(5)
+    
+    print("="*60)
 
-# Set up plotting style
-plt.style.use('default')
-sns.set_palette("husl")
-
-print("Visualization libraries imported and configured")
+# Display our processed business data
+display_etl_results(business_processed, "Business Data Processing Results")
 ```
 
-**Create ETL Performance Dashboard**
+### ETL Pipeline Analysis Using Ray Data Native Operations
 
 ```python
-def create_etl_dashboard(processed_data):
-    """Create a comprehensive ETL performance dashboard."""
-    
-    print("Creating ETL performance dashboard...")
-    
-    # Set up the dashboard layout
-    fig, axes = plt.subplots(2, 3, figsize=(18, 12))
-    fig.suptitle('ETL Pipeline Performance Dashboard', fontsize=16, fontweight='bold')
-    
-    # Convert Ray Dataset to pandas for visualization
-    sample_data = processed_data.take(1000)  # Sample for visualization
-    df = pd.DataFrame(sample_data)
-    
-    return fig, axes, df
+# Analyze ETL results using Ray Data aggregations
+from ray.data.aggregate import Count, Mean, Sum, Max, Min
 
-# Initialize dashboard components
-dashboard_fig, dashboard_axes, dashboard_data = create_etl_dashboard(business_processed)
-```
+# Business metrics analysis
+print("ETL Pipeline Analysis:")
+print("="*50)
 
-**Dashboard Panel 1: Data Volume Analysis**
+# Group by trip type for analysis
+trip_analysis = business_processed.groupby("trip_type").aggregate(
+    Count(),
+    Mean("total_revenue"),
+    Mean("efficiency_score")
+).rename_columns(["trip_type", "trip_count", "avg_revenue", "avg_efficiency"])
 
-```python
-# 1. Data Volume by Region
-if 'region' in dashboard_data.columns:
-    region_counts = dashboard_data['region'].value_counts()
-    dashboard_axes[0, 0].bar(region_counts.index, region_counts.values, color='skyblue')
-    dashboard_axes[0, 0].set_title('Data Volume by Region')
-    dashboard_axes[0, 0].set_xlabel('Region')
-    dashboard_axes[0, 0].set_ylabel('Record Count')
-    
-    # Add value labels on bars
-    for i, v in enumerate(region_counts.values):
-        dashboard_axes[0, 0].text(i, v + 0.01*max(region_counts.values), str(v), ha='center')
+print("Trip Type Analysis:")
+trip_analysis.show()
 
-print("Data volume analysis panel created")
-```
+# Revenue analysis
+revenue_metrics = business_processed.aggregate(
+    Count(),
+    Sum("total_revenue"),
+    Mean("total_revenue"),
+    Max("total_revenue"),
+    Min("total_revenue")
+)
 
-**Dashboard Panel 2: Processing Time Analysis**
+print(f"\nRevenue Summary:")
+for metric in revenue_metrics:
+    print(f"  {metric}")
 
-```python
-# 2. Processing Time Distribution
-processing_times = np.random.normal(2.5, 0.8, len(dashboard_data))  # Simulated times
-dashboard_axes[0, 1].hist(processing_times, bins=20, color='lightgreen', alpha=0.7, edgecolor='black')
-dashboard_axes[0, 1].set_title('Processing Time Distribution')
-dashboard_axes[0, 1].set_xlabel('Processing Time (seconds)')
-dashboard_axes[0, 1].set_ylabel('Frequency')
-dashboard_axes[0, 1].axvline(np.mean(processing_times), color='red', linestyle='--', 
-                           label=f'Mean: {np.mean(processing_times):.2f}s')
-dashboard_axes[0, 1].legend()
-
-print("Processing time analysis panel created")
-```
-
-**Dashboard Panel 3: Data Quality Metrics**
-
-```python
-# 3. Data Quality Metrics
-quality_metrics = ['Valid Records', 'Invalid Records']
-quality_values = [85, 15]  # Example percentages
-colors = ['green', 'red']
-dashboard_axes[0, 2].pie(quality_values, labels=quality_metrics, colors=colors, 
-                       autopct='%1.1f%%', startangle=90)
-dashboard_axes[0, 2].set_title('Data Quality Distribution')
-
-print("Data quality metrics panel created")
-```
-
-**Display Complete Dashboard**
-
-```python
-# Finalize and display the dashboard
-plt.tight_layout()
-plt.show()
-
-print("ETL Performance Dashboard created successfully!")
-print("This dashboard provides insights into your ETL pipeline performance")
+print(f"\nETL Pipeline Processing Complete!")
+print(f"Monitor detailed performance in Ray Dashboard: {ray.get_dashboard_url()}")
 ```
 
 ### **ETL Pipeline Status Monitoring**
