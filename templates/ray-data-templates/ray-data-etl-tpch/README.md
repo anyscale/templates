@@ -107,119 +107,246 @@ except Exception as e:
     print("Continuing with local processing...")
 ```
 
-### Step 2: Sample Data Creation (2 min)
+### Step 2: Load TPC-H Benchmark Data (2 min)
 
 ```python
-def generate_sample_customers(num_customers: int = 1000) -> List[Dict[str, Any]]:
-    """Generate realistic customer data for ETL demonstration."""
-    customers = []
-    
-    cities = ['New York', 'Los Angeles', 'Chicago', 'Houston', 'Phoenix', 'Philadelphia']
-    segments = ['Premium', 'Standard', 'Basic']
-    
-    for i in range(num_customers):
-        customer = {
-            'customer_id': i + 1,
-            'name': f'Customer_{i+1:04d}',
-            'city': np.random.choice(cities),
-            'segment': np.random.choice(segments),
-            'income': np.random.normal(50000, 20000),
-            'age': np.random.randint(18, 80),
-            'registration_date': datetime.now() - pd.Timedelta(days=np.random.randint(1, 365))
-        }
-        customers.append(customer)
-    
-    return customers
+# Load actual TPC-H benchmark dataset - industry standard for data processing
+# TPC-H is the gold standard benchmark for decision support systems and analytics
 
-# Generate sample data
-print("Generating sample customer data...")
-customer_data = generate_sample_customers(1000)
-customers_ds = ray.data.from_items(customer_data)
+# TPC-H S3 data location
+TPCH_S3_PATH = "s3://ray-benchmark-data/tpch/parquet/sf10"
 
-print(f"Created dataset with {customers_ds.count():,} customers")
-print("Sample customer record:")
-print(customers_ds.take(1)[0])
+# TPC-H Schema Overview
+tpch_tables = {
+    "customer": "Customer master data with demographics and market segments",
+    "orders": "Order header information with dates, priorities, and status",
+    "lineitem": "Detailed line items for each order (largest table ~6B rows)",
+    "part": "Parts catalog with specifications and retail prices", 
+    "supplier": "Supplier information including contact details and geography",
+    "partsupp": "Part-supplier relationships with costs and availability",
+    "nation": "Nation reference data with geographic regions",
+    "region": "Regional groupings for geographic analysis"
+}
+
+print("TPC-H Schema (8 Tables):")
+for table, description in tpch_tables.items():
+    print(f"  {table.upper()}: {description}")
 ```
 
 ### Step 3: Data Transformation (1.5 min)
 
 ```python
-def transform_customer_batch(batch: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    """Apply business logic transformations to customer data."""
-    transformed_customers = []
-    
-    for customer in batch:
-        # Business logic: customer tier based on income
-        income = customer['income']
-        if income > 75000:
-            tier = 'Gold'
-            discount_rate = 0.15
-        elif income > 50000:
-            tier = 'Silver'
-            discount_rate = 0.10
-        else:
-            tier = 'Bronze'
-            discount_rate = 0.05
-        
-        # Create enriched customer record
-        enriched_customer = {
-            **customer,
-            'tier': tier,
-            'discount_rate': discount_rate,
-            'annual_value': income * discount_rate,
-            'processing_date': datetime.now().isoformat()
-        }
-        
-        transformed_customers.append(enriched_customer)
-    
-    return transformed_customers
+# Load TPC-H Customer Master Data
+customers_ds = ray.data.read_parquet(f"{TPCH_S3_PATH}/customer")
 
-# Apply transformations
-print("Applying customer transformations...")
-transformed_ds = customers_ds.map_batches(
-    transform_customer_batch,
-    batch_size=100,
-    concurrency=4
-)
+# Clean and rename columns to standard TPC-H schema
+customers_ds = customers_ds.drop_columns(["column8"])
+customers_ds = customers_ds.rename_columns([
+    "c_custkey",
+    "c_name", 
+    "c_address",
+    "c_nationkey",
+    "c_phone",
+    "c_acctbal",
+    "c_mktsegment",
+    "c_comment"
+])
 
-print(f"Transformed {transformed_ds.count():,} customer records")
+print("TPC-H Customer Master Data:")
+print(f"Schema: {customers_ds.schema()}")
+print(f"Total customers: {customers_ds.count():,}")
+print("Sample customer records:")
+customers_ds.limit(5).to_pandas()
+
 ```
 
-### Step 4: Aggregation and Analysis (0.5 min)
+### Step 4: Transform - TPC-H Business Intelligence (1.5 min)
 
 ```python
-from ray.data.aggregate import Count, Mean, Sum, Max, Min
+# TPC-H Market Segment Analysis using Ray Data aggregations
+from ray.data.aggregate import Count, Mean
 
-# Business intelligence aggregations
-print("Calculating business metrics...")
+segment_analysis = customers_ds.groupby("c_mktsegment").aggregate(
+    Count(),
+    Mean("c_acctbal"),
+).rename_columns(["c_mktsegment", "customer_count", "avg_account_balance"])
 
-city_analysis = (transformed_ds
-    .groupby('city')
-    .aggregate(
-        Count(),
-        Mean('income'),
-        Sum('annual_value'),
-        Max('age'),
-        Min('age')
-    )
+print("Customer Market Segment Distribution:")
+segment_analysis.show(5)
+```
+
+### Step 5: Load Nation Data and Join Analysis (1 min)
+
+```python
+# Load geographic reference data - Nations table
+nation_ds = ray.data.read_parquet(f"{TPCH_S3_PATH}/nation")
+nation_ds = (
+    nation_ds
+    .select_columns(["column0", "column1", "column2", "column3"])
+    .rename_columns(["n_nationkey", "n_name", "n_regionkey", "n_comment"])
 )
 
-tier_analysis = (transformed_ds
-    .groupby('tier')
+print(f"Total nations: {nation_ds.count()}")
+print("Sample nation records:")
+nation_ds.limit(5).to_pandas()
+```
+
+### Step 6: Advanced TPC-H Joins and Analytics (2 min)
+
+```python
+# Customer Demographics by Nation - Advanced Join Analysis
+from ray.data.aggregate import Count, Mean, Sum
+
+customer_nation_analysis = (customers_ds
+    .join(nation_ds, on=("c_nationkey",), right_on=("n_nationkey",), join_type="inner", num_partitions=100)
+    .groupby("n_name")
     .aggregate(
         Count(),
-        Mean('income'),
-        Sum('annual_value')
+        Mean("c_acctbal"),
+        Sum("c_acctbal"),
     )
+    .rename_columns(["n_name", "customer_count", "avg_balance", "total_balance"])
 )
 
-print("\nCity Analysis:")
-for city_stat in city_analysis.take(5):
-    print(f"  {city_stat}")
+print("Customer Demographics by Nation (Top 10):")
+customer_nation_analysis.sort("customer_count", descending=True).limit(10).to_pandas()
+```
 
-print(f"\nAverage income: ${transformed_ds.map(lambda x: x['income']).mean():.2f}")
+### Step 7: Load Orders Data for Transaction Analysis (1 min)
 
-print("\nQuick Start Complete! You've built your first Ray Data ETL pipeline.")
+```python
+# Load TPC-H Orders Data (Enterprise Transaction Processing)
+orders_ds = ray.data.read_parquet(f"{TPCH_S3_PATH}/orders")
+
+orders_ds = (orders_ds
+    .select_columns([f"column{i}" for i in range(9)])
+    .rename_columns([
+        "o_orderkey",
+        "o_custkey", 
+        "o_orderstatus",
+        "o_totalprice",
+        "o_orderdate",
+        "o_orderpriority",
+        "o_clerk",
+        "o_shippriority",
+        "o_comment"
+    ])
+)
+
+print("TPC-H Orders Data:")
+print(f"Total orders: {orders_ds.count():,}")
+print("Sample order records:")
+orders_ds.limit(5).to_pandas()
+```
+
+### Step 8: Advanced ETL Transformations with TPC-H Data (2 min)
+
+```python
+# Traditional ETL transformations for TPC-H business intelligence
+def traditional_etl_enrichment_tpch(batch):
+    """Traditional ETL transformations for TPC-H business intelligence and reporting."""
+    df = batch
+    
+    # Parse order date and create time dimensions (standard BI practice)
+    df['o_orderdate'] = pd.to_datetime(df['o_orderdate'])
+    df['order_year'] = df['o_orderdate'].dt.year
+    df['order_quarter'] = df['o_orderdate'].dt.quarter
+    df['order_month'] = df['o_orderdate'].dt.month
+    df['quarter_name'] = 'Q' + df['order_quarter'].astype(str)
+    
+    # Revenue tier classification (standard BI practice)
+    df['revenue_tier'] = pd.cut(
+        df['o_totalprice'],
+        bins=[0, 50000, 150000, 300000, float('inf')],
+        labels=['Small', 'Medium', 'Large', 'Enterprise']
+    )
+    
+    # Priority-based business rules
+    priority_weights = {
+        '1-URGENT': 1.0, '2-HIGH': 0.8, '3-MEDIUM': 0.6,
+        '4-NOT SPECIFIED': 0.4, '5-LOW': 0.2
+    }
+    df['priority_weight'] = df['o_orderpriority'].map(priority_weights).fillna(0.4)
+    df['weighted_revenue'] = df['o_totalprice'] * df['priority_weight']
+    
+    return df
+
+# Apply TPC-H transformations
+enriched_orders = orders_ds.map_batches(
+    traditional_etl_enrichment_tpch,
+    batch_format="pandas",
+    batch_size=1024
+)
+
+print("TPC-H ETL transformations applied")
+print("Sample enriched order records:")
+enriched_orders.limit(3).to_pandas()
+```
+
+### Step 9: Load - TPC-H Business Intelligence Aggregations (2 min)
+
+```python
+# Executive Dashboard - Traditional BI metrics on TPC-H enterprise data
+from ray.data.aggregate import Count, Mean, Sum
+
+executive_summary = (enriched_orders
+    .groupby("order_quarter")
+    .aggregate(
+        Count(),
+        Sum("o_totalprice"),
+        Mean("o_totalprice"),
+        Sum("weighted_revenue"),
+    )
+    .rename_columns([
+        "order_quarter",
+        "total_orders", 
+        "total_revenue",
+        "avg_order_value",
+        "weighted_revenue"
+    ])
+)
+
+print("Quarterly Business Performance:")
+executive_summary.show()
+
+# Revenue Tier Analysis - Operational metrics
+operational_metrics = (enriched_orders
+    .groupby("revenue_tier")
+    .aggregate(
+        Count(),
+        Sum("o_totalprice"),
+        Mean("priority_weight")
+    )
+    .rename_columns([
+        "revenue_tier",
+        "order_volume", 
+        "total_revenue",
+        "avg_priority_weight"
+    ])
+)
+
+print("Performance by Revenue Tier:")
+operational_metrics.show()
+```
+
+### Step 10: Write Results to Storage (1 min)
+
+```python
+# Write TPC-H processed data using Ray Data native operations
+import os
+OUTPUT_PATH = "/mnt/cluster_storage/tpch_etl_output"
+os.makedirs(OUTPUT_PATH, exist_ok=True)
+
+print("Writing TPC-H processed data to Parquet...")
+
+# Write enriched data to Parquet (optimal for analytics)
+enriched_orders.write_parquet(f"{OUTPUT_PATH}/enriched_orders")
+executive_summary.write_parquet(f"{OUTPUT_PATH}/executive_summary") 
+operational_metrics.write_parquet(f"{OUTPUT_PATH}/operational_metrics")
+
+print("TPC-H ETL pipeline completed!")
+print(f"Results written to: {OUTPUT_PATH}")
+print(f"Check Ray Dashboard for execution details: {ray.get_dashboard_url()}")
 ```
 
 ## Advanced ETL Features
