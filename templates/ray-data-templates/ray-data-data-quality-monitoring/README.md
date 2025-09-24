@@ -187,25 +187,117 @@ def create_quality_dashboard(dataset, sample_size=1000):
     ax_income.legend()
     ax_income.grid(True, alpha=0.3)
     
-    # Simple quality analysis and display
-    print("\nData Quality Analysis Results:")
+    # Create engaging data quality visualization dashboard
+    import plotly.express as px
+    import plotly.graph_objects as go
+    from plotly.subplots import make_subplots
+    
+    # Create comprehensive data quality dashboard
+    fig = make_subplots(
+        rows=2, cols=3,
+        subplot_titles=('Data Completeness by Field', 'Category Distribution', 'Quality Score Distribution',
+                       'Age vs Income Correlation', 'Data Quality Trends', 'Record Status Overview'),
+        specs=[[{"type": "bar"}, {"type": "pie"}, {"type": "histogram"}],
+               [{"type": "scatter"}, {"type": "scatter"}, {"type": "bar"}]]
+    )
+    
+    # 1. Data Completeness Analysis
+    completeness_data = []
+    for col in df.columns:
+        completeness_pct = (df[col].notna().sum() / len(df)) * 100
+        completeness_data.append({'field': col, 'completeness': completeness_pct})
+    
+    completeness_df = pd.DataFrame(completeness_data)
+    colors = ['green' if x > 90 else 'orange' if x > 70 else 'red' for x in completeness_df['completeness']]
+    
+    fig.add_trace(
+        go.Bar(x=completeness_df['field'], y=completeness_df['completeness'],
+              marker_color=colors, name="Completeness"),
+        row=1, col=1
+    )
+    
+    # 2. Category Distribution
+    if 'category' in df.columns:
+        category_counts = df['category'].value_counts()
+        fig.add_trace(
+            go.Pie(labels=category_counts.index, values=category_counts.values,
+                  name="Categories"),
+            row=1, col=2
+        )
+    
+    # 3. Quality Score Distribution (if available)
+    if 'score' in df.columns:
+        valid_scores = df['score'].dropna()
+        if len(valid_scores) > 0:
+            fig.add_trace(
+                go.Histogram(x=valid_scores, nbinsx=20, marker_color='skyblue',
+                            name="Quality Scores"),
+                row=1, col=3
+            )
+    
+    # 4. Age vs Income Correlation (Data Relationships)
+    if 'age' in df.columns and 'income' in df.columns:
+        clean_data = df.dropna(subset=['age', 'income'])
+        if len(clean_data) > 0:
+            fig.add_trace(
+                go.Scatter(x=clean_data['age'], y=clean_data['income'],
+                          mode='markers', marker=dict(size=6, opacity=0.6),
+                          name="Age vs Income"),
+                row=2, col=1
+            )
+    
+    # 5. Missing Data Patterns by Field
+    missing_data = []
+    for col in df.columns:
+        missing_count = df[col].isna().sum()
+        missing_data.append({'field': col, 'missing_count': missing_count})
+    
+    missing_df = pd.DataFrame(missing_data)
+    fig.add_trace(
+        go.Scatter(x=missing_df['field'], y=missing_df['missing_count'],
+                  mode='markers+lines', marker=dict(size=10),
+                  name="Missing Data Pattern"),
+        row=2, col=2
+    )
+    
+    # 6. Record Status Overview
+    total_records = len(df)
+    complete_records = df.dropna().shape[0]
+    incomplete_records = total_records - complete_records
+    
+    fig.add_trace(
+        go.Bar(x=['Complete Records', 'Incomplete Records'], 
+               y=[complete_records, incomplete_records],
+               marker_color=['green', 'orange'],
+               name="Record Status"),
+        row=2, col=3
+    )
+    
+    # Update layout
+    fig.update_layout(
+        title_text="Data Quality Analysis Dashboard",
+        height=800,
+        showlegend=False
+    )
+    
+    # Show interactive dashboard
+    fig.show()
+    
+    print("="*60)
+    print("DATA QUALITY ANALYSIS SUMMARY")
+    print("="*60)
     print(f"Total records: {len(df):,}")
-    print(f"Complete records: {df.dropna().shape[0]:,}")
-    print(f"Data completeness: {(df.dropna().shape[0] / len(df) * 100):.1f}%")
+    print(f"Complete records: {complete_records:,} ({complete_records/total_records*100:.1f}%)")
+    print(f"Fields analyzed: {len(df.columns)}")
     
-    # Category distribution
-    category_counts = df['category'].value_counts()
-    print(f"\nCategory distribution:")
-    for category, count in category_counts.items():
-        print(f"  {category}: {count:,} ({count/len(df)*100:.1f}%)")
+    # Category distribution summary
+    if 'category' in df.columns:
+        category_counts = df['category'].value_counts()
+        print(f"\nCategory distribution:")
+        for category, count in category_counts.items():
+            print(f"  {category}: {count:,} ({count/len(df)*100:.1f}%)")
     
-    # Quality metrics by category
-    print(f"\nQuality metrics by category:")
-    for category in df['category'].unique():
-        if pd.notna(category):
-            cat_data = df[df['category'] == category]
-            completeness = cat_data.dropna().shape[0] / len(cat_data) * 100
-            print(f"  {category}: {completeness:.1f}% complete")
+    return fig
     sample_df['age'] = sample_df['age'].fillna('NULL')
     sample_df['income'] = sample_df['income'].fillna('NULL')
     sample_df['income'] = sample_df['income'].apply(lambda x: f"${x:,.0f}" if x != 'NULL' else 'NULL')

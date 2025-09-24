@@ -905,62 +905,52 @@ ctx.enable_progress_bars = True
 
 Let's create comprehensive visualizations for log analysis and security monitoring:
 
-### Security Operations Center (SOC) Dashboard
+### Security Operations Analysis
 
 ```python
-def create_soc_dashboard(log_data):
-    """Create comprehensive Security Operations Center dashboard."""
-    print("Creating SOC dashboard...")
+# Security analysis using Ray Data native operations
+def analyze_security_logs(log_dataset):
+    """Analyze security logs using Ray Data aggregations."""
     
-    import matplotlib.pyplot as plt
-    import seaborn as sns
-    import plotly.express as px
-    import plotly.graph_objects as go
-    from plotly.subplots import make_subplots
-    import numpy as np
-    import pandas as pd
-    from datetime import datetime, timedelta
+    print("="*60)
+    print("SECURITY OPERATIONS ANALYSIS")
+    print("="*60)
     
-    # Convert to pandas for visualization
-    if hasattr(log_data, 'to_pandas'):
-        logs_df = log_data.to_pandas()
-    else:
-        logs_df = pd.DataFrame(log_data)
+    # Threat level analysis using Ray Data groupby
+    from ray.data.aggregate import Count, Sum
     
-    # Set security visualization style
-    plt.style.use('dark_background')  # SOC-style dark theme
-    sns.set_palette("rocket")
+    threat_analysis = log_dataset.groupby("threat_level").aggregate(
+        Count()
+    ).rename_columns(["threat_level", "event_count"])
     
-    # Create comprehensive SOC dashboard
-    fig, axes = plt.subplots(3, 3, figsize=(20, 15))
-    fig.patch.set_facecolor('black')
-    fig.suptitle('Security Operations Center Dashboard', fontsize=16, fontweight='bold', color='white')
+    print("Threat Level Distribution:")
+    threat_analysis.show()
     
-    # 1. Threat Level Distribution
-    ax1 = axes[0, 0]
-    ax1.set_facecolor('black')
+    # Security event analysis by source
+    source_analysis = log_dataset.groupby("log_source").aggregate(
+        Count()
+    ).rename_columns(["log_source", "total_events"])
     
-    if 'threat_level' in logs_df.columns:
-        threat_counts = logs_df['threat_level'].value_counts()
-    else:
-        # Simulate threat levels
-        threat_levels = ['Low', 'Medium', 'High', 'Critical']
-        threat_counts = pd.Series([1250, 450, 85, 15], index=threat_levels)
+    print("\nSecurity Events by Source:")
+    source_analysis.show()
     
-    colors_threat = ['green', 'yellow', 'orange', 'red']
-    bars = ax1.bar(threat_counts.index, threat_counts.values, color=colors_threat, alpha=0.8)
-    ax1.set_title('Threat Level Distribution', fontweight='bold', color='white')
-    ax1.set_ylabel('Number of Events', color='white')
-    ax1.tick_params(colors='white')
+    # High-priority security events
+    high_priority = log_dataset.filter(
+        lambda record: record.get("threat_level") in ["High", "Critical"]
+    )
     
-    # Add value labels
-    for bar, value in zip(bars, threat_counts.values):
-        height = bar.get_height()
-        ax1.text(bar.get_x() + bar.get_width()/2., height + 10,
-                f'{int(value)}', ha='center', va='bottom', fontweight='bold', color='white')
+    print(f"\nHigh-Priority Security Events: {high_priority.count():,}")
+    print("Sample high-priority events:")
+    high_priority.show(3)
     
-    # 2. Attack Types Analysis
-    ax2 = axes[0, 1]
+    return {
+        'threat_analysis': threat_analysis,
+        'source_analysis': source_analysis,
+        'high_priority_count': high_priority.count()
+    }
+
+# Perform security analysis
+security_results = analyze_security_logs(parsed_logs)
     ax2.set_facecolor('black')
     
     attack_types = ['Brute Force', 'SQL Injection', 'XSS', 'DDoS', 'Malware', 'Phishing']

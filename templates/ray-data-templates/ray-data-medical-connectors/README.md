@@ -1543,15 +1543,94 @@ Exported enterprise-ready analytics in Parquet format
 
 ## Final Medical Analytics Results
 
-### Hospital Utilization Analysis
-hospital_utilization.limit(10).to_pandas()
+### Medical Analytics Dashboard
 
-### Patient Demographics Analysis  
-patient_demographics.limit(10).to_pandas()
+```python
+def create_medical_analytics_dashboard(hospital_data, patient_data, dicom_data):
+    """Create comprehensive medical analytics dashboard for healthcare insights."""
+    
+    import plotly.express as px
+    import plotly.graph_objects as go
+    from plotly.subplots import make_subplots
+    
+    print("Creating medical analytics dashboard...")
+    
+    # Convert Ray datasets to pandas for visualization
+    hospital_df = hospital_data.to_pandas()
+    patient_df = patient_data.to_pandas()
+    dicom_df = dicom_data.to_pandas() if dicom_data.count() > 0 else pd.DataFrame()
+    
+    # Create medical dashboard
+    fig = make_subplots(
+        rows=2, cols=3,
+        subplot_titles=('Hospital Capacity Utilization', 'Patient Age Distribution', 'DICOM Modality Analysis',
+                       'Admission Trends', 'Demographics by Hospital', 'Medical Imaging Volume'),
+        specs=[[{"type": "bar"}, {"type": "histogram"}, {"type": "pie"}],
+               [{"type": "scatter"}, {"type": "bar"}, {"type": "bar"}]]
+    )
+    
+    # 1. Hospital Capacity Utilization
+    if 'hospital_id' in hospital_df.columns and 'total_patients' in hospital_df.columns:
+        fig.add_trace(
+            go.Bar(x=hospital_df['hospital_id'], y=hospital_df['total_patients'],
+                  marker_color='lightblue', name="Hospital Capacity"),
+            row=1, col=1
+        )
+    
+    # 2. Patient Age Distribution
+    if 'age' in patient_df.columns:
+        valid_ages = patient_df['age'].dropna()
+        if len(valid_ages) > 0:
+            fig.add_trace(
+                go.Histogram(x=valid_ages, nbinsx=20, marker_color='lightgreen',
+                            name="Patient Ages"),
+                row=1, col=2
+            )
+    
+    # 3. DICOM Modality Distribution
+    if len(dicom_df) > 0 and 'modality' in dicom_df.columns:
+        modality_counts = dicom_df['modality'].value_counts()
+        fig.add_trace(
+            go.Pie(labels=modality_counts.index, values=modality_counts.values,
+                  name="Imaging Modalities"),
+            row=1, col=3
+        )
+    
+    # 4. Patient Demographics Analysis
+    if 'gender' in patient_df.columns:
+        gender_counts = patient_df['gender'].value_counts()
+        fig.add_trace(
+            go.Bar(x=gender_counts.index, y=gender_counts.values,
+                  marker_color=['pink', 'lightblue'], name="Gender Distribution"),
+            row=2, col=1
+        )
+    
+    # Update layout for medical theme
+    fig.update_layout(
+        title_text="Medical Analytics Dashboard - Healthcare Insights",
+        height=800,
+        showlegend=True
+    )
+    
+    # Show medical dashboard
+    fig.show()
+    
+    print("="*60)
+    print("MEDICAL ANALYTICS SUMMARY")
+    print("="*60)
+    print(f"Hospitals analyzed: {hospital_df['hospital_id'].nunique() if 'hospital_id' in hospital_df.columns else 0}")
+    print(f"Patients processed: {len(patient_df):,}")
+    print(f"Medical images: {len(dicom_df):,}")
+    print("HIPAA-compliant processing completed successfully")
+    
+    return fig
 
-### Medical Image Processing Results
-# Display DICOM modality distribution
-anonymized_dicom.groupby('modality').count().limit(10).to_pandas()
+# Create medical analytics dashboard
+medical_dashboard = create_medical_analytics_dashboard(
+    hospital_utilization, 
+    patient_demographics, 
+    anonymized_dicom
+)
 ```
 
 ### 2. **Building Custom DICOM Datasource**

@@ -1033,12 +1033,24 @@ ray.init(
 
 ## Interactive ETL Pipeline Visualizations
 
-Let's display our ETL pipeline results using Ray Data's native capabilities for clean, readable output:
+Let's create engaging visualizations to understand our ETL pipeline results and data insights:
 
 ```python
-# Display ETL results using Ray Data native operations
-def display_etl_results(dataset, title="ETL Results"):
-    """Display ETL pipeline results in a clean, professional format."""
+# Import visualization libraries for engaging data presentation
+import matplotlib.pyplot as plt
+import seaborn as sns
+import plotly.express as px
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
+import pandas as pd
+import numpy as np
+
+# Set up appealing visual style
+plt.style.use('default')
+sns.set_palette("husl")
+
+def create_engaging_etl_dashboard(dataset, title="ETL Results"):
+    """Create visually appealing dashboard showing ETL results and insights."""
     
     print("="*60)
     print(f"{title.upper()}")
@@ -1047,13 +1059,97 @@ def display_etl_results(dataset, title="ETL Results"):
     print(f"Schema: {dataset.schema()}")
     print(f"Dataset size: {dataset.size_bytes() / (1024**2):.1f} MB")
     
-    print(f"\nSample records:")
-    dataset.show(5)
+    # Convert sample data to pandas for visualization
+    sample_data = dataset.take(10000)  # 10K sample for visualization
+    df = pd.DataFrame(sample_data)
+    
+    # Create comprehensive visualization dashboard
+    fig = make_subplots(
+        rows=2, cols=3,
+        subplot_titles=('Trip Type Distribution', 'Revenue by Efficiency', 'Geographic Patterns',
+                       'Revenue Trends', 'Capacity Utilization', 'Performance Metrics'),
+        specs=[[{"type": "bar"}, {"type": "scatter"}, {"type": "bar"}],
+               [{"type": "scatter"}, {"type": "histogram"}, {"type": "bar"}]]
+    )
+    
+    # 1. Trip Type Distribution (Business Logic Results)
+    if 'trip_type' in df.columns:
+        trip_counts = df['trip_type'].value_counts()
+        fig.add_trace(
+            go.Bar(x=trip_counts.index, y=trip_counts.values,
+                  marker_color=['#FF6B6B', '#4ECDC4', '#45B7D1'],
+                  name="Trip Types"),
+            row=1, col=1
+        )
+    
+    # 2. Revenue vs Efficiency Analysis
+    if 'total_revenue' in df.columns and 'efficiency_score' in df.columns:
+        fig.add_trace(
+            go.Scatter(x=df['efficiency_score'], y=df['total_revenue'],
+                      mode='markers', marker=dict(size=8, opacity=0.6),
+                      name="Revenue vs Efficiency"),
+            row=1, col=2
+        )
+    
+    # 3. Geographic Distribution (if available)
+    if 'pickup_borough' in df.columns:
+        borough_counts = df['pickup_borough'].value_counts()
+        fig.add_trace(
+            go.Bar(x=borough_counts.index, y=borough_counts.values,
+                  marker_color='lightgreen', name="Geographic Distribution"),
+            row=1, col=3
+        )
+    
+    # 4. Revenue Trends Over Time
+    if 'pickup_datetime' in df.columns and 'total_revenue' in df.columns:
+        df['pickup_datetime'] = pd.to_datetime(df['pickup_datetime'])
+        df['hour'] = df['pickup_datetime'].dt.hour
+        hourly_revenue = df.groupby('hour')['total_revenue'].mean()
+        
+        fig.add_trace(
+            go.Scatter(x=hourly_revenue.index, y=hourly_revenue.values,
+                      mode='lines+markers', name="Hourly Revenue Trends"),
+            row=2, col=1
+        )
+    
+    # 5. Capacity Utilization Distribution
+    if 'capacity_utilization' in df.columns:
+        fig.add_trace(
+            go.Histogram(x=df['capacity_utilization'], nbinsx=20,
+                        marker_color='orange', name="Capacity Utilization"),
+            row=2, col=2
+        )
+    
+    # 6. Performance Metrics Summary
+    if 'efficiency_score' in df.columns:
+        efficiency_ranges = pd.cut(df['efficiency_score'], bins=5, labels=['Poor', 'Fair', 'Good', 'Very Good', 'Excellent'])
+        range_counts = efficiency_ranges.value_counts()
+        
+        fig.add_trace(
+            go.Bar(x=range_counts.index, y=range_counts.values,
+                  marker_color='purple', name="Performance Ranges"),
+            row=2, col=3
+        )
+    
+    # Update layout for better appearance
+    fig.update_layout(
+        title_text="ETL Pipeline Results Dashboard - Data Insights",
+        height=800,
+        showlegend=False
+    )
+    
+    # Show interactive dashboard
+    fig.show()
     
     print("="*60)
+    print("Interactive ETL dashboard created!")
+    print("This dashboard shows data insights and processing results")
+    print("="*60)
+    
+    return fig
 
-# Display our processed business data
-display_etl_results(business_processed, "Business Data Processing Results")
+# Create engaging ETL results dashboard
+etl_dashboard = create_engaging_etl_dashboard(business_processed, "ETL Pipeline Results")
 ```
 
 ### ETL Pipeline Analysis Using Ray Data Native Operations

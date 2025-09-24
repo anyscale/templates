@@ -779,24 +779,111 @@ def create_text_visualizations(dataset):
 create_text_visualizations(text_dataset)
 ```
 
-### Interactive Plotly Text Dashboard
+### Interactive Text Analytics Dashboard
 
 ```python
-def create_interactive_text_dashboard(dataset):
-    """Create interactive text analytics dashboard using Plotly."""
+def create_interactive_text_dashboard(dataset, sentiment_results):
+    """Create engaging interactive text analytics dashboard using Plotly."""
     print("Creating interactive text analytics dashboard...")
     
+    # Convert data for visualization
     text_df = dataset.to_pandas()
-    sentiment_df = pd.DataFrame(final_results)
+    sentiment_df = pd.DataFrame(sentiment_results)
     
-    # Create subplots
+    # Create comprehensive interactive dashboard
     fig = make_subplots(
         rows=2, cols=3,
-        subplot_titles=('Sentiment Distribution', 'Text Length Analysis', 'Word Frequency',
-                       'Sentiment vs Length', 'Readability Scores', 'Text Categories'),
-        specs=[[{"type": "bar"}, {"type": "histogram"}, {"type": "bar"}],
-               [{"type": "scatter"}, {"type": "histogram"}, {"type": "pie"}]]
+        subplot_titles=('Sentiment Distribution', 'Text Length Analysis', 'Confidence Scores',
+                       'Word Count Distribution', 'Sentiment vs Length', 'Top Keywords'),
+        specs=[[{"type": "bar"}, {"type": "histogram"}, {"type": "histogram"}],
+               [{"type": "histogram"}, {"type": "scatter"}, {"type": "bar"}]]
     )
+    
+    # 1. Sentiment Distribution (Business Insights)
+    if 'sentiment' in sentiment_df.columns:
+        sentiment_counts = sentiment_df['sentiment'].value_counts()
+        colors = ['#00CC96' if s == 'POSITIVE' else '#EF553B' if s == 'NEGATIVE' else '#636EFA' 
+                 for s in sentiment_counts.index]
+        
+        fig.add_trace(
+            go.Bar(x=sentiment_counts.index, y=sentiment_counts.values,
+                  marker_color=colors, name="Sentiment"),
+            row=1, col=1
+        )
+    
+    # 2. Text Length Distribution (Data Characteristics)
+    text_df['length'] = text_df['text'].str.len()
+    fig.add_trace(
+        go.Histogram(x=text_df['length'], nbinsx=30, marker_color='skyblue',
+                    name="Text Length"),
+        row=1, col=2
+    )
+    
+    # 3. Confidence Score Distribution (Model Performance)
+    if 'confidence' in sentiment_df.columns:
+        fig.add_trace(
+            go.Histogram(x=sentiment_df['confidence'], nbinsx=20, marker_color='lightgreen',
+                        name="Confidence"),
+            row=1, col=3
+        )
+    
+    # 4. Word Count Analysis
+    text_df['word_count'] = text_df['text'].str.split().str.len()
+    fig.add_trace(
+        go.Histogram(x=text_df['word_count'], nbinsx=25, marker_color='orange',
+                    name="Word Count"),
+        row=2, col=1
+    )
+    
+    # 5. Sentiment vs Text Length Relationship
+    if 'sentiment' in sentiment_df.columns:
+        merged_df = pd.merge(sentiment_df, text_df, on='text', how='inner')
+        for sentiment in merged_df['sentiment'].unique():
+            sentiment_data = merged_df[merged_df['sentiment'] == sentiment]
+            fig.add_trace(
+                go.Scatter(x=sentiment_data['length'], y=sentiment_data['word_count'],
+                          mode='markers', name=sentiment, opacity=0.6),
+                row=2, col=2
+            )
+    
+    # 6. Top Keywords Analysis
+    from collections import Counter
+    import re
+    
+    all_text = ' '.join(text_df['text'].str.lower())
+    words = re.findall(r'\b[a-zA-Z]{4,}\b', all_text)  # Words 4+ chars
+    stop_words = {'this', 'that', 'with', 'have', 'will', 'from', 'they', 'been', 'said', 'each', 'which', 'their'}
+    filtered_words = [word for word in words if word not in stop_words]
+    
+    if filtered_words:
+        word_counts = Counter(filtered_words).most_common(10)
+        words_list, counts_list = zip(*word_counts)
+        
+        fig.add_trace(
+            go.Bar(x=list(words_list), y=list(counts_list),
+                  marker_color='lightcoral', name="Top Keywords"),
+            row=2, col=3
+        )
+    
+    # Update layout for professional appearance
+    fig.update_layout(
+        title_text="Text Analytics Dashboard - NLP Insights",
+        height=800,
+        showlegend=True
+    )
+    
+    # Show interactive dashboard
+    fig.show()
+    
+    print("="*60)
+    print("Interactive text analytics dashboard created!")
+    print("Dashboard shows sentiment patterns, text characteristics, and key insights")
+    print("="*60)
+    
+    return fig
+
+# Create interactive text analytics dashboard
+text_dashboard = create_interactive_text_dashboard(text_dataset, final_results)
     
     # 1. Sentiment Distribution
     if 'sentiment' in sentiment_df.columns:
