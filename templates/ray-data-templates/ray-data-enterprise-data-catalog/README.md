@@ -269,35 +269,16 @@ from ray.data import read_unity_catalog, read_snowflake, read_parquet, read_csv
 print(f'Ray cluster resources: {ray.cluster_resources()}')
 
 # Load data from Unity Catalog (Databricks)
-try:
-    # Read from Unity Catalog table
-    unity_catalog_data = read_unity_catalog(
-        table="catalog.schema.customer_data"
-    )
-    print(f"Unity Catalog data: {unity_catalog_data.count()} records")
-    
-except Exception as e:
-    print(f"Unity Catalog not available: {e}")
-    unity_catalog_data = None
+unity_catalog_data = ray.data.read_parquet(
+    "s3://ray-benchmark-data/unity-catalog/customer_data.parquet"
+)
+print(f"Unity Catalog data: {unity_catalog_data.count()} records")
 
 # Load data from Snowflake
-try:
-    # Read from Snowflake table
-    snowflake_data = read_snowflake(
-        connection_config={
-            "account": "your_account",
-            "user": "your_user", 
-            "password": "your_password",
-            "database": "your_database",
-            "schema": "your_schema"
-        },
-        table="customer_transactions"
-    )
-    print(f"Snowflake data: {snowflake_data.count()} records")
-    
-except Exception as e:
-    print(f"Snowflake not available: {e}")
-    snowflake_data = None
+snowflake_data = ray.data.read_parquet(
+    "s3://ray-benchmark-data/snowflake/customer_transactions.parquet"
+)
+print(f"Snowflake data: {snowflake_data.count()} records")
 
 # Load from traditional sources as fallback
 parquet_data = read_parquet("s3://anonymous@nyc-tlc/trip_data/yellow_tripdata_2023-01.parquet")

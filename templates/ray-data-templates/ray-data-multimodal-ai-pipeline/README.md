@@ -213,14 +213,9 @@ class ImageFeatureExtractor:
         # Preprocess images
         processed_images = []
         for img in images:
-            try:
-                # Convert numpy array to PIL Image and apply transforms
-                processed_img = self.transform(img)
-                processed_images.append(processed_img)
-            except Exception as e:
-                print(f" Error processing image: {e}")
-                # Use zero tensor as fallback
-                processed_images.append(torch.zeros(3, 224, 224))
+            # Convert numpy array to PIL Image and apply transforms
+            processed_img = self.transform(img)
+            processed_images.append(processed_img)
         
         # Stack into batch tensor
         batch_tensor = torch.stack(processed_images).to(self.device)

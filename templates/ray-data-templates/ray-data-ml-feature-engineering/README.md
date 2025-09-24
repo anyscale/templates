@@ -247,16 +247,14 @@ import numpy as np
 # Ray cluster is already running on Anyscale
 print(f'Ray cluster resources: {ray.cluster_resources()}')
 
-# Load real ML datasets using Ray Data native APIs
-try:
-    # Use Ray Data's native Hugging Face integration
-    titanic_data = from_huggingface("inria-soda/tabular-benchmark", subset="titanic")
-    print(f"Titanic data from Hugging Face: {titanic_data.count()} records")
-    
-except Exception as e:
-    print(f"Hugging Face dataset not available: {e}")
-    
-    # Create realistic Titanic-style data using Ray Data from_items
+# Load real Titanic dataset for ML feature engineering
+titanic_data = ray.data.read_csv(
+    "s3://ray-benchmark-data/ml-datasets/titanic.csv"
+)
+
+print(f"Loaded real Titanic dataset: {titanic_data.count()} records")
+print(f"Schema: {titanic_data.schema()}")
+print("Dataset ready for feature engineering")
     import numpy as np
     
     sample_data = []
@@ -279,14 +277,6 @@ except Exception as e:
     print(f"Generated Titanic-style data: {titanic_data.count()} records")
 
 # Alternative: Load from public datasets using native APIs
-try:
-    # Use existing public dataset
-    public_data = read_csv("s3://anonymous@openml-datasets/titanic/train.csv")
-    print(f"Public dataset loaded: {public_data.count()} records")
-    
-except Exception as e:
-    print(f"Using generated dataset for demo")
-
 print(f"ML dataset ready for feature engineering")
 ```
 
