@@ -1,24 +1,22 @@
 # ML batch inference optimization with Ray Data
 
-**Time to complete**: 25 min | **Difficulty**: Intermediate | **Prerequisites**: Basic ML knowledge, Python experience
+**Time to complete**: 20 min | **Difficulty**: Intermediate | **Prerequisites**: Basic ML knowledge, Python experience
 
-Learn how to optimize ML batch inference using Ray Data. This template demonstrates practical optimization techniques for processing large datasets with machine learning models efficiently.
+Learn how to optimize ML batch inference by comparing inefficient and efficient approaches. This template shows common pitfalls and how Ray Data solves them.
 
 ## Table of Contents
 
-1. [Setup and Data Loading](#setup-and-installation) (5 min)
-2. [Quick Start: Basic Optimization](#quick-start-performance-baseline) (8 min)
-3. [Batch Size Optimization](#batch-size-optimization) (7 min)
-4. [Advanced Techniques](#advanced-optimization-techniques) (5 min)
+1. [Setup and Data](#setup) (3 min)
+2. [Inefficient Batch Inference](#inefficient-approach) (5 min) 
+3. [Optimized with Ray Data](#optimized-approach) (8 min)
+4. [Performance Comparison](#performance-comparison) (4 min)
 
 ## Learning Objectives
 
-By completing this template, you will master:
-
-**Ray Data optimization fundamentals**: Learn how Ray Data's batching, parallelism, and distributed processing improve ML inference performance  
-**Practical optimization techniques**: Hands-on experience with batch sizing, concurrency tuning, and GPU acceleration  
-**Real-world patterns**: Common optimization patterns used in production ML systems  
-**Performance analysis**: Understanding bottlenecks and measuring improvements using Ray Dashboard
+**Ray Data batch processing**: Learn how `map_batches` improves inference efficiency  
+**Actor-based optimization**: Use Ray actors to avoid repeated model loading  
+**Batch size tuning**: Understand how batch size affects performance  
+**GPU utilization**: Optimize for distributed GPU workers in Ray clusters
 
 ## Overview: High-Performance ML Inference Challenge
 
