@@ -267,70 +267,151 @@ print(f'Available resources: {ray.cluster_resources()}')
 # !pip install plotly pandas
 ```
 
-### **Step 2: Load Real Log Data (1 minute)**
+### **Step 2: Load Realistic Log Data (1 minute)**
+
+**Understanding Log Data Loading:**
+
+Log data comes in various formats and from multiple sources in enterprise environments. Ray Data provides native operations to efficiently load and process these diverse log formats at scale.
+
+**Why This Matters:**
+- **Volume**: Production systems generate millions of log entries daily
+- **Variety**: Different log formats (Apache, JSON, syslog) require different parsing approaches
+- **Velocity**: Real-time security and operational insights require fast log processing
+- **Value**: Hidden patterns in logs reveal security threats and performance issues
 
 ```python
 from ray.data import read_text
 import re
 
-# Create sample Apache log data for demonstration
-sample_logs = [
-    '192.168.1.1 - - [01/Jan/2024:00:00:01 +0000] "GET /api/users HTTP/1.1" 200 1234',
-    '192.168.1.2 - - [01/Jan/2024:00:00:02 +0000] "POST /api/login HTTP/1.1" 401 567',
-    '192.168.1.3 - - [01/Jan/2024:00:00:03 +0000] "GET /dashboard HTTP/1.1" 200 8901',
-    '192.168.1.4 - - [01/Jan/2024:00:00:04 +0000] "GET /api/data HTTP/1.1" 500 234',
-    '192.168.1.5 - - [01/Jan/2024:00:00:05 +0000] "DELETE /api/users/123 HTTP/1.1" 204 0'
-] * 20  # Repeat for more samples
+# Load pre-built realistic log datasets with Ray Data native operations
+print("Loading comprehensive log datasets...")
 
-# Use Ray Data native from_items API
-web_logs = ray.data.from_items([{"text": log} for log in sample_logs])
-print(f"Created log dataset: {web_logs.count()} log entries")
+# Apache access logs (1M entries) - Web server traffic analysis
+apache_logs = ray.data.read_parquet("apache_access_logs.parquet")
+print(f"Apache access logs: {apache_logs.count():,} entries")
+print("  Contains: HTTP requests, response codes, user agents, IP addresses")
+
+# Application logs (500K entries) - Microservices monitoring  
+app_logs = ray.data.read_parquet("application_logs.parquet")
+print(f"Application logs: {app_logs.count():,} entries")
+print("  Contains: Service logs, error tracking, performance metrics")
+
+# Security logs (200K entries) - Threat detection and analysis
+security_logs = ray.data.read_parquet("security_logs.parquet")
+print(f"Security logs: {security_logs.count():,} entries")
+print("  Contains: Security events, threat levels, attack patterns")
+
+print(f"\nTotal log entries available: {apache_logs.count() + app_logs.count() + security_logs.count():,}")
+print("Realistic datasets ready for comprehensive log analysis!")
 ```
+
+**What Ray Data Provides:**
+- **Parallel Loading**: All log files loaded simultaneously across cluster
+- **Memory Efficiency**: Large datasets processed without loading everything into memory
+- **Format Flexibility**: Parquet for structured data, text files for raw logs
+- **Automatic Optimization**: Ray Data optimizes block size and distribution automatically
 
 ### **Step 3: Parse Logs with Ray Data (2 minutes)**
 
+**Understanding Log Parsing Challenges:**
+
+Raw log data is unstructured text that must be converted into structured fields for analysis. This is one of the most computationally intensive steps in log processing, especially at enterprise scale.
+
+**Why Log Parsing is Critical:**
+- **Structure Extraction**: Convert unstructured text into queryable fields
+- **Data Standardization**: Normalize timestamps, IP addresses, and response codes across systems
+- **Error Handling**: Gracefully handle malformed or incomplete log entries
+- **Performance**: Efficient parsing directly impacts overall pipeline throughput
+
+**Ray Data's Parsing Advantages:**
+- **Distributed Processing**: Parse millions of logs simultaneously across cluster nodes
+- **Memory Efficiency**: Process large log files without loading everything into memory
+- **Fault Tolerance**: Continue processing even if some log entries are malformed
+- **Native Operations**: `map_batches()` provides optimal performance for batch text processing
+
 ```python
-# Parse Apache/Nginx logs using Ray Data native operations
-def parse_access_logs(batch):
-    """Parse web server access logs."""
+# Parse Apache access logs using Ray Data distributed processing
+def parse_apache_access_logs(batch):
+    """
+    Parse Apache Common Log Format using distributed processing.
+    
+    Apache Log Format: IP - - [timestamp] "method URL protocol" status size
+    Example: 192.168.1.1 - - [01/Jan/2024:12:00:00 +0000] "GET /api/users HTTP/1.1" 200 1234
+    """
     parsed_logs = []
     
-    # Apache Common Log Format regex
+    # Apache Common Log Format regex pattern
     log_pattern = r'(\S+) \S+ \S+ \[([\w:/]+\s[+\-]\d{4})\] "(\S+) (\S+) (\S+)" (\d{3}) (\d+|-)'
     
     for log_entry in batch:
-        try:
-            line = log_entry.get('text', '')
-            match = re.match(log_pattern, line)
+        line = log_entry.get('log_entry', '')  # Parquet column name
+        match = re.match(log_pattern, line)
+        
+        if match:
+            ip, timestamp, method, url, protocol, status, size = match.groups()
             
-            if match:
-                ip, timestamp, method, url, protocol, status, size = match.groups()
+            # Extract business-relevant fields
+            parsed_log = {
+                'ip_address': ip,
+                'timestamp': timestamp,
+                'method': method,
+                'url': url,
+                'protocol': protocol,
+                'status_code': int(status),
+                'response_size': int(size) if size != '-' else 0,
                 
-                parsed_log = {
-                    'ip_address': ip,
-                    'timestamp': timestamp,
-                    'method': method,
-                    'url': url,
-                    'status_code': int(status),
-                    'response_size': int(size) if size != '-' else 0,
-                    'is_error': int(status) >= 400,
-                    'is_security_endpoint': '/api/' in url,
-                    'hour': int(timestamp.split(':')[1]) if ':' in timestamp else 0
-                }
-                parsed_logs.append(parsed_log)
+                # Derived fields for analysis
+                'is_error': int(status) >= 400,
+                'is_client_error': 400 <= int(status) < 500,
+                'is_server_error': int(status) >= 500,
+                'is_api_endpoint': '/api/' in url,
+                'is_login_endpoint': '/login' in url,
+                'is_admin_endpoint': '/admin' in url,
                 
-        except Exception:
-            # Skip malformed logs
-            continue
+                # Time-based fields for temporal analysis
+                'hour': int(timestamp.split(':')[1]) if ':' in timestamp else 0,
+                'log_source': 'apache_access'
+            }
+            parsed_logs.append(parsed_log)
     
     return parsed_logs
 
-# Use Ray Data native map_batches for parsing
-parsed_logs = web_logs.map_batches(parse_access_logs, batch_size=100)
-print(f"Parsed {parsed_logs.count()} log entries")
+# Apply distributed log parsing using Ray Data
+print("Parsing Apache access logs using distributed processing...")
+parsed_apache = apache_logs.map_batches(
+    parse_apache_access_logs,
+    batch_size=1000,  # Optimal batch size for text processing
+    concurrency=8     # Parallel parsing across cluster
+)
+
+print(f"Parsed Apache logs: {parsed_apache.count():,} structured records")
+print("Sample parsed log entries:")
+parsed_apache.show(3)
 ```
 
-### **Step 4: Analyze and Visualize (1.5 minutes)**
+**Log Parsing Performance Insights:**
+- **Batch Processing**: Processing 1000 logs per batch optimizes memory usage and performance
+- **Regex Efficiency**: Compiled regex patterns provide fast field extraction
+- **Error Tolerance**: Malformed logs are skipped without stopping the entire pipeline
+- **Field Enrichment**: Additional derived fields enhance analysis capabilities
+
+### **Step 4: Security and Operational Analysis (1.5 minutes)**
+
+**Understanding Log Analysis Objectives:**
+
+Once logs are parsed into structured format, we can extract actionable insights for security operations, performance monitoring, and business intelligence. This is where the real value of log processing emerges.
+
+**Key Analysis Categories:**
+- **Security Analysis**: Identify threats, attacks, and suspicious patterns  
+- **Operational Monitoring**: Track system performance, errors, and capacity
+- **Business Intelligence**: Understand user behavior, feature usage, and trends
+- **Compliance Reporting**: Generate audit trails and regulatory reports
+
+**Why This Analysis Matters:**
+- **Mean Time to Detection**: Fast log analysis reduces security incident response from hours to minutes
+- **Proactive Monitoring**: Identify performance issues before they impact users
+- **Cost Optimization**: Understanding usage patterns enables better resource allocation
+- **Regulatory Compliance**: Automated log analysis ensures audit trail completeness
 
 ```python
 # Use Ray Data native operations for analysis
