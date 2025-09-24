@@ -78,22 +78,24 @@ OUTLIER_SCORE_RATE = 0.03    # 3% score outliers
 ```
 
 ```python
-# Load real e-commerce customer data for quality monitoring
+# Load pre-built customer dataset with realistic quality issues
 customer_dataset = ray.data.read_parquet(
-    "s3://ray-benchmark-data/ecommerce/online_retail_customers.parquet"
+    "ecommerce_customers_with_quality_issues.parquet"
 )
 
-print(f"Loaded real customer dataset:")
+print(f"Loaded customer dataset with quality issues:")
 print(f"  Records: {customer_dataset.count():,}")
 print(f"  Schema: {customer_dataset.schema()}")
+print(f"  Dataset size: {customer_dataset.size_bytes() / (1024**2):.1f} MB")
 
 ds = customer_dataset
 ```
 
-**What we created:**
-- 10,000 customer records with realistic data patterns
-- Intentional quality issues: missing values, invalid data, outliers  
-- Ray Dataset ready for distributed quality analysis
+**What we have:**
+- 100,000+ customer records with realistic data patterns
+- Intentional quality issues: missing values, invalid data, outliers, duplicates
+- Pre-built Parquet dataset for optimal Ray Data performance
+- Realistic e-commerce customer data with authentic quality challenges
 
 ### Comprehensive Data Quality Dashboard
 

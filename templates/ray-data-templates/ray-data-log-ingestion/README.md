@@ -52,10 +52,22 @@ Want to see log analysis in action immediately?
 import ray
 from datetime import datetime
 
-# Create sample log entries
-logs = [f"2024-01-01 12:00:00 INFO User login successful user_id=user_{i}" for i in range(10000)]
-ds = ray.data.from_items([{"log_line": log} for log in logs])
-print(f"Created log dataset with {ds.count()} log entries")
+# Load pre-built realistic log datasets
+print("Loading comprehensive log datasets...")
+
+# Load Apache access logs (1M entries)
+apache_logs = ray.data.read_parquet("apache_access_logs.parquet")
+print(f"Apache access logs: {apache_logs.count():,} entries")
+
+# Load application logs (500K entries)  
+app_logs = ray.data.read_parquet("application_logs.parquet")
+print(f"Application logs: {app_logs.count():,} entries")
+
+# Load security logs (200K entries)
+security_logs = ray.data.read_parquet("security_logs.parquet")
+print(f"Security logs: {security_logs.count():,} entries")
+
+print("Realistic log datasets loaded successfully!")
 ```
 
 To run this template, you will need the following packages:
