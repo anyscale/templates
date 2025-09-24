@@ -142,7 +142,7 @@ taxi_data = ray.data.read_parquet(
 # Extract location points from taxi data
 def extract_taxi_locations(batch):
     df = pd.DataFrame(batch)
-    locations = []
+locations = []
     
     for _, row in df.iterrows():
         # Extract pickup locations with valid NYC coordinates
@@ -159,6 +159,146 @@ def extract_taxi_locations(batch):
 
 ds = taxi_data.flat_map(extract_taxi_locations)
 print(f"Loaded NYC taxi location data: {ds.count():,} location points")
+
+### **NYC Geospatial Analysis Dashboard**
+
+Let's create comprehensive visualizations to understand spatial patterns and optimize location-based services:
+
+```python
+# Create engaging NYC geospatial analysis dashboard
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+
+def create_nyc_geospatial_dashboard():
+    """Generate comprehensive NYC taxi geospatial analysis dashboard."""
+    
+    # Convert Ray dataset to pandas for visualization
+    sample_locations = ds.take(10000)  # Sample for visualization
+    location_df = pd.DataFrame(sample_locations)
+    
+    # Create comprehensive analysis dashboard
+    fig, axes = plt.subplots(2, 3, figsize=(20, 12))
+    fig.suptitle('NYC Geospatial Analysis: Taxi Location Intelligence Dashboard', fontsize=16, fontweight='bold')
+    
+    # 1. Geographic distribution heatmap
+    ax1 = axes[0, 0]
+    # Create 2D histogram for pickup density
+    lat_bins = np.linspace(location_df['lat'].min(), location_df['lat'].max(), 50)
+    lon_bins = np.linspace(location_df['lon'].min(), location_df['lon'].max(), 50)
+    
+    H, xedges, yedges = np.histogram2d(location_df['lon'], location_df['lat'], bins=[lon_bins, lat_bins])
+    extent = [xedges[0], xedges[-1], yedges[0], yedges[-1]]
+    
+    im1 = ax1.imshow(H.T, origin='lower', extent=extent, cmap='hot', aspect='auto')
+    ax1.set_title('Taxi Pickup Density Heatmap', fontweight='bold')
+    ax1.set_xlabel('Longitude')
+    ax1.set_ylabel('Latitude')
+    plt.colorbar(im1, ax=ax1, label='Pickup Density')
+    
+    # 2. Trip distance distribution
+    ax2 = axes[0, 1]
+    trip_distances = location_df['trip_distance'].dropna()
+    trip_distances = trip_distances[trip_distances > 0]  # Remove zero distances
+    trip_distances = trip_distances[trip_distances < 50]  # Remove outliers
+    
+    ax2.hist(trip_distances, bins=30, color='skyblue', alpha=0.7, edgecolor='black')
+    ax2.axvline(trip_distances.mean(), color='red', linestyle='--', 
+               label=f'Mean: {trip_distances.mean():.2f} miles')
+    ax2.axvline(trip_distances.median(), color='orange', linestyle='--', 
+               label=f'Median: {trip_distances.median():.2f} miles')
+    ax2.set_title('Trip Distance Distribution', fontweight='bold')
+    ax2.set_xlabel('Trip Distance (miles)')
+    ax2.set_ylabel('Frequency')
+    ax2.legend()
+    ax2.grid(True, alpha=0.3)
+    
+    # 3. Spatial clustering analysis
+    ax3 = axes[0, 2]
+    # Simple spatial clustering using lat/lon buckets
+    location_df['lat_bucket'] = pd.cut(location_df['lat'], bins=20, labels=False)
+    location_df['lon_bucket'] = pd.cut(location_df['lon'], bins=20, labels=False)
+    location_df['spatial_cluster'] = location_df['lat_bucket'] * 20 + location_df['lon_bucket']
+    
+    cluster_sizes = location_df.groupby('spatial_cluster').size().sort_values(ascending=False).head(10)
+    
+    bars3 = ax3.bar(range(len(cluster_sizes)), cluster_sizes.values, color='lightgreen')
+    ax3.set_title('Top 10 Spatial Clusters by Activity', fontweight='bold')
+    ax3.set_xlabel('Cluster ID')
+    ax3.set_ylabel('Number of Pickups')
+    ax3.set_xticks(range(len(cluster_sizes)))
+    ax3.set_xticklabels([f'C{i+1}' for i in range(len(cluster_sizes))])
+    
+    # Add value labels
+    for bar, value in zip(bars3, cluster_sizes.values):
+        height = bar.get_height()
+        ax3.text(bar.get_x() + bar.get_width()/2., height + 5,
+                f'{value}', ha='center', va='bottom', fontweight='bold')
+    
+    # 4. Latitude vs Longitude scatter with density
+    ax4 = axes[1, 0]
+    scatter = ax4.scatter(location_df['lon'], location_df['lat'], 
+                         c=location_df['trip_distance'], cmap='viridis', 
+                         alpha=0.6, s=10)
+    ax4.set_title('Geographic Distribution by Trip Distance', fontweight='bold')
+    ax4.set_xlabel('Longitude')
+    ax4.set_ylabel('Latitude')
+    cbar = plt.colorbar(scatter, ax=ax4)
+    cbar.set_label('Trip Distance (miles)')
+    
+    # 5. Geospatial efficiency analysis
+    ax5 = axes[1, 1]
+    # Calculate pickup efficiency by area
+    location_df['efficiency'] = location_df.groupby('spatial_cluster')['trip_distance'].transform('mean')
+    efficiency_by_cluster = location_df.groupby('spatial_cluster')['efficiency'].first().sort_values(ascending=False).head(8)
+    
+    bars5 = ax5.bar(range(len(efficiency_by_cluster)), efficiency_by_cluster.values, color='coral')
+    ax5.set_title('Average Trip Distance by Spatial Cluster', fontweight='bold')
+    ax5.set_xlabel('Cluster ID')
+    ax5.set_ylabel('Average Trip Distance (miles)')
+    ax5.set_xticks(range(len(efficiency_by_cluster)))
+    ax5.set_xticklabels([f'C{i+1}' for i in range(len(efficiency_by_cluster))])
+    
+    # 6. Spatial coverage analysis
+    ax6 = axes[1, 2]
+    # Analyze geographic coverage
+    lat_range = location_df['lat'].max() - location_df['lat'].min()
+    lon_range = location_df['lon'].max() - location_df['lon'].min()
+    coverage_area = lat_range * lon_range * 111 * 111  # Approximate km²
+    
+    metrics = ['Lat Range (°)', 'Lon Range (°)', 'Coverage (km²)', 'Density (pts/km²)']
+    values = [lat_range, lon_range, coverage_area, len(location_df) / coverage_area]
+    colors = ['lightblue', 'lightgreen', 'lightyellow', 'lightpink']
+    
+    bars6 = ax6.bar(range(len(metrics)), values, color=colors)
+    ax6.set_title('Spatial Coverage Metrics', fontweight='bold')
+    ax6.set_ylabel('Value')
+    ax6.set_xticks(range(len(metrics)))
+    ax6.set_xticklabels(metrics, rotation=45, ha='right')
+    ax6.set_yscale('log')  # Log scale due to different magnitude values
+    
+    # Add value labels
+    for bar, value in zip(bars6, values):
+        height = bar.get_height()
+        ax6.text(bar.get_x() + bar.get_width()/2., height * 1.1,
+                f'{value:.2f}', ha='center', va='bottom', fontweight='bold')
+    
+    plt.tight_layout()
+    plt.show()
+    
+    print("NYC Geospatial Analysis Summary:")
+    print(f"- Total pickup locations analyzed: {len(location_df):,}")
+    print(f"- Average trip distance: {trip_distances.mean():.2f} miles")
+    print(f"- Geographic coverage: {coverage_area:.2f} km²")
+    print(f"- Pickup density: {len(location_df) / coverage_area:.2f} pickups/km²")
+    print(f"- Most active cluster has {cluster_sizes.iloc[0]:,} pickups")
+    print(f"- Highest efficiency cluster averages {efficiency_by_cluster.iloc[0]:.2f} miles/trip")
+
+# Create NYC geospatial analysis dashboard
+create_nyc_geospatial_dashboard()
+```
+
+This comprehensive geospatial analysis reveals patterns crucial for optimizing ride-sharing operations, delivery routing, and urban planning decisions.
 ```
 
 ### Interactive Geospatial Visualization Dashboard
