@@ -1,10 +1,10 @@
 # Log analytics and security monitoring with Ray Data
 
-**Time to complete**: 30 min | **Difficulty**: Intermediate | **Prerequisites**: Understanding of log files, basic security concepts
+**⏱️ Time to complete**: 30 min | **Difficulty**: Intermediate | **Prerequisites**: Understanding of log files, basic security concepts
 
 ## What You'll Build
 
-Create a scalable log analysis system that processes millions of log entries to detect security threats, monitor system performance, and extract operational insights - similar to what SOC teams use for cybersecurity monitoring.
+Create a scalable log analysis system that processes millions of log entries to detect security threats, monitor system performance, and extract operational insights using Ray Data's distributed processing capabilities.
 
 ## Table of Contents
 
@@ -15,12 +15,13 @@ Create a scalable log analysis system that processes millions of log entries to 
 
 ## Learning Objectives
 
-By completing this tutorial, you'll understand:
+**Why log analysis matters**: Logs provide critical visibility into system security and performance, enabling proactive threat detection and operational monitoring. Modern systems generate massive log volumes that require distributed processing for real-time analysis.
 
-- **Why log analysis is critical**: How logs provide visibility into system security and performance
-- **Ray Data's log processing power**: Analyze millions of log entries in parallel for real-time insights
-- **Real-world applications**: How companies like Cloudflare and Datadog process petabytes of logs daily
-- **Security patterns**: Detect threats, anomalies, and performance issues at scale
+**Ray Data's log processing superpowers**: Analyze millions of log entries in parallel for real-time insights and security intelligence. You'll learn how distributed processing transforms log analysis from reactive to proactive security monitoring.
+
+**Real-world security applications**: Techniques used by companies like Cloudflare and Datadog to process petabytes of logs daily for threat detection demonstrate the scale and sophistication required for modern security operations.
+
+**Security and operational patterns**: Detect threats, anomalies, and performance issues at enterprise scale using distributed log analysis techniques that enable rapid incident response and system optimization.
 
 ## Overview
 
@@ -52,20 +53,20 @@ Want to see log analysis in action immediately?
 import ray
 from datetime import datetime
 
-# Load pre-built realistic log datasets
+# Load realistic log datasets using native formats
 print("Loading comprehensive log datasets...")
 
-# Load Apache access logs (1M entries)
-apache_logs = ray.data.read_parquet("apache_access_logs.parquet")
-print(f"Apache access logs: {apache_logs.count():,} entries")
+# Apache access logs - Raw text format (realistic for web servers)
+apache_logs = ray.data.read_text("s3://ray-benchmark-data/logs/apache-access.log")
+print(f"Apache access logs: {apache_logs.count():,} lines")
 
-# Load application logs (500K entries)  
-app_logs = ray.data.read_parquet("application_logs.parquet")
+# Application logs - JSON format (common for modern apps)
+app_logs = ray.data.read_json("s3://ray-benchmark-data/logs/application.json")
 print(f"Application logs: {app_logs.count():,} entries")
 
-# Load security logs (200K entries)
-security_logs = ray.data.read_parquet("security_logs.parquet")
-print(f"Security logs: {security_logs.count():,} entries")
+# Security logs - Text format (typical for security systems)
+security_logs = ray.data.read_text("s3://ray-benchmark-data/logs/security.log")
+print(f"Security logs: {security_logs.count():,} lines")
 
 print("Realistic log datasets loaded successfully!")
 ```
@@ -283,23 +284,23 @@ Log data comes in various formats and from multiple sources in enterprise enviro
 from ray.data import read_text
 import re
 
-# Load pre-built realistic log datasets with Ray Data native operations
+# Load realistic log datasets using appropriate formats
 print("Loading comprehensive log datasets...")
 
-# Apache access logs (1M entries) - Web server traffic analysis
-apache_logs = ray.data.read_parquet("apache_access_logs.parquet")
-print(f"Apache access logs: {apache_logs.count():,} entries")
-print("  Contains: HTTP requests, response codes, user agents, IP addresses")
+# Apache access logs - Raw text log format (realistic for web servers)
+apache_logs = ray.data.read_text("s3://ray-benchmark-data/logs/apache-access/*.log")
+print(f"Apache access logs: {apache_logs.count():,} lines")
+print("  Format: Raw Apache Common Log Format text files")
 
-# Application logs (500K entries) - Microservices monitoring  
-app_logs = ray.data.read_parquet("application_logs.parquet")
+# Application logs - JSON format (common for microservices)
+app_logs = ray.data.read_json("s3://ray-benchmark-data/logs/application/*.json")
 print(f"Application logs: {app_logs.count():,} entries")
-print("  Contains: Service logs, error tracking, performance metrics")
+print("  Format: Structured JSON logs from microservices")
 
-# Security logs (200K entries) - Threat detection and analysis
-security_logs = ray.data.read_parquet("security_logs.parquet")
-print(f"Security logs: {security_logs.count():,} entries")
-print("  Contains: Security events, threat levels, attack patterns")
+# Security logs - Syslog text format (typical for security systems)
+security_logs = ray.data.read_text("s3://ray-benchmark-data/logs/security/*.log")
+print(f"Security logs: {security_logs.count():,} lines")
+print("  Format: Syslog format text files from security devices")
 
 print(f"\nTotal log entries available: {apache_logs.count() + app_logs.count() + security_logs.count():,}")
 print("Realistic datasets ready for comprehensive log analysis!")
@@ -380,6 +381,7 @@ def parse_apache_access_logs(batch):
 print("Parsing Apache access logs using distributed processing...")
 parsed_apache = apache_logs.map_batches(
     parse_apache_access_logs,
+    batch_format="pandas",  # Use pandas format for efficient regex processing
     batch_size=1000,  # Optimal batch size for text processing
     concurrency=8     # Parallel parsing across cluster
 )

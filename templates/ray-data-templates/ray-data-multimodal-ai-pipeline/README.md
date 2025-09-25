@@ -1,6 +1,6 @@
 # Multimodal AI pipeline with Ray Data
 
-**Time to complete**: 30 min | **Difficulty**: Advanced | **Prerequisites**: ML experience, understanding of computer vision and NLP
+**⏱️ Time to complete**: 30 min | **Difficulty**: Advanced | **Prerequisites**: ML experience, understanding of computer vision and NLP
 
 ## What You'll Build
 
@@ -15,13 +15,15 @@ Create a cutting-edge multimodal AI system that processes images and text togeth
 
 ## Learning Objectives
 
-By completing this template, you will master:
+**Why multimodal AI matters**: Combining text, images, audio, and video data creates more intelligent systems with significantly better accuracy than single-modal approaches. Understanding multimodal processing unlocks the next generation of AI applications that mirror human-like understanding.
 
-- **Why multimodal AI matters**: Combining text, images, audio, and video data creates more intelligent systems achieving 40%+ better accuracy than single-modal approaches
-- **Ray Data's multimodal superpowers**: Unified processing pipeline for heterogeneous data types with automatic optimization and GPU acceleration
-- **Production AI applications**: Industry-standard techniques used by OpenAI, Google, and Meta for foundation models and multimodal search
-- **Advanced AI architectures**: Cross-modal embeddings, attention mechanisms, and transformer-based multimodal models at scale
-- **Enterprise deployment strategies**: Production multimodal pipelines with monitoring, versioning, and continuous integration
+**Ray Data's multimodal superpowers**: Unified processing pipeline for heterogeneous data types with automatic optimization and GPU acceleration. You'll learn how to orchestrate complex multimodal workflows that scale across distributed computing clusters.
+
+**Production AI applications**: Industry-standard techniques used by OpenAI, Google, and Meta for foundation models and multimodal search demonstrate the cutting-edge capabilities of distributed multimodal processing.
+
+**Advanced AI architectures**: Cross-modal embeddings, attention mechanisms, and transformer-based multimodal models at scale enable sophisticated AI systems that understand relationships between different data modalities.
+
+**Enterprise deployment strategies**: Production multimodal pipelines with monitoring, versioning, and continuous integration ensure reliable operation of complex AI systems in enterprise environments.
 
 ## Overview
 
@@ -39,11 +41,13 @@ By completing this template, you will master:
 
 ## Prerequisites Checklist
 
-Before starting, ensure you have:
-- [ ] Understanding of deep learning concepts
-- [ ] Familiarity with computer vision and NLP basics
-- [ ] Experience with PyTorch or similar ML frameworks
-- [ ] GPU access recommended (but not required)
+Before starting this advanced template, ensure you have understanding of deep learning concepts and familiarity with both computer vision and NLP basics. Experience with PyTorch or similar ML frameworks is essential for working with the multimodal models demonstrated.
+
+**Required knowledge**:
+- [ ] Deep learning fundamentals and neural network architectures
+- [ ] Computer vision and NLP preprocessing techniques
+- [ ] PyTorch or TensorFlow experience for model implementation
+- [ ] GPU access recommended for optimal performance (but not required)
 
 ## Quick Start (3 minutes)
 
@@ -280,8 +284,9 @@ def load_multimodal_dataset():
         """Pair images with text captions for multimodal processing."""
         import random
         
-        # Get text samples for pairing
-        text_samples = text_dataset.take(len(batch['image']))
+        # Get text samples for pairing (ensure efficient data access)
+        text_sample_count = min(len(batch['image']), 1000)  # Limit for efficiency
+        text_samples = text_dataset.take(text_sample_count)
         
         pairs = []
         for i, image in enumerate(batch['image']):

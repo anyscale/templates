@@ -1,6 +1,6 @@
 # NLP text analytics with Ray Data
 
-**Time to complete**: 30 min | **Difficulty**: Intermediate | **Prerequisites**: Basic Python, familiarity with text processing
+**⏱️ Time to complete**: 30 min | **Difficulty**: Intermediate | **Prerequisites**: Basic Python, familiarity with text processing
 
 ## What You'll Build
 
@@ -15,12 +15,13 @@ Create a scalable text processing pipeline that analyzes thousands of text docum
 
 ## Learning Objectives
 
-By completing this tutorial, you'll understand:
+**Why text processing matters**: Memory and computation challenges with large text datasets require distributed processing solutions. Understanding scalable NLP enables analysis of massive text corpora that traditional tools cannot handle.
 
-- **Why text processing is challenging**: Memory and computation issues with large text datasets
-- **Ray Data's text capabilities**: Distribute NLP tasks across multiple workers
-- **Real-world applications**: How companies process millions of reviews, comments, and documents
-- **Performance benefits**: Process 100x more text in the same time
+**Ray Data's text superpowers**: Distribute NLP tasks across multiple workers for scalable text analytics. You'll learn how to transform text processing from single-machine limitations to distributed scale.
+
+**Real-world text applications**: Techniques used by companies to process millions of reviews, comments, and documents demonstrate the practical value of distributed NLP for business intelligence.
+
+**Production NLP strategies**: Scale text processing workflows for enterprise applications enabling real-time text analytics and automated content analysis at massive scale.
 
 ## Overview
 
@@ -2069,7 +2070,8 @@ trending_topics = competitor_analysis.groupby('mention_type').agg({
 
 ```python
 # Load support tickets
-tickets = read_parquet("s3://support-system/tickets/")
+# Support tickets - JSON format (typical for customer support systems)
+tickets = ray.data.read_json("s3://ray-benchmark-data/support/tickets/*.json")
 
 # Urgency classification and routing
 classified_tickets = tickets.map_batches(TicketClassifier(), batch_size=150)

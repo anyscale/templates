@@ -1,10 +1,10 @@
 # Large-scale ETL optimization with Ray Data
 
-**Time to complete**: 35 min | **Difficulty**: Intermediate | **Prerequisites**: Understanding of ETL concepts, data processing experience
+**⏱️ Time to complete**: 35 min | **Difficulty**: Intermediate | **Prerequisites**: Understanding of ETL concepts, data processing experience
 
 ## What You'll Build
 
-Create a high-performance ETL pipeline that processes millions of records efficiently. You'll learn the optimization techniques that make the difference between ETL jobs that take hours vs. minutes at enterprise scale.
+Create a high-performance ETL pipeline that processes millions of records efficiently using Ray Data's distributed processing capabilities. Learn the optimization techniques that make the difference between ETL jobs that take hours vs. minutes at enterprise scale.
 
 ## Table of Contents
 
@@ -15,12 +15,13 @@ Create a high-performance ETL pipeline that processes millions of records effici
 
 ## Learning Objectives
 
-By completing this tutorial, you'll understand:
+**Why ETL optimization matters**: The difference between fast and slow data pipelines directly impacts business agility and operational costs at enterprise scale. Understanding optimization techniques enables data teams to deliver insights faster while reducing infrastructure costs.
 
-- **Why ETL optimization matters**: The difference between fast and slow data pipelines at scale
-- **Ray Data's ETL superpowers**: Native operations for distributed processing at scale
-- **Real-world patterns**: How companies like Netflix and Airbnb process petabytes of data daily
-- **Performance tuning**: Memory management, parallel processing, and resource optimization
+**Ray Data's ETL superpowers**: Native operations for distributed processing that automatically optimize memory, CPU, and I/O utilization. You'll learn how Ray Data's architecture enables efficient processing of massive datasets.
+
+**Real-world optimization patterns**: Techniques used by companies like Netflix and Airbnb to process petabytes of data daily for business intelligence demonstrate the practical application of distributed ETL optimization.
+
+**Performance tuning strategies**: Memory management, parallel processing, and resource optimization for production ETL workloads ensure that data pipelines scale efficiently with growing data volumes.
 
 ## Overview
 

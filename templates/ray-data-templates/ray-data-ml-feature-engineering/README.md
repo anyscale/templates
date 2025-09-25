@@ -1,10 +1,10 @@
 # ML feature engineering with Ray Data
 
-**Time to complete**: 35 min | **Difficulty**: Intermediate | **Prerequisites**: ML experience, understanding of data preprocessing
+**⏱️ Time to complete**: 35 min | **Difficulty**: Intermediate | **Prerequisites**: ML experience, understanding of data preprocessing
 
 ## What You'll Build
 
-Create an automated feature engineering pipeline that transforms raw data into ML-ready features at scale. You'll learn the techniques that separate good data scientists from great ones - and how to apply them to massive datasets.
+Create an automated feature engineering pipeline that transforms raw data into ML-ready features at scale. Learn the techniques that separate good data scientists from great ones and how to apply them to massive datasets using Ray Data's distributed processing.
 
 ## Table of Contents
 
@@ -15,25 +15,27 @@ Create an automated feature engineering pipeline that transforms raw data into M
 
 ## Learning Objectives
 
-By completing this template, you will master:
+**Why feature engineering matters**: Quality features determine ML model performance more than algorithm selection, making feature engineering the foundation of successful ML systems. Understanding how to create and select effective features separates good data scientists from exceptional ones.
 
-- **Why feature engineering matters**: Quality features determine 80% of ML model performance - more critical than algorithm selection
-- **Ray Data's preprocessing superpowers**: Scale complex feature transformations across terabyte datasets with automatic optimization
-- **Production ML patterns**: Feature stores, versioning, and automated pipelines used by Netflix, Spotify, and LinkedIn for recommendation systems
-- **Advanced transformation techniques**: Time-based features, categorical encoding, and automated feature selection at enterprise scale
-- **MLOps integration strategies**: Production feature pipelines with monitoring, validation, and continuous deployment
+**Ray Data's preprocessing superpowers**: Scale complex feature transformations across terabyte datasets with automatic optimization and distributed processing. You'll learn how to leverage Ray Data's capabilities to handle enterprise-scale feature engineering workflows.
+
+**Production ML patterns**: Feature stores, versioning, and automated pipelines used by Netflix, Spotify, and LinkedIn for recommendation systems demonstrate the importance of scalable feature engineering infrastructure.
+
+**Advanced transformation techniques**: Master time-based features, categorical encoding, and automated feature selection at enterprise scale. These techniques enable sophisticated ML applications across industries.
+
+**MLOps integration strategies**: Production feature pipelines with monitoring, validation, and continuous deployment ensure reliable ML operations at scale.
 
 ## Overview
 
-**The Challenge**: Feature engineering is the most time-consuming part of ML projects. Data scientists spend 60-80% of their time creating, testing, and selecting features manually.
+**Challenge**: Feature engineering is the most time-consuming part of ML projects, with data scientists spending 60-80% of their time creating, testing, and selecting features manually. Traditional approaches don't scale to enterprise datasets and lack automated optimization.
 
-**The Solution**: Ray Data automates and distributes feature engineering, letting you focus on the creative aspects while handling the computational heavy lifting.
+**Solution**: Ray Data automates and distributes feature engineering, letting you focus on the creative aspects while handling the computational heavy lifting. Distributed processing enables feature creation across terabyte datasets that would overwhelm single machines.
 
-**Real-world Impact**:
--  **E-commerce**: Netflix uses 1000+ features for recommendations, created from viewing history and user behavior
-- 💳 **Fraud Detection**: Banks engineer 500+ features from transaction patterns to catch fraud in real-time
-- 🚗 **Autonomous Vehicles**: Tesla creates features from sensor data, camera images, and GPS coordinates
--  **Healthcare**: Hospitals use features from patient records, lab results, and medical images for diagnosis
+**Impact**: Leading companies leverage automated feature engineering for competitive advantage:
+- **E-commerce**: Netflix uses thousands of features for recommendations, created from viewing history and user behavior patterns
+- **Fraud Detection**: Banks engineer hundreds of features from transaction patterns to catch fraud in real-time
+- **Autonomous Vehicles**: Tesla creates features from sensor data, camera images, and GPS coordinates for safety systems
+- **Healthcare**: Hospitals use features from patient records, lab results, and medical images for accurate diagnosis
 
 ---
 

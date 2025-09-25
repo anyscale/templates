@@ -1,10 +1,10 @@
 # Geospatial data analysis with Ray Data
 
-**Time to complete**: 25 min | **Difficulty**: Intermediate | **Prerequisites**: Basic Python, understanding of coordinates
+**⏱️ Time to complete**: 25 min | **Difficulty**: Intermediate | **Prerequisites**: Basic Python, understanding of coordinates
 
 ## What You'll Build
 
-Create a scalable geospatial analysis pipeline that can process millions of location points across entire cities. You'll learn to find nearby businesses, calculate distances, and perform spatial clustering - all at massive scale.
+Create a scalable geospatial analysis pipeline that processes millions of location points across entire cities. Learn to find nearby businesses, calculate distances, and perform spatial clustering using Ray Data's distributed processing capabilities.
 
 ## Table of Contents
 
@@ -15,31 +15,23 @@ Create a scalable geospatial analysis pipeline that can process millions of loca
 
 ## Learning Objectives
 
-By completing this template, you will master:
+**Why geospatial analytics matters**: Location intelligence drives revenue across ride-sharing, delivery, and real estate industries through data-driven decision making. Understanding spatial patterns and relationships unlocks competitive advantages in location-based businesses.
 
-- **Why geospatial analytics matters**: Location intelligence drives $50B+ annual revenue across ride-sharing, delivery, and real estate industries
-- **Ray Data's spatial superpowers**: Distribute complex geographic calculations like spatial joins, clustering, and routing across distributed clusters
-- **Real-world location applications**: Industry-standard techniques used by Uber, DoorDash, and Google Maps to process billions of location events
-- **Advanced spatial analysis**: Geofencing, hot spot detection, route optimization, and location-based recommendations at city scale
-- **Production deployment patterns**: Real-time location processing, spatial indexing, and geographic data pipeline optimization
+**Ray Data's spatial superpowers**: Distribute complex geographic calculations like spatial joins, clustering, and routing across distributed clusters. You'll learn how Ray Data handles the computational intensity of spatial operations at scale.
 
-## Overview: Geospatial Analytics at Scale Challenge
+**Real-world location applications**: Industry-standard techniques used by Uber, DoorDash, and Google Maps to process billions of location events daily. These patterns apply across transportation, logistics, and location-based services.
 
-**Challenge**: Traditional geospatial analysis tools face significant limitations:
-- Processing millions of GPS coordinates overwhelms single-machine memory
-- Spatial operations like proximity search and clustering are computationally expensive
-- Real-time location analysis requires sub-second response times
-- Enterprise datasets often contain billions of location points across global operations
+**Advanced spatial analysis**: Master geofencing, hot spot detection, route optimization, and location-based recommendations at city scale. These techniques enable sophisticated location intelligence applications.
 
-**Solution**: Ray Data provides distributed geospatial processing capabilities:
-- Automatically parallelizes spatial calculations across multiple nodes
-- Handles datasets larger than cluster memory through streaming processing
-- Integrates with popular geospatial libraries (PostGIS, Shapely, GeoPandas)
-- Scales from city-level to global geographic analysis seamlessly
+**Production deployment patterns**: Real-time location processing, spatial indexing, and geographic data pipeline optimization strategies that enable enterprise-scale geospatial applications.
 
-**Enterprise Geospatial Analytics Impact**
+## Overview
 
-Leading location-based companies demonstrate the transformative power of distributed geospatial analytics. Uber achieves real-time route optimization for millions of daily trips across 900+ cities using sophisticated spatial processing algorithms. DoorDash implements dynamic delivery zone optimization processing over 1 billion location events through distributed geographic calculations. Airbnb leverages neighborhood analysis and pricing optimization across 220+ countries using scalable spatial data processing, while Lyft enables real-time driver-passenger matching with sub-second geospatial queries through optimized spatial indexing.
+**Challenge**: Traditional geospatial analysis tools face significant limitations when processing large-scale location data. Single-machine processing overwhelms memory with millions of GPS coordinates, while spatial operations like proximity search and clustering become computationally expensive at scale.
+
+**Solution**: Ray Data provides distributed geospatial processing capabilities that automatically parallelize spatial calculations across multiple nodes. The framework handles datasets larger than cluster memory through streaming processing and integrates seamlessly with popular geospatial libraries.
+
+**Impact**: Leading location-based companies leverage distributed geospatial analytics for transformative business results. Uber processes millions of daily trips across cities using sophisticated spatial algorithms, while DoorDash optimizes delivery zones through distributed geographic calculations. These patterns enable real-time location processing at enterprise scale.
 
 ```python
 # Example: Real-time spatial matching like Uber/Lyft
@@ -139,26 +131,40 @@ taxi_data = ray.data.read_parquet(
     "s3://ray-benchmark-data/nyc-taxi/yellow_tripdata_2023-01.parquet"
 ).limit(50000)
 
-# Extract location points from taxi data
+# Extract location points from taxi data using Ray Data map_batches
 def extract_taxi_locations(batch):
+    """Extract taxi pickup locations for geospatial analysis."""
     df = pd.DataFrame(batch)
-locations = []
+    locations = []
     
     for _, row in df.iterrows():
         # Extract pickup locations with valid NYC coordinates
-        locations.append({
-            'location_id': f"pickup_{row.name}",
-            'lat': float(row['pickup_latitude']),
-            'lon': float(row['pickup_longitude']),
-            'type': 'taxi_pickup',
-            'borough': 'NYC',
-            'trip_distance': float(row.get('trip_distance', 0))
-        })
+        if (row.get('pickup_latitude') is not None and 
+            row.get('pickup_longitude') is not None and
+            40.0 <= row['pickup_latitude'] <= 41.0 and  # Valid NYC latitude range
+            -75.0 <= row['pickup_longitude'] <= -73.0):  # Valid NYC longitude range
+            
+            locations.append({
+                'location_id': f"pickup_{row.name}",
+                'lat': float(row['pickup_latitude']),
+                'lon': float(row['pickup_longitude']),
+                'type': 'taxi_pickup',
+                'borough': 'NYC',
+                'trip_distance': float(row.get('trip_distance', 0))
+            })
     
     return locations
 
-ds = taxi_data.flat_map(extract_taxi_locations)
-print(f"Loaded NYC taxi location data: {ds.count():,} location points")
+# Use Ray Data map_batches for efficient location extraction
+# Optimize batch size for memory efficiency with large datasets
+location_dataset = taxi_data.map_batches(
+    extract_taxi_locations,
+    batch_format="pandas",
+    batch_size=500,  # Reduced batch size for memory efficiency
+    concurrency=4    # Increase concurrency for better parallelization
+).flatten()
+
+print(f"Loaded NYC taxi location data: {location_dataset.count():,} location points")
 
 ### **NYC Geospatial Analysis Dashboard**
 
@@ -606,11 +612,18 @@ def calculate_distance_metrics(batch: Dict[str, Any]) -> Dict[str, Any]:
         center_lat = metro_pois['latitude'].mean()
         center_lon = metro_pois['longitude'].mean()
         
-        # Simple distance calculation (Euclidean approximation)
+        # Use proper haversine distance calculation for accuracy
         distances = []
         for _, poi in metro_pois.iterrows():
-            dist = np.sqrt((poi['latitude'] - center_lat)**2 + 
-                          (poi['longitude'] - center_lon)**2) * 111  # km
+            # Haversine formula for great-circle distance
+            lat1, lon1 = np.radians(center_lat), np.radians(center_lon)
+            lat2, lon2 = np.radians(poi['latitude']), np.radians(poi['longitude'])
+            
+            dlat = lat2 - lat1
+            dlon = lon2 - lon1
+            a = np.sin(dlat/2)**2 + np.cos(lat1) * np.cos(lat2) * np.sin(dlon/2)**2
+            c = 2 * np.arcsin(np.sqrt(a))
+            dist = 6371 * c  # Earth's radius in kilometers
             distances.append(dist)
         
         results.append({

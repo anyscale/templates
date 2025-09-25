@@ -1,10 +1,10 @@
 # Medical data processing and HIPAA compliance with Ray Data
 
-**Time to complete**: 35 min | **Difficulty**: Advanced | **Prerequisites**: Healthcare data familiarity, Python experience, HIPAA compliance knowledge
+**⏱️ Time to complete**: 35 min | **Difficulty**: Advanced | **Prerequisites**: Healthcare data familiarity, Python experience, HIPAA compliance knowledge
 
 ## What You'll Build
 
-Create a HIPAA-compliant medical data processing pipeline that handles healthcare records and medical images at scale. You'll learn how to process sensitive healthcare data while maintaining privacy and regulatory compliance.
+Create a HIPAA-compliant medical data processing pipeline that handles healthcare records and medical images at scale. Learn how to process sensitive healthcare data while maintaining privacy and regulatory compliance using Ray Data's distributed processing capabilities.
 
 ## Table of Contents
 
@@ -15,12 +15,13 @@ Create a HIPAA-compliant medical data processing pipeline that handles healthcar
 
 ## Learning Objectives
 
-By completing this tutorial, you'll understand:
+**Why healthcare data processing matters**: Privacy, compliance, and format challenges require specialized approaches for medical data at scale. Healthcare organizations must balance data utility with strict regulatory requirements while maintaining patient privacy.
 
-- **Why healthcare data is unique**: Privacy, compliance, and format challenges in medical data
-- **Ray Data's healthcare capabilities**: Process sensitive medical data at scale with built-in privacy protection
-- **Real-world applications**: How hospitals and health systems analyze patient data for better outcomes
-- **Compliance patterns**: HIPAA-compliant data processing techniques
+**Ray Data's healthcare superpowers**: Process sensitive medical data with built-in privacy protection and HIPAA compliance patterns. You'll learn how distributed processing can handle healthcare data volumes while maintaining security standards.
+
+**Real-world medical applications**: Techniques used by hospitals and health systems to analyze patient data for better outcomes demonstrate the transformative potential of scalable healthcare analytics.
+
+**Compliance and security patterns**: HIPAA-compliant data processing techniques for production healthcare systems ensure that analytics capabilities don't compromise patient privacy or regulatory compliance.
 
 ## Overview
 
@@ -173,7 +174,8 @@ DICOM files contain both medical images and rich metadata crucial for diagnostic
 
 ```python
 # Example: Processing DICOM metadata for radiology analytics
-dicom_data = ray.data.read_parquet("dicom_imaging_metadata.parquet")
+# DICOM metadata - JSON format (realistic for medical imaging metadata)
+dicom_data = ray.data.read_json("s3://ray-benchmark-data/medical/dicom-metadata.json")
 
 # Imaging modality analysis
 modality_stats = dicom_data.groupby("modality").count()
@@ -258,9 +260,16 @@ import ray
 ray.init(address="ray://localhost:10001")
 
 # Load multiple medical data formats simultaneously
-hl7_messages = ray.data.read_parquet("hl7_medical_messages.parquet")
-dicom_metadata = ray.data.read_parquet("dicom_imaging_metadata.parquet")
-patient_records = ray.data.read_parquet("patient_medical_records.parquet")
+# HL7 messages - Text format (standard for healthcare messaging)
+hl7_messages = ray.data.read_text("s3://ray-benchmark-data/medical/hl7-messages/*.hl7")
+print("HL7 messages loaded from standard HL7 text format")
+
+# DICOM metadata - JSON format (extracted metadata from DICOM files) 
+dicom_metadata = ray.data.read_json("s3://ray-benchmark-data/medical/dicom-metadata/*.json")
+print("DICOM metadata loaded from JSON format")
+
+# Patient records - CSV format (common EHR export format)
+patient_records = ray.data.read_csv("s3://ray-benchmark-data/medical/patient-records.csv")
 
 print("Medical Data Integration Summary:")
 print(f"HL7 clinical messages: {hl7_messages.count():,}")
@@ -304,7 +313,8 @@ import ray
 
 # Load sample healthcare datasets
 hl7_data = ray.data.read_parquet("hl7_medical_messages.parquet")
-dicom_data = ray.data.read_parquet("dicom_imaging_metadata.parquet")
+# DICOM metadata - JSON format (realistic for medical imaging metadata)
+dicom_data = ray.data.read_json("s3://ray-benchmark-data/medical/dicom-metadata.json")
 
 # Examine data structure complexity
 print("HL7 Message Fields:")
@@ -433,7 +443,8 @@ Medical imaging presents unique memory challenges that require specialized handl
 
 ```python
 # Efficient DICOM metadata processing with memory optimization
-dicom_data = ray.data.read_parquet("dicom_imaging_metadata.parquet")
+# DICOM metadata - JSON format (realistic for medical imaging metadata)
+dicom_data = ray.data.read_json("s3://ray-benchmark-data/medical/dicom-metadata.json")
 
 # Process large imaging datasets with streaming approach
 def process_imaging_metadata(batch):
@@ -522,7 +533,8 @@ start_time = time.time()
 hl7_data = ray.data.read_parquet("hl7_medical_messages.parquet")
 
 # DICOM imaging metadata
-dicom_data = ray.data.read_parquet("dicom_imaging_metadata.parquet")
+# DICOM metadata - JSON format (realistic for medical imaging metadata)
+dicom_data = ray.data.read_json("s3://ray-benchmark-data/medical/dicom-metadata.json")
 
 # Patient records (EHR format)
 patient_data = ray.data.read_parquet("patient_medical_records.parquet")

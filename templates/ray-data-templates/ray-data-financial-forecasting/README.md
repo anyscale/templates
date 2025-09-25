@@ -1,10 +1,10 @@
 # Financial time series forecasting with Ray Data
 
-**Time to complete**: 30 min | **Difficulty**: Intermediate | **Prerequisites**: Basic finance knowledge, understanding of time series data
+**⏱️ Time to complete**: 30 min | **Difficulty**: Intermediate | **Prerequisites**: Basic finance knowledge, understanding of time series data
 
 ## What You'll Build
 
-Create a sophisticated financial analysis system that processes stock market data, calculates technical indicators, and builds forecasting models at scale - similar to what trading firms and financial institutions use for algorithmic trading.
+Create a sophisticated financial analysis system that processes stock market data, calculates technical indicators, and builds forecasting models at scale using Ray Data's distributed processing capabilities for algorithmic trading applications.
 
 ## Table of Contents
 
@@ -15,13 +15,15 @@ Create a sophisticated financial analysis system that processes stock market dat
 
 ## Learning Objectives
 
-By completing this template, you will master:
+**Why financial analytics matters**: High-frequency trading generates terabytes of data daily requiring millisecond processing times for competitive advantage in financial markets. Understanding distributed financial analytics is essential for modern trading systems.
 
-- **Why financial analytics matters**: High-frequency trading generates terabytes of data daily requiring millisecond processing times for competitive advantage
-- **Ray Data's financial superpowers**: Distribute complex calculations like portfolio optimization, risk modeling, and technical indicators across thousands of cores
-- **Real-world trading applications**: Industry-standard techniques used by Goldman Sachs, JPMorgan, and quantitative hedge funds for algorithmic trading
-- **Risk management expertise**: Advanced portfolio optimization, VaR calculations, and stress testing at institutional scale
-- **Production trading systems**: Real-time market data processing, backtesting, and automated trading strategy deployment
+**Ray Data's financial superpowers**: Distribute complex calculations like portfolio optimization, risk modeling, and technical indicators across distributed computing clusters. You'll learn how to scale financial computations to handle institutional-grade workloads.
+
+**Real-world trading applications**: Industry-standard techniques used by investment banks and quantitative hedge funds for algorithmic trading systems demonstrate the sophistication required for competitive financial analytics.
+
+**Risk management expertise**: Advanced portfolio optimization, risk calculations, and stress testing at institutional scale enable sophisticated risk management that protects capital while maximizing returns.
+
+**Production trading strategies**: Real-time market data processing, backtesting, and automated trading strategy deployment patterns that enable systematic trading at scale.
 
 ## Overview: Financial Analytics at Scale Challenge
 
