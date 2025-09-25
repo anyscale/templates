@@ -86,14 +86,13 @@ This distributed approach enables real-world applications across industries. Rid
 
 ## Prerequisites Checklist
 
-Before starting, ensure you have:
+Before starting this geospatial analysis template, ensure you have Python 3.8+ with basic geospatial processing experience and understanding of geographic coordinates. Knowledge of GIS concepts like projections and coordinate systems will help you understand the spatial transformations demonstrated.
 
+**Required setup**:
 - [ ] Python 3.8+ with geospatial processing experience
-- [ ] Understanding of geographic coordinates and spatial data formats
-- [ ] Basic knowledge of GIS concepts (projections, coordinate systems)
-- [ ] Familiarity with location-based applications and services
-- [ ] Access to Ray cluster (local or cloud)
-- [ ] 8GB+ RAM for processing sample geographic datasets
+- [ ] Understanding of latitude/longitude coordinate systems
+- [ ] Access to Ray cluster for distributed processing
+- [ ] 8GB+ RAM for processing geographic datasets
 - [ ] Optional: Experience with geospatial libraries (GeoPandas, Shapely)
 
 ## Quick Start (3 minutes)
@@ -649,25 +648,173 @@ print("Distance Analysis Results:")
 distance_analysis.show()
 ```
 
-## Step 3: Aggregation and Grouping
+## Step 3: Advanced Spatial Operations with Ray Data
 
-Ray Data provides powerful aggregation capabilities for geospatial analysis:
+Ray Data provides powerful native operations that are perfect for geospatial analysis. Let's demonstrate filtering, grouping, joining, and aggregating spatial data using Ray Data's distributed capabilities.
+
+### Spatial Filtering and Selection
 
 ```python
-# Group by metro area and category
+# Use Ray Data's native filter() operation for spatial queries
+# Find high-rated restaurants in NYC
+high_rated_restaurants = poi_dataset.filter(
+    lambda poi: (poi['category'] == 'restaurant' and 
+                poi['rating'] > 4.0 and 
+                poi['metro_area'] == 'NYC')
+)
+
+print(f"High-rated NYC restaurants: {high_rated_restaurants.count()} found")
+
+# Filter POIs within specific geographic bounds (Manhattan-like area)
+manhattan_bounds = poi_dataset.filter(
+    lambda poi: (40.7000 <= poi['latitude'] <= 40.8000 and
+                -74.0200 <= poi['longitude'] <= -73.9000 and
+                poi['metro_area'] == 'NYC')
+)
+
+print(f"POIs in Manhattan bounds: {manhattan_bounds.count()} locations")
+```
+
+### Spatial Aggregations and Grouping
+
+```python
+# Use Ray Data's native groupby() for distributed spatial aggregations
+print("Performing distributed spatial aggregations...")
+
+# Group by metro area and category using Ray Data native operations
 category_analysis = poi_dataset.groupby(['metro_area', 'category']).count()
 print("POI Count by Metro and Category:")
 category_analysis.show(15)
 
-# Calculate average ratings by metro area
-rating_analysis = poi_dataset.groupby('metro_area').mean('rating')
-print("\nAverage Rating by Metro Area:")
-rating_analysis.show()
+# Calculate spatial statistics by metro area
+from ray.data.aggregate import Mean, Max, Min, Count
+spatial_stats = poi_dataset.groupby('metro_area').aggregate(
+    Count('poi_id'),
+    Mean('rating'),
+    Mean('latitude'),
+    Mean('longitude')
+)
+
+print("\nSpatial Statistics by Metro Area:")
+spatial_stats.show()
+
+# Advanced aggregation: Category distribution analysis
+category_distribution = poi_dataset.groupby('category').aggregate(
+    Count('poi_id'),
+    Mean('rating'),
+    Max('rating'),
+    Min('rating')
+)
+
+print("\nCategory Distribution Analysis:")
+category_distribution.show()
 ```
 
-## Step 4: Spatial Joins and Proximity Analysis
+## Step 4: Advanced Spatial Joins and Analysis
 
-Let's create a more complex spatial analysis using Ray Data:
+Now let's demonstrate Ray Data's powerful join operations for complex spatial analysis. We'll create demographic data and join it with our POI data to understand location patterns.
+
+### Creating Demographic Data for Spatial Joins
+
+```python
+# Create demographic data that we can join with POI data
+def create_demographic_data():
+    """Create realistic demographic data for spatial joins."""
+    np.random.seed(42)  # Reproducible results
+    
+    demographics = []
+    metro_areas = ['NYC', 'LA', 'Chicago']
+    
+    for metro in metro_areas:
+        for zone_id in range(10):  # 10 zones per metro
+            demographics.append({
+                'metro_area': metro,
+                'zone_id': f'{metro}_zone_{zone_id}',
+                'population': np.random.randint(50000, 500000),
+                'median_income': np.random.randint(35000, 150000),
+                'age_median': np.random.uniform(25, 45),
+                'density_per_km2': np.random.randint(1000, 15000)
+            })
+    
+    return ray.data.from_items(demographics)
+
+# Create demographic dataset
+demographic_data = create_demographic_data()
+print(f"Created demographic data: {demographic_data.count()} zones")
+```
+
+### Spatial Joins with Ray Data
+
+```python
+# Perform distributed spatial join using Ray Data's native join operation
+print("Performing spatial join between POIs and demographics...")
+
+# Join POI data with demographic data by metro area
+spatial_join_result = poi_dataset.join(
+    demographic_data,
+    key='metro_area',  # Join on metro area
+    join_type='inner'  # Inner join for complete matches
+)
+
+print(f"Spatial join completed: {spatial_join_result.count()} enriched records")
+
+# Show sample of joined data
+joined_sample = spatial_join_result.take(3)
+for i, record in enumerate(joined_sample):
+    print(f"  {i+1}. {record['name']} in {record['metro_area']} (Pop: {record['population']:,}, Income: ${record['median_income']:,})")
+```
+
+### Advanced Spatial Analytics with Ray Data
+
+```python
+# Use Ray Data's native sort() for geographic ranking
+print("Ranking locations by spatial accessibility...")
+
+# Sort POIs by rating within each metro area
+top_rated_pois = spatial_join_result.sort(['metro_area', 'rating'], descending=[False, True])
+
+print("Top-rated POIs by metro area:")
+top_pois_sample = top_rated_pois.take(10)
+for poi in top_pois_sample:
+    print(f"  {poi['name']} ({poi['category']}) - Rating: {poi['rating']:.1f} in {poi['metro_area']}")
+
+# Use Ray Data's union() operation to combine datasets
+print("\nCombining multiple geographic datasets...")
+
+# Create additional POI data for demonstration
+additional_pois = ray.data.from_items([
+    {'poi_id': 'new_001', 'name': 'Central Park', 'category': 'park', 
+     'latitude': 40.7829, 'longitude': -73.9654, 'metro_area': 'NYC', 'rating': 4.8},
+    {'poi_id': 'new_002', 'name': 'Golden Gate Bridge', 'category': 'landmark', 
+     'latitude': 37.8199, 'longitude': -122.4783, 'metro_area': 'SF', 'rating': 4.9}
+])
+
+# Combine datasets using Ray Data's union operation
+combined_pois = poi_dataset.union(additional_pois)
+print(f"Combined POI dataset: {combined_pois.count()} total locations")
+
+# Use Ray Data's limit() for efficient sampling
+geographic_sample = combined_pois.limit(1000)
+print(f"Geographic sample created: {geographic_sample.count()} locations")
+
+# Use Ray Data's select() operation to focus on specific columns
+spatial_coords = combined_pois.select_columns(['latitude', 'longitude', 'metro_area', 'category'])
+print(f"Selected spatial coordinates: {spatial_coords.count()} records")
+
+# Chain multiple Ray Data operations for complex spatial pipeline
+spatial_pipeline_result = (combined_pois
+    .filter(lambda x: x['rating'] > 3.0)  # Filter high-quality locations
+    .groupby('category')                   # Group by POI category
+    .count()                              # Count POIs per category
+    .sort('count', descending=True)       # Sort by count
+    .limit(10)                            # Take top 10 categories
+)
+
+print("\nTop POI categories by count:")
+spatial_pipeline_result.show()
+```
+
+### Distributed Spatial Clustering Analysis
 
 ```python
 class SpatialAnalyzer:
@@ -710,6 +857,20 @@ spatial_results = poi_dataset.map_batches(
 
 print("Spatial Analysis Results:")
 spatial_results.show()
+
+# Save spatial analysis results using Ray Data's native write operations
+print("Saving geospatial analysis results...")
+
+# Write enriched POI data to Parquet for efficient storage
+spatial_join_result.write_parquet("s3://your-bucket/geospatial-analysis/enriched-pois/")
+
+# Write category analysis results  
+category_distribution.write_parquet("s3://your-bucket/geospatial-analysis/category-stats/")
+
+# Write top locations for business intelligence
+top_rated_pois.limit(100).write_json("s3://your-bucket/geospatial-analysis/top-locations.json")
+
+print("Geospatial analysis results saved using Ray Data native write operations")
 ```
 
 ## Step 5: Interactive Visualizations and Results
@@ -1157,20 +1318,28 @@ To extend this example:
 ## Cleanup
 
 ```python
-# Clean up Ray resources (rule #210: Always include cleanup code)
+# Clean up Ray resources when finished with geospatial analysis
 if ray.is_initialized():
     ray.shutdown()
-    print("Ray resources cleaned up successfully!")
-else:
-    print("Ray was not initialized - no cleanup needed")
+    print("Ray cluster resources cleaned up successfully")
+    print("Geospatial analysis pipeline completed")
 ```
 
 ## Key Takeaways
 
-- Ray Data enables distributed processing of large geospatial datasets
-- Use `map_batches()` for complex spatial operations
-- Leverage Ray Data's aggregation capabilities for spatial analysis
-- Proper batch sizing and concurrency settings are crucial for performance
+**Ray Data Native Operations Mastered**:
+- `read_parquet()` for loading geospatial datasets efficiently
+- `map_batches()` for distributed spatial calculations and transformations
+- `filter()` for spatial queries and geographic bounds filtering
+- `groupby()` and `aggregate()` for spatial statistics and analysis
+- `join()` for combining POI data with demographic information
+- `sort()` for geographic ranking and accessibility analysis
+- `union()` for combining multiple geographic datasets
+- `select_columns()` for focusing on spatial coordinates
+- `limit()` and `take()` for efficient spatial sampling
+- `write_parquet()` and `write_json()` for saving analysis results
+
+**Geospatial Processing Excellence**: Ray Data's distributed architecture enables processing millions of location points with sophisticated spatial operations that scale horizontally across clusters while maintaining memory efficiency through streaming execution.
 
 ---
 
