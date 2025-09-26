@@ -1,6 +1,6 @@
 # Medical data processing and HIPAA compliance with Ray Data
 
-**⏱️ Time to complete**: 35 min | **Difficulty**: Advanced | **Prerequisites**: Healthcare data familiarity, Python experience, HIPAA compliance knowledge
+**Time to complete**: 35 min | **Difficulty**: Advanced | **Prerequisites**: Healthcare data familiarity, Python experience, HIPAA compliance knowledge
 
 ## What You'll Build
 
@@ -17,7 +17,7 @@ Create a HIPAA-compliant medical data processing pipeline that handles healthcar
 
 **Why healthcare data processing matters**: Privacy, compliance, and format challenges require specialized approaches for medical data at scale. Healthcare organizations must balance data utility with strict regulatory requirements while maintaining patient privacy.
 
-**Ray Data's healthcare superpowers**: Process sensitive medical data with built-in privacy protection and HIPAA compliance patterns. You'll learn how distributed processing can handle healthcare data volumes while maintaining security standards.
+**Ray Data's healthcare capabilities**: Process sensitive medical data with built-in privacy protection and HIPAA compliance patterns. You'll learn how distributed processing can handle healthcare data volumes while maintaining security standards.
 
 **Real-world medical applications**: Techniques used by hospitals and health systems to analyze patient data for better outcomes demonstrate the transformative potential of scalable healthcare analytics.
 

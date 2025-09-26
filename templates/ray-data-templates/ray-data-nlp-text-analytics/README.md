@@ -1,6 +1,6 @@
 # NLP text analytics with Ray Data
 
-**⏱️ Time to complete**: 30 min | **Difficulty**: Intermediate | **Prerequisites**: Basic Python, familiarity with text processing
+**Time to complete**: 30 min | **Difficulty**: Intermediate | **Prerequisites**: Basic Python, familiarity with text processing
 
 ## What You'll Build
 
@@ -17,7 +17,7 @@ Create a scalable text processing pipeline that analyzes thousands of text docum
 
 **Why text processing matters**: Memory and computation challenges with large text datasets require distributed processing solutions. Understanding scalable NLP enables analysis of massive text corpora that traditional tools cannot handle.
 
-**Ray Data's text superpowers**: Distribute NLP tasks across multiple workers for scalable text analytics. You'll learn how to transform text processing from single-machine limitations to distributed scale.
+**Ray Data's text capabilities**: Distribute NLP tasks across multiple workers for scalable text analytics. You'll learn how to transform text processing from single-machine limitations to distributed scale.
 
 **Real-world text applications**: Techniques used by companies to process millions of reviews, comments, and documents demonstrate the practical value of distributed NLP for business intelligence.
 

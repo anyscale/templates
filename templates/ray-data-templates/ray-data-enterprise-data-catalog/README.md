@@ -1,6 +1,6 @@
 # Enterprise data catalog and discovery with Ray Data
 
-**⏱️ Time to complete**: 30 min | **Difficulty**: Intermediate | **Prerequisites**: Understanding of data management, metadata concepts
+**Time to complete**: 30 min | **Difficulty**: Intermediate | **Prerequisites**: Understanding of data management, metadata concepts
 
 ## What You'll Build
 
@@ -17,7 +17,7 @@ Create an intelligent data catalog system that automatically discovers datasets,
 
 **Why data discovery matters**: Data scientists spend significant time finding relevant data in large organizations, impacting productivity and innovation speed. Effective data cataloging transforms organizational data assets from hidden resources into accessible knowledge.
 
-**Ray Data's catalog superpowers**: Automate data discovery and metadata management at scale with distributed processing capabilities. You'll learn how to build intelligent data catalogs that scale across enterprise data landscapes.
+**Ray Data's catalog capabilities**: Automate data discovery and metadata management at scale with distributed processing capabilities. You'll learn how to build intelligent data catalogs that scale across enterprise data landscapes.
 
 **Real-world discovery applications**: Techniques used by companies like Airbnb and LinkedIn to help teams discover and access organizational data demonstrate the business value of automated data cataloging.
 

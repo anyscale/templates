@@ -1,6 +1,6 @@
 # Multimodal AI pipeline with Ray Data
 
-**⏱️ Time to complete**: 30 min | **Difficulty**: Advanced | **Prerequisites**: ML experience, understanding of computer vision and NLP
+**Time to complete**: 30 min | **Difficulty**: Advanced | **Prerequisites**: ML experience, understanding of computer vision and NLP
 
 ## What You'll Build
 
@@ -17,7 +17,7 @@ Create a cutting-edge multimodal AI system that processes images and text togeth
 
 **Why multimodal AI matters**: Combining text, images, audio, and video data enables more comprehensive understanding than single-modal approaches. Understanding multimodal processing unlocks AI applications that integrate multiple data types.
 
-**Ray Data's multimodal superpowers**: Unified processing pipeline for heterogeneous data types with automatic optimization and GPU acceleration. You'll learn how to orchestrate complex multimodal workflows that scale across distributed computing clusters.
+**Ray Data's multimodal capabilities**: Unified processing pipeline for heterogeneous data types with automatic optimization and GPU acceleration. You'll learn how to orchestrate complex multimodal workflows that scale across distributed computing clusters.
 
 **Production AI applications**: Industry-standard techniques used by OpenAI, Google, and Meta for foundation models and multimodal search demonstrate the cutting-edge capabilities of distributed multimodal processing.
 

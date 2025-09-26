@@ -1,6 +1,6 @@
 # ML feature engineering with Ray Data
 
-**⏱️ Time to complete**: 35 min | **Difficulty**: Intermediate | **Prerequisites**: ML experience, understanding of data preprocessing
+**Time to complete**: 35 min | **Difficulty**: Intermediate | **Prerequisites**: ML experience, understanding of data preprocessing
 
 ## What You'll Build
 
@@ -17,7 +17,7 @@ Create an automated feature engineering pipeline that transforms raw data into M
 
 **Why feature engineering matters**: Quality features determine ML model performance more than algorithm selection, making feature engineering the foundation of successful ML systems. Understanding how to create and select effective features separates good data scientists from exceptional ones.
 
-**Ray Data's preprocessing superpowers**: Scale complex feature transformations across terabyte datasets with automatic optimization and distributed processing. You'll learn how to leverage Ray Data's capabilities to handle enterprise-scale feature engineering workflows.
+**Ray Data's preprocessing capabilities**: Scale complex feature transformations across terabyte datasets with automatic optimization and distributed processing. You'll learn how to leverage Ray Data's capabilities to handle enterprise-scale feature engineering workflows.
 
 **Production ML patterns**: Feature stores, versioning, and automated pipelines used by Netflix, Spotify, and LinkedIn for recommendation systems demonstrate the importance of scalable feature engineering infrastructure.
 

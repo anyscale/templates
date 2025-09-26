@@ -1,6 +1,6 @@
 # Data quality monitoring and validation with Ray Data
 
-**⏱️ Time to complete**: 25 min | **Difficulty**: Intermediate | **Prerequisites**: Data engineering experience, understanding of data quality concepts
+**Time to complete**: 25 min | **Difficulty**: Intermediate | **Prerequisites**: Data engineering experience, understanding of data quality concepts
 
 ## What You'll Build
 
@@ -149,9 +149,9 @@ missing_analysis = check_missing_values(ds)
 
 | Field | Missing Count | Missing Rate | Status |
 |-------|---------------|--------------|---------|
-| **Email** | Sample analysis | Calculated % | 🔴 High / 🟡 Medium / 🟢 Good |
-| **Age** | Sample analysis | Calculated % | 🔴 High / 🟡 Medium / 🟢 Good |
-| **Income** | Sample analysis | Calculated % | 🔴 High / 🟡 Medium / 🟢 Good |
+| **Email** | Sample analysis | Calculated % | High / Medium / Good |
+| **Age** | Sample analysis | Calculated % | High / Medium / Good |
+| **Income** | Sample analysis | Calculated % | High / Medium / Good |
 
 ### Simple Quality Visualization
 
@@ -260,7 +260,7 @@ def generate_quality_report(dataset, missing_stats, email_validation):
     # Missing data summary
     print("\nMissing Data Summary:")
     for field, stats in missing_stats.items():
-        status = "🔴 High" if stats['missing_rate'] > 10 else "🟡 Medium" if stats['missing_rate'] > 5 else "🟢 Good"
+        status = "High" if stats['missing_rate'] > 10 else "Medium" if stats['missing_rate'] > 5 else "Good"
         print(f"  {field}: {stats['missing_rate']:.1f}% missing {status}")
     
     print("="*60)

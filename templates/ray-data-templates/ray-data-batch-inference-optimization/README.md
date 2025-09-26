@@ -1,6 +1,6 @@
 # ML batch inference optimization with Ray Data
 
-**⏱️ Time to complete**: 20 min | **Difficulty**: Intermediate | **Prerequisites**: Basic ML knowledge, Python experience
+**Time to complete**: 20 min | **Difficulty**: Intermediate | **Prerequisites**: Basic ML knowledge, Python experience
 
 ## What You'll Build
 
@@ -17,7 +17,7 @@ Create an optimized ML batch inference pipeline that demonstrates the performanc
 
 **Why batch inference optimization matters**: Poor optimization wastes significant compute resources through repeated model loading and inefficient batching. Understanding these bottlenecks is crucial for production ML systems.
 
-**Ray Data's inference superpowers**: Stateful per-worker model loading (via Ray Data) and distributed processing eliminate performance bottlenecks that plague traditional ML pipelines. You'll learn how to leverage these capabilities for scalable inference.
+**Ray Data's inference capabilities**: Stateful per-worker model loading (via Ray Data) and distributed processing eliminate performance bottlenecks that plague traditional ML pipelines. You'll learn how to leverage these capabilities for scalable inference.
 
 **Real-world optimization patterns**: Companies like Netflix and Tesla process millions of inference requests efficiently using the distributed techniques demonstrated in this template. These patterns apply across industries from recommendation systems to autonomous vehicles.
 
@@ -25,7 +25,7 @@ Create an optimized ML batch inference pipeline that demonstrates the performanc
 
 ## Overview
 
-**Challenge**: Naive batch inference approaches create significant performance bottlenecks that prevent ML systems from scaling to production workloads. Model loading overhead can consume 80-90% of processing time, while poor batch sizing wastes GPU resources and increases operational costs.
+**Challenge**: Naive batch inference approaches create significant performance bottlenecks that prevent ML systems from scaling to production workloads. Model loading overhead can consume significant processing time, while poor batch sizing wastes GPU resources and increases operational costs.
 
 **Solution**: Ray Data transforms batch inference through distributed processing and intelligent resource management. Actor-based model loading eliminates repeated initialization overhead, while optimized batching maximizes throughput across GPU clusters.
 
@@ -245,8 +245,8 @@ print("\nNo custom monitoring needed - Ray Dashboard handles everything!")
 
 | Approach | Model Loading | Batch Size | GPU Utilization | Overall Efficiency |
 |----------|---------------|------------|-----------------|-------------------|
-| **Inefficient** | Every batch | 4 images | Poor | ❌ Very slow |
-| **Optimized** | Once per worker | 16 images | Excellent | ✅ Fast |
+| **Inefficient** | Every batch | 4 images | Poor | Very slow |
+| **Optimized** | Once per worker | 16 images | Excellent | Fast |
 
 ### Optimization Impact
 

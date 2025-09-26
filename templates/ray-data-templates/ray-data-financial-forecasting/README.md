@@ -1,6 +1,6 @@
 # Financial time series forecasting with Ray Data
 
-**⏱️ Time to complete**: 30 min | **Difficulty**: Intermediate | **Prerequisites**: Basic finance knowledge, understanding of time series data
+**Time to complete**: 30 min | **Difficulty**: Intermediate | **Prerequisites**: Basic finance knowledge, understanding of time series data
 
 ## What You'll Build
 
@@ -17,7 +17,7 @@ Create a sophisticated financial analysis system that processes stock market dat
 
 **Why financial analytics matters**: High-frequency trading generates terabytes of data daily requiring millisecond processing times for competitive advantage in financial markets. Understanding distributed financial analytics is essential for modern trading systems.
 
-**Ray Data's financial superpowers**: Distribute complex calculations like portfolio optimization, risk modeling, and technical indicators across distributed computing clusters. You'll learn how to scale financial computations to handle institutional-grade workloads.
+**Ray Data's financial capabilities**: Distribute complex calculations like portfolio optimization, risk modeling, and technical indicators across distributed computing clusters. You'll learn how to scale financial computations to handle institutional-grade workloads.
 
 **Real-world trading applications**: Industry-standard techniques used by investment banks and quantitative hedge funds for algorithmic trading systems demonstrate the sophistication required for competitive financial analytics.
 

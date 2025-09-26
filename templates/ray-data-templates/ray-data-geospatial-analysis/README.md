@@ -1,6 +1,6 @@
 # Geospatial data analysis with Ray Data
 
-**⏱️ Time to complete**: 25 min | **Difficulty**: Intermediate | **Prerequisites**: Basic Python, understanding of coordinates
+**Time to complete**: 25 min | **Difficulty**: Intermediate | **Prerequisites**: Basic Python, understanding of coordinates
 
 ## What You'll Build
 
@@ -17,7 +17,7 @@ Create a scalable geospatial analysis pipeline that processes millions of locati
 
 **Why geospatial analytics matters**: Location intelligence drives revenue across ride-sharing, delivery, and real estate industries through data-driven decision making. Understanding spatial patterns and relationships unlocks competitive advantages in location-based businesses.
 
-**Ray Data's spatial superpowers**: Distribute complex geographic calculations like spatial joins, clustering, and routing across distributed clusters. You'll learn how Ray Data handles the computational intensity of spatial operations at scale.
+**Ray Data's spatial capabilities**: Distribute complex geographic calculations like spatial joins, clustering, and routing across distributed clusters. You'll learn how Ray Data handles the computational intensity of spatial operations at scale.
 
 **Real-world location applications**: Industry-standard techniques used by Uber, DoorDash, and Google Maps to process billions of location events daily. These patterns apply across transportation, logistics, and location-based services.
 
