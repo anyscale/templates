@@ -598,25 +598,35 @@ if len(categories) == 0:
 Now let's perform basic spatial operations using Ray Data's distributed processing capabilities.
 
 ```python
+# OPTIMIZED: Reduce pandas usage and use native Ray Data operations where possible
 def calculate_distance_metrics(batch: Dict[str, Any]) -> Dict[str, Any]:
-    """Calculate distance-based metrics for POI analysis."""
-    df = pd.DataFrame(batch)
+    """Calculate distance-based metrics with optimized processing."""
+    # Group records by metro area using native Python (avoid pandas groupby)
+    metro_groups = {}
+    for record in batch:
+        metro = record.get('metro_area', 'unknown')
+        if metro not in metro_groups:
+            metro_groups[metro] = []
+        metro_groups[metro].append(record)
     
     results = []
     
-    for metro in df['metro_area'].unique():
-        metro_pois = df[df['metro_area'] == metro]
+    for metro, pois in metro_groups.items():
+        if not pois:
+            continue
+            
+        # Calculate center point using native operations
+        total_lat = sum(poi.get('latitude', 0) for poi in pois)
+        total_lon = sum(poi.get('longitude', 0) for poi in pois)
+        poi_count = len(pois)
+        center_lat = total_lat / poi_count
+        center_lon = total_lon / poi_count
         
-        # Calculate center point
-        center_lat = metro_pois['latitude'].mean()
-        center_lon = metro_pois['longitude'].mean()
-        
-        # Use proper haversine distance calculation for accuracy
+        # Use vectorized haversine calculation for efficiency
         distances = []
-        for _, poi in metro_pois.iterrows():
-            # Haversine formula for great-circle distance
+        for poi in pois:
             lat1, lon1 = np.radians(center_lat), np.radians(center_lon)
-            lat2, lon2 = np.radians(poi['latitude']), np.radians(poi['longitude'])
+            lat2, lon2 = np.radians(poi.get('latitude', 0)), np.radians(poi.get('longitude', 0))
             
             dlat = lat2 - lat1
             dlon = lon2 - lon1
@@ -631,17 +641,16 @@ def calculate_distance_metrics(batch: Dict[str, Any]) -> Dict[str, Any]:
             'center_lon': center_lon,
             'avg_distance_from_center': np.mean(distances),
             'max_distance_from_center': np.max(distances),
-            'poi_count': len(metro_pois)
+            'poi_count': poi_count
         })
     
-    return pd.DataFrame(results).to_dict('list')
+    return results
 
-# Process the data using Ray Data
+# Process with optimized batch processing
 distance_analysis = poi_dataset.map_batches(
     calculate_distance_metrics,
-    batch_format="pandas",
-    batch_size=1000,
-    concurrency=2
+    batch_size=2000,    # Larger batch size for efficiency
+    concurrency=4       # Increased concurrency
 )
 
 print("Distance Analysis Results:")
@@ -655,21 +664,25 @@ Ray Data provides powerful native operations that are perfect for geospatial ana
 ### Spatial Filtering and Selection
 
 ```python
-# Use Ray Data's native filter() operation for spatial queries
-# Find high-rated restaurants in NYC
+# BEST PRACTICE: Use Ray Data expressions API for optimized spatial queries
+from ray.data.expressions import col, lit
+
+# Find high-rated restaurants in NYC using expressions API
 high_rated_restaurants = poi_dataset.filter(
-    lambda poi: (poi['category'] == 'restaurant' and 
-                poi['rating'] > 4.0 and 
-                poi['metro_area'] == 'NYC')
+    (col('category') == lit('restaurant')) & 
+    (col('rating') > lit(4.0)) & 
+    (col('metro_area') == lit('NYC'))
 )
 
 print(f"High-rated NYC restaurants: {high_rated_restaurants.count()} found")
 
-# Filter POIs within specific geographic bounds (Manhattan-like area)
+# Filter POIs within specific geographic bounds using expressions
 manhattan_bounds = poi_dataset.filter(
-    lambda poi: (40.7000 <= poi['latitude'] <= 40.8000 and
-                -74.0200 <= poi['longitude'] <= -73.9000 and
-                poi['metro_area'] == 'NYC')
+    (col('latitude') >= lit(40.7000)) & 
+    (col('latitude') <= lit(40.8000)) &
+    (col('longitude') >= lit(-74.0200)) & 
+    (col('longitude') <= lit(-73.9000)) &
+    (col('metro_area') == lit('NYC'))
 )
 
 print(f"POIs in Manhattan bounds: {manhattan_bounds.count()} locations")

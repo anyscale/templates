@@ -568,38 +568,36 @@ for ip_data in top_login_ips:
 ### 4. **Operational Metrics Analysis**
 
 ```python
-# Application performance analysis using native operations
-def calculate_app_metrics(batch):
-    """Calculate application performance metrics."""
-    import pandas as pd
-    
-    df = pd.DataFrame(batch)
-    if df.empty:
-        return []
-    
-    # Calculate metrics by event type
-    metrics = df.groupby('event_type').agg({
-        'payload_size': ['count', 'mean', 'max'],
-        'user': 'nunique',
-        'repo': 'nunique'
-    }).round(2)
-    
-    metrics.columns = ['_'.join(col).strip() for col in metrics.columns]
-    metrics = metrics.reset_index()
-    
-    # Add derived metrics
-    metrics['avg_payload_size'] = metrics['payload_size_mean']
-    metrics['unique_users'] = metrics['user_nunique']
-    metrics['unique_repos'] = metrics['repo_nunique']
-    
-    return metrics.to_dict('records')
+# OPTIMIZED: Use Ray Data native operations instead of pandas groupby
+from ray.data.aggregate import Count, Mean, Max
 
-# Apply metrics calculation
-app_metrics = parsed_app_logs.map_batches(calculate_app_metrics, batch_size=5000)
+# Use Ray Data native groupby operations for log metrics
+app_metrics_by_event = parsed_app_logs.groupby('event_type').aggregate(
+    Count(),  # Event count per type
+    Mean('payload_size'),  # Average payload size
+    Max('payload_size')    # Maximum payload size
+)
 
-# Use native operations for trend analysis
-push_events_hourly = parsed_app_logs.filter(lambda x: x['is_push']).groupby('hour').count()
-pr_events_hourly = parsed_app_logs.filter(lambda x: x['is_pr']).groupby('hour').count()
+print("Application metrics calculated using native Ray Data operations")
+
+# Use native operations with expressions API for trend analysis
+from ray.data.expressions import col, lit
+
+push_events_hourly = parsed_app_logs.filter(
+    col('is_push') == lit(True)
+).groupby('hour').aggregate(Count())
+
+pr_events_hourly = parsed_app_logs.filter(
+    col('is_pr') == lit(True)
+).groupby('hour').aggregate(Count())
+
+# Additional analysis with native operations
+high_activity_events = parsed_app_logs.filter(
+    col('payload_size') > lit(1000)
+).groupby('event_type').aggregate(
+    Count(),
+    Mean('payload_size')
+)
 
 print(f"Application metrics calculated: {app_metrics.count()} metric groups")
 ```

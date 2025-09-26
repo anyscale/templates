@@ -24,11 +24,11 @@ This collection contains comprehensive Ray Data templates that demonstrate distr
 - **[enterprise-data-catalog](./ray-data-enterprise-data-catalog/)**: Automated data discovery and metadata management
 - **[log-ingestion](./ray-data-log-ingestion/)**: Security monitoring and log analytics at scale
 
-## Template Standards
+## Template standards
 
-All templates in this collection meet enterprise-grade standards with complete learning paths that progress from 5-minute quick starts to production deployment guidance. Each template features real company examples with quantified business impact, demonstrating how organizations like Netflix, Uber, and Tesla leverage distributed data processing.
+All templates in this collection follow enterprise-grade standards with complete learning paths that progress from quick starts to production considerations. Each template includes real-world context to illustrate how organizations leverage distributed data processing.
 
-The templates provide production-ready code with comprehensive error handling and monitoring integration. Performance benchmarks with specific metrics and scalability data help you understand the computational benefits of distributed processing. Comprehensive troubleshooting sections address common issues, while action-oriented outcomes provide both immediate learning goals and long-term implementation strategies.
+Templates focus on clear, maintainable examples using Ray Data native operations. You will find troubleshooting sections for common issues and action-oriented outcomes that provide immediate learning goals and longer-term implementation guidance. Performance characteristics are discussed conceptually without numeric claims.
 
 ## Getting Started
 
@@ -72,9 +72,9 @@ ray.init(
 When adding new Ray Data templates:
 
 1. **Follow naming convention**: `ray-data-{use-case}-{domain}`
-2. **Include all required sections**: Prerequisites, Learning Objectives, Quick Start, etc.
-3. **Add real company examples**: Quantified business impact and industry context
-4. **Provide performance benchmarks**: Specific metrics and scalability data
+2. **Include required sections**: Prerequisites, learning objectives, quick start, etc.
+3. **Provide real-world context**: Describe industry relevance without quantified impact claims
+4. **Explain performance considerations**: Discuss configuration and patterns without numeric speedups or cost claims
 5. **Test thoroughly**: Ensure all code examples execute successfully
 
 ## Resources

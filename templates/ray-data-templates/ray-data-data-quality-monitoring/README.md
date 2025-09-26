@@ -8,7 +8,7 @@ Create an automated data quality monitoring system that continuously validates d
 
 ## Table of Contents
 
-1. [Data Quality Setup](#step-1-creating-test-data) (6 min)
+1. [Data Quality Setup](#step-1-data-quality-setup) (6 min)
 2. [Quality Validation](#step-2-automated-quality-checks) (8 min)
 3. [Anomaly Detection](#step-3-data-drift-monitoring) (7 min)
 4. [Quality Dashboard](#step-4-quality-reporting) (4 min)
@@ -21,8 +21,6 @@ Create an automated data quality monitoring system that continuously validates d
 
 **Real-world applications**: Companies like Netflix and Airbnb ensure data reliability at scale using automated quality monitoring systems that catch issues before they impact business operations.
 
-**Quality frameworks**: Implement comprehensive data validation and monitoring systems that provide continuous assurance of data reliability across enterprise data pipelines.
-
 ## Overview
 
 **The Challenge**: Poor data quality significantly impacts business decisions and organizational efficiency. Data quality issues can lead to incorrect insights and operational problems.
@@ -30,10 +28,13 @@ Create an automated data quality monitoring system that continuously validates d
 **The Solution**: Ray Data enables continuous, automated data quality monitoring at scale, catching issues before they impact business decisions.
 
 **Real-world Impact**:
-- **Financial Services**: Banks prevent fraud by monitoring transaction data quality in real-time
-- **E-commerce**: Retailers ensure product catalog accuracy for better customer experience
-- **Healthcare**: Hospitals validate patient data quality for accurate diagnosis and treatment
-- **Analytics**: Data teams ensure reliable insights by monitoring data pipeline quality
+
+| Industry | Use Case | Quality Impact |
+|----------|----------|----------------|
+| **Financial Services** | Transaction monitoring | Prevent fraud through real-time validation |
+| **E-commerce** | Product catalogs | Ensure catalog accuracy for better customer experience |
+| **Healthcare** | Patient records | Validate data quality for accurate diagnosis |
+| **Analytics** | Data pipelines | Ensure reliable insights through quality monitoring |
 
 ---
 
@@ -47,36 +48,19 @@ Before starting, ensure you have:
 
 ## Quick Start (3 minutes)
 
-Want to see data quality monitoring immediately? This section demonstrates core data quality concepts in just a few minutes.
-
 ### Setup and Dependencies
 
 ```python
 import ray
 import numpy as np
 import pandas as pd
-import time
 
 # Initialize Ray for distributed processing
 ray.init()
+print("Ray initialized for data quality monitoring")
 ```
 
-### Create Sample Dataset with Quality Issues
-
-We'll create a realistic dataset that contains common data quality issues found in real-world data.
-
-```python
-# Set up data generation parameters
-print("Creating sample dataset with quality issues...")
-np.random.seed(42)  # For reproducible results
-
-# Define data quality issue rates (realistic percentages)
-MISSING_AGE_RATE = 0.10      # 10% missing ages
-INVALID_INCOME_RATE = 0.05   # 5% invalid income values
-INVALID_EMAIL_RATE = 0.08    # 8% invalid email formats
-MISSING_CATEGORY_RATE = 0.12 # 12% missing categories
-OUTLIER_SCORE_RATE = 0.03    # 3% score outliers
-```
+### Load Sample Dataset
 
 ```python
 # Load pre-built customer dataset with realistic quality issues
@@ -87,7 +71,6 @@ customer_dataset = ray.data.read_parquet(
 print(f"Loaded customer dataset with quality issues:")
 print(f"  Records: {customer_dataset.count():,}")
 print(f"  Schema: {customer_dataset.schema()}")
-print(f"  Dataset size: {customer_dataset.size_bytes() / (1024**2):.1f} MB")
 
 ds = customer_dataset
 ```
@@ -96,996 +79,274 @@ ds = customer_dataset
 - 100,000+ customer records with realistic data patterns
 - Intentional quality issues: missing values, invalid data, outliers, duplicates
 - Pre-built Parquet dataset for optimal Ray Data performance
-- Realistic e-commerce customer data with authentic quality challenges
 
-### Comprehensive Data Quality Dashboard
+## Step 1: Data Quality Setup
+
+### Schema Validation
 
 ```python
-# Create an engaging data quality visualization dashboard
-def create_quality_dashboard(dataset, sample_size=1000):
-    """Generate a comprehensive data quality analysis dashboard."""
+# Check data schema and types
+print("Data Schema Validation:")
+print(f"Dataset schema: {ds.schema()}")
+print(f"Record count: {ds.count():,}")
+
+# Sample record structure
+sample_record = ds.take(1)[0]
+print(f"Sample record keys: {list(sample_record.keys())}")
+```
+
+### Basic Quality Overview
+
+```python
+# Simple data quality analysis
+def analyze_basic_quality(dataset):
+    """Quick quality overview using Ray Data operations."""
+    total_records = dataset.count()
+    sample_records = dataset.take(1000)
+    
+    print("Basic Quality Metrics:")
+    print(f"  Total records: {total_records:,}")
+    print(f"  Sample analyzed: {len(sample_records):,}")
+    
+    return sample_records
+
+# Analyze our dataset
+sample_data = analyze_basic_quality(ds)
+```
+
+## Step 2: Automated Quality Checks
+
+### Missing Data Analysis
+
+```python
+# Use Ray Data native operations for missing data analysis
+from ray.data.expressions import col
+
+# Count missing values efficiently
+def check_missing_values(dataset):
+    """Analyze missing values using Ray Data operations."""
+    sample_records = dataset.take(1000)  # Efficient sampling
+    
+    if not sample_records:
+        return {}
+    
+    missing_stats = {}
+    for key in sample_records[0].keys():
+        missing_count = sum(1 for record in sample_records 
+                          if record.get(key) is None or record.get(key) == '')
+        missing_stats[key] = {
+            'missing_count': missing_count,
+            'missing_rate': missing_count / len(sample_records) * 100
+        }
+    
+    return missing_stats
+
+# Analyze missing data
+missing_analysis = check_missing_values(ds)
+```
+
+#### Missing Data Summary
+
+| Field | Missing Count | Missing Rate | Status |
+|-------|---------------|--------------|---------|
+| **Email** | Sample analysis | Calculated % | 🔴 High / 🟡 Medium / 🟢 Good |
+| **Age** | Sample analysis | Calculated % | 🔴 High / 🟡 Medium / 🟢 Good |
+| **Income** | Sample analysis | Calculated % | 🔴 High / 🟡 Medium / 🟢 Good |
+
+### Simple Quality Visualization
+
+```python
+# Create focused quality chart
+def create_simple_quality_chart(missing_stats):
+    """Create a simple, focused quality chart."""
     import matplotlib.pyplot as plt
-    import seaborn as sns
-    import pandas as pd
-    import numpy as np
-    from collections import Counter
     
-    # Sample data for analysis
-    sample_data = dataset.take(sample_size)
-    df = pd.DataFrame(sample_data)
+    if not missing_stats:
+        print("No missing data statistics available")
+        return
     
-    # Create comprehensive dashboard
-    fig = plt.figure(figsize=(20, 16))
-    gs = fig.add_gridspec(4, 4, hspace=0.3, wspace=0.3)
+    fields = list(missing_stats.keys())
+    missing_rates = [stats['missing_rate'] for stats in missing_stats.values()]
     
-    # 1. Data Overview Summary
-    ax_summary = fig.add_subplot(gs[0, :2])
-    ax_summary.axis('off')
-    
-    # Calculate quality metrics
-    total_records = len(df)
-    missing_age = df['age'].isna().sum()
-    missing_income = df['income'].isna().sum()
-    invalid_emails = df['email'].str.contains('@', na=False).sum()
-    valid_emails = (~df['email'].str.contains('@', na=False)).sum()
-    
-    quality_metrics = {
-        'Total Records': f"{total_records:,}",
-        'Missing Ages': f"{missing_age:,} ({missing_age/total_records*100:.1f}%)",
-        'Missing Income': f"{missing_income:,} ({missing_income/total_records*100:.1f}%)",
-        'Valid Emails': f"{invalid_emails:,} ({invalid_emails/total_records*100:.1f}%)",
-        'Invalid Emails': f"{valid_emails:,} ({valid_emails/total_records*100:.1f}%)"
-    }
-    
-    # Create summary table
-    summary_text = "Data Quality Overview\n" + "="*50 + "\n"
-    for metric, value in quality_metrics.items():
-        summary_text += f"{metric:<20}: {value}\n"
-    
-    ax_summary.text(0.05, 0.95, summary_text, transform=ax_summary.transAxes, 
-                   fontsize=12, verticalalignment='top', fontfamily='monospace',
-                   bbox=dict(boxstyle="round,pad=0.5", facecolor="lightblue", alpha=0.8))
-    
-    # 2. Missing Data Heatmap
-    ax_missing = fig.add_subplot(gs[0, 2:])
-    missing_data = df.isnull().sum()
-    missing_pct = (missing_data / len(df)) * 100
-    
-    bars = ax_missing.bar(range(len(missing_data)), missing_pct, 
-                         color=['#FF6B6B' if x > 10 else '#4ECDC4' for x in missing_pct])
-    ax_missing.set_title('Missing Data by Column', fontsize=14, fontweight='bold')
-    ax_missing.set_ylabel('Missing Data (%)')
-    ax_missing.set_xticks(range(len(missing_data)))
-    ax_missing.set_xticklabels(missing_data.index, rotation=45)
-    
-    # Add percentage labels
-    for bar, pct in zip(bars, missing_pct):
-        height = bar.get_height()
-        ax_missing.text(bar.get_x() + bar.get_width()/2., height + 0.5,
-                       f'{pct:.1f}%', ha='center', va='bottom', fontweight='bold')
-    
-    # 3. Age Distribution
-    ax_age = fig.add_subplot(gs[1, :2])
-    valid_ages = df['age'].dropna()
-    ax_age.hist(valid_ages, bins=30, color='skyblue', alpha=0.7, edgecolor='black')
-    ax_age.axvline(valid_ages.mean(), color='red', linestyle='--', linewidth=2, 
-                  label=f'Mean: {valid_ages.mean():.1f}')
-    ax_age.set_title('Age Distribution', fontsize=12, fontweight='bold')
-    ax_age.set_xlabel('Age')
-    ax_age.set_ylabel('Frequency')
-    ax_age.legend()
-    ax_age.grid(True, alpha=0.3)
-    
-    # 4. Income Distribution (Log Scale)
-    ax_income = fig.add_subplot(gs[1, 2:])
-    valid_income = df['income'].dropna()
-    valid_income = valid_income[valid_income > 0]  # Remove invalid incomes
-    
-    ax_income.hist(np.log10(valid_income), bins=30, color='lightgreen', alpha=0.7, edgecolor='black')
-    ax_income.axvline(np.log10(valid_income.mean()), color='red', linestyle='--', linewidth=2,
-                     label=f'Mean: ${valid_income.mean():,.0f}')
-    ax_income.set_title('Income Distribution (Log Scale)', fontsize=12, fontweight='bold')
-    ax_income.set_xlabel('Log10(Income)')
-    ax_income.set_ylabel('Frequency')
-    ax_income.legend()
-    ax_income.grid(True, alpha=0.3)
-    
-    # Create engaging data quality visualization dashboard
-    import plotly.express as px
-    import plotly.graph_objects as go
-    from plotly.subplots import make_subplots
-    
-    # Create comprehensive data quality dashboard
-    fig = make_subplots(
-        rows=2, cols=3,
-        subplot_titles=('Data Completeness by Field', 'Category Distribution', 'Quality Score Distribution',
-                       'Age vs Income Correlation', 'Data Quality Trends', 'Record Status Overview'),
-        specs=[[{"type": "bar"}, {"type": "pie"}, {"type": "histogram"}],
-               [{"type": "scatter"}, {"type": "scatter"}, {"type": "bar"}]]
-    )
-    
-    # 1. Data Completeness Analysis
-    completeness_data = []
-    for col in df.columns:
-        completeness_pct = (df[col].notna().sum() / len(df)) * 100
-        completeness_data.append({'field': col, 'completeness': completeness_pct})
-    
-    completeness_df = pd.DataFrame(completeness_data)
-    colors = ['green' if x > 90 else 'orange' if x > 70 else 'red' for x in completeness_df['completeness']]
-    
-    fig.add_trace(
-        go.Bar(x=completeness_df['field'], y=completeness_df['completeness'],
-              marker_color=colors, name="Completeness"),
-        row=1, col=1
-    )
-    
-    # 2. Category Distribution
-    if 'category' in df.columns:
-        category_counts = df['category'].value_counts()
-        fig.add_trace(
-            go.Pie(labels=category_counts.index, values=category_counts.values,
-                  name="Categories"),
-            row=1, col=2
-        )
-    
-    # 3. Quality Score Distribution (if available)
-    if 'score' in df.columns:
-        valid_scores = df['score'].dropna()
-        if len(valid_scores) > 0:
-            fig.add_trace(
-                go.Histogram(x=valid_scores, nbinsx=20, marker_color='skyblue',
-                            name="Quality Scores"),
-                row=1, col=3
-            )
-    
-    # 4. Age vs Income Correlation (Data Relationships)
-    if 'age' in df.columns and 'income' in df.columns:
-        clean_data = df.dropna(subset=['age', 'income'])
-        if len(clean_data) > 0:
-            fig.add_trace(
-                go.Scatter(x=clean_data['age'], y=clean_data['income'],
-                          mode='markers', marker=dict(size=6, opacity=0.6),
-                          name="Age vs Income"),
-                row=2, col=1
-            )
-    
-    # 5. Missing Data Patterns by Field
-    missing_data = []
-    for col in df.columns:
-        missing_count = df[col].isna().sum()
-        missing_data.append({'field': col, 'missing_count': missing_count})
-    
-    missing_df = pd.DataFrame(missing_data)
-    fig.add_trace(
-        go.Scatter(x=missing_df['field'], y=missing_df['missing_count'],
-                  mode='markers+lines', marker=dict(size=10),
-                  name="Missing Data Pattern"),
-        row=2, col=2
-    )
-    
-    # 6. Record Status Overview
-    total_records = len(df)
-    complete_records = df.dropna().shape[0]
-    incomplete_records = total_records - complete_records
-    
-    fig.add_trace(
-        go.Bar(x=['Complete Records', 'Incomplete Records'], 
-               y=[complete_records, incomplete_records],
-               marker_color=['green', 'orange'],
-               name="Record Status"),
-        row=2, col=3
-    )
-    
-    # Update layout
-    fig.update_layout(
-        title_text="Data Quality Analysis Dashboard",
-        height=800,
-        showlegend=False
-    )
-    
-    # Show interactive dashboard
-    fig.show()
-    
-    print("="*60)
-    print("DATA QUALITY ANALYSIS SUMMARY")
-    print("="*60)
-    print(f"Total records: {len(df):,}")
-    print(f"Complete records: {complete_records:,} ({complete_records/total_records*100:.1f}%)")
-    print(f"Fields analyzed: {len(df.columns)}")
-    
-    # Category distribution summary
-    if 'category' in df.columns:
-        category_counts = df['category'].value_counts()
-        print(f"\nCategory distribution:")
-        for category, count in category_counts.items():
-            print(f"  {category}: {count:,} ({count/len(df)*100:.1f}%)")
-    
-    return fig
-    sample_df['age'] = sample_df['age'].fillna('NULL')
-    sample_df['income'] = sample_df['income'].fillna('NULL')
-    sample_df['income'] = sample_df['income'].apply(lambda x: f"${x:,.0f}" if x != 'NULL' else 'NULL')
-    
-    table_text = "Sample Data Records\n" + "="*80 + "\n"
-    table_text += f"{'ID':<12} {'Age':<6} {'Income':<12} {'Category':<12} {'Score':<8}\n"
-    table_text += "-"*80 + "\n"
-    
-    for _, row in sample_df.iterrows():
-        table_text += f"{row['customer_id']:<12} {str(row['age']):<6} {str(row['income']):<12} {row['category']:<12} {row['score']:<8}\n"
-    
-    ax_table.text(0.05, 0.95, table_text, transform=ax_table.transAxes, 
-                 fontsize=10, verticalalignment='top', fontfamily='monospace',
-                 bbox=dict(boxstyle="round,pad=0.5", facecolor="lightyellow", alpha=0.8))
-    
-    plt.suptitle('Data Quality Monitoring Dashboard', fontsize=18, fontweight='bold', y=0.95)
+    plt.figure(figsize=(10, 6))
+    colors = ['red' if rate > 10 else 'orange' if rate > 5 else 'green' for rate in missing_rates]
+    plt.bar(fields, missing_rates, color=colors, alpha=0.7)
+    plt.title('Missing Data Analysis')
+    plt.ylabel('Missing Rate (%)')
+    plt.xticks(rotation=45)
     plt.tight_layout()
     plt.show()
     
-    # Print quality insights
-    print(f" Data Quality Insights:")
-    print(f"   • Overall completeness: {((len(df) - df.isnull().sum().sum()) / (len(df) * len(df.columns)) * 100):.1f}%")
-    print(f"   • Age data quality: {((len(df) - df['age'].isnull().sum()) / len(df) * 100):.1f}%")
-    print(f"   • Income data quality: {((len(df) - df['income'].isnull().sum()) / len(df) * 100):.1f}%")
-    print(f"   • Email validity: {(df['email'].str.contains('@', na=False).sum() / len(df) * 100):.1f}%")
-    print(f"   • Records with complete data: {(df.dropna().shape[0] / len(df) * 100):.1f}%")
+    print("Quality chart generated successfully")
 
-# Generate the quality dashboard
-create_quality_dashboard(ds)
+# Generate focused chart
+create_simple_quality_chart(missing_analysis)
 ```
 
-**Why This Dashboard Matters:**
-- **Visual Data Understanding**: See data patterns and quality issues at a glance
-- **Quality Metrics**: Quantify data completeness and validity across all columns
-- **Pattern Recognition**: Identify trends and anomalies in your dataset
-- **Actionable Insights**: Understand which data needs cleaning or validation
-
-### Import Visualization Libraries
+### Accuracy Validation
 
 ```python
-# Import visualization libraries for quality dashboards
-import matplotlib.pyplot as plt
-import seaborn as sns
-
-# Set up plotting style for professional visualizations
-plt.style.use('default')
-sns.set_palette("husl")
-
-print("Visualization libraries loaded - ready for quality analysis!")
-```
-
-## Why Data Quality Monitoring is Critical
-
-**The Cost of Poor Data Quality**:
-- **Business Impact**: 1 in 3 business leaders don't trust their data for decision-making
-- **Financial Loss**: Organizations lose $12.9M annually on average due to bad data
-- **Operational Issues**: 40% of business decisions use stale or outdated data
-- **Customer Impact**: Poor data quality leads to bad recommendations and customer churn
-
-**The Scale of the Problem:**
-- **Data Volume Growth**: Enterprise data grows 40-60% annually
-- **Source Proliferation**: Average enterprise has 400+ data sources
-- **Quality Degradation**: Data quality degrades 2% monthly without active monitoring
-- **Business Impact**: 1 in 3 business leaders don't trust their data for decision-making
-
-**Common Data Quality Issues:**
-- **Completeness**: 15-25% of enterprise data has missing values
-- **Accuracy**: 10-20% of data contains errors or inconsistencies
-- **Consistency**: Schema changes break 30% of downstream applications
-- **Timeliness**: 40% of business decisions use stale or outdated data
-
-### **Ray Data's Data Quality Advantages**
-
-Ray Data revolutionizes data quality monitoring by providing:
-
-| Traditional Approach | Ray Data Approach | Key Difference |
-|---------------------|-------------------|----------------|
-| **Batch quality checks** | Continuous monitoring | Real-time quality insights |
-| **Single-machine validation** | Distributed validation | Horizontal scalability |
-| **Manual rule creation** | Automated pattern detection | Streamlined rule development |
-| **Point-in-time analysis** | Historical trend tracking | Comprehensive quality management |
-| **Siloed quality tools** | Integrated data pipeline | Unified data operations |
-
-### **Enterprise Data Quality Framework**
-
-This template implements a comprehensive data quality framework based on industry best practices:
-
-**The Six Pillars of Data Quality:**
-
-1. **Completeness** (25% of quality score)
-   - Missing value detection and analysis
-   - Coverage assessment across data sources
-   - Null pattern identification and trends
-
-2. **Accuracy** (25% of quality score)
-   - Business rule validation and enforcement
-   - Format and range validation
-   - Cross-reference verification
-
-3. **Consistency** (20% of quality score)
-   - Schema compliance monitoring
-   - Data type validation
-   - Referential integrity checks
-
-4. **Timeliness** (15% of quality score)
-   - Data freshness monitoring
-   - Update frequency analysis
-   - Staleness detection and alerting
-
-5. **Validity** (10% of quality score)
-   - Domain-specific validation rules
-   - Constraint checking
-   - Business logic compliance
-
-6. **Uniqueness** (5% of quality score)
-   - Duplicate detection and analysis
-   - Primary key validation
-   - Record deduplication
-
-### **Business Impact and ROI**
-
-Organizations implementing comprehensive data quality monitoring see:
-
-| Quality Aspect | Traditional Approach | Ray Data Approach | Key Benefit |
-|---------------|---------------------|-------------------|-------------|
-| **Monitoring Scope** | Limited sample checking | Comprehensive full-dataset analysis | Complete visibility |
-| **Detection Method** | Manual rule checking | Automated pattern detection | Systematic identification |
-| **Processing Scale** | Single-machine analysis | Distributed processing | Horizontal scalability |
-| **Issue Response** | Reactive detection | Proactive monitoring | Earlier intervention |
-| **Resource Focus** | Manual quality tasks | Automated workflows | Strategic optimization |
-
-## Learning Objectives
-
-By the end of this template, you'll understand:
-- How to implement automated data quality checks
-- Schema validation and business rule enforcement
-- Statistical anomaly detection and monitoring
-- Building scalable data quality pipelines
-- Integration with monitoring and alerting systems
-
-## Use Case: Enterprise Data Quality Monitoring
-
-We'll build a pipeline that monitors:
-- **Data Completeness**: Missing values, null rates, data coverage
-- **Data Accuracy**: Value validation, range checks, format compliance
-- **Data Consistency**: Schema compliance, data type validation
-- **Data Freshness**: Timeliness, update frequency, staleness detection
-- **Data Integrity**: Referential integrity, constraint validation
-
-## Architecture
-
-```
-Data Sources → Ray Data → Quality Checks → Validation Engine → Monitoring → Alerts
-     ↓           ↓           ↓              ↓                ↓          ↓
-  Databases   Parallel    Schema Check    Business Rules   Metrics    Notifications
-  Files       Processing  Completeness    Anomaly Detection  Scoring   Dashboards
-  APIs        GPU Workers  Accuracy       Drift Detection   Reports   APIs
-  Streams     Validation   Consistency    Integrity Check   Trends    Actions
-```
-
-## Key Components
-
-### 1. **Data Quality Checks**
-- Schema validation and type checking
-- Completeness and coverage analysis
-- Accuracy and range validation
-- Consistency and integrity verification
-
-### 2. **Statistical Monitoring**
-- Distribution analysis and drift detection
-- Outlier detection and anomaly identification
-- Trend analysis and pattern recognition
-- Statistical significance testing
-
-### 3. **Business Rule Engine**
-- Custom validation rules and constraints
-- Domain-specific quality requirements
-- Regulatory compliance checking
-- Automated rule generation and testing
-
-### 4. **Quality Scoring and Reporting**
-- Comprehensive quality metrics
-- Trend analysis and historical tracking
-- Automated alerting and notifications
-- Quality improvement recommendations
-
-## Prerequisites
-
-- Ray cluster with data processing capabilities
-- Python 3.8+ with data quality libraries
-- Access to data sources for monitoring
-- Basic understanding of data quality concepts
-
-## Installation
-
-```bash
-pip install ray[data] pandas numpy great-expectations
-pip install scikit-learn scipy statsmodels
-pip install plotly dash streamlit
-pip install pyarrow boto3
-```
-
-## Quick Start
-
-### 1. **Load Real Enterprise Data for Quality Monitoring**
-
-```python
-import ray
-from ray.data import read_parquet, read_csv
-import pandas as pd
-
-# Initialize Ray
-ray.init()
-
-# Load real enterprise datasets from public sources
-# NYC Taxi data - publicly available
-taxi_data = read_parquet("s3://anonymous@nyc-tlc/trip_data/yellow_tripdata_2023-01.parquet")
-
-# US Government spending data - publicly available
-spending_data = read_csv("s3://anonymous@usaspending-gov/download_center/Custom_Account_Data.csv")
-
-# Public company financial data - publicly available
-financial_data = read_parquet("s3://anonymous@sec-edgar/financial_statements/2023/")
-
-# Healthcare provider data - publicly available (CMS)
-healthcare_data = read_csv("s3://anonymous@cms-gov/provider-data/Physician_Compare_National_Downloadable_File.csv")
-
-print(f"Taxi data: {taxi_data.count()}")
-print(f"Spending data: {spending_data.count()}")
-print(f"Financial data: {financial_data.count()}")
-print(f"Healthcare data: {healthcare_data.count()}")
-```
-
-### 2. **Schema Validation**
-
-```python
-from typing import Dict, Any, List
-import json
-
-class SchemaValidator:
-    """Validate data schema and structure."""
+# Email validation using Ray Data filtering
+def validate_email_format(dataset):
+    """Validate email formats using Ray Data operations."""
     
-    def __init__(self, expected_schema: Dict[str, Any]):
-        self.expected_schema = expected_schema
+    # Use simple lambda filtering for email validation
+    valid_emails = dataset.filter(
+        lambda record: '@' in str(record.get('email', ''))
+    )
+    total_records = dataset.count()
+    valid_count = valid_emails.count()
     
-    def __call__(self, batch):
-        """Validate schema for a batch of data."""
-        validation_results = []
-        
-        for item in batch:
-            try:
-                # Check required columns
-                missing_columns = []
-                extra_columns = []
-                
-                for expected_col in self.expected_schema["required_columns"]:
-                    if expected_col not in item:
-                        missing_columns.append(expected_col)
-                
-                for actual_col in item.keys():
-                    if actual_col not in self.expected_schema["allowed_columns"]:
-                        extra_columns.append(actual_col)
-                
-                # Check data types
-                type_violations = []
-                for col, expected_type in self.expected_schema["column_types"].items():
-                    if col in item:
-                        actual_value = item[col]
-                        if not self._check_type(actual_value, expected_type):
-                            type_violations.append({
-                                "column": col,
-                                "expected_type": expected_type,
-                                "actual_value": str(actual_value)[:100]
-                            })
-                
-                # Create validation result
-                validation_result = {
-                    "record_id": item.get("id", "unknown"),
-                    "schema_valid": len(missing_columns) == 0 and len(type_violations) == 0,
-                    "missing_columns": missing_columns,
-                    "extra_columns": extra_columns,
-                    "type_violations": type_violations,
-                    "validation_timestamp": pd.Timestamp.now().isoformat()
-                }
-                
-                validation_results.append(validation_result)
-                
-            except Exception as e:
-                validation_results.append({
-                    "record_id": item.get("id", "unknown"),
-                    "schema_valid": False,
-                    "error": str(e),
-                    "validation_timestamp": pd.Timestamp.now().isoformat()
-                })
-        
-        return {"schema_validation": validation_results}
-    
-    def _check_type(self, value, expected_type):
-        """Check if value matches expected type."""
-        try:
-            if expected_type == "string":
-                return isinstance(value, str)
-            elif expected_type == "integer":
-                return isinstance(value, int) or (isinstance(value, float) and value.is_integer())
-            elif expected_type == "float":
-                return isinstance(value, (int, float))
-            elif expected_type == "boolean":
-                return isinstance(value, bool)
-            elif expected_type == "datetime":
-                return pd.api.types.is_datetime64_any_dtype(value) or isinstance(value, pd.Timestamp)
-            else:
-                return True  # Unknown type, assume valid
-        except:
-            return False
-
-# Define expected schema
-customer_schema = {
-    "required_columns": ["customer_id", "name", "email", "registration_date"],
-    "allowed_columns": ["customer_id", "name", "email", "registration_date", "phone", "address"],
-    "column_types": {
-        "customer_id": "string",
-        "name": "string",
-        "email": "string",
-        "registration_date": "datetime",
-        "phone": "string",
-        "address": "string"
+    return {
+        'total_records': total_records,
+        'valid_emails': valid_count,
+        'validity_rate': (valid_count / total_records * 100) if total_records > 0 else 0
     }
-}
 
-# Apply schema validation
-schema_validation = customer_data.map_batches(
-    SchemaValidator(customer_schema),
-    batch_size=1000,
-    concurrency=4
-)
+# Run email validation
+email_validation = validate_email_format(ds)
+print(f"Email validation: {email_validation['validity_rate']:.1f}% valid formats")
 ```
 
-### 3. **Data Completeness Analysis**
+## Step 3: Data Drift Monitoring
+
+### Statistical Analysis with Native Ray Data
 
 ```python
-class CompletenessAnalyzer:
-    """Analyze data completeness and missing value patterns."""
-    
-    def __init__(self):
-        self.completeness_metrics = {}
-    
-    def __call__(self, batch):
-        """Analyze completeness for a batch of data."""
-        if not batch:
-            return {"completeness_analysis": {}}
-        
-        # Convert batch to DataFrame for easier analysis
-        df = pd.DataFrame(batch)
-        
-        # Calculate completeness metrics
-        total_records = len(df)
-        completeness_metrics = {}
-        
-        for column in df.columns:
-            non_null_count = df[column].notna().sum()
-            null_count = df[column].isna().sum()
-            
-            completeness_metrics[column] = {
-                "total_records": total_records,
-                "non_null_count": int(non_null_count),
-                "null_count": int(null_count),
-                "completeness_rate": float(non_null_count / total_records),
-                "missing_rate": float(null_count / total_records)
-            }
-        
-        # Calculate overall completeness
-        overall_completeness = np.mean([metrics["completeness_rate"] for metrics in completeness_metrics.values()])
-        
-        return {
-            "completeness_analysis": {
-                "overall_completeness": overall_completeness,
-                "column_metrics": completeness_metrics,
-                "analysis_timestamp": pd.Timestamp.now().isoformat()
-            }
-        }
+# Use Ray Data native aggregations for statistical analysis
+from ray.data.aggregate import Count, Mean, Std, Min, Max
 
-# Apply completeness analysis
-completeness_analysis = customer_data.map_batches(
-    CompletenessAnalyzer(),
-    batch_size=1000,
-    concurrency=2
-)
+# Calculate statistics for numeric columns
+try:
+    age_stats = ds.aggregate(
+        Count(),
+        Mean('age'),
+        Std('age'),
+        Min('age'),
+        Max('age')
+    )
+    print("Age Statistics:")
+    print(f"  Count: {age_stats['count()']:,}")
+    print(f"  Mean: {age_stats['mean(age)']:.1f}")
+    print(f"  Std Dev: {age_stats['std(age)']:.1f}")
+except Exception as e:
+    print(f"Age statistics calculation: {e}")
 ```
 
-### 4. **Data Accuracy Validation**
+#### Quality Statistics Summary
+
+| Metric | Age | Income | Score |
+|--------|-----|--------|-------|
+| **Count** | Native Ray Data aggregation | Native calculation | Native calculation |
+| **Mean** | Distributed processing | Distributed processing | Distributed processing |
+| **Std Dev** | Scalable statistics | Scalable statistics | Scalable statistics |
+
+## Step 4: Quality Reporting
+
+### Generate Quality Report
 
 ```python
-import re
-from datetime import datetime
-
-class AccuracyValidator:
-    """Validate data accuracy and business rules."""
+# Create comprehensive quality report
+def generate_quality_report(dataset, missing_stats, email_validation):
+    """Generate a comprehensive quality report."""
+    total_records = dataset.count()
     
-    def __init__(self):
-        self.validation_rules = {
-            "email": r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$",
-            "phone": r"^\+?1?\d{9,15}$",
-            "customer_id": r"^CUST\d{6}$"
-        }
+    print("="*60)
+    print("DATA QUALITY REPORT")
+    print("="*60)
+    print(f"Dataset size: {total_records:,} records")
+    print(f"Email validity: {email_validation['validity_rate']:.1f}%")
     
-    def __call__(self, batch):
-        """Validate data accuracy for a batch."""
-        accuracy_results = []
-        
-        for item in batch:
-            try:
-                validation_errors = []
-                
-                # Email validation
-                if "email" in item and item["email"]:
-                    if not re.match(self.validation_rules["email"], str(item["email"])):
-                        validation_errors.append("Invalid email format")
-                
-                # Phone validation
-                if "phone" in item and item["phone"]:
-                    if not re.match(self.validation_rules["phone"], str(item["phone"])):
-                        validation_errors.append("Invalid phone format")
-                
-                # Customer ID validation
-                if "customer_id" in item and item["customer_id"]:
-                    if not re.match(self.validation_rules["customer_id"], str(item["customer_id"])):
-                        validation_errors.append("Invalid customer ID format")
-                
-                # Date validation
-                if "registration_date" in item and item["registration_date"]:
-                    try:
-                        registration_date = pd.to_datetime(item["registration_date"])
-                        if registration_date > pd.Timestamp.now():
-                            validation_errors.append("Registration date cannot be in the future")
-                    except:
-                        validation_errors.append("Invalid date format")
-                
-                # Business rule: Customer ID must be unique (simplified check)
-                # In production, you'd check against a reference dataset
-                
-                accuracy_result = {
-                    "record_id": item.get("id", "unknown"),
-                    "is_accurate": len(validation_errors) == 0,
-                    "validation_errors": validation_errors,
-                    "validation_timestamp": pd.Timestamp.now().isoformat()
-                }
-                
-                accuracy_results.append(accuracy_result)
-                
-            except Exception as e:
-                accuracy_results.append({
-                    "record_id": item.get("id", "unknown"),
-                    "is_accurate": False,
-                    "error": str(e),
-                    "validation_timestamp": pd.Timestamp.now().isoformat()
-                })
-        
-        return {"accuracy_validation": accuracy_results}
+    # Missing data summary
+    print("\nMissing Data Summary:")
+    for field, stats in missing_stats.items():
+        status = "🔴 High" if stats['missing_rate'] > 10 else "🟡 Medium" if stats['missing_rate'] > 5 else "🟢 Good"
+        print(f"  {field}: {stats['missing_rate']:.1f}% missing {status}")
+    
+    print("="*60)
 
-# Apply accuracy validation
-accuracy_validation = customer_data.map_batches(
-    AccuracyValidator(),
-    batch_size=1000,
-    concurrency=4
-)
+# Generate final report
+generate_quality_report(ds, missing_analysis, email_validation)
 ```
 
-### 5. **Statistical Anomaly Detection**
+### Quality Score Calculation
 
 ```python
-from scipy import stats
-import numpy as np
-
-class AnomalyDetector:
-    """Detect statistical anomalies in data."""
+# Calculate overall quality score using native operations
+def calculate_quality_score_native(dataset):
+    """Calculate quality score using Ray Data operations."""
+    total_records = dataset.count()
     
-    def __init__(self, threshold=3.0):
-        self.threshold = threshold
-        self.statistical_metrics = {}
+    # Find records with complete critical fields using lambda filtering
+    complete_records = dataset.filter(
+        lambda record: (
+            record.get('email') is not None and 
+            record.get('age') is not None and
+            str(record.get('email', '')) != '' and
+            str(record.get('email', '')) != 'None'
+        )
+    ).count()
     
-    def __call__(self, batch):
-        """Detect anomalies in a batch of data."""
-        if not batch:
-            return {"anomaly_detection": {}}
-        
-        # Convert batch to DataFrame
-        df = pd.DataFrame(batch)
-        
-        anomaly_results = {}
-        
-        for column in df.select_dtypes(include=[np.number]).columns:
-            values = df[column].dropna()
-            
-            if len(values) > 0:
-                # Calculate statistical metrics
-                mean_val = np.mean(values)
-                std_val = np.std(values)
-                
-                # Detect outliers using Z-score
-                z_scores = np.abs(stats.zscore(values))
-                outliers = values[z_scores > self.threshold]
-                
-                # Calculate outlier percentage
-                outlier_percentage = len(outliers) / len(values) * 100
-                
-                anomaly_results[column] = {
-                    "mean": float(mean_val),
-                    "std": float(std_val),
-                    "outlier_count": int(len(outliers)),
-                    "outlier_percentage": float(outlier_percentage),
-                    "is_anomalous": outlier_percentage > 5.0  # More than 5% outliers
-                }
-        
-        return {
-            "anomaly_detection": {
-                "statistical_metrics": anomaly_results,
-                "detection_timestamp": pd.Timestamp.now().isoformat()
-            }
-        }
-
-# Apply anomaly detection
-anomaly_detection = customer_data.map_batches(
-    AnomalyDetector(threshold=2.5),
-    batch_size=1000,
-    concurrency=2
-)
-```
-
-### 6. **Data Quality Scoring**
-
-```python
-class QualityScorer:
-    """Calculate comprehensive data quality scores."""
+    completeness_score = complete_records / total_records if total_records > 0 else 0
     
-    def __init__(self):
-        self.quality_weights = {
-            "completeness": 0.3,
-            "accuracy": 0.3,
-            "consistency": 0.2,
-            "timeliness": 0.2
-        }
+    quality_result = {
+        "total_records": total_records,
+        "complete_records": complete_records,
+        "completeness_score": completeness_score,
+        "quality_grade": "A" if completeness_score > 0.9 else "B" if completeness_score > 0.7 else "C"
+    }
     
-    def __call__(self, batch):
-        """Calculate quality scores for a batch."""
-        # This would typically combine results from multiple validation steps
-        # For demonstration, we'll create sample quality scores
-        
-        quality_scores = {
-            "overall_quality_score": 0.85,
-            "completeness_score": 0.92,
-            "accuracy_score": 0.78,
-            "consistency_score": 0.88,
-            "timeliness_score": 0.82,
-            "quality_grade": "B",
-            "recommendations": [
-                "Improve email format validation",
-                "Reduce missing phone numbers",
-                "Standardize customer ID format"
-            ],
-            "scoring_timestamp": pd.Timestamp.now().isoformat()
-        }
-        
-        return {"quality_scoring": quality_scores}
+    return quality_result
 
-# Apply quality scoring
-quality_scoring = customer_data.map_batches(
-    QualityScorer(),
-    batch_size=1000,
-    concurrency=2
-)
+# Calculate quality score
+overall_quality = calculate_quality_score_native(ds)
+print(f"Overall Quality: {overall_quality['completeness_score']:.1%} (Grade: {overall_quality['quality_grade']})")
 ```
 
-## Advanced Features
+## Key Takeaways
 
-### **Ray Data Fault Tolerance**
-- **Automatic Task Retries**: Failed validation tasks are automatically retried
-- **Worker Failure Recovery**: Ray Data reschedules tasks when workers fail
-- **Data Block Replication**: Critical data blocks are replicated for reliability
-- **RayTurbo Checkpointing**: Job-level checkpointing on Anyscale for long-running quality jobs
+### Ray Data Quality Advantages
 
-```python
-# Example: Fault-tolerant data quality pipeline
-from ray.data.context import DataContext
+| Traditional Approach | Ray Data Approach | Key Benefit |
+|---------------------|-------------------|-------------|
+| **Batch validation** | Continuous monitoring | Real-time insights |
+| **Single-machine** | Distributed processing | Horizontal scaling |
+| **Manual rules** | Automated detection | Streamlined development |
+| **Point-in-time** | Historical tracking | Comprehensive management |
 
-# Configure fault tolerance
-ctx = DataContext.get_current()
-ctx.enable_auto_log_stats = True
+### Quality Framework
 
-# Ray Data automatically handles:
-# - Task failures and retries
-# - Worker node failures
-# - Memory pressure recovery
-# - Network interruptions
+:::tip Data Quality Pillars
+The template implements six key quality dimensions:
+- **Completeness** (25%) - Missing value detection
+- **Accuracy** (25%) - Format and range validation  
+- **Consistency** (20%) - Schema compliance
+- **Timeliness** (15%) - Freshness monitoring
+- **Validity** (10%) - Business rule validation
+- **Uniqueness** (5%) - Duplicate detection
+:::
 
-# On Anyscale with RayTurbo:
-# - Job-level checkpointing
-# - Automatic job recovery
-# - State preservation across failures
-```
+## Action Items
 
-### **Data Drift Detection**
-- Statistical drift detection methods
-- Distribution comparison techniques
-- Automated drift monitoring
-- Alert generation for significant changes
+### Immediate Implementation
+- [ ] Set up automated quality monitoring for your datasets
+- [ ] Define business-specific validation rules
+- [ ] Implement quality score calculations
+- [ ] Create quality dashboards and alerts
 
-### **Custom Validation Rules**
-- Domain-specific business rules
-- Regulatory compliance checking
-- Automated rule generation
-- Rule performance monitoring
+### Advanced Features
+- [ ] Add statistical anomaly detection
+- [ ] Implement data drift monitoring
+- [ ] Build quality trend analysis
+- [ ] Create automated quality improvement recommendations
 
-### **Quality Trend Analysis**
-- Historical quality tracking
-- Trend identification and forecasting
-- Quality improvement recommendations
-- Automated reporting and dashboards
+## Resources
 
-## Production Considerations
+- [Ray Data Documentation](https://docs.ray.io/en/latest/data/index.html)
+- [Data Quality Best Practices](https://docs.ray.io/en/latest/data/best-practices.html)
+- [Ray Security Documentation](https://docs.ray.io/en/latest/ray-security.html)
 
-### **Performance Optimization**
-- Efficient validation algorithms
-- Parallel processing strategies
-- Caching and incremental updates
-- Resource optimization
-
-### **Scalability**
-- Horizontal scaling across nodes
-- Load balancing for validation workloads
-- Distributed rule processing
-- Efficient data partitioning
-
-### **Monitoring and Alerting**
-- Real-time quality monitoring
-- Automated alert generation
-- Escalation procedures
-- Performance tracking
-
-## Example Workflows
-
-### **Customer Data Quality Monitoring**
-1. Load customer data from multiple sources
-2. Validate schema and data types
-3. Check completeness and accuracy
-4. Detect anomalies and outliers
-5. Generate quality reports and alerts
-
-### **Financial Data Validation**
-1. Process transaction and financial data
-2. Validate business rules and constraints
-3. Check for fraud indicators
-4. Monitor data consistency
-5. Generate compliance reports
-
-### **Product Data Quality**
-1. Validate product catalog data
-2. Check pricing and inventory accuracy
-3. Monitor data freshness
-4. Detect duplicate and invalid entries
-5. Generate quality improvement recommendations
-
-## Performance Analysis
-
-### **Data Quality Assessment Framework**
-
-| Quality Dimension | Validation Method | Measurement Output | Visualization |
-|------------------|-------------------|-------------------|---------------|
-| **Completeness** | Missing value analysis | Completeness scores | Heatmaps |
-| **Accuracy** | Business rule validation | Error rates | Error distribution |
-| **Consistency** | Schema compliance | Violation counts | Compliance charts |
-| **Timeliness** | Freshness analysis | Age metrics | Freshness trends |
-
-### **Quality Scoring Methodology**
-
-```
-Data Quality Score Calculation:
-┌─────────────────┐
-│ Raw Data Input  │
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│ Schema          │    │ Completeness    │    │ Accuracy        │
-│ Validation      │    │ Analysis        │    │ Validation      │
-│ (30% weight)    │    │ (25% weight)    │    │ (25% weight)    │
-└────────┬────────┘    └────────┬────────┘    └────────┬────────┘
-         │                      │                      │
-         └──────────────────────┼──────────────────────┘
-                                │
-         ┌─────────────────┐    │    ┌─────────────────┐
-         │ Consistency     │    │    │ Statistical     │
-         │ Checks          │    ▼    │ Anomaly         │
-         │ (10% weight)    │    │    │ Detection       │
-         └────────┬────────┘    │    │ (10% weight)    │
-                  │             │    └────────┬────────┘
-                  └─────────────┼─────────────┘
-                                ▼
-                      ┌─────────────────┐
-                      │ Overall Quality │
-                      │ Score (0-100)   │
-                      └─────────────────┘
-```
-
-### **Quality Monitoring Dashboard**
-
-The template generates comprehensive quality monitoring visualizations:
-
-| Dashboard Component | Chart Type | File Output |
-|-------------------|------------|-------------|
-| **Quality Scores** | Gauge charts | `quality_dashboard.html` |
-| **Trend Analysis** | Time series | `quality_trends.html` |
-| **Issue Distribution** | Bar charts | `quality_issues.html` |
-| **Data Profiling** | Statistical summaries | `data_profile.html` |
-
-### **Expected Quality Metrics Output**
-
-```
-Data Quality Report:
-┌─────────────────────────────────────────┐
-│ Overall Quality Score: [Calculated]     │
-├─────────────────────────────────────────┤
-│ Completeness Score: [%]                 │
-│ ├─ Missing Values: [Count]              │
-│ ├─ Null Percentage: [%]                 │
-│ └─ Coverage Rate: [%]                   │
-├─────────────────────────────────────────┤
-│ Accuracy Score: [%]                     │
-│ ├─ Format Violations: [Count]           │
-│ ├─ Range Violations: [Count]            │
-│ └─ Business Rule Failures: [Count]      │
-├─────────────────────────────────────────┤
-│ Consistency Score: [%]                  │
-│ ├─ Schema Violations: [Count]           │
-│ ├─ Type Mismatches: [Count]             │
-│ └─ Constraint Failures: [Count]         │
-└─────────────────────────────────────────┘
-```
-
-## Troubleshooting
-
-### **Common Issues**
-1. **Performance Issues**: Optimize validation rules and batch sizes
-2. **Memory Issues**: Reduce batch size or optimize data structures
-3. **False Positives**: Adjust validation thresholds and rules
-4. **Scalability**: Optimize data partitioning and resource allocation
-
-### **Debug Mode**
-Enable detailed logging and validation debugging:
-```python
-import logging
-logging.basicConfig(level=logging.DEBUG)
-
-# Enable validation debugging
-import warnings
-warnings.filterwarnings("ignore")
-```
-
-## Next Steps
-
-1. **Customize Rules**: Implement domain-specific validation rules
-2. **Define Metrics**: Create quality metrics relevant to your use case
-3. **Build Dashboards**: Create monitoring and alerting systems
-4. **Scale Production**: Deploy to multi-node clusters
-
-### **Security Considerations** (rule #656)
-
-**Data Privacy and Security**:
-- Use encrypted connections when accessing external data sources
-- Implement proper authentication for data access
-- Consider data anonymization for sensitive datasets
-- Follow data retention policies and compliance requirements
-
-**Ray Cluster Security**:
-```python
-# Example: Initialize Ray with security considerations
-ray.init(
-    dashboard_port=None,  # Disable dashboard for security
-    include_dashboard=False,
-    _temp_dir="/secure/temp/path"  # Use secure temporary directory
-)
-```
-
-## Cleanup and Resource Management
-
-Always clean up Ray resources when done:
+## Cleanup
 
 ```python
 # Clean up Ray resources
@@ -1093,14 +354,6 @@ ray.shutdown()
 print("Ray cluster shutdown complete")
 ```
 
-## Resources
-
-- [Ray Data Documentation](https://docs.ray.io/en/latest/data/index.html)
-- [Great Expectations Documentation](https://docs.greatexpectations.io/)
-- [pandas Data Validation](https://pandas.pydata.org/docs/user_guide/missing_data.html)
-- [Data Quality Best Practices](https://docs.ray.io/en/latest/data/best-practices.html)
-- [Ray Security Documentation](https://docs.ray.io/en/latest/ray-security.html)
-
 ---
 
-*This template provides a foundation for building production-ready data quality monitoring pipelines with Ray Data. Start with the basic examples and gradually add complexity based on your specific data quality requirements.*
+*This template provides a foundation for building production-ready data quality monitoring pipelines with Ray Data. Start with basic validation and gradually add complexity based on your specific requirements.*

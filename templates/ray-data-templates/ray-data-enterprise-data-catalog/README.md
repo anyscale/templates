@@ -87,18 +87,18 @@ pip install matplotlib seaborn plotly
 
 ## Why Data Catalogs are Essential
 
-**The Data Discovery Problem**:
-- **Time Waste**: Data scientists spend 80% of time finding and preparing data
-- **Duplicate Work**: Teams recreate datasets that already exist
-- **Missed Opportunities**: 60% of valuable datasets remain undiscovered
-- **Compliance Risk**: Unknown data sources create regulatory risks
+**The data discovery problem**:
+- **Time waste**: Significant effort goes to finding and preparing data
+- **Duplicate work**: Teams can recreate datasets that already exist
+- **Missed opportunities**: Valuable datasets may remain undiscovered
+- **Compliance risk**: Unknown data sources increase regulatory risks
 
-**The Enterprise Data Chaos:**
-- **Data Sprawl**: Average enterprise has 10,000+ datasets across 200+ systems
-- **Discovery Time**: Data scientists spend 80% of their time finding and preparing data
-- **Duplicate Efforts**: Teams recreate datasets that already exist elsewhere
-- **Compliance Risk**: Unknown data sources create regulatory and privacy risks
-- **Knowledge Loss**: Institutional knowledge about data sources leaves with employees
+**Enterprise data challenges:**
+- **Data sprawl** across many systems
+- **Long discovery time** without central cataloging
+- **Duplicate efforts** due to poor visibility
+- **Compliance and privacy risks** without proper governance
+- **Knowledge loss** when context is not documented
 
 **The Cost of Poor Data Discovery:**
 - **Productivity Loss**: $2.5M annually per 1000 employees due to data search time
@@ -147,17 +147,15 @@ This template implements a comprehensive data catalog system with:
    - Recommendation engine for related datasets
    - Faceted search by domain, quality, and usage
 
-### **Business Value and Impact**
+### **Business value and impact**
 
-Organizations implementing comprehensive data catalogs achieve:
+Adopting a comprehensive data catalog can:
 
-| Business Metric | Before Data Catalog | After Data Catalog | Improvement |
-|----------------|-------------------|-------------------|-------------|
-| **Time to Find Data** | 2-4 weeks | 2-4 hours | Much faster |
-| **Data Reuse Rate** | 20% | 70% | Significant increase |
-| **Compliance Readiness** | 40% | 95% | Major improvement |
-| **Data Engineer Productivity** | 30% on data discovery | 80% on value creation | Much more productive |
-| **Duplicate Data Processing** | Frequently | Rarely | Reduced duplication |
+- Reduce time to find data through centralized discovery
+- Increase data reuse with searchable, documented datasets
+- Improve compliance readiness with lineage and governance metadata
+- Shift engineering time to value creation instead of discovery
+- Reduce duplicate data processing by improving visibility
 
 ### **What You'll Build**
 
@@ -260,28 +258,24 @@ pip install elasticsearch opensearch-py
 
 ## Quick Start
 
-### 1. **Load Data from Unity Catalog and Snowflake**
+### 1. **Load data from common sources**
 
 ```python
 import ray
-from ray.data import read_unity_catalog, read_snowflake, read_parquet, read_csv
+from ray.data import read_parquet, read_csv
 
 # Ray cluster is already running on Anyscale
 print(f'Ray cluster resources: {ray.cluster_resources()}')
 
-# Load data from Unity Catalog (Databricks)
-unity_catalog_data = ray.data.read_parquet(
-    "s3://ray-benchmark-data/unity-catalog/customer_data.parquet"
+# Load data from Parquet and CSV sources
+customer_data = ray.data.read_parquet(
+    "s3://ray-benchmark-data/catalog/customer_data.parquet"
 )
-print(f"Unity Catalog data: {unity_catalog_data.count()} records")
+print(f"Customer data: {customer_data.count()} records")
 
-# Load data from Snowflake
-snowflake_data = ray.data.read_parquet(
-    "s3://ray-benchmark-data/snowflake/customer_transactions.parquet"
-)
-print(f"Snowflake data: {snowflake_data.count()} records")
-
-# Load from traditional sources as fallback
+parquet_data = read_parquet("s3://anonymous@nyc-tlc/trip_data/yellow_tripdata_2023-01.parquet")
+csv_data = read_csv("s3://anonymous@uscensus-grp/acs/2021_5yr_data.csv")
+##
 parquet_data = read_parquet("s3://anonymous@nyc-tlc/trip_data/yellow_tripdata_2023-01.parquet")
 csv_data = read_csv("s3://anonymous@uscensus-grp/acs/2021_5yr_data.csv")
 
@@ -437,11 +431,11 @@ class SchemaAnalyzer:
         
         return {"schema_analysis": schema_analysis}
 
-# Apply schema analysis
+# Apply schema analysis with optimized parameters
 schema_analysis = ray.data.from_items([{"data": sample_data}]).map_batches(
     SchemaAnalyzer(),
-    batch_size=100,
-    concurrency=2
+    batch_size=500,   # Larger batch size for better efficiency
+    concurrency=4     # Increased concurrency for parallel processing
 )
 ```
 

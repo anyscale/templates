@@ -29,11 +29,11 @@ Create a scalable text processing pipeline that analyzes thousands of text docum
 
 **The Solution**: Ray Data distributes text processing across multiple cores, making it possible to analyze millions of documents quickly.
 
-**Real-world Impact**:
--  **E-commerce**: Analyze millions of product reviews for insights
--  **Social media**: Process tweets and posts for sentiment trends  
-- 📰 **News**: Classify and analyze thousands of articles daily
-- 💬 **Customer support**: Automatically categorize and route support tickets
+**Real-world impact**:
+- **E-commerce**: Analyze product reviews for insights
+- **Social media**: Process posts for sentiment trends
+- **News**: Classify and analyze large volumes of articles
+- **Customer support**: Automatically categorize and route support tickets
 
 ---
 
@@ -132,11 +132,14 @@ def load_real_text_data():
             columns=["review_body", "star_rating", "product_title", "verified_purchase"]
         ).limit(10000)  # Limit to 10K reviews for processing efficiency
         
-        print(f"Successfully loaded {text_dataset.count():,} Amazon book reviews")
+    print(f"Loaded {text_dataset.count():,} Amazon book reviews")
         
-        # Transform to consistent format
-        def transform_amazon_reviews(batch):
-            """Transform Amazon reviews to consistent format."""
+        # BEST PRACTICE: Use Ray Data native operations for data transformation
+        from ray.data.expressions import col, lit
+        
+        # Add sentiment mapping using native column operations
+        def map_sentiment(batch):
+            """Map star ratings to sentiment labels efficiently."""
             transformed = []
             for review in batch:
                 # Map star rating to sentiment
@@ -148,61 +151,40 @@ def load_real_text_data():
                 else:
                     sentiment = 'neutral'
                 
+                # Calculate text length without pandas overhead
+                text_length = len(str(review.get('review_body', '')))
+                
                 transformed.append({
                     'text': review.get('review_body', ''),
                     'sentiment': sentiment,
                     'star_rating': rating,
                     'product_title': review.get('product_title', ''),
                     'verified_purchase': review.get('verified_purchase', False),
-                    'length': len(str(review.get('review_body', '')))
+                    'length': text_length
                 })
             
             return transformed
         
-        # Apply transformation
+        # Apply transformation with optimized batch processing
         text_dataset = text_dataset.map_batches(
-            transform_amazon_reviews,
-            batch_format="pandas"
+            map_sentiment,
+            batch_size=2000,  # Larger batch size for efficiency
+            concurrency=4     # Parallel processing
+        )
+        
+        # Use native column operations for additional features
+        text_dataset = text_dataset.add_column(
+            "is_long_review", 
+            col("length") > lit(500)
+        ).add_column(
+            "is_positive",
+            col("star_rating") >= lit(4)
         )
         
         return text_dataset
         
     except Exception as e:
-        print(f"Could not load Amazon reviews: {e}")
-        print("Using alternative news dataset...")
-        
-        # Fallback to news headlines if Amazon data unavailable
-        text_dataset = ray.data.read_text(
-            "s3://ray-benchmark-data/text/news_headlines.txt"
-        ).limit(5000)
-        
-        def transform_news_data(batch):
-            """Transform news data to consistent format."""
-            transformed = []
-            for item in batch:
-                text = item.get('text', '')
-                # Simple sentiment heuristic for news
-                sentiment = 'neutral'
-                if any(word in text.lower() for word in ['great', 'good', 'success', 'win', 'positive']):
-                    sentiment = 'positive'
-                elif any(word in text.lower() for word in ['bad', 'fail', 'crisis', 'problem', 'negative']):
-                    sentiment = 'negative'
-                
-                transformed.append({
-                    'text': text,
-                    'sentiment': sentiment,
-                    'length': len(text),
-                    'source': 'news'
-                })
-            
-            return transformed
-        
-        text_dataset = text_dataset.map_batches(
-            transform_news_data,
-            batch_format="pandas"
-        )
-        
-        return text_dataset
+        raise RuntimeError(f"Failed to load Amazon reviews: {e}")
 
 # Load real text dataset
 text_dataset = load_real_text_data()
@@ -379,11 +361,11 @@ def create_nlp_dashboard(dataset, sample_size=1000):
     plt.show()
     
     # Print NLP insights
-    print(f" NLP Text Analytics Insights:")
-    print(f"   • Text diversity: {unique_words:,} unique words across {total_reviews:,} reviews")
-    print(f"   • Average complexity: {avg_words:.1f} words per review")
-    print(f"   • Sentiment balance: {sentiment_dist.to_dict()}")
-    print(f"   • Vocabulary density: {unique_words/len(' '.join(df['text']).split()):.3f}")
+    print("NLP Text Analytics Insights:")
+    print(f"- Text diversity: {unique_words:,} unique words across {total_reviews:,} reviews")
+    print(f"- Average complexity: {avg_words:.1f} words per review")
+    print(f"- Sentiment balance: {sentiment_dist.to_dict()}")
+    print(f"- Vocabulary density: {unique_words/len(' '.join(df['text']).split()):.3f}")
     
     return df
 
@@ -426,14 +408,11 @@ A large e-commerce company receives 100,000+ pieces of text content daily from m
 
 The comprehensive NLP pipeline delivers:
 
-| Business Metric | Before Ray Data | After Ray Data | Improvement |
-|----------------|----------------|----------------|-------------|
-| **Processing Time** | 40+ hours | 2 hours | Much faster |
-| **Content Coverage** | 10% processed | 100% processed | Complete coverage |
-| **Analysis Consistency** | Variable quality | Standardized insights | Much more consistent |
-| **Response Time** | 24-48 hours | Real-time | Much faster response |
-| **Monthly Cost** | $200K+ | $20K | Significant cost reduction |
-| **Insight Quality** | Basic sentiment | 10+ NLP functions | Comprehensive analysis |
+| Business aspect | Traditional approach | With Ray Data |
+|----------------|----------------------|---------------|
+| Processing scope | Sample-based analysis | Distributed full-dataset processing |
+| Pipeline complexity | Manual orchestration | Native Ray Data operations |
+| Consistency | Variable | Standardized across workers |
 
 ### **Enterprise NLP Pipeline Capabilities**
 
@@ -2142,7 +2121,7 @@ response_generation = intent_analysis.map_batches(ResponseGenerator(), batch_siz
 # Results: Automated multilingual support, intent classification, response suggestions
 ```
 
-## Performance Analysis
+## Performance analysis
 
 ### **NLP Pipeline Processing Flow**
 
@@ -2167,7 +2146,7 @@ Text Data Processing Pipeline:
          └─────────────────┘    └─────────────────┘
 ```
 
-### **Performance Measurement Framework**
+### **Performance measurement framework**
 
 | Analysis Type | Benchmark Method | Visualization Output |
 |--------------|------------------|---------------------|
@@ -2359,13 +2338,10 @@ ctx = DataContext.get_current()
 ctx.enable_progress_bars = True
 ```
 
-## Performance Benchmarks
+## Performance considerations
 
-**Text Processing Performance:**
-- **Data ingestion**: 100K+ documents/second
-- **Text preprocessing**: 50K+ documents/second
-- **Sentiment analysis**: 25K+ documents/second
-- **Entity extraction**: 15K+ documents/second
+- Use Ray Dashboard to monitor throughput and resource utilization.
+- Tune batch sizes and concurrency based on your actual cluster resources and dataset size.
 
 ## Key Takeaways
 

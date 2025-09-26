@@ -17,7 +17,7 @@ Create an optimized ML batch inference pipeline that demonstrates the performanc
 
 **Why batch inference optimization matters**: Poor optimization wastes significant compute resources through repeated model loading and inefficient batching. Understanding these bottlenecks is crucial for production ML systems.
 
-**Ray Data's inference superpowers**: Actor-based model loading and distributed processing eliminate performance bottlenecks that plague traditional ML pipelines. You'll learn how to leverage these capabilities for scalable inference.
+**Ray Data's inference superpowers**: Stateful per-worker model loading (via Ray Data) and distributed processing eliminate performance bottlenecks that plague traditional ML pipelines. You'll learn how to leverage these capabilities for scalable inference.
 
 **Real-world optimization patterns**: Companies like Netflix and Tesla process millions of inference requests efficiently using the distributed techniques demonstrated in this template. These patterns apply across industries from recommendation systems to autonomous vehicles.
 
@@ -109,20 +109,12 @@ def inefficient_inference(batch):
     # This is very slow - model loads repeatedly!
     from transformers import pipeline
     import time
-    
     print("Loading model... (this happens for every batch!)")
     start_load = time.time()
-    
-    try:
-        # Model loading happens for every batch - very inefficient
-        classifier = pipeline("image-classification", 
-                             model="microsoft/resnet-50")
-        
-        load_time = time.time() - start_load
-        print(f"Model loading took: {load_time:.2f} seconds")
-    except Exception as e:
-        print(f"Model loading failed: {e}")
-        return []
+    # Model loading happens for every batch - very inefficient
+    classifier = pipeline("image-classification", model="microsoft/resnet-50")
+    load_time = time.time() - start_load
+    print(f"Model loading took: {load_time:.2f} seconds")
     
     # Process images one by one (also inefficient)
     results = []
@@ -138,18 +130,14 @@ def inefficient_inference(batch):
 print("Testing inefficient approach...")
 print("Watch Ray Dashboard to see the performance problems")
 
-start_time = time.time()
-
 # Run inefficient batch inference with small batches
 inefficient_results = dataset.limit(100).map_batches(
     inefficient_inference,
-    batch_size=4,  # Small batch size
+    batch_size=4,
     concurrency=2
 ).take(20)
 
-inefficient_time = time.time() - start_time
-print(f"\nInefficient approach completed in: {inefficient_time:.2f} seconds")
-print("Problems: Model loads repeatedly, poor batching, wasted resources")
+print("Inefficient approach completed. Problems: repeated model loading, poor batching, wasted resources")
 ```
 
 **Analysis of the inefficient approach**: This code demonstrates several critical performance problems. The model loading overhead dominates execution time because the transformer pipeline is initialized for every single batch. Small batch sizes of 4 images fail to utilize GPU memory efficiently, while processing images individually prevents vectorized operations. The combination of these factors results in poor resource utilization across distributed workers.
@@ -158,95 +146,53 @@ These performance bottlenecks are common in production ML systems where inferenc
 
 ## Optimized Approach
 
-### The Right Way: Actor-Based Model Loading
+### The Right Way: Stateful per-worker model loading with Ray Data
 
-Ray Data solves the model loading problem through integration with Ray actors - stateful distributed processes that can load a model once and reuse it across many batches. This architectural pattern eliminates the repeated loading overhead that dominates the inefficient approach.
-
-Actors provide persistent state across multiple function calls, making them ideal for batch inference scenarios. By loading expensive models once during actor initialization, subsequent inference operations can focus on processing data rather than reinitializing the same model repeatedly.
-
-The `@ray.remote` decorator with GPU allocation ensures that each actor has dedicated compute resources, enabling efficient parallel processing across the cluster. This pattern scales naturally as you add more workers to handle larger workloads.
+Ray Data solves the model loading problem by letting you run stateful, class-based `map_batches` with an actor pool strategy. Each worker loads the model once and reuses it across many batches, eliminating repeated initialization overhead.
 
 ```python
-# EFFICIENT: Use Ray actors to load model once per worker
-@ray.remote(num_gpus=1)  # Allocate GPU to actor
-class OptimizedInferenceActor:
-    """Stateful actor that loads model once and reuses it."""
-    
+# EFFICIENT: Use Ray Data class-based map_batches with optimized actor configuration
+
+class InferenceWorker:
+    """Stateful worker that loads the model once and reuses it."""
     def __init__(self):
-        """Load model once when actor starts."""
         from transformers import pipeline
         import torch
-        
-        print("Loading model once per actor...")
-        
-        try:
-            # Load model with GPU support if available
-            device = 0 if torch.cuda.is_available() else -1
-            self.classifier = pipeline("image-classification",
-                                      model="microsoft/resnet-50",
-                                      device=device)
-            print("Model loaded and ready for efficient inference")
-        except Exception as e:
-            print(f"Failed to load model in actor: {e}")
-            # Use CPU fallback if GPU loading fails
-            self.classifier = pipeline("image-classification",
-                                      model="microsoft/resnet-50",
-                                      device=-1)
-            print("Loaded model with CPU fallback")
-    
-    def predict_batch(self, images):
-        """Process entire batch of images efficiently."""
-        # Process all images in batch (much faster than one-by-one)
-        predictions = []
-        for image in images:
-            result = self.classifier(image)
-            predictions.append({
-                "prediction": result[0]["label"],
-                "confidence": result[0]["score"]
+        device = 0 if torch.cuda.is_available() else -1
+        self.classifier = pipeline(
+            "image-classification",
+            model="microsoft/resnet-50",
+            device=device,
+        )
+
+    def __call__(self, batch):
+        results = []
+        for image in batch["image"]:
+            pred = self.classifier(image)
+            results.append({
+                "prediction": pred[0]["label"],
+                "confidence": pred[0]["score"],
             })
-        
-        return predictions
+        return results
 
-# Create actors for distributed inference
-print("Creating optimized inference actors...")
-num_actors = 2
-actors = [OptimizedInferenceActor.remote() for _ in range(num_actors)]
+print("Running optimized Ray Data inference with stateful workers...")
 
-def optimized_inference(batch):
-    """Efficient inference using pre-loaded actors."""
-    # Distribute work across available actors using consistent hashing
-    # This ensures good load distribution across actor pool
-    import hashlib
-    batch_hash = hashlib.md5(str(len(batch["image"])).encode()).hexdigest()
-    actor_idx = int(batch_hash, 16) % len(actors)
-    actor = actors[actor_idx]
-    
-    # Process entire batch efficiently using the selected actor
-    results = ray.get(actor.predict_batch.remote(batch["image"]))
-    return results
-
-print("Testing optimized approach...")
-print("Watch Ray Dashboard to see improved performance")
-
-start_time = time.time()
-
-# Run optimized batch inference with larger batches
+# BEST PRACTICE: Use the new concurrency parameter for actor-based processing
 optimized_results = dataset.limit(100).map_batches(
-    optimized_inference,
-    batch_size=16,  # Larger batch size for efficiency
-    concurrency=4   # More concurrency for parallelism
+    InferenceWorker,
+    concurrency=2,      # Use concurrency instead of deprecated compute parameter
+    num_gpus=1,         # Allocate one GPU per worker
+    batch_size=16,      # Optimal batch size for GPU utilization
 ).take(20)
 
-optimized_time = time.time() - start_time
-print(f"\nOptimized approach completed in: {optimized_time:.2f} seconds")
-print("Improvements: Model loads once, better batching, efficient resource use")
+print("Optimized approach completed. Improvements: single model load per worker, better batching, efficient resource use")
 ```
 
 **What's better:**
-- Model loads only once per actor (much faster)
+- Model loads only once per worker via Ray Data `ActorPoolStrategy`
 - Larger batch sizes for better resource utilization
 - Proper GPU allocation with `num_gpus=1`
-- Distributed processing across multiple workers
+- Ray Data manages distribution across workers
 
 ### GPU Acceleration for Data Preprocessing
 
@@ -276,65 +222,11 @@ def gpu_accelerated_preprocessing(batch):
 print("GPU acceleration available for complex pandas preprocessing")
 ```
 
-## Performance Comparison
+## Evaluation and monitoring
 
-### Analyzing the Results
-
-```python
-# Compare performance between approaches
-print("Performance Comparison:")
-print(f"Inefficient approach: {inefficient_time:.2f} seconds")
-print(f"Optimized approach: {optimized_time:.2f} seconds")
-
-if inefficient_time > 0 and optimized_time > 0:
-    speedup = inefficient_time / optimized_time
-    print(f"Speedup achieved: {speedup:.1f}x faster")
-else:
-    print("Run both approaches to see performance comparison")
-
-print("\nKey optimizations:")
-print("- Ray actors for efficient model loading")
-print("- Larger batch sizes for better throughput")
-print("- GPU resource allocation for inference workers")
-print("- Distributed processing across cluster")
-```
-
-### Batch Size Optimization
-
-```python
-# Test different batch sizes to find optimal performance
-print("\nTesting different batch sizes:")
-
-batch_sizes = [4, 8, 16, 32]
-batch_performance = []
-
-for batch_size in batch_sizes:
-    print(f"Testing batch size: {batch_size}")
-    start_time = time.time()
-    
-    # Test small sample for quick comparison
-    test_results = dataset.limit(80).map_batches(
-        optimized_inference,
-        batch_size=batch_size,
-        concurrency=2
-    ).take(40)
-    
-    batch_time = time.time() - start_time
-    throughput = 40 / batch_time if batch_time > 0 else 0
-    
-    batch_performance.append({
-        "batch_size": batch_size,
-        "time": batch_time,
-        "throughput": throughput
-    })
-    
-    print(f"  Time: {batch_time:.2f}s, Throughput: {throughput:.1f} images/sec")
-
-# Find best performing batch size
-if batch_performance:
-    best_batch = max(batch_performance, key=lambda x: x["throughput"])
-    print(f"\nBest batch size: {best_batch['batch_size']} ({best_batch['throughput']:.1f} images/sec)")
-```
+- Use Ray Dashboard to examine task timelines, GPU utilization, and worker load.
+- Compare inefficient vs optimized execution plans to understand where time is spent.
+- Adjust `batch_size`, `concurrency`, and `num_gpus` based on your cluster resources and dataset.
 
 ### Ray Dashboard Monitoring
 
@@ -349,25 +241,35 @@ print("- Ray Data execution plans and optimization details")
 print("\nNo custom monitoring needed - Ray Dashboard handles everything!")
 ```
 
-## Key Takeaways
+## Performance Comparison Results
 
-**Actor pattern is essential**: Loading models once per worker using Ray actors provides significant performance improvements  
-**Batch size optimization**: Larger batch sizes generally improve GPU utilization and throughput  
-**Resource allocation**: Use `num_gpus=1` to properly allocate GPU resources to inference tasks  
-**Ray Dashboard monitoring**: Leverage built-in monitoring instead of custom performance tracking  
+| Approach | Model Loading | Batch Size | GPU Utilization | Overall Efficiency |
+|----------|---------------|------------|-----------------|-------------------|
+| **Inefficient** | Every batch | 4 images | Poor | ❌ Very slow |
+| **Optimized** | Once per worker | 16 images | Excellent | ✅ Fast |
 
-## Action Items
+### Optimization Impact
 
-1. **Apply actor patterns**: Use Ray actors for your own model loading scenarios
-2. **Experiment with batch sizes**: Test different batch sizes to find optimal performance
-3. **Monitor with Ray Dashboard**: Use the dashboard to understand performance characteristics
-4. **Add GPU acceleration**: Use RAPIDS cuDF for complex pandas preprocessing when needed
+:::tip Key Performance Improvements
+The optimized approach delivers significant improvements through:
+- **Stateful model loading** eliminates repeated initialization overhead
+- **Larger batch sizes** maximize GPU memory utilization  
+- **Proper resource allocation** ensures efficient worker distribution
+:::
 
-## Next Steps
+## Implementation Checklist
 
-**Advanced Ray Data features**: Explore streaming inference and pipeline optimization  
-**Ray Serve integration**: Learn about real-time model serving with Ray Serve  
-**Multi-model workflows**: Process multiple models in the same Ray Data pipeline  
+### Immediate Actions
+- [ ] Use actor-based `map_batches()` for model loading
+- [ ] Set appropriate `batch_size` for your GPU memory
+- [ ] Configure `concurrency` based on available resources
+- [ ] Monitor performance with Ray Dashboard
+
+### Advanced Optimizations  
+- [ ] Experiment with different batch sizes for your models
+- [ ] Add GPU acceleration for data preprocessing
+- [ ] Implement multi-model inference pipelines
+- [ ] Integrate with Ray Serve for real-time serving  
 
 ---
 

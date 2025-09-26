@@ -1301,36 +1301,54 @@ print("Custom datasource development completed!")
 
 ### 1. **Step-by-Step Datasource Development**
 
-**Stage 1: Create Large Medical Dataset**
+**Stage 1: Create large medical dataset (Ray Data-only)**
 
 ```python
 import os
-import time
+import ray
+import pandas as pd
+import ray.data as rd
 
-@ray.remote
-def generate_hl7_batch(batch_start: int, batch_size: int, output_dir: str) -> str:
-    """Generate a batch of HL7 messages using Ray Core distributed tasks."""
-    import os
-    
-    # Realistic HL7 message templates for different healthcare scenarios
-    hl7_templates = {
-        'admission': "MSH|^~\\&|ADT|{hospital}|EMR|{clinic}|{timestamp}||ADT^A01|{msg_id}|P|2.5\rPID|1||{patient_id}||{last_name}^{first_name}^{middle}||{birth_date}|{gender}|||{address}||{phone}|||{marital}||{ssn}\rPV1|1|{patient_class}|{location}|||{attending_doctor}|||{hospital_service}||||A|||{attending_doctor}|{patient_type}|",
-        'lab_result': "MSH|^~\\&|LAB|{hospital}|EMR|{clinic}|{timestamp}||ORU^R01|{msg_id}|P|2.5\rPID|1||{patient_id}||{last_name}^{first_name}^{middle}||{birth_date}|{gender}|||{address}||{phone}|||{marital}||{ssn}\rOBX|1|NM|{test_code}^{test_name}^L||{test_value}|{units}|{reference_range}|{abnormal_flag}|||F\rOBX|2|NM|{test_code2}^{test_name2}^L||{test_value2}|{units2}|{reference_range2}|{abnormal_flag2}|||F",
-        'pharmacy': "MSH|^~\\&|PHARM|{hospital}|EMR|{clinic}|{timestamp}||RDE^O11|{msg_id}|P|2.5\rPID|1||{patient_id}||{last_name}^{first_name}^{middle}||{birth_date}|{gender}|||{address}||{phone}|||{marital}||{ssn}\rRXE|1^1^{timestamp}^{end_date}|{medication}|{quantity}||{form}|{route}|{frequency}|||",
-        'discharge': "MSH|^~\\&|ADT|{hospital}|EMR|{clinic}|{timestamp}||ADT^A03|{msg_id}|P|2.5\rPID|1||{patient_id}||{last_name}^{first_name}^{middle}||{birth_date}|{gender}|||{address}||{phone}|||{marital}||{ssn}\rPV1|1|{patient_class}|{location}|||{attending_doctor}|||{hospital_service}||||D|||{attending_doctor}|{patient_type}|"
-    }
-    
+# Directory for generated HL7 messages (one message per file)
+output_dir = "/mnt/cluster_storage/enterprise_medical_data"
+os.makedirs(output_dir, exist_ok=True)
+
+# Generate a large dataset of HL7 messages using Ray Data
+total_messages = 50000
+
+def generate_hl7_messages(batch: pd.DataFrame) -> list[str]:
     hospitals = ['GENERAL_HOSPITAL', 'MEDICAL_CENTER', 'REGIONAL_CLINIC', 'UNIVERSITY_HOSPITAL']
     clinics = ['INTERNAL_MED', 'CARDIOLOGY', 'NEUROLOGY', 'ONCOLOGY', 'PEDIATRICS']
-    
-    # Generate batch of HL7 messages
-    batch_messages = []
-    
-    for i in range(batch_start, batch_start + batch_size):
+
+    messages: list[str] = []
+    for i in batch["id"].tolist():
         template_type = ['admission', 'lab_result', 'pharmacy', 'discharge'][i % 4]
-        template = hl7_templates[template_type]
-        
-        # Generate realistic medical data
+        if template_type == 'admission':
+            template = (
+                "MSH|^~\\&|ADT|{hospital}|EMR|{clinic}|{timestamp}||ADT^A01|{msg_id}|P|2.5\r"
+                "PID|1||{patient_id}||{last_name}^{first_name}^{middle}||{birth_date}|{gender}|||{address}||{phone}|||{marital}||{ssn}\r"
+                "PV1|1|{patient_class}|{location}|||{attending_doctor}|||{hospital_service}||||A|||{attending_doctor}|{patient_type}|"
+            )
+        elif template_type == 'lab_result':
+            template = (
+                "MSH|^~\\&|LAB|{hospital}|EMR|{clinic}|{timestamp}||ORU^R01|{msg_id}|P|2.5\r"
+                "PID|1||{patient_id}||{last_name}^{first_name}^{middle}||{birth_date}|{gender}|||{address}||{phone}|||{marital}||{ssn}\r"
+                "OBX|1|NM|{test_code}^{test_name}^L||{test_value}|{units}|{reference_range}|{abnormal_flag}|||F\r"
+                "OBX|2|NM|{test_code2}^{test_name2}^L||{test_value2}|{units2}|{reference_range2}|{abnormal_flag2}|||F"
+            )
+        elif template_type == 'pharmacy':
+            template = (
+                "MSH|^~\\&|PHARM|{hospital}|EMR|{clinic}|{timestamp}||RDE^O11|{msg_id}|P|2.5\r"
+                "PID|1||{patient_id}||{last_name}^{first_name}^{middle}||{birth_date}|{gender}|||{address}||{phone}|||{marital}||{ssn}\r"
+                "RXE|1^1^{timestamp}^{end_date}|{medication}|{quantity}||{form}|{route}|{frequency}|||"
+            )
+        else:  # discharge
+            template = (
+                "MSH|^~\\&|ADT|{hospital}|EMR|{clinic}|{timestamp}||ADT^A03|{msg_id}|P|2.5\r"
+                "PID|1||{patient_id}||{last_name}^{first_name}^{middle}||{birth_date}|{gender}|||{address}||{phone}|||{marital}||{ssn}\r"
+                "PV1|1|{patient_class}|{location}|||{attending_doctor}|||{hospital_service}||||D|||{attending_doctor}|{patient_type}|"
+            )
+
         hl7_message = template.format(
             hospital=hospitals[i % len(hospitals)],
             clinic=clinics[i % len(clinics)],
@@ -1339,14 +1357,14 @@ def generate_hl7_batch(batch_start: int, batch_size: int, output_dir: str) -> st
             patient_id=f"{200000 + (i % 100000)}",
             last_name=f"PATIENT{i % 5000}",
             first_name=f"FNAME{i % 2000}",
-            middle=chr(65 + (i % 26)),  # A-Z
+            middle=chr(65 + (i % 26)),
             birth_date=f"{1940 + (i % 80)}{(i % 12) + 1:02d}{(i % 28) + 1:02d}",
             gender=["M", "F"][i % 2],
             address=f"{i % 9999} MEDICAL BLVD^^CITY{i % 500}^ST^{20000 + (i % 80000)}",
             phone=f"555-{(i % 9000) + 1000}",
             marital=["S", "M", "D", "W"][i % 4],
             ssn=f"{100 + (i % 900)}-{10 + (i % 90)}-{1000 + (i % 9000)}",
-            patient_class=["I", "O", "E"][i % 3],  # Inpatient, Outpatient, Emergency
+            patient_class=["I", "O", "E"][i % 3],
             location=f"UNIT{i % 50}^{i % 20}^{chr(65 + (i % 26))}",
             attending_doctor=f"DOC{i % 200}",
             hospital_service=["MED", "SURG", "PEDS", "OB", "PSYCH"][i % 5],
@@ -1370,52 +1388,16 @@ def generate_hl7_batch(batch_start: int, batch_size: int, output_dir: str) -> st
             frequency=["QD", "BID", "TID", "QID"][i % 4],
             end_date=f"2024{(i % 12) + 1:02d}{((i + 30) % 28) + 1:02d}{(i % 24):02d}{(i % 60):02d}00"
         )
-        
-        batch_messages.append(hl7_message)
-    
-    # Write batch to file (500 messages per file for optimal processing)
-    file_index = batch_start // 500
-    file_path = f"{output_dir}/hl7_enterprise_{file_index:04d}.hl7"
-    
-    with open(file_path, "w") as f:
-        f.write("\r\n\r\n".join(batch_messages))
-    
-    return f"Generated batch {file_index}: {len(batch_messages)} messages"
+        messages.append(hl7_message)
 
-def create_enterprise_hl7_dataset_distributed():
-    """Create enterprise-scale HL7 dataset using Ray Core distributed tasks."""
-    import ray
-    
-    # Use cluster storage for distributed access
-    output_dir = "/mnt/cluster_storage/enterprise_medical_data"
-    os.makedirs(output_dir, exist_ok=True)
-    
-    # Distribute dataset generation across Ray workers
-    total_messages = 50000
-    batch_size = 500  # 500 messages per batch/file
-    num_batches = total_messages // batch_size
-    
-    print(f"Generating {total_messages} HL7 messages using {num_batches} Ray tasks...")
-    
-    # Create Ray tasks for distributed generation
-    tasks = []
-    for batch_idx in range(num_batches):
-        batch_start = batch_idx * batch_size
-        task = generate_hl7_batch.remote(batch_start, batch_size, output_dir)
-        tasks.append(task)
-    
-    # Wait for all tasks to complete
-    results = ray.get(tasks)
-    
-    print(f"Distributed generation completed:")
-    for result in results[:5]:  # Show first 5 results
-        print(f"  {result}")
-    print(f"  ... and {len(results) - 5} more batches")
-    
-    return output_dir
+    return messages
 
-# Create enterprise dataset using distributed Ray Core tasks
-enterprise_data_path = create_enterprise_hl7_dataset_distributed()
+# Build Ray Data pipeline and write one HL7 message per file
+ds = ray.data.range(total_messages)
+messages_ds = ds.map_batches(generate_hl7_messages, batch_size=500)
+messages_ds.write_text(output_dir)
+
+enterprise_data_path = output_dir
 ```
 
 **Stage 2: Single-Thread Python Function**

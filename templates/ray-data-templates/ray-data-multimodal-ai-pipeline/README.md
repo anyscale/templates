@@ -15,7 +15,7 @@ Create a cutting-edge multimodal AI system that processes images and text togeth
 
 ## Learning Objectives
 
-**Why multimodal AI matters**: Combining text, images, audio, and video data creates more intelligent systems with significantly better accuracy than single-modal approaches. Understanding multimodal processing unlocks the next generation of AI applications that mirror human-like understanding.
+**Why multimodal AI matters**: Combining text, images, audio, and video data enables more comprehensive understanding than single-modal approaches. Understanding multimodal processing unlocks AI applications that integrate multiple data types.
 
 **Ray Data's multimodal superpowers**: Unified processing pipeline for heterogeneous data types with automatic optimization and GPU acceleration. You'll learn how to orchestrate complex multimodal workflows that scale across distributed computing clusters.
 
@@ -114,7 +114,7 @@ def analyze_multimodal_content(batch):
 print("Multimodal analysis provides comprehensive content understanding")
 ```
 
-Performance improvements from multimodal models consistently outperform single-modal approaches across industries, with accuracy improvements typically ranging from 15-40% depending on the application domain.
+Multimodal models often outperform single-modal approaches. This template focuses on how to build scalable multimodal pipelines; evaluate accuracy using your datasets and metrics.
 
 ### **Multimodal AI Performance Visualization**
 
@@ -133,7 +133,7 @@ def create_multimodal_ai_dashboard():
     fig, axes = plt.subplots(2, 3, figsize=(18, 12))
     fig.suptitle('Multimodal AI: Performance and Capabilities Analysis', fontsize=16, fontweight='bold')
     
-    # 1. Accuracy comparison: Single vs Multimodal
+    # 1. Model comparison: single vs multimodal (illustrative)
     ax1 = axes[0, 0]
     models = ['Text Only', 'Image Only', 'Audio Only', 'Text+Image', 'Text+Audio', 'Image+Audio', 'All Modalities']
     accuracies = [72.3, 68.9, 65.2, 89.1, 84.7, 81.5, 92.8]
@@ -141,12 +141,12 @@ def create_multimodal_ai_dashboard():
     
     bars1 = ax1.bar(range(len(models)), accuracies, color=colors)
     ax1.set_title('Model Accuracy by Modality Combination', fontweight='bold')
-    ax1.set_ylabel('Accuracy (%)')
+    ax1.set_ylabel('Score')
     ax1.set_xticks(range(len(models)))
     ax1.set_xticklabels(models, rotation=45, ha='right')
     ax1.set_ylim(0, 100)
     
-    # Add accuracy labels
+    # Add labels
     for bar, acc in zip(bars1, accuracies):
         height = bar.get_height()
         ax1.text(bar.get_x() + bar.get_width()/2., height + 1,
@@ -159,7 +159,7 @@ def create_multimodal_ai_dashboard():
     
     bars2 = ax2.bar(data_types, processing_times, color=['lightgreen', 'orange', 'skyblue', 'plum'])
     ax2.set_title('Processing Time by Data Type', fontweight='bold')
-    ax2.set_ylabel('Processing Time (seconds)')
+    ax2.set_ylabel('Processing time')
     
     # Add time labels
     for bar, time in zip(bars2, processing_times):
@@ -174,7 +174,7 @@ def create_multimodal_ai_dashboard():
     
     bars3 = ax3.bar(fusion_methods, fusion_performance, color='mediumpurple')
     ax3.set_title('Fusion Method Performance', fontweight='bold')
-    ax3.set_ylabel('F1 Score (%)')
+    ax3.set_ylabel('Score')
     ax3.set_xticklabels(fusion_methods, rotation=45, ha='right')
     
     # 4. Memory usage comparison
@@ -193,7 +193,7 @@ def create_multimodal_ai_dashboard():
     ax4.legend()
     ax4.grid(True, alpha=0.3)
     
-    # 5. Industry application accuracy
+    # 5. Industry application comparison (illustrative)
     ax5 = axes[1, 1]
     industries = ['Social Media', 'E-commerce', 'Healthcare', 'Automotive', 'Education']
     baseline_acc = [71.2, 68.9, 82.1, 74.5, 69.8]
@@ -206,7 +206,7 @@ def create_multimodal_ai_dashboard():
     bars5b = ax5.bar(x + width/2, multimodal_acc, width, label='Multimodal AI', color='lightgreen')
     
     ax5.set_title('Industry Application Performance', fontweight='bold')
-    ax5.set_ylabel('Accuracy (%)')
+    ax5.set_ylabel('Score')
     ax5.set_xticks(x)
     ax5.set_xticklabels(industries, rotation=45, ha='right')
     ax5.legend()
@@ -224,11 +224,10 @@ def create_multimodal_ai_dashboard():
     plt.tight_layout()
     plt.show()
     
-    print("Multimodal AI Analysis Summary:")
-    print(f"- Multimodal models achieve {max(accuracies)}% accuracy vs {max(accuracies[:3])}% single-modal")
-    print(f"- Cross-modal attention fusion shows {max(fusion_performance)}% F1 score")
-    print(f"- Healthcare applications benefit most from multimodal approach")
-    print(f"- Text modality contributes {contributions[0]}% to final predictions")
+    print("Multimodal AI analysis summary:")
+    print("- Compare single-modal and multimodal approaches on your metrics")
+    print("- Evaluate fusion methods (e.g., attention, weighted) on your data")
+    print("- Analyze modality contributions for your use case")
 
 # Create multimodal AI dashboard
 create_multimodal_ai_dashboard()
@@ -324,10 +323,10 @@ for i, sample in enumerate(samples):
 ```
 
 ** What just happened?**
-- Created 1,000 multimodal samples with both images and text
-- Each sample has a synthetic image and descriptive text caption
+- Loaded 1,000 multimodal samples with both images and text
+- Each sample includes a real image and a descriptive text caption from the dataset
 - Data is loaded into Ray Data for distributed multimodal processing
-- We can easily scale this to millions of real multimodal samples
+- You can scale this to larger datasets as needed
 
 ## Step 2: Image Feature Extraction
 *Time: 8 minutes*
@@ -735,7 +734,7 @@ total_processing_time = time.time() - start_time
 print(f" Final Results:")
 print(f"  - Processed {total_samples:,} multimodal samples")
 print(f"  - Total processing time: {total_processing_time:.2f} seconds")
-print(f"  - Processing rate: {total_samples/total_processing_time:.1f} samples/second")
+print("  - Review Ray Dashboard for throughput and resource usage")
 print(f"  - Created rich multimodal representations")
 print(f"  - Ready for downstream AI tasks (classification, search, etc.)")
 
@@ -834,7 +833,7 @@ Ray Data provides several advantages for multimodal processing:
 - **Ray Data NLP Text Analytics**: Deep dive into text processing techniques
 - **Ray Data Batch Classification**: Focus on image processing optimization
 
-** Congratulations!** You've successfully built a scalable multimodal AI pipeline with Ray Data!
+You have built a scalable multimodal AI pipeline with Ray Data.
 
 These multimodal techniques enable you to build AI systems that understand content the way humans do - by combining visual and textual information for richer understanding.
 
@@ -1136,37 +1135,24 @@ results = fused_ds.map_batches(
 4. Generate market insights and predictions
 5. Alert on significant events or trends
 
-## Performance Analysis
+## Performance analysis
 
-### **Benchmark Framework**
+### **Evaluation framework**
 
-The template includes comprehensive performance measurement tools:
+You can evaluate your pipeline with the following dimensions:
 
 | Benchmark Type | Measurement Focus | Output Visualization |
 |---------------|-------------------|---------------------|
 | **Fusion Method Comparison** | Attention vs Weighted vs Simple | Performance comparison charts |
 | **Batch Size Optimization** | Memory usage vs throughput | Optimization curves |
-| **GPU vs CPU Analysis** | Device performance comparison | Speedup analysis |
+| **GPU vs CPU analysis** | Device performance comparison | Resource utilization |
 | **Scalability Testing** | Multi-GPU performance | Scaling visualizations |
 
-### **Performance Measurement Example**
+### **Example evaluation setup**
 
 ```python
-# Run actual performance benchmarks
-benchmark = MultimodalBenchmark()
-results = benchmark.run_performance_benchmark(
-    fusion_methods=["simple", "weighted", "attention"],
-    batch_sizes=[4, 8, 16, 32],
-    gpu_enabled=True
-)
-
-# Generate verified performance report
-benchmark.generate_benchmark_report()
-
-# Expected output structure:
-# - benchmark_results.csv: Detailed metrics
-# - performance_report.txt: Analysis summary
-# - performance_charts.html: Interactive visualizations
+print("Use Ray Dashboard to measure throughput, GPU utilization, and task timelines.")
+print("Vary batch sizes and fusion methods to evaluate tradeoffs for your data.")
 ```
 
 ### **Modality Processing Pipeline**

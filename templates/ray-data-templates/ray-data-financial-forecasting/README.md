@@ -528,7 +528,7 @@ def create_financial_dashboard(stock_data, news_data, sample_size=1000):
     plt.show()
     
     # Print financial insights
-    print(f"💰 Financial Data Insights:")
+    print("Financial Data Insights:")
     print(f"   • Market coverage: {total_stocks} companies")
     print(f"   • Price range: ${stock_df['close'].min():.2f} - ${stock_df['close'].max():.2f}")
     print(f"   • Average sentiment: {avg_sentiment:.2f} ({'Positive' if avg_sentiment > 0.5 else 'Negative'})")
@@ -603,14 +603,9 @@ except Exception as e:
     print(f"   Error creating economic data: {e}")
     economic_data = None
 
-# Use the best available dataset
-if sp500_prices is not None:
-    main_dataset = sp500_prices
-    print(f"\nUsing S&P 500 historical price dataset as primary source")
-else:
-    # Fallback to Yahoo Finance data
-    main_dataset = sp500_data
-    print(f"\nUsing Yahoo Finance dataset as primary source")
+# Use S&P 500 price dataset as the primary source
+main_dataset = sp500_prices
+print("\nUsing S&P 500 historical price dataset as primary source")
 
 print(f"Primary dataset contains: {main_dataset.count():,} records of real financial data")
 ```
@@ -755,7 +750,7 @@ print(f"  Total trading days: {len(all_data):,}")
 print(f"  Price range: ${min(prices):.2f} - ${max(prices):.2f}")
 print(f"  Average price: ${np.mean(prices):.2f}")
 print(f"  Total volume traded: {sum(volumes):,} shares")
-print(f"  Market cap representation: ~$2.5 trillion")
+# Removed aggregate market cap statement to avoid unsupported claims
 
 print("\nReady for advanced financial analysis with real market data!")
 ```
@@ -902,84 +897,14 @@ else:
 Let's create financial time series data for analysis:
 
 ```python
-def create_financial_data():
-    """
-    Create sample financial time series data for analysis.
-    
-    Returns:
-        ray.data.Dataset: Dataset containing financial time series data with OHLC prices,
-                         volume, and metadata for multiple stock symbols.
-                         
-    Note:
-        Uses reproducible random seed for consistent results across runs.
-        Generates realistic price movements with proper volatility characteristics.
-    """
-    print("Creating financial time series data...")
-    
-    np.random.seed(42)  # Reproducible results
-    
-    # Portfolio of major stocks
-    symbols = ['AAPL', 'GOOGL', 'MSFT', 'SPY']
-    
-    financial_data = []
-    start_date = datetime.now() - timedelta(days=365)  # 1 year of data
-    
-    # Stock characteristics for realistic simulation
-    stock_params = {
-        'AAPL': {'base_price': 150, 'volatility': 0.25},
-        'GOOGL': {'base_price': 2500, 'volatility': 0.28},
-        'MSFT': {'base_price': 300, 'volatility': 0.22},
-        'SPY': {'base_price': 400, 'volatility': 0.16}
-    }
-    
-    for symbol in symbols:
-        params = stock_params[symbol]
-        current_price = params['base_price']
-        
-        for i in range(250):  # ~1 year of trading days
-            date = start_date + timedelta(days=i)
-            
-            # Skip weekends
-            if date.weekday() >= 5:
-                continue
-            
-            # Generate realistic price movement
-            daily_return = np.random.normal(0, params['volatility'] / np.sqrt(252))
-            current_price *= (1 + daily_return)
-            
-            # Generate OHLC data
-            open_price = current_price * np.random.uniform(0.999, 1.001)
-            high_price = max(open_price, current_price) * np.random.uniform(1.0, 1.01)
-            low_price = min(open_price, current_price) * np.random.uniform(0.99, 1.0)
-            
-            financial_data.append({
-                'symbol': symbol,
-                'date': date.strftime('%Y-%m-%d'),
-                'open': round(open_price, 2),
-                'high': round(high_price, 2),
-                'low': round(low_price, 2),
-                'close': round(current_price, 2),
-                'volume': int(np.random.lognormal(15, 0.5))
-            })
-    
-    # Create Ray dataset
-    financial_dataset = ray.data.from_items(financial_data)
-    
-    print(f"Created dataset with {financial_dataset.count():,} records")
-    print(f"Symbols: {len(symbols)}, Date range: 1 year")
-    
-    return financial_dataset
+# Load financial dataset from a public source (or prepared local parquet)
+from ray.data import read_parquet
 
-# Create financial dataset with resource monitoring (rule #457)
-print("Monitoring resource usage during data creation...")
-initial_memory = ray.cluster_resources().get('memory', 0)
-
-financial_data = create_financial_data()
-
-# Monitor resource utilization after data creation
-final_memory = ray.cluster_resources().get('memory', 0)
-print(f"Memory utilization: {initial_memory - final_memory:.2f} GB used")
-print(f"Dataset creation completed with {financial_data.count()} records")
+print("Loading S&P 500 time series data...")
+financial_data = read_parquet(
+    "s3://ray-benchmark-data/financial/sp500_daily_2years.parquet"
+)
+print(f"Loaded {financial_data.count():,} price records")
 ```
 
 Inspect the dataset structure:
@@ -1048,14 +973,15 @@ def process_financial_data_with_ray_data_best_practices(dataset):
     
     print("Processing financial data using Ray Data best practices...")
     
-    # Best Practice 1: Use Ray Data native filter operations
-    print("1. Data validation using native filter operations...")
+    # Best Practice 1: Use Ray Data native filter operations with expressions API
+    from ray.data.expressions import col, lit
+    print("1. Data validation using native filter operations with expressions...")
+    
+    # Use expression API for better query optimization
     clean_data = dataset.filter(
-        lambda record: (
-            record.get('Close', record.get('close', 0)) > 0 and
-            record.get('Volume', record.get('volume', 0)) > 1000 and  # Minimum volume threshold
-            record.get('Open', record.get('open', 0)) > 0
-        )
+        (col('Close') > lit(0)) & 
+        (col('Volume') > lit(1000)) &  # Minimum volume threshold
+        (col('Open') > lit(0))
     )
     
     print(f"   Filtered dataset: {clean_data.count():,} valid records")
@@ -2342,19 +2268,11 @@ Ray Data's distributed processing provides several advantages for financial anal
 - **Ray Data Batch Inference Optimization**: Optimize financial model inference
 - **Ray Data Data Quality Monitoring**: Ensure financial data quality
 
-## Performance Benchmarks
+## Performance considerations
 
-**Processing Performance:**
-- **Stock data ingestion**: 100,000+ price points/second
-- **Technical indicator calculation**: 50,000+ instruments/second
-- **Portfolio optimization**: 10,000+ assets processed in under 30 seconds
-- **Risk calculations**: Real-time VaR for 50,000+ position portfolio
-
-**Scalability:**
-- **Single node**: 1,000 stocks analyzed in 2 minutes
-- **4 nodes**: 10,000 stocks analyzed in 3 minutes  
-- **16 nodes**: 100,000 stocks analyzed in 8 minutes
-- **64 nodes**: 1M+ instruments processed in under 15 minutes
+- Use Ray Dashboard to monitor throughput, memory, and task execution.
+- Tune `batch_size` and `concurrency` for your dataset size and cluster resources.
+- Prefer Parquet over CSV for large datasets.
 
 ## Key Takeaways
 

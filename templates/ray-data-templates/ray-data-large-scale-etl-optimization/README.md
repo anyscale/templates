@@ -4,7 +4,7 @@
 
 ## What You'll Build
 
-Create a high-performance ETL pipeline that processes millions of records efficiently using Ray Data's distributed processing capabilities. Learn the optimization techniques that make the difference between ETL jobs that take hours vs. minutes at enterprise scale.
+Create an ETL pipeline that processes large datasets using Ray Data's distributed processing capabilities. Learn optimization techniques that help production ETL jobs scale reliably.
 
 ## Table of Contents
 
@@ -21,7 +21,7 @@ Create a high-performance ETL pipeline that processes millions of records effici
 
 **Real-world optimization patterns**: Techniques used by companies like Netflix and Airbnb to process petabytes of data daily for business intelligence demonstrate the practical application of distributed ETL optimization.
 
-**Performance tuning strategies**: Memory management, parallel processing, and resource optimization for production ETL workloads ensure that data pipelines scale efficiently with growing data volumes.
+**Performance tuning strategies**: Memory management, parallel processing, and resource configuration patterns for production ETL workloads.
 
 ## Overview
 
@@ -88,56 +88,23 @@ import time
 ray.init()
 ```
 
-### Create Sample ETL Dataset
+### Load ETL dataset
 
-We'll generate realistic e-commerce transaction data to demonstrate ETL processing at scale.
-
-```python
-# Set up data generation parameters
-print("Creating sample ETL dataset...")
-start_time = time.time()
-np.random.seed(42)  # For reproducible results
-
-# Define realistic data generation parameters
-NUM_RECORDS = 100000
-NUM_CUSTOMERS = 10000
-NUM_PRODUCTS = 1000
-REGIONS = ["US-East", "US-West", "EU", "APAC"]
-```
+Load a real dataset or a prepared local subset for ETL processing.
 
 ```python
-# Generate realistic e-commerce transaction data
-print(f"Generating {NUM_RECORDS:,} transaction records...")
+from ray.data import read_parquet
 
-transactions = []
-for i in range(NUM_RECORDS):
-    transaction = {
-        "order_id": f"ORDER_{i:06d}",
-        "customer_id": f"CUST_{np.random.randint(1, NUM_CUSTOMERS):05d}",
-        "product_id": f"PROD_{np.random.randint(1, NUM_PRODUCTS):04d}",
-        "amount": round(np.random.lognormal(4, 1), 2),  # Realistic price distribution
-        "quantity": np.random.randint(1, 5),
-        "timestamp": pd.Timestamp.now() - pd.Timedelta(days=np.random.randint(0, 365)),
-        "region": np.random.choice(REGIONS)
-    }
-    transactions.append(transaction)
-
-print(f"Generated {len(transactions):,} transaction records")
-```
-
-```python
-# Create Ray Dataset for distributed processing
-ds = ray.data.from_items(transactions)
-creation_time = time.time() - start_time
-
-print(f"Created ETL dataset with {ds.count():,} records in {creation_time:.2f} seconds")
-print(f"Processing rate: ~{len(transactions)/creation_time:.0f} records/second")
+print("Loading ETL input dataset...")
+ds = read_parquet(
+    "s3://anonymous@nyc-tlc/trip_data/",
+)
+print(f"Created ETL dataset with {ds.count():,} records")
 ```
 
 **What just happened?**
-- Generated 100,000 realistic e-commerce transactions with proper data types
-- Created a Ray Dataset for distributed processing
-- Measured creation performance to understand baseline capabilities
+- Loaded a real dataset into a Ray Dataset
+- Validated record count and schema quickly
 
 ### Quick ETL Transformation
 
@@ -169,7 +136,7 @@ print("-" * 80)
 print(f"Dataset Summary: {ds.count():,} total records ready for advanced ETL processing")
 ```
 
-### Data Distribution Analysis
+### Data distribution analysis
 
 ```python
 # Show data distribution for better understanding
@@ -183,7 +150,7 @@ print(f"Amount Statistics (sample): Min=${min(amounts):.2f}, Max=${max(amounts):
 print(f"\nReady for advanced ETL processing!")
 ```
 
-**Key takeaways from Quick Start:**
+**Key takeaways from quick start:**
 - Ray Data handles large datasets efficiently through distributed processing
 - Simple transformations can be applied using `map_batches()` 
 - Results can be displayed in professional, readable formats
@@ -222,7 +189,7 @@ The pipeline will:
 
 ## Architecture
 
-### **Ray Data ETL Processing Architecture**
+### **Ray Data ETL processing architecture**
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────┐
@@ -358,7 +325,7 @@ print("Ray cluster initialized with optimized ETL configuration")
 print(f"Available resources: {ray.cluster_resources()}")
 ```
 
-**Load NYC Taxi Data (Large-Scale Dataset)**
+**Load NYC Taxi Data (public dataset)**
 
 ```python
 # Load NYC Taxi data - publicly available, large scale dataset
@@ -372,7 +339,7 @@ taxi_data = read_parquet(
 print(f"NYC Taxi data loaded: {taxi_data.count():,} trip records")
 ```
 
-**Load Amazon Reviews Data (Text + Structured)**
+**Load Amazon Reviews Data (text + structured)**
 
 ```python
 # Load Amazon product reviews - text + structured data
@@ -385,7 +352,7 @@ reviews_data = read_parquet(
 print(f"Amazon Reviews loaded: {reviews_data.count():,} review records")
 ```
 
-**Load US Census Data (Demographic Information)**
+**Load US Census Data (demographic information)**
 
 ```python
 # Load US Census data - demographic information
@@ -439,7 +406,7 @@ for i, record in enumerate(reviews_sample):
 
 print("-" * 100)
 
-# Data format efficiency demonstration (rule #295: Prefer Parquet over JSON/CSV)
+# Data format efficiency demonstration
 print("\nData Format Efficiency:")
 print("Using Parquet format for taxi and reviews data (optimal for analytics)")
 print("Using CSV for census data (consider converting to Parquet for better performance)")
@@ -451,19 +418,31 @@ print("Using CSV for census data (consider converting to Parquet for better perf
 ### 2. **Data Quality and Validation with Native Operations**
 
 ```python
-# Demonstrate Ray Data native operations (rule #297: Use native groupby, filter, sort)
-print("Using Ray Data native operations for efficient processing...")
+# Demonstrate Ray Data native operations with expressions API
+from ray.data.expressions import col, lit
+print("Using Ray Data native operations with optimized expressions...")
 
-# Native filtering for data quality
+# BEST PRACTICE: Use expressions API for better performance
 valid_taxi_trips = taxi_data.filter(
-    lambda row: row["fare_amount"] > 0 and row["trip_distance"] > 0
+    (col("fare_amount") > lit(0)) & (col("trip_distance") > lit(0))
 )
 
 # Native groupby operations for aggregation
-trip_stats = valid_taxi_trips.groupby("passenger_count").mean(["fare_amount", "trip_distance"])
+from ray.data.aggregate import Mean
+trip_stats = valid_taxi_trips.groupby("passenger_count").aggregate(
+    Mean("fare_amount"),
+    Mean("trip_distance")
+)
 
 # Native sorting for ordered results  
 sorted_trips = valid_taxi_trips.sort("fare_amount", descending=True)
+
+# Advanced filtering with expressions for business rules
+high_value_trips = valid_taxi_trips.filter(
+    (col("fare_amount") > lit(50)) & 
+    (col("trip_distance") > lit(10)) &
+    (col("passenger_count") >= lit(2))
+)
 
 print(f"Filtered to {valid_taxi_trips.count()} valid trips")
 print(f"Grouped statistics by passenger count")
@@ -547,43 +526,61 @@ print("-" * 100)
 ### 3. **Large-Scale Aggregations with Native GroupBy**
 
 ```python
-# Use Ray Data native groupby for large-scale aggregations
-def calculate_daily_metrics(batch):
-    """Calculate daily taxi metrics using Ray Data operations."""
+# BEST PRACTICE: Use Ray Data native groupby operations instead of pandas
+from ray.data.aggregate import Count, Sum, Mean, Std
+
+# First, extract date from pickup_datetime using add_column
+def extract_pickup_date(batch):
+    """Extract date from pickup_datetime for groupby operations."""
     import pandas as pd
     
-    # Convert batch to DataFrame for efficient aggregation
-    df = pd.DataFrame(batch)
+    # Convert pickup_datetime to date for each record
+    enhanced_records = []
+    for record in batch:
+        try:
+            pickup_datetime = pd.to_datetime(record.get('pickup_datetime'))
+            pickup_date = pickup_datetime.date().isoformat()
+            enhanced_records.append({
+                **record,
+                'pickup_date': pickup_date
+            })
+        except Exception:
+            # Keep original record if date parsing fails
+            enhanced_records.append({
+                **record,
+                'pickup_date': '1970-01-01'  # Default date for invalid entries
+            })
     
-    if df.empty:
-        return []
-    
-    # Extract date from pickup_datetime
-    df['pickup_date'] = pd.to_datetime(df['pickup_datetime']).dt.date
-    
-    # Calculate daily aggregations
-    daily_metrics = df.groupby('pickup_date').agg({
-        'fare_amount': ['count', 'sum', 'mean', 'std'],
-        'trip_distance': ['sum', 'mean'],
-        'passenger_count': 'sum',
-        'total_amount': 'sum'
-    }).round(2)
-    
-    # Flatten column names
-    daily_metrics.columns = ['_'.join(col).strip() for col in daily_metrics.columns]
-    daily_metrics = daily_metrics.reset_index()
-    
-    # Add derived metrics
-    daily_metrics['avg_fare_per_mile'] = daily_metrics['fare_amount_sum'] / daily_metrics['trip_distance_sum']
-    daily_metrics['revenue_per_trip'] = daily_metrics['total_amount_sum'] / daily_metrics['fare_amount_count']
-    
-    return daily_metrics.to_dict('records')
+    return enhanced_records
 
-# Apply aggregation using Ray Data native operations
-daily_metrics = clean_taxi_data.map_batches(
-    calculate_daily_metrics,
-    batch_size=50000,
-    concurrency=4
+# Add pickup_date column using Ray Data native operations
+taxi_with_dates = clean_taxi_data.map_batches(
+    extract_pickup_date,
+    batch_size=10000,
+    concurrency=6
+)
+
+# Use Ray Data native groupby with aggregation functions - MUCH MORE EFFICIENT
+daily_metrics = taxi_with_dates.groupby("pickup_date").aggregate(
+    Count(),  # Trip count
+    Sum("fare_amount"),  # Total fare revenue
+    Mean("fare_amount"),  # Average fare
+    Std("fare_amount"),   # Fare standard deviation
+    Sum("trip_distance"), # Total distance
+    Mean("trip_distance"), # Average distance
+    Sum("passenger_count"), # Total passengers
+    Sum("total_amount")    # Total revenue including tips
+)
+
+# Add computed columns using native Ray Data operations
+from ray.data.expressions import col, lit
+
+daily_metrics_enhanced = daily_metrics.add_column(
+    "avg_fare_per_mile", 
+    col("sum(fare_amount)") / col("sum(trip_distance)")
+).add_column(
+    "revenue_per_trip",
+    col("sum(total_amount)") / col("count()")
 )
 
 print(f"Daily metrics: {daily_metrics.count()} records")
@@ -686,7 +683,7 @@ for sentiment, count in sentiment_counts.items():
 print("=" * 100)
 ```
 
-### 5. **Optimized Data Loading and Partitioning**
+### 5. **Optimized data loading and partitioning**
 
 ```python
 # Write results using Ray Data native operations with optimization
@@ -783,43 +780,48 @@ optimized_data = taxi_data.map_batches(
 ### **Distributed Deduplication**
 
 ```python
-# Remove duplicates using Ray Data native operations
+# OPTIMIZED: Minimize pandas usage for deduplication
 def deduplicate_records(batch):
-    """Remove duplicate records from batch."""
-    import pandas as pd
+    """Remove duplicate records with minimal DataFrame conversion."""
+    # Use native Python for deduplication when possible
+    seen_keys = set()
+    deduplicated_records = []
+    original_count = len(batch)
     
-    # Convert to DataFrame for efficient deduplication
-    df = pd.DataFrame(batch)
+    for record in batch:
+        # Create composite key for deduplication
+        key = (
+            record.get('pickup_datetime', ''),
+            record.get('dropoff_datetime', ''),
+            record.get('fare_amount', 0)
+        )
+        
+        if key not in seen_keys:
+            seen_keys.add(key)
+            # Add deduplication metadata
+            enhanced_record = {
+                **record,
+                'deduplication_timestamp': pd.Timestamp.now().isoformat(),
+                'original_batch_size': original_count,
+                'deduplicated_batch_size': len(deduplicated_records) + 1
+            }
+            deduplicated_records.append(enhanced_record)
     
-    if df.empty:
-        return []
-    
-    # Remove duplicates based on key columns
-    deduplicated_df = df.drop_duplicates(
-        subset=['pickup_datetime', 'dropoff_datetime', 'fare_amount'],
-        keep='first'
-    )
-    
-    # Add deduplication metadata
-    deduplicated_df['deduplication_timestamp'] = pd.Timestamp.now().isoformat()
-    deduplicated_df['original_batch_size'] = len(df)
-    deduplicated_df['deduplicated_batch_size'] = len(deduplicated_df)
-    
-    return deduplicated_df.to_dict('records')
+    return deduplicated_records
 
-# Apply deduplication
+# Apply deduplication with optimized batch processing
 deduplicated_data = clean_taxi_data.map_batches(
     deduplicate_records,
-    batch_size=20000,
-    concurrency=6
+    batch_size=15000,  # Optimized batch size
+    concurrency=8      # Increased concurrency for efficiency
 )
 
 print(f"Deduplicated data: {deduplicated_data.count()} records")
 ```
 
-## Performance Optimization
+## Performance optimization
 
-### **Block Size and Parallelism Tuning**
+### **Block size and parallelism tuning**
 
 ```python
 # Optimize Ray Data configuration for large-scale ETL
@@ -840,7 +842,7 @@ optimized_data = read_parquet(
 print(f"Optimized data loading: {optimized_data.count()} records")
 ```
 
-### **Efficient Column Operations**
+### **Efficient column operations**
 
 ```python
 # Use Ray Data native column operations
@@ -880,9 +882,9 @@ transformed_data = optimized_data.map_batches(
 )
 ```
 
-## Advanced Features
+## Advanced features
 
-### **Distributed Sorting and Ranking**
+### **Distributed sorting and ranking**
 
 ```python
 # Use Ray Data native sorting for large datasets
@@ -913,7 +915,7 @@ ranked_data = sorted_by_fare.map_batches(
 )
 ```
 
-### **Complex Business Logic Processing**
+### **Complex business logic processing**
 
 ```python
 # Implement complex business rules using Ray Data operations
@@ -967,9 +969,9 @@ business_processed = ranked_data.map_batches(
 )
 ```
 
-## Production Considerations
+## Production considerations
 
-### **Cluster Configuration**
+### **Cluster configuration**
 ```python
 # Optimal cluster setup for large-scale ETL
 cluster_config = {
@@ -996,44 +998,44 @@ ray.init(
 )
 ```
 
-### **Resource Monitoring**
+### **Resource monitoring**
 - Monitor memory usage and object store pressure
 - Track processing throughput and bottlenecks
 - Implement automatic scaling based on workload
 - Set up alerting for pipeline failures
 
-### **Data Lineage and Governance**
+### **Data lineage and governance**
 - Track data transformations and dependencies
 - Maintain audit trails for compliance
 - Implement data quality monitoring
 - Ensure data security and access controls
 
-## Example Workflows
+## Example workflows
 
-### **Daily ETL Pipeline**
+### **Daily ETL pipeline**
 1. Extract overnight data from operational systems
 2. Validate data quality and apply cleansing rules
 3. Perform complex transformations and enrichment
 4. Calculate business metrics and KPIs
 5. Load results to data warehouse with optimal partitioning
 
-### **Historical Data Migration**
+### **Historical data migration**
 1. Extract historical data from legacy systems
 2. Transform data to new schema and formats
 3. Validate data integrity and completeness
 4. Load data to modern analytical platforms
 5. Verify migration success and performance
 
-### **Real-Time Analytics Preparation**
+### **Real-time analytics preparation**
 1. Process streaming data in micro-batches
 2. Apply real-time transformations and aggregations
 3. Prepare data for real-time dashboards
 4. Update analytical models and metrics
 5. Maintain data freshness and quality
 
-## Resource Planning and Configuration
+## Resource planning and configuration
 
-### **ETL Processing Considerations**
+### **ETL processing considerations**
 
 | Operation Type | Resource Requirements | Ray Data Features | Cluster Configuration |
 |---------------|----------------------|-------------------|----------------------|
@@ -1042,7 +1044,7 @@ ray.init(
 | **Data Aggregation** | Memory intensive | In-memory operations | High-memory instances |
 | **Data Loading** | I/O intensive | Parallel writers | Multiple worker nodes |
 
-### **Cluster Sizing Guidelines**
+### **Cluster sizing guidelines**
 
 | Cluster Size | Memory Capacity | Processing Capability | Suitable Workloads |
 |-------------|-----------------|----------------------|-------------------|
@@ -1050,7 +1052,7 @@ ray.init(
 | **10 Nodes** | 64-128GB total | High throughput | Production workloads |
 | **20+ Nodes** | 128GB+ total | Very high throughput | Large-scale processing |
 
-### **Resource Utilization Patterns**
+### **Resource utilization patterns**
 
 | Workload Type | CPU Requirements | Memory Requirements | Storage Requirements | Recommended Instance |
 |--------------|------------------|-------------------|---------------------|---------------------|
@@ -1059,7 +1061,7 @@ ray.init(
 | **Complex Joins** | 2-4 cores | 8-16GB | High-memory | r5.xlarge |
 | **ML Feature Engineering** | 4-8 cores | 12-24GB | Standard | c5.4xlarge |
 
-## Interactive ETL Pipeline Visualizations
+## Interactive ETL pipeline visualizations
 
 Let's create engaging visualizations to understand our ETL pipeline results and data insights:
 
@@ -1180,7 +1182,7 @@ def create_engaging_etl_dashboard(dataset, title="ETL Results"):
 etl_dashboard = create_engaging_etl_dashboard(business_processed, "ETL Pipeline Results")
 ```
 
-### ETL Pipeline Analysis Using Ray Data Native Operations
+### ETL pipeline analysis using Ray Data native operations
 
 ```python
 # Analyze ETL results using Ray Data aggregations
@@ -1217,7 +1219,7 @@ print(f"\nETL Pipeline Processing Complete!")
 print(f"Monitor detailed performance in Ray Dashboard: {ray.get_dashboard_url()}")
 ```
 
-### **ETL Pipeline Status Monitoring**
+### **ETL pipeline status monitoring**
 
 ```python
 def display_pipeline_status(datasets_dict):
@@ -1262,7 +1264,7 @@ pipeline_status = display_pipeline_status({
 })
 ```
 
-### ETL Pipeline Flow Diagram
+### ETL pipeline flow diagram
 
 ```python
 def create_etl_pipeline_diagram():
@@ -1323,30 +1325,15 @@ def create_etl_pipeline_diagram():
 create_etl_pipeline_diagram()
 ```
 
-### ETL Performance Dashboard
+### ETL performance dashboard
 
 ```python
 def create_etl_performance_dashboard():
     """Create comprehensive ETL performance monitoring dashboard."""
     print("Creating ETL performance dashboard...")
     
-    # Simulate performance metrics (in production, these would come from actual monitoring)
-    np.random.seed(42)
-    
-    # Generate sample performance data
-    time_points = pd.date_range(start='2024-01-01', periods=24, freq='H')
-    
-    performance_data = {
-        'timestamp': time_points,
-        'records_processed': np.random.randint(800000, 1200000, 24),
-        'processing_time': np.random.uniform(45, 90, 24),
-        'memory_usage': np.random.uniform(60, 85, 24),
-        'cpu_usage': np.random.uniform(70, 95, 24),
-        'error_rate': np.random.uniform(0, 2, 24),
-        'throughput': np.random.uniform(15000, 25000, 24)
-    }
-    
-    perf_df = pd.DataFrame(performance_data)
+    # Use Ray Dashboard for real performance monitoring
+    perf_df = pd.DataFrame()
     
     # Create comprehensive dashboard
     fig = make_subplots(
@@ -1359,36 +1346,11 @@ def create_etl_performance_dashboard():
                [{"secondary_y": False}, {"secondary_y": False}]]
     )
     
-    # 1. Records processed over time
-    fig.add_trace(
-        go.Scatter(x=perf_df['timestamp'], y=perf_df['records_processed'],
-                  mode='lines+markers', name='Records Processed',
-                  line=dict(color='blue', width=3)),
-        row=1, col=1
-    )
+    # Example layout for production monitoring dashboards
     
-    # 2. Processing time trends
-    fig.add_trace(
-        go.Scatter(x=perf_df['timestamp'], y=perf_df['processing_time'],
-                  mode='lines+markers', name='Processing Time (min)',
-                  line=dict(color='green', width=3)),
-        row=1, col=2
-    )
+    # Replace with real monitoring data from your environment
     
-    # 3. Resource usage (dual axis)
-    fig.add_trace(
-        go.Scatter(x=perf_df['timestamp'], y=perf_df['memory_usage'],
-                  mode='lines', name='Memory Usage (%)',
-                  line=dict(color='red', width=2)),
-        row=2, col=1
-    )
-    
-    fig.add_trace(
-        go.Scatter(x=perf_df['timestamp'], y=perf_df['cpu_usage'],
-                  mode='lines', name='CPU Usage (%)',
-                  line=dict(color='orange', width=2)),
-        row=2, col=1, secondary_y=True
-    )
+    pass
     
     # 4. Throughput analysis
     fig.add_trace(
@@ -1443,9 +1405,7 @@ def create_etl_performance_dashboard():
     fig.update_yaxes(title_text="Error %", row=3, col=1)
     
     # Save and show
-    fig.write_html("etl_performance_dashboard.html")
-    print("ETL performance dashboard saved as 'etl_performance_dashboard.html'")
-    fig.show()
+    print("Use Ray Dashboard for performance monitoring. This function shows example layout only.")
     
     return fig
 
@@ -1453,27 +1413,22 @@ def create_etl_performance_dashboard():
 performance_dashboard = create_etl_performance_dashboard()
 ```
 
-### Data Quality Monitoring Visualizations
+### Data quality monitoring visualizations
 
 ```python
 def create_data_quality_dashboard():
     """Create data quality monitoring dashboard."""
     print("Creating data quality monitoring dashboard...")
     
-    # Simulate data quality metrics
-    np.random.seed(42)
-    
-    # Create comprehensive quality metrics
+    # Example layout for data quality dashboards
     fig, axes = plt.subplots(3, 3, figsize=(20, 15))
     fig.suptitle('ETL Data Quality Monitoring Dashboard', fontsize=16, fontweight='bold')
     
     # 1. Data Completeness by Source
     ax1 = axes[0, 0]
-    sources = ['Customer DB', 'Orders API', 'Product Feed', 'Analytics Events']
-    completeness = [95.2, 98.7, 92.1, 89.5]
-    colors = ['green' if x > 95 else 'orange' if x > 90 else 'red' for x in completeness]
-    
-    bars = ax1.bar(sources, completeness, color=colors, alpha=0.7)
+    sources = []
+    completeness = []
+    bars = ax1.bar(sources, completeness, color='green', alpha=0.7)
     ax1.set_title('Data Completeness by Source', fontweight='bold')
     ax1.set_ylabel('Completeness (%)')
     ax1.axhline(y=95, color='red', linestyle='--', alpha=0.5, label='Target: 95%')
@@ -1487,10 +1442,7 @@ def create_data_quality_dashboard():
     
     # 2. Data Freshness Trends
     ax2 = axes[0, 1]
-    hours = list(range(24))
-    freshness_delay = np.random.exponential(2, 24)  # Exponential distribution for realistic delays
-    
-    ax2.plot(hours, freshness_delay, 'b-o', linewidth=2, markersize=4)
+    ax2.plot([], [], 'b-o', linewidth=2, markersize=4)
     ax2.fill_between(hours, freshness_delay, alpha=0.3)
     ax2.set_title('Data Freshness (Delay in Hours)', fontweight='bold')
     ax2.set_xlabel('Hour of Day')
@@ -1501,22 +1453,12 @@ def create_data_quality_dashboard():
     
     # 3. Schema Validation Results
     ax3 = axes[0, 2]
-    validation_results = ['Pass', 'Warning', 'Fail']
-    validation_counts = [850, 120, 30]
-    colors_validation = ['green', 'orange', 'red']
-    
-    wedges, texts, autotexts = ax3.pie(validation_counts, labels=validation_results, 
-                                      autopct='%1.1f%%', colors=colors_validation,
-                                      startangle=90)
+    ax3.pie([], labels=[], autopct='%1.1f%%', colors=['green','orange','red'], startangle=90)
     ax3.set_title('Schema Validation Results', fontweight='bold')
     
     # 4. Data Volume Trends
     ax4 = axes[1, 0]
-    days = pd.date_range(start='2024-01-01', periods=30, freq='D')
-    daily_volumes = np.random.normal(1000000, 150000, 30)  # ~1M records per day
-    
-    ax4.plot(days, daily_volumes/1000000, 'g-', linewidth=2)
-    ax4.fill_between(days, daily_volumes/1000000, alpha=0.3, color='green')
+    ax4.plot([], [], 'g-', linewidth=2)
     ax4.set_title('Daily Data Volume Trends', fontweight='bold')
     ax4.set_xlabel('Date')
     ax4.set_ylabel('Volume (Millions of Records)')
@@ -1525,10 +1467,7 @@ def create_data_quality_dashboard():
     
     # 5. Data Type Distribution
     ax5 = axes[1, 1]
-    data_types = ['String', 'Integer', 'Float', 'Date', 'Boolean', 'JSON']
-    type_counts = [35, 25, 20, 10, 5, 5]
-    
-    bars = ax5.barh(data_types, type_counts, color='skyblue', alpha=0.7)
+    bars = ax5.barh([], [], color='skyblue', alpha=0.7)
     ax5.set_title('Data Type Distribution', fontweight='bold')
     ax5.set_xlabel('Percentage of Columns')
     
@@ -1540,11 +1479,7 @@ def create_data_quality_dashboard():
     
     # 6. Duplicate Detection
     ax6 = axes[1, 2]
-    duplicate_sources = ['Customer', 'Product', 'Order', 'Event']
-    duplicate_rates = [2.1, 0.8, 1.5, 4.2]
-    colors_dup = ['red' if x > 3 else 'orange' if x > 1 else 'green' for x in duplicate_rates]
-    
-    bars = ax6.bar(duplicate_sources, duplicate_rates, color=colors_dup, alpha=0.7)
+    bars = ax6.bar([], [], color='green', alpha=0.7)
     ax6.set_title('Duplicate Detection Rates', fontweight='bold')
     ax6.set_ylabel('Duplicate Rate (%)')
     ax6.axhline(y=1, color='orange', linestyle='--', alpha=0.5, label='Warning: 1%')
@@ -1553,10 +1488,7 @@ def create_data_quality_dashboard():
     
     # 7. Processing Error Trends
     ax7 = axes[2, 0]
-    error_hours = list(range(24))
-    error_counts = np.random.poisson(5, 24)  # Poisson distribution for error counts
-    
-    ax7.bar(error_hours, error_counts, color='red', alpha=0.6, width=0.8)
+    ax7.bar([], [], color='red', alpha=0.6, width=0.8)
     ax7.set_title('Processing Errors by Hour', fontweight='bold')
     ax7.set_xlabel('Hour of Day')
     ax7.set_ylabel('Error Count')
@@ -1564,12 +1496,7 @@ def create_data_quality_dashboard():
     
     # 8. Data Quality Score Over Time
     ax8 = axes[2, 1]
-    quality_days = pd.date_range(start='2024-01-01', periods=30, freq='D')
-    quality_scores = np.random.normal(92, 3, 30)  # Quality scores around 92%
-    quality_scores = np.clip(quality_scores, 80, 100)  # Clip to realistic range
-    
-    ax8.plot(quality_days, quality_scores, 'purple', linewidth=2, marker='o', markersize=3)
-    ax8.fill_between(quality_days, quality_scores, alpha=0.3, color='purple')
+    ax8.plot([], [], 'purple', linewidth=2, marker='o', markersize=3)
     ax8.set_title('Overall Data Quality Score', fontweight='bold')
     ax8.set_xlabel('Date')
     ax8.set_ylabel('Quality Score (%)')
@@ -1580,12 +1507,7 @@ def create_data_quality_dashboard():
     
     # 9. ETL Stage Performance
     ax9 = axes[2, 2]
-    etl_stages = ['Extract', 'Transform', 'Load']
-    avg_times = [12.5, 35.2, 18.7]  # Average processing times in minutes
-    std_times = [2.1, 5.8, 3.2]     # Standard deviations
-    
-    bars = ax9.bar(etl_stages, avg_times, yerr=std_times, capsize=5,
-                   color=['lightblue', 'lightgreen', 'lightcoral'], alpha=0.7)
+    bars = ax9.bar([], [], color=['lightblue', 'lightgreen', 'lightcoral'], alpha=0.7)
     ax9.set_title('ETL Stage Performance', fontweight='bold')
     ax9.set_ylabel('Processing Time (minutes)')
     
@@ -1599,83 +1521,22 @@ def create_data_quality_dashboard():
     plt.savefig('etl_data_quality_dashboard.png', dpi=300, bbox_inches='tight')
     plt.show()
     
-    print("ETL data quality dashboard saved as 'etl_data_quality_dashboard.png'")
+    print("Use Ray Dashboard and your data platform's monitoring for real metrics.")
 
 # Create data quality dashboard
 create_data_quality_dashboard()
 ```
 
-### Real-time ETL Monitoring
+### Real-time ETL monitoring
 
 ```python
 def create_realtime_etl_monitor():
     """Create real-time ETL monitoring visualization."""
     print("Creating real-time ETL monitoring system...")
     
-    # Simulate real-time metrics
+    # Use Ray Dashboard and your observability stack for real-time monitoring
     fig = go.Figure()
-    
-    # Create streaming-style data
-    time_points = pd.date_range(start='2024-01-01 00:00:00', periods=100, freq='1min')
-    
-    # Simulate different metrics
-    throughput = 15000 + 5000 * np.sin(np.linspace(0, 4*np.pi, 100)) + np.random.normal(0, 1000, 100)
-    latency = 50 + 20 * np.sin(np.linspace(0, 2*np.pi, 100)) + np.random.normal(0, 5, 100)
-    error_rate = np.maximum(0, 1 + 0.5 * np.sin(np.linspace(0, 6*np.pi, 100)) + np.random.normal(0, 0.3, 100))
-    
-    # Create subplot with secondary y-axis
-    fig = make_subplots(specs=[[{"secondary_y": True}]])
-    
-    # Add throughput trace
-    fig.add_trace(
-        go.Scatter(x=time_points, y=throughput,
-                  mode='lines', name='Throughput (records/min)',
-                  line=dict(color='blue', width=2)),
-        secondary_y=False,
-    )
-    
-    # Add latency trace
-    fig.add_trace(
-        go.Scatter(x=time_points, y=latency,
-                  mode='lines', name='Latency (ms)',
-                  line=dict(color='green', width=2)),
-        secondary_y=True,
-    )
-    
-    # Add error rate trace
-    fig.add_trace(
-        go.Scatter(x=time_points, y=error_rate,
-                  mode='lines', name='Error Rate (%)',
-                  line=dict(color='red', width=2),
-                  fill='tozeroy', fillcolor='rgba(255,0,0,0.1)'),
-        secondary_y=True,
-    )
-    
-    # Add threshold lines
-    fig.add_hline(y=10000, line_dash="dash", line_color="blue", 
-                  annotation_text="Min Throughput", secondary_y=False)
-    fig.add_hline(y=100, line_dash="dash", line_color="orange", 
-                  annotation_text="Max Latency", secondary_y=True)
-    fig.add_hline(y=5, line_dash="dash", line_color="red", 
-                  annotation_text="Max Error Rate", secondary_y=True)
-    
-    # Set y-axes titles
-    fig.update_yaxes(title_text="Throughput (records/min)", secondary_y=False)
-    fig.update_yaxes(title_text="Latency (ms) / Error Rate (%)", secondary_y=True)
-    
-    # Set x-axis title
-    fig.update_xaxes(title_text="Time")
-    
-    fig.update_layout(
-        title_text="Real-time ETL Pipeline Monitoring",
-        height=600,
-        hovermode='x unified'
-    )
-    
-    # Save and show
-    fig.write_html("realtime_etl_monitor.html")
-    print("Real-time ETL monitor saved as 'realtime_etl_monitor.html'")
-    fig.show()
+    print("Use Ray Dashboard for real-time monitoring. This function shows example layout only.")
     
     return fig
 
@@ -1683,27 +1544,26 @@ def create_realtime_etl_monitor():
 realtime_monitor = create_realtime_etl_monitor()
 ```
 
-### System Resource Monitoring
+### System resource monitoring
 
 ```python
 def create_system_resource_dashboard():
     """Create system resource monitoring dashboard."""
     print("Creating system resource monitoring dashboard...")
     
-    # Get actual system information
-    cpu_percent = psutil.cpu_percent(interval=1, percpu=True)
-    memory = psutil.virtual_memory()
-    disk = psutil.disk_usage('/')
+    # Example layout for system resource dashboards
+    cpu_percent = []
+    class M: pass
+    memory = M(); memory.total = 0; memory.percent = 0
+    class D: pass
+    disk = D(); disk.total = 0; disk.used = 0
     
     # Create system resource visualization
     fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(15, 10))
     fig.suptitle('System Resource Monitoring for ETL Pipeline', fontsize=16, fontweight='bold')
     
     # 1. CPU Usage by Core
-    cores = [f'Core {i+1}' for i in range(len(cpu_percent))]
-    colors = ['red' if cpu > 80 else 'orange' if cpu > 60 else 'green' for cpu in cpu_percent]
-    
-    bars = ax1.bar(cores, cpu_percent, color=colors, alpha=0.7)
+    bars = ax1.bar([], [], color='green', alpha=0.7)
     ax1.set_title('CPU Usage by Core', fontweight='bold')
     ax1.set_ylabel('CPU Usage (%)')
     ax1.axhline(y=80, color='red', linestyle='--', alpha=0.5, label='Critical: 80%')
@@ -1717,33 +1577,16 @@ def create_system_resource_dashboard():
                 f'{value:.1f}%', ha='center', va='bottom', fontweight='bold')
     
     # 2. Memory Usage
-    memory_data = [
-        ('Used', memory.used / (1024**3), 'red'),
-        ('Available', memory.available / (1024**3), 'green'),
-        ('Cached', (memory.cached if hasattr(memory, 'cached') else 0) / (1024**3), 'blue')
-    ]
-    
-    labels, values, colors_mem = zip(*memory_data)
-    ax2.pie(values, labels=labels, colors=colors_mem, autopct='%1.1f%%', startangle=90)
+    ax2.pie([], labels=[], colors=['red','green','blue'], autopct='%1.1f%%', startangle=90)
     ax2.set_title(f'Memory Usage (Total: {memory.total / (1024**3):.1f} GB)', fontweight='bold')
     
     # 3. Disk Usage
-    disk_data = [
-        ('Used', disk.used / (1024**3), 'red'),
-        ('Free', disk.free / (1024**3), 'green')
-    ]
-    
-    labels_disk, values_disk, colors_disk = zip(*disk_data)
-    ax3.pie(values_disk, labels=labels_disk, colors=colors_disk, autopct='%1.1f%%', startangle=90)
+    ax3.pie([], labels=[], colors=['red','green'], autopct='%1.1f%%', startangle=90)
     ax3.set_title(f'Disk Usage (Total: {disk.total / (1024**3):.1f} GB)', fontweight='bold')
     
     # 4. Resource Trends (simulated)
-    hours = list(range(24))
-    cpu_trend = 30 + 20 * np.sin(np.linspace(0, 2*np.pi, 24)) + np.random.normal(0, 5, 24)
-    memory_trend = 60 + 15 * np.sin(np.linspace(0, 4*np.pi, 24)) + np.random.normal(0, 3, 24)
-    
-    ax4.plot(hours, cpu_trend, 'b-o', label='CPU Usage (%)', linewidth=2, markersize=4)
-    ax4.plot(hours, memory_trend, 'r-s', label='Memory Usage (%)', linewidth=2, markersize=4)
+    ax4.plot([], [], 'b-o', label='CPU Usage (%)', linewidth=2, markersize=4)
+    ax4.plot([], [], 'r-s', label='Memory Usage (%)', linewidth=2, markersize=4)
     ax4.set_title('24-Hour Resource Trends', fontweight='bold')
     ax4.set_xlabel('Hour of Day')
     ax4.set_ylabel('Usage (%)')
@@ -1754,13 +1597,7 @@ def create_system_resource_dashboard():
     plt.savefig('system_resource_dashboard.png', dpi=300, bbox_inches='tight')
     plt.show()
     
-    print("System resource dashboard saved as 'system_resource_dashboard.png'")
-    
-    # Print current system status
-    print(f"\nCurrent System Status:")
-    print(f"  CPU Usage: {psutil.cpu_percent():.1f}%")
-    print(f"  Memory Usage: {memory.percent:.1f}%")
-    print(f"  Disk Usage: {(disk.used / disk.total) * 100:.1f}%")
+    print("Use Ray Dashboard and your infrastructure monitoring for system metrics.")
 
 # Create system resource dashboard
 create_system_resource_dashboard()
