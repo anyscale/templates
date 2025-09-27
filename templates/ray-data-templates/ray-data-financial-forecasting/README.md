@@ -287,22 +287,11 @@ This comprehensive dashboard provides key insights into market trends, volatilit
 ### Load Financial News Data from Public Sources
 
 ```python
-# Load financial news dataset using Ray Data native operations
-try:
-    # Option 1: Load from public financial news dataset
-    financial_news = ray.data.read_json(
-        "s3://anonymous@financial-news-dataset/news_data.jsonl",
-        columns=["date", "symbol", "headline", "content", "sentiment"]
-    )
-    
-    print(f"Loaded financial news dataset with {financial_news.count():,} articles")
-    
-except Exception as e:
-    print(f"Public news dataset not available: {e}")
-    print("Creating comprehensive news dataset using available sources...")
-    
-    # Create comprehensive financial news dataset
-    news_articles = []
+# Create comprehensive financial news dataset for analysis
+print("Creating comprehensive financial news dataset...")
+
+# Create realistic financial news dataset
+news_articles = []
     
     # Real financial news headlines (sample from public domain sources)
     real_headlines = [
@@ -1005,35 +994,32 @@ def process_financial_data_with_ray_data_best_practices(dataset):
         concurrency=4     # Parallel processing across workers
     )
     
-    print(f"   Enhanced dataset with financial metrics: {enhanced_data.count():,} records")
+    print(f"   Financial dataset with metrics: {financial_data.count():,} records")
     
     # Best Practice 3: Use native groupby for aggregations
     print("3. Sector analysis using native groupby operations...")
-    try:
-        # Group by symbol for time series analysis
-        symbol_groups = enhanced_data.groupby('Symbol').mean(['Close', 'Volume', 'daily_return'])
-        print("   Symbol-level aggregations completed")
-    except Exception as e:
-        print(f"   Groupby operation: {e}")
+    # Group by symbol for time series analysis
+    symbol_groups = financial_data.groupby('Symbol').mean(['Close', 'Volume', 'daily_return'])
+    print("   Symbol-level aggregations completed")
     
-    return enhanced_data
+    return financial_data
 
 # Process the real financial data
-processed_financial_data = process_financial_data_with_ray_data_best_practices(sp500_data)
+processed_financial_data = process_financial_data_with_ray_data_best_practices(financial_data)
 ```
 
-### Display Enhanced Financial Analysis Results
+### Display Financial Analysis Results
 
 ```python
-# Display enhanced financial analysis results
-sample_enhanced = processed_financial_data.take(8)
+# Display financial analysis results
+sample_processed = processed_financial_data.take(8)
 
-print("Enhanced Financial Analysis Results:")
+print("Financial Analysis Results:")
 print("=" * 130)
 print(f"{'Symbol':<8} {'Date':<12} {'Close':<8} {'Daily Return':<12} {'Price Range':<12} {'Volume Cat':<12} {'Analysis':<25}")
 print("-" * 130)
 
-for record in sample_enhanced:
+for record in sample_processed:
     symbol = str(record.get('Symbol', record.get('Name', 'N/A')))[:7]
     date = str(record.get('Date', record.get('date', 'N/A')))[:10]
     close_price = record.get('Close', record.get('close', 0))

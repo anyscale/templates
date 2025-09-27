@@ -24,10 +24,10 @@ echo "Attempting to test pandas import..."
 python -c "import pandas as pd; print('Pandas import successful!')"
 
 if [ $? -eq 0 ]; then
-    echo "✅ Pandas/numpy issue fixed!"
+    echo "Pandas/numpy issue fixed!"
     echo "You can now run: python upload_benchmark_data.py"
 else
-    echo "❌ Issue persists. Try:"
+    echo "Issue persists. Try:"
     echo "1. conda create -n fresh_env python=3.9"
     echo "2. conda activate fresh_env" 
     echo "3. pip install boto3 pandas pyarrow requests yfinance"

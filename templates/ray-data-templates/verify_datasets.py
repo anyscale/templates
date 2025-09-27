@@ -36,12 +36,12 @@ def verify_dataset(path: str, description: str, expected_min_records: int = 1) -
         count = dataset.count()
         
         if count >= expected_min_records:
-            return True, f"✅ {description}: {count:,} records", count
+            return True, f"PASS {description}: {count:,} records", count
         else:
-            return False, f"❌ {description}: Only {count} records (expected >= {expected_min_records})", count
+            return False, f"FAIL {description}: Only {count} records (expected >= {expected_min_records})", count
             
     except Exception as e:
-        return False, f"❌ {description}: Error - {str(e)}", 0
+        return False, f"ERROR {description}: {str(e)}", 0
 
 def main():
     """Main verification function."""

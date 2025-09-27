@@ -511,24 +511,20 @@ def parse_cloudtrail_logs(batch):
     security_events = []
     
     for log_entry in batch:
-        try:
-            # Extract security-relevant fields
-            security_event = {
-                'event_time': log_entry.get('eventTime', ''),
-                'event_name': log_entry.get('eventName', 'unknown'),
-                'event_source': log_entry.get('eventSource', 'unknown'),
-                'user_identity': log_entry.get('userIdentity', {}).get('type', 'unknown'),
-                'source_ip': log_entry.get('sourceIPAddress', ''),
-                'user_agent': log_entry.get('userAgent', ''),
-                'aws_region': log_entry.get('awsRegion', ''),
-                'is_console_login': 'ConsoleLogin' in log_entry.get('eventName', ''),
-                'is_api_call': log_entry.get('eventSource', '').endswith('.amazonaws.com'),
-                'is_error': log_entry.get('errorCode') is not None
-            }
-            security_events.append(security_event)
-            
-        except Exception:
-            continue
+        # Extract security-relevant fields
+        security_event = {
+            'event_time': log_entry.get('eventTime', ''),
+            'event_name': log_entry.get('eventName', 'unknown'),
+            'event_source': log_entry.get('eventSource', 'unknown'),
+            'user_identity': log_entry.get('userIdentity', {}).get('type', 'unknown'),
+            'source_ip': log_entry.get('sourceIPAddress', ''),
+            'user_agent': log_entry.get('userAgent', ''),
+            'aws_region': log_entry.get('awsRegion', ''),
+            'is_console_login': 'ConsoleLogin' in log_entry.get('eventName', ''),
+            'is_api_call': log_entry.get('eventSource', '').endswith('.amazonaws.com'),
+            'is_error': log_entry.get('errorCode') is not None
+        }
+        security_events.append(security_event)
     
     return security_events
 

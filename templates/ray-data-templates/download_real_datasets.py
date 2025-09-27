@@ -479,7 +479,7 @@ fi
 # Master script to download all real datasets for Ray Data templates
 # Requires: kaggle configure, aws configure
 
-echo "🚀 Ray Data Template Real Dataset Downloader"
+echo "Ray Data Template Real Dataset Downloader"
 echo "============================================="
 
 # Check prerequisites
@@ -493,17 +493,17 @@ if ! command -v aws &> /dev/null; then
     exit 1
 fi
 
-echo "✅ Prerequisites check passed"
+echo "Prerequisites check passed"
 
 # Download datasets
-echo "📥 Downloading real datasets..."
+echo "Downloading real datasets..."
 
 # 1. Titanic (Competition data)
 echo "1. Downloading Titanic dataset..."
 kaggle competitions download -c titanic -p ./downloads --unzip
 if [ -f "./downloads/train.csv" ]; then
     aws s3 cp ./downloads/train.csv s3://ray-benchmark-data/ml-datasets/titanic.csv
-    echo "✅ Titanic dataset uploaded"
+    echo "Titanic dataset uploaded"
 fi
 
 # 2. Amazon Reviews (NLP)
@@ -512,7 +512,7 @@ kaggle datasets download -d snap/amazon-fine-food-reviews -p ./downloads --unzip
 if [ -f "./downloads/Reviews.csv" ]; then
     head -50000 ./downloads/Reviews.csv > ./downloads/amazon_reviews_sample.csv
     aws s3 cp ./downloads/amazon_reviews_sample.csv s3://ray-benchmark-data/nlp/amazon-reviews.csv
-    echo "✅ Amazon reviews uploaded"
+    echo "Amazon reviews uploaded"
 fi
 
 # 3. Brazilian E-Commerce (Customer data)
@@ -520,7 +520,7 @@ echo "3. Downloading Brazilian e-commerce data..."
 kaggle datasets download -d olistbr/brazilian-ecommerce -p ./downloads --unzip
 if [ -f "./downloads/olist_customers_dataset.csv" ]; then
     aws s3 cp ./downloads/olist_customers_dataset.csv s3://ray-benchmark-data/catalog/customer_data.csv
-    echo "✅ E-commerce customer data uploaded"
+    echo "E-commerce customer data uploaded"
 fi
 
 # 4. Credit Card Fraud (Financial anomaly detection)
@@ -528,16 +528,16 @@ echo "4. Downloading credit card fraud data..."
 kaggle datasets download -d mlg-ulb/creditcardfraud -p ./downloads --unzip
 if [ -f "./downloads/creditcard.csv" ]; then
     aws s3 cp ./downloads/creditcard.csv s3://ray-benchmark-data/financial/credit-card-fraud.csv
-    echo "✅ Credit card fraud data uploaded"
+    echo "Credit card fraud data uploaded"
 fi
 
 # 5. NYC Taxi (if available on Kaggle)
 echo "5. Checking for NYC taxi data..."
 kaggle datasets download -d elemento/nyc-yellow-taxi-trip-data -p ./downloads --unzip 2>/dev/null || echo "NYC taxi not available on Kaggle, use manual download"
 
-echo "🎉 Real dataset download completed!"
-echo "📊 All templates now have access to real data"
-echo "📝 Note: Some formats may need conversion from CSV to Parquet"
+echo "Real dataset download completed!"
+echo "All templates now have access to real data"
+echo "Note: Some formats may need conversion from CSV to Parquet"
 """
         
         script_path = os.path.join(self.download_dir, "download_all_real_datasets.sh")
