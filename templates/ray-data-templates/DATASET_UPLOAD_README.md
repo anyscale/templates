@@ -212,16 +212,35 @@ print(f"TPC-H customers: {customer_data.count()} records")
 
 Expected dataset sizes after upload:
 
-- Financial data: ~50MB (10 symbols × 2 years daily)
-- Titanic data: ~100KB (891 passengers)
-- NYC Taxi data: ~50MB (50K trips)
-- TPC-H data: ~2GB total (SF10 scale)
-- Log data: ~100MB (converted text logs)
-- Medical data: ~200MB (various formats)
-- Text captions: ~500KB (5K captions)
-- Support tickets: ~50MB (10K tickets)
+- Financial data: ~150MB (10 symbols × 2 years daily, realistic volumes)
+- Titanic data: ~500KB (5K passengers for ML training)
+- NYC Taxi data: ~200MB (100K-250K trips for geospatial analysis)
+- TPC-H data: ~8GB total (SF10 scale with realistic volumes)
+- Log data: ~500MB (25K+ log entries per type)
+- Medical data: ~800MB (5K+ DICOM studies, 3K+ HL7 messages)
+- Text captions: ~2MB (10K captions for multimodal AI)
+- Support tickets: ~200MB (10K realistic support tickets)
 
-**Total estimated size**: ~3GB (excluding ImageNette images)
+**Total estimated size**: ~10GB (excluding ImageNette images)
+
+### Dataset Row Counts
+
+| Dataset | Rows/Records | Purpose |
+|---------|--------------|---------|
+| **Financial S&P 500** | 7,300+ records | 10 symbols × 2 years daily |
+| **Titanic ML** | 5,000 passengers | Expanded for better ML training |
+| **NYC Taxi** | 100K-250K trips | City-scale geospatial analysis |
+| **TPC-H Customers** | 500K customers | Enterprise-scale ETL testing |
+| **TPC-H Orders** | 3M orders | Realistic business transaction volume |
+| **TPC-H LineItems** | 15M line items | High-volume transaction details |
+| **Apache Logs** | 25K log entries | Web server log analysis |
+| **Security Logs** | 15K security events | Security monitoring patterns |
+| **Application Logs** | 5K JSON logs | Microservice log analysis |
+| **DICOM Studies** | 5K medical studies | Healthcare imaging metadata |
+| **HL7 Messages** | 3K medical messages | Healthcare data exchange |
+| **Patient Records** | 5K patient records | Medical record processing |
+| **Support Tickets** | 10K tickets | Customer service NLP analysis |
+| **Text Captions** | 10K captions | Multimodal AI training |
 
 ## Security Considerations
 

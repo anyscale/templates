@@ -255,7 +255,7 @@ class BenchmarkDataUploader:
         logger.info("Creating synthetic Titanic dataset...")
         
         np.random.seed(42)
-        n_passengers = 891
+        n_passengers = 5000
         
         data = {
             'PassengerId': range(1, n_passengers + 1),
@@ -287,7 +287,7 @@ class BenchmarkDataUploader:
         min_lat, max_lat = 40.4774, 40.9176
         min_lon, max_lon = -74.2591, -73.7004
         
-        n_trips = 50000
+        n_trips = 250000
         np.random.seed(42)
         
         data = []
@@ -323,7 +323,7 @@ class BenchmarkDataUploader:
         logger.info("Creating TPC-H benchmark datasets...")
         
         # Create customer table
-        n_customers = 150000
+        n_customers = 500000
         customers = {
             'c_custkey': range(1, n_customers + 1),
             'c_name': [f"Customer#{i:09d}" for i in range(1, n_customers + 1)],
@@ -359,8 +359,8 @@ class BenchmarkDataUploader:
         self.upload_file_to_s3(temp_path, "tpch/parquet/sf10/nation.parquet")
         os.remove(temp_path)
         
-        # Create orders table (smaller subset)
-        n_orders = 1500000
+        # Create orders table (larger dataset)
+        n_orders = 3000000
         orders = {
             'o_orderkey': range(1, n_orders + 1),
             'o_custkey': np.random.randint(1, n_customers + 1, n_orders),
@@ -380,8 +380,8 @@ class BenchmarkDataUploader:
         self.upload_file_to_s3(temp_path, "tpch/parquet/sf10/orders.parquet")
         os.remove(temp_path)
         
-        # Create lineitem table (sample)
-        n_lineitems = 6000000
+        # Create lineitem table (realistic scale)
+        n_lineitems = 15000000
         lineitems = {
             'l_orderkey': np.random.randint(1, n_orders + 1, n_lineitems),
             'l_partkey': np.random.randint(1, 200000, n_lineitems),

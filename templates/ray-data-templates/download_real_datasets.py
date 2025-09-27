@@ -237,7 +237,7 @@ fi
             modalities = ['CT', 'MRI', 'XRAY', 'ULTRASOUND', 'MAMMOGRAPHY', 'NUCLEAR MEDICINE']
             body_parts = ['CHEST', 'HEAD', 'ABDOMEN', 'PELVIS', 'SPINE', 'EXTREMITY']
             
-            for i in range(5000):
+            for i in range(10000):
                 study_date = datetime.now() - timedelta(days=random.randint(0, 365))
                 
                 dicom_record = {
@@ -268,7 +268,7 @@ fi
             # Create realistic HL7 messages based on HL7 v2.4 standard
             hl7_file = os.path.join(self.download_dir, "hl7_messages.hl7")
             with open(hl7_file, 'w') as f:
-                for i in range(1000):
+                for i in range(5000):
                     timestamp = (datetime.now() - timedelta(days=random.randint(0, 365))).strftime('%Y%m%d%H%M%S')
                     
                     # Realistic HL7 ADT message (Admit/Discharge/Transfer)

@@ -187,7 +187,7 @@ class SimpleBenchmarkDataUploader:
         
         temp_path = os.path.join(self.temp_dir, "captions.txt")
         with open(temp_path, 'w') as f:
-            for i in range(5000):
+            for i in range(10000):
                 caption = captions[i % len(captions)]
                 f.write(f"{caption} variation {i}\n")
         
@@ -205,7 +205,7 @@ class SimpleBenchmarkDataUploader:
         
         temp_path = os.path.join(self.temp_dir, "apache-access.log")
         with open(temp_path, 'w') as f:
-            for i in range(10000):
+            for i in range(25000):
                 entry = log_entries[i % len(log_entries)]
                 # Vary the timestamp
                 f.write(entry.replace("13:55:36", f"13:{55 + (i % 60):02d}:{36 + (i % 24):02d}") + '\n')
@@ -224,7 +224,7 @@ class SimpleBenchmarkDataUploader:
         
         temp_path = os.path.join(self.temp_dir, "security.log")
         with open(temp_path, 'w') as f:
-            for i in range(5000):
+            for i in range(15000):
                 entry = security_entries[i % len(security_entries)]
                 f.write(entry + '\n')
         
@@ -255,7 +255,7 @@ class SimpleBenchmarkDataUploader:
         # DICOM metadata
         temp_path = os.path.join(self.temp_dir, "dicom-metadata.json")
         with open(temp_path, 'w') as f:
-            for i in range(1000):
+            for i in range(5000):
                 dicom_record = {
                     "study_id": f"STUDY-{i:06d}",
                     "patient_id": f"PAT-{i:04d}",
@@ -326,7 +326,7 @@ class SimpleBenchmarkDataUploader:
         temp_path = os.path.join(self.temp_dir, "hl7-messages", "messages.hl7")
         
         with open(temp_path, 'w') as f:
-            for i in range(1000):
+            for i in range(3000):
                 # Simplified HL7 message format
                 hl7_message = f"""MSH|^~\\&|SYSTEM|HOSPITAL|RECEIVER|CLINIC|{datetime.now().strftime('%Y%m%d%H%M%S')}||ADT^A01|{i+1:06d}|P|2.4
 EVN||{datetime.now().strftime('%Y%m%d%H%M%S')}
@@ -409,7 +409,7 @@ To download and upload ImageNette:
         min_lat, max_lat = 40.4774, 40.9176
         min_lon, max_lon = -74.2591, -73.7004
         
-        n_trips = 50000
+        n_trips = 100000
         random.seed(42)
         
         temp_path = os.path.join(self.temp_dir, "yellow_tripdata_2023-01.parquet")
