@@ -988,7 +988,7 @@ def process_financial_data_with_ray_data_best_practices(dataset):
     
     # Best Practice 2: Use map_batches for efficient transformations
     print("2. Computing financial metrics using map_batches...")
-    enhanced_data = clean_data.map_batches(
+    financial_data = clean_data.map_batches(
         lambda batch: [
             {
                 **record,
@@ -1256,7 +1256,7 @@ print("Technical indicators calculated successfully using Ray Data distributed p
         return pd.DataFrame(results).to_dict('list')
     
     # Apply technical indicators using Ray Data
-    enhanced_dataset = dataset.map_batches(
+    financial_dataset = dataset.map_batches(
         add_technical_indicators,
         batch_format="pandas",
         batch_size=1000,
@@ -1272,10 +1272,10 @@ print("Technical indicators calculated successfully using Ray Data distributed p
         print(f"  {record['symbol']} on {record['date']}: Close=${record['close']:.2f}, "
               f"RSI={rsi_val:.1f}, SMA20=${sma20_val:.2f}")
     
-    return enhanced_dataset
+    return financial_dataset
 
 # Calculate technical indicators
-enhanced_financial_data = calculate_technical_indicators(financial_data)
+financial_with_indicators = calculate_technical_indicators(financial_data)
 
 ## Interactive Financial Visualizations
 
@@ -1437,7 +1437,7 @@ def create_interactive_candlestick_charts(dataset):
         fig.show()
 
 # Create technical analysis charts
-create_interactive_candlestick_charts(enhanced_financial_data)
+create_interactive_candlestick_charts(financial_with_indicators)
 ```
 
 ### Portfolio Performance Dashboard
@@ -1611,7 +1611,7 @@ def create_portfolio_performance_dashboard(dataset):
     return fig
 
 # Create portfolio performance dashboard
-portfolio_dashboard = create_portfolio_performance_dashboard(enhanced_financial_data)
+portfolio_dashboard = create_portfolio_performance_dashboard(financial_with_indicators)
 ```
 
 ### Advanced Financial Analytics
@@ -1829,7 +1829,7 @@ def create_advanced_financial_analytics(dataset):
     print("Advanced financial analytics saved as 'advanced_financial_analytics.png'")
 
 # Create advanced financial analytics
-create_advanced_financial_analytics(enhanced_financial_data)
+create_advanced_financial_analytics(financial_with_indicators)
 ```
 ```
 
@@ -1919,7 +1919,7 @@ def run_autoarima_forecasting(dataset):
     return forecast_results
 
 # Run AutoARIMA forecasting
-forecast_results = run_autoarima_forecasting(enhanced_financial_data)
+forecast_results = run_autoarima_forecasting(financial_with_indicators)
 ```
 
 ## Portfolio Optimization and Risk Analysis
@@ -2135,8 +2135,8 @@ def run_risk_analysis(dataset):
     return risk_analysis
 
 # Run portfolio optimization and risk analysis
-portfolio_results = run_portfolio_optimization(enhanced_financial_data)
-risk_results = run_risk_analysis(enhanced_financial_data)
+portfolio_results = run_portfolio_optimization(financial_with_indicators)
+risk_results = run_risk_analysis(financial_with_indicators)
 ```
 
 ## Key Takeaways and Best Practices

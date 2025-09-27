@@ -178,7 +178,7 @@ class InferenceWorker:
 print("Running optimized Ray Data inference with stateful workers...")
 
 # BEST PRACTICE: Use the new concurrency parameter for actor-based processing
-optimized_results = dataset.limit(100).map_batches(
+inference_results = dataset.limit(100).map_batches(
     InferenceWorker,
     concurrency=2,      # Use concurrency instead of deprecated compute parameter
     num_gpus=1,         # Allocate one GPU per worker

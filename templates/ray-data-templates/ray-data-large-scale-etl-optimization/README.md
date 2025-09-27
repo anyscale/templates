@@ -43,7 +43,7 @@ def process_transaction_stream(batch):
     
     for transaction in batch:
         # Calculate derived fields for analytics
-        enhanced_transaction = {
+        processed_transaction = {
             'transaction_id': transaction['id'],
             'customer_segment': 'premium' if transaction['amount'] > 500 else 'standard',
             'product_category': transaction['product_type'],
@@ -52,7 +52,7 @@ def process_transaction_stream(batch):
             'geographic_region': transaction['shipping_region']
         }
         
-        processed_transactions.append(enhanced_transaction)
+        processed_transactions.append(processed_transaction)
     
     return processed_transactions
 
@@ -770,7 +770,7 @@ def memory_optimized_transform(batch):
     return transformed_records
 
 # Apply memory-optimized processing
-optimized_data = taxi_data.map_batches(
+processed_data = taxi_data.map_batches(
     memory_optimized_transform,
     batch_size=5000,  # Smaller batches for memory efficiency
     concurrency=10

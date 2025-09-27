@@ -197,7 +197,7 @@ def create_titanic_feature_analysis():
     return titanic_df
 
 # Create Titanic feature analysis
-enhanced_titanic = create_titanic_feature_analysis()
+titanic_analysis = create_titanic_feature_analysis()
 ```
 
 This analysis reveals powerful feature engineering opportunities that we'll demonstrate throughout this template.
@@ -210,7 +210,7 @@ Leading companies demonstrate the transformative power of sophisticated feature 
 # Example: Creating family and social features from Titanic data
 def create_family_features(batch):
     """Engineer family and social features from Titanic dataset."""
-    enhanced_features = []
+    family_features = []
     for passenger in batch:
         # Calculate family size
         family_size = passenger['SibSp'] + passenger['Parch'] + 1
@@ -239,9 +239,9 @@ def create_family_features(batch):
             'fare_per_person': passenger.get('Fare', 0) / max(family_size, 1)
         }
         
-        enhanced_features.append({**passenger, **family_features})
+        family_features.append({**passenger, **family_data})
     
-    return enhanced_features
+    return family_features
 
 # Apply family feature engineering to Titanic data
 family_enhanced_data = ds.map_batches(
