@@ -67,7 +67,7 @@ pip install ray[data] transformers torch nltk wordcloud matplotlib seaborn plotl
 ---
 
 ## Step 1: Loading Text Data
-*⏱ Time: 5 minutes*
+*Time: 5 minutes*
 
 ### What We're Doing
 We'll create a realistic text dataset similar to product reviews or social media posts. This gives us something meaningful to analyze without requiring huge downloads.

@@ -2328,10 +2328,13 @@ class MedicalDataSink(BlockBasedFileDatasink):
             table = pa.Table.from_pandas(df)
             pq.write_table(table, file)
         elif self.format == 'csv':
-            df.to_csv(file, index=False)
+            # Use Ray Data native CSV writer
+            dataset_from_df = ray.data.from_pandas([df])
+            dataset_from_df.write_csv(file)
         else:
-            # JSON format
-            df.to_json(file, orient='records', lines=True)
+            # Use Ray Data native JSON writer
+            dataset_from_df = ray.data.from_pandas([df])
+            dataset_from_df.write_json(file)
 
 # Export processed medical data
 processed_hl7.write_datasink(

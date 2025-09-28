@@ -411,7 +411,7 @@ def create_geospatial_dashboard(dataset, sample_size=1000):
     lat_range = lat_max - lat_min
     lon_range = lon_max - lon_min
     
-    bounds_text = "🗺️ Geographic Analysis\n" + "="*40 + "\n"
+    bounds_text = "Geographic Analysis\n" + "="*40 + "\n"
     bounds_text += f"Total Locations: {len(df):,}\n"
     bounds_text += f"Latitude Range: {lat_min:.2f}° to {lat_max:.2f}°\n"
     bounds_text += f"Longitude Range: {lon_min:.2f}° to {lon_max:.2f}°\n"
@@ -544,7 +544,7 @@ start_time = time.time()
 poi_dataset = load_geospatial_data()
 load_time = time.time() - start_time
 
-print(f"⏱ Data loading took: {load_time:.2f} seconds")
+print(f"Data loading took: {load_time:.2f} seconds")
 ```
 
 Inspect the dataset structure and validate our data:

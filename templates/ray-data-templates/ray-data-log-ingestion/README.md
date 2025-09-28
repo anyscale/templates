@@ -17,7 +17,7 @@ Create a scalable log analysis system that processes millions of log entries to 
 
 **Why log analysis matters**: Logs provide critical visibility into system security and performance, enabling proactive threat detection and operational monitoring. Modern systems generate massive log volumes that require distributed processing for real-time analysis.
 
-**Ray Data's log processing superpowers**: Analyze millions of log entries in parallel for real-time insights and security intelligence. You'll learn how distributed processing transforms log analysis from reactive to proactive security monitoring.
+**Ray Data's log processing capabilities**: Analyze millions of log entries in parallel for real-time insights and security intelligence. You'll learn how distributed processing transforms log analysis from reactive to proactive security monitoring.
 
 **Real-world security applications**: Techniques used by companies like Cloudflare and Datadog to process petabytes of logs daily for threat detection demonstrate the scale and sophistication required for modern security operations.
 

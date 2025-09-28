@@ -1091,7 +1091,7 @@ def validate_features(dataset):
     
     if sample_features:
         feature_count = len(sample_features[0])
-        print(f"✅ Feature engineering successful:")
+        print(f"Feature engineering successful:")
         print(f"   Features per record: {feature_count}")
         print(f"   Sample record keys: {len(list(sample_features[0].keys()))}")
         return True
@@ -1123,9 +1123,9 @@ def create_feature_overview(dataset):
     if sample_features:
         feature_count = len(sample_features[0])
         print(f"Feature Engineering Results:")
-        print(f"  ✅ Total features per record: {feature_count}")
-        print(f"  ✅ Sample features: {list(sample_features[0].keys())[:10]}...")
-        print(f"  ✅ Processing completed successfully!")
+        print(f"  Total features per record: {feature_count}")
+        print(f"  Sample features: {list(sample_features[0].keys())[:10]}...")
+        print(f"  Processing completed successfully!")
     
     return dataset
 
