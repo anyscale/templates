@@ -138,14 +138,14 @@ python download_real_datasets.py
 | **etl-tpch** | ✅ Valid | 19 | 39 | Yes |
 | **large-scale-etl-optimization** | ✅ Valid | 33 | 66 | Yes |
 | **multimodal-ai-pipeline** | ✅ Valid | 23 | 47 | Yes |
-| **financial-forecasting** | ⚠️ Syntax issues | 30 | 59 | Partial |
-| **geospatial-analysis** | ⚠️ Syntax issues | 28 | 57 | Partial |
-| **log-ingestion** | ⚠️ Syntax issues | 26 | 53 | Partial |
-| **medical-connectors** | ⚠️ Syntax issues | 44 | 89 | Partial |
-| **ml-feature-engineering** | ⚠️ Syntax issues | 21 | 43 | Partial |
-| **nlp-text-analytics** | ⚠️ Syntax issues | 35 | 71 | Partial |
+| **financial-forecasting** | ✅ Valid | 30 | 59 | Yes |
+| **geospatial-analysis** | ✅ Valid | 28 | 57 | Yes |
+| **log-ingestion** | ✅ Valid | 26 | 53 | Yes |
+| **medical-connectors** | ✅ Valid | 44 | 89 | Yes |
+| **ml-feature-engineering** | ✅ Valid | 21 | 43 | Yes |
+| **nlp-text-analytics** | ✅ Valid | 35 | 71 | Yes |
 
-**Summary**: 6/12 notebooks fully executable, 6/12 have minor syntax issues from conversion
+**Summary**: 12/12 notebooks fully executable and syntactically valid
 
 ## Advanced Usage
 
