@@ -3122,7 +3122,7 @@ With Ray Data's streaming capabilities and medical connectors, healthcare organi
 - **Medication Safety**: Real-time drug interaction checking across all patient medications and conditions
 - **Surgical Planning**: Dynamic surgical risk assessment based on real-time patient data and outcomes analysis
 
-**🧬 Precision Medicine at Population Scale**
+**Precision Medicine at Population Scale**
 Ray Data's medical connectors enable **precision medicine initiatives** that combine genomic data, clinical records, and lifestyle factors to provide personalized treatment recommendations for every patient.
 
 **Capabilities:**

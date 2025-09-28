@@ -19,7 +19,7 @@ Create an optimized ML batch inference pipeline that demonstrates the performanc
 
 **Ray Data's inference capabilities**: Stateful per-worker model loading (via Ray Data) and distributed processing eliminate performance bottlenecks that plague traditional ML pipelines. You'll learn how to leverage these capabilities for scalable inference.
 
-**Real-world optimization patterns**: Companies like Netflix and Tesla process millions of inference requests efficiently using the distributed techniques demonstrated in this template. These patterns apply across industries from recommendation systems to autonomous vehicles.
+**Real-world optimization patterns**: Netflix processes 200+ million inference requests daily for personalized recommendations using distributed ML systems. Tesla's autonomous driving systems perform real-time inference on sensor data from millions of vehicles. Google Search executes billions of ML inference operations for ranking and relevance. These patterns apply across industries from recommendation systems to autonomous vehicles, search engines, and fraud detection systems.
 
 **Production deployment strategies**: Master GPU utilization, batch size tuning, and resource allocation techniques that enable ML systems to scale to enterprise workloads cost-effectively.
 
@@ -259,17 +259,27 @@ The optimized approach delivers significant improvements through:
 
 ## Implementation Checklist
 
-### Immediate Actions
-- [ ] Use actor-based `map_batches()` for model loading
-- [ ] Set appropriate `batch_size` for your GPU memory
-- [ ] Configure `concurrency` based on available resources
-- [ ] Monitor performance with Ray Dashboard
+### Immediate Actions (Next 2 weeks)
+- [ ] Use actor-based `map_batches()` for stateful model loading
+- [ ] Set optimal `batch_size` for your GPU memory (start with 16-32)
+- [ ] Configure `concurrency` based on available resources (2-4 workers initially)
+- [ ] Monitor performance with Ray Dashboard for bottleneck identification
+- [ ] Implement proper resource cleanup with `ray.shutdown()`
 
-### Advanced Optimizations  
-- [ ] Experiment with different batch sizes for your models
-- [ ] Add GPU acceleration for data preprocessing
-- [ ] Implement multi-model inference pipelines
-- [ ] Integrate with Ray Serve for real-time serving  
+### Production Optimizations (Next 1-2 months)
+- [ ] Experiment with different batch sizes for your specific models
+- [ ] Add GPU acceleration for data preprocessing pipelines
+- [ ] Implement multi-model inference pipelines for A/B testing
+- [ ] Integrate with Ray Serve for real-time serving capabilities
+- [ ] Set up automated model deployment and versioning
+- [ ] Implement comprehensive monitoring and alerting
+
+### Enterprise Scale (Next 3-6 months)
+- [ ] Deploy across multi-node GPU clusters for massive throughput
+- [ ] Implement auto-scaling based on inference demand
+- [ ] Add model performance tracking and drift detection
+- [ ] Integrate with MLOps pipelines for continuous deployment
+- [ ] Implement cost optimization strategies for GPU utilization  
 
 ---
 

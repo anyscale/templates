@@ -1167,15 +1167,49 @@ feature_overview = create_feature_overview(categorical_features)
 - [ ] Implement real-time feature engineering
 - [ ] Add feature drift monitoring and validation
 
-## Performance Summary
+## Performance Optimization Guide
 
-### Feature Engineering Metrics
+### **Batch Size Optimization**
 
-| Operation Type | Processing Rate | Scalability | Method |
-|----------------|----------------|-------------|---------|
-| **Categorical Encoding** | High throughput | Linear scaling | Native operations |
-| **Numerical Transformations** | Very high | Excellent scaling | Expression API |
-| **Feature Selection** | Fast processing | Distributed | Native aggregations |
+| Feature Type | Recommended Batch Size | Memory Usage | Processing Speed |
+|--------------|------------------------|--------------|------------------|
+| **Simple Features** | 5,000-10,000 records | Low | Very fast |
+| **Complex Features** | 1,000-2,000 records | Medium | Fast |
+| **ML Model Features** | 500-1,000 records | High | Moderate |
+
+### **Concurrency Guidelines**
+
+| Dataset Size | Recommended Concurrency | Resource Type | Expected Performance |
+|--------------|------------------------|---------------|---------------------|
+| **< 100K records** | 2-4 workers | Standard CPU | Quick processing |
+| **100K-1M records** | 4-8 workers | High-CPU instances | Efficient scaling |
+| **> 1M records** | 8-16 workers | Distributed cluster | Linear scaling |
+
+### **Memory Management Best Practices**
+
+```python
+# Memory-efficient feature engineering patterns
+def memory_efficient_features(batch):
+    """Create features with minimal memory overhead."""
+    # Process records directly without DataFrame conversion
+    feature_records = []
+    for record in batch:
+        # Calculate features using simple operations
+        features = {
+            'original_feature': record.get('value', 0),
+            'derived_feature': record.get('value', 0) * 2,
+            'categorical_feature': 'high' if record.get('value', 0) > 100 else 'low'
+        }
+        feature_records.append({**record, **features})
+    return feature_records
+
+# Apply with optimal settings
+feature_dataset = dataset.map_batches(
+    memory_efficient_features,
+    batch_size=2000,  # Balanced for memory and performance
+    concurrency=4     # Parallel processing
+)
+```
 
 ## Cleanup
 

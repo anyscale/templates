@@ -1079,107 +1079,54 @@ import numpy as np
 plt.style.use('default')
 sns.set_palette("husl")
 
-def create_engaging_etl_dashboard(dataset, title="ETL Results"):
-    """Create visually appealing dashboard showing ETL results and insights."""
-    
+def create_etl_summary(dataset, title="ETL Results"):
+    """Create concise ETL processing summary."""
     print("="*60)
     print(f"{title.upper()}")
     print("="*60)
     print(f"Total records: {dataset.count():,}")
     print(f"Schema: {dataset.schema()}")
     print(f"Dataset size: {dataset.size_bytes() / (1024**2):.1f} MB")
-    
-    # Convert sample data to pandas for visualization
-    sample_data = dataset.take(10000)  # 10K sample for visualization
+
+def create_simple_etl_chart(dataset):
+    """Create focused ETL results visualization."""
+    # Convert sample data for visualization
+    sample_data = dataset.take(1000)  # Smaller sample for efficiency
     df = pd.DataFrame(sample_data)
     
-    # Create comprehensive visualization dashboard
-    fig = make_subplots(
-        rows=2, cols=3,
-        subplot_titles=('Trip Type Distribution', 'Revenue by Efficiency', 'Geographic Patterns',
-                       'Revenue Trends', 'Capacity Utilization', 'Performance Metrics'),
-        specs=[[{"type": "bar"}, {"type": "scatter"}, {"type": "bar"}],
-               [{"type": "scatter"}, {"type": "histogram"}, {"type": "bar"}]]
-    )
+    # Create simple, focused visualization
+    if len(df) > 0 and 'trip_type' in df.columns:
+        plt.figure(figsize=(10, 6))
+        trip_counts = df['trip_type'].value_counts()
+        plt.bar(trip_counts.index, trip_counts.values, color=['#FF6B6B', '#4ECDC4', '#45B7D1'])
+        plt.title('ETL Processing Results - Trip Type Distribution')
+        plt.xlabel('Trip Type')
+        plt.ylabel('Count')
+        plt.xticks(rotation=45)
+        plt.tight_layout()
+        plt.show()
+        print(f"ETL processing completed: {len(df):,} records analyzed")
     
-    # 1. Trip Type Distribution (Business Logic Results)
+    # Simple trip type analysis
     if 'trip_type' in df.columns:
         trip_counts = df['trip_type'].value_counts()
-        fig.add_trace(
-            go.Bar(x=trip_counts.index, y=trip_counts.values,
-                  marker_color=['#FF6B6B', '#4ECDC4', '#45B7D1'],
-                  name="Trip Types"),
-            row=1, col=1
-        )
+        print(f"Trip type distribution: {trip_counts.to_dict()}")
     
-    # 2. Revenue vs Efficiency Analysis
-    if 'total_revenue' in df.columns and 'efficiency_score' in df.columns:
-        fig.add_trace(
-            go.Scatter(x=df['efficiency_score'], y=df['total_revenue'],
-                      mode='markers', marker=dict(size=8, opacity=0.6),
-                      name="Revenue vs Efficiency"),
-            row=1, col=2
-        )
+    # Simple revenue analysis
+    if 'total_revenue' in df.columns:
+        avg_revenue = df['total_revenue'].mean()
+        print(f"Average revenue per trip: ${avg_revenue:.2f}")
     
-    # 3. Geographic Distribution (if available)
-    if 'pickup_borough' in df.columns:
-        borough_counts = df['pickup_borough'].value_counts()
-        fig.add_trace(
-            go.Bar(x=borough_counts.index, y=borough_counts.values,
-                  marker_color='lightgreen', name="Geographic Distribution"),
-            row=1, col=3
-        )
-    
-    # 4. Revenue Trends Over Time
-    if 'pickup_datetime' in df.columns and 'total_revenue' in df.columns:
-        df['pickup_datetime'] = pd.to_datetime(df['pickup_datetime'])
-        df['hour'] = df['pickup_datetime'].dt.hour
-        hourly_revenue = df.groupby('hour')['total_revenue'].mean()
-        
-        fig.add_trace(
-            go.Scatter(x=hourly_revenue.index, y=hourly_revenue.values,
-                      mode='lines+markers', name="Hourly Revenue Trends"),
-            row=2, col=1
-        )
-    
-    # 5. Capacity Utilization Distribution
-    if 'capacity_utilization' in df.columns:
-        fig.add_trace(
-            go.Histogram(x=df['capacity_utilization'], nbinsx=20,
-                        marker_color='orange', name="Capacity Utilization"),
-            row=2, col=2
-        )
-    
-    # 6. Performance Metrics Summary
+    # Basic efficiency metrics
     if 'efficiency_score' in df.columns:
-        efficiency_ranges = pd.cut(df['efficiency_score'], bins=5, labels=['Poor', 'Fair', 'Good', 'Very Good', 'Excellent'])
-        range_counts = efficiency_ranges.value_counts()
-        
-        fig.add_trace(
-            go.Bar(x=range_counts.index, y=range_counts.values,
-                  marker_color='purple', name="Performance Ranges"),
-            row=2, col=3
-        )
+        avg_efficiency = df['efficiency_score'].mean()
+        print(f"Average efficiency score: {avg_efficiency:.2f}")
     
-    # Update layout for better appearance
-    fig.update_layout(
-        title_text="ETL Pipeline Results Dashboard - Data Insights",
-        height=800,
-        showlegend=False
-    )
-    
-    # Show interactive dashboard
-    fig.show()
-    
-    print("="*60)
-    print("Interactive ETL dashboard created!")
-    print("This dashboard shows data insights and processing results")
-    print("="*60)
-    
-    return fig
+    print("ETL processing visualization completed")
 
-# Create engaging ETL results dashboard
-etl_dashboard = create_engaging_etl_dashboard(business_processed, "ETL Pipeline Results")
+# Create focused ETL results summary
+create_etl_summary(business_processed, "ETL Pipeline Results")
+create_simple_etl_chart(business_processed)
 ```
 
 ### ETL pipeline analysis using Ray Data native operations

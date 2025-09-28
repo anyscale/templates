@@ -555,12 +555,49 @@ print(f"Processed data available in: {OUTPUT_PATH}")
 **Distributed ETL**: Scalable patterns that work from single-node development to distributed production clusters  
 **Ray Data Fundamentals**: Core concepts for building production-ready data processing pipelines  
 
+## Troubleshooting Common Issues
+
+### **Problem: "Memory pressure during large joins"**
+**Solution**:
+```python
+# Use smaller batch sizes for memory-intensive operations
+large_join = customers_ds.join(orders_ds, 
+    left_on="c_custkey", right_on="o_custkey"
+).map_batches(process_function, batch_size=1000, concurrency=2)
+```
+
+### **Problem: "Slow aggregation performance"**
+**Solution**:
+```python
+# Use Ray Data native aggregations instead of pandas
+from ray.data.aggregate import Count, Sum, Mean
+result = dataset.groupby("category").aggregate(
+    Count(), Sum("amount"), Mean("price")
+)
+```
+
+### **Problem: "Column name errors"**
+**Solution**:
+```python
+# Always check schema before processing
+print(f"Available columns: {dataset.schema().names}")
+# Use consistent column naming
+dataset = dataset.rename_columns(["col1", "col2", "col3"])
+```
+
 ## Action Items
 
-1. **Explore TPC-H queries**: Implement additional TPC-H benchmark queries using Ray Data
-2. **Apply to your data**: Adapt these patterns to your organization's data processing needs
-3. **Scale to production**: Use Ray clusters for processing larger TPC-H scale factors
-4. **Monitor performance**: Leverage Ray Dashboard for optimization insights
+### **Immediate Implementation (This Week)**
+- [ ] Run TPC-H queries on your cluster to understand performance characteristics
+- [ ] Implement basic joins and aggregations using Ray Data native operations
+- [ ] Monitor resource utilization with Ray Dashboard
+- [ ] Test with different batch sizes to find optimal configuration
+
+### **Production Scaling (Next Month)**
+- [ ] Implement additional TPC-H benchmark queries using Ray Data patterns
+- [ ] Adapt these patterns to your organization's data processing needs
+- [ ] Scale to production clusters for processing larger TPC-H scale factors
+- [ ] Set up automated performance monitoring and optimization
 
 ## Next Steps
 

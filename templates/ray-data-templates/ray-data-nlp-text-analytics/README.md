@@ -402,17 +402,20 @@ A large e-commerce company receives 100,000+ pieces of text content daily from m
 - **Inconsistent Analysis**: Different analysts provide varying insights
 - **Delayed Response**: 24-48 hour delay for sentiment analysis and issue identification
 - **Limited Scale**: Can only process 10% of available content
-- **High Cost**: $200K+ monthly for external NLP services
+- **High Cost**: Expensive external NLP service dependencies
 
 ### **Ray Data Solution Benefits**
 
 The comprehensive NLP pipeline delivers:
 
-| Business aspect | Traditional approach | With Ray Data |
-|----------------|----------------------|---------------|
-| Processing scope | Sample-based analysis | Distributed full-dataset processing |
-| Pipeline complexity | Manual orchestration | Native Ray Data operations |
-| Consistency | Variable | Standardized across workers |
+| Business Aspect | Traditional Approach | Ray Data Solution | Business Impact |
+|----------------|----------------------|-------------------|-----------------|
+| **Processing Speed** | Manual analysis required | Automated distributed processing | Faster insights |
+| **Content Coverage** | Sample-based analysis | Full-dataset processing capability | Complete coverage |
+| **Consistency** | Variable analyst results | Standardized ML processing | Reliable outcomes |
+| **Scalability** | Limited to analyst capacity | Distributed across workers | Horizontal scaling |
+| **Cost Structure** | External service dependencies | Infrastructure automation | Operational efficiency |
+| **Response Time** | Significant processing delays | Near real-time processing | Faster decision making |
 
 ### **Enterprise NLP Pipeline Capabilities**
 

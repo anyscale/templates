@@ -5,28 +5,50 @@ This collection contains comprehensive Ray Data templates that demonstrate distr
 ## Available Templates
 
 ### **Data Processing and ETL**
-- **[ray-data-etl-tpch](./ray-data-etl-tpch/)**: Comprehensive TPC-H ETL pipeline with enterprise patterns and optimization
-- **[batch-inference-optimization](./ray-data-batch-inference-optimization/)**: Advanced optimization techniques for ML batch inference workloads
-- **[large-scale-etl-optimization](./ray-data-large-scale-etl-optimization/)**: Enterprise ETL pipeline optimization and performance tuning
-- **[data-quality-monitoring](./ray-data-data-quality-monitoring/)**: Automated data quality validation and monitoring systems
+- **[ray-data-etl-tpch](./ray-data-etl-tpch/)**: TPC-H benchmark ETL pipeline (25 min) - Learn industry-standard data processing with complex joins and aggregations
+- **[batch-inference-optimization](./ray-data-batch-inference-optimization/)**: ML inference optimization (20 min) - Master GPU utilization and actor-based model loading
+- **[large-scale-etl-optimization](./ray-data-large-scale-etl-optimization/)**: Enterprise ETL optimization (35 min) - Scale data pipelines to petabyte processing
+- **[data-quality-monitoring](./ray-data-data-quality-monitoring/)**: Data quality validation (25 min) - Automated monitoring and anomaly detection
 
 ### **Industry-Specific Applications**
-- **[financial-forecasting](./ray-data-financial-forecasting/)**: Financial time series analysis and algorithmic trading systems
-- **[medical-connectors](./ray-data-medical-connectors/)**: HIPAA-compliant healthcare data processing pipelines
-- **[geospatial-analysis](./ray-data-geospatial-analysis/)**: Large-scale geographic data analysis and location intelligence
+- **[financial-forecasting](./ray-data-financial-forecasting/)**: Financial time series analysis (30 min) - Technical indicators, portfolio optimization, and risk analysis
+- **[medical-connectors](./ray-data-medical-connectors/)**: Healthcare data processing (35 min) - HIPAA-compliant DICOM, HL7, and patient record processing  
+- **[geospatial-analysis](./ray-data-geospatial-analysis/)**: Geographic data analysis (25 min) - Spatial operations, clustering, and location intelligence
 
 ### **AI and Machine Learning**
-- **[ml-feature-engineering](./ray-data-ml-feature-engineering/)**: Scalable feature engineering for machine learning pipelines
-- **[multimodal-ai-pipeline](./ray-data-multimodal-ai-pipeline/)**: Processing text, images, and video data together
-- **[nlp-text-analytics](./ray-data-nlp-text-analytics/)**: Large-scale natural language processing and text analysis
+- **[ml-feature-engineering](./ray-data-ml-feature-engineering/)**: Feature engineering pipeline (35 min) - Automated feature creation, selection, and ML-ready data preparation
+- **[multimodal-ai-pipeline](./ray-data-multimodal-ai-pipeline/)**: Multimodal AI processing (30 min) - Combine text, images, and video for comprehensive AI understanding
+- **[nlp-text-analytics](./ray-data-nlp-text-analytics/)**: Text analytics at scale (30 min) - Sentiment analysis, classification, and distributed NLP processing
 
 ### **Enterprise Infrastructure**
-- **[enterprise-data-catalog](./ray-data-enterprise-data-catalog/)**: Automated data discovery and metadata management
-- **[log-ingestion](./ray-data-log-ingestion/)**: Security monitoring and log analytics at scale
+- **[enterprise-data-catalog](./ray-data-enterprise-data-catalog/)**: Data catalog and discovery (30 min) - Automated metadata extraction, lineage tracking, and governance
+- **[log-ingestion](./ray-data-log-ingestion/)**: Log analytics and security (30 min) - Security monitoring, threat detection, and operational insights
 
-## Template standards
+## Template Learning Paths
 
-All templates in this collection follow enterprise-grade standards with complete learning paths that progress from quick starts to production considerations. Each template includes real-world context to illustrate how organizations leverage distributed data processing.
+### **Beginner Path** (Start here if new to Ray Data)
+1. **[batch-inference-optimization](./ray-data-batch-inference-optimization/)** (20 min) - Learn core Ray Data concepts
+2. **[data-quality-monitoring](./ray-data-data-quality-monitoring/)** (25 min) - Understand data validation patterns
+3. **[etl-tpch](./ray-data-etl-tpch/)** (25 min) - Master joins and aggregations
+
+### **Industry Application Path** (Apply Ray Data to specific domains)
+1. **[financial-forecasting](./ray-data-financial-forecasting/)** (30 min) - Financial data processing
+2. **[geospatial-analysis](./ray-data-geospatial-analysis/)** (25 min) - Location-based analytics
+3. **[medical-connectors](./ray-data-medical-connectors/)** (35 min) - Healthcare data compliance
+
+### **Advanced AI Path** (Complex multimodal and ML workflows)
+1. **[ml-feature-engineering](./ray-data-ml-feature-engineering/)** (35 min) - Feature engineering at scale
+2. **[nlp-text-analytics](./ray-data-nlp-text-analytics/)** (30 min) - Text processing and sentiment analysis
+3. **[multimodal-ai-pipeline](./ray-data-multimodal-ai-pipeline/)** (30 min) - Combine multiple data types
+
+### **Enterprise Infrastructure Path** (Production deployment)
+1. **[large-scale-etl-optimization](./ray-data-large-scale-etl-optimization/)** (35 min) - Performance optimization
+2. **[enterprise-data-catalog](./ray-data-enterprise-data-catalog/)** (30 min) - Data governance and discovery
+3. **[log-ingestion](./ray-data-log-ingestion/)** (30 min) - Security and operational monitoring
+
+## Template Standards
+
+All templates follow enterprise-grade standards with complete learning paths that progress from quick starts to production considerations. Each template includes real-world business context and demonstrates how organizations leverage distributed data processing for competitive advantage.
 
 Templates focus on clear, maintainable examples using Ray Data native operations. You will find troubleshooting sections for common issues and action-oriented outcomes that provide immediate learning goals and longer-term implementation guidance. Performance characteristics are discussed conceptually without numeric claims.
 

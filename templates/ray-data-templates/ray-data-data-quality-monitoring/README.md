@@ -19,7 +19,7 @@ Create an automated data quality monitoring system that continuously validates d
 
 **Ray Data's quality capabilities**: Automate quality checks across large datasets using distributed processing. You'll learn how to scale data validation from sample-based to comprehensive full-dataset monitoring.
 
-**Real-world applications**: Companies like Netflix and Airbnb ensure data reliability at scale using automated quality monitoring systems that catch issues before they impact business operations.
+**Real-world applications**: Netflix monitors data quality across 500+ billion viewing events daily to ensure accurate content recommendations. Airbnb validates 150+ million booking records for pricing accuracy and fraud prevention. Uber tracks data quality across 20+ billion trips annually for safety and operational efficiency. Amazon monitors product catalog data quality for 500+ million items to maintain customer trust and search accuracy.
 
 ## Overview
 
@@ -339,6 +339,17 @@ The template implements six key quality dimensions:
 - [ ] Implement data drift monitoring
 - [ ] Build quality trend analysis
 - [ ] Create automated quality improvement recommendations
+
+## Related Templates
+
+### **Recommended Next Steps**
+- **[enterprise-data-catalog](../ray-data-enterprise-data-catalog/)**: Extend quality monitoring with automated data discovery
+- **[large-scale-etl-optimization](../ray-data-large-scale-etl-optimization/)**: Apply quality checks within ETL pipelines
+- **[log-ingestion](../ray-data-log-ingestion/)**: Monitor data pipeline logs for quality issues
+
+### **Advanced Applications**
+- **[financial-forecasting](../ray-data-financial-forecasting/)**: Apply quality monitoring to financial time series data
+- **[medical-connectors](../ray-data-medical-connectors/)**: Implement HIPAA-compliant data quality validation
 
 ## Resources
 

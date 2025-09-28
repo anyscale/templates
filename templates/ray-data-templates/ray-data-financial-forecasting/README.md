@@ -147,15 +147,21 @@ import matplotlib.dates as mdates
 import seaborn as sns
 import numpy as np
 
-def create_financial_analysis_dashboard():
-    """Generate comprehensive financial market analysis dashboard."""
+def create_simple_financial_summary():
+    """Generate focused financial market summary."""
     
-    # Convert Ray dataset to pandas for visualization
-    financial_df = financial_data.to_pandas()
+    # Convert sample data for analysis
+    sample_data = financial_data.take(1000)
+    print(f"Financial data summary: {len(sample_data):,} records analyzed")
     
-    # Ensure date column is datetime
-    if 'date' in financial_df.columns:
-        financial_df['date'] = pd.to_datetime(financial_df['date'])
+    # Basic financial metrics
+    if sample_data:
+        prices = [r.get('close', 0) for r in sample_data]
+        volumes = [r.get('volume', 0) for r in sample_data]
+        print(f"Price range: ${min(prices):.2f} - ${max(prices):.2f}")
+        print(f"Average volume: {sum(volumes) / len(volumes):,.0f}")
+    
+    print("Financial analysis completed")
     
     # Create comprehensive analysis dashboard
     fig, axes = plt.subplots(2, 3, figsize=(20, 12))
@@ -277,8 +283,8 @@ def create_financial_analysis_dashboard():
         print(f"- Maximum drawdown: {max_drawdown:.2%}")
     print(f"- Total trading days analyzed: {len(financial_df):,}")
 
-# Create financial analysis dashboard
-create_financial_analysis_dashboard()
+# Create financial analysis summary
+create_simple_financial_summary()
 ```
 
 This comprehensive dashboard provides key insights into market trends, volatility patterns, and performance metrics essential for financial forecasting.

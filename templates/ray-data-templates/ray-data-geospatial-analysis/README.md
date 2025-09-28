@@ -1406,6 +1406,45 @@ def debug_dataset_info(dataset, name="dataset"):
 # Example usage: debug_dataset_info(poi_dataset, "POI dataset")
 ```
 
+## Troubleshooting Common Issues
+
+### **Problem: "Invalid coordinate values"**
+**Solution**:
+```python
+# Validate coordinates before processing
+def validate_coordinates(batch):
+    valid_records = []
+    for record in batch:
+        lat = record.get('latitude', 0)
+        lon = record.get('longitude', 0)
+        if -90 <= lat <= 90 and -180 <= lon <= 180:
+            valid_records.append(record)
+    return valid_records
+```
+
+### **Problem: "Memory issues with large spatial datasets"**
+**Solution**:
+```python
+# Use smaller batch sizes for memory-intensive spatial calculations
+dataset.map_batches(spatial_function, batch_size=500, concurrency=2)
+```
+
+### **Problem: "Slow distance calculations"**
+**Solution**:
+```python
+# Use vectorized operations for better performance
+import numpy as np
+
+def fast_haversine_distance(lat1, lon1, lat2, lon2):
+    """Vectorized haversine distance calculation."""
+    R = 6371  # Earth's radius in kilometers
+    lat1, lon1, lat2, lon2 = map(np.radians, [lat1, lon1, lat2, lon2])
+    dlat = lat2 - lat1
+    dlon = lon2 - lon1
+    a = np.sin(dlat/2)**2 + np.cos(lat1) * np.cos(lat2) * np.sin(dlon/2)**2
+    return 2 * R * np.arcsin(np.sqrt(a))
+```
+
 ### **Performance Optimization Tips**
 
 1. **Batch Processing**: Process locations in batches of 1000-5000 for optimal performance
