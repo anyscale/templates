@@ -576,11 +576,11 @@ import ray
 
 # Create sample real movie reviews for quick demo
 real_reviews = [
-    "This movie was absolutely fantastic! Great acting and plot.",
+    "This movie was absolutely excellent! Great acting and plot.",
     "Terrible film. Waste of time and money. Very disappointed.",
     "Amazing cinematography and outstanding performances throughout.",
     "The movie was okay, nothing special but entertaining enough.",
-    "Brilliant storytelling and incredible attention to detail."
+    "Brilliant storytelling and sophisticated attention to detail."
 ]
 
 # Convert to Ray dataset
@@ -1033,7 +1033,7 @@ print("Quick start completed! Run the full demo for advanced NLP features.")
 # Expected Output:
 # Sentiment Analysis Results:
 # --------------------------------------------------
-# Text: This movie was absolutely fantastic! Great acting...
+# Text: This movie was absolutely excellent! Great acting...
 # Sentiment: POSITIVE (confidence: 0.95)
 # ------------------------------
 # Text: Terrible film. Waste of time and money. Very dis...

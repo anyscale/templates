@@ -366,7 +366,7 @@ Built-in HIPAA anonymization ensures data protection throughout the processing p
 
 **Building Production-Ready Medical Data Systems**
 
-Ray Data's medical connectors represent a revolutionary approach to healthcare data processing that combines technical sophistication with practical implementation simplicity. These connectors address the fundamental challenge of medical data integration while maintaining strict compliance standards.
+Ray Data's medical connectors represent an advanced approach to healthcare data processing that combines technical sophistication with practical implementation simplicity. These connectors address the fundamental challenge of medical data integration while maintaining strict compliance standards.
 
 The architecture centers on custom datasource implementations that handle the complexity of medical data formats while providing a clean, standardized interface for healthcare analytics.
 
@@ -1487,7 +1487,7 @@ The performance limitation is clear: processing files one at a time on a single 
 
 **Stage 3: Transform Python Function into Ray Data Datasource**
 
-Here's where Ray Data's magic happens. We're going to take the exact same parsing logic from our single-threaded function and wrap it in Ray Data's `FileBasedDatasource` class. This transformation automatically gives us:
+Here's where Ray Data's distributed processing capabilities work. We're going to take the exact same parsing logic from our single-threaded function and wrap it in Ray Data's `FileBasedDatasource` class. This transformation automatically gives us:
 
 - **Distributed Processing**: Files processed across multiple CPU cores simultaneously
 - **Automatic Scaling**: Ray Data handles worker coordination and load balancing  

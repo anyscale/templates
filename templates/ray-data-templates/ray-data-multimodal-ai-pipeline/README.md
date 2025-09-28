@@ -4,7 +4,7 @@
 
 ## What You'll Build
 
-Create a cutting-edge multimodal AI system that processes images and text together - like how humans understand memes, social media posts, or product listings that combine visual and textual information.
+Create an advanced multimodal AI system that processes images and text together - like how humans understand memes, social media posts, or product listings that combine visual and textual information.
 
 ## Table of Contents
 
@@ -19,7 +19,7 @@ Create a cutting-edge multimodal AI system that processes images and text togeth
 
 **Ray Data's multimodal capabilities**: Unified processing pipeline for heterogeneous data types with automatic optimization and GPU acceleration. You'll learn how to orchestrate complex multimodal workflows that scale across distributed computing clusters.
 
-**Production AI applications**: Industry-standard techniques used by OpenAI, Google, and Meta for foundation models and multimodal search demonstrate the cutting-edge capabilities of distributed multimodal processing.
+**Production AI applications**: Industry-standard techniques used by OpenAI, Google, and Meta for foundation models and multimodal search demonstrate the advanced capabilities of distributed multimodal processing.
 
 **Advanced AI architectures**: Cross-modal embeddings, attention mechanisms, and transformer-based multimodal models at scale enable sophisticated AI systems that understand relationships between different data modalities.
 
@@ -633,7 +633,7 @@ print(f"  - Total feature space: {len(sample_text_features['image_features']) + 
 *Time: 7 minutes*
 
 ### What We're Doing
-Combine image and text features to create unified multimodal representations. This is where the magic of multimodal AI happens - understanding content that combines visual and textual information.
+Combine image and text features to create unified multimodal representations. This is where multimodal AI processing works - understanding content that combines visual and textual information.
 
 ### Why Fusion Matters
 - **Richer Understanding**: Combined features capture more information than either modality alone

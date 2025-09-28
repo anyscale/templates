@@ -619,7 +619,7 @@ def enrich_with_reviews(batch):
         review_text = record.get('review_body', '')
         
         # Simple sentiment scoring based on keywords
-        positive_words = ['great', 'excellent', 'amazing', 'love', 'perfect', 'wonderful']
+        positive_words = ['great', 'excellent', 'outstanding', 'love', 'perfect', 'wonderful']
         negative_words = ['terrible', 'awful', 'hate', 'worst', 'horrible', 'disappointing']
         
         positive_count = sum(1 for word in positive_words if word in review_text.lower())
