@@ -75,7 +75,7 @@ def setup_dataloader(model_name: str, dataset_name: str, seq_length: int, batch_
 
 def setup_model_and_optimizer(model_name: str, learning_rate: float, ds_config: Dict[str, Any]) -> deepspeed.runtime.engine.DeepSpeedEngine:
     model = AutoModelForCausalLM.from_pretrained(model_name, trust_remote_code=True)
-    log_rank0(f"Model loaded: {model_name} (#parameters: {sum(p.numel() for p in model.parameters())}")
+    log_rank0(f"Model loaded: {model_name} (#parameters: {sum(p.numel() for p in model.parameters())})")
 
     optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
     ds_engine, optimizer, _, _ = deepspeed.initialize(
@@ -90,29 +90,52 @@ def report_metrics_and_save_checkpoint(
     ds_engine: deepspeed.runtime.engine.DeepSpeedEngine,
     metrics: Dict[str, Any]
 ) -> None:
-    with tempfile.TemporaryDirectory() as tmp:
-        tmp_epoch = os.path.join(tmp, "epoch")
-        os.makedirs(tmp_epoch, exist_ok=True)
-        ds_engine.save_checkpoint(tmp_epoch)
-        torch.distributed.barrier()
+    ctx = ray.train.get_context()
+    epoch_value = metrics["epoch"]
 
-        if ray.train.get_context().get_world_rank() == 0:
-            ray.train.report(metrics, checkpoint=Checkpoint.from_directory(tmp))
-        else:
-            ray.train.report(metrics, checkpoint=None)
-        log_rank0(f"Checkpoint saved successfully. Metrics: {metrics}")
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        checkpoint_dir = os.path.join(tmp_dir, "checkpoint")
+        os.makedirs(checkpoint_dir, exist_ok=True)
+
+        ds_engine.save_checkpoint(checkpoint_dir)
+
+        epoch_file = os.path.join(checkpoint_dir, "epoch.txt")
+        with open(epoch_file, "w", encoding="utf-8") as f:
+            f.write(str(epoch_value))
+
+        checkpoint = Checkpoint.from_directory(tmp_dir)
+        ray.train.report(metrics, checkpoint=checkpoint)
+
+        if ctx.get_world_rank() == 0:
+            experiment_name = ctx.get_experiment_name()
+            log_rank0(
+                f"Checkpoint saved successfully for experiment {experiment_name} at {checkpoint_dir}. Metrics: {metrics}"
+            )
 
 
-def load_checkpoint( ds_engine: deepspeed.runtime.engine.DeepSpeedEngine, ckpt: ray.train.Checkpoint):
+def load_checkpoint(ds_engine: deepspeed.runtime.engine.DeepSpeedEngine, ckpt: ray.train.Checkpoint) -> int:
+    next_epoch = 0
     try:
         with ckpt.as_directory() as checkpoint_dir:
-            ds_engine.load_checkpoint(checkpoint_dir)
+            log_rank0(f"Loading checkpoint from {checkpoint_dir}")
+            epoch_dir = os.path.join(checkpoint_dir, "checkpoint")
+            if not os.path.isdir(epoch_dir):
+                epoch_dir = checkpoint_dir
+
+            ds_engine.load_checkpoint(epoch_dir)
+
+            epoch_file = os.path.join(epoch_dir, "epoch.txt")
+            assert os.path.isfile(epoch_file), f"Epoch file not found in checkpoint: {epoch_file}"
+            with open(epoch_file, "r", encoding="utf-8") as f:
+                last_epoch = int(f.read().strip())
+            next_epoch = last_epoch + 1
 
         torch.distributed.barrier()
         log_rank0("Successfully loaded distributed checkpoint")
     except Exception as e:
         logger.error(f"Failed to load checkpoint: {e}")
         raise RuntimeError(f"Checkpoint loading failed: {e}") from e
+    return next_epoch
 
 
 def train_loop(config: Dict[str, Any]) -> None:
@@ -121,14 +144,18 @@ def train_loop(config: Dict[str, Any]) -> None:
 
     # Load checkpoint if exists
     ckpt = ray.train.get_checkpoint()
+    start_epoch = 0
     if ckpt:
-        load_checkpoint(ds_engine, ckpt)
+        start_epoch = load_checkpoint(ds_engine, ckpt)
+
+    if start_epoch > 0:
+        log_rank0(f"Resuming training from epoch {start_epoch}")
 
     train_loader = setup_dataloader(config["model_name"], config["dataset_name"], config["seq_length"], config["batch_size"])
     total_steps = len(train_loader) * config["epochs"]
     device = ray.train.torch.get_device()
 
-    for epoch in range(config["epochs"]):
+    for epoch in range(start_epoch, config["epochs"]):
         if ray.train.get_context().get_world_size() > 1:
             train_loader.sampler.set_epoch(epoch)
 
@@ -151,7 +178,10 @@ def train_loop(config: Dict[str, Any]) -> None:
                 log_rank0(f"Debug steps finished. Stopping epoch {epoch}.")
                 break
 
-        report_metrics_and_save_checkpoint(ds_engine, {"loss": running_loss / num_batches, "epoch": epoch})
+        report_metrics_and_save_checkpoint(
+            ds_engine,
+            {"loss": running_loss / num_batches, "epoch": epoch},
+        )
 
 
 def main():
