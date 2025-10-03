@@ -190,9 +190,9 @@ def check_missing_values(dataset):
 missing_analysis = check_missing_values(quality_dataset)
 
 print("Ray Data Benefits Demonstrated:")
-print("✓ Memory-efficient sampling with take() - no full dataset load required")
-print("✓ Distributed processing - analyze across cluster nodes")
-print("✓ Schema introspection - automatic field discovery and validation")
+print("Memory-efficient sampling with take() - no full dataset load required")
+print("Distributed processing - analyze across cluster nodes")
+print("Schema introspection - automatic field discovery and validation")
 ```
 
 #### Missing Data Summary
@@ -255,9 +255,9 @@ print(f"Email validation: {email_validation['validity_rate']:.1f}% valid formats
 
 # Demonstrate Ray Data's filtering performance
 print("\nRay Data Filtering Benefits:")
-print("✓ Push-down optimization - only email column processed")
-print("✓ Lazy evaluation - filter applied during data scan")
-print("✓ Distributed execution - parallel validation across cluster")
+print("Push-down optimization - only email column processed")
+print("Lazy evaluation - filter applied during data scan")
+print("Distributed execution - parallel validation across cluster")
 print(f"✓ Validated {email_validation['total_records']:,} records efficiently")
 ```
 
@@ -290,10 +290,10 @@ try:
     print(f"  Max: {age_stats['max(age)']:.1f}")
     
     print("\nRay Data Aggregation Benefits:")
-    print("✓ Distributed computation - statistics calculated across cluster")
-    print("✓ Memory efficient - processes data in streaming fashion")
-    print("✓ Native operations - optimized C++ implementation")
-    print("✓ Handles billions of records without memory issues")
+    print("Distributed computation - statistics calculated across cluster")
+    print("Memory efficient - processes data in streaming fashion")
+    print("Native operations - optimized C++ implementation")
+    print("Handles billions of records without memory issues")
     
 except Exception as e:
     print(f"Age statistics calculation: {e}")

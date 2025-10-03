@@ -79,9 +79,9 @@ print(f"Security logs: {security_logs.count():,} lines")
 
 print("Realistic log datasets loaded successfully")
 print("\nRay Data native readers used:")
-print("✓ read_text() for Apache Common Log Format (.log files)")
-print("✓ read_json() for structured application logs (.json files)")
-print("✓ read_text() for syslog format security logs (.log files)")
+print("read_text() for Apache Common Log Format (.log files)")
+print("read_json() for structured application logs (.json files)")
+print("read_text() for syslog format security logs (.log files)")
 ```
 
 To run this template, you will need the following packages:

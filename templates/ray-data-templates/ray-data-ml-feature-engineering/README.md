@@ -660,7 +660,7 @@ target_encoded = interaction_features.map_batches(
 )
 
 print(f"✓ Target encoding applied: {target_encoded.count():,} records")
-print("✓ Benefit: High-cardinality categories now numerical without dimension explosion")
+print("Benefit: High-cardinality categories now numerical without dimension explosion")
 ```
 
 ### Frequency and Count Encoding
@@ -717,7 +717,7 @@ freq_encoded = target_encoded.map_batches(
 )
 
 print(f"✓ Frequency encoding applied: {freq_encoded.count():,} records")
-print("✓ Cabin categories encoded by frequency - rare cabins have low scores")
+print("Cabin categories encoded by frequency - rare cabins have low scores")
 ```
 
 ### Missing Value Indicator Features
@@ -781,7 +781,7 @@ with_missing_features = freq_encoded.map_batches(
 )
 
 print(f"✓ Missing indicators created: {with_missing_features.count():,} records")
-print("✓ Missingness patterns now available as ML features")
+print("Missingness patterns now available as ML features")
 ```
 
 ### Aggregation Features Using Ray Data groupby
@@ -826,7 +826,7 @@ with_agg_features = with_missing_features.join(
 )
 
 print(f"✓ Aggregation features added: {with_agg_features.count():,} records")
-print("✓ Each passenger now has their group's statistics as features")
+print("Each passenger now has their group's statistics as features")
 
 # Verify the new features
 sample = with_agg_features.take(1)[0]
@@ -954,7 +954,7 @@ text_features = cyclical_features.map_batches(
 )
 
 print(f"✓ Text features extracted: {text_features.count():,} records")
-print("✓ Extracted titles correlate with survival rates (Mrs/Miss higher than Mr)")
+print("Extracted titles correlate with survival rates (Mrs/Miss higher than Mr)")
 ```
 
 ### Ranking and Percentile Features
@@ -1014,7 +1014,7 @@ ranked_features = text_features.map_batches(
 )
 
 print(f"✓ Ranking features created: {ranked_features.count():,} records")
-print("✓ Fare and Age now have percentile features (0-1 scale)")
+print("Fare and Age now have percentile features (0-1 scale)")
 ```
 
 ### Feature Scaling and Normalization
@@ -1083,8 +1083,8 @@ scaled_features = ranked_features.map_batches(
 )
 
 print(f"✓ Feature scaling applied: {scaled_features.count():,} records")
-print("✓ Age, Fare, and family_size now scaled to [0, 1] range")
-print("✓ Ready for neural networks and distance-based algorithms")
+print("Age, Fare, and family_size now scaled to [0, 1] range")
+print("Ready for neural networks and distance-based algorithms")
 ```
 
 ### Comprehensive Feature Engineering Methods Summary
@@ -1170,9 +1170,9 @@ trainer = XGBoostTrainer(
 # Run training immediately with fresh features
 result = trainer.fit()
 
-print("✓ Feature engineering and training completed on same cluster")
-print("✓ No feature store needed for one-time training")
-print("✓ Fast iteration for experimentation")
+print("Feature engineering and training completed on same cluster")
+print("No feature store needed for one-time training")
+print("Fast iteration for experimentation")
 ```
 
 **Workflow:**
@@ -1253,7 +1253,7 @@ customer_features.write_parquet(
     num_cpus=0.1
 )
 
-print("✓ Features persisted to feature store")
+print("Features persisted to feature store")
 
 # Alternative: Write to Delta Lake for ACID transactions
 customer_features.write_delta(
@@ -1267,7 +1267,7 @@ customer_features.write_sql(
     connection="postgresql://feature-db:5432/features"
 )
 
-print("✓ Features available in feature store for:")
+print("Features available in feature store for:")
 print("  - Model training (historical features)")
 print("  - Online serving (real-time predictions)")
 print("  - Feature exploration and analysis")
@@ -1301,7 +1301,7 @@ trainer = XGBoostTrainer(
 )
 
 result = trainer.fit()
-print("✓ Model trained using pre-engineered features from feature store")
+print("Model trained using pre-engineered features from feature store")
 ```
 
 **Step 5: Use features for online serving:**
@@ -1338,8 +1338,8 @@ def get_customer_features(customer_id):
 customer_features = get_customer_features("CUST123")
 prediction = model.predict(customer_features)
 
-print("✓ Real-time prediction using feature store")
-print("✓ No feature re-engineering needed")
+print("Real-time prediction using feature store")
+print("No feature re-engineering needed")
 ```
 
 ### Architecture Comparison
@@ -1592,7 +1592,7 @@ def validated_feature_pipeline(dataset):
     # Step 2: Validate feature quality
     sample = features.take(100)
     if all(r.get('family_size') is not None for r in sample):
-        print("✓ Feature quality validation passed")
+        print("Feature quality validation passed")
     else:
         print("✗ Feature quality issues detected")
     

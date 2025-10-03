@@ -487,7 +487,7 @@ ctx.execution_options.resource_limits.gpu = 4  # Use only 4 GPUs
 from ray.data import ExecutionResources
 ctx.execution_options.exclude_resources = ExecutionResources(cpu=4, gpu=1)
 
-print("✓ Resource limits configured for batch inference")
+print("Resource limits configured for batch inference")
 ```
 
 ### Monitoring Resource Usage
