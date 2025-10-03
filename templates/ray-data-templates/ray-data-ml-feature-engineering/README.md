@@ -1100,6 +1100,294 @@ print("✓ Ready for neural networks and distance-based algorithms")
 | **Temporal/Cyclical** | Sin/cos encoding for periodic features | `map_batches()` with trig functions |
 | **Ranking** | Percentiles, ranks within groups | `map_batches()` with pandas rank |
 
+## Feature Engineering Architecture Patterns
+
+Understanding when and where to perform feature engineering is critical for production ML systems. Ray Data enables both lightweight one-time transformations and large-scale feature store architectures.
+
+### Pattern 1: Lightweight Feature Engineering with Ray Data + Ray Train
+
+**When to use:** Training a model once or experimenting with features during development.
+
+**Architecture:** Perform feature engineering and model training on the same Ray cluster in a single pipeline.
+
+**Benefits:**
+- **Simplicity**: No separate feature engineering infrastructure
+- **Fast iteration**: Immediate feedback during experimentation
+- **Cost efficient**: Single cluster for both feature engineering and training
+- **Easy debugging**: All code in one place
+
+**Use cases:**
+- **One-time model training**: Research projects, proof-of-concepts
+- **Small datasets**: < 100GB of training data
+- **Experimentation**: Trying different feature combinations
+- **Development**: Building and testing new models
+
+```python
+import ray
+from ray.data.expressions import col, lit
+from ray.train.xgboost import XGBoostTrainer
+from ray.train import ScalingConfig
+
+# Pattern 1: Feature engineering + training on same cluster
+print("Lightweight Pattern: Feature engineering integrated with training...")
+
+# Step 1: Load training data using Ray Data
+training_data = ray.data.read_csv(
+    "s3://data/training_data.csv",
+    num_cpus=0.05
+)
+
+# Step 2: Apply feature engineering using Ray Data
+# This runs on the same cluster that will train the model
+engineered_data = training_data.add_column(
+    "family_size",
+    col("SibSp") + col("Parch") + lit(1)
+).map_batches(
+    engineer_categorical_features,
+    batch_size=2000,
+    concurrency=4
+).map_batches(
+    create_numerical_features,
+    batch_size=2000,
+    concurrency=4
+)
+
+# Step 3: Split into train/validation using Ray Data
+train_dataset, val_dataset = engineered_data.train_test_split(test_size=0.2)
+
+# Step 4: Train model directly with Ray Train
+# Features were just engineered on the same cluster - no separate storage needed
+trainer = XGBoostTrainer(
+    label_column="Survived",
+    num_boost_round=100,
+    scaling_config=ScalingConfig(
+        num_workers=4,
+        use_gpu=False
+    ),
+    datasets={"train": train_dataset, "validation": val_dataset}
+)
+
+# Run training immediately with fresh features
+result = trainer.fit()
+
+print("✓ Feature engineering and training completed on same cluster")
+print("✓ No feature store needed for one-time training")
+print("✓ Fast iteration for experimentation")
+```
+
+**Workflow:**
+```
+┌──────────────┐      ┌───────────────┐      ┌──────────────┐      ┌────────────┐
+│  Raw Data    │  →   │  Ray Data     │  →   │  Ray Train   │  →   │  Trained   │
+│  (S3/Lake)   │      │  Engineering  │      │  XGBoost     │      │  Model     │
+└──────────────┘      └───────────────┘      └──────────────┘      └────────────┘
+                       Same Ray Cluster - No External Storage
+```
+
+**When NOT to use:**
+- ✗ Serving predictions (features need to be re-engineered for each prediction)
+- ✗ Retraining regularly (re-compute features each time)
+- ✗ Sharing features across models (each model re-engineers independently)
+- ✗ Large-scale production (wasted compute re-engineering same features)
+
+### Pattern 2: Large-Scale Feature Engineering with Feature Store
+
+**When to use:** Production ML systems that serve predictions, retrain regularly, or share features across models.
+
+**Architecture:** Engineer features once using Ray Data, persist to feature store (Feast, Tecton, AWS Feature Store), then retrieve for training and inference.
+
+**Benefits:**
+- **Compute once, use many times**: Engineer features once, use for training and inference
+- **Consistency**: Same features for training and serving (no training/serving skew)
+- **Reusability**: Share features across multiple models
+- **Scalability**: Separate feature engineering from model serving
+
+**Use cases:**
+- **Production ML systems**: Real-time predictions at scale
+- **Regular retraining**: Weekly/daily model updates
+- **Multi-model systems**: Features shared across recommendation, churn, fraud models
+- **Large datasets**: TB+ feature engineering datasets
+
+```python
+import ray
+from ray.data.expressions import col, lit
+
+# Pattern 2: Feature engineering to feature store
+print("Large-Scale Pattern: Feature engineering with feature store...")
+
+# Step 1: Load all customer data for feature engineering
+# This is a large batch job - engineer features for entire customer base
+all_customers = ray.data.read_csv(
+    "s3://data/all_customers.csv",
+    num_cpus=0.05
+)
+
+print(f"Engineering features for {all_customers.count():,} customers...")
+
+# Step 2: Apply comprehensive feature engineering pipeline
+# This runs once across your entire customer base
+customer_features = (
+    all_customers
+    # Add simple features with expressions
+    .add_column("account_age_days", col("current_date") - col("signup_date"))
+    .add_column("is_premium", col("account_tier") == lit("premium"))
+    
+    # Add complex categorical features
+    .map_batches(engineer_categorical_features, batch_size=5000, concurrency=8)
+    
+    # Add numerical transformations
+    .map_batches(create_numerical_features, batch_size=5000, concurrency=8)
+    
+    # Add aggregation features
+    .map_batches(create_aggregation_features, batch_size=5000, concurrency=4)
+)
+
+# Step 3: Persist engineered features to feature store
+# Write to Parquet for feature store ingestion
+print("Persisting features to feature store...")
+
+customer_features.write_parquet(
+    "s3://feature-store/customer-features/",
+    partition_cols=["feature_date"],  # Partition by date for time-travel
+    compression="snappy",
+    num_cpus=0.1
+)
+
+print("✓ Features persisted to feature store")
+
+# Alternative: Write to Delta Lake for ACID transactions
+customer_features.write_delta(
+    "s3://feature-store/customer-features-delta/",
+    mode="overwrite"
+)
+
+# Alternative: Write to database feature store
+customer_features.write_sql(
+    table="customer_features",
+    connection="postgresql://feature-db:5432/features"
+)
+
+print("✓ Features available in feature store for:")
+print("  - Model training (historical features)")
+print("  - Online serving (real-time predictions)")
+print("  - Feature exploration and analysis")
+```
+
+**Step 4: Use features for training (separate job):**
+
+```python
+# Later: Load features from feature store for training
+# This runs separately from feature engineering - could be days/weeks later
+
+import ray
+from ray.train.xgboost import XGBoostTrainer
+
+# Load pre-engineered features from feature store
+training_features = ray.data.read_parquet(
+    "s3://feature-store/customer-features/feature_date=2024-01-01/",
+    num_cpus=0.025
+)
+
+# Filter to training date range
+train_data = training_features.filter(
+    lambda x: x['feature_date'] >= '2024-01-01'
+)
+
+# Train model with pre-engineered features
+# No feature engineering needed - features already computed
+trainer = XGBoostTrainer(
+    label_column="churn_label",
+    datasets={"train": train_data}
+)
+
+result = trainer.fit()
+print("✓ Model trained using pre-engineered features from feature store")
+```
+
+**Step 5: Use features for online serving:**
+
+```python
+# Online inference: Retrieve features from feature store
+# This happens in production when serving predictions
+
+import ray
+
+# For real-time prediction, fetch features from feature store
+def get_customer_features(customer_id):
+    """Retrieve pre-engineered features for a customer."""
+    
+    # Option 1: Query feature store API (Feast, Tecton)
+    from feast import FeatureStore
+    store = FeatureStore(repo_path="./feature_repo")
+    features = store.get_online_features(
+        entity_rows=[{"customer_id": customer_id}],
+        features=["customer_features:account_age_days",
+                 "customer_features:total_purchases",
+                 "customer_features:avg_purchase_amount"]
+    ).to_dict()
+    
+    # Option 2: Query database directly
+    features = ray.data.read_sql(
+        f"SELECT * FROM customer_features WHERE customer_id = '{customer_id}'",
+        connection="postgresql://feature-db:5432/features"
+    )
+    
+    return features
+
+# Make prediction using retrieved features
+customer_features = get_customer_features("CUST123")
+prediction = model.predict(customer_features)
+
+print("✓ Real-time prediction using feature store")
+print("✓ No feature re-engineering needed")
+```
+
+### Architecture Comparison
+
+| Aspect | Lightweight (Ray Data + Train) | Large-Scale (Feature Store) |
+|--------|-------------------------------|---------------------------|
+| **Setup Complexity** | Simple - single pipeline | Complex - separate systems |
+| **Compute Cost** | Low - single cluster | Higher - separate compute |
+| **Storage** | None - temporary | Required - persistent storage |
+| **Reusability** | One-time use | Reuse across models and time |
+| **Training/Serving Skew** | No serving - training only | Prevented - same features |
+| **Best For** | Experimentation, one-time training | Production ML at scale |
+| **Feature Freshness** | Always fresh (computed on demand) | Updated on schedule (hourly/daily) |
+| **Latency** | High (engineer + train) | Low (pre-computed features) |
+
+### Hybrid Architecture Pattern
+
+**Best of both worlds:** Use Ray Data + Train for experimentation, then promote to feature store for production.
+
+```
+Development/Experimentation:
+┌─────────────┐      ┌──────────────┐      ┌─────────────┐
+│  Ray Data   │  →   │  Features    │  →   │  Ray Train  │
+│  Load       │      │  (in-memory) │      │  Train      │
+└─────────────┘      └──────────────┘      └─────────────┘
+                Fast iteration, no storage
+
+Production Deployment:
+┌─────────────┐      ┌──────────────┐      ┌─────────────┐      ┌──────────────┐
+│  Ray Data   │  →   │  Features    │  →   │  Feature    │  →   │  Ray Train   │
+│  Engineer   │      │  Validated   │      │  Store      │      │  + Serve     │
+└─────────────┘      └──────────────┘      └─────────────┘      └──────────────┘
+                Compute once, use many times
+```
+
+**Implementation:**
+
+```python
+# Development: Quick experimentation
+features = ray.data.read_csv("data.csv").add_column("feature", col("x") + col("y"))
+trainer = XGBoostTrainer(datasets={"train": features})
+result = trainer.fit()
+
+# Production: Persist to feature store
+features = ray.data.read_csv("data.csv").add_column("feature", col("x") + col("y"))
+features.write_parquet("s3://feature-store/features/")  # Persist
+```
+
 ## Step 5: Feature Selection with Ray Data
 
 Use Ray Data aggregations for statistical feature selection:
