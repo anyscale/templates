@@ -352,6 +352,46 @@ Organizations implementing systematic feature engineering see:
 | **Feature Pipeline Reliability** | 60% success rate | 95% success rate | improvement |
 | **Time to Production** | 6+ months | 2 months | faster deployment |
 
+**Example: Ray Data for automated feature engineering:**
+
+```python
+import ray
+from ray.data.expressions import col, lit
+
+# Load ML dataset
+dataset = ray.data.read_csv("s3://ray-benchmark-data/ml-datasets/titanic.csv", num_cpus=0.05)
+
+# Simple feature engineering with Ray Data native operations
+# Create family size feature
+dataset_with_features = dataset.add_column(
+    "family_size",
+    col("SibSp") + col("Parch") + lit(1)
+)
+
+# Create boolean features with expressions
+dataset_with_features = dataset_with_features.add_column(
+    "is_alone",
+    col("family_size") == lit(1)
+)
+
+# Complex features with map_batches
+def create_advanced_features(batch):
+    """Create multiple features in one pass."""
+    for record in batch:
+        record['age_group'] = 'child' if record.get('Age', 0) < 18 else 'adult'
+        record['fare_per_person'] = record.get('Fare', 0) / max(record.get('family_size', 1), 1)
+    return batch
+
+enriched_dataset = dataset_with_features.map_batches(
+    create_advanced_features,
+    batch_size=2000,
+    concurrency=4
+)
+
+print(f"Created multiple features for {enriched_dataset.count():,} samples")
+print("Ray Data benefits: efficient column operations, distributed processing")
+```
+
 ## Learning objectives
 
 By the end of this template, you'll understand:
@@ -842,18 +882,118 @@ class FeatureSelector:
 ## Advanced Features
 
 ### Automated Feature Engineering
+
+Ray Data enables automated feature generation and discovery:
+
+```python
+# Example: Automated interaction feature generation
+def generate_interaction_features(batch):
+    """Automatically generate interaction features between numeric columns."""
+    import pandas as pd
+    df = pd.DataFrame(batch)
+    
+    numeric_cols = df.select_dtypes(include=['number']).columns[:5]
+    
+    # Generate multiplicative interactions
+    for i, col1 in enumerate(numeric_cols):
+        for col2 in numeric_cols[i+1:]:
+            df[f'{col1}_x_{col2}'] = df[col1] * df[col2]
+            df[f'{col1}_div_{col2}'] = df[col1] / (df[col2] + 1e-6)
+    
+    return df.to_dict('records')
+
+# Apply automated feature generation
+auto_features = dataset.map_batches(
+    generate_interaction_features,
+    batch_size=1000,
+    concurrency=4
+)
+
+print(f"Automated feature generation created {len(auto_features.take(1)[0])} total features")
+```
+
+**Key capabilities:**
 - Genetic programming for feature creation
 - Automated feature interaction discovery
 - Domain-specific feature templates
 - Feature engineering optimization
 
 ### GPU Acceleration
+
+For large-scale feature engineering, use cuDF for GPU acceleration:
+
+```python
+# Example: GPU-accelerated feature engineering with cuDF
+def gpu_feature_engineering(batch):
+    """Feature engineering with GPU acceleration using cuDF."""
+    import cudf as pd  # GPU-accelerated pandas
+    
+    df = pd.DataFrame(batch)
+    
+    # These operations run on GPU
+    df['log_amount'] = df['amount'].log()
+    df['amount_squared'] = df['amount'] ** 2
+    df['normalized_amount'] = (df['amount'] - df['amount'].mean()) / df['amount'].std()
+    
+    return df.to_dict('records')
+
+# Apply GPU-accelerated features (requires GPU cluster)
+gpu_features = dataset.map_batches(
+    gpu_feature_engineering,
+    batch_size=5000,
+    num_gpus=0.5,  # Allocate GPU resources
+    concurrency=2
+)
+
+print("GPU-accelerated feature engineering complete")
+```
+
+**GPU acceleration benefits:**
 - CUDA-accelerated feature transformations
-- Parallel feature computation
+- Parallel feature computation across GPUs
 - Memory-efficient feature processing
 - GPU-optimized algorithms
 
 ### Feature Store Integration
+
+Integrate engineered features with ML feature stores:
+
+```python
+# Example: Export features to feature store format
+def prepare_feature_store_export(batch):
+    """Format features for feature store ingestion."""
+    feature_records = []
+    
+    for record in batch:
+        feature_record = {
+            'entity_id': record.get('customer_id'),
+            'timestamp': record.get('feature_timestamp'),
+            'features': {
+                'family_size': record.get('family_size'),
+                'fare_per_person': record.get('fare_per_person'),
+                'age_group': record.get('age_group')
+            }
+        }
+        feature_records.append(feature_record)
+    
+    return feature_records
+
+# Export to feature store format
+feature_store_data = enriched_dataset.map_batches(
+    prepare_feature_store_export,
+    batch_size=2000
+)
+
+# Write to feature store (Parquet format)
+feature_store_data.write_parquet(
+    "/mnt/feature_store/customer_features/",
+    partition_cols=['timestamp']
+)
+
+print("Features exported to feature store")
+```
+
+**Feature store capabilities:**
 - Feature versioning and tracking
 - Feature lineage and metadata
 - Real-time feature serving
@@ -862,22 +1002,57 @@ class FeatureSelector:
 ## Production Considerations
 
 ### Feature Pipeline Management
+
+```python
+# Example: Feature pipeline with monitoring and validation
+def validated_feature_pipeline(dataset):
+    """Production feature pipeline with quality checks."""
+    
+    # Step 1: Create features
+    features = dataset.add_column("family_size", col("SibSp") + col("Parch") + lit(1))
+    
+    # Step 2: Validate feature quality
+    sample = features.take(100)
+    if all(r.get('family_size') is not None for r in sample):
+        print("✓ Feature quality validation passed")
+    else:
+        print("✗ Feature quality issues detected")
+    
+    # Step 3: Monitor feature statistics
+    stats = features.aggregate(
+        Count(),
+        Mean('family_size'),
+        Max('family_size')
+    )
+    print(f"Feature stats: {stats}")
+    
+    return features
+
+# Run monitored pipeline
+production_features = validated_feature_pipeline(dataset)
+```
+
+**Pipeline management includes:**
 - Feature versioning and deployment
 - Pipeline monitoring and alerting
 - Feature drift detection
 - Automated pipeline updates
 
 ### Performance Optimization
-- Efficient feature computation
-- Caching and memoization
-- Parallel processing strategies
-- Resource optimization
+
+**Optimization guidelines:**
+- Efficient feature computation with `add_column()` for simple operations
+- Caching and memoization for expensive transformations
+- Parallel processing strategies with `concurrency` parameter
+- Resource optimization with appropriate `num_cpus` allocation
 
 ### Quality Assurance
-- Feature validation and testing
-- Feature performance monitoring
-- Automated feature quality checks
-- Feature improvement recommendations
+
+**Quality checks:**
+- Feature validation and testing with statistical tests
+- Feature performance monitoring for drift detection
+- Automated feature quality checks using Ray Data aggregations
+- Feature improvement recommendations based on analytics
 
 ## Example Workflows
 

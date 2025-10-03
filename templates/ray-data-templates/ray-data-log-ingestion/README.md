@@ -164,6 +164,32 @@ The pipeline delivers measurable business value:
 | **Mean Time to Detection** | 4+ hours | 15 minutes | faster |
 | **Data Engineer Productivity** | 60% time on infrastructure | 90% time on insights | efficiency gain |
 
+**Quick example showing the transformation:**
+
+```python
+# Traditional approach: Sequential log processing
+import pandas as pd
+
+# Load all logs into memory (memory issues with large files)
+logs = pd.read_csv("access.log")  # Fails with 100GB files
+
+# Process sequentially (slow)
+for idx, log in logs.iterrows():
+    parse_log(log)  # Hours for millions of logs
+
+# Ray Data approach: Distributed and streaming
+import ray
+
+# Streaming load (handles unlimited size)
+logs = ray.data.read_text("s3://logs/*.log", num_cpus=0.05)
+
+# Distributed parallel processing (minutes for millions of logs)
+parsed = logs.map_batches(parse_logs, num_cpus=0.5, batch_size=1000)
+metrics = parsed.groupby('status_code').count()
+
+print(f"Processed {logs.count():,} logs efficiently across cluster")
+```
+
 ### What You'll Build
 
 The complete pipeline will:
