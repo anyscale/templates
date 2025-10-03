@@ -520,6 +520,302 @@ interaction_features = numerical_features.map_batches(
 print(f"✓ Interaction features created: {interaction_features.count():,} records")
 ```
 
+### Target Encoding for Categorical Features
+
+Target encoding replaces categories with their target mean - effective for high-cardinality categoricals:
+
+```python
+def create_target_encoding(batch):
+    """Create target encoding features using category means."""
+    import pandas as pd
+    df = pd.DataFrame(batch)
+    
+    # Calculate mean survival rate by Embarked port
+    if 'Embarked' in df.columns and 'Survived' in df.columns:
+        embarked_means = df.groupby('Embarked')['Survived'].mean().to_dict()
+        
+        # Apply target encoding
+        for record in batch:
+            embarked = record.get('Embarked', 'unknown')
+            record['Embarked_target_enc'] = embarked_means.get(embarked, 0.5)
+    
+    return batch
+
+# Apply target encoding
+target_encoded = interaction_features.map_batches(
+    create_target_encoding,
+    batch_size=2000,
+    concurrency=2
+)
+
+print(f"✓ Target encoding applied: {target_encoded.count():,} records")
+```
+
+### Frequency and Count Encoding
+
+Encode categories by their frequency in the dataset:
+
+```python
+def create_frequency_encoding(batch):
+    """Create frequency encoding for categorical features."""
+    import pandas as pd
+    df = pd.DataFrame(batch)
+    
+    # Calculate frequencies
+    if 'Cabin' in df.columns:
+        cabin_freq = df['Cabin'].value_counts(normalize=True).to_dict()
+        
+        for record in batch:
+            cabin = record.get('Cabin', 'unknown')
+            record['Cabin_frequency'] = cabin_freq.get(cabin, 0.0)
+    
+    return batch
+
+# Apply frequency encoding  
+freq_encoded = target_encoded.map_batches(
+    create_frequency_encoding,
+    batch_size=2000,
+    concurrency=2
+)
+
+print(f"✓ Frequency encoding applied: {freq_encoded.count():,} records")
+```
+
+### Missing Value Indicator Features
+
+Create features that indicate missing data patterns:
+
+```python
+def create_missing_indicators(batch):
+    """Create binary indicators for missing values."""
+    enhanced_records = []
+    
+    # Fields to check for missingness
+    check_fields = ['Age', 'Cabin', 'Embarked', 'Fare']
+    
+    for record in batch:
+        enhanced_record = record.copy()
+        
+        # Create missing indicators
+        for field in check_fields:
+            enhanced_record[f'{field}_is_missing'] = 1 if record.get(field) is None else 0
+        
+        # Count total missing values
+        enhanced_record['total_missing'] = sum(
+            1 for field in check_fields if record.get(field) is None
+        )
+        
+        enhanced_records.append(enhanced_record)
+    
+    return enhanced_records
+
+# Apply missing indicators
+with_missing_features = freq_encoded.map_batches(
+    create_missing_indicators,
+    batch_size=2000,
+    concurrency=4
+)
+
+print(f"✓ Missing indicators created: {with_missing_features.count():,} records")
+```
+
+### Aggregation Features Using Ray Data groupby
+
+Create statistical features from grouped data:
+
+```python
+from ray.data.aggregate import Count, Mean, Max, Min, Std
+
+# Calculate aggregated features by passenger class
+print("Creating aggregation features using Ray Data native operations...")
+
+pclass_stats = with_missing_features.groupby('Pclass').aggregate(
+    Count(),
+    Mean('Fare'),
+    Max('Fare'),
+    Std('Age')
+)
+
+print("Aggregated Statistics by Class:")
+print(pclass_stats.limit(10).to_pandas())
+
+# Join aggregated stats back to main dataset
+with_agg_features = with_missing_features.join(
+    pclass_stats,
+    left_key='Pclass',
+    right_key='Pclass'
+)
+
+print(f"✓ Aggregation features added: {with_agg_features.count():,} records")
+```
+
+### Cyclical/Temporal Feature Encoding
+
+Encode cyclical features (months, days, hours) using sine/cosine:
+
+```python
+import numpy as np
+
+def create_cyclical_features(batch):
+    """Create cyclical encoding for periodic features."""
+    enhanced_records = []
+    
+    for record in batch:
+        # Example: If we had a month field
+        # Encode it cyclically so December (12) is close to January (1)
+        enhanced_record = record.copy()
+        
+        # Simulated month feature for demonstration
+        pclass = record.get('Pclass', 1)
+        
+        # Cyclical encoding (works for any periodic feature)
+        enhanced_record['Pclass_sin'] = np.sin(2 * np.pi * pclass / 3)
+        enhanced_record['Pclass_cos'] = np.cos(2 * np.pi * pclass / 3)
+        
+        enhanced_records.append(enhanced_record)
+    
+    return enhanced_records
+
+# Apply cyclical encoding
+cyclical_features = with_agg_features.map_batches(
+    create_cyclical_features,
+    batch_size=2000,
+    concurrency=4
+)
+
+print(f"✓ Cyclical features created: {cyclical_features.count():,} records")
+```
+
+### Text Feature Engineering
+
+Extract features from text columns like passenger names:
+
+```python
+def create_text_features(batch):
+    """Create features from text fields."""
+    enhanced_records = []
+    
+    for record in batch:
+        name = record.get('Name', '')
+        
+        # Extract title from name (Mr., Mrs., Miss., etc.)
+        title = 'Unknown'
+        if 'Mr.' in name:
+            title = 'Mr'
+        elif 'Mrs.' in name:
+            title = 'Mrs'
+        elif 'Miss.' in name:
+            title = 'Miss'
+        elif 'Master.' in name:
+            title = 'Master'
+        elif any(t in name for t in ['Dr.', 'Rev.', 'Col.', 'Major']):
+            title = 'Professional'
+        
+        enhanced_record = {
+            **record,
+            # Title extraction
+            'Title': title,
+            'Title_Mr': 1 if title == 'Mr' else 0,
+            'Title_Mrs': 1 if title == 'Mrs' else 0,
+            'Title_Miss': 1 if title == 'Miss' else 0,
+            
+            # Text statistics
+            'Name_length': len(name),
+            'Name_word_count': len(name.split()),
+            'Has_parentheses': 1 if '(' in name else 0
+        }
+        
+        enhanced_records.append(enhanced_record)
+    
+    return enhanced_records
+
+# Apply text feature engineering
+text_features = cyclical_features.map_batches(
+    create_text_features,
+    batch_size=2000,
+    concurrency=4
+)
+
+print(f"✓ Text features extracted: {text_features.count():,} records")
+```
+
+### Ranking and Percentile Features
+
+Create rank-based features using Ray Data operations:
+
+```python
+def add_ranking_features(batch):
+    """Create percentile and ranking features."""
+    import pandas as pd
+    df = pd.DataFrame(batch)
+    
+    # Calculate percentile ranks
+    if 'Fare' in df.columns:
+        df['Fare_percentile'] = df['Fare'].rank(pct=True)
+        df['Fare_rank'] = df['Fare'].rank()
+    
+    if 'Age' in df.columns:
+        df['Age_percentile'] = df['Age'].rank(pct=True)
+    
+    return df.to_dict('records')
+
+# Apply ranking features
+ranked_features = text_features.map_batches(
+    add_ranking_features,
+    batch_size=2000,
+    concurrency=2
+)
+
+print(f"✓ Ranking features created: {ranked_features.count():,} records")
+```
+
+### Feature Scaling and Normalization
+
+Apply scaling transformations for ML algorithms:
+
+```python
+def apply_feature_scaling(batch):
+    """Apply standard scaling to numerical features."""
+    import pandas as pd
+    df = pd.DataFrame(batch)
+    
+    # Apply min-max scaling
+    numeric_cols = ['Age', 'Fare', 'family_size']
+    
+    for col in numeric_cols:
+        if col in df.columns:
+            col_min = df[col].min()
+            col_max = df[col].max()
+            if col_max > col_min:
+                df[f'{col}_scaled'] = (df[col] - col_min) / (col_max - col_min)
+            else:
+                df[f'{col}_scaled'] = 0
+    
+    return df.to_dict('records')
+
+# Apply scaling
+scaled_features = ranked_features.map_batches(
+    apply_feature_scaling,
+    batch_size=2000,
+    concurrency=4
+)
+
+print(f"✓ Feature scaling applied: {scaled_features.count():,} records")
+```
+
+### Comprehensive Feature Engineering Methods Summary
+
+| Category | Methods Demonstrated | Ray Data Operations |
+|----------|---------------------|-------------------|
+| **Categorical Encoding** | One-hot, Label, Target, Frequency | `add_column()`, `map_batches()` |
+| **Numerical Transforms** | Polynomial, Log, Sqrt, Scaling, Binning | `map_batches()` with numpy |
+| **Interaction Features** | Multiplication, Division, Ratios | Simple arithmetic in functions |
+| **Aggregation Features** | Group statistics (mean, std, count) | `groupby().aggregate()`, `join()` |
+| **Text Features** | String extraction, length, word count | `map_batches()` with string ops |
+| **Missing Indicators** | Binary flags for missingness | Record-level checks |
+| **Temporal/Cyclical** | Sin/cos encoding for periodic features | `map_batches()` with trig functions |
+| **Ranking** | Percentiles, ranks within groups | `map_batches()` with pandas rank |
+
 ## Step 5: Feature Selection with Ray Data
 
 Use Ray Data aggregations for statistical feature selection:
