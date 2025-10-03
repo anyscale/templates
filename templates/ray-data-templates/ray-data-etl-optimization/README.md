@@ -885,8 +885,12 @@ Ray Data uniquely combines the best aspects of structured streaming and batch pr
 
 #### How streaming execution works
 
+**Traditional Batch Processing:**
+
+<img src="https://anyscale-materials.s3.us-west-2.amazonaws.com/cko-2025-q1/batch-processing.png" width="800" alt="Traditional Batch Processing">
+
 ```
-Traditional Batch Processing:
+Traditional approach problems:
 ┌──────┐   ┌──────┐   ┌──────┐   ┌──────┐
 │ Read │ → │ Proc │ → │ Agg  │ → │Write │
 │ ALL  │   │ ALL  │   │ ALL  │   │ ALL  │
