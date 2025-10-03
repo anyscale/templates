@@ -281,15 +281,35 @@ Automation becomes essential because manual feature engineering cannot scale to 
 
 ### Ray Data's Feature Engineering Advantages
 
+:::tip Ray Data for ML Feature Engineering
+Feature engineering is compute-intensive and data-heavy - perfect for Ray Data's strengths:
+1. **Distributed computation**: `map_batches()` parallelizes feature creation across cluster
+2. **Memory efficiency**: Process millions of samples without loading entire dataset into RAM
+3. **Native operations**: `add_column()` and expressions API for efficient transformations
+4. **GPU acceleration**: Optional cuDF integration for pandas operations on GPU
+5. **Scalability**: Same feature engineering code works for 1K or 1B samples
+:::
+
 Ray Data transforms feature engineering by enabling:
 
-| Traditional Limitation | Ray Data Solution | Impact |
-|------------------------|-------------------|--------|
-| **Memory Constraints** | Distributed feature computation | Process unlimited dataset sizes |
-| **Sequential Processing** | Parallel feature engineering | 10-faster feature creation |
-| **Manual Feature Selection** | Automated statistical selection | Faster feature discovery |
-| **Single-Machine GPU** | Multi-GPU feature acceleration | 5-faster transformations |
-| **Pipeline Complexity** | Native distributed operations | 80% less infrastructure code |
+| Traditional Limitation | Ray Data Solution | ML Workflow Impact |
+|------------------------|-------------------|-------------------|
+| **Memory Constraints** | Distributed feature computation with `map_batches()` | Process unlimited dataset sizes |
+| **Sequential Processing** | Parallel feature engineering across cluster nodes | Feature creation at production scale |
+| **Manual Feature Selection** | Automated statistical selection with Ray aggregations | Faster experimentation cycles |
+| **Single-Machine GPU** | Multi-GPU feature acceleration with distributed processing | Handle TB-scale training datasets |
+| **Pipeline Complexity** | Native operations (`add_column()`, `filter()`, `groupby()`) | 80% less infrastructure code |
+
+**Ray Data Native Operations for ML Feature Engineering:**
+
+| Operation | Feature Engineering Use Case | Benefit |
+|-----------|------------------------------|---------|
+| `add_column()` | Simple feature transformations (ratios, flags) | Efficient column-wise operations without pandas |
+| `map_batches()` | Complex feature engineering (encoding, scaling) | Distributed pandas/cuDF processing |
+| `filter()` | Remove low-quality samples or outliers | Memory-efficient dataset cleaning |
+| `groupby().aggregate()` | Statistical features (mean, std by category) | Distributed aggregation for group features |
+| Expressions API (`col()`, `lit()`) | Conditional features and transformations | Query optimization and performance |
+| `select_columns()` | Feature subset selection before training | Reduce memory usage and I/O |
 
 ### The Complete Feature Engineering Lifecycle
 
