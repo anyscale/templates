@@ -786,32 +786,52 @@ print("✓ Missingness patterns now available as ML features")
 
 ### Aggregation Features Using Ray Data groupby
 
-Create statistical features from grouped data:
+**What are aggregation features?** Calculate group statistics and join them back to individual records.
+
+**Why use aggregations?**
+- **Capture group patterns**: Average fare for your passenger class
+- **Relative comparisons**: How you compare to your group (above/below average)
+- **Encode relationships**: Group membership without creating many columns
+
+**Example:** Add "average age for my passenger class" as a feature for each passenger
+
+**Ray Data advantage:** Native `groupby().aggregate()` operations distribute group calculations across cluster.
 
 ```python
 from ray.data.aggregate import Count, Mean, Max, Min, Std
 
-# Calculate aggregated features by passenger class
+# Calculate aggregated features by passenger class using Ray Data native operations
+# Why: Comparing yourself to your group is often more predictive than absolute values
 print("Creating aggregation features using Ray Data native operations...")
 
+# Step 1: Calculate group statistics
+# This distributes the aggregation across your Ray cluster
 pclass_stats = with_missing_features.groupby('Pclass').aggregate(
-    Count(),
-    Mean('Fare'),
-    Max('Fare'),
-    Std('Age')
+    Count(),          # Number of passengers in each class
+    Mean('Fare'),     # Average fare for each class
+    Max('Fare'),      # Maximum fare paid in each class
+    Std('Age')        # Age variability within each class
 )
 
 print("Aggregated Statistics by Class:")
 print(pclass_stats.limit(10).to_pandas())
 
-# Join aggregated stats back to main dataset
+# Step 2: Join aggregated stats back to main dataset
+# Now each passenger has their class statistics as features
+# Example: A 1st class passenger gets mean_fare_class1 = $84.15
 with_agg_features = with_missing_features.join(
     pclass_stats,
-    left_key='Pclass',
-    right_key='Pclass'
+    left_key='Pclass',    # Join on passenger class
+    right_key='Pclass'     # Broadcast group stats to all members
 )
 
 print(f"✓ Aggregation features added: {with_agg_features.count():,} records")
+print("✓ Each passenger now has their group's statistics as features")
+
+# Verify the new features
+sample = with_agg_features.take(1)[0]
+print(f"✓ Example: Passenger in class {sample.get('Pclass')} has "
+      f"class mean fare = ${sample.get('mean(Fare)', 0):.2f}")
 ```
 
 ### Cyclical/Temporal Feature Encoding
@@ -853,55 +873,88 @@ print(f"✓ Cyclical features created: {cyclical_features.count():,} records")
 
 ### Text Feature Engineering
 
-Extract features from text columns like passenger names:
+**Why extract features from text?** Text columns often contain hidden structured information.
+
+**Passenger names example:**
+- **Name**: "Braund, Mr. Owen Harris" contains:
+  - Title: "Mr." (indicates male adult)
+  - Format: "LastName, Title FirstName" (standard format)
+  - Length: Longer names might indicate nobility or importance
+
+**Common text feature engineering techniques:**
+1. **Pattern extraction**: Extract titles, prefixes, suffixes using regex
+2. **Text statistics**: Length, word count, character counts
+3. **Text indicators**: Presence of keywords, parentheses, special characters
+4. **NLP features**: Sentiment, entities, topics (for longer text)
 
 ```python
 def create_text_features(batch):
-    """Create features from text fields."""
+    """
+    Create features from text fields like passenger names.
+    
+    Text columns often contain structured information that can be extracted:
+    - Titles (Mr., Mrs., Dr.) indicate social status and demographics
+    - Name length might correlate with social class
+    - Special characters might indicate nicknames or maiden names
+    
+    Args:
+        batch: List of records from Ray Data
+        
+    Returns:
+        List of records with text features added
+    """
     enhanced_records = []
     
     for record in batch:
         name = record.get('Name', '')
         
-        # Extract title from name (Mr., Mrs., Miss., etc.)
+        # Extract title from name using pattern matching
+        # Why: Titles strongly correlate with survival (Mrs/Miss higher than Mr)
         title = 'Unknown'
         if 'Mr.' in name:
-            title = 'Mr'
+            title = 'Mr'        # Adult male
         elif 'Mrs.' in name:
-            title = 'Mrs'
+            title = 'Mrs'       # Married woman - higher survival
         elif 'Miss.' in name:
-            title = 'Miss'
+            title = 'Miss'      # Unmarried woman - higher survival
         elif 'Master.' in name:
-            title = 'Master'
+            title = 'Master'    # Young boy - higher survival
         elif any(t in name for t in ['Dr.', 'Rev.', 'Col.', 'Major']):
-            title = 'Professional'
+            title = 'Professional'  # Higher social status
         
         enhanced_record = {
             **record,
-            # Title extraction
+            
+            # Title extraction - categorical feature
             'Title': title,
+            
+            # Title one-hot encoding - binary features
             'Title_Mr': 1 if title == 'Mr' else 0,
             'Title_Mrs': 1 if title == 'Mrs' else 0,
             'Title_Miss': 1 if title == 'Miss' else 0,
             
-            # Text statistics
-            'Name_length': len(name),
-            'Name_word_count': len(name.split()),
-            'Has_parentheses': 1 if '(' in name else 0
+            # Text statistics - numerical features
+            'Name_length': len(name),              # Longer names might indicate nobility
+            'Name_word_count': len(name.split()),  # Complex names might indicate status
+            
+            # Text indicators - binary features
+            'Has_parentheses': 1 if '(' in name else 0  # Parentheses often indicate maiden names or nicknames
         }
         
         enhanced_records.append(enhanced_record)
     
     return enhanced_records
 
-# Apply text feature engineering
+# Apply text feature engineering using Ray Data
+# This demonstrates how to extract structured information from unstructured text
 text_features = cyclical_features.map_batches(
     create_text_features,
-    batch_size=2000,
-    concurrency=4
+    batch_size=2000,  # Standard batch size
+    concurrency=4      # High concurrency - text operations are fast
 )
 
 print(f"✓ Text features extracted: {text_features.count():,} records")
+print("✓ Extracted titles correlate with survival rates (Mrs/Miss higher than Mr)")
 ```
 
 ### Ranking and Percentile Features
