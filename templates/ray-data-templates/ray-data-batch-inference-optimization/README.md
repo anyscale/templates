@@ -88,10 +88,22 @@ Before starting, ensure you have:
 
 **Recommended learning path**:
 
-1. **Start with Part 1** - Understand fundamentals and common mistakes
-2. **Continue to Part 2** - Master advanced optimization and production deployment
+1. **Start with Part 1** - Understand fundamentals and common anti-patterns
+2. **Continue to Part 2** - Master advanced optimization techniques
+3. **Finish with Part 3** - Deep dive into Ray Data architecture and how it enables optimization
 
 Each part builds on the previous, so complete them in order for the best learning experience.
+
+**Alternative paths:**
+
+**Quick path** (for immediate results):
+- Part 1 only - Learn the basics and avoid common mistakes
+
+**Architecture-focused path** (for deep understanding):
+- Part 1 → Part 3 → Part 2 - Learn fundamentals, understand architecture, then advanced techniques
+
+**Production path** (for deployment):
+- Part 1 → Part 2 - Skip architecture deep-dive, focus on practical optimization
 
 ---
 

@@ -283,7 +283,17 @@ In Part 2, you'll learn:
 - Performance monitoring and diagnostics
 - Production deployment best practices
 
-Or **[return to the overview](README.md)** to see all available parts.
+**Or skip ahead to Part 3** for a deep dive into Ray Data's architecture:
+
+**[Jump to Part 3: Ray Data Architecture →](03-ray-data-architecture.md)**
+
+In Part 3, you'll learn:
+- How streaming execution enables unlimited dataset processing
+- How blocks and memory management affect optimization
+- How operator fusion and backpressure work
+- How to calculate optimal parameters from architectural principles
+
+**[Return to overview](README.md)** to see all available parts.
 
 ---
 
