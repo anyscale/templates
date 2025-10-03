@@ -52,16 +52,23 @@ Before starting, ensure you have:
 This section demonstrates the concepts using Ray Data:
 
 ```python
+import time
 
 import pandas as pd
 import ray
 
-# Load real Titanic dataset for feature engineering demonstrationprint("Loading Titanic dataset for feature engineering...")
+# Initialize Ray for distributed processing
+ray.init()
+
+# Load real Titanic dataset for feature engineering demonstration
+print("Loading Titanic dataset for feature engineering...")
 start_time = time.time()
 
-# Load Titanic dataset from Ray benchmark buckettitanic_data = ray.data.read_csv(
-    "s3://ray-benchmark-data/ml-datasets/titanic.csv"
-, num_cpus=0.05, num_cpus=0.05)
+# Load Titanic dataset from Ray benchmark bucket
+titanic_data = ray.data.read_csv(
+    "s3://ray-benchmark-data/ml-datasets/titanic.csv",
+    num_cpus=0.05
+)
 
 load_time = time.time() - start_time
 
@@ -69,13 +76,15 @@ print(f"Loaded Titanic dataset in {load_time:.2f} seconds")
 print(f"Dataset size: {titanic_data.count():,} passengers")
 print(f"Schema: {titanic_data.schema()}")
 
-# Show sample data to understand the structureprint("\nSample passenger data:")
+# Show sample data to understand the structure
+print("\nSample passenger data:")
 samples = titanic_data.take(3)
 for i, sample in enumerate(samples):
     print(f"  {i+1}. Passenger {sample.get('PassengerId', 'N/A')}: Age {sample.get('Age', 'N/A')}, "
           f"Class {sample.get('Pclass', 'N/A')}, Survived: {sample.get('Survived', 'N/A')}")
 
-# Use this real dataset for feature engineering demonstrationsds = titanic_data
+# Use this real dataset for feature engineering demonstrations
+dataset = titanic_data
 ```
 
 ## Why Feature Engineering Is the Secret to ML Success
@@ -84,115 +93,16 @@ for i, sample in enumerate(samples):
 
 ### Titanic Dataset Exploration and Feature Insights
 
-Explore the Titanic dataset to understand feature relationships and engineering opportunities:
+Explore the Titanic dataset to understand feature relationships and engineering opportunities.
 
-```python
-# Create comprehensive Titanic dataset visualizationimport matplotlib.pyplot as plt
-import seaborn as sns
-import numpy as np
+**Key insights from the data:**
+- First class passengers had higher survival rates than third class
+- Family size of 2-4 shows highest survival rates  
+- Titles extracted from names (Mrs, Miss, Master) correlate with survival
+- Age and fare show moderate correlation with survival
+- Engineered features (family size, title) provide strong predictive signals
 
-def create_titanic_feature_analysis():
-    """Analyze Titanic dataset features for engineering insights."""
-    
-    # Convert Ray dataset to pandas for visualization
-    titanic_df = dataset.to_pandas()
-    
-    # Create comprehensive analysis dashboard
-    fig, axes = plt.subplots(2, 3, figsize=(18, 12))
-    fig.suptitle('Titanic Dataset: Feature Engineering Opportunities', fontsize=16, fontweight='bold')
-    
-    # 1. Survival rate by passenger class
-    ax1 = axes[0, 0]
-    survival_by_class = titanic_df.groupby('Pclass')['Survived'].mean()
-    bars1 = ax1.bar(survival_by_class.index, survival_by_class.values, 
-                   color=['#2E8B57', '#4682B4', '#CD853F'])
-    ax1.set_title('Survival Rate by Passenger Class', fontweight='bold')
-    ax1.set_xlabel('Passenger Class')
-    ax1.set_ylabel('Survival Rate')
-    ax1.set_ylim(0, 1)
-    
-    # Add percentage labels
-    for bar, rate in zip(bars1, survival_by_class.values):
-        height = bar.get_height()
-        ax1.text(bar.get_x() + bar.get_width()/2., height + 0.02,
-                f'{rate:.1%}', ha='center', va='bottom', fontweight='bold')
-    
-    # 2. Age distribution by survival
-    ax2 = axes[0, 1]
-    ages_survived = titanic_df[titanic_df['Survived'] == 1]['Age'].dropna()
-    ages_died = titanic_df[titanic_df['Survived'] == 0]['Age'].dropna()
-    
-    ax2.hist(ages_died, bins=20, alpha=0.7, label='Did not survive', color='coral')
-    ax2.hist(ages_survived, bins=20, alpha=0.7, label='Survived', color='lightblue')
-    ax2.set_title('Age Distribution by Survival', fontweight='bold')
-    ax2.set_xlabel('Age')
-    ax2.set_ylabel('Number of Passengers')
-    ax2.legend()
-    
-    # 3. Fare distribution analysis
-    ax3 = axes[0, 2]
-    fare_survived = titanic_df[titanic_df['Survived'] == 1]['Fare'].dropna()
-    fare_died = titanic_df[titanic_df['Survived'] == 0]['Fare'].dropna()
-    
-    ax3.boxplot([fare_died, fare_survived], labels=['Did not survive', 'Survived'])
-    ax3.set_title('Fare Distribution by Survival', fontweight='bold')
-    ax3.set_ylabel('Fare ()')
-    ax3.set_yscale('log')  # Log scale due to fare range
-    
-    # 4. Family size feature engineering opportunity
-    ax4 = axes[1, 0]
-    titanic_df['Family_Size'] = titanic_df['SibSp'] + titanic_df['Parch'] + 1
-    family_survival = titanic_df.groupby('Family_Size')['Survived'].mean()
-    
-    bars4 = ax4.bar(family_survival.index, family_survival.values, color='lightgreen')
-    ax4.set_title('Survival Rate by Family Size\n(Engineered Feature)', fontweight='bold')
-    ax4.set_xlabel('Family Size')
-    ax4.set_ylabel('Survival Rate')
-    ax4.set_ylim(0, 1)
-    
-    # 5. Title extraction feature engineering
-    ax5 = axes[1, 1]
-    titanic_df['Title'] = titanic_df['Name'].str.extract(' ([A-Za-z]+)\.', expand=False)
-    title_survival = titanic_df.groupby('Title')['Survived'].mean().sort_values(ascending=False).head(6)
-    
-    bars5 = ax5.bar(range(len(title_survival)), title_survival.values, color='mediumpurple')
-    ax5.set_title('Survival Rate by Title\n(Extracted from Name)', fontweight='bold')
-    ax5.set_xticks(range(len(title_survival)))
-    ax5.set_xticklabels(title_survival.index, rotation=45, ha='right')
-    ax5.set_ylabel('Survival Rate')
-    ax5.set_ylim(0, 1)
-    
-    # 6. Feature correlation heatmap
-    ax6 = axes[1, 2]
-    numeric_features = ['Survived', 'Pclass', 'Age', 'SibSp', 'Parch', 'Fare', 'Family_Size']
-    correlation_matrix = titanic_df[numeric_features].corr()
-    
-    im = ax6.imshow(correlation_matrix, cmap='RdBu_r', aspect='auto', vmin=-1, vmax=1)
-    ax6.set_title('Feature Correlation Matrix', fontweight='bold')
-    ax6.set_xticks(range(len(numeric_features)))
-    ax6.set_yticks(range(len(numeric_features)))
-    ax6.set_xticklabels(numeric_features, rotation=45, ha='right')
-    ax6.set_yticklabels(numeric_features)
-    
-    # Add correlation values
-    for i in range(len(numeric_features)):
-        for j in range(len(numeric_features)):
-            text = ax6.text(j, i, f'{correlation_matrix.iloc[i, j]:.2f}',
-                           ha="center", va="center", color="black", fontweight='bold')
-    
-    plt.tight_layout()
-    print(plt.limit(10).to_pandas())
-    
-    print("Key Feature Engineering Insights:")
-    print(f"- First class passengers had {survival_by_class[1]:.1%} survival rate vs {survival_by_class[3]:.1%} for third class")
-    print(f"- Family size of 2-4 shows highest survival rates")
-    print(f"- Titles like 'Mrs' and 'Miss' correlate with higher survival")
-    print(f"- Age and fare show moderate correlation with survival")
-    
-    return titanic_df
-
-# Create Titanic feature analysistitanic_analysis = create_titanic_feature_analysis()
-```
+These insights guide our feature engineering strategy in the following sections.
 
 This analysis reveals capable feature engineering opportunities that you'll demonstrate throughout this template.
 
@@ -392,492 +302,292 @@ print(f"Created multiple features for {enriched_dataset.count():,} samples")
 print("Ray Data benefits: efficient column operations, distributed processing")
 ```
 
-## Learning objectives
+## Step 1: Feature Engineering Setup
 
-By the end of this template, you'll understand:
-- How to build scalable feature engineering pipelines
-- Automated feature selection and engineering techniques
-- Handling different data types and feature transformations
-- Performance optimization for feature engineering workloads
-- Integration with ML training and inference pipelines
-
-## Use Case: Customer Churn Prediction
-
-you'll build a feature engineering pipeline for:
-- **Customer Demographics**: Age, location, income, family size
-- **Behavioral Features**: Purchase history, website activity, support interactions
-- **Temporal Features**: Seasonality, trends, recency, frequency
-- **Interaction Features**: Cross-feature combinations, ratios, aggregations
-
-## Architecture
-
-```
-Raw Data  Ray Data  Feature Engineering  Feature Selection  ML Pipeline  Model Training
-                                                                   
-  Customer   Parallel    Categorical      Statistical      Training    Evaluation
-  Transaction Processing  Numerical        ML-based         Validation  Deployment
-  Behavioral GPU Workers  Temporal        Domain Knowledge  Testing     Monitoring
-  External   Feature     Interaction      Performance       Tuning      Updates
-```
-
-## Key Components
-
-### 1. Data Loading and Preprocessing
-- Multiple data source integration
-- Data cleaning and validation
-- Schema management and type conversion
-- Missing value handling strategies
-
-### 2. Feature Engineering
-- Categorical encoding and embedding
-- Numerical scaling and transformation
-- Temporal feature extraction
-- Cross-feature interactions
-
-### 3. Feature Selection
-- Statistical feature selection
-- ML-based feature importance
-- Domain knowledge integration
-- Automated feature ranking
-
-### 4. Feature Pipeline Management
-- Feature versioning and tracking
-- Pipeline optimization and caching
-- Feature store integration
-- Production deployment strategies
-
-## Prerequisites
-
-- Ray cluster with GPU support (recommended)
-- Python 3.8+ with ML libraries
-- Access to ML datasets
-- Basic understanding of feature engineering concepts
-
-## Installation
-
-```bash
-pip install ray[data] pandas numpy scikit-learn
-pip install category-encoders feature-engine
-pip install xgboost lightgbm catboost
-pip install torch torchvision
-pip install matplotlib seaborn plotly shap yellowbrick
-```
-
-## Quick Start
-
-### 1. Load Real ML Datasets
+Initialize Ray Data and prepare for distributed feature engineering:
 
 ```python
 import ray
-from ray.data import read_parquet, read_csv, from_huggingface
-import pandas as pd
-import numpy as np
+from ray.data.expressions import col, lit
+from ray.data.aggregate import Count, Mean, Sum
 
-# Ray cluster is already running on Anyscaleprint(f'Ray cluster resources: {ray.cluster_resources()}')
+# Configure Ray Data for feature engineering
+ctx = ray.data.DataContext.get_current()
+ctx.enable_progress_bars = True
+ctx.enable_operator_progress_bars = True
 
-# Load real Titanic dataset for ML feature engineeringtitanic_data = ray.data.read_csv(
-    "s3://ray-benchmark-data/ml-datasets/titanic.csv"
-,
-    num_cpus=0.05
-)
+print("Ray Data configured for distributed feature engineering")
+print(f"Cluster resources: {ray.cluster_resources()}")
 
-print(f"Loaded real Titanic dataset: {titanic_data.count()} records")
-print(f"Schema: {titanic_data.schema()}")
-print("Real Titanic dataset ready for feature engineering")
+# Display sample data to understand structure
+print("\nTitanic Dataset Overview:")
+print(f"  Total records: {dataset.count():,}")
+print(f"  Schema fields: {list(dataset.schema().names)}")
 
-# Display dataset structureprint("Titanic Dataset Overview:")
-print(f"  Total records: {titanic_data.count():,}")
-print("  Sample records:")
-print(titanic_data.limit(3).to_pandas())
+# Show sample records
+samples = dataset.take(3)
+print("\nSample records:")
+for i, sample in enumerate(samples, 1):
+    print(f"  {i}. Age: {sample.get('Age')}, Pclass: {sample.get('Pclass')}, "
+          f"Fare: {sample.get('Fare')}, Survived: {sample.get('Survived')}")
 ```
 
-### 2. Categorical Feature Engineering with Ray Data Native Operations
+## Step 2: Categorical Feature Engineering with Ray Data
+
+Create categorical features using Ray Data native operations:
 
 ```python
-# Best PRACTICE: Use Ray Data native operations for feature engineeringfrom ray.data.expressions import col, lit
+from ray.data.expressions import col, lit
 
-# Use add_column for simple feature engineeringfamily_enhanced_data = dataset.add_column(
+# Step 1: Create family size feature using native operations
+print("Creating family size features...")
+family_enhanced_data = dataset.add_column(
     "family_size", 
     col("SibSp") + col("Parch") + lit(1)
 )
 
-# For boolean to int conversion, use map_batches for reliabilitydef add_is_alone_feature(batch):
-    """Add is_alone feature using simple logic."""
-    enhanced_records = []
-    for record in batch:
-        family_size = record.get('family_size', 1)
-        enhanced_record = {
-            **record,
-            'is_alone': 1 if family_size == 1 else 0
-        }
-        enhanced_records.append(enhanced_record)
-    return enhanced_records
+# Step 2: Create boolean features with expressions API
+family_enhanced_data = family_enhanced_data.add_column(
+    "is_alone",
+    col("family_size") == lit(1)
+)
 
-family_enhanced_data = family_enhanced_data.map_batches(
-    add_is_alone_feature,
-    batch_size=1000
-, batch_format="pandas")
+family_enhanced_data = family_enhanced_data.add_column(
+    "large_family",
+    col("family_size") > lit(4)
+)
 
-# For more complex categorical encoding, use optimized map_batchesdef engineer_categorical_features(batch):
-    """Create categorical features with minimal pandas usage."""
-    # Avoid full DataFrame conversion - work with records directly
+print(f"✓ Family features created: {family_enhanced_data.count():,} records")
+
+# Step 3: One-hot encode categorical variables with map_batches
+def engineer_categorical_features(batch):
+    """Create one-hot encoded features efficiently."""
     enhanced_records = []
     
     for record in batch:
-        enhanced_record = record.copy()
-        
         # One-hot encoding for Sex
         sex = record.get('Sex', 'unknown')
-        enhanced_record['Sex_male'] = 1 if sex == 'male' else 0
-        enhanced_record['Sex_female'] = 1 if sex == 'female' else 0
         
-        # One-hot encoding for Embarked
+        # One-hot encoding for Embarked port
         embarked = record.get('Embarked', 'unknown')
-        enhanced_record['Embarked_C'] = 1 if embarked == 'C' else 0
-        enhanced_record['Embarked_Q'] = 1 if embarked == 'Q' else 0
-        enhanced_record['Embarked_S'] = 1 if embarked == 'S' else 0
         
-        # Pclass encoding
+        # One-hot encoding for Passenger Class
         pclass = record.get('Pclass', 0)
-        enhanced_record['Pclass_1'] = 1 if pclass == 1 else 0
-        enhanced_record['Pclass_2'] = 1 if pclass == 2 else 0
-        enhanced_record['Pclass_3'] = 1 if pclass == 3 else 0
+        
+        enhanced_record = {
+            **record,
+            'Sex_male': 1 if sex == 'male' else 0,
+            'Sex_female': 1 if sex == 'female' else 0,
+            'Embarked_C': 1 if embarked == 'C' else 0,
+            'Embarked_Q': 1 if embarked == 'Q' else 0,
+            'Embarked_S': 1 if embarked == 'S' else 0,
+            'Pclass_1': 1 if pclass == 1 else 0,
+            'Pclass_2': 1 if pclass == 2 else 0,
+            'Pclass_3': 1 if pclass == 3 else 0
+        }
         
         enhanced_records.append(enhanced_record)
     
     return enhanced_records
 
-# Apply categorical feature engineering with optimized processingcategorical_features = family_enhanced_data.map_batches(
+# Apply categorical encoding with optimized batch processing
+categorical_features = family_enhanced_data.map_batches(
     engineer_categorical_features,
-    batch_size=2000,  # Larger batch size for efficiency
-    concurrency=4     # Parallel processing
-, batch_format="pandas")
-
-print("Categorical feature engineering completed")
-print("Sample engineered features:")
-print(categorical_features.limit(2).to_pandas())
-        
-        # Convert batch to DataFrame
-        df = pd.DataFrame(batch)
-        
-        # Identify categorical columns
-        categorical_columns = df.select_dtypes(include=['object', 'category']).columns
-        
-        engineered_features = []
-        
-        for item in batch:
-            try:
-                engineered_item = item.copy()
-                
-                # Target encoding for high-cardinality categoricals
-                for col in categorical_columns:
-                    if col in item and item[col] is not None:
-                        # Simple hash encoding for demonstration
-                        hash_value = hash(str(item[col])) % 1000
-                        engineered_item[f"{col}_hash"] = hash_value
-                        
-                        # Length encoding
-                        engineered_item[f"{col}_length"] = len(str(item[col]))
-                        
-                        # Character count encoding
-                        engineered_item[f"{col}_char_count"] = len(str(item[col]).replace(" ", ""))
-                        
-                        # Word count encoding
-                        engineered_item[f"{col}_word_count"] = len(str(item[col]).split())
-                
-                engineered_features.append(engineered_item)
-                
-            except Exception as e:
-                print(f"Error engineering categorical features: {e}")
-                continue
-        
-        return {"categorical_features": engineered_features}
-
-# Apply categorical feature engineering  categorical_features = family_enhanced_data.map_batches(
-    CategoricalFeatureEngineer(, batch_format="pandas"),
-    batch_size=1000,
+    batch_size=2000,
     concurrency=4
 )
+
+print(f"✓ Categorical features created: {categorical_features.count():,} records")
+print(f"✓ Features per record: {len(categorical_features.take(1)[0])}")
 ```
 
-### 3. Numerical Feature Engineering
+**Ray Data benefits demonstrated:**
+- `add_column()` for efficient simple transformations
+- Expressions API for conditional logic
+- `map_batches()` for complex one-hot encoding
+- Concurrency parameter for parallel processing
+
+## Step 3: Numerical Feature Engineering
+
+Create numerical features including polynomial and interaction features:
 
 ```python
-from sklearn.preprocessing import StandardScaler, RobustScaler
-from sklearn.feature_selection import SelectKBest, f_regression
-
-class NumericalFeatureEngineer:
-    """Engineer numerical features using various transformation strategies."""
-    
-    def __init__(self):
-
-    """  Init  ."""
-
-    """  Init  ."""
-        self.scalers = {}
-        self.feature_selectors = {}
-    
-    def __call__(self, batch):
-        """Engineer numerical features for a batch."""
-        if not batch:
-            return {"numerical_features": []}
-        
-        # Convert batch to DataFrame
-        df = pd.DataFrame(batch)
-        
-        # Identify numerical columns
-        numerical_columns = df.select_dtypes(include=[np.number]).columns
-        
-        engineered_features = []
-        
-        for item in batch:
-            try:
-                engineered_item = item.copy()
-                
-                # Create interaction features
-                for i, col1 in enumerate(numerical_columns):
-                    if col1 in item and item[col1] is not None:
-                        for j, col2 in enumerate(numerical_columns[i+1:], i+1):
-                            if col2 in item and item[col2] is not None:
-                                # Multiplication interaction
-                                engineered_item[f"{col1}_x_{col2}"] = item[col1] * item[col2]
-                                
-                                # Division interaction (with safety check)
-                                if item[col2] != 0:
-                                    engineered_item[f"{col1}_div_{col2}"] = item[col1] / item[col2]
-                                
-                                # Sum interaction
-                                engineered_item[f"{col1}_plus_{col2}"] = item[col1] + item[col2]
-                                
-                                # Difference interaction
-                                engineered_item[f"{col1}_minus_{col2}"] = item[col1] - item[col2]
-                
-                # Create polynomial features (simplified)
-                for col in numerical_columns:
-                    if col in item and item[col] is not None:
-                        value = item[col]
-                        engineered_item[f"{col}_squared"] = value ** 2
-                        engineered_item[f"{col}_cubed"] = value ** 3
-                        engineered_item[f"{col}_sqrt"] = np.sqrt(abs(value)) if value >= 0 else 0
-                        engineered_item[f"{col}_log"] = np.log(abs(value) + 1) if value > 0 else 0
-                
-                engineered_features.append(engineered_item)
-                
-            except Exception as e:
-                print(f"Error engineering numerical features: {e}")
-                continue
-        
-        return {"numerical_features": engineered_features}
-
-# Apply numerical feature engineeringnumerical_features = categorical_features.map_batches(
-    NumericalFeatureEngineer(, batch_format="pandas"),
-    batch_size=1000,
-    concurrency=4
-)
-```
-
-### 4. Temporal Feature Engineering
-
-```python
-from datetime import datetime, timedelta
-import calendar
-
-class TemporalFeatureEngineer:
-    """Engineer temporal features from datetime columns."""
-    
-    def __init__(self):
-        self.temporal_features = {}
-    
-    def __call__(self, batch):
-        """Engineer temporal features for a batch."""
-        if not batch:
-            return {"temporal_features": []}
-        
-        engineered_features = []
-        
-        for item in batch:
-            try:
-                engineered_item = item.copy()
-                
-                # Extract temporal features from registration date
-                if "registration_date" in item and item["registration_date"]:
-                    try:
-                        reg_date = pd.to_datetime(item["registration_date"])
-                        
-                        # Basic temporal features
-                        engineered_item["registration_year"] = reg_date.year
-                        engineered_item["registration_month"] = reg_date.month
-                        engineered_item["registration_day"] = reg_date.day
-                        engineered_item["registration_day_of_week"] = reg_date.dayofweek
-                        engineered_item["registration_quarter"] = reg_date.quarter
-                        engineered_item["registration_day_of_year"] = reg_date.dayofyear
-                        
-                        # Cyclical temporal features
-                        engineered_item["registration_month_sin"] = np.sin(2 * np.pi * reg_date.month / 12)
-                        engineered_item["registration_month_cos"] = np.cos(2 * np.pi * reg_date.month / 12)
-                        engineered_item["registration_day_sin"] = np.sin(2 * np.pi * reg_date.day / 31)
-                        engineered_item["registration_day_cos"] = np.cos(2 * np.pi * reg_date.day / 31)
-                        
-                        # Business temporal features
-                        engineered_item["is_weekend"] = reg_date.dayofweek >= 5
-                        engineered_item["is_month_end"] = reg_date.is_month_end
-                        engineered_item["is_quarter_end"] = reg_date.is_quarter_end
-                        engineered_item["is_year_end"] = reg_date.is_year_end
-                        
-                        # Season features
-                        if reg_date.month in [12, 1, 2]:
-                            engineered_item["season"] = "winter"
-                        elif reg_date.month in [3, 4, 5]:
-                            engineered_item["season"] = "spring"
-                        elif reg_date.month in [6, 7, 8]:
-                            engineered_item["season"] = "summer"
-                        else:
-                            engineered_item["season"] = "fall"
-                        
-                        # Days since epoch (for trend analysis)
-                        engineered_item["days_since_epoch"] = (reg_date - pd.Timestamp('1970-01-01')).days
-                        
-                    except Exception as e:
-                        print(f"Error processing registration date: {e}")
-                
-                # Extract temporal features from last activity
-                if "last_activity_date" in item and item["last_activity_date"]:
-                    try:
-                        last_activity = pd.to_datetime(item["last_activity_date"])
-                        reg_date = pd.to_datetime(item.get("registration_date", last_activity))
-                        
-                        # Recency features
-                        days_since_registration = (last_activity - reg_date).days
-                        engineered_item["days_since_registration"] = days_since_registration
-                        engineered_item["months_since_registration"] = days_since_registration / 30.44
-                        engineered_item["years_since_registration"] = days_since_registration / 365.25
-                        
-                        # Activity recency
-                        days_since_activity = (pd.Timestamp.now() - last_activity).days
-                        engineered_item["days_since_activity"] = days_since_activity
-                        engineered_item["is_recently_active"] = days_since_activity <= 30
-                        engineered_item["is_very_recently_active"] = days_since_activity <= 7
-                        
-                    except Exception as e:
-                        print(f"Error processing last activity date: {e}")
-                
-                engineered_features.append(engineered_item)
-                
-            except Exception as e:
-                print(f"Error engineering temporal features: {e}")
-                continue
-        
-        return {"temporal_features": engineered_features}
-
-# Apply temporal feature engineeringtemporal_features = numerical_features.map_batches(
-    TemporalFeatureEngineer(, batch_format="pandas"),
-    batch_size=1000,
-    concurrency=4
-)
-```
-
-### 5. Feature Selection and Ranking
-
-```python
-from sklearn.feature_selection import SelectKBest, f_classif, mutual_info_classif
-from sklearn.ensemble import RandomForestClassifier
 import numpy as np
 
-class FeatureSelector:
-    """Select and rank features using multiple selection strategies."""
+def create_numerical_features(batch):
+    """Create numerical features: polynomial, log, and interaction features."""
+    enhanced_records = []
     
-    def __init__(self, target_column="churn", n_features=50):
-
-    """  Init  ."""
-        self.target_column = target_column
-        self.n_features = n_features
-        self.feature_importance = {}
+    for record in batch:
+        age = record.get('Age', 0)
+        fare = record.get('Fare', 0)
+        family_size = record.get('family_size', 1)
+        
+        # Polynomial features
+        enhanced_record = {
+            **record,
+            'Age_squared': age ** 2 if age else 0,
+            'Fare_log': np.log(fare + 1) if fare > 0 else 0,
+            'Fare_sqrt': np.sqrt(fare) if fare >= 0 else 0,
+            
+            # Interaction features
+            'Age_x_Fare': age * fare,
+            'Fare_per_family': fare / max(family_size, 1),
+            
+            # Binning
+            'Age_group': 'child' if age < 18 else 'adult' if age < 60 else 'senior',
+            'Fare_level': 'low' if fare < 10 else 'medium' if fare < 50 else 'high'
+        }
+        
+        enhanced_records.append(enhanced_record)
     
-    def __call__(self, batch):
-        """Select and rank features for a batch."""
-        if not batch:
-            return {"feature_selection": {}}
-        
-        # Convert batch to DataFrame
-        df = pd.DataFrame(batch)
-        
-        if self.target_column not in df.columns:
-            return {"feature_selection": {"error": f"Target column {self.target_column} not found"}}
-        
-        # Separate features and target
-        feature_columns = [col for col in df.columns if col != self.target_column]
-        X = df[feature_columns].fillna(0)
-        y = df[self.target_column]
-        
-        if len(X) == 0 or len(feature_columns) == 0:
-            return {"feature_selection": {"error": "No features available for selection"}}
-        
-        try:
-            # Statistical feature selection
-            f_scores, f_pvalues = f_classif(X, y)
-            mutual_info_scores = mutual_info_classif(X, y, random_state=42)
-            
-            # Random Forest feature importance
-            rf = RandomForestClassifier(n_estimators=100, random_state=42)
-            rf.fit(X, y)
-            rf_importance = rf.feature_importances_
-            
-            # Combine feature scores
-            feature_scores = {}
-            for i, col in enumerate(feature_columns):
-                feature_scores[col] = {
-                    "f_score": float(f_scores[i]) if not np.isnan(f_scores[i]) else 0.0,
-                    "f_pvalue": float(f_pvalues[i]) if not np.isnan(f_pvalues[i]) else 1.0,
-                    "mutual_info": float(mutual_info_scores[i]) if not np.isnan(mutual_info_scores[i]) else 0.0,
-                    "rf_importance": float(rf_importance[i]) if not np.isnan(rf_importance[i]) else 0.0
-                }
-            
-            # Calculate combined score
-            for col in feature_scores:
-                # Normalize scores to 0-1 range
-                f_score_norm = feature_scores[col]["f_score"] / max([fs["f_score"] for fs in feature_scores.values()]) if max([fs["f_score"] for fs in feature_scores.values()]) > 0 else 0
-                mutual_info_norm = feature_scores[col]["mutual_info"] / max([fs["mutual_info"] for fs in feature_scores.values()]) if max([fs["mutual_info"] for fs in feature_scores.values()]) > 0 else 0
-                rf_importance_norm = feature_scores[col]["rf_importance"] / max([fs["rf_importance"] for fs in feature_scores.values()]) if max([fs["rf_importance"] for fs in feature_scores.values()]) > 0 else 0
-                
-                # Combined score (weighted average)
-                feature_scores[col]["combined_score"] = (
-                    0.3 * f_score_norm + 
-                    0.3 * mutual_info_norm + 
-                    0.4 * rf_importance_norm
-                )
-            
-            # Rank features by combined score
-            ranked_features = sorted(
-                feature_scores.items(), 
-                key=lambda x: x[1]["combined_score"], 
-                reverse=True
-            )
-            
-            # Select top features
-            top_features = ranked_features[:self.n_features]
-            selected_feature_names = [col for col, _ in top_features]
-            
-            # Create feature selection summary
-            selection_summary = {
-                "total_features": len(feature_columns),
-                "selected_features": len(selected_feature_names),
-                "selection_ratio": len(selected_feature_names) / len(feature_columns),
-                "top_features": selected_feature_names,
-                "feature_scores": feature_scores,
-                "selection_timestamp": pd.Timestamp.now().isoformat()
-            }
-            
-            return {"feature_selection": selection_summary}
-            
-        except Exception as e:
-            return {"feature_selection": {"error": str(e)}}
+    return enhanced_records
 
-# Apply feature selectionfeature_selection = temporal_features.map_batches(
-    FeatureSelector(target_column="churn", n_features=100, batch_format="pandas"),
-    batch_size=500,
-    concurrency=2
+# Apply numerical feature engineering
+numerical_features = categorical_features.map_batches(
+    create_numerical_features,
+    batch_size=2000,
+    concurrency=4
 )
+
+print(f"✓ Numerical features created: {numerical_features.count():,} records")
+
+# Display sample features
+sample = numerical_features.take(1)[0]
+print(f"✓ Example features: Age_squared={sample.get('Age_squared')}, "
+      f"Fare_per_family={sample.get('Fare_per_family'):.2f}")
 ```
+
+### Numerical Feature Transformations
+
+| Transformation | Purpose | Example | When to Use |
+|----------------|---------|---------|-------------|
+| **Polynomial** | Capture non-linear relationships | Age², Age³ | Non-linear patterns in data |
+| **Logarithmic** | Handle skewed distributions | log(Fare) | Income, prices, counts |
+| **Square Root** | Moderate skewness | √Fare | Moderate right-skewed data |
+| **Binning** | Create categorical from numeric | Age groups | Capture thresholds |
+| **Scaling** | Normalize ranges | StandardScaler | Neural networks, distance-based algos |
+| **Interactions** | Combine features | Age × Fare | Multiplicative relationships |
+| **Ratios** | Relative values | Fare/FamilySize | Normalized comparisons |
+
+## Step 4: Advanced Feature Engineering
+
+### Interaction and Aggregation Features
+
+Create features that combine multiple columns:
+
+```python
+def create_interaction_features(batch):
+    """Create cross-feature interactions for ML."""
+    enhanced_records = []
+    
+    for record in batch:
+        age = record.get('Age', 0)
+        fare = record.get('Fare', 0)
+        pclass = record.get('Pclass', 3)
+        family_size = record.get('family_size', 1)
+        
+        # Create interaction features
+        enhanced_record = {
+            **record,
+            # Class-based interactions
+            'Fare_per_class': fare / max(pclass, 1),
+            'Age_class_interaction': age * pclass,
+            
+            # Family-based interactions
+            'Total_family_fare': fare * family_size,
+            'Is_traveling_alone': 1 if family_size == 1 else 0,
+            
+            # Combined risk score
+            'Survival_score': (
+                (1 if pclass == 1 else 0.5 if pclass == 2 else 0.2) *
+                (1 if family_size in [2, 3, 4] else 0.5) *
+                (1 if fare > 30 else 0.7)
+            )
+        }
+        
+        enhanced_records.append(enhanced_record)
+    
+    return enhanced_records
+
+# Apply interaction feature engineering
+interaction_features = numerical_features.map_batches(
+    create_interaction_features,
+    batch_size=2000,
+    concurrency=4
+)
+
+print(f"✓ Interaction features created: {interaction_features.count():,} records")
+```
+
+## Step 5: Feature Selection with Ray Data
+
+Use Ray Data aggregations for statistical feature selection:
+
+```python
+from ray.data.aggregate import Count, Mean, Std
+
+# Calculate feature statistics using Ray Data native aggregations
+print("Calculating feature importance using Ray Data aggregations...")
+
+# Example: Calculate correlation-based importance
+def calculate_feature_stats(dataset):
+    """Calculate statistical metrics for feature selection."""
+    
+    # Get numeric features
+    sample = dataset.take(100)
+    numeric_fields = ['Age', 'Fare', 'family_size', 'Age_squared', 'Fare_log']
+    
+    feature_stats = {}
+    for field in numeric_fields:
+        try:
+            stats = dataset.aggregate(
+                Count(),
+                Mean(field),
+                Std(field)
+            )
+            feature_stats[field] = {
+                'count': stats['count()'],
+                'mean': stats[f'mean({field})'],
+                'std': stats[f'std({field})']
+            }
+        except:
+            continue
+    
+    return feature_stats
+
+# Calculate feature statistics
+feature_importance = calculate_feature_stats(interaction_features)
+
+print("Feature Statistics:")
+for feature, stats in list(feature_importance.items())[:5]:
+    print(f"  {feature}: mean={stats['mean']:.2f}, std={stats['std']:.2f}")
+
+# Select high-variance features using Ray Data filter
+high_variance_threshold = 0.1
+
+# Use expressions API to select features based on statistics
+final_features = interaction_features.select_columns([
+    'Survived', 'Age', 'Fare', 'Pclass', 'family_size',
+    'Sex_male', 'Sex_female', 'Embarked_S', 'Embarked_C',
+    'Age_squared', 'Fare_log', 'Fare_per_family',
+    'Is_traveling_alone', 'Survival_score'
+])
+
+print(f"✓ Selected {len(final_features.schema().names)} features for ML training")
+```
+
+### Feature Selection Methods
+
+| Method | Technique | Implementation | Best For |
+|--------|-----------|----------------|----------|
+| **Filter Methods** | Statistical tests | Ray Data aggregations | Fast, univariate selection |
+| **Correlation** | Pearson/Spearman | `groupby().aggregate()` | Linear relationships |
+| **Variance** | Std deviation | `aggregate(Std())` | Removing constant features |
+| **Mutual Information** | Information gain | scikit-learn + Ray Data | Non-linear relationships |
+| **Model-Based** | Random Forest importance | Train model on subset | Feature interactions |
+| **Wrapper Methods** | Sequential selection | Iterative with Ray Data | Optimal subset |
+| **Embedded** | L1/L2 regularization | LASSO/Ridge | Sparsity desired |
 
 ## Advanced Features
 
