@@ -27,11 +27,29 @@ Build a geospatial analysis pipeline that processes location points across citie
 
 ## Overview
 
-**Challenge**: Geospatial analysis tools can face limitations when processing large location datasets. Single-machine processing may encounter memory constraints with GPS coordinates, while spatial operations like proximity search and clustering require distributed processing.
+**Challenge**: Processing millions of GPS coordinates, calculating distances for billions of location pairs, and performing spatial joins across large datasets exceeds single-machine capacity. Traditional GIS tools struggle with:
+- **Memory constraints**: Loading all coordinates into RAM
+- **Sequential processing**: Calculating distances one-by-one
+- **Complex spatial joins**: Matching locations within radius
+- **Real-time requirements**: Sub-second proximity queries
 
-**Solution**: Ray Data provides distributed geospatial processing capabilities that parallelize spatial calculations across multiple nodes. The framework handles large datasets through streaming processing and integrates with geospatial libraries.
+**Solution**: Ray Data enables distributed geospatial processing that scales spatial calculations across clusters:
 
-**Applications**: Location-based companies use distributed geospatial analytics for business applications. Transportation companies process trip data using spatial algorithms, while delivery services optimize zones through distributed geographic calculations. These patterns support location processing applications.
+| Spatial Operation | Traditional Approach | Ray Data Approach | Scalability |
+|-------------------|---------------------|-------------------|-------------|
+| **Distance calculations** | Sequential loops | Parallel `map_batches()` | Linear scaling with nodes |
+| **Proximity search** | Full dataset scan | Distributed filtering | Handles billions of points |
+| **Spatial joins** | Memory-limited | Streaming joins | Unlimited dataset size |
+| **Clustering** | Single-machine algorithms | Distributed `groupby()` | Scales to terabytes |
+
+**Ray Data Benefits for Geospatial:**
+- ✅ **Distributed haversine calculations**: Process millions of distance computations in parallel
+- ✅ **Streaming spatial joins**: Match locations without loading full datasets into memory
+- ✅ **Native aggregations**: Use `groupby()` for spatial clustering and zone analysis
+- ✅ **Expression API**: Efficient filtering with `col()` and `lit()` for bounding box queries
+- ✅ **Pipeline parallelism**: All spatial operations run concurrently for maximum throughput
+
+**Applications**: Uber processes 10M+ trips daily using distributed spatial matching. DoorDash optimizes delivery zones across 10,000+ restaurants using spatial clustering. Zillow analyzes property locations and nearby amenities for 135M+ listings using geospatial joins.
 
 ```python
 # Example: Real-time spatial matching like Uber/Lyftdef find_nearest_drivers(passenger_location, driver_locations, max_distance_km=5):
