@@ -132,18 +132,18 @@ python download_real_datasets.py
 
 | Template | Notebook Status | Code Cells | Total Cells | Execution Ready |
 |----------|----------------|------------|-------------|-----------------|
-| **batch-inference-optimization** | ✅ Valid | 8 | 16 | Yes |
-| **data-quality-monitoring** | ✅ Valid | 11 | 23 | Yes |
-| **enterprise-data-catalog** | ✅ Valid | 8 | 17 | Yes |
-| **etl-tpch** | ✅ Valid | 19 | 39 | Yes |
-| **large-scale-etl-optimization** | ✅ Valid | 33 | 66 | Yes |
-| **multimodal-ai-pipeline** | ✅ Valid | 23 | 47 | Yes |
-| **financial-forecasting** | ✅ Valid | 30 | 59 | Yes |
-| **geospatial-analysis** | ✅ Valid | 28 | 57 | Yes |
-| **log-ingestion** | ✅ Valid | 26 | 53 | Yes |
-| **medical-connectors** | ✅ Valid | 44 | 89 | Yes |
-| **ml-feature-engineering** | ✅ Valid | 21 | 43 | Yes |
-| **nlp-text-analytics** | ✅ Valid | 35 | 71 | Yes |
+| **batch-inference-optimization** | - Valid | 8 | 16 | Yes |
+| **data-quality-monitoring** | - Valid | 11 | 23 | Yes |
+| **enterprise-data-catalog** | - Valid | 8 | 17 | Yes |
+| **etl-tpch** | - Valid | 19 | 39 | Yes |
+| **large-scale-etl-optimization** | - Valid | 33 | 66 | Yes |
+| **multimodal-ai-pipeline** | - Valid | 23 | 47 | Yes |
+| **financial-forecasting** | - Valid | 30 | 59 | Yes |
+| **geospatial-analysis** | - Valid | 28 | 57 | Yes |
+| **log-ingestion** | - Valid | 26 | 53 | Yes |
+| **medical-connectors** | - Valid | 44 | 89 | Yes |
+| **ml-feature-engineering** | - Valid | 21 | 43 | Yes |
+| **nlp-text-analytics** | - Valid | 35 | 71 | Yes |
 
 **Summary**: 12/12 notebooks fully executable and syntactically valid
 
@@ -154,7 +154,7 @@ python download_real_datasets.py
 # Execute all valid notebooks
 for notebook in ray-data-*/README.ipynb; do
     echo "Testing $notebook..."
-    jupyter nbconvert --execute --to notebook "$notebook" --output "$(basename "$notebook" .ipynb)_executed.ipynb" 2>/dev/null && echo "✅ $notebook executed successfully" || echo "⚠️ $notebook needs fixes"
+    jupyter nbconvert --execute --to notebook "$notebook" --output "$(basename "$notebook" .ipynb)_executed.ipynb" 2>/dev/null && echo "- $notebook executed successfully" || echo "⚠️ $notebook needs fixes"
 done
 ```
 

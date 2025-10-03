@@ -266,10 +266,10 @@ print("GPU acceleration available for complex pandas preprocessing")
 ## Key Takeaways from Part 1
 
 You've learned the fundamentals of batch inference optimization:
-- ✅ Identified common anti-patterns that destroy performance
-- ✅ Understood why repeated model loading is catastrophic
-- ✅ Implemented class-based actors for stateful model loading
-- ✅ Used proper resource allocation with `num_gpus` and `concurrency`
+- - Identified common anti-patterns that destroy performance
+- - Understood why repeated model loading is catastrophic
+- - Implemented class-based actors for stateful model loading
+- - Used proper resource allocation with `num_gpus` and `concurrency`
 
 ## Next Steps
 

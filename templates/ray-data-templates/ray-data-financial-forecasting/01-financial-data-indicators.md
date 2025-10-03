@@ -1125,10 +1125,10 @@ print("Technical indicators calculated successfully using Ray Data distributed p
 ## Key Takeaways from Part 1
 
 You've learned how to:
-- ✅ Load real stock market data from public sources
-- ✅ Process financial data with Ray Data operations
-- ✅ Calculate professional technical indicators (MA, RSI, MACD, Bollinger Bands)
-- ✅ Use Ray Data aggregations for financial analytics
+- - Load real stock market data from public sources
+- - Process financial data with Ray Data operations
+- - Calculate professional technical indicators (MA, RSI, MACD, Bollinger Bands)
+- - Use Ray Data aggregations for financial analytics
 
 ## Next Steps
 

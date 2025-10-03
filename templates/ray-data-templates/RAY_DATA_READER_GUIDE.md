@@ -278,7 +278,7 @@ What Ray Data reader should I use?
 
 ## Common Mistakes to Avoid
 
-### ❌ Don't Read Logs as Parquet
+### x Don't Read Logs as Parquet
 ```python
 # WRONG: Raw logs should not be parquet
 apache_logs = ray.data.read_parquet("apache-access-logs.parquet")
@@ -295,7 +295,7 @@ parsed_logs = apache_logs.map_batches(parse_apache_logs, num_cpus=0.25)
 parsed_logs.write_parquet("s3://processed-logs/apache/", num_cpus=0.1)
 ```
 
-### ❌ Don't Read HL7 as Parquet
+### x Don't Read HL7 as Parquet
 ```python
 # WRONG: HL7 messages are text-based
 hl7_data = ray.data.read_parquet("hl7_messages.parquet")
@@ -312,7 +312,7 @@ hl7_dataset = ray.data.read_datasource(
 )
 ```
 
-### ❌ Don't Use Custom Readers for Standard Formats
+### x Don't Use Custom Readers for Standard Formats
 ```python
 # WRONG: Don't implement custom readers for standard formats
 def custom_csv_reader(path):
@@ -344,11 +344,11 @@ Before finalizing a template, verify:
 ## Summary
 
 All Ray Data templates now use proper file formats and native readers:
-- ✅ **Logs**: Text/JSON formats with appropriate readers
-- ✅ **Medical data**: Native formats (HL7 text, DICOM datasource, JSON metadata)
-- ✅ **Images**: Native `read_images()` reader
-- ✅ **Documents**: Binary file reader with custom parsing
-- ✅ **Analytics data**: Parquet for performance
-- ✅ **Custom formats**: Datasource implementations for specialized data
+- - **Logs**: Text/JSON formats with appropriate readers
+- - **Medical data**: Native formats (HL7 text, DICOM datasource, JSON metadata)
+- - **Images**: Native `read_images()` reader
+- - **Documents**: Binary file reader with custom parsing
+- - **Analytics data**: Parquet for performance
+- - **Custom formats**: Datasource implementations for specialized data
 
 Templates demonstrate the full workflow from raw data ingestion through processing to analytics-ready Parquet storage.

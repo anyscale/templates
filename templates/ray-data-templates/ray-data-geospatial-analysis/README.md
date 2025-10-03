@@ -43,11 +43,11 @@ Build a geospatial analysis pipeline that processes location points across citie
 | **Clustering** | Single-machine algorithms | Distributed `groupby()` | Scales to terabytes |
 
 **Ray Data Benefits for Geospatial:**
-- ✅ **Distributed haversine calculations**: Process millions of distance computations in parallel
-- ✅ **Streaming spatial joins**: Match locations without loading full datasets into memory
-- ✅ **Native aggregations**: Use `groupby()` for spatial clustering and zone analysis
-- ✅ **Expression API**: Efficient filtering with `col()` and `lit()` for bounding box queries
-- ✅ **Pipeline parallelism**: All spatial operations run concurrently for maximum throughput
+- - **Distributed haversine calculations**: Process millions of distance computations in parallel
+- - **Streaming spatial joins**: Match locations without loading full datasets into memory
+- - **Native aggregations**: Use `groupby()` for spatial clustering and zone analysis
+- - **Expression API**: Efficient filtering with `col()` and `lit()` for bounding box queries
+- - **Pipeline parallelism**: All spatial operations run concurrently for maximum throughput
 
 **Applications**: Uber processes 10M+ trips daily using distributed spatial matching. DoorDash optimizes delivery zones across 10,000+ restaurants using spatial clustering. Zillow analyzes property locations and nearby amenities for 135M+ listings using geospatial joins.
 

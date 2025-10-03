@@ -56,20 +56,20 @@ Traditional batch processing loads entire datasets into memory before processing
 <img src="https://anyscale-materials.s3.us-west-2.amazonaws.com/cko-2025-q1/batch-processing.png" width="800" alt="Traditional Batch Processing">
 
 **Problems with traditional approach:**
-- ✗ High memory - requires loading entire dataset
-- ✗ No parallelism - stages run sequentially  
-- ✗ Long latency - wait for complete load before processing
-- ✗ Wasted resources - GPUs idle during load/write stages
+- x High memory - requires loading entire dataset
+- x No parallelism - stages run sequentially  
+- x Long latency - wait for complete load before processing
+- x Wasted resources - GPUs idle during load/write stages
 
 **Ray Data Streaming Execution:**
 
 <img src="https://anyscale-materials.s3.us-west-2.amazonaws.com/cko-2025-q1/pipelining.png" width="800" alt="Ray Data Streaming Execution">
 
 **Benefits of streaming execution:**
-- ✓ Low memory - constant 128MB blocks regardless of dataset size
-- ✓ Pipeline parallelism - all stages active simultaneously
-- ✓ Fast first result - inference starts immediately
-- ✓ Maximum throughput - all resources utilized continuously
+- - Low memory - constant 128MB blocks regardless of dataset size
+- - Pipeline parallelism - all stages active simultaneously
+- - Fast first result - inference starts immediately
+- - Maximum throughput - all resources utilized continuously
 
 ### How This Affects Your Optimization Decisions
 
@@ -139,22 +139,22 @@ A **block** is the fundamental unit of data in Ray Data. Understanding blocks is
 Block size directly impacts inference performance:
 
 **Block Size Too Small (e.g., 1MB):**
-- ✗ Too many tasks created (scheduling overhead)
-- ✗ Poor GPU utilization (small batches)
-- ✗ High network overhead (many small transfers)
-- ✗ Scheduler bottleneck (managing thousands of tasks)
+- x Too many tasks created (scheduling overhead)
+- x Poor GPU utilization (small batches)
+- x High network overhead (many small transfers)
+- x Scheduler bottleneck (managing thousands of tasks)
 
 **Block Size Too Large (e.g., 1GB):**
-- ✗ Memory pressure (blocks don't fit in object store)
-- ✗ Poor parallelism (few blocks = few parallel tasks)
-- ✗ Spilling to disk (performance degradation)
-- ✗ Uneven load balancing (some workers idle)
+- x Memory pressure (blocks don't fit in object store)
+- x Poor parallelism (few blocks = few parallel tasks)
+- x Spilling to disk (performance degradation)
+- x Uneven load balancing (some workers idle)
 
 **Optimal Block Size (128MB default):**
-- ✓ Good parallelism (many blocks for distribution)
-- ✓ Low overhead (reasonable number of tasks)
-- ✓ Fits in memory (object store can hold multiple blocks)
-- ✓ Efficient transfer (network overhead manageable)
+- - Good parallelism (many blocks for distribution)
+- - Low overhead (reasonable number of tasks)
+- - Fits in memory (object store can hold multiple blocks)
+- - Efficient transfer (network overhead manageable)
 
 ### Configuring Block Size for Inference
 
@@ -601,10 +601,10 @@ print(f"  Object store limit: {max_concurrency_object_store}")
 
 | Aspect | Tasks | Actors | Best For Inference |
 |--------|-------|--------|-------------------|
-| **Startup** | Launch per invocation | Launch once, reuse | ✓ Actors (amortize model loading) |
-| **State** | Stateless | Stateful | ✓ Actors (keep model in memory) |
+| **Startup** | Launch per invocation | Launch once, reuse | - Actors (amortize model loading) |
+| **State** | Stateless | Stateful | - Actors (keep model in memory) |
 | **Resource overhead** | Low | Higher | Depends on model size |
-| **Scheduling overhead** | Higher (many tasks) | Lower (few actors) | ✓ Actors (fewer scheduling decisions) |
+| **Scheduling overhead** | Higher (many tasks) | Lower (few actors) | - Actors (fewer scheduling decisions) |
 | **Memory** | Released after task | Held by actor | Tasks if memory-constrained |
 
 **For batch inference:** Almost always use actors because:

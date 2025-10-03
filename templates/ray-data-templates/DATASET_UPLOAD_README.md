@@ -86,14 +86,14 @@ bash downloads/download_all_real_datasets.sh
 - **S3 Path**: `s3://ray-benchmark-data/financial/sp500_daily_2years.csv` (parquet preferred)
 - **Used by**: `ray-data-financial-forecasting`
 - **Format**: CSV/Parquet with columns: symbol, date, open, high, low, close, volume
-- **Real Data**: ✅ 5 years of actual market data from public sources
+- **Real Data**: - 5 years of actual market data from public sources
 
 ### ML Datasets
 - **Source**: Real Titanic dataset from Kaggle competition
 - **S3 Path**: `s3://ray-benchmark-data/ml-datasets/titanic.csv`
 - **Used by**: `ray-data-ml-feature-engineering`
 - **Format**: CSV with standard Titanic dataset columns
-- **Real Data**: ✅ Actual passenger data from Kaggle's Titanic competition
+- **Real Data**: - Actual passenger data from Kaggle's Titanic competition
 
 ### Geospatial Data
 - **Source**: Synthetic NYC taxi trip data

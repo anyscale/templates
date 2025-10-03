@@ -258,7 +258,7 @@ print("\nRay Data Filtering Benefits:")
 print("Push-down optimization - only email column processed")
 print("Lazy evaluation - filter applied during data scan")
 print("Distributed execution - parallel validation across cluster")
-print(f"✓ Validated {email_validation['total_records']:,} records efficiently")
+print(f"- Validated {email_validation['total_records']:,} records efficiently")
 ```
 
 ## Step 3: Data Drift Monitoring

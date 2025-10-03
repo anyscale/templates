@@ -375,7 +375,7 @@ family_enhanced_data = family_enhanced_data.add_column(
     col("family_size") > lit(4)  # Families over 4 had lower survival rates
 )
 
-print(f"✓ Family features created: {family_enhanced_data.count():,} records")
+print(f"- Family features created: {family_enhanced_data.count():,} records")
 print("  Ray Data benefits: No pandas conversion needed, efficient column operations")
 
 # Step 3: One-hot encode categorical variables with map_batches
@@ -433,10 +433,10 @@ categorical_features = family_enhanced_data.map_batches(
     concurrency=4      # Parallel processing across cluster
 )
 
-print(f"✓ Categorical features created: {categorical_features.count():,} records")
-print(f"✓ Features per record: {len(categorical_features.take(1)[0])}")
-print(f"✓ Original features: {len(dataset.schema().names)}")
-print(f"✓ Added features: {len(categorical_features.take(1)[0]) - len(dataset.schema().names)}")
+print(f"- Categorical features created: {categorical_features.count():,} records")
+print(f"- Features per record: {len(categorical_features.take(1)[0])}")
+print(f"- Original features: {len(dataset.schema().names)}")
+print(f"- Added features: {len(categorical_features.take(1)[0]) - len(dataset.schema().names)}")
 ```
 
 **Ray Data benefits demonstrated:**
@@ -533,13 +533,13 @@ numerical_features = categorical_features.map_batches(
     concurrency=4      # 4 parallel workers for distributed execution
 )
 
-print(f"✓ Numerical features created: {numerical_features.count():,} records")
+print(f"- Numerical features created: {numerical_features.count():,} records")
 
 # Display sample features to verify transformations
 sample = numerical_features.take(1)[0]
-print(f"✓ Example features: Age_squared={sample.get('Age_squared')}, "
+print(f"- Example features: Age_squared={sample.get('Age_squared')}, "
       f"Fare_per_family={sample.get('Fare_per_family'):.2f}")
-print(f"✓ Total features now: {len(numerical_features.schema().names)}")
+print(f"- Total features now: {len(numerical_features.schema().names)}")
 ```
 
 ### Numerical Feature Transformations
@@ -601,7 +601,7 @@ interaction_features = numerical_features.map_batches(
     concurrency=4
 )
 
-print(f"✓ Interaction features created: {interaction_features.count():,} records")
+print(f"- Interaction features created: {interaction_features.count():,} records")
 ```
 
 ### Target Encoding for Categorical Features
@@ -659,7 +659,7 @@ target_encoded = interaction_features.map_batches(
     concurrency=2      # Moderate concurrency for aggregation
 )
 
-print(f"✓ Target encoding applied: {target_encoded.count():,} records")
+print(f"- Target encoding applied: {target_encoded.count():,} records")
 print("Benefit: High-cardinality categories now numerical without dimension explosion")
 ```
 
@@ -716,7 +716,7 @@ freq_encoded = target_encoded.map_batches(
     concurrency=2      # Moderate concurrency
 )
 
-print(f"✓ Frequency encoding applied: {freq_encoded.count():,} records")
+print(f"- Frequency encoding applied: {freq_encoded.count():,} records")
 print("Cabin categories encoded by frequency - rare cabins have low scores")
 ```
 
@@ -780,7 +780,7 @@ with_missing_features = freq_encoded.map_batches(
     concurrency=4      # High concurrency - this is a fast operation
 )
 
-print(f"✓ Missing indicators created: {with_missing_features.count():,} records")
+print(f"- Missing indicators created: {with_missing_features.count():,} records")
 print("Missingness patterns now available as ML features")
 ```
 
@@ -825,12 +825,12 @@ with_agg_features = with_missing_features.join(
     right_key='Pclass'     # Broadcast group stats to all members
 )
 
-print(f"✓ Aggregation features added: {with_agg_features.count():,} records")
+print(f"- Aggregation features added: {with_agg_features.count():,} records")
 print("Each passenger now has their group's statistics as features")
 
 # Verify the new features
 sample = with_agg_features.take(1)[0]
-print(f"✓ Example: Passenger in class {sample.get('Pclass')} has "
+print(f"- Example: Passenger in class {sample.get('Pclass')} has "
       f"class mean fare = ${sample.get('mean(Fare)', 0):.2f}")
 ```
 
@@ -868,7 +868,7 @@ cyclical_features = with_agg_features.map_batches(
     concurrency=4
 )
 
-print(f"✓ Cyclical features created: {cyclical_features.count():,} records")
+print(f"- Cyclical features created: {cyclical_features.count():,} records")
 ```
 
 ### Text Feature Engineering
@@ -953,7 +953,7 @@ text_features = cyclical_features.map_batches(
     concurrency=4      # High concurrency - text operations are fast
 )
 
-print(f"✓ Text features extracted: {text_features.count():,} records")
+print(f"- Text features extracted: {text_features.count():,} records")
 print("Extracted titles correlate with survival rates (Mrs/Miss higher than Mr)")
 ```
 
@@ -1013,7 +1013,7 @@ ranked_features = text_features.map_batches(
     concurrency=2      # Moderate concurrency for ranking operations
 )
 
-print(f"✓ Ranking features created: {ranked_features.count():,} records")
+print(f"- Ranking features created: {ranked_features.count():,} records")
 print("Fare and Age now have percentile features (0-1 scale)")
 ```
 
@@ -1082,7 +1082,7 @@ scaled_features = ranked_features.map_batches(
     concurrency=4      # High concurrency - scaling is fast
 )
 
-print(f"✓ Feature scaling applied: {scaled_features.count():,} records")
+print(f"- Feature scaling applied: {scaled_features.count():,} records")
 print("Age, Fare, and family_size now scaled to [0, 1] range")
 print("Ready for neural networks and distance-based algorithms")
 ```
@@ -1185,10 +1185,10 @@ print("Fast iteration for experimentation")
 ```
 
 **When NOT to use:**
-- ✗ Serving predictions (features need to be re-engineered for each prediction)
-- ✗ Retraining regularly (re-compute features each time)
-- ✗ Sharing features across models (each model re-engineers independently)
-- ✗ Large-scale production (wasted compute re-engineering same features)
+- x Serving predictions (features need to be re-engineered for each prediction)
+- x Retraining regularly (re-compute features each time)
+- x Sharing features across models (each model re-engineers independently)
+- x Large-scale production (wasted compute re-engineering same features)
 
 ### Pattern 2: Large-Scale Feature Engineering with Feature Store
 
@@ -1442,7 +1442,7 @@ final_features = interaction_features.select_columns([
     'Is_traveling_alone', 'Survival_score'
 ])
 
-print(f"✓ Selected {len(final_features.schema().names)} features for ML training")
+print(f"- Selected {len(final_features.schema().names)} features for ML training")
 ```
 
 ### Feature Selection Methods
@@ -1594,7 +1594,7 @@ def validated_feature_pipeline(dataset):
     if all(r.get('family_size') is not None for r in sample):
         print("Feature quality validation passed")
     else:
-        print("✗ Feature quality issues detected")
+        print("x Feature quality issues detected")
     
     # Step 3: Monitor feature statistics
     stats = features.aggregate(
