@@ -710,13 +710,12 @@ print(f"  Block size: {ctx.target_max_block_size / 1024**2:.0f}MB")
 ### Architecture-Aware Performance Tips
 
 **Tip 1: Align batch_size with block_size**
-```python
-# Good: Batches divide evenly into blocks
-block_size = 128MB, batch_size = 32 (4 samples per block)
 
-# Suboptimal: Awkward divisions
-block_size = 128MB, batch_size = 50 (2.56 batches per block)
-```
+Good configuration:
+- Block size: 128MB, batch_size: 32 (4 batches per block - clean division)
+
+Suboptimal configuration:
+- Block size: 128MB, batch_size: 50 (2.56 batches per block - awkward division)
 
 **Tip 2: Monitor object store, not just GPUs**
 ```python
@@ -726,14 +725,13 @@ block_size = 128MB, batch_size = 50 (2.56 batches per block)
 ```
 
 **Tip 3: Use fusion-friendly patterns**
+
 ```python
 # Fusion-friendly: Same compute, compatible configs
-.map_batches(prep, batch_size=32, num_cpus=1)
-.map_batches(model, batch_size=32, num_gpus=1)
+images.map_batches(prep, batch_size=32, num_cpus=1).map_batches(model, batch_size=32, num_gpus=1)
 
-# Fusion-incompatible: Different batch sizes
-.map_batches(prep, batch_size=64)
-.map_batches(model, batch_size=32)
+# Fusion-incompatible: Different batch sizes  
+images.map_batches(prep, batch_size=64).map_batches(model, batch_size=32)
 ```
 
 **Tip 4: Respect memory limits**
