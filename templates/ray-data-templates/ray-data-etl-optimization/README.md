@@ -840,13 +840,44 @@ This template showcases enterprise-ready patterns:
 ### ETL pipeline performance visualization
 
 ```python
-# Visualize ETL pipeline performance using utility function
-from util.viz_utils import visualize_etl_performance
+# Visualize ETL pipeline performance using utility functions
+from util.viz_utils import (
+    visualize_etl_performance,
+    create_interactive_etl_pipeline,
+    create_data_lineage_diagram,
+    create_tpch_schema_diagram
+)
 
 # Generate ETL performance visualization
 fig = visualize_etl_performance()
 print("ETL performance visualization created")
+
+# Create interactive pipeline dashboard
+pipeline_results = {
+    'stages': ['Extract', 'Transform', 'Load'],
+    'records': [1500000, 1200000, 1200000],
+    'processing_time': [12, 45, 10]
+}
+interactive_dashboard = create_interactive_etl_pipeline(pipeline_results)
+interactive_dashboard.write_html('etl_pipeline_dashboard.html')
+print("Interactive ETL pipeline dashboard saved")
+
+# Create data lineage visualization
+lineage_diagram = create_data_lineage_diagram()
+lineage_diagram.write_html('data_lineage.html')
+print("Data lineage diagram saved")
+
+# Create TPC-H schema diagram
+schema_diagram = create_tpch_schema_diagram()
+schema_diagram.write_html('tpch_schema.html')
+print("TPC-H schema diagram saved")
 ```
+
+**Interactive visualizations created:**
+- **ETL pipeline dashboard**: Shows data volumes, processing times, and resource utilization
+- **Data lineage diagram**: Sankey chart showing data flow through ETL stages
+- **TPC-H schema**: Visual representation of table relationships
+- **Performance metrics**: Interactive charts for throughput and optimization impact
 
 ### Ray Data's streaming execution model
 
