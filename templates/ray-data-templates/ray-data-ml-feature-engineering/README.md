@@ -334,56 +334,90 @@ for i, sample in enumerate(samples, 1):
 
 ## Step 2: Categorical Feature Engineering with Ray Data
 
-Create categorical features using Ray Data native operations:
+Categorical features are non-numeric values (gender, location, product category) that need special encoding for ML algorithms. This section demonstrates the most popular encoding techniques using Ray Data.
+
+### Why Categorical Encoding Matters
+
+Most ML algorithms require numerical input, but categorical features contain valuable information:
+- **Sex** (male/female) strongly predicts survival - women and children first
+- **Passenger Class** (1st/2nd/3rd) indicates socioeconomic status and survival priority
+- **Embarked Port** (C/Q/S) correlates with passenger demographics
+
+**Encoding approaches:**
+- **One-hot encoding**: Create binary column for each category (best for low cardinality)
+- **Label encoding**: Assign integer to each category (ordinal relationships)
+- **Target encoding**: Replace with target variable mean (high cardinality)
+- **Frequency encoding**: Replace with category frequency (simple but effective)
+
+### Simple Feature Engineering with Ray Data Native Operations
 
 ```python
 from ray.data.expressions import col, lit
 
-# Step 1: Create family size feature using native operations
+# Step 1: Create family size feature using native add_column()
+# Why: Family size is a strong survival predictor - families of 2-4 had best survival rates
 print("Creating family size features...")
+
 family_enhanced_data = dataset.add_column(
-    "family_size", 
-    col("SibSp") + col("Parch") + lit(1)
+    "family_size",  # New feature name
+    col("SibSp") + col("Parch") + lit(1)  # Siblings + Parents + Self = Family size
 )
 
 # Step 2: Create boolean features with expressions API
+# Why: Being alone or in large family affects survival probability
 family_enhanced_data = family_enhanced_data.add_column(
-    "is_alone",
-    col("family_size") == lit(1)
+    "is_alone",  # Binary feature: 1 if traveling alone, 0 otherwise
+    col("family_size") == lit(1)  # True becomes 1, False becomes 0
 )
 
 family_enhanced_data = family_enhanced_data.add_column(
-    "large_family",
-    col("family_size") > lit(4)
+    "large_family",  # Binary feature: 1 if family size > 4
+    col("family_size") > lit(4)  # Families over 4 had lower survival rates
 )
 
 print(f"✓ Family features created: {family_enhanced_data.count():,} records")
+print("  Ray Data benefits: No pandas conversion needed, efficient column operations")
 
 # Step 3: One-hot encode categorical variables with map_batches
+# Why: ML algorithms need numeric input - one-hot encoding creates binary features
 def engineer_categorical_features(batch):
-    """Create one-hot encoded features efficiently."""
+    """
+    Create one-hot encoded features for categorical variables.
+    
+    One-hot encoding creates a binary column for each category value.
+    Example: Sex becomes Sex_male=1, Sex_female=0 for male passengers
+    
+    Args:
+        batch: List of records from Ray Data
+        
+    Returns:
+        List of records with one-hot encoded features added
+    """
     enhanced_records = []
     
     for record in batch:
-        # One-hot encoding for Sex
+        # Extract categorical values
         sex = record.get('Sex', 'unknown')
-        
-        # One-hot encoding for Embarked port
         embarked = record.get('Embarked', 'unknown')
-        
-        # One-hot encoding for Passenger Class
         pclass = record.get('Pclass', 0)
         
+        # Create new record with one-hot encoded features
         enhanced_record = {
-            **record,
+            **record,  # Keep all original features
+            
+            # Sex one-hot encoding (2 categories)
             'Sex_male': 1 if sex == 'male' else 0,
             'Sex_female': 1 if sex == 'female' else 0,
-            'Embarked_C': 1 if embarked == 'C' else 0,
-            'Embarked_Q': 1 if embarked == 'Q' else 0,
-            'Embarked_S': 1 if embarked == 'S' else 0,
-            'Pclass_1': 1 if pclass == 1 else 0,
-            'Pclass_2': 1 if pclass == 2 else 0,
-            'Pclass_3': 1 if pclass == 3 else 0
+            
+            # Embarked port one-hot encoding (3 categories)
+            'Embarked_C': 1 if embarked == 'C' else 0,  # Cherbourg
+            'Embarked_Q': 1 if embarked == 'Q' else 0,  # Queenstown
+            'Embarked_S': 1 if embarked == 'S' else 0,  # Southampton
+            
+            # Passenger class one-hot encoding (3 categories)
+            'Pclass_1': 1 if pclass == 1 else 0,  # First class
+            'Pclass_2': 1 if pclass == 2 else 0,  # Second class
+            'Pclass_3': 1 if pclass == 3 else 0   # Third class
         }
         
         enhanced_records.append(enhanced_record)
@@ -391,14 +425,18 @@ def engineer_categorical_features(batch):
     return enhanced_records
 
 # Apply categorical encoding with optimized batch processing
+# batch_size=2000: Process 2000 records per batch for efficiency
+# concurrency=4: Run 4 parallel workers for distributed processing
 categorical_features = family_enhanced_data.map_batches(
     engineer_categorical_features,
-    batch_size=2000,
-    concurrency=4
+    batch_size=2000,  # Larger batches = better throughput
+    concurrency=4      # Parallel processing across cluster
 )
 
 print(f"✓ Categorical features created: {categorical_features.count():,} records")
 print(f"✓ Features per record: {len(categorical_features.take(1)[0])}")
+print(f"✓ Original features: {len(dataset.schema().names)}")
+print(f"✓ Added features: {len(categorical_features.take(1)[0]) - len(dataset.schema().names)}")
 ```
 
 **Ray Data benefits demonstrated:**
@@ -409,33 +447,77 @@ print(f"✓ Features per record: {len(categorical_features.take(1)[0])}")
 
 ## Step 3: Numerical Feature Engineering
 
-Create numerical features including polynomial and interaction features:
+Numerical features can be transformed to capture non-linear relationships and improve model performance. This section demonstrates the most effective numerical transformations.
+
+### Why Numerical Transformations Matter
+
+Raw numerical features often have limitations:
+- **Linear relationships**: ML models may miss non-linear patterns
+- **Skewed distributions**: Extreme values dominate algorithms like gradient boosting
+- **Scale differences**: Features with different ranges (Age: 0-80, Fare: 0-500) need normalization
+- **Hidden patterns**: Interactions between features reveal important relationships
+
+### Popular Numerical Transformations
 
 ```python
 import numpy as np
 
 def create_numerical_features(batch):
-    """Create numerical features: polynomial, log, and interaction features."""
+    """
+    Create numerical features including polynomial, log, and interaction features.
+    
+    Transformations applied:
+    - Polynomial: Capture non-linear relationships (Age²)
+    - Logarithmic: Handle right-skewed distributions (log(Fare))
+    - Square root: Moderate skewness
+    - Interactions: Combine features (Age × Fare)
+    - Ratios: Create relative metrics (Fare/Family)
+    - Binning: Convert continuous to categorical groups
+    
+    Args:
+        batch: List of records from Ray Data
+        
+    Returns:
+        List of records with numerical features added
+    """
     enhanced_records = []
     
     for record in batch:
+        # Extract original numerical values
         age = record.get('Age', 0)
         fare = record.get('Fare', 0)
         family_size = record.get('family_size', 1)
         
-        # Polynomial features
+        # Create enhanced record with all transformations
         enhanced_record = {
-            **record,
+            **record,  # Keep all original features
+            
+            # Polynomial features - capture non-linear relationships
+            # Why: Age² helps model that survival rate isn't linear with age
             'Age_squared': age ** 2 if age else 0,
-            'Fare_log': np.log(fare + 1) if fare > 0 else 0,
+            
+            # Logarithmic features - handle skewed distributions
+            # Why: Fare has long tail (most low, few very high) - log normalizes it
+            'Fare_log': np.log(fare + 1) if fare > 0 else 0,  # +1 to handle fare=0
+            
+            # Square root features - moderate skewness
+            # Why: Less aggressive than log for moderately skewed features
             'Fare_sqrt': np.sqrt(fare) if fare >= 0 else 0,
             
-            # Interaction features
+            # Interaction features - multiplicative relationships
+            # Why: Wealthy older passengers may have different survival than young wealthy
             'Age_x_Fare': age * fare,
-            'Fare_per_family': fare / max(family_size, 1),
             
-            # Binning
+            # Ratio features - normalized comparisons
+            # Why: $100 fare for family of 4 very different from $100 for solo traveler
+            'Fare_per_family': fare / max(family_size, 1),  # Avoid division by zero
+            
+            # Binning - create categories from continuous features
+            # Why: Models can learn different patterns for children, adults, seniors
             'Age_group': 'child' if age < 18 else 'adult' if age < 60 else 'senior',
+            
+            # Fare binning - group by price tier
+            # Why: Fare correlates with class and survival, bins capture thresholds
             'Fare_level': 'low' if fare < 10 else 'medium' if fare < 50 else 'high'
         }
         
@@ -443,19 +525,21 @@ def create_numerical_features(batch):
     
     return enhanced_records
 
-# Apply numerical feature engineering
+# Apply numerical feature engineering using Ray Data distributed processing
+# This runs in parallel across your cluster for scalability
 numerical_features = categorical_features.map_batches(
     create_numerical_features,
-    batch_size=2000,
-    concurrency=4
+    batch_size=2000,  # Process 2000 records per batch for efficiency
+    concurrency=4      # 4 parallel workers for distributed execution
 )
 
 print(f"✓ Numerical features created: {numerical_features.count():,} records")
 
-# Display sample features
+# Display sample features to verify transformations
 sample = numerical_features.take(1)[0]
 print(f"✓ Example features: Age_squared={sample.get('Age_squared')}, "
       f"Fare_per_family={sample.get('Fare_per_family'):.2f}")
+print(f"✓ Total features now: {len(numerical_features.schema().names)}")
 ```
 
 ### Numerical Feature Transformations
@@ -522,85 +606,165 @@ print(f"✓ Interaction features created: {interaction_features.count():,} recor
 
 ### Target Encoding for Categorical Features
 
-Target encoding replaces categories with their target mean - effective for high-cardinality categoricals:
+**What is target encoding?** Replace each category with the mean of the target variable for that category.
+
+**Why use it?**
+- **High-cardinality categoricals**: When you have 100+ unique values (zip codes, customer IDs)
+- **Captures relationship**: Directly encodes correlation between category and target
+- **Reduces dimensionality**: One column instead of 100 one-hot columns
+
+**Example:** If Embarked='C' passengers had 55% survival rate, replace 'C' with 0.55
+
+**Caution:** Can cause target leakage - use with cross-validation or separate training/validation encoding
 
 ```python
 def create_target_encoding(batch):
-    """Create target encoding features using category means."""
+    """
+    Create target encoding features using category means.
+    
+    Target encoding replaces categorical values with the mean target value
+    for that category. This captures the relationship between the category
+    and the target variable in a single numerical feature.
+    
+    Example:
+        Embarked='C' with 55% survival → Embarked_target_enc=0.55
+        Embarked='S' with 34% survival → Embarked_target_enc=0.34
+    
+    Args:
+        batch: List of records from Ray Data
+        
+    Returns:
+        Batch with target encoding features added
+    """
     import pandas as pd
     df = pd.DataFrame(batch)
     
     # Calculate mean survival rate by Embarked port
+    # This gives us the "target encoding" for each port
     if 'Embarked' in df.columns and 'Survived' in df.columns:
         embarked_means = df.groupby('Embarked')['Survived'].mean().to_dict()
         
-        # Apply target encoding
+        # Apply target encoding to each record
         for record in batch:
             embarked = record.get('Embarked', 'unknown')
+            # Replace categorical value with mean survival rate
             record['Embarked_target_enc'] = embarked_means.get(embarked, 0.5)
     
     return batch
 
-# Apply target encoding
+# Apply target encoding using Ray Data distributed processing
 target_encoded = interaction_features.map_batches(
     create_target_encoding,
-    batch_size=2000,
-    concurrency=2
+    batch_size=2000,  # Batch size for pandas groupby operations
+    concurrency=2      # Moderate concurrency for aggregation
 )
 
 print(f"✓ Target encoding applied: {target_encoded.count():,} records")
+print("✓ Benefit: High-cardinality categories now numerical without dimension explosion")
 ```
 
 ### Frequency and Count Encoding
 
-Encode categories by their frequency in the dataset:
+**What is frequency encoding?** Replace each category with how often it appears in the dataset.
+
+**Why use it?**
+- **Simple but effective**: Often performs as well as complex encodings
+- **Captures category importance**: Frequent categories might be more significant
+- **No target leakage**: Safe to use without cross-validation concerns
+- **Works with high cardinality**: One number per category regardless of unique values
+
+**Example:** If 'Cabin=B5' appears in 2% of records, encode as 0.02
 
 ```python
 def create_frequency_encoding(batch):
-    """Create frequency encoding for categorical features."""
+    """
+    Create frequency encoding for categorical features.
+    
+    Frequency encoding replaces each category with its occurrence frequency.
+    This captures how common or rare each category is in the dataset.
+    
+    Benefits:
+    - Simple one-number encoding regardless of cardinality
+    - No dummy variable explosion
+    - Captures category importance via frequency
+    
+    Args:
+        batch: List of records from Ray Data
+        
+    Returns:
+        Batch with frequency encoding features added
+    """
     import pandas as pd
     df = pd.DataFrame(batch)
     
-    # Calculate frequencies
+    # Calculate normalized frequencies (0.0 to 1.0)
     if 'Cabin' in df.columns:
         cabin_freq = df['Cabin'].value_counts(normalize=True).to_dict()
         
+        # Apply frequency encoding to each record
         for record in batch:
             cabin = record.get('Cabin', 'unknown')
+            # Replace cabin value with its frequency in dataset
             record['Cabin_frequency'] = cabin_freq.get(cabin, 0.0)
     
     return batch
 
-# Apply frequency encoding  
+# Apply frequency encoding using Ray Data  
 freq_encoded = target_encoded.map_batches(
     create_frequency_encoding,
-    batch_size=2000,
-    concurrency=2
+    batch_size=2000,  # Standard batch size
+    concurrency=2      # Moderate concurrency
 )
 
 print(f"✓ Frequency encoding applied: {freq_encoded.count():,} records")
+print("✓ Cabin categories encoded by frequency - rare cabins have low scores")
 ```
 
 ### Missing Value Indicator Features
 
-Create features that indicate missing data patterns:
+**Why create missing value indicators?** Missing data patterns can be predictive themselves.
+
+**Key insight:** The fact that data is missing can signal something important:
+- **Missing age**: Might indicate lower-class passengers with incomplete records
+- **Missing cabin**: Might indicate cheaper tickets without cabin assignments
+- **Systematic missingness**: Certain passenger groups might have more missing data
+
+**ML benefit:** Instead of just imputing missing values, preserve the signal by creating indicator features.
 
 ```python
 def create_missing_indicators(batch):
-    """Create binary indicators for missing values."""
+    """
+    Create binary indicators for missing values.
+    
+    Missing data patterns can be predictive. For example, passengers without
+    cabin information might have had cheaper tickets and lower survival rates.
+    
+    This function creates:
+    - Binary flag for each field's missingness (Age_is_missing, Cabin_is_missing)
+    - Total count of missing values per record
+    
+    Args:
+        batch: List of records from Ray Data
+        
+    Returns:
+        List of records with missing indicator features added
+    """
     enhanced_records = []
     
     # Fields to check for missingness
+    # These fields have missing patterns that correlate with survival
     check_fields = ['Age', 'Cabin', 'Embarked', 'Fare']
     
     for record in batch:
         enhanced_record = record.copy()
         
-        # Create missing indicators
+        # Create binary indicator for each field's missingness
         for field in check_fields:
+            # 1 if missing, 0 if present
             enhanced_record[f'{field}_is_missing'] = 1 if record.get(field) is None else 0
         
-        # Count total missing values
+        # Count total missing values - captures data quality per record
+        # Why: Records with many missing values might represent data quality issues
         enhanced_record['total_missing'] = sum(
             1 for field in check_fields if record.get(field) is None
         )
@@ -609,14 +773,15 @@ def create_missing_indicators(batch):
     
     return enhanced_records
 
-# Apply missing indicators
+# Apply missing indicators using Ray Data distributed processing
 with_missing_features = freq_encoded.map_batches(
     create_missing_indicators,
-    batch_size=2000,
-    concurrency=4
+    batch_size=2000,  # Efficient batch size
+    concurrency=4      # High concurrency - this is a fast operation
 )
 
 print(f"✓ Missing indicators created: {with_missing_features.count():,} records")
+print("✓ Missingness patterns now available as ML features")
 ```
 
 ### Aggregation Features Using Ray Data groupby
