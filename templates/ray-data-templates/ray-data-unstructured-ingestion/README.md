@@ -28,11 +28,31 @@ Build a comprehensive document ingestion pipeline that transforms unstructured d
 
 ## Overview
 
-**Challenge**: Enterprise data lakes contain millions of unstructured documents across multiple formats that need systematic processing to extract business value. Traditional document processing approaches struggle with scale, consistency, and integration with analytics systems.
+**Challenge**: Enterprise data lakes contain millions of unstructured documents (PDFs, Word docs, presentations) across multiple formats that need systematic processing to extract business value. Traditional document processing approaches struggle with:
+- **Scale**: Single-machine processing limits document volume
+- **Consistency**: Manual extraction creates inconsistent schemas  
+- **LLM integration**: Complex infrastructure for AI-powered analysis
+- **Warehouse integration**: Manual data modeling and ETL processes
 
-**Solution**: Ray Data enables distributed document ingestion that processes large document collections, extracts structured information, and creates analytics-ready datasets for data warehouse consumption.
+**Solution**: Ray Data enables end-to-end document ingestion pipelines:
 
-**Data Lake to Warehouse Flow**: This template demonstrates a complete pipeline from raw documents in data lakes to structured, queryable datasets ready for business intelligence and analytics workflows.
+| Pipeline Stage | Traditional Approach | Ray Data Approach | Benefit |
+|----------------|---------------------|-------------------|---------|
+| **Document Discovery** | Sequential file listing | Parallel `read_binary_files()` | Process millions of files |
+| **Text Extraction** | Single-threaded parsing | Distributed `map_batches()` | Extract from all docs simultaneously |
+| **LLM Analysis** | Manual API calls | Integrated `ray.data.llm` package | Built-in batch inference |
+| **Data Warehouse** | Custom ETL scripts | Native `write_parquet()` with partitioning | Production-ready output |
+
+:::tip Ray Data LLM Integration
+Ray Data's `ray.data.llm` package integrates vLLM directly into data pipelines, enabling document analysis at scale:
+- **Batch inference**: Process 1000s of documents with optimized GPU utilization
+- **Built-in preprocessing**: Custom prompt formatting integrated in pipeline
+- **Automatic postprocessing**: Extract structured data from LLM responses
+- **Fault tolerance**: Retry failed documents without losing progress
+- **Cost efficiency**: GPU sharing across document batches
+:::
+
+**Data Lake to Warehouse Flow**: This template demonstrates a complete pipeline from raw documents in data lakes to structured, queryable datasets ready for business intelligence and analytics workflows using Ray Data native operations and integrated LLM processing.
 
 ---
 
