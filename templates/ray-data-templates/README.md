@@ -5,10 +5,10 @@ This collection contains comprehensive Ray Data templates that demonstrate distr
 ## Available Templates
 
 ### **Data Processing and ETL**
-- **[ray-data-etl-tpch](./ray-data-etl-tpch/)**: TPC-H benchmark ETL pipeline (25 min) - Learn industry-standard data processing with complex joins and aggregations
-- **[batch-inference-optimization](./ray-data-batch-inference-optimization/)**: ML inference optimization (20 min) - Master GPU utilization and actor-based model loading
-- **[large-scale-etl-optimization](./ray-data-large-scale-etl-optimization/)**: Enterprise ETL optimization (35 min) - Scale data pipelines to petabyte processing
-- **[data-quality-monitoring](./ray-data-data-quality-monitoring/)**: Data quality validation (25 min) - Automated monitoring and anomaly detection
+- **[ray-data-etl-optimization](./ray-data-etl-optimization/)**: Comprehensive ETL processing with TPC-H benchmark and optimization (40 min) - Learn ETL fundamentals and production optimization techniques
+- **[ray-data-batch-inference-optimization](./ray-data-batch-inference-optimization/)**: ML inference optimization (20 min) - Master GPU utilization and actor-based model loading
+- **[ray-data-data-quality-monitoring](./ray-data-data-quality-monitoring/)**: Data quality validation (25 min) - Automated monitoring and anomaly detection
+- **[ray-data-unstructured-ingestion](./ray-data-unstructured-ingestion/)**: Document ingestion and processing (35 min) - Data lake to warehouse with LLM integration
 
 ### **Industry-Specific Applications**
 - **[financial-forecasting](./ray-data-financial-forecasting/)**: Financial time series analysis (30 min) - Technical indicators, portfolio optimization, and risk analysis
@@ -27,9 +27,9 @@ This collection contains comprehensive Ray Data templates that demonstrate distr
 ## Template Learning Paths
 
 ### **Beginner Path** (Start here if new to Ray Data)
-1. **[batch-inference-optimization](./ray-data-batch-inference-optimization/)** (20 min) - Learn core Ray Data concepts
-2. **[data-quality-monitoring](./ray-data-data-quality-monitoring/)** (25 min) - Understand data validation patterns
-3. **[etl-tpch](./ray-data-etl-tpch/)** (25 min) - Master joins and aggregations
+1. **[ray-data-batch-inference-optimization](./ray-data-batch-inference-optimization/)** (20 min) - Learn core Ray Data concepts
+2. **[ray-data-data-quality-monitoring](./ray-data-data-quality-monitoring/)** (25 min) - Understand data validation patterns
+3. **[ray-data-etl-optimization](./ray-data-etl-optimization/)** (40 min) - Master ETL fundamentals and optimization
 
 ### **Industry Application Path** (Apply Ray Data to specific domains)
 1. **[financial-forecasting](./ray-data-financial-forecasting/)** (30 min) - Financial data processing
@@ -42,9 +42,10 @@ This collection contains comprehensive Ray Data templates that demonstrate distr
 3. **[multimodal-ai-pipeline](./ray-data-multimodal-ai-pipeline/)** (30 min) - Combine multiple data types
 
 ### **Enterprise Infrastructure Path** (Production deployment)
-1. **[large-scale-etl-optimization](./ray-data-large-scale-etl-optimization/)** (35 min) - Performance optimization
-2. **[enterprise-data-catalog](./ray-data-enterprise-data-catalog/)** (30 min) - Data governance and discovery
-3. **[log-ingestion](./ray-data-log-ingestion/)** (30 min) - Security and operational monitoring
+1. **[ray-data-etl-optimization](./ray-data-etl-optimization/)** (40 min) - Comprehensive ETL and performance optimization
+2. **[ray-data-enterprise-data-catalog](./ray-data-enterprise-data-catalog/)** (30 min) - Data governance and discovery
+3. **[ray-data-log-ingestion](./ray-data-log-ingestion/)** (30 min) - Security and operational monitoring
+4. **[ray-data-unstructured-ingestion](./ray-data-unstructured-ingestion/)** (35 min) - Document processing and data warehouse integration
 
 ## Template Standards
 

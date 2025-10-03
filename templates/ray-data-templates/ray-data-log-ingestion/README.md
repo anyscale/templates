@@ -1,6 +1,6 @@
-# Log analytics and security monitoring with Ray Data
+# Log Analytics and Security Monitoring with Ray Data
 
-**Time to complete**: 30 min | **Difficulty**: Intermediate | **Prerequisites**: Understanding of log files, basic security concepts
+**⏱️ Time to complete**: 30 min | **Difficulty**: Intermediate | **Prerequisites**: Understanding of log files, basic security concepts
 
 ## What You'll Build
 
@@ -13,7 +13,7 @@ Create a scalable log analysis system that processes millions of log entries to 
 3. [Security Analysis](#step-3-security-threat-detection) (10 min)
 4. [Operational Insights](#step-4-operational-analytics) (5 min)
 
-## Learning Objectives
+## Learning objectives
 
 **Why log analysis matters**: Logs provide critical visibility into system security and performance, enabling proactive threat detection and operational monitoring. Modern systems generate massive log volumes that require distributed processing for real-time analysis.
 
@@ -21,13 +21,13 @@ Create a scalable log analysis system that processes millions of log entries to 
 
 **Real-world security applications**: Techniques used by companies like Cloudflare and Datadog to process petabytes of logs daily for threat detection demonstrate the scale and sophistication required for modern security operations.
 
-**Security and operational patterns**: Detect threats, anomalies, and performance issues at enterprise scale using distributed log analysis techniques that enable rapid incident response and system optimization.
+**Security and operational patterns**: Detect threats, anomalies, and performance issues at production scale using distributed log analysis techniques that enable rapid incident response and system optimization.
 
 ## Overview
 
 **The Challenge**: Modern systems generate massive volumes of logs - web servers, applications, security devices, and infrastructure components create millions of log entries daily. Traditional log analysis tools struggle with this volume and velocity.
 
-**The Solution**: Ray Data processes logs at massive scale, enabling real-time security monitoring, performance analysis, and operational intelligence.
+**The Solution**: Ray Data processes logs at large scale, enabling real-time security monitoring, performance analysis, and operational intelligence.
 
 **Real-world Impact**:
 - **Security Operations**: SOC teams detect cyber attacks by analyzing billions of security logs
@@ -45,30 +45,32 @@ Before starting, ensure you have:
 - [ ] Familiarity with regular expressions for log parsing
 - [ ] Python environment with sufficient memory (4GB+ recommended)
 
-## Quick Start (3 minutes)
+## Quick start (3 minutes)
 
-Want to see log analysis in action immediately?
+This section demonstrates the concepts using Ray Data:
 
 ```python
 import ray
 from datetime import datetime
 
-# Load realistic log datasets using native formats
-print("Loading comprehensive log datasets...")
+# Load realistic log datasets using native formatsprint("Loading comprehensive log datasets...")
 
-# Apache access logs - Raw text format (realistic for web servers)
-apache_logs = ray.data.read_text("s3://ray-benchmark-data/logs/apache-access.log")
+# Apache access logs - Raw text format (realistic for web servers)apache_logs = ray.data.read_text("s3://ray-benchmark-data/logs/apache-access.log",
+    num_cpus=0.05
+)
 print(f"Apache access logs: {apache_logs.count():,} lines")
 
-# Application logs - JSON format (common for modern apps)
-app_logs = ray.data.read_json("s3://ray-benchmark-data/logs/application.json")
+# Application logs - JSON format (common for modern apps)app_logs = ray.data.read_json("s3://ray-benchmark-data/logs/application.json",
+    num_cpus=0.05
+)
 print(f"Application logs: {app_logs.count():,} entries")
 
-# Security logs - Text format (typical for security systems)
-security_logs = ray.data.read_text("s3://ray-benchmark-data/logs/security.log")
+# Security logs - Text format (typical for security systems)security_logs = ray.data.read_text("s3://ray-benchmark-data/logs/security.log",
+    num_cpus=0.05
+)
 print(f"Security logs: {security_logs.count():,} lines")
 
-print("Realistic log datasets loaded successfully!")
+print("Realistic log datasets loaded successfully")
 ```
 
 To run this template, you will need the following packages:
@@ -77,9 +79,7 @@ To run this template, you will need the following packages:
 pip install ray[data] plotly pandas numpy matplotlib seaborn networkx
 ```
 
-## Overview
-
-### **Enterprise Log Processing at Scale**
+### Enterprise Log Processing at Scale
 
 Modern enterprises generate massive volumes of log data that contain critical insights for security, operations, and business intelligence. A typical large organization processes:
 
@@ -94,19 +94,19 @@ Modern enterprises generate massive volumes of log data that contain critical in
 - **Variety**: Multiple log formats (Apache, JSON, syslog, custom) require different parsers
 - **Value**: Extracting actionable insights from unstructured text data is complex
 
-### **Ray Data's Log Processing Advantages**
+### Ray Data's Log Processing Advantages
 
 Log processing showcases Ray Data's core strengths:
 
 | Traditional Approach | Ray Data Approach | Enterprise Benefit |
 |---------------------|-------------------|-------------------|
-| **Single-machine parsing** | Distributed across 88+ CPU cores | 100x scale increase |
+| **Single-machine parsing** | Distributed across 88+ CPU cores | scale increase |
 | **Sequential log processing** | Parallel text operations | faster processing |
 | **Complex infrastructure setup** | Native Ray Data operations | 90% less ops overhead |
 | **Manual scaling and tuning** | Automatic resource management | Zero-touch scaling |
 | **Limited fault tolerance** | Built-in error recovery | 99.9% pipeline reliability |
 
-### **Enterprise Log Analytics Capabilities**
+### Enterprise Log Analytics Capabilities
 
 This template demonstrates the most critical log processing use cases:
 
@@ -116,7 +116,7 @@ This template demonstrates the most critical log processing use cases:
 - **Compliance and Audit**: Regulatory reporting, access tracking, data governance
 - **DevOps and Monitoring**: Application health, deployment tracking, resource utilization
 
-## Learning Objectives
+## Learning objectives
 
 By the end of this template, you'll understand:
 - How to design efficient log ingestion pipelines with Ray Data
@@ -127,7 +127,7 @@ By the end of this template, you'll understand:
 
 ## Use Case: Enterprise Log Analytics
 
-### **The Challenge: Modern Log Processing at Scale**
+### The Challenge: Modern Log Processing at Scale
 
 Modern enterprises face an explosion of log data from diverse sources. Consider a typical e-commerce company:
 
@@ -142,7 +142,7 @@ Modern enterprises face an explosion of log data from diverse sources. Consider 
 - **Velocity**: Need for near-real-time processing for security and operations
 - **Complexity**: Extracting meaningful insights from unstructured text data
 
-### **The Ray Data Solution**
+### The Ray Data Solution
 
 Our log analytics pipeline addresses these challenges by processing:
 
@@ -153,7 +153,7 @@ Our log analytics pipeline addresses these challenges by processing:
 | **Security Logs** | 50M+ entries | Syslog, custom | Threat detection, patterns | Distributed aggregation and correlation |
 | **System Metrics** | 1B+ entries | Time-series | Resource monitoring | Native statistical operations |
 
-### **Business Impact and Value**
+### Business Impact and Value
 
 The pipeline delivers measurable business value:
 
@@ -162,9 +162,9 @@ The pipeline delivers measurable business value:
 | **Processing Time** | 8+ hours daily | 2 hours daily | faster |
 | **Infrastructure Cost** | $50K+ monthly | $15K monthly | reduction |
 | **Mean Time to Detection** | 4+ hours | 15 minutes | faster |
-| **Data Engineer Productivity** | 60% time on infrastructure | 90% time on insights | 50% efficiency gain |
+| **Data Engineer Productivity** | 60% time on infrastructure | 90% time on insights | efficiency gain |
 
-### **What You'll Build**
+### What You'll Build
 
 The complete pipeline will:
 
@@ -201,35 +201,47 @@ The complete pipeline will:
 ## Architecture
 
 ```
-Log Sources → Ray Data → Distributed Parsing → Native Aggregations → Analytics
-     ↓           ↓              ↓                    ↓                ↓
+Log Sources  Ray Data  Distributed Parsing  Native Aggregations  Analytics
+                                                                  
   Web Logs    read_text()    map_batches()       groupby()        Insights
-  App Logs    read_json()    Log Parsing         filter()         Security
-  Sec Logs    read_parquet() Field Extract       sort()           Operations
+  App Logs    read_json(,
+    num_cpus=0.05
+)    Log Parsing         filter()         Security
+  Sec Logs    read_parquet(,
+    num_cpus=0.025
+) Field Extract       sort()           Operations
   Sys Logs    Native Ops     Standardization     Distributed      Dashboards
 ```
 
 ## Key Components
 
-### 1. **Native Log Ingestion**
-- `ray.data.read_text()` for raw log files
-- `ray.data.read_json()` for structured logs
-- `ray.data.read_parquet()` for processed logs
+### 1. Native Log Ingestion
+- `ray.data.read_text()` for raw log files (Apache, syslog, custom text formats)
+- `ray.data.read_json(,
+    num_cpus=0.05
+)` for structured logs (application logs, JSON-formatted)
+- `ray.data.read_parquet(,
+    num_cpus=0.025
+)` for pre-processed log data (after parsing and enrichment)
 - Optimized parallelism for massive datasets
 
-### 2. **Distributed Log Parsing**
-- `dataset.map_batches()` for efficient parsing
+**Note**: Logs should be read in their native format (text for Apache/syslog, JSON for structured application logs). Parquet is used for storing processed/enriched logs after parsing.
+
+### 2. Distributed Log Parsing
+- `dataset.map_batches(, num_cpus=0.25, batch_format="pandas")` for efficient parsing
 - `dataset.map()` for row-wise transformations
 - `dataset.flat_map()` for log expansion
 - Native field extraction and standardization
 
-### 3. **Log Analytics**
+### 3. Log Analytics
 - `dataset.groupby()` for distributed aggregations
-- `dataset.filter()` for log selection and filtering
+- `dataset.filter(,
+    num_cpus=0.1
+)` for log selection and filtering
 - `dataset.sort()` for temporal analysis
 - Statistical analysis and anomaly detection
 
-### 4. **Security and Operations**
+### 4. Security and Operations
 - Threat detection and security analysis
 - Performance monitoring and SLA tracking
 - Error analysis and root cause identification
@@ -254,25 +266,22 @@ pip install plotly matplotlib
 
 **Goal**: Analyze real web server logs in 5 minutes
 
-### **Step 1: Setup on Anyscale (30 seconds)**
+### Step 1: Setup on Anyscale (30 Seconds)
 
 ```python
-# Ray cluster is already running on Anyscale
-import ray
+# Ray cluster is already running on Anyscaleimport ray
 
-# Check cluster status (already connected)
-print('Connected to Anyscale Ray cluster!')
+# Check cluster status (already connected)print('Connected to Anyscale Ray cluster')
 print(f'Available resources: {ray.cluster_resources()}')
 
-# Install any missing packages if needed
-# !pip install plotly pandas
+# Install any missing packages if needed# !pip install plotly pandas
 ```
 
-### **Step 2: Load Realistic Log Data (1 minute)**
+### Step 2: Load Realistic Log Data (1 Minute)
 
 **Understanding Log Data Loading:**
 
-Log data comes in various formats and from multiple sources in enterprise environments. Ray Data provides native operations to efficiently load and process these diverse log formats at scale.
+Log data comes in various formats and from multiple sources in enterprise environments. Ray Data provides native operations to efficiently load and process these diverse log formats with large datasets.
 
 **Why This Matters:**
 - **Volume**: Production systems generate millions of log entries daily
@@ -284,26 +293,28 @@ Log data comes in various formats and from multiple sources in enterprise enviro
 from ray.data import read_text
 import re
 
-# Load realistic log datasets using appropriate formats
-print("Loading comprehensive log datasets...")
+# Load realistic log datasets using appropriate formatsprint("Loading comprehensive log datasets...")
 
-# Apache access logs - Raw text log format (realistic for web servers)
-apache_logs = ray.data.read_text("s3://ray-benchmark-data/logs/apache-access/*.log")
+# Apache access logs - Raw text log format (realistic for web servers)apache_logs = ray.data.read_text("s3://ray-benchmark-data/logs/apache-access/*.log",
+    num_cpus=0.05
+)
 print(f"Apache access logs: {apache_logs.count():,} lines")
 print("  Format: Raw Apache Common Log Format text files")
 
-# Application logs - JSON format (common for microservices)
-app_logs = ray.data.read_json("s3://ray-benchmark-data/logs/application/*.json")
+# Application logs - JSON format (common for microservices)app_logs = ray.data.read_json("s3://ray-benchmark-data/logs/application/*.json",
+    num_cpus=0.05
+)
 print(f"Application logs: {app_logs.count():,} entries")
 print("  Format: Structured JSON logs from microservices")
 
-# Security logs - Syslog text format (typical for security systems)
-security_logs = ray.data.read_text("s3://ray-benchmark-data/logs/security/*.log")
+# Security logs - Syslog text format (typical for security systems)security_logs = ray.data.read_text("s3://ray-benchmark-data/logs/security/*.log",
+    num_cpus=0.05
+)
 print(f"Security logs: {security_logs.count():,} lines")
 print("  Format: Syslog format text files from security devices")
 
 print(f"\nTotal log entries available: {apache_logs.count() + app_logs.count() + security_logs.count():,}")
-print("Realistic datasets ready for comprehensive log analysis!")
+print("Realistic datasets ready for comprehensive log analysis")
 ```
 
 **What Ray Data Provides:**
@@ -312,11 +323,11 @@ print("Realistic datasets ready for comprehensive log analysis!")
 - **Format Flexibility**: Parquet for structured data, text files for raw logs
 - **Automatic Optimization**: Ray Data optimizes block size and distribution automatically
 
-### **Step 3: Parse Logs with Ray Data (2 minutes)**
+### Step 3: Parse Logs with Ray Data (2 Minutes)
 
 **Understanding Log Parsing Challenges:**
 
-Raw log data is unstructured text that must be converted into structured fields for analysis. This is one of the most computationally intensive steps in log processing, especially at enterprise scale.
+Raw log data is unstructured text that must be converted into structured fields for analysis. This is one of the most computationally intensive steps in log processing, especially at production scale.
 
 **Why Log Parsing is Critical:**
 - **Structure Extraction**: Convert unstructured text into queryable fields
@@ -331,8 +342,7 @@ Raw log data is unstructured text that must be converted into structured fields 
 - **Native Operations**: `map_batches()` provides optimal performance for batch text processing
 
 ```python
-# Parse Apache access logs using Ray Data distributed processing
-def parse_apache_access_logs(batch):
+# Parse Apache access logs using Ray Data distributed processingdef parse_apache_access_logs(batch):
     """
     Parse Apache Common Log Format using distributed processing.
     
@@ -377,8 +387,7 @@ def parse_apache_access_logs(batch):
     
     return parsed_logs
 
-# Apply distributed log parsing using Ray Data
-print("Parsing Apache access logs using distributed processing...")
+# Apply distributed log parsing using Ray Dataprint("Parsing Apache access logs using distributed processing...")
 parsed_apache = apache_logs.map_batches(
     parse_apache_access_logs,
     batch_format="pandas",  # Use pandas format for efficient regex processing
@@ -388,7 +397,7 @@ parsed_apache = apache_logs.map_batches(
 
 print(f"Parsed Apache logs: {parsed_apache.count():,} structured records")
 print("Sample parsed log entries:")
-parsed_apache.show(3)
+print(parsed_apache.limit(3).to_pandas())
 ```
 
 **Log Parsing Performance Insights:**
@@ -397,7 +406,7 @@ parsed_apache.show(3)
 - **Error Tolerance**: Malformed logs are skipped without stopping the entire pipeline
 - **Field Enrichment**: Additional derived fields enhance analysis capabilities
 
-### **Step 4: Security and Operational Analysis (1.5 minutes)**
+### Step 4: Security and Operational Analysis (1.5 Minutes)
 
 **Understanding Log Analysis Objectives:**
 
@@ -416,71 +425,65 @@ Once logs are parsed into structured format, we can extract actionable insights 
 - **Regulatory Compliance**: Automated log analysis ensures audit trail completeness
 
 ```python
-# Use Ray Data native operations for analysis
-# Filter for errors using native filter
-error_logs = parsed_logs.filter(lambda x: x['is_error'])
+# Use Ray Data native operations for analysis# Filter for errors using native filtererror_logs = parsed_logs.filter(lambda x: x['is_error'],
+    num_cpus=0.1
+)
 
-# Group by status code using native groupby
-status_distribution = parsed_logs.groupby('status_code').count()
+# Group by status code using native groupbystatus_distribution = parsed_logs.groupby('status_code').count()
 
-# Group by hour for traffic analysis
-hourly_traffic = parsed_logs.groupby('hour').count()
+# Group by hour for traffic analysishourly_traffic = parsed_logs.groupby('hour').count()
 
 print(f"Error logs: {error_logs.count()}")
 
-# Display results
-print("\nLog Analysis Results:")
+# Display resultsprint("\nLog Analysis Results:")
 print("-" * 40)
 
-# Show status code distribution
-status_results = status_distribution.take_all()
+# Show status code distributionstatus_results = status_distribution.take_all()
 for result in status_results:
     print(f"Status {result['status_code']}: {result['count()']} requests")
 
-# Show hourly traffic
-hourly_results = hourly_traffic.take(5)
+# Show hourly traffichourly_results = hourly_traffic.take(5)
 print(f"\nHourly Traffic (sample):")
 for result in hourly_results:
     print(f"Hour {result['hour']}: {result['count()']} requests")
 
-# Security analysis
-security_logs = parsed_logs.filter(lambda x: x['is_security_endpoint'])
+# Security analysissecurity_logs = parsed_logs.filter(lambda x: x['is_security_endpoint'],
+    num_cpus=0.1
+)
 print(f"\nSecurity endpoint requests: {security_logs.count()}")
 
-print("\nQuick start completed! Run the full demo for advanced log analytics.")
+print("\nQuick start completed! Run the full demo for improved log analytics.")
 ```
 
 ## Complete Tutorial
 
-### 1. **Load Large Log Datasets**
+### 1. Load Large Log Datasets
 
 ```python
 import ray
 from ray.data import read_text, read_json, read_parquet
 
-# Initialize Ray (already connected on Anyscale)
-print(f"Ray cluster resources: {ray.cluster_resources()}")
+# Initialize Ray (already connected on Anyscale)print(f"Ray cluster resources: {ray.cluster_resources()}")
 
-# Load various log formats using Ray Data native readers
-# Web server logs - Common Crawl data
-web_logs = read_text("s3://anonymous@commoncrawl/crawl-data/CC-MAIN-2023-40/segments/")
+# Load various log formats using Ray Data native readers# Web server logs - Common Crawl dataweb_logs = read_text("s3://anonymous@commoncrawl/crawl-data/CC-MAIN-2023-40/segments/")
 
-# Application logs - GitHub events  
-app_logs = read_json("s3://anonymous@githubarchive/2023/01/01/")
+# Application logs - GitHub events  app_logs = read_json("s3://anonymous@githubarchive/2023/01/01/",
+    num_cpus=0.05
+)
 
-# System logs - AWS CloudTrail sample
-system_logs = read_json("s3://anonymous@aws-cloudtrail-logs-sample/AWSLogs/")
+# System logs - AWS CloudTrail samplesystem_logs = read_json("s3://anonymous@aws-cloudtrail-logs-sample/AWSLogs/",
+    num_cpus=0.05
+)
 
 print(f"Web logs: {web_logs.count()}")
 print(f"Application logs: {app_logs.count()}")
 print(f"System logs: {system_logs.count()}")
 ```
 
-### 2. **Advanced Log Parsing**
+### 2. Advanced Log Parsing
 
 ```python
-# Parse different log formats using Ray Data map_batches
-def parse_github_events(batch):
+# Parse different log formats using Ray Data map_batchesdef parse_github_events(batch):
     """Parse GitHub event logs for application monitoring."""
     parsed_events = []
     
@@ -505,8 +508,7 @@ def parse_github_events(batch):
     
     return parsed_events
 
-# Parse CloudTrail logs for security monitoring
-def parse_cloudtrail_logs(batch):
+# Parse CloudTrail logs for security monitoringdef parse_cloudtrail_logs(batch):
     """Parse AWS CloudTrail logs for security analysis."""
     security_events = []
     
@@ -528,47 +530,42 @@ def parse_cloudtrail_logs(batch):
     
     return security_events
 
-# Apply parsing using Ray Data native operations
-parsed_app_logs = app_logs.map_batches(parse_github_events, batch_size=1000)
-parsed_security_logs = system_logs.map_batches(parse_cloudtrail_logs, batch_size=500)
+# Apply parsing using Ray Data native operationsparsed_app_logs = app_logs.map_batches(parse_github_events, num_cpus=0.5, batch_size=1000, batch_format="pandas")
+parsed_security_logs = system_logs.map_batches(parse_cloudtrail_logs, num_cpus=0.5, batch_size=500, batch_format="pandas")
 
 print(f"Parsed application logs: {parsed_app_logs.count()}")
 print(f"Parsed security logs: {parsed_security_logs.count()}")
 ```
 
-### 3. **Security Analysis with Native Operations**
+### 3. Security Analysis with Native Operations
 
 ```python
-# Security threat detection using Ray Data native operations
-# Filter for suspicious activities
-suspicious_logins = parsed_security_logs.filter(
+# Security threat detection using Ray Data native operations# Filter for suspicious activitiessuspicious_logins = parsed_security_logs.filter(
     lambda x: x['is_console_login'] and x['source_ip'] not in ['192.168.', '10.0.', '172.16.']
 )
 
-failed_api_calls = parsed_security_logs.filter(lambda x: x['is_error'] and x['is_api_call'])
+failed_api_calls = parsed_security_logs.filter(lambda x: x['is_error'] and x['is_api_call'],
+    num_cpus=0.1
+)
 
-# Aggregate security metrics using native groupby
-login_by_ip = parsed_security_logs.groupby('source_ip').count()
+# Aggregate security metrics using native groupbylogin_by_ip = parsed_security_logs.groupby('source_ip').count()
 events_by_region = parsed_security_logs.groupby('aws_region').count()
 
 print(f"Suspicious logins: {suspicious_logins.count()}")
 print(f"Failed API calls: {failed_api_calls.count()}")
 
-# Display top suspicious IPs
-top_login_ips = login_by_ip.sort('count()', descending=True).take(5)
+# Display top suspicious IPstop_login_ips = login_by_ip.sort('count()', descending=True).take(5)
 print("\nTop Login Source IPs:")
 for ip_data in top_login_ips:
     print(f"  {ip_data['source_ip']}: {ip_data['count()']} attempts")
 ```
 
-### 4. **Operational Metrics Analysis**
+### 4. Operational Metrics Analysis
 
 ```python
-# OPTIMIZED: Use Ray Data native operations instead of pandas groupby
-from ray.data.aggregate import Count, Mean, Max
+# Optimized: Use Ray Data native operations instead of pandas groupbyfrom ray.data.aggregate import Count, Mean, Max
 
-# Use Ray Data native groupby operations for log metrics
-app_metrics_by_event = parsed_app_logs.groupby('event_type').aggregate(
+# Use Ray Data native groupby operations for log metricsapp_metrics_by_event = parsed_app_logs.groupby('event_type').aggregate(
     Count(),  # Event count per type
     Mean('payload_size'),  # Average payload size
     Max('payload_size')    # Maximum payload size
@@ -576,8 +573,7 @@ app_metrics_by_event = parsed_app_logs.groupby('event_type').aggregate(
 
 print("Application metrics calculated using native Ray Data operations")
 
-# Use native operations with expressions API for trend analysis
-from ray.data.expressions import col, lit
+# Use native operations with expressions API for trend analysisfrom ray.data.expressions import col, lit
 
 push_events_hourly = parsed_app_logs.filter(
     col('is_push') == lit(True)
@@ -587,8 +583,7 @@ pr_events_hourly = parsed_app_logs.filter(
     col('is_pr') == lit(True)
 ).groupby('hour').aggregate(Count())
 
-# Additional analysis with native operations
-high_activity_events = parsed_app_logs.filter(
+# Additional analysis with native operationshigh_activity_events = parsed_app_logs.filter(
     col('payload_size') > lit(1000)
 ).groupby('event_type').aggregate(
     Count(),
@@ -598,11 +593,63 @@ high_activity_events = parsed_app_logs.filter(
 print(f"Application metrics calculated: {app_metrics.count()} metric groups")
 ```
 
-### 5. **Log Analytics Dashboard**
+### Log Operations Quick View
 
 ```python
-# Generate comprehensive log analytics visualizations
-def create_log_analytics_dashboard(app_results, security_results, output_dir="log_analytics_results"):
+# Create concise operational log analyticsimport matplotlib.pyplot as plt
+import numpy as np
+
+def visualize_log_operations():
+    """Create concise log analytics visualization."""
+    fig, axes = plt.subplots(1, 3, figsize=(15, 4))
+    
+    # 1. Log volume by source
+    sources = ['Apache', 'App Logs', 'Security', 'System']
+    volumes = [2500, 4200, 850, 1800]  # thousands of log entries
+    colors = ['blue', 'green', 'red', 'orange']
+    
+    bars = axes[0].bar(sources, volumes, color=colors, alpha=0.7)
+    axes[0].set_title('Log Volume by Source', fontweight='bold')
+    axes[0].set_ylabel('Entries (thousands)')
+    for bar, vol in zip(bars, volumes):
+        axes[0].text(bar.get_x() + bar.get_width()/2, bar.get_height() + 50,
+                    f'{vol}K', ha='center', fontweight='bold')
+    
+    # 2. Error rates
+    hours = list(range(24))
+    error_rate = 2 + np.sin(np.array(hours) * np.pi / 12) + np.random.rand(24) * 0.5
+    
+    axes[1].plot(hours, error_rate, 'o-', linewidth=2, markersize=4, color='red')
+    axes[1].fill_between(hours, error_rate, alpha=0.3, color='red')
+    axes[1].set_title('Hourly Error Rate', fontweight='bold')
+    axes[1].set_xlabel('Hour of Day')
+    axes[1].set_ylabel('Error Rate (%)')
+    axes[1].grid(True, alpha=0.3)
+    axes[1].set_xlim(0, 23)
+    
+    # 3. Security event breakdown
+    event_types = ['Failed\nLogin', 'Unauthorized\nAccess', 'Suspicious\nIP', 'Policy\nViolation']
+    counts = [145, 89, 67, 43]
+    colors_sec = ['darkred', 'orange', 'yellow', 'red']
+    
+    bars3 = axes[2].bar(event_types, counts, color=colors_sec, alpha=0.7)
+    axes[2].set_title('Security Events', fontweight='bold')
+    axes[2].set_ylabel('Count')
+    for bar, cnt in zip(bars3, counts):
+        axes[2].text(bar.get_x() + bar.get_width()/2, bar.get_height() + 2,
+                    str(cnt), ha='center', fontsize=9, fontweight='bold')
+    
+    plt.tight_layout()
+    plt.savefig('log_operations.png', dpi=150, bbox_inches='tight')
+    print("Log operations visualization saved")
+
+# Generate log operations viewvisualize_log_operations()
+```
+
+### 5. Log Analytics Dashboard
+
+```python
+# Generate comprehensive log analytics visualizationsdef create_log_analytics_dashboard(app_results, security_results, output_dir="log_analytics_results"):
     """Create comprehensive log analytics dashboard."""
     import os
     import pandas as pd
@@ -708,8 +755,7 @@ def create_text_log_summary(app_results, security_results, output_dir):
     
     print("\n".join(summary_lines))
 
-# Example usage in main pipeline
-app_results = app_metrics.take_all()
+# Example usage in main pipelineapp_results = app_metrics.take_all()
 security_results = parsed_security_logs.take(100)  # Sample for demo
 
 create_log_analytics_dashboard(app_results, security_results)
@@ -717,11 +763,10 @@ create_log_analytics_dashboard(app_results, security_results)
 
 ## Advanced Log Processing Patterns
 
-### **Log Enrichment and Correlation**
+### Log Enrichment and Correlation
 
 ```python
-# Enrich logs with geolocation and threat intelligence
-def enrich_with_geolocation(batch):
+# Enrich logs with geolocation and threat intelligencedef enrich_with_geolocation(batch):
     """Enrich logs with IP geolocation data."""
     enriched_logs = []
     
@@ -749,15 +794,13 @@ def enrich_with_geolocation(batch):
     
     return enriched_logs
 
-# Apply enrichment using Ray Data native operations
-enriched_logs = parsed_logs.map_batches(enrich_with_geolocation, batch_size=1000)
+# Apply enrichment using Ray Data native operationsenriched_logs = parsed_logs.map_batches(enrich_with_geolocation, num_cpus=0.5, batch_size=1000, batch_format="pandas")
 ```
 
-### **Anomaly Detection in Logs**
+### Anomaly Detection in Logs
 
 ```python
-# Detect anomalies using Ray Data native operations
-def detect_log_anomalies(batch):
+# Detect anomalies using Ray Data native operationsdef detect_log_anomalies(batch):
     """Detect anomalies in log patterns."""
     import pandas as pd
     
@@ -796,11 +839,11 @@ def detect_log_anomalies(batch):
     
     return anomalies
 
-# Apply anomaly detection
-anomalies = enriched_logs.map_batches(detect_log_anomalies, batch_size=2000)
+# Apply anomaly detectionanomalies = enriched_logs.map_batches(detect_log_anomalies, num_cpus=0.5, batch_size=2000, batch_format="pandas")
 
-# Filter for high severity anomalies using native filter
-high_severity_anomalies = anomalies.filter(lambda x: x.get('severity') == 'high')
+# Filter for high severity anomalies using native filterhigh_severity_anomalies = anomalies.filter(lambda x: x.get('severity',
+    num_cpus=0.1
+) == 'high')
 
 print(f"Total anomalies detected: {anomalies.count()}")
 print(f"High severity anomalies: {high_severity_anomalies.count()}")
@@ -808,34 +851,36 @@ print(f"High severity anomalies: {high_severity_anomalies.count()}")
 
 ## Performance Analysis
 
-### **Log Processing Performance Framework**
+### Log Processing Performance Framework
 
 | Processing Stage | Ray Data Operation | Expected Throughput | Memory Usage |
 |------------------|-------------------|-------------------|--------------|
-| **Log Ingestion** | `read_text()`, `read_json()` | [Measured] | [Measured] |
+| **Log Ingestion** | `read_text()`, `read_json(,
+    num_cpus=0.05
+)` | [Measured] | [Measured] |
 | **Log Parsing** | `map_batches()` | [Measured] | [Measured] |
 | **Log Filtering** | `filter()` | [Measured] | [Measured] |
 | **Log Aggregation** | `groupby()` | [Measured] | [Measured] |
 
-### **Scalability Analysis**
+### Scalability Analysis
 
 ```
 Log Processing Pipeline:
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│ Raw Log Files   │    │ Distributed     │    │ Security &      │
-│ (TB+ daily)     │───▶│ Parsing         │───▶│ Ops Analytics   │
-│ Multiple Sources│    │ (map_batches)   │    │ (groupby/filter)│
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-         │                       │                       │
-         ▼                       ▼                       ▼
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│ Format          │    │ Field           │    │ Threat          │
-│ Detection       │    │ Extraction      │    │ Detection       │
-│ (auto)          │    │ (standardized)  │    │ (real-time)     │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
+        
+ Raw Log Files        Distributed          Security &      
+ (TB+ daily)      Parsing          Ops Analytics   
+ Multiple Sources     (map_batches)        (groupby/filter)
+        
+                                                       
+                                                       
+        
+ Format               Field                Threat          
+ Detection            Extraction           Detection       
+ (auto)               (standardized)       (real-time)     
+        
 ```
 
-### **Expected Output Visualizations**
+### Expected Output Visualizations
 
 | Analysis Type | File Output | Content |
 |--------------|-------------|---------|
@@ -846,83 +891,83 @@ Log Processing Pipeline:
 
 ## Enterprise Log Processing Workflows
 
-### **1. Security Operations Center (SOC) Pipeline**
+### 1. Security Operations Center (soc) Pipeline
 **Use Case**: Security team analyzing 1M+ daily security events
 
 ```python
-# Load security logs from multiple sources
-security_logs = read_json("s3://security-logs/firewall/")
+# Load security logs from multiple sourcessecurity_logs = read_json("s3://security-logs/firewall/",
+    num_cpus=0.05
+)
 auth_logs = read_text("s3://security-logs/authentication/")
-audit_logs = read_parquet("s3://security-logs/audit-trail/")
+audit_logs = read_json("s3://security-logs/audit-trail/*.json",
+    num_cpus=0.05
+)
 
-# Parse and normalize different log formats
-normalized_security = security_logs.map_batches(SecurityLogParser(), batch_size=1000)
-normalized_auth = auth_logs.map_batches(AuthLogParser(), batch_size=1500)
+# Parse and normalize different log formatsnormalized_security = security_logs.map_batches(SecurityLogParser(, num_cpus=0.25, batch_format="pandas"), batch_size=1000)
+normalized_auth = auth_logs.map_batches(AuthLogParser(, num_cpus=0.25, batch_format="pandas"), batch_size=1500)
 
-# Threat detection and anomaly analysis
-threat_analysis = normalized_security.map_batches(ThreatDetector(), batch_size=500)
-suspicious_auth = normalized_auth.filter(lambda x: x['failed_attempts'] > 5)
+# Threat detection and anomaly analysisthreat_analysis = normalized_security.map_batches(ThreatDetector(, num_cpus=0.25, batch_format="pandas"), batch_size=500)
+suspicious_auth = normalized_auth.filter(lambda x: x['failed_attempts'] > 5,
+    num_cpus=0.1
+)
 
-# Security incident correlation
-incidents = threat_analysis.groupby('source_ip').agg({
+# Security incident correlationincidents = threat_analysis.groupby('source_ip').agg({
     'threat_score': 'max',
     'event_count': 'count',
     'severity_level': 'max'
 })
 
-# Results: Real-time threat detection, incident response, security dashboards
-```
+# Results: Real-time threat detection, incident response, security dashboards```
 
-### **2. Site Reliability Engineering (SRE) Pipeline**
+### 2. Site Reliability Engineering (sre) Pipeline
 **Use Case**: SRE team monitoring 500+ microservices with 50GB daily logs
 
 ```python
-# Load application and infrastructure logs
-app_logs = read_text("s3://application-logs/microservices/")
-infra_logs = read_json("s3://infrastructure-logs/kubernetes/")
+# Load application and infrastructure logsapp_logs = read_text("s3://application-logs/microservices/")
+infra_logs = read_json("s3://infrastructure-logs/kubernetes/",
+    num_cpus=0.05
+)
 
-# Error detection and classification
-error_analysis = app_logs.map_batches(ErrorClassifier(), batch_size=2000)
-performance_analysis = infra_logs.map_batches(PerformanceAnalyzer(), batch_size=1000)
+# Error detection and classificationerror_analysis = app_logs.map_batches(ErrorClassifier(, num_cpus=0.25, batch_format="pandas"), batch_size=2000)
+performance_analysis = infra_logs.map_batches(PerformanceAnalyzer(, num_cpus=0.25, batch_format="pandas"), batch_size=1000)
 
-# Service health monitoring
-service_health = error_analysis.groupby('service_name').agg({
+# Service health monitoringservice_health = error_analysis.groupby('service_name').agg({
     'error_rate': 'mean',
     'response_time': 'mean',
     'availability': 'mean'
 })
 
-# Results: Service health dashboards, automated alerts, capacity recommendations
-```
+# Results: Service health dashboards, automated alerts, capacity recommendations```
 
-### **3. E-commerce Customer Analytics**
+### 3. E-commerce Customer Analytics
 **Use Case**: E-commerce platform analyzing 5M+ daily user logs
 
 ```python
-# Load e-commerce logs
-clickstream_logs = read_json("s3://ecommerce-logs/clickstream/")
+# Load e-commerce logsclickstream_logs = read_json("s3://ecommerce-logs/clickstream/",
+    num_cpus=0.05
+)
 search_logs = read_text("s3://ecommerce-logs/search/")
 
-# Customer behavior analysis
-behavior_analysis = clickstream_logs.map_batches(BehaviorAnalyzer(), batch_size=5000)
-search_analysis = search_logs.map_batches(SearchAnalyzer(), batch_size=3000)
+# Customer behavior analysisbehavior_analysis = clickstream_logs.map_batches(BehaviorAnalyzer(,
+    num_cpus=0.25
+), batch_size=5000)
+search_analysis = search_logs.map_batches(SearchAnalyzer(,
+    num_cpus=0.25
+), batch_size=3000)
 
-# Conversion funnel analysis
-funnel_analysis = behavior_analysis.groupby('customer_segment').agg({
+# Conversion funnel analysisfunnel_analysis = behavior_analysis.groupby('customer_segment').agg({
     'conversion_rate': 'mean',
     'cart_abandonment_rate': 'mean',
     'average_order_value': 'mean'
 })
 
-# Results: Customer insights, conversion optimization, personalization strategies
-```
+# Results: Customer insights, conversion optimization, personalization strategies```
 
 ## Production Considerations
 
-### **Cluster Configuration for Log Processing**
+### Cluster Configuration for Log Processing
 ```python
-# Optimal configuration for log ingestion workloads
-cluster_config = {
+# Optimal configuration for log ingestion workloadscluster_config = {
     "head_node": {
         "instance_type": "m5.2xlarge",  # 8 vCPUs, 32GB RAM
         "storage": "500GB SSD"
@@ -935,13 +980,12 @@ cluster_config = {
     }
 }
 
-# Ray Data configuration for log processing
-from ray.data.context import DataContext
+# Ray Data configuration for log processingfrom ray.data.context import DataContext
 ctx = DataContext.get_current()
 ctx.target_max_block_size = 512 * 1024 * 1024  # 512MB blocks for logs
 ```
 
-### **Real-Time Log Monitoring**
+### Real-time Log Monitoring
 - Set up alerts for security anomalies
 - Monitor processing throughput and latency
 - Implement automatic scaling based on log volume
@@ -949,21 +993,21 @@ ctx.target_max_block_size = 512 * 1024 * 1024  # 512MB blocks for logs
 
 ## Example Workflows
 
-### **Security Operations Center (SOC)**
+### Security Operations Center (soc)
 1. Ingest security logs from multiple sources
 2. Parse and standardize log formats
 3. Apply threat detection algorithms
 4. Generate security alerts and reports
 5. Feed results to SIEM systems
 
-### **Application Performance Monitoring**
+### Application Performance Monitoring
 1. Process application and service logs
 2. Extract performance metrics and errors
 3. Identify bottlenecks and issues
 4. Generate performance dashboards
 5. Alert on SLA violations
 
-### **Compliance and Audit**
+### Compliance and Audit
 1. Collect audit logs from all systems
 2. Parse and validate log integrity
 3. Apply compliance rules and policies
@@ -972,33 +1016,31 @@ ctx.target_max_block_size = 512 * 1024 * 1024  # 512MB blocks for logs
 
 ## Troubleshooting
 
-### **Common Issues**
+### Common Issues
 1. **Memory Pressure**: Reduce batch size for large log entries
-2. **Parsing Errors**: Implement robust regex patterns and error handling
+2. **Parsing Errors**: Implement reliable regex patterns and error handling
 3. **Performance Issues**: Optimize block size and parallelism
 4. **Data Skew**: Handle uneven log distribution across time periods
 
-### **Debug Mode**
+### Debug Mode
 Enable detailed logging and performance monitoring:
 ```python
 import logging
 logging.basicConfig(level=logging.DEBUG)
 
-# Enable Ray Data debugging
-from ray.data.context import DataContext
+# Enable Ray Data debuggingfrom ray.data.context import DataContext
 ctx = DataContext.get_current()
 ctx.enable_progress_bars = True
 ```
 
 ## Interactive Log Analytics Visualizations
 
-Let's create comprehensive visualizations for log analysis and security monitoring:
+Create comprehensive visualizations for log analysis and security monitoring:
 
 ### Security Operations Analysis
 
 ```python
-# Security analysis using Ray Data native operations
-def analyze_security_logs(log_dataset):
+# Security analysis using Ray Data native operationsdef analyze_security_logs(log_dataset):
     """Analyze security logs using Ray Data aggregations."""
     
     print("="*60)
@@ -1013,7 +1055,7 @@ def analyze_security_logs(log_dataset):
     ).rename_columns(["threat_level", "event_count"])
     
     print("Threat Level Distribution:")
-    threat_analysis.show()
+    print(threat_analysis.limit(10).to_pandas())
     
     # Security event analysis by source
     source_analysis = log_dataset.groupby("log_source").aggregate(
@@ -1021,7 +1063,7 @@ def analyze_security_logs(log_dataset):
     ).rename_columns(["log_source", "total_events"])
     
     print("\nSecurity Events by Source:")
-    source_analysis.show()
+    print(source_analysis.limit(10).to_pandas())
     
     # High-priority security events
     high_priority = log_dataset.filter(
@@ -1030,7 +1072,7 @@ def analyze_security_logs(log_dataset):
     
     print(f"\nHigh-Priority Security Events: {high_priority.count():,}")
     print("Sample high-priority events:")
-    high_priority.show(3)
+    print(high_priority.limit(3).to_pandas())
     
     return {
         'threat_analysis': threat_analysis,
@@ -1038,8 +1080,7 @@ def analyze_security_logs(log_dataset):
         'high_priority_count': high_priority.count()
     }
 
-# Perform security analysis
-security_results = analyze_security_logs(parsed_logs)
+# Perform security analysissecurity_results = analyze_security_logs(parsed_logs)
     ax2.set_facecolor('black')
     
     attack_types = ['Brute Force', 'SQL Injection', 'XSS', 'DDoS', 'Malware', 'Phishing']
@@ -1186,13 +1227,11 @@ security_results = analyze_security_logs(parsed_logs)
     
     plt.tight_layout()
     plt.savefig('soc_dashboard.png', dpi=300, bbox_inches='tight', facecolor='black')
-    plt.show()
+    print(plt.limit(10).to_pandas())
     
     print("SOC dashboard saved as 'soc_dashboard.png'")
 
-# Example usage
-# create_soc_dashboard(security_logs)
-```
+# Example usage# Create_soc_dashboard(security_logs)```
 
 ### Interactive Log Analytics Dashboard
 
@@ -1322,12 +1361,11 @@ def create_interactive_log_dashboard(log_data):
     # Save and show
     fig.write_html("interactive_log_dashboard.html")
     print("Interactive log dashboard saved as 'interactive_log_dashboard.html'")
-    fig.show()
+    print(fig.limit(10).to_pandas())
     
     return fig
 
-# Create interactive dashboard
-interactive_dashboard = create_interactive_log_dashboard(None)
+# Create interactive dashboardinteractive_dashboard = create_interactive_log_dashboard(None)
 ```
 
 ### Network Security Visualization
@@ -1441,19 +1479,18 @@ def create_network_security_visualization():
     
     plt.tight_layout()
     plt.savefig('network_security_analysis.png', dpi=300, bbox_inches='tight')
-    plt.show()
+    print(plt.limit(10).to_pandas())
     
     print("Network security visualization saved as 'network_security_analysis.png'")
 
-# Create network security visualization
-create_network_security_visualization()
+# Create network security visualizationcreate_network_security_visualization()
 ```
 
 ## Next Steps
 
 1. **Scale to Production**: Deploy to multi-node clusters for TB+ daily logs
 2. **Add Real-Time Processing**: Integrate with log streaming systems
-3. **Enhance Security**: Implement advanced threat detection algorithms
+3. **Enhance Security**: Implement improved threat detection algorithms
 4. **Build Dashboards**: Create operational monitoring interfaces
 
 ## Troubleshooting
@@ -1501,7 +1538,7 @@ ctx.enable_progress_bars = True
 
 ### Long-term Goals (Next 3 months)
 1. **Deploy production SIEM** with real-time threat detection
-2. **Implement advanced security analytics** like behavioral analysis and threat hunting
+2. **Implement improved security analytics** like behavioral analysis and threat hunting
 3. **Build compliance reporting** for regulatory requirements
 4. **Create security dashboards** for SOC team monitoring
 
@@ -1514,59 +1551,67 @@ ctx.enable_progress_bars = True
 
 ## Advanced Log Processing Features
 
-### **Ray Data's Log Processing Superpowers**
+### Ray Data's Log Processing Superpowers
 
 **1. Massive Scale Text Processing**
 ```python
-# Process terabytes of logs across distributed cluster
-massive_logs.map_batches(
+# Process terabytes of logs across distributed clustermassive_logs.map_batches(
     LogParser(),
     batch_size=5000,     # Optimal for text processing
     concurrency=16       # Parallel across all CPU cores
 )
-# Ray Data automatically handles memory management and load balancing
-```
+# Ray Data automatically handles memory management and load balancing```
 
 **2. Multi-Format Log Ingestion**
 ```python
-# Handle different log formats in single pipeline
-web_logs = read_text("s3://logs/apache/")      # Apache format
-app_logs = read_json("s3://logs/application/") # JSON format
-sys_logs = read_parquet("s3://logs/system/")   # Structured format
+# Handle different log formats in single pipelineweb_logs = read_text("s3://logs/apache/")      # Apache format
+app_logs = read_json("s3://logs/application/",
+    num_cpus=0.05
+) # JSON format
+sys_logs = read_json("s3://logs/system/*.json",
+    num_cpus=0.05
+)   # Structured format
 
-# Unified processing across formats
-all_logs = web_logs.union(app_logs).union(sys_logs)
-processed = all_logs.map_batches(UnifiedLogProcessor())
+# Unified processing across formatsall_logs = web_logs.union(app_logs).union(sys_logs)
+processed = all_logs.map_batches(UnifiedLogProcessor(,
+    num_cpus=0.25
+))
 ```
 
 **3. Real-Time Security Analysis**
 ```python
-# Security threat detection at scale
-security_pipeline = (logs
-    .filter(lambda x: x['log_type'] == 'security')      # Native filtering
-    .map_batches(ThreatDetector(), batch_size=1000)     # Parallel analysis
-    .filter(lambda x: x['threat_level'] == 'high')     # Alert filtering
+# Security threat detection with large datasetssecurity_pipeline = (logs
+    .filter(lambda x: x['log_type'] == 'security',
+    num_cpus=0.1
+)      # Native filtering
+    .map_batches(ThreatDetector(,
+    num_cpus=0.25
+), batch_size=1000)     # Parallel analysis
+    .filter(lambda x: x['threat_level'] == 'high',
+    num_cpus=0.1
+)     # Alert filtering
     .groupby('source_ip').agg({'threat_score': 'max'}) # Threat aggregation
 )
-# Built-in fault tolerance ensures no security events are lost
-```
+# Built-in fault tolerance ensures no security events are lost```
 
 **4. Operational Intelligence Extraction**
 ```python
-# SLA monitoring and performance analysis
-operational_pipeline = (logs
-    .filter(lambda x: x['log_type'] == 'performance')
-    .map_batches(SLAMonitor(), batch_size=2000)
+# Sla monitoring and performance analysisoperational_pipeline = (logs
+    .filter(lambda x: x['log_type'] == 'performance',
+    num_cpus=0.1
+)
+    .map_batches(SLAMonitor(,
+    num_cpus=0.25
+), batch_size=2000)
     .groupby('service_name').agg({
         'error_rate': 'mean',
         'response_time': 'mean',
         'availability': 'mean'
     })
 )
-# Automatic scaling handles traffic spikes without manual intervention
-```
+# Automatic scaling handles traffic spikes without manual intervention```
 
-### **Enterprise Log Analytics Patterns**
+### Enterprise Log Analytics Patterns
 
 **Security Operations Excellence**
 - **Threat Detection**: Process 1M+ security events daily
@@ -1591,8 +1636,7 @@ operational_pipeline = (logs
 Always clean up Ray resources when done:
 
 ```python
-# Clean up Ray resources
-ray.shutdown()
+# Clean up Ray resourcesray.shutdown()
 print("Ray cluster shutdown complete")
 ```
 

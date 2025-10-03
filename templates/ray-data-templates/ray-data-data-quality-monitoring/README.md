@@ -1,10 +1,10 @@
-# Data quality monitoring and validation with Ray Data
+# Data Quality Monitoring and Validation with Ray Data
 
-**Time to complete**: 25 min | **Difficulty**: Intermediate | **Prerequisites**: Data engineering experience, understanding of data quality concepts
+**⏱️ Time to complete**: 25 min | **Difficulty**: Intermediate | **Prerequisites**: Data engineering experience, understanding of data quality concepts
 
 ## What You'll Build
 
-Create an automated data quality monitoring system that continuously validates data, detects anomalies, and ensures your data pipelines produce reliable, trustworthy results - essential for any data-driven organization.
+Build an automated data quality monitoring system that validates data, detects anomalies, and helps ensure your data pipelines produce reliable results for data-driven organizations.
 
 ## Table of Contents
 
@@ -13,19 +13,19 @@ Create an automated data quality monitoring system that continuously validates d
 3. [Anomaly Detection](#step-3-data-drift-monitoring) (7 min)
 4. [Quality Dashboard](#step-4-quality-reporting) (4 min)
 
-## Learning Objectives
+## Learning objectives
 
-**Why data quality matters**: Poor data quality costs organizations millions annually through incorrect insights and operational problems. Understanding data quality monitoring is essential for reliable data-driven decision making.
+**Why data quality matters**: Poor data quality affects organizations through incorrect insights and operational problems. Understanding data quality monitoring helps enable reliable data-driven decision making.
 
-**Ray Data's quality capabilities**: Automate quality checks across large datasets using distributed processing. You'll learn how to scale data validation from sample-based to comprehensive full-dataset monitoring.
+**Ray Data's quality capabilities**: Automate quality checks across large datasets using distributed processing. You'll learn how to scale data validation from sample-based to full-dataset monitoring.
 
-**Real-world applications**: Netflix monitors data quality across 500+ billion viewing events daily to ensure accurate content recommendations. Airbnb validates 150+ million booking records for pricing accuracy and fraud prevention. Uber tracks data quality across 20+ billion trips annually for safety and operational efficiency. Amazon monitors product catalog data quality for 500+ million items to maintain customer trust and search accuracy.
+**Real-world applications**: Streaming services monitor data quality across viewing events to support content recommendations. Booking platforms validate booking records for pricing accuracy and fraud prevention. Transportation companies track data quality across trip data for safety and operational efficiency. E-commerce platforms monitor product catalog data quality to maintain customer experience and search accuracy.
 
 ## Overview
 
 **The Challenge**: Poor data quality significantly impacts business decisions and organizational efficiency. Data quality issues can lead to incorrect insights and operational problems.
 
-**The Solution**: Ray Data enables continuous, automated data quality monitoring at scale, catching issues before they impact business decisions.
+**The Solution**: Ray Data enables continuous, automated data quality monitoring with large datasets, catching issues before they impact business decisions.
 
 **Real-world Impact**:
 
@@ -46,17 +46,23 @@ Before starting, ensure you have:
 - [ ] Familiarity with statistical concepts for anomaly detection
 - [ ] Python environment with data processing libraries
 
-## Quick Start (3 minutes)
+## Quick start (3 minutes)
 
 ### Setup and Dependencies
 
 ```python
-import ray
 import numpy as np
 import pandas as pd
+import ray
 
 # Initialize Ray for distributed processing
 ray.init()
+
+# Configure Ray Data for optimal performance monitoring
+ctx = ray.data.DataContext.get_current()
+ctx.enable_progress_bars = True
+ctx.enable_operator_progress_bars = True
+
 print("Ray initialized for data quality monitoring")
 ```
 
@@ -65,14 +71,15 @@ print("Ray initialized for data quality monitoring")
 ```python
 # Load pre-built customer dataset with realistic quality issues
 customer_dataset = ray.data.read_parquet(
-    "ecommerce_customers_with_quality_issues.parquet"
+    "ecommerce_customers_with_quality_issues.parquet",
+    num_cpus=0.025
 )
 
 print(f"Loaded customer dataset with quality issues:")
 print(f"  Records: {customer_dataset.count():,}")
 print(f"  Schema: {customer_dataset.schema()}")
 
-ds = customer_dataset
+quality_dataset = customer_dataset
 ```
 
 **What we have:**
@@ -87,11 +94,11 @@ ds = customer_dataset
 ```python
 # Check data schema and types
 print("Data Schema Validation:")
-print(f"Dataset schema: {ds.schema()}")
-print(f"Record count: {ds.count():,}")
+print(f"Dataset schema: {quality_dataset.schema()}")
+print(f"Record count: {quality_dataset.count():,}")
 
 # Sample record structure
-sample_record = ds.take(1)[0]
+sample_record = quality_dataset.take(1)[0]
 print(f"Sample record keys: {list(sample_record.keys())}")
 ```
 
@@ -111,7 +118,7 @@ def analyze_basic_quality(dataset):
     return sample_records
 
 # Analyze our dataset
-sample_data = analyze_basic_quality(ds)
+sample_data = analyze_basic_quality(quality_dataset)
 ```
 
 ## Step 2: Automated Quality Checks
@@ -122,7 +129,6 @@ sample_data = analyze_basic_quality(ds)
 # Use Ray Data native operations for missing data analysis
 from ray.data.expressions import col
 
-# Count missing values efficiently
 def check_missing_values(dataset):
     """Analyze missing values using Ray Data operations."""
     sample_records = dataset.take(1000)  # Efficient sampling
@@ -142,7 +148,7 @@ def check_missing_values(dataset):
     return missing_stats
 
 # Analyze missing data
-missing_analysis = check_missing_values(ds)
+missing_analysis = check_missing_values(dataset)
 ```
 
 #### Missing Data Summary
@@ -153,34 +159,15 @@ missing_analysis = check_missing_values(ds)
 | **Age** | Sample analysis | Calculated % | High / Medium / Good |
 | **Income** | Sample analysis | Calculated % | High / Medium / Good |
 
-### Simple Quality Visualization
+### Data Quality Dashboard
 
 ```python
-# Create focused quality chart
-def create_simple_quality_chart(missing_stats):
-    """Create a simple, focused quality chart."""
-    import matplotlib.pyplot as plt
-    
-    if not missing_stats:
-        print("No missing data statistics available")
-        return
-    
-    fields = list(missing_stats.keys())
-    missing_rates = [stats['missing_rate'] for stats in missing_stats.values()]
-    
-    plt.figure(figsize=(10, 6))
-    colors = ['red' if rate > 10 else 'orange' if rate > 5 else 'green' for rate in missing_rates]
-    plt.bar(fields, missing_rates, color=colors, alpha=0.7)
-    plt.title('Missing Data Analysis')
-    plt.ylabel('Missing Rate (%)')
-    plt.xticks(rotation=45)
-    plt.tight_layout()
-    plt.show()
-    
-    print("Quality chart generated successfully")
+# Create data quality dashboard using utility function
+from util.viz_utils import create_quality_dashboard
 
-# Generate focused chart
-create_simple_quality_chart(missing_analysis)
+# Generate quality dashboard
+fig = create_quality_dashboard(missing_analysis, email_validation)
+print("Quality dashboard created")
 ```
 
 ### Accuracy Validation
@@ -204,7 +191,7 @@ def validate_email_format(dataset):
     }
 
 # Run email validation
-email_validation = validate_email_format(ds)
+email_validation = validate_email_format(dataset)
 print(f"Email validation: {email_validation['validity_rate']:.1f}% valid formats")
 ```
 
@@ -218,7 +205,7 @@ from ray.data.aggregate import Count, Mean, Std, Min, Max
 
 # Calculate statistics for numeric columns
 try:
-    age_stats = ds.aggregate(
+    age_stats = dataset.aggregate(
         Count(),
         Mean('age'),
         Std('age'),
@@ -266,7 +253,7 @@ def generate_quality_report(dataset, missing_stats, email_validation):
     print("="*60)
 
 # Generate final report
-generate_quality_report(ds, missing_analysis, email_validation)
+generate_quality_report(dataset, missing_analysis, email_validation)
 ```
 
 ### Quality Score Calculation
@@ -299,7 +286,7 @@ def calculate_quality_score_native(dataset):
     return quality_result
 
 # Calculate quality score
-overall_quality = calculate_quality_score_native(ds)
+overall_quality = calculate_quality_score_native(dataset)
 print(f"Overall Quality: {overall_quality['completeness_score']:.1%} (Grade: {overall_quality['quality_grade']})")
 ```
 
@@ -316,7 +303,7 @@ print(f"Overall Quality: {overall_quality['completeness_score']:.1%} (Grade: {ov
 
 ### Quality Framework
 
-:::tip Data Quality Pillars
+:::tip Data quality pillars
 The template implements six key quality dimensions:
 - **Completeness** (25%) - Missing value detection
 - **Accuracy** (25%) - Format and range validation  
@@ -342,12 +329,12 @@ The template implements six key quality dimensions:
 
 ## Related Templates
 
-### **Recommended Next Steps**
+### Recommended Next Steps
 - **[enterprise-data-catalog](../ray-data-enterprise-data-catalog/)**: Extend quality monitoring with automated data discovery
-- **[large-scale-etl-optimization](../ray-data-large-scale-etl-optimization/)**: Apply quality checks within ETL pipelines
+- **[etl-optimization](../ray-data-etl-optimization/)**: Apply quality checks within ETL pipelines
 - **[log-ingestion](../ray-data-log-ingestion/)**: Monitor data pipeline logs for quality issues
 
-### **Advanced Applications**
+### Advanced Applications
 - **[financial-forecasting](../ray-data-financial-forecasting/)**: Apply quality monitoring to financial time series data
 - **[medical-connectors](../ray-data-medical-connectors/)**: Implement HIPAA-compliant data quality validation
 
@@ -361,8 +348,9 @@ The template implements six key quality dimensions:
 
 ```python
 # Clean up Ray resources
-ray.shutdown()
-print("Ray cluster shutdown complete")
+if ray.is_initialized():
+    ray.shutdown()
+    print("Ray cluster shutdown complete")
 ```
 
 ---

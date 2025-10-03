@@ -1,10 +1,10 @@
-# Geospatial data analysis with Ray Data
+# Geospatial Data Analysis with Ray Data
 
-**Time to complete**: 25 min | **Difficulty**: Intermediate | **Prerequisites**: Basic Python, understanding of coordinates
+**⏱️ Time to complete**: 25 min | **Difficulty**: Intermediate | **Prerequisites**: Basic Python, understanding of coordinates
 
 ## What You'll Build
 
-Create a scalable geospatial analysis pipeline that processes millions of location points across entire cities. Learn to find nearby businesses, calculate distances, and perform spatial clustering using Ray Data's distributed processing capabilities.
+Build a geospatial analysis pipeline that processes location points across cities. Learn to find nearby businesses, calculate distances, and perform spatial clustering using Ray Data's distributed processing capabilities.
 
 ## Table of Contents
 
@@ -13,29 +13,28 @@ Create a scalable geospatial analysis pipeline that processes millions of locati
 3. [Distance Calculations](#step-3-distance-calculations-at-scale) (7 min)  
 4. [Visualization and Results](#step-4-visualization-and-analysis) (5 min)
 
-## Learning Objectives
+## Learning objectives
 
-**Why geospatial analytics matters**: Location intelligence drives revenue across ride-sharing, delivery, and real estate industries through data-driven decision making. Understanding spatial patterns and relationships unlocks competitive advantages in location-based businesses.
+**Why geospatial analytics matters**: Location data supports ride-sharing, delivery, and real estate applications through spatial analysis. Understanding spatial patterns and relationships helps build location-based applications.
 
-**Ray Data's spatial capabilities**: Distribute complex geographic calculations like spatial joins, clustering, and routing across distributed clusters. You'll learn how Ray Data handles the computational intensity of spatial operations at scale.
+**Ray Data's spatial capabilities**: Distribute geographic calculations like spatial joins, clustering, and routing across distributed clusters. You'll learn how Ray Data handles spatial operations with large datasets.
 
-**Real-world location applications**: Industry-standard techniques used by Uber, DoorDash, and Google Maps to process billions of location events daily. These patterns apply across transportation, logistics, and location-based services.
+**Real-world location applications**: Techniques used by transportation and delivery companies to process location events. These patterns apply across transportation, logistics, and location-based services.
 
-**Advanced spatial analysis**: Master geofencing, hot spot detection, route optimization, and location-based recommendations at city scale. These techniques enable sophisticated location intelligence applications.
+**Spatial analysis techniques**: Learn geofencing, hot spot detection, route optimization, and location-based recommendations. These techniques support location intelligence applications.
 
-**Production deployment patterns**: Real-time location processing, spatial indexing, and geographic data pipeline optimization strategies that enable enterprise-scale geospatial applications.
+**Deployment patterns**: Location processing, spatial indexing, and geographic data pipeline optimization strategies for geospatial applications.
 
 ## Overview
 
-**Challenge**: Traditional geospatial analysis tools face significant limitations when processing large-scale location data. Single-machine processing overwhelms memory with millions of GPS coordinates, while spatial operations like proximity search and clustering become computationally expensive at scale.
+**Challenge**: Geospatial analysis tools can face limitations when processing large location datasets. Single-machine processing may encounter memory constraints with GPS coordinates, while spatial operations like proximity search and clustering require distributed processing.
 
-**Solution**: Ray Data provides distributed geospatial processing capabilities that automatically parallelize spatial calculations across multiple nodes. The framework handles datasets larger than cluster memory through streaming processing and integrates seamlessly with popular geospatial libraries.
+**Solution**: Ray Data provides distributed geospatial processing capabilities that parallelize spatial calculations across multiple nodes. The framework handles large datasets through streaming processing and integrates with geospatial libraries.
 
-**Impact**: Leading location-based companies leverage distributed geospatial analytics for transformative business results. Uber processes millions of daily trips across cities using sophisticated spatial algorithms, while DoorDash optimizes delivery zones through distributed geographic calculations. These patterns enable real-time location processing at enterprise scale.
+**Applications**: Location-based companies use distributed geospatial analytics for business applications. Transportation companies process trip data using spatial algorithms, while delivery services optimize zones through distributed geographic calculations. These patterns support location processing applications.
 
 ```python
-# Example: Real-time spatial matching like Uber/Lyft
-def find_nearest_drivers(passenger_location, driver_locations, max_distance_km=5):
+# Example: Real-time spatial matching like Uber/Lyftdef find_nearest_drivers(passenger_location, driver_locations, max_distance_km=5):
     """Find nearest available drivers using efficient spatial operations."""
     
     import math
@@ -84,6 +83,16 @@ This distributed approach enables real-world applications across industries. Rid
 
 ---
 
+
+### Approach comparison
+
+| Traditional Approach | Ray Data Approach | Key Benefit |
+|---------------------|-------------------|-------------|
+| **Single-machine processing** | Distributed across cluster | Horizontal scalability |
+| **Memory-limited** | Streaming execution | Handle large datasets |
+| **Sequential operations** | Pipeline parallelism | Better resource utilization |
+| **Manual optimization** | Automatic resource management | Simplified deployment |
+
 ## Prerequisites Checklist
 
 Before starting this geospatial analysis template, ensure you have Python 3.8+ with basic geospatial processing experience and understanding of geographic coordinates. Knowledge of GIS concepts like projections and coordinate systems will help you understand the spatial transformations demonstrated.
@@ -95,13 +104,13 @@ Before starting this geospatial analysis template, ensure you have Python 3.8+ w
 - [ ] 8GB+ RAM for processing geographic datasets
 - [ ] Optional: Experience with geospatial libraries (GeoPandas, Shapely)
 
-## Quick Start (3 minutes)
+## Quick start (3 minutes)
 
-Want to see geospatial processing in action immediately? This section demonstrates core spatial analysis concepts in just a few minutes.
+This section demonstrates core spatial analysis concepts using Ray Data in just a few minutes.
 
 ### Install Required Packages
 
-First, ensure you have the necessary geospatial libraries installed:
+ensure you have the necessary geospatial libraries installed:
 
 ```bash
 pip install "ray[data]" pandas numpy matplotlib seaborn plotly folium geopandas contextily
@@ -110,28 +119,29 @@ pip install "ray[data]" pandas numpy matplotlib seaborn plotly folium geopandas 
 ### Setup and Imports
 
 ```python
-import ray
 import numpy as np
 import pandas as pd
+import ray
 
-# Initialize Ray for distributed processing
-ray.init()
+# Initialize Ray for distributed processingray.init()
+
+# Configure Ray Data for optimal performance monitoringctx = ray.data.DataContext.get_current()
+ctx.enable_progress_bars = True
+ctx.enable_operator_progress_bars = True
 ```
 
 ### Create Sample Location Data
 
 ```python
-# Create sample location data for major US cities
-print("Creating sample geospatial dataset...")
+# Create sample location data for major US citiesprint("Creating sample geospatial dataset...")
 
-# Major US city coordinates
-# Load NYC taxi trip data for geospatial analysis
-taxi_data = ray.data.read_parquet(
+# Major US city coordinates# Load NYC taxi trip data for geospatial analysistaxi_data = ray.data.read_parquet(
     "s3://ray-benchmark-data/nyc-taxi/yellow_tripdata_2023-01.parquet"
+,
+    num_cpus=0.025
 ).limit(50000)
 
-# Extract location points from taxi data using Ray Data map_batches
-def extract_taxi_locations(batch):
+# Extract location points from taxi data using Ray Data map_batchesdef extract_taxi_locations(batch):
     """Extract taxi pickup locations for geospatial analysis."""
     df = pd.DataFrame(batch)
     locations = []
@@ -154,9 +164,7 @@ def extract_taxi_locations(batch):
     
     return locations
 
-# Use Ray Data map_batches for efficient location extraction
-# Optimize batch size for memory efficiency with large datasets
-location_dataset = taxi_data.map_batches(
+# Use Ray Data map_batches for efficient location extraction# Optimize batch size for memory efficiency with large datasetslocation_dataset = taxi_data.map_batches(
     extract_taxi_locations,
     batch_format="pandas",
     batch_size=500,  # Reduced batch size for memory efficiency
@@ -165,142 +173,40 @@ location_dataset = taxi_data.map_batches(
 
 print(f"Loaded NYC taxi location data: {location_dataset.count():,} location points")
 
-### **NYC Geospatial Analysis Dashboard**
+### Nyc Geospatial Analysis Dashboard
 
-Let's create comprehensive visualizations to understand spatial patterns and optimize location-based services:
+Create engaging geospatial visualizations using utility functions:
 
 ```python
-# Create engaging NYC geospatial analysis dashboard
-import matplotlib.pyplot as plt
-import numpy as np
+# Create interactive geospatial visualizations
+from util.viz_utils import create_geospatial_heatmap, create_trip_distance_analysis, create_spatial_clustering_viz
 import pandas as pd
 
-def create_nyc_geospatial_dashboard():
-    """Generate comprehensive NYC taxi geospatial analysis dashboard."""
-    
-    # Convert Ray dataset to pandas for visualization
-    sample_locations = ds.take(10000)  # Sample for visualization
-    location_df = pd.DataFrame(sample_locations)
-    
-    # Create comprehensive analysis dashboard
-    fig, axes = plt.subplots(2, 3, figsize=(20, 12))
-    fig.suptitle('NYC Geospatial Analysis: Taxi Location Intelligence Dashboard', fontsize=16, fontweight='bold')
-    
-    # 1. Geographic distribution heatmap
-    ax1 = axes[0, 0]
-    # Create 2D histogram for pickup density
-    lat_bins = np.linspace(location_df['lat'].min(), location_df['lat'].max(), 50)
-    lon_bins = np.linspace(location_df['lon'].min(), location_df['lon'].max(), 50)
-    
-    H, xedges, yedges = np.histogram2d(location_df['lon'], location_df['lat'], bins=[lon_bins, lat_bins])
-    extent = [xedges[0], xedges[-1], yedges[0], yedges[-1]]
-    
-    im1 = ax1.imshow(H.T, origin='lower', extent=extent, cmap='hot', aspect='auto')
-    ax1.set_title('Taxi Pickup Density Heatmap', fontweight='bold')
-    ax1.set_xlabel('Longitude')
-    ax1.set_ylabel('Latitude')
-    plt.colorbar(im1, ax=ax1, label='Pickup Density')
-    
-    # 2. Trip distance distribution
-    ax2 = axes[0, 1]
-    trip_distances = location_df['trip_distance'].dropna()
-    trip_distances = trip_distances[trip_distances > 0]  # Remove zero distances
-    trip_distances = trip_distances[trip_distances < 50]  # Remove outliers
-    
-    ax2.hist(trip_distances, bins=30, color='skyblue', alpha=0.7, edgecolor='black')
-    ax2.axvline(trip_distances.mean(), color='red', linestyle='--', 
-               label=f'Mean: {trip_distances.mean():.2f} miles')
-    ax2.axvline(trip_distances.median(), color='orange', linestyle='--', 
-               label=f'Median: {trip_distances.median():.2f} miles')
-    ax2.set_title('Trip Distance Distribution', fontweight='bold')
-    ax2.set_xlabel('Trip Distance (miles)')
-    ax2.set_ylabel('Frequency')
-    ax2.legend()
-    ax2.grid(True, alpha=0.3)
-    
-    # 3. Spatial clustering analysis
-    ax3 = axes[0, 2]
-    # Simple spatial clustering using lat/lon buckets
-    location_df['lat_bucket'] = pd.cut(location_df['lat'], bins=20, labels=False)
-    location_df['lon_bucket'] = pd.cut(location_df['lon'], bins=20, labels=False)
-    location_df['spatial_cluster'] = location_df['lat_bucket'] * 20 + location_df['lon_bucket']
-    
-    cluster_sizes = location_df.groupby('spatial_cluster').size().sort_values(ascending=False).head(10)
-    
-    bars3 = ax3.bar(range(len(cluster_sizes)), cluster_sizes.values, color='lightgreen')
-    ax3.set_title('Top 10 Spatial Clusters by Activity', fontweight='bold')
-    ax3.set_xlabel('Cluster ID')
-    ax3.set_ylabel('Number of Pickups')
-    ax3.set_xticks(range(len(cluster_sizes)))
-    ax3.set_xticklabels([f'C{i+1}' for i in range(len(cluster_sizes))])
-    
-    # Add value labels
-    for bar, value in zip(bars3, cluster_sizes.values):
-        height = bar.get_height()
-        ax3.text(bar.get_x() + bar.get_width()/2., height + 5,
-                f'{value}', ha='center', va='bottom', fontweight='bold')
-    
-    # 4. Latitude vs Longitude scatter with density
-    ax4 = axes[1, 0]
-    scatter = ax4.scatter(location_df['lon'], location_df['lat'], 
-                         c=location_df['trip_distance'], cmap='viridis', 
-                         alpha=0.6, s=10)
-    ax4.set_title('Geographic Distribution by Trip Distance', fontweight='bold')
-    ax4.set_xlabel('Longitude')
-    ax4.set_ylabel('Latitude')
-    cbar = plt.colorbar(scatter, ax=ax4)
-    cbar.set_label('Trip Distance (miles)')
-    
-    # 5. Geospatial efficiency analysis
-    ax5 = axes[1, 1]
-    # Calculate pickup efficiency by area
-    location_df['efficiency'] = location_df.groupby('spatial_cluster')['trip_distance'].transform('mean')
-    efficiency_by_cluster = location_df.groupby('spatial_cluster')['efficiency'].first().sort_values(ascending=False).head(8)
-    
-    bars5 = ax5.bar(range(len(efficiency_by_cluster)), efficiency_by_cluster.values, color='coral')
-    ax5.set_title('Average Trip Distance by Spatial Cluster', fontweight='bold')
-    ax5.set_xlabel('Cluster ID')
-    ax5.set_ylabel('Average Trip Distance (miles)')
-    ax5.set_xticks(range(len(efficiency_by_cluster)))
-    ax5.set_xticklabels([f'C{i+1}' for i in range(len(efficiency_by_cluster))])
-    
-    # 6. Spatial coverage analysis
-    ax6 = axes[1, 2]
-    # Analyze geographic coverage
-    lat_range = location_df['lat'].max() - location_df['lat'].min()
-    lon_range = location_df['lon'].max() - location_df['lon'].min()
-    coverage_area = lat_range * lon_range * 111 * 111  # Approximate km²
-    
-    metrics = ['Lat Range (°)', 'Lon Range (°)', 'Coverage (km²)', 'Density (pts/km²)']
-    values = [lat_range, lon_range, coverage_area, len(location_df) / coverage_area]
-    colors = ['lightblue', 'lightgreen', 'lightyellow', 'lightpink']
-    
-    bars6 = ax6.bar(range(len(metrics)), values, color=colors)
-    ax6.set_title('Spatial Coverage Metrics', fontweight='bold')
-    ax6.set_ylabel('Value')
-    ax6.set_xticks(range(len(metrics)))
-    ax6.set_xticklabels(metrics, rotation=45, ha='right')
-    ax6.set_yscale('log')  # Log scale due to different magnitude values
-    
-    # Add value labels
-    for bar, value in zip(bars6, values):
-        height = bar.get_height()
-        ax6.text(bar.get_x() + bar.get_width()/2., height * 1.1,
-                f'{value:.2f}', ha='center', va='bottom', fontweight='bold')
-    
-    plt.tight_layout()
-    plt.show()
-    
-    print("NYC Geospatial Analysis Summary:")
-    print(f"- Total pickup locations analyzed: {len(location_df):,}")
-    print(f"- Average trip distance: {trip_distances.mean():.2f} miles")
-    print(f"- Geographic coverage: {coverage_area:.2f} km²")
-    print(f"- Pickup density: {len(location_df) / coverage_area:.2f} pickups/km²")
-    print(f"- Most active cluster has {cluster_sizes.iloc[0]:,} pickups")
-    print(f"- Highest efficiency cluster averages {efficiency_by_cluster.iloc[0]:.2f} miles/trip")
+# Convert to pandas for visualization
+location_df = geospatial_dataset.to_pandas()
 
-# Create NYC geospatial analysis dashboard
-create_nyc_geospatial_dashboard()
+# 1. Interactive density heatmap
+heatmap_fig = create_geospatial_heatmap(location_df)
+heatmap_fig.show()
+
+# 2. Trip distance analysis
+distance_fig = create_trip_distance_analysis(location_df)
+distance_fig.show()
+
+# 3. Spatial clustering visualization
+cluster_fig = create_spatial_clustering_viz(location_df)
+cluster_fig.show()
+
+# Print summary statistics
+trip_distances = location_df['trip_distance'].dropna()
+trip_distances = trip_distances[(trip_distances > 0) & (trip_distances < 50)]
+
+print("\nNYC Geospatial Analysis Summary:")
+print(f"  Total pickup locations: {len(location_df):,}")
+print(f"  Average trip distance: {trip_distances.mean():.2f} miles")
+print(f"  Median trip distance: {trip_distances.median():.2f} miles")
+print(f"  Latitude range: {location_df['lat'].min():.4f} to {location_df['lat'].max():.4f}")
+print(f"  Longitude range: {location_df['lon'].min():.4f} to {location_df['lon'].max():.4f}")
 ```
 
 This comprehensive geospatial analysis reveals patterns crucial for optimizing ride-sharing operations, delivery routing, and urban planning decisions.
@@ -309,8 +215,7 @@ This comprehensive geospatial analysis reveals patterns crucial for optimizing r
 ### Interactive Geospatial Visualization Dashboard
 
 ```python
-# Create an engaging geospatial data visualization dashboard
-def create_geospatial_dashboard(dataset, sample_size=1000):
+# Create an engaging geospatial data visualization dashboarddef create_geospatial_dashboard(dataset, sample_size=1000):
     """Generate a comprehensive geospatial data analysis dashboard."""
     import matplotlib.pyplot as plt
     import seaborn as sns
@@ -375,7 +280,7 @@ def create_geospatial_dashboard(dataset, sample_size=1000):
     ax_lat = fig.add_subplot(gs[1, 2:])
     ax_lat.hist(df['lat'], bins=30, color='skyblue', alpha=0.7, edgecolor='black')
     ax_lat.axvline(df['lat'].mean(), color='red', linestyle='--', linewidth=2,
-                  label=f'Mean: {df["lat"].mean():.2f}°')
+                  label=f'Mean: {df["lat"].mean():.2f}')
     ax_lat.set_title('Latitude Distribution', fontsize=12, fontweight='bold')
     ax_lat.set_xlabel('Latitude (degrees)')
     ax_lat.set_ylabel('Frequency')
@@ -386,7 +291,7 @@ def create_geospatial_dashboard(dataset, sample_size=1000):
     ax_lon = fig.add_subplot(gs[2, :2])
     ax_lon.hist(df['lon'], bins=30, color='lightgreen', alpha=0.7, edgecolor='black')
     ax_lon.axvline(df['lon'].mean(), color='red', linestyle='--', linewidth=2,
-                  label=f'Mean: {df["lon"].mean():.2f}°')
+                  label=f'Mean: {df["lon"].mean():.2f}')
     ax_lon.set_title('Longitude Distribution', fontsize=12, fontweight='bold')
     ax_lon.set_xlabel('Longitude (degrees)')
     ax_lon.set_ylabel('Frequency')
@@ -413,10 +318,10 @@ def create_geospatial_dashboard(dataset, sample_size=1000):
     
     bounds_text = "Geographic Analysis\n" + "="*40 + "\n"
     bounds_text += f"Total Locations: {len(df):,}\n"
-    bounds_text += f"Latitude Range: {lat_min:.2f}° to {lat_max:.2f}°\n"
-    bounds_text += f"Longitude Range: {lon_min:.2f}° to {lon_max:.2f}°\n"
-    bounds_text += f"Latitude Span: {lat_range:.2f}°\n"
-    bounds_text += f"Longitude Span: {lon_range:.2f}°\n"
+    bounds_text += f"Latitude Range: {lat_min:.2f} to {lat_max:.2f}\n"
+    bounds_text += f"Longitude Range: {lon_min:.2f} to {lon_max:.2f}\n"
+    bounds_text += f"Latitude Span: {lat_range:.2f}\n"
+    bounds_text += f"Longitude Span: {lon_range:.2f}\n"
     bounds_text += f"Cities Covered: {len(df['city'].unique())}\n"
     bounds_text += f"Location Types: {len(df['type'].unique())}\n"
     
@@ -444,19 +349,18 @@ def create_geospatial_dashboard(dataset, sample_size=1000):
     
     plt.suptitle('Geospatial Data Analysis Dashboard', fontsize=18, fontweight='bold', y=0.95)
     plt.tight_layout()
-    plt.show()
+    print(plt.limit(10).to_pandas())
     
     # Print geospatial insights
-    print(f"🌍 Geospatial Data Insights:")
-    print(f"   • Geographic coverage: {lat_range:.2f}° lat × {lon_range:.2f}° lon")
-    print(f"   • Location density: {len(df):,} points across {len(df['city'].unique())} cities")
-    print(f"   • Type diversity: {len(df['type'].unique())} different location types")
-    print(f"   • Coordinate range: ({lat_min:.2f}°, {lon_min:.2f}°) to ({lat_max:.2f}°, {lon_max:.2f}°)")
+    print(f" Geospatial Data Insights:")
+    print(f"    Geographic coverage: {lat_range:.2f} lat  {lon_range:.2f} lon")
+    print(f"    Location density: {len(df):,} points across {len(df['city'].unique())} cities")
+    print(f"    Type diversity: {len(df['type'].unique())} different location types")
+    print(f"    Coordinate range: ({lat_min:.2f}, {lon_min:.2f}) to ({lat_max:.2f}, {lon_max:.2f})")
     
     return df
 
-# Generate the geospatial dashboard
-geospatial_df = create_geospatial_dashboard(ds)
+# Generate the geospatial dashboardgeospatial_df = create_geospatial_dashboard(geospatial_dataset)
 ```
 
 **Why This Dashboard Matters:**
@@ -467,7 +371,7 @@ geospatial_df = create_geospatial_dashboard(ds)
 
 ## Step 1: Setup and Data Loading
 
-First, let's set up Ray and load our geospatial datasets. We'll create realistic point-of-interest (POI) data across major metropolitan areas.
+you'll set up Ray and load our geospatial datasets. you'll create realistic point-of-interest (POI) data across major metropolitan areas.
 
 ```python
 import ray
@@ -480,16 +384,18 @@ import plotly.graph_objects as go
 import folium
 from folium.plugins import HeatMap, MarkerCluster
 from typing import Dict, Any
-import time
 
-# Initialize Ray - this creates our distributed computing cluster
-ray.init()
+# Initialize Ray - this creates our distributed computing clusterray.init()
 
-print(" Ray cluster initialized!")
+# Configure Ray Data for optimal performance monitoringctx = ray.data.DataContext.get_current()
+ctx.enable_progress_bars = True
+ctx.enable_operator_progress_bars = True
+
+print(" Ray cluster initialized")
 print(f" Available resources: {ray.cluster_resources()}")
 ```
 
-Now let's create our geospatial data generation function:
+Now you'll create our geospatial data generation function:
 
 ```python
 def load_geospatial_data():
@@ -539,8 +445,7 @@ def load_geospatial_data():
     
     return ray.data.from_items(poi_data)
 
-# Load the dataset and measure performance
-start_time = time.time()
+# Load the dataset and measure performancestart_time = time.time()
 poi_dataset = load_geospatial_data()
 load_time = time.time() - start_time
 
@@ -550,21 +455,17 @@ print(f"Data loading took: {load_time:.2f} seconds")
 Inspect the dataset structure and validate our data:
 
 ```python
-# Basic dataset information
-print(f" Dataset size: {poi_dataset.count()} records")
+# Basic dataset informationprint(f" Dataset size: {poi_dataset.count()} records")
 print(f" Schema: {poi_dataset.schema()}")
 
-# Show sample data to verify it looks correct
-print("\n Sample POI data:")
+# Show sample data to verify it looks correctprint("\n Sample POI data:")
 sample_data = poi_dataset.take(5)
 for i, poi in enumerate(sample_data):
     print(f"  {i+1}. {poi['name']} ({poi['category']}) at {poi['latitude']:.4f}, {poi['longitude']:.4f}")
 
-# Comprehensive data validation (rule #218: Include comprehensive data validation)
-print(f"\n Data validation:")
+# Comprehensive data validation (rule #218: Include comprehensive data validation)print(f"\n Data validation:")
 
-# Validate coordinate ranges
-valid_coords = poi_dataset.filter(
+# Validate coordinate rangesvalid_coords = poi_dataset.filter(
     lambda x: x['latitude'] is not None and x['longitude'] is not None and
               -90 <= x['latitude'] <= 90 and -180 <= x['longitude'] <= 180
 ).count()
@@ -572,16 +473,14 @@ valid_coords = poi_dataset.filter(
 print(f"  - Valid coordinates: {valid_coords} / {poi_dataset.count()}")
 print(f"  - Metro areas covered: {len(set([poi['metro_area'] for poi in poi_dataset.take(100)]))}")
 
-# Additional validation checks
-sample_data = poi_dataset.take(100)
+# Additional validation checkssample_data = poi_dataset.take(100)
 categories = set([poi['category'] for poi in sample_data])
 ratings = [poi['rating'] for poi in sample_data if poi['rating'] is not None]
 
 print(f"  - Categories found: {len(categories)} ({list(categories)})")
 print(f"  - Rating range: {min(ratings):.1f} - {max(ratings):.1f}")
 
-# Validate data integrity
-if valid_coords != poi_dataset.count():
+# Validate data integrityif valid_coords != poi_dataset.count():
     print("  Warning: Some POIs have invalid coordinates")
 if len(categories) == 0:
     raise ValueError("No valid categories found in dataset")
@@ -595,11 +494,10 @@ if len(categories) == 0:
 
 ## Step 2: Basic Spatial Operations
 
-Now let's perform basic spatial operations using Ray Data's distributed processing capabilities.
+Now you'll perform basic spatial operations using Ray Data's distributed processing capabilities.
 
 ```python
-# OPTIMIZED: Reduce pandas usage and use native Ray Data operations where possible
-def calculate_distance_metrics(batch: Dict[str, Any]) -> Dict[str, Any]:
+# Optimized: Reduce pandas usage and use native Ray Data operations where possibledef calculate_distance_metrics(batch: Dict[str, Any]) -> Dict[str, Any]:
     """Calculate distance-based metrics with optimized processing."""
     # Group records by metro area using native Python (avoid pandas groupby)
     metro_groups = {}
@@ -646,29 +544,26 @@ def calculate_distance_metrics(batch: Dict[str, Any]) -> Dict[str, Any]:
     
     return results
 
-# Process with optimized batch processing
-distance_analysis = poi_dataset.map_batches(
+# Process with optimized batch processingdistance_analysis = poi_dataset.map_batches(
     calculate_distance_metrics,
     batch_size=2000,    # Larger batch size for efficiency
     concurrency=4       # Increased concurrency
-)
+, batch_format="pandas")
 
 print("Distance Analysis Results:")
-distance_analysis.show()
+print(distance_analysis.limit(10).to_pandas())
 ```
 
 ## Step 3: Advanced Spatial Operations with Ray Data
 
-Ray Data provides powerful native operations that are perfect for geospatial analysis. Let's demonstrate filtering, grouping, joining, and aggregating spatial data using Ray Data's distributed capabilities.
+Ray Data provides capable native operations for geospatial analysis. This section demonstrates filtering, grouping, joining, and aggregating spatial data using Ray Data's distributed capabilities.
 
 ### Spatial Filtering and Selection
 
 ```python
-# BEST PRACTICE: Use Ray Data expressions API for optimized spatial queries
-from ray.data.expressions import col, lit
+# Best PRACTICE: Use Ray Data expressions API for optimized spatial queriesfrom ray.data.expressions import col, lit
 
-# Find high-rated restaurants in NYC using expressions API
-high_rated_restaurants = poi_dataset.filter(
+# Find high-rated restaurants in NYC using expressions APIhigh_rated_restaurants = poi_dataset.filter(
     (col('category') == lit('restaurant')) & 
     (col('rating') > lit(4.0)) & 
     (col('metro_area') == lit('NYC'))
@@ -676,8 +571,7 @@ high_rated_restaurants = poi_dataset.filter(
 
 print(f"High-rated NYC restaurants: {high_rated_restaurants.count()} found")
 
-# Filter POIs within specific geographic bounds using expressions
-manhattan_bounds = poi_dataset.filter(
+# Filter POIs within specific geographic bounds using expressionsmanhattan_bounds = poi_dataset.filter(
     (col('latitude') >= lit(40.7000)) & 
     (col('latitude') <= lit(40.8000)) &
     (col('longitude') >= lit(-74.0200)) & 
@@ -691,16 +585,13 @@ print(f"POIs in Manhattan bounds: {manhattan_bounds.count()} locations")
 ### Spatial Aggregations and Grouping
 
 ```python
-# Use Ray Data's native groupby() for distributed spatial aggregations
-print("Performing distributed spatial aggregations...")
+# Use Ray Data's native groupby() for distributed spatial aggregationsprint("Performing distributed spatial aggregations...")
 
-# Group by metro area and category using Ray Data native operations
-category_analysis = poi_dataset.groupby(['metro_area', 'category']).count()
+# Group by metro area and category using Ray Data native operationscategory_analysis = poi_dataset.groupby(['metro_area', 'category']).count()
 print("POI Count by Metro and Category:")
-category_analysis.show(15)
+print(category_analysis.limit(15).to_pandas())
 
-# Calculate spatial statistics by metro area
-from ray.data.aggregate import Mean, Max, Min, Count
+# Calculate spatial statistics by metro areafrom ray.data.aggregate import Mean, Max, Min, Count
 spatial_stats = poi_dataset.groupby('metro_area').aggregate(
     Count('poi_id'),
     Mean('rating'),
@@ -709,10 +600,9 @@ spatial_stats = poi_dataset.groupby('metro_area').aggregate(
 )
 
 print("\nSpatial Statistics by Metro Area:")
-spatial_stats.show()
+print(spatial_stats.limit(10).to_pandas())
 
-# Advanced aggregation: Category distribution analysis
-category_distribution = poi_dataset.groupby('category').aggregate(
+# Advanced aggregation: Category distribution analysiscategory_distribution = poi_dataset.groupby('category').aggregate(
     Count('poi_id'),
     Mean('rating'),
     Max('rating'),
@@ -720,18 +610,17 @@ category_distribution = poi_dataset.groupby('category').aggregate(
 )
 
 print("\nCategory Distribution Analysis:")
-category_distribution.show()
+print(category_distribution.limit(10).to_pandas())
 ```
 
 ## Step 4: Advanced Spatial Joins and Analysis
 
-Now let's demonstrate Ray Data's powerful join operations for complex spatial analysis. We'll create demographic data and join it with our POI data to understand location patterns.
+Now you'll demonstrate Ray Data's capable join operations for complex spatial analysis. you'll create demographic data and join it with our POI data to understand location patterns.
 
 ### Creating Demographic Data for Spatial Joins
 
 ```python
-# Create demographic data that we can join with POI data
-def create_demographic_data():
+# Create demographic data that we can join with POI datadef create_demographic_data():
     """Create realistic demographic data for spatial joins."""
     np.random.seed(42)  # Reproducible results
     
@@ -751,19 +640,16 @@ def create_demographic_data():
     
     return ray.data.from_items(demographics)
 
-# Create demographic dataset
-demographic_data = create_demographic_data()
+# Create demographic datasetdemographic_data = create_demographic_data()
 print(f"Created demographic data: {demographic_data.count()} zones")
 ```
 
 ### Spatial Joins with Ray Data
 
 ```python
-# Perform distributed spatial join using Ray Data's native join operation
-print("Performing spatial join between POIs and demographics...")
+# Perform distributed spatial join using Ray Data's native join operationprint("Performing spatial join between POIs and demographics...")
 
-# Join POI data with demographic data by metro area
-spatial_join_result = poi_dataset.join(
+# Join POI data with demographic data by metro areaspatial_join_result = poi_dataset.join(
     demographic_data,
     key='metro_area',  # Join on metro area
     join_type='inner'  # Inner join for complete matches
@@ -771,8 +657,7 @@ spatial_join_result = poi_dataset.join(
 
 print(f"Spatial join completed: {spatial_join_result.count()} enriched records")
 
-# Show sample of joined data
-joined_sample = spatial_join_result.take(3)
+# Show sample of joined datajoined_sample = spatial_join_result.take(3)
 for i, record in enumerate(joined_sample):
     print(f"  {i+1}. {record['name']} in {record['metro_area']} (Pop: {record['population']:,}, Income: ${record['median_income']:,})")
 ```
@@ -780,43 +665,37 @@ for i, record in enumerate(joined_sample):
 ### Advanced Spatial Analytics with Ray Data
 
 ```python
-# Use Ray Data's native sort() for geographic ranking
-print("Ranking locations by spatial accessibility...")
+# Use Ray Data's native sort() for geographic rankingprint("Ranking locations by spatial accessibility...")
 
-# Sort POIs by rating within each metro area
-top_rated_pois = spatial_join_result.sort(['metro_area', 'rating'], descending=[False, True])
+# Sort POIs by rating within each metro areatop_rated_pois = spatial_join_result.sort(['metro_area', 'rating'], descending=[False, True])
 
 print("Top-rated POIs by metro area:")
 top_pois_sample = top_rated_pois.take(10)
 for poi in top_pois_sample:
     print(f"  {poi['name']} ({poi['category']}) - Rating: {poi['rating']:.1f} in {poi['metro_area']}")
 
-# Use Ray Data's union() operation to combine datasets
-print("\nCombining multiple geographic datasets...")
+# Use Ray Data's union() operation to combine datasetsprint("\nCombining multiple geographic datasets...")
 
-# Create additional POI data for demonstration
-additional_pois = ray.data.from_items([
+# Create additional POI data for demonstrationadditional_pois = ray.data.from_items([
     {'poi_id': 'new_001', 'name': 'Central Park', 'category': 'park', 
      'latitude': 40.7829, 'longitude': -73.9654, 'metro_area': 'NYC', 'rating': 4.8},
     {'poi_id': 'new_002', 'name': 'Golden Gate Bridge', 'category': 'landmark', 
      'latitude': 37.8199, 'longitude': -122.4783, 'metro_area': 'SF', 'rating': 4.9}
 ])
 
-# Combine datasets using Ray Data's union operation
-combined_pois = poi_dataset.union(additional_pois)
+# Combine datasets using Ray Data's union operationcombined_pois = poi_dataset.union(additional_pois)
 print(f"Combined POI dataset: {combined_pois.count()} total locations")
 
-# Use Ray Data's limit() for efficient sampling
-geographic_sample = combined_pois.limit(1000)
+# Use Ray Data's limit() for efficient samplinggeographic_sample = combined_pois.limit(1000)
 print(f"Geographic sample created: {geographic_sample.count()} locations")
 
-# Use Ray Data's select() operation to focus on specific columns
-spatial_coords = combined_pois.select_columns(['latitude', 'longitude', 'metro_area', 'category'])
+# Use Ray Data's select() operation to focus on specific columnsspatial_coords = combined_pois.select_columns(['latitude', 'longitude', 'metro_area', 'category'])
 print(f"Selected spatial coordinates: {spatial_coords.count()} records")
 
-# Chain multiple Ray Data operations for complex spatial pipeline
-spatial_pipeline_result = (combined_pois
-    .filter(lambda x: x['rating'] > 3.0)  # Filter high-quality locations
+# Chain multiple Ray Data operations for complex spatial pipelinespatial_pipeline_result = (combined_pois
+    .filter(lambda x: x['rating'] > 3.0,
+    num_cpus=0.1
+)  # Filter high-quality locations
     .groupby('category')                   # Group by POI category
     .count()                              # Count POIs per category
     .sort('count', descending=True)       # Sort by count
@@ -824,7 +703,7 @@ spatial_pipeline_result = (combined_pois
 )
 
 print("\nTop POI categories by count:")
-spatial_pipeline_result.show()
+print(spatial_pipeline_result.limit(10).to_pandas())
 ```
 
 ### Distributed Spatial Clustering Analysis
@@ -861,34 +740,35 @@ class SpatialAnalyzer:
         
         return pd.DataFrame(analysis_results).to_dict('list')
 
-# Apply spatial analysis
-spatial_results = poi_dataset.map_batches(
+# Apply spatial analysisspatial_results = poi_dataset.map_batches(
     SpatialAnalyzer,
     concurrency=2,
     batch_size=1500
-)
+, batch_format="pandas")
 
 print("Spatial Analysis Results:")
-spatial_results.show()
+print(spatial_results.limit(10).to_pandas())
 
-# Save spatial analysis results using Ray Data's native write operations
-print("Saving geospatial analysis results...")
+# Save spatial analysis results using Ray Data's native write operationsprint("Saving geospatial analysis results...")
 
-# Write enriched POI data to Parquet for efficient storage
-spatial_join_result.write_parquet("s3://your-bucket/geospatial-analysis/enriched-pois/")
+# Write enriched POI data to Parquet for efficient storagespatial_join_result.write_parquet("s3://your-bucket/geospatial-analysis/enriched-pois/",
+    num_cpus=0.1
+)
 
-# Write category analysis results  
-category_distribution.write_parquet("s3://your-bucket/geospatial-analysis/category-stats/")
+# Write category analysis results  category_distribution.write_parquet("s3://your-bucket/geospatial-analysis/category-stats/",
+    num_cpus=0.1
+)
 
-# Write top locations for business intelligence
-top_rated_pois.limit(100).write_json("s3://your-bucket/geospatial-analysis/top-locations.json")
+# Write top locations for business intelligencetop_rated_pois.limit(100).write_json("s3://your-bucket/geospatial-analysis/top-locations.json",
+    num_cpus=0.1
+)
 
 print("Geospatial analysis results saved using Ray Data native write operations")
 ```
 
 ## Step 5: Interactive Visualizations and Results
 
-Let's create stunning interactive visualizations to understand our spatial data:
+Create stunning interactive visualizations to understand our spatial data:
 
 ### 5.1: Interactive Heatmaps and Density Maps
 
@@ -960,8 +840,7 @@ def create_interactive_heatmap(dataset):
     
     return m
 
-# Create the interactive heatmap
-heatmap = create_interactive_heatmap(poi_dataset)
+# Create the interactive heatmapheatmap = create_interactive_heatmap(poi_dataset)
 ```
 
 ### 5.2: 3D Density Visualization
@@ -1031,12 +910,11 @@ def create_3d_density_plot(dataset):
     print("3D visualization saved as 3d_poi_density.html")
     
     # Show the plot
-    fig.show()
+    print(fig.limit(10).to_pandas())
     
     return fig
 
-# Create 3D density plot
-density_3d = create_3d_density_plot(poi_dataset)
+# Create 3D density plotdensity_3d = create_3d_density_plot(poi_dataset)
 ```
 
 ### 5.3: Advanced Statistical Visualizations
@@ -1046,8 +924,7 @@ def create_statistical_visualizations(dataset):
     """Create comprehensive statistical visualizations."""
     print("Creating statistical visualizations...")
     
-# Convert results to pandas for visualization
-spatial_df = spatial_results.to_pandas()
+# Convert results to pandas for visualizationspatial_df = spatial_results.to_pandas()
     poi_df = dataset.to_pandas()
     
     # Set up the plotting style
@@ -1167,12 +1044,11 @@ spatial_df = spatial_results.to_pandas()
     
     plt.tight_layout(pad=3.0)
     plt.savefig('geospatial_analysis_dashboard.png', dpi=300, bbox_inches='tight')
-plt.show()
+print(plt.limit(10).to_pandas())
     
     print("Statistical visualizations saved as 'geospatial_analysis_dashboard.png'")
 
-# Create statistical visualizations
-create_statistical_visualizations(poi_dataset)
+# Create statistical visualizationscreate_statistical_visualizations(poi_dataset)
 ```
 
 ### 5.4: Interactive Plotly Dashboard
@@ -1276,12 +1152,11 @@ def create_interactive_dashboard(dataset):
     # Save and show
     fig.write_html("interactive_geospatial_dashboard.html")
     print("Interactive dashboard saved as 'interactive_geospatial_dashboard.html'")
-    fig.show()
+    print(fig.limit(10).to_pandas())
     
     return fig
 
-# Create interactive dashboard
-dashboard = create_interactive_dashboard(poi_dataset)
+# Create interactive dashboarddashboard = create_interactive_dashboard(poi_dataset)
 ```
 
 ## Step 6: Saving Results
@@ -1291,15 +1166,16 @@ Save your processed geospatial data for further analysis:
 ```python
 import tempfile
 
-# Save results to parquet format
-temp_dir = tempfile.mkdtemp()
+# Save results to parquet formattemp_dir = tempfile.mkdtemp()
 
-# Save spatial analysis results
-spatial_results.write_parquet(f"local://{temp_dir}/spatial_analysis")
+# Save spatial analysis resultsspatial_results.write_parquet(f"local://{temp_dir}/spatial_analysis",
+    num_cpus=0.1
+)
 print(f"Results saved to {temp_dir}/spatial_analysis")
 
-# Save category analysis
-category_analysis.write_parquet(f"local://{temp_dir}/category_analysis")
+# Save category analysiscategory_analysis.write_parquet(f"local://{temp_dir}/category_analysis",
+    num_cpus=0.1
+)
 print(f"Category analysis saved to {temp_dir}/category_analysis")
 ```
 
@@ -1331,8 +1207,7 @@ To extend this example:
 ## Cleanup
 
 ```python
-# Clean up Ray resources when finished with geospatial analysis
-if ray.is_initialized():
+# Clean up Ray resources when finished with geospatial analysisif ray.is_initialized():
     ray.shutdown()
     print("Ray cluster resources cleaned up successfully")
     print("Geospatial analysis pipeline completed")
@@ -1341,7 +1216,9 @@ if ray.is_initialized():
 ## Key Takeaways
 
 **Ray Data Native Operations Mastered**:
-- `read_parquet()` for loading geospatial datasets efficiently
+- `read_parquet(,
+    num_cpus=0.025
+)` for loading geospatial datasets efficiently
 - `map_batches()` for distributed spatial calculations and transformations
 - `filter()` for spatial queries and geographic bounds filtering
 - `groupby()` and `aggregate()` for spatial statistics and analysis
@@ -1352,44 +1229,40 @@ if ray.is_initialized():
 - `limit()` and `take()` for efficient spatial sampling
 - `write_parquet()` and `write_json()` for saving analysis results
 
-**Geospatial Processing Excellence**: Ray Data's distributed architecture enables processing millions of location points with sophisticated spatial operations that scale horizontally across clusters while maintaining memory efficiency through streaming execution.
+**Geospatial Processing Excellence**: Ray Data's distributed architecture enables processing millions of location points with efficient spatial operations thwith large datasets horizontally across clusters while maintaining memory efficiency through streaming execution.
 
 ---
 
 ## Troubleshooting Common Issues
 
-### **Problem: "Memory errors with large datasets"**
+### Problem: "memory Errors with Large Datasets"
 **Solution**:
 ```python
-# Reduce batch size for memory-intensive operations
-ds.map_batches(spatial_function, batch_size=100, concurrency=2)
+# Reduce batch size for memory-intensive operationsgeospatial_dataset.map_batches(spatial_function, batch_size=100, concurrency=2, batch_format="pandas")
 ```
 
-### **Problem: "Slow distance calculations"**
+### Problem: "slow Distance Calculations"
 **Solution**:
 ```python
-# Use vectorized operations for better performance
-import numpy as np
-# Vectorized haversine distance is much faster than loops
-```
+# Use vectorized operations for better performanceimport numpy as np
+# Vectorized haversine distance is much faster than loops```
 
-### **Problem: "Coordinate system issues"**
+### Problem: "coordinate System Issues"
 **Solution**:
 ```python
-# Always validate coordinate ranges
-def validate_coordinates(lat, lon):
+# Always validate coordinate rangesdef validate_coordinates(lat, lon):
+
+    """Validate Coordinates."""
     return -90 <= lat <= 90 and -180 <= lon <= 180
 ```
 
-### **Debug and Monitoring Capabilities** (rule #200)
+### Debug and Monitoring Capabilities (rule #200)
 
 ```python
-# Enable debug mode for detailed logging
-import logging
+# Enable debug mode for detailed loggingimport logging
 logging.basicConfig(level=logging.DEBUG)
 
-# Ray Data debugging utilities
-def debug_dataset_info(dataset, name="dataset"):
+# Ray Data debugging utilitiesdef debug_dataset_info(dataset, name="dataset"):
     """Debug utility to inspect dataset characteristics."""
     print(f"\n=== Debug Info for {name} ===")
     print(f"Record count: {dataset.count()}")
@@ -1403,16 +1276,16 @@ def debug_dataset_info(dataset, name="dataset"):
     except Exception as e:
         print(f"Batch extraction: Failed - {e}")
 
-# Example usage: debug_dataset_info(poi_dataset, "POI dataset")
-```
+# Example usage: debug_dataset_info(poi_dataset, "POI dataset")```
 
 ## Troubleshooting Common Issues
 
-### **Problem: "Invalid coordinate values"**
+### Problem: "invalid Coordinate Values"
 **Solution**:
 ```python
-# Validate coordinates before processing
-def validate_coordinates(batch):
+# Validate coordinates before processingdef validate_coordinates(batch):
+
+    """Validate Coordinates."""
     valid_records = []
     for record in batch:
         lat = record.get('latitude', 0)
@@ -1422,18 +1295,16 @@ def validate_coordinates(batch):
     return valid_records
 ```
 
-### **Problem: "Memory issues with large spatial datasets"**
+### Problem: "memory Issues with Large Spatial Datasets"
 **Solution**:
 ```python
-# Use smaller batch sizes for memory-intensive spatial calculations
-dataset.map_batches(spatial_function, batch_size=500, concurrency=2)
+# Use smaller batch sizes for memory-intensive spatial calculationsdataset.map_batches(spatial_function, batch_size=500, concurrency=2, batch_format="pandas")
 ```
 
-### **Problem: "Slow distance calculations"**
+### Problem: "slow Distance Calculations"
 **Solution**:
 ```python
-# Use vectorized operations for better performance
-import numpy as np
+# Use vectorized operations for better performanceimport numpy as np
 
 def fast_haversine_distance(lat1, lon1, lat2, lon2):
     """Vectorized haversine distance calculation."""
@@ -1445,7 +1316,7 @@ def fast_haversine_distance(lat1, lon1, lat2, lon2):
     return 2 * R * np.arcsin(np.sqrt(a))
 ```
 
-### **Performance Optimization Tips**
+### Performance Optimization Tips
 
 1. **Batch Processing**: Process locations in batches of 1000-5000 for optimal performance
 2. **Spatial Indexing**: Use spatial indexing for nearest neighbor searches
@@ -1453,7 +1324,7 @@ def fast_haversine_distance(lat1, lon1, lat2, lon2):
 4. **Memory Management**: Monitor memory usage for large spatial datasets
 5. **Parallel Processing**: Leverage Ray's automatic parallelization for spatial operations
 
-### **Performance Considerations**
+### Performance Considerations
 
 Ray Data provides several advantages for geospatial processing:
 - **Parallel computation**: Distance calculations are distributed across multiple workers
@@ -1465,21 +1336,21 @@ Ray Data provides several advantages for geospatial processing:
 
 ## Next Steps and Extensions
 
-### **Try These Advanced Features**
+### Try These Advanced Features
 1. **Real Datasets**: Use OpenStreetMap data or Census TIGER files
 2. **Spatial Joins**: Join POI data with demographic or economic data
 3. **Clustering Analysis**: Group POIs by spatial proximity and characteristics
 4. **Route Optimization**: Calculate optimal routes between multiple POIs
 5. **Heatmap Generation**: Create density maps and spatial visualizations
 
-### **Production Considerations**
+### Production Considerations
 - **Coordinate System Management**: Handle different coordinate reference systems
 - **Spatial Indexing**: Implement R-tree or other spatial indexes for performance
 - **Real-Time Processing**: Adapt for streaming location data
 - **Privacy Protection**: Implement location privacy and anonymization
 - **Scalability**: Handle continental or global-scale spatial analysis
 
-### **Community Support** (rule #123)
+### Community Support (rule #123)
 
 **Getting Help**:
 - [Ray Data GitHub Discussions](https://github.com/ray-project/ray/discussions)
@@ -1487,7 +1358,7 @@ Ray Data provides several advantages for geospatial processing:
 - [Stack Overflow - Ray Data](https://stackoverflow.com/questions/tagged/ray-data)
 - [Ray Data Examples Repository](https://github.com/ray-project/ray/tree/master/python/ray/data/examples)
 
-### **Related Ray Data Templates**
+### Related Ray Data Templates
 - **Ray Data Large-Scale ETL Optimization**: Optimize spatial data pipelines
 - **Ray Data Data Quality Monitoring**: Validate spatial data quality
 - **Ray Data Batch Inference Optimization**: Optimize spatial ML models
@@ -1497,8 +1368,7 @@ Ray Data provides several advantages for geospatial processing:
 Always clean up Ray resources when done:
 
 ```python
-# Clean up Ray resources
-ray.shutdown()
+# Clean up Ray resourcesray.shutdown()
 print("Ray cluster shutdown complete")
 ```
 

@@ -1,10 +1,10 @@
-# ML feature engineering with Ray Data
+# ML Feature Engineering with Ray Data
 
-**Time to complete**: 35 min | **Difficulty**: Intermediate | **Prerequisites**: ML experience, understanding of data preprocessing
+**⏱️ Time to complete**: 35 min | **Difficulty**: Intermediate | **Prerequisites**: ML experience, understanding of data preprocessing
 
 ## What You'll Build
 
-Create an automated feature engineering pipeline that transforms raw data into ML-ready features at scale. Learn the techniques that separate good data scientists from great ones and how to apply them to massive datasets using Ray Data's distributed processing.
+Build an automated feature engineering pipeline that transforms raw data into ML-ready features. Learn techniques for feature engineering and how to apply them to large datasets using Ray Data's distributed processing.
 
 ## Table of Contents
 
@@ -13,25 +13,25 @@ Create an automated feature engineering pipeline that transforms raw data into M
 3. [Feature Selection](#step-3-intelligent-feature-selection) (10 min)
 4. [Pipeline Optimization](#step-4-performance-optimization) (5 min)
 
-## Learning Objectives
+## Learning objectives
 
-**Why feature engineering matters**: Quality features determine ML model performance more than algorithm selection, making feature engineering the foundation of successful ML systems. Understanding how to create and select effective features separates good data scientists from exceptional ones.
+**Why feature engineering matters**: Quality features affect ML model performance, making feature engineering important for ML systems. Understanding how to create and select effective features supports data science work.
 
-**Ray Data's preprocessing capabilities**: Scale complex feature transformations across terabyte datasets with automatic optimization and distributed processing. You'll learn how to leverage Ray Data's capabilities to handle enterprise-scale feature engineering workflows.
+**Ray Data's preprocessing capabilities**: Scale feature transformations across large datasets with distributed processing. You'll learn how to use Ray Data's capabilities to handle feature engineering workflows.
 
-**Production ML patterns**: Feature stores, versioning, and automated pipelines used by Netflix, Spotify, and LinkedIn for recommendation systems demonstrate the importance of scalable feature engineering infrastructure.
+**Production ML patterns**: Feature stores, versioning, and automated pipelines used by technology companies for recommendation systems show the importance of feature engineering infrastructure.
 
-**Advanced transformation techniques**: Master time-based features, categorical encoding, and automated feature selection at enterprise scale. These techniques enable sophisticated ML applications across industries.
+**Transformation techniques**: Time-based features, categorical encoding, and automated feature selection techniques. These techniques support ML applications across industries.
 
-**MLOps integration strategies**: Production feature pipelines with monitoring, validation, and continuous deployment ensure reliable ML operations at scale.
+**MLOps integration strategies**: Production feature pipelines with monitoring, validation, and deployment support ML operations.
 
 ## Overview
 
-**Challenge**: Feature engineering is the most time-consuming part of ML projects, with data scientists spending 60-80% of their time creating, testing, and selecting features manually. Traditional approaches don't scale to enterprise datasets and lack automated optimization.
+**Challenge**: Feature engineering requires significant time in ML projects, with data scientists creating, testing, and selecting features manually. Traditional approaches may not scale to large datasets and require manual optimization.
 
 **Solution**: Ray Data automates and distributes feature engineering, letting you focus on the creative aspects while handling the computational heavy lifting. Distributed processing enables feature creation across terabyte datasets that would overwhelm single machines.
 
-**Impact**: Leading companies leverage automated feature engineering for competitive advantage:
+**Impact**: Leading companies leverage automated feature engineering for business value:
 - **E-commerce**: Netflix uses thousands of features for recommendations, created from viewing history and user behavior patterns
 - **Fraud Detection**: Banks engineer hundreds of features from transaction patterns to catch fraud in real-time
 - **Autonomous Vehicles**: Tesla creates features from sensor data, camera images, and GPS coordinates for safety systems
@@ -47,23 +47,21 @@ Before starting, ensure you have:
 - [ ] Familiarity with pandas and data manipulation
 - [ ] Knowledge of feature types (numerical, categorical, text)
 
-## Quick Start (3 minutes)
+## Quick start (3 minutes)
 
-Want to see automated feature engineering immediately?
+This section demonstrates the concepts using Ray Data:
 
 ```python
-import ray
-import pandas as pd
-import time
 
-# Load real Titanic dataset for feature engineering demonstration
-print("Loading Titanic dataset for feature engineering...")
+import pandas as pd
+import ray
+
+# Load real Titanic dataset for feature engineering demonstrationprint("Loading Titanic dataset for feature engineering...")
 start_time = time.time()
 
-# Load Titanic dataset from Ray benchmark bucket
-titanic_data = ray.data.read_csv(
+# Load Titanic dataset from Ray benchmark buckettitanic_data = ray.data.read_csv(
     "s3://ray-benchmark-data/ml-datasets/titanic.csv"
-)
+, num_cpus=0.05, num_cpus=0.05)
 
 load_time = time.time() - start_time
 
@@ -71,28 +69,25 @@ print(f"Loaded Titanic dataset in {load_time:.2f} seconds")
 print(f"Dataset size: {titanic_data.count():,} passengers")
 print(f"Schema: {titanic_data.schema()}")
 
-# Show sample data to understand the structure
-print("\nSample passenger data:")
+# Show sample data to understand the structureprint("\nSample passenger data:")
 samples = titanic_data.take(3)
 for i, sample in enumerate(samples):
     print(f"  {i+1}. Passenger {sample.get('PassengerId', 'N/A')}: Age {sample.get('Age', 'N/A')}, "
           f"Class {sample.get('Pclass', 'N/A')}, Survived: {sample.get('Survived', 'N/A')}")
 
-# Use this real dataset for feature engineering demonstrations
-ds = titanic_data
+# Use this real dataset for feature engineering demonstrationsds = titanic_data
 ```
 
-## Why Feature Engineering is the Secret to ML Success
+## Why Feature Engineering Is the Secret to ML Success
 
 **The 80/20 Rule**: 80% of ML model performance comes from feature quality, only 20% from algorithm choice.
 
-### **Titanic Dataset Exploration and Feature Insights**
+### Titanic Dataset Exploration and Feature Insights
 
-Let's explore the Titanic dataset to understand feature relationships and engineering opportunities:
+Explore the Titanic dataset to understand feature relationships and engineering opportunities:
 
 ```python
-# Create comprehensive Titanic dataset visualization
-import matplotlib.pyplot as plt
+# Create comprehensive Titanic dataset visualizationimport matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
 
@@ -100,7 +95,7 @@ def create_titanic_feature_analysis():
     """Analyze Titanic dataset features for engineering insights."""
     
     # Convert Ray dataset to pandas for visualization
-    titanic_df = ds.to_pandas()
+    titanic_df = dataset.to_pandas()
     
     # Create comprehensive analysis dashboard
     fig, axes = plt.subplots(2, 3, figsize=(18, 12))
@@ -141,7 +136,7 @@ def create_titanic_feature_analysis():
     
     ax3.boxplot([fare_died, fare_survived], labels=['Did not survive', 'Survived'])
     ax3.set_title('Fare Distribution by Survival', fontweight='bold')
-    ax3.set_ylabel('Fare (£)')
+    ax3.set_ylabel('Fare ()')
     ax3.set_yscale('log')  # Log scale due to fare range
     
     # 4. Family size feature engineering opportunity
@@ -186,7 +181,7 @@ def create_titanic_feature_analysis():
                            ha="center", va="center", color="black", fontweight='bold')
     
     plt.tight_layout()
-    plt.show()
+    print(plt.limit(10).to_pandas())
     
     print("Key Feature Engineering Insights:")
     print(f"- First class passengers had {survival_by_class[1]:.1%} survival rate vs {survival_by_class[3]:.1%} for third class")
@@ -196,19 +191,17 @@ def create_titanic_feature_analysis():
     
     return titanic_df
 
-# Create Titanic feature analysis
-titanic_analysis = create_titanic_feature_analysis()
+# Create Titanic feature analysistitanic_analysis = create_titanic_feature_analysis()
 ```
 
-This analysis reveals powerful feature engineering opportunities that we'll demonstrate throughout this template.
+This analysis reveals capable feature engineering opportunities that you'll demonstrate throughout this template.
 
 **Industry Success Stories**
 
-Leading companies demonstrate the transformative power of sophisticated feature engineering. Netflix discovered that "time since last similar movie watched" predicts viewing behavior more accurately than simple genre categorization. Uber's pricing algorithms rely heavily on "ratio of supply to demand in area" rather than absolute numbers, while Amazon's recommendation engine leverages "purchase frequency in category" to outperform individual purchase-based features.
+Leading companies demonstrate the significant power of efficient feature engineering. Netflix discovered that "time since last similar movie watched" predicts viewing behavior more accurately than simple genre categorization. Uber's pricing algorithms rely heavily on "ratio of supply to demand in area" rather than absolute numbers, while Amazon's recommendation engine leverages "purchase frequency in category" to outperform individual purchase-based features.
 
 ```python
-# Example: Creating family and social features from Titanic data
-def create_family_features(batch):
+# Example: Creating family and social features from Titanic datadef create_family_features(batch):
     """Engineer family and social features from Titanic dataset."""
     family_features = []
     for passenger in batch:
@@ -243,8 +236,7 @@ def create_family_features(batch):
     
     return family_features
 
-# Apply family feature engineering to Titanic data
-family_enhanced_data = ds.map_batches(
+# Apply family feature engineering to Titanic datafamily_enhanced_data = dataset.map_batches(
     create_family_features,
     batch_format="pandas"
 )
@@ -255,17 +247,18 @@ print(f"Enhanced dataset size: {family_enhanced_data.count():,} passengers")
 
 **The Feature Engineering Challenge at Scale**
 
-Modern ML systems face unprecedented challenges in feature engineering. Scale becomes critical when datasets contain billions of rows and thousands of potential features, while complexity grows exponentially as interaction features create vast feature spaces. Performance bottlenecks often emerge in the feature engineering stage rather than model training, and poor feature quality consistently leads to poor models regardless of algorithm sophistication.
+Modern ML systems face large challenges in feature engineering. Scale becomes critical when datasets contain billions of rows and thousands of potential features, while complexity grows exponentially as interaction features create vast feature spaces. Performance bottlenecks often emerge in the feature engineering stage rather than model training, and poor feature quality consistently leads to poor models regardless of algorithm sophistication.
 
 Automation becomes essential because manual feature engineering cannot scale to enterprise data volumes. E-commerce platforms must create 500+ features from customer behavior, product catalogs, and transaction histories. Financial services require 1000+ risk indicators from market data, credit histories, and economic factors. Healthcare organizations transform patient records, lab results, and imaging data into predictive features, while manufacturing companies convert sensor data, maintenance logs, and production metrics into quality predictors.
 
 ```python
-# Example: Automated feature selection at scale
-def automated_feature_selection(dataset, target_column, max_features=100):
+# Example: Automated feature selection with large datasetsdef automated_feature_selection(dataset, target_column, max_features=100):
     """Automatically select the most predictive features."""
     
     # Calculate feature importance scores
     def calculate_feature_importance(batch):
+
+    """Calculate Feature Importance."""
         # Simplified correlation-based feature scoring
         correlations = []
         for column in batch.columns:
@@ -283,11 +276,10 @@ def automated_feature_selection(dataset, target_column, max_features=100):
     print(f"Automated feature selection identified top {max_features} features")
     return feature_scores
 
-# Demonstrate automated feature selection
-selected_features = automated_feature_selection(enhanced_data, 'target_variable')
+# Demonstrate automated feature selectionselected_features = automated_feature_selection(enhanced_data, 'target_variable')
 ```
 
-### **Ray Data's Feature Engineering Advantages**
+### Ray Data's Feature Engineering Advantages
 
 Ray Data transforms feature engineering by enabling:
 
@@ -299,7 +291,7 @@ Ray Data transforms feature engineering by enabling:
 | **Single-Machine GPU** | Multi-GPU feature acceleration | 5-faster transformations |
 | **Pipeline Complexity** | Native distributed operations | 80% less infrastructure code |
 
-### **The Complete Feature Engineering Lifecycle**
+### The Complete Feature Engineering Lifecycle
 
 This template guides you through the entire feature engineering process:
 
@@ -328,7 +320,7 @@ This template guides you through the entire feature engineering process:
 - **Wrapper Methods**: Forward/backward selection with cross-validation
 - **Embedded Methods**: L1/L2 regularization and feature ranking
 
-### **Business Value of Systematic Feature Engineering**
+### Business Value of Systematic Feature Engineering
 
 Organizations implementing systematic feature engineering see:
 
@@ -340,7 +332,7 @@ Organizations implementing systematic feature engineering see:
 | **Feature Pipeline Reliability** | 60% success rate | 95% success rate | improvement |
 | **Time to Production** | 6+ months | 2 months | faster deployment |
 
-## Learning Objectives
+## Learning objectives
 
 By the end of this template, you'll understand:
 - How to build scalable feature engineering pipelines
@@ -351,7 +343,7 @@ By the end of this template, you'll understand:
 
 ## Use Case: Customer Churn Prediction
 
-We'll build a feature engineering pipeline for:
+you'll build a feature engineering pipeline for:
 - **Customer Demographics**: Age, location, income, family size
 - **Behavioral Features**: Purchase history, website activity, support interactions
 - **Temporal Features**: Seasonality, trends, recency, frequency
@@ -360,8 +352,8 @@ We'll build a feature engineering pipeline for:
 ## Architecture
 
 ```
-Raw Data → Ray Data → Feature Engineering → Feature Selection → ML Pipeline → Model Training
-    ↓         ↓           ↓                ↓                ↓           ↓
+Raw Data  Ray Data  Feature Engineering  Feature Selection  ML Pipeline  Model Training
+                                                                   
   Customer   Parallel    Categorical      Statistical      Training    Evaluation
   Transaction Processing  Numerical        ML-based         Validation  Deployment
   Behavioral GPU Workers  Temporal        Domain Knowledge  Testing     Monitoring
@@ -370,25 +362,25 @@ Raw Data → Ray Data → Feature Engineering → Feature Selection → ML Pipel
 
 ## Key Components
 
-### 1. **Data Loading and Preprocessing**
+### 1. Data Loading and Preprocessing
 - Multiple data source integration
 - Data cleaning and validation
 - Schema management and type conversion
 - Missing value handling strategies
 
-### 2. **Feature Engineering**
+### 2. Feature Engineering
 - Categorical encoding and embedding
 - Numerical scaling and transformation
 - Temporal feature extraction
 - Cross-feature interactions
 
-### 3. **Feature Selection**
+### 3. Feature Selection
 - Statistical feature selection
 - ML-based feature importance
 - Domain knowledge integration
 - Automated feature ranking
 
-### 4. **Feature Pipeline Management**
+### 4. Feature Pipeline Management
 - Feature versioning and tracking
 - Pipeline optimization and caching
 - Feature store integration
@@ -413,7 +405,7 @@ pip install matplotlib seaborn plotly shap yellowbrick
 
 ## Quick Start
 
-### 1. **Load Real ML Datasets**
+### 1. Load Real ML Datasets
 
 ```python
 import ray
@@ -421,39 +413,35 @@ from ray.data import read_parquet, read_csv, from_huggingface
 import pandas as pd
 import numpy as np
 
-# Ray cluster is already running on Anyscale
-print(f'Ray cluster resources: {ray.cluster_resources()}')
+# Ray cluster is already running on Anyscaleprint(f'Ray cluster resources: {ray.cluster_resources()}')
 
-# Load real Titanic dataset for ML feature engineering
-titanic_data = ray.data.read_csv(
+# Load real Titanic dataset for ML feature engineeringtitanic_data = ray.data.read_csv(
     "s3://ray-benchmark-data/ml-datasets/titanic.csv"
+,
+    num_cpus=0.05
 )
 
 print(f"Loaded real Titanic dataset: {titanic_data.count()} records")
 print(f"Schema: {titanic_data.schema()}")
 print("Real Titanic dataset ready for feature engineering")
 
-# Display dataset structure
-print("Titanic Dataset Overview:")
+# Display dataset structureprint("Titanic Dataset Overview:")
 print(f"  Total records: {titanic_data.count():,}")
 print("  Sample records:")
-titanic_data.show(3)
+print(titanic_data.limit(3).to_pandas())
 ```
 
-### 2. **Categorical Feature Engineering with Ray Data Native Operations**
+### 2. Categorical Feature Engineering with Ray Data Native Operations
 
 ```python
-# BEST PRACTICE: Use Ray Data native operations for feature engineering
-from ray.data.expressions import col, lit
+# Best PRACTICE: Use Ray Data native operations for feature engineeringfrom ray.data.expressions import col, lit
 
-# Use add_column for simple feature engineering
-family_enhanced_data = ds.add_column(
+# Use add_column for simple feature engineeringfamily_enhanced_data = dataset.add_column(
     "family_size", 
     col("SibSp") + col("Parch") + lit(1)
 )
 
-# For boolean to int conversion, use map_batches for reliability
-def add_is_alone_feature(batch):
+# For boolean to int conversion, use map_batches for reliabilitydef add_is_alone_feature(batch):
     """Add is_alone feature using simple logic."""
     enhanced_records = []
     for record in batch:
@@ -468,10 +456,9 @@ def add_is_alone_feature(batch):
 family_enhanced_data = family_enhanced_data.map_batches(
     add_is_alone_feature,
     batch_size=1000
-)
+, batch_format="pandas")
 
-# For more complex categorical encoding, use optimized map_batches
-def engineer_categorical_features(batch):
+# For more complex categorical encoding, use optimized map_batchesdef engineer_categorical_features(batch):
     """Create categorical features with minimal pandas usage."""
     # Avoid full DataFrame conversion - work with records directly
     enhanced_records = []
@@ -500,16 +487,15 @@ def engineer_categorical_features(batch):
     
     return enhanced_records
 
-# Apply categorical feature engineering with optimized processing
-categorical_features = family_enhanced_data.map_batches(
+# Apply categorical feature engineering with optimized processingcategorical_features = family_enhanced_data.map_batches(
     engineer_categorical_features,
     batch_size=2000,  # Larger batch size for efficiency
     concurrency=4     # Parallel processing
-)
+, batch_format="pandas")
 
 print("Categorical feature engineering completed")
 print("Sample engineered features:")
-categorical_features.show(2)
+print(categorical_features.limit(2).to_pandas())
         
         # Convert batch to DataFrame
         df = pd.DataFrame(batch)
@@ -547,15 +533,14 @@ categorical_features.show(2)
         
         return {"categorical_features": engineered_features}
 
-# Apply categorical feature engineering  
-categorical_features = family_enhanced_data.map_batches(
-    CategoricalFeatureEngineer(),
+# Apply categorical feature engineering  categorical_features = family_enhanced_data.map_batches(
+    CategoricalFeatureEngineer(, batch_format="pandas"),
     batch_size=1000,
     concurrency=4
 )
 ```
 
-### 3. **Numerical Feature Engineering**
+### 3. Numerical Feature Engineering
 
 ```python
 from sklearn.preprocessing import StandardScaler, RobustScaler
@@ -565,6 +550,10 @@ class NumericalFeatureEngineer:
     """Engineer numerical features using various transformation strategies."""
     
     def __init__(self):
+
+    """  Init  ."""
+
+    """  Init  ."""
         self.scalers = {}
         self.feature_selectors = {}
     
@@ -620,15 +609,14 @@ class NumericalFeatureEngineer:
         
         return {"numerical_features": engineered_features}
 
-# Apply numerical feature engineering
-numerical_features = categorical_features.map_batches(
-    NumericalFeatureEngineer(),
+# Apply numerical feature engineeringnumerical_features = categorical_features.map_batches(
+    NumericalFeatureEngineer(, batch_format="pandas"),
     batch_size=1000,
     concurrency=4
 )
 ```
 
-### 4. **Temporal Feature Engineering**
+### 4. Temporal Feature Engineering
 
 ```python
 from datetime import datetime, timedelta
@@ -721,15 +709,14 @@ class TemporalFeatureEngineer:
         
         return {"temporal_features": engineered_features}
 
-# Apply temporal feature engineering
-temporal_features = numerical_features.map_batches(
-    TemporalFeatureEngineer(),
+# Apply temporal feature engineeringtemporal_features = numerical_features.map_batches(
+    TemporalFeatureEngineer(, batch_format="pandas"),
     batch_size=1000,
     concurrency=4
 )
 ```
 
-### 5. **Feature Selection and Ranking**
+### 5. Feature Selection and Ranking
 
 ```python
 from sklearn.feature_selection import SelectKBest, f_classif, mutual_info_classif
@@ -740,6 +727,8 @@ class FeatureSelector:
     """Select and rank features using multiple selection strategies."""
     
     def __init__(self, target_column="churn", n_features=50):
+
+    """  Init  ."""
         self.target_column = target_column
         self.n_features = n_features
         self.feature_importance = {}
@@ -823,9 +812,8 @@ class FeatureSelector:
         except Exception as e:
             return {"feature_selection": {"error": str(e)}}
 
-# Apply feature selection
-feature_selection = temporal_features.map_batches(
-    FeatureSelector(target_column="churn", n_features=100),
+# Apply feature selectionfeature_selection = temporal_features.map_batches(
+    FeatureSelector(target_column="churn", n_features=100, batch_format="pandas"),
     batch_size=500,
     concurrency=2
 )
@@ -833,19 +821,19 @@ feature_selection = temporal_features.map_batches(
 
 ## Advanced Features
 
-### **Automated Feature Engineering**
+### Automated Feature Engineering
 - Genetic programming for feature creation
 - Automated feature interaction discovery
 - Domain-specific feature templates
 - Feature engineering optimization
 
-### **GPU Acceleration**
+### GPU Acceleration
 - CUDA-accelerated feature transformations
 - Parallel feature computation
 - Memory-efficient feature processing
 - GPU-optimized algorithms
 
-### **Feature Store Integration**
+### Feature Store Integration
 - Feature versioning and tracking
 - Feature lineage and metadata
 - Real-time feature serving
@@ -853,19 +841,19 @@ feature_selection = temporal_features.map_batches(
 
 ## Production Considerations
 
-### **Feature Pipeline Management**
+### Feature Pipeline Management
 - Feature versioning and deployment
 - Pipeline monitoring and alerting
 - Feature drift detection
 - Automated pipeline updates
 
-### **Performance Optimization**
+### Performance Optimization
 - Efficient feature computation
 - Caching and memoization
 - Parallel processing strategies
 - Resource optimization
 
-### **Quality Assurance**
+### Quality Assurance
 - Feature validation and testing
 - Feature performance monitoring
 - Automated feature quality checks
@@ -873,21 +861,21 @@ feature_selection = temporal_features.map_batches(
 
 ## Example Workflows
 
-### **Customer Churn Prediction**
+### Customer Churn Prediction
 1. Load customer and transaction data
 2. Engineer demographic and behavioral features
 3. Create temporal and interaction features
 4. Select most predictive features
 5. Train ML models with engineered features
 
-### **Credit Risk Assessment**
+### Credit Risk Assessment
 1. Process financial and personal data
 2. Engineer risk-related features
 3. Create interaction and ratio features
 4. Select risk indicators
 5. Build risk scoring models
 
-### **Recommendation Systems**
+### Recommendation Systems
 1. Load user and item data
 2. Engineer user preference features
 3. Create item similarity features
@@ -896,92 +884,87 @@ feature_selection = temporal_features.map_batches(
 
 ## Performance Benchmarks
 
-### **Feature Engineering Performance**
+### Feature Engineering Performance
 - **Categorical Encoding**: 50,000+ records/second
 - **Numerical Transformation**: 100,000+ records/second
 - **Temporal Feature Creation**: 30,000+ records/second
 - **Feature Selection**: 20,000+ records/second
 
-### **Scalability**
+### Scalability
 - **2 Nodes**: 1.speedup
 - **4 Nodes**: 3.speedup
 - **8 Nodes**: 5.speedup
 
-### **Memory Efficiency**
+### Memory Efficiency
 - **Feature Engineering**: 3-6GB per worker
 - **Feature Selection**: 2-4GB per worker
 - **GPU Processing**: 4-8GB per worker
 
 ## Troubleshooting
 
-### **Common Issues**
+### Common Issues
 1. **Memory Issues**: Optimize feature engineering algorithms and batch sizes
 2. **Performance Issues**: Use GPU acceleration and parallel processing
-3. **Feature Quality**: Implement robust validation and testing
+3. **Feature Quality**: Implement reliable validation and testing
 4. **Scalability**: Optimize data partitioning and resource allocation
 
-### **Debug Mode**
+### Debug Mode
 Enable detailed logging and feature engineering debugging:
 ```python
 import logging
 logging.basicConfig(level=logging.DEBUG)
 
-# Enable scikit-learn debugging
-import warnings
+# Enable scikit-learn debuggingimport warnings
 warnings.filterwarnings("ignore")
 ```
 
 ## Performance Summary
 
 ```python
-# Display final performance metrics
-print("\n Feature Engineering Performance Summary:")
+# Display final performance metricsprint("\n Feature Engineering Performance Summary:")
 print(f"  - Total features created: {len([col for col in final_features.columns if col.startswith('feature_')])}")
 print(f"  - Dataset size: {len(final_features):,} samples")
 print(f"  - Processing time: {time.time() - overall_start:.2f} seconds")
 print(f"  - Features per second: {len(final_features) / (time.time() - overall_start):.0f}")
 
-# Clean up Ray resources
-ray.shutdown()
-print(" Ray cluster shut down successfully!")
+# Clean up Ray resourcesray.shutdown()
+print(" Ray cluster shut down successfully")
 ```
 
 ---
 
 ## Troubleshooting Common Issues
 
-### **Problem: "Memory errors during feature creation"**
+### Problem: "memory Errors During Feature Creation"
 **Solution**:
 ```python
-# Reduce batch size for memory-intensive feature engineering
-ds.map_batches(feature_function, batch_size=1000, concurrency=2)
+# Reduce batch size for memory-intensive feature engineeringdataset.map_batches(feature_function, batch_size=1000, concurrency=2, batch_format="pandas")
 ```
 
-### **Problem: "Features have NaN or infinite values"**
+### Problem: "features Have Nan or Infinite Values"
 **Solution**:
 ```python
-# Add validation and cleaning for feature values
-def clean_features(features):
+# Add validation and cleaning for feature valuesdef clean_features(features):
+
+    """Clean Features."""
     return np.nan_to_num(features, nan=0.0, posinf=1e6, neginf=-1e6)
 ```
 
-### **Problem: "Feature selection takes too long"**
+### Problem: "feature Selection Takes Too Long"
 **Solution**:
 ```python
-# Use correlation-based pre-filtering before statistical tests
-high_corr_features = df.corr().abs().sum().nlargest(100).index
+# Use correlation-based pre-filtering before statistical testshigh_corr_features = df.corr().abs().sum().nlargest(100).index
 ```
 
-### **Problem: "Categorical encoding creates too many features"**
+### Problem: "categorical Encoding Creates Too Many Features"
 **Solution**:
 ```python
-# Limit high-cardinality categorical features
-def limit_categories(series, max_categories=20):
+# Limit high-cardinality categorical featuresdef limit_categories(series, max_categories=20):
     top_categories = series.value_counts().head(max_categories).index
     return series.where(series.isin(top_categories), 'Other')
 ```
 
-### **Performance Optimization Tips**
+### Performance Optimization Tips
 
 1. **Feature Caching**: Cache expensive feature calculations for reuse
 2. **Parallel Processing**: Use Ray's parallelization for independent features
@@ -989,7 +972,7 @@ def limit_categories(series, max_categories=20):
 4. **Data Types**: Use appropriate data types to minimize memory usage
 5. **Feature Pruning**: Remove redundant features early in the pipeline
 
-### **Performance Considerations**
+### Performance Considerations
 
 Ray Data provides several advantages for feature engineering:
 - **Parallel computation**: Feature calculations are distributed across multiple workers
@@ -1001,14 +984,14 @@ Ray Data provides several advantages for feature engineering:
 
 ## Next Steps and Extensions
 
-### **Try These Advanced Features**
+### Try These Advanced Features
 1. **Automated Feature Discovery**: Implement genetic programming for feature creation
 2. **Deep Feature Learning**: Use autoencoders for feature extraction
 3. **Domain-Specific Features**: Create industry-specific feature transformations
 4. **Real-Time Features**: Adapt for streaming feature computation
 5. **Feature Store Integration**: Connect with MLflow or Feast feature stores
 
-### **Testing and Validation** (rule #219)
+### Testing and Validation (rule #219)
 
 ```python
 def validate_feature_quality(features_df):
@@ -1037,11 +1020,9 @@ def validate_feature_quality(features_df):
     
     return validation_results
 
-# Example usage after feature engineering
-# validation_results = validate_feature_quality(final_features)
-```
+# Example usage after feature engineering# Validation_results = validate_feature_quality(final_features)```
 
-### **Production Considerations**
+### Production Considerations
 - **Feature Versioning**: Track feature definitions and changes over time
 - **Data Drift Monitoring**: Monitor feature distributions for changes
 - **Feature Validation**: Implement comprehensive feature quality checks
@@ -1063,20 +1044,18 @@ def validate_feature_quality(features_df):
 ### Quick Feature Analysis
 
 ```python
-# Simple feature quality check
-def analyze_feature_quality(dataset):
+# Simple feature quality checkdef analyze_feature_quality(dataset):
     """Quick feature engineering validation."""
     sample_features = dataset.take(100)
     
     print("Feature Engineering Summary:")
     print(f"  Records processed: {dataset.count():,}")
     print(f"  Features per record: {len(sample_features[0]) if sample_features else 0}")
-    print(f"  Processing completed successfully!")
+    print(f"  Processing completed successfully")
     
     return dataset
 
-# Test the feature quality function
-sample_quality_check = analyze_feature_quality(categorical_features)
+# Test the feature quality functionsample_quality_check = analyze_feature_quality(categorical_features)
 ```
 
 ### Feature Engineering Validation
@@ -1084,8 +1063,7 @@ sample_quality_check = analyze_feature_quality(categorical_features)
 Use Ray Data native operations to validate your feature engineering results:
 
 ```python
-# Validate feature engineering results
-def validate_features(dataset):
+# Validate feature engineering resultsdef validate_features(dataset):
     """Simple feature validation using Ray Data operations."""
     sample_features = dataset.take(10)
     
@@ -1097,8 +1075,7 @@ def validate_features(dataset):
         return True
     return False
 
-# Validate our engineered features
-validation_success = validate_features(categorical_features)
+# Validate our engineered featuresvalidation_success = validate_features(categorical_features)
 ```
 
 ## Feature Engineering Performance
@@ -1115,8 +1092,7 @@ validation_success = validate_features(categorical_features)
 ### Simple Feature Visualization
 
 ```python
-# Create simple feature overview
-def create_feature_overview(dataset):
+# Create simple feature overviewdef create_feature_overview(dataset):
     """Simple feature engineering overview."""
     sample_features = dataset.take(5)
     
@@ -1125,12 +1101,66 @@ def create_feature_overview(dataset):
         print(f"Feature Engineering Results:")
         print(f"  Total features per record: {feature_count}")
         print(f"  Sample features: {list(sample_features[0].keys())[:10]}...")
-        print(f"  Processing completed successfully!")
+        print(f"  Processing completed successfully")
     
     return dataset
 
-# Generate feature overview
-feature_overview = create_feature_overview(categorical_features)
+# Generate feature overviewfeature_overview = create_feature_overview(categorical_features)
+```
+
+### Feature Engineering Analytics
+
+```python
+# Visualize feature engineering resultsimport matplotlib.pyplot as plt
+import numpy as np
+
+def visualize_feature_engineering():
+    """Create concise feature engineering analytics."""
+    fig, axes = plt.subplots(1, 3, figsize=(15, 4))
+    
+    # 1. Feature importance scores
+    features = ['Family_Size', 'Fare_pp', 'Title_Score', 'Age_Group', 'Deck', 'Embarked']
+    importance = [0.85, 0.72, 0.68, 0.55, 0.48, 0.35]
+    colors_imp = ['darkgreen' if i > 0.7 else 'green' if i > 0.5 else 'orange' for i in importance]
+    
+    bars = axes[0].barh(features, importance, color=colors_imp, alpha=0.7)
+    axes[0].set_title('Feature Importance Scores', fontweight='bold')
+    axes[0].set_xlabel('Importance Score')
+    axes[0].set_xlim(0, 1.0)
+    axes[0].axvline(x=0.5, color='gray', linestyle='--', alpha=0.3)
+    
+    for bar, imp in zip(bars, importance):
+        axes[0].text(imp + 0.02, bar.get_y() + bar.get_height()/2,
+                    f'{imp:.2f}', va='center', fontweight='bold')
+    
+    # 2. Feature type distribution
+    feature_types = ['Numerical', 'Categorical', 'Temporal', 'Interaction', 'Derived']
+    type_counts = [12, 15, 8, 22, 18]
+    colors_type = ['lightblue', 'lightgreen', 'lightyellow', 'lightcoral', 'plum']
+    
+    wedges, texts, autotexts = axes[1].pie(type_counts, labels=feature_types,
+                                           colors=colors_type, autopct='%1.0f%%',
+                                           startangle=90)
+    axes[1].set_title('Feature Type Distribution', fontweight='bold')
+    
+    # 3. Feature engineering pipeline
+    stages = ['Raw\nData', 'Basic\nFeatures', 'Derived\nFeatures', 'Selected\nFeatures', 'Final\nSet']
+    stage_counts = [12, 28, 75, 35, 25]
+    
+    axes[2].plot(stages, stage_counts, 'o-', linewidth=2, markersize=8, color='steelblue')
+    axes[2].fill_between(range(len(stages)), stage_counts, alpha=0.3)
+    axes[2].set_title('Feature Pipeline Progression', fontweight='bold')
+    axes[2].set_ylabel('Feature Count')
+    axes[2].grid(True, alpha=0.3)
+    
+    for i, (stage, cnt) in enumerate(zip(stages, stage_counts)):
+        axes[2].text(i, cnt + 2, str(cnt), ha='center', fontsize=9, fontweight='bold')
+    
+    plt.tight_layout()
+    plt.savefig('feature_engineering.png', dpi=150, bbox_inches='tight')
+    print("Feature engineering visualization saved")
+
+# Generate feature engineering analyticsvisualize_feature_engineering()
 ```
 
 ## Key Takeaways
@@ -1169,7 +1199,7 @@ feature_overview = create_feature_overview(categorical_features)
 
 ## Performance Optimization Guide
 
-### **Batch Size Optimization**
+### Batch Size Optimization
 
 | Feature Type | Recommended Batch Size | Memory Usage | Processing Speed |
 |--------------|------------------------|--------------|------------------|
@@ -1177,7 +1207,7 @@ feature_overview = create_feature_overview(categorical_features)
 | **Complex Features** | 1,000-2,000 records | Medium | Fast |
 | **ML Model Features** | 500-1,000 records | High | Moderate |
 
-### **Concurrency Guidelines**
+### Concurrency Guidelines
 
 | Dataset Size | Recommended Concurrency | Resource Type | Expected Performance |
 |--------------|------------------------|---------------|---------------------|
@@ -1185,11 +1215,10 @@ feature_overview = create_feature_overview(categorical_features)
 | **100K-1M records** | 4-8 workers | High-CPU instances | Efficient scaling |
 | **> 1M records** | 8-16 workers | Distributed cluster | Linear scaling |
 
-### **Memory Management Best Practices**
+### Memory Management Best Practices
 
 ```python
-# Memory-efficient feature engineering patterns
-def memory_efficient_features(batch):
+# Memory-efficient feature engineering patternsdef memory_efficient_features(batch):
     """Create features with minimal memory overhead."""
     # Process records directly without DataFrame conversion
     feature_records = []
@@ -1203,19 +1232,17 @@ def memory_efficient_features(batch):
         feature_records.append({**record, **features})
     return feature_records
 
-# Apply with optimal settings
-feature_dataset = dataset.map_batches(
+# Apply with optimal settingsfeature_dataset = dataset.map_batches(
     memory_efficient_features,
     batch_size=2000,  # Balanced for memory and performance
     concurrency=4     # Parallel processing
-)
+, batch_format="pandas")
 ```
 
 ## Cleanup
 
 ```python
-# Clean up Ray resources
-ray.shutdown()
+# Clean up Ray resourcesray.shutdown()
 print("Ray cluster shutdown complete")
 ```
 
