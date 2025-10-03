@@ -1,6 +1,11 @@
 """Visualization utilities for data quality monitoring."""
 
 import matplotlib.pyplot as plt
+import plotly.graph_objects as go
+import plotly.express as px
+from plotly.subplots import make_subplots
+import pandas as pd
+import numpy as np
 
 
 def create_quality_dashboard(missing_stats, email_validation):

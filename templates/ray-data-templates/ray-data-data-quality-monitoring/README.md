@@ -163,12 +163,23 @@ missing_analysis = check_missing_values(dataset)
 
 ```python
 # Create data quality dashboard using utility function
-from util.viz_utils import create_quality_dashboard
+from util.viz_utils import create_quality_dashboard, create_interactive_quality_dashboard
 
 # Generate quality dashboard
 fig = create_quality_dashboard(missing_analysis, email_validation)
 print("Quality dashboard created")
+
+# Create interactive plotly dashboard
+interactive_fig = create_interactive_quality_dashboard(quality_dataset)
+interactive_fig.write_html('interactive_quality_dashboard.html')
+print("Interactive quality dashboard saved to 'interactive_quality_dashboard.html'")
 ```
+
+**What the dashboard shows:**
+- **Missing data heatmap**: Visualize missing patterns across fields and records
+- **Quality scores**: Overall data quality across multiple dimensions
+- **Outlier detection**: Box plots showing data distribution and outliers
+- **Data freshness**: Timeline of record ingestion and processing
 
 ### Accuracy Validation
 
@@ -218,6 +229,140 @@ try:
     print(f"  Std Dev: {age_stats['std(age)']:.1f}")
 except Exception as e:
     print(f"Age statistics calculation: {e}")
+```
+
+### Anomaly Detection Using Statistical Methods
+
+```python
+def detect_statistical_anomalies(dataset):
+    """Detect statistical anomalies using Ray Data operations."""
+    
+    # Calculate statistical thresholds
+    sample_records = dataset.take(1000)
+    
+    if not sample_records:
+        return {}
+    
+    # Analyze numeric fields
+    numeric_fields = ['age', 'income', 'score']
+    anomaly_results = {}
+    
+    for field in numeric_fields:
+        values = [r.get(field) for r in sample_records if r.get(field) is not None]
+        
+        if values:
+            mean_val = np.mean(values)
+            std_val = np.std(values)
+            
+            # Calculate Z-scores for outlier detection
+            outliers = sum(1 for v in values if abs(v - mean_val) > 3 * std_val)
+            
+            anomaly_results[field] = {
+                'mean': mean_val,
+                'std': std_val,
+                'outliers': outliers,
+                'outlier_rate': (outliers / len(values) * 100) if values else 0
+            }
+    
+    return anomaly_results
+
+# Detect anomalies
+anomalies = detect_statistical_anomalies(quality_dataset)
+
+print("Statistical Anomaly Detection Results:")
+for field, stats in anomalies.items():
+    print(f"  {field}: {stats['outliers']} outliers ({stats['outlier_rate']:.2f}%)")
+```
+
+### Data Drift Detection Over Time
+
+```python
+def detect_data_drift(current_dataset, historical_stats):
+    """Detect data drift by comparing current vs historical distributions."""
+    
+    current_sample = current_dataset.take(1000)
+    
+    drift_results = {}
+    
+    # Compare distributions
+    for field in ['age', 'income']:
+        current_values = [r.get(field) for r in current_sample if r.get(field) is not None]
+        
+        if current_values:
+            current_mean = np.mean(current_values)
+            current_std = np.std(current_values)
+            
+            # Compare with historical baselines
+            historical_mean = historical_stats.get(f'{field}_mean', current_mean)
+            historical_std = historical_stats.get(f'{field}_std', current_std)
+            
+            mean_drift = abs(current_mean - historical_mean) / historical_mean * 100
+            std_drift = abs(current_std - historical_std) / historical_std * 100
+            
+            drift_status = "High" if mean_drift > 15 else "Medium" if mean_drift > 5 else "Low"
+            
+            drift_results[field] = {
+                'mean_drift_pct': mean_drift,
+                'std_drift_pct': std_drift,
+                'status': drift_status
+            }
+    
+    return drift_results
+
+# Example historical statistics (in production, load from storage)
+historical_stats = {
+    'age_mean': 45.0,
+    'age_std': 15.0,
+    'income_mean': 65000,
+    'income_std': 25000
+}
+
+# Detect drift
+drift_analysis = detect_data_drift(quality_dataset, historical_stats)
+
+print("Data Drift Analysis:")
+for field, drift in drift_analysis.items():
+    print(f"  {field}: {drift['mean_drift_pct']:.2f}% drift - Status: {drift['status']}")
+```
+
+### Business Rule Validation
+
+```python
+def validate_business_rules(dataset):
+    """Validate business logic rules using Ray Data filtering."""
+    from ray.data.expressions import col, lit
+    
+    total_records = dataset.count()
+    validation_results = {}
+    
+    # Rule 1: Age should be between 0 and 120
+    valid_age = dataset.filter(
+        (col("age") >= lit(0)) & (col("age") <= lit(120))
+    ).count()
+    validation_results['valid_age_range'] = {
+        'valid_count': valid_age,
+        'valid_rate': (valid_age / total_records * 100) if total_records > 0 else 0,
+        'rule': '0 <= age <= 120'
+    }
+    
+    # Rule 2: Income should be positive
+    valid_income = dataset.filter(
+        col("income") > lit(0)
+    ).count()
+    validation_results['valid_income'] = {
+        'valid_count': valid_income,
+        'valid_rate': (valid_income / total_records * 100) if total_records > 0 else 0,
+        'rule': 'income > 0'
+    }
+    
+    return validation_results
+
+# Run business rule validation
+business_validation = validate_business_rules(quality_dataset)
+
+print("Business Rule Validation Results:")
+for rule_name, result in business_validation.items():
+    print(f"  {rule_name}: {result['valid_rate']:.1f}% valid - {result['rule']}")
 ```
 
 #### Quality Statistics Summary

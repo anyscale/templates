@@ -160,3 +160,113 @@ def create_network_security_visualization():
     
     return fig
 
+
+def create_traffic_heatmap(log_df):
+    """Create hourly traffic heatmap visualization."""
+    import plotly.express as px
+    import pandas as pd
+    
+    # Create hourly heatmap
+    if 'timestamp' in log_df.columns:
+        log_df['timestamp'] = pd.to_datetime(log_df['timestamp'])
+        log_df['hour'] = log_df['timestamp'].dt.hour
+        log_df['day'] = log_df['timestamp'].dt.day_name()
+        
+        heatmap_data = log_df.groupby(['day', 'hour']).size().reset_index()
+        heatmap_pivot = heatmap_data.pivot(index='day', columns='hour', values=0)
+        
+        fig = px.imshow(heatmap_pivot,
+                       labels=dict(x="Hour of Day", y="Day of Week", color="Request Count"),
+                       title="Traffic Heatmap (Requests by Hour and Day)",
+                       color_continuous_scale='Blues')
+        
+        fig.update_layout(height=500)
+        return fig
+    return None
+
+
+def create_error_rate_timeline(log_df):
+    """Create error rate timeline visualization."""
+    import plotly.graph_objects as go
+    import pandas as pd
+    
+    if 'timestamp' in log_df.columns and 'level' in log_df.columns:
+        log_df['timestamp'] = pd.to_datetime(log_df['timestamp'])
+        
+        # Calculate hourly error rates
+        hourly_total = log_df.groupby(log_df['timestamp'].dt.hour).size()
+        hourly_errors = log_df[log_df['level'] == 'ERROR'].groupby(
+            log_df[log_df['level'] == 'ERROR']['timestamp'].dt.hour
+        ).size()
+        
+        error_rate = (hourly_errors / hourly_total * 100).fillna(0)
+        
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(
+            x=error_rate.index,
+            y=error_rate.values,
+            mode='lines+markers',
+            line=dict(color='red', width=2),
+            fill='tozeroy',
+            name='Error Rate'
+        ))
+        
+        fig.update_layout(
+            title='Hourly Error Rate Trends',
+            xaxis_title='Hour of Day',
+            yaxis_title='Error Rate (%)',
+            height=400
+        )
+        
+        return fig
+    return None
+
+
+def create_service_health_dashboard(log_df):
+    """Create service health monitoring dashboard."""
+    import plotly.graph_objects as go
+    from plotly.subplots import make_subplots
+    
+    fig = make_subplots(
+        rows=1, cols=3,
+        subplot_titles=('Service Availability', 'Response Time Percentiles', 'Error Distribution'),
+        specs=[[{"type": "indicator"}, {"type": "bar"}, {"type": "pie"}]]
+    )
+    
+    # Service availability
+    fig.add_trace(
+        go.Indicator(
+            mode="gauge+number",
+            value=99.7,
+            title={'text': "Availability %"},
+            gauge={'axis': {'range': [95, 100]},
+                  'bar': {'color': "green"},
+                  'steps': [
+                      {'range': [95, 97], 'color': "lightcoral"},
+                      {'range': [97, 99], 'color': "lightyellow"},
+                      {'range': [99, 100], 'color': "lightgreen"}]},
+        ),
+        row=1, col=1
+    )
+    
+    # Response time percentiles
+    percentiles = ['P50', 'P90', 'P95', 'P99']
+    times = [120, 450, 780, 1200]  # milliseconds
+    fig.add_trace(
+        go.Bar(x=percentiles, y=times, marker_color='skyblue'),
+        row=1, col=2
+    )
+    
+    # Error distribution
+    error_types = ['4xx Client', '5xx Server', 'Timeout', 'Other']
+    error_counts = [234, 89, 45, 32]
+    fig.add_trace(
+        go.Pie(labels=error_types, values=error_counts),
+        row=1, col=3
+    )
+    
+    fig.update_layout(height=500, showlegend=False,
+                     title_text="Service Health Monitoring")
+    
+    return fig
+
