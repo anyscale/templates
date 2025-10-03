@@ -1,17 +1,18 @@
 # Batch Inference Optimization with Ray Data
 
-**⏱️ Time to complete**: 40 min (across 2 parts)
+**⏱️ Time to complete**: 65 min (across 3 parts)
 
 Create an optimized ML batch inference pipeline that demonstrates the performance difference between naive and efficient approaches. Learn how Ray Data's actor-based patterns eliminate common bottlenecks in production ML inference.
 
 ## Template Parts
 
-This template is split into two parts for better learning progression:
+This template is split into three parts for comprehensive learning:
 
 | Part | Description | Time | File |
 |------|-------------|------|------|
 | **Part 1** | Inference Fundamentals | 20 min | [01-inference-fundamentals.md](01-inference-fundamentals.md) |
 | **Part 2** | Advanced Optimization | 20 min | [02-advanced-optimization.md](02-advanced-optimization.md) |
+| **Part 3** | Ray Data Architecture | 25 min | [03-ray-data-architecture.md](03-ray-data-architecture.md) |
 
 ## What You'll Learn
 
@@ -28,6 +29,14 @@ Master systematic optimization techniques for production deployment:
 - **Advanced Techniques**: Multi-model ensembles, systematic parameter tuning
 - **Performance Monitoring**: Use Ray Dashboard for optimization decisions
 - **Production Deployment**: Best practices for enterprise-scale inference
+
+### Part 3: Ray Data Architecture (NEW)
+Understand how Ray Data's architecture enables optimization:
+- **Streaming Execution**: How Ray Data processes unlimited datasets with constant memory
+- **Blocks and Memory Model**: Understanding object store, heap memory, and zero-copy
+- **Operators and Fusion**: How Ray Data combines operations for efficiency
+- **Resource Management**: Automatic backpressure and dynamic allocation
+- **Architecture-Informed Decisions**: Calculate optimal batch_size and concurrency from first principles
 
 ## Learning Objectives
 

@@ -500,3 +500,20 @@ if ray.is_initialized():
     print("Ray cluster shutdown complete")
 ```
 
+---
+
+## Next Steps
+
+You've learned advanced optimization techniques for batch inference. Continue to Part 3 to understand the Ray Data architecture that makes these optimizations possible.
+
+**[Continue to Part 3: Ray Data Architecture →](03-ray-data-architecture.md)**
+
+In Part 3, you'll learn:
+- How streaming execution enables unlimited dataset processing
+- How blocks and memory management affect your optimization choices
+- How operator fusion and backpressure work under the hood
+- How to calculate optimal parameters from architectural constraints
+
+Or **[return to the overview](README.md)** to see all available parts.
+
+---
