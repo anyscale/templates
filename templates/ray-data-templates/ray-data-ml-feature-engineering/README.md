@@ -1011,7 +1011,7 @@ Ray Data provides several advantages for feature engineering:
 4. **Real-Time Features**: Adapt for streaming feature computation
 5. **Feature Store Integration**: Connect with MLflow or Feast feature stores
 
-### Testing and Validation (rule #219)
+### Testing and Validation
 
 ```python
 def validate_feature_quality(features_df):

@@ -728,7 +728,7 @@ import plotly.express as px
 from plotly.subplots import make_subplots
 import mplfinance as mpf
 
-# Configure logging for monitoring and debugging (rule #221)logging.basicConfig(
+# Configure logging for monitoring and debugginglogging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s'
 )

@@ -431,7 +431,7 @@ def load_geospatial_data():
     print("Loading geospatial datasets...")
     
     # Create sample POI data for major US metro areas
-    # Use fixed seed for reproducible results (rule #502)
+    # Use fixed seed for reproducible results
     np.random.seed(42)
     
     metro_areas = {
@@ -1177,7 +1177,7 @@ To extend this example:
     return -90 <= lat <= 90 and -180 <= lon <= 180
 ```
 
-### Debug and Monitoring Capabilities (rule #200)
+### Debug and Monitoring Capabilities
 
 ```python
 # Enable debug mode for detailed loggingimport logging
@@ -1271,7 +1271,7 @@ Ray Data provides several advantages for geospatial processing:
 - **Privacy Protection**: Implement location privacy and anonymization
 - **Scalability**: Handle continental or global-scale spatial analysis
 
-### Community Support (rule #123)
+### Community Support
 
 **Getting Help**:
 - [Ray Data GitHub Discussions](https://github.com/ray-project/ray/discussions)
