@@ -239,6 +239,31 @@ Log Sources  Ray Data  Distributed Parsing  Native Aggregations  Analytics
   Sys Logs    Native Ops     Standardization     Distributed      Dashboards
 ```
 
+**Example: Complete log processing pipeline:**
+
+```python
+import ray
+
+# Step 1: Ingest logs from multiple sources
+web_logs = ray.data.read_text("s3://logs/apache/*.log", num_cpus=0.05)
+app_logs = ray.data.read_json("s3://logs/app/*.json", num_cpus=0.05)
+
+# Step 2: Parse and standardize
+parsed_web = web_logs.map_batches(parse_apache_logs, num_cpus=0.5, batch_size=1000)
+parsed_app = app_logs.map_batches(parse_json_logs, num_cpus=0.25, batch_size=2000)
+
+# Step 3: Extract security insights
+threats = parsed_web.filter(lambda x: x['status_code'] >= 400)
+security_metrics = threats.groupby('source_ip').count()
+
+# Step 4: Generate operational metrics
+error_rates = parsed_app.filter(lambda x: x['level'] == 'ERROR')
+hourly_errors = error_rates.groupby('hour').count()
+
+print(f"Processed {web_logs.count():,} web logs and {app_logs.count():,} app logs")
+print(f"Detected {threats.count():,} potential security events")
+```
+
 ## Key Components
 
 ### 1. Native Log Ingestion

@@ -1077,6 +1077,47 @@ production_features = validated_feature_pipeline(dataset)
 4. Generate interaction features
 5. Train recommendation models
 
+**Example: Churn prediction workflow with Ray Data:**
+
+```python
+# Complete workflow example
+import ray
+from ray.data.expressions import col, lit
+from ray.data.aggregate import Count, Mean
+
+# Step 1: Load customer data
+customers = ray.data.read_csv("s3://data/customers.csv", num_cpus=0.05)
+transactions = ray.data.read_csv("s3://data/transactions.csv", num_cpus=0.05)
+
+# Step 2: Engineer behavioral features
+customer_features = customers.add_column(
+    "account_age_days",
+    col("current_date") - col("signup_date")
+)
+
+# Step 3: Create aggregated transaction features
+transaction_stats = transactions.groupby("customer_id").aggregate(
+    Count(),
+    Mean("amount"),
+    Sum("amount")
+)
+
+# Step 4: Join customer and transaction features
+ml_ready = customer_features.join(
+    transaction_stats,
+    left_key="customer_id",
+    right_key="customer_id"
+)
+
+# Step 5: Select features and prepare for training
+final_features = ml_ready.select_columns([
+    "customer_id", "account_age_days", "count()", 
+    "mean(amount)", "sum(amount)", "churn_label"
+])
+
+print(f"ML-ready dataset: {final_features.count():,} customers with engineered features")
+```
+
 ## Performance Benchmarks
 
 ### Feature Engineering Performance
