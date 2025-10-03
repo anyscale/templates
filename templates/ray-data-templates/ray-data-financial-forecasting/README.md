@@ -39,11 +39,31 @@ Master time series forecasting and portfolio optimization:
 
 ## Overview
 
-**Challenge**: Financial institutions process large datasets with timing requirements - trading data arrives at high volumes, calculating indicators across portfolios requires distributed processing, and risk models need processing of market data from multiple sources.
+**Challenge**: Financial institutions face data-intensive analytics requirements:
+- **Volume**: Process 100M+ trades and quotes daily across global markets
+- **Velocity**: Calculate technical indicators in real-time for trading decisions
+- **Variety**: Integrate stock prices, news, earnings, and alternative data
+- **Complexity**: Portfolio optimization requires millions of simulations
 
-**Solution**: Ray Data enables distributed financial analytics - distributing calculations across clusters, processing market data using streaming operations, and scaling portfolio optimization.
+**Solution**: Ray Data enables production-scale financial analytics:
 
-**Impact**: Financial systems process market data using Ray Data's capabilities for algorithmic trading, risk management, and portfolio optimization.
+| Financial Task | Traditional Approach | Ray Data Approach | Trading Benefit |
+|----------------|---------------------|-------------------|----------------|
+| **Technical Indicators** | Sequential calculation per stock | Parallel `map_batches()` across portfolio | Real-time indicators for 1000s of symbols |
+| **Risk Calculations** | Single-machine VaR/CVaR | Distributed Monte Carlo with `groupby()` | Portfolio risk in seconds not hours |
+| **Backtesting** | Days to backtest strategies | Parallel strategy evaluation | Test 100s of strategies simultaneously |
+| **Data Integration** | Manual joins and merging | Native `join()` operations | Seamless multi-source integration |
+
+:::tip Ray Data for Quantitative Finance
+Financial analytics benefits from Ray Data's distributed processing:
+- **Technical indicators**: Calculate SMA, RSI, MACD across 10,000+ stocks in parallel
+- **Portfolio optimization**: Distribute mean-variance optimization calculations
+- **Risk modeling**: Parallel Monte Carlo simulations for VaR and stress testing
+- **Backtesting**: Test trading strategies across years of historical data
+- **Real-time processing**: Stream market data with `map_batches()` for live indicators
+:::
+
+**Impact**: Goldman Sachs processes billions of trades using distributed analytics. Renaissance Technologies runs quantitative models on decades of market data. Two Sigma analyzes alternative data sources using scalable data pipelines for alpha generation.
 
 ---
 
