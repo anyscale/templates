@@ -335,11 +335,17 @@ Raw log data is unstructured text that must be converted into structured fields 
 - **Error Handling**: Gracefully handle malformed or incomplete log entries
 - **Performance**: Efficient parsing directly impacts overall pipeline throughput
 
+:::tip Ray Data Advantage: Distributed Text Processing
+Traditional log parsers process files sequentially on a single machine. Ray Data's `map_batches()` parallelizes regex parsing across your entire cluster, enabling security teams to analyze 100M+ log entries in minutes instead of hours. For SOC teams, this means detecting threats in real-time rather than discovering breaches hours later.
+:::
+
 **Ray Data's Parsing Advantages:**
 - **Distributed Processing**: Parse millions of logs simultaneously across cluster nodes
 - **Memory Efficiency**: Process large log files without loading everything into memory
 - **Fault Tolerance**: Continue processing even if some log entries are malformed
 - **Native Operations**: `map_batches()` provides optimal performance for batch text processing
+- **Batch optimization**: Process 1000 logs per batch for maximum throughput
+- **Lazy evaluation**: Parsing happens during data scan, minimizing memory footprint
 
 ```python
 # Parse Apache access logs using Ray Data distributed processingdef parse_apache_access_logs(batch):
