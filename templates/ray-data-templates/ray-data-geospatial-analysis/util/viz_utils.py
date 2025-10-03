@@ -109,22 +109,100 @@ def create_3d_scatter(location_df):
 
 
 def create_interactive_dashboard(dataset):
-    """Create interactive geospatial analysis dashboard."""
-    import plotly.express as px
-    import pandas as pd
+    """Create comprehensive interactive Plotly dashboard for geospatial analysis."""
+    import plotly.graph_objects as go
+    from plotly.subplots import make_subplots
     
-    df = dataset.to_pandas()
+    poi_df = dataset.to_pandas()
     
-    # Density heatmap
-    fig1 = px.density_mapbox(df, lat='lat', lon='lon',
-                             title='Location Density Heatmap',
-                             mapbox_style='open-street-map', zoom=10)
+    # Create subplots
+    fig = make_subplots(
+        rows=2, cols=2,
+        subplot_titles=('Geographic Distribution', 'Category Analysis', 
+                       'Rating Distribution', 'Metro Comparison'),
+        specs=[[{"type": "scattermapbox"}, {"type": "bar"}],
+               [{"type": "histogram"}, {"type": "box"}]]
+    )
     
-    # Trip distance distribution
-    fig2 = px.histogram(df, x='trip_distance', nbins=30,
-                       title='Trip Distance Distribution')
+    # 1. Geographic scatter map
+    fig.add_trace(
+        go.Scattermapbox(
+            lat=poi_df['latitude'],
+            lon=poi_df['longitude'],
+            mode='markers',
+            marker=dict(
+                size=8,
+                color=poi_df['rating'],
+                colorscale='Viridis',
+                showscale=True,
+                colorbar=dict(title="Rating", x=0.45)
+            ),
+            text=[f"Name: {name}<br>Category: {cat}<br>Rating: {rating:.1f}" 
+                  for name, cat, rating in zip(poi_df['name'], poi_df['category'], poi_df['rating'])],
+            hovertemplate="<b>%{text}</b><br>Lat: %{lat:.4f}<br>Lon: %{lon:.4f}<extra></extra>",
+            name="POIs"
+        ),
+        row=1, col=1
+    )
     
-    return fig1, fig2
+    # 2. Category bar chart
+    category_counts = poi_df['category'].value_counts()
+    fig.add_trace(
+        go.Bar(
+            x=category_counts.index,
+            y=category_counts.values,
+            marker_color='lightblue',
+            name="Categories"
+        ),
+        row=1, col=2
+    )
+    
+    # 3. Rating histogram
+    fig.add_trace(
+        go.Histogram(
+            x=poi_df['rating'],
+            nbinsx=20,
+            marker_color='lightgreen',
+            name="Rating Distribution"
+        ),
+        row=2, col=1
+    )
+    
+    # 4. Box plot by metro
+    for metro in poi_df['metro_area'].unique():
+        metro_data = poi_df[poi_df['metro_area'] == metro]
+        fig.add_trace(
+            go.Box(
+                y=metro_data['rating'],
+                name=metro,
+                boxpoints='all',
+                jitter=0.3,
+                pointpos=-1.8
+            ),
+            row=2, col=2
+        )
+    
+    # Update layout
+    fig.update_layout(
+        title_text="Interactive Geospatial Analysis Dashboard",
+        title_x=0.5,
+        height=800,
+        showlegend=False,
+        mapbox=dict(
+            style="open-street-map",
+            center=dict(lat=poi_df['latitude'].mean(), lon=poi_df['longitude'].mean()),
+            zoom=8
+        )
+    )
+    
+    # Update axes titles
+    fig.update_xaxes(title_text="Category", row=1, col=2)
+    fig.update_yaxes(title_text="Count", row=1, col=2)
+    fig.update_xaxes(title_text="Rating", row=2, col=1)
+    fig.update_yaxes(title_text="Frequency", row=2, col=1)
+    fig.update_yaxes(title_text="Rating", row=2, col=2)
+    
+    return fig
 
 
 def create_interactive_heatmap(dataset):

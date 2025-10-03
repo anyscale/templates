@@ -270,3 +270,53 @@ def create_service_health_dashboard(log_df):
     
     return fig
 
+
+def visualize_log_operations():
+    """Create concise log analytics visualization."""
+    import matplotlib.pyplot as plt
+    import numpy as np
+    
+    fig, axes = plt.subplots(1, 3, figsize=(15, 4))
+    
+    # 1. Log volume by source
+    sources = ['Apache', 'App Logs', 'Security', 'System']
+    volumes = [2500, 4200, 850, 1800]  # thousands of log entries
+    colors = ['blue', 'green', 'red', 'orange']
+    
+    bars = axes[0].bar(sources, volumes, color=colors, alpha=0.7)
+    axes[0].set_title('Log Volume by Source', fontweight='bold')
+    axes[0].set_ylabel('Entries (thousands)')
+    for bar, vol in zip(bars, volumes):
+        axes[0].text(bar.get_x() + bar.get_width()/2, bar.get_height() + 50,
+                    f'{vol}K', ha='center', fontweight='bold')
+    
+    # 2. Error rates
+    hours = list(range(24))
+    error_rate = 2 + np.sin(np.array(hours) * np.pi / 12) + np.random.rand(24) * 0.5
+    
+    axes[1].plot(hours, error_rate, 'o-', linewidth=2, markersize=4, color='red')
+    axes[1].fill_between(hours, error_rate, alpha=0.3, color='red')
+    axes[1].set_title('Hourly Error Rate', fontweight='bold')
+    axes[1].set_xlabel('Hour of Day')
+    axes[1].set_ylabel('Error Rate (%)')
+    axes[1].grid(True, alpha=0.3)
+    axes[1].set_xlim(0, 23)
+    
+    # 3. Security event breakdown
+    event_types = ['Failed\nLogin', 'Unauthorized\nAccess', 'Suspicious\nIP', 'Policy\nViolation']
+    counts = [145, 89, 67, 43]
+    colors_sec = ['darkred', 'orange', 'yellow', 'red']
+    
+    bars3 = axes[2].bar(event_types, counts, color=colors_sec, alpha=0.7)
+    axes[2].set_title('Security Events', fontweight='bold')
+    axes[2].set_ylabel('Count')
+    for bar, cnt in zip(bars3, counts):
+        axes[2].text(bar.get_x() + bar.get_width()/2, bar.get_height() + 2,
+                    str(cnt), ha='center', fontsize=9, fontweight='bold')
+    
+    plt.tight_layout()
+    plt.savefig('log_operations.png', dpi=150, bbox_inches='tight')
+    print("Log operations visualization saved")
+    
+    return fig
+

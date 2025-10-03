@@ -743,137 +743,20 @@ This distributed image processing approach with automated quality assessment sig
 Visualizing medical data patterns helps healthcare organizations identify trends, optimize resources, and improve patient outcomes through data-driven insights.
 
 ```python
-# Create comprehensive medical analytics visualizationsimport matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd
+# Create comprehensive medical analytics visualizations using utility function
+from util.viz_utils import create_medical_analytics_dashboard
 
-def create_medical_analytics_dashboard():
-    """Generate healthcare analytics dashboard with multiple insights."""
-    
-    # Create figure with subplots
-    fig, axes = plt.subplots(2, 3, figsize=(18, 12))
-    fig.suptitle('Healthcare Analytics Dashboard - Ray Data Processing', fontsize=16, fontweight='bold')
-    
-    # 1. Patient Age Distribution by Department
-    departments = ['CARDIOLOGY', 'EMERGENCY', 'ORTHOPEDICS', 'NEUROLOGY', 'ONCOLOGY', 'PEDIATRICS']
-    age_data = {
-        'CARDIOLOGY': np.random.normal(65, 15, 1000),
-        'EMERGENCY': np.random.normal(45, 20, 1500),
-        'ORTHOPEDICS': np.random.normal(55, 18, 800),
-        'NEUROLOGY': np.random.normal(60, 16, 600),
-        'ONCOLOGY': np.random.normal(58, 14, 700),
-        'PEDIATRICS': np.random.normal(8, 5, 500)
-    }
-    
-    ax1 = axes[0, 0]
-    for dept, ages in age_data.items():
-        ages = np.clip(ages, 0, 100)  # Ensure realistic ages
-        ax1.hist(ages, alpha=0.6, label=dept, bins=20)
-    ax1.set_title('Patient Age Distribution by Department', fontweight='bold')
-    ax1.set_xlabel('Patient Age')
-    ax1.set_ylabel('Number of Patients')
-    ax1.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
-    ax1.grid(True, alpha=0.3)
-    
-    # 2. Lab Result Processing Volume
-    ax2 = axes[0, 1]
-    lab_tests = ['Glucose', 'Cholesterol', 'Blood Count', 'Liver Panel', 'Kidney Panel', 'Thyroid']
-    daily_volumes = [2500, 1800, 3200, 1200, 1100, 900]
-    colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FECA57', '#FF9FF3']
-    
-    bars = ax2.bar(lab_tests, daily_volumes, color=colors)
-    ax2.set_title('Daily Lab Test Processing Volume', fontweight='bold')
-    ax2.set_ylabel('Tests Processed')
-    ax2.tick_params(axis='x', rotation=45)
-    
-    # Add value labels on bars
-    for bar, volume in zip(bars, daily_volumes):
-        height = bar.get_height()
-        ax2.text(bar.get_x() + bar.get_width()/2., height + 50,
-                f'{volume:,}', ha='center', va='bottom', fontweight='bold')
-    
-    # 3. Critical Alert Distribution
-    ax3 = axes[0, 2]
-    alert_types = ['Blood Pressure', 'Heart Rate', 'Glucose Level', 'Oxygen Saturation', 'Temperature']
-    alert_counts = [145, 89, 156, 67, 23]
-    severity_colors = ['#FF4757', '#FF6348', '#FFA502', '#F0932B', '#6C5CE7']
-    
-    wedges, texts, autotexts = ax3.pie(alert_counts, labels=alert_types, autopct='%1.1f%%',
-                                      colors=severity_colors, startangle=90)
-    ax3.set_title('Critical Alert Distribution (Last 24 Hours)', fontweight='bold')
-    
-    # 4. DICOM Image Processing Performance
-    ax4 = axes[1, 0]
-    modalities = ['CT', 'MRI', 'X-Ray', 'Ultrasound', 'Mammography']
-    processing_times = [3.2, 8.5, 1.1, 2.3, 4.7]  # Average processing time in minutes
-    throughput = [450, 180, 800, 650, 320]  # Images per hour
-    
-    ax4_twin = ax4.twinx()
-    
-    line1 = ax4.plot(modalities, processing_times, 'bo-', linewidth=3, markersize=8, label='Processing Time')
-    line2 = ax4_twin.plot(modalities, throughput, 'rs-', linewidth=3, markersize=8, label='Throughput')
-    
-    ax4.set_title('DICOM Processing Performance by Modality', fontweight='bold')
-    ax4.set_ylabel('Avg Processing Time (min)', color='blue')
-    ax4_twin.set_ylabel('Images/Hour', color='red')
-    ax4.tick_params(axis='x', rotation=45)
-    
-    # Combine legends
-    lines1, labels1 = ax4.get_legend_handles_labels()
-    lines2, labels2 = ax4_twin.get_legend_handles_labels()
-    ax4.legend(lines1 + lines2, labels1 + labels2, loc='upper left')
-    
-    # 5. Patient Flow Analysis
-    ax5 = axes[1, 1]
-    hours = list(range(24))
-    admissions = [12, 8, 5, 3, 2, 4, 8, 15, 22, 28, 32, 35, 38, 42, 45, 48, 52, 48, 45, 38, 32, 28, 22, 18]
-    discharges = [8, 5, 3, 2, 1, 2, 5, 12, 18, 25, 30, 32, 35, 38, 40, 42, 38, 35, 30, 25, 20, 15, 12, 10]
-    
-    ax5.fill_between(hours, admissions, alpha=0.6, color='lightcoral', label='Admissions')
-    ax5.fill_between(hours, discharges, alpha=0.6, color='lightblue', label='Discharges')
-    ax5.plot(hours, admissions, 'r-', linewidth=2)
-    ax5.plot(hours, discharges, 'b-', linewidth=2)
-    
-    ax5.set_title('24-Hour Patient Flow Pattern', fontweight='bold')
-    ax5.set_xlabel('Hour of Day')
-    ax5.set_ylabel('Number of Patients')
-    ax5.legend()
-    ax5.grid(True, alpha=0.3)
-    
-    # 6. Data Quality Metrics
-    ax6 = axes[1, 2]
-    quality_metrics = ['Completeness', 'Accuracy', 'Consistency', 'Timeliness', 'Validity']
-    scores = [94.5, 98.2, 91.8, 96.7, 93.4]
-    colors = ['#2ECC71' if score >= 95 else '#F39C12' if score >= 90 else '#E74C3C' for score in scores]
-    
-    bars = ax6.barh(quality_metrics, scores, color=colors)
-    ax6.set_title('Medical Data Quality Assessment', fontweight='bold')
-    ax6.set_xlabel('Quality Score (%)')
-    ax6.set_xlim(0, 100)
-    
-    # Add score labels
-    for bar, score in zip(bars, scores):
-        width = bar.get_width()
-        ax6.text(width + 1, bar.get_y() + bar.get_height()/2,
-                f'{score}%', ha='left', va='center', fontweight='bold')
-    
-    # Add quality thresholds
-    ax6.axvline(x=95, color='green', linestyle='--', alpha=0.7, label='Excellent (95%+)')
-    ax6.axvline(x=90, color='orange', linestyle='--', alpha=0.7, label='Good (90%+)')
-    ax6.legend()
-    
-    plt.tight_layout()
-    print(plt.limit(10).to_pandas())
-    
-    print("Healthcare analytics dashboard displays:")
-    print("- Patient demographics across departments")
-    print("- Laboratory processing volumes")
-    print("- Critical alert patterns")
-    print("- Medical imaging performance metrics")
-    print("- Patient flow optimization insights")
-    print("- Data quality assessment scores")
+fig = create_medical_analytics_dashboard()
+plt.savefig('healthcare_analytics_dashboard.png', dpi=150, bbox_inches='tight')
+print("Healthcare analytics dashboard created and saved")
 
-# Generate healthcare analytics dashboardcreate_medical_analytics_dashboard()
+print("Healthcare analytics dashboard displays:")
+print("- Patient demographics across departments")
+print("- Laboratory processing volumes")
+print("- Critical alert patterns")
+print("- Medical imaging performance metrics")
+print("- Patient flow optimization insights")
+print("- Data quality assessment scores")
 ```
 
 These visualizations provide healthcare organizations with actionable insights for operational optimization, quality improvement, and resource allocation decisions.

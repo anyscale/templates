@@ -1054,109 +1054,12 @@ print(plt.limit(10).to_pandas())
 ### 5.4: Interactive Plotly Dashboard
 
 ```python
-def create_interactive_dashboard(dataset):
-    """Create interactive Plotly dashboard."""
-    print("Creating interactive Plotly dashboard...")
-    
-    poi_df = dataset.to_pandas()
-    
-    # Create subplots
-    from plotly.subplots import make_subplots
-    
-    fig = make_subplots(
-        rows=2, cols=2,
-        subplot_titles=('Geographic Distribution', 'Category Analysis', 
-                       'Rating Distribution', 'Metro Comparison'),
-        specs=[[{"type": "scattermapbox"}, {"type": "bar"}],
-               [{"type": "histogram"}, {"type": "box"}]]
-    )
-    
-    # 1. Geographic scatter map
-    fig.add_trace(
-        go.Scattermapbox(
-            lat=poi_df['latitude'],
-            lon=poi_df['longitude'],
-            mode='markers',
-            marker=dict(
-                size=8,
-                color=poi_df['rating'],
-                colorscale='Viridis',
-                showscale=True,
-                colorbar=dict(title="Rating", x=0.45)
-            ),
-            text=[f"Name: {name}<br>Category: {cat}<br>Rating: {rating:.1f}" 
-                  for name, cat, rating in zip(poi_df['name'], poi_df['category'], poi_df['rating'])],
-            hovertemplate="<b>%{text}</b><br>Lat: %{lat:.4f}<br>Lon: %{lon:.4f}<extra></extra>",
-            name="POIs"
-        ),
-        row=1, col=1
-    )
-    
-    # 2. Category bar chart
-    category_counts = poi_df['category'].value_counts()
-    fig.add_trace(
-        go.Bar(
-            x=category_counts.index,
-            y=category_counts.values,
-            marker_color='lightblue',
-            name="Categories"
-        ),
-        row=1, col=2
-    )
-    
-    # 3. Rating histogram
-    fig.add_trace(
-        go.Histogram(
-            x=poi_df['rating'],
-            nbinsx=20,
-            marker_color='lightgreen',
-            name="Rating Distribution"
-        ),
-        row=2, col=1
-    )
-    
-    # 4. Box plot by metro
-    for metro in poi_df['metro_area'].unique():
-        metro_data = poi_df[poi_df['metro_area'] == metro]
-        fig.add_trace(
-            go.Box(
-                y=metro_data['rating'],
-                name=metro,
-                boxpoints='all',
-                jitter=0.3,
-                pointpos=-1.8
-            ),
-            row=2, col=2
-        )
-    
-    # Update layout
-    fig.update_layout(
-        title_text="Interactive Geospatial Analysis Dashboard",
-        title_x=0.5,
-        height=800,
-        showlegend=False,
-        mapbox=dict(
-            style="open-street-map",
-            center=dict(lat=poi_df['latitude'].mean(), lon=poi_df['longitude'].mean()),
-            zoom=8
-        )
-    )
-    
-    # Update axes titles
-    fig.update_xaxes(title_text="Category", row=1, col=2)
-    fig.update_yaxes(title_text="Count", row=1, col=2)
-    fig.update_xaxes(title_text="Rating", row=2, col=1)
-    fig.update_yaxes(title_text="Frequency", row=2, col=1)
-    fig.update_yaxes(title_text="Rating", row=2, col=2)
-    
-    # Save and show
-    fig.write_html("interactive_geospatial_dashboard.html")
-    print("Interactive dashboard saved as 'interactive_geospatial_dashboard.html'")
-    print(fig.limit(10).to_pandas())
-    
-    return fig
+# Create interactive dashboard using utility function
+from util.viz_utils import create_interactive_dashboard
 
-# Create interactive dashboarddashboard = create_interactive_dashboard(poi_dataset)
+dashboard = create_interactive_dashboard(poi_dataset)
+dashboard.write_html("interactive_geospatial_dashboard.html")
+print("Interactive dashboard saved as 'interactive_geospatial_dashboard.html'")
 ```
 
 ## Step 6: Saving Results

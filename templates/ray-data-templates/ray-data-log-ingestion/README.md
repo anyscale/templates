@@ -599,51 +599,11 @@ print(f"Application metrics calculated: {app_metrics.count()} metric groups")
 # Create concise operational log analyticsimport matplotlib.pyplot as plt
 import numpy as np
 
-def visualize_log_operations():
-    """Create concise log analytics visualization."""
-    fig, axes = plt.subplots(1, 3, figsize=(15, 4))
-    
-    # 1. Log volume by source
-    sources = ['Apache', 'App Logs', 'Security', 'System']
-    volumes = [2500, 4200, 850, 1800]  # thousands of log entries
-    colors = ['blue', 'green', 'red', 'orange']
-    
-    bars = axes[0].bar(sources, volumes, color=colors, alpha=0.7)
-    axes[0].set_title('Log Volume by Source', fontweight='bold')
-    axes[0].set_ylabel('Entries (thousands)')
-    for bar, vol in zip(bars, volumes):
-        axes[0].text(bar.get_x() + bar.get_width()/2, bar.get_height() + 50,
-                    f'{vol}K', ha='center', fontweight='bold')
-    
-    # 2. Error rates
-    hours = list(range(24))
-    error_rate = 2 + np.sin(np.array(hours) * np.pi / 12) + np.random.rand(24) * 0.5
-    
-    axes[1].plot(hours, error_rate, 'o-', linewidth=2, markersize=4, color='red')
-    axes[1].fill_between(hours, error_rate, alpha=0.3, color='red')
-    axes[1].set_title('Hourly Error Rate', fontweight='bold')
-    axes[1].set_xlabel('Hour of Day')
-    axes[1].set_ylabel('Error Rate (%)')
-    axes[1].grid(True, alpha=0.3)
-    axes[1].set_xlim(0, 23)
-    
-    # 3. Security event breakdown
-    event_types = ['Failed\nLogin', 'Unauthorized\nAccess', 'Suspicious\nIP', 'Policy\nViolation']
-    counts = [145, 89, 67, 43]
-    colors_sec = ['darkred', 'orange', 'yellow', 'red']
-    
-    bars3 = axes[2].bar(event_types, counts, color=colors_sec, alpha=0.7)
-    axes[2].set_title('Security Events', fontweight='bold')
-    axes[2].set_ylabel('Count')
-    for bar, cnt in zip(bars3, counts):
-        axes[2].text(bar.get_x() + bar.get_width()/2, bar.get_height() + 2,
-                    str(cnt), ha='center', fontsize=9, fontweight='bold')
-    
-    plt.tight_layout()
-    plt.savefig('log_operations.png', dpi=150, bbox_inches='tight')
-    print("Log operations visualization saved")
+# Generate log operations view using utility function
+from util.viz_utils import visualize_log_operations
 
-# Generate log operations viewvisualize_log_operations()
+fig = visualize_log_operations()
+print("Log operations visualization created")
 ```
 
 ### 5. Log Analytics Dashboard
@@ -1236,136 +1196,12 @@ Create comprehensive visualizations for log analysis and security monitoring:
 ### Interactive Log Analytics Dashboard
 
 ```python
-def create_interactive_log_dashboard(log_data):
-    """Create interactive log analytics dashboard using Plotly."""
-    print("Creating interactive log analytics dashboard...")
-    
-    # Create comprehensive interactive dashboard
-    fig = make_subplots(
-        rows=3, cols=2,
-        subplot_titles=('Log Volume Over Time', 'Error Rate Analysis',
-                       'Response Time Distribution', 'Service Health Status',
-                       'Geographic Log Sources', 'Log Level Breakdown'),
-        specs=[[{"secondary_y": False}, {"secondary_y": True}],
-               [{"secondary_y": False}, {"secondary_y": False}],
-               [{"type": "scattergeo"}, {"type": "pie"}]]
-    )
-    
-    # Simulate log data for demonstration
-    np.random.seed(42)
-    
-    # 1. Log volume over time
-    dates = pd.date_range(start='2024-01-01', periods=168, freq='H')  # 1 week hourly
-    log_volumes = 1000 + 500 * np.sin(np.linspace(0, 14*np.pi, 168)) + np.random.normal(0, 100, 168)
-    log_volumes = np.maximum(log_volumes, 0)
-    
-    fig.add_trace(
-        go.Scatter(x=dates, y=log_volumes,
-                  mode='lines', name='Log Volume',
-                  line=dict(color='blue', width=2)),
-        row=1, col=1
-    )
-    
-    # 2. Error rate analysis with dual axis
-    error_rates = 2 + np.random.normal(0, 0.5, 168)
-    error_rates = np.maximum(error_rates, 0)
-    
-    fig.add_trace(
-        go.Scatter(x=dates, y=error_rates,
-                  mode='lines', name='Error Rate (%)',
-                  line=dict(color='red', width=2)),
-        row=1, col=2, secondary_y=False
-    )
-    
-    # Success rate on secondary y-axis
-    success_rates = 100 - error_rates
-    fig.add_trace(
-        go.Scatter(x=dates, y=success_rates,
-                  mode='lines', name='Success Rate (%)',
-                  line=dict(color='green', width=2)),
-        row=1, col=2, secondary_y=True
-    )
-    
-    # 3. Response time distribution
-    response_times = np.random.lognormal(4, 0.5, 10000)  # Log-normal distribution
-    
-    fig.add_trace(
-        go.Histogram(x=response_times, nbinsx=50,
-                    marker_color='orange', name='Response Times'),
-        row=2, col=1
-    )
-    
-    # 4. Service health status
-    services = ['Web Server', 'Database', 'API Gateway', 'Cache', 'Queue']
-    health_scores = [98.5, 99.2, 97.8, 99.8, 98.1]
-    colors_health = ['green' if score > 99 else 'orange' if score > 95 else 'red' 
-                    for score in health_scores]
-    
-    fig.add_trace(
-        go.Bar(x=services, y=health_scores,
-              marker_color=colors_health, name='Health Score'),
-        row=2, col=2
-    )
-    
-    # 5. Geographic log sources
-    countries = ['USA', 'Germany', 'Japan', 'Brazil', 'India', 'Australia']
-    country_codes = ['USA', 'DEU', 'JPN', 'BRA', 'IND', 'AUS']
-    log_counts = [45000, 28000, 32000, 18000, 25000, 12000]
-    
-    fig.add_trace(
-        go.Scattergeo(
-            locations=country_codes,
-            text=countries,
-            mode='markers',
-            marker=dict(
-                size=[count/1000 for count in log_counts],
-                color=log_counts,
-                colorscale='Viridis',
-                showscale=True,
-                colorbar=dict(title="Log Count", x=0.45)
-            ),
-            name="Log Sources"
-        ),
-        row=3, col=1
-    )
-    
-    # 6. Log level breakdown
-    log_levels = ['INFO', 'WARN', 'ERROR', 'DEBUG', 'FATAL']
-    level_counts = [60000, 15000, 8000, 25000, 500]
-    
-    fig.add_trace(
-        go.Pie(labels=log_levels, values=level_counts,
-              name="Log Levels"),
-        row=3, col=2
-    )
-    
-    # Update layout
-    fig.update_layout(
-        title_text="Interactive Log Analytics Dashboard",
-        height=1000,
-        showlegend=True,
-        template="plotly_dark"  # Dark theme for operations dashboard
-    )
-    
-    # Update axes
-    fig.update_xaxes(title_text="Time", row=1, col=1)
-    fig.update_yaxes(title_text="Log Count", row=1, col=1)
-    fig.update_xaxes(title_text="Time", row=1, col=2)
-    fig.update_yaxes(title_text="Error Rate (%)", row=1, col=2, secondary_y=False)
-    fig.update_yaxes(title_text="Success Rate (%)", row=1, col=2, secondary_y=True)
-    fig.update_xaxes(title_text="Response Time (ms)", row=2, col=1)
-    fig.update_yaxes(title_text="Frequency", row=2, col=1)
-    fig.update_xaxes(title_text="Service", row=2, col=2)
-    fig.update_yaxes(title_text="Health Score (%)", row=2, col=2)
-    
-    # Save and show
-    fig.write_html("interactive_log_dashboard.html")
-    print("Interactive log dashboard saved as 'interactive_log_dashboard.html'")
-    print(fig.limit(10).to_pandas())
-    
-    return fig
+# Create interactive dashboard using utility function
+from util.viz_utils import create_interactive_log_dashboard
 
-# Create interactive dashboardinteractive_dashboard = create_interactive_log_dashboard(None)
+interactive_dashboard = create_interactive_log_dashboard(parsed_logs)
+interactive_dashboard.write_html("interactive_log_dashboard.html")
+print("Interactive log dashboard saved as 'interactive_log_dashboard.html'")
 ```
 
 ### Network Security Visualization
