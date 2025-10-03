@@ -959,66 +959,132 @@ print("✓ Extracted titles correlate with survival rates (Mrs/Miss higher than 
 
 ### Ranking and Percentile Features
 
-Create rank-based features using Ray Data operations:
+**Why use ranking features?** Convert absolute values to relative rankings within the dataset.
+
+**Benefits:**
+- **Robust to outliers**: Ranks aren't affected by extreme values
+- **Normalized scale**: Percentiles always 0-1 regardless of original range
+- **Interpretable**: 90th percentile means "better than 90% of dataset"
+- **Works with skewed data**: Doesn't require normal distribution
+
+**Example:** Instead of "Fare=$100", use "Fare at 85th percentile" (top 15% of fares)
+
+**Use cases:**
+- Ranking customers by purchase amount
+- Percentile features for age, income, scores
+- Relative metrics more stable than absolute values
 
 ```python
 def add_ranking_features(batch):
-    """Create percentile and ranking features."""
+    """
+    Create percentile and ranking features.
+    
+    Ranking converts absolute values to relative position in dataset.
+    This is useful when the relative position is more important than
+    the absolute value (e.g., being in top 10% vs specific amount).
+    
+    Args:
+        batch: List of records from Ray Data
+        
+    Returns:
+        Batch with ranking/percentile features added
+    """
     import pandas as pd
     df = pd.DataFrame(batch)
     
-    # Calculate percentile ranks
+    # Calculate percentile ranks for fare
+    # Why: 90th percentile fare more meaningful than absolute $100 fare
     if 'Fare' in df.columns:
-        df['Fare_percentile'] = df['Fare'].rank(pct=True)
-        df['Fare_rank'] = df['Fare'].rank()
+        df['Fare_percentile'] = df['Fare'].rank(pct=True)  # 0.0 to 1.0
+        df['Fare_rank'] = df['Fare'].rank()                 # 1 to N
     
+    # Calculate percentile ranks for age
+    # Why: Age percentile captures relative maturity
     if 'Age' in df.columns:
         df['Age_percentile'] = df['Age'].rank(pct=True)
     
     return df.to_dict('records')
 
-# Apply ranking features
+# Apply ranking features using Ray Data
+# Note: This uses pandas rank() within batches, so rankings are approximate
 ranked_features = text_features.map_batches(
     add_ranking_features,
-    batch_size=2000,
-    concurrency=2
+    batch_size=2000,  # Larger batches give better ranking estimates
+    concurrency=2      # Moderate concurrency for ranking operations
 )
 
 print(f"✓ Ranking features created: {ranked_features.count():,} records")
+print("✓ Fare and Age now have percentile features (0-1 scale)")
 ```
 
 ### Feature Scaling and Normalization
 
-Apply scaling transformations for ML algorithms:
+**Why scale features?** Many ML algorithms are sensitive to feature scale differences.
+
+**Algorithms that need scaling:**
+- **Neural networks**: Gradient descent converges faster with scaled features
+- **SVM**: Distance-based algorithms affected by scale
+- **K-means clustering**: Euclidean distance dominated by large-scale features
+- **Linear regression with regularization**: Regularization penalizes based on scale
+
+**Algorithms that don't need scaling:**
+- **Tree-based**: Decision trees, Random Forest, XGBoost (split on thresholds)
+
+**Common scaling methods:**
+1. **Min-Max Scaling**: Scale to [0, 1] range
+2. **Standard Scaling**: Mean=0, Std=1 (assumes normal distribution)
+3. **Robust Scaling**: Uses median and IQR (robust to outliers)
 
 ```python
 def apply_feature_scaling(batch):
-    """Apply standard scaling to numerical features."""
+    """
+    Apply min-max scaling to numerical features.
+    
+    Min-max scaling transforms features to [0, 1] range:
+        scaled = (value - min) / (max - min)
+    
+    Why use it:
+    - Neural networks train faster with normalized inputs
+    - Features on different scales don't dominate
+    - Gradients are more stable during training
+    
+    Args:
+        batch: List of records from Ray Data
+        
+    Returns:
+        Batch with scaled features added
+    """
     import pandas as pd
     df = pd.DataFrame(batch)
     
-    # Apply min-max scaling
+    # Features to scale - numerical features with different ranges
     numeric_cols = ['Age', 'Fare', 'family_size']
     
     for col in numeric_cols:
         if col in df.columns:
+            # Calculate min and max for this batch
             col_min = df[col].min()
             col_max = df[col].max()
+            
+            # Apply min-max scaling: (value - min) / (max - min)
             if col_max > col_min:
                 df[f'{col}_scaled'] = (df[col] - col_min) / (col_max - col_min)
             else:
+                # If all values same, set to 0
                 df[f'{col}_scaled'] = 0
     
     return df.to_dict('records')
 
-# Apply scaling
+# Apply scaling using Ray Data distributed processing
 scaled_features = ranked_features.map_batches(
     apply_feature_scaling,
-    batch_size=2000,
-    concurrency=4
+    batch_size=2000,  # Larger batches for better min/max estimates
+    concurrency=4      # High concurrency - scaling is fast
 )
 
 print(f"✓ Feature scaling applied: {scaled_features.count():,} records")
+print("✓ Age, Fare, and family_size now scaled to [0, 1] range")
+print("✓ Ready for neural networks and distance-based algorithms")
 ```
 
 ### Comprehensive Feature Engineering Methods Summary
