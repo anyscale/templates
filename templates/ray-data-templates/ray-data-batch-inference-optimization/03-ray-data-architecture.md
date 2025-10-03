@@ -52,38 +52,24 @@ Traditional batch processing loads entire datasets into memory before processing
 ### Visualizing the Difference
 
 **Traditional Batch Processing:**
-```
-┌──────────────┐   ┌──────────────┐   ┌──────────────┐   ┌──────────────┐
-│  Load ALL    │ → │  Preprocess  │ → │  Inference   │ → │  Write ALL   │
-│  Images      │   │  ALL         │   │  ALL         │   │  Results     │
-└──────────────┘   └──────────────┘   └──────────────┘   └──────────────┘
-     Wait             Wait               Wait               Wait
-  (3TB memory)     (3TB memory)       (3TB memory)       (3TB memory)
 
-Problems:
-✗ High memory - requires loading entire dataset
-✗ No parallelism - stages run sequentially  
-✗ Long latency - wait for complete load before processing
-✗ Wasted resources - GPUs idle during load/write stages
-```
+<img src="https://anyscale-materials.s3.us-west-2.amazonaws.com/cko-2025-q1/batch-processing.png" width="800" alt="Traditional Batch Processing">
+
+**Problems with traditional approach:**
+- ✗ High memory - requires loading entire dataset
+- ✗ No parallelism - stages run sequentially  
+- ✗ Long latency - wait for complete load before processing
+- ✗ Wasted resources - GPUs idle during load/write stages
 
 **Ray Data Streaming Execution:**
-```
-┌──────────┐   ┌──────────┐   ┌──────────┐   ┌──────────┐
-│ Block 1  │ → │ Block 1  │ → │ Block 1  │ → │ Block 1  │
-│ Block 2  │ → │ Block 2  │ → │ Block 2  │ → │ Block 2  │  ← All Parallel!
-│ Block 3  │ → │ Block 3  │ → │ Block 3  │ → │ Block 3  │
-│   ...    │   │   ...    │   │   ...    │   │   ...    │
-└──────────┘   └──────────┘   └──────────┘   └──────────┘
-   Load        Preprocess     Inference      Write
- (128MB)        (128MB)        (128MB)      (128MB)
 
-Benefits:
-✓ Low memory - constant 128MB blocks regardless of dataset size
-✓ Pipeline parallelism - all stages active simultaneously
-✓ Fast first result - inference starts immediately
-✓ Maximum throughput - all resources utilized continuously
-```
+<img src="https://anyscale-materials.s3.us-west-2.amazonaws.com/cko-2025-q1/pipelining.png" width="800" alt="Ray Data Streaming Execution">
+
+**Benefits of streaming execution:**
+- ✓ Low memory - constant 128MB blocks regardless of dataset size
+- ✓ Pipeline parallelism - all stages active simultaneously
+- ✓ Fast first result - inference starts immediately
+- ✓ Maximum throughput - all resources utilized continuously
 
 ### How This Affects Your Optimization Decisions
 
@@ -198,38 +184,15 @@ print(f"Estimated blocks: {images.size_bytes() / ctx.target_max_block_size:.0f}"
 
 ### How Blocks Flow Through Inference Pipeline
 
-```
-Step 1: Read Images (creates blocks)
-┌─────────────────────────────────────────────┐
-│  S3://images/                               │
-│  ├── img_001.jpg → Block 1 (128MB)         │
-│  ├── img_002.jpg → Block 2 (128MB)         │
-│  └── img_003.jpg → Block 3 (128MB)         │
-└─────────────────────────────────────────────┘
-         ↓
-Step 2: Preprocess (transform blocks)
-┌─────────────────────────────────────────────┐
-│  Block 1 → Resize, normalize → Block 1'    │
-│  Block 2 → Resize, normalize → Block 2'    │  ← Parallel
-│  Block 3 → Resize, normalize → Block 3'    │
-└─────────────────────────────────────────────┘
-         ↓
-Step 3: Inference (process blocks)
-┌─────────────────────────────────────────────┐
-│  Actor 1: Block 1' → Model → Results 1     │
-│  Actor 2: Block 2' → Model → Results 2     │  ← Parallel
-│  Actor 3: Block 3' → Model → Results 3     │
-└─────────────────────────────────────────────┘
-         ↓
-Step 4: Write Results (output blocks)
-┌─────────────────────────────────────────────┐
-│  Results 1 → S3://output/part-001.parquet  │
-│  Results 2 → S3://output/part-002.parquet  │  ← Parallel
-│  Results 3 → S3://output/part-003.parquet  │
-└─────────────────────────────────────────────┘
+Ray Data's block-based architecture enables parallelism at every stage:
 
-Key insight: Blocks enable parallelism at every stage
-```
+<img src="https://docs.ray.io/en/latest/_images/dataset-arch.svg" width="700" alt="Ray Data Block Architecture">
+
+**Key insights:**
+- Each block contains a disjoint subset of rows
+- Blocks are processed in parallel across the cluster
+- Distributed object store enables efficient block transfer
+- Tasks operate on individual blocks for maximum parallelism
 
 ---
 
@@ -238,6 +201,8 @@ Key insight: Blocks enable parallelism at every stage
 ### Object Store and Heap Memory
 
 Ray manages two types of memory that affect batch inference:
+
+<img src="https://docs.ray.io/en/latest/_images/memory.svg" width="600" alt="Ray Memory Model">
 
 **1. Object Store Memory (30% of node memory by default):**
 - **Purpose**: Shared memory for passing data between tasks
@@ -340,6 +305,10 @@ Ray Data uses **zero-copy deserialization** for efficiency:
 # Actor 2 reads block: 0MB copy (pointer) → 128MB total
 # Result: Constant memory!
 ```
+
+**Visual representation of object store usage:**
+
+<img src="https://anyscale-materials.s3.us-west-2.amazonaws.com/ray-data-deep-dive/producer-consumer-object-store-v2.png" width="700" alt="Object Store Data Flow">
 
 ---
 
