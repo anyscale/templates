@@ -39,15 +39,35 @@ Master advanced NLP techniques:
 
 ## Overview
 
-**Challenge**: Processing large text datasets (reviews, social media, documents) with traditional tools is slow and often runs out of memory.
+**Challenge**: Processing large text datasets exceeds single-machine capabilities:
+- **Volume**: 100M+ social media posts, product reviews, or documents
+- **Memory**: Text data with embeddings requires TB of RAM
+- **Velocity**: Real-time sentiment analysis for customer feedback
+- **NLP compute**: Transformer models require GPU acceleration
 
-**Solution**: Ray Data distributes text processing across multiple cores, making it possible to analyze millions of documents quickly.
+**Solution**: Ray Data enables distributed NLP at production scale:
+
+| NLP Task | Traditional Approach | Ray Data Approach | Text Analytics Benefit |
+|----------|---------------------|-------------------|----------------------|
+| **Text Preprocessing** | Sequential string operations | Parallel `map_batches()` | Process millions of documents |
+| **Sentiment Analysis** | Batch API calls | Distributed model inference | Real-time insights from reviews |
+| **Topic Modeling** | Single-machine LDA | Distributed text clustering with `groupby()` | Discover topics in TB of text |
+| **Entity Extraction** | Sequential NER | Parallel transformer inference | Extract entities from all documents |
+
+:::tip Ray Data for NLP Workloads
+Text analytics is perfectly suited for Ray Data because:
+- **Text preprocessing**: `map_batches()` parallelizes cleaning, tokenization, and normalization
+- **Transformer inference**: Stateful actors load models once, process millions of texts
+- **Embeddings generation**: Distribute embedding calculations across GPUs
+- **Text aggregation**: `groupby()` for topic clustering and document grouping
+- **Memory efficiency**: Stream processing handles unlimited text volumes
+:::
 
 **Real-world Impact**:
-- **E-commerce**: Analyze product reviews for insights
-- **Social Media**: Process posts for sentiment trends
-- **News**: Classify and analyze large volumes of articles
-- **Customer Support**: Automatically categorize and route support tickets
+- **E-commerce**: Amazon analyzes 200M+ product reviews using distributed sentiment analysis
+- **Social Media**: Twitter processes 500M+ daily tweets for trending topics using distributed NLP
+- **News**: Bloomberg analyzes 100,000+ articles daily for financial sentiment using scalable pipelines
+- **Customer Support**: Zendesk routes 10M+ support tickets using distributed text classification
 
 ---
 

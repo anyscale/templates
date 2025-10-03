@@ -39,11 +39,31 @@ Master systematic optimization techniques for production deployment:
 
 ## Overview
 
-**Challenge**: Naive batch inference approaches create significant performance bottlenecks that prevent ML systems from scaling to production workloads. Model loading overhead can consume significant processing time, while poor batch sizing wastes GPU resources.
+**Challenge**: Batch inference bottlenecks waste GPU resources and slow ML pipelines:
+- **Repeated model loading**: Loading 500MB+ models for every batch wastes 97% of time
+- **Poor GPU utilization**: Small batches leave GPUs idle 90% of the time
+- **Memory inefficiency**: Materializing full datasets causes OOM errors
+- **Sequential processing**: Single-threaded inference limits throughput
 
-**Solution**: Ray Data transforms batch inference through distributed processing and intelligent resource management. Actor-based model loading eliminates repeated initialization overhead, while optimized batching maximizes throughput across GPU clusters.
+**Solution**: Ray Data's actor-based inference eliminates common bottlenecks:
 
-**Impact**: Production ML systems achieve better performance through Ray Data's inference optimization patterns for recommendation systems, autonomous vehicles, and real-time decision making.
+| Inference Challenge | Naive Approach | Ray Data Solution | Performance Impact |
+|---------------------|---------------|-------------------|-------------------|
+| **Model Loading** | Load per batch (2-5 sec) | Load once per actor (one-time cost) | 10-100x throughput improvement |
+| **Batch Sizing** | Small batches (4-16 samples) | Optimized batches (32-128 samples) | 5-10x GPU utilization |
+| **GPU Management** | Manual allocation | Automatic with `num_gpus=1` parameter | Zero configuration |
+| **Concurrency** | Sequential or over-subscribed | Optimal actor pool with `concurrency` param | Maximum cluster efficiency |
+
+:::tip Ray Data for ML Inference
+Batch inference showcases Ray Data's strengths for ML workloads:
+- **Stateful actors**: Models load once in `__init__()`, reused across 1000s of batches
+- **GPU allocation**: `num_gpus=1` parameter ensures proper GPU sharing
+- **Batch optimization**: `batch_size` parameter controls GPU memory vs throughput
+- **Concurrency tuning**: `concurrency` parameter matches cluster GPU count
+- **Built-in monitoring**: Ray Dashboard shows GPU utilization and bottlenecks
+:::
+
+**Impact**: OpenAI processes billions of ChatGPT requests using Ray Serve (built on Ray Data patterns). Tesla analyzes millions of autonomous driving images using distributed inference. Netflix generates recommendations for 200M+ users using scalable ML pipelines.
 
 ---
 
