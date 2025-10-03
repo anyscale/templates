@@ -53,24 +53,35 @@ This section demonstrates the concepts using Ray Data:
 import ray
 from datetime import datetime
 
-# Load realistic log datasets using native formatsprint("Loading comprehensive log datasets...")
+# Load realistic log datasets using native formats
+print("Loading comprehensive log datasets...")
 
-# Apache access logs - Raw text format (realistic for web servers)apache_logs = ray.data.read_text("s3://ray-benchmark-data/logs/apache-access.log",
+# Apache access logs - Raw text format (realistic for web servers)
+apache_logs = ray.data.read_text(
+    "apache_access.log",
     num_cpus=0.05
 )
 print(f"Apache access logs: {apache_logs.count():,} lines")
 
-# Application logs - JSON format (common for modern apps)app_logs = ray.data.read_json("s3://ray-benchmark-data/logs/application.json",
+# Application logs - JSON format (common for modern apps)
+app_logs = ray.data.read_json(
+    "application.json",
     num_cpus=0.05
 )
 print(f"Application logs: {app_logs.count():,} entries")
 
-# Security logs - Text format (typical for security systems)security_logs = ray.data.read_text("s3://ray-benchmark-data/logs/security.log",
+# Security logs - Text format (typical for security systems)
+security_logs = ray.data.read_text(
+    "security.log",
     num_cpus=0.05
 )
 print(f"Security logs: {security_logs.count():,} lines")
 
 print("Realistic log datasets loaded successfully")
+print("\nRay Data native readers used:")
+print("✓ read_text() for Apache Common Log Format (.log files)")
+print("✓ read_json() for structured application logs (.json files)")
+print("✓ read_text() for syslog format security logs (.log files)")
 ```
 
 To run this template, you will need the following packages:
@@ -344,25 +355,35 @@ Log data comes in various formats and from multiple sources in enterprise enviro
 from ray.data import read_text
 import re
 
-# Load realistic log datasets using appropriate formatsprint("Loading comprehensive log datasets...")
+# Load realistic log datasets using appropriate formats
+print("Loading comprehensive log datasets...")
 
-# Apache access logs - Raw text log format (realistic for web servers)apache_logs = ray.data.read_text("s3://ray-benchmark-data/logs/apache-access/*.log",
+# Apache access logs - Raw text log format (realistic for web servers)
+apache_logs = ray.data.read_text(
+    "apache_access.log",
     num_cpus=0.05
 )
 print(f"Apache access logs: {apache_logs.count():,} lines")
 print("  Format: Raw Apache Common Log Format text files")
+print("  Ray Data reader: read_text() for unstructured log files")
 
-# Application logs - JSON format (common for microservices)app_logs = ray.data.read_json("s3://ray-benchmark-data/logs/application/*.json",
+# Application logs - JSON format (common for microservices)
+app_logs = ray.data.read_json(
+    "application.json",
     num_cpus=0.05
 )
 print(f"Application logs: {app_logs.count():,} entries")
 print("  Format: Structured JSON logs from microservices")
+print("  Ray Data reader: read_json() for structured logs")
 
-# Security logs - Syslog text format (typical for security systems)security_logs = ray.data.read_text("s3://ray-benchmark-data/logs/security/*.log",
+# Security logs - Syslog text format (typical for security systems)
+security_logs = ray.data.read_text(
+    "security.log",
     num_cpus=0.05
 )
 print(f"Security logs: {security_logs.count():,} lines")
 print("  Format: Syslog format text files from security devices")
+print("  Ray Data reader: read_text() for syslog format")
 
 print(f"\nTotal log entries available: {apache_logs.count() + app_logs.count() + security_logs.count():,}")
 print("Realistic datasets ready for comprehensive log analysis")
@@ -412,7 +433,8 @@ Traditional log parsers process files sequentially on a single machine. Ray Data
     log_pattern = r'(\S+) \S+ \S+ \[([\w:/]+\s[+\-]\d{4})\] "(\S+) (\S+) (\S+)" (\d{3}) (\d+|-)'
     
     for log_entry in batch:
-        line = log_entry.get('log_entry', '')  # Parquet column name
+        # Ray Data read_text() returns records with 'text' key containing the log line
+        line = log_entry.get('text', '')
         match = re.match(log_pattern, line)
         
         if match:
