@@ -106,22 +106,42 @@ print(f"Cluster resources: {ray.cluster_resources()}")
 
 ```python
 # Load pre-built customer dataset with realistic quality issues
+# This dataset intentionally contains data quality problems for learning
 customer_dataset = ray.data.read_parquet(
     "ecommerce_customers_with_quality_issues.parquet",
-    num_cpus=0.025
+    num_cpus=0.025  # High I/O concurrency for fast loading
 )
 
 print(f"Loaded customer dataset with quality issues:")
 print(f"  Records: {customer_dataset.count():,}")
 print(f"  Schema: {customer_dataset.schema()}")
 
+# Use consistent variable name throughout template
 quality_dataset = customer_dataset
+
+print("\nQuick start complete - you now have:")
+print("  - Real e-commerce customer data loaded")
+print("  - Intentional quality issues to detect")
+print("  - Ray Data configured for quality monitoring")
 ```
 
-**What we have:**
-- 100,000+ customer records with realistic data patterns
-- Intentional quality issues: missing values, invalid data, outliers, duplicates
-- Pre-built Parquet dataset for optimal Ray Data performance
+**What you accomplished:**
+- **Loaded 100,000+ customer records** with realistic data patterns
+- **Identified data quality challenges**: Missing values, invalid emails, outliers, duplicates
+- **Configured Ray Data**: Optimized for quality validation workflows
+- **Ready for analysis**: Dataset prepared for quality checks in next steps
+
+**Expected output:**
+```
+Loaded customer dataset with quality issues:
+  Records: 100,000
+  Schema: {email: string, age: int64, income: double, ...}
+
+Quick start complete - you now have:
+  - Real e-commerce customer data loaded
+  - Intentional quality issues to detect
+  - Ray Data configured for quality monitoring
+```
 
 ## Step 1: Data Quality Setup
 
