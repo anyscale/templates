@@ -15,11 +15,30 @@ Build an automated data quality monitoring system that validates data, detects a
 
 ## Learning objectives
 
-**Why data quality matters**: Poor data quality affects organizations through incorrect insights and operational problems. Understanding data quality monitoring helps enable reliable data-driven decision making.
+By completing this template, you will:
 
-**Ray Data's quality capabilities**: Automate quality checks across large datasets using distributed processing. You'll learn how to scale data validation from sample-based to full-dataset monitoring.
+**Understand data quality fundamentals:**
+- Learn the six dimensions of data quality (completeness, accuracy, consistency, validity, timeliness, uniqueness)
+- Understand how poor data quality impacts business decisions and creates operational risk
+- Recognize data quality patterns and anti-patterns in real datasets
 
-**Real-world applications**: Streaming services monitor data quality across viewing events to support content recommendations. Booking platforms validate booking records for pricing accuracy and fraud prevention. Transportation companies track data quality across trip data for safety and operational efficiency. E-commerce platforms monitor product catalog data quality to maintain customer experience and search accuracy.
+**Master Ray Data quality operations:**
+- Use `filter()` and expressions API for data validation at scale
+- Apply `aggregate()` functions for statistical quality metrics
+- Implement `take()` for efficient quality sampling without full dataset loads
+- Leverage distributed processing to check 100% of records, not just samples
+
+**Build production quality pipelines:**
+- Automate missing data detection and reporting
+- Implement business rule validation using Ray Data native operations
+- Create data drift monitoring to detect distribution changes
+- Generate quality dashboards for operational monitoring
+
+**Real-world applications:**
+- **Streaming services** (Netflix, Spotify): Monitor data quality across billions of viewing/listening events
+- **E-commerce** (Amazon, Shopify): Validate product catalog data for search accuracy and customer experience
+- **Financial services** (PayPal, Stripe): Ensure transaction data quality for fraud detection
+- **Transportation** (Uber, Lyft): Track trip data quality for safety and operational efficiency
 
 ## Overview
 
