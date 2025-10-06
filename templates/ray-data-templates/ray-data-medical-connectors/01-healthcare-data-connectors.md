@@ -167,14 +167,17 @@ Sample patient records:
 
 ### The Healthcare Data Revolution: Why Medical Connectors Matter
 
-Healthcare is undergoing a massive digital transformation, generating more data than any other industry. By 2025, healthcare data is projected to grow at a compound annual rate of 36%, reaching 2,314 exabytes annually. This explosion of medical data represents both large opportunities and significant challenges.
+Healthcare is undergoing a massive digital transformation. By 2025, healthcare data is projected to grow at 36% annually, reaching 2,314 exabytes. This explosion represents both large opportunities and significant challenges.
 
-**The Scale of Healthcare Data:**
-- **Electronic Health Records**: 500+ million patient records across US healthcare systems
-- **Medical Imaging**: 50+ billion medical images generated annually worldwide
-- **Clinical Trials**: 350,000+ active studies generating petabytes of research data
-- **IoT Health Devices**: 26+ billion connected health devices by 2025
-- **Genomic Data**: Human genome sequencing costs dropped 99.9% since 2007, enabling population-scale genomics
+**The scale of healthcare data:**
+
+| Data Type | Volume | Growth Driver |
+|-----------|--------|---------------|
+| **Electronic Health Records** | 500+ million patient records (US) | Digital healthcare adoption |
+| **Medical Imaging** | 50+ billion images annually | Advanced diagnostic imaging |
+| **Clinical Trials** | 350,000+ active studies | Accelerated drug development |
+| **IoT Health Devices** | 26+ billion devices by 2025 | Connected health monitoring |
+| **Genomic Data** | Population-scale sequencing | 99.9% cost reduction since 2007 |
 
 **The Healthcare Data Crisis:**
 
@@ -199,11 +202,14 @@ Ray Data transforms healthcare data processing by providing a **unified, scalabl
 | **Research** | Population health studies, drug development, precision medicine | Accelerated innovation |
 | **Industry** | Interoperability, real-time analytics, scalable processing | Market leadership |
 
-**Key healthcare improvements:**
-- **Clinical**: Real-time medical imaging analysis, early warning systems, accelerated clinical research
-- **Business**: Automated data integration, built-in HIPAA compliance, reduced infrastructure costs
-- **Research**: Large-scale epidemiological studies, genomic analysis, healthcare AI training datasets
-- **Industry**: Breaking down data silos, live patient monitoring, foundation for new applications
+**Key healthcare improvements by domain:**
+
+| Domain | Improvements | Impact |
+|--------|-------------|--------|
+| **Clinical** | Real-time imaging analysis, early warning systems | Faster diagnosis, better outcomes |
+| **Business** | Automated integration, HIPAA compliance | Reduced costs, streamlined operations |
+| **Research** | Epidemiological studies, genomic analysis | Accelerated discoveries, precision medicine |
+| **Industry** | Data interoperability, live monitoring | Innovation platform, new applications |
 
 ### Ray Data's Medical Data Advantages
 
@@ -962,23 +968,21 @@ By the end of this template, you'll understand:
 
 Healthcare organizations handle diverse data formats that require specialized processing:
 
-**HL7 Messages (Health Level 7)**
-- **Volume**: 100K+ daily patient messages across hospital systems
-- **Complexity**: Structured messaging with patient demographics, lab results, clinical notes
-- **Standards**: HL7 v2.x and FHIR (Fast Healthcare Interoperability Resources)
-- **Integration**: Electronic Health Records (EHR), lab systems, imaging systems
+**Healthcare data types and characteristics:**
 
-**DICOM Images (Digital Imaging)**
-- **Volume**: 10K+ daily medical images (X-rays, MRIs, CT scans)
-- **Size**: 1-500MB per image with metadata and pixel data
-- **Standards**: DICOM 3.0 with patient information and imaging parameters
-- **Processing**: Image analysis, anonymization, format conversion
+| Data Type | Volume | Size/Complexity | Standards | Use Case |
+|-----------|--------|-----------------|-----------|----------|
+| **HL7 Messages** | 100K+ daily messages | Structured text, pipe-delimited | HL7 v2.x, FHIR | Patient demographics, lab results |
+| **DICOM Images** | 10K+ daily images | 1-500MB per image + metadata | DICOM 3.0 | Medical imaging, radiology AI |
 
-**Traditional Healthcare Data Challenges:**
-- **Format Complexity**: Proprietary healthcare formats require specialized parsers
-- **Compliance Requirements**: HIPAA, patient privacy, data security
-- **Scale**: Large hospital systems generate terabytes of medical data daily
-- **Integration**: Multiple systems with different data formats and standards
+**Traditional healthcare data challenges:**
+
+| Challenge | Description | Impact |
+|-----------|-------------|--------|
+| **Format Complexity** | Proprietary healthcare formats need specialized parsers | Integration difficulties |
+| **Compliance** | HIPAA, patient privacy, data security requirements | Processing constraints |
+| **Scale** | Terabytes of medical data generated daily | Infrastructure limitations |
+| **Integration** | Multiple systems with different formats | Data silos, fragmentation |
 
 ### Ray Data Medical Connector Benefits
 
