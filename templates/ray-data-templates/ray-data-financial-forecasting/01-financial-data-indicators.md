@@ -50,7 +50,8 @@ In this part, you'll learn how to:
 Financial institutions use distributed analytics for various applications. Investment banks implement risk calculation systems using distributed processing architectures. Banks process transaction data for fraud detection through parallel analytics pipelines. Asset management companies optimize portfolios using computational frameworks, while trading firms execute algorithmic trading decisions using distributed systems.
 
 ```python
-# Example: Portfolio risk calculation using Ray Datadef calculate_portfolio_risk(batch):
+# Example: Portfolio risk calculation using Ray Data
+def calculate_portfolio_risk(batch):
     """Calculate Value at Risk (VaR) for portfolio positions."""
     risk_metrics = []
     
@@ -142,7 +143,8 @@ start_time = time.time()
 ```
 
 ```python
-# Load real S&P 500 financial data from Ray benchmark bucketfinancial_data = ray.data.read_parquet(
+# Load real S&P 500 financial data from Ray benchmark bucket
+financial_data = ray.data.read_parquet(
     "s3://ray-benchmark-data/financial/sp500_daily_2years.parquet",
     num_cpus=0.025  # High I/O concurrency for reading financial data
 )
@@ -164,7 +166,8 @@ Create visualizations to understand market patterns and trends:
 # Analyze financial market data directlyimport matplotlib.pyplot as plt
 import numpy as np
 
-# Convert sample data for analysissample_data = financial_data.take(1000)
+# Convert sample data for analysis
+sample_data = financial_data.take(1000)
 print(f"Financial data summary: {len(sample_data):,} records analyzed")
 
 # Calculate basic financial metricsif sample_data:
@@ -179,10 +182,12 @@ print("Financial analysis completed")
 ### Basic Financial Visualization
 
 ```python
-# Create simple financial data visualizationfig, axes = plt.subplots(1, 2, figsize=(12, 5))
+# Create simple financial data visualization
+fig, axes = plt.subplots(1, 2, figsize=(12, 5))
 fig.suptitle('Financial Market Analysis', fontsize=14)
 
-# Convert Ray Data to pandas for visualizationfinancial_df = financial_data.to_pandas()
+# Convert Ray Data to pandas for visualization
+financial_df = financial_data.to_pandas()
 
 # Plot price trendsax1 = axes[0]
 if 'close' in financial_df.columns and 'date' in financial_df.columns:
@@ -297,7 +302,8 @@ This basic visualization shows the financial data structure and patterns. Now yo
         print(f"- Maximum drawdown: {max_drawdown:.2%}")
     print(f"- Total trading days analyzed: {len(financial_df):,}")
 
-# Create financial analysis summarycreate_simple_financial_summary()
+# Create financial analysis summary
+create_simple_financial_summary()
 ```
 
 This comprehensive dashboard provides key insights into market trends, volatility patterns, and performance metrics essential for financial forecasting.
@@ -309,7 +315,8 @@ This comprehensive dashboard provides key insights into market trends, volatilit
 # Create comprehensive financial news dataset for analysis
 print("Creating comprehensive financial news dataset...")
 
-# Create realistic financial news datasetnews_articles = []
+# Create realistic financial news dataset
+news_articles = []
     
     # Real financial news headlines (sample from public domain sources)
     real_headlines = [
@@ -511,7 +518,8 @@ for name, count, date_range, quality, source in datasets_info:
 
 print("=" * 120)
 
-# Show sample of real data with proper formattingsample_real_data = main_dataset.take(5)
+# Show sample of real data with proper formatting
+sample_real_data = main_dataset.take(5)
 print("\nReal Financial Data Sample:")
 print("-" * 100)
 
@@ -550,7 +558,8 @@ print("All datasets loaded successfully using Ray Data native operations")
 # Use Ray Data native operations for data exploration and validation
 print("Analyzing real financial dataset using Ray Data native operations...")
 
-# Use Ray Data native filter operation for data qualityvalid_data = sp500_data.filter(
+# Use Ray Data native filter operation for data quality
+valid_data = sp500_data.filter(
     lambda record: (
         record.get('Close', 0) > 0 and 
         record.get('Volume', 0) > 0 and 
@@ -569,10 +578,12 @@ print(f"Data quality check: {valid_data.count():,} valid records out of {sp500_d
 except Exception as e:
     print(f"Groupby operation info: {e}")
 
-# Use Ray Data native sort for top performerstop_performers = valid_data.sort('Close', descending=True)
+# Use Ray Data native sort for top performers
+top_performers = valid_data.sort('Close', descending=True)
 print("Data sorted by closing price using Ray Data native sort operation")
 
-# Display sample real market data in professional formatsample_data = top_performers.take(10)
+# Display sample real market data in professional format
+sample_data = top_performers.take(10)
 
 print("Real Market Data Sample:")
 print("=" * 110)
@@ -614,7 +625,8 @@ for record in sample_data:
 
 print("-" * 110)
 
-# Show market statisticsall_data = stock_data.take_all()
+# Show market statistics
+all_data = stock_data.take_all()
 prices = [r['close'] for r in all_data]
 volumes = [r['volume'] for r in all_data]
 
