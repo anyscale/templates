@@ -981,7 +981,8 @@ else:
     num_cpus=0.25
 ), batch_size=100, concurrency=8)
 
-# Product feature extractionfeature_pipeline = sentiment_pipeline.map_batches(ProductFeatureExtractor(,
+# Product feature extraction
+feature_pipeline = sentiment_pipeline.map_batches(ProductFeatureExtractor(,
     num_cpus=0.25
 ), batch_size=50)
 
@@ -1004,7 +1005,8 @@ insights = feature_pipeline.groupby('product_category').agg({
     num_cpus=0.25
 ), batch_size=200)
 
-# Competitive comparisoncompetitor_analysis = brand_analysis.map_batches(CompetitorMentionTracker(,
+# Competitive comparison
+competitor_analysis = brand_analysis.map_batches(CompetitorMentionTracker(,
     num_cpus=0.25
 ), batch_size=100)
 
@@ -1032,11 +1034,13 @@ classified_tickets = tickets.map_batches(TicketClassifier(,
     num_cpus=0.25
 ), batch_size=150)
 
-# Issue categorization and solution matchingcategorized_tickets = classified_tickets.map_batches(IssueCategorizer(,
+# Issue categorization and solution matching
+categorized_tickets = classified_tickets.map_batches(IssueCategorizer(,
     num_cpus=0.25
 ), batch_size=100)
 
-# Knowledge base enhancementknowledge_updates = categorized_tickets.map_batches(KnowledgeExtractor(,
+# Knowledge base enhancement
+knowledge_updates = categorized_tickets.map_batches(KnowledgeExtractor(,
     num_cpus=0.25
 ), batch_size=75)
 

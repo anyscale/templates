@@ -689,7 +689,8 @@ Population health requires analyzing millions of patient records for public heal
     
     return health_indicators
 
-# Analyze population health patternspopulation_health = patient_records.map_batches(
+# Analyze population health patterns
+population_health = patient_records.map_batches(
     analyze_population_health_trends,
     batch_format="pandas"
 )
