@@ -192,7 +192,9 @@ ehr_data.groupby("age_group").count().show(5)
 DICOM files contain both medical images and rich metadata crucial for diagnostic workflows.
 
 ```python
-# Example: Processing DICOM metadata for radiology analytics# Dicom metadata - JSON format (realistic for medical imaging metadata)dicom_data = ray.data.read_json("s3://ray-benchmark-data/medical/dicom-metadata.json",
+# Example: Processing DICOM metadata for radiology analytics
+# Dicom metadata - JSON format (realistic for medical imaging metadata)
+dicom_data = ray.data.read_json("s3://ray-benchmark-data/medical/dicom-metadata.json",
     num_cpus=0.05
 )
 
@@ -554,7 +556,9 @@ Healthcare systems use over 200 different data formats and standards, creating i
 
 # Hl7 clinical messageshl7_data = ray.data.read_text("hl7_medical_messages.txt")
 
-# Dicom imaging metadata# Dicom metadata - JSON format (realistic for medical imaging metadata)dicom_data = ray.data.read_json("s3://ray-benchmark-data/medical/dicom-metadata.json",
+# Dicom imaging metadata
+# Dicom metadata - JSON format (realistic for medical imaging metadata)
+dicom_data = ray.data.read_json("s3://ray-benchmark-data/medical/dicom-metadata.json",
     num_cpus=0.05
 )
 

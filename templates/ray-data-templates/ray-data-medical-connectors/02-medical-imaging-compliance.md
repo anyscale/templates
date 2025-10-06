@@ -702,7 +702,8 @@ anonymized_dicom = dicom_dataset.map(anonymize_dicom_record)
 print(f"\nDICOM Processing Results:")
 print(f"Anonymized {anonymized_dicom.count()} medical images")
 
-# Display anonymized DICOM structuresample_anon_dicom = anonymized_dicom.limit(1).to_pandas()
+# Display anonymized DICOM structure
+sample_anon_dicom = anonymized_dicom.limit(1).to_pandas()
 print(f"\nAnonymized DICOM record:")
 print(f"  Encrypted Patient ID: {sample_anon_dicom['encrypted_patient_id'].iloc[0][:50]}...")
 print(f"  Modality: {sample_anon_dicom['modality'].iloc[0]}")
