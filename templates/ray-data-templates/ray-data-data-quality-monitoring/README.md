@@ -242,7 +242,7 @@ print("Schema introspection - automatic field discovery and validation")
 | **Age** | Sample analysis | Calculated % | High / Medium / Good |
 | **Income** | Sample analysis | Calculated % | High / Medium / Good |
 
-### Data Quality Dashboard
+### Data quality dashboard
 
 ```python
 # Create data quality dashboard using utility function
@@ -302,7 +302,7 @@ print(f"- Validated {email_validation['total_records']:,} records efficiently")
 
 ## Step 3: Data Drift Monitoring
 
-### Statistical Analysis with Native Ray Data
+### Statistical analysis with native Ray Data
 
 :::tip Ray Data Distributed Aggregations
 Ray Data's native aggregation functions (`Count()`, `Mean()`, `Std()`, `Min()`, `Max()`) are optimized for distributed execution. Unlike pandas which requires loading full datasets into memory, Ray Data computes statistics in parallel across cluster nodes, enabling quality analysis on terabyte-scale datasets.
@@ -338,7 +338,7 @@ except Exception as e:
     print(f"Age statistics calculation: {e}")
 ```
 
-### Anomaly Detection Using Statistical Methods
+### Anomaly detection using statistical methods
 
 ```python
 def detect_statistical_anomalies(dataset):
@@ -381,7 +381,7 @@ for field, stats in anomalies.items():
     print(f"  {field}: {stats['outliers']} outliers ({stats['outlier_rate']:.2f}%)")
 ```
 
-### Data Drift Detection Over Time
+### Data drift detection over time
 
 ```python
 def detect_data_drift(current_dataset, historical_stats):
@@ -432,7 +432,7 @@ for field, drift in drift_analysis.items():
     print(f"  {field}: {drift['mean_drift_pct']:.2f}% drift - Status: {drift['status']}")
 ```
 
-### Business Rule Validation
+### Business rule validation
 
 ```python
 def validate_business_rules(dataset):
@@ -482,7 +482,7 @@ for rule_name, result in business_validation.items():
 
 ## Step 4: Quality Reporting
 
-### Generate Quality Report
+### Generate quality report
 
 ```python
 # Create comprehensive quality report
@@ -508,7 +508,7 @@ def generate_quality_report(dataset, missing_stats, email_validation):
 generate_quality_report(dataset, missing_analysis, email_validation)
 ```
 
-### Quality Score Calculation
+### Quality score calculation
 
 ```python
 # Calculate overall quality score using native operations
@@ -544,7 +544,7 @@ print(f"Overall Quality: {overall_quality['completeness_score']:.1%} (Grade: {ov
 
 ## Key Takeaways
 
-### Ray Data Quality Advantages
+### Ray Data quality advantages
 
 | Traditional Approach | Ray Data Approach | Key Benefit |
 |---------------------|-------------------|-------------|
@@ -581,7 +581,7 @@ The template implements six key quality dimensions:
 
 ## Related Templates
 
-### Recommended Next Steps
+### Recommended next steps
 - **[enterprise-data-catalog](../ray-data-enterprise-data-catalog/)**: Extend quality monitoring with automated data discovery
 - **[etl-optimization](../ray-data-etl-optimization/)**: Apply quality checks within ETL pipelines
 - **[log-ingestion](../ray-data-log-ingestion/)**: Monitor data pipeline logs for quality issues

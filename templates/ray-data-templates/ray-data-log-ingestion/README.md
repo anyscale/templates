@@ -90,7 +90,7 @@ To run this template, you will need the following packages:
 pip install ray[data] plotly pandas numpy matplotlib seaborn networkx
 ```
 
-### Enterprise Log Processing at Scale
+### Enterprise log processing at scale
 
 Modern enterprises generate massive volumes of log data that contain critical insights for security, operations, and business intelligence. A typical large organization processes:
 
@@ -105,7 +105,7 @@ Modern enterprises generate massive volumes of log data that contain critical in
 - **Variety**: Multiple log formats (Apache, JSON, syslog, custom) require different parsers
 - **Value**: Extracting actionable insights from unstructured text data is complex
 
-### Ray Data's Log Processing Advantages
+### Ray Data's log processing advantages
 
 Log processing showcases Ray Data's core strengths:
 
@@ -117,7 +117,7 @@ Log processing showcases Ray Data's core strengths:
 | **Manual scaling and tuning** | Automatic resource management | Zero-touch scaling |
 | **Limited fault tolerance** | Built-in error recovery | 99.9% pipeline reliability |
 
-### Enterprise Log Analytics Capabilities
+### Enterprise log analytics capabilities
 
 This template demonstrates the most critical log processing use cases:
 
@@ -138,7 +138,7 @@ By the end of this template, you'll understand:
 
 ## Use Case: Enterprise Log Analytics
 
-### The Challenge: Modern Log Processing at Scale
+### The challenge: modern log processing at scale
 
 Modern enterprises face an explosion of log data from diverse sources. Consider a typical e-commerce company:
 
@@ -153,7 +153,7 @@ Modern enterprises face an explosion of log data from diverse sources. Consider 
 - **Velocity**: Need for near-real-time processing for security and operations
 - **Complexity**: Extracting meaningful insights from unstructured text data
 
-### The Ray Data Solution
+### The Ray Data solution
 
 Our log analytics pipeline addresses these challenges by processing:
 
@@ -164,7 +164,7 @@ Our log analytics pipeline addresses these challenges by processing:
 | **Security Logs** | 50M+ entries | Syslog, custom | Threat detection, patterns | Distributed aggregation and correlation |
 | **System Metrics** | 1B+ entries | Time-series | Resource monitoring | Native statistical operations |
 
-### Business Impact and Value
+### Business impact and value
 
 The pipeline delivers measurable business value:
 
@@ -328,7 +328,7 @@ pip install plotly matplotlib
 
 **Goal**: Analyze real web server logs in 5 minutes
 
-### Step 1: Setup on Anyscale (30 Seconds)
+### Step 1: Setup on Anyscale (30 seconds)
 
 ```python
 # Ray cluster is already running on Anyscaleimport ray
@@ -339,7 +339,7 @@ print(f'Available resources: {ray.cluster_resources()}')
 # Install any missing packages if needed# !pip install plotly pandas
 ```
 
-### Step 2: Load Realistic Log Data (1 Minute)
+### Step 2: Load realistic log data (1 minute)
 
 **Understanding Log Data Loading:**
 
@@ -395,7 +395,7 @@ print("Realistic datasets ready for comprehensive log analysis")
 - **Format Flexibility**: Parquet for structured data, text files for raw logs
 - **Automatic Optimization**: Ray Data optimizes block size and distribution automatically
 
-### Step 3: Parse Logs with Ray Data (2 Minutes)
+### Step 3: Parse logs with Ray Data (2 minutes)
 
 **Understanding Log Parsing Challenges:**
 
@@ -485,7 +485,7 @@ print(parsed_apache.limit(3).to_pandas())
 - **Error Tolerance**: Malformed logs are skipped without stopping the entire pipeline
 - **Field Enrichment**: Additional derived fields enhance analysis capabilities
 
-### Step 4: Security and Operational Analysis (1.5 Minutes)
+### Step 4: Security and operational analysis (1.5 minutes)
 
 **Understanding Log Analysis Objectives:**
 
@@ -672,7 +672,7 @@ pr_events_hourly = parsed_app_logs.filter(
 print(f"Application metrics calculated: {app_metrics.count()} metric groups")
 ```
 
-### Log Operations Quick View
+### Log operations quick view
 
 ```python
 # Create concise operational log analyticsimport matplotlib.pyplot as plt
@@ -802,7 +802,7 @@ create_log_analytics_dashboard(app_results, security_results)
 
 ## Advanced Log Processing Patterns
 
-### Log Enrichment and Correlation
+### Log enrichment and correlation
 
 ```python
 # Enrich logs with geolocation and threat intelligencedef enrich_with_geolocation(batch):
@@ -836,7 +836,7 @@ create_log_analytics_dashboard(app_results, security_results)
 # Apply enrichment using Ray Data native operationsenriched_logs = parsed_logs.map_batches(enrich_with_geolocation, num_cpus=0.5, batch_size=1000, batch_format="pandas")
 ```
 
-### Anomaly Detection in Logs
+### Anomaly detection in logs
 
 ```python
 # Detect anomalies using Ray Data native operationsdef detect_log_anomalies(batch):
@@ -890,7 +890,7 @@ print(f"High severity anomalies: {high_severity_anomalies.count()}")
 
 ## Performance Analysis
 
-### Log Processing Performance Framework
+### Log processing performance framework
 
 | Processing Stage | Ray Data Operation | Expected Throughput | Memory Usage |
 |------------------|-------------------|-------------------|--------------|
@@ -919,7 +919,7 @@ Log Processing Pipeline:
         
 ```
 
-### Expected Output Visualizations
+### Expected output visualizations
 
 | Analysis Type | File Output | Content |
 |--------------|-------------|---------|
@@ -1004,7 +1004,7 @@ search_analysis = search_logs.map_batches(SearchAnalyzer(,
 
 ## Production Considerations
 
-### Cluster Configuration for Log Processing
+### Cluster configuration for log processing
 ```python
 # Optimal configuration for log ingestion workloadscluster_config = {
     "head_node": {
@@ -1024,7 +1024,7 @@ ctx = DataContext.get_current()
 ctx.target_max_block_size = 512 * 1024 * 1024  # 512MB blocks for logs
 ```
 
-### Real-time Log Monitoring
+### Real-time log monitoring
 - Set up alerts for security anomalies
 - Monitor processing throughput and latency
 - Implement automatic scaling based on log volume
@@ -1032,14 +1032,14 @@ ctx.target_max_block_size = 512 * 1024 * 1024  # 512MB blocks for logs
 
 ## Example Workflows
 
-### Security Operations Center (soc)
+### Security operations center (SOC)
 1. Ingest security logs from multiple sources
 2. Parse and standardize log formats
 3. Apply threat detection algorithms
 4. Generate security alerts and reports
 5. Feed results to SIEM systems
 
-### Application Performance Monitoring
+### Application performance monitoring
 1. Process application and service logs
 2. Extract performance metrics and errors
 3. Identify bottlenecks and issues

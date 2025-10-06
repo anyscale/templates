@@ -109,7 +109,7 @@ print(f"Dataset schema: {document_dataset.schema()}")
 
 ## Step 1: Data Lake Document Discovery
 
-### Initialize Ray Data Environment
+### Initialize Ray Data environment
 
 ```python
 import json
@@ -134,7 +134,7 @@ print("Ray Data initialized for large-scale document ingestion")
 print(f"Cluster resources: {ray.cluster_resources()}")
 ```
 
-### Discover Document Collections in Data Lake
+### Discover document collections in data lake
 
 ```python
 # Configuration for document ingestion pipelineSOURCE_S3_PATH = "s3://anyscale-rag-application/1000-docs/"
@@ -153,7 +153,7 @@ print(f"  Total documents: {document_collection.count():,}")
 print(f"  Schema: {document_collection.schema()}")
 ```
 
-### Document Metadata Extraction
+### Document metadata extraction
 
 ```python
 def extract_document_metadata(record: Dict[str, Any]) -> Dict[str, Any]:
@@ -227,7 +227,7 @@ documents_with_metadata = document_collection.map(
 print(f"Metadata extraction completed: {documents_with_metadata.count():,} documents processed")
 ```
 
-### Document Collection Analytics
+### Document collection analytics
 
 ```python
 # Use Ray Data native operations for document collection analysisfrom ray.data.aggregate import Count, Sum, Mean, Max, Min
@@ -265,7 +265,7 @@ print(f"  PowerPoint documents: {ppt_documents.count():,}")
 
 ## Step 2: Document Processing and Classification
 
-### Text Extraction Pipeline
+### Text extraction pipeline
 
 ```python
 def extract_text_from_document(record: Dict[str, Any]) -> Dict[str, Any]:
@@ -347,7 +347,7 @@ documents_with_text = documents_with_metadata.map_batches(
 print(f"Text extraction completed: {documents_with_text.count():,} documents processed")
 ```
 
-### Document Quality Assessment
+### Document quality assessment
 
 ```python
 def assess_document_quality(record: Dict[str, Any]) -> Dict[str, Any]:
@@ -421,7 +421,7 @@ print(f"  Total documents assessed: {quality_assessed_docs.count():,}")
 print(f"  High quality documents: {high_quality_docs.count():,}")
 ```
 
-### Document Filtering and Prioritization
+### Document filtering and prioritization
 
 ```python
 # Use Ray Data native filtering for document prioritizationprint("Filtering and prioritizing documents for processing...")
@@ -461,7 +461,7 @@ print(f"  Small documents (5MB): {small_documents.count():,}")
 
 ## Step 3: Text Extraction and Enrichment
 
-### Text Chunking for LLM Processing
+### Text chunking for LLM processing
 
 ```python
 def create_text_chunks_for_analytics(record: Dict[str, Any]) -> List[Dict[str, Any]]:
@@ -517,7 +517,7 @@ chunked_documents = high_quality_docs.flat_map(
 print(f"Text chunking completed: {chunked_documents.count():,} text chunks created")
 ```
 
-### Content Preprocessing for Analytics
+### Content preprocessing for analytics
 
 ```python
 def preprocess_content_for_analytics(record: Dict[str, Any]) -> Dict[str, Any]:
@@ -576,7 +576,7 @@ print(f"Content preprocessing completed: {llm_ready_chunks.count():,} chunks rea
 
 ## Step 4: LLM-Powered Content Analysis
 
-### Configure Ray Data LLM Processing
+### Configure Ray Data LLM processing
 
 ```python
 # Configure LLM processing using Ray Data LLM packageprint("Configuring Ray Data LLM processing...")
@@ -609,7 +609,7 @@ except ImportError:
     llm_available = False
 ```
 
-### Business Intelligence Prompt Engineering
+### Business intelligence prompt engineering
 
 ```python
 def create_business_analysis_prompt(row: Dict[str, Any]) -> Dict[str, Any]:
@@ -786,7 +786,7 @@ else:
     print(f"Fallback analysis completed: {llm_analyzed_docs.count():,} chunks processed")
 ```
 
-### Content Enrichment and Entity Extraction
+### Content enrichment and entity extraction
 
 ```python
 def enrich_content_with_business_intelligence(record: Dict[str, Any]) -> Dict[str, Any]:
@@ -836,7 +836,7 @@ print(f"Content enrichment completed: {enriched_documents.count():,} documents e
 
 ## Step 4: Structured Data Transformation
 
-### Data Warehouse Schema Creation
+### Data warehouse schema creation
 
 ```python
 def create_data_warehouse_schema(record: Dict[str, Any]) -> Dict[str, Any]:
@@ -923,7 +923,7 @@ warehouse_dataset = enriched_documents.map_batches(
 print(f"Data warehouse schema created: {warehouse_dataset.count():,} records")
 ```
 
-### Data Validation for Warehouse Integration
+### Data validation for warehouse integration
 
 ```python
 def validate_warehouse_data(record: Dict[str, Any]) -> Dict[str, Any]:
@@ -971,7 +971,7 @@ print(f"  Warehouse-ready documents: {warehouse_ready_docs.count():,}")
 
 ## Step 5: Data Warehouse Output
 
-### Document Processing Analytics
+### Document processing analytics
 
 ```python
 # Visualize document processing pipeline resultsimport matplotlib.pyplot as plt
@@ -989,7 +989,7 @@ funnel_fig.write_html('document_processing_funnel.html')
 print("Interactive processing funnel saved")
 ```
 
-### Write to Data Warehouse Formats
+### Write to data warehouse formats
 
 ```python
 # Write main warehouse table with partitioning for query optimizationprint("Writing to data warehouse formats...")
@@ -1058,7 +1058,7 @@ print(f"  Compliance analytics: {compliance_analytics.count():,} records")
 print(f"  Research analytics: {research_analytics.count():,} records")
 ```
 
-### Create Analytics Summary Tables
+### Create analytics summary tables
 
 ```python
 # Create comprehensive analytics summaries using Ray Data native operationsprint("Creating analytics summary tables for data warehouse...")
@@ -1129,7 +1129,7 @@ print("  - LLM analysis effectiveness summary")
 print("  - Document format analysis")
 ```
 
-### Data Catalog and Lineage
+### Data catalog and lineage
 
 ```python
 # Create comprehensive data catalog for warehouse integrationdef create_data_warehouse_catalog():
@@ -1238,7 +1238,7 @@ print("Data warehouse catalog created and saved")
 
 ## Verification and Analytics Validation
 
-### Comprehensive Output Verification
+### Comprehensive output verification
 
 ```python
 # Verify all data warehouse outputsprint("Verifying data warehouse integration...")
