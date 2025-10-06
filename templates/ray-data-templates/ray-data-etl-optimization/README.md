@@ -346,7 +346,8 @@ print(f"Order enrichment completed: {enriched_orders.count():,} orders processed
 ### Advanced filtering and selection
 
 ```python
-# Advanced filtering using Ray Data expressions APIprint("Applying advanced filtering techniques...")
+# Advanced filtering using Ray Data expressions API
+print("Applying advanced filtering techniques...")
 
 # Filter recent high-value ordersrecent_high_value_orders = enriched_orders.filter(
     (col("order_year") >= lit(1995)) & 
@@ -376,7 +377,8 @@ print(f"  Complex filtered orders: {complex_filtered_orders.count():,}")
 ### Data joins and relationships
 
 ```python
-# Etl Join: Customer-Order analysis using Ray Data joinsprint("Performing distributed joins for customer-order analysis...")
+# Etl Join: Customer-Order analysis using Ray Data joins
+print("Performing distributed joins for customer-order analysis...")
 
 # Join customers with their orders for comprehensive analysiscustomer_order_analysis = customers_ds.join(
     enriched_orders,

@@ -140,7 +140,8 @@ print(f"Cluster resources: {ray.cluster_resources()}")
 # Configuration for document ingestion pipelineSOURCE_S3_PATH = "s3://anyscale-rag-application/1000-docs/"
 OUTPUT_WAREHOUSE_PATH = "/tmp/document_warehouse"
 
-# Use Ray Data to scan large document collectionsprint("Discovering documents in data lake...")
+# Use Ray Data to scan large document collections
+print("Discovering documents in data lake...")
 
 document_collection = ray.data.read_binary_files(
     SOURCE_S3_PATH,
@@ -217,7 +218,8 @@ def extract_document_metadata(record: Dict[str, Any]) -> Dict[str, Any]:
         "processing_status": "discovered"
     }
 
-# Apply metadata extraction using Ray Data map operationprint("Extracting document metadata for data warehouse analysis...")
+# Apply metadata extraction using Ray Data map operation
+print("Extracting document metadata for data warehouse analysis...")
 
 documents_with_metadata = document_collection.map(
     extract_document_metadata,
@@ -336,7 +338,8 @@ def simulate_html_extraction(file_name: str, file_size: int) -> str:
     else:
         return f"HTML Document: Web content with structured information, data tables, and business content suitable for data warehouse ingestion."
 
-# Apply text extraction using Ray Data distributed processingprint("Extracting text content from documents...")
+# Apply text extraction using Ray Data distributed processing
+print("Extracting text content from documents...")
 
 documents_with_text = documents_with_metadata.map_batches(
     lambda batch: [extract_text_from_document(record, batch_format="pandas") for record in batch],
@@ -403,7 +406,8 @@ def assess_document_quality(record: Dict[str, Any]) -> Dict[str, Any]:
         "quality_assessment_timestamp": datetime.now().isoformat()
     }
 
-# Apply quality assessment using Ray Data batch processingprint("Assessing document quality for data warehouse ingestion...")
+# Apply quality assessment using Ray Data batch processing
+print("Assessing document quality for data warehouse ingestion...")
 
 quality_assessed_docs = documents_with_text.map_batches(
     lambda batch: [assess_document_quality(record, batch_format="pandas") for record in batch],
@@ -424,7 +428,8 @@ print(f"  High quality documents: {high_quality_docs.count():,}")
 ### Document filtering and prioritization
 
 ```python
-# Use Ray Data native filtering for document prioritizationprint("Filtering and prioritizing documents for processing...")
+# Use Ray Data native filtering for document prioritization
+print("Filtering and prioritizing documents for processing...")
 
 # Filter by processing priority using expressions APIhigh_priority_docs = high_quality_docs.filter(
     col("priority_score") >= lit(2),
@@ -507,7 +512,8 @@ def create_text_chunks_for_analytics(record: Dict[str, Any]) -> List[Dict[str, A
     
     return chunks
 
-# Apply text chunking using Ray Data flat_mapprint("Creating text chunks for LLM processing...")
+# Apply text chunking using Ray Data flat_map
+print("Creating text chunks for LLM processing...")
 
 chunked_documents = high_quality_docs.flat_map(
     create_text_chunks_for_analytics,
@@ -558,7 +564,8 @@ def preprocess_content_for_analytics(record: Dict[str, Any]) -> Dict[str, Any]:
         "llm_ready": len(cleaned_text) > 50  # Minimum text for LLM processing
     }
 
-# Apply content preprocessing using Ray Dataprint("Preprocessing content for analytics...")
+# Apply content preprocessing using Ray Data
+print("Preprocessing content for analytics...")
 
 preprocessed_chunks = chunked_documents.map_batches(
     lambda batch: [preprocess_content_for_analytics(record, batch_format="pandas") for record in batch],
@@ -579,7 +586,8 @@ print(f"Content preprocessing completed: {llm_ready_chunks.count():,} chunks rea
 ### Configure Ray Data LLM processing
 
 ```python
-# Configure LLM processing using Ray Data LLM packageprint("Configuring Ray Data LLM processing...")
+# Configure LLM processing using Ray Data LLM package
+print("Configuring Ray Data LLM processing...")
 
 # Install required packages for LLM processing# Pip install -U vllm==0.7.2
 try:
@@ -974,7 +982,8 @@ print(f"  Warehouse-ready documents: {warehouse_ready_docs.count():,}")
 ### Document processing analytics
 
 ```python
-# Visualize document processing pipeline resultsimport matplotlib.pyplot as plt
+# Visualize document processing pipeline results
+import matplotlib.pyplot as plt
 import numpy as np
 
 # Generate document processing analytics using utility function
