@@ -1004,7 +1004,8 @@ etl_results = (
 ## Cleanup
 
 ```python
-# Cleanup Ray resources following best practicesif ray.is_initialized():
+# Cleanup Ray resources following best practices
+if ray.is_initialized():
     ray.shutdown()
 print("Ray shutdown completed")
 ```

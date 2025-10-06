@@ -1306,7 +1306,8 @@ executive_view.write_parquet(
     num_cpus=0.1
 )
 
-# Operational metrics viewoperational_view = warehouse_ready_docs.select_columns([
+# Operational metrics view
+operational_view = warehouse_ready_docs.select_columns([
     "document_id", "file_size_mb", "text_length", "word_count",
     "quality_score", "processing_date", "llm_category"
 ]).filter(
@@ -1329,11 +1330,13 @@ print(f"  Operational metrics: {operational_view.count():,} records")
 ## Pipeline Performance Summary
 
 ```python
-# Calculate comprehensive pipeline processing metricsprint("=" * 80)
+# Calculate comprehensive pipeline processing metrics
+print("=" * 80)
 print("DOCUMENT INGESTION PIPELINE SUMMARY")
 print("=" * 80)
 
-# Processing metricstotal_input_docs = document_collection.count()
+# Processing metrics
+total_input_docs = document_collection.count()
 total_chunks_created = enriched_documents.count()
 total_warehouse_records = warehouse_ready_docs.count()
 total_financial_records = financial_analytics.count()
@@ -1347,7 +1350,8 @@ print(f"    Financial records: {total_financial_records:,}")
 print(f"    Compliance records: {total_compliance_records:,}")
 print(f"    Average chunks per document: {total_chunks_created / total_input_docs:.1f}")
 
-# Data warehouse statisticsbusiness_categories = warehouse_ready_docs.select_columns(["business_category"]).distinct(num_cpus=0.1).take_all()
+# Data warehouse statistics
+business_categories = warehouse_ready_docs.select_columns(["business_category"]).distinct(num_cpus=0.1).take_all()
 document_types = warehouse_ready_docs.select_columns(["document_type"]).distinct(num_cpus=0.1).take_all()
 
 print(f" DATA WAREHOUSE STATISTICS:")
@@ -1439,7 +1443,8 @@ This template showcases comprehensive Ray Data native operations:
 ## Cleanup
 
 ```python
-# Cleanup Ray resources following best practicesif ray.is_initialized():
+# Cleanup Ray resources following best practices
+if ray.is_initialized():
     ray.shutdown()
 print("Ray shutdown completed")
 ```
