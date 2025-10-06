@@ -707,7 +707,8 @@ valid_data = sp500_data.filter(
 
 print(f"Data quality check: {valid_data.count():,} valid records out of {sp500_data.count():,} total")
 
-# Use Ray Data native groupby for sector analysistry:
+# Use Ray Data native groupby for sector analysis
+try:
     if 'Sector' in sp500_data.schema().names:
         sector_stats = valid_data.groupby('Sector').mean(['Close', 'Volume'])
         print("Sector analysis completed using Ray Data native groupby")
@@ -744,44 +745,17 @@ for record in sample_data:
     
     print(f"{str(symbol):<8} {date:<12} ${open_price:<7.2f} ${high_price:<7.2f} ${low_price:<7.2f} ${close_price:<7.2f} {volume:<12,} {change_str:<10}")
 
-print("-" * 110)
-
-for record in sample_data:
-    symbol = record['symbol']
-    date = record['date']
-    open_price = record['open']
-    high_price = record['high']
-    low_price = record['low']
-    close_price = record['close']
-    volume = record['volume']
-    
-    # Calculate daily change percentage
-    daily_change = ((close_price - open_price) / open_price) * 100 if open_price > 0 else 0
-    change_str = f"{daily_change:+.2f}%"
-    
-    print(f"{symbol:<8} {date:<12} ${open_price:<7.2f} ${high_price:<7.2f} ${low_price:<7.2f} ${close_price:<7.2f} {volume:<12,} {change_str:<10}")
-
-print("-" * 110)
-
-# Show market statistics
-all_data = stock_data.take_all()
-prices = [r['close'] for r in all_data]
-volumes = [r['volume'] for r in all_data]
-
-print(f"\nMarket Data Statistics:")
-print(f"  Total trading days: {len(all_data):,}")
-print(f"  Price range: ${min(prices):.2f} - ${max(prices):.2f}")
-print(f"  Average price: ${np.mean(prices):.2f}")
-print(f"  Total volume traded: {sum(volumes):,} shares")
-# Removed aggregate market cap statement to avoid unsupported claims
-print("\nReady for improved financial analysis with real market data")
+print("=" * 110)
+print("\nRay Data native operations provide efficient financial data processing")
 ```
 
-## Why Financial Data Processing Is Hard
+**Key benefits of Ray Data for financial analysis:**
+- Native filter operations for data quality checks
+- Efficient groupby for sector and industry analysis  
+- Fast sorting for identifying top performers
+- Scalable processing for large financial datasets
 
-**Volume**: Markets generate terabytes of data daily across thousands of securities
-**Speed**: Millisecond delays can cost millions in high-frequency trading
-**Complexity**: Technical indicators require complex mathematical calculations
+---
 **Scale**: Global portfolios contain thousands of positions requiring simultaneous analysis
 
 **Ray Data solves these challenges by:**
