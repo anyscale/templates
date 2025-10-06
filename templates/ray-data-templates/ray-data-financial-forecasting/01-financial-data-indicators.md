@@ -119,7 +119,8 @@ import pandas as pd
 import ray
 import yfinance as yf
 
-# Initialize Ray for distributed processingray.init()
+# Initialize Ray for distributed processing
+ray.init()
 
 # Configure Ray Data for optimal performance monitoring
 ctx = ray.data.DataContext.get_current()
@@ -426,7 +427,8 @@ print(f"  Average sentiment: {news_df['sentiment_score'].mean():.2f}")
 ```python
 # Load multiple real financial datasets using Ray Data native operationsprint("Loading comprehensive real-world financial datasets...")
 
-# Dataset 1: S&P 500 Historical Prices (5+ years of data)try:
+# Dataset 1: S&P 500 Historical Prices (5+ years of data)
+try:
     print("1. Loading S&P 500 historical price data...")
     sp500_prices = ray.data.read_csv(
         "https://raw.githubusercontent.com/datasets/s-and-p-500/master/data/all-stocks-5yr.csv",
@@ -451,7 +453,8 @@ except Exception as e:
     print(f"   Error loading company data: {e}")
     sp500_companies = None
 
-# Dataset 3: Economic Indicators (Federal Reserve Data)try:
+# Dataset 3: Economic Indicators (Federal Reserve Data)
+try:
     print("3. Loading economic indicators...")
     # Load key economic indicators that affect stock markets
     economic_data_records = []
@@ -755,7 +758,8 @@ else:
 Create financial time series data for analysis:
 
 ```python
-# Load financial dataset from a public source (or prepared local parquet)from ray.data import read_parquet
+# Load financial dataset from a public source (or prepared local parquet)
+from ray.data import read_parquet
 
 print("Loading S&P 500 time series data...")
 financial_data = read_parquet(
