@@ -69,7 +69,8 @@ This section demonstrates medical data processing using Ray Data:
 ```python
 import ray
 
-# Create sample medical data (anonymized)patient_data = [{"patient_id": f"P{i:04d}", "age": 45, "diagnosis": "routine_checkup"} for i in range(1000)]
+# Create sample medical data (anonymized)
+patient_data = [{"patient_id": f"P{i:04d}", "age": 45, "diagnosis": "routine_checkup"} for i in range(1000)]
 ds = ray.data.from_items(patient_data)
 print(f" Created medical dataset with {medical_dataset.count()} patient records")
 ```
@@ -193,7 +194,8 @@ DICOM files contain both medical images and rich metadata crucial for diagnostic
     num_cpus=0.05
 )
 
-# Imaging modality analysismodality_stats = dicom_data.groupby("modality").count()
+# Imaging modality analysis
+modality_stats = dicom_data.groupby("modality").count()
 print("Imaging studies by modality:")
 print(modality_stats.limit(10).to_pandas())
 ```
@@ -203,11 +205,13 @@ print(modality_stats.limit(10).to_pandas())
 HL7 messages carry lab results and clinical observations essential for patient care.
 
 ```python
-# Example: Processing lab results for clinical insightslab_data = ray.data.read_parquet("laboratory_results.parquet",
+# Example: Processing lab results for clinical insights
+lab_data = ray.data.read_parquet("laboratory_results.parquet",
     num_cpus=0.025
 )
 
-# Abnormal result analysisabnormal_labs = lab_data.filter(lambda x: x["abnormal_flag"] != "N",
+# Abnormal result analysis
+abnormal_labs = lab_data.filter(lambda x: x["abnormal_flag"] != "N",
     num_cpus=0.1
 )
 print(f"Abnormal lab results: {abnormal_labs.count():,}")
@@ -494,7 +498,8 @@ This streaming approach enables processing of unlimited medical imaging datasets
 Critical lab results must be processed within minutes for patient safety, requiring streaming HL7 processing capabilities with sub-second latency for immediate clinical alerts and decision support.
 
 ```python
-# Real-time lab result processing for clinical alertslab_data = ray.data.read_parquet("laboratory_results.parquet",
+# Real-time lab result processing for clinical alerts
+lab_data = ray.data.read_parquet("laboratory_results.parquet",
     num_cpus=0.025
 )
 
@@ -600,7 +605,8 @@ Emergency departments require sub-second processing for critical patient decisio
     
     return emergency_alerts
 
-# Process emergency department dataemergency_data = patient_records.filter(lambda x: x["department"] == "EMERGENCY",
+# Process emergency department data
+emergency_data = patient_records.filter(lambda x: x["department"] == "EMERGENCY",
     num_cpus=0.1
 )
 critical_alerts = emergency_data.map_batches(
@@ -1170,7 +1176,8 @@ ray_processing_time = time.time() - ray_start_time
         'processing_date': '2024-01-01'
     }
 
-# Apply processing and saveprocessed_data = hl7_dataset.map(anonymize_patient_data)
+# Apply processing and save
+processed_data = hl7_dataset.map(anonymize_patient_data)
 processed_data.write_parquet("/tmp/medical_analytics/processed_hl7",
     num_cpus=0.1
 )

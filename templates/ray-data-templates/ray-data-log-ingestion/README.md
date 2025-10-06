@@ -504,7 +504,9 @@ Once logs are parsed into structured format, we can extract actionable insights 
 - **Regulatory Compliance**: Automated log analysis ensures audit trail completeness
 
 ```python
-# Use Ray Data native operations for analysis# Filter for errors using native filtererror_logs = parsed_logs.filter(lambda x: x['is_error'],
+# Use Ray Data native operations for analysis
+# Filter for errors using native filter
+error_logs = parsed_logs.filter(lambda x: x['is_error'],
     num_cpus=0.1
 )
 
@@ -526,7 +528,8 @@ print(f"\nHourly Traffic (sample):")
 for result in hourly_results:
     print(f"Hour {result['hour']}: {result['count()']} requests")
 
-# Security analysissecurity_logs = parsed_logs.filter(lambda x: x['is_security_endpoint'],
+# Security analysis
+security_logs = parsed_logs.filter(lambda x: x['is_security_endpoint'],
     num_cpus=0.1
 )
 print(f"\nSecurity endpoint requests: {security_logs.count()}")
@@ -619,7 +622,9 @@ print(f"Parsed security logs: {parsed_security_logs.count()}")
 ### 3. Security Analysis with Native Operations
 
 ```python
-# Security threat detection using Ray Data native operations# Filter for suspicious activitiessuspicious_logins = parsed_security_logs.filter(
+# Security threat detection using Ray Data native operations
+# Filter for suspicious activities
+suspicious_logins = parsed_security_logs.filter(
     lambda x: x['is_console_login'] and x['source_ip'] not in ['192.168.', '10.0.', '172.16.']
 )
 
@@ -662,7 +667,8 @@ pr_events_hourly = parsed_app_logs.filter(
     col('is_pr') == lit(True)
 ).groupby('hour').aggregate(Count())
 
-# Additional analysis with native operationshigh_activity_events = parsed_app_logs.filter(
+# Additional analysis with native operations
+high_activity_events = parsed_app_logs.filter(
     col('payload_size') > lit(1000)
 ).groupby('event_type').aggregate(
     Count(),

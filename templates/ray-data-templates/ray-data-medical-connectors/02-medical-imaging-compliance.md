@@ -327,10 +327,12 @@ class EnterpriseHL7Datasource(FileBasedDatasource):
         
         return parsed_data
 
-# Compare single-thread vs Ray Data performanceprint("Performance Comparison:")
+# Compare single-thread vs Ray Data performance
+print("Performance Comparison:")
 print(f"Single-thread (5 files): {enhanced_single_time:.2f}s")
 
-# Now test Ray Data datasource with all filesray_enterprise_start = time.time()
+# Now test Ray Data datasource with all files
+ray_enterprise_start = time.time()
 
 enterprise_hl7_dataset = ray.data.read_datasource(
     EnterpriseHL7Datasource("/mnt/cluster_storage/enterprise_medical_data/")
@@ -341,16 +343,19 @@ ray_enterprise_time = time.time() - ray_enterprise_start
 
 print(f"Ray Data (all files): {enterprise_count} messages in {ray_enterprise_time:.2f}s")
 
-# Calculate estimated single-thread time for all filesestimated_single_thread_time = enhanced_single_time * (len(glob.glob("/mnt/cluster_storage/enterprise_medical_data/*.hl7")) / 5)
+# Calculate estimated single-thread time for all files
+estimated_single_thread_time = enhanced_single_time * (len(glob.glob("/mnt/cluster_storage/enterprise_medical_data/*.hl7")) / 5)
 speedup = estimated_single_thread_time / ray_enterprise_time
 
 print(f"Ray Data distributed processing completed successfully")
 
-# Explore the data structure Ray Data createdprint("\n" + "="*50)
+# Explore the data structure Ray Data created
+print("\n" + "="*50)
 print("DATA EXPLORATION: Ray Data's Power with Complex Formats")
 print("="*50)
 
-# Display sample parsed HL7 data structureprint("Sample HL7 record structure (Ray Data automatically handles complex nested data):")
+# Display sample parsed HL7 data structure
+print("Sample HL7 record structure (Ray Data automatically handles complex nested data):")
 sample_hl7_record = enterprise_hl7_dataset.limit(1).to_pandas()
 print(sample_hl7_record.to_string())
 
@@ -388,7 +393,8 @@ Now that we have our medical data in Ray Data format, we can perform efficient a
 Healthcare organizations often need to analyze patient patterns, hospital utilization, and clinical workflows. With traditional tools, this would require specialized medical informatics software. Ray Data democratizes this capability, making enterprise-grade medical analytics accessible through standard data operations.
 
 ```python
-# Perform medical data operations using Ray Dataprint("\nPerforming medical data analytics...")
+# Perform medical data operations using Ray Data
+print("\nPerforming medical data analytics...")
 
 # 1. Patient demographics analysis
 patient_demographics = enterprise_hl7_dataset.groupby('patient_demographics.gender').count()
@@ -510,7 +516,8 @@ workflow_analysis.limit(10).to_pandas()
 hospital_analysis.sort('count()', descending=True).limit(10).to_pandas()
 
 ## Clinical Data Distribution
-# Analyze distribution of clinical data with lab resultsclinical_analysis = anonymized_data.filter(lambda x: x['has_lab_results'],
+# Analyze distribution of clinical data with lab results
+clinical_analysis = anonymized_data.filter(lambda x: x['has_lab_results'],
     num_cpus=0.1
 ).groupby('age_group').count()
 clinical_analysis.limit(10).to_pandas()
@@ -698,17 +705,21 @@ print(f"  Image Statistics: {sample_anon_dicom['image_statistics'].iloc[0]}")
 **Stage 7: Save to Parquet for Analytics**
 
 ```python
-# Save processed medical data to Parquet for downstream analyticsprint("Saving medical analytics to Parquet...")
+# Save processed medical data to Parquet for downstream analytics
+print("Saving medical analytics to Parquet...")
 
-# Save anonymized patient dataanonymized_data.write_parquet("/tmp/medical_analytics/anonymized_patients",
+# Save anonymized patient data
+anonymized_data.write_parquet("/tmp/medical_analytics/anonymized_patients",
     num_cpus=0.1
 )
 
-# Save hospital utilization metrics using Ray Data native operationshospital_utilization.write_parquet("/tmp/medical_analytics/hospital_utilization",
+# Save hospital utilization metrics using Ray Data native operations
+hospital_utilization.write_parquet("/tmp/medical_analytics/hospital_utilization",
     num_cpus=0.1
 )
 
-# Save patient demographics using Ray Data native operationspatient_demographics.write_parquet("/tmp/medical_analytics/patient_demographics",
+# Save patient demographics using Ray Data native operations
+patient_demographics.write_parquet("/tmp/medical_analytics/patient_demographics",
     num_cpus=0.1
 )
 

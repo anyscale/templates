@@ -52,7 +52,8 @@ Build a geospatial analysis pipeline that processes location points across citie
 **Applications**: Uber processes 10M+ trips daily using distributed spatial matching. DoorDash optimizes delivery zones across 10,000+ restaurants using spatial clustering. Zillow analyzes property locations and nearby amenities for 135M+ listings using geospatial joins.
 
 ```python
-# Example: Real-time spatial matching like Uber/Lyftdef find_nearest_drivers(passenger_location, driver_locations, max_distance_km=5):
+# Example: Real-time spatial matching like Uber/Lyft
+def find_nearest_drivers(passenger_location, driver_locations, max_distance_km=5):
     """Find nearest available drivers using efficient spatial operations."""
     
     import math
@@ -141,9 +142,11 @@ import numpy as np
 import pandas as pd
 import ray
 
-# Initialize Ray for distributed processingray.init()
+# Initialize Ray for distributed processing
+ray.init()
 
-# Configure Ray Data for optimal performance monitoringctx = ray.data.DataContext.get_current()
+# Configure Ray Data for optimal performance monitoring
+ctx = ray.data.DataContext.get_current()
 ctx.enable_progress_bars = True
 ctx.enable_operator_progress_bars = True
 ```
@@ -151,15 +154,18 @@ ctx.enable_operator_progress_bars = True
 ### Create sample location data
 
 ```python
-# Create sample location data for major US citiesprint("Creating sample geospatial dataset...")
+# Create sample location data for major US cities
+print("Creating sample geospatial dataset...")
 
-# Major US city coordinates# Load NYC taxi trip data for geospatial analysistaxi_data = ray.data.read_parquet(
+# Load NYC taxi trip data for geospatial analysis
+taxi_data = ray.data.read_parquet(
     "s3://ray-benchmark-data/nyc-taxi/yellow_tripdata_2023-01.parquet"
 ,
     num_cpus=0.025
 ).limit(50000)
 
-# Extract location points from taxi data using Ray Data map_batchesdef extract_taxi_locations(batch):
+# Extract location points from taxi data using Ray Data map_batches
+def extract_taxi_locations(batch):
     """Extract taxi pickup locations for geospatial analysis."""
     df = pd.DataFrame(batch)
     locations = []
@@ -182,7 +188,9 @@ ctx.enable_operator_progress_bars = True
     
     return locations
 
-# Use Ray Data map_batches for efficient location extraction# Optimize batch size for memory efficiency with large datasetslocation_dataset = taxi_data.map_batches(
+# Use Ray Data map_batches for efficient location extraction
+# Optimize batch size for memory efficiency with large datasets
+location_dataset = taxi_data.map_batches(
     extract_taxi_locations,
     batch_format="pandas",
     batch_size=500,  # Reduced batch size for memory efficiency
@@ -233,7 +241,8 @@ This comprehensive geospatial analysis reveals patterns crucial for optimizing r
 ### Interactive geospatial visualization dashboard
 
 ```python
-# Create an engaging geospatial data visualization dashboarddef create_geospatial_dashboard(dataset, sample_size=1000):
+# Create an engaging geospatial data visualization dashboard
+def create_geospatial_dashboard(dataset, sample_size=1000):
     """Generate a comprehensive geospatial data analysis dashboard."""
     import matplotlib.pyplot as plt
     import seaborn as sns
@@ -474,17 +483,21 @@ print(f"Data loading took: {load_time:.2f} seconds")
 Inspect the dataset structure and validate the data:
 
 ```python
-# Basic dataset informationprint(f" Dataset size: {poi_dataset.count()} records")
+# Basic dataset information
+print(f" Dataset size: {poi_dataset.count()} records")
 print(f" Schema: {poi_dataset.schema()}")
 
-# Show sample data to verify it looks correctprint("\n Sample POI data:")
+# Show sample data to verify it looks correct
+print("\n Sample POI data:")
 sample_data = poi_dataset.take(5)
 for i, poi in enumerate(sample_data):
     print(f"  {i+1}. {poi['name']} ({poi['category']}) at {poi['latitude']:.4f}, {poi['longitude']:.4f}")
 
-# Comprehensive data validation (rule #218: Include comprehensive data validation)print(f"\n Data validation:")
+# Comprehensive data validation
+print(f"\n Data validation:")
 
-# Validate coordinate rangesvalid_coords = poi_dataset.filter(
+# Validate coordinate ranges
+valid_coords = poi_dataset.filter(
     lambda x: x['latitude'] is not None and x['longitude'] is not None and
               -90 <= x['latitude'] <= 90 and -180 <= x['longitude'] <= 180
 ).count()
@@ -563,7 +576,8 @@ Now you'll perform basic spatial operations using Ray Data's distributed process
     
     return results
 
-# Process with optimized batch processingdistance_analysis = poi_dataset.map_batches(
+# Process with optimized batch processing
+distance_analysis = poi_dataset.map_batches(
     calculate_distance_metrics,
     batch_size=2000,    # Larger batch size for efficiency
     concurrency=4       # Increased concurrency
@@ -582,7 +596,8 @@ Ray Data provides capable native operations for geospatial analysis. This sectio
 ```python
 # Best PRACTICE: Use Ray Data expressions API for optimized spatial queriesfrom ray.data.expressions import col, lit
 
-# Find high-rated restaurants in NYC using expressions APIhigh_rated_restaurants = poi_dataset.filter(
+# Find high-rated restaurants in NYC using expressions API
+high_rated_restaurants = poi_dataset.filter(
     (col('category') == lit('restaurant')) & 
     (col('rating') > lit(4.0)) & 
     (col('metro_area') == lit('NYC'))
@@ -590,7 +605,8 @@ Ray Data provides capable native operations for geospatial analysis. This sectio
 
 print(f"High-rated NYC restaurants: {high_rated_restaurants.count()} found")
 
-# Filter POIs within specific geographic bounds using expressionsmanhattan_bounds = poi_dataset.filter(
+# Filter POIs within specific geographic bounds using expressions
+manhattan_bounds = poi_dataset.filter(
     (col('latitude') >= lit(40.7000)) & 
     (col('latitude') <= lit(40.8000)) &
     (col('longitude') >= lit(-74.0200)) & 
@@ -604,13 +620,16 @@ print(f"POIs in Manhattan bounds: {manhattan_bounds.count()} locations")
 ### Spatial aggregations and grouping
 
 ```python
-# Use Ray Data's native groupby() for distributed spatial aggregationsprint("Performing distributed spatial aggregations...")
+# Use Ray Data's native groupby() for distributed spatial aggregations
+print("Performing distributed spatial aggregations...")
 
-# Group by metro area and category using Ray Data native operationscategory_analysis = poi_dataset.groupby(['metro_area', 'category']).count()
+# Group by metro area and category using Ray Data native operations
+category_analysis = poi_dataset.groupby(['metro_area', 'category']).count()
 print("POI Count by Metro and Category:")
 print(category_analysis.limit(15).to_pandas())
 
-# Calculate spatial statistics by metro areafrom ray.data.aggregate import Mean, Max, Min, Count
+# Calculate spatial statistics by metro area
+from ray.data.aggregate import Mean, Max, Min, Count
 spatial_stats = poi_dataset.groupby('metro_area').aggregate(
     Count('poi_id'),
     Mean('rating'),
@@ -621,7 +640,8 @@ spatial_stats = poi_dataset.groupby('metro_area').aggregate(
 print("\nSpatial Statistics by Metro Area:")
 print(spatial_stats.limit(10).to_pandas())
 
-# Advanced aggregation: Category distribution analysiscategory_distribution = poi_dataset.groupby('category').aggregate(
+# Advanced aggregation: Category distribution analysis
+category_distribution = poi_dataset.groupby('category').aggregate(
     Count('poi_id'),
     Mean('rating'),
     Max('rating'),
@@ -666,9 +686,11 @@ print(f"Created demographic data: {demographic_data.count()} zones")
 ### Spatial joins with Ray Data
 
 ```python
-# Perform distributed spatial join using Ray Data's native join operationprint("Performing spatial join between POIs and demographics...")
+# Perform distributed spatial join using Ray Data's native join operation
+print("Performing spatial join between POIs and demographics...")
 
-# Join POI data with demographic data by metro areaspatial_join_result = poi_dataset.join(
+# Join POI data with demographic data by metro area
+spatial_join_result = poi_dataset.join(
     demographic_data,
     key='metro_area',  # Join on metro area
     join_type='inner'  # Inner join for complete matches
@@ -684,18 +706,22 @@ for i, record in enumerate(joined_sample):
 ### Advanced Spatial Analytics with Ray Data
 
 ```python
-# Use Ray Data's native sort() for geographic rankingprint("Ranking locations by spatial accessibility...")
+# Use Ray Data's native sort() for geographic ranking
+print("Ranking locations by spatial accessibility...")
 
-# Sort POIs by rating within each metro areatop_rated_pois = spatial_join_result.sort(['metro_area', 'rating'], descending=[False, True])
+# Sort POIs by rating within each metro area
+top_rated_pois = spatial_join_result.sort(['metro_area', 'rating'], descending=[False, True])
 
 print("Top-rated POIs by metro area:")
 top_pois_sample = top_rated_pois.take(10)
 for poi in top_pois_sample:
     print(f"  {poi['name']} ({poi['category']}) - Rating: {poi['rating']:.1f} in {poi['metro_area']}")
 
-# Use Ray Data's union() operation to combine datasetsprint("\nCombining multiple geographic datasets...")
+# Use Ray Data's union() operation to combine datasets
+print("\nCombining multiple geographic datasets...")
 
-# Create additional POI data for demonstrationadditional_pois = ray.data.from_items([
+# Create additional POI data for demonstration
+additional_pois = ray.data.from_items([
     {'poi_id': 'new_001', 'name': 'Central Park', 'category': 'park', 
      'latitude': 40.7829, 'longitude': -73.9654, 'metro_area': 'NYC', 'rating': 4.8},
     {'poi_id': 'new_002', 'name': 'Golden Gate Bridge', 'category': 'landmark', 
@@ -759,7 +785,8 @@ class SpatialAnalyzer:
         
         return pd.DataFrame(analysis_results).to_dict('list')
 
-# Apply spatial analysisspatial_results = poi_dataset.map_batches(
+# Apply spatial analysis
+spatial_results = poi_dataset.map_batches(
     SpatialAnalyzer,
     concurrency=2,
     batch_size=1500
@@ -768,17 +795,21 @@ class SpatialAnalyzer:
 print("Spatial Analysis Results:")
 print(spatial_results.limit(10).to_pandas())
 
-# Save spatial analysis results using Ray Data's native write operationsprint("Saving geospatial analysis results...")
+# Save spatial analysis results using Ray Data's native write operations
+print("Saving geospatial analysis results...")
 
-# Write enriched POI data to Parquet for efficient storagespatial_join_result.write_parquet("s3://your-bucket/geospatial-analysis/enriched-pois/",
+# Write enriched POI data to Parquet for efficient storage
+spatial_join_result.write_parquet("s3://your-bucket/geospatial-analysis/enriched-pois/",
     num_cpus=0.1
 )
 
-# Write category analysis results  category_distribution.write_parquet("s3://your-bucket/geospatial-analysis/category-stats/",
+# Write category analysis results
+category_distribution.write_parquet("s3://your-bucket/geospatial-analysis/category-stats/",
     num_cpus=0.1
 )
 
-# Write top locations for business intelligencetop_rated_pois.limit(100).write_json("s3://your-bucket/geospatial-analysis/top-locations.json",
+# Write top locations for business intelligence
+top_rated_pois.limit(100).write_json("s3://your-bucket/geospatial-analysis/top-locations.json",
     num_cpus=0.1
 )
 
@@ -1088,14 +1119,17 @@ Save your processed geospatial data for further analysis:
 ```python
 import tempfile
 
-# Save results to parquet formattemp_dir = tempfile.mkdtemp()
+# Save results to parquet format
+temp_dir = tempfile.mkdtemp()
 
-# Save spatial analysis resultsspatial_results.write_parquet(f"local://{temp_dir}/spatial_analysis",
+# Save spatial analysis results
+spatial_results.write_parquet(f"local://{temp_dir}/spatial_analysis",
     num_cpus=0.1
 )
 print(f"Results saved to {temp_dir}/spatial_analysis")
 
-# Save category analysiscategory_analysis.write_parquet(f"local://{temp_dir}/category_analysis",
+# Save category analysis
+category_analysis.write_parquet(f"local://{temp_dir}/category_analysis",
     num_cpus=0.1
 )
 print(f"Category analysis saved to {temp_dir}/category_analysis")

@@ -46,7 +46,8 @@ print(f"IMDB Reviews: {imdb_reviews.count()}")
 ).limit(500)
 print(f"Amazon Reviews: {amazon_reviews.count()}")
 
-# Inspect sample datasample_review = imdb_reviews.take(1)[0]
+# Inspect sample data
+sample_review = imdb_reviews.take(1)[0]
 print(f"Sample review: {sample_review['text'][:100]}...")
 print(f"Sample label: {sample_review['label']}")
 ```
@@ -563,7 +564,8 @@ except ImportError:
     print("To use LLM features, install with: pip install ray[data,llm]")
     llm_analysis = improved_nlp
 
-# Alternative: Simple LLM integration without Ray Data LLM packageclass SimpleLLMProcessor:
+# Alternative: Simple LLM integration without Ray Data LLM package
+class SimpleLLMProcessor:
     """Simple LLM integration using transformers directly."""
     
     def __init__(self):
