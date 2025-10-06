@@ -37,6 +37,8 @@
 
 ---
 
+---
+
 ## Complete NLP Tutorial
 
 ### 1. Load Real Text Data
@@ -150,8 +152,10 @@ class TextPreprocessor:
                 processed.append(lemmatized)
         return processed
 
-# Apply text preprocessingprocessed_texts = reviews_ds.map_batches(
-    TextPreprocessor(, batch_format="pandas"),
+# Apply text preprocessing
+processed_texts = reviews_ds.map_batches(
+    TextPreprocessor,
+    batch_format="pandas",
     batch_size=100,
     concurrency=4
 )
@@ -895,6 +899,8 @@ except ImportError:
 print(f"Complete NLP pipeline processed {len(final_nlp_results)} documents")
 ```
 
+---
+
 ## Advanced Features
 
 ### Ray Data's NLP Superpowers
@@ -966,6 +972,8 @@ else:
 - **Competitive**: Multi-brand comparison and positioning
 - **Actionable**: Trend identification and response recommendations
 
+---
+
 ## Production Considerations
 
 ### Model Management
@@ -982,6 +990,8 @@ else:
 - Text data validation
 - Model performance monitoring
 - Output quality checks
+
+---
 
 ## Example Workflows
 
