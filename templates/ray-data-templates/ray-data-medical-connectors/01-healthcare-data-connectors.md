@@ -176,11 +176,13 @@ Medical data comes in some of the most complex formats ever created, each design
 EHR systems contain structured patient information that forms the foundation of healthcare analytics.
 
 ```python
-# Example: Loading EHR patient data with Ray Dataehr_data = ray.data.read_csv("patient_demographics.csv",
+# Example: Loading EHR patient data with Ray Data
+ehr_data = ray.data.read_csv("patient_demographics.csv",
     num_cpus=0.05
 )
 
-# Quick EHR analysisprint(f"Total patients: {ehr_data.count():,}")
+# Quick EHR analysis
+print(f"Total patients: {ehr_data.count():,}")
 print("Patient age distribution:")
 ehr_data.groupby("age_group").count().show(5)
 ```
@@ -288,7 +290,8 @@ print("HL7 messages loaded from standard HL7 text format")
 )
 print("DICOM metadata loaded from JSON format")
 
-# Patient records - CSV format (common EHR export format)patient_records = ray.data.read_csv("s3://ray-benchmark-data/medical/patient-records.csv",
+# Patient records - CSV format (common EHR export format)
+patient_records = ray.data.read_csv("s3://ray-benchmark-data/medical/patient-records.csv",
     num_cpus=0.05
 )
 
@@ -691,7 +694,8 @@ Population health requires analyzing millions of patient records for public heal
     batch_format="pandas"
 )
 
-# Generate population health insightsrisk_distribution = population_health.groupby("geographic_region").mean("risk_score")
+# Generate population health insights
+risk_distribution = population_health.groupby("geographic_region").mean("risk_score")
 print("Population Health Risk by Region:")
 print(risk_distribution.limit(10).to_pandas())
 ```

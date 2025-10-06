@@ -513,14 +513,17 @@ error_logs = parsed_logs.filter(lambda x: x['is_error'],
 # Group by status code using native groupby
 status_distribution = parsed_logs.groupby('status_code').count()
 
-# Group by hour for traffic analysishourly_traffic = parsed_logs.groupby('hour').count()
+# Group by hour for traffic analysis
+hourly_traffic = parsed_logs.groupby('hour').count()
 
 print(f"Error logs: {error_logs.count()}")
 
-# Display resultsprint("\nLog Analysis Results:")
+# Display results
+print("\nLog Analysis Results:")
 print("-" * 40)
 
-# Show status code distributionstatus_results = status_distribution.take_all()
+# Show status code distribution
+status_results = status_distribution.take_all()
 for result in status_results:
     print(f"Status {result['status_code']}: {result['count()']} requests")
 

@@ -985,7 +985,8 @@ else:
     num_cpus=0.25
 ), batch_size=50)
 
-# Business insights generationinsights = feature_pipeline.groupby('product_category').agg({
+# Business insights generation
+insights = feature_pipeline.groupby('product_category').agg({
     'sentiment_score': 'mean',
     'feature_mentions': 'count',
     'recommendation_score': 'mean'
@@ -1007,7 +1008,8 @@ else:
     num_cpus=0.25
 ), batch_size=100)
 
-# Trend identificationtrending_topics = competitor_analysis.groupby('mention_type').agg({
+# Trend identification
+trending_topics = competitor_analysis.groupby('mention_type').agg({
     'sentiment_score': 'mean',
     'engagement_rate': 'mean',
     'virality_score': 'max'
@@ -1019,11 +1021,14 @@ else:
 **Use Case**: Customer service team processing 15K daily tickets
 
 ```python
-# Load support tickets# Support tickets - JSON format (typical for customer support systems)tickets = ray.data.read_json("s3://ray-benchmark-data/support/tickets/*.json",
+# Load support tickets
+# Support tickets - JSON format (typical for customer support systems)
+tickets = ray.data.read_json("s3://ray-benchmark-data/support/tickets/*.json",
     num_cpus=0.05
 )
 
-# Urgency classification and routingclassified_tickets = tickets.map_batches(TicketClassifier(,
+# Urgency classification and routing
+classified_tickets = tickets.map_batches(TicketClassifier(,
     num_cpus=0.25
 ), batch_size=150)
 
