@@ -587,7 +587,8 @@ except Exception as e:
     print(f"   Error loading S&P 500 data: {e}")
     sp500_prices = None
 
-# Dataset 2: S&P 500 Company Informationtry:
+# Dataset 2: S&P 500 Company Information
+try:
     print("2. Loading S&P 500 company fundamentals...")
     sp500_companies = ray.data.read_csv(
         "https://raw.githubusercontent.com/datasets/s-and-p-500-companies/master/data/constituents.csv",
@@ -626,7 +627,8 @@ except Exception as e:
     print(f"   Error creating economic data: {e}")
     economic_data = None
 
-# Use S&P 500 price dataset as the primary sourcemain_dataset = sp500_prices
+# Use S&P 500 price dataset as the primary source
+main_dataset = sp500_prices
 print("\nUsing S&P 500 historical price dataset as primary source")
 
 print(f"Primary dataset contains: {main_dataset.count():,} records of real financial data")
