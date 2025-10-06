@@ -6,24 +6,34 @@
 
 ---
 
-## What You'll Learn
+## Learning Objectives
 
-In this part, you'll master advanced NLP analysis techniques:
-1. Implement distributed sentiment analysis
-2. Perform topic modeling and clustering
-3. Extract named entities from text
-4. Deploy NLP pipelines to production
+**What you'll master:**
+- Implement distributed sentiment analysis with Ray Data
+- Perform topic modeling and text clustering at scale
+- Extract named entities from millions of documents
+- Deploy production NLP pipelines with monitoring
+
+**Why this matters:**
+- **Sentiment analysis**: Understand customer feedback at scale
+- **Topic modeling**: Discover patterns in large text corpora
+- **Named entity recognition**: Extract structured data from unstructured text
+- **Production deployment**: Build enterprise-grade NLP systems
 
 ## Prerequisites
 
-Complete [Part 1: Text Processing Fundamentals](01-text-processing-fundamentals.md) before starting this part.
+**Required:**
+- [ ] Complete [Part 1: Text Processing Fundamentals](01-text-processing-fundamentals.md)
+- [ ] Basic understanding of NLP concepts (sentiment, entities, topics)
+- [ ] Familiarity with transformers library
+- [ ] Python 3.8+ with NLP dependencies installed
 
 ## Table of Contents
 
-1. [Complete NLP Tutorial](#complete-nlp-tutorial)
-2. [Advanced Features](#advanced-features)
-3. [Production Considerations](#production-considerations)
-4. [Example Workflows](#example-workflows)
+1. [Complete NLP Tutorial](#complete-nlp-tutorial) (10 min)
+2. [Advanced Features](#advanced-features) (3 min)
+3. [Production Considerations](#production-considerations) (2 min)
+4. [Example Workflows](#example-workflows) (5 min)
 
 ---
 
@@ -35,16 +45,20 @@ Complete [Part 1: Text Processing Fundamentals](01-text-processing-fundamentals.
 import ray
 from ray.data import read_text, read_parquet, from_huggingface
 
-# Ray cluster is already running on Anyscaleprint(f'Ray cluster resources: {ray.cluster_resources()}')
+# Ray cluster is already running on Anyscale
+print(f'Ray cluster resources: {ray.cluster_resources()}')
 
-# Load real text datasets using Ray Data native APIs# Use Ray Data's native Hugging Face integrationimdb_reviews = from_huggingface("imdb", split="train[:1000]")
-print(f"IMDB Reviews: {imdb_reviews.count()}")
+# Load real text datasets using Ray Data native APIs
+# Use Ray Data's native Hugging Face integration
+imdb_reviews = from_huggingface("imdb", split="train[:1000]")
+print(f"IMDB Reviews: {imdb_reviews.count():,}")
 
-# Load Amazon reviews using native read_parquetamazon_reviews = read_parquet(
+# Load Amazon reviews using native read_parquet
+amazon_reviews = read_parquet(
     "s3://amazon-reviews-pds/parquet/product_category=Books/",
     columns=["review_body", "star_rating"]
 ).limit(500)
-print(f"Amazon Reviews: {amazon_reviews.count()}")
+print(f"Amazon Reviews: {amazon_reviews.count():,}")
 
 # Inspect sample data
 sample_review = imdb_reviews.take(1)[0]
