@@ -113,7 +113,7 @@ Data Flow:
 
 ## Step 1: ETL Fundamentals with TPC-H
 
-### Understanding TPC-H Benchmark
+### Understanding TPC-H benchmark
 
 ```python
 from typing import Dict, Any
@@ -141,7 +141,7 @@ The TPC-H benchmark is used for testing database and data processing performance
 
 **TPC-H Business Context**: The benchmark models a wholesale supplier managing customer orders, inventory, and supplier relationships - representing business data systems.
 
-### TPC-H Schema Overview
+### TPC-H schema overview
 
 The TPC-H benchmark provides realistic business data for learning ETL patterns. Understanding the schema helps you apply these techniques to your own data.
 
@@ -183,7 +183,7 @@ for table, description in tpch_tables.items():
     print(f"  {table.upper()}: {description}")
 ```
 
-### Loading TPC-H Data with Ray Data
+### Loading TPC-H data with Ray Data
 
 ```python
 # Tpc-H benchmark data locationTPCH_S3_PATH = "s3://ray-benchmark-data/tpch/parquet/sf10"
@@ -213,7 +213,7 @@ print(f"  Orders: {orders_ds.count():,}")
 print(f"  Line items: {lineitems_ds.count():,}")
 ```
 
-### Basic ETL Transformations
+### Basic ETL transformations
 
 ```python
 # Etl Transform: Customer segmentation using Ray Data native operationsdef segment_customers(batch):
@@ -280,7 +280,7 @@ Data transformations convert raw data into business-valuable information. Common
 | **Categorization** | Conditional logic loops | Pandas vectorization | Efficient |
 | **Business rules** | Single-threaded | Distributed map_batches | Scales to cluster |
 
-### Complex Data Transformations
+### Complex data transformations
 
 :::tip GPU Acceleration for Pandas ETL Operations
 For complex pandas transformations in your ETL pipeline, you can use **NVIDIA RAPIDS cuDF** to accelerate DataFrame operations on GPUs. Replace `import pandas as pd` with `import cudf as pd` in your `map_batches` functions to use GPU acceleration for operations like datetime parsing, groupby, joins, and aggregations.
@@ -343,7 +343,7 @@ def enrich_orders_with_metrics(batch):
 print(f"Order enrichment completed: {enriched_orders.count():,} orders processed")
 ```
 
-### Advanced Filtering and Selection
+### Advanced filtering and selection
 
 ```python
 # Advanced filtering using Ray Data expressions APIprint("Applying advanced filtering techniques...")
@@ -373,7 +373,7 @@ print(f"  Enterprise orders: {enterprise_orders.count():,}")
 print(f"  Complex filtered orders: {complex_filtered_orders.count():,}")
 ```
 
-### Data Joins and Relationships
+### Data joins and relationships
 
 ```python
 # Etl Join: Customer-Order analysis using Ray Data joinsprint("Performing distributed joins for customer-order analysis...")
@@ -444,7 +444,7 @@ ETL Performance Issue
 | **Aggregate** | Reduction | Default | Default | Ray Data optimized |
 | **Load** | I/O-bound | 0.1 | Default | Balanced writes |
 
-### Memory and Resource Optimization
+### Memory and resource optimization
 
 ```python
 # Configure Ray Data for optimal ETL performanceprint("Configuring Ray Data for ETL optimization...")
@@ -458,7 +458,7 @@ ctx.memory_usage_poll_interval_s = 5.0
 print("Ray Data configured for optimal ETL performance")
 ```
 
-### Batch Size and Concurrency Optimization
+### Batch size and concurrency optimization
 
 ```python
 # Demonstrate different batch size strategies for ETL operationsprint("Testing ETL batch size optimization...")
@@ -508,7 +508,7 @@ print(f"Memory-optimized processing: {memory_optimized_orders.count():,} records
 print(f"I/O-optimized processing: {io_optimized_orders.count():,} records")
 ```
 
-### Column Selection and Schema Optimization
+### Column selection and schema optimization
 
 ```python
 # Etl Optimization: Column pruning for performanceprint("Applying column selection optimization...")
@@ -597,7 +597,7 @@ print("Customer Segment Performance:")
 print(segment_performance.limit(10).to_pandas())
 ```
 
-### ETL Pipeline Optimization
+### ETL pipeline optimization
 
 ```python
 # Demonstrate optimized ETL pipeline patternsprint("Building optimized ETL pipeline...")
@@ -667,7 +667,7 @@ print("Optimized ETL Pipeline Results:")
 print(optimized_results.limit(10).to_pandas())
 ```
 
-### Large-Scale Data Processing
+### Large-scale data processing
 
 ```python
 # Process large datasets with optimization techniquesprint("Demonstrating large-scale data processing...")
@@ -715,7 +715,7 @@ print("Large-Scale Revenue Analysis:")
 print(revenue_analysis.limit(10).to_pandas())
 ```
 
-### ETL Output and Data Warehouse Integration
+### ETL output and data warehouse integration
 
 ```python
 # Write ETL results to data warehouse formatsprint("Writing ETL results to data warehouse...")
@@ -751,7 +751,7 @@ final_analytics.write_parquet(
 print("ETL warehouse output completed")
 ```
 
-### Performance Monitoring and Validation
+### Performance monitoring and validation
 
 ```python
 # Validate ETL pipeline performanceprint("Validating ETL pipeline performance...")

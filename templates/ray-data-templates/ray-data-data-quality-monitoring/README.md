@@ -67,7 +67,7 @@ Before starting, ensure you have:
 
 ## Quick start (3 minutes)
 
-### Why Ray Data for Data Quality Monitoring
+### Why Ray Data for data quality monitoring
 
 Ray Data transforms data quality monitoring from sample-based validation to full-dataset quality assurance:
 
@@ -102,7 +102,7 @@ print("Ray initialized for data quality monitoring")
 print(f"Cluster resources: {ray.cluster_resources()}")
 ```
 
-### Load Sample Dataset
+### Load sample dataset
 
 ```python
 # Load pre-built customer dataset with realistic quality issues
@@ -145,7 +145,7 @@ Quick start complete - you now have:
 
 ## Step 1: Data Quality Setup
 
-### Ray Data Native Operations for Quality Monitoring
+### Ray Data native operations for quality monitoring
 
 This template showcases Ray Data's built-in operations optimized for data quality workflows:
 
@@ -176,7 +176,7 @@ for field_name, field_type in quality_dataset.schema().items():
     print(f"  {field_name}: {field_type}")
 ```
 
-### Basic Quality Overview
+### Basic quality overview
 
 ```python
 # Simple data quality analysis
@@ -197,7 +197,7 @@ sample_data = analyze_basic_quality(quality_dataset)
 
 ## Step 2: Automated Quality Checks
 
-### Missing Data Analysis
+### Missing data analysis
 
 :::tip Ray Data Advantage: Distributed Quality Checks
 Traditional tools require loading entire datasets into memory for quality analysis. Ray Data's `filter()` and `take()` operations enable memory-efficient quality profiling across billions of records without materializing the full dataset.

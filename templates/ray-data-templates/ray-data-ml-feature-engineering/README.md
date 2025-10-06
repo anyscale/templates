@@ -91,7 +91,7 @@ dataset = titanic_data
 
 **The 80/20 Rule**: 80% of ML model performance comes from feature quality, only 20% from algorithm choice.
 
-### Titanic Dataset Exploration and Feature Insights
+### Titanic dataset exploration and feature insights
 
 Explore the Titanic dataset to understand feature relationships and engineering opportunities.
 
@@ -189,7 +189,7 @@ Automation becomes essential because manual feature engineering cannot scale to 
 # Demonstrate automated feature selectionselected_features = automated_feature_selection(enhanced_data, 'target_variable')
 ```
 
-### Ray Data's Feature Engineering Advantages
+### Ray Data's feature engineering advantages
 
 :::tip Ray Data for ML Feature Engineering
 Feature engineering is compute-intensive and data-heavy - perfect for Ray Data's strengths:
@@ -221,7 +221,7 @@ Ray Data transforms feature engineering by enabling:
 | Expressions API (`col()`, `lit()`) | Conditional features and transformations | Query optimization and performance |
 | `select_columns()` | Feature subset selection before training | Reduce memory usage and I/O |
 
-### The Complete Feature Engineering Lifecycle
+### The complete feature engineering lifecycle
 
 This template guides you through the entire feature engineering process:
 
@@ -250,7 +250,7 @@ This template guides you through the entire feature engineering process:
 - **Wrapper Methods**: Forward/backward selection with cross-validation
 - **Embedded Methods**: L1/L2 regularization and feature ranking
 
-### Business Value of Systematic Feature Engineering
+### Business value of systematic feature engineering
 
 Organizations implementing systematic feature engineering see:
 
@@ -336,7 +336,7 @@ for i, sample in enumerate(samples, 1):
 
 Categorical features are non-numeric values (gender, location, product category) that need special encoding for ML algorithms. This section demonstrates the most popular encoding techniques using Ray Data.
 
-### Why Categorical Encoding Matters
+### Why categorical encoding matters
 
 Most ML algorithms require numerical input, but categorical features contain valuable information:
 - **Sex** (male/female) strongly predicts survival - women and children first
@@ -349,7 +349,7 @@ Most ML algorithms require numerical input, but categorical features contain val
 - **Target encoding**: Replace with target variable mean (high cardinality)
 - **Frequency encoding**: Replace with category frequency (simple but effective)
 
-### Simple Feature Engineering with Ray Data Native Operations
+### Simple feature engineering with Ray Data native operations
 
 ```python
 from ray.data.expressions import col, lit
@@ -449,7 +449,7 @@ print(f"- Added features: {len(categorical_features.take(1)[0]) - len(dataset.sc
 
 Numerical features can be transformed to capture non-linear relationships and improve model performance. This section demonstrates the most effective numerical transformations.
 
-### Why Numerical Transformations Matter
+### Why numerical transformations matter
 
 Raw numerical features often have limitations:
 - **Linear relationships**: ML models may miss non-linear patterns
@@ -457,7 +457,7 @@ Raw numerical features often have limitations:
 - **Scale differences**: Features with different ranges (Age: 0-80, Fare: 0-500) need normalization
 - **Hidden patterns**: Interactions between features reveal important relationships
 
-### Popular Numerical Transformations
+### Popular numerical transformations
 
 ```python
 import numpy as np
@@ -542,7 +542,7 @@ print(f"- Example features: Age_squared={sample.get('Age_squared')}, "
 print(f"- Total features now: {len(numerical_features.schema().names)}")
 ```
 
-### Numerical Feature Transformations
+### Numerical feature transformations
 
 | Transformation | Purpose | Example | When to Use |
 |----------------|---------|---------|-------------|
@@ -556,7 +556,7 @@ print(f"- Total features now: {len(numerical_features.schema().names)}")
 
 ## Step 4: Advanced Feature Engineering
 
-### Interaction and Aggregation Features
+### Interaction and aggregation features
 
 Create features that combine multiple columns:
 
@@ -604,7 +604,7 @@ interaction_features = numerical_features.map_batches(
 print(f"- Interaction features created: {interaction_features.count():,} records")
 ```
 
-### Target Encoding for Categorical Features
+### Target encoding for categorical features
 
 **What is target encoding?** Replace each category with the mean of the target variable for that category.
 
@@ -663,7 +663,7 @@ print(f"- Target encoding applied: {target_encoded.count():,} records")
 print("Benefit: High-cardinality categories now numerical without dimension explosion")
 ```
 
-### Frequency and Count Encoding
+### Frequency and count encoding
 
 **What is frequency encoding?** Replace each category with how often it appears in the dataset.
 
@@ -720,7 +720,7 @@ print(f"- Frequency encoding applied: {freq_encoded.count():,} records")
 print("Cabin categories encoded by frequency - rare cabins have low scores")
 ```
 
-### Missing Value Indicator Features
+### Missing value indicator features
 
 **Why create missing value indicators?** Missing data patterns can be predictive themselves.
 
@@ -784,7 +784,7 @@ print(f"- Missing indicators created: {with_missing_features.count():,} records"
 print("Missingness patterns now available as ML features")
 ```
 
-### Aggregation Features Using Ray Data groupby
+### Aggregation features using Ray Data groupby
 
 **What are aggregation features?** Calculate group statistics and join them back to individual records.
 
@@ -834,7 +834,7 @@ print(f"- Example: Passenger in class {sample.get('Pclass')} has "
       f"class mean fare = ${sample.get('mean(Fare)', 0):.2f}")
 ```
 
-### Cyclical/Temporal Feature Encoding
+### Cyclical/temporal feature encoding
 
 Encode cyclical features (months, days, hours) using sine/cosine:
 
@@ -871,7 +871,7 @@ cyclical_features = with_agg_features.map_batches(
 print(f"- Cyclical features created: {cyclical_features.count():,} records")
 ```
 
-### Text Feature Engineering
+### Text feature engineering
 
 **Why extract features from text?** Text columns often contain hidden structured information.
 
@@ -957,7 +957,7 @@ print(f"- Text features extracted: {text_features.count():,} records")
 print("Extracted titles correlate with survival rates (Mrs/Miss higher than Mr)")
 ```
 
-### Ranking and Percentile Features
+### Ranking and percentile features
 
 **Why use ranking features?** Convert absolute values to relative rankings within the dataset.
 
@@ -1017,7 +1017,7 @@ print(f"- Ranking features created: {ranked_features.count():,} records")
 print("Fare and Age now have percentile features (0-1 scale)")
 ```
 
-### Feature Scaling and Normalization
+### Feature scaling and normalization
 
 **Why scale features?** Many ML algorithms are sensitive to feature scale differences.
 
@@ -1087,7 +1087,7 @@ print("Age, Fare, and family_size now scaled to [0, 1] range")
 print("Ready for neural networks and distance-based algorithms")
 ```
 
-### Comprehensive Feature Engineering Methods Summary
+### Comprehensive feature engineering methods summary
 
 | Category | Methods Demonstrated | Ray Data Operations |
 |----------|---------------------|-------------------|
