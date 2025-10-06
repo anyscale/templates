@@ -194,7 +194,8 @@ TPCH_S3_PATH = "s3://ray-benchmark-data/tpch/parquet/sf10"
 print("Loading TPC-H benchmark data for distributed processing...")
 start_time = time.time()
 
-# Read TPC-H Customer Master Datacustomers_ds = ray.data.read_parquet(
+# Read TPC-H Customer Master Data
+customers_ds = ray.data.read_parquet(
     f"{TPCH_S3_PATH}/customer",
     num_cpus=0.025  # High I/O concurrency for reading
 )
@@ -204,7 +205,8 @@ start_time = time.time()
     num_cpus=0.025
 )
 
-# Read TPC-H Line Items (largest table)lineitems_ds = ray.data.read_parquet(
+# Read TPC-H Line Items (largest table)
+lineitems_ds = ray.data.read_parquet(
     f"{TPCH_S3_PATH}/lineitem",
     num_cpus=0.025
 )
