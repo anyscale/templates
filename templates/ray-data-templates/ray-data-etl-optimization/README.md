@@ -919,8 +919,13 @@ Traditional approach problems:
  High memory (load everything)
  No parallelism across stages
  Long time to first result
+```
 
-Ray Data Streaming Execution:
+**Ray Data Streaming Execution:**
+
+<img src="https://anyscale-materials.s3.us-west-2.amazonaws.com/cko-2025-q1/pipelining.png" width="800" alt="Ray Data Streaming Execution">
+
+```
 ┌──────┐   ┌──────┐   ┌──────┐   ┌──────┐
 │Block1│ → │Block1│ → │Block1│ → │Block1│
 │Block2│ → │Block2│ → │Block2│ → │Block2│ (Parallel!)
@@ -1000,6 +1005,74 @@ etl_results = (
 - Results available while pipeline still running
 - All CPUs active across all stages
 - No manual tuning of batch sizes or windows
+
+### Datasets and blocks
+
+Ray Data processes data in **blocks** - the basic units of distributed data processing:
+
+<img src="https://docs.ray.io/en/latest/_images/dataset-arch.svg" width="700" alt="Ray Data Block Architecture">
+
+**Key concepts:**
+- **Blocks**: Disjoint subsets of rows stored as PyArrow Tables or Pandas DataFrames
+- **Block size**: Defaults to 128 MB, configurable via `DataContext.target_max_block_size`
+- **Distributed storage**: Blocks stored in Ray Object Store for efficient sharing
+- **Streaming processing**: Blocks processed independently for scalability
+
+**Why blocks matter for ETL:**
+- **Memory efficiency**: Process 128 MB at a time, not full dataset
+- **Parallelism**: Each block processed independently across cluster
+- **Scalability**: Same code works for GB or TB datasets
+- **Performance**: Optimal block size balances overhead vs throughput
+
+### Ray memory model
+
+Ray manages memory in two key areas:
+
+<img src="https://docs.ray.io/en/latest/_images/memory.svg" width="600" alt="Ray Memory Model">
+
+**1. Object Store Memory (30% of node memory):**
+- Stores blocks as shared memory objects
+- Enables zero-copy data sharing between tasks
+- Automatic spilling to disk when full
+- Used for passing data between ETL stages
+
+**2. Task Execution Memory (remaining memory):**
+- Used by workers to execute ETL transformations
+- Allocated from worker heap
+- Released after task completion
+
+**Why this matters for ETL:**
+- **Resource planning**: Understand memory budgets for large joins
+- **Performance tuning**: Avoid object store pressure through proper `num_cpus`
+- **Cluster sizing**: Balance object store vs execution memory needs
+
+### Operators and resource management
+
+Ray Data uses **physical operators** to execute your ETL pipeline:
+
+**Common operators for ETL:**
+- **TaskPoolMapOperator**: Executes transformations using Ray tasks
+- **ActorPoolMapOperator**: Executes transformations using Ray actors (for stateful ops)
+- **AllToAllOperator**: Handles shuffles for joins and groupby operations
+
+**Operator fusion:**
+Ray Data automatically fuses consecutive map operations for efficiency:
+```python
+# These two operations get fused into a single task
+ds.map_batches(transform1).map_batches(transform2)
+# Becomes: TaskPoolMapOperator[transform1->transform2]
+# Result: No data transfer between operations, faster execution
+```
+
+**Resource management and backpressure:**
+- **Dynamic allocation**: Resources distributed across operators automatically
+- **Backpressure**: Prevents memory overflow by throttling upstream operators
+- **Configurable limits**: Set via `DataContext.execution_options.resource_limits`
+
+**Why this matters for ETL:**
+- **Automatic optimization**: No manual tuning of micro-batches
+- **Memory safety**: Backpressure prevents OOM errors
+- **Resource efficiency**: Dynamic allocation maximizes cluster utilization
 
 ## Cleanup
 
