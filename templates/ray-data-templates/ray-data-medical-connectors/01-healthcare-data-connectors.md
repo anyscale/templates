@@ -347,7 +347,8 @@ dicom_data = ray.data.read_json("s3://ray-benchmark-data/medical/dicom-metadata.
 
 # Note: Pre-processed parquet files (hl7_medical_messages.parquet) are available
 # For convenience after parsing, but production systems should read HL7 from# Native text format and parse using custom datasources
-# Examine data structure complexityprint("HL7 Message Fields:")
+# Examine data structure complexity
+print("HL7 Message Fields:")
 print(f"Total fields per message: {len(hl7_data.schema())}")
 print(f"Sample HL7 message structure:")
 print(hl7_data.limit(1).to_pandas())

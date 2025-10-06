@@ -616,7 +616,8 @@ clinical_analysis.limit(10).to_pandas()
 
 print(f"Loaded DICOM dataset: {dicom_dataset.count()} medical images")
 
-# Display sample DICOM data structureprint("\nSample DICOM record structure:")
+# Display sample DICOM data structure
+print("\nSample DICOM record structure:")
 sample_dicom = dicom_dataset.limit(1).to_pandas()
 print("DICOM Metadata:")
 print(f"  Patient ID: {sample_dicom['patient_id'].iloc[0]}")

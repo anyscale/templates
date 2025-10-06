@@ -655,7 +655,8 @@ for ip_data in top_login_ips:
 ### 4. Operational Metrics Analysis
 
 ```python
-# Optimized: Use Ray Data native operations instead of pandas groupbyfrom ray.data.aggregate import Count, Mean, Max
+# Optimized: Use Ray Data native operations instead of pandas groupby
+from ray.data.aggregate import Count, Mean, Max
 
 # Use Ray Data native groupby operations for log metricsapp_metrics_by_event = parsed_app_logs.groupby('event_type').aggregate(
     Count(),  # Event count per type
@@ -665,7 +666,8 @@ for ip_data in top_login_ips:
 
 print("Application metrics calculated using native Ray Data operations")
 
-# Use native operations with expressions API for trend analysisfrom ray.data.expressions import col, lit
+# Use native operations with expressions API for trend analysis
+from ray.data.expressions import col, lit
 
 push_events_hourly = parsed_app_logs.filter(
     col('is_push') == lit(True)
@@ -1034,7 +1036,8 @@ search_analysis = search_logs.map_batches(SearchAnalyzer(,
     }
 }
 
-# Ray Data configuration for log processingfrom ray.data.context import DataContext
+# Ray Data configuration for log processing
+from ray.data.context import DataContext
 ctx = DataContext.get_current()
 ctx.target_max_block_size = 512 * 1024 * 1024  # 512MB blocks for logs
 ```
@@ -1082,7 +1085,8 @@ Enable detailed logging and performance monitoring:
 import logging
 logging.basicConfig(level=logging.DEBUG)
 
-# Enable Ray Data debuggingfrom ray.data.context import DataContext
+# Enable Ray Data debugging
+from ray.data.context import DataContext
 ctx = DataContext.get_current()
 ctx.enable_progress_bars = True
 ```
