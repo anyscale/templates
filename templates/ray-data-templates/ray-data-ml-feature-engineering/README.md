@@ -1741,7 +1741,8 @@ print(f"  - Dataset size: {len(final_features):,} samples")
 print(f"  - Processing time: {time.time() - overall_start:.2f} seconds")
 print(f"  - Features per second: {len(final_features) / (time.time() - overall_start):.0f}")
 
-# Clean up Ray resourcesray.shutdown()
+# Clean up Ray resources
+ray.shutdown()
 print(" Ray cluster shut down successfully")
 ```
 
@@ -2015,7 +2016,8 @@ print("Feature engineering visualization created")
 ## Cleanup
 
 ```python
-# Clean up Ray resourcesray.shutdown()
+# Clean up Ray resources
+ray.shutdown()
 print("Ray cluster shutdown complete")
 ```
 

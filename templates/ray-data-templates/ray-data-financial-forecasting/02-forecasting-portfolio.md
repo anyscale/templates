@@ -917,7 +917,8 @@ Ray Data's distributed processing provides several advantages for financial anal
 Always clean up Ray resources when done:
 
 ```python
-# Clean up Ray resourcesray.shutdown()
+# Clean up Ray resources
+ray.shutdown()
 print("Ray cluster shutdown complete")
 ```
 

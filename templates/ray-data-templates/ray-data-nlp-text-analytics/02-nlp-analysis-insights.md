@@ -1347,7 +1347,8 @@ ctx.enable_progress_bars = True
 ## Cleanup and Resource Management
 
 ```python
-# Clean up Ray resourcesray.shutdown()
+# Clean up Ray resources
+ray.shutdown()
 print("Ray cluster shutdown complete")
 ```
 

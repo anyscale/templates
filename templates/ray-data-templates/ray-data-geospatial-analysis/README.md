@@ -505,7 +505,8 @@ valid_coords = poi_dataset.filter(
 print(f"  - Valid coordinates: {valid_coords} / {poi_dataset.count()}")
 print(f"  - Metro areas covered: {len(set([poi['metro_area'] for poi in poi_dataset.take(100)]))}")
 
-# Additional validation checkssample_data = poi_dataset.take(100)
+# Additional validation checks
+sample_data = poi_dataset.take(100)
 categories = set([poi['category'] for poi in sample_data])
 ratings = [poi['rating'] for poi in sample_data if poi['rating'] is not None]
 
@@ -594,7 +595,8 @@ Ray Data provides capable native operations for geospatial analysis. This sectio
 ### Spatial filtering and selection
 
 ```python
-# Best PRACTICE: Use Ray Data expressions API for optimized spatial queriesfrom ray.data.expressions import col, lit
+# Best practice: Use Ray Data expressions API for optimized spatial queries
+from ray.data.expressions import col, lit
 
 # Find high-rated restaurants in NYC using expressions API
 high_rated_restaurants = poi_dataset.filter(
@@ -698,7 +700,8 @@ spatial_join_result = poi_dataset.join(
 
 print(f"Spatial join completed: {spatial_join_result.count()} enriched records")
 
-# Show sample of joined datajoined_sample = spatial_join_result.take(3)
+# Show sample of joined data
+joined_sample = spatial_join_result.take(3)
 for i, record in enumerate(joined_sample):
     print(f"  {i+1}. {record['name']} in {record['metro_area']} (Pop: {record['population']:,}, Income: ${record['median_income']:,})")
 ```
@@ -1324,7 +1327,8 @@ Ray Data provides several advantages for geospatial processing:
 Always clean up Ray resources when done:
 
 ```python
-# Clean up Ray resourcesray.shutdown()
+# Clean up Ray resources
+ray.shutdown()
 print("Ray cluster shutdown complete")
 ```
 

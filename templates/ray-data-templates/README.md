@@ -49,7 +49,7 @@ This collection contains comprehensive Ray Data templates that demonstrate distr
 
 ## Template Standards
 
-All templates follow enterprise-grade standards with complete learning paths that progress from quick starts to production considerations. Each template includes real-world business context and demonstrates how organizations leverage distributed data processing for competitive advantage.
+All templates follow enterprise-grade standards with complete learning paths that progress from quick starts to production considerations. Each template includes real-world business context and demonstrates how organizations use distributed data processing for competitive advantage.
 
 Templates focus on clear, maintainable examples using Ray Data native operations. You will find troubleshooting sections for common issues and action-oriented outcomes that provide immediate learning goals and longer-term implementation guidance. Performance characteristics are discussed conceptually without numeric claims.
 

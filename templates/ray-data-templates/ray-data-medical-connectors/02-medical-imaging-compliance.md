@@ -363,7 +363,8 @@ print(f"\nRay Data Schema Analysis:")
 print(f"Schema: {enterprise_hl7_dataset.schema()}")
 print(f"Total records: {enterprise_hl7_dataset.count():,}")
 
-# Show how Ray Data handles complex medical data effortlesslyprint(f"\nRay Data's General-Purpose Magic:")
+# Show how Ray Data handles complex medical data
+print(f"\nRay Data's General-Purpose Capabilities:")
 print(f"Automatically distributed complex HL7 parsing across {ray.cluster_resources()['CPU']} CPU cores")
 print(f"Handled nested medical data structures")
 print(f"Built-in fault tolerance for mission-critical healthcare data")
@@ -484,7 +485,8 @@ Our encryption approach uses industry-standard Fernet symmetric encryption, prov
 Examine the anonymized data structure to verify our HIPAA compliance:
 
 ```python
-# Explore the anonymized data structuresample_anonymized = anonymized_data.limit(1).to_pandas()
+# Explore the anonymized data structure
+sample_anonymized = anonymized_data.limit(1).to_pandas()
 print("Sample anonymized record (HIPAA-compliant):")
 print(sample_anonymized.to_string())
 ```
@@ -504,15 +506,18 @@ This approach maintains the clinical and analytical value of the data while meet
 ```python
 # Advanced medical analytics using Ray Data native operations
 ## Patient Demographics Analysis
-# Analyze patient demographics across age groupsdemographics_analysis = anonymized_data.groupby('age_group').count()
+# Analyze patient demographics across age groups
+demographics_analysis = anonymized_data.groupby('age_group').count()
 demographics_analysis.limit(10).to_pandas()
 
 ## Clinical Workflow Analysis
-# Analyze clinical workflow patterns by message typeworkflow_analysis = anonymized_data.groupby('message_type').count()
+# Analyze clinical workflow patterns by message type
+workflow_analysis = anonymized_data.groupby('message_type').count()
 workflow_analysis.limit(10).to_pandas()
 
 ## Hospital Utilization Patterns
-# Analyze hospital utilization patterns (top hospitals by message volume)hospital_analysis = anonymized_data.groupby('encrypted_hospital_id').count()
+# Analyze hospital utilization patterns (top hospitals by message volume)
+hospital_analysis = anonymized_data.groupby('encrypted_hospital_id').count()
 hospital_analysis.sort('count()', descending=True).limit(10).to_pandas()
 
 ## Clinical Data Distribution
@@ -826,7 +831,7 @@ def create_medical_analytics_dashboard(hospital_data, patient_data, dicom_data):
     )
     
     # Show medical dashboard
-    print(fig.limit(10).to_pandas())
+    fig.show()
     
     print("="*60)
     print("MEDICAL ANALYTICS SUMMARY")
@@ -1387,11 +1392,12 @@ def create_medical_imaging_dashboard(imaging_data=None):
     
     plt.tight_layout()
     plt.savefig('medical_imaging_dashboard.png', dpi=300, bbox_inches='tight')
-    print(plt.limit(10).to_pandas())
+    plt.close()
     
     print("Medical imaging dashboard saved as 'medical_imaging_dashboard.png'")
 
-# Create medical imaging dashboardcreate_medical_imaging_dashboard()
+# Create medical imaging dashboard
+create_medical_imaging_dashboard()
 ```
 
 ### Interactive medical data explorer
@@ -1737,7 +1743,8 @@ Medical connectors enable research institutions to conduct **large-scale studies
 Always clean up Ray resources when done:
 
 ```python
-# Clean up Ray resourcesray.shutdown()
+# Clean up Ray resources
+ray.shutdown()
 print("Ray cluster shutdown complete")
 ```
 

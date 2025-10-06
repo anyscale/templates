@@ -510,7 +510,8 @@ error_logs = parsed_logs.filter(lambda x: x['is_error'],
     num_cpus=0.1
 )
 
-# Group by status code using native groupbystatus_distribution = parsed_logs.groupby('status_code').count()
+# Group by status code using native groupby
+status_distribution = parsed_logs.groupby('status_code').count()
 
 # Group by hour for traffic analysishourly_traffic = parsed_logs.groupby('hour').count()
 
@@ -523,7 +524,8 @@ print("-" * 40)
 for result in status_results:
     print(f"Status {result['status_code']}: {result['count()']} requests")
 
-# Show hourly traffichourly_results = hourly_traffic.take(5)
+# Show hourly traffic
+hourly_results = hourly_traffic.take(5)
 print(f"\nHourly Traffic (sample):")
 for result in hourly_results:
     print(f"Hour {result['hour']}: {result['count()']} requests")
@@ -1557,7 +1559,8 @@ processed = all_logs.map_batches(UnifiedLogProcessor(,
 Always clean up Ray resources when done:
 
 ```python
-# Clean up Ray resourcesray.shutdown()
+# Clean up Ray resources
+ray.shutdown()
 print("Ray cluster shutdown complete")
 ```
 

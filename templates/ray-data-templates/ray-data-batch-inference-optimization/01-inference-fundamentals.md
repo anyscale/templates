@@ -236,7 +236,7 @@ print("Optimized approach completed. Improvements: single model load per worker,
 ### GPU Acceleration for Data Preprocessing
 
 :::tip NVIDIA RAPIDS cuDF for Pandas Operations
-If your batch inference includes complex pandas data preprocessing, you can accelerate it with **NVIDIA RAPIDS cuDF**. Simply replace `import pandas as pd` with `import cudf as pd` in your `map_batches` functions to leverage GPU acceleration for DataFrame operations.
+If your batch inference includes complex pandas data preprocessing, you can accelerate it with **NVIDIA RAPIDS cuDF**. Simply replace `import pandas as pd` with `import cudf as pd` in your `map_batches` functions to use GPU acceleration for DataFrame operations.
 :::
 
 ```python
