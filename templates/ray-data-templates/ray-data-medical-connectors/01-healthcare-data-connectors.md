@@ -26,47 +26,79 @@ This template demonstrates proper reading of medical data in their native format
 
 ## Table of Contents
 
-1. [Quick Start](#quick-start-3-minutes)
-2. [5-Minute HL7 Processing Demo](#5-minute-quick-start)
-3. [Healthcare Data Context](#overview)
+1. [Learning Objectives](#learning-objectives) (2 min)
+2. [Overview](#overview) (3 min) - Healthcare data challenges and solutions
+3. [Prerequisites](#prerequisites) (1 min) - Required knowledge and setup
+4. [Installation](#installation) (1 min) - Install medical processing libraries
+5. [Quick Start](#quick-start-3-minutes) (3 min) - Process HL7 messages quickly
+6. [5-Minute HL7 Demo](#5-minute-quick-start) (5 min) - Complete processing workflow
+7. [Next Steps](#next-steps) (2 min) - Continue learning
 
-## Learning objectives
+**Total Time**: 17 minutes
 
-**Why healthcare data processing matters**: Privacy, compliance, and format challenges require specialized approaches for medical data with large datasets. Healthcare organizations must balance data utility with strict regulatory requirements while maintaining patient privacy.
+---
 
-**Ray Data's healthcare capabilities**: Process sensitive medical data with built-in privacy protection and HIPAA compliance patterns. You'll learn how distributed processing can handle healthcare data volumes while maintaining security standards.
+## Learning Objectives
 
-**Real-world medical applications**: Techniques used by hospitals and health systems to analyze patient data for healthcare outcomes using distributed healthcare analytics.
+**What you'll learn:**
 
-**Compliance and security patterns**: HIPAA-compliant data processing techniques for production healthcare systems ensure that analytics capabilities don't compromise patient privacy or regulatory compliance.
+| Topic | What You'll Gain | Why It Matters |
+|-------|------------------|----------------|
+| **Custom Datasources** | Build HL7 and DICOM connectors | Handle complex medical formats at scale |
+| **Medical Data Parsing** | Extract structured data from HL7 messages | Enable distributed healthcare analytics |
+| **HIPAA Compliance** | Implement patient data anonymization | Maintain regulatory compliance |
+| **Distributed Processing** | Process medical records with Ray Data | Scale to millions of patient records |
+
+**Why healthcare data processing matters:**
+
+Healthcare organizations must balance data utility with strict regulatory requirements while maintaining patient privacy. Privacy, compliance, and format challenges require specialized approaches for medical data with large datasets.
+
+**Ray Data's healthcare capabilities:**
+
+Process sensitive medical data with built-in privacy protection and HIPAA compliance patterns. Distributed processing handles healthcare data volumes while maintaining security standards and enabling improved medical analytics.
 
 ---
 
 ## Overview
 
-**The Challenge**: Healthcare data is complex, sensitive, and highly regulated. Traditional data processing tools struggle with medical data formats, privacy requirements, and the scale of modern healthcare systems.
+### The Challenge
 
-**The Solution**: Ray Data provides secure, scalable processing for healthcare data while maintaining HIPAA compliance and enabling improved medical analytics.
+Healthcare data is complex, sensitive, and highly regulated:
 
-**Real-world Impact**:
-- **Hospitals**: Process thousands of patient records for predictive analytics
-- **Research**: Analyze clinical trial data across multiple institutions
-- **Public Health**: Track disease patterns and health outcomes at population scale
-- **Pharma**: Drug discovery and safety analysis across massive datasets
+| Challenge | Impact | Example |
+|-----------|--------|---------|
+| **Complex Formats** | HL7, DICOM, FHIR standards | 200+ medical data formats in use |
+| **Sensitive Data** | Patient privacy requirements | HIPAA, GDPR compliance mandatory |
+| **Scale** | Growing data volumes | 50+ billion medical images annually |
+| **Fragmentation** | Siloed systems | Average hospital uses 16+ systems |
+
+### The Solution
+
+Ray Data provides secure, scalable processing for healthcare data:
+- **Custom connectors** for HL7, DICOM, and FHIR formats
+- **Built-in privacy** protection and HIPAA compliance patterns
+- **Distributed processing** for healthcare data volumes
+- **Format-specific parsing** with error handling
+
+### Real-World Impact
+
+| Industry Segment | Use Case | Scale |
+|------------------|----------|-------|
+| **Hospitals** | Predictive analytics on patient records | Thousands of records daily |
+| **Research** | Clinical trial data across institutions | Petabytes of research data |
+| **Public Health** | Disease pattern tracking | Population-scale analysis |
+| **Pharma** | Drug discovery and safety analysis | Massive datasets |
 
 ---
 
----
+## Prerequisites
 
-## Prerequisites Checklist
-
-Before starting, ensure you have:
-- [ ] Understanding of healthcare data privacy requirements
+**Required knowledge:**
+- [ ] Understanding of healthcare data privacy requirements (HIPAA, GDPR)
 - [ ] Familiarity with medical data concepts (patient records, medical imaging)
 - [ ] Knowledge of data security and compliance principles
 - [ ] Python environment with healthcare data processing libraries
-
----
+- [ ] Basic Ray Data experience (complete fundamentals template first)
 
 ---
 
