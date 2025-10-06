@@ -6,6 +6,8 @@
 
 ---
 
+---
+
 ## What You'll Learn
 
 In this part, you'll learn advanced medical data processing:
@@ -14,9 +16,13 @@ In this part, you'll learn advanced medical data processing:
 3. Implement complete HIPAA compliance framework
 4. Deploy production healthcare analytics systems
 
+---
+
 ## Prerequisites
 
 Complete [Part 1: Healthcare Data Connectors](01-healthcare-data-connectors.md) before starting this part.
+
+---
 
 ## Table of Contents
 
@@ -24,6 +30,8 @@ Complete [Part 1: Healthcare Data Connectors](01-healthcare-data-connectors.md) 
 2. [DICOM Image Processing](#building-custom-dicom-datasource)
 3. [Advanced Features](#advanced-features)
 4. [Production Deployment](#production-considerations)
+
+---
 
 ---
 
@@ -506,20 +514,28 @@ This approach maintains the clinical and analytical value of the data while meet
 
 ```python
 # Advanced medical analytics using Ray Data native operations
+---
+
 ## Patient Demographics Analysis
 # Analyze patient demographics across age groups
 demographics_analysis = anonymized_data.groupby('age_group').count()
 demographics_analysis.limit(10).to_pandas()
+
+---
 
 ## Clinical Workflow Analysis
 # Analyze clinical workflow patterns by message type
 workflow_analysis = anonymized_data.groupby('message_type').count()
 workflow_analysis.limit(10).to_pandas()
 
+---
+
 ## Hospital Utilization Patterns
 # Analyze hospital utilization patterns (top hospitals by message volume)
 hospital_analysis = anonymized_data.groupby('encrypted_hospital_id').count()
 hospital_analysis.sort('count()', descending=True).limit(10).to_pandas()
+
+---
 
 ## Clinical Data Distribution
 # Analyze distribution of clinical data with lab results
@@ -733,6 +749,8 @@ patient_demographics.write_parquet("/tmp/medical_analytics/patient_demographics"
 )
 
 print("Medical data processing pipeline completed")
+---
+
 ## Processing Summary
 Processed 50K HL7 messages with custom Ray Data datasource  
 Applied HIPAA-compliant anonymization  
@@ -740,14 +758,20 @@ Generated hospital utilization and patient demographic analytics
 Saved results to Parquet format for downstream analysis
 
 # Final data exploration - showing Ray Data's incredible versatility# Ray Data's General-Purpose Power Demonstrated
+---
+
 ## What We Just Accomplished
 Processed 50,000 complex HL7 medical messages  
 Built custom datasources for proprietary healthcare formats
+---
+
 ## Medical Data Processing Accomplishments
 Applied HIPAA-compliant encryption to sensitive patient data  
 Generated medical analytics across multiple hospitals  
 Processed medical images with pixel-level analysis  
 Exported enterprise-ready analytics in Parquet format
+
+---
 
 ## Ray Data's Universal Data Processing
 
@@ -755,6 +779,8 @@ Exported enterprise-ready analytics in Parquet format
  Same simple operations (map, filter, groupby) work for ANY data format  
  Custom datasources extend Ray Data to handle proprietary formats  
  Automatic distribution across clusters - no configuration needed
+---
+
 ## Ray Data's General-Purpose Power Demonstrated
 
 **Key Capabilities Showcased:**
@@ -762,6 +788,8 @@ Exported enterprise-ready analytics in Parquet format
  Integration with downstream analytics and ML pipelines
 
 ** Key Insight:** Ray Data is not just another data processing tool - it's a general-purpose platform that adapts to YOUR data, no matter how complex!
+
+---
 
 ## Final Medical Analytics Results
 
@@ -1072,6 +1100,8 @@ processed_dicom.write_datasink(
 print("Medical data exported with compliance metadata")
 ```
 
+---
+
 ## Advanced Features
 
 ### Healthcare compliance and privacy
@@ -1145,6 +1175,8 @@ class MedicalDataValidator:
 # Apply medical data validationvalidated_data = processed_hl7.map_batches(MedicalDataValidator(, num_cpus=0.25, batch_format="pandas"))
 ```
 
+---
+
 ## Production Considerations
 
 ### Healthcare data security
@@ -1164,6 +1196,8 @@ class MedicalDataValidator:
 - HIPAA privacy and security requirements
 - Clinical trial data integrity standards
 - Healthcare interoperability standards
+
+---
 
 ## Example Workflows
 
@@ -1188,6 +1222,8 @@ class MedicalDataValidator:
 4. Generate research datasets for clinical trials
 5. Export to research platforms and statistical analysis tools
 
+---
+
 ## Performance Analysis
 
 ### Medical data processing performance
@@ -1211,6 +1247,8 @@ Medical Data Sources  Custom Connectors  Processing  Analytics  Compliance
     Clinical Notes      CustomParsers    Image        Research     Audit
     Lab Results         Validation       Analysis     Insights     Trails
 ```
+
+---
 
 ## Interactive Medical Data Visualizations
 
@@ -1606,6 +1644,8 @@ def create_hipaa_compliant_visualizations(patient_data):
 # Create HIPAA-compliant visualizationscreate_hipaa_compliant_visualizations(None)
 ```
 
+---
+
 ## Troubleshooting
 
 ### Common issues and solutions
@@ -1643,6 +1683,8 @@ logging.basicConfig(level=logging.DEBUG)
             validation = record['validation']
             print(f"Validation score: {validation.get('validation_score', 0):.2f}")
 ```
+
+---
 
 ## The Future of Healthcare Data: What's Possible with Ray Data Medical Connectors
 
@@ -1704,6 +1746,8 @@ Medical connectors enable research institutions to conduct **large-scale studies
 - **Population Genomics**: Large-scale genetic studies combining clinical and genomic data
 - **Health Services Research**: Healthcare delivery optimization and policy impact assessment
 
+---
+
 ## Next Steps: Building Your Healthcare Data Future
 
 ### Immediate implementation opportunities
@@ -1735,12 +1779,16 @@ Medical connectors enable research institutions to conduct **large-scale studies
    - Establish partnerships with healthcare organizations and technology companies
    - Lead industry transformation through innovative healthcare data solutions
 
+---
+
 ## Resources
 
 - [Ray Data Custom Datasources](https://docs.ray.io/en/latest/data/custom-datasources.html)
 - [HL7 Standard Documentation](https://www.hl7.org/implement/standards/)
 - [DICOM Standard](https://www.dicomstandard.org/)
 - [Healthcare Data Processing Best Practices](https://docs.ray.io/en/latest/data/best-practices.html)
+
+---
 
 ## Cleanup and Resource Management
 
@@ -1755,3 +1803,5 @@ print("Ray cluster shutdown complete")
 ---
 
 *This template demonstrates Ray Data's extensibility for specialized medical data formats. Learn to build custom connectors while ensuring healthcare compliance and patient privacy protection.*
+
+Added 24 section separators
