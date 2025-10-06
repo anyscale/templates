@@ -245,7 +245,8 @@ for i, sample in enumerate(samples):
 ### Interactive NLP Text Analytics Dashboard
 
 ```python
-# Create an engaging NLP text analytics visualization dashboarddef create_nlp_dashboard(dataset, sample_size=1000):
+# Create an engaging NLP text analytics visualization dashboard
+def create_nlp_dashboard(dataset, sample_size=1000):
     """Generate a comprehensive NLP text analytics dashboard."""
     import matplotlib.pyplot as plt
     import seaborn as sns
@@ -276,8 +277,9 @@ for i, sample in enumerate(samples):
     
     # 2. Text Length Analysis
     ax_length = fig.add_subplot(gs[0, 2:])
-
-    # Data transformation    df['length'] = df['text'].str.len()
+    
+    # Data transformation
+    df['length'] = df['text'].str.len()
     ax_length.hist(df['length'], bins=30, color='skyblue', alpha=0.7, edgecolor='black')
     ax_length.axvline(df['length'].mean(), color='red', linestyle='--', linewidth=2,
                      label=f'Mean: {df["length"].mean():.1f} chars')
@@ -288,8 +290,9 @@ for i, sample in enumerate(samples):
     ax_length.grid(True, alpha=0.3)
     
     # Simplified text analysis
-
-    # Data transformation    df['word_count'] = df['text'].str.split().str.len()
+    
+    # Data transformation
+    df['word_count'] = df['text'].str.split().str.len()
     
     print("\nText Analytics Summary:")
     print(f"Total reviews: {len(df):,}")
