@@ -986,13 +986,23 @@ Healthcare organizations handle diverse data formats that require specialized pr
 
 ### Ray Data Medical Connector Benefits
 
-| Traditional Approach | Ray Data Connector Approach | Healthcare Benefit |
-|---------------------|----------------------------|-------------------|
-| **Custom ETL scripts** | Reusable Ray Data connectors | Faster development cycles |
-| **Single-machine processing** | Distributed medical data processing | Massive scale increase |
-| **Manual format handling** | Standardized connector patterns | Fewer parsing errors |
-| **Limited fault tolerance** | Built-in error recovery | Enhanced data processing reliability |
-| **Complex infrastructure** | Native Ray Data integration | Simplified operations |
+**Comparison: Traditional vs. Ray Data approach**
+
+| Aspect | Traditional Approach | Ray Data Approach | Healthcare Benefit |
+|--------|---------------------|-------------------|-------------------|
+| **Development** | Custom ETL scripts per format | Reusable Ray Data connectors | Faster development cycles |
+| **Scale** | Single-machine processing | Distributed medical data processing | Handle millions of records |
+| **Parsing** | Manual format handling | Standardized connector patterns | Fewer parsing errors |
+| **Reliability** | Limited fault tolerance | Built-in error recovery | Enhanced processing reliability |
+| **Infrastructure** | Complex setup and maintenance | Native Ray Data integration | Simplified operations |
+
+:::note Why Ray Data for Medical Connectors
+Ray Data provides a **production-ready framework** for building custom medical data connectors:
+- **FileBasedDatasource** - Handle HL7, DICOM, and custom formats
+- **Distributed parsing** - Process medical data at scale
+- **Error resilience** - Built-in fault tolerance for production workloads
+- **HIPAA compliance** - Structured anonymization patterns
+:::
 
 ---
 
@@ -1039,29 +1049,48 @@ Healthcare Data Sources
 
 ## Key Components
 
-### 1. HL7 Message Connector
-- Custom `FileBasedDatasource` for HL7 message parsing
+**Key components of medical data connectors:**
+
+| Component | Purpose | Key Features |
+|-----------|---------|--------------|
+| **1. HL7 Message Connector** | Parse healthcare messages | Custom FileBasedDatasource, patient demographics, lab results |
+| **2. DICOM Image Connector** | Process medical imaging | Metadata extraction, patient anonymization, image prep |
+| **3. Data Validation** | Ensure compliance | HIPAA compliance, quality validation, audit logging |
+| **4. Custom Datasink** | Export and archive | Format conversion, system integration, reporting |
+
+**Implementation details:**
+
+:::tip HL7 Message Connector
+**Custom FileBasedDatasource** for HL7 parsing:
 - Patient demographics extraction and validation
 - Lab result processing and normalization
 - Clinical workflow integration patterns
+- Distributed parsing across cluster nodes
+:::
 
-### 2. DICOM Image Connector
-- Custom `FileBasedDatasource` for medical imaging
+:::tip DICOM Image Connector
+**Custom FileBasedDatasource** for medical imaging:
 - DICOM metadata extraction and processing
 - Patient anonymization and privacy protection
 - Medical image analysis preparation
+- Scalable image processing pipeline
+:::
 
-### 3. Healthcare Data Validation
-- HIPAA compliance and patient privacy protection
+:::tip Healthcare Data Validation
+**HIPAA compliance and data quality**:
+- Patient privacy protection patterns
 - Medical data quality validation
-- Healthcare standard conformance checking
-- Audit logging and regulatory compliance
+- Healthcare standard conformance
+- Audit logging for regulatory compliance
+:::
 
-### 4. Custom Datasink Implementation
-- Medical data export and archival
+:::tip Custom Datasink Implementation
+**Medical data export and archival**:
 - Format conversion and standardization
 - Healthcare system integration
-- Regulatory reporting and compliance
+- Regulatory reporting capabilities
+- Secure data archival
+:::
 
 ---
 
