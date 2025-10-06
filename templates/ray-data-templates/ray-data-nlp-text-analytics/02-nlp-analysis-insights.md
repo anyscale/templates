@@ -975,9 +975,11 @@ else:
 **Use Case**: E-commerce company analyzing 50K daily reviews
 
 ```python
-# Load customer reviews with large datasetsreviews = from_huggingface("amazon_reviews_multi", split="train[:50000]")
+# Load customer reviews with large datasets
+reviews = from_huggingface("amazon_reviews_multi", split="train[:50000]")
 
-# Multi-dimensional sentiment analysissentiment_pipeline = reviews.map_batches(SentimentAnalyzer(,
+# Multi-dimensional sentiment analysis
+sentiment_pipeline = reviews.map_batches(SentimentAnalyzer(,
     num_cpus=0.25
 ), batch_size=100, concurrency=8)
 
@@ -999,9 +1001,11 @@ insights = feature_pipeline.groupby('product_category').agg({
 **Use Case**: Marketing team tracking 25K daily social mentions
 
 ```python
-# Load social media mentionssocial_data = read_text("s3://social-media-feeds/mentions/")
+# Load social media mentions
+social_data = read_text("s3://social-media-feeds/mentions/")
 
-# Brand sentiment trackingbrand_analysis = social_data.map_batches(BrandSentimentAnalyzer(,
+# Brand sentiment tracking
+brand_analysis = social_data.map_batches(BrandSentimentAnalyzer(,
     num_cpus=0.25
 ), batch_size=200)
 

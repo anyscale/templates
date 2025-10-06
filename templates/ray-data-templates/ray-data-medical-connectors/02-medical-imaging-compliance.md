@@ -465,7 +465,8 @@ def anonymize_medical_record(record):
         'hipaa_compliance_version': 'HIPAA_2024_v1.0'
     }
 
-# Apply anonymization using Ray Data's capable map() operationanonymized_data = enterprise_hl7_dataset.map(anonymize_medical_record)
+# Apply anonymization using Ray Data's capable map() operation
+anonymized_data = enterprise_hl7_dataset.map(anonymize_medical_record)
 
 print(f"Anonymized {anonymized_data.count()} medical records for analytics")
 ```
@@ -695,7 +696,8 @@ except ImportError:
         'processing_timestamp': pd.Timestamp.now().isoformat()
     }
 
-# Apply DICOM anonymizationanonymized_dicom = dicom_dataset.map(anonymize_dicom_record)
+# Apply DICOM anonymization
+anonymized_dicom = dicom_dataset.map(anonymize_dicom_record)
 
 print(f"\nDICOM Processing Results:")
 print(f"Anonymized {anonymized_dicom.count()} medical images")

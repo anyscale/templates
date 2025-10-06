@@ -434,7 +434,8 @@ print(patient_data.limit(1).to_pandas())
 Automated HIPAA compliance is built into every stage of the processing pipeline, ensuring that personally identifiable information (PHI) is properly handled according to healthcare regulations.
 
 ```python
-# Built-in anonymization and compliance processingdef anonymize_medical_data(batch):
+# Built-in anonymization and compliance processing
+def anonymize_medical_data(batch):
     """Remove/mask PHI while preserving clinical value."""
     anonymized_batch = []
     for record in batch:
@@ -465,11 +466,14 @@ print(f"HIPAA-compliant records: {anonymized_data.count():,}")
 Medical imaging presents unique memory challenges that require specialized handling. DICOM files often exceed 100MB each, and complete imaging studies can contain thousands of individual images requiring careful memory management to prevent system overload.
 
 ```python
-# Efficient DICOM metadata processing with memory optimization# Dicom metadata - JSON format (realistic for medical imaging metadata)dicom_data = ray.data.read_json("s3://ray-benchmark-data/medical/dicom-metadata.json",
+# Efficient DICOM metadata processing with memory optimization
+# Dicom metadata - JSON format (realistic for medical imaging metadata)
+dicom_data = ray.data.read_json("s3://ray-benchmark-data/medical/dicom-metadata.json",
     num_cpus=0.05
 )
 
-# Process large imaging datasets with streaming approachdef process_imaging_metadata(batch):
+# Process large imaging datasets with streaming approach
+def process_imaging_metadata(batch):
     """Process DICOM metadata with memory-efficient techniques."""
     processed_studies = []
     for study in batch:
@@ -582,7 +586,8 @@ This single platform approach handles all healthcare data types integratedly, el
 Emergency departments require sub-second processing for critical patient decisions, integrating real-time HL7 messages, vital signs, lab results, and imaging orders to support immediate clinical decision-making.
 
 ```python
-# Emergency department real-time analytics pipelinedef analyze_emergency_patient_data(batch):
+# Emergency department real-time analytics pipeline
+def analyze_emergency_patient_data(batch):
     """Process emergency department data for immediate clinical insights."""
     emergency_alerts = []
     for patient in batch:
@@ -628,7 +633,8 @@ This streaming medical data processing approach with automated clinical alerts s
 Clinical research requires integrating data from multiple institutions while maintaining patient privacy, combining electronic health records, genomic data, clinical trial results, and imaging studies for comprehensive analysis.
 
 ```python
-# Clinical research data integration with privacy preservationdef prepare_research_dataset(batch):
+# Clinical research data integration with privacy preservation
+def prepare_research_dataset(batch):
     """Prepare clinical data for research while preserving patient privacy."""
     research_records = []
     for patient in batch:
@@ -665,7 +671,8 @@ This federated learning and privacy-preserving analytics approach accelerates dr
 Population health requires analyzing millions of patient records for public health insights, integrating EHR data, claims data, social determinants, and public health records for comprehensive epidemiological analysis.
 
 ```python
-# Population health analytics for disease pattern detectiondef analyze_population_health_trends(batch):
+# Population health analytics for disease pattern detection
+def analyze_population_health_trends(batch):
     """Analyze population health patterns for public health insights."""
     health_indicators = []
     for patient in batch:
@@ -708,7 +715,8 @@ This distributed population health analytics approach enables early disease outb
 Medical imaging AI requires processing petabytes of DICOM images, radiology reports, pathology slides, and clinical annotations for comprehensive AI training datasets that support diagnostic algorithm development.
 
 ```python
-# Medical imaging AI data preparation pipelinedef prepare_imaging_ai_dataset(batch):
+# Medical imaging AI data preparation pipeline
+def prepare_imaging_ai_dataset(batch):
     """Prepare medical imaging data for AI training with quality assessment."""
     ai_training_data = []
     for study in batch:
@@ -1172,7 +1180,8 @@ ray_processing_time = time.time() - ray_start_time
 ### Step 4: Process and Save (30 Seconds)
 
 ```python
-# Process medical data and save to Parquetdef anonymize_patient_data(record):
+# Process medical data and save to Parquet
+def anonymize_patient_data(record):
     """Anonymize patient data for HIPAA compliance."""
     return {
         'patient_hash': hash(record['patient_id']) % 100000,  # Anonymized ID

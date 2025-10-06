@@ -420,7 +420,8 @@ Traditional log parsers process files sequentially on a single machine. Ray Data
 - **Lazy evaluation**: Parsing happens during data scan, minimizing memory footprint
 
 ```python
-# Parse Apache access logs using Ray Data distributed processingdef parse_apache_access_logs(batch):
+# Parse Apache access logs using Ray Data distributed processing
+def parse_apache_access_logs(batch):
     """
     Parse Apache Common Log Format using distributed processing.
     
@@ -570,7 +571,8 @@ print(f"System logs: {system_logs.count()}")
 ### 2. Advanced Log Parsing
 
 ```python
-# Parse different log formats using Ray Data map_batchesdef parse_github_events(batch):
+# Parse different log formats using Ray Data map_batches
+def parse_github_events(batch):
     """Parse GitHub event logs for application monitoring."""
     parsed_events = []
     
@@ -595,7 +597,8 @@ print(f"System logs: {system_logs.count()}")
     
     return parsed_events
 
-# Parse CloudTrail logs for security monitoringdef parse_cloudtrail_logs(batch):
+# Parse CloudTrail logs for security monitoring
+def parse_cloudtrail_logs(batch):
     """Parse AWS CloudTrail logs for security analysis."""
     security_events = []
     
@@ -699,7 +702,8 @@ print("Log operations visualization created")
 ### 5. Log Analytics Dashboard
 
 ```python
-# Generate comprehensive log analytics visualizationsdef create_log_analytics_dashboard(app_results, security_results, output_dir="log_analytics_results"):
+# Generate comprehensive log analytics visualizations
+def create_log_analytics_dashboard(app_results, security_results, output_dir="log_analytics_results"):
     """Create comprehensive log analytics dashboard."""
     import os
     import pandas as pd
