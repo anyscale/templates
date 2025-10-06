@@ -1141,13 +1141,15 @@ pip install matplotlib seaborn plotly dash scikit-image nibabel
 ### Step 1: Setup and Create Large Medical Dataset (1 Minute)
 
 ```python
-# Ray cluster is already running on Anyscaleimport ray
+# Ray cluster is already running on Anyscale
+import ray
 import os
 
 print('Connected to Anyscale Ray cluster')
 print(f'Available resources: {ray.cluster_resources()}')
 
-# Create large-scale medical dataset for realistic processingdef create_large_hl7_dataset():
+# Create large-scale medical dataset for realistic processing
+def create_large_hl7_dataset():
     """Create large HL7 dataset since no public dataset is available."""
     
     # HL7 message templates for different medical scenarios
