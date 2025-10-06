@@ -538,7 +538,8 @@ def run_autoarima_forecasting(dataset):
     
     return forecast_results
 
-# Run AutoARIMA forecastingforecast_results = run_autoarima_forecasting(financial_with_indicators)
+# Run AutoARIMA forecasting
+forecast_results = run_autoarima_forecasting(financial_with_indicators)
 ```
 
 ## Portfolio Optimization and Risk Analysis

@@ -121,7 +121,8 @@ import yfinance as yf
 
 # Initialize Ray for distributed processingray.init()
 
-# Configure Ray Data for optimal performance monitoringctx = ray.data.DataContext.get_current()
+# Configure Ray Data for optimal performance monitoring
+ctx = ray.data.DataContext.get_current()
 ctx.enable_progress_bars = True
 ctx.enable_operator_progress_bars = True
 
@@ -728,7 +729,8 @@ import plotly.express as px
 from plotly.subplots import make_subplots
 import mplfinance as mpf
 
-# Configure logging for monitoring and debugginglogging.basicConfig(
+# Configure logging for monitoring and debugging
+logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
@@ -802,7 +804,8 @@ for record in sample_data:
 
 print("-" * 110)
 
-# Show data distribution statisticsprint(f"\nMarket Data Statistics:")
+# Show data distribution statistics
+print(f"\nMarket Data Statistics:")
 prices = [r['close'] for r in sample_data]
 volumes = [r['volume'] for r in sample_data]
 print(f"  Price Range: ${min(prices):.2f} - ${max(prices):.2f}")
