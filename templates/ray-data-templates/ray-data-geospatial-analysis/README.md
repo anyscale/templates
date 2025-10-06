@@ -126,9 +126,9 @@ Before starting this geospatial analysis template, ensure you have Python 3.8+ w
 
 This section demonstrates core spatial analysis concepts using Ray Data in a few minutes.
 
-### Install Required Packages
+### Install required packages
 
-ensure you have the necessary geospatial libraries installed:
+Install the necessary geospatial libraries:
 
 ```bash
 pip install "ray[data]" pandas numpy matplotlib seaborn plotly folium geopandas contextily
@@ -148,7 +148,7 @@ ctx.enable_progress_bars = True
 ctx.enable_operator_progress_bars = True
 ```
 
-### Create Sample Location Data
+### Create sample location data
 
 ```python
 # Create sample location data for major US citiesprint("Creating sample geospatial dataset...")
@@ -191,7 +191,7 @@ ctx.enable_operator_progress_bars = True
 
 print(f"Loaded NYC taxi location data: {location_dataset.count():,} location points")
 
-### Nyc Geospatial Analysis Dashboard
+### NYC geospatial analysis dashboard
 
 Create engaging geospatial visualizations using utility functions:
 
@@ -230,7 +230,7 @@ print(f"  Longitude range: {location_df['lon'].min():.4f} to {location_df['lon']
 This comprehensive geospatial analysis reveals patterns crucial for optimizing ride-sharing operations, delivery routing, and urban planning decisions.
 ```
 
-### Interactive Geospatial Visualization Dashboard
+### Interactive geospatial visualization dashboard
 
 ```python
 # Create an engaging geospatial data visualization dashboarddef create_geospatial_dashboard(dataset, sample_size=1000):
@@ -577,7 +577,7 @@ print(distance_analysis.limit(10).to_pandas())
 
 Ray Data provides capable native operations for geospatial analysis. This section demonstrates filtering, grouping, joining, and aggregating spatial data using Ray Data's distributed capabilities.
 
-### Spatial Filtering and Selection
+### Spatial filtering and selection
 
 ```python
 # Best PRACTICE: Use Ray Data expressions API for optimized spatial queriesfrom ray.data.expressions import col, lit
@@ -601,7 +601,7 @@ print(f"High-rated NYC restaurants: {high_rated_restaurants.count()} found")
 print(f"POIs in Manhattan bounds: {manhattan_bounds.count()} locations")
 ```
 
-### Spatial Aggregations and Grouping
+### Spatial aggregations and grouping
 
 ```python
 # Use Ray Data's native groupby() for distributed spatial aggregationsprint("Performing distributed spatial aggregations...")
@@ -636,7 +636,7 @@ print(category_distribution.limit(10).to_pandas())
 
 Now you'll demonstrate Ray Data's capable join operations for complex spatial analysis. You'll create demographic data and join it with the POI data to understand location patterns.
 
-### Creating Demographic Data for Spatial Joins
+### Creating demographic data for spatial joins
 
 ```python
 # Create demographic data that we can join with POI datadef create_demographic_data():
@@ -663,7 +663,7 @@ Now you'll demonstrate Ray Data's capable join operations for complex spatial an
 print(f"Created demographic data: {demographic_data.count()} zones")
 ```
 
-### Spatial Joins with Ray Data
+### Spatial joins with Ray Data
 
 ```python
 # Perform distributed spatial join using Ray Data's native join operationprint("Performing spatial join between POIs and demographics...")
