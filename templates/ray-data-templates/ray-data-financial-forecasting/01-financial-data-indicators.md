@@ -768,7 +768,8 @@ print("\nRay Data native operations provide efficient financial data processing"
 *Time: 7 minutes*
 
 ### What We're Doing
-you'll load real financial market data from public sources including stock prices, trading volumes, and financial news. This provides authentic data for professional-grade financial analysis.
+
+You'll load real financial market data from public sources including stock prices, trading volumes, and financial news. This provides authentic data for professional-grade financial analysis.
 
 ### Why Real Financial Data Matters
 - **Authentic market patterns**: Real volatility, trends, and correlations from actual trading
@@ -867,7 +868,8 @@ for record in sample_processed:
 
 print("-" * 130)
 
-# Financial data quality summarytotal_records = processed_financial_data.count()
+# Financial data quality summary
+total_records = processed_financial_data.count()
 print(f"\nFinancial Data Quality Summary:")
 print(f"  Total processed records: {total_records:,}")
 print(f"  Data processing method: Ray Data native operations")
@@ -877,32 +879,22 @@ print(f"  Enhancement: Daily returns and volatility calculated")
 print("=" * 130)
 ```
 
-## Step 2: Technical Indicators with Ray Data
+Ray Data's native operations provide efficient financial data processing with automatic optimization.
 
-*Time: 10 minutes*
+---
 
-### What We're Doing
-you'll calculate professional technical indicators (moving averages, RSI, MACD) using Ray Data's distributed processing capabilities on our real financial dataset.
+## Step 3: Calculate Technical Indicators
 
-### Why Technical Indicators Matter
-- **Market analysis**: Technical indicators help identify trends and trading opportunities
-- **Risk management**: Indicators like RSI help identify overbought/oversold conditions
-- **Portfolio optimization**: Multiple indicators provide comprehensive market view
-- **Real-time capability**: Ray Data enables indicator calculation with large datasets
-
-### Calculate Technical Indicators Using Ray Data Best Practices
-
-you'll calculate professional technical indicators step by step using Ray Data's distributed processing.
-
-**Step 1: Sort Data for Time Series Analysis**
+### Sort Data for Time Series Analysis
 
 ```python
-# Sort data by symbol and date using Ray Data native sort operationprint("Sorting financial data for time series analysis...")
+# Sort data by symbol and date using Ray Data native sort operation
+print("Sorting financial data for time series analysis...")
 sorted_data = main_dataset.sort(['Symbol', 'Date'])
 print("Data sorted successfully using Ray Data native sort")
 ```
 
-**Step 2: Define Technical Indicator Functions**
+### Define Technical Indicator Functions
 
 ```python
 def calculate_moving_averages(prices):
