@@ -213,7 +213,7 @@ Ray Data transforms healthcare data processing by providing a **unified, scalabl
 
 ### Ray Data's Medical Data Advantages
 
-Ray Data revolutionizes medical data processing through several key capabilities:
+Ray Data transforms medical data processing through several key capabilities:
 
 | Traditional Approach | Ray Data Approach | Healthcare Benefit |
 |---------------------|-------------------|-------------------|
