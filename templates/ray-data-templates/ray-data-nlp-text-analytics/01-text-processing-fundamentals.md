@@ -602,12 +602,15 @@ pip install pandas numpy pyarrow
 ### Step 1: Setup on Anyscale (30 Seconds)
 
 ```python
-# Ray cluster is already running on Anyscaleimport ray
+# Ray cluster is already running on Anyscale
+import ray
 
-# Check cluster status (already connected)print('Connected to Anyscale Ray cluster')
+# Check cluster status (already connected)
+print('Connected to Anyscale Ray cluster')
 print(f'Available resources: {ray.cluster_resources()}')
 
-# Install any missing packages if needed# !pip install transformers torch
+# Install any missing packages if needed
+# !pip install transformers torch
 ```
 
 ### Step 2: Load Real Text Data (1 Minute)
@@ -659,14 +662,20 @@ class QuickSentimentAnalyzer:
                 results.append({**item, "error": str(e)})
         return results
 
-# Analyze sentimentsentiment_results = text_ds.map_batches(QuickSentimentAnalyzer(, num_cpus=0.25, batch_format="pandas"), batch_size=5)
+# Analyze sentiment
+sentiment_results = text_ds.map_batches(
+    QuickSentimentAnalyzer,
+    num_cpus=0.25,
+    batch_size=5
+)
 final_results = sentiment_results.take_all()
 ```
 
 ### Step 4: View Results (1 Minute)
 
 ```python
-# Display sentiment analysis resultsprint("\nSentiment Analysis Results:")
+# Display sentiment analysis results
+print("\nSentiment Analysis Results:")
 print("-" * 50)
 
 for result in final_results:
