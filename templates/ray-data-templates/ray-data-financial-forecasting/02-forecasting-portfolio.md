@@ -101,9 +101,10 @@ from util.viz_utils import create_improved_financial_analytics
 create_improved_financial_analytics(financial_with_indicators)
 print("Advanced financial analytics saved as 'improved_financial_analytics.png'")
 ```
-```
 
-## Autoarima Forecasting
+Interactive visualizations provide insights into market behavior and portfolio performance across multiple dimensions.
+
+## AutoARIMA Forecasting
 
 Implement AutoARIMA forecasting for automated time series modeling:
 
@@ -192,11 +193,19 @@ def run_autoarima_forecasting(dataset):
 forecast_results = run_autoarima_forecasting(financial_with_indicators)
 ```
 
+**Why forecasting matters:**
+- Anticipate price movements for better trading decisions
+- Generate 30-day forecasts with confidence intervals
+- Identify trend components and seasonality patterns
+
 ## Portfolio Optimization and Risk Analysis
 
-Implement portfolio optimization using modern portfolio theory and comprehensive risk analysis:
+Modern portfolio theory helps balance risk and return across multiple assets.
+
+### Portfolio Optimization
 
 ```python
+# Portfolio optimization using Ray Data batch processing
 def run_portfolio_optimization(dataset):
     """Demonstrate portfolio optimization using Ray Data."""
     print("\nRunning portfolio optimization...")
@@ -409,59 +418,26 @@ portfolio_results = run_portfolio_optimization(financial_with_indicators)
 risk_results = run_risk_analysis(financial_with_indicators)
 ```
 
-## Key Takeaways and Best Practices
+**Portfolio analysis provides:**
+- Equal-weight and risk-parity allocation strategies
+- Expected returns, volatility, and Sharpe ratios
+- Value at Risk (VaR) and Conditional VaR metrics
+- Maximum drawdown and beta calculations
 
-### Financial Time Series Analysis Framework
+## Key Takeaways
 
-** Essential ML Techniques**
-- **AutoARIMA**: Automated model selection for time series forecasting
-- **Technical Analysis**: RSI, MACD, Bollinger Bands for market signals
-- **Portfolio Optimization**: Modern portfolio theory with risk-return optimization
-- **Risk Management**: VaR, CVaR, maximum drawdown, and stress testing
-- **Statistical Analysis**: Comprehensive financial metrics and performance evaluation
+**Essential concepts covered:**
+- **Interactive visualizations**: Candlestick charts and portfolio dashboards
+- **Time series forecasting**: AutoARIMA for price predictions
+- **Portfolio optimization**: Modern portfolio theory for asset allocation
+- **Risk analysis**: Comprehensive metrics (VaR, CVaR, beta, Sharpe ratio)
 
-** Ray Data Advantages**
-- **Distributed Processing**: Scale financial analysis across large datasets
-- **Real-time Capabilities**: Process streaming financial data efficiently
-- **Memory Optimization**: Handle large time series datasets without memory issues
-- **Parallel Execution**: Run multiple models and analysis simultaneously
+**Ray Data advantages:**
+- Process millions of financial records efficiently with distributed computing
+- Calculate complex indicators across entire portfolios in parallel
+- Scale from small portfolios to institutional-size datasets seamlessly
 
-### Production Implementation Guidelines
-
-** Financial Analytics Best Practices**
-- **Data Quality**: Validate financial data for missing values, outliers, and corporate actions
-- **Model Selection**: Use multiple forecasting techniques and ensemble approaches
-- **Risk Management**: Always include comprehensive risk analysis and stress testing
-- **Performance Monitoring**: Track model accuracy and financial performance metrics
-- **Regulatory Compliance**: Ensure all calculations meet financial industry standards
-
-**Common Pitfalls to Avoid**
-- **Look-ahead Bias**: Never use future information in historical analysis
-- **Overfitting**: Validate models on out-of-sample data
-- **Ignoring Transaction Costs**: Include realistic trading costs in backtesting
-- **Static Models**: Regularly retrain models as market conditions change
-
-## Cleanup
-
-Clean up Ray resources:
-
-```python
-# Cleanup Ray resources
-if ray.is_initialized():
-    ray.shutdown()
-    
-print(" Financial Time Series Forecasting tutorial completed")
-print("\nKey learnings:")
-print(" Real financial data provides realistic forecasting challenges")
-print(" Multiple ML techniques offer different forecasting perspectives")
-print(" Portfolio optimization requires balancing risk and return")
-print(" Risk analysis is essential for financial decision making")
-print(" Ray Data enables scalable financial analytics at institutional scale")
-```
-
----
-
-## Troubleshooting Common Issues
+## Troubleshooting
 
 ### Problem: "division by Zero in Financial Calculations"
 **Solution**:
@@ -503,82 +479,48 @@ def validate_financial_metric(value, min_val, max_val, metric_name):
         return None
 ```
 
-### Performance Optimization Tips
+### Performance Optimization
 
-1. **Batch Size**: Use larger batches (1000-5000) for financial calculations
-2. **Concurrency**: Match concurrency to number of CPU cores for financial analysis
-3. **Memory Management**: Clear intermediate results for large time series
-4. **Data Types**: Use float32 instead of float64 for memory efficiency
-5. **Vectorization**: Use NumPy vectorized operations for technical indicators
+**Batch size recommendations:**
+- Use larger batches (1000-5000) for portfolio calculations
+- Smaller batches (500-1000) for per-symbol forecasting
+- Match concurrency to available CPU cores
 
-### Performance Considerations
+**Memory management:**
+- Use Ray Data's streaming execution for large datasets
+- Clear intermediate results for long time series
+- Prefer Parquet format for efficient storage
 
-Ray Data's distributed processing provides several advantages for financial analysis:
-- **Parallel computation**: Technical indicators can be calculated across multiple stocks simultaneously
-- **Memory efficiency**: Large time series datasets are processed in chunks to avoid memory issues
-- **Scalability**: The same code patterns work for both small portfolios and large institutional datasets
-- **Resource utilization**: Automatic load balancing across available CPU cores
+## Next Steps
 
----
+**Extend this template:**
+1. Connect to real market data APIs (yfinance, Alpha Vantage)
+2. Add more technical indicators (Fibonacci, Ichimoku clouds)
+3. Implement ML models (LSTM, Transformers) for forecasting
+4. Add Monte Carlo simulations for stress testing
 
-## Next Steps and Extensions
+**Production deployment:**
+- Implement data quality validation and monitoring
+- Track forecast accuracy and model performance
+- Ensure regulatory compliance for financial calculations
+- Set up risk controls and position limits
 
-### Try These Advanced Features
-1. **Real Market Data**: Use yfinance or Alpha Vantage APIs for live data
-2. **More Indicators**: Add Fibonacci retracements, Ichimoku clouds, Williams %R
-3. **Machine Learning**: Implement LSTM or Transformer models for forecasting
-4. **Risk Models**: Add Monte Carlo simulations and stress testing
-5. **Real-Time Processing**: Adapt for streaming market data
+**Related templates:**
+- [ML Feature Engineering](/templates/ray-data-ml-feature-engineering) - Build features for financial ML
+- [Batch Inference Optimization](/templates/ray-data-batch-inference-optimization) - Optimize model inference
+- [Data Quality Monitoring](/templates/ray-data-data-quality-monitoring) - Validate financial data
 
-### Production Considerations
-- **Data Quality**: Implement reliable data validation for market data
-- **Model Monitoring**: Track forecast accuracy and model drift
-- **Regulatory Compliance**: Ensure calculations meet financial regulations
-- **Risk Management**: Implement proper risk controls and limits
-- **Performance Monitoring**: Track latency and throughput metrics
+## Cleanup
 
-### Related Ray Data Templates
-- **Ray Data ML Feature Engineering**: Create features for financial ML models
-- **Ray Data Batch Inference Optimization**: Optimize financial model inference
-- **Ray Data Data Quality Monitoring**: Ensure financial data quality
-
-## Performance Considerations
-
-- Use Ray Dashboard to monitor throughput, memory, and task execution.
-- Tune `batch_size` and `concurrency` for your dataset size and cluster resources.
-- Prefer Parquet over CSV for large datasets.
-
-## Key Takeaways
-
-- **Ray Data democratizes quantitative finance**: Institutional-grade analytics accessible without massive infrastructure investment
-- **Real-time processing enables alpha generation**: Millisecond advantage in trading decisions translates to significant profits
-- **Distributed computing is essential for modern finance**: Single-machine tools cannot handle current market data volumes
-- **Data quality and validation prevent costly errors**: Quality pipelines protect against bad trading decisions
-
-## Action Items
-
-### Immediate Goals (Next 2 weeks)
-1. **Implement financial data pipeline** for your specific trading or investment use case
-2. **Add technical indicators** relevant to your investment strategy
-3. **Set up real-time data feeds** from market data providers
-4. **Implement risk management** with position sizing and stop-loss automation
-
-### Long-term Goals (Next 3 months)
-1. **Deploy production trading systems** with real money and regulatory compliance
-2. **Build automated trading strategies** with backtesting and paper trading
-3. **Implement portfolio management** with multi-asset optimization
-4. **Create financial dashboards** for real-time market monitoring
-
-## Cleanup and Resource Management
-
-Always clean up Ray resources when done:
+Clean up Ray resources:
 
 ```python
-# Clean up Ray resources
-ray.shutdown()
-print("Ray cluster shutdown complete")
+# Cleanup Ray resources
+if ray.is_initialized():
+    ray.shutdown()
+print("Financial forecasting tutorial completed")
 ```
 
 ---
 
-*This template provides a foundation for institutional-grade financial analytics with Ray Data. Start with basic indicators and gradually add complexity based on your specific trading and investment requirements.*
+**[← Back to Part 1](01-financial-data-indicators.md)** | **[Return to Overview](README.md)**
