@@ -1,52 +1,49 @@
 # Data Quality Monitoring and Validation with Ray Data
 
-**Time to complete**: 25 min | **Difficulty**: Intermediate | **Prerequisites**: Data engineering experience, understanding of data quality concepts
+**⏱️ Time to complete**: 25 min
 
-## What you'll build
+**Difficulty**: Intermediate | **Prerequisites**: Data engineering experience, understanding of data quality concepts
 
-Build an automated data quality monitoring system that validates data, detects anomalies, and helps ensure your data pipelines produce reliable results for data-driven organizations.
+**What you'll learn:**
+- Build automated data quality monitoring systems that validate data at scale
+- Detect anomalies and data drift using Ray Data's distributed processing
+- Generate quality dashboards for operational monitoring
+- Ensure your data pipelines produce reliable results
+
+**Why this matters:**
+- **Data quality fundamentals**: Learn the six dimensions of data quality (completeness, accuracy, consistency, validity, timeliness, uniqueness)
+- **Ray Data quality operations**: Use `filter()`, `aggregate()`, and expressions API for validation at scale
+- **Production pipelines**: Automate missing data detection, business rule validation, and drift monitoring
+- **Real-world applications**: Used by streaming services, e-commerce, financial services, and transportation companies
 
 ## Table of Contents
 
-1. [Data Quality Setup](#step-1-data-quality-setup) (6 min)
-2. [Quality Validation](#step-2-automated-quality-checks) (8 min)
-3. [Anomaly Detection](#step-3-data-drift-monitoring) (7 min)
-4. [Quality Dashboard](#step-4-quality-reporting) (4 min)
-
-## Learning objectives
-
-By completing this template, you will:
-
-**Understand data quality fundamentals:**
-- Learn the six dimensions of data quality (completeness, accuracy, consistency, validity, timeliness, uniqueness)
-- Understand how poor data quality impacts business decisions and creates operational risk
-- Recognize data quality patterns and anti-patterns in real datasets
-
-**Master Ray Data quality operations:**
-- Use `filter()` and expressions API for data validation at scale
-- Apply `aggregate()` functions for statistical quality metrics
-- Implement `take()` for efficient quality sampling without full dataset loads
-- Use distributed processing to check 100% of records, not samples
-
-**Build production quality pipelines:**
-- Automate missing data detection and reporting
-- Implement business rule validation using Ray Data native operations
-- Create data drift monitoring to detect distribution changes
-- Generate quality dashboards for operational monitoring
-
-**Real-world applications:**
-- **Streaming services** (Netflix, Spotify): Monitor data quality across billions of viewing/listening events
-- **E-commerce** (Amazon, Shopify): Validate product catalog data for search accuracy and customer experience
-- **Financial services** (PayPal, Stripe): Ensure transaction data quality for fraud detection
-- **Transportation** (Uber, Lyft): Track trip data quality for safety and operational efficiency
+1. [Overview](#overview)
+2. [Quick Start](#quick-start-3-minutes)
+3. [Data Quality Setup](#step-1-data-quality-setup)
+4. [Quality Validation](#step-2-automated-quality-checks)
+5. [Anomaly Detection](#step-3-data-drift-monitoring)
+6. [Quality Dashboard](#step-4-quality-reporting)
 
 ## Overview
 
-**The Challenge**: Poor data quality significantly impacts business decisions and organizational efficiency. Data quality issues can lead to incorrect insights and operational problems.
+### The Challenge
 
-**The Solution**: Ray Data enables continuous, automated data quality monitoring with large datasets, catching issues before they impact business decisions.
+Poor data quality significantly impacts business decisions and organizational efficiency:
+- Incorrect insights from flawed data
+- Operational problems from invalid records
+- Financial losses from data errors
+- Compliance risks from incomplete data
 
-**Real-world Impact**:
+### The Solution
+
+Ray Data enables continuous, automated data quality monitoring:
+- Validate 100% of records (not just samples)
+- Detect anomalies in real-time
+- Monitor data drift automatically
+- Scale to billions of records
+
+### Real-World Impact
 
 | Industry | Use Case | Quality Impact |
 |----------|----------|----------------|
@@ -57,15 +54,15 @@ By completing this template, you will:
 
 ---
 
-## Prerequisites Checklist
+## Prerequisites
 
-Before starting, ensure you have:
+**Before starting, ensure you have:**
 - [ ] Understanding of data quality concepts (completeness, accuracy, consistency)
 - [ ] Experience with data validation and testing
 - [ ] Familiarity with statistical concepts for anomaly detection
 - [ ] Python environment with data processing libraries
 
-## Quick start (3 minutes)
+## Quick Start (3 minutes)
 
 ### Why Ray Data for data quality monitoring
 
