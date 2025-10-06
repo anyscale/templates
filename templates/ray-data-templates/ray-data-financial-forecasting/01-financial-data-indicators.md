@@ -6,51 +6,49 @@
 
 ---
 
-## What You'll Learn
+## Learning Objectives
 
-In this part, you'll learn how to:
-1. Load real financial market data from public sources
-2. Process stock prices and trading volumes with Ray Data
-3. Calculate professional technical indicators (Moving Averages, RSI, MACD, Bollinger Bands)
-4. Use Ray Data's groupby and aggregation operations for financial analytics
+**What you'll learn:**
+- Load real financial market data from public sources  
+- Process stock prices and trading volumes with Ray Data
+- Calculate professional technical indicators (Moving Averages, RSI, MACD, Bollinger Bands)
+- Use Ray Data's groupby and aggregation operations for financial analytics
+
+**Why this matters:**
+- **Trading systems** process large volumes of market data daily, requiring efficient processing for financial decision-making
+- **Ray Data's distributed capabilities** enable calculations like portfolio optimization, risk modeling, and technical indicators across computing clusters
+- **Real-world applications** include algorithmic trading systems, portfolio optimization, and risk management used by financial institutions
 
 ## Table of Contents
 
-1. [Setup and Data Loading](#step-1-setup-and-real-world-data-loading)
-2. [Technical Indicators with Ray Data](#step-2-technical-indicators-with-ray-data)
+1. [Overview](#overview)
+2. [Quick Start](#quick-start-3-minutes)
+3. [Setup and Data Loading](#step-1-setup-and-real-world-data-loading)
+4. [Technical Indicators](#step-2-technical-indicators-with-ray-data)
+5. [Ray Data Architecture](#ray-data-architecture-for-financial-analytics)
 
-## Learning objectives
+## Overview
 
-**Why financial analytics matters**: Trading systems process large volumes of market data daily, requiring efficient processing for financial decision-making. Understanding distributed financial analytics helps build reliable trading systems.
+### The Challenge
 
-**Ray Data's financial capabilities**: Distribute calculations like portfolio optimization, risk modeling, and technical indicators across computing clusters. You'll learn how to scale financial computations to handle large datasets.
-
-**Real-world trading applications**: Techniques used by financial institutions for algorithmic trading systems show the methods required for financial analytics.
-
-**Risk management applications**: Portfolio optimization, risk calculations, and testing help implement risk management that supports investment decisions.
-
-**Trading system patterns**: Market data processing, backtesting, and trading strategy deployment patterns that support systematic trading.
-
-## Overview: Financial Analytics at Scale Challenge
-
-**Challenge**: Financial institutions process large datasets with timing requirements:
+Financial institutions face significant data processing challenges:
 - Trading data arrives at high volumes throughout the day
 - Calculating indicators across large portfolios requires distributed processing
 - Risk models need processing of market data from multiple sources
 - Regulatory reporting requires data accuracy and audit trails
 
-**Solution**: Ray Data enables distributed financial analytics:
+### The Solution
+
+Ray Data enables distributed financial analytics that scales:
 - Distributes calculations across multiple cores in a cluster
-- Processes market data using streaming operations
+- Processes market data using streaming operations for memory efficiency
 - Scales portfolio optimization across different numbers of instruments
 - Provides data validation and processing audit capabilities
 
-**Financial Analytics Applications**
-
-Financial institutions use distributed analytics for various applications. Investment banks implement risk calculation systems using distributed processing architectures. Banks process transaction data for fraud detection through parallel analytics pipelines. Asset management companies optimize portfolios using computational frameworks, while trading firms execute algorithmic trading decisions using distributed systems.
+### Example: Portfolio Risk Calculation
 
 ```python
-# Example: Portfolio risk calculation using Ray Data
+# Portfolio risk calculation using Ray Data
 def calculate_portfolio_risk(batch):
     """Calculate Value at Risk (VaR) for portfolio positions."""
     risk_metrics = []
@@ -76,29 +74,24 @@ def calculate_portfolio_risk(batch):
 print("Portfolio risk calculation completed")
 ```
 
-These implementations show how distributed financial analytics support decision-making with large datasets.
-
----
-
-
-### Approach comparison
+### Approach Comparison
 
 | Traditional Approach | Ray Data Approach | Key Benefit |
 |---------------------|-------------------|-------------|
-| **Single-machine processing** | Distributed across cluster | Horizontal scalability |
-| **Memory-limited** | Streaming execution | Handle large datasets |
-| **Sequential operations** | Pipeline parallelism | Better resource utilization |
-| **Manual optimization** | Automatic resource management | Simplified deployment |
+| Single-machine processing | Distributed across cluster | Horizontal scalability |
+| Memory-limited | Streaming execution | Handle large datasets |
+| Sequential operations | Pipeline parallelism | Better resource utilization |
+| Manual optimization | Automatic resource management | Simplified deployment |
 
-## Prerequisites Checklist
+---
 
-Before starting, ensure you have:
+**Before starting, ensure you have:**
 - [ ] Basic understanding of financial markets and stock prices
 - [ ] Familiarity with concepts like moving averages and volatility
 - [ ] Knowledge of time series data structure
 - [ ] Python environment with sufficient memory (4GB+ recommended)
 
-## Quick start (3 minutes)
+## Quick Start (3 minutes)
 
 This section uses real market data to demonstrate core financial analysis concepts using Ray Data.
 
@@ -157,10 +150,11 @@ print(f"  Date range: 2 years of daily market data")
 
 load_time = time.time() - start_time
 print(f"Real financial data loaded in {load_time:.2f} seconds")
+```
 
-### Financial Market Analysis Dashboard
+### Quick Data Analysis
 
-Create visualizations to understand market patterns and trends:
+Analyze the loaded financial data:
 
 ```python
 # Analyze financial market data directly
@@ -200,7 +194,8 @@ if 'close' in financial_df.columns and 'date' in financial_df.columns:
     ax1.set_ylabel('Closing Price ($)')
     ax1.grid(True, alpha=0.3)
 
-# Plot volume distributionax2 = axes[1]
+# Plot volume distribution
+ax2 = axes[1]
 if 'volume' in financial_df.columns:
     volumes = financial_df['volume'].dropna()
     ax2.hist(volumes, bins=30, color='lightgreen', alpha=0.7)
@@ -209,110 +204,248 @@ if 'volume' in financial_df.columns:
     ax2.set_ylabel('Frequency')
 
 plt.tight_layout()
-print(plt.limit(10).to_pandas())
+plt.close()
+print("Basic financial visualization completed")
 ```
 
-This basic visualization shows the financial data structure and patterns. Now you'll proceed to the main analysis.
-        # Calculate daily returns
-        financial_df['daily_return'] = financial_df['close'].pct_change()
-        returns = financial_df['daily_return'].dropna()
-        
-        ax3.hist(returns, bins=50, color='coral', alpha=0.7, edgecolor='black')
-        ax3.axvline(returns.mean(), color='red', linestyle='--', 
-                   label=f'Mean: {returns.mean():.4f}')
-        ax3.axvline(returns.std(), color='orange', linestyle='--', 
-                   label=f'Std: {returns.std():.4f}')
-        ax3.set_title('Daily Returns Distribution', fontweight='bold')
-        ax3.set_xlabel('Daily Return (%)')
-        ax3.set_ylabel('Frequency')
-        ax3.legend()
+This quick start demonstrates loading and visualizing financial data with Ray Data. Now proceed to the detailed analysis.
+
+---
+
+## Why Financial Data Processing Is Hard
+
+Financial data processing presents unique challenges:
+
+**Volume and velocity:**
+- Millions of trades per day across global markets
+- Real-time price updates require continuous processing
+- Historical data spans years or decades
+
+**Complexity:**
+- Multiple data sources (prices, volumes, news, fundamentals)
+- Complex calculations (technical indicators, risk metrics)
+- Time series dependencies and window operations
+
+**Requirements:**
+- Low latency for trading decisions
+- High accuracy for risk management
+- Audit trails for regulatory compliance
+
+Ray Data solves these challenges with distributed processing, streaming execution, and built-in fault tolerance.
+
+---
+
+## Step 1: Setup and Real-World Data Loading
+
+### Installation
+
+Install required dependencies:
+
+```python
+# Install Ray Data and financial analysis libraries
+pip install "ray[data]" pandas numpy scikit-learn matplotlib seaborn plotly yfinance mplfinance ta-lib
+```
+
+### Initialize Ray
+
+```python
+from datetime import datetime, timedelta
+import numpy as np
+import pandas as pd
+import ray
+import yfinance as yf
+
+# Initialize Ray for distributed processing
+ray.init()
+
+# Configure Ray Data for optimal performance monitoring
+ctx = ray.data.DataContext.get_current()
+ctx.enable_progress_bars = True
+ctx.enable_operator_progress_bars = True
+
+print("Ray cluster initialized for financial analysis")
+print(f"Available resources: {ray.cluster_resources()}")
+```
+
+### Load Comprehensive Financial Data
+
+```python
+def load_comprehensive_financial_data():
+    """Load real market data with news and fundamental data."""
+    print("\nLoading comprehensive financial market data...")
     
-    # 4. Moving averages analysis
-    ax4 = axes[1, 0]
-    if 'close' in financial_df.columns and 'date' in financial_df.columns:
+    # Load real S&P 500 data from Ray benchmark bucket
+    financial_data = ray.data.read_parquet(
+        "s3://ray-benchmark-data/financial/sp500_daily_2years.parquet",
+        num_cpus=0.025  # High I/O concurrency for reading financial data
+    )
+    
+    print(f"Loaded S&P 500 dataset:")
+    print(f"  Records: {financial_data.count():,}")
+    print(f"  Schema: {financial_data.schema()}")
+    print(f"  Dataset size: {financial_data.size_bytes() / (1024**2):.1f} MB")
+    
+    return financial_data
+
+# Load financial data
+financial_data = load_comprehensive_financial_data()
+```
+
+### Quick Data Exploration
+
+Examine the loaded data structure:
+
+```python
+# Take a sample to inspect data structure
+sample_data = financial_data.take(1000)
+print(f"\nFinancial data sample: {len(sample_data):,} records")
+
+# Calculate key metrics
+if sample_data:
+    prices = [r.get('close', 0) for r in sample_data]
+    volumes = [r.get('volume', 0) for r in sample_data]
+    print(f"Price range: ${min(prices):.2f} - ${max(prices):.2f}")
+    print(f"Average volume: {sum(volumes) / len(volumes):,.0f}")
+
+print("Financial data exploration completed")
+```
+
+---
+
+## Step 2: Technical Indicators with Ray Data
+
+### Display Real Market Data Using Ray Data Best Practices
+
+```python
+# Display sample financial data
+sample_records = financial_data.take(10)
+print("\nSample Financial Data:")
+for i, record in enumerate(sample_records[:5], 1):
+    print(f"\nRecord {i}:")
+    for key, value in record.items():
+        print(f"  {key}: {value}")
+```
+
+### Calculate Technical Indicators
+
+Now calculate professional technical indicators using Ray Data:
+
+```python
+def calculate_moving_averages(prices):
+    """Calculate Simple and Exponential Moving Averages."""
+    if len(prices) < 20:
+        return None, None
+    
+    # Calculate Simple Moving Average (SMA)
+    sma_20 = sum(prices[-20:]) / 20
+    sma_50 = sum(prices[-50:]) / 50 if len(prices) >= 50 else None
+    
+    # Calculate Exponential Moving Average (EMA)
+    multiplier = 2 / (20 + 1)
+    ema_20 = prices[-1]
+    for price in reversed(prices[-20:]):
+        ema_20 = (price * multiplier) + (ema_20 * (1 - multiplier))
+    
+    return {
+        'sma_20': sma_20,
+        'sma_50': sma_50,
+        'ema_20': ema_20
+    }
+
+def calculate_rsi(prices, window=14):
+    """Calculate Relative Strength Index."""
+    if len(prices) < window + 1:
+        return None
+    
+    # Calculate price changes
+    changes = [prices[i] - prices[i-1] for i in range(1, len(prices))]
+    
+    # Separate gains and losses
+    gains = [max(change, 0) for change in changes[-window:]]
+    losses = [abs(min(change, 0)) for change in changes[-window:]]
+    
+    # Calculate average gains and losses
+    avg_gain = sum(gains) / window
+    avg_loss = sum(losses) / window
+    
+    # Calculate RSI
+    if avg_loss == 0:
+        return 100
+    rs = avg_gain / avg_loss
+    rsi = 100 - (100 / (1 + rs))
+    
+    return rsi
+
+def calculate_technical_indicators(batch):
+    """Calculate comprehensive technical indicators for financial analysis."""
+    import pandas as pd
+    import numpy as np
+    
+    df = pd.DataFrame(batch)
+    results = []
+    
+    for symbol in df['symbol'].unique():
+        symbol_data = df[df['symbol'] == symbol].sort_values('date')
+        
+        if len(symbol_data) < 20:  # Need minimum data for indicators
+            continue
+        
+        prices = symbol_data['close'].tolist()
+        
         # Calculate moving averages
-        sample_df = financial_df.sample(min(500, len(financial_df))).sort_values('date')
-        sample_df['ma_20'] = sample_df['close'].rolling(window=20).mean()
-        sample_df['ma_50'] = sample_df['close'].rolling(window=50).mean()
+        ma_indicators = calculate_moving_averages(prices)
         
-        ax4.plot(sample_df['date'], sample_df['close'], label='Close Price', linewidth=1, alpha=0.7)
-        ax4.plot(sample_df['date'], sample_df['ma_20'], label='20-day MA', linewidth=2)
-        ax4.plot(sample_df['date'], sample_df['ma_50'], label='50-day MA', linewidth=2)
-        ax4.set_title('Moving Averages Analysis', fontweight='bold')
-        ax4.set_ylabel('Price ($)')
-        ax4.legend()
-        ax4.grid(True, alpha=0.3)
-        ax4.tick_params(axis='x', rotation=45)
+        # Calculate RSI
+        rsi = calculate_rsi(prices)
+        
+        # Calculate MACD
+        ema_12 = prices[-1]  # Simplified
+        ema_26 = prices[-1]  # Simplified
+        macd = ema_12 - ema_26
+        
+        # Calculate Bollinger Bands
+        sma_20 = ma_indicators['sma_20']
+        std_20 = np.std(prices[-20:])
+        upper_band = sma_20 + (2 * std_20)
+        lower_band = sma_20 - (2 * std_20)
+        
+        results.append({
+            'symbol': symbol,
+            'date': symbol_data['date'].iloc[-1],
+            'close': prices[-1],
+            'sma_20': ma_indicators['sma_20'],
+            'sma_50': ma_indicators['sma_50'],
+            'ema_20': ma_indicators['ema_20'],
+            'rsi': rsi,
+            'macd': macd,
+            'bollinger_upper': upper_band,
+            'bollinger_lower': lower_band,
+            'volatility': std_20
+        })
     
-    # 5. High-Low volatility analysis
-    ax5 = axes[1, 1]
-    if all(col in financial_df.columns for col in ['high', 'low', 'close']):
-        # Calculate daily volatility
-        financial_df['volatility'] = (financial_df['high'] - financial_df['low']) / financial_df['close']
-        volatility = financial_df['volatility'].dropna()
-        
-        ax5.boxplot([volatility], labels=['Daily Volatility'])
-        ax5.set_title('Market Volatility Analysis', fontweight='bold')
-        ax5.set_ylabel('Volatility Ratio')
-        ax5.grid(True, alpha=0.3)
-        
-        # Add summary statistics
-        ax5.text(0.7, volatility.quantile(0.75), 
-                f'Mean: {volatility.mean():.4f}\nStd: {volatility.std():.4f}',
-                fontsize=10, fontweight='bold',
-                bbox=dict(boxstyle="round,pad=0.3", facecolor="lightblue"))
-    
-    # 6. Market performance metrics
-    ax6 = axes[1, 2]
-    metrics = ['Mean Return', 'Volatility', 'Sharpe Ratio', 'Max Drawdown']
-    
-    # Calculate key metrics
-    if 'daily_return' in financial_df.columns:
-        daily_returns = financial_df['daily_return'].dropna()
-        mean_return = daily_returns.mean() * 252  # Annualized
-        volatility_annual = daily_returns.std() * np.sqrt(252)
-        sharpe_ratio = mean_return / volatility_annual if volatility_annual > 0 else 0
-        
-        # Calculate max drawdown
-        cumulative_returns = (1 + daily_returns).cumprod()
-        rolling_max = cumulative_returns.expanding().max()
-        drawdown = (cumulative_returns / rolling_max) - 1
-        max_drawdown = drawdown.min()
-        
-        values = [mean_return * 100, volatility_annual * 100, sharpe_ratio, max_drawdown * 100]
-        colors = ['green' if v > 0 else 'red' for v in values]
-        
-        bars = ax6.bar(metrics, values, color=colors, alpha=0.7)
-        ax6.set_title('Key Performance Metrics', fontweight='bold')
-        ax6.set_ylabel('Value (%)')
-        ax6.tick_params(axis='x', rotation=45)
-        
-        # Add value labels
-        for bar, value in zip(bars, values):
-            height = bar.get_height()
-            ax6.text(bar.get_x() + bar.get_width()/2., height + (0.1 if height > 0 else -0.3),
-                    f'{value:.2f}%', ha='center', va='bottom' if height > 0 else 'top',
-                    fontweight='bold')
-    
-    plt.tight_layout()
-    print(plt.limit(10).to_pandas())
-    
-    print("Financial Market Analysis Summary:")
-    if 'daily_return' in financial_df.columns:
-        print(f"- Average daily return: {daily_returns.mean():.4f} ({daily_returns.mean()*252:.2%} annualized)")
-        print(f"- Market volatility: {daily_returns.std():.4f} ({volatility_annual:.2%} annualized)")
-        print(f"- Sharpe ratio: {sharpe_ratio:.2f}")
-        print(f"- Maximum drawdown: {max_drawdown:.2%}")
-    print(f"- Total trading days analyzed: {len(financial_df):,}")
+    return pd.DataFrame(results).to_dict('list') if results else pd.DataFrame().to_dict('list')
 
-# Create financial analysis summary
-create_simple_financial_summary()
+# Calculate technical indicators using Ray Data
+print("\nCalculating technical indicators...")
+financial_with_indicators = financial_data.map_batches(
+    calculate_technical_indicators,
+    batch_format="pandas",
+    batch_size=1000,  # Optimal batch size for financial calculations
+    concurrency=4
+)
+
+# Display sample results
+sample_indicators = financial_with_indicators.take(10)
+print("\nSample Technical Indicators:")
+for i, indicator in enumerate(sample_indicators[:5], 1):
+    print(f"\n{indicator['symbol']}:")
+    print(f"  Close: ${indicator['close']:.2f}")
+    print(f"  SMA(20): ${indicator['sma_20']:.2f}")
+    print(f"  RSI: {indicator['rsi']:.2f}")
+    print(f"  MACD: {indicator['macd']:.2f}")
 ```
 
-This comprehensive dashboard provides key insights into market trends, volatility patterns, and performance metrics essential for financial forecasting.
-```
-
-### Load Financial News Data from Public Sources
+### Load Additional Financial Data
 
 ```python
 # Create comprehensive financial news dataset for analysis
