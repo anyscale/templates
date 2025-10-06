@@ -102,6 +102,17 @@ Ray Data provides secure, scalable processing for healthcare data:
 
 ---
 
+## Installation
+
+Install required medical data processing libraries:
+
+```bash
+pip install ray[data] pydicom hl7 pillow numpy pandas pyarrow
+pip install matplotlib seaborn plotly dash scikit-image nibabel
+```
+
+---
+
 ## Quick Start (3 minutes)
 
 **Goal:** Process HL7 healthcare messages with Ray Data in 3 minutes
@@ -111,22 +122,48 @@ This quick demonstration shows how to load and process HL7 medical messages usin
 ```python
 import ray
 
-# Create sample medical data (anonymized)
-patient_data = [{"patient_id": f"P{i:04d}", "age": 45, "diagnosis": "routine_checkup"} for i in range(1000)]
-ds = ray.data.from_items(patient_data)
-print(f" Created medical dataset with {medical_dataset.count()} patient records")
+# Initialize Ray
+ray.init()
+
+# Create sample medical data (anonymized for demonstration)
+patient_data = [
+    {"patient_id": f"P{i:04d}", "age": 45 + (i % 40), "diagnosis": "routine_checkup"}
+    for i in range(1000)
+]
+
+# Create Ray Data dataset
+medical_dataset = ray.data.from_items(patient_data)
+
+print(f"Created medical dataset with {medical_dataset.count()} patient records")
+print(f"Schema: {medical_dataset.schema()}")
+
+# Show sample records
+print("\nSample patient records:")
+for record in medical_dataset.take(3):
+    print(f"  - Patient {record['patient_id']}: Age {record['age']}, {record['diagnosis']}")
 ```
 
-To run this template, you will need the following packages:
-
-```bash
-pip install ray[data] pydicom hl7 pillow numpy pandas pyarrow
-pip install matplotlib seaborn plotly dash scikit-image nibabel
+**Expected output:**
 ```
+Created medical dataset with 1000 patient records
+Schema: patient_id: string, age: int64, diagnosis: string
+
+Sample patient records:
+  - Patient P0000: Age 45, routine_checkup
+  - Patient P0001: Age 46, routine_checkup
+  - Patient P0002: Age 47, routine_checkup
+```
+
+:::tip What You Just Created
+✅ **Created** 1,000 anonymized patient records
+✅ **Loaded** data into Ray Data for distributed processing
+✅ **Validated** dataset schema and record structure
+✅ **Ready** to apply medical data transformations at scale
+:::
 
 ---
 
-## Overview
+## Healthcare Data Context
 
 ### The Healthcare Data Revolution: Why Medical Connectors Matter
 
