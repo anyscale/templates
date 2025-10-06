@@ -136,7 +136,8 @@ print(f"Available resources: {ray.cluster_resources()}")
 Create a comprehensive financial dataset for forecasting analysis:
 
 ```python
-# Generate realistic financial market data for time series forecastingprint("Generating comprehensive financial market dataset...")
+# Generate realistic financial market data for time series forecasting
+print("Generating comprehensive financial market dataset...")
 start_time = time.time()
 ```
 
@@ -305,7 +306,8 @@ This comprehensive dashboard provides key insights into market trends, volatilit
 ### Load Financial News Data from Public Sources
 
 ```python
-# Create comprehensive financial news dataset for analysisprint("Creating comprehensive financial news dataset...")
+# Create comprehensive financial news dataset for analysis
+print("Creating comprehensive financial news dataset...")
 
 # Create realistic financial news datasetnews_articles = []
     
@@ -425,7 +427,8 @@ print(f"  Average sentiment: {news_df['sentiment_score'].mean():.2f}")
 ### Load Comprehensive Public Financial Datasets
 
 ```python
-# Load multiple real financial datasets using Ray Data native operationsprint("Loading comprehensive real-world financial datasets...")
+# Load multiple real financial datasets using Ray Data native operations
+print("Loading comprehensive real-world financial datasets...")
 
 # Dataset 1: S&P 500 Historical Prices (5+ years of data)
 try:
@@ -489,7 +492,8 @@ print(f"Primary dataset contains: {main_dataset.count():,} records of real finan
 ### Display Comprehensive Dataset Information
 
 ```python
-# Display comprehensive dataset information using Ray Data operationsprint("Comprehensive Financial Dataset Analysis:")
+# Display comprehensive dataset information using Ray Data operations
+print("Comprehensive Financial Dataset Analysis:")
 print("=" * 120)
 print(f"{'Dataset':<25} {'Records':<15} {'Date Range':<20} {'Data Quality':<25} {'Source':<20}")
 print("-" * 120)
@@ -543,7 +547,8 @@ print("All datasets loaded successfully using Ray Data native operations")
 ### Display Real Market Data Using Ray Data Best Practices
 
 ```python
-# Use Ray Data native operations for data exploration and validationprint("Analyzing real financial dataset using Ray Data native operations...")
+# Use Ray Data native operations for data exploration and validation
+print("Analyzing real financial dataset using Ray Data native operations...")
 
 # Use Ray Data native filter operation for data qualityvalid_data = sp500_data.filter(
     lambda record: (
