@@ -292,9 +292,9 @@ print(f"Email validation: {email_validation['validity_rate']:.1f}% valid formats
 # Demonstrate Ray Data's filtering performance
 print("\nRay Data Filtering Benefits:")
 print("Push-down optimization - only email column processed")
-print("Lazy evaluation - filter applied during data scan")
-print("Distributed execution - parallel validation across cluster")
-print(f"- Validated {email_validation['total_records']:,} records efficiently")
+print("  • Lazy evaluation - filter applied during data scan")
+print("  • Distributed execution - parallel validation across cluster")
+print(f"  • Validated {email_validation['total_records']:,} records efficiently")
 ```
 
 ## Step 3: Data Drift Monitoring
@@ -326,10 +326,10 @@ try:
     print(f"  Max: {age_stats['max(age)']:.1f}")
     
     print("\nRay Data Aggregation Benefits:")
-    print("Distributed computation - statistics calculated across cluster")
-    print("Memory efficient - processes data in streaming fashion")
-    print("Native operations - optimized C++ implementation")
-    print("Handles billions of records without memory issues")
+    print("  • Distributed computation - statistics calculated across cluster")
+    print("  • Memory efficient - processes data in streaming fashion")
+    print("  • Native operations - optimized C++ implementation")
+    print("  • Handles billions of records without memory issues")
     
 except Exception as e:
     print(f"Age statistics calculation: {e}")
@@ -376,9 +376,9 @@ def detect_statistical_anomalies(dataset):
 # Detect anomalies
 anomalies = detect_statistical_anomalies(quality_dataset)
 
-print("Statistical Anomaly Detection Results:")
+print("\nStatistical Anomaly Detection Results:")
 for field, stats in anomalies.items():
-    print(f"  {field}: {stats['outliers']} outliers ({stats['outlier_rate']:.2f}%)")
+    print(f"  • {field}: {stats['outliers']} outliers ({stats['outlier_rate']:.2f}%)")
 ```
 
 **Results:** Identifies outliers in age, income, and score fields using 3-sigma rule.
@@ -433,9 +433,9 @@ historical_stats = {
 # Detect drift
 drift_analysis = detect_data_drift(quality_dataset, historical_stats)
 
-print("Data Drift Analysis:")
+print("\nData Drift Analysis:")
 for field, drift in drift_analysis.items():
-    print(f"  {field}: {drift['mean_drift_pct']:.2f}% drift - Status: {drift['status']}")
+    print(f"  • {field}: {drift['mean_drift_pct']:.2f}% drift - Status: {drift['status']}")
 ```
 
 ### Business Rule Validation
@@ -477,9 +477,9 @@ def validate_business_rules(dataset):
 # Run business rule validation
 business_validation = validate_business_rules(quality_dataset)
 
-print("Business Rule Validation Results:")
+print("\nBusiness Rule Validation Results:")
 for rule_name, result in business_validation.items():
-    print(f"  {rule_name}: {result['valid_rate']:.1f}% valid - {result['rule']}")
+    print(f"  • {rule_name}: {result['valid_rate']:.1f}% valid - {result['rule']}")
 ```
 
 #### Quality Statistics Summary
@@ -504,9 +504,9 @@ def generate_quality_report(dataset, missing_stats, email_validation):
     """Generate a comprehensive quality report."""
     total_records = dataset.count()
     
-    print("="*60)
+    print("=" * 60)
     print("DATA QUALITY REPORT")
-    print("="*60)
+    print("=" * 60)
     print(f"Dataset size: {total_records:,} records")
     print(f"Email validity: {email_validation['validity_rate']:.1f}%")
     
@@ -514,9 +514,9 @@ def generate_quality_report(dataset, missing_stats, email_validation):
     print("\nMissing Data Summary:")
     for field, stats in missing_stats.items():
         status = "High" if stats['missing_rate'] > 10 else "Medium" if stats['missing_rate'] > 5 else "Good"
-        print(f"  {field}: {stats['missing_rate']:.1f}% missing {status}")
+        print(f"  • {field}: {stats['missing_rate']:.1f}% missing - {status}")
     
-    print("="*60)
+    print("=" * 60)
 
 # Generate final report
 generate_quality_report(dataset, missing_analysis, email_validation)
