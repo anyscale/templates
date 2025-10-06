@@ -1,10 +1,150 @@
 """Visualization utilities for geospatial analysis templates."""
 
+import matplotlib.pyplot as plt
+import seaborn as sns
 import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import pandas as pd
 import numpy as np
+
+
+def create_geospatial_dashboard(dataset, sample_size=1000):
+    """Generate a comprehensive geospatial data analysis dashboard."""
+    # Sample data for analysis
+    sample_data = dataset.take(sample_size)
+    df = pd.DataFrame(sample_data)
+    
+    # Create comprehensive dashboard
+    fig = plt.figure(figsize=(20, 16))
+    gs = fig.add_gridspec(4, 4, hspace=0.3, wspace=0.3)
+    
+    # 1. Geographic Distribution Map
+    ax_map = fig.add_subplot(gs[0, :2])
+    
+    # Create scatter plot of locations
+    scatter = ax_map.scatter(df['lon'], df['lat'], c=df['type'].astype('category').cat.codes, 
+                           cmap='tab10', alpha=0.6, s=20)
+    ax_map.set_title('Geographic Distribution of Locations', fontsize=14, fontweight='bold')
+    ax_map.set_xlabel('Longitude')
+    ax_map.set_ylabel('Latitude')
+    ax_map.grid(True, alpha=0.3)
+    
+    # Add city labels
+    city_centers = df.groupby('city')[['lat', 'lon']].mean()
+    for city, (lat, lon) in city_centers.iterrows():
+        ax_map.annotate(city, (lon, lat), xytext=(5, 5), textcoords='offset points',
+                       bbox=dict(boxstyle="round,pad=0.3", facecolor="white", alpha=0.8),
+                       fontsize=8)
+    
+    # 2. Location Type Distribution
+    ax_types = fig.add_subplot(gs[0, 2:])
+    type_counts = df['type'].value_counts()
+    colors = plt.cm.Set3(np.linspace(0, 1, len(type_counts)))
+    
+    wedges, texts, autotexts = ax_types.pie(type_counts.values, labels=type_counts.index, 
+                                           autopct='%1.1f%%', colors=colors, startangle=90)
+    ax_types.set_title('Location Type Distribution', fontsize=12, fontweight='bold')
+    
+    # 3. City Coverage Analysis
+    ax_cities = fig.add_subplot(gs[1, :2])
+    city_counts = df['city'].value_counts()
+    bars = ax_cities.bar(range(len(city_counts)), city_counts.values,
+                        color=plt.cm.viridis(np.linspace(0, 1, len(city_counts))))
+    ax_cities.set_title('Location Count by City', fontsize=12, fontweight='bold')
+    ax_cities.set_ylabel('Number of Locations')
+    ax_cities.set_xticks(range(len(city_counts)))
+    ax_cities.set_xticklabels(city_counts.index, rotation=45)
+    
+    # Add count labels
+    for bar, count in zip(bars, city_counts.values):
+        height = bar.get_height()
+        ax_cities.text(bar.get_x() + bar.get_width()/2., height + height*0.01,
+                      f'{count}', ha='center', va='bottom', fontweight='bold')
+    
+    # 4. Latitude Distribution
+    ax_lat = fig.add_subplot(gs[1, 2:])
+    ax_lat.hist(df['lat'], bins=30, color='skyblue', alpha=0.7, edgecolor='black')
+    ax_lat.axvline(df['lat'].mean(), color='red', linestyle='--', linewidth=2,
+                  label=f'Mean: {df["lat"].mean():.2f}')
+    ax_lat.set_title('Latitude Distribution', fontsize=12, fontweight='bold')
+    ax_lat.set_xlabel('Latitude (degrees)')
+    ax_lat.set_ylabel('Frequency')
+    ax_lat.legend()
+    ax_lat.grid(True, alpha=0.3)
+    
+    # 5. Longitude Distribution
+    ax_lon = fig.add_subplot(gs[2, :2])
+    ax_lon.hist(df['lon'], bins=30, color='lightgreen', alpha=0.7, edgecolor='black')
+    ax_lon.axvline(df['lon'].mean(), color='red', linestyle='--', linewidth=2,
+                  label=f'Mean: {df["lon"].mean():.2f}')
+    ax_lon.set_title('Longitude Distribution', fontsize=12, fontweight='bold')
+    ax_lon.set_xlabel('Longitude (degrees)')
+    ax_lon.set_ylabel('Frequency')
+    ax_lon.legend()
+    ax_lon.grid(True, alpha=0.3)
+    
+    # 6. Type vs City Heatmap
+    ax_heatmap = fig.add_subplot(gs[2, 2:])
+    type_city_matrix = pd.crosstab(df['type'], df['city'])
+    sns.heatmap(type_city_matrix, annot=True, fmt='d', cmap='YlOrRd', ax=ax_heatmap)
+    ax_heatmap.set_title('Location Types by City', fontsize=12, fontweight='bold')
+    ax_heatmap.set_xlabel('City')
+    ax_heatmap.set_ylabel('Location Type')
+    
+    # 7. Geographic Bounds Analysis
+    ax_bounds = fig.add_subplot(gs[3, :2])
+    ax_bounds.axis('off')
+    
+    # Calculate geographic bounds
+    lat_min, lat_max = df['lat'].min(), df['lat'].max()
+    lon_min, lon_max = df['lon'].min(), df['lon'].max()
+    lat_range = lat_max - lat_min
+    lon_range = lon_max - lon_min
+    
+    bounds_text = "Geographic Analysis\n" + "="*40 + "\n"
+    bounds_text += f"Total Locations: {len(df):,}\n"
+    bounds_text += f"Latitude Range: {lat_min:.2f} to {lat_max:.2f}\n"
+    bounds_text += f"Longitude Range: {lon_min:.2f} to {lon_max:.2f}\n"
+    bounds_text += f"Latitude Span: {lat_range:.2f}\n"
+    bounds_text += f"Longitude Span: {lon_range:.2f}\n"
+    bounds_text += f"Cities Covered: {len(df['city'].unique())}\n"
+    bounds_text += f"Location Types: {len(df['type'].unique())}\n"
+    
+    ax_bounds.text(0.05, 0.95, bounds_text, transform=ax_bounds.transAxes, 
+                  fontsize=11, verticalalignment='top', fontfamily='monospace',
+                  bbox=dict(boxstyle="round,pad=0.5", facecolor="lightyellow", alpha=0.8))
+    
+    # 8. Sample Data Table
+    ax_table = fig.add_subplot(gs[3, 2:])
+    ax_table.axis('off')
+    
+    # Create sample data table
+    sample_df = df.head(8)[['location_id', 'city', 'type', 'lat', 'lon']].copy()
+    
+    table_text = "Sample Location Data\n" + "="*70 + "\n"
+    table_text += f"{'ID':<12} {'City':<10} {'Type':<10} {'Lat':<8} {'Lon':<8}\n"
+    table_text += "-"*70 + "\n"
+    
+    for _, row in sample_df.iterrows():
+        table_text += f"{row['location_id']:<12} {row['city']:<10} {row['type']:<10} {row['lat']:<8.2f} {row['lon']:<8.2f}\n"
+    
+    ax_table.text(0.05, 0.95, table_text, transform=ax_table.transAxes, 
+                 fontsize=9, verticalalignment='top', fontfamily='monospace',
+                 bbox=dict(boxstyle="round,pad=0.5", facecolor="lightblue", alpha=0.8))
+    
+    plt.suptitle('Geospatial Data Analysis Dashboard', fontsize=18, fontweight='bold', y=0.95)
+    plt.tight_layout()
+    plt.close()
+    
+    # Print geospatial insights
+    print(f" Geospatial Data Insights:")
+    print(f"    Geographic coverage: {lat_range:.2f} lat × {lon_range:.2f} lon")
+    print(f"    Location density: {len(df):,} points across {len(df['city'].unique())} cities")
+    print(f"    Type diversity: {len(df['type'].unique())} different location types")
+    print(f"    Coordinate range: ({lat_min:.2f}, {lon_min:.2f}) to ({lat_max:.2f}, {lon_max:.2f})")
+    
+    return df
 
 
 def create_geospatial_heatmap(location_df):
@@ -49,255 +189,103 @@ def create_trip_distance_analysis(location_df):
             mode='markers',
             marker=dict(size=8, color=sample_data['trip_distance'],
                        colorscale='Viridis', showscale=True),
-            name="Locations"
+            text=sample_data['trip_distance'],
+            name="Trips"
         ),
         row=1, col=2
     )
     
-    fig.update_layout(height=500, showlegend=False, mapbox_style='open-street-map')
-    return fig
-
-
-def create_spatial_clustering_viz(location_df):
-    """Create spatial clustering visualization."""
-    # Simple spatial clustering
-    location_df = location_df.copy()
-    location_df['lat_bucket'] = pd.cut(location_df['lat'], bins=20, labels=False)
-    location_df['lon_bucket'] = pd.cut(location_df['lon'], bins=20, labels=False)
-    location_df['spatial_cluster'] = location_df['lat_bucket'] * 20 + location_df['lon_bucket']
-    
-    cluster_sizes = location_df.groupby('spatial_cluster').size().reset_index()
-    cluster_sizes.columns = ['cluster', 'count']
-    cluster_sizes = cluster_sizes.nlargest(10, 'count')
-    
-    fig = px.bar(cluster_sizes, x='cluster', y='count',
-                title='Top 10 Spatial Clusters by Activity',
-                labels={'cluster': 'Cluster ID', 'count': 'Number of Points'})
-    
-    return fig
-
-
-def create_3d_scatter(location_df):
-    """Create 3D scatter plot for spatial analysis."""
-    sample_data = location_df.sample(min(5000, len(location_df)))
-    
-    fig = go.Figure(data=[go.Scatter3d(
-        x=sample_data['lon'],
-        y=sample_data['lat'],
-        z=sample_data['trip_distance'],
-        mode='markers',
-        marker=dict(
-            size=3,
-            color=sample_data['trip_distance'],
-            colorscale='Viridis',
-            showscale=True,
-            colorbar=dict(title="Trip Distance")
-        )
-    )])
-    
     fig.update_layout(
-        title='3D Spatial Analysis',
-        scene=dict(
-            xaxis_title='Longitude',
-            yaxis_title='Latitude',
-            zaxis_title='Trip Distance'
-        ),
-        height=700
-    )
-    
-    return fig
-
-
-def create_interactive_dashboard(dataset):
-    """Create comprehensive interactive Plotly dashboard for geospatial analysis."""
-    import plotly.graph_objects as go
-    from plotly.subplots import make_subplots
-    
-    poi_df = dataset.to_pandas()
-    
-    # Create subplots
-    fig = make_subplots(
-        rows=2, cols=2,
-        subplot_titles=('Geographic Distribution', 'Category Analysis', 
-                       'Rating Distribution', 'Metro Comparison'),
-        specs=[[{"type": "scattermapbox"}, {"type": "bar"}],
-               [{"type": "histogram"}, {"type": "box"}]]
-    )
-    
-    # 1. Geographic scatter map
-    fig.add_trace(
-        go.Scattermapbox(
-            lat=poi_df['latitude'],
-            lon=poi_df['longitude'],
-            mode='markers',
-            marker=dict(
-                size=8,
-                color=poi_df['rating'],
-                colorscale='Viridis',
-                showscale=True,
-                colorbar=dict(title="Rating", x=0.45)
-            ),
-            text=[f"Name: {name}<br>Category: {cat}<br>Rating: {rating:.1f}" 
-                  for name, cat, rating in zip(poi_df['name'], poi_df['category'], poi_df['rating'])],
-            hovertemplate="<b>%{text}</b><br>Lat: %{lat:.4f}<br>Lon: %{lon:.4f}<extra></extra>",
-            name="POIs"
-        ),
-        row=1, col=1
-    )
-    
-    # 2. Category bar chart
-    category_counts = poi_df['category'].value_counts()
-    fig.add_trace(
-        go.Bar(
-            x=category_counts.index,
-            y=category_counts.values,
-            marker_color='lightblue',
-            name="Categories"
-        ),
-        row=1, col=2
-    )
-    
-    # 3. Rating histogram
-    fig.add_trace(
-        go.Histogram(
-            x=poi_df['rating'],
-            nbinsx=20,
-            marker_color='lightgreen',
-            name="Rating Distribution"
-        ),
-        row=2, col=1
-    )
-    
-    # 4. Box plot by metro
-    for metro in poi_df['metro_area'].unique():
-        metro_data = poi_df[poi_df['metro_area'] == metro]
-        fig.add_trace(
-            go.Box(
-                y=metro_data['rating'],
-                name=metro,
-                boxpoints='all',
-                jitter=0.3,
-                pointpos=-1.8
-            ),
-            row=2, col=2
-        )
-    
-    # Update layout
-    fig.update_layout(
-        title_text="Interactive Geospatial Analysis Dashboard",
-        title_x=0.5,
-        height=800,
-        showlegend=False,
-        mapbox=dict(
-            style="open-street-map",
-            center=dict(lat=poi_df['latitude'].mean(), lon=poi_df['longitude'].mean()),
-            zoom=8
-        )
-    )
-    
-    # Update axes titles
-    fig.update_xaxes(title_text="Category", row=1, col=2)
-    fig.update_yaxes(title_text="Count", row=1, col=2)
-    fig.update_xaxes(title_text="Rating", row=2, col=1)
-    fig.update_yaxes(title_text="Frequency", row=2, col=1)
-    fig.update_yaxes(title_text="Rating", row=2, col=2)
-    
-    return fig
-
-
-def create_interactive_heatmap(dataset):
-    """Create interactive heatmap visualization."""
-    import plotly.express as px
-    import pandas as pd
-    
-    df = dataset.to_pandas()
-    
-    fig = px.density_mapbox(df, lat='lat', lon='lon', radius=15,
-                           title='Interactive Location Heatmap',
-                           mapbox_style='open-street-map',
-                           zoom=11, height=600)
-    
-    return fig
-
-
-def create_3d_density_plot(dataset):
-    """Create 3D density visualization."""
-    sample_df = dataset.to_pandas().sample(min(5000, len(dataset.to_pandas())))
-    
-    fig = go.Figure(data=[go.Scatter3d(
-        x=sample_df['lon'],
-        y=sample_df['lat'],
-        z=sample_df.get('trip_distance', 0),
-        mode='markers',
-        marker=dict(size=3, color=sample_df.get('trip_distance', 0),
-                   colorscale='Plasma', showscale=True)
-    )])
-    
-    fig.update_layout(title='3D Spatial Density',
-                     scene=dict(xaxis_title='Longitude',
-                               yaxis_title='Latitude',
-                               zaxis_title='Metric'),
-                     height=700)
-    
-    return fig
-
-
-def create_poi_category_chart(poi_df):
-    """Create interactive POI category distribution chart."""
-    category_counts = poi_df['category'].value_counts().head(10)
-    
-    fig = px.bar(
-        x=category_counts.values,
-        y=category_counts.index,
-        orientation='h',
-        title='Top 10 POI Categories',
-        labels={'x': 'Number of Locations', 'y': 'Category'},
-        color=category_counts.values,
-        color_continuous_scale='Viridis'
-    )
-    
-    fig.update_layout(height=500, showlegend=False)
-    return fig
-
-
-def create_metro_comparison(poi_df):
-    """Create metro area comparison visualization."""
-    metro_stats = poi_df.groupby('metro_area').agg({
-        'rating': 'mean',
-        'category': 'count'
-    }).reset_index()
-    metro_stats.columns = ['metro_area', 'avg_rating', 'poi_count']
-    
-    fig = go.Figure()
-    
-    fig.add_trace(go.Bar(
-        name='POI Count',
-        x=metro_stats['metro_area'],
-        y=metro_stats['poi_count'],
-        marker_color='lightblue'
-    ))
-    
-    fig.update_layout(
-        title='POI Distribution Across Metro Areas',
-        xaxis_title='Metro Area',
-        yaxis_title='Number of POIs',
+        title='Trip Distance Analysis',
+        mapbox=dict(style='open-street-map', zoom=10),
         height=500
     )
     
     return fig
 
 
-def create_rating_distribution(poi_df):
-    """Create interactive rating distribution chart."""
-    fig = px.histogram(
-        poi_df,
-        x='rating',
-        nbins=20,
-        title='POI Rating Distribution',
-        labels={'rating': 'Rating', 'count': 'Frequency'},
-        color_discrete_sequence=['skyblue']
+def create_cluster_visualization(location_df):
+    """Create spatial cluster visualization."""
+    fig = px.scatter_mapbox(
+        location_df,
+        lat='lat',
+        lon='lon',
+        color='cluster_id',
+        size='cluster_size',
+        hover_data=['location_id', 'city'],
+        title='Spatial Clustering Results',
+        mapbox_style='open-street-map',
+        zoom=10,
+        height=600
     )
-    
-    fig.update_layout(height=400)
     return fig
 
+
+def create_poi_density_map(location_df):
+    """Create point-of-interest density visualization."""
+    fig = make_subplots(
+        rows=1, cols=2,
+        subplot_titles=('Location Density', 'Type Distribution'),
+        specs=[[{"type": "scatter"}, {"type": "bar"}]]
+    )
+    
+    # Density scatter
+    fig.add_trace(
+        go.Scatter(
+            x=location_df['lon'],
+            y=location_df['lat'],
+            mode='markers',
+            marker=dict(
+                size=5,
+                color=location_df['type'].astype('category').cat.codes,
+                colorscale='Viridis',
+                showscale=True
+            ),
+            text=location_df['type'],
+            name="Locations"
+        ),
+        row=1, col=1
+    )
+    
+    # Type distribution
+    type_counts = location_df['type'].value_counts()
+    fig.add_trace(
+        go.Bar(
+            x=type_counts.index,
+            y=type_counts.values,
+            marker_color='lightblue',
+            name="Count"
+        ),
+        row=1, col=2
+    )
+    
+    fig.update_layout(height=500, showlegend=False,
+                     title_text="Point of Interest Analysis")
+    
+    return fig
+
+
+def create_route_analysis(route_df):
+    """Create route analysis visualization."""
+    fig = go.Figure()
+    
+    # Plot routes
+    for route_id in route_df['route_id'].unique():
+        route_data = route_df[route_df['route_id'] == route_id]
+        
+        fig.add_trace(go.Scattermapbox(
+            lat=route_data['lat'],
+            lon=route_data['lon'],
+            mode='lines+markers',
+            name=f'Route {route_id}',
+            line=dict(width=2)
+        ))
+    
+    fig.update_layout(
+        title='Route Analysis',
+        mapbox=dict(style='open-street-map', zoom=10),
+        height=600,
+        showlegend=True
+    )
+    
+    return fig
