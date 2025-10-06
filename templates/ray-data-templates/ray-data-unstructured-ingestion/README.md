@@ -438,7 +438,8 @@ high_priority_docs = high_quality_docs.filter(
     num_cpus=0.1
 )
 
-# Filter by business category for targeted processingfinancial_docs = high_quality_docs.filter(
+# Filter by business category for targeted processing
+financial_docs = high_quality_docs.filter(
     col("business_category") == lit("finance"),
     num_cpus=0.1
 )
@@ -591,7 +592,8 @@ print(f"Content preprocessing completed: {llm_ready_chunks.count():,} chunks rea
 # Configure LLM processing using Ray Data LLM package
 print("Configuring Ray Data LLM processing...")
 
-# Install required packages for LLM processing# Pip install -U vllm==0.7.2
+# Install required packages for LLM processing
+# Pip install -U vllm==0.7.2
 try:
     from ray.data.llm import vLLMEngineProcessorConfig, build_llm_processor
     

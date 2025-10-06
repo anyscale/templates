@@ -454,10 +454,12 @@ ETL Performance Issue
 # Configure Ray Data for optimal ETL performance
 print("Configuring Ray Data for ETL optimization...")
 
-# Memory optimization for large datasetsctx.target_max_block_size = 128 * 1024 * 1024  # 128 MB blocks
+# Memory optimization for large datasets
+ctx.target_max_block_size = 128 * 1024 * 1024  # 128 MB blocks
 ctx.eager_free = True  # Aggressive memory cleanup
 
-# Enable performance monitoringctx.enable_auto_log_stats = True
+# Enable performance monitoring
+ctx.enable_auto_log_stats = True
 ctx.memory_usage_poll_interval_s = 5.0
 
 print("Ray Data configured for optimal ETL performance")
@@ -469,7 +471,8 @@ print("Ray Data configured for optimal ETL performance")
 # Demonstrate different batch size strategies for ETL operations
 print("Testing ETL batch size optimization...")
 
-# Small batch processing for memory-constrained operationsdef memory_intensive_etl(batch):
+# Small batch processing for memory-constrained operations
+def memory_intensive_etl(batch):
     """Memory-intensive ETL transformation."""
     import pandas as pd
     df = pd.DataFrame(batch)
@@ -520,7 +523,8 @@ print(f"I/O-optimized processing: {io_optimized_orders.count():,} records")
 # Etl Optimization: Column pruning for performance
 print("Applying column selection optimization...")
 
-# Select only essential columns for downstream processingessential_customer_columns = customers_ds.select_columns([
+# Select only essential columns for downstream processing
+essential_customer_columns = customers_ds.select_columns([
     "c_custkey", "c_name", "c_mktsegment", "c_acctbal", "c_nationkey"
 ])
 
@@ -569,7 +573,8 @@ As data volumes grow, ETL approaches must evolve:
 # Large-scale aggregations using Ray Data native operations
 print("Performing large-scale distributed aggregations...")
 
-# Multi-dimensional aggregations for business intelligencecomprehensive_metrics = optimized_join.groupby(["c_mktsegment", "order_year", "revenue_tier"]).aggregate(
+# Multi-dimensional aggregations for business intelligence
+comprehensive_metrics = optimized_join.groupby(["c_mktsegment", "order_year", "revenue_tier"]).aggregate(
     Count(),
     Sum("o_totalprice"),
     Mean("o_totalprice"),
