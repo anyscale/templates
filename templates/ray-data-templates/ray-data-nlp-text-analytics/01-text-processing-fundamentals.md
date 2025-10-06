@@ -636,18 +636,15 @@ print(f"Loaded {text_ds.count()} real movie reviews")
 from transformers import pipeline
 
 class QuickSentimentAnalyzer:
+    """Quick sentiment analyzer using transformers."""
+    
     def __init__(self):
-
-    """  Init  ."""
-
-    """  Init  ."""
-
-    """  Init  ."""
+        """Initialize sentiment analysis pipeline."""
+        from transformers import pipeline
         self.sentiment_pipeline = pipeline("sentiment-analysis", device=-1)  # CPU for speed
     
     def __call__(self, batch):
-
-    """  Call  ."""
+        """Process batch of texts for sentiment analysis."""
         results = []
         for item in batch:
             try:
