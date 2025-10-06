@@ -837,13 +837,15 @@ if len(symbol_data) < 50:  # Need minimum data for indicators
 ### Problem: "memory Issues with Large Financial Datasets"
 **Solution**:
 ```python
-# Use smaller batch sizes for memory-intensive financial calculationsdataset.map_batches(financial_function, batch_size=500, concurrency=2, batch_format="pandas")
+# Use smaller batch sizes for memory-intensive financial calculations
+dataset.map_batches(financial_function, batch_size=500, concurrency=2, batch_format="pandas")
 ```
 
 ### Problem: "unrealistic Financial Results"
 **Solution**:
 ```python
-# Validate financial metrics are within reasonable rangesdef validate_financial_metric(value, min_val, max_val, metric_name):
+# Validate financial metrics are within reasonable ranges
+def validate_financial_metric(value, min_val, max_val, metric_name):
 
     """Validate Financial Metric."""
     if min_val <= value <= max_val:
