@@ -288,53 +288,35 @@ abnormal_labs = lab_data.filter(lambda x: x["abnormal_flag"] != "N",
 print(f"Abnormal lab results: {abnormal_labs.count():,}")
 ```
 
-**Why Medical Data Processing Matters:**
-- **Care Coordination**: Unified patient records improve clinical decisions
-- **Population Health**: Large-scale analytics identify health trends
-- **Research Acceleration**: Faster analysis enables medical breakthroughs
-- **Cost Reduction**: Efficient processing reduces healthcare operational costs
+**Why medical data processing matters:**
+
+| Benefit | Impact | Example |
+|---------|--------|---------|
+| **Care Coordination** | Unified patient records improve clinical decisions | Complete patient history at point of care |
+| **Population Health** | Large-scale analytics identify health trends | Disease outbreak detection and prevention |
+| **Research Acceleration** | Faster analysis enables medical breakthroughs | Drug discovery and clinical trial optimization |
+| **Cost Reduction** | Efficient processing reduces operational costs | Automated data integration and analytics |
 
 ### The Medical Data Processing Revolution
 
-**Traditional Healthcare Data Processing:**
-- **Expensive Proprietary Systems**: $500K+ for basic medical data integration platforms
-- **Limited Scalability**: Single-machine processing can't handle population-scale data
-- **Vendor Lock-in**: Proprietary formats trap organizations with specific vendors
-- **Slow Implementation**: 12-18 months for basic data integration projects
-- **Compliance Complexity**: Manual HIPAA compliance processes prone to human error
+**Comparison: Traditional vs. Ray Data healthcare processing**
 
-**Ray Data Healthcare Data Processing:**
-- **Open Source Foundation**: No licensing costs for core data processing capabilities
-- **Unlimited Scalability**: Distribute processing across thousands of cores automatically
-- **Format Freedom**: Custom connectors for any medical data format or standard
-- **Rapid Deployment**: Production systems in days, not months
-- **Built-in Compliance**: Automated HIPAA anonymization and healthcare data protection
+| Aspect | Traditional Approach | Ray Data Approach |
+|--------|---------------------|-------------------|
+| **Cost** | $500K+ proprietary systems | Open source, no licensing fees |
+| **Scalability** | Single-machine limitations | Distribute across thousands of cores |
+| **Vendor Lock-in** | Proprietary format trap | Custom connectors for any format |
+| **Implementation** | 12-18 months | Production in days or weeks |
+| **Compliance** | Manual HIPAA processes | Automated anonymization patterns |
 
 ### Business Impact Across Healthcare Segments
 
-**Hospitals and Health Systems**
-- **Clinical Operations**: Real-time patient data integration for better care coordination
-- **Quality Improvement**: Population health analytics for outcome optimization
-- **Research Capabilities**: Clinical research data extraction and analysis
-- **Cost Reduction**: reduction in data integration and analytics infrastructure costs
-
-**Pharmaceutical and Biotech**
-- **Drug Discovery**: Accelerated compound screening and target identification
-- **Clinical Trials**: Faster patient recruitment and outcome analysis
-- **Regulatory Submission**: Automated data preparation for FDA submissions
-- **Market Access**: Real-world evidence generation for payer negotiations
-
-**Research Institutions**
-- **Population Studies**: Large-scale epidemiological research and public health analysis
-- **Precision Medicine**: Genomic analysis and personalized treatment development
-- **AI/ML Research**: Training datasets for medical AI and diagnostic algorithms
-- **Collaborative Research**: Multi-institutional data sharing and analysis platforms
-
-**Healthcare Technology Companies**
-- **Product Development**: Healthcare analytics platforms and clinical decision support tools
-- **Data Services**: Medical data processing and analytics as a service
-- **Integration Solutions**: Healthcare data interoperability and system integration
-- **Compliance Automation**: HIPAA and healthcare regulatory compliance tools
+| Segment | Use Cases | Key Benefits |
+|---------|-----------|--------------|
+| **Hospitals & Health Systems** | Clinical operations, quality improvement, research | Real-time integration, population health analytics, outcome optimization |
+| **Pharmaceutical & Biotech** | Drug discovery, clinical trials, regulatory submission | Accelerated compound screening, faster recruitment, automated FDA prep |
+| **Research Institutions** | Population studies, precision medicine, AI/ML research | Large-scale epidemiology, genomic analysis, medical AI datasets |
+| **Healthcare Technology** | Product development, data services, integration | Analytics platforms, processing as a service, interoperability solutions |
 
 ### Medical Data Connectors: the Foundation of Healthcare Analytics
 
