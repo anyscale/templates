@@ -6,88 +6,126 @@
 
 ---
 
-## What You'll Learn
+## Learning Objectives
 
-In this part, you'll learn the fundamentals of distributed text processing:
-1. Load text data from various sources
-2. Preprocess and clean text at scale with Ray Data
-3. Create interactive text analytics visualizations
-4. Use Ray Data operations for text analytics
+**What you'll learn:**
+- Load text data from various sources using Ray Data
+- Preprocess and clean text at scale with distributed operations
+- Create interactive text analytics visualizations with plotly and word clouds
+- Use Ray Data's `map_batches()` and native operations for text workflows
+
+**Why this matters:**
+- **Text processing fundamentals**: Learn distributed text loading, cleaning, and tokenization
+- **Ray Data operations**: Master `map_batches()`, `filter()`, and `groupby()` for text data
+- **Production pipelines**: Build scalable text preprocessing pipelines
+- **Real-world applications**: Process millions of documents like e-commerce reviews and social media posts
 
 ## Table of Contents
 
-1. [Loading Text Data](#step-1-loading-text-data)
-2. [Quick Start Demo](#quick-start-3-minutes)
-3. [Interactive Text Analytics](#interactive-text-analytics-visualizations)
-
-## Learning objectives
-
-**Why text processing matters**: Memory and computation challenges with large text datasets require distributed processing solutions. Understanding distributed NLP enables analysis of large text corpora.
-
-**Ray Data's text capabilities**: Distribute NLP tasks across multiple workers for text analytics. You'll learn how to transform text processing from single-machine processing to distributed processing.
-
-**Real-world text applications**: Techniques used by companies to process reviews, comments, and documents for business applications using distributed NLP.
-
-**NLP processing strategies**: Text processing workflows for applications enabling text analytics and automated content analysis.
-
-## Overview
-
-**The Challenge**: Processing large text datasets (reviews, social media, documents) with traditional tools is slow and often runs out of memory.
-
-**The Solution**: Ray Data distributes text processing across multiple cores, making it possible to analyze millions of documents quickly.
-
-**Real-world impact**:
-- **E-commerce**: Analyze product reviews for insights
-- **Social media**: Process posts for sentiment trends
-- **News**: Classify and analyze large volumes of articles
-- **Customer support**: Automatically categorize and route support tickets
+1. [Overview](#overview)
+2. [Prerequisites](#prerequisites-checklist)
+3. [Quick Start](#quick-start-3-minutes)
+4. [Loading Text Data](#step-1-loading-text-data)
+5. [Interactive Visualizations](#interactive-text-analytics-visualizations)
 
 ---
 
-## Prerequisites Checklist
+## Overview
 
-Before starting, ensure you have:
-- [ ] Basic understanding of text processing concepts
-- [ ] Familiarity with sentiment analysis
-- [ ] Python environment with sufficient memory (4GB+ recommended)
+### The Challenge
+
+Processing large text datasets (reviews, social media, documents) faces these limitations:
+- **Memory constraints**: Traditional tools load entire datasets into RAM
+- **Single-core processing**: Sequential text operations are slow
+- **Scalability issues**: Can't handle millions of documents efficiently
+- **Resource bottlenecks**: Text preprocessing becomes the bottleneck
+
+### The Solution
+
+Ray Data enables distributed text processing:
+- **Parallel processing**: Distribute text operations across multiple cores
+- **Memory efficiency**: Stream processing handles unlimited text volumes
+- **Native operations**: Use `map_batches()` for distributed text transformations
+- **Scalability**: Analyze millions of documents quickly
+
+### Real-World Impact
+
+**Production text processing use cases:**
+
+| Industry | Use Case | Scale | Benefit |
+|----------|----------|-------|---------|
+| **E-commerce** | Product review analysis | Millions of reviews | Customer insights |
+| **Social Media** | Post sentiment analysis | Billions of posts | Trending topics |
+| **News** | Article classification | 100K+ articles/day | Content categorization |
+| **Customer Support** | Ticket routing | Millions of tickets | Automated triage |
+
+---
+
+## Prerequisites
+
+**Before starting, ensure you have:**
+- [ ] Basic understanding of text processing concepts (tokenization, cleaning)
+- [ ] Familiarity with NLP terminology
+- [ ] Python environment with 4GB+ RAM recommended
 - [ ] Understanding of machine learning basics
 
-## Quick start (3 minutes)
+---
+
+## Quick Start (3 minutes)
 
 This section demonstrates text processing using Ray Data:
 
 ```python
 import ray
 
-# Create sample text datatexts = ["I love this product", "This is terrible", "Pretty good overall"]
+# Initialize Ray for distributed processing
+ray.init()
+
+# Create sample text data
+texts = ["I love this product", "This is terrible", "Pretty good overall"]
 text_dataset = ray.data.from_items([{"text": t} for t in texts * 1000])
-print(f" Created dataset with {text_dataset.count()} text samples")
+
+print(f"Created dataset with {text_dataset.count():,} text samples")
+print("Ray Data text processing ready!")
 ```
 
-To run this template, you will need the following packages:
+**Installation:**
 
 ```bash
+# Install all required dependencies
 pip install ray[data] transformers torch nltk wordcloud matplotlib seaborn plotly textstat
 ```
 
 ---
 
+---
+
 ## Step 1: Loading Text Data
+
 *Time: 5 minutes*
 
-### What We're Doing
-you'll create a realistic text dataset similar to product reviews or social media posts. This gives us something meaningful to analyze without requiring huge downloads.
+### What You'll Build
 
-### Why This Approach Transforms Text Processing
+Create a realistic text dataset similar to product reviews or social media posts for meaningful analysis without requiring huge downloads.
 
-Working with realistic data fundamentally changes how you understand text analytics. When you learn with data that resembles real-world text patterns, the techniques naturally scale from thousands to millions of documents without architectural changes. This approach ensures that insights gained during development translate directly to production environments.
+### Why Realistic Data Matters
 
-Memory efficiency becomes critical when processing large text datasets. Traditional text processing methods often require loading entire datasets into memory, creating bottlenecks that prevent scaling to enterprise data volumes. Ray Data's distributed approach enables processing unlimited text volumes without memory constraints, allowing organizations to analyze their complete text archives rather than samples.
+**Learning with production-like data:**
+- Text patterns match real-world use cases
+- Techniques scale naturally from thousands to millions of documents
+- No architectural changes needed when moving to production
+- Development insights translate directly to production environments
+
+**Memory efficiency benefits:**
+- Traditional methods load entire datasets into RAM (bottleneck)
+- Ray Data's distributed approach processes unlimited text volumes
+- Stream processing prevents memory constraints
+- Analyze complete text archives instead of samples
 
 ```python
-# Demonstrate scalable text processing efficiencydef measure_text_processing_efficiency():
+# Demonstrate scalable text processing efficiency
+def measure_text_processing_efficiency():
     """Show how Ray Data handles increasing text volumes."""
-    
     # Start with smaller dataset for comparison
     small_texts = ["Sample text"] * 1000
     small_dataset = ray.data.from_items([{"text": t} for t in small_texts])
@@ -102,10 +140,11 @@ Memory efficiency becomes critical when processing large text datasets. Traditio
     
     return large_dataset
 
-# Demonstrate memory-efficient text processingefficient_dataset = measure_text_processing_efficiency()
+# Demonstrate memory-efficient text processing
+efficient_dataset = measure_text_processing_efficiency()
 ```
 
-This scalable foundation enables efficient text analytics that work consistently across different data volumes and organizational requirements.
+**Key benefit:** This scalable foundation enables efficient text analytics that work consistently across different data volumes and organizational requirements.
 
 ```python
 import ray
@@ -121,7 +160,8 @@ import textstat
 from collections import Counter
 import re
 
-# Initialize Ray for distributed processingray.init()
+# Initialize Ray for distributed processing
+ray.init()
 
 def load_real_text_data():
     """Load real Amazon product reviews for text analytics."""
@@ -132,10 +172,11 @@ def load_real_text_data():
         # Load Amazon reviews parquet data
         text_dataset = ray.data.read_parquet(
             "s3://amazon-reviews-pds/parquet/product_category=Books/",
-            columns=["review_body", "star_rating", "product_title", "verified_purchase"]
-        , num_cpus=0.025).limit(10000)  # Limit to 10K reviews for processing efficiency
+            columns=["review_body", "star_rating", "product_title", "verified_purchase"],
+            num_cpus=0.025
+        ).limit(10000)  # Limit to 10K reviews for processing efficiency
         
-    print(f"Loaded {text_dataset.count():,} Amazon book reviews")
+        print(f"Loaded {text_dataset.count():,} Amazon book reviews")
         
         # BEST PRACTICE: Use Ray Data native operations for data transformation
         from ray.data.expressions import col, lit
