@@ -68,9 +68,13 @@ Before starting, ensure you have:
 
 ---
 
-## Quick start (3 minutes)
+---
 
-This section demonstrates medical data processing using Ray Data:
+## Quick Start (3 minutes)
+
+**Goal:** Process HL7 healthcare messages with Ray Data in 3 minutes
+
+This quick demonstration shows how to load and process HL7 medical messages using Ray Data's distributed processing:
 
 ```python
 import ray
