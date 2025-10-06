@@ -772,7 +772,8 @@ print(f"Ray cluster ready in {init_time:.2f} seconds")
 print(f"Available resources: {ray.cluster_resources()}")
 print("Ready for distributed financial analysis")
 
-# Check if we have GPU resources for accelerationgpu_count = ray.cluster_resources().get('GPU', 0)
+# Check if we have GPU resources for acceleration
+gpu_count = ray.cluster_resources().get('GPU', 0)
 if gpu_count > 0:
     print(f"GPU acceleration available: {gpu_count} GPUs detected")
 else:
@@ -795,7 +796,8 @@ print(f"Loaded {financial_data.count():,} price records")
 Inspect the dataset structure:
 
 ```python
-# Display dataset schema and sample data in a visually appealing formatprint("Financial Dataset Overview:")
+# Display dataset schema and sample data in a visually appealing format
+print("Financial Dataset Overview:")
 print("=" * 90)
 print(f"{'Metric':<25} {'Value':<20} {'Description':<35}")
 print("-" * 90)
@@ -809,7 +811,8 @@ print(f"\nDataset Schema:")
 schema_str = str(financial_data.schema())
 print(f"  {schema_str}")
 
-# Display sample financial data in a professional table formatsample_data = financial_data.take(8)
+# Display sample financial data in a professional table format
+sample_data = financial_data.take(8)
 print(f"\nSample Financial Market Data:")
 print("=" * 110)
 print(f"{'Symbol':<8} {'Date':<12} {'Open':<8} {'High':<8} {'Low':<8} {'Close':<8} {'Volume':<12} {'Change%':<10}")
@@ -850,7 +853,8 @@ print(financial_data.limit(5).to_pandas())
 ### Advanced Financial Data Processing with Ray Data Best Practices
 
 ```python
-# Demonstrate Ray Data best practices for financial data processingdef process_financial_data_with_ray_data_best_practices(dataset):
+# Demonstrate Ray Data best practices for financial data processing
+def process_financial_data_with_ray_data_best_practices(dataset):
     """Process financial data using Ray Data native operations and best practices."""
     
     print("Processing financial data using Ray Data best practices...")
@@ -898,13 +902,15 @@ print(financial_data.limit(5).to_pandas())
     
     return financial_data
 
-# Process the real financial dataprocessed_financial_data = process_financial_data_with_ray_data_best_practices(financial_data)
+# Process the real financial data
+processed_financial_data = process_financial_data_with_ray_data_best_practices(financial_data)
 ```
 
 ### Display Financial Analysis Results
 
 ```python
-# Display financial analysis resultssample_processed = processed_financial_data.take(8)
+# Display financial analysis results
+sample_processed = processed_financial_data.take(8)
 
 print("Financial Analysis Results:")
 print("=" * 130)
