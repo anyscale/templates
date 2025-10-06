@@ -104,12 +104,14 @@ Healthcare is undergoing a massive digital transformation, generating more data 
 - **Genomic Data**: Human genome sequencing costs dropped 99.9% since 2007, enabling population-scale genomics
 
 **The Healthcare Data Crisis:**
-Healthcare organizations are drowning in data while struggling to extract actionable insights:
-- **Data Silos**: 89% of healthcare data remains trapped in isolated systems
-- **Format Complexity**: 200+ different medical data standards and formats in use
-- **Compliance Burden**: HIPAA, GDPR, and FDA regulations create processing constraints
-- **Integration Challenges**: Average hospital uses 16+ different data systems
-- **Analytics Gap**: Only 5% of healthcare data is currently analyzed for insights
+
+| Challenge | Impact | Scale |
+|-----------|--------|-------|
+| **Data Silos** | Data trapped in isolated systems | 89% of healthcare data inaccessible |
+| **Format Complexity** | Multiple incompatible standards | 200+ different medical data formats |
+| **Compliance Burden** | Strict regulatory requirements | HIPAA, GDPR, FDA regulations |
+| **Integration Challenges** | Fragmented data systems | Average hospital uses 16+ systems |
+| **Analytics Gap** | Underutilized data potential | Only 5% of data analyzed for insights |
 
 ### Ray Data's approach to medical data
 
@@ -117,29 +119,18 @@ Ray Data transforms healthcare data processing by providing a **unified, scalabl
 
 **Why This Matters for Healthcare Organizations:**
 
-**Clinical Impact**
-- **Faster Diagnosis**: Real-time analysis of medical imaging and lab results
-- **Personalized Treatment**: Patient-specific analytics using comprehensive health records
-- **Predictive Healthcare**: Early warning systems for patient deterioration
-- **Clinical Research**: Accelerated drug discovery and clinical trial analysis
+| Impact Area | Benefit | Business Value |
+|-------------|---------|----------------|
+| **Clinical** | Faster diagnosis, personalized treatment, predictive healthcare | Improved patient outcomes |
+| **Business** | Cost reduction, operational efficiency, regulatory compliance | Streamlined operations |
+| **Research** | Population health studies, drug development, precision medicine | Accelerated innovation |
+| **Industry** | Interoperability, real-time analytics, scalable processing | Market leadership |
 
-**Business Benefits**
-- **Cost Reduction**: Streamlined data processing infrastructure
-- **Operational Efficiency**: Automated data integration across hospital systems
-- **Regulatory Compliance**: Built-in HIPAA and healthcare data protection
-- **Competitive Advantage**: Advanced analytics capabilities for better patient outcomes
-
-**Research Acceleration**
-- **Population Health**: Large-scale epidemiological studies and public health research
-- **Drug Development**: Accelerated pharmaceutical research and clinical trials
-- **Precision Medicine**: Genomic analysis and personalized treatment protocols
-- **Healthcare AI**: Training datasets for medical AI and machine learning models
-
-**Industry Transformation**
-- **Interoperability**: Breaking down data silos between healthcare systems
-- **Real-time Analytics**: Live patient monitoring and clinical decision support
-- **Scalable Processing**: Handle growing data volumes without infrastructure constraints
-- **Innovation Platform**: Foundation for new healthcare applications
+**Key healthcare improvements:**
+- **Clinical**: Real-time medical imaging analysis, early warning systems, accelerated clinical research
+- **Business**: Automated data integration, built-in HIPAA compliance, reduced infrastructure costs
+- **Research**: Large-scale epidemiological studies, genomic analysis, healthcare AI training datasets
+- **Industry**: Breaking down data silos, live patient monitoring, foundation for new applications
 
 ### Ray Data's Medical Data Advantages
 
@@ -157,25 +148,14 @@ Ray Data revolutionizes medical data processing through several key capabilities
 
 Medical data comes in some of the most complex formats ever created, each designed for specific clinical workflows and regulatory requirements. Ray Data's extensible architecture transforms these challenges into opportunities:
 
-**HL7 Message Processing**
-- **Challenge**: Complex healthcare messaging standards with nested hierarchies
-- **Ray Data Solution**: Custom parsers that extract structured patient data automatically
-- **Business Impact**: Real-time patient data integration across hospital systems
+**From Complex Formats to Life-Saving Insights:**
 
-**DICOM Image Analysis**
-- **Challenge**: Binary medical images with embedded metadata and pixel arrays
-- **Ray Data Solution**: Distributed image processing with metadata extraction
-- **Business Impact**: Scalable medical imaging analytics and AI training datasets
-
-**Genomic Data Processing**
-- **Challenge**: Massive genomic files (100GB+ per genome) with complex bioinformatics formats
-- **Ray Data Solution**: Distributed genomic analysis with specialized parsers
-- **Business Impact**: Population-scale genomics and personalized medicine
-
-**Clinical Data Warehousing**
-- **Challenge**: Integrating data from 16+ different hospital systems and formats
-- **Ray Data Solution**: Unified data platform with custom connectors for each system
-- **Business Impact**: Complete patient records and clinical analytics
+| Medical Data Type | Challenge | Ray Data Solution | Business Impact |
+|-------------------|-----------|-------------------|-----------------|
+| **HL7 Messages** | Complex nested hierarchies | Custom parsers extract structured data | Real-time hospital integration |
+| **DICOM Images** | Binary images with metadata | Distributed image processing | Scalable medical imaging AI |
+| **Genomic Data** | Massive files (100GB+ per genome) | Distributed genomic analysis | Population-scale genomics |
+| **Clinical Warehouses** | 16+ fragmented systems | Unified platform with custom connectors | Complete patient 360 view |
 
 ### Healthcare Data Types and Processing Examples
 
