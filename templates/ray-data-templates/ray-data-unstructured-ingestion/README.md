@@ -137,7 +137,8 @@ print(f"Cluster resources: {ray.cluster_resources()}")
 ### Discover document collections in data lake
 
 ```python
-# Configuration for document ingestion pipelineSOURCE_S3_PATH = "s3://anyscale-rag-application/1000-docs/"
+# Configuration for document ingestion pipeline
+SOURCE_S3_PATH = "s3://anyscale-rag-application/1000-docs/"
 OUTPUT_WAREHOUSE_PATH = "/tmp/document_warehouse"
 
 # Use Ray Data to scan large document collections
@@ -431,7 +432,8 @@ print(f"  High quality documents: {high_quality_docs.count():,}")
 # Use Ray Data native filtering for document prioritization
 print("Filtering and prioritizing documents for processing...")
 
-# Filter by processing priority using expressions APIhigh_priority_docs = high_quality_docs.filter(
+# Filter by processing priority using expressions API
+high_priority_docs = high_quality_docs.filter(
     col("priority_score") >= lit(2),
     num_cpus=0.1
 )

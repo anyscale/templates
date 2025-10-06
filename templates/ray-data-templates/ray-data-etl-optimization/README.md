@@ -349,7 +349,8 @@ print(f"Order enrichment completed: {enriched_orders.count():,} orders processed
 # Advanced filtering using Ray Data expressions API
 print("Applying advanced filtering techniques...")
 
-# Filter recent high-value ordersrecent_high_value_orders = enriched_orders.filter(
+# Filter recent high-value orders
+recent_high_value_orders = enriched_orders.filter(
     (col("order_year") >= lit(1995)) & 
     (col("o_totalprice") > lit(100000)) &
     (col("is_urgent") == lit(True)),
@@ -380,7 +381,8 @@ print(f"  Complex filtered orders: {complex_filtered_orders.count():,}")
 # Etl Join: Customer-Order analysis using Ray Data joins
 print("Performing distributed joins for customer-order analysis...")
 
-# Join customers with their orders for comprehensive analysiscustomer_order_analysis = customers_ds.join(
+# Join customers with their orders for comprehensive analysis
+customer_order_analysis = customers_ds.join(
     enriched_orders,
     left_key="c_custkey",
     right_key="o_custkey",
@@ -449,7 +451,8 @@ ETL Performance Issue
 ### Memory and resource optimization
 
 ```python
-# Configure Ray Data for optimal ETL performanceprint("Configuring Ray Data for ETL optimization...")
+# Configure Ray Data for optimal ETL performance
+print("Configuring Ray Data for ETL optimization...")
 
 # Memory optimization for large datasetsctx.target_max_block_size = 128 * 1024 * 1024  # 128 MB blocks
 ctx.eager_free = True  # Aggressive memory cleanup
@@ -463,7 +466,8 @@ print("Ray Data configured for optimal ETL performance")
 ### Batch size and concurrency optimization
 
 ```python
-# Demonstrate different batch size strategies for ETL operationsprint("Testing ETL batch size optimization...")
+# Demonstrate different batch size strategies for ETL operations
+print("Testing ETL batch size optimization...")
 
 # Small batch processing for memory-constrained operationsdef memory_intensive_etl(batch):
     """Memory-intensive ETL transformation."""
@@ -513,7 +517,8 @@ print(f"I/O-optimized processing: {io_optimized_orders.count():,} records")
 ### Column selection and schema optimization
 
 ```python
-# Etl Optimization: Column pruning for performanceprint("Applying column selection optimization...")
+# Etl Optimization: Column pruning for performance
+print("Applying column selection optimization...")
 
 # Select only essential columns for downstream processingessential_customer_columns = customers_ds.select_columns([
     "c_custkey", "c_name", "c_mktsegment", "c_acctbal", "c_nationkey"
@@ -561,7 +566,8 @@ As data volumes grow, ETL approaches must evolve:
 ### Distributed Aggregations
 
 ```python
-# Large-scale aggregations using Ray Data native operationsprint("Performing large-scale distributed aggregations...")
+# Large-scale aggregations using Ray Data native operations
+print("Performing large-scale distributed aggregations...")
 
 # Multi-dimensional aggregations for business intelligencecomprehensive_metrics = optimized_join.groupby(["c_mktsegment", "order_year", "revenue_tier"]).aggregate(
     Count(),
