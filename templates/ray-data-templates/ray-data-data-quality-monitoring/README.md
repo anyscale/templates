@@ -337,12 +337,15 @@ except Exception as e:
     print(f"Age statistics calculation: {e}")
 ```
 
-### Anomaly detection using statistical methods
+### Anomaly Detection: Z-Score Method
+
+**Method:** Use Z-scores to detect outliers (values more than 3 standard deviations from mean).
+
+**Ray Data usage:** Efficient sampling with `take()` for statistical analysis without loading full dataset.
 
 ```python
 def detect_statistical_anomalies(dataset):
     """Detect statistical anomalies using Ray Data operations."""
-    
     # Calculate statistical thresholds
     sample_records = dataset.take(1000)
     
@@ -380,7 +383,13 @@ for field, stats in anomalies.items():
     print(f"  {field}: {stats['outliers']} outliers ({stats['outlier_rate']:.2f}%)")
 ```
 
-### Data drift detection over time
+**Results:** Identifies outliers in age, income, and score fields using 3-sigma rule.
+
+### Data Drift Detection: Distribution Comparison
+
+**Method:** Compare current data distributions against historical baselines to detect drift.
+
+**Why this matters:** Data drift can degrade ML model performance and indicate upstream data issues.
 
 ```python
 def detect_data_drift(current_dataset, historical_stats):
@@ -431,7 +440,11 @@ for field, drift in drift_analysis.items():
     print(f"  {field}: {drift['mean_drift_pct']:.2f}% drift - Status: {drift['status']}")
 ```
 
-### Business rule validation
+### Business Rule Validation
+
+**Purpose:** Enforce business logic constraints using Ray Data's expression API.
+
+**Ray Data advantage:** Use `filter()` with expressions API for distributed rule validation across billions of records.
 
 ```python
 def validate_business_rules(dataset):
@@ -483,7 +496,9 @@ for rule_name, result in business_validation.items():
 
 *Time: 4 minutes*
 
-### Generate quality report
+### Comprehensive Quality Report
+
+**Purpose:** Consolidate all quality metrics into a single report for stakeholder communication.
 
 ```python
 # Create comprehensive quality report
