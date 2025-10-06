@@ -387,7 +387,8 @@ def create_geospatial_dashboard(dataset, sample_size=1000):
     
     return df
 
-# Generate the geospatial dashboardgeospatial_df = create_geospatial_dashboard(geospatial_dataset)
+# Generate the geospatial dashboard
+geospatial_df = create_geospatial_dashboard(geospatial_dataset)
 ```
 
 **Why This Dashboard Matters:**
