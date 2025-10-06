@@ -232,7 +232,8 @@ def create_portfolio_performance_dashboard(dataset):
     
     return fig
 
-# Create portfolio performance dashboardportfolio_dashboard = create_portfolio_performance_dashboard(financial_with_indicators)
+# Create portfolio performance dashboard
+portfolio_dashboard = create_portfolio_performance_dashboard(financial_with_indicators)
 ```
 
 ### Advanced Financial Analytics
@@ -449,7 +450,8 @@ def create_improved_financial_analytics(dataset):
     
     print("Advanced financial analytics saved as 'improved_financial_analytics.png'")
 
-# Create improved financial analyticscreate_improved_financial_analytics(financial_with_indicators)
+# Create improved financial analytics
+create_improved_financial_analytics(financial_with_indicators)
 ```
 ```
 
@@ -754,7 +756,8 @@ def run_risk_analysis(dataset):
     
     return risk_analysis
 
-# Run portfolio optimization and risk analysisportfolio_results = run_portfolio_optimization(financial_with_indicators)
+# Run portfolio optimization and risk analysis
+portfolio_results = run_portfolio_optimization(financial_with_indicators)
 risk_results = run_risk_analysis(financial_with_indicators)
 ```
 
@@ -795,7 +798,8 @@ risk_results = run_risk_analysis(financial_with_indicators)
 Clean up Ray resources:
 
 ```python
-# Cleanup Ray resourcesif ray.is_initialized():
+# Cleanup Ray resources
+if ray.is_initialized():
     ray.shutdown()
     
 print(" Financial Time Series Forecasting tutorial completed")
@@ -814,7 +818,8 @@ print(" Ray Data enables scalable financial analytics at institutional scale")
 ### Problem: "division by Zero in Financial Calculations"
 **Solution**:
 ```python
-# Add safety checks for financial calculationsdef safe_divide(numerator, denominator, default=0):
+# Add safety checks for financial calculations
+def safe_divide(numerator, denominator, default=0):
 
     """Safe Divide."""
     return numerator / denominator if denominator != 0 else default
@@ -823,7 +828,8 @@ print(" Ray Data enables scalable financial analytics at institutional scale")
 ### Problem: "insufficient Data for Technical Indicators"
 **Solution**:
 ```python
-# Check data length before calculating indicatorsif len(symbol_data) < 50:  # Need minimum data for indicators
+# Check data length before calculating indicators
+if len(symbol_data) < 50:  # Need minimum data for indicators
     print(f" Insufficient data for {symbol}, skipping...")
     continue
 ```
