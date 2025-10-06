@@ -200,7 +200,8 @@ customers_ds = ray.data.read_parquet(
     num_cpus=0.025  # High I/O concurrency for reading
 )
 
-# Read TPC-H Orders Dataorders_ds = ray.data.read_parquet(
+# Read TPC-H Orders Data
+orders_ds = ray.data.read_parquet(
     f"{TPCH_S3_PATH}/orders", 
     num_cpus=0.025
 )
