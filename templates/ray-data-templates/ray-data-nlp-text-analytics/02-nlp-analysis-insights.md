@@ -1293,7 +1293,8 @@ transformers_logging.set_verbosity_info()
 
 print("Use Ray Dashboard for detailed resource monitoring and cluster metrics")
 
-# Enable progress trackingclass ProgressTracker:
+# Enable progress tracking
+class ProgressTracker:
     def __init__(self, total_items):
         self.total_items = total_items
         self.processed_items = 0

@@ -552,9 +552,11 @@ Healthcare systems use over 200 different data formats and standards, creating i
 
 ```python
 # Demonstrate multi-format healthcare data integration
-# Load multiple healthcare data formats simultaneouslystart_time = time.time()
+# Load multiple healthcare data formats simultaneously
+start_time = time.time()
 
-# Hl7 clinical messageshl7_data = ray.data.read_text("hl7_medical_messages.txt")
+# Hl7 clinical messages
+hl7_data = ray.data.read_text("hl7_medical_messages.txt")
 
 # Dicom imaging metadata
 # Dicom metadata - JSON format (realistic for medical imaging metadata)
@@ -562,11 +564,13 @@ dicom_data = ray.data.read_json("s3://ray-benchmark-data/medical/dicom-metadata.
     num_cpus=0.05
 )
 
-# Patient records (EHR format)patient_data = ray.data.read_parquet("patient_medical_records.parquet",
+# Patient records (EHR format)
+patient_data = ray.data.read_parquet("patient_medical_records.parquet",
     num_cpus=0.025
 )
 
-# Laboratory resultslab_data = ray.data.read_parquet("laboratory_results.parquet",
+# Laboratory results
+lab_data = ray.data.read_parquet("laboratory_results.parquet",
     num_cpus=0.025
 )
 
