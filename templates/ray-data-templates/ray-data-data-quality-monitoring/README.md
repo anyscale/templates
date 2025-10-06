@@ -142,6 +142,8 @@ Quick start complete - you now have:
 
 ## Step 1: Data Quality Setup
 
+*Time: 6 minutes*
+
 ### Ray Data native operations for quality monitoring
 
 This template showcases Ray Data's built-in operations optimized for data quality workflows:
@@ -193,6 +195,8 @@ sample_data = analyze_basic_quality(quality_dataset)
 ```
 
 ## Step 2: Automated Quality Checks
+
+*Time: 8 minutes*
 
 ### Missing data analysis
 
@@ -261,11 +265,9 @@ print("Interactive quality dashboard saved to 'interactive_quality_dashboard.htm
 - **Outlier detection**: Box plots showing data distribution and outliers
 - **Data freshness**: Timeline of record ingestion and processing
 
-### Accuracy Validation
+### Accuracy Validation: Email Format Checking
 
-:::tip Ray Data Native Filtering
-Ray Data's `filter()` operation uses push-down predicate optimization, processing only the columns needed for validation. This enables validating billions of email addresses without loading irrelevant fields into memory.
-:::
+**Ray Data advantage:** The `filter()` operation uses push-down predicate optimization, processing only the columns needed for validation. This enables validating billions of email addresses without loading irrelevant fields into memory.
 
 ```python
 # Email validation using Ray Data filtering
@@ -299,11 +301,11 @@ print(f"- Validated {email_validation['total_records']:,} records efficiently")
 
 ## Step 3: Data Drift Monitoring
 
-### Statistical analysis with native Ray Data
+*Time: 7 minutes*
 
-:::tip Ray Data Distributed Aggregations
-Ray Data's native aggregation functions (`Count()`, `Mean()`, `Std()`, `Min()`, `Max()`) are optimized for distributed execution. Unlike pandas which requires loading full datasets into memory, Ray Data computes statistics in parallel across cluster nodes, enabling quality analysis on terabyte-scale datasets.
-:::
+### Statistical Analysis: Distributed Aggregations
+
+**Ray Data advantage:** Native aggregation functions (`Count()`, `Mean()`, `Std()`, `Min()`, `Max()`) are optimized for distributed execution. Unlike pandas which requires loading full datasets into memory, Ray Data computes statistics in parallel across cluster nodes, enabling quality analysis on terabyte-scale datasets.
 
 ```python
 # Use Ray Data native aggregations for statistical analysis
@@ -478,6 +480,8 @@ for rule_name, result in business_validation.items():
 | **Std Dev** | Scalable statistics | Scalable statistics | Scalable statistics |
 
 ## Step 4: Quality Reporting
+
+*Time: 4 minutes*
 
 ### Generate quality report
 
