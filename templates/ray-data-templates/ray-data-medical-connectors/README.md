@@ -1,6 +1,6 @@
 # Medical Data Processing and HIPAA Compliance with Ray Data
 
-**⏱️ Time to complete**: 35 min (across 2 parts)
+**Time to complete**: 35 min (across 2 parts)
 
 Create a HIPAA-compliant medical data processing pipeline that handles healthcare records (HL7 messages) and medical images (DICOM) with large datasets.
 
@@ -29,7 +29,7 @@ Extend to medical imaging and production deployment:
 - **Production Patterns**: Enterprise deployment strategies
 - **Medical Analytics**: Healthcare insights and visualizations
 
-## Learning Objectives
+## Learning objectives
 
 **Why healthcare data processing matters**: Healthcare data is complex, sensitive, and highly regulated. Understanding how to process medical data while maintaining HIPAA compliance is crucial for healthcare analytics.
 

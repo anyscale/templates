@@ -1,8 +1,8 @@
 # Data Quality Monitoring and Validation with Ray Data
 
-**⏱️ Time to complete**: 25 min | **Difficulty**: Intermediate | **Prerequisites**: Data engineering experience, understanding of data quality concepts
+**Time to complete**: 25 min | **Difficulty**: Intermediate | **Prerequisites**: Data engineering experience, understanding of data quality concepts
 
-## What You'll Build
+## What you'll build
 
 Build an automated data quality monitoring system that validates data, detects anomalies, and helps ensure your data pipelines produce reliable results for data-driven organizations.
 
@@ -26,7 +26,7 @@ By completing this template, you will:
 - Use `filter()` and expressions API for data validation at scale
 - Apply `aggregate()` functions for statistical quality metrics
 - Implement `take()` for efficient quality sampling without full dataset loads
-- Leverage distributed processing to check 100% of records, not just samples
+- Use distributed processing to check 100% of records, not samples
 
 **Build production quality pipelines:**
 - Automate missing data detection and reporting
@@ -191,7 +191,7 @@ def analyze_basic_quality(dataset):
     
     return sample_records
 
-# Analyze our dataset
+# Analyze the dataset
 sample_data = analyze_basic_quality(quality_dataset)
 ```
 

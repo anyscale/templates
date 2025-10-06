@@ -1,8 +1,8 @@
 # Unstructured Data Ingestion and Processing with Ray Data
 
-**⏱️ Time to complete**: 35 min | **Difficulty**: Advanced | **Prerequisites**: Data engineering experience, understanding of document processing, basic NLP knowledge
+**Time to complete**: 35 min | **Difficulty**: Advanced | **Prerequisites**: Data engineering experience, understanding of document processing, basic NLP knowledge
 
-## What You'll Build
+## What you'll build
 
 Build a comprehensive document ingestion pipeline that transforms unstructured documents from data lakes into structured, analytics-ready datasets using Ray Data's distributed processing capabilities for enterprise data warehouse workflows.
 

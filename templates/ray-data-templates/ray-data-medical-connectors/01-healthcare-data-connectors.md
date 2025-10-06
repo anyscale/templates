@@ -102,7 +102,7 @@ Healthcare organizations are drowning in data while struggling to extract action
 - **Integration Challenges**: Average hospital uses 16+ different data systems
 - **Analytics Gap**: Only 5% of healthcare data is currently analyzed for insights
 
-### Ray Data's Revolutionary Approach to Medical Data
+### Ray Data's approach to medical data
 
 Ray Data transforms healthcare data processing by providing a **unified, scalable platform** that can handle any medical data format while maintaining compliance and ensuring data security.
 
@@ -263,11 +263,11 @@ print(f"Abnormal lab results: {abnormal_labs.count():,}")
 
 ### Medical Data Connectors: the Foundation of Healthcare Analytics
 
-Custom medical data connectors are not just technical implementations - they are the **foundation of modern healthcare analytics** and the key to unlocking the value trapped in complex medical data formats.
+Custom medical data connectors are technical implementations that form the **foundation of modern healthcare analytics**, enabling access to the value in complex medical data formats.
 
 **Strategic Value Through Data Liberation**
 
-Medical data connectors transform how healthcare organizations access and utilize their data assets. Traditional healthcare systems trap valuable insights within proprietary formats, creating data silos that hinder clinical decision-making and research progress.
+Medical data connectors transform how healthcare organizations access and use their data assets. Traditional healthcare systems trap valuable insights within proprietary formats, creating data silos that hinder clinical decision-making and research progress.
 
 ```python
 # Demonstrate data liberation with Ray Data medical connectorsimport ray
@@ -534,7 +534,7 @@ print(critical_alerts.limit(5).to_pandas())
 
 **Multi-format Integration**
 
-Healthcare systems utilize over 200 different data formats and standards, creating integration challenges that Ray Data's unified platform addresses through custom connectors for each format type.
+Healthcare systems use over 200 different data formats and standards, creating integration challenges that Ray Data's unified platform addresses through custom connectors for each format type.
 
 ```python
 # Demonstrate multi-format healthcare data integration

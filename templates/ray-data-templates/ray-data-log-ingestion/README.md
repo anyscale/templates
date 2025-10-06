@@ -1,8 +1,8 @@
 # Log Analytics and Security Monitoring with Ray Data
 
-**⏱️ Time to complete**: 30 min | **Difficulty**: Intermediate | **Prerequisites**: Understanding of log files, basic security concepts
+**Time to complete**: 30 min | **Difficulty**: Intermediate | **Prerequisites**: Understanding of log files, basic security concepts
 
-## What You'll Build
+## What you'll build
 
 Create a scalable log analysis system that processes millions of log entries to detect security threats, monitor system performance, and extract operational insights using Ray Data's distributed processing capabilities.
 
@@ -201,7 +201,7 @@ metrics = parsed.groupby('status_code').count()
 print(f"Processed {logs.count():,} logs efficiently across cluster")
 ```
 
-### What You'll Build
+### What you'll build
 
 The complete pipeline will:
 

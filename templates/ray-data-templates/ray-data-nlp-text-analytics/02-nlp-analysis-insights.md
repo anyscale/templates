@@ -917,7 +917,7 @@ print(f"Complete NLP pipeline processed {len(final_nlp_results)} documents")
 )
 # No additional fault tolerance code needed```
 
-**4. Seamless Model Scaling**
+**4. Model scaling**
 ```python
 # Scale from single GPU to multi-GPU automaticallyif ray.cluster_resources().get("GPU", 0) >= 4:
     # Multi-GPU configuration

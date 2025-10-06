@@ -258,7 +258,7 @@ What Ray Data reader should I use?
 ### 2. Parquet for Performance
 - Use Parquet for pre-processed, analytics-ready data
 - Convert raw data to Parquet after cleaning/parsing
-- Leverage column pruning with Parquet readers
+- Use column pruning with Parquet readers
 
 ### 3. Custom Datasources for Complex Formats
 - Implement custom datasources for HL7, DICOM, FHIR

@@ -360,7 +360,7 @@ print(f"Total records: {enterprise_hl7_dataset.count():,}")
 
 # Show how Ray Data handles complex medical data effortlesslyprint(f"\nRay Data's General-Purpose Magic:")
 print(f"Automatically distributed complex HL7 parsing across {ray.cluster_resources()['CPU']} CPU cores")
-print(f"Seamlessly handled nested medical data structures")
+print(f"Handled nested medical data structures")
 print(f"Built-in fault tolerance for mission-critical healthcare data")
 print(f"Zero configuration required - Ray Data 'just works' with any format")
 ```
@@ -739,7 +739,7 @@ Exported enterprise-ready analytics in Parquet format
 
 **Key Capabilities Showcased:**
  Built-in fault tolerance protects mission-critical medical data  
- Seamless integration with downstream analytics and ML pipelines
+ Integration with downstream analytics and ML pipelines
 
 ** Key Insight:** Ray Data is not just another data processing tool - it's a general-purpose platform that adapts to YOUR data, no matter how complex!
 
@@ -1660,7 +1660,7 @@ The medical connectors provide the **data foundation** for new healthcare AI app
 Medical connectors enable healthcare providers to transform from **reactive treatment centers** to **proactive health management organizations**.
 
 **Transformation Areas:**
-- **Care Coordination**: Seamless patient data sharing across all care providers and settings
+- **Care Coordination**: Patient data sharing across all care providers and settings
 - **Quality Improvement**: Data-driven quality initiatives and outcome optimization
 - **Operational Excellence**: Resource optimization and workflow efficiency improvements
 - **Patient Engagement**: Personalized patient communication and care management

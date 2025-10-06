@@ -1,8 +1,8 @@
 # ETL Processing and Optimization with Ray Data
 
-**⏱️ Time to complete**: 40 min | **Difficulty**: Intermediate | **Prerequisites**: Understanding of ETL concepts, basic SQL knowledge, data processing experience
+**Time to complete**: 40 min | **Difficulty**: Intermediate | **Prerequisites**: Understanding of ETL concepts, basic SQL knowledge, data processing experience
 
-## What You'll Build
+## What you'll build
 
 Build comprehensive ETL pipelines using Ray Data's distributed processing capabilities, from foundational concepts with TPC-H benchmark to production-scale optimization techniques for enterprise data processing.
 
@@ -283,7 +283,7 @@ Data transformations convert raw data into business-valuable information. Common
 ### Complex Data Transformations
 
 :::tip GPU Acceleration for Pandas ETL Operations
-For complex pandas transformations in your ETL pipeline, you can use **NVIDIA RAPIDS cuDF** to accelerate DataFrame operations on GPUs. Simply replace `import pandas as pd` with `import cudf as pd` in your `map_batches` functions to leverage GPU acceleration for operations like datetime parsing, groupby, joins, and aggregations.
+For complex pandas transformations in your ETL pipeline, you can use **NVIDIA RAPIDS cuDF** to accelerate DataFrame operations on GPUs. Replace `import pandas as pd` with `import cudf as pd` in your `map_batches` functions to use GPU acceleration for operations like datetime parsing, groupby, joins, and aggregations.
 
 **When to use cuDF**:
 - Complex datetime operations (parsing, extracting components)
@@ -1032,7 +1032,7 @@ This template showcases the full range of Ray Data's native ETL operations:
 -  Apply filters early using expressions API for data reduction
 -  Specify `num_cpus` based on operation complexity
 -  Use `map_batches()` with batch_format="pandas" for transformations
--  Leverage native `join()` and `groupby()` operations
+-  Use native `join()` and `groupby()` operations
 -  Write with partitioning and compression for warehouse optimization
 -  Monitor progress with Ray Dashboard and progress bars
 

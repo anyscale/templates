@@ -1,6 +1,6 @@
 # NLP Text Analytics with Ray Data
 
-**⏱️ Time to complete**: 30 min (across 2 parts)
+**Time to complete**: 30 min (across 2 parts)
 
 Create a scalable text processing pipeline that analyzes thousands of text documents in parallel. Learn sentiment analysis, text classification, and how to process large text datasets efficiently.
 
@@ -29,7 +29,7 @@ Master advanced NLP techniques:
 - **Named Entity Recognition**: Extract entities from text
 - **Production Deployment**: Scale NLP to enterprise workloads
 
-## Learning Objectives
+## Learning objectives
 
 **Why text processing matters**: Memory and computation challenges with large text datasets require distributed processing solutions.
 

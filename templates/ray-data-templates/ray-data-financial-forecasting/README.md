@@ -1,6 +1,6 @@
 # Financial Time Series Forecasting with Ray Data
 
-**⏱️ Time to complete**: 30 min (across 2 parts)
+**Time to complete**: 30 min (across 2 parts)
 
 Build a financial analysis system that processes stock market data, calculates technical indicators, and creates forecasting models using Ray Data's distributed processing for trading applications.
 
@@ -29,7 +29,7 @@ Master time series forecasting and portfolio optimization:
 - **Advanced Visualizations**: Interactive forecasting and portfolio dashboards
 - **Production Deployment**: Best practices for financial analytics systems
 
-## Learning Objectives
+## Learning objectives
 
 **Why financial analytics matters**: Trading systems process large volumes of market data daily, requiring efficient processing for financial decision-making.
 
@@ -52,7 +52,7 @@ Master time series forecasting and portfolio optimization:
 | **Technical Indicators** | Sequential calculation per stock | Parallel `map_batches()` across portfolio | Real-time indicators for 1000s of symbols |
 | **Risk Calculations** | Single-machine VaR/CVaR | Distributed Monte Carlo with `groupby()` | Portfolio risk in seconds not hours |
 | **Backtesting** | Days to backtest strategies | Parallel strategy evaluation | Test 100s of strategies simultaneously |
-| **Data Integration** | Manual joins and merging | Native `join()` operations | Seamless multi-source integration |
+| **Data Integration** | Manual joins and merging | Native `join()` operations | Multi-source integration |
 
 :::tip Ray Data for Quantitative Finance
 Financial analytics benefits from Ray Data's distributed processing:

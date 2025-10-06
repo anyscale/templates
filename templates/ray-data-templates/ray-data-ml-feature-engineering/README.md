@@ -1,8 +1,8 @@
 # ML Feature Engineering with Ray Data
 
-**⏱️ Time to complete**: 35 min | **Difficulty**: Intermediate | **Prerequisites**: ML experience, understanding of data preprocessing
+**Time to complete**: 35 min | **Difficulty**: Intermediate | **Prerequisites**: ML experience, understanding of data preprocessing
 
-## What You'll Build
+## What you'll build
 
 Build an automated feature engineering pipeline that transforms raw data into ML-ready features. Learn techniques for feature engineering and how to apply them to large datasets using Ray Data's distributed processing.
 
@@ -31,7 +31,7 @@ Build an automated feature engineering pipeline that transforms raw data into ML
 
 **Solution**: Ray Data automates and distributes feature engineering, letting you focus on the creative aspects while handling the computational heavy lifting. Distributed processing enables feature creation across terabyte datasets that would overwhelm single machines.
 
-**Impact**: Leading companies leverage automated feature engineering for business value:
+**Impact**: Leading companies use automated feature engineering for business value:
 - **E-commerce**: Netflix uses thousands of features for recommendations, created from viewing history and user behavior patterns
 - **Fraud Detection**: Banks engineer hundreds of features from transaction patterns to catch fraud in real-time
 - **Autonomous Vehicles**: Tesla creates features from sensor data, camera images, and GPS coordinates for safety systems
@@ -102,13 +102,13 @@ Explore the Titanic dataset to understand feature relationships and engineering 
 - Age and fare show moderate correlation with survival
 - Engineered features (family size, title) provide strong predictive signals
 
-These insights guide our feature engineering strategy in the following sections.
+These insights guide the feature engineering strategy in the following sections.
 
 This analysis reveals capable feature engineering opportunities that you'll demonstrate throughout this template.
 
 **Industry Success Stories**
 
-Leading companies demonstrate the significant power of efficient feature engineering. Netflix discovered that "time since last similar movie watched" predicts viewing behavior more accurately than simple genre categorization. Uber's pricing algorithms rely heavily on "ratio of supply to demand in area" rather than absolute numbers, while Amazon's recommendation engine leverages "purchase frequency in category" to outperform individual purchase-based features.
+Leading companies demonstrate the significant power of efficient feature engineering. Netflix discovered that "time since last similar movie watched" predicts viewing behavior more accurately than simple genre categorization. Uber's pricing algorithms rely heavily on "ratio of supply to demand in area" rather than absolute numbers, while Amazon's recommendation engine uses "purchase frequency in category" to outperform individual purchase-based features.
 
 ```python
 # Example: Creating family and social features from Titanic datadef create_family_features(batch):
@@ -1889,7 +1889,8 @@ Use Ray Data native operations to validate your feature engineering results:
         return True
     return False
 
-# Validate our engineered featuresvalidation_success = validate_features(categorical_features)
+# Validate the engineered features
+validation_success = validate_features(categorical_features)
 ```
 
 ## Feature Engineering Performance
@@ -1951,7 +1952,7 @@ print("Feature engineering visualization created")
 :::tip Ray Data Feature Engineering
 - **Use native column operations** for simple transformations
 - **Optimize batch processing** to minimize pandas overhead
-- **Leverage expressions API** for complex feature calculations
+- **Use expressions API** for complex feature calculations
 - **Apply distributed processing** for large-scale feature creation
 :::
 

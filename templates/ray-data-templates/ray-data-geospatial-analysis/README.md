@@ -1,8 +1,8 @@
 # Geospatial Data Analysis with Ray Data
 
-**⏱️ Time to complete**: 25 min | **Difficulty**: Intermediate | **Prerequisites**: Basic Python, understanding of coordinates
+**Time to complete**: 25 min | **Difficulty**: Intermediate | **Prerequisites**: Basic Python, understanding of coordinates
 
-## What You'll Build
+## What you'll build
 
 Build a geospatial analysis pipeline that processes location points across cities. Learn to find nearby businesses, calculate distances, and perform spatial clustering using Ray Data's distributed processing capabilities.
 
@@ -124,7 +124,7 @@ Before starting this geospatial analysis template, ensure you have Python 3.8+ w
 
 ## Quick start (3 minutes)
 
-This section demonstrates core spatial analysis concepts using Ray Data in just a few minutes.
+This section demonstrates core spatial analysis concepts using Ray Data in a few minutes.
 
 ### Install Required Packages
 
@@ -389,7 +389,7 @@ This comprehensive geospatial analysis reveals patterns crucial for optimizing r
 
 ## Step 1: Setup and Data Loading
 
-you'll set up Ray and load our geospatial datasets. you'll create realistic point-of-interest (POI) data across major metropolitan areas.
+You'll set up Ray and load the geospatial datasets. You'll create realistic point-of-interest (POI) data across major metropolitan areas.
 
 ```python
 import ray
@@ -403,7 +403,8 @@ import folium
 from folium.plugins import HeatMap, MarkerCluster
 from typing import Dict, Any
 
-# Initialize Ray - this creates our distributed computing clusterray.init()
+# Initialize Ray - this creates the distributed computing cluster
+ray.init()
 
 # Configure Ray Data for optimal performance monitoringctx = ray.data.DataContext.get_current()
 ctx.enable_progress_bars = True
@@ -413,7 +414,7 @@ print(" Ray cluster initialized")
 print(f" Available resources: {ray.cluster_resources()}")
 ```
 
-Now you'll create our geospatial data generation function:
+Now you'll create the geospatial data generation function:
 
 ```python
 def load_geospatial_data():
@@ -470,7 +471,7 @@ load_time = time.time() - start_time
 print(f"Data loading took: {load_time:.2f} seconds")
 ```
 
-Inspect the dataset structure and validate our data:
+Inspect the dataset structure and validate the data:
 
 ```python
 # Basic dataset informationprint(f" Dataset size: {poi_dataset.count()} records")
@@ -504,11 +505,11 @@ if len(categories) == 0:
     raise ValueError("No valid categories found in dataset")
 ```
 
-** What just happened?**
+**What happened?**
 - Created 3,000 realistic POI locations across 3 major cities
 - Each POI has coordinates, category, and rating information
 - Data is distributed across Ray workers for parallel processing
-- We validated our data to ensure it's ready for analysis
+- Validated the data to ensure it's ready for analysis
 
 ## Step 2: Basic Spatial Operations
 
@@ -633,7 +634,7 @@ print(category_distribution.limit(10).to_pandas())
 
 ## Step 4: Advanced Spatial Joins and Analysis
 
-Now you'll demonstrate Ray Data's capable join operations for complex spatial analysis. you'll create demographic data and join it with our POI data to understand location patterns.
+Now you'll demonstrate Ray Data's capable join operations for complex spatial analysis. You'll create demographic data and join it with the POI data to understand location patterns.
 
 ### Creating Demographic Data for Spatial Joins
 
@@ -786,7 +787,7 @@ print("Geospatial analysis results saved using Ray Data native write operations"
 
 ## Step 5: Interactive Visualizations and Results
 
-Create stunning interactive visualizations to understand our spatial data:
+Create stunning interactive visualizations to understand the spatial data:
 
 ### 5.1: Interactive Heatmaps and Density Maps
 
@@ -1243,7 +1244,7 @@ def fast_haversine_distance(lat1, lon1, lat2, lon2):
 2. **Spatial Indexing**: Use spatial indexing for nearest neighbor searches
 3. **Coordinate Validation**: Always validate lat/lon ranges before processing
 4. **Memory Management**: Monitor memory usage for large spatial datasets
-5. **Parallel Processing**: Leverage Ray's automatic parallelization for spatial operations
+5. **Parallel Processing**: Use Ray's automatic parallelization for spatial operations
 
 ### Performance Considerations
 
