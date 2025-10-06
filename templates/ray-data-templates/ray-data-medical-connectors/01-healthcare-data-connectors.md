@@ -130,50 +130,98 @@ pip install matplotlib seaborn plotly dash scikit-image nibabel
 
 ## Quick Start (3 minutes)
 
-**Goal:** Process HL7 healthcare messages with Ray Data in 3 minutes
+**Goal:** Build a simple custom HL7Datasource in 3 minutes
 
-This quick demonstration shows how to load and process HL7 medical messages using Ray Data's distributed processing:
+This quick demonstration shows **how to build a custom FileBasedDatasource** for HL7 messages:
 
 ```python
 import ray
+from ray.data.datasource import FileBasedDatasource
+from typing import Iterator, Dict, Any
 
 # Initialize Ray
 ray.init()
 
-# Create sample medical data (anonymized for demonstration)
-patient_data = [
-    {"patient_id": f"P{i:04d}", "age": 45 + (i % 40), "diagnosis": "routine_checkup"}
-    for i in range(1000)
-]
+# Step 1: Build custom HL7Datasource by inheriting from FileBasedDatasource
+class SimpleHL7Datasource(FileBasedDatasource):
+    """Simple custom datasource for HL7 messages.
+    
+    This demonstrates the basic pattern for building custom
+    FileBasedDatasource implementations for medical data.
+    """
+    
+    def _read_stream(self, f: "pyarrow.NativeFile", path: str) -> Iterator[Dict[str, Any]]:
+        """Parse HL7 messages from file stream.
+        
+        This is the core method you implement for custom parsing.
+        """
+        # Read file content
+        content = f.read().decode('utf-8')
+        
+        # Split into individual HL7 messages
+        messages = content.strip().split('\n\n')
+        
+        for message in messages:
+            if not message.strip():
+                continue
+            
+            # Basic HL7 parsing: extract patient ID from PID segment
+            lines = message.split('\n')
+            patient_id = None
+            
+            for line in lines:
+                if line.startswith('PID'):
+                    # PID|1||PATIENT_ID||...
+                    fields = line.split('|')
+                    if len(fields) > 3:
+                        patient_id = fields[3]
+            
+            yield {
+                'raw_message': message,
+                'patient_id': patient_id,
+                'message_type': 'HL7'
+            }
 
-# Create Ray Data dataset
-medical_dataset = ray.data.from_items(patient_data)
+# Step 2: Use your custom datasource with Ray Data
+# Create sample HL7 file for demonstration
+import tempfile
+with tempfile.NamedTemporaryFile(mode='w', suffix='.hl7', delete=False) as f:
+    f.write("MSH|^~\\&|LAB|HOSPITAL|EMR|CLINIC|20240101120000||ADT^A01|MSG001|P|2.5\n")
+    f.write("PID|1||P0001||Doe^John||19800101|M\n\n")
+    f.write("MSH|^~\\&|LAB|HOSPITAL|EMR|CLINIC|20240101120100||ADT^A01|MSG002|P|2.5\n")
+    f.write("PID|1||P0002||Smith^Jane||19750515|F\n")
+    hl7_path = f.name
 
-print(f"Created medical dataset with {medical_dataset.count()} patient records")
-print(f"Schema: {medical_dataset.schema()}")
+# Step 3: Read HL7 files using your custom datasource
+hl7_dataset = ray.data.read_datasource(
+    SimpleHL7Datasource(),
+    paths=[hl7_path]
+)
 
-# Show sample records
-print("\nSample patient records:")
-for record in medical_dataset.take(3):
-    print(f"  - Patient {record['patient_id']}: Age {record['age']}, {record['diagnosis']}")
+print(f"Loaded {hl7_dataset.count()} HL7 messages using custom datasource")
+print(f"Schema: {hl7_dataset.schema()}")
+print("\nParsed HL7 messages:")
+for record in hl7_dataset.take(2):
+    print(f"  - Patient: {record['patient_id']}, Type: {record['message_type']}")
 ```
 
 **Expected output:**
 ```
-Created medical dataset with 1000 patient records
-Schema: patient_id: string, age: int64, diagnosis: string
+Loaded 2 HL7 messages using custom datasource
+Schema: raw_message: string, patient_id: string, message_type: string
 
-Sample patient records:
-  - Patient P0000: Age 45, routine_checkup
-  - Patient P0001: Age 46, routine_checkup
-  - Patient P0002: Age 47, routine_checkup
+Parsed HL7 messages:
+  - Patient: P0001, Type: HL7
+  - Patient: P0002, Type: HL7
 ```
 
-:::tip What You Just Created
-✅ **Created** 1,000 anonymized patient records
-✅ **Loaded** data into Ray Data for distributed processing
-✅ **Validated** dataset schema and record structure
-✅ **Ready** to apply medical data transformations at scale
+:::tip What You Just Built
+✅ **Created** custom HL7Datasource by inheriting from FileBasedDatasource
+✅ **Implemented** _read_stream() method for HL7 parsing
+✅ **Used** ray.data.read_datasource() with your custom connector
+✅ **Parsed** HL7 messages into structured data with Ray Data
+
+**This is the core pattern for building custom medical data connectors!**
 :::
 
 ---
