@@ -524,7 +524,11 @@ def generate_quality_report(dataset, missing_stats, email_validation):
 generate_quality_report(dataset, missing_analysis, email_validation)
 ```
 
-### Quality score calculation
+---
+
+### Quality Score Calculation
+
+**Purpose:** Generate a single quality score (0-100) summarizing overall data quality.
 
 ```python
 # Calculate overall quality score using native operations
@@ -558,42 +562,10 @@ overall_quality = calculate_quality_score_native(dataset)
 print(f"Overall Quality: {overall_quality['completeness_score']:.1%} (Grade: {overall_quality['quality_grade']})")
 ```
 
-## Key Takeaways
-
-### Ray Data quality advantages
-
-| Traditional Approach | Ray Data Approach | Key Benefit |
-|---------------------|-------------------|-------------|
-| **Batch validation** | Continuous monitoring | Real-time insights |
-| **Single-machine** | Distributed processing | Horizontal scaling |
-| **Manual rules** | Automated detection | Streamlined development |
-| **Point-in-time** | Historical tracking | Comprehensive management |
-
-### Quality Framework
-
-:::tip Data quality pillars
-The template implements six key quality dimensions:
-- **Completeness** (25%) - Missing value detection
-- **Accuracy** (25%) - Format and range validation  
-- **Consistency** (20%) - Schema compliance
-- **Timeliness** (15%) - Freshness monitoring
-- **Validity** (10%) - Business rule validation
-- **Uniqueness** (5%) - Duplicate detection
-:::
-
-## Action Items
-
-### Immediate Implementation
-- [ ] Set up automated quality monitoring for your datasets
-- [ ] Define business-specific validation rules
-- [ ] Implement quality score calculations
-- [ ] Create quality dashboards and alerts
-
-### Advanced Features
-- [ ] Add statistical anomaly detection
-- [ ] Implement data drift monitoring
-- [ ] Build quality trend analysis
-- [ ] Create automated quality improvement recommendations
+**Quality grading:**
+- **Grade A**: > 90% completeness (Excellent)
+- **Grade B**: 70-90% completeness (Good)
+- **Grade C**: < 70% completeness (Needs Improvement)
 
 ## Related Templates
 
