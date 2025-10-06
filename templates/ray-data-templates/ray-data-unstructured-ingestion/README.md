@@ -1425,6 +1425,126 @@ This template showcases comprehensive Ray Data native operations:
 - Custom preprocessing and postprocessing functions
 - Batch inference optimization for document analysis
 
+## Ray Data Architecture for Document Processing
+
+Understanding Ray Data's architecture is essential for building efficient document ingestion pipelines.
+
+### Streaming Execution Model
+
+Ray Data's streaming execution enables processing millions of documents with constant memory usage:
+
+**Traditional Batch Processing:**
+
+<img src="https://anyscale-materials.s3.us-west-2.amazonaws.com/cko-2025-q1/batch-processing.png" width="800" alt="Traditional Batch Processing">
+
+**Problems with traditional approach:**
+- High memory - requires loading all documents
+- No parallelism - stages run sequentially
+- Long latency - wait for complete load before processing
+- Wasted resources - CPUs/GPUs idle during load/write stages
+
+**Ray Data Streaming Execution:**
+
+<img src="https://anyscale-materials.s3.us-west-2.amazonaws.com/cko-2025-q1/pipelining.png" width="800" alt="Ray Data Streaming Execution">
+
+**Benefits of streaming execution:**
+- Low memory - constant 128MB blocks regardless of document count
+- Pipeline parallelism - all stages active simultaneously
+- Fast first result - processing starts immediately
+- Maximum throughput - all resources utilized continuously
+
+**Practical example for document processing:**
+```python
+# This pipeline runs all stages simultaneously
+processed_docs = (
+    # Stage 1: Discover and load documents
+    ray.data.read_binary_files("s3://documents/", num_cpus=0.025)
+    
+    # Stage 2: Extract metadata (parallel with stage 1)
+    .map(extract_metadata, num_cpus=0.25)
+    
+    # Stage 3: Extract text (parallel with stages 1-2)
+    .map_batches(extract_text, batch_size=500, num_cpus=1.0)
+    
+    # Stage 4: Chunk for LLM (parallel with stages 1-3)
+    .flat_map(chunk_text, num_cpus=0.5)
+    
+    # Stage 5: Write to warehouse (starts as soon as first chunks ready)
+    .write_parquet("s3://warehouse/", num_cpus=0.1)
+)
+
+# All stages run simultaneously!
+# Document 1 can be written while Document 1000 is being discovered
+# Memory stays constant for 1000 or 1,000,000 documents
+```
+
+### Datasets and Blocks
+
+Ray Data processes documents in **blocks**:
+
+<img src="https://docs.ray.io/en/latest/_images/dataset-arch.svg" width="700" alt="Ray Data Block Architecture">
+
+**Key concepts for document processing:**
+- **Blocks**: Groups of documents (typically ~128 MB of content)
+- **Distributed storage**: Blocks stored in Ray Object Store
+- **Independent processing**: Each block processed in parallel
+- **Configurable size**: Tune via `DataContext.target_max_block_size`
+
+**Why blocks matter for document ingestion:**
+- **Memory efficiency**: Process 100 documents at a time, not all 1M at once
+- **Parallelism**: 1000 blocks = 1000 parallel processing units
+- **Scalability**: Same code for 100 docs or 100M docs
+- **Performance**: Optimal throughput without manual tuning
+
+### Ray Memory Model
+
+Ray manages memory efficiently for document processing:
+
+<img src="https://docs.ray.io/en/latest/_images/memory.svg" width="600" alt="Ray Memory Model">
+
+**1. Object Store Memory (30% of node memory):**
+- Stores document blocks as shared memory
+- Enables zero-copy sharing between pipeline stages
+- Automatically spills to disk when full
+- Critical for passing documents through pipeline
+
+**2. Task Execution Memory (remaining memory):**
+- Used for text extraction, LLM inference, transformations
+- Allocated per worker
+- Released after document batch processing
+
+**Why this matters for document ingestion:**
+- **Resource planning**: Size cluster for peak document size + LLM models
+- **Performance tuning**: Avoid object store pressure with proper `num_cpus`
+- **Batch sizing**: Match batch sizes to available execution memory
+
+### Operators and Resource Management
+
+Ray Data uses **physical operators** for document processing:
+
+**Common operators:**
+- **TaskPoolMapOperator**: For stateless document transformations
+- **ActorPoolMapOperator**: For stateful operations (LLM inference)
+- **AllToAllOperator**: For document grouping and aggregations
+
+**Operator fusion for document processing:**
+```python
+# These operations get fused automatically
+docs.map(extract_metadata).map(validate_metadata)
+# Becomes: TaskPoolMapOperator[extract_metadata->validate_metadata]
+# Result: No data transfer, single task per document block
+```
+
+**Resource management and backpressure:**
+- **Dynamic allocation**: Resources distributed across pipeline stages
+- **Backpressure**: Prevents memory overflow during heavy LLM processing
+- **Automatic tuning**: No manual configuration needed
+
+**Why this matters for document pipelines:**
+- **LLM integration**: Actors enable efficient model loading and reuse
+- **Memory safety**: Backpressure prevents OOM during text extraction
+- **Resource efficiency**: All stages utilize resources simultaneously
+
 ### Performance Optimization Patterns
 
 **Resource Allocation Following Ray Data Best Practices:**
