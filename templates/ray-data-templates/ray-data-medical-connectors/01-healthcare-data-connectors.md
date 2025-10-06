@@ -40,6 +40,8 @@ This template demonstrates proper reading of medical data in their native format
 
 **Compliance and security patterns**: HIPAA-compliant data processing techniques for production healthcare systems ensure that analytics capabilities don't compromise patient privacy or regulatory compliance.
 
+---
+
 ## Overview
 
 **The Challenge**: Healthcare data is complex, sensitive, and highly regulated. Traditional data processing tools struggle with medical data formats, privacy requirements, and the scale of modern healthcare systems.
@@ -54,6 +56,8 @@ This template demonstrates proper reading of medical data in their native format
 
 ---
 
+---
+
 ## Prerequisites Checklist
 
 Before starting, ensure you have:
@@ -61,6 +65,8 @@ Before starting, ensure you have:
 - [ ] Familiarity with medical data concepts (patient records, medical imaging)
 - [ ] Knowledge of data security and compliance principles
 - [ ] Python environment with healthcare data processing libraries
+
+---
 
 ## Quick start (3 minutes)
 
@@ -81,6 +87,8 @@ To run this template, you will need the following packages:
 pip install ray[data] pydicom hl7 pillow numpy pandas pyarrow
 pip install matplotlib seaborn plotly dash scikit-image nibabel
 ```
+
+---
 
 ## Overview
 
@@ -893,6 +901,8 @@ By the end of this template, you'll understand:
 - Advanced Ray Data extensibility and customization
 - Real-world connector development best practices
 
+---
+
 ## Use Case: Healthcare Data Integration Platform
 
 ### Real-world Medical Data Challenges
@@ -926,6 +936,8 @@ Healthcare organizations handle diverse data formats that require specialized pr
 | **Manual format handling** | Standardized connector patterns | Fewer parsing errors |
 | **Limited fault tolerance** | Built-in error recovery | Enhanced data processing reliability |
 | **Complex infrastructure** | Native Ray Data integration | Simplified operations |
+
+---
 
 ## Architecture
 
@@ -966,6 +978,8 @@ Healthcare Data Sources
 
 ```
 
+---
+
 ## Key Components
 
 ### 1. HL7 Message Connector
@@ -992,6 +1006,8 @@ Healthcare Data Sources
 - Healthcare system integration
 - Regulatory reporting and compliance
 
+---
+
 ## Prerequisites
 
 - Ray cluster (Anyscale recommended)
@@ -999,12 +1015,16 @@ Healthcare Data Sources
 - Basic understanding of healthcare data formats
 - Familiarity with Ray Data concepts and APIs
 
+---
+
 ## Installation
 
 ```bash
 pip install ray[data] pydicom hl7 pillow numpy pandas pyarrow
 pip install matplotlib seaborn plotly dash scikit-image nibabel
 ```
+
+---
 
 ## 5-Minute Quick Start
 
