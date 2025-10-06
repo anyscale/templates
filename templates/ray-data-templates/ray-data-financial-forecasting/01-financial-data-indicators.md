@@ -163,14 +163,16 @@ print(f"Real financial data loaded in {load_time:.2f} seconds")
 Create visualizations to understand market patterns and trends:
 
 ```python
-# Analyze financial market data directlyimport matplotlib.pyplot as plt
+# Analyze financial market data directly
+import matplotlib.pyplot as plt
 import numpy as np
 
 # Convert sample data for analysis
 sample_data = financial_data.take(1000)
 print(f"Financial data summary: {len(sample_data):,} records analyzed")
 
-# Calculate basic financial metricsif sample_data:
+# Calculate basic financial metrics
+if sample_data:
     prices = [r.get('close', 0) for r in sample_data]
     volumes = [r.get('volume', 0) for r in sample_data]
     print(f"Price range: ${min(prices):.2f} - ${max(prices):.2f}")
@@ -189,7 +191,8 @@ fig.suptitle('Financial Market Analysis', fontsize=14)
 # Convert Ray Data to pandas for visualization
 financial_df = financial_data.to_pandas()
 
-# Plot price trendsax1 = axes[0]
+# Plot price trends
+ax1 = axes[0]
 if 'close' in financial_df.columns and 'date' in financial_df.columns:
     sample_df = financial_df.sample(min(1000, len(financial_df))).sort_values('date')
     ax1.plot(sample_df['date'], sample_df['close'], linewidth=1.5, color='blue')
@@ -667,7 +670,8 @@ you'll load real financial market data from public sources including stock price
 ### Load Real Market Data with Financial News
 
 ```python
-# Enhanced financial data loading with news integrationdef load_comprehensive_financial_data():
+# Enhanced financial data loading with news integration
+def load_comprehensive_financial_data():
     """Load real market data with news and fundamental data."""
     
     # Major technology stocks for analysis
@@ -725,7 +729,8 @@ you'll load real financial market data from public sources including stock price
     
     return financial_records
 
-# Load the comprehensive datasetfinancial_data_list = load_comprehensive_financial_data()
+# Load the comprehensive dataset
+financial_data_list = load_comprehensive_financial_data()
 financial_data = ray.data.from_items(financial_data_list)
 
 print(f"\nComprehensive Financial Dataset Created:")
@@ -756,7 +761,9 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Initialize Ray - this sets up our distributed computing environment# Ray will automatically detect available CPUs and memoryprint("Initializing Ray for financial analysis...")
+# Initialize Ray - this sets up our distributed computing environment
+# Ray will automatically detect available CPUs and memory
+print("Initializing Ray for financial analysis...")
 start_time = time.time()
 ray.init()
 init_time = time.time() - start_time
