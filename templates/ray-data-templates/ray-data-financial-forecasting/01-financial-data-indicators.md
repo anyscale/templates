@@ -1155,7 +1155,8 @@ print("Technical indicators calculated successfully using Ray Data distributed p
     
     return financial_dataset
 
-# Calculate technical indicatorsfinancial_with_indicators = calculate_technical_indicators(financial_data)
+# Calculate technical indicators
+financial_with_indicators = calculate_technical_indicators(financial_data)
 
 ---
 
