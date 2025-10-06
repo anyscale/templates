@@ -49,7 +49,8 @@ from ray.data.expressions import col, lit
 # Initialize Ray for distributed ETL processing
 ray.init()
 
-# Configure Ray Data for optimal performance monitoringctx = ray.data.DataContext.get_current()
+# Configure Ray Data for optimal performance monitoring
+ctx = ray.data.DataContext.get_current()
 ctx.enable_progress_bars = True
 ctx.enable_operator_progress_bars = True
 
@@ -127,7 +128,8 @@ from ray.data.aggregate import Count, Mean, Sum, Max
 
 # Initialize Ray for ETL processingray.init(ignore_reinit_error=True)
 
-# Configure Ray Data for optimal performance monitoringctx = ray.data.DataContext.get_current()
+# Configure Ray Data for optimal performance monitoring
+ctx = ray.data.DataContext.get_current()
 ctx.enable_progress_bars = True
 ctx.enable_operator_progress_bars = True
 
@@ -186,7 +188,8 @@ for table, description in tpch_tables.items():
 ### Loading TPC-H data with Ray Data
 
 ```python
-# Tpc-H benchmark data locationTPCH_S3_PATH = "s3://ray-benchmark-data/tpch/parquet/sf10"
+# Tpc-H benchmark data location
+TPCH_S3_PATH = "s3://ray-benchmark-data/tpch/parquet/sf10"
 
 print("Loading TPC-H benchmark data for distributed processing...")
 start_time = time.time()

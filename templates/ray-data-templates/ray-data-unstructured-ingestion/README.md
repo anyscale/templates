@@ -93,7 +93,8 @@ from ray.data.expressions import col, lit
 
 # Initialize Ray for distributed processingray.init()
 
-# Configure Ray Data for optimal performance monitoringctx = ray.data.DataContext.get_current()
+# Configure Ray Data for optimal performance monitoring
+ctx = ray.data.DataContext.get_current()
 ctx.enable_progress_bars = True
 ctx.enable_operator_progress_bars = True
 
@@ -126,7 +127,8 @@ from ray.data.expressions import col, lit
 
 # Initialize Ray for distributed document processingray.init()
 
-# Configure Ray Data for optimal performance monitoringctx = ray.data.DataContext.get_current()
+# Configure Ray Data for optimal performance monitoring
+ctx = ray.data.DataContext.get_current()
 ctx.enable_progress_bars = True
 ctx.enable_operator_progress_bars = True
 
