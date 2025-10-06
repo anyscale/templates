@@ -1160,6 +1160,128 @@ financial_with_indicators = calculate_technical_indicators(financial_data)
 
 ---
 
+## Ray Data Architecture for Financial Analytics
+
+Understanding Ray Data's architecture is essential for building high-performance financial systems.
+
+### Streaming Execution for Financial Data
+
+Ray Data's streaming execution enables processing millions of trades with constant memory:
+
+**Traditional Batch Processing:**
+
+<img src="https://anyscale-materials.s3.us-west-2.amazonaws.com/cko-2025-q1/batch-processing.png" width="800" alt="Traditional Batch Processing">
+
+**Problems with traditional approach:**
+- High memory - requires loading all historical data
+- No parallelism - technical indicators calculated sequentially
+- Long latency - wait for data load before analysis
+- Resource waste - CPUs idle during data loading
+
+**Ray Data Streaming Execution:**
+
+<img src="https://anyscale-materials.s3.us-west-2.amazonaws.com/cko-2025-q1/pipelining.png" width="800" alt="Ray Data Streaming Execution">
+
+**Benefits for financial analytics:**
+- Low memory - constant 128MB blocks regardless of data volume
+- Pipeline parallelism - load, calculate indicators, analyze simultaneously
+- Fast results - indicators available as data loads
+- Maximum throughput - all resources utilized continuously
+
+**Practical example for financial data:**
+```python
+# This pipeline runs all stages simultaneously
+financial_indicators = (
+    # Stage 1: Load market data
+    ray.data.read_parquet("s3://market-data/", num_cpus=0.025)
+    
+    # Stage 2: Calculate moving averages (parallel with stage 1)
+    .map_batches(calculate_ma, batch_size=1000, num_cpus=0.5)
+    
+    # Stage 3: Calculate RSI (parallel with stages 1-2)
+    .map_batches(calculate_rsi, batch_size=1000, num_cpus=0.5)
+    
+    # Stage 4: Calculate Bollinger Bands (parallel with stages 1-3)
+    .map_batches(calculate_bollinger, batch_size=1000, num_cpus=0.5)
+    
+    # Stage 5: Write results (starts as soon as first indicators ready)
+    .write_parquet("s3://indicators/", num_cpus=0.1)
+)
+
+# All stages run simultaneously!
+# Trade 1 can be written while Trade 1M is being loaded
+# Memory stays constant for 1M or 1B trades
+```
+
+### Datasets and Blocks for Financial Data
+
+Ray Data processes financial data in **blocks**:
+
+<img src="https://docs.ray.io/en/latest/_images/dataset-arch.svg" width="700" alt="Ray Data Block Architecture">
+
+**Key concepts for financial analytics:**
+- **Blocks**: Groups of trades/quotes (typically ~128 MB)
+- **Distributed storage**: Blocks stored in Ray Object Store
+- **Independent processing**: Each block processed in parallel
+- **Configurable size**: Tune via `DataContext.target_max_block_size`
+
+**Why blocks matter for financial analytics:**
+- **Memory efficiency**: Process 10K trades at a time, not all 100M
+- **Parallelism**: 1000 blocks = 1000 parallel indicator calculations
+- **Scalability**: Same code for 1M or 1B trades
+- **Performance**: Optimal throughput without manual tuning
+
+### Ray Memory Model for Financial Computing
+
+Ray manages memory efficiently for financial calculations:
+
+<img src="https://docs.ray.io/en/latest/_images/memory.svg" width="600" alt="Ray Memory Model">
+
+**1. Object Store Memory (30% of node memory):**
+- Stores trade/quote blocks as shared memory
+- Enables zero-copy sharing between indicator calculations
+- Automatically spills to disk when full
+- Critical for passing data through pipeline
+
+**2. Task Execution Memory (remaining memory):**
+- Used for indicator calculations, aggregations, forecasting
+- Allocated per worker
+- Released after batch processing
+
+**Why this matters for financial analytics:**
+- **Resource planning**: Size cluster for peak data volume + models
+- **Performance tuning**: Avoid object store pressure with proper `num_cpus`
+- **Batch sizing**: Match batch sizes to calculation complexity
+
+### Operators and Resource Management
+
+Ray Data uses **physical operators** for financial processing:
+
+**Common operators:**
+- **TaskPoolMapOperator**: For stateless indicator calculations
+- **ActorPoolMapOperator**: For stateful operations (model inference)
+- **AllToAllOperator**: For market-wide aggregations and joins
+
+**Operator fusion for financial calculations:**
+```python
+# These operations get fused automatically
+trades.map_batches(calculate_ma).map_batches(calculate_rsi)
+# Becomes: TaskPoolMapOperator[calculate_ma->calculate_rsi]
+# Result: No data transfer, single task per trade block
+```
+
+**Resource management and backpressure:**
+- **Dynamic allocation**: Resources distributed across pipeline stages
+- **Backpressure**: Prevents memory overflow during complex calculations
+- **Automatic tuning**: No manual configuration needed
+
+**Why this matters for financial pipelines:**
+- **Calculation efficiency**: Multiple indicators calculated without data copying
+- **Memory safety**: Backpressure prevents OOM during heavy aggregations
+- **Resource efficiency**: All stages utilize resources simultaneously
+
+---
+
 ## Key Takeaways from Part 1
 
 You've learned how to:
