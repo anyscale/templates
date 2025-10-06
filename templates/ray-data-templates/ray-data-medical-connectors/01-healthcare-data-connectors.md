@@ -9,32 +9,38 @@
 ## What You'll Learn
 
 In this part, you'll learn how to:
-1. Build custom Ray Data datasources for HL7 healthcare messages
-2. Parse complex medical data formats with distributed processing
-3. Implement HIPAA-compliant patient data anonymization
-4. Process medical records at scale with Ray Data
+1. **Build custom FileBasedDatasource** implementations for HL7 healthcare messages
+2. **Implement custom parsers** for complex medical data formats (HL7, DICOM)
+3. **Extend Ray Data** with custom connectors for proprietary medical formats
+4. **Process medical records at scale** with distributed custom datasources
 
-### Healthcare Data Format Guidance
+### Custom Datasource Implementation Focus
 
-This template demonstrates proper reading of medical data in their native formats:
+This template demonstrates **building custom datasources using FileBasedDatasource**:
 
-| Data Type | Native Format | Ray Data Reader | Example |
-|-----------|---------------|----------------|---------|
-| **HL7 Messages** | Text (pipe-delimited) | `read_text()` | HL7 v2 clinical messages |
-| **DICOM Metadata** | JSON | `read_json()` | Medical imaging metadata |
-| **EHR Records** | CSV or JSON | `read_csv()` or `read_json()` | Patient demographics |
+| Medical Format | Standard Reader? | Custom Datasource Needed? | Why Custom? |
+|----------------|------------------|---------------------------|-------------|
+| **HL7 Messages** | ❌ No native support | ✅ Build HL7Datasource | Complex pipe-delimited hierarchical format |
+| **DICOM Files** | ❌ No native support | ✅ Build DICOMDatasource | Binary format with embedded metadata |
+| **FHIR Resources** | ❌ No native support | ✅ Build FHIRDatasource | Nested JSON with healthcare semantics |
+
+:::note Template Focus: Custom Connector Implementation
+This template shows **how to build custom FileBasedDatasource implementations** for medical data formats that don't have native Ray Data support. You'll learn the full implementation pattern from scratch.
+:::
 
 ## Table of Contents
 
 1. [Learning Objectives](#learning-objectives) (2 min)
-2. [Overview](#overview) (3 min) - Healthcare data challenges and solutions
+2. [Overview](#overview) (3 min) - Why build custom datasources for medical data
 3. [Prerequisites](#prerequisites) (1 min) - Required knowledge and setup
 4. [Installation](#installation) (1 min) - Install medical processing libraries
-5. [Quick Start](#quick-start-3-minutes) (3 min) - Process HL7 messages quickly
-6. [5-Minute HL7 Demo](#5-minute-quick-start) (5 min) - Complete processing workflow
-7. [Next Steps](#next-steps) (2 min) - Continue learning
+5. [Quick Start](#quick-start-3-minutes) (3 min) - Build a simple HL7 datasource
+6. [Complete HL7Datasource Implementation](#5-minute-quick-start) (5 min) - Production-ready connector
+7. [Next Steps](#next-steps) (2 min) - Build DICOM and FHIR datasources
 
 **Total Time**: 17 minutes
+
+**Focus**: Building custom FileBasedDatasource implementations for medical data formats
 
 ---
 
@@ -44,10 +50,19 @@ This template demonstrates proper reading of medical data in their native format
 
 | Topic | What You'll Gain | Why It Matters |
 |-------|------------------|----------------|
-| **Custom Datasources** | Build HL7 and DICOM connectors | Handle complex medical formats at scale |
-| **Medical Data Parsing** | Extract structured data from HL7 messages | Enable distributed healthcare analytics |
-| **HIPAA Compliance** | Implement patient data anonymization | Maintain regulatory compliance |
-| **Distributed Processing** | Process medical records with Ray Data | Scale to millions of patient records |
+| **FileBasedDatasource** | Implement custom datasource class | Extend Ray Data for any medical format |
+| **Custom Parsers** | Build HL7/DICOM parsing logic | Handle complex proprietary formats |
+| **_read_stream() Method** | Implement streaming data reading | Efficiently process large medical files |
+| **Production Patterns** | Error handling, validation, HIPAA compliance | Build production-ready medical connectors |
+
+**Core learning focus:**
+
+You'll learn the **complete pattern for building custom FileBasedDatasource implementations**, not just using standard Ray Data readers. This includes:
+
+- **Inheriting from FileBasedDatasource** - Base class for custom file readers
+- **Implementing _read_stream()** - Core method for parsing your format
+- **Building custom parsers** - HL7 segment parsing, DICOM tag extraction
+- **Production patterns** - Error handling, validation, compliance
 
 **Why healthcare data processing matters:**
 
