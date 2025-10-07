@@ -9,10 +9,10 @@
 ## What You'll Learn
 
 In this part, you'll master systematic optimization techniques for production ML inference:
-- Decision frameworks for choosing the right optimization
-- Multi-model ensemble inference patterns
-- Systematic parameter tuning approaches
-- Production deployment best practices
+- Decision frameworks for choosing the right optimization (CPU and GPU)
+- Multi-model ensemble inference patterns (works on both CPU and GPU)
+- Systematic parameter tuning approaches for any hardware
+- Production deployment best practices for CPU-only and GPU clusters
 
 ## Prerequisites
 
@@ -33,8 +33,8 @@ Complete [Part 1: Inference Fundamentals](01-inference-fundamentals.md) before s
 
 | Level | Tool | When to Use | Impact | Complexity |
 |-------|------|-------------|---------|------------|
-| **1** | `num_cpus` parameter | Primary tool for all performance issues | **High** - Controls parallelism | **Low** - Simple parameter |
-| **2** | `batch_size` parameter | GPU memory issues only | **Medium** - Affects GPU utilization | **Medium** - Requires testing |
+| **1** | `num_cpus`/`num_gpus` parameter | Primary tool for all performance issues | **High** - Controls parallelism | **Low** - Simple parameter |
+| **2** | `batch_size` parameter | Memory issues (CPU or GPU) | **Medium** - Affects resource utilization | **Medium** - Requires testing |
 | **3** | `concurrency` parameter | Stateful operations (actors) | **High** - Controls actor pool size | **Low** - Simple parameter |
 | **4** | Block/memory configs | Out of memory errors only | **Medium** - Affects memory patterns | **High** - Deep knowledge needed |
 
@@ -42,27 +42,36 @@ Complete [Part 1: Inference Fundamentals](01-inference-fundamentals.md) before s
 
 ```
 Performance Issue
-├── GPU underutilized (<50%)
+├── Resource underutilized (CPU/GPU <50%)
 │   └── Solution: Increase preprocessing parallelism (reduce num_cpus to 0.025-0.5)
 │
-├── GPU out of memory
+├── Out of memory (CPU or GPU)
 │   └── Solution: Reduce batch_size progressively (64→32→16→8)
 │
 ├── Slow preprocessing
 │   └── Solution: Adjust num_cpus for CPU stages (try 0.25-0.5)
 │
 └── Workers getting killed
-    └── Solution: Increase num_cpus to reduce parallelism (try 2.0-4.0)
+    └── Solution: Increase num_cpus/num_gpus to reduce parallelism (try 2.0-4.0)
 ```
+
+:::note CPU and GPU Decision Framework
+**The same decision framework applies to both CPU and GPU clusters!**
+
+- Replace "GPU utilization" with "CPU utilization" for CPU clusters
+- Same optimization patterns, just different resource parameters
+- Monitor Ray Dashboard to see CPU or GPU utilization in real-time
+:::
 
 ### Resource Allocation Quick Reference
 
-| Stage Type | num_cpus Value | Reasoning |
-|-----------|----------------|-----------|
-| **Image loading** | 0.025-0.05 | I/O bound, high concurrency needed |
-| **CPU preprocessing** | 0.25-0.5 | Light compute, benefit from parallelism |
-| **GPU inference** | 1.0 per GPU | GPU coordination |
-| **Post-processing** | 0.25-0.5 | Light compute |
+| Stage Type | Resource Allocation | Reasoning |
+|-----------|-------------------|-----------|
+| **Image loading** | `num_cpus=0.025-0.05` | I/O bound, high concurrency needed |
+| **CPU preprocessing** | `num_cpus=0.25-0.5` | Light compute, benefit from parallelism |
+| **GPU inference** | `num_gpus=1` | One model per GPU |
+| **CPU inference** | `num_cpus=2-4` | Heavier CPU allocation for model execution |
+| **Post-processing** | `num_cpus=0.25-0.5` | Light compute |
 
 ---
 
@@ -72,19 +81,24 @@ Performance Issue
 
 ```python
 class EnsembleInferenceWorker:
-    """Advanced worker that uses multiple models for ensemble predictions."""
+    """Advanced worker that uses multiple models for ensemble predictions.
+    
+    Works on both CPU and GPU - automatically detects hardware.
+    """
     
     def __init__(self):
         from transformers import pipeline
         import torch
         
+        # Auto-detect GPU availability
         self.device = 0 if torch.cuda.is_available() else -1
+        device_name = "GPU" if self.device >= 0 else "CPU"
         
         # Load multiple models for ensemble
         self.resnet = pipeline("image-classification", model="microsoft/resnet-50", device=self.device)
         self.vit = pipeline("image-classification", model="google/vit-base-patch16-224", device=self.device)
         
-        print("Ensemble models loaded: ResNet-50 + ViT")
+        print(f"Ensemble models loaded on {device_name}: ResNet-50 + ViT")
     
     def __call__(self, batch):
         """Run ensemble inference with multiple models."""
@@ -111,11 +125,16 @@ class EnsembleInferenceWorker:
         
         return results
 
-# Run ensemble inference
+# Detect GPU availability for resource allocation
+import torch
+HAS_GPU = torch.cuda.is_available()
+
+# Run ensemble inference with adaptive resource allocation
 ensemble_results = dataset.limit(50).map_batches(
     EnsembleInferenceWorker,
-    concurrency=1,  # Single worker for GPU memory management
-    num_gpus=1,
+    concurrency=1,  # Single worker for memory management
+    num_gpus=1 if HAS_GPU else 0,  # GPU if available
+    num_cpus=4 if not HAS_GPU else 1,  # More CPU cores if no GPU
     batch_size=8,   # Smaller batches for multiple models
 )
 
@@ -127,10 +146,12 @@ print(ensemble_results.take(5))
 
 ```python
 def find_optimal_batch_size(model_worker_class, test_dataset):
-    """Systematically find optimal batch size for GPU inference."""
+    """Systematically find optimal batch size for inference (CPU or GPU)."""
+    import torch
     
     batch_sizes_to_test = [4, 8, 16, 32, 64, 128]
     results = {}
+    HAS_GPU = torch.cuda.is_available()
     
     for batch_size in batch_sizes_to_test:
         print(f"Testing batch_size={batch_size}")
@@ -138,9 +159,11 @@ def find_optimal_batch_size(model_worker_class, test_dataset):
         try:
             test_start = time.time()
             
+            # Adaptive resource allocation
             test_results = test_dataset.limit(100).map_batches(
                 model_worker_class,
-                num_gpus=1,
+                num_gpus=1 if HAS_GPU else 0,
+                num_cpus=2 if not HAS_GPU else 1,
                 concurrency=1,
                 batch_size=batch_size
             )
