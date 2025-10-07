@@ -9,10 +9,10 @@
 ## What You'll Learn
 
 In this part, you'll understand the fundamentals of batch inference optimization by comparing inefficient and efficient approaches:
-- How to set up Ray Data for GPU-accelerated inference
+- How to set up Ray Data for accelerated inference (CPU or GPU)
 - Why naive inference patterns create performance bottlenecks
 - How Ray Data's actor-based pattern solves these problems
-- How to implement optimized inference with proper resource allocation
+- How to implement optimized inference with proper resource allocation for both CPU and GPU
 
 ## Table of Contents
 
@@ -55,12 +55,27 @@ ctx.enable_operator_progress_bars = True
 print("Ray cluster initialized for batch inference optimization")
 print(f"Available resources: {ray.cluster_resources()}")
 
-# Check GPU availability
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+# Detect hardware availability
+HAS_GPU = torch.cuda.is_available()
+device = torch.device("cuda" if HAS_GPU else "cpu")
+
 print(f"Using device: {device}")
-if torch.cuda.is_available():
+if HAS_GPU:
     print(f"GPU count: {torch.cuda.device_count()}")
+    print("✅ GPU detected - examples will use GPU acceleration")
+else:
+    print("ℹ️  No GPU detected - examples will run on CPU")
+    print("   (All patterns work identically on CPU, just use num_cpus instead of num_gpus)")
 ```
+
+:::note CPU and GPU Compatibility
+**This template works on both CPU-only and GPU clusters!**
+
+- **GPU clusters**: Code automatically detects GPUs and uses `num_gpus=1` for acceleration
+- **CPU clusters**: Code falls back to CPU and uses `num_cpus=2` for parallelism
+
+All optimization concepts (actor-based loading, batching, concurrency) apply equally to both environments.
+:::
 
 ### Load Demo Dataset
 
@@ -209,16 +224,22 @@ Ray Data solves the model loading problem by letting you run stateful, class-bas
 # Efficient: Use Ray Data class-based map_batches with optimized actor configuration
 
 class InferenceWorker:
-    """Stateful worker that loads the model once and reuses it."""
+    """Stateful worker that loads the model once and reuses it.
+    
+    Works on both CPU and GPU - automatically detects hardware.
+    """
     def __init__(self):
         from transformers import pipeline
         import torch
+        
+        # Automatically use GPU if available, otherwise CPU
         device = 0 if torch.cuda.is_available() else -1
         self.classifier = pipeline(
             "image-classification",
             model="microsoft/resnet-50",
             device=device,
         )
+        print(f"Model loaded on: {'GPU' if device >= 0 else 'CPU'}")
 
     def __call__(self, batch):
         results = []
@@ -233,11 +254,13 @@ class InferenceWorker:
 print("Running optimized Ray Data inference with stateful workers...")
 
 # Best practice: Use the new concurrency parameter for actor-based processing
+# Resource allocation adapts to available hardware
 inference_results = dataset.limit(100).map_batches(
     InferenceWorker,
-    concurrency=2,      # Use concurrency instead of deprecated compute parameter
-    num_gpus=1,         # Allocate one GPU per worker
-    batch_size=16,      # Optimal batch size for GPU utilization
+    concurrency=2,      # Number of parallel actors
+    num_gpus=1 if HAS_GPU else 0,  # Allocate GPU if available
+    num_cpus=2 if not HAS_GPU else 1,  # Use more CPU cores if no GPU
+    batch_size=16,      # Optimal batch size for resource utilization
 ).take(20)
 
 print("Optimized approach completed. Improvements: single model load per worker, better batching, efficient resource use")
@@ -246,35 +269,66 @@ print("Optimized approach completed. Improvements: single model load per worker,
 **What's Better:**
 - Model loads only once per worker via Ray Data `ActorPoolStrategy`
 - Larger batch sizes for better resource utilization
-- Proper GPU allocation with `num_gpus=1`
+- Proper resource allocation with `num_gpus=1` (GPU) or `num_cpus=2` (CPU)
 - Ray Data manages distribution across workers
+- **Works identically on CPU and GPU clusters**
 
-### GPU Acceleration for Data Preprocessing
+:::tip Resource Allocation Patterns
+**GPU clusters**: Use `num_gpus=1` to allocate one GPU per actor
+```python
+.map_batches(InferenceWorker, num_gpus=1, concurrency=2)  # 2 GPUs used
+```
 
-:::tip NVIDIA RAPIDS cuDF for Pandas Operations
-If your batch inference includes complex pandas data preprocessing, you can accelerate it with **NVIDIA RAPIDS cuDF**. Simply replace `import pandas as pd` with `import cudf as pd` in your `map_batches` functions to use GPU acceleration for DataFrame operations.
+**CPU clusters**: Use `num_cpus=2` to allocate CPU cores per actor
+```python
+.map_batches(InferenceWorker, num_cpus=2, concurrency=4)  # 8 CPU cores used
+```
+
+The patterns are identical - Ray Data abstracts away the hardware differences!
+:::
+
+### Performance Expectations: CPU vs GPU
+
+:::tip Performance Scaling
+**Both CPU and GPU deployments benefit from Ray Data optimizations!**
+
+**GPU clusters** (when available):
+- **Throughput**: 500-2000 images/second (model dependent)
+- **Best for**: Large models, high-volume inference
+- **Resource**: Use `num_gpus=1` per actor
+
+**CPU clusters** (always available):
+- **Throughput**: 50-200 images/second (model dependent)
+- **Best for**: Development, smaller models, cost-sensitive workloads
+- **Resource**: Use `num_cpus=2-4` per actor
+
+**Key insight**: The optimization patterns (actor-based loading, batching, concurrency) provide similar relative speedups on both CPU and GPU!
 :::
 
 ```python
-# Example: Batch inference with GPU-accelerated preprocessing
-def gpu_accelerated_preprocessing(batch):
-    """Image preprocessing with optional cuDF acceleration.
+# Example: Adaptive resource allocation based on available hardware
+def create_inference_config():
+    """Generate optimal configuration for available hardware."""
+    import torch
+    has_gpu = torch.cuda.is_available()
     
-    For GPU acceleration, replace 'import pandas as pd' with 'import cudf as pd'
-    to speed up complex DataFrame operations.
-    """
-    import pandas as pd  # or 'import cudf as pd' for GPU acceleration
-    
-    # Convert batch to DataFrame for preprocessing
-    df = pd.DataFrame(batch)
-    
-    # Complex preprocessing that benefits from GPU acceleration
-    df['image_processed'] = True
-    df['batch_id'] = range(len(df))
-    
-    return df.to_dict('records')
+    if has_gpu:
+        return {
+            "num_gpus": 1,
+            "concurrency": torch.cuda.device_count(),
+            "batch_size": 32,  # Larger batches for GPU
+            "expected_throughput": "500-2000 images/sec"
+        }
+    else:
+        return {
+            "num_cpus": 2,
+            "concurrency": ray.available_resources()["CPU"] // 2,
+            "batch_size": 16,  # Smaller batches for CPU
+            "expected_throughput": "50-200 images/sec"
+        }
 
-print("GPU acceleration available for complex pandas preprocessing")
+config = create_inference_config()
+print(f"Optimized configuration for your cluster: {config}")
 ```
 
 ---

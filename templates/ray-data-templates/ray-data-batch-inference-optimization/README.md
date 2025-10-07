@@ -18,10 +18,10 @@ This template is split into three parts for comprehensive learning:
 
 ### Part 1: Inference Fundamentals
 Learn the core concepts of batch inference optimization by comparing inefficient and efficient approaches:
-- **Setup**: Initialize Ray Data for GPU-accelerated inference
+- **Setup**: Initialize Ray Data for accelerated inference (CPU or GPU)
 - **The Wrong Way**: Understand anti-patterns that cause performance bottlenecks
 - **Why It Fails**: Learn the technical reasons behind poor performance
-- **The Right Way**: Implement optimized actor-based inference
+- **The Right Way**: Implement optimized actor-based inference (works on CPU and GPU)
 
 ### Part 2: Advanced Optimization
 Master systematic optimization techniques for production deployment:
@@ -48,9 +48,9 @@ Understand how Ray Data's architecture enables optimization:
 
 ## Overview
 
-**Challenge**: Batch inference bottlenecks waste GPU resources and slow ML pipelines:
+**Challenge**: Batch inference bottlenecks waste compute resources and slow ML pipelines:
 - **Repeated model loading**: Loading 500MB+ models for every batch wastes 97% of time
-- **Poor GPU utilization**: Small batches leave GPUs idle 90% of the time
+- **Poor resource utilization**: Small batches leave CPUs/GPUs idle 90% of the time
 - **Memory inefficiency**: Materializing full datasets causes OOM errors
 - **Sequential processing**: Single-threaded inference limits throughput
 
@@ -59,17 +59,18 @@ Understand how Ray Data's architecture enables optimization:
 | Inference Challenge | Naive Approach | Ray Data Solution | Performance Impact |
 |---------------------|---------------|-------------------|-------------------|
 | **Model Loading** | Load per batch (2-5 sec) | Load once per actor (one-time cost) | 10-100x throughput improvement |
-| **Batch Sizing** | Small batches (4-16 samples) | Optimized batches (32-128 samples) | 5-10x GPU utilization |
-| **GPU Management** | Manual allocation | Automatic with `num_gpus=1` parameter | Zero configuration |
+| **Batch Sizing** | Small batches (4-16 samples) | Optimized batches (32-128 samples) | 5-10x resource utilization |
+| **Resource Management** | Manual allocation | Automatic with `num_gpus` (GPU) or `num_cpus` (CPU) | Zero configuration |
 | **Concurrency** | Sequential or over-subscribed | Optimal actor pool with `concurrency` param | Maximum cluster efficiency |
 
 :::tip Ray Data for ML Inference
 Batch inference showcases Ray Data's strengths for ML workloads:
 - **Stateful actors**: Models load once in `__init__()`, reused across 1000s of batches
-- **GPU allocation**: `num_gpus=1` parameter ensures proper GPU sharing
-- **Batch optimization**: `batch_size` parameter controls GPU memory vs throughput
-- **Concurrency tuning**: `concurrency` parameter matches cluster GPU count
-- **Built-in monitoring**: Ray Dashboard shows GPU utilization and bottlenecks
+- **Resource allocation**: `num_gpus=1` (GPU) or `num_cpus=2` (CPU) for proper resource management
+- **Batch optimization**: `batch_size` parameter controls memory vs throughput
+- **Concurrency tuning**: `concurrency` parameter matches cluster resources (GPUs or CPU cores)
+- **Built-in monitoring**: Ray Dashboard shows resource utilization and bottlenecks
+- **Universal patterns**: Same optimization patterns work on CPU-only and GPU clusters
 :::
 
 **Impact**: OpenAI processes billions of ChatGPT requests using Ray Serve (built on Ray Data patterns). Tesla analyzes millions of autonomous driving images using distributed inference. Netflix generates recommendations for 200M+ users using scalable ML pipelines.
@@ -83,6 +84,15 @@ Before starting, ensure you have:
 - [ ] Ray Data installed (`pip install ray[data]`)
 - [ ] Basic understanding of ML model inference
 - [ ] Familiarity with PyTorch or Transformers library (helpful but not required)
+
+:::tip CPU and GPU Compatibility
+**All examples work on both CPU-only and GPU clusters!**
+
+- **GPU clusters**: Examples use `num_gpus=1` for optimal GPU acceleration
+- **CPU clusters**: Simply set `num_gpus=0` or omit the parameter entirely
+
+The optimization patterns and architecture concepts apply equally to both CPU and GPU workloads.
+:::
 
 ## Getting Started
 
