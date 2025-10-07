@@ -169,9 +169,9 @@ Each part builds on the previous, so complete them in order for the best learnin
 - **Result**: Production-ready inference pipeline with monitoring
 
 **Troubleshooting path** (as needed):
-- 🔧 When stuck: Check [Troubleshooting Guide](../TROUBLESHOOTING_GUIDE.md)
-- 🔧 Performance issues: See [Performance Tuning Guide](../PERFORMANCE_TUNING_GUIDE.md)
-- 🔧 CPU/GPU questions: Read [CPU and GPU Usage Guide](CPU_GPU_USAGE_GUIDE.md)
+- When stuck: Check [Troubleshooting Guide](../TROUBLESHOOTING_GUIDE.md)
+- Performance issues: See [Performance Tuning Guide](../PERFORMANCE_TUNING_GUIDE.md)
+- CPU/GPU questions: Read [CPU and GPU Usage Guide](CPU_GPU_USAGE_GUIDE.md)
 
 ---
 
