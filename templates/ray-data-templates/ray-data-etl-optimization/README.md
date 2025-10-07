@@ -391,13 +391,29 @@ def enrich_orders_with_metrics(batch):
     return df.to_dict('records')
 
 # Apply order enrichment
-enriched_orders = orders_ds.map_batches(
-    enrich_orders_with_metrics,
-    num_cpus=0.5,  # Medium complexity transformation
-    batch_format="pandas"
-)
+print("\n🔄 Enriching orders with business metrics...")
 
-print(f"Order enrichment completed: {enriched_orders.count():,} orders processed")
+try:
+    enriched_orders = orders_ds.map_batches(
+        enrich_orders_with_metrics,
+        num_cpus=0.5,  # Medium complexity transformation
+        batch_format="pandas"
+    )
+    
+    enriched_count = enriched_orders.count()
+    print(f"✅ Order enrichment completed: {enriched_count:,} orders processed")
+    
+    # Show sample enriched record
+    sample = enriched_orders.take(1)[0]
+    print(f"\n📋 Sample enriched order:")
+    print(f"   Order ID: {sample.get('o_orderkey')}")
+    print(f"   Year: {sample.get('order_year')}, Quarter: {sample.get('order_quarter')}")
+    print(f"   Category: {sample.get('order_size_category')}")
+    print(f"   Revenue Tier: {sample.get('revenue_tier')}")
+    
+except Exception as e:
+    print(f"❌ Error during enrichment: {e}")
+    raise
 ```
 
 ### Advanced filtering and selection
@@ -438,17 +454,32 @@ print(f"  Complex filtered orders: {complex_filtered_orders.count():,}")
 
 ```python
 # ETL Join: Customer-Order analysis using Ray Data joins
-print("Performing distributed joins for customer-order analysis...")
+print("\n🔗 Performing distributed joins for customer-order analysis...")
 
-# Join customers with their orders for comprehensive analysis
-customer_order_analysis = customers_ds.join(
-    enriched_orders,
-    left_key="c_custkey",
-    right_key="o_custkey",
-    join_type="inner"
-)
-
-print(f"Customer-order join completed: {customer_order_analysis.count():,} records")
+try:
+    # Join customers with their orders for comprehensive analysis
+    # Ray Data optimizes join execution across distributed nodes
+    customer_order_analysis = customers_ds.join(
+        enriched_orders,
+        left_key="c_custkey",
+        right_key="o_custkey",
+        join_type="inner"
+    )
+    
+    join_count = customer_order_analysis.count()
+    print(f"✅ Customer-order join completed: {join_count:,} records")
+    
+    # Calculate join statistics
+    customer_count = customers_ds.count()
+    orders_count = enriched_orders.count()
+    join_ratio = (join_count / orders_count) * 100 if orders_count > 0 else 0
+    
+    print(f"   Input: {customer_count:,} customers, {orders_count:,} orders")
+    print(f"   Join ratio: {join_ratio:.1f}% of orders matched")
+    
+except Exception as e:
+    print(f"❌ Error during join: {e}")
+    raise
 
 # Aggregate customer order metrics
 customer_order_metrics = customer_order_analysis.groupby("c_mktsegment").aggregate(
