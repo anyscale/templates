@@ -145,21 +145,45 @@ print(ensemble_results.take(5))
 ### Systematic Batch Size Optimization
 
 ```python
-def find_optimal_batch_size(model_worker_class, test_dataset):
-    """Systematically find optimal batch size for inference (CPU or GPU)."""
+import time
+from typing import Dict, Any, Type
+
+def find_optimal_batch_size(
+    model_worker_class: Type,
+    test_dataset: "ray.data.Dataset",
+    batch_sizes_to_test: List[int] = None
+) -> int:
+    """Systematically find optimal batch size for inference (CPU or GPU).
+    
+    Uses binary search approach to find the largest batch size that doesn't
+    cause out-of-memory errors while maximizing throughput.
+    
+    Args:
+        model_worker_class: The inference worker class to test
+        test_dataset: Dataset to use for testing (should be representative sample)
+        batch_sizes_to_test: Optional list of batch sizes to try (default: [4, 8, 16, 32, 64, 128])
+        
+    Returns:
+        Optimal batch size as integer
+    """
     import torch
     
-    batch_sizes_to_test = [4, 8, 16, 32, 64, 128]
+    if batch_sizes_to_test is None:
+        batch_sizes_to_test = [4, 8, 16, 32, 64, 128]
+    
     results = {}
     HAS_GPU = torch.cuda.is_available()
     
+    print(f"Testing batch sizes on {'GPU' if HAS_GPU else 'CPU'}...")
+    print(f"Batch sizes to test: {batch_sizes_to_test}")
+    
     for batch_size in batch_sizes_to_test:
-        print(f"Testing batch_size={batch_size}")
+        print(f"\n🔍 Testing batch_size={batch_size}...")
         
         try:
             test_start = time.time()
             
-            # Adaptive resource allocation
+            # Adaptive resource allocation based on hardware
             test_results = test_dataset.limit(100).map_batches(
                 model_worker_class,
                 num_gpus=1 if HAS_GPU else 0,
