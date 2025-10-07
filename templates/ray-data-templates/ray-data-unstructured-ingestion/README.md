@@ -91,14 +91,16 @@ import pandas as pd
 import ray
 from ray.data.expressions import col, lit
 
-# Initialize Ray for distributed processingray.init()
+# Initialize Ray for distributed processing
+ray.init()
 
 # Configure Ray Data for optimal performance monitoring
 ctx = ray.data.DataContext.get_current()
 ctx.enable_progress_bars = True
 ctx.enable_operator_progress_bars = True
 
-# Load document collection from data lakedocument_dataset = ray.data.read_binary_files(
+# Load document collection from data lake
+document_dataset = ray.data.read_binary_files(
     "s3://anyscale-rag-application/1000-docs/",
     include_paths=True,
     num_cpus=0.025  # High I/O concurrency for large document collections
@@ -125,7 +127,8 @@ import pandas as pd
 import ray
 from ray.data.expressions import col, lit
 
-# Initialize Ray for distributed document processingray.init()
+# Initialize Ray for distributed document processing
+ray.init()
 
 # Configure Ray Data for optimal performance monitoring
 ctx = ray.data.DataContext.get_current()

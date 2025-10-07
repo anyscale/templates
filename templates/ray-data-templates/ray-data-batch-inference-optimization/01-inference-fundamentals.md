@@ -105,18 +105,29 @@ This section demonstrates a common anti-pattern in ML inference systems. Underst
 When models are loaded repeatedly for each batch, the initialization overhead dominates processing time. This pattern is unfortunately common in production systems where developers haven't considered the cost of model loading operations.
 
 ```python
-def inefficient_inference(batch):
-    """INEFFICIENT: Loads model for every single batch."""
-    # This is very slow - model loads repeatedly!
+def inefficient_inference(batch: Dict[str, Any]) -> List[Dict[str, Any]]:
+    """INEFFICIENT: Loads model for every single batch.
+    
+    Anti-pattern demonstration - DO NOT use this approach in production!
+    This function intentionally shows bad practices to highlight optimization opportunities.
+    
+    Args:
+        batch: Dictionary containing 'image' key with list of PIL Images
+        
+    Returns:
+        List of prediction dictionaries with 'prediction' and 'confidence' keys
+    """
+    import time
     from transformers import pipeline
+    
+    # ❌ BAD: Model loading happens inside function - repeats for every batch!
     print("Loading model... (this happens for every batch!)")
     start_load = time.time()
-    # Model loading happens for every batch - very inefficient
     classifier = pipeline("image-classification", model="microsoft/resnet-50")
     load_time = time.time() - start_load
     print(f"Model loading took: {load_time:.2f} seconds")
     
-    # Process images one by one (also inefficient)
+    # ❌ BAD: Processing images one by one instead of batched inference
     results = []
     for image in batch["image"]:
         prediction = classifier(image)
@@ -128,7 +139,7 @@ def inefficient_inference(batch):
     return results
 
 print("Testing inefficient approach...")
-print("Watch Ray Dashboard to see the performance problems")
+print("💡 Watch Ray Dashboard to see the performance problems")
 
 # Run inefficient batch inference with small batches
 inefficient_results = dataset.limit(100).map_batches(
@@ -137,7 +148,8 @@ inefficient_results = dataset.limit(100).map_batches(
     concurrency=2
 ).take(20)
 
-print("Inefficient approach completed. Problems: repeated model loading, poor batching, wasted resources")
+print("✅ Inefficient approach completed")
+print("   Problems: repeated model loading, poor batching, wasted resources")
 ```
 
 **Expected issues:**
@@ -221,14 +233,21 @@ Now you can see how Ray Data solves these problems with actor-based inference, p
 Ray Data solves the model loading problem by letting you run stateful, class-based `map_batches` with an actor pool strategy. Each worker loads the model once and reuses it across many batches, eliminating repeated initialization overhead.
 
 ```python
+from typing import Dict, Any, List
+
 # Efficient: Use Ray Data class-based map_batches with optimized actor configuration
 
 class InferenceWorker:
     """Stateful worker that loads the model once and reuses it.
     
+    This is the CORRECT pattern for batch inference - model loads once in __init__
+    and is reused across all batches processed by this worker.
+    
     Works on both CPU and GPU - automatically detects hardware.
     """
+    
     def __init__(self):
+        """Initialize worker - called once per actor, not per batch!"""
         from transformers import pipeline
         import torch
         
@@ -239,9 +258,17 @@ class InferenceWorker:
             model="microsoft/resnet-50",
             device=device,
         )
-        print(f"Model loaded on: {'GPU' if device >= 0 else 'CPU'}")
+        print(f"✅ Model loaded on: {'GPU' if device >= 0 else 'CPU'}")
 
-    def __call__(self, batch):
+    def __call__(self, batch: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """Process a batch of images - called many times, reuses loaded model.
+        
+        Args:
+            batch: Dictionary containing 'image' key with list of PIL Images
+            
+        Returns:
+            List of prediction dictionaries
+        """
         results = []
         for image in batch["image"]:
             pred = self.classifier(image)
@@ -255,15 +282,23 @@ print("Running optimized Ray Data inference with stateful workers...")
 
 # Best practice: Use the new concurrency parameter for actor-based processing
 # Resource allocation adapts to available hardware
-inference_results = dataset.limit(100).map_batches(
-    InferenceWorker,
-    concurrency=2,      # Number of parallel actors
-    num_gpus=1 if HAS_GPU else 0,  # Allocate GPU if available
-    num_cpus=2 if not HAS_GPU else 1,  # Use more CPU cores if no GPU
-    batch_size=16,      # Optimal batch size for resource utilization
-).take(20)
-
-print("Optimized approach completed. Improvements: single model load per worker, better batching, efficient resource use")
+try:
+    inference_results = dataset.limit(100).map_batches(
+        InferenceWorker,
+        concurrency=2,      # Number of parallel actors
+        num_gpus=1 if HAS_GPU else 0,  # Allocate GPU if available
+        num_cpus=2 if not HAS_GPU else 1,  # Use more CPU cores if no GPU
+        batch_size=16,      # Optimal batch size for resource utilization
+    ).take(20)
+    
+    print("✅ Optimized approach completed successfully!")
+    print("   Improvements: single model load per worker, better batching, efficient resource use")
+    print(f"   Processed {len(inference_results)} images")
+    
+except Exception as e:
+    print(f"❌ Error during inference: {e}")
+    print("   Check that transformers and torch are installed")
+    raise
 ```
 
 **What's Better:**
