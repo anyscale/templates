@@ -121,14 +121,14 @@ Data Flow:
 ### Understanding TPC-H benchmark
 
 ```python
-from typing import Dict, Any
+from typing import Dict, Any, List
 
 import numpy as np
 import pandas as pd
 import pyarrow as pa
 import ray
-from ray.data.expressions import col, lit
 from ray.data.aggregate import Count, Mean, Sum, Max
+from ray.data.expressions import col, lit
 
 # Initialize Ray for ETL processing
 ray.init(ignore_reinit_error=True)
@@ -138,8 +138,9 @@ ctx = ray.data.DataContext.get_current()
 ctx.enable_progress_bars = True
 ctx.enable_operator_progress_bars = True
 
-print(f"Ray version: {ray.__version__}")
-print(f"Ray cluster resources: {ray.cluster_resources()}")
+print(f"✅ Ray Data initialized for ETL processing")
+print(f"   Ray version: {ray.__version__}")
+print(f"   Cluster resources: {ray.cluster_resources()}")
 ```
 
 **What is TPC-H?**
