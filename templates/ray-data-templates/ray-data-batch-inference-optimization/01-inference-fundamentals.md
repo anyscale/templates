@@ -83,17 +83,25 @@ For this demonstration, you'll use the Imagenette dataset, which provides a real
 
 ```python
 # Load real ImageNet dataset for batch inference demonstration
-dataset = ray.data.read_images(
-    "s3://ray-benchmark-data/imagenette2/train/",
-    mode="RGB",  # Ensure consistent RGB color format
-    num_cpus=0.05
-).limit(1000)  # Use 1K images for focused performance comparison
-
-print("Loaded ImageNet dataset for batch inference demo")
-print("Sample dataset:")
-sample_batch = dataset.take_batch(3)
-print(f"Batch contains {len(sample_batch['image'])} images")
-print(f"Image shape: {sample_batch['image'][0].shape}")
+try:
+    dataset = ray.data.read_images(
+        "s3://ray-benchmark-data/imagenette2/train/",
+        mode="RGB",  # Ensure consistent RGB color format
+        num_cpus=0.05
+    ).limit(1000)  # Use 1K images for focused performance comparison
+    
+    print("✅ Loaded ImageNet dataset for batch inference demo")
+    print(f"   Dataset size: {dataset.count()} images")
+    print("\n📊 Sample dataset:")
+    sample_batch = dataset.take_batch(3)
+    print(f"   Batch contains {len(sample_batch['image'])} images")
+    print(f"   Image shape: {sample_batch['image'][0].shape}")
+    print(f"   Image dtype: {sample_batch['image'][0].dtype}")
+    
+except Exception as e:
+    print(f"❌ Error loading dataset: {e}")
+    print("   Check S3 access and ray.data.read_images() availability")
+    raise
 ```
 
 ---
@@ -302,11 +310,11 @@ except Exception as e:
 ```
 
 **What's Better:**
-- Model loads only once per worker via Ray Data `ActorPoolStrategy`
-- Larger batch sizes for better resource utilization
-- Proper resource allocation with `num_gpus=1` (GPU) or `num_cpus=2` (CPU)
-- Ray Data manages distribution across workers
-- **Works identically on CPU and GPU clusters**
+- ✅ Model loads only once per worker via Ray Data `ActorPoolStrategy`
+- ✅ Larger batch sizes for better resource utilization
+- ✅ Proper resource allocation with `num_gpus=1` (GPU) or `num_cpus=2` (CPU)
+- ✅ Ray Data automatically manages distribution across workers
+- ✅ **Works identically on CPU and GPU clusters with zero code changes**
 
 :::tip Resource Allocation Patterns
 **GPU clusters**: Use `num_gpus=1` to allocate one GPU per actor
@@ -371,10 +379,11 @@ print(f"Optimized configuration for your cluster: {config}")
 ## Key Takeaways from Part 1
 
 You've learned the fundamentals of batch inference optimization:
-- - Identified common anti-patterns that destroy performance
-- - Understood why repeated model loading is catastrophic
-- - Implemented class-based actors for stateful model loading
-- - Used proper resource allocation with `num_gpus` and `concurrency`
+- ✅ Identified common anti-patterns that destroy performance
+- ✅ Understood why repeated model loading is catastrophic  
+- ✅ Implemented class-based actors for stateful model loading
+- ✅ Used proper resource allocation with `num_gpus` and `concurrency`
+- ✅ Learned CPU and GPU compatibility patterns
 
 ## Next Steps
 
