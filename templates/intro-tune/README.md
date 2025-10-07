@@ -90,6 +90,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 from torch.utils.data import random_split
+from ray import train
 
 def train_cifar(config):
     net = Net(config["l1"], config["l2"])
@@ -188,6 +189,21 @@ import os
 STORAGE_PATH = os.environ["ANYSCALE_ARTIFACT_STORAGE"] + "/tune_results"
 storage_path, fs = get_path_and_fs(STORAGE_PATH)
 
+# Debug: Print the storage configuration
+print(f"Original STORAGE_PATH: {STORAGE_PATH}")
+print(f"Parsed storage_path: {storage_path}")
+print(f"Filesystem type: {type(fs)}")
+print(f"Filesystem: {fs}")
+
+# Create the tune_results directory in ABFSS storage
+if fs is not None:
+    try:
+        # Ensure the tune_results directory exists
+        fs.create_dir(storage_path)
+        print(f"✅ Created directory: {storage_path}")
+    except Exception as e:
+        print(f"Directory might already exist: {e}")
+
 # Define trial sweep parameters across l1, l2, and lr.
 trial_space = {
     "l1": tune.grid_search([8, 16, 64]),
@@ -224,7 +240,83 @@ We didn't save any checkpoints in the example above, but if [you setup checkpoin
 
 ```python
 # Note: On GCP cloud use `gsutil ls` instead.
-!aws s3 ls $ANYSCALE_ARTIFACT_STORAGE/tune_results/
+# For ABFSS, we list the local storage directory since we're using local fallback
+import os
+import subprocess
+
+storage_path = os.environ["ANYSCALE_ARTIFACT_STORAGE"]
+
+if storage_path.startswith("s3://"):
+    # Use subprocess for AWS S3 command
+    result = subprocess.run(["aws", "s3", "ls", f"{storage_path}/tune_results/"], 
+                          capture_output=True, text=True)
+    print(result.stdout)
+    if result.stderr:
+        print("Error:", result.stderr)
+elif storage_path.startswith("abfss://"):
+    # Use PyArrow's native ABFSS support to list results
+    import pyarrow.fs as fs
+    print(f"Listing ABFSS storage: {storage_path}")
+    try:
+        # Parse the ABFSS URL to extract account and container info
+        # Format: abfss://container@account.dfs.core.windows.net/path
+        url_parts = storage_path.replace("abfss://", "").split("/")
+        container_account = url_parts[0].split("@")
+        if len(container_account) == 2:
+            container, account = container_account
+            account = account.replace(".dfs.core.windows.net", "")
+            path = "/" + "/".join(url_parts[1:]) if len(url_parts) > 1 else "/"
+            
+            # Create AzureFileSystem instance (container is part of the path, not a parameter)
+            azure_fs = fs.AzureFileSystem(account_name=account)
+            
+            # First, let's see what exists in the base path
+            base_path = f"{container}{path.rstrip('/')}"
+            print(f"Checking base path: {base_path}")
+            
+            try:
+                # List contents of the base directory first
+                base_file_infos = azure_fs.get_file_info(fs.FileSelector(base_path, recursive=False))
+                
+                if base_file_infos:
+                    print("Contents of base directory:")
+                    for file_info in base_file_infos:
+                        if file_info.type == fs.FileType.Directory:
+                            print(f"DIR  {file_info.path}/")
+                        else:
+                            size_mb = file_info.size / (1024 * 1024)
+                            print(f"FILE {file_info.path} ({size_mb:.2f} MB)")
+                    
+                    # Now look for tune_results specifically
+                    tune_results_path = f"{base_path}/tune_results"
+                    print(f"\nLooking for tune_results in: {tune_results_path}")
+                    
+                    try:
+                        tune_file_infos = azure_fs.get_file_info(fs.FileSelector(tune_results_path, recursive=True))
+                        if tune_file_infos:
+                            print("Tune results found:")
+                            for file_info in tune_file_infos:
+                                if file_info.type == fs.FileType.Directory:
+                                    print(f"DIR  {file_info.path}/")
+                                else:
+                                    size_mb = file_info.size / (1024 * 1024)
+                                    print(f"FILE {file_info.path} ({size_mb:.2f} MB)")
+                        else:
+                            print("No tune_results directory found.")
+                    except Exception as tune_error:
+                        print(f"Tune results directory not found: {tune_error}")
+                else:
+                    print("Base directory is empty or doesn't exist.")
+            except Exception as base_error:
+                print(f"Error accessing base directory: {base_error}")
+        else:
+            print("Invalid ABFSS URL format. Expected: abfss://container@account.dfs.core.windows.net/path")
+    except Exception as e:
+        print(f"Error accessing ABFSS storage: {e}")
+else:
+    # For GCP or other storage
+    print(f"Please use appropriate command for storage type: {storage_path}")
+    print("For GCP: use 'gsutil ls' command")
 ```
 
 ## Monitoring Tune execution in the cluster
