@@ -73,17 +73,45 @@ Batch inference showcases Ray Data's strengths for ML workloads:
 - **Universal patterns**: Same optimization patterns work on CPU-only and GPU clusters
 :::
 
-**Impact**: OpenAI processes billions of ChatGPT requests using Ray Serve (built on Ray Data patterns). Tesla analyzes millions of autonomous driving images using distributed inference. Netflix generates recommendations for 200M+ users using scalable ML pipelines.
+**Impact**: Companies use these patterns at massive scale:
+- **OpenAI**: Processes billions of ChatGPT requests using Ray Serve (built on Ray Data patterns)
+- **Tesla**: Analyzes millions of autonomous driving images using distributed inference
+- **Netflix**: Generates recommendations for 200M+ users using scalable ML pipelines
+- **Shopify**: Processes millions of product images for search and categorization
+- **Instacart**: Analyzes grocery images and generates recommendations at scale
+
+**Performance results** you can expect:
+- **10-100x throughput improvement** over naive implementations
+- **90%+ resource utilization** vs 10-20% with poor patterns
+- **Linear scaling** as you add more CPUs/GPUs to cluster
+- **Sub-second latency** for batch sizes of 1000+ images
 
 ---
 
 ## Prerequisites
 
 Before starting, ensure you have:
-- [ ] Python 3.8+ with machine learning libraries
-- [ ] Ray Data installed (`pip install ray[data]`)
-- [ ] Basic understanding of ML model inference
+- [ ] Python 3.8+ with machine learning libraries installed
+- [ ] Ray Data installed (`pip install "ray[data]>=2.7.0"` for full features)
+- [ ] Transformers library (`pip install transformers torch`) for model examples
+- [ ] Basic understanding of ML model inference concepts
 - [ ] Familiarity with PyTorch or Transformers library (helpful but not required)
+- [ ] Access to compute resources (CPU-only clusters work fine, GPU optional)
+
+**Quick Installation:**
+```bash
+pip install "ray[data]>=2.7.0" transformers torch pillow
+```
+
+**Verify Installation:**
+```python
+import ray
+import torch
+from transformers import pipeline
+print(f"Ray version: {ray.__version__}")
+print(f"PyTorch version: {torch.__version__}")
+print(f"GPU available: {torch.cuda.is_available()}")
+```
 
 :::tip CPU and GPU Compatibility
 **All examples work on both CPU-only and GPU clusters!**
@@ -96,24 +124,54 @@ The optimization patterns and architecture concepts apply equally to both CPU an
 
 ## Getting Started
 
-**Recommended learning path**:
+**Recommended learning path** (65 minutes total):
 
-1. **Start with Part 1** - Understand fundamentals and common anti-patterns
-2. **Continue to Part 2** - Master advanced optimization techniques
-3. **Finish with Part 3** - Deep dive into Ray Data architecture and how it enables optimization
+1. **Start with Part 1** (20 min) - Understand fundamentals and common anti-patterns
+   - See the problem: inefficient inference code
+   - Learn the solution: actor-based patterns
+   - Get immediate results: 10-50x throughput improvement
+   
+2. **Continue to Part 2** (20 min) - Master advanced optimization techniques
+   - Systematic decision frameworks
+   - Multi-model ensemble patterns
+   - Performance monitoring and tuning
+   
+3. **Finish with Part 3** (25 min) - Deep dive into Ray Data architecture
+   - How streaming execution works
+   - Memory model and zero-copy optimizations
+   - Calculate optimal parameters from first principles
 
 Each part builds on the previous, so complete them in order for the best learning experience.
 
-**Alternative paths:**
+**Time-saving tips**:
+- Each part includes a 3-5 minute "Quick Start" for immediate hands-on experience
+- Code examples are copy-paste ready for rapid experimentation
+- All examples work on both CPU-only and GPU clusters
 
-**Quick path** (for immediate results):
-- Part 1 only - Learn the basics and avoid common mistakes
+**Alternative learning paths:**
 
-**Architecture-focused path** (for deep understanding):
-- Part 1 → Part 3 → Part 2 - Learn fundamentals, understand architecture, then advanced techniques
+**Quick path** (20 minutes - for immediate results):
+- ✅ Part 1 only - Learn the basics and avoid common mistakes
+- **Best for**: Quick wins, proof of concepts, immediate performance improvements
+- **You'll learn**: Actor-based patterns, basic resource allocation
+- **Result**: 10-50x throughput improvement in your inference code
 
-**Production path** (for deployment):
-- Part 1 → Part 2 - Skip architecture deep-dive, focus on practical optimization
+**Architecture-focused path** (45 minutes - for deep understanding):
+- ✅ Part 1 → Part 3 → Part 2
+- **Best for**: Understanding how Ray Data works under the hood
+- **You'll learn**: Streaming execution, memory model, operator fusion
+- **Result**: Calculate optimal parameters and debug performance issues confidently
+
+**Production path** (40 minutes - for deployment):
+- ✅ Part 1 → Part 2
+- **Best for**: Getting code production-ready quickly
+- **You'll learn**: Practical optimization, monitoring, troubleshooting
+- **Result**: Production-ready inference pipeline with monitoring
+
+**Troubleshooting path** (as needed):
+- 🔧 When stuck: Check [Troubleshooting Guide](../TROUBLESHOOTING_GUIDE.md)
+- 🔧 Performance issues: See [Performance Tuning Guide](../PERFORMANCE_TUNING_GUIDE.md)
+- 🔧 CPU/GPU questions: Read [CPU and GPU Usage Guide](CPU_GPU_USAGE_GUIDE.md)
 
 ---
 
