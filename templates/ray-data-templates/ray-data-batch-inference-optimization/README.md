@@ -117,5 +117,14 @@ Each part builds on the previous, so complete them in order for the best learnin
 
 ---
 
+## Additional Resources
+
+- **[CPU and GPU Usage Guide](CPU_GPU_USAGE_GUIDE.md)** - Comprehensive guide for running templates on any hardware
+- **[Production Checklist](../PRODUCTION_CHECKLIST.md)** - Production deployment best practices
+- **[Performance Tuning Guide](../PERFORMANCE_TUNING_GUIDE.md)** - Systematic optimization strategies
+- **[Troubleshooting Guide](../TROUBLESHOOTING_GUIDE.md)** - Debug common issues
+
+---
+
 **Ready to begin?** → Start with [Part 1: Inference Fundamentals](01-inference-fundamentals.md)
 
