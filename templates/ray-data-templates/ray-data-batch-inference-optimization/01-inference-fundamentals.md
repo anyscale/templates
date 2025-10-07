@@ -414,9 +414,15 @@ In Part 3, you'll learn:
 ## Cleanup
 
 ```python
-# Clean up Ray resources
-if ray.is_initialized():
-    ray.shutdown()
-    print("Ray cluster shutdown complete")
+# Clean up Ray resources when done
+print("\n🧹 Cleaning up Ray resources...")
+try:
+    if ray.is_initialized():
+        ray.shutdown()
+        print("✅ Ray resources cleaned up successfully")
+    else:
+        print("ℹ️  Ray was not initialized, no cleanup needed")
+except Exception as e:
+    print(f"⚠️  Warning during cleanup: {e}")
 ```
 
