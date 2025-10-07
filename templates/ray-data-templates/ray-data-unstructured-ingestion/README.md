@@ -238,11 +238,13 @@ print(f"Metadata extraction completed: {documents_with_metadata.count():,} docum
 ### Document collection analytics
 
 ```python
-# Use Ray Data native operations for document collection analysisfrom ray.data.aggregate import Count, Sum, Mean, Max, Min
+# Use Ray Data native operations for document collection analysis
+from ray.data.aggregate import Count, Sum, Mean, Max, Min
 
 print("Analyzing document collection using Ray Data native operations...")
 
-# Document type distribution using native groupbydoc_type_stats = documents_with_metadata.groupby("document_type").aggregate(
+# Document type distribution using native groupby
+doc_type_stats = documents_with_metadata.groupby("document_type").aggregate(
     Count(),
     Sum("file_size_bytes"),
     Mean("file_size_mb"),
@@ -252,7 +254,8 @@ print("Analyzing document collection using Ray Data native operations...")
 print("Document Type Distribution:")
 print(doc_type_stats.limit(10).to_pandas())
 
-# Business category analysiscategory_stats = documents_with_metadata.groupby("business_category").aggregate(
+# Business category analysis
+category_stats = documents_with_metadata.groupby("business_category").aggregate(
     Count(),
     Mean("priority_score"),
     Sum("file_size_mb")
@@ -261,9 +264,21 @@ print(doc_type_stats.limit(10).to_pandas())
 print("Business Category Analysis:")
 print(category_stats.limit(10).to_pandas())
 
-# File extension analysis using expressions APIpdf_documents = documents_with_metadata.filter(col("file_extension") == lit(".pdf"), num_cpus=0.1)
-word_documents = documents_with_metadata.filter(col("file_extension") == lit(".docx"), num_cpus=0.1)
-ppt_documents = documents_with_metadata.filter(col("file_extension") == lit(".pptx"), num_cpus=0.1)
+# File extension analysis using expressions API
+pdf_documents = documents_with_metadata.filter(
+    col("file_extension") == lit(".pdf"),
+    num_cpus=0.1
+)
+
+word_documents = documents_with_metadata.filter(
+    col("file_extension") == lit(".docx"),
+    num_cpus=0.1
+)
+
+ppt_documents = documents_with_metadata.filter(
+    col("file_extension") == lit(".pptx"),
+    num_cpus=0.1
+)
 
 print(f"File Format Distribution:")
 print(f"  PDF documents: {pdf_documents.count():,}")
@@ -347,13 +362,19 @@ def simulate_html_extraction(file_name: str, file_size: int) -> str:
 # Apply text extraction using Ray Data distributed processing
 print("Extracting text content from documents...")
 
-documents_with_text = documents_with_metadata.map_batches(
-    lambda batch: [extract_text_from_document(record, batch_format="pandas") for record in batch],
-    num_cpus=1.0,  # Heavy text extraction processing
-    batch_size=500
-)
-
-print(f"Text extraction completed: {documents_with_text.count():,} documents processed")
+try:
+    documents_with_text = documents_with_metadata.map_batches(
+        lambda batch: [extract_text_from_document(record) for record in batch],
+        num_cpus=1.0,  # Heavy text extraction processing
+        batch_size=500
+    )
+    
+    text_count = documents_with_text.count()
+    print(f"✅ Text extraction completed: {text_count:,} documents processed")
+    
+except Exception as e:
+    print(f"❌ Error during text extraction: {e}")
+    raise
 ```
 
 ### Document quality assessment
