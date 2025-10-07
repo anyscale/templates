@@ -194,70 +194,108 @@ for table, description in tpch_tables.items():
 ### Loading TPC-H data with Ray Data
 
 ```python
-# Tpc-H benchmark data location
+# TPC-H benchmark data location
 TPCH_S3_PATH = "s3://ray-benchmark-data/tpch/parquet/sf10"
 
-print("Loading TPC-H benchmark data for distributed processing...")
+print("📥 Loading TPC-H benchmark data for distributed processing...")
 start_time = time.time()
 
-# Read TPC-H Customer Master Data
-customers_ds = ray.data.read_parquet(
-    f"{TPCH_S3_PATH}/customer",
-    num_cpus=0.025  # High I/O concurrency for reading
-)
-
-# Read TPC-H Orders Data
-orders_ds = ray.data.read_parquet(
-    f"{TPCH_S3_PATH}/orders", 
-    num_cpus=0.025
-)
-
-# Read TPC-H Line Items (largest table)
-lineitems_ds = ray.data.read_parquet(
-    f"{TPCH_S3_PATH}/lineitem",
-    num_cpus=0.025
-)
-
-load_time = time.time() - start_time
-print(f"TPC-H data loaded in {load_time:.2f} seconds")
-print(f"  Customers: {customers_ds.count():,}")
-print(f"  Orders: {orders_ds.count():,}")
-print(f"  Line items: {lineitems_ds.count():,}")
+try:
+    # Read TPC-H Customer Master Data
+    customers_ds = ray.data.read_parquet(
+        f"{TPCH_S3_PATH}/customer",
+        num_cpus=0.025  # High I/O concurrency for reading
+    )
+    
+    # Read TPC-H Orders Data
+    orders_ds = ray.data.read_parquet(
+        f"{TPCH_S3_PATH}/orders", 
+        num_cpus=0.025
+    )
+    
+    # Read TPC-H Line Items (largest table)
+    lineitems_ds = ray.data.read_parquet(
+        f"{TPCH_S3_PATH}/lineitem",
+        num_cpus=0.025
+    )
+    
+    load_time = time.time() - start_time
+    
+    # Count records in parallel
+    customer_count = customers_ds.count()
+    orders_count = orders_ds.count()
+    lineitems_count = lineitems_ds.count()
+    
+    print(f"✅ TPC-H data loaded in {load_time:.2f} seconds")
+    print(f"   Customers: {customer_count:,}")
+    print(f"   Orders: {orders_count:,}")
+    print(f"   Line items: {lineitems_count:,}")
+    print(f"   Total records: {customer_count + orders_count + lineitems_count:,}")
+    
+except Exception as e:
+    print(f"❌ Error loading TPC-H data: {e}")
+    print("   Check S3 access and data availability")
+    raise
 ```
 
 ### Basic ETL transformations
 
 ```python
 # ETL Transform: Customer segmentation using Ray Data native operations
-def segment_customers(batch):
-    """Apply business rules for customer segmentation."""
-    import pandas as pd
-    df = pd.DataFrame(batch)
+def segment_customers(batch: pd.DataFrame) -> pd.DataFrame:
+    """Apply business rules for customer segmentation.
     
-    # Business logic for customer segmentation
-
-    # Data transformation    df['customer_segment'] = 'standard'
-    df.loc[df['c_acctbal'] > 5000, 'customer_segment'] = 'premium'
-    df.loc[df['c_acctbal'] > 10000, 'customer_segment'] = 'enterprise'
+    This demonstrates common ETL pattern of adding derived business attributes
+    based on rules and thresholds.
     
-    return df.to_dict('records')
+    Args:
+        batch: Pandas DataFrame with customer records
+        
+    Returns:
+        DataFrame with added customer_segment column
+    """
+    # Business logic for customer segmentation based on account balance
+    batch['customer_segment'] = 'standard'
+    batch.loc[batch['c_acctbal'] > 5000, 'customer_segment'] = 'premium'
+    batch.loc[batch['c_acctbal'] > 10000, 'customer_segment'] = 'enterprise'
+    
+    return batch
 
 # Apply customer segmentation transformation
-segmented_customers = customers_ds.map_batches(
-    segment_customers,
-    num_cpus=0.5,  # Medium complexity transformation
-    batch_format="pandas"
-)
+print("\n🔄 Applying customer segmentation...")
 
-print(f"Customer segmentation completed: {segmented_customers.count():,} customers segmented")
+try:
+    segmented_customers = customers_ds.map_batches(
+        segment_customers,
+        num_cpus=0.5,  # Medium complexity transformation
+        batch_format="pandas"
+    )
+    
+    segment_count = segmented_customers.count()
+    print(f"✅ Customer segmentation completed: {segment_count:,} customers segmented")
+    
+except Exception as e:
+    print(f"❌ Error during segmentation: {e}")
+    raise
 
 # ETL Filter: High-value customers using expressions API
-high_value_customers = segmented_customers.filter(
-    col("c_acctbal") > lit(1000),
-    num_cpus=0.1
-)
+print("\n🔍 Filtering high-value customers...")
 
-print(f"High-value customers: {high_value_customers.count():,}")
+try:
+    high_value_customers = segmented_customers.filter(
+        col("c_acctbal") > lit(1000),
+        num_cpus=0.1
+    )
+    
+    high_value_count = high_value_customers.count()
+    total_count = segmented_customers.count()
+    percentage = (high_value_count / total_count) * 100 if total_count > 0 else 0
+    
+    print(f"✅ High-value customers: {high_value_count:,} ({percentage:.1f}% of total)")
+    
+except Exception as e:
+    print(f"❌ Error during filtering: {e}")
+    raise
 
 # ETL Aggregation: Customer statistics by market segment
 customer_stats = segmented_customers.groupby("c_mktsegment").aggregate(
@@ -267,10 +305,12 @@ customer_stats = segmented_customers.groupby("c_mktsegment").aggregate(
     Max("c_acctbal")
 )
 
-print("Customer Statistics by Market Segment:")
+print("\n📊 Customer Statistics by Market Segment:")
+print("=" * 70)
 # Display customer statistics
-print("Customer Statistics by Market Segment:")
-print(customer_stats.limit(10).to_pandas())
+stats_df = customer_stats.limit(10).to_pandas()
+print(stats_df.to_string(index=False))
+print("=" * 70)
 ```
 
 ## Step 2: Data Transformations and Processing
