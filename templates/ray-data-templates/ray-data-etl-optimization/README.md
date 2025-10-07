@@ -1,6 +1,6 @@
-# ETL Processing and Optimization with Ray Data
+# ETL Processing and Optimization With Ray Data
 
-**Time to complete**: 40 min | **Difficulty**: Intermediate | **Prerequisites**: Understanding of ETL concepts, basic SQL knowledge, data processing experience
+**Time to complete**: 40 min | **Difficulty**: Intermediate | **Prerequisites**: ETL concepts, basic SQL knowledge, data processing experience
 
 ## What you'll build
 
@@ -13,7 +13,7 @@ Build comprehensive ETL pipelines using Ray Data's distributed processing capabi
 3. [Performance Optimization Techniques](#step-3-performance-optimization-techniques) (10 min)
 4. [Large-Scale ETL Patterns](#step-4-large-scale-etl-patterns) (8 min)
 
-## Learning objectives
+## Learning Objectives
 
 **Why ETL optimization matters**: The difference between fast and slow data pipelines directly impacts business agility and operational costs. Understanding optimization techniques enables data teams to deliver insights faster while reducing infrastructure costs.
 
@@ -138,7 +138,7 @@ ctx = ray.data.DataContext.get_current()
 ctx.enable_progress_bars = True
 ctx.enable_operator_progress_bars = True
 
-print(f"✅ Ray Data initialized for ETL processing")
+print(f"Ray Data initialized for ETL processing")
 print(f"   Ray version: {ray.__version__}")
 print(f"   Cluster resources: {ray.cluster_resources()}")
 ```
@@ -197,7 +197,7 @@ for table, description in tpch_tables.items():
 # TPC-H benchmark data location
 TPCH_S3_PATH = "s3://ray-benchmark-data/tpch/parquet/sf10"
 
-print("📥 Loading TPC-H benchmark data for distributed processing...")
+print("Loading TPC-H benchmark data for distributed processing...")
 start_time = time.time()
 
 try:
@@ -226,14 +226,14 @@ try:
     orders_count = orders_ds.count()
     lineitems_count = lineitems_ds.count()
     
-    print(f"✅ TPC-H data loaded in {load_time:.2f} seconds")
+    print(f"TPC-H data loaded successfully in {load_time:.2f} seconds")
     print(f"   Customers: {customer_count:,}")
     print(f"   Orders: {orders_count:,}")
     print(f"   Line items: {lineitems_count:,}")
     print(f"   Total records: {customer_count + orders_count + lineitems_count:,}")
     
 except Exception as e:
-    print(f"❌ Error loading TPC-H data: {e}")
+    print(f"ERROR: Failed to load TPC-H data: {e}")
     print("   Check S3 access and data availability")
     raise
 ```
@@ -272,14 +272,14 @@ try:
     )
     
     segment_count = segmented_customers.count()
-    print(f"✅ Customer segmentation completed: {segment_count:,} customers segmented")
+    print(f"Customer segmentation completed: {segment_count:,} customers segmented")
     
 except Exception as e:
-    print(f"❌ Error during segmentation: {e}")
+    print(f"ERROR: Segmentation failed: {e}")
     raise
 
 # ETL Filter: High-value customers using expressions API
-print("\n🔍 Filtering high-value customers...")
+print("\nFiltering high-value customers...")
 
 try:
     high_value_customers = segmented_customers.filter(
@@ -305,7 +305,7 @@ customer_stats = segmented_customers.groupby("c_mktsegment").aggregate(
     Max("c_acctbal")
 )
 
-print("\n📊 Customer Statistics by Market Segment:")
+print("\nCustomer Statistics by Market Segment:")
 print("=" * 70)
 # Display customer statistics
 stats_df = customer_stats.limit(10).to_pandas()

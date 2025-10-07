@@ -1,6 +1,6 @@
-# Unstructured Data Ingestion and Processing with Ray Data
+# Unstructured Data Ingestion and Processing With Ray Data
 
-**Time to complete**: 35 min | **Difficulty**: Advanced | **Prerequisites**: Data engineering experience, understanding of document processing, basic NLP knowledge
+**Time to complete**: 35 min | **Difficulty**: Advanced | **Prerequisites**: Data engineering experience, document processing, basic NLP knowledge
 
 ## What you'll build
 
@@ -14,7 +14,7 @@ Build a comprehensive document ingestion pipeline that transforms unstructured d
 4. [LLM-Powered Content Analysis](#step-4-llm-powered-content-analysis) (6 min)
 5. [Data Warehouse Output](#step-5-data-warehouse-output) (3 min)
 
-## Learning objectives
+## Learning Objectives
 
 **Why unstructured data ingestion matters**: Enterprise data lakes contain vast amounts of unstructured documents (PDFs, Word docs, presentations, reports) that need systematic processing to extract business value for analytics and reporting.
 
@@ -370,10 +370,10 @@ try:
     )
     
     text_count = documents_with_text.count()
-    print(f"✅ Text extraction completed: {text_count:,} documents processed")
+    print(f"Text extraction completed: {text_count:,} documents processed")
     
 except Exception as e:
-    print(f"❌ Error during text extraction: {e}")
+    print(f"ERROR: Text extraction failed: {e}")
     raise
 ```
 

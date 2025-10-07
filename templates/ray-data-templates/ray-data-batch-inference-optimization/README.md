@@ -1,6 +1,6 @@
-# Batch Inference Optimization with Ray Data
+# Batch Inference Optimization With Ray Data
 
-**Time to complete**: 65 min (across 3 parts)
+**Time to complete**: 65 min (across 3 parts) | **Difficulty**: Intermediate | **Prerequisites**: ML inference experience, Python knowledge
 
 Create an optimized ML batch inference pipeline that demonstrates the performance difference between naive and efficient approaches. Learn how Ray Data's actor-based patterns eliminate common bottlenecks in production ML inference.
 
@@ -38,7 +38,7 @@ Understand how Ray Data's architecture enables optimization:
 - **Resource Management**: Automatic backpressure and dynamic allocation
 - **Architecture-Informed Decisions**: Calculate optimal batch_size and concurrency from first principles
 
-## Learning objectives
+## Learning Objectives
 
 **Why batch inference optimization matters**: Poor optimization wastes significant compute resources through repeated model loading and inefficient batching. Understanding these bottlenecks is crucial for production ML systems.
 

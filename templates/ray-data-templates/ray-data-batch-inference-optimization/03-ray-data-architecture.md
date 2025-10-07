@@ -1,6 +1,6 @@
 # Part 3: Ray Data Architecture and Optimization
 
-**⏱️ Time to complete**: 25 min
+**Time to complete**: 25 min | **Difficulty**: Advanced | **Prerequisites**: Complete Part 1 and Part 2
 
 **[← Back to Part 2](02-advanced-optimization.md)** | **[Return to Overview](README.md)**
 
@@ -880,7 +880,9 @@ if ray.is_initialized():
 5. Monitor Ray Dashboard for bottlenecks
 6. Adjust based on observed behavior
 
-**[← Back to Part 2: Advanced Optimization](02-advanced-optimization.md)** | **[Return to Overview](README.md)**
+---
+
+**[← Back to Part 2](02-advanced-optimization.md)** | **[Return to Overview](README.md)**
 
 ---
 

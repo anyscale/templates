@@ -1,6 +1,6 @@
 # Part 1: Inference Fundamentals
 
-**⏱️ Time to complete**: 20 min
+**Time to complete**: 20 min | **Difficulty**: Beginner | **Prerequisites**: Basic Python, ML model concepts
 
 **[← Back to Overview](README.md)** | **[Continue to Part 2 →](02-advanced-optimization.md)**
 
@@ -379,17 +379,17 @@ print(f"Optimized configuration for your cluster: {config}")
 ## Key Takeaways from Part 1
 
 You've learned the fundamentals of batch inference optimization:
-- ✅ Identified common anti-patterns that destroy performance
-- ✅ Understood why repeated model loading is catastrophic  
-- ✅ Implemented class-based actors for stateful model loading
-- ✅ Used proper resource allocation with `num_gpus` and `concurrency`
-- ✅ Learned CPU and GPU compatibility patterns
+- Identified common anti-patterns that destroy performance
+- Understood why repeated model loading is catastrophic  
+- Implemented class-based actors for stateful model loading
+- Used proper resource allocation with `num_gpus` and `concurrency`
+- Learned CPU and GPU compatibility patterns
 
 ## Next Steps
 
 Now that you understand the fundamentals, you're ready to learn systematic optimization techniques.
 
-**[Continue to Part 2: Advanced Optimization →](02-advanced-optimization.md)**
+**[← Back to Overview](README.md)** | **[Continue to Part 2: Advanced Optimization →](02-advanced-optimization.md)**
 
 In Part 2, you'll learn:
 - Systematic decision frameworks for choosing optimization techniques
