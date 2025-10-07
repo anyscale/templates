@@ -125,6 +125,22 @@ inefficient_results = dataset.limit(100).map_batches(
 print("Inefficient approach completed. Problems: repeated model loading, poor batching, wasted resources")
 ```
 
+**Expected issues:**
+```
+Loading model... (this happens for every batch!)
+Model loading took: 3.45 seconds
+Loading model... (this happens for every batch!)
+Model loading took: 3.52 seconds
+[repeated 25 times...]
+```
+
+:::caution Performance Anti-Pattern
+❌ Model loads 25 times (one per batch)  
+❌ Each load takes 3+ seconds = 87.5 seconds wasted  
+❌ CPU/GPU mostly idle waiting for model loading  
+❌ Total throughput: ~1 image/second (unacceptable)
+:::
+
 ---
 
 ## Why the Naive Approach Fails

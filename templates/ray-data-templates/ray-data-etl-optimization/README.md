@@ -54,13 +54,17 @@ ctx = ray.data.DataContext.get_current()
 ctx.enable_progress_bars = True
 ctx.enable_operator_progress_bars = True
 
-# Load sample dataset for ETL demonstrationsample_data = ray.data.read_parquet(
+# Load sample dataset for ETL demonstration
+sample_data = ray.data.read_parquet(
     "s3://ray-benchmark-data/tpch/parquet/sf1/customer",
     num_cpus=0.025  # High I/O concurrency
 )
 
 print(f"Loaded ETL sample dataset: {sample_data.count()} records")
 print(f"Schema: {sample_data.schema()}")
+print("\nSample records:")
+for i, record in enumerate(sample_data.take(3)):
+    print(f"  {i+1}. Customer {record['c_custkey']}: {record['c_name']} from {record['c_mktsegment']}")
 ```
 
 ## Overview
@@ -126,7 +130,8 @@ import ray
 from ray.data.expressions import col, lit
 from ray.data.aggregate import Count, Mean, Sum, Max
 
-# Initialize Ray for ETL processingray.init(ignore_reinit_error=True)
+# Initialize Ray for ETL processing
+ray.init(ignore_reinit_error=True)
 
 # Configure Ray Data for optimal performance monitoring
 ctx = ray.data.DataContext.get_current()
@@ -222,7 +227,8 @@ print(f"  Line items: {lineitems_ds.count():,}")
 ### Basic ETL transformations
 
 ```python
-# Etl Transform: Customer segmentation using Ray Data native operationsdef segment_customers(batch):
+# ETL Transform: Customer segmentation using Ray Data native operations
+def segment_customers(batch):
     """Apply business rules for customer segmentation."""
     import pandas as pd
     df = pd.DataFrame(batch)
@@ -235,7 +241,8 @@ print(f"  Line items: {lineitems_ds.count():,}")
     
     return df.to_dict('records')
 
-# Apply customer segmentation transformationsegmented_customers = customers_ds.map_batches(
+# Apply customer segmentation transformation
+segmented_customers = customers_ds.map_batches(
     segment_customers,
     num_cpus=0.5,  # Medium complexity transformation
     batch_format="pandas"
@@ -243,14 +250,16 @@ print(f"  Line items: {lineitems_ds.count():,}")
 
 print(f"Customer segmentation completed: {segmented_customers.count():,} customers segmented")
 
-# Etl Filter: High-value customers using expressions APIhigh_value_customers = segmented_customers.filter(
+# ETL Filter: High-value customers using expressions API
+high_value_customers = segmented_customers.filter(
     col("c_acctbal") > lit(1000),
     num_cpus=0.1
 )
 
 print(f"High-value customers: {high_value_customers.count():,}")
 
-# Etl Aggregation: Customer statistics by market segmentcustomer_stats = segmented_customers.groupby("c_mktsegment").aggregate(
+# ETL Aggregation: Customer statistics by market segment
+customer_stats = segmented_customers.groupby("c_mktsegment").aggregate(
     Count(),
     Mean("c_acctbal"),
     Sum("c_acctbal"),
@@ -340,7 +349,8 @@ def enrich_orders_with_metrics(batch):
     
     return df.to_dict('records')
 
-# Apply order enrichmentenriched_orders = orders_ds.map_batches(
+# Apply order enrichment
+enriched_orders = orders_ds.map_batches(
     enrich_orders_with_metrics,
     num_cpus=0.5,  # Medium complexity transformation
     batch_format="pandas"
@@ -363,12 +373,14 @@ recent_high_value_orders = enriched_orders.filter(
     num_cpus=0.1
 )
 
-# Filter by revenue tier using expressionsenterprise_orders = enriched_orders.filter(
+# Filter by revenue tier using expressions
+enterprise_orders = enriched_orders.filter(
     col("revenue_tier") == lit("Enterprise"),
     num_cpus=0.1
 )
 
-# Complex filtering with multiple conditionscomplex_filtered_orders = enriched_orders.filter(
+# Complex filtering with multiple conditions
+complex_filtered_orders = enriched_orders.filter(
     (col("order_quarter") == lit(4)) &
     (col("o_orderstatus") == lit("F")) &
     (col("o_totalprice") > lit(50000)),
@@ -384,7 +396,7 @@ print(f"  Complex filtered orders: {complex_filtered_orders.count():,}")
 ### Data joins and relationships
 
 ```python
-# Etl Join: Customer-Order analysis using Ray Data joins
+# ETL Join: Customer-Order analysis using Ray Data joins
 print("Performing distributed joins for customer-order analysis...")
 
 # Join customers with their orders for comprehensive analysis
@@ -397,7 +409,8 @@ customer_order_analysis = customers_ds.join(
 
 print(f"Customer-order join completed: {customer_order_analysis.count():,} records")
 
-# Aggregate customer order metricscustomer_order_metrics = customer_order_analysis.groupby("c_mktsegment").aggregate(
+# Aggregate customer order metrics
+customer_order_metrics = customer_order_analysis.groupby("c_mktsegment").aggregate(
     Count(),
     Mean("o_totalprice"),
     Sum("o_totalprice"),
@@ -491,7 +504,8 @@ def memory_intensive_etl(batch):
     
     return df.to_dict('records')
 
-# Apply with optimized batch size for memory managementmemory_optimized_orders = enriched_orders.map_batches(
+# Apply with optimized batch size for memory management
+memory_optimized_orders = enriched_orders.map_batches(
     memory_intensive_etl,
     num_cpus=1.0,  # Fewer concurrent tasks for memory management
     batch_size=500,  # Smaller batches for memory efficiency
@@ -514,7 +528,8 @@ print(f"Memory-optimized processing: {memory_optimized_orders.count():,} records
     
     return processed_records
 
-# Apply with optimized batch size for I/O efficiencyio_optimized_orders = enriched_orders.map_batches(
+# Apply with optimized batch size for I/O efficiency
+io_optimized_orders = enriched_orders.map_batches(
     io_intensive_etl,
     num_cpus=0.25,  # Higher concurrency for I/O operations
     batch_size=2000  # Larger batches for I/O efficiency
@@ -526,7 +541,7 @@ print(f"I/O-optimized processing: {io_optimized_orders.count():,} records")
 ### Column selection and schema optimization
 
 ```python
-# Etl Optimization: Column pruning for performance
+# ETL Optimization: Column pruning for performance
 print("Applying column selection optimization...")
 
 # Select only essential columns for downstream processing
@@ -543,7 +558,8 @@ print(f"Column optimization:")
 print(f"  Customer columns: {len(essential_customer_columns.schema().names)}")
 print(f"  Order columns: {len(essential_order_columns.schema().names)}")
 
-# Optimized join with selected columnsoptimized_join = essential_customer_columns.join(
+# Optimized join with selected columns
+optimized_join = essential_customer_columns.join(
     essential_order_columns,
     left_key="c_custkey",
     right_key="o_custkey"
@@ -593,7 +609,8 @@ print("Comprehensive Business Metrics:")
 print("Comprehensive Business Metrics:")
 print(comprehensive_metrics.limit(20).to_pandas())
 
-# Time-series aggregations for trend analysisyearly_trends = optimized_join.groupby("order_year").aggregate(
+# Time-series aggregations for trend analysis
+yearly_trends = optimized_join.groupby("order_year").aggregate(
     Count(),
     Sum("o_totalprice"),
     Mean("o_totalprice")
@@ -604,7 +621,8 @@ print("Yearly Trends Analysis:")
 print("Yearly Trends Analysis:")
 print(yearly_trends.limit(10).to_pandas())
 
-# Customer segment performance analysissegment_performance = optimized_join.groupby(["c_mktsegment", "revenue_tier"]).aggregate(
+# Customer segment performance analysis
+segment_performance = optimized_join.groupby(["c_mktsegment", "revenue_tier"]).aggregate(
     Count(),
     Sum("o_totalprice"),
     Mean("c_acctbal")
@@ -619,7 +637,8 @@ print(segment_performance.limit(10).to_pandas())
 ### ETL pipeline optimization
 
 ```python
-# Demonstrate optimized ETL pipeline patternsprint("Building optimized ETL pipeline...")
+# Demonstrate optimized ETL pipeline patterns
+print("Building optimized ETL pipeline...")
 
 def create_optimized_etl_pipeline():
     """Create optimized ETL pipeline with Ray Data best practices."""
@@ -679,7 +698,8 @@ def create_optimized_etl_pipeline():
     
     return final_analytics
 
-# Execute optimized ETL pipelineoptimized_results = create_optimized_etl_pipeline()
+# Execute optimized ETL pipeline
+optimized_results = create_optimized_etl_pipeline()
 print("Optimized ETL Pipeline Results:")
 # Display optimized pipeline results
 print("Optimized ETL Pipeline Results:")
@@ -689,9 +709,11 @@ print(optimized_results.limit(10).to_pandas())
 ### Large-scale data processing
 
 ```python
-# Process large datasets with optimization techniquesprint("Demonstrating large-scale data processing...")
+# Process large datasets with optimization techniques
+print("Demonstrating large-scale data processing...")
 
-# Load larger TPC-H scale factor for performance testinglarge_orders = ray.data.read_parquet(
+# Load larger TPC-H scale factor for performance testing
+large_orders = ray.data.read_parquet(
     f"{TPCH_S3_PATH}/lineitem",  # Largest TPC-H table
     columns=["l_orderkey", "l_partkey", "l_quantity", "l_extendedprice", "l_discount"],
     num_cpus=0.025  # High concurrency for large dataset
@@ -715,14 +737,16 @@ print(f"Large dataset loaded: {large_orders.count():,} line items")
     
     return df.to_dict('records')
 
-# Process large dataset with optimized settingsprocessed_lineitems = large_orders.map_batches(
+# Process large dataset with optimized settings
+processed_lineitems = large_orders.map_batches(
     calculate_line_metrics,
     num_cpus=0.5,  # Balanced processing
     batch_size=1000,
     batch_format="pandas"
 )
 
-# Large-scale aggregationsrevenue_analysis = processed_lineitems.groupby("volume_category").aggregate(
+# Large-scale aggregations
+revenue_analysis = processed_lineitems.groupby("volume_category").aggregate(
     Count(),
     Sum("revenue_impact"),
     Mean("discounted_price")
@@ -737,23 +761,27 @@ print(revenue_analysis.limit(10).to_pandas())
 ### ETL output and data warehouse integration
 
 ```python
-# Write ETL results to data warehouse formatsprint("Writing ETL results to data warehouse...")
+# Write ETL results to data warehouse formats
+print("Writing ETL results to data warehouse...")
 
-# Write customer analytics with partitioningenriched_customers.write_parquet(
+# Write customer analytics with partitioning
+enriched_customers.write_parquet(
     "/tmp/etl_warehouse/customers/",
     partition_cols=["customer_tier"],
     compression="snappy",
     num_cpus=0.1
 )
 
-# Write order analytics with time-based partitioningprocessed_orders.write_parquet(
+# Write order analytics with time-based partitioning
+processed_orders.write_parquet(
     "/tmp/etl_warehouse/orders/",
     partition_cols=["order_year"],
     compression="snappy",
     num_cpus=0.1
 )
 
-# Write aggregated analytics for BI toolsfinal_analytics = optimized_join.groupby(["c_mktsegment", "revenue_tier", "order_year"]).aggregate(
+# Write aggregated analytics for BI tools
+final_analytics = optimized_join.groupby(["c_mktsegment", "revenue_tier", "order_year"]).aggregate(
     Count(),
     Sum("o_totalprice"),
     Mean("o_totalprice"),
@@ -773,9 +801,11 @@ print("ETL warehouse output completed")
 ### Performance monitoring and validation
 
 ```python
-# Validate ETL pipeline performanceprint("Validating ETL pipeline performance...")
+# Validate ETL pipeline performance
+print("Validating ETL pipeline performance...")
 
-# Read back and verify outputscustomer_verification = ray.data.read_parquet(
+# Read back and verify outputs
+customer_verification = ray.data.read_parquet(
     "/tmp/etl_warehouse/customers/",
     num_cpus=0.025
 )
@@ -795,7 +825,8 @@ print(f"  Customer records: {customer_verification.count():,}")
 print(f"  Order records: {order_verification.count():,}")
 print(f"  Analytics records: {analytics_verification.count():,}")
 
-# Display sample resultssample_analytics = analytics_verification.take(5)
+# Display sample results
+sample_analytics = analytics_verification.take(5)
 print("Sample ETL Analytics Results:")
 for i, record in enumerate(sample_analytics):
     print(f"  {i+1}. Segment: {record['c_mktsegment']}, Tier: {record['revenue_tier']}, "

@@ -363,6 +363,34 @@ inference_pipeline = (
 
 ---
 
+---
+
+## Key Takeaways
+
+**What you learned:**
+- ✅ Systematic optimization framework (start with `num_cpus`)
+- ✅ Multi-model ensemble inference patterns
+- ✅ Batch size and concurrency tuning strategies
+- ✅ Resource allocation by cluster size
+
+**Production-ready patterns:**
+- Decision trees for performance issues
+- Resource allocation tables
+- Performance monitoring dashboards
+- Troubleshooting guides
+
+:::tip Next Steps
+**[Continue to Part 3: Ray Data Architecture →](03-ray-data-architecture.md)**
+
+Understand the internals:
+- How streaming execution enables efficiency
+- Memory management and backpressure
+- Operator fusion and pipelining
+- Design pipelines based on architectural insights
+:::
+
+---
+
 ## Troubleshooting Quick Guide
 
 ### Issue 1: GPU Showing 0% Utilization
