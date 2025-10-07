@@ -26,10 +26,10 @@ ray.init()
 HAS_GPU = torch.cuda.is_available()
 
 if HAS_GPU:
-    print(f"✅ GPU detected: {torch.cuda.device_count()} GPU(s) available")
+    print(f"GPU detected: {torch.cuda.device_count()} GPU(s) available")
     print(f"   GPU type: {torch.cuda.get_device_name(0)}")
 else:
-    print("ℹ️  No GPU detected - running on CPU")
+    print("INFO: No GPU detected - running on CPU")
     print(f"   Available CPU cores: {ray.available_resources()['CPU']}")
 
 print("\nAll examples will adapt automatically to your hardware!")
@@ -286,7 +286,7 @@ def load_model_adaptive(model_name):
         device=device
     )
     
-    print(f"✅ {model_name} ready on {device_name}")
+    print(f"{model_name} ready on {device_name}")
     return model
 
 # Use in your InferenceWorker
@@ -322,11 +322,11 @@ def find_optimal_batch_size_adaptive(worker_class, test_dataset):
                 batch_size=batch_size
             )
             results.take(5)
-            print(f"✅ Optimal batch_size={batch_size}")
+            print(f"Optimal batch_size={batch_size}")
             return batch_size
         except (RuntimeError, MemoryError) as e:
             if "memory" in str(e).lower():
-                print(f"❌ batch_size={batch_size} OOM, trying smaller...")
+                print(f"ERROR: batch_size={batch_size} OOM, trying smaller...")
                 continue
             raise
     
@@ -417,7 +417,7 @@ if torch.cuda.is_available():
 
 ## Best Practices
 
-### ✅ DO
+### Best Practices
 
 1. **Always detect hardware availability**:
 ```python
@@ -443,7 +443,7 @@ dataset.limit(100).map_batches(...)  # Test before full run
 
 ---
 
-### ❌ DON'T
+### Anti-Patterns to Avoid
 
 1. **Don't assume GPU availability**:
 ```python
@@ -517,11 +517,11 @@ results = dataset.map_batches(
 
 **Key Takeaways:**
 
-1. ✅ **All templates work on CPU and GPU** - just adapt resource parameters
-2. ✅ **Same optimization patterns apply** - actor-based loading, batching, concurrency
-3. ✅ **Hardware detection is simple** - use `torch.cuda.is_available()`
-4. ✅ **Performance scales appropriately** - GPU faster, but CPU benefits too
-5. ✅ **Development → Production path** - develop on CPU, deploy on GPU seamlessly
+1. **All templates work on CPU and GPU** - just adapt resource parameters
+2. **Same optimization patterns apply** - actor-based loading, batching, concurrency
+3. **Hardware detection is simple** - use `torch.cuda.is_available()`
+4. **Performance scales appropriately** - GPU faster, but CPU benefits too
+5. **Development → Production path** - develop on CPU, deploy on GPU seamlessly
 
 **The beauty of Ray Data**: Write once, run anywhere - CPU or GPU!
 

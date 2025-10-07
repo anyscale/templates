@@ -151,19 +151,19 @@ Each part builds on the previous, so complete them in order for the best learnin
 **Alternative learning paths:**
 
 **Quick path** (20 minutes - for immediate results):
-- ✅ Part 1 only - Learn the basics and avoid common mistakes
+- Part 1 only - Learn the basics and avoid common mistakes
 - **Best for**: Quick wins, proof of concepts, immediate performance improvements
 - **You'll learn**: Actor-based patterns, basic resource allocation
 - **Result**: 10-50x throughput improvement in your inference code
 
 **Architecture-focused path** (45 minutes - for deep understanding):
-- ✅ Part 1 → Part 3 → Part 2
+- Part 1 → Part 3 → Part 2
 - **Best for**: Understanding how Ray Data works under the hood
 - **You'll learn**: Streaming execution, memory model, operator fusion
 - **Result**: Calculate optimal parameters and debug performance issues confidently
 
 **Production path** (40 minutes - for deployment):
-- ✅ Part 1 → Part 2
+- Part 1 → Part 2
 - **Best for**: Getting code production-ready quickly
 - **You'll learn**: Practical optimization, monitoring, troubleshooting
 - **Result**: Production-ready inference pipeline with monitoring

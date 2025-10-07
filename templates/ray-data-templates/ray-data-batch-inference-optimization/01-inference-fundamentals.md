@@ -62,9 +62,9 @@ device = torch.device("cuda" if HAS_GPU else "cpu")
 print(f"Using device: {device}")
 if HAS_GPU:
     print(f"GPU count: {torch.cuda.device_count()}")
-    print("✅ GPU detected - examples will use GPU acceleration")
+    print("GPU detected - examples will use GPU acceleration")
 else:
-    print("ℹ️  No GPU detected - examples will run on CPU")
+    print("No GPU detected - examples will run on CPU")
     print("   (All patterns work identically on CPU, just use num_cpus instead of num_gpus)")
 ```
 
@@ -90,16 +90,16 @@ try:
         num_cpus=0.05
     ).limit(1000)  # Use 1K images for focused performance comparison
     
-    print("✅ Loaded ImageNet dataset for batch inference demo")
+    print("Loaded ImageNet dataset for batch inference demo")
     print(f"   Dataset size: {dataset.count()} images")
-    print("\n📊 Sample dataset:")
+    print("\nSample dataset:")
     sample_batch = dataset.take_batch(3)
     print(f"   Batch contains {len(sample_batch['image'])} images")
     print(f"   Image shape: {sample_batch['image'][0].shape}")
     print(f"   Image dtype: {sample_batch['image'][0].dtype}")
     
 except Exception as e:
-    print(f"❌ Error loading dataset: {e}")
+    print(f"ERROR: Failed to load dataset: {e}")
     print("   Check S3 access and ray.data.read_images() availability")
     raise
 ```
@@ -128,14 +128,14 @@ def inefficient_inference(batch: Dict[str, Any]) -> List[Dict[str, Any]]:
     import time
     from transformers import pipeline
     
-    # ❌ BAD: Model loading happens inside function - repeats for every batch!
+    # BAD: Model loading happens inside function - repeats for every batch!
     print("Loading model... (this happens for every batch!)")
     start_load = time.time()
     classifier = pipeline("image-classification", model="microsoft/resnet-50")
     load_time = time.time() - start_load
     print(f"Model loading took: {load_time:.2f} seconds")
     
-    # ❌ BAD: Processing images one by one instead of batched inference
+    # BAD: Processing images one by one instead of batched inference
     results = []
     for image in batch["image"]:
         prediction = classifier(image)
@@ -147,7 +147,7 @@ def inefficient_inference(batch: Dict[str, Any]) -> List[Dict[str, Any]]:
     return results
 
 print("Testing inefficient approach...")
-print("💡 Watch Ray Dashboard to see the performance problems")
+print("TIP: Watch Ray Dashboard to see the performance problems")
 
 # Run inefficient batch inference with small batches
 inefficient_results = dataset.limit(100).map_batches(
@@ -156,7 +156,7 @@ inefficient_results = dataset.limit(100).map_batches(
     concurrency=2
 ).take(20)
 
-print("✅ Inefficient approach completed")
+print("Inefficient approach completed")
 print("   Problems: repeated model loading, poor batching, wasted resources")
 ```
 
@@ -170,10 +170,10 @@ Model loading took: 3.52 seconds
 ```
 
 :::caution Performance Anti-Pattern
-❌ Model loads 25 times (one per batch)  
-❌ Each load takes 3+ seconds = 87.5 seconds wasted  
-❌ CPU/GPU mostly idle waiting for model loading  
-❌ Total throughput: ~1 image/second (unacceptable)
+- Model loads 25 times (one per batch)  
+- Each load takes 3+ seconds = 87.5 seconds wasted  
+- CPU/GPU mostly idle waiting for model loading  
+- Total throughput: ~1 image/second (unacceptable)
 :::
 
 ---
@@ -266,7 +266,7 @@ class InferenceWorker:
             model="microsoft/resnet-50",
             device=device,
         )
-        print(f"✅ Model loaded on: {'GPU' if device >= 0 else 'CPU'}")
+        print(f"Model loaded on: {'GPU' if device >= 0 else 'CPU'}")
 
     def __call__(self, batch: Dict[str, Any]) -> List[Dict[str, Any]]:
         """Process a batch of images - called many times, reuses loaded model.
@@ -299,22 +299,22 @@ try:
         batch_size=16,      # Optimal batch size for resource utilization
     ).take(20)
     
-    print("✅ Optimized approach completed successfully!")
+    print("Optimized approach completed successfully!")
     print("   Improvements: single model load per worker, better batching, efficient resource use")
     print(f"   Processed {len(inference_results)} images")
     
 except Exception as e:
-    print(f"❌ Error during inference: {e}")
+    print(f"ERROR: Inference failed: {e}")
     print("   Check that transformers and torch are installed")
     raise
 ```
 
 **What's Better:**
-- ✅ Model loads only once per worker via Ray Data `ActorPoolStrategy`
-- ✅ Larger batch sizes for better resource utilization
-- ✅ Proper resource allocation with `num_gpus=1` (GPU) or `num_cpus=2` (CPU)
-- ✅ Ray Data automatically manages distribution across workers
-- ✅ **Works identically on CPU and GPU clusters with zero code changes**
+- Model loads only once per worker via Ray Data `ActorPoolStrategy`
+- Larger batch sizes for better resource utilization
+- Proper resource allocation with `num_gpus=1` (GPU) or `num_cpus=2` (CPU)
+- Ray Data automatically manages distribution across workers
+- **Works identically on CPU and GPU clusters with zero code changes**
 
 :::tip Resource Allocation Patterns
 **GPU clusters**: Use `num_gpus=1` to allocate one GPU per actor
@@ -415,14 +415,14 @@ In Part 3, you'll learn:
 
 ```python
 # Clean up Ray resources when done
-print("\n🧹 Cleaning up Ray resources...")
+print("\nCleaning up Ray resources...")
 try:
     if ray.is_initialized():
         ray.shutdown()
-        print("✅ Ray resources cleaned up successfully")
+        print("Ray resources cleaned up successfully")
     else:
-        print("ℹ️  Ray was not initialized, no cleanup needed")
+        print("INFO: Ray was not initialized, no cleanup needed")
 except Exception as e:
-    print(f"⚠️  Warning during cleanup: {e}")
+    print(f"WARNING: Error during cleanup: {e}")
 ```
 

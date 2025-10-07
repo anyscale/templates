@@ -178,7 +178,7 @@ def find_optimal_batch_size(
     print(f"Batch sizes to test: {batch_sizes_to_test}")
     
     for batch_size in batch_sizes_to_test:
-        print(f"\n🔍 Testing batch_size={batch_size}...")
+        print(f"\nTesting batch_size={batch_size}...")
         
         try:
             test_start = time.time()
@@ -415,10 +415,10 @@ inference_pipeline = (
 ## Key Takeaways
 
 **What you learned:**
-- ✅ Systematic optimization framework (start with `num_cpus`)
-- ✅ Multi-model ensemble inference patterns
-- ✅ Batch size and concurrency tuning strategies
-- ✅ Resource allocation by cluster size
+- Systematic optimization framework (start with `num_cpus`)
+- Multi-model ensemble inference patterns
+- Batch size and concurrency tuning strategies
+- Resource allocation by cluster size
 
 **Production-ready patterns:**
 - Decision trees for performance issues
