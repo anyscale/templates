@@ -9,7 +9,7 @@ This notebook shows you how to run batch inference for LLMs using [Ray Data LLM]
 
 
 ### Deciding between online vs offline inference for LLM
-Use online LLM inference (e.g., Anyscale Endpoints) to get real-time responses for prompts or to interact with the LLM. Use online inference when you want to optimize latency of inference.
+Use online LLM inference to get real-time responses for prompts or to interact with the LLM. Use online inference when you want to optimize latency of inference.
 
 On the other hand, use offline LLM inference, also referred to as batch inference, when you want to get responses for a large number of prompts within some time frame, but not necessarily in real-time, for example in minutes to hours. Use offline inference when you want to:
 1. Process large-scale datasets.
@@ -55,16 +55,9 @@ ds = ds.repartition(num_blocks=num_partitions)
 
 ## Step 2: Define the processor config for the vLLM engine
 
-You also need to define the model configs for the LLM engine, which configures the model and compute resources needed for inference. 
+You also need to define the model configs for the LLM engine, which configures the model and compute resources needed for inference.
 
-Make sure to provide your [Hugging Face user access token](https://huggingface.co/docs/hub/en/security-tokens). Ray uses this token to authenticate and download the model and Hugging Face **requires the token for official LLaMA, Mistral, and Gemma models**.
-
-
-```python
-HF_TOKEN = "Insert your Hugging Face token here"
-```
-
-This example uses the `meta-llama/Meta-Llama-3.1-8B-Instruct` model.
+This example uses the `unsloth/Llama-3.1-8B-Instruct` model.
 You also need to define a configuration associated with the model you want to use to configure the compute resources, engine arguments, and other inference engine specific parameters. For more details on the configs you can pass to vLLM engine, see [vLLM doc](https://docs.vllm.ai/en/latest/serving/engine_args.html).
 
 Note that because our input prompts and expected output token lengths are small, we have set `batch_size=256` in this case. However, depending on your workload, a large batch size can lead to increased idle GPU time when decoding long sequences. Be sure to adjust this value to find the optimal trade-off between throughput and latency.
@@ -83,12 +76,6 @@ processor_config = vLLMEngineProcessorConfig(
         enable_chunked_prefill=True,
         max_num_batched_tokens=1024,
         gpu_memory_utilization=0.85,
-    ),
-    # Override Ray's runtime env to include the Hugging Face token. Ray is being used under the hood to orchestrate the inference pipeline.
-    runtime_env=dict(
-        env_vars=dict(
-            HF_TOKEN=HF_TOKEN,
-        ),
     ),
     batch_size=256,
     accelerator_type="L4",
@@ -186,20 +173,14 @@ We applied 2 adjustments on top of the previous example:
 * set `has_image=True` in `vLLMEngineProcessorConfig`
 * prepare image input inside preprocessor
 
-**Restart your Anyscale Workspace**
+### ⚠️ Before continuing, restart your Anyscale Workspace
 
-To free up GPU memory held by the previously loaded LLM and prevent out-of-memory (OOM) errors, please restart your workspace before running your next job.
+LLM batch inference + Ray Data is not optimized for execution via Jupyter notebook. To free up GPU memory held by the previously loaded model and prevent out-of-memory (OOM) errors, please restart your workspace before running your next job.
 
 
 ```python
 # Install datasets library.
 !pip install "datasets<4"
-```
-
-
-```python
-# Use your HF token
-HF_TOKEN = "Insert your Hugging Face token here"
 ```
 
 
@@ -223,10 +204,8 @@ vision_processor_config = vLLMEngineProcessorConfig(
         enable_chunked_prefill=True,
         max_num_batched_tokens=2048,
     ),
-    # Override Ray's runtime env to include the Hugging Face token. Ray Data uses Ray under the hood to orchestrate the inference pipeline.
     runtime_env=dict(
         env_vars=dict(
-            # HF_TOKEN=HF_TOKEN, # Qwen model is not gated so HF token is not needed
             VLLM_USE_V1="1",
         ),
     ),
