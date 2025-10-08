@@ -59,14 +59,122 @@ Access built-in cloud storage using the `$ANYSCALE_ARTIFACT_STORAGE` URI as a pr
 
 
 ```python
-# Note: "gsutil cp" instead of "aws s3 cp" in GCP clouds.
-!echo "hello world" > /tmp/input.txt && aws s3 cp /tmp/input.txt $ANYSCALE_ARTIFACT_STORAGE/saved.txt
+import os
+import re
+import subprocess
+
+class UnifiedStorageHandler:
+    def __init__(self):
+        self.artifact_storage = os.environ["ANYSCALE_ARTIFACT_STORAGE"]
+        self.storage_type = self._detect_storage_type()
+        self.setup_storage()
+    
+    def _detect_storage_type(self):
+        """Detect storage type based on URI scheme"""
+        if self.artifact_storage.startswith('s3://'):
+            return 's3'
+        elif self.artifact_storage.startswith('abfss://'):
+            return 'abfss'
+        elif self.artifact_storage.startswith('gs://'):
+            return 'gcs'
+        else:
+            raise ValueError(f"Unsupported storage URI: {self.artifact_storage}")
+    
+    def setup_storage(self):
+        """Setup storage-specific configurations"""
+        if self.storage_type == 'abfss':
+            # Convert ABFSS URI to blob storage URI for azcopy
+            self.storage_uri = re.sub(
+                r'^abfss://([^@]+)@([^.]+)\.dfs\.core\.windows\.net/', 
+                r'https://\2.blob.core.windows.net/\1/', 
+                self.artifact_storage
+            )
+            if self.storage_uri.endswith('/artifact_storage'):
+                self.storage_uri = self.storage_uri[:-len('/artifact_storage')]
+            
+            # Login to Azure
+            try:
+                subprocess.run(['azcopy', 'login', '--identity'], check=True, capture_output=True)
+                print("✓ Azure authentication successful")
+            except subprocess.CalledProcessError as e:
+                print(f"Azure login failed: {e}")
+                
+        elif self.storage_type == 's3':
+            self.storage_uri = self.artifact_storage
+            print("✓ Using S3 storage")
+            
+        elif self.storage_type == 'gcs':
+            self.storage_uri = self.artifact_storage
+            print("✓ Using Google Cloud Storage")
+    
+    def upload_file(self, local_path, remote_filename):
+        """Upload file to storage"""
+        remote_path = f"{self.storage_uri}/{remote_filename}"
+        
+        if self.storage_type == 's3':
+            cmd = ['aws', 's3', 'cp', local_path, remote_path]
+        elif self.storage_type == 'abfss':
+            cmd = ['azcopy', 'copy', local_path, remote_path, '--from-to', 'LocalBlob']
+        elif self.storage_type == 'gcs':
+            cmd = ['gsutil', 'cp', local_path, remote_path]
+        
+        try:
+            result = subprocess.run(cmd, check=True, capture_output=True, text=True)
+            print(f"✓ Upload successful: {local_path} -> {remote_path}")
+            return True
+        except subprocess.CalledProcessError as e:
+            print(f"✗ Upload failed: {e}")
+            print(f"Command: {' '.join(cmd)}")
+            if e.stdout:
+                print(f"Stdout: {e.stdout}")
+            if e.stderr:
+                print(f"Stderr: {e.stderr}")
+            return False
+    
+    def download_file(self, remote_filename, local_path):
+        """Download file from storage"""
+        remote_path = f"{self.storage_uri}/{remote_filename}"
+        
+        if self.storage_type == 's3':
+            cmd = ['aws', 's3', 'cp', remote_path, local_path]
+        elif self.storage_type == 'abfss':
+            cmd = ['azcopy', 'copy', remote_path, local_path]
+        elif self.storage_type == 'gcs':
+            cmd = ['gsutil', 'cp', remote_path, local_path]
+        
+        try:
+            result = subprocess.run(cmd, check=True, capture_output=True, text=True)
+            print(f"✓ Download successful: {remote_path} -> {local_path}")
+            return True
+        except subprocess.CalledProcessError as e:
+            print(f"✗ Download failed: {e}")
+            print(f"Command: {' '.join(cmd)}")
+            if e.stdout:
+                print(f"Stdout: {e.stdout}")
+            if e.stderr:
+                print(f"Stderr: {e.stderr}")
+            return False
+
+# Initialize the storage handler
+storage = UnifiedStorageHandler()
+print(f"Detected storage type: {storage.storage_type}")
+print(f"Storage URI: {storage.storage_uri}")
+
+# Create test file and upload
+!echo "hello world" > /tmp/input.txt
+storage.upload_file('/tmp/input.txt', 'saved.txt')
 ```
 
 
 ```python
-# Note: "gsutil cp" instead of "aws s3 cp" in GCP clouds.
-!aws s3 cp $ANYSCALE_ARTIFACT_STORAGE/saved.txt /tmp/output.txt && cat /tmp/output.txt
+# Download the file using the unified storage handler
+if storage.download_file('saved.txt', '/tmp/output.txt'):
+    # Read and display the downloaded file
+    with open('/tmp/output.txt', 'r') as f:
+        content = f.read()
+        print(content)
+else:
+    print("Failed to download file")
 ```
 
 ## Ray cluster management
