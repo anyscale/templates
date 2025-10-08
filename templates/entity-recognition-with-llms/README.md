@@ -360,9 +360,61 @@ s3://anyscale-test-data-cld-i2w99rzq8b6lbjkke9y94vi5/org_7c1Kalm9WcX2bNIjW53GUT/
 ```bash
 %%bash
 # Save fine-tuning artifacts to cloud storage
-aws s3 rm $ANYSCALE_ARTIFACT_STORAGE/viggo --recursive --quiet
-aws s3 cp /mnt/cluster_storage/viggo/outputs $ANYSCALE_ARTIFACT_STORAGE/viggo/outputs --recursive --quiet
-aws s3 cp $2 /mnt/cluster_storage/viggo/saves $ANYSCALE_ARTIFACT_STORAGE/viggo/saves --recursive --quiet
+# This script supports both S3 and Azure Blob File System (ABFSS)
+
+if [[ "$ANYSCALE_ARTIFACT_STORAGE" == s3://* ]]; then
+    echo "Using S3 storage..."
+    # S3 storage path
+    aws s3 rm $ANYSCALE_ARTIFACT_STORAGE/viggo --recursive --quiet
+    aws s3 cp /mnt/cluster_storage/viggo/outputs $ANYSCALE_ARTIFACT_STORAGE/viggo/outputs --recursive --quiet
+    aws s3 cp /mnt/cluster_storage/viggo/saves $ANYSCALE_ARTIFACT_STORAGE/viggo/saves --recursive --quiet
+    
+elif [[ "$ANYSCALE_ARTIFACT_STORAGE" == abfss://* ]]; then
+    echo "Using Azure Blob File System (ABFSS)..."
+    # Install Azure CLI 
+    # Only need to run it one time
+    # curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+    # Authenticate with Azure
+    az login --identity
+    
+    # Parse ABFSS URL components
+    ACCOUNT_NAME=$(echo "$ANYSCALE_ARTIFACT_STORAGE" | sed 's|abfss://||' | cut -d'@' -f2 | cut -d'.' -f1)
+    CONTAINER_NAME=$(echo "$ANYSCALE_ARTIFACT_STORAGE" | sed 's|abfss://||' | cut -d'@' -f1)
+    BASE_PATH=$(echo "$ANYSCALE_ARTIFACT_STORAGE" | sed 's|abfss://||' | cut -d'/' -f2-)
+    
+    echo "Account: $ACCOUNT_NAME, Container: $CONTAINER_NAME"
+    
+    # Upload training outputs to Azure Blob Storage
+    az storage blob upload-batch \
+      --account-name "$ACCOUNT_NAME" \
+      --destination "$CONTAINER_NAME" \
+      --destination-path "$BASE_PATH/viggo/outputs" \
+      --source "/mnt/cluster_storage/viggo/outputs" \
+      --auth-mode login \
+      --overwrite
+    
+    # Upload training checkpoints to Azure Blob Storage
+    az storage blob upload-batch \
+      --account-name "$ACCOUNT_NAME" \
+      --destination "$CONTAINER_NAME" \
+      --destination-path "$BASE_PATH/viggo/saves" \
+      --source "/mnt/cluster_storage/viggo/saves" \
+      --auth-mode login \
+      --overwrite
+      
+elif [[ "$ANYSCALE_ARTIFACT_STORAGE" == gs://* ]]; then
+    echo "Using Google Cloud Storage (GCS)..."
+    # GCS storage path
+    gsutil -m rm -r $ANYSCALE_ARTIFACT_STORAGE/viggo
+    gsutil -m cp -r /mnt/cluster_storage/viggo/outputs $ANYSCALE_ARTIFACT_STORAGE/viggo/outputs
+    gsutil -m cp -r /mnt/cluster_storage/viggo/saves $ANYSCALE_ARTIFACT_STORAGE/viggo/saves
+    
+else
+    echo "Unknown storage type: $ANYSCALE_ARTIFACT_STORAGE"
+    exit 1
+fi
+
+echo "Upload completed successfully!"
 ```
 
 
