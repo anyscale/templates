@@ -275,7 +275,35 @@ Finally, write the computed embeddings out to Parquet files on S3. Running the f
 
 
 ```python
-embedded_ds.write_parquet(OUTPUT_PATH, try_create_dir=False)
+# Write results to cloud storage with ABFSS support
+import re
+import adlfs
+from azure.identity import DefaultAzureCredential
+
+# Check if we're using ABFSS storage
+if OUTPUT_PATH.startswith("abfss://"):
+    # Parse ABFSS URL to extract account and container info
+    url_parts = OUTPUT_PATH.replace("abfss://", "").split("/")
+    container_account = url_parts[0].split("@")
+    
+    if len(container_account) == 2:
+        container, account = container_account
+        account = account.replace(".dfs.core.windows.net", "")
+        
+        # Create Azure filesystem
+        fs = adlfs.AzureBlobFileSystem(
+            account_name=account,
+            credential=DefaultAzureCredential(),
+        )
+        
+        # IMPORTANT: pass the filesystem object so PyArrow/fsspec treats the path as abfss
+        embedded_ds.write_parquet(OUTPUT_PATH, filesystem=fs, try_create_dir=False)
+    else:
+        # Fallback to regular write if parsing fails
+        embedded_ds.write_parquet(OUTPUT_PATH, try_create_dir=False)
+else:
+    # For S3, GCS, or local storage, use regular write
+    embedded_ds.write_parquet(OUTPUT_PATH, try_create_dir=False)
 ```
 
 We can also use Ray Data to read back the output files to ensure the results are as expected.
