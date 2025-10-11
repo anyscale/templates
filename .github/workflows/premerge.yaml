@@ -31,7 +31,7 @@ jobs:
         python-version: '3.9'
     - uses: actions/setup-go@v5
       with:
-        go-version: 1.23
+        go-version: 1.25
 
     - name: Install pre-commit
       run: pip install jupyter==1.1.1
