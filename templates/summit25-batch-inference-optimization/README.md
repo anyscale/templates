@@ -10,9 +10,9 @@ This template is split into three parts for comprehensive learning:
 
 | Part | Description | Time | File |
 |------|-------------|------|------|
-| **Part 1** | Inference Fundamentals | 20 min | [01-inference-fundamentals.ipynb](01-inference-fundamentals.ipynb) |
-| **Part 2** | Advanced Optimization | 20 min | [02-advanced-optimization.ipynb](02-advanced-optimization.ipynb) |
-| **Part 3** | Ray Data Architecture | 25 min | [03-ray-data-architecture.ipynb](03-ray-data-architecture.ipynb) |
+| **Part 1** | Inference Fundamentals | 20 min | [01-inference-fundamentals.md](01-inference-fundamentals.md) |
+| **Part 2** | Advanced Optimization | 20 min | [02-advanced-optimization.md](02-advanced-optimization.md) |
+| **Part 3** | Ray Data Architecture | 25 min | [03-ray-data-architecture.md](03-ray-data-architecture.md) |
 
 ## What You'll Learn
 
@@ -116,11 +116,6 @@ print(f"PyTorch version: {torch.__version__}")
 # GPUs are optional for these templates
 print(f"GPU available: {torch.cuda.is_available()}")
 ```
-
-    Ray version: 2.49.2
-    PyTorch version: 2.8.0+cu128
-    GPU available: False
-
 
 
 <div style="margin:1em 0; padding:12px 16px; border-left:4px solid #2e7d32; background:#f1f8e9; border-radius:4px;">
