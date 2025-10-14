@@ -10,9 +10,9 @@ This template is split into three parts for comprehensive learning:
 
 | Part | Description | Time | File |
 |------|-------------|------|------|
-| **Part 1** | Inference Fundamentals | 20 min | [01-inference-fundamentals.md](01-inference-fundamentals.md) |
-| **Part 2** | Advanced Optimization | 20 min | [02-advanced-optimization.md](02-advanced-optimization.md) |
-| **Part 3** | Ray Data Architecture | 25 min | [03-ray-data-architecture.md](03-ray-data-architecture.md) |
+| **Part 1** | Inference Fundamentals | 20 min | [01-inference-fundamentals.ipynb](01-inference-fundamentals.ipynb) |
+| **Part 2** | Advanced Optimization | 20 min | [02-advanced-optimization.ipynb](02-advanced-optimization.ipynb) |
+| **Part 3** | Ray Data Architecture | 25 min | [03-ray-data-architecture.ipynb](03-ray-data-architecture.ipynb) |
 
 ## What You'll Learn
 
