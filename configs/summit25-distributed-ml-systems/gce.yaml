@@ -1,0 +1,11 @@
+head_node_type:
+  name: head
+  instance_type: n1-standard-8
+worker_node_types:
+  - name: worker-gpu
+    instance_type: n1-highmem-8-nvidia-t4-16gb-1
+    min_workers: 2
+    max_workers: 2
+
+flags:
+  allow-cross-zone-autoscaling: true
