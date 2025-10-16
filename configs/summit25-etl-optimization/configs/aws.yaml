@@ -5,8 +5,7 @@ head_node_type:
     cpu: 0
     gpu: 0
 worker_node_types:
-  - name: worker-cpu
-    instance_type: m5.2xlarge
+  - instance_type: m5.2xlarge
     min_workers: 10
     max_workers: 10
 
