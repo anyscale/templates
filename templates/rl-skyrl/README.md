@@ -23,17 +23,15 @@ cd SkyRL/skyrl-train/
 
 ## GRPO for solving math problems (GSM8K)
 ### Dataset preparation
-First, to download and prepare the GSM8K dataset from huggingface, run the following command:
+To download and prepare the GSM8K dataset from huggingface, run the following command:
 
 ```bash
 uv run --isolated examples/gsm8k/gsm8k_dataset.py --output_dir  /mnt/cluster_storage/data/gsm8k
 ```
 
-This script converts the GSM8K dataset from Hugging Face into two Parquet files with the schema required for instruction-tuning or RL-style training:
+This script converts the GSM8K dataset from Hugging Face into two Parquet files with the [schema required by SkyRL](https://skyrl.readthedocs.io/en/latest/datasets/dataset-preparation.html).
 - `train.parquet` - Training data.
 - `validation.parquet` - Validation data.
-
-The schema follows the [SkyRL dataset preparation format](https://skyrl.readthedocs.io/en/latest/datasets/dataset-preparation.html).
 
 ### Launching your training run
 
