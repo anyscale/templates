@@ -1,6 +1,9 @@
 head_node_type:
   name: head
   instance_type: m5.2xlarge
+  resources:
+    cpu: 0
+    gpu: 0
 worker_node_types:
   - name: worker-cpu
     instance_type: m5.2xlarge
