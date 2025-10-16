@@ -5,7 +5,8 @@ head_node_type:
     cpu: 0
     gpu: 0
 worker_node_types:
-  - instance_type: n1-standard-16-nvidia-t4-16gb-1
+  - name: 1xT4:16CPU-60GB
+    instance_type: n1-standard-16-nvidia-t4-16gb-1
     min_workers: 2
     max_workers: 2
 

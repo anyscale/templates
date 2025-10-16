@@ -5,7 +5,8 @@ head_node_type:
     cpu: 0
     gpu: 0
 worker_node_types:
-  - instance_type: g4dn.2xlarge
+  - name: 1xT4:8CPU-32GB
+    instance_type: g4dn.2xlarge
     min_workers: 1
     max_workers: 1
 
