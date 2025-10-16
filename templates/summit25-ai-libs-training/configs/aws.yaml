@@ -2,11 +2,10 @@ head_node_type:
   name: head
   instance_type: m5a.2xlarge
   resources:
-    CPU: 0
-    GPU: 0
+    cpu: 0
+    gpu: 0
 worker_node_types:
-- name: gpu-worker
-  instance_type: g5.2xlarge
+- instance_type: g5.2xlarge
   min_workers: 2
   max_workers: 2
 

@@ -2,11 +2,10 @@ head_node_type:
   name: head
   instance_type: n2-standard-8
   resources:
-    CPU: 0
-    GPU: 0
+    cpu: 0
+    gpu: 0
 worker_node_types:
-- name: gpu-worker
-  instance_type: g2-standard-8-nvidia-l4-1
+- instance_type: g2-standard-8-nvidia-l4-1
   min_workers: 2
   max_workers: 2
 
