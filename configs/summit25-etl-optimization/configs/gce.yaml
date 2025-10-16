@@ -5,7 +5,8 @@ head_node_type:
     cpu: 0
     gpu: 0
 worker_node_types:
-  - instance_type: n1-standard-8
+  - name: 8CPU-32GB
+    instance_type: n1-standard-8
     min_workers: 10
     max_workers: 10
 
