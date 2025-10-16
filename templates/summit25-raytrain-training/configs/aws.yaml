@@ -1,6 +1,9 @@
 head_node_type:
   name: head
   instance_type: g4dn.2xlarge
+  resources:
+    CPU: 0
+    GPU: 0
 worker_node_types:
 - name: gpu-worker
   instance_type: g5.2xlarge
