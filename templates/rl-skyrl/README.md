@@ -12,7 +12,7 @@ show how you can create your own new environment to train on your specific task 
 
 
 ## Setup
-SkyRL uses the [uv + Ray integration](https://www.anyscale.com/blog/uv-ray-pain-free-python-dependencies-in-clusters) for dependency management, ensuring a consistent set of dependencies get shipped to all Ray workers. This template uses the PLACEHOLDER docker image to ensure all necessary system depedencies are installed. The exact Dockerfile can be found at [SkyRL/docker/Dockerfile](https://github.com/NovaSky-AI/SkyRL/blob/skyrl_train-v0.2.0/docker/Dockerfile).
+SkyRL uses the [uv + Ray integration](https://www.anyscale.com/blog/uv-ray-pain-free-python-dependencies-in-clusters) for dependency management, ensuring a consistent set of dependencies get shipped to all Ray workers. This template uses the `novaskyai/skyrl-train-ray-2.48.0-py3.12-cu12.8` docker image to ensure all necessary system depedencies are installed. The exact Dockerfile can be found at [SkyRL/docker/Dockerfile](https://github.com/NovaSky-AI/SkyRL/blob/skyrl_train-v0.2.0/docker/Dockerfile).
 
 First, clone SkyRL and cd to `skyrl-train/`.
 
