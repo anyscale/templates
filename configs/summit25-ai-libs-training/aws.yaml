@@ -1,12 +1,12 @@
 head_node_type:
   name: head
-  instance_type: n1-standard-8-nvidia-t4-16gb-1
+  instance_type: m5a.2xlarge
   resources:
-    CPU: 0
-    GPU: 0
+    cpu: 0
+    gpu: 0
 worker_node_types:
-- name: gpu-worker
-  instance_type: g2-standard-8-nvidia-l4-1
+- name: 1xA10G:8CPU-32GB
+  instance_type: g5.2xlarge
   min_workers: 2
   max_workers: 2
 

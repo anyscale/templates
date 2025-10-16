@@ -5,7 +5,7 @@ head_node_type:
     CPU: 0
     GPU: 0
 worker_node_types:
-- name: gpu-worker
+- name: 1xA10G:8CPU-32GB
   instance_type: g5.2xlarge
   min_workers: 2
   max_workers: 2
