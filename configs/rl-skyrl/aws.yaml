@@ -1,0 +1,9 @@
+head_node_type:
+  name: head
+  instance_type: m5.2xlarge
+  resources:
+    cpu: 0
+
+worker_node_types:
+- name: worker
+  instance_type: g6.24xlarge
