@@ -191,9 +191,6 @@ else:
 ```python
 import requests
 
-BASE_URL = "" # PASTE HERE
-API_KEY = "" # PASTE HERE
-
 def send_request(name: str) -> str:
     response: requests.Response = requests.get(
         f"{BASE_URL}/hello",
