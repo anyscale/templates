@@ -23,19 +23,19 @@ cd SkyRL/skyrl-train/
 
 ## GRPO for solving math problems (GSM8K)
 ### Dataset preparation
-To download and prepare the GSM8K dataset from huggingface, run the following command:
+To download and prepare the GSM8K dataset from HuggingFace, run the following command:
 
 ```bash
 uv run --isolated examples/gsm8k/gsm8k_dataset.py --output_dir  /mnt/cluster_storage/data/gsm8k
 ```
 
-This script converts the GSM8K dataset from Hugging Face into two Parquet files with the [schema required by SkyRL](https://skyrl.readthedocs.io/en/latest/datasets/dataset-preparation.html).
+This script converts the Huggingface GSM8K dataset to two Parquet files with the [schema required by SkyRL](https://skyrl.readthedocs.io/en/latest/datasets/dataset-preparation.html).
 - `train.parquet` - Training data.
 - `validation.parquet` - Validation data.
 
 ### Launching your training run
 
-Now you're ready to launch a training run! If you choose to use the wandb logger (`trainer.logger="wandb"`), first set the `WANDB_API_KEY` environment variable in the [Dependencies tab](https://docs.anyscale.com/development#environment-variables). Otherwise, you can set `trainer.logger="console"` to print training logs to console. 
+Now you're ready to launch a training run! If you choose to use the W&B logger (`trainer.logger="wandb"`), first set the `WANDB_API_KEY` environment variable in the [Dependencies tab](https://docs.anyscale.com/development#environment-variables). Otherwise, you can set `trainer.logger="console"` to print training logs to console. 
 
 
 ```bash
@@ -49,7 +49,7 @@ bash examples/gsm8k/run_gsm8k.sh \
    trainer.logger="console"
 ```
 
-If using wandb, you should see logs like the ones shown below, with detailed metric tracking and timing breakdowns for each stage of the RL pipeline.
+If using W&B, you should see logs like the ones shown below, with detailed metric tracking and timing breakdowns for each stage of the RL pipeline.
 <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/rl-skyrl/assets/gsm8k_wandb.png" width=1500px />
 
 
