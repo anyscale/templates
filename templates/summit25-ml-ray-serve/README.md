@@ -31,25 +31,7 @@
 - Metrics, tracing, and alerting (Prometheus, Grafana, Datadog)  
 - Debugging tips for production workloads  
 
-## 5. Performance Optimization
-- Core performance levers  
-  - Request pipelining  
-  - Dynamic batching  
-  - Multiplexing for multi-tenant serving  
-- Trade-offs and when to use each  
-
-## 6. Autoscaling & Resilience
+## 5. Autoscaling with Ray Serve
 - Configuring autoscaling policies in Ray Serve  
 - Load testing with Locust (hands-on exercise)  
 - Finding and tuning the “right” autoscaling config  
-
-## 7. Deployment Patterns & Best Practices
-- Multi-model serving patterns  
-- Canary and blue/green rollouts  
-- Handling model updates and versioning  
-- Security & compliance considerations  
-
-## 8. Wrap-Up & Q&A
-- Recap of best practices  
-- Checklist for deploying ML models in production with Ray Serve  
-- Resources & next steps  
