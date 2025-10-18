@@ -69,7 +69,7 @@ uv run --isolated examples/multiply/multiply_dataset.py \
 
 ### Training your model
 ```bash
-bash examples/multiply/run_multiply.sh \
+SKYRL_RAY_PG_TIMEOUT_IN_S=90 bash examples/multiply/run_multiply.sh \
    data.train_data="['/mnt/cluster_storage/data/multiply/train.parquet']" \
    data.val_data="['/mnt/cluster_storage/data/multiply/validation.parquet']" \
    trainer.ckpt_path="/mnt/cluster_storage/ckpts/multiply_1.5B_ckpt" \
