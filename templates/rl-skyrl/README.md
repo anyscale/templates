@@ -39,7 +39,7 @@ Now you're ready to launch a training run! If you choose to use the W&B logger (
 
 
 ```bash
-bash examples/gsm8k/run_gsm8k.sh \
+SKYRL_RAY_PG_TIMEOUT_IN_S=90 bash examples/gsm8k/run_gsm8k.sh \
    data.train_data="['/mnt/cluster_storage/data/gsm8k/train.parquet']" \
    data.val_data="['/mnt/cluster_storage/data/gsm8k/validation.parquet']" \
    trainer.ckpt_path="/mnt/cluster_storage/ckpts/gsm8k_1.5B_ckpt" \
