@@ -24,6 +24,7 @@ import logging
 import os
 import re
 import shutil
+import subprocess
 import tempfile
 from contextlib import nullcontext
 from functools import partial
@@ -73,80 +74,13 @@ IMAGE_LATENTS_512_KEY = "latents_512_bytes"
 # Step 1: Load preprocessed data from S3 or ABFSS #
 ##################################################
 
-### Utils ###
-def is_abfss_path(path: str) -> bool:
-    """Check if the path is an ABFSS (Azure Blob File System) path."""
-    return path.startswith("abfss://") or path.startswith("abfs://")
-
-
-def get_azure_auth_kwargs(account_name: str) -> dict:
-    """Get Azure authentication kwargs using DefaultAzureCredential."""
-    if not AZURE_IDENTITY_AVAILABLE:
-        raise ImportError(
-            "azure-identity is required for Azure authentication. Install it with: pip install azure-identity"
-        )
-
-    logger.info("Using DefaultAzureCredential for Azure authentication")
-    # Return account_name and a flag to use DefaultAzureCredential
-    return {"account_name": account_name, "use_default_credential": True}
-
-
-def create_azure_filesystem(account_name: str) -> AzureBlobFileSystem:
-    """Create Azure filesystem using DefaultAzureCredential."""
-    if not AZURE_IDENTITY_AVAILABLE:
-        raise ImportError(
-            "azure-identity is required for Azure authentication. Install it with: pip install azure-identity"
-        )
-
-    # Force removal of incomplete service principal environment variables
-    # to ensure DefaultAzureCredential uses managed identity
-    if "AZURE_CLIENT_ID" in os.environ and "AZURE_CLIENT_SECRET" not in os.environ:
-        logger.info("Removing incomplete service principal environment variables to use managed identity")
-        os.environ.pop("AZURE_CLIENT_ID", None)
-        os.environ.pop("AZURE_TENANT_ID", None)
-
-    try:
-        credential = DefaultAzureCredential()
-        azure_fs = AzureBlobFileSystem(account_name=account_name, credential=credential)
-        logger.info("Successfully created Azure filesystem with DefaultAzureCredential")
-        return azure_fs
-    except Exception as e:
-        logger.error(f"Failed to create Azure filesystem with DefaultAzureCredential: {e}")
-        logger.error("DefaultAzureCredential automatically tries multiple authentication methods.")
-        logger.error("Common solutions:")
-        logger.error("- Ensure you're running in AKS with managed identity configured")
-        logger.error("- Or run 'az login' to authenticate with Azure CLI")
-        logger.error("- Ensure the identity has proper permissions to access the storage account")
-        raise
-
-
-class SerializableAzureFileSystem:
-    """A serializable wrapper for Azure filesystem that Ray can handle."""
-
-    def __init__(self, account_name: str):
-        self.account_name = account_name
-        self._fs = None
-
-    @property
-    def fs(self):
-        if self._fs is None:
-            if not AZURE_IDENTITY_AVAILABLE:
-                raise ImportError(
-                    "azure-identity is required for Azure authentication. Install it with: pip install azure-identity"
-                )
-
-            # Force removal of incomplete service principal environment variables
-            # to ensure DefaultAzureCredential uses managed identity
-            if "AZURE_CLIENT_ID" in os.environ and "AZURE_CLIENT_SECRET" not in os.environ:
-                os.environ.pop("AZURE_CLIENT_ID", None)
-                os.environ.pop("AZURE_TENANT_ID", None)
-
-            credential = DefaultAzureCredential()
-            self._fs = AzureBlobFileSystem(account_name=self.account_name, credential=credential)
-        return self._fs
-
-    def __getattr__(self, name):
-        return getattr(self.fs, name)
+### Import ABFSS utilities ###
+from abfss_utils import (
+    is_abfss_path,
+    create_azure_filesystem,
+    upload_to_abfss,
+    get_local_storage_path,
+)
 
 
 def create_filesystem(storage_path: str) -> pyarrow.fs.FileSystem:
@@ -539,7 +473,7 @@ def train_func(config: dict) -> None:
         accumulate_grad_batches=config["accumulate_grad_batches"],
         accelerator="gpu",
         devices="auto",
-        precision="bf16-mixed",
+        precision="16-mixed",  # Use float16 instead of bfloat16 for broader GPU compatibility
         strategy=strategy,
         plugins=[RayLightningEnvironment()],
         callbacks=callbacks,
@@ -698,7 +632,11 @@ def train(
             # For ABFSS, Ray Train doesn't support it directly for storage_path
             # Use local storage for Ray Train checkpoints, we'll handle ABFSS copying separately
             logger.warning("Ray Train doesn't support ABFSS storage_path directly.")
-            logger.warning("Using local storage for checkpoints. Consider copying to ABFSS manually after training.")
+            logger.warning("Using local storage for checkpoints. Will upload to ABFSS after training.")
+
+            # Create a local storage path for Ray Train checkpoints
+            local_storage_path = get_local_storage_path()
+            os.makedirs(local_storage_path, exist_ok=True)
 
             trainer = TorchTrainer(
                 train_func,
@@ -730,7 +668,7 @@ def train(
                 ),
                 run_config=RunConfig(
                     name=experiment_name,
-                    # Don't pass ABFSS path to Ray Train - it doesn't support it
+                    storage_path=local_storage_path,
                     failure_config=FailureConfig(max_failures=max_failures),
                 ),
                 datasets=ray_datasets,  # type: ignore [arg-type]
@@ -781,9 +719,7 @@ def train(
 
     # Show the produced model checkpoints under storage path.
     if is_abfss_path(storage_path):
-        print("Note: Checkpoints are stored locally since Ray Train doesn't support ABFSS storage_path directly.")
-        print("Local checkpoint directory: ~/ray_results/")
-        print("To copy checkpoints to ABFSS, you can use Azure CLI or Python scripts after training.")
+        upload_to_abfss(storage_path, experiment_name)
     else:
         # Default S3 behavior
         try:
