@@ -2,7 +2,6 @@ import logging
 from io import BytesIO
 import asyncio
 from typing import Dict
-from collections import defaultdict
 
 import boto3
 import torch
@@ -12,37 +11,33 @@ from ray import serve
 from ray.serve.handle import DeploymentHandle, DeploymentResponse
 from ray.serve.exceptions import BackPressureError
 from ray._private.utils import get_or_create_event_loop
-from vllm.engine.arg_utils import AsyncEngineArgs
-from vllm.engine.async_llm_engine import AsyncLLMEngine
-from vllm.engine.arg_utils import AsyncEngineArgs
-from vllm.engine.async_llm_engine import AsyncLLMEngine
-from vllm.entrypoints.openai.cli_args import make_arg_parser
-from vllm import SamplingParams
 
 
-# Set up the Ray Serve logger.
 logger = logging.getLogger("ray.serve")
 
+# Configure your AWS credentials and resource names
 AWS_ACCESS_KEY_ID = "your-aws-access-key-id"
 AWS_SECRET_ACCESS_KEY = "your-aws-secret-access-key"
 AWS_SESSION_TOKEN = "your-aws-session-token"
 S3_BUCKET_NAME = "your-s3-bucket-name"
-SQS_QUEUE_1 = "your-first-queue-name"
-SQS_QUEUE_2 = "your-second-queue-name"
+SQS_QUEUE_NAME = "your-queue-name"
 
 
 @serve.deployment(
     ray_actor_options={"num_gpus": 1, "num_cpus": 1},
-    max_queued_requests=3,
-    max_ongoing_requests=1,
+    max_queued_requests=3,  # Low queue capacity triggers backpressure early
+    max_ongoing_requests=1,  # GPU-bound, process one at a time
     autoscaling_config={
         "min_replicas": 1,
         "max_replicas": 10,
-        "target_ongoing_requests": 1,
+        "target_ongoing_requests": 1,  # Scale up when replica is busy
     },
 )
 class StableDiffusionXL:
+    """Text-to-image model that generates images from text prompts."""
+
     def __init__(self):
+        # Load model weights (download on first run)
         model_id = "stabilityai/stable-diffusion-xl-base-1.0"
 
         self.pipe = DiffusionPipeline.from_pretrained(
@@ -58,170 +53,130 @@ class StableDiffusionXL:
         return image
 
 
-@serve.deployment(
-    max_queued_requests=40,
-    max_ongoing_requests=40,
-    autoscaling_config={
-        "min_replicas": 1,
-        "max_replicas": 10,
-        "target_ongoing_requests": 20,
-        "upscaling_factor": 0.2,
-    },
-)
-class VLLMDeployment:
-    def __init__(self, engine_args: AsyncEngineArgs):
-        self.engine = AsyncLLMEngine.from_engine_args(engine_args)
-        self.request_id = 0
-    
-    async def __call__(self, prompt):
-        results_generator = self.engine.generate(
-            prompt=(
-                "<|begin_of_text|>"
-                "<|start_header_id|>system<|end_header_id|>\n\n"
-                "You are a helpful assistant.<|eot_id|>"
-                "<|start_header_id|>user<|end_header_id|>\n\n"
-                f"{prompt}<|eot_id|>"
-                "<|start_header_id|>assistant<|end_header_id|>\n\n"
-            ),
-            request_id=str(self.request_id),
-            sampling_params=SamplingParams(temperature=0.01, max_tokens=1000),
-        )
-        self.request_id += 1
-
-        final_output = None
-        async for request_output in results_generator:
-            final_output = request_output.outputs[0].text
-        return final_output
-
-
-@serve.deployment(num_replicas=2, ray_actor_options={"num_cpus": 0.2})
+@serve.deployment(num_replicas=1, ray_actor_options={"num_cpus": 0.2})
 class QueuePoller:
-    def __init__(self, handles: Dict[str, DeploymentHandle], queues: Dict[str, str]):
-        # Map from model name -> deployment handles
-        self.handles = handles
-        # Ongoing requests that are executing at a downstream ML model
+    """Continuously polls SQS queue and forwards messages to the model."""
+
+    def __init__(self, model_handle: DeploymentHandle, queue_name: str):
+        self.model_handle = model_handle
+        # Track in-flight requests (prevents duplicate processing)
         self.processing_requests: Dict[str, asyncio.Task] = {}
-        # A map from model name -> counter that tracks, for each model,
-        # how many consecutive times forwarding a request has failed
-        # with backpressure error.
-        # NOTE: a request fails with backpressure error when the number
-        # of queued requests exceeds `max_queued_requests` for that
-        # deployment.
-        self.backpressure_counters: Dict[str, int] = defaultdict(int)
+        # Tracks consecutive backpressure failures for exponential backoff
+        self.backpressure_counter: int = 0
 
-        self.shutdown_event = asyncio.Event()
-
-        # Set up S3 clients
+        # Set up AWS clients
         session = boto3.Session(
             aws_access_key_id=AWS_ACCESS_KEY_ID,
             aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
-            aws_session_token=AWS_SESSION_TOKEN
+            aws_session_token=AWS_SESSION_TOKEN,
         )
         sqs = session.resource("sqs", region_name="us-west-2")
         self.s3_client = session.client("s3")
-        self.queues = {
-            model: sqs.get_queue_by_name(QueueName=queue_name)
-            for model, queue_name in queues.items()
-        }
+        self.queue = sqs.get_queue_by_name(QueueName=queue_name)
 
-        # Run loops in background to continuously poll SQS queue
+        # Start background polling loop
         self.loop = get_or_create_event_loop()
-        for model_name in self.handles:
-            self.loop.create_task(self.run(model_name))
+        self.loop.create_task(self.run())
 
-    async def process_finished_request(
-        self, resp: DeploymentResponse, model_name: str, queue_message
-    ):
-        try:
-            result = await resp
+        # Event to shutdown polling
+        self.shutdown_event = asyncio.Event()
 
-            # Upload result to s3
-            if model_name == "stable_diffusion":
-                # Save image to bytes buffer
-                file_stream = BytesIO()
-                result.save(file_stream, "PNG")
-                file_stream.seek(0)
-
-                filename = f"image_{queue_message.message_id}.png"
-                self.s3_client.upload_fileobj(
-                    Fileobj=file_stream, 
-                    Bucket=S3_BUCKET_NAME,
-                    Key=filename,
-                    ExtraArgs={"ContentType":"image/png"}
-                )
-            else:
-                assert model_name == "llm"
-                # Save output to bytes buffer
-                file_stream = BytesIO(result.encode("utf-8"))
-
-                filename = f"response_{queue_message.message_id}.txt"
-                self.s3_client.upload_fileobj(
-                    Fileobj=file_stream, 
-                    Bucket=S3_BUCKET_NAME,
-                    Key=filename,
-                )
-
-            logger.info(f"Uploaded {filename} to S3.")
-
-        except BackPressureError as e:
-            self.backpressure_counters[model_name] += 1
-            logger.info(f"({queue_message.message_id}) {str(e)}")
-        else:
-            if self.backpressure_counters[model_name] > 0:
-                logger.info(f"Resetting counter for {model_name}")
-
-            self.backpressure_counters[model_name] = 0
-            queue_message.delete()
-            logger.info(f"Message {queue_message.message_id} deleted from queue.")
-        finally:
-            del self.processing_requests[queue_message.message_id]
-
-    async def run(self, model_name: str):
+    async def run(self):
+        """Main polling loop: fetch messages from SQS and forward to model."""
         while True:
             if self.shutdown_event.is_set():
                 logger.info("Breaking out of run loop because shutdown event is set")
                 break
 
+            # Fetch up to 10 messages (long polling reduces API costs)
             messages = await self.loop.run_in_executor(
                 None,
-                lambda: self.queues[model_name].receive_messages(
-                    MaxNumberOfMessages=10, WaitTimeSeconds=2,
-                )
+                lambda: self.queue.receive_messages(
+                    MaxNumberOfMessages=10,
+                    WaitTimeSeconds=2,
+                ),
             )
             for message in messages:
+                # Skip if already processing (handles SQS visibility timeout redelivery)
                 if message.message_id in self.processing_requests:
-                    # We could re-receive the same message if the time for which the
-                    # message has been queued in the deployment handle has exceeded
-                    # the SQS queue's visibility timeout.
-                    # Although there's no guarantee that another QueuePoller replica
-                    # won't pick up this message, we can ensure at-least-once execution
                     logger.info(f"Still processing {message.message_id}, skipping.")
                     continue
 
                 logger.debug(f"Processing '{message.message_id}' from queue.")
 
-                # Forward request to downstream models: StableDiffisionXL or VLLMDeployment
-                resp = self.handles[model_name].remote(message.body)
+                # Forward prompt to StableDiffusion (non-blocking)
+                resp = self.model_handle.remote(message.body)
                 assert isinstance(resp, DeploymentResponse)
 
+                # Track request in background task
                 new_task = self.loop.create_task(
-                    self.process_finished_request(resp, model_name, message)
+                    self.process_finished_request(resp, message)
                 )
                 self.processing_requests[message.message_id] = new_task
 
-            if self.backpressure_counters[model_name] == 0:
-                await asyncio.sleep(0.1)
+            # Adaptive polling: slow down when backpressure detected
+            # This gives autoscaler time to add replicas without overwhelming system
+            if self.backpressure_counter == 0:
+                await asyncio.sleep(0.1)  # Normal operation: poll frequently
             else:
-                backoff_time = min(10, 2 ** self.backpressure_counters[model_name])
+                # Exponential backoff: 2s → 4s → 8s → 10s max
+                backoff_time = min(10, 2**self.backpressure_counter)
                 logger.info(
-                    f"'{model_name}' models are overloaded, polling queue again after "
-                    f"{backoff_time}s."
+                    f"Model is overloaded, polling queue again after {backoff_time}s."
                 )
                 await asyncio.sleep(backoff_time)
 
+    async def process_finished_request(self, resp: DeploymentResponse, queue_message):
+        """Waits for model response and uploads result to S3."""
+        try:
+            # Wait for image generation to complete
+            result = await resp
+
+            # Offload blocking operations (PIL encoding + S3 upload) to thread pool
+            filename = await self.loop.run_in_executor(
+                None,
+                self._upload_to_s3,
+                result,
+                queue_message.message_id,
+            )
+
+            logger.info(f"Uploaded {filename} to S3.")
+
+        except BackPressureError as e:
+            # Model queue full - don't delete message, let it retry
+            self.backpressure_counter += 1
+            logger.info(f"({queue_message.message_id}) {str(e)}")
+        else:
+            # Success - safe to delete from queue (at-least-once delivery)
+            if self.backpressure_counter > 0:
+                logger.info("Resetting backpressure counter")
+
+            self.backpressure_counter = 0
+            queue_message.delete()
+            logger.info(f"Message {queue_message.message_id} deleted from queue.")
+        finally:
+            del self.processing_requests[queue_message.message_id]
+
+    def _upload_to_s3(self, image, message_id: str) -> str:
+        """Blocking helper: encode image and upload to S3."""
+        # Convert PIL Image to bytes
+        file_stream = BytesIO()
+        image.save(file_stream, "PNG")
+        file_stream.seek(0)
+
+        # Upload to S3
+        filename = f"image_{message_id}.png"
+        self.s3_client.upload_fileobj(
+            Fileobj=file_stream,
+            Bucket=S3_BUCKET_NAME,
+            Key=filename,
+            ExtraArgs={"ContentType": "image/png"},
+        )
+        return filename
+
     async def __del__(self):
+        # Graceful shutdown: wait for in-flight requests to complete
         self.shutdown_event.set()
-        # Wait until all ongoing requests are finished processing.
         while True:
             if len(self.processing_requests) == 0:
                 break
@@ -233,29 +188,9 @@ class QueuePoller:
             await asyncio.sleep(2)
 
 
-# -- Application entrypoint (to be imported) ---
-def app_builder(cli_args: Dict[str, str]) -> serve.Application:
-    parser = make_arg_parser()
-    arg_strings = []
-    for key, value in cli_args.items():
-        arg_strings.extend([f'--{key}', str(value)])
-    parsed_args = parser.parse_args(args=arg_strings)
-    engine_args = AsyncEngineArgs.from_cli_args(parsed_args)
-    engine_args.worker_use_ray = True
-    pg_resources = [{"CPU": 1.0}]
-    for i in range(engine_args.tensor_parallel_size):
-        pg_resources.append({"CPU": 2.0, "GPU": 1.0}) # for the vLLM workers
-
+def app_builder() -> serve.Application:
+    """Builds the application: QueuePoller → StableDiffusionXL."""
     return QueuePoller.bind(
-        {
-            "stable_diffusion": StableDiffusionXL.bind(),
-            "llm": VLLMDeployment.options(
-                placement_group_bundles=pg_resources,
-                placement_group_strategy="STRICT_PACK"
-            ).bind(engine_args)
-        },
-        {
-            "stable_diffusion": SQS_QUEUE_1,
-            "llm": SQS_QUEUE_2,
-        },
+        StableDiffusionXL.bind(),
+        SQS_QUEUE_NAME,
     )
