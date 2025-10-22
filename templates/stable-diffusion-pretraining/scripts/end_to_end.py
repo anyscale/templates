@@ -39,6 +39,17 @@ from ray.train import Checkpoint, FailureConfig, RunConfig, ScalingConfig
 from ray.train.lightning import RayDDPStrategy, RayFSDPStrategy, RayLightningEnvironment
 from ray.train.torch import TorchTrainer, get_device
 from s3fs import S3FileSystem  # type: ignore
+try:
+    from adlfs import AzureBlobFileSystem  # type: ignore
+    ADLFS_AVAILABLE = True
+except ImportError:
+    ADLFS_AVAILABLE = False
+
+try:
+    from azure.identity import DefaultAzureCredential  # type: ignore
+    AZURE_IDENTITY_AVAILABLE = True
+except ImportError:
+    AZURE_IDENTITY_AVAILABLE = False
 from torch.distributed.fsdp import BackwardPrefetch
 from torch.distributed.fsdp import FullyShardedDataParallel as FSDP
 from transformers import CLIPTextModel, CLIPTokenizer, PretrainedConfig, get_linear_schedule_with_warmup
@@ -47,6 +58,14 @@ logger = logging.getLogger(__name__)
 
 ### Type Definitions ###
 ResolutionDtype = Literal[256, 512]
+
+### Import ABFSS utilities ###
+from abfss_utils import (
+    is_abfss_path,
+    create_azure_filesystem,
+    upload_to_abfss,
+    get_local_storage_path,
+)
 
 ### Constants ###
 CAPTION_LATENTS_KEY = "caption_latents"
@@ -751,7 +770,7 @@ def train_func(config: dict) -> None:
         accumulate_grad_batches=config["accumulate_grad_batches"],
         accelerator="gpu",
         devices="auto",
-        precision="bf16-mixed",
+        precision="16-mixed",  # Use float16 instead of bfloat16 for broader GPU compatibility
         strategy=strategy,
         plugins=[RayLightningEnvironment()],
         callbacks=callbacks,
@@ -820,7 +839,12 @@ app = typer.Typer()
 artifact_storage = os.environ["ANYSCALE_ARTIFACT_STORAGE"]
 user_name = re.sub(r"\s+", "__", os.environ.get("ANYSCALE_USERNAME", "user"))
 anyscale_storage_path = f"{artifact_storage}/{user_name}"
-anyscale_storage_path = anyscale_storage_path.replace("s3://", "")
+# Remove protocol prefix for storage path - works for both s3:// and abfss://
+if anyscale_storage_path.startswith("s3://"):
+    anyscale_storage_path = anyscale_storage_path.replace("s3://", "")
+elif is_abfss_path(anyscale_storage_path):
+    # Keep ABFSS paths as-is since they need the full URI
+    pass
 
 
 @app.command()
@@ -932,55 +956,125 @@ def train(
         if resume_from_checkpoint:
             checkpoint = Checkpoint(resume_from_checkpoint)
 
-        s3_fs = S3FileSystem()
-        fs = pyarrow.fs.PyFileSystem(pyarrow.fs.FSSpecHandler(s3_fs))
+        # Handle ABFSS vs S3 storage paths differently
+        if is_abfss_path(storage_path):
+            if not ADLFS_AVAILABLE:
+                raise ImportError(
+                    "adlfs is required for ABFSS support. Install it with: pip install adlfs"
+                )
+            import re
+            match = re.match(r"abfss?://[^@]+@([^.]+)\.dfs\.core\.windows\.net", storage_path)
+            if not match:
+                raise ValueError(f"Invalid ABFSS path format: {storage_path}")
 
-        trainer = TorchTrainer(
-            train_func,
-            train_loop_config={
-                "seed": seed,
-                "lr": lr,
-                "weight_decay": weight_decay,
-                "num_warmup_steps": num_warmup_steps,
-                "init_from_pretrained": init_from_pretrained,
-                "model_name": model_name,
-                "use_xformers": use_xformers,
-                "use_small_unet": use_small_unet,
-                "batch_size_per_worker": batch_size_per_worker,
-                "max_steps": max_steps,
-                "fsdp": fsdp,
-                "sharding_policy": sharding_policy,
-                "checkpoint_sharding_strategy": checkpoint_sharding_strategy,
-                "resume_from_checkpoint": resume_from_checkpoint,
-                "checkpoint_every_n_steps": checkpoint_every_n_steps,
-                "val_check_interval": val_check_interval,
-                "accumulate_grad_batches": accumulate_grad_batches,
-                "prefetch_batches": prefetch_batches,
-                "resolution": cast(ResolutionDtype, resolution),
-            },
-            scaling_config=ScalingConfig(
-                num_workers=num_training_workers,
-                use_gpu=True,
-                accelerator_type=accelerator_type,
-            ),
-            run_config=RunConfig(
-                name=experiment_name,
-                storage_path=storage_path,
-                storage_filesystem=fs,
-                failure_config=FailureConfig(max_failures=max_failures),
-            ),
-            datasets=ray_datasets,  # type: ignore [arg-type]
-            resume_from_checkpoint=checkpoint,
-        )
+            account_name = match.group(1)
+            # Test that we can create the filesystem
+            test_fs = create_azure_filesystem(account_name)
+            logger.info("Successfully validated ABFSS authentication")
+
+            # For ABFSS, Ray Train doesn't support it directly for storage_path
+            # Use local storage for Ray Train checkpoints, we'll handle ABFSS copying separately
+            logger.warning("Ray Train doesn't support ABFSS storage_path directly.")
+            logger.warning("Using local storage for checkpoints. Will upload to ABFSS after training.")
+
+            # Create a local storage path for Ray Train checkpoints
+            local_storage_path = get_local_storage_path()
+            os.makedirs(local_storage_path, exist_ok=True)
+
+            trainer = TorchTrainer(
+                train_func,
+                train_loop_config={
+                    "seed": seed,
+                    "lr": lr,
+                    "weight_decay": weight_decay,
+                    "num_warmup_steps": num_warmup_steps,
+                    "init_from_pretrained": init_from_pretrained,
+                    "model_name": model_name,
+                    "use_xformers": use_xformers,
+                    "use_small_unet": use_small_unet,
+                    "batch_size_per_worker": batch_size_per_worker,
+                    "max_steps": max_steps,
+                    "fsdp": fsdp,
+                    "sharding_policy": sharding_policy,
+                    "checkpoint_sharding_strategy": checkpoint_sharding_strategy,
+                    "resume_from_checkpoint": resume_from_checkpoint,
+                    "checkpoint_every_n_steps": checkpoint_every_n_steps,
+                    "val_check_interval": val_check_interval,
+                    "accumulate_grad_batches": accumulate_grad_batches,
+                    "prefetch_batches": prefetch_batches,
+                    "resolution": cast(ResolutionDtype, resolution),
+                },
+                scaling_config=ScalingConfig(
+                    num_workers=num_training_workers,
+                    use_gpu=True,
+                    accelerator_type=accelerator_type,
+                ),
+                run_config=RunConfig(
+                    name=experiment_name,
+                    storage_path=local_storage_path,
+                    failure_config=FailureConfig(max_failures=max_failures),
+                ),
+                datasets=ray_datasets,  # type: ignore [arg-type]
+                resume_from_checkpoint=checkpoint,
+            )
+        else:
+            # For S3, use the existing approach
+            s3_fs = S3FileSystem()
+            fs = pyarrow.fs.PyFileSystem(pyarrow.fs.FSSpecHandler(s3_fs))
+
+            trainer = TorchTrainer(
+                train_func,
+                train_loop_config={
+                    "seed": seed,
+                    "lr": lr,
+                    "weight_decay": weight_decay,
+                    "num_warmup_steps": num_warmup_steps,
+                    "init_from_pretrained": init_from_pretrained,
+                    "model_name": model_name,
+                    "use_xformers": use_xformers,
+                    "use_small_unet": use_small_unet,
+                    "batch_size_per_worker": batch_size_per_worker,
+                    "max_steps": max_steps,
+                    "fsdp": fsdp,
+                    "sharding_policy": sharding_policy,
+                    "checkpoint_sharding_strategy": checkpoint_sharding_strategy,
+                    "resume_from_checkpoint": resume_from_checkpoint,
+                    "checkpoint_every_n_steps": checkpoint_every_n_steps,
+                    "val_check_interval": val_check_interval,
+                    "accumulate_grad_batches": accumulate_grad_batches,
+                    "prefetch_batches": prefetch_batches,
+                    "resolution": cast(ResolutionDtype, resolution),
+                },
+                scaling_config=ScalingConfig(
+                    num_workers=num_training_workers,
+                    use_gpu=True,
+                    accelerator_type=accelerator_type,
+                ),
+                run_config=RunConfig(
+                    name=experiment_name,
+                    storage_path=storage_path,
+                    storage_filesystem=fs,
+                    failure_config=FailureConfig(max_failures=max_failures),
+                ),
+                datasets=ray_datasets,  # type: ignore [arg-type]
+                resume_from_checkpoint=checkpoint,
+            )
     trainer.fit()
 
     # Show the produced model checkpoints under storage path.
-    fs = S3FileSystem()
-    paths = fs.glob(f"{storage_path }/**/checkpoint.ckpt")
-    print("Produced Model Checkpoints:")
-    print("===========================")
-    for p in paths:
-        print(p)
+    if is_abfss_path(storage_path):
+        upload_to_abfss(storage_path, experiment_name)
+    else:
+        # Default S3 behavior
+        try:
+            fs = S3FileSystem()
+            paths = fs.glob(f"{storage_path}/**/checkpoint.ckpt")
+            print("Produced Model Checkpoints:")
+            print("===========================")
+            for p in paths:
+                print(p)
+        except Exception as e:
+            print(f"Warning: Could not list checkpoints: {e}")
 
 
 if __name__ == "__main__":

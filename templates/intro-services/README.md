@@ -103,7 +103,12 @@ Use the following to deploy `my_service` in a single command:
 
 
 ```python
-!anyscale service deploy main:my_app --name=my_service
+# Define the service name - change this to customize your service name
+SERVICE_NAME = "my_service"
+
+print(f"Service name: {SERVICE_NAME}")
+
+!anyscale service deploy main:my_app --name={SERVICE_NAME}
 ```
 
 **Note**: This Anyscale Service pulls the associated dependencies, compute config, and service config from the workspace. To define these explicitly, you can deploy from a `config.yaml` file using the `-f` flag. See [ServiceConfig reference](https://docs.anyscale.com/reference/service-api#serviceconfig) for details.
@@ -116,7 +121,7 @@ To get the status of `my_service`, run the following:
 
 
 ```python
-!anyscale service status --name=my_service
+!anyscale service status --name={SERVICE_NAME}
 ```
 
 ### Query the service
@@ -133,10 +138,58 @@ Fill in the following placeholder values for the `BASE_URL` and `API_KEY` in the
 
 
 ```python
-import requests
+import subprocess
+import re
 
-BASE_URL = "" # PASTE HERE
-API_KEY = "" # PASTE HERE
+# Extract service information from the status command
+def extract_service_info(service_name):
+    """Extract the API token and base URL from anyscale service status command."""
+    try:
+        # Run the service status command
+        result = subprocess.run(
+            ["anyscale", "service", "status", f"--name={service_name}"],
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        
+        # Extract query_auth_token
+        token_match = re.search(r'query_auth_token:\s*(\S+)', result.stdout)
+        api_key = token_match.group(1) if token_match else None
+        
+        # Extract query_url (handle potential line breaks and color codes in output)
+        # The URL might be split across multiple lines with ANSI color codes
+        url_match = re.search(r'query_url:\s*\n?\s*(?:\[[0-9;]+m)?(https://[^\s\[\n]+)(?:\[[0-9;]+m)?(?:\n\s*(?:\[[0-9;]+m)?([^\s\[\n]+))?', result.stdout)
+        if url_match:
+            base_url = url_match.group(1)
+            # If there's a second part (like "om" after line break), append it
+            if url_match.group(2):
+                base_url += url_match.group(2)
+        else:
+            base_url = None
+        
+        return api_key, base_url
+    except subprocess.CalledProcessError as e:
+        print(f"Error running service status command: {e}")
+        return None, None
+
+# Extract the service info for the deployed service
+API_KEY, BASE_URL = extract_service_info(SERVICE_NAME)
+
+print(f"Extracted API_KEY: {API_KEY}")
+print(f"Extracted BASE_URL: {BASE_URL}")
+
+# Verify we got valid values
+if not API_KEY or not BASE_URL:
+    print("Warning: Could not extract service information. Please check the service status manually.")
+else:
+    print("✅ Successfully extracted service credentials for testing!")
+
+```
+
+
+```python
+import requests
 
 def send_request(name: str) -> str:
     response: requests.Response = requests.get(
