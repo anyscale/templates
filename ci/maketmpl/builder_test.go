@@ -12,6 +12,7 @@ import (
 	"reflect"
 	"runtime"
 	"sort"
+	"strings"
 	"testing"
 )
 
@@ -260,6 +261,20 @@ func TestBuilder(t *testing.T) {
 				"readme for github %q, does not match the saved %q",
 				gh, srcReadme,
 			)
+		}
+	}
+
+	previewZip := filepath.Join(tmp, previewDotZip)
+	z, err = zip.OpenReader(previewZip)
+	if err != nil {
+		t.Fatalf("open preview zip: %v", err)
+	}
+	defer z.Close()
+
+	// Make sure that .meta is empty.
+	for _, f := range z.File {
+		if strings.HasPrefix(f.Name, ".meta/") {
+			t.Fatalf("preview zip contains .meta/ directory")
 		}
 	}
 }
