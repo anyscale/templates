@@ -38,15 +38,3 @@
   compute_config:
     GCP: configs/basic-serverless-config/gce.yaml
     AWS: configs/basic-serverless-config/aws.yaml
-
-# owner: goku
-- name: entity-recognition-with-llms
-  emoji: 📝
-  title: Entity Recognition with LLMs
-  description: Fine-tune an LLM to perform batch inference and online serving for entity recognition.
-  dir: templates/entity-recognition-with-llms
-  cluster_env:
-    build_id: anyscaleray-llm2441-py311-cu124
-  compute_config:
-    AWS: configs/serverless/aws.yaml
-    GCP: configs/serverless/gcp.yaml
