@@ -25,6 +25,9 @@ const (
 	// The name of the build result zip file.
 	buildDotZip = "build.zip"
 
+	// The name of the preview result zip file.
+	previewDotZip = "preview.zip"
+
 	// The name of the tempalte metadata JSON file.
 	rayAppDotJSON = "ray-app.json"
 
@@ -153,6 +156,17 @@ func (b *builder) build(outputDir string) error {
 	zipOutput := filepath.Join(outputDir, buildDotZip)
 	if err := buildZip(b.tmplDir, srcFiles, zipOutput); err != nil {
 		return fmt.Errorf("save release zip file: %w", err)
+	}
+
+	// Preview zip file contains all the source files except the meta file.
+	// This is for the file viewer to show preview of the template content.
+	var previewFiles []*zipFile
+	for _, f := range files {
+		previewFiles = append(previewFiles, &zipFile{path: f})
+	}
+	previewZipOutput := filepath.Join(outputDir, previewDotZip)
+	if err := buildZip(b.tmplDir, previewFiles, previewZipOutput); err != nil {
+		return fmt.Errorf("save preview zip file: %w", err)
 	}
 
 	// Write out the ray-app.json file as an independent file too.
