@@ -64,7 +64,7 @@ __Industries/verticals__
 ```
 FROM anyscale/ray:2.49.2-slim-py312-cu128
 
-RUN pip install python_depset.lock --no-cache-dir --no-deps
+RUN uv pip install -r python_depset.lock --no-cache-dir --no-deps --system
 
 # Add your Debian packages here. Do not install unnecessary packages for a smaller image size to optimize build and cluster startup time.
 RUN sudo apt-get update -y \
