@@ -64,7 +64,7 @@ __Industries/verticals__
 ```
 FROM anyscale/ray:2.49.2-slim-py312-cu128
 
-RUN pip install --no-cache-dir --upgrade "torch==2.6.0" "torchvision==0.21.0" "matplotlib==3.10.1" "diffusers==0.32.2" "transformers==4.50.0" "accelerate==1.5.2" "xgboost==2.1.4" "pytorch-lightning==2.5.1" "pyarrow==19.0.1" "datasets==3.5.0" "evaluate==0.4.3" "scikit-learn==1.6.1" "torch-tb-profiler==0.4.3" "tensorboard==2.19.0"
+RUN pip install python_depset.lock --no-cache-dir --no-deps
 
 # Add your Debian packages here. Do not install unnecessary packages for a smaller image size to optimize build and cluster startup time.
 RUN sudo apt-get update -y \
