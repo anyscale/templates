@@ -2,11 +2,11 @@
 
 **Workshop Duration**: 3 hours | **Difficulty**: Intermediate to Advanced | **Prerequisites**: Data engineering experience, Python knowledge
 
-This workshop demonstrates advanced Ray Data capabilities through three hands-on exercises covering batch inference optimization, ETL processing, and unstructured data ingestion.
+This template demonstrates advanced Ray Data capabilities through three use cases covering batch inference optimization, ETL processing, and unstructured data ingestion.
 
-## Workshop exercises
+## Use cases
 
-| Exercise | Duration | Focus Area | Description |
+| Use Case | Duration | Focus Area | Description |
 |----------|----------|------------|-------------|
 | **[Batch Inference Optimization](https://console.anyscale.com/template-preview/summit25-raydata-pipelines?file=%252Ffiles%252Fbatch-inference-optimization)** | 65 min | ML Inference | Build optimized ML batch inference pipelines using Ray Data's actor-based patterns. Learn to eliminate common bottlenecks and achieve 10-100x performance improvements. |
 | **[ETL Processing & Optimization](https://console.anyscale.com/template-preview/summit25-raydata-pipelines?file=%252Ffiles%252Fetl-optimization)** | 40 min | Data Engineering | Process large-scale ETL workflows using TPC-H benchmark data. Master distributed transformations, joins, and data warehouse integration patterns. |
