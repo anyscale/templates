@@ -138,40 +138,25 @@ Fill in the following placeholder values for the `BASE_URL` and `API_KEY` in the
 
 
 ```python
+import json
 import subprocess
-import re
 
 # Extract service information from the status command
 def extract_service_info(service_name):
     """Extract the API token and base URL from anyscale service status command."""
     try:
         # Run the service status command
-        result = subprocess.run(
-            ["anyscale", "service", "status", f"--name={service_name}"],
-            capture_output=True,
+        result = subprocess.check_output(
+            ["anyscale", "service", "status", "--json", f"--name={service_name}"],
             text=True,
-            check=True
         )
-        
-        # Extract query_auth_token
-        token_match = re.search(r'query_auth_token:\s*(\S+)', result.stdout)
-        api_key = token_match.group(1) if token_match else None
-        
-        # Extract query_url (handle potential line breaks and color codes in output)
-        # The URL might be split across multiple lines with ANSI color codes
-        url_match = re.search(r'query_url:\s*\n?\s*(?:\[[0-9;]+m)?(https://[^\s\[\n]+)(?:\[[0-9;]+m)?(?:\n\s*(?:\[[0-9;]+m)?([^\s\[\n]+))?', result.stdout)
-        if url_match:
-            base_url = url_match.group(1)
-            # If there's a second part (like "om" after line break), append it
-            if url_match.group(2):
-                base_url += url_match.group(2)
-        else:
-            base_url = None
-        
-        return api_key, base_url
     except subprocess.CalledProcessError as e:
         print(f"Error running service status command: {e}")
         return None, None
+
+    # Extract query_auth_token
+    parsed_result = json.loads(result)
+    return parsed_result["query_auth_token"], parsed_result["query_url"]
 
 # Extract the service info for the deployed service
 API_KEY, BASE_URL = extract_service_info(SERVICE_NAME)
