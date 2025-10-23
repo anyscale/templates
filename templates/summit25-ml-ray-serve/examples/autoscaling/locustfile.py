@@ -15,7 +15,7 @@ class ImageClassificationUser(HttpUser):
 class AutoscalingTrafficPattern(LoadTestShape):
     """
     Traffic pattern to demonstrate autoscaling behavior.
-    
+
     Stages simulate realistic traffic with gradual ramp up, sustained load,
     spike, and ramp down to observe scale-up and scale-down behavior.
     """
@@ -33,4 +33,3 @@ class AutoscalingTrafficPattern(LoadTestShape):
                 return (stage["users"], stage["spawn_rate"])
 
         return None
-

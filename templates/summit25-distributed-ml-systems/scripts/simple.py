@@ -9,8 +9,8 @@ def simple_task():
     return "Hello, Ray!"
 
 if __name__ == "__main__":
-    # The raylet process logs detailed information about events like task execution 
-    # and object transfers between nodes. Set the logging level at runtime 
+    # The raylet process logs detailed information about events like task execution
+    # and object transfers between nodes. Set the logging level at runtime
     # to get more information.
     ray.init(runtime_env={"env_vars": {"RAY_BACKEND_LOG_LEVEL": "debug"}})
 

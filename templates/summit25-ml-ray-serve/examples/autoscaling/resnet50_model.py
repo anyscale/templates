@@ -47,4 +47,3 @@ class Model:
 
 
 app = Model.bind()
-
