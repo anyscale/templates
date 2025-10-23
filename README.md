@@ -1,5 +1,12 @@
 # Anyscale Starter Templates
 
+> **⚠️ DEPRECATION NOTICE**
+>
+> This repository is being deprecated.
+>
+> - **For existing templates:** Consider moving them to the Ray repo at https://github.com/ray-project/ray/tree/master/doc/source/templates
+> - **For new templates:** Create templates directly in the Ray repo instead of this repository
+
 These templates are a set of minimal examples & tutorials for customers to run on the anyscale platform.
 
 ## Contributing Guide
