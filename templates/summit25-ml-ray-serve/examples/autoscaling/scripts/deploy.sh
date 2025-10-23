@@ -32,4 +32,3 @@ echo "Service endpoint: http://127.0.0.1:8000"
 echo ""
 echo "Test with:"
 echo "curl -X POST http://127.0.0.1:8000 -H 'Content-Type: application/json' -d '{\"uri\": \"https://raw.githubusercontent.com/pytorch/hub/master/images/dog.jpg\"}'"
-
