@@ -34,7 +34,7 @@
   description: Introduction on how to use Anyscale Services
   dir: templates/intro-services
   cluster_env:
-    build_id: anyscaleray2501-py39
+    build_id: anyscaleray2501-py311
   compute_config:
     GCP: configs/basic-serverless-config/gce.yaml
     AWS: configs/basic-serverless-config/aws.yaml
