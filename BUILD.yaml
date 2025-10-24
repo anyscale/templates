@@ -38,3 +38,18 @@
   compute_config:
     GCP: configs/basic-serverless-config/gce.yaml
     AWS: configs/basic-serverless-config/aws.yaml
+
+### summit 2025 templates
+
+- name: summit25-deploy-and-finetune-llm
+  emoji: 🚀🤖
+  title: Deploy and fine-tune LLMs with vLLM and Llama-Factory
+  description: Deploy gpt-oss 20B with Ray Serve LLM and fine-tune popular open-source LLMs using Llama-Factory on Anyscale.
+  dir: templates/summit25-deploy-and-finetune-llm
+  cluster_env:
+    byod:
+      docker_image: anyscale/ray-llm:2.50.1-py311-cu128
+      ray_version: 2.50.1
+  compute_config:
+    AWS: configs/summit25-deploy-and-finetune-llm/aws.yaml
+    GCP: configs/summit25-deploy-and-finetune-llm/gce.yaml
