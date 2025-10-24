@@ -80,6 +80,18 @@
     AWS: configs/summit25-raytrain-training/aws.yaml
     GCP: configs/summit25-raytrain-training/gce.yaml
 
+- name: summit25-distributed-ml-systems
+  emoji: ⚙️📈
+  title: Building distributed ML systems with Ray Core
+  description: Hands-on tasks, actors, and streaming patterns to build scalable ML pipelines and distributed training.
+  cluster_env:
+    byod:
+      docker_image: us-docker.pkg.dev/anyscale-workspace-templates/workspace-templates/ray-core-summit:2.50.0
+      ray_version: 2.50.0
+  compute_config:
+    AWS: configs/summit25-distributed-ml-systems/aws.yaml
+    GCP: configs/summit25-distributed-ml-systems/gce.yaml
+
 - name: summit25-ml-ray-serve
   emoji: ⚙️📈
   title: Serving ML models with Ray Serve
