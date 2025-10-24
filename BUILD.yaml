@@ -53,3 +53,16 @@
   compute_config:
     AWS: configs/summit25-deploy-and-finetune-llm/aws.yaml
     GCP: configs/summit25-deploy-and-finetune-llm/gce.yaml
+
+- name: ray-data-pipelines
+  emoji: ⚡🧠
+  title: Building pipelines with Ray Data
+  description: Building scalable, multi-modal data processing pipelines with Ray Data, including batch inference optimization, ETL processing & optimization, and unstructured data ingestion.
+  dir: templates/ray-data-pipelines
+  cluster_env:
+    byod:
+      docker_image: us-docker.pkg.dev/anyscale-workspace-templates/workspace-templates/ray-data-pipelines:2.50.1
+      ray_version: 2.50.1
+  compute_config:
+    AWS: configs/ray-data-pipelines/aws.yaml
+    GCP: configs/ray-data-pipelines/gce.yaml
