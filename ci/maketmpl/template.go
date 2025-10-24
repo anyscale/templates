@@ -9,14 +9,14 @@ import (
 
 // ClusterEnvBYOD is the cluster environment for BYOD clusters.
 type ClusterEnvBYOD struct {
-	DockerImage string `yaml:"docker_image"`
-	RayVersion  string `yaml:"ray_version,omitempty"`
+	DockerImage string `yaml:"docker_image" json:"docker_image"`
+	RayVersion  string `yaml:"ray_version,omitempty" json:"ray_version,omitempty"`
 }
 
 // ClusterEnv is the cluster environment for Anyscale clusters.
 type ClusterEnv struct {
-	BuildID string          `yaml:"build_id,omitempty"`
-	BYOD    *ClusterEnvBYOD `yaml:"byod,omitempty"`
+	BuildID string          `yaml:"build_id,omitempty" json:"build_id,omitempty"`
+	BYOD    *ClusterEnvBYOD `yaml:"byod,omitempty" json:"byod,omitempty"`
 }
 
 // Template defines the definition of a workspace template.
