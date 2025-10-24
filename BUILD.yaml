@@ -79,3 +79,16 @@
   compute_config:
     AWS: configs/summit25-raytrain-training/aws.yaml
     GCP: configs/summit25-raytrain-training/gce.yaml
+
+- name: summit25-ml-ray-serve
+  emoji: ⚙️📈
+  title: Serving ML models with Ray Serve
+  description: Best practices and scalable production patterns for serving ML models with Ray Serve.
+  dir: templates/summit25-ml-ray-serve
+  cluster_env:
+    byod:
+      docker_image: us-docker.pkg.dev/anyscale-workspace-templates/workspace-templates/ray-serve-summit:2.50.0
+      ray_version: 2.50.0
+  compute_config:
+    AWS: configs/summit25-ml-ray-serve/aws.yaml
+    GCP: configs/summit25-ml-ray-serve/gce.yaml

@@ -1,0 +1,36 @@
+{
+    "name": "replica_handle_request",
+    "context": {
+        "trace_id": "0x2d5ed4047a3efcdf74ba8644db8cb24e",
+        "span_id": "0x75e02cfff4c43bbb",
+        "trace_state": "[]"
+    },
+    "kind": "SpanKind.SERVER",
+    "parent_id": "0x4e025e8ec4427767",
+    "start_time": "2025-04-08T22:42:02.861716Z",
+    "end_time": "2025-04-08T22:42:02.871145Z",
+    "status": {
+        "status_code": "OK"
+    },
+    "attributes": {
+        "request_id": "e0ec146b-1ad8-4d47-8dd1-55bfe5aa826c",
+        "replica_id": "i852aab6",
+        "deployment": "HelloWorld",
+        "app": "default",
+        "call_method": "__call__",
+        "route": "/",
+        "multiplexed_model_id": "",
+        "is_streaming": true
+    },
+    "events": [],
+    "links": [],
+    "resource": {
+        "attributes": {
+            "telemetry.sdk.language": "python",
+            "telemetry.sdk.name": "opentelemetry",
+            "telemetry.sdk.version": "1.26.0",
+            "service.name": "unknown_service"
+        },
+        "schema_url": ""
+    }
+}

@@ -1,0 +1,19 @@
+# default_tracing_service.yaml
+name: default-tracing-service
+working_dir: https://github.com/anyscale/tracing-example/archive/1bf0aa2b6e846de485979e763d416a006767d793.zip
+image_uri: anyscale/ray:2.40.0-slim-py310
+requirements:
+  - opentelemetry-api==1.26.0
+  - opentelemetry-sdk==1.26.0
+  - opentelemetry-exporter-otlp==1.26.0
+  - opentelemetry-exporter-otlp-proto-grpc==1.26.0
+  - opentelemetry-instrumentation==0.47b0
+  - opentelemetry-instrumentation-asgi==0.47b0
+  - opentelemetry-instrumentation-fastapi==0.47b0
+applications:
+- route_prefix:  '/'
+  import_path: default_serve_hello:app
+  runtime_env: {}
+tracing_config:
+  enabled: True
+  sampling_ratio: 1.0

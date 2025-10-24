@@ -1,0 +1,5 @@
+applications:
+  - name: MyApp
+    import_path: main:app_builder
+    args:
+      message: "Hello from config"
