@@ -52,7 +52,7 @@ func TestReadTemplates(t *testing.T) {
 		Title:       "Intro to Jobs",
 		Dir:         "templates/intro-jobs",
 		Description: "Introduction on how to use Anyscale Jobs",
-		ClusterEnv:  map[string]any{"build_id": "anyscaleray2340-py311"},
+		ClusterEnv:  &ClusterEnv{BuildID: "anyscaleray2340-py311"},
 		ComputeConfig: map[string]string{
 			"GCP": "configs/basic-single-node/gce.yaml",
 			"AWS": "configs/basic-single-node/aws.yaml",
@@ -63,7 +63,7 @@ func TestReadTemplates(t *testing.T) {
 		Title:       "Intro to Workspaces",
 		Dir:         "templates/intro-workspaces",
 		Description: "Introduction on how to use Anyscale Workspaces",
-		ClusterEnv:  map[string]any{"build_id": "anyscaleray2340-py311"},
+		ClusterEnv:  &ClusterEnv{BuildID: "anyscaleray2340-py311"},
 		ComputeConfig: map[string]string{
 			"GCP": "configs/basic-single-node/gce.yaml",
 			"AWS": "configs/basic-single-node/aws.yaml",
