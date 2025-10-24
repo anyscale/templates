@@ -66,3 +66,16 @@
   compute_config:
     AWS: configs/ray-data-pipelines/aws.yaml
     GCP: configs/ray-data-pipelines/gce.yaml
+
+- name: summit25-raytrain-training
+  emoji: 🚀💪
+  title: Easy scalable training with Ray Train
+  description: Train PyTorch models efficiently with Ray Train. This guide covers data migration, checkpointing, fault tolerance, Ray Data integration, and observability.
+  dir: templates/summit25-raytrain-training
+  cluster_env:
+    byod:
+      docker_image: us-docker.pkg.dev/anyscale-workspace-templates/workspace-templates/summit25-ai-libs:2
+      ray_version: 2.49.2
+  compute_config:
+    AWS: configs/summit25-raytrain-training/aws.yaml
+    GCP: configs/summit25-raytrain-training/gce.yaml
