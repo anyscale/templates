@@ -17,6 +17,7 @@ llm_config = LLMConfig(
     engine_kwargs=dict(
         max_model_len=32768
     ),
+    log_engine_metrics= True,
 )
 
 app = build_openai_app({"llm_configs": [llm_config]})
