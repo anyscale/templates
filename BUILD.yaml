@@ -102,6 +102,7 @@
   emoji: ⚙️📈
   title: Building distributed ML systems with Ray Core
   description: Hands-on tasks, actors, and streaming patterns to build scalable ML pipelines and distributed training.
+  dir: templates/summit25-distributed-ml-systems
   cluster_env:
     byod:
       docker_image: us-docker.pkg.dev/anyscale-workspace-templates/workspace-templates/ray-core-summit:2.50.0
