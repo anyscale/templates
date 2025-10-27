@@ -55,8 +55,8 @@ func TestBuilder(t *testing.T) {
 		Name:  "reefy-ray",
 		Dir:   "reefy-ray",
 		Title: "Ray lives in the REEf",
-		ClusterEnv: map[string]any{
-			"build_id": "anyscaleray2340-py311",
+		ClusterEnv: &ClusterEnv{
+			BuildID: "anyscaleray2340-py311",
 		},
 		ComputeConfig: map[string]string{
 			"AWS": "configs/aws.yaml",
@@ -144,7 +144,7 @@ func TestBuilder(t *testing.T) {
 		t.Fatalf("decode cluster env: %v", err)
 	}
 
-	var clusterEnvGot map[string]any
+	var clusterEnvGot *ClusterEnv
 	if err := json.Unmarshal(clusterEnv, &clusterEnvGot); err != nil {
 		t.Fatalf("unmarshal cluster env: %v", err)
 	}
