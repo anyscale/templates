@@ -63,7 +63,7 @@
   dir: templates/ray-data-pipelines
   cluster_env:
     byod:
-      docker_image: us-docker.pkg.dev/anyscale-workspace-templates/workspace-templates/ray-data-pipelines:2.50.1
+      docker_image: 593241322649.dkr.ecr.us-east-2.amazonaws.com/workspace-templates/ray-data-pipelines:2.50.1
       ray_version: 2.50.1
   compute_config:
     AWS: configs/ray-data-pipelines/aws.yaml
