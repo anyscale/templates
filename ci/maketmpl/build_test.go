@@ -6,7 +6,11 @@ import (
 	"testing"
 )
 
-func checkBuiltTemplate(t *testing.T, tmp, tmplName string) {
+type builtTemplateChecker struct {
+	allowEmpty bool
+}
+
+func (c *builtTemplateChecker) check(t *testing.T, tmp, tmplName string) {
 	t.Helper()
 
 	// Check that critical files are generated.
@@ -25,8 +29,11 @@ func checkBuiltTemplate(t *testing.T, tmp, tmplName string) {
 		if stat.IsDir() {
 			t.Errorf("%q is a directory", f)
 		}
-		if stat.Size() == 0 {
-			t.Errorf("%q is empty", f)
+
+		if !c.allowEmpty {
+			if stat.Size() == 0 {
+				t.Errorf("%q is empty", f)
+			}
 		}
 	}
 }
@@ -38,9 +45,13 @@ func TestBuildAll(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	checker := &builtTemplateChecker{allowEmpty: false}
 	for _, tmpl := range []string{"reefy-ray", "fishy-ray"} {
-		checkBuiltTemplate(t, tmp, tmpl)
+		checker.check(t, tmp, tmpl)
 	}
+
+	checker.allowEmpty = true
+	checker.check(t, tmp, "nully-ray")
 }
 
 func TestBuild(t *testing.T) {
@@ -52,7 +63,8 @@ func TestBuild(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	checkBuiltTemplate(t, tmp, "reefy-ray")
+	checker := &builtTemplateChecker{}
+	checker.check(t, tmp, "reefy-ray")
 }
 
 func TestBuild_notFound(t *testing.T) {
