@@ -77,7 +77,7 @@
   dir: templates/summit25-ai-libs-training
   cluster_env:
     byod:
-      docker_image: us-docker.pkg.dev/anyscale-workspace-templates/workspace-templates/summit25-ai-libs:2
+      docker_image: us-docker.pkg.dev/anyscale-workspace-templates/workspace-templates/summit25-ai-libs:1
       ray_version: 2.49.2
   compute_config:
     AWS: configs/summit25-ai-libs-training/aws.yaml
