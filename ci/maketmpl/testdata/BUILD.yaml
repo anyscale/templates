@@ -19,3 +19,14 @@
   compute_config:
     GCP: configs/gcp.yaml
     AWS: configs/aws.yaml
+
+- name: nully-ray
+  emoji: 🪱
+  title: Nully Ray
+  description: Ray lives deep in the ocean.
+  dir: nully-ray
+  cluster_env:
+    build_id: anyscaleray2370-py311
+  compute_config:
+    GCP: configs/gcp.yaml
+    AWS: configs/aws.yaml
