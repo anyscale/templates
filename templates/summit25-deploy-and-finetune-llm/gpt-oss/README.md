@@ -25,18 +25,19 @@ from ray.serve.llm import LLMConfig, build_openai_app
 llm_config = LLMConfig(
     model_loading_config=dict(
         model_id="my-gpt-oss",
-        model_source="openai/gpt-oss-20b",
+        model_source="s3://llm-guide/data/ray-serve-llm/hf_repo/gpt-oss-20b", # also support huggingface repo syntax like openai/gpt-oss-20b
     ),
     accelerator_type="L4",
     deployment_config=dict(
         autoscaling_config=dict(
-            min_replicas=1,
-            max_replicas=2,
+            min_replicas=1, # avoid cold starts by keeping at least 1 replica always on
+            max_replicas=2, # limit max replicas to control cost
         )
     ),
     engine_kwargs=dict(
         max_model_len=32768
     ),
+    log_engine_metrics= True,
 )
 
 app = build_openai_app({"llm_configs": [llm_config]})
@@ -55,10 +56,6 @@ app = build_openai_app({"llm_configs": [llm_config]})
 ### Dependencies
 
 gpt-oss integration is available starting from `ray[serve,llm]>=2.50.0`.
-
-```bash
-pip install "ray[serve,llm]>=2.50.0"
-```
 
 ---
 
@@ -81,17 +78,6 @@ Deployment typically takes a few minutes as Ray provisions the cluster, the vLLM
 ### Send requests
 
 Your endpoint is available locally at `http://localhost:8000`. You can use a placeholder authentication token for the OpenAI client, for example `"FAKE_KEY"`.
-
-#### Example curl
-
-
-```bash
-%%bash
-curl -X POST http://localhost:8000/v1/chat/completions \
-  -H "Authorization: Bearer FAKE_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{ "model": "my-gpt-oss", "messages": [{"role": "user", "content": "How many Rs in strawberry ?"}] }'
-```
 
 #### Example Python
 
@@ -145,86 +131,6 @@ serve shutdown -y
 
 ---
 
-## Deploy to production with Anyscale services
-
-For production deployment, use Anyscale services to deploy the Ray Serve app to a dedicated cluster without modifying the code. Anyscale ensures scalability, fault tolerance, and load balancing, keeping the service resilient against node failures, high traffic, and rolling updates.
-
----
-
-### Launch the service
-
-Anyscale provides out-of-the-box images (`anyscale/ray-llm`) which come pre-loaded with Ray Serve LLM, vLLM, and all required GPU/runtime dependencies. This makes it easy to get started without building a custom image.
-
-Create your Anyscale service configuration in a new `service.yaml` file:
-
-```yaml
-# service.yaml
-name: deploy-gpt-oss
-image_uri: anyscale/ray-llm:2.50.1-py311-cu128 # Anyscale Ray Serve LLM image. Use `containerfile: ./Dockerfile` to use a custom Dockerfile.
-compute_config:
-  auto_select_worker_config: true 
-working_dir: .
-cloud:
-applications:
-  # Point to your app in your Python module
-  - import_path: serve_gpt_oss:app
-```
-
-
-To deploy your service, you would use:
-```bash
-anyscale service deploy -f service.yaml
-```
-
-**Custom Dockerfile**  
-You can customize the container by writing your own Dockerfile. In your Anyscale Service config, reference the Dockerfile with `containerfile` (instead of `image_uri`):
-
-```yaml
-# service.yam
-# Replace:
-# image_uri: anyscale/ray-llm:2.50.0-py311-cu128
-
-# with:
-containerfile: ./Dockerfile
-```
-
-See the [Anyscale base images](https://docs.anyscale.com/reference/base-images) for details on what each image includes.
-
-
----
-
-### Send requests 
-
-The `anyscale service deploy` command output shows both the endpoint and authentication token:
-
-```console
-(anyscale +3.9s) curl -H "Authorization: Bearer <YOUR-TOKEN>" <YOUR-ENDPOINT>
-```
-
-You can also retrieve both from the service page in the Anyscale console. Click **Query** at the top. See [Send requests](#send-requests) for example requests, but make sure to use the correct endpoint and authentication token.  
-
----
-
-### Access the Serve LLM dashboard
-
-For instructions on enabling LLM-specific logging, see [Enable LLM monitoring](#enable-llm-monitoring). To open the Ray Serve LLM Dashboard from an Anyscale service:
-
-1. In the Anyscale console, go to the **Service** or **Workspace** tab.
-1. Navigate to the **Metrics** tab.
-1. Click **View in Grafana** and click **Serve LLM Dashboard**.
-
----
-
-### Shutdown
-
-To shutdown your Anyscale Service, you would use:
-```bash
-anyscale service terminate -n deploy-gpt-oss
-```
-
-
----
-
 ## Enable LLM monitoring
 
 The *Serve LLM Dashboard* offers deep visibility into model performance, latency, and system behavior, including:
@@ -255,11 +161,6 @@ Example log for gpt-oss-20b with 1xL4:
 INFO 09-08 17:34:28 [kv_cache_utils.py:1017] Maximum concurrency for 32,768 tokens per request: 5.22x
 ```
 
-Example log for gpt-oss-120b with 2xL40S:
-```console
-INFO 09-09 00:32:32 [kv_cache_utils.py:1017] Maximum concurrency for 32,768 tokens per request: 6.18x
-```
-
 To improve concurrency for gpt-oss models, see [Deploy a small-sized LLM: Improve concurrency](https://docs.ray.io/en/latest/serve/tutorials/deployment-serve-llm/small-size-llm/README.html#improve-concurrency) for small-sized models such as `gpt-oss-20b`, and [Deploy a medium-sized LLM: Improve concurrency](https://docs.ray.io/en/latest/serve/tutorials/deployment-serve-llm/medium-size-llm/README.html#improve-concurrency) for medium-sized models such as `gpt-oss-120b`.
 
 **Note:** Some example guides recommend using quantization to boost concurrency. `gpt-oss` weights are already 4-bit by default, so further quantization typically isn’t applicable.  
@@ -268,7 +169,7 @@ For broader guidance, also see [Choose a GPU for LLM serving](https://docs.anysc
 
 ---
 
-## Reasoning configuration
+## Reasoning configuration (with gpt-oss)
 
 You don’t need a custom reasoning parser when deploying `gpt-oss` with Ray Serve LLM, you can access the reasoning content in the model's response directly. You can also control the reasoning effort of the model in the request.
 
@@ -318,37 +219,6 @@ response = client.chat.completions.create(
 ```
 
 **Note:** There's no reliable way to completely disable reasoning.
-
----
-
-## Troubleshooting
-
-### Can't download the vocab file  
-```console
-openai_harmony.HarmonyError: error downloading or loading vocab file: failed to download or load vocab
-```
-
-The `openai_harmony` library needs the *tiktoken* encoding files and tries to fetch them from OpenAI's public host. Common causes include:
-- Corporate firewall or proxy blocks `openaipublic.blob.core.windows.net`. You may need to whitelist this domain.
-- Intermittent network issues.
-- Race conditions when multiple processes try to download to the same cache. This can happen when [deploying multiple models at the same time](https://github.com/openai/harmony/pull/41).
-
-You can also directly download the *tiktoken* encoding files in advance and set the `TIKTOKEN_ENCODINGS_BASE` environment variable:
-```bash
-mkdir -p tiktoken_encodings
-wget -O tiktoken_encodings/o200k_base.tiktoken "https://openaipublic.blob.core.windows.net/encodings/o200k_base.tiktoken"
-wget -O tiktoken_encodings/cl100k_base.tiktoken "https://openaipublic.blob.core.windows.net/encodings/cl100k_base.tiktoken"
-export TIKTOKEN_ENCODINGS_BASE=${PWD}/tiktoken_encodings
-```
-
-### `gpt-oss` architecture not recognized 
-```console
-Value error, The checkpoint you are trying to load has model type `gpt_oss` but Transformers does not recognize this architecture. This could be because of an issue with the checkpoint, or because your version of Transformers is out of date.
-```
-Older vLLM and Transformers versions don't register `gpt_oss`, raising an error when vLLM hands off to Transformers. Upgrade **vLLM ≥ 0.10.1** and let your package resolver such as `pip` handle the other dependencies.
-```bash
-pip install -U "vllm>=0.10.1"
-```
 
 ---
 
