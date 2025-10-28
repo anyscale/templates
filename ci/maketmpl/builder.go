@@ -192,6 +192,13 @@ func (b *builder) build(outputDir string) error {
 		); err != nil {
 			return fmt.Errorf("write release readme file: %w", err)
 		}
+	} else {
+		// Otherwise, write out an empty readme file any ways.
+		if err := os.WriteFile(
+			filepath.Join(outputDir, readmeDocMD), []byte(""), 0600,
+		); err != nil {
+			return fmt.Errorf("write empty readme file: %w", err)
+		}
 	}
 
 	if readmeMD != nil {
@@ -202,6 +209,12 @@ func (b *builder) build(outputDir string) error {
 			filepath.Join(outputDir, readmeGitHubMD),
 		); err != nil {
 			return fmt.Errorf("write github readme file: %w", err)
+		}
+	} else {
+		if err := os.WriteFile(
+			filepath.Join(outputDir, readmeGitHubMD), []byte(""), 0600,
+		); err != nil {
+			return fmt.Errorf("write empty github readme file: %w", err)
 		}
 	}
 
