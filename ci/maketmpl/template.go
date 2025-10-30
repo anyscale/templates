@@ -15,23 +15,25 @@ type ClusterEnvBYOD struct {
 
 // ClusterEnv is the cluster environment for Anyscale clusters.
 type ClusterEnv struct {
-	BuildID string          `yaml:"build_id,omitempty" json:"build_id,omitempty"`
-	BYOD    *ClusterEnvBYOD `yaml:"byod,omitempty" json:"byod,omitempty"`
+	BuildID string `yaml:"build_id,omitempty" json:"build_id,omitempty"`
+
+	// BYOD is the cluster environment for bring-your-own-docker clusters.
+	BYOD *ClusterEnvBYOD `yaml:"byod,omitempty" json:"byod,omitempty"`
 }
 
 // Template defines the definition of a workspace template.
 type Template struct {
-	Name string `yaml:"name"`
-	Dir  string `yaml:"dir"`
+	Name string `yaml:"name" json:"name"`
+	Dir  string `yaml:"dir" json:"dir"`
 
-	Emoji       string `yaml:"emoji"`
-	Title       string `yaml:"title"`
-	Description string `yaml:"description"`
+	Emoji       string `yaml:"emoji" json:"emoji"`
+	Title       string `yaml:"title" json:"title"`
+	Description string `yaml:"description,omitempty" json:"description,omitempty"`
 
-	ClusterEnv *ClusterEnv `yaml:"cluster_env"`
+	ClusterEnv *ClusterEnv `yaml:"cluster_env" json:"cluster_env"`
 
 	// A map of files for different compute platforms.
-	ComputeConfig map[string]string `yaml:"compute_config"`
+	ComputeConfig map[string]string `yaml:"compute_config" json:"compute_config"`
 }
 
 func readTemplates(yamlFile string) ([]*Template, error) {

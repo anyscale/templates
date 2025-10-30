@@ -1,6 +1,7 @@
 package maketmpl
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -27,7 +28,9 @@ const testBuildDotYaml = `
   description: Introduction on how to use Anyscale Workspaces
   dir: templates/intro-workspaces
   cluster_env:
-    build_id: anyscaleray2340-py311
+    byod:
+      docker_image: cr.ray.io/ray:2340-py311
+      ray_version: 2.34.0
   compute_config:
     GCP: configs/basic-single-node/gce.yaml
     AWS: configs/basic-single-node/aws.yaml
@@ -63,7 +66,12 @@ func TestReadTemplates(t *testing.T) {
 		Title:       "Intro to Workspaces",
 		Dir:         "templates/intro-workspaces",
 		Description: "Introduction on how to use Anyscale Workspaces",
-		ClusterEnv:  &ClusterEnv{BuildID: "anyscaleray2340-py311"},
+		ClusterEnv: &ClusterEnv{
+			BYOD: &ClusterEnvBYOD{
+				DockerImage: "cr.ray.io/ray:2340-py311",
+				RayVersion:  "2.34.0",
+			},
+		},
 		ComputeConfig: map[string]string{
 			"GCP": "configs/basic-single-node/gce.yaml",
 			"AWS": "configs/basic-single-node/aws.yaml",
@@ -72,6 +80,25 @@ func TestReadTemplates(t *testing.T) {
 
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("readTemplates(%q), got %+v, want %+v", f, got, want)
+	}
+
+	// Loopback with JSON encoding, and it should be the same.
+	jsonBytes, err := json.Marshal(got)
+	if err != nil {
+		t.Fatalf("marshal templates: %v", err)
+	}
+
+	jsonFile := filepath.Join(tmp, "BUILD.json")
+	if err := os.WriteFile(jsonFile, jsonBytes, 0o600); err != nil {
+		t.Fatalf("write json file: %v", err)
+	}
+
+	jsonGot, err := readTemplates(jsonFile)
+	if err != nil {
+		t.Fatalf("read json file: %v", err)
+	}
+	if !reflect.DeepEqual(jsonGot, want) {
+		t.Errorf("read json file, got %+v, want %+v", jsonGot, want)
 	}
 }
 
