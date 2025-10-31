@@ -4,18 +4,20 @@
 
 ### Part 1: Ray Tasks
 
-#### 1. Ray Tasks in Practice (`01_Ray_Tasks_in_Practice.ipynb`)
+#### 0. Ray Task - Fundamentals (`00_Ray_Task_Fundamentals.ipynb`)
 - Ray Core overview and fundamentals
 - Creating and executing remote functions with `@ray.remote`
 - Working with ObjectRefs and `ray.get()`
 - Object store and passing data by reference
 - Task chaining and dependencies
+
+#### 1. Ray Task - Adanced Patterns (`01_Ray_Task_Advanced.ipynb`)
 - Task retries and exception handling
 - Runtime environments (dependencies, environment variables)
 - Resource allocation (CPU, GPU, fractional resources)
 - Nested tasks
 - Pipeline data processing with `ray.wait()`
-- Common anti-patterns and best practices
+- Using Ray generators
 
 #### 2. Streaming Operator Execution (`02_Streaming_Operator_Execution.ipynb`)
 - Building streaming pipelines with generators and iterators
