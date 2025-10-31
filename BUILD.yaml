@@ -38,3 +38,89 @@
   compute_config:
     GCP: configs/basic-serverless-config/gce.yaml
     AWS: configs/basic-serverless-config/aws.yaml
+
+### summit 2025 templates
+
+# owner: aydin
+- name: summit25-deploy-and-finetune-llm
+  emoji: 🚀🤖
+  title: Deploy and fine-tune LLMs with vLLM and Llama-Factory
+  description: Deploy gpt-oss 20B with Ray Serve LLM and fine-tune popular open-source LLMs using Llama-Factory on Anyscale.
+  dir: templates/summit25-deploy-and-finetune-llm
+  cluster_env:
+    byod:
+      docker_image: anyscale/ray-llm:2.50.1-py311-cu128
+      ray_version: 2.50.1
+  compute_config:
+    AWS: configs/summit25-deploy-and-finetune-llm/aws.yaml
+    GCP: configs/summit25-deploy-and-finetune-llm/gce.yaml
+
+# owner: stephen
+- name: ray-data-pipelines
+  emoji: ⚡🧠
+  title: Building pipelines with Ray Data
+  description: Building scalable, multi-modal data processing pipelines with Ray Data, including batch inference optimization, ETL processing & optimization, and unstructured data ingestion.
+  dir: templates/ray-data-pipelines
+  cluster_env:
+    byod:
+      docker_image: 593241322649.dkr.ecr.us-east-2.amazonaws.com/workspace-templates/ray-data-pipelines:2.50.1
+      ray_version: 2.50.1
+  compute_config:
+    AWS: configs/ray-data-pipelines/aws.yaml
+    GCP: configs/ray-data-pipelines/gce.yaml
+
+# owner: adam
+- name: summit25-intro-rayailib
+  emoji: 🤖📚💪
+  title: Starting with Ray for distributed AI/ML
+  description: Explore Ray core AI libraries, such as Ray Data and Ray Train, and learn how to use them for large-scale training and batch inference with GenAI and LLMs.
+  dir: templates/summit25-ai-libs-training
+  cluster_env:
+    byod:
+      docker_image: 593241322649.dkr.ecr.us-east-2.amazonaws.com/workspace-templates/summit25-intro-rayailib:2.49.2
+      ray_version: 2.49.2
+  compute_config:
+    AWS: configs/summit25-ai-libs-training/aws.yaml
+    GCP: configs/summit25-ai-libs-training/gce.yaml
+
+# owner: adam
+- name: summit25-raytrain-training
+  emoji: 🚀💪
+  title: Easy scalable training with Ray Train
+  description: Train PyTorch models efficiently with Ray Train. This guide covers data migration, checkpointing, fault tolerance, Ray Data integration, and observability.
+  dir: templates/summit25-raytrain-training
+  cluster_env:
+    byod:
+      docker_image: 593241322649.dkr.ecr.us-east-2.amazonaws.com/workspace-templates/summit25-raytrain-training:2.49.2
+      ray_version: 2.49.2
+  compute_config:
+    AWS: configs/summit25-raytrain-training/aws.yaml
+    GCP: configs/summit25-raytrain-training/gce.yaml
+
+# owner: marwan
+- name: summit25-distributed-ml-systems
+  emoji: ⚙️📈
+  title: Building distributed ML systems with Ray Core
+  description: Hands-on tasks, actors, and streaming patterns to build scalable ML pipelines and distributed training.
+  dir: templates/summit25-distributed-ml-systems
+  cluster_env:
+    byod:
+      docker_image: 593241322649.dkr.ecr.us-east-2.amazonaws.com/workspace-templates/summit25-distributed-ml-systems:2.50.0
+      ray_version: 2.50.0
+  compute_config:
+    AWS: configs/summit25-distributed-ml-systems/aws.yaml
+    GCP: configs/summit25-distributed-ml-systems/gce.yaml
+
+# owner: marwan
+- name: summit25-ml-ray-serve
+  emoji: ⚙️📈
+  title: Serving ML models with Ray Serve
+  description: Best practices and scalable production patterns for serving ML models with Ray Serve.
+  dir: templates/summit25-ml-ray-serve
+  cluster_env:
+    byod:
+      docker_image: 593241322649.dkr.ecr.us-east-2.amazonaws.com/workspace-templates/summit25-ml-ray-serve:2.50.0
+      ray_version: 2.50.0
+  compute_config:
+    AWS: configs/summit25-ml-ray-serve/aws.yaml
+    GCP: configs/summit25-ml-ray-serve/gce.yaml

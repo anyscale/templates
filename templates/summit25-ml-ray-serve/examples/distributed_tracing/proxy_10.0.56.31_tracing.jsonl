@@ -1,0 +1,65 @@
+{
+    "name": "proxy_http_request",
+    "context": {
+        "trace_id": "0x2d5ed4047a3efcdf74ba8644db8cb24e",
+        "span_id": "0xa0fcaf250c32a74d",
+        "trace_state": "[]"
+    },
+    "kind": "SpanKind.SERVER",
+    "parent_id": null,
+    "start_time": "2025-04-08T22:42:02.858593Z",
+    "end_time": "2025-04-08T22:42:02.872686Z",
+    "status": {
+        "status_code": "OK"
+    },
+    "attributes": {
+        "request_id": "e0ec146b-1ad8-4d47-8dd1-55bfe5aa826c",
+        "deployment": "HelloWorld",
+        "app": "default",
+        "request_type": "http",
+        "request_method": "GET",
+        "request_route_path": "/"
+    },
+    "events": [],
+    "links": [],
+    "resource": {
+        "telemetry.sdk.language": "python",
+        "telemetry.sdk.name": "opentelemetry",
+        "telemetry.sdk.version": "1.1.0",
+        "service.name": "unknown_service"
+    }
+}
+{
+    "name": "proxy_route_to_replica",
+    "context": {
+        "trace_id": "0x2d5ed4047a3efcdf74ba8644db8cb24e",
+        "span_id": "0x4e025e8ec4427767",
+        "trace_state": "[]"
+    },
+    "kind": "SpanKind.SERVER",
+    "parent_id": "a0fcaf250c32a74d",
+    "start_time": "2025-04-08T22:42:02.859221Z",
+    "end_time": "2025-04-08T22:42:02.862683Z",
+    "status": {
+        "status_code": "OK"
+    },
+    "attributes": {
+        "request_id": "e0ec146b-1ad8-4d47-8dd1-55bfe5aa826c",
+        "deployment": "HelloWorld",
+        "app": "default",
+        "call_method": "__call__",
+        "route": "/",
+        "multiplexed_model_id": "",
+        "is_streaming": true,
+        "is_http_request": true,
+        "is_grpc_request": false
+    },
+    "events": [],
+    "links": [],
+    "resource": {
+        "telemetry.sdk.language": "python",
+        "telemetry.sdk.name": "opentelemetry",
+        "telemetry.sdk.version": "1.1.0",
+        "service.name": "unknown_service"
+    }
+}
