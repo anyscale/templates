@@ -1,0 +1,19 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: Current File",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",          // Runs the current open Python file
+            "console": "integratedTerminal", // Use VS Code's built-in terminal
+            "justMyCode": true,            // Set to false to step into library code
+            "env": {
+              "PYTHONUNBUFFERED": "1"     // Ensures real-time print output
+            }
+          }
+    ]
+}
