@@ -96,20 +96,54 @@ For each message:
 
 ```python
 async def process_finished_request(self, resp: DeploymentResponse, queue_message):
+    """Waits for model response and uploads result to S3."""
     try:
+        # Wait for image generation to complete
         result = await resp
-        
-        file_stream = BytesIO()
-        result.save(file_stream, "PNG")
-        file_stream.seek(0)
-        
-        filename = f"image_{queue_message.message_id}.png"
-        self.s3_client.upload_fileobj(
-            Fileobj=file_stream, 
-            Bucket=S3_BUCKET_NAME,
-            Key=filename,
-            ExtraArgs={"ContentType":"image/png"}
+
+        # Offload blocking operations (PIL encoding + S3 upload) to thread pool
+        filename = await self.loop.run_in_executor(
+            None,
+            self._upload_to_s3,
+            result,
+            queue_message.message_id,
         )
+
+        logger.info(f"Uploaded {filename} to S3.")
+
+    except BackPressureError as e:
+        # Model queue full - don't delete message, let it retry
+        self.backpressure_counter += 1
+        logger.info(f"({queue_message.message_id}) {str(e)}")
+    else:
+        # Success - safe to delete from queue (at-least-once delivery)
+        if self.backpressure_counter > 0:
+            logger.info("Resetting backpressure counter")
+
+        self.backpressure_counter = 0
+        queue_message.delete()
+        logger.info(f"Message {queue_message.message_id} deleted from queue.")
+    finally:
+        del self.processing_requests[queue_message.message_id]
+```
+
+Blocking upload helper used above:
+
+```python
+def _upload_to_s3(self, image, message_id: str) -> str:
+    """Blocking helper: encode image and upload to S3."""
+    file_stream = BytesIO()
+    image.save(file_stream, "PNG")
+    file_stream.seek(0)
+
+    filename = f"image_{message_id}.png"
+    self.s3_client.upload_fileobj(
+        Fileobj=file_stream,
+        Bucket=S3_BUCKET_NAME,
+        Key=filename,
+        ExtraArgs={"ContentType": "image/png"},
+    )
+    return filename
 ```
 
 When processing completes:
@@ -126,9 +160,29 @@ StableDiffusionXL has limited queue capacity:
 
 ```python
 @serve.deployment(
-    max_queued_requests=3,
-    max_ongoing_requests=1,
+    ray_actor_options={"num_gpus": 1, "num_cpus": 1},
+    max_queued_requests=3,  # Low queue capacity triggers backpressure early
+    max_ongoing_requests=1,  # GPU-bound, process one at a time
+    autoscaling_config={
+        "min_replicas": 1,
+        "max_replicas": 10,
+        "target_ongoing_requests": 1,  # Scale up when replica is busy
+    },
 )
+class StableDiffusionXL:
+    """Text-to-image model that generates images from text prompts."""
+
+    def __init__(self):
+        model_id = "stabilityai/stable-diffusion-xl-base-1.0"
+        self.pipe = DiffusionPipeline.from_pretrained(
+            model_id, torch_dtype=torch.float16, use_safetensors=True, variant="fp16"
+        )
+        self.pipe.to("cuda")
+
+    def __call__(self, prompt: str, img_size: int = 512):
+        assert len(prompt), "prompt parameter cannot be empty"
+        image = self.pipe(prompt, height=img_size, width=img_size).images[0]
+        return image
 ```
 
 When more than 3 requests are queued, Ray Serve raises `BackPressureError`.
@@ -140,10 +194,12 @@ except BackPressureError as e:
     self.backpressure_counter += 1
     logger.info(f"({queue_message.message_id}) {str(e)}")
 else:
+    if self.backpressure_counter > 0:
+        logger.info("Resetting backpressure counter")
     self.backpressure_counter = 0
     queue_message.delete()
 finally:
-    del self.processing_requests[message.message_id]
+    del self.processing_requests[queue_message.message_id]
 ```
 
 On backpressure:
@@ -157,13 +213,22 @@ On success:
 
 ### Exponential Backoff
 
+This logic lives at the end of `QueuePoller.run(...)` (the polling loop) and adapts polling frequency based on recent backpressure events.
+
 ```python
-if self.backpressure_counter == 0:
-    await asyncio.sleep(0.1)
-else:
-    backoff_time = min(10, 2 ** self.backpressure_counter)
-    logger.info(f"Model is overloaded, polling queue again after {backoff_time}s.")
-    await asyncio.sleep(backoff_time)
+class QueuePoller:
+    async def run(self):
+        # ... poll SQS, forward messages, track tasks ...
+
+        # Adaptive polling: slow down when backpressure is detected
+        if self.backpressure_counter == 0:
+            await asyncio.sleep(0.1)
+        else:
+            backoff_time = min(10, 2**self.backpressure_counter)
+            logger.info(
+                f"Model is overloaded, polling queue again after {backoff_time}s."
+            )
+            await asyncio.sleep(backoff_time)
 ```
 
 The polling frequency adapts based on backpressure:
