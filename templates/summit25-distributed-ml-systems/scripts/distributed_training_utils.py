@@ -9,6 +9,7 @@ from datetime import timedelta
 
 import ray
 import torch
+from collections import defaultdict
 import torch.distributed as dist
 
 
@@ -55,4 +56,67 @@ def cleanup_impl(rank: int):
     if dist.is_initialized():
         print(f"[Rank {rank}] Destroying process group")
         dist.destroy_process_group()
+    return True
+
+
+
+
+### Advanced: GPU Setup and Coordination
+
+# **The Problem:** When using NCCL (NVIDIA's collective communication library) for GPU training, each worker needs visibility to **all GPUs on its node**, not just its own GPU. By default, Ray isolates each actor to see only its assigned GPU.
+
+# **Why This Matters:**
+# - NCCL uses peer-to-peer GPU communication for efficiency
+# - **Workers on the same node** can use **fast NVLink/PCIe** instead of going through the network
+# - Without visibility to other GPUs, NCCL falls back to slower communication paths
+
+# **The Solution:** We gather GPU information from all workers, group them by node, and set `CUDA_VISIBLE_DEVICES` to include all GPUs on each node.
+# call share_cuda_visible_devices on the worker list before setup_torch_process_group_impl
+
+def share_cuda_visible_devices(workers: list):
+    """Share CUDA_VISIBLE_DEVICES across workers on the same node."""
+
+    # Step 1: Collect metadata from all workers using execute()
+    metadata_list = ray.get([
+        worker.execute.remote(get_worker_metadata)
+        for worker in workers
+    ])
+    
+    # Step 2: Group workers by node
+    node_to_workers = defaultdict(list)
+    for worker_idx, (node_id, gpu_ids) in enumerate(metadata_list):
+        node_to_workers[node_id].append(worker_idx)
+
+    node_to_gpu_ids = defaultdict(set)
+    for worker_idx, (node_id, gpu_ids) in enumerate(metadata_list):
+        for gpu_id in gpu_ids:
+            node_to_gpu_ids[node_id].add(str(gpu_id))
+    
+    # Step 3: Set CUDA_VISIBLE_DEVICES on each worker using execute()
+    set_refs = []
+    for node_id, worker_indices in node_to_workers.items():
+        gpu_ids_str = ",".join(sorted(node_to_gpu_ids[node_id]))
+        
+        for worker_idx in worker_indices:
+            set_ref = workers[worker_idx].execute.remote(
+                set_worker_cuda_devices,
+                rank=worker_idx,
+                gpu_ids_str=gpu_ids_str
+            )
+            set_refs.append(set_ref)
+    
+    # Wait for all workers to complete setting CUDA_VISIBLE_DEVICES
+    ray.get(set_refs)
+
+
+def get_worker_metadata():
+    """Get metadata about this worker (node_id and GPU IDs)."""
+    node_id = ray.get_runtime_context().get_node_id()
+    gpu_ids = ray.get_gpu_ids()
+    return node_id, gpu_ids
+
+def set_worker_cuda_devices(rank: int, gpu_ids_str: str):
+    """Set CUDA_VISIBLE_DEVICES for this worker."""
+    os.environ["CUDA_VISIBLE_DEVICES"] = gpu_ids_str
+    print(f"[Rank {rank}] Set CUDA_VISIBLE_DEVICES={gpu_ids_str}")
     return True

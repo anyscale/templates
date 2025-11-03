@@ -13,6 +13,7 @@ llm_config = LLMConfig(
             max_replicas=2, # limit max replicas to control cost
         )
     ),
+    runtime_env=dict(env_vars={"AWS_REGION": "us-west-2"}),
     engine_kwargs=dict(
         max_model_len=32768
     ),
