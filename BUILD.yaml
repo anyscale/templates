@@ -91,7 +91,7 @@
   dir: templates/summit25-raytrain-training
   cluster_env:
     byod:
-      docker_image: 593241322649.dkr.ecr.us-east-2.amazonaws.com/workspace-templates/summit25-raytrain-training:2.49.2
+      docker_image: us-docker.pkg.dev/anyscale-workspace-templates/workspace-templates/summit25-ai-libs:2
       ray_version: 2.49.2
   compute_config:
     AWS: configs/summit25-raytrain-training/aws.yaml
@@ -119,7 +119,7 @@
   dir: templates/summit25-ml-ray-serve
   cluster_env:
     byod:
-      docker_image: 593241322649.dkr.ecr.us-east-2.amazonaws.com/workspace-templates/summit25-ml-ray-serve:2.50.0
+      docker_image: us-docker.pkg.dev/anyscale-workspace-templates/workspace-templates/ray-serve-summit:2.50.0
       ray_version: 2.50.0
   compute_config:
     AWS: configs/summit25-ml-ray-serve/aws.yaml
