@@ -23,20 +23,20 @@ Learn the core concepts of batch inference optimization by comparing inefficient
 - **Why It Fails**: Learn the technical reasons behind poor performance
 - **The Right Way**: Implement optimized actor-based inference (works on CPU and GPU)
 
-### Part 2: Advanced Optimization
-Master systematic optimization techniques for production deployment:
-- **Decision Framework**: Learn when to use each optimization parameter
-- **Advanced Techniques**: Multi-model ensembles, systematic parameter tuning
-- **Performance Monitoring**: Use Ray Dashboard for optimization decisions
-- **Production Deployment**: Best practices for enterprise-scale inference
-
-### Part 3: Ray Data Architecture
+### Part 2: Ray Data Architecture
 Understand how Ray Data's architecture enables optimization:
 - **Streaming Execution**: How Ray Data processes unlimited datasets with constant memory
 - **Blocks and Memory Model**: Understanding object store, heap memory, and zero-copy
 - **Operators and Fusion**: How Ray Data combines operations for efficiency
 - **Resource Management**: Automatic backpressure and dynamic allocation
 - **Architecture-Informed Decisions**: Calculate optimal batch_size and concurrency from first principles
+
+### Part 3: Advanced Optimization
+Master systematic optimization techniques for production deployment:
+- **Decision Framework**: Learn when to use each optimization parameter
+- **Advanced Techniques**: Multi-model ensembles, systematic parameter tuning
+- **Performance Monitoring**: Use Ray Dashboard for optimization decisions
+- **Production Deployment**: Best practices for enterprise-scale inference
 
 ## Learning Objectives
 
@@ -136,15 +136,15 @@ The optimization patterns and architecture concepts apply equally to both CPU an
    - Learn the solution: actor-based patterns
    - Get immediate results: 10-50x throughput improvement
    
-2. **Continue to Part 2** (20 min) - Master advanced optimization techniques
-   - Systematic decision frameworks
-   - Multi-model ensemble patterns
-   - Performance monitoring and tuning
-   
-3. **Finish with Part 3** (25 min) - Deep dive into Ray Data architecture
+2. **Continue to Part 2** (25 min) - Deep dive into Ray Data architecture
    - How streaming execution works
    - Memory model and zero-copy optimizations
    - Calculate optimal parameters from first principles
+
+3. **Finish with Part 3** (20 min) - Master advanced optimization techniques
+   - Systematic decision frameworks
+   - Multi-model ensemble patterns
+   - Performance monitoring and tuning
 
 Each part builds on the previous, so complete them in order for the best learning experience.
 
