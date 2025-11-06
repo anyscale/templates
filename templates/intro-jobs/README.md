@@ -67,14 +67,14 @@ In the above section, you submitted a Job from a workspace. By default, Jobs sub
 
 You can also submit jobs from other machines, using the Anyscale CLI. 
 
-Copy ``main.py`` to an empty folder on your **laptop**, and then run the following on your **laptop** to try this out:
+Copy ``main.py`` and ``requirements.txt`` to an empty folder on your **laptop**, and then run the following on your **laptop** to try this out:
 
 ```bash
 # Make sure we have anyscale CLI installed.
 $ pip install -U anyscale
 
 # Note: outside of workspaces, you must specify required files via --working-dir.
-$ anyscale job submit --working-dir=. --wait -- python main.py
+$ anyscale job submit --working-dir=. --requirements=requirements.txt --wait -- python main.py
 ```
 
 Jobs submitted externally will run with the Anyscale default autoscaling compute config and dependencies. To override these settings, use the ``--config-file``, ``--image-uri``, or ``--containerfile`` flags.
