@@ -1,0 +1,15 @@
+head_node_type:
+  name: 8CPU-32GB
+  instance_type: m5.2xlarge
+  resources:
+    cpu: 0
+    gpu: 0
+worker_node_types:
+- name: 1xA10G:4CPU-16GB
+  instance_type: g5.xlarge
+  min_workers: 1
+  max_workers: 1
+- name: 1xA10G:4CPU-16GB
+  instance_type: g5.xlarge
+  min_workers: 1
+  max_workers: 1
