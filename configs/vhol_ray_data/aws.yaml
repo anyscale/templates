@@ -5,11 +5,11 @@ head_node_type:
     cpu: 0
     gpu: 0
 worker_node_types:
-- name: 1xA10G:4CPU-16GB
+- name: 1xA10G:4CPU-16GB-worker1
   instance_type: g5.xlarge
   min_workers: 1
   max_workers: 1
-- name: 1xA10G:4CPU-16GB
+- name: 1xA10G:4CPU-16GB-worker2
   instance_type: g5.xlarge
   min_workers: 1
   max_workers: 1
