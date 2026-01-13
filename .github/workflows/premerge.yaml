@@ -46,4 +46,8 @@ jobs:
       run: CI=1 bash -ec "(cd ci; go test -v ./...)"
 
     - name: Build templates
-      run: bash build.sh
+      run: |
+        wget https://github.com/ray-project/rayci/releases/download/v0.25.0/rayapp-linux-amd64
+        chmod +x rayapp-linux-amd64
+        mv rayapp-linux-amd64 /usr/local/bin/rayapp
+        rayapp build --build BUILD.yaml --output _build
