@@ -48,4 +48,4 @@ jobs:
     - name: Build templates
       run: |
         bash ./download_rayapp.sh
-        ./rayapp build --build BUILD.yaml --output _build
+        ./rayapp build
