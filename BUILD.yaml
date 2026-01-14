@@ -15,6 +15,17 @@
     GCP: configs/basic-single-node/gce.yaml
     AWS: configs/basic-single-node/aws.yaml
 
+- name: job-intro-v2
+  emoji: 🔰
+  title: Intro to Jobs - v2 (latest)
+  description: Introduction on how to use Anyscale Jobs
+  dir: templates/intro-jobs
+  cluster_env:
+    build_id: anyscaleray2530-py311
+  compute_config:
+    GCP: configs/basic-single-node/gce.yaml
+    AWS: configs/basic-single-node/aws.yaml
+
 # owner: huaiwei
 - name: workspace-intro
   emoji: 🔰
