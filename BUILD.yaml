@@ -46,7 +46,7 @@
   description: Text-to-image generation model by Stability AI. Deploy with Ray Serve.
   dir: templates/serve-stable-diffusion
   cluster_env:
-    build_id: anyscaleray2441-py312-cu128
+    build_id: anyscaleray2491-py312-cu128
   compute_config:
     GCP: configs/basic-serverless-config/gce.yaml
     AWS: configs/basic-serverless-config/aws.yaml
