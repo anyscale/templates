@@ -1,0 +1,60 @@
+# Change this to the model you want to fine-tune
+model_id: meta-llama/Meta-Llama-3-70B-Instruct
+
+task: instruction_tuning
+
+# Change this to the path to your training data
+train_path: /mnt/cluster_storage/openhermes_train.jsonl
+
+# Change this to the path to your validation data. This is optional
+# valid_path: /mnt/cluster_storage/gsm8k_full.jsonl
+
+# Change this to the context length you want to use. Examples with longer
+# context length will be truncated.
+context_length: 1024
+
+# Change this to total number of GPUs that you want to use
+num_devices: 8
+
+# Change this to the number of epochs that you want to train for
+num_epochs: 4
+
+# Change this to the batch size that you want to use
+train_batch_size_per_device: 12
+eval_batch_size_per_device: 12
+
+# Change this to the learning rate that you want to use
+learning_rate: 1e-5
+
+# This will pad batches to the longest sequence. Use "max_length" when profiling to profile the worst case.
+padding: "max_length"
+
+# By default, we will keep the best checkpoint. You can change this to keep more checkpoints.
+num_checkpoints_to_keep: 1
+
+checkpoint_every_n_epochs: 1
+
+gradient_accumulation_steps: 8
+
+# Deepspeed configuration, you can provide your own deepspeed setup
+deepspeed:
+  config_path: deepspeed_configs/zero_3_offload_optim.json
+
+# Accelerator type, the value of 0.001 is not important, as long as it is
+# between 0 and 1. This ensures that the given accelerator is available for each trainer
+# worker.
+worker_resources:
+  accelerator_type:NVIDIA_H100: 0.001
+
+# If needed, add your logging integration here, see https://docs.anyscale.com/llms/finetuning/guides/logging_integrations
+#
+# logger:
+#     provider: wandb
+#     provider_config: 
+#          project: llmforge # wandb project (default set to `llmforge`)
+#          group: my_run_group # optional wandb group (default set to model id)
+#          name: my_run_name # optional wandb run name (default set to generated model tag)
+#          tags:   # optional list of tags for the run, base model and generated model_tag are included by default
+#                - custom_tag1
+#                - custom_tag2
+#     rank_zero_only: True # logs only on the rank 0 device if True
