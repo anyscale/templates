@@ -1,0 +1,3 @@
+head_node:
+  instance_type: m5.2xlarge
+auto_select_worker_config: true
