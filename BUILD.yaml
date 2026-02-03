@@ -38,3 +38,16 @@
   compute_config:
     GCP: configs/basic-serverless-config/gce.yaml
     AWS: configs/basic-serverless-config/aws.yaml
+
+
+# owner: Aydin
+- name: model-multiplexing-forecast
+  emoji: 🔰
+  title: Model Multiplexing Forecast
+  description: Deploy multiple forecasting models with Ray Serve and route requests to the appropriate model.
+  dir: templates/model-multiplexing-forecast
+  cluster_env:
+    build_id: anyscaleray2530-slim-py312-cu129
+  compute_config:
+    GCP: configs/basic-single-node/gce.yaml
+    AWS: configs/basic-single-node/aws.yaml
