@@ -305,10 +305,11 @@ Use the endpoint and token from the deployment output:
 
 ```python
 # client_anyscale_service.py
+import os
 import requests
 
-ENDPOINT = "<YOUR-ENDPOINT>"  # From the deployment output
-TOKEN = "<YOUR-TOKEN>"  # From the deployment output
+ENDPOINT = os.environ["ANYSCALE_SERVICE_ENDPOINT"]
+TOKEN = os.environ["ANYSCALE_SERVICE_TOKEN"]
 
 response = requests.post(
     ENDPOINT,
