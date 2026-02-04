@@ -38,3 +38,16 @@
   compute_config:
     GCP: configs/basic-serverless-config/gce.yaml
     AWS: configs/basic-serverless-config/aws.yaml
+
+# owner: stephen
+- name: unstructured_data_ingestion
+  emoji: 📄📊
+  title: Ingest unstructured documents into structured datasets
+  description: Ingest unstructured documents from data lakes and convert them into structured datasets using Ray Data's distributed processing.
+  dir: templates/unstructured_data_ingestion
+  containerfile: templates/unstructured_data_ingestion/Dockerfile
+  cluster_env:
+    build_id: anyscaleray2511-slim-py312
+  compute_config:
+    GCP: configs/unstructured_data_ingestion/gce.yaml
+    AWS: configs/unstructured_data_ingestion/aws.yaml
