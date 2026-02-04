@@ -41,7 +41,7 @@
 
 
 # owner: Aydin
-- name: model-multiplexing-forecast
+- name: model-multiplexing
   emoji: 🔰
   title: Model Multiplexing Forecast
   description: Deploy multiple forecasting models with Ray Serve and route requests to the appropriate model.
