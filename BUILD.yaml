@@ -15,26 +15,72 @@
     GCP: configs/basic-single-node/gce.yaml
     AWS: configs/basic-single-node/aws.yaml
 
-# owner: huaiwei
-- name: workspace-intro
+- name: job-intro-2
   emoji: 🔰
-  title: Intro to Workspaces
-  description: Introduction on how to use Anyscale Workspaces
-  dir: templates/intro-workspaces
+  title: Intro to Jobs
+  description: Introduction on how to use Anyscale Jobs
+  dir: templates/intro-jobs
   cluster_env:
-    build_id: anyscaleray2501-py311
+    image_uri: anyscale/ray:2.50.1-py311
   compute_config:
     GCP: configs/basic-single-node/gce.yaml
     AWS: configs/basic-single-node/aws.yaml
 
-# owner: edward
-- name: service-intro
+- name: job-intro-3
   emoji: 🔰
-  title: Intro to Services
-  description: Introduction on how to use Anyscale Services
-  dir: templates/intro-services
+  title: Intro to Jobs
+  description: Introduction on how to use Anyscale Jobs
+  dir: templates/intro-jobs
   cluster_env:
-    build_id: anyscaleray2501-py311
+    byod:
+      docker_image: us-docker.pkg.dev/anyscale-workspace-templates/workspace-templates/template_unstructured_data_ingestion:2.51.1
+      ray_version: 2.51.1
   compute_config:
-    GCP: configs/basic-serverless-config/gce.yaml
-    AWS: configs/basic-serverless-config/aws.yaml
+    GCP: configs/basic-single-node/gce.yaml
+    AWS: configs/basic-single-node/aws.yaml
+
+- name: job-intro-4
+  emoji: 🔰
+  title: Intro to Jobs
+  description: Introduction on how to use Anyscale Jobs
+  dir: templates/intro-jobs
+  compute_config:
+    GCP: configs/basic-single-node/gce.yaml
+    AWS: configs/basic-single-node/aws.yaml
+
+- name: job-intro-5
+  emoji: 🔰
+  title: Intro to Jobs
+  description: Introduction on how to use Anyscale Jobs
+  dir: templates/intro-jobs
+  cluster_env:
+    byod:
+      containerfile: templates/intro-jobs/Dockerfile
+      ray_version: 2.51.1
+  compute_config:
+    GCP: configs/basic-single-node/gce.yaml
+    AWS: configs/basic-single-node/aws.yaml
+
+# # owner: huaiwei
+# - name: workspace-intro
+#   emoji: 🔰
+#   title: Intro to Workspaces
+#   description: Introduction on how to use Anyscale Workspaces
+#   dir: templates/intro-workspaces
+#   cluster_env:
+#     build_id: anyscaleray2501-py311
+#   compute_config:
+#     GCP: configs/basic-single-node/gce.yaml
+#     AWS: configs/basic-single-node/aws.yaml
+
+# # owner: edward
+# - name: service-intro
+#   emoji: 🔰
+#   title: Intro to Services
+#   description: Introduction on how to use Anyscale Services
+#   dir: templates/intro-services
+#   cluster_env:
+#     build_id: anyscaleray2501-py311
+#   compute_config:
+#     GCP: configs/basic-serverless-config/gce.yaml
+#     AWS: configs/basic-serverless-config/aws.yaml
