@@ -49,5 +49,5 @@
   cluster_env:
     build_id: anyscaleray2511-slim-py312
   compute_config:
-    GCP: configs/unstructured_data_ingestion/gce.yaml
-    AWS: configs/unstructured_data_ingestion/aws.yaml
+    GCP: configs/unstructured-data-ingestion/gce.yaml
+    AWS: configs/unstructured-data-ingestion/aws.yaml
