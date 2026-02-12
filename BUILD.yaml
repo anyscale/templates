@@ -30,7 +30,7 @@
     AWS: configs/basic-single-node/aws.yaml
   test:
     tests_path: tests/intro-jobs
-    command: ./test.sh
+    command: bash test.sh
     timeout_in_sec: 600
 
 - name: job-intro-3
@@ -63,8 +63,8 @@
     AWS: configs/basic-single-node/aws.yaml
   test:
     tests_path: tests/intro-jobs
-    command: ./test.sh
-    timeout_in_sec: 600
+    command: bash test.sh
+    timeout_in_sec: 10
 
 # # owner: huaiwei
 # - name: workspace-intro
