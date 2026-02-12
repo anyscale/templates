@@ -9,5 +9,6 @@ RUN sudo apt-get update -y \
     && sudo apt-get install --no-install-recommends -y libgl1-mesa-glx libmagic1 poppler-utils tesseract-ocr libreoffice \
     && sudo rm -f /etc/apt/sources.list.d/*
 
+# Elliot was here
 
 RUN pip install --force-reinstall --no-cache-dir "unstructured[all-docs]==0.18.21" "pandas==2.3.3"
