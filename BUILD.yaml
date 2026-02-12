@@ -14,6 +14,9 @@
   compute_config:
     GCP: configs/basic-single-node/gce.yaml
     AWS: configs/basic-single-node/aws.yaml
+  test:
+    command: pip install pytest==9.0.2 nbmake==1.5.5 && pytest --nbmake . -s -vv
+    timeout_in_sec: 600
 
 - name: job-intro-2
   emoji: 🔰
@@ -25,6 +28,10 @@
   compute_config:
     GCP: configs/basic-single-node/gce.yaml
     AWS: configs/basic-single-node/aws.yaml
+  test:
+    tests_path: tests/intro-jobs
+    command: ./test.sh
+    timeout_in_sec: 600
 
 - name: job-intro-3
   emoji: 🔰
@@ -38,17 +45,11 @@
   compute_config:
     GCP: configs/basic-single-node/gce.yaml
     AWS: configs/basic-single-node/aws.yaml
+  test:
+    command: exit 1
+    timeout_in_sec: 600
 
 - name: job-intro-4
-  emoji: 🔰
-  title: Intro to Jobs
-  description: Introduction on how to use Anyscale Jobs
-  dir: templates/intro-jobs
-  compute_config:
-    GCP: configs/basic-single-node/gce.yaml
-    AWS: configs/basic-single-node/aws.yaml
-
-- name: job-intro-5
   emoji: 🔰
   title: Intro to Jobs
   description: Introduction on how to use Anyscale Jobs
@@ -60,6 +61,10 @@
   compute_config:
     GCP: configs/basic-single-node/gce.yaml
     AWS: configs/basic-single-node/aws.yaml
+  test:
+    tests_path: tests/intro-jobs
+    command: ./test.sh
+    timeout_in_sec: 600
 
 # # owner: huaiwei
 # - name: workspace-intro
