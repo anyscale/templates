@@ -7,7 +7,7 @@
 - name: job-intro
   emoji: 🔰
   title: Intro to Jobs
-  description: Introduction on how to use Anyscale Jobs
+  description: Happy path for tests with a test command
   dir: templates/intro-jobs
   cluster_env:
     build_id: anyscaleray2501-py311
@@ -21,7 +21,7 @@
 - name: job-intro-2
   emoji: 🔰
   title: Intro to Jobs
-  description: Introduction on how to use Anyscale Jobs
+  description: Happy path for tests with a single test script
   dir: templates/intro-jobs
   cluster_env:
     image_uri: anyscale/ray:2.50.1-py311
@@ -36,7 +36,7 @@
 - name: job-intro-3
   emoji: 🔰
   title: Intro to Jobs
-  description: Introduction on how to use Anyscale Jobs
+  description: Failure path for tests with forced command failure
   dir: templates/intro-jobs
   cluster_env:
     byod:
@@ -52,7 +52,7 @@
 - name: job-intro-4
   emoji: 🔰
   title: Intro to Jobs
-  description: Introduction on how to use Anyscale Jobs
+  description: Failure path for tests with forced timeout
   dir: templates/intro-jobs
   cluster_env:
     byod:
