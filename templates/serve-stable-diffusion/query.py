@@ -2,7 +2,7 @@ import requests
 
 endpoint = "http://localhost:8000/imagine"
 
-# Elliot was here
+
 def generate_image(prompt, image_size):
     req = {"prompt": prompt, "img_size": image_size}
     resp = requests.get(endpoint, params=req)
