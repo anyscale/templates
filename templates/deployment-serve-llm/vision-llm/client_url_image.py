@@ -5,7 +5,6 @@ from openai import OpenAI
 API_KEY = "FAKE_KEY"
 BASE_URL = "http://localhost:8000"
 
-# Elliot was here
 client = OpenAI(base_url=urljoin(BASE_URL, "v1"), api_key=API_KEY)
 
 response = client.chat.completions.create(
