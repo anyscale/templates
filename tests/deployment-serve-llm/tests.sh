@@ -15,7 +15,7 @@ for nb in \
   "hybrid-reasoning-llm/notebook" \
   "gpt-oss/notebook"
 do
-  python ci/nb2py.py "${nb}.ipynb" "${nb}.py" --ignore-cmds
+  python nb2py.py "${nb}.ipynb" "${nb}.py" --ignore-cmds
   python "${nb}.py"
   rm "${nb}.py"
 done
