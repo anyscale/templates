@@ -50,3 +50,7 @@
   compute_config:
     GCP: configs/basic-single-node/gce.yaml
     AWS: configs/basic-single-node/aws.yaml
+  test:
+    tests_path: tests/deployment-serve-llm/
+    command: bash tests.sh
+    timeout_in_secs: 900
