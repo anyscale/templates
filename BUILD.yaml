@@ -39,6 +39,18 @@
     GCP: configs/basic-serverless-config/gce.yaml
     AWS: configs/basic-serverless-config/aws.yaml
 
+# owner: akshay
+- name: serve-stable-diffusion-v2
+  emoji: 🔰
+  title: Deploy Stable Diffusion
+  description: Text-to-image generation model by Stability AI. Deploy with Ray Serve.
+  dir: templates/serve-stable-diffusion
+  cluster_env:
+    build_id: anyscaleray2441-py312-cu128
+  compute_config:
+    GCP: configs/basic-serverless-config/gce.yaml
+    AWS: configs/basic-serverless-config/aws.yaml
+
 # owner: Aydin
 - name: deployment-serve-llm
   emoji: 🚀🤖
