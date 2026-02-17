@@ -53,4 +53,4 @@
   test:
     tests_path: tests/deployment-serve-llm/
     command: bash tests.sh
-    timeout_in_secs: 900
+    timeout_in_sec: 900
