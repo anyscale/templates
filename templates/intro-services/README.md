@@ -124,6 +124,13 @@ To get the status of `my_service`, run the following:
 !anyscale service status --name={SERVICE_NAME}
 ```
 
+### Wait for the service to be in RUNNING state
+
+
+```python
+!anyscale service wait --name={SERVICE_NAME} --state=RUNNING
+```
+
 ### Query the service
 
 When you deploy, you expose the service to a publicly accessible IP address which you can send requests to.
