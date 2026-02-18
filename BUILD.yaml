@@ -39,7 +39,6 @@
     GCP: configs/basic-serverless-config/gce.yaml
     AWS: configs/basic-serverless-config/aws.yaml
 
-
 # owner: Aydin
 - name: model-multiplexing
   emoji: 🔰
