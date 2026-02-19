@@ -51,6 +51,18 @@
     GCP: configs/basic-single-node/gce.yaml
     AWS: configs/basic-single-node/aws.yaml
 
+
+- name: model-composition-recsys
+  emoji: 🧩
+  title: Model composition for recommendation systems
+  description: Build a recommendation system using Ray Serve's model composition pattern to break ML pipelines into independent, scalable deployments.
+  dir: templates/model-composition-recsys
+  cluster_env:
+    build_id: anyscaleray2530-slim-py312-cu129
+  compute_config:
+    GCP: configs/basic-single-node/gce.yaml
+    AWS: configs/basic-single-node/aws.yaml
+
 # owner: akshay
 - name: serve-stable-diffusion-v2
   emoji: 🔰
