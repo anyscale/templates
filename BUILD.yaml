@@ -51,6 +51,20 @@
     command: bash tests.sh
     timeout_in_sec: 900
 
+# owner: jasond
+- name: intro-ray-libraries
+  emoji: 🔰
+  title: Intro to Ray AI Libraries
+  description: Hands-on introduction to Ray Train, Ray Tune, Ray Data, and Ray Serve with PyTorch.
+  dir: templates/intro-ray-libraries
+  cluster_env:
+  byod:
+    docker_image: anyscale/ray:2.54.0-slim-py313-cu129
+    ray_version: 2.54.0
+  compute_config:
+    AWS: configs/intro-ray-libraries/aws.yaml
+    GCP: configs/intro-ray-libraries/gce.yaml
+
 # owner: stephen
 - name: unstructured_data_ingestion
   emoji: 📄📊
