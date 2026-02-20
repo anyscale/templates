@@ -1,19 +1,11 @@
----
-orphan: true
----
-
-<!--
-Do not modify this README. This file is a copy of the notebook and is not used to display the content.
-Modify notebook.ipynb instead, then regenerate this file with:
-jupyter nbconvert "$notebook.ipynb" --to markdown --output "README.md"
--->
-
 # Deploy a reasoning LLM
 
 <div align="left">
 <a target="_blank" href="https://console.anyscale.com/template-preview/deployment-serve-llm?file=%252Ffiles%252Freasoning-llm"><img src="https://img.shields.io/badge/🚀 Run_on-Anyscale-9hf"></a>&nbsp;
-<a href="https://github.com/ray-project/ray/tree/master/doc/source/serve/tutorials/deployment-serve-llm/reasoning-llm" role="button"><img src="https://img.shields.io/static/v1?label=&amp;message=View%20On%20GitHub&amp;color=586069&amp;logo=github&amp;labelColor=2f363d"></a>&nbsp;
+<a href="https://github.com/ray-project/ray/tree/master/doc/source/serve/tutorials/deployment-serve-llm/content/reasoning-llm" role="button"><img src="https://img.shields.io/static/v1?label=&amp;message=View%20On%20GitHub&amp;color=586069&amp;logo=github&amp;labelColor=2f363d"></a>&nbsp;
 </div>
+
+**⏱️ Time to complete**: 15 min
 
 A reasoning LLM handles tasks that require deeper analysis or step-by-step thought. It generates intermediate reasoning before arriving at a final answer, making it better suited for situations where careful logic or structured problem-solving is more important than speed or efficiency.
 
@@ -48,7 +40,7 @@ If your input is clear and complete, a standard model is usually faster and more
 
 Reasoning models often separate *reasoning* from the *final answer* using tags like `<think>...</think>`. Without a proper parser, this reasoning may end up in the `content` field instead of the dedicated `reasoning_content` field.
 
-To extract reasoning correctly, configure a `reasoning_parser` in your Ray Serve deployment. This tells vLLM how to isolate the model’s thought process from the rest of the output.  
+To extract reasoning correctly, configure a `reasoning_parser` in your Ray Serve deployment. This tells vLLM how to isolate the model's thought process from the rest of the output.  
 **Note:** For example, *QwQ* uses the `deepseek-r1` parser. Other models may require different parsers. See the [vLLM docs](https://docs.vllm.ai/en/stable/features/reasoning_outputs.html#supported-models) or your model's documentation to find a supported parser, or [build your own](https://docs.vllm.ai/en/stable/features/reasoning_outputs.html#how-to-support-a-new-reasoning-model) if needed.
 
 ```yaml
@@ -138,9 +130,9 @@ app = build_openai_app({"llm_configs": [llm_config]})
 **Prerequisites**
 
 * Access to GPU compute.
-* (Optional) A **Hugging Face token** if using gated models. Store it in `export HF_TOKEN=<YOUR-TOKEN-HERE>`
+* (Optional) A **Hugging Face token** if using gated models. Store it in `export HF_TOKEN=<YOUR-HUGGINGFACE-TOKEN>`.
 
-**Note:** Depending on the organization, you can usually request access on the model's Hugging Face page. For example, Meta’s Llama models approval can take anywhere from a few hours to several weeks.
+**Note:** Depending on the organization, you can usually request access on the model's Hugging Face page. For example, Meta's Llama models approval can take anywhere from a few hours to several weeks.
 
 **Dependencies:**  
 ```bash
@@ -149,7 +141,7 @@ pip install "ray[serve,llm]"
 
 ---
 
-### Launch the service
+### Launch
 
 Follow the instructions at [Configure Ray Serve LLM](#configure-ray-serve-llm) to define your app in a Python module `serve_qwq_32b.py`.  
 
@@ -157,7 +149,7 @@ In a terminal, run:
 
 
 ```python
-serve run serve_qwq_32b:app --non-blocking
+!serve run serve_qwq_32b:app --non-blocking
 ```
 
 Deployment typically takes a few minutes as the cluster is provisioned, the vLLM server starts, and the model is downloaded. 
@@ -166,19 +158,7 @@ Deployment typically takes a few minutes as the cluster is provisioned, the vLLM
 
 ### Send requests
 
-Your endpoint is available locally at `http://localhost:8000` and you can use a placeholder authentication token for the OpenAI client, for example `"FAKE_KEY"`.
-
-Example curl:
-
-
-```python
-curl -X POST http://localhost:8000/v1/chat/completions \
-  -H "Authorization: Bearer FAKE_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{ "model": "my-qwq-32B", "messages": [{"role": "user", "content": "Pick three random words with 3 syllables each and count the number of R'\''s in each of them"}] }'
-```
-
-Example Python:
+Your endpoint is available locally at `http://localhost:8000`. You can use a placeholder authentication token for the OpenAI client, for example `"FAKE_KEY"`.
 
 
 ```python
@@ -212,7 +192,7 @@ Shutdown your LLM service:
 
 
 ```python
-serve shutdown -y
+!serve shutdown -y
 ```
 
 
@@ -220,7 +200,7 @@ serve shutdown -y
 
 ## Deploy to production with Anyscale services
 
-For production, use Anyscale services to deploy your Ray Serve app on a dedicated cluster without code changes. Anyscale provides scalability, fault tolerance, and load balancing, ensuring resilience against node failures, high traffic, and rolling updates. See [Deploy a medium-sized LLM](https://docs.ray.io/en/latest/serve/tutorials/deployment-serve-llm/medium-size-llm/README.html#deploy-to-production-with-anyscale-services) for an example with a medium-sized model like the *QwQ-32&nbsp;B* used here.
+For production deployment, use Anyscale services to deploy your Ray Serve app to a dedicated cluster without modifying the code. Anyscale ensures scalability, fault tolerance, and load balancing, keeping the service resilient against node failures, high traffic, and rolling updates. For more details, see [Serve LLMs with Anyscale](https://docs.anyscale.com/llm/serving). See [Deploy a medium-sized LLM](https://docs.ray.io/en/latest/serve/tutorials/deployment-serve-llm/content/medium-size-llm/README.html#deploy-to-production-with-anyscale-services) for an example with a medium-sized model like the *QwQ-32&nbsp;B* used here.
 
 ---
 

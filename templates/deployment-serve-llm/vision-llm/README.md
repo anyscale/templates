@@ -1,19 +1,11 @@
----
-orphan: true
----
-
-<!--
-Do not modify this README. This file is a copy of the notebook and is not used to display the content.
-Modify notebook.ipynb instead, then regenerate this file with:
-jupyter nbconvert "$notebook.ipynb" --to markdown --output "README.md"
--->
-
 # Deploy a vision LLM
 
 <div align="left">
 <a target="_blank" href="https://console.anyscale.com/template-preview/deployment-serve-llm?file=%252Ffiles%252Fvision-llm"><img src="https://img.shields.io/badge/🚀 Run_on-Anyscale-9hf"></a>&nbsp;
-<a href="https://github.com/ray-project/ray/tree/master/doc/source/serve/tutorials/deployment-serve-llm/vision-llm" role="button"><img src="https://img.shields.io/static/v1?label=&amp;message=View%20On%20GitHub&amp;color=586069&amp;logo=github&amp;labelColor=2f363d"></a>&nbsp;
+<a href="https://github.com/ray-project/ray/tree/master/doc/source/serve/tutorials/deployment-serve-llm/content/vision-llm" role="button"><img src="https://img.shields.io/static/v1?label=&amp;message=View%20On%20GitHub&amp;color=586069&amp;logo=github&amp;labelColor=2f363d"></a>&nbsp;
 </div>
+
+**⏱️ Time to complete**: 15 min
 
 A vision LLM can interpret images as well as text, enabling tasks like answering questions about charts, analyzing photos, or combining visuals with instructions. It extends LLMs beyond language to support multimodal reasoning and richer applications.  
 
@@ -63,9 +55,9 @@ app = build_openai_app({"llm_configs": [llm_config]})
 **Prerequisites**
 
 * Access to GPU compute.
-* (Optional) A **Hugging Face token** if using gated models. Store it in `export HF_TOKEN=<YOUR-TOKEN-HERE>`
+* (Optional) A **Hugging Face token** if using gated models. Store it in `export HF_TOKEN=<YOUR-HUGGINGFACE-TOKEN>`.
 
-**Note:** Depending on the organization, you can usually request access on the model's Hugging Face page. For example, Meta’s Llama models approval can take anywhere from a few hours to several weeks.
+**Note:** Depending on the organization, you can usually request access on the model's Hugging Face page. For example, Meta's Llama models approval can take anywhere from a few hours to several weeks.
 
 **Dependencies:**  
 ```bash
@@ -82,28 +74,16 @@ In a terminal, run:
 
 
 ```python
-serve run serve_qwen_VL:app --non-blocking
+!serve run serve_qwen_VL:app --non-blocking
 ```
 
 Deployment typically takes a few minutes as the cluster is provisioned, the vLLM server starts, and the model is downloaded. 
 
 ---
 
-### Sending requests with images
+### Send requests with images
 
-Your endpoint is available locally at `http://localhost:8000` and you can use a placeholder authentication token for the OpenAI client, for example `"FAKE_KEY"`.
-
-Example curl with image URL:
-
-
-```python
-curl -X POST http://localhost:8000/v1/chat/completions \
-  -H "Authorization: Bearer FAKE_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{ "model": "my-qwen-VL", "messages": [ { "role": "user", "content": [ {"type": "text", "text": "What do you see in this image?"}, {"type": "image_url", "image_url": { "url": "http://images.cocodataset.org/val2017/000000039769.jpg" }} ] } ] }'
-```
-
-Example Python with image URL:
+Your endpoint is available locally at `http://localhost:8000`. You can use a placeholder authentication token for the OpenAI client, for example `"FAKE_KEY"`.
 
 
 ```python
@@ -137,7 +117,7 @@ for chunk in response:
         print(content, end="", flush=True)
 ```
 
-Example Python with local image:
+Example with local image. Download our [`example.jpg`](https://github.com/ray-project/ray/blob/master/doc/source/serve/tutorials/deployment-serve-llm/content/vision-llm/example.jpg):
 
 
 ```python
@@ -186,7 +166,7 @@ Shutdown your LLM service:
 
 
 ```python
-serve shutdown -y
+!serve shutdown -y
 ```
 
 
@@ -194,7 +174,7 @@ serve shutdown -y
 
 ## Deploy to production with Anyscale services
 
-For production, it's recommended to use Anyscale services to deploy your Ray Serve app on a dedicated cluster without code changes. Anyscale provides scalability, fault tolerance, and load balancing, ensuring resilience against node failures, high traffic, and rolling updates. See [Deploy a small-sized LLM](https://docs.ray.io/en/latest/serve/tutorials/deployment-serve-llm/small-size-llm/README.html#deploy-to-production-with-anyscale-services) for an example with a small-sized model like the *Qwen2.5-VL-7&nbsp;B-Instruct* used in this tutorial.
+For production deployment, use Anyscale services to deploy your Ray Serve app to a dedicated cluster without modifying the code. Anyscale ensures scalability, fault tolerance, and load balancing, keeping the service resilient against node failures, high traffic, and rolling updates. For more details, see [Serve LLMs with Anyscale](https://docs.anyscale.com/llm/serving). See [Deploy a small-sized LLM](https://docs.ray.io/en/latest/serve/tutorials/deployment-serve-llm/content/small-size-llm/README.html#deploy-to-production-with-anyscale-services) for an example with a small-sized model like the *Qwen2.5-VL-7&nbsp;B-Instruct* used in this tutorial.
 
 ---
 
