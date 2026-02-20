@@ -1,23 +1,15 @@
----
-orphan: true
----
-
-<!--
-Do not modify this README. This file is a copy of the notebook and is not used to display the content.
-Modify notebook.ipynb instead, then regenerate this file with:
-jupyter nbconvert "$notebook.ipynb" --to markdown --output "README.md"
--->
-
 # Deploy a large-sized LLM
 
 <div align="left">
 <a target="_blank" href="https://console.anyscale.com/template-preview/deployment-serve-llm?file=%252Ffiles%252Flarge-size-llm"><img src="https://img.shields.io/badge/🚀 Run_on-Anyscale-9hf"></a>&nbsp;
-<a href="https://github.com/ray-proj    ect/ray/tree/master/doc/source/serve/tutorials/deployment-serve-llm/large-size-llm" role="button"><img src="https://img.shields.io/static/v1?label=&amp;message=View%20On%20GitHub&amp;color=586069&amp;logo=github&amp;labelColor=2f363d"></a>&nbsp;
+<a href="https://github.com/ray-project/ray/tree/master/doc/source/serve/tutorials/deployment-serve-llm/content/large-size-llm" role="button"><img src="https://img.shields.io/static/v1?label=&amp;message=View%20On%20GitHub&amp;color=586069&amp;logo=github&amp;labelColor=2f363d"></a>&nbsp;
 </div>
 
-This tutorial shows you how to deploy and serve a large language model in production with Ray Serve LLM. A large LLM typically runs on multiple nodes with multiple GPUs, prioritizing peak quality and capability: stronger reasoning, broader knowledge, longer context windows, more robust generalization. This tutorial deploys DeepSeek-R1, a large-sized LLM with 685&nbsp;B parameters. When higher latency, complexity, and cost are acceptable trade-offs because you require state-of-the-art results.
+**⏱️ Time to complete**: 30 min
 
-For smaller models, see [Deploy a small-sized LLM](https://docs.ray.io/en/latest/serve/tutorials/deployment-serve-llm/small-size-llm/README.html) or [Deploy a medium-sized LLM](https://docs.ray.io/en/latest/serve/tutorials/deployment-serve-llm/medium-size-llm/README.html).
+A large LLM typically runs on multiple nodes with multiple GPUs, prioritizing peak quality and capability: stronger reasoning, broader knowledge, longer context windows, more robust generalization. When higher latency, complexity, and cost are acceptable trade-offs because you require state-of-the-art results.
+
+This tutorial deploys DeepSeek-R1, a large LLM with 685&nbsp;B parameters, using Ray Serve LLM. For smaller models, see [Deploying a small-sized LLM](https://docs.ray.io/en/latest/serve/tutorials/deployment-serve-llm/content/small-size-llm/README.html) or [Deploying a medium-sized LLM](https://docs.ray.io/en/latest/serve/tutorials/deployment-serve-llm/content/medium-size-llm/README.html).
 
 ---
 
@@ -31,11 +23,11 @@ Deploying a model of this scale normally requires you to manually launch and coo
 
 ## Configure Ray Serve LLM
 
-A large-sized LLM is typically deployed across multiple nodes with multiple GPUs. To fully utilize the hardware, set `pipeline_parallel_size` to the number of nodes and `tensor_parallel_size` to the number of GPUs per node, which distributes the model’s weights evenly.
+A large-sized LLM is typically deployed across multiple nodes with multiple GPUs. To fully utilize the hardware, set `pipeline_parallel_size` to the number of nodes and `tensor_parallel_size` to the number of GPUs per node, which distributes the model's weights evenly.
 
 Ray Serve LLM provides multiple [Python APIs](https://docs.ray.io/en/latest/serve/api/index.html#llm-api) for defining your application. Use [`build_openai_app`](https://docs.ray.io/en/latest/serve/api/doc/ray.serve.llm.build_openai_app.html#ray.serve.llm.build_openai_app) to build a full application from your [`LLMConfig`](https://docs.ray.io/en/latest/serve/api/doc/ray.serve.llm.LLMConfig.html#ray.serve.llm.LLMConfig) object.
 
-**Optional:** Because Deepseek-R1 is a reasoning model, this tutorial uses vLLM’s built-in reasoning parser to correctly separate its reasoning content from the final response. See [Deploying a reasoning LLM: Parse reasoning outputs](https://docs.ray.io/en/latest/serve/tutorials/deployment-serve-llm/reasoning-llm/README.html#parse-reasoning-outputs).
+**Optional:** Because Deepseek-R1 is a reasoning model, this tutorial uses vLLM's built-in reasoning parser to correctly separate its reasoning content from the final response. See [Deploying a reasoning LLM: Parse reasoning outputs](https://docs.ray.io/en/latest/serve/tutorials/deployment-serve-llm/content/reasoning-llm/README.html#parse-reasoning-outputs).
 
 
 ```python
@@ -99,7 +91,7 @@ In a terminal, run:
 
 
 ```python
-serve run serve_deepseek_r1:app --non-blocking
+!serve run serve_deepseek_r1:app --non-blocking
 ```
 
 Deployment typically takes a few minutes as the cluster is provisioned, the vLLM server starts, and the model is downloaded. 
@@ -108,19 +100,7 @@ Deployment typically takes a few minutes as the cluster is provisioned, the vLLM
 
 ### Send requests
 
-Your endpoint is available locally at `http://localhost:8000` and you can use a placeholder authentication token for the OpenAI client, for example `"FAKE_KEY"`.
-
-Example curl:
-
-
-```python
-curl -X POST http://localhost:8000/v1/chat/completions \
-  -H "Authorization: Bearer FAKE_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{ "model": "my-deepseek-r1", "messages": [{"role": "user", "content": "What is 2 + 2?"}] }'
-```
-
-Example Python:
+Your endpoint is available locally at `http://localhost:8000`. You can use a placeholder authentication token for the OpenAI client, for example `"FAKE_KEY"`.
 
 
 ```python
@@ -162,7 +142,7 @@ Shutdown your LLM service:
 
 
 ```python
-serve shutdown -y
+!serve shutdown -y
 ```
 
 
@@ -170,13 +150,13 @@ serve shutdown -y
 
 ## Deploy to production with Anyscale services
 
-For production deployment, use Anyscale services to deploy the Ray Serve app to a dedicated cluster without modifying the code. Anyscale provides scalability, fault tolerance, and load balancing, keeping the service resilient against node failures, high traffic, and rolling updates, while also automating multi-node setup and autoscaling for large models like DeepSeek-R1.
+For production deployment, use Anyscale services to deploy the Ray Serve app to a dedicated cluster without modifying the code. Anyscale ensures scalability, fault tolerance, and load balancing, keeping the service resilient against node failures, high traffic, and rolling updates, while also automating multi-node setup and autoscaling for large models like DeepSeek-R1. For more details, see [Serve LLMs with Anyscale](https://docs.anyscale.com/llm/serving).
 
 **Beware**: this is an expensive deployment. At the time of writing, the deployment cost is around \$110 USD per hour in the `us-west-2` AWS region using on-demand instances. Because this node has a high amount of inter-node traffic, and cross-zone traffic is expensive (around \$0.02 per GB), it's recommended to *disable cross-zone autoscaling*. This demo is pre-configured with cross-zone autoscaling disabled for your convenience.
 
 ### Prerequisites
 
-The following template runs only on H100 GPUs in your self-hosted Anyscale cloud, as H100s aren't available in Anyscale’s public cloud. This example uses two nodes of type *8xH100-80&nbsp;GB:208CPU-1830&nbsp;GB* on an AWS cloud.
+The following template runs only on H100 GPUs in your self-hosted Anyscale cloud, as H100s aren't available in Anyscale's public cloud. This example uses two nodes of type *8xH100-80&nbsp;GB:208CPU-1830&nbsp;GB* on an AWS cloud.
 
 To provision nodes with 1000 GB of disk capacity, see [Changing the default disk size for GCP clusters](https://docs.anyscale.com/configuration/compute/gcp#disk-size) for Google Cloud Platform (GCP) or [Changing the default disk size for AWS clusters](https://docs.anyscale.com/configuration/compute/aws#disk-size) for Amazon Web Services (AWS). 
 
@@ -186,11 +166,11 @@ To provision nodes with 1000 GB of disk capacity, see [Changing the default disk
 
 Anyscale provides out-of-the-box images (`anyscale/ray-llm`), which come pre-loaded with Ray Serve LLM, vLLM, and all required GPU/runtime dependencies. This makes it easy to get started without building a custom image.
 
-Create your Anyscale service configuration in a new `service.yaml` file:
+Create your Anyscale Service configuration in a new `service.yaml` file:
 ```yaml
 #service.yaml
 name: deploy-deepseek-r1
-image_uri: anyscale/ray-llm:2.49.0-py311-cu128 # Anyscale Ray Serve LLM image. Use `containerfile: ./Dockerfile` to use a custom Dockerfile.
+image_uri: anyscale/ray-llm:2.54.0-py311-cu128 # Anyscale Ray Serve LLM image. To build an image from a custom Dockerfile, set `containerfile: ./Dockerfile`
 compute_config:
   auto_select_worker_config: true 
   # Change default disk size to 1000GB
@@ -219,11 +199,11 @@ applications:
 - import_path: serve_deepseek_r1:app
 ```
 
-Deploy your service
+Deploy your service:
 
 
 ```python
-anyscale service deploy -f service.yaml
+!anyscale service deploy -f service.yaml
 ```
 
 **Note:** If your model is gated, make sure to pass your Hugging Face token to the service with `--env HF_TOKEN=<YOUR_HUGGINGFACE_TOKEN>`
@@ -234,7 +214,7 @@ You can customize the container by building your own Dockerfile. In your Anyscal
 ```yaml
 # service.yaml
 # Replace:
-# image_uri: anyscale/ray-llm:2.49.0-py311-cu128
+# image_uri: anyscale/ray-llm:2.54.0-py311-cu128
 
 # with:
 containerfile: ./Dockerfile
@@ -250,63 +230,48 @@ The `anyscale service deploy` command output shows both the endpoint and authent
 ```console
 (anyscale +3.9s) curl -H "Authorization: Bearer <YOUR-TOKEN>" <YOUR-ENDPOINT>
 ```
-You can also retrieve both from the service page in the Anyscale console. Click the **Query** button at the top. See [Send requests](#send-requests) for example requests, but make sure to use the correct endpoint and authentication token.  
+You can also retrieve both from the service page in the Anyscale Console. Click the **Query** button at the top. See [Send requests](#send-requests) for example requests, but make sure to use the correct endpoint and authentication token.  
 
 ---
 
-### Access the Serve LLM dashboard
+### Access the Serve LLM Dashboard
 
-See [Monitor your deployment](#monitor-your-deployment) for instructions on enabling LLM-specific logging. To open the Ray Serve LLM dashboard from an Anyscale service:
-1. In the Anyscale console, go to your **Service** or **Workspace**
-2. Navigate to the **Metrics** tab
-3. Click **View in Grafana** and click **Serve LLM Dashboard**
+See [Enable LLM monitoring](#enable-llm-monitoring) for instructions on enabling LLM-specific logging. To open the Ray Serve LLM Dashboard from an Anyscale Service:
+1. In the Anyscale Console, go to your **Service** or **Workspace**.
+2. Navigate to the **Metrics** tab.
+3. Click **View in Grafana** and click **Serve LLM Dashboard**.
 
 ---
 
 ### Shutdown 
  
-Shutdown your Anyscale service:
+Shutdown your Anyscale Service:
 
 
 ```python
-anyscale service terminate -n deploy-deepseek-r1
+!anyscale service terminate -n deploy-deepseek-r1
 ```
 
 
 ---
 
-## Monitor your deployment
+## Enable LLM monitoring
 
-Ray Serve LLM provides comprehensive monitoring through the Serve LLM Dashboard. This dashboard visualizes key metrics including:
+The *Serve LLM Dashboard* offers deep visibility into model performance, latency, and system behavior, including:
 
-- **Time to First Token (TTFT)**: Latency before the first token is generated.
-- **Time Per Output Token (TPOT)**: Average latency per generated token.
-- **Token throughput**: Total tokens generated per second.
-- **GPU cache utilization**: Percentage of KV cache memory in use.
-- **Request latency**: End-to-end request duration.
+- Token throughput (tokens/sec).
+- Latency metrics: Time To First Token (TTFT), Time Per Output Token (TPOT).
+- KV cache utilization.
 
-To enable engine-level metrics, set `log_engine_metrics: true` in your LLM configuration. This is enabled by default starting with Ray 2.51.0.
-
-The following example shows how to enable monitoring:
-
-```python
-llm_config = LLMConfig(
-    # ... other config ...
-    log_engine_metrics=True,  # Enable detailed metrics
-)
+To enable these metrics, go to your LLM config and set `log_engine_metrics: true`. 
+```yaml
+applications:
+- ...
+  args:
+    llm_configs:
+      - ...
+        log_engine_metrics: true
 ```
-
-### Access the dashboard
-
-To view metrics in an Anyscale Service or Workspace:
-
-1. Navigate to your **Service** or **Workspace** page.
-2. Open the **Metrics** tab.
-3. Expand **View in Grafana** and select **Serve LLM Dashboard**.
-
-For a detailed explanation of each metric and how to interpret them for your workload, see [Understand LLM latency and throughput metrics](https://docs.anyscale.com/llm/serving/benchmarking/metrics).
-
-For comprehensive monitoring strategies and best practices, see the [Observability and monitoring guide](https://docs.ray.io/en/latest/serve/llm/user-guides/observability.html).
 
 ---
 
@@ -325,8 +290,8 @@ The following are a few ways to improve concurrency depending on your model and 
 Lowering `max_model_len` reduces the memory needed for KV cache.
 
 **Example**: Running DeepSeek-R1 on 2 nodes with 8xH100-80&nbsp;GB GPUs each:
-* `max_model_len = 32,768` → concurrency ≈ 29
-* `max_model_len = 16,384` → concurrency ≈ 58
+- `max_model_len = 32,768` → concurrency ≈ 29
+- `max_model_len = 16,384` → concurrency ≈ 58
 
 **Use distilled or quantized models**  
 Quantizing or distilling your model reduces its memory footprint, freeing up space for more KV cache and enabling more concurrent requests. For example, see [`deepseek-ai/DeepSeek-R1-Distill-Llama-70B`](https://huggingface.co/deepseek-ai/DeepSeek-R1-Distill-Llama-70B) for a distilled version of DeepSeek-R1.
@@ -345,18 +310,21 @@ deployment_config:
     max_replicas: 4
 ```
 
-*For more details on tuning strategies, hardware guidance, and serving configurations, see [Choose a GPU for LLM serving](https://docs.anyscale.com/llm/serving/gpu-guidance) and [Tune parameters for LLMs on Anyscale services](https://docs.anyscale.com/llm/serving/parameter-tuning).*
+*For more details on tuning strategies, hardware guidance, and serving configurations, see [Choose a GPU for LLM serving](https://docs.anyscale.com/llm/serving/gpu-guidance), [Optimize performance for Ray Serve LLM](https://docs.anyscale.com/llm/serving/performance-optimization), and [Tune parameters for LLMs on Anyscale services](https://docs.anyscale.com/llm/serving/parameter-tuning).*
 
 ---
 
 ## Troubleshooting
 
-If you encounter issues when deploying your LLM, such as out-of-memory errors, authentication problems, or slow performance, consult the [Troubleshooting Guide](https://docs.anyscale.com/llm/serving/troubleshooting) for solutions to common problems.
+**Hugging Face authentication errors**  
+Some models, such as Llama-3.1, are gated and require prior authorization from the organization. See your model's documentation for instructions on obtaining access.
+
+**Out-of-memory errors**  
+Out-of-memory (OOM) errors are one of the most common failure modes when deploying LLMs, especially as model sizes and context length increase.  
+See this [Troubleshooting Guide](https://docs.anyscale.com/llm/serving/troubleshooting) for common errors and how to fix them.
 
 ---
 
 ## Summary
 
-In this tutorial, you deployed a large-sized LLM with Ray Serve LLM, from development to production. You learned how to configure and deploy your service, send requests, monitor performance metrics, and optimize concurrency.
-
-To learn more, take the [LLM Serving Foundations](https://courses.anyscale.com/courses/llm-serving-foundations) course or explore [LLM batch inference](https://docs.anyscale.com/llm/batch-inference) for offline workloads. For smaller models, see [Deploy a small-sized LLM](https://docs.ray.io/en/latest/serve/tutorials/deployment-serve-llm/small-size-llm/README.html) or [Deploy a medium-sized LLM](https://docs.ray.io/en/latest/serve/tutorials/deployment-serve-llm/medium-size-llm/README.html).
+In this tutorial, you deployed a large-sized LLM with Ray Serve LLM, from development to production. You learned how to configure Ray Serve LLM, deploy your service on your Ray cluster, and send requests. You also learned how to monitor your app and troubleshoot common issues.
