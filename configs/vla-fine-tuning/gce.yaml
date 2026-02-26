@@ -1,0 +1,11 @@
+head_node:
+  instance_type: n2-standard-8
+  resources:
+    CPU: 0
+    GPU: 0
+  flags: {}
+enable_cross_zone_scaling: false
+auto_select_worker_config: true
+idle_termination_minutes: 120
+flags:
+  allow-cross-zone-autoscaling: false
