@@ -5,13 +5,13 @@ set -euo pipefail
 echo "Running tests for deployment-serve-llm template..."
 
 for nb in \
-  "small-size-llm/notebook" \
-  "medium-size-llm/notebook" \
-  "large-size-llm/notebook" \
-  "vision-llm/notebook" \
-  "reasoning-llm/notebook" \
-  "hybrid-reasoning-llm/notebook" \
-  "gpt-oss/notebook"
+  "small-size-llm/README" \
+  "medium-size-llm/README" \
+  "large-size-llm/README" \
+  "vision-llm/README" \
+  "reasoning-llm/README" \
+  "hybrid-reasoning-llm/README" \
+  "gpt-oss/README"
 do
   python nb2py.py "${nb}.ipynb" "${nb}.py" --ignore-cmds
   python "${nb}.py"
