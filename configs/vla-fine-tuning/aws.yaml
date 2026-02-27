@@ -1,0 +1,10 @@
+head_node_type:
+  instance_type: m5.2xlarge
+  resources:
+    cpu: 0
+    gpu: 0
+  flags: {}
+enable_cross_zone_scaling: false
+auto_select_worker_config: true
+flags:
+  allow-cross-zone-autoscaling: false
