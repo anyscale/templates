@@ -72,7 +72,6 @@
     command: bash tests.sh
     timeout_in_sec: 900
 
-
 - name: model-composition-recsys
   emoji: 🧩
   title: Model composition for recommendation systems
@@ -131,4 +130,3 @@
   compute_config:
     AWS: configs/vla-fine-tuning/aws.yaml
     GCP: configs/vla-fine-tuning/gce.yaml
-  
