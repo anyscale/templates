@@ -1,5 +1,10 @@
 # Unstructured Data Ingestion and Processing With Ray Data
 
+<div align="left">
+<a target="_blank" href="https://console.anyscale.com/template-preview/unstructured_data_ingestion"><img src="https://img.shields.io/badge/🚀 Run_on-Anyscale-9hf"></a>&nbsp;
+<a href="https://github.com/anyscale/templates/tree/main/templates/unstructured_data_ingestion" role="button"><img src="https://img.shields.io/static/v1?label=&amp;message=View%20On%20GitHub&amp;color=586069&amp;logo=github&amp;labelColor=2f363d"></a>&nbsp;
+</div>
+
 **Time to complete**: 35 min | **Difficulty**: Intermediate | **Prerequisites**: Data engineering experience, document processing, basic natural language processing (NLP) knowledge
 
 Build a comprehensive document ingestion pipeline that transforms unstructured documents from data lakes into structured, analytics-ready datasets using Ray Data's distributed processing capabilities for enterprise data warehouse workflows.
