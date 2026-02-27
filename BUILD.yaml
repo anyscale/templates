@@ -99,3 +99,17 @@
   compute_config:
     GCP: configs/basic-single-node/gce.yaml
     AWS: configs/basic-single-node/aws.yaml
+
+# owner: @omar
+- name: vla-fine-tuning
+  emoji: 🚀
+  title: Distributed VLA Fine-tuning with Ray
+  description: Fine-tune a Vision-Language-Action with Ray Data & Ray Train
+  dir: templates/vla-fine-tuning
+  cluster_env:
+    byod:
+      docker_image: anyscale/ray:2.54.0-py312-cu129
+      ray_version: 2.54.0
+  compute_config:
+    AWS: configs/vla-fine-tuning/aws.yaml
+    GCP: configs/vla-fine-tuning/gce.yaml
