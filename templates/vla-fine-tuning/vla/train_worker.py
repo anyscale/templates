@@ -26,6 +26,7 @@ from ray.train.torch import prepare_model
 # PI0.5 helpers
 # ---------------------------------------------------------------------------
 
+
 def _apply_pi05_attention_mask_patch():
     """
     Monkey-patch make_att_2d_masks to tolerate pad/attention mask length
@@ -34,12 +35,15 @@ def _apply_pi05_attention_mask_patch():
     Applied once per process (guarded by a flag on the module).
     """
     import lerobot.policies.pi05.modeling_pi05 as mp
+
     if getattr(mp, "_PI05_MASK_PATCH_APPLIED", False):
         return
     _orig = mp.make_att_2d_masks
+
     def _patched(pad_masks, att_masks):
         L = min(pad_masks.shape[-1], att_masks.shape[-1])
         return _orig(pad_masks[..., :L], att_masks[..., :L])
+
     mp.make_att_2d_masks = _patched
     mp._PI05_MASK_PATCH_APPLIED = True
 
@@ -68,6 +72,7 @@ def _load_checkpoint(checkpoint, policy, optimizer) -> int:
     Returns the next epoch index so the training loop can resume seamlessly.
     """
     import ray.cloudpickle as pickle
+
     with checkpoint.as_directory() as d:
         with open(os.path.join(d, "state.pkl"), "rb") as f:
             state = pickle.load(f)
@@ -76,20 +81,25 @@ def _load_checkpoint(checkpoint, policy, optimizer) -> int:
     return state["epoch"] + 1
 
 
-def _save_checkpoint(train, Checkpoint, policy, optimizer, epoch, step, metrics) -> None:
+def _save_checkpoint(
+    train, Checkpoint, policy, optimizer, epoch, step, metrics
+) -> None:
     """
     Serialize model + optimizer state to a temporary directory and hand it to
     Ray Train.  Only rank 0 writes the file; all ranks report metrics.
     """
     import ray.cloudpickle as pickle
+
     if train.get_context().get_world_rank() == 0:
         with tempfile.TemporaryDirectory(prefix="pi05_ckpt_") as ckpt_dir:
             with open(os.path.join(ckpt_dir, "state.pkl"), "wb") as f:
                 pickle.dump(
-                    {"model": policy.module.state_dict(),
-                     "optim": optimizer.state_dict(),
-                     "epoch": epoch,
-                     "step":  step},
+                    {
+                        "model": policy.module.state_dict(),
+                        "optim": optimizer.state_dict(),
+                        "epoch": epoch,
+                        "step": step,
+                    },
                     f,
                 )
             train.report(metrics, checkpoint=Checkpoint.from_directory(ckpt_dir))
@@ -107,8 +117,16 @@ def _truncate_batch_for_pi05(batch: dict, max_len: int) -> dict:
     """
     if not max_len:
         return batch
-    mask_keys = ("tokens", "input_ids", "masks", "attention_mask",
-                 "pad_masks", "att_masks", "img_masks", "image_masks")
+    mask_keys = (
+        "tokens",
+        "input_ids",
+        "masks",
+        "attention_mask",
+        "pad_masks",
+        "att_masks",
+        "img_masks",
+        "image_masks",
+    )
     for k in mask_keys:
         if k in batch and hasattr(batch[k], "ndim") and batch[k].ndim >= 2:
             batch[k] = batch[k][..., :max_len]
@@ -119,6 +137,7 @@ def _truncate_batch_for_pi05(batch: dict, max_len: int) -> dict:
 # Collate
 # ---------------------------------------------------------------------------
 
+
 class _Collate(NumpyBatchCollateFn):
     """Convert a numpy batch dict into float32 tensors on the target device."""
 
@@ -127,8 +146,10 @@ class _Collate(NumpyBatchCollateFn):
 
     def __call__(self, batch: dict) -> dict:
         task = list(batch.pop("task"))
-        result = {k: torch.tensor(v, dtype=torch.float32, device=self.device)
-                  for k, v in batch.items()}
+        result = {
+            k: torch.tensor(v, dtype=torch.float32, device=self.device)
+            for k, v in batch.items()
+        }
         result["task"] = task
         return result
 
@@ -136,6 +157,7 @@ class _Collate(NumpyBatchCollateFn):
 # ---------------------------------------------------------------------------
 # Ray Train per-worker loop
 # ---------------------------------------------------------------------------
+
 
 def train_loop_per_worker(config: dict):
     """
@@ -178,7 +200,7 @@ def train_loop_per_worker(config: dict):
 
     # --- 2. Resume from checkpoint (if one exists) ----------------------------
 
-    checkpoint  = train.get_checkpoint()
+    checkpoint = train.get_checkpoint()
     start_epoch = _load_checkpoint(checkpoint, policy, optimizer) if checkpoint else 0
 
     # --- 3. Preprocessor with DROID normalization stats -----------------------
@@ -194,9 +216,9 @@ def train_loop_per_worker(config: dict):
 
     # --- 4. Training loop -----------------------------------------------------
 
-    shard      = train.get_dataset_shard("train")
+    shard = train.get_dataset_shard("train")
     batch_size = int(config.get("batch_size", 1))
-    max_len    = int(config.get("max_len", 512))
+    max_len = int(config.get("max_len", 512))
     grad_accum = int(config.get("grad_accum", 1))
     num_epochs = int(config.get("num_epochs", 1))
 
@@ -211,16 +233,16 @@ def train_loop_per_worker(config: dict):
         ):
             batch = preprocessor(batch)
             batch = _truncate_batch_for_pi05(batch, max_len)
-            batch.pop("task",       None)  # consumed by preprocessor
+            batch.pop("task", None)  # consumed by preprocessor
             batch.pop("task_index", None)
 
             with torch.autocast("cuda", torch.float16):
-                out  = policy(batch)
+                out = policy(batch)
                 loss = out.loss if hasattr(out, "loss") else out[0]
 
             (loss / grad_accum).backward()
-            step       += 1
-            loss_sum   += float(loss.detach())
+            step += 1
+            loss_sum += float(loss.detach())
             loss_count += 1
 
             if train.get_context().get_world_rank() == 0:
