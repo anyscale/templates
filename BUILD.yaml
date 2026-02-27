@@ -14,6 +14,10 @@
   compute_config:
     GCP: configs/basic-single-node/gce.yaml
     AWS: configs/basic-single-node/aws.yaml
+  test:
+    tests_path: tests/job-intro/
+    command: bash tests.sh
+    timeout_in_sec: 900
 
 # owner: huaiwei
 - name: workspace-intro
@@ -26,6 +30,10 @@
   compute_config:
     GCP: configs/basic-single-node/gce.yaml
     AWS: configs/basic-single-node/aws.yaml
+  test:
+    tests_path: tests/workspace-intro/
+    command: bash tests.sh
+    timeout_in_sec: 900
 
 # owner: edward
 - name: service-intro
@@ -38,6 +46,10 @@
   compute_config:
     GCP: configs/basic-serverless-config/gce.yaml
     AWS: configs/basic-serverless-config/aws.yaml
+  test:
+    tests_path: tests/service-intro/
+    command: bash tests.sh
+    timeout_in_sec: 900
 
 # owner: stephen
 - name: unstructured_data_ingestion
