@@ -1,8 +1,8 @@
-head_node:
+head_node_type:
   instance_type: n2-standard-8
   resources:
-    CPU: 0
-    GPU: 0
+    cpu: 0
+    gpu: 0
   flags: {}
 enable_cross_zone_scaling: false
 auto_select_worker_config: true

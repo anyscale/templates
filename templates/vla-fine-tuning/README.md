@@ -119,7 +119,7 @@ ray.init(
 ```python
 STATS_PATH             = "/mnt/cluster_storage/stats_droid.json"
 EPISODE_INDEX_PATH     = "./data/episodes_droid_v1.0.1.parquet"
-NUM_EPISODES_TO_PROCESS = 10
+NUM_EPISODES_TO_PROCESS = 10 # increase for complete run
 
 RUN_NAME         = "pi05-droid-finetune"
 RUN_STORAGE_PATH = "/mnt/cluster_storage/ray_train_runs/pi05_droid"
@@ -162,8 +162,8 @@ if os.path.exists(STATS_PATH):
 else:
     stats_ds = (
         ray.data
-        .read_parquet(episode_index_path)
-        .limit(num_episodes)
+        .read_parquet(EPISODE_INDEX_PATH)
+        .limit(NUM_EPISODES_TO_PROCESS) # remove to process all data
         .map(harmonize_episode_paths)
         .filter(lambda ep: bool(ep.get("hdf5_path")))
         .map(extract_episode_action_and_state)
