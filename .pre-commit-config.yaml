@@ -1,4 +1,4 @@
-default_stages: [commit, push]
+default_stages: [pre-commit, pre-push]
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v3.2.0
@@ -17,4 +17,4 @@ repos:
         name: Auto generate README.md from README.ipynb
         entry: ci/auto-generate-readme.sh
         language: script
-        pass_filenames: false
+        pass_filenames: true
