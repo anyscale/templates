@@ -115,6 +115,10 @@
   compute_config:
     GCP: configs/basic-single-node/gce.yaml
     AWS: configs/basic-single-node/aws.yaml
+  test:
+    tests_path: tests/deployment-serve-llm/
+    command: bash tests.sh
+    timeout_in_sec: 900
 
 # owner: @omar
 - name: vla-fine-tuning
@@ -123,13 +127,8 @@
   description: Fine-tune a Vision-Language-Action with Ray Data & Ray Train
   dir: templates/vla-fine-tuning
   cluster_env:
-    byod:
-      docker_image: anyscale/ray:2.54.0-py312-cu129
-      ray_version: 2.54.0
+    build_id: anyscaleray2540-py312-cu129
   compute_config:
     AWS: configs/vla-fine-tuning/aws.yaml
     GCP: configs/vla-fine-tuning/gce.yaml
-  test:
-    tests_path: tests/deployment-serve-llm/
-    command: bash tests.sh
-    timeout_in_sec: 900
+  
