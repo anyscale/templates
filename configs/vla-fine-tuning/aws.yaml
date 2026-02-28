@@ -3,8 +3,5 @@ head_node_type:
   resources:
     cpu: 0
     gpu: 0
-  flags: {}
-enable_cross_zone_scaling: false
+worker_node_types: []
 auto_select_worker_config: true
-flags:
-  allow-cross-zone-autoscaling: false
