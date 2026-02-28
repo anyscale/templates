@@ -143,3 +143,7 @@
   compute_config:
     AWS: configs/vla-fine-tuning/aws.yaml
     GCP: configs/vla-fine-tuning/gce.yaml
+  test:
+    tests_path: tests/vla-fine-tuning/
+    command: bash tests.sh
+    timeout_in_sec: 900
