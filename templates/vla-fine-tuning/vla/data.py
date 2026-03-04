@@ -16,7 +16,7 @@ Organized in three layers:
                    Used as Ray Data .map_batches() callables.
 """
 
-import io/
+import io
 import itertools
 import av
 import h5py
@@ -24,6 +24,34 @@ import numpy as np
 import smart_open
 
 from typing import Any, Dict, Generator, Iterator
+
+
+# ---------------------------------------------------------------------------
+# Path resolution
+# ---------------------------------------------------------------------------
+
+_PATH_COLS = ("hdf5_path", "wrist_mp4_path", "ext1_mp4_path", "ext2_mp4_path")
+
+
+def resolve_episode_paths(episode: Dict[str, Any], bucket: str, prefix: str) -> Dict[str, Any]:
+    """
+    Prepend storage URI to relative path columns in an episode dict.
+
+    Paths that already contain '://' are left unchanged, so this function is
+    safe to call on a dataset that has not been stripped of its URI prefixes.
+
+    Args:
+        bucket: Storage bucket URI including scheme, e.g. "s3://my-bucket"
+                or "gs://my-bucket".
+        prefix: Path prefix within the bucket, e.g. "droid/1.0.1".
+    """
+    base = f"{bucket}/{prefix}/"
+    resolved = dict(episode)
+    for key in _PATH_COLS:
+        val = episode.get(key) or ""
+        if val and "://" not in val:
+            resolved[key] = base + val
+    return resolved
 
 
 # ---------------------------------------------------------------------------
