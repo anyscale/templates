@@ -8,7 +8,7 @@ This notebook implements an end-to-end distributed fine-tuning pipeline for the 
 It leverages Ray's ability to independently scale two distinct compute tiers.
 - **CPU nodes** — Orchestrated by Ray Data, this tier handles all data-intensive work:
     - streaming HDF5 robot state and action files,
-    - reading MP4 camera videos directly from Google Cloud Storage,
+    - reading MP4 camera videos directly from S3,
     - decoding video frames,
     - assembling per-timestep rows, and
     - running batched normalization preprocessing to produce camera images, robot state vectors, and action tensors
@@ -33,20 +33,8 @@ Because the CPU preprocessing pool and the GPU training pool are independently s
 <strong>IMPORTANT: BEFORE YOU START - DEPENDENCIES WITH UV</strong>
 </span>
 
-1. Open a terminal and run <code>uv sync</code>  
+1. Open a terminal and run <code>uv sync</code>
 2. After this completes, if prompted for a kernel, select the existing Python environment named vla (.venv/bin/python)
-
-<span style="background-color: #fff3b0; padding: 2px 4px; border-radius: 3px;">
-<strong>IMPORTANT: BEFORE YOU START - GOOGLE CLOUD AUTHENTICATION</strong>
-</span>
-
-Run the following command in a terminal window. Note: this will require google cloud authentication and then stores user google cloud credentials in a shared location for access by all workers
-
-```
-gcloud auth application-default login && \
-install -m 600 ~/.config/gcloud/application_default_credentials.json \
-/mnt/cluster_storage/gcp_adc.json
-```
 
 <span style="background-color: #fff3b0; padding: 2px 4px; border-radius: 3px;">
 <strong>IMPORTANT: BEFORE YOU START - HUGGINGFACE TOKEN</strong>
@@ -63,26 +51,22 @@ Without completing both steps, the model download will fail with a 401/403 error
 
 #### Init Ray
 
-First we use a custom utility function to initialize Ray so that workers can access:
-1. A HuggingFace token (for access to the pi0.5 VLA and the paligemma VLM backbone)
-2. Google Cloud credentials (for reading the Droid dataset)
+First we initialize Ray with a runtime environment that propagates the HuggingFace token to all workers.
 
 
 ```python
 # Start a Ray cluster session configured for this tutorial.
-
-# Reads GCS credentials from the shared path written by the setup step,
-# then calls ray.init() with a runtime environment that:
+#
+# Calls ray.init() with a runtime environment that:
 #     - uses uv as the Python executable on every worker
 #     - bundles the current working directory (so vla/ is importable)
-#     - propagates HF_TOKEN and GCP credentials to all remote workers
-
+#     - propagates HF_TOKEN to all remote workers
+#
 # Requires the HF_TOKEN environment variable to be set before calling this
 # function.  Export it in your shell or set it in the notebook kernel:
-
+#
 #     export HF_TOKEN=hf_...
 
-import json
 import os
 import ray
 
@@ -95,18 +79,12 @@ if not hf_token:
 
 os.environ.pop("RAY_RUNTIME_ENV_HOOK", None)
 
-credentials_path = "/mnt/cluster_storage/gcp_adc.json"
-with open(credentials_path) as f:
-    project_id = json.load(f).get("quota_project_id")
-
 ray.init(
     runtime_env={
         "py_executable": "uv run",
         "working_dir": ".",
         "env_vars": {
             "HF_TOKEN": hf_token,
-            "GOOGLE_APPLICATION_CREDENTIALS": credentials_path,
-            "GOOGLE_CLOUD_PROJECT": project_id,
         },
     },
     ignore_reinit_error=True,
@@ -118,7 +96,7 @@ ray.init(
 
 ```python
 STATS_PATH             = "/mnt/cluster_storage/stats_droid.json"
-EPISODE_INDEX_PATH     = "./data/episodes_droid_v1.0.1.parquet"
+EPISODE_INDEX_PATH     = "./data/episodes_droid_v1.0.1_s3.parquet"
 NUM_EPISODES_TO_PROCESS = 10 # increase for complete run
 
 RUN_NAME         = "pi05-droid-finetune"
@@ -142,14 +120,14 @@ files, computes per-feature mean and standard deviation for robot actions
 and state, writes the result to stats_path as JSON, and returns the dict.
 
 Pipeline:
-    read_parquet                  — loads the episode index (one row per episode)
-    map(harmonize_episode_paths)  — normalizes truncated GCS paths to canonical form
-    filter                        — drops episodes missing an hdf5_path
-    map(extract)                  — streams each HDF5 from GCS, pulls action/state
-    map(episode_stats)            — computes partial mean/std per episode
-    aggregate                     — reduces partials into final per-feature stats
+    read_parquet  — loads the episode index (one row per episode)
+    map(extract)  — streams each HDF5 from S3, pulls action/state arrays
+    map(stats)    — computes partial mean/std per episode
+    aggregate     — reduces partials into final per-feature stats
 """
-from vla.data import harmonize_episode_paths
+import json
+import os
+
 from vla.stats import (
     compute_episode_stats,
     compute_stats,
@@ -158,14 +136,12 @@ from vla.stats import (
 
 if os.path.exists(STATS_PATH):
     with open(STATS_PATH) as f:
-        stats=json.load(f)
+        stats = json.load(f)
 else:
     stats_ds = (
         ray.data
         .read_parquet(EPISODE_INDEX_PATH)
         .limit(NUM_EPISODES_TO_PROCESS) # remove to process all data
-        .map(harmonize_episode_paths)
-        .filter(lambda ep: bool(ep.get("hdf5_path")))
         .map(extract_episode_action_and_state)
         .map(compute_episode_stats)
     )
@@ -174,16 +150,15 @@ else:
 
     with open(STATS_PATH, "w") as f:
         json.dump(stats, f, indent=2)
-
 ```
 
 ## 3. Dataset pipeline
 
 With the Ray Data pipeline defined, we have a fully lazy, streaming dataset ready to feed the training loop. Here's how data flows at runtime:
 
-**GCS (source)** — HDF5 files (robot state and actions) and MP4 files (wrist camera video) are stored in Google Cloud Storage. Each episode is an HDF5/MP4 pair; the Parquet index tells Ray where to find them. Data is never copied to a local disk — workers stream directly from GCS using `smart_open`.
+**S3 (source)** — HDF5 files (robot state and actions) and MP4 files (wrist camera video) are stored in a public S3 bucket (`s3://anyscale-demo/droid/1.0.1/`). Each episode consists of an HDF5 and several MP4 files; the Parquet index tells Ray where to find them. Data is never copied to a local disk — workers stream directly from S3 using `smart_open`.
 
-**Ray Data CPU workers (preprocessing)** — CPU actors read files from GCS, decode wrist camera video with PyAV, assemble per-timestep rows, and run `preprocess_batch` to produce normalized `float32` tensors in PI0.5 format: `observation.images.base_0_rgb` (CHW), `observation.state` (7-dim), and `action` (7-dim). Completed batches are written into the Ray object store and held there until a GPU worker requests them.
+**Ray Data CPU workers (preprocessing)** — CPU actors read files from S3, decode wrist camera video with PyAV, assemble per-timestep rows, and run `preprocess_batch` to produce normalized `float32` tensors in PI0.5 format: `observation.images.base_0_rgb` (CHW), `observation.state` (7-dim), and `action` (7-dim). Completed batches are written into the Ray object store and held there until a GPU worker requests them.
 
 **Ray Train GPU workers (training)** — each GPU worker calls `ray.train.get_dataset_shard("train")` to receive its partition of the stream. Workers run the PI0.5 forward pass, compute the loss, and synchronize gradients via DDP. CPU preprocessing and GPU training **overlap in time** — while one batch is being computed on the GPU, CPU workers are already assembling the next batch.
 
@@ -194,13 +169,12 @@ Neither side sits idle: GPUs are never stalled waiting for data to decode, and C
 
 ```python
 import ray
-from vla.data import episode_to_training_rows, harmonize_episode_paths, preprocess_batch
+from vla.data import episode_to_training_rows, preprocess_batch
 
 ds = (
     ray.data
     .read_parquet(EPISODE_INDEX_PATH)
     .limit(NUM_EPISODES_TO_PROCESS)
-    .map(harmonize_episode_paths)                  # normalize truncated GCS paths to canonical form
     .flat_map(episode_to_training_rows)            # episode  → timestep rows
     .map_batches(preprocess_batch, batch_size=32)  # rows     → PI0.5 tensors
 )
@@ -256,7 +230,7 @@ This notebook demonstrates distributed fine-tuning of the **PI0.5 Vision-Languag
 
 2. **Configuration** — Key paths and hyperparameters are defined: episode index (Parquet), normalization stats cache, training run name/storage, and training settings (epochs, batch size, learning rate, sequence length).
 
-3. **Normalization statistics (Ray Data)** — A one-time streaming scan over the Droid HDF5 files computes per-feature mean and standard deviation for robot actions and state. Ray Data's parallel CPU workers stream directly from GCS, extract episode data, compute partial stats, and aggregate them into a `stats.json` file reused across runs.
+3. **Normalization statistics (Ray Data)** — A one-time streaming scan over the Droid HDF5 files computes per-feature mean and standard deviation for robot actions and state. Ray Data's parallel CPU workers stream directly from S3, extract episode data, compute partial stats, and aggregate them into a `stats.json` file reused across runs.
 
 4. **Dataset pipeline (Ray Data)** — A fully lazy, streaming pipeline reads the Parquet episode index, expands each episode into per-timestep rows (`episode_to_training_rows`), and applies batched preprocessing (`preprocess_batch`) to produce normalized PI0.5-format tensors: camera images (CHW), robot state (7-dim), and actions (7-dim). CPU preprocessing and GPU training overlap in time via the Ray object store.
 

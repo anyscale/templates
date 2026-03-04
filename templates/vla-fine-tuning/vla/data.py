@@ -16,7 +16,7 @@ Organized in three layers:
                    Used as Ray Data .map_batches() callables.
 """
 
-import io
+import io/
 import itertools
 import av
 import h5py
@@ -25,67 +25,45 @@ import smart_open
 
 from typing import Any, Dict, Generator, Iterator
 
-# ---------------------------------------------------------------------------
-# GCS path constants for the DROID v1.0.1 dataset
-# ---------------------------------------------------------------------------
-
-_GCS_BUCKET = "gresearch"
-_GCS_BASE_PATH = "robotics/droid_raw/1.0.1"
-
-# Some rows in the parquet index have truncated GCS paths of the form
-#   gs://success/<date>/<timestamp>/...
-# where the true path is
-#   gs://gresearch/robotics/droid_raw/1.0.1/<lab>/success/<date>/<timestamp>/...
-# The lab name is always the first token of the uuid field (e.g. "AUTOLab").
-_TRUNCATED_PREFIX = "gs://success/"
-
-
-def harmonize_episode_paths(episode: Dict[str, Any]) -> Dict[str, Any]:
-    """
-    map stage: normalize truncated GCS paths to their canonical form before any I/O is attempted.
-
-    About 30 % of rows in episodes_droid_v1.0.1.parquet have paths like
-        gs://success/2023-07-07/Fri_Jul__7_09:42:23_2023/trajectory.h5
-    instead of the correct
-        gs://gresearch/robotics/droid_raw/1.0.1/AUTOLab/success/2023-07-07/...
-
-    The lab name (e.g. "AUTOLab") is embedded as the first '+'-separated
-    token of the uuid field, so we can reconstruct the full path without
-    any additional metadata.
-    """
-    hdf5_path = episode.get("hdf5_path", "") or ""
-    if not hdf5_path.startswith(_TRUNCATED_PREFIX):
-        return episode
-
-    lab = (episode.get("uuid") or "").split("+")[0]
-    prefix = f"gs://{_GCS_BUCKET}/{_GCS_BASE_PATH}/{lab}/"
-
-    fixed = dict(episode)
-    for key in ("hdf5_path", "wrist_mp4_path", "ext1_mp4_path", "ext2_mp4_path"):
-        val = episode.get(key) or ""
-        if val.startswith(_TRUNCATED_PREFIX):
-            # strip the leading "gs://" from the truncated path so that
-            # "success/<date>/..." is appended after the reconstructed prefix.
-            fixed[key] = prefix + val[len("gs://") :]
-
-    return fixed
-
 
 # ---------------------------------------------------------------------------
 # I/O helpers
 # ---------------------------------------------------------------------------
 
 
+def _open(path: str, mode: str = "rb"):
+    """
+    Open a file from any supported scheme.
+
+    For S3 paths, tries the default boto3 credential chain first (env vars,
+    ~/.aws/credentials, instance profile IAM role on AWS workers).  If no
+    credentials are found, falls back to unsigned anonymous access for
+    publicly readable buckets (e.g. when running on GCP).
+    """
+    if path.startswith("s3://"):
+        import boto3
+        from botocore import UNSIGNED
+        from botocore.client import Config
+
+        has_credentials = boto3.Session().get_credentials() is not None
+        if has_credentials:
+            client = boto3.client("s3")
+        else:
+            client = boto3.client("s3", config=Config(signature_version=UNSIGNED))
+        return smart_open.open(path, mode, transport_params={"client": client})
+    return smart_open.open(path, mode)
+
+
 def read_hdf5_data(hdf5_path: str) -> Dict[str, np.ndarray]:
     """
-    Read an HDF5 file from GCS and return every leaf dataset as a flat dict.
+    Read an HDF5 file from S3 and return every leaf dataset as a flat dict.
 
     Keys use dot notation (e.g. "action.cartesian_velocity") and values are
     numpy arrays of shape (T, ...).  The file is buffered in memory so that
-    h5py can seek freely without multiple GCS round-trips.
+    h5py can seek freely without multiple S3 round-trips.
     """
 
-    with smart_open.open(hdf5_path, "rb") as f:
+    with _open(hdf5_path, "rb") as f:
         buf = io.BytesIO(f.read())
 
     data = {}
@@ -102,12 +80,12 @@ def read_hdf5_data(hdf5_path: str) -> Dict[str, np.ndarray]:
 
 def iter_video_frames(mp4_path: str) -> Iterator[np.ndarray]:
     """
-    Lazily yield RGB frames (HWC uint8) from an MP4 file on GCS.
+    Lazily yield RGB frames (HWC uint8) from an MP4 file on S3.
 
     The compressed bytes are buffered once in memory so that PyAV can seek
-    without additional GCS reads; frames are decoded one at a time.
+    without additional S3 reads; frames are decoded one at a time.
     """
-    with smart_open.open(mp4_path, "rb") as f:
+    with _open(mp4_path, "rb") as f:
         buf = io.BytesIO(f.read())
     with av.open(buf, mode="r") as container:
         for frame in container.decode(video=0):
