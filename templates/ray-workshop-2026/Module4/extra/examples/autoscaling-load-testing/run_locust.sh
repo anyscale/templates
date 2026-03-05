@@ -1,1 +1,0 @@
-locust --headless --html results.html --csv results.csv -f locustfile.py --host https://tl-workshop-msedw.cld-91sl4yby42b2ivfp.s.anyscaleuserdata.com

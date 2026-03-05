@@ -1,7 +1,0 @@
-applications:
-  - name: my-app
-    import_path: external_scaler_predictive:app
-    external_scaler_enabled: true
-    deployments:
-      - name: TextProcessor
-        num_replicas: 1
