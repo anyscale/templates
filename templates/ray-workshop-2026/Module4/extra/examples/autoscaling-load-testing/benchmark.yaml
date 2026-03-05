@@ -1,0 +1,24 @@
+image_uri: anyscale/image/tl-workshop-2:3
+compute_config:
+  head_node:
+    instance_type: m5.5xlarge
+    resources:
+      CPU: 0
+      GPU: 0
+  worker_nodes:
+    - instance_type: m5.4xlarge
+      min_nodes: 1
+      max_nodes: 1
+      market_type: ON_DEMAND
+applications:
+  - name: resnet50_single_replica_benchmark
+    import_path: resnet50_model:app
+    route_prefix: /
+    deployments:
+      - name: Model
+        max_ongoing_requests: 10000  # arbitrarily large number to avoid queueing while benchmarking
+        ray_actor_options:
+          num_cpus: 4
+        autoscaling_config:
+          min_replicas: 1  # benchmark against a single replica only
+          max_replicas: 1  # benchmark against a single replica only
