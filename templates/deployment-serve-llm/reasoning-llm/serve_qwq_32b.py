@@ -26,3 +26,4 @@ llm_config = LLMConfig(
 )
 
 app = build_openai_app({"llm_configs": [llm_config]})
+print(app)

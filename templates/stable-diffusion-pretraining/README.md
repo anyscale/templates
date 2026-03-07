@@ -1,5 +1,5 @@
 # Quickstart: Stable diffusion pre-training
-
+print("Hello, world!")
 <img src="https://anyscale-materials.s3.us-west-2.amazonaws.com/stable-diffusion/end_to_end_architecture_v7.png" width=1000px />
 
 Above is the reference architecture for Stable Diffusion pre-training

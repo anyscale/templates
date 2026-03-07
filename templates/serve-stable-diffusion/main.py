@@ -84,3 +84,4 @@ class StableDiffusionXL:
 # Bind the deployments to arguments that will be passed into its constructor.
 # This defines a Ray Serve application that we can run locally or deploy to production.
 stable_diffusion_app = APIIngress.bind(StableDiffusionXL.bind())
+print(stable_diffusion_app)

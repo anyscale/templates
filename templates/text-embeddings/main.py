@@ -11,6 +11,7 @@ from optimum.bettertransformer import BetterTransformer
 from util.utils import generate_output_path
 from util.embedding_util import ComputeEmbeddings
 
+
 # Step 1: Setup model defaults
 HF_MODEL_NAME = "thenlper/gte-large"
 # Some Hugging Face models require a token for access; if you choose one of these models, replace the following with your token.
