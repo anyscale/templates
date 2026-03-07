@@ -21,7 +21,6 @@ def prompt_for_hugging_face_token(hf_model: str) -> str:
     returns an empty string."""
 
     url = f"https://huggingface.co/api/models/{hf_model}"
-    print(url)
 
     response = requests.get(url)
     response_json = response.json()
