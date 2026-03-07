@@ -7,3 +7,15 @@ It leverages Ray's ability to independently scale two distinct compute tiers —
 ![VLA Fine-tuning Pipeline](images/vla-fine-tuning-pipeline.png)
 
 For the full walkthrough, open **[vla.ipynb](vla.ipynb)**.
+
+## Setup
+
+### Dependencies
+
+This template uses [uv](https://docs.astral.sh/uv/) for dependency management. Before running the notebook, open a terminal in the workspace and run:
+
+```bash
+uv sync
+```
+
+When prompted for a Jupyter kernel, select the Python environment named **vla** (`.venv/bin/python`).
