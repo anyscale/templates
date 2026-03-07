@@ -55,7 +55,6 @@ class FastAPIDeployment:
         return f"Hello {name}!"
 
 my_app = FastAPIDeployment.bind()
-print(my_app)
 ```
 
 The following is a breakdown of this code that integrates [Ray Serve with Fast API](https://docs.ray.io/en/latest/serve/http-guide.html):
