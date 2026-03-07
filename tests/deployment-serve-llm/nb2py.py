@@ -17,6 +17,7 @@ def convert_notebook(
             # Only process code cells
             if cell.cell_type != "code":
                 continue
+            print(cell.source)
 
             lines = cell.source.splitlines()
             # Skip cells that load or autoreload extensions
