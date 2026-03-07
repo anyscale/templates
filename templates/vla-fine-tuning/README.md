@@ -19,3 +19,17 @@ uv sync
 ```
 
 When prompted for a Jupyter kernel, select the Python environment named **vla** (`.venv/bin/python`).
+
+### HuggingFace Token
+
+PI0.5 depends on [google/paligemma-3b-pt-224](https://huggingface.co/google/paligemma-3b-pt-224) as a vision backbone. Google requires you to **accept the model license** before the weights can be downloaded.
+
+1. Navigate to the [google/paligemma-3b-pt-224 model page](https://huggingface.co/google/paligemma-3b-pt-224) and accept the license agreement.
+2. Generate an access token at [huggingface.co/settings/tokens](https://huggingface.co/settings/tokens).
+3. Export the token before running the notebook:
+
+```bash
+export HF_TOKEN=hf_...
+```
+
+Without both steps, the model download will fail with a 401/403 error.
