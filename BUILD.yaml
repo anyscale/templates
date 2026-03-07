@@ -59,7 +59,7 @@
   dir: templates/unstructured_data_ingestion
   cluster_env:
     byod:
-      containerfile: templates/unstructured_data_ingestion/Dockerfile
+      docker_image: us-docker.pkg.dev/anyscale-workspace-templates/workspace-templates/template_unstructured_data_ingestion:2.51.1
       ray_version: 2.51.1
   compute_config:
     GCP: configs/unstructured-data-ingestion/gce.yaml
@@ -143,3 +143,7 @@
   compute_config:
     AWS: configs/vla-fine-tuning/aws.yaml
     GCP: configs/vla-fine-tuning/gce.yaml
+  test:
+    tests_path: tests/vla-fine-tuning/
+    command: bash tests.sh
+    timeout_in_sec: 900
