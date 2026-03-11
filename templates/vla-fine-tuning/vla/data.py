@@ -63,21 +63,16 @@ def _open(path: str, mode: str = "rb"):
     """
     Open a file from any supported scheme.
 
-    For S3 paths, tries the default boto3 credential chain first (env vars,
-    ~/.aws/credentials, instance profile IAM role on AWS workers).  If no
-    credentials are found, falls back to unsigned anonymous access for
-    publicly readable buckets (e.g. when running on GCP).
+    For S3 paths, always uses unsigned (anonymous) access since the DROID
+    dataset bucket is publicly readable.  This avoids permission errors
+    when the caller has AWS credentials configured for a different account.
     """
     if path.startswith("s3://"):
         import boto3
         from botocore import UNSIGNED
         from botocore.client import Config
 
-        has_credentials = boto3.Session().get_credentials() is not None
-        if has_credentials:
-            client = boto3.client("s3")
-        else:
-            client = boto3.client("s3", config=Config(signature_version=UNSIGNED))
+        client = boto3.client("s3", config=Config(signature_version=UNSIGNED))
         return smart_open.open(path, mode, transport_params={"client": client})
     return smart_open.open(path, mode)
 
