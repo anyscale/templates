@@ -64,6 +64,10 @@
   compute_config:
     AWS: configs/intro-ray-libraries/aws.yaml
     GCP: configs/intro-ray-libraries/gce.yaml
+  test:
+    tests_path: tests/intro-ray-libraries/
+    command: bash tests.sh
+    timeout_in_sec: 1800
 
 # owner: stephen
 - name: unstructured_data_ingestion
