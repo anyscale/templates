@@ -41,12 +41,12 @@ def run_readme_generation(notebook_path, repo_root):
     script = os.path.join(repo_root, "ci", "auto-generate-readme.sh")
     result = subprocess.run(
         [script, notebook_path],
-        capture_output=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
         text=True,
         cwd=repo_root,
     )
-    output = result.stdout + result.stderr
-    return notebook_path, result.returncode, output
+    return notebook_path, result.returncode, result.stdout
 
 
 def main():
