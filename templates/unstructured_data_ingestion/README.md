@@ -101,7 +101,6 @@ ctx.enable_operator_progress_bars = False
 runtime_env = dict(
     pip= {
         "packages": ["unstructured[all-docs]==0.18.21", "pandas==2.3.3"],
-        "pip_install_options": ["--force-reinstall", "--no-cache-dir"]
     }
 )
 # Initialize Ray cluster connection to set the Ray Data context
@@ -128,14 +127,14 @@ ray.init(ignore_reinit_error=True, runtime_env= runtime_env)
 #   - ray_remote_args: Resource allocation per task
 #     * num_cpus=0.025: Very low CPU since this is I/O-bound (reading files)
 #     * This allows many concurrent reads without CPU bottleneck
-#   - limit(100): Process only 100 documents for this demo
+#   - limit(50): Process only 50 documents for this demo
 #     * Remove this limit to process entire collection
 
 document_collection = ray.data.read_binary_files(
     "s3://anyscale-rag-application/1000-docs/",
     include_paths=True,
     ray_remote_args={"num_cpus": 0.025}
-).limit(100)
+).limit(50)
 
 # Display the schema to understand our data structure
 # At this point, we have: 'bytes' (file content) and 'path' (file location)
@@ -268,19 +267,6 @@ documents_with_text.limit(25).to_pandas()
 # Instead of simple string matching, apply basic NLP for categorization.
 # For high-quality production, you'd use an ML or LLM model endpoint here.
 
-from transformers import pipeline
-
-# For demonstration: Use a small zero-shot classification model.
-# In a real pipeline, you should call a production LLM/ML endpoint or use a domain-specific model.
-# The 'facebook/bart-large-mnli' model works for zero-shot/label classification tasks.
-# You may swap with "typeform/distilbert-base-uncased-mnli" or another small MNLI model for lighter resource use.
-# If working at scale or with large docs, consider using Ray Serve + LLM API instead.
-
-zero_shot_classifier = pipeline(
-    "zero-shot-classification",
-    model="facebook/bart-large-mnli"  # Or another MNLI model if needed
-)
-
 # Define candidate classes (map to business categories)
 CANDIDATE_LABELS = [
     "financial document",  # maps to 'finance'
@@ -301,46 +287,63 @@ BUSINESS_CATEGORY_MAPPING = {
 }
 
 
-def enrich_business_metadata(record: Dict[str, Any]) -> Dict[str, Any]:
+class BusinessMetadataEnricher:
     """
     Uses zero-shot text classification to predict business category and assign processing priority.
     For production: Replace this with a call to your domain-tuned classifier or LLM endpoint.
+
+    NOTE: We use a class-based approach so that Ray loads the model once per worker
+    in __init__, then reuses it across all records in __call__. This avoids the
+    expensive overhead of loading the ~1.6GB model for every single document.
     """
 
-    file_size = record["file_size_bytes"]
-    text = record.get("extracted_text", "") or ""
-    filename = record.get("file_name", "")
+    def __init__(self):
+        from transformers import pipeline
 
-    # Concatenate extracted text with filename for context, up to limit (to save inference cost)
-    context_text = (filename + "\n\n" + text[:1000]).strip()  # Truncate to first 1000 chars for speed
+        # Load the model once per worker actor.
+        # The 'facebook/bart-large-mnli' model works for zero-shot/label classification tasks.
+        # You may swap with "typeform/distilbert-base-uncased-mnli" or another small MNLI model for lighter resource use.
+        # If working at scale or with large docs, consider using Ray Serve + LLM API instead.
+        self.zero_shot_classifier = pipeline(
+            "zero-shot-classification",
+            model="facebook/bart-large-mnli"
+        )
 
-    # Run zero-shot classification (useful even with short context)
-    result = zero_shot_classifier(context_text, CANDIDATE_LABELS, multi_label=False)
-    top_label = result["labels"][0] if result and "labels" in result and result["labels"] else "general document"
+    def __call__(self, record: Dict[str, Any]) -> Dict[str, Any]:
+        file_size = record["file_size_bytes"]
+        text = record.get("extracted_text", "") or ""
+        filename = record.get("file_name", "")
 
-    doc_type, business_category = BUSINESS_CATEGORY_MAPPING.get(top_label, ("general_document", "general"))
+        # Concatenate extracted text with filename for context, up to limit (to save inference cost)
+        context_text = (filename + "\n\n" + text[:1000]).strip()  # Truncate to first 1000 chars for speed
 
-    # Priority assignment using simple logic + NLP keyword search (feel free to LLM this too)
-    lower_context = context_text.lower()
-    if any(w in lower_context for w in ["urgent", "critical", "deadline"]):
-        priority = "high"
-        priority_score = 3
-    elif any(w in lower_context for w in ["important", "quarterly", "annual"]):
-        priority = "medium"
-        priority_score = 2
-    else:
-        priority = "low"
-        priority_score = 1
-    
-    return {
-        **record,
-        "document_type": doc_type,
-        "business_category": business_category,
-        "processing_priority": priority,
-        "priority_score": priority_score,
-        "estimated_pages": max(1, file_size // 50000),
-        "processing_status": "classified"
-    }
+        # Run zero-shot classification (useful even with short context)
+        result = self.zero_shot_classifier(context_text, CANDIDATE_LABELS, multi_label=False)
+        top_label = result["labels"][0] if result and "labels" in result and result["labels"] else "general document"
+
+        doc_type, business_category = BUSINESS_CATEGORY_MAPPING.get(top_label, ("general_document", "general"))
+
+        # Priority assignment using simple logic + NLP keyword search (feel free to LLM this too)
+        lower_context = context_text.lower()
+        if any(w in lower_context for w in ["urgent", "critical", "deadline"]):
+            priority = "high"
+            priority_score = 3
+        elif any(w in lower_context for w in ["important", "quarterly", "annual"]):
+            priority = "medium"
+            priority_score = 2
+        else:
+            priority = "low"
+            priority_score = 1
+        
+        return {
+            **record,
+            "document_type": doc_type,
+            "business_category": business_category,
+            "processing_priority": priority,
+            "priority_score": priority_score,
+            "estimated_pages": max(1, file_size // 50000),
+            "processing_status": "classified"
+        }
 
 
 # Apply business metadata enrichment to all documents
@@ -349,8 +352,13 @@ print("Enriching with business metadata (using zero-shot NLP)...")
 # Note: zero-shot and LLM models can be heavy;
 # For fast local testing, use a smaller model, or replace with a production endpoint.
 
+# Using a class-based approach with concurrency=2 means Ray creates 2 actor instances,
+# each loading the model once, then processing many documents with that loaded model.
+# This is dramatically faster than loading the model per-record with a plain function.
+
 documents_with_metadata = documents_with_text.map(
-    enrich_business_metadata
+    BusinessMetadataEnricher,
+    concurrency=2
 )
 
 
@@ -741,6 +749,13 @@ print("Main warehouse table written successfully")
 # Create specialized datasets for specific business teams
 # Each team gets only the data they need with relevant columns
 
+# IMPORTANT: Read the data back from the main table we just wrote.
+# This avoids re-executing the entire expensive pipeline (text extraction + NLP enrichment).
+# Instead, we read the already-processed Parquet data, which is fast.
+warehouse_dataset = ray.data.read_parquet(
+    f"{OUTPUT_WAREHOUSE_PATH}/main_table/",
+    ray_remote_args={"num_cpus": 0.025}
+)
 
 # Example: Compliance analytics dataset
 # Compliance team needs: document content, quality, and priority

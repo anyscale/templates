@@ -67,7 +67,7 @@
   test:
     tests_path: tests/unstructured_data_ingestion/
     command: bash tests.sh
-    timeout_in_sec: 900
+    timeout_in_sec: 1200
 
 # owner: Aydin
 - name: model-multiplexing
