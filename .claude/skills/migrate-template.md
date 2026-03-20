@@ -30,13 +30,25 @@ Content, cluster env, compute config, and tests are defined in `BUILD.yaml` in t
 
 ---
 
+## Important: Schema strictness
+
+Every entry in both `BUILD.yaml` and `workspace-templates.yaml` **must exactly match** the schemas defined in the [publishing guide](https://www.notion.so/anyscale-hq/Anyscale-Template-publishing-guide-V3-317027c809cb801bbf09fed1cb9bf71d). All fields in the schema are required.
+
+- **Do not guess values.** If a field's value is ambiguous or unknown, add a `# TODO: <explain what's needed>` comment instead of inventing a value.
+- **`cluster_env` must be one of two forms** — never mix them, never leave it empty:
+  - `image_uri: anyscale/ray:...` (Anyscale public image)
+  - `byod:` block with `docker_image` + `ray_version` (external/custom image)
+- The same applies to `workspace-templates.yaml`: every field in the schema (title, description, base_url, emoji, complexity, icon_type, icon_bg_color, labels, for_gallery, ld_flag, etc.) must be present. If you don't know the right value, use a `# TODO:` comment.
+
+---
+
 ## Phase 1: Add entries to BUILD.yaml
 
 **Goal:** For each old-workflow template hosted in `anyscale/templates`, add an entry to `BUILD.yaml`.
 
 ### 1.1 Identify candidates
 
-Search `workspace-templates.yaml` for entries with:
+Search [`backend/workspace-templates.yaml`](https://github.com/anyscale/product/blob/master/backend/workspace-templates.yaml) for entries with:
 ```
 base_url: https://github.com/anyscale/templates/tree/...
 ```
@@ -45,7 +57,7 @@ These are the templates to migrate. Templates hosted in `ray-project/ray` (e.g.,
 
 ### 1.2 Check what already exists in BUILD.yaml
 
-Cross-reference the candidates against existing `BUILD.yaml` entries. Skip any template that already has an entry (already migrated).
+Cross-reference the candidates against existing entries in [`BUILD.yaml`](https://github.com/anyscale/templates/blob/main/BUILD.yaml). Skip any template that already has an entry (already migrated).
 
 ### 1.3 Add BUILD.yaml entries
 
@@ -141,7 +153,11 @@ Remove these fields from the `workspace-templates.yaml` entry (they now live in 
 | `path` | No longer needed; `base_url` is self-contained with `ascommon://` |
 | `cluster_env` | Now defined in `BUILD.yaml` |
 | `compute_config` | Now defined in `BUILD.yaml` |
-| `maximum_uptime_minutes` | Deprecated field |
+| `maximum_uptime_minutes` | Dead in template flow: parsed but never surfaced to the API or frontend (frontend hardcodes 1440 min). Safe to remove. |
+| `for_fine_tuning` | Dead: full plumbing exists but no caller ever passes `for_fine_tuning=true`. See Deprecated fields section. |
+| `for_private_endpoints_home_page` | Dead: full plumbing exists but no caller ever passes it as `true`. See Deprecated fields section. |
+| `logo_ids` | Dead: serialized into API response but no frontend component reads or renders it. Template card icons use `icon_type`/`icon_bg_color` instead. See Deprecated fields section. |
+| `emoji` | Dead: serialized into API response but no frontend component reads or renders it. Cards use `icon_type`/`icon_bg_color` instead. See Deprecated fields section. |
 
 ### 2.3 Keep these fields in workspace-templates.yaml
 
@@ -149,23 +165,25 @@ These fields stay because they control console display and gallery behavior:
 
 ```yaml
 <template-name>:
-  emoji: ...
   title: ...
   description: ...
   base_url: ascommon:///templates/<template-name>/latest
-  ld_flag: false
   mins_to_complete: ...
   complexity: ...
   icon_type: ...
   icon_bg_color: "..."
   for_gallery: true
-  labels:
-    - ...
-  oa_group_name: ...         # if present
-  logo_ids:                  # if present
-    - ...
-  for_fine_tuning: ...       # if present
-  for_private_endpoints_home_page: ...  # if present
+  labels:                       # Only these values have functional effect:
+    - ...                       #   Filter pills: Parallel processing, Distributed training,
+                                #     Batch inference, Data processing, Online inference, Fine-tuning,
+                                #     Text, Image, Audio, Video, Tabular,
+                                #     Scikit-learn, XGBoost, Pytorch, Tensorflow,
+                                #     Ray Core, Ray Data, Ray Train, Ray Serve
+                                #   Recommendation scoring adds: LLMs, Stable Diffusion, Parallel Processing
+                                #   Card chips: only Ray Core, Ray Data, Ray Train, Ray Serve render visually
+                                #   Any other value only matches free-text search
+  oa_group_name: intro         # keep only if value is "intro", drop otherwise
+  ld_flag: false
 ```
 
 ### 2.4 Verify consistency
@@ -177,12 +195,40 @@ After editing, confirm:
 
 ---
 
-## Files involved
+## File locations
 
-| File | Repo | Purpose |
-|---|---|---|
-| `BUILD.yaml` | `anyscale/templates` | Template build definitions (content, env, compute, tests) |
-| `backend/workspace-templates.yaml` | `anyscale/product` | Console gallery metadata and `base_url` routing |
+| File | Link | Repo | Purpose |
+|---|---|---|---|
+| `BUILD.yaml` | [anyscale/templates/BUILD.yaml](https://github.com/anyscale/templates/blob/main/BUILD.yaml) | `anyscale/templates` | Template build definitions (content, env, compute, tests) |
+| `workspace-templates.yaml` | [anyscale/product/backend/workspace-templates.yaml](https://github.com/anyscale/product/blob/master/backend/workspace-templates.yaml) | `anyscale/product` | Console gallery metadata and `base_url` routing |
+
+---
+
+## Deprecated fields in workspace-templates.yaml
+
+### `maximum_uptime_minutes`
+
+**Dead field.** The YAML value is parsed but never surfaced to the API — `filter_and_format_templates_standalone()` in `workspaces_service.py` omits it when constructing the `GlobalWorkspaceTemplate` response. The frontend never reads it from the template and instead hardcodes `1440` (24h) in `utils.ts:13`, which is what gets sent to the backend on every Launch. The enforcement mechanism itself is real (Go cluster operator force-terminates clusters via `max_uptime_threshold_seconds` in the `AnyscaleClusterSpec` proto), but the YAML value never reaches it. Safe to remove.
+
+### `for_fine_tuning`
+
+**Dead field.** The full plumbing exists — YAML value, `is_for_fine_tuning()` method in `workspaces_service.py:268`, filter logic in `filter_and_format_templates_standalone()`, API query parameter on the `GET /templates` endpoint, and a `forFineTuning` param in the frontend hook `useListWorkspaceTemplates`. However, **no caller anywhere passes `for_fine_tuning=true`** — neither the frontend pages (`TemplatesPage`, `HomePage`) nor any CLI/Go code ever triggers the filter. The `GlobalWorkspaceTemplate` response model also does not include the field. Only two templates declare it (`skyrl`, `finetune-stable-diffusion`). Safe to remove.
+
+### `for_private_endpoints_home_page`
+
+**Dead field.** Three templates declare it (`langchain-agent-ray-serve`, `unstructured_data_ingestion`, `asynchronous_inference`). The backend has `is_for_private_endpoints_home_page()` in `workspaces_service.py:271`, a filter branch in `filter_and_format_templates_standalone()`, and a `for_private_endpoints_homepage` query parameter on the `GET /templates` router. However, **no frontend page, CLI command, or Go caller ever passes `for_private_endpoints_homepage=true`**. The `GlobalWorkspaceTemplate` response model does not include the field. Appears to be a vestige of an older "private endpoints home page" UI that no longer exists. Safe to remove.
+
+### `emoji`
+
+**Dead field.** Parsed by `workspaces_service.py:759`, included in the `GlobalWorkspaceTemplate` model (`experimental_workspaces.py:187`), and serialized into every API response. However, **no frontend component ever reads `.emoji`** from the template object. `TemplateCard`, `TemplateCardGrid`, and all page components have zero references to it. Template cards use `icon_type`/`icon_bg_color` for their visual icon instead. Safe to remove.
+
+### `logo_ids`
+
+**Dead field.** Defined in 32 templates with values like `ray`, `meta`, `hugging-face`, etc. Parsed by `workspaces_service.py:762`, included in the `GlobalWorkspaceTemplate` model (`experimental_workspaces.py:195`), and serialized into every API response. However, **no frontend component ever reads `logoIds` from the template object**. `TemplateCardGrid` does not pass it to `TemplateCard`, and `TemplateCard` has no `logoIds` prop. Template card icons are driven entirely by `icon_type` and `icon_bg_color`, which appear to have replaced `logo_ids`. Safe to remove.
+
+### `oa_group_name`
+
+**Partially alive.** Has exactly one real caller: `HomePage.tsx:27` queries `oaGroupNames: ["intro"]` to fetch the 5 intro templates for the home page welcome section. This flows through the API query parameter (`experimental_workspaces_router.py:293`) to `filter_and_format_templates_standalone()` in `workspaces_service.py:740` which filters templates server-side by their `oa_group_name` YAML value. However, only the `"intro"` group is ever queried — the other 4 groups (`gen_ai`, `more`, `data`, `ray_summit`) are never requested by any caller. The field is also included in the `GlobalWorkspaceTemplate` API response (`experimental_workspaces.py:199`) but no frontend component ever reads it from the response. **Keep the field for templates with `oa_group_name: intro`; the rest are dead weight but harmless.**
 
 ---
 
