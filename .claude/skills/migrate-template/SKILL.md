@@ -115,6 +115,14 @@ Pattern:
 
 Reference for valid images: https://docs.anyscale.com/reference/base-images
 
+#### Compute config reuse
+
+Before referencing a template-specific compute config, check whether it is identical to one of the shared configs:
+- `configs/basic-single-node/` — head-only, `auto_select_worker_config: true` (GCP: `n2-standard-8`)
+- `configs/basic-serverless-config/` — head-only, `auto_select_worker_config: true` (GCP: `n1-standard-8`)
+
+If the template's compute config content matches a shared config, reference the shared one instead. Only keep template-specific configs when they define custom worker node types, GPU instances, or other non-default settings.
+
 #### Decision gates
 
 Before adding an entry, verify:
@@ -161,7 +169,11 @@ Remove these fields from the `workspace-templates.yaml` entry (they now live in 
 
 ### 2.3 Keep these fields in workspace-templates.yaml
 
-These fields stay because they control console display and gallery behavior:
+These fields stay because they control console display and gallery behavior.
+
+**CRITICAL: Field order and completeness.** Every migrated entry MUST:
+1. Include **all** fields listed below — even for `ld_flag: true` templates. If a value is unknown, add a `# TODO:` comment but still keep the field's position in the order.
+2. Follow **exactly this field order** — no exceptions, no reordering:
 
 ```yaml
 <template-name>:
@@ -169,29 +181,50 @@ These fields stay because they control console display and gallery behavior:
   description: ...
   base_url: ascommon:///templates/<template-name>/latest
   mins_to_complete: ...
-  complexity: ...
-  icon_type: ...
-  icon_bg_color: "..."
-  for_gallery: true
-  labels:                       # Only these values have functional effect:
-    - ...                       #   Filter pills: Parallel processing, Distributed training,
-                                #     Batch inference, Data processing, Online inference, Fine-tuning,
-                                #     Text, Image, Audio, Video, Tabular,
-                                #     Scikit-learn, XGBoost, Pytorch, Tensorflow,
-                                #     Ray Core, Ray Data, Ray Train, Ray Serve
-                                #   Recommendation scoring adds: LLMs, Stable Diffusion, Parallel Processing
-                                #   Card chips: only Ray Core, Ray Data, Ray Train, Ray Serve render visually
-                                #   Any other value only matches free-text search
-  oa_group_name: intro         # keep only if value is "intro", drop otherwise
-  ld_flag: false
+  complexity: ...                # one of: Beginner, Intermediate, Advanced
+  icon_type: ...                 # use # TODO: if unknown
+  icon_bg_color: "..."           # use # TODO: if unknown
+  for_gallery: true              # false only if template is hidden (ld_flag: true)
+  labels:                        # MUST be sorted alphabetically (A-Z)
+    - ...                        # Only these values have functional effect:
+                                 #   Filter pills: Parallel processing, Distributed training,
+                                 #     Batch inference, Data processing, Online inference, Fine-tuning,
+                                 #     Text, Image, Audio, Video, Tabular,
+                                 #     Scikit-learn, XGBoost, Pytorch, Tensorflow,
+                                 #     Ray Core, Ray Data, Ray Train, Ray Serve
+                                 #   Recommendation scoring adds: LLMs, Stable Diffusion, Parallel Processing
+                                 #   Card chips: only Ray Core, Ray Data, Ray Train, Ray Serve render visually
+                                 #   Any other value only matches free-text search
+  oa_group_name: intro           # ONLY include if value is "intro" — omit entirely otherwise
+  ld_flag: false                 # ALWAYS the last field
 ```
 
-### 2.4 Verify consistency
+### 2.4 Verify labels against template content
+
+Before finalizing labels, **read the actual template content** (README.md, notebooks) for each template to verify:
+
+1. **`mins_to_complete`** — check if the template mentions a time estimate. Use that value, or estimate from content length.
+2. **`complexity`** — check if prerequisites or difficulty are mentioned. Map to Beginner/Intermediate/Advanced.
+3. **Labels accuracy** — verify that labels match the Ray libraries and frameworks actually used in the code:
+   - If the template imports `ray.data`, add "Ray Data"
+   - If the template imports `ray.train`, add "Ray Train"
+   - If the template imports `ray.serve`, add "Ray Serve"
+   - If the template uses `ray.remote`/`ray.actor`, add "Ray Core"
+   - If the template uses PyTorch, add "Pytorch"
+   - If the template processes images, add "Image"; text → "Text"; etc.
+   - Remove labels that don't match the actual content
+4. **Labels sort order** — labels MUST be sorted alphabetically (A-Z). Double-check after any additions or removals.
+
+### 2.5 Verify consistency
 
 After editing, confirm:
 - The `<template-name>` key in `workspace-templates.yaml` matches the `name` in `BUILD.yaml`
 - The `base_url` path segment matches the `name` in `BUILD.yaml`
 - No `cluster_env`, `compute_config`, or `path` fields remain on migrated entries
+- All fields appear in the exact order specified in 2.3
+- `ld_flag` is the last field in every entry
+- Labels are sorted alphabetically
+- No deprecated fields remain (`emoji`, `logo_ids`, `oa_group_name` unless "intro", `maximum_uptime_minutes`, `for_fine_tuning`, `for_private_endpoints_home_page`)
 
 ---
 
