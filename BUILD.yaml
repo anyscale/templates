@@ -133,3 +133,115 @@
     tests_path: tests/vla-fine-tuning/
     command: bash tests.sh
     timeout_in_sec: 900
+
+# owner: @eric
+- name: skyrl
+  dir: templates/skyrl
+  cluster_env:
+    byod:
+      docker_image: novaskyai/skyrl-train-ray-2.48.0-py3.12-cu12.8
+      ray_version: 2.48.0
+  compute_config:
+    GCP: configs/skyrl/gce.yaml
+    AWS: configs/skyrl/aws.yaml
+  test:
+    tests_path: tests/skyrl/
+    command: bash tests.sh
+    timeout_in_sec: 900
+
+# owner: @scott-lee
+- name: text-embeddings
+  dir: templates/text-embeddings
+  cluster_env:
+    byod:
+      docker_image: anyscale/ray:2.47.0-slim-py312-cu128
+      ray_version: 2.47.0
+  compute_config:
+    GCP: configs/text-embeddings/gce.yaml
+    AWS: configs/text-embeddings/aws.yaml
+  test:
+    tests_path: tests/text-embeddings/
+    command: bash tests.sh
+    timeout_in_sec: 900
+
+# owner: @justin, @mattd
+- name: finetune-stable-diffusion
+  dir: templates/finetune-stable-diffusion
+  cluster_env:
+    image_uri: anyscale/ray-ml:2.22.0-py39-gpu
+  compute_config:
+    GCP: configs/basic-serverless-config/gce.yaml
+    AWS: configs/basic-serverless-config/aws.yaml
+  test:
+    tests_path: tests/finetune-stable-diffusion/
+    command: bash tests.sh
+    timeout_in_sec: 900
+
+# owner: @sofian, @huaiwei
+- name: getting-started
+  dir: templates/getting-started
+  cluster_env:
+    image_uri: anyscale/ray:2.34.0-py311
+  compute_config:
+    GCP: configs/getting-started/gce.yaml
+    AWS: configs/getting-started/aws.yaml
+  test:
+    tests_path: tests/getting-started/
+    command: bash tests.sh
+    timeout_in_sec: 900
+
+# owner: @yunxuan, @marwan
+- name: stable-diffusion-pretraining
+  dir: templates/stable-diffusion-pretraining
+  cluster_env:
+    byod:
+      docker_image: us-docker.pkg.dev/anyscale-workspace-templates/workspace-templates/stable-diffusion-pretraining:ray-2.12-full
+      ray_version: 2.12.0
+  compute_config:
+    AWS: configs/stable-diffusion-pretraining/aws.yaml
+    GCP: configs/stable-diffusion-pretraining/gce.yaml
+  test:
+    tests_path: tests/stable-diffusion-pretraining/
+    command: bash tests.sh
+    timeout_in_sec: 900
+
+# owner: @mattd
+- name: parallel-experiments
+  dir: templates/parallel-experiments
+  cluster_env:
+    image_uri: anyscale/ray-ml:2.49.0-py39-gpu
+  compute_config:
+    GCP: configs/basic-serverless-config/gce.yaml
+    AWS: configs/basic-serverless-config/aws.yaml
+  test:
+    tests_path: tests/parallel-experiments/
+    command: bash tests.sh
+    timeout_in_sec: 900
+
+# owner: @saihaj, @chris-ray-zhang, @soffer-anyscale
+- name: ray-data-batch-image-classification
+  dir: templates/ray-data-batch-image-classification
+  cluster_env:
+    image_uri: anyscale/ray:2.44.1-slim-py311-cu123
+  compute_config:
+    GCP: configs/ray-data-batch-image-classification/gce.yaml
+    AWS: configs/ray-data-batch-image-classification/aws.yaml
+  test:
+    tests_path: tests/ray-data-batch-image-classification/
+    command: bash tests.sh
+    timeout_in_sec: 900
+
+# owner: @marwan
+- name: ray-summit-core-masterclass
+  dir: templates/ray-summit-core-masterclass
+  cluster_env:
+    byod:
+      docker_image: us-docker.pkg.dev/anyscale-workspace-templates/workspace-templates/ray-summit-core-masterclass-2024:1
+      ray_version: 2.36.0
+  compute_config:
+    AWS: configs/ray-summit-core-masterclass/aws.yaml
+    GCP: configs/basic-serverless-config/gce.yaml
+  test:
+    tests_path: tests/ray-summit-core-masterclass/
+    command: bash tests.sh
+    timeout_in_sec: 900
