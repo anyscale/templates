@@ -165,3 +165,20 @@
     tests_path: tests/vla-fine-tuning/
     command: bash tests.sh
     timeout_in_sec: 900
+
+- name: mcp-ray-serve
+  emoji: 🔌
+  title: MCP Servers with Ray Serve
+  description: Deploy MCP servers with Ray Serve — custom Streamable HTTP, MCP gateway over existing apps, and stdio Docker image deployments.
+  dir: templates/mcp-ray-serve
+  cluster_env:
+    byod:
+      docker_image: anyscale/ray:2.47.1-py312
+      ray_version: 2.47.1
+  compute_config:
+    AWS: configs/basic-single-node/aws.yaml
+    GCP: configs/basic-single-node/gce.yaml
+  test:
+    tests_path: tests/mcp-ray-serve/
+    command: bash tests.sh
+    timeout_in_sec: 1800
