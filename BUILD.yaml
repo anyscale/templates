@@ -165,3 +165,20 @@
     tests_path: tests/vla-fine-tuning/
     command: bash tests.sh
     timeout_in_sec: 900
+
+- name: entity-recognition-with-llms
+  emoji: 🏷️
+  title: Entity Recognition with LLMs
+  description: End-to-end LLM workflow for entity recognition — fine-tuning, batch inference with ray.data.llm, and online serving with ray.serve.llm.
+  dir: templates/entity-recognition-with-llms
+  cluster_env:
+    byod:
+      docker_image: anyscale/ray-llm:2.44.1-py311-cu124
+      ray_version: 2.44.1
+  compute_config:
+    AWS: configs/basic-single-node/aws.yaml
+    GCP: configs/basic-single-node/gce.yaml
+  test:
+    tests_path: tests/entity-recognition-with-llms/
+    command: bash tests.sh
+    timeout_in_sec: 1800
