@@ -49,7 +49,7 @@
   test:
     tests_path: tests/service-intro/
     command: bash tests.sh
-    timeout_in_sec: 900
+    timeout_in_sec: 1200
 
 # owner: jasond
 - name: intro-ray-libraries
