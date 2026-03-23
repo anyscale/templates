@@ -165,3 +165,20 @@
     tests_path: tests/vla-fine-tuning/
     command: bash tests.sh
     timeout_in_sec: 900
+
+- name: object-detection-video-processing
+  emoji: 🎥
+  title: Scalable video processing
+  description: Fine-tune object detection models using Ray Train, evaluate performance, process video files with Ray Data batch inference, and deploy real-time services with Ray Serve.
+  dir: templates/object-detection-video-processing
+  cluster_env:
+    byod:
+      docker_image: us-docker.pkg.dev/anyscale-workspace-templates/workspace-templates/object-detection-ray:2.44.1
+      ray_version: 2.44.1
+  compute_config:
+    AWS: configs/object-detection-video-processing/aws.yaml
+    GCP: configs/object-detection-video-processing/gce.yaml
+  test:
+    tests_path: tests/object-detection-video-processing/
+    command: bash tests.sh
+    timeout_in_sec: 1800
