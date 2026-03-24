@@ -67,7 +67,7 @@
   test:
     tests_path: tests/unstructured_data_ingestion/
     command: bash tests.sh
-    timeout_in_sec: 900
+    timeout_in_sec: 1500
 
 # owner: @aydin
 - name: model-multiplexing
@@ -136,7 +136,7 @@
 
 # owner: @eric
 - name: skyrl
-  dir: templates/skyrl
+  dir: templates/rl-skyrl
   cluster_env:
     byod:
       docker_image: novaskyai/skyrl-train-ray-2.48.0-py3.12-cu12.8
@@ -166,7 +166,7 @@
 
 # owner: @justin, @mattd
 - name: finetune-stable-diffusion
-  dir: templates/finetune-stable-diffusion
+  dir: templates/fine-tune-stable-diffusion
   cluster_env:
     image_uri: anyscale/ray-ml:2.22.0-py39-gpu
   compute_config:
@@ -207,7 +207,7 @@
 
 # owner: @mattd
 - name: parallel-experiments
-  dir: templates/parallel-experiments
+  dir: templates/intro-tune
   cluster_env:
     image_uri: anyscale/ray-ml:2.49.0-py39-gpu
   compute_config:
@@ -220,7 +220,7 @@
 
 # owner: @saihaj, @chris-ray-zhang, @soffer-anyscale
 - name: ray-data-batch-image-classification
-  dir: templates/ray-data-batch-image-classification
+  dir: templates/ray-data-batch-classification
   cluster_env:
     image_uri: anyscale/ray:2.44.1-slim-py311-cu123
   compute_config:
