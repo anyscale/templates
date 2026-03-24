@@ -63,7 +63,7 @@ Usage:
 import logging
 import os
 
-import ray
+import numpy as np
 import util
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s  %(levelname)-8s  %(message)s")
@@ -97,6 +97,8 @@ if not HF_TOKEN:
 # ============================================================================
 # Connect to Ray
 # ============================================================================
+
+import ray
 
 ray.init(
     runtime_env={
@@ -134,8 +136,6 @@ def transpose_images(batch: dict, camera_keys: list[str]) -> dict:
     PI0.5 (like most vision models) expects (batch, channels, height, width).
     The raw dataset stores images as (height, width, channels) uint8.
     """
-    import numpy as np
-
     result = dict(batch)
     for key in camera_keys:
         result[key] = np.transpose(np.stack(batch[key]), (0, 3, 1, 2)).astype(np.float32)
@@ -186,11 +186,14 @@ ds = (
 # See: https://docs.ray.io/en/latest/train/getting-started-pytorch.html
 # ============================================================================
 
-import torch                               # used by Ray Train GPU workers
+import torch
 
 
 def train_loop_per_worker(config: dict):
     """Per-GPU training entry point. Ray Train calls this on each worker."""
+
+    import ray.train
+    import ray.train.torch
 
     device = torch.device("cuda")
 
@@ -299,6 +302,10 @@ def train_loop_per_worker(config: dict):
                 # Standard PyTorch: unscale, clip, step, zero_grad (see util.py)
                 util.optimizer_step(policy, optimizer, scaler, scheduler)
 
+            # Log every 10 steps so you can watch training progress.
+            if step % 10 == 0:
+                log.info("epoch=%d  step=%d  loss=%.4f  lr=%.2e", epoch, step, loss_val, scheduler.get_last_lr()[0])
+
         # -- End of epoch: report metrics and checkpoint -----------------------
         #
         # ray.train.report() is a synchronization barrier -- every worker must
@@ -327,6 +334,9 @@ def train_loop_per_worker(config: dict):
 # code, data pipeline, and checkpointing all adapt automatically.
 # See: https://docs.ray.io/en/latest/train/api/doc/ray.train.torch.TorchTrainer.html
 # ============================================================================
+
+import ray.train
+import ray.train.torch
 
 train_loop_config = {
     "stats": stats,
