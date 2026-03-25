@@ -135,9 +135,6 @@
     timeout_in_sec: 900
 
 - name: e2e-timeseries-forecasting
-  emoji: 📈
-  title: "Time-series forecasting"
-  description: "Train and serve an end-to-end time-series forecasting model using Ray Data, Train, and Serve."
   dir: templates/e2e-timeseries-forecasting
   cluster_env:
     image_uri: anyscale/ray:2.46.0-slim-py312-cu128
