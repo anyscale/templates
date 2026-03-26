@@ -134,6 +134,7 @@
     command: bash tests.sh
     timeout_in_sec: 900
 
+# owner: @aydin
 - name: audio-dataset-curation-llm-judge
   dir: templates/audio-dataset-curation-llm-judge
   cluster_env:
@@ -142,6 +143,7 @@
     AWS: configs/audio-dataset-curation-llm-judge/aws.yaml
     GCP: configs/audio-dataset-curation-llm-judge/gce.yaml
 
+# owner: @tseah
 - name: distributing-pytorch
   dir: templates/distributing-pytorch
   cluster_env:
@@ -150,6 +152,7 @@
     AWS: configs/distributing-pytorch/aws.yaml
     GCP: configs/distributing-pytorch/gce.yaml
 
+# owner: @jasonli
 - name: pytorch-fsdp
   dir: templates/pytorch-fsdp
   cluster_env:
@@ -158,6 +161,7 @@
     AWS: configs/pytorch-fsdp/aws.yaml
     GCP: configs/pytorch-fsdp/gce.yaml
 
+# owner: @tohtana
 - name: deepspeed-finetune
   dir: templates/deepspeed-finetune
   cluster_env:
@@ -166,6 +170,7 @@
     AWS: configs/deepspeed-finetune/aws.yaml
     GCP: configs/deepspeed-finetune/gce.yaml
 
+# owner: @lehui
 - name: pytorch-profiling
   dir: templates/pytorch-profiling
   cluster_env:
@@ -174,6 +179,7 @@
     AWS: configs/pytorch-profiling/aws.yaml
     GCP: configs/pytorch-profiling/gce.yaml
 
+# owner: @jasond
 - name: llm-finetuning
   dir: templates/llm-finetuning
   cluster_env:
@@ -182,6 +188,7 @@
     AWS: configs/llm-finetuning/aws.yaml
     GCP: configs/llm-finetuning/gce.yaml
 
+# owner: @kunling
 - name: e2e-rag-deepdive
   dir: templates/e2e-rag-deepdive
   cluster_env:
