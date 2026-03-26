@@ -150,3 +150,13 @@
   compute_config:
     AWS: configs/basic-single-node/aws.yaml
     GCP: configs/basic-single-node/gce.yaml
+
+- name: object-detection-video-processing
+  dir: templates/object-detection-video-processing
+  cluster_env:
+    byod:
+      docker_image: us-docker.pkg.dev/anyscale-workspace-templates/workspace-templates/object-detection-ray:2.44.1
+      ray_version: 2.44.1
+  compute_config:
+    AWS: configs/object-detection-video-processing/aws.yaml
+    GCP: configs/object-detection-video-processing/gce.yaml
