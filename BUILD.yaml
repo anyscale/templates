@@ -143,6 +143,7 @@
     AWS: configs/basic-single-node/aws.yaml
     GCP: configs/basic-single-node/gce.yaml
 
+# owner: @aydin
 - name: e2e-timeseries-forecasting
   dir: templates/e2e-timeseries-forecasting
   cluster_env:
@@ -151,6 +152,7 @@
     AWS: configs/basic-single-node/aws.yaml
     GCP: configs/basic-single-node/gce.yaml
 
+# owner: @kunling
 - name: object-detection-video-processing
   dir: templates/object-detection-video-processing
   cluster_env:
@@ -161,6 +163,7 @@
     AWS: configs/object-detection-video-processing/aws.yaml
     GCP: configs/object-detection-video-processing/gce.yaml
 
+# owner: @kunling
 - name: langchain-agent-ray-serve
   dir: templates/langchain-agent-ray-serve
   cluster_env:
@@ -169,6 +172,7 @@
     AWS: configs/basic-single-node/aws.yaml
     GCP: configs/basic-single-node/gce.yaml
 
+# owner: @kunling
 - name: mcp-ray-serve
   dir: templates/mcp-ray-serve
   cluster_env:
@@ -177,6 +181,7 @@
     AWS: configs/basic-single-node/aws.yaml
     GCP: configs/basic-single-node/gce.yaml
 
+# owner: @goku
 - name: entity-recognition-with-llms
   dir: templates/entity-recognition-with-llms
   cluster_env:
@@ -185,6 +190,7 @@
     AWS: configs/basic-single-node/aws.yaml
     GCP: configs/basic-single-node/gce.yaml
 
+# owner: @goku
 - name: image-search-and-classification
   dir: templates/image-search-and-classification
   cluster_env:
