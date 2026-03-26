@@ -282,6 +282,7 @@ def train_loop_per_worker(config: dict):
     for epoch in range(start_epoch, num_epochs):
         optimizer.zero_grad(set_to_none=True)
         epoch_loss_sum, epoch_loss_count = 0.0, 0
+        accum_count = 0
 
         # iter_torch_batches() streams pre-processed batches from the Ray Data
         # CPU worker pool directly into GPU memory. The data was already decoded
@@ -295,16 +296,22 @@ def train_loop_per_worker(config: dict):
             # Standard PyTorch: forward + scaled backward (see util.py)
             loss_val = util.train_step(policy, batch, preprocessor, max_len, grad_accum, scaler)
             step += 1
+            accum_count += 1
             epoch_loss_sum += loss_val
             epoch_loss_count += 1
 
-            if step % grad_accum == 0:
+            if accum_count % grad_accum == 0:
                 # Standard PyTorch: unscale, clip, step, zero_grad (see util.py)
                 util.optimizer_step(policy, optimizer, scaler, scheduler)
+                accum_count = 0
 
             # Log every 10 steps so you can watch training progress.
             if step % 10 == 0:
                 log.info("epoch=%d  step=%d  loss=%.4f  lr=%.2e", epoch, step, loss_val, scheduler.get_last_lr()[0])
+
+        # Flush any leftover accumulated gradients at epoch end.
+        if accum_count > 0:
+            util.optimizer_step(policy, optimizer, scaler, scheduler)
 
         # -- End of epoch: report metrics and checkpoint -----------------------
         #
@@ -338,11 +345,17 @@ def train_loop_per_worker(config: dict):
 import ray.train
 import ray.train.torch
 
+# GPU requirements:
+#   A100 (80 GB) -- batch_size=4, grad_accum=2 works well.
+#   L4   (24 GB) -- use batch_size=1, grad_accum=8 to avoid OOM. Smaller
+#                   batches consume data faster, which can cause object store
+#                   spillage. If this happens, reduce data pipeline concurrency
+#                   to keep producers and consumers in balance.
 train_loop_config = {
     "stats": stats,
     "total_rows": source.meta.total_frames,
     "num_epochs": 2,
-    "batch_size": 4,
+    "batch_size": 2,
     "grad_accum": 2,
     "lr":         1e-4,
     "warmup_frac": 0.1,

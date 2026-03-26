@@ -67,3 +67,26 @@ uv run python vla.py
 ```
 
 To scale: change `num_workers` in the `ScalingConfig`. The training code, data pipeline, and checkpointing all adapt automatically.
+
+## GPU Requirements
+
+This template supports both **A100** and **L4** GPUs but requires different
+configurations for each:
+
+| | A100 (80 GB) | L4 (24 GB) |
+|---|---|---|
+| `batch_size` | 4 | 1 |
+| `grad_accum` | 2 | 8 |
+| `num_workers` | 4 | 4 |
+
+**A100s** have enough VRAM to run larger batch sizes with minimal gradient
+accumulation. This keeps GPU utilization high and the data pipeline
+straightforward.
+
+**L4s** require `batch_size=1` to fit in 24 GB VRAM. To compensate, increase
+`grad_accum` so the effective batch size stays reasonable. However, smaller
+per-step batches mean faster consumption, which can cause the Ray Data
+pipeline to fall behind and spill to disk. If you see frequent object store
+spillage, reduce the data pipeline's throughput to match the training speed —
+for example, lower the `map_batches` concurrency or decrease the number of
+CPU data workers so the producer and consumer stay in balance.
