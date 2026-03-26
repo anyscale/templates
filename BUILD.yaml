@@ -133,3 +133,59 @@
     tests_path: tests/vla-fine-tuning/
     command: bash tests.sh
     timeout_in_sec: 900
+
+- name: audio-dataset-curation-llm-judge
+  dir: templates/audio-dataset-curation-llm-judge
+  cluster_env:
+    image_uri: anyscale/ray-llm:2.47.0-py311-cu124
+  compute_config:
+    AWS: configs/audio-dataset-curation-llm-judge/aws.yaml
+    GCP: configs/audio-dataset-curation-llm-judge/gce.yaml
+
+- name: distributing-pytorch
+  dir: templates/distributing-pytorch
+  cluster_env:
+    image_uri: anyscale/ray:2.51.0-slim-py312-cu128
+  compute_config:
+    AWS: configs/distributing-pytorch/aws.yaml
+    GCP: configs/distributing-pytorch/gce.yaml
+
+- name: pytorch-fsdp
+  dir: templates/pytorch-fsdp
+  cluster_env:
+    image_uri: anyscale/ray:2.49.1-py312-cu128
+  compute_config:
+    AWS: configs/pytorch-fsdp/aws.yaml
+    GCP: configs/pytorch-fsdp/gce.yaml
+
+- name: deepspeed-finetune
+  dir: templates/deepspeed-finetune
+  cluster_env:
+    image_uri: anyscale/ray:2.50.0-py312-cu128
+  compute_config:
+    AWS: configs/deepspeed-finetune/aws.yaml
+    GCP: configs/deepspeed-finetune/gce.yaml
+
+- name: pytorch-profiling
+  dir: templates/pytorch-profiling
+  cluster_env:
+    image_uri: anyscale/ray:2.50.1-py312-cu128
+  compute_config:
+    AWS: configs/pytorch-profiling/aws.yaml
+    GCP: configs/pytorch-profiling/gce.yaml
+
+- name: llm-finetuning
+  dir: templates/llm-finetuning
+  cluster_env:
+    image_uri: anyscale/ray-llm:2.48.0-py311-cu128
+  compute_config:
+    AWS: configs/llm-finetuning/aws.yaml
+    GCP: configs/llm-finetuning/gce.yaml
+
+- name: e2e-rag-deepdive
+  dir: templates/e2e-rag-deepdive
+  cluster_env:
+    image_uri: us-docker.pkg.dev/anyscale-workspace-templates/workspace-templates/e2e-rag-deepdive:2.45.0
+  compute_config:
+    AWS: configs/e2e-rag-deepdive/aws.yaml
+    GCP: configs/e2e-rag-deepdive/gce.yaml
