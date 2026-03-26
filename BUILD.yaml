@@ -168,3 +168,11 @@
   compute_config:
     AWS: configs/basic-single-node/aws.yaml
     GCP: configs/basic-single-node/gce.yaml
+
+- name: mcp-ray-serve
+  dir: templates/mcp-ray-serve
+  cluster_env:
+    image_uri: anyscale/ray:2.47.1-py312
+  compute_config:
+    AWS: configs/basic-single-node/aws.yaml
+    GCP: configs/basic-single-node/gce.yaml
