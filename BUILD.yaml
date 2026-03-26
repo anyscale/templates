@@ -1,40 +1,135 @@
-# UNDER CONSTRUCTION: we in the process of adding template definitions
-# into this file. This file does not contain all the templates yet.
-
 # job-intro template is to be removed and replaced by
 # https://github.com/anyscale/first-job
-# owner: matthew owen
+# owner: @matthew-owen
 - name: job-intro
-  emoji: 🔰
-  title: Intro to Jobs
-  description: Introduction on how to use Anyscale Jobs
   dir: templates/intro-jobs
   cluster_env:
-    build_id: anyscaleray2501-py311
+    image_uri: anyscale/ray:2.50.1-py311
   compute_config:
     GCP: configs/basic-single-node/gce.yaml
     AWS: configs/basic-single-node/aws.yaml
+  test:
+    tests_path: tests/job-intro/
+    command: bash tests.sh
+    timeout_in_sec: 900
 
-# owner: huaiwei
+# owner: @huaiwei
 - name: workspace-intro
-  emoji: 🔰
-  title: Intro to Workspaces
-  description: Introduction on how to use Anyscale Workspaces
   dir: templates/intro-workspaces
   cluster_env:
-    build_id: anyscaleray2501-py311
+    image_uri: anyscale/ray:2.50.1-py311
   compute_config:
     GCP: configs/basic-single-node/gce.yaml
     AWS: configs/basic-single-node/aws.yaml
+  test:
+    tests_path: tests/workspace-intro/
+    command: bash tests.sh
+    timeout_in_sec: 900
 
-# owner: edward
+# owner: @edward
 - name: service-intro
-  emoji: 🔰
-  title: Intro to Services
-  description: Introduction on how to use Anyscale Services
   dir: templates/intro-services
   cluster_env:
-    build_id: anyscaleray2501-py311
+    image_uri: anyscale/ray:2.50.1-py311
   compute_config:
     GCP: configs/basic-serverless-config/gce.yaml
     AWS: configs/basic-serverless-config/aws.yaml
+  test:
+    tests_path: tests/service-intro/
+    command: bash tests.sh
+    timeout_in_sec: 1200
+
+# owner: @jasond
+- name: intro-ray-libraries
+  dir: templates/intro-ray-libraries
+  cluster_env:
+    byod:
+      docker_image: anyscale/ray:2.54.0-slim-py313-cu129
+      ray_version: 2.54.0
+  compute_config:
+    AWS: configs/intro-ray-libraries/aws.yaml
+    GCP: configs/intro-ray-libraries/gce.yaml
+  test:
+    tests_path: tests/intro-ray-libraries/
+    command: bash tests.sh
+    timeout_in_sec: 1800
+
+# owner: @stephen
+- name: unstructured_data_ingestion
+  dir: templates/unstructured_data_ingestion
+  cluster_env:
+    byod:
+      docker_image: us-docker.pkg.dev/anyscale-workspace-templates/workspace-templates/template_unstructured_data_ingestion:2.51.1
+      ray_version: 2.51.1
+  compute_config:
+    GCP: configs/unstructured-data-ingestion/gce.yaml
+    AWS: configs/unstructured-data-ingestion/aws.yaml
+  test:
+    tests_path: tests/unstructured_data_ingestion/
+    command: bash tests.sh
+    timeout_in_sec: 900
+
+# owner: @aydin
+- name: model-multiplexing
+  dir: templates/model-multiplexing-forecast
+  cluster_env:
+    image_uri: anyscale/ray:2.53.0-slim-py312-cu129
+  compute_config:
+    GCP: configs/basic-single-node/gce.yaml
+    AWS: configs/basic-single-node/aws.yaml
+  test:
+    tests_path: tests/model-multiplexing/
+    command: bash tests.sh
+    timeout_in_sec: 900
+
+# owner: @aydin
+- name: model-composition-recsys
+  dir: templates/model-composition-recsys
+  cluster_env:
+    image_uri: anyscale/ray:2.53.0-slim-py312-cu129
+  compute_config:
+    GCP: configs/basic-single-node/gce.yaml
+    AWS: configs/basic-single-node/aws.yaml
+  test:
+    tests_path: tests/model-composition-recsys/
+    command: bash tests.sh
+    timeout_in_sec: 900
+
+# owner: @akshay
+- name: serve-stable-diffusion-v2
+  dir: templates/serve-stable-diffusion
+  cluster_env:
+    image_uri: anyscale/ray:2.44.1-py312-cu128
+  compute_config:
+    GCP: configs/basic-serverless-config/gce.yaml
+    AWS: configs/basic-serverless-config/aws.yaml
+  test:
+    tests_path: tests/serve-stable-diffusion-v2/
+    command: bash tests.sh
+    timeout_in_sec: 900
+
+# owner: @aydin
+- name: deployment-serve-llm
+  dir: templates/deployment-serve-llm
+  cluster_env:
+    image_uri: anyscale/ray-llm:2.54.0-py311-cu128
+  compute_config:
+    GCP: configs/basic-single-node/gce.yaml
+    AWS: configs/basic-single-node/aws.yaml
+  test:
+    tests_path: tests/deployment-serve-llm/
+    command: bash tests.sh
+    timeout_in_sec: 900
+
+# owner: @omar
+- name: vla-fine-tuning
+  dir: templates/vla-fine-tuning
+  cluster_env:
+    image_uri: anyscale/ray:2.54.0-py312-cu129
+  compute_config:
+    AWS: configs/vla-fine-tuning/aws.yaml
+    GCP: configs/vla-fine-tuning/gce.yaml
+  test:
+    tests_path: tests/vla-fine-tuning/
+    command: bash tests.sh
+    timeout_in_sec: 900
