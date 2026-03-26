@@ -184,3 +184,11 @@
   compute_config:
     AWS: configs/basic-single-node/aws.yaml
     GCP: configs/basic-single-node/gce.yaml
+
+- name: image-search-and-classification
+  dir: templates/image-search-and-classification
+  cluster_env:
+    image_uri: anyscale/ray:2.49.0-slim-py312-cu128
+  compute_config:
+    AWS: configs/basic-single-node/aws.yaml
+    GCP: configs/basic-single-node/gce.yaml
