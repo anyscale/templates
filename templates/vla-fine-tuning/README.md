@@ -1,237 +1,92 @@
-## Distributed Vision-Language-Action (VLA) Model Fine-tuning with Ray
+# Distributed VLA Fine-Tuning with Ray
 
+This template fine-tunes the [PI0.5](https://www.physicalintelligence.company/blog/pi05) Vision-Language-Action (VLA) model on a [LeRobot](https://github.com/huggingface/lerobot) robotics dataset stored in S3, using [Ray](https://docs.ray.io/) on [Anyscale](https://anyscale.com).
 
-![VLA Fine-tuning Pipeline](images/vla-fine-tuning-pipeline.png)
+It leverages Ray's ability to independently scale two distinct compute tiers — CPU nodes for streaming data preprocessing and GPU nodes for distributed training — so that neither side sits idle and GPU stalls waiting for data are eliminated.
 
-This notebook implements an end-to-end distributed fine-tuning pipeline for the **PI0.5 Vision-Language-Action (VLA)** model on the **Droid v1.0.1** robot manipulation dataset
-
-It leverages Ray's ability to independently scale two distinct compute tiers.
-- **CPU nodes** — Orchestrated by Ray Data, this tier handles all data-intensive work:
-    - streaming HDF5 robot state and action files,
-    - reading MP4 camera videos directly from S3,
-    - decoding video frames,
-    - assembling per-timestep rows, and
-    - running batched normalization preprocessing to produce camera images, robot state vectors, and action tensors
-- **GPU nodes** — Managed by Ray Train, these are dedicated exclusively to the PI0.5 forward and backward passes and DDP gradient synchronization across A100 accelerators.
-
-Because the CPU preprocessing pool and the GPU training pool are independently scaled and communicate asynchronously through the Ray object store, adding more CPU nodes accelerates distributed video decoding and data loading without touching the GPU fleet, and adding more GPU nodes increases training throughput without requiring additional preprocessing capacity. Neither side sits idle, and GPU stalls waiting for data are eliminated.
-
----
-
-- Run this entire tutorial on [Anyscale](https://anyscale.com) for free: https://console.anyscale.com/template-preview/vla-fine-tuning
-
-- This tutorial focuses on the **systems challenges** of distributed VLA fine-tuning at scale - data loading, preprocessing, scaling across nodes, orchestration and moving from development to production.
-
-- We treat the model itself as a **black box**. The goal is not to explore the model architecture or learning algorithm, but to show how to reliably and efficiently train large multimodal models in distributed environments.
-
-- The tutorial uses [PI0.5](https://www.physicalintelligence.company/blog/pi05) — Physical Intelligence's vision-language-action model — and the [Droid v1.0.1 raw dataset](https://droid-dataset.github.io/).
-
-
-## 0. Setup
-
-<span style="background-color: #fff3b0; padding: 2px 4px; border-radius: 3px;">
-<strong>IMPORTANT: BEFORE YOU START - DEPENDENCIES WITH UV</strong>
-</span>
-
-1. Open a terminal and run <code>uv sync</code>
-2. After this completes, if prompted for a kernel, select the existing Python environment named vla (.venv/bin/python)
-
-<span style="background-color: #fff3b0; padding: 2px 4px; border-radius: 3px;">
-<strong>IMPORTANT: BEFORE YOU START - HUGGINGFACE TOKEN</strong>
-</span>
-
-PI0.5 depends on [google/paligemma-3b-pt-224](https://huggingface.co/google/paligemma-3b-pt-224) as a backbone. Although the model weights are publicly available, Google requires you to **accept the model license** before they can be downloaded.
-
-To do this:
-1. Log in to [huggingface.co](https://huggingface.co) and navigate to the [google/paligemma-3b-pt-224 model page](https://huggingface.co/google/paligemma-3b-pt-224).
-2. Accept the license agreement on that page.
-3. Generate a HuggingFace access token at [huggingface.co/settings/tokens](https://huggingface.co/settings/tokens) and set it in the cell below.
-
-Without completing both steps, the model download will fail with a 401/403 error even if a valid token is provided.
-
-#### Init Ray
-
-First we initialize Ray with a runtime environment that propagates the HuggingFace token to all workers.
-
-
-```python
-# Start a Ray cluster session configured for this tutorial.
-#
-# Calls ray.init() with a runtime environment that:
-#     - uses uv as the Python executable on every worker
-#     - bundles the current working directory (so vla/ is importable)
-#     - propagates HF_TOKEN to all remote workers
-#
-# Requires the HF_TOKEN environment variable to be set before calling this
-# function.  Export it in your shell or set it in the notebook kernel:
-#
-#     export HF_TOKEN=hf_...
-
-import os
-import ray
-
-hf_token = os.environ.get("HF_TOKEN")
-if not hf_token:
-    raise EnvironmentError(
-        "HF_TOKEN is not set. Please export it before running this notebook:\n"
-        "    export HF_TOKEN=hf_..."
-    )
-
-os.environ.pop("RAY_RUNTIME_ENV_HOOK", None)
-
-ray.init(
-    runtime_env={
-        "py_executable": "uv run",
-        "working_dir": ".",
-        "env_vars": {
-            "HF_TOKEN": hf_token,
-        },
-    },
-    ignore_reinit_error=True,
-)
+```
++-----------+       +------------+       +-----------+
+| S3 Bucket | ----> | Ray Data   | ----> | Ray Train |
+| (LeRobot  |       | (CPU pool) |       | (N GPUs)  |
+| mp4+pqt)  |       |            |       |           |
++-----------+       +------------+       +-----------+
+                     |                    |
+                     | - read parquet     | - load PI0.5
+                     | - decode mp4       | - freeze backbone
+                     | - rename cameras   | - train action heads
+                     | - transpose HWC    | - mixed-precision
+                     |   -> CHW float32   | - gradient accum
+                     | - stream batches   | - checkpoint & resume
+                     +--------------------+---------------------
 ```
 
-## 1. Configuration
+For the full walkthrough, open **[vla.ipynb](vla.ipynb)**.
 
+## Files
 
-```python
-STATS_PATH             = "/mnt/cluster_storage/stats_droid.json"
-EPISODE_INDEX_PATH     = "./data/episodes_droid_v1.0.1_s3.parquet"
-NUM_EPISODES_TO_PROCESS = 10 # increase for complete run
+| File | Description |
+|------|-------------|
+| `vla.ipynb` | Interactive notebook — step-by-step walkthrough |
+| `vla.py` | Job script — same pipeline, submittable with `uv run python vla.py` |
+| `util.py` | Training utilities — model loading, checkpointing, collation, training step helpers |
+| `lerobot_datasource.py` | Custom Ray Data datasource for LeRobot v3 datasets |
 
-RUN_NAME         = "pi05-droid-finetune"
-RUN_STORAGE_PATH = "/mnt/cluster_storage/ray_train_runs/pi05_droid"
+## Setup
+
+### Dependencies
+
+This template uses [uv](https://docs.astral.sh/uv/) for dependency management:
+
+```bash
+uv sync
 ```
 
-## 2. Normalization statistics
+### HuggingFace Token
 
-Before training, the preprocessor needs per-feature **mean and standard deviation** for robot actions and state so it can normalize inputs to zero mean / unit variance.
+PI0.5 depends on [google/paligemma-3b-pt-224](https://huggingface.co/google/paligemma-3b-pt-224) as a vision backbone. Google requires you to **accept the model license** before the weights can be downloaded.
 
-`compute_or_load_stats` runs a Ray Data pipeline that streams through the DROID HDF5 files, computes partial stats per episode in parallel, then aggregates them into a single JSON file. On subsequent runs it loads the cached file immediately.
+1. Navigate to the [google/paligemma-3b-pt-224 model page](https://huggingface.co/google/paligemma-3b-pt-224) and accept the license agreement.
+2. Generate an access token at [huggingface.co/settings/tokens](https://huggingface.co/settings/tokens).
+3. Export the token:
 
-
-```python
-"""
-Return normalization statistics for the DROID dataset.
-
-If stats_path already exists the file is loaded and returned immediately,
-skipping all I/O.  Otherwise a Ray Data pipeline streams through the HDF5
-files, computes per-feature mean and standard deviation for robot actions
-and state, writes the result to stats_path as JSON, and returns the dict.
-
-Pipeline:
-    read_parquet  — loads the episode index (one row per episode)
-    map(extract)  — streams each HDF5 from S3, pulls action/state arrays
-    map(stats)    — computes partial mean/std per episode
-    aggregate     — reduces partials into final per-feature stats
-"""
-import json
-import os
-
-from vla.stats import (
-    compute_episode_stats,
-    compute_stats,
-    extract_episode_action_and_state,
-)
-
-if os.path.exists(STATS_PATH):
-    with open(STATS_PATH) as f:
-        stats = json.load(f)
-else:
-    stats_ds = (
-        ray.data
-        .read_parquet(EPISODE_INDEX_PATH)
-        .limit(NUM_EPISODES_TO_PROCESS) # remove to process all data
-        .map(extract_episode_action_and_state)
-        .map(compute_episode_stats)
-    )
-
-    stats = compute_stats(stats_ds)
-
-    with open(STATS_PATH, "w") as f:
-        json.dump(stats, f, indent=2)
+```bash
+export HF_TOKEN=hf_...
 ```
 
-## 3. Dataset pipeline
+## Usage
 
-With the Ray Data pipeline defined, we have a fully lazy, streaming dataset ready to feed the training loop. Here's how data flows at runtime:
+### Notebook
 
-**S3 (source)** — HDF5 files (robot state and actions) and MP4 files (wrist camera video) are stored in a public S3 bucket (`s3://anyscale-demo/droid/1.0.1/`). Each episode consists of an HDF5 and several MP4 files; the Parquet index tells Ray where to find them. Data is never copied to a local disk — workers stream directly from S3 using `smart_open`.
+Open `vla.ipynb` and run cells top-to-bottom. When prompted for a kernel, select the Python environment named **vla** (`.venv/bin/python`).
 
-**Ray Data CPU workers (preprocessing)** — CPU actors read files from S3, decode wrist camera video with PyAV, assemble per-timestep rows, and run `preprocess_batch` to produce normalized `float32` tensors in PI0.5 format: `observation.images.base_0_rgb` (CHW), `observation.state` (7-dim), and `action` (7-dim). Completed batches are written into the Ray object store and held there until a GPU worker requests them.
+### Job script
 
-**Ray Train GPU workers (training)** — each GPU worker calls `ray.train.get_dataset_shard("train")` to receive its partition of the stream. Workers run the PI0.5 forward pass, compute the loss, and synchronize gradients via DDP. CPU preprocessing and GPU training **overlap in time** — while one batch is being computed on the GPU, CPU workers are already assembling the next batch.
-
-Neither side sits idle: GPUs are never stalled waiting for data to decode, and CPU workers are never blocked waiting for the GPU to consume their output.
-
-![VLA Fine-tuning Pipeline](images/vla-fine-tuning-pipeline.png)
-
-
-```python
-import ray
-from vla.data import episode_to_training_rows, preprocess_batch
-
-ds = (
-    ray.data
-    .read_parquet(EPISODE_INDEX_PATH)
-    .limit(NUM_EPISODES_TO_PROCESS)
-    .flat_map(episode_to_training_rows)            # episode  → timestep rows
-    .map_batches(preprocess_batch, batch_size=32)  # rows     → PI0.5 tensors
-)
+```bash
+export HF_TOKEN=hf_...
+uv run python vla.py
 ```
 
-## 4. Distributed training
+To scale: change `num_workers` in the `ScalingConfig`. The training code, data pipeline, and checkpointing all adapt automatically.
 
+## GPU Requirements
 
-```python
-from ray.train import FailureConfig, RunConfig, ScalingConfig
-from ray.train.torch import TorchTrainer
-from vla.train_worker import train_loop_per_worker
+This template supports both **A100** and **L4** GPUs but requires different
+configurations for each:
 
-scaling_config = ScalingConfig(
-    num_workers=2,
-    use_gpu=True,
-    accelerator_type="A100",
-)
+| | A100 (80 GB) | L4 (24 GB) |
+|---|---|---|
+| `batch_size` | 4 | 1 |
+| `grad_accum` | 2 | 8 |
+| `num_workers` | 4 | 4 |
 
-run_config = RunConfig(
-        name=RUN_NAME,
-        storage_path=RUN_STORAGE_PATH,
-        failure_config=FailureConfig(max_failures=1),
-)
+**A100s** have enough VRAM to run larger batch sizes with minimal gradient
+accumulation. This keeps GPU utilization high and the data pipeline
+straightforward.
 
-train_loop_config = {
-    "stats_path": STATS_PATH,
-    "num_epochs": 2,
-    "batch_size": 1,
-    "grad_accum": 1,
-    "lr":         1e-4,
-    "max_len":    512,   # truncate token sequences to fit smaller GPUs
-}
-
-trainer = TorchTrainer(
-    train_loop_per_worker=train_loop_per_worker,
-    train_loop_config=train_loop_config,
-    scaling_config=scaling_config,
-    run_config=run_config,
-    datasets={"train": ds},
-)
-
-result = trainer.fit()
-```
-
-## Summary
-
-This notebook demonstrates distributed fine-tuning of the **PI0.5 Vision-Language-Action (VLA) model** on the **Droid v1.0.1 robot manipulation dataset** using Ray on Anyscale.
-
-**What was covered:**
-
-1. **Environment setup** — Ray is initialized with a `uv`-managed runtime environment, and a HuggingFace token is configured to access gated model weights.
-
-2. **Configuration** — Key paths and hyperparameters are defined: episode index (Parquet), normalization stats cache, training run name/storage, and training settings (epochs, batch size, learning rate, sequence length).
-
-3. **Normalization statistics (Ray Data)** — A one-time streaming scan over the Droid HDF5 files computes per-feature mean and standard deviation for robot actions and state. Ray Data's parallel CPU workers stream directly from S3, extract episode data, compute partial stats, and aggregate them into a `stats.json` file reused across runs.
-
-4. **Dataset pipeline (Ray Data)** — A fully lazy, streaming pipeline reads the Parquet episode index, expands each episode into per-timestep rows (`episode_to_training_rows`), and applies batched preprocessing (`preprocess_batch`) to produce normalized PI0.5-format tensors: camera images (CHW), robot state (7-dim), and actions (7-dim). CPU preprocessing and GPU training overlap in time via the Ray object store.
-
-5. **Distributed training (Ray Train)** — A `TorchTrainer` runs the PI0.5 forward/backward pass across 2 A100 GPU workers using DDP. Fault tolerance (`max_failures=1`), run checkpointing to shared storage, and dataset sharding are handled automatically by Ray Train.
+**L4s** require `batch_size=1` to fit in 24 GB VRAM. To compensate, increase
+`grad_accum` so the effective batch size stays reasonable. However, smaller
+per-step batches mean faster consumption, which can cause the Ray Data
+pipeline to fall behind and spill to disk. If you see frequent object store
+spillage, reduce the data pipeline's throughput to match the training speed —
+for example, lower the `map_batches` concurrency or decrease the number of
+CPU data workers so the producer and consumer stay in balance.
