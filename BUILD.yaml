@@ -176,3 +176,11 @@
   compute_config:
     AWS: configs/basic-single-node/aws.yaml
     GCP: configs/basic-single-node/gce.yaml
+
+- name: entity-recognition-with-llms
+  dir: templates/entity-recognition-with-llms
+  cluster_env:
+    image_uri: anyscale/ray-llm:2.44.1-py311-cu124
+  compute_config:
+    AWS: configs/basic-single-node/aws.yaml
+    GCP: configs/basic-single-node/gce.yaml
