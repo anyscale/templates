@@ -100,7 +100,7 @@ ctx.enable_operator_progress_bars = False
 # You can skip this if your custom image already has these dependencies installed
 runtime_env = dict(
     pip= {
-        "packages": ["unstructured[all-docs]==0.18.21", "pandas==2.3.3"],
+        "packages": ["unstructured[all-docs]==0.18.21", "pandas==2.3.3", "transformers==4.57.3"],
         "pip_install_options": ["--force-reinstall", "--no-cache-dir"]
     }
 )
