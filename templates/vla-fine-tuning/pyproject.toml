@@ -3,10 +3,9 @@ name = "vla"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
-requires-python = "==3.12.*"
+requires-python = ">=3.12.0"
 dependencies = [
     "accelerate<2",
-    "av>=15.0.0,<16",
     "cmake<4.2",
     "datasets<4.2",
     "deepdiff<9",
@@ -33,13 +32,20 @@ dependencies = [
     "torchvision<0.23",
     "tqdm>=4.67.3",
     "wandb<0.25",
+    "s3fs>=2025.9.0",
+    "av>=15.1.0",
 ]
 
 [tool.uv]
 environments = ["sys_platform == 'linux' and platform_machine == 'x86_64'"]
 
+[[tool.uv.index]]
+name = "anyscale"
+url = "http://localhost:9478/simple"
+
 [tool.uv.sources]
 transformers = { git = "https://github.com/huggingface/transformers.git", branch = "fix/lerobot_openpi" }
+ray = { index = "anyscale" }
 
 [tool.uv.workspace]
 members = []
