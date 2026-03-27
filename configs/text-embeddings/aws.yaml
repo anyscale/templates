@@ -43,16 +43,16 @@ worker_node_types:
   use_spot: true
   fallback_to_ondemand: true
 
-# 8 vCPU, 1 NVIDIA Tesla V100 16GB GPU, 61 GiB memory
-- name: gpu-worker-v100
-  instance_type: p3.2xlarge
+# 8 vCPU, 1 NVIDIA L4 GPU, 24 GiB memory
+- name: gpu-worker-l4
+  instance_type: g6.2xlarge
   resources:
     cpu:
     gpu:
     memory:
     object_store_memory:
     custom_resources:
-      "accelerator_type:V100": 1
+      "accelerator_type:L4": 1
   min_workers: 0
   max_workers: 16
   use_spot: true
