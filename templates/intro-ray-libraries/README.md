@@ -1,4 +1,4 @@
-# Introduction to Ray AI Libraries with PyTorch
+# Introduction to Ray AI Libraries
 
 Ray AI Libraries provide a high-level, easy-to-use set of APIs for the full AI/ML lifecycle. This template series walks you through the core Ray libraries — Ray Data, Ray Train, Ray Tune, and Ray Serve — using hands-on PyTorch examples built around the MNIST dataset.
 
