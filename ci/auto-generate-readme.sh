@@ -10,8 +10,13 @@ if [[ "$(pwd)" != "${REPO_ROOT}" ]]; then
 	exit 1
 fi
 
-# Search for all README.ipynb files recursively in the templates directory
-NOTEBOOK_FILES=($(find "templates" -name "README.ipynb" -type f))
+# If a single notebook file is provided as an argument, use it;
+# otherwise, search for all README.ipynb files recursively.
+if [[ $# -gt 0 ]]; then
+	NOTEBOOK_FILES=("$1")
+else
+	NOTEBOOK_FILES=($(find "templates" -name "README.ipynb" -type f))
+fi
 
 # Define the repo prefix
 REPO_PREFIX="https://raw.githubusercontent.com/anyscale/templates/main"
