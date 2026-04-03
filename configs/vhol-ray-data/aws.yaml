@@ -1,0 +1,8 @@
+head_node_type:
+  name: head
+  instance_type: m5.2xlarge
+worker_node_types:
+  - name: "gpu-workers"
+    instance_type: "g5.xlarge"
+    min_workers: 2
+    max_workers: 2
