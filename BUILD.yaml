@@ -43,9 +43,7 @@
 - name: intro-ray-libraries
   dir: templates/intro-ray-libraries
   cluster_env:
-    byod:
-      docker_image: anyscale/ray:2.54.0-slim-py313-cu129
-      ray_version: 2.54.0
+    image_uri: anyscale/ray:2.54.0-slim-py313-cu129
   compute_config:
     AWS: configs/intro-ray-libraries/aws.yaml
     GCP: configs/intro-ray-libraries/gce.yaml
