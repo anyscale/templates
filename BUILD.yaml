@@ -212,10 +212,14 @@
 - name: pytorch-fsdp
   dir: templates/pytorch-fsdp
   cluster_env:
-    image_uri: anyscale/ray:2.49.1-py312-cu128
+    image_uri: anyscale/ray:2.54.1-py312-cu128
   compute_config:
     AWS: configs/pytorch-fsdp/aws.yaml
     GCP: configs/pytorch-fsdp/gce.yaml
+  test:
+    tests_path: tests/pytorch-fsdp/
+    command: bash tests.sh
+    timeout_in_sec: 1800
 
 # owner: @tohtana
 - name: deepspeed_finetune
