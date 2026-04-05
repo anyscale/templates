@@ -185,10 +185,14 @@
 - name: entity-recognition-with-llms
   dir: templates/entity-recognition-with-llms
   cluster_env:
-    image_uri: anyscale/ray-llm:2.44.1-py311-cu124
+    image_uri: anyscale/ray-llm:2.54.1-py311-cu128
   compute_config:
     AWS: configs/basic-single-node/aws.yaml
     GCP: configs/basic-single-node/gce.yaml
+  test:
+    tests_path: tests/entity-recognition-with-llms/
+    command: bash tests.sh
+    timeout_in_sec: 3600
 
 # owner: @aydin
 - name: audio-dataset-curation-llm-judge
