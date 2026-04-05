@@ -203,10 +203,14 @@
 - name: distributing-pytorch
   dir: templates/distributing-pytorch
   cluster_env:
-    image_uri: anyscale/ray:2.51.0-slim-py312-cu128
+    image_uri: anyscale/ray:2.54.1-slim-py312-cu128
   compute_config:
     AWS: configs/distributing-pytorch/aws.yaml
     GCP: configs/distributing-pytorch/gce.yaml
+  test:
+    tests_path: tests/distributing-pytorch/
+    command: bash tests.sh
+    timeout_in_sec: 1800
 
 # owner: @jasonli
 - name: pytorch-fsdp
