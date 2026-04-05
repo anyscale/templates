@@ -187,8 +187,8 @@
   cluster_env:
     image_uri: anyscale/ray-llm:2.54.1-py311-cu128
   compute_config:
-    AWS: configs/basic-single-node/aws.yaml
-    GCP: configs/basic-single-node/gce.yaml
+    AWS: configs/entity-recognition-with-llms/aws.yaml
+    GCP: configs/entity-recognition-with-llms/gce.yaml
   test:
     tests_path: tests/entity-recognition-with-llms/
     command: bash tests.sh

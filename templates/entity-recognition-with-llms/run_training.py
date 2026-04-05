@@ -17,7 +17,7 @@ import os
 import shutil
 
 
-@ray.remote(num_gpus=1, num_cpus=4)
+@ray.remote(num_gpus=1, num_cpus=4, accelerator_type="L4")
 def run_training(config_path: str) -> int:
     """Run LLaMA-Factory training on a GPU worker."""
     env = os.environ.copy()
