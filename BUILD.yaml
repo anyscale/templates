@@ -361,14 +361,14 @@
 - name: ray-data-batch-image-classification
   dir: templates/ray-data-batch-classification
   cluster_env:
-    image_uri: anyscale/ray:2.44.1-slim-py311-cu123
+    image_uri: anyscale/ray:2.54.1-py312-cu128
   compute_config:
     GCP: configs/ray-data-batch-classification/gcp.yaml
     AWS: configs/ray-data-batch-classification/aws.yaml
   test:
     tests_path: tests/ray-data-batch-image-classification/
     command: bash tests.sh
-    timeout_in_sec: 900
+    timeout_in_sec: 1800
 
 # owner: @marwan
 - name: ray-summit-core-masterclass
