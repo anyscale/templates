@@ -281,9 +281,7 @@
 - name: text-embeddings
   dir: templates/text-embeddings
   cluster_env:
-    byod:
-      docker_image: anyscale/ray:2.47.0-slim-py312-cu128
-      ray_version: 2.47.0
+    image_uri: anyscale/ray:2.54.1-py311-cu124
   compute_config:
     GCP: configs/text-embeddings/gce.yaml
     AWS: configs/text-embeddings/aws.yaml
