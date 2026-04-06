@@ -1,4 +1,4 @@
-"""Training script for Stable Diffusion model v2.
+"""Training script for Stable Diffusion model.
 
 The script performs the following steps:
 1. Load preprocessed data from S3 or ABFSS using the load_precomputed_dataset function.
@@ -130,7 +130,7 @@ def load_precomputed_dataset(
     ds = ray.data.read_parquet(
         data_uri,
         columns=key_list,
-        shuffle="file",
+        shuffle="files",
         concurrency=num_data_loading_workers,
     )
 
@@ -153,7 +153,7 @@ small_unet_model_config = {
     "attention_head_dim": 8,
     "block_out_channels": [160, 320, 640, 640],
     "center_input_sample": False,
-    "cross_attention_dim": 1024,
+    "cross_attention_dim": 768,
     "down_block_types": [
         "CrossAttnDownBlock2D",
         "CrossAttnDownBlock2D",
@@ -359,7 +359,7 @@ class RayTrainReportCallback(pl.callbacks.Callback):
         # Create a local temporary directory to save the checkpoint.
         temp_checkpoint_dir = os.path.join(
             tempfile.gettempdir(),
-            ray.train.get_context().get_trial_name(),
+            ray.train.get_context().get_experiment_name() or "default",
             f"step={step}",
         )
         os.makedirs(temp_checkpoint_dir, exist_ok=True)
@@ -420,7 +420,7 @@ def train_func(config: dict) -> None:
     """Training function for Stable Diffusion model."""
     seed = config["seed"]
     seed_everything(seed)
-    trial_name = ray.train.get_context().get_trial_name()
+    trial_name = ray.train.get_context().get_experiment_name() or "default"
 
     # Prepare Ray datasets.
     collate_fn = partial(move_to_device_collate_fn, device=ray.train.torch.get_device())
@@ -555,7 +555,7 @@ def train(
     experiment_name: str = "sd-demo",
     seed: int = 2024,
     init_from_pretrained: bool = False,
-    model_name: str = "stabilityai/stable-diffusion-2-base",
+    model_name: str = "CompVis/stable-diffusion-v1-4",
     use_xformers: bool = False,
     batch_size_per_worker: int = 1,
     max_steps: int = 100,
@@ -582,8 +582,8 @@ def train(
     validation_data_uri: str = "s3://anyscale-materials/stable-diffusion/laion_art_sample_processed_valid_256.parquet",
 ):
     """Train a Stable Diffusion model."""
-    ray.data.set_progress_bars(False)
     ctx = ray.data.DataContext.get_current()
+    ctx.enable_progress_bars = False
     ctx.execution_options.verbose_progress = False
 
     train_ds = load_precomputed_dataset(
