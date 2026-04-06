@@ -221,10 +221,14 @@
 - name: deepspeed_finetune
   dir: templates/deepspeed_finetune
   cluster_env:
-    image_uri: anyscale/ray:2.50.0-py312-cu128
+    image_uri: anyscale/ray:2.54.1-py311-cu128
   compute_config:
     AWS: configs/deepspeed_finetune/aws.yaml
     GCP: configs/deepspeed_finetune/gce.yaml
+  test:
+    tests_path: tests/deepspeed_finetune/
+    command: bash tests.sh
+    timeout_in_sec: 1800
 
 # owner: @lehui
 - name: pytorch-profiling

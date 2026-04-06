@@ -51,7 +51,8 @@ Run the cell below only if your environment still needs these packages installed
 
 ```bash
 %%bash
-pip install torch torchvision
+# Install torch 2.4.1 which supports CUDA 12.1/12.4 (compatible with g6 L4 instances)
+pip install torch==2.4.1 torchvision==0.19.1
 pip install transformers==4.36.2 datasets==3.6.0
 pip install deepspeed ray[train]
 ```
