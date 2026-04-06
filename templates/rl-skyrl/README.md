@@ -12,13 +12,21 @@ show how you can create your own new environment to train on your specific task 
 
 
 ## Setup
-SkyRL uses the [uv + Ray integration](https://www.anyscale.com/blog/uv-ray-pain-free-python-dependencies-in-clusters) for dependency management, ensuring a consistent set of dependencies get shipped to all Ray workers. This template uses the `novaskyai/skyrl-train-ray-2.48.0-py3.12-cu12.8` docker image to ensure all necessary system depedencies are installed. The exact Dockerfile can be found at [SkyRL/docker/Dockerfile](https://github.com/NovaSky-AI/SkyRL/blob/skyrl_train-v0.2.0/docker/Dockerfile).
+SkyRL uses the [uv + Ray integration](https://www.anyscale.com/blog/uv-ray-pain-free-python-dependencies-in-clusters) for dependency management, ensuring a consistent set of dependencies get shipped to all Ray workers. This template uses `anyscale/ray:2.54.1-py312-cu128` as the base image. SkyRL requires Python 3.12, so the `py312` variant is required. The exact Dockerfile for SkyRL's system dependencies can be found at [SkyRL/docker/Dockerfile](https://github.com/NovaSky-AI/SkyRL/blob/skyrl_train-v0.2.0/docker/Dockerfile).
 
 First, clone SkyRL and cd to `skyrl-train/`.
 
 ```bash
 git clone --branch skyrl_train-v0.2.0 https://github.com/NovaSky-AI/SkyRL.git
 cd SkyRL/skyrl-train/
+```
+
+Next, update SkyRL's Ray dependency to match the cluster version and patch a moved import:
+
+```bash
+sed -i 's/"ray==2.48.0"/"ray==2.54.1"/' pyproject.toml
+sed -i 's|from ray.experimental.collective.util import get_address_and_port|from ray.util.collective.collective import get_address_and_port|' skyrl_train/inference_engines/utils.py
+uv lock
 ```
 
 ## GRPO for solving math problems (GSM8K)
