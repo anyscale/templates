@@ -257,10 +257,16 @@
 - name: e2e-rag-deepdive
   dir: templates/e2e-rag-deepdive
   cluster_env:
-    image_uri: us-docker.pkg.dev/anyscale-workspace-templates/workspace-templates/e2e-rag-deepdive:2.45.0
+    byod:
+      docker_image: us-docker.pkg.dev/anyscale-workspace-templates/workspace-templates/e2e-rag-deepdive:2.54.1
+      ray_version: 2.54.1
   compute_config:
-    AWS: configs/basic-single-node/aws.yaml
-    GCP: configs/basic-single-node/gce.yaml
+    AWS: configs/e2e-rag-deepdive/aws.yaml
+    GCP: configs/e2e-rag-deepdive/gce.yaml
+  test:
+    tests_path: tests/e2e-rag-deepdive/
+    command: bash tests.sh
+    timeout_in_sec: 1800
 
 # owner: @eric
 - name: skyrl
