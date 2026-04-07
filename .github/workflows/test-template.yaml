@@ -13,10 +13,16 @@ on:
 jobs:
   test-template:
     # Run on manual dispatch, or when a PR comment starts with /test-template
+    # Only org members/collaborators can trigger via comment (MEMBER, OWNER, COLLABORATOR)
     if: >-
       github.event_name == 'workflow_dispatch' ||
-      (github.event.issue.pull_request && startsWith(github.event.comment.body, '/test-template '))
+      (github.event.issue.pull_request &&
+       startsWith(github.event.comment.body, '/test-template ') &&
+       contains(fromJSON('["MEMBER","OWNER","COLLABORATOR"]'), github.event.comment.author_association))
     runs-on: ubuntu-latest
+    env:
+      ANYSCALE_CLI_TOKEN: ${{ secrets.ANYSCALE_CLI_TOKEN }}
+      ANYSCALE_HOST: https://console.anyscale-staging.com
     steps:
     - name: Parse template name from comment
       if: github.event_name == 'issue_comment'
