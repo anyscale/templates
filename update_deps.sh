@@ -20,14 +20,6 @@ if [[ ! -x "$RAYDEPSETS_BIN" ]]; then
 fi
 
 echo "Running raydepsets..."
-# Find uv binary — needed because the Bazel-bundled Python in raydepsets
-# can't resolve its own runfiles reliably.
-UV_PATH="$(command -v uv 2>/dev/null || true)"
-if [[ -z "$UV_PATH" ]]; then
-  echo "Error: uv not found on PATH" >&2; exit 1
-fi
-
 "$RAYDEPSETS_BIN" build \
   "$REPO_ROOT/dependencies/template.depsets.yaml" \
-  --workspace-dir "$REPO_ROOT" \
-  --uv-path "$UV_PATH"
+  --workspace-dir "$REPO_ROOT"
