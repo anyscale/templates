@@ -3,16 +3,23 @@ name: test-template
 on:
   issue_comment:
     types: [created]
+  workflow_dispatch:
+    inputs:
+      template:
+        description: 'Template name from BUILD.yaml (e.g. job-intro)'
+        required: true
+        type: string
 
 jobs:
   test-template:
-    # Only run when a PR comment starts with /test-template
     if: >-
-      github.event.issue.pull_request &&
-      startsWith(github.event.comment.body, '/test-template ')
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.issue.pull_request &&
+       startsWith(github.event.comment.body, '/test-template '))
     runs-on: ubuntu-latest
     steps:
     - name: Verify commenter and PR author are Anyscale enterprise members
+      if: github.event_name == 'issue_comment'
       uses: actions/github-script@v7
       with:
         github-token: ${{ secrets.READ_ENTERPRISE_PAT }}
@@ -22,9 +29,9 @@ jobs:
 
           for (const username of [commenter, prAuthor]) {
             const result = await github.graphql(`
-              query($enterprise: String!, $query: String!) {
+              query($enterprise: String!, $search: String!) {
                 enterprise(slug: $enterprise) {
-                  members(query: $query, first: 20) {
+                  members(query: $search, first: 20) {
                     nodes {
                       ... on EnterpriseUserAccount { login }
                       ... on User { login }
@@ -32,7 +39,7 @@ jobs:
                   }
                 }
               }
-            `, { enterprise: 'anyscale', query: username });
+            `, { enterprise: 'anyscale', search: username });
 
             const isMember = result.enterprise.members.nodes.some(
               node => node.login.toLowerCase() === username.toLowerCase()
@@ -45,6 +52,7 @@ jobs:
           }
 
     - name: Parse template name from comment
+      if: github.event_name == 'issue_comment'
       id: parse
       env:
         COMMENT_BODY: ${{ github.event.comment.body }}
@@ -57,6 +65,7 @@ jobs:
         echo "template=$TEMPLATE" >> "$GITHUB_OUTPUT"
 
     - name: Get PR ref
+      if: github.event_name == 'issue_comment'
       id: pr
       uses: actions/github-script@v7
       with:
@@ -74,7 +83,7 @@ jobs:
 
     - uses: actions/checkout@v4
       with:
-        ref: ${{ steps.pr.outputs.sha }}
+        ref: ${{ github.event_name == 'issue_comment' && steps.pr.outputs.sha || github.ref }}
 
     - name: Download rayapp
       run: bash ./download_rayapp.sh
@@ -83,5 +92,5 @@ jobs:
       env:
         ANYSCALE_CLI_TOKEN: ${{ secrets.ANYSCALE_CLI_TOKEN }}
         ANYSCALE_HOST: https://console.anyscale-staging.com
-        TEMPLATE: ${{ steps.parse.outputs.template }}
+        TEMPLATE: ${{ github.event_name == 'issue_comment' && steps.parse.outputs.template || inputs.template }}
       run: ./rayapp test "$TEMPLATE"
