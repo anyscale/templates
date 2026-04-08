@@ -6,3 +6,4 @@ RUN sudo apt-get update && \
     sudo apt-get install -y --no-install-recommends build-essential
 
 RUN pip install vllm==0.15.0
+# noop
