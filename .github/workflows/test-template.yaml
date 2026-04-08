@@ -6,44 +6,12 @@ on:
 
 jobs:
   test-template:
-    # Only run when a PR comment starts with /test-template
     if: >-
       github.event.issue.pull_request &&
-      startsWith(github.event.comment.body, '/test-template ')
+      startsWith(github.event.comment.body, '/test-template ') &&
+      contains(fromJSON('["MEMBER","OWNER","COLLABORATOR"]'), github.event.comment.author_association)
     runs-on: ubuntu-latest
     steps:
-    - name: Verify commenter and PR author are Anyscale enterprise members
-      uses: actions/github-script@v7
-      with:
-        github-token: ${{ secrets.READ_ENTERPRISE_PAT }}
-        script: |
-          const commenter = context.payload.comment.user.login;
-          const prAuthor = context.payload.issue.user.login;
-
-          for (const username of [commenter, prAuthor]) {
-            const result = await github.graphql(`
-              query($enterprise: String!, $query: String!) {
-                enterprise(slug: $enterprise) {
-                  members(query: $query, first: 20) {
-                    nodes {
-                      ... on EnterpriseUserAccount { login }
-                      ... on User { login }
-                    }
-                  }
-                }
-              }
-            `, { enterprise: 'anyscale', query: username });
-
-            const isMember = result.enterprise.members.nodes.some(
-              node => node.login.toLowerCase() === username.toLowerCase()
-            );
-            if (!isMember) {
-              core.setFailed(`${username} is not an Anyscale enterprise member`);
-              return;
-            }
-            console.log(`✓ ${username} is an Anyscale enterprise member`);
-          }
-
     - name: Parse template name from comment
       id: parse
       env:
