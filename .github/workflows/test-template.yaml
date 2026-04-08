@@ -13,12 +13,13 @@ on:
 jobs:
   test-template:
     # Run on manual dispatch, or when a PR comment starts with /test-template
-    # Only org members/collaborators can trigger via comment (MEMBER, OWNER, COLLABORATOR)
+    # Only org members/collaborators can trigger via comment, and PR must be from an org member
     if: >-
       github.event_name == 'workflow_dispatch' ||
       (github.event.issue.pull_request &&
        startsWith(github.event.comment.body, '/test-template ') &&
-       contains(fromJSON('["MEMBER","OWNER","COLLABORATOR"]'), github.event.comment.author_association))
+       contains(fromJSON('["MEMBER","OWNER","COLLABORATOR"]'), github.event.comment.author_association) &&
+       contains(fromJSON('["MEMBER","OWNER","COLLABORATOR"]'), github.event.issue.author_association))
     runs-on: ubuntu-latest
     env:
       ANYSCALE_CLI_TOKEN: ${{ secrets.ANYSCALE_CLI_TOKEN }}
