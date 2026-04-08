@@ -3,37 +3,28 @@ name: test-template
 on:
   issue_comment:
     types: [created]
-  workflow_dispatch:
-    inputs:
-      template:
-        description: 'Template name from BUILD.yaml (e.g. job-intro, workspace-intro)'
-        required: true
-        type: string
 
 jobs:
   test-template:
-    # Run on manual dispatch, or when a PR comment starts with /test-template
-    # Only org members/collaborators can trigger via comment, and PR must be from an org member
+    # Only run when a PR comment starts with /test-template
+    # Both the commenter and PR author must be org members/collaborators
     if: >-
-      github.event_name == 'workflow_dispatch' ||
-      (github.event.issue.pull_request &&
-       startsWith(github.event.comment.body, '/test-template ') &&
-       contains(fromJSON('["MEMBER","OWNER","COLLABORATOR"]'), github.event.comment.author_association) &&
-       contains(fromJSON('["MEMBER","OWNER","COLLABORATOR"]'), github.event.issue.author_association))
+      github.event.issue.pull_request &&
+      startsWith(github.event.comment.body, '/test-template ') &&
+      contains(fromJSON('["MEMBER","OWNER","COLLABORATOR"]'), github.event.comment.author_association) &&
+      contains(fromJSON('["MEMBER","OWNER","COLLABORATOR"]'), github.event.issue.author_association)
     runs-on: ubuntu-latest
     env:
       ANYSCALE_CLI_TOKEN: ${{ secrets.ANYSCALE_CLI_TOKEN }}
       ANYSCALE_HOST: https://console.anyscale-staging.com
     steps:
     - name: Parse template name from comment
-      if: github.event_name == 'issue_comment'
       id: parse
       run: |
         TEMPLATE=$(echo "${{ github.event.comment.body }}" | sed 's|^/test-template ||' | head -1 | xargs)
         echo "template=$TEMPLATE" >> "$GITHUB_OUTPUT"
 
     - name: Get PR ref
-      if: github.event_name == 'issue_comment'
       id: pr
       uses: actions/github-script@v7
       with:
@@ -47,10 +38,10 @@ jobs:
 
     - uses: actions/checkout@v3
       with:
-        ref: ${{ github.event_name == 'issue_comment' && steps.pr.outputs.ref || github.ref }}
+        ref: ${{ steps.pr.outputs.ref }}
 
     - name: Download rayapp
       run: bash ./download_rayapp.sh
 
     - name: Test template
-      run: ./rayapp test ${{ github.event_name == 'issue_comment' && steps.parse.outputs.template || inputs.template }}
+      run: ./rayapp test ${{ steps.parse.outputs.template }}
