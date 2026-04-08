@@ -11,9 +11,6 @@ jobs:
       github.event.issue.pull_request &&
       startsWith(github.event.comment.body, '/test-template ')
     runs-on: ubuntu-latest
-    env:
-      ANYSCALE_CLI_TOKEN: ${{ secrets.ANYSCALE_CLI_TOKEN }}
-      ANYSCALE_HOST: https://console.anyscale-staging.com
     steps:
     - name: Verify commenter and PR author are Anyscale enterprise members
       uses: actions/github-script@v7
@@ -27,7 +24,7 @@ jobs:
             const result = await github.graphql(`
               query($enterprise: String!, $query: String!) {
                 enterprise(slug: $enterprise) {
-                  members(query: $query, first: 10) {
+                  members(query: $query, first: 20) {
                     nodes {
                       ... on EnterpriseUserAccount { login }
                       ... on User { login }
@@ -49,8 +46,14 @@ jobs:
 
     - name: Parse template name from comment
       id: parse
+      env:
+        COMMENT_BODY: ${{ github.event.comment.body }}
       run: |
-        TEMPLATE=$(echo "${{ github.event.comment.body }}" | sed 's|^/test-template ||' | head -1 | xargs)
+        TEMPLATE=$(echo "$COMMENT_BODY" | awk '/^\/test-template / { print $2; exit }')
+        if [[ ! "$TEMPLATE" =~ ^[a-zA-Z0-9_-]+$ ]]; then
+          echo "::error::Invalid template name: $TEMPLATE"
+          exit 1
+        fi
         echo "template=$TEMPLATE" >> "$GITHUB_OUTPUT"
 
     - name: Get PR ref
@@ -63,14 +66,22 @@ jobs:
             repo: context.repo.repo,
             pull_number: context.issue.number,
           });
-          core.setOutput('ref', pr.data.head.ref);
+          if (pr.data.head.repo.full_name !== pr.data.base.repo.full_name) {
+            core.setFailed('Cannot test templates from fork PRs');
+            return;
+          }
+          core.setOutput('sha', pr.data.head.sha);
 
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
-        ref: ${{ steps.pr.outputs.ref }}
+        ref: ${{ steps.pr.outputs.sha }}
 
     - name: Download rayapp
       run: bash ./download_rayapp.sh
 
     - name: Test template
-      run: ./rayapp test ${{ steps.parse.outputs.template }}
+      env:
+        ANYSCALE_CLI_TOKEN: ${{ secrets.ANYSCALE_CLI_TOKEN }}
+        ANYSCALE_HOST: https://console.anyscale-staging.com
+        TEMPLATE: ${{ steps.parse.outputs.template }}
+      run: ./rayapp test "$TEMPLATE"
