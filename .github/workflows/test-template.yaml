@@ -49,12 +49,8 @@ jobs:
       with:
         ref: ${{ github.event_name == 'issue_comment' && steps.pr.outputs.ref || github.ref }}
 
-    - uses: actions/setup-python@v3
-      with:
-        python-version: '3.9'
-
     - name: Download rayapp
       run: bash ./download_rayapp.sh
 
     - name: Test template
-      run: ./rayapp build ${{ github.event_name == 'issue_comment' && steps.parse.outputs.template || inputs.template }}
+      run: ./rayapp test ${{ github.event_name == 'issue_comment' && steps.parse.outputs.template || inputs.template }}
