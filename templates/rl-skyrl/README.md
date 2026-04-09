@@ -50,7 +50,7 @@ SKYRL_RAY_PG_TIMEOUT_IN_S=90 bash examples/gsm8k/run_gsm8k.sh \
 ```
 
 If using W&B, you should see logs like the ones shown below, with detailed metric tracking and timing breakdowns for each stage of the RL pipeline.
-<img src="assets/gsm8k_wandb.png" width=1500px />
+<img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/rl-skyrl/assets/gsm8k_wandb.png" width=1500px />
 
 
 ## Creating a new environment or task
