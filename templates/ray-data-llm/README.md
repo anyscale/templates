@@ -23,7 +23,6 @@ This tutorial focuses on the latter, using offline LLM inference for a summariza
 Ray Data LLM runs batch inference for LLMs on Ray Data datasets. In this tutorial, we will perform batch inference with an LLM to reformat dates. Our source is a 2-million-row CSV file containing sample customer data.
 First, we load the data from a remote URL. Then, to ensure the workload can be distributed across multiple GPUs, we repartition the dataset. This step is crucial for achieving parallelism.
 
-
 ```python
 import ray
 
@@ -62,7 +61,6 @@ You also need to define a configuration associated with the model you want to us
 
 Note that because our input prompts and expected output token lengths are small, we have set `batch_size=256` in this case. However, depending on your workload, a large batch size can lead to increased idle GPU time when decoding long sequences. Be sure to adjust this value to find the optimal trade-off between throughput and latency.
 
-
 ```python
 from ray.data.llm import vLLMEngineProcessorConfig
 
@@ -89,7 +87,6 @@ processor_config = vLLMEngineProcessorConfig(
 The task is to format the `Subscription Date`as the format `MM-DD-YYYY` using LLM. 
 
 Define the preprocess function to prepare `messages` and `sampling_params` for vLLM engine, and the postprocessor function to consume `generated_text`.
-
 
 ```python
 from typing import Any
@@ -128,7 +125,6 @@ def postprocess(row: dict[str, Any]) -> dict[str, Any]:
 
 
 With the processors and configs defined, you can now build then run the processor
-
 
 ```python
 from ray.data.llm import build_llm_processor
@@ -177,12 +173,10 @@ We applied 2 adjustments on top of the previous example:
 
 LLM batch inference + Ray Data is not optimized for execution via Jupyter notebook. To free up GPU memory held by the previously loaded model and prevent out-of-memory (OOM) errors, please restart your workspace before running your next job.
 
-
 ```python
 # Install datasets library.
 !pip install "datasets<4"
 ```
-
 
 ```python
 import ray 
@@ -267,7 +261,6 @@ def vision_postprocess(row: dict) -> dict:
 
 Similar to previous example, build and run the processor.
 
-
 ```python
 from ray.data.llm import build_llm_processor
 
@@ -281,7 +274,6 @@ vision_processed_ds = vision_processor(vision_dataset).materialize()
 ```
 
 Similar to previous example, peek the first 3 entries.
-
 
 ```python
 from pprint import pprint
