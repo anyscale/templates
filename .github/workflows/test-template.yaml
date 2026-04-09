@@ -83,6 +83,7 @@ jobs:
             check_run_id: ${{ steps.check.outputs.id }},
             status: 'completed',
             conclusion: 'success',
+            details_url: `${process.env.GITHUB_SERVER_URL}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
           });
 
     - name: Update check run (failure)
@@ -96,4 +97,5 @@ jobs:
             check_run_id: ${{ steps.check.outputs.id }},
             status: 'completed',
             conclusion: 'failure',
+            details_url: `${process.env.GITHUB_SERVER_URL}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
           });
