@@ -386,3 +386,94 @@
     tests_path: tests/ray-summit-core-masterclass/
     command: bash tests.sh
     timeout_in_sec: 900
+
+# owner: @kunling, @aydin
+- name: multi_agent_a2a
+  dir: templates/multi_agent_a2a
+  cluster_env:
+    image_uri: anyscale/ray-llm:2.54.0-py311-cu128
+  compute_config:
+    AWS: configs/multi-agent-a2a/aws.yaml
+    GCP: configs/multi-agent-a2a/gce.yaml
+  test:
+    tests_path: tests/multi_agent_a2a/
+    command: bash tests.sh
+    timeout_in_sec: 1800
+
+# owner: @aydin
+- name: llm_batch_inference_text
+  dir: templates/llm_batch_inference_text
+  cluster_env:
+    image_uri: anyscale/ray-llm:2.54.0-py311-cu128
+  compute_config:
+    AWS: configs/llm-batch-inference/aws.yaml
+    GCP: configs/llm-batch-inference/gce.yaml
+  test:
+    tests_path: tests/llm_batch_inference_text/
+    command: bash tests.sh
+    timeout_in_sec: 900
+
+# owner: @aydin
+- name: llm_batch_inference_vision
+  dir: templates/llm_batch_inference_vision
+  cluster_env:
+    image_uri: anyscale/ray-llm:2.54.0-py311-cu128
+  compute_config:
+    AWS: configs/llm-batch-inference/aws.yaml
+    GCP: configs/llm-batch-inference/gce.yaml
+  test:
+    tests_path: tests/llm_batch_inference_vision/
+    command: bash tests.sh
+    timeout_in_sec: 900
+
+# owner: @tohtana
+- name: tensor_parallel_dtensor
+  dir: templates/tensor_parallel_dtensor
+  cluster_env:
+    image_uri: anyscale/ray:2.54.0-py312-cu128
+  compute_config:
+    AWS: configs/tensor-parallel-dtensor/aws.yaml
+    GCP: configs/tensor-parallel-dtensor/gce.yaml
+  test:
+    tests_path: tests/tensor_parallel_dtensor/
+    command: bash tests.sh
+    timeout_in_sec: 1800
+
+# owner: @ian-jordan, @aydin
+- name: ray_train_workloads
+  dir: templates/ray_train_workloads
+  cluster_env:
+    image_uri: anyscale/ray:2.53.0-slim-py312-cu129
+  compute_config:
+    AWS: configs/ray-train-workloads/aws.yaml
+    GCP: configs/ray-train-workloads/gce.yaml
+  test:
+    tests_path: tests/ray_train_workloads/
+    command: bash tests.sh
+    timeout_in_sec: 1800
+
+# owner: @harshit-anyscale
+- name: asynchronous_inference
+  dir: templates/asynchronous_inference
+  cluster_env:
+    image_uri: anyscale/ray:2.52.1-slim-py312-cu128
+  compute_config:
+    AWS: configs/basic-serverless-config/aws.yaml
+    GCP: configs/basic-serverless-config/gce.yaml
+  test:
+    tests_path: tests/asynchronous_inference/
+    command: bash tests.sh
+    timeout_in_sec: 1800
+
+# owner: @ian-jordan, @aydin
+- name: tune_pytorch_asha
+  dir: templates/tune_pytorch_asha
+  cluster_env:
+    image_uri: anyscale/ray:2.53.0-slim-py312-cu129
+  compute_config:
+    AWS: configs/tune-pytorch-asha/aws.yaml
+    GCP: configs/tune-pytorch-asha/gce.yaml
+  test:
+    tests_path: tests/tune_pytorch_asha/
+    command: bash tests.sh
+    timeout_in_sec: 1800
