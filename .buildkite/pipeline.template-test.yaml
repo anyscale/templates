@@ -14,6 +14,7 @@ steps:
       export ANYSCALE_HOST="https://console.anyscale-staging.com"
       bash download_rayapp.sh
       sudo apt-get update && sudo apt-get install -y rsync
+      sudo pip install anyscale==0.26.87
       ./rayapp test $$TEMPLATE_NAME
     timeout_in_minutes: 20
     agents:
