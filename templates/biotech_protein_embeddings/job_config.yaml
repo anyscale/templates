@@ -1,0 +1,17 @@
+name: biotech-protein-embeddings
+entrypoint: python scripts/02_run_embedding.py --scale medium --bucketed
+
+runtime_env:
+  working_dir: .
+  pip:
+    - ray[data]>=2.9
+    - transformers>=4.35
+    - torch>=2.1
+    - numpy>=1.24
+    - pandas>=2.0
+    - pyarrow>=14.0
+    - biopython>=1.82
+    - scikit-learn>=1.3
+
+compute_config: compute_config.yaml
+max_retries: 2
