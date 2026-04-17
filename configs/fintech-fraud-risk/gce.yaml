@@ -1,0 +1,9 @@
+head_node_type:
+  name: head
+  instance_type: n2-standard-16
+
+worker_node_types:
+  - name: cpu-worker
+    instance_type: n2-standard-16   # 16 vCPU, 64GB RAM — feature engineering + scoring
+    min_workers: 2
+    max_workers: 2
