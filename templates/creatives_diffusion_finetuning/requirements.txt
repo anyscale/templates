@@ -1,0 +1,11 @@
+ray[train,data]>=2.9
+torch==2.5.1
+torchvision==0.20.1
+diffusers>=0.25
+transformers>=4.35
+peft>=0.7
+accelerate>=0.25
+datasets
+pillow>=10.0
+numpy>=1.24
+matplotlib>=3.7
