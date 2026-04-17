@@ -119,19 +119,19 @@ def get_options_chain(symbol):
     try:
         # Get ticker data
         ticker = yf.Ticker(symbol)
-        
+
         # Get current info
         ticker_info = ticker.info
         current_price = ticker_info['currentPrice']
         dividend_yield = ticker_info['trailingAnnualDividendYield']
-        
+
         # Get options data
         options_chain = {
             'symbol': symbol,
             'current_price': current_price,
             'options': [],
         }
-        
+
         # Get options expirations
         try:
             expirations = ticker.options
@@ -141,23 +141,23 @@ def get_options_chain(symbol):
                     'current_price': current_price,
                     'error': 'No options data available'
                 }
-            
+
             # filter out near term options
-            expirations = [exp for exp in expirations if 
+            expirations = [exp for exp in expirations if
                                        (datetime.strptime(exp, '%Y-%m-%d') - datetime.now()).days > 30]
             # Sort expirations by date (nearest first)
             filtered_expirations = sorted(expirations, key=lambda x: datetime.strptime(x, '%Y-%m-%d'))
-            
-            
+
+
             # Process each expiration date
             for expiration in filtered_expirations:
                 # Get option chain for this expiration
                 opt = ticker.option_chain(expiration)
-                
+
                 # Process calls if requested
                 if not opt.calls.empty:
                     opt_calls = opt.calls
-                    
+
                     # Convert to list of dictionaries
                     for _, row in opt_calls.iterrows():
                         call_data = {
@@ -176,7 +176,7 @@ def get_options_chain(symbol):
                         options_chain['options'].append(call_data)
 
                     opt_puts = opt.puts
-                    
+
                     # Convert to list of dictionaries
                     for _, row in opt_puts.iterrows():
                         put_data = {
@@ -191,7 +191,7 @@ def get_options_chain(symbol):
                             'ask': float(row['ask']) if 'ask' in row else None,
                             'volume': int(row['volume']) if 'volume' in row and not np.isnan(row['volume']) else 0
                         }
-                        
+
                         options_chain['options'].append(put_data)
         except Exception as e:
             print(f"Error getting options data: {str(e)}")
@@ -200,14 +200,14 @@ def get_options_chain(symbol):
                 'current_price': current_price,
                 'error': f'Error retrieving options data: {str(e)}'
             }
-        
+
         return options_chain
-    
+
     except Exception as e:
         print(f"Error in get_options_chain: {str(e)}")
         return {'error': str(e)}
 
-# NOTE:   
+# NOTE:
 #   Saving to csv isn't completely necessary for the demo, but
 #   it is included to demonstrate that it is very quick, in case someone asks.
 #   Can use it as opportunity to discuss shared storage
