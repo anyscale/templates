@@ -1,26 +1,9 @@
-name: creatives-diffusion-finetuning-v4
-image_uri: anyscale/ray:2.54.0-py311-cu121
-compute_config:
-  cloud: aws-public-us-west-2
-  head_node:
-    instance_type: m5.2xlarge
-  worker_nodes:
-    - name: gpu-workers
-      instance_type: g4dn.xlarge   # T4 16GB — one per training worker
-      min_nodes: 2
-      max_nodes: 2
-idle_termination_minutes: 60
-env_vars:
-  HF_HOME: /mnt/cluster_storage/hf_cache
-requirements:
-  - ray[train,data]>=2.9
-  - torch==2.5.1
-  - torchvision==0.20.1
-  - diffusers>=0.25
-  - transformers>=4.35
-  - peft>=0.7
-  - accelerate>=0.25
-  - datasets
-  - pillow>=10.0
-  - numpy>=1.24
-  - matplotlib>=3.7
+head_node_type:
+  name: head
+  instance_type: m5.2xlarge
+
+worker_node_types:
+  - name: gpu-worker
+    instance_type: g4dn.xlarge   # T4 16GB — one per training worker
+    min_workers: 2
+    max_workers: 2
