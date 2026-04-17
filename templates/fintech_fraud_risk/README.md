@@ -1,4 +1,6 @@
 # FinTech Batch Fraud Risk Scoring Pipeline
+
+**⏱️ Time to complete**: 30 min
 ### Anyscale Technical Demo — Ray Data on Anyscale Jobs
 
 ---

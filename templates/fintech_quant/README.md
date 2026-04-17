@@ -1,5 +1,7 @@
 # Option chain pricing with Ray
 
+**⏱️ Time to complete**: 30 min
+
 - Option chain pricing explodes into many independent calculations (symbol x contract x shock), which is a natural fit for task parallelism.
 - Ray Core lets us keep Python functions while distributing work across CPUs with `@ray.remote`.
 - Ray's dynamic execution model (from the Ray paper) is built for irregular workloads where task counts change at runtime.

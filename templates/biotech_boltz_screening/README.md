@@ -1,4 +1,7 @@
 # Biotech Protein Interaction Screening with Boltz-1
+
+**⏱️ Time to complete**: 30 min
+
 ### Anyscale Technical Demo — Ray Data on Anyscale Jobs
 
 ---

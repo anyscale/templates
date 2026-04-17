@@ -1,4 +1,7 @@
 # Stable Diffusion LoRA Fine-Tuning with Ray Train
+
+**⏱️ Time to complete**: 30 min
+
 ### Anyscale Technical Demo — Distributed Training on Anyscale Jobs
 
 ---
@@ -24,7 +27,6 @@ Ray Data (CPU)                     Ray Train (2x T4 GPU)
 
 Standard PyTorch + diffusers + peft code. Ray Train distributes it.
 Ray Data feeds it. Anyscale runs it as a Job.
-
 
 ## Step 1: Connect to the Ray Cluster
 

@@ -1,4 +1,6 @@
 # E-Commerce PyTorch Ranker Serving
+
+**⏱️ Time to complete**: 30 min
 ### Anyscale Technical Demo — Ray Serve on Anyscale Services
 
 ---

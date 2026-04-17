@@ -1,4 +1,6 @@
 # E-Commerce Batch Product Embedding Pipeline
+
+**⏱️ Time to complete**: 30 min
 ### Anyscale Technical Demo — Ray Data on Anyscale Jobs
 
 ---

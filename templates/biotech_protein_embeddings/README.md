@@ -1,4 +1,6 @@
 # Biotech Protein Sequence Embedding Pipeline (ESM-2)
+
+**⏱️ Time to complete**: 30 min
 ### Anyscale Technical Demo — Ray Data on Anyscale Jobs
 
 ---
