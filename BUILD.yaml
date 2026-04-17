@@ -485,6 +485,7 @@
     image_uri: anyscale/ray:2.55.0-py311-cu121
   compute_config:
     AWS: configs/biotech-boltz-screening/aws.yaml
+    GCP: configs/biotech-boltz-screening/gce.yaml
   test:
     tests_path: tests/biotech_boltz_screening/
     command: bash tests.sh
@@ -497,6 +498,7 @@
     image_uri: anyscale/ray:2.55.0-py311-cu121
   compute_config:
     AWS: configs/biotech-protein-embeddings/aws.yaml
+    GCP: configs/biotech-protein-embeddings/gce.yaml
   test:
     tests_path: tests/biotech_protein_embeddings/
     command: bash tests.sh
@@ -509,6 +511,7 @@
     image_uri: anyscale/ray:2.55.0-py311-cu121
   compute_config:
     AWS: configs/ecommerce-batch-embeddings/aws.yaml
+    GCP: configs/ecommerce-batch-embeddings/gce.yaml
   test:
     tests_path: tests/ecommerce_batch_embeddings/
     command: bash tests.sh
@@ -521,6 +524,7 @@
     image_uri: anyscale/ray:2.55.0-py311-cu121
   compute_config:
     AWS: configs/ecommerce-multi-model-serving/aws.yaml
+    GCP: configs/ecommerce-multi-model-serving/gce.yaml
   test:
     tests_path: tests/ecommerce_multi_model_serving/
     command: bash tests.sh
@@ -533,6 +537,7 @@
     image_uri: anyscale/ray:2.55.0-py311
   compute_config:
     AWS: configs/fintech-fraud-risk/aws.yaml
+    GCP: configs/fintech-fraud-risk/gce.yaml
   test:
     tests_path: tests/fintech_fraud_risk/
     command: bash tests.sh
@@ -545,6 +550,7 @@
     image_uri: anyscale/ray:2.55.0-py311
   compute_config:
     AWS: configs/fintech-quant/aws.yaml
+    GCP: configs/fintech-quant/gce.yaml
   test:
     tests_path: tests/fintech_quant/
     command: bash tests.sh
