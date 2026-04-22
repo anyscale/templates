@@ -296,7 +296,7 @@
 - name: finetune-stable-diffusion
   dir: templates/fine-tune-stable-diffusion
   cluster_env:
-    image_uri: anyscale/ray-ml:2.22.0-py39-gpu
+    image_uri: anyscale/ray:2.54.0-slim-py312-cu128
   compute_config:
     GCP: configs/basic-serverless-config/gce.yaml
     AWS: configs/basic-serverless-config/aws.yaml
