@@ -176,10 +176,14 @@
 - name: mcp-ray-serve
   dir: templates/mcp-ray-serve
   cluster_env:
-    image_uri: anyscale/ray:2.47.1-py312
+    image_uri: anyscale/ray:2.54.1-py312
   compute_config:
     AWS: configs/basic-single-node/aws.yaml
     GCP: configs/basic-single-node/gce.yaml
+  test:
+    tests_path: tests/mcp-ray-serve/
+    command: bash tests.sh
+    timeout_in_sec: 1800
 
 # owner: @goku
 - name: entity-recognition-with-llms
