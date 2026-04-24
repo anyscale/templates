@@ -1,0 +1,9 @@
+head_node_type:
+  name: head
+  instance_type: m5.2xlarge
+
+worker_node_types:
+  - name: cpu-worker
+    instance_type: m5.2xlarge   # 8 vCPU, 32GB RAM — Ray Core task parallelism
+    min_workers: 2
+    max_workers: 4
