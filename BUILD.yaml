@@ -337,7 +337,7 @@
 - name: parallel-experiments
   dir: templates/intro-tune
   cluster_env:
-    image_uri: anyscale/ray:2.54.0-slim-py313-cu129
+    image_uri: anyscale/ray:2.54.1-slim-py313-cu129
   compute_config:
     GCP: configs/basic-serverless-config/gce.yaml
     AWS: configs/basic-serverless-config/aws.yaml
