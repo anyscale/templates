@@ -202,10 +202,14 @@
 - name: audio-dataset-curation-llm-judge
   dir: templates/audio-dataset-curation-llm-judge
   cluster_env:
-    image_uri: anyscale/ray-llm:2.47.0-py311-cu124
+    image_uri: anyscale/ray-llm:2.54.1-py311-cu128
   compute_config:
     AWS: configs/audio-dataset-curation-llm-judge/aws.yaml
     GCP: configs/audio-dataset-curation-llm-judge/gce.yaml
+  test:
+    tests_path: tests/audio-dataset-curation-llm-judge/
+    command: bash tests.sh
+    timeout_in_sec: 1800
 
 # owner: @tseah
 - name: distributing-pytorch
