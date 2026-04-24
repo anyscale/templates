@@ -61,9 +61,7 @@ Install the required dependencies for this tutorial:
 
 ```bash
 %%bash
-pip install torch
-pip install torchvision
-pip install matplotlib
+pip install torch==2.7.0 torchvision==0.22.0 matplotlib
 ```
 
 
