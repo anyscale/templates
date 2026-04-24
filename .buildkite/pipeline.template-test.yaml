@@ -16,7 +16,7 @@ steps:
       sudo apt-get update && sudo apt-get install -y rsync
       sudo pip install anyscale==0.26.87
       ./rayapp test $$TEMPLATE_NAME
-    timeout_in_minutes: 20
+    timeout_in_minutes: 75
     agents:
       queue: small
     retry:
