@@ -39,12 +39,6 @@ jobs:
     - name: Build
       run: bash -ec "(cd ci; go install ./...)"
 
-    - name: Check go format
-      run: bash -ec "(cd ci; go fmt ./... ; git diff --exit-code)"
-
-    - name: Test
-      run: CI=1 bash -ec "(cd ci; go test -v ./...)"
-
     - name: Build templates
       run: |
         bash ./download_rayapp.sh

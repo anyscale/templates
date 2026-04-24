@@ -1,0 +1,15 @@
+# compute_config must be an inline map or a registered config name (e.g. my-config:1), not a file path.
+# Jobs use a fresh cluster without workspace /mnt/cluster_storage — run generate → train → score.
+name: fintech-fraud-risk
+entrypoint: bash -c "python scripts/01_generate_data.py --scale medium && python scripts/02_train_model.py --scale medium && python scripts/03_run_scoring.py --scale medium"
+requirements: requirements.txt
+compute_config:
+  cloud: aws-public-us-west-2
+  head_node:
+    instance_type: m5.4xlarge
+  worker_nodes:
+    - name: cpu-workers
+      instance_type: m5.4xlarge
+      min_nodes: 2
+      max_nodes: 20
+max_retries: 2
