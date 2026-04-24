@@ -17,6 +17,11 @@ Let's start by running a quick "hello world" that runs a few variations of a fun
 
 
 ```python
+!pip install --no-cache-dir torch==2.10.0 torchvision==0.25.0
+```
+
+
+```python
 from ray import tune
 
 def f(config):
