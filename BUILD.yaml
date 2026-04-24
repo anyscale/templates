@@ -294,14 +294,14 @@
 - name: finetune-stable-diffusion
   dir: templates/fine-tune-stable-diffusion
   cluster_env:
-    image_uri: anyscale/ray-ml:2.22.0-py39-gpu
+    image_uri: anyscale/ray:2.54.1-py311-cu128
   compute_config:
     GCP: configs/basic-serverless-config/gce.yaml
     AWS: configs/basic-serverless-config/aws.yaml
   test:
     tests_path: tests/finetune-stable-diffusion/
     command: bash tests.sh
-    timeout_in_sec: 900
+    timeout_in_sec: 2700
 
 # owner: @sofian, @huaiwei
 - name: getting-started
@@ -335,7 +335,7 @@
 - name: parallel-experiments
   dir: templates/intro-tune
   cluster_env:
-    image_uri: anyscale/ray-ml:2.49.0-py39-gpu
+    image_uri: anyscale/ray:2.54.0-slim-py313-cu129
   compute_config:
     GCP: configs/basic-serverless-config/gce.yaml
     AWS: configs/basic-serverless-config/aws.yaml
@@ -380,5 +380,187 @@
     GCP: configs/basic-serverless-config/gce.yaml
   test:
     tests_path: tests/ray-summit-core-masterclass/
+    command: bash tests.sh
+    timeout_in_sec: 900
+
+# owner: @kunling, @aydin
+- name: multi_agent_a2a
+  dir: templates/multi_agent_a2a
+  cluster_env:
+    image_uri: anyscale/ray-llm:2.54.0-py311-cu128
+  compute_config:
+    AWS: configs/multi-agent-a2a/aws.yaml
+    GCP: configs/multi-agent-a2a/gce.yaml
+  test:
+    tests_path: tests/multi_agent_a2a/
+    command: bash tests.sh
+    timeout_in_sec: 1800
+
+# owner: @aydin
+- name: llm_batch_inference_text
+  dir: templates/llm_batch_inference_text
+  cluster_env:
+    image_uri: anyscale/ray-llm:2.54.0-py311-cu128
+  compute_config:
+    AWS: configs/llm-batch-inference/aws.yaml
+    GCP: configs/llm-batch-inference/gce.yaml
+  test:
+    tests_path: tests/llm_batch_inference_text/
+    command: bash tests.sh
+    timeout_in_sec: 900
+
+# owner: @aydin
+- name: llm_batch_inference_vision
+  dir: templates/llm_batch_inference_vision
+  cluster_env:
+    image_uri: anyscale/ray-llm:2.54.0-py311-cu128
+  compute_config:
+    AWS: configs/llm-batch-inference/aws.yaml
+    GCP: configs/llm-batch-inference/gce.yaml
+  test:
+    tests_path: tests/llm_batch_inference_vision/
+    command: bash tests.sh
+    timeout_in_sec: 900
+
+# owner: @tohtana
+- name: tensor_parallel_dtensor
+  dir: templates/tensor_parallel_dtensor
+  cluster_env:
+    image_uri: anyscale/ray:2.54.0-py312-cu128
+  compute_config:
+    AWS: configs/tensor-parallel-dtensor/aws.yaml
+    GCP: configs/tensor-parallel-dtensor/gce.yaml
+  test:
+    tests_path: tests/tensor_parallel_dtensor/
+    command: bash tests.sh
+    timeout_in_sec: 1800
+
+# owner: @ian-jordan, @aydin
+- name: ray_train_workloads
+  dir: templates/ray_train_workloads
+  cluster_env:
+    image_uri: anyscale/ray:2.53.0-slim-py312-cu129
+  compute_config:
+    AWS: configs/ray-train-workloads/aws.yaml
+    GCP: configs/ray-train-workloads/gce.yaml
+  test:
+    tests_path: tests/ray_train_workloads/
+    command: bash tests.sh
+    timeout_in_sec: 1800
+
+# owner: @harshit-anyscale
+- name: asynchronous_inference
+  dir: templates/asynchronous_inference
+  cluster_env:
+    image_uri: anyscale/ray:2.52.1-slim-py312-cu128
+  compute_config:
+    AWS: configs/basic-serverless-config/aws.yaml
+    GCP: configs/basic-serverless-config/gce.yaml
+  test:
+    tests_path: tests/asynchronous_inference/
+    command: bash tests.sh
+    timeout_in_sec: 1800
+
+# owner: @ian-jordan, @aydin
+- name: tune_pytorch_asha
+  dir: templates/tune_pytorch_asha
+  cluster_env:
+    image_uri: anyscale/ray:2.53.0-slim-py312-cu129
+  compute_config:
+    AWS: configs/tune-pytorch-asha/aws.yaml
+    GCP: configs/tune-pytorch-asha/gce.yaml
+  test:
+    tests_path: tests/tune_pytorch_asha/
+    command: bash tests.sh
+    timeout_in_sec: 1800
+
+# owner: @christian-stano
+- name: creatives_diffusion_finetuning
+  dir: templates/creatives_diffusion_finetuning
+  cluster_env:
+    image_uri: anyscale/ray:2.55.0-py311-cu121
+  compute_config:
+    AWS: configs/creatives-diffusion-finetuning/aws.yaml
+    GCP: configs/creatives-diffusion-finetuning/gce.yaml
+  test:
+    tests_path: tests/creatives_diffusion_finetuning/
+    command: bash tests.sh
+    timeout_in_sec: 1800
+
+# owner: @christian-stano
+- name: biotech_boltz_screening
+  dir: templates/biotech_boltz_screening
+  cluster_env:
+    image_uri: anyscale/ray:2.55.0-py311-cu121
+  compute_config:
+    AWS: configs/biotech-boltz-screening/aws.yaml
+    GCP: configs/biotech-boltz-screening/gce.yaml
+  test:
+    tests_path: tests/biotech_boltz_screening/
+    command: bash tests.sh
+    timeout_in_sec: 1800
+
+# owner: @christian-stano
+- name: biotech_protein_embeddings
+  dir: templates/biotech_protein_embeddings
+  cluster_env:
+    image_uri: anyscale/ray:2.55.0-py311-cu121
+  compute_config:
+    AWS: configs/biotech-protein-embeddings/aws.yaml
+    GCP: configs/biotech-protein-embeddings/gce.yaml
+  test:
+    tests_path: tests/biotech_protein_embeddings/
+    command: bash tests.sh
+    timeout_in_sec: 1800
+
+# owner: @christian-stano
+- name: ecommerce_batch_embeddings
+  dir: templates/ecommerce_batch_embeddings
+  cluster_env:
+    image_uri: anyscale/ray:2.55.0-py311-cu121
+  compute_config:
+    AWS: configs/ecommerce-batch-embeddings/aws.yaml
+    GCP: configs/ecommerce-batch-embeddings/gce.yaml
+  test:
+    tests_path: tests/ecommerce_batch_embeddings/
+    command: bash tests.sh
+    timeout_in_sec: 1800
+
+# owner: @christian-stano
+- name: ecommerce_multi_model_serving
+  dir: templates/ecommerce_multi_model_serving
+  cluster_env:
+    image_uri: anyscale/ray:2.55.0-py311-cu121
+  compute_config:
+    AWS: configs/ecommerce-multi-model-serving/aws.yaml
+    GCP: configs/ecommerce-multi-model-serving/gce.yaml
+  test:
+    tests_path: tests/ecommerce_multi_model_serving/
+    command: bash tests.sh
+    timeout_in_sec: 1800
+
+# owner: @christian-stano
+- name: fintech_fraud_risk
+  dir: templates/fintech_fraud_risk
+  cluster_env:
+    image_uri: anyscale/ray:2.55.0-py311
+  compute_config:
+    AWS: configs/fintech-fraud-risk/aws.yaml
+    GCP: configs/fintech-fraud-risk/gce.yaml
+  test:
+    tests_path: tests/fintech_fraud_risk/
+    command: bash tests.sh
+    timeout_in_sec: 1800
+
+# owner: @christian-stano
+- name: fintech_quant
+  dir: templates/fintech_quant
+  cluster_env:
+    image_uri: anyscale/ray:2.55.0-py311
+  compute_config:
+    AWS: configs/fintech-quant/aws.yaml
+    GCP: configs/fintech-quant/gce.yaml
+  test:
+    tests_path: tests/fintech_quant/
     command: bash tests.sh
     timeout_in_sec: 1800
