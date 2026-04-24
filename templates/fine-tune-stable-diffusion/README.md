@@ -47,13 +47,7 @@ SUBJECT_IMAGES_PATH = "/mnt/local_storage/subject_images"
 
 ```python
 # Copy the sample dog dataset to the subject images path -- feel free to comment this out.
-import os
-import shutil
-from pathlib import Path
-
-os.makedirs(SUBJECT_IMAGES_PATH, exist_ok=True)
-for jpeg_file in Path("./assets/dog").glob("*.jpeg"):
-    shutil.copy(jpeg_file, SUBJECT_IMAGES_PATH)
+!mkdir -p {SUBJECT_IMAGES_PATH} && cp ./assets/dog/*.jpeg {SUBJECT_IMAGES_PATH}
 ```
 
 Take a look at the dataset!
