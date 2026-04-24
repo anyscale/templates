@@ -21,7 +21,7 @@ First, install additional required dependencies using `pip`.
 
 
 ```python
-!pip install -q langchain==0.1.17 optimum==1.19.2 && echo 'Install complete!'
+!pip install -q "torch<2.5" langchain==0.1.17 transformers==4.40.2 optimum==1.19.2 && echo "Install complete!"
 ```
 
 
@@ -82,6 +82,7 @@ if ray.is_initialized():
     ray.shutdown()
 ray.init(
     runtime_env={
+        "pip": ["torch<2.5", "langchain==0.1.17", "transformers==4.40.2", "optimum==1.19.2"],
         "env_vars": {
             # Set the user token on all nodes.
             "HF_TOKEN": OPTIONAL_HF_TOKEN_FOR_MODEL,
