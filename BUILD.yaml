@@ -376,9 +376,7 @@
 - name: ray-summit-core-masterclass
   dir: templates/ray-summit-core-masterclass
   cluster_env:
-    byod:
-      docker_image: us-docker.pkg.dev/anyscale-workspace-templates/workspace-templates/ray-summit-core-masterclass-2024:1
-      ray_version: 2.36.0
+    image_uri: anyscale/ray:2.54.1-py312-cu128
   compute_config:
     AWS: configs/ray-summit-core-masterclass/aws.yaml
     GCP: configs/basic-serverless-config/gce.yaml
