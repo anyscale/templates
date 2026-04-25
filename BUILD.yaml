@@ -151,10 +151,14 @@
 - name: e2e-timeseries-forecasting
   dir: templates/e2e-timeseries-forecasting
   cluster_env:
-    image_uri: anyscale/ray:2.46.0-slim-py312-cu128
+    image_uri: anyscale/ray:2.54.1-slim-py312-cu128
   compute_config:
-    AWS: configs/basic-single-node/aws.yaml
-    GCP: configs/basic-single-node/gce.yaml
+    AWS: configs/e2e-timeseries-forecasting/aws.yaml
+    GCP: configs/e2e-timeseries-forecasting/gce.yaml
+  test:
+    tests_path: tests/e2e-timeseries-forecasting/
+    command: bash tests.sh
+    timeout_in_sec: 900
 
 # owner: @kunling
 - name: object-detection-video-processing
