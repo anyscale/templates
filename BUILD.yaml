@@ -125,7 +125,7 @@
 - name: vla-fine-tuning
   dir: templates/vla-fine-tuning
   cluster_env:
-    image_uri: anyscale/ray:2.54.0-py312-cu129
+    image_uri: anyscale/ray:2.54.1-py312-cu129
   compute_config:
     AWS: configs/vla-fine-tuning/aws.yaml
     GCP: configs/vla-fine-tuning/gce.yaml
