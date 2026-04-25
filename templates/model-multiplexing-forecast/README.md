@@ -240,7 +240,7 @@ Create a `service.yaml` file:
 ```yaml
 # service.yaml
 name: my-forecast-multiplexing-service
-image_uri: anyscale/ray:2.52.1-slim-py312
+image_uri: anyscale/ray:2.54.1-slim-py312
 compute_config:
   auto_select_worker_config: true
 working_dir: .
