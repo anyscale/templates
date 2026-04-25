@@ -59,8 +59,8 @@
   dir: templates/unstructured_data_ingestion
   cluster_env:
     byod:
-      docker_image: us-docker.pkg.dev/anyscale-workspace-templates/workspace-templates/template_unstructured_data_ingestion:2.51.1
-      ray_version: 2.51.1
+      docker_image: us-docker.pkg.dev/anyscale-workspace-templates/workspace-templates/template_unstructured_data_ingestion:2.54.1
+      ray_version: 2.54.1
   compute_config:
     GCP: configs/unstructured-data-ingestion/gce.yaml
     AWS: configs/unstructured-data-ingestion/aws.yaml
@@ -167,19 +167,27 @@
 - name: langchain-agent-ray-serve
   dir: templates/langchain-agent-ray-serve
   cluster_env:
-    image_uri: anyscale/ray:2.54.0-py311-cu128
+    image_uri: anyscale/ray:2.54.1-py311-cu128
   compute_config:
     AWS: configs/basic-single-node/aws.yaml
     GCP: configs/basic-single-node/gce.yaml
+  test:
+    tests_path: tests/langchain-agent-ray-serve/
+    command: bash tests.sh
+    timeout_in_sec: 1800
 
 # owner: @kunling
 - name: mcp-ray-serve
   dir: templates/mcp-ray-serve
   cluster_env:
-    image_uri: anyscale/ray:2.47.1-py312
+    image_uri: anyscale/ray:2.54.1-py312
   compute_config:
     AWS: configs/basic-single-node/aws.yaml
     GCP: configs/basic-single-node/gce.yaml
+  test:
+    tests_path: tests/mcp-ray-serve/
+    command: bash tests.sh
+    timeout_in_sec: 1800
 
 # owner: @goku
 - name: entity-recognition-with-llms
@@ -194,64 +202,92 @@
 - name: audio-dataset-curation-llm-judge
   dir: templates/audio-dataset-curation-llm-judge
   cluster_env:
-    image_uri: anyscale/ray-llm:2.47.0-py311-cu124
+    image_uri: anyscale/ray-llm:2.54.1-py311-cu128
   compute_config:
     AWS: configs/audio-dataset-curation-llm-judge/aws.yaml
     GCP: configs/audio-dataset-curation-llm-judge/gce.yaml
+  test:
+    tests_path: tests/audio-dataset-curation-llm-judge/
+    command: bash tests.sh
+    timeout_in_sec: 1800
 
 # owner: @tseah
 - name: distributing-pytorch
   dir: templates/distributing-pytorch
   cluster_env:
-    image_uri: anyscale/ray:2.51.0-slim-py312-cu128
+    image_uri: anyscale/ray:2.54.1-slim-py312-cu128
   compute_config:
     AWS: configs/distributing-pytorch/aws.yaml
     GCP: configs/distributing-pytorch/gce.yaml
+  test:
+    tests_path: tests/distributing-pytorch/
+    command: bash tests.sh
+    timeout_in_sec: 1800
 
 # owner: @jasonli
 - name: pytorch-fsdp
   dir: templates/pytorch-fsdp
   cluster_env:
-    image_uri: anyscale/ray:2.49.1-py312-cu128
+    image_uri: anyscale/ray:2.54.1-py312-cu128
   compute_config:
     AWS: configs/pytorch-fsdp/aws.yaml
     GCP: configs/pytorch-fsdp/gce.yaml
+  test:
+    tests_path: tests/pytorch-fsdp/
+    command: bash tests.sh
+    timeout_in_sec: 1800
 
 # owner: @tohtana
 - name: deepspeed_finetune
   dir: templates/deepspeed_finetune
   cluster_env:
-    image_uri: anyscale/ray:2.50.0-py312-cu128
+    image_uri: anyscale/ray:2.54.1-py311-cu128
   compute_config:
     AWS: configs/deepspeed_finetune/aws.yaml
     GCP: configs/deepspeed_finetune/gce.yaml
+  test:
+    tests_path: tests/deepspeed_finetune/
+    command: bash tests.sh
+    timeout_in_sec: 1800
 
 # owner: @lehui
 - name: pytorch-profiling
   dir: templates/pytorch-profiling
   cluster_env:
-    image_uri: anyscale/ray:2.50.1-py312-cu128
+    image_uri: anyscale/ray:2.54.1-py312-cu128
   compute_config:
     AWS: configs/pytorch-profiling/aws.yaml
     GCP: configs/pytorch-profiling/gce.yaml
+  test:
+    tests_path: tests/pytorch-profiling/
+    command: bash tests.sh
+    timeout_in_sec: 1200
 
 # owner: @jasond
 - name: llm_finetuning
   dir: templates/llm_finetuning
   cluster_env:
-    image_uri: anyscale/ray-llm:2.48.0-py311-cu128
+    image_uri: anyscale/ray-llm:2.54.1-py311-cu128
   compute_config:
     AWS: configs/basic-single-node/aws.yaml
     GCP: configs/basic-single-node/gce.yaml
+  test:
+    tests_path: tests/llm_finetuning/
+    command: bash tests.sh
+    timeout_in_sec: 1800
 
 # owner: @goku
 - name: image-search-and-classification
   dir: templates/image-search-and-classification
   cluster_env:
-    image_uri: anyscale/ray:2.49.0-slim-py312-cu128
+    image_uri: anyscale/ray:2.54.1-slim-py312-cu128
   compute_config:
-    AWS: configs/basic-single-node/aws.yaml
-    GCP: configs/basic-single-node/gce.yaml
+    AWS: templates/image-search-and-classification/configs/aws.yaml
+    GCP: templates/image-search-and-classification/configs/gce.yaml
+  test:
+    tests_path: tests/image-search-and-classification/
+    command: bash tests.sh
+    timeout_in_sec: 1800
 
 # owner: @kunling
 - name: e2e-rag-deepdive
@@ -267,8 +303,8 @@
   dir: templates/rl-skyrl
   cluster_env:
     byod:
-      docker_image: novaskyai/skyrl-train-ray-2.48.0-py3.12-cu12.8
-      ray_version: 2.48.0
+      docker_image: novaskyai/skyrl-train-ray-2.51.1-py3.12-cu12.8
+      ray_version: 2.51.1
   compute_config:
     GCP: configs/rl-skyrl/gce.yaml
     AWS: configs/rl-skyrl/aws.yaml
@@ -281,9 +317,7 @@
 - name: text-embeddings
   dir: templates/text-embeddings
   cluster_env:
-    byod:
-      docker_image: anyscale/ray:2.47.0-slim-py312-cu128
-      ray_version: 2.47.0
+    image_uri: anyscale/ray:2.54.1-py311-cu124
   compute_config:
     GCP: configs/text-embeddings/gce.yaml
     AWS: configs/text-embeddings/aws.yaml
@@ -298,8 +332,8 @@
   cluster_env:
     image_uri: anyscale/ray:2.54.1-py311-cu128
   compute_config:
-    GCP: configs/basic-serverless-config/gce.yaml
-    AWS: configs/basic-serverless-config/aws.yaml
+    GCP: configs/finetune-stable-diffusion/gce.yaml
+    AWS: configs/finetune-stable-diffusion/aws.yaml
   test:
     tests_path: tests/finetune-stable-diffusion/
     command: bash tests.sh
@@ -335,7 +369,7 @@
 - name: parallel-experiments
   dir: templates/intro-tune
   cluster_env:
-    image_uri: anyscale/ray:2.54.0-slim-py313-cu129
+    image_uri: anyscale/ray:2.54.1-slim-py313-cu129
   compute_config:
     GCP: configs/basic-serverless-config/gce.yaml
     AWS: configs/basic-serverless-config/aws.yaml
@@ -361,22 +395,20 @@
 - name: ray-data-batch-image-classification
   dir: templates/ray-data-batch-classification
   cluster_env:
-    image_uri: anyscale/ray:2.44.1-slim-py311-cu123
+    image_uri: anyscale/ray:2.54.1-py312-cu128
   compute_config:
     GCP: configs/ray-data-batch-classification/gcp.yaml
     AWS: configs/ray-data-batch-classification/aws.yaml
   test:
     tests_path: tests/ray-data-batch-image-classification/
     command: bash tests.sh
-    timeout_in_sec: 900
+    timeout_in_sec: 1800
 
 # owner: @marwan
 - name: ray-summit-core-masterclass
   dir: templates/ray-summit-core-masterclass
   cluster_env:
-    byod:
-      docker_image: us-docker.pkg.dev/anyscale-workspace-templates/workspace-templates/ray-summit-core-masterclass-2024:1
-      ray_version: 2.36.0
+    image_uri: anyscale/ray:2.54.1-py312-cu128
   compute_config:
     AWS: configs/ray-summit-core-masterclass/aws.yaml
     GCP: configs/basic-serverless-config/gce.yaml
