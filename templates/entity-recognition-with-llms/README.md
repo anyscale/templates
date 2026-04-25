@@ -48,16 +48,16 @@ Start by downloading the dependencies required for this tutorial. Notice in your
 %%bash
 # Install dependencies
 pip install -q \
-    "xgrammar==0.1.11" \
     "pynvml==12.0.0" \
     "hf_transfer==0.1.9" \
     "tensorboard==2.19.0" \
-    "llamafactory@git+https://github.com/hiyouga/LLaMA-Factory.git@ac8c6fdd3ab7fb6372f231f238e6b8ba6a17eb16#egg=llamafactory"
+    "llamafactory@git+https://github.com/hiyouga/LLaMA-Factory.git" \
+    "transformers>=4.56.0,<5" \
+    "peft>=0.18" \
+    "trl>=0.18" \
+    "omegaconf" \
+    "torchdata"
 ```
-
-    [92mSuccessfully registered `ray, vllm` and 5 other packages to be installed on all cluster nodes.[0m
-    [92mView and update dependencies here: https://console.anyscale.com/cld_kvedZWag2qA8i5BjxUevf5i7/prj_cz951f43jjdybtzkx1s5sjgz99/workspaces/expwrk_mp8cxvgle2yeumgcpu1yua2r3e?workspace-tab=dependencies[0m
-
 
 ## Data ingestion
 
@@ -226,13 +226,11 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 
 
 
-## Distributed fine-tuning
+## Fine-tuning
 
-Use [Ray Train](https://docs.ray.io/en/latest/train/train.html) + [LLaMA-Factory](https://github.com/hiyouga/LLaMA-Factory) to perform multi-node training. Find the parameters for the training workload, post-training method, dataset location, train/val details, etc. in the `llama3_lora_sft_ray.yaml` config file. See the recipes for even more post-training methods, like SFT, pretraining, PPO, DPO, KTO, etc. [on GitHub](https://github.com/hiyouga/LLaMA-Factory/tree/main/examples).
+Use [LLaMA-Factory](https://github.com/hiyouga/LLaMA-Factory) to perform fine-tuning on a GPU worker via Ray. Find the parameters for the training workload, post-training method, dataset location, train/val details, etc. in the `lora_sft_ray.yaml` config file. See the recipes for even more post-training methods, like SFT, pretraining, PPO, DPO, KTO, etc. [on GitHub](https://github.com/hiyouga/LLaMA-Factory/tree/main/examples).
 
 **Note**: Ray also supports using other tools like [axolotl](https://axolotl-ai-cloud.github.io/axolotl/docs/ray-integration.html) or even [Ray Train + HF Accelerate + FSDP/DeepSpeed](https://docs.ray.io/en/latest/train/huggingface-accelerate.html) directly for complete control of your post-training workloads.
-
-<img src="https://raw.githubusercontent.com/anyscale/foundational-ray-app/refs/heads/main/images/distributed_training.png" width=800>
 
 ### `config`
 
@@ -394,9 +392,9 @@ print (model_source)
     Qwen/Qwen2.5-7B-Instruct
 
 
-### Multi-node training
+### Training
 
-Use Ray Train + LlamaFactory to perform the mult-node train loop.
+Use `run_training.py` to launch LLaMA-Factory training on a GPU worker node via Ray remote task. The training config is read from shared storage so the GPU worker can access it.
 
 <div class="alert alert-block alert"> <b>Ray Train</b> 
 
@@ -420,80 +418,10 @@ Using [Ray Train](https://docs.ray.io/en/latest/train/train.html) has several ad
 
 ```bash
 %%bash
-# Run multi-node distributed fine-tuning workload
-USE_RAY=1 llamafactory-cli train lora_sft_ray.yaml
+# Copy config to shared storage and run training on a GPU worker
+cp lora_sft_ray.yaml /mnt/cluster_storage/viggo/lora_sft_ray.yaml
+python run_training.py --config /mnt/cluster_storage/viggo/lora_sft_ray.yaml
 ```
-
-    
-    
-    Training started with configuration:
-        ╭──────────────────────────────────────────────────────────────────────────────────────────────────────╮
-        │ Training config                                                                                      │
-        ├──────────────────────────────────────────────────────────────────────────────────────────────────────┤
-        │ train_loop_config/args/bf16                                                                     True │
-        │ train_loop_config/args/cutoff_len                                                               2048 │
-        │ train_loop_config/args/dataloader_num_workers                                                      4 │
-        │ train_loop_config/args/dataset                                                           viggo-train │
-        │ train_loop_config/args/dataset_dir                                              ...ter_storage/viggo │
-        │ train_loop_config/args/ddp_timeout                                                         180000000 │
-        │ train_loop_config/args/do_train                                                                 True │
-        │ train_loop_config/args/eval_dataset                                                        viggo-val │
-        │ train_loop_config/args/eval_steps                                                                500 │
-        │ train_loop_config/args/eval_strategy                                                           steps │
-        │ train_loop_config/args/finetuning_type                                                          lora │
-        │ train_loop_config/args/gradient_accumulation_steps                                                 8 │
-        │ train_loop_config/args/learning_rate                                                          0.0001 │
-        │ train_loop_config/args/logging_steps                                                              10 │
-        │ train_loop_config/args/lora_rank                                                                   8 │
-        │ train_loop_config/args/lora_target                                                               all │
-        │ train_loop_config/args/lr_scheduler_type                                                      cosine │
-        │ train_loop_config/args/max_samples                                                              1000 │
-        │ train_loop_config/args/model_name_or_path                                       ...en2.5-7B-Instruct │
-        │ train_loop_config/args/num_train_epochs                                                          5.0 │
-        │ train_loop_config/args/output_dir                                               ...age/viggo/outputs │
-        │ train_loop_config/args/overwrite_cache                                                          True │
-        │ train_loop_config/args/overwrite_output_dir                                                     True │
-        │ train_loop_config/args/per_device_eval_batch_size                                                  1 │
-        │ train_loop_config/args/per_device_train_batch_size                                                 1 │
-        │ train_loop_config/args/placement_strategy                                                       PACK │
-        │ train_loop_config/args/plot_loss                                                                True │
-        │ train_loop_config/args/preprocessing_num_workers                                                  16 │
-        │ train_loop_config/args/ray_num_workers                                                             4 │
-        │ train_loop_config/args/ray_run_name                                                     lora_sft_ray │
-        │ train_loop_config/args/ray_storage_path                                         ...orage/viggo/saves │
-        │ train_loop_config/args/resources_per_worker/GPU                                                    1 │
-        │ train_loop_config/args/resources_per_worker/anyscale/accelerator_shape:4xA10G                      1 │
-        │ train_loop_config/args/resume_from_checkpoint                                                        │
-        │ train_loop_config/args/save_only_model                                                         False │
-        │ train_loop_config/args/save_steps                                                                500 │
-        │ train_loop_config/args/stage                                                                     sft │
-        │ train_loop_config/args/template                                                                 qwen │
-        │ train_loop_config/args/trust_remote_code                                                        True │
-        │ train_loop_config/args/warmup_ratio                                                              0.1 │
-        │ train_loop_config/callbacks                                                     ... 0x7e1262910e10>] │
-        ╰──────────────────────────────────────────────────────────────────────────────────────────────────────╯
-    
-        100%|██████████| 155/155 [07:12<00:00,  2.85s/it][INFO|trainer.py:3942] 2025-04-11 14:57:59,207 >> Saving model checkpoint to /mnt/cluster_storage/viggo/outputs/checkpoint-155
-        
-        Training finished iteration 1 at 2025-04-11 14:58:02. Total running time: 10min 24s
-        ╭─────────────────────────────────────────╮
-        │ Training result                         │
-        ├─────────────────────────────────────────┤
-        │ checkpoint_dir_name   checkpoint_000000 │
-        │ time_this_iter_s              521.83827 │
-        │ time_total_s                  521.83827 │
-        │ training_iteration                    1 │
-        │ epoch                             4.704 │
-        │ grad_norm                       0.14288 │
-        │ learning_rate                        0. │
-        │ loss                             0.0065 │
-        │ step                                150 │
-        ╰─────────────────────────────────────────╯
-        Training saved a checkpoint for iteration 1 at: (local)/mnt/cluster_storage/viggo/saves/lora_sft_ray/TorchTrainer_95d16_00000_0_2025-04-11_14-47-37/checkpoint_000000
-    
-    
-    
-
 
 
 ```python
@@ -643,7 +571,6 @@ echo $ANYSCALE_ARTIFACT_STORAGE
 # Save fine-tuning artifacts to cloud storage.
 STORAGE_PATH="$ANYSCALE_ARTIFACT_STORAGE/viggo"
 LOCAL_OUTPUTS_PATH="/mnt/cluster_storage/viggo/outputs"
-LOCAL_SAVES_PATH="/mnt/cluster_storage/viggo/saves"
 
 # AWS S3 operations.
 if [[ "$STORAGE_PATH" == s3://* ]]; then
@@ -651,7 +578,6 @@ if [[ "$STORAGE_PATH" == s3://* ]]; then
         aws s3 rm "$STORAGE_PATH" --recursive --quiet
     fi
     aws s3 cp "$LOCAL_OUTPUTS_PATH" "$STORAGE_PATH/outputs" --recursive --quiet
-    aws s3 cp "$LOCAL_SAVES_PATH" "$STORAGE_PATH/saves" --recursive --quiet
 
 # Google Cloud Storage operations.
 elif [[ "$STORAGE_PATH" == gs://* ]]; then
@@ -659,7 +585,6 @@ elif [[ "$STORAGE_PATH" == gs://* ]]; then
         gsutil -m -q rm -r "$STORAGE_PATH"
     fi
     gsutil -m -q cp -r "$LOCAL_OUTPUTS_PATH" "$STORAGE_PATH/outputs"
-    gsutil -m -q cp -r "$LOCAL_SAVES_PATH" "$STORAGE_PATH/saves"
 
 else
     echo "Unsupported storage protocol: $STORAGE_PATH"
@@ -670,64 +595,25 @@ fi
 
 ```bash
 %%bash
-ls /mnt/cluster_storage/viggo/saves/lora_sft_ray
+ls /mnt/cluster_storage/viggo/outputs/
 ```
-
-    TorchTrainer_95d16_00000_0_2025-04-11_14-47-37
-    TorchTrainer_f9e4e_00000_0_2025-04-11_12-41-34
-    basic-variant-state-2025-04-11_12-41-34.json
-    basic-variant-state-2025-04-11_14-47-37.json
-    experiment_state-2025-04-11_12-41-34.json
-    experiment_state-2025-04-11_14-47-37.json
-    trainer.pkl
-    tuner.pkl
-
 
 
 ```python
 # LoRA paths.
-save_dir = Path("/mnt/cluster_storage/viggo/saves/lora_sft_ray")
-trainer_dirs = [d for d in save_dir.iterdir() if d.name.startswith("TorchTrainer_") and d.is_dir()]
-latest_trainer = max(trainer_dirs, key=lambda d: d.stat().st_mtime, default=None)
-lora_path = f"{latest_trainer}/checkpoint_000000/checkpoint"
-cloud_lora_path = os.path.join(os.getenv("ANYSCALE_ARTIFACT_STORAGE"), lora_path.split("/mnt/cluster_storage/")[-1])
-dynamic_lora_path, lora_id = cloud_lora_path.rsplit("/", 1)
-print (lora_path)
-print (cloud_lora_path)
-print (dynamic_lora_path)
-print (lora_id)
+lora_path = "/mnt/cluster_storage/viggo/outputs"
+cloud_lora_path = os.path.join(os.getenv("ANYSCALE_ARTIFACT_STORAGE"), "viggo/outputs")
+dynamic_lora_path = cloud_lora_path
+print(lora_path)
+print(cloud_lora_path)
+print(dynamic_lora_path)
 ```
-
-    /mnt/cluster_storage/viggo/saves/lora_sft_ray/TorchTrainer_95d16_00000_0_2025-04-11_14-47-37/checkpoint_000000/checkpoint
-    s3://anyscale-test-data-cld-i2w99rzq8b6lbjkke9y94vi5/org_7c1Kalm9WcX2bNIjW53GUT/cld_kvedZWag2qA8i5BjxUevf5i7/artifact_storage/viggo/saves/lora_sft_ray/TorchTrainer_95d16_00000_0_2025-04-11_14-47-37/checkpoint_000000/checkpoint
-    s3://anyscale-test-data-cld-i2w99rzq8b6lbjkke9y94vi5/org_7c1Kalm9WcX2bNIjW53GUT/cld_kvedZWag2qA8i5BjxUevf5i7/artifact_storage/viggo/saves/lora_sft_ray/TorchTrainer_95d16_00000_0_2025-04-11_14-47-37/checkpoint_000000
-    checkpoint
-
 
 
 ```bash
-%%bash -s "$lora_path"
-ls $1
+%%bash
+ls /mnt/cluster_storage/viggo/outputs/
 ```
-
-    README.md
-    adapter_config.json
-    adapter_model.safetensors
-    added_tokens.json
-    merges.txt
-    optimizer.pt
-    rng_state_0.pth
-    rng_state_1.pth
-    rng_state_2.pth
-    rng_state_3.pth
-    scheduler.pt
-    special_tokens_map.json
-    tokenizer.json
-    tokenizer_config.json
-    trainer_state.json
-    training_args.bin
-    vocab.json
-
 
 ## Batch inference 
 [`Overview`](https://docs.ray.io/en/latest/data/working-with-llms.html) |  [`API reference`](https://docs.ray.io/en/latest/data/api/llm.html)
@@ -959,9 +845,10 @@ from ray import serve
 from ray.serve.llm import LLMConfig, build_openai_app
 ```
 
-Define an [LLM config](https://docs.ray.io/en/latest/serve/api/doc/ray.serve.llm.LLMConfig.html#ray.serve.llm.LLMConfig) where you can define where the model comes from, it's [autoscaling behavior](https://docs.ray.io/en/latest/serve/autoscaling-guide.html#serve-autoscaling), what hardware to use and [engine arguments](https://docs.vllm.ai/en/stable/serving/engine_args.html).
+Define an [LLM config](https://docs.ray.io/en/latest/serve/api/doc/ray.serve.llm.LLMConfig.html#ray.serve.llm.LLMConfig) where you can define where the model comes from, its [autoscaling behavior](https://docs.ray.io/en/latest/serve/autoscaling-guide.html#serve-autoscaling), what hardware to use and [engine arguments](https://docs.vllm.ai/en/stable/serving/engine_args.html).
 
 **Note**: If you're using AWS S3, replace `AWS_REGION` in the `runtime_env`'s `env_vars` below with the cloud storage and respective region you saved your model artifacts to. Do the same if using other cloud storage options as well.
+
 
 ```python
 # Define config.
@@ -1012,7 +899,7 @@ serve.run(app)
 # Initialize client.
 client = OpenAI(base_url="http://localhost:8000/v1", api_key="fake-key")
 response = client.chat.completions.create(
-    model=f"{model_id}:{lora_id}",
+    model=f"{model_id}:checkpoint-125"  # Use checkpoint subdirectory as LoRA ID,
     messages=[
         {"role": "system", "content": "Given a target sentence construct the underlying meaning representation of the input sentence as a single function with attributes and attribute values. This function should describe the target string accurately and the function must be one of the following ['inform', 'request', 'give_opinion', 'confirm', 'verify_attribute', 'suggest', 'request_explanation', 'recommend', 'request_attribute']. The attributes must be one of the following: ['name', 'exp_release_date', 'release_year', 'developer', 'esrb', 'rating', 'genres', 'player_perspective', 'has_multiplayer', 'platforms', 'available_on_steam', 'has_linux_release', 'has_mac_release', 'specifier']"},
         {"role": "user", "content": "Blizzard North is mostly an okay developer, but they released Diablo II for the Mac and so that pushes the game from okay to good in my view."},
@@ -1023,15 +910,6 @@ for chunk in response:
     if chunk.choices[0].delta.content is not None:
         print(chunk.choices[0].delta.content, end="", flush=True)
 ```
-
-    
-    
-    Avg prompt throughput: 20.3 tokens/s, Avg generation throughput: 0.1 tokens/s, Running: 1 reqs, Swapped: 0 reqs, Pending: 0 reqs, GPU KV cache usage: 0.3%, CPU KV cache usage: 0.0%.
-    
-    _opinion(name[Diablo II], developer[Blizzard North], rating[good], has_mac_release[yes])
-    
-    
-
 
 And of course, you can observe the running service, the deployments, and metrics like QPS, latency, etc., through the [Ray Dashboard](https://docs.ray.io/en/latest/ray-observability/getting-started.html)'s [Serve view](https://docs.ray.io/en/latest/ray-observability/getting-started.html#dash-serve-view):
 
