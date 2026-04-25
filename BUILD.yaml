@@ -99,7 +99,7 @@
 - name: serve-stable-diffusion-v2
   dir: templates/serve-stable-diffusion
   cluster_env:
-    image_uri: anyscale/ray:2.44.1-py312-cu128
+    image_uri: anyscale/ray:2.54.1-py312-cu128
   compute_config:
     GCP: configs/basic-serverless-config/gce.yaml
     AWS: configs/basic-serverless-config/aws.yaml
