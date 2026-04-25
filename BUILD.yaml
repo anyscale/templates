@@ -30,7 +30,7 @@
 - name: service-intro
   dir: templates/intro-services
   cluster_env:
-    image_uri: anyscale/ray:2.50.1-py311
+    image_uri: anyscale/ray:2.54.1-py311
   compute_config:
     GCP: configs/basic-serverless-config/gce.yaml
     AWS: configs/basic-serverless-config/aws.yaml
