@@ -1,0 +1,76 @@
+# Compute Config Schema (Legacy API format)
+#
+# These YAML files live under configs/<template-name>/{aws,gce}.yaml
+# They use the LEGACY compute config format (not the workspace_v2 CLI format).
+#
+# IMPORTANT: Omit fields that match their default value. Only include what you
+# actually need to override. This keeps configs minimal and avoids confusion
+# about which values are intentional vs just restating defaults.
+
+# --- Full schema (with defaults noted) ---
+
+head_node_type:                        # REQUIRED
+  name: head                           # REQUIRED. Node type name.
+  instance_type: m5.2xlarge            # Optional. Cloud instance type.
+  resources:                           # Optional. Only include to override defaults.
+    cpu: 0                             #   Default: auto-detected. Set 0 to exclude from scheduling.
+    gpu: 0                             #   Default: auto-detected. Set 0 to exclude from scheduling.
+    # memory: 0                        #   Default: auto-detected.
+    # object_store_memory: 0           #   Default: auto-detected.
+    # custom_resources: {}             #   Default: empty.
+  # required_resources: {}             # Optional. Default: none. Omit if not needed.
+  # labels: {}                         # Optional. Default: empty. Omit if not needed.
+  # required_labels: {}                # Optional. Default: empty. Omit if not needed.
+  # flags: {}                          # Optional. Default: empty. Omit if not needed.
+  # aws_advanced_configurations_json: {}  # Omit unless needed.
+  # gcp_advanced_configurations_json: {}  # Omit unless needed.
+
+worker_node_types:                     # Default: []. Omit or use [] if auto_select_worker_config is true.
+  - name: gpu-worker                   # REQUIRED per worker type.
+    instance_type: g4dn.12xlarge       # Optional. Cloud instance type.
+    min_workers: 2                     # Optional. Default: 0. Omit if 0.
+    max_workers: 2                     # Optional. Default: 0. Omit if 0.
+    # use_spot: false                  # Default: false. Omit unless true.
+    # fallback_to_ondemand: false      # Default: false. Omit unless true.
+    # resources: {}                    # Optional. Same as head_node_type.resources. Omit if auto-detected.
+    # required_resources: {}           # Optional. Omit if not needed.
+    # labels: {}                       # Optional. Omit if not needed.
+    # required_labels: {}              # Optional. Omit if not needed.
+    # flags: {}                        # Optional. Omit if not needed.
+
+auto_select_worker_config: true        # Default: false. Omit if false.
+                                       # When true, worker_node_types can be empty [].
+
+# flags: {}                            # Optional. Default: empty. Omit if not needed.
+#   allow-cross-zone-autoscaling: true # Common flag for multi-AZ scheduling.
+
+# --- Common patterns ---
+#
+# CPU-only single node (auto workers):
+#   head_node_type:
+#     name: head
+#     instance_type: m5.2xlarge        # AWS
+#     # instance_type: n2-standard-8   # GCP
+#   worker_node_types: []
+#   auto_select_worker_config: true
+#
+# GPU workers (explicit):
+#   head_node_type:
+#     name: head
+#     instance_type: m5.2xlarge
+#     resources: { cpu: 0, gpu: 0 }    # Head excluded from scheduling
+#   worker_node_types:
+#     - name: gpu-worker
+#       instance_type: g4dn.12xlarge
+#       min_workers: 2
+#       max_workers: 2
+#
+# AWS instance types commonly used:
+#   CPU: m5.2xlarge, m5.4xlarge
+#   GPU: g5.xlarge (1x A10G), g5.2xlarge (1x A10G), g6.2xlarge (1x L4),
+#        p4d.24xlarge (8x A100)
+#
+# GCP instance types commonly used:
+#   CPU: n2-standard-8, n2-standard-16
+#   GPU: g2-standard-8-nvidia-l4-1, g2-standard-12-nvidia-l4-1 (1x L4),
+#        a2-highgpu-1g-nvidia-a100-40gb-1 (1x A100)
