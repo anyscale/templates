@@ -4,5 +4,9 @@ head_node_type:
   resources:
     cpu: 0
     gpu: 0
-worker_node_types: []
-auto_select_worker_config: true
+worker_node_types:
+  - name: l4-worker
+    instance_type: g2-standard-16-nvidia-l4-1
+    min_workers: 4
+    max_workers: 4
+auto_select_worker_config: false

@@ -130,7 +130,7 @@
   test:
     tests_path: tests/vla-fine-tuning/
     command: bash tests.sh
-    timeout_in_sec: 900
+    timeout_in_sec: 1800
 
 # owner: @akshay
 - name: xgboost-training-and-serving
