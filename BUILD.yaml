@@ -485,6 +485,19 @@
     command: bash tests.sh
     timeout_in_sec: 1800
 
+# owner: @tohtana
+- name: tensor_parallel_autotp
+  dir: templates/tensor_parallel_autotp
+  cluster_env:
+    image_uri: anyscale/ray:2.54.0-py311-cu128
+  compute_config:
+    AWS: configs/tensor-parallel-autotp/aws.yaml
+    GCP: configs/tensor-parallel-autotp/gce.yaml
+  test:
+    tests_path: tests/tensor_parallel_autotp/
+    command: bash tests.sh
+    timeout_in_sec: 1800
+
 # owner: @ian-jordan, @aydin
 - name: ray_train_workloads
   dir: templates/ray_train_workloads
