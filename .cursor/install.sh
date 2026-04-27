@@ -31,28 +31,33 @@ if ! command -v docker &>/dev/null; then
   sudo apt-get install -y docker.io fuse-overlayfs iptables
 fi
 
-# --- Auth: gh ---
+# --- Auth: gh (hard requirement — used to clone debug-agent skills) ---
+: "${ANYSCALE_DEBUG_AGENT_GH_TOKEN:?secret ANYSCALE_DEBUG_AGENT_GH_TOKEN is empty/unset; add it in Cursor → Cloud Agents → My Secrets}"
 echo "$ANYSCALE_DEBUG_AGENT_GH_TOKEN" | gh auth login --with-token
 
 # --- Sideload private skills from anyscale-debug-agent ---
 rm -rf /tmp/debug-agent
-gh repo clone anyscale/anyscale-debug-agent /tmp/debug-agent
+GH_TOKEN="$ANYSCALE_DEBUG_AGENT_GH_TOKEN" gh repo clone anyscale/anyscale-debug-agent /tmp/debug-agent
 mkdir -p ~/.claude/skills
 cp -r /tmp/debug-agent/skills/* ~/.claude/skills/
 echo "User-scope skills:"
 ls ~/.claude/skills/
 
-# --- Auth: gcloud (for docker push to GCP artifact registry) ---
+# --- Auth: gcloud (for docker push to GCP artifact registry; soft — only needed for custom images) ---
 if [ -n "${GCP_TEMPLATE_REGISTRY_SA_KEY:-}" ]; then
   echo "$GCP_TEMPLATE_REGISTRY_SA_KEY" > /tmp/gcp-sa.json
   gcloud auth activate-service-account --key-file=/tmp/gcp-sa.json
   gcloud auth configure-docker us-docker.pkg.dev --quiet
+else
+  echo "WARN: GCP_TEMPLATE_REGISTRY_SA_KEY not set — custom-image rebuild + push to GCP will fail."
 fi
 
-# --- Auth: anyscale CLI ---
+# --- Auth: anyscale CLI (soft — only needed for templates that invoke the anyscale CLI) ---
 if [ -n "${ANYSCALE_CLI_TOKEN:-}" ]; then
   mkdir -p ~/.anyscale
   cat > ~/.anyscale/credentials.json <<EOF
 {"cli_token": "$ANYSCALE_CLI_TOKEN"}
 EOF
+else
+  echo "WARN: ANYSCALE_CLI_TOKEN not set — anyscale CLI commands will fail."
 fi
