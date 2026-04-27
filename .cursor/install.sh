@@ -17,7 +17,19 @@ if ! command -v gh &>/dev/null; then
   sudo apt-get install -y gh
 fi
 
-pip install -q --upgrade anyscale
+# --- Python tooling (versions pinned to match this repo's CI) ---
+python3 -m pip install --user --no-warn-script-location \
+  pre-commit==3.8.0 jupyter==1.1.1 anyscale==0.26.87
+export PATH="$HOME/.local/bin:$PATH"
+grep -qxF 'export PATH="$HOME/.local/bin:$PATH"' ~/.bashrc 2>/dev/null \
+  || echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
+
+# --- rayapp (version pinned via repo's download_rayapp.sh) ---
+if [ -f download_rayapp.sh ] && ! command -v rayapp &>/dev/null; then
+  bash download_rayapp.sh
+  mkdir -p "$HOME/.local/bin"
+  mv rayapp "$HOME/.local/bin/rayapp"
+fi
 
 if ! command -v gcloud &>/dev/null; then
   curl -sSL https://sdk.cloud.google.com > /tmp/gcloud-install.sh

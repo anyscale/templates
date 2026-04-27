@@ -1,4 +1,7 @@
 {
+  "build": {
+    "dockerfile": ".cursor/Dockerfile"
+  },
   "install": "bash .cursor/install.sh",
   "start": "sudo service docker start"
 }
