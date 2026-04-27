@@ -163,11 +163,15 @@
   dir: templates/object-detection-video-processing
   cluster_env:
     byod:
-      docker_image: us-docker.pkg.dev/anyscale-workspace-templates/workspace-templates/object-detection-ray:2.44.1
-      ray_version: 2.44.1
+      docker_image: us-docker.pkg.dev/anyscale-workspace-templates/workspace-templates/object-detection-ray:2.54.1
+      ray_version: 2.54.1
   compute_config:
     AWS: configs/object-detection-video-processing/aws.yaml
     GCP: configs/object-detection-video-processing/gce.yaml
+  test:
+    tests_path: tests/object-detection-video-processing/
+    command: bash tests.sh
+    timeout_in_sec: 3600
 
 # owner: @kunling
 - name: langchain-agent-ray-serve
