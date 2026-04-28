@@ -45,7 +45,13 @@ jobs:
           exit 1
         fi
         VALID=$(awk '/^- name:/ {print $3}' BUILD.yaml)
-        for t in $TEMPLATES; do
+        # 'all' expands to every template in BUILD.yaml (still fans out as N parallel matrix jobs)
+        if [[ " $TEMPLATES " == *" all "* ]]; then
+          EXPANDED=$(echo "$VALID" | tr '\n' ' ' | xargs)
+        else
+          EXPANDED="$TEMPLATES"
+        fi
+        for t in $EXPANDED; do
           if [[ ! "$t" =~ ^[a-zA-Z0-9_-]+$ ]]; then
             echo "::error::Invalid template name: $t"
             exit 1
@@ -55,7 +61,7 @@ jobs:
             exit 1
           fi
         done
-        TEMPLATES_JSON=$(echo "$TEMPLATES" | jq -Rc 'split(" ")')
+        TEMPLATES_JSON=$(echo "$EXPANDED" | jq -Rc 'split(" ")')
         echo "templates=$TEMPLATES" >> "$GITHUB_OUTPUT"
         echo "templates_json=$TEMPLATES_JSON" >> "$GITHUB_OUTPUT"
 
