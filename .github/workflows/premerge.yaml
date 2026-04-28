@@ -37,6 +37,9 @@ jobs:
       with:
         go-version: 1.25
 
+    - name: Install nbconvert
+      run: pip install nbconvert==7.16.4
+
     - name: Build
       run: bash -ec "(cd ci; go install ./...)"
 
