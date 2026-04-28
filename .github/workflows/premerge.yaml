@@ -20,7 +20,7 @@ jobs:
 
     # Install pre-commit dependencies
     - name: Install pre-commit
-      run: pip install pre-commit==3.8.0 nbconvert==7.16.4
+      run: pip install pre-commit==3.8.0
 
     # Run pre-commit hooks with verbose logging
     - name: Run pre-commit
