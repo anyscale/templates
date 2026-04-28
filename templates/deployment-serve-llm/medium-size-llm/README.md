@@ -9,7 +9,7 @@
 
 A medium LLM typically runs on a single node with 4-8 GPUs. It offers a balance between performance and efficiency. These models provide stronger accuracy and reasoning than small models while remaining more affordable and resource-friendly than very large ones. This makes them a solid choice for production workloads that need good quality at lower cost. They're also ideal for scaling applications where large models would be too slow or expensive.
 
-This tutorial deploys a medium-sized LLM using Ray Serve LLM. For smaller models, see [Deploy a small-sized LLM](https://docs.ray.io/en/latest/serve/tutorials/deployment-serve-llm/content/small-size-llm/content/README.html), and for larger models, see [Deploy a large-sized LLM](https://docs.ray.io/en/latest/serve/tutorials/deployment-serve-llm/content/large-size-llm/README.html).
+This tutorial deploys a medium-sized LLM using Ray Serve LLM. For smaller models, see [Deploy a small-sized LLM](../small-size-llm/README.md), and for larger models, see [Deploy a large-sized LLM](../large-size-llm/README.md).
 
 ---
 
