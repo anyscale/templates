@@ -7,3 +7,12 @@ For cloud agents, companion skills `/fix`, `/run`, and `/inspect` are loaded at 
 **CI invariant** — `.github/workflows/test-template.yaml` only runs when a PR comment matches `/test-template <template-id>`. After any push to a PR, comment to trigger or re-trigger validation.
 
 **Known automation** — the `template-updater` Cursor automation owns Ray-version bumps end-to-end (open PR → CI → fix-loop) on every major/minor Ray release. Its PRs use label `ray-update` and branches `update/*/ray-*`.
+
+## For Cursor Cloud Agent setup
+
+Use `.cursor/Dockerfile` and `.cursor/install.sh` as the canonical environment setup. Run `bash .cursor/install.sh` from the repo root verbatim — don't infer or replicate its steps, the script is the source of truth.
+
+Required Cursor secrets (already provisioned at team scope):
+- `ANYSCALE_DEBUG_AGENT_GH_TOKEN`
+- `ANYSCALE_CLI_TOKEN`
+- `GCP_TEMPLATE_REGISTRY_SA_KEY`
