@@ -1,6 +1,7 @@
 {
   "build": {
     "dockerfile": "Dockerfile"
+    // "context": ".."  // Re-enable if Dockerfile uses COPY/ADD on repo-root files; defaults to .cursor/
   },
   "install": "bash .cursor/install.sh",
   "start": "sudo service docker start"
