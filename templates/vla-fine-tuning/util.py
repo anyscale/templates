@@ -80,9 +80,62 @@ def renamed_image_keys(source, camera_rename):
 # ============================================================================
 # Model Loading
 # ============================================================================
+#
+# PI0.5 is published at HuggingFace `lerobot/pi05_base`. Loading from there
+# normally requires HF_TOKEN because PI0.5 references the gated PaliGemma
+# backbone — but in practice `PI05Policy.from_pretrained` only fetches
+# `model.safetensors` (PaliGemma weights are merged in), so a public S3
+# mirror of the same files works with no token at all.
+# ============================================================================
+
+PI05_BASE_DEFAULT = "s3://anyscale-public-robotics-datasets/lerobot/lerobot/pi05_base/"
+
+_pi05_local_cache: dict[str, str] = {}
 
 
-def load_pi05_policy(pretrained_path="lerobot/pi05_base"):
+def _mirror_s3_dir(s3_uri: str, local_dir: str) -> str:
+    """Anonymously mirror a public S3 'directory' to local disk. Idempotent."""
+    from urllib.parse import urlparse
+
+    import boto3
+    from botocore import UNSIGNED
+    from botocore.config import Config
+
+    parsed = urlparse(s3_uri)
+    bucket, prefix = parsed.netloc, parsed.path.lstrip("/")
+    s3 = boto3.client("s3", config=Config(signature_version=UNSIGNED))
+
+    os.makedirs(local_dir, exist_ok=True)
+    paginator = s3.get_paginator("list_objects_v2")
+    for page in paginator.paginate(Bucket=bucket, Prefix=prefix):
+        for obj in page.get("Contents", []):
+            relpath = obj["Key"][len(prefix):].lstrip("/")
+            if not relpath or any(p.startswith(".") for p in relpath.split("/")):
+                continue  # skip dotfiles / hidden dirs (e.g. .cache/huggingface)
+            dest = os.path.join(local_dir, relpath)
+            os.makedirs(os.path.dirname(dest) or ".", exist_ok=True)
+            if os.path.exists(dest) and os.path.getsize(dest) == obj["Size"]:
+                continue
+            s3.download_file(bucket, obj["Key"], dest)
+    return local_dir
+
+
+def resolve_pi05_path(path: str = PI05_BASE_DEFAULT) -> str:
+    """Resolve an `s3://` URI to a local mirror; pass through anything else.
+
+    Memoized per-process so workers that call this for both the policy
+    weights and the preprocessor share one download.
+    """
+    if not path.startswith("s3://"):
+        return path
+    if path in _pi05_local_cache:
+        return _pi05_local_cache[path]
+    local_dir = _mirror_s3_dir(path, "/tmp/pi05_base")
+    _pi05_local_cache[path] = local_dir
+    return local_dir
+
+
+def load_pi05_policy(pretrained_path: str = PI05_BASE_DEFAULT):
     """Load PI0.5, apply the attention mask patch, and freeze the backbone.
 
     Returns the policy with only the action/time projection heads unfrozen
@@ -97,8 +150,9 @@ def load_pi05_policy(pretrained_path="lerobot/pi05_base"):
 
     apply_pi05_attention_mask_patch()
 
+    local_path = resolve_pi05_path(pretrained_path)
     policy = PI05Policy.from_pretrained(
-        pretrained_path, device="cuda", dtype=torch.float16, train_expert_only=True,
+        local_path, device="cuda", dtype=torch.float16, train_expert_only=True,
     )
 
     # Freeze everything, then unfreeze the small trainable heads.

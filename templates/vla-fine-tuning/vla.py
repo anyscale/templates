@@ -56,12 +56,10 @@ ARCHITECTURE OVERVIEW
                          +--------------------+---------------------
 
 Usage:
-    export HF_TOKEN=hf_...
-    uv run python vla.py
+    python vla.py
 """
 
 import logging
-import os
 
 import numpy as np
 import util
@@ -89,10 +87,6 @@ CAMERA_RENAME = {
     "observation.images.cam_right_wrist": "observation.images.right_wrist_0_rgb",
 }
 
-HF_TOKEN = os.environ.get("HF_TOKEN")
-if not HF_TOKEN:
-    raise EnvironmentError("Set HF_TOKEN before running:  export HF_TOKEN=hf_...")
-
 
 # ============================================================================
 # Connect to Ray
@@ -100,14 +94,7 @@ if not HF_TOKEN:
 
 import ray
 
-ray.init(
-    runtime_env={
-        "py_executable": "uv run",
-        "working_dir": ".",
-        "env_vars": {"HF_TOKEN": HF_TOKEN},
-    },
-    ignore_reinit_error=True,
-)
+ray.init(ignore_reinit_error=True)
 
 
 # ============================================================================
@@ -240,7 +227,7 @@ def train_loop_per_worker(config: dict):
 
     from lerobot.policies.factory import make_pre_post_processors
     preprocessor, _ = make_pre_post_processors(
-        policy.module.config, pretrained_path="lerobot/pi05_base", dataset_stats=config["stats"],
+        policy.module.config, pretrained_path=util.resolve_pi05_path(), dataset_stats=config["stats"],
     )
 
     # -- Hyperparameters and LR schedule ----------------------------------------

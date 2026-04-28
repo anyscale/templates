@@ -59,7 +59,7 @@ on a laptop to 32 GPUs across a cluster, with zero changes to your code.
 | File | Description |
 |------|-------------|
 | `README.ipynb` (this notebook) | Interactive walkthrough — open in Jupyter and run cells top-to-bottom |
-| `vla.py` | Job script — same pipeline, submittable with `uv run python vla.py` |
+| `vla.py` | Job script — same pipeline, submittable with `python vla.py` |
 | `util.py` | Training utilities — model loading, checkpointing, collation, training step helpers |
 | `lerobot_datasource.py` | Custom Ray Data datasource for LeRobot v3 datasets |
 
@@ -67,26 +67,10 @@ on a laptop to 32 GPUs across a cluster, with zero changes to your code.
 
 ### Dependencies
 
-This template uses [uv](https://docs.astral.sh/uv/) for dependency management.
 Open a terminal and run:
 
 ```bash
-uv sync
-```
-
-When prompted for a Jupyter kernel, select the Python environment named **vla** (`.venv/bin/python`).
-
-### HuggingFace Token
-
-PI0.5 depends on [google/paligemma-3b-pt-224](https://huggingface.co/google/paligemma-3b-pt-224) as a vision backbone.
-Google requires you to **accept the model license** before the weights can be downloaded.
-
-1. Navigate to the [model page](https://huggingface.co/google/paligemma-3b-pt-224) and accept the license.
-2. Generate an access token at [huggingface.co/settings/tokens](https://huggingface.co/settings/tokens).
-3. Export it before running:
-
-```bash
-export HF_TOKEN=hf_...
+uv pip install --system -r requirements.txt
 ```
 
 ## GPU Requirements
@@ -119,7 +103,6 @@ or decrease the number of CPU data workers so the producer and consumer stay in 
 
 ```python
 import logging
-import os
 
 import numpy as np
 import util
@@ -141,33 +124,15 @@ CAMERA_RENAME = {
     "observation.images.cam_left_wrist":  "observation.images.left_wrist_0_rgb",
     "observation.images.cam_right_wrist": "observation.images.right_wrist_0_rgb",
 }
-
-HF_TOKEN = os.environ.get("HF_TOKEN")
-if not HF_TOKEN:
-    raise EnvironmentError("Set HF_TOKEN before running:  export HF_TOKEN=hf_...")
 ```
 
 ## 2. Connect to Ray
 
 
 ```python
-# The Anyscale base image registers a RAY_RUNTIME_ENV_HOOK that imports a
-# package only available in the system Python. With `py_executable="uv run"`,
-# the driver runs from the project venv (no `uv run` ancestor process), so
-# Ray falls through to the hook and crashes on the missing import. Disable it.
-import os
-os.environ.pop("RAY_RUNTIME_ENV_HOOK", None)
-
 import ray
 
-ray.init(
-    runtime_env={
-        "py_executable": "uv run",
-        "working_dir": ".",
-        "env_vars": {"HF_TOKEN": HF_TOKEN},
-    },
-    ignore_reinit_error=True,
-)
+ray.init(ignore_reinit_error=True)
 ```
 
 ## 3. Ray Data — Build the preprocessing pipeline
@@ -298,7 +263,7 @@ def train_loop_per_worker(config: dict):
 
     from lerobot.policies.factory import make_pre_post_processors
     preprocessor, _ = make_pre_post_processors(
-        policy.module.config, pretrained_path="lerobot/pi05_base", dataset_stats=config["stats"],
+        policy.module.config, pretrained_path=util.resolve_pi05_path(), dataset_stats=config["stats"],
     )
 
     # -- Hyperparameters and LR schedule ----------------------------------------
@@ -391,6 +356,8 @@ code, data pipeline, and checkpointing all adapt automatically.
 
 
 ```python
+import os
+
 import ray.train
 import ray.train.torch
 
@@ -451,7 +418,7 @@ This notebook demonstrated distributed fine-tuning of the **PI0.5 VLA model** on
 
 **What was covered:**
 
-1. **Configuration** — Dataset path, camera column rename map, and HuggingFace token.
+1. **Configuration** — Dataset path and camera column rename map.
 
 2. **Ray Data preprocessing** — A lazy, streaming pipeline that reads from S3,
    decodes mp4 video, renames camera columns, and transposes images from HWC to CHW —
@@ -470,7 +437,5 @@ This notebook has a companion script, **`vla.py`**, that mirrors the same pipeli
 and can be submitted as a standalone job:
 
 ```bash
-export HF_TOKEN=hf_...
-uv run python vla.py
+python vla.py
 ```
-
