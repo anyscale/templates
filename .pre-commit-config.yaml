@@ -13,9 +13,9 @@ repos:
         exclude: templates/.+/README.md
   - repo: local
     hooks:
-      - id: generate-readme
-        name: Auto generate README.md from README.ipynb
-        entry: python3 ci/auto-generate-readme.py
+      - id: check-readme
+        name: README.md must match nbconvert output of README.ipynb
+        entry: bash ci/check-readme.sh
         language: system
         pass_filenames: true
-        files: ^templates/
+        files: ^templates/.+/(README\.ipynb|README\.md)$
