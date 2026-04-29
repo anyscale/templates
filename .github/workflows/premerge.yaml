@@ -18,9 +18,9 @@ jobs:
       with:
         python-version: '3.9'
 
-    # Install pre-commit dependencies
+    # Install pre-commit + nbconvert (needed by the check-readme local hook)
     - name: Install pre-commit
-      run: pip install pre-commit==3.8.0
+      run: pip install pre-commit==3.8.0 nbconvert==7.17.1
 
     # Run pre-commit hooks with verbose logging
     - name: Run pre-commit
@@ -35,7 +35,7 @@ jobs:
         python-version: '3.9'
 
     - name: Install nbconvert
-      run: pip install nbconvert==7.16.4
+      run: pip install nbconvert==7.17.1
 
     - name: Build templates
       run: |
