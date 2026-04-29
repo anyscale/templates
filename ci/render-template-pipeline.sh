@@ -29,15 +29,29 @@ for t in $TEMPLATES; do
         sudo apt-get update && sudo apt-get install -y rsync
         sudo pip install anyscale==0.26.87
         LOG=/tmp/rayapp-\$\$TEMPLATE_NAME.log
+        : > "\$\$LOG"
+        # Background watcher: post the workspace URL annotation as soon as
+        # anyscale CLI prints the "View and update dependencies here:" line.
+        (
+          while :; do
+            URL=\$\$(grep 'View and update dependencies here:' "\$\$LOG" 2>/dev/null \\
+              | grep -oE 'https://console\.anyscale[^ ]+/workspaces/expwrk_[a-z0-9]+' \\
+              | head -1)
+            if [ -n "\$\$URL" ]; then
+              printf '**%s** workspace: %s\n' "\$\$TEMPLATE_NAME" "\$\$URL" \\
+                | buildkite-agent annotate --style info --context "ws-\$\$TEMPLATE_NAME"
+              break
+            fi
+            sleep 2
+          done
+        ) &
+        WATCHER_PID=\$\$!
         set +e
         ./rayapp test \$\$TEMPLATE_NAME 2>&1 | tee "\$\$LOG"
         EXIT=\$\${PIPESTATUS[0]}
         set -e
-        URL=\$\$(grep -oE 'https://console\.anyscale[^ ]+/workspaces/expwrk_[a-z0-9]+' "\$\$LOG" | head -1 | sed 's/?.*//')
-        if [ -n "\$\$URL" ]; then
-          printf '**%s** workspace: %s\n' "\$\$TEMPLATE_NAME" "\$\$URL" | \\
-            buildkite-agent annotate --style info --context "ws-\$\$TEMPLATE_NAME"
-        fi
+        kill "\$\$WATCHER_PID" 2>/dev/null || true
+        wait "\$\$WATCHER_PID" 2>/dev/null || true
         exit \$\$EXIT
     timeout_in_minutes: 75
     agents:
