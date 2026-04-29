@@ -18,9 +18,10 @@ jobs:
       with:
         python-version: '3.9'
 
-    # Install pre-commit dependencies
+    # Install pre-commit dependencies (nbconvert provides the jupyter CLI
+    # that the existing generate-readme local hook needs)
     - name: Install pre-commit
-      run: pip install pre-commit==3.8.0
+      run: pip install pre-commit==3.8.0 nbconvert==7.17.1
 
     # Run pre-commit hooks with verbose logging
     - name: Run pre-commit
