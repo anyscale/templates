@@ -13,21 +13,24 @@ repos:
         exclude: templates/.+/README.md
   - repo: local
     hooks:
-      - id: check-readme
-        name: README.md must match nbconvert output of README.ipynb
-        entry: bash ci/check-readme.sh
-        language: system
-        pass_filenames: true
-        files: ^templates/.+/(README\.ipynb|README\.md)$
-      - id: check-image-urls
-        name: README.ipynb image refs must use absolute URLs
-        entry: python3 ci/check-image-urls.py
-        language: system
-        pass_filenames: true
-        files: ^templates/.+/README\.ipynb$
+      # Order matters: check the cheap notebook-hygiene rules first so the
+      # slower nbconvert-based check-readme only runs when the .ipynb is
+      # already in good shape.
       - id: check-cleared-outputs
         name: notebook outputs must be cleared before commit
         entry: python3 ci/check-cleared-outputs.py
         language: system
         pass_filenames: true
         files: \.ipynb$
+      - id: check-image-urls
+        name: README.ipynb image refs must use absolute URLs
+        entry: python3 ci/check-image-urls.py
+        language: system
+        pass_filenames: true
+        files: ^templates/.+/README\.ipynb$
+      - id: check-readme
+        name: README.md must match nbconvert output of README.ipynb
+        entry: bash ci/check-readme.sh
+        language: system
+        pass_filenames: true
+        files: ^templates/.+/(README\.ipynb|README\.md)$
