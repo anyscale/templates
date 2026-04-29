@@ -9,7 +9,7 @@ In this example, we demonstrate fine-tuning on [Glaive's function calling datase
 The mentioned dataset consists of about 113,000 examples of synthetically generated function calling data. The dataset composition is given below:
 
 <p align="center">
-  <img src="./assets/distr_glaive_pie.png" alt="Distribution" width=800>
+  <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/fine-tune-llm_v2/end-to-end-examples/fine-tune-function-calling/assets/distr_glaive_pie.png" alt="Distribution" width=800>
 </p>
 
 
@@ -46,7 +46,7 @@ from fc_utils.print_utils import pprint_example
 Our data processing will occur in 2-stages, as shown in the below figure:
 
 <p align="center">
-  <img src="./assets/data_processing.png" alt="Data preprocessing" width=500>
+  <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/fine-tune-llm_v2/end-to-end-examples/fine-tune-function-calling/assets/data_processing.png" alt="Data preprocessing" width=500>
 </p>
 
 
@@ -68,59 +68,6 @@ raw_example = ray_ds.take(1)[0]
 pprint_example(raw_example, dataset_format=DatasetFormat.GLAIVE)
 ```
 
-
-<pre><span style="color: cyan;">Chat: </span>USER: I need to set a reminder for my doctor&#x27;s appointment.
-
-
-ASSISTANT: Sure, I can help with that. Could you please provide me with the date and time of your appointment? &lt;|endoftext|&gt;
-
-
-USER: The appointment is on 2022-09-15 at 10:00 AM.
-
-
-ASSISTANT: &lt;functioncall&gt; {&quot;name&quot;: &quot;create_reminder&quot;, &quot;arguments&quot;: &#x27;{&quot;reminder_text&quot;: &quot;Doctor&#x27;s appointment&quot;, &quot;reminder_date&quot;: &quot;2022-09-15&quot;, &quot;reminder_time&quot;: &quot;10:00&quot;}&#x27;} &lt;|endoftext|&gt;
-
-
-FUNCTION RESPONSE: {&quot;status&quot;: &quot;success&quot;, &quot;message&quot;: &quot;Reminder for &#x27;Doctor&#x27;s appointment&#x27; on 2022-09-15 at 10:00 AM has been created successfully.&quot;}
-
-
-ASSISTANT: Your reminder for the doctor&#x27;s appointment on 2022-09-15 at 10:00 AM has been created successfully. You will be notified at the specified time. &lt;|endoftext|&gt;
-
-
-
-<span style="color: red;">System: </span>SYSTEM: You are a helpful assistant with access to the following functions. Use them if required -
-{
-    &quot;name&quot;: &quot;create_reminder&quot;,
-    &quot;description&quot;: &quot;Create a reminder for a specific date and time&quot;,
-    &quot;parameters&quot;: {
-        &quot;type&quot;: &quot;object&quot;,
-        &quot;properties&quot;: {
-            &quot;reminder_text&quot;: {
-                &quot;type&quot;: &quot;string&quot;,
-                &quot;description&quot;: &quot;The content of the reminder&quot;
-            },
-            &quot;reminder_date&quot;: {
-                &quot;type&quot;: &quot;string&quot;,
-                &quot;format&quot;: &quot;date&quot;,
-                &quot;description&quot;: &quot;The date of the reminder&quot;
-            },
-            &quot;reminder_time&quot;: {
-                &quot;type&quot;: &quot;string&quot;,
-                &quot;format&quot;: &quot;time&quot;,
-                &quot;description&quot;: &quot;The time of the reminder&quot;
-            }
-        },
-        &quot;required&quot;: [
-            &quot;reminder_text&quot;,
-            &quot;reminder_date&quot;,
-            &quot;reminder_time&quot;
-        ]
-    }
-}
-
-</pre>
-
-
 Each sample in the dataset has two entries: system and chat. As mentioned, this dataset is formatted in a specific way (e.g. using USER, \<|endoftext|\> and other tokens). To enable fine-tuning on various open source models we need to convert each row to a more general format like the OpenAI chat format, which is the preferred format for fine-tuning instruction-tuned models on Anyscale ([dataset format guide](https://docs.endpoints.anyscale.com/endpoints/fine-tuning/dataset-prep)). The below code accomplishes the same.
 
 
@@ -135,25 +82,6 @@ openai_ex = openai_fmt_ds.take(1)[0]
 # Inspect one example
 pprint_example(openai_ex, dataset_format=DatasetFormat.OPENAI)
 ```
-
-
-<pre><span style="color: cyan;">Messages: </span>
-	<span style="color: red;">system: </span>You are a helpful assistant.
-	<span style="color: green;">user: </span>I need to set a reminder for my doctor&#x27;s appointment.
-	<span style="color: blue;">assistant: 
-		content: </span>Sure, I can help with that. Could you please provide me with the date and time of your appointment? 
-		<span style="color: blue;">tool_calls: </span>[]
-	<span style="color: green;">user: </span>The appointment is on 2022-09-15 at 10:00 AM.
-	<span style="color: blue;">assistant: 
-		content: </span>
-		<span style="color: blue;">tool_calls: </span>[{&#x27;function&#x27;: {&#x27;arguments&#x27;: &#x27;{&quot;reminder_text&quot;: &quot;Doctors appointment&quot;, &quot;reminder_date&quot;: &quot;2022-09-15&quot;, &quot;reminder_time&quot;: &quot;10:00&quot;}&#x27;, &#x27;name&#x27;: &#x27;create_reminder&#x27;}, &#x27;type&#x27;: &#x27;function&#x27;}]
-	<span style="color: yellow;">tool: </span>{&quot;name&quot;: &quot;create_reminder&quot;, &quot;content&quot;: &quot;{\&quot;status\&quot;: \&quot;success\&quot;, \&quot;message\&quot;: \&quot;Reminder for &#x27;Doctor&#x27;s appointment&#x27; on 2022-09-15 at 10:00 AM has been created successfully.\&quot;}&quot;, &quot;tool_call_id&quot;: &quot;call_1&quot;}
-	<span style="color: blue;">assistant: 
-		content: </span>Your reminder for the doctor&#x27;s appointment on 2022-09-15 at 10:00 AM has been created successfully. You will be notified at the specified time. 
-		<span style="color: blue;">tool_calls: </span>[]
-<span style="color: magenta;">Tools: </span>[{&quot;type&quot;: &quot;function&quot;, &quot;function&quot;: {&quot;name&quot;: &quot;create_reminder&quot;, &quot;description&quot;: &quot;Create a reminder for a specific date and time&quot;, &quot;parameters&quot;: {&quot;type&quot;: &quot;object&quot;, &quot;properties&quot;: {&quot;reminder_text&quot;: {&quot;type&quot;: &quot;string&quot;, &quot;description&quot;: &quot;The content of the reminder&quot;}, &quot;reminder_date&quot;: {&quot;type&quot;: &quot;string&quot;, &quot;format&quot;: &quot;date&quot;, &quot;description&quot;: &quot;The date of the reminder&quot;}, &quot;reminder_time&quot;: {&quot;type&quot;: &quot;string&quot;, &quot;format&quot;: &quot;time&quot;, &quot;description&quot;: &quot;The time of the reminder&quot;}}, &quot;required&quot;: [&quot;reminder_text&quot;, &quot;reminder_date&quot;, &quot;reminder_time&quot;]}}}]
-</pre>
-
 
 If you notice, the tool calls are almost exactly in the OpenAI format, i.e. `assistant` messages can include `tool_calls` and `tool` is also a role just like `user` or `assistant`. The only slight difference is that it is short of the `id` entry provided by the OpenAI API. For training, we choose to leave the model out of ID generation. Internally, each tool call is kept track by its index in the list of tool calls made. This is used later in the tool response (In the above example, there is only one tool call made and the tool response has `tool_call_id` "call_1"). 
 
@@ -173,18 +101,6 @@ anyscale_ex = processed_ds.take(1)[0]
 pprint_example(anyscale_ex, dataset_format=DatasetFormat.ANYSCALE)
 ```
 
-
-<pre><span style="color: cyan;">Messages: </span>
-	<span style="color: red;">system: </span>You are a helpful assistant.[TOOL_LIST] [{&quot;type&quot;: &quot;function&quot;, &quot;function&quot;: {&quot;name&quot;: &quot;create_reminder&quot;, &quot;description&quot;: &quot;Create a reminder for a specific date and time&quot;, &quot;parameters&quot;: {&quot;type&quot;: &quot;object&quot;, &quot;properties&quot;: {&quot;reminder_text&quot;: {&quot;type&quot;: &quot;string&quot;, &quot;description&quot;: &quot;The content of the reminder&quot;}, &quot;reminder_date&quot;: {&quot;type&quot;: &quot;string&quot;, &quot;format&quot;: &quot;date&quot;, &quot;description&quot;: &quot;The date of the reminder&quot;}, &quot;reminder_time&quot;: {&quot;type&quot;: &quot;string&quot;, &quot;format&quot;: &quot;time&quot;, &quot;description&quot;: &quot;The time of the reminder&quot;}}, &quot;required&quot;: [&quot;reminder_text&quot;, &quot;reminder_date&quot;, &quot;reminder_time&quot;]}}}] [/TOOL_LIST]
-	<span style="color: green;">user: </span>I need to set a reminder for my doctor&#x27;s appointment.
-	<span style="color: blue;">assistant: </span>Sure, I can help with that. Could you please provide me with the date and time of your appointment? 
-	<span style="color: green;">user: </span>The appointment is on 2022-09-15 at 10:00 AM.
-	<span style="color: blue;">assistant: </span>[TOOL_CALLS] [{&quot;function&quot;: {&quot;arguments&quot;: &quot;{\&quot;reminder_text\&quot;: \&quot;Doctors appointment\&quot;, \&quot;reminder_date\&quot;: \&quot;2022-09-15\&quot;, \&quot;reminder_time\&quot;: \&quot;10:00\&quot;}&quot;, &quot;name&quot;: &quot;create_reminder&quot;}, &quot;type&quot;: &quot;function&quot;}] [/TOOL_CALLS]
-	<span style="color: green;">user: </span>[TOOL_RESULT] {&quot;name&quot;: &quot;create_reminder&quot;, &quot;content&quot;: &quot;{\&quot;status\&quot;: \&quot;success\&quot;, \&quot;message\&quot;: \&quot;Reminder for &#x27;Doctor&#x27;s appointment&#x27; on 2022-09-15 at 10:00 AM has been created successfully.\&quot;}&quot;, &quot;tool_call_id&quot;: &quot;call_1&quot;} [/TOOL_RESULT]
-	<span style="color: blue;">assistant: </span>Your reminder for the doctor&#x27;s appointment on 2022-09-15 at 10:00 AM has been created successfully. You will be notified at the specified time. 
-</pre>
-
-
 Let's make a train, validation and test split and save the datasets in the `jsonl` format.
 
 
@@ -200,13 +116,6 @@ test_ds, _  = test_ds.split_at_indices([200])
 # Inspect final counts
 train_ds.count(), val_ds.count(), test_ds.count()
 ```
-
-
-
-
-    (9012, 1126, 200)
-
-
 
 
 ```python
@@ -295,14 +204,14 @@ llmforge anyscale finetune ./end-to-end-examples/fine-tune-function-calling/gen_
 
 Make a note of the final checkpoint after fine-tuning (this should be the last line in the logs). You can now spin up the "Deploy LLMs" template which has all the instructions and required dependencies to serve your finetuned model efficiently. You will find the tutorials on [serving LoRA models](https://github.com/anyscale/templates/blob/main/templates/endpoints_v2/examples/lora/DeployLora.ipynb) (if applicable) and on deploying a [custom model](https://github.com/anyscale/templates/blob/main/templates/endpoints_v2/examples/CustomModels.ipynb) helpful. Once you have set up your fine-tuned model as an Anyscale Service, head over to the "Services" tab in the console and select your deployed service. 
 <p align="center">
-  <img src="./assets/services_list.png" alt="Services list">
+  <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/fine-tune-llm_v2/end-to-end-examples/fine-tune-function-calling/assets/services_list.png" alt="Services list">
 </p>
 
 
 Click on the "Query" drop down box to get instructions on how to query your deployed model. Note down the base URL and API key and place them here.
 
 <p align="center">
-  <img src="./assets/service_token.png" alt="Services token" width="600">
+  <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/fine-tune-llm_v2/end-to-end-examples/fine-tune-function-calling/assets/service_token.png" alt="Services token" width="600">
 </p>
 
 
@@ -375,7 +284,7 @@ For evaluation, we initialise parsers - one for each model - to handle obtaining
 
 
 <p align="center">
-  <img src="./assets/eval_logic.png" alt="Evaluation" width=800>
+  <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/fine-tune-llm_v2/end-to-end-examples/fine-tune-function-calling/assets/eval_logic.png" alt="Evaluation" width=800>
 </p>
 
 Internally, evaluation of each example (for the given parser) is handled by the function `parse_and_eval`. We'll use a dataset-level function `evaluate_model` that provides the full results along with model accuracy.
@@ -434,7 +343,7 @@ plot_results(results_base, results_finetuned, results_gpt)
 Here's how your plot might look like for `Llama-3-8B-Instruct`:
 
 <p align="center">
-  <img src="./assets/error_analysis.png" alt="Error Analysis">
+  <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/fine-tune-llm_v2/end-to-end-examples/fine-tune-function-calling/assets/error_analysis.png" alt="Error Analysis">
 </p>
 
 The base model is a lot more trigger happy when tools are available and further makes a number of mistakes in formatting (generating tool calls with the right schema) and providing the right argument values (making accurate tool calls). A number of these issues are eliminated with fine-tuning and the final fine-tuned model rivals GPT-4 level performance on this dataset.  Note that the difference would be larger in a real-world setting, because our test dataset construction was straightforward and it is very similar to the training dataset.

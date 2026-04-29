@@ -81,24 +81,11 @@ wget https://viggo-ds.s3.amazonaws.com/test.jsonl -O /mnt/cluster_storage/viggo/
 wget https://viggo-ds.s3.amazonaws.com/dataset_info.json -O /mnt/cluster_storage/viggo/dataset_info.json
 ```
 
-    download: s3://viggo-ds/train.jsonl to ../../../mnt/cluster_storage/viggo/train.jsonl
-    download: s3://viggo-ds/val.jsonl to ../../../mnt/cluster_storage/viggo/val.jsonl
-    download: s3://viggo-ds/test.jsonl to ../../../mnt/cluster_storage/viggo/test.jsonl
-    download: s3://viggo-ds/dataset_info.json to ../../../mnt/cluster_storage/viggo/dataset_info.json
-
-
 
 ```bash
 %%bash
 head -n 1 /mnt/cluster_storage/viggo/train.jsonl | python3 -m json.tool
 ```
-
-    {
-        "instruction": "Given a target sentence construct the underlying meaning representation of the input sentence as a single function with attributes and attribute values. This function should describe the target string accurately and the function must be one of the following ['inform', 'request', 'give_opinion', 'confirm', 'verify_attribute', 'suggest', 'request_explanation', 'recommend', 'request_attribute']. The attributes must be one of the following: ['name', 'exp_release_date', 'release_year', 'developer', 'esrb', 'rating', 'genres', 'player_perspective', 'has_multiplayer', 'platforms', 'available_on_steam', 'has_linux_release', 'has_mac_release', 'specifier']",
-        "input": "Blizzard North is mostly an okay developer, but they released Diablo II for the Mac and so that pushes the game from okay to good in my view.",
-        "output": "give_opinion(name[Diablo II], developer[Blizzard North], rating[good], has_mac_release[yes])"
-    }
-
 
 
 ```python
@@ -109,122 +96,12 @@ system_content = item["instruction"]
 print(textwrap.fill(system_content, width=80))
 ```
 
-    Given a target sentence construct the underlying meaning representation of the
-    input sentence as a single function with attributes and attribute values. This
-    function should describe the target string accurately and the function must be
-    one of the following ['inform', 'request', 'give_opinion', 'confirm',
-    'verify_attribute', 'suggest', 'request_explanation', 'recommend',
-    'request_attribute']. The attributes must be one of the following: ['name',
-    'exp_release_date', 'release_year', 'developer', 'esrb', 'rating', 'genres',
-    'player_perspective', 'has_multiplayer', 'platforms', 'available_on_steam',
-    'has_linux_release', 'has_mac_release', 'specifier']
-
-
 You also have an info file that identifies the datasets and format (Alpaca and ShareGPT formats) to use for post training.
 
 
 ```python
 display(Code(filename="/mnt/cluster_storage/viggo/dataset_info.json", language="json"))
 ```
-
-
-<style>pre { line-height: 125%; }
-td.linenos .normal { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
-span.linenos { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
-td.linenos .special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
-span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
-.output_html .hll { background-color: #ffffcc }
-.output_html { background: #f8f8f8; }
-.output_html .c { color: #3D7B7B; font-style: italic } /* Comment */
-.output_html .err { border: 1px solid #FF0000 } /* Error */
-.output_html .k { color: #008000; font-weight: bold } /* Keyword */
-.output_html .o { color: #666666 } /* Operator */
-.output_html .ch { color: #3D7B7B; font-style: italic } /* Comment.Hashbang */
-.output_html .cm { color: #3D7B7B; font-style: italic } /* Comment.Multiline */
-.output_html .cp { color: #9C6500 } /* Comment.Preproc */
-.output_html .cpf { color: #3D7B7B; font-style: italic } /* Comment.PreprocFile */
-.output_html .c1 { color: #3D7B7B; font-style: italic } /* Comment.Single */
-.output_html .cs { color: #3D7B7B; font-style: italic } /* Comment.Special */
-.output_html .gd { color: #A00000 } /* Generic.Deleted */
-.output_html .ge { font-style: italic } /* Generic.Emph */
-.output_html .ges { font-weight: bold; font-style: italic } /* Generic.EmphStrong */
-.output_html .gr { color: #E40000 } /* Generic.Error */
-.output_html .gh { color: #000080; font-weight: bold } /* Generic.Heading */
-.output_html .gi { color: #008400 } /* Generic.Inserted */
-.output_html .go { color: #717171 } /* Generic.Output */
-.output_html .gp { color: #000080; font-weight: bold } /* Generic.Prompt */
-.output_html .gs { font-weight: bold } /* Generic.Strong */
-.output_html .gu { color: #800080; font-weight: bold } /* Generic.Subheading */
-.output_html .gt { color: #0044DD } /* Generic.Traceback */
-.output_html .kc { color: #008000; font-weight: bold } /* Keyword.Constant */
-.output_html .kd { color: #008000; font-weight: bold } /* Keyword.Declaration */
-.output_html .kn { color: #008000; font-weight: bold } /* Keyword.Namespace */
-.output_html .kp { color: #008000 } /* Keyword.Pseudo */
-.output_html .kr { color: #008000; font-weight: bold } /* Keyword.Reserved */
-.output_html .kt { color: #B00040 } /* Keyword.Type */
-.output_html .m { color: #666666 } /* Literal.Number */
-.output_html .s { color: #BA2121 } /* Literal.String */
-.output_html .na { color: #687822 } /* Name.Attribute */
-.output_html .nb { color: #008000 } /* Name.Builtin */
-.output_html .nc { color: #0000FF; font-weight: bold } /* Name.Class */
-.output_html .no { color: #880000 } /* Name.Constant */
-.output_html .nd { color: #AA22FF } /* Name.Decorator */
-.output_html .ni { color: #717171; font-weight: bold } /* Name.Entity */
-.output_html .ne { color: #CB3F38; font-weight: bold } /* Name.Exception */
-.output_html .nf { color: #0000FF } /* Name.Function */
-.output_html .nl { color: #767600 } /* Name.Label */
-.output_html .nn { color: #0000FF; font-weight: bold } /* Name.Namespace */
-.output_html .nt { color: #008000; font-weight: bold } /* Name.Tag */
-.output_html .nv { color: #19177C } /* Name.Variable */
-.output_html .ow { color: #AA22FF; font-weight: bold } /* Operator.Word */
-.output_html .w { color: #bbbbbb } /* Text.Whitespace */
-.output_html .mb { color: #666666 } /* Literal.Number.Bin */
-.output_html .mf { color: #666666 } /* Literal.Number.Float */
-.output_html .mh { color: #666666 } /* Literal.Number.Hex */
-.output_html .mi { color: #666666 } /* Literal.Number.Integer */
-.output_html .mo { color: #666666 } /* Literal.Number.Oct */
-.output_html .sa { color: #BA2121 } /* Literal.String.Affix */
-.output_html .sb { color: #BA2121 } /* Literal.String.Backtick */
-.output_html .sc { color: #BA2121 } /* Literal.String.Char */
-.output_html .dl { color: #BA2121 } /* Literal.String.Delimiter */
-.output_html .sd { color: #BA2121; font-style: italic } /* Literal.String.Doc */
-.output_html .s2 { color: #BA2121 } /* Literal.String.Double */
-.output_html .se { color: #AA5D1F; font-weight: bold } /* Literal.String.Escape */
-.output_html .sh { color: #BA2121 } /* Literal.String.Heredoc */
-.output_html .si { color: #A45A77; font-weight: bold } /* Literal.String.Interpol */
-.output_html .sx { color: #008000 } /* Literal.String.Other */
-.output_html .sr { color: #A45A77 } /* Literal.String.Regex */
-.output_html .s1 { color: #BA2121 } /* Literal.String.Single */
-.output_html .ss { color: #19177C } /* Literal.String.Symbol */
-.output_html .bp { color: #008000 } /* Name.Builtin.Pseudo */
-.output_html .fm { color: #0000FF } /* Name.Function.Magic */
-.output_html .vc { color: #19177C } /* Name.Variable.Class */
-.output_html .vg { color: #19177C } /* Name.Variable.Global */
-.output_html .vi { color: #19177C } /* Name.Variable.Instance */
-.output_html .vm { color: #19177C } /* Name.Variable.Magic */
-.output_html .il { color: #666666 } /* Literal.Number.Integer.Long */</style><div class="highlight"><pre><span></span><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;viggo-train&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="nt">&quot;file_name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;/mnt/cluster_storage/viggo/train.jsonl&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;formatting&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;alpaca&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;columns&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">            </span><span class="nt">&quot;prompt&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;instruction&quot;</span><span class="p">,</span>
-<span class="w">            </span><span class="nt">&quot;query&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;input&quot;</span><span class="p">,</span>
-<span class="w">            </span><span class="nt">&quot;response&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;output&quot;</span>
-<span class="w">        </span><span class="p">}</span>
-<span class="w">    </span><span class="p">},</span>
-<span class="w">    </span><span class="nt">&quot;viggo-val&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="nt">&quot;file_name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;/mnt/cluster_storage/viggo/val.jsonl&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;formatting&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;alpaca&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;columns&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">            </span><span class="nt">&quot;prompt&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;instruction&quot;</span><span class="p">,</span>
-<span class="w">            </span><span class="nt">&quot;query&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;input&quot;</span><span class="p">,</span>
-<span class="w">            </span><span class="nt">&quot;response&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;output&quot;</span>
-<span class="w">        </span><span class="p">}</span>
-<span class="w">    </span><span class="p">}</span>
-<span class="p">}</span>
-</pre></div>
-
-
 
 ## Fine-tuning
 
@@ -247,150 +124,11 @@ display(Code(filename="lora_sft_ray.yaml", language="yaml"))
 ```
 
 
-<style>pre { line-height: 125%; }
-td.linenos .normal { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
-span.linenos { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
-td.linenos .special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
-span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
-.output_html .hll { background-color: #ffffcc }
-.output_html { background: #f8f8f8; }
-.output_html .c { color: #3D7B7B; font-style: italic } /* Comment */
-.output_html .err { border: 1px solid #FF0000 } /* Error */
-.output_html .k { color: #008000; font-weight: bold } /* Keyword */
-.output_html .o { color: #666666 } /* Operator */
-.output_html .ch { color: #3D7B7B; font-style: italic } /* Comment.Hashbang */
-.output_html .cm { color: #3D7B7B; font-style: italic } /* Comment.Multiline */
-.output_html .cp { color: #9C6500 } /* Comment.Preproc */
-.output_html .cpf { color: #3D7B7B; font-style: italic } /* Comment.PreprocFile */
-.output_html .c1 { color: #3D7B7B; font-style: italic } /* Comment.Single */
-.output_html .cs { color: #3D7B7B; font-style: italic } /* Comment.Special */
-.output_html .gd { color: #A00000 } /* Generic.Deleted */
-.output_html .ge { font-style: italic } /* Generic.Emph */
-.output_html .ges { font-weight: bold; font-style: italic } /* Generic.EmphStrong */
-.output_html .gr { color: #E40000 } /* Generic.Error */
-.output_html .gh { color: #000080; font-weight: bold } /* Generic.Heading */
-.output_html .gi { color: #008400 } /* Generic.Inserted */
-.output_html .go { color: #717171 } /* Generic.Output */
-.output_html .gp { color: #000080; font-weight: bold } /* Generic.Prompt */
-.output_html .gs { font-weight: bold } /* Generic.Strong */
-.output_html .gu { color: #800080; font-weight: bold } /* Generic.Subheading */
-.output_html .gt { color: #0044DD } /* Generic.Traceback */
-.output_html .kc { color: #008000; font-weight: bold } /* Keyword.Constant */
-.output_html .kd { color: #008000; font-weight: bold } /* Keyword.Declaration */
-.output_html .kn { color: #008000; font-weight: bold } /* Keyword.Namespace */
-.output_html .kp { color: #008000 } /* Keyword.Pseudo */
-.output_html .kr { color: #008000; font-weight: bold } /* Keyword.Reserved */
-.output_html .kt { color: #B00040 } /* Keyword.Type */
-.output_html .m { color: #666666 } /* Literal.Number */
-.output_html .s { color: #BA2121 } /* Literal.String */
-.output_html .na { color: #687822 } /* Name.Attribute */
-.output_html .nb { color: #008000 } /* Name.Builtin */
-.output_html .nc { color: #0000FF; font-weight: bold } /* Name.Class */
-.output_html .no { color: #880000 } /* Name.Constant */
-.output_html .nd { color: #AA22FF } /* Name.Decorator */
-.output_html .ni { color: #717171; font-weight: bold } /* Name.Entity */
-.output_html .ne { color: #CB3F38; font-weight: bold } /* Name.Exception */
-.output_html .nf { color: #0000FF } /* Name.Function */
-.output_html .nl { color: #767600 } /* Name.Label */
-.output_html .nn { color: #0000FF; font-weight: bold } /* Name.Namespace */
-.output_html .nt { color: #008000; font-weight: bold } /* Name.Tag */
-.output_html .nv { color: #19177C } /* Name.Variable */
-.output_html .ow { color: #AA22FF; font-weight: bold } /* Operator.Word */
-.output_html .w { color: #bbbbbb } /* Text.Whitespace */
-.output_html .mb { color: #666666 } /* Literal.Number.Bin */
-.output_html .mf { color: #666666 } /* Literal.Number.Float */
-.output_html .mh { color: #666666 } /* Literal.Number.Hex */
-.output_html .mi { color: #666666 } /* Literal.Number.Integer */
-.output_html .mo { color: #666666 } /* Literal.Number.Oct */
-.output_html .sa { color: #BA2121 } /* Literal.String.Affix */
-.output_html .sb { color: #BA2121 } /* Literal.String.Backtick */
-.output_html .sc { color: #BA2121 } /* Literal.String.Char */
-.output_html .dl { color: #BA2121 } /* Literal.String.Delimiter */
-.output_html .sd { color: #BA2121; font-style: italic } /* Literal.String.Doc */
-.output_html .s2 { color: #BA2121 } /* Literal.String.Double */
-.output_html .se { color: #AA5D1F; font-weight: bold } /* Literal.String.Escape */
-.output_html .sh { color: #BA2121 } /* Literal.String.Heredoc */
-.output_html .si { color: #A45A77; font-weight: bold } /* Literal.String.Interpol */
-.output_html .sx { color: #008000 } /* Literal.String.Other */
-.output_html .sr { color: #A45A77 } /* Literal.String.Regex */
-.output_html .s1 { color: #BA2121 } /* Literal.String.Single */
-.output_html .ss { color: #19177C } /* Literal.String.Symbol */
-.output_html .bp { color: #008000 } /* Name.Builtin.Pseudo */
-.output_html .fm { color: #0000FF } /* Name.Function.Magic */
-.output_html .vc { color: #19177C } /* Name.Variable.Class */
-.output_html .vg { color: #19177C } /* Name.Variable.Global */
-.output_html .vi { color: #19177C } /* Name.Variable.Instance */
-.output_html .vm { color: #19177C } /* Name.Variable.Magic */
-.output_html .il { color: #666666 } /* Literal.Number.Integer.Long */</style><div class="highlight"><pre><span></span><span class="c1">### model</span>
-<span class="nt">model_name_or_path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Qwen/Qwen2.5-7B-Instruct</span>
-<span class="nt">trust_remote_code</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
-
-<span class="c1">### method</span>
-<span class="nt">stage</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sft</span>
-<span class="nt">do_train</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
-<span class="nt">finetuning_type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">lora</span>
-<span class="nt">lora_rank</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8</span>
-<span class="nt">lora_target</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">all</span>
-
-<span class="c1">### dataset</span>
-<span class="nt">dataset</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">viggo-train</span>
-<span class="nt">dataset_dir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/mnt/cluster_storage/viggo</span><span class="w">  </span><span class="c1"># shared storage workers have access to</span>
-<span class="nt">template</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">qwen</span>
-<span class="nt">cutoff_len</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2048</span>
-<span class="nt">max_samples</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1000</span>
-<span class="nt">overwrite_cache</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
-<span class="nt">preprocessing_num_workers</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">16</span>
-<span class="nt">dataloader_num_workers</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">4</span>
-
-<span class="c1">### output</span>
-<span class="nt">output_dir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/mnt/cluster_storage/viggo/outputs</span><span class="w">  </span><span class="c1"># should be somewhere workers have access to (ex. s3, nfs)</span>
-<span class="nt">logging_steps</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10</span>
-<span class="nt">save_steps</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">500</span>
-<span class="nt">plot_loss</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
-<span class="nt">overwrite_output_dir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
-<span class="nt">save_only_model</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
-
-<span class="c1">### ray</span>
-<span class="nt">ray_run_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">lora_sft_ray</span>
-<span class="nt">ray_storage_path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/mnt/cluster_storage/viggo/saves</span><span class="w">  </span><span class="c1"># should be somewhere workers have access to (ex. s3, nfs)</span>
-<span class="nt">ray_num_workers</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">4</span>
-<span class="nt">resources_per_worker</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">GPU</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
-<span class="w">  </span><span class="nt">anyscale/accelerator_shape:4xL4</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.001</span><span class="w">  </span><span class="c1"># Use this to specify a specific node shape,</span>
-<span class="w">  </span><span class="c1"># accelerator_type:L4: 1           # Or use this to simply specify a GPU type.</span>
-<span class="w">  </span><span class="c1"># see https://docs.ray.io/en/master/ray-core/accelerator-types.html#accelerator-types for a full list of accelerator types</span>
-<span class="nt">placement_strategy</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">PACK</span>
-
-<span class="c1">### train</span>
-<span class="nt">per_device_train_batch_size</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
-<span class="nt">gradient_accumulation_steps</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8</span>
-<span class="nt">learning_rate</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1.0e-4</span>
-<span class="nt">num_train_epochs</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5.0</span>
-<span class="nt">lr_scheduler_type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cosine</span>
-<span class="nt">warmup_ratio</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.1</span>
-<span class="nt">bf16</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
-<span class="nt">ddp_timeout</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">180000000</span>
-<span class="nt">resume_from_checkpoint</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">null</span>
-
-<span class="c1">### eval</span>
-<span class="nt">eval_dataset</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">viggo-val</span><span class="w">  </span><span class="c1"># uses same dataset_dir as training data</span>
-<span class="c1"># val_size: 0.1  # only if using part of training data for validation</span>
-<span class="nt">per_device_eval_batch_size</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
-<span class="nt">eval_strategy</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">steps</span>
-<span class="nt">eval_steps</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">500</span>
-</pre></div>
-
-
-
-
 ```python
 model_id = "ft-model"  # call it whatever you want
 model_source = yaml.safe_load(open("lora_sft_ray.yaml"))["model_name_or_path"]  # HF model ID, S3 mirror config, or GCS mirror config
 print (model_source)
 ```
-
-    Qwen/Qwen2.5-7B-Instruct
-
 
 ### Training
 
@@ -427,97 +165,6 @@ python run_training.py --config /mnt/cluster_storage/viggo/lora_sft_ray.yaml
 ```python
 display(Code(filename="/mnt/cluster_storage/viggo/outputs/all_results.json", language="json"))
 ```
-
-
-<style>pre { line-height: 125%; }
-td.linenos .normal { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
-span.linenos { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
-td.linenos .special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
-span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
-.output_html .hll { background-color: #ffffcc }
-.output_html { background: #f8f8f8; }
-.output_html .c { color: #3D7B7B; font-style: italic } /* Comment */
-.output_html .err { border: 1px solid #FF0000 } /* Error */
-.output_html .k { color: #008000; font-weight: bold } /* Keyword */
-.output_html .o { color: #666666 } /* Operator */
-.output_html .ch { color: #3D7B7B; font-style: italic } /* Comment.Hashbang */
-.output_html .cm { color: #3D7B7B; font-style: italic } /* Comment.Multiline */
-.output_html .cp { color: #9C6500 } /* Comment.Preproc */
-.output_html .cpf { color: #3D7B7B; font-style: italic } /* Comment.PreprocFile */
-.output_html .c1 { color: #3D7B7B; font-style: italic } /* Comment.Single */
-.output_html .cs { color: #3D7B7B; font-style: italic } /* Comment.Special */
-.output_html .gd { color: #A00000 } /* Generic.Deleted */
-.output_html .ge { font-style: italic } /* Generic.Emph */
-.output_html .ges { font-weight: bold; font-style: italic } /* Generic.EmphStrong */
-.output_html .gr { color: #E40000 } /* Generic.Error */
-.output_html .gh { color: #000080; font-weight: bold } /* Generic.Heading */
-.output_html .gi { color: #008400 } /* Generic.Inserted */
-.output_html .go { color: #717171 } /* Generic.Output */
-.output_html .gp { color: #000080; font-weight: bold } /* Generic.Prompt */
-.output_html .gs { font-weight: bold } /* Generic.Strong */
-.output_html .gu { color: #800080; font-weight: bold } /* Generic.Subheading */
-.output_html .gt { color: #0044DD } /* Generic.Traceback */
-.output_html .kc { color: #008000; font-weight: bold } /* Keyword.Constant */
-.output_html .kd { color: #008000; font-weight: bold } /* Keyword.Declaration */
-.output_html .kn { color: #008000; font-weight: bold } /* Keyword.Namespace */
-.output_html .kp { color: #008000 } /* Keyword.Pseudo */
-.output_html .kr { color: #008000; font-weight: bold } /* Keyword.Reserved */
-.output_html .kt { color: #B00040 } /* Keyword.Type */
-.output_html .m { color: #666666 } /* Literal.Number */
-.output_html .s { color: #BA2121 } /* Literal.String */
-.output_html .na { color: #687822 } /* Name.Attribute */
-.output_html .nb { color: #008000 } /* Name.Builtin */
-.output_html .nc { color: #0000FF; font-weight: bold } /* Name.Class */
-.output_html .no { color: #880000 } /* Name.Constant */
-.output_html .nd { color: #AA22FF } /* Name.Decorator */
-.output_html .ni { color: #717171; font-weight: bold } /* Name.Entity */
-.output_html .ne { color: #CB3F38; font-weight: bold } /* Name.Exception */
-.output_html .nf { color: #0000FF } /* Name.Function */
-.output_html .nl { color: #767600 } /* Name.Label */
-.output_html .nn { color: #0000FF; font-weight: bold } /* Name.Namespace */
-.output_html .nt { color: #008000; font-weight: bold } /* Name.Tag */
-.output_html .nv { color: #19177C } /* Name.Variable */
-.output_html .ow { color: #AA22FF; font-weight: bold } /* Operator.Word */
-.output_html .w { color: #bbbbbb } /* Text.Whitespace */
-.output_html .mb { color: #666666 } /* Literal.Number.Bin */
-.output_html .mf { color: #666666 } /* Literal.Number.Float */
-.output_html .mh { color: #666666 } /* Literal.Number.Hex */
-.output_html .mi { color: #666666 } /* Literal.Number.Integer */
-.output_html .mo { color: #666666 } /* Literal.Number.Oct */
-.output_html .sa { color: #BA2121 } /* Literal.String.Affix */
-.output_html .sb { color: #BA2121 } /* Literal.String.Backtick */
-.output_html .sc { color: #BA2121 } /* Literal.String.Char */
-.output_html .dl { color: #BA2121 } /* Literal.String.Delimiter */
-.output_html .sd { color: #BA2121; font-style: italic } /* Literal.String.Doc */
-.output_html .s2 { color: #BA2121 } /* Literal.String.Double */
-.output_html .se { color: #AA5D1F; font-weight: bold } /* Literal.String.Escape */
-.output_html .sh { color: #BA2121 } /* Literal.String.Heredoc */
-.output_html .si { color: #A45A77; font-weight: bold } /* Literal.String.Interpol */
-.output_html .sx { color: #008000 } /* Literal.String.Other */
-.output_html .sr { color: #A45A77 } /* Literal.String.Regex */
-.output_html .s1 { color: #BA2121 } /* Literal.String.Single */
-.output_html .ss { color: #19177C } /* Literal.String.Symbol */
-.output_html .bp { color: #008000 } /* Name.Builtin.Pseudo */
-.output_html .fm { color: #0000FF } /* Name.Function.Magic */
-.output_html .vc { color: #19177C } /* Name.Variable.Class */
-.output_html .vg { color: #19177C } /* Name.Variable.Global */
-.output_html .vi { color: #19177C } /* Name.Variable.Instance */
-.output_html .vm { color: #19177C } /* Name.Variable.Magic */
-.output_html .il { color: #666666 } /* Literal.Number.Integer.Long */</style><div class="highlight"><pre><span></span><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;epoch&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">4.864</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;eval_viggo-val_loss&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.13618840277194977</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;eval_viggo-val_runtime&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">20.2797</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;eval_viggo-val_samples_per_second&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">35.208</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;eval_viggo-val_steps_per_second&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">8.827</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;total_flos&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">4.843098686147789e+16</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;train_loss&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.2079355036479331</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;train_runtime&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">437.2951</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;train_samples_per_second&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">11.434</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;train_steps_per_second&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.354</span>
-<span class="p">}</span>
-</pre></div>
-
-
 
 <img src="https://raw.githubusercontent.com/anyscale/e2e-llm-workflows/refs/heads/main/images/loss.png" width=500>
 
@@ -561,9 +208,6 @@ You can always store to data inside [any storage buckets](https://docs.anyscale.
 # Anyscale default storage bucket.
 echo $ANYSCALE_ARTIFACT_STORAGE
 ```
-
-    s3://anyscale-test-data-cld-i2w99rzq8b6lbjkke9y94vi5/org_7c1Kalm9WcX2bNIjW53GUT/cld_kvedZWag2qA8i5BjxUevf5i7/artifact_storage
-
 
 
 ```bash
@@ -644,9 +288,6 @@ import ray
 from ray.data.llm import vLLMEngineProcessorConfig
 ```
 
-    INFO 04-11 14:58:40 __init__.py:194] No platform detected, vLLM is running on UnspecifiedPlatform
-
-
 
 ```python
 config = vLLMEngineProcessorConfig(
@@ -708,19 +349,6 @@ processor = build_processor(
 )
 ```
 
-    2025-04-11 14:58:40,942	INFO worker.py:1660 -- Connecting to existing Ray cluster at address: 10.0.51.51:6379...
-    2025-04-11 14:58:40,953	INFO worker.py:1843 -- Connected to Ray cluster. View the dashboard at [1m[32mhttps://session-zt5t77xa58pyp3uy28glg2g24d.i.anyscaleuserdata.com [39m[22m
-    2025-04-11 14:58:40,960	INFO packaging.py:367 -- Pushing file package 'gcs://_ray_pkg_e71d58b4dc01d065456a9fc0325ee2682e13de88.zip' (2.16MiB) to Ray cluster...
-    2025-04-11 14:58:40,969	INFO packaging.py:380 -- Successfully pushed file package 'gcs://_ray_pkg_e71d58b4dc01d065456a9fc0325ee2682e13de88.zip'.
-
-
-
-    config.json:   0%|          | 0.00/663 [00:00<?, ?B/s]
-
-
-    [36m(pid=51260)[0m INFO 04-11 14:58:47 __init__.py:194] No platform detected, vLLM is running on UnspecifiedPlatform
-
-
 
 ```python
 # Evaluation on test dataset
@@ -729,56 +357,6 @@ ds = processor(ds)
 results = ds.take_all()
 results[0]
 ```
-
-    
-    
-    {
-      "batch_uuid": "d7a6b5341cbf4986bb7506ff277cc9cf",
-      "embeddings": null,
-      "generated_text": "request(esrb)",
-      "generated_tokens": [2035, 50236, 10681, 8, 151645],
-      "input": "Do you have a favorite ESRB content rating?",
-      "instruction": "Given a target sentence construct the underlying meaning representation of the input sentence as a single function with attributes and attribute values. This function should describe the target string accurately and the function must be one of the following ['inform', 'request', 'give_opinion', 'confirm', 'verify_attribute', 'suggest', 'request_explanation', 'recommend', 'request_attribute']. The attributes must be one of the following: ['name', 'exp_release_date', 'release_year', 'developer', 'esrb', 'rating', 'genres', 'player_perspective', 'has_multiplayer', 'platforms', 'available_on_steam', 'has_linux_release', 'has_mac_release', 'specifier']",
-      "messages": [
-        {
-          "content": "Given a target sentence construct the underlying meaning representation of the input sentence as a single function with attributes and attribute values. This function should describe the target string accurately and the function must be one of the following ['inform', 'request', 'give_opinion', 'confirm', 'verify_attribute', 'suggest', 'request_explanation', 'recommend', 'request_attribute']. The attributes must be one of the following: ['name', 'exp_release_date', 'release_year', 'developer', 'esrb', 'rating', 'genres', 'player_perspective', 'has_multiplayer', 'platforms', 'available_on_steam', 'has_linux_release', 'has_mac_release', 'specifier']",
-          "role": "system"
-        },
-        {
-          "content": "Do you have a favorite ESRB content rating?",
-          "role": "user"
-        }
-      ],
-      "metrics": {
-        "arrival_time": 1744408857.148983,
-        "finished_time": 1744408863.09091,
-        "first_scheduled_time": 1744408859.130259,
-        "first_token_time": 1744408862.7087252,
-        "last_token_time": 1744408863.089174,
-        "model_execute_time": null,
-        "model_forward_time": null,
-        "scheduler_time": 0.04162892400017881,
-        "time_in_queue": 1.981276035308838
-      },
-      "model": "/mnt/cluster_storage/viggo/saves/lora_sft_ray/TorchTrainer_95d16_00000_0_2025-04-11_14-47-37/checkpoint_000000/checkpoint",
-      "num_generated_tokens": 5,
-      "num_input_tokens": 164,
-      "output": "request_attribute(esrb[])",
-      "params": "SamplingParams(n=1, presence_penalty=0.0, frequency_penalty=0.0, repetition_penalty=1.0, temperature=0.3, top_p=1.0, top_k=-1, min_p=0.0, seed=None, stop=[], stop_token_ids=[], bad_words=[], include_stop_str_in_output=False, ignore_eos=False, max_tokens=250, min_tokens=0, logprobs=None, prompt_logprobs=None, skip_special_tokens=True, spaces_between_special_tokens=True, truncate_prompt_tokens=None, structured_outputs=None)",
-      "prompt": "<|im_start|>system
-    Given a target sentence construct the underlying meaning representation of the input sentence as a single function with attributes and attribute values. This function should describe the target string accurately and the function must be one of the following ['inform', 'request', 'give_opinion', 'confirm', 'verify_attribute', 'suggest', 'request_explanation', 'recommend', 'request_attribute']. The attributes must be one of the following: ['name', 'exp_release_date', 'release_year', 'developer', 'esrb', 'rating', 'genres', 'player_perspective', 'has_multiplayer', 'platforms', 'available_on_steam', 'has_linux_release', 'has_mac_release', 'specifier']<|im_end|>
-    <|im_start|>user
-    Do you have a favorite ESRB content rating?<|im_end|>
-    <|im_start|>assistant
-    ",
-      "prompt_token_ids": [151644, "...", 198],
-      "request_id": 94,
-      "time_taken_llm": 6.028705836999961,
-      "generated_output": "request(esrb)"
-    }
-    
-    
-
 
 
 ```python
@@ -789,13 +367,6 @@ for item in results:
         matches += 1
 matches / float(len(results))
 ```
-
-
-
-
-    0.6879039704524469
-
-
 
 **Note**: The objective of fine-tuning here isn't to create the most performant model but to show that you can leverage it for downstream workloads, like batch inference and online serving at scale. However, you can increase `num_train_epochs` if you want to.
 
@@ -889,9 +460,6 @@ app = build_openai_app({"llm_configs": [llm_config]})
 serve.run(app)
 ```
 
-    DeploymentHandle(deployment='LLMRouter')
-
-
 ### Service request
 
 
@@ -899,7 +467,7 @@ serve.run(app)
 # Initialize client.
 client = OpenAI(base_url="http://localhost:8000/v1", api_key="fake-key")
 response = client.chat.completions.create(
-    model=f"{model_id}:checkpoint-125"  # Use checkpoint subdirectory as LoRA ID,
+    model=f"{model_id}:checkpoint-125",  # Use checkpoint subdirectory as LoRA ID
     messages=[
         {"role": "system", "content": "Given a target sentence construct the underlying meaning representation of the input sentence as a single function with attributes and attribute values. This function should describe the target string accurately and the function must be one of the following ['inform', 'request', 'give_opinion', 'confirm', 'verify_attribute', 'suggest', 'request_explanation', 'recommend', 'request_attribute']. The attributes must be one of the following: ['name', 'exp_release_date', 'release_year', 'developer', 'esrb', 'rating', 'genres', 'player_perspective', 'has_multiplayer', 'platforms', 'available_on_steam', 'has_linux_release', 'has_mac_release', 'specifier']"},
         {"role": "user", "content": "Blizzard North is mostly an okay developer, but they released Diablo II for the Mac and so that pushes the game from okay to good in my view."},
