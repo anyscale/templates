@@ -19,3 +19,9 @@ repos:
         language: system
         pass_filenames: true
         files: ^templates/.+/(README\.ipynb|README\.md)$
+      - id: check-image-urls
+        name: README.ipynb image refs must use absolute URLs
+        entry: python3 ci/check-image-urls.py
+        language: system
+        pass_filenames: true
+        files: ^templates/.+/README\.ipynb$
