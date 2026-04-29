@@ -1,34 +1,5 @@
-env:
-  TEMPLATE_NAME: "${TEMPLATE_NAME}"
-
 steps:
-  - name: "Test template: ${TEMPLATE_NAME}"
-    commands:
-    - |
-      set -euo pipefail
-      if [ -z "$$TEMPLATE_NAME" ]; then
-        echo "Error: TEMPLATE_NAME environment variable is required"
-        exit 1
-      fi
-      export ANYSCALE_CLI_TOKEN="$$(aws --region=us-west-2 secretsmanager get-secret-value --secret-id $$ANYSCALE_CLI_TOKEN_SECRET_NAME | jq -r .SecretString)"
-      export ANYSCALE_HOST="https://console.anyscale-staging.com"
-      bash download_rayapp.sh
-      sudo apt-get update && sudo apt-get install -y rsync
-      sudo pip install anyscale==0.26.87
-      ./rayapp test $$TEMPLATE_NAME
-    timeout_in_minutes: 75
+  - label: ":pipeline: Fan out template tests"
+    commands: ci/render-template-pipeline.sh | buildkite-agent pipeline upload
     agents:
       queue: small
-    retry:
-      automatic: true
-    plugins:
-      - docker#v5.9.0:
-          image: "830883877497.dkr.ecr.us-west-2.amazonaws.com/anyscale/forge:241125"
-          propagate-aws-auth-tokens: true
-          mount-buildkite-agent: true
-          shell: ["/bin/bash", "-e", "-c"]
-          environment:
-            - "BUILDKITE"
-            - "BUILDKITE_PIPELINE_ID"
-            - "TEMPLATE_NAME"
-            - "ANYSCALE_CLI_TOKEN_SECRET_NAME"
