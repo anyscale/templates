@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import argparse
 import sys
 import urllib.error
 import urllib.request
@@ -51,7 +52,7 @@ def manifest_accessible(uri):
         return False, f"network error: {e.reason}"
 
 
-def validate_entry(entry, idx, errors):
+def validate_entry(entry, idx, errors, *, check_network):
     name = entry.get("name", f"<entry #{idx}>")
 
     d = entry.get("dir")
@@ -71,6 +72,9 @@ def validate_entry(entry, idx, errors):
     if tp and not (REPO_ROOT / tp).is_dir():
         errors.append(f"{name}: test.tests_path not found: {tp}")
 
+    if not check_network:
+        return
+
     ce = entry.get("cluster_env") or {}
     images = []
     if ce.get("image_uri"):
@@ -87,6 +91,14 @@ def validate_entry(entry, idx, errors):
 
 
 def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--no-network",
+        action="store_true",
+        help="Skip the GCP image accessibility check (for pre-commit / offline use)",
+    )
+    args = parser.parse_args()
+
     build_yaml = REPO_ROOT / "BUILD.yaml"
     with build_yaml.open() as f:
         entries = yaml.safe_load(f)
@@ -97,7 +109,7 @@ def main():
 
     errors = []
     for idx, entry in enumerate(entries):
-        validate_entry(entry, idx, errors)
+        validate_entry(entry, idx, errors, check_network=not args.no_network)
 
     if errors:
         print(f"FAIL: {len(errors)} validation error(s):", file=sys.stderr)
@@ -105,7 +117,8 @@ def main():
             print(f"::error::{err}", file=sys.stderr)
         return 1
 
-    print(f"OK: validated {len(entries)} BUILD.yaml entries")
+    mode = "paths only" if args.no_network else "paths + GCP images"
+    print(f"OK: validated {len(entries)} BUILD.yaml entries ({mode})")
     return 0
 
 
