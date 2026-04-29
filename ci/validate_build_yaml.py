@@ -8,7 +8,7 @@ import sys
 import urllib.error
 import urllib.request
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
 import yaml
 from pydantic import (
@@ -73,6 +73,27 @@ class Entry(Strict):
     test: Test
 
 
+# Top-level keys allowed by the legacy ComputeTemplateConfig API:
+# https://docs.anyscale.com/ref/0.26.64/compute-config-api#computetemplateconfig-legacy
+# Lax: any field can be missing. Strict: extra top-level keys are rejected
+# because they usually mean the file is using the new (non-legacy) schema.
+class LegacyComputeTemplateConfig(Strict):
+    cloud_id: Optional[Any] = None
+    maximum_uptime_minutes: Optional[Any] = None
+    deployment_configs: Optional[Any] = None
+    max_workers: Optional[Any] = None
+    region: Optional[Any] = None
+    allowed_azs: Optional[Any] = None
+    head_node_type: Optional[Any] = None
+    worker_node_types: Optional[Any] = None
+    aws_advanced_configurations_json: Optional[Any] = None
+    gcp_advanced_configurations_json: Optional[Any] = None
+    advanced_configurations_json: Optional[Any] = None
+    auto_select_worker_config: Optional[Any] = None
+    flags: Optional[Any] = None
+    idle_termination_minutes: Optional[Any] = None
+
+
 # ------------------------------------------- filesystem + name uniqueness
 
 def check_filesystem_and_uniqueness(entries: list[Entry]) -> list[str]:
@@ -95,6 +116,45 @@ def check_filesystem_and_uniqueness(entries: list[Entry]) -> list[str]:
             errors.append(f"{e.name}.test.tests_path: not found: {e.test.tests_path}")
         elif not (REPO_ROOT / e.test.tests_path / "tests.sh").is_file():
             errors.append(f"{e.name}.test.tests_path: missing tests.sh in {e.test.tests_path}")
+    return errors
+
+
+# ----------------------------------------- compute config legacy schema
+
+LEGACY_DOCS = (
+    "https://docs.anyscale.com/ref/0.26.64/compute-config-api"
+    "#computetemplateconfig-legacy"
+)
+
+
+def check_compute_configs_legacy(entries: list[Entry]) -> list[str]:
+    """Each compute config file must follow the legacy ComputeTemplateConfig
+    schema. Top-level keys are checked (nested keys are not validated)."""
+    errors: list[str] = []
+    paths: set[str] = set()
+    for e in entries:
+        paths.add(e.compute_config.GCP)
+        paths.add(e.compute_config.AWS)
+    for path in sorted(paths):
+        full = REPO_ROOT / path
+        if not full.is_file():
+            continue  # already reported by check_filesystem_and_uniqueness
+        try:
+            data = yaml.safe_load(full.read_text()) or {}
+            LegacyComputeTemplateConfig.model_validate(data)
+        except ValidationError as e:
+            extras = [
+                str(err["loc"][0]) for err in e.errors()
+                if err.get("type") == "extra_forbidden"
+            ]
+            if extras:
+                errors.append(
+                    f"{path}: unknown top-level keys {extras} — this config "
+                    f"likely uses the new compute-config schema. This repo "
+                    f"requires the legacy ComputeTemplateConfig API: {LEGACY_DOCS}"
+                )
+            else:
+                errors.append(f"{path}: {e.errors()}")
     return errors
 
 
@@ -169,6 +229,7 @@ def main() -> int:
         return 1
 
     errors = check_filesystem_and_uniqueness(entries)
+    errors.extend(check_compute_configs_legacy(entries))
     if not args.no_network:
         errors.extend(check_gcp_images(entries))
 
