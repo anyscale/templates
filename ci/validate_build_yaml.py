@@ -44,7 +44,7 @@ class Byod(Strict):
 
 
 class ClusterEnv(Strict):
-    image_uri: Optional[str] = None
+    image_uri: Optional[str] = Field(default=None, pattern=r"^anyscale/")
     byod: Optional[Byod] = None
 
     @model_validator(mode="after")
@@ -55,18 +55,18 @@ class ClusterEnv(Strict):
 
 
 class ComputeConfig(Strict):
-    GCP: str = Field(pattern=r"^configs/.*\.yaml$")
-    AWS: str = Field(pattern=r"^configs/.*\.yaml$")
+    GCP: str = Field(pattern=r"^configs/.+/gce\.yaml$")
+    AWS: str = Field(pattern=r"^configs/.+/aws\.yaml$")
 
 
 class Test(Strict):
     tests_path: str = Field(pattern=r"^tests/")
-    command: str
-    timeout_in_sec: int
+    command: str = Field(min_length=1)
+    timeout_in_sec: int = Field(gt=0)
 
 
 class Entry(Strict):
-    name: str
+    name: str = Field(pattern=r"^[a-z0-9_-]+$")
     dir: str = Field(pattern=r"^templates/")
     cluster_env: ClusterEnv
     compute_config: ComputeConfig
@@ -93,6 +93,8 @@ def check_filesystem_and_uniqueness(entries: list[Entry]) -> list[str]:
                 errors.append(f"{e.name}.compute_config.{cloud}: not found: {path}")
         if not (REPO_ROOT / e.test.tests_path).is_dir():
             errors.append(f"{e.name}.test.tests_path: not found: {e.test.tests_path}")
+        elif not (REPO_ROOT / e.test.tests_path / "tests.sh").is_file():
+            errors.append(f"{e.name}.test.tests_path: missing tests.sh in {e.test.tests_path}")
     return errors
 
 

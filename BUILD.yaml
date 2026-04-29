@@ -417,7 +417,7 @@
   cluster_env:
     image_uri: anyscale/ray:2.54.1-py312-cu128
   compute_config:
-    GCP: configs/ray-data-batch-classification/gcp.yaml
+    GCP: configs/ray-data-batch-classification/gce.yaml
     AWS: configs/ray-data-batch-classification/aws.yaml
   test:
     tests_path: tests/ray-data-batch-image-classification/
