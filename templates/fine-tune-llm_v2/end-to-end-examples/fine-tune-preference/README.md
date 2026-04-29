@@ -24,7 +24,7 @@ Notebook guide:
 **NOTE**: Running the jobs in this notebook requires a HuggingFace token that can access [Llama-3.1-70B-Instruct](https://huggingface.co/meta-llama/Meta-Llama-3.1-70B-Instruct) and [Mistral-7B-Instruct-v0.1](https://huggingface.co/mistralai/Mistral-7B-Instruct-v0.1). For GPT-4o evaluation, you'd also need a valid `OPENAI_API_KEY`.  Make sure to provide `HF_TOKEN` and `OPENAI_API_KEY` by defining it under dependencies in your cluster setup.
 
 <p align="center">
-  <img src="./assets/env_var.png?" alt="Environment variable" width=800>
+  <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/fine-tune-llm_v2/end-to-end-examples/fine-tune-preference/assets/env_var.png?" alt="Environment variable" width=800>
 </p>
 
 First, let's make the necessary imports
@@ -129,12 +129,12 @@ For this example, we will use `Mistral-7B-Instruct-v0.1` as the base model to fi
 We've provided a helpful visualization here:
 
 <p align="center">
-  <img src="./assets/preference_function.png?" alt="Preference function" width=800>
+  <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/fine-tune-llm_v2/end-to-end-examples/fine-tune-preference/assets/preference_function.png?" alt="Preference function" width=800>
 </p>
 
 Combining all this together, our data pre-processing pipeline is going to look as follows: 
 
-![preprocessing](./assets/preprocessing.png?1)
+![preprocessing](https://raw.githubusercontent.com/anyscale/templates/main/templates/fine-tune-llm_v2/end-to-end-examples/fine-tune-preference/assets/preprocessing.png?1)
 
 💡 INSIGHT: 
 Our synthetic preference data collection looks pretty involved at first glance. The key ideas in plain English are as follows:
@@ -172,7 +172,7 @@ At the end of the job, you should see the remote path to the folder with Q&A in 
 
 
 <p align="center">
-  <img src="./assets/question_generation_done.png?" alt="Evaluation" width=800>
+  <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/fine-tune-llm_v2/end-to-end-examples/fine-tune-preference/assets/question_generation_done.png?" alt="Evaluation" width=800>
 </p>
 
  Make sure to make note to use it for the next steps! 
@@ -643,12 +643,12 @@ for row in example_rows:
 
 Now that we have the pre-processed dataset, we are ready to fine-tune `Mistral-7B-Instruct-v0.1` using DPO. On Anyscale, we've created an easy-to-use interface to do preference-tuning using DPO. We leverage Ray to overlap reference model log-probability calculation with model training to improve GPU utilization. Most implementations compute log probabilities synchronously with model training,
 
-![hf model](./assets/hf_dpo.png)
+![hf model](https://raw.githubusercontent.com/anyscale/templates/main/templates/fine-tune-llm_v2/end-to-end-examples/fine-tune-preference/assets/hf_dpo.png)
 
 While our implementation using Ray is asynchronous:  
 
 
-![assistant model](./assets/anyscale_dpo.png)
+![assistant model](https://raw.githubusercontent.com/anyscale/templates/main/templates/fine-tune-llm_v2/end-to-end-examples/fine-tune-preference/assets/anyscale_dpo.png)
 
 Further, our use of Ray Data also implies that the compute configuration for the reference model can be completely decoupled with the policy model. For example, reference model calculation can run on a different node (with configurable number of GPUs, etc) with zero code changes needed. 
 
@@ -738,7 +738,7 @@ Let's evaluate our trained model. Here we'll use two baselines: (1) the base mod
 Our evaluation strategy involves the same Q&A scoring system as used while generating the preference data. 
 
 <p align="center">
-  <img src="./assets/eval.png?" alt="Evaluation" width=800>
+  <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/fine-tune-llm_v2/end-to-end-examples/fine-tune-preference/assets/eval.png?" alt="Evaluation" width=800>
 </p>
 
 We evaluate the baseline model and the trained DPO model on the test set. 

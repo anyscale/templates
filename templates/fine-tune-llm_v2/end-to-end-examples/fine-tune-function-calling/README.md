@@ -9,7 +9,7 @@ In this example, we demonstrate fine-tuning on [Glaive's function calling datase
 The mentioned dataset consists of about 113,000 examples of synthetically generated function calling data. The dataset composition is given below:
 
 <p align="center">
-  <img src="./assets/distr_glaive_pie.png" alt="Distribution" width=800>
+  <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/fine-tune-llm_v2/end-to-end-examples/fine-tune-function-calling/assets/distr_glaive_pie.png" alt="Distribution" width=800>
 </p>
 
 
@@ -46,7 +46,7 @@ from fc_utils.print_utils import pprint_example
 Our data processing will occur in 2-stages, as shown in the below figure:
 
 <p align="center">
-  <img src="./assets/data_processing.png" alt="Data preprocessing" width=500>
+  <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/fine-tune-llm_v2/end-to-end-examples/fine-tune-function-calling/assets/data_processing.png" alt="Data preprocessing" width=500>
 </p>
 
 
@@ -295,14 +295,14 @@ llmforge anyscale finetune ./end-to-end-examples/fine-tune-function-calling/gen_
 
 Make a note of the final checkpoint after fine-tuning (this should be the last line in the logs). You can now spin up the "Deploy LLMs" template which has all the instructions and required dependencies to serve your finetuned model efficiently. You will find the tutorials on [serving LoRA models](https://github.com/anyscale/templates/blob/main/templates/endpoints_v2/examples/lora/DeployLora.ipynb) (if applicable) and on deploying a [custom model](https://github.com/anyscale/templates/blob/main/templates/endpoints_v2/examples/CustomModels.ipynb) helpful. Once you have set up your fine-tuned model as an Anyscale Service, head over to the "Services" tab in the console and select your deployed service. 
 <p align="center">
-  <img src="./assets/services_list.png" alt="Services list">
+  <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/fine-tune-llm_v2/end-to-end-examples/fine-tune-function-calling/assets/services_list.png" alt="Services list">
 </p>
 
 
 Click on the "Query" drop down box to get instructions on how to query your deployed model. Note down the base URL and API key and place them here.
 
 <p align="center">
-  <img src="./assets/service_token.png" alt="Services token" width="600">
+  <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/fine-tune-llm_v2/end-to-end-examples/fine-tune-function-calling/assets/service_token.png" alt="Services token" width="600">
 </p>
 
 
@@ -375,7 +375,7 @@ For evaluation, we initialise parsers - one for each model - to handle obtaining
 
 
 <p align="center">
-  <img src="./assets/eval_logic.png" alt="Evaluation" width=800>
+  <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/fine-tune-llm_v2/end-to-end-examples/fine-tune-function-calling/assets/eval_logic.png" alt="Evaluation" width=800>
 </p>
 
 Internally, evaluation of each example (for the given parser) is handled by the function `parse_and_eval`. We'll use a dataset-level function `evaluate_model` that provides the full results along with model accuracy.
@@ -434,7 +434,7 @@ plot_results(results_base, results_finetuned, results_gpt)
 Here's how your plot might look like for `Llama-3-8B-Instruct`:
 
 <p align="center">
-  <img src="./assets/error_analysis.png" alt="Error Analysis">
+  <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/fine-tune-llm_v2/end-to-end-examples/fine-tune-function-calling/assets/error_analysis.png" alt="Error Analysis">
 </p>
 
 The base model is a lot more trigger happy when tools are available and further makes a number of mistakes in formatting (generating tool calls with the right schema) and providing the right argument values (making accurate tool calls). A number of these issues are eliminated with fine-tuning and the final fine-tuned model rivals GPT-4 level performance on this dataset.  Note that the difference would be larger in a real-world setting, because our test dataset construction was straightforward and it is very similar to the training dataset.
