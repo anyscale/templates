@@ -19,3 +19,9 @@ repos:
         language: system
         pass_filenames: true
         files: ^templates/
+      - id: check-build-yaml
+        name: BUILD.yaml schema and referenced paths exist
+        entry: python3 ci/validate_build_yaml.py --no-network
+        language: system
+        pass_filenames: false
+        files: ^BUILD\.yaml$
