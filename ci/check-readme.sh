@@ -50,7 +50,17 @@ while IFS= read -r NOTEBOOK; do
   EXPECTED="$DIR/README.md"
 
   if [ ! -f "$EXPECTED" ]; then
-    echo "WARN: $NOTEBOOK has no sibling README.md; skipping" >&2
+    cat >&2 <<EOF
+
+$NOTEBOOK has no sibling README.md.
+Every README.ipynb must have a generated README.md alongside it. Generate it with:
+
+    jupyter-nbconvert --to markdown $NOTEBOOK --output-dir $DIR
+
+then stage README.md and commit again.
+
+EOF
+    EXIT=1
     continue
   fi
 
