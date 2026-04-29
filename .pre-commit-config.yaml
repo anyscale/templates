@@ -23,11 +23,11 @@ repos:
         pass_filenames: true
         files: \.ipynb$
       - id: check-image-urls
-        name: README.ipynb image refs must use absolute URLs
+        name: image refs in notebooks and markdown must use absolute URLs
         entry: python3 ci/check-image-urls.py
         language: system
         pass_filenames: true
-        files: ^templates/.+/README\.ipynb$
+        files: \.(ipynb|md)$
       - id: check-readme
         name: README.md must match nbconvert output of README.ipynb
         entry: bash ci/check-readme.sh
