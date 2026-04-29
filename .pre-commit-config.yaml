@@ -25,3 +25,9 @@ repos:
         language: system
         pass_filenames: true
         files: ^templates/.+/README\.ipynb$
+      - id: check-cleared-outputs
+        name: notebook outputs must be cleared before commit
+        entry: python3 ci/check-cleared-outputs.py
+        language: system
+        pass_filenames: true
+        files: \.ipynb$
