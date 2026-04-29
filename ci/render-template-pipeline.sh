@@ -32,7 +32,10 @@ for t in $TEMPLATES; do
         : > "\$\$LOG"
         # Background watcher: post the workspace URL annotation as soon as
         # anyscale CLI prints the "View and update dependencies here:" line.
+        # Disable -e/pipefail in the subshell — grep returns non-zero when the
+        # log doesn't yet contain the line, which would otherwise kill the watcher.
         (
+          set +eo pipefail
           while :; do
             URL=\$\$(grep 'View and update dependencies here:' "\$\$LOG" 2>/dev/null \\
               | grep -oE 'https://console\.anyscale[^ ]+/workspaces/expwrk_[a-z0-9]+' \\
