@@ -14,8 +14,8 @@ if ! command -v jupyter-nbconvert >/dev/null 2>&1; then
   cat >&2 <<EOF
 ERROR: \`jupyter-nbconvert\` not found. Install nbconvert with one of:
 
-    pip install nbconvert        # plain pip (in an active venv)
-    uv tool install nbconvert    # uv (puts jupyter-nbconvert on PATH globally)
+    pip install nbconvert
+    uv tool install nbconvert
 
 EOF
   exit 1
