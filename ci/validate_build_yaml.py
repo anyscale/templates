@@ -52,6 +52,23 @@ def manifest_accessible(uri):
         return False, f"network error: {e.reason}"
 
 
+def check_gcp_images(entry, name, errors):
+    """Verify that any GCP-hosted image URIs in `entry` are publicly accessible."""
+    ce = entry.get("cluster_env") or {}
+    images = []
+    if ce.get("image_uri"):
+        images.append(ce["image_uri"])
+    byod = ce.get("byod") or {}
+    if byod.get("docker_image"):
+        images.append(byod["docker_image"])
+
+    for img in images:
+        if is_gcp_uri(img):
+            ok, msg = manifest_accessible(img)
+            if not ok:
+                errors.append(f"{name}: GCP image not accessible: {img} ({msg})")
+
+
 def validate_entry(entry, idx, errors, *, check_network):
     name = entry.get("name", f"<entry #{idx}>")
 
@@ -72,22 +89,8 @@ def validate_entry(entry, idx, errors, *, check_network):
     if tp and not (REPO_ROOT / tp).is_dir():
         errors.append(f"{name}: test.tests_path not found: {tp}")
 
-    if not check_network:
-        return
-
-    ce = entry.get("cluster_env") or {}
-    images = []
-    if ce.get("image_uri"):
-        images.append(ce["image_uri"])
-    byod = ce.get("byod") or {}
-    if byod.get("docker_image"):
-        images.append(byod["docker_image"])
-
-    for img in images:
-        if is_gcp_uri(img):
-            ok, msg = manifest_accessible(img)
-            if not ok:
-                errors.append(f"{name}: GCP image not accessible: {img} ({msg})")
+    if check_network:
+        check_gcp_images(entry, name, errors)
 
 
 def main():
