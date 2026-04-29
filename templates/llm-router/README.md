@@ -89,106 +89,6 @@ from src.utils import load_and_display_nectar
 nectar_df = load_and_display_nectar()
 ```
 
-
-<div>
-<style scoped>
-    .dataframe tbody tr th:only-of-type {
-        vertical-align: middle;
-    }
-
-    .dataframe tbody tr th {
-        vertical-align: top;
-    }
-
-    .dataframe thead th {
-        text-align: right;
-    }
-</style>
-<table border="1" class="dataframe">
-  <thead>
-    <tr style="text-align: right;">
-      <th></th>
-      <th>prompt</th>
-      <th>answers</th>
-      <th>turns</th>
-      <th>num_responses</th>
-      <th>source</th>
-      <th>good_natured</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <th>0</th>
-      <td>\n\nHuman: 0.002 = 1000 \n1 = x?\n\nAssistant:</td>
-      <td>[{'answer': 'To find the value of x, we can set up a proportion using the given information:
-
-0.002/1000 = 1/x
-
-To solve for x, we can cross multiply:
-
-0.002 * x = 1000 * 1
-
-0.002x = 1000
-
-Dividing both sides by 0.002:
-
-x = 1000 / 0.002
-
-x = 500,000
-
-Therefore, 1 is equal to 500,000 in this proportion.', 'model': 'gpt-3.5-turbo', 'rank': 1.0}, {'answer': 'To solve for x in this equation, you can use cross-multiplication. Here's how:
-
-0.002 / 1 = 1000 / x
-
-Cross-multiplication gives:
-
-0.002 * x = 1000
-
-To solve for x, divide both sides by 0.002:
-
-x = 1000 / 0.002
-
-So, x equals 500,000.', 'model': 'gpt-4-0613', 'rank': 2.0}, {'answer': 'This looks like a proportion. To solve for x, you can set up a proportion equation:
-
-0.002 / 1 = 1000 / x
-
-Now, cross-multiply:
-
-0.002 \* x = 1 \* 1000
-
-Then, solve for x:
-
-0.002x = 1000
-
-x = 1000 / 0.002
-
-x = 500,000', 'model': 'gpt-3.5-turbo', 'rank': 3.0}, {'answer': 'If 0.002 equals 1000, then 1 would equal 500,000.', 'model': 'gpt-4', 'rank': 4.0}, {'answer': 'I apologize, but the equation you provided is not correct.
-
-0.002 is equal to 0.002, not 1000.
-
-1 is equal to x, not a number.
-
-Can you please provide a correct equation or problem for me to solve?', 'model': 'llama-2-7b-chat', 'rank': 5.0}, {'answer': '0.001 = x', 'model': 'gpt-3.5-turbo-instruct', 'rank': 6.0}, {'answer': 'It seems like you are asking for the value of x in the equation x = 1/0.002. 
-
-To solve this equation, you can divide both sides by 0.002 to get: 
-
-x = 1/0.002 
-x = 500 
-
-Therefore, x = 500.', 'model': 'mistral-7b-instruct-v0.1', 'rank': 7.0}]</td>
-      <td>1</td>
-      <td>7</td>
-      <td>[sharegpt]</td>
-      <td>True</td>
-    </tr>
-  </tbody>
-</table>
-</div>
-
-
-    Number of queries with GPT-4 responses: 191487
-
-
 ## 1.2 Data Preprocessing
 
 We will use a subset of the Nectar data that includes responses from GPT-4, as these will be used to generate scores (as seen below). We will process this data by focusing on single-turn conversations, filtering for good-natured interactions, and cleaning up the prompts and responses to maintain high quality. Additionally, we will sample a small subset from the dataset for the purpose of this tutorial; however, you can skip sampling to work with the full dataset.
@@ -212,66 +112,6 @@ dataset_df = nectar_gpt4_df.sample(N_SUBSET, random_state=42)
 ```python
 display(dataset_df.head())
 ```
-
-
-<div>
-<style scoped>
-    .dataframe tbody tr th:only-of-type {
-        vertical-align: middle;
-    }
-
-    .dataframe tbody tr th {
-        vertical-align: top;
-    }
-
-    .dataframe thead th {
-        text-align: right;
-    }
-</style>
-<table border="1" class="dataframe">
-  <thead>
-    <tr style="text-align: right;">
-      <th></th>
-      <th>prompt</th>
-      <th>source</th>
-      <th>gpt4_response</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <th>6062</th>
-      <td>Based on the features mentioned, which hotel d...</td>
-      <td>[evol_instruct]</td>
-      <td>Based on the features mentioned, Hotel A seems...</td>
-    </tr>
-    <tr>
-      <th>113830</th>
-      <td>Provide step-by-step instructions on how to cr...</td>
-      <td>[ultrachat]</td>
-      <td>Sure, here's a simple step-by-step guide on ho...</td>
-    </tr>
-    <tr>
-      <th>138869</th>
-      <td>What are the 10 largest cities in the US by po...</td>
-      <td>[lmsys-chat-1m]</td>
-      <td>As of the most recent data available, the 10 l...</td>
-    </tr>
-    <tr>
-      <th>169249</th>
-      <td>Write a comparison essay of at least 500 words...</td>
-      <td>[ultrachat]</td>
-      <td>Title: A Comparative Analysis of Driving a Car...</td>
-    </tr>
-    <tr>
-      <th>116934</th>
-      <td>Q: You are provided with an "Event", "Intent" ...</td>
-      <td>[flan_v2_niv2]</td>
-      <td>PersonX might feel satisfied or content using ...</td>
-    </tr>
-  </tbody>
-</table>
-</div>
-
 
 ## 1.3 Data Labeling
 
@@ -301,72 +141,6 @@ dataset_df = generate_mixtral_responses(
 display(dataset_df.head())
 ```
 
-
-<div>
-<style scoped>
-    .dataframe tbody tr th:only-of-type {
-        vertical-align: middle;
-    }
-
-    .dataframe tbody tr th {
-        vertical-align: top;
-    }
-
-    .dataframe thead th {
-        text-align: right;
-    }
-</style>
-<table border="1" class="dataframe">
-  <thead>
-    <tr style="text-align: right;">
-      <th></th>
-      <th>prompt</th>
-      <th>source</th>
-      <th>gpt4_response</th>
-      <th>mixtral_response</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <th>6062</th>
-      <td>Based on the features mentioned, which hotel d...</td>
-      <td>[evol_instruct]</td>
-      <td>Based on the features mentioned, Hotel A seems...</td>
-      <td>Based on the information you've provided, I c...</td>
-    </tr>
-    <tr>
-      <th>113830</th>
-      <td>Provide step-by-step instructions on how to cr...</td>
-      <td>[ultrachat]</td>
-      <td>Sure, here's a simple step-by-step guide on ho...</td>
-      <td>Sure, I'd be happy to help you make a homemad...</td>
-    </tr>
-    <tr>
-      <th>138869</th>
-      <td>What are the 10 largest cities in the US by po...</td>
-      <td>[lmsys-chat-1m]</td>
-      <td>As of the most recent data available, the 10 l...</td>
-      <td>Sure, I'd be happy to help with that! Here ar...</td>
-    </tr>
-    <tr>
-      <th>169249</th>
-      <td>Write a comparison essay of at least 500 words...</td>
-      <td>[ultrachat]</td>
-      <td>Title: A Comparative Analysis of Driving a Car...</td>
-      <td>Title: The Great Debate: Driving a Car vs. Ri...</td>
-    </tr>
-    <tr>
-      <th>116934</th>
-      <td>Q: You are provided with an "Event", "Intent" ...</td>
-      <td>[flan_v2_niv2]</td>
-      <td>PersonX might feel satisfied or content using ...</td>
-      <td>PersonX likely feels comfortable and focused,...</td>
-    </tr>
-  </tbody>
-</table>
-</div>
-
-
 ### Generate GPT-4-as-a-judge scores 
 
 Let's first take a look at an example query we will send to GPT-4 for judgement
@@ -377,30 +151,6 @@ from src.utils import inspect_llm_judge_queries
 
 inspect_llm_judge_queries(dataset_df)
 ```
-
-    [Instruction]
-    Evaluate the AI assistant's proficiency in answering the user question displayed below. Your evaluation should consider factors such as the helpfulness, relevance, adherence to real-world facts, depth, creativity, and level of detail of the response. You will be given a reference answer which is considered of high quality. Your assessment will have two lines: First line has a rating on a scale of 1 to 5 with a higher rating representing higher response quality. Follow strictly this format: "[[rating]]", for example: "[[3]]". Second line contains a short explanation of your rating.
-    
-    [Question]
-    Q: You are provided with an "Event", "Intent" related to PersonX. Guess a reaction/reaction of PersonX about the given event and their intention.
-    Event:PersonX uses ___ in class. Intent: 1) to use his prefered writing implement
-    A:
-    
-    [Reference Answer]
-    PersonX might feel satisfied or content using their preferred writing implement in class, as it aligns with their intention to utilize a comfortable and desired tool for writing. 
-    Confidence: 85%
-    
-    [Assistant Answer]
-     PersonX likely feels comfortable and focused, as they are using their preferred writing implement in class. This may help them engage more effectively with the material being taught and participate in the class more willingly.
-    
-    Guidelines for Rating:
-     - High Rating (4-5): Reserved for responses that are very close to the quality of the reference or even better.
-     - Medium Rating (3): Reserved for responses that have moderate quality compared to the reference.
-     - Low Rating (1-2): Allocated to response that are much lower quality compared to the reference or completely wrong.
-    
-    Assessment:
-    
-
 
 Now, we apply a similar online batch-inference method to generate our labels.
 
@@ -420,78 +170,6 @@ dataset_df = generate_llm_judge_labels(dataset_df, os.getenv('OPENAI_API_KEY'))
 display(dataset_df.head())
 ```
 
-
-<div>
-<style scoped>
-    .dataframe tbody tr th:only-of-type {
-        vertical-align: middle;
-    }
-
-    .dataframe tbody tr th {
-        vertical-align: top;
-    }
-
-    .dataframe thead th {
-        text-align: right;
-    }
-</style>
-<table border="1" class="dataframe">
-  <thead>
-    <tr style="text-align: right;">
-      <th></th>
-      <th>prompt</th>
-      <th>source</th>
-      <th>gpt4_response</th>
-      <th>mixtral_response</th>
-      <th>mixtral_score</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <th>6062</th>
-      <td>Based on the features mentioned, which hotel d...</td>
-      <td>[evol_instruct]</td>
-      <td>Based on the features mentioned, Hotel A seems...</td>
-      <td>Based on the information you've provided, I c...</td>
-      <td>5</td>
-    </tr>
-    <tr>
-      <th>113830</th>
-      <td>Provide step-by-step instructions on how to cr...</td>
-      <td>[ultrachat]</td>
-      <td>Sure, here's a simple step-by-step guide on ho...</td>
-      <td>Sure, I'd be happy to help you make a homemad...</td>
-      <td>4</td>
-    </tr>
-    <tr>
-      <th>138869</th>
-      <td>What are the 10 largest cities in the US by po...</td>
-      <td>[lmsys-chat-1m]</td>
-      <td>As of the most recent data available, the 10 l...</td>
-      <td>Sure, I'd be happy to help with that! Here ar...</td>
-      <td>5</td>
-    </tr>
-    <tr>
-      <th>169249</th>
-      <td>Write a comparison essay of at least 500 words...</td>
-      <td>[ultrachat]</td>
-      <td>Title: A Comparative Analysis of Driving a Car...</td>
-      <td>Title: The Great Debate: Driving a Car vs. Ri...</td>
-      <td>5</td>
-    </tr>
-    <tr>
-      <th>116934</th>
-      <td>Q: You are provided with an "Event", "Intent" ...</td>
-      <td>[flan_v2_niv2]</td>
-      <td>PersonX might feel satisfied or content using ...</td>
-      <td>PersonX likely feels comfortable and focused,...</td>
-      <td>5</td>
-    </tr>
-  </tbody>
-</table>
-</div>
-
-
 ### Full Dataset
 We have previously generated the full labeled datasets, created a train and validation splits, and published them as a public huggingface dataset `routellm/gpt4_dataset`. Let's load the dataset and explore the score distribution.
 
@@ -509,87 +187,6 @@ display(train_df.head())
 visualize_label_distribution(train_df, key="mixtral_score")
 ```
 
-    Train size: 109101
-
-
-
-<div>
-<style scoped>
-    .dataframe tbody tr th:only-of-type {
-        vertical-align: middle;
-    }
-
-    .dataframe tbody tr th {
-        vertical-align: top;
-    }
-
-    .dataframe thead th {
-        text-align: right;
-    }
-</style>
-<table border="1" class="dataframe">
-  <thead>
-    <tr style="text-align: right;">
-      <th></th>
-      <th>prompt</th>
-      <th>source</th>
-      <th>gpt4_response</th>
-      <th>mixtral_response</th>
-      <th>mixtral_score</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <th>0</th>
-      <td>I'll give you a review, can you extract the fo...</td>
-      <td>[lmsys-chat-1m]</td>
-      <td>Sure, here's the analysis of the review:\n\n1....</td>
-      <td>Food aspects and opinion words:\n\n1. Made to ...</td>
-      <td>4</td>
-    </tr>
-    <tr>
-      <th>1</th>
-      <td>Answer the following question: Claim: "Joker m...</td>
-      <td>[flan_v2_cot]</td>
-      <td>The answer is no.\nChain of thoughts: Stan Lee...</td>
-      <td>The answer is no.\n\nChain of thoughts: While ...</td>
-      <td>5</td>
-    </tr>
-    <tr>
-      <th>2</th>
-      <td>TASK DEFINITION: In this task you will be give...</td>
-      <td>[flan_v2_niv2]</td>
-      <td>ZdoublexpropheciesS</td>
-      <td>ZdoublexpropheciesS\n\nIn this task, you are a...</td>
-      <td>5</td>
-    </tr>
-    <tr>
-      <th>3</th>
-      <td>Detailed Instructions: In this task, you need ...</td>
-      <td>[flan_v2_niv2]</td>
-      <td>Yes</td>
-      <td>No, 'station' is not the longest word in the s...</td>
-      <td>5</td>
-    </tr>
-    <tr>
-      <th>4</th>
-      <td>A guy pick up a woman Then he puts her down Ex...</td>
-      <td>[sharegpt]</td>
-      <td>This phrase could be interpreted as a joke bec...</td>
-      <td>This joke is a play on words and relies on the...</td>
-      <td>5</td>
-    </tr>
-  </tbody>
-</table>
-</div>
-
-
-
-    
-![png](README_files/README_24_2.png)
-    
-
-
 Higher counts for 4-5 scores indicate that Mixtral-8x7B consistently produces high-quality responses, demonstrating its competitive performance compared to the June 2023 version of GPT-4, whose responses are logged in the Nectar dataset.
 
 Let us assume that if the score is >= 4, we will route to the OSS model (indicating the response quality is good enough); otherwise, we will route to the closed model. Under this assumption, the data distribution looks like this:
@@ -603,12 +200,6 @@ train_df["routing_label"] = train_df["mixtral_score"].apply(
 
 visualize_label_distribution(train_df, key="routing_label")
 ```
-
-
-    
-![png](README_files/README_26_0.png)
-    
-
 
 # Step 2: Finetune a router model <a id="finetune-router-model"></a>
 
@@ -628,21 +219,6 @@ from src.utils import inspect_instructions
 inspect_instructions()
 ```
 
-    [Instruction]
-    Based on the question provided below, predict the score an expert evaluator would give to an AI assistant's response, considering its helpfulness, relevance, adherence to facts, depth, creativity, and detail. Your prediction should infer the level of proficiency needed to address the question effectively. Use a scale from 1 to 5, where a higher score indicates a higher anticipated quality of response. Provide your prediction as: "[[predicted rating]]".
-    
-    Score criteria:
-    - **4-5**: The AI assistant can produce a very strong answer, showing deep understanding, creativity, detailed insight, and high relevance.
-    - **3**: The AI assistant can provide an adequate answer with moderate detail, relevance, and factual accuracy.
-    - **1-2**: The AI assistant will struggle to produce a strong answer due to the question's difficulty, vagueness, or the assistant's limitations.
-    
-    [Question]
-    {question}
-    
-    Prediction:
-    
-
-
 ### API Data Format
 
 To finetune the model, we must format the data to be compatible with [Anyscale's finetuning API](https://docs.anyscale.com/endpoints/fine-tuning/dataset-prep).
@@ -658,14 +234,6 @@ train_df["messages"] = prepare_ft_messages(train_df, "mixtral_score")
 display(train_df["messages"].iloc[0])
 ```
 
-
-    [{'role': 'system',
-      'content': '[Instruction]\nBased on the question provided below, predict the score an expert evaluator would give to an AI assistant\'s response, considering its helpfulness, relevance, adherence to facts, depth, creativity, and detail. Your prediction should infer the level of proficiency needed to address the question effectively. Use a scale from 1 to 5, where a higher score indicates a higher anticipated quality of response. Provide your prediction as: "[[predicted rating]]".\n\nScore criteria:\n- **4-5**: The AI assistant can produce a very strong answer, showing deep understanding, creativity, detailed insight, and high relevance.\n- **3**: The AI assistant can provide an adequate answer with moderate detail, relevance, and factual accuracy.\n- **1-2**: The AI assistant will struggle to produce a strong answer due to the question\'s difficulty, vagueness, or the assistant\'s limitations.\n'},
-     {'role': 'user',
-      'content': "[Question]\nI'll give you a review, can you extract the food aspects and the opinion words of these aspects and analyze the sentiment of these opinion from this review? the review is:They tore the old NAME_1 down then built another one...? Anyway, they sell wine and beer and snacks and have a seating area inside and outside to eat. Besides gas, the big draw is the Made to Order food. I ordered some tacos and French toast sticks both were pretty good. I think I'd like to try more snacks.And they're open 24/7.\n\nPrediction:\n"},
-     {'role': 'assistant', 'content': '[[4]]'}]
-
-
 ### Label Rebalancing
 
 For classification tasks, it's recommended to train on label-balanced datasets to ensure models are not biased to a specific label. We will balance the dataset based on `routing_label`, as this is the label of primary interest.
@@ -679,9 +247,6 @@ balanced_train_df = balance_dataset(train_df, key="routing_label")
 
 print(f"Train size: {len(balanced_train_df)}")
 ```
-
-    Train size: 29504
-
 
 ### Subsample and Store Data
 
@@ -709,46 +274,11 @@ For this tutorial, we will perform full-parameter finetuning of Llama3-8B on the
 !cat configs/ft_config_a10.yaml
 ```
 
-    model_id: meta-llama/Meta-Llama-3-8B
-    train_path: /mnt/user_storage/train_data_sample.jsonl
-    valid_path: /mnt/user_storage/train_data_sample.jsonl
-    context_length: 1024
-    num_devices: 8
-    num_epochs: 5
-    checkpoint_and_evaluation_frequency: 
-      unit: epochs
-      frequency: 5
-    train_batch_size_per_device: 4
-    eval_batch_size_per_device: 4
-    lr_scheduler_type: constant
-    learning_rate: 1e-5
-    num_checkpoints_to_keep: 1
-    gradient_checkpointing: True
-    output_dir: /mnt/local_storage
-    deepspeed:
-      config_path: config_files/deepspeed/zero_3_optimizer_parameter_offload.json
-    flash_attention_2: true
-    classifier_config:
-      label_tokens:
-          - "[[1]]"
-          - "[[2]]"
-          - "[[3]]"
-          - "[[4]]"
-          - "[[5]]"
-
-
 
 ```python
 # View job yaml config
 !cat configs/ft_job.yaml
 ```
-
-    name: llm-router-tutorial
-    entrypoint: python src/ft.py configs/ft_config_a10.yaml
-    image_uri: localhost:5555/anyscale/llm-forge:0.5.0.0
-    requirements: requirements.txt
-    max_retries: 0
-
 
 
 ```python
@@ -807,37 +337,6 @@ print("Messages:")
 pprint(input_example['messages'])
 ```
 
-    Prompt: What challenges did FDR face while in office
-    Label: 5
-    Messages:
-    [{'content': '[Instruction]\n'
-                 'Based on the question provided below, predict the score an '
-                 "expert evaluator would give to an AI assistant's response, "
-                 'considering its helpfulness, relevance, adherence to facts, '
-                 'depth, creativity, and detail. Your prediction should infer the '
-                 'level of proficiency needed to address the question effectively. '
-                 'Use a scale from 1 to 5, where a higher score indicates a higher '
-                 'anticipated quality of response. Provide your prediction as: '
-                 '"[[predicted rating]]".\n'
-                 '\n'
-                 'Score criteria:\n'
-                 '- **4-5**: The AI assistant can produce a very strong answer, '
-                 'showing deep understanding, creativity, detailed insight, and '
-                 'high relevance.\n'
-                 '- **3**: The AI assistant can provide an adequate answer with '
-                 'moderate detail, relevance, and factual accuracy.\n'
-                 '- **1-2**: The AI assistant will struggle to produce a strong '
-                 "answer due to the question's difficulty, vagueness, or the "
-                 "assistant's limitations.\n",
-      'role': 'system'},
-     {'content': '[Question]\n'
-                 'What challenges did FDR face while in office\n'
-                 '\n'
-                 'Prediction:\n',
-      'role': 'user'},
-     {'content': '[[5]]', 'role': 'assistant'}]
-
-
 Let's run inference with this example and examine the model's output.
 
 
@@ -854,34 +353,6 @@ del result
 gc.collect()
 torch.cuda.empty_cache() 
 ```
-
-    Loading model checkpoint from routellm/causal_llm_gpt4_augmented ...
-
-
-
-    Loading checkpoint shards:   0%|          | 0/4 [00:00<?, ?it/s]
-
-
-    Special tokens have been added in the vocabulary, make sure the associated word embeddings are fine-tuned or trained.
-
-
-    Done loading model in 5.880241394042969 seconds.
-    {'binary_prob': 0.9662781,
-     'output_ids': tensor([128006,  78191, 128007,    271, 128260, 128009]),
-     'output_str': '<|start_header_id|>assistant<|end_header_id|>\n'
-                   '\n'
-                   '[[5]]<|eot_id|>',
-     'output_tokens': ['<|start_header_id|>',
-                       'assistant',
-                       '<|end_header_id|>',
-                       'ĊĊ',
-                       '[[5]]',
-                       '<|eot_id|>'],
-     'score_logits': array([10.3125, 10.9375, 11.4375, 14.4375, 15.    ], dtype=float32),
-     'score_pred': 5,
-     'softmax_scores': array([0.00566901, 0.0105911 , 0.01746178, 0.3507292 , 0.6155489 ],
-          dtype=float32)}
-
 
 The model outputs the predicted score as a special token`[[5]]`, since it is trained to predict one of the 5 labels which we add as special tokens to the vocabulary. We extract softmax scores of each of 5 labels in `softmax_scores`, and compute the routing probability as `binary_prob = sum(softmax_scores[3:])`.
 
@@ -905,12 +376,6 @@ from IPython.display import Image, display
 image_path = "/home/ray/default/RouteLLM/gsm8k.png"
 display(Image(filename=image_path))
 ```
-
-
-    
-![png](README_files/README_51_0.png)
-    
-
 
 This plot illustrates that as we relax the cost constraints (i.e., increase the percentage of GPT-4 calls), the performance improves. While the performance of a random router improves linearly with cost, our router achieves significantly better results at each cost level.
 
