@@ -130,11 +130,3 @@ worker_node_types:
         Value: "true"
   min_workers: 0
   max_workers: 100
-aws:
-  TagSpecifications:
-    - ResourceType: instance
-      Tags:
-        - Key: as-feature-enable-multi-az-serve
-          Value: "true"
-        - Key: as-feature-multi-zone
-          Value: "true"
