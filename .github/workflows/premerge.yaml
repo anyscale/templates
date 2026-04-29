@@ -18,10 +18,11 @@ jobs:
       with:
         python-version: '3.9'
 
-    # Install pre-commit dependencies (nbconvert provides the jupyter CLI
-    # that the existing generate-readme local hook needs)
+    # Install pre-commit dependencies. nbconvert provides the jupyter CLI
+    # the existing generate-readme local hook needs; pyyaml + pydantic are
+    # for the new check-build-yaml local hook.
     - name: Install pre-commit
-      run: pip install pre-commit==3.8.0 nbconvert==7.17.1
+      run: pip install pre-commit==3.8.0 nbconvert==7.17.1 pyyaml pydantic
 
     # Run pre-commit hooks with verbose logging
     - name: Run pre-commit
@@ -50,5 +51,5 @@ jobs:
     - uses: actions/setup-python@v5
       with:
         python-version: '3.11'
-    - run: pip install pyyaml
+    - run: pip install pyyaml pydantic
     - run: python ci/validate_build_yaml.py

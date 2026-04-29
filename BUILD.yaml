@@ -296,8 +296,8 @@
   cluster_env:
     image_uri: anyscale/ray:2.54.1-slim-py312-cu128
   compute_config:
-    AWS: templates/image-search-and-classification/configs/aws.yaml
-    GCP: templates/image-search-and-classification/configs/gce.yaml
+    AWS: configs/image-search-and-classification/aws.yaml
+    GCP: configs/image-search-and-classification/gce.yaml
   test:
     tests_path: tests/image-search-and-classification/
     command: bash tests.sh

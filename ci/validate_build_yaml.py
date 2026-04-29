@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate BUILD.yaml: referenced paths exist and GCP images are publicly accessible."""
+"""Validate BUILD.yaml: schema, paths, name uniqueness, and (optionally) GCP image accessibility."""
 
 from __future__ import annotations
 
@@ -8,8 +8,17 @@ import sys
 import urllib.error
 import urllib.request
 from pathlib import Path
+from typing import Optional
 
 import yaml
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    TypeAdapter,
+    ValidationError,
+    model_validator,
+)
 
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -22,12 +31,79 @@ ACCEPT = ", ".join([
 ])
 
 
-def is_gcp_uri(uri):
+# ---------------------------------------------------------------- schema
+
+class Strict(BaseModel):
+    """Reject unknown keys at every level."""
+    model_config = ConfigDict(extra="forbid")
+
+
+class Byod(Strict):
+    docker_image: str
+    ray_version: str
+
+
+class ClusterEnv(Strict):
+    image_uri: Optional[str] = None
+    byod: Optional[Byod] = None
+
+    @model_validator(mode="after")
+    def xor_image_or_byod(self):
+        if (self.image_uri is None) == (self.byod is None):
+            raise ValueError("must have exactly one of 'image_uri' or 'byod'")
+        return self
+
+
+class ComputeConfig(Strict):
+    GCP: str = Field(pattern=r"^configs/.*\.yaml$")
+    AWS: str = Field(pattern=r"^configs/.*\.yaml$")
+
+
+class Test(Strict):
+    tests_path: str = Field(pattern=r"^tests/")
+    command: str
+    timeout_in_sec: int
+
+
+class Entry(Strict):
+    name: str
+    dir: str = Field(pattern=r"^templates/")
+    cluster_env: ClusterEnv
+    compute_config: ComputeConfig
+    test: Test
+
+
+# ------------------------------------------- filesystem + name uniqueness
+
+def check_filesystem_and_uniqueness(entries: list[Entry]) -> list[str]:
+    """Verify referenced paths exist and names are unique. (Pydantic can't
+    express filesystem state, so we do this in Python.)"""
+    seen: set[str] = set()
+    errors: list[str] = []
+    for e in entries:
+        if e.name in seen:
+            errors.append(f"duplicate name: {e.name!r}")
+        seen.add(e.name)
+
+        if not (REPO_ROOT / e.dir).is_dir():
+            errors.append(f"{e.name}: dir not found: {e.dir}")
+        for cloud in ("GCP", "AWS"):
+            path = getattr(e.compute_config, cloud)
+            if not (REPO_ROOT / path).is_file():
+                errors.append(f"{e.name}.compute_config.{cloud}: not found: {path}")
+        if not (REPO_ROOT / e.test.tests_path).is_dir():
+            errors.append(f"{e.name}.test.tests_path: not found: {e.test.tests_path}")
+    return errors
+
+
+# ------------------------------------------------ GCP image accessibility
+
+def is_gcp_uri(uri: str) -> bool:
     host = uri.split("/", 1)[0]
     return host.endswith(".pkg.dev") or host.endswith("gcr.io")
 
 
-def parse_ref(uri):
+def parse_ref(uri: str):
     repo, _, tag = uri.partition(":")
     if not tag:
         tag = "latest"
@@ -38,7 +114,7 @@ def parse_ref(uri):
     return host, repo_path, tag
 
 
-def manifest_accessible(uri):
+def manifest_accessible(uri: str) -> tuple[bool, str]:
     host, repo, tag = parse_ref(uri)
     url = f"https://{host}/v2/{repo}/manifests/{tag}"
     req = urllib.request.Request(url, method="HEAD")
@@ -52,48 +128,25 @@ def manifest_accessible(uri):
         return False, f"network error: {e.reason}"
 
 
-def check_gcp_images(entry, name, errors):
-    """Verify that any GCP-hosted image URIs in `entry` are publicly accessible."""
-    ce = entry.get("cluster_env") or {}
-    images = []
-    if ce.get("image_uri"):
-        images.append(ce["image_uri"])
-    byod = ce.get("byod") or {}
-    if byod.get("docker_image"):
-        images.append(byod["docker_image"])
-
-    for img in images:
-        if is_gcp_uri(img):
-            ok, msg = manifest_accessible(img)
-            if not ok:
-                errors.append(f"{name}: GCP image not accessible: {img} ({msg})")
-
-
-def validate_entry(entry, idx, errors, *, check_network):
-    name = entry.get("name", f"<entry #{idx}>")
-
-    d = entry.get("dir")
-    if not d:
-        errors.append(f"{name}: missing 'dir'")
-    elif not (REPO_ROOT / d).is_dir():
-        errors.append(f"{name}: dir does not exist: {d}")
-
-    cc = entry.get("compute_config") or {}
-    for cloud in ("GCP", "AWS"):
-        path = cc.get(cloud)
-        if path and not (REPO_ROOT / path).is_file():
-            errors.append(f"{name}: compute_config.{cloud} not found: {path}")
-
-    test = entry.get("test") or {}
-    tp = test.get("tests_path")
-    if tp and not (REPO_ROOT / tp).is_dir():
-        errors.append(f"{name}: test.tests_path not found: {tp}")
-
-    if check_network:
-        check_gcp_images(entry, name, errors)
+def check_gcp_images(entries: list[Entry]) -> list[str]:
+    errors: list[str] = []
+    for e in entries:
+        images: list[str] = []
+        if e.cluster_env.image_uri:
+            images.append(e.cluster_env.image_uri)
+        if e.cluster_env.byod:
+            images.append(e.cluster_env.byod.docker_image)
+        for img in images:
+            if is_gcp_uri(img):
+                ok, msg = manifest_accessible(img)
+                if not ok:
+                    errors.append(f"{e.name}: GCP image not accessible: {img} ({msg})")
+    return errors
 
 
-def main():
+# ------------------------------------------------------------------ main
+
+def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--no-network",
@@ -102,17 +155,20 @@ def main():
     )
     args = parser.parse_args()
 
-    build_yaml = REPO_ROOT / "BUILD.yaml"
-    with build_yaml.open() as f:
-        entries = yaml.safe_load(f)
+    raw = yaml.safe_load((REPO_ROOT / "BUILD.yaml").read_text())
 
-    if not isinstance(entries, list):
-        print("ERROR: BUILD.yaml top-level must be a list", file=sys.stderr)
+    try:
+        entries = TypeAdapter(list[Entry]).validate_python(raw)
+    except ValidationError as e:
+        print("FAIL: BUILD.yaml schema errors:", file=sys.stderr)
+        for err in e.errors():
+            loc = ".".join(str(p) for p in err["loc"])
+            print(f"::error::{loc}: {err['msg']}", file=sys.stderr)
         return 1
 
-    errors = []
-    for idx, entry in enumerate(entries):
-        validate_entry(entry, idx, errors, check_network=not args.no_network)
+    errors = check_filesystem_and_uniqueness(entries)
+    if not args.no_network:
+        errors.extend(check_gcp_images(entries))
 
     if errors:
         print(f"FAIL: {len(errors)} validation error(s):", file=sys.stderr)
@@ -120,7 +176,7 @@ def main():
             print(f"::error::{err}", file=sys.stderr)
         return 1
 
-    mode = "paths only" if args.no_network else "paths + GCP images"
+    mode = "schema + paths" if args.no_network else "schema + paths + GCP images"
     print(f"OK: validated {len(entries)} BUILD.yaml entries ({mode})")
     return 0
 
