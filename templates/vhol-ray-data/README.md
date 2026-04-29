@@ -14,7 +14,7 @@ In this virtual session, you'll learn how to use Ray to:
 
 This free lab is more than a webinar. You'll leave with a working understanding of Ray, a reusable project you can build on, and a clear view of how Ray and Anyscale work together to accelerate AI development.
 
-![Ray Overview](assets/img01.png)
+![Ray Overview](https://raw.githubusercontent.com/anyscale/templates/main/templates/vhol-ray-data/assets/img01.png)
 
 ## Contents
 
@@ -24,18 +24,18 @@ The main hands-on lab notebook (`VHOL.ipynb`) guides you through building a comp
 
 1. **Introduction to Ray** - Learn core Ray concepts including tasks, actors, and the Ray ecosystem
 
-   ![Ray Tasks](assets/img02.png)
+   ![Ray Tasks](https://raw.githubusercontent.com/anyscale/templates/main/templates/vhol-ray-data/assets/img02.png)
 
 2. **Introduction to Ray Data** - Understand streaming execution, blocks, and distributed data processing
 
-   ![Ray Data Blocks](assets/img03.png)
+   ![Ray Data Blocks](https://raw.githubusercontent.com/anyscale/templates/main/templates/vhol-ray-data/assets/img03.png)
 
    **Traditional Bulk Processing:**  
-   ![Bulk Processing](assets/img04.png)  
+   ![Bulk Processing](https://raw.githubusercontent.com/anyscale/templates/main/templates/vhol-ray-data/assets/img04.png)  
    
    **Streaming Execution**: Ray Data processes large datasets efficiently using a streaming model with blocks as the basic units of data, enabling pipeline parallelism and memory-efficient processing.
 
-   ![Streaming Processing](assets/img05.png)  
+   ![Streaming Processing](https://raw.githubusercontent.com/anyscale/templates/main/templates/vhol-ray-data/assets/img05.png)  
    - Enables pipeline parallelism, allowing data to flow through multiple processing stages concurrently for increased efficiency.
 
 3. **Building a Scalable AI Pipeline** - Create an end-to-end pipeline that:
@@ -48,11 +48,11 @@ The main hands-on lab notebook (`VHOL.ipynb`) guides you through building a comp
 
 **Scenario**: You'll build a pipeline that combines animal prompts with clothing details, enhances them using an LLM, and generates images using a text-to-image model—all orchestrated at scale with Ray Data.
 
-![Pipeline Progress](assets/img06.png)
+![Pipeline Progress](https://raw.githubusercontent.com/anyscale/templates/main/templates/vhol-ray-data/assets/img06.png)
 
-![Pipeline Progress](assets/Part2.png)
+![Pipeline Progress](https://raw.githubusercontent.com/anyscale/templates/main/templates/vhol-ray-data/assets/Part2.png)
 
-![Pipeline Progress](assets/Part3.png)
+![Pipeline Progress](https://raw.githubusercontent.com/anyscale/templates/main/templates/vhol-ray-data/assets/Part3.png)
 
 
 **Key Learning Points**:
