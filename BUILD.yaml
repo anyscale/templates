@@ -2,7 +2,7 @@
 # https://github.com/anyscale/first-job
 # owner: @matthew-owen
 - name: job-intro
-  dir: templates/intro-jobs
+  dir: templates/job-intro
   cluster_env:
     image_uri: anyscale/ray:2.54.1-py311
   compute_config:
@@ -15,7 +15,7 @@
 
 # owner: @huaiwei
 - name: workspace-intro
-  dir: templates/intro-workspaces
+  dir: templates/workspace-intro
   cluster_env:
     image_uri: anyscale/ray:2.54.1-py311
   compute_config:
@@ -28,7 +28,7 @@
 
 # owner: @edward
 - name: service-intro
-  dir: templates/intro-services
+  dir: templates/service-intro
   cluster_env:
     image_uri: anyscale/ray:2.54.1-py311
   compute_config:
@@ -69,7 +69,7 @@
 
 # owner: @aydin
 - name: model-multiplexing
-  dir: templates/model-multiplexing-forecast
+  dir: templates/model-multiplexing
   cluster_env:
     image_uri: anyscale/ray:2.54.1-slim-py312-cu128
   compute_config:
@@ -95,7 +95,7 @@
 
 # owner: @akshay
 - name: serve-stable-diffusion-v2
-  dir: templates/serve-stable-diffusion
+  dir: templates/serve-stable-diffusion-v2
   cluster_env:
     image_uri: anyscale/ray:2.54.1-py312-cu128
   compute_config:
@@ -320,7 +320,7 @@
 
 # owner: @eric
 - name: skyrl
-  dir: templates/rl-skyrl
+  dir: templates/skyrl
   cluster_env:
     byod:
       docker_image: novaskyai/skyrl-train-ray-2.51.1-py3.12-cu12.8
@@ -348,7 +348,7 @@
 
 # owner: @justin, @mattd
 - name: finetune-stable-diffusion
-  dir: templates/fine-tune-stable-diffusion
+  dir: templates/finetune-stable-diffusion
   cluster_env:
     image_uri: anyscale/ray:2.54.1-py311-cu128
   compute_config:
@@ -387,7 +387,7 @@
 
 # owner: @mattd
 - name: parallel-experiments
-  dir: templates/intro-tune
+  dir: templates/parallel-experiments
   cluster_env:
     image_uri: anyscale/ray:2.54.1-slim-py313-cu129
   compute_config:
@@ -413,7 +413,7 @@
 
 # owner: @saihaj, @chris-ray-zhang, @soffer-anyscale
 - name: ray-data-batch-image-classification
-  dir: templates/ray-data-batch-classification
+  dir: templates/ray-data-batch-image-classification
   cluster_env:
     image_uri: anyscale/ray:2.54.1-py312-cu128
   compute_config:
