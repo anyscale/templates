@@ -11,9 +11,9 @@ In this tutorial, you will learn about:
 2. Basic features of [Ray Train](https://docs.ray.io/en/latest/train/train.html) such as specifying the number of training workers and the desired accelerator type.
 3. Anyscale's smart instance selection and autoscaling that makes it simple to scale up your training workload to any size.
 
-## Step 1: Install python dependencies
+## Step 1: Install Python dependencies
 
-The application requires a few extra Python dependencies. Install them using `pip` and they'll be automatically installed on remote workers when they're launched!
+The application requires a few extra Python dependencies. Install them using `pip`. When launching remote workers, Anyscale automatically installs the dependencies on them.
 
 
 ```python
@@ -24,18 +24,18 @@ The application requires a few extra Python dependencies. Install them using `pi
 
 First, provide some images of the subject you want to fine-tune on.
 
-We'll use a sample dog dataset to demonstrate, but you can use pictures of your own subject.
-Fine-tuning works best if your images are all cropped to a square with your subject in the center!
+This example uses a sample dog dataset to demonstrate, but you can use pictures of your own subject.
+Fine-tuning works best if your images are all cropped to a square with your subject in the center.
 
 A few notes on these constants that you can modify when training on your own custom subject:
-* `SUBJECT_TOKEN` is the a unique token that you will teach the model to correspond to your subject. This can be is any token that does not appear much in normal text.
-    * Think of it as the name of your subject that the diffusion model will learn to recognize. Feel free to leave it as `sks`.
-    * When generating images, make sure to include `sks` in your prompt -- otherwise the model will just generate any random dog, not the dog that we fine-tuned it on!
+* `SUBJECT_TOKEN` is the a unique token that you teach the model to correspond to your subject. This token can be any token that doesn't appear much in normal text.
+    * Think of it as the name of your subject that the diffusion model learns to recognize. You can leave it as `sks`.
+    * When generating images, make sure to include `sks` in your prompt--otherwise the model generates any random dog, not the dog that you fine-tuned it on.
 * `SUBJECT_CLASS` is the category that your subject falls into.
     * For example, if you have a human subject, the class could be `"man"` or `"woman"`.
-    * This class combined with the `SUBJECT_TOKEN` can be used in a prompt to convey the meaning: "a dog named sks".
-* Put training images of your subject in `SUBJECT_IMAGES_PATH`. We'll later upload it to cloud storage so that all worker nodes can access the dataset.
-    * The easiest way to use your own images is to drag files into a folder in the VSCode file explorer, then moving the folder to `SUBJECT_IMAGES_PATH` in the command line. (Ex: `mv ./images /mnt/local_storage/subject_images`)
+    * Use this class in combination with the `SUBJECT_TOKEN` in a prompt to convey the meaning: "a dog named sks".
+* Put training images of your subject in `SUBJECT_IMAGES_PATH` to upload later to cloud storage so that all worker nodes can access the dataset.
+    * The easiest way to use your own images is to drag files into a folder in the VS Code file explorer, then moving the folder to `SUBJECT_IMAGES_PATH` in the command line. For example, `mv ./images /mnt/local_storage/subject_images`.
 
 
 ```python
@@ -46,11 +46,11 @@ SUBJECT_IMAGES_PATH = "/mnt/local_storage/subject_images"
 
 
 ```python
-# Copy the sample dog dataset to the subject images path -- feel free to comment this out.
+# Copy the sample dog dataset to the subject images path--feel free to comment this out.
 !mkdir -p {SUBJECT_IMAGES_PATH} && cp ./assets/dog/*.jpeg {SUBJECT_IMAGES_PATH}
 ```
 
-Take a look at the dataset!
+Take a look at the dataset.
 
 
 ```python
@@ -60,7 +60,7 @@ from pathlib import Path
 display(*[Image(filename=image_path, width=250) for image_path in Path(SUBJECT_IMAGES_PATH).iterdir()])
 ```
 
-Next, upload the dataset to cloud storage so that we can download it on each worker node at the start of training.
+Next, upload the dataset to cloud storage so that Anyscale can download it on each worker node at the start of training.
 
 
 ```python
@@ -72,9 +72,9 @@ upload_to_cloud(local_path=SUBJECT_IMAGES_PATH, cloud_uri=DATA_CLOUD_PATH)
 print("Uploaded data to: ", DATA_CLOUD_PATH)
 ```
 
-Let's come up with some prompts to test our model on after fine-tuning. Notice the `{SUBJECT_TOKEN} {SUBJECT_CLASS}` included in each of them.
+Create some prompts to test our model on after fine-tuning. Notice that every prompt includes the `{SUBJECT_TOKEN} {SUBJECT_CLASS}`.
 
-You can change these to be more fitting for your subject.
+You can change these to be more applicable for your subject.
 
 
 ```python
@@ -87,21 +87,21 @@ PROMPTS = [
 PROMPTS
 ```
 
-## Step 3: Run fine-tuning with Ray Train + HuggingFace Accelerate
+## Step 3: Run fine-tuning with Ray Train and Hugging Face Accelerate
 
-Next, let's launch the distributed fine-tuning job.
+Next, launch the distributed fine-tuning job.
 
-We will use the training script provided by the [HuggingFace diffusers Dreambooth fine-tuning example](https://github.com/huggingface/diffusers/blob/d7634cca87641897baf90f5a006f2d6d16eac6ec/examples/dreambooth/README_sdxl.md) with very slight modifications.
+Use the training script provided by the [Hugging Face diffusers Dreambooth fine-tuning example](https://github.com/huggingface/diffusers/blob/d7634cca87641897baf90f5a006f2d6d16eac6ec/examples/dreambooth/README_sdxl.md) with very slight modifications.
 
 See `train_dreambooth_lora_sdxl.py` for the training script. The example does fine-tuning with [Low Rank Adaptation](https://arxiv.org/abs/2106.09685) (LoRA), which is a method that freezes most layers but injects a small set of trainable layers that get added to existing layers. This method greatly reduces the amount of training state in GPU memory and reduces the checkpoint size, while maintaining the fine-tuned model quality.
 
-This script uses HuggingFace Accelerate, and we will show that it is easy to scale out an existing training script on a Ray cluster with Ray Train.
+This script uses Hugging Face Accelerate, and this example shows that it's easy to scale out an existing training script on a Ray cluster with Ray Train.
 
 ### Parse training arguments
 
-The `diffusers` script is originally launched via the command line. Here, we'll launch it with Ray Train instead and pass in the parsed command line arguments, in order to make as few modifications to the training script as possible.
+The original example launches the `diffusers` script at the command line. This example launches it with Ray Train instead and passes in the parsed command line arguments, in order to make as few modifications to the training script as possible.
 
-The settings and hyperparameters below are taken from the [HuggingFace example](https://github.com/huggingface/diffusers/blob/d7634cca87641897baf90f5a006f2d6d16eac6ec/examples/dreambooth/README_sdxl.md).
+The settings and hyperparameters below are taken from the [Hugging Face example](https://github.com/huggingface/diffusers/blob/d7634cca87641897baf90f5a006f2d6d16eac6ec/examples/dreambooth/README_sdxl.md).
 
 
 ```python
@@ -121,7 +121,7 @@ cmd_line_args = [
     f"--instance_prompt=a photo of {SUBJECT_TOKEN} {SUBJECT_CLASS}",
     "--resolution=1024",
     # The global batch size is: num_workers * train_batch_size * gradient_accumulation_steps
-    # We define the number of workers later in the TorchTrainer.
+    # Define the number of workers later in the TorchTrainer.
     "--train_batch_size=1",  # This is the batch size *per* worker.
     "--gradient_accumulation_steps=1",
     "--learning_rate=1e-4",
@@ -146,14 +146,14 @@ TRAINING_ARGS = parse_args(input_args=cmd_line_args)
 
 ### Launch distributed training with Ray Train
 
-To run distributed training, we'll use a `ray.train.torch.TorchTrainer` to request GPU workers and connect them together in a distributed worker group. Then, when the workers run the training script, HuggingFace Accelerate detects this distributed process group and sets up the model to do data parallel training.
+To run distributed training, use a `ray.train.torch.TorchTrainer` to request GPU workers and connect them together in a distributed worker group. Then, when the workers run the training script, Hugging Face Accelerate detects this distributed process group and sets up the model to do data parallel training.
 
 A few notes:
 * `ray.init(runtime_env={"env_vars": ...})` sets the environment variables on all workers in the cluster -- setting the environment variable in this notebook on the head node is not enough in a distributed setting.
 * `train_fn_per_worker` is the function that will run on all distributed training workers. In this case, it's just a light wrapper on top of the `diffusers` example script that copies the latest checkpoint to shared cluster storage.
 * `ScalingConfig` is the configuration that determines how many workers and what kind of accelerator to use for training. Once the training is launched, **Anyscale will automatically scale up nodes to meet this resource request!**
 
-The result of this fine-tuning will be a fine-tuned LoRA model checkpoint at `MODEL_CHECKPOINT_PATH`.
+The result of this fine-tuning is a fine-tuned LoRA model checkpoint at `MODEL_CHECKPOINT_PATH`.
 
 
 ```python
@@ -219,13 +219,13 @@ trainer.fit()
 print("Finished fine-tuning!")
 ```
 
-## Step 3: Generate some images with your fine-tuned model!
+## Step 3: Generate some images with your fine-tuned model.
 
-Finally, let's generate some images!
+Finally, generate some images!
 
-We'll launch 2 remote GPU tasks to generate images from the `PROMPTS` we defined earlier, one using just the base model and one that loads our fine-tuned LoRA weights. Let's compare them to see the results of fine-tuning!
+Launch 2 remote GPU tasks to generate images from the `PROMPTS` you defined earlier, one using just the base model and one that loads the fine-tuned LoRA weights. Compare them to see the results of fine-tuning.
 
-Note: If your cluster has already scaled down from the training job due to the workers being idle, then this step might take a little longer to relaunch new GPU workers.
+Note: If Anyscale already scaled down your cluster from the training job due to the workers being idle, then this step might take a little longer to relaunch new GPU workers.
 
 
 ```python
@@ -246,7 +246,7 @@ from utils import generate
 
 ### Images generated with the finetuned model
 
-These images should resemble your subject. If the generated image quality is not satisfactory, refer to the tips in [this blog post](https://huggingface.co/blog/dreambooth#tldr-recommended-settings) to tweak your hyperparameters.
+These images should resemble your subject. If the generated image quality isn't satisfactory, see to the tips in [this blog post](https://huggingface.co/blog/dreambooth#tldr-recommended-settings) to tweak your hyperparameters.
 
 
 ```python
@@ -267,11 +267,11 @@ display(*finetuned_images)
 
 ## Summary
 
-Congrats, you've fine-tuned Stable Diffusion XL!
+At this point, you've fine-tuned Stable Diffusion XL.
 
 As a recap, this notebook:
 1. Installed cluster-wide dependencies.
 2. Scaled out fine-tuning to multiple GPU workers.
 3. Compared the generated output results before and after fine-tuning.
 
-As a next step, you can take the fine-tuned model checkpoint and use it to serve the model. See the tutorial on serving stable diffusion on the home page to get started!
+As a next step, you can take the fine-tuned model checkpoint and use it to serve the model. See the tutorial on serving stable diffusion on the home page to get started.
