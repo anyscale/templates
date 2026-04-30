@@ -42,3 +42,11 @@ jobs:
       run: |
         bash ./download_rayapp.sh
         ./rayapp build all
+
+  check-depsets:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Check depsets are up to date
+      run: ./update_deps.sh --check
