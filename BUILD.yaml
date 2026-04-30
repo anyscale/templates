@@ -431,7 +431,7 @@
     image_uri: anyscale/ray:2.54.1-py312-cu128
   compute_config:
     AWS: configs/ray-summit-core-masterclass/aws.yaml
-    GCP: configs/basic-serverless-config/gce.yaml
+    GCP: configs/ray-summit-core-masterclass/gce.yaml
   test:
     tests_path: tests/ray-summit-core-masterclass/
     command: bash tests.sh
