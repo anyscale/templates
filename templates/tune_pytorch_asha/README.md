@@ -113,7 +113,7 @@ import os, sys, subprocess
 os.environ["RAY_TRAIN_V2_ENABLED"] = "1"
 
 # Install Python dependencies 
-!pip install -r requirements.txt
+subprocess.check_call([sys.executable, "-m", "pip", "install", "-r", "requirements.txt"])
 ```
 
 
