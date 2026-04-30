@@ -30,19 +30,13 @@ for t in $TEMPLATES; do
         sudo pip install anyscale==0.26.87
         LOG=/tmp/rayapp-\$\$TEMPLATE_NAME.log
         : > "\$\$LOG"
-        # Background watcher: as soon as rayapp logs the workspace ID
-        # (always printed via "Workspace created successfully id: expwrk_..."),
-        # query the anyscale CLI for cloud_id/project_id and post a
-        # buildkite annotation with the canonical workspace URL.
-        # Disable -e/pipefail in the subshell — grep returns non-zero while
-        # the log is empty, which would otherwise kill the watcher.
+        # Watch for "Workspace created successfully id: expwrk_..." (always
+        # printed by anyscale CLI), then build the canonical workspace URL
+        # from cloud_id/project_id and post a buildkite annotation.
+        # set +eo pipefail: grep returns non-zero when the log is still empty.
         (
           set +eo pipefail
           while :; do
-            # Anchor on the anyscale CLI's "Workspace created successfully id:"
-            # line to make sure we pick up the workspace rayapp just created,
-            # not some unrelated expwrk_ string that a template's logs might
-            # contain.
             WS_ID=\$\$(grep 'Workspace created successfully id:' "\$\$LOG" 2>/dev/null \\
               | grep -oE 'expwrk_[a-z0-9]+' | head -1)
             if [ -n "\$\$WS_ID" ]; then
