@@ -8,7 +8,7 @@ import sys
 import urllib.error
 import urllib.request
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, List, Optional
 
 import yaml
 from pydantic import (
@@ -73,10 +73,34 @@ class Entry(Strict):
     test: Test
 
 
-# Top-level keys allowed by the legacy ComputeTemplateConfig API:
-# https://docs.anyscale.com/ref/0.26.64/compute-config-api#computetemplateconfig-legacy
-# Lax: any field can be missing. Strict: extra top-level keys are rejected
-# because they usually mean the file is using the new (non-legacy) schema.
+# Schemas for the legacy compute config, applied to BUILD.yaml-referenced
+# files. All fields are optional (lax) but extra top-level keys are rejected
+# (strict) — extra keys usually indicate the file is using the new schema.
+#   ComputeTemplateConfig: https://docs.anyscale.com/ref/0.26.64/compute-config-api#computetemplateconfig-legacy
+#   ComputeNodeType:       https://docs.anyscale.com/ref/0.26.64/compute-config-api#computenodetype-legacy
+#   WorkerNodeType:        https://docs.anyscale.com/ref/0.26.64/other#workernodetype-legacy
+
+class LegacyComputeNodeType(Strict):
+    """Used for head_node_type."""
+    name: Optional[Any] = None
+    instance_type: Optional[Any] = None
+    resources: Optional[Any] = None
+    labels: Optional[Any] = None
+    aws_advanced_configurations_json: Optional[Any] = None
+    gcp_advanced_configurations_json: Optional[Any] = None
+    advanced_configurations_json: Optional[Any] = None
+    flags: Optional[Any] = None
+
+
+class LegacyWorkerNodeType(LegacyComputeNodeType):
+    """Used for worker_node_types entries. Same as ComputeNodeType plus
+    worker-specific scaling / spot fields."""
+    min_workers: Optional[Any] = None
+    max_workers: Optional[Any] = None
+    use_spot: Optional[Any] = None
+    fallback_to_ondemand: Optional[Any] = None
+
+
 class LegacyComputeTemplateConfig(Strict):
     cloud_id: Optional[Any] = None
     maximum_uptime_minutes: Optional[Any] = None
@@ -84,8 +108,8 @@ class LegacyComputeTemplateConfig(Strict):
     max_workers: Optional[Any] = None
     region: Optional[Any] = None
     allowed_azs: Optional[Any] = None
-    head_node_type: Optional[Any] = None
-    worker_node_types: Optional[Any] = None
+    head_node_type: Optional[LegacyComputeNodeType] = None
+    worker_node_types: Optional[List[LegacyWorkerNodeType]] = None
     aws_advanced_configurations_json: Optional[Any] = None
     gcp_advanced_configurations_json: Optional[Any] = None
     advanced_configurations_json: Optional[Any] = None
@@ -144,14 +168,14 @@ def check_compute_configs_legacy(entries: list[Entry]) -> list[str]:
             LegacyComputeTemplateConfig.model_validate(data)
         except ValidationError as e:
             extras = [
-                str(err["loc"][0]) for err in e.errors()
+                ".".join(str(p) for p in err["loc"]) for err in e.errors()
                 if err.get("type") == "extra_forbidden"
             ]
             if extras:
                 errors.append(
-                    f"{path}: unknown top-level keys {extras} — this config "
-                    f"likely uses the new compute-config schema. This repo "
-                    f"requires the legacy ComputeTemplateConfig API: {LEGACY_DOCS}"
+                    f"{path}: unknown keys {extras} — this config likely uses "
+                    f"the new compute-config schema. This repo requires the "
+                    f"legacy ComputeTemplateConfig API: {LEGACY_DOCS}"
                 )
             else:
                 errors.append(f"{path}: {e.errors()}")
