@@ -168,9 +168,15 @@ def check_filesystem_and_uniqueness(entries: list[Entry]) -> list[str]:
 
 # ----------------------------------- redundant compute configs (warning)
 
-BASIC_CONFIGS = (
+# Configs we suggest authors reuse instead of duplicating.
+SHARED_CONFIGS_TO_PROMOTE = (
     "configs/basic-single-node/aws.yaml",
     "configs/basic-single-node/gce.yaml",
+)
+# Configs that are themselves shared and should never be flagged, even if
+# they happen to be byte-equal to one of the promoted ones.
+KNOWN_SHARED_CONFIGS = (
+    *SHARED_CONFIGS_TO_PROMOTE,
     "configs/basic-serverless-config/aws.yaml",
     "configs/basic-serverless-config/gce.yaml",
 )
@@ -178,10 +184,12 @@ BASIC_CONFIGS = (
 
 def check_redundant_compute_configs(entries: list[Entry]) -> list[str]:
     """Warn when a custom compute config file is byte-equal to one of the
-    shared `basic-*` configs. The author can just reference the shared one."""
+    shared `basic-single-node` configs. The author can just reference the
+    shared one. Entries already pointing at any known shared config are
+    skipped — they're not the duplication we want to flag."""
     warnings: list[str] = []
     basics: dict[str, bytes] = {}
-    for p in BASIC_CONFIGS:
+    for p in SHARED_CONFIGS_TO_PROMOTE:
         full = REPO_ROOT / p
         if full.is_file():
             basics[p] = full.read_bytes()
@@ -189,7 +197,7 @@ def check_redundant_compute_configs(entries: list[Entry]) -> list[str]:
     for e in entries:
         for cloud in ("GCP", "AWS"):
             path = getattr(e.compute_config, cloud)
-            if path in BASIC_CONFIGS:
+            if path in KNOWN_SHARED_CONFIGS:
                 continue
             full = REPO_ROOT / path
             if not full.is_file():
