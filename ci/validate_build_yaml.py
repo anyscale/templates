@@ -169,6 +169,21 @@ def check_filesystem_and_uniqueness(entries: list[Entry]) -> list[str]:
                 f"same directory; got {gcp_parent} and {aws_parent}"
             )
 
+        # Custom compute config dirs must be named after the entry (the
+        # `name` field is the source of truth across templates/, tests/,
+        # and configs/). Shared `configs/basic-single-node/` is exempt.
+        cfg_dir_basename = gcp_parent.name
+        if (
+            gcp_parent == aws_parent
+            and cfg_dir_basename != "basic-single-node"
+            and cfg_dir_basename != e.name
+        ):
+            errors.append(
+                f"{e.name}.compute_config: dir basename {cfg_dir_basename!r} "
+                f"must equal name {e.name!r} (expected configs/{e.name}/) — "
+                f"or use the shared configs/basic-single-node/"
+            )
+
         if not (REPO_ROOT / e.dir).is_dir():
             errors.append(f"{e.name}: dir not found: {e.dir}")
         for cloud in ("GCP", "AWS"):
