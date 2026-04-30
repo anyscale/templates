@@ -130,14 +130,28 @@ class LegacyComputeTemplateConfig(Strict):
 # ------------------------------------------- filesystem + name uniqueness
 
 def check_filesystem_and_uniqueness(entries: list[Entry]) -> list[str]:
-    """Verify referenced paths exist and names are unique. (Pydantic can't
-    express filesystem state, so we do this in Python.)"""
-    seen: set[str] = set()
+    """Verify referenced paths exist, fields are unique across entries, and
+    each entry's GCP/AWS configs differ. (Pydantic can't express filesystem
+    state or cross-entry constraints, so we do this in Python.)"""
+    seen_names: set[str] = set()
+    seen_dirs: set[str] = set()
+    seen_tests_paths: set[str] = set()
     errors: list[str] = []
     for e in entries:
-        if e.name in seen:
+        if e.name in seen_names:
             errors.append(f"duplicate name: {e.name!r}")
-        seen.add(e.name)
+        seen_names.add(e.name)
+
+        if e.dir in seen_dirs:
+            errors.append(f"{e.name}: duplicate dir: {e.dir}")
+        seen_dirs.add(e.dir)
+
+        if e.test.tests_path in seen_tests_paths:
+            errors.append(f"{e.name}: duplicate tests_path: {e.test.tests_path}")
+        seen_tests_paths.add(e.test.tests_path)
+
+        # (GCP != AWS is implicitly enforced by the regex: GCP must end in
+        # /gce.yaml and AWS in /aws.yaml, so they can never be equal.)
 
         if not (REPO_ROOT / e.dir).is_dir():
             errors.append(f"{e.name}: dir not found: {e.dir}")
@@ -150,6 +164,46 @@ def check_filesystem_and_uniqueness(entries: list[Entry]) -> list[str]:
         elif not (REPO_ROOT / e.test.tests_path / "tests.sh").is_file():
             errors.append(f"{e.name}.test.tests_path: missing tests.sh in {e.test.tests_path}")
     return errors
+
+
+# ----------------------------------- redundant compute configs (warning)
+
+BASIC_CONFIGS = (
+    "configs/basic-single-node/aws.yaml",
+    "configs/basic-single-node/gce.yaml",
+    "configs/basic-serverless-config/aws.yaml",
+    "configs/basic-serverless-config/gce.yaml",
+)
+
+
+def check_redundant_compute_configs(entries: list[Entry]) -> list[str]:
+    """Warn when a custom compute config file is byte-equal to one of the
+    shared `basic-*` configs. The author can just reference the shared one."""
+    warnings: list[str] = []
+    basics: dict[str, bytes] = {}
+    for p in BASIC_CONFIGS:
+        full = REPO_ROOT / p
+        if full.is_file():
+            basics[p] = full.read_bytes()
+
+    for e in entries:
+        for cloud in ("GCP", "AWS"):
+            path = getattr(e.compute_config, cloud)
+            if path in BASIC_CONFIGS:
+                continue
+            full = REPO_ROOT / path
+            if not full.is_file():
+                continue
+            content = full.read_bytes()
+            for basic_path, basic_bytes in basics.items():
+                if content == basic_bytes:
+                    warnings.append(
+                        f"{e.name}.compute_config.{cloud}: {path} is byte-identical "
+                        f"to {basic_path}; consider referencing the shared config "
+                        f"instead of duplicating it"
+                    )
+                    break  # one warning per cloud is enough
+    return warnings
 
 
 # ----------------------------------------- compute config legacy schema
@@ -260,6 +314,9 @@ def main() -> int:
             loc = ".".join(str(p) for p in err["loc"])
             print(f"::error::{loc}: {err['msg']}", file=sys.stderr)
         return 1
+
+    for w in check_redundant_compute_configs(entries):
+        print(f"::warning::{w}", file=sys.stderr)
 
     errors = check_filesystem_and_uniqueness(entries)
     errors.extend(check_compute_configs_legacy(entries))
