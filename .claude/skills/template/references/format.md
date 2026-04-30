@@ -25,7 +25,7 @@ templates/
 
 ## What to validate
 
-- **BUILD.yaml entry**: matches `build-yaml-schema.yaml`. A template must use either `image_uri` OR `byod` — never both. For image bumps, see `image-cases.md`.
+- **BUILD.yaml entry**: matches `build-yaml-schema.yaml`. A template must use either `image_uri` OR `byod` — never both. For image bumps, see SKILL.md ("Image URI cases").
 - **Compute configs**: present at `configs/<name>/aws.yaml` and `configs/<name>/gce.yaml`. Schema in `compute-config-schema.yaml`.
 - **Tests**: `tests/<name>/tests.sh` exists.
 

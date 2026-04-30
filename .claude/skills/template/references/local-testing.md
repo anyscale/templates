@@ -40,4 +40,4 @@ rayapp test <template-name>
 
 ## Custom images (byod)
 
-Pre-build with `anyscale image build` and update BUILD.yaml's `byod.docker_image` before testing. When finished iterating, `docker push` to GCP per `custom-image-publishing.md` and update BUILD.yaml again with the GCP URI.
+Pre-build with `anyscale image build` and update BUILD.yaml's `byod.docker_image` before testing. When finished iterating, run `.claude/skills/template/scripts/publish-custom-image.sh <dockerfile-dir> <image-name> <ray-version>` and update BUILD.yaml again with the GCP URI.
