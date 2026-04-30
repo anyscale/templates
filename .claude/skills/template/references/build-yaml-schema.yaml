@@ -10,7 +10,7 @@
 - name: <template-name>          # REQUIRED. Unique identifier. Appears in console URL.
   dir: templates/<dir-name>      # REQUIRED. Path to template content (relative to repo root).
 
-  # REQUIRED. Exactly one of: image_uri, build_id, or byod.
+  # REQUIRED. Exactly one of: image_uri, or byod.
   cluster_env:
     # Option 1: Stock Anyscale image
     image_uri: anyscale/ray:2.54.1-py312-cu128
