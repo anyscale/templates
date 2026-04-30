@@ -22,4 +22,5 @@ fi
 echo "Running raydepsets..."
 "$RAYDEPSETS_BIN" build \
   "$REPO_ROOT/dependencies/template.depsets.yaml" \
-  --workspace-dir "$REPO_ROOT"
+  --workspace-dir "$REPO_ROOT" \
+  "$@"
