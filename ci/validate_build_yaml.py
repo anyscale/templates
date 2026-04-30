@@ -74,17 +74,26 @@ class Entry(Strict):
 
 
 # Schemas for the legacy compute config, applied to BUILD.yaml-referenced
-# files. All fields are optional (lax) but extra top-level keys are rejected
-# (strict) — extra keys usually indicate the file is using the new schema.
+# files. All fields are optional (lax) but extra keys are rejected (strict)
+# — extra keys usually indicate the file is using the new schema.
 #   ComputeTemplateConfig: https://docs.anyscale.com/ref/0.26.64/compute-config-api#computetemplateconfig-legacy
 #   ComputeNodeType:       https://docs.anyscale.com/ref/0.26.64/compute-config-api#computenodetype-legacy
 #   WorkerNodeType:        https://docs.anyscale.com/ref/0.26.64/other#workernodetype-legacy
+#   Resources:             https://docs.anyscale.com/ref/0.26.64/other#resources-legacy
+
+class LegacyResources(Strict):
+    cpu: Optional[Any] = None
+    gpu: Optional[Any] = None
+    memory: Optional[Any] = None
+    object_store_memory: Optional[Any] = None
+    custom_resources: Optional[Any] = None
+
 
 class LegacyComputeNodeType(Strict):
     """Used for head_node_type."""
     name: Optional[Any] = None
     instance_type: Optional[Any] = None
-    resources: Optional[Any] = None
+    resources: Optional[LegacyResources] = None
     labels: Optional[Any] = None
     aws_advanced_configurations_json: Optional[Any] = None
     gcp_advanced_configurations_json: Optional[Any] = None
