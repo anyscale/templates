@@ -46,8 +46,8 @@ depsets:
     operation: expand
     source_depset: ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
     requirements:
-      - templates/serve-stable-diffusion/requirements.txt
-    output: templates/serve-stable-diffusion/python_depset.lock
+      - templates/serve-stable-diffusion-v2/requirements.txt
+    output: templates/serve-stable-diffusion-v2/python_depset.lock
     append_flags:
       - --python-version=${PYTHON_VERSION}
       - --python-platform=linux
