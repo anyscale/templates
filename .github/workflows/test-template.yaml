@@ -44,14 +44,14 @@ jobs:
           echo "::error::No template names provided"
           exit 1
         fi
-        VALID=$(awk '/^- name:/ {print $3}' BUILD.yaml)
-        # 'all' expands to every template in BUILD.yaml (still fans out as N parallel matrix jobs)
-        if [[ " $TEMPLATES " == *" all "* ]]; then
-          EXPANDED=$(echo "$VALID" | tr '\n' ' ' | xargs)
-        else
-          EXPANDED="$TEMPLATES"
+        # Cap to keep CI cost bounded; bump if the team agrees a higher cap is fine.
+        COUNT=$(echo "$TEMPLATES" | wc -w | xargs)
+        if [ "$COUNT" -gt 3 ]; then
+          echo "::error::Too many templates ($COUNT); max 3 per /test-template comment"
+          exit 1
         fi
-        for t in $EXPANDED; do
+        VALID=$(awk '/^- name:/ {print $3}' BUILD.yaml)
+        for t in $TEMPLATES; do
           if [[ ! "$t" =~ ^[a-zA-Z0-9_-]+$ ]]; then
             echo "::error::Invalid template name: $t"
             exit 1
@@ -61,7 +61,7 @@ jobs:
             exit 1
           fi
         done
-        TEMPLATES_JSON=$(echo "$EXPANDED" | jq -Rc 'split(" ")')
+        TEMPLATES_JSON=$(echo "$TEMPLATES" | jq -Rc 'split(" ")')
         echo "templates=$TEMPLATES" >> "$GITHUB_OUTPUT"
         echo "templates_json=$TEMPLATES_JSON" >> "$GITHUB_OUTPUT"
 
