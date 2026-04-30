@@ -1,8 +1,7 @@
 #!/bin/bash
-# Parse a /test-template comment body and emit two GH-Actions outputs to
-# the path given as $GITHUB_OUTPUT:
-#   templates       — space-separated template names
-#   templates_json  — JSON array, e.g. ["foo","bar"]
+# Parse a /test-template comment body and emit one GH-Actions output to
+# $GITHUB_OUTPUT:
+#   templates — space-separated template names
 #
 # Inputs:
 #   COMMENT_BODY  — the PR comment body
@@ -51,6 +50,4 @@ for t in $TEMPLATES; do
   fi
 done
 
-TEMPLATES_JSON=$(echo "$TEMPLATES" | jq -Rc 'split(" ")')
 echo "templates=$TEMPLATES" >> "$GITHUB_OUTPUT"
-echo "templates_json=$TEMPLATES_JSON" >> "$GITHUB_OUTPUT"

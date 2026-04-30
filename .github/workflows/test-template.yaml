@@ -53,7 +53,7 @@ jobs:
           -d "$(jq -n \
             --arg branch "${{ steps.pr.outputs.branch }}" \
             --arg sha "${{ steps.pr.outputs.sha }}" \
-            --arg templates_json "${{ steps.parse.outputs.templates_json }}" \
+            --arg templates "${{ steps.parse.outputs.templates }}" \
             --arg msg "Test templates: ${{ steps.parse.outputs.templates }} (PR #${{ github.event.issue.number }})" \
             --arg secret "${{ secrets.ANYSCALE_CLI_TOKEN_SECRET_NAME }}" \
             '{
@@ -61,7 +61,7 @@ jobs:
               commit: $sha,
               branch: $branch,
               env: {
-                TEMPLATE_NAMES_JSON: $templates_json,
+                TEMPLATE_NAMES: $templates,
                 ANYSCALE_CLI_TOKEN_SECRET_NAME: $secret
               }
             }'

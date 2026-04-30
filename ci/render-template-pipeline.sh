@@ -1,9 +1,9 @@
 #!/bin/bash
 set -euo pipefail
 
-: "${TEMPLATE_NAMES_JSON:?TEMPLATE_NAMES_JSON env var is required}"
+: "${TEMPLATE_NAMES:?TEMPLATE_NAMES env var is required}"
 
-TEMPLATES=$(echo "$TEMPLATE_NAMES_JSON" | jq -r '.[]')
+TEMPLATES="$TEMPLATE_NAMES"
 
 for t in $TEMPLATES; do
   case "$t" in
