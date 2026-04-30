@@ -30,20 +30,26 @@ for t in $TEMPLATES; do
         sudo pip install anyscale==0.26.87
         LOG=/tmp/rayapp-\$\$TEMPLATE_NAME.log
         : > "\$\$LOG"
-        # Background watcher: post the workspace URL annotation as soon as
-        # anyscale CLI prints the "View and update dependencies here:" line.
-        # Disable -e/pipefail in the subshell — grep returns non-zero when the
-        # log doesn't yet contain the line, which would otherwise kill the watcher.
+        # Background watcher: as soon as rayapp logs the workspace ID
+        # (always printed via "Workspace created successfully id: expwrk_..."),
+        # query the anyscale CLI for cloud_id/project_id and post a
+        # buildkite annotation with the canonical workspace URL.
+        # Disable -e/pipefail in the subshell — grep returns non-zero while
+        # the log is empty, which would otherwise kill the watcher.
         (
           set +eo pipefail
           while :; do
-            URL=\$\$(grep 'View and update dependencies here:' "\$\$LOG" 2>/dev/null \\
-              | grep -oE 'https://console\.anyscale[^ ]+/workspaces/expwrk_[a-z0-9]+' \\
-              | head -1)
-            if [ -n "\$\$URL" ]; then
-              printf '**%s** workspace: %s\n' "\$\$TEMPLATE_NAME" "\$\$URL" \\
-                | buildkite-agent annotate --style info --context "ws-\$\$TEMPLATE_NAME"
-              break
+            WS_ID=\$\$(grep -oE 'expwrk_[a-z0-9]+' "\$\$LOG" 2>/dev/null | head -1)
+            if [ -n "\$\$WS_ID" ]; then
+              JSON=\$\$(anyscale workspace_v2 get --id "\$\$WS_ID" -j 2>/dev/null)
+              CLOUD_ID=\$\$(echo "\$\$JSON" | jq -r '.cloud_id // empty')
+              PROJECT_ID=\$\$(echo "\$\$JSON" | jq -r '.project_id // empty')
+              if [ -n "\$\$CLOUD_ID" ] && [ -n "\$\$PROJECT_ID" ]; then
+                URL="\$\$ANYSCALE_HOST/\$\$CLOUD_ID/\$\$PROJECT_ID/workspaces/\$\$WS_ID"
+                printf '**%s** workspace: %s\n' "\$\$TEMPLATE_NAME" "\$\$URL" \\
+                  | buildkite-agent annotate --style info --context "ws-\$\$TEMPLATE_NAME"
+                break
+              fi
             fi
             sleep 2
           done
