@@ -172,8 +172,7 @@ Get the system running first, then explore how it works.
 **Install dependencies:**
 Install all Python dependencies from [`requirements.txt`](https://github.com/ray-project/ray/tree/master/doc/source/ray-overview/examples/multi_agent_a2a/content/requirements.txt):
 
-
-```python
+```bash
 !pip install -r requirements.txt
 ```
 
@@ -212,36 +211,31 @@ Run each of the following curl commands separately and check their responses:
 
 1. LLM (OpenAI-compatible)
 
-
-```python
+```bash
 !curl -X POST http://127.0.0.1:8000/llm/v1/chat/completions -H "Content-Type: application/json" -d '{"model": "Qwen/Qwen3-4B-Instruct-2507-FP8", "messages": [{"role": "user", "content": "Hello!"}]}'
 ```
 
 2. Weather Agent (SSE interface)
 
-
-```python
+```bash
 !curl -X POST http://127.0.0.1:8000/weather-agent/chat -H "Content-Type: application/json" -d '{"user_request": "What is the weather in San Francisco?"}'
 ```
 
 3. Research Agent (SSE interface)
 
-
-```python
+```bash
 !curl -X POST http://127.0.0.1:8000/research-agent/chat -H "Content-Type: application/json" -d '{"user_request": "What are the top attractions in Seattle? Reply with sources."}'
 ```
 
 4. Travel Agent (SSE interface, orchestrates other agents through A2A)
 
-
-```python
+```bash
 !curl -X POST http://127.0.0.1:8000/travel-agent/chat -H "Content-Type: application/json" -d '{"user_request": "Plan a 2-day trip to Seattle next week. Include weather details and considerations."}'
 ```
 
 5. A2A discovery (AgentCards)
 
-
-```python
+```bash
 !curl http://127.0.0.1:8000/a2a-weather/.well-known/agent-card.json
 !curl http://127.0.0.1:8000/a2a-research/.well-known/agent-card.json
 !curl http://127.0.0.1:8000/a2a-travel/.well-known/agent-card.json
@@ -249,8 +243,7 @@ Run each of the following curl commands separately and check their responses:
 
 ### Run the full test suite
 
-
-```python
+```bash
 # Run all tests
 !python tests/run_all.py
 ```
@@ -259,8 +252,7 @@ Run each of the following curl commands separately and check their responses:
 
 To deploy to production on Anyscale:
 
-
-```python
+```bash
 !anyscale service deploy -f anyscale_service_multi_config.yaml
 ```
 
@@ -293,36 +285,31 @@ Run each of the following curl commands separately and check their responses:
 
 1. LLM (OpenAI-compatible)
 
-
-```python
+```bash
 !curl -X POST "${BASE_URL}/llm/v1/chat/completions" -H "Content-Type: application/json" -H "Authorization: Bearer ${ANYSCALE_API_TOKEN}" -d '{"model": "Qwen/Qwen3-4B-Instruct-2507-FP8", "messages": [{"role": "user", "content": "Hello!"}]}'
 ```
 
 2. Weather Agent (SSE interface)
 
-
-```python
+```bash
 !curl -X POST "${BASE_URL}/weather-agent/chat" -H "Content-Type: application/json" -H "Authorization: Bearer ${ANYSCALE_API_TOKEN}" -d '{"user_request": "What is the weather in San Francisco?"}'
 ```
 
 3. Research Agent (SSE interface)
 
-
-```python
+```bash
 !curl -X POST "${BASE_URL}/research-agent/chat" -H "Content-Type: application/json" -H "Authorization: Bearer ${ANYSCALE_API_TOKEN}" -d '{"user_request": "What are the top attractions in Seattle? Reply with sources."}'
 ```
 
 4. Travel Agent (SSE interface, orchestrates other agents through A2A)
 
-
-```python
+```bash
 !curl -X POST "${BASE_URL}/travel-agent/chat" -H "Content-Type: application/json" -H "Authorization: Bearer ${ANYSCALE_API_TOKEN}" -d '{"user_request": "Plan a 2-day trip to Seattle next week. Include weather details and considerations."}'
 ```
 
 5. A2A discovery (AgentCards)
 
-
-```python
+```bash
 !curl "${BASE_URL}/a2a-weather/.well-known/agent-card.json" -H "Authorization: Bearer ${ANYSCALE_API_TOKEN}"
 !curl "${BASE_URL}/a2a-research/.well-known/agent-card.json" -H "Authorization: Bearer ${ANYSCALE_API_TOKEN}"
 !curl "${BASE_URL}/a2a-travel/.well-known/agent-card.json" -H "Authorization: Bearer ${ANYSCALE_API_TOKEN}"
@@ -339,8 +326,7 @@ In a notebook:
 %env TEST_TIMEOUT_SECONDS=2000
 ```
 
-
-```python
+```bash
 !python tests/run_all.py
 ```
 
@@ -652,8 +638,7 @@ print(result)
 
 **Test A2A endpoints:**
 
-
-```python
+```bash
 # Test A2A discovery
 !curl http://127.0.0.1:8000/a2a-weather/.well-known/agent-card.json
 
@@ -680,8 +665,7 @@ print(result)
 
 You can also test discovery directly:
 
-
-```python
+```bash
 !curl http://127.0.0.1:8000/a2a-weather/.well-known/agent-card.json
 ```
 
