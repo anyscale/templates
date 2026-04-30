@@ -150,8 +150,24 @@ def check_filesystem_and_uniqueness(entries: list[Entry]) -> list[str]:
             errors.append(f"{e.name}: duplicate tests_path: {e.test.tests_path}")
         seen_tests_paths.add(e.test.tests_path)
 
-        # (GCP != AWS is implicitly enforced by the regex: GCP must end in
-        # /gce.yaml and AWS in /aws.yaml, so they can never be equal.)
+        # tests_path basename must equal the entry's name. Catches stale
+        # tests_path values when an entry is renamed.
+        tests_basename = Path(e.test.tests_path.rstrip("/")).name
+        if tests_basename != e.name:
+            errors.append(
+                f"{e.name}.test.tests_path: basename {tests_basename!r} must "
+                f"equal name {e.name!r} (expected tests/{e.name}/)"
+            )
+
+        # GCP and AWS configs must live in the same directory under configs/.
+        # Catches one-cloud-customized-but-not-the-other mistakes.
+        gcp_parent = Path(e.compute_config.GCP).parent
+        aws_parent = Path(e.compute_config.AWS).parent
+        if gcp_parent != aws_parent:
+            errors.append(
+                f"{e.name}.compute_config: GCP and AWS configs must be in the "
+                f"same directory; got {gcp_parent} and {aws_parent}"
+            )
 
         if not (REPO_ROOT / e.dir).is_dir():
             errors.append(f"{e.name}: dir not found: {e.dir}")
@@ -168,28 +184,19 @@ def check_filesystem_and_uniqueness(entries: list[Entry]) -> list[str]:
 
 # ----------------------------------- redundant compute configs (warning)
 
-# Configs we suggest authors reuse instead of duplicating.
-SHARED_CONFIGS_TO_PROMOTE = (
+BASIC_CONFIGS = (
     "configs/basic-single-node/aws.yaml",
     "configs/basic-single-node/gce.yaml",
-)
-# Configs that are themselves shared and should never be flagged, even if
-# they happen to be byte-equal to one of the promoted ones.
-KNOWN_SHARED_CONFIGS = (
-    *SHARED_CONFIGS_TO_PROMOTE,
-    "configs/basic-serverless-config/aws.yaml",
-    "configs/basic-serverless-config/gce.yaml",
 )
 
 
 def check_redundant_compute_configs(entries: list[Entry]) -> list[str]:
     """Warn when a custom compute config file is byte-equal to one of the
     shared `basic-single-node` configs. The author can just reference the
-    shared one. Entries already pointing at any known shared config are
-    skipped — they're not the duplication we want to flag."""
+    shared one."""
     warnings: list[str] = []
     basics: dict[str, bytes] = {}
-    for p in SHARED_CONFIGS_TO_PROMOTE:
+    for p in BASIC_CONFIGS:
         full = REPO_ROOT / p
         if full.is_file():
             basics[p] = full.read_bytes()
@@ -197,7 +204,7 @@ def check_redundant_compute_configs(entries: list[Entry]) -> list[str]:
     for e in entries:
         for cloud in ("GCP", "AWS"):
             path = getattr(e.compute_config, cloud)
-            if path in KNOWN_SHARED_CONFIGS:
+            if path in BASIC_CONFIGS:
                 continue
             full = REPO_ROOT / path
             if not full.is_file():
