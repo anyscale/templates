@@ -150,6 +150,15 @@ def check_filesystem_and_uniqueness(entries: list[Entry]) -> list[str]:
             errors.append(f"{e.name}: duplicate tests_path: {e.test.tests_path}")
         seen_tests_paths.add(e.test.tests_path)
 
+        # dir basename must equal the entry's name. Catches stale dirs when
+        # an entry is renamed.
+        dir_basename = Path(e.dir.rstrip("/")).name
+        if dir_basename != e.name:
+            errors.append(
+                f"{e.name}.dir: basename {dir_basename!r} must equal name "
+                f"{e.name!r} (expected templates/{e.name}/)"
+            )
+
         # tests_path basename must equal the entry's name. Catches stale
         # tests_path values when an entry is renamed.
         tests_basename = Path(e.test.tests_path.rstrip("/")).name

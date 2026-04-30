@@ -950,6 +950,6 @@ And more!
 - [Batch text embeddings with Ray data](https://github.com/anyscale/templates/tree/main/templates/text-embeddings)
 - [Production RAG applications](https://www.anyscale.com/blog/a-comprehensive-guide-for-building-rag-based-llm-applications-part-1)
 - [Router](https://github.com/anyscale/llm-router) between different models (base, fine-tuned, closed-source) to optimize for cost and quality
-- Stable diffusion [fine-tuning](https://github.com/anyscale/templates/tree/main/templates/fine-tune-stable-diffusion) and [serving](https://github.com/anyscale/templates/tree/main/templates/serve-stable-diffusion)
+- Stable diffusion [fine-tuning](https://github.com/anyscale/templates/tree/main/templates/finetune-stable-diffusion) and [serving](https://github.com/anyscale/templates/tree/main/templates/serve-stable-diffusion-v2)
 
 And if you're interested in using our hosted Anyscale or connecting it to your own cloud, reach out to us at [Anyscale](https://www.anyscale.com/get-started?utm_source=goku). And follow us on [Twitter](https://x.com/anyscalecompute) and [LinkedIn](https://www.linkedin.com/company/joinanyscale/) for more real-time updates on new features!
