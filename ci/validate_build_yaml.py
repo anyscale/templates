@@ -49,8 +49,15 @@ class ClusterEnv(Strict):
 
     @model_validator(mode="after")
     def xor_image_or_byod(self):
-        if (self.image_uri is None) == (self.byod is None):
-            raise ValueError("must have exactly one of 'image_uri' or 'byod'")
+        has_image, has_byod = self.image_uri is not None, self.byod is not None
+        if has_image and has_byod:
+            raise ValueError(
+                "cluster_env has both 'image_uri' and 'byod'; pick exactly one"
+            )
+        if not has_image and not has_byod:
+            raise ValueError(
+                "cluster_env has neither 'image_uri' nor 'byod'; set exactly one"
+            )
         return self
 
 
@@ -165,8 +172,9 @@ def check_filesystem_and_uniqueness(entries: list[Entry]) -> list[str]:
         aws_parent = Path(e.compute_config.AWS).parent
         if gcp_parent != aws_parent:
             errors.append(
-                f"{e.name}.compute_config: GCP and AWS configs must be in the "
-                f"same directory; got {gcp_parent} and {aws_parent}"
+                f"{e.name}.compute_config: GCP and AWS configs must live in "
+                f"the same `configs/<name>/` directory; got {gcp_parent} and "
+                f"{aws_parent}"
             )
 
         # Custom compute config dirs must be named after the entry (the
@@ -275,7 +283,12 @@ def check_compute_configs_legacy(entries: list[Entry]) -> list[str]:
     return errors
 
 
-# ------------------------------------------------ GCP image accessibility
+# ----------------------------------------------- GCP image naming + access
+
+GCP_BYOD_REGISTRY = (
+    "us-docker.pkg.dev/anyscale-workspace-templates/workspace-templates"
+)
+
 
 def is_gcp_uri(uri: str) -> bool:
     host = uri.split("/", 1)[0]
@@ -307,19 +320,36 @@ def manifest_accessible(uri: str) -> tuple[bool, str]:
         return False, f"network error: {e.reason}"
 
 
-def check_gcp_images(entries: list[Entry]) -> list[str]:
+def check_gcp_byod_images(entries: list[Entry], *, network: bool) -> list[str]:
+    """Walk byod images hosted on a GCP registry: enforce the canonical
+    `<registry>/<name>:<byod.ray_version>` form for the Anyscale registry, and
+    (when `network` is on) verify the manifest is reachable. `image_uri` is
+    skipped — the schema constrains it to `^anyscale/`, never a GCP host."""
     errors: list[str] = []
     for e in entries:
-        images: list[str] = []
-        if e.cluster_env.image_uri:
-            images.append(e.cluster_env.image_uri)
-        if e.cluster_env.byod:
-            images.append(e.cluster_env.byod.docker_image)
-        for img in images:
-            if is_gcp_uri(img):
-                ok, msg = manifest_accessible(img)
-                if not ok:
-                    errors.append(f"{e.name}: GCP image not accessible: {img} ({msg})")
+        if not e.cluster_env.byod:
+            continue
+        img = e.cluster_env.byod.docker_image
+        if not is_gcp_uri(img):
+            continue
+
+        if img.startswith(f"{GCP_BYOD_REGISTRY}/"):
+            expected = f"{GCP_BYOD_REGISTRY}/{e.name}:{e.cluster_env.byod.ray_version}"
+            if img != expected:
+                errors.append(
+                    f"{e.name}.cluster_env.byod.docker_image: must be "
+                    f"{expected!r}, got {img!r} (image basename must equal "
+                    f"`name` and tag must equal `byod.ray_version`)"
+                )
+
+        if network:
+            ok, msg = manifest_accessible(img)
+            if not ok:
+                errors.append(
+                    f"{e.name}: GCP image not accessible: {img} ({msg}) — "
+                    f"the registry is public, so this almost always means the "
+                    f"push did not complete; rebuild and republish"
+                )
     return errors
 
 
@@ -350,8 +380,7 @@ def main() -> int:
 
     errors = check_filesystem_and_uniqueness(entries)
     errors.extend(check_compute_configs_legacy(entries))
-    if not args.no_network:
-        errors.extend(check_gcp_images(entries))
+    errors.extend(check_gcp_byod_images(entries, network=not args.no_network))
 
     if errors:
         print(f"FAIL: {len(errors)} validation error(s):", file=sys.stderr)

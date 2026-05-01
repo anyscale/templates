@@ -57,7 +57,7 @@
   dir: templates/unstructured_data_ingestion
   cluster_env:
     byod:
-      docker_image: us-docker.pkg.dev/anyscale-workspace-templates/workspace-templates/template_unstructured_data_ingestion:2.54.1
+      docker_image: us-docker.pkg.dev/anyscale-workspace-templates/workspace-templates/unstructured_data_ingestion:2.54.1
       ray_version: 2.54.1
   compute_config:
     GCP: configs/unstructured_data_ingestion/gce.yaml
@@ -163,7 +163,7 @@
   dir: templates/object-detection-video-processing
   cluster_env:
     byod:
-      docker_image: us-docker.pkg.dev/anyscale-workspace-templates/workspace-templates/object-detection-ray:2.54.1
+      docker_image: us-docker.pkg.dev/anyscale-workspace-templates/workspace-templates/object-detection-video-processing:2.54.1
       ray_version: 2.54.1
   compute_config:
     AWS: configs/object-detection-video-processing/aws.yaml
