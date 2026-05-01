@@ -18,12 +18,9 @@ jobs:
       with:
         python-version: '3.9'
 
-    # Install pre-commit dependencies (nbconvert provides the jupyter CLI
-    # that the existing generate-readme local hook needs)
     - name: Install pre-commit
-      run: pip install pre-commit==3.8.0 nbconvert==7.17.1
+      run: pip install pre-commit==3.8.0 nbconvert==7.17.1 pyyaml==6.0.3 pydantic==2.13.3
 
-    # Run pre-commit hooks with verbose logging
     - name: Run pre-commit
       run: pre-commit run --all-files --verbose
 
@@ -42,6 +39,16 @@ jobs:
       run: |
         bash ./download_rayapp.sh
         ./rayapp build all
+
+  validate-build-yaml:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+    - run: pip install pyyaml==6.0.3 pydantic==2.13.3
+    - run: python ci/validate_build_yaml.py
 
   check-depsets:
     runs-on: ubuntu-latest

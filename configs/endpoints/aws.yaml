@@ -101,11 +101,6 @@ worker_node_types:
       Ebs:
         DeleteOnTermination: true
         VolumeSize: 1000
-    TagSpecifications:
-    - ResourceType: instance
-      Tags:
-      - Key: as-feature-multi-zone
-        Value: "true"
   min_workers: 0
   max_workers: 100
 - name: gpu-worker-a100-80g-8
@@ -123,18 +118,5 @@ worker_node_types:
       Ebs:
         DeleteOnTermination: true
         VolumeSize: 1000
-    TagSpecifications:
-    - ResourceType: instance
-      Tags:
-      - Key: as-feature-multi-zone
-        Value: "true"
   min_workers: 0
   max_workers: 100
-aws:
-  TagSpecifications:
-    - ResourceType: instance
-      Tags:
-        - Key: as-feature-enable-multi-az-serve
-          Value: "true"
-        - Key: as-feature-multi-zone
-          Value: "true"
