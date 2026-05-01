@@ -49,3 +49,11 @@ jobs:
         python-version: '3.11'
     - run: pip install pyyaml==6.0.3 pydantic==2.13.3
     - run: python ci/validate_build_yaml.py
+
+  check-depsets:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Check depsets are up to date
+      run: ./update_deps.sh --check
