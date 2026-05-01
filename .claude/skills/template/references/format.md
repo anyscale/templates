@@ -29,6 +29,10 @@ templates/
 - **Compute configs**: present at `configs/<name>/aws.yaml` and `configs/<name>/gce.yaml`. Schema in `compute-config-schema.yaml`.
 - **Tests**: `tests/<name>/tests.sh` exists.
 
-⚠️ **Compute configs use the OLD API format**, NOT the new ComputeConfig API. ALWAYS use existing entries under `configs/` as reference. Do NOT refer to the anyscale docs — they only document the new schema.
+⚠️ **Compute configs use the OLD API format**, NOT the new ComputeConfig API. ALWAYS use existing entries under `configs/` as reference. Do NOT refer to the live anyscale docs — they only document the new schema. Legacy API references:
+- ComputeTemplateConfig: https://docs.anyscale.com/ref/0.26.64/compute-config-api#computetemplateconfig-legacy
+- ComputeNodeType:       https://docs.anyscale.com/ref/0.26.64/compute-config-api#computenodetype-legacy
+- WorkerNodeType:        https://docs.anyscale.com/ref/0.26.64/other#workernodetype-legacy
+- Resources:             https://docs.anyscale.com/ref/0.26.64/other#resources-legacy
 
 **If anything is missing**: report to the user, do NOT generate from scratch unless explicitly requested.
