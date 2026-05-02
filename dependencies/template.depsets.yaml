@@ -1,0 +1,21 @@
+build_arg_sets:
+  ray2540_py310:
+    RAY_VERSION: "2.54.0"
+    PYTHON_VERSION: "3.10"
+    PYTHON_SHORT: "310"
+
+depsets:
+  - name: ray_img_depset_${RAY_VERSION}_${PYTHON_VERSION}
+    operation: compile
+    requirements:
+      - /tmp/ray-deps/ray_img_py${PYTHON_SHORT}.lock
+    output: dependencies/depsets/ray_${RAY_VERSION}_img_py${PYTHON_SHORT}.lock
+    append_flags:
+      - --python-version=${PYTHON_VERSION}
+      - --python-platform=linux
+      - --unsafe-package ray
+    build_arg_sets:
+      - ray2540_py310
+    pre_hooks:
+      - dependencies/scripts/fetch-ray-depsets.sh ${RAY_VERSION} ${PYTHON_SHORT}
+      - dependencies/scripts/fetch-ray-constraints.sh ${RAY_VERSION} ${PYTHON_VERSION}

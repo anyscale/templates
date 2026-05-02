@@ -16,7 +16,7 @@ Create at session start:
 
 ## Step 1: Update version
 
-Get latest Ray version with `pip index versions ray`. Pick the right image case from `image-cases.md` and apply it to `BUILD.yaml`.
+Get latest Ray version with `pip index versions ray`. Pick the right image case from SKILL.md ("Image URI cases") and apply it to `BUILD.yaml`.
 
 Grep and update any remaining version strings in template code.
 
@@ -49,7 +49,7 @@ Notes: .claude/.artifacts/<template-name>/update-ray-<version>/notes-fix-<timest
 ```
 
 After `/fix` returns:
-1. If a new image was built, `docker build + push` to GCP per `custom-image-publishing.md`; update BUILD.yaml `byod.docker_image` with the published URI.
+1. If a new image was built, run `.claude/skills/template/scripts/publish-custom-image.sh <dockerfile-dir> <image-name> <ray-version>` to push to GCP; update BUILD.yaml `byod.docker_image` with the printed URI.
 2. Follow instructions at `format.md` to normalize.
 3. Commit and push fixes to the PR branch.
 4. Back to Step 3.

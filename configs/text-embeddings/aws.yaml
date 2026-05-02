@@ -12,10 +12,3 @@ worker_node_types:
   max_workers: 4
   use_spot: true
   fallback_to_ondemand: true
-
-aws:
-  TagSpecifications:
-    - ResourceType: instance
-      Tags:
-        - Key: as-feature-multi-zone
-          Value: "true"
