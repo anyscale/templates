@@ -26,4 +26,4 @@ If any issues, just read `.cursor/Dockerfile` and `.cursor/install.sh` and repro
 - **Build all templates:** `rayapp build all` (non-self-closing `<img>` warnings are benign).
 - **Validate `BUILD.yaml`:** `python3 ci/validate_build_yaml.py --no-network` — schema + path check, mirrors the pre-commit hook.
 - **Depsets:** `bash ./update_deps.sh --check` — verifies the dependency lockfile is current.
-- **Skills sideload** (`anyscale/anyscale-debug-agent` clone at the end of `install.sh`) is required for the `/template` update flow; if it fails, `~/.claude/skills/` will be empty and `/fix` won't be available. Other dev workflows can proceed without it.
+- **Skills sideload** (`anyscale/anyscale-debug-agent` clone at the end of `install.sh`) is required for the `/template` update flow; if it fails, `~/.claude/skills/` will be empty and `/fix` won't be available. Other dev workflows can proceed without it but would perform much better if those skills are available
