@@ -16,9 +16,24 @@ Create at session start:
 
 ## Step 1: Update version
 
-Get latest Ray version with `pip index versions ray`. Pick the right image case from SKILL.md ("Image URI cases") and apply it to `BUILD.yaml`.
+Get latest Ray version: `pip index versions ray`.
 
-Grep and update any remaining version strings in template code.
+**Verify the new image tag exists** — a non-existent tag fails only after a slow workspace boot:
+
+```bash
+curl -sf "https://hub.docker.com/v2/repositories/anyscale/ray/tags/<tag>/" >/dev/null \
+  || { echo "anyscale/ray:<tag> does not exist"; exit 1; }
+```
+
+For third-party images, use the upstream registry's equivalent.
+
+Apply the bump per case (taxonomy in SKILL.md "Image URI cases"):
+
+- **Anyscale base:** set `image_uri` to `anyscale/ray:<new-tag>`.
+- **Anyscale custom on GCP:** bump Dockerfile `FROM` → run `.claude/skills/template/scripts/publish-custom-image.sh <dockerfile-dir> <name> <ray-version>` to publish to GCP (use the entry's `name` field as `<image-name>` — validator requires `<registry>/<name>:<ray-version>`) → update `byod.docker_image` and `ray_version` in `BUILD.yaml`.
+- **Third-party:** same repo, pick the latest tag with the highest Ray version, update `byod.docker_image` and `ray_version`. Don't swap to `anyscale/ray`.
+
+Grep and update any remaining version strings in template content.
 
 ## Step 2: Open PR
 
