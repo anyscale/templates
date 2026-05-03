@@ -37,14 +37,16 @@ Grep and update any remaining version strings in template content.
 
 ## Step 2: Open PR
 
+All `gh` write commands below need `GH_TOKEN=$ANYSCALE_DEBUG_AGENT_GH_TOKEN` (Cursor's default auth can't write to this repo — see AGENTS.md "GitHub write operations").
+
 1. Commit: `Update <template-name> to Ray <version>`
 2. Push the commit. In Cursor Cloud you're already on a `cursor/...` branch — push to that. Outside Cursor, any branch name works.
-3. Open the PR against `main`. Title: `[ray-update-<version>] Update <template-name> to Ray <version>`. Body: what changed and why.
-4. Apply the `ray-update` label. If running in Cursor Cloud, also apply `cursor-cloud` (see AGENTS.md "PR labels").
+3. Open the PR: `GH_TOKEN=$ANYSCALE_DEBUG_AGENT_GH_TOKEN gh pr create --base main --title '[ray-update-<version>] Update <template-name> to Ray <version>' --body '<what changed and why>' --draft`
+4. Apply both labels: `GH_TOKEN=$ANYSCALE_DEBUG_AGENT_GH_TOKEN gh pr edit --add-label ray-update --add-label cursor-cloud` (per AGENTS.md "PR labels").
 
 ## Step 3: Validate via CI
 
-Comment `/test-template <template-id>` on the PR, wait for CI.
+`GH_TOKEN=$ANYSCALE_DEBUG_AGENT_GH_TOKEN gh pr comment <pr-number> --body '/test-template <template-id>'`. Wait for CI.
 
 - **PASSED** → Step 5
 - **FAILED** → Step 4
@@ -54,7 +56,7 @@ Comment `/test-template <template-id>` on the PR, wait for CI.
 Classify the CI failure first:
 
 - **Agent-fixable** — template code/notebook/Dockerfile/config bug, BUILD.yaml schema error, image build error. Spawn `/fix` and iterate (below).
-- **Infrastructure** — workspace creation timeout, Anyscale staging API errors, auth/SSO errors, GitHub Actions runner errors. **Don't retry.** Run the local test (`rayapp test <template-name>`, see `local-testing.md`); if it passes, trust the local result, post a PR comment summarizing the CI infra failure, and hand off to a human. The PR stays open.
+- **Infrastructure** — workspace creation timeout, Anyscale staging API errors, auth/SSO errors, GitHub Actions runner errors. **Don't retry.** Run the local test (`rayapp test <template-name>`, see `local-testing.md`); if it passes, trust the local result, post a PR comment summarizing the CI infra failure (`GH_TOKEN=$ANYSCALE_DEBUG_AGENT_GH_TOKEN gh pr comment <pr-number> --body '...'`), and hand off to a human. The PR stays open.
 
 For agent-fixable failures, spawn `/fix` subagent (explicitly authorized):
 
