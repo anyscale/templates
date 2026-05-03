@@ -9,7 +9,7 @@ Create at session start:
 1. `update-version` — Bump image (+ GCP publish if custom) and any version strings
 2. `open-pr` — Commit, push, open PR
 3. `validate-ci` — Comment `/test-template <id>` on PR, wait for CI
-4. `fix` — If CI fails, spawn `/fix`, push new commit, re-validate (cap 2 retries)
+4. `fix` — If CI fails, classify and respond — spawn `/fix` for agent-fixable failures, hand off for infrastructure failures
 5. `report` — Session report
 
 ---
@@ -38,9 +38,9 @@ Grep and update any remaining version strings in template content.
 ## Step 2: Open PR
 
 1. Commit: `Update <template-name> to Ray <version>`
-2. Push to `update/<template-name>/ray-<version>`
-3. PR title: `[ray-update-<version>] Update <template-name> to Ray <version>`. Body: what changed and why.
-4. Apply the `ray-update` label.
+2. Push the commit. In Cursor Cloud you're already on a `cursor/...` branch — push to that. Outside Cursor, any branch name works.
+3. Open the PR against the branch the agent was tasked from (typically `main`; could be a dev branch in active development — if unsure in Cursor Cloud, check the task setup or ask the user). Title: `[ray-update-<version>] Update <template-name> to Ray <version>`. Body: what changed and why.
+4. Apply the `ray-update` label. If running in Cursor Cloud, also apply `cursor-cloud` (see AGENTS.md "PR labels").
 
 ## Step 3: Validate via CI
 
@@ -51,7 +51,12 @@ Comment `/test-template <template-id>` on the PR, wait for CI.
 
 ## Step 4: Fix
 
-Spawn `/fix` subagent (explicitly authorized):
+Classify the CI failure first:
+
+- **Agent-fixable** — template code/notebook/Dockerfile/config bug, BUILD.yaml schema error, image build error. Spawn `/fix` and iterate (below).
+- **Infrastructure** — workspace creation timeout, Anyscale staging API errors, auth/SSO errors, GitHub Actions runner errors. **Don't retry.** Run the local test (`rayapp test <template-name>`, see `local-testing.md`); if it passes, trust the local result, post a PR comment summarizing the CI infra failure, and hand off to a human. The PR stays open.
+
+For agent-fixable failures, spawn `/fix` subagent (explicitly authorized):
 
 ```
 /fix templates/<template-name>
@@ -59,7 +64,7 @@ Spawn `/fix` subagent (explicitly authorized):
 CI failed on PR #<num>. <paste relevant CI error>
 
 Fix minimally — code, notebooks, Dockerfiles, configs. Don't touch BUILD.yaml (orchestrator owns it).
-Iterate until `tests/<template-name>/tests.sh` passes. For custom images, rebuild as needed (See `anyscale image build` CLI for fast iteration) and report the working URI and Dockerfile.
+Iterate until `rayapp test <template-name>` passes locally (see local-testing.md). For custom images, rebuild as needed (See `anyscale image build` CLI for fast iteration) and report the working URI and Dockerfile.
 Notes: .claude/.artifacts/<template-name>/update-ray-<version>/notes-fix-<timestamp-epoch>.md
 ```
 
@@ -68,8 +73,6 @@ After `/fix` returns:
 2. Follow instructions at `format.md` to normalize.
 3. Commit and push fixes to the PR branch.
 4. Back to Step 3.
-
-Cap: 2 CI retries, then stop and report what was tried.
 
 ## Step 5: Report
 
