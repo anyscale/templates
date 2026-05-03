@@ -18,3 +18,13 @@ Required Cursor secrets (already provisioned at team scope):
 - `GCP_TEMPLATE_REGISTRY_SA_KEY`
 
 If any issues, just read `.cursor/Dockerfile` and `.cursor/install.sh` and reproduce their steps yourself.
+
+## Cursor Cloud specific instructions
+
+- **No services to run.** This is a content repository of ~73 self-contained templates. There are no backend servers, databases, or long-running processes. The dev loop is: edit templates → run `pre-commit run --all-files` → push → CI validates.
+- **Lint:** `pre-commit run --all-files` (the `pre-commit install` hook won't activate because Cursor sets `core.hooksPath`; run manually before committing).
+- **Build:** `rayapp build all` — builds all templates (exits 0 on success; non-self-closing `<img>` warnings are benign).
+- **Validate:** `python3 ci/validate_build_yaml.py --no-network` — schema + path check on `BUILD.yaml`.
+- **Depsets:** `bash ./update_deps.sh --check` — verifies dependency lockfiles are current. Requires a `python` symlink (Ubuntu 22.04 only ships `python3`); create with `sudo ln -sf /usr/bin/python3 /usr/bin/python` if missing.
+- **PATH:** Always ensure `$HOME/.local/bin` and `$HOME/google-cloud-sdk/bin` are on `PATH` (the install script appends to `~/.bashrc`, but subshells may not source it).
+- **Private skills clone** at the end of `install.sh` (`anyscale/anyscale-debug-agent`) may fail if the GitHub token lacks access — this is non-fatal and doesn't affect core dev workflows.
