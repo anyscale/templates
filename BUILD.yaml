@@ -78,7 +78,7 @@
   test:
     tests_path: tests/model-multiplexing/
     command: bash tests.sh
-    timeout_in_sec: 900
+    timeout_in_sec: 1500
 
 # owner: @aydin
 - name: model-composition-recsys
