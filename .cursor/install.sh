@@ -2,7 +2,9 @@
 # Cursor Cloud Agent install script.
 # Idempotent: runs on every VM startup. Cached via Cursor's snapshot.
 # Required secrets (set in Cursor → My Secrets, exposed as env vars):
-#   ANYSCALE_DEBUG_AGENT_GH_TOKEN  GitHub PAT with read on anyscale/anyscale-debug-agent
+#   ANYSCALE_DEBUG_AGENT_GH_TOKEN  GitHub PAT — needs read on anyscale/anyscale-debug-agent
+#                                   (skills clone) AND push/PR/comment/label on anyscale/templates
+#                                   (gh fallback when Cursor's default auth lacks PR permissions).
 #   ANYSCALE_CLI_TOKEN             For the anyscale CLI
 #   GCP_TEMPLATE_REGISTRY_SA_KEY   GCP SA JSON for docker push to us-docker.pkg.dev
 set -euo pipefail
