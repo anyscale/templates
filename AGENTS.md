@@ -2,7 +2,7 @@
 
 Anyscale console templates. For any template-related work (bump Ray, format, publish, debug a test failure), use the `template` skill (`/template`) — canonical entry point for procedures and references.
 
-For cloud agents, companion skills `/fix`, `/run`, and `/inspect` are loaded at user scope via `.cursor/environment.json` for debugging. Advice: `/fix` is a powerful skill that handles the entire debug loop, you might want to wrap it with a subagent to avoid cluttering your main context too much.
+Cloud agents **require** companion skills `/ask`, `/fix`, `/run`, `/inspect` — sideloaded by `.cursor/install.sh` from `anyscale/anyscale-debug-agent` into `~/.claude/skills/`. These are not optional: the `/template` update flow uses `/fix` to iterate on CI failures and cannot complete without it. If `~/.claude/skills/` is empty after install.sh, the `ANYSCALE_DEBUG_AGENT_GH_TOKEN` token lacks access — fix the token before retrying. Tip: wrap `/fix` in a subagent to keep its debug output out of your main context.
 
 **CI invariant** — `.github/workflows/test-template.yaml` only runs when a PR comment matches `/test-template <template-id> [<template-id>...]` (up to 3, fanned out in parallel). After any push to a PR, comment to trigger or re-trigger validation.
 

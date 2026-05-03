@@ -80,9 +80,12 @@ else
   echo "WARN: ANYSCALE_CLI_TOKEN not set — anyscale CLI commands will fail."
 fi
 
-# --- Sideload private skills from anyscale-debug-agent (last; failures here
-# don't block the rest of setup). Sparse + shallow + blobless: only fetch
-# .claude/skills/ (~1.4M) instead of the full 210M repo. ---
+# --- Sideload required skills (/ask, /fix, /run, /inspect) from
+# anyscale-debug-agent. Required for the /template update flow — without
+# /fix the agent cannot iterate on CI failures. Last in the script so a
+# clone failure can't cascade into losing earlier auth/creds setup; the
+# script still exits non-zero on failure. Sparse + shallow + blobless:
+# fetches only .claude/skills/ (~1.4M) instead of the full 210M repo. ---
 rm -rf /tmp/debug-agent
 GH_TOKEN="$ANYSCALE_DEBUG_AGENT_GH_TOKEN" gh repo clone \
   anyscale/anyscale-debug-agent /tmp/debug-agent -- \
