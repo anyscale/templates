@@ -25,6 +25,17 @@ export PATH="$HOME/.local/bin:$PATH"
 grep -qxF 'export PATH="$HOME/.local/bin:$PATH"' ~/.bashrc 2>/dev/null \
   || echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
 
+# --- Persist env for subsequent agent shells. ~/.bashrc only fires for
+# interactive shells (Ubuntu's stock ~/.bashrc early-returns when $PS1 is
+# unset), so login shells need /etc/profile.d/ to pick up these exports.
+# Written early so partial install failures still leave env persisted.
+# Idempotent: tee overwrites. ---
+sudo tee /etc/profile.d/cursor-env.sh > /dev/null <<'EOF'
+export PATH="$HOME/.local/bin:$PATH"
+export PATH="$PATH:$HOME/google-cloud-sdk/bin"
+export ANYSCALE_HOST="https://console.anyscale-staging.com"
+EOF
+
 # --- pre-commit hooks (auto-fire on git commit; idempotent) ---
 # Non-fatal: pre-commit refuses if core.hooksPath is set (and other niche
 # git configs). The agent can still run `pre-commit run --all-files` by hand.
