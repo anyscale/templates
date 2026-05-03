@@ -18,7 +18,10 @@ if ! command -v gh &>/dev/null; then
 fi
 
 # --- Python tooling (versions pinned to match this repo's CI) ---
-python3 -m pip install --user --no-warn-script-location \
+# --break-system-packages: Ubuntu 24.04's Python 3.12 enforces PEP 668 and
+# refuses `pip install --user` without it. Safe in this single-purpose
+# container — there's no user Python env to break.
+python3 -m pip install --user --no-warn-script-location --break-system-packages \
   pre-commit==3.8.0 nbconvert==7.17.1 anyscale==0.26.87 \
   pyyaml==6.0.3 pydantic==2.13.3
 export PATH="$HOME/.local/bin:$PATH"

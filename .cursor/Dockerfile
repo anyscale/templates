@@ -6,7 +6,7 @@
 # This Dockerfile's primary job is to put environment.json into "Manual
 # Dockerfile" mode so Cursor honors the install command instead of falling
 # back to its agent-driven setup which ignores it.
-FROM ubuntu:22.04
+FROM ubuntu:24.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 
