@@ -6,7 +6,11 @@ Cloud agents **require** companion skills `/ask`, `/fix`, `/run`, `/inspect` —
 
 **CI invariant** — `.github/workflows/test-template.yaml` only runs when a PR comment matches `/test-template <template-id> [<template-id>...]` (up to 3, fanned out in parallel). After any push to a PR, comment to trigger or re-trigger validation.
 
-**Known automation** — the `template-updater` Cursor automation owns Ray-version bumps end-to-end (open PR → CI → fix-loop) on every major/minor Ray release. Its PRs use label `ray-update` and branches `update/*/ray-*`.
+**Known automation** — the `template-updater` Cursor Cloud agent owns Ray-version bumps end-to-end (open PR → CI → fix-loop) on every major/minor Ray release. Branch naming is whatever Cursor auto-assigns (typically `cursor/...`).
+
+**PR labels** — apply all that fit:
+- `cursor-cloud` — **origin marker:** any PR opened by a Cursor Cloud agent.
+- `ray-update` — **content marker:** any PR bumping a template's Ray version. Applied whether the work was done by an agent or by hand.
 
 ## For Cursor Cloud Agent setup
 
@@ -26,4 +30,5 @@ If any issues, just read `.cursor/Dockerfile` and `.cursor/install.sh` and repro
 - **Build all templates:** `rayapp build all` (non-self-closing `<img>` warnings are benign).
 - **Validate `BUILD.yaml`:** `python3 ci/validate_build_yaml.py --no-network` — schema + path check, mirrors the pre-commit hook.
 - **Depsets:** `bash ./update_deps.sh --check` — verifies the dependency lockfile is current.
-- **Skills sideload** (`anyscale/anyscale-debug-agent` clone at the end of `install.sh`) is required for the `/template` update flow; if it fails, `~/.claude/skills/` will be empty and `/fix` won't be available. Other dev workflows can proceed without it but would perform much better if those skills are available
+- **Skills sideload** (`anyscale/anyscale-debug-agent` clone at the end of `install.sh`) is required for the `/template` update flow; if it fails, `~/.claude/skills/` will be empty and `/fix` won't be available. Other dev workflows can proceed without it but would perform much better if those skills are available.
+- **`gh` permission errors** — Cursor's default GitHub App auth may lack the permissions needed for PR ops (saw "Resource not accessible by integration" on `gh pr create`). If a `gh` command fails with a permission error, retry it prefixed with `GH_TOKEN=$ANYSCALE_DEBUG_AGENT_GH_TOKEN` — that secret holds a PAT with full repo access (push, PR create/edit, comment, label).
