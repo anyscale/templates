@@ -16,3 +16,5 @@ Required Cursor secrets (already provisioned at team scope):
 - `ANYSCALE_DEBUG_AGENT_GH_TOKEN`
 - `ANYSCALE_CLI_TOKEN`
 - `GCP_TEMPLATE_REGISTRY_SA_KEY`
+
+If any issues, just read `.cursor/Dockerfile` and `.cursor/install.sh` and reproduce their steps yourself.
