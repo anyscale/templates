@@ -96,14 +96,23 @@ fi
 # /fix the agent cannot iterate on CI failures. Last in the script so a
 # clone failure can't cascade into losing earlier auth/creds setup; the
 # script still exits non-zero on failure. Sparse + shallow + blobless:
-# fetches only .claude/skills/ (~1.4M) instead of the full 210M repo. ---
+# fetches only .claude/skills/ (~1.4M) instead of the full 210M repo.
+#
+# Direct `git clone` with the token in the URL, not `gh repo clone`:
+# newer `gh` doesn't auto-configure git's credential helper on
+# `gh auth login --with-token`, so the underlying git clone fires
+# anonymously and GitHub returns 404 on private repos. Embedding the
+# token in the URL bypasses that auth chain entirely. ---
 rm -rf /tmp/debug-agent
-GH_TOKEN="$ANYSCALE_DEBUG_AGENT_GH_TOKEN" gh repo clone \
-  anyscale/anyscale-debug-agent /tmp/debug-agent -- \
-  --depth 1 --single-branch --no-checkout --filter=blob:none
+git clone --depth 1 --single-branch --no-checkout --filter=blob:none \
+  "https://x-access-token:${ANYSCALE_DEBUG_AGENT_GH_TOKEN}@github.com/anyscale/anyscale-debug-agent.git" \
+  /tmp/debug-agent
 git -C /tmp/debug-agent sparse-checkout set .claude/skills
 git -C /tmp/debug-agent checkout
 mkdir -p ~/.claude/skills
 cp -r /tmp/debug-agent/.claude/skills/* ~/.claude/skills/
 echo "User-scope skills:"
 ls ~/.claude/skills/
+# Clean up the cloned dir — the .git/config has the token embedded and
+# we've already extracted what we need.
+rm -rf /tmp/debug-agent
