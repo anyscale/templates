@@ -26,8 +26,11 @@ grep -qxF 'export PATH="$HOME/.local/bin:$PATH"' ~/.bashrc 2>/dev/null \
   || echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
 
 # --- pre-commit hooks (auto-fire on git commit; idempotent) ---
+# Non-fatal: pre-commit refuses if core.hooksPath is set (and other niche
+# git configs). The agent can still run `pre-commit run --all-files` by hand.
 if [ -f .pre-commit-config.yaml ] && [ -d .git ]; then
-  pre-commit install
+  pre-commit install \
+    || echo "WARN: pre-commit install skipped — run 'pre-commit run --all-files' manually before committing."
 fi
 
 # --- rayapp (version pinned via repo's download_rayapp.sh) ---
@@ -49,17 +52,9 @@ if ! command -v docker &>/dev/null; then
   sudo apt-get install -y docker.io fuse-overlayfs iptables
 fi
 
-# --- Auth: gh (hard requirement — used to clone debug-agent skills) ---
+# --- Auth: gh ---
 : "${ANYSCALE_DEBUG_AGENT_GH_TOKEN:?secret ANYSCALE_DEBUG_AGENT_GH_TOKEN is empty/unset; add it in Cursor → Cloud Agents → My Secrets}"
 echo "$ANYSCALE_DEBUG_AGENT_GH_TOKEN" | gh auth login --with-token
-
-# --- Sideload private skills from anyscale-debug-agent ---
-rm -rf /tmp/debug-agent
-GH_TOKEN="$ANYSCALE_DEBUG_AGENT_GH_TOKEN" gh repo clone anyscale/anyscale-debug-agent /tmp/debug-agent
-mkdir -p ~/.claude/skills
-cp -r /tmp/debug-agent/skills/* ~/.claude/skills/
-echo "User-scope skills:"
-ls ~/.claude/skills/
 
 # --- Auth: gcloud (for docker push to GCP artifact registry; soft — only needed for custom images) ---
 if [ -n "${GCP_TEMPLATE_REGISTRY_SA_KEY:-}" ]; then
@@ -84,3 +79,17 @@ EOF
 else
   echo "WARN: ANYSCALE_CLI_TOKEN not set — anyscale CLI commands will fail."
 fi
+
+# --- Sideload private skills from anyscale-debug-agent (last; failures here
+# don't block the rest of setup). Sparse + shallow + blobless: only fetch
+# .claude/skills/ (~1.4M) instead of the full 210M repo. ---
+rm -rf /tmp/debug-agent
+GH_TOKEN="$ANYSCALE_DEBUG_AGENT_GH_TOKEN" gh repo clone \
+  anyscale/anyscale-debug-agent /tmp/debug-agent -- \
+  --depth 1 --single-branch --no-checkout --filter=blob:none
+git -C /tmp/debug-agent sparse-checkout set .claude/skills
+git -C /tmp/debug-agent checkout
+mkdir -p ~/.claude/skills
+cp -r /tmp/debug-agent/.claude/skills/* ~/.claude/skills/
+echo "User-scope skills:"
+ls ~/.claude/skills/
