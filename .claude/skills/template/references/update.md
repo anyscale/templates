@@ -39,7 +39,7 @@ Grep and update any remaining version strings in template content.
 
 1. Commit: `Update <template-name> to Ray <version>`
 2. Push the commit. In Cursor Cloud you're already on a `cursor/...` branch — push to that. Outside Cursor, any branch name works.
-3. Open the PR against the branch the agent was tasked from (typically `main`; could be a dev branch in active development — if unsure in Cursor Cloud, check the task setup or ask the user). Title: `[ray-update-<version>] Update <template-name> to Ray <version>`. Body: what changed and why.
+3. Open the PR against `main`. Title: `[ray-update-<version>] Update <template-name> to Ray <version>`. Body: what changed and why.
 4. Apply the `ray-update` label. If running in Cursor Cloud, also apply `cursor-cloud` (see AGENTS.md "PR labels").
 
 ## Step 3: Validate via CI
