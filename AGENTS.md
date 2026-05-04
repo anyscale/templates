@@ -24,10 +24,7 @@ Apply all that fit:
 
 Dev loop: edit → `pre-commit run --all-files` → push → CI validates. The pre-commit hooks cover trailing whitespace, README auto-generation (from `README.ipynb` via `jupyter nbconvert`), and BUILD.yaml schema validation.
 
-Standalone commands (beyond pre-commit):
-- `rayapp build all` — build all templates (non-self-closing `<img>` warnings are benign).
-- `bash ./update_deps.sh --check` — verify dependency lockfile is current.
-- `python3 ci/validate_build_yaml.py --no-network` — schema check on BUILD.yaml only (faster than running all pre-commit hooks).
+Beyond pre-commit, `rayapp build all` builds all templates locally (non-self-closing `<img>` warnings are benign).
 
 **Caveat:** `generate-readme` is non-deterministic across Python/jupyter versions (CI uses 3.9). If pre-commit passes locally but fails CI with "files were modified by this hook", treat as infra failure in `/template`'s triage.
 
