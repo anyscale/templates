@@ -4,7 +4,7 @@ Anyscale console templates. For any template-related work (bump Ray, format, pub
 
 ## Required skills
 
-The `/template` update flow requires companion skills `/ask`, `/fix`, `/run`, `/inspect` (from `anyscale/anyscale-debug-agent`). `/fix` in particular drives the CI iteration loop — without it, `/template` cannot complete an update. Cursor Cloud auto-sideloads them via `.cursor/install.sh` into `~/.claude/skills/`; for other setups, clone the skills yourself. Tip: wrap `/fix` in a subagent to keep its debug output out of your main context.
+The `/template` update flow requires companion skills `/ask`, `/fix`, `/run`, `/inspect` (from `anyscale/anyscale-debug-agent`). `/fix` in particular drives the CI iteration loop — **without it you cannot fix a broken template and should not try to do so**. Cursor Cloud auto-sideloads them via `.cursor/install.sh` into `~/.claude/skills/`; for other setups, clone the skills yourself. Tip: wrap `/fix` in a subagent to keep its debug output out of your main context.
 
 ## CI
 
