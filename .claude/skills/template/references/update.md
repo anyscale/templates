@@ -44,7 +44,7 @@ All `gh` write commands below need `GH_TOKEN=$ANYSCALE_DEBUG_AGENT_GH_TOKEN` (Cu
 3. Open the PR (Draft) with title `[ray-update-<version>] Update <template-name> to Ray <version>` and body following the outline below. `GH_TOKEN=$ANYSCALE_DEBUG_AGENT_GH_TOKEN gh pr create --base main --title '...' --body-file <body.md> --draft` (or use `--body "$(cat <<'EOF' ... EOF)"`).
 4. Apply both labels: `GH_TOKEN=$ANYSCALE_DEBUG_AGENT_GH_TOKEN gh pr edit --add-label ray-update --add-label cursor-cloud` (per AGENTS.md "PR labels").
 
-PR body outline (omit **Fix iterations** if `/fix` wasn't invoked):
+**Keep the PR body concise — short bullets, no prose, no boilerplate.** Outline (omit **Fix iterations** if `/fix` wasn't invoked):
 
 ```markdown
 ## Summary
