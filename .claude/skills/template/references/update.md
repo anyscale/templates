@@ -67,7 +67,7 @@ For agent-fixable failures, spawn `/fix` subagent (explicitly authorized):
 
 CI failed on PR #<num>. <paste relevant CI error>
 
-Fix minimally — code, notebooks, Dockerfiles, configs. Don't touch BUILD.yaml (orchestrator owns it).
+Fix minimally — code, notebooks, Dockerfiles, configs...
 Iterate until `rayapp test <template-name>` passes locally (see local-testing.md). For custom images, rebuild as needed (See `anyscale image build` CLI for fast iteration) and report the working URI and Dockerfile.
 Notes: .claude/.artifacts/<template-name>/update-ray-<version>/notes-fix-<timestamp-epoch>.md
 ```
@@ -80,4 +80,6 @@ After `/fix` returns:
 
 ## Step 5: Report
 
-Write to `.claude/.artifacts/<template-name>/update-ray-<version>/notes-session-<timestamp-epoch>.md`: what changed, issues, fixes.
+The PR description (Step 2) is the canonical session report.
+
+Only write a separate notes file at `.claude/.artifacts/<template-name>/update-ray-<version>/notes-session-<timestamp-epoch>.md` when something non-trivial happened: `/fix` was invoked, an infrastructure failure was handed off, or the agent iterated multiple times. For a clean bump (CI green on first try, no `/fix`), skip the file — the PR is enough.
