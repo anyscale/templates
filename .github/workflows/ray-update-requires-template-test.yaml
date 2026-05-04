@@ -28,58 +28,84 @@ jobs:
         run: |
           set -euo pipefail
 
-          # Resolve the PR number and head SHA, working under both event types.
-          PR=""
-          HEAD_SHA=""
+          # Build the list of PRs to evaluate. status events can map to
+          # multiple PRs (stacked PRs, backports), so iterate all of them
+          # rather than picking [0] and silently missing a ray-update PR.
+          PRS=()
           if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            PR="${{ github.event.pull_request.number }}"
-            HEAD_SHA="${{ github.event.pull_request.head.sha }}"
+            PRS+=("${{ github.event.pull_request.number }}")
           else
-            # status event — find the PR (if any) tied to this commit.
-            HEAD_SHA="${{ github.event.sha }}"
-            PR=$(gh api "/repos/$REPO/commits/$HEAD_SHA/pulls" \
-                 --jq '.[0].number // empty')
-            if [[ -z "$PR" ]]; then
-              echo "No PR found for SHA $HEAD_SHA — nothing to gate."
+            STATUS_SHA="${{ github.event.sha }}"
+            while IFS= read -r N; do
+              [ -n "$N" ] && PRS+=("$N")
+            done < <(gh api "/repos/$REPO/commits/$STATUS_SHA/pulls" --jq '.[].number')
+            if [ ${#PRS[@]} -eq 0 ]; then
+              echo "No PR contains commit $STATUS_SHA — nothing to gate."
               exit 0
             fi
           fi
-          echo "PR #$PR @ $HEAD_SHA"
 
-          # ray-update label present?
-          LABELS=$(gh pr view "$PR" --repo "$REPO" \
-                   --json labels --jq '[.labels[].name] | join(",")')
-          echo "Labels: $LABELS"
-          if ! echo ",$LABELS," | grep -q ',ray-update,'; then
-            echo "ray-update label not present — passing."
-            exit 0
-          fi
+          ANY_FAILED=0
+          for PR in "${PRS[@]}"; do
+            echo "::group::PR #$PR"
 
-          # Latest buildkite/template-test commit-status on the head SHA.
-          # Empty list from jq → "missing" sentinel, so a never-run test is
-          # distinguishable from a failed/pending one.
-          STATUS=$(gh api "/repos/$REPO/commits/$HEAD_SHA/status" \
-                   --jq '[.statuses[] | select(.context | startswith("buildkite/template-test"))] | sort_by(.updated_at) | last | .state // "missing"')
-          echo "buildkite/template-test status on HEAD: $STATUS"
+            # Always re-fetch the PR's current head + labels from the API,
+            # never trust event payloads. Closes the stale-SHA hole where a
+            # late-arriving status from an earlier commit would otherwise
+            # gate the new HEAD as 'green'.
+            PR_DATA=$(gh pr view "$PR" --repo "$REPO" --json headRefOid,labels)
+            HEAD_SHA=$(echo "$PR_DATA" | jq -r '.headRefOid')
+            LABELS=$(echo "$PR_DATA" | jq -r '[.labels[].name] | join(",")')
+            echo "PR #$PR HEAD: $HEAD_SHA"
+            echo "PR #$PR labels: $LABELS"
 
-          case "$STATUS" in
-            success)
-              echo "buildkite/template-test is green — passing."
-              ;;
-            missing)
-              echo "::error::No buildkite/template-test build for this commit. Comment '/test-template <template-name>' on the PR to dispatch one, then wait for it to pass."
-              exit 1
-              ;;
-            pending)
-              echo "::error::buildkite/template-test is still running. Wait for the build to finish, then this check will re-run automatically."
-              exit 1
-              ;;
-            failure|error)
-              echo "::error::buildkite/template-test reported '$STATUS'. Investigate the build logs, push a fix, then re-run /test-template."
-              exit 1
-              ;;
-            *)
-              echo "::error::Unexpected buildkite/template-test status '$STATUS' (expected 'success'). Check the PR's commit-status detail."
-              exit 1
-              ;;
-          esac
+            # On a status event, the check-run we produce is attached to
+            # the status's commit. Branch protection on a PR looks at the
+            # PR's head commit's checks, so only gate PRs whose current
+            # head is this commit; others will be re-evaluated when their
+            # own heads move.
+            if [[ "${{ github.event_name }}" == "status" ]] \
+               && [[ "$HEAD_SHA" != "${{ github.event.sha }}" ]]; then
+              echo "PR #$PR HEAD ≠ status SHA — skipping (will fire when its own head moves)."
+              echo "::endgroup::"
+              continue
+            fi
+
+            if ! echo ",$LABELS," | grep -q ',ray-update,'; then
+              echo "ray-update label not present — passing for PR #$PR."
+              echo "::endgroup::"
+              continue
+            fi
+
+            # Latest buildkite/template-test commit-status on this PR's HEAD.
+            # Empty list from jq → "missing" sentinel, so never-run is
+            # distinguishable from failed/pending.
+            STATUS=$(gh api "/repos/$REPO/commits/$HEAD_SHA/status" \
+                     --jq '[.statuses[] | select(.context | startswith("buildkite/template-test"))] | sort_by(.updated_at) | last | .state // "missing"')
+            echo "buildkite/template-test status on HEAD: $STATUS"
+
+            case "$STATUS" in
+              success)
+                echo "PR #$PR: buildkite/template-test is green — passing."
+                ;;
+              missing)
+                echo "::error::PR #$PR: no buildkite/template-test build for HEAD ($HEAD_SHA). Comment '/test-template <template-name>' to dispatch one."
+                ANY_FAILED=1
+                ;;
+              pending)
+                echo "::error::PR #$PR: buildkite/template-test still running on $HEAD_SHA. Wait for it to finish; this check will re-run automatically."
+                ANY_FAILED=1
+                ;;
+              failure|error)
+                echo "::error::PR #$PR: buildkite/template-test reported '$STATUS' on $HEAD_SHA. Investigate, push a fix, then re-run /test-template."
+                ANY_FAILED=1
+                ;;
+              *)
+                echo "::error::PR #$PR: unexpected buildkite/template-test status '$STATUS' on $HEAD_SHA."
+                ANY_FAILED=1
+                ;;
+            esac
+            echo "::endgroup::"
+          done
+
+          [ $ANY_FAILED -eq 0 ]
