@@ -26,11 +26,18 @@ if ! GH_TOKEN="${ANYSCALE_GH_TOKEN:-}" gh auth status >/dev/null 2>&1; then
   failures+=("gh auth: 'gh auth status' failed with ANYSCALE_GH_TOKEN — check token validity/scopes")
 fi
 
-# Verifies the token has access to anyscale/templates specifically. Catches
-# tokens that are valid but not SSO-authorized for the org — `gh auth status`
-# won't flag those, but every PR write would 404.
-if ! GH_TOKEN="${ANYSCALE_GH_TOKEN:-}" gh api /repos/anyscale/templates >/dev/null 2>&1; then
-  failures+=("gh repo access: ANYSCALE_GH_TOKEN can't fetch anyscale/templates — likely missing SSO authorization for the org")
+# Verifies the token can do PR write operations (create/edit/comment/label)
+# on this repo. .permissions.push from the repo response reflects the calling
+# user's role — Write or higher returns true; everything PR-write needs that.
+# Catches: invalid token, missing SSO authorization, user not a collaborator,
+# token revoked.
+# Limitation: for fine-grained PATs this reflects the user's role, not the
+# token's configured scopes. A token belonging to an admin user but scoped
+# narrowly would still report push:true. No API closes that gap without an
+# actual write.
+push_perm=$(GH_TOKEN="${ANYSCALE_GH_TOKEN:-}" gh api /repos/anyscale/templates --jq '.permissions.push' 2>/dev/null)
+if [[ "$push_perm" != "true" ]]; then
+  failures+=("gh repo access: ANYSCALE_GH_TOKEN doesn't grant push to anyscale/templates (PR create/edit/comment/label will fail) — check SSO authorization and repo permissions")
 fi
 
 if ! gcloud auth list --filter=status:ACTIVE --format='value(account)' 2>/dev/null | grep -q .; then
