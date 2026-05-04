@@ -40,7 +40,9 @@ if [[ ! -f "$HOME/.docker/config.json" ]] \
 fi
 
 # Pinned to staging — Cursor Cloud agent must never run against prod.
-if ! ANYSCALE_HOST=https://console.anyscale-staging.com anyscale cloud list >/dev/null 2>&1; then
+# --no-interactive prevents the CLI from prompting (would hang in CI).
+if ! ANYSCALE_HOST=https://console.anyscale-staging.com \
+     anyscale --no-interactive cloud list >/dev/null 2>&1; then
   failures+=("anyscale auth: 'anyscale cloud list' against staging failed — check ANYSCALE_CLI_TOKEN is a staging token")
 fi
 
