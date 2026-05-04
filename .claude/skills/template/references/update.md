@@ -41,8 +41,28 @@ All `gh` write commands below need `GH_TOKEN=$ANYSCALE_DEBUG_AGENT_GH_TOKEN` (Cu
 
 1. Commit: `Update <template-name> to Ray <version>`
 2. Push the commit. In Cursor Cloud you're already on a `cursor/...` branch — push to that. Outside Cursor, use `update/<template-name>/ray-<version>`.
-3. Open the PR: `GH_TOKEN=$ANYSCALE_DEBUG_AGENT_GH_TOKEN gh pr create --base main --title '[ray-update-<version>] Update <template-name> to Ray <version>' --body '<what changed and why>' --draft`
+3. Open the PR (Draft) with title `[ray-update-<version>] Update <template-name> to Ray <version>` and body following the outline below. `GH_TOKEN=$ANYSCALE_DEBUG_AGENT_GH_TOKEN gh pr create --base main --title '...' --body-file <body.md> --draft` (or use `--body "$(cat <<'EOF' ... EOF)"`).
 4. Apply both labels: `GH_TOKEN=$ANYSCALE_DEBUG_AGENT_GH_TOKEN gh pr edit --add-label ray-update --add-label cursor-cloud` (per AGENTS.md "PR labels").
+
+PR body outline (omit **Fix iterations** if `/fix` wasn't invoked):
+
+```markdown
+## Summary
+Bump <template-name> to Ray <ray-version>.
+
+## Changes
+| File | Before | After |
+|---|---|---|
+| `BUILD.yaml` (`<name>` entry) | <old image URI> | <new image URI> |
+| <other in-template files with version strings> | ... | ... |
+
+## Fix iterations
+<short summary of what was iterated on>. Full notes: `.claude/.artifacts/<template-name>/update-ray-<version>/notes-session-<timestamp-epoch>.md`.
+
+## Tests / validation
+- **Local:** `rayapp test <template-name>` — passed.
+- **CI:** Buildkite build #N — <passed | skipped due to infra failure: <reason + link>>.
+```
 
 ## Step 3: Validate via CI
 
@@ -80,4 +100,4 @@ After `/fix` returns:
 
 ## Step 5: Report
 
-PR description (Step 2) is the canonical session report. Only write `.claude/.artifacts/<template-name>/update-ray-<version>/notes-session-<timestamp-epoch>.md` if `/fix` was invoked.
+PR description (Step 2) is the canonical session report. Only write an extensive `.claude/.artifacts/<template-name>/update-ray-<version>/notes-session-<timestamp-epoch>.md` if `/fix` was invoked.
