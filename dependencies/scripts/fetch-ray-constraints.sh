@@ -10,11 +10,6 @@ BASE_URL="https://raw.githubusercontent.com/ray-project/ray/ray-${RAY_VERSION}/p
 
 mkdir -p "$DEST_DIR"
 
-if [[ -f "$DEST_DIR/$DEST_FILE" ]]; then
-  echo "Already fetched: $DEST_DIR/$DEST_FILE"
-  exit 0
-fi
-
 # Try version-specific constraints first, fall back to generic
 URL="${BASE_URL}/requirements_compiled_py${PYTHON_VERSION}.txt"
 echo "Fetching Ray constraints: $URL"
