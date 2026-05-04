@@ -4,14 +4,14 @@
 set -uo pipefail
 
 failures=()
-details=()
 
-# Run a command, capture combined stdout+stderr. On non-zero exit, register a
-# failure summary AND keep the captured output for the details section.
-record_failure() {
-  local summary="$1" output="$2"
-  failures+=("$summary")
-  details+=("--- $summary ---"$'\n'"$output")
+# Append a failure entry consisting of a summary line and an indented block of
+# captured stderr/stdout output, so summaries and their underlying errors stay
+# paired in the final report.
+add_failure_with_output() {
+  local summary="$1" output="$2" indented
+  indented=$(printf '%s\n' "$output" | sed 's/^/      /')
+  failures+=("$summary"$'\n'"$indented")
 }
 
 # 1. Companion skills
@@ -30,18 +30,24 @@ done
 
 # 3. Auth verified
 if out=$(GH_TOKEN="${ANYSCALE_GH_TOKEN:-}" gh auth status 2>&1); then :; else
-  record_failure "gh auth: 'gh auth status' failed with ANYSCALE_GH_TOKEN — check token validity/scopes" "$out"
+  add_failure_with_output \
+    "gh auth: 'gh auth status' failed with ANYSCALE_GH_TOKEN — check token validity/scopes" \
+    "$out"
 fi
 
 # `gh auth status` validates the token but won't flag tokens that are valid
 # yet not SSO-authorized for the org — every PR write would 404.
 if out=$(GH_TOKEN="${ANYSCALE_GH_TOKEN:-}" gh api /repos/anyscale/templates 2>&1); then :; else
-  record_failure "gh repo access: ANYSCALE_GH_TOKEN can't fetch anyscale/templates — likely missing SSO authorization for the org" "$out"
+  add_failure_with_output \
+    "gh repo access: ANYSCALE_GH_TOKEN can't fetch anyscale/templates — likely missing SSO authorization for the org" \
+    "$out"
 fi
 
 gcloud_out=$(gcloud auth list --filter=status:ACTIVE --format='value(account)' 2>&1)
 if ! echo "$gcloud_out" | grep -q .; then
-  record_failure "gcloud auth: no active account — service-account activation failed (check GCP_TEMPLATE_REGISTRY_SA_KEY)" "$gcloud_out"
+  add_failure_with_output \
+    "gcloud auth: no active account — service-account activation failed (check GCP_TEMPLATE_REGISTRY_SA_KEY)" \
+    "$gcloud_out"
 fi
 
 if [[ ! -f "$HOME/.docker/config.json" ]] \
@@ -53,7 +59,9 @@ fi
 # --no-interactive prevents the CLI from prompting (would hang in CI).
 if out=$(ANYSCALE_HOST=https://console.anyscale-staging.com \
          anyscale cloud list --no-interactive 2>&1); then :; else
-  record_failure "anyscale auth: 'anyscale cloud list' against staging failed — check ANYSCALE_CLI_TOKEN is a staging token" "$out"
+  add_failure_with_output \
+    "anyscale auth: 'anyscale cloud list' against staging failed — check ANYSCALE_CLI_TOKEN is a staging token" \
+    "$out"
 fi
 
 # Buildkite MCP server starts with a stale token and only 401s mid-task —
@@ -62,10 +70,14 @@ if [[ -n "${BUILDKITE_API_TOKEN:-}" ]]; then
   if out=$(curl -sS -H "Authorization: Bearer $BUILDKITE_API_TOKEN" \
            https://api.buildkite.com/v2/access-token 2>&1); then
     if ! echo "$out" | grep -q '"uuid"'; then
-      record_failure "buildkite auth: BUILDKITE_API_TOKEN rejected by api.buildkite.com — token expired or revoked" "$out"
+      add_failure_with_output \
+        "buildkite auth: BUILDKITE_API_TOKEN rejected by api.buildkite.com — token expired or revoked" \
+        "$out"
     fi
   else
-    record_failure "buildkite auth: 'curl https://api.buildkite.com/v2/access-token' failed" "$out"
+    add_failure_with_output \
+      "buildkite auth: 'curl https://api.buildkite.com/v2/access-token' failed" \
+      "$out"
   fi
 fi
 
@@ -83,14 +95,6 @@ if [[ ${#failures[@]} -gt 0 ]]; then
   for f in "${failures[@]}"; do
     echo "  - $f" >&2
   done
-  if [[ ${#details[@]} -gt 0 ]]; then
-    echo >&2
-    echo "Details:" >&2
-    for d in "${details[@]}"; do
-      echo "$d" >&2
-      echo >&2
-    done
-  fi
   exit 1
 fi
 
