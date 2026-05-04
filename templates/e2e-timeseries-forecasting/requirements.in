@@ -2,7 +2,7 @@ numpy
 pandas
 scikit-learn
 torch
-# ray[data,train,serve]==2.46.0
+# ray[data,train,serve]==2.54.1
 aiohttp
 pyyaml
 s3fs

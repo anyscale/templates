@@ -188,11 +188,13 @@ Then we use the [`map_batches()`](https://docs.ray.io/en/latest/data/api/doc/ray
 
 
 ```python
+num_gpus = int(ray.cluster_resources().get("GPU", 1))
+
 predictions = transformed_ds.map_batches(
     ResnetModel,
-    concurrency=4,  # Use 4 GPUs. Change this number based on the number of GPUs in your cluster.
-    num_gpus=1,  # Specify 1 GPU per model replica.
-    batch_size=720,  # Use the largest batch size that can fit on our GPUs
+    concurrency=num_gpus,  # One actor per GPU in the cluster
+    num_gpus=1,  # Specify 1 GPU per model replica
+    batch_size=64,  # Moderate batch size to avoid GPU memory pressure
 )
 ```
 
@@ -210,12 +212,15 @@ We see that all the images are correctly classified as “tench”, which is a t
 ```python
 from PIL import Image
 
-for image, prediction in zip(
+for i, (image, prediction) in enumerate(zip(
     prediction_batch["original_image"], prediction_batch["predicted_label"]
-):
+)):
     img = Image.fromarray(image)
-    display(img)
-    print("Label: ", prediction)
+    try:
+        display(img)
+    except NameError:
+        pass
+    print(f"Image {i}: Label = {prediction}")
 ```
 
 If the samples look good, we can proceed with saving the results to external storage (for example, local disk or cloud storage such as AWS S3). See [the guide on saving data](https://docs.ray.io/en/latest/data/saving-data.html#saving-data) for all supported storage and file formats.
@@ -226,9 +231,10 @@ import tempfile
 
 temp_dir = tempfile.mkdtemp()
 
-# First, drop the original images to avoid them being saved as part of the predictions.
-# Then, write the predictions in parquet format to a path with the `local://` prefix
-# to make sure all results get written on the head node.
-predictions.drop_columns(["original_image"]).write_parquet(f"local://{temp_dir}")
+# For demonstration, we'll save a sample of predictions.
+# In production, you can process the entire dataset by removing .limit().
+sample_predictions = predictions.limit(1000)
+
+sample_predictions.drop_columns(["original_image"]).write_parquet(temp_dir)
 print(f"Predictions saved to `{temp_dir}`!")
 ```

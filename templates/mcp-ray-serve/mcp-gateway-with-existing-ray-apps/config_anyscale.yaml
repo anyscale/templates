@@ -4,7 +4,7 @@ applications:
 
 - name: image_classifier_app
 
-  route_prefix: /app1
+  route_prefix: /classify
 
   import_path: image_classifier:app
 
@@ -34,7 +34,7 @@ applications:
 
 - name: text_translator_app
 
-  route_prefix: /app2
+  route_prefix: /translate
 
   import_path: text_translator:app
 

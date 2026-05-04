@@ -17,6 +17,11 @@ Let's start by running a quick "hello world" that runs a few variations of a fun
 
 
 ```python
+!pip install --no-cache-dir torch==2.10.0 torchvision==0.25.0 s3fs==2026.3.0
+```
+
+
+```python
 from ray import tune
 
 def f(config):
@@ -90,7 +95,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 from torch.utils.data import random_split
-from ray import train
+from ray import tune
 
 def train_cifar(config):
     net = Net(config["l1"], config["l2"])
@@ -168,7 +173,7 @@ def train_cifar(config):
                 val_loss += loss.cpu().numpy()
                 val_steps += 1
 
-        train.report(
+        tune.report(
             {"loss": (val_loss / val_steps), "accuracy": correct / total},
         )
     print("Finished Training")
@@ -181,7 +186,7 @@ It will sweep across several choices for "l1", "l2", and "lr" of the net:
 
 ```python
 from filesystem_utils import get_path_and_fs
-from ray import tune, train
+from ray import tune
 import os
 
 # Define where results are stored. We'll use the Anyscale artifact storage path to
@@ -220,7 +225,7 @@ train_cifar = tune.with_resources(train_cifar, {"cpu": 2})
 tuner = tune.Tuner(
     train_cifar,
     param_space=trial_space,
-    run_config=train.RunConfig(storage_path=storage_path, storage_filesystem=fs),
+    run_config=tune.RunConfig(storage_path=storage_path, storage_filesystem=fs),
 )
 results = tuner.fit()
 print(results)

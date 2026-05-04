@@ -1,4 +1,4 @@
-"""Preprocessing script for Stable Diffusion v2 pre-training.
+"""Preprocessing script for Stable Diffusion pre-training.
 
 The script performs the following steps:
 1. Load images and text captions from a remote storage system using the read_data function.
@@ -9,10 +9,8 @@ For an detailed explanation of the below code, check out our
 [guide here](https://www.anyscale.com/blog/processing-2-billion-images-for-stable-diffusion-model-training-definitive-guides-with-ray-series).
 """
 
-import gc
 import io
 import logging
-import math
 import time
 from pathlib import Path
 from typing import Literal, Optional, cast
@@ -22,23 +20,24 @@ import numpy as np
 import pandas as pd  # type: ignore
 import pyarrow as pa  # type: ignore
 import ray.data
-import torch
-import torchvision  # type: ignore
 import typer
-from diffusers.models import AutoencoderKL
 from PIL import Image
-from transformers import CLIPTextModel, CLIPTokenizer  # type: ignore
+
+import sys
+sys.path.insert(0, str(Path(__file__).parent.parent))
+from sd_data_transforms import (
+    SDTransformer,
+    SDLatentEncoder,
+    CAPTION_LATENTS_KEY,
+    IMAGE_LATENTS_256_KEY,
+    IMAGE_LATENTS_512_KEY,
+)
 
 ### Logging ###
 logger = logging.getLogger("ray.data")
 
 ### Type Definitions ###
 ResolutionDtype = Literal[256, 512]
-
-### Constants ###
-CAPTION_LATENTS_KEY = "caption_latents"
-IMAGE_LATENTS_256_KEY = "latents_256_bytes"
-IMAGE_LATENTS_512_KEY = "latents_512_bytes"
 
 
 ########################
@@ -79,245 +78,6 @@ def read_data(
     if limit:
         ds = ds.limit(limit)
     return ds
-
-
-##########################
-# Step 2: Transformation #
-##########################
-
-#### Utils ####
-class LargestCenterSquare:
-    """Largest center square crop for images."""
-
-    def __init__(self, size: int) -> None:
-        self.size = size
-
-    def __call__(self, img: Image.Image) -> Image.Image:
-        """Crop the largest center square from an image."""
-        # First, resize the image such that the smallest side is self.size while preserving aspect ratio.
-        img = torchvision.transforms.functional.resize(
-            img=img,
-            size=self.size,
-        )
-
-        # Then take a center crop to a square.
-        w, h = img.size
-        c_top = (h - self.size) // 2
-        c_left = (w - self.size) // 2
-        img = torchvision.transforms.functional.crop(
-            img=img,
-            top=c_top,
-            left=c_left,
-            height=self.size,
-            width=self.size,
-        )
-        return img
-
-#### Transformer ####
-class SDTransformer:
-    """Image and text transforms."""
-
-    def __init__(
-        self,
-        resolution: int,
-        model_name: str = "stabilityai/stable-diffusion-2-base",
-    ) -> None:
-        # Image transforms.
-        self.resolution = resolution
-        normalize = torchvision.transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
-        self.crop = LargestCenterSquare(resolution)
-        self.transforms = torchvision.transforms.Compose(
-            [torchvision.transforms.ToTensor(), normalize]
-        )
-        # Text tokenizer.
-        self.text_tokenizer = CLIPTokenizer.from_pretrained(
-            model_name, subfolder="tokenizer"
-        )
-
-    def image_transform(self, image: Image.Image) -> np.ndarray:
-        """Transform image to a square-sized normalized tensor."""
-        image = self.crop(image)
-        out = self.transforms(image)
-        return convert_tensor_to_array(out)
-
-    def text_tokenize(self, text: str) -> np.ndarray:
-        """Tokenize text using the CLIP tokenizer into a fixed-length sequence."""
-        return self.text_tokenizer(
-            text,
-            padding="max_length",
-            max_length=self.text_tokenizer.model_max_length,
-            truncation=True,
-            return_tensors="np",
-        )["input_ids"][0]
-
-    def __call__(self, batch: dict[str, np.ndarray]) -> dict[str, np.ndarray]:
-        """Transform images and text captions."""
-        final_batch: dict[str, list] = {
-            "hash": [],
-            "caption_ids": [],
-            f"image_{self.resolution}": [],
-        }
-        logger.info("Running image and text transforms...")
-        for hash_, jpg, width, height, caption in zip(
-            batch["hash"],
-            batch["jpg"],
-            batch["width"],
-            batch["height"],
-            batch["caption"],
-        ):
-            if jpg == b"":
-                logger.info(f"Skipping hash {hash_} due to empty image.")
-                continue
-            if math.isnan(width) or width == 0:
-                logger.info(f"Skipping hash {hash_} due to invalid width.")
-                continue
-            if math.isnan(height) or height == 0:
-                logger.info(f"Skipping hash {hash_} due to invalid height.")
-                continue
-
-            try:
-                image = Image.open(io.BytesIO(jpg))
-            except IOError:
-                logger.info(
-                    f"Skipping hash {hash_} due to invalid image.", exc_info=False
-                )
-                continue
-
-            if image.mode != "RGB":
-                logger.info(f"Converting image to RGB.")
-                image = image.convert("RGB")
-
-            image_arr = self.image_transform(image)
-            caption_ids = self.text_tokenize(caption)
-
-            final_batch["hash"].append(hash_)
-            final_batch[f"image_{self.resolution}"].append(image_arr)
-            final_batch["caption_ids"].append(caption_ids)
-
-        logger.info("Finished executing image and text transforms.")
-        return {k: np.array(v) for k, v in final_batch.items()}
-
-
-####################
-# Step 3: Encoding #
-####################
-
-#### Utils ####
-def convert_tensor_to_array(tensor: torch.Tensor, dtype=np.float32) -> np.ndarray:
-    """Convert a torch tensor to a numpy array."""
-    array = tensor.detach().cpu().numpy()
-    return array.astype(dtype)
-
-
-def supports_float16(device: torch.device) -> bool:
-    """Check if the device supports float16."""
-    if device == torch.device("cuda"):
-        properties = torch.cuda.get_device_properties(device)
-        return properties.major >= 7  # Volta or newer
-    else:
-        return False
-
-
-def resolve_device() -> torch.device:
-    """Resolve to the first available device: CUDA, MPS, or CPU."""
-    if torch.cuda.is_available():
-        return torch.device("cuda")
-    if torch.backends.mps.is_available():
-        return torch.device("mps")
-    return torch.device("cpu")
-
-
-#### Encoder ####
-class SDLatentEncoder:
-    """Latent encoder to encode images and text."""
-
-    def __init__(
-        self,
-        resolution: int = 256,
-        device: Optional[str] = None,
-        model_name: str = "stabilityai/stable-diffusion-2-base",
-    ) -> None:
-        self.device = torch.device(device) if device else resolve_device()
-        self.resolution = resolution
-
-        # Image and text encoders.
-        self.vae = AutoencoderKL.from_pretrained(
-            model_name,
-            subfolder="vae",
-            torch_dtype=(
-                torch.float16 if supports_float16(self.device) else torch.float32
-            ),
-        )
-        self.text_encoder = CLIPTextModel.from_pretrained(
-            model_name,
-            subfolder="text_encoder",
-            torch_dtype=(
-                torch.float16 if supports_float16(self.device) else torch.float32
-            ),
-        )
-
-        # Move the encoders to device.
-        self.vae = self.vae.to(self.device)
-        self.text_encoder = self.text_encoder.to(self.device)
-
-        logger.info("Initialized SDLatentEncoder.")
-        logger.info(f"Device: {self.device}")
-        logger.info(f"Resolution: {self.resolution}")
-
-    @property
-    def image_latents_key(self) -> str:
-        """Return the key for image latents based on resolution."""
-        if self.resolution == 256:
-            return IMAGE_LATENTS_256_KEY
-        elif self.resolution == 512:
-            return IMAGE_LATENTS_512_KEY
-        else:
-            raise ValueError(f"Unsupported resolution: {self.resolution}")
-
-    def encode_images(self, images: np.ndarray) -> np.ndarray:
-        """Encode images into a latent space."""
-        logger.info(f"Encoding images with shape: {images.shape}")
-        input_images = torch.tensor(images, device=self.device)
-
-        if supports_float16(self.device):
-            latent_dist = self.vae.encode(input_images.half())["latent_dist"]
-        else:
-            logger.info("Running VAE.encode")
-            latent_dist = self.vae.encode(input_images)["latent_dist"]
-
-        image_latents = latent_dist.sample() * 0.18215
-        logger.info(f"Image latents shape: {image_latents.shape}")
-        return convert_tensor_to_array(image_latents)
-
-    def encode_text(self, caption_ids: np.ndarray) -> np.ndarray:
-        """Encode text captions into a latent space."""
-        logger.info(f"Encoding text with shape: {caption_ids.shape}")
-        caption_ids_tensor = torch.tensor(caption_ids, device=self.device)
-        caption_latents_tensor = self.text_encoder(caption_ids_tensor)[0]
-        logger.info(f"Caption latents shape: {caption_latents_tensor.shape}")
-        return convert_tensor_to_array(caption_latents_tensor)
-
-    def __call__(self, batch: dict[str, np.ndarray]) -> dict[str, np.ndarray]:
-        """Encode images and text captions."""
-        with torch.no_grad():
-            # Step 1: Encode images.
-            input_images = batch[f"image_{self.resolution}"]
-            image_latents = self.encode_images(input_images)
-            # Shape = [batch_size, 4, 32, 32]
-            batch[self.image_latents_key] = image_latents
-
-            del batch[f"image_{self.resolution}"]
-            gc.collect()
-
-            # Step 2: Encode captions.
-            caption_ids = batch["caption_ids"]
-            # Shape = [batch_size, 77, 1024]
-            batch[CAPTION_LATENTS_KEY] = self.encode_text(caption_ids)
-
-            del batch["caption_ids"]
-            gc.collect()
-
-        return batch
 
 
 ########################################
@@ -518,8 +278,8 @@ def process(
 
     if visualize_output:
         print("Visualizing input raw data compared to output processed data.")
-        ray.data.set_progress_bars(False)
         ctx = ray.data.DataContext.get_current()
+        ctx.enable_progress_bars = False
         ctx.execution_options.verbose_progress = False
         df_output = ray.data.read_parquet(output_uri).limit(2).to_pandas()
         df_input = (

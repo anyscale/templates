@@ -1,0 +1,5 @@
+steps:
+  - label: ":pipeline: Fan out template tests"
+    commands: ci/render-template-pipeline.sh | buildkite-agent pipeline upload
+    agents:
+      queue: small

@@ -23,7 +23,7 @@ dependencies = [
     "opencv-python-headless==4.11.0.86",
     "pandas>=2.2,<3",
     "pyserial<4",
-    "ray[data,train]>=2.54.0",
+    "ray[data,train]==2.54.1",
     "sentencepiece",
     "transformers",
     "smart-open>=7.5.0",

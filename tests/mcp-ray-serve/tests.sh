@@ -6,6 +6,9 @@
 
 set -euxo pipefail
 
+# Install dependencies first
+bash build.sh
+
 # Use the AWS CLI to fetch BRAVE_API_KEY from Secrets Manager.
 # Replace 'my-brave-api-key-secret' with the actual secret name.
 BRAVE_API_KEY=$(aws secretsmanager get-secret-value \
@@ -22,7 +25,7 @@ for nb in \
   "04 Deploy_multiple_mcp_stdio_docker_images_with_ray_serve" \
   "05 (Optional) Build_docker_image_for_mcp_server"
 do
-  python ci/nb2py.py "${nb}.ipynb" "${nb}.py" --ignore-cmds
+  python nb2py.py "${nb}.ipynb" "${nb}.py" --ignore-cmds
   python "${nb}.py"
   rm "${nb}.py"
 done

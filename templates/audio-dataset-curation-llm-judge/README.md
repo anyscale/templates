@@ -25,19 +25,14 @@ Ray Data is particularly powerful for this use case because it:
 - Processes data through each stage as soon as the first data block is available. This **streaming execution model** minimizes the time-to-first-result, eliminates large intermediate data storage, and maximizes resource utilization
 - The same script scales to larger GPU clusters with minimal code changes
 
-## Prerequisites
-
-Install the dependencies using:
-
-```bash
-pip install -r requirements.txt
-```
-
 This tutorial runs on a cluster with five L4 GPU worker nodes.
 
 ## Setup
 
-First, import the necessary modules:
+
+```python
+!pip install soundfile
+```
 
 
 ```python
@@ -46,8 +41,8 @@ import os
 
 import numpy as np
 import ray
+import soundfile as sf
 import torch
-import torchaudio
 import torchaudio.transforms as T
 from ray.data.llm import build_processor, vLLMEngineProcessorConfig
 from transformers import AutoModelForSpeechSeq2Seq, AutoProcessor
@@ -92,7 +87,8 @@ def resample(item):
     # Resample at 16kHz, which is what openai/whisper-large-v3-turbo was trained on.
     audio_bytes = item.pop("audio_bytes")
     new_sampling_rate = 16000
-    waveform, sampling_rate = torchaudio.load(io.BytesIO(audio_bytes), format="flac")
+    data, sampling_rate = sf.read(io.BytesIO(audio_bytes), dtype="float32", always_2d=True)
+    waveform = torch.from_numpy(data.T.copy())
     waveform = T.Resample(sampling_rate, new_sampling_rate)(waveform).squeeze()
     item["arr"] = np.array(waveform)
     item["sampling_rate"] = new_sampling_rate

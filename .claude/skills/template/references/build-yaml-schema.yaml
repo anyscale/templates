@@ -1,0 +1,58 @@
+# BUILD.yaml Entry Schema
+#
+# Each entry in BUILD.yaml is a list item defining a template.
+# The file is parsed as a YAML list of Template objects.
+#
+# Template names must match: ^[a-zA-Z0-9][a-zA-Z0-9_-]*$
+
+# --- Full schema with all fields ---
+
+- name: <template-name>          # REQUIRED. Unique identifier. Appears in console URL.
+  dir: templates/<dir-name>      # REQUIRED. Path to template content (relative to repo root).
+
+  # REQUIRED. Exactly one of: image_uri, build_id, or byod.
+  cluster_env:
+    # Option 1: Stock Anyscale image
+    image_uri: anyscale/ray:2.54.1-py312-cu128
+
+    # Option 2: BYOD (Bring Your Own Docker)
+    # Set docker_image to the GCP Artifact Registry URI of the built image URI from `anyscale image build`.
+    # ray_version must be the same as the version used to build the image.
+    # byod:
+    #   docker_image: us-docker.pkg.dev/anyscale-workspace-templates/workspace-templates/<image-name>:<ray-version>
+    #   ray_version: <ray-version>
+
+    # Option 3: BYOD from an external (third-party) registry
+    # docker_image points to an external registry that we do not own or rebuild.
+    # When bumping Ray, keep the same repo and tag pattern — pick the latest available tag with the highest Ray version.
+    # Do NOT swap to anyscale/ray. ray_version must match the Ray version embedded in the upstream tag.
+    # byod:
+    #   docker_image: <registry>/<image-name>      # e.g. novaskyai/skyrl-train-ray-2.51.1-py3.12-cu12.8
+    #   ray_version: <ray-version>                 # Infer from the image's metadata/Dockerfile
+
+  # REQUIRED. Map of cloud provider to compute config file path.
+  compute_config:
+    AWS: configs/<config-dir>/aws.yaml
+    GCP: configs/<config-dir>/gce.yaml
+
+  # REQUIRED.
+  test:
+    command: bash tests.sh            # REQUIRED.
+    tests_path: tests/<name>/         # REQUIRED. Relative path (no absolute, no "..").
+    timeout_in_sec: 900               # REQUIRED. Default: 3600. Must be non-negative.
+
+# --- Image URI conventions ---
+#
+# Format: anyscale/<base>:<ray-version>-<variant>-<python>-<cuda>
+#
+# Base images. Must be one of the following:
+#   anyscale/ray          - Standard Ray image
+#   anyscale/ray-llm      - Ray + LLM serving dependencies
+#
+# Common variants:
+#   anyscale/ray:<ray-version>-py312-cu128          - Full GPU image
+#   anyscale/ray:<ray-version>-slim-py312-cu128     - Slim GPU image
+#   anyscale/ray:<ray-version>-py311                - CPU-only image
+#   anyscale/ray-llm:<ray-version>-py311-cu128      - LLM serving image
+#
+# See: https://docs.anyscale.com/reference/base-images

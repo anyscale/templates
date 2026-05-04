@@ -3,7 +3,7 @@ head_node_type:
   instance_type: m5.2xlarge
 
 worker_node_types:
-  - instance_type: g4dn.xlarge
-    name: '1xT4:4CPU-16GB'
+  - instance_type: g6.2xlarge
+    name: '1xL4:8CPU-32GB'
     min_workers: 2
     max_workers: 2
