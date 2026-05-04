@@ -5,6 +5,11 @@ set -euo pipefail
 
 TEMPLATES="$TEMPLATE_NAMES"
 
+# Pin the forge-image anyscale CLI to whatever requirements-dev.txt says, so
+# bumping anyscale in one place propagates here on the next pipeline render.
+ANYSCALE_VERSION=$(grep '^anyscale==' requirements-dev.txt | cut -d= -f3)
+: "${ANYSCALE_VERSION:?could not read anyscale pin from requirements-dev.txt}"
+
 for t in $TEMPLATES; do
   case "$t" in
     *[!a-zA-Z0-9_-]*)
@@ -27,7 +32,7 @@ for t in $TEMPLATES; do
         export ANYSCALE_HOST="https://console.anyscale-staging.com"
         bash download_rayapp.sh
         sudo apt-get update && sudo apt-get install -y rsync ca-certificates && sudo update-ca-certificates
-        sudo pip install anyscale==0.26.87
+        sudo pip install anyscale==${ANYSCALE_VERSION}
         LOG=/tmp/rayapp-\$\$TEMPLATE_NAME.log
         : > "\$\$LOG"
         # Watch for "Workspace created successfully id: expwrk_..." (always
