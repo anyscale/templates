@@ -13,6 +13,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y --no-install-recommends \
       curl wget ca-certificates sudo gnupg lsb-release \
       git python3 python3-pip python-is-python3 \
+      rsync openssh-client \
  && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /workspace
