@@ -2,6 +2,6 @@
   "build": {
     "dockerfile": "Dockerfile"
   },
-  "install": "export PATH=\"$HOME/.local/bin:$PATH:$HOME/google-cloud-sdk/bin\" && bash .cursor/install.sh",
+  "install": "bash .cursor/install.sh",
   "start": "sudo service docker start"
 }
