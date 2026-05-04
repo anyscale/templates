@@ -31,7 +31,7 @@ Apply the bump per case (taxonomy in SKILL.md "Image URI cases"):
 
 - **Anyscale base:** set `image_uri` to `anyscale/ray:<new-tag>`.
 - **Anyscale custom on GCP:** bump Dockerfile `FROM` → ensure the docker daemon is up (`sudo service docker start`) → run `.claude/skills/template/scripts/publish-custom-image.sh <dockerfile-dir> <name> <ray-version>` to publish to GCP (use the entry's `name` field as `<image-name>` — validator requires `<registry>/<name>:<ray-version>`) → update `byod.docker_image` and `ray_version` in `BUILD.yaml`.
-- **Third-party:** same repo, pick the tag with the highest Ray version **≤ the requested version** (upstream may lag — using the closest version below the request is acceptable; never use a Ray version above what the upstream actually publishes). Update `byod.docker_image` and `ray_version` to that tag. Don't swap to `anyscale/ray`.
+- **Third-party:** same repo, pick the tag with the highest Ray version **≤ the requested version** (upstream may lag — using the closest version below the request is acceptable). Update `byod.docker_image` and `ray_version` to that tag. Don't swap to `anyscale/ray`.
 
 Grep and update any remaining version strings in template content.
 
@@ -40,7 +40,7 @@ Grep and update any remaining version strings in template content.
 All `gh` write commands below need `GH_TOKEN=$ANYSCALE_DEBUG_AGENT_GH_TOKEN` (Cursor's default auth can't write to this repo — see AGENTS.md "GitHub write operations").
 
 1. Commit: `Update <template-name> to Ray <version>`
-2. Push the commit. In Cursor Cloud you're already on a `cursor/...` branch — push to that. Outside Cursor, any branch name works.
+2. Push the commit. In Cursor Cloud you're already on a `cursor/...` branch — push to that. Outside Cursor, use `update/<template-name>/ray-<version>`.
 3. Open the PR: `GH_TOKEN=$ANYSCALE_DEBUG_AGENT_GH_TOKEN gh pr create --base main --title '[ray-update-<version>] Update <template-name> to Ray <version>' --body '<what changed and why>' --draft`
 4. Apply both labels: `GH_TOKEN=$ANYSCALE_DEBUG_AGENT_GH_TOKEN gh pr edit --add-label ray-update --add-label cursor-cloud` (per AGENTS.md "PR labels").
 
