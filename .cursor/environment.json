@@ -3,5 +3,9 @@
     "dockerfile": "Dockerfile"
   },
   "install": "bash .cursor/install.sh",
-  "start": "sudo service docker start"
+  "start": "sudo service docker start",
+  "repositoryDependencies": [
+    "anyscale/anyscale-debug-agent",
+    "anyscale/templates"
+  ]
 }
