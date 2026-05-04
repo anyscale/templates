@@ -28,11 +28,10 @@ If any issues, just read `.cursor/Dockerfile` and `.cursor/install.sh` and repro
 
 ## Cursor Cloud quick reference
 
-- **No services to run.** This is a content repository of ~73 self-contained templates. There are no backend servers, databases, or long-running processes. Dev loop: edit → `pre-commit run --all-files` → push → CI validates.
+- **No services to run.** This is a content repository of ~48 production templates (the BUILD.yaml entries). There are no backend servers, databases, or long-running processes. Dev loop: edit → `pre-commit run --all-files` → push → CI validates.
 - **Lint:** `pre-commit run --all-files`. The `pre-commit install` git hook won't activate because Cursor sets `core.hooksPath`; run manually before committing.
 - **Build all templates:** `rayapp build all` (non-self-closing `<img>` warnings are benign).
 - **Validate `BUILD.yaml`:** `python3 ci/validate_build_yaml.py --no-network` — schema + path check, mirrors the pre-commit hook.
 - **Depsets:** `bash ./update_deps.sh --check` — verifies the dependency lockfile is current.
-- **Skills sideload** (`anyscale/anyscale-debug-agent` clone at the end of `install.sh`) is required for the `/template` update flow; if it fails, `~/.claude/skills/` will be empty and `/fix` won't be available. Other dev workflows can proceed without it but would perform much better if those skills are available.
 - **GitHub write operations** — Cursor's default GitHub App auth can't write to this repo. **Always prefix `gh` write commands** (`gh pr create`, `gh pr edit`, `gh pr comment`, `gh issue comment`, `gh pr review`) with `GH_TOKEN=$ANYSCALE_DEBUG_AGENT_GH_TOKEN`. Read-only `gh` calls work without the prefix. The same secret is used by `install.sh` for the skills clone.
 - **Pre-commit `generate-readme` flake on CI** — `ci/auto-generate-readme.sh` runs `jupyter nbconvert`, whose byte-level output differs across Python/jupyter versions. CI runs Python 3.9; if your container runs a different version, you can hit "files were modified by this hook" on CI while local pre-commit passes. Treat this as **infrastructure failure** under the `/template` infra-vs-fixable triage — don't retry, hand off.
