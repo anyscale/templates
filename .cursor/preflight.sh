@@ -10,8 +10,8 @@ failures=()
 # paired in the final report.
 add_failure_with_output() {
   local summary="$1" output="$2" indented
-  indented=$(printf '%s\n' "$output" | sed 's/^/      /')
-  failures+=("$summary"$'\n'"$indented")
+  indented=$(printf '%s\n' "$output" | sed 's/^/        /')
+  failures+=("$summary"$'\n'"      Raw error:"$'\n'"$indented")
 }
 
 # 1. Companion skills
