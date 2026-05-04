@@ -10,11 +10,9 @@ The `/template` update flow requires companion skills `/ask`, `/fix`, `/run`, `/
 
 ~48 production templates (BUILD.yaml entries). No services to run.
 
-Local: edit → `pre-commit run --all-files` → push. Pre-commit covers whitespace, README auto-gen (`jupyter nbconvert`), and BUILD.yaml schema. **Use Python 3.12 to match CI** (otherwise `generate-readme` produces byte-different output). `rayapp build all` mirrors CI's build job locally.
+Local: edit → `pre-commit run --all-files` → push. Pre-commit covers lint, formatting, codebase conventions. `rayapp build all` mirrors CI's build job locally.
 
-CI on push (`.github/workflows/premerge.yaml`): pre-commit, build, BUILD.yaml validation, depset check.
-
-Per-template tests — comment `/test-template <id> [<id>...]` (up to 3, parallel) on the PR to dispatch the Buildkite `template-test` pipeline (workspace + actual test run). **Monitor via the Buildkite MCP** (`mcp__buildkite__*`, authenticated via `BUILDKITE_API_TOKEN`); `gh pr checks` only shows the GH dispatch step.
+Per-template tests — comment `/test-template <id> [<id>...]` (up to 3, parallel) on the PR to dispatch the Buildkite `template-test` pipeline (workspace + actual test run). For local iteration before pushing, `rayapp test <id>` runs the same flow against the staging cloud.
 
 PR labels (apply all that fit):
 - `cursor-cloud` — origin: Cursor Cloud agent.
@@ -26,7 +24,7 @@ The `template-updater` Cursor Cloud agent owns Ray-version bumps end-to-end (ope
 
 ### Setup
 
-Use `.cursor/Dockerfile` and `.cursor/install.sh` as the canonical environment setup. `install.sh` handles auth and the skills sideload (cloning `anyscale/anyscale-debug-agent` into `~/.claude/skills/`). Run `bash .cursor/install.sh` from the repo root verbatim — don't infer or replicate its steps, the script is the source of truth. If anything fails, read the files and reproduce their steps yourself.
+Use `.cursor/Dockerfile` and `.cursor/install.sh` as the canonical environment setup. Run `bash .cursor/install.sh`. If anything fails, read the files and reproduce their steps yourself.
 
 ### Required Cursor secrets
 
@@ -34,7 +32,7 @@ Already provisioned at team scope:
 - `ANYSCALE_DEBUG_AGENT_GH_TOKEN` — skills clone + `gh` write fallback on this repo (see quirks below).
 - `ANYSCALE_CLI_TOKEN`
 - `GCP_TEMPLATE_REGISTRY_SA_KEY`
-- `BUILDKITE_API_TOKEN` — used by the Buildkite MCP (see "Dev lifecycle" above).
+- `BUILDKITE_API_TOKEN`
 
 ### Cursor-specific quirks
 
