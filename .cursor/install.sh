@@ -75,7 +75,9 @@ git clone --depth 1 --single-branch --no-checkout --filter=blob:none \
 git -C /tmp/debug-agent sparse-checkout set .claude/skills
 git -C /tmp/debug-agent checkout
 mkdir -p ~/.claude/skills
-cp -r /tmp/debug-agent/.claude/skills/* ~/.claude/skills/
+# rsync --delete keeps ~/.claude/skills/ exactly mirrored to upstream — drops
+# any locally-stale skill that was removed from anyscale-debug-agent.
+rsync -a --delete /tmp/debug-agent/.claude/skills/ ~/.claude/skills/
 echo "User-scope skills:"
 ls ~/.claude/skills/
 # Clean up the cloned dir — the .git/config has the token embedded and

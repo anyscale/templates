@@ -1,6 +1,7 @@
 {
   "build": {
-    "dockerfile": "Dockerfile"
+    "dockerfile": ".cursor/Dockerfile",
+    "context": ".."
   },
   "install": "bash .cursor/install.sh",
   "start": "sudo service docker start",
