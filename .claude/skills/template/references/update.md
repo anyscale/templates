@@ -18,7 +18,7 @@ Create at session start:
 
 Get latest Ray version: `pip index versions ray`.
 
-**Verify the new image tag exists** — a non-existent tag fails only after a slow workspace boot:
+**IMPORTANT: Verify the new image tag exists to catch errors early**:
 
 ```bash
 curl -sf "https://hub.docker.com/v2/repositories/anyscale/ray/tags/<tag>/" >/dev/null \
@@ -30,8 +30,8 @@ For third-party images, use the upstream registry's equivalent.
 Apply the bump per case (taxonomy in SKILL.md "Image URI cases"):
 
 - **Anyscale base:** set `image_uri` to `anyscale/ray:<new-tag>`.
-- **Anyscale custom on GCP:** bump Dockerfile `FROM` → ensure the docker daemon is up (`sudo service docker start` — idempotent, in case Cursor's `start` hook didn't fire) → run `.claude/skills/template/scripts/publish-custom-image.sh <dockerfile-dir> <name> <ray-version>` to publish to GCP (use the entry's `name` field as `<image-name>` — validator requires `<registry>/<name>:<ray-version>`) → update `byod.docker_image` and `ray_version` in `BUILD.yaml`.
-- **Third-party:** same repo, pick the latest tag with the highest Ray version, update `byod.docker_image` and `ray_version`. Don't swap to `anyscale/ray`.
+- **Anyscale custom on GCP:** bump Dockerfile `FROM` → ensure the docker daemon is up (`sudo service docker start`) → run `.claude/skills/template/scripts/publish-custom-image.sh <dockerfile-dir> <name> <ray-version>` to publish to GCP (use the entry's `name` field as `<image-name>` — validator requires `<registry>/<name>:<ray-version>`) → update `byod.docker_image` and `ray_version` in `BUILD.yaml`.
+- **Third-party:** same repo, pick the tag with the highest Ray version **≤ the requested version** (upstream may lag — using the closest version below the request is acceptable; never use a Ray version above what the upstream actually publishes). Update `byod.docker_image` and `ray_version` to that tag. Don't swap to `anyscale/ray`.
 
 Grep and update any remaining version strings in template content.
 
