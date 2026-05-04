@@ -1,5 +1,5 @@
 {
-  "name": "anyscale-templates",
+  "name": "anyscale-templates-environment-dev",
   "build": {
     "dockerfile": ".cursor/Dockerfile",
     "context": ".."
