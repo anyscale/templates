@@ -83,3 +83,7 @@ ls ~/.claude/skills/
 # Clean up the cloned dir — the .git/config has the token embedded and
 # we've already extracted what we need.
 rm -rf /tmp/debug-agent
+
+# --- Preflight: validate the env this script just set up. Same script the
+# agent re-runs at task start (see AGENTS.md → Cursor Cloud → Preconditions). ---
+bash .cursor/preflight.sh

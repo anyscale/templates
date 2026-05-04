@@ -2,13 +2,15 @@
 
 Anyscale console templates. For any template-related work (bump Ray, format, publish, debug a test failure), use the `template` skill (`/template`) — canonical entry point for procedures and references.
 
-## Required skills
+## Companion skills
 
-The `/template` update flow requires companion skills `/ask`, `/fix`, `/run`, `/inspect` (from `anyscale/anyscale-debug-agent`). `/fix` in particular drives the CI iteration loop — **without it you cannot fix a broken template and should not try to do so**. Tip: wrap `/fix` in a subagent to keep its debug output out of your main context.
+The `/template` update flow leans on companion skills `/ask`, `/fix`, `/run`, `/inspect` (from `anyscale/anyscale-debug-agent`). `/fix` in particular drives the CI iteration loop — without it you cannot reliably diagnose and fix a broken template. Strongly recommended for any update work. Tip: wrap `/fix` in a subagent to keep its debug output out of your main context.
+
+For Cursor Cloud, these skills are a hard precondition (see Cursor Cloud → Preconditions).
 
 ## Dev lifecycle
 
-~48 production templates (BUILD.yaml entries). No services to run.
+Manage production templates (BUILD.yaml entries). No services to run.
 
 Local: edit → `pre-commit run --all-files` → push. Pre-commit covers lint, formatting, codebase conventions. `rayapp build all` mirrors CI's build job locally.
 
@@ -22,17 +24,23 @@ PR labels (apply all that fit):
 
 The `template-updater` Cursor Cloud agent owns Ray-version bumps end-to-end (open PR → CI → fix-loop) on every major/minor Ray release.
 
+### Preconditions (HARD EXIT IF MISSING)
+
+Run `bash .cursor/preflight.sh` before any task. It checks:
+
+- **Companion skills** present at `~/.claude/skills/{ask,fix,run,inspect}` (cloned from `anyscale/anyscale-debug-agent` by `.cursor/install.sh`).
+- **Cursor secrets** (team-scope, all four non-empty):
+  - `ANYSCALE_DEBUG_AGENT_GH_TOKEN` — skills clone + `gh` write fallback on this repo (see quirks below).
+  - `ANYSCALE_CLI_TOKEN`
+  - `GCP_TEMPLATE_REGISTRY_SA_KEY`
+  - `BUILDKITE_API_TOKEN`
+- **Auth verified:** `gh auth status` (with the token above), `gcloud auth list`, and `anyscale cloud list` all succeed.
+
+**If preflight exits non-zero, post its stderr as a PR comment and stop — don't attempt the task.**
+
 ### Setup
 
 Use `.cursor/Dockerfile` and `.cursor/install.sh` as the canonical environment setup. Run `bash .cursor/install.sh`. If anything fails, read the files and reproduce their steps yourself.
-
-### Required Cursor secrets
-
-Already provisioned at team scope:
-- `ANYSCALE_DEBUG_AGENT_GH_TOKEN` — skills clone + `gh` write fallback on this repo (see quirks below).
-- `ANYSCALE_CLI_TOKEN`
-- `GCP_TEMPLATE_REGISTRY_SA_KEY`
-- `BUILDKITE_API_TOKEN`
 
 ### Cursor-specific quirks
 
