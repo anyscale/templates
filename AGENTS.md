@@ -4,7 +4,7 @@ Anyscale console templates. For any template-related work (bump Ray, format, pub
 
 ## Required skills
 
-The `/template` update flow requires companion skills `/ask`, `/fix`, `/run`, `/inspect` (from `anyscale/anyscale-debug-agent`). `/fix` in particular drives the CI iteration loop — **without it you cannot fix a broken template and should not try to do so**. Make sure these are available in `~/.claude/skills/` (or your agent's equivalent skill location) before invoking `/template`. Tip: wrap `/fix` in a subagent to keep its debug output out of your main context.
+The `/template` update flow requires companion skills `/ask`, `/fix`, `/run`, `/inspect` (from `anyscale/anyscale-debug-agent`). `/fix` in particular drives the CI iteration loop — **without it you cannot fix a broken template and should not try to do so**. Tip: wrap `/fix` in a subagent to keep its debug output out of your main context.
 
 ## CI
 
@@ -14,19 +14,22 @@ The `/template` update flow requires companion skills `/ask`, `/fix`, `/run`, `/
 
 ## PR labels
 
-Orthogonal axes — apply all that fit:
+Apply all that fit:
 - `cursor-cloud` — **origin marker:** any PR opened by a Cursor Cloud agent.
-- `ray-update` — **content marker:** any PR bumping a template's Ray version. Applied whether the work was done by an agent or by hand.
+- `ray-update` — **content marker:** any PR bumping a template's Ray version.
 
 ## Quick command reference
 
-~48 production templates (the BUILD.yaml entries). No services to run. Dev loop: edit → `pre-commit run --all-files` → push → CI validates.
+~48 production templates (the BUILD.yaml entries). No services to run.
 
-- **Lint:** `pre-commit run --all-files`.
-- **Build all templates:** `rayapp build all` (non-self-closing `<img>` warnings are benign).
-- **Validate `BUILD.yaml`:** `python3 ci/validate_build_yaml.py --no-network` — schema + path check, mirrors the pre-commit hook.
-- **Depsets:** `bash ./update_deps.sh --check` — verifies the dependency lockfile is current.
-- **Pre-commit `generate-readme` flake on CI** — `ci/auto-generate-readme.sh` runs `jupyter nbconvert`, whose byte-level output differs across Python/jupyter versions. CI runs Python 3.9; if your local Python differs, you can hit "files were modified by this hook" on CI while pre-commit passes locally. Treat this as **infrastructure failure** under the `/template` infra-vs-fixable triage — don't retry, hand off.
+Dev loop: edit → `pre-commit run --all-files` → push → CI validates. The pre-commit hooks cover trailing whitespace, README auto-generation (from `README.ipynb` via `jupyter nbconvert`), and BUILD.yaml schema validation.
+
+Standalone commands (beyond pre-commit):
+- `rayapp build all` — build all templates (non-self-closing `<img>` warnings are benign).
+- `bash ./update_deps.sh --check` — verify dependency lockfile is current.
+- `python3 ci/validate_build_yaml.py --no-network` — schema check on BUILD.yaml only (faster than running all pre-commit hooks).
+
+**Caveat:** `generate-readme` is non-deterministic across Python/jupyter versions (CI uses 3.9). If pre-commit passes locally but fails CI with "files were modified by this hook", treat as infra failure in `/template`'s triage.
 
 ## Cursor Cloud
 
