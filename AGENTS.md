@@ -28,12 +28,13 @@ The `template-updater` Cursor Cloud agent owns Ray-version bumps end-to-end (ope
 
 Run `bash .cursor/preflight.sh` before any task. It checks:
 
-- **Companion skills** present at `~/.claude/skills/{ask,fix,run,inspect}` (rsync'd by `.cursor/install.sh` from the `anyscale/anyscale-debug-agent` pre-clone Cursor sets up via `.cursor/environment.json` `repositoryDependencies`).
-- **Cursor secrets** (team-scope, all three non-empty):
+- **Companion skills** present at `~/.claude/skills/{ask,fix,run,inspect}` (cloned from `anyscale/anyscale-debug-agent` by `.cursor/install.sh`).
+- **Cursor secrets** (team-scope, all four non-empty):
+  - `ANYSCALE_GH_TOKEN` — skills clone + `gh` write fallback on this repo (see quirks below).
   - `ANYSCALE_CLI_TOKEN`
   - `GCP_TEMPLATE_REGISTRY_SA_KEY`
   - `BUILDKITE_API_TOKEN`
-- **Auth verified:** `gh auth status` (Cursor's native GH App auth), `gcloud auth list`, and `anyscale cloud list` all succeed.
+- **Auth verified:** `gh auth status` (with the token above), `gcloud auth list`, and `anyscale cloud list` all succeed.
 
 **If preflight exits non-zero, post its stderr as a PR comment and stop — don't attempt the task.**
 
@@ -45,3 +46,4 @@ Use `.cursor/Dockerfile` and `.cursor/install.sh` as the canonical environment s
 
 - **Branch naming:** Cursor auto-assigns `cursor/...`. (Outside Cursor, use `update/<template-name>/ray-<version>`.)
 - **`pre-commit install` doesn't auto-fire:** Cursor sets `core.hooksPath`, which causes pre-commit to skip its hook install. Run `pre-commit run --all-files` manually before committing.
+- **GitHub write operations:** Cursor's default GitHub App auth can't write to this repo. **Always prefix `gh` write commands** (`gh pr create`, `gh pr edit`, `gh pr comment`, `gh issue comment`, `gh pr review`) with `GH_TOKEN=$ANYSCALE_GH_TOKEN`. Read-only `gh` calls work without the prefix.

@@ -5,23 +5,29 @@ set -uo pipefail
 
 failures=()
 
-# 1. Companion skills (rsync'd from Cursor's pre-clone of anyscale-debug-agent)
+# 1. Companion skills
 for s in ask fix run inspect; do
   if [[ ! -f "$HOME/.claude/skills/$s/SKILL.md" ]]; then
-    failures+=("missing skill: ~/.claude/skills/$s/SKILL.md — install.sh couldn't find Cursor's anyscale-debug-agent pre-clone (check .cursor/environment.json repositoryDependencies)")
+    failures+=("missing skill: ~/.claude/skills/$s/SKILL.md (clone of anyscale/anyscale-debug-agent failed? Check ANYSCALE_GH_TOKEN)")
   fi
 done
 
 # 2. Environment variables
-for var in ANYSCALE_CLI_TOKEN GCP_TEMPLATE_REGISTRY_SA_KEY BUILDKITE_API_TOKEN; do
+for var in ANYSCALE_GH_TOKEN ANYSCALE_CLI_TOKEN GCP_TEMPLATE_REGISTRY_SA_KEY BUILDKITE_API_TOKEN; do
   if [[ -z "${!var:-}" ]]; then
     failures+=("missing env var: $var (team-scope, non-empty)")
   fi
 done
 
-# 3. Auth verified — gh uses Cursor's native GH App auth, no PAT.
-if ! gh auth status >/dev/null 2>&1; then
-  failures+=("gh auth: 'gh auth status' failed — Cursor's native GH App auth not wired")
+# 3. Auth verified
+if ! GH_TOKEN="${ANYSCALE_GH_TOKEN:-}" gh auth status >/dev/null 2>&1; then
+  failures+=("gh auth: 'gh auth status' failed with ANYSCALE_GH_TOKEN — check token validity/scopes")
+fi
+
+# `gh auth status` validates the token but won't flag tokens that are valid
+# yet not SSO-authorized for the org — every PR write would 404.
+if ! GH_TOKEN="${ANYSCALE_GH_TOKEN:-}" gh api /repos/anyscale/templates >/dev/null 2>&1; then
+  failures+=("gh repo access: ANYSCALE_GH_TOKEN can't fetch anyscale/templates — likely missing SSO authorization for the org")
 fi
 
 if ! gcloud auth list --filter=status:ACTIVE --format='value(account)' 2>/dev/null | grep -q .; then
