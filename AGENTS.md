@@ -2,36 +2,50 @@
 
 Anyscale console templates. For any template-related work (bump Ray, format, publish, debug a test failure), use the `template` skill (`/template`) — canonical entry point for procedures and references.
 
-Cloud agents **require** companion skills `/ask`, `/fix`, `/run`, `/inspect` — sideloaded by `.cursor/install.sh` from `anyscale/anyscale-debug-agent` into `~/.claude/skills/`. These are not optional: the `/template` update flow uses `/fix` to iterate on CI failures and cannot complete without it. If `~/.claude/skills/` is empty after install.sh, the `ANYSCALE_DEBUG_AGENT_GH_TOKEN` token lacks access — fix the token before retrying. Tip: wrap `/fix` in a subagent to keep its debug output out of your main context.
+## Required skills
 
-**CI invariant** — `.github/workflows/test-template.yaml` only runs when a PR comment matches `/test-template <template-id> [<template-id>...]` (up to 3, fanned out in parallel). After any push to a PR, comment to trigger or re-trigger validation.
+The `/template` update flow requires companion skills `/ask`, `/fix`, `/run`, `/inspect` (from `anyscale/anyscale-debug-agent`). `/fix` in particular drives the CI iteration loop — without it, `/template` cannot complete an update. Cursor Cloud auto-sideloads them via `.cursor/install.sh` into `~/.claude/skills/`; for other setups, clone the skills yourself. Tip: wrap `/fix` in a subagent to keep its debug output out of your main context.
+
+## CI
+
+**Invariant** — `.github/workflows/test-template.yaml` only runs when a PR comment matches `/test-template <template-id> [<template-id>...]` (up to 3, fanned out in parallel). After any push to a PR, comment to trigger or re-trigger validation.
 
 **CI runs on Buildkite, not GitHub.** The GitHub Action above only dispatches the Buildkite `template-test` pipeline; the actual workspace creation, image pull, and test run happen there. To monitor a build or read failure logs, use the **Buildkite MCP** (`mcp__buildkite__*` tools, authenticated via `BUILDKITE_API_TOKEN`). `gh pr checks` only shows the dispatch status, not the test result.
 
-**Known automation** — the `template-updater` Cursor Cloud agent owns Ray-version bumps end-to-end (open PR → CI → fix-loop) on every major/minor Ray release. Branch naming is whatever Cursor auto-assigns (typically `cursor/...`).
+## PR labels
 
-**PR labels** — apply all that fit:
+Orthogonal axes — apply all that fit:
 - `cursor-cloud` — **origin marker:** any PR opened by a Cursor Cloud agent.
 - `ray-update` — **content marker:** any PR bumping a template's Ray version. Applied whether the work was done by an agent or by hand.
 
-## For Cursor Cloud Agent setup
+## Quick command reference
 
-Use `.cursor/Dockerfile` and `.cursor/install.sh` as the canonical environment setup. Run `bash .cursor/install.sh` from the repo root verbatim — don't infer or replicate its steps, the script is the source of truth.
+~48 production templates (the BUILD.yaml entries). No services to run. Dev loop: edit → `pre-commit run --all-files` → push → CI validates.
 
-Required Cursor secrets (already provisioned at team scope):
-- `ANYSCALE_DEBUG_AGENT_GH_TOKEN`
-- `ANYSCALE_CLI_TOKEN`
-- `GCP_TEMPLATE_REGISTRY_SA_KEY`
-- `BUILDKITE_API_TOKEN` (used by the Buildkite MCP — see "CI invariant")
-
-If any issues, just read `.cursor/Dockerfile` and `.cursor/install.sh` and reproduce their steps yourself.
-
-## Cursor Cloud quick reference
-
-- **No services to run.** This is a content repository of ~48 production templates (the BUILD.yaml entries). There are no backend servers, databases, or long-running processes. Dev loop: edit → `pre-commit run --all-files` → push → CI validates.
-- **Lint:** `pre-commit run --all-files`. The `pre-commit install` git hook won't activate because Cursor sets `core.hooksPath`; run manually before committing.
+- **Lint:** `pre-commit run --all-files`.
 - **Build all templates:** `rayapp build all` (non-self-closing `<img>` warnings are benign).
 - **Validate `BUILD.yaml`:** `python3 ci/validate_build_yaml.py --no-network` — schema + path check, mirrors the pre-commit hook.
 - **Depsets:** `bash ./update_deps.sh --check` — verifies the dependency lockfile is current.
-- **GitHub write operations** — Cursor's default GitHub App auth can't write to this repo. **Always prefix `gh` write commands** (`gh pr create`, `gh pr edit`, `gh pr comment`, `gh issue comment`, `gh pr review`) with `GH_TOKEN=$ANYSCALE_DEBUG_AGENT_GH_TOKEN`. Read-only `gh` calls work without the prefix. The same secret is used by `install.sh` for the skills clone.
-- **Pre-commit `generate-readme` flake on CI** — `ci/auto-generate-readme.sh` runs `jupyter nbconvert`, whose byte-level output differs across Python/jupyter versions. CI runs Python 3.9; if your container runs a different version, you can hit "files were modified by this hook" on CI while local pre-commit passes. Treat this as **infrastructure failure** under the `/template` infra-vs-fixable triage — don't retry, hand off.
+- **Pre-commit `generate-readme` flake on CI** — `ci/auto-generate-readme.sh` runs `jupyter nbconvert`, whose byte-level output differs across Python/jupyter versions. CI runs Python 3.9; if your local Python differs, you can hit "files were modified by this hook" on CI while pre-commit passes locally. Treat this as **infrastructure failure** under the `/template` infra-vs-fixable triage — don't retry, hand off.
+
+## Cursor Cloud
+
+The `template-updater` Cursor Cloud agent owns Ray-version bumps end-to-end (open PR → CI → fix-loop) on every major/minor Ray release.
+
+### Setup
+
+Use `.cursor/Dockerfile` and `.cursor/install.sh` as the canonical environment setup. Run `bash .cursor/install.sh` from the repo root verbatim — don't infer or replicate its steps, the script is the source of truth. If anything fails, read the files and reproduce their steps yourself.
+
+### Required Cursor secrets
+
+Already provisioned at team scope:
+- `ANYSCALE_DEBUG_AGENT_GH_TOKEN` — skills clone + `gh` write fallback on this repo (see quirks below).
+- `ANYSCALE_CLI_TOKEN`
+- `GCP_TEMPLATE_REGISTRY_SA_KEY`
+- `BUILDKITE_API_TOKEN` — used by the Buildkite MCP (see "CI" above).
+
+### Cursor-specific quirks
+
+- **Branch naming:** Cursor auto-assigns `cursor/...`. (Outside Cursor, use `update/<template-name>/ray-<version>`.)
+- **`pre-commit install` doesn't auto-fire:** Cursor sets `core.hooksPath`, which causes pre-commit to skip its hook install. Run `pre-commit run --all-files` manually before committing.
+- **GitHub write operations:** Cursor's default GitHub App auth can't write to this repo. **Always prefix `gh` write commands** (`gh pr create`, `gh pr edit`, `gh pr comment`, `gh issue comment`, `gh pr review`) with `GH_TOKEN=$ANYSCALE_DEBUG_AGENT_GH_TOKEN`. Read-only `gh` calls work without the prefix.
