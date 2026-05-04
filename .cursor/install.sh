@@ -53,7 +53,7 @@ if [ -n "${ANYSCALE_CLI_TOKEN:-}" ]; then
 {"cli_token": "$ANYSCALE_CLI_TOKEN"}
 EOF
 else
-  echo "WARN: ANYSCALE_CLI_TOKEN not set — anyscale CLI commands will fail."
+  echo "WARN: ANYSCALE_CLI_TOKEN not set — rayapp and anyscale CLI commands will fail."
 fi
 
 # --- Sideload required skills (/ask, /fix, /run, /inspect) from

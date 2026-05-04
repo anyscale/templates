@@ -36,13 +36,15 @@ RUN curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
 RUN apt-get update -qq && apt-get install -y docker.io fuse-overlayfs iptables \
  && rm -rf /var/lib/apt/lists/*
 
-# --- Python tooling (pinned to match this repo's CI; system-wide so binaries
-# land in /usr/local/bin which is already on PATH). --break-system-packages:
+# --- Python tooling (pinned via requirements-dev.txt, the single source of
+# truth shared with CI and human contributors). System-wide install so
+# binaries land in /usr/local/bin (already on PATH). --break-system-packages:
 # Ubuntu 24.04's Python 3.12 enforces PEP 668; safe in this single-purpose
 # container. ---
+COPY requirements-dev.txt /tmp/requirements-dev.txt
 RUN python3 -m pip install --no-warn-script-location --break-system-packages \
-      pre-commit==3.8.0 nbconvert==7.17.1 anyscale==0.26.87 \
-      pyyaml==6.0.3 pydantic==2.13.3
+      -r /tmp/requirements-dev.txt \
+ && rm /tmp/requirements-dev.txt
 
 # --- gcloud SDK (installed at /opt/google-cloud-sdk; bin added to PATH below) ---
 RUN curl -sSL https://sdk.cloud.google.com > /tmp/gcloud-install.sh \

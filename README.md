@@ -42,7 +42,7 @@ The sections below describe what the skill (or you, manually) does under the hoo
 ## Local development
 
 ```bash
-pip install pre-commit==3.8.0 nbconvert==7.17.1 pyyaml==6.0.3 pydantic==2.13.3
+pip install -r requirements-dev.txt               # pinned dev deps (single source of truth)
 pre-commit install                                # auto-fire hooks on git commit
 pre-commit run --all-files                        # lint + schema + auto-README
 python3 ci/validate_build_yaml.py --no-network    # offline BUILD.yaml validation
