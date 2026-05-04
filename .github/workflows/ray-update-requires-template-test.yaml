@@ -1,0 +1,68 @@
+name: ray-update-requires-template-test
+
+# Gate ray-update PRs on a passing buildkite/template-test build.
+# - pull_request triggers re-evaluate on push, label changes, etc.
+# - status trigger re-evaluates whenever a commit status (e.g. Buildkite's
+#   build result) lands, so the gate flips green automatically without a
+#   manual rerun once /test-template finishes.
+# Mark this workflow's check as required in the main branch protection rule.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+  status:
+
+permissions:
+  contents: read
+  pull-requests: read
+  statuses: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify buildkite/template-test passed when ray-update label is set
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+
+          # Resolve the PR number and head SHA, working under both event types.
+          PR=""
+          HEAD_SHA=""
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            PR="${{ github.event.pull_request.number }}"
+            HEAD_SHA="${{ github.event.pull_request.head.sha }}"
+          else
+            # status event — find the PR (if any) tied to this commit.
+            HEAD_SHA="${{ github.event.sha }}"
+            PR=$(gh api "/repos/$REPO/commits/$HEAD_SHA/pulls" \
+                 --jq '.[0].number // empty')
+            if [[ -z "$PR" ]]; then
+              echo "No PR found for SHA $HEAD_SHA — nothing to gate."
+              exit 0
+            fi
+          fi
+          echo "PR #$PR @ $HEAD_SHA"
+
+          # ray-update label present?
+          LABELS=$(gh pr view "$PR" --repo "$REPO" \
+                   --json labels --jq '[.labels[].name] | join(",")')
+          echo "Labels: $LABELS"
+          if ! echo ",$LABELS," | grep -q ',ray-update,'; then
+            echo "ray-update label not present — passing."
+            exit 0
+          fi
+
+          # Latest buildkite/template-test commit-status on the head SHA.
+          STATUS=$(gh api "/repos/$REPO/commits/$HEAD_SHA/status" \
+                   --jq '[.statuses[] | select(.context | startswith("buildkite/template-test"))] | sort_by(.updated_at) | last | .state // "missing"')
+          echo "buildkite/template-test status on HEAD: $STATUS"
+
+          if [[ "$STATUS" != "success" ]]; then
+            echo "::error::ray-update PRs require a green buildkite/template-test build on the head commit. Comment '/test-template <template-name>' on the PR (if you haven't yet) and wait for it to pass."
+            exit 1
+          fi
+
+          echo "buildkite/template-test is green — passing."
