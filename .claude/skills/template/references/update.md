@@ -80,6 +80,4 @@ After `/fix` returns:
 
 ## Step 5: Report
 
-The PR description (Step 2) is the canonical session report.
-
-Only write a separate notes file at `.claude/.artifacts/<template-name>/update-ray-<version>/notes-session-<timestamp-epoch>.md` when something non-trivial happened: `/fix` was invoked, an infrastructure failure was handed off, or the agent iterated multiple times. For a clean bump (CI green on first try, no `/fix`), skip the file — the PR is enough.
+PR description (Step 2) is the canonical session report. Only write `.claude/.artifacts/<template-name>/update-ray-<version>/notes-session-<timestamp-epoch>.md` if `/fix` was invoked.
