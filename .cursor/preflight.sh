@@ -14,7 +14,7 @@ for s in ask fix run inspect; do
   fi
 done
 
-# 2. Cursor team-scope secrets
+# 2. Environment variables
 for var in ANYSCALE_DEBUG_AGENT_GH_TOKEN ANYSCALE_CLI_TOKEN GCP_TEMPLATE_REGISTRY_SA_KEY BUILDKITE_API_TOKEN; do
   if [[ -z "${!var:-}" ]]; then
     failures+=("missing env var: $var (Cursor team-scope secret not provisioned)")
@@ -26,12 +26,32 @@ if ! GH_TOKEN="${ANYSCALE_DEBUG_AGENT_GH_TOKEN:-}" gh auth status >/dev/null 2>&
   failures+=("gh auth: 'gh auth status' failed with ANYSCALE_DEBUG_AGENT_GH_TOKEN — check token validity/scopes")
 fi
 
+# Verifies the token has access to anyscale/templates specifically. Catches
+# tokens that are valid but not SSO-authorized for the org — `gh auth status`
+# won't flag those, but every PR write would 404.
+if ! GH_TOKEN="${ANYSCALE_DEBUG_AGENT_GH_TOKEN:-}" gh api /repos/anyscale/templates >/dev/null 2>&1; then
+  failures+=("gh repo access: ANYSCALE_DEBUG_AGENT_GH_TOKEN can't fetch anyscale/templates — likely missing SSO authorization for the org")
+fi
+
 if ! gcloud auth list --filter=status:ACTIVE --format='value(account)' 2>/dev/null | grep -q .; then
   failures+=("gcloud auth: no active account — service-account activation failed (check GCP_TEMPLATE_REGISTRY_SA_KEY)")
 fi
 
 if ! anyscale cloud list >/dev/null 2>&1; then
   failures+=("anyscale auth: 'anyscale cloud list' failed — check ANYSCALE_CLI_TOKEN")
+fi
+
+# Live token check — the Buildkite MCP server starts fine with a stale token
+# and only 401s mid-task, so we probe the API directly here.
+if [[ -n "${BUILDKITE_API_TOKEN:-}" ]] \
+    && ! curl -sf -H "Authorization: Bearer $BUILDKITE_API_TOKEN" \
+         https://api.buildkite.com/v2/access-token >/dev/null 2>&1; then
+  failures+=("buildkite auth: BUILDKITE_API_TOKEN rejected by api.buildkite.com — token expired or revoked")
+fi
+
+# 4. Tools (Dockerfile-baked except rayapp, which install.sh downloads)
+if ! command -v rayapp >/dev/null 2>&1; then
+  failures+=("rayapp not on PATH — install.sh's download_rayapp.sh step likely failed")
 fi
 
 if [[ ${#failures[@]} -gt 0 ]]; then
