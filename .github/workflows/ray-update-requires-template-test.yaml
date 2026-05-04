@@ -56,13 +56,30 @@ jobs:
           fi
 
           # Latest buildkite/template-test commit-status on the head SHA.
+          # Empty list from jq → "missing" sentinel, so a never-run test is
+          # distinguishable from a failed/pending one.
           STATUS=$(gh api "/repos/$REPO/commits/$HEAD_SHA/status" \
                    --jq '[.statuses[] | select(.context | startswith("buildkite/template-test"))] | sort_by(.updated_at) | last | .state // "missing"')
           echo "buildkite/template-test status on HEAD: $STATUS"
 
-          if [[ "$STATUS" != "success" ]]; then
-            echo "::error::ray-update PRs require a green buildkite/template-test build on the head commit. Comment '/test-template <template-name>' on the PR (if you haven't yet) and wait for it to pass."
-            exit 1
-          fi
-
-          echo "buildkite/template-test is green — passing."
+          case "$STATUS" in
+            success)
+              echo "buildkite/template-test is green — passing."
+              ;;
+            missing)
+              echo "::error::No buildkite/template-test build for this commit. Comment '/test-template <template-name>' on the PR to dispatch one, then wait for it to pass."
+              exit 1
+              ;;
+            pending)
+              echo "::error::buildkite/template-test is still running. Wait for the build to finish, then this check will re-run automatically."
+              exit 1
+              ;;
+            failure|error)
+              echo "::error::buildkite/template-test reported '$STATUS'. Investigate the build logs, push a fix, then re-run /test-template."
+              exit 1
+              ;;
+            *)
+              echo "::error::Unexpected buildkite/template-test status '$STATUS' (expected 'success'). Check the PR's commit-status detail."
+              exit 1
+              ;;
+          esac
