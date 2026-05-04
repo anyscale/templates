@@ -37,6 +37,14 @@ if ! gcloud auth list --filter=status:ACTIVE --format='value(account)' 2>/dev/nu
   failures+=("gcloud auth: no active account — service-account activation failed (check GCP_TEMPLATE_REGISTRY_SA_KEY)")
 fi
 
+# Without this, `docker push us-docker.pkg.dev/...` fails with a confusing
+# auth error mid custom-image rebuild. install.sh runs `gcloud auth
+# configure-docker us-docker.pkg.dev` to wire it up.
+if [[ ! -f "$HOME/.docker/config.json" ]] \
+    || ! grep -q "us-docker.pkg.dev" "$HOME/.docker/config.json" 2>/dev/null; then
+  failures+=("docker auth: us-docker.pkg.dev not configured in ~/.docker/config.json — install.sh's 'gcloud auth configure-docker' step likely failed; custom-image push will fail")
+fi
+
 # Pinned to staging — Cursor Cloud agent must never run against prod. The
 # Dockerfile sets ANYSCALE_HOST=staging globally; this re-asserts it locally
 # in case it's been overridden.
@@ -55,6 +63,10 @@ fi
 # 4. Tools (Dockerfile-baked except rayapp, which install.sh downloads)
 if ! command -v rayapp >/dev/null 2>&1; then
   failures+=("rayapp not on PATH — install.sh's download_rayapp.sh step likely failed")
+fi
+
+if ! command -v buildkite-mcp-server >/dev/null 2>&1; then
+  failures+=("buildkite-mcp-server not on PATH — Dockerfile bake step regressed; Buildkite MCP integration will fail to start")
 fi
 
 if [[ ${#failures[@]} -gt 0 ]]; then
