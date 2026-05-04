@@ -51,10 +51,7 @@ PR body outline (omit **Fix iterations** if `/fix` wasn't invoked):
 Bump <template-name> to Ray <ray-version>.
 
 ## Changes
-| File | Before | After |
-|---|---|---|
-| `BUILD.yaml` (`<name>` entry) | <old image URI> | <new image URI> |
-| <other in-template files with version strings> | ... | ... |
+- <free-form bullets: BUILD.yaml entry bump, in-template version strings, Dockerfile FROM, etc.>
 
 ## Fix iterations
 <short summary of what was iterated on>. Full notes: `.claude/.artifacts/<template-name>/update-ray-<version>/notes-session-<timestamp-epoch>.md`.
