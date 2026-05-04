@@ -41,6 +41,8 @@ The sections below describe what the skill (or you, manually) does under the hoo
 
 ## Local development
 
+Requires Python 3.12 (matches CI and cursor cloud — `generate-readme` is byte-deterministic at that version).
+
 ```bash
 pip install -r requirements-dev.txt               # pinned dev deps (single source of truth)
 pre-commit install                                # auto-fire hooks on git commit

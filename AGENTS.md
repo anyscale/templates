@@ -26,7 +26,7 @@ Dev loop: edit → `pre-commit run --all-files` → push → CI validates. The p
 
 Beyond pre-commit, `rayapp build all` builds all templates locally (non-self-closing `<img>` warnings are benign).
 
-**Caveat:** `generate-readme` is non-deterministic across Python/jupyter versions (CI uses 3.9). If pre-commit passes locally but fails CI with "files were modified by this hook", treat as infra failure in `/template`'s triage.
+**Use Python 3.12** locally to match CI and cursor cloud. The `generate-readme` hook (`jupyter nbconvert`) is byte-deterministic only when the nbconvert pin (`requirements-dev.txt`) and the Python version both match.
 
 ## Cursor Cloud
 

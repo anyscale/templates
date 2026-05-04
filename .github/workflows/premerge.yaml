@@ -16,7 +16,7 @@ jobs:
     - uses: actions/checkout@v4
     - uses: actions/setup-python@v5
       with:
-        python-version: '3.9'
+        python-version: '3.12'
 
     - name: Install dev deps
       run: pip install -r requirements-dev.txt
@@ -30,7 +30,7 @@ jobs:
     - uses: actions/checkout@v4
     - uses: actions/setup-python@v5
       with:
-        python-version: '3.9'
+        python-version: '3.12'
 
     - name: Install dev deps
       run: pip install -r requirements-dev.txt
@@ -46,7 +46,7 @@ jobs:
     - uses: actions/checkout@v4
     - uses: actions/setup-python@v5
       with:
-        python-version: '3.11'
+        python-version: '3.12'
     - run: pip install -r requirements-dev.txt
     - run: python ci/validate_build_yaml.py
 
