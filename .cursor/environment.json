@@ -7,7 +7,6 @@
   "install": "bash .cursor/install.sh",
   "start": "sudo service docker start",
   "repositoryDependencies": [
-    "anyscale/anyscale-debug-agent",
-    "anyscale/templates"
+    "anyscale/anyscale-debug-agent"
   ]
 }
