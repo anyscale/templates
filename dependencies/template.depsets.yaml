@@ -1,14 +1,10 @@
 build_arg_sets:
-  ray2540_py310:
-    RAY_VERSION: "2.54.0"
-    PYTHON_VERSION: "3.10"
-    PYTHON_SHORT: "310"
-  ray2510_py312:
-    RAY_VERSION: "2.51.0"
-    PYTHON_VERSION: "3.12"
-    PYTHON_SHORT: "312"
-  ray2441_py312:
-    RAY_VERSION: "2.44.1"
+  ray2541_py311:
+    RAY_VERSION: "2.54.1"
+    PYTHON_VERSION: "3.11"
+    PYTHON_SHORT: "311"
+  ray2541_py312:
+    RAY_VERSION: "2.54.1"
     PYTHON_VERSION: "3.12"
     PYTHON_SHORT: "312"
 
@@ -23,8 +19,8 @@ depsets:
       - --python-platform=linux
       - --unsafe-package ray
     build_arg_sets:
-      - ray2540_py310
-      - ray2441_py312
+      - ray2541_py311
+      - ray2541_py312
     pre_hooks:
       - dependencies/scripts/fetch-ray-depsets.sh ${RAY_VERSION} ${PYTHON_SHORT}
       - dependencies/scripts/fetch-ray-constraints.sh ${RAY_VERSION} ${PYTHON_VERSION}
@@ -40,7 +36,7 @@ depsets:
       - --python-platform=linux
       - --unsafe-package ray
     build_arg_sets:
-      - ray2441_py312
+      - ray2541_py312
 
 
   - name: relaxed_langchain_agent_ray_serve_ray_img_depset_${RAY_VERSION}_${PYTHON_VERSION}
@@ -54,7 +50,7 @@ depsets:
       - --python-platform=linux
       - --unsafe-package ray
     build_arg_sets:
-      - ray2540_py310
+      - ray2541_py311
 
   - name: langchain_agent_ray_serve_depset_${RAY_VERSION}_${PYTHON_VERSION}
     operation: expand
@@ -63,11 +59,12 @@ depsets:
       - templates/langchain-agent-ray-serve/requirements.txt
     output: templates/langchain-agent-ray-serve/python_depset.lock
     append_flags:
+      - --index https://download.pytorch.org/whl/cu128
       - --python-version=${PYTHON_VERSION}
       - --python-platform=linux
       - --unsafe-package ray
     build_arg_sets:
-      - ray2540_py310
+      - ray2541_py311
     pre_hooks:
       - dependencies/scripts/fetch-ray-depsets.sh ${RAY_VERSION} ${PYTHON_SHORT}
       - dependencies/scripts/fetch-ray-constraints.sh ${RAY_VERSION} ${PYTHON_VERSION}
