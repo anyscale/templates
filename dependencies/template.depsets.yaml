@@ -49,6 +49,7 @@ depsets:
       - --python-version=${PYTHON_VERSION}
       - --python-platform=linux
       - --unsafe-package ray
+      - --quiet
     build_arg_sets:
       - ray2541_py311
 
