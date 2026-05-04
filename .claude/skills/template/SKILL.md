@@ -11,7 +11,7 @@ Read the reference matching your task:
 - **How to format** a template to repo conventions → `references/format.md`
 - **How to publish** a template to dev/staging/production (S3 via Buildkite) → `references/publish.md`
 - **Publish a custom image** to our GCP artifact registry → run `.claude/skills/template/scripts/publish-custom-image.sh <dockerfile-dir> <image-name> <ray-version>`
-- **How to reproduce CI test locally** (rayapp setup) → `references/local-testing.md`
+- **How to reproduce CI test locally** (rayapp setup) → `references/rayapp-local-testing.md`
 - **BUILD.yaml schema guidance** lookup → `references/build-yaml-schema.yaml`
 - **Compute config schema guidance** lookup → `references/compute-config-schema.yaml`
 

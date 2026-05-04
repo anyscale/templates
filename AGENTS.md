@@ -12,7 +12,7 @@ The `/template` update flow requires companion skills `/ask`, `/fix`, `/run`, `/
 
 Local: edit → `pre-commit run --all-files` → push. Pre-commit covers lint, formatting, codebase conventions. `rayapp build all` mirrors CI's build job locally.
 
-Per-template tests — comment `/test-template <id> [<id>...]` (up to 3, parallel) on the PR to dispatch the Buildkite `template-test` pipeline (workspace + actual test run). For local iteration before pushing, `rayapp test <id>` runs the same flow against the staging cloud.
+Per-template tests — comment `/test-template <id> [<id>...]` (up to 3, parallel) on the PR to dispatch the Buildkite `template-test` pipeline (workspace + actual test run). For local iteration before pushing, `rayapp test <id>` runs the same flow (see `references/rayapp-local-testing.md` in the `/template` skill for setup).
 
 PR labels (apply all that fit):
 - `cursor-cloud` — origin: Cursor Cloud agent.

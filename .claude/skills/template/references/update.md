@@ -75,7 +75,7 @@ The `/test-template` GitHub Action only dispatches a Buildkite job (`template-te
 Classify the CI failure first (read the Buildkite logs via the MCP — `gh pr checks` won't show the test failure, only the dispatch):
 
 - **Agent-fixable** — template code/notebook/Dockerfile/config bug, BUILD.yaml schema error, image build error. Spawn `/fix` and iterate (below).
-- **Infrastructure** — workspace creation timeout, Anyscale staging API errors, auth/SSO errors, Buildkite/GitHub Actions runner errors. **Don't retry.** Run the local test (`rayapp test <template-name>`, see `local-testing.md`); if it passes, trust the local result, post a PR comment summarizing the CI infra failure (`GH_TOKEN=$ANYSCALE_DEBUG_AGENT_GH_TOKEN gh pr comment <pr-number> --body '...'`), and hand off to a human. The PR stays open.
+- **Infrastructure** — workspace creation timeout, Anyscale staging API errors, auth/SSO errors, Buildkite/GitHub Actions runner errors. **Don't retry.** Run the local test (`rayapp test <template-name>`, see `rayapp-local-testing.md`); if it passes, trust the local result, post a PR comment summarizing the CI infra failure (`GH_TOKEN=$ANYSCALE_DEBUG_AGENT_GH_TOKEN gh pr comment <pr-number> --body '...'`), and hand off to a human. The PR stays open.
 
 For agent-fixable failures, spawn `/fix` subagent (explicitly authorized):
 
@@ -85,7 +85,7 @@ For agent-fixable failures, spawn `/fix` subagent (explicitly authorized):
 CI failed on PR #<num>. <paste relevant CI error>
 
 Fix minimally — code, notebooks, Dockerfiles, configs...
-Iterate until `rayapp test <template-name>` passes locally (see local-testing.md). For custom images, rebuild as needed (See `anyscale image build` CLI for fast iteration) and report the working URI and Dockerfile.
+Iterate until `rayapp test <template-name>` passes locally (see rayapp-local-testing.md). For custom images, rebuild as needed (See `anyscale image build` CLI for fast iteration) and report the working URI and Dockerfile.
 Notes: .claude/.artifacts/<template-name>/update-ray-<version>/notes-fix-<timestamp-epoch>.md
 ```
 
