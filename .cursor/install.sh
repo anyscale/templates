@@ -10,12 +10,13 @@
 #     download_rayapp.sh, pre-commit hook, sideloaded skills).
 #
 # Required secrets (set in Cursor → My Secrets, exposed as env vars):
-#   ANYSCALE_GH_TOKEN  GitHub PAT — needs read on anyscale/anyscale-debug-agent
-#                                   (skills clone) AND push/PR/comment/label on anyscale/templates
-#                                   (gh fallback when Cursor's default auth lacks PR permissions).
 #   ANYSCALE_CLI_TOKEN             For the anyscale CLI
 #   GCP_TEMPLATE_REGISTRY_SA_KEY   GCP SA JSON for docker push to us-docker.pkg.dev
 #   BUILDKITE_API_TOKEN            Read by the Buildkite MCP server (Dockerfile-baked).
+#
+# GitHub auth: relies on Cursor's native GH App auth (no PAT). Skills are
+# pulled from the anyscale-debug-agent repo that Cursor pre-clones via
+# .cursor/environment.json's repositoryDependencies field.
 set -euo pipefail
 
 # --- pre-commit hooks (auto-fire on git commit; idempotent) ---
@@ -32,10 +33,6 @@ if [ -f download_rayapp.sh ] && ! command -v rayapp &>/dev/null; then
   bash download_rayapp.sh
   mv rayapp /usr/local/bin/rayapp
 fi
-
-# --- Auth: gh ---
-: "${ANYSCALE_GH_TOKEN:?secret ANYSCALE_GH_TOKEN is empty/unset; add it in Cursor → Cloud Agents → My Secrets}"
-echo "$ANYSCALE_GH_TOKEN" | gh auth login --with-token
 
 # --- Auth: gcloud (for docker push to GCP artifact registry; soft — only needed for custom images) ---
 if [ -n "${GCP_TEMPLATE_REGISTRY_SA_KEY:-}" ]; then
@@ -56,33 +53,42 @@ else
   echo "WARN: ANYSCALE_CLI_TOKEN not set — rayapp and anyscale CLI commands will fail."
 fi
 
-# --- Sideload required skills (/ask, /fix, /run, /inspect) from
-# anyscale-debug-agent. Required for the /template update flow — without
-# /fix the agent cannot iterate on CI failures. Last in the script so a
-# clone failure can't cascade into losing earlier auth/creds setup; the
-# script still exits non-zero on failure. Sparse + shallow + blobless:
-# fetches only .claude/skills/ (~1.4M) instead of the full 210M repo.
-#
-# Direct `git clone` with the token in the URL, not `gh repo clone`:
-# newer `gh` doesn't auto-configure git's credential helper on
-# `gh auth login --with-token`, so the underlying git clone fires
-# anonymously and GitHub returns 404 on private repos. Embedding the
-# token in the URL bypasses that auth chain entirely. ---
-rm -rf /tmp/debug-agent
-git clone --depth 1 --single-branch --no-checkout --filter=blob:none \
-  "https://x-access-token:${ANYSCALE_GH_TOKEN}@github.com/anyscale/anyscale-debug-agent.git" \
-  /tmp/debug-agent
-git -C /tmp/debug-agent sparse-checkout set .claude/skills
-git -C /tmp/debug-agent checkout
+# --- Sideload required skills (/ask, /fix, /run, /inspect) from the
+# anyscale-debug-agent repo. We don't clone it ourselves — Cursor pre-clones
+# it via .cursor/environment.json's repositoryDependencies. Find that
+# pre-clone and rsync .claude/skills/ from it. If we can't locate the
+# pre-clone, fail loudly with a filesystem dump so we can adjust the search
+# list (or fall back to a token-based clone). ---
+DEBUG_AGENT_SRC=""
+for p in \
+    "$(pwd)/../anyscale-debug-agent" \
+    /workspace/anyscale-debug-agent \
+    /repos/anyscale-debug-agent \
+    "$HOME/anyscale-debug-agent" \
+    "$HOME/repositories/anyscale-debug-agent" \
+    "$HOME/workspaces/anyscale-debug-agent"; do
+  if [ -d "$p/.claude/skills" ]; then
+    DEBUG_AGENT_SRC="$p"
+    echo "Found anyscale-debug-agent pre-clone at: $DEBUG_AGENT_SRC"
+    break
+  fi
+done
+
+if [ -z "$DEBUG_AGENT_SRC" ]; then
+  echo "ERROR: anyscale-debug-agent pre-clone not found at any expected path."
+  echo "Filesystem inspection (looking for it):"
+  find / -maxdepth 6 -name 'anyscale-debug-agent' -type d 2>/dev/null || true
+  echo "Parent of CWD ($(pwd)/..):"
+  ls -la "$(pwd)/.." 2>/dev/null || true
+  exit 1
+fi
+
 mkdir -p ~/.claude/skills
 # rsync --delete keeps ~/.claude/skills/ exactly mirrored to upstream — drops
 # any locally-stale skill that was removed from anyscale-debug-agent.
-rsync -a --delete /tmp/debug-agent/.claude/skills/ ~/.claude/skills/
+rsync -a --delete "$DEBUG_AGENT_SRC/.claude/skills/" ~/.claude/skills/
 echo "User-scope skills:"
 ls ~/.claude/skills/
-# Clean up the cloned dir — the .git/config has the token embedded and
-# we've already extracted what we need.
-rm -rf /tmp/debug-agent
 
 # --- Preflight: validate the env this script just set up. Same script the
 # agent re-runs at task start (see AGENTS.md → Cursor Cloud → Preconditions). ---
