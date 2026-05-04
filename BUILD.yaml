@@ -110,7 +110,7 @@
 - name: deployment-serve-llm
   dir: templates/deployment-serve-llm
   cluster_env:
-    image_uri: anyscale/ray-llm:2.54.1-py311-cu128
+    image_uri: anyscale/ray-llm:2.55.1-py311-cu128
   compute_config:
     GCP: configs/basic-single-node/gce.yaml
     AWS: configs/basic-single-node/aws.yaml
