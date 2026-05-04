@@ -95,6 +95,12 @@ After `/fix` returns:
 3. Commit and push fixes to the PR branch.
 4. Back to Step 3.
 
-## Step 5: Report
+## Step 5: Mark ready and report
+
+Once all CI checks are green (`gh pr checks <pr-number>` reports all green — premerge GitHub Actions + the Buildkite `template-test` build), mark the PR ready for review:
+
+```bash
+GH_TOKEN=$ANYSCALE_GH_TOKEN gh pr ready <pr-number>
+```
 
 PR description (Step 2) is the canonical session report. Only write an extensive `.claude/.artifacts/<template-name>/update-ray-<version>/notes-session-<timestamp-epoch>.md` if `/fix` was invoked.
