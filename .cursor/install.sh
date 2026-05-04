@@ -84,6 +84,35 @@ ls ~/.claude/skills/
 # we've already extracted what we need.
 rm -rf /tmp/debug-agent
 
+# --- Cloud-agent MCP config: merge workspace .cursor/mcp.json into user-scope
+# ~/.cursor/mcp.json. Workspace-scope is read by Cursor IDE only; cloud agents
+# read user-scope at session boot. Merge rather than overwrite so any
+# pre-existing MCPs (e.g. ones Cursor itself populates) survive — workspace
+# entries win on key collision. ---
+if [ -f .cursor/mcp.json ]; then
+  mkdir -p ~/.cursor
+  python3 - <<'PY'
+import json, pathlib
+
+home = pathlib.Path.home() / ".cursor" / "mcp.json"
+ws = pathlib.Path(".cursor") / "mcp.json"
+
+merged = {}
+if home.exists():
+    try:
+        merged = json.loads(home.read_text())
+    except json.JSONDecodeError:
+        merged = {}
+
+ws_cfg = json.loads(ws.read_text())
+merged.setdefault("mcpServers", {})
+merged["mcpServers"].update(ws_cfg.get("mcpServers", {}))
+
+home.write_text(json.dumps(merged, indent=2) + "\n")
+print(f"Merged MCP servers from {ws} into {home}")
+PY
+fi
+
 # --- Preflight: validate the env this script just set up. Same script the
 # agent re-runs at task start (see AGENTS.md → Cursor Cloud → Preconditions). ---
 bash .cursor/preflight.sh
