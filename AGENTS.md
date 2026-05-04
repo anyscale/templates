@@ -6,27 +6,19 @@ Anyscale console templates. For any template-related work (bump Ray, format, pub
 
 The `/template` update flow requires companion skills `/ask`, `/fix`, `/run`, `/inspect` (from `anyscale/anyscale-debug-agent`). `/fix` in particular drives the CI iteration loop — **without it you cannot fix a broken template and should not try to do so**. Tip: wrap `/fix` in a subagent to keep its debug output out of your main context.
 
-## CI
+## Dev lifecycle
 
-**Invariant** — `.github/workflows/test-template.yaml` only runs when a PR comment matches `/test-template <template-id> [<template-id>...]` (up to 3, fanned out in parallel). After any push to a PR, comment to trigger or re-trigger validation.
+~48 production templates (BUILD.yaml entries). No services to run.
 
-**CI runs on Buildkite, not GitHub.** The GitHub Action above only dispatches the Buildkite `template-test` pipeline; the actual workspace creation, image pull, and test run happen there. To monitor a build or read failure logs, use the **Buildkite MCP** (`mcp__buildkite__*` tools, authenticated via `BUILDKITE_API_TOKEN`). `gh pr checks` only shows the dispatch status, not the test result.
+Local: edit → `pre-commit run --all-files` → push. Pre-commit covers whitespace, README auto-gen (`jupyter nbconvert`), and BUILD.yaml schema. **Use Python 3.12 to match CI** (otherwise `generate-readme` produces byte-different output). `rayapp build all` mirrors CI's build job locally.
 
-## PR labels
+CI on push (`.github/workflows/premerge.yaml`): pre-commit, build, BUILD.yaml validation, depset check.
 
-Apply all that fit:
-- `cursor-cloud` — **origin marker:** any PR opened by a Cursor Cloud agent.
-- `ray-update` — **content marker:** any PR bumping a template's Ray version.
+Per-template tests — comment `/test-template <id> [<id>...]` (up to 3, parallel) on the PR to dispatch the Buildkite `template-test` pipeline (workspace + actual test run). **Monitor via the Buildkite MCP** (`mcp__buildkite__*`, authenticated via `BUILDKITE_API_TOKEN`); `gh pr checks` only shows the GH dispatch step.
 
-## Quick command reference
-
-~48 production templates (the BUILD.yaml entries). No services to run.
-
-Dev loop: edit → `pre-commit run --all-files` → push → CI validates. The pre-commit hooks cover trailing whitespace, README auto-generation (from `README.ipynb` via `jupyter nbconvert`), and BUILD.yaml schema validation.
-
-Beyond pre-commit, `rayapp build all` builds all templates locally (non-self-closing `<img>` warnings are benign).
-
-**Use Python 3.12** locally to match CI and cursor cloud. The `generate-readme` hook (`jupyter nbconvert`) is byte-deterministic only when the nbconvert pin (`requirements-dev.txt`) and the Python version both match.
+PR labels (apply all that fit):
+- `cursor-cloud` — origin: Cursor Cloud agent.
+- `ray-update` — content: Ray version bump.
 
 ## Cursor Cloud
 
@@ -42,7 +34,7 @@ Already provisioned at team scope:
 - `ANYSCALE_DEBUG_AGENT_GH_TOKEN` — skills clone + `gh` write fallback on this repo (see quirks below).
 - `ANYSCALE_CLI_TOKEN`
 - `GCP_TEMPLATE_REGISTRY_SA_KEY`
-- `BUILDKITE_API_TOKEN` — used by the Buildkite MCP (see "CI" above).
+- `BUILDKITE_API_TOKEN` — used by the Buildkite MCP (see "Dev lifecycle" above).
 
 ### Cursor-specific quirks
 
