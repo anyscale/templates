@@ -46,17 +46,19 @@ All `gh` write commands below need `GH_TOKEN=$ANYSCALE_DEBUG_AGENT_GH_TOKEN` (Cu
 
 ## Step 3: Validate via CI
 
-`GH_TOKEN=$ANYSCALE_DEBUG_AGENT_GH_TOKEN gh pr comment <pr-number> --body '/test-template <template-id>'`. Wait for CI.
+`GH_TOKEN=$ANYSCALE_DEBUG_AGENT_GH_TOKEN gh pr comment <pr-number> --body '/test-template <template-id>'`.
 
-- **PASSED** → Step 5
-- **FAILED** → Step 4
+The `/test-template` GitHub Action only dispatches a Buildkite job (`template-test` pipeline). **Monitor the Buildkite build via the Buildkite MCP** — that's where the workspace creation, image pull, and test logs live. `gh pr checks` only shows the dispatch step.
+
+- **PASSED** (Buildkite build green) → Step 5
+- **FAILED** → Step 4 (read the Buildkite logs to classify)
 
 ## Step 4: Fix
 
-Classify the CI failure first:
+Classify the CI failure first (read the Buildkite logs via the MCP — `gh pr checks` won't show the test failure, only the dispatch):
 
 - **Agent-fixable** — template code/notebook/Dockerfile/config bug, BUILD.yaml schema error, image build error. Spawn `/fix` and iterate (below).
-- **Infrastructure** — workspace creation timeout, Anyscale staging API errors, auth/SSO errors, GitHub Actions runner errors. **Don't retry.** Run the local test (`rayapp test <template-name>`, see `local-testing.md`); if it passes, trust the local result, post a PR comment summarizing the CI infra failure (`GH_TOKEN=$ANYSCALE_DEBUG_AGENT_GH_TOKEN gh pr comment <pr-number> --body '...'`), and hand off to a human. The PR stays open.
+- **Infrastructure** — workspace creation timeout, Anyscale staging API errors, auth/SSO errors, Buildkite/GitHub Actions runner errors. **Don't retry.** Run the local test (`rayapp test <template-name>`, see `local-testing.md`); if it passes, trust the local result, post a PR comment summarizing the CI infra failure (`GH_TOKEN=$ANYSCALE_DEBUG_AGENT_GH_TOKEN gh pr comment <pr-number> --body '...'`), and hand off to a human. The PR stays open.
 
 For agent-fixable failures, spawn `/fix` subagent (explicitly authorized):
 

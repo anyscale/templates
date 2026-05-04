@@ -6,6 +6,8 @@ Cloud agents **require** companion skills `/ask`, `/fix`, `/run`, `/inspect` —
 
 **CI invariant** — `.github/workflows/test-template.yaml` only runs when a PR comment matches `/test-template <template-id> [<template-id>...]` (up to 3, fanned out in parallel). After any push to a PR, comment to trigger or re-trigger validation.
 
+**CI runs on Buildkite, not GitHub.** The GitHub Action above only dispatches the Buildkite `template-test` pipeline; the actual workspace creation, image pull, and test run happen there. To monitor a build or read failure logs, use the **Buildkite MCP** (`mcp__buildkite__*` tools, authenticated via `BUILDKITE_API_TOKEN`). `gh pr checks` only shows the dispatch status, not the test result.
+
 **Known automation** — the `template-updater` Cursor Cloud agent owns Ray-version bumps end-to-end (open PR → CI → fix-loop) on every major/minor Ray release. Branch naming is whatever Cursor auto-assigns (typically `cursor/...`).
 
 **PR labels** — apply all that fit:
@@ -20,6 +22,7 @@ Required Cursor secrets (already provisioned at team scope):
 - `ANYSCALE_DEBUG_AGENT_GH_TOKEN`
 - `ANYSCALE_CLI_TOKEN`
 - `GCP_TEMPLATE_REGISTRY_SA_KEY`
+- `BUILDKITE_API_TOKEN` (used by the Buildkite MCP — see "CI invariant")
 
 If any issues, just read `.cursor/Dockerfile` and `.cursor/install.sh` and reproduce their steps yourself.
 
