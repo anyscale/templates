@@ -68,6 +68,17 @@ if ! command -v docker &>/dev/null; then
   sudo apt-get install -y docker.io fuse-overlayfs iptables
 fi
 
+# --- Buildkite MCP server (binary; the cursor cloud automation's MCP config
+# invokes `buildkite-mcp-server stdio` and the binary picks up BUILDKITE_API_TOKEN
+# from the agent's env, populated by the Cursor secret). ---
+if ! command -v buildkite-mcp-server &>/dev/null; then
+  BK_MCP_VER=$(curl -fsSL https://api.github.com/repos/buildkite/buildkite-mcp-server/releases/latest \
+    | python3 -c "import json,sys; print(json.load(sys.stdin)['tag_name'])")
+  curl -fsSL "https://github.com/buildkite/buildkite-mcp-server/releases/download/${BK_MCP_VER}/buildkite-mcp-server_Linux_x86_64.tar.gz" \
+    | tar -xz -C "$HOME/.local/bin" buildkite-mcp-server
+  chmod +x "$HOME/.local/bin/buildkite-mcp-server"
+fi
+
 # --- Auth: gh ---
 : "${ANYSCALE_DEBUG_AGENT_GH_TOKEN:?secret ANYSCALE_DEBUG_AGENT_GH_TOKEN is empty/unset; add it in Cursor → Cloud Agents → My Secrets}"
 echo "$ANYSCALE_DEBUG_AGENT_GH_TOKEN" | gh auth login --with-token
