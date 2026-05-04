@@ -10,7 +10,7 @@
 #     download_rayapp.sh, pre-commit hook, sideloaded skills).
 #
 # Required secrets (set in Cursor → My Secrets, exposed as env vars):
-#   ANYSCALE_DEBUG_AGENT_GH_TOKEN  GitHub PAT — needs read on anyscale/anyscale-debug-agent
+#   ANYSCALE_GH_TOKEN  GitHub PAT — needs read on anyscale/anyscale-debug-agent
 #                                   (skills clone) AND push/PR/comment/label on anyscale/templates
 #                                   (gh fallback when Cursor's default auth lacks PR permissions).
 #   ANYSCALE_CLI_TOKEN             For the anyscale CLI
@@ -34,8 +34,8 @@ if [ -f download_rayapp.sh ] && ! command -v rayapp &>/dev/null; then
 fi
 
 # --- Auth: gh ---
-: "${ANYSCALE_DEBUG_AGENT_GH_TOKEN:?secret ANYSCALE_DEBUG_AGENT_GH_TOKEN is empty/unset; add it in Cursor → Cloud Agents → My Secrets}"
-echo "$ANYSCALE_DEBUG_AGENT_GH_TOKEN" | gh auth login --with-token
+: "${ANYSCALE_GH_TOKEN:?secret ANYSCALE_GH_TOKEN is empty/unset; add it in Cursor → Cloud Agents → My Secrets}"
+echo "$ANYSCALE_GH_TOKEN" | gh auth login --with-token
 
 # --- Auth: gcloud (for docker push to GCP artifact registry; soft — only needed for custom images) ---
 if [ -n "${GCP_TEMPLATE_REGISTRY_SA_KEY:-}" ]; then
@@ -70,7 +70,7 @@ fi
 # token in the URL bypasses that auth chain entirely. ---
 rm -rf /tmp/debug-agent
 git clone --depth 1 --single-branch --no-checkout --filter=blob:none \
-  "https://x-access-token:${ANYSCALE_DEBUG_AGENT_GH_TOKEN}@github.com/anyscale/anyscale-debug-agent.git" \
+  "https://x-access-token:${ANYSCALE_GH_TOKEN}@github.com/anyscale/anyscale-debug-agent.git" \
   /tmp/debug-agent
 git -C /tmp/debug-agent sparse-checkout set .claude/skills
 git -C /tmp/debug-agent checkout

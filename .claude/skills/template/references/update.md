@@ -37,12 +37,12 @@ Grep and update any remaining version strings in template content.
 
 ## Step 2: Open PR
 
-All `gh` write commands below need `GH_TOKEN=$ANYSCALE_DEBUG_AGENT_GH_TOKEN` (Cursor's default auth can't write to this repo — see AGENTS.md "GitHub write operations").
+All `gh` write commands below need `GH_TOKEN=$ANYSCALE_GH_TOKEN` (Cursor's default auth can't write to this repo — see AGENTS.md "GitHub write operations").
 
 1. Commit: `Update <template-name> to Ray <version>`
 2. Push the commit. In Cursor Cloud you're already on a `cursor/...` branch — push to that. Outside Cursor, use `update/<template-name>/ray-<version>`.
-3. Open the PR (Draft) with title `[ray-update-<version>] Update <template-name> to Ray <version>` and body following the outline below. `GH_TOKEN=$ANYSCALE_DEBUG_AGENT_GH_TOKEN gh pr create --base main --title '...' --body-file <body.md> --draft` (or use `--body "$(cat <<'EOF' ... EOF)"`).
-4. Apply both labels: `GH_TOKEN=$ANYSCALE_DEBUG_AGENT_GH_TOKEN gh pr edit --add-label ray-update --add-label cursor-cloud` (per AGENTS.md "PR labels").
+3. Open the PR (Draft) with title `[ray-update-<version>] Update <template-name> to Ray <version>` and body following the outline below. `GH_TOKEN=$ANYSCALE_GH_TOKEN gh pr create --base main --title '...' --body-file <body.md> --draft` (or use `--body "$(cat <<'EOF' ... EOF)"`).
+4. Apply both labels: `GH_TOKEN=$ANYSCALE_GH_TOKEN gh pr edit --add-label ray-update --add-label cursor-cloud` (per AGENTS.md "PR labels").
 
 **Keep the PR body concise — short bullets, no prose, no boilerplate.** Outline (omit **Fix iterations** if `/fix` wasn't invoked):
 
@@ -63,7 +63,7 @@ Bump <template-name> to Ray <ray-version>.
 
 ## Step 3: Validate via CI
 
-`GH_TOKEN=$ANYSCALE_DEBUG_AGENT_GH_TOKEN gh pr comment <pr-number> --body '/test-template <template-id>'`.
+`GH_TOKEN=$ANYSCALE_GH_TOKEN gh pr comment <pr-number> --body '/test-template <template-id>'`.
 
 The `/test-template` GitHub Action only dispatches a Buildkite job (`template-test` pipeline). **Monitor the Buildkite build via the Buildkite MCP** — that's where the workspace creation, image pull, and test logs live. `gh pr checks` only shows the dispatch step.
 
@@ -75,7 +75,7 @@ The `/test-template` GitHub Action only dispatches a Buildkite job (`template-te
 Classify the CI failure first (read the Buildkite logs via the MCP — `gh pr checks` won't show the test failure, only the dispatch):
 
 - **Agent-fixable** — template code/notebook/Dockerfile/config bug, BUILD.yaml schema error, image build error. Spawn `/fix` and iterate (below).
-- **Infrastructure** — workspace creation timeout, Anyscale staging API errors, auth/SSO errors, Buildkite/GitHub Actions runner errors. **Don't retry.** Run the local test (`rayapp test <template-name>`, see `rayapp-local-testing.md`); if it passes, trust the local result, post a PR comment summarizing the CI infra failure (`GH_TOKEN=$ANYSCALE_DEBUG_AGENT_GH_TOKEN gh pr comment <pr-number> --body '...'`), and hand off to a human. The PR stays open.
+- **Infrastructure** — workspace creation timeout, Anyscale staging API errors, auth/SSO errors, Buildkite/GitHub Actions runner errors. **Don't retry.** Run the local test (`rayapp test <template-name>`, see `rayapp-local-testing.md`); if it passes, trust the local result, post a PR comment summarizing the CI infra failure (`GH_TOKEN=$ANYSCALE_GH_TOKEN gh pr comment <pr-number> --body '...'`), and hand off to a human. The PR stays open.
 
 For agent-fixable failures, spawn `/fix` subagent (explicitly authorized):
 
