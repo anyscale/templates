@@ -47,3 +47,13 @@ Use `.cursor/Dockerfile` and `.cursor/install.sh` as the canonical environment s
 - **Branch naming:** Cursor auto-assigns `cursor/...`. (Outside Cursor, use `update/<template-name>/ray-<version>`.)
 - **`pre-commit install` doesn't auto-fire:** Cursor sets `core.hooksPath`, which causes pre-commit to skip its hook install. Run `pre-commit run --all-files` manually before committing.
 - **GitHub write operations:** Cursor's default GitHub App auth can't write to this repo. **Always prefix `gh` write commands** (`gh pr create`, `gh pr edit`, `gh pr comment`, `gh issue comment`, `gh pr review`) with `GH_TOKEN=$ANYSCALE_GH_TOKEN`. Read-only `gh` calls work without the prefix.
+
+## Cursor Cloud specific instructions
+
+- **No local services to run.** This is a content-only repository; the dev loop is `edit → pre-commit run --all-files → push`. All template execution happens remotely on Anyscale infrastructure.
+- **Preflight may hang on `anyscale cloud list`:** The preflight script calls `anyscale cloud list` which defaults to `--mode=interactive` and blocks waiting for pager input. Wrap with `timeout 30` or pipe to `head` to avoid hanging. A timeout exit (124) is acceptable as long as the underlying anyscale auth is valid (check `~/.anyscale/credentials.json` exists with a valid token).
+- **Lint/validate commands** (run before every commit):
+  - `pre-commit run --all-files` — all hooks (trailing whitespace, large files, README auto-gen, BUILD.yaml schema)
+  - `python3 ci/validate_build_yaml.py --no-network` — standalone BUILD.yaml validation
+  - `bash ./update_deps.sh --check` — dependency lockfile freshness
+  - `rayapp build all` — mirrors CI's build job locally (notebook → markdown conversion for all templates)
