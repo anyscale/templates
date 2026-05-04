@@ -1,7 +1,7 @@
 {
   "name": "anyscale-templates-environment-dev",
   "build": {
-    "dockerfile": ".cursor/Dockerfile",
+    "dockerfile": "Dockerfile",
     "context": ".."
   },
   "install": "bash .cursor/install.sh",
