@@ -44,7 +44,7 @@ depsets:
     source_depset: ray_img_depset_${RAY_VERSION}_${PYTHON_VERSION}
     packages:
       - uvloop
-    output: /tmp/ray-deps/relaxed_ray_img_py${PYTHON_SHORT}.lock
+    output: dependencies/depsets/relaxed_ray_img_py${PYTHON_SHORT}.lock
     append_flags:
       - --python-version=${PYTHON_VERSION}
       - --python-platform=linux
