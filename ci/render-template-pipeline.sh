@@ -5,6 +5,13 @@ set -euo pipefail
 
 TEMPLATES="$TEMPLATE_NAMES"
 
+# Single source of truth for the forge-image anyscale pin. Script-relative
+# path (CWD-independent); awk so a missing line gives empty output rather
+# than tripping set -e before the :? fires.
+REQ_FILE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../requirements-dev.txt"
+ANYSCALE_VERSION=$(awk -F= '/^anyscale==/{print $3}' "$REQ_FILE")
+: "${ANYSCALE_VERSION:?could not read anyscale pin from $REQ_FILE}"
+
 for t in $TEMPLATES; do
   case "$t" in
     *[!a-zA-Z0-9_-]*)
@@ -26,8 +33,8 @@ for t in $TEMPLATES; do
         export ANYSCALE_CLI_TOKEN="\$\$(aws --region=us-west-2 secretsmanager get-secret-value --secret-id \$\$ANYSCALE_CLI_TOKEN_SECRET_NAME | jq -r .SecretString)"
         export ANYSCALE_HOST="https://console.anyscale-staging.com"
         bash download_rayapp.sh
-        sudo apt-get update && sudo apt-get install -y rsync
-        sudo pip install anyscale==0.26.87
+        sudo apt-get update && sudo apt-get install -y rsync ca-certificates && sudo update-ca-certificates
+        sudo pip install anyscale==${ANYSCALE_VERSION}
         LOG=/tmp/rayapp-\$\$TEMPLATE_NAME.log
         : > "\$\$LOG"
         # Watch for "Workspace created successfully id: expwrk_..." (always
