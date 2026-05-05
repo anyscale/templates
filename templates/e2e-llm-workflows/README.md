@@ -112,11 +112,6 @@ from ray.data import Dataset
 
 
 ```python
-from ray.data import Dataset
-```
-
-
-```python
 # Load as a Ray Dataset
 train_ds = ray.data.from_items(train_set)
 train_ds.take(1)
@@ -192,30 +187,6 @@ ft_test_ds: Dataset = ray.data.from_items(test_set).map(to_schema, fn_kwargs={'s
 ### Save and load data
 
 We can save our data locally and/or to remote storage to use later (training, evaluation, etc.). All workspaces come with a default [cloud storage locations and shared storage](https://docs.anyscale.com/workspaces/storage) that we can write to.
-
-
-```python
-import anyscale
-import os
-from ray.data import Dataset
-from rich import print as rprint
-from src.utils import get_dataset_file_path
-```
-
-
-```python
-# Upload as an Anyscale Dataset
-def upload_dataset(dataset: Dataset, filename: str):
-    with get_dataset_file_path(dataset) as dataset_file_path:
-        dataset = anyscale.llm.dataset.upload(
-            dataset_file_path,
-            # john_doe/viggo/train.jsonl
-            name=f"viggo/{filename}",
-        )
-    rprint(f"Metadata for '{filename}'")
-    rprint(dataset)
-    return dataset
-```
 
 
 ```python
