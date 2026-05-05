@@ -7,8 +7,14 @@ TEMPLATES="$TEMPLATE_NAMES"
 
 # Pin the forge-image anyscale CLI to whatever requirements-dev.txt says, so
 # bumping anyscale in one place propagates here on the next pipeline render.
-ANYSCALE_VERSION=$(grep '^anyscale==' requirements-dev.txt | cut -d= -f3)
-: "${ANYSCALE_VERSION:?could not read anyscale pin from requirements-dev.txt}"
+# Resolve relative to the script's location (not CWD) so the lookup works
+# regardless of where the script is invoked from. Use awk (vs grep|cut) so
+# a missing line yields an empty string instead of tripping `set -e` and
+# aborting before the `:?` error message can fire.
+SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+REQ_FILE="$SCRIPT_DIR/../requirements-dev.txt"
+ANYSCALE_VERSION=$(awk -F= '/^anyscale==/{print $3}' "$REQ_FILE")
+: "${ANYSCALE_VERSION:?could not read anyscale pin from $REQ_FILE}"
 
 for t in $TEMPLATES; do
   case "$t" in
