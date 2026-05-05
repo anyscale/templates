@@ -1,0 +1,14 @@
+# Pinned dev/contributor deps — single source of truth for Python tooling.
+#
+# Consumers:
+#   - .cursor/Dockerfile (cursor cloud agent base image)
+#   - .github/workflows/premerge.yaml (CI)
+#   - human contributors (see README.md "Local development")
+#
+# Bumping a version here propagates to all three on the next image rebuild
+# / CI run / contributor pull.
+pre-commit==3.8.0
+nbconvert==7.17.1
+anyscale==0.26.87
+pyyaml==6.0.3
+pydantic==2.13.3
