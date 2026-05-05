@@ -18,7 +18,7 @@ Per-template tests — comment `/test-template <id> [<id>...]` (up to 3, paralle
 
 PR labels (apply all that fit):
 - `cursor-cloud` — origin: Cursor Cloud agent.
-- `ray-update` — content: Ray version bump.
+- `ray-update` — content: Ray version bump. Gated on a green `buildkite/template-test` build (enforced by `.github/workflows/ray-update-requires-template-test.yaml`).
 
 ## Cursor Cloud
 
