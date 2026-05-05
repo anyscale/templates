@@ -17,7 +17,7 @@ add_failure_with_output() {
 # 1. Companion skills
 for s in ask fix run inspect; do
   if [[ ! -f "$HOME/.claude/skills/$s/SKILL.md" ]]; then
-    failures+=("missing skill: ~/.claude/skills/$s/SKILL.md (clone of anyscale/anyscale-debug-agent failed? Check ANYSCALE_GH_TOKEN)")
+    failures+=("missing skill: ~/.claude/skills/$s/SKILL.md ('anyscale skills install -p claude-code -y -f' didn't run, or failed? Check ANYSCALE_CLI_TOKEN)")
   fi
 done
 
