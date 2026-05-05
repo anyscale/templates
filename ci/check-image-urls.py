@@ -28,7 +28,13 @@ GITHUB_PREFIX = "https://raw.githubusercontent.com/anyscale/templates/main"
 
 ALLOWED_PREFIX = re.compile(r"^(https?://|data:|#|README_files/)")
 MARKDOWN_IMG = re.compile(r"!\[([^\]]*)\]\(([^)]+)\)")
-HTML_IMG_SRC = re.compile(r'<img\s[^>]*src="([^"]+)"')
+# Match src= with double-quoted, single-quoted, OR unquoted values.
+# Without all three a relative ref like <img src='assets/x.png'> would
+# bypass the check.
+HTML_IMG_SRC = re.compile(
+    r'''<img\s[^>]*src=(?:"([^"]+)"|'([^']+)'|([^\s>'"]+))''',
+    re.IGNORECASE,
+)
 
 
 def find_relative_in_text(text: str) -> list[str]:
@@ -38,7 +44,7 @@ def find_relative_in_text(text: str) -> list[str]:
         if not ALLOWED_PREFIX.match(url):
             bad.append(url)
     for m in HTML_IMG_SRC.finditer(text):
-        url = m.group(1).strip()
+        url = (m.group(1) or m.group(2) or m.group(3)).strip()
         if not ALLOWED_PREFIX.match(url):
             bad.append(url)
     return bad
