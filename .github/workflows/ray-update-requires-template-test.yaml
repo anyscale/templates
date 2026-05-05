@@ -1,11 +1,7 @@
 name: ray-update-requires-template-test
 
-# Gate ray-update PRs on a passing buildkite/template-test build.
-# - pull_request triggers re-evaluate on push, label changes, etc.
-# - status trigger re-evaluates whenever a commit status (e.g. Buildkite's
-#   build result) lands, so the gate flips green automatically without a
-#   manual rerun once /test-template finishes.
-# Mark this workflow's check as required in the main branch protection rule.
+# Gate ray-update PRs on a green buildkite/template-test status.
+# Required check on main; re-evaluates on pull_request + status events.
 
 on:
   pull_request:
@@ -28,98 +24,65 @@ jobs:
         run: |
           set -euo pipefail
 
-          # Build the list of PRs to evaluate. status events can map to
-          # multiple PRs (stacked PRs, backports), so iterate all of them
-          # rather than picking [0] and silently missing a ray-update PR.
+          # status events fire on a commit, not a PR. List every PR containing
+          # the commit so a non-ray-update PR at [0] doesn't shadow the rest.
           PRS=()
           if [[ "${{ github.event_name }}" == "pull_request" ]]; then
             PRS+=("${{ github.event.pull_request.number }}")
           else
-            STATUS_SHA="${{ github.event.sha }}"
             while IFS= read -r N; do
               [ -n "$N" ] && PRS+=("$N")
-            done < <(gh api "/repos/$REPO/commits/$STATUS_SHA/pulls" --jq '.[].number')
-            if [ ${#PRS[@]} -eq 0 ]; then
-              echo "No PR contains commit $STATUS_SHA — nothing to gate."
-              exit 0
-            fi
+            done < <(gh api "/repos/$REPO/commits/${{ github.event.sha }}/pulls" --jq '.[].number')
+            [ ${#PRS[@]} -eq 0 ] && exit 0
           fi
 
-          ANY_FAILED=0
+          FAILED=0
           for PR in "${PRS[@]}"; do
             echo "::group::PR #$PR"
+            # Re-fetch from the API; event payloads may carry stale SHAs.
+            DATA=$(gh pr view "$PR" --repo "$REPO" --json headRefOid,labels,isCrossRepository)
+            HEAD_SHA=$(echo "$DATA" | jq -r '.headRefOid')
+            LABELS=$(echo "$DATA" | jq -r '[.labels[].name] | join(",")')
+            IS_FORK=$(echo "$DATA" | jq -r '.isCrossRepository')
+            echo "head=$HEAD_SHA labels=$LABELS fork=$IS_FORK"
 
-            # Always re-fetch the PR's current head + labels from the API,
-            # never trust event payloads. Closes the stale-SHA hole where a
-            # late-arriving status from an earlier commit would otherwise
-            # gate the new HEAD as 'green'.
-            PR_DATA=$(gh pr view "$PR" --repo "$REPO" --json headRefOid,labels,isCrossRepository)
-            HEAD_SHA=$(echo "$PR_DATA" | jq -r '.headRefOid')
-            LABELS=$(echo "$PR_DATA" | jq -r '[.labels[].name] | join(",")')
-            IS_FORK=$(echo "$PR_DATA" | jq -r '.isCrossRepository')
-            echo "PR #$PR HEAD: $HEAD_SHA"
-            echo "PR #$PR labels: $LABELS"
-            echo "PR #$PR fork?: $IS_FORK"
-
-            # On a status event, the check-run we produce is attached to
-            # the status's commit. Branch protection on a PR looks at the
-            # PR's head commit's checks, so only gate PRs whose current
-            # head is this commit; others will be re-evaluated when their
-            # own heads move.
-            if [[ "${{ github.event_name }}" == "status" ]] \
-               && [[ "$HEAD_SHA" != "${{ github.event.sha }}" ]]; then
-              echo "PR #$PR HEAD ≠ status SHA — skipping (will fire when its own head moves)."
-              echo "::endgroup::"
-              continue
+            # The check-run we produce is attached to the event's SHA.
+            # Skip PRs whose head has moved past it.
+            if [[ "${{ github.event_name }}" == "status" ]] && [[ "$HEAD_SHA" != "${{ github.event.sha }}" ]]; then
+              echo "skip: HEAD ≠ status SHA"; echo "::endgroup::"; continue
             fi
 
             if ! echo ",$LABELS," | grep -q ',ray-update,'; then
-              echo "ray-update label not present — passing for PR #$PR."
-              echo "::endgroup::"
-              continue
+              echo "skip: no ray-update label"; echo "::endgroup::"; continue
             fi
 
-            # Fork PRs can't dispatch /test-template (the test-template.yaml
-            # workflow refuses cross-repo PRs for security), so the
-            # buildkite/template-test status will never appear and this
-            # gate would block forever. Surface that with an actionable
-            # message instead of the generic "missing build" error.
+            # /test-template (.github/workflows/test-template.yaml) refuses
+            # fork PRs, so fork+label can never go green.
             if [[ "$IS_FORK" == "true" ]]; then
-              echo "::error::PR #$PR is from a fork. /test-template doesn't dispatch from fork PRs (see .github/workflows/test-template.yaml), so buildkite/template-test can never run on this branch — the ray-update gate will stay red. Mirror the change to an internal branch (or have a maintainer do it) and re-open the PR there."
-              ANY_FAILED=1
-              echo "::endgroup::"
-              continue
+              echo "::error::PR #$PR: fork PRs can't run /test-template — mirror to an internal branch and re-open."
+              FAILED=1; echo "::endgroup::"; continue
             fi
 
-            # Latest buildkite/template-test commit-status on this PR's HEAD.
-            # Empty list from jq → "missing" sentinel, so never-run is
-            # distinguishable from failed/pending.
             STATUS=$(gh api "/repos/$REPO/commits/$HEAD_SHA/status" \
-                     --jq '[.statuses[] | select(.context | startswith("buildkite/template-test"))] | sort_by(.updated_at) | last | .state // "missing"')
-            echo "buildkite/template-test status on HEAD: $STATUS"
+              --jq '[.statuses[] | select(.context | startswith("buildkite/template-test"))] | sort_by(.updated_at) | last | .state // "missing"')
+            echo "buildkite/template-test: $STATUS"
 
             case "$STATUS" in
-              success)
-                echo "PR #$PR: buildkite/template-test is green — passing."
-                ;;
+              success) ;;
               missing)
-                echo "::error::PR #$PR: no buildkite/template-test build for HEAD ($HEAD_SHA). Comment '/test-template <template-name>' to dispatch one."
-                ANY_FAILED=1
-                ;;
+                echo "::error::PR #$PR: no buildkite/template-test build for $HEAD_SHA. Comment /test-template <name>."
+                FAILED=1 ;;
               pending)
-                echo "::error::PR #$PR: buildkite/template-test still running on $HEAD_SHA. Wait for it to finish; this check will re-run automatically."
-                ANY_FAILED=1
-                ;;
+                echo "::error::PR #$PR: buildkite/template-test still running. This check re-runs automatically."
+                FAILED=1 ;;
               failure|error)
-                echo "::error::PR #$PR: buildkite/template-test reported '$STATUS' on $HEAD_SHA. Investigate, push a fix, then re-run /test-template."
-                ANY_FAILED=1
-                ;;
+                echo "::error::PR #$PR: buildkite/template-test '$STATUS' on $HEAD_SHA — fix and re-run /test-template."
+                FAILED=1 ;;
               *)
-                echo "::error::PR #$PR: unexpected buildkite/template-test status '$STATUS' on $HEAD_SHA."
-                ANY_FAILED=1
-                ;;
+                echo "::error::PR #$PR: unexpected status '$STATUS'."
+                FAILED=1 ;;
             esac
             echo "::endgroup::"
           done
 
-          [ $ANY_FAILED -eq 0 ]
+          [ $FAILED -eq 0 ]
