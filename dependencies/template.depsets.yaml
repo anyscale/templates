@@ -1,8 +1,12 @@
 build_arg_sets:
-  ray2540_py310:
-    RAY_VERSION: "2.54.0"
-    PYTHON_VERSION: "3.10"
-    PYTHON_SHORT: "310"
+  ray2541_py311:
+    RAY_VERSION: "2.54.1"
+    PYTHON_VERSION: "3.11"
+    PYTHON_SHORT: "311"
+  ray2541_py312:
+    RAY_VERSION: "2.54.1"
+    PYTHON_VERSION: "3.12"
+    PYTHON_SHORT: "312"
 
 depsets:
   - name: ray_img_depset_${RAY_VERSION}_${PYTHON_VERSION}
@@ -15,7 +19,53 @@ depsets:
       - --python-platform=linux
       - --unsafe-package ray
     build_arg_sets:
-      - ray2540_py310
+      - ray2541_py311
+      - ray2541_py312
+    pre_hooks:
+      - dependencies/scripts/fetch-ray-depsets.sh ${RAY_VERSION} ${PYTHON_SHORT}
+      - dependencies/scripts/fetch-ray-constraints.sh ${RAY_VERSION} ${PYTHON_VERSION}
+
+  - name: serve_stable_diffusion_depset_${RAY_VERSION}_${PYTHON_VERSION}
+    operation: expand
+    soruce_depset: ray_img_depset_${RAY_VERSION}_${PYTHON_VERSION}
+    requirements:
+      - templates/serve-stable-diffusion/requirements.txt
+    output: templates/serve-stable-diffusion/python_depset.lock
+    append_flags:
+      - --python-version=${PYTHON_VERSION}
+      - --python-platform=linux
+      - --unsafe-package ray
+    build_arg_sets:
+      - ray2541_py312
+
+
+  - name: relaxed_langchain_agent_ray_serve_ray_img_depset_${RAY_VERSION}_${PYTHON_VERSION}
+    operation: relax
+    source_depset: ray_img_depset_${RAY_VERSION}_${PYTHON_VERSION}
+    packages:
+      - uvloop
+    output: dependencies/depsets/relaxed_ray_img_py${PYTHON_SHORT}.lock
+    append_flags:
+      - --python-version=${PYTHON_VERSION}
+      - --python-platform=linux
+      - --unsafe-package ray
+      - --quiet
+    build_arg_sets:
+      - ray2541_py311
+
+  - name: langchain_agent_ray_serve_depset_${RAY_VERSION}_${PYTHON_VERSION}
+    operation: expand
+    soruce_depset: relaxed_langchain_agent_ray_serve_ray_img_depset_${RAY_VERSION}_${PYTHON_VERSION}
+    requirements:
+      - templates/langchain-agent-ray-serve/requirements.txt
+    output: templates/langchain-agent-ray-serve/python_depset.lock
+    append_flags:
+      - --index https://download.pytorch.org/whl/cu128
+      - --python-version=${PYTHON_VERSION}
+      - --python-platform=linux
+      - --unsafe-package ray
+    build_arg_sets:
+      - ray2541_py311
     pre_hooks:
       - dependencies/scripts/fetch-ray-depsets.sh ${RAY_VERSION} ${PYTHON_SHORT}
       - dependencies/scripts/fetch-ray-constraints.sh ${RAY_VERSION} ${PYTHON_VERSION}
