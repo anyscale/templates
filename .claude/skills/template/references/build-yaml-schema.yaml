@@ -3,14 +3,14 @@
 # Each entry in BUILD.yaml is a list item defining a template.
 # The file is parsed as a YAML list of Template objects.
 #
-# Template names must match: ^[a-zA-Z0-9][a-zA-Z0-9_-]*$
+# Template names must match: ^[a-z0-9_-]+$
 
 # --- Full schema with all fields ---
 
 - name: <template-name>          # REQUIRED. Unique identifier. Appears in console URL.
   dir: templates/<dir-name>      # REQUIRED. Path to template content (relative to repo root).
 
-  # REQUIRED. Exactly one of: image_uri, build_id, or byod.
+  # REQUIRED. Exactly one of: image_uri, or byod.
   cluster_env:
     # Option 1: Stock Anyscale image
     image_uri: anyscale/ray:2.54.1-py312-cu128
@@ -39,7 +39,7 @@
   test:
     command: bash tests.sh            # REQUIRED.
     tests_path: tests/<name>/         # REQUIRED. Relative path (no absolute, no "..").
-    timeout_in_sec: 900               # REQUIRED. Default: 3600. Must be non-negative.
+    timeout_in_sec: 900               # REQUIRED. Must be > 0.
 
 # --- Image URI conventions ---
 #
@@ -56,3 +56,12 @@
 #   anyscale/ray-llm:<ray-version>-py311-cu128      - LLM serving image
 #
 # See: https://docs.anyscale.com/reference/base-images
+
+# --- Cross-field rules (enforced by ci/validate_build_yaml.py) ---
+#
+# - tests_path basename must equal name → tests/<name>/
+# - compute_config GCP and AWS must share the same configs/<dir>/
+# - that dir's basename must equal name, OR be `basic-single-node`
+# - For byod on the Anyscale GCP registry, docker_image must be exactly:
+#     us-docker.pkg.dev/anyscale-workspace-templates/workspace-templates/<name>:<byod.ray_version>
+#   (image basename == name, tag == byod.ray_version). publish-custom-image.sh produces this form.

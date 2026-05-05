@@ -25,6 +25,8 @@ templates/
 
 ## What to validate
 
+Run `python3 ci/validate_build_yaml.py --no-network` first — covers schema, paths, naming, and the legacy compute-config check authoritatively. Fix anything it reports, then sanity-check:
+
 - **BUILD.yaml entry**: matches `build-yaml-schema.yaml`. A template must use either `image_uri` OR `byod` — never both. For image bumps, see SKILL.md ("Image URI cases").
 - **Compute configs**: present at `configs/<name>/aws.yaml` and `configs/<name>/gce.yaml`. Schema in `compute-config-schema.yaml`.
 - **Tests**: `tests/<name>/tests.sh` exists.

@@ -2,8 +2,48 @@
 
 Anyscale console templates. For any template-related work (bump Ray, format, publish, debug a test failure), use the `template` skill (`/template`) — canonical entry point for procedures and references.
 
-For cloud agents, companion skills `/fix`, `/run`, and `/inspect` are loaded at user scope via `.cursor/environment.json` for debugging. Advice: `/fix` is a powerful skill that handles the entire debug loop, you might want to wrap it with a subagent to avoid cluttering your main context too much.
+## Companion skills
 
-**CI invariant** — `.github/workflows/test-template.yaml` only runs when a PR comment matches `/test-template <template-id>`. After any push to a PR, comment to trigger or re-trigger validation.
+The `/template` update flow leans on companion skills `/ask`, `/fix`, `/run`, `/inspect` (from `anyscale/anyscale-debug-agent`). `/fix` in particular drives the CI iteration loop — without it you cannot reliably diagnose and fix a broken template. Strongly recommended for any update work. Tip: wrap `/fix` in a subagent to keep its debug output out of your main context.
 
-**Known automation** — the `template-updater` Cursor automation owns Ray-version bumps end-to-end (open PR → CI → fix-loop) on every major/minor Ray release. Its PRs use label `ray-update` and branches `update/*/ray-*`.
+For Cursor Cloud, these skills are a hard precondition (see Cursor Cloud → Preconditions).
+
+## Dev lifecycle
+
+Manage production templates (BUILD.yaml entries). No services to run.
+
+Local: edit → `pre-commit run --all-files` → push. Pre-commit covers lint, formatting, codebase conventions. `rayapp build all` mirrors CI's build job locally.
+
+Per-template tests — comment `/test-template <id> [<id>...]` (up to 3, parallel) on the PR to dispatch the Buildkite `template-test` pipeline (workspace + actual test run). For local iteration before pushing, `rayapp test <id>` runs the same flow (see `references/rayapp-local-testing.md` in the `/template` skill for setup).
+
+PR labels (apply all that fit):
+- `cursor-cloud` — origin: Cursor Cloud agent.
+- `ray-update` — content: Ray version bump.
+
+## Cursor Cloud
+
+The `template-updater` Cursor Cloud agent owns Ray-version bumps end-to-end (open PR → CI → fix-loop) on every major/minor Ray release.
+
+### Preconditions (HARD EXIT IF MISSING)
+
+Run `bash .cursor/preflight.sh` before any task. It checks:
+
+- **Companion skills** present at `~/.claude/skills/{ask,fix,run,inspect}` (cloned from `anyscale/anyscale-debug-agent` by `.cursor/install.sh`).
+- **Cursor secrets** (team-scope, all four non-empty):
+  - `ANYSCALE_GH_TOKEN` — skills clone + `gh` write fallback on this repo (see quirks below).
+  - `ANYSCALE_CLI_TOKEN`
+  - `GCP_TEMPLATE_REGISTRY_SA_KEY`
+  - `BUILDKITE_API_TOKEN`
+- **Auth verified:** `gh auth status` (with the token above), `gcloud auth list`, and `anyscale cloud list` all succeed.
+
+**If preflight exits non-zero, post its stderr as a PR comment and stop — don't attempt the task.**
+
+### Setup
+
+Use `.cursor/Dockerfile` and `.cursor/install.sh` as the canonical environment setup. Run `bash .cursor/install.sh`. If anything fails, read the files and reproduce their steps yourself.
+
+### Cursor-specific quirks
+
+- **Branch naming:** Cursor auto-assigns `cursor/...`. (Outside Cursor, use `update/<template-name>/ray-<version>`.)
+- **`pre-commit install` doesn't auto-fire:** Cursor sets `core.hooksPath`, which causes pre-commit to skip its hook install. Run `pre-commit run --all-files` manually before committing.
+- **GitHub write operations:** Cursor's default GitHub App auth can't write to this repo. **Always prefix `gh` write commands** (`gh pr create`, `gh pr edit`, `gh pr comment`, `gh issue comment`, `gh pr review`) with `GH_TOKEN=$ANYSCALE_GH_TOKEN`. Read-only `gh` calls work without the prefix.
