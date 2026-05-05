@@ -1,6 +1,8 @@
 {
+  "name": "anyscale-templates-environment-dev",
   "build": {
-    "dockerfile": "Dockerfile"
+    "dockerfile": "Dockerfile",
+    "context": ".."
   },
   "install": "bash .cursor/install.sh",
   "start": "sudo service docker start"
