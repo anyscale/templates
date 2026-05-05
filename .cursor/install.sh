@@ -9,13 +9,11 @@
 #     setup that depends on the mounted repo (rayapp pinned by
 #     download_rayapp.sh, pre-commit hook, sideloaded skills).
 #
-# Required secrets (set in Cursor → My Secrets, exposed as env vars):
-#   ANYSCALE_GH_TOKEN  GitHub PAT — needs push/PR/comment/label on anyscale/templates
-#                                   (gh fallback; Cursor's default GH App auth lacks PR permissions).
-#   ANYSCALE_CLI_TOKEN             anyscale CLI auth — also used by `anyscale skills install`
-#                                   to fetch /ask, /fix, /run, /inspect from Anyscale's backend.
-#   GCP_TEMPLATE_REGISTRY_SA_KEY   GCP SA JSON for docker push to us-docker.pkg.dev
-#   BUILDKITE_API_TOKEN            Read by the Buildkite MCP server (Dockerfile-baked).
+# Required secrets (Cursor → My Secrets):
+#   ANYSCALE_GH_TOKEN              gh write fallback on anyscale/templates
+#   ANYSCALE_CLI_TOKEN             anyscale CLI auth + skills install
+#   GCP_TEMPLATE_REGISTRY_SA_KEY   docker push to us-docker.pkg.dev
+#   BUILDKITE_API_TOKEN            Buildkite MCP server (Dockerfile-baked)
 set -euo pipefail
 
 # --- pre-commit hooks (auto-fire on git commit; idempotent) ---
@@ -46,22 +44,17 @@ else
   echo "WARN: GCP_TEMPLATE_REGISTRY_SA_KEY not set — custom-image rebuild + push to GCP will fail."
 fi
 
-# --- Auth: anyscale CLI + sideload required skills (/ask, /fix, /run,
-# /inspect) via the CLI. The skills are required for the /template update
-# flow — without /fix the agent cannot iterate on CI failures.
-# `anyscale skills install` pulls them from Anyscale's skills backend using
-# ANYSCALE_CLI_TOKEN (no GitHub PAT needed). `-f` overwrites locally-stale
-# files so we always get the latest published skills. ---
+# --- Auth: anyscale CLI + skills install (/ask, /fix, /run, /inspect).
+# -f overwrites locally-stale skills with the latest published. ---
 if [ -n "${ANYSCALE_CLI_TOKEN:-}" ]; then
   mkdir -p ~/.anyscale
   cat > ~/.anyscale/credentials.json <<EOF
 {"cli_token": "$ANYSCALE_CLI_TOKEN"}
 EOF
   anyscale skills install -p claude-code -y -f
-  echo "User-scope skills:"
   ls ~/.claude/skills/
 else
-  echo "WARN: ANYSCALE_CLI_TOKEN not set — anyscale CLI commands and skill install will fail. preflight will catch this."
+  echo "WARN: ANYSCALE_CLI_TOKEN not set — preflight will fail."
 fi
 
 # --- Cloud-agent MCP config: merge workspace .cursor/mcp.json into user-scope
