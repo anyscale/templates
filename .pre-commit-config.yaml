@@ -16,9 +16,9 @@ repos:
       # Order matters: check the cheap notebook-hygiene rules first so the
       # slower nbconvert-based check-readme only runs when the .ipynb is
       # already in good shape.
-      - id: check-cleared-outputs
-        name: notebook outputs must be cleared before commit
-        entry: python3 ci/check-cleared-outputs.py
+      - id: clear-notebook-outputs
+        name: clear notebook outputs (mutating)
+        entry: python3 ci/clear-notebook-outputs.py
         language: system
         pass_filenames: true
         files: \.ipynb$
