@@ -1,20 +1,11 @@
 #!/usr/bin/env python3
-"""Pre-commit hook: forbid relative image refs in notebooks and markdown.
+"""Pre-commit hook: image refs in notebooks and markdown must be absolute
+URLs. Relative paths break when README.md is rendered outside its source
+directory (Anyscale gallery, raw-md viewers). Convention: GitHub raw
+(https://raw.githubusercontent.com/anyscale/templates/main/<path>).
 
-A README.md is rendered in places that don't share its source directory
-(Anyscale's template gallery, raw-md viewers), so relative image paths
-break there. Image refs must use absolute URLs. Convention is GitHub raw:
-
-    https://raw.githubusercontent.com/anyscale/templates/main/<path>
-
-Skipped:
-- http(s):// URLs (already absolute)
-- data: inline images
-- README_files/... (nbconvert auto-generated cell-output thumbnails)
-
-Scope:
-- .ipynb files: only markdown cells are inspected
-- .md files: the whole file
+Allowed: http(s)://, data:, fragment (#), README_files/... (nbconvert
+output thumbnails). Inspects markdown cells in .ipynb; whole file in .md.
 """
 
 from __future__ import annotations
@@ -28,9 +19,7 @@ GITHUB_PREFIX = "https://raw.githubusercontent.com/anyscale/templates/main"
 
 ALLOWED_PREFIX = re.compile(r"^(https?://|data:|#|README_files/)")
 MARKDOWN_IMG = re.compile(r"!\[([^\]]*)\]\(([^)]+)\)")
-# Match src= with double-quoted, single-quoted, OR unquoted values.
-# Without all three a relative ref like <img src='assets/x.png'> would
-# bypass the check.
+# All three quoting styles — otherwise <img src='…'> or <img src=…> bypass.
 HTML_IMG_SRC = re.compile(
     r'''<img\s[^>]*src=(?:"([^"]+)"|'([^']+)'|([^\s>'"]+))''',
     re.IGNORECASE,

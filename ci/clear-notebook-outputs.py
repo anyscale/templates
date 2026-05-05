@@ -1,14 +1,10 @@
 #!/usr/bin/env python3
-"""Pre-commit hook: clear outputs from notebook code cells in-place.
+"""Pre-commit hook: clear notebook code-cell outputs in-place via
+`jupyter-nbconvert --clear-output --inplace`. Mutating; exits non-zero
+so pre-commit reports "files were modified" — re-stage and commit again.
 
-Committed notebook outputs cause noisy diffs (every re-run shifts execution
-counts and timestamps) and risk leaking sensitive data (paths, secrets,
-debug prints). This hook clears outputs and execution_count in any code
-cell that has them, then exits non-zero so pre-commit reports "files were
-modified by this hook" — re-stage and commit again.
-
-Mutation is delegated to `jupyter-nbconvert --clear-output --inplace` so
-the byte-output is canonical and matches what CI would produce.
+Why: committed outputs cause noisy diffs (execution_count and timestamp
+churn on every re-run) and risk leaking secrets through stream/error blobs.
 """
 
 from __future__ import annotations
@@ -48,13 +44,9 @@ def main(argv: list[str]) -> int:
         modified.append(path)
 
     if modified:
-        print(
-            f"\nCleared outputs in {len(modified)} notebook(s):",
-            file=sys.stderr,
-        )
+        print(f"\nCleared outputs in {len(modified)} notebook(s); re-stage and commit again.", file=sys.stderr)
         for p in modified:
             print(f"  {p}", file=sys.stderr)
-        print("\nRe-stage and commit again.", file=sys.stderr)
         return 1
     return 0
 
