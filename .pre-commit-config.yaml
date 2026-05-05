@@ -13,12 +13,27 @@ repos:
         exclude: templates/.+/README.md
   - repo: local
     hooks:
-      - id: generate-readme
-        name: Auto generate README.md from README.ipynb
-        entry: python3 ci/auto-generate-readme.py
+      # Order matters: check the cheap notebook-hygiene rules first so the
+      # slower nbconvert-based check-readme only runs when the .ipynb is
+      # already in good shape.
+      - id: clear-notebook-outputs
+        name: clear notebook outputs (mutating)
+        entry: python3 ci/clear-notebook-outputs.py
         language: system
         pass_filenames: true
-        files: ^templates/
+        files: \.ipynb$
+      - id: check-image-urls
+        name: image refs in notebooks and markdown must use absolute URLs
+        entry: python3 ci/check-image-urls.py
+        language: system
+        pass_filenames: true
+        files: \.(ipynb|md)$
+      - id: check-readme
+        name: README.md must match nbconvert output of README.ipynb
+        entry: bash ci/check-readme.sh
+        language: system
+        pass_filenames: true
+        files: ^templates/.+/(README\.ipynb|README\.md)$
       - id: check-build-yaml
         name: BUILD.yaml schema and referenced paths exist
         entry: python3 ci/validate_build_yaml.py --no-network

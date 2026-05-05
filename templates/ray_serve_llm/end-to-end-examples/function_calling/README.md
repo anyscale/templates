@@ -61,20 +61,6 @@ text = "\n\nTo help the user, you are given a set of tools which you can optiona
 print(text)
 ```
 
-    
-    
-    To help the user, you are given a set of tools which you can optionally use. Determine which tool to use. If no tool should be used output {"tool_name": "none"}. Here are the optional list of tools: {tool_list_str}
-    
-    Rules:
-    	1. Output the name of the tool you want to use via {"tool_name": "<name_of_the_tool>"}.
-    	2. If there has been an error from the previous tool call, output the same tool_name.
-    	3. Output {"tool_name": "none"} in the following cases:
-    		1) Based on context there is ambiguity in what arguments to use for the tools
-    		2) The tools are irrelevant for  answering the user's question
-    		3) The question is answered based on the previous tool response.
-    	 If none of these cases are true, output the name of the tool. Output in JSON.
-
-
 With a schema that looks like this:
 
 ```json
@@ -105,14 +91,6 @@ After the tool has been selected in a separate call, we can ask for the argument
 text = "\n\nTo help answer, you have access to the following tool:\n{tool}.\n\n Based on the provided context what should be the arguments to call the tool. If there are errors with the previous tool call, fix the arguments. Output in JSON format."
 print(text)
 ```
-
-    
-    
-    To help answer, you have access to the following tool:
-    {tool}.
-    
-     Based on the provided context what should be the arguments to call the tool. If there are errors with the previous tool call, fix the arguments. Output in JSON format.
-
 
 We then use the corresponding tool's schema to guarantee that the output matches the desired schema of the tool. An example of this implementation is done in this [client module](./client/client.py).
 
@@ -189,8 +167,6 @@ for chunk in completion:
         print(text, end="")
 ```
 
-    {"function": {"name": "get_current_weather", "arguments": {"location": "Boston, MA", "unit": "fahrenheit"}}}
-
 Now that we have got the function, we can assume that we have called the `get_current_weather` tool and received the following response:
 
 ```json
@@ -221,8 +197,6 @@ for chunk in completion:
     if text:
         print(text, end="")
 ```
-
-    25 degrees.
 
 ## Conclusion
 
