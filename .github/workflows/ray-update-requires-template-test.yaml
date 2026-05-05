@@ -53,11 +53,13 @@ jobs:
             # never trust event payloads. Closes the stale-SHA hole where a
             # late-arriving status from an earlier commit would otherwise
             # gate the new HEAD as 'green'.
-            PR_DATA=$(gh pr view "$PR" --repo "$REPO" --json headRefOid,labels)
+            PR_DATA=$(gh pr view "$PR" --repo "$REPO" --json headRefOid,labels,isCrossRepository)
             HEAD_SHA=$(echo "$PR_DATA" | jq -r '.headRefOid')
             LABELS=$(echo "$PR_DATA" | jq -r '[.labels[].name] | join(",")')
+            IS_FORK=$(echo "$PR_DATA" | jq -r '.isCrossRepository')
             echo "PR #$PR HEAD: $HEAD_SHA"
             echo "PR #$PR labels: $LABELS"
+            echo "PR #$PR fork?: $IS_FORK"
 
             # On a status event, the check-run we produce is attached to
             # the status's commit. Branch protection on a PR looks at the
@@ -73,6 +75,18 @@ jobs:
 
             if ! echo ",$LABELS," | grep -q ',ray-update,'; then
               echo "ray-update label not present — passing for PR #$PR."
+              echo "::endgroup::"
+              continue
+            fi
+
+            # Fork PRs can't dispatch /test-template (the test-template.yaml
+            # workflow refuses cross-repo PRs for security), so the
+            # buildkite/template-test status will never appear and this
+            # gate would block forever. Surface that with an actionable
+            # message instead of the generic "missing build" error.
+            if [[ "$IS_FORK" == "true" ]]; then
+              echo "::error::PR #$PR is from a fork. /test-template doesn't dispatch from fork PRs (see .github/workflows/test-template.yaml), so buildkite/template-test can never run on this branch — the ray-update gate will stay red. Mirror the change to an internal branch (or have a maintainer do it) and re-open the PR there."
+              ANY_FAILED=1
               echo "::endgroup::"
               continue
             fi
