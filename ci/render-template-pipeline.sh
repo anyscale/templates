@@ -26,7 +26,7 @@ for t in $TEMPLATES; do
         export ANYSCALE_CLI_TOKEN="\$\$(aws --region=us-west-2 secretsmanager get-secret-value --secret-id \$\$ANYSCALE_CLI_TOKEN_SECRET_NAME | jq -r .SecretString)"
         export ANYSCALE_HOST="https://console.anyscale-staging.com"
         bash download_rayapp.sh
-        sudo apt-get update && sudo apt-get install -y rsync
+        sudo apt-get update && sudo apt-get install -y rsync ca-certificates && sudo update-ca-certificates
         sudo pip install anyscale==0.26.87
         LOG=/tmp/rayapp-\$\$TEMPLATE_NAME.log
         : > "\$\$LOG"
