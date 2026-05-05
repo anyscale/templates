@@ -4,7 +4,7 @@ Anyscale console templates. For any template-related work (bump Ray, format, pub
 
 ## Companion skills
 
-The `/template` update flow leans on companion skills `/ask`, `/fix`, `/run`, `/inspect` (from `anyscale/anyscale-debug-agent`). `/fix` in particular drives the CI iteration loop — without it you cannot reliably diagnose and fix a broken template. Strongly recommended for any update work. Tip: wrap `/fix` in a subagent to keep its debug output out of your main context.
+The `/template` update flow leans on companion skills `/ask`, `/fix`, `/run`, `/inspect` (install with `anyscale skills install -p claude-code -y -f` — pulls from Anyscale's skills backend; uses `ANYSCALE_CLI_TOKEN`). `/fix` in particular drives the CI iteration loop — without it you cannot reliably diagnose and fix a broken template. Strongly recommended for any update work. Tip: wrap `/fix` in a subagent to keep its debug output out of your main context.
 
 For Cursor Cloud, these skills are a hard precondition (see Cursor Cloud → Preconditions).
 
@@ -28,10 +28,10 @@ The `template-updater` Cursor Cloud agent owns Ray-version bumps end-to-end (ope
 
 Run `bash .cursor/preflight.sh` before any task. It checks:
 
-- **Companion skills** present at `~/.claude/skills/{ask,fix,run,inspect}` (cloned from `anyscale/anyscale-debug-agent` by `.cursor/install.sh`).
+- **Companion skills** present at `~/.claude/skills/{ask,fix,run,inspect}` (installed by `.cursor/install.sh` via `anyscale skills install -p claude-code -y -f`, which fetches them from Anyscale's backend using `ANYSCALE_CLI_TOKEN`).
 - **Cursor secrets** (team-scope, all four non-empty):
-  - `ANYSCALE_GH_TOKEN` — skills clone + `gh` write fallback on this repo (see quirks below).
-  - `ANYSCALE_CLI_TOKEN`
+  - `ANYSCALE_GH_TOKEN` — `gh` write fallback on this repo (see quirks below).
+  - `ANYSCALE_CLI_TOKEN` — anyscale CLI auth + skill install.
   - `GCP_TEMPLATE_REGISTRY_SA_KEY`
   - `BUILDKITE_API_TOKEN`
 - **Auth verified:** `gh auth status` (with the token above), `gcloud auth list`, and `anyscale cloud list` all succeed.
