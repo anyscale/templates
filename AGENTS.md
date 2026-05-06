@@ -28,7 +28,7 @@ The `template-updater` Cursor Cloud agent owns Ray-version bumps end-to-end (ope
 
 Run `bash .cursor/preflight.sh` before any task. It checks:
 
-- **Companion skills** present at `~/.claude/skills/{ask,fix,run,inspect}` (installed by `.cursor/install.sh` via `anyscale skills install -p claude-code -y -f`, which fetches them from Anyscale's backend using `ANYSCALE_CLI_TOKEN`).
+- **Companion skills** present at `~/.claude/skills/anyscale-platform-{ask,fix,run,inspect}` (installed by `.cursor/install.sh` via `anyscale skills install -p claude-code -y -f`, which fetches them from Anyscale's backend using `ANYSCALE_CLI_TOKEN`).
 - **Cursor secrets** (team-scope, all four non-empty):
   - `ANYSCALE_GH_TOKEN` — `gh` write fallback on this repo (see quirks below).
   - `ANYSCALE_CLI_TOKEN` — anyscale CLI auth + skill install.
@@ -48,10 +48,8 @@ Use `.cursor/Dockerfile` and `.cursor/install.sh` as the canonical environment s
 - **`pre-commit install` doesn't auto-fire:** Cursor sets `core.hooksPath`, which causes pre-commit to skip its hook install. Run `pre-commit run --all-files` manually before committing.
 - **GitHub write operations:** Cursor's default GitHub App auth can't write to this repo. **Always prefix `gh` write commands** (`gh pr create`, `gh pr edit`, `gh pr comment`, `gh issue comment`, `gh pr review`) with `GH_TOKEN=$ANYSCALE_GH_TOKEN`. Read-only `gh` calls work without the prefix.
 
-## Cursor Cloud specific instructions
+### Notes from Cursor Cloud agent runs
 
-- **Skill path symlinks:** `anyscale skills install -p claude-code -y -f` installs skills under `~/.claude/skills/anyscale-platform-{ask,fix,run,inspect}/`, but preflight.sh expects them at `~/.claude/skills/{ask,fix,run,inspect}/`. After skills install, create symlinks: `cd ~/.claude/skills && ln -sf anyscale-platform-ask ask && ln -sf anyscale-platform-fix fix && ln -sf anyscale-platform-run run && ln -sf anyscale-platform-inspect inspect`.
-- **No services to start.** This is a static content/template repo — the "application" is the set of template files + BUILD.yaml manifest. Validation is entirely local via `pre-commit run --all-files`, `python3 ci/validate_build_yaml.py --no-network`, and `rayapp build all`.
-- **Lint before commit:** Always run `pre-commit run --all-files` before committing (hooks don't auto-fire due to `core.hooksPath`).
-- **`rayapp build all`** converts all notebooks to markdown and validates the build; exit 0 = success. Warnings about non-self-closing `<img>` tags are harmless.
-- **`update_deps.sh --check`** validates dependency lockfiles are up-to-date (requires network for the first run to fetch Ray constraints).
+- **No services to start.** This is a static content repo — validation is local via `pre-commit run --all-files`, `python3 ci/validate_build_yaml.py --no-network`, and `rayapp build all`.
+- **`rayapp build all`** converts notebooks → markdown and validates the build; exit 0 = success. Warnings about non-self-closing `<img>` tags are harmless.
+- **`update_deps.sh --check`** validates dependency lockfiles are up-to-date (requires network on first run to fetch Ray constraints).
