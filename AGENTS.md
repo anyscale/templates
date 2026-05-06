@@ -28,7 +28,7 @@ The `template-updater` Cursor Cloud agent owns Ray-version bumps end-to-end (ope
 
 Run `bash .cursor/preflight.sh` before any task. It checks:
 
-- **Companion skills** present at `~/.claude/skills/{ask,fix,run,inspect}` (installed by `.cursor/install.sh` via `anyscale skills install -p claude-code -y -f`, which fetches them from Anyscale's backend using `ANYSCALE_CLI_TOKEN`).
+- **Companion skills** present at `~/.claude/skills/anyscale-platform-{ask,fix,run,inspect}` (installed by `.cursor/install.sh` via `anyscale skills install -p claude-code -y -f`, which fetches them from Anyscale's backend using `ANYSCALE_CLI_TOKEN`).
 - **Cursor secrets** (team-scope, all four non-empty):
   - `ANYSCALE_GH_TOKEN` — `gh` write fallback on this repo (see quirks below).
   - `ANYSCALE_CLI_TOKEN` — anyscale CLI auth + skill install.

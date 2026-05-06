@@ -45,13 +45,22 @@ else
 fi
 
 # --- Auth: anyscale CLI + skills install (/ask, /fix, /run, /inspect).
-# -f overwrites locally-stale skills with the latest published. ---
+# -f overwrites locally-stale skills with the latest published.
+# After install, prune any other skill dirs so ~/.claude/skills/ mirrors
+# what the CLI laid down — keeps the env hermetic across runs. ---
 if [ -n "${ANYSCALE_CLI_TOKEN:-}" ]; then
   mkdir -p ~/.anyscale
   cat > ~/.anyscale/credentials.json <<EOF
 {"cli_token": "$ANYSCALE_CLI_TOKEN"}
 EOF
   anyscale skills install -p claude-code -y -f
+  for d in ~/.claude/skills/*; do
+    [ -d "$d" ] || continue
+    case "$(basename "$d")" in
+      anyscale-platform-ask|anyscale-platform-fix|anyscale-platform-run|anyscale-platform-inspect) ;;
+      *) echo "Removing unrecognized skill: $d"; rm -rf -- "$d" ;;
+    esac
+  done
   ls ~/.claude/skills/
 else
   echo "WARN: ANYSCALE_CLI_TOKEN not set — preflight will fail."
