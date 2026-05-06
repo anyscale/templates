@@ -47,9 +47,3 @@ Use `.cursor/Dockerfile` and `.cursor/install.sh` as the canonical environment s
 - **Branch naming:** Cursor auto-assigns `cursor/...`. (Outside Cursor, use `update/<template-name>/ray-<version>`.)
 - **`pre-commit install` doesn't auto-fire:** Cursor sets `core.hooksPath`, which causes pre-commit to skip its hook install. Run `pre-commit run --all-files` manually before committing.
 - **GitHub write operations:** Cursor's default GitHub App auth can't write to this repo. **Always prefix `gh` write commands** (`gh pr create`, `gh pr edit`, `gh pr comment`, `gh issue comment`, `gh pr review`) with `GH_TOKEN=$ANYSCALE_GH_TOKEN`. Read-only `gh` calls work without the prefix.
-
-### Notes from Cursor Cloud agent runs
-
-- **No services to start.** This is a static content repo — validation is local via `pre-commit run --all-files`, `python3 ci/validate_build_yaml.py --no-network`, and `rayapp build all`.
-- **`rayapp build all`** converts notebooks → markdown and validates the build; exit 0 = success. Warnings about non-self-closing `<img>` tags are harmless.
-- **`update_deps.sh --check`** validates dependency lockfiles are up-to-date (requires network on first run to fetch Ray constraints).
