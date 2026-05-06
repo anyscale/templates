@@ -54,11 +54,11 @@ if [ -n "${ANYSCALE_CLI_TOKEN:-}" ]; then
 {"cli_token": "$ANYSCALE_CLI_TOKEN"}
 EOF
   anyscale skills install -p claude-code -y -f
-  for d in ~/.claude/skills/*/; do
+  for d in ~/.claude/skills/*; do
     [ -d "$d" ] || continue
     case "$(basename "$d")" in
       anyscale-platform-ask|anyscale-platform-fix|anyscale-platform-run|anyscale-platform-inspect) ;;
-      *) echo "Removing unrecognized skill: $d"; rm -rf "$d" ;;
+      *) echo "Removing unrecognized skill: $d"; rm -rf -- "$d" ;;
     esac
   done
   ls ~/.claude/skills/
