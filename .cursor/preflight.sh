@@ -14,10 +14,11 @@ add_failure_with_output() {
   failures+=("$summary"$'\n'"      Raw error:"$'\n'"$indented")
 }
 
-# 1. Companion skills
+# 1. Companion skills (anyscale skills install lays them down as
+# anyscale-platform-{ask,fix,run,inspect}/).
 for s in ask fix run inspect; do
-  if [[ ! -f "$HOME/.claude/skills/$s/SKILL.md" ]]; then
-    failures+=("missing skill: ~/.claude/skills/$s/SKILL.md ('anyscale skills install -p claude-code -y -f' didn't run, or failed? Check ANYSCALE_CLI_TOKEN)")
+  if [[ ! -f "$HOME/.claude/skills/anyscale-platform-$s/SKILL.md" ]]; then
+    failures+=("missing skill: ~/.claude/skills/anyscale-platform-$s/SKILL.md ('anyscale skills install -p claude-code -y -f' didn't run, or failed? Check ANYSCALE_CLI_TOKEN)")
   fi
 done
 
