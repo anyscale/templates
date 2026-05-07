@@ -1,0 +1,13 @@
+# Ray Tune and Train Integration Dependencies
+# Base image: anyscale/ray-llm:2.55.1-py311-cu128 includes torch, transformers
+
+# Additional dependencies
+tensorboard==2.18.0
+
+# Optional: Advanced search algorithms
+# Uncomment if using Bayesian optimization
+# bayesian-optimization==1.4.3
+
+# Optional: Alternative search algorithms
+# optuna==3.6.1
+# hyperopt==0.2.7
