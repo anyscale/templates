@@ -6,7 +6,10 @@ on:
 
 permissions:
   pull-requests: write
-  contents: read
+
+concurrency:
+  group: publish-on-label-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
 
 jobs:
   trigger-publish:
@@ -21,7 +24,7 @@ jobs:
         PR_NUMBER: ${{ github.event.pull_request.number }}
         PR_TITLE: ${{ github.event.pull_request.title }}
       run: |
-        response=$(curl -sfS \
+        response=$(curl --fail-with-body -sS \
           -X POST \
           -H "Authorization: Bearer $BUILDKITE_API_TOKEN" \
           -H "Content-Type: application/json" \
