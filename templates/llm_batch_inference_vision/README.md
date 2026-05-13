@@ -243,7 +243,7 @@ Save your batch inference code as `batch_inference_vision.py`, then create a job
 # job.yaml
 name: my-llm-batch-inference-vision
 entrypoint: python batch_inference_vision.py
-image_uri: anyscale/ray-llm:2.51.1-py311-cu128
+image_uri: anyscale/ray-llm:2.55.1-py311-cu128
 compute_config:
   head_node:
     instance_type: m5.2xlarge
