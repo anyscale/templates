@@ -47,3 +47,13 @@ Use `.cursor/Dockerfile` and `.cursor/install.sh` as the canonical environment s
 - **Branch naming:** Cursor auto-assigns `cursor/...`. (Outside Cursor, use `update/<template-name>/ray-<version>`.)
 - **`pre-commit install` doesn't auto-fire:** Cursor sets `core.hooksPath`, which causes pre-commit to skip its hook install. Run `pre-commit run --all-files` manually before committing.
 - **GitHub write operations:** Cursor's default GitHub App auth can't write to this repo. **Always prefix `gh` write commands** (`gh pr create`, `gh pr edit`, `gh pr comment`, `gh issue comment`, `gh pr review`) with `GH_TOKEN=$ANYSCALE_GH_TOKEN`. Read-only `gh` calls work without the prefix.
+
+## Cursor Cloud specific instructions
+
+This section captures non-obvious runtime caveats for future cloud agents. The canonical setup is `.cursor/Dockerfile` (image build) + `.cursor/install.sh` (per-run auth); see those files for the full picture.
+
+- **No services to run.** This is a content-only template repository. The dev loop is: edit files → `pre-commit run --all-files` → push. `rayapp build all` mirrors CI locally.
+- **Validation commands:** `python3 ci/validate_build_yaml.py --no-network` (offline schema check) and `bash ./update_deps.sh --check` (depset lockfile freshness). Both should pass on a clean checkout.
+- **Docker in Cursor VM:** If Docker is needed (custom image flows), start with `sudo dockerd &` and fix socket permissions with `sudo chmod 666 /var/run/docker.sock`. The daemon config at `/etc/docker/daemon.json` already sets `fuse-overlayfs`; do not pass `--storage-driver` as a flag too, or dockerd will refuse to start.
+- **PATH:** When the environment is built from the Dockerfile, all binaries are on PATH. If running `install.sh` manually in a fresh VM, pip packages (pre-commit, anyscale, nbconvert) land in `~/.local/bin` — ensure it is on PATH. `gcloud` lives at `/opt/google-cloud-sdk/bin`.
+- **`install.sh` needs sudo for rayapp:** `download_rayapp.sh` writes the binary to `$PWD`; the `mv` to `/usr/local/bin/` requires sudo in non-root environments.
