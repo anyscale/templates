@@ -242,7 +242,7 @@
 - name: pytorch-fsdp
   dir: templates/pytorch-fsdp
   cluster_env:
-    image_uri: anyscale/ray:2.54.1-py312-cu128
+    image_uri: anyscale/ray:2.55.1-py312-cu128
   compute_config:
     AWS: configs/pytorch-fsdp/aws.yaml
     GCP: configs/pytorch-fsdp/gce.yaml
