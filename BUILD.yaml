@@ -571,7 +571,7 @@
 - name: biotech_protein_embeddings
   dir: templates/biotech_protein_embeddings
   cluster_env:
-    image_uri: anyscale/ray:2.55.0-py311-cu121
+    image_uri: anyscale/ray:2.55.1-py311-cu121
   compute_config:
     AWS: configs/biotech_protein_embeddings/aws.yaml
     GCP: configs/biotech_protein_embeddings/gce.yaml
