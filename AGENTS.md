@@ -55,3 +55,4 @@ Use `.cursor/Dockerfile` and `.cursor/install.sh` as the canonical environment s
 - **pip installs land in `~/.local/bin`:** The base image runs as non-root, so `pip install --break-system-packages` puts binaries (e.g. `pre-commit`, `anyscale`) in `~/.local/bin`. Ensure this is on `$PATH`.
 - **gcloud SDK lives at `/opt/google-cloud-sdk/bin`:** Must be on `$PATH` for `gcloud auth` and `gcloud auth configure-docker` to work.
 - **`ANYSCALE_HOST` must be `https://console.anyscale-staging.com`:** The CLI is pinned to staging; preflight validates this.
+- **Secret casing gotcha:** Cursor Secrets may lowercase token values. If `ANYSCALE_GH_TOKEN` returns 401, check `echo -n "$ANYSCALE_GH_TOKEN" | od -c | head` — GitHub PATs are case-sensitive.
