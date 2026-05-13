@@ -47,3 +47,11 @@ Use `.cursor/Dockerfile` and `.cursor/install.sh` as the canonical environment s
 - **Branch naming:** Cursor auto-assigns `cursor/...`. (Outside Cursor, use `update/<template-name>/ray-<version>`.)
 - **`pre-commit install` doesn't auto-fire:** Cursor sets `core.hooksPath`, which causes pre-commit to skip its hook install. Run `pre-commit run --all-files` manually before committing.
 - **GitHub write operations:** Cursor's default GitHub App auth can't write to this repo. **Always prefix `gh` write commands** (`gh pr create`, `gh pr edit`, `gh pr comment`, `gh issue comment`, `gh pr review`) with `GH_TOKEN=$ANYSCALE_GH_TOKEN`. Read-only `gh` calls work without the prefix.
+
+## Cursor Cloud specific instructions
+
+- **No services to run.** This repo manages template definitions (BUILD.yaml). The dev loop is: edit templates → `pre-commit run --all-files` → push. `rayapp build all` mirrors CI's build job.
+- **Docker in nested container:** dockerd must be started with `sudo dockerd &` (not `service docker start`). The Dockerfile configures `fuse-overlayfs` as the storage driver and `iptables-legacy`; these are already set up by the image/install flow.
+- **pip installs land in `~/.local/bin`:** The base image runs as non-root, so `pip install --break-system-packages` puts binaries (e.g. `pre-commit`, `anyscale`) in `~/.local/bin`. Ensure this is on `$PATH`.
+- **gcloud SDK lives at `/opt/google-cloud-sdk/bin`:** Must be on `$PATH` for `gcloud auth` and `gcloud auth configure-docker` to work.
+- **`ANYSCALE_HOST` must be `https://console.anyscale-staging.com`:** The CLI is pinned to staging; preflight validates this.
