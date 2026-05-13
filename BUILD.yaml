@@ -268,7 +268,7 @@
 - name: pytorch-profiling
   dir: templates/pytorch-profiling
   cluster_env:
-    image_uri: anyscale/ray:2.54.1-py312-cu128
+    image_uri: anyscale/ray:2.55.1-py312-cu128
   compute_config:
     AWS: configs/pytorch-profiling/aws.yaml
     GCP: configs/pytorch-profiling/gce.yaml
