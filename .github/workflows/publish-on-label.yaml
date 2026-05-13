@@ -1,0 +1,70 @@
+name: publish-on-label
+
+on:
+  pull_request:
+    types: [labeled]
+
+permissions:
+  pull-requests: write
+  contents: read
+
+jobs:
+  trigger-publish:
+    if: github.event.label.name == 'publish'
+    runs-on: ubuntu-latest
+    steps:
+    - name: Trigger Buildkite tmpl-publish build
+      id: buildkite
+      env:
+        BUILDKITE_API_TOKEN: ${{ secrets.BUILDKITE_API_TOKEN }}
+        BUILDKITE_ORG: ${{ secrets.BUILDKITE_ORG }}
+        PR_NUMBER: ${{ github.event.pull_request.number }}
+        PR_TITLE: ${{ github.event.pull_request.title }}
+      run: |
+        response=$(curl -sfS \
+          -X POST \
+          -H "Authorization: Bearer $BUILDKITE_API_TOKEN" \
+          -H "Content-Type: application/json" \
+          -d "$(jq -n \
+            --arg msg "Publish for PR #${PR_NUMBER}: ${PR_TITLE}" \
+            '{
+              message: $msg,
+              commit: "HEAD",
+              branch: "master"
+            }'
+          )" \
+          "https://api.buildkite.com/v2/organizations/${BUILDKITE_ORG}/pipelines/tmpl-publish/builds")
+        web_url=$(echo "$response" | jq -r '.web_url')
+        if [ -z "$web_url" ] || [ "$web_url" = "null" ]; then
+          echo "Buildkite response missing web_url:"
+          echo "$response"
+          exit 1
+        fi
+        echo "web_url=$web_url" >> "$GITHUB_OUTPUT"
+
+    - name: Comment on PR with build URL and hint
+      uses: actions/github-script@v7
+      env:
+        BUILD_URL: ${{ steps.buildkite.outputs.web_url }}
+        PR_BRANCH: ${{ github.event.pull_request.head.ref }}
+      with:
+        script: |
+          const buildUrl = process.env.BUILD_URL;
+          const prBranch = process.env.PR_BRANCH;
+          const body = [
+            `Buildkite \`tmpl-publish\` build triggered: ${buildUrl}`,
+            ``,
+            `Next steps (manual):`,
+            `1. Open the build and unblock the \`input-tmpl-name\` step with:`,
+            `   - \`tmpl-name=<template-id from BUILD.yaml>\``,
+            `   - \`tmpl-branch=${prBranch}\``,
+            `   - \`tmpl-commit=HEAD\``,
+            `2. Wait for \`build-template\` and \`test-template\` to pass.`,
+            `3. Unblock \`block-publish-dev\` → \`block-publish-staging\` → \`block-publish-production\` in order.`,
+          ].join('\n');
+          await github.rest.issues.createComment({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number: context.payload.pull_request.number,
+            body,
+          });
