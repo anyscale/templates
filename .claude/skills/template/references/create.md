@@ -1,5 +1,7 @@
 # Create a new template
 
+Read `format.md` first — it owns repo conventions, schemas, and the legacy-API warning. This file is the generation workflow.
+
 `<name>` below is the template's identifier — used in `BUILD.yaml`, `configs/<name>/`, `tests/<name>/`.
 
 ## Source the content
@@ -17,11 +19,7 @@ Wait for its deliverable, drop it in `templates/<dir>/`, then continue.
 
 Append a list item per `build-yaml-schema.yaml`. Pick the image case per SKILL.md "Image URI cases" — set `cluster_env.image_uri` (stock) or `cluster_env.byod.{docker_image,ray_version}` (custom or third-party). For custom GCP, publish the image first (script in SKILL.md) and use the printed URI.
 
-Cross-field rules (validator-enforced) live at the bottom of `build-yaml-schema.yaml`.
-
 ## Step 2: Compute configs
-
-Legacy schema, per `compute-config-schema.yaml`. NOT the new ComputeConfig API.
 
 **Preferred — translate from a tested workspace.** Ask the user for the Anyscale console URL of the workspace they validated the template on. Extract the workspace ID (`expwrk_*` from `/workspaces/<id>`) and fetch its config:
 
