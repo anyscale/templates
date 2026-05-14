@@ -6,7 +6,7 @@
 #     triggers an automatic image rebuild on the next agent run.
 #   - install.sh: runtime auth (per-run secrets) + repo-tree-dependent
 #     setup (pre-commit hook, rayapp pinned via repo's download_rayapp.sh,
-#     skills clone). Runs on every VM start.
+#     skills install via 'anyscale skills install'). Runs on every VM start.
 #
 # This Dockerfile also puts environment.json into "Manual Dockerfile" mode
 # so Cursor honors the install command instead of its agent-driven setup.
