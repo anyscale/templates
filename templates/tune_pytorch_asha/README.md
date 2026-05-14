@@ -105,15 +105,17 @@ Finally, import everything needed for **hyperparameter tuning with Ray**:
 - `RunConfig` for experiment-level configuration like storage paths and naming  
 
 
+```bash
+!pip install -r requirements.txt
+```
+
+
 ```python
-# 00. Runtime setup — install deps and set env vars
-import os, sys, subprocess
+# 00. Runtime setup — set env vars
+import os
 
 # Non-secret env var 
 os.environ["RAY_TRAIN_V2_ENABLED"] = "1"
-
-# Install Python dependencies 
-!pip install -r requirements.txt
 ```
 
 

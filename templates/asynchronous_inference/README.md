@@ -54,7 +54,7 @@ Redis serves as both the message broker (task queue) and result backend.
 **Install and start Redis (Google Colab compatible):**
 
 
-```python
+```bash
 # Install and start Redis server
 !sudo apt-get update -qq
 !sudo apt-get install -y redis-server
@@ -78,7 +78,7 @@ If you're using a hosted Redis instance, ensure that your Ray Serve cluster can 
 ## Step 2: Install Dependencies
 
 
-```python
+```bash
 !pip install -q ray[serve-async-inference]>=2.50.0 requests>=2.31.0 PyPDF2>=3.0.0 celery[redis]
 ```
 
