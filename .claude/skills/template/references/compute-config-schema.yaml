@@ -8,7 +8,7 @@
 # about which values are intentional vs just restating defaults.
 #
 # NOT included in the template config (these are operational, not template-shipped):
-# idle_termination_minutes, maximum_uptime_minutes, region, cloud, allowed_azs.
+# idle_termination_minutes, maximum_uptime_minutes, region, cloud.
 
 # --- Full schema (with defaults noted) ---
 
