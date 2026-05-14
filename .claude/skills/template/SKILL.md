@@ -7,6 +7,7 @@ description: Work with Anyscale console templates. Covers maintenance (Ray versi
 
 Read the reference matching your task:
 
+- **How to create** a new template (defers authoring to anyscale-template-agent, then walks repo integration) → `references/create.md`
 - **How to update** a template to a specific Ray release → `references/update.md`
 - **How to format** a template to repo conventions → `references/format.md`
 - **How to publish** a template to dev/staging/production (S3 via Buildkite) → `references/publish.md`
