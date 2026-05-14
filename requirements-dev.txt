@@ -9,6 +9,6 @@
 # / CI run / contributor pull.
 pre-commit==3.8.0
 nbconvert==7.17.1
-anyscale==0.26.87
+anyscale==0.26.99
 pyyaml==6.0.3
 pydantic==2.13.3

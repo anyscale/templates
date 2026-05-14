@@ -6,6 +6,8 @@
 # IMPORTANT: Omit fields that match their default value. Only include what you
 # actually need to override. This keeps configs minimal and avoids confusion
 # about which values are intentional vs just restating defaults.
+#
+# NOT included in the template config: `cloud` (operational reference, not a per-template setting).
 
 # --- Full schema (with defaults noted) ---
 
