@@ -25,15 +25,21 @@ Cross-field rules (validator-enforced) live at the bottom of `build-yaml-schema.
 
 Legacy schema, per `compute-config-schema.yaml`. NOT the new ComputeConfig API.
 
-**Preferred — translate from a tested workspace.** Ask the user for the Anyscale console URL of the workspace they validated the template on. Pull the workspace's compute config (head node type, worker node types, autoscaler bounds, spot, flags) and translate into `configs/<name>/aws.yaml` + `configs/<name>/gce.yaml`.
+**Preferred — translate from a tested workspace.** Ask the user for the Anyscale console URL of the workspace they validated the template on. Extract the workspace ID (`expwrk_*` from `/workspaces/<id>`) and fetch its config:
 
-**Fallback — guided Q&A.** Ask:
+```
+anyscale workspace_v2 get --id expwrk_<id> --json | jq '.config.compute_config'
+```
+
+The CLI returns the new ComputeConfig API shape; translate fields into the legacy schema per `compute-config-schema.yaml`. Pick `configs/<name>/aws.yaml` or `configs/<name>/gce.yaml` by instance-type family — AWS uses `m5.*` / `g5.*` / `g6.*` / `p4d.*`; GCP uses `n2-standard-*` / `g2-standard-*-nvidia-l4-*` / `a2-highgpu-*-nvidia-a100-*`. If the template should support both clouds, mirror the same GPU class on the other side. `idle_termination_minutes`, `region`, and cloud metadata don't go in the template config — they're operational.
+
+**Fallback — guided Q&A.** When no tested workspace exists, ask:
 - GPU or CPU? Head + worker instance type?
 - `min_workers` / `max_workers`?
 - Spot or on-demand (`use_spot`)?
 - Cross-zone autoscaling (`flags.allow-cross-zone-autoscaling: true`)?
 
-Cross-check shape against `configs/distributing-pytorch/{aws,gce}.yaml` (GPU example) or `configs/basic-single-node/{aws,gce}.yaml` (CPU single-node — shared across intro and serve templates). AWS uses `m5.*` / `g5.*` / `g6.*` / `p4d.*`; GCP uses `n2-standard-*` / `g2-standard-*-nvidia-l4-*` / `a2-highgpu-*-nvidia-a100-*`. Pair AWS and GCP at the same GPU class.
+Cross-check shape against `configs/distributing-pytorch/{aws,gce}.yaml` (GPU example) or `configs/basic-single-node/{aws,gce}.yaml` (CPU single-node — shared across intro and serve templates).
 
 ## Step 3: Test script
 
