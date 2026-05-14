@@ -1,7 +1,5 @@
 # Create a new template
 
-Author the content via the dedicated agent, then integrate into this repo (BUILD.yaml + compute configs + tests + validation), then hand off to `publish.md`.
-
 `<name>` below is the template's identifier (used in `BUILD.yaml`, `configs/`, `tests/`). Must match `^[a-z0-9_-]+$`.
 
 ## Authoring (defer)
@@ -35,7 +33,7 @@ Legacy schema, per `compute-config-schema.yaml`. NOT the new ComputeConfig API.
 - Spot or on-demand (`use_spot`)?
 - Cross-zone autoscaling (`flags.allow-cross-zone-autoscaling: true`)?
 
-Cross-check shape against `configs/distributing-pytorch/{aws,gce}.yaml` (GPU example) or `configs/basic-single-node/{aws,gce}.yaml` (CPU single-node — used by intro templates). AWS uses `m5.*` / `g5.*` / `g6.*` / `p4d.*`; GCP uses `n2-standard-*` / `g2-standard-*-nvidia-l4-*` / `a2-highgpu-*-nvidia-a100-*`. Pair AWS and GCP at the same GPU class.
+Cross-check shape against `configs/distributing-pytorch/{aws,gce}.yaml` (GPU example) or `configs/basic-single-node/{aws,gce}.yaml` (CPU single-node — shared across intro and serve templates). AWS uses `m5.*` / `g5.*` / `g6.*` / `p4d.*`; GCP uses `n2-standard-*` / `g2-standard-*-nvidia-l4-*` / `a2-highgpu-*-nvidia-a100-*`. Pair AWS and GCP at the same GPU class.
 
 ## Step 3: Test script
 
