@@ -27,7 +27,7 @@ Append a list item per `build-yaml-schema.yaml`. Pick the image case per SKILL.m
 anyscale workspace_v2 get --id expwrk_<id> --json | jq '.config.compute_config'
 ```
 
-The CLI returns the new ComputeConfig API shape; translate fields into the legacy schema per `compute-config-schema.yaml`. Pick `configs/<name>/aws.yaml` or `configs/<name>/gce.yaml` by instance family. For dual-cloud support, mirror the same GPU class across both files. `idle_termination_minutes`, `region`, and cloud metadata don't go in the template config — they're operational.
+The CLI returns the new ComputeConfig API shape; translate fields into the legacy schema per `compute-config-schema.yaml`. Pick `configs/<name>/aws.yaml` or `configs/<name>/gce.yaml` by instance family.
 
 **Fallback — guided Q&A.** When no tested workspace exists, walk the user through the schema fields (`compute-config-schema.yaml`) — head/worker instance types, autoscaler bounds, spot, cross-zone autoscaling.
 
@@ -38,14 +38,16 @@ Write `tests/<name>/tests.sh`. Two shapes — pick by template type:
 - **Notebook via papermill** (most common) — for `.ipynb` templates. See `tests/audio-dataset-curation-llm-judge/tests.sh`.
 - **Custom script** — for templates shipping a `.py` entrypoint or service. See `tests/asynchronous_inference/tests.sh`.
 
+Design the test to mirror the user flow, with minimal-impact shortcuts to keep CI fast:
+
+- **Skip redundant paths.** If two code paths exercise the same logic (e.g., a local Ray Serve deployment and the same app deployed as an Anyscale Service), test only one.
+- **Prefer cheap GPUs.** A10 (`g5.*`) or L4 (`g6.*` / `g2-*-nvidia-l4-*`) over A100/H100 — faster to provision, cheaper to run.
+- **Shrink work via env vars.** Lower dataset size, epochs, or warmup through environment variables read in the notebook. Keep the user-facing code path clean (e.g., `epochs = int(os.getenv("EPOCHS", 100))` reads as real config, not test scaffolding).
+
 ## Step 4: Validate
 
-```
-python3 ci/validate_build_yaml.py --no-network
-```
-
-Fix anything it reports.
+Apply `format.md` to the new template.
 
 ## Handoff
 
-Now run the publish flow per `publish.md`.
+Open a PR with the new template, then have the user comment `/test-template` on it to trigger CI. After merge, publish per `publish.md`.

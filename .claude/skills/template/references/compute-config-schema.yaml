@@ -6,6 +6,9 @@
 # IMPORTANT: Omit fields that match their default value. Only include what you
 # actually need to override. This keeps configs minimal and avoids confusion
 # about which values are intentional vs just restating defaults.
+#
+# NOT included in the template config (these are operational, not template-shipped):
+# idle_termination_minutes, maximum_uptime_minutes, region, cloud, allowed_azs.
 
 # --- Full schema (with defaults noted) ---
 
