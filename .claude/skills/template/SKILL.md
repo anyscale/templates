@@ -1,12 +1,13 @@
 ---
 name: template
-description: Work with Anyscale console templates. Covers maintenance (Ray version bumps), formatting (repo conventions), and publishing (S3 via Buildkite). Use for any BUILD.yaml edit, image bump, or template lifecycle task.
+description: Create, maintain, format, and publish Anyscale console templates. Use for making a new template, bumping a template's Ray version, BUILD.yaml edits, image bumps, repo conventions, or publishing to dev/staging/prod.
 ---
 
 # Template skill
 
 Read the reference matching your task:
 
+- **How to create** a new template (defers authoring to anyscale-template-agent, then walks repo integration) → `references/create.md`
 - **How to update** a template to a specific Ray release → `references/update.md`
 - **How to format** a template to repo conventions → `references/format.md`
 - **How to publish** a template to dev/staging/production (S3 via Buildkite) → `references/publish.md`
