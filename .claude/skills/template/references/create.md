@@ -2,14 +2,16 @@
 
 `<name>` below is the template's identifier — used in `BUILD.yaml`, `configs/<name>/`, `tests/<name>/`.
 
-## Authoring (defer)
+## Source the content
 
-Authoring lives in **anyscale/anyscale-template-agent** (https://github.com/anyscale/anyscale-template-agent). Two starting points:
+Move the template's content (notebook / Python files / partial draft) into `templates/<dir>/`. Most users arrive with something partial-to-done already — just integrate what they have.
 
-- **Bootstrap from scratch** (prompt-only) — describe what the template should demonstrate; the agent generates it.
-- **Wrap existing work** — Jupyter notebook, Python files, markdown, URL, or GitHub repo.
+If nothing exists yet, or the user wants existing work agent-polished, defer to **anyscale/anyscale-template-agent** (https://github.com/anyscale/anyscale-template-agent) first:
 
-Wait for the deliverable (typically a `.ipynb` + supporting files). Move it into `templates/<dir>/` and continue below.
+- **Bootstrap from scratch** (prompt-only) — when there's no starting content.
+- **Wrap or improve existing work** — for adding diagrams, debugging, or finalizing.
+
+Wait for its deliverable, drop it in `templates/<dir>/`, then continue.
 
 ## Step 1: BUILD.yaml entry
 
