@@ -2,18 +2,18 @@
 
 Read `format.md` first — it owns repo conventions, schemas, and the legacy-API warning. This file is the generation workflow.
 
-`<name>` below is the template's identifier — used in `BUILD.yaml`, `configs/<name>/`, `tests/<name>/`.
+`<name>` below is the template's identifier — used in `BUILD.yaml`, `templates/<name>/`, `configs/<name>/`, `tests/<name>/`.
 
 ## Source the content
 
-Move the template's content (notebook / Python files / partial draft) into `templates/<dir>/`. Most users arrive with something partial-to-done already — just integrate what they have.
+Move the template's content (notebook / Python files / partial draft) into `templates/<name>/`. Most users arrive with something partial-to-done already — just integrate what they have.
 
 If nothing exists yet, or the user wants existing work agent-polished, defer to **anyscale/anyscale-template-agent** (https://github.com/anyscale/anyscale-template-agent) first:
 
 - **Bootstrap from scratch** (prompt-only) — when there's no starting content.
 - **Wrap or improve existing work** — for adding diagrams, debugging, or finalizing.
 
-Wait for its deliverable, drop it in `templates/<dir>/`, then continue.
+Wait for its deliverable, drop it in `templates/<name>/`, then continue.
 
 ## Step 1: BUILD.yaml entry
 
@@ -50,4 +50,7 @@ Apply `format.md` to the new template.
 
 ## Handoff
 
-Open a PR with the new template, then have the user comment `/test-template` on it to trigger CI. After merge, publish per `publish.md`.
+1. **Open a PR** with the new template.
+2. **Run CI** — have the user comment `/test-template` on the PR.
+3. **After merge, publish to dev / staging / prod** via the Buildkite tmpl-publish pipeline. Offer to run it for the user (see `publish.md`), or point them at it to run themselves.
+4. **Reference the template in `anyscale/product`** so it surfaces in the Anyscale console frontend.
