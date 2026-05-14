@@ -33,8 +33,6 @@ The CLI returns the new ComputeConfig API shape; translate fields into the legac
 
 **Fallback — guided Q&A.** When no tested workspace exists, walk the user through the schema fields (`compute-config-schema.yaml`) — head/worker instance types, autoscaler bounds, spot, cross-zone autoscaling.
 
-Cross-check shape against `configs/distributing-pytorch/{aws,gce}.yaml` (GPU example) or `configs/basic-single-node/{aws,gce}.yaml` (CPU example).
-
 ## Step 3: Test script
 
 Write `tests/<name>/tests.sh`. Two shapes — pick by template type:
