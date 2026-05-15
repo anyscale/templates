@@ -149,7 +149,7 @@
 - name: e2e-timeseries-forecasting
   dir: templates/e2e-timeseries-forecasting
   cluster_env:
-    image_uri: anyscale/ray:2.54.1-slim-py312-cu128
+    image_uri: anyscale/ray:2.55.1-slim-py312-cu128
   compute_config:
     AWS: configs/e2e-timeseries-forecasting/aws.yaml
     GCP: configs/e2e-timeseries-forecasting/gce.yaml
