@@ -9,7 +9,7 @@ pip install -r requirements.txt
 echo "[2/4] Validating llm_deploy_qwen.py (Ray Serve LLM app construction)..."
 python -c "
 from llm_deploy_qwen import app, llm_config
-print(f'  LLM config model: {llm_config.model_loading_config[\"model_id\"]}')
+print(f'  LLM config model: {llm_config.model_loading_config.model_id}')
 print(f'  Accelerator: {llm_config.accelerator_type}')
 print('  LLM app constructed successfully')
 "
