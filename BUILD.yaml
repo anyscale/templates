@@ -203,7 +203,7 @@
 - name: entity-recognition-with-llms
   dir: templates/entity-recognition-with-llms
   cluster_env:
-    image_uri: anyscale/ray-llm:2.54.1-py311-cu128
+    image_uri: anyscale/ray-llm:2.55.1-py311-cu128
   compute_config:
     AWS: configs/entity-recognition-with-llms/aws.yaml
     GCP: configs/entity-recognition-with-llms/gce.yaml
