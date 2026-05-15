@@ -323,7 +323,7 @@
   dir: templates/rl-skyrl
   cluster_env:
     byod:
-      docker_image: novaskyai/skyrl-train-ray-2.51.1-py3.12-cu12.8
+      docker_image: novaskyai/skyrl-train-ray-2.51.1-slim-py312-cu128-megatron-2.10-te
       ray_version: 2.51.1
   compute_config:
     GCP: configs/skyrl/gce.yaml
