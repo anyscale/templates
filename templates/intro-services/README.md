@@ -182,6 +182,10 @@ else:
 
 ```python
 import requests
+from urllib.parse import urlparse
+
+# Anyscale staging services use self-signed certs; production uses valid certs.
+_IS_STAGING = (urlparse(BASE_URL).hostname or "").endswith("anyscaleuserdata-staging.com")
 
 def send_request(name: str) -> str:
     response: requests.Response = requests.get(
@@ -190,6 +194,7 @@ def send_request(name: str) -> str:
         headers={
             "Authorization": f"Bearer {API_KEY}",
         },
+        verify=not _IS_STAGING,
     )
     response.raise_for_status()
     return response.content
