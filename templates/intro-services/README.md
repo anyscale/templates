@@ -108,7 +108,7 @@ SERVICE_NAME = "my_service"
 
 print(f"Service name: {SERVICE_NAME}")
 
-!anyscale service deploy main:my_app --name={SERVICE_NAME} --working-dir=.
+!anyscale service deploy main:my_app --name={SERVICE_NAME}
 ```
 
 **Note**: This Anyscale Service pulls the associated dependencies, compute config, and service config from the workspace. To define these explicitly, you can deploy from a `config.yaml` file using the `-f` flag. See [ServiceConfig reference](https://docs.anyscale.com/reference/service-api#serviceconfig) for details.
@@ -182,10 +182,6 @@ else:
 
 ```python
 import requests
-from urllib.parse import urlparse
-
-# Anyscale staging services use self-signed certs; production uses valid certs.
-_IS_STAGING = (urlparse(BASE_URL).hostname or "").endswith("anyscaleuserdata-staging.com")
 
 def send_request(name: str) -> str:
     response: requests.Response = requests.get(
@@ -194,7 +190,6 @@ def send_request(name: str) -> str:
         headers={
             "Authorization": f"Bearer {API_KEY}",
         },
-        verify=not _IS_STAGING,
     )
     response.raise_for_status()
     return response.content
@@ -257,7 +252,7 @@ To deploy the update, execute the following command to trigger a staged rollout 
 
 
 ```python
-!anyscale service deploy main:my_app --name=my_service --working-dir=.
+!anyscale service deploy main:my_app --name=my_service
 ```
 
 In the service overview page, you can monitor the status of the update and see Ray Serve shut down the previous cluster.
