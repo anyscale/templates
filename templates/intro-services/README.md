@@ -108,7 +108,7 @@ SERVICE_NAME = "my_service"
 
 print(f"Service name: {SERVICE_NAME}")
 
-!anyscale service deploy main:my_app --name={SERVICE_NAME}
+!anyscale service deploy -f service.yaml
 ```
 
 **Note**: This Anyscale Service pulls the associated dependencies, compute config, and service config from the workspace. To define these explicitly, you can deploy from a `config.yaml` file using the `-f` flag. See [ServiceConfig reference](https://docs.anyscale.com/reference/service-api#serviceconfig) for details.
@@ -252,7 +252,7 @@ To deploy the update, execute the following command to trigger a staged rollout 
 
 
 ```python
-!anyscale service deploy main:my_app --name=my_service
+!anyscale service deploy -f service.yaml
 ```
 
 In the service overview page, you can monitor the status of the update and see Ray Serve shut down the previous cluster.
@@ -269,7 +269,7 @@ To tear down the service cluster, run the following command:
 
 
 ```python
-!anyscale service terminate --name=my_service
+!anyscale service terminate --name={SERVICE_NAME}
 ```
 
 ## Summary
