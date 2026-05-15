@@ -4,7 +4,7 @@
 - name: job-intro
   dir: templates/intro-jobs
   cluster_env:
-    image_uri: anyscale/ray:2.54.1-py311
+    image_uri: anyscale/ray:2.55.1-py311
   compute_config:
     GCP: configs/basic-single-node/gce.yaml
     AWS: configs/basic-single-node/aws.yaml
@@ -17,7 +17,7 @@
 - name: workspace-intro
   dir: templates/intro-workspaces
   cluster_env:
-    image_uri: anyscale/ray:2.54.1-py311
+    image_uri: anyscale/ray:2.55.1-py311
   compute_config:
     GCP: configs/basic-single-node/gce.yaml
     AWS: configs/basic-single-node/aws.yaml
@@ -43,7 +43,7 @@
 - name: intro-ray-libraries
   dir: templates/intro-ray-libraries
   cluster_env:
-    image_uri: anyscale/ray:2.54.1-slim-py313-cu129
+    image_uri: anyscale/ray:2.55.1-slim-py313-cu129
   compute_config:
     AWS: configs/intro-ray-libraries/aws.yaml
     GCP: configs/intro-ray-libraries/gce.yaml
@@ -57,8 +57,8 @@
   dir: templates/unstructured_data_ingestion
   cluster_env:
     byod:
-      docker_image: us-docker.pkg.dev/anyscale-workspace-templates/workspace-templates/unstructured_data_ingestion:2.54.1
-      ray_version: 2.54.1
+      docker_image: us-docker.pkg.dev/anyscale-workspace-templates/workspace-templates/unstructured_data_ingestion:2.55.1
+      ray_version: 2.55.1
   compute_config:
     GCP: configs/unstructured_data_ingestion/gce.yaml
     AWS: configs/unstructured_data_ingestion/aws.yaml
@@ -71,7 +71,7 @@
 - name: model-multiplexing
   dir: templates/model-multiplexing-forecast
   cluster_env:
-    image_uri: anyscale/ray:2.54.1-slim-py312-cu128
+    image_uri: anyscale/ray:2.55.1-slim-py312-cu128
   compute_config:
     GCP: configs/basic-single-node/gce.yaml
     AWS: configs/basic-single-node/aws.yaml
@@ -84,7 +84,7 @@
 - name: model-composition-recsys
   dir: templates/model-composition-recsys
   cluster_env:
-    image_uri: anyscale/ray:2.54.1-slim-py312-cu129
+    image_uri: anyscale/ray:2.55.1-slim-py312-cu129
   compute_config:
     GCP: configs/basic-single-node/gce.yaml
     AWS: configs/basic-single-node/aws.yaml
@@ -97,7 +97,7 @@
 - name: serve-stable-diffusion-v2
   dir: templates/serve-stable-diffusion
   cluster_env:
-    image_uri: anyscale/ray:2.54.1-py312-cu128
+    image_uri: anyscale/ray:2.55.1-py312-cu128
   compute_config:
     GCP: configs/basic-single-node/gce.yaml
     AWS: configs/basic-single-node/aws.yaml
@@ -110,7 +110,7 @@
 - name: deployment-serve-llm
   dir: templates/deployment-serve-llm
   cluster_env:
-    image_uri: anyscale/ray-llm:2.54.1-py311-cu128
+    image_uri: anyscale/ray-llm:2.55.1-py311-cu128
   compute_config:
     GCP: configs/basic-single-node/gce.yaml
     AWS: configs/basic-single-node/aws.yaml
@@ -123,7 +123,7 @@
 - name: vla-fine-tuning
   dir: templates/vla-fine-tuning
   cluster_env:
-    image_uri: anyscale/ray:2.54.1-py312-cu129
+    image_uri: anyscale/ray:2.55.1-py312-cu129
   compute_config:
     AWS: configs/vla-fine-tuning/aws.yaml
     GCP: configs/vla-fine-tuning/gce.yaml
@@ -136,7 +136,7 @@
 - name: xgboost-training-and-serving
   dir: templates/xgboost-training-and-serving
   cluster_env:
-    image_uri: anyscale/ray:2.54.1-slim-py312-cu128
+    image_uri: anyscale/ray:2.55.1-slim-py312-cu128
   compute_config:
     AWS: configs/basic-single-node/aws.yaml
     GCP: configs/basic-single-node/gce.yaml
@@ -149,7 +149,7 @@
 - name: e2e-timeseries-forecasting
   dir: templates/e2e-timeseries-forecasting
   cluster_env:
-    image_uri: anyscale/ray:2.54.1-slim-py312-cu128
+    image_uri: anyscale/ray:2.55.1-slim-py312-cu128
   compute_config:
     AWS: configs/e2e-timeseries-forecasting/aws.yaml
     GCP: configs/e2e-timeseries-forecasting/gce.yaml
@@ -163,8 +163,8 @@
   dir: templates/object-detection-video-processing
   cluster_env:
     byod:
-      docker_image: us-docker.pkg.dev/anyscale-workspace-templates/workspace-templates/object-detection-video-processing:2.54.1
-      ray_version: 2.54.1
+      docker_image: us-docker.pkg.dev/anyscale-workspace-templates/workspace-templates/object-detection-video-processing:2.55.1
+      ray_version: 2.55.1
   compute_config:
     AWS: configs/object-detection-video-processing/aws.yaml
     GCP: configs/object-detection-video-processing/gce.yaml
@@ -177,7 +177,7 @@
 - name: langchain-agent-ray-serve
   dir: templates/langchain-agent-ray-serve
   cluster_env:
-    image_uri: anyscale/ray:2.54.1-py311-cu128
+    image_uri: anyscale/ray-llm:2.55.1-py311-cu128
   compute_config:
     AWS: configs/basic-single-node/aws.yaml
     GCP: configs/basic-single-node/gce.yaml
@@ -190,7 +190,7 @@
 - name: mcp-ray-serve
   dir: templates/mcp-ray-serve
   cluster_env:
-    image_uri: anyscale/ray:2.54.1-py312
+    image_uri: anyscale/ray:2.55.1-py312
   compute_config:
     AWS: configs/basic-single-node/aws.yaml
     GCP: configs/basic-single-node/gce.yaml
@@ -203,7 +203,7 @@
 - name: entity-recognition-with-llms
   dir: templates/entity-recognition-with-llms
   cluster_env:
-    image_uri: anyscale/ray-llm:2.54.1-py311-cu128
+    image_uri: anyscale/ray-llm:2.55.1-py311-cu128
   compute_config:
     AWS: configs/entity-recognition-with-llms/aws.yaml
     GCP: configs/entity-recognition-with-llms/gce.yaml
@@ -216,7 +216,7 @@
 - name: audio-dataset-curation-llm-judge
   dir: templates/audio-dataset-curation-llm-judge
   cluster_env:
-    image_uri: anyscale/ray-llm:2.54.1-py311-cu128
+    image_uri: anyscale/ray-llm:2.55.1-py311-cu128
   compute_config:
     AWS: configs/audio-dataset-curation-llm-judge/aws.yaml
     GCP: configs/audio-dataset-curation-llm-judge/gce.yaml
@@ -229,7 +229,7 @@
 - name: distributing-pytorch
   dir: templates/distributing-pytorch
   cluster_env:
-    image_uri: anyscale/ray:2.54.1-slim-py312-cu128
+    image_uri: anyscale/ray:2.55.1-slim-py312-cu128
   compute_config:
     AWS: configs/distributing-pytorch/aws.yaml
     GCP: configs/distributing-pytorch/gce.yaml
@@ -242,7 +242,7 @@
 - name: pytorch-fsdp
   dir: templates/pytorch-fsdp
   cluster_env:
-    image_uri: anyscale/ray:2.54.1-py312-cu128
+    image_uri: anyscale/ray:2.55.1-py312-cu128
   compute_config:
     AWS: configs/pytorch-fsdp/aws.yaml
     GCP: configs/pytorch-fsdp/gce.yaml
@@ -255,7 +255,7 @@
 - name: deepspeed_finetune
   dir: templates/deepspeed_finetune
   cluster_env:
-    image_uri: anyscale/ray:2.54.1-py311-cu128
+    image_uri: anyscale/ray:2.55.1-py311-cu128
   compute_config:
     AWS: configs/deepspeed_finetune/aws.yaml
     GCP: configs/deepspeed_finetune/gce.yaml
@@ -268,7 +268,7 @@
 - name: pytorch-profiling
   dir: templates/pytorch-profiling
   cluster_env:
-    image_uri: anyscale/ray:2.54.1-py312-cu128
+    image_uri: anyscale/ray:2.55.1-py312-cu128
   compute_config:
     AWS: configs/pytorch-profiling/aws.yaml
     GCP: configs/pytorch-profiling/gce.yaml
@@ -281,7 +281,7 @@
 - name: llm_finetuning
   dir: templates/llm_finetuning
   cluster_env:
-    image_uri: anyscale/ray-llm:2.54.1-py311-cu128
+    image_uri: anyscale/ray-llm:2.55.1-py311-cu128
   compute_config:
     AWS: configs/basic-single-node/aws.yaml
     GCP: configs/basic-single-node/gce.yaml
@@ -294,7 +294,7 @@
 - name: image-search-and-classification
   dir: templates/image-search-and-classification
   cluster_env:
-    image_uri: anyscale/ray:2.54.1-slim-py312-cu128
+    image_uri: anyscale/ray:2.55.1-slim-py312-cu128
   compute_config:
     AWS: configs/image-search-and-classification/aws.yaml
     GCP: configs/image-search-and-classification/gce.yaml
@@ -308,8 +308,8 @@
   dir: templates/e2e-rag-deepdive
   cluster_env:
     byod:
-      docker_image: us-docker.pkg.dev/anyscale-workspace-templates/workspace-templates/e2e-rag-deepdive:2.54.1
-      ray_version: 2.54.1
+      docker_image: us-docker.pkg.dev/anyscale-workspace-templates/workspace-templates/e2e-rag-deepdive:2.55.1
+      ray_version: 2.55.1
   compute_config:
     AWS: configs/e2e-rag-deepdive/aws.yaml
     GCP: configs/e2e-rag-deepdive/gce.yaml
@@ -337,7 +337,7 @@
 - name: text-embeddings
   dir: templates/text-embeddings
   cluster_env:
-    image_uri: anyscale/ray:2.54.1-py311-cu124
+    image_uri: anyscale/ray:2.55.1-py311-cu124
   compute_config:
     GCP: configs/text-embeddings/gce.yaml
     AWS: configs/text-embeddings/aws.yaml
@@ -350,7 +350,7 @@
 - name: finetune-stable-diffusion
   dir: templates/fine-tune-stable-diffusion
   cluster_env:
-    image_uri: anyscale/ray:2.54.1-py311-cu128
+    image_uri: anyscale/ray:2.55.1-py311-cu128
   compute_config:
     GCP: configs/finetune-stable-diffusion/gce.yaml
     AWS: configs/finetune-stable-diffusion/aws.yaml
@@ -363,7 +363,7 @@
 - name: getting-started
   dir: templates/getting-started
   cluster_env:
-    image_uri: anyscale/ray:2.34.0-py311
+    image_uri: anyscale/ray:2.55.1-py311
   compute_config:
     GCP: configs/getting-started/gce.yaml
     AWS: configs/getting-started/aws.yaml
@@ -376,7 +376,7 @@
 - name: stable-diffusion-pretraining
   dir: templates/stable-diffusion-pretraining
   cluster_env:
-    image_uri: anyscale/ray:2.54.1-py311-cu128
+    image_uri: anyscale/ray:2.55.1-py311-cu128
   compute_config:
     AWS: configs/stable-diffusion-pretraining/aws.yaml
     GCP: configs/stable-diffusion-pretraining/gce.yaml
@@ -389,7 +389,7 @@
 - name: parallel-experiments
   dir: templates/intro-tune
   cluster_env:
-    image_uri: anyscale/ray:2.54.1-slim-py313-cu129
+    image_uri: anyscale/ray:2.55.1-slim-py313-cu129
   compute_config:
     GCP: configs/basic-single-node/gce.yaml
     AWS: configs/basic-single-node/aws.yaml
@@ -402,7 +402,7 @@
 - name: vhol-ray-data
   dir: templates/vhol-ray-data
   cluster_env:
-    image_uri: anyscale/ray:2.54.0-py311-cu128
+    image_uri: anyscale/ray:2.55.1-py311-cu128
   compute_config:
     AWS: configs/vhol-ray-data/aws.yaml
     GCP: configs/vhol-ray-data/gce.yaml
@@ -415,7 +415,7 @@
 - name: ray-data-batch-image-classification
   dir: templates/ray-data-batch-classification
   cluster_env:
-    image_uri: anyscale/ray:2.54.1-py312-cu128
+    image_uri: anyscale/ray:2.55.1-py312-cu128
   compute_config:
     GCP: configs/basic-single-node/gce.yaml
     AWS: configs/basic-single-node/aws.yaml
@@ -428,7 +428,7 @@
 - name: ray-summit-core-masterclass
   dir: templates/ray-summit-core-masterclass
   cluster_env:
-    image_uri: anyscale/ray:2.54.1-py312-cu128
+    image_uri: anyscale/ray:2.55.1-py312-cu128
   compute_config:
     AWS: configs/ray-summit-core-masterclass/aws.yaml
     GCP: configs/ray-summit-core-masterclass/gce.yaml
@@ -441,7 +441,7 @@
 - name: multi_agent_a2a
   dir: templates/multi_agent_a2a
   cluster_env:
-    image_uri: anyscale/ray-llm:2.54.0-py311-cu128
+    image_uri: anyscale/ray-llm:2.55.1-py311-cu128
   compute_config:
     AWS: configs/multi_agent_a2a/aws.yaml
     GCP: configs/multi_agent_a2a/gce.yaml
@@ -454,7 +454,7 @@
 - name: llm_batch_inference_text
   dir: templates/llm_batch_inference_text
   cluster_env:
-    image_uri: anyscale/ray-llm:2.54.0-py311-cu128
+    image_uri: anyscale/ray-llm:2.55.1-py311-cu128
   compute_config:
     AWS: configs/llm_batch_inference_text/aws.yaml
     GCP: configs/llm_batch_inference_text/gce.yaml
@@ -467,7 +467,7 @@
 - name: llm_batch_inference_vision
   dir: templates/llm_batch_inference_vision
   cluster_env:
-    image_uri: anyscale/ray-llm:2.54.0-py311-cu128
+    image_uri: anyscale/ray-llm:2.55.1-py311-cu128
   compute_config:
     AWS: configs/llm_batch_inference_vision/aws.yaml
     GCP: configs/llm_batch_inference_vision/gce.yaml
@@ -480,7 +480,7 @@
 - name: tensor_parallel_dtensor
   dir: templates/tensor_parallel_dtensor
   cluster_env:
-    image_uri: anyscale/ray:2.54.0-py312-cu128
+    image_uri: anyscale/ray:2.55.1-py312-cu128
   compute_config:
     AWS: configs/tensor_parallel_dtensor/aws.yaml
     GCP: configs/tensor_parallel_dtensor/gce.yaml
@@ -493,7 +493,7 @@
 - name: tensor_parallel_autotp
   dir: templates/tensor_parallel_autotp
   cluster_env:
-    image_uri: anyscale/ray:2.54.0-py311-cu128
+    image_uri: anyscale/ray:2.55.1-py311-cu128
   compute_config:
     AWS: configs/tensor_parallel_autotp/aws.yaml
     GCP: configs/tensor_parallel_autotp/gce.yaml
@@ -506,7 +506,7 @@
 - name: ray_train_workloads
   dir: templates/ray_train_workloads
   cluster_env:
-    image_uri: anyscale/ray:2.53.0-slim-py312-cu129
+    image_uri: anyscale/ray:2.55.1-slim-py312-cu129
   compute_config:
     AWS: configs/ray_train_workloads/aws.yaml
     GCP: configs/ray_train_workloads/gce.yaml
@@ -519,7 +519,7 @@
 - name: asynchronous_inference
   dir: templates/asynchronous_inference
   cluster_env:
-    image_uri: anyscale/ray:2.52.1-slim-py312-cu128
+    image_uri: anyscale/ray:2.55.1-slim-py312-cu128
   compute_config:
     AWS: configs/basic-single-node/aws.yaml
     GCP: configs/basic-single-node/gce.yaml
@@ -532,7 +532,7 @@
 - name: tune_pytorch_asha
   dir: templates/tune_pytorch_asha
   cluster_env:
-    image_uri: anyscale/ray:2.53.0-slim-py312-cu129
+    image_uri: anyscale/ray:2.55.1-slim-py312-cu129
   compute_config:
     AWS: configs/tune_pytorch_asha/aws.yaml
     GCP: configs/tune_pytorch_asha/gce.yaml
@@ -545,7 +545,7 @@
 - name: creatives_diffusion_finetuning
   dir: templates/creatives_diffusion_finetuning
   cluster_env:
-    image_uri: anyscale/ray:2.55.0-py311-cu121
+    image_uri: anyscale/ray:2.55.1-py311-cu121
   compute_config:
     AWS: configs/creatives_diffusion_finetuning/aws.yaml
     GCP: configs/creatives_diffusion_finetuning/gce.yaml
@@ -558,7 +558,7 @@
 - name: biotech_boltz_screening
   dir: templates/biotech_boltz_screening
   cluster_env:
-    image_uri: anyscale/ray:2.55.0-py311-cu121
+    image_uri: anyscale/ray:2.55.1-py311-cu121
   compute_config:
     AWS: configs/biotech_boltz_screening/aws.yaml
     GCP: configs/biotech_boltz_screening/gce.yaml
@@ -571,7 +571,7 @@
 - name: biotech_protein_embeddings
   dir: templates/biotech_protein_embeddings
   cluster_env:
-    image_uri: anyscale/ray:2.55.0-py311-cu121
+    image_uri: anyscale/ray:2.55.1-py311-cu121
   compute_config:
     AWS: configs/biotech_protein_embeddings/aws.yaml
     GCP: configs/biotech_protein_embeddings/gce.yaml
@@ -584,7 +584,7 @@
 - name: ecommerce_batch_embeddings
   dir: templates/ecommerce_batch_embeddings
   cluster_env:
-    image_uri: anyscale/ray:2.55.0-py311-cu121
+    image_uri: anyscale/ray:2.55.1-py311-cu121
   compute_config:
     AWS: configs/ecommerce_batch_embeddings/aws.yaml
     GCP: configs/ecommerce_batch_embeddings/gce.yaml
@@ -597,7 +597,7 @@
 - name: ecommerce_multi_model_serving
   dir: templates/ecommerce_multi_model_serving
   cluster_env:
-    image_uri: anyscale/ray:2.55.0-py311-cu121
+    image_uri: anyscale/ray:2.55.1-py311-cu121
   compute_config:
     AWS: configs/ecommerce_multi_model_serving/aws.yaml
     GCP: configs/ecommerce_multi_model_serving/gce.yaml
@@ -610,7 +610,7 @@
 - name: fintech_fraud_risk
   dir: templates/fintech_fraud_risk
   cluster_env:
-    image_uri: anyscale/ray:2.55.0-py311
+    image_uri: anyscale/ray:2.55.1-py311
   compute_config:
     AWS: configs/fintech_fraud_risk/aws.yaml
     GCP: configs/fintech_fraud_risk/gce.yaml
@@ -623,7 +623,7 @@
 - name: fintech_quant
   dir: templates/fintech_quant
   cluster_env:
-    image_uri: anyscale/ray:2.55.0-py311
+    image_uri: anyscale/ray:2.55.1-py311
   compute_config:
     AWS: configs/fintech_quant/aws.yaml
     GCP: configs/fintech_quant/gce.yaml
