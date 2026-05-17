@@ -1,0 +1,15 @@
+head_node_type:
+  name: head
+  instance_type: m5.2xlarge
+  resources:
+    cpu: 0
+
+worker_node_types:
+# 8 vCPU, 1 NVIDIA L4 GPU, 32 GiB memory
+- name: gpu-worker
+  instance_type: g6.2xlarge
+  min_workers: 2
+  max_workers: 4
+
+flags:
+  allow-cross-zone-autoscaling: true
