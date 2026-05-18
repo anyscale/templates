@@ -194,7 +194,7 @@ baseline_trainer = TorchTrainer(
 )
 
 baseline_result = baseline_trainer.fit()
-print(f"\nBaseline Final Accuracy: {baseline_result.metrics['accuracy']:.2f}%")
+print(f"\nBaseline Final Accuracy: {baseline_result.metrics_dataframe.iloc[-1]['accuracy']:.2f}%")
 ```
 
 ---
@@ -360,8 +360,8 @@ best_result = results.get_best_result(metric="accuracy", mode="max")
 print("Best Configuration Found:")
 print(f"  Learning Rate: {best_result.config['train_loop_config']['learning_rate']:.6f}")
 print(f"  Batch Size: {best_result.config['train_loop_config']['batch_size']}")
-print(f"  Final Accuracy: {best_result.metrics['accuracy']:.2f}%")
-print(f"  Final Loss: {best_result.metrics['loss']:.4f}")
+print(f"  Final Accuracy: {best_result.metrics_dataframe.iloc[-1]['accuracy']:.2f}%")
+print(f"  Final Loss: {best_result.metrics_dataframe.iloc[-1]['loss']:.4f}")
 ```
 
 
@@ -721,11 +721,17 @@ best_result = results_with_asha.get_best_result(metric="accuracy", mode="max")
 print("Best Configuration:")
 print(f"  Learning Rate: {best_result.config['train_loop_config']['learning_rate']:.6f}")
 print(f"  Batch Size: {best_result.config['train_loop_config']['batch_size']}")
-print(f"  Final Accuracy: {best_result.metrics['accuracy']:.2f}%")
+print(f"  Final Accuracy: {best_result.metrics_dataframe.iloc[-1]['accuracy']:.2f}%")
 
-# The checkpoint path is available in the result
+# The checkpoint path is available in the result (None unless your train
+# function calls train.report(checkpoint=Checkpoint.from_directory(...)) —
+# the train functions in this notebook only report metrics, not checkpoints).
 best_checkpoint = best_result.checkpoint
-print(f"\nBest checkpoint: {best_checkpoint}")
+if best_checkpoint is not None:
+    print(f"\nBest checkpoint: {best_checkpoint}")
+else:
+    print("\nNo checkpoint saved for this run. Add train.report(checkpoint=...) "
+          "in your train function to enable best-checkpoint retrieval.")
 ```
 
 
@@ -772,8 +778,8 @@ optimal_config = {
     "learning_rate": best_result.config['train_loop_config']['learning_rate'],
     "batch_size": best_result.config['train_loop_config']['batch_size'],
     "num_epochs": best_result.config['train_loop_config']['num_epochs'],
-    "final_accuracy": best_result.metrics['accuracy'],
-    "final_loss": best_result.metrics['loss']
+    "final_accuracy": best_result.metrics_dataframe.iloc[-1]['accuracy'],
+    "final_loss": best_result.metrics_dataframe.iloc[-1]['loss']
 }
 
 config_path = '/mnt/cluster_storage/optimal_config.json'
