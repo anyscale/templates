@@ -1,0 +1,451 @@
+{
+  "project_name": "anyscale_jobs_intro",
+  "template_intent": {
+    "purpose": "A practical standalone template for job submission, runtime env layout, retries, logs, and debugging from a clean workspace. Give users one minimal artifact they can clone, submit, fail, debug, and rerun without needing broader course context.",
+    "modules": [
+      "Ray Core",
+      "Anyscale Platform"
+    ],
+    "source_relationship": "close_conversion",
+    "target_outcome": "Submit jobs from workspaces and externally, configure runtime environments, debug failed jobs, inspect logs and outputs."
+  },
+  "archetype": "single-notebook",
+  "domain_patterns": [],
+  "topic_area": "Anyscale Jobs Platform",
+  "audience": "beginner",
+  "scope": "standard",
+  "topic_landscape": {
+    "modules": [
+      "Ray Core",
+      "Anyscale Jobs"
+    ],
+    "core_topics": [
+      "Ray task execution (@ray.remote, ray.get, .remote())",
+      "Job submission from workspace (anyscale job submit CLI)",
+      "Job configuration basics (JobConfig: name, entrypoint, max_retries)",
+      "Runtime environment (working_dir, requirements, env_vars)",
+      "Job monitoring (anyscale.job.status, anyscale.job.wait)",
+      "Job termination (anyscale.job.terminate)"
+    ],
+    "supporting_topics": [
+      "Compute configuration (inline compute_config in job.yaml)",
+      "Job logs retrieval (anyscale.job.get_logs)",
+      "Container image specification (image_uri)",
+      "Python SDK job submission (programmatic JobConfig)"
+    ],
+    "extended_topics": [
+      "Job queues (JobQueueConfig)",
+      "Job timeout policies",
+      "Third-party connections",
+      "Advanced retry strategies"
+    ],
+    "covered_by_source": [
+      "@ray.remote",
+      "ray.get",
+      ".remote()",
+      "anyscale job submit",
+      "JobConfig basic fields",
+      "working_dir",
+      "requirements",
+      "env_vars"
+    ],
+    "not_in_source": [
+      "anyscale.job.status",
+      "anyscale.job.wait",
+      "anyscale.job.terminate",
+      "anyscale.job.get_logs",
+      "compute_config details",
+      "SDK programmatic submission"
+    ],
+    "apis_checked_for_deprecation": [
+      "ray.remote",
+      "ray.get",
+      "ray.init",
+      "anyscale.job.submit",
+      "anyscale.job.status",
+      "anyscale.job.wait",
+      "anyscale.job.terminate",
+      "JobConfig",
+      "WorkloadConfig"
+    ],
+    "deprecated_apis_found": []
+  },
+  "link_and_diagram_inventory": {
+    "repo_doc_links": [
+      {
+        "source_path": "doc/source/cluster/running-applications/job-submission/index.md",
+        "public_url": "https://docs.ray.io/en/latest/cluster/running-applications/job-submission/index.html",
+        "link_text": "Ray Jobs Overview",
+        "topics": [
+          "jobs",
+          "overview"
+        ],
+        "repo": "rayturbo"
+      },
+      {
+        "source_path": "doc/source/cluster/running-applications/job-submission/quickstart.rst",
+        "public_url": "https://docs.ray.io/en/latest/cluster/running-applications/job-submission/quickstart.html",
+        "link_text": "Quickstart using the Ray Jobs CLI",
+        "topics": [
+          "jobs",
+          "cli"
+        ],
+        "repo": "rayturbo"
+      },
+      {
+        "source_path": "doc/source/cluster/running-applications/job-submission/sdk.rst",
+        "public_url": "https://docs.ray.io/en/latest/cluster/running-applications/job-submission/sdk.html",
+        "link_text": "Python SDK Overview",
+        "topics": [
+          "jobs",
+          "sdk"
+        ],
+        "repo": "rayturbo"
+      },
+      {
+        "source_path": "doc/source/cluster/running-applications/job-submission/jobs-package-ref.rst",
+        "public_url": "https://docs.ray.io/en/latest/cluster/running-applications/job-submission/jobs-package-ref.html",
+        "link_text": "Python SDK API Reference",
+        "topics": [
+          "jobs",
+          "sdk",
+          "reference"
+        ],
+        "repo": "rayturbo"
+      },
+      {
+        "source_path": "doc/source/cluster/running-applications/job-submission/cli.rst",
+        "public_url": "https://docs.ray.io/en/latest/cluster/running-applications/job-submission/cli.html",
+        "link_text": "Ray Jobs CLI API Reference",
+        "topics": [
+          "jobs",
+          "cli",
+          "reference"
+        ],
+        "repo": "rayturbo"
+      },
+      {
+        "source_path": "doc/source/ray-core/handling-dependencies.rst",
+        "public_url": "https://docs.ray.io/en/latest/ray-core/handling-dependencies.html",
+        "link_text": "Environment Dependencies",
+        "topics": [
+          "runtime_env",
+          "dependencies"
+        ],
+        "repo": "rayturbo"
+      },
+      {
+        "source_path": "docs/jobs/index.md",
+        "public_url": "https://docs.anyscale.com/jobs/",
+        "link_text": "What are Anyscale jobs?",
+        "topics": [
+          "jobs",
+          "overview"
+        ],
+        "repo": "anyscale-docs"
+      },
+      {
+        "source_path": "docs/jobs/tutorial.md",
+        "public_url": "https://docs.anyscale.com/jobs/tutorial/",
+        "link_text": "Get started with jobs",
+        "topics": [
+          "jobs",
+          "tutorial"
+        ],
+        "repo": "anyscale-docs"
+      },
+      {
+        "source_path": "docs/jobs/manage.md",
+        "public_url": "https://docs.anyscale.com/jobs/manage/",
+        "link_text": "Create and manage jobs",
+        "topics": [
+          "jobs",
+          "cli",
+          "sdk",
+          "configuration"
+        ],
+        "repo": "anyscale-docs"
+      },
+      {
+        "source_path": "docs/jobs/monitor.md",
+        "public_url": "https://docs.anyscale.com/jobs/monitor/",
+        "link_text": "Monitor a job",
+        "topics": [
+          "jobs",
+          "monitoring",
+          "debugging"
+        ],
+        "repo": "anyscale-docs"
+      },
+      {
+        "source_path": "docs/jobs/queues.md",
+        "public_url": "https://docs.anyscale.com/jobs/queues/",
+        "link_text": "Submit jobs to persistent job queues",
+        "topics": [
+          "jobs",
+          "queues"
+        ],
+        "repo": "anyscale-docs"
+      },
+      {
+        "source_path": "docs/jobs/schedules.md",
+        "public_url": "https://docs.anyscale.com/jobs/schedules/",
+        "link_text": "Job schedules",
+        "topics": [
+          "jobs",
+          "scheduling"
+        ],
+        "repo": "anyscale-docs"
+      },
+      {
+        "source_path": "docs/configuration/compute/index.md",
+        "public_url": "https://docs.anyscale.com/configuration/compute/",
+        "link_text": "Compute configuration on Anyscale",
+        "topics": [
+          "compute",
+          "configuration"
+        ],
+        "repo": "anyscale-docs"
+      },
+      {
+        "source_path": "docs/ref/0.26.92/job-api.md",
+        "public_url": "https://docs.anyscale.com/reference/job-api/",
+        "link_text": "Job API Reference",
+        "topics": [
+          "jobs",
+          "api",
+          "reference"
+        ],
+        "repo": "anyscale-docs"
+      },
+      {
+        "source_path": "docs/ref/0.26.92/compute-config-api.md",
+        "public_url": "https://docs.anyscale.com/reference/compute-config-api/",
+        "link_text": "Compute Config API Reference",
+        "topics": [
+          "compute",
+          "api",
+          "reference"
+        ],
+        "repo": "anyscale-docs"
+      }
+    ],
+    "repo_diagrams": [
+      {
+        "source_path": "static/img/jobs/intro-to-jobs.png",
+        "public_url": "https://docs.anyscale.com/img/jobs/intro-to-jobs.png",
+        "alt_text": "Introduction to Anyscale Jobs overview diagram",
+        "topics": [
+          "jobs",
+          "overview"
+        ],
+        "repo": "anyscale-docs"
+      },
+      {
+        "source_path": "static/img/jobs/job-details.png",
+        "public_url": "https://docs.anyscale.com/img/jobs/job-details.png",
+        "alt_text": "Job detail page showing job configuration and status",
+        "topics": [
+          "jobs",
+          "monitoring"
+        ],
+        "repo": "anyscale-docs"
+      },
+      {
+        "source_path": "static/img/jobs/job-metrics.png",
+        "public_url": "https://docs.anyscale.com/img/jobs/job-metrics.png",
+        "alt_text": "Job metrics dashboard showing hardware and system metrics",
+        "topics": [
+          "jobs",
+          "monitoring"
+        ],
+        "repo": "anyscale-docs"
+      },
+      {
+        "source_path": "static/img/jobs/job-logs.png",
+        "public_url": "https://docs.anyscale.com/img/jobs/job-logs.png",
+        "alt_text": "Job logs interface for viewing job output",
+        "topics": [
+          "jobs",
+          "monitoring",
+          "debugging"
+        ],
+        "repo": "anyscale-docs"
+      },
+      {
+        "source_path": "doc/source/images/map-of-ray.svg",
+        "public_url": "https://raw.githubusercontent.com/ray-project/ray/master/doc/source/images/map-of-ray.svg",
+        "alt_text": "Map of Ray ecosystem showing Ray Core and libraries",
+        "topics": [
+          "architecture"
+        ],
+        "repo": "rayturbo"
+      }
+    ],
+    "source_links_preserved": [
+      {
+        "url": "https://docs.anyscale.com/platform/jobs/",
+        "context": "Anyscale Jobs documentation",
+        "link_text": "Anyscale documentation"
+      },
+      {
+        "url": "https://raw.githubusercontent.com/anyscale/templates/main/templates/intro-jobs/assets/anyscale-job.png",
+        "context": "Job UI screenshot",
+        "link_text": "Job UI overview"
+      },
+      {
+        "url": "https://github.com/anyscale/examples.git",
+        "context": "Anyscale examples repository",
+        "link_text": "examples repository"
+      },
+      {
+        "url": "https://docs.anyscale.com/configuration/storage#shared",
+        "context": "Shared storage configuration",
+        "link_text": "shared storage solution"
+      }
+    ]
+  },
+  "canonical_patterns": {
+    "code_example": "Simple Ray task that processes a list of numbers (squares them), with intentional failure scenario for debugging demonstration",
+    "data_loading": "Synthetic data (list of integers 0-99)",
+    "model_setup": "N/A (no ML model)",
+    "storage": "/mnt/cluster_storage/",
+    "runtime_assessment": {
+      "estimated_total_minutes": 15,
+      "long_running_operations": [
+        {
+          "operation": "First job submission (cold start)",
+          "source_config": "100 numbers, simple processing",
+          "estimated_minutes": 4,
+          "proposed_reduction": "None - already minimal",
+          "reduced_minutes": 4,
+          "user_accepted": true
+        },
+        {
+          "operation": "Debugging iteration",
+          "source_config": "100 numbers per iteration",
+          "estimated_minutes": 3,
+          "proposed_reduction": "None - essential for debugging demo",
+          "reduced_minutes": 3,
+          "user_accepted": true
+        }
+      ],
+      "downscale_applied": false
+    }
+  },
+  "compute_config": {
+    "gpu_type": null,
+    "gpu_count": 0,
+    "description": "CPU-only",
+    "workload_type": "batch jobs",
+    "num_workers": null,
+    "num_gpus_per_worker": 0,
+    "tensor_parallel_size": null,
+    "user_specified": true
+  },
+  "supporting_files": [
+    {
+      "path": "main.py",
+      "purpose": "Ray task execution script demonstrating @ray.remote pattern",
+      "public_api": [
+        "process(x) -> int"
+      ],
+      "used_by": [
+        "Section 3",
+        "Section 4",
+        "Section 5",
+        "Section 7",
+        "Section 10"
+      ],
+      "dependencies": [
+        "ray",
+        "emoji",
+        "time"
+      ]
+    },
+    {
+      "path": "requirements.txt",
+      "purpose": "Pip dependencies for job runtime environment",
+      "public_api": [],
+      "used_by": [
+        "Section 7",
+        "Section 11"
+      ],
+      "dependencies": []
+    },
+    {
+      "path": "job.yaml",
+      "purpose": "Job configuration example showing YAML-based job definition",
+      "public_api": [],
+      "used_by": [
+        "Section 6",
+        "Section 7",
+        "Section 8"
+      ],
+      "dependencies": []
+    }
+  ],
+  "dependencies": {
+    "base_image": "anyscale/ray:2.55.1-slim-py313-cu129",
+    "ray_version": "2.55.1",
+    "python_version": "313",
+    "cuda_version": "129",
+    "pip_preinstalled": [
+      "ray",
+      "pandas",
+      "numpy",
+      "pyarrow",
+      "scikit-learn",
+      "boto3",
+      "fastapi",
+      "requests"
+    ],
+    "pip_install": [
+      "emoji"
+    ],
+    "system_deps": [],
+    "dockerfile_needed": false
+  },
+  "execution_dependencies": {
+    "order": "sequential",
+    "groups": [
+      {
+        "files": [
+          "anyscale_jobs_intro.ipynb"
+        ],
+        "depends_on": [],
+        "produces": [
+          "/mnt/cluster_storage/job_outputs"
+        ]
+      }
+    ],
+    "parallel_safe": []
+  },
+  "alternative_configs": [],
+  "embedded_images": [
+    {
+      "local_path": "https://docs.anyscale.com/img/jobs/intro-to-jobs.png",
+      "display_context": "Section: What are Anyscale Jobs?",
+      "public_url": "https://docs.anyscale.com/img/jobs/intro-to-jobs.png",
+      "source": "anyscale-docs-repo",
+      "diagram_skill": null
+    },
+    {
+      "local_path": "https://docs.anyscale.com/img/jobs/job-details.png",
+      "display_context": "Section: Monitor and Inspect Jobs",
+      "public_url": "https://docs.anyscale.com/img/jobs/job-details.png",
+      "source": "anyscale-docs-repo",
+      "diagram_skill": null
+    }
+  ],
+  "created_at": "2026-05-04T16:10:34Z",
+  "input_files": [
+    "/Users/maxpumperla/code/anyscale-lms/anyscale-sources/content/anyscale-docs/jobs/tutorial.md",
+    "/Users/maxpumperla/code/anyscale-lms/anyscale-sources/content/anyscale-docs/jobs.md",
+    "/Users/maxpumperla/code/anyscale-lms/anyscale-sources/content/anyscale-docs/jobs/manage.md",
+    "/Users/maxpumperla/code/anyscale-lms/anyscale-sources/content/templates/templates/intro-jobs/README.md",
+    "/Users/maxpumperla/code/anyscale-lms/anyscale-sources/content/templates/templates/intro-jobs/main.py",
+    "/Users/maxpumperla/code/anyscale-lms/anyscale-sources/content/templates/templates/intro-jobs/requirements.txt"
+  ],
+  "diagram_phase_completed_at": "2026-05-04T18:25:26.125505+00:00"
+}
