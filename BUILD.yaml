@@ -26,6 +26,19 @@
     command: bash tests.sh
     timeout_in_sec: 900
 
+# owner: @maxpumperla, @aydin
+- name: workspaces-dev-flow
+  dir: templates/workspaces-dev-flow
+  cluster_env:
+    image_uri: anyscale/ray:2.55.1-py311
+  compute_config:
+    GCP: configs/basic-single-node/gce.yaml
+    AWS: configs/basic-single-node/aws.yaml
+  test:
+    tests_path: tests/workspaces-dev-flow/
+    command: bash tests.sh
+    timeout_in_sec: 1200
+
 # owner: @edward
 - name: service-intro
   dir: templates/intro-services
