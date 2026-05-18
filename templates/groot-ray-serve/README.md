@@ -76,9 +76,15 @@ The notebook on the head node deploys the GR00T policy to a GPU worker via Ray S
 
 ## Step 0: Hugging Face authentication
 
-GR00T-N1.7 uses `nvidia/Cosmos-Reason2-2B` as its vision-language backbone. The Cosmos model is gated on Hugging Face, so a token with access is required.
+GR00T-N1.7 uses `nvidia/Cosmos-Reason2-2B` as its vision-language backbone. The Cosmos model is gated on Hugging Face — you need a free account and a one-time agreement to access it.
 
-**Before running:** accept the terms at https://huggingface.co/nvidia/Cosmos-Reason2-2B (must be logged in), then create a read token at https://huggingface.co/settings/tokens.
+**One-time setup (≈1 min):**
+
+1. **Sign up or log in** to Hugging Face at https://huggingface.co/join (skip if you already have an account).
+2. **Accept the Cosmos terms** at https://huggingface.co/nvidia/Cosmos-Reason2-2B — click **Agree and access repository**. Approval is automatic, no waiting.
+3. **Generate a Read token** at https://huggingface.co/settings/tokens — click **New token**, set Type to **Read**, copy the value (starts with `hf_`).
+
+Run the cell below and paste the token when prompted. It's read into memory only — never written to disk or committed.
 
 
 ```python
