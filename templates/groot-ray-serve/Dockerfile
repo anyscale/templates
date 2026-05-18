@@ -8,7 +8,7 @@
 # - all GR00T runtime deps baked in (av, diffusers, peft, etc.)
 # =============================================================================
 
-FROM anyscale/ray:2.53.0-slim-py311-cu128
+FROM anyscale/ray:2.55.1-slim-py311-cu129
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV PYTHONUNBUFFERED=1
