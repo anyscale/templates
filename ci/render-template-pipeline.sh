@@ -5,9 +5,6 @@ set -euo pipefail
 
 TEMPLATES="$TEMPLATE_NAMES"
 
-# Single source of truth for the forge-image anyscale pin. Script-relative
-# path (CWD-independent); awk so a missing line gives empty output rather
-# than tripping set -e before the :? fires.
 REQ_FILE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../requirements-dev.txt"
 ANYSCALE_VERSION=$(awk -F= '/^anyscale==/{print $3}' "$REQ_FILE")
 : "${ANYSCALE_VERSION:?could not read anyscale pin from $REQ_FILE}"
