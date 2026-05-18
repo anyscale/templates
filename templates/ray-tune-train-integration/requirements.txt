@@ -1,5 +1,5 @@
 # Ray Tune and Train Integration Dependencies
-# Base image: anyscale/ray:2.55.1-slim-py312-cu129 includes torch + torchvision
+# Base image: anyscale/ray:2.55.1-py312-cu129 includes torch + torchvision
 
 # Additional dependencies
 tensorboard==2.18.0

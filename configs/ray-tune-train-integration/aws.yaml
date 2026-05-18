@@ -3,10 +3,10 @@ head_node_type:
   name: head
   instance_type: m5.2xlarge
 
-# Worker nodes (1× A10G GPU each, autoscale 1-2)
+# Worker nodes (1× L4 GPU each, autoscale 1-2)
 worker_node_types:
   - name: gpu-workers
-    instance_type: g5.4xlarge
+    instance_type: g6.4xlarge
     min_workers: 1
     max_workers: 2
 
