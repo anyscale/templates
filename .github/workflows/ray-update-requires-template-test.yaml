@@ -1,0 +1,88 @@
+name: ray-update-requires-template-test
+
+# Gate ray-update PRs on a green buildkite/template-test status.
+# Required check on main; re-evaluates on pull_request + status events.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+  status:
+
+permissions:
+  contents: read
+  pull-requests: read
+  statuses: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify buildkite/template-test passed when ray-update label is set
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+
+          # status events fire on a commit, not a PR. List every PR containing
+          # the commit so a non-ray-update PR at [0] doesn't shadow the rest.
+          PRS=()
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            PRS+=("${{ github.event.pull_request.number }}")
+          else
+            while IFS= read -r N; do
+              [ -n "$N" ] && PRS+=("$N")
+            done < <(gh api "/repos/$REPO/commits/${{ github.event.sha }}/pulls" --jq '.[].number')
+            [ ${#PRS[@]} -eq 0 ] && exit 0
+          fi
+
+          FAILED=0
+          for PR in "${PRS[@]}"; do
+            echo "::group::PR #$PR"
+            # Re-fetch from the API; event payloads may carry stale SHAs.
+            DATA=$(gh pr view "$PR" --repo "$REPO" --json headRefOid,labels,isCrossRepository)
+            HEAD_SHA=$(echo "$DATA" | jq -r '.headRefOid')
+            LABELS=$(echo "$DATA" | jq -r '[.labels[].name] | join(",")')
+            IS_FORK=$(echo "$DATA" | jq -r '.isCrossRepository')
+            echo "head=$HEAD_SHA labels=$LABELS fork=$IS_FORK"
+
+            # The check-run we produce is attached to the event's SHA.
+            # Skip PRs whose head has moved past it.
+            if [[ "${{ github.event_name }}" == "status" ]] && [[ "$HEAD_SHA" != "${{ github.event.sha }}" ]]; then
+              echo "skip: HEAD ≠ status SHA"; echo "::endgroup::"; continue
+            fi
+
+            if ! echo ",$LABELS," | grep -q ',ray-update,'; then
+              echo "skip: no ray-update label"; echo "::endgroup::"; continue
+            fi
+
+            # /test-template (.github/workflows/test-template.yaml) refuses
+            # fork PRs, so fork+label can never go green.
+            if [[ "$IS_FORK" == "true" ]]; then
+              echo "::error::PR #$PR: fork PRs can't run /test-template — mirror to an internal branch and re-open."
+              FAILED=1; echo "::endgroup::"; continue
+            fi
+
+            STATUS=$(gh api "/repos/$REPO/commits/$HEAD_SHA/status" \
+              --jq '[.statuses[] | select(.context | startswith("buildkite/template-test"))] | sort_by(.updated_at) | last | .state // "missing"')
+            echo "buildkite/template-test: $STATUS"
+
+            case "$STATUS" in
+              success) ;;
+              missing)
+                echo "::error::PR #$PR: no buildkite/template-test build for $HEAD_SHA. Comment /test-template <name>."
+                FAILED=1 ;;
+              pending)
+                echo "::error::PR #$PR: buildkite/template-test still running. This check re-runs automatically."
+                FAILED=1 ;;
+              failure|error)
+                echo "::error::PR #$PR: buildkite/template-test '$STATUS' on $HEAD_SHA — fix and re-run /test-template."
+                FAILED=1 ;;
+              *)
+                echo "::error::PR #$PR: unexpected status '$STATUS'."
+                FAILED=1 ;;
+            esac
+            echo "::endgroup::"
+          done
+
+          [ $FAILED -eq 0 ]
