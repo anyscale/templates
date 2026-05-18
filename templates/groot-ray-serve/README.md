@@ -1,18 +1,4 @@
-<!--
-  Source: https://github.com/alicia-yay/isaac-lab-gr00t-ray-serve @ 3e714f2761efcab8939a91b38f6487968591d2bf
-
-  Vendored files from source repo:
-    - module3_groot_ray_workshop.ipynb (renamed to README.ipynb here)
-    - policy_server.py
-    - sim_worker.py
-    - g1_env.py
-    - run_demo.py
-    - g1_groot_n17_zeroshot.gif
-    - g1_groot_n17_zeroshot.mp4
--->
 # Module 3: Robotics simulation at scale with Ray
-
-**⏱️ Time to complete**: 15 min
 
 ### Ray Workshop: Boston, workshop module
 
