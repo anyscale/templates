@@ -1,0 +1,149 @@
+<mxfile host="app.diagrams.net" modified="2026-05-04T00:00:00.000Z" agent="Claude" version="24.0.0">
+  <diagram name="Decision Tree" id="decision-tree">
+    <mxGraphModel dx="1200" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="900" pageHeight="800" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- Title -->
+        <mxCell id="title" value="Compute Config Decision Tree" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=18;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="300" y="20" width="300" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- Start -->
+        <mxCell id="start" value="Select Compute Config" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="375" y="70" width="150" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- GPU Question -->
+        <mxCell id="q1" value="Need GPU?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="390" y="150" width="120" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="edge1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0" edge="1" parent="1" source="start" target="q1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- CPU Path -->
+        <mxCell id="cpu-instance" value="Instance Type:&#xa;m5.2xlarge" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10" vertex="1" parent="1">
+          <mxGeometry x="150" y="280" width="120" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-cpu" value="NO (CPU)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;exitX=0;exitY=0.5;entryX=0.5;entryY=0;fontSize=10" edge="1" parent="1" source="q1" target="cpu-instance">
+          <mxGeometry x="-0.2" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- GPU Path -->
+        <mxCell id="gpu-instance" value="Instance Type:&#xa;g5.2xlarge (L4)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10" vertex="1" parent="1">
+          <mxGeometry x="630" y="280" width="120" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-gpu" value="YES (GPU)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;exitX=1;exitY=0.5;entryX=0.5;entryY=0;fontSize=10" edge="1" parent="1" source="q1" target="gpu-instance">
+          <mxGeometry x="0.2" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Predictable Question (CPU path) -->
+        <mxCell id="q2-cpu" value="Predictable&#xa;workload?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10" vertex="1" parent="1">
+          <mxGeometry x="155" y="370" width="110" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="edge2-cpu" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0" edge="1" parent="1" source="cpu-instance" target="q2-cpu">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Predictable Question (GPU path) -->
+        <mxCell id="q2-gpu" value="Predictable&#xa;workload?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10" vertex="1" parent="1">
+          <mxGeometry x="635" y="370" width="110" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="edge2-gpu" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0" edge="1" parent="1" source="gpu-instance" target="q2-gpu">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Fixed Size (CPU, Predictable) -->
+        <mxCell id="fixed-cpu" value="Fixed-size:&#xa;min_nodes = max_nodes" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="40" y="490" width="130" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-fixed-cpu" value="YES" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;exitX=0;exitY=0.5;entryX=0.5;entryY=0;fontSize=9" edge="1" parent="1" source="q2-cpu" target="fixed-cpu">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Autoscale (CPU, Variable) -->
+        <mxCell id="autoscale-cpu" value="Autoscaling:&#xa;min < max" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="220" y="490" width="130" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-autoscale-cpu" value="NO" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;exitX=1;exitY=0.5;entryX=0.5;entryY=0;fontSize=9" edge="1" parent="1" source="q2-cpu" target="autoscale-cpu">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Fixed Size (GPU, Predictable) -->
+        <mxCell id="fixed-gpu" value="Fixed-size:&#xa;min_nodes = max_nodes" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="550" y="490" width="130" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-fixed-gpu" value="YES" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;exitX=0;exitY=0.5;entryX=0.5;entryY=0;fontSize=9" edge="1" parent="1" source="q2-gpu" target="fixed-gpu">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Autoscale (GPU, Variable) -->
+        <mxCell id="autoscale-gpu" value="Autoscaling:&#xa;min < max" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="730" y="490" width="130" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-autoscale-gpu" value="NO" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;exitX=1;exitY=0.5;entryX=0.5;entryY=0;fontSize=9" edge="1" parent="1" source="q2-gpu" target="autoscale-gpu">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Cost Question (Autoscale paths) -->
+        <mxCell id="q3-cpu" value="Cost&#xa;sensitive?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10" vertex="1" parent="1">
+          <mxGeometry x="230" y="580" width="110" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3-cpu" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0" edge="1" parent="1" source="autoscale-cpu" target="q3-cpu">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="q3-gpu" value="Cost&#xa;sensitive?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10" vertex="1" parent="1">
+          <mxGeometry x="740" y="580" width="110" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3-gpu" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0" edge="1" parent="1" source="autoscale-gpu" target="q3-gpu">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Final Configs -->
+        <mxCell id="spot-cpu" value="market_type:&#xa;PREFER_SPOT" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=10;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="160" y="690" width="110" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-spot-cpu" value="YES" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;exitX=0;exitY=0.5;entryX=0.5;entryY=0;fontSize=9" edge="1" parent="1" source="q3-cpu" target="spot-cpu">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="ondemand-cpu" value="market_type:&#xa;ON_DEMAND" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=10;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="300" y="690" width="110" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-ondemand-cpu" value="NO" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;exitX=1;exitY=0.5;entryX=0.5;entryY=0;fontSize=9" edge="1" parent="1" source="q3-cpu" target="ondemand-cpu">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="spot-gpu" value="market_type:&#xa;PREFER_SPOT" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=10;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="670" y="690" width="110" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-spot-gpu" value="YES" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;exitX=0;exitY=0.5;entryX=0.5;entryY=0;fontSize=9" edge="1" parent="1" source="q3-gpu" target="spot-gpu">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="ondemand-gpu" value="market_type:&#xa;ON_DEMAND" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=10;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="810" y="690" width="110" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-ondemand-gpu" value="NO" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;exitX=1;exitY=0.5;entryX=0.5;entryY=0;fontSize=9" edge="1" parent="1" source="q3-gpu" target="ondemand-gpu">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Legend -->
+        <mxCell id="legend" value="Decision Points" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=9" vertex="1" parent="1">
+          <mxGeometry x="40" y="750" width="80" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="legend2" value="Configuration" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=9" vertex="1" parent="1">
+          <mxGeometry x="130" y="755" width="90" height="40" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
