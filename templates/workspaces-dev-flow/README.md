@@ -45,6 +45,11 @@ import ray
 import os
 from pathlib import Path
 
+# Ensure Ray is initialized. Anyscale Workspaces auto-starts Ray, but other
+# environments (e.g., Anyscale Jobs, local Ray, CI) don't — ignore_reinit_error
+# makes this call idempotent.
+ray.init(ignore_reinit_error=True)
+
 # Print cluster resources
 resources = ray.cluster_resources()
 print("Available cluster resources:")
@@ -52,7 +57,7 @@ for resource, count in sorted(resources.items()):
     print(f"  {resource}: {count}")
 ```
 
-You should see output showing available CPUs, memory, and other resources. The cluster is already initialized — no need to call `ray.init()` explicitly.
+You should see output showing available CPUs, memory, and other resources. The `ray.init(ignore_reinit_error=True)` call above is a no-op when Ray is already running (as in Anyscale Workspaces) and bootstraps Ray when it isn't (e.g., when running this notebook outside a Workspace).
 
 
 ```python
