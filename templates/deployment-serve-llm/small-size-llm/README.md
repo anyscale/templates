@@ -10,7 +10,7 @@
 A small LLM runs on a single node with 1–2 GPUs, making it fast, inexpensive, and simple to use. It's ideal for prototyping, lightweight applications, latency-critical use cases, cost-sensitive deployments, and environments with limited resources where efficiency matters more than peak accuracy.
 
 
-For larger models, see [Deploy a medium-sized LLM](https://docs.ray.io/en/latest/serve/tutorials/deployment-serve-llm/content/medium-size-llm/README.html) or [Deploy a large-sized LLM](https://docs.ray.io/en/latest/serve/tutorials/deployment-serve-llm/content/large-size-llm/README.html).
+For larger models, see [Deploy a medium-sized LLM](../medium-size-llm/README.md) or [Deploy a large-sized LLM](../large-size-llm/README.md).
 
 ---
 

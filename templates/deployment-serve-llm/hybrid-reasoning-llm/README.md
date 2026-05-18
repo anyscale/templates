@@ -24,7 +24,7 @@ This tutorial deploys a hybrid reasoning LLM using Ray Serve LLM.
 <!-- vale Google.Acronyms = YES -->
 **Note:** Reasoning often benefits from long context windows (32K up to +1M tokens), high token throughput, low-temperature decoding (greedy sampling), and strong instruction tuning or scratchpad-style reasoning.
 
-To see an example of deploying a purely reasoning model like *QwQ-32&nbsp;B*, see [Deploy a reasoning LLM](https://docs.ray.io/en/latest/serve/tutorials/deployment-serve-llm/content/reasoning-llm/README.html).
+To see an example of deploying a purely reasoning model like *QwQ-32&nbsp;B*, see [Deploy a reasoning LLM](../reasoning-llm/README.md).
 
 ---
 
@@ -288,7 +288,7 @@ Shutdown your LLM service:
 
 ## Deploy to production with Anyscale services
 
-For production deployment, use Anyscale services to deploy your Ray Serve app to a dedicated cluster without modifying the code. Anyscale ensures scalability, fault tolerance, and load balancing, keeping the service resilient against node failures, high traffic, and rolling updates. For more details, see [Serve LLMs with Anyscale](https://docs.anyscale.com/llm/serving). See [Deploy a medium-sized LLM](https://docs.ray.io/en/latest/serve/tutorials/deployment-serve-llm/content/medium-size-llm/README.html#deploy-to-production-with-anyscale-services) for an example with a medium-sized model like the *Qwen-32b* from this tutorial.
+For production deployment, use Anyscale services to deploy your Ray Serve app to a dedicated cluster without modifying the code. Anyscale ensures scalability, fault tolerance, and load balancing, keeping the service resilient against node failures, high traffic, and rolling updates. For more details, see [Serve LLMs with Anyscale](https://docs.anyscale.com/llm/serving). See [Deploy a medium-sized LLM](../medium-size-llm/README.md#deploy-to-production-with-anyscale-services) for an example with a medium-sized model like the *Qwen-32b* from this tutorial.
 
 ---
 
