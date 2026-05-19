@@ -26,10 +26,10 @@ the relevant docs.
 Run directly on the workspace cluster:
   python scripts/run_enc_vlm_batch_emb_enrich_3b.py
 
-Or as an Anyscale Job (re-use vlm_32b_job_config.yaml — same g6.12xlarge fits;
+Or as an Anyscale Job (re-use job_config.yaml — same g6.12xlarge fits;
 flip cpu-workers max_nodes back to a positive number — this pipeline WANTS the
 CPU pool):
-  anyscale job submit --config-file vlm_32b_job_config.yaml \\
+  anyscale job submit --config-file job_config.yaml \\
     --entrypoint "python scripts/run_enc_vlm_batch_emb_enrich_3b.py" \\
     --env HF_TOKEN=$HF_TOKEN
 

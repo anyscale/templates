@@ -1,51 +1,36 @@
 """
-Ray Train — Qwen2.5-VL-3B Catalog Enrichment SFT (FSDP + LoRA)
+Stage 2 — Qwen2.5-VL-3B SFT (FSDP + LoRA) on Stage 1's teacher labels.
 
-Distills the 32B teacher's enrichment JSON into the 3B student so you ship
-~32B-quality structured catalog output at 3B inference cost. Reads the
-parquet that scripts/run_vlm_batch_enrich_32b.py wrote and uses each row's
+Distills the 7B teacher's enrichment JSON into the 3B student so you ship
+teacher-grade structured catalog output at 3B inference cost. Reads the
+parquet that scripts/run_teacher_batch_label.py wrote and uses each row's
 `raw_output` (the teacher's JSON string) as the SFT target.
 
-This closes the third loop of the demo arc:
-  1) Batch enrichment      (run_enc_vlm_batch_emb_enrich_3b.py)  ← inference
-  2) Online search         (run_vlm_online_search_3b.py)         ← inference
-  3) Post-training (SFT)   (this file)                           ← training
-
-The output is a LoRA adapter that drops into either of the inference scripts
+The output is a LoRA adapter that drops into Stage 3 (run_enrich_and_embed.py)
 as a model swap — same Qwen2.5-VL-3B base, fine-tuned weights.
 
-Pipeline shape:
-  LOAD teacher parquet → CPU FETCH images + SPLIT → BUILD SFT EXAMPLES (CPU pool)
-       → SFT TRAIN  (Ray Train + FSDP + LoRA on 4× L4)
+Pipeline:
+  LOAD teacher parquet → CPU FETCH images + SPLIT → BUILD SFT EXAMPLES (CPU)
+       → SFT TRAIN (Ray Train + FSDP + LoRA on 4× L4)
        → WRITE adapter
 
-Each comment block below says WHERE the stage runs (CPU pool, GPU pool, or
-inside the Ray Train workers) and links the relevant docs.
+Run on the workspace cluster (after the Stage 1 teacher parquet exists):
+  python scripts/run_distill_student_lora.py
 
-Run on the workspace cluster (after the 32B teacher parquet exists):
-  python scripts/run_finetune_vlm_enrichment_3b.py
-
-Or as an Anyscale Job (re-uses the 4× L4 fleet from the 32B job config —
-training fleet is the same shape):
-  anyscale job submit --config-file vlm_32b_job_config.yaml \\
-    --entrypoint "python scripts/run_finetune_vlm_enrichment_3b.py" \\
+Or as an Anyscale Job (same 4× L4 fleet as Stage 1):
+  anyscale job submit --config-file job_config.yaml \\
+    --entrypoint "python scripts/run_distill_student_lora.py" \\
     --env HF_TOKEN=$HF_TOKEN
 
 ──────────────────────────────────────────────────────────
-Why distill the 32B teacher into a 3B student
+Why distill the 7B teacher into a 3B student
 ──────────────────────────────────────────────────────────
 Same prompt, same 4-key JSON schema, but a fraction of the inference cost.
-The student is bounded by teacher quality — it will not exceed 32B output —
-but will close most of the gap on a focused task (structured JSON over a
-narrow product category) at 3B model size. This is the same recipe Anthropic
-and OpenAI use internally to ship Haiku-class models from Opus-class teachers,
-applied to one customer's catalog.
-
-The category-specialization is a feature, not a bug. The teacher parquet was
-produced on `Electronics` (CATEGORY in run_vlm_batch_enrich_32b.py); the
-fine-tuned adapter will be category-specialized. production-scale catalogs
-deploy this as a fleet of per-category adapters served from one base model
-checkpoint — clean operational pattern, cheap to retrain per category.
+The student is bounded by teacher quality — it will not exceed the 7B teacher
+— but closes most of the gap on a focused task (structured JSON over a narrow
+product category) at 3B model size. The category-specialization is a feature:
+the teacher parquet is produced on one CATEGORY at a time, and you ship a
+fleet of per-category adapters served from one base model checkpoint.
 
 ──────────────────────────────────────────────────────────
 What's optimized for L4 24GB and the 4× L4 node shape
@@ -98,7 +83,7 @@ N_ROWS = int(os.environ.get("N_ROWS", TEACHER_N_ROWS))
 SEED = int(os.environ.get("SEED", 42))
 
 BASE_DIR = "/mnt/cluster_storage/vlm-distillation-catalog-enrichment"
-TEACHER_PARQUET     = f"{BASE_DIR}/vlm_enriched_32b_{TEACHER_N_ROWS}.parquet"
+TEACHER_PARQUET     = f"{BASE_DIR}/teacher_7b_enriched_{TEACHER_N_ROWS}.parquet"
 SFT_CACHE_PATH      = f"{BASE_DIR}/sft_cache_{N_ROWS}.parquet"
 ADAPTER_OUTPUT_DIR  = f"{BASE_DIR}/qwen25vl_3b_enrichment_lora_{N_ROWS}"
 TRAIN_RUN_DIR       = f"{BASE_DIR}/qwen25vl_3b_enrichment_runs_{N_ROWS}"
@@ -122,7 +107,7 @@ WARMUP_RATIO = 0.03
 WEIGHT_DECAY = 0.01
 MAX_SEQ_LEN = 1024          # ~512 visual + ~200 prompt + ≤160 target ≈ 870
                             # tokens worst-case; 1024 is a safe ceiling. Lower
-                            # than batch-enrich-32b's 2048 max_model_len to
+                            # than teacher-batch-label's 2048 max_model_len to
                             # halve the cross-entropy logits allocation
                             # (batch × seq × ~152K vocab × bf16) which OOMed
                             # the loss step on 4× L4. Inference (online
@@ -169,7 +154,7 @@ BUILD_CONCURRENCY = 8
 # ──────────────────────────────────────────────────────────
 # STAGE 1 — BUILD SFT TRAINING CACHE  (CPU)
 # ──────────────────────────────────────────────────────────
-# Reads the 32B teacher parquet, drops rows whose teacher output isn't valid
+# Reads the 7B teacher parquet, drops rows whose teacher output isn't valid
 # JSON (bad supervision), assigns a deterministic train/val/test split,
 # fetches every image once, and writes a self-contained training parquet at
 # SFT_CACHE_PATH. Once cached, every epoch reads from this file — no HTTP.
@@ -186,7 +171,7 @@ def _split_bucket(row_id: str) -> str:
 
 
 def _strip_code_fence(text: str) -> str:
-    """The 32B teacher sometimes wraps JSON in ```json ... ``` fences. Strip
+    """The 7B teacher sometimes wraps JSON in ```json ... ``` fences. Strip
     them so json.loads succeeds. Same recovery the serve app does."""
     text = (text or "").strip()
     if text.startswith("```"):
@@ -247,7 +232,7 @@ def build_sft_cache():
     if not os.path.exists(TEACHER_PARQUET):
         raise FileNotFoundError(
             f"Teacher parquet not found at {TEACHER_PARQUET!r}. Run "
-            f"scripts/run_vlm_batch_enrich_32b.py first to produce it."
+            f"scripts/run_teacher_batch_label.py first to produce it."
         )
 
     print(f"[cache] reading teacher parquet {TEACHER_PARQUET}")
@@ -791,7 +776,7 @@ if __name__ == "__main__":
 #  Multi-node / multi-category scale-up:
 #    - Bump NUM_WORKERS for more GPUs (one ScalingConfig knob).
 #    - Per-category training: re-run with a different teacher parquet
-#      (point TEACHER_PARQUET at vlm_enriched_32b_<Category>.parquet) and a
+#      (point TEACHER_PARQUET at teacher_7b_enriched_<Category>.parquet) and a
 #      different ADAPTER_OUTPUT_DIR. One base model, one LoRA per category.
 #
 #  Output:

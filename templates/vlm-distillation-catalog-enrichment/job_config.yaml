@@ -1,4 +1,4 @@
-# Anyscale Job — VLM Batch Enrichment (Qwen2.5-VL-32B, TP=2 PP=2, 10k rows)
+# Anyscale Job — VLM Batch Enrichment (Qwen2.5-VL-7B, TP=2 PP=2, 10k rows)
 name: ecommerce-enc-vlm-batch-embeddings-enrichment-3b
 entrypoint: python scripts/run_enc_vlm_batch_emb_enrich_3b.py
 
