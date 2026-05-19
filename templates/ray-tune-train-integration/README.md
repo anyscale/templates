@@ -355,12 +355,7 @@ tuner = tune.Tuner(
     ),
     run_config=TuneRunConfig(
         name=f"mnist_tune_{datetime.now():%Y%m%d_%H%M%S}",
-        storage_path=STORAGE_PATH,
-        checkpoint_config=CheckpointConfig(
-            num_to_keep=2,
-            checkpoint_score_attribute="accuracy",
-            checkpoint_score_order="max"
-        )
+        storage_path=STORAGE_PATH
     )
 )
 
@@ -476,12 +471,7 @@ tuner_with_asha = tune.Tuner(
     ),
     run_config=TuneRunConfig(
         name=f"mnist_tune_asha_{datetime.now():%Y%m%d_%H%M%S}",
-        storage_path=STORAGE_PATH,
-        checkpoint_config=CheckpointConfig(
-            num_to_keep=2,
-            checkpoint_score_attribute="accuracy",
-            checkpoint_score_order="max"
-        )
+        storage_path=STORAGE_PATH
     )
 )
 
