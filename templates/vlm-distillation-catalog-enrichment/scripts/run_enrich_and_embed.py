@@ -24,13 +24,13 @@ Each comment block below says WHERE the stage runs (CPU or GPU) and links to
 the relevant docs.
 
 Run directly on the workspace cluster:
-  python scripts/run_enc_vlm_batch_emb_enrich_3b.py
+  python scripts/run_enrich_and_embed.py
 
 Or as an Anyscale Job (re-use job_config.yaml — same g6.12xlarge fits;
 flip cpu-workers max_nodes back to a positive number — this pipeline WANTS the
 CPU pool):
   anyscale job submit --config-file job_config.yaml \\
-    --entrypoint "python scripts/run_enc_vlm_batch_emb_enrich_3b.py" \\
+    --entrypoint "python scripts/run_enrich_and_embed.py" \\
     --env HF_TOKEN=$HF_TOKEN
 
 NOTE: this is a batch Ray Data pipeline (datasets in → parquet out). It is
@@ -158,7 +158,7 @@ LORA_ADAPTER_DIR = os.environ.get(
     "QWEN_LORA_ADAPTER_DIR",
     None,
 )
-LORA_MAX_RANK = 16  # must be ≥ LORA_R used during training (run_vlm_ft_enrich_3b.py)
+LORA_MAX_RANK = 16  # must be ≥ LORA_R used during training (run_distill_student_lora.py)
 
 
 def _ensure_lora_remote(local_dir: str) -> Optional[str]:

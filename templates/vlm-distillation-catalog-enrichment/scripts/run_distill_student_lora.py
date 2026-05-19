@@ -731,7 +731,7 @@ def main():
     # The student outputs aren't generated here (that's an inference-time
     # concern); we just print what the teacher said for 3 test products so
     # you have a reference to compare against after loading the adapter into
-    # run_enc_vlm_batch_emb_enrich_3b.py or the serve app.
+    # run_enrich_and_embed.py.
     print("\n[preview] held-out test set — teacher targets:")
     for r in cached.filter(lambda r: r["split"] == "test").take(3):
         print(f"\n  title:    {r['title'][:90]}")
