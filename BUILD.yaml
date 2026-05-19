@@ -593,6 +593,19 @@
     command: bash tests.sh
     timeout_in_sec: 1800
 
+# owner: @geoff-counihan
+- name: vlm-distillation-catalog-enrichment
+  dir: templates/vlm-distillation-catalog-enrichment
+  cluster_env:
+    image_uri: anyscale/ray-llm:2.55.1-py311-cu128
+  compute_config:
+    AWS: configs/vlm-distillation-catalog-enrichment/aws.yaml
+    GCP: configs/vlm-distillation-catalog-enrichment/gce.yaml
+  test:
+    tests_path: tests/vlm-distillation-catalog-enrichment/
+    command: bash tests.sh
+    timeout_in_sec: 3600
+
 # owner: @christian-stano
 - name: ecommerce_multi_model_serving
   dir: templates/ecommerce_multi_model_serving
