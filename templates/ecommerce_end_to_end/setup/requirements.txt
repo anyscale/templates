@@ -1,0 +1,8 @@
+torch
+transformers
+sentence-transformers
+hf_transfer
+scikit-learn
+
+# Notebook / UI
+streamlit

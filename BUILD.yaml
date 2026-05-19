@@ -631,3 +631,16 @@
     tests_path: tests/fintech_quant/
     command: bash tests.sh
     timeout_in_sec: 1800
+
+# owner: @daniel.arrizza
+- name: ecommerce_end_to_end
+  dir: templates/ecommerce_end_to_end
+  cluster_env:
+    image_uri: anyscale/ray:2.55.1-py312
+  compute_config:
+    AWS: configs/ecommerce_end_to_end/aws.yaml
+    GCP: configs/ecommerce_end_to_end/gce.yaml
+  test:
+    tests_path: tests/ecommerce_end_to_end/
+    command: bash tests.sh
+    timeout_in_sec: 1800
