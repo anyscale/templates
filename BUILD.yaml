@@ -633,6 +633,19 @@
     timeout_in_sec: 1800
 
 # owner: @daniel.arrizza
+- name: ecommerce_rec_system
+  dir: templates/ecommerce_rec_system
+  cluster_env:
+    image_uri: anyscale/ray:2.55.1-py312
+  compute_config:
+    AWS: configs/ecommerce_rec_system/aws.yaml
+    GCP: configs/ecommerce_rec_system/gce.yaml
+  test:
+    tests_path: tests/ecommerce_rec_system/
+    command: bash tests.sh
+    timeout_in_sec: 1800
+
+# owner: @daniel.arrizza
 - name: ecommerce_end_to_end
   dir: templates/ecommerce_end_to_end
   cluster_env:
