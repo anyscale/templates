@@ -37,9 +37,9 @@ Let's start by initializing Ray and checking our cluster resources.
 ```python
 import ray
 from ray import train, tune
-from ray.train import RunConfig, ScalingConfig, CheckpointConfig, Checkpoint
+from ray.train import ScalingConfig, CheckpointConfig, Checkpoint
 from ray.train.torch import TorchTrainer
-from ray.tune import TuneConfig
+from ray.tune import TuneConfig, RunConfig
 from ray.tune.schedulers import ASHAScheduler
 
 import torch
@@ -296,18 +296,16 @@ Search spaces define the range of values Tune will explore for each hyperparamet
 ```python
 # Define search space for MNIST example
 search_space = {
-    "train_loop_config": {
-        # Learning rate: logarithmic scale (1e-4 to 1e-1)
-        # Orders of magnitude matter for learning rates
-        "learning_rate": tune.loguniform(1e-4, 1e-1),
+    # Learning rate: logarithmic scale (1e-4 to 1e-1)
+    # Orders of magnitude matter for learning rates
+    "learning_rate": tune.loguniform(1e-4, 1e-1),
 
-        # Batch size: categorical choice
-        # Common powers of 2 for efficient GPU utilization
-        "batch_size": tune.choice([32, 64, 128]),
+    # Batch size: categorical choice
+    # Common powers of 2 for efficient GPU utilization
+    "batch_size": tune.choice([32, 64, 128]),
 
-        # Number of epochs: fixed for fair comparison
-        "num_epochs": int(os.environ.get("NUM_EPOCHS", "5"))
-    }
+    # Number of epochs: fixed for fair comparison
+    "num_epochs": int(os.environ.get("NUM_EPOCHS", "5"))
 }
 
 print("Search Space Configuration:")
@@ -326,19 +324,26 @@ Now let's run our first hyperparameter search. Tune will launch multiple trials 
 
 
 ```python
-# Create trainer wrapped for Tune
-tunable_trainer = TorchTrainer(
-    tunable_train_func,
-    scaling_config=ScalingConfig(
-        num_workers=1,
-        use_gpu=True,
-        resources_per_worker={"CPU": 2, "GPU": 1}
+# Ray Train V2 pattern: wrap TorchTrainer inside a driver function passed to
+# tune.Tuner. Each Tune trial calls train_driver_fn(config) with sampled
+# hyperparameters; the driver instantiates a TorchTrainer with that config and
+# returns the training result.
+def train_driver_fn(config):
+    trainer = TorchTrainer(
+        tunable_train_func,
+        scaling_config=ScalingConfig(
+            num_workers=1,
+            use_gpu=True,
+            resources_per_worker={"CPU": 2, "GPU": 1},
+        ),
+        train_loop_config=config,
     )
-)
+    return trainer.fit()
+```
 
 # Configure hyperparameter search
 tuner = tune.Tuner(
-    tunable_trainer,
+    train_driver_fn,
     param_space=search_space,
     tune_config=TuneConfig(
         num_samples=int(os.environ.get("NUM_SAMPLES", "12")),  # Number of trials to run
@@ -365,13 +370,6 @@ print("Monitor progress in the Ray dashboard.")
 results = tuner.fit()
 
 print("\nHyperparameter search complete!")
-```
-
----
-
-## 6. Analyzing Results with ResultGrid
-
-The `ResultGrid` returned by `tuner.fit()` provides powerful tools for analyzing trial results and extracting the best configuration.
 
 
 ```python
@@ -379,8 +377,8 @@ The `ResultGrid` returned by `tuner.fit()` provides powerful tools for analyzing
 best_result = results.get_best_result(metric="accuracy", mode="max")
 
 print("Best Configuration Found:")
-print(f"  Learning Rate: {best_result.config['train_loop_config']['learning_rate']:.6f}")
-print(f"  Batch Size: {best_result.config['train_loop_config']['batch_size']}")
+print(f"  Learning Rate: {best_result.config['learning_rate']:.6f}")
+print(f"  Batch Size: {best_result.config['batch_size']}")
 print(f"  Final Accuracy: {best_result.metrics['accuracy']:.2f}%")
 print(f"  Final Loss: {best_result.metrics['loss']:.4f}")
 ```
@@ -392,8 +390,8 @@ df = results.get_dataframe()
 
 # Show key columns
 print("\nAll Trial Results:")
-print(df[['trial_id', 'config/train_loop_config/learning_rate',
-          'config/train_loop_config/batch_size', 'accuracy', 'loss']].head(12))
+print(df[['trial_id', 'config/learning_rate',
+          'config/batch_size', 'accuracy', 'loss']].head(12))
 ```
 
 
@@ -403,9 +401,9 @@ fig, axes = plt.subplots(1, 2, figsize=(14, 5))
 
 # Plot 1: Learning rate vs accuracy
 axes[0].scatter(
-    df['config/train_loop_config/learning_rate'],
+    df['config/learning_rate'],
     df['accuracy'],
-    c=df['config/train_loop_config/batch_size'],
+    c=df['config/batch_size'],
     cmap='viridis',
     s=100,
     alpha=0.6
@@ -419,9 +417,9 @@ colorbar = plt.colorbar(axes[0].collections[0], ax=axes[0])
 colorbar.set_label('Batch Size')
 
 # Plot 2: Box plot by batch size
-batch_sizes = sorted(df['config/train_loop_config/batch_size'].unique())
+batch_sizes = sorted(df['config/batch_size'].unique())
 accuracy_by_batch = [
-    df[df['config/train_loop_config/batch_size'] == bs]['accuracy'].values
+    df[df['config/batch_size'] == bs]['accuracy'].values
     for bs in batch_sizes
 ]
 axes[1].boxplot(accuracy_by_batch, labels=[str(bs) for bs in batch_sizes])
@@ -464,7 +462,7 @@ asha_scheduler = ASHAScheduler(
 
 # Run search with ASHA
 tuner_with_asha = tune.Tuner(
-    tunable_trainer,
+    train_driver_fn,
     param_space=search_space,
     tune_config=TuneConfig(
         num_samples=int(os.environ.get("NUM_SAMPLES", "12")),
@@ -584,11 +582,9 @@ try:
 
     # Define search space for BayesOpt (must be continuous)
     bayesopt_space = {
-        "train_loop_config": {
-            "learning_rate": tune.loguniform(1e-4, 1e-1),
-            "batch_size": tune.choice([32, 64, 128]),  # BayesOpt treats as index
-            "num_epochs": int(os.environ.get("NUM_EPOCHS", "5"))
-        }
+        "learning_rate": tune.loguniform(1e-4, 1e-1),
+        "batch_size": tune.choice([32, 64, 128]),  # BayesOpt treats as index
+        "num_epochs": int(os.environ.get("NUM_EPOCHS", "5"))
     }
 
     # Configure Bayesian search
@@ -599,7 +595,7 @@ try:
     )
 
     tuner_bayesopt = tune.Tuner(
-        tunable_trainer,
+        train_driver_fn,
         param_space=bayesopt_space,
         tune_config=TuneConfig(
             num_samples=int(os.environ.get("NUM_SAMPLES", "12")),
@@ -740,19 +736,20 @@ After finding the optimal configuration, you'll want to load the best checkpoint
 best_result = results_with_asha.get_best_result(metric="accuracy", mode="max")
 
 print("Best Configuration:")
-print(f"  Learning Rate: {best_result.config['train_loop_config']['learning_rate']:.6f}")
-print(f"  Batch Size: {best_result.config['train_loop_config']['batch_size']}")
+print(f"  Learning Rate: {best_result.config['learning_rate']:.6f}")
+print(f"  Batch Size: {best_result.config['batch_size']}")
 print(f"  Final Accuracy: {best_result.metrics['accuracy']:.2f}%")
 
-# The checkpoint path is available in the result (None unless your train
-# function calls train.report(checkpoint=Checkpoint.from_directory(...)) —
-# the train functions in this notebook only report metrics, not checkpoints).
+# The best trial's checkpoint path. tunable_train_func calls
+# train.report(checkpoint=...) on every epoch (see cell 8), so this is
+# populated. The None-guard below is defensive — useful if you fork the train
+# function and drop the checkpoint save.
 best_checkpoint = best_result.checkpoint
 if best_checkpoint is not None:
     print(f"\nBest checkpoint: {best_checkpoint}")
 else:
-    print("\nNo checkpoint saved for this run. Add train.report(checkpoint=...) "
-          "in your train function to enable best-checkpoint retrieval.")
+    print("\nNo checkpoint saved. Restore the train.report(checkpoint=...) "
+          "call in your train function to enable best-checkpoint retrieval.")
 ```
 
 
@@ -796,9 +793,9 @@ print(f"Ready for inference or further fine-tuning")
 import json
 
 optimal_config = {
-    "learning_rate": best_result.config['train_loop_config']['learning_rate'],
-    "batch_size": best_result.config['train_loop_config']['batch_size'],
-    "num_epochs": best_result.config['train_loop_config']['num_epochs'],
+    "learning_rate": best_result.config['learning_rate'],
+    "batch_size": best_result.config['batch_size'],
+    "num_epochs": best_result.config['num_epochs'],
     "final_accuracy": best_result.metrics['accuracy'],
     "final_loss": best_result.metrics['loss']
 }
