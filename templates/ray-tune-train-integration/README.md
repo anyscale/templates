@@ -341,6 +341,8 @@ def train_driver_fn(config):
     return trainer.fit()
 ```
 
+
+```python
 # Configure hyperparameter search
 tuner = tune.Tuner(
     train_driver_fn,
@@ -370,6 +372,7 @@ print("Monitor progress in the Ray dashboard.")
 results = tuner.fit()
 
 print("\nHyperparameter search complete!")
+```
 
 
 ```python
