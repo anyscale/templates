@@ -326,8 +326,18 @@ Now let's run our first hyperparameter search. Tune will launch multiple trials 
 ```python
 # Ray Train V2 pattern: wrap TorchTrainer inside a driver function passed to
 # tune.Tuner. Each Tune trial calls train_driver_fn(config) with sampled
-# hyperparameters; the driver instantiates a TorchTrainer with that config and
-# returns the training result.
+# hyperparameters; the driver instantiates a TorchTrainer with that config,
+# runs it, and returns the trainer's final metrics dict.
+#
+# Note: Tune's function-trainable contract requires returning a dict (or
+# number), not a Result object — that's why we unwrap result.metrics here.
+# Side effect: Tune only sees the FINAL per-trial metrics, not the per-epoch
+# stream from train.report(). That degrades ASHA-style early stopping (cell
+# 18) since ASHA's pruning depends on intermediate iterations. The trial
+# still records all reported metrics in result.metrics_dataframe, but the
+# scheduler only sees the last value at trial end. For full early-stopping
+# fidelity, integrate Tune more deeply into the train function itself
+# (advanced pattern, outside this template's scope).
 def train_driver_fn(config):
     trainer = TorchTrainer(
         tunable_train_func,
@@ -338,7 +348,11 @@ def train_driver_fn(config):
         ),
         train_loop_config=config,
     )
-    return trainer.fit()
+    result = trainer.fit()
+    # Defensive against None in case Ray's Result API stops populating .metrics
+    # for some edge case; train.report(checkpoint=...) in tunable_train_func
+    # should keep this populated under normal conditions.
+    return result.metrics or {}
 ```
 
 
