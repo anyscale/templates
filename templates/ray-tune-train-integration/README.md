@@ -37,9 +37,9 @@ Let's start by initializing Ray and checking our cluster resources.
 ```python
 import ray
 from ray import train, tune
-from ray.train import ScalingConfig, CheckpointConfig, Checkpoint
+from ray.train import RunConfig, ScalingConfig, CheckpointConfig, Checkpoint
 from ray.train.torch import TorchTrainer
-from ray.tune import TuneConfig, RunConfig
+from ray.tune import TuneConfig, RunConfig as TuneRunConfig
 from ray.tune.schedulers import ASHAScheduler
 
 import torch
@@ -351,7 +351,7 @@ tuner = tune.Tuner(
         mode="max",  # Maximize accuracy
         max_concurrent_trials=int(os.environ.get("MAX_CONCURRENT_TRIALS", "2"))  # Run 2 trials at once (adjust based on cluster size)
     ),
-    run_config=RunConfig(
+    run_config=TuneRunConfig(
         name=f"mnist_tune_{datetime.now():%Y%m%d_%H%M%S}",
         storage_path=STORAGE_PATH,
         checkpoint_config=CheckpointConfig(
@@ -471,7 +471,7 @@ tuner_with_asha = tune.Tuner(
         scheduler=asha_scheduler,  # Add scheduler
         max_concurrent_trials=int(os.environ.get("MAX_CONCURRENT_TRIALS", "2"))
     ),
-    run_config=RunConfig(
+    run_config=TuneRunConfig(
         name=f"mnist_tune_asha_{datetime.now():%Y%m%d_%H%M%S}",
         storage_path=STORAGE_PATH,
         checkpoint_config=CheckpointConfig(
@@ -604,7 +604,7 @@ try:
             search_alg=bayesopt_search,  # Use Bayesian optimization
             max_concurrent_trials=1  # BayesOpt works best sequentially
         ),
-        run_config=RunConfig(
+        run_config=TuneRunConfig(
             name=f"mnist_bayesopt_{datetime.now():%Y%m%d_%H%M%S}",
             storage_path=STORAGE_PATH
         )
