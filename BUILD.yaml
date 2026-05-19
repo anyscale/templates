@@ -801,3 +801,16 @@
   compute_config:
     AWS: archive/events/2026-ray-workshop/ray-workshop-2026/configs/aws.yaml
     GCP: archive/events/2026-ray-workshop/ray-workshop-2026/configs/gce.yaml
+
+# owner: @daniel.arrizza
+- name: ecommerce_end_to_end
+  dir: templates/ecommerce_end_to_end
+  cluster_env:
+    image_uri: anyscale/ray:2.55.1-py312
+  compute_config:
+    AWS: configs/ecommerce_end_to_end/aws.yaml
+    GCP: configs/ecommerce_end_to_end/gce.yaml
+  test:
+    tests_path: tests/ecommerce_end_to_end/
+    command: bash tests.sh
+    timeout_in_sec: 1800
