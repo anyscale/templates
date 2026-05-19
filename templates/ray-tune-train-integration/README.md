@@ -37,7 +37,7 @@ Let's start by initializing Ray and checking our cluster resources.
 ```python
 import ray
 from ray import train, tune
-from ray.train import RunConfig, ScalingConfig, CheckpointConfig
+from ray.train import RunConfig, ScalingConfig, CheckpointConfig, Checkpoint
 from ray.train.torch import TorchTrainer
 from ray.tune import TuneConfig
 from ray.tune.schedulers import ASHAScheduler
@@ -52,6 +52,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from datetime import datetime
 import os
+import tempfile
 
 # Initialize Ray
 ray.init()
@@ -166,8 +167,18 @@ def baseline_train_func():
         avg_loss = epoch_loss / len(train_loader)
         accuracy = 100. * correct / total
 
-        # Report metrics to Ray Train
-        train.report({"loss": avg_loss, "accuracy": accuracy})
+        # Report metrics + checkpoint to Ray Train. The Trainer's CheckpointConfig
+        # tracks best-by-accuracy checkpoints — without them, Result.metrics and
+        # Result.metrics_dataframe both return None in Ray 2.55.
+        with tempfile.TemporaryDirectory() as tmp_checkpoint_dir:
+            torch.save(
+                model.state_dict(),
+                f"{tmp_checkpoint_dir}/model.pt",
+            )
+            train.report(
+                {"loss": avg_loss, "accuracy": accuracy},
+                checkpoint=Checkpoint.from_directory(tmp_checkpoint_dir),
+            )
 
         print(f"Epoch {epoch + 1}/{num_epochs} - Loss: {avg_loss:.4f}, Accuracy: {accuracy:.2f}%")
 ```
@@ -194,7 +205,7 @@ baseline_trainer = TorchTrainer(
 )
 
 baseline_result = baseline_trainer.fit()
-print(f"\nBaseline Final Accuracy: {baseline_result.metrics_dataframe.iloc[-1]['accuracy']:.2f}%")
+print(f"\nBaseline Final Accuracy: {baseline_result.metrics['accuracy']:.2f}%")
 ```
 
 ---
@@ -248,8 +259,18 @@ def tunable_train_func(config):
         avg_loss = epoch_loss / len(train_loader)
         accuracy = 100. * correct / total
 
-        # Report metrics to both Train and Tune
-        train.report({"loss": avg_loss, "accuracy": accuracy})
+        # Report metrics + checkpoint to Ray Train. The Trainer's CheckpointConfig
+        # tracks best-by-accuracy checkpoints — without them, Result.metrics and
+        # Result.metrics_dataframe both return None in Ray 2.55.
+        with tempfile.TemporaryDirectory() as tmp_checkpoint_dir:
+            torch.save(
+                model.state_dict(),
+                f"{tmp_checkpoint_dir}/model.pt",
+            )
+            train.report(
+                {"loss": avg_loss, "accuracy": accuracy},
+                checkpoint=Checkpoint.from_directory(tmp_checkpoint_dir),
+            )
 
 print("Training function converted to tunable format.")
 print("Hyperparameters now come from config dict:")
@@ -360,8 +381,8 @@ best_result = results.get_best_result(metric="accuracy", mode="max")
 print("Best Configuration Found:")
 print(f"  Learning Rate: {best_result.config['train_loop_config']['learning_rate']:.6f}")
 print(f"  Batch Size: {best_result.config['train_loop_config']['batch_size']}")
-print(f"  Final Accuracy: {best_result.metrics_dataframe.iloc[-1]['accuracy']:.2f}%")
-print(f"  Final Loss: {best_result.metrics_dataframe.iloc[-1]['loss']:.4f}")
+print(f"  Final Accuracy: {best_result.metrics['accuracy']:.2f}%")
+print(f"  Final Loss: {best_result.metrics['loss']:.4f}")
 ```
 
 
@@ -721,7 +742,7 @@ best_result = results_with_asha.get_best_result(metric="accuracy", mode="max")
 print("Best Configuration:")
 print(f"  Learning Rate: {best_result.config['train_loop_config']['learning_rate']:.6f}")
 print(f"  Batch Size: {best_result.config['train_loop_config']['batch_size']}")
-print(f"  Final Accuracy: {best_result.metrics_dataframe.iloc[-1]['accuracy']:.2f}%")
+print(f"  Final Accuracy: {best_result.metrics['accuracy']:.2f}%")
 
 # The checkpoint path is available in the result (None unless your train
 # function calls train.report(checkpoint=Checkpoint.from_directory(...)) —
@@ -778,8 +799,8 @@ optimal_config = {
     "learning_rate": best_result.config['train_loop_config']['learning_rate'],
     "batch_size": best_result.config['train_loop_config']['batch_size'],
     "num_epochs": best_result.config['train_loop_config']['num_epochs'],
-    "final_accuracy": best_result.metrics_dataframe.iloc[-1]['accuracy'],
-    "final_loss": best_result.metrics_dataframe.iloc[-1]['loss']
+    "final_accuracy": best_result.metrics['accuracy'],
+    "final_loss": best_result.metrics['loss']
 }
 
 config_path = '/mnt/cluster_storage/optimal_config.json'
