@@ -588,7 +588,7 @@ try:
     # Define search space for BayesOpt (must be continuous)
     bayesopt_space = {
         "learning_rate": tune.loguniform(1e-4, 1e-1),
-        "batch_size": tune.choice([32, 64, 128]),  # BayesOpt treats as index
+        "batch_size": 64,  # BayesOpt requires continuous params; pinning to a single value
         "num_epochs": int(os.environ.get("NUM_EPOCHS", "5"))
     }
 
