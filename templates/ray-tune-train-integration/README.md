@@ -478,8 +478,6 @@ tuner_with_asha = tune.Tuner(
     param_space=search_space,
     tune_config=TuneConfig(
         num_samples=int(os.environ.get("NUM_SAMPLES", "12")),
-        metric="accuracy",
-        mode="max",
         scheduler=asha_scheduler,  # Add scheduler
         max_concurrent_trials=int(os.environ.get("MAX_CONCURRENT_TRIALS", "2"))
     ),
@@ -606,8 +604,6 @@ try:
         param_space=bayesopt_space,
         tune_config=TuneConfig(
             num_samples=int(os.environ.get("NUM_SAMPLES", "12")),
-            metric="accuracy",
-            mode="max",
             search_alg=bayesopt_search,  # Use Bayesian optimization
             max_concurrent_trials=1  # BayesOpt works best sequentially
         ),
