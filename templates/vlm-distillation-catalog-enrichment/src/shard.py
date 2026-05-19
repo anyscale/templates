@@ -9,7 +9,7 @@ Convention:
 A shard is "completed" iff a directory named ``shard_NNNN`` exists at
 ``output_dir`` with at least one parquet inside. Commits use POSIX
 ``os.rename``, atomic for directories on the same filesystem (works on
-NFS too, which is what ``/mnt/shared_storage/walmart-notebooks`` is).
+NFS too, which is what ``/mnt/cluster_storage/vlm-distillation-catalog-enrichment`` is).
 """
 import os
 import re

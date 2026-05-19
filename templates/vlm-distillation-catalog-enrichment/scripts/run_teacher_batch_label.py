@@ -18,7 +18,7 @@ Or as an Anyscale Job:
   anyscale job submit --config-file vlm_32b_job_config.yaml --env HF_TOKEN=$HF_TOKEN
 
 View job ui on previous run:
-    https://console.anyscale.com/cld_g54aiirwj1s8t9ktgzikqur41k/prj_f1j47h9srml4cyg962id75ms2e/jobs/prodjob_1myz2ukkkhylts5jkaqlshd4qn/data?job-tab=ray-turbo-dashboard&job-logs-section-tabs=application_logs
+    
 
 ──────────────────────────────────────────────────────────
 v2 changes vs the baseline run (compare against: <PASTE_BASELINE_JOB_URL>)
@@ -103,9 +103,9 @@ BATCH_SIZE = 16          # rows fed to each replica per step; smaller for VLMs
 CONCURRENCY = 1          # exactly 1 replica (pins TP*PP=4 GPUs on one node).
                          # Set (min, max) for autoscaling, e.g. (1, 4).
 
-BASE_DIR = "/mnt/shared_storage/walmart-notebooks"   # per-user persistent NFS — survives cluster
+BASE_DIR = "/mnt/cluster_storage/vlm-distillation-catalog-enrichment"   # per-user persistent NFS — survives cluster
                                   # teardown AND is private to the submitting user.
-                                  # Use /mnt/shared_storage/walmart-notebooks instead if teammates
+                                  # Use /mnt/cluster_storage/vlm-distillation-catalog-enrichment instead if teammates
                                   # in the same project need to read these outputs.
 HF_PATH = f"hf://datasets/McAuley-Lab/Amazon-Reviews-2023/raw_meta_{CATEGORY}"
 CACHE_PATH = f"{BASE_DIR}/catalog_{CATEGORY}_{N_ROWS}.parquet"
@@ -386,7 +386,7 @@ def main():
     # ── PREVIEW — print a few enriched rows to the job log ──
     # Reads from the just-written parquet (NOT the lazy `ds`) so we don't
     # re-execute the GPU pipeline for the preview. If the cluster's
-    # /mnt/shared_storage/walmart-notebooks gets blown away after the job, at least the
+    # /mnt/cluster_storage/vlm-distillation-catalog-enrichment gets blown away after the job, at least the
     # sample rows live forever in the captured job logs.
     print("\n[preview] sample enriched rows:")
     for row in ray.data.read_parquet(OUTPUT_PATH).take(limit=4):

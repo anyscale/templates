@@ -43,7 +43,7 @@ applied to one customer's catalog.
 
 The category-specialization is a feature, not a bug. The teacher parquet was
 produced on `Electronics` (CATEGORY in run_vlm_batch_enrich_32b.py); the
-fine-tuned adapter will be category-specialized. Real Walmart-class catalogs
+fine-tuned adapter will be category-specialized. production-scale catalogs
 deploy this as a fleet of per-category adapters served from one base model
 checkpoint — clean operational pattern, cheap to retrain per category.
 
@@ -97,7 +97,7 @@ TEACHER_N_ROWS = 10_000
 N_ROWS = int(os.environ.get("N_ROWS", TEACHER_N_ROWS))
 SEED = int(os.environ.get("SEED", 42))
 
-BASE_DIR = "/mnt/shared_storage/walmart-notebooks"
+BASE_DIR = "/mnt/cluster_storage/vlm-distillation-catalog-enrichment"
 TEACHER_PARQUET     = f"{BASE_DIR}/vlm_enriched_32b_{TEACHER_N_ROWS}.parquet"
 SFT_CACHE_PATH      = f"{BASE_DIR}/sft_cache_{N_ROWS}.parquet"
 ADAPTER_OUTPUT_DIR  = f"{BASE_DIR}/qwen25vl_3b_enrichment_lora_{N_ROWS}"

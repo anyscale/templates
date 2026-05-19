@@ -156,7 +156,7 @@ def load_amazon_berkeley_objects(
     n_rows: int,
     output_path: str,
     seed: int = 42,
-    image_cache_dir: str = "/mnt/shared_storage/walmart-notebooks/abo-images",
+    image_cache_dir: str = "/mnt/cluster_storage/vlm-distillation-catalog-enrichment/abo-images",
 ) -> str:
     """
     Backup loader: Amazon Berkeley Objects.
@@ -224,7 +224,7 @@ def load_catalog(
     source: str = "amazon-reviews-2023",
     category: str = "Electronics",
     n_rows: int = 10_000,
-    output_path: str = "/mnt/shared_storage/walmart-notebooks/vlm-demo/catalog.parquet",
+    output_path: str = "/mnt/cluster_storage/vlm-distillation-catalog-enrichment/vlm-demo/catalog.parquet",
 ):
     """
     Unified loader. `source` is one of:

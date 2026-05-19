@@ -7,7 +7,7 @@ One Ray Data graph that produces, for every product, BOTH:
   - dense image AND text vectors in a shared multimodal space (1152-dim,
     L2-normalized) ready to push into FAISS / OpenSearch k-NN / Vespa.
 
-This is the shape of a real Walmart-class catalog-understanding pipeline:
+This is the shape of a real production-scale catalog-understanding pipeline:
   - Generative VLM enrichment fills the search index (categories, tags, descriptions).
   - Dual-tower image+text encoder fills the vector index (visual search,
     out-of-stock substitution, listing dedup, "more like this", multimodal recall).
@@ -131,7 +131,7 @@ FETCH_CONCURRENCY = 16
 # CPU PROCESS (SigLIP image processor + text tokenizer). CPU bound.
 PROCESS_CONCURRENCY = 8
 
-BASE_DIR = "/mnt/shared_storage/walmart-notebooks"
+BASE_DIR = "/mnt/cluster_storage/vlm-distillation-catalog-enrichment"
 HF_PATH = f"hf://datasets/McAuley-Lab/Amazon-Reviews-2023/raw_meta_{CATEGORY}"
 CACHE_PATH = f"{BASE_DIR}/catalog_{CATEGORY}_{N_ROWS}.parquet"
 CHECKPOINT_PATH = f"{BASE_DIR}/enc_vlm_emb_enrich_{N_ROWS}_checkpoint"
@@ -156,7 +156,7 @@ OUTPUT_PATH = f"{BASE_DIR}/enc_vlm_enriched_with_embeddings_{N_ROWS}.parquet"
 #     ANYSCALE_ARTIFACT_STORAGE bucket once and use that S3 prefix.
 LORA_ADAPTER_DIR = os.environ.get(
     "QWEN_LORA_ADAPTER_DIR",
-    "s3://anyscale-production-data-cld-g54aiirwj1s8t9ktgzikqur41k/org_967t9ah1lbk1yqf1zau6a1v247/cld_g54aiirwj1s8t9ktgzikqur41k/artifact_storage/loras/qwen25vl_3b_enrichment_lora_1000",
+    None,
 )
 LORA_MAX_RANK = 16  # must be ≥ LORA_R used during training (run_vlm_ft_enrich_3b.py)
 
@@ -269,7 +269,7 @@ def _normalize_amazon_row(row):
 
 
 def build_catalog():
-    # Cache check: /mnt/shared_storage/walmart-notebooks is per-user persistent, so once we've
+    # Cache check: /mnt/cluster_storage/vlm-distillation-catalog-enrichment is per-user persistent, so once we've
     # built the catalog at this (CATEGORY, N_ROWS) we never need to redo the
     # HF read + URL HEAD checks. Saves ~10 min/run for 10K rows.
     if os.path.exists(CACHE_PATH):
@@ -323,7 +323,7 @@ def fetch_and_resize(batch):
             r = requests.get(
                 batch["image_url"][i],
                 timeout=FETCH_TIMEOUT_S,
-                headers={"User-Agent": "anyscale-demo/1.0"},
+                headers={"User-Agent": "vlm-distillation-catalog-enrichment/1.0"},
             )
             if r.status_code != 200:
                 continue

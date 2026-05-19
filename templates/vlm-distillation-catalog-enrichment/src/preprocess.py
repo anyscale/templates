@@ -30,7 +30,7 @@ def fetch_and_decode(batch: dict) -> dict:
             resp = requests.get(
                 batch["image_url"][i],
                 timeout=5.0,
-                headers={"User-Agent": "anyscale-demo/1.0"},
+                headers={"User-Agent": "vlm-distillation-catalog-enrichment/1.0"},
             )
             if resp.status_code != 200:
                 continue
