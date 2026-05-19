@@ -1,0 +1,7 @@
+torch
+transformers
+sentence-transformers
+hf_transfer
+
+# Notebook / UI
+streamlit
