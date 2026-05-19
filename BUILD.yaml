@@ -634,6 +634,7 @@
 
 # owner: @daniel.arrizza
 - name: ecommerce_rec_system
+  azure_only: true
   dir: templates/ecommerce_rec_system
   cluster_env:
     image_uri: anyscale/ray:2.55.1-py312
