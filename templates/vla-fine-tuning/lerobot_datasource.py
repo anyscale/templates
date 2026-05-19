@@ -406,14 +406,18 @@ class LeRobotReadTask(ReadTask):
                 with fs.open(path, "rb") as f:
                     pq_table = pq.read_table(f, filters=filters)
 
-                task_idx_col = pq_table.column("task_index")
-                timestamp_col = pq_table.column("timestamp")
-                ep_idx_col   = pq_table.column("episode_index")
+                # Convert columns to python lists once, instead of calling
+                # .as_py() per cell in the hot loop -- Arrow scalar boxing
+                # dominated this loop on a flame graph.
+                task_indices = pq_table.column("task_index").to_pylist()
+                timestamps   = pq_table.column("timestamp").to_pylist()
+                ep_indices   = pq_table.column("episode_index").to_pylist()
+                tasks_table  = meta.tasks
                 seg_start = 0
 
                 for row_idx in range(pq_table.num_rows):
-                    ep_idx = ep_idx_col[row_idx].as_py()
-                    row_ts = timestamp_col[row_idx].as_py()
+                    ep_idx = ep_indices[row_idx]
+                    row_ts = timestamps[row_idx]
 
                     for k in meta.video_keys:
                         target_ts = ep_from_ts[k][ep_idx] + row_ts
@@ -423,7 +427,7 @@ class LeRobotReadTask(ReadTask):
                             cur[k] = self._next_frame(frame_iters, start, k, row_idx, ep_idx)
                         frame_buffers[k].append(cur[k][0].to_ndarray(format="rgb24"))
 
-                    task_list.append(meta.tasks[task_idx_col[row_idx].as_py()])
+                    task_list.append(tasks_table[task_indices[row_idx]])
 
                     if len(task_list) >= self._rows_per_batch:
                         pq_buffer.append(pq_table.slice(seg_start, row_idx + 1 - seg_start))
