@@ -36,9 +36,9 @@ sys.path.insert(0, REPO_ROOT)
 # ──────────────────────────────────────────────────────────
 # Knobs — the only things you usually tune
 # ──────────────────────────────────────────────────────────
-CATEGORY = "Electronics"
-N_ROWS = 10_000
-SEED = 42
+CATEGORY = os.environ.get("CATEGORY", "Electronics")
+N_ROWS = int(os.environ.get("N_ROWS", 10_000))
+SEED = int(os.environ.get("SEED", 42))
 
 # Qwen2.5-VL ships in 3B / 7B / 32B / 72B. 7B in bf16 (~14GB) fits on a
 # single L4 (24GB), so we shard via replicas — one model copy per GPU —

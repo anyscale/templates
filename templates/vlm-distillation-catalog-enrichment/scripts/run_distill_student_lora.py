@@ -78,7 +78,7 @@ sys.path.insert(0, REPO_ROOT)
 # by stage 1). Training subset is N_ROWS — env-overridable so the same script
 # + job config can submit a small smoke job (N_ROWS=1000, ~45 min) or the
 # full run (N_ROWS=10000, ~6 hr) without code edits.
-TEACHER_N_ROWS = 10_000
+TEACHER_N_ROWS = int(os.environ.get("TEACHER_N_ROWS", 10_000))
 N_ROWS = int(os.environ.get("N_ROWS", TEACHER_N_ROWS))
 SEED = int(os.environ.get("SEED", 42))
 

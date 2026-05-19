@@ -106,9 +106,9 @@ sys.path.insert(0, REPO_ROOT)
 # ──────────────────────────────────────────────────────────
 # Knobs — the only things you usually tune
 # ──────────────────────────────────────────────────────────
-CATEGORY = "Electronics"
-N_ROWS = 10_000          # bump to 10_000 / 100_000 when going beyond a smoke run
-SEED = 42
+CATEGORY = os.environ.get("CATEGORY", "Electronics")
+N_ROWS = int(os.environ.get("N_ROWS", 10_000))
+SEED = int(os.environ.get("SEED", 42))
 
 # VLM (generative) — Qwen2.5-VL-3B fits on a single L4 at bf16.
 VLM_MODEL_SOURCE = "Qwen/Qwen2.5-VL-3B-Instruct"
