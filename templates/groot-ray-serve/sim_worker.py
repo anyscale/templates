@@ -173,14 +173,31 @@ def main():
               f"{result['steps']} steps, {result['policy_calls']} policy calls, "
               f"{result['avg_policy_latency_ms']:.1f}ms avg latency", flush=True)
 
-    env.close()
-
-    # Write results file for the orchestrator to pick up.
+    # ------------------------------------------------------------
+    # CRITICAL: write results file BEFORE env.close() can hang us.
+    # ------------------------------------------------------------
     if args.results_file:
         os.makedirs(os.path.dirname(args.results_file) or ".", exist_ok=True)
         with open(args.results_file, "w") as f:
             json.dump(all_results, f, indent=2)
         print(f"[Worker-{args.worker_id}] Wrote results to {args.results_file}", flush=True)
+
+    # ------------------------------------------------------------
+    # Try to close Isaac Lab cleanly, but force-exit if env.close() hangs.
+    # Isaac Sim teardown is known to deadlock; we give it 10s then kill the process.
+    # ------------------------------------------------------------
+    import signal
+    def _force_exit(sig, frame):
+        print(f"[Worker-{args.worker_id}] env.close() hung after 10s, force-exiting", flush=True)
+        os._exit(0)
+    signal.signal(signal.SIGALRM, _force_exit)
+    signal.alarm(10)
+    try:
+        env.close()
+        print(f"[Worker-{args.worker_id}] env.close() completed cleanly", flush=True)
+    except Exception as e:
+        print(f"[Worker-{args.worker_id}] env.close() raised: {type(e).__name__}: {e}", flush=True)
+    os._exit(0)  # don't let Python's atexit handlers re-hang us
 
 
 if __name__ == "__main__":

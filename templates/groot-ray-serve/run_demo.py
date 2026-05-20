@@ -97,7 +97,10 @@ def main():
     # ----------------------------------------------------------------
     # Ray init + Serve start
     # ----------------------------------------------------------------
-    runtime_env = {"env_vars": {"HF_TOKEN": hf_token}} if hf_token else {}
+    runtime_env = {
+        "env_vars": {"HF_TOKEN": hf_token} if hf_token else {},
+        "pip": ["proxsuite"],
+    }
     if not ray.is_initialized():
         ray.init(address="auto", ignore_reinit_error=True, runtime_env=runtime_env)
 

@@ -131,119 +131,125 @@ class G1LocomanipulationEnv:
         return self._format_obs(obs), float(reward), done, info
 
     def _format_obs(self, raw_obs: Any) -> Dict[str, Any]:
-        """Translate Isaac Lab's obs dict into GR00T's REAL_G1 nested modality schema.
+            """Translate Isaac Lab's obs dict into GR00T's REAL_G1 nested modality schema.
 
-        Verified schema (via live probe on cluster):
-            {
-              "video":    {"ego_view":  [B, 2, H, W, 3] uint8},   # 2 frames: -20 & 0
-              "state":    {
-                  "left_wrist_eef_9d":  [B, 1, 9] float32,   # 3 pos + 6 rot (first 2 rows of R)
-                  "right_wrist_eef_9d": [B, 1, 9] float32,
-                  "left_hand":          [B, 1, 7] float32,
-                  "right_hand":         [B, 1, 7] float32,
-                  "left_arm":           [B, 1, 7] float32,
-                  "right_arm":          [B, 1, 7] float32,
-                  "waist":              [B, 1, 3] float32,
-              },
-              "language": {"annotation.human.task_description": [[str]]},
+            Verified schema (via live probe on cluster):
+                {
+                "video":    {"ego_view":  [B, 2, H, W, 3] uint8},   # 2 frames: -20 & 0
+                "state":    {
+                    "left_wrist_eef_9d":  [B, 1, 9] float32,   # 3 pos + 6 rot (first 2 rows of R)
+                    "right_wrist_eef_9d": [B, 1, 9] float32,
+                    "left_hand":          [B, 1, 7] float32,
+                    "right_hand":         [B, 1, 7] float32,
+                    "left_arm":           [B, 1, 7] float32,
+                    "right_arm":          [B, 1, 7] float32,
+                    "waist":              [B, 1, 3] float32,
+                },
+                "language": {"annotation.human.task_description": [[str]]},
+                }
+            """
+            from scipy.spatial.transform import Rotation as _R  # deferred for env safety
+
+            def _np(x, dtype=np.float32):
+                if hasattr(x, "detach"):
+                    x = x.detach().cpu().numpy()
+                elif not isinstance(x, np.ndarray):
+                    x = np.asarray(x)
+                return x.astype(dtype)
+
+            policy_obs = raw_obs.get("policy", raw_obs) if isinstance(raw_obs, dict) else raw_obs
+
+            # === DIAGNOSTIC: dump first observation so we can verify joint indexing ===
+            if self._step_count == 0:
+                print("\n" + "="*60)
+                print("[G1Env DEBUG] raw_obs type:", type(raw_obs).__name__)
+                if isinstance(raw_obs, dict):
+                    print("[G1Env DEBUG] raw_obs keys:", list(raw_obs.keys()))
+                print("[G1Env DEBUG] policy_obs type:", type(policy_obs).__name__)
+                if isinstance(policy_obs, dict):
+                    print("[G1Env DEBUG] policy_obs keys:", list(policy_obs.keys()))
+                    for k, v in policy_obs.items():
+                        if hasattr(v, "shape"):
+                            print(f"  {k}: shape={tuple(v.shape)} dtype={getattr(v, 'dtype', '?')}")
+                        else:
+                            print(f"  {k}: {type(v).__name__}")
+                    if "joint_pos" in policy_obs:
+                        jp = policy_obs["joint_pos"]
+                        if hasattr(jp, "detach"):
+                            jp = jp.detach().cpu().numpy()
+                        jp = np.asarray(jp).flatten()
+                        print(f"[G1Env DEBUG] joint_pos[:15]: {jp[:15]}")
+                        print(f"[G1Env DEBUG] joint_pos[15:]: {jp[15:]}")
+                try:
+                    robot = self.env.unwrapped.scene["robot"]
+                    print(f"[G1Env DEBUG] robot.joint_names ({len(robot.joint_names)}):")
+                    for i, n in enumerate(robot.joint_names):
+                        print(f"  [{i}] {n}")
+                except Exception as e:
+                    print(f"[G1Env DEBUG] couldn't get joint_names: {e}")
+                print("="*60 + "\n", flush=True)
+            # === END DIAGNOSTIC ===
+
+            # ---------- Video ----------
+            if isinstance(policy_obs, dict) and "rgb" in policy_obs:
+                rgb = _np(policy_obs["rgb"], dtype=np.uint8)
+            else:
+                rgb = np.asarray(self.env.render(), dtype=np.uint8)
+            if rgb.ndim == 3:
+                rgb = rgb[None, ...]
+            if rgb.ndim == 4:
+                rgb = rgb[:, None].repeat(2, axis=1)
+            elif rgb.ndim == 5 and rgb.shape[1] == 1:
+                rgb = rgb.repeat(2, axis=1)
+
+            # ---------- State ----------
+            joint_pos = _np(policy_obs.get("joint_pos", np.zeros(29))) if isinstance(policy_obs, dict) \
+                        else _np(np.zeros(29))
+            if joint_pos.ndim == 2:
+                joint_pos = joint_pos[0]
+
+            left_arm   = joint_pos[6:13]  if joint_pos.shape[0] >= 13 else np.zeros(7, np.float32)
+            right_arm  = joint_pos[13:20] if joint_pos.shape[0] >= 20 else np.zeros(7, np.float32)
+            left_hand  = joint_pos[20:27] if joint_pos.shape[0] >= 27 else np.zeros(7, np.float32)
+            right_hand = joint_pos[27:34] if joint_pos.shape[0] >= 34 else np.zeros(7, np.float32)
+            waist      = joint_pos[0:3]   if joint_pos.shape[0] >= 3  else np.zeros(3, np.float32)
+
+            def _pose_to_9d(pos, quat_xyzw):
+                R_mat = _R.from_quat(quat_xyzw).as_matrix()
+                return np.concatenate([pos, R_mat[0], R_mat[1]], axis=-1).astype(np.float32)
+
+            def _eef_9d(prefix: str):
+                pos_key = f"{prefix}_eef_pos"
+                quat_key = f"{prefix}_eef_quat"
+                if isinstance(policy_obs, dict) and pos_key in policy_obs and quat_key in policy_obs:
+                    pos = _np(policy_obs[pos_key])
+                    quat = _np(policy_obs[quat_key])
+                    if pos.ndim == 2: pos = pos[0]
+                    if quat.ndim == 2: quat = quat[0]
+                    quat_xyzw = np.roll(quat, -1)
+                    return _pose_to_9d(pos, quat_xyzw)
+                return np.array([0.3, 0.0, 0.0, 1, 0, 0, 0, 1, 0], dtype=np.float32)
+
+            left_eef_9d  = _eef_9d("left")
+            right_eef_9d = _eef_9d("right")
+
+            state = {
+                "left_wrist_eef_9d":  left_eef_9d[None, None, :],
+                "right_wrist_eef_9d": right_eef_9d[None, None, :],
+                "left_hand":   left_hand[None, None, :],
+                "right_hand":  right_hand[None, None, :],
+                "left_arm":    left_arm[None, None, :],
+                "right_arm":   right_arm[None, None, :],
+                "waist":       waist[None, None, :],
             }
 
-        Isaac Lab's PickPlace-FixedBaseUpperBodyIK-G1-Abs-v0 task gives us joint
-        positions + eef poses. This function slices/packs them into the above.
-
-        KNOWN GAPS (TODO before production use):
-          * Joint indexing into Isaac Lab's 29-DoF G1 is a best guess; exact
-            ordering depends on the URDF. First run should print raw_obs.keys()
-            and actual joint names from env.unwrapped.scene["robot"].joint_names
-            to verify.
-          * 9D EEF format uses 3 pos + 2 rotation-matrix rows (rows 1&2, 6 dims).
-            Isaac Lab exposes eef pose as position + quaternion. We convert
-            below via R = quat_to_matrix(q); flat[0:3]=pos, flat[3:9]=R[:2].flatten().
-          * Video horizon is 2 frames but we only have 1 current frame, so we
-            duplicate current frame for the -20 slot. A proper ring buffer would
-            be better but is out of scope for this demo.
-        """
-        from scipy.spatial.transform import Rotation as _R  # deferred for env safety
-
-        def _np(x, dtype=np.float32):
-            if hasattr(x, "detach"):
-                x = x.detach().cpu().numpy()
-            elif not isinstance(x, np.ndarray):
-                x = np.asarray(x)
-            return x.astype(dtype)
-
-        policy_obs = raw_obs.get("policy", raw_obs) if isinstance(raw_obs, dict) else raw_obs
-
-        # ---------- Video ----------
-        # Horizon is [-20, 0] so we need TWO frames. We only have current, so
-        # duplicate it into both slots. Real implementation would ring-buffer.
-        if isinstance(policy_obs, dict) and "rgb" in policy_obs:
-            rgb = _np(policy_obs["rgb"], dtype=np.uint8)
-        else:
-            rgb = np.asarray(self.env.render(), dtype=np.uint8)
-        if rgb.ndim == 3:
-            rgb = rgb[None, ...]  # add batch dim if missing
-        # Now rgb is [B, H, W, 3] or [B, T, H, W, 3]. Need [B=1, T=2, H, W, 3]:
-        if rgb.ndim == 4:
-            rgb = rgb[:, None].repeat(2, axis=1)  # duplicate across time
-        elif rgb.ndim == 5 and rgb.shape[1] == 1:
-            rgb = rgb.repeat(2, axis=1)
-
-        # ---------- State ----------
-        # Get joint positions (flatten batch dim, Isaac Lab uses shape (1, N)).
-        joint_pos = _np(policy_obs.get("joint_pos", np.zeros(29))) if isinstance(policy_obs, dict) \
-                    else _np(np.zeros(29))
-        if joint_pos.ndim == 2:
-            joint_pos = joint_pos[0]  # drop batch dim
-
-        # TODO: these slices are guesses. Verify against Isaac Lab's actual
-        # joint ordering on first run.
-        left_arm   = joint_pos[6:13]  if joint_pos.shape[0] >= 13 else np.zeros(7, np.float32)
-        right_arm  = joint_pos[13:20] if joint_pos.shape[0] >= 20 else np.zeros(7, np.float32)
-        left_hand  = joint_pos[20:27] if joint_pos.shape[0] >= 27 else np.zeros(7, np.float32)
-        right_hand = joint_pos[27:34] if joint_pos.shape[0] >= 34 else np.zeros(7, np.float32)
-        waist      = joint_pos[0:3]   if joint_pos.shape[0] >= 3  else np.zeros(3, np.float32)
-
-        # EEF poses (9D = [xyz, R_row1, R_row2])
-        def _pose_to_9d(pos, quat_xyzw):
-            """Convert 3D position + quaternion to GR00T's 9D EEF format."""
-            R_mat = _R.from_quat(quat_xyzw).as_matrix()  # (3,3)
-            return np.concatenate([pos, R_mat[0], R_mat[1]], axis=-1).astype(np.float32)
-
-        def _eef_9d(prefix: str):
-            pos_key = f"{prefix}_eef_pos"
-            quat_key = f"{prefix}_eef_quat"
-            if isinstance(policy_obs, dict) and pos_key in policy_obs and quat_key in policy_obs:
-                pos = _np(policy_obs[pos_key])
-                quat = _np(policy_obs[quat_key])  # may be wxyz - Isaac Lab uses wxyz
-                if pos.ndim == 2: pos = pos[0]
-                if quat.ndim == 2: quat = quat[0]
-                # Isaac Lab quat is (w, x, y, z); scipy wants (x, y, z, w)
-                quat_xyzw = np.roll(quat, -1)
-                return _pose_to_9d(pos, quat_xyzw)
-            # Fallback: identity at origin
-            return np.array([0.3, 0.0, 0.0, 1, 0, 0, 0, 1, 0], dtype=np.float32)
-
-        left_eef_9d  = _eef_9d("left")
-        right_eef_9d = _eef_9d("right")
-
-        state = {
-            "left_wrist_eef_9d":  left_eef_9d[None, None, :],      # (1, 1, 9)
-            "right_wrist_eef_9d": right_eef_9d[None, None, :],
-            "left_hand":   left_hand[None, None, :],
-            "right_hand":  right_hand[None, None, :],
-            "left_arm":    left_arm[None, None, :],
-            "right_arm":   right_arm[None, None, :],
-            "waist":       waist[None, None, :],
-        }
-
-        return {
-            "video":    {"ego_view": rgb.astype(np.uint8)},
-            "state":    state,
-            "language": {
-                "annotation.human.task_description": [[self.language_instruction]],
-            },
-        }
+            return {
+                "video":    {"ego_view": rgb.astype(np.uint8)},
+                "state":    state,
+                "language": {
+                    "annotation.human.task_description": [[self.language_instruction]],
+                },
+            }
 
     def _flatten_action(self, action_chunk: Dict[str, np.ndarray], step_idx: int = 0) -> np.ndarray:
         """Flatten one timestep of GR00T's 9-key action chunk into Isaac Lab's
