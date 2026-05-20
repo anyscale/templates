@@ -4,7 +4,7 @@ Validate the specified template against the conventions below. If the template d
 
 ## Rules
 
-- **Only validate and format existing files.** If required files are missing (compute configs, test scripts, etc.), report what's missing and ask the user to add them — do NOT generate them yourself.
+- **Only validate and format existing files.** If required files are missing (compute configs, test scripts, etc.), report what's missing and ask the user to add them — do NOT generate them yourself. Direct them to `references/create.md` to scaffold missing files.
 - **Do not run tests.** This guide only checks formatting, not functionality.
 - **Minimal changes.** Only fix what doesn't follow conventions. Don't refactor or "improve" code.
 
@@ -25,6 +25,8 @@ templates/
 
 ## What to validate
 
+Run `python3 ci/validate_build_yaml.py --no-network` first — covers schema, paths, naming, and the legacy compute-config check authoritatively. Fix anything it reports, then sanity-check:
+
 - **BUILD.yaml entry**: matches `build-yaml-schema.yaml`. A template must use either `image_uri` OR `byod` — never both. For image bumps, see SKILL.md ("Image URI cases").
 - **Compute configs**: present at `configs/<name>/aws.yaml` and `configs/<name>/gce.yaml`. Schema in `compute-config-schema.yaml`.
 - **Tests**: `tests/<name>/tests.sh` exists.
@@ -35,4 +37,4 @@ templates/
 - WorkerNodeType:        https://docs.anyscale.com/ref/0.26.64/other#workernodetype-legacy
 - Resources:             https://docs.anyscale.com/ref/0.26.64/other#resources-legacy
 
-**If anything is missing**: report to the user, do NOT generate from scratch unless explicitly requested.
+**If anything is missing**: report to the user and point them at `references/create.md`. Do NOT generate from scratch unless explicitly requested.
