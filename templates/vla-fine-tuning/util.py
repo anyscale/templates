@@ -196,21 +196,69 @@ class NumpyToTorchCollate(NumpyBatchCollateFn):
     """
 
     def __init__(self, device: torch.device):
+        # device is accepted for API compatibility but the collate produces
+        # pinned CPU tensors only -- the H2D copy is owned by cuda_prefetcher
+        # so it can run on a separate CUDA stream and overlap with training.
         self.device = device
 
     def __call__(self, batch: dict) -> dict:
         task = list(batch.pop("task"))
         result = {}
         for k, v in batch.items():
-            arr = np.asarray(v)
+            arr = np.ascontiguousarray(v)
             if np.issubdtype(arr.dtype, np.integer):
-                result[k] = torch.tensor(arr, dtype=torch.long, device=self.device)
+                target_dtype = torch.long
             elif np.issubdtype(arr.dtype, np.bool_):
-                result[k] = torch.tensor(arr, dtype=torch.bool, device=self.device)
+                target_dtype = torch.bool
             else:
-                result[k] = torch.tensor(arr, dtype=torch.float32, device=self.device)
+                target_dtype = torch.float32
+            # Cast on CPU first so pin_memory operates on the final tensor.
+            result[k] = torch.from_numpy(arr).to(target_dtype).pin_memory()
         result["task"] = task
         return result
+
+
+def cuda_prefetcher(batch_iter, device: torch.device):
+    """One-batch GPU prefetch on a dedicated CUDA stream.
+
+    The collate hands us pinned-CPU tensors. This generator H2D-copies the
+    next batch onto a separate ``prefetch_stream`` while the caller is still
+    training on the current batch -- compute and copy overlap on the device.
+
+    Without this, even with ``non_blocking=True`` the H2D still serializes on
+    the default stream against the kernels that immediately follow it.
+    """
+    if not torch.cuda.is_available():
+        yield from batch_iter
+        return
+
+    stream = torch.cuda.Stream(device=device)
+
+    def _to_device(batch):
+        out = {}
+        with torch.cuda.stream(stream):
+            for k, v in batch.items():
+                if torch.is_tensor(v):
+                    out[k] = v.to(device, non_blocking=True)
+                else:
+                    out[k] = v
+        return out
+
+    it = iter(batch_iter)
+    try:
+        nxt = _to_device(next(it))
+    except StopIteration:
+        return
+
+    for upcoming in it:
+        # Ensure the H2D copy of `nxt` is visible to the default (compute)
+        # stream before the caller uses it.
+        torch.cuda.current_stream(device).wait_stream(stream)
+        cur, nxt = nxt, _to_device(upcoming)
+        yield cur
+
+    torch.cuda.current_stream(device).wait_stream(stream)
+    yield nxt
 
 
 # ============================================================================
@@ -240,7 +288,9 @@ def train_step(policy, batch, preprocessor, max_len, grad_accum, scaler):
         loss = out.loss if hasattr(out, "loss") else out[0]
 
     scaler.scale(loss / grad_accum).backward()
-    return float(loss.detach())
+    # Return the detached tensor (0-d, on device). Forcing .item() here would
+    # sync every step; callers can defer the sync to logging boundaries.
+    return loss.detach()
 
 
 def optimizer_step(policy, optimizer, scaler, scheduler):
@@ -250,13 +300,42 @@ def optimizer_step(policy, optimizer, scaler, scheduler):
     Called every ``grad_accum`` micro-batches.
     """
     scaler.unscale_(optimizer)
-    torch.nn.utils.clip_grad_norm_(
-        [p for p in policy.parameters() if p.requires_grad], max_norm=1.0,
-    )
+    # Cache the trainable-param list on the policy so clip_grad_norm_ doesn't
+    # re-walk every parameter (including the frozen VLM backbone) each step.
+    trainable = getattr(policy, "_trainable_params_cache", None)
+    if trainable is None:
+        trainable = [p for p in policy.parameters() if p.requires_grad]
+        policy._trainable_params_cache = trainable
+    torch.nn.utils.clip_grad_norm_(trainable, max_norm=1.0)
     scaler.step(optimizer)
     scaler.update()
     optimizer.zero_grad(set_to_none=True)
     scheduler.step()
+
+
+def enable_gpu_perf_flags():
+    """Enable GPU perf knobs on the current worker.
+
+    Called from inside the per-worker training fn (NOT at the driver/cell level
+    -- accessing ``torch.backends.cudnn`` from a cell's globals can confuse
+    cloudpickle, which then refuses to ship the train fn to workers).
+    """
+    torch.backends.cuda.matmul.allow_tf32 = True
+    torch.backends.cudnn.allow_tf32 = True
+    torch.backends.cudnn.benchmark = True
+    torch.set_float32_matmul_precision("high")
+
+
+def make_trainable_optimizer(policy, lr: float):
+    """Build a fused AdamW over the unfrozen parameters.
+
+    `fused=True` runs the optimizer step as a single CUDA kernel, which is
+    measurably faster than the foreach/python implementations for small param
+    counts (the action heads here).
+    """
+    trainable = [p for p in policy.parameters() if p.requires_grad]
+    policy._trainable_params_cache = trainable
+    return torch.optim.AdamW(trainable, lr=lr, fused=torch.cuda.is_available())
 
 
 def build_lr_scheduler(optimizer, config, num_workers, last_step):
