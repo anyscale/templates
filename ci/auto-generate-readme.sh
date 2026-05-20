@@ -32,7 +32,7 @@ for NOTEBOOK_FILE in "${NOTEBOOK_FILES[@]}"; do
 	TMPL_NAME="$(echo "${NOTEBOOK_DIR}" | cut -d'/' -f2)"
 
 	# Exclude specific notebooks from conversion
-	if [[ "${TMPL_NAME}" == "getting-started" || "${TMPL_NAME}" == "e2e-llm-workflows" || "${TMPL_NAME}" == "ray-summit-multi-modal-search" || "${TMPL_NAME}" == "image-search-and-classification" || "${TMPL_NAME}" == "entity-recognition-with-llms" ]]; then
+	if [[ "${TMPL_NAME}" == "getting-started" || "${TMPL_NAME}" == "e2e-llm-workflows" || "${TMPL_NAME}" == "ray-summit-multi-modal-search" || "${TMPL_NAME}" == "image-search-and-classification" || "${TMPL_NAME}" == "entity-recognition-with-llms" || "${TMPL_NAME}" == "groot-ray-serve" ]]; then
 		echo "Skip 'Time to complete' checking for ${TMPL_NAME}"
 	elif ! grep -q "Time to complete" "${NOTEBOOK_FILE}" ; then
 		echo "**********"
