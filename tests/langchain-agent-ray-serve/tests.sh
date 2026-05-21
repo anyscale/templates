@@ -4,7 +4,7 @@ set -euo pipefail
 echo "=== langchain-agent-ray-serve template tests ==="
 
 echo "[1/4] Installing dependencies..."
-uv pip install -r python_depset.lock --no-deps --no-cache-dir
+uv pip install -r python_depset.lock --system --no-deps --no-cache-dir
 
 echo "[2/4] Validating llm_deploy_qwen.py (Ray Serve LLM app construction)..."
 python -c "
