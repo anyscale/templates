@@ -47,7 +47,7 @@ depsets:
     output: dependencies/depsets/relaxed_ray_img_py${PYTHON_SHORT}.lock
     append_flags:
       - --python-version=${PYTHON_VERSION}
-      - --python-platform=linux
+      - --python-platform=x86_64-manylinux_2_31
       - --unsafe-package ray
       - --quiet
     build_arg_sets:
@@ -62,7 +62,7 @@ depsets:
     append_flags:
       - --index https://download.pytorch.org/whl/cu128
       - --python-version=${PYTHON_VERSION}
-      - --python-platform=linux
+      - --python-platform=x86_64-manylinux_2_31
       - --unsafe-package ray
     build_arg_sets:
       - ray2541_py311
