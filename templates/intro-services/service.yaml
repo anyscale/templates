@@ -1,0 +1,7 @@
+name: my_service
+image_uri: anyscale/ray:2.55.1-py311
+applications:
+- name: default
+  import_path: main:my_app
+  runtime_env:
+    working_dir: .

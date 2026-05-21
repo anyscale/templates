@@ -163,7 +163,7 @@ Get the system running first, then explore how it works.
 ### Prerequisites
 
 **Docker image:**
-- Use `anyscale/ray-llm:2.50.1-py311-cu128` for optimal compatibility.
+- Use `anyscale/ray-llm:2.55.1-py311-cu128` for optimal compatibility.
 
 **Compute requirements:**
 - 1x L4 GPU (g6.2xlarge, 24 GB GPU memory) for the LLM service.
