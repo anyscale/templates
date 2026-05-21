@@ -1,0 +1,10 @@
+# Core dependencies
+fastapi
+langchain
+langchain-mcp-adapters
+langchain-openai
+langgraph
+openai
+uvicorn
+httpx
+mcp

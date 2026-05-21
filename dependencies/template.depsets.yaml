@@ -44,7 +44,7 @@ depsets:
 
   - name: serve_stable_diffusion_depset_${RAY_VERSION}_${PYTHON_VERSION}_${CUDA_VARIANT}
     operation: expand
-    soruce_depset: ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
+    source_depset: ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
     requirements:
       - templates/serve-stable-diffusion/requirements.txt
     output: templates/serve-stable-diffusion/python_depset.lock
