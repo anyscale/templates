@@ -1,0 +1,5 @@
+# Deps for drift-scan.yaml: compute_drift.py + compute_effective_hash.py.
+# pyyaml/pydantic versions match requirements-dev.txt.
+pyyaml==6.0.3
+pydantic==2.13.3
+requests==2.32.3

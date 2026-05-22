@@ -3,6 +3,7 @@
 # to make sure people are using serverless
 /configs @shomilj @sofianhnaide @scottsun94
 
-# Template infra
-/BUILD.yaml @anyscale/template-infra
-/.cursor/   @anyscale/cloud-agents
+# Bypass prevention for the 'go'-label gate (see ci/generate_fanout_pipeline.py).
+/.buildkite/ @anyscale/template-infra
+/ci/         @anyscale/template-infra
+/.github/    @anyscale/template-infra
