@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import sys
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Optional
 
@@ -20,14 +21,15 @@ from validate_build_yaml import Entry  # noqa: E402
 
 
 CHANNEL_URL = "https://templates.ci.ray.io/templates/{name}/latest/channel.json"
+_SESSION = requests.Session()
 
 
-def fetch_published_hash(name: str, *, timeout: float = 10.0) -> Optional[str]:
+def fetch_published_hash(name: str, *, timeout: float = 5.0) -> Optional[str]:
     """None on first-publish (404), missing field, or transient failure
     (treated as drifted — safe default; false-positive drift just means an
     extra publish)."""
     try:
-        resp = requests.get(CHANNEL_URL.format(name=name), timeout=timeout)
+        resp = _SESSION.get(CHANNEL_URL.format(name=name), timeout=timeout)
     except requests.exceptions.RequestException as exc:
         print(f"warning: fetch failed for {name}: {exc}", file=sys.stderr)
         return None
@@ -44,12 +46,13 @@ def fetch_published_hash(name: str, *, timeout: float = 10.0) -> Optional[str]:
 
 
 def compute_drift(entries: list[Entry]) -> list[str]:
-    drifted: list[str] = []
-    for e in entries:
-        published = fetch_published_hash(e.name)
-        if published is None or effective_hash(e) != published:
-            drifted.append(e.name)
-    return drifted
+    with ThreadPoolExecutor(max_workers=10) as pool:
+        published = list(pool.map(lambda e: fetch_published_hash(e.name), entries))
+    return [
+        e.name
+        for e, p in zip(entries, published)
+        if p is None or effective_hash(e) != p
+    ]
 
 
 def main() -> int:
