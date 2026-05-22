@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""Canonical effective hash per template, used by drift-scan and by product's
-build.sh (`python ci/compute_effective_hash.py <tmpl-name>`)."""
+"""Compute the canonical effective hash for a template."""
 
 from __future__ import annotations
 
@@ -38,7 +37,7 @@ def _canonical_yaml(entry: Entry) -> bytes:
 
 
 def _git_object_hash(path: str, *, ref: str = "HEAD") -> str:
-    # Works for both directories (tree hash) and files (blob hash).
+    # `git rev-parse <ref>:<path>` returns tree hash for dirs, blob hash for files.
     out = subprocess.check_output(
         ["git", "rev-parse", f"{ref}:{path}"],
         cwd=REPO_ROOT,
@@ -61,11 +60,7 @@ def effective_hash(entry: Entry, *, ref: str = "HEAD") -> str:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("name", help="Template name (BUILD.yaml entry name)")
-    parser.add_argument(
-        "--ref",
-        default="HEAD",
-        help="Git ref to hash against (default: HEAD)",
-    )
+    parser.add_argument("--ref", default="HEAD", help="Git ref (default: HEAD)")
     args = parser.parse_args()
 
     entries = load_entries()

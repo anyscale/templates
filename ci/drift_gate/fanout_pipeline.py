@@ -1,15 +1,5 @@
 #!/usr/bin/env python3
-"""Emit the dynamic publish-templates sub-pipeline.
-
-Reads {drifted_templates, go_present, pr_number, pr_head_sha, pr_head_ref}
-from buildkite-agent meta-data. Emits one of three pipelines to stdout:
-
-  1. drift == 0                       -> empty (build short-circuits green)
-  2. drift  > 0 AND go_present=true   -> N parallel `trigger:` -> tmpl-publish
-  3. drift  > 0 AND go_present!=true  -> placeholder block + verify (re-checks
-                                         the `go` label to defeat manual
-                                         Unblock-without-`go` bypass)
-"""
+"""Emit the publish-templates sub-pipeline based on drift + `go` label."""
 
 from __future__ import annotations
 
@@ -17,11 +7,9 @@ import json
 import subprocess
 import sys
 
-import yaml
-
 
 def _meta(key: str, default: str = "") -> str:
-    # buildkite-agent exits 100 when the key is missing; treat that as "use default".
+    # buildkite-agent exits 100 when the key is missing.
     result = subprocess.run(
         ["buildkite-agent", "meta-data", "get", key],
         capture_output=True,
@@ -46,14 +34,13 @@ def _trigger_steps(drifted: list[str], pr_number: str, head_sha: str, head_ref: 
             "label": f":rocket: Publish {name}",
             "trigger": "tmpl-publish",
             "build": {
-                # `branch` is metadata only — build.sh clones templates itself.
-                # Setting it to the PR head ref namespaces child builds per-PR
-                # so `cancel_running_branch_builds` on tmpl-publish cancels
-                # only same-PR predecessors, not cross-PR concurrent publishes.
+                # build.sh clones templates itself; `branch` is metadata only.
+                # Setting it to PR head ref scopes cancel_running_branch_builds
+                # on tmpl-publish to same-PR predecessors.
                 "branch": head_ref,
                 "message": f"Publish {name} for PR #{pr_number}",
-                # env vars drive the `if:` guards on tmpl-publish's block steps
-                # (Buildkite conditional expressions don't support meta_data).
+                # env drives tmpl-publish's `if:` guards (Buildkite conditionals
+                # don't support meta_data). meta_data still needed by build.sh.
                 "env": {
                     "TMPL_NAME": name,
                     "AUTO_PUBLISH_DEV": "true",
@@ -74,9 +61,8 @@ def _trigger_steps(drifted: list[str], pr_number: str, head_sha: str, head_ref: 
 def _wait_for_label_pipeline(drifted: list[str], pr_number: str) -> dict:
     n = len(drifted)
     plural = "" if n == 1 else "s"
-    # Verify step re-runs the label check via `gh api` after the block clears.
-    # Catches the "maintainer clicks Unblock without applying `go`" bypass —
-    # the build goes red instead of silently succeeding with zero children.
+    # Defeats manual-Unblock-without-`go` bypass. Requires $GH_TOKEN on the
+    # publish-templates pipeline env.
     verify_cmd = (
         f"set -euo pipefail\n"
         f"if ! gh api repos/anyscale/templates/issues/{pr_number}/labels "
@@ -101,8 +87,6 @@ def _wait_for_label_pipeline(drifted: list[str], pr_number: str) -> dict:
                 "label": ":lock: Verify 'go' label",
                 "key": "verify-go-label",
                 "depends_on": "wait-for-go-label",
-                # GH_TOKEN must be provisioned in the publish-templates pipeline
-                # settings (Buildkite agents don't have a GH token by default).
                 "command": verify_cmd,
                 "agents": {"queue": "small"},
             },
@@ -126,7 +110,7 @@ def main() -> int:
     else:
         pipeline = _wait_for_label_pipeline(drifted, pr_number)
 
-    yaml.safe_dump(pipeline, sys.stdout, sort_keys=False, default_flow_style=False)
+    json.dump(pipeline, sys.stdout)
     return 0
 
 

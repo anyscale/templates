@@ -14,14 +14,12 @@ permissions:
 
 jobs:
   scan:
-    # Fork PRs don't have access to BUILDKITE_API_TOKEN — bail before computing
-    # anything. Mirrors the fork-PR rejection in test-template.yaml.
+    # Fork PRs lack BUILDKITE_API_TOKEN; bail.
     if: github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     steps:
-    # Sets skip=true to short-circuit subsequent steps when a non-member fires
-    # a label event. Plain `exit 0` here would only end this step's shell — the
-    # rest of the job would still run and trigger the Buildkite build.
+    # `exit 0` here would only end this step's shell, not skip the job;
+    # write skip=true and gate every later step on it.
     - name: Auth-check label event sender
       id: auth
       env:
@@ -42,7 +40,7 @@ jobs:
       if: steps.auth.outputs.skip != 'true'
       with:
         ref: ${{ github.event.pull_request.head.sha }}
-        # Full history so `git rev-parse HEAD:<path>` can resolve tree/blob hashes.
+        # Full history so `git rev-parse HEAD:<path>` resolves tree/blob hashes.
         fetch-depth: 0
 
     - uses: actions/setup-python@v5
@@ -68,8 +66,7 @@ jobs:
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        # Fetch current labels directly — the event payload may be stale if
-        # multiple labels were applied in quick succession.
+        # Event payload may be stale if labels were applied in quick succession.
         if gh pr view ${{ github.event.pull_request.number }} --repo ${{ github.repository }} \
             --json labels --jq '.labels[].name' | grep -qx go; then
           echo "go=true" >> "$GITHUB_OUTPUT"
