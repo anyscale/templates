@@ -48,16 +48,20 @@ def _wait_for_label_pipeline(drifted: list[str], pr_number: str) -> dict:
     plural = "" if n == 1 else "s"
     # Defeats manual-Unblock-without-`go` bypass. Requires $GH_TOKEN on the
     # publish-templates pipeline env.
-    verify_cmd = (
-        f"set -euo pipefail\n"
-        f"if ! gh api repos/anyscale/templates/issues/{pr_number}/labels "
-        f"--jq '.[].name' | grep -qx go; then\n"
-        f"  buildkite-agent annotate --style error "
-        f"\"Manual unblock without 'go' label is not allowed.\"\n"
-        f"  exit 1\n"
-        f"fi\n"
-        f'echo "go label present; allowing publish"\n'
-    )
+    verify_cmd = f"""set -euo pipefail
+
+if ! LABELS=$(gh api repos/anyscale/templates/issues/{pr_number}/labels --jq '.[].name'); then
+  buildkite-agent annotate --style error "Failed to fetch PR labels (gh api error — check GH_TOKEN)."
+  exit 1
+fi
+
+if ! echo "$LABELS" | grep -qx go; then
+  buildkite-agent annotate --style error "Manual unblock without 'go' label is not allowed."
+  exit 1
+fi
+
+echo "go label present; allowing publish"
+"""
     return {
         "steps": [
             {

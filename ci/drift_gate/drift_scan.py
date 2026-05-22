@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import sys
+import threading
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Optional
@@ -21,7 +22,15 @@ from validate_build_yaml import Entry  # noqa: E402
 
 
 CHANNEL_URL = "https://templates.ci.ray.io/templates/{name}/latest/channel.json"
-_SESSION = requests.Session()
+# requests.Session isn't thread-safe; give each thread its own (still pools
+# connections within the thread, which is where the wins are).
+_local = threading.local()
+
+
+def _session() -> requests.Session:
+    if not hasattr(_local, "session"):
+        _local.session = requests.Session()
+    return _local.session
 
 
 def fetch_published_hash(name: str, *, timeout: float = 5.0) -> Optional[str]:
@@ -29,7 +38,7 @@ def fetch_published_hash(name: str, *, timeout: float = 5.0) -> Optional[str]:
     (treated as drifted — safe default; false-positive drift just means an
     extra publish)."""
     try:
-        resp = _SESSION.get(CHANNEL_URL.format(name=name), timeout=timeout)
+        resp = _session().get(CHANNEL_URL.format(name=name), timeout=timeout)
     except requests.exceptions.RequestException as exc:
         print(f"warning: fetch failed for {name}: {exc}", file=sys.stderr)
         return None

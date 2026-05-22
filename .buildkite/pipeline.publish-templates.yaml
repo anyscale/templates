@@ -8,7 +8,7 @@ steps:
         exit 0
       fi
 
-      pip install --quiet --user -r ci/drift_gate/requirements-drift-gate.txt
+      python3 -m pip install --quiet --user -r ci/drift_gate/requirements-drift-gate.txt
 
       export DRIFTED="$(python3 ci/drift_gate/drift_scan.py)"
       echo "Drifted templates: $DRIFTED"
