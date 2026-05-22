@@ -52,7 +52,8 @@ def _wait_for_label_pipeline(drifted: list[str], pr_number: str) -> dict:
         f"set -euo pipefail\n"
         f"if ! gh api repos/anyscale/templates/issues/{pr_number}/labels "
         f"--jq '.[].name' | grep -qx go; then\n"
-        f'  echo "::error::Manual unblock without \'go\' label is not allowed" >&2\n'
+        f"  buildkite-agent annotate --style error "
+        f"\"Manual unblock without 'go' label is not allowed.\"\n"
         f"  exit 1\n"
         f"fi\n"
         f'echo "go label present; allowing publish"\n'

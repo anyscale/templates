@@ -23,12 +23,24 @@ CHANNEL_URL = "https://templates.ci.ray.io/templates/{name}/latest/channel.json"
 
 
 def fetch_published_hash(name: str, *, timeout: float = 10.0) -> Optional[str]:
-    """None on first-publish (404) or if channel.json lacks the field."""
-    resp = requests.get(CHANNEL_URL.format(name=name), timeout=timeout)
+    """None on first-publish (404), missing field, or transient failure
+    (treated as drifted — safe default; false-positive drift just means an
+    extra publish)."""
+    try:
+        resp = requests.get(CHANNEL_URL.format(name=name), timeout=timeout)
+    except requests.exceptions.RequestException as exc:
+        print(f"warning: fetch failed for {name}: {exc}", file=sys.stderr)
+        return None
     if resp.status_code == 404:
         return None
-    resp.raise_for_status()
-    return resp.json().get("tmpl_effective_hash")
+    if not resp.ok:
+        print(f"warning: {name} returned HTTP {resp.status_code}", file=sys.stderr)
+        return None
+    try:
+        return resp.json().get("tmpl_effective_hash")
+    except ValueError as exc:
+        print(f"warning: {name} channel.json invalid: {exc}", file=sys.stderr)
+        return None
 
 
 def compute_drift(entries: list[Entry]) -> list[str]:

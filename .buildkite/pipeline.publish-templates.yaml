@@ -13,8 +13,9 @@ steps:
       export DRIFTED="$(python3 ci/drift_gate/drift_scan.py)"
       echo "Drifted templates: $DRIFTED"
 
-      # Fetch labels fresh; webhook payload may be stale.
-      if gh pr view "$BUILDKITE_PULL_REQUEST" --repo anyscale/templates --json labels --jq '.labels[].name' | grep -qx go; then
+      # Fetch labels fresh; webhook payload may be stale. Uses the issues
+      # endpoint (works for PRs too) — needs only `Issues: Read` on GH_TOKEN.
+      if gh api "repos/anyscale/templates/issues/$BUILDKITE_PULL_REQUEST/labels" --jq '.[].name' | grep -qx go; then
         export GO_PRESENT=true
       else
         export GO_PRESENT=false
