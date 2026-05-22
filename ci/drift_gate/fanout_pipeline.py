@@ -4,23 +4,8 @@
 from __future__ import annotations
 
 import json
-import subprocess
+import os
 import sys
-
-
-def _meta(key: str, default: str = "") -> str:
-    # buildkite-agent exits 100 when the key is missing.
-    result = subprocess.run(
-        ["buildkite-agent", "meta-data", "get", key],
-        capture_output=True,
-        text=True,
-    )
-    if result.returncode == 100:
-        return default
-    if result.returncode != 0:
-        print(result.stderr, file=sys.stderr)
-        raise SystemExit(result.returncode)
-    return result.stdout.strip()
 
 
 def _empty_pipeline() -> dict:
@@ -95,17 +80,15 @@ def _wait_for_label_pipeline(drifted: list[str], pr_number: str) -> dict:
 
 
 def main() -> int:
-    drifted_raw = _meta("drifted_templates", "[]")
-    go_present = _meta("go_present", "false")
-    pr_number = _meta("pr_number", "")
-    pr_head_sha = _meta("pr_head_sha", "")
-    pr_head_ref = _meta("pr_head_ref", "")
-
-    drifted = json.loads(drifted_raw) if drifted_raw else []
+    drifted = json.loads(os.environ.get("DRIFTED", "[]"))
+    go_present = os.environ.get("GO_PRESENT", "false") == "true"
+    pr_number = os.environ.get("BUILDKITE_PULL_REQUEST", "")
+    pr_head_sha = os.environ.get("BUILDKITE_COMMIT", "")
+    pr_head_ref = os.environ.get("BUILDKITE_BRANCH", "")
 
     if not drifted:
         pipeline = _empty_pipeline()
-    elif go_present == "true":
+    elif go_present:
         pipeline = _trigger_steps(drifted, pr_number, pr_head_sha, pr_head_ref)
     else:
         pipeline = _wait_for_label_pipeline(drifted, pr_number)

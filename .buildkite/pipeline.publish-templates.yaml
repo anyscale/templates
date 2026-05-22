@@ -1,5 +1,26 @@
 steps:
-  - label: ":pipeline: Generate fanout"
-    command: python ci/drift_gate/fanout_pipeline.py | buildkite-agent pipeline upload
+  - label: ":mag: drift-scan + fanout"
+    command: |
+      set -euo pipefail
+
+      if [ "${BUILDKITE_PULL_REQUEST:-false}" = "false" ]; then
+        echo "Not a PR build; nothing to scan."
+        exit 0
+      fi
+
+      pip install --quiet --user -r ci/drift_gate/requirements.txt
+
+      export DRIFTED="$(python3 ci/drift_gate/drift_scan.py)"
+      echo "Drifted templates: $DRIFTED"
+
+      # Fetch labels fresh; webhook payload may be stale.
+      if gh pr view "$BUILDKITE_PULL_REQUEST" --repo anyscale/templates --json labels --jq '.labels[].name' | grep -qx go; then
+        export GO_PRESENT=true
+      else
+        export GO_PRESENT=false
+      fi
+      echo "Go label present: $GO_PRESENT"
+
+      python3 ci/drift_gate/fanout_pipeline.py | buildkite-agent pipeline upload
     agents:
       queue: bootstrap
