@@ -52,13 +52,13 @@ jobs:
 
     - name: Install drift-scan deps
       if: steps.auth.outputs.skip != 'true'
-      run: pip install -r ci/requirements-drift-scan.txt
+      run: pip install -r ci/drift_gate/requirements.txt
 
     - name: Compute drift
       id: drift
       if: steps.auth.outputs.skip != 'true'
       run: |
-        DRIFTED=$(python ci/compute_drift.py)
+        DRIFTED=$(python ci/drift_gate/drift_scan.py)
         echo "drifted=$DRIFTED" >> "$GITHUB_OUTPUT"
         echo "Drifted templates: $DRIFTED"
 

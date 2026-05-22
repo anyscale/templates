@@ -1,5 +1,5 @@
 steps:
   - label: ":pipeline: Generate fanout"
-    command: python ci/generate_fanout_pipeline.py | buildkite-agent pipeline upload
+    command: python ci/drift_gate/fanout_pipeline.py | buildkite-agent pipeline upload
     agents:
       queue: small

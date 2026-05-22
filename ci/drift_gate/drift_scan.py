@@ -13,7 +13,7 @@ from typing import Optional
 
 import requests
 
-from compute_effective_hash import effective_hash, load_entries
+from effective_hash import effective_hash, load_entries
 from validate_build_yaml import Entry
 
 
