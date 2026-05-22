@@ -1,3 +1,6 @@
-pyyaml==6.0.3
-pydantic==2.13.3
+# pyyaml/pydantic pins inherited from requirements-dev.txt (single source
+# of truth). `requests` lives only here (not used elsewhere).
+-c ../../requirements-dev.txt
+pyyaml
+pydantic
 requests==2.32.3

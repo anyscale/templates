@@ -15,7 +15,11 @@ steps:
 
       # Fetch labels fresh; webhook payload may be stale. Uses the issues
       # endpoint (works for PRs too) — needs only `Issues: Read` on GH_TOKEN.
-      if gh api "repos/anyscale/templates/issues/$BUILDKITE_PULL_REQUEST/labels" --jq '.[].name' | grep -qx go; then
+      if ! LABELS=$(gh api "repos/anyscale/templates/issues/$BUILDKITE_PULL_REQUEST/labels" --jq '.[].name'); then
+        buildkite-agent annotate --style error "Failed to fetch PR labels (gh api error — check GH_TOKEN)."
+        exit 1
+      fi
+      if echo "$LABELS" | grep -qx go; then
         export GO_PRESENT=true
       else
         export GO_PRESENT=false
