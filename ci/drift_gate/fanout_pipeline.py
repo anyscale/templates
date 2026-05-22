@@ -52,6 +52,13 @@ def _trigger_steps(drifted: list[str], pr_number: str, head_sha: str, head_ref: 
                 # only same-PR predecessors, not cross-PR concurrent publishes.
                 "branch": head_ref,
                 "message": f"Publish {name} for PR #{pr_number}",
+                # env vars drive the `if:` guards on tmpl-publish's block steps
+                # (Buildkite conditional expressions don't support meta_data).
+                "env": {
+                    "TMPL_NAME": name,
+                    "AUTO_PUBLISH_DEV": "true",
+                    "AUTO_PUBLISH_STAGING": "true",
+                },
                 "meta_data": {
                     "tmpl-name": name,
                     "tmpl-branch": head_ref,
