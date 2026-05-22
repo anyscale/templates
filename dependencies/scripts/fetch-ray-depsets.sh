@@ -10,12 +10,6 @@ URL="https://raw.githubusercontent.com/ray-project/ray/ray-${RAY_VERSION}/python
 
 mkdir -p "$DEST_DIR"
 
-# Skip if already fetched (idempotent across depsets sharing the same pre_hook)
-if [[ -f "$DEST_DIR/$LOCK_FILE" ]]; then
-  echo "Already fetched: $DEST_DIR/$LOCK_FILE"
-  exit 0
-fi
-
 # fallback to use requirements.txt for ray versions that don't have ray_img_py${PYTHON_SHORT}.lock
 FALLBACK_URL="https://raw.githubusercontent.com/ray-project/ray/releases/${RAY_VERSION}/python/requirements.txt"
 
