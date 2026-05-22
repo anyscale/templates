@@ -48,10 +48,14 @@ def fetch_published_hash(name: str, *, timeout: float = 5.0) -> Optional[str]:
         print(f"warning: {name} returned HTTP {resp.status_code}", file=sys.stderr)
         return None
     try:
-        return resp.json().get("tmpl_effective_hash")
+        data = resp.json()
     except ValueError as exc:
         print(f"warning: {name} channel.json invalid: {exc}", file=sys.stderr)
         return None
+    if not isinstance(data, dict):
+        print(f"warning: {name} channel.json is not an object", file=sys.stderr)
+        return None
+    return data.get("tmpl_effective_hash")
 
 
 def compute_drift(entries: list[Entry]) -> list[str]:
