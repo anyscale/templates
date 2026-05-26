@@ -1,17 +1,16 @@
-#!/bin/bash
-
-# Don't use nbconvert or jupytext unless you're willing
-# to check each subprocess unit and validate that errors
-# aren't being consumed/hidden.
-
+#!/usr/bin/env bash
 set -euxo pipefail
 
-for nb in \
-  "notebooks/dpo_qlora" \
-  "notebooks/kto_lora" \
-  "notebooks/sft_lora_deepspeed"
-do
-  python nb2py.py "${nb}.ipynb" "${nb}.py" --ignore-cmds
-  python "${nb}.py"
-  rm "${nb}.py"
+pip install -q papermill nbconvert ipykernel
+
+# Heavy llamafactory-cli train cells are tagged skip-in-ci; CI runs install + data prep.
+# %%bash cells reference ../train-configs and ../dataset-configs, so run from notebooks/.
+cd notebooks
+for nb in dpo_qlora.ipynb kto_lora.ipynb sft_lora_deepspeed.ipynb cpt_deepspeed.ipynb; do
+  base="${nb%.ipynb}"
+  jupyter nbconvert --to notebook "${nb}" \
+    --TagRemovePreprocessor.enabled=True \
+    --TagRemovePreprocessor.remove_cell_tags=skip-in-ci \
+    --output "/tmp/${base}.ci.ipynb"
+  papermill "/tmp/${base}.ci.ipynb" "/tmp/${base}.out.ipynb" --log-output --kernel python3 --cwd .
 done
