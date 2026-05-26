@@ -1,31 +1,36 @@
-#!/bin/bash
-
-# Don't use nbconvert or jupytext unless you're willing
-# to check each subprocess unit and validate that errors
-# aren't being consumed/hidden.
-
+#!/usr/bin/env bash
 set -euxo pipefail
 
-# Install dependencies first
 bash build.sh
+pip install --no-cache-dir "papermill==2.7.0" "jupyter==1.1.1" "nbconvert==7.16.6"
 
-# Use the AWS CLI to fetch BRAVE_API_KEY from Secrets Manager.
-# Replace 'my-brave-api-key-secret' with the actual secret name.
+set +x  # don't echo the resolved secret under xtrace
 BRAVE_API_KEY=$(aws secretsmanager get-secret-value \
   --secret-id brave-search-api-key \
   --query SecretString \
   --output text)
-
 export BRAVE_API_KEY
+set -x
 
-for nb in \
-  "01 Deploy_custom_mcp_in_streamable_http_with_ray_serve" \
-  "02 Build_mcp_gateway_with_existing_ray_serve_apps" \
-  "03 Deploy_single_mcp_stdio_docker_image_with_ray_serve" \
-  "04 Deploy_multiple_mcp_stdio_docker_images_with_ray_serve" \
-  "05 (Optional) Build_docker_image_for_mcp_server"
-do
-  python nb2py.py "${nb}.ipynb" "${nb}.py" --ignore-cmds
-  python "${nb}.py"
-  rm "${nb}.py"
-done
+run_nb() {
+  local nb="$1" base
+  base="$(basename "${nb}" .ipynb)"
+  jupyter nbconvert --to notebook "${nb}" \
+    --TagRemovePreprocessor.enabled=True \
+    --TagRemovePreprocessor.remove_cell_tags='["skip-in-ci"]' \
+    --output "/tmp/${base}.ci.ipynb"
+  papermill "/tmp/${base}.ci.ipynb" "/tmp/${base}.out.ipynb" --log-output --kernel python3 --cwd .
+}
+
+run_nb "01 Deploy_custom_mcp_in_streamable_http_with_ray_serve.ipynb"
+run_nb "02 Build_mcp_gateway_with_existing_ray_serve_apps.ipynb"
+
+# NB03 queries a service the customer deploys from a terminal; replicate that here.
+serve run --non-blocking brave_mcp_ray_serve:brave_search_tool
+trap 'serve shutdown -y || true' EXIT
+for _ in $(seq 1 60); do curl -sf http://localhost:8000/tools >/dev/null 2>&1 && break; sleep 5; done
+run_nb "03 Deploy_single_mcp_stdio_docker_image_with_ray_serve.ipynb"
+serve shutdown -y
+
+# NB04 deploys + queries locally on its own; the EXIT trap tears it down. NB05 is markdown-only (skipped).
+run_nb "04 Deploy_multiple_mcp_stdio_docker_images_with_ray_serve.ipynb"
