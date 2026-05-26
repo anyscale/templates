@@ -23,6 +23,8 @@ The same primitives that scale LLM inference scale cleanly to robotics. By the e
 > Ray Core fans out the expensive simulation layer.
 
 
+![GR00T-N1.7 humanoid policy running a zero-shot pick-and-place rollout in NVIDIA Isaac Lab, served by Ray Serve](https://raw.githubusercontent.com/anyscale/templates/main/templates/groot-ray-serve/g1_groot_n17_zeroshot.gif)
+
 ## Architecture
 
 <div align="center">
@@ -101,9 +103,6 @@ assert HF_TOKEN.startswith("hf_"), "Token should start with 'hf_'"
 print(f"HF token loaded (ends in ...{HF_TOKEN[-4:]})")
 ```
 
-    HF token loaded (ends in ...pLCi)
-
-
 ## Step 1: Connect to the Ray cluster
 
 Attach to the running Anyscale cluster. The `runtime_env` ensures every Ray task and Ray Serve replica inherits the HF token.
@@ -127,25 +126,6 @@ print()
 print("Translation: we are no longer running a notebook cell.")
 print("We are controlling a distributed system.")
 ```
-
-    2026-05-21 18:04:26,844	INFO worker.py:1814 -- Connecting to existing Ray cluster at address: 10.0.160.125:6379...
-    2026-05-21 18:04:26,871	INFO worker.py:2003 -- Connected to Ray cluster. View the dashboard at [1m[32mhttps://session-yx2rqsz6efuzw8ve6mu1p3w6hu.i.anyscaleuserdata.com [39m[22m
-    2026-05-21 18:04:26,891	INFO packaging.py:463 -- Pushing file package 'gcs://_ray_pkg_2a801c5b2efb6e07f662e7952ff519974a4967ef.zip' (4.94MiB) to Ray cluster...
-    2026-05-21 18:04:26,911	INFO packaging.py:476 -- Successfully pushed file package 'gcs://_ray_pkg_2a801c5b2efb6e07f662e7952ff519974a4967ef.zip'.
-
-
-    Ray cluster connected.
-    Available GPUs:         4
-    Available CPUs:         32
-    Object store memory:    48 GB
-    
-    Translation: we are no longer running a notebook cell.
-    We are controlling a distributed system.
-
-
-    /home/ray/anaconda3/lib/python3.11/site-packages/ray/_private/worker.py:2051: FutureWarning: Tip: In future versions of Ray, Ray will no longer override accelerator visible devices env var if num_gpus=0 or num_gpus=None (default). To enable this behavior and turn off this error message, set RAY_ACCEL_ENV_VAR_OVERRIDE_ON_ZERO=0
-      warnings.warn(
-
 
 ## Step 2: Pre-warm the model cache (Ray Core in action)
 
@@ -173,20 +153,6 @@ print()
 for r in ray.get([prewarm_models.remote() for _ in range(n_gpus)]):
     print(f"  {r}")
 ```
-
-    Pre-warming GR00T and Cosmos on 4 GPU workers in parallel...
-    
-
-
-    Fetching 27 files: 100%|██████████| 27/27 [00:00<00:00, 332100.32it/s]
-    Fetching 15 files: 100%|██████████| 15/15 [00:00<00:00, 35365.13it/s]
-
-
-      ip-10-0-204-32: ready in 0s
-      ip-10-0-204-32: ready in 0s
-      ip-10-0-196-47: ready in 0s
-      ip-10-0-204-32: ready in 0s
-
 
 ## Step 3: Deploy GR00T behind an HTTP endpoint (Ray Serve)
 
@@ -243,60 +209,6 @@ print()
 print(f"Policy is live at {POLICY_URL}")
 ```
 
-    INFO 2026-05-21 18:05:56,756 serve 7756 -- Connecting to existing Serve app in namespace "serve". New http options will not be applied.
-    INFO 2026-05-21 18:05:56,774 serve 7756 -- Connecting to existing Serve app in namespace "serve". New http options will not be applied.
-
-
-    Deploying GR00TPolicyServer to Ray Serve...
-
-
-    [36m(ServeController pid=5050)[0m INFO 2026-05-21 18:05:56,877 controller 5050 -- Deploying new version of Deployment(name='GR00TPolicyServer', app='gr00t-policy') (initial target replicas: 1).
-    [36m(ServeController pid=5050)[0m INFO 2026-05-21 18:05:56,984 controller 5050 -- Stopping 1 replicas of Deployment(name='GR00TPolicyServer', app='gr00t-policy') with outdated versions.
-    [36m(ServeController pid=5050)[0m INFO 2026-05-21 18:05:56,985 controller 5050 -- Adding 1 replica to Deployment(name='GR00TPolicyServer', app='gr00t-policy').
-    [36m(ServeController pid=5050)[0m INFO 2026-05-21 18:05:57,007 controller 5050 -- Draining proxy on node 'bc6327ac47a0b7cf3d0de526b20da3defcf1efb34c0a87ec97ec8b30'.
-    [36m(ServeController pid=5050)[0m INFO 2026-05-21 18:05:59,083 controller 5050 -- Replica(id='kwicybz2', deployment='GR00TPolicyServer', app='gr00t-policy') is stopped.
-
-
-    [36m(ServeReplica:gr00t-policy:GR00TPolicyServer pid=3596, ip=10.0.204.32)[0m [GR00TServer] Loading nvidia/GR00T-N1.7-3B on cuda:0
-
-
-    [36m(ServeReplica:gr00t-policy:GR00TPolicyServer pid=3596, ip=10.0.204.32)[0m Note: Environment variable`HF_TOKEN` is set and is the current active token independently from the token you've just configured.
-    [36m(ProxyActor pid=3667, ip=10.0.204.32)[0m INFO 2026-05-21 18:06:01,988 proxy 10.0.204.32 -- Proxy starting on node c5bc28447ff207e301af29bdc08b5e77a9b5a1f794597cadb0b1d868 (HTTP port: 8000).
-    [36m(ProxyActor pid=3667, ip=10.0.204.32)[0m INFO 2026-05-21 18:06:02,071 proxy 10.0.204.32 -- Got updated endpoints: {Deployment(name='GR00TPolicyServer', app='gr00t-policy'): EndpointInfo(route='/', app_is_cross_language=False, route_patterns=[RoutePattern(methods=['GET', 'HEAD'], path='/docs'), RoutePattern(methods=['GET', 'HEAD'], path='/docs/oauth2-redirect'), RoutePattern(methods=['GET', 'HEAD'], path='/openapi.json'), RoutePattern(methods=['POST'], path='/predict'), RoutePattern(methods=['GET', 'HEAD'], path='/redoc'), RoutePattern(methods=['GET'], path='/stats')])}.
-    [36m(ProxyActor pid=3667, ip=10.0.204.32)[0m INFO 2026-05-21 18:06:02,083 proxy 10.0.204.32 -- Started <ray.serve._private.router.SharedRouterLongPollClient object at 0x71ccdf5e90d0>.
-    [36m(ServeReplica:gr00t-policy:GR00TPolicyServer pid=3596, ip=10.0.204.32)[0m /home/ray/anaconda3/lib/python3.11/site-packages/albumentations/__init__.py:13: UserWarning: A new version of Albumentations is available: 2.0.8 (you have 1.4.18). Upgrade using: pip install -U albumentations. To disable automatic update checks, set the environment variable NO_ALBUMENTATIONS_UPDATE to 1.
-    [36m(ServeReplica:gr00t-policy:GR00TPolicyServer pid=3596, ip=10.0.204.32)[0m   check_for_updates()
-    [36m(ServeReplica:gr00t-policy:GR00TPolicyServer pid=3596, ip=10.0.204.32)[0m flash_attn is not installed. Falling back to sdpa attention. Install flash-attn for better performance: pip install flash-attn
-    [36m(ServeReplica:gr00t-policy:GR00TPolicyServer pid=3596, ip=10.0.204.32)[0m `torch_dtype` is deprecated! Use `dtype` instead!
-    [36m(ServeReplica:gr00t-policy:GR00TPolicyServer pid=3596, ip=10.0.204.32)[0m /home/ray/Isaac-GR00T/gr00t/model/modules/dit.py:255: FutureWarning: Accessing config attribute `compute_dtype` directly via 'AlternateVLDiT' object attribute is deprecated. Please access 'compute_dtype' over 'AlternateVLDiT's config object instead, e.g. 'unet.config.compute_dtype'.
-    [36m(ServeReplica:gr00t-policy:GR00TPolicyServer pid=3596, ip=10.0.204.32)[0m   embedding_dim=self.inner_dim, compute_dtype=self.compute_dtype
-    [36m(ServeReplica:gr00t-policy:GR00TPolicyServer pid=3596, ip=10.0.204.32)[0m /home/ray/Isaac-GR00T/gr00t/model/modules/dit.py:286: FutureWarning: Accessing config attribute `output_dim` directly via 'AlternateVLDiT' object attribute is deprecated. Please access 'output_dim' over 'AlternateVLDiT's config object instead, e.g. 'unet.config.output_dim'.
-    [36m(ServeReplica:gr00t-policy:GR00TPolicyServer pid=3596, ip=10.0.204.32)[0m   self.proj_out_2 = nn.Linear(self.inner_dim, self.output_dim)
-
-
-    [36m(ServeReplica:gr00t-policy:GR00TPolicyServer pid=3596, ip=10.0.204.32)[0m Total number of DiT parameters:  1091722240
-    [36m(ServeReplica:gr00t-policy:GR00TPolicyServer pid=3596, ip=10.0.204.32)[0m Total number of SelfAttentionTransformer parameters:  201433088
-
-
-    Loading checkpoint shards:   0%|          | 0/2 [00:00<?, ?it/s]0.0.204.32)[0m 
-    Loading checkpoint shards:  50%|█████     | 1/2 [00:05<00:05,  5.85s/it]32)[0m 
-    Loading checkpoint shards: 100%|██████████| 2/2 [00:10<00:00,  5.27s/it]32)[0m 
-    [36m(ServeController pid=5050)[0m WARNING 2026-05-21 18:06:27,067 controller 5050 -- Deployment 'GR00TPolicyServer' in application 'gr00t-policy' has 1 replicas that have taken more than 30s to initialize.
-    [36m(ServeController pid=5050)[0m This may be caused by a slow __init__ or reconfigure method.
-    [36m(ServeController pid=5050)[0m INFO 2026-05-21 18:06:28,313 controller 5050 -- Removing drained proxy on node 'bc6327ac47a0b7cf3d0de526b20da3defcf1efb34c0a87ec97ec8b30'.
-
-
-    [36m(ServeReplica:gr00t-policy:GR00TPolicyServer pid=3596, ip=10.0.204.32)[0m [GR00TServer] Loaded in 28.3s (3.14B params)
-    [36m(ServeReplica:gr00t-policy:GR00TPolicyServer pid=3596, ip=10.0.204.32)[0m [GR00TServer] Modality config: {'video': {'modality_keys': ['ego_view'], 'delta_indices': [-20, 0]}, 'state': {'modality_keys': ['left_wrist_eef_9d', 'right_wrist_eef_9d', 'left_hand', 'right_hand', 'left_arm', 'right_arm', 'waist'], 'delta_indices': [0]}, 'action': {'modality_keys': ['left_wrist_eef_9d', 'right_wrist_eef_9d', 'left_hand', 'right_hand', 'left_arm', 'right_arm', 'waist', 'base_height_command', 'navigate_command'], 'delta_indices': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39]}, 'language': {'modality_keys': ['annotation.human.task_description'], 'delta_indices': [0]}}
-
-
-    INFO 2026-05-21 18:06:34,862 serve 7756 -- Application 'gr00t-policy' is ready at http://0.0.0.0:8000/.
-
-
-    
-    Policy is live at http://10.0.160.125:8000
-
-
 ## Step 4: Send the policy a real observation
 
 A real observation in GR00T's `REAL_G1` schema includes:
@@ -342,23 +254,6 @@ print("Action chunk:")
 for k, v in resp["action"].items():
     print(f"  {k:24s} {np.asarray(v).shape}")
 ```
-
-    Round trip: 1793 ms
-    
-    Action chunk:
-      left_wrist_eef_9d        (1, 40, 9)
-      right_wrist_eef_9d       (1, 40, 9)
-      left_hand                (1, 40, 7)
-      right_hand               (1, 40, 7)
-      left_arm                 (1, 40, 7)
-      right_arm                (1, 40, 7)
-      waist                    (1, 40, 3)
-      base_height_command      (1, 40, 1)
-      navigate_command         (1, 40, 3)
-
-
-    [36m(ServeReplica:gr00t-policy:GR00TPolicyServer pid=3596, ip=10.0.204.32)[0m INFO 2026-05-21 18:06:39,372 gr00t-policy_GR00TPolicyServer x52dcpo9 e0e8dca7-0404-4d95-809e-4dcfde6ebf5d -- POST /predict 200 1782.5ms
-
 
 ## Step 4.5: Kick off a live sim rollout in the background
 
@@ -435,13 +330,6 @@ print("Isaac Lab is booting inside the actor right now.")
 print("We will collect the result in Step 5.")
 ```
 
-    Spawning sim actor on a GPU worker...
-    Launching first rollout on the actor...
-    Submitted. Future: ObjectRef(ed591a78bc5bd7f9f2db98a85f1df431e120e3fa0300000001000000)
-    Isaac Lab is booting inside the actor right now.
-    We will collect the result in Step 5.
-
-
 ## Step 5: Collect the live rollout
 
 In Step 4.5 we sent the simulator off as a Ray task. Now we call `ray.get(live_future)` to collect the result. This blocks until the rollout finishes.
@@ -503,68 +391,6 @@ if src and os.path.exists(src):
 else:
     display(Image(filename="g1_groot_n17_zeroshot.gif"))
 ```
-
-    Collecting result from the background sim task
-      Isaac Lab boot + rollout typically takes 200-300s on a warm worker
-    
-      ...still running (2s elapsed)
-      ...still running (4s elapsed)
-      ...still running (6s elapsed)
-      ...still running (8s elapsed)
-      ...still running (10s elapsed)
-      ...still running (12s elapsed)
-      ...still running (14s elapsed)
-      ...still running (16s elapsed)
-      ...still running (18s elapsed)
-      ...still running (20s elapsed)
-      ...still running (22s elapsed)
-      ...still running (24s elapsed)
-      ...still running (26s elapsed)
-      ...still running (28s elapsed)
-      ...still running (30s elapsed)
-      ...still running (32s elapsed)
-      ...still running (34s elapsed)
-      ...still running (36s elapsed)
-      ...still running (38s elapsed)
-      ...still running (40s elapsed)
-    [36m(autoscaler +2m57s)[0m Tip: use `ray status` to view detailed cluster status. To disable these messages, set RAY_SCHEDULER_EVENTS=0.
-      ...still running (42s elapsed)
-      ...still running (44s elapsed)
-      ...still running (46s elapsed)
-      ...still running (48s elapsed)
-      ...still running (50s elapsed)
-      ...still running (52s elapsed)
-      ...still running (54s elapsed)
-      ...still running (56s elapsed)
-      ...still running (58s elapsed)
-      ...still running (60s elapsed)
-      ...still running (62s elapsed)
-      ...still running (64s elapsed)
-      ...still running (66s elapsed)
-      ...still running (68s elapsed)
-      ...still running (70s elapsed)
-      ...still running (72s elapsed)
-      ...still running (74s elapsed)
-      ...still running (76s elapsed)
-      ...still running (78s elapsed)
-      ...still running (80s elapsed)
-      ...still running (82s elapsed)
-      ...still running (84s elapsed)
-      ...still running (86s elapsed)
-      ...still running (88s elapsed)
-      ...still running (90s elapsed)
-      ...still running (92s elapsed)
-      ...still running (94s elapsed)
-      ...still running (96s elapsed)
-      ...still running (98s elapsed)
-      ...still running (100s elapsed)
-      ...still running (102s elapsed)
-      ...still running (104s elapsed)
-      ...still running (106s elapsed)
-      ...still running (108s elapsed)
-      ...still running (110s elapsed)
-      ...still running (112s elapsed)
-
 
 
 ```python
