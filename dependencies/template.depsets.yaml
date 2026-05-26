@@ -1,11 +1,17 @@
 build_arg_sets:
-  ray2540_py310:
-    RAY_VERSION: "2.54.0"
-    PYTHON_VERSION: "3.10"
-    PYTHON_SHORT: "310"
+  ray2551_py311_cu128:
+    RAY_VERSION: "2.55.1"
+    PYTHON_VERSION: "3.11"
+    PYTHON_SHORT: "311"
+    CUDA_VARIANT: "cu128"
+  ray2551_py312_cu128:
+    RAY_VERSION: "2.55.1"
+    PYTHON_VERSION: "3.12"
+    PYTHON_SHORT: "312"
+    CUDA_VARIANT: "cu128"
 
 depsets:
-  - name: ray_img_depset_${RAY_VERSION}_${PYTHON_VERSION}
+  - name: ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
     operation: compile
     requirements:
       - /tmp/ray-deps/ray_img_py${PYTHON_SHORT}.lock
@@ -15,7 +21,50 @@ depsets:
       - --python-platform=linux
       - --unsafe-package ray
     build_arg_sets:
-      - ray2540_py310
+      - ray2551_py312_cu128
+
     pre_hooks:
       - dependencies/scripts/fetch-ray-depsets.sh ${RAY_VERSION} ${PYTHON_SHORT}
       - dependencies/scripts/fetch-ray-constraints.sh ${RAY_VERSION} ${PYTHON_VERSION}
+
+  - name: ray_llm_depset_${RAY_VERSION}_${PYTHON_VERSION}_${CUDA_VARIANT}
+    operation: compile
+    requirements:
+      - /tmp/ray-deps/rayllm_py${PYTHON_SHORT}_${CUDA_VARIANT}.lock
+    output: dependencies/depsets/rayllm_${RAY_VERSION}_py${PYTHON_SHORT}_${CUDA_VARIANT}.lock
+    append_flags:
+      - --python-version=${PYTHON_VERSION}
+      - --python-platform=x86_64-manylinux_2_31
+      - --unsafe-package ray
+    build_arg_sets:
+      - ray2551_py311_cu128
+    pre_hooks:
+      - dependencies/scripts/fetch-ray-llm-depsets.sh ${RAY_VERSION} ${PYTHON_SHORT} ${CUDA_VARIANT}
+      - dependencies/scripts/fetch-ray-constraints.sh ${RAY_VERSION} ${PYTHON_VERSION}
+
+  - name: serve_stable_diffusion_depset_${RAY_VERSION}_${PYTHON_VERSION}_${CUDA_VARIANT}
+    operation: expand
+    source_depset: ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
+    requirements:
+      - templates/serve-stable-diffusion/requirements.txt
+    output: templates/serve-stable-diffusion/python_depset.lock
+    append_flags:
+      - --python-version=${PYTHON_VERSION}
+      - --python-platform=linux
+      - --unsafe-package ray
+    build_arg_sets:
+      - ray2551_py312_cu128
+
+  - name: langchain_agent_ray_serve_depset_${RAY_VERSION}_${PYTHON_VERSION}
+    operation: expand
+    soruce_depset: ray_llm_depset_${RAY_VERSION}_${PYTHON_VERSION}_${CUDA_VARIANT}
+    requirements:
+      - templates/langchain-agent-ray-serve/requirements.txt
+    output: templates/langchain-agent-ray-serve/python_depset.lock
+    append_flags:
+      - --index https://download.pytorch.org/whl/cu128
+      - --python-version=${PYTHON_VERSION}
+      - --python-platform=x86_64-manylinux_2_31
+      - --unsafe-package ray
+    build_arg_sets:
+      - ray2551_py311_cu128
