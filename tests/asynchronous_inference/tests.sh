@@ -1,45 +1,13 @@
 #!/usr/bin/env bash
+
 set -euxo pipefail
 
-# Test the asynchronous inference tutorial using two methods:
-# 1. Using an actual Redis instance in AWS
-# 2. Using a Redis instance started locally by the user
+bash build.sh
+pip install --no-cache-dir papermill "nbconvert==7.16.6" ipykernel
 
-
-# -------------------------------------------------
-# Test 1: Using an actual redis instance in the AWS
-# -------------------------------------------------
-
-# pip uninstall aws -y
-
-# sudo apt-get install awscli jq redis-tools -y
-
-# pip install -r requirements.txt
-
-# anyscale service deploy --config-file=service.yaml
-
-# SERVICE_NAME="asynchronous-inference-service"
-
-# anyscale service wait --name "$SERVICE_NAME" --state RUNNING --timeout-s 600
-
-# SERVICE_JSON=$(anyscale service status --name "$SERVICE_NAME" --json)
-# SERVICE_URL=$(echo "$SERVICE_JSON" | jq -r '.query_url // .[0].query_url')
-# AUTH_TOKEN=$(echo "$SERVICE_JSON" | jq -r '.query_auth_token // .[0].query_auth_token')
-
-# python client.py -H "Bearer $AUTH_TOKEN" "$SERVICE_URL"
-
-# anyscale service terminate --name "$SERVICE_NAME"
-
-# anyscale service wait --name "$SERVICE_NAME" --state TERMINATED --timeout-s 600
-
-# anyscale service delete --name "$SERVICE_NAME"
-
-
-# -------------------------------------------------------------
-# Test 2: Using the redis instance started locally by the user.
-# -------------------------------------------------------------
-
-# python nb2py.py asynchronous-inference.ipynb /tmp/asynchronous-inference.py
-# python /tmp/asynchronous-inference.py
-
-# rm /tmp/asynchronous-inference.py
+# Notebook self-installs+starts redis (:6399) and serve.runs locally — just execute it.
+jupyter nbconvert --to notebook "asynchronous-inference.ipynb" \
+  --TagRemovePreprocessor.enabled=True \
+  --TagRemovePreprocessor.remove_cell_tags='["skip-in-ci"]' \
+  --output "/tmp/asynchronous-inference.ci.ipynb"
+papermill "/tmp/asynchronous-inference.ci.ipynb" "/tmp/asynchronous-inference.out.ipynb" --log-output --kernel python3 --cwd .
