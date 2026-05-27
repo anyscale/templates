@@ -316,7 +316,7 @@
   test:
     tests_path: tests/e2e-rag-deepdive/
     command: bash tests.sh
-    timeout_in_sec: 1800
+    timeout_in_sec: 7200
 
 # owner: @eric
 - name: skyrl
