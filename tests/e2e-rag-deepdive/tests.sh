@@ -48,7 +48,7 @@ done
 
 # Free the 4xL4 before NB07 builds its OWN 32B batch LLM. serve shutdown is async, so
 # wait (bounded poll) for the GPUs to be reclaimed to avoid contention at NB07 vLLM init.
-serve shutdown -y
+serve shutdown -y || true
 python - <<'PY'
 import time
 try:
