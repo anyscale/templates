@@ -5,8 +5,8 @@ pip install -q -r requirements.txt
 
 # README.ipynb deploys via `anyscale service deploy` (prod); run the same 3 apps locally instead
 # — LLM + weather MCP + LangGraph agent — then query the agent.
-serve run --non-blocking --name llm --route-prefix /llm llm_deploy_qwen:app
 trap 'serve shutdown -y >/dev/null 2>&1 || true' EXIT
+serve run --non-blocking --name llm --route-prefix /llm llm_deploy_qwen:app
 serve run --non-blocking --name weather --route-prefix /weather weather_mcp_ray:app
 
 # Wait for the Qwen LLM to load (GPU autoscale + vLLM); /v1/models 200 means query-ready.
