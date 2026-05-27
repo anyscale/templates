@@ -3,10 +3,7 @@ set -euo pipefail
 
 pip install -q papermill
 
-# Run the RAG ingestion notebooks via papermill (ipykernel runs their !/%%bash cells
-# natively). NB01 = regular doc-processing demo; NB02 = scalable Ray Data ingestion that
-# persists the ChromaDB vector store to /mnt/cluster_storage/vector_store.
-# They use relative paths under notebooks/, so execute with that as the working dir.
+# NB01 (doc processing) + NB02 (Ray Data ingestion; persists ChromaDB to /mnt/cluster_storage/vector_store).
 notebooks=(
   "01_(Optional)_Regular_Document_Processing_Pipeline"
   "02_Scalable_RAG_Data_Ingestion_with_Ray_Data"
@@ -15,15 +12,9 @@ for nb in "${notebooks[@]}"; do
   papermill "notebooks/${nb}.ipynb" "/tmp/${nb}.out.ipynb" -k python3 --log-output --cwd notebooks
 done
 
-# NB03-07 stay out of CI — each needs the expensive 4x L4 LLM, beyond the CI floor:
-#   03 Deploy LLM with Ray Serve        - boots the 4x L4 model endpoint
-#   04 Build Basic RAG Chatbot          - needs the served LLM
-#   05 Improve RAG with Prompt Engineering - needs the served LLM
-#   06 Evaluate RAG (Online Inference)  - online inference against the served LLM
-#   07 Evaluate RAG (Ray Data Batch)    - LLM batch inference
+# NB03-07 skipped: each needs a Qwen2.5-32B LLM on 4x L4 (serve/chatbot/eval) — beyond the CI floor.
 
-# Retrieval smoke: query the ChromaDB that NB02 persisted, using the SAME e5 model NB02
-# embedded with, and assert top-k returns hits. No LLM involved.
+# Retrieval smoke (no LLM): query NB02's persisted store with the same e5 model; assert hits.
 python - <<'PY'
 import chromadb
 from sentence_transformers import SentenceTransformer
