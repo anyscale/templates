@@ -730,9 +730,6 @@ with torch.no_grad():
     print(f"{predicted_label=} {test_label=}")
 ```
 
-    predicted_label=8 test_label=9
-
-
 ## Summary
 
 In this tutorial, you did the following: 
