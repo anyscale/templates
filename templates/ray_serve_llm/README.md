@@ -57,7 +57,7 @@ Wait for the serve application to start. You should see a message like the follo
 ```
 
 From the Ray dashboard Serve tab, all deployments should be in the "Running" or "Healthy" states, like so:
-![Ray dashboard healthy](./assets/healthy_dashboard_example.png)
+![Ray dashboard healthy](https://raw.githubusercontent.com/anyscale/templates/main/templates/ray_serve_llm/./assets/healthy_dashboard_example.png)
 
 ## Step 3 - Query the model
 
