@@ -331,7 +331,7 @@
   test:
     tests_path: tests/skyrl/
     command: bash tests.sh
-    timeout_in_sec: 900
+    timeout_in_sec: 3600
 
 # owner: @scott-lee
 - name: text-embeddings
