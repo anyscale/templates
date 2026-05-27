@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euxo pipefail
 
-pip install -q -r requirements.txt
+uv pip install -r python_depset.lock --system --no-deps --no-cache-dir --index-strategy unsafe-best-match
 
 # README.ipynb deploys via `anyscale service deploy` (prod); run the same 3 apps locally instead
 # — LLM + weather MCP + LangGraph agent — then query the agent.
