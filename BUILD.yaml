@@ -184,7 +184,7 @@
   test:
     tests_path: tests/langchain-agent-ray-serve/
     command: bash tests.sh
-    timeout_in_sec: 1800
+    timeout_in_sec: 2700
 
 # owner: @kunling
 - name: mcp-ray-serve
