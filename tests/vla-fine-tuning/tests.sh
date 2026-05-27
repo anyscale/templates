@@ -13,5 +13,5 @@ uv sync
 uv run pip install -q papermill ipykernel
 # Register a venv-backed kernelspec so papermill runs against the uv-synced
 # deps (uv-pinned transformers, lerobot, local modules), not a stray python3.
-uv run python -m ipykernel install --user --name vla --display-name vla --replace
+uv run python -m ipykernel install --user --name vla --display-name vla
 uv run papermill README.ipynb /tmp/vla.out.ipynb --log-output --kernel vla --cwd .
