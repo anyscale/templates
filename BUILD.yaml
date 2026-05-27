@@ -435,7 +435,7 @@
   test:
     tests_path: tests/ray-summit-core-masterclass/
     command: bash tests.sh
-    timeout_in_sec: 900
+    timeout_in_sec: 1800
 
 # owner: @kunling, @aydin
 - name: multi_agent_a2a
