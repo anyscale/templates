@@ -580,6 +580,19 @@
     command: bash tests.sh
     timeout_in_sec: 1800
 
+# owner: @maxpumperla, @aydin
+- name: ray-tune-train-integration
+  dir: templates/ray-tune-train-integration
+  cluster_env:
+    image_uri: anyscale/ray:2.55.1-py312-cu129
+  compute_config:
+    AWS: configs/ray-tune-train-integration/aws.yaml
+    GCP: configs/ray-tune-train-integration/gce.yaml
+  test:
+    tests_path: tests/ray-tune-train-integration/
+    command: bash tests.sh
+    timeout_in_sec: 3600
+
 # owner: @christian-stano
 - name: creatives_diffusion_finetuning
   dir: templates/creatives_diffusion_finetuning
