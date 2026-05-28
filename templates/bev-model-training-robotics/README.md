@@ -1,5 +1,7 @@
 # BEV Model Training for Robotics
 
+**⏱️ Time to complete**: 60 min
+
 Train Bird's-Eye View (BEV) perception models for robotics using Ray Data for distributed preprocessing and Ray Train for fault-tolerant distributed training. This template demonstrates production-grade patterns for scaling multi-camera perception workloads on the Anyscale platform.
 
 ## What You'll Learn
