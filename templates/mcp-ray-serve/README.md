@@ -4,7 +4,7 @@
 
 <div align="left">
 <a target="_blank" href="https://console.anyscale.com/"><img src="https://img.shields.io/badge/🚀 Run_on-Anyscale-9hf"></a>&nbsp;
-<a href="https://github.com/ray-project/ray" role="button"><img src="https://img.shields.io/static/v1?label=&amp;message=View%20On%20GitHub&amp;color=586069&amp;logo=github&amp;labelColor=2f363d"></a>&nbsp;
+<a href="https://github.com/anyscale/templates/tree/main/templates/mcp-ray-serve" role="button"><img src="https://img.shields.io/static/v1?label=&amp;message=View%20On%20GitHub&amp;color=586069&amp;logo=github&amp;labelColor=2f363d"></a>&nbsp;
 </div>
 
 This repository provides end-to-end examples for deploying and scaling Model Context Protocol (MCP) servers using Ray Serve and Anyscale Service, covering both streamable HTTP and stdio transport types:
