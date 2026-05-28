@@ -1,0 +1,35 @@
+# Anyscale Job Configuration Example
+# This is a complete, production-ready job config showing all key fields
+
+name: anyscale-jobs-intro-example
+
+# What command to run when the job starts
+entrypoint: python main.py
+
+# Container image (pinned version for reproducibility)
+image_uri: anyscale/ray:2.55.1-slim-py313-cu129
+
+# Upload current directory to job cluster
+working_dir: .
+
+# Python dependencies
+requirements:
+  - emoji==2.8.0
+
+# Environment variables
+env_vars:
+  LOG_LEVEL: "INFO"
+  EXAMPLE_ENV_VAR: "production"
+
+# Compute configuration
+compute_config:
+  head_node:
+    instance_type: m5.2xlarge
+
+  worker_nodes:
+    - instance_type: m5.xlarge
+      min_nodes: 1
+      max_nodes: 5
+
+# Retry policy
+max_retries: 2
