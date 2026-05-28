@@ -58,10 +58,10 @@ fi
 
 # Pinned to staging — Cursor Cloud agent must never run against prod.
 # --no-interactive prevents the CLI from prompting (would hang in CI).
-if out=$(ANYSCALE_HOST=https://console.anyscale-staging.com \
+if out=$(ANYSCALE_HOST=https://console.anyscale.com \
          anyscale cloud list --no-interactive 2>&1); then :; else
   add_failure_with_output \
-    "anyscale auth: 'anyscale cloud list' against staging failed — check ANYSCALE_CLI_TOKEN is a staging token" \
+    "anyscale auth: 'anyscale cloud list' against prod failed — check ANYSCALE_CLI_TOKEN is a prod token" \
     "$out"
 fi
 
