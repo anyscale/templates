@@ -8,15 +8,22 @@ git clone https://github.com/NovaSky-AI/SkyRL.git
 cd SkyRL/
 git checkout acbc21c
 
+# CI-only patch: switch `uv run --isolated` to `--frozen` in run_gsm8k.sh.
+# SkyRL's top-level `requires-python = ">=3.11"` makes uv's universal resolver
+# consider Python 3.14 + arm64-macOS, where ray==2.51.1 has no wheels, so
+# `--isolated` fails resolution. `--frozen` uses the shipped uv.lock and skips
+# resolution — equivalent runtime for our (linux x86_64 / py3.12) CI box.
+sed -i 's/uv run --isolated/uv run --frozen/g' examples/train/gsm8k/run_gsm8k.sh
+
 # run_gsm8k.sh reads DATA_DIR to build data.train_data/data.val_data, so the
 # training step reads exactly where the dataset step writes.
 export DATA_DIR=/mnt/cluster_storage/data/gsm8k
 
 # Data prep. --max_train_dataset_length truncates train so 1 epoch is a few steps.
-uv run --isolated examples/train/gsm8k/gsm8k_dataset.py --output_dir "$DATA_DIR" --max_train_dataset_length 16
+uv run --frozen examples/train/gsm8k/gsm8k_dataset.py --output_dir "$DATA_DIR" --max_train_dataset_length 16
 
 # Eval is disabled below; keep validation tiny as insurance.
-uv run --isolated python -c "
+uv run --frozen python -c "
 import pyarrow.parquet as pq
 p = '$DATA_DIR/validation.parquet'
 pq.write_table(pq.read_table(p).slice(0, 8), p)
