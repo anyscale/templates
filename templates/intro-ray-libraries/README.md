@@ -11,7 +11,7 @@ Ray AI Libraries provide a high-level, easy-to-use set of APIs for the full AI/M
 
 | Notebook | Description |
 |---|---|
-| [Introduction to Ray Train](train.ipynb) | Scale a PyTorch training loop from a single GPU to a multi-GPU cluster using Ray Train and Ray Data |
-| [Introduction to Ray Tune](tune.ipynb) | Run distributed hyperparameter search with Ray Tune, from a baseline training loop to advanced search algorithms and schedulers |
-| [Introduction to Ray Data](data.ipynb) | Process and stream large datasets for ML pipelines using Ray Data's distributed execution engine |
-| [Introduction to Ray Serve](serve.ipynb) | Deploy, scale, and operate a PyTorch model as an online service with Ray Serve |
+| [Introduction to Ray Train](https://github.com/anyscale/templates/blob/main/templates/intro-ray-libraries/train.ipynb) | Scale a PyTorch training loop from a single GPU to a multi-GPU cluster using Ray Train and Ray Data |
+| [Introduction to Ray Tune](https://github.com/anyscale/templates/blob/main/templates/intro-ray-libraries/tune.ipynb) | Run distributed hyperparameter search with Ray Tune, from a baseline training loop to advanced search algorithms and schedulers |
+| [Introduction to Ray Data](https://github.com/anyscale/templates/blob/main/templates/intro-ray-libraries/data.ipynb) | Process and stream large datasets for ML pipelines using Ray Data's distributed execution engine |
+| [Introduction to Ray Serve](https://github.com/anyscale/templates/blob/main/templates/intro-ray-libraries/serve.ipynb) | Deploy, scale, and operate a PyTorch model as an online service with Ray Serve |
