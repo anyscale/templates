@@ -1,0 +1,10 @@
+.env
+*.token
+hf_token*
+demo_output/
+candidates/
+/tmp/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.DS_Store
