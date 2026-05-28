@@ -67,7 +67,7 @@ For more information on LLM serving and Ray Serve, see the following:
 ```bash
 %%bash
 # Install dependencies
-pip install -r requirements.txt
+uv pip install -r python_depset.lock --system --no-deps --no-cache-dir --index-strategy unsafe-best-match
 ```
 
 ## Implementation: Building the services
