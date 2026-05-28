@@ -20,7 +20,7 @@ curl -sL "https://github.com/ray-project/rayci/releases/download/${RAYAPP_VERSIO
 
 ```bash
 export ANYSCALE_CLI_TOKEN="$$(aws --region=us-west-2 secretsmanager get-secret-value --secret-id $$ANYSCALE_CLI_TOKEN_SECRET_NAME | jq -r .SecretString)"
-export ANYSCALE_HOST="https://console.anyscale-staging.com"
+export ANYSCALE_HOST="https://console.anyscale.com"
 pip install anyscale==0.26.87
 ```
 

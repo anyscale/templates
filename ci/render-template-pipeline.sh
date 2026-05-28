@@ -28,7 +28,7 @@ for t in $TEMPLATES; do
       - |
         set -euo pipefail
         export ANYSCALE_CLI_TOKEN="\$\$(aws --region=us-west-2 secretsmanager get-secret-value --secret-id \$\$ANYSCALE_CLI_TOKEN_SECRET_NAME | jq -r .SecretString)"
-        export ANYSCALE_HOST="https://console.anyscale-staging.com"
+        export ANYSCALE_HOST="https://console.anyscale.com"
         bash download_rayapp.sh
         sudo apt-get update && sudo apt-get install -y rsync ca-certificates && sudo update-ca-certificates
         sudo pip install anyscale==${ANYSCALE_VERSION}
