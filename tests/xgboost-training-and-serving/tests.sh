@@ -2,7 +2,7 @@
 set -euxo pipefail
 
 pip install -q -r requirements.txt
-pip install -q papermill nbconvert ipykernel
+pip install -q papermill nbconvert==7.16.6 ipykernel
 
 # CI runs on a single CPU node; NB01 defaults to 4 GPU workers (real config, env-overridable).
 export NUM_WORKERS=2 USE_GPU=false
