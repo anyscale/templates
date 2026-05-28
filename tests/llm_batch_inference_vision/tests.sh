@@ -4,7 +4,7 @@ set -euxo pipefail
 # CI shrink — notebook defaults (10000 images, concurrency 4) are the real demo.
 export DATASET_LIMIT=8 CONCURRENCY=1
 
-pip install -q papermill nbconvert==7.16.6 ipykernel
+pip install -q papermill==2.7.0 nbconvert==7.16.6 ipykernel==6.29.5
 jupyter nbconvert --to notebook README.ipynb \
     --TagRemovePreprocessor.enabled=True \
     --TagRemovePreprocessor.remove_cell_tags='["skip-in-ci"]' \
