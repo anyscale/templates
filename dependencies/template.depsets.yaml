@@ -97,19 +97,6 @@ depsets:
     build_arg_sets:
       - ray2551_py312_cu128
 
-  - name: llm_router_depset_${RAY_VERSION}_${PYTHON_VERSION}
-    operation: expand
-    source_depset: ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
-    requirements:
-      - templates/llm-router/requirements.txt
-    output: templates/llm-router/python_depset.lock
-    append_flags:
-      - --python-version=${PYTHON_VERSION}
-      - --python-platform=linux
-      - --unsafe-package ray
-    build_arg_sets:
-      - ray2551_py312_cu128
-
   - name: biotech_protein_embeddings_depset_${RAY_VERSION}_${PYTHON_VERSION}
     operation: expand
     source_depset: ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
