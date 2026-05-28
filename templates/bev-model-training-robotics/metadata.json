@@ -1,0 +1,142 @@
+{
+  "template_id": "bev-model-training-robotics",
+  "title": "BEV Model Training for Robotics",
+  "created_at": "2026-05-05T15:35:02Z",
+  "template_intent": {
+    "purpose": "End-to-end BEV pipeline - Complete walkthrough from dataset staging to distributed training. Shows production-grade patterns for training Bird's-Eye View perception models on multi-camera robotics datasets using Ray Data for preprocessing and Ray Train for distributed training.",
+    "modules": [
+      "Ray Data (distributed preprocessing for multi-camera images and BEV label rasterization)",
+      "Ray Train (distributed training with DDP, checkpointing, and fault tolerance)"
+    ],
+    "source_relationship": "Follow closely - Keep the pedagogical flow and system design explanations. Preserve emphasis on distributed systems patterns, fault tolerance, and production-grade execution while making it more concise and template-friendly.",
+    "target_outcomes": [
+      "Stage robotics perception datasets (NuScenes) on cluster storage - Download, extract, validate multi-sensor datasets",
+      "Build Ray Data pipelines for multi-camera preprocessing - Implement scalable CPU-side preprocessing with image loading, normalization, and BEV label rasterization",
+      "Train BEV models with Ray Train and DDP - Set up distributed training with checkpointing, mixed precision, and fault tolerance for BEV perception models"
+    ]
+  },
+  "scope": {
+    "level": "standard",
+    "section_count": 12,
+    "estimated_duration_minutes": 60
+  },
+  "structure": {
+    "archetype": "single-notebook",
+    "primary_notebook": "bev_model_training_robotics.ipynb"
+  },
+  "compute_requirements": {
+    "gpu_type": "L4",
+    "gpu_count": 1,
+    "rationale": "Single GPU (L4 or A10G) per worker for training BEV Transformer. Template demonstrates 2-worker DDP training. Preprocessing runs on CPUs via Ray Data."
+  },
+  "dependencies": {
+    "base_image_tier": "llm",
+    "base_image": "anyscale/ray-llm:2.55.1-py311-cu128",
+    "pip_install": [
+      "opencv-python",
+      "nuscenes-devkit",
+      "pyquaternion",
+      "tqdm"
+    ],
+    "rationale": "LLM tier includes torch and torchvision (required for ResNet-18 backbone and model training). Only need robotics-specific packages: opencv for image ops, nuscenes-devkit for dataset API, pyquaternion for coordinate transforms."
+  },
+  "family": "Robotics",
+  "learning_path": "Robotics",
+  "target_libraries": [
+    "Ray Data",
+    "Ray Train"
+  ],
+  "workload_types": [
+    "Distributed training",
+    "Vision training"
+  ],
+  "priority": "Now",
+  "effort": "M",
+  "gap": "Thin",
+  "source_materials": [
+    {
+      "title": "Training BEV Models for Robotics with Ray",
+      "path": "anyscale-sources/content/robotics_distributed_training/02_supervised_camera_bev.ipynb",
+      "relevance": "primary"
+    },
+    {
+      "title": "Multimodal Data Pipelines for Robotics",
+      "path": "apps/dashboard/public/learning_paths/verticals/03-robotics/courses/02-multimodal-data-pipelines-for-robotics.md",
+      "relevance": "context"
+    },
+    {
+      "title": "Ray Data API Reference",
+      "path": "~/.repos/rayturbo/python/ray/data/",
+      "relevance": "reference"
+    },
+    {
+      "title": "Ray Train API Reference",
+      "path": "~/.repos/rayturbo/python/ray/train/",
+      "relevance": "reference"
+    }
+  ],
+  "debug_notes": {
+    "verification_method": "Code review and pattern validation",
+    "verified_at": "2026-05-05T16:40:00Z",
+    "verified_patterns": [
+      "Ray Data from_items() and map_batches() for distributed preprocessing",
+      "Fixed-shape tensor outputs: images (B,6,3,128,224), labels (B,50,50)",
+      "BEV label rasterization from 3D boxes using pyquaternion coordinate transforms",
+      "Camera-only BEV Transformer architecture with cross-attention",
+      "Ray Train TorchTrainer configuration with ScalingConfig, RunConfig, CheckpointConfig",
+      "DDP wrapping with prepare_model()",
+      "Mixed precision training with torch.cuda.amp",
+      "Checkpoint save/load with Ray Train Checkpoint API",
+      "Metric aggregation with torch.distributed.all_reduce()",
+      "Dataset shard streaming with train.get_dataset_shard()"
+    ],
+    "execution_requirements": {
+      "dataset": "NuScenes v1.0-mini (~400MB download)",
+      "compute": "2 workers, 1 GPU each (L4 or A10G recommended)",
+      "base_image": "anyscale/ray-llm:2.55.1-py311-cu128",
+      "additional_packages": ["opencv-python", "nuscenes-devkit", "pyquaternion", "tqdm"]
+    },
+    "key_api_findings": [
+      "Ray Data map_batches() outputs fixed-shape NumPy arrays for GPU efficiency",
+      "Ray Train datasets parameter passes named shards to workers",
+      "prepare_model() handles DDP wrapping automatically for TorchTrainer",
+      "Checkpoint.from_directory() + Checkpoint.as_directory() pattern for save/load",
+      "torch.distributed.all_reduce() aggregates metrics across workers"
+    ],
+    "note": "Template follows production patterns from source notebook (02_supervised_camera_bev.ipynb). All Ray Data, Ray Train, and PyTorch API patterns verified against Ray 2.55.1 source code. Full execution requires GPU workspace with NuScenes dataset."
+  },
+  "embedded_links": [
+    {"title": "Ray Data User Guide", "url": "https://docs.ray.io/en/latest/data/data.html", "section": "Introduction and Environment Setup"},
+    {"title": "Ray Train User Guide", "url": "https://docs.ray.io/en/latest/train/train.html", "section": "Introduction and Environment Setup"},
+    {"title": "Ray Data from_items API", "url": "https://docs.ray.io/en/latest/data/api/doc/ray.data.from_items.html", "section": "Build Ray Data Datasets for Distributed Preprocessing"},
+    {"title": "Ray Data map_batches API", "url": "https://docs.ray.io/en/latest/data/api/doc/ray.data.Dataset.map_batches.html", "section": "Build Ray Data Datasets for Distributed Preprocessing"},
+    {"title": "Ray Data iter_torch_batches API", "url": "https://docs.ray.io/en/latest/data/api/doc/ray.data.Dataset.iter_torch_batches.html", "section": "Define Ray Train Worker Loop with DDP"},
+    {"title": "TorchTrainer API Reference", "url": "https://docs.ray.io/en/latest/train/api/doc/ray.train.torch.TorchTrainer.html", "section": "Launch Distributed Training with TorchTrainer"},
+    {"title": "ScalingConfig API Reference", "url": "https://docs.ray.io/en/latest/train/api/doc/ray.train.ScalingConfig.html", "section": "Launch Distributed Training with TorchTrainer"},
+    {"title": "prepare_model for DDP", "url": "https://docs.ray.io/en/latest/train/api/doc/ray.train.torch.prepare_model.html", "section": "Define Ray Train Worker Loop with DDP"},
+    {"title": "Checkpointing Guide", "url": "https://docs.ray.io/en/latest/train/user-guides/checkpoints.html", "section": "Analyze Training Results and Checkpoints"},
+    {"title": "NuScenes Dataset", "url": "https://www.nuscenes.org/", "section": "Introduction and Environment Setup"},
+    {"title": "BEV Perception Survey Paper", "url": "https://arxiv.org/abs/2206.07959", "section": "Best Practices and Next Steps"}
+  ],
+  "embedded_images": [
+    {
+      "path": "diagrams/bev_training_pipeline.xml",
+      "title": "BEV Training Pipeline: Dataset to Trained Model",
+      "description": "End-to-end workflow showing 4 stages: dataset staging, manifest creation, Ray Data preprocessing, and distributed training. Includes data flow transformations and key benefits.",
+      "section": "Introduction and Environment Setup"
+    },
+    {
+      "path": "diagrams/camera_to_bev_transform.xml",
+      "title": "Multi-Camera to Bird's-Eye View Transformation",
+      "description": "Visual explanation of how 6 surround cameras (front/back, left/right) are processed through BEV Transformer to produce ego-centric semantic grid. Shows camera FOVs, BEV grid overlay, and output format.",
+      "section": "Define Camera-Only BEV Transformer Model"
+    },
+    {
+      "path": "diagrams/ray_distributed_architecture.xml",
+      "title": "Ray Data + Ray Train: Distributed BEV Training Architecture",
+      "description": "Cluster architecture diagram showing separation between Ray Data layer (CPU preprocessing) and Ray Train layer (GPU training with DDP). Illustrates data sharding, gradient synchronization, and checkpoint persistence.",
+      "section": "Build Ray Data Datasets for Distributed Preprocessing"
+    }
+  ],
+  "diagram_phase_completed_at": "2026-05-05T16:50:00Z"
+}

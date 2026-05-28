@@ -1,0 +1,120 @@
+<mxfile host="app.diagrams.net" modified="2026-05-05T00:00:00.000Z" agent="Claude" version="24.0.0">
+  <diagram name="BEV Training Pipeline" id="bev-pipeline">
+    <mxGraphModel dx="1400" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1000" pageHeight="800" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- Title -->
+        <mxCell id="title" value="BEV Training Pipeline: Dataset to Trained Model" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=18;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="250" y="20" width="500" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- Stage 1: Dataset Staging -->
+        <mxCell id="stage1-box" value="1. Dataset Staging" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=14;fontStyle=1;verticalAlign=top;align=center" vertex="1" parent="1">
+          <mxGeometry x="80" y="80" width="200" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="stage1-content" value="• Download NuScenes&#xa;  (~400MB)&#xa;• Extract to cluster storage&#xa;  (/mnt/cluster_storage)&#xa;• Validate dataset&#xa;• 10 scenes, 404 samples&#xa;• Multi-camera + lidar" style="text;html=1;align=left;verticalAlign=top;fontSize=10;fillColor=none;strokeColor=none;spacing=5" vertex="1" parent="1">
+          <mxGeometry x="90" y="115" width="180" height="100" as="geometry" />
+        </mxCell>
+
+        <!-- Stage 2: Manifest Creation -->
+        <mxCell id="stage2-box" value="2. Manifest Creation" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=14;fontStyle=1;verticalAlign=top;align=center" vertex="1" parent="1">
+          <mxGeometry x="320" y="80" width="200" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="stage2-content" value="• Build token-based manifest&#xa;• Lightweight: just paths&#xa;  + poses + annotations&#xa;• Decouple from NuScenes&#xa;  objects&#xa;• Split 80/20 train/val&#xa;• 200 samples subset" style="text;html=1;align=left;verticalAlign=top;fontSize=10;fillColor=none;strokeColor=none;spacing=5" vertex="1" parent="1">
+          <mxGeometry x="330" y="115" width="180" height="100" as="geometry" />
+        </mxCell>
+
+        <!-- Stage 3: Ray Data Preprocessing -->
+        <mxCell id="stage3-box" value="3. Ray Data Preprocessing" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=14;fontStyle=1;verticalAlign=top;align=center" vertex="1" parent="1">
+          <mxGeometry x="560" y="80" width="200" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="stage3-content" value="• Load 6 camera images&#xa;• Resize + normalize&#xa;• Rasterize BEV labels&#xa;  from 3D boxes&#xa;• Fixed shapes:&#xa;  - images: (6,3,128,224)&#xa;  - labels: (50,50)" style="text;html=1;align=left;verticalAlign=top;fontSize=10;fillColor=none;strokeColor=none;spacing=5" vertex="1" parent="1">
+          <mxGeometry x="570" y="115" width="180" height="100" as="geometry" />
+        </mxCell>
+
+        <!-- Stage 4: Model Training -->
+        <mxCell id="stage4-box" value="4. Distributed Training" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=14;fontStyle=1;verticalAlign=top;align=center" vertex="1" parent="1">
+          <mxGeometry x="800" y="80" width="200" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="stage4-content" value="• BEV Transformer model&#xa;• 2-worker DDP&#xa;• 1 GPU per worker&#xa;• Mixed precision (AMP)&#xa;• Checkpointing&#xa;• Fault tolerance&#xa;• Metric aggregation" style="text;html=1;align=left;verticalAlign=top;fontSize=10;fillColor=none;strokeColor=none;spacing=5" vertex="1" parent="1">
+          <mxGeometry x="810" y="115" width="180" height="100" as="geometry" />
+        </mxCell>
+
+        <!-- Arrows connecting stages -->
+        <mxCell id="arrow1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;strokeWidth=3;endArrow=block;endFill=1;strokeColor=#666666" edge="1" parent="1" source="stage1-box" target="stage2-box">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="arrow2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;strokeWidth=3;endArrow=block;endFill=1;strokeColor=#666666" edge="1" parent="1" source="stage2-box" target="stage3-box">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="arrow3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;strokeWidth=3;endArrow=block;endFill=1;strokeColor=#666666" edge="1" parent="1" source="stage3-box" target="stage4-box">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Data Flow Details -->
+        <mxCell id="dataflow-title" value="Data Flow & Transformations" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=14;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="80" y="250" width="920" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- Raw Data -->
+        <mxCell id="raw-data" value="Raw NuScenes Data" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#f5f5f5;strokeColor=#666666;fontSize=11;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="130" y="300" width="100" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="raw-data-detail" value="• Multi-camera images&#xa;• Lidar point clouds&#xa;• 3D annotations&#xa;• Calibration data" style="text;html=1;align=left;verticalAlign=top;fontSize=9" vertex="1" parent="1">
+          <mxGeometry x="250" y="310" width="150" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- Manifest -->
+        <mxCell id="manifest-data" value="Token Manifest" style="shape=note;whiteSpace=wrap;html=1;backgroundOutline=1;darkOpacity=0.05;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;fontStyle=1;size=15" vertex="1" parent="1">
+          <mxGeometry x="370" y="300" width="100" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="manifest-detail" value="JSON file:&#xa;• Sample tokens&#xa;• Camera paths&#xa;• Ego poses&#xa;• Annotation list" style="text;html=1;align=left;verticalAlign=top;fontSize=9" vertex="1" parent="1">
+          <mxGeometry x="490" y="310" width="120" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- Preprocessed Tensors -->
+        <mxCell id="tensor-data" value="Fixed-Shape Tensors" style="shape=parallelogram;perimeter=parallelogramPerimeter;whiteSpace=wrap;html=1;fixedSize=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="610" y="300" width="100" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="tensor-detail" value="NumPy arrays:&#xa;• images: (B,6,3,H,W)&#xa;• labels: (B,BEV_H,BEV_W)&#xa;Ready for GPU" style="text;html=1;align=left;verticalAlign=top;fontSize=9" vertex="1" parent="1">
+          <mxGeometry x="730" y="310" width="140" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- Trained Model -->
+        <mxCell id="model-output" value="Trained BEV Model" style="shape=hexagon;perimeter=hexagonPerimeter2;whiteSpace=wrap;html=1;fixedSize=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=11;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="850" y="300" width="100" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="model-detail" value="Checkpoint:&#xa;• Model state_dict&#xa;• Optimizer state&#xa;• Training metrics&#xa;• Resume-ready" style="text;html=1;align=left;verticalAlign=top;fontSize=9" vertex="1" parent="1">
+          <mxGeometry x="880" y="400" width="120" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- Data flow arrows -->
+        <mxCell id="flow1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#999999;dashed=1" edge="1" parent="1" source="raw-data" target="manifest-data">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="flow2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#999999;dashed=1" edge="1" parent="1" source="manifest-data" target="tensor-data">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="flow3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;strokeWidth=2;endArrow=block;endFill=1;strokeColor=#999999;dashed=1" edge="1" parent="1" source="tensor-data" target="model-output">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Key Benefits Box -->
+        <mxCell id="benefits-box" value="Key Benefits of This Pipeline" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=13;fontStyle=1;verticalAlign=top;align=left;spacing=10" vertex="1" parent="1">
+          <mxGeometry x="80" y="500" width="920" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="benefits-content" value="✓ Scalable: Ray Data parallelizes CPU preprocessing across cluster&#xa;✓ Fault-tolerant: Checkpointing enables resume from any epoch&#xa;✓ Efficient: Separates CPU preprocessing from GPU training&#xa;✓ Production-ready: Same patterns work for larger datasets (full NuScenes: 1000 scenes)&#xa;✓ Flexible: Easy to add lidar, temporal context, or better BEV architectures" style="text;html=1;align=left;verticalAlign=top;fontSize=11;fillColor=none;strokeColor=none;spacing=5" vertex="1" parent="1">
+          <mxGeometry x="90" y="540" width="900" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- Performance Note -->
+        <mxCell id="perf-note" value="⏱ Pipeline Duration: ~60 minutes end-to-end (download + 3 training epochs)" style="text;html=1;strokeColor=#666666;fillColor=#f5f5f5;align=center;verticalAlign=middle;fontSize=10;rounded=1;spacing=5;fontStyle=2" vertex="1" parent="1">
+          <mxGeometry x="300" y="650" width="400" height="40" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

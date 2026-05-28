@@ -631,3 +631,16 @@
     tests_path: tests/fintech_quant/
     command: bash tests.sh
     timeout_in_sec: 1800
+
+# owner: @max
+- name: bev-model-training-robotics
+  dir: templates/bev-model-training-robotics
+  cluster_env:
+    image_uri: anyscale/ray-llm:2.55.1-py311-cu128
+  compute_config:
+    AWS: configs/bev-model-training-robotics/aws.yaml
+    GCP: configs/bev-model-training-robotics/gce.yaml
+  test:
+    tests_path: tests/bev-model-training-robotics/
+    command: bash tests.sh
+    timeout_in_sec: 1800
