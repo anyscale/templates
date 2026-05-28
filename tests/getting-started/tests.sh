@@ -2,7 +2,7 @@
 set -euxo pipefail
 
 # Intro notebook is a CI-safe Ray hello-world; run it end-to-end.
-pip install -q papermill==2.7.0 nbconvert==7.16.6 ipykernel==6.29.5
+pip install -q papermill nbconvert==7.16.6 ipykernel
 jupyter nbconvert --to notebook README.ipynb \
   --TagRemovePreprocessor.enabled=True \
   --TagRemovePreprocessor.remove_cell_tags=skip-in-ci \
