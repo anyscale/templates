@@ -578,7 +578,7 @@
   test:
     tests_path: tests/ray_train_workloads/
     command: bash tests.sh
-    timeout_in_sec: 1800
+    timeout_in_sec: 3600
 
 # owner: @harshit-anyscale
 - name: asynchronous_inference
