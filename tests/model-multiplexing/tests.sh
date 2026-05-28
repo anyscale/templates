@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
-set -euo pipefail
+set -euxo pipefail
 
-# Convert and run the notebook
-python nb2py.py "README.ipynb" "README.py"
-python "README.py"
-rm "README.py"
+pip install -q papermill
+papermill README.ipynb /tmp/model-multiplexing.out.ipynb --log-output --kernel python3 --cwd .
