@@ -135,10 +135,22 @@ def transpose_images(batch: dict, camera_keys: list[str]) -> dict:
 
     PI0.5 (like most vision models) expects (batch, channels, height, width).
     The raw dataset stores images as (height, width, channels) uint8.
+
+    Implementation note: writing into a pre-allocated float32 buffer fuses the
+    stack + transpose + dtype cast into a single pass, avoiding the two
+    intermediate allocations that ``np.stack`` + ``np.transpose`` + ``.astype``
+    would produce. Cuts CPU time and host memory bandwidth on this stage.
     """
     result = dict(batch)
     for key in camera_keys:
-        result[key] = np.transpose(np.stack(batch[key]), (0, 3, 1, 2)).astype(np.float32)
+        frames = batch[key]
+        n = len(frames)
+        h, w, c = frames[0].shape
+        out = np.empty((n, c, h, w), dtype=np.float32)
+        for i, f in enumerate(frames):
+            # Single copy + transpose + uint8->float32 cast into the slice.
+            np.copyto(out[i], np.moveaxis(f, -1, 0), casting="unsafe")
+        result[key] = out
     return result
 
 
@@ -197,6 +209,12 @@ def train_loop_per_worker(config: dict):
 
     device = torch.device("cuda")
 
+    # -- Enable GPU perf knobs --------------------------------------------------
+    # TF32 + cudnn.benchmark, set inside the worker (must NOT reference
+    # torch.backends.cudnn from the driver's notebook globals -- cloudpickle
+    # then refuses to ship this fn to workers).
+    util.enable_gpu_perf_flags()
+
     # -- Load model and freeze backbone ----------------------------------------
     #
     # load_pi05_policy() loads the pretrained PI0.5 model, applies the
@@ -211,10 +229,11 @@ def train_loop_per_worker(config: dict):
     policy = util.load_pi05_policy()
     policy = ray.train.torch.prepare_model(policy)                         # <-- RAY TRAIN: wrap in DDP
 
-    # AdamW optimizer -- only updates the unfrozen action/time projection heads.
-    optimizer = torch.optim.AdamW(
-        [p for p in policy.parameters() if p.requires_grad], lr=config.get("lr", 1e-4),
-    )
+    # AdamW optimizer -- only updates the unfrozen action/time projection
+    # heads. make_trainable_optimizer caches the trainable-param list on the
+    # policy (so clip_grad_norm_ doesn't re-walk every step) and enables the
+    # fused CUDA implementation.
+    optimizer = util.make_trainable_optimizer(policy, lr=config.get("lr", 1e-4))
 
     # GradScaler for mixed-precision training (fp16 forward, fp32 gradients).
     # Scales the loss before backward() to prevent fp16 underflow, then
@@ -281,7 +300,11 @@ def train_loop_per_worker(config: dict):
 
     for epoch in range(start_epoch, num_epochs):
         optimizer.zero_grad(set_to_none=True)
-        epoch_loss_sum, epoch_loss_count = 0.0, 0
+        # Keep the running loss sum on-device as a 0-d tensor so we never
+        # block on a host sync inside the inner loop. We materialize a scalar
+        # only at log boundaries and at end-of-epoch.
+        epoch_loss_sum = torch.zeros((), device=device)
+        epoch_loss_count = 0
         accum_count = 0
 
         # iter_torch_batches() streams pre-processed batches from the Ray Data
@@ -289,15 +312,22 @@ def train_loop_per_worker(config: dict):
         # (mp4), renamed, and transposed on CPU workers -- zero GPU time spent
         # on data loading. Backpressure ensures we never OOM.
         # See: https://docs.ray.io/en/latest/data/api/doc/ray.data.DataIterator.iter_torch_batches.html
-        for batch in shard.iter_torch_batches(                             # <-- RAY DATA: streaming batches
-            batch_size=batch_size,
-            collate_fn=util.NumpyToTorchCollate(device),
-        ):
-            # Standard PyTorch: forward + scaled backward (see util.py)
-            loss_val = util.train_step(policy, batch, preprocessor, max_len, grad_accum, scaler)
+        # cuda_prefetcher wraps the Ray Data iterator with a 1-batch GPU
+        # prefetch on a separate CUDA stream. Batch N+1's H2D copy overlaps
+        # with batch N's forward/backward -- no stalls on data transfer.
+        batch_stream = util.cuda_prefetcher(
+            shard.iter_torch_batches(                                      # <-- RAY DATA: streaming batches
+                batch_size=batch_size,
+                collate_fn=util.NumpyToTorchCollate(device),
+            ),
+            device,
+        )
+        for batch in batch_stream:
+            # train_step returns a 0-d device tensor -- no implicit host sync.
+            loss_t = util.train_step(policy, batch, preprocessor, max_len, grad_accum, scaler)
             step += 1
             accum_count += 1
-            epoch_loss_sum += loss_val
+            epoch_loss_sum += loss_t
             epoch_loss_count += 1
 
             if accum_count % grad_accum == 0:
@@ -305,9 +335,10 @@ def train_loop_per_worker(config: dict):
                 util.optimizer_step(policy, optimizer, scaler, scheduler)
                 accum_count = 0
 
-            # Log every 10 steps so you can watch training progress.
+            # Log every 10 steps. .item() is the only host sync in this loop.
             if step % 10 == 0:
-                log.info("epoch=%d  step=%d  loss=%.4f  lr=%.2e", epoch, step, loss_val, scheduler.get_last_lr()[0])
+                log.info("epoch=%d  step=%d  loss=%.4f  lr=%.2e",
+                         epoch, step, loss_t.item(), scheduler.get_last_lr()[0])
 
         # Flush any leftover accumulated gradients at epoch end.
         if accum_count > 0:
@@ -322,7 +353,7 @@ def train_loop_per_worker(config: dict):
         # On failure, Ray restarts workers and feeds the checkpoint back to
         # ray.train.get_checkpoint() above -- automatic resume, zero user code.
         # See: https://docs.ray.io/en/latest/train/api/doc/ray.train.report.html
-        avg_loss = epoch_loss_sum / max(epoch_loss_count, 1)
+        avg_loss = (epoch_loss_sum / max(epoch_loss_count, 1)).item()
         metrics = {"epoch": epoch, "steps": step, "loss": avg_loss, "lr": scheduler.get_last_lr()[0]}
 
         if ray.train.get_context().get_world_rank() == 0:                  # <-- RAY TRAIN
