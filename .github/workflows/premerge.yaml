@@ -16,10 +16,10 @@ jobs:
     - uses: actions/checkout@v4
     - uses: actions/setup-python@v5
       with:
-        python-version: '3.9'
+        python-version: '3.12'
 
-    - name: Install pre-commit
-      run: pip install pre-commit==3.8.0 nbconvert==7.17.1 pyyaml==6.0.3 pydantic==2.13.3
+    - name: Install dev deps
+      run: pip install -r requirements-dev.txt
 
     - name: Run pre-commit
       run: pre-commit run --all-files --verbose
@@ -30,10 +30,10 @@ jobs:
     - uses: actions/checkout@v4
     - uses: actions/setup-python@v5
       with:
-        python-version: '3.9'
+        python-version: '3.12'
 
-    - name: Install nbconvert
-      run: pip install nbconvert==7.17.1
+    - name: Install dev deps
+      run: pip install -r requirements-dev.txt
 
     - name: Build templates
       run: |
@@ -46,8 +46,8 @@ jobs:
     - uses: actions/checkout@v4
     - uses: actions/setup-python@v5
       with:
-        python-version: '3.11'
-    - run: pip install pyyaml==6.0.3 pydantic==2.13.3
+        python-version: '3.12'
+    - run: pip install -r requirements-dev.txt
     - run: python ci/validate_build_yaml.py
 
   check-depsets:
