@@ -3,7 +3,7 @@
 
 **Tool calling** (aka **Function calling**) allows you to hook up external tools to an LLM, enabling it to use APIs and other functions to perform tasks. This feature is particularly useful when you want to extend the capabilities of an LLM beyond its internal knowledge base.
 
-This example explains how to use [JSON Mode](docs.anyscale.com/llms/serving/guides/json_mode) to enable this capability for *any* LLM. 
+This example explains how to use [JSON Mode](https://docs.anyscale.com/llms/serving/guides/json_mode) to enable this capability for *any* LLM. 
 
 
 ## How does tool calling work?
@@ -22,7 +22,7 @@ Tool calling can be enabled with one of the two following approaches:
 
 1. **Fine-tuning**: You can fine-tune an LLM to use tools when prompted in a specific way. Many recently released open-weight models have gone through some stages of post-training and come out-of-the-box with the capability to use tools. For examples, `mistralai/Mixtral-8x22B-Instruct-v0.1` and `meta-llama/Meta-Llama-3.1-8B-Instruct` natively support tool calling. They have been fine-tuned to do so when given a special prompt format. To use these models, you must specify the tool-compatible prompt format in your LLM config YAML. 
 
-For example, for `mistralai/Mixtral-8x22B-Instruct-v0.1`, here is the prompt format used to enable tool calling (see the full config [here](./llm_configs/mistralai--Mixtral-8x22B-Instruct-v0_1.yaml)):
+For example, for `mistralai/Mixtral-8x22B-Instruct-v0.1`, here is the prompt format used to enable tool calling (see the full config [here](https://github.com/anyscale/templates/blob/main/templates/endpoints_v2/end-to-end-examples/function_calling/llm_configs/mistralai--Mixtral-8x22B-Instruct-v0_1.yaml)):
 
 ```yaml
     prompt_format:
@@ -118,13 +118,13 @@ text = "\n\nTo help answer, you have access to the following tool:\n{tool}.\n\n 
 print(text)
 ```
 
-We then use the corresponding tool's schema to guarantee that the output matches the desired schema of the tool. An example of this implementation is done in this [client module](./client/client.py).
+We then use the corresponding tool's schema to guarantee that the output matches the desired schema of the tool. An example of this implementation is done in this [client module](https://github.com/anyscale/templates/blob/main/templates/endpoints_v2/end-to-end-examples/function_calling/client/client.py).
 
 ## Example usage
 
 The pre-requisite for the following code is to have a self-deployed model (e.g. `meta-llama/Meta-Llama-3.1-8B-Instruct`). To do so, you can follow the instructions in the [RayLLM documentation](https://docs.anyscale.com/llms/serving/intro).
 
-Alternatively, you can do `serve run serve_llama_3p1.yaml --non-blocking` to deploy a service locally on a 1xA10 GPU. Make sure to add your HuggingFace token to the [LLM config](./llm_configs/meta-llama--Meta-Llama-3_1-8B-Instruct.yaml) first.
+Alternatively, you can do `serve run serve_llama_3p1.yaml --non-blocking` to deploy a service locally on a 1xA10 GPU. Make sure to add your HuggingFace token to the [LLM config](https://github.com/anyscale/templates/blob/main/templates/endpoints_v2/end-to-end-examples/function_calling/llm_configs/meta-llama--Meta-Llama-3_1-8B-Instruct.yaml) first.
 
 
 ```python
@@ -228,6 +228,6 @@ for chunk in completion:
 
 In this example, we have shown how you can use JSON Mode to create a simple client that is capable of tool calling on Any Open-weight LLM, even if the LLM is not fine-tuned to natively support tool calling. 
 
-The implementation in [client.py](./client/client.py) is complete and you can read the code to cover all the details.
+The implementation in [client.py](https://github.com/anyscale/templates/blob/main/templates/endpoints_v2/end-to-end-examples/function_calling/client/client.py) is complete and you can read the code to cover all the details.
 
 
