@@ -6,7 +6,7 @@ nuscenes-devkit==1.1.11
 pyquaternion==0.9.9
 
 # Image processing
-opencv-python==4.10.0.84
+opencv-python-headless==4.10.0.84
 
 # Progress bars
 tqdm==4.67.1

@@ -39,6 +39,9 @@ We use the **NuScenes v1.0-mini** dataset (10 scenes, ~400 samples) as a practic
 
 ```python
 !pip install -q -r requirements.txt
+# nuscenes-devkit pulls GUI opencv-python (needs libGL, absent on the headless image);
+# force the headless build to own the cv2 namespace.
+!pip install -q --force-reinstall --no-deps opencv-python-headless==4.10.0.84
 ```
 
 
