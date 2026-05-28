@@ -51,7 +51,7 @@ pip install -q \
     "pynvml==12.0.0" \
     "hf_transfer==0.1.9" \
     "tensorboard==2.19.0" \
-    "llamafactory@git+https://github.com/hiyouga/LLaMA-Factory.git" \
+    "llamafactory@git+https://github.com/hiyouga/LlamaFactory.git" \
     "transformers>=4.56.0,<5" \
     "peft>=0.18" \
     "trl>=0.18" \
@@ -105,7 +105,7 @@ display(Code(filename="/mnt/cluster_storage/viggo/dataset_info.json", language="
 
 ## Fine-tuning
 
-Use [LLaMA-Factory](https://github.com/hiyouga/LLaMA-Factory) to perform fine-tuning on a GPU worker via Ray. Find the parameters for the training workload, post-training method, dataset location, train/val details, etc. in the `lora_sft_ray.yaml` config file. See the recipes for even more post-training methods, like SFT, pretraining, PPO, DPO, KTO, etc. [on GitHub](https://github.com/hiyouga/LLaMA-Factory/tree/main/examples).
+Use [LLaMA-Factory](https://github.com/hiyouga/LlamaFactory) to perform fine-tuning on a GPU worker via Ray. Find the parameters for the training workload, post-training method, dataset location, train/val details, etc. in the `lora_sft_ray.yaml` config file. See the recipes for even more post-training methods, like SFT, pretraining, PPO, DPO, KTO, etc. [on GitHub](https://github.com/hiyouga/LlamaFactory/tree/main/examples).
 
 **Note**: Ray also supports using other tools like [axolotl](https://axolotl-ai-cloud.github.io/axolotl/docs/ray-integration.html) or even [Ray Train + HF Accelerate + FSDP/DeepSpeed](https://docs.ray.io/en/latest/train/huggingface-accelerate.html) directly for complete control of your post-training workloads.
 

@@ -40,5 +40,5 @@ This is the path where the adapted weights are stored, you can use them for infe
 
 Here is a list of end-to-end examples that involve more steps such as data preprocessing, evaluation, etc but with a main focus on improving model quality via fine-tuning.
 
-* [Fine-tuning for Function calling on custom data](./end-to-end-examples/fine-tune-function-calling/README.ipynb): This example demonstrates how to fine-tune a model on a custom dataset for function calling task.
-* [Preference tuning for summarization](./end-to-end-examples/fine-tune-preference/README.ipynb): An example of Direct Preference Optimization (DPO) fine-tuning for summarization.
+* [Fine-tuning for Function calling on custom data](https://github.com/anyscale/templates/blob/main/templates/fine-tune-llm_v2/end-to-end-examples/fine-tune-function-calling/README.ipynb): This example demonstrates how to fine-tune a model on a custom dataset for function calling task.
+* [Preference tuning for summarization](https://github.com/anyscale/templates/blob/main/templates/fine-tune-llm_v2/end-to-end-examples/fine-tune-preference/README.ipynb): An example of Direct Preference Optimization (DPO) fine-tuning for summarization.

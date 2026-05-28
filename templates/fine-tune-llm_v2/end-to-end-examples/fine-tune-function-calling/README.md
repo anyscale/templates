@@ -135,11 +135,11 @@ save_to_jsonl(test_ds, test_file_path)
 
 # Step 2: Fine-tuning 
 
-For fine-tuning, you can start with the [fine-tuning template](../../README.md). This is an easy to use solution for data-scientists and ML engineers with flexibility in choice of models, hyperparameters, monitoring, etc.
+For fine-tuning, you can start with the [fine-tuning template](https://github.com/anyscale/templates/blob/main/templates/fine-tune-llm_v2/README.md). This is an easy to use solution for data-scientists and ML engineers with flexibility in choice of models, hyperparameters, monitoring, etc.
 
 For this guide, we will use `Llama-3-8B-Instruct` as the base model for fine-tuning and we will use LoRA for efficient fine-tuning.
 
-You can follow similar steps outlined in the [template tutorial](../../README.md). We can first generate the config YAML we would like to use:
+You can follow similar steps outlined in the [template tutorial](https://github.com/anyscale/templates/blob/main/templates/fine-tune-llm_v2/README.md). We can first generate the config YAML we would like to use:
 
 
 ```python
@@ -193,7 +193,7 @@ with open("gen_configs/llama-3-8b.yaml", "w") as f:
     yaml.dump(config, f)
 ```
 
-You can now run the `llmforge` command with this YAML config to start the fine-tuning job from the root directory (not the subfolder with this notebook) and follow the rest of the [template tutorial](../../README.md) for serving the model.
+You can now run the `llmforge` command with this YAML config to start the fine-tuning job from the root directory (not the subfolder with this notebook) and follow the rest of the [template tutorial](https://github.com/anyscale/templates/blob/main/templates/fine-tune-llm_v2/README.md) for serving the model.
 
 ```
 llmforge anyscale finetune ./end-to-end-examples/fine-tune-function-calling/gen_configs/llama-3-8b.yaml
@@ -202,7 +202,7 @@ llmforge anyscale finetune ./end-to-end-examples/fine-tune-function-calling/gen_
 # Step 3: Serving
 
 
-Make a note of the final checkpoint after fine-tuning (this should be the last line in the logs). You can now spin up the "Deploy LLMs" template which has all the instructions and required dependencies to serve your finetuned model efficiently. You will find the tutorials on [serving LoRA models](https://github.com/anyscale/templates/blob/main/templates/endpoints_v2/examples/lora/DeployLora.ipynb) (if applicable) and on deploying a [custom model](https://github.com/anyscale/templates/blob/main/templates/endpoints_v2/examples/CustomModels.ipynb) helpful. Once you have set up your fine-tuned model as an Anyscale Service, head over to the "Services" tab in the console and select your deployed service. 
+Make a note of the final checkpoint after fine-tuning (this should be the last line in the logs). You can now spin up the "Deploy LLMs" template which has all the instructions and required dependencies to serve your finetuned model efficiently. You will find the tutorials on [serving LoRA models](https://github.com/anyscale/templates/blob/main/templates/endpoints/examples/lora/DeployLora.ipynb) (if applicable) and on deploying a [custom model](https://github.com/anyscale/templates/blob/main/templates/endpoints/examples/CustomModels.ipynb) helpful. Once you have set up your fine-tuned model as an Anyscale Service, head over to the "Services" tab in the console and select your deployed service. 
 <p align="center">
   <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/fine-tune-llm_v2/end-to-end-examples/fine-tune-function-calling/assets/services_list.png" alt="Services list">
 </p>
