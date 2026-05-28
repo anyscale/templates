@@ -3,7 +3,7 @@
 set -euxo pipefail
 
 bash build.sh
-pip install --no-cache-dir "papermill==2.7.0" "nbconvert==7.16.6" "ipykernel==6.29.5"
+pip install --no-cache-dir papermill "nbconvert==7.16.6" ipykernel
 
 # Notebook self-installs+starts redis (:6399) and serve.runs locally — just execute it.
 jupyter nbconvert --to notebook "asynchronous-inference.ipynb" \

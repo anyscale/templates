@@ -4,7 +4,7 @@ set -euxo pipefail
 # the notebook's `!python tests/run_all.py` swallows its exit code, so CI runs it for real.
 
 pip install -r requirements.txt
-pip install "papermill==2.7.0" "nbconvert==7.16.6" "ipykernel==6.29.5"
+pip install papermill "nbconvert==7.16.6" ipykernel
 
 # Research/travel agents use the web-search MCP; key is optional but makes them deterministic.
 BRAVE_API_KEY=$(aws secretsmanager get-secret-value \
