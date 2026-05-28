@@ -410,7 +410,7 @@ When you call `LM.finetune()`, DSPy will:
 6. Wait for the finetuning job to complete
 7. Return the finetuned `dspy.LM` object
 
-You can see what DSPy is doing under the hood [here](https://github.com/stanfordnlp/dspy/blob/main/dspy/clients/anyscale.py)
+You can see what DSPy is doing under the hood [here](https://dspy.ai/learn/programming/language_models/)
 
 
 ```python

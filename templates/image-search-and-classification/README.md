@@ -9,7 +9,7 @@
 </div>
 
 💻 Run this entire tutorial on [Anyscale](https://www.anyscale.com/) for free:
-**https://console.anyscale.com/template-preview/image-search-and-classification** or access the repository [here](https://github.com/ray-project/ray/tree/master/doc/source/ray-overview/examples/e2e-multimodal-ai-workloads).
+**https://console.anyscale.com/template-preview/image-search-and-classification** or access the repository [here](https://github.com/anyscale/templates/tree/main/templates/image-search-and-classification).
 
 This tutorial focuses on the fundamental challenges of multimodal AI workloads at scale:
 
