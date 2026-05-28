@@ -347,6 +347,7 @@ def train_driver_fn(config):
             resources_per_worker={"CPU": 2, "GPU": 1},
         ),
         train_loop_config=config,
+        run_config=RunConfig(storage_path=STORAGE_PATH),
     )
     result = trainer.fit()
     # Defensive against None in case Ray's Result API stops populating .metrics
