@@ -10,7 +10,7 @@ set -x
 export MAX_TRAIN_STEPS=20
 
 uv sync
-uv run pip install -q papermill==2.7.0 ipykernel==6.29.5
+uv run pip install -q papermill ipykernel
 # Register a venv-backed kernelspec so papermill runs against the uv-synced
 # deps (uv-pinned transformers, lerobot, local modules), not a stray python3.
 uv run python -m ipykernel install --user --name vla --display-name vla

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euxo pipefail
 
-pip install -q papermill==2.7.0
+pip install -q papermill
 
 # Minimal-scale run of all 7 tutorial notebooks: the env knobs below shrink epochs /
 # dataset size / boost rounds (defaults in each notebook are the real customer config).

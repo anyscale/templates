@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # The notebook installs torch/torchvision/etc. itself; we just need the runner.
-pip install papermill==2.7.0
+pip install papermill
 
 # Fast synthetic-data path: 2 trials x 2 epochs of FakeData (no CIFAR-10 download).
 # Exercises the full Tune + ASHA + checkpoint + eval + plot pipeline; trials use the cluster's GPU workers.
