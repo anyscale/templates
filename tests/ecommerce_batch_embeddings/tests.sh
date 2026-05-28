@@ -1,4 +1,5 @@
-#!/bin/bash
-python nb2py.py README.ipynb README.py  # convert notebook to py script
-python README.py  # run the converted python script
-rm README.py  # remove the generated script
+#!/usr/bin/env bash
+set -euxo pipefail
+
+pip install -q papermill
+papermill README.ipynb /tmp/ecommerce_batch_embeddings.out.ipynb --log-output --kernel python3 --cwd .
