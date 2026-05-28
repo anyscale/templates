@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euxo pipefail
 
-pip install -q papermill nbconvert ipykernel
+pip install -q papermill nbconvert==7.16.6 ipykernel
 
 set +x  # don't echo the resolved secret under xtrace
 export HF_TOKEN=$(aws --region=us-west-2 secretsmanager get-secret-value \

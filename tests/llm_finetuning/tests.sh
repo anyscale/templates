@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euxo pipefail
 
-pip install -q papermill nbconvert ipykernel
+pip install -q papermill nbconvert==7.16.6 ipykernel
 
 # Heavy llamafactory-cli train cells are tagged skip-in-ci; CI runs install + data prep.
 # %%bash cells reference ../train-configs and ../dataset-configs, so run from notebooks/.

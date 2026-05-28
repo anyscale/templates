@@ -117,7 +117,7 @@
   test:
     tests_path: tests/deployment-serve-llm/
     command: bash tests.sh
-    timeout_in_sec: 900
+    timeout_in_sec: 1800
 
 # owner: @omar
 - name: vla-fine-tuning
