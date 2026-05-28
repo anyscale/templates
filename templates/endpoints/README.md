@@ -14,7 +14,7 @@ You can also find more advanced tutorials in the `examples/` folder, including t
 
 ## Step 1 - Run the model locally in the Workspace
 
-We provide a starter command to run Llama and Mistral-family models via Ray Serve. You can specify the arguments, such as Lora, GPU type and tensor parallelism via the command. You can also follow the [guide](examples/CustomModels.ipynb) to bring your own models.
+We provide a starter command to run Llama and Mistral-family models via Ray Serve. You can specify the arguments, such as Lora, GPU type and tensor parallelism via the command. You can also follow the [guide](https://github.com/anyscale/templates/blob/main/templates/endpoints/examples/CustomModels.ipynb) to bring your own models.
 
 The command will generate 2 files - a model config file (saved in `model_config/`) and a serve config file (`serve_TIMESTAMP.yaml`) that you can reference and re-run in the future.
 
@@ -132,12 +132,12 @@ As well as operational features for efficient scaling of LLM apps:
 - Native multi-GPU & multi-node model deployments.
 
 Look at the following guides for more advanced use-cases:
-* [Deploy models for embedding generation](examples/embedding/EmbeddingModels.ipynb)
-* [Learn how to bring your own models](examples/CustomModels.ipynb)
-* [Deploy multiple LoRA fine-tuned models](examples/lora/DeployLora.ipynb)
-* [Deploy Function calling models](examples/function_calling/DeployFunctionCalling.ipynb)
-* [Learn how to leverage different configurations that can optimize the latency and throughput of your models](examples/OptimizeModels.ipynb)
-* [Learn how to fully configure your deployment including auto-scaling, optimization parameters and tensor-parallelism](examples/AdvancedModelConfigs.ipynb)
+* [Deploy models for embedding generation](https://github.com/anyscale/templates/blob/main/templates/endpoints/examples/embedding/EmbeddingModels.ipynb)
+* [Learn how to bring your own models](https://github.com/anyscale/templates/blob/main/templates/endpoints/examples/CustomModels.ipynb)
+* [Deploy multiple LoRA fine-tuned models](https://github.com/anyscale/templates/blob/main/templates/endpoints/examples/lora/DeployLora.ipynb)
+* [Deploy Function calling models](https://github.com/anyscale/templates/blob/main/templates/endpoints/examples/function_calling/DeployFunctionCalling.ipynb)
+* [Learn how to leverage different configurations that can optimize the latency and throughput of your models](https://github.com/anyscale/templates/blob/main/templates/endpoints/examples/OptimizeModels.ipynb)
+* [Learn how to fully configure your deployment including auto-scaling, optimization parameters and tensor-parallelism](https://github.com/anyscale/templates/blob/main/templates/endpoints/examples/AdvancedModelConfigs.ipynb)
 
 ## Application Examples
 

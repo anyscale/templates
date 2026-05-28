@@ -1,0 +1,7 @@
+# All required packages are included in the Anyscale base image:
+# - ray[default]
+# - pandas
+# - pyarrow
+# - pyyaml
+#
+# No additional packages needed for this template.

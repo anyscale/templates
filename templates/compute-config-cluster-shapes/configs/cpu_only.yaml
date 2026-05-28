@@ -1,0 +1,11 @@
+cloud: your-anyscale-cloud-name
+head_node:
+  instance_type: m5.2xlarge
+  resources:
+    CPU: 0
+    GPU: 0
+worker_nodes:
+- instance_type: m5.large
+  name: cpu-workers
+  min_nodes: 2
+  max_nodes: 2

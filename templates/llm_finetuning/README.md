@@ -2,7 +2,7 @@
 
 **⏱️ Time to complete**: 45 min
 
-This repository provides ready-to-run templates for fine-tuning Large Language Models (LLMs) on Anyscale using [LLaMA-Factory](https://github.com/hiyouga/LLaMA-Factory). These templates demonstrate instruction tuning and preference alignment at scale (multi-GPU, multi-node), with configurations that you can reuse across different cloud providers.
+This repository provides ready-to-run templates for fine-tuning Large Language Models (LLMs) on Anyscale using [LLaMA-Factory](https://github.com/hiyouga/LlamaFactory). These templates demonstrate instruction tuning and preference alignment at scale (multi-GPU, multi-node), with configurations that you can reuse across different cloud providers.
 
 Each template is an executable notebook that guides you through setup, configuration, and distributed execution. It also includes corresponding YAML/JSON configurations for repeatable runs and automation.
 
@@ -12,22 +12,22 @@ LLaMA-Factory is an easy-to-use, open-source framework. Its simple, declarative 
 
 ## Templates
 
-### [SFT with LoRA and DeepSpeed](./notebooks/sft_lora_deepspeed.ipynb)
+### [SFT with LoRA and DeepSpeed](https://github.com/anyscale/templates/blob/main/templates/llm_finetuning/notebooks/sft_lora_deepspeed.ipynb)
 Supervised instruction tuning with **LoRA** and **DeepSpeed ZeRO** for efficient, reproducible multi-GPU training.
 
 ---
 
-### [DPO with QLoRA](./notebooks/dpo_qlora.ipynb)
+### [DPO with QLoRA](https://github.com/anyscale/templates/blob/main/templates/llm_finetuning/notebooks/dpo_qlora.ipynb)
 Preference alignment on pairwise data with **DPO** and **QLoRA** for memory-efficient, scalable training.
 
 ---
 
-### [KTO with LoRA](./notebooks/kto_lora.ipynb)
+### [KTO with LoRA](https://github.com/anyscale/templates/blob/main/templates/llm_finetuning/notebooks/kto_lora.ipynb)
 Single-signal feedback alignment with **KTO** and **LoRA** for lightweight, scalable preference tuning.
 
 ---
 
-### [CPT with DeepSpeed](./notebooks/cpt_deepspeed.ipynb)
+### [CPT with DeepSpeed](https://github.com/anyscale/templates/blob/main/templates/llm_finetuning/notebooks/cpt_deepspeed.ipynb)
 Continued pre-training on raw text with **full fine-tuning** and **DeepSpeed ZeRO** for efficient, reproducible multi-GPU training.
 
 ## Repository layout
