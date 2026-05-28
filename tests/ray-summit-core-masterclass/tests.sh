@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # nbconvert (last) is needed for the NB6 tag-strip below.
-pip install papermill torch torchvision xgboost scikit-learn pillow tqdm matplotlib pandas pyarrow requests nbconvert
+pip install papermill torch torchvision xgboost scikit-learn pillow tqdm matplotlib pandas pyarrow requests nbconvert==7.16.6
 
 # Notebooks 1-5 run end-to-end as-is.
 for nb in \
