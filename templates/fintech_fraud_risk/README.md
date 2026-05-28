@@ -50,7 +50,7 @@ The workspace launched with `workspace.yaml` which specified:
 
 
 ```python
-!uv pip install -r python_depset.lock --system --no-deps --no-cache-dir --index-strategy unsafe-best-match
+!pip install -q -r requirements.txt
 ```
 
 
