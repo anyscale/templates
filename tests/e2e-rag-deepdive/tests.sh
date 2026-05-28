@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-pip install -q papermill nbconvert==7.16.6
+pip install -q papermill==2.7.0 nbconvert==7.16.6
 
 # NB03 deploys a 32B LLM to the cluster Serve controller; free it on any exit.
 trap 'serve shutdown -y || true' EXIT
