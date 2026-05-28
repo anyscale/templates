@@ -2,13 +2,13 @@
 
 **⏱️ Time to complete**: ~20 mins, which includes the time to train the model
 
-Looking to get the most out of your LLM workloads? Fine-tuning pretrained LLMs can often be the most cost effective way to improve model performance on the tasks that you care about. This template walks through how to use the popular open source library [LLaMA-Factory](https://github.com/hiyouga/LLaMA-Factory) to fine-tune LLMs on Anyscale. LLaMA-Factory comes with a [Ray](https://www.ray.io/) integration for scaling training to multiple GPUs and nodes.
+Looking to get the most out of your LLM workloads? Fine-tuning pretrained LLMs can often be the most cost effective way to improve model performance on the tasks that you care about. This template walks through how to use the popular open source library [LLaMA-Factory](https://github.com/hiyouga/LlamaFactory) to fine-tune LLMs on Anyscale. LLaMA-Factory comes with a [Ray](https://www.ray.io/) integration for scaling training to multiple GPUs and nodes.
 
 ## Getting started with LLaMA-Factory 
-First, you need to install the LLaMA-Factory code. You can view the latest changes from the [LLaMA-Factory GitHub](https://github.com/hiyouga/LLaMA-Factory.git). 
+First, you need to install the LLaMA-Factory code. You can view the latest changes from the [LLaMA-Factory GitHub](https://github.com/hiyouga/LlamaFactory.git). 
 
 ```bash
-git clone --branch v0.9.3 --depth 1 https://github.com/hiyouga/LLaMA-Factory.git
+git clone --branch v0.9.3 --depth 1 https://github.com/hiyouga/LlamaFactory.git
 cd LLaMA-Factory
 # Install extras separately so Anyscale can track the dependencies on worker nodes.
 pip install torch==2.5.0 torchvision==0.20.0 torchaudio==2.5.0 --index-url https://download.pytorch.org/whl/cu121
@@ -22,7 +22,7 @@ Additionally it's recommended to use `hf_transfer` for fast model downloading by
 
 <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/fine-tune-llm-oss/assets/env_vars.png" width=1500px />
 
-You can find some example configs that use Ray with LLaMA-Factory for pretraining and SFT (instruction tuning) in the `llamafactory_config` directory. Find a full set of examples with various models, tasks, and datasets on the [LLaMA-Factory GitHub](https://github.com/hiyouga/LLaMA-Factory/tree/main/examples). 
+You can find some example configs that use Ray with LLaMA-Factory for pretraining and SFT (instruction tuning) in the `llamafactory_config` directory. Find a full set of examples with various models, tasks, and datasets on the [LLaMA-Factory GitHub](https://github.com/hiyouga/LlamaFactory/tree/main/examples). 
 
 LLaMA-Factory provides a CLI `llamafactory-cli` that allows you to launch training with a config YAML file. For example, you can launch a supervised fine-tuning job with Ray by running the following command:
 ```bash
@@ -87,7 +87,7 @@ To run LLaMA-Factory as an Anyscale job, create a [custom container image](https
 # Start with an Anyscale base image.
 FROM anyscale/ray-ml:2.42.0-py310-gpu
 WORKDIR /app
-RUN git clone --branch v0.9.3 --depth 1 https://github.com/hiyouga/LLaMA-Factory.git && \
+RUN git clone --branch v0.9.3 --depth 1 https://github.com/hiyouga/LlamaFactory.git && \
     cd LLaMA-Factory && \
     pip install torch==2.5.0 torchvision==0.20.0 torchaudio==2.5.0 --index-url https://download.pytorch.org/whl/cu121 && \
     pip install --no-cache-dir deepspeed==0.16.4 transformers==4.51.3 jieba nltk rouge-chinese && \

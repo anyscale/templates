@@ -3,7 +3,7 @@
 accelerate==0.25.0 \
     --hash=sha256:c7bb817eb974bba0ff3ea1ba0f24d55afb86d50e3d4fe98d6922dc69cf2ccff1 \
     --hash=sha256:ecf55b0ab278a1dac8539dde0d276977aff04683f07ede73eaf02478538576a1
-    # via -r templates/serve-stable-diffusion/requirements.txt
+    # via -r templates/serve-stable-diffusion-v2/requirements.txt
 certifi==2026.2.25 \
     --hash=sha256:027692e4402ad994f1c42e52a4997a9763c646b73e4096e4d5d6db8af1d6f0fa \
     --hash=sha256:e887ab5cee78ea814d3472169153c2d12cd43b14bd03329a39a9c6e2e80bfba7
@@ -168,7 +168,7 @@ cuda-toolkit==13.0.2 ; sys_platform == 'linux' \
 diffusers==0.25.0 \
     --hash=sha256:5eebec0c4d4f12de205e6e97d34c3617598be9a1f853cc5f40becc94a1abaa7c \
     --hash=sha256:67102c6490f869aea943f90cd7a115251c8989c1ab3e9b07eaad4e5a4c593f59
-    # via -r templates/serve-stable-diffusion/requirements.txt
+    # via -r templates/serve-stable-diffusion-v2/requirements.txt
 filelock==3.25.2 \
     --hash=sha256:b64ece2b38f4ca29dd3e810287aa8c48182bbecd1ae6e9ae126c9b35f1382694 \
     --hash=sha256:ca8afb0da15f229774c9ad1b455ed96e85a81373065fb10446672f64444ddf70
@@ -187,7 +187,7 @@ huggingface-hub==0.25.2 \
     --hash=sha256:1897caf88ce7f97fe0110603d8f66ac264e3ba6accdf30cd66cc0fed5282ad25 \
     --hash=sha256:a1014ea111a5f40ccd23f7f7ba8ac46e20fa3b658ced1f86a00c75c06ec6423c
     # via
-    #   -r templates/serve-stable-diffusion/requirements.txt
+    #   -r templates/serve-stable-diffusion-v2/requirements.txt
     #   accelerate
     #   diffusers
     #   tokenizers
@@ -970,7 +970,7 @@ tqdm==4.67.3 \
 transformers==4.36.2 \
     --hash=sha256:462066c4f74ee52516f12890dcc9ec71d1a5e97998db621668455117a54330f6 \
     --hash=sha256:d8068e897e47793281501e547d2bbdfc5b8556409c2cb6c3d9e2ca77d4c0b4ec
-    # via -r templates/serve-stable-diffusion/requirements.txt
+    # via -r templates/serve-stable-diffusion-v2/requirements.txt
 triton==3.6.0 ; sys_platform == 'linux' \
     --hash=sha256:0b3a97e8ed304dfa9bd23bb41ca04cdf6b2e617d5e782a8653d616037a5d537d \
     --hash=sha256:10c7f76c6e72d2ef08df639e3d0d30729112f47a56b0c81672edc05ee5116ac9 \
