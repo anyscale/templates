@@ -1,14 +1,7 @@
-# Multimodal AI Workloads
+# Multi-modal AI pipeline
 
 **⏱️ Time to complete**: 45 min
 
-```{toctree}
-:hidden:
-
-notebooks/01-Batch-Inference
-notebooks/02-Distributed-Training
-notebooks/03-Online-Serving
-```
 
 <div align="left">
 <a target="_blank" href="https://console.anyscale.com/"><img src="https://img.shields.io/badge/🚀 Run_on-Anyscale-9hf"></a>&nbsp;
@@ -16,13 +9,13 @@ notebooks/03-Online-Serving
 </div>
 
 💻 Run this entire tutorial on [Anyscale](https://www.anyscale.com/) for free:
-**https://console.anyscale.com/template-preview/image-search-and-classification** or access the repository [here](https://github.com/ray-project/ray/tree/master/doc/source/ray-overview/examples/e2e-multimodal-ai-workloads).
+**https://console.anyscale.com/template-preview/image-search-and-classification** or access the repository [here](https://github.com/anyscale/templates/tree/main/templates/image-search-and-classification).
 
 This tutorial focuses on the fundamental challenges of multimodal AI workloads at scale:
 
 - **🔋 Compute**: managing heterogeneous clusters, reducing idle time, and handling complex dependencies
 - **📈 Scale**: integrating with the Python ecosystem, improving observability, and enabling effective debugging
-- **🛡️ Reliability**: ensuring fault tolerance, leveraging checkpointing, and supporting job resumption
+- **🛡️ Reliability**: ensuring fault tolerance, leveraging checkpointing, and supporting job resumability
 - **🚀 Production**: bridging dev-to-prod gaps, enabling fast iteration, maintaining zero downtime, and meeting SLAs
 
 This tutorial covers how Ray addresses each of these challenges and shows the solutions hands-on by implementing scalable batch inference, distributed training, and online serving workloads.
@@ -85,6 +78,13 @@ anyscale service deploy -f /home/ray/default/configs/service.yaml
 
 ## No infrastructure headaches
 Abstract away infrastructure from your ML/AI developers so they can focus on their core ML development. You can additionally better manage compute resources and costs with [enterprise governance and observability](https://www.anyscale.com/blog/enterprise-governance-observability) and [admin capabilities](https://docs.anyscale.com/administration/overview) so you can set [resource quotas](https://docs.anyscale.com/reference/resource-quotas/), set [priorities for different workloads](https://docs.anyscale.com/administration/cloud-deployment/global-resource-scheduler) and gain [observability of your utilization across your entire compute fleet](https://docs.anyscale.com/administration/resource-management/telescope-dashboard).
-
 Users running on a Kubernetes cloud (EKS, GKE, etc.) can still access the proprietary RayTurbo optimizations demonstrated in this tutorial by deploying the [Anyscale Kubernetes Operator](https://docs.anyscale.com/administration/cloud-deployment/kubernetes/).
 
+
+```{toctree}
+:hidden:
+
+notebooks/01-Batch-Inference
+notebooks/02-Distributed-Training
+notebooks/03-Online-Serving
+```

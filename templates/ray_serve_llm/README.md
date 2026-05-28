@@ -57,7 +57,7 @@ Wait for the serve application to start. You should see a message like the follo
 ```
 
 From the Ray dashboard Serve tab, all deployments should be in the "Running" or "Healthy" states, like so:
-![Ray dashboard healthy](./assets/healthy_dashboard_example.png)
+![Ray dashboard healthy](https://raw.githubusercontent.com/anyscale/templates/main/templates/ray_serve_llm/./assets/healthy_dashboard_example.png)
 
 ## Step 3 - Query the model
 
@@ -165,8 +165,8 @@ query(service_url, service_bearer_token)
 
 ## End-to-end examples
 
-- [Build tool calling feature for any LLM via JSON mode](./end-to-end-examples/function_calling/README.ipynb): This example demonstrates how to build a tool calling feature for any LLM via JSON mode.
-- [Deploy a gargantuan model (DeepSeek R1 670B) with Ray Serve LLM](./end-to-end-examples/gargantuan_model/README.ipynb): This example demonstrates how to deploy a reasoning model that is too large to fit on a single node, using tensor-parallelism and pipeline-parallelism across multiple nodes.
+- [Build tool calling feature for any LLM via JSON mode](https://github.com/anyscale/templates/blob/main/templates/ray_serve_llm/end-to-end-examples/function_calling/README.ipynb): This example demonstrates how to build a tool calling feature for any LLM via JSON mode.
+- [Deploy a gargantuan model (DeepSeek R1 670B) with Ray Serve LLM](https://github.com/anyscale/templates/blob/main/templates/ray_serve_llm/end-to-end-examples/gargantuan_model/README.ipynb): This example demonstrates how to deploy a reasoning model that is too large to fit on a single node, using tensor-parallelism and pipeline-parallelism across multiple nodes.
 
 
 ## Next steps
