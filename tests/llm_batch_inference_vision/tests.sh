@@ -1,7 +1,12 @@
-#!/bin/bash
+#!/usr/bin/env bash
+set -euxo pipefail
 
-set -exo pipefail
+# CI shrink — notebook defaults (10000 images, concurrency 4) are the real demo.
+export DATASET_LIMIT=8 CONCURRENCY=1
 
-# python nb2py.py "README.ipynb" "README.py" --ignore-cmds
-# python "README.py"
-# rm "README.py"
+pip install -q papermill nbconvert==7.16.6 ipykernel
+jupyter nbconvert --to notebook README.ipynb \
+    --TagRemovePreprocessor.enabled=True \
+    --TagRemovePreprocessor.remove_cell_tags='["skip-in-ci"]' \
+    --output /tmp/llm_batch_inference_vision.ci.ipynb
+papermill /tmp/llm_batch_inference_vision.ci.ipynb /tmp/llm_batch_inference_vision.out.ipynb --log-output --kernel python3 --cwd .
