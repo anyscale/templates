@@ -449,7 +449,7 @@ print(f"Training finished. Result: {result}")
 While this tutorial is designed to run interactively in a Jupyter notebook, you can also launch the same training workflow as a standalone Python script.
 This is useful for running longer experiments, automating jobs, or deploying training on a cluster.
 
-The [full code](https://github.com/ray-project/ray/blob/master/doc/source/train/examples/pytorch/deepspeed_finetune/train.py) is also available.
+The [full code](https://github.com/anyscale/templates/blob/main/templates/deepspeed_finetune/train.py) is also available.
 To start training from the command line, run:
 
 ```bash
