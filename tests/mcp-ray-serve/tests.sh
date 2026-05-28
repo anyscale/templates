@@ -26,7 +26,13 @@ run_nb "01 Deploy_custom_mcp_in_streamable_http_with_ray_serve.ipynb"
 run_nb "02 Build_mcp_gateway_with_existing_ray_serve_apps.ipynb"
 
 # NB03 queries a service the customer deploys from a terminal; replicate that here.
-serve run --non-blocking brave_mcp_ray_serve:brave_search_tool
+# `serve run` doesn't propagate the runner's shell env to Ray Serve replicas (customers
+# set BRAVE_API_KEY via the workspace Dependencies tab in prod) — pass it via runtime-env.
+set +x  # hide the secret from xtrace
+serve run --non-blocking \
+  --runtime-env-json "$(jq -nc --arg k "$BRAVE_API_KEY" '{env_vars:{BRAVE_API_KEY:$k}}')" \
+  brave_mcp_ray_serve:brave_search_tool
+set -x
 trap 'serve shutdown -y || true' EXIT
 for _ in $(seq 1 60); do curl -sf http://localhost:8000/tools >/dev/null 2>&1 && break; sleep 5; done
 run_nb "03 Deploy_single_mcp_stdio_docker_image_with_ray_serve.ipynb"
