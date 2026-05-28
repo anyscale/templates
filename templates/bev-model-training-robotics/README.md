@@ -38,6 +38,11 @@ We use the **NuScenes v1.0-mini** dataset (10 scenes, ~400 samples) as a practic
 
 
 ```python
+!pip install -q -r requirements.txt
+```
+
+
+```python
 import os
 from pathlib import Path
 import sys
@@ -116,7 +121,7 @@ def download_with_resume(url: str, dst: Path, chunk_size: int = 1024 * 1024) -> 
 
 
 ```python
-# Download NuScenes v1.0-mini dataset (~400MB)
+# Download NuScenes v1.0-mini dataset (~4 GB)
 NUSCENES_MINI_URL = os.environ.get(
     "NUSCENES_MINI_URL",
     "https://www.nuscenes.org/data/v1.0-mini.tgz"
@@ -143,24 +148,35 @@ After downloading, extract the archive safely and validate that the NuScenes dat
 ```python
 import tarfile
 
+# Extract only the dirs used here — maps/, samples/ (keyframes), v1.0-mini/
+# (tables). Skip sweeps/: tens of thousands of unused intermediate-frame files
+# whose write to network storage is the bulk of extract time.
+KEEP_DIRS = {"maps", "samples", "v1.0-mini"}
+
 def safe_extract(tar: tarfile.TarFile, path: Path) -> None:
     """
-    Safely extract tar archive, preventing path traversal attacks.
+    Extract the needed NuScenes dirs, preventing path traversal attacks.
 
-    Verify every member resolves within target directory before extraction.
+    Skips sweeps/ (unused here); verifies every extracted member resolves
+    within the target directory before extraction.
     """
     path = path.resolve()
+    members = []
     for member in tar.getmembers():
+        name = member.name[2:] if member.name.startswith("./") else member.name
+        if name.split("/", 1)[0] not in KEEP_DIRS:
+            continue
         member_path = (path / member.name).resolve()
 
         # Block entries that would escape target directory
         if not str(member_path).startswith(str(path)):
             raise RuntimeError(f"Blocked path traversal in tar member: {member.name}")
+        members.append(member)
 
-    tar.extractall(path)
+    tar.extractall(path, members=members)
 
-# Expected top-level directories after extraction
-expected = ["maps", "samples", "sweeps", "v1.0-mini"]
+# Expected top-level directories after extraction (sweeps/ intentionally skipped)
+expected = ["maps", "samples", "v1.0-mini"]
 
 # Check if dataset already extracted
 already = all((NUSCENES_ROOT / e).exists() for e in expected)
@@ -225,7 +241,8 @@ nusc.render_sample_data(cam_token)
 # Visualize lidar in ego frame with map overlay
 # This is the coordinate system BEV labels will use
 lidar_token = sample["data"]["LIDAR_TOP"]
-nusc.render_sample_data(lidar_token, nsweeps=5, underlay_map=True)
+# nsweeps=1: keyframe lidar only (lives in samples/; sweeps/ is not extracted)
+nusc.render_sample_data(lidar_token, nsweeps=1, underlay_map=True)
 ```
 
 
@@ -315,11 +332,11 @@ def build_manifest_from_tokens(nusc, tokens, cam_channels):
     print(f"Manifest built: {len(items)} samples (skipped {skipped})")
     return items
 
-# Create 200-sample subset for fast iteration
+# Create a subset for fast iteration (size via BEV_SUBSET_SIZE env; default 200)
 SUBSET_DIR = NUSCENES_ROOT / "subsets"
 SUBSET_DIR.mkdir(parents=True, exist_ok=True)
 
-subset_size = 200
+subset_size = int(os.environ.get("BEV_SUBSET_SIZE", "200"))
 tokens = []
 
 # Walk scenes and collect sample tokens
@@ -532,14 +549,17 @@ import ray
 train_ds = (
     ray.data.from_items(train_items)
     .map_batches(preprocess_nuscenes_batch, batch_size=2, batch_format="numpy")
+    .materialize()
 )
 
 val_ds = (
     ray.data.from_items(val_items)
     .map_batches(preprocess_nuscenes_batch, batch_size=2, batch_format="numpy")
+    .materialize()
 )
 
-# Validate pipeline (this materializes datasets - okay for small demo)
+# Materialized above, so preprocessing runs once and is reused by
+# count()/schema() here and by training (avoids 5-6x recompute).
 print("Train ds count:", train_ds.count())
 print("Val ds count:", val_ds.count())
 print("Train schema:", train_ds.schema())
@@ -737,9 +757,6 @@ Implement the per-worker training function with DDP, mixed precision, checkpoint
 ```python
 from ray.train.torch import prepare_model
 
-# Enable CUDA expandable segments to reduce fragmentation in long jobs
-os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
-
 def set_seed(seed: int):
     """Set seeds for reproducibility."""
     random.seed(seed)
@@ -766,6 +783,10 @@ def train_loop_per_worker(config: dict):
     import torch.distributed as dist
     from ray import train
     from ray.train import Checkpoint
+
+    # Reduce CUDA fragmentation. Must run in the worker process before CUDA
+    # initializes; setting it on the driver has no effect on the workers.
+    os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
 
     set_seed(int(config.get("seed", 123)))
 
@@ -796,7 +817,7 @@ def train_loop_per_worker(config: dict):
     )
 
     # Mixed precision
-    scaler = torch.cuda.amp.GradScaler(enabled=(device.type == "cuda"))
+    scaler = torch.amp.GradScaler("cuda", enabled=(device.type == "cuda"))
 
     # Resume from checkpoint
     start_epoch = 0
@@ -843,8 +864,11 @@ def train_loop_per_worker(config: dict):
             images = batch["images"]  # (B, 6, 3, IMG_H, IMG_W)
             labels = batch["labels"]  # (B, BEV_H, BEV_W)
 
-            # Forward pass with mixed precision
-            with torch.cuda.amp.autocast(enabled=(device.type == "cuda"), dtype=torch.float16):
+            # Forward pass with mixed precision; disable autograd during eval
+            # to avoid building the graph (saves memory / OOM risk).
+            with torch.set_grad_enabled(train_mode), torch.amp.autocast(
+                "cuda", enabled=(device.type == "cuda"), dtype=torch.float16
+            ):
                 logits = model(images)
                 loss = F.cross_entropy(logits, labels)
 
@@ -953,7 +977,7 @@ trainer = TorchTrainer(
         # Training hyperparameters
         "batch_size": 1,     # Small batch fits on modest GPUs
         "grad_accum": 1,
-        "num_epochs": 3,
+        "num_epochs": int(os.environ.get("BEV_NUM_EPOCHS", "3")),
     },
     scaling_config=ScalingConfig(
         num_workers=2,  # 2-worker DDP
@@ -1028,7 +1052,7 @@ print("  3. Training continues from last completed epoch")
 
 **Production tips:**
 - Use cluster-visible storage (`/mnt/cluster_storage`) for datasets and checkpoints
-- Enable mixed precision (`torch.cuda.amp`) to reduce memory and speed up training
+- Enable mixed precision (`torch.amp`) to reduce memory and speed up training
 - Aggregate metrics with `torch.distributed.all_reduce()` for correct global values
 - Set `PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True` to reduce fragmentation
 
