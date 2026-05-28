@@ -55,7 +55,7 @@ In the following sections, we discuss the steps that enable anyone to build a st
 
 ```python
 # Install required packages
-!uv pip install -r python_depset.lock --system --no-deps --no-cache-dir --index-strategy unsafe-best-match
+!pip install -r requirements.txt
 
 # Store your ANYSCALE_API_KEY and OPENAI_API_KEY in /home/ray/default/.env
 from dotenv import load_dotenv
