@@ -1,4 +1,5 @@
-#!/bin/bash
-python nb2py.py README.ipynb README.py  # convert notebook to py script
-python README.py  # be sure to use ipython to ensure even non-python cells are executed properly
-rm README.py  # remove the generated script
+#!/usr/bin/env bash
+set -euxo pipefail
+
+pip install -q papermill
+papermill README.ipynb /tmp/distributing-pytorch.out.ipynb --log-output --kernel python3 --cwd .
