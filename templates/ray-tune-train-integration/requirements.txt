@@ -1,0 +1,19 @@
+# Ray Tune and Train Integration Dependencies
+# Base image: anyscale/ray:2.55.1-py312-cu129 does NOT include torch — we
+# install it here. Verify via:
+# https://docs.anyscale.com/reference/base-images/ray-2551/py312
+
+# PyTorch (required by the notebook's CNN + ray.train.torch.TorchTrainer)
+torch>=2.5.0,<2.6.0
+torchvision>=0.20.0,<0.21.0
+
+# Additional dependencies
+tensorboard==2.18.0
+
+# Optional: Advanced search algorithms
+# Uncomment if using Bayesian optimization
+# bayesian-optimization==1.4.3
+
+# Optional: Alternative search algorithms
+# optuna==3.6.1
+# hyperopt==0.2.7

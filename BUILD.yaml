@@ -26,6 +26,19 @@
     command: bash tests.sh
     timeout_in_sec: 900
 
+# owner: @maxpumperla, @aydin
+- name: workspaces-dev-flow
+  dir: templates/workspaces-dev-flow
+  cluster_env:
+    image_uri: anyscale/ray:2.55.1-py311
+  compute_config:
+    GCP: configs/basic-single-node/gce.yaml
+    AWS: configs/basic-single-node/aws.yaml
+  test:
+    tests_path: tests/workspaces-dev-flow/
+    command: bash tests.sh
+    timeout_in_sec: 1200
+
 # owner: @edward
 - name: service-intro
   dir: templates/service-intro
@@ -38,6 +51,19 @@
     tests_path: tests/service-intro/
     command: bash tests.sh
     timeout_in_sec: 1200
+
+# owner: @maxpumperla, @aydin
+- name: anyscale-jobs-intro
+  dir: templates/anyscale-jobs-intro
+  cluster_env:
+    image_uri: anyscale/ray:2.55.1-py311
+  compute_config:
+    AWS: configs/basic-single-node/aws.yaml
+    GCP: configs/basic-single-node/gce.yaml
+  test:
+    tests_path: tests/anyscale-jobs-intro/
+    command: bash tests.sh
+    timeout_in_sec: 3600
 
 # owner: @maxpumperla, @aydin
 - name: storage-access-large-datasets
@@ -64,6 +90,19 @@
     tests_path: tests/intro-ray-libraries/
     command: bash tests.sh
     timeout_in_sec: 1800
+
+# owner: @aydin
+- name: compute-config-cluster-shapes
+  dir: templates/compute-config-cluster-shapes
+  cluster_env:
+    image_uri: anyscale/ray:2.55.1-py311
+  compute_config:
+    GCP: configs/basic-single-node/gce.yaml
+    AWS: configs/basic-single-node/aws.yaml
+  test:
+    tests_path: tests/compute-config-cluster-shapes/
+    command: bash tests.sh
+    timeout_in_sec: 900
 
 # owner: @stephen
 - name: unstructured_data_ingestion
@@ -553,6 +592,19 @@
     tests_path: tests/tune_pytorch_asha/
     command: bash tests.sh
     timeout_in_sec: 1800
+
+# owner: @maxpumperla, @aydin
+- name: ray-tune-train-integration
+  dir: templates/ray-tune-train-integration
+  cluster_env:
+    image_uri: anyscale/ray:2.55.1-py312-cu129
+  compute_config:
+    AWS: configs/ray-tune-train-integration/aws.yaml
+    GCP: configs/ray-tune-train-integration/gce.yaml
+  test:
+    tests_path: tests/ray-tune-train-integration/
+    command: bash tests.sh
+    timeout_in_sec: 3600
 
 # owner: @christian-stano
 - name: creatives_diffusion_finetuning
