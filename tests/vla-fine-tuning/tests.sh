@@ -10,7 +10,11 @@ set -x
 export MAX_TRAIN_STEPS=20
 
 uv sync
-uv run pip install -q papermill ipykernel
+# Use `uv pip install` (uv's native installer), not `uv run pip install`: uv venvs
+# don't ship pip by default, so `uv run pip` falls through to the workspace's
+# /home/ray/anaconda3/bin/pip — which has an Anyscale-injected `import snapshot_util`
+# that ModuleNotFoundErrors outside the workspace controller's runtime.
+uv pip install -q papermill ipykernel
 # Register a venv-backed kernelspec so papermill runs against the uv-synced
 # deps (uv-pinned transformers, lerobot, local modules), not a stray python3.
 uv run python -m ipykernel install --user --name vla --display-name vla
