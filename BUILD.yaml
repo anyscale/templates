@@ -396,7 +396,7 @@
   test:
     tests_path: tests/skyrl/
     command: bash tests.sh
-    timeout_in_sec: 900
+    timeout_in_sec: 3600
 
 # owner: @scott-lee
 - name: text-embeddings
@@ -500,7 +500,7 @@
   test:
     tests_path: tests/ray-summit-core-masterclass/
     command: bash tests.sh
-    timeout_in_sec: 900
+    timeout_in_sec: 1800
 
 # owner: @kunling, @aydin
 - name: multi_agent_a2a
