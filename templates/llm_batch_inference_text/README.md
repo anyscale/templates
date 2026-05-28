@@ -2,7 +2,7 @@
 
 <div align="left">
 <a target="_blank" href="https://console.anyscale.com/template-preview/llm_batch_inference_text"><img src="https://img.shields.io/badge/🚀 Run_on-Anyscale-9hf"></a>&nbsp;
-<a href="https://github.com/ray-project/ray/tree/master/doc/source/data/examples/llm_batch_inference_text/content" role="button"><img src="https://img.shields.io/static/v1?label=&amp;message=View%20On%20GitHub&amp;color=586069&amp;logo=github&amp;labelColor=2f363d"></a>&nbsp;
+<a href="https://github.com/anyscale/templates/tree/main/templates/llm_batch_inference_text" role="button"><img src="https://img.shields.io/static/v1?label=&amp;message=View%20On%20GitHub&amp;color=586069&amp;logo=github&amp;labelColor=2f363d"></a>&nbsp;
 </div>
 
 **⏱️ Time to complete**: 20 min
