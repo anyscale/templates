@@ -61,9 +61,12 @@ If you don't repartition, the system might read a large file into only a few blo
 
 
 ```python
-# Limit the dataset to 10,000 images for this example.
-print("Limiting dataset to 10,000 images for initial processing.")
-ds_small = ds.limit(10_000)
+import os
+
+# Limit the dataset size for this example; override with DATASET_LIMIT.
+limit = int(os.getenv("DATASET_LIMIT", "10000"))
+print(f"Limiting dataset to {limit} images for initial processing.")
+ds_small = ds.limit(limit)
 
 # Repartition the dataset to enable parallelism across multiple workers (GPUs).
 # By default, streaming datasets might not be optimally partitioned. Repartitioning
@@ -97,6 +100,8 @@ Vision models process each image as hundreds or thousands of vision tokens, unli
 
 
 ```python
+import os
+
 from ray.data.llm import vLLMEngineProcessorConfig
 
 processor_config = vLLMEngineProcessorConfig(
@@ -106,7 +111,7 @@ processor_config = vLLMEngineProcessorConfig(
     ),
     batch_size=16,
     accelerator_type="L4",
-    concurrency=4,
+    concurrency=int(os.getenv("CONCURRENCY", "4")),
     has_image=True,  # Enable image input.
 )
 
