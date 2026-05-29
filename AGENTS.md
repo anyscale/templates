@@ -4,7 +4,7 @@ Anyscale console templates. For any template-related work (bump Ray, format, pub
 
 ## Companion skills
 
-The `/template` update flow leans on companion skills `/ask`, `/fix`, `/run`, `/inspect` (install with `anyscale skills install -p claude-code -y -f` — pulls from Anyscale's skills backend; uses `ANYSCALE_CLI_TOKEN`). `/fix` in particular drives the CI iteration loop — without it you cannot reliably diagnose and fix a broken template. Strongly recommended for any update work. Tip: wrap `/fix` in a subagent to keep its debug output out of your main context.
+The `/template` update flow leans on companion skills `/anyscale-platform-{ask,fix,run,inspect}` (install with `anyscale skills install -p claude-code -y -f` — pulls from Anyscale's skills backend; uses `ANYSCALE_CLI_TOKEN`). `/anyscale-platform-fix` in particular drives the CI iteration loop — without it you cannot reliably diagnose and fix a broken template. Strongly recommended for any update work. Tip: wrap `/anyscale-platform-fix` in a subagent to keep its debug output out of your main context.
 
 For Cursor Cloud, these skills are a hard precondition (see Cursor Cloud → Preconditions).
 
@@ -14,7 +14,7 @@ Manage production templates (BUILD.yaml entries). No services to run.
 
 Local: edit → `pre-commit run --all-files` → push. Pre-commit covers lint, formatting, codebase conventions. `rayapp build all` mirrors CI's build job locally.
 
-Per-template tests — comment `/test-template <id> [<id>...]` (up to 3, parallel) on the PR to dispatch the Buildkite `template-test` pipeline (workspace + actual test run). For local iteration before pushing, `rayapp test <id>` runs the same flow (see `references/rayapp-local-testing.md` in the `/template` skill for setup).
+Per-template tests — comment `/test-template <id> [<id>...]` (up to 3, parallel) on the PR to dispatch the Buildkite `template-test` pipeline (workspace + actual test run). For local iteration before pushing, `rayapp test <id>` runs the same flow (see `references/run-tests-locally-with-rayapp.md` in the `/template` skill for setup).
 
 PR labels (apply all that fit):
 - `cursor-cloud` — origin: Cursor Cloud agent.
@@ -22,7 +22,7 @@ PR labels (apply all that fit):
 
 ## Cursor Cloud
 
-The `template-updater` Cursor Cloud agent owns Ray-version bumps end-to-end (open PR → CI → fix-loop) on every major/minor Ray release.
+The `template-updater` Cursor Cloud agent owns Ray-version bumps end-to-end (open PR → CI → fix-loop → kick off publish) on every major/minor Ray release.
 
 ### Preconditions (HARD EXIT IF MISSING)
 
@@ -36,7 +36,7 @@ Run `bash .cursor/preflight.sh` before any task. It checks:
   - `BUILDKITE_API_TOKEN`
 - **Auth verified:** `gh auth status` (with the token above), `gcloud auth list`, and `anyscale cloud list` all succeed.
 
-**If preflight exits non-zero, post its stderr as a PR comment and stop — don't attempt the task.**
+**If preflight exits non-zero, report its stderr (as a PR comment if a PR exists, otherwise in the run/CI output) and stop — don't attempt the task.**
 
 ### Setup
 

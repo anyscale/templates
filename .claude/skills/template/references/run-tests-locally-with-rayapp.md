@@ -19,12 +19,12 @@ curl -sL "https://github.com/ray-project/rayci/releases/download/${RAYAPP_VERSIO
 ## Set credentials
 
 ```bash
-export ANYSCALE_CLI_TOKEN="$$(aws --region=us-west-2 secretsmanager get-secret-value --secret-id $$ANYSCALE_CLI_TOKEN_SECRET_NAME | jq -r .SecretString)"
-export ANYSCALE_HOST="https://console.anyscale.com"
+export ANYSCALE_HOST="https://console.anyscale-staging.com"  # match CI: staging by default; prod (console.anyscale.com) only if CI fell back
+export ANYSCALE_CLI_TOKEN="<token issued by that console>"   # must match the env in ANYSCALE_HOST
 pip install anyscale==0.26.87
 ```
 
-If auth issues, stop here and ask user to provide valid authentication for the staging console.
+**Auth errors?** First, match what CI's rayapp did: in CI it runs against **staging** by default and falls back to **prod** (`https://console.anyscale.com`) only when staging has temporary failures — rare, but it happens. Reproduce against the *same* environment the CI run used — point `ANYSCALE_HOST` there and use an `ANYSCALE_CLI_TOKEN` issued for it. Prod and staging are separate consoles with separate tokens, so a mismatch fails auth; if you don't have a token for that env, ask the user.
 
 ## Run a template's tests
 
@@ -40,4 +40,4 @@ rayapp test <template-name>
 
 ## Custom images (byod)
 
-Pre-build with `anyscale image build` and update BUILD.yaml's `byod.docker_image` before testing. When finished iterating, run `.claude/skills/template/scripts/publish-custom-image.sh <dockerfile-dir> <image-name> <ray-version>` and update BUILD.yaml again with the GCP URI.
+Pre-build with `anyscale image build` and update BUILD.yaml's `byod.docker_image` before testing. When finished iterating, run `.claude/skills/template/scripts/push-custom-image-to-gcp.sh <dockerfile-dir> <image-name> <ray-version>` and update BUILD.yaml again with the GCP URI.
