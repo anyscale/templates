@@ -1,7 +1,5 @@
-#!/bin/bash
-
+#!/usr/bin/env bash
 set -euxo pipefail
 
-python nb2py.py README.ipynb README.py  # convert notebook to py script
-python README.py  # be sure to use ipython to ensure even non-python cells are executed properly
-rm README.py  # remove the generated script
+pip install -q papermill
+papermill README.ipynb /tmp/entity-recognition-with-llms.out.ipynb --log-output --kernel python3 --cwd .
