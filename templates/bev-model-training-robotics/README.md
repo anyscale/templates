@@ -235,6 +235,16 @@ print("Num annotations:", len(sample["anns"]))
 
 
 ```python
+# nuscenes-devkit 1.1.11 targets matplotlib<3.6; its render_* helpers call
+# FigureCanvas.set_window_title, removed in matplotlib>=3.6. Restore a no-op so the
+# visualization cells work on the image's matplotlib 3.7 (no functional effect headless).
+from matplotlib.backend_bases import FigureCanvasBase
+if not hasattr(FigureCanvasBase, "set_window_title"):
+    FigureCanvasBase.set_window_title = lambda self, *a, **k: None
+```
+
+
+```python
 # Visualize front camera with 3D bounding boxes
 cam_token = sample["data"]["CAM_FRONT"]
 nusc.render_sample_data(cam_token)
