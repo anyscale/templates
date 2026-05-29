@@ -38,15 +38,6 @@ We use the **NuScenes v1.0-mini** dataset (10 scenes, ~400 samples) as a practic
 
 
 ```python
-# nuscenes-devkit pins matplotlib<3.6 (no py311 wheel -> source build) and GUI
-# opencv-python; install it without deps, then its runtime deps from requirements.txt
-# (the base image already provides matplotlib 3.7 and opencv-python-headless 4.13).
-!pip install -q --no-deps nuscenes-devkit==1.1.11
-!pip install -q -r requirements.txt
-```
-
-
-```python
 import os
 from pathlib import Path
 import sys

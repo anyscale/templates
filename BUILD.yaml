@@ -636,7 +636,9 @@
 - name: bev-model-training-robotics
   dir: templates/bev-model-training-robotics
   cluster_env:
-    image_uri: anyscale/ray-llm:2.55.1-py311-cu128
+    byod:
+      docker_image: us-docker.pkg.dev/anyscale-workspace-templates/workspace-templates/bev-model-training-robotics:2.55.1
+      ray_version: 2.55.1
   compute_config:
     AWS: configs/bev-model-training-robotics/aws.yaml
     GCP: configs/bev-model-training-robotics/gce.yaml
