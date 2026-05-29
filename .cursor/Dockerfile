@@ -63,6 +63,6 @@ RUN curl -fsSL "https://github.com/buildkite/buildkite-mcp-server/releases/downl
 # interactive, non-interactive). Replaces the prior /etc/profile.d/ + ~/.bashrc
 # dance, which depended on shell mode. ---
 ENV PATH=/opt/google-cloud-sdk/bin:$PATH
-ENV ANYSCALE_HOST=https://console.anyscale.com
+ENV ANYSCALE_HOST=https://console.anyscale-staging.com
 
 WORKDIR /workspace

@@ -19,12 +19,12 @@ curl -sL "https://github.com/ray-project/rayci/releases/download/${RAYAPP_VERSIO
 ## Set credentials
 
 ```bash
-export ANYSCALE_HOST="https://console.anyscale-staging.com"  # match CI: staging by default; prod (console.anyscale.com) only if CI fell back
-export ANYSCALE_CLI_TOKEN="<token issued by that console>"   # must match the env in ANYSCALE_HOST
+export ANYSCALE_HOST="https://console.anyscale-staging.com"  # always staging — local tests + fixes never run against prod
+export ANYSCALE_CLI_TOKEN="<staging token>"                  # from the staging console's API tokens
 pip install anyscale==0.26.87
 ```
 
-**Auth errors?** First, match what CI's rayapp did: in CI it runs against **staging** by default and falls back to **prod** (`https://console.anyscale.com`) only when staging has temporary failures — rare, but it happens. Reproduce against the *same* environment the CI run used — point `ANYSCALE_HOST` there and use an `ANYSCALE_CLI_TOKEN` issued for it. Prod and staging are separate consoles with separate tokens, so a mismatch fails auth; if you don't have a token for that env, ask the user.
+**Always staging.** Local rayapp runs against **staging** (`https://console.anyscale-staging.com`) only — never prod, even if the CI run used prod. Use a staging `ANYSCALE_CLI_TOKEN` (ask the user if you don't have one). If staging itself fails — auth or the test — treat it as an **infra issue and ignore it**; don't chase the failure on prod. (Prod is read-only-exceptional — see `testing-template.md` Recovery.)
 
 ## Run a template's tests
 
@@ -34,9 +34,23 @@ rayapp test <template-name>
 
 ## How rayapp test works
 
-1. Creates a workspace using the BUILD.yaml image
-2. Copies `templates/<dir>/` and `tests/<name>/` into the workspace
-3. Runs `tests.sh` from the workspace root
+1. Creates a **staging** workspace using the BUILD.yaml image.
+2. **Flattens the template and test content into one directory** — the *contents* of `templates/<dir>/` and `tests/<name>/` land side by side at the workspace root (not as subfolders).
+3. Runs `bash tests.sh` from that root, so `tests.sh` finds the template files (e.g. `README.ipynb`) right beside it via bare relative paths.
+
+Example — everything ends up co-located, then `tests.sh` runs:
+
+```
+Repo                              Workspace root (flattened — same level)
+templates/my-template/              README.ipynb     ← from templates/my-template/
+  README.ipynb                      util.py
+  util.py                           Dockerfile
+  Dockerfile                        tests.sh         ← from tests/my-template/
+tests/my-template/                  $ bash tests.sh  →  papermill README.ipynb ...
+  tests.sh
+```
+
+Replicate this co-location if you ever run `tests.sh` by hand outside rayapp.
 
 ## Custom images (byod)
 

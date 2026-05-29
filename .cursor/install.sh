@@ -11,9 +11,11 @@
 #
 # Required secrets (Cursor → My Secrets):
 #   ANYSCALE_GH_TOKEN              gh write fallback on anyscale/templates
-#   ANYSCALE_CLI_TOKEN             anyscale CLI auth + skills install
+#   STAGING_ANYSCALE_CLI_TOKEN    anyscale CLI auth + skills install (everything runs on staging)
 #   GCP_TEMPLATE_REGISTRY_SA_KEY   docker push to us-docker.pkg.dev
 #   BUILDKITE_API_TOKEN            Buildkite MCP server (Dockerfile-baked)
+# Optional secret:
+#   PROD_ANYSCALE_CLI_TOKEN       read-only-exceptional: collect logs/info from a prod CI run
 set -euo pipefail
 
 # --- pre-commit hooks (auto-fire on git commit; idempotent) ---
@@ -44,14 +46,16 @@ else
   echo "WARN: GCP_TEMPLATE_REGISTRY_SA_KEY not set — custom-image rebuild + push to GCP will fail."
 fi
 
-# --- Auth: anyscale CLI + skills install (/ask, /fix, /run, /inspect).
-# -f overwrites locally-stale skills with the latest published.
-# After install, prune any other skill dirs so ~/.claude/skills/ mirrors
-# what the CLI laid down — keeps the env hermetic across runs. ---
-if [ -n "${ANYSCALE_CLI_TOKEN:-}" ]; then
+# --- Auth: anyscale CLI + skills install (anyscale-platform-{ask,fix,run,inspect}).
+# Everything runs on STAGING (ANYSCALE_HOST is baked to staging in the Dockerfile),
+# so credentials come from STAGING_ANYSCALE_CLI_TOKEN. -f overwrites locally-stale
+# skills with the latest published. After install, prune any other skill dirs so
+# ~/.claude/skills/ mirrors what the CLI laid down — keeps the env hermetic. ---
+if [ -n "${STAGING_ANYSCALE_CLI_TOKEN:-}" ]; then
+  export ANYSCALE_CLI_TOKEN="$STAGING_ANYSCALE_CLI_TOKEN"
   mkdir -p ~/.anyscale
   cat > ~/.anyscale/credentials.json <<EOF
-{"cli_token": "$ANYSCALE_CLI_TOKEN"}
+{"cli_token": "$STAGING_ANYSCALE_CLI_TOKEN"}
 EOF
   anyscale skills install -p claude-code -y -f
   for d in ~/.claude/skills/*; do
@@ -63,7 +67,7 @@ EOF
   done
   ls ~/.claude/skills/
 else
-  echo "WARN: ANYSCALE_CLI_TOKEN not set — preflight will fail."
+  echo "WARN: STAGING_ANYSCALE_CLI_TOKEN not set — preflight will fail."
 fi
 
 # --- Cloud-agent MCP config: merge workspace .cursor/mcp.json into user-scope

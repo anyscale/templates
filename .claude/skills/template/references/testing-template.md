@@ -36,13 +36,13 @@ The green path needs **no** local rayapp. (Recovery may: `/anyscale-platform-fix
 
 ## Validate — advanced (Cursor cloud / local iteration)
 
-`rayapp test <name>` reproduces the CI flow on your machine — setup in `run-tests-locally-with-rayapp.md`. This is what the fix-loop iterates against before re-pushing.
+`rayapp test <name>` runs the template's test on a **staging** workspace — setup in `run-tests-locally-with-rayapp.md`. This is what the fix-loop iterates against before re-pushing.
 
 ## Recovery
 
 Read the Buildkite logs (via MCP) and classify:
 
-- **Agent-fixable** — template code/notebook, Dockerfile, config, or BUILD.yaml-schema bug. Delegate to **`/anyscale-platform-fix`** and iterate against `rayapp test <name>` until green. (Interactive/human path only: if the skill is missing, `anyscale skills install -p claude-code -y -f` — needs `anyscale login`. In Cursor, preflight already guarantees it.)
-- **Infra** — workspace-creation timeout, Anyscale API/SSO errors, Buildkite / GitHub-Actions runner errors. **Don't retry blindly.** If `rayapp test <name>` passes locally, trust that, summarize the infra failure on the PR, and hand off to a human.
+- **Agent-fixable** — template code/notebook, Dockerfile, config, or BUILD.yaml-schema bug. Delegate to **`/anyscale-platform-fix`**, which iterates against `rayapp test <name>` on **staging** until green. (Interactive/human path only: if the skill is missing, `anyscale skills install -p claude-code -y -f` — needs `anyscale login`. In Cursor, preflight guarantees it.)
+- **Infra** — workspace-creation timeout, Anyscale API/SSO errors, Buildkite / GitHub-Actions runner errors, **or staging itself failing**. **Don't retry blindly, and never switch to prod.** If `rayapp test <name>` passes locally on staging, trust that, summarize the infra failure on the PR, and hand off to a human.
 
-**Auth errors** (401/403, SSO, rejected token) usually mean a prod/staging mismatch — confirm the host (`console.anyscale.com` vs `console.anyscale-staging.com`) and that `ANYSCALE_CLI_TOKEN` is for that env (`run-tests-locally-with-rayapp.md`) before treating it as infra.
+**Stay on staging.** rayapp and `/anyscale-platform-fix` always target **staging** (`console.anyscale-staging.com`) — a staging auth or test failure (401/403, SSO, rejected token, flaky workspace) is **infra: ignore it, don't chase it on prod**. Prod is read-only-exceptional — use a prod token only to *collect logs/info* from a prod CI run, never to test or fix.
