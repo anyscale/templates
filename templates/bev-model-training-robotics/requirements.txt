@@ -1,20 +1,20 @@
 # BEV Model Training for Robotics Dependencies
 # Base image anyscale/ray-llm:2.55.1-py311-cu128 already provides torch, torchvision,
-# numpy, Pillow, matplotlib (3.7), scipy, scikit-learn, and opencv-python-headless (4.13).
+# numpy 1.26, Pillow, matplotlib 3.7, scipy, scikit-learn, and opencv-python-headless 4.13.
+# opencv-headless is intentionally NOT pinned here: it's already on the image, and
+# pinning it makes pip honor its numpy>=2 dependency, which upgrades the base's
+# numpy 1.x and breaks vllm/scipy/torch.
 #
 # nuscenes-devkit pins matplotlib<3.6 (no py311 wheel -> source build) and GUI
 # opencv-python, so it is installed with --no-deps in the notebook's first cell;
-# the lines below are its runtime deps, restricted to versions with py311 wheels.
+# the lines below are its runtime deps (py311 wheels).
 
-# nuscenes-devkit runtime deps (py311 wheels)
 pyquaternion==0.9.9
 pycocotools==2.0.11
 shapely<2.0
 descartes==1.1.0
 fire==0.7.1
-
-# Headless OpenCV — >=4.13 to match the base image (and vllm); avoids libGL
-opencv-python-headless>=4.13.0
-
-# Progress bars
 tqdm==4.67.1
+
+# Keep the base image's numpy 1.x (block any transitive numpy 2.x upgrade)
+numpy<2
