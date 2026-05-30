@@ -8,26 +8,14 @@ Writes to /mnt/cluster_storage/ecommerce-demo/serving/:
     product_catalog.parquet  — product metadata (no embeddings)
     product_index.faiss      — FAISS IndexFlatIP over 384-dim embeddings
 """
-import importlib.util
 import os
-import sys
 
 import faiss
 import numpy as np
 import pandas as pd
 import torch
 
-# Reuse the Faker-based catalog generator from the batch-embeddings sibling demo.
-# Imported via spec_from_file_location to avoid colliding with the local `src`
-# package namespace when running as `python -m src.build_index`.
-_BATCH_ROOT = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), "..", "..", "batch-embeddings")
-)
-_gen_data_path = os.path.join(_BATCH_ROOT, "src", "generate_data.py")
-_spec = importlib.util.spec_from_file_location("batch_generate_data", _gen_data_path)
-_mod = importlib.util.module_from_spec(_spec)
-_spec.loader.exec_module(_mod)
-generate_catalog = _mod.generate_catalog
+from src.generate_data import generate_catalog
 
 CATALOG_PATH = "/mnt/cluster_storage/ecommerce-demo/serving/product_catalog.parquet"
 INDEX_PATH = "/mnt/cluster_storage/ecommerce-demo/serving/product_index.faiss"

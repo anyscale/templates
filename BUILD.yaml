@@ -26,6 +26,19 @@
     command: bash tests.sh
     timeout_in_sec: 900
 
+# owner: @maxpumperla, @aydin
+- name: workspaces-dev-flow
+  dir: templates/workspaces-dev-flow
+  cluster_env:
+    image_uri: anyscale/ray:2.55.1-py311
+  compute_config:
+    GCP: configs/basic-single-node/gce.yaml
+    AWS: configs/basic-single-node/aws.yaml
+  test:
+    tests_path: tests/workspaces-dev-flow/
+    command: bash tests.sh
+    timeout_in_sec: 1200
+
 # owner: @edward
 - name: service-intro
   dir: templates/service-intro
@@ -36,6 +49,45 @@
     AWS: configs/basic-single-node/aws.yaml
   test:
     tests_path: tests/service-intro/
+    command: bash tests.sh
+    timeout_in_sec: 1200
+
+# owner: @maxpumperla, @aydin
+- name: anyscale-jobs-intro
+  dir: templates/anyscale-jobs-intro
+  cluster_env:
+    image_uri: anyscale/ray:2.55.1-py311
+  compute_config:
+    AWS: configs/basic-single-node/aws.yaml
+    GCP: configs/basic-single-node/gce.yaml
+  test:
+    tests_path: tests/anyscale-jobs-intro/
+    command: bash tests.sh
+    timeout_in_sec: 3600
+
+# owner: @maxpumperla, @aydin
+- name: storage-access-large-datasets
+  dir: templates/storage-access-large-datasets
+  cluster_env:
+    image_uri: anyscale/ray:2.55.1-py311
+  compute_config:
+    AWS: configs/basic-single-node/aws.yaml
+    GCP: configs/basic-single-node/gce.yaml
+  test:
+    tests_path: tests/storage-access-large-datasets/
+    command: bash tests.sh
+    timeout_in_sec: 1200
+
+# owner: @maxpumperla, @aydin
+- name: ray-serve-observability
+  dir: templates/ray-serve-observability
+  cluster_env:
+    image_uri: anyscale/ray:2.55.1-py311
+  compute_config:
+    AWS: configs/basic-single-node/aws.yaml
+    GCP: configs/basic-single-node/gce.yaml
+  test:
+    tests_path: tests/ray-serve-observability/
     command: bash tests.sh
     timeout_in_sec: 1200
 
@@ -51,6 +103,19 @@
     tests_path: tests/intro-ray-libraries/
     command: bash tests.sh
     timeout_in_sec: 1800
+
+# owner: @aydin
+- name: compute-config-cluster-shapes
+  dir: templates/compute-config-cluster-shapes
+  cluster_env:
+    image_uri: anyscale/ray:2.55.1-py311
+  compute_config:
+    GCP: configs/basic-single-node/gce.yaml
+    AWS: configs/basic-single-node/aws.yaml
+  test:
+    tests_path: tests/compute-config-cluster-shapes/
+    command: bash tests.sh
+    timeout_in_sec: 900
 
 # owner: @stephen
 - name: unstructured_data_ingestion
@@ -117,7 +182,7 @@
   test:
     tests_path: tests/deployment-serve-llm/
     command: bash tests.sh
-    timeout_in_sec: 900
+    timeout_in_sec: 1800
 
 # owner: @omar
 - name: vla-fine-tuning
@@ -184,7 +249,7 @@
   test:
     tests_path: tests/langchain-agent-ray-serve/
     command: bash tests.sh
-    timeout_in_sec: 1800
+    timeout_in_sec: 2700
 
 # owner: @kunling
 - name: mcp-ray-serve
@@ -316,7 +381,7 @@
   test:
     tests_path: tests/e2e-rag-deepdive/
     command: bash tests.sh
-    timeout_in_sec: 1800
+    timeout_in_sec: 7200
 
 # owner: @eric
 - name: skyrl
@@ -331,7 +396,22 @@
   test:
     tests_path: tests/skyrl/
     command: bash tests.sh
-    timeout_in_sec: 900
+    timeout_in_sec: 3600
+
+# owner: @aydin
+- name: groot-ray-serve
+  dir: templates/groot-ray-serve
+  cluster_env:
+    byod:
+      docker_image: us-docker.pkg.dev/anyscale-workspace-templates/workspace-templates/groot-ray-serve:2.55.1
+      ray_version: 2.55.1
+  compute_config:
+    GCP: configs/groot-ray-serve/gce.yaml
+    AWS: configs/groot-ray-serve/aws.yaml
+  test:
+    tests_path: tests/groot-ray-serve/
+    command: bash tests.sh
+    timeout_in_sec: 3600
 
 # owner: @scott-lee
 - name: text-embeddings
@@ -435,7 +515,7 @@
   test:
     tests_path: tests/ray-summit-core-masterclass/
     command: bash tests.sh
-    timeout_in_sec: 900
+    timeout_in_sec: 1800
 
 # owner: @kunling, @aydin
 - name: multi_agent_a2a
@@ -513,7 +593,7 @@
   test:
     tests_path: tests/ray_train_workloads/
     command: bash tests.sh
-    timeout_in_sec: 1800
+    timeout_in_sec: 3600
 
 # owner: @harshit-anyscale
 - name: asynchronous_inference
@@ -540,6 +620,19 @@
     tests_path: tests/tune_pytorch_asha/
     command: bash tests.sh
     timeout_in_sec: 1800
+
+# owner: @maxpumperla, @aydin
+- name: ray-tune-train-integration
+  dir: templates/ray-tune-train-integration
+  cluster_env:
+    image_uri: anyscale/ray:2.55.1-py312-cu129
+  compute_config:
+    AWS: configs/ray-tune-train-integration/aws.yaml
+    GCP: configs/ray-tune-train-integration/gce.yaml
+  test:
+    tests_path: tests/ray-tune-train-integration/
+    command: bash tests.sh
+    timeout_in_sec: 3600
 
 # owner: @christian-stano
 - name: creatives_diffusion_finetuning

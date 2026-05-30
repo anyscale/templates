@@ -1,5 +1,8 @@
-#!/bin/bash
-python nb2py.py README.ipynb README.py  # convert notebook to py script
-python README.py  # run the converted python script
-rm README.py  # remove the generated script
+#!/usr/bin/env bash
+set -euxo pipefail
+
+pip install -q papermill
+papermill README.ipynb /tmp/deepspeed_finetune.out.ipynb --log-output --kernel python3 --cwd .
+
+# The standalone training script (separately exercised; --debug_steps caps to ~30 steps).
 python train.py --debug_steps 30
