@@ -1,6 +1,6 @@
 # Update a template
 
-Interactive flow for changing an existing template's content, config, or tests. **Not** a Ray-version bump — that's `bump-ray-version.md`. The template is already in the gallery, so there is **no product PR**; you just re-publish the artifact.
+Interactive flow for changing an existing template's content, config, or tests. **Not** a Ray-version bump — that's `bump-ray-version.md`. The template is already in the gallery, so there is **no product PR** — you just re-publish the artifact via `tmpl-publish`. (Exception: changing gallery metadata — title, description, labels, icon — is a product-side `workspace-templates.yaml` change instead; use `/publish-template`.)
 
 ## 1. Confirm scope
 
@@ -20,4 +20,4 @@ Commit on a branch and open a PR against `main`. Run `/test-template`, get it gr
 
 ## 5. Republish
 
-**Merge the green PR to `main` first** (the pipeline publishes templates `main`), then re-publish the artifact (dev → staging → prod) via `../references/publish-to-backend.md`. No product-gallery work.
+**Merge the green PR to `main` first** (the pipeline publishes templates `main`), then re-publish the artifact (dev → staging → prod) via `../references/publish-to-backend.md`.

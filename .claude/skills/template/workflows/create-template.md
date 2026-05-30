@@ -59,10 +59,10 @@ Apply `../references/conventions.md` to the new template.
 
 Commit on a branch and open a PR against `main`. Run `/test-template`, get it green **before publishing**. Dispatch, monitoring, and failure recovery: `../references/testing-template.md`.
 
-## 8. Publish the artifact
+## 8. Merge to `main`
 
-**Merge the green PR to `main` first** — the publish pipeline ships templates `main`, so don't publish an unmerged branch. Then publish dev → staging → prod via `../references/publish-to-backend.md`.
+**Merge the green PR to `main` first** — the publish pipeline ships templates `main`, so nothing publishes from an unmerged branch.
 
-## 9. Register in the product gallery
+## 9. Publish + register via the product gallery
 
-Hand off to **`/publish-template`** (the `templates` plugin in anyscale/product owns this step — gallery registration via `workspace-templates.yaml`). Do NOT do product-repo work from here.
+Hand off to **`/publish-template`** (the `templates` plugin in anyscale/product). For a **new** template it owns the whole publish: the `workspace-templates.yaml` gallery entry **and** the `tmpl-publish` run (dev → dev-console test → staging → prod), interleaved in that order — the dev-console test needs both the artifact and the gallery entry to exist. **Don't run `tmpl-publish` yourself** here, and do no other product-repo work.
