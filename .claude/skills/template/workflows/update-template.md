@@ -20,4 +20,4 @@ Commit on a branch and open a PR against `main`. Run `/test-template`, get it gr
 
 ## 5. Republish
 
-**Merge the green PR to `main` first** (the pipeline publishes templates `main`), then re-publish the artifact (dev → staging → prod) via `../references/publish-to-backend.md` — rebuild the existing build for this template. No product-gallery work.
+**Merge the green PR to `main` first** (the pipeline publishes templates `main`), then re-publish the artifact (dev → staging → prod) via `../references/publish-to-backend.md`. No product-gallery work.

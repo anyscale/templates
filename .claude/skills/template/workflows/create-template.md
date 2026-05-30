@@ -65,4 +65,4 @@ Commit on a branch and open a PR against `main`. Run `/test-template`, get it gr
 
 ## 9. Register in the product gallery
 
-Hand off to **`/publish-template`** (the plugin in anyscale/product's marketplace owns this step). Do NOT do product-repo work from here.
+Hand off to **`/publish-template`** (the `templates` plugin in anyscale/product owns this step — gallery registration via `workspace-templates.yaml`). Do NOT do product-repo work from here.
