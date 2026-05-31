@@ -5,8 +5,8 @@ Publishes a template's content artifact to the dev → staging → production ba
 lives in `anyscale/product`, is triggered against its `master`, and publishes the content on the
 templates repo's `main`.
 
-This is **distinct from `/publish-template`** (product-gallery registration, in anyscale/product's
-`templates` plugin) — different job. `<name>` is the template's `name` in `BUILD.yaml`. To publish several templates, run one
+This is **distinct from `/register-template`** (product-gallery registration, in anyscale/product's
+`console-template-plugin`) — different job. `<name>` is the template's `name` in `BUILD.yaml`. To publish several templates, run one
 independent flow per template in parallel.
 
 ## Pipeline stages

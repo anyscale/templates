@@ -11,6 +11,8 @@ A console template = a `BUILD.yaml` entry + `templates/<name>/` content + `confi
 
 ## Pick a workflow
 
+Invoked bare (just `/template`) by a human — i.e. **not** the ray-bump automation (no `.cursor/` / `cursor/...` / trigger signals)? Ask first: are you **creating** a new template or **updating** an existing one? Then follow that file — don't default to one. (Create's first step interviews you for everything else.)
+
 - **Create** a new template → `workflows/create-template.md`
 - **Update** content/config, no Ray bump → `workflows/update-template.md`
 - **Ray-version bump** (non-interactive) → `workflows/bump-ray-version.md`

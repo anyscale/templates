@@ -1,6 +1,6 @@
 # Update a template
 
-Interactive flow for changing an existing template's content, config, or tests. **Not** a Ray-version bump — that's `bump-ray-version.md`. The template is already in the gallery, so there is **no product PR** — you just re-publish the artifact via `tmpl-publish`. (Exception: changing gallery metadata — title, description, labels, icon — is a product-side `workspace-templates.yaml` change instead; use `/publish-template`.)
+Interactive flow for changing an existing template's content, config, or tests. **Not** a Ray-version bump — that's `bump-ray-version.md`. The template is already in the gallery, so there is **no product PR** — you just re-publish the artifact via `tmpl-publish`. (Exception: changing gallery metadata — title, description, labels, icon — is a product-side `workspace-templates.yaml` change instead; use `/register-template`.)
 
 ## 1. Confirm scope
 

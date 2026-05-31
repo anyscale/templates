@@ -65,4 +65,4 @@ Commit on a branch and open a PR against `main`. Run `/test-template`, get it gr
 
 ## 9. Publish + register via the product gallery
 
-Hand off to **`/publish-template`** (the `templates` plugin in anyscale/product). For a **new** template it owns the whole publish: the `workspace-templates.yaml` gallery entry **and** the `tmpl-publish` run (dev → dev-console test → staging → prod), interleaved in that order — the dev-console test needs both the artifact and the gallery entry to exist. **Don't run `tmpl-publish` yourself** here, and do no other product-repo work.
+Hand off to **`/register-template`** (the `console-template-plugin` in anyscale/product). For a **new** template it owns the whole publish: the `workspace-templates.yaml` gallery entry **and** the `tmpl-publish` run (dev → dev-console test → staging → prod), interleaved in that order — the dev-console test needs both the artifact and the gallery entry to exist. **Don't run `tmpl-publish` yourself** here, and do no other product-repo work.
