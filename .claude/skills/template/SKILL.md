@@ -1,27 +1,30 @@
 ---
 name: template
-description: Create, maintain, format, and publish Anyscale console templates. Use for making a new template, bumping a template's Ray version, BUILD.yaml edits, image bumps, repo conventions, or publishing to dev/staging/prod.
+description: Create, maintain, format, and publish Anyscale console templates. Use for a new template, a Ray-version bump, BUILD.yaml edits, repo conventions, or publishing to dev/staging/prod.
 ---
 
 # Template skill
 
-Read the reference matching your task:
+A console template = a `BUILD.yaml` entry + `templates/<name>/` content + `configs/<name>/` compute configs + a `tests/<name>/` test.
 
-- **How to create** a new template (defers authoring to anyscale-template-agent, then walks repo integration) → `references/create.md`
-- **How to update** a template to a specific Ray release → `references/update.md`
-- **How to format** a template to repo conventions → `references/format.md`
-- **How to publish** a template to dev/staging/production (S3 via Buildkite) → `references/publish.md`
-- **Publish a custom image** to our GCP artifact registry → run `.claude/skills/template/scripts/publish-custom-image.sh <dockerfile-dir> <image-name> <ray-version>`
-- **How to reproduce CI test locally** (rayapp setup) → `references/rayapp-local-testing.md`
-- **BUILD.yaml schema guidance** lookup → `references/build-yaml-schema.yaml`
-- **Compute config schema guidance** lookup → `references/compute-config-schema.yaml`
+**How to use:** create/update are **interactive** — interview the user, explain at the point of need, and ask for any missing input. **ray-bump is non-interactive** (the `template-updater` Cursor cloud agent; signals: `.cursor/` setup, a `cursor/...` branch, an automation trigger): never prompt, use defaults; on missing input or preflight failure, post to the PR and stop. Track multi-step runs with your task tool.
+
+## Pick a workflow
+
+Invoked bare (just `/template`) by a human — i.e. **not** the ray-bump automation (no `.cursor/` / `cursor/...` / trigger signals)? Ask first: are you **creating** a new template or **updating** an existing one? Then follow that file — don't default to one. (Create's first step interviews you for everything else.)
+
+- **Create** a new template → `workflows/create-template.md`
+- **Update** content/config, no Ray bump → `workflows/update-template.md`
+- **Ray-version bump** (non-interactive) → `workflows/bump-ray-version.md`
+
+Supporting: `references/conventions.md` · `references/testing-template.md` · `references/publish-to-backend.md` · `references/run-tests-locally-with-rayapp.md` · `schemas/build-yaml-schema.yaml` · `schemas/compute-config-schema.yaml` · `.claude/skills/template/scripts/push-custom-image-to-gcp.sh`.
 
 ## Image URI cases
 
-A template's image is one of three types, identified by its `BUILD.yaml` entry:
+A template's image is one of three types:
 
-- **Anyscale base** — `image_uri: anyscale/ray:...`. Available tags: `https://docs.anyscale.com/reference/base-images/ray-<vXXX>/<pyYY>` — substitute dots-removed Ray version + python variant (e.g. Ray 2.55.1 + py3.11 → `ray-2551/py311`). The same tag space applies to `anyscale/ray-llm:...` and to Dockerfile `FROM` lines in custom images.
-- **Anyscale custom on GCP** — `byod.docker_image: us-docker.pkg.dev/anyscale-workspace-templates/workspace-templates/<name>:<ray-version>`. Image is built from the template's Dockerfile and published to the Anyscale GCP Artifact Registry.
-- **Third-party** — `byod.docker_image` from any other registry (e.g. `novaskyai/skyrl-train-ray-2.48.0-py3.12-cu12.8`). Not maintained by us.
+- **Anyscale base** — `cluster_env.image_uri: anyscale/ray:...`. Tags: `https://docs.anyscale.com/reference/base-images/ray-<vXXX>/<pyYY>` (Ray 2.55.1 + py3.11 → `ray-2551/py311`). Same tag space for `anyscale/ray-llm:...` and Dockerfile `FROM` lines.
+- **Anyscale custom on GCP** — `cluster_env.byod.docker_image: us-docker.pkg.dev/anyscale-workspace-templates/workspace-templates/<name>:<ray-version>`. Built from the Dockerfile, pushed to our GCP Artifact Registry.
+- **Third-party** — `cluster_env.byod.docker_image` from another registry; not ours.
 
-For per-case bump procedures, see `references/update.md` Step 1.
+Bump procedure per case → `workflows/bump-ray-version.md`.

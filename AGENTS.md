@@ -4,7 +4,7 @@ Anyscale console templates. For any template-related work (bump Ray, format, pub
 
 ## Companion skills
 
-The `/template` update flow leans on companion skills `/ask`, `/fix`, `/run`, `/inspect` (install with `anyscale skills install -p claude-code -y -f` — pulls from Anyscale's skills backend; uses `ANYSCALE_CLI_TOKEN`). `/fix` in particular drives the CI iteration loop — without it you cannot reliably diagnose and fix a broken template. Strongly recommended for any update work. Tip: wrap `/fix` in a subagent to keep its debug output out of your main context.
+The `/template` update flow leans on companion skills `/anyscale-platform-{ask,fix,run,inspect}` (install with `anyscale skills install -p claude-code -y -f` — pulls from Anyscale's skills backend; uses `STAGING_ANYSCALE_CLI_TOKEN`). `/anyscale-platform-fix` in particular drives the CI iteration loop — without it you cannot reliably diagnose and fix a broken template. Strongly recommended for any update work. Tip: wrap `/anyscale-platform-fix` in a subagent to keep its debug output out of your main context.
 
 For Cursor Cloud, these skills are a hard precondition (see Cursor Cloud → Preconditions).
 
@@ -14,7 +14,7 @@ Manage production templates (BUILD.yaml entries). No services to run.
 
 Local: edit → `pre-commit run --all-files` → push. Pre-commit covers lint, formatting, codebase conventions. `rayapp build all` mirrors CI's build job locally.
 
-Per-template tests — comment `/test-template <id> [<id>...]` (up to 3, parallel) on the PR to dispatch the Buildkite `template-test` pipeline (workspace + actual test run). For local iteration before pushing, `rayapp test <id>` runs the same flow (see `references/rayapp-local-testing.md` in the `/template` skill for setup).
+Per-template tests — comment `/test-template <id> [<id>...]` (up to 3, parallel) on the PR to dispatch the Buildkite `template-test` pipeline (workspace + actual test run). For local iteration before pushing, `rayapp test <id>` runs the same flow (see `references/run-tests-locally-with-rayapp.md` in the `/template` skill for setup).
 
 PR labels (apply all that fit):
 - `cursor-cloud` — origin: Cursor Cloud agent.
@@ -22,21 +22,24 @@ PR labels (apply all that fit):
 
 ## Cursor Cloud
 
-The `template-updater` Cursor Cloud agent owns Ray-version bumps end-to-end (open PR → CI → fix-loop) on every major/minor Ray release.
+The `template-updater` Cursor Cloud agent owns Ray-version bumps end-to-end (open PR → CI → fix-loop → kick off publish) on every major/minor Ray release.
+
+It runs **unattended**: it acts only on its initial task input, never reads or acts on PR comments, reviews, or other inbound messages mid-run, and **returns as soon as the job is done**. All of its Anyscale work — skill install, local `rayapp` tests, `/anyscale-platform-fix` — runs against **staging**; treat a staging failure as infra (ignore it), and touch prod only read-only to collect logs/info from a prod CI run.
 
 ### Preconditions (HARD EXIT IF MISSING)
 
 Run `bash .cursor/preflight.sh` before any task. It checks:
 
-- **Companion skills** present at `~/.claude/skills/anyscale-platform-{ask,fix,run,inspect}` (installed by `.cursor/install.sh` via `anyscale skills install -p claude-code -y -f`, which fetches them from Anyscale's backend using `ANYSCALE_CLI_TOKEN`).
-- **Cursor secrets** (team-scope, all four non-empty):
+- **Companion skills** present at `~/.claude/skills/anyscale-platform-{ask,fix,run,inspect}` (installed by `.cursor/install.sh` via `anyscale skills install -p claude-code -y -f`, which fetches them from Anyscale's backend using `STAGING_ANYSCALE_CLI_TOKEN`).
+- **Cursor secrets** (team-scope):
   - `ANYSCALE_GH_TOKEN` — `gh` write fallback on this repo (see quirks below).
-  - `ANYSCALE_CLI_TOKEN` — anyscale CLI auth + skill install.
+  - `STAGING_ANYSCALE_CLI_TOKEN` — anyscale CLI auth + skill install; **everything runs on staging**.
   - `GCP_TEMPLATE_REGISTRY_SA_KEY`
   - `BUILDKITE_API_TOKEN`
-- **Auth verified:** `gh auth status` (with the token above), `gcloud auth list`, and `anyscale cloud list` all succeed.
+  - `PROD_ANYSCALE_CLI_TOKEN` — *optional*; read-only-exceptional, only to collect logs/info from a prod CI run.
+- **Auth verified:** `gh auth status` (with the token above), `gcloud auth list`, and `anyscale cloud list` (against staging) all succeed.
 
-**If preflight exits non-zero, post its stderr as a PR comment and stop — don't attempt the task.**
+**If preflight exits non-zero, report its stderr (as a PR comment if a PR exists, otherwise in the run/CI output) and stop — don't attempt the task.**
 
 ### Setup
 

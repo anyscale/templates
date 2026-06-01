@@ -18,12 +18,12 @@ add_failure_with_output() {
 # anyscale-platform-{ask,fix,run,inspect}/).
 for s in ask fix run inspect; do
   if [[ ! -f "$HOME/.claude/skills/anyscale-platform-$s/SKILL.md" ]]; then
-    failures+=("missing skill: ~/.claude/skills/anyscale-platform-$s/SKILL.md ('anyscale skills install -p claude-code -y -f' didn't run, or failed? Check ANYSCALE_CLI_TOKEN)")
+    failures+=("missing skill: ~/.claude/skills/anyscale-platform-$s/SKILL.md ('anyscale skills install -p claude-code -y -f' didn't run, or failed? Check STAGING_ANYSCALE_CLI_TOKEN)")
   fi
 done
 
 # 2. Environment variables
-for var in ANYSCALE_GH_TOKEN ANYSCALE_CLI_TOKEN GCP_TEMPLATE_REGISTRY_SA_KEY BUILDKITE_API_TOKEN; do
+for var in ANYSCALE_GH_TOKEN STAGING_ANYSCALE_CLI_TOKEN GCP_TEMPLATE_REGISTRY_SA_KEY BUILDKITE_API_TOKEN; do
   if [[ -z "${!var:-}" ]]; then
     failures+=("missing env var: $var (team-scope, non-empty)")
   fi
@@ -56,12 +56,12 @@ if [[ ! -f "$HOME/.docker/config.json" ]] \
   failures+=("docker auth: us-docker.pkg.dev not configured in ~/.docker/config.json — install.sh's 'gcloud auth configure-docker' step likely failed; custom-image push will fail")
 fi
 
-# Pinned to staging — Cursor Cloud agent must never run against prod.
+# Everything runs against staging; the Cursor agent never tests or fixes on prod.
 # --no-interactive prevents the CLI from prompting (would hang in CI).
-if out=$(ANYSCALE_HOST=https://console.anyscale.com \
+if out=$(ANYSCALE_HOST=https://console.anyscale-staging.com \
          anyscale cloud list --no-interactive 2>&1); then :; else
   add_failure_with_output \
-    "anyscale auth: 'anyscale cloud list' against prod failed — check ANYSCALE_CLI_TOKEN is a prod token" \
+    "anyscale auth: 'anyscale cloud list' against staging failed — check STAGING_ANYSCALE_CLI_TOKEN is a valid staging token" \
     "$out"
 fi
 

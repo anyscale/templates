@@ -64,4 +64,4 @@
 # - that dir's basename must equal name, OR be `basic-single-node`
 # - For byod on the Anyscale GCP registry, docker_image must be exactly:
 #     us-docker.pkg.dev/anyscale-workspace-templates/workspace-templates/<name>:<byod.ray_version>
-#   (image basename == name, tag == byod.ray_version). publish-custom-image.sh produces this form.
+#   (image basename == name, tag == byod.ray_version). push-custom-image-to-gcp.sh produces this form.
