@@ -110,3 +110,17 @@ depsets:
       - --unsafe-package ray
     build_arg_sets:
       - ray2551_py311_cu128
+
+  - name: ecommerce_batch_embeddings_depset_${RAY_VERSION}_${PYTHON_VERSION}
+    operation: expand
+    source_depset: ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
+    requirements:
+      - templates/ecommerce_batch_embeddings/requirements.txt
+    output: templates/ecommerce_batch_embeddings/python_depset.lock
+    append_flags:
+      - --index https://download.pytorch.org/whl/cu121
+      - --python-version=${PYTHON_VERSION}
+      - --python-platform=linux
+      - --unsafe-package ray
+    build_arg_sets:
+      - ray2551_py311_cu128
