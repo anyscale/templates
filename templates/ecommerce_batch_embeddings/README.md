@@ -45,10 +45,6 @@ The next cell initializes a connection to the Anyscale-managed Ray cluster and p
 import os
 os.environ["HF_HOME"] = "/mnt/cluster_storage/hf_cache"
 
-# Install the hash-pinned dependency closure (compiled from requirements.txt
-# into python_depset.lock via `uv pip compile`). --no-deps because the lock is
-# already a full closure; --index-strategy unsafe-best-match for the multi-index
-# (PyPI + PyTorch cu121) resolve. This keeps the environment reproducible.
 !uv pip install -r python_depset.lock --system --no-deps --no-cache-dir --index-strategy unsafe-best-match
 ```
 
@@ -65,11 +61,7 @@ if DEMO_ROOT not in sys.path:
 import ray
 
 # In Anyscale Workspace, Ray is pre-initialized.
-# runtime_env working_dir ships src.* to workers; pip installs the hash-pinned
-# dependency closure (python_depset.lock) on EVERY node, so the GPU workers
-# running the bare base image get sentence-transformers/torch for the embedding
-# actors. The cell-1 `uv pip install` only reaches the head, so without this the
-# ProductEmbedder actors fail to import on the worker nodes.
+# runtime_env working_dir ensures Ray workers can import src.* from this repo.
 ray.init(
     ignore_reinit_error=True,
     runtime_env={
@@ -89,7 +81,6 @@ print(f"\nCluster nodes: {len(nodes)}")
 for n in nodes:
     res = ', '.join(f"{k}={v}" for k, v in n['Resources'].items() if not k.startswith('node:'))
     print(f"  {n['NodeManagerAddress']:<20} alive={n['Alive']}  {res}")
-
 ```
 
 ## Step 2: Load the Product Catalog with Ray Data

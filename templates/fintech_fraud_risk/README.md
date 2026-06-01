@@ -65,11 +65,6 @@ if DEMO_ROOT not in sys.path:
 import ray
 
 # In Anyscale Workspace, Ray is pre-initialized.
-# runtime_env working_dir ships src.* to workers; pip installs the hash-pinned
-# dependency closure (python_depset.lock) on EVERY node, so the CPU workers
-# running the bare base image get xgboost/scikit-learn/etc. for the Ray Data
-# (and Ray Tune) tasks. The cell-1 `uv pip install` only reaches the head, so
-# without this the worker tasks fail to import on the worker nodes.
 ray.init(
     ignore_reinit_error=True,
     runtime_env={
