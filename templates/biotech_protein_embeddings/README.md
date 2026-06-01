@@ -76,10 +76,17 @@ if DEMO_ROOT not in sys.path:
 import ray
 
 # In Anyscale Workspace, Ray is pre-initialized.
-# runtime_env working_dir ensures Ray workers can import src.* from this repo.
+# runtime_env working_dir ships src.* to workers; pip installs the hash-pinned
+# dependency closure (python_depset.lock) on EVERY node, so the GPU workers
+# running the bare base image get torch/transformers/etc. for the ESM-2 embedding
+# actors. The cell-1 `uv pip install` only reaches the head, so without this the
+# GPU map_batches actors fail to import on the worker nodes.
 ray.init(
     ignore_reinit_error=True,
-    runtime_env={"working_dir": DEMO_ROOT},
+    runtime_env={
+        "working_dir": DEMO_ROOT,
+        "pip": os.path.join(DEMO_ROOT, "python_depset.lock"),
+    },
 )
 
 resources = ray.cluster_resources()
