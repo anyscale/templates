@@ -1,14 +1,8 @@
-head_node_type:
-  name: head
+head_node:
   instance_type: n2-standard-16
-  resources:
-    cpu: 0
-    gpu: 0
-worker_node_types:
-  - instance_type: g2-standard-16-nvidia-l4-1
-    name: '1xL4:16CPU-64GB'
-    min_workers: 2
-    max_workers: 2
-
-flags:
-  allow-cross-zone-autoscaling: true
+worker_nodes:
+- name: 1xL4:16CPU-64GB
+  instance_type: g2-standard-16-nvidia-l4-1
+  min_nodes: 2
+  max_nodes: 2
+enable_cross_zone_scaling: true
