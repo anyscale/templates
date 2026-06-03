@@ -1,0 +1,2 @@
+soundfile==0.13.1
+numpy==2.2.6

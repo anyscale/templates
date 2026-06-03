@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euxo pipefail
 
-pip install -r requirements.txt
-pip install papermill "nbconvert==7.16.6" ipykernel
+uv pip install -r python_depset.lock --system --no-deps --no-cache-dir --index-strategy unsafe-best-match
+uv pip install -q --system papermill "nbconvert==7.16.6" ipykernel
 
 set +x  # don't echo the resolved secret under xtrace
 BRAVE_API_KEY=$(aws secretsmanager get-secret-value \

@@ -31,7 +31,7 @@ This tutorial runs on a cluster with five L4 GPU worker nodes.
 
 
 ```python
-!pip install soundfile
+!uv pip install -r python_depset.lock --system --no-deps --no-cache-dir --index-strategy unsafe-best-match
 ```
 
 
