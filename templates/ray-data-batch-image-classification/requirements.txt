@@ -1,0 +1,4 @@
+torch==2.7.1
+torchvision==0.22.1
+numpy==1.26.4
+pyarrow==19.0.1

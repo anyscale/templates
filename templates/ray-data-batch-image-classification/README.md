@@ -22,7 +22,7 @@ To run this example, you will need the following packages:
 
 
 ```python
-!pip install -q "ray[data]" torch torchvision
+!uv pip install -r python_depset.lock --system --no-deps --no-cache-dir --index-strategy unsafe-best-match
 ```
 
 ## Step 1: Reading the Dataset from S3
