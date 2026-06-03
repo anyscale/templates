@@ -128,7 +128,7 @@ Install the required dependencies:
 
 ```bash
 %%bash
-pip install "torch>=2.4" transformers datasets "deepspeed>=0.18.6"
+uv pip install -r python_depset.lock --system --no-deps --no-cache-dir --index-strategy unsafe-best-match
 ```
 
 

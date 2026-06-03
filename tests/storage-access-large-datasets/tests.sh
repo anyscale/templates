@@ -1,4 +1,4 @@
 #!/usr/bin/env bash
 set -euo pipefail
-pip install papermill gcsfs adlfs
+uv pip install -q --system papermill
 papermill README.ipynb output.ipynb -k python3 --log-output

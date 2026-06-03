@@ -1,4 +1,3 @@
-ray
 QuantLib==1.42
 yfinance==1.2.2
 pandas

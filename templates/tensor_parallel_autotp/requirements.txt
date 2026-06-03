@@ -1,0 +1,5 @@
+torch==2.7.0
+transformers==4.48.0
+datasets==2.21.0
+deepspeed==0.18.9
+numpy==1.26.4

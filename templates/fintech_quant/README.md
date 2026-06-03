@@ -16,7 +16,7 @@
 
 
 ```python
-!pip install QuantLib==1.42 yfinance==1.2.2
+!uv pip install -r python_depset.lock --system --no-deps --no-cache-dir --index-strategy unsafe-best-match
 ```
 
 
