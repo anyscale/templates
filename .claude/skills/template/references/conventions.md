@@ -33,10 +33,10 @@ Run the `check-build-yaml` hook first (see **Validate locally**) — it authorit
 - **Ray-doc links → canonical URL.** For templates that also ship in the Ray repo/docs, link Ray documentation as `https://docs.ray.io/en/latest/...` — never a relative path or a `github.com/ray-project/ray/...` blob link. Exception: link GitHub directly only when the point is to show the source code itself.
 - **Ray Train templates use the V2 API, never V1.**
 
-⚠️ **Compute configs use the new user-facing ComputeConfig schema** (`head_node` / `worker_nodes` / `market_type` / …), NOT the legacy `head_node_type` format. Mirror an existing `configs/<name>/` entry. Reference:
+⚠️ **Compute configs use the user-facing ComputeConfig schema** (`head_node` / `worker_nodes` / `market_type` / …), NOT the legacy `head_node_type` format. Mirror an existing `configs/<name>/` entry. Reference:
 - ComputeConfig: https://docs.anyscale.com/reference/compute-config-api#computeconfig
 
-(`rayapp build` converts new→legacy at publish time — ray-project/rayci#492 — so published bundles still carry the legacy schema the console clone path parses.)
+(`rayapp build` converts configs to the legacy bundle format at publish time — ray-project/rayci#492 — so published bundles still carry the legacy schema the console clone path parses.)
 
 ## Validate locally
 
