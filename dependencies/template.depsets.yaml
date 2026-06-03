@@ -104,9 +104,8 @@ depsets:
       - templates/biotech_protein_embeddings/requirements.txt
     output: templates/biotech_protein_embeddings/python_depset.lock
     append_flags:
-      - --index https://download.pytorch.org/whl/cu121
       - --python-version=${PYTHON_VERSION}
-      - --python-platform=linux
+      - --python-platform=x86_64-manylinux_2_31
       - --unsafe-package ray
     build_arg_sets:
       - ray2551_py311_cu128

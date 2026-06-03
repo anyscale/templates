@@ -1,8 +1,9 @@
 ray[data]>=2.9
 transformers>=4.35
-torch>=2.1
-numpy>=1.24
+torch==2.7.0
 pandas>=2.0
-pyarrow>=14.0
 biopython>=1.82
 scikit-learn>=1.3
+numpy==1.26.4
+pyarrow==19.0.1
+markupsafe==2.1.3
