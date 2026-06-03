@@ -25,7 +25,7 @@ if ray.is_initialized():
     ray.shutdown()
 ray.init(
     runtime_env={
-        "pip": ["torch<2.5", "langchain==0.1.17", "transformers==4.40.2", "optimum==1.19.2"],
+        "pip": os.path.abspath("python_depset.lock"),
         "env_vars": {
             "HF_TOKEN": HF_TOKEN,
 

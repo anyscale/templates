@@ -1,0 +1,10 @@
+torch==2.7.0
+torchvision==0.22.0
+xgboost
+scikit-learn
+pillow
+tqdm
+matplotlib
+pandas
+pyarrow==19.0.1
+requests
