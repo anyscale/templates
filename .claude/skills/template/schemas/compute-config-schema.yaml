@@ -1,78 +1,87 @@
-# Compute Config Schema (Legacy API format)
+# Compute Config Schema (ComputeConfig — user-facing API format)
 #
-# These YAML files live under configs/<template-name>/{aws,gce}.yaml
-# They use the LEGACY compute config format (not the workspace_v2 CLI format).
+# These YAML files live under configs/<template-name>/{aws,gce}.yaml and use the
+# user-facing ComputeConfig schema:
+#   https://docs.anyscale.com/reference/compute-config-api#computeconfig
 #
 # IMPORTANT: Omit fields that match their default value. Only include what you
 # actually need to override. This keeps configs minimal and avoids confusion
 # about which values are intentional vs just restating defaults.
 #
-# NOT included in the template config: `cloud` (operational reference, not a per-template setting).
+# NOT included in the template config: `cloud` / `cloud_resource` (operational
+# references, injected at clone time — not per-template settings).
 
 # --- Full schema (with defaults noted) ---
 
-head_node_type:                        # REQUIRED
-  name: head                           # REQUIRED. Node type name.
-  instance_type: m5.2xlarge            # Optional. Cloud instance type.
-  resources:                           # Optional. Only include to override defaults.
-    cpu: 0                             #   Default: auto-detected. Set 0 to exclude from scheduling.
-    gpu: 0                             #   Default: auto-detected. Set 0 to exclude from scheduling.
+head_node:                             # Optional. Defaults to the cloud's default head node.
+  instance_type: m5.2xlarge            # Optional. Cloud instance type. (The head has NO `name`.)
+  resources:                           # Optional. Only include to override auto-detected resources.
+    CPU: 0                             #   Set 0 to exclude the head from scheduling. Keys are CAPITALIZED.
+    # GPU: 0                           #   Default: auto-detected from the instance type.
     # memory: 0                        #   Default: auto-detected.
     # object_store_memory: 0           #   Default: auto-detected.
-    # custom_resources: {}             #   Default: empty.
-  # required_resources: {}             # Optional. Default: none. Omit if not needed.
-  # labels: {}                         # Optional. Default: empty. Omit if not needed.
-  # required_labels: {}                # Optional. Default: empty. Omit if not needed.
-  # flags: {}                          # Optional. Default: empty. Omit if not needed.
-  # aws_advanced_configurations_json: {}  # Omit unless needed.
-  # gcp_advanced_configurations_json: {}  # Omit unless needed.
+    # "accelerator_type:T4": 1         #   Custom Ray resources go here as flat keys.
+  # required_resources: {}             # Optional. For custom (free-pod) instance shapes. Omit if not needed.
+  # labels: {}                         # Optional. Omit if not needed.
+  # required_labels: {}                # Optional. Omit if not needed.
+  # advanced_instance_config: {}       # Optional. Cloud-provider passthrough (see below). Omit unless needed.
+  # flags: {}                          # Optional. Omit if not needed.
 
-worker_node_types:                     # Default: []. Omit or use [] if auto_select_worker_config is true.
-  - name: gpu-worker                   # REQUIRED per worker type.
+worker_nodes:                          # Optional. Omit for serverless auto-select; use [] for head-only.
+                                       # MUST be omitted when auto_select_worker_config is true.
+  - name: gpu-worker                   # Optional. Defaults to the instance type. Must be unique per group.
     instance_type: g4dn.12xlarge       # Optional. Cloud instance type.
-    min_workers: 2                     # Optional. Default: 0. Omit if 0.
-    max_workers: 2                     # Optional. Default: 0. Omit if 0.
-    # use_spot: false                  # Default: false. Omit unless true.
-    # fallback_to_ondemand: false      # Default: false. Omit unless true.
-    # resources: {}                    # Optional. Same as head_node_type.resources. Omit if auto-detected.
+    # min_nodes: 0                     # Default: 0. Omit if 0.
+    max_nodes: 2                       # Default: 10. Set the autoscaling ceiling explicitly.
+    # market_type: ON_DEMAND           # ON_DEMAND (default) | SPOT | PREFER_SPOT. Omit if ON_DEMAND.
+    # resources: {}                    # Optional. Same shape as head_node.resources.
     # required_resources: {}           # Optional. Omit if not needed.
-    # labels: {}                       # Optional. Omit if not needed.
-    # required_labels: {}              # Optional. Omit if not needed.
+    # labels: {} / required_labels: {} # Optional. Omit if not needed.
+    # advanced_instance_config: {}     # Optional. Per-group cloud-provider passthrough.
     # flags: {}                        # Optional. Omit if not needed.
 
-auto_select_worker_config: true        # Default: false. Omit if false.
-                                       # When true, worker_node_types can be empty [].
+auto_select_worker_config: true        # Default: false. Omit if false. When true, OMIT worker_nodes
+                                       # (the two are mutually exclusive).
 
-# flags: {}                            # Optional. Default: empty. Omit if not needed.
-#   allow-cross-zone-autoscaling: true # Common flag for multi-AZ scheduling.
+# enable_cross_zone_scaling: true      # Default: false. Omit if false. (Replaces the legacy
+#                                        flags: {allow-cross-zone-autoscaling: true}.)
+# zones: [us-west-2a, us-west-2b]      # Optional. Defaults to all zones in the cloud's region.
+# min_resources: {CPU: 1}              # Optional. Cluster-wide minimum logical resources.
+# max_resources: {CPU: 6, GPU: 10}     # Optional. Cluster-wide maximum logical resources.
+# advanced_instance_config: {}         # Optional. Top-level cloud-provider passthrough (AWS or GCP).
+# flags: {}                            # Optional. Advanced/experimental cluster flags.
 
 # --- Common patterns ---
 #
-# CPU-only single node (auto workers):
-#   head_node_type:
-#     name: head
+# CPU-only single node (serverless auto-select):
+#   head_node:
 #     instance_type: m5.2xlarge        # AWS
 #     # instance_type: n2-standard-8   # GCP
-#   worker_node_types: []
 #   auto_select_worker_config: true
 #
-# GPU workers (explicit):
-#   head_node_type:
-#     name: head
+# GPU workers (explicit); head excluded from scheduling:
+#   head_node:
 #     instance_type: m5.2xlarge
-#     resources: { cpu: 0, gpu: 0 }    # Head excluded from scheduling
-#   worker_node_types:
+#     resources: {CPU: 0}              # When workers exist, the head is unschedulable by default.
+#   worker_nodes:
 #     - name: gpu-worker
 #       instance_type: g4dn.12xlarge
-#       min_workers: 2
-#       max_workers: 2
+#       max_nodes: 2
+#
+# Spot workers:
+#   worker_nodes:
+#     - instance_type: g6.2xlarge
+#       max_nodes: 4
+#       market_type: PREFER_SPOT       # spot, fall back to on-demand
+#
+# advanced_instance_config (cloud-provider passthrough; the key is provider-neutral, the body is not):
+#   # AWS: {BlockDeviceMappings: [{DeviceName: /dev/sda1, Ebs: {VolumeSize: 1000, DeleteOnTermination: true}}]}
+#   # GCP: {instance_properties: {labels: {as-feature-multi-zone: 'true'}}}
 #
 # AWS instance types commonly used:
 #   CPU: m5.2xlarge, m5.4xlarge
-#   GPU: g5.xlarge (1x A10G), g5.2xlarge (1x A10G), g6.2xlarge (1x L4),
-#        p4d.24xlarge (8x A100)
+#   GPU: g5.xlarge (1x A10G), g6.2xlarge (1x L4), p4d.24xlarge (8x A100)
 #
 # GCP instance types commonly used:
 #   CPU: n2-standard-8, n2-standard-16
-#   GPU: g2-standard-8-nvidia-l4-1, g2-standard-12-nvidia-l4-1 (1x L4),
-#        a2-highgpu-1g-nvidia-a100-40gb-1 (1x A100)
+#   GPU: g2-standard-12-nvidia-l4-1 (1x L4), a2-highgpu-1g-nvidia-a100-40gb-1 (1x A100)
