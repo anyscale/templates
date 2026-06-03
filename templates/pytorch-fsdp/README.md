@@ -61,7 +61,7 @@ Install the required dependencies for this tutorial:
 
 ```bash
 %%bash
-pip install torch==2.7.0 torchvision==0.22.0 matplotlib
+uv pip install -r python_depset.lock --system --no-deps --no-cache-dir --index-strategy unsafe-best-match
 ```
 
 

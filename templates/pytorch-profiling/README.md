@@ -47,7 +47,7 @@ With Ray Train, you can profile distributed training workloads across multiple w
 
 ```bash
 %%bash
-pip install torch torchvision matplotlib
+uv pip install -r python_depset.lock --system --no-deps --no-cache-dir --index-strategy unsafe-best-match
 ```
 
 ## Distributed training with Ray Train and PyTorch Profiler
