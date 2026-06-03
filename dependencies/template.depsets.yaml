@@ -179,48 +179,48 @@ depsets:
 #      - --unsafe-package ray
 #    build_arg_sets:
 #      - ray2551_py311_cu128
-#
-#  - name: creatives_diffusion_finetuning_depset_${RAY_VERSION}_${PYTHON_VERSION}
-#    operation: expand
-#    source_depset: ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
-#    requirements:
-#      - templates/creatives_diffusion_finetuning/requirements.txt
-#    output: templates/creatives_diffusion_finetuning/python_depset.lock
-#    append_flags:
-#      - --index https://download.pytorch.org/whl/cu121
-#      - --python-version=${PYTHON_VERSION}
-#      - --python-platform=linux
-#      - --unsafe-package ray
-#    build_arg_sets:
-#      - ray2551_py311_cu128
-#
-#  - name: ecommerce_multi_model_serving_depset_${RAY_VERSION}_${PYTHON_VERSION}
-#    operation: expand
-#    source_depset: ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
-#    requirements:
-#      - templates/ecommerce_multi_model_serving/requirements.txt
-#    output: templates/ecommerce_multi_model_serving/python_depset.lock
-#    append_flags:
-#      - --index https://download.pytorch.org/whl/cu121
-#      - --python-version=${PYTHON_VERSION}
-#      - --python-platform=linux
-#      - --unsafe-package ray
-#    build_arg_sets:
-#      - ray2551_py311_cu128
-#
-#  - name: biotech_boltz_screening_depset_${RAY_VERSION}_${PYTHON_VERSION}
-#    operation: expand
-#    source_depset: ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
-#    requirements:
-#      - templates/biotech_boltz_screening/requirements.txt
-#    output: templates/biotech_boltz_screening/python_depset.lock
-#    append_flags:
-#      - --index https://download.pytorch.org/whl/cu121
-#      - --python-version=${PYTHON_VERSION}
-#      - --python-platform=linux
-#      - --unsafe-package ray
-#    build_arg_sets:
-#      - ray2551_py311_cu128
+
+  - name: creatives_diffusion_finetuning_depset_${RAY_VERSION}_${PYTHON_VERSION}
+    operation: expand
+    source_depset: ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
+    requirements:
+      - templates/creatives_diffusion_finetuning/requirements.txt
+    output: templates/creatives_diffusion_finetuning/python_depset.lock
+    append_flags:
+      - --index https://download.pytorch.org/whl/cu121
+      - --python-version=${PYTHON_VERSION}
+      - --python-platform=linux
+      - --unsafe-package ray
+    build_arg_sets:
+      - ray2551_py311_cu128
+
+  - name: ecommerce_multi_model_serving_depset_${RAY_VERSION}_${PYTHON_VERSION}
+    operation: expand
+    source_depset: ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
+    requirements:
+      - templates/ecommerce_multi_model_serving/requirements.txt
+    output: templates/ecommerce_multi_model_serving/python_depset.lock
+    append_flags:
+      - --index https://download.pytorch.org/whl/cu121
+      - --python-version=${PYTHON_VERSION}
+      - --python-platform=linux
+      - --unsafe-package ray
+    build_arg_sets:
+      - ray2551_py311_cu128
+
+  - name: biotech_boltz_screening_depset_${RAY_VERSION}_${PYTHON_VERSION}
+    operation: expand
+    source_depset: ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
+    requirements:
+      - templates/biotech_boltz_screening/requirements.txt
+    output: templates/biotech_boltz_screening/python_depset.lock
+    append_flags:
+      - --index https://download.pytorch.org/whl/cu121
+      - --python-version=${PYTHON_VERSION}
+      - --python-platform=linux
+      - --unsafe-package ray
+    build_arg_sets:
+      - ray2551_py311_cu128
 #
 #  - name: finetune_stable_diffusion_depset_${RAY_VERSION}_${PYTHON_VERSION}
 #    operation: expand

@@ -39,7 +39,7 @@ After connecting, we print the cluster's available resources (CPUs, GPUs, memory
 import os
 os.environ["HF_HOME"] = "/mnt/cluster_storage/hf_cache"
 
-!pip install -q -r requirements.txt
+!uv pip install -r python_depset.lock --system --no-deps --no-cache-dir --index-strategy unsafe-best-match
 ```
 
 
