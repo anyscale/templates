@@ -1,5 +1,5 @@
-torch
-torchvision
+torch==2.7.0
+torchvision==0.22.0
 accelerate==0.28.0
 diffusers==0.27.2
 peft==0.10.0

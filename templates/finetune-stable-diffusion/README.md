@@ -17,7 +17,7 @@ The application requires a few extra Python dependencies. Install them using `pi
 
 
 ```python
-!pip install -U -r requirements.txt
+!uv pip install -r python_depset.lock --system --no-deps --no-cache-dir --index-strategy unsafe-best-match
 ```
 
 ## Step 2: Set up a dataset of your subject
@@ -184,7 +184,7 @@ if WANDB_API_KEY:
     ENV_VARS["WANDB_API_KEY"] = WANDB_API_KEY
 
 ray.shutdown()
-ray.init(runtime_env={"env_vars": ENV_VARS})
+ray.init(runtime_env={"env_vars": ENV_VARS, "pip": os.path.abspath("python_depset.lock")})
 
 
 def train_fn_per_worker(config: dict):
