@@ -23,6 +23,16 @@ To run this example, you will need the following packages:
 
 ```python
 !uv pip install -r python_depset.lock --system --no-deps --no-cache-dir --index-strategy unsafe-best-match
+
+import os
+import ray
+
+# Install deps on the driver (above) AND propagate them to worker nodes via
+# runtime_env, so the map_batches actors can import torch/torchvision.
+ray.init(
+    ignore_reinit_error=True,
+    runtime_env={"pip": os.path.join(os.getcwd(), "python_depset.lock")},
+)
 ```
 
 ## Step 1: Reading the Dataset from S3
