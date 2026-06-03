@@ -80,14 +80,12 @@ class Entry(Strict):
     test: Test
 
 
-# Schema for the new user-facing ComputeConfig, applied to BUILD.yaml-referenced
-# files. All fields are optional (lax) but extra keys are rejected (strict) — extra
-# keys (e.g. head_node_type, worker_node_types) usually indicate the file is still
-# using the legacy compute-config schema.
+# ComputeConfig schema, applied to BUILD.yaml-referenced files.
+# All fields are optional (lax) but extra keys are rejected (strict).
 #   ComputeConfig: https://docs.anyscale.com/reference/compute-config-api#computeconfig
 
-class NewHeadNode(Strict):
-    """Used for head_node. Note: the new schema has no per-node `name` on the head."""
+class HeadNode(Strict):
+    """Used for head_node (the head has no `name` field)."""
     instance_type: Optional[Any] = None
     resources: Optional[Any] = None
     required_resources: Optional[Any] = None
@@ -98,7 +96,7 @@ class NewHeadNode(Strict):
     cloud_deployment: Optional[Any] = None
 
 
-class NewWorkerNode(NewHeadNode):
+class WorkerNode(HeadNode):
     """Used for worker_nodes entries: head fields plus a name and worker scaling / market fields."""
     name: Optional[Any] = None
     min_nodes: Optional[Any] = None
@@ -106,11 +104,11 @@ class NewWorkerNode(NewHeadNode):
     market_type: Optional[Any] = None
 
 
-class NewComputeConfig(Strict):
+class ComputeConfigFile(Strict):
     cloud: Optional[Any] = None
     cloud_resource: Optional[Any] = None
-    head_node: Optional[NewHeadNode] = None
-    worker_nodes: Optional[List[NewWorkerNode]] = None
+    head_node: Optional[HeadNode] = None
+    worker_nodes: Optional[List[WorkerNode]] = None
     min_resources: Optional[Any] = None
     max_resources: Optional[Any] = None
     zones: Optional[Any] = None
@@ -122,9 +120,9 @@ class NewComputeConfig(Strict):
     @model_validator(mode="after")
     def _auto_select_xor_worker_nodes(self):
         # Mirror the SDK constraint (anyscale compute_config/models.py
-        # _validate_auto_select_worker_config): the new schema forbids
-        # auto_select_worker_config together with an explicit worker_nodes list
-        # (note `[]` is not None, so it is also forbidden).
+        # _validate_auto_select_worker_config): auto_select_worker_config cannot
+        # be combined with an explicit worker_nodes list (note `[]` is not None,
+        # so it is also forbidden).
         if self.auto_select_worker_config and self.worker_nodes is not None:
             raise ValueError(
                 "'auto_select_worker_config: true' cannot be combined with 'worker_nodes'; "
@@ -260,8 +258,8 @@ COMPUTE_CONFIG_DOCS = (
 
 
 def check_compute_configs(entries: list[Entry]) -> list[str]:
-    """Each compute config file must follow the new user-facing ComputeConfig
-    schema. Top-level keys are checked (nested keys are lightly validated)."""
+    """Each compute config file must follow the ComputeConfig schema.
+    Top-level keys are checked (nested keys are lightly validated)."""
     errors: list[str] = []
     paths: set[str] = set()
     for e in entries:
@@ -273,7 +271,7 @@ def check_compute_configs(entries: list[Entry]) -> list[str]:
             continue  # already reported by check_filesystem_and_uniqueness
         try:
             data = yaml.safe_load(full.read_text()) or {}
-            NewComputeConfig.model_validate(data)
+            ComputeConfigFile.model_validate(data)
         except ValidationError as e:
             extras = [
                 ".".join(str(p) for p in err["loc"]) for err in e.errors()
@@ -281,9 +279,8 @@ def check_compute_configs(entries: list[Entry]) -> list[str]:
             ]
             if extras:
                 errors.append(
-                    f"{path}: unknown keys {extras} — this config likely uses "
-                    f"the legacy compute-config schema. This repo now requires the "
-                    f"new ComputeConfig schema: {COMPUTE_CONFIG_DOCS}"
+                    f"{path}: unknown keys {extras} — compute configs must follow "
+                    f"the ComputeConfig schema: {COMPUTE_CONFIG_DOCS}"
                 )
             else:
                 errors.append(f"{path}: {e.errors()}")
