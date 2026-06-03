@@ -50,7 +50,7 @@ The workspace launched with `workspace.yaml` which specified:
 
 
 ```python
-!pip install -q -r requirements.txt
+!uv pip install -r python_depset.lock --system --no-deps --no-cache-dir --index-strategy unsafe-best-match
 ```
 
 
@@ -67,7 +67,10 @@ import ray
 # In Anyscale Workspace, Ray is pre-initialized.
 ray.init(
     ignore_reinit_error=True,
-    runtime_env={"working_dir": DEMO_ROOT},
+    runtime_env={
+        "working_dir": DEMO_ROOT,
+        "pip": os.path.join(DEMO_ROOT, "python_depset.lock"),
+    },
 )
 
 resources = ray.cluster_resources()

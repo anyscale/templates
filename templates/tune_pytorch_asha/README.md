@@ -113,7 +113,13 @@ import os, sys, subprocess
 os.environ["RAY_TRAIN_V2_ENABLED"] = "1"
 
 # Install Python dependencies 
-!pip install -r requirements.txt
+!uv pip install -r python_depset.lock --system --no-deps --no-cache-dir --index-strategy unsafe-best-match
+
+import ray
+ray.init(
+    ignore_reinit_error=True,
+    runtime_env={"pip": os.path.join(os.getcwd(), "python_depset.lock")},
+)
 ```
 
 
