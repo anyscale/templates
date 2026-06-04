@@ -24,11 +24,13 @@ if [ -f .pre-commit-config.yaml ] && [ -d .git ]; then
     || echo "WARN: pre-commit install skipped — run 'pre-commit run --all-files' manually before committing."
 fi
 
+python3 -m pip install --break-system-packages -r requirements-dev.txt
+
 # --- rayapp (version pinned via repo's download_rayapp.sh; lives in the
 # repo so kept here rather than baked into the image) ---
-if [ -f download_rayapp.sh ] && ! command -v rayapp &>/dev/null; then
+if ! command -v rayapp >/dev/null 2>&1 && [ -f download_rayapp.sh ]; then
   bash download_rayapp.sh
-  mv rayapp /usr/local/bin/rayapp
+  sudo mv rayapp /usr/local/bin/rayapp 2>/dev/null || mv rayapp "$HOME/bin/rayapp"
 fi
 
 # --- Auth: gh ---
