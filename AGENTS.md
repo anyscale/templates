@@ -61,6 +61,7 @@ This repo has **no long-running local services** — development is lint → bui
 - **PATH:** When Python tools land in `~/.local/bin` (user pip install fallback), ensure `export PATH="$HOME/.local/bin:$PATH"` before invoking `pre-commit`, `anyscale`, or `jupyter`.
 - **`python` symlink:** `update_deps.sh` invokes `python`; install `python-is-python3` (included in the Dockerfile) or symlink `python` → `python3`.
 - **Docker:** Start with `sudo service docker start` before BYOD image builds (`publish-custom-image.sh`). Required for `gcloud auth configure-docker us-docker.pkg.dev` credential helper.
+- **`rsync` + `openssh-client`:** Required for `rayapp test` / `anyscale workspace push` (baked into the Dockerfile). If missing, install with `sudo apt-get install -y rsync openssh-client`.
 - **Staging host:** Export `ANYSCALE_HOST=https://console.anyscale-staging.com` before any `anyscale` CLI call. Preflight and `rayapp test` always target staging.
 
 ### Lint, build, and test (no cloud vs cloud)
