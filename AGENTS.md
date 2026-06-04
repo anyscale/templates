@@ -50,3 +50,36 @@ Use `.cursor/Dockerfile` and `.cursor/install.sh` as the canonical environment s
 - **Branch naming:** Cursor auto-assigns `cursor/...`. (Outside Cursor, use `update/<template-name>/ray-<version>`.)
 - **`pre-commit install` doesn't auto-fire:** Cursor sets `core.hooksPath`, which causes pre-commit to skip its hook install. Run `pre-commit run --all-files` manually before committing.
 - **GitHub write operations:** Cursor's default GitHub App auth can't write to this repo. **Always prefix `gh` write commands** (`gh pr create`, `gh pr edit`, `gh pr comment`, `gh issue comment`, `gh pr review`) with `GH_TOKEN=$ANYSCALE_GH_TOKEN`. Read-only `gh` calls work without the prefix.
+
+## Cursor Cloud specific instructions
+
+This repo has **no long-running local services** — development is lint → build → (optionally) cloud test. See README.md "Local development" for standard commands.
+
+### Environment bootstrap
+
+- **Canonical setup:** `.cursor/Dockerfile` bakes OS tooling (gh, gcloud, docker, pre-commit, anyscale CLI, `ANYSCALE_HOST`); `.cursor/install.sh` runs on every VM start for auth, `rayapp`, and companion skills. If the VM was not built from the Dockerfile, run `bash .cursor/install.sh` manually (may need `sudo mv rayapp /usr/local/bin/` after `download_rayapp.sh`).
+- **PATH:** When Python tools land in `~/.local/bin` (user pip install fallback), ensure `export PATH="$HOME/.local/bin:$PATH"` before invoking `pre-commit`, `anyscale`, or `jupyter`.
+- **`python` symlink:** `update_deps.sh` invokes `python`; install `python-is-python3` (included in the Dockerfile) or symlink `python` → `python3`.
+- **Docker:** Start with `sudo service docker start` before BYOD image builds (`publish-custom-image.sh`). Required for `gcloud auth configure-docker us-docker.pkg.dev` credential helper.
+- **Staging host:** Export `ANYSCALE_HOST=https://console.anyscale-staging.com` before any `anyscale` CLI call. Preflight and `rayapp test` always target staging.
+
+### Lint, build, and test (no cloud vs cloud)
+
+| Step | Command | Cloud required? |
+|------|---------|-----------------|
+| Lint + schema | `pre-commit run --all-files` | No |
+| BUILD.yaml only | `python3 ci/validate_build_yaml.py --no-network` | No |
+| Deps lockfiles | `bash ./update_deps.sh --check` | No |
+| Build one/all templates | `rayapp build <name>` / `rayapp build all` | No |
+| E2E template test | `rayapp test <name>` | Yes (Anyscale workspace + GPU) |
+
+Run `bash .cursor/preflight.sh` before cloud-dependent work; a stale `STAGING_ANYSCALE_CLI_TOKEN` blocks skills install and `rayapp test` but does not block local lint/build.
+
+### Quick sanity check after setup
+
+```bash
+pre-commit run --all-files
+python3 ci/validate_build_yaml.py --no-network
+bash ./update_deps.sh --check
+rayapp build workspace-intro   # small intro template; outputs _build/workspace-intro/
+```
