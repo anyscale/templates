@@ -110,6 +110,19 @@ import os
 os.environ["RAY_TRAIN_V2_ENABLED"] = "1"  # Ensure Ray Train v2 APIs
 import ray
 
+# Propagate the locked dependencies (torch, transformers, deepspeed, ...) to every
+# Ray Train worker. In a multi-node cluster, packages installed on the head node are
+# not available on worker nodes, so we ship the lockfile to each worker via the
+# job-level runtime_env (a pip-based install).
+if ray.is_initialized():
+    ray.shutdown()
+ray.init(
+    runtime_env={
+        "pip": os.path.abspath("python_depset.lock"),
+        "env_vars": {"RAY_TRAIN_V2_ENABLED": "1"},
+    },
+)
+
 def train_loop(config: Dict[str, Any]) -> None:
     ds_config = dict(config["ds_config"])
     ds_config.update(get_precision_config())
