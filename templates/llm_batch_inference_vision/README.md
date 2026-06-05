@@ -29,7 +29,7 @@ First, load the data from a remote URL then repartition the dataset to ensure th
 
 
 ```python
-%pip install datasets==4.4.2
+!uv pip install -r python_depset.lock --system --no-deps --no-cache-dir --index-strategy unsafe-best-match
 ```
 
 
