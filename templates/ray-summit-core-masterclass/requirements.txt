@@ -2,7 +2,7 @@ torch==2.7.0
 torchvision==0.22.0
 xgboost
 scikit-learn
-pillow
+pillow==10.4.0
 tqdm
 matplotlib
 pandas
