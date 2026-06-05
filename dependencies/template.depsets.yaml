@@ -165,20 +165,20 @@ depsets:
 #      - --unsafe-package ray
 #    build_arg_sets:
 #      - ray2551_py311_cu128
-#
-#  - name: llm_finetuning_depset_${RAY_VERSION}_${PYTHON_VERSION}_${CUDA_VARIANT}
-#    operation: expand
-#    source_depset: ray_llm_depset_${RAY_VERSION}_${PYTHON_VERSION}_${CUDA_VARIANT}
-#    requirements:
-#      - templates/llm_finetuning/requirements.txt
-#    output: templates/llm_finetuning/python_depset.lock
-#    append_flags:
-#      - --index https://download.pytorch.org/whl/cu128
-#      - --python-version=${PYTHON_VERSION}
-#      - --python-platform=x86_64-manylinux_2_31
-#      - --unsafe-package ray
-#    build_arg_sets:
-#      - ray2551_py311_cu128
+
+  - name: llm_finetuning_depset_${RAY_VERSION}_${PYTHON_VERSION}_${CUDA_VARIANT}
+    operation: expand
+    source_depset: ray_llm_depset_${RAY_VERSION}_${PYTHON_VERSION}_${CUDA_VARIANT}
+    requirements:
+      - templates/llm_finetuning/requirements.txt
+    output: templates/llm_finetuning/python_depset.lock
+    append_flags:
+      - --index https://download.pytorch.org/whl/cu128
+      - --python-version=${PYTHON_VERSION}
+      - --python-platform=x86_64-manylinux_2_31
+      - --unsafe-package ray
+    build_arg_sets:
+      - ray2551_py311_cu128
 
   - name: creatives_diffusion_finetuning_depset_${RAY_VERSION}_${PYTHON_VERSION}
     operation: expand
@@ -221,7 +221,7 @@ depsets:
       - --unsafe-package ray
     build_arg_sets:
       - ray2551_py311_cu128
-#
+
 #  - name: finetune_stable_diffusion_depset_${RAY_VERSION}_${PYTHON_VERSION}
 #    operation: expand
 #    source_depset: ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
@@ -305,48 +305,48 @@ depsets:
 #      - --unsafe-package ray
 #    build_arg_sets:
 #      - ray2551_py312_cu128
-#
-#  - name: image_search_and_classification_depset_${RAY_VERSION}_${PYTHON_VERSION}
-#    operation: expand
-#    source_depset: ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
-#    requirements:
-#      - templates/image-search-and-classification/requirements.txt
-#    output: templates/image-search-and-classification/python_depset.lock
-#    append_flags:
-#      - --index https://download.pytorch.org/whl/cu128
-#      - --python-version=${PYTHON_VERSION}
-#      - --python-platform=linux
-#      - --unsafe-package ray
-#    build_arg_sets:
-#      - ray2551_py312_cu128
-#
-#  - name: tensor_parallel_dtensor_depset_${RAY_VERSION}_${PYTHON_VERSION}
-#    operation: expand
-#    source_depset: ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
-#    requirements:
-#      - templates/tensor_parallel_dtensor/requirements.txt
-#    output: templates/tensor_parallel_dtensor/python_depset.lock
-#    append_flags:
-#      - --index https://download.pytorch.org/whl/cu128
-#      - --python-version=${PYTHON_VERSION}
-#      - --python-platform=linux
-#      - --unsafe-package ray
-#    build_arg_sets:
-#      - ray2551_py312_cu128
-#
-#  - name: ray_data_batch_image_classification_depset_${RAY_VERSION}_${PYTHON_VERSION}
-#    operation: expand
-#    source_depset: ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
-#    requirements:
-#      - templates/ray-data-batch-image-classification/requirements.txt
-#    output: templates/ray-data-batch-image-classification/python_depset.lock
-#    append_flags:
-#      - --index https://download.pytorch.org/whl/cu128
-#      - --python-version=${PYTHON_VERSION}
-#      - --python-platform=linux
-#      - --unsafe-package ray
-#    build_arg_sets:
-#      - ray2551_py312_cu128
+
+  - name: image_search_and_classification_depset_${RAY_VERSION}_${PYTHON_VERSION}
+    operation: expand
+    source_depset: ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
+    requirements:
+      - templates/image-search-and-classification/requirements.txt
+    output: templates/image-search-and-classification/python_depset.lock
+    append_flags:
+      - --index https://download.pytorch.org/whl/cu128
+      - --python-version=${PYTHON_VERSION}
+      - --python-platform=linux
+      - --unsafe-package ray
+    build_arg_sets:
+      - ray2551_py312_cu128
+
+  - name: tensor_parallel_dtensor_depset_${RAY_VERSION}_${PYTHON_VERSION}
+    operation: expand
+    source_depset: ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
+    requirements:
+      - templates/tensor_parallel_dtensor/requirements.txt
+    output: templates/tensor_parallel_dtensor/python_depset.lock
+    append_flags:
+      - --index https://download.pytorch.org/whl/cu128
+      - --python-version=${PYTHON_VERSION}
+      - --python-platform=linux
+      - --unsafe-package ray
+    build_arg_sets:
+      - ray2551_py312_cu128
+
+  - name: ray_data_batch_image_classification_depset_${RAY_VERSION}_${PYTHON_VERSION}
+    operation: expand
+    source_depset: ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
+    requirements:
+      - templates/ray-data-batch-image-classification/requirements.txt
+    output: templates/ray-data-batch-image-classification/python_depset.lock
+    append_flags:
+      - --index https://download.pytorch.org/whl/cu128
+      - --python-version=${PYTHON_VERSION}
+      - --python-platform=linux
+      - --unsafe-package ray
+    build_arg_sets:
+      - ray2551_py312_cu128
 #
 #  - name: xgboost_training_and_serving_depset_${RAY_VERSION}_${PYTHON_VERSION}
 #    operation: expand
