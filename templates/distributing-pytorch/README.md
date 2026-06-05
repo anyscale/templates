@@ -23,6 +23,21 @@ uv pip install -r python_depset.lock --system --no-deps --no-cache-dir --index-s
 
 
 ```python
+# Connect to the Ray cluster and propagate dependencies to all workers.
+# Installing with `uv pip --system` above only affects the driver, so set a
+# runtime_env pointing at python_depset.lock to ensure Ray workers install the
+# same pinned dependencies (for example, torch).
+import os
+import ray
+
+ray.init(
+    ignore_reinit_error=True,
+    runtime_env={"pip": os.path.join(os.getcwd(), "python_depset.lock")},
+)
+```
+
+
+```python
 import os
 from typing import Dict
 

@@ -50,6 +50,21 @@ With Ray Train, you can profile distributed training workloads across multiple w
 uv pip install -r python_depset.lock --system --no-deps --no-cache-dir --index-strategy unsafe-best-match
 ```
 
+
+```python
+# Connect to the Ray cluster and propagate dependencies to all workers.
+# Installing with `uv pip --system` above only affects the driver, so set a
+# runtime_env pointing at python_depset.lock to ensure Ray workers install the
+# same pinned dependencies (for example, torch).
+import os
+import ray
+
+ray.init(
+    ignore_reinit_error=True,
+    runtime_env={"pip": os.path.join(os.getcwd(), "python_depset.lock")},
+)
+```
+
 ## Distributed training with Ray Train and PyTorch Profiler
 
 This example demonstrates how to run PyTorch training with Ray Train with PyTorch profiler. This section uses a simple ResNet model to demonstrate how to use Pytorch Profiler and Ray Train together to analyze model performance.
