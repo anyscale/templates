@@ -54,7 +54,12 @@ import ray
 
 ray.init(
     ignore_reinit_error=True,
-    runtime_env={"working_dir": DEMO_ROOT},
+    runtime_env={
+        "working_dir": DEMO_ROOT,
+        # Install the locked deps into the Ray worker runtime_env so that
+        # worker actors/tasks (not just the driver) can import them.
+        "pip": os.path.join(DEMO_ROOT, "python_depset.lock"),
+    },
 )
 
 resources = ray.cluster_resources()
