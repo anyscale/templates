@@ -1,0 +1,5 @@
+torch==2.9.1
+torchvision==0.24.1
+transformers==4.48.0
+datasets==2.21.0
+numpy==1.26.4
