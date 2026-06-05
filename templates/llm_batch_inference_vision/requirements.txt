@@ -7,3 +7,8 @@ datasets==3.6.0
 numpy==1.26.4
 pandas==2.3.3
 pyarrow==19.0.1
+# datasets only requires huggingface-hub>=0.24.0, but unsafe-best-match resolves it to
+# 1.x; the base image's transformers==4.57.6 requires huggingface-hub<1.0, so a 1.x
+# upgrade breaks transformers import (the test layers this lock with --no-deps). Pin to
+# the base-image version so it reinstalls as a no-op.
+huggingface-hub==0.36.2

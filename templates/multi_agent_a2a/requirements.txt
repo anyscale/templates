@@ -9,6 +9,10 @@ uvicorn==0.38.0
 a2a-sdk[http-server]==0.3.22
 httpx==0.28.1
 mcp==1.22.0
+# a2a-sdk only requires protobuf>=5.29.5, but unsafe-best-match resolves it to 7.x,
+# which removes FieldDescriptor.label and breaks Ray Serve's _proto_to_dict on the
+# protobuf-5.x base image (anyscale/ray-llm:2.55.1). Pin to the base-image version.
+protobuf==5.29.6
 
 # Web search + fetch helpers
 protego==0.5.0
