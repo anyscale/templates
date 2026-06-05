@@ -347,7 +347,7 @@ depsets:
       - --unsafe-package ray
     build_arg_sets:
       - ray2551_py312_cu128
-#
+
   - name: image_search_and_classification_depset_${RAY_VERSION}_${PYTHON_VERSION}
     operation: expand
     source_depset: ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
