@@ -1,7 +1,12 @@
-torch
-torchvision
+torch==2.7.0
+torchvision==0.22.0
 accelerate==0.28.0
 diffusers==0.27.2
 peft==0.10.0
 transformers==4.39.1
 huggingface_hub==0.25.2
+# Pin numpy/pyarrow to the Ray base-image versions. Without this the resolver picks
+# numpy 2.x, whose ABI is incompatible with the numpy-1.x-built stack (pandas/scipy),
+# which crashed the notebook at import time ("numpy.dtype size changed").
+numpy==1.26.4
+pyarrow==19.0.1
