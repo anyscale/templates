@@ -1,0 +1,5 @@
+soundfile==0.13.1
+# Match the base image's numpy (anyscale/ray-llm:2.55.1 ships numpy 1.26.4). The test
+# layers this lock on the stock image with `uv pip install --no-deps`, so a higher numpy
+# would force-upgrade it and break the image's numpy-1.x-compiled pandas/scipy (ABI).
+numpy==1.26.4
