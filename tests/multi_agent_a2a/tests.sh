@@ -29,10 +29,26 @@ serve run /tmp/serve_multi_config.ci.yaml --non-blocking
 trap 'serve shutdown -y || true' EXIT
 
 # Block until the LLM app finishes loading on the L4 worker (the slowest deployment).
-for _ in $(seq 1 120); do
-  curl -sf http://127.0.0.1:8000/llm/v1/models >/dev/null 2>&1 && break
+# L4 provisioning + vLLM cold-start can exceed 10 min, so wait up to ~20 min and fail
+# loudly (dumping serve status + routes) if it never comes up. Without this gate the loop
+# silently falls through, the notebook/smoke test below hit the proxy's 404 fallback, and
+# the run dies with an opaque JSONDecodeError instead of "LLM never became ready".
+llm_ready=0
+for _ in $(seq 1 240); do
+  if curl -sf http://127.0.0.1:8000/llm/v1/models >/dev/null 2>&1; then
+    llm_ready=1
+    break
+  fi
   sleep 5
 done
+if [ "$llm_ready" -ne 1 ]; then
+  echo "ERROR: LLM app did not become ready within ~20 min." >&2
+  echo "----- serve status -----" >&2
+  serve status >&2 || true
+  echo "----- /-/routes -----" >&2
+  curl -s http://127.0.0.1:8000/-/routes >&2 || true
+  exit 1
+fi
 
 jupyter nbconvert --to notebook README.ipynb \
   --TagRemovePreprocessor.enabled=True \
@@ -47,17 +63,31 @@ papermill /tmp/multi_agent_a2a.ci.ipynb /tmp/multi_agent_a2a.out.ipynb --log-out
 # TODO(@kunling, @aydin): template-side fix — make build_agent() retry MCP/LLM
 # discovery with backoff (or defer it past __init__) so cold deps don't fail-fast.
 python - <<'PY'
+import sys
 import requests
 BASE = "http://127.0.0.1:8000/llm"
-models = requests.get(f"{BASE}/v1/models", timeout=10).json()["data"]
+
+
+def json_or_die(resp, what):
+    """Surface route-not-found / non-JSON bodies clearly instead of JSONDecodeError."""
+    ctype = resp.headers.get("content-type", "")
+    if resp.status_code != 200 or "application/json" not in ctype:
+        sys.exit(
+            f"ERROR: {what} returned HTTP {resp.status_code} ({ctype or 'no content-type'}).\n"
+            f"Body (first 500 chars): {resp.text[:500]!r}\n"
+            f"The Serve route is likely not up — check http://127.0.0.1:8000/-/routes."
+        )
+    return resp.json()
+
+
+models = json_or_die(requests.get(f"{BASE}/v1/models", timeout=10), "GET /v1/models")["data"]
 assert models, "no models served"
 model_id = models[0]["id"]
 r = requests.post(f"{BASE}/v1/chat/completions",
     headers={"Authorization": "Bearer local"},
     json={"model": model_id, "messages": [{"role": "user", "content": "Say hi."}]},
     timeout=30)
-r.raise_for_status()
-content = r.json()["choices"][0]["message"]["content"].strip()
+content = json_or_die(r, "POST /v1/chat/completions")["choices"][0]["message"]["content"].strip()
 assert content, "LLM returned empty content"
 print(f"OK: LLM chat completion via {model_id}")
 PY

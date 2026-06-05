@@ -1,1 +1,9 @@
-datasets==4.4.2
+# datasets 4.x requires the numpy-2 stack (numpy>=2, pyarrow>=21, pandas 3), which is
+# incompatible with the numpy-1.x base image (anyscale/ray-llm:2.55.1). The test layers
+# this lock on the stock image with `uv pip install --no-deps`, so we keep the delta
+# purely additive: 3.6.0 is the newest datasets that resolves against the image's
+# numpy/pandas/pyarrow, which we pin so they reinstall as no-ops (no ABI break, Ray-safe).
+datasets==3.6.0
+numpy==1.26.4
+pandas==2.3.3
+pyarrow==19.0.1
