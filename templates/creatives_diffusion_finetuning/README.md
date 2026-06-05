@@ -40,7 +40,7 @@ This is the **zero-infrastructure** story: Anyscale spins up a heterogeneous clu
 import os
 os.environ["HF_HOME"] = "/mnt/cluster_storage/hf_cache"
 
-!pip install -q -r requirements.txt
+!uv pip install -r python_depset.lock --system --no-deps --no-cache-dir --index-strategy unsafe-best-match
 ```
 
 
@@ -55,7 +55,12 @@ import ray
 
 ray.init(
     ignore_reinit_error=True,
-    runtime_env={"working_dir": DEMO_ROOT},
+    runtime_env={
+        "working_dir": DEMO_ROOT,
+        # Install the locked deps into the Ray worker runtime_env so that
+        # worker actors/tasks (not just the driver) can import them.
+        "pip": os.path.join(DEMO_ROOT, "python_depset.lock"),
+    },
 )
 
 resources = ray.cluster_resources()

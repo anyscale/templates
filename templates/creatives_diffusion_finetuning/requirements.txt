@@ -5,7 +5,14 @@ diffusers>=0.25
 transformers>=4.35
 peft>=0.7
 accelerate>=0.25
-datasets
+# datasets 2.14.4 is the last release without an fsspec upper bound, so an
+# unpinned spec resolves there once fsspec floats to a 2025+ release — and that
+# old datasets can't recognise the new fsspec LocalFileSystem (load_dataset
+# raises "Loading a dataset cached in a LocalFileSystem is not supported").
+# Pin to the Ray-base-image versions, which are mutually compatible.
+datasets==3.6.0
+fsspec==2023.12.1
 pillow>=10.0
-numpy>=1.24
+numpy==1.26.4
+pyarrow==19.0.1
 matplotlib>=3.7

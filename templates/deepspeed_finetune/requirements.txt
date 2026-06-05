@@ -1,0 +1,11 @@
+torch==2.4.1
+torchvision==0.19.1
+transformers==4.36.2
+datasets==3.6.0
+deepspeed
+# Pin numpy/pyarrow to the Ray base-image versions. The newer torch/transformers
+# otherwise resolve numpy 2.x, whose ABI is incompatible with the numpy-1.x-built
+# stack in the base image (scipy/pandas), causing import-time crashes on workers.
+numpy==1.26.4
+pyarrow==19.0.1
+pandas==1.5.3
