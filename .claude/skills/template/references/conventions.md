@@ -21,7 +21,7 @@ templates/
 
 ## Conventions
 
-Run the `check-build-yaml` hook first (see **Validate locally**) — it authoritatively covers BUILD.yaml schema, referenced paths, naming, and the legacy compute-config check. Fix what it reports, then verify:
+Run the `check-build-yaml` hook first (see **Validate locally**) — it authoritatively covers BUILD.yaml schema, referenced paths, naming, and the compute-config schema check. Fix what it reports, then verify:
 
 - **BUILD.yaml entry** matches `../schemas/build-yaml-schema.yaml`. Under `cluster_env:`, use either `cluster_env.image_uri` OR `cluster_env.byod`, never both. Image taxonomy: SKILL.md "Image URI cases".
 - **Compute configs** present at `configs/<name>/aws.yaml` and `configs/<name>/gce.yaml`. Schema: `../schemas/compute-config-schema.yaml`.
@@ -33,11 +33,10 @@ Run the `check-build-yaml` hook first (see **Validate locally**) — it authorit
 - **Ray-doc links → canonical URL.** For templates that also ship in the Ray repo/docs, link Ray documentation as `https://docs.ray.io/en/latest/...` — never a relative path or a `github.com/ray-project/ray/...` blob link. Exception: link GitHub directly only when the point is to show the source code itself.
 - **Ray Train templates use the V2 API, never V1.**
 
-⚠️ **Compute configs use the OLD (legacy) API**, NOT the new ComputeConfig API. ALWAYS mirror an existing `configs/<name>/` entry. Do NOT consult the live anyscale docs — they document only the new schema. Legacy references:
-- ComputeTemplateConfig: https://docs.anyscale.com/ref/0.26.64/compute-config-api#computetemplateconfig-legacy
-- ComputeNodeType:       https://docs.anyscale.com/ref/0.26.64/compute-config-api#computenodetype-legacy
-- WorkerNodeType:        https://docs.anyscale.com/ref/0.26.64/other#workernodetype-legacy
-- Resources:             https://docs.anyscale.com/ref/0.26.64/other#resources-legacy
+⚠️ **Compute configs use the user-facing ComputeConfig schema** (`head_node` / `worker_nodes` / `market_type` / …), NOT the legacy `head_node_type` format. Mirror an existing `configs/<name>/` entry. Reference:
+- ComputeConfig: https://docs.anyscale.com/reference/compute-config-api#computeconfig
+
+(`rayapp build` converts configs to the legacy bundle format at publish time — ray-project/rayci#492 — so published bundles still carry the legacy schema the console clone path parses.)
 
 ## Validate locally
 
