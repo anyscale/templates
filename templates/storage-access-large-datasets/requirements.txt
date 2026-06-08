@@ -1,0 +1,4 @@
+gcsfs
+adlfs
+numpy==1.26.4
+pyarrow==19.0.1
