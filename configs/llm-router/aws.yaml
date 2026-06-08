@@ -1,3 +1,3 @@
-head_node_type:
-  name: head
+head_node:
   instance_type: g5.48xlarge
+worker_nodes: []

@@ -1,14 +1,8 @@
-head_node_type:
-  name: head
+head_node:
   instance_type: m5.2xlarge
-  resources:
-    cpu: 0
-    gpu: 0
-worker_node_types:
-  - name: 8CPU-32GB
-    instance_type: m5.2xlarge
-    min_workers: 10
-    max_workers: 10
-
-flags:
-  allow-cross-zone-autoscaling: true
+worker_nodes:
+- name: 8CPU-32GB
+  instance_type: m5.2xlarge
+  min_nodes: 10
+  max_nodes: 10
+enable_cross_zone_scaling: true

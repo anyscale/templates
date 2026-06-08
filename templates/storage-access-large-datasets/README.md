@@ -37,7 +37,7 @@ Let's start by installing dependencies and importing the necessary libraries.
 ```python
 # Install Google Cloud Storage filesystem support
 # Note: adlfs (Azure) is pre-installed on Anyscale base images
-!pip install -q gcsfs
+!uv pip install -r python_depset.lock --system --no-deps --no-cache-dir --index-strategy unsafe-best-match
 ```
 
 
