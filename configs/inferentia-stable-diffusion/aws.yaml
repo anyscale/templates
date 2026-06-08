@@ -1,8 +1,6 @@
-head_node_type:
-  name: head
+head_node:
   instance_type: inf2.8xlarge
-worker_node_types:
+worker_nodes:
 - name: gpu_worker
   instance_type: inf2.8xlarge
-  min_workers: 0
-  max_workers: 3
+  max_nodes: 3
