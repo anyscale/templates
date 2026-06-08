@@ -221,133 +221,133 @@ depsets:
       - --unsafe-package ray
     build_arg_sets:
       - ray2551_py311_cu128
-#
-#  - name: creatives_diffusion_finetuning_depset_${RAY_VERSION}_${PYTHON_VERSION}
-#    operation: expand
-#    source_depset: ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
-#    requirements:
-#      - templates/creatives_diffusion_finetuning/requirements.txt
-#    output: templates/creatives_diffusion_finetuning/python_depset.lock
-#    append_flags:
-#      - --index https://download.pytorch.org/whl/cu121
-#      - --python-version=${PYTHON_VERSION}
-#      - --python-platform=linux
-#      - --unsafe-package ray
-#    build_arg_sets:
-#      - ray2551_py311_cu128
-#
-#  - name: ecommerce_multi_model_serving_depset_${RAY_VERSION}_${PYTHON_VERSION}
-#    operation: expand
-#    source_depset: ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
-#    requirements:
-#      - templates/ecommerce_multi_model_serving/requirements.txt
-#    output: templates/ecommerce_multi_model_serving/python_depset.lock
-#    append_flags:
-#      - --index https://download.pytorch.org/whl/cu121
-#      - --python-version=${PYTHON_VERSION}
-#      - --python-platform=linux
-#      - --unsafe-package ray
-#    build_arg_sets:
-#      - ray2551_py311_cu128
-#
-#  - name: biotech_boltz_screening_depset_${RAY_VERSION}_${PYTHON_VERSION}
-#    operation: expand
-#    source_depset: ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
-#    requirements:
-#      - templates/biotech_boltz_screening/requirements.txt
-#    output: templates/biotech_boltz_screening/python_depset.lock
-#    append_flags:
-#      - --index https://download.pytorch.org/whl/cu121
-#      - --python-version=${PYTHON_VERSION}
-#      - --python-platform=linux
-#      - --unsafe-package ray
-#    build_arg_sets:
-#      - ray2551_py311_cu128
-#
-#  - name: finetune_stable_diffusion_depset_${RAY_VERSION}_${PYTHON_VERSION}
-#    operation: expand
-#    source_depset: ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
-#    requirements:
-#      - templates/finetune-stable-diffusion/requirements.txt
-#    output: templates/finetune-stable-diffusion/python_depset.lock
-#    append_flags:
-#      - --index https://download.pytorch.org/whl/cu128
-#      - --python-version=${PYTHON_VERSION}
-#      - --python-platform=linux
-#      - --unsafe-package ray
-#    build_arg_sets:
-#      - ray2551_py311_cu128
-#
-#  - name: vhol_ray_data_depset_${RAY_VERSION}_${PYTHON_VERSION}
-#    operation: expand
-#    source_depset: ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
-#    requirements:
-#      - templates/vhol-ray-data/requirements.txt
-#    output: templates/vhol-ray-data/python_depset.lock
-#    append_flags:
-#      - --index https://download.pytorch.org/whl/cu128
-#      - --python-version=${PYTHON_VERSION}
-#      - --python-platform=linux
-#      - --unsafe-package ray
-#    build_arg_sets:
-#      - ray2551_py311_cu128
-#
-#  - name: deepspeed_finetune_depset_${RAY_VERSION}_${PYTHON_VERSION}
-#    operation: expand
-#    source_depset: ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
-#    requirements:
-#      - templates/deepspeed_finetune/requirements.txt
-#    output: templates/deepspeed_finetune/python_depset.lock
-#    append_flags:
-#      - --index https://download.pytorch.org/whl/cu128
-#      - --python-version=${PYTHON_VERSION}
-#      - --python-platform=linux
-#      - --unsafe-package ray
-#    build_arg_sets:
-#      - ray2551_py311_cu128
-#
-#  - name: distributing_pytorch_depset_${RAY_VERSION}_${PYTHON_VERSION}
-#    operation: expand
-#    source_depset: ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
-#    requirements:
-#      - templates/distributing-pytorch/requirements.txt
-#    output: templates/distributing-pytorch/python_depset.lock
-#    append_flags:
-#      - --index https://download.pytorch.org/whl/cu128
-#      - --python-version=${PYTHON_VERSION}
-#      - --python-platform=linux
-#      - --unsafe-package ray
-#    build_arg_sets:
-#      - ray2551_py312_cu128
-#
-#  - name: pytorch_fsdp_depset_${RAY_VERSION}_${PYTHON_VERSION}
-#    operation: expand
-#    source_depset: ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
-#    requirements:
-#      - templates/pytorch-fsdp/requirements.txt
-#    output: templates/pytorch-fsdp/python_depset.lock
-#    append_flags:
-#      - --index https://download.pytorch.org/whl/cu128
-#      - --python-version=${PYTHON_VERSION}
-#      - --python-platform=linux
-#      - --unsafe-package ray
-#    build_arg_sets:
-#      - ray2551_py312_cu128
-#
-#  - name: pytorch_profiling_depset_${RAY_VERSION}_${PYTHON_VERSION}
-#    operation: expand
-#    source_depset: ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
-#    requirements:
-#      - templates/pytorch-profiling/requirements.txt
-#    output: templates/pytorch-profiling/python_depset.lock
-#    append_flags:
-#      - --index https://download.pytorch.org/whl/cu128
-#      - --python-version=${PYTHON_VERSION}
-#      - --python-platform=linux
-#      - --unsafe-package ray
-#    build_arg_sets:
-#      - ray2551_py312_cu128
 
+  - name: creatives_diffusion_finetuning_depset_${RAY_VERSION}_${PYTHON_VERSION}
+    operation: expand
+    source_depset: ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
+    requirements:
+      - templates/creatives_diffusion_finetuning/requirements.txt
+    output: templates/creatives_diffusion_finetuning/python_depset.lock
+    append_flags:
+      - --index https://download.pytorch.org/whl/cu121
+      - --python-version=${PYTHON_VERSION}
+      - --python-platform=linux
+      - --unsafe-package ray
+    build_arg_sets:
+      - ray2551_py311_cu128
+
+  - name: ecommerce_multi_model_serving_depset_${RAY_VERSION}_${PYTHON_VERSION}
+    operation: expand
+    source_depset: ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
+    requirements:
+      - templates/ecommerce_multi_model_serving/requirements.txt
+    output: templates/ecommerce_multi_model_serving/python_depset.lock
+    append_flags:
+      - --index https://download.pytorch.org/whl/cu121
+      - --python-version=${PYTHON_VERSION}
+      - --python-platform=linux
+      - --unsafe-package ray
+    build_arg_sets:
+      - ray2551_py311_cu128
+
+  - name: biotech_boltz_screening_depset_${RAY_VERSION}_${PYTHON_VERSION}
+    operation: expand
+    source_depset: ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
+    requirements:
+      - templates/biotech_boltz_screening/requirements.txt
+    output: templates/biotech_boltz_screening/python_depset.lock
+    append_flags:
+      - --index https://download.pytorch.org/whl/cu121
+      - --python-version=${PYTHON_VERSION}
+      - --python-platform=linux
+      - --unsafe-package ray
+    build_arg_sets:
+      - ray2551_py311_cu128
+
+  - name: finetune_stable_diffusion_depset_${RAY_VERSION}_${PYTHON_VERSION}
+    operation: expand
+    source_depset: ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
+    requirements:
+      - templates/finetune-stable-diffusion/requirements.txt
+    output: templates/finetune-stable-diffusion/python_depset.lock
+    append_flags:
+      - --index https://download.pytorch.org/whl/cu128
+      - --python-version=${PYTHON_VERSION}
+      - --python-platform=linux
+      - --unsafe-package ray
+    build_arg_sets:
+      - ray2551_py311_cu128
+
+  - name: vhol_ray_data_depset_${RAY_VERSION}_${PYTHON_VERSION}
+    operation: expand
+    source_depset: ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
+    requirements:
+      - templates/vhol-ray-data/requirements.txt
+    output: templates/vhol-ray-data/python_depset.lock
+    append_flags:
+      - --index https://download.pytorch.org/whl/cu128
+      - --python-version=${PYTHON_VERSION}
+      - --python-platform=linux
+      - --unsafe-package ray
+    build_arg_sets:
+      - ray2551_py311_cu128
+
+  - name: deepspeed_finetune_depset_${RAY_VERSION}_${PYTHON_VERSION}
+    operation: expand
+    source_depset: ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
+    requirements:
+      - templates/deepspeed_finetune/requirements.txt
+    output: templates/deepspeed_finetune/python_depset.lock
+    append_flags:
+      - --index https://download.pytorch.org/whl/cu128
+      - --python-version=${PYTHON_VERSION}
+      - --python-platform=linux
+      - --unsafe-package ray
+    build_arg_sets:
+      - ray2551_py311_cu128
+
+  - name: distributing_pytorch_depset_${RAY_VERSION}_${PYTHON_VERSION}
+    operation: expand
+    source_depset: ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
+    requirements:
+      - templates/distributing-pytorch/requirements.txt
+    output: templates/distributing-pytorch/python_depset.lock
+    append_flags:
+      - --index https://download.pytorch.org/whl/cu128
+      - --python-version=${PYTHON_VERSION}
+      - --python-platform=linux
+      - --unsafe-package ray
+    build_arg_sets:
+      - ray2551_py312_cu128
+
+  - name: pytorch_fsdp_depset_${RAY_VERSION}_${PYTHON_VERSION}
+    operation: expand
+    source_depset: ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
+    requirements:
+      - templates/pytorch-fsdp/requirements.txt
+    output: templates/pytorch-fsdp/python_depset.lock
+    append_flags:
+      - --index https://download.pytorch.org/whl/cu128
+      - --python-version=${PYTHON_VERSION}
+      - --python-platform=linux
+      - --unsafe-package ray
+    build_arg_sets:
+      - ray2551_py312_cu128
+
+  - name: pytorch_profiling_depset_${RAY_VERSION}_${PYTHON_VERSION}
+    operation: expand
+    source_depset: ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
+    requirements:
+      - templates/pytorch-profiling/requirements.txt
+    output: templates/pytorch-profiling/python_depset.lock
+    append_flags:
+      - --index https://download.pytorch.org/whl/cu128
+      - --python-version=${PYTHON_VERSION}
+      - --python-platform=linux
+      - --unsafe-package ray
+    build_arg_sets:
+      - ray2551_py312_cu128
+#
   - name: image_search_and_classification_depset_${RAY_VERSION}_${PYTHON_VERSION}
     operation: expand
     source_depset: ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
@@ -389,47 +389,47 @@ depsets:
       - --unsafe-package ray
     build_arg_sets:
       - ray2551_py312_cu128
-#
-#  - name: xgboost_training_and_serving_depset_${RAY_VERSION}_${PYTHON_VERSION}
-#    operation: expand
-#    source_depset: ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
-#    requirements:
-#      - templates/xgboost-training-and-serving/requirements.txt
-#    output: templates/xgboost-training-and-serving/python_depset.lock
-#    append_flags:
-#      - --python-version=${PYTHON_VERSION}
-#      - --python-platform=linux
-#      - --unsafe-package ray
-#    build_arg_sets:
-#      - ray2551_py312_cu128
-#
-#  - name: ray_train_workloads_depset_${RAY_VERSION}_${PYTHON_VERSION}
-#    operation: expand
-#    source_depset: ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
-#    requirements:
-#      - templates/ray_train_workloads/requirements.txt
-#    output: templates/ray_train_workloads/python_depset.lock
-#    append_flags:
-#      - --index https://download.pytorch.org/whl/cu128
-#      - --python-version=${PYTHON_VERSION}
-#      - --python-platform=linux
-#      - --unsafe-package ray
-#    build_arg_sets:
-#      - ray2551_py312_cu128
-#
-#  - name: ray_tune_train_integration_depset_${RAY_VERSION}_${PYTHON_VERSION}
-#    operation: expand
-#    source_depset: ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
-#    requirements:
-#      - templates/ray-tune-train-integration/requirements.txt
-#    output: templates/ray-tune-train-integration/python_depset.lock
-#    append_flags:
-#      - --index https://download.pytorch.org/whl/cu128
-#      - --python-version=${PYTHON_VERSION}
-#      - --python-platform=linux
-#      - --unsafe-package ray
-#    build_arg_sets:
-#      - ray2551_py312_cu128
+
+  - name: xgboost_training_and_serving_depset_${RAY_VERSION}_${PYTHON_VERSION}
+    operation: expand
+    source_depset: ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
+    requirements:
+      - templates/xgboost-training-and-serving/requirements.txt
+    output: templates/xgboost-training-and-serving/python_depset.lock
+    append_flags:
+      - --python-version=${PYTHON_VERSION}
+      - --python-platform=linux
+      - --unsafe-package ray
+    build_arg_sets:
+      - ray2551_py312_cu128
+
+  - name: ray_train_workloads_depset_${RAY_VERSION}_${PYTHON_VERSION}
+    operation: expand
+    source_depset: ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
+    requirements:
+      - templates/ray_train_workloads/requirements.txt
+    output: templates/ray_train_workloads/python_depset.lock
+    append_flags:
+      - --index https://download.pytorch.org/whl/cu128
+      - --python-version=${PYTHON_VERSION}
+      - --python-platform=linux
+      - --unsafe-package ray
+    build_arg_sets:
+      - ray2551_py312_cu128
+
+  - name: ray_tune_train_integration_depset_${RAY_VERSION}_${PYTHON_VERSION}
+    operation: expand
+    source_depset: ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
+    requirements:
+      - templates/ray-tune-train-integration/requirements.txt
+    output: templates/ray-tune-train-integration/python_depset.lock
+    append_flags:
+      - --index https://download.pytorch.org/whl/cu128
+      - --python-version=${PYTHON_VERSION}
+      - --python-platform=linux
+      - --unsafe-package ray
+    build_arg_sets:
+      - ray2551_py312_cu128
 
   - name: fintech_quant_depset_${RAY_VERSION}_${PYTHON_VERSION}
     operation: expand

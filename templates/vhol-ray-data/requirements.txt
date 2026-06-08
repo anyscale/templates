@@ -3,3 +3,5 @@ torchvision==0.21.0
 transformers==4.50.0
 diffusers==0.32.2
 accelerate==1.5.2
+numpy==1.26.4
+pyarrow==19.0.1
