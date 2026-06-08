@@ -1,5 +1,10 @@
 # Ray Tune and Train Integration
 
+<div align="left">
+  <a target="_blank" href="https://console.anyscale.com/template-preview/ray-tune-train-integration"><img src="https://img.shields.io/badge/🚀 Run_on-Anyscale-9hf"></a>&nbsp;
+  <a href="https://github.com/anyscale/templates/tree/main/templates/ray-tune-train-integration" role="button"><img src="https://img.shields.io/static/v1?label=&message=View%20On%20GitHub&color=586069&logo=github&labelColor=2f363d"></a>&nbsp;
+</div>
+
 **⏱️ Time to complete**: 45 min
 
 Learn how to integrate Ray Tune with Ray Train for hyperparameter optimization over distributed training workloads. This template shows the natural progression from single training runs to cost-effective hyperparameter search with early stopping and result analysis.
@@ -32,6 +37,12 @@ Ray Tune provides a unified interface for hyperparameter tuning that integrates 
 - Unified result tracking and analysis
 
 Let's start by initializing Ray and checking our cluster resources.
+
+## Get the code
+
+```bash
+git clone https://github.com/anyscale/templates && cd templates/templates/ray-tune-train-integration
+```
 
 
 ```python

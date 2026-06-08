@@ -1,5 +1,10 @@
 # E-Commerce Batch Product Embedding Pipeline
 
+<div align="left">
+  <a target="_blank" href="https://console.anyscale.com/template-preview/ecommerce_batch_embeddings"><img src="https://img.shields.io/badge/🚀 Run_on-Anyscale-9hf"></a>&nbsp;
+  <a href="https://github.com/anyscale/templates/tree/main/templates/ecommerce_batch_embeddings" role="button"><img src="https://img.shields.io/static/v1?label=&message=View%20On%20GitHub&color=586069&logo=github&labelColor=2f363d"></a>&nbsp;
+</div>
+
 **⏱️ Time to complete**: 30 min
 ### Anyscale Technical Demo — Ray Data on Anyscale Jobs
 
@@ -33,6 +38,11 @@ Anyscale Job
 
 Data streams between stages — no intermediate disk writes, no idle CPUs waiting on GPUs.
 
+## Get the code
+
+```bash
+git clone https://github.com/anyscale/templates && cd templates/templates/ecommerce_batch_embeddings
+```
 
 ## Step 1: Connect to the Ray Cluster
 

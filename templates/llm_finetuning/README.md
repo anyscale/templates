@@ -1,5 +1,10 @@
 # Fine-tuning LLMs with LLaMA-Factory on Anyscale
 
+<div align="left">
+  <a target="_blank" href="https://console.anyscale.com/template-preview/llm_finetuning"><img src="https://img.shields.io/badge/🚀 Run_on-Anyscale-9hf"></a>&nbsp;
+  <a href="https://github.com/anyscale/templates/tree/main/templates/llm_finetuning" role="button"><img src="https://img.shields.io/static/v1?label=&message=View%20On%20GitHub&color=586069&logo=github&labelColor=2f363d"></a>&nbsp;
+</div>
+
 **⏱️ Time to complete**: 45 min
 
 This repository provides ready-to-run templates for fine-tuning Large Language Models (LLMs) on Anyscale using [LLaMA-Factory](https://github.com/hiyouga/LlamaFactory). These templates demonstrate instruction tuning and preference alignment at scale (multi-GPU, multi-node), with configurations that you can reuse across different cloud providers.
@@ -45,3 +50,8 @@ Develop as you would on your laptop. Attach your IDE remotely and install depend
 
 Transition from development to production by submitting your configurations as an **Anyscale job**. This allows for reliable execution on managed clusters and seamless integration with CI/CD pipelines. See more [Anyscale jobs](https://docs.anyscale.com/platform/jobs/) to learn more.
 
+## Get the code
+
+```bash
+git clone https://github.com/anyscale/templates && cd templates/templates/llm_finetuning
+```

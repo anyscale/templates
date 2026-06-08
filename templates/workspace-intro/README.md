@@ -1,5 +1,10 @@
 # Introduction to Workspaces
 
+<div align="left">
+  <a target="_blank" href="https://console.anyscale.com/template-preview/workspace-intro"><img src="https://img.shields.io/badge/🚀 Run_on-Anyscale-9hf"></a>&nbsp;
+  <a href="https://github.com/anyscale/templates/tree/main/templates/workspace-intro" role="button"><img src="https://img.shields.io/static/v1?label=&message=View%20On%20GitHub&color=586069&logo=github&labelColor=2f363d"></a>&nbsp;
+</div>
+
 **⏱️ Time to complete**: 10 min
 
 Welcome! You are currently in a Workspace, which is a persistent cloud IDE connected to a Ray cluster.
@@ -13,6 +18,12 @@ In this tutorial, you will learn:
 ## "Hello world" in workspaces
 
 Let's start by checking that Ray is working properly in your workspace. You can do this by running the following cell to execute a simple parallel Ray program.
+
+## Get the code
+
+```bash
+git clone https://github.com/anyscale/templates && cd templates/templates/workspace-intro
+```
 
 
 ```python

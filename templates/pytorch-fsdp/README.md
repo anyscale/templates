@@ -1,5 +1,10 @@
 # Get started with PyTorch Fully Sharded Data Parallel (FSDP2) and Ray Train
 
+<div align="left">
+  <a target="_blank" href="https://console.anyscale.com/template-preview/pytorch-fsdp"><img src="https://img.shields.io/badge/🚀 Run_on-Anyscale-9hf"></a>&nbsp;
+  <a href="https://github.com/anyscale/templates/tree/main/templates/pytorch-fsdp" role="button"><img src="https://img.shields.io/static/v1?label=&message=View%20On%20GitHub&color=586069&logo=github&labelColor=2f363d"></a>&nbsp;
+</div>
+
 **⏱️ Time to complete**: 30 min
 
 This template shows how to get memory and performance improvements of integrating PyTorch's Fully Sharded Data Parallel with Ray Train. 
@@ -15,6 +20,12 @@ This tutorial provides a comprehensive, step-by-step guide on integrating PyTorc
 - Loading a distributed model for inference
 
 **Note:** This notebook uses FSDP2's `fully_sharded` API. If you're using FSDP1's `FullyShardedDataParallel`, consider migrating to FSDP2 for improved performance and features such as lower memory usage and `DTensor` integration. 
+
+## Get the code
+
+```bash
+git clone https://github.com/anyscale/templates && cd templates/templates/pytorch-fsdp
+```
 
 <div id="anyscale-note" class="alert alert-block alert-warning">
 

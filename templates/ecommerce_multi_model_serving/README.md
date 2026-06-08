@@ -1,5 +1,10 @@
 # E-Commerce PyTorch Ranker Serving
 
+<div align="left">
+  <a target="_blank" href="https://console.anyscale.com/template-preview/ecommerce_multi_model_serving"><img src="https://img.shields.io/badge/🚀 Run_on-Anyscale-9hf"></a>&nbsp;
+  <a href="https://github.com/anyscale/templates/tree/main/templates/ecommerce_multi_model_serving" role="button"><img src="https://img.shields.io/static/v1?label=&message=View%20On%20GitHub&color=586069&logo=github&labelColor=2f363d"></a>&nbsp;
+</div>
+
 **⏱️ Time to complete**: 30 min
 ### Anyscale Technical Demo — Ray Serve on Anyscale Services
 
@@ -27,6 +32,11 @@ POST /recommend
 The same Python class that runs here becomes the production service.
 No Dockerfile. No Kubernetes YAML. One command to deploy.
 
+## Get the code
+
+```bash
+git clone https://github.com/anyscale/templates && cd templates/templates/ecommerce_multi_model_serving
+```
 
 ### Step 1: Connect to the Ray Cluster
 

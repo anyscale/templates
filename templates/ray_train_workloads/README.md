@@ -7,9 +7,15 @@ jupyter nbconvert "README.ipynb" --to markdown --output "README.md"
 # Ray Train workloads
 
 <div align="left">
-<a target="_blank" href="https://console.anyscale.com/template-preview/ray_train_workloads"><img src="https://img.shields.io/badge/🚀 Run_on-Anyscale-9hf"></a>&nbsp;
-<a href="https://github.com/anyscale/templates/tree/main/templates/ray_train_workloads" role="button"><img src="https://img.shields.io/static/v1?label=&amp;message=View%20On%20GitHub&amp;color=586069&amp;logo=github&amp;labelColor=2f363d"></a>&nbsp;
+  <a target="_blank" href="https://console.anyscale.com/template-preview/ray_train_workloads"><img src="https://img.shields.io/badge/🚀 Run_on-Anyscale-9hf"></a>&nbsp;
+  <a href="https://github.com/anyscale/templates/tree/main/templates/ray_train_workloads" role="button"><img src="https://img.shields.io/static/v1?label=&message=View%20On%20GitHub&color=586069&logo=github&labelColor=2f363d"></a>&nbsp;
 </div>
+
+## Get the code
+
+```bash
+git clone https://github.com/anyscale/templates && cd templates/templates/ray_train_workloads
+```
 
 **⏱️ Time to complete**: 30 min
 

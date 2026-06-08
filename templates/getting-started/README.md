@@ -1,8 +1,19 @@
 # Welcome to Anyscale
 
+<div align="left">
+  <a target="_blank" href="https://console.anyscale.com/template-preview/getting-started"><img src="https://img.shields.io/badge/🚀 Run_on-Anyscale-9hf"></a>&nbsp;
+  <a href="https://github.com/anyscale/templates/tree/main/templates/getting-started" role="button"><img src="https://img.shields.io/static/v1?label=&message=View%20On%20GitHub&color=586069&logo=github&labelColor=2f363d"></a>&nbsp;
+</div>
+
 Welcome to your first Workspace - a powerful dev environment designed for making developing distributed AI applications a breeze. This is not just any dev box, it can seamlessly transition to a dev cluster without any configuration hassles.
 
 Let's dive in with a simple "Hello World" example.
+
+## Get the code
+
+```bash
+git clone https://github.com/anyscale/templates && cd templates/templates/getting-started
+```
 
 
 ```python

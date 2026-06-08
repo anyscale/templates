@@ -1,5 +1,10 @@
 # Stable Diffusion LoRA Fine-Tuning with Ray Train
 
+<div align="left">
+  <a target="_blank" href="https://console.anyscale.com/template-preview/creatives_diffusion_finetuning"><img src="https://img.shields.io/badge/🚀 Run_on-Anyscale-9hf"></a>&nbsp;
+  <a href="https://github.com/anyscale/templates/tree/main/templates/creatives_diffusion_finetuning" role="button"><img src="https://img.shields.io/static/v1?label=&message=View%20On%20GitHub&color=586069&logo=github&labelColor=2f363d"></a>&nbsp;
+</div>
+
 **⏱️ Time to complete**: 30 min
 
 ### Anyscale Technical Demo — Distributed Training on Anyscale Jobs
@@ -27,6 +32,12 @@ Ray Data (CPU)                     Ray Train (2x T4 GPU)
 
 Standard PyTorch + diffusers + peft code. Ray Train distributes it.
 Ray Data feeds it. Anyscale runs it as a Job.
+
+## Get the code
+
+```bash
+git clone https://github.com/anyscale/templates && cd templates/templates/creatives_diffusion_finetuning
+```
 
 ## Step 1: Connect to the Ray Cluster
 

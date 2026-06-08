@@ -1,12 +1,19 @@
 # Multi-modal AI pipeline
 
+<div align="left">
+  <a target="_blank" href="https://console.anyscale.com/template-preview/image-search-and-classification"><img src="https://img.shields.io/badge/🚀 Run_on-Anyscale-9hf"></a>&nbsp;
+  <a href="https://github.com/anyscale/templates/tree/main/templates/image-search-and-classification" role="button"><img src="https://img.shields.io/static/v1?label=&message=View%20On%20GitHub&color=586069&logo=github&labelColor=2f363d"></a>&nbsp;
+</div>
+
 **⏱️ Time to complete**: 45 min
 
+## Get the code
 
-<div align="left">
-<a target="_blank" href="https://console.anyscale.com/"><img src="https://img.shields.io/badge/🚀 Run_on-Anyscale-9hf"></a>&nbsp;
-<a href="https://github.com/anyscale/multimodal-ai" role="button"><img src="https://img.shields.io/static/v1?label=&amp;message=View%20On%20GitHub&amp;color=586069&amp;logo=github&amp;labelColor=2f363d"></a>&nbsp;
-</div>
+```bash
+git clone https://github.com/anyscale/templates && cd templates/templates/image-search-and-classification
+```
+
+
 
 💻 Run this entire tutorial on [Anyscale](https://www.anyscale.com/) for free:
 **https://console.anyscale.com/template-preview/image-search-and-classification** or access the repository [here](https://github.com/anyscale/templates/tree/main/templates/image-search-and-classification).
