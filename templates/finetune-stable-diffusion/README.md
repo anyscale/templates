@@ -1,5 +1,10 @@
 # Fine-tuning Stable Diffusion XL with Ray Train
 
+<div align="left">
+  <a target="_blank" href="https://console.anyscale.com/template-preview/finetune-stable-diffusion"><img src="https://img.shields.io/badge/🚀 Run_on-Anyscale-9hf"></a>&nbsp;
+  <a href="https://github.com/anyscale/templates/tree/main/templates/finetune-stable-diffusion" role="button"><img src="https://img.shields.io/static/v1?label=&message=View%20On%20GitHub&color=586069&logo=github&labelColor=2f363d"></a>&nbsp;
+</div>
+
 **⏱️ Time to complete**: 10 min
 
 This template shows you how to do [Dreambooth](https://arxiv.org/abs/2208.12242) fine-tuning, which is a method of personalizing a stable diffusion model on a few examples (3~5) of a subject.
@@ -10,6 +15,12 @@ In this tutorial, you will learn about:
 1. How to easily scale out an existing HuggingFace `diffusers` example to run on a Ray cluster with minimal modifications.
 2. Basic features of [Ray Train](https://docs.ray.io/en/latest/train/train.html) such as specifying the number of training workers and the desired accelerator type.
 3. Anyscale's smart instance selection and autoscaling that makes it simple to scale up your training workload to any size.
+
+## Get the code
+
+```bash
+git clone https://github.com/anyscale/templates && cd templates/templates/finetune-stable-diffusion
+```
 
 ## Step 1: Install python dependencies
 

@@ -1,5 +1,10 @@
 # Profiling a Ray Train Workload with PyTorch Profiler
 
+<div align="left">
+  <a target="_blank" href="https://console.anyscale.com/template-preview/pytorch-profiling"><img src="https://img.shields.io/badge/🚀 Run_on-Anyscale-9hf"></a>&nbsp;
+  <a href="https://github.com/anyscale/templates/tree/main/templates/pytorch-profiling" role="button"><img src="https://img.shields.io/static/v1?label=&message=View%20On%20GitHub&color=586069&logo=github&labelColor=2f363d"></a>&nbsp;
+</div>
+
 **⏱️ Time to complete**: 15 min
 
 This template profiles PyTorch training code with PyTorch Profiler to identify performance bottlenecks, optimize memory usage, and monitor training efficiency in distributed environments.
@@ -9,8 +14,13 @@ In this tutorial, you will:
 2. Distribute it to multiple GPUs on multiple machines with [Ray Train](https://docs.ray.io/en/latest/train/train.html) and profile the distributed training workload.
 3. Explore advanced profiling techniques including memory profiling, performance analysis, and dashboard integration for comprehensive monitoring. 
 
-
 With Ray Train, you can profile distributed training workloads across multiple workers, enabling you to identify communication bottlenecks, load balancing issues, and resource utilization patterns that are critical for optimizing large-scale training jobs.
+
+## Get the code
+
+```bash
+git clone https://github.com/anyscale/templates && cd templates/templates/pytorch-profiling
+```
 
 <div id="anyscale-note" class="alert alert-block alert-warning">
 

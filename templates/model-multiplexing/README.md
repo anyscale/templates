@@ -1,5 +1,10 @@
 # Model multiplexing with forecasting models
 
+<div align="left">
+  <a target="_blank" href="https://console.anyscale.com/template-preview/model-multiplexing"><img src="https://img.shields.io/badge/🚀 Run_on-Anyscale-9hf"></a>&nbsp;
+  <a href="https://github.com/anyscale/templates/tree/main/templates/model-multiplexing" role="button"><img src="https://img.shields.io/static/v1?label=&message=View%20On%20GitHub&color=586069&logo=github&labelColor=2f363d"></a>&nbsp;
+</div>
+
 **⏱️ Time to complete**: 30 min
 
 This tutorial shows you how to efficiently serve multiple forecasting models using Ray Serve's model multiplexing pattern. Model multiplexing lets you serve dozens or thousands of models from a shared pool of replicas, optimizing cost and resources.
@@ -26,6 +31,12 @@ Assume you have multiple forecasting models stored in cloud storage with the fol
 ```
 
 Define a multiplexed deployment:
+
+## Get the code
+
+```bash
+git clone https://github.com/anyscale/templates && cd templates/templates/model-multiplexing
+```
 
 
 ```python

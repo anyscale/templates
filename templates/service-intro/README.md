@@ -1,5 +1,10 @@
 # Introduction to Anyscale Services
 
+<div align="left">
+  <a target="_blank" href="https://console.anyscale.com/template-preview/service-intro"><img src="https://img.shields.io/badge/🚀 Run_on-Anyscale-9hf"></a>&nbsp;
+  <a href="https://github.com/anyscale/templates/tree/main/templates/service-intro" role="button"><img src="https://img.shields.io/static/v1?label=&message=View%20On%20GitHub&color=586069&logo=github&labelColor=2f363d"></a>&nbsp;
+</div>
+
 Deploy your machine learning apps into production with [Anyscale Services](https://docs.anyscale.com/platform/services/) for scalability, fault tolerance, high availability, and zero downtime upgrades.
 
 ---
@@ -25,6 +30,11 @@ This interactive example takes you through a common development to production wo
   - Update the service.
   - Terminate the service.
 
+## Get the code
+
+```bash
+git clone https://github.com/anyscale/templates && cd templates/templates/service-intro
+```
 
 ## Development
 

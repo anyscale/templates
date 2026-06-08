@@ -1,9 +1,3 @@
-<!--
-Do not modify this README. This file is a copy of the notebook and is not used to display the content.
-Modify tune_pytorch_asha.ipynb instead, then regenerate this file with:
-jupyter nbconvert "tune_pytorch_asha.ipynb" --to markdown --output "README.md"
--->
-
 # Hyperparameter tuning with Ray Tune and PyTorch
 
 <div align="left">
@@ -21,6 +15,12 @@ This notebook runs **hyperparameter tuning experiments** on a PyTorch CNN using 
 * How to add **checkpointing and resume** logic to your training function with `tune.get_checkpoint()`.  
 * How to use **schedulers like Asynchronous Successive Halving (ASHA)** to early stop under-performing trials and speed up search.  
 * How to retrieve and test the **best model checkpoint** at the end of tuning.  
+
+## Get the code
+
+```bash
+git clone https://github.com/anyscale/templates && cd templates/templates/tune_pytorch_asha
+```
 
 ## What problem are you solving? (hyperparameter tuning for image classification)  
 
@@ -596,7 +596,8 @@ This toggle lets you switch between **fast iteration** (for development) and **f
 # 07. Smoke test flag
 
 # Set this to True for a smoke test that runs with a small synthetic dataset.
-SMOKE_TEST = False
+# Or set the SMOKE_TEST env var (1/true/yes) to enable it without editing code.
+SMOKE_TEST = os.getenv("SMOKE_TEST", "").lower() in ("1", "true", "yes")
 ```
 
 ## 8. Define the hyperparameter search space and configuration  

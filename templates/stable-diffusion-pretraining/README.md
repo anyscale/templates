@@ -1,5 +1,10 @@
 # Quickstart: Stable diffusion pre-training
 
+<div align="left">
+  <a target="_blank" href="https://console.anyscale.com/template-preview/stable-diffusion-pretraining"><img src="https://img.shields.io/badge/🚀 Run_on-Anyscale-9hf"></a>&nbsp;
+  <a href="https://github.com/anyscale/templates/tree/main/templates/stable-diffusion-pretraining" role="button"><img src="https://img.shields.io/static/v1?label=&message=View%20On%20GitHub&color=586069&logo=github&labelColor=2f363d"></a>&nbsp;
+</div>
+
 <img src="https://anyscale-materials.s3.us-west-2.amazonaws.com/stable-diffusion/end_to_end_architecture_v7.png" width=1000px />
 
 Above is the reference architecture for Stable Diffusion pre-training
@@ -17,6 +22,12 @@ Here’s what you can achieve with this reference implementation:
     costs by 3x compared to baseline methods.
 
 To view a detailed benchmarking and explanation of our reference implementation, check out our [blog post here](https://www.anyscale.com/blog/stable-diffusion-pre-training).
+
+## Get the code
+
+```bash
+git clone https://github.com/anyscale/templates && cd templates/templates/stable-diffusion-pretraining
+```
 
 ## Interactive notebooks
 

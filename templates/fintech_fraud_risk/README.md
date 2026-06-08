@@ -1,5 +1,10 @@
 # FinTech Batch Fraud Risk Scoring Pipeline
 
+<div align="left">
+  <a target="_blank" href="https://console.anyscale.com/template-preview/fintech_fraud_risk"><img src="https://img.shields.io/badge/🚀 Run_on-Anyscale-9hf"></a>&nbsp;
+  <a href="https://github.com/anyscale/templates/tree/main/templates/fintech_fraud_risk" role="button"><img src="https://img.shields.io/static/v1?label=&message=View%20On%20GitHub&color=586069&logo=github&labelColor=2f363d"></a>&nbsp;
+</div>
+
 **⏱️ Time to complete**: 30 min
 ### Anyscale Technical Demo — Ray Data on Anyscale Jobs
 
@@ -38,6 +43,12 @@ Data streams between stages — no intermediate disk writes, no idle workers.
 - **Min 8-11:** Results & validation
 - **Min 11-13:** Fault tolerance & observability
 - **Min 13-15:** Path to production, Spark comparison
+
+## Get the code
+
+```bash
+git clone https://github.com/anyscale/templates && cd templates/templates/fintech_fraud_risk
+```
 
 ## Step 1: Connect to the Ray Cluster
 

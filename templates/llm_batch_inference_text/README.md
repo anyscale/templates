@@ -1,14 +1,13 @@
 # LLM batch inference with Ray Data LLM
 
 <div align="left">
-<a target="_blank" href="https://console.anyscale.com/template-preview/llm_batch_inference_text"><img src="https://img.shields.io/badge/🚀 Run_on-Anyscale-9hf"></a>&nbsp;
-<a href="https://github.com/anyscale/templates/tree/main/templates/llm_batch_inference_text" role="button"><img src="https://img.shields.io/static/v1?label=&amp;message=View%20On%20GitHub&amp;color=586069&amp;logo=github&amp;labelColor=2f363d"></a>&nbsp;
+  <a target="_blank" href="https://console.anyscale.com/template-preview/llm_batch_inference_text"><img src="https://img.shields.io/badge/🚀 Run_on-Anyscale-9hf"></a>&nbsp;
+  <a href="https://github.com/anyscale/templates/tree/main/templates/llm_batch_inference_text" role="button"><img src="https://img.shields.io/static/v1?label=&message=View%20On%20GitHub&color=586069&logo=github&labelColor=2f363d"></a>&nbsp;
 </div>
 
 **⏱️ Time to complete**: 20 min
 
 This example shows you how to run batch inference for large language models (LLMs) using [Ray Data LLM APIs](https://docs.ray.io/en/latest/data/api/llm.html). In this use case, the batch inference job infers company industries from company names across a large customer dataset.
-
 
 ## When to use LLM batch inference
 
@@ -20,6 +19,12 @@ Choose batch inference when:
 - You want to take advantage of fault tolerance for long-running jobs.
 
 On the contrary, if you are more interested in optimizing for latency, consider [deploying your LLM with Ray Serve LLM for online inference](https://docs.ray.io/en/latest/serve/llm/index.html).
+
+## Get the code
+
+```bash
+git clone https://github.com/anyscale/templates && cd templates/templates/llm_batch_inference_text
+```
 
 ## Prepare a Ray Data dataset
 

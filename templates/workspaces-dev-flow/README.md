@@ -1,5 +1,10 @@
 # Workspaces and Development Flow on Anyscale
 
+<div align="left">
+  <a target="_blank" href="https://console.anyscale.com/template-preview/workspaces-dev-flow"><img src="https://img.shields.io/badge/🚀 Run_on-Anyscale-9hf"></a>&nbsp;
+  <a href="https://github.com/anyscale/templates/tree/main/templates/workspaces-dev-flow" role="button"><img src="https://img.shields.io/static/v1?label=&message=View%20On%20GitHub&color=586069&logo=github&labelColor=2f363d"></a>&nbsp;
+</div>
+
 **⏱️ Time to complete**: 20 min
 
 Welcome to Anyscale Workspaces! This tutorial will guide you through the complete developer workflow — from setting up your workspace to deploying production workloads. Think of this as your "day-zero" onboarding to the Anyscale platform.
@@ -38,6 +43,12 @@ This architecture lets you write code in notebooks while leveraging distributed 
 ## Getting Started with Your Workspace
 
 Let's verify your workspace is running and explore the Ray cluster.
+
+## Get the code
+
+```bash
+git clone https://github.com/anyscale/templates && cd templates/templates/workspaces-dev-flow
+```
 
 
 ```python

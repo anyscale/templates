@@ -1,7 +1,11 @@
 # Reinforcement Learning for LLMs with SkyRL
 
-**⏱️ Time to complete**: ~40 mins, including the time to train the models
+<div align="left">
+  <a target="_blank" href="https://console.anyscale.com/template-preview/skyrl"><img src="https://img.shields.io/badge/🚀 Run_on-Anyscale-9hf"></a>&nbsp;
+  <a href="https://github.com/anyscale/templates/tree/main/templates/skyrl" role="button"><img src="https://img.shields.io/static/v1?label=&message=View%20On%20GitHub&color=586069&logo=github&labelColor=2f363d"></a>&nbsp;
+</div>
 
+**⏱️ Time to complete**: ~40 mins, including the time to train the models
 
 This template walks through running [GRPO](https://arxiv.org/pdf/2402.03300) on Anyscale using the [SkyRL](https://github.com/NovaSky-AI/SkyRL) framework. 
 SkyRL is a modular full-stack RL library for LLMs developed at the Berkeley Sky Computing Lab in collaboration with Anyscale, providing a flexible framework 
@@ -10,6 +14,11 @@ for training LLMs on tool-use tasks and multi-turn agentic workflows using popul
 This template will first show a basic example of training a model to solve math word problems from the GSM8K dataset using GRPO. Next, the template will
 show how you can create your own new environment to train on your specific task using the SkyRL-Gym.
 
+## Get the code
+
+```bash
+git clone https://github.com/anyscale/templates && cd templates/templates/skyrl
+```
 
 ## Setup
 SkyRL uses the [uv + Ray integration](https://www.anyscale.com/blog/uv-ray-pain-free-python-dependencies-in-clusters) for dependency management, ensuring a consistent set of dependencies get shipped to all Ray workers. This template uses the `novaskyai/skyrl-train-ray-2.51.1-slim-py312-cu128-megatron-2.10-te` docker image to ensure all necessary system depedencies are installed. The exact Dockerfile can be found at [SkyRL/docker/Dockerfile](https://github.com/NovaSky-AI/SkyRL/blob/acbc21ccf4e14d48848ab2bb094d8e00d8886072/docker/Dockerfile.megatron).

@@ -1,5 +1,16 @@
 # Building Scalable AI with Ray - Virtual Hands-On Lab
 
+<div align="left">
+  <a target="_blank" href="https://console.anyscale.com/template-preview/vhol-ray-data"><img src="https://img.shields.io/badge/🚀 Run_on-Anyscale-9hf"></a>&nbsp;
+  <a href="https://github.com/anyscale/templates/tree/main/templates/vhol-ray-data" role="button"><img src="https://img.shields.io/static/v1?label=&message=View%20On%20GitHub&color=586069&logo=github&labelColor=2f363d"></a>&nbsp;
+</div>
+
+## Get the code
+
+```bash
+git clone https://github.com/anyscale/templates && cd templates/templates/vhol-ray-data
+```
+
 This repository contains materials for the **Live Virtual Hands-On Lab: Building Scalable AI with Ray**, where ML engineers and platform engineers explore how to use Ray for distributed data processing, model training, and real-time inference with the Anyscale Platform.
 
 ## What You'll Learn
@@ -54,11 +65,9 @@ The main hands-on lab notebook (`VHOL.ipynb`) guides you through building a comp
 
 ![Pipeline Progress](https://raw.githubusercontent.com/anyscale/templates/main/templates/vhol-ray-data/assets/Part3.png)
 
-
 **Key Learning Points**:
 - Ray Data's streaming execution model for memory-efficient processing
 - Actor-based patterns for stateful operations (like model loading)
 - Fractional GPU scheduling for optimal resource utilization
 - Dataset joins and transformations in distributed settings
 - Parameterization and separation of concerns in ML pipelines
-

@@ -1,5 +1,10 @@
 # Computing Text Embeddings with Ray Data
 
+<div align="left">
+  <a target="_blank" href="https://console.anyscale.com/template-preview/text-embeddings"><img src="https://img.shields.io/badge/🚀 Run_on-Anyscale-9hf"></a>&nbsp;
+  <a href="https://github.com/anyscale/templates/tree/main/templates/text-embeddings" role="button"><img src="https://img.shields.io/static/v1?label=&message=View%20On%20GitHub&color=586069&logo=github&labelColor=2f363d"></a>&nbsp;
+</div>
+
 **⏱️ Time to complete**: 10 min
 
 This template shows you how to:
@@ -12,6 +17,12 @@ This template shows you how to:
 For a Python script version of the `.ipynb` notebook used for the workspace template, refer to `main.py`.
 
 **Note:** This tutorial runs within a workspace. See [Introduction to Workspaces](https://docs.anyscale.com/examples/intro-workspaces) for more details.
+
+## Get the code
+
+```bash
+git clone https://github.com/anyscale/templates && cd templates/templates/text-embeddings
+```
 
 
 

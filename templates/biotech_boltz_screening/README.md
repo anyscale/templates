@@ -1,5 +1,10 @@
 # Biotech Protein Interaction Screening with Boltz-1
 
+<div align="left">
+  <a target="_blank" href="https://console.anyscale.com/template-preview/biotech_boltz_screening"><img src="https://img.shields.io/badge/🚀 Run_on-Anyscale-9hf"></a>&nbsp;
+  <a href="https://github.com/anyscale/templates/tree/main/templates/biotech_boltz_screening" role="button"><img src="https://img.shields.io/static/v1?label=&message=View%20On%20GitHub&color=586069&logo=github&labelColor=2f363d"></a>&nbsp;
+</div>
+
 **⏱️ Time to complete**: 30 min
 
 ### Anyscale Technical Demo — Ray Data on Anyscale Jobs
@@ -35,6 +40,12 @@ Data streams between stages — no intermediate disk writes, no idle CPUs waitin
 ---
 
 **Timing note**: The full pipeline on 500 complexes with 4x A10G GPUs completes in ~4 minutes — compared to 4+ hours on a single GPU running sequentially. The speedup comes from three things working together: 4 GPUs processing batches in parallel, CPU feature prep streaming into GPU inference with no idle time between stages, and Ray Data's automatic load balancing across workers. During the run, open the Ray Dashboard to watch CPU and GPU workers in action.
+
+## Get the code
+
+```bash
+git clone https://github.com/anyscale/templates && cd templates/templates/biotech_boltz_screening
+```
 
 ## Step 1: Connect to the Ray Cluster
 

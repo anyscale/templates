@@ -1,12 +1,18 @@
 # Time-series forecasting
 
+<div align="left">
+  <a target="_blank" href="https://console.anyscale.com/template-preview/e2e-timeseries-forecasting"><img src="https://img.shields.io/badge/🚀 Run_on-Anyscale-9hf"></a>&nbsp;
+  <a href="https://github.com/anyscale/templates/tree/main/templates/e2e-timeseries-forecasting" role="button"><img src="https://img.shields.io/static/v1?label=&message=View%20On%20GitHub&color=586069&logo=github&labelColor=2f363d"></a>&nbsp;
+</div>
+
 **⏱️ Time to complete**: 20 min
 
+## Get the code
 
-<div align="left">
-<a target="_blank" href="https://console.anyscale.com/"><img src="https://img.shields.io/badge/🚀%20Run%20on-Anyscale-9hf"></a>&nbsp;
-<a href="https://github.com/anyscale/e2e-timeseries" role="button"><img src="https://img.shields.io/static/v1?label=&message=View%20On%20GitHub&color=586069&logo=github&labelColor=2f363d"></a>
-</div>
+```bash
+git clone https://github.com/anyscale/templates && cd templates/templates/e2e-timeseries-forecasting
+```
+
 
 
 These tutorials implement an end-to-end time-series application including:

@@ -1,5 +1,10 @@
 # Get started with 2D Parallelism (Tensor + Data Parallelism) using FSDP2 and Ray Train
 
+<div align="left">
+  <a target="_blank" href="https://console.anyscale.com/template-preview/tensor_parallel_dtensor"><img src="https://img.shields.io/badge/🚀 Run_on-Anyscale-9hf"></a>&nbsp;
+  <a href="https://github.com/anyscale/templates/tree/main/templates/tensor_parallel_dtensor" role="button"><img src="https://img.shields.io/static/v1?label=&message=View%20On%20GitHub&color=586069&logo=github&labelColor=2f363d"></a>&nbsp;
+</div>
+
 **Time to complete:** 20 min
 
 This template shows how to train large language models using tensor parallelism with PyTorch's native [DTensor (Distributed Tensor) API](https://docs.pytorch.org/docs/stable/distributed.tensor.html) and Ray Train for distributed execution.
@@ -15,6 +20,12 @@ This tutorial provides a step-by-step guide covering:
 - Distributed training with Ray Train
 
 **Note:** This tutorial uses PyTorch's native `DTensor` and `fully_shard` APIs. These require PyTorch 2.4 or later.
+
+## Get the code
+
+```bash
+git clone https://github.com/anyscale/templates && cd templates/templates/tensor_parallel_dtensor
+```
 
 <div id="anyscale-note" class="alert alert-block alert-warning">
 
