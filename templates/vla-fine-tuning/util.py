@@ -80,9 +80,18 @@ def renamed_image_keys(source, camera_rename):
 # ============================================================================
 # Model Loading
 # ============================================================================
+PI05_BASE_REPO = "lerobot/pi05_base"
+PI05_BASE_REVISION = "a538eb273274eb30f126a118f39dbc0ee212c883"
 
 
-def load_pi05_policy(pretrained_path="lerobot/pi05_base"):
+def pi05_base_path():
+    """Local snapshot of lerobot/pi05_base, pinned to a lerobot-0.4.3-compatible revision."""
+    from huggingface_hub import snapshot_download
+
+    return snapshot_download(PI05_BASE_REPO, revision=PI05_BASE_REVISION)
+
+
+def load_pi05_policy(pretrained_path=None):
     """Load PI0.5, apply the attention mask patch, and freeze the backbone.
 
     Returns the policy with only the action/time projection heads unfrozen
@@ -94,6 +103,9 @@ def load_pi05_policy(pretrained_path="lerobot/pi05_base"):
     doesn't crash on sequence-length mismatches.
     """
     from lerobot.policies.pi05 import PI05Policy
+
+    if pretrained_path is None:
+        pretrained_path = pi05_base_path()
 
     apply_pi05_attention_mask_patch()
 

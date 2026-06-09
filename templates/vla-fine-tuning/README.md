@@ -309,7 +309,7 @@ def train_loop_per_worker(config: dict):
 
     from lerobot.policies.factory import make_pre_post_processors
     preprocessor, _ = make_pre_post_processors(
-        policy.module.config, pretrained_path="lerobot/pi05_base", dataset_stats=config["stats"],
+        policy.module.config, pretrained_path=util.pi05_base_path(), dataset_stats=config["stats"],
     )
 
     # -- Hyperparameters and LR schedule ----------------------------------------
