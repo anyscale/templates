@@ -224,7 +224,7 @@ The following is an example of a generated image:
 
 In this section, you can run a performance benchmark to compare the performance of
 Ray Serve with Triton vs. PyTorch vs. PyTorch Compile. The code to run a Ray Serve
-application with PyTorch is in the `pytorch_app.py` file. 
+application with PyTorch is in the `pytorch_app.py` file.
 
 To start the app with purely PyTorch, run the following command:
 ```commandline
