@@ -1,3 +1,0 @@
-head_node:
-  instance_type: n1-standard-8
-auto_select_worker_config: true
