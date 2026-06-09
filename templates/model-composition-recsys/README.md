@@ -1,5 +1,10 @@
 # Model composition for recommendation systems
 
+<div align="left">
+  <a target="_blank" href="https://console.anyscale.com/template-preview/model-composition-recsys"><img src="https://img.shields.io/badge/🚀 Run_on-Anyscale-9hf"></a>&nbsp;
+  <a href="https://github.com/anyscale/templates/tree/main/templates/model-composition-recsys" role="button"><img src="https://img.shields.io/static/v1?label=&message=View%20On%20GitHub&color=586069&logo=github&labelColor=2f363d"></a>&nbsp;
+</div>
+
 **⏱️ Time to complete**: 30 min
 
 This tutorial shows you how to build a recommendation system using Ray Serve's model composition pattern. Model composition breaks complex ML pipelines into independent deployments that you can scale and update separately.
@@ -20,6 +25,12 @@ Build a recommendation system with three components:
 1. **UserFeatureExtractor**: Extracts user features (demographics, history, preferences).
 2. **ItemRankingModel**: Scores items based on user features.
 3. **RecommendationService**: Orchestrates the pipeline and returns top recommendations.
+
+## Get the code
+
+```bash
+git clone https://github.com/anyscale/templates && cd templates/templates/model-composition-recsys
+```
 
 
 ```python

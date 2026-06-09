@@ -1,5 +1,10 @@
 # Compute Config and Cluster Shape Selection
 
+<div align="left">
+  <a target="_blank" href="https://console.anyscale.com/template-preview/compute-config-cluster-shapes"><img src="https://img.shields.io/badge/🚀 Run_on-Anyscale-9hf"></a>&nbsp;
+  <a href="https://github.com/anyscale/templates/tree/main/templates/compute-config-cluster-shapes" role="button"><img src="https://img.shields.io/static/v1?label=&message=View%20On%20GitHub&color=586069&logo=github&labelColor=2f363d"></a>&nbsp;
+</div>
+
 **⏱️ Time to complete**: 25 min
 
 Learn how to choose the right cluster configuration for your Ray workloads on Anyscale. This template teaches you when to use CPU vs GPU instances, how to configure autoscaling, and how to optimize costs with spot instances and heterogeneous worker groups.
@@ -43,6 +48,12 @@ This template will help you make informed infrastructure decisions by comparing 
 ## 02 · Understanding Cluster Components
 
 Before creating compute configs, let's understand the roles of head and worker nodes in a Ray cluster.
+
+## Get the code
+
+```bash
+git clone https://github.com/anyscale/templates && cd templates/templates/compute-config-cluster-shapes
+```
 
 
 ```python

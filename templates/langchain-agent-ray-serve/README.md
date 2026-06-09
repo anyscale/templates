@@ -1,5 +1,10 @@
 # Build a tool-using agent
 
+<div align="left">
+  <a target="_blank" href="https://console.anyscale.com/template-preview/langchain-agent-ray-serve"><img src="https://img.shields.io/badge/🚀 Run_on-Anyscale-9hf"></a>&nbsp;
+  <a href="https://github.com/anyscale/templates/tree/main/templates/langchain-agent-ray-serve" role="button"><img src="https://img.shields.io/static/v1?label=&message=View%20On%20GitHub&color=586069&logo=github&labelColor=2f363d"></a>&nbsp;
+</div>
+
 **⏱️ Time to complete**: 90 min
 
 This tutorial guides you through building and deploying a sophisticated, tool-using agent using LangChain, LangGraph, and Ray Serve on Anyscale.
@@ -14,13 +19,18 @@ Learn how to create a scalable microservices architecture where each component�
 
 This decoupled design provides automatic scaling, fault isolation, and the flexibility to update or swap components such as LLMs or tools without changing your agent's code.
 
+## Get the code
+
+```bash
+git clone https://github.com/anyscale/templates && cd templates/templates/langchain-agent-ray-serve
+```
+
 ## Architecture overview
 
 You can build the agentic system from three core components, each running as its own Ray Serve application.
 
 ### Components
 * Agent Service ([LangChain agents](https://docs.langchain.com/oss/python/langchain/agents)): The "brain" of the operation. It orchestrates the multi-step reasoning and manages the conversation state. It's lightweight (CPU-only) and deployed with Ray Serve. **Note:**  [LangGraph v1 deprecates the `createReactAgent` prebuilt](https://docs.langchain.com/oss/javascript/migrate/langgraph-v1#deprecation:-createreactagent-%E2%86%92-createagent). Use LangChain's `create_agent`, which runs on LangGraph and adds a flexible middle-ware system. 
-
 
 * LLM Service (Ray Serve LLM): The "language engine." It runs the `Qwen/Qwen3-4B-Instruct-2507-FP8` model, optimized for tool use. It's deployed with vLLM on a GPU (L4) for high-speed inference and provides an OpenAI-compatible API.
 
@@ -81,7 +91,6 @@ Check out the code in `llm_deploy_qwen.py`. This script deploys the Qwen LLM (`Q
 The following are key configurations in this script:
 
 - **`accelerator_type="L4"`**: Specifies the GPU type. L4 GPUs (Ada Lovelace architecture) are optimized for FP8 precision, making them cost-effective for this quantized model. For higher throughput, use H100 GPUs. For GPU selection guidance, see the [GPU guidance documentation](https://docs.anyscale.com/llm/serving/gpu-guidance).
-
 
 - **`enable_auto_tool_choice=True`**: Enables the model to automatically decide when to use tools based on the input. This is essential for agent workflows where the LLM needs to determine whether to call a tool or respond directly. For more information on tool calling, see the [tool and function calling documentation](https://docs.anyscale.com/llm/serving/tool-function-calling).
 
@@ -533,7 +542,6 @@ Use Anyscale's built-in observability to track:
 To enable LLM metrics, see [Monitor with the Ray Serve LLM dashboard](https://docs.anyscale.com/llm/serving/benchmarking/metrics#monitor-with-the-ray-serve-llm-dashboard). Note: Engine metric logging is on by default as of Ray 2.51 or later.
 For detailed metrics guidance on monitoring with Anyscale service, see [Monitor a service](https://docs.anyscale.com/services/monitoring#metrics).
 
-
 **Scale efficiently**  
 Configure auto-scaling policies for each service independently:
 - Scale the LLM service based on GPU utilization
@@ -552,12 +560,6 @@ Anyscale services provide enterprise-grade features for running agents in produc
 
 - **High availability**: Distribute replicas across availability zones with automatic handling of outages. See [Configure head node fault tolerance](https://docs.anyscale.com/administration/resource-management/head-node-fault-tolerance).
 
-
 For comprehensive guidance on production deployments, see the [Anyscale Services documentation](https://docs.anyscale.com/services) and [Ray Serve on the Anyscale Runtime](https://docs.anyscale.com/runtime/serve).
-
-
-
-
-
 
 

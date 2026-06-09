@@ -1,12 +1,11 @@
 # Audio batch inference
 
-**⏱️ Time to complete**: 30 min
-
 <div align="left">
-<a target="_blank" href="https://console.anyscale.com/"><img src="https://img.shields.io/badge/🚀 Run_on-Anyscale-9hf"></a>&nbsp;
-<a href="https://github.com/anyscale/templates/tree/main/templates/audio-dataset-curation-llm-judge" role="button"><img src="https://img.shields.io/static/v1?label=&amp;message=View%20On%20GitHub&amp;color=586069&amp;logo=github&amp;labelColor=2f363d"></a>&nbsp;
+  <a target="_blank" href="https://console.anyscale.com/template-preview/audio-dataset-curation-llm-judge"><img src="https://img.shields.io/badge/🚀 Run_on-Anyscale-9hf"></a>&nbsp;
+  <a href="https://github.com/anyscale/templates/tree/main/templates/audio-dataset-curation-llm-judge" role="button"><img src="https://img.shields.io/static/v1?label=&message=View%20On%20GitHub&color=586069&logo=github&labelColor=2f363d"></a>&nbsp;
 </div>
 
+**⏱️ Time to complete**: 30 min
 
 This tutorial demonstrates a batch inference pipeline that converts raw
 audio files into a curated subset using two different ML models.
@@ -28,6 +27,12 @@ Ray Data is particularly powerful for this use case because it:
 This tutorial runs on a cluster with five L4 GPU worker nodes.
 
 ## Setup
+
+## Get the code
+
+```bash
+git clone https://github.com/anyscale/templates && cd templates/templates/audio-dataset-curation-llm-judge
+```
 
 
 ```python

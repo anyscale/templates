@@ -1,5 +1,10 @@
 # Distributing your PyTorch Training Code with Ray Train and Ray Data
 
+<div align="left">
+  <a target="_blank" href="https://console.anyscale.com/template-preview/distributing-pytorch"><img src="https://img.shields.io/badge/🚀 Run_on-Anyscale-9hf"></a>&nbsp;
+  <a href="https://github.com/anyscale/templates/tree/main/templates/distributing-pytorch" role="button"><img src="https://img.shields.io/static/v1?label=&message=View%20On%20GitHub&color=586069&logo=github&labelColor=2f363d"></a>&nbsp;
+</div>
+
 **⏱️ Time to complete**: 10 min
 
 This template shows you how to distribute your PyTorch training code with Ray Train and Ray Data, getting performance and usability improvements along the way.
@@ -8,6 +13,12 @@ In this tutorial, you:
 1. Start with a basic single machine PyTorch example.
 2. Distribute it to multiple GPUs on multiple machines with [Ray Train](https://docs.ray.io/en/latest/train/train.html) and, if you are using an Anyscale Workspace, inspect results with the Ray Train dashboard.
 3. Scale data ingest separately from training with [Ray Data](https://docs.ray.io/en/latest/data/data.html) and, if you are using an Anyscale Workspace, inspect results with the Ray Data dashboard. 
+
+## Get the code
+
+```bash
+git clone https://github.com/anyscale/templates && cd templates/templates/distributing-pytorch
+```
 
 ## Step 1: Start with a basic single machine PyTorch example
 

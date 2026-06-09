@@ -1,5 +1,16 @@
 # Asynchronous Inference with Ray Serve
 
+<div align="left">
+  <a target="_blank" href="https://console.anyscale.com/template-preview/asynchronous_inference"><img src="https://img.shields.io/badge/🚀 Run_on-Anyscale-9hf"></a>&nbsp;
+  <a href="https://github.com/anyscale/templates/tree/main/templates/asynchronous_inference" role="button"><img src="https://img.shields.io/static/v1?label=&message=View%20On%20GitHub&color=586069&logo=github&labelColor=2f363d"></a>&nbsp;
+</div>
+
+## Get the code
+
+```bash
+git clone https://github.com/anyscale/templates && cd templates/templates/asynchronous_inference
+```
+
 **⏱️ Time to complete:** 30 minutes
 
 This template demonstrates how to build scalable asynchronous inference services using Ray Serve. Learn how to handle long-running PDF processing tasks without blocking HTTP responses, using Celery task queues and Redis as a message broker.
@@ -53,7 +64,6 @@ Redis serves as both the message broker (task queue) and result backend.
 
 **Install and start Redis (Google Colab compatible):**
 
-
 ```python
 # Install and start Redis server
 !sudo apt-get update -qq
@@ -77,7 +87,6 @@ If you're using a hosted Redis instance, ensure that your Ray Serve cluster can 
 
 ## Step 2: Install Dependencies
 
-
 ```python
 !pip install -q ray[serve-async-inference]>=2.55.1 requests>=2.31.0 PyPDF2>=3.0.0 celery[redis]
 ```
@@ -89,7 +98,6 @@ Let's see and run the code for the service. We will go through each component in
 ### 3.1 Ingress Deployment to Handle HTTP Requests
 
 The `AsyncPDFAPI` deployment handles HTTP requests and enqueues tasks.
-
 
 ```python
 import logging
@@ -189,7 +197,6 @@ The `@task_consumer` decorator transforms a Ray Serve deployment into a worker t
 The `@task_handler` decorator registers a method to process a specific task type. Each handler corresponds to a task name that producers use when enqueuing work.
 
 For more details, see the [Asynchronous Inference Guide](https://docs.ray.io/en/master/serve/asynchronous-inference.html).
-
 
 ```python
 import io
@@ -301,7 +308,6 @@ class PDFProcessor:
 
 Now, we will combine the deployments and run the application.
 
-
 ```python
 consumer = PDFProcessor.bind()
 
@@ -317,7 +323,6 @@ serve.run(
 
 Let's execute the client code, which calls the Ray Serve application to process PDFs and then polls for results using task IDs. First, define the base URL to query and import the required modules.
 
-
 ```python
 import time
 from typing import Dict, Any
@@ -329,7 +334,6 @@ BASE_URL = "http://localhost:8000".rstrip("/")
 ```
 
 Submit two tasks. The application returns a `task_id` for each request that you can use to poll for results.
-
 
 ```python
 def process_pdf(pdf_url: str, max_summary_paragraphs: int = 3) -> str:
@@ -347,7 +351,6 @@ def process_pdf(pdf_url: str, max_summary_paragraphs: int = 3) -> str:
     data = response.json()
     return data["task_id"]
 
-
 pdf_urls = [
     "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
     "https://arxiv.org/pdf/1706.03762.pdf",
@@ -362,7 +365,6 @@ for i, url in enumerate(pdf_urls, 1):
 ```
 
 Next, poll the Ray Serve application using the `task_id` obtained in the previous step to retrieve the result.
-
 
 ```python
 def get_task_status(task_id: str) -> Dict[str, Any]:

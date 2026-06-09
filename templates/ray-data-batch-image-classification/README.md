@@ -1,5 +1,10 @@
 # Image Classification Batch Inference with PyTorch
 
+<div align="left">
+  <a target="_blank" href="https://console.anyscale.com/template-preview/ray-data-batch-image-classification"><img src="https://img.shields.io/badge/🚀 Run_on-Anyscale-9hf"></a>&nbsp;
+  <a href="https://github.com/anyscale/templates/tree/main/templates/ray-data-batch-image-classification" role="button"><img src="https://img.shields.io/static/v1?label=&message=View%20On%20GitHub&color=586069&logo=github&labelColor=2f363d"></a>&nbsp;
+</div>
+
 **⏱️ Time to complete**: 15 min
 
 In this example, we will introduce how to use [Ray Data](https://docs.ray.io/en/latest/data/data.html#data) for large-scale batch inference with multiple GPU workers.
@@ -19,6 +24,12 @@ This example will still work even if you do not have GPUs available, but overall
 See [this guide on batch inference](https://docs.ray.io/en/latest/data/batch_inference.html#batch-inference-home) for tips and troubleshooting when adapting this example to use your own model and dataset!
 
 To run this example, you will need the following packages:
+
+## Get the code
+
+```bash
+git clone https://github.com/anyscale/templates && cd templates/templates/ray-data-batch-image-classification
+```
 
 
 ```python

@@ -1,5 +1,10 @@
 # Computing Text Embeddings with Ray Data
 
+<div align="left">
+  <a target="_blank" href="https://console.anyscale.com/template-preview/text-embeddings"><img src="https://img.shields.io/badge/🚀 Run_on-Anyscale-9hf"></a>&nbsp;
+  <a href="https://github.com/anyscale/templates/tree/main/templates/text-embeddings" role="button"><img src="https://img.shields.io/static/v1?label=&message=View%20On%20GitHub&color=586069&logo=github&labelColor=2f363d"></a>&nbsp;
+</div>
+
 **⏱️ Time to complete**: 10 min
 
 This template shows you how to:
@@ -13,6 +18,12 @@ For a Python script version of the `.ipynb` notebook used for the workspace temp
 
 **Note:** This tutorial runs within a workspace. See [Introduction to Workspaces](https://docs.anyscale.com/examples/intro-workspaces) for more details.
 
+## Get the code
+
+```bash
+git clone https://github.com/anyscale/templates && cd templates/templates/text-embeddings
+```
+
 
 
 ## Step 1: Setup model defaults
@@ -21,7 +32,7 @@ First, install additional required dependencies using `pip`.
 
 
 ```python
-!uv pip install -r python_depset.lock --system --no-deps --no-cache-dir --index-strategy unsafe-best-match
+!pip install -q "torch<2.5" langchain==0.1.17 transformers==4.40.2 optimum==1.19.2 && echo "Install complete!"
 ```
 
 
@@ -82,7 +93,7 @@ if ray.is_initialized():
     ray.shutdown()
 ray.init(
     runtime_env={
-        "pip": os.path.abspath("python_depset.lock"),
+        "pip": ["torch<2.5", "langchain==0.1.17", "transformers==4.40.2", "optimum==1.19.2"],
         "env_vars": {
             # Set the user token on all nodes.
             "HF_TOKEN": OPTIONAL_HF_TOKEN_FOR_MODEL,

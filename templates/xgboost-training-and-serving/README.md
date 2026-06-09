@@ -1,13 +1,18 @@
 # Distributed XGBoost pipeline
 
+<div align="left">
+  <a target="_blank" href="https://console.anyscale.com/template-preview/xgboost-training-and-serving"><img src="https://img.shields.io/badge/🚀 Run_on-Anyscale-9hf"></a>&nbsp;
+  <a href="https://github.com/anyscale/templates/tree/main/templates/xgboost-training-and-serving" role="button"><img src="https://img.shields.io/static/v1?label=&message=View%20On%20GitHub&color=586069&logo=github&labelColor=2f363d"></a>&nbsp;
+</div>
+
 **⏱️ Time to complete**: 30 min
 
+## Get the code
 
+```bash
+git clone https://github.com/anyscale/templates && cd templates/templates/xgboost-training-and-serving
+```
 
-<div align="left">
-<a target="_blank" href="https://console.anyscale.com/"><img src="https://img.shields.io/badge/🚀 Run_on-Anyscale-9hf"></a>&nbsp;
-<a href="https://github.com/anyscale/e2e-xgboost" role="button"><img src="https://img.shields.io/static/v1?label=&amp;message=View%20On%20GitHub&amp;color=586069&amp;logo=github&amp;labelColor=2f363d"></a>&nbsp;
-</div>
 
 
 <div align="center">
@@ -15,7 +20,6 @@
 </div>
 
 These tutorials implement an end-to-end XGBoost application including:
-
 
 - **Distributed data preprocessing and model training**: Ingest and preprocess data at scale using [Ray Data](https://docs.ray.io/en/latest/data/data.html). Then, train a distributed [XGBoost model](https://xgboost.readthedocs.io/en/stable/python/index.html) using [Ray Train](https://docs.ray.io/en/latest/train/train.html). See [Distributed training of an XGBoost model](https://github.com/anyscale/templates/blob/main/templates/xgboost-training-and-serving/notebooks/01-Distributed_Training.ipynb).
 - **Model validation using offline inference**: Evaluate the model using Ray Data offline batch inference. See [Model validation using offline batch inference](https://github.com/anyscale/templates/blob/main/templates/xgboost-training-and-serving/notebooks/02-Validation.ipynb).
