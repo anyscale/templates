@@ -1,0 +1,6 @@
+torch<2.5
+langchain==0.1.17
+transformers==4.40.2
+optimum==1.19.2
+numpy==1.26.4
+pyarrow==19.0.1
