@@ -1,3 +1,0 @@
-head_node:
-  instance_type: g5.48xlarge
-worker_nodes: []
