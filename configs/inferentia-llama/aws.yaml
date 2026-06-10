@@ -1,9 +1,0 @@
-head_node:
-  instance_type: inf2.8xlarge
-worker_nodes:
-- name: inf_worker
-  instance_type: inf2.8xlarge
-  max_nodes: 3
-- name: inf_worker_2
-  instance_type: inf2.48xlarge
-  max_nodes: 3
