@@ -4,15 +4,15 @@
 
 Looking to get the most out of your LLM workloads? Fine-tuning pretrained LLMs can often be the most cost effective way to improve model performance on the tasks that you care about. This template walks through how to use the popular open source library [LLaMA-Factory](https://github.com/hiyouga/LlamaFactory) to fine-tune LLMs on Anyscale. LLaMA-Factory comes with a [Ray](https://www.ray.io/) integration for scaling training to multiple GPUs and nodes.
 
-## Getting started with LLaMA-Factory 
-First, you need to install the LLaMA-Factory code. You can view the latest changes from the [LLaMA-Factory GitHub](https://github.com/hiyouga/LlamaFactory.git). 
+## Getting started with LLaMA-Factory
+First, you need to install the LLaMA-Factory code. You can view the latest changes from the [LLaMA-Factory GitHub](https://github.com/hiyouga/LlamaFactory.git).
 
 ```bash
 git clone --branch v0.9.3 --depth 1 https://github.com/hiyouga/LlamaFactory.git
 cd LLaMA-Factory
 # Install extras separately so Anyscale can track the dependencies on worker nodes.
 pip install torch==2.5.0 torchvision==0.20.0 torchaudio==2.5.0 --index-url https://download.pytorch.org/whl/cu121
-pip install deepspeed==0.16.4 transformers==4.51.3 jieba nltk rouge-chinese 
+pip install deepspeed==0.16.4 transformers==4.51.3 jieba nltk rouge-chinese
 pip install -e .
 ```
 
@@ -22,7 +22,7 @@ Additionally it's recommended to use `hf_transfer` for fast model downloading by
 
 <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/fine-tune-llm-oss/assets/env_vars.png" width=1500px />
 
-You can find some example configs that use Ray with LLaMA-Factory for pretraining and SFT (instruction tuning) in the `llamafactory_config` directory. Find a full set of examples with various models, tasks, and datasets on the [LLaMA-Factory GitHub](https://github.com/hiyouga/LlamaFactory/tree/main/examples). 
+You can find some example configs that use Ray with LLaMA-Factory for pretraining and SFT (instruction tuning) in the `llamafactory_config` directory. Find a full set of examples with various models, tasks, and datasets on the [LLaMA-Factory GitHub](https://github.com/hiyouga/LlamaFactory/tree/main/examples).
 
 LLaMA-Factory provides a CLI `llamafactory-cli` that allows you to launch training with a config YAML file. For example, you can launch a supervised fine-tuning job with Ray by running the following command:
 ```bash
@@ -44,7 +44,7 @@ dataset_dir: REMOTE:llamafactory/demo_data  # or use local absolute path
 
 However, by default LLaMA-Factory reads dataset information from a local file `dataset_info.json`, which you can find in `LLaMA-Factory/data/`)
 
-To specify new datasets that are accessible across Ray worker nodes, you must first add `dataset_info.json` and any data files to shared storage like `/mnt/cluster_storage`. 
+To specify new datasets that are accessible across Ray worker nodes, you must first add `dataset_info.json` and any data files to shared storage like `/mnt/cluster_storage`.
 
 For example, if you wanted to run pretraining on the `c4_demo` dataset, first go through the following setup steps:
 ```bash
@@ -91,7 +91,7 @@ RUN git clone --branch v0.9.3 --depth 1 https://github.com/hiyouga/LlamaFactory.
     cd LLaMA-Factory && \
     pip install torch==2.5.0 torchvision==0.20.0 torchaudio==2.5.0 --index-url https://download.pytorch.org/whl/cu121 && \
     pip install --no-cache-dir deepspeed==0.16.4 transformers==4.51.3 jieba nltk rouge-chinese && \
-    pip install -e . 
+    pip install -e .
 ```
 
 You can then use this new image to run your job with the [Anyscale jobs CLI](https://docs.anyscale.com/platform/jobs/manage-jobs) locally or from a workspace. We provide an example job config in `sft_job_config.yaml` for running a job from this workspace, which contains the following:
@@ -120,6 +120,3 @@ anyscale job submit --wait --config-file sft_job_config.yaml
 The training job should take less than 15 minutes to start up and complete, after which you should see that the job status has been updated to "Succeeded"!
 
 <img src="https://raw.githubusercontent.com/anyscale/templates/main/templates/fine-tune-llm-oss/assets/completed.png" width=1500px />
-
-
-
