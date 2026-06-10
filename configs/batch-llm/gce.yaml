@@ -1,9 +1,0 @@
-head_node:
-  instance_type: n2-standard-8
-  resources:
-    CPU: 0
-worker_nodes:
-- name: worker
-  instance_type: g2-standard-8-nvidia-l4-1
-  min_nodes: 1
-  max_nodes: 4
