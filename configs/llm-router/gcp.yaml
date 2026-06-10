@@ -1,3 +1,0 @@
-head_node:
-  instance_type: g2-standard-48
-worker_nodes: []
