@@ -111,10 +111,10 @@ Stateful tranformation of datasets -- in this example, AI inference where the st
 class ImageGen():
     def __init__(self):
         self.pipe = AutoPipelineForText2Image.from_pretrained("stabilityai/sdxl-turbo", torch_dtype=torch.float16, variant="fp16").to("cuda")
-        
+
     def gen_image(self, prompts):
         return self.pipe(prompt=list(prompts), num_inference_steps=1, guidance_scale=0.0).images
-    
+
     def __call__(self, batch):
         batch['image'] = self.gen_image(batch['prompt'])
         return batch
@@ -228,19 +228,19 @@ To implement this operation, we'll
 class Enhancer():
     def __init__(self):
         self.pipe = pipeline("text-generation", model="Qwen/Qwen2.5-0.5B-Instruct", device='cuda')
-        
+
     def chat(self, prompts):
         messages = []
         for p in prompts:
             season = random.choice(['winter', 'spring', 'summer', 'fall'])
-                                    
+
             message = [{"role": "system", "content": "You are a helpful assistant." +
-                                "Enhance the image description with two short elements corresponding to the " + season + 
+                                "Enhance the image description with two short elements corresponding to the " + season +
                                 "season. Keep animal wearing clothing and retain image medium information (like photo or painting). Return new description only, no intro."},
                                 {"role": "user", "content": p }]
             messages.append(message)
         return [out[0]['generated_text'][-1]['content'] for out in self.pipe(messages, max_new_tokens=200, batch_size=2)]
-    
+
     def __call__(self, batch):
         batch['prompt'] = self.chat(batch['prompt'])
         return batch
