@@ -34,14 +34,16 @@ def main():
     p.add_argument("--source", choices=["tabformer", "synthetic"], default="tabformer")
     args = p.parse_args()
 
-    # smoke runs on CPU; small/full use the GPU workers (03 picks GPU via its
-    # own per-scale presets; 04 needs the flags explicitly). Two fat GPU
-    # replicas beat four thin ones here — the inference is ~a minute of work,
-    # not worth autoscaling extra nodes for.
+    # smoke runs on CPU; small/full use the GPUs (03 picks GPU via its own
+    # per-scale presets; 04 needs the flags explicitly). All GPU replicas live
+    # on the single 4xGPU worker — fat batches, no extra node spin-up. `full`
+    # embeds every holdout transaction (~5M windows), so it uses all 4 GPUs.
     if args.scale == "smoke":
         embed_args = ["--num-workers", "8"]
-    else:
+    elif args.scale == "small":
         embed_args = ["--use-gpu", "--num-workers", "2", "--batch-size", "2048"]
+    else:
+        embed_args = ["--use-gpu", "--num-workers", "4", "--batch-size", "2048"]
 
     run_stage("[1/6] data", "01_generate_data.py", "--scale", args.scale, "--source", args.source)
     run_stage("[2/6] tokenize", "02_tokenize.py", "--scale", args.scale)

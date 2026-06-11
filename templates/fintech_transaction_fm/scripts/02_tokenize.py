@@ -20,12 +20,24 @@ from src.paths import SCALE_MAP, artifact_paths, get_demo_base_dir  # noqa: E402
 from src.tokenizer import SEQ_LEN_BY_SCALE, tokenize_dataset, write_vocab  # noqa: E402
 
 # Per-scale sampling: cap pretrain windows per card and target a manageable
-# eval-set size (all frauds + downsampled normals). Real cards have thousands
-# of transactions; without caps, smoke would tokenize millions of windows.
+# eval-set size (all frauds + downsampled normals, importance-weighted). Real
+# cards have thousands of transactions; without caps, smoke would tokenize
+# millions of windows. holdout_keep=1.0 scores EVERY val/test transaction —
+# exact full-data metrics, no weighting — at the cost of a bigger eval set
+# (~5M windows at `full`).
 TOKENIZE_PRESETS = {
-    "smoke": dict(target_eval_samples=30_000, max_pretrain_windows=8),
-    "small": dict(target_eval_samples=150_000, max_pretrain_windows=None),
-    "full": dict(target_eval_samples=400_000, max_pretrain_windows=None),
+    "smoke": dict(
+        target_eval_samples=30_000, max_pretrain_windows=8, holdout_keep=None,
+        shuffle_partitions=32,
+    ),
+    "small": dict(
+        target_eval_samples=150_000, max_pretrain_windows=None, holdout_keep=None,
+        shuffle_partitions=128,
+    ),
+    "full": dict(
+        target_eval_samples=400_000, max_pretrain_windows=None, holdout_keep=1.0,
+        shuffle_partitions=128,
+    ),
 }
 
 PRETRAIN_DROP = [
@@ -58,6 +70,10 @@ def main():
     )
 
     ray.init(ignore_reinit_error=True)
+    # Right-size the hash shuffle for demo-scale data: the default aggregator
+    # count assumes a much larger cluster and triggers CPU/memory warnings on
+    # small ones (each aggregator reserves 0.25 CPU + ~1GiB memory estimate).
+    ray.data.DataContext.get_current().max_hash_shuffle_aggregators = 16
     ds = ray.data.read_parquet(paths["raw"])
     tokenized = tokenize_dataset(
         ds,
@@ -65,7 +81,9 @@ def main():
         train_end=splits["train_end"],
         val_end=splits["val_end"],
         normal_keep=normal_keep,
+        holdout_keep=preset["holdout_keep"],
         max_pretrain_windows=preset["max_pretrain_windows"],
+        num_partitions=preset["shuffle_partitions"],
     ).materialize()
 
     # Arrow-level filters (no numpy round trip — handles empty blocks cleanly).

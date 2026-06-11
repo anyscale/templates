@@ -146,6 +146,9 @@ def prepare_tabformer(
     source_dir = source_dir or os.path.join(os.path.dirname(os.path.dirname(raw_out)), "source")
     csv_path = ensure_download(source_dir)
     ray.init(ignore_reinit_error=True)
+    # Right-size the statics groupby shuffle for demo-scale clusters (see
+    # 02_tokenize.py for the same tuning on the main tokenize shuffle).
+    ray.data.DataContext.get_current().max_hash_shuffle_aggregators = 16
 
     print(f"[tabformer] reading {csv_path} with Ray Data ...")
     ds = ray.data.read_csv(
@@ -171,7 +174,11 @@ def prepare_tabformer(
 
     # Per-card static fields via a distributed groupby (issuer/bin_region don't
     # exist in TabFormer). The result is tiny (~6k rows) — broadcast it back.
-    stats = ds.groupby("card_id").map_groups(_card_statics, batch_format="pandas").to_pandas()
+    stats = (
+        ds.groupby("card_id", num_partitions=128)
+        .map_groups(_card_statics, batch_format="pandas")
+        .to_pandas()
+    )
     home_state = dict(zip(stats["card_id"], stats["home_state"]))
     card_type = dict(zip(stats["card_id"], stats["card_type"]))
 

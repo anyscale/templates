@@ -249,6 +249,7 @@ def make_tokenize_group_fn(
     train_end: str | None = None,
     val_end: str | None = None,
     normal_keep: float = 1.0,
+    holdout_keep: float | None = None,
     max_pretrain_windows: int | None = None,
 ):
     """Build a ``map_groups`` UDF turning one card's transactions into padded,
@@ -260,6 +261,9 @@ def make_tokenize_group_fn(
     """
     t_train = np.datetime64(train_end, "s") if train_end else None
     t_val = np.datetime64(val_end, "s") if val_end else None
+    # Keep-probability for normals in the val/test periods; None -> same as
+    # train. 1.0 = score every holdout transaction (exact full-data metrics).
+    holdout_keep = normal_keep if holdout_keep is None else holdout_keep
     soft = AMOUNT_MODE == "soft"
 
     def tokenize_group(group: dict) -> dict:
@@ -294,12 +298,9 @@ def make_tokenize_group_fn(
 
         rows = []
 
-        def emit(lo: int, hi: int, kind: str, split: str, label: int, target):
+        def emit(lo: int, hi: int, kind: str, split: str, label: int, target, weight: float = 1.0):
             L = hi - lo
             pad = seq_len - L
-            # Importance weight undoing the normal-downsampling, so downstream
-            # metrics estimate full-population (natural-prevalence) values.
-            weight = 1.0 if (label == 1 or kind != "eval") else 1.0 / max(normal_keep, 1e-9)
             r = {
                 "card_id": card_id, "length": L, "kind": kind, "split": split,
                 "label": label, "weight": np.float64(weight),
@@ -350,7 +351,10 @@ def make_tokenize_group_fn(
         # is_fraud; split by the target's timestamp. All frauds kept, normals
         # downsampled deterministically.
         rng = np.random.default_rng(card_id + 1)
-        keep = (fraud == 1) | (rng.random(n) < normal_keep)
+        keep_p = np.full(n, normal_keep)
+        if t_train is not None:
+            keep_p[int(np.searchsorted(ts, t_train)):] = holdout_keep
+        keep = (fraud == 1) | (rng.random(n) < keep_p)
         if not rows and not keep.any():
             # Guarantee at least one output row per card: empty (0, seq_len)
             # batches break Ray's Arrow tensor conversion, and a card should
@@ -363,7 +367,10 @@ def make_tokenize_group_fn(
                 split = "val"
             else:
                 split = "test"
-            emit(max(0, t + 1 - seq_len), t + 1, "eval", split, int(fraud[t]), int(t))
+            # Importance weight undoing the normal-downsampling, so downstream
+            # metrics estimate full-population (natural-prevalence) values.
+            w = 1.0 if fraud[t] == 1 else 1.0 / max(float(keep_p[t]), 1e-9)
+            emit(max(0, t + 1 - seq_len), t + 1, "eval", split, int(fraud[t]), int(t), weight=w)
 
         return _stack_rows(rows, seq_len, soft)
 
@@ -376,15 +383,23 @@ def tokenize_dataset(
     train_end: str | None = None,
     val_end: str | None = None,
     normal_keep: float = 1.0,
+    holdout_keep: float | None = None,
     max_pretrain_windows: int | None = None,
+    num_partitions: int | None = None,
 ):
-    """Apply the tokenizer over a Ray Dataset grouped by card."""
-    return ds.groupby("card_id").map_groups(
+    """Apply the tokenizer over a Ray Dataset grouped by card.
+
+    ``num_partitions`` sizes the hash shuffle; Ray's default (200) is tuned for
+    much larger clusters/datasets and produces hundreds of tiny output files at
+    demo scales.
+    """
+    return ds.groupby("card_id", num_partitions=num_partitions).map_groups(
         make_tokenize_group_fn(
             seq_len,
             train_end=train_end,
             val_end=val_end,
             normal_keep=normal_keep,
+            holdout_keep=holdout_keep,
             max_pretrain_windows=max_pretrain_windows,
         ),
         batch_format="numpy",

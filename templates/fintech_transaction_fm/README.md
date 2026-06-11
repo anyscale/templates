@@ -85,8 +85,8 @@ import pandas as pd
 from src.paths import SCALE_MAP, artifact_paths, get_demo_base_dir
 from src.tabformer import prepare_tabformer
 
-SCALE = "smoke"        # "small" / "full" for the distributed story
-USE_GPU = False        # set True on a GPU cluster for train + embed
+SCALE = "small"        # "small" / "full" for the distributed story
+USE_GPU = True        # set True on a GPU cluster for train + embed
 
 BASE_DIR = get_demo_base_dir()
 paths = artifact_paths(BASE_DIR, SCALE)
@@ -112,6 +112,13 @@ This is the core idea. NVIDIA's blueprint flattens every transaction into ~12 to
 The vocabulary is fully deterministic (fixed amount buckets + merchant hashing), so tokenization is a **stateless `map_groups`** with no global shuffle — exactly what Ray Data is built for. NVIDIA's RAPIDS path is single-GPU; this scales across the cluster.
 
 Two representation choices live here. **Positions are time-aware**: alongside the ordinal position we embed the log-bucketed *gap since the previous transaction*, because for transactions *when* matters more than ordinal slot. And **amount uses bucketing** (`AMOUNT_MODE`), with an optional `"soft"` mode that blends the two adjacent bin embeddings so $86.99 and $87.01 don't land on unrelated vectors.
+
+> **What you'll see while this runs** (and why it's fine):
+> - **"Cluster does not have any available CPUs / job may hang"** — on a fresh or idle cluster the GPU worker is still launching; Ray Data waits and the warnings clear once it lands (~2 min). The head node intentionally schedules no work.
+> - **Hash-shuffle aggregator warnings** — Ray's shuffle defaults assume a much bigger cluster; we right-size it per scale (`shuffle_partitions` + `max_hash_shuffle_aggregators` in `scripts/02_tokenize.py`).
+> - **"Numba isn't available"** — `numba` (in `requirements.txt`) lets RayTurbo JIT the hash-partitioning kernel of this groupby; without it the shuffle falls back to slower Python.
+> - **"Object store is configured to use only 28% of memory"** — set at cluster start on Anyscale; at this dataset size (~3GB) the default is plenty.
+
 
 
 ```python
