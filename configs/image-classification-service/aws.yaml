@@ -1,7 +1,0 @@
-head_node:
-  instance_type: g5.xlarge
-worker_nodes:
-- name: gpu_worker
-  instance_type: g5.xlarge
-  min_nodes: 1
-  max_nodes: 3
