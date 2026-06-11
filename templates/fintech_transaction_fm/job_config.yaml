@@ -1,0 +1,16 @@
+# Run the full transaction-FM pipeline as an Anyscale Job.
+# Jobs use a fresh cluster (no workspace /mnt/cluster_storage), so all stages
+# run in sequence against a shared base dir under the working directory.
+name: fintech-transaction-fm
+entrypoint: bash -c "python scripts/01_generate_data.py --scale small && python scripts/02_tokenize.py --scale small && python scripts/03_pretrain.py --scale small --use-gpu && python scripts/04_extract_embeddings.py --scale small --use-gpu && python scripts/05_train_downstream.py --scale small"
+requirements: requirements.txt
+compute_config:
+  cloud: aws-public-us-west-2
+  head_node:
+    instance_type: m5.2xlarge
+  worker_nodes:
+    - name: gpu-workers
+      instance_type: g4dn.xlarge
+      min_nodes: 1
+      max_nodes: 4
+max_retries: 1

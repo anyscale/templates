@@ -712,6 +712,19 @@
     command: bash tests.sh
     timeout_in_sec: 1800
 
+# owner: @geoff.counihan
+- name: fintech_transaction_fm
+  dir: templates/fintech_transaction_fm
+  cluster_env:
+    image_uri: anyscale/ray:2.55.1-py311-cu121
+  compute_config:
+    AWS: configs/fintech_transaction_fm/aws.yaml
+    GCP: configs/fintech_transaction_fm/gce.yaml
+  test:
+    tests_path: tests/fintech_transaction_fm/
+    command: bash tests.sh
+    timeout_in_sec: 1800
+
 # owner: @christian-stano
 - name: fintech_quant
   dir: templates/fintech_quant
