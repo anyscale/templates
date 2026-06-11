@@ -147,25 +147,34 @@ class TransactionFM(nn.Module):
         return {f: head(hidden) for f, head in self.mlm_heads.items()}
 
     def field_loss(self, logits: dict, targets: dict, masked, weighting: str = "uncertainty"):
-        """Sum the per-field masked cross-entropies.
+        """Sum the per-field masked cross-entropies and report per-field stats.
 
         ``weighting="uncertainty"`` applies Kendall & Gal homoscedastic weighting
         (loss_f * exp(-s_f) + 0.5*s_f, with s_f a learned log-variance) so heads
         of very different difficulty/scale stay balanced. ``"mean"`` is the plain
-        unweighted average. Returns (total_loss, per_field_ce_dict).
+        unweighted average.
+
+        Returns (total_loss, stats) where stats[field] = {"ce", "acc"} — the
+        masked cross-entropy and top-1 accuracy for that field. These per-field
+        numbers (not the weighted total, which drifts as the log-variances learn)
+        are what you watch to confirm training is working.
         """
-        per_field = {}
+        ce, stats = {}, {}
         for f in self.dynamic_fields:
-            per_field[f] = F.cross_entropy(logits[f][masked], targets[f][masked])
+            lg, tg = logits[f][masked], targets[f][masked]
+            ce[f] = F.cross_entropy(lg, tg)
+            with torch.no_grad():
+                acc = (lg.argmax(dim=-1) == tg).float().mean()
+            stats[f] = {"ce": float(ce[f].item()), "acc": float(acc.item())}
 
         if weighting == "uncertainty":
             total = 0.0
-            for f, ce in per_field.items():
+            for f in self.dynamic_fields:
                 s = self.log_var[f]
-                total = total + torch.exp(-s) * ce + 0.5 * s
+                total = total + torch.exp(-s) * ce[f] + 0.5 * s
         else:
-            total = sum(per_field.values()) / len(per_field)
-        return total, {f: float(v.item()) for f, v in per_field.items()}
+            total = sum(ce.values()) / len(ce)
+        return total, stats
 
     @torch.no_grad()
     def sequence_embedding(self, batch: dict) -> torch.Tensor:

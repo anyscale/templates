@@ -87,4 +87,31 @@ def extract_embeddings(
     )
     ds.write_parquet(output_path)
     print(f"[embed] wrote customer embeddings -> {output_path}")
+    embedding_health(output_path)
     return output_path
+
+
+def embedding_health(output_path: str, sample: int = 2000) -> dict:
+    """Cheap representation-collapse check on a sample of the embeddings.
+
+    The classic self-supervised failure mode is silent collapse — every customer
+    maps to nearly the same vector while the loss looks fine. We report mean
+    pairwise cosine similarity (→1.0 means collapse) and mean feature variance
+    (→0 means collapse). Mean pairwise cosine is computed in closed form from the
+    summed unit vectors, so it's O(n·d), not O(n²).
+    """
+    import ray
+
+    df = ray.data.read_parquet(output_path).limit(sample).to_pandas()
+    X = np.vstack(df["embedding"].to_numpy()).astype(np.float64)
+    n = len(X)
+    Xn = X / (np.linalg.norm(X, axis=1, keepdims=True) + 1e-8)
+    s = Xn.sum(axis=0)
+    mean_pair_cos = float((s @ s - n) / (n * (n - 1))) if n > 1 else float("nan")
+    mean_var = float(X.var(axis=0).mean())
+    flag = " ⚠️ possible collapse" if mean_pair_cos > 0.9 else ""
+    print(
+        f"[embed] health: mean_pairwise_cos={mean_pair_cos:.3f} (→1 = collapse), "
+        f"mean_feature_var={mean_var:.4f}, n={n}{flag}"
+    )
+    return {"mean_pairwise_cos": mean_pair_cos, "mean_feature_var": mean_var, "n": n}

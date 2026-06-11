@@ -9,9 +9,11 @@ tolerance — the same code runs on 1 CPU worker (CI smoke) or N GPU workers
 from __future__ import annotations
 
 import json
+import math
 import os
 import shutil
 import tempfile
+from collections import defaultdict
 
 import torch
 
@@ -56,23 +58,39 @@ def train_func(config: dict):
     for epoch in range(config["epochs"]):
         model.train()
         running, n_batches = 0.0, 0
+        ce_sum, acc_sum, tot_n = defaultdict(float), defaultdict(float), 0
         for batch in train_shard.iter_torch_batches(
             batch_size=config["batch_size"], dtypes=dtypes
         ):
             corrupted, targets, masked = mask_batch(batch, dynamic_fields, mask_prob)
-            if masked.sum() == 0:
+            n = int(masked.sum())
+            if n == 0:
                 continue
             # Heads + loss run inside forward so DDP all-reduces every param.
-            loss, _ = model(corrupted, targets=targets, masked=masked, weighting=weighting)
+            loss, stats = model(corrupted, targets=targets, masked=masked, weighting=weighting)
 
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
             running += float(loss.item())
             n_batches += 1
+            tot_n += n
+            for f, d in stats.items():
+                ce_sum[f] += d["ce"] * n   # weight per-field means by #masked
+                acc_sum[f] += d["acc"] * n
 
-        avg = running / max(n_batches, 1)
-        metrics = {"epoch": epoch, "mlm_loss": avg}
+        # The weighted total drifts as the log-variances learn — watch the
+        # per-field accuracy and perplexity instead. Perplexity vs. the field's
+        # vocab size tells you whether it learned structure (ppl << vocab = good).
+        metrics = {"epoch": epoch, "mlm_loss": running / max(n_batches, 1)}
+        macro_acc = 0.0
+        for f in dynamic_fields:
+            mean_ce = ce_sum[f] / max(tot_n, 1)
+            acc = acc_sum[f] / max(tot_n, 1)
+            metrics[f"acc_{f}"] = acc
+            metrics[f"ppl_{f}"] = math.exp(min(mean_ce, 20.0))
+            macro_acc += acc
+        metrics["acc_macro"] = macro_acc / len(dynamic_fields)
 
         # Checkpoint on the last epoch (rank 0 writes the weights).
         checkpoint = None
@@ -127,5 +145,9 @@ def pretrain(
     with result.checkpoint.as_directory() as ckpt_dir:
         for fn in os.listdir(ckpt_dir):
             shutil.copy(os.path.join(ckpt_dir, fn), os.path.join(checkpoint_out, fn))
-    print(f"[pretrain] final mlm_loss={result.metrics.get('mlm_loss'):.4f} -> {checkpoint_out}")
-    return result.metrics
+    m = result.metrics
+    print(
+        f"[pretrain] final mlm_loss={m.get('mlm_loss', float('nan')):.4f} "
+        f"macro_acc={m.get('acc_macro', float('nan')):.3f} -> {checkpoint_out}"
+    )
+    return m
