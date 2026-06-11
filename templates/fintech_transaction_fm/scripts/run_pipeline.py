@@ -43,7 +43,9 @@ def main():
     elif args.scale == "small":
         embed_args = ["--use-gpu", "--num-workers", "2", "--batch-size", "2048"]
     else:
-        embed_args = ["--use-gpu", "--num-workers", "4", "--batch-size", "2048"]
+        # seq 512: attention buffers cap the T4 inference batch well below
+        # the seq-128 setting.
+        embed_args = ["--use-gpu", "--num-workers", "4", "--batch-size", "256"]
 
     run_stage("[1/6] data", "01_generate_data.py", "--scale", args.scale, "--source", args.source)
     run_stage("[2/6] tokenize", "02_tokenize.py", "--scale", args.scale)

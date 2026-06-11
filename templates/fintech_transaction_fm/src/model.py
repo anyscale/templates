@@ -95,6 +95,8 @@ class TransactionFM(nn.Module):
         B, S = any_field.shape
         device = any_field.device
 
+        # .long(): token columns arrive as int32 (storage-efficient at long
+        # seq_len); nn.Embedding requires int64 indices.
         x = torch.zeros(B, S, self.d_model, device=device)
         for f in self.dynamic_fields:
             if (
@@ -104,22 +106,22 @@ class TransactionFM(nn.Module):
             ):
                 # Soft binning: blend the two adjacent bin embeddings so $86.99
                 # and $87.01 get near-identical vectors (no hard boundary).
-                lo = batch["d_amount_bucket"]
+                lo = batch["d_amount_bucket"].long()
                 hi = torch.clamp(lo + 1, max=self.dyn_emb[f].num_embeddings - 1)
                 frac = batch["d_amount_frac"].unsqueeze(-1).float()  # [B,S,1]
                 x = x + (1.0 - frac) * self.dyn_emb[f](lo) + frac * self.dyn_emb[f](hi)
             else:
-                x = x + self.dyn_emb[f](batch[f"d_{f}"])
+                x = x + self.dyn_emb[f](batch[f"d_{f}"].long())
 
         static_vec = torch.zeros(B, self.d_model, device=device)
         for f in self.static_fields:
-            static_vec = static_vec + self.static_emb[f](batch[f"s_{f}"])
+            static_vec = static_vec + self.static_emb[f](batch[f"s_{f}"].long())
         x = x + static_vec.unsqueeze(1)  # broadcast static over all positions
 
         pos = torch.arange(S, device=device).unsqueeze(0).expand(B, S)
         x = x + self.pos_emb(pos)
         if self.time_aware and "time_bucket" in batch:
-            x = x + self.time_emb(batch["time_bucket"])  # inter-transaction gap
+            x = x + self.time_emb(batch["time_bucket"].long())  # inter-txn gap
         x = self.dropout(self.input_norm(x))
 
         pad_mask = batch["attention_mask"] == 0  # True where padding
@@ -177,9 +179,21 @@ class TransactionFM(nn.Module):
         return total, stats
 
     @torch.no_grad()
-    def sequence_embedding(self, batch: dict) -> torch.Tensor:
-        """Mean-pool final hidden states over valid positions -> customer vector."""
+    def sequence_embedding(self, batch: dict, pooling: str = "mean") -> torch.Tensor:
+        """Pool final hidden states into one vector per sequence.
+
+        ``"last"`` — the final position's hidden state. Sequences are
+        right-aligned (left-padded), so this is the most recent transaction:
+        the right readout for per-transaction labels (NVIDIA's blueprint pools
+        the last token the same way). Mean-pooling dilutes the target event
+        across the window — the longer the window, the worse it gets.
+
+        ``"mean"`` — masked mean over valid positions: a whole-history
+        customer summary, the right readout for card-level tasks.
+        """
         hidden = self.encode(batch)
+        if pooling == "last":
+            return hidden[:, -1, :]
         mask = batch["attention_mask"].unsqueeze(-1).float()
         summed = (hidden * mask).sum(dim=1)
         counts = mask.sum(dim=1).clamp(min=1.0)
@@ -193,7 +207,11 @@ def build_model(vocab_path: str, size: str = "small", max_len: int = 64) -> Tran
     presets = {
         "smoke": dict(d_model=64, n_heads=2, n_layers=2, dim_ff=128),
         "small": dict(d_model=256, n_heads=4, n_layers=4, dim_ff=512),
-        "full": dict(d_model=384, n_heads=6, n_layers=6, dim_ff=1024),
+        # ~29M params — capacity parity with NVIDIA's blueprint decoder
+        # (8 layers, 512 hidden). The difference is the tokenizer: 1 position
+        # per transaction instead of ~12 tokens, so seq_len 512 covers 512
+        # transactions vs ~315 in their 4096-token context.
+        "full": dict(d_model=512, n_heads=8, n_layers=8, dim_ff=2048),
     }
     cfg = presets.get(size, presets["small"])
     return TransactionFM(
@@ -220,7 +238,7 @@ def mask_batch(batch: dict, dynamic_fields: list, mask_prob: float = 0.15):
     rand = torch.rand(attn.shape, device=attn.device)
     masked = (rand < mask_prob) & (attn == 1)
 
-    targets = {f: batch[f"d_{f}"].clone() for f in dynamic_fields}
+    targets = {f: batch[f"d_{f}"].clone().long() for f in dynamic_fields}
     corrupted = dict(batch)
     for f in dynamic_fields:
         col = batch[f"d_{f}"].clone()

@@ -56,9 +56,11 @@ MASK = 1
 OOV = 2
 _RESERVED = 3
 
-# 128-txn context at GPU scales — closer to the NVIDIA blueprint's ~315-txn
-# window; T4 memory has plenty of headroom for this model size.
-SEQ_LEN_BY_SCALE = {"smoke": 32, "small": 128, "full": 128}
+# One position per transaction makes long histories cheap: `full`'s 512
+# positions cover 512 transactions — vs ~315 in the NVIDIA blueprint's entire
+# 4096-token context (~12 tokens per txn). Going past 512 on T4s wants
+# flash-attention (O(S^2) buffers) — left as the documented extension.
+SEQ_LEN_BY_SCALE = {"smoke": 32, "small": 128, "full": 512}
 
 # --- Deterministic field vocabularies (no data scan needed) ---
 N_AMOUNT_BUCKETS = 16
@@ -227,8 +229,8 @@ def _stack_rows(rows: list, seq_len: int, soft: bool) -> dict:
         "split": np.array([], dtype=object),
         "label": np.zeros(0, np.int64),
         "weight": np.zeros(0, np.float64),
-        "attention_mask": np.zeros((0, seq_len), np.int64),
-        "time_bucket": np.zeros((0, seq_len), np.int64),
+        "attention_mask": np.zeros((0, seq_len), np.int32),
+        "time_bucket": np.zeros((0, seq_len), np.int32),
         "raw_amount": np.zeros(0, np.float32),
         "raw_hour": np.zeros(0, np.int64),
         "raw_dow": np.zeros(0, np.int64),
@@ -238,7 +240,7 @@ def _stack_rows(rows: list, seq_len: int, soft: bool) -> dict:
     for f in STATIC_FIELDS:
         out[f"s_{f}"] = np.zeros(0, np.int64)
     for f in DYNAMIC_FIELDS:
-        out[f"d_{f}"] = np.zeros((0, seq_len), np.int64)
+        out[f"d_{f}"] = np.zeros((0, seq_len), np.int32)
     if soft:
         out["d_amount_frac"] = np.zeros((0, seq_len), np.float32)
     return out
@@ -305,11 +307,16 @@ def make_tokenize_group_fn(
                 "card_id": card_id, "length": L, "kind": kind, "split": split,
                 "label": label, "weight": np.float64(weight),
             }
+            # Sequence columns are int32: vocabularies are tiny, and at long
+            # seq_len the eval set is millions of windows — int64 doubles GBs
+            # of intermediates for nothing. The model casts to long on input.
             for f, arr in full.items():
-                r[f"d_{f}"] = np.concatenate([np.full(pad, PAD, np.int64), arr[lo:hi]])
+                r[f"d_{f}"] = np.concatenate(
+                    [np.full(pad, PAD, np.int32), arr[lo:hi].astype(np.int32)]
+                )
             if soft:
                 r["d_amount_bucket"] = np.concatenate(
-                    [np.full(pad, PAD, np.int64), soft_lo[lo:hi]]
+                    [np.full(pad, PAD, np.int32), soft_lo[lo:hi].astype(np.int32)]
                 )
                 r["d_amount_frac"] = np.concatenate(
                     [np.zeros(pad, np.float32), soft_frac[lo:hi]]
@@ -317,14 +324,14 @@ def make_tokenize_group_fn(
             for f, v in statics.items():
                 r[f"s_{f}"] = v
             r["attention_mask"] = np.concatenate(
-                [np.zeros(pad, np.int64), np.ones(L, np.int64)]
+                [np.zeros(pad, np.int32), np.ones(L, np.int32)]
             )
             # Inter-transaction gap, recomputed within the window (first gap 0).
             deltas = np.zeros(L, dtype=np.float64)
             if L > 1:
                 deltas[1:] = (ts[lo + 1 : hi] - ts[lo : hi - 1]) / np.timedelta64(1, "h")
             r["time_bucket"] = np.concatenate(
-                [np.full(pad, PAD, np.int64), _delta_to_bucket(deltas).astype(np.int64)]
+                [np.full(pad, PAD, np.int32), _delta_to_bucket(deltas).astype(np.int32)]
             )
             if target is None:
                 r.update(raw_amount=np.float32(0.0), raw_hour=0, raw_dow=0, raw_mcc=0, raw_ts=0)

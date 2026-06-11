@@ -47,6 +47,7 @@ def _fit_eval(X_tr, y_tr, X_va, y_va, X_te, y_te, w_te) -> dict:
         eval_metric="aucpr",
         early_stopping_rounds=30,
         scale_pos_weight=(neg / max(pos, 1.0)),
+        random_state=0,  # pinned: subsampled fits at 0.1% prevalence vary a LOT
         n_jobs=-1,
     )
     model.fit(X_tr, y_tr, eval_set=[(X_va, y_va)], verbose=False)
@@ -65,6 +66,7 @@ def run_downstream(embeddings_path: str, output_dir: str) -> dict:
     """Train + evaluate all three feature sets; persist a metrics summary."""
     df = pd.read_parquet(embeddings_path)
     X_fm = np.vstack(df["embedding"].to_numpy()).astype(np.float32)
+    df = df.drop(columns=["embedding"])  # free the object column (GBs at `full`)
 
     # Raw target-transaction features (carried through tokenize -> embed).
     amt = df["raw_amount"].to_numpy(np.float64)
@@ -76,7 +78,6 @@ def run_downstream(embeddings_path: str, output_dir: str) -> dict:
             df["raw_mcc"].to_numpy(np.float32),
         ]
     ).astype(np.float32)
-    X_fusion = np.hstack([X_fm, X_raw])
     y = df["label"].to_numpy(np.int64)
     w = df["weight"].to_numpy(np.float64)
 
@@ -89,9 +90,16 @@ def run_downstream(embeddings_path: str, output_dir: str) -> dict:
             )
     tr, va, te = masks["train"], masks["val"], masks["test"]
 
+    # Assemble matrices per split instead of full-dataset (fusion would
+    # otherwise duplicate the entire embedding matrix — ~8GB at `full`).
+    feature_sets = {
+        "raw": lambda m: X_raw[m],
+        "fm": lambda m: X_fm[m],
+        "fusion": lambda m: np.hstack([X_fm[m], X_raw[m]]),
+    }
     results = {}
-    for name, X in [("raw", X_raw), ("fm", X_fm), ("fusion", X_fusion)]:
-        results[name] = _fit_eval(X[tr], y[tr], X[va], y[va], X[te], y[te], w[te])
+    for name, fx in feature_sets.items():
+        results[name] = _fit_eval(fx(tr), y[tr], fx(va), y[va], fx(te), y[te], w[te])
 
     summary = {
         "protocol": (

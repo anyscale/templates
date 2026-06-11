@@ -7,33 +7,32 @@ requirements: requirements.txt
 compute_config:
   cloud: aws-public-us-west-2
   head_node:
-    instance_type: m5.2xlarge
+    # 64GB: the `full` downstream stage holds ~5M x 512-dim embeddings +
+    # per-split XGBoost matrices on the driver.
+    instance_type: m5.4xlarge
   worker_nodes:
-    # Preferred: one 4xT4 box — on-node DDP all-reduce and 48 vCPUs for the
-    # data stages. Often capacity-constrained on AWS, so the ranking flags
-    # below fall back to four single-GPU nodes + a CPU node for the shuffle.
-    # Cross-node DDP is cheap here anyway: the model is a few M params, so
-    # gradients are tiny (and FSDP unnecessary).
-    - name: gpu-4x
-      instance_type: g4dn.12xlarge
-      min_nodes: 0
-      max_nodes: 1
+    # Single-GPU nodes: `small` needs 2 GPUs, `full` needs 4 — singles
+    # bin-pack exactly (no idle GPUs) and dodge g4dn.12xlarge capacity
+    # shortages. Cross-node DDP is cheap here: the model is a few M params,
+    # so gradients are tiny (and FSDP unnecessary).
     - name: gpu-1x
       instance_type: g4dn.xlarge
       min_nodes: 0
       max_nodes: 4
+    # CPU muscle for the data stages (24M-row tokenize shuffle); GPU nodes
+    # never spin up for shuffle work.
     - name: cpu-workers
       instance_type: m5.4xlarge
       min_nodes: 0
       max_nodes: 1
   flags:
-    # Try the 4xGPU box first; when AWS has no capacity the autoscaler
-    # satisfies the same resource demands from the lower-ranked groups.
+    # Prefer the CPU group for CPU-only demands — g4dn.xlarge is cheaper
+    # per node, so price-based defaults would otherwise send shuffle tasks
+    # to GPU instances. GPU demands can only land on gpu-1x regardless.
     instance_ranking_strategy:
       - ranker_type: custom_group_order
         ranker_config:
           group_order:
-            - gpu-4x
-            - - gpu-1x
-              - cpu-workers
+            - cpu-workers
+            - gpu-1x
 max_retries: 1

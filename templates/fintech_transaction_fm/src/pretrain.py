@@ -30,6 +30,11 @@ def _unwrap(model):
 
 
 def train_func(config: dict):
+    # Same init on every rank (DDP would broadcast anyway; this also makes
+    # *runs* reproducible for A/B comparisons), then per-rank reseed below so
+    # MLM masking differs across workers deterministically.
+    torch.manual_seed(config.get("seed", 0))
+
     vocab_path = config["vocab_path"]
     with open(vocab_path) as f:
         vocab = json.load(f)
@@ -54,6 +59,7 @@ def train_func(config: dict):
     optimizer = torch.optim.AdamW(model.parameters(), lr=config["lr"])
     train_shard = ray.train.get_dataset_shard("train")
     mask_prob = config.get("mask_prob", 0.15)
+    torch.manual_seed(config.get("seed", 0) + ray.train.get_context().get_world_rank())
 
     for epoch in range(config["epochs"]):
         model.train()
@@ -118,6 +124,7 @@ def pretrain(
     use_fsdp: bool = False,
     loss_weighting: str = "uncertainty",
     storage_base: str | None = None,
+    seed: int = 0,
 ) -> dict:
     """Run distributed pretraining and persist the final checkpoint.
 
@@ -140,6 +147,7 @@ def pretrain(
             "lr": lr,
             "use_fsdp": use_fsdp,
             "loss_weighting": loss_weighting,
+            "seed": seed,
         },
         scaling_config=ScalingConfig(num_workers=num_workers, use_gpu=use_gpu),
         datasets={"train": ds},

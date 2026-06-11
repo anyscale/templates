@@ -21,8 +21,10 @@ import torch
 
 
 class EmbeddingExtractor:
-    def __init__(self, checkpoint_dir: str):
+    def __init__(self, checkpoint_dir: str, pooling: str = "last"):
         from .model import build_model
+
+        self.pooling = pooling
 
         with open(os.path.join(checkpoint_dir, "model_config.json")) as f:
             mcfg = json.load(f)
@@ -57,7 +59,7 @@ class EmbeddingExtractor:
         if self.vocab.get("amount_mode") == "soft":
             tensors["d_amount_frac"] = to_tensor("d_amount_frac", torch.float32)
         with torch.no_grad():
-            emb = self.model.sequence_embedding(tensors).cpu().numpy()
+            emb = self.model.sequence_embedding(tensors, pooling=self.pooling).cpu().numpy()
         passthrough = [
             "card_id", "label", "split", "weight",
             "raw_amount", "raw_hour", "raw_dow", "raw_mcc", "raw_ts",
@@ -74,6 +76,7 @@ def extract_embeddings(
     num_workers: int = 2,
     use_gpu: bool = False,
     batch_size: int = 256,
+    pooling: str = "last",
 ) -> str:
     """Run distributed batch embedding extraction and write Parquet."""
     import ray
@@ -81,7 +84,7 @@ def extract_embeddings(
     ds = ray.data.read_parquet(tokenized_path)
     ds = ds.map_batches(
         EmbeddingExtractor,
-        fn_constructor_kwargs={"checkpoint_dir": checkpoint_dir},
+        fn_constructor_kwargs={"checkpoint_dir": checkpoint_dir, "pooling": pooling},
         batch_size=batch_size,
         concurrency=num_workers,
         num_gpus=1 if use_gpu else 0,

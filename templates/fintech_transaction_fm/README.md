@@ -123,6 +123,8 @@ Two representation choices live here. **Positions are time-aware**: alongside th
 
 ```python
 import json
+
+import numpy as np
 from ray.data.expressions import col
 from src.tokenizer import SEQ_LEN_BY_SCALE, tokenize_dataset, write_vocab
 
@@ -137,6 +139,7 @@ tokenized = tokenize_dataset(
     val_end=splits["val_end"],
     normal_keep=0.005,               # downsample normal eval samples (all frauds kept)
     max_pretrain_windows=8,
+    num_partitions=32,            # right-size the shuffle (Ray defaults to 200)
 ).materialize()
 
 PRETRAIN_DROP = ["kind", "split", "label", "weight",
@@ -151,8 +154,8 @@ tok = pd.read_parquet(paths["tokenized_eval"])
 print(f"{len(tok):,} eval samples ({int((tok['label'] == 1).sum()):,} fraud), seq_len={seq_len}")
 row = tok.iloc[0]
 print("  static:", {c: int(row[c]) for c in tok.columns if c.startswith("s_")})
-print("  amount-bucket tokens:", list(row["d_amount_bucket"])[-8:])
-print("  attention mask:", list(row["attention_mask"])[-8:])
+print("  amount-bucket tokens:", np.asarray(row["d_amount_bucket"])[-8:].tolist())
+print("  attention mask:", np.asarray(row["attention_mask"])[-8:].tolist())
 ```
 
 ## Step 4: Pretrain with Ray Train (masked-feature modeling, DDP)
@@ -260,8 +263,7 @@ The same code scales up by changing config, and runs as a scheduled **Anyscale J
 anyscale job submit --config-file job_config.yaml
 
 # Larger scale:
-anyscale job submit --config-file job_config.yaml \
-  --override-entrypoint 'python scripts/run_pipeline.py --scale full'
+anyscale job submit --config-file job_config.yaml -- python scripts/run_pipeline.py --scale full
 ```
 
 | Stage | Ray primitive | Scale knob |

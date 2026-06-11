@@ -22,7 +22,11 @@ from src.tokenizer import SEQ_LEN_BY_SCALE  # noqa: E402
 TRAIN_PRESETS = {
     "smoke": dict(epochs=2, batch_size=64, num_workers=1, use_gpu=False, use_fsdp=False),
     "small": dict(epochs=15, batch_size=512, lr=8e-4, num_workers=2, use_gpu=True, use_fsdp=False),
-    "full": dict(epochs=10, batch_size=1024, lr=1e-3, num_workers=4, use_gpu=True, use_fsdp=False),
+    # The real thing: ~29M params (NVIDIA-parity) at seq 512. batch 64/worker
+    # is the T4-safe ceiling — the B x heads x S x S attention buffers and the
+    # 2000-way merchant MLM head logits dominate memory at this seq_len.
+    # Epochs are cheap: non-overlapping 512-txn windows = ~38k/epoch.
+    "full": dict(epochs=20, batch_size=64, lr=4e-4, num_workers=4, use_gpu=True, use_fsdp=False),
 }
 
 
