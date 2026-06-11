@@ -193,7 +193,7 @@ def build_model(vocab_path: str, size: str = "small", max_len: int = 64) -> Tran
     presets = {
         "smoke": dict(d_model=64, n_heads=2, n_layers=2, dim_ff=128),
         "small": dict(d_model=256, n_heads=4, n_layers=4, dim_ff=512),
-        "medium": dict(d_model=384, n_heads=6, n_layers=6, dim_ff=1024),
+        "full": dict(d_model=384, n_heads=6, n_layers=6, dim_ff=1024),
     }
     cfg = presets.get(size, presets["small"])
     return TransactionFM(

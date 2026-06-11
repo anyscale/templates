@@ -37,7 +37,7 @@ Every stage is the **same code** from laptop to multi-node cluster — you chang
 
 ---
 
-**Walkthrough:** this notebook runs end-to-end at `smoke` scale (a few thousand cards, a 2-layer model) so it completes in minutes on a small cluster. Flip `SCALE` to `small`/`medium` and `USE_GPU=True` for the real distributed story.
+**Walkthrough:** this notebook runs end-to-end at `smoke` scale (a few thousand cards, a 2-layer model) so it completes in minutes on a small cluster. Flip `SCALE` to `small`/`full` and `USE_GPU=True` for the real distributed story.
 
 ## Get the code
 
@@ -85,7 +85,7 @@ import pandas as pd
 from src.paths import SCALE_MAP, artifact_paths, get_demo_base_dir
 from src.tabformer import prepare_tabformer
 
-SCALE = "smoke"        # "small" / "medium" for the distributed story
+SCALE = "smoke"        # "small" / "full" for the distributed story
 USE_GPU = False        # set True on a GPU cluster for train + embed
 
 BASE_DIR = get_demo_base_dir()
@@ -186,7 +186,7 @@ extract_embeddings(
     tokenized_path=paths["tokenized_eval"],
     checkpoint_dir=paths["checkpoint"],
     output_path=paths["embeddings"],
-    num_workers=1,          # scale out across GPU replicas at `medium`
+    num_workers=1,          # scale out across GPU replicas at `full`
     use_gpu=USE_GPU,
 )
 emb = pd.read_parquet(paths["embeddings"])
@@ -201,7 +201,7 @@ The headline result, evaluated with the **NVIDIA transaction-FM blueprint protoc
 2. **fm** — the FM embedding of the history window only
 3. **fusion** — embedding ++ raw features (Nubank's joint fusion)
 
-The lift of (2) and (3) over (1) is the case for a transaction FM. *(At `smoke` scale — 2 CPU epochs, a 2-layer model — expect fusion ≈ raw; the gap opens with the `small`/`medium` GPU pretrain.)*
+The lift of (2) and (3) over (1) is the case for a transaction FM. *(At `smoke` scale — 2 CPU epochs, a 2-layer model — expect fusion ≈ raw; the gap opens with the `small`/`full` GPU pretrain.)*
 
 
 
@@ -246,7 +246,7 @@ serve.shutdown()
 
 ## Step 9: Path to production
 
-The same code scales up by changing config, and runs as a scheduled **Anyscale Job**:
+The same code scales up by changing config, and runs as a scheduled **Anyscale Job**. `scripts/run_pipeline.py` wraps all six stages (data -> tokenize -> pretrain -> embed -> downstream -> validate) in one command:
 
 ```bash
 # Full pipeline as a Job (GPU workers, autoscaling):
@@ -254,11 +254,7 @@ anyscale job submit --config-file job_config.yaml
 
 # Larger scale:
 anyscale job submit --config-file job_config.yaml \
-  --override-entrypoint 'python scripts/01_generate_data.py --scale medium && \
-    python scripts/02_tokenize.py --scale medium && \
-    python scripts/03_pretrain.py --scale medium --use-gpu --num-workers 4 && \
-    python scripts/04_extract_embeddings.py --scale medium --use-gpu --num-workers 4 && \
-    python scripts/05_train_downstream.py --scale medium'
+  --override-entrypoint 'python scripts/run_pipeline.py --scale full'
 ```
 
 | Stage | Ray primitive | Scale knob |
@@ -267,6 +263,7 @@ anyscale job submit --config-file job_config.yaml \
 | Pretrain | Ray Train + DDP | `num_workers`, `use_gpu` |
 | Batch embed | Ray Data `map_batches` | `num_workers`, `num_gpus` |
 | Online serve | Ray Serve | replica autoscaling |
+
 
 ## Validate
 

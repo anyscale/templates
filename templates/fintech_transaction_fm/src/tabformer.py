@@ -1,4 +1,4 @@
-"""IBM TabFormer loader — the real-data path.
+"""IBM TabFormer loader — the real-data path, built on Ray Data.
 
 TabFormer (Padhi et al., ICASSP 2021, https://arxiv.org/abs/2011.01843) is the
 de-facto public benchmark for transaction foundation models: 24.4M card
@@ -6,8 +6,10 @@ transactions, 2,000 users / ~6.1k cards, 1991-2020, 0.12% transaction-level
 fraud. NVIDIA's transaction-FM blueprint and FATA-Trans both evaluate on it.
 
 This module downloads the dataset (266MB tgz from IBM's GitHub, no auth
-needed), normalizes it into the same canonical schema the synthetic generator
-produces, and samples down to ``num_cards`` so the smoke scale stays cheap.
+needed), then normalizes it into the canonical schema with a distributed Ray
+Data pipeline — the CSV is read, transformed, aggregated, and written across
+the cluster, so the driver never materializes the 24M rows (a single-node
+pandas pass OOMs a 32GB head node).
 
 Schema mapping notes (TabFormer -> canonical):
 
@@ -31,9 +33,6 @@ import urllib.request
 
 import numpy as np
 import pandas as pd
-import pyarrow as pa
-import pyarrow.compute as pc
-import pyarrow.csv as pacsv
 
 from .paths import write_splits_meta
 
@@ -41,6 +40,11 @@ SOURCE_URL = (
     "https://media.githubusercontent.com/media/IBM/TabFormer/main/data/credit_card/transactions.tgz"
 )
 CSV_NAME = "card_transaction.v1.csv"
+
+_CSV_COLUMNS = [
+    "User", "Card", "Year", "Month", "Day", "Time",
+    "Amount", "Use Chip", "Merchant Name", "Merchant State", "MCC", "Is Fraud?",
+]
 
 
 def ensure_download(source_dir: str) -> str:
@@ -86,11 +90,43 @@ def _mcc_to_category(mcc: np.ndarray) -> np.ndarray:
     return np.select(conds, cats, default="other")
 
 
-def _modal_per_card(df: pd.DataFrame, col: str) -> pd.Series:
-    """Most frequent value of ``col`` per card_id (vectorized, no .apply(mode))."""
-    counts = df.groupby(["card_id", col]).size().rename("n").reset_index()
-    counts = counts.sort_values("n").drop_duplicates("card_id", keep="last")
-    return counts.set_index("card_id")[col]
+def _normalize(b: pd.DataFrame) -> pd.DataFrame:
+    """Per-batch TabFormer -> canonical-schema normalization (stateless)."""
+    hm = b["Time"].str.split(":", expand=True).astype(np.int64)
+    ts = pd.to_datetime(
+        dict(year=b["Year"], month=b["Month"], day=b["Day"], hour=hm[0], minute=hm[1])
+    )
+    state = b["Merchant State"].fillna("")
+    return pd.DataFrame(
+        {
+            "card_id": (b["User"] * 100 + b["Card"]).astype(np.int64),
+            "timestamp": ts,
+            "amount": b["Amount"].str.replace("$", "", regex=False).astype(np.float64),
+            "merchant_id": b["Merchant Name"].astype(np.int64),
+            "merchant_category": _mcc_to_category(b["MCC"].to_numpy()),
+            "mcc": b["MCC"].astype(np.int64),
+            "hour": hm[0],
+            "day_of_week": ts.dt.dayofweek.astype(np.int64),
+            "is_fraud": (b["Is Fraud?"] == "Yes").astype(np.int64),
+            "channel": b["Use Chip"].str.split(" ").str[0].str.lower(),
+            "state_norm": np.select(
+                [state.str.len() == 2, state.str.len() == 0],
+                [state, "ONLINE"],
+                default="FOREIGN",
+            ),
+        }
+    )
+
+
+def _card_statics(g: pd.DataFrame) -> pd.DataFrame:
+    """Modal home state + channel for one card (runs inside a Ray groupby)."""
+    return pd.DataFrame(
+        {
+            "card_id": [int(g["card_id"].iloc[0])],
+            "home_state": [g["state_norm"].mode().iat[0]],
+            "card_type": [g["channel"].mode().iat[0]],
+        }
+    )
 
 
 def prepare_tabformer(
@@ -100,73 +136,69 @@ def prepare_tabformer(
     seed: int = 42,
     source_dir: str | None = None,
 ) -> str:
-    """Normalize TabFormer to the canonical schema, sample cards, write Parquet."""
+    """Normalize TabFormer to the canonical schema with Ray Data, sample cards,
+    and write Parquet (``raw_out`` becomes a directory of shards)."""
+    import pyarrow as pa
+    import pyarrow.csv as pacsv
+
+    import ray
+
     source_dir = source_dir or os.path.join(os.path.dirname(os.path.dirname(raw_out)), "source")
     csv_path = ensure_download(source_dir)
+    ray.init(ignore_reinit_error=True)
 
-    print(f"[tabformer] reading {csv_path} ...")
-    tbl = pacsv.read_csv(csv_path)
-    card_key = pc.add(pc.multiply(pc.cast(tbl["User"], pa.int64()), 100), tbl["Card"])
-    tbl = tbl.append_column("card_id", card_key)
-    # Extract clock fields in Arrow (Time parses as time32[s]; cheap here, slow in pandas).
-    tbl = tbl.append_column("hour", pc.hour(tbl["Time"]))
-    tbl = tbl.append_column("minute", pc.minute(tbl["Time"]))
+    print(f"[tabformer] reading {csv_path} with Ray Data ...")
+    ds = ray.data.read_csv(
+        csv_path,
+        convert_options=pacsv.ConvertOptions(
+            include_columns=_CSV_COLUMNS,
+            column_types={"Time": pa.string()},  # keep "HH:MM" strings
+        ),
+    ).map_batches(_normalize, batch_format="pandas")
 
-    all_cards = np.sort(pc.unique(tbl["card_id"]).to_numpy())
+    all_cards = np.sort(np.asarray(ds.unique("card_id")))
     n_take = min(num_cards, len(all_cards))
     if n_take < num_cards:
         print(f"[tabformer] only {len(all_cards)} cards available (requested {num_cards}); using all")
-    chosen = np.random.default_rng(seed).choice(all_cards, size=n_take, replace=False)
-    tbl = tbl.filter(pc.is_in(tbl["card_id"], value_set=pa.array(chosen)))
+    if n_take < len(all_cards):
+        chosen = set(
+            np.random.default_rng(seed).choice(all_cards, size=n_take, replace=False).tolist()
+        )
+        ds = ds.map_batches(
+            lambda b: b[b["card_id"].isin(chosen)], batch_format="pandas"
+        )
+    ds = ds.materialize()
 
-    df = tbl.select(
-        ["card_id", "Year", "Month", "Day", "hour", "minute", "Amount",
-         "Use Chip", "Merchant Name", "Merchant State", "MCC", "Is Fraud?"]
-    ).to_pandas()
+    # Per-card static fields via a distributed groupby (issuer/bin_region don't
+    # exist in TabFormer). The result is tiny (~6k rows) — broadcast it back.
+    stats = ds.groupby("card_id").map_groups(_card_statics, batch_format="pandas").to_pandas()
+    home_state = dict(zip(stats["card_id"], stats["home_state"]))
+    card_type = dict(zip(stats["card_id"], stats["card_type"]))
 
-    ts = pd.to_datetime(
-        dict(year=df["Year"], month=df["Month"], day=df["Day"],
-             hour=df["hour"], minute=df["minute"])
-    )
-    state = df["Merchant State"].fillna("")
-    state_norm = np.select(
-        [state.str.len() == 2, state.str.len() == 0], [state, "ONLINE"], default="FOREIGN"
-    )
-    df = df.assign(
-        timestamp=ts,
-        amount=df["Amount"].str.replace("$", "", regex=False).astype(np.float64),
-        merchant_id=df["Merchant Name"].astype(np.int64),
-        merchant_category=_mcc_to_category(df["MCC"].to_numpy()),
-        mcc=df["MCC"].astype(np.int64),
-        day_of_week=ts.dt.dayofweek.astype(np.int64),
-        is_fraud=(df["Is Fraud?"] == "Yes").astype(np.int64),
-        channel=df["Use Chip"].str.split(" ").str[0].str.lower(),
-        state_norm=state_norm,
-    )
+    def attach_statics(b: pd.DataFrame) -> pd.DataFrame:
+        b = b.drop(columns=["channel", "state_norm"])
+        b["issuer"] = "UNKNOWN"
+        b["bin_region"] = "UNKNOWN"
+        b["card_type"] = b["card_id"].map(card_type)
+        b["home_state"] = b["card_id"].map(home_state)
+        return b
 
-    # Card-level static fields (issuer/bin_region don't exist in TabFormer).
-    home_state = _modal_per_card(df, "state_norm").rename("home_state")
-    card_type = _modal_per_card(df, "channel").rename("card_type")
-    df = df.join(home_state, on="card_id").join(card_type, on="card_id")
-    df["issuer"] = "UNKNOWN"
-    df["bin_region"] = "UNKNOWN"
+    final = ds.map_batches(attach_statics, batch_format="pandas").materialize()
+    final.write_parquet(raw_out)
 
-    out = df[
-        ["card_id", "issuer", "card_type", "bin_region", "home_state",
-         "timestamp", "amount", "merchant_id", "merchant_category", "mcc",
-         "hour", "day_of_week", "is_fraud"]
-    ].sort_values(["card_id", "timestamp"]).reset_index(drop=True)
-    out["hour"] = out["hour"].astype(np.int64)
-
-    os.makedirs(os.path.dirname(raw_out.rstrip("/")), exist_ok=True)
-    out.to_parquet(raw_out, index=False)
+    # Split cutoffs + stats. Only two slim columns come to the driver
+    # (~16B/row) — exact quantiles without holding the whole table.
+    slim = final.select_columns(["timestamp", "is_fraud"]).to_pandas()
     meta = write_splits_meta(
-        splits_out, out["timestamp"].to_numpy(), out["is_fraud"].to_numpy(),
-        source="tabformer", n_cards=n_take,
+        splits_out,
+        slim["timestamp"].to_numpy(),
+        slim["is_fraud"].to_numpy(),
+        source="tabformer",
+        n_cards=n_take,
     )
     print(
-        f"[tabformer] {len(out):,} transactions / {n_take:,} cards "
-        f"({out['is_fraud'].mean() * 100:.3f}% fraud) -> {raw_out}\n"
+        f"[tabformer] {len(slim):,} transactions / {n_take:,} cards "
+        f"({slim['is_fraud'].mean() * 100:.3f}% fraud) -> {raw_out}\n"
         f"[tabformer] temporal split: train<{meta['train_end']} val<{meta['val_end']}"
     )
     return raw_out

@@ -56,7 +56,9 @@ MASK = 1
 OOV = 2
 _RESERVED = 3
 
-SEQ_LEN_BY_SCALE = {"smoke": 32, "small": 64, "medium": 64}
+# 128-txn context at GPU scales — closer to the NVIDIA blueprint's ~315-txn
+# window; T4 memory has plenty of headroom for this model size.
+SEQ_LEN_BY_SCALE = {"smoke": 32, "small": 128, "full": 128}
 
 # --- Deterministic field vocabularies (no data scan needed) ---
 N_AMOUNT_BUCKETS = 16

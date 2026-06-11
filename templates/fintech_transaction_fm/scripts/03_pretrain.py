@@ -16,10 +16,13 @@ from src.tokenizer import SEQ_LEN_BY_SCALE  # noqa: E402
 # The model is small enough to fit one GPU at every scale, so we use DDP
 # (data-parallel) throughout — FSDP would only help a model too big for one GPU.
 # Set use_fsdp=True via pretrain() if you scale the model up substantially.
+# Batch sizes sized to actually load the GPUs (the model is tiny; T4s were
+# mostly idle at 128) with lr scaled alongside; epoch counts chosen because
+# loss was still dropping at the old cutoffs.
 TRAIN_PRESETS = {
     "smoke": dict(epochs=2, batch_size=64, num_workers=1, use_gpu=False, use_fsdp=False),
-    "small": dict(epochs=5, batch_size=128, num_workers=2, use_gpu=True, use_fsdp=False),
-    "medium": dict(epochs=8, batch_size=256, num_workers=4, use_gpu=True, use_fsdp=False),
+    "small": dict(epochs=15, batch_size=512, lr=8e-4, num_workers=2, use_gpu=True, use_fsdp=False),
+    "full": dict(epochs=10, batch_size=1024, lr=1e-3, num_workers=4, use_gpu=True, use_fsdp=False),
 }
 
 

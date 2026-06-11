@@ -9,12 +9,13 @@ import os
 
 # Scale -> number of *cards* sampled (each card produces a variable-length
 # sequence of transactions). With the real IBM TabFormer data (~6.1k cards,
-# ~24M transactions) `smoke` samples ~8M transactions; `small`/`medium` use
-# every card. Synthetic source generates exactly this many cards.
+# ~24M transactions) `smoke` samples ~8M transactions; `small`/`full` use
+# every card — they differ in model size and GPU count, not data. Synthetic
+# source generates exactly this many cards.
 SCALE_MAP = {
-    "smoke": 2_000,      # ~8M real txns   — CI / CPU sanity
-    "small": 20_000,     # full TabFormer  — single GPU
-    "medium": 200_000,   # full TabFormer  — multi-GPU distributed story
+    "smoke": 2_000,      # ~8M real txns  — CI / CPU sanity
+    "small": 20_000,     # all TabFormer cards — 2-GPU DDP, 256-dim model
+    "full": 200_000,     # all TabFormer cards — 4-GPU DDP, 384-dim model
 }
 
 

@@ -24,8 +24,8 @@ from src.tokenizer import SEQ_LEN_BY_SCALE, tokenize_dataset, write_vocab  # noq
 # of transactions; without caps, smoke would tokenize millions of windows.
 TOKENIZE_PRESETS = {
     "smoke": dict(target_eval_samples=30_000, max_pretrain_windows=8),
-    "small": dict(target_eval_samples=150_000, max_pretrain_windows=32),
-    "medium": dict(target_eval_samples=400_000, max_pretrain_windows=None),
+    "small": dict(target_eval_samples=150_000, max_pretrain_windows=None),
+    "full": dict(target_eval_samples=400_000, max_pretrain_windows=None),
 }
 
 PRETRAIN_DROP = [

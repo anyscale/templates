@@ -18,6 +18,7 @@ def main():
     p.add_argument("--base-dir", default=None)
     p.add_argument("--num-workers", type=int, default=2)
     p.add_argument("--use-gpu", action="store_true")
+    p.add_argument("--batch-size", type=int, default=256)
     args = p.parse_args()
 
     base = args.base_dir or get_demo_base_dir()
@@ -30,6 +31,7 @@ def main():
         output_path=paths["embeddings"],
         num_workers=args.num_workers,
         use_gpu=args.use_gpu,
+        batch_size=args.batch_size,
     )
 
 

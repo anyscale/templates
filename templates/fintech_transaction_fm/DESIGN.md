@@ -136,6 +136,6 @@ AUC-ROC / PR-AUC lift of (2) and (3) over (1) is the headline result.
 
 ## Scale knobs
 
-`--scale {smoke,small,medium}` everywhere. `smoke` trains a ~1–2 layer / hidden-128
+`--scale {smoke,small,full}` everywhere. `smoke` trains a ~1–2 layer / hidden-128
 model on a few thousand sequences in a couple minutes on CPU (so papermill CI
-passes without a GPU). `medium` is the credible distributed story on GPU workers.
+passes without a GPU). `full` is the credible distributed story on multi-GPU.
