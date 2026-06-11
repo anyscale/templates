@@ -58,11 +58,13 @@ class EmbeddingExtractor:
             tensors["d_amount_frac"] = to_tensor("d_amount_frac", torch.float32)
         with torch.no_grad():
             emb = self.model.sequence_embedding(tensors).cpu().numpy()
-        return {
-            "card_id": batch["card_id"],
-            "label": batch["label"],
-            "embedding": [row for row in emb.astype(np.float32)],
-        }
+        passthrough = [
+            "card_id", "label", "split", "weight",
+            "raw_amount", "raw_hour", "raw_dow", "raw_mcc", "raw_ts",
+        ]
+        out = {k: batch[k] for k in passthrough if k in batch}
+        out["embedding"] = [row for row in emb.astype(np.float32)]
+        return out
 
 
 def extract_embeddings(

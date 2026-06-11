@@ -13,8 +13,20 @@ the **static/dynamic split** (FATA-Trans / Visa TREASURE):
 
 So a sequence of N transactions is N positions, not 12N — cheaper *and* a
 stronger inductive bias. The vocabulary is fully deterministic (fixed buckets +
-hashing), so tokenization is a stateless, embarrassingly parallel `map_batches`
-with no global aggregation — exactly the workload Ray Data is built for.
+hashing + a reserved OOV id), so tokenization is a stateless, embarrassingly
+parallel ``map_groups`` with no global aggregation — exactly the workload Ray
+Data is built for.
+
+The tokenizer emits TWO kinds of samples per card (``kind`` column), following
+the evaluation protocol of NVIDIA's transaction-FM blueprint on TabFormer:
+
+* ``pretrain`` — non-overlapping windows of the card's **train-period** history
+  (newest first), used for masked-feature-modeling pretraining. The FM never
+  sees val/test-period transactions.
+* ``eval``     — one window per *target transaction* (the window ends at it),
+  labeled with that transaction's ``is_fraud`` and tagged ``split`` ∈
+  {train,val,test} by the target's timestamp vs the temporal 80/10/10 cutoffs.
+  All frauds are kept; normals are downsampled (deterministically per card).
 
 Set ``SPLIT_FIELDS = False`` to recover the NVIDIA-style flat baseline (variant
 A) for an A/B comparison — left as a documented extension point.
@@ -31,25 +43,25 @@ from .generate_data import (
     BIN_REGIONS,
     CARD_TYPES,
     ISSUERS,
-    MCC_BY_CATEGORY,
     MERCHANT_CATEGORIES,
-    STATES,
 )
 
 SPLIT_FIELDS = True  # False -> NVIDIA-style flat tokenization (extension point)
 AMOUNT_MODE = "hard"  # "hard" (default, verified) | "soft" (blend adjacent bins)
 
-# Reserved token ids (shared across every field table).
+# Reserved token ids (shared across every field table). OOV absorbs categorical
+# values outside the fixed vocab — real-world data always has some.
 PAD = 0
 MASK = 1
-_RESERVED = 2
+OOV = 2
+_RESERVED = 3
 
 SEQ_LEN_BY_SCALE = {"smoke": 32, "small": 64, "medium": 64}
 
 # --- Deterministic field vocabularies (no data scan needed) ---
 N_AMOUNT_BUCKETS = 16
 N_MERCHANT_BUCKETS = 2000
-_ALL_MCC = sorted({m for codes in MCC_BY_CATEGORY.values() for m in codes})
+N_MCC_BUCKETS = 128  # hashed, like merchants — real data has open-ended MCC sets
 
 # log10(amount) bucket edges spanning ~$0.10 .. ~$100k.
 #
@@ -70,6 +82,18 @@ TIME_AWARE = True
 N_TIME_BUCKETS = 16
 _TIME_EDGES = np.linspace(-2.0, 4.0, N_TIME_BUCKETS - 1)  # ~0.01h .. ~1yr
 
+# Vocab lists are supersets of the synthetic generator's palettes so the same
+# tokenizer covers both synthetic and real (TabFormer) data. card_type gains the
+# TabFormer transaction channels; home_state covers all US states plus the
+# ONLINE/FOREIGN buckets the loader emits.
+US_STATES = [
+    "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA", "HI", "ID",
+    "IL", "IN", "IA", "KS", "KY", "LA", "ME", "MD", "MA", "MI", "MN", "MS",
+    "MO", "MT", "NE", "NV", "NH", "NJ", "NM", "NY", "NC", "ND", "OH", "OK",
+    "OR", "PA", "RI", "SC", "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV",
+    "WI", "WY", "DC",
+]
+
 
 def _index_map(values: list) -> dict:
     """Map a fixed list of category values to ids starting after reserved ids."""
@@ -77,15 +101,14 @@ def _index_map(values: list) -> dict:
 
 
 STATIC_VOCAB = {
-    "issuer": _index_map(ISSUERS),
-    "card_type": _index_map(CARD_TYPES),
-    "bin_region": _index_map(BIN_REGIONS),
-    "home_state": _index_map(STATES),
+    "issuer": _index_map(ISSUERS + ["UNKNOWN"]),
+    "card_type": _index_map(CARD_TYPES + ["swipe", "chip", "online", "UNKNOWN"]),
+    "bin_region": _index_map(BIN_REGIONS + ["UNKNOWN"]),
+    "home_state": _index_map(US_STATES + ["ONLINE", "FOREIGN", "UNKNOWN"]),
 }
 
 DYNAMIC_CATEGORICAL_VOCAB = {
-    "merchant_category": _index_map(MERCHANT_CATEGORIES),
-    "mcc": _index_map(_ALL_MCC),
+    "merchant_category": _index_map(MERCHANT_CATEGORIES + ["other"]),
     "hour": _index_map(list(range(24))),
     "day_of_week": _index_map(list(range(7))),
 }
@@ -107,6 +130,7 @@ def field_vocab_sizes() -> dict:
     sizes = {
         "amount_bucket": N_AMOUNT_BUCKETS + _RESERVED,
         "merchant_bucket": N_MERCHANT_BUCKETS + _RESERVED,
+        "mcc": N_MCC_BUCKETS + _RESERVED,
     }
     for f, v in DYNAMIC_CATEGORICAL_VOCAB.items():
         sizes[f] = len(v) + _RESERVED
@@ -116,7 +140,8 @@ def field_vocab_sizes() -> dict:
 
 
 def _amount_to_bucket(amount: np.ndarray) -> np.ndarray:
-    logs = np.log10(np.clip(amount, 0.1, None))
+    # abs(): refunds/credits are negative in real data; magnitude carries the signal.
+    logs = np.log10(np.clip(np.abs(amount), 0.1, None))
     return np.digitize(logs, _AMOUNT_EDGES) + _RESERVED
 
 
@@ -124,7 +149,7 @@ def _amount_to_soft(amount: np.ndarray):
     """Soft binning: return (lower_bin_id, frac) where the embedding is
     (1-frac)*emb[lower] + frac*emb[lower+1]. `frac` is the position between the
     two nearest bin edges, so adjacent amounts get near-identical vectors."""
-    logs = np.log10(np.clip(amount, 0.1, None))
+    logs = np.log10(np.clip(np.abs(amount), 0.1, None))
     cont = np.interp(logs, _AMOUNT_EDGES, np.arange(len(_AMOUNT_EDGES), dtype=np.float64))
     lower = np.floor(cont).astype(np.int64)
     frac = (cont - lower).astype(np.float32)
@@ -137,6 +162,12 @@ def _merchant_to_bucket(merchant_id: np.ndarray) -> np.ndarray:
     # disambiguated by the other fields. Raise N_MERCHANT_BUCKETS (or use
     # multi-hash) in production to cut the collision rate.
     return (merchant_id.astype(np.int64) % N_MERCHANT_BUCKETS) + _RESERVED
+
+
+def _mcc_to_bucket(mcc: np.ndarray) -> np.ndarray:
+    # Same hashing trick: MCC sets are open-ended in real data (TabFormer has
+    # ~109 distinct codes). Coarse semantics live in merchant_category.
+    return (mcc.astype(np.int64) % N_MCC_BUCKETS) + _RESERVED
 
 
 def _delta_to_bucket(delta_hours: np.ndarray) -> np.ndarray:
@@ -163,85 +194,196 @@ def write_vocab(output_path: str) -> None:
                 "amount_mode": AMOUNT_MODE,
                 "pad": PAD,
                 "mask": MASK,
+                "oov": OOV,
             },
             f,
             indent=2,
         )
 
 
-def make_tokenize_group_fn(seq_len: int):
-    """Build a `map_groups` UDF that turns one card's transactions into one
-    padded, per-field token sequence.
+# Raw target-transaction features carried on eval samples so the downstream
+# stage can fit the NVIDIA-style raw-feature baseline without re-reading data.
+RAW_FEATURE_COLS = ["raw_amount", "raw_hour", "raw_dow", "raw_mcc", "raw_ts"]
+
+
+def _stack_rows(rows: list, seq_len: int, soft: bool) -> dict:
+    """Stack per-row dicts into a numpy batch; emit dtype-correct empties."""
+    if rows:
+        out = {}
+        for k, v0 in rows[0].items():
+            if isinstance(v0, np.ndarray):
+                out[k] = np.stack([r[k] for r in rows])
+            elif isinstance(v0, str):
+                out[k] = np.array([r[k] for r in rows], dtype=object)
+            else:
+                out[k] = np.array([r[k] for r in rows])
+        return out
+    out = {
+        "card_id": np.zeros(0, np.int64),
+        "length": np.zeros(0, np.int64),
+        "kind": np.array([], dtype=object),
+        "split": np.array([], dtype=object),
+        "label": np.zeros(0, np.int64),
+        "weight": np.zeros(0, np.float64),
+        "attention_mask": np.zeros((0, seq_len), np.int64),
+        "time_bucket": np.zeros((0, seq_len), np.int64),
+        "raw_amount": np.zeros(0, np.float32),
+        "raw_hour": np.zeros(0, np.int64),
+        "raw_dow": np.zeros(0, np.int64),
+        "raw_mcc": np.zeros(0, np.int64),
+        "raw_ts": np.zeros(0, np.int64),
+    }
+    for f in STATIC_FIELDS:
+        out[f"s_{f}"] = np.zeros(0, np.int64)
+    for f in DYNAMIC_FIELDS:
+        out[f"d_{f}"] = np.zeros((0, seq_len), np.int64)
+    if soft:
+        out["d_amount_frac"] = np.zeros((0, seq_len), np.float32)
+    return out
+
+
+def make_tokenize_group_fn(
+    seq_len: int,
+    train_end: str | None = None,
+    val_end: str | None = None,
+    normal_keep: float = 1.0,
+    max_pretrain_windows: int | None = None,
+):
+    """Build a ``map_groups`` UDF turning one card's transactions into padded,
+    per-field token sequences (pretrain windows + per-transaction eval samples).
 
     A closure (not a callable class) because Ray Data's ``map_groups`` keys off
-    ``fn.__name__``. The function is stateless — safe at high concurrency.
+    ``fn.__name__``. The function is stateless — safe at high concurrency; the
+    eval-sample downsampling RNG is seeded per card, so output is deterministic.
     """
+    t_train = np.datetime64(train_end, "s") if train_end else None
+    t_val = np.datetime64(val_end, "s") if val_end else None
+    soft = AMOUNT_MODE == "soft"
 
     def tokenize_group(group: dict) -> dict:
         n = len(group["card_id"])
         order = np.argsort(group["timestamp"])
-        if n > seq_len:
-            order = order[-seq_len:]  # keep most recent
-        L = len(order)
-        pad = seq_len - L
+        ts = np.asarray(group["timestamp"])[order].astype("datetime64[s]")
+        fraud = np.asarray(group["is_fraud"]).astype(np.int64)[order]
+        amounts = np.asarray(group["amount"]).astype(np.float64)[order]
+        hours = np.asarray(group["hour"]).astype(np.int64)[order]
+        dows = np.asarray(group["day_of_week"]).astype(np.int64)[order]
+        mccs = np.asarray(group["mcc"]).astype(np.int64)[order]
+        card_id = int(group["card_id"][0])
 
-        def padded(values):
-            arr = np.asarray(values)[order]
-            return np.concatenate([np.full(pad, PAD, dtype=np.int64), arr.astype(np.int64)])
-
-        def padded_f(values):
-            arr = np.asarray(values)[order]
-            return np.concatenate([np.zeros(pad, dtype=np.float32), arr.astype(np.float32)])
-
-        dyn = {
-            "amount_bucket": padded(_amount_to_bucket(np.asarray(group["amount"]))),
-            "merchant_bucket": padded(_merchant_to_bucket(np.asarray(group["merchant_id"]))),
-            "merchant_category": padded(
-                [DYNAMIC_CATEGORICAL_VOCAB["merchant_category"][c] for c in group["merchant_category"]]
+        mc_v = DYNAMIC_CATEGORICAL_VOCAB["merchant_category"]
+        hr_v = DYNAMIC_CATEGORICAL_VOCAB["hour"]
+        dw_v = DYNAMIC_CATEGORICAL_VOCAB["day_of_week"]
+        # Tokenize the full sorted history once; windows below just slice it.
+        full = {
+            "amount_bucket": _amount_to_bucket(amounts),
+            "merchant_bucket": _merchant_to_bucket(np.asarray(group["merchant_id"])[order]),
+            "merchant_category": np.array(
+                [mc_v.get(c, OOV) for c in np.asarray(group["merchant_category"])[order]],
+                dtype=np.int64,
             ),
-            "mcc": padded([DYNAMIC_CATEGORICAL_VOCAB["mcc"][int(m)] for m in group["mcc"]]),
-            "hour": padded([DYNAMIC_CATEGORICAL_VOCAB["hour"][int(h)] for h in group["hour"]]),
-            "day_of_week": padded(
-                [DYNAMIC_CATEGORICAL_VOCAB["day_of_week"][int(d)] for d in group["day_of_week"]]
-            ),
+            "mcc": _mcc_to_bucket(mccs),
+            "hour": np.array([hr_v.get(int(h), OOV) for h in hours], dtype=np.int64),
+            "day_of_week": np.array([dw_v.get(int(d), OOV) for d in dows], dtype=np.int64),
         }
-        attn = np.concatenate([np.zeros(pad, dtype=np.int64), np.ones(L, dtype=np.int64)])
+        if soft:
+            soft_lo, soft_frac = _amount_to_soft(amounts)
+        statics = {f: int(STATIC_VOCAB[f].get(group[f][0], OOV)) for f in STATIC_FIELDS}
 
-        # Time-aware position signal: hours since the previous transaction,
-        # log-bucketed. First event in the window has gap 0.
-        ts_sorted = np.asarray(group["timestamp"])[order]
-        t = np.array(ts_sorted, dtype="datetime64[s]")
-        deltas = np.zeros(L, dtype=np.float64)
-        if L > 1:
-            deltas[1:] = (t[1:] - t[:-1]) / np.timedelta64(1, "h")
-        time_vals = _delta_to_bucket(deltas).astype(np.int64)
-        time_padded = np.concatenate([np.full(pad, PAD, dtype=np.int64), time_vals])
+        rows = []
 
-        # Static fields are scalars (first row — constant within the card).
-        out = {
-            "card_id": np.array([int(group["card_id"][0])]),
-            "length": np.array([L]),
-            "attention_mask": [attn],
-            "time_bucket": [time_padded],
-            "label": np.array([int(np.max(group["is_fraud"]))]),
-        }
-        for f in STATIC_FIELDS:
-            out[f"s_{f}"] = np.array([STATIC_VOCAB[f][group[f][0]]])
-        for f in DYNAMIC_FIELDS:
-            out[f"d_{f}"] = [dyn[f]]
+        def emit(lo: int, hi: int, kind: str, split: str, label: int, target):
+            L = hi - lo
+            pad = seq_len - L
+            # Importance weight undoing the normal-downsampling, so downstream
+            # metrics estimate full-population (natural-prevalence) values.
+            weight = 1.0 if (label == 1 or kind != "eval") else 1.0 / max(normal_keep, 1e-9)
+            r = {
+                "card_id": card_id, "length": L, "kind": kind, "split": split,
+                "label": label, "weight": np.float64(weight),
+            }
+            for f, arr in full.items():
+                r[f"d_{f}"] = np.concatenate([np.full(pad, PAD, np.int64), arr[lo:hi]])
+            if soft:
+                r["d_amount_bucket"] = np.concatenate(
+                    [np.full(pad, PAD, np.int64), soft_lo[lo:hi]]
+                )
+                r["d_amount_frac"] = np.concatenate(
+                    [np.zeros(pad, np.float32), soft_frac[lo:hi]]
+                ).astype(np.float32)
+            for f, v in statics.items():
+                r[f"s_{f}"] = v
+            r["attention_mask"] = np.concatenate(
+                [np.zeros(pad, np.int64), np.ones(L, np.int64)]
+            )
+            # Inter-transaction gap, recomputed within the window (first gap 0).
+            deltas = np.zeros(L, dtype=np.float64)
+            if L > 1:
+                deltas[1:] = (ts[lo + 1 : hi] - ts[lo : hi - 1]) / np.timedelta64(1, "h")
+            r["time_bucket"] = np.concatenate(
+                [np.full(pad, PAD, np.int64), _delta_to_bucket(deltas).astype(np.int64)]
+            )
+            if target is None:
+                r.update(raw_amount=np.float32(0.0), raw_hour=0, raw_dow=0, raw_mcc=0, raw_ts=0)
+            else:
+                r.update(
+                    raw_amount=np.float32(amounts[target]),
+                    raw_hour=int(hours[target]),
+                    raw_dow=int(dows[target]),
+                    raw_mcc=int(mccs[target]),
+                    raw_ts=int(ts[target].astype(np.int64)),
+                )
+            rows.append(r)
 
-        if AMOUNT_MODE == "soft":
-            # Overwrite the hard amount id with the lower bin + emit the weight.
-            lower, frac = _amount_to_soft(np.asarray(group["amount"]))
-            out["d_amount_bucket"] = [padded(lower)]
-            out["d_amount_frac"] = [padded_f(frac)]
-        return out
+        # --- Pretraining windows: train-period only, newest first, non-overlapping.
+        n_train = n if t_train is None else int(np.searchsorted(ts, t_train))
+        hi, made = n_train, 0
+        while hi >= 2 and (max_pretrain_windows is None or made < max_pretrain_windows):
+            lo = max(0, hi - seq_len)
+            emit(lo, hi, "pretrain", "train", 0, None)
+            made += 1
+            hi = lo
+
+        # --- Eval samples: window ends at the target transaction; label = its
+        # is_fraud; split by the target's timestamp. All frauds kept, normals
+        # downsampled deterministically.
+        rng = np.random.default_rng(card_id + 1)
+        keep = (fraud == 1) | (rng.random(n) < normal_keep)
+        if not rows and not keep.any():
+            # Guarantee at least one output row per card: empty (0, seq_len)
+            # batches break Ray's Arrow tensor conversion, and a card should
+            # not silently vanish from the pipeline anyway.
+            keep[n - 1] = True
+        for t in np.nonzero(keep)[0]:
+            if t_train is None or ts[t] < t_train:
+                split = "train"
+            elif t_val is None or ts[t] < t_val:
+                split = "val"
+            else:
+                split = "test"
+            emit(max(0, t + 1 - seq_len), t + 1, "eval", split, int(fraud[t]), int(t))
+
+        return _stack_rows(rows, seq_len, soft)
 
     return tokenize_group
 
 
-def tokenize_dataset(ds, seq_len: int):
+def tokenize_dataset(
+    ds,
+    seq_len: int,
+    train_end: str | None = None,
+    val_end: str | None = None,
+    normal_keep: float = 1.0,
+    max_pretrain_windows: int | None = None,
+):
     """Apply the tokenizer over a Ray Dataset grouped by card."""
     return ds.groupby("card_id").map_groups(
-        make_tokenize_group_fn(seq_len), batch_format="numpy"
+        make_tokenize_group_fn(
+            seq_len,
+            train_end=train_end,
+            val_end=val_end,
+            normal_keep=normal_keep,
+            max_pretrain_windows=max_pretrain_windows,
+        ),
+        batch_format="numpy",
     )

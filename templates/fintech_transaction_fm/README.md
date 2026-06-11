@@ -70,17 +70,20 @@ from src.utils import print_cluster_resources
 print_cluster_resources()
 ```
 
-## Step 2: Generate & inspect transaction data
+## Step 2: Load & inspect transaction data
 
-We generate a synthetic dataset whose schema mirrors **IBM TabFormer** (the public benchmark for this subfield). Each *card* has **static** fields (issuer, card type, BIN region, home state) that never change, plus a time-ordered stream of transactions with **dynamic** fields (amount, merchant, MCC, hour, day-of-week) and a planted fraud label.
+By default we use the **real IBM TabFormer dataset** (Padhi et al., ICASSP 2021 — the public benchmark for transaction foundation models: 24.4M transactions, ~6.1k cards, 0.12% fraud), downloaded once (~266MB) and sampled down to the scale's card budget. Each *card* has **static** fields (issuer, card type, BIN region, home state — derived where TabFormer lacks them) plus a time-ordered stream of transactions with **dynamic** fields (amount, merchant, MCC, hour, day-of-week) and a fraud label.
 
-> For real data, point `paths["raw"]` at TabFormer, the Sparkov Kaggle set, or your own Parquet — the rest of the pipeline is unchanged.
+The loader also writes `splits.json` with **temporal 80/10/10 cutoffs** (train on the past, test on the most recent 10%) — the same evaluation protocol as NVIDIA's transaction-FM blueprint, so downstream numbers are comparable.
+
+> Fully offline alternative: `python scripts/01_generate_data.py --source synthetic` generates schema-identical synthetic data.
+
 
 
 ```python
 import pandas as pd
 from src.paths import SCALE_MAP, artifact_paths, get_demo_base_dir
-from src.generate_data import save_dataset
+from src.tabformer import prepare_tabformer
 
 SCALE = "smoke"        # "small" / "medium" for the distributed story
 USE_GPU = False        # set True on a GPU cluster for train + embed
@@ -88,11 +91,14 @@ USE_GPU = False        # set True on a GPU cluster for train + embed
 BASE_DIR = get_demo_base_dir()
 paths = artifact_paths(BASE_DIR, SCALE)
 
-if not os.path.exists(paths["raw"]):
-    save_dataset(paths["raw"], num_cards=SCALE_MAP[SCALE])
+if not (os.path.exists(paths["raw"]) and os.path.exists(paths["splits"])):
+    prepare_tabformer(
+        paths["raw"], paths["splits"],
+        num_cards=SCALE_MAP[SCALE], source_dir=paths["source"],
+    )
 
 df = pd.read_parquet(paths["raw"])
-print(f"{len(df):,} transactions / {df['card_id'].nunique():,} cards / fraud {df['is_fraud'].mean()*100:.2f}%")
+print(f"{len(df):,} transactions / {df['card_id'].nunique():,} cards / fraud {df['is_fraud'].mean()*100:.3f}%")
 df.head(4)
 ```
 
@@ -109,21 +115,37 @@ Two representation choices live here. **Positions are time-aware**: alongside th
 
 
 ```python
+import json
+from ray.data.expressions import col
 from src.tokenizer import SEQ_LEN_BY_SCALE, tokenize_dataset, write_vocab
 
 seq_len = SEQ_LEN_BY_SCALE[SCALE]
+with open(paths["splits"]) as f:
+    splits = json.load(f)
+
 ds = ray.data.read_parquet(paths["raw"])
-tokenize_dataset(ds, seq_len).write_parquet(paths["tokenized"])
+tokenized = tokenize_dataset(
+    ds, seq_len,
+    train_end=splits["train_end"],   # temporal cutoffs -> pretrain never sees val/test
+    val_end=splits["val_end"],
+    normal_keep=0.005,               # downsample normal eval samples (all frauds kept)
+    max_pretrain_windows=8,
+).materialize()
+
+PRETRAIN_DROP = ["kind", "split", "label", "weight",
+                 "raw_amount", "raw_hour", "raw_dow", "raw_mcc", "raw_ts"]
+tokenized.filter(expr=col("kind") == "pretrain").drop_columns(PRETRAIN_DROP) \
+    .write_parquet(paths["tokenized_pretrain"])
+tokenized.filter(expr=col("kind") == "eval").drop_columns(["kind"]) \
+    .write_parquet(paths["tokenized_eval"])
 write_vocab(paths["vocab"])
 
-tok = pd.read_parquet(paths["tokenized"])
-print(f"{len(tok):,} card sequences, seq_len={seq_len}")
-print("columns:", [c for c in tok.columns])
+tok = pd.read_parquet(paths["tokenized_eval"])
+print(f"{len(tok):,} eval samples ({int((tok['label'] == 1).sum()):,} fraud), seq_len={seq_len}")
 row = tok.iloc[0]
-print("\nOne tokenized card:")
 print("  static:", {c: int(row[c]) for c in tok.columns if c.startswith("s_")})
 print("  amount-bucket tokens:", list(row["d_amount_bucket"])[-8:])
-print("  attention mask tail :", list(row["attention_mask"])[-8:])
+print("  attention mask:", list(row["attention_mask"])[-8:])
 ```
 
 ## Step 4: Pretrain with Ray Train (masked-feature modeling, DDP)
@@ -137,16 +159,17 @@ The training loop is plain PyTorch; **Ray Train** handles worker setup, dataset 
 from src.pretrain import pretrain
 
 metrics = pretrain(
-    tokenized_path=paths["tokenized"],
+    tokenized_path=paths["tokenized_pretrain"],
     vocab_path=paths["vocab"],
     checkpoint_out=paths["checkpoint"],
     size=SCALE,
     max_len=seq_len,
     epochs=2,
     batch_size=64,
-    num_workers=1,          # bump to 4–8 GPU workers at scale
+    num_workers=1,          # bump to 4-8 GPU workers at scale
     use_gpu=USE_GPU,
     use_fsdp=False,         # True for sharded multi-GPU training
+    storage_base=BASE_DIR,  # shared storage — workers run on other nodes
 )
 print("final MLM loss:", round(metrics["mlm_loss"], 4))
 ```
@@ -160,31 +183,32 @@ The recurring production job: score every customer to a fresh embedding. This is
 from src.embed import extract_embeddings
 
 extract_embeddings(
-    tokenized_path=paths["tokenized"],
+    tokenized_path=paths["tokenized_eval"],
     checkpoint_dir=paths["checkpoint"],
     output_path=paths["embeddings"],
     num_workers=1,          # scale out across GPU replicas at `medium`
     use_gpu=USE_GPU,
 )
 emb = pd.read_parquet(paths["embeddings"])
-print(f"{len(emb):,} customer embeddings, dim={len(emb['embedding'].iloc[0])}")
+print(f"{len(emb):,} transaction-window embeddings, dim={len(emb['embedding'].iloc[0])}")
 ```
 
 ## Step 6: Downstream fraud — raw vs FM vs fusion
 
-The headline result. Same XGBoost recipe, three feature sets:
+The headline result, evaluated with the **NVIDIA transaction-FM blueprint protocol**: temporal 80/10/10 split, per-transaction last-event fraud labels, AUC-ROC + PR-AUC at natural fraud prevalence (downsampled normals are importance-weighted back). Same XGBoost recipe, three feature sets:
 
-1. **raw** — hand-crafted per-card aggregates (what you have today)
-2. **fm** — the FM embedding only
+1. **raw** — the target transaction's tabular fields (what you have today)
+2. **fm** — the FM embedding of the history window only
 3. **fusion** — embedding ++ raw features (Nubank's joint fusion)
 
-The lift of (2) and (3) over (1) is the case for a transaction FM. *(At `smoke` scale the absolute numbers are noisy; the gap widens with real data and a longer pretrain.)*
+The lift of (2) and (3) over (1) is the case for a transaction FM. *(At `smoke` scale — 2 CPU epochs, a 2-layer model — expect fusion ≈ raw; the gap opens with the `small`/`medium` GPU pretrain.)*
+
 
 
 ```python
 from src.downstream import run_downstream, print_summary
 
-summary = run_downstream(paths["embeddings"], paths["raw"], paths["downstream"])
+summary = run_downstream(paths["embeddings"], paths["downstream"])
 print_summary(summary)
 ```
 
@@ -200,7 +224,7 @@ from src.serve import build_app
 from src.utils import sample_serve_payload
 
 serve.run(build_app(paths["checkpoint"]), name="txn-fm")
-payload = sample_serve_payload(paths["tokenized"])
+payload = sample_serve_payload(paths["tokenized_eval"])
 resp = requests.post("http://localhost:8000/", json=payload, timeout=30).json()
 print("card_id   :", resp["card_id"])
 print("embedding :", [round(x, 3) for x in resp["embedding"][:6]], "...")

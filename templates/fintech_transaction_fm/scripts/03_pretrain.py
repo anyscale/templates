@@ -41,7 +41,7 @@ def main():
 
     ray.init(ignore_reinit_error=True)
     pretrain(
-        tokenized_path=paths["tokenized"],
+        tokenized_path=paths["tokenized_pretrain"],
         vocab_path=paths["vocab"],
         checkpoint_out=paths["checkpoint"],
         size=args.scale,

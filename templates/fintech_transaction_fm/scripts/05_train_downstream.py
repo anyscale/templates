@@ -1,4 +1,4 @@
-"""Step 5 — downstream fraud classification (raw vs FM vs fusion)."""
+"""Step 5 — downstream fraud classification (raw vs FM vs fusion, temporal split)."""
 
 import argparse
 import os
@@ -20,7 +20,6 @@ def main():
     paths = artifact_paths(base, args.scale)
     summary = run_downstream(
         embeddings_path=paths["embeddings"],
-        raw_path=paths["raw"],
         output_dir=paths["downstream"],
     )
     print_summary(summary)

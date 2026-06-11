@@ -27,5 +27,7 @@ def sample_serve_payload(tokenized_path: str) -> dict:
     ds = ray.data.read_parquet(tokenized_path)
     row = ds.take(1)[0]
     payload = {k: (v.tolist() if hasattr(v, "tolist") else v) for k, v in row.items()}
-    payload.pop("label", None)
+    for k in ("label", "split", "weight", "kind",
+              "raw_amount", "raw_hour", "raw_dow", "raw_mcc", "raw_ts"):
+        payload.pop(k, None)
     return json.loads(json.dumps(payload))  # ensure JSON-serializable

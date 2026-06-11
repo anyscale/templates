@@ -25,7 +25,7 @@ def main():
 
     ray.init(ignore_reinit_error=True)
     extract_embeddings(
-        tokenized_path=paths["tokenized"],
+        tokenized_path=paths["tokenized_eval"],
         checkpoint_dir=paths["checkpoint"],
         output_path=paths["embeddings"],
         num_workers=args.num_workers,

@@ -11,9 +11,13 @@ def validate_pipeline(paths: dict) -> dict:
     report = {}
 
     # Tokenized sequences exist and have the expected columns.
-    tok = pd.read_parquet(paths["tokenized"])
-    assert len(tok) > 0, "no tokenized sequences"
+    pre = pd.read_parquet(paths["tokenized_pretrain"])
+    tok = pd.read_parquet(paths["tokenized_eval"])
+    assert len(pre) > 0, "no pretrain windows"
+    assert len(tok) > 0, "no eval samples"
     assert "attention_mask" in tok.columns, "missing attention_mask"
+    assert set(tok["split"].unique()) >= {"train", "val", "test"}, "missing temporal splits"
+    report["n_pretrain_windows"] = int(len(pre))
     report["n_sequences"] = int(len(tok))
 
     # Checkpoint has weights + vocab + config.
@@ -40,6 +44,7 @@ def validate_pipeline(paths: dict) -> dict:
 
 def print_report(report: dict) -> None:
     print("Pipeline validation:")
+    print(f"  pretrain wins:  {report['n_pretrain_windows']:,}")
     print(f"  sequences:      {report['n_sequences']:,}")
     print(f"  embedding dim:  {report['embedding_dim']}")
     print(f"  embeddings:     {report['n_embeddings']:,}")

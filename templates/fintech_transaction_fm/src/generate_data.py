@@ -130,9 +130,18 @@ def generate_transactions(num_cards: int, seed: int = 42) -> pd.DataFrame:
 
 def save_dataset(output_path: str, num_cards: int, seed: int = 42) -> str:
     """Generate and write the dataset to a single Parquet file."""
+    from .paths import write_splits_meta
+
     os.makedirs(os.path.dirname(output_path.rstrip("/")), exist_ok=True)
     df = generate_transactions(num_cards, seed=seed)
     df.to_parquet(output_path, index=False)
+    write_splits_meta(
+        os.path.join(os.path.dirname(output_path), "splits.json"),
+        df["timestamp"].to_numpy().astype("datetime64[s]"),
+        df["is_fraud"].to_numpy(),
+        source="synthetic",
+        n_cards=num_cards,
+    )
     print(
         f"[generate_data] {len(df):,} transactions / {num_cards:,} cards "
         f"({df['is_fraud'].mean() * 100:.2f}% fraud) -> {output_path}"

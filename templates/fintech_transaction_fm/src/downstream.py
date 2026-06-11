@@ -1,11 +1,23 @@
 """Downstream fraud classification — the headline result.
 
+Evaluation protocol matches NVIDIA's transaction-FM blueprint on TabFormer so
+the numbers are directly comparable when run on the real data:
+
+* **Temporal 80/10/10 split** by transaction time (cutoffs from splits.json —
+  the same ones the tokenizer used). Train on the past, early-stop on val,
+  report on the most recent 10%. No temporal leakage.
+* **Per-transaction, last-event labels**: each sample is one target transaction
+  scored from the window of history ending at it.
+* **Metrics: AUC-ROC and PR-AUC (Average Precision)** — at ~0.1% fraud, AUC-ROC
+  saturates and PR-AUC is the operationally meaningful number (NVIDIA frames it
+  the same way).
+
 We compare three feature sets with the SAME XGBoost recipe so the only variable
 is the representation:
 
-1. ``raw``    — hand-crafted aggregate features (the "what you have today" baseline)
-2. ``fm``     — the FM embedding only (no hand-crafted features at all)
-3. ``fusion`` — embedding concatenated with raw features (Nubank's joint fusion)
+1. ``raw``    — the target transaction's tabular fields (the "what you have today" baseline)
+2. ``fm``     — the FM embedding of the history window only (no raw fields at all)
+3. ``fusion`` — embedding concatenated with raw fields (Nubank's joint fusion)
 
 The lift of (2) and (3) over (1) is the story: a pretrained transaction FM lets
 you drop or augment a hand-tuned feature pipeline.
@@ -19,82 +31,79 @@ import os
 import numpy as np
 import pandas as pd
 from sklearn.metrics import average_precision_score, roc_auc_score
-from sklearn.model_selection import train_test_split
 
 
-def _raw_features(raw_path: str) -> pd.DataFrame:
-    """Cheap hand-crafted per-card aggregates — a stand-in for a feature pipeline."""
-    df = pd.read_parquet(raw_path)
-    g = df.groupby("card_id")
-    feats = pd.DataFrame(
-        {
-            "n_txn": g.size(),
-            "amount_mean": g["amount"].mean(),
-            "amount_std": g["amount"].std().fillna(0.0),
-            "amount_max": g["amount"].max(),
-            "amount_p95": g["amount"].quantile(0.95),
-            "n_categories": g["merchant_category"].nunique(),
-            "n_merchants": g["merchant_id"].nunique(),
-            "night_frac": g["hour"].apply(lambda h: float((h < 6).mean())),
-            "weekend_frac": g["day_of_week"].apply(lambda d: float((d >= 5).mean())),
-            "label": g["is_fraud"].max(),
-        }
-    ).reset_index()
-    return feats
-
-
-def _fit_eval(X_train, y_train, X_val, y_val) -> dict:
+def _fit_eval(X_tr, y_tr, X_va, y_va, X_te, y_te, w_te) -> dict:
     import xgboost as xgb
 
-    pos = float(y_train.sum())
-    neg = float(len(y_train) - pos)
+    pos = float(y_tr.sum())
+    neg = float(len(y_tr) - pos)
     model = xgb.XGBClassifier(
-        n_estimators=200,
+        n_estimators=400,
         max_depth=5,
         learning_rate=0.1,
         subsample=0.8,
         colsample_bytree=0.8,
         eval_metric="aucpr",
+        early_stopping_rounds=30,
         scale_pos_weight=(neg / max(pos, 1.0)),
         n_jobs=-1,
     )
-    model.fit(X_train, y_train)
-    proba = model.predict_proba(X_val)[:, 1]
+    model.fit(X_tr, y_tr, eval_set=[(X_va, y_va)], verbose=False)
+    proba = model.predict_proba(X_te)[:, 1]
+    # Weighted metrics undo the normal-downsampling: they estimate performance
+    # at the natural fraud prevalence (what NVIDIA's blueprint reports), not on
+    # the fraud-enriched sample we kept for compute reasons.
     return {
-        "auc_roc": float(roc_auc_score(y_val, proba)),
-        "pr_auc": float(average_precision_score(y_val, proba)),
+        "auc_roc": float(roc_auc_score(y_te, proba, sample_weight=w_te)),
+        "pr_auc": float(average_precision_score(y_te, proba, sample_weight=w_te)),
+        "pr_auc_sampled": float(average_precision_score(y_te, proba)),
     }
 
 
-def run_downstream(embeddings_path: str, raw_path: str, output_dir: str) -> dict:
+def run_downstream(embeddings_path: str, output_dir: str) -> dict:
     """Train + evaluate all three feature sets; persist a metrics summary."""
-    emb_df = pd.read_parquet(embeddings_path)
-    emb_mat = np.vstack(emb_df["embedding"].to_numpy())
-    emb_df = emb_df[["card_id", "label"]].copy()
+    df = pd.read_parquet(embeddings_path)
+    X_fm = np.vstack(df["embedding"].to_numpy()).astype(np.float32)
 
-    raw = _raw_features(raw_path)
-    merged = emb_df.merge(raw.drop(columns=["label"]), on="card_id", how="inner")
-
-    raw_cols = [c for c in raw.columns if c not in ("card_id", "label")]
-    # Re-align embedding rows to merged order.
-    emb_lookup = {cid: emb_mat[i] for i, cid in enumerate(emb_df["card_id"].to_numpy())}
-    emb_aligned = np.vstack([emb_lookup[c] for c in merged["card_id"].to_numpy()])
-
-    y = merged["label"].to_numpy()
-    X_raw = merged[raw_cols].to_numpy(dtype=np.float32)
-    X_fm = emb_aligned.astype(np.float32)
+    # Raw target-transaction features (carried through tokenize -> embed).
+    amt = df["raw_amount"].to_numpy(np.float64)
+    X_raw = np.column_stack(
+        [
+            np.sign(amt) * np.log1p(np.abs(amt)),
+            df["raw_hour"].to_numpy(np.float32),
+            df["raw_dow"].to_numpy(np.float32),
+            df["raw_mcc"].to_numpy(np.float32),
+        ]
+    ).astype(np.float32)
     X_fusion = np.hstack([X_fm, X_raw])
+    y = df["label"].to_numpy(np.int64)
+    w = df["weight"].to_numpy(np.float64)
 
-    idx = np.arange(len(y))
-    tr, va = train_test_split(idx, test_size=0.25, random_state=0, stratify=y)
+    masks = {s: (df["split"] == s).to_numpy() for s in ("train", "val", "test")}
+    for s, m in masks.items():
+        if m.sum() == 0:
+            raise RuntimeError(
+                f"split '{s}' is empty — re-run 01/02 so splits.json temporal "
+                "cutoffs are written and applied during tokenization"
+            )
+    tr, va, te = masks["train"], masks["val"], masks["test"]
 
     results = {}
     for name, X in [("raw", X_raw), ("fm", X_fm), ("fusion", X_fusion)]:
-        results[name] = _fit_eval(X[tr], y[tr], X[va], y[va])
+        results[name] = _fit_eval(X[tr], y[tr], X[va], y[va], X[te], y[te], w[te])
 
     summary = {
-        "n_cards": int(len(y)),
-        "fraud_rate": float(y.mean()),
+        "protocol": (
+            "temporal 80/10/10 split by transaction time; per-transaction "
+            "last-event fraud labels; prevalence-weighted metrics on the "
+            "held-out most-recent 10% (NVIDIA transaction-FM blueprint protocol)"
+        ),
+        "n_samples": {s: int(m.sum()) for s, m in masks.items()},
+        "fraud_rate": {s: float(y[m].mean()) for s, m in masks.items()},
+        "natural_fraud_rate": {
+            s: float((w[m] * y[m]).sum() / w[m].sum()) for s, m in masks.items()
+        },
         "embedding_dim": int(X_fm.shape[1]),
         "results": results,
         "fm_lift_pr_auc": results["fm"]["pr_auc"] - results["raw"]["pr_auc"],
@@ -108,6 +117,13 @@ def run_downstream(embeddings_path: str, raw_path: str, output_dir: str) -> dict
 
 
 def print_summary(summary: dict) -> None:
+    n = summary["n_samples"]
+    nfr = summary["natural_fraud_rate"]
+    print(f"protocol: {summary['protocol']}")
+    print(
+        f"samples  train={n['train']:,}  val={n['val']:,}  test={n['test']:,} "
+        f"(natural test fraud rate {nfr['test']:.4%})"
+    )
     print(f"{'feature set':<10} {'AUC-ROC':>10} {'PR-AUC':>10}")
     print("-" * 32)
     for name, r in summary["results"].items():
