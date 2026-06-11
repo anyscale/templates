@@ -13,10 +13,13 @@ from src.pretrain import pretrain  # noqa: E402
 from src.tokenizer import SEQ_LEN_BY_SCALE  # noqa: E402
 
 # Per-scale training presets (kept tiny for `smoke` so CI runs on CPU).
+# The model is small enough to fit one GPU at every scale, so we use DDP
+# (data-parallel) throughout — FSDP would only help a model too big for one GPU.
+# Set use_fsdp=True via pretrain() if you scale the model up substantially.
 TRAIN_PRESETS = {
     "smoke": dict(epochs=2, batch_size=64, num_workers=1, use_gpu=False, use_fsdp=False),
     "small": dict(epochs=5, batch_size=128, num_workers=2, use_gpu=True, use_fsdp=False),
-    "medium": dict(epochs=8, batch_size=256, num_workers=4, use_gpu=True, use_fsdp=True),
+    "medium": dict(epochs=8, batch_size=256, num_workers=4, use_gpu=True, use_fsdp=False),
 }
 
 

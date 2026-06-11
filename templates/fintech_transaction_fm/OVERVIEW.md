@@ -59,6 +59,13 @@ Same code laptop → multi-node; you change `ScalingConfig`, not the program.
 - **Replace the single-GPU RAPIDS tokenizer with Ray Data**, single-node training
   with **Ray Train + FSDP**, and add a **Ray Data batch embedding** job — the
   piece with no clean public reference and the clearest Ray win.
+- **Time-aware positions** — ordinal slot is the wrong signal for transactions;
+  the inter-event *gap* matters. We embed the log-bucketed hours-since-previous
+  transaction and add it alongside the ordinal position. (Upgrades: Time2Vec, or
+  a relative-time attention bias à la FATA-Trans/HSTU.)
+- **Amount representation** — log-bucketed by default (robust, clean MLM). Raw
+  log1p+z-score scalar is the weak baseline; soft-binning and learned numerical
+  embeddings (PLE / periodic, Gorishniy et al.) are the upgrades.
 
 **Borrow from Nubank (the downstream pattern):**
 - **Joint fusion** — concatenate the FM embedding with existing tabular features

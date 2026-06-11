@@ -14,7 +14,6 @@ import shutil
 import tempfile
 
 import torch
-import torch.nn.functional as F
 
 import ray
 import ray.train
@@ -31,7 +30,12 @@ def _unwrap(model):
 def train_func(config: dict):
     vocab_path = config["vocab_path"]
     with open(vocab_path) as f:
-        dynamic_fields = json.load(f)["dynamic_fields"]
+        vocab = json.load(f)
+    dynamic_fields = vocab["dynamic_fields"]
+    weighting = config.get("loss_weighting", "uncertainty")
+
+    # Per-column dtypes: tokens are int64, the soft-bin amount weight is float32.
+    dtypes = {"d_amount_frac": torch.float32} if vocab.get("amount_mode") == "soft" else None
 
     model = build_model(vocab_path, size=config["size"], max_len=config["max_len"])
 
@@ -53,20 +57,13 @@ def train_func(config: dict):
         model.train()
         running, n_batches = 0.0, 0
         for batch in train_shard.iter_torch_batches(
-            batch_size=config["batch_size"], dtypes=torch.int64
+            batch_size=config["batch_size"], dtypes=dtypes
         ):
             corrupted, targets, masked = mask_batch(batch, dynamic_fields, mask_prob)
-            hidden = model(corrupted)
-            logits = base.mlm_logits(hidden)
-
             if masked.sum() == 0:
                 continue
-            loss = 0.0
-            for fld in dynamic_fields:
-                pred = logits[fld][masked]              # [n_masked, vocab]
-                tgt = targets[fld][masked]              # [n_masked]
-                loss = loss + F.cross_entropy(pred, tgt)
-            loss = loss / len(dynamic_fields)
+            # Heads + loss run inside forward so DDP all-reduces every param.
+            loss, _ = model(corrupted, targets=targets, masked=masked, weighting=weighting)
 
             optimizer.zero_grad()
             loss.backward()
@@ -101,6 +98,7 @@ def pretrain(
     num_workers: int = 2,
     use_gpu: bool = False,
     use_fsdp: bool = False,
+    loss_weighting: str = "uncertainty",
 ) -> dict:
     """Run distributed pretraining and persist the final checkpoint."""
     ds = ray.data.read_parquet(tokenized_path)
@@ -115,6 +113,7 @@ def pretrain(
             "batch_size": batch_size,
             "lr": lr,
             "use_fsdp": use_fsdp,
+            "loss_weighting": loss_weighting,
         },
         scaling_config=ScalingConfig(num_workers=num_workers, use_gpu=use_gpu),
         datasets={"train": ds},

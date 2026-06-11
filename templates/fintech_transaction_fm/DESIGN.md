@@ -93,6 +93,29 @@ mirrors **IBM TabFormer** (the de-facto public benchmark): per-card static field
 + per-transaction dynamic fields + a planted fraud label with several realistic
 patterns. README points at TabFormer / Sparkov / IBMCard for the real next step.
 
+## Field representation choices
+
+**Time-aware positions (implemented).** Ordinal position alone is the wrong
+signal for transactions — the *gap* between events matters more than the slot.
+We keep the learned ordinal position embedding *and* add a learned embedding of
+the **log-bucketed hours since the previous transaction** (`time_bucket`),
+summed into each position. Stays in the additive d-dim scheme, no custom
+attention. Upgrade paths: Time2Vec (continuous), or a relative-time attention
+bias (FATA-Trans / HSTU) — the latter needs a custom attention layer.
+
+**Amount representation (bucketing default, pluggable).** Money is heavy-tailed,
+so we log-bucket the amount into a categorical token. Spectrum of options,
+worst→best:
+1. **raw log1p + z-score scalar** via `Linear(1, d)` — simple, but weak and forks
+   the MLM objective into regression (MSE head).
+2. **hard buckets** (current default) — robust, uniform with categoricals, clean
+   masked-classification.
+3. **soft binning** — interpolate the two adjacent bin embeddings; removes hard
+   boundaries; cheap upgrade.
+4. **learned numerical embeddings** — piecewise-linear (PLE) or periodic/Fourier
+   (Gorishniy et al., *On Embeddings for Numerical Features*); strongest, more
+   code. The "if you want to squeeze it" lever.
+
 ## Pretraining objective
 
 **Masked feature modeling (MLM)** on dynamic-field tokens — bidirectional context

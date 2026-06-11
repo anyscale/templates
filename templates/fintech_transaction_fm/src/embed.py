@@ -46,11 +46,16 @@ class EmbeddingExtractor:
             + [f"s_{f}" for f in self.vocab["static_fields"]]
             + ["attention_mask"]
         )
-        tensors = {
-            k: torch.as_tensor(np.stack(batch[k]) if batch[k].dtype == object else batch[k],
-                               dtype=torch.long, device=self.device)
-            for k in cols
-        }
+        if self.vocab.get("time_aware"):
+            cols.append("time_bucket")
+
+        def to_tensor(k, dtype):
+            v = np.stack(batch[k]) if batch[k].dtype == object else batch[k]
+            return torch.as_tensor(v, dtype=dtype, device=self.device)
+
+        tensors = {k: to_tensor(k, torch.long) for k in cols}
+        if self.vocab.get("amount_mode") == "soft":
+            tensors["d_amount_frac"] = to_tensor("d_amount_frac", torch.float32)
         with torch.no_grad():
             emb = self.model.sequence_embedding(tensors).cpu().numpy()
         return {

@@ -56,15 +56,20 @@ class TransactionEmbeddingService:
             + [f"s_{f}" for f in self.vocab["static_fields"]]
             + ["attention_mask"]
         )
+        if self.vocab.get("time_aware"):
+            cols.append("time_bucket")
+        if self.vocab.get("amount_mode") == "soft":
+            cols.append("d_amount_frac")
         out = {}
         for k in cols:
             arr = np.asarray(payload[k])
-            is_sequence = k.startswith("d_") or k == "attention_mask"
+            is_sequence = k.startswith("d_") or k in ("attention_mask", "time_bucket")
             if is_sequence and arr.ndim == 1:
                 arr = arr[None, :]          # [S] -> [1, S]
             elif not is_sequence and arr.ndim == 0:
                 arr = arr[None]             # scalar -> [1]
-            out[k] = torch.as_tensor(arr, dtype=torch.long, device=self.device)
+            dtype = torch.float32 if k == "d_amount_frac" else torch.long
+            out[k] = torch.as_tensor(arr, dtype=dtype, device=self.device)
         return out
 
     def embed(self, payload: dict) -> dict:

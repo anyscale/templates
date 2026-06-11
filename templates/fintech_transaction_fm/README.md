@@ -26,7 +26,7 @@ The model itself is small and not the hard part. The hard parts are **engineerin
 ```
                        ┌─────────────────────── Anyscale ───────────────────────┐
  raw transactions ──►  │ [Ray Data]   static/dynamic tokenization (map_groups)   │
-   (Parquet, S3)       │ [Ray Train]  masked-feature pretraining (PyTorch + FSDP)│
+   (Parquet, S3)       │ [Ray Train]  masked-feature pretraining (PyTorch + DDP)│
                        │ [Ray Data]   batch embedding extraction (CPU read+GPU)  │
                        │ [XGBoost]    downstream fraud: raw vs FM vs fusion       │
                        │ [Ray Serve]  online embedding + fraud score (cached)     │
@@ -105,6 +105,8 @@ This is the core idea. NVIDIA's blueprint flattens every transaction into ~12 to
 
 The vocabulary is fully deterministic (fixed amount buckets + merchant hashing), so tokenization is a **stateless `map_groups`** with no global shuffle — exactly what Ray Data is built for. NVIDIA's RAPIDS path is single-GPU; this scales across the cluster.
 
+Two representation choices live here. **Positions are time-aware**: alongside the ordinal position we embed the log-bucketed *gap since the previous transaction*, because for transactions *when* matters more than ordinal slot. And **amount uses bucketing** (`AMOUNT_MODE`), with an optional `"soft"` mode that blends the two adjacent bin embeddings so $86.99 and $87.01 don't land on unrelated vectors.
+
 
 ```python
 from src.tokenizer import SEQ_LEN_BY_SCALE, tokenize_dataset, write_vocab
@@ -124,11 +126,11 @@ print("  amount-bucket tokens:", list(row["d_amount_bucket"])[-8:])
 print("  attention mask tail :", list(row["attention_mask"])[-8:])
 ```
 
-## Step 4: Pretrain with Ray Train (masked-feature modeling + FSDP)
+## Step 4: Pretrain with Ray Train (masked-feature modeling, DDP)
 
-We pretrain by **masking dynamic-field tokens and predicting them** (the Stripe / Open-Banking objective — bidirectional context is better than next-token for the fixed-window tasks fintech cares about). One classification head per dynamic field.
+We pretrain by **masking dynamic-field tokens and predicting them** (the Stripe / Open-Banking objective — bidirectional context beats next-token for the fixed-window tasks fintech cares about). There's **one classification head per dynamic field**, and because those heads differ wildly in difficulty (merchant is ~2000-way, day-of-week is 9-way) we balance them with **uncertainty weighting** (Kendall & Gal) so the big head doesn't dominate.
 
-The training loop is plain PyTorch; **Ray Train** handles worker setup, dataset sharding, DDP/FSDP wrapping, checkpointing, and fault tolerance. Go from 1 CPU worker (here) to N GPU workers with FSDP by changing only `num_workers`, `use_gpu`, and `use_fsdp`.
+The training loop is plain PyTorch; **Ray Train** handles worker setup, dataset sharding, **DDP** wrapping, checkpointing, and fault tolerance. The model fits one GPU at every scale, so we use DDP (data-parallel) and scale by adding workers — go from 1 CPU worker (here) to N GPU workers by changing only `num_workers` and `use_gpu`. (`use_fsdp` is available for when the model itself outgrows a GPU.)
 
 
 ```python
@@ -238,7 +240,7 @@ anyscale job submit --config-file job_config.yaml \
 | Stage | Ray primitive | Scale knob |
 |-------|---------------|-----------|
 | Tokenize | Ray Data `map_groups` | partitions / cluster size |
-| Pretrain | Ray Train + FSDP | `num_workers`, `use_gpu`, `use_fsdp` |
+| Pretrain | Ray Train + DDP | `num_workers`, `use_gpu` |
 | Batch embed | Ray Data `map_batches` | `num_workers`, `num_gpus` |
 | Online serve | Ray Serve | replica autoscaling |
 
