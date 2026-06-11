@@ -5,7 +5,7 @@ description: Create, maintain, format, and publish Anyscale console templates. U
 
 # Template skill
 
-A console template = a `BUILD.yaml` entry + `templates/<name>/` content + `configs/<name>/` compute configs + a `tests/<name>/` test. Every template under `templates/` is tested (the validator enforces it); `archive/` holds **test-exempt** content — retired/past-event templates, plus fast untested iteration that can still be published — via `workflows/archive-template.md`.
+A console template = a `BUILD.yaml` entry + `templates/<name>/` content + `configs/<name>/` compute configs + a `tests/<name>/` test, plus a hash-pinned `python_depset.lock` when it adds Python deps (`references/depsets.md`). Every template under `templates/` is tested (the validator enforces it); `archive/` holds **test-exempt** content — retired/past-event templates, plus fast untested iteration that can still be published — via `workflows/archive-template.md`.
 
 **How to use:** create/update are **interactive** — interview the user, explain at the point of need, and ask for any missing input. **ray-bump is non-interactive** (the `template-updater` Cursor cloud agent; signals: `.cursor/` setup, a `cursor/...` branch, an automation trigger): never prompt, use defaults; on missing input or preflight failure, post to the PR and stop. Track multi-step runs with your task tool.
 
@@ -18,7 +18,7 @@ Invoked bare (just `/template`) by a human — i.e. **not** the ray-bump automat
 - **Ray-version bump** (non-interactive) → `workflows/bump-ray-version.md`
 - **Archive** a retired or past-event template → `workflows/archive-template.md`
 
-Supporting: `references/conventions.md` · `references/testing-template.md` · `references/publish-to-backend.md` · `references/run-tests-locally-with-rayapp.md` · `schemas/build-yaml-schema.yaml` · `schemas/compute-config-schema.yaml` · `.claude/skills/template/scripts/push-custom-image-to-gcp.sh`.
+Supporting: `references/conventions.md` · `references/depsets.md` · `references/testing-template.md` · `references/publish-to-backend.md` · `references/run-tests-locally-with-rayapp.md` · `schemas/build-yaml-schema.yaml` · `schemas/compute-config-schema.yaml` · `.claude/skills/template/scripts/push-custom-image-to-gcp.sh`.
 
 ## Image URI cases
 

@@ -25,6 +25,8 @@ curl -sf "https://hub.docker.com/v2/repositories/anyscale/ray/tags/<tag>/" >/dev
 
 Then bump `BUILD.yaml` `ray_version` and grep/update any in-template version strings.
 
+**Depsets stay out of this flow.** The depset system pins Ray *globally* (`build_arg_sets` in `dependencies/template.depsets.yaml`), so a single-template PR can't recompile its `python_depset.lock` without forcing every other lock to rebuild too. **Don't touch the lock here** — leave it as-is. Recompiling locks on a Ray release is a **separate, repo-global** operation; see `../references/depsets.md` "On a Ray-version release".
+
 ## 2. Open the PR
 
 1. Validate locally (`../references/conventions.md` "Validate locally") before committing.
