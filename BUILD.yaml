@@ -724,3 +724,16 @@
     tests_path: tests/fintech_quant/
     command: bash tests.sh
     timeout_in_sec: 1800
+
+# Event template published from archive/ without the test gate
+# (see the template skill's publish-to-backend reference).
+# owner: @as-jding
+- name: ray-workshop-2026
+  dir: archive/events/2026-ray-workshop/ray-workshop-2026/content
+  cluster_env:
+    byod:
+      docker_image: anyscale/ray-llm:2.54.0-py311-cu128
+      ray_version: 2.54.0
+  compute_config:
+    AWS: archive/events/2026-ray-workshop/ray-workshop-2026/configs/aws.yaml
+    GCP: archive/events/2026-ray-workshop/ray-workshop-2026/configs/gce.yaml
