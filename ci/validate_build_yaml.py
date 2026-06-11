@@ -62,8 +62,10 @@ class ClusterEnv(Strict):
 
 
 class ComputeConfig(Strict):
-    GCP: str = Field(pattern=r"^configs/.+/gce\.yaml$")
-    AWS: str = Field(pattern=r"^configs/.+/aws\.yaml$")
+    # configs/<name>/ for active templates; archive/.../<name>/configs/ for
+    # archived ones (which co-locate their compute config under the template).
+    GCP: str = Field(pattern=r"^(?:configs|archive)/.+/gce\.yaml$")
+    AWS: str = Field(pattern=r"^(?:configs|archive)/.+/aws\.yaml$")
 
 
 class Test(Strict):
@@ -74,10 +76,27 @@ class Test(Strict):
 
 class Entry(Strict):
     name: str = Field(pattern=r"^[a-z0-9_-]+$")
-    dir: str = Field(pattern=r"^templates/")
+    # templates/<name>/ for active templates; archive/<...>/<name>/ for archived
+    # ones (retired, past-event, or fast untested iteration).
+    dir: str = Field(pattern=r"^(?:templates|archive)/")
     cluster_env: ClusterEnv
     compute_config: ComputeConfig
-    test: Test
+    # Mandatory for templates/ entries — active templates are tested. Entries
+    # under archive/ are exempt: archived content can be published test-free
+    # (e.g. an urgent mid-event fix). Optional here so the validator can raise a
+    # clear, actionable error instead of pydantic's generic "Field required".
+    test: Optional[Test] = None
+
+    @model_validator(mode="after")
+    def _templates_must_be_tested(self):
+        if self.dir.startswith("templates/") and self.test is None:
+            raise ValueError(
+                f"{self.name}: no `test` block — every template under templates/ "
+                "must be tested. To publish without a test (fast event iteration "
+                "or a retired template), move it under archive/ instead; archive/ "
+                "entries are test-exempt."
+            )
+        return self
 
 
 # ComputeConfig schema, applied to BUILD.yaml-referenced files.
@@ -150,27 +169,31 @@ def check_filesystem_and_uniqueness(entries: list[Entry]) -> list[str]:
             errors.append(f"{e.name}: duplicate dir: {e.dir}")
         seen_dirs.add(e.dir)
 
-        if e.test.tests_path in seen_tests_paths:
-            errors.append(f"{e.name}: duplicate tests_path: {e.test.tests_path}")
-        seen_tests_paths.add(e.test.tests_path)
+        if e.test is not None:
+            if e.test.tests_path in seen_tests_paths:
+                errors.append(f"{e.name}: duplicate tests_path: {e.test.tests_path}")
+            seen_tests_paths.add(e.test.tests_path)
 
-        # dir basename must equal the entry's name. Catches stale dirs when
-        # an entry is renamed.
-        dir_basename = Path(e.dir.rstrip("/")).name
-        if dir_basename != e.name:
-            errors.append(
-                f"{e.name}.dir: basename {dir_basename!r} must equal name "
-                f"{e.name!r} (expected templates/{e.name}/)"
-            )
+        # dir basename must equal the entry's name (templates/ convention) —
+        # catches stale dirs on rename. archive/ entries are laid out freely
+        # (e.g. archive/.../<name>/content), so this is templates/-only.
+        if e.dir.startswith("templates/"):
+            dir_basename = Path(e.dir.rstrip("/")).name
+            if dir_basename != e.name:
+                errors.append(
+                    f"{e.name}.dir: basename {dir_basename!r} must equal name "
+                    f"{e.name!r} (expected templates/{e.name}/)"
+                )
 
         # tests_path basename must equal the entry's name. Catches stale
         # tests_path values when an entry is renamed.
-        tests_basename = Path(e.test.tests_path.rstrip("/")).name
-        if tests_basename != e.name:
-            errors.append(
-                f"{e.name}.test.tests_path: basename {tests_basename!r} must "
-                f"equal name {e.name!r} (expected tests/{e.name}/)"
-            )
+        if e.test is not None:
+            tests_basename = Path(e.test.tests_path.rstrip("/")).name
+            if tests_basename != e.name:
+                errors.append(
+                    f"{e.name}.test.tests_path: basename {tests_basename!r} must "
+                    f"equal name {e.name!r} (expected tests/{e.name}/)"
+                )
 
         # GCP and AWS configs must live in the same directory under configs/.
         # Catches one-cloud-customized-but-not-the-other mistakes.
@@ -188,7 +211,8 @@ def check_filesystem_and_uniqueness(entries: list[Entry]) -> list[str]:
         # and configs/). Shared `configs/basic-single-node/` is exempt.
         cfg_dir_basename = gcp_parent.name
         if (
-            gcp_parent == aws_parent
+            gcp_parent.parts and gcp_parent.parts[0] == "configs"
+            and gcp_parent == aws_parent
             and cfg_dir_basename != "basic-single-node"
             and cfg_dir_basename != e.name
         ):
@@ -204,10 +228,11 @@ def check_filesystem_and_uniqueness(entries: list[Entry]) -> list[str]:
             path = getattr(e.compute_config, cloud)
             if not (REPO_ROOT / path).is_file():
                 errors.append(f"{e.name}.compute_config.{cloud}: not found: {path}")
-        if not (REPO_ROOT / e.test.tests_path).is_dir():
-            errors.append(f"{e.name}.test.tests_path: not found: {e.test.tests_path}")
-        elif not (REPO_ROOT / e.test.tests_path / "tests.sh").is_file():
-            errors.append(f"{e.name}.test.tests_path: missing tests.sh in {e.test.tests_path}")
+        if e.test is not None:
+            if not (REPO_ROOT / e.test.tests_path).is_dir():
+                errors.append(f"{e.name}.test.tests_path: not found: {e.test.tests_path}")
+            elif not (REPO_ROOT / e.test.tests_path / "tests.sh").is_file():
+                errors.append(f"{e.name}.test.tests_path: missing tests.sh in {e.test.tests_path}")
     return errors
 
 
