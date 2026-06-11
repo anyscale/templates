@@ -117,9 +117,17 @@ def pretrain(
     use_gpu: bool = False,
     use_fsdp: bool = False,
     loss_weighting: str = "uncertainty",
+    storage_base: str | None = None,
 ) -> dict:
-    """Run distributed pretraining and persist the final checkpoint."""
+    """Run distributed pretraining and persist the final checkpoint.
+
+    ``storage_base`` must be a path every node can read/write (e.g.
+    ``/mnt/cluster_storage/...``) — Ray Train persists checkpoints there from
+    the worker nodes, so a head-node-local default like ``~/ray_results``
+    breaks on multi-node clusters.
+    """
     ds = ray.data.read_parquet(tokenized_path)
+    storage_path = os.path.join(storage_base, "ray_results") if storage_base else None
 
     trainer = TorchTrainer(
         train_func,
@@ -135,7 +143,7 @@ def pretrain(
         },
         scaling_config=ScalingConfig(num_workers=num_workers, use_gpu=use_gpu),
         datasets={"train": ds},
-        run_config=RunConfig(name="transaction_fm_pretrain"),
+        run_config=RunConfig(name="transaction_fm_pretrain", storage_path=storage_path),
     )
     result = trainer.fit()
 

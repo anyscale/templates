@@ -46,6 +46,7 @@ def main():
         checkpoint_out=paths["checkpoint"],
         size=args.scale,
         max_len=SEQ_LEN_BY_SCALE[args.scale],
+        storage_base=base,
         **preset,
     )
 
