@@ -1,6 +1,0 @@
-head_node:
-  instance_type: m5.2xlarge
-worker_nodes:
-- name: cpu_worker
-  instance_type: m5.2xlarge
-  max_nodes: 2
