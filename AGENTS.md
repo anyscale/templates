@@ -12,7 +12,7 @@ For Cursor Cloud, these skills are a hard precondition (see Cursor Cloud → Pre
 
 Manage production templates (BUILD.yaml entries). No services to run.
 
-Local: edit → `pre-commit run --all-files` → push. Pre-commit covers lint, formatting, codebase conventions. `rayapp build all` mirrors CI's build job locally.
+Local: edit → `pre-commit run --all-files` → push. Pre-commit covers lint, formatting, codebase conventions. `rayapp build all` mirrors CI's build job locally — but **not** the `check-depsets` gate: a template that changes Python deps needs its `python_depset.lock` recompiled via `./update_deps.sh`, and nothing local catches a stale lock (how-to: the `/template` skill's `references/depsets.md`).
 
 Per-template tests — comment `/test-template <id> [<id>...]` (up to 3, parallel) on the PR to dispatch the Buildkite `template-test` pipeline (workspace + actual test run). For local iteration before pushing, `rayapp test <id>` runs the same flow (see `references/run-tests-locally-with-rayapp.md` in the `/template` skill for setup).
 

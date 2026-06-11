@@ -8,7 +8,7 @@ Ask which template (`<name>`) and what's changing — notebook/code, compute con
 
 ## 2. Make the change
 
-Edit files under `templates/<name>/` (and `configs/<name>/` or `tests/<name>/` as needed). Author README content in `README.ipynb` (README convention in `../references/conventions.md`). If the change touches the image: identify the case in SKILL.md "Image URI cases" (for custom-GCP, rebuild and push via `.claude/skills/template/scripts/push-custom-image-to-gcp.sh`). For a Ray-**version** bump specifically, use `bump-ray-version.md` — it owns the full per-case bump procedure.
+Edit files under `templates/<name>/` (and `configs/<name>/` or `tests/<name>/` as needed). Author README content in `README.ipynb` (README convention in `../references/conventions.md`). If the change touches **dependencies** (`requirements.txt`), recompile and commit the `python_depset.lock` per `../references/depsets.md` — `check-depsets` fails on a stale lock and nothing local catches it. If the change touches the image: identify the case in SKILL.md "Image URI cases" (for custom-GCP, rebuild and push via `.claude/skills/template/scripts/push-custom-image-to-gcp.sh`). For a Ray-**version** bump specifically, use `bump-ray-version.md` — it owns the full per-case bump procedure.
 
 ## 3. Format
 
