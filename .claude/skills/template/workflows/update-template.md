@@ -20,4 +20,4 @@ Commit on a branch and open a PR against `main`. Run `/test-template`, get it gr
 
 ## 5. Republish
 
-**Merge the green PR to `main` first** (the pipeline publishes templates `main`), then re-publish the artifact (dev → staging → prod) via `../references/publish-to-backend.md`.
+**Merge the green PR to `main` first** (the pipeline publishes templates `main`), then re-publish the artifact (dev → staging → prod) via `../references/publish-to-backend.md`. (Urgent event fix that can't wait on tests? Re-publish *test-free* via an `archive/` entry — see "Publish without the test gate" there.)

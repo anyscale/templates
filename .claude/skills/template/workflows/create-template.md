@@ -54,7 +54,7 @@ Apply `../references/conventions.md` to the new template.
 
 ## 7. Test gate — non-skippable
 
-Commit on a branch and open a PR against `main`. Run `/test-template`, get it green **before publishing**. Dispatch, monitoring, and failure recovery: `../references/testing-template.md`.
+Commit on a branch and open a PR against `main`. Run `/test-template`, get it green **before publishing**. Dispatch, monitoring, and failure recovery: `../references/testing-template.md`. (Exception — an event template under time pressure can publish *test-free* by routing through `archive/`: see "Publish without the test gate" in `../references/publish-to-backend.md`.)
 
 ## 8. Merge to `main`
 

@@ -44,3 +44,13 @@ Bold = manual gates you Unblock. **Never unblock a publish step until this pipel
 An update is just another run: trigger a fresh build (step 1) with the same `message=<name>` and
 input fields. Prefer a fresh trigger over `rebuild_build` — it re-resolves `main` HEAD (your latest
 merged content) and the current pipeline, whereas a rebuild replays the original build's older commits.
+
+## Publish without the test gate (events / urgent fixes)
+
+For an event template that must ship or be fixed faster than the test pipeline (~5–60 min). `rayapp` treats `test` as optional and the BUILD.yaml validator requires it only under `templates/`, so an entry pointing at `archive/` publishes with no `test-template` stage:
+
+1. Put the template under `archive/` and point its `BUILD.yaml` entry's `dir` + `compute_config` there, with **no `test` field** (`templates/` demands a test; `archive/` is exempt). The move: `../workflows/archive-template.md`.
+2. Publish as above — `test-template` has nothing to run, so the fix ships immediately.
+3. After the event: restore it to `templates/` **with a test**, or retire it (`../workflows/archive-template.md`).
+
+Use sparingly — it bypasses the test gate. Anything not under event-time pressure stays in `templates/`, tested.
