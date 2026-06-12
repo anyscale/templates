@@ -15,7 +15,7 @@
 
 Banks and fintechs are converging on **transaction foundation models** (TFMs): a single self-supervised transformer pretrained on raw transaction sequences, producing a reusable **customer embedding** that powers fraud, churn, credit, and personalization — replacing dozens of hand-built feature pipelines. Stripe, Visa (TREASURE), Nubank, and Revolut (PRAGMA) have all published variants of this recipe.
 
-The model itself is small and not the hard part. The hard parts are **engineering at scale**: tokenizing petabytes of transactions, pretraining across many GPUs, and re-embedding every customer on a schedule — then serving those embeddings both in batch and in real time.
+The model architecture is the easy part. The real challenges are with **engineering at scale**: tokenizing petabytes of transactions, pretraining across many GPUs, and re-embedding every customer on a schedule — then serving those embeddings both in batch and in real time.
 
 **This template** builds the whole pipeline on Ray, with one upgrade over the standard NVIDIA blueprint: a **static/dynamic field split** in the tokenizer and model (the idea behind Visa TREASURE and FATA-Trans), which is cheaper and a stronger inductive bias than flattening every field into the token stream.
 
