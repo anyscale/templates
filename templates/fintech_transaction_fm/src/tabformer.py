@@ -146,9 +146,6 @@ def prepare_tabformer(
     source_dir = source_dir or os.path.join(os.path.dirname(os.path.dirname(raw_out)), "source")
     csv_path = ensure_download(source_dir)
     ray.init(ignore_reinit_error=True)
-    # Right-size the statics groupby shuffle for demo-scale clusters (see
-    # 02_tokenize.py for the same tuning on the main tokenize shuffle).
-    ray.data.DataContext.get_current().max_hash_shuffle_aggregators = 16
 
     print(f"[tabformer] reading {csv_path} with Ray Data ...")
     ds = ray.data.read_csv(

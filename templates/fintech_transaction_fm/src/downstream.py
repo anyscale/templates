@@ -118,6 +118,35 @@ def _load_embeddings(embeddings_path: str):
     return X_fm, X_raw, y, w, split_code
 
 
+def _eval_fingerprint(embeddings_path: str) -> str:
+    """Order-independent hash of eval-set membership (card_id, ts, split, label).
+
+    Metrics from two runs are comparable iff their fingerprints match.
+    Eval sampling is deterministic (per-card seeded RNG in the tokenizer), so
+    this changes only when the raw data or the sampling knobs change — never
+    with model/training changes.
+    """
+    import hashlib
+
+    import pyarrow as pa
+    import pyarrow.compute as pc
+    import pyarrow.dataset as pads
+
+    t = pads.dataset(embeddings_path, format="parquet").to_table(
+        columns=["card_id", "raw_ts", "split", "label"]
+    )
+    cols = [
+        t.column("card_id").to_numpy(zero_copy_only=False).astype(np.int64),
+        t.column("raw_ts").to_numpy(zero_copy_only=False).astype(np.int64),
+        pc.index_in(t.column("split"), value_set=pa.array(_SPLITS))
+        .to_numpy(zero_copy_only=False)
+        .astype(np.int64),
+        t.column("label").to_numpy(zero_copy_only=False).astype(np.int64),
+    ]
+    order = np.lexsort(cols[::-1])
+    return hashlib.sha256(np.column_stack(cols)[order].tobytes()).hexdigest()[:16]
+
+
 def run_downstream(embeddings_path: str, output_dir: str) -> dict:
     """Train + evaluate all three feature sets; persist a metrics summary."""
     X_fm, X_raw, y, w, split_code = _load_embeddings(embeddings_path)
@@ -150,6 +179,7 @@ def run_downstream(embeddings_path: str, output_dir: str) -> dict:
             "last-event fraud labels; prevalence-weighted metrics on the "
             "held-out most-recent 10% (NVIDIA transaction-FM blueprint protocol)"
         ),
+        "eval_fingerprint": _eval_fingerprint(embeddings_path),
         "n_samples": {s: int(m.sum()) for s, m in masks.items()},
         "fraud_rate": {s: float(y[m].mean()) for s, m in masks.items()},
         "natural_fraud_rate": {
@@ -195,6 +225,10 @@ def print_summary(summary: dict) -> None:
     print(
         f"samples  train={n['train']:,}  val={n['val']:,}  test={n['test']:,} "
         f"(natural test fraud rate {nfr['test']:.4%})"
+    )
+    print(
+        f"eval fingerprint: {summary['eval_fingerprint']} "
+        "(metrics comparable across runs iff this matches)"
     )
     print(f"{'feature set':<10} {'AUC-ROC':>10} {'PR-AUC':>10}")
     print("-" * 32)
