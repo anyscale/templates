@@ -29,8 +29,9 @@ import json
 import os
 
 import numpy as np
-import pandas as pd
 from sklearn.metrics import average_precision_score, roc_auc_score
+
+_SPLITS = ("train", "val", "test")
 
 
 def _fit_eval(X_tr, y_tr, X_va, y_va, X_te, y_te, w_te) -> dict:
@@ -62,26 +63,65 @@ def _fit_eval(X_tr, y_tr, X_va, y_va, X_te, y_te, w_te) -> dict:
     }
 
 
-def run_downstream(embeddings_path: str, output_dir: str) -> dict:
-    """Train + evaluate all three feature sets; persist a metrics summary."""
-    df = pd.read_parquet(embeddings_path)
-    X_fm = np.vstack(df["embedding"].to_numpy()).astype(np.float32)
-    df = df.drop(columns=["embedding"])  # free the object column (GBs at `full`)
+def _load_embeddings(embeddings_path: str):
+    """Stream the embeddings Parquet into preallocated arrays.
+
+    pandas would materialize the embedding column as millions of small object
+    arrays and np.vstack would copy them all again — peak memory ~3x the final
+    matrix, which OOM-kills the head node at `full` (~5M x 512 floats).
+    Streaming record batches into one preallocated float32 matrix keeps the
+    peak at ~1x.
+    """
+    import pyarrow as pa
+    import pyarrow.compute as pc
+    import pyarrow.dataset as pads
+
+    cols = ["embedding", "raw_amount", "raw_hour", "raw_dow", "raw_mcc", "label", "weight", "split"]
+    dset = pads.dataset(embeddings_path, format="parquet")
+    n = dset.count_rows()
+    split_values = pa.array(_SPLITS)
+
+    X_fm = None
+    amt = np.empty(n, np.float64)
+    hour = np.empty(n, np.float32)
+    dow = np.empty(n, np.float32)
+    mcc = np.empty(n, np.float32)
+    y = np.empty(n, np.int64)
+    w = np.empty(n, np.float64)
+    split_code = np.empty(n, np.int8)
+
+    i = 0
+    for batch in dset.to_batches(columns=cols, batch_size=32_768):
+        m = batch.num_rows
+        if m == 0:
+            continue
+        flat = batch.column("embedding").flatten().to_numpy(zero_copy_only=False)
+        if X_fm is None:
+            X_fm = np.empty((n, len(flat) // m), np.float32)
+        X_fm[i : i + m] = flat.reshape(m, -1)
+        amt[i : i + m] = batch.column("raw_amount").to_numpy(zero_copy_only=False)
+        hour[i : i + m] = batch.column("raw_hour").to_numpy(zero_copy_only=False)
+        dow[i : i + m] = batch.column("raw_dow").to_numpy(zero_copy_only=False)
+        mcc[i : i + m] = batch.column("raw_mcc").to_numpy(zero_copy_only=False)
+        y[i : i + m] = batch.column("label").to_numpy(zero_copy_only=False)
+        w[i : i + m] = batch.column("weight").to_numpy(zero_copy_only=False)
+        codes = pc.fill_null(pc.index_in(batch.column("split"), value_set=split_values), -1)
+        split_code[i : i + m] = codes.to_numpy(zero_copy_only=False)
+        i += m
+    assert i == n, f"read {i} rows, expected {n}"
 
     # Raw target-transaction features (carried through tokenize -> embed).
-    amt = df["raw_amount"].to_numpy(np.float64)
     X_raw = np.column_stack(
-        [
-            np.sign(amt) * np.log1p(np.abs(amt)),
-            df["raw_hour"].to_numpy(np.float32),
-            df["raw_dow"].to_numpy(np.float32),
-            df["raw_mcc"].to_numpy(np.float32),
-        ]
+        [np.sign(amt) * np.log1p(np.abs(amt)), hour, dow, mcc]
     ).astype(np.float32)
-    y = df["label"].to_numpy(np.int64)
-    w = df["weight"].to_numpy(np.float64)
+    return X_fm, X_raw, y, w, split_code
 
-    masks = {s: (df["split"] == s).to_numpy() for s in ("train", "val", "test")}
+
+def run_downstream(embeddings_path: str, output_dir: str) -> dict:
+    """Train + evaluate all three feature sets; persist a metrics summary."""
+    X_fm, X_raw, y, w, split_code = _load_embeddings(embeddings_path)
+
+    masks = {s: split_code == c for c, s in enumerate(_SPLITS)}
     for s, m in masks.items():
         if m.sum() == 0:
             raise RuntimeError(

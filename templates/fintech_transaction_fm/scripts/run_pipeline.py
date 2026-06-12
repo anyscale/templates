@@ -28,11 +28,44 @@ def run_stage(label: str, script: str, *args: str) -> None:
     subprocess.run(cmd, check=True)
 
 
+def fresh_artifact_dirs(base: str, scale: str) -> None:
+    """Remove every stage output for this scale before running.
+
+    Ray's write_parquet APPENDS into an existing directory, and a job retry
+    reuses the same cluster storage — leftovers from a previous attempt
+    silently double every downstream dataset. Only the scale-independent
+    source/ download cache survives; stage 01 rebuilds the raw data from it.
+    """
+    import shutil
+
+    for key, path in artifact_paths(base, scale).items():
+        if key == "source":
+            continue
+        path = path.rstrip("/")
+        if os.path.isdir(path):
+            shutil.rmtree(path)
+        elif os.path.isfile(path):
+            os.remove(path)
+        else:
+            continue
+        print(f"[clean] removed stale {path}", flush=True)
+
+
 def main():
     p = argparse.ArgumentParser()
     p.add_argument("--scale", choices=list(SCALE_MAP), default="smoke")
     p.add_argument("--source", choices=["tabformer", "synthetic"], default="tabformer")
+    p.add_argument(
+        "--keep-artifacts",
+        action="store_true",
+        help="reuse existing stage outputs instead of starting fresh — unsafe "
+        "for full reruns (parquet stages append), only for debugging",
+    )
     args = p.parse_args()
+
+    base = get_demo_base_dir()
+    if not args.keep_artifacts:
+        fresh_artifact_dirs(base, args.scale)
 
     # smoke runs on CPU; small/full use the GPUs (03 picks GPU via its own
     # per-scale presets; 04 needs the flags explicitly). All GPU replicas live
@@ -56,8 +89,7 @@ def main():
     print("=== [6/6] validate ===", flush=True)
     from scripts.validate_results import print_report, validate_pipeline
 
-    paths = artifact_paths(get_demo_base_dir(), args.scale)
-    print_report(validate_pipeline(paths))
+    print_report(validate_pipeline(artifact_paths(base, args.scale)))
 
 
 if __name__ == "__main__":
