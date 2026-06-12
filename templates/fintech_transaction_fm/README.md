@@ -17,7 +17,7 @@ Banks and fintechs are converging on **transaction foundation models** (TFMs): a
 
 The model architecture is the easy part. The real challenges are with **engineering at scale**: tokenizing petabytes of transactions, pretraining across many GPUs, and re-embedding every customer on a schedule — then serving those embeddings both in batch and in real time.
 
-**This template** builds the whole pipeline on Ray, with one upgrade over the standard NVIDIA blueprint: a **static/dynamic field split** in the tokenizer and model (the idea behind Visa TREASURE and FATA-Trans), which is cheaper and a stronger inductive bias than flattening every field into the token stream.
+**This template** builds the whole distributed, scalable pipeline on Ray, with one modeling improvement over the standard NVIDIA blueprint: a **static/dynamic field split** in the tokenizer and model (the idea behind Visa TREASURE and FATA-Trans), which is cheaper and a stronger inductive bias than flattening every field into the token stream.
 
 ---
 
