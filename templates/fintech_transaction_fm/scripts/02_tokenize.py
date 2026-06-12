@@ -51,10 +51,6 @@ def main():
     )
 
     ray.init(ignore_reinit_error=True)
-    # Right-size the hash shuffle for demo-scale data: the default aggregator
-    # count assumes a much larger cluster and triggers CPU/memory warnings on
-    # small ones (each aggregator reserves 0.25 CPU + ~1GiB memory estimate).
-    ray.data.DataContext.get_current().max_hash_shuffle_aggregators = 16
     ds = ray.data.read_parquet(paths["raw"])
     tokenized = tokenize_dataset(
         ds,

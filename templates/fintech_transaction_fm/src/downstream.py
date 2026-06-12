@@ -34,7 +34,7 @@ from sklearn.metrics import average_precision_score, roc_auc_score
 _SPLITS = ("train", "val", "test")
 
 
-def _fit_eval(X_tr, y_tr, X_va, y_va, X_te, y_te, w_te) -> dict:
+def _fit_eval(X_tr, y_tr, X_va, y_va, X_te, y_te, w_te) -> tuple:
     import xgboost as xgb
 
     pos = float(y_tr.sum())
@@ -56,11 +56,12 @@ def _fit_eval(X_tr, y_tr, X_va, y_va, X_te, y_te, w_te) -> dict:
     # Weighted metrics undo the normal-downsampling: they estimate performance
     # at the natural fraud prevalence (what NVIDIA's blueprint reports), not on
     # the fraud-enriched sample we kept for compute reasons.
-    return {
+    metrics = {
         "auc_roc": float(roc_auc_score(y_te, proba, sample_weight=w_te)),
         "pr_auc": float(average_precision_score(y_te, proba, sample_weight=w_te)),
         "pr_auc_sampled": float(average_precision_score(y_te, proba)),
     }
+    return metrics, proba
 
 
 def _load_embeddings(embeddings_path: str):
@@ -137,9 +138,11 @@ def run_downstream(embeddings_path: str, output_dir: str) -> dict:
         "fm": lambda m: X_fm[m],
         "fusion": lambda m: np.hstack([X_fm[m], X_raw[m]]),
     }
-    results = {}
+    results, test_proba = {}, {}
     for name, fx in feature_sets.items():
-        results[name] = _fit_eval(fx(tr), y[tr], fx(va), y[va], fx(te), y[te], w[te])
+        results[name], test_proba[name] = _fit_eval(
+            fx(tr), y[tr], fx(va), y[va], fx(te), y[te], w[te]
+        )
 
     summary = {
         "protocol": (
@@ -161,6 +164,27 @@ def run_downstream(embeddings_path: str, output_dir: str) -> dict:
     os.makedirs(output_dir, exist_ok=True)
     with open(os.path.join(output_dir, "downstream_metrics.json"), "w") as f:
         json.dump(summary, f, indent=2)
+
+    # Per-sample test scores so ROC/PR curves can be rebuilt offline. Apply
+    # `weight` when plotting to get natural-prevalence curves (same correction
+    # as the metrics above).
+    import pyarrow as pa
+    import pyarrow.parquet as pq
+
+    names = list(test_proba)
+    n_te = int(te.sum())
+    pq.write_table(
+        pa.table(
+            {
+                "feature_set": np.repeat(np.array(names), n_te),
+                "label": np.tile(y[te], len(names)),
+                "proba": np.concatenate([test_proba[n] for n in names]),
+                "weight": np.tile(w[te], len(names)),
+            }
+        ),
+        os.path.join(output_dir, "test_predictions.parquet"),
+    )
+    print(f"[05] per-sample test scores -> {output_dir}/test_predictions.parquet")
     return summary
 
 
