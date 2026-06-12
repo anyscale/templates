@@ -44,9 +44,7 @@ def train_func(config: dict):
     # Per-column dtypes: tokens are int64, the soft-bin amount weight is float32.
     dtypes = {"d_amount_frac": torch.float32} if vocab.get("amount_mode") == "soft" else None
 
-    model = build_model(
-        vocab_path, size=config["size"], max_len=config["max_len"], arch=config.get("arch")
-    )
+    model = build_model(vocab_path, arch=config["arch"], max_len=config["max_len"])
 
     use_fsdp = config.get("use_fsdp", False) and torch.cuda.is_available()
     if use_fsdp:
@@ -111,7 +109,7 @@ def train_func(config: dict):
                     {
                         "size": config["size"],
                         "max_len": config["max_len"],
-                        "arch": config.get("arch"),
+                        "arch": config["arch"],
                     },
                     f,
                 )
@@ -138,11 +136,19 @@ def pretrain(
 ) -> dict:
     """Run distributed pretraining and persist the final checkpoint.
 
+    ``arch`` is the `model:` block of a scale config (d_model / n_heads /
+    n_layers / dim_ff); when omitted it is resolved from configs/<size>.yaml.
+
     ``storage_base`` must be a path every node can read/write (e.g.
     ``/mnt/cluster_storage/...``) — Ray Train persists checkpoints there from
     the worker nodes, so a head-node-local default like ``~/ray_results``
     breaks on multi-node clusters.
     """
+    if arch is None:
+        from .scale_config import load_scale
+
+        arch = load_scale(size)["model"]
+
     ds = ray.data.read_parquet(tokenized_path)
     storage_path = os.path.join(storage_base, "ray_results") if storage_base else None
 
