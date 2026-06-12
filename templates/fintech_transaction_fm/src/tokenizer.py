@@ -253,6 +253,26 @@ def _stack_rows(rows: list, seq_len: int, soft: bool) -> dict:
     return out
 
 
+# Columns only the eval samples need — dropped from the pretrain windows
+# before they reach the trainer (string columns break torch batch conversion).
+PRETRAIN_DROP = [
+    "kind", "split", "label", "weight",
+    "raw_amount", "raw_hour", "raw_dow", "raw_mcc", "raw_ts",
+]
+
+
+def eval_normal_keep(splits: dict, target_eval_samples: int) -> float:
+    """Keep-probability for normal txns in the eval set.
+
+    Keeps enough normals to hit the eval-size target, never fewer than 4x the
+    fraud count (importance weights undo the downsampling in the metrics).
+    """
+    n_txn = splits["n_transactions"]
+    n_fraud = splits["fraud_rate"] * n_txn
+    normals_target = max(target_eval_samples - n_fraud, 4 * n_fraud)
+    return float(min(1.0, normals_target / max(n_txn - n_fraud, 1.0)))
+
+
 def make_tokenize_group_fn(
     seq_len: int,
     train_end: str | None = None,
@@ -260,6 +280,7 @@ def make_tokenize_group_fn(
     normal_keep: float = 1.0,
     holdout_keep: float | None = None,
     max_pretrain_windows: int | None = None,
+    emit: str = "both",
 ):
     """Build a ``map_groups`` UDF turning one card's transactions into padded,
     per-field token sequences (pretrain windows + per-transaction eval samples).
@@ -267,6 +288,11 @@ def make_tokenize_group_fn(
     A closure (not a callable class) because Ray Data's ``map_groups`` keys off
     ``fn.__name__``. The function is stateless — safe at high concurrency; the
     eval-sample downsampling RNG is seeded per card, so output is deterministic.
+
+    ``emit`` ("both" | "pretrain" | "eval") skips computing the other kind's
+    windows — a pure compute optimization for single-consumer pipelines. Kept
+    rows are identical to a "both" run filtered on ``kind`` (the one-row-per-
+    card guard may still emit the other kind, so consumers filter regardless).
     """
     t_train = np.datetime64(train_end, "s") if train_end else None
     t_val = np.datetime64(val_end, "s") if val_end else None
@@ -307,7 +333,7 @@ def make_tokenize_group_fn(
 
         rows = []
 
-        def emit(lo: int, hi: int, kind: str, split: str, label: int, target, weight: float = 1.0):
+        def emit_row(lo: int, hi: int, kind: str, split: str, label: int, target, weight: float = 1.0):
             L = hi - lo
             pad = seq_len - L
             r = {
@@ -354,12 +380,13 @@ def make_tokenize_group_fn(
 
         # --- Pretraining windows: train-period only, newest first, non-overlapping.
         n_train = n if t_train is None else int(np.searchsorted(ts, t_train))
-        hi, made = n_train, 0
-        while hi >= 2 and (max_pretrain_windows is None or made < max_pretrain_windows):
-            lo = max(0, hi - seq_len)
-            emit(lo, hi, "pretrain", "train", 0, None)
-            made += 1
-            hi = lo
+        if emit in ("both", "pretrain"):
+            hi, made = n_train, 0
+            while hi >= 2 and (max_pretrain_windows is None or made < max_pretrain_windows):
+                lo = max(0, hi - seq_len)
+                emit_row(lo, hi, "pretrain", "train", 0, None)
+                made += 1
+                hi = lo
 
         # --- Eval samples: window ends at the target transaction; label = its
         # is_fraud; split by the target's timestamp. All frauds kept, normals
@@ -369,11 +396,23 @@ def make_tokenize_group_fn(
         if t_train is not None:
             keep_p[int(np.searchsorted(ts, t_train)):] = holdout_keep
         keep = (fraud == 1) | (rng.random(n) < keep_p)
+        if emit == "pretrain":
+            keep[:] = False  # eval windows not wanted; guard below still applies
+        # Guarantee at least one output row per card: empty (0, seq_len)
+        # batches break Ray's Arrow tensor conversion, and a card should not
+        # silently vanish from the pipeline anyway. In eval-only mode the
+        # guard must mirror the combined run exactly — a card whose pretrain
+        # windows would have prevented it firing gets a pretrain-kind marker
+        # (dropped by the consumer's kind filter) instead of an extra eval
+        # row, otherwise the eval set would differ between the two pipelines.
+        would_emit_pretrain = n_train >= 2 and (
+            max_pretrain_windows is None or max_pretrain_windows > 0
+        )
         if not rows and not keep.any():
-            # Guarantee at least one output row per card: empty (0, seq_len)
-            # batches break Ray's Arrow tensor conversion, and a card should
-            # not silently vanish from the pipeline anyway.
-            keep[n - 1] = True
+            if emit == "eval" and would_emit_pretrain:
+                emit_row(max(0, n_train - seq_len), n_train, "pretrain", "train", 0, None)
+            else:
+                keep[n - 1] = True
         for t in np.nonzero(keep)[0]:
             if t_train is None or ts[t] < t_train:
                 split = "train"
@@ -384,7 +423,7 @@ def make_tokenize_group_fn(
             # Importance weight undoing the normal-downsampling, so downstream
             # metrics estimate full-population (natural-prevalence) values.
             w = 1.0 if fraud[t] == 1 else 1.0 / max(float(keep_p[t]), 1e-9)
-            emit(max(0, t + 1 - seq_len), t + 1, "eval", split, int(fraud[t]), int(t), weight=w)
+            emit_row(max(0, t + 1 - seq_len), t + 1, "eval", split, int(fraud[t]), int(t), weight=w)
 
         return _stack_rows(rows, seq_len, soft)
 
@@ -400,12 +439,14 @@ def tokenize_dataset(
     holdout_keep: float | None = None,
     max_pretrain_windows: int | None = None,
     num_partitions: int | None = None,
+    emit: str = "both",
 ):
     """Apply the tokenizer over a Ray Dataset grouped by card.
 
     ``num_partitions`` sizes the hash shuffle; Ray's default (200) is tuned for
     much larger clusters/datasets and produces hundreds of tiny output files at
-    demo scales.
+    demo scales. ``emit`` (see ``make_tokenize_group_fn``) skips the other
+    kind's window computation when the pipeline only consumes one.
     """
     return ds.groupby("card_id", num_partitions=num_partitions).map_groups(
         make_tokenize_group_fn(
@@ -415,6 +456,7 @@ def tokenize_dataset(
             normal_keep=normal_keep,
             holdout_keep=holdout_keep,
             max_pretrain_windows=max_pretrain_windows,
+            emit=emit,
         ),
         batch_format="numpy",
     )

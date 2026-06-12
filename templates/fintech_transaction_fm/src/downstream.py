@@ -96,7 +96,13 @@ def _load_embeddings(embeddings_path: str):
         m = batch.num_rows
         if m == 0:
             continue
-        flat = batch.column("embedding").flatten().to_numpy(zero_copy_only=False)
+        emb = batch.column("embedding")
+        if hasattr(emb, "storage"):
+            # Arrow extension array (Ray's tensor type, registered whenever
+            # ray.data is imported in the reading process) — unwrap to the
+            # underlying list storage so .flatten() works in both contexts.
+            emb = emb.storage
+        flat = emb.flatten().to_numpy(zero_copy_only=False)
         if X_fm is None:
             X_fm = np.empty((n, len(flat) // m), np.float32)
         X_fm[i : i + m] = flat.reshape(m, -1)

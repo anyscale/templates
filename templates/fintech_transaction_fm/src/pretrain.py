@@ -118,9 +118,10 @@ def train_func(config: dict):
 
 
 def pretrain(
-    tokenized_path: str,
-    vocab_path: str,
-    checkpoint_out: str,
+    tokenized_path: str | None = None,
+    vocab_path: str = "",
+    checkpoint_out: str = "",
+    train_ds=None,
     size: str = "small",
     max_len: int = 64,
     arch: dict | None = None,
@@ -136,6 +137,12 @@ def pretrain(
 ) -> dict:
     """Run distributed pretraining and persist the final checkpoint.
 
+    Training data comes from ``train_ds`` (a live Ray Dataset — e.g. tokenized
+    windows materialized in the object store, no Parquet round-trip) or, when
+    that's absent, from ``tokenized_path``. Ray Train re-executes the dataset
+    every epoch, so a materialized in-memory dataset also avoids re-reading
+    Parquet from shared storage once per epoch.
+
     ``arch`` is the `model:` block of a scale config (d_model / n_heads /
     n_layers / dim_ff); when omitted it is resolved from configs/<size>.yaml.
 
@@ -149,7 +156,7 @@ def pretrain(
 
         arch = load_scale(size)["model"]
 
-    ds = ray.data.read_parquet(tokenized_path)
+    ds = train_ds if train_ds is not None else ray.data.read_parquet(tokenized_path)
     storage_path = os.path.join(storage_base, "ray_results") if storage_base else None
 
     trainer = TorchTrainer(

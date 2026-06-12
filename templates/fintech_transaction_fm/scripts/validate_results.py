@@ -3,33 +3,55 @@
 import json
 import os
 
-import pandas as pd
+
+def _dataset(path: str):
+    import pyarrow.dataset as pads
+
+    return pads.dataset(path, format="parquet")
 
 
-def validate_pipeline(paths: dict) -> dict:
-    """Assert each stage produced sane artifacts; return a short report."""
+def validate_pipeline(paths: dict, n_pretrain_windows: int | None = None) -> dict:
+    """Assert each stage produced sane artifacts; return a short report.
+
+    Uses Parquet metadata and small reads only — never loads a full dataset
+    onto the driver (at `full` the eval artifacts are tens of GB).
+
+    ``n_pretrain_windows`` is passed by the fused pipeline (which streams the
+    tokenized windows through the object store instead of writing Parquet);
+    when omitted, it is counted from the tokenized Parquet that the
+    step-by-step scripts write.
+    """
     report = {}
 
-    # Tokenized sequences exist and have the expected columns.
-    pre = pd.read_parquet(paths["tokenized_pretrain"])
-    tok = pd.read_parquet(paths["tokenized_eval"])
-    assert len(pre) > 0, "no pretrain windows"
-    assert len(tok) > 0, "no eval samples"
-    assert "attention_mask" in tok.columns, "missing attention_mask"
-    assert set(tok["split"].unique()) >= {"train", "val", "test"}, "missing temporal splits"
-    report["n_pretrain_windows"] = int(len(pre))
-    report["n_sequences"] = int(len(tok))
+    # Tokenized sequences exist (Parquet when the per-stage scripts ran;
+    # otherwise the count handed over from the in-memory pipeline).
+    if n_pretrain_windows is None:
+        n_pretrain_windows = _dataset(paths["tokenized_pretrain"]).count_rows()
+    assert n_pretrain_windows > 0, "no pretrain windows"
+    report["n_pretrain_windows"] = int(n_pretrain_windows)
 
     # Checkpoint has weights + vocab + config.
     for fn in ("model.pt", "vocab.json", "model_config.json"):
         assert os.path.exists(os.path.join(paths["checkpoint"], fn)), f"missing {fn}"
 
-    # Embeddings exist with a non-trivial dimension.
-    emb = pd.read_parquet(paths["embeddings"])
-    dim = len(emb["embedding"].iloc[0])
+    # Embeddings exist, with a non-trivial dimension and all temporal splits.
+    emb = _dataset(paths["embeddings"])
+    n_emb = emb.count_rows()
+    assert n_emb > 0, "no eval samples"
+    first = emb.head(1, columns=["embedding"]).column("embedding").chunk(0)
+    if hasattr(first, "storage"):
+        first = first.storage  # unwrap Ray's tensor extension (see downstream.py)
+    dim = len(first[0].as_py())
     assert dim >= 16, f"embedding dim too small: {dim}"
+    splits = set()
+    for batch in emb.to_batches(columns=["split"], batch_size=65_536):
+        splits.update(batch.column("split").unique().to_pylist())
+        if splits >= {"train", "val", "test"}:
+            break
+    assert splits >= {"train", "val", "test"}, "missing temporal splits"
+    report["n_sequences"] = int(n_emb)
     report["embedding_dim"] = int(dim)
-    report["n_embeddings"] = int(len(emb))
+    report["n_embeddings"] = int(n_emb)
 
     # Downstream metrics produced and the FM beats (or matches) the raw baseline.
     with open(os.path.join(paths["downstream"], "downstream_metrics.json")) as f:

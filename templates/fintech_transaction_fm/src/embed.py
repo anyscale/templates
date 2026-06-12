@@ -70,23 +70,30 @@ class EmbeddingExtractor:
 
 
 def extract_embeddings(
-    tokenized_path: str,
-    checkpoint_dir: str,
-    output_path: str,
+    tokenized_path: str | None = None,
+    checkpoint_dir: str = "",
+    output_path: str = "",
     num_workers: int = 2,
     use_gpu: bool = False,
     batch_size: int = 256,
     pooling: str = "last",
+    ds=None,
 ) -> str:
-    """Run distributed batch embedding extraction and write Parquet."""
+    """Run distributed batch embedding extraction and write Parquet.
+
+    ``ds`` may be any Ray Dataset of tokenized eval windows — including a lazy
+    one, so upstream CPU tokenization streams straight into the GPU actors
+    through the object store. Falls back to reading ``tokenized_path``.
+    """
     import ray
 
-    ds = ray.data.read_parquet(tokenized_path)
+    if ds is None:
+        ds = ray.data.read_parquet(tokenized_path)
     ds = ds.map_batches(
         EmbeddingExtractor,
         fn_constructor_kwargs={"checkpoint_dir": checkpoint_dir, "pooling": pooling},
         batch_size=batch_size,
-        concurrency=num_workers,
+        compute=ray.data.ActorPoolStrategy(size=num_workers),
         num_gpus=1 if use_gpu else 0,
         batch_format="numpy",
     )

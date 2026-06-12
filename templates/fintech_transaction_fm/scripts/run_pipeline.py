@@ -1,32 +1,36 @@
-"""Run the full transaction-FM pipeline end to end in one command.
+"""Run the full transaction-FM pipeline end to end in ONE Ray driver.
+
+Unlike the step-by-step scripts (01-05, which read/write Parquet at every
+boundary so each stage is independently runnable), this orchestrator keeps the
+intermediates in the cluster:
+
+* tokenized **pretrain windows** are materialized in the object store and
+  handed to Ray Train as a live Dataset — no Parquet round-trip, and each
+  epoch iterates from memory instead of re-reading shared storage;
+* tokenized **eval windows** stream straight from the CPU tokenizer tasks into
+  the GPU embedding actors in one Ray Data topology — they never touch disk.
+
+Only the durable artifacts hit storage: raw data (+ splits.json), vocab, the
+model checkpoint, the embeddings (the product), and downstream metrics +
+per-sample test scores.
 
 Usage:
     python scripts/run_pipeline.py                      # smoke (CPU)
     python scripts/run_pipeline.py --scale small        # full TabFormer, GPU
     python scripts/run_pipeline.py --source synthetic   # offline data source
 
-Also the Anyscale Job entrypoint (see job_config.yaml). Each stage runs as a
-subprocess of its canonical script, so this file stays a thin orchestrator and
-the per-stage scripts remain runnable on their own.
+Also the Anyscale Job entrypoint (see job_config.yaml).
 """
 
 import argparse
+import json
 import os
-import subprocess
 import sys
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from src.paths import artifact_paths, get_demo_base_dir  # noqa: E402
 from src.scale_config import add_scale_args, load_scale  # noqa: E402
-
-SCRIPTS_DIR = os.path.dirname(os.path.abspath(__file__))
-
-
-def run_stage(label: str, script: str, *args: str) -> None:
-    cmd = [sys.executable, os.path.join(SCRIPTS_DIR, script), *args]
-    print(f"=== {label}: {' '.join(cmd[1:])} ===", flush=True)
-    subprocess.run(cmd, check=True)
 
 
 def fresh_artifact_dirs(base: str, scale: str) -> None:
@@ -35,7 +39,7 @@ def fresh_artifact_dirs(base: str, scale: str) -> None:
     Ray's write_parquet APPENDS into an existing directory, and a job retry
     reuses the same cluster storage — leftovers from a previous attempt
     silently double every downstream dataset. Only the scale-independent
-    source/ download cache survives; stage 01 rebuilds the raw data from it.
+    source/ download cache survives; stage [1] rebuilds the raw data from it.
     """
     import shutil
 
@@ -52,6 +56,27 @@ def fresh_artifact_dirs(base: str, scale: str) -> None:
         print(f"[clean] removed stale {path}", flush=True)
 
 
+def ensure_raw_data(paths: dict, num_cards: int, source: str, seed: int = 42) -> None:
+    """Stage [1]: prepare raw transactions + temporal splits (skip if cached)."""
+    if os.path.exists(paths["raw"]) and os.path.exists(paths["splits"]):
+        print(f"[1/6] raw data exists -> {paths['raw']} (skipping)", flush=True)
+        return
+    if source == "tabformer":
+        from src.tabformer import prepare_tabformer
+
+        prepare_tabformer(
+            paths["raw"],
+            paths["splits"],
+            num_cards=num_cards,
+            seed=seed,
+            source_dir=paths["source"],
+        )
+    else:
+        from src.generate_data import save_dataset
+
+        save_dataset(paths["raw"], num_cards=num_cards, seed=seed)
+
+
 def main():
     p = argparse.ArgumentParser()
     add_scale_args(p, default="smoke")
@@ -64,28 +89,93 @@ def main():
     )
     args = p.parse_args()
 
-    load_scale(args.scale, args.scale_config)  # fail fast on a bad scale/config
+    cfg = load_scale(args.scale, args.scale_config)
     base = get_demo_base_dir()
+    paths = artifact_paths(base, args.scale)
     if not args.keep_artifacts:
         fresh_artifact_dirs(base, args.scale)
 
-    # Every per-scale knob lives in configs/<scale>.yaml (or the file given
-    # via --scale-config); each stage loads its own block, so we only forward
-    # the flags.
-    scale_args = ["--scale", args.scale]
-    if args.scale_config:
-        scale_args += ["--scale-config", args.scale_config]
+    import ray
 
-    run_stage("[1/6] data", "01_generate_data.py", *scale_args, "--source", args.source)
-    run_stage("[2/6] tokenize", "02_tokenize.py", *scale_args)
-    run_stage("[3/6] pretrain", "03_pretrain.py", *scale_args)
-    run_stage("[4/6] extract embeddings", "04_extract_embeddings.py", *scale_args)
-    run_stage("[5/6] downstream fraud eval", "05_train_downstream.py", *scale_args)
+    from src.tokenizer import (
+        PRETRAIN_DROP,
+        eval_normal_keep,
+        tokenize_dataset,
+        write_vocab,
+    )
+
+    ray.init(ignore_reinit_error=True)
+    from ray.data.expressions import col
+
+    print("=== [1/6] data ===", flush=True)
+    ensure_raw_data(paths, cfg["data"]["num_cards"], args.source)
+    with open(paths["splits"]) as f:
+        splits = json.load(f)
+    tk = cfg["tokenize"]
+    normal_keep = eval_normal_keep(splits, tk["target_eval_samples"])
+    write_vocab(paths["vocab"])
+
+    def tokenized(emit: str):
+        return tokenize_dataset(
+            ray.data.read_parquet(paths["raw"]),
+            tk["seq_len"],
+            train_end=splits["train_end"],
+            val_end=splits["val_end"],
+            normal_keep=normal_keep,
+            holdout_keep=tk["holdout_keep"],
+            max_pretrain_windows=tk["max_pretrain_windows"],
+            num_partitions=tk["shuffle_partitions"],
+            emit=emit,
+        )
+
+    print("=== [2/6] tokenize pretrain windows -> object store ===", flush=True)
+    pre = (
+        tokenized("pretrain")
+        .filter(expr=col("kind") == "pretrain")
+        .drop_columns(PRETRAIN_DROP)
+        .materialize()
+    )
+    n_pretrain = pre.count()
+    print(f"[2/6] {n_pretrain:,} pretrain windows materialized", flush=True)
+
+    print("=== [3/6] pretrain ===", flush=True)
+    from src.pretrain import pretrain
+
+    pretrain(
+        train_ds=pre,
+        vocab_path=paths["vocab"],
+        checkpoint_out=paths["checkpoint"],
+        size=args.scale,
+        max_len=tk["seq_len"],
+        arch=cfg["model"],
+        storage_base=base,
+        **cfg["pretrain"],
+    )
+    del pre  # release the object-store blocks before the embedding pass
+
+    print("=== [4/6] tokenize eval windows -> embed (streaming CPU->GPU) ===", flush=True)
+    from src.embed import extract_embeddings
+
+    ev = tokenized("eval").filter(expr=col("kind") == "eval").drop_columns(["kind"])
+    e = cfg["embed"]
+    extract_embeddings(
+        ds=ev,
+        checkpoint_dir=paths["checkpoint"],
+        output_path=paths["embeddings"],
+        num_workers=e["num_workers"],
+        use_gpu=e["use_gpu"],
+        batch_size=e["batch_size"],
+    )
+
+    print("=== [5/6] downstream fraud eval ===", flush=True)
+    from src.downstream import print_summary, run_downstream
+
+    print_summary(run_downstream(paths["embeddings"], paths["downstream"]))
 
     print("=== [6/6] validate ===", flush=True)
     from scripts.validate_results import print_report, validate_pipeline
 
-    print_report(validate_pipeline(artifact_paths(base, args.scale)))
+    print_report(validate_pipeline(paths, n_pretrain_windows=n_pretrain))
 
 
 if __name__ == "__main__":

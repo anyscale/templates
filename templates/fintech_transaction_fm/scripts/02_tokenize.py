@@ -18,12 +18,12 @@ import ray  # noqa: E402
 
 from src.paths import artifact_paths, get_demo_base_dir  # noqa: E402
 from src.scale_config import add_scale_args, load_scale  # noqa: E402
-from src.tokenizer import tokenize_dataset, write_vocab  # noqa: E402
-
-PRETRAIN_DROP = [
-    "kind", "split", "label", "weight",
-    "raw_amount", "raw_hour", "raw_dow", "raw_mcc", "raw_ts",
-]
+from src.tokenizer import (  # noqa: E402
+    PRETRAIN_DROP,
+    eval_normal_keep,
+    tokenize_dataset,
+    write_vocab,
+)
 
 
 def main():
@@ -40,14 +40,11 @@ def main():
 
     with open(paths["splits"]) as f:
         splits = json.load(f)
-    n_txn = splits["n_transactions"]
-    n_fraud = splits["fraud_rate"] * n_txn
-    # Keep enough normals to hit the eval target, never fewer than 4x frauds.
-    normals_target = max(preset["target_eval_samples"] - n_fraud, 4 * n_fraud)
-    normal_keep = float(min(1.0, normals_target / max(n_txn - n_fraud, 1.0)))
+    normal_keep = eval_normal_keep(splits, preset["target_eval_samples"])
     print(
         f"[02] temporal split train<{splits['train_end']} val<{splits['val_end']} | "
-        f"~{int(n_fraud):,} frauds, normal_keep={normal_keep:.4f}"
+        f"~{int(splits['fraud_rate'] * splits['n_transactions']):,} frauds, "
+        f"normal_keep={normal_keep:.4f}"
     )
 
     ray.init(ignore_reinit_error=True)
