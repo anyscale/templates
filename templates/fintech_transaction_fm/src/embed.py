@@ -36,6 +36,7 @@ class EmbeddingExtractor:
             os.path.join(checkpoint_dir, "vocab.json"),
             size=mcfg["size"],
             max_len=mcfg["max_len"],
+            arch=mcfg.get("arch"),
         )
         state = torch.load(os.path.join(checkpoint_dir, "model.pt"), map_location=self.device)
         self.model.load_state_dict(state)

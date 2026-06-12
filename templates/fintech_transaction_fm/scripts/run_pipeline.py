@@ -17,7 +17,8 @@ import sys
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from src.paths import SCALE_MAP, artifact_paths, get_demo_base_dir  # noqa: E402
+from src.paths import artifact_paths, get_demo_base_dir  # noqa: E402
+from src.scale_config import add_scale_args, load_scale  # noqa: E402
 
 SCRIPTS_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -53,7 +54,7 @@ def fresh_artifact_dirs(base: str, scale: str) -> None:
 
 def main():
     p = argparse.ArgumentParser()
-    p.add_argument("--scale", choices=list(SCALE_MAP), default="smoke")
+    add_scale_args(p, default="smoke")
     p.add_argument("--source", choices=["tabformer", "synthetic"], default="tabformer")
     p.add_argument(
         "--keep-artifacts",
@@ -63,28 +64,23 @@ def main():
     )
     args = p.parse_args()
 
+    load_scale(args.scale, args.scale_config)  # fail fast on a bad scale/config
     base = get_demo_base_dir()
     if not args.keep_artifacts:
         fresh_artifact_dirs(base, args.scale)
 
-    # smoke runs on CPU; small/full use the GPUs (03 picks GPU via its own
-    # per-scale presets; 04 needs the flags explicitly). All GPU replicas live
-    # on the single 4xGPU worker — fat batches, no extra node spin-up. `full`
-    # embeds every holdout transaction (~5M windows), so it uses all 4 GPUs.
-    if args.scale == "smoke":
-        embed_args = ["--num-workers", "8"]
-    elif args.scale == "small":
-        embed_args = ["--use-gpu", "--num-workers", "2", "--batch-size", "2048"]
-    else:
-        # seq 512: attention buffers cap the T4 inference batch well below
-        # the seq-128 setting.
-        embed_args = ["--use-gpu", "--num-workers", "4", "--batch-size", "256"]
+    # Every per-scale knob lives in configs/<scale>.yaml (or the file given
+    # via --scale-config); each stage loads its own block, so we only forward
+    # the flags.
+    scale_args = ["--scale", args.scale]
+    if args.scale_config:
+        scale_args += ["--scale-config", args.scale_config]
 
-    run_stage("[1/6] data", "01_generate_data.py", "--scale", args.scale, "--source", args.source)
-    run_stage("[2/6] tokenize", "02_tokenize.py", "--scale", args.scale)
-    run_stage("[3/6] pretrain", "03_pretrain.py", "--scale", args.scale)
-    run_stage("[4/6] extract embeddings", "04_extract_embeddings.py", "--scale", args.scale, *embed_args)
-    run_stage("[5/6] downstream fraud eval", "05_train_downstream.py", "--scale", args.scale)
+    run_stage("[1/6] data", "01_generate_data.py", *scale_args, "--source", args.source)
+    run_stage("[2/6] tokenize", "02_tokenize.py", *scale_args)
+    run_stage("[3/6] pretrain", "03_pretrain.py", *scale_args)
+    run_stage("[4/6] extract embeddings", "04_extract_embeddings.py", *scale_args)
+    run_stage("[5/6] downstream fraud eval", "05_train_downstream.py", *scale_args)
 
     print("=== [6/6] validate ===", flush=True)
     from scripts.validate_results import print_report, validate_pipeline

@@ -1,0 +1,35 @@
+# Scale: full — the real thing. ~29M params, capacity parity with NVIDIA's
+# blueprint decoder (8 layers, 512 hidden). The difference is the tokenizer:
+# 1 position per transaction instead of ~12 tokens, so seq_len 512 covers 512
+# txns vs ~315 in their 4096-token context. Scores every holdout transaction.
+# See configs/smoke.yaml for what each key means.
+
+data:
+  num_cards: 200000          # > the ~6.1k real cards = use every card
+
+tokenize:
+  seq_len: 512
+  target_eval_samples: 400000
+  max_pretrain_windows: null
+  holdout_keep: 1.0          # exact full-data metrics (~5M eval windows)
+  shuffle_partitions: 128
+
+model:
+  d_model: 512
+  n_heads: 8
+  n_layers: 8
+  dim_ff: 2048
+
+pretrain:
+  epochs: 20                 # epochs are cheap: non-overlapping 512-txn windows = ~38k/epoch
+  batch_size: 64             # T4-safe ceiling at seq 512 — the B x heads x S x S attention
+                             # buffers + 2000-way merchant MLM head logits dominate memory
+  lr: 4.0e-4
+  num_workers: 4
+  use_gpu: true
+  use_fsdp: false
+
+embed:
+  num_workers: 4
+  use_gpu: true
+  batch_size: 256            # seq 512: attention buffers cap T4 inference batch well below seq-128

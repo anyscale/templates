@@ -7,16 +7,16 @@ back to a directory under the current working dir.
 
 import os
 
-# Scale -> number of *cards* sampled (each card produces a variable-length
-# sequence of transactions). With the real IBM TabFormer data (~6.1k cards,
-# ~24M transactions) `smoke` samples ~8M transactions; `small`/`full` use
-# every card — they differ in model size and GPU count, not data. Synthetic
-# source generates exactly this many cards.
-SCALE_MAP = {
-    "smoke": 2_000,      # ~8M real txns  — CI / CPU sanity
-    "small": 20_000,     # all TabFormer cards — 2-GPU DDP, 256-dim model
-    "full": 200_000,     # all TabFormer cards — 4-GPU DDP, 384-dim model
-}
+# Scale -> number of *cards* sampled. Derived from configs/<scale>.yaml (the
+# single source of truth for per-scale settings); kept here because the README
+# walkthrough imports it.
+def _scale_map() -> dict:
+    from .scale_config import load_scales
+
+    return {name: cfg["data"]["num_cards"] for name, cfg in load_scales().items()}
+
+
+SCALE_MAP = _scale_map()
 
 
 def get_demo_base_dir() -> str:

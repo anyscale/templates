@@ -16,29 +16,9 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 
 import ray  # noqa: E402
 
-from src.paths import SCALE_MAP, artifact_paths, get_demo_base_dir  # noqa: E402
-from src.tokenizer import SEQ_LEN_BY_SCALE, tokenize_dataset, write_vocab  # noqa: E402
-
-# Per-scale sampling: cap pretrain windows per card and target a manageable
-# eval-set size (all frauds + downsampled normals, importance-weighted). Real
-# cards have thousands of transactions; without caps, smoke would tokenize
-# millions of windows. holdout_keep=1.0 scores EVERY val/test transaction —
-# exact full-data metrics, no weighting — at the cost of a bigger eval set
-# (~5M windows at `full`).
-TOKENIZE_PRESETS = {
-    "smoke": dict(
-        target_eval_samples=30_000, max_pretrain_windows=8, holdout_keep=None,
-        shuffle_partitions=32,
-    ),
-    "small": dict(
-        target_eval_samples=150_000, max_pretrain_windows=None, holdout_keep=None,
-        shuffle_partitions=128,
-    ),
-    "full": dict(
-        target_eval_samples=400_000, max_pretrain_windows=None, holdout_keep=1.0,
-        shuffle_partitions=128,
-    ),
-}
+from src.paths import artifact_paths, get_demo_base_dir  # noqa: E402
+from src.scale_config import add_scale_args, load_scale  # noqa: E402
+from src.tokenizer import tokenize_dataset, write_vocab  # noqa: E402
 
 PRETRAIN_DROP = [
     "kind", "split", "label", "weight",
@@ -48,14 +28,15 @@ PRETRAIN_DROP = [
 
 def main():
     p = argparse.ArgumentParser()
-    p.add_argument("--scale", choices=list(SCALE_MAP), default="small")
+    add_scale_args(p)
     p.add_argument("--base-dir", default=None)
     args = p.parse_args()
 
     base = args.base_dir or get_demo_base_dir()
     paths = artifact_paths(base, args.scale)
-    seq_len = SEQ_LEN_BY_SCALE[args.scale]
-    preset = TOKENIZE_PRESETS[args.scale]
+    # Sampling knobs (see configs/<scale>.yaml for what each one means).
+    preset = load_scale(args.scale, args.scale_config)["tokenize"]
+    seq_len = preset["seq_len"]
 
     with open(paths["splits"]) as f:
         splits = json.load(f)

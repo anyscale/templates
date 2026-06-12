@@ -60,7 +60,14 @@ _RESERVED = 3
 # positions cover 512 transactions — vs ~315 in the NVIDIA blueprint's entire
 # 4096-token context (~12 tokens per txn). Going past 512 on T4s wants
 # flash-attention (O(S^2) buffers) — left as the documented extension.
-SEQ_LEN_BY_SCALE = {"smoke": 32, "small": 128, "full": 512}
+# Derived from configs/<scale>.yaml; kept here because the README imports it.
+def _seq_len_by_scale() -> dict:
+    from .scale_config import load_scales
+
+    return {name: cfg["tokenize"]["seq_len"] for name, cfg in load_scales().items()}
+
+
+SEQ_LEN_BY_SCALE = _seq_len_by_scale()
 
 # --- Deterministic field vocabularies (no data scan needed) ---
 N_AMOUNT_BUCKETS = 16

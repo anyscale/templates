@@ -200,20 +200,31 @@ class TransactionFM(nn.Module):
         return summed / counts
 
 
-def build_model(vocab_path: str, size: str = "small", max_len: int = 64) -> TransactionFM:
-    """Construct a model from a written vocab.json and a size preset."""
+# Frozen name -> dims fallback for checkpoints written before
+# model_config.json carried an explicit `arch`. Do NOT edit these to change a
+# scale — the live values are the `model:` blocks in configs/<scale>.yaml.
+_LEGACY_ARCH = {
+    "smoke": dict(d_model=64, n_heads=2, n_layers=2, dim_ff=128),
+    "small": dict(d_model=256, n_heads=4, n_layers=4, dim_ff=512),
+    "full": dict(d_model=512, n_heads=8, n_layers=8, dim_ff=2048),
+}
+
+
+def build_model(
+    vocab_path: str,
+    size: str = "small",
+    max_len: int = 64,
+    arch: dict | None = None,
+) -> TransactionFM:
+    """Construct a model from a written vocab.json and explicit dims.
+
+    ``arch`` is the `model:` block of configs/<scale>.yaml (d_model / n_heads /
+    n_layers / dim_ff). When absent — older checkpoints — fall back to the
+    frozen ``size``-name presets.
+    """
     with open(vocab_path) as f:
         vocab = json.load(f)
-    presets = {
-        "smoke": dict(d_model=64, n_heads=2, n_layers=2, dim_ff=128),
-        "small": dict(d_model=256, n_heads=4, n_layers=4, dim_ff=512),
-        # ~29M params — capacity parity with NVIDIA's blueprint decoder
-        # (8 layers, 512 hidden). The difference is the tokenizer: 1 position
-        # per transaction instead of ~12 tokens, so seq_len 512 covers 512
-        # transactions vs ~315 in their 4096-token context.
-        "full": dict(d_model=512, n_heads=8, n_layers=8, dim_ff=2048),
-    }
-    cfg = presets.get(size, presets["small"])
+    cfg = arch or _LEGACY_ARCH.get(size, _LEGACY_ARCH["small"])
     return TransactionFM(
         field_vocab_sizes=vocab["field_vocab_sizes"],
         dynamic_fields=vocab["dynamic_fields"],

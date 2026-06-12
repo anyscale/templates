@@ -44,7 +44,9 @@ def train_func(config: dict):
     # Per-column dtypes: tokens are int64, the soft-bin amount weight is float32.
     dtypes = {"d_amount_frac": torch.float32} if vocab.get("amount_mode") == "soft" else None
 
-    model = build_model(vocab_path, size=config["size"], max_len=config["max_len"])
+    model = build_model(
+        vocab_path, size=config["size"], max_len=config["max_len"], arch=config.get("arch")
+    )
 
     use_fsdp = config.get("use_fsdp", False) and torch.cuda.is_available()
     if use_fsdp:
@@ -105,7 +107,14 @@ def train_func(config: dict):
             torch.save(base.state_dict(), os.path.join(tmp, "model.pt"))
             shutil.copy(vocab_path, os.path.join(tmp, "vocab.json"))
             with open(os.path.join(tmp, "model_config.json"), "w") as f:
-                json.dump({"size": config["size"], "max_len": config["max_len"]}, f)
+                json.dump(
+                    {
+                        "size": config["size"],
+                        "max_len": config["max_len"],
+                        "arch": config.get("arch"),
+                    },
+                    f,
+                )
             checkpoint = Checkpoint.from_directory(tmp)
         ray.train.report(metrics, checkpoint=checkpoint)
 
@@ -116,6 +125,7 @@ def pretrain(
     checkpoint_out: str,
     size: str = "small",
     max_len: int = 64,
+    arch: dict | None = None,
     epochs: int = 5,
     batch_size: int = 128,
     lr: float = 3e-4,
@@ -142,6 +152,7 @@ def pretrain(
             "vocab_path": vocab_path,
             "size": size,
             "max_len": max_len,
+            "arch": arch,
             "epochs": epochs,
             "batch_size": batch_size,
             "lr": lr,

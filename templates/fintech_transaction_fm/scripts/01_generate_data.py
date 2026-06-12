@@ -6,12 +6,13 @@ import sys
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from src.paths import SCALE_MAP, artifact_paths, get_demo_base_dir  # noqa: E402
+from src.paths import artifact_paths, get_demo_base_dir  # noqa: E402
+from src.scale_config import add_scale_args, load_scale  # noqa: E402
 
 
 def main():
     p = argparse.ArgumentParser()
-    p.add_argument("--scale", choices=list(SCALE_MAP), default="small")
+    add_scale_args(p)
     p.add_argument("--base-dir", default=None)
     p.add_argument(
         "--source",
@@ -23,6 +24,7 @@ def main():
     p.add_argument("--seed", type=int, default=42)
     args = p.parse_args()
 
+    cfg = load_scale(args.scale, args.scale_config)
     base = args.base_dir or get_demo_base_dir()
     paths = artifact_paths(base, args.scale)
     if os.path.exists(paths["raw"]) and os.path.exists(paths["splits"]):
@@ -35,14 +37,14 @@ def main():
         prepare_tabformer(
             paths["raw"],
             paths["splits"],
-            num_cards=SCALE_MAP[args.scale],
+            num_cards=cfg["data"]["num_cards"],
             seed=args.seed,
             source_dir=paths["source"],
         )
     else:
         from src.generate_data import save_dataset
 
-        save_dataset(paths["raw"], num_cards=SCALE_MAP[args.scale], seed=args.seed)
+        save_dataset(paths["raw"], num_cards=cfg["data"]["num_cards"], seed=args.seed)
 
 
 if __name__ == "__main__":

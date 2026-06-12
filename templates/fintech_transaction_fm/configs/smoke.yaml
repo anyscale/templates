@@ -1,0 +1,41 @@
+# Scale: smoke — CI / laptop sanity. ~2k cards, tiny model, CPU only.
+#
+# One file per scale defines EVERYTHING that varies between runs — no
+# inheritance, no hidden defaults — so diffing two files shows the complete
+# difference between two scales. To run your own experiment:
+#
+#   cp configs/smoke.yaml configs/ttest.yaml    # edit it
+#   python scripts/run_pipeline.py --scale ttest
+#
+# (any configs/<name>.yaml is auto-discovered; or pass --scale-config <path>
+# to use a file outside configs/)
+
+data:
+  num_cards: 2000            # cards sampled from the source (each card = one txn sequence)
+
+tokenize:
+  seq_len: 32                # txns per window (the tokenizer emits 1 position per txn)
+  target_eval_samples: 30000 # eval-set sizing: all frauds + downsampled, importance-weighted normals
+  max_pretrain_windows: 8    # cap pretrain windows per card (null = every non-overlapping window)
+  holdout_keep: null         # fraction of val/test txns scored directly (null = downsample normals
+                             # like train; 1.0 = score EVERY holdout txn — exact metrics, big eval set)
+  shuffle_partitions: 32     # hash-shuffle partitions for the tokenize stage
+
+model:                       # transformer encoder dims (fits one GPU at every scale -> DDP)
+  d_model: 64
+  n_heads: 2
+  n_layers: 2
+  dim_ff: 128
+
+pretrain:
+  epochs: 2
+  batch_size: 64             # per training worker
+  lr: 3.0e-4
+  num_workers: 1
+  use_gpu: false
+  use_fsdp: false            # only worth it if the model outgrows one GPU
+
+embed:
+  num_workers: 8
+  use_gpu: false
+  batch_size: 256

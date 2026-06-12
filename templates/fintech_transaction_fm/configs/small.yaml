@@ -1,0 +1,32 @@
+# Scale: small — all TabFormer cards, mid-size model, 2 GPUs.
+# Batch sized to actually load the GPUs (T4s were mostly idle at 128) with lr
+# scaled alongside. See configs/smoke.yaml for what each key means.
+
+data:
+  num_cards: 20000           # > the ~6.1k real cards = use every card
+
+tokenize:
+  seq_len: 128
+  target_eval_samples: 150000
+  max_pretrain_windows: null
+  holdout_keep: null
+  shuffle_partitions: 128
+
+model:
+  d_model: 256
+  n_heads: 4
+  n_layers: 4
+  dim_ff: 512
+
+pretrain:
+  epochs: 15
+  batch_size: 512
+  lr: 8.0e-4
+  num_workers: 2
+  use_gpu: true
+  use_fsdp: false
+
+embed:
+  num_workers: 2
+  use_gpu: true
+  batch_size: 2048
