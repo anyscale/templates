@@ -19,7 +19,7 @@ DSPy simplifies the complex workflow of:
 - Fine-tuning
 - Prompt Optimization
 - Evaluation
-  
+
 We'll use Anyscale for scalable infrastructure for training and serving/deploying models.
 
 ## Scenario: Cost-Effective Customer Support Query Classification
@@ -90,7 +90,7 @@ You can get a WANDB_API_KEY [here](https://wandb.ai/authorize).
 
 ```python
 import os
-import ray 
+import ray
 # By default, the cache directory used by HuggingFace is in the home directory -`/home/ray`
 # We'll use `/mnt/local_storage` here for downloading large model weight files
 
@@ -189,7 +189,7 @@ At the heart of our DSPy program is the `Signature` class. This class serves as 
 
 Both input and output fields are accompanied by concise descriptions, just to help the LLM understand the task.
 
-By structuring our program this way, we utilize DSPy's capabilities to create a clear, modular design that's both powerful and easy to maintain. 
+By structuring our program this way, we utilize DSPy's capabilities to create a clear, modular design that's both powerful and easy to maintain.
 
 
 ```python
@@ -300,10 +300,10 @@ from src import NUM_THREADS, get_valid_label_metric_fn
 
 with dspy.context(lm=llama_70b):
     bootstrap_data_kwargs = {
-        "program": vanilla_program, 
-        "dataset": ft_trainset_to_label, 
-        "num_threads": NUM_THREADS, 
-        "max_errors": 10000, 
+        "program": vanilla_program,
+        "dataset": ft_trainset_to_label,
+        "num_threads": NUM_THREADS,
+        "max_errors": 10000,
         "metric": get_valid_label_metric_fn(labels_in_use)
     }
     collected_data = bootstrap_data(**bootstrap_data_kwargs)
@@ -418,13 +418,13 @@ finetuneable_lm = dspy.LM(model="meta-llama/Llama-3.2-1B-Instruct", **MODEL_PARA
 
 try:
     finetuning_kwargs = {
-        "train_data": train_data, 
+        "train_data": train_data,
         "train_kwargs": {
-            "job_config_path": job_config_path, 
-            "llmforge_config_path": llmforge_config_path, 
+            "job_config_path": job_config_path,
+            "llmforge_config_path": llmforge_config_path,
             "serve_config_path": serve_config_path
-        }, 
-        "train_method": method, 
+        },
+        "train_method": method,
         "provider": "anyscale"
     }
 
@@ -459,7 +459,7 @@ print(finetuned_llama.model)
 
 We will run a local RayLLM instance that serves the model.
 
-Provided with this template is are two files, `serve_1B.yaml` and `model_configs/meta-llama--Llama-3_2-1B-Instruct.yaml`. 
+Provided with this template is are two files, `serve_1B.yaml` and `model_configs/meta-llama--Llama-3_2-1B-Instruct.yaml`.
 
 The first file, `serve_1B.yaml`, contains the serve configuration to load the model with RayLLM.
 
@@ -631,45 +631,45 @@ This pipeline is very simple, but you can imagine that data collection would be 
 
 # Serving
 
-The typical usecase for DSPy is for optimizing prompts and weights programmatically. DSPy allows you to define a complex pipeline with different components like a retriever and one or more LLMs. Often, we're interested in taking the same system we optimized during training to inference. 
+The typical usecase for DSPy is for optimizing prompts and weights programmatically. DSPy allows you to define a complex pipeline with different components like a retriever and one or more LLMs. Often, we're interested in taking the same system we optimized during training to inference.
 
 To deploy, you can serve the optimized DSPy program directly: This is the simplest option to take your program to production. Since DSPy simply relies on a deployed inference endpoint for LLM calls, we can use it in conjunction with optimized serving libraries like RayLLM. We can leverage Ray Serve with our DSPy pipeline being our custom business logic while serving.
 
-NOTE: As of DSPy 2.5, there are scalability limitations for high throughput scenarios with DSPy. DSPy compiled programs currently use threading for handling multiple queries in parallel, which might not scale as well as a native `async` implementation. A native `async` implementation is in the immediate roadmap for DSPy. If this is a concern, you can always try to stitch together the saved program from DSPy in native Python code. 
+NOTE: As of DSPy 2.5, there are scalability limitations for high throughput scenarios with DSPy. DSPy compiled programs currently use threading for handling multiple queries in parallel, which might not scale as well as a native `async` implementation. A native `async` implementation is in the immediate roadmap for DSPy. If this is a concern, you can always try to stitch together the saved program from DSPy in native Python code.
 
 ## Serving a DSPy Pipeline using Ray Serve
 
 We can break down our program into two distinct parts: 1) Fine-tuned LLM served behind an OpenAI compatible endpoint and 2) The DSPy program (our business logic tying all components together)
 
 These two different parts can be served as two separate applications with different deployment configurations. There are two ways this can be done:
-- Separate Ray Serve deployments: In this case, you would be managing two separate services for your DSPy program. One scenario where this is helpful is if you expect changes/updates to just one component (say the DSPy program) happening at a different cadence to the other. 
+- Separate Ray Serve deployments: In this case, you would be managing two separate services for your DSPy program. One scenario where this is helpful is if you expect changes/updates to just one component (say the DSPy program) happening at a different cadence to the other.
 - Single multi-app deployment: This is the simpler way for managing your DSPy program in production by deploying one service with two applications. This is recommended when all your Ray Serve logic lies in one repository.
 
 
-In this guide, we will show an example for both: For the local serve deploy in our workspace environment, we will do a single multi-app deployment. While moving to a standalone Anyscale Service, we will deploy these separately. 
+In this guide, we will show an example for both: For the local serve deploy in our workspace environment, we will do a single multi-app deployment. While moving to a standalone Anyscale Service, we will deploy these separately.
 
 First, let's save some important state for the compiled program into a JSON file for use in serving
 
 
 ```python
-import json 
+import json
 
-# Note: there are some caveats to how `best_program_path` can look like. All files for use in serving should be in the working directory passed to the serve config. 
+# Note: there are some caveats to how `best_program_path` can look like. All files for use in serving should be in the working directory passed to the serve config.
 # By default the working directory  is the current directory
 my_state = {"best_model": best_model, "best_program_path": best_program_path, "labels_in_use": labels_in_use}
 with open("configs/deploy_params.json", "w") as f:
     json.dump(my_state, f)
 ```
 
-For the purpose of serving, it is recommended to place all the application logic in a python script. We've provided a script `deploy.py` which contains the DSPy application logic. 
+For the purpose of serving, it is recommended to place all the application logic in a python script. We've provided a script `deploy.py` which contains the DSPy application logic.
 
 
 ```python
-# Print out deploy.py 
+# Print out deploy.py
 
 from rich import print_json
 from rich.syntax import Syntax
-from rich import print as rprint 
+from rich import print as rprint
 
 
 def pretty_print_py(file_path):
@@ -683,7 +683,7 @@ pretty_print_py("deploy.py")
 
 As seen above, we've put our DSPy application logic in the `LLMClient` class. We've also passed in some basic configuration for resources and an autoscaling config. At initialization, each replica of `LLMClient` will run a copy of the DSPy program after reading in the saved parameters from `param_path` (`configs/deploy_params.json` here).
 
-The main entrypoint for the app is `construct_app`. 
+The main entrypoint for the app is `construct_app`.
 
 Our DSPy code will read in the API parameters for the RayLLM service through `args`.
 
@@ -691,7 +691,7 @@ Let's now go over the Ray Serve config for our DSPy deployment:
 
 
 ```python
-import yaml 
+import yaml
 
 deploy_config_path = "local_deploy_dspy.yaml"
 with open(deploy_config_path, "r") as f:
@@ -786,7 +786,7 @@ import yaml
 def update_rayllm_config(yaml_path, new_api_base=None, new_api_key=None, new_route_prefix=None):
     """
     Update the RayLLM configuration in the YAML file.
-    
+
     Args:
         yaml_path (str): Path to the YAML file
         new_api_base (str, Optional): New API base URL
@@ -795,16 +795,16 @@ def update_rayllm_config(yaml_path, new_api_base=None, new_api_key=None, new_rou
     """
     with open(yaml_path, 'r') as f:
         config = yaml.safe_load(f)
-    
+
     rayllm_args = config['applications'][0]['args']['rayllm_args']
-    
+
     if new_api_base:
         rayllm_args['api_base'] = new_api_base
     if new_api_key:
         rayllm_args['api_key'] = new_api_key
     if new_route_prefix:
         rayllm_args['route_prefix'] = new_route_prefix
-    
+
     with open(yaml_path, 'w') as f:
         yaml.safe_dump(config, f, default_flow_style=False)
 ```
@@ -821,7 +821,7 @@ update_rayllm_config("configs/anyscale_deploy.yaml", new_api_base=ANYSCALE_RAYLL
 !anyscale service deploy -f configs/anyscale_deploy.yaml
 ```
 
-Great! We should now have a service which runs the compiled DSPy program. Let's query this new service. Make sure to enter the details here: 
+Great! We should now have a service which runs the compiled DSPy program. Let's query this new service. Make sure to enter the details here:
 
 
 ```python
