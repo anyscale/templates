@@ -25,6 +25,8 @@ curl -sf "https://hub.docker.com/v2/repositories/anyscale/ray/tags/<tag>/" >/dev
 
 Then bump `BUILD.yaml` `ray_version` and grep/update any in-template version strings.
 
+**Pair with the dependency recompile.** If `<name>` ships a `templates/<name>/python_depset.lock`, the image bump alone leaves its locked deps compiled against the old Ray version. The lock must be regenerated against `<version>` — see `upgrade-dependencies.md` (`references/dependencies.md` for the system). Image Ray version and lock Ray version must match.
+
 ## 2. Open the PR
 
 1. Validate locally (`../references/conventions.md` "Validate locally") before committing.
