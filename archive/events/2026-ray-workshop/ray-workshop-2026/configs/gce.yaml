@@ -1,0 +1,8 @@
+head_node:
+  instance_type: n2-standard-8
+worker_nodes:
+- name: '1xL4:8CPU-32GB'
+  instance_type: g2-standard-8-nvidia-l4-1
+  min_nodes: 2
+  max_nodes: 2
+enable_cross_zone_scaling: true

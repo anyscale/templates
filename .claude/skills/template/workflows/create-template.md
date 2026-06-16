@@ -33,17 +33,14 @@ Append a list item per `../schemas/build-yaml-schema.yaml`. Set the image for th
 anyscale workspace_v2 get --id expwrk_<id> --json | jq '.config.compute_config'
 ```
 
-That returns the new ComputeConfig API shape; translate into the legacy schema (full fields + patterns in `../schemas/compute-config-schema.yaml`; legacy-API warning in `../references/conventions.md`). Key fields:
+That returns the ComputeConfig shape `configs/` uses directly (full fields + patterns in `../schemas/compute-config-schema.yaml`). Copy it, pruned to the minimal form:
 
-| New ComputeConfig (workspace_v2) | Legacy (`configs/<name>/*.yaml`) |
-|---|---|
-| head node instance type | `head_node_type.instance_type` |
-| worker group instance type | `worker_node_types[].instance_type` |
-| worker min / max count | `min_workers` / `max_workers` |
-| spot / market type | `use_spot: true` |
-| cross-zone / multi-AZ | `flags: {allow-cross-zone-autoscaling: true}` |
+- drop `cloud` / `cloud_resource` (injected at clone time)
+- drop fields matching their defaults: `min_nodes: 0`, `market_type: ON_DEMAND`, `auto_select_worker_config: false`, `enable_cross_zone_scaling: false`
+- drop auto-detected node `resources` (with workers present, the head is unschedulable by default); keep explicit overrides like `CPU: 0`
+- keep `max_nodes` explicit on every worker group
 
-Omit any field that matches its default (per the schema). Write `configs/<name>/aws.yaml` and `gce.yaml` by instance family.
+Write `configs/<name>/aws.yaml` and `gce.yaml` by instance family.
 
 **Fallback — guided Q&A.** No tested workspace → walk the user through those same fields.
 
@@ -57,7 +54,7 @@ Apply `../references/conventions.md` to the new template.
 
 ## 7. Test gate — non-skippable
 
-Commit on a branch and open a PR against `main`. Run `/test-template`, get it green **before publishing**. Dispatch, monitoring, and failure recovery: `../references/testing-template.md`.
+Commit on a branch and open a PR against `main`. Run `/test-template`, get it green **before publishing**. Dispatch, monitoring, and failure recovery: `../references/testing-template.md`. (Exception — an event template under time pressure can publish *test-free* by routing through `archive/`: see "Publish without the test gate" in `../references/publish-to-backend.md`.)
 
 ## 8. Merge to `main`
 

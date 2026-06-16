@@ -1,5 +1,10 @@
 # Introduction to Jobs
 
+<div align="left">
+  <a target="_blank" href="https://console.anyscale.com/template-preview/job-intro"><img src="https://img.shields.io/badge/🚀 Run_on-Anyscale-9hf"></a>&nbsp;
+  <a href="https://github.com/anyscale/templates/tree/main/templates/job-intro" role="button"><img src="https://img.shields.io/static/v1?label=&message=View%20On%20GitHub&color=586069&logo=github&labelColor=2f363d"></a>&nbsp;
+</div>
+
 **⏱️ Time to complete**: 10 min
 
 This tutorial shows you how to:
@@ -19,8 +24,13 @@ Key features of Anyscale Jobs:
 - Automated email alerting
 - Record and persist outputs such as logs
 
-
 **Note**: Ray also has an internal concept of a "Ray job", which is created when running a Ray app. Anyscale Jobs, Workspaces, and Services all launch Ray jobs internally.
+
+## Get the code
+
+```bash
+git clone https://github.com/anyscale/templates && cd templates/templates/job-intro
+```
 
 ## Walkthrough
 

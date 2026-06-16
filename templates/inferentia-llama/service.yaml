@@ -1,7 +1,0 @@
-name: "inferentia-llama-service"
-ray_serve_config:
-  applications:
-    - name: llama
-      import_path: llama-serve:lldep
-      runtime_env:
-        working_dir: "."

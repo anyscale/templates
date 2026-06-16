@@ -1,5 +1,10 @@
 # Introduction to Anyscale Jobs
 
+<div align="left">
+  <a target="_blank" href="https://console.anyscale.com/template-preview/anyscale-jobs-intro"><img src="https://img.shields.io/badge/🚀 Run_on-Anyscale-9hf"></a>&nbsp;
+  <a href="https://github.com/anyscale/templates/tree/main/templates/anyscale-jobs-intro" role="button"><img src="https://img.shields.io/static/v1?label=&message=View%20On%20GitHub&color=586069&logo=github&labelColor=2f363d"></a>&nbsp;
+</div>
+
 **⏱️ Time to complete**: 15-20 minutes
 
 Welcome to Anyscale Jobs! This hands-on tutorial teaches you how to submit, configure, monitor, and debug batch workloads on Anyscale.
@@ -38,6 +43,12 @@ This tutorial assumes you're running in an Anyscale workspace. If you haven't wo
 # Setup & Prerequisites
 
 First, let's verify the Anyscale CLI is available in our workspace:
+
+## Get the code
+
+```bash
+git clone https://github.com/anyscale/templates && cd templates/templates/anyscale-jobs-intro
+```
 
 
 ```python

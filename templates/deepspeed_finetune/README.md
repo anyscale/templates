@@ -1,5 +1,10 @@
 # Fine-tune an LLM with Ray Train and DeepSpeed
 
+<div align="left">
+  <a target="_blank" href="https://console.anyscale.com/template-preview/deepspeed_finetune"><img src="https://img.shields.io/badge/🚀 Run_on-Anyscale-9hf"></a>&nbsp;
+  <a href="https://github.com/anyscale/templates/tree/main/templates/deepspeed_finetune" role="button"><img src="https://img.shields.io/static/v1?label=&message=View%20On%20GitHub&color=586069&logo=github&labelColor=2f363d"></a>&nbsp;
+</div>
+
 **⏱️ Time to complete**: 20 min
 
 This notebook combines **Ray Train** with **DeepSpeed** to efficiently scale PyTorch training across GPUs and nodes while minimizing GPU memory usage.
@@ -9,6 +14,12 @@ This hands-on example includes the following:
 - Checkpoint saving and resuming with Ray Train
 - Configuring ZeRO for memory and performance (stages, mixed precision, CPU offload)
 - Launching a distributed training job
+
+## Get the code
+
+```bash
+git clone https://github.com/anyscale/templates && cd templates/templates/deepspeed_finetune
+```
 
 <div id="anyscale-note" class="alert alert-block alert-warning">
 

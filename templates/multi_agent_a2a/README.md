@@ -172,6 +172,12 @@ Get the system running first, then explore how it works.
 **Install dependencies:**
 Install all Python dependencies from [`requirements.txt`](https://github.com/anyscale/templates/blob/main/templates/multi_agent_a2a/requirements.txt):
 
+## Get the code
+
+```bash
+git clone https://github.com/anyscale/templates && cd templates/templates/multi_agent_a2a
+```
+
 
 ```python
 !uv pip install -r python_depset.lock --system --no-deps --no-cache-dir --index-strategy unsafe-best-match
@@ -360,7 +366,6 @@ See the code in [`llm/llm_deploy_qwen.py`](https://github.com/anyscale/templates
 
 - **`tool_call_parser="hermes"`**: Parses tool calls in Hermes format, which Qwen models support natively.
 
-
 For detailed information on deploying and configuring LLM services, see the [Anyscale LLM serving documentation](https://docs.anyscale.com/llm/serving) and the [Deploy LLM template](https://console.anyscale.com/template-preview/deployment-serve-llm).
 
 ### 5.2 The MCP tool services
@@ -389,8 +394,6 @@ See [mcps/web_search_mcp_server.py](https://github.com/anyscale/templates/blob/m
 | `brave_search` | Searches the web through the Brave Search API. | `query: str`, `num_results: int` (default: 10) |
 | `fetch_url` | Fetches and parses web pages. | `url: str`, `max_length: int` (default: 5000), `start_index: int` (default: 0), `raw: bool` (default: false), `ignore_robots_txt: bool` (default: false) |
 
-
-
 ### 5.3 The agent runtime
 
 The agent runtime provides a builder pattern for creating agents and deploying them with both SSE (human-to-agent) and A2A (agent-to-agent) interfaces. This shared infrastructure eliminates code duplication across agents by centralizing configuration, agent building, and deployment logic.
@@ -407,7 +410,6 @@ The configuration module [`agent_runtime/config.py`](https://github.com/anyscale
 
 - **Classes:** `LLMConfig` (LLM backend settings) and `MCPEndpoint` (MCP server configuration).
 - **Functions:** `load_llm_config()`.
-
 
 #### 5.3.2 Agent building helpers
 
@@ -427,7 +429,6 @@ The SSE deployment module [`agent_runtime/serve_deployment.py`](https://github.c
 #### 5.3.4 A2A deployment factory
 
 The A2A deployment module [`agent_runtime/a2a_deployment.py`](https://github.com/anyscale/templates/blob/main/templates/multi_agent_a2a/agent_runtime/a2a_deployment.py) enables standardized agent-to-agent communication by creating Ray Serve deployments with A2A protocol compliance.
-
 
 ### 5.4 The specialized agents
 
@@ -692,8 +693,6 @@ See [`serve_multi_config.yaml`](https://github.com/anyscale/templates/blob/main/
 **Autoscaling configuration:**
 
 The system uses Ray Serve's built-in autoscaling to handle variable load. See the configuration details in [`serve_multi_config.yaml`](https://github.com/anyscale/templates/blob/main/templates/multi_agent_a2a/serve_multi_config.yaml).
-
-
 
 ## 6. Next steps
 

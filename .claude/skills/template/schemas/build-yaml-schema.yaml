@@ -35,7 +35,9 @@
     AWS: configs/<config-dir>/aws.yaml
     GCP: configs/<config-dir>/gce.yaml
 
-  # REQUIRED.
+  # REQUIRED for entries under templates/ — active templates are tested. Entries
+  # under archive/ are exempt (test-free — e.g. fast event iteration or a retired
+  # template; see workflows/archive-template.md).
   test:
     command: bash tests.sh            # REQUIRED.
     tests_path: tests/<name>/         # REQUIRED. Relative path (no absolute, no "..").

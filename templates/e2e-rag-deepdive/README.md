@@ -1,7 +1,17 @@
 # Distributed RAG pipeline
 
+<div align="left">
+  <a target="_blank" href="https://console.anyscale.com/template-preview/e2e-rag-deepdive"><img src="https://img.shields.io/badge/🚀 Run_on-Anyscale-9hf"></a>&nbsp;
+  <a href="https://github.com/anyscale/templates/tree/main/templates/e2e-rag-deepdive" role="button"><img src="https://img.shields.io/static/v1?label=&message=View%20On%20GitHub&color=586069&logo=github&labelColor=2f363d"></a>&nbsp;
+</div>
+
 **⏱️ Time to complete**: 60 min
 
+## Get the code
+
+```bash
+git clone https://github.com/anyscale/templates && cd templates/templates/e2e-rag-deepdive
+```
 
 
 This tutorial covers end-to-end Retrieval-Augmented Generation (RAG) pipelines using [Ray](https://docs.ray.io/), from data ingestion and LLM deployment to prompt engineering, evaluation and scaling out all workloads in the application.

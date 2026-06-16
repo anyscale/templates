@@ -1,5 +1,10 @@
 # Distributed VLA Fine-Tuning with Ray
 
+<div align="left">
+  <a target="_blank" href="https://console.anyscale.com/template-preview/vla-fine-tuning"><img src="https://img.shields.io/badge/🚀 Run_on-Anyscale-9hf"></a>&nbsp;
+  <a href="https://github.com/anyscale/templates/tree/main/templates/vla-fine-tuning" role="button"><img src="https://img.shields.io/static/v1?label=&message=View%20On%20GitHub&color=586069&logo=github&labelColor=2f363d"></a>&nbsp;
+</div>
+
 **⏱️ Time to complete:** 30 min
 
 This notebook fine-tunes the **PI0.5 Vision-Language-Action (VLA)** model on a
@@ -52,6 +57,12 @@ on a laptop to 32 GPUs across a cluster, with zero changes to your code.
                      |   -> CHW float32   | - gradient accum
                      | - stream batches   | - checkpoint & resume
                      +--------------------+---------------------
+```
+
+## Get the code
+
+```bash
+git clone https://github.com/anyscale/templates && cd templates/templates/vla-fine-tuning
 ```
 
 ## Files
@@ -298,7 +309,7 @@ def train_loop_per_worker(config: dict):
 
     from lerobot.policies.factory import make_pre_post_processors
     preprocessor, _ = make_pre_post_processors(
-        policy.module.config, pretrained_path="lerobot/pi05_base", dataset_stats=config["stats"],
+        policy.module.config, pretrained_path=util.pi05_base_path(), dataset_stats=config["stats"],
     )
 
     # -- Hyperparameters and LR schedule ----------------------------------------

@@ -1,11 +1,11 @@
 # Deploy MCP servers
 
-**⏱️ Time to complete**: 60 min
-
 <div align="left">
-<a target="_blank" href="https://console.anyscale.com/"><img src="https://img.shields.io/badge/🚀 Run_on-Anyscale-9hf"></a>&nbsp;
-<a href="https://github.com/anyscale/templates/tree/main/templates/mcp-ray-serve" role="button"><img src="https://img.shields.io/static/v1?label=&amp;message=View%20On%20GitHub&amp;color=586069&amp;logo=github&amp;labelColor=2f363d"></a>&nbsp;
+  <a target="_blank" href="https://console.anyscale.com/template-preview/mcp-ray-serve"><img src="https://img.shields.io/badge/🚀 Run_on-Anyscale-9hf"></a>&nbsp;
+  <a href="https://github.com/anyscale/templates/tree/main/templates/mcp-ray-serve" role="button"><img src="https://img.shields.io/static/v1?label=&message=View%20On%20GitHub&color=586069&logo=github&labelColor=2f363d"></a>&nbsp;
 </div>
+
+**⏱️ Time to complete**: 60 min
 
 This repository provides end-to-end examples for deploying and scaling Model Context Protocol (MCP) servers using Ray Serve and Anyscale Service, covering both streamable HTTP and stdio transport types:
 
@@ -22,13 +22,11 @@ This repository provides end-to-end examples for deploying and scaling Model Con
 - **Fault tolerance:** Detects failures, restarts components, and reroutes traffic to healthy replicas for continuous availability
 - **Composition:**  Chains deployments—pre‑process, infer, post‑process, and custom logic—into a single seamless pipeline
 
-
 ## Anyscale service benefits
 - **Production ready:**  Enterprise‑grade infrastructure management and automated deployments for real‑world MCP traffic
 - **[High availability](https://docs.anyscale.com/platform/services/faq#does-services-support-multiple-availability-zones-for-high-availability):**  Availability‑Zone‑aware scheduling and zero‑downtime rolling updates to maximize uptime
 - **[Logging](https://docs.anyscale.com/monitoring/accessing-logs) and [tracing](https://docs.anyscale.com/monitoring/tracing):**  Comprehensive logs, distributed tracing, and real‑time dashboards for end‑to‑end observability
 - **[Head node fault tolerance](https://docs.anyscale.com/platform/services/head-node-ft/):**  Managed head‑node redundancy to eliminate single points of failure in your Ray cluster coordination layer
-
 
 ## Prerequisites
 
@@ -66,4 +64,10 @@ If you're running on a Kubernetes cloud (EKS, GKE, etc.), you can still access t
 03 Deploy_single_mcp_stdio_docker_image_with_ray_serve.ipynb
 04 Deploy_multiple_mcp_stdio_docker_images_with_ray_serve.ipynb
 05 (Optional) Build_docker_image_for_mcp_server.ipynb
+```
+
+## Get the code
+
+```bash
+git clone https://github.com/anyscale/templates && cd templates/templates/mcp-ray-serve
 ```

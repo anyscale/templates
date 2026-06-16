@@ -1,0 +1,12 @@
+head_node:
+  instance_type: m5.2xlarge
+  resources:
+    CPU: 8
+worker_nodes:
+- name: cpu-worker
+  instance_type: m5.2xlarge
+  max_nodes: 1
+- name: gpu-worker
+  instance_type: g5.12xlarge
+  max_nodes: 2
+enable_cross_zone_scaling: true

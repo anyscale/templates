@@ -1,5 +1,10 @@
 # Biotech Protein Sequence Embedding Pipeline (ESM-2)
 
+<div align="left">
+  <a target="_blank" href="https://console.anyscale.com/template-preview/biotech_protein_embeddings"><img src="https://img.shields.io/badge/🚀 Run_on-Anyscale-9hf"></a>&nbsp;
+  <a href="https://github.com/anyscale/templates/tree/main/templates/biotech_protein_embeddings" role="button"><img src="https://img.shields.io/static/v1?label=&message=View%20On%20GitHub&color=586069&logo=github&labelColor=2f363d"></a>&nbsp;
+</div>
+
 **⏱️ Time to complete**: 30 min
 ### Anyscale Technical Demo — Ray Data on Anyscale Jobs
 
@@ -48,6 +53,12 @@ Anyscale Job
 **Hero moment:** We run the pipeline TWICE — first without bucketing (~30% GPU util), then with bucketing (~80% GPU util). Same data, same hardware, 2-3x throughput improvement from one preprocessing optimization.
 
 **Estimated runtime:** ~5-8 minutes for both runs on 2x A10G GPUs (100K sequences).
+
+## Get the code
+
+```bash
+git clone https://github.com/anyscale/templates && cd templates/templates/biotech_protein_embeddings
+```
 
 ## Step 1: Connect to the Ray Cluster
 

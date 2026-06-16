@@ -1,0 +1,12 @@
+head_node:
+  instance_type: m5.4xlarge
+  resources:
+    CPU: 0
+    GPU: 0
+    is_head_node: 1
+worker_nodes:
+- name: 1xL4:16CPU-64GB
+  instance_type: g6.4xlarge
+  min_nodes: 2
+  max_nodes: 2
+enable_cross_zone_scaling: true

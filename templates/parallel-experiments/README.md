@@ -1,5 +1,10 @@
 # Running Experiments in Parallel with Tune
 
+<div align="left">
+  <a target="_blank" href="https://console.anyscale.com/template-preview/parallel-experiments"><img src="https://img.shields.io/badge/🚀 Run_on-Anyscale-9hf"></a>&nbsp;
+  <a href="https://github.com/anyscale/templates/tree/main/templates/parallel-experiments" role="button"><img src="https://img.shields.io/static/v1?label=&message=View%20On%20GitHub&color=586069&logo=github&labelColor=2f363d"></a>&nbsp;
+</div>
+
 **⏱️ Time to complete**: 10 min
 
 Ray Tune lets you easily run experiments in parallel across a cluster.
@@ -14,6 +19,12 @@ In this tutorial, you will learn:
 ## Grid search hello world
 
 Let's start by running a quick "hello world" that runs a few variations of a function call across a cluster. It should take about 10 seconds to run:
+
+## Get the code
+
+```bash
+git clone https://github.com/anyscale/templates && cd templates/templates/parallel-experiments
+```
 
 
 ```python

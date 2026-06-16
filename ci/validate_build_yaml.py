@@ -62,8 +62,10 @@ class ClusterEnv(Strict):
 
 
 class ComputeConfig(Strict):
-    GCP: str = Field(pattern=r"^configs/.+/gce\.yaml$")
-    AWS: str = Field(pattern=r"^configs/.+/aws\.yaml$")
+    # configs/<name>/ for active templates; archive/.../<name>/configs/ for
+    # archived ones (which co-locate their compute config under the template).
+    GCP: str = Field(pattern=r"^(?:configs|archive)/.+/gce\.yaml$")
+    AWS: str = Field(pattern=r"^(?:configs|archive)/.+/aws\.yaml$")
 
 
 class Test(Strict):
@@ -74,64 +76,78 @@ class Test(Strict):
 
 class Entry(Strict):
     name: str = Field(pattern=r"^[a-z0-9_-]+$")
-    dir: str = Field(pattern=r"^templates/")
+    # templates/<name>/ for active templates; archive/<...>/<name>/ for archived
+    # ones (retired, past-event, or fast untested iteration).
+    dir: str = Field(pattern=r"^(?:templates|archive)/")
     cluster_env: ClusterEnv
     compute_config: ComputeConfig
-    test: Test
+    # Mandatory for templates/ entries — active templates are tested. Entries
+    # under archive/ are exempt: archived content can be published test-free
+    # (e.g. an urgent mid-event fix). Optional here so the validator can raise a
+    # clear, actionable error instead of pydantic's generic "Field required".
+    test: Optional[Test] = None
+
+    @model_validator(mode="after")
+    def _templates_must_be_tested(self):
+        if self.dir.startswith("templates/") and self.test is None:
+            raise ValueError(
+                f"{self.name}: no `test` block — every template under templates/ "
+                "must be tested. To publish without a test (fast event iteration "
+                "or a retired template), move it under archive/ instead; archive/ "
+                "entries are test-exempt."
+            )
+        return self
 
 
-# Schemas for the legacy compute config, applied to BUILD.yaml-referenced
-# files. All fields are optional (lax) but extra keys are rejected (strict)
-# — extra keys usually indicate the file is using the new schema.
-#   ComputeTemplateConfig: https://docs.anyscale.com/ref/0.26.64/compute-config-api#computetemplateconfig-legacy
-#   ComputeNodeType:       https://docs.anyscale.com/ref/0.26.64/compute-config-api#computenodetype-legacy
-#   WorkerNodeType:        https://docs.anyscale.com/ref/0.26.64/other#workernodetype-legacy
-#   Resources:             https://docs.anyscale.com/ref/0.26.64/other#resources-legacy
+# ComputeConfig schema, applied to BUILD.yaml-referenced files.
+# All fields are optional (lax) but extra keys are rejected (strict).
+#   ComputeConfig: https://docs.anyscale.com/reference/compute-config-api#computeconfig
 
-class LegacyResources(Strict):
-    cpu: Optional[Any] = None
-    gpu: Optional[Any] = None
-    memory: Optional[Any] = None
-    object_store_memory: Optional[Any] = None
-    custom_resources: Optional[Any] = None
-
-
-class LegacyComputeNodeType(Strict):
-    """Used for head_node_type."""
-    name: Optional[Any] = None
+class HeadNode(Strict):
+    """Used for head_node (the head has no `name` field)."""
     instance_type: Optional[Any] = None
-    resources: Optional[LegacyResources] = None
+    resources: Optional[Any] = None
+    required_resources: Optional[Any] = None
     labels: Optional[Any] = None
-    aws_advanced_configurations_json: Optional[Any] = None
-    gcp_advanced_configurations_json: Optional[Any] = None
-    advanced_configurations_json: Optional[Any] = None
+    required_labels: Optional[Any] = None
+    advanced_instance_config: Optional[Any] = None
     flags: Optional[Any] = None
+    cloud_deployment: Optional[Any] = None
 
 
-class LegacyWorkerNodeType(LegacyComputeNodeType):
-    """Used for worker_node_types entries. Same as ComputeNodeType plus
-    worker-specific scaling / spot fields."""
-    min_workers: Optional[Any] = None
-    max_workers: Optional[Any] = None
-    use_spot: Optional[Any] = None
-    fallback_to_ondemand: Optional[Any] = None
+class WorkerNode(HeadNode):
+    """Used for worker_nodes entries: head fields plus a name and worker scaling / market fields."""
+    name: Optional[Any] = None
+    min_nodes: Optional[Any] = None
+    max_nodes: Optional[Any] = None
+    market_type: Optional[Any] = None
 
 
-class LegacyComputeTemplateConfig(Strict):
-    cloud_id: Optional[Any] = None
-    maximum_uptime_minutes: Optional[Any] = None
-    deployment_configs: Optional[Any] = None
-    max_workers: Optional[Any] = None
-    region: Optional[Any] = None
-    allowed_azs: Optional[Any] = None
-    head_node_type: Optional[LegacyComputeNodeType] = None
-    worker_node_types: Optional[List[LegacyWorkerNodeType]] = None
-    aws_advanced_configurations_json: Optional[Any] = None
-    gcp_advanced_configurations_json: Optional[Any] = None
-    advanced_configurations_json: Optional[Any] = None
+class ComputeConfigFile(Strict):
+    cloud: Optional[Any] = None
+    cloud_resource: Optional[Any] = None
+    head_node: Optional[HeadNode] = None
+    worker_nodes: Optional[List[WorkerNode]] = None
+    min_resources: Optional[Any] = None
+    max_resources: Optional[Any] = None
+    zones: Optional[Any] = None
+    enable_cross_zone_scaling: Optional[Any] = None
+    advanced_instance_config: Optional[Any] = None
+    flags: Optional[Any] = None
     auto_select_worker_config: Optional[Any] = None
-    flags: Optional[Any] = None
-    idle_termination_minutes: Optional[Any] = None
+
+    @model_validator(mode="after")
+    def _auto_select_xor_worker_nodes(self):
+        # Mirror the SDK constraint (anyscale compute_config/models.py
+        # _validate_auto_select_worker_config): auto_select_worker_config cannot
+        # be combined with an explicit worker_nodes list (note `[]` is not None,
+        # so it is also forbidden).
+        if self.auto_select_worker_config and self.worker_nodes is not None:
+            raise ValueError(
+                "'auto_select_worker_config: true' cannot be combined with 'worker_nodes'; "
+                "omit 'worker_nodes' when auto-selecting"
+            )
+        return self
 
 
 # ------------------------------------------- filesystem + name uniqueness
@@ -153,27 +169,31 @@ def check_filesystem_and_uniqueness(entries: list[Entry]) -> list[str]:
             errors.append(f"{e.name}: duplicate dir: {e.dir}")
         seen_dirs.add(e.dir)
 
-        if e.test.tests_path in seen_tests_paths:
-            errors.append(f"{e.name}: duplicate tests_path: {e.test.tests_path}")
-        seen_tests_paths.add(e.test.tests_path)
+        if e.test is not None:
+            if e.test.tests_path in seen_tests_paths:
+                errors.append(f"{e.name}: duplicate tests_path: {e.test.tests_path}")
+            seen_tests_paths.add(e.test.tests_path)
 
-        # dir basename must equal the entry's name. Catches stale dirs when
-        # an entry is renamed.
-        dir_basename = Path(e.dir.rstrip("/")).name
-        if dir_basename != e.name:
-            errors.append(
-                f"{e.name}.dir: basename {dir_basename!r} must equal name "
-                f"{e.name!r} (expected templates/{e.name}/)"
-            )
+        # dir basename must equal the entry's name (templates/ convention) —
+        # catches stale dirs on rename. archive/ entries are laid out freely
+        # (e.g. archive/.../<name>/content), so this is templates/-only.
+        if e.dir.startswith("templates/"):
+            dir_basename = Path(e.dir.rstrip("/")).name
+            if dir_basename != e.name:
+                errors.append(
+                    f"{e.name}.dir: basename {dir_basename!r} must equal name "
+                    f"{e.name!r} (expected templates/{e.name}/)"
+                )
 
         # tests_path basename must equal the entry's name. Catches stale
         # tests_path values when an entry is renamed.
-        tests_basename = Path(e.test.tests_path.rstrip("/")).name
-        if tests_basename != e.name:
-            errors.append(
-                f"{e.name}.test.tests_path: basename {tests_basename!r} must "
-                f"equal name {e.name!r} (expected tests/{e.name}/)"
-            )
+        if e.test is not None:
+            tests_basename = Path(e.test.tests_path.rstrip("/")).name
+            if tests_basename != e.name:
+                errors.append(
+                    f"{e.name}.test.tests_path: basename {tests_basename!r} must "
+                    f"equal name {e.name!r} (expected tests/{e.name}/)"
+                )
 
         # GCP and AWS configs must live in the same directory under configs/.
         # Catches one-cloud-customized-but-not-the-other mistakes.
@@ -191,7 +211,8 @@ def check_filesystem_and_uniqueness(entries: list[Entry]) -> list[str]:
         # and configs/). Shared `configs/basic-single-node/` is exempt.
         cfg_dir_basename = gcp_parent.name
         if (
-            gcp_parent == aws_parent
+            gcp_parent.parts and gcp_parent.parts[0] == "configs"
+            and gcp_parent == aws_parent
             and cfg_dir_basename != "basic-single-node"
             and cfg_dir_basename != e.name
         ):
@@ -207,10 +228,11 @@ def check_filesystem_and_uniqueness(entries: list[Entry]) -> list[str]:
             path = getattr(e.compute_config, cloud)
             if not (REPO_ROOT / path).is_file():
                 errors.append(f"{e.name}.compute_config.{cloud}: not found: {path}")
-        if not (REPO_ROOT / e.test.tests_path).is_dir():
-            errors.append(f"{e.name}.test.tests_path: not found: {e.test.tests_path}")
-        elif not (REPO_ROOT / e.test.tests_path / "tests.sh").is_file():
-            errors.append(f"{e.name}.test.tests_path: missing tests.sh in {e.test.tests_path}")
+        if e.test is not None:
+            if not (REPO_ROOT / e.test.tests_path).is_dir():
+                errors.append(f"{e.name}.test.tests_path: not found: {e.test.tests_path}")
+            elif not (REPO_ROOT / e.test.tests_path / "tests.sh").is_file():
+                errors.append(f"{e.name}.test.tests_path: missing tests.sh in {e.test.tests_path}")
     return errors
 
 
@@ -253,17 +275,16 @@ def check_redundant_compute_configs(entries: list[Entry]) -> list[str]:
     return warnings
 
 
-# ----------------------------------------- compute config legacy schema
+# -------------------------------------- compute config schema (ComputeConfig)
 
-LEGACY_DOCS = (
-    "https://docs.anyscale.com/ref/0.26.64/compute-config-api"
-    "#computetemplateconfig-legacy"
+COMPUTE_CONFIG_DOCS = (
+    "https://docs.anyscale.com/reference/compute-config-api#computeconfig"
 )
 
 
-def check_compute_configs_legacy(entries: list[Entry]) -> list[str]:
-    """Each compute config file must follow the legacy ComputeTemplateConfig
-    schema. Top-level keys are checked (nested keys are not validated)."""
+def check_compute_configs(entries: list[Entry]) -> list[str]:
+    """Each compute config file must follow the ComputeConfig schema.
+    Top-level keys are checked (nested keys are lightly validated)."""
     errors: list[str] = []
     paths: set[str] = set()
     for e in entries:
@@ -275,7 +296,7 @@ def check_compute_configs_legacy(entries: list[Entry]) -> list[str]:
             continue  # already reported by check_filesystem_and_uniqueness
         try:
             data = yaml.safe_load(full.read_text()) or {}
-            LegacyComputeTemplateConfig.model_validate(data)
+            ComputeConfigFile.model_validate(data)
         except ValidationError as e:
             extras = [
                 ".".join(str(p) for p in err["loc"]) for err in e.errors()
@@ -283,9 +304,8 @@ def check_compute_configs_legacy(entries: list[Entry]) -> list[str]:
             ]
             if extras:
                 errors.append(
-                    f"{path}: unknown keys {extras} — this config likely uses "
-                    f"the new compute-config schema. This repo requires the "
-                    f"legacy ComputeTemplateConfig API: {LEGACY_DOCS}"
+                    f"{path}: unknown keys {extras} — compute configs must follow "
+                    f"the ComputeConfig schema: {COMPUTE_CONFIG_DOCS}"
                 )
             else:
                 errors.append(f"{path}: {e.errors()}")
@@ -388,7 +408,7 @@ def main() -> int:
         print(f"::warning::{w}", file=sys.stderr)
 
     errors = check_filesystem_and_uniqueness(entries)
-    errors.extend(check_compute_configs_legacy(entries))
+    errors.extend(check_compute_configs(entries))
     errors.extend(check_gcp_byod_images(entries, network=not args.no_network))
 
     if errors:

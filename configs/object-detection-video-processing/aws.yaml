@@ -1,14 +1,8 @@
-# Head node
-head_node_type:
-  name: head
+head_node:
   instance_type: m5.2xlarge
   resources:
-    cpu: 8
-
-# Worker nodes
-worker_node_types:
-  - name: "gpu-workers"
-    instance_type: "g4dn.xlarge"
-    min_workers: 0
-    max_workers: 10
-auto_select_worker_config: false
+    CPU: 8
+worker_nodes:
+- name: gpu-workers
+  instance_type: g4dn.xlarge
+  max_nodes: 10

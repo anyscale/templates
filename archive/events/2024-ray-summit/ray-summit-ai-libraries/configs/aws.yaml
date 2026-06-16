@@ -1,0 +1,8 @@
+head_node:
+  instance_type: g4dn.2xlarge
+worker_nodes:
+- name: 1xT4:8CPU-32GB
+  instance_type: g4dn.2xlarge
+  min_nodes: 1
+  max_nodes: 1
+enable_cross_zone_scaling: true

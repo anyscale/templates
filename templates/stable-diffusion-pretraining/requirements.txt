@@ -1,0 +1,12 @@
+diffusers==0.34.0
+transformers==4.47.0
+accelerate==1.2.1
+lightning==2.6.1
+typer
+s3fs
+matplotlib
+Pillow
+torch>=2.5,<2.6
+torchvision>=0.20,<0.21
+numpy==1.26.4
+pyarrow==19.0.1

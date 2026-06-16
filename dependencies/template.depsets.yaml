@@ -471,84 +471,84 @@ depsets:
     build_arg_sets:
       - ray2551_py311_cu128
 #
-#
-#  - name: asynchronous_inference_depset_${RAY_VERSION}_${PYTHON_VERSION}
-#    operation: expand
-#    source_depset: ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
-#    requirements:
-#      - templates/asynchronous_inference/requirements.txt
-#    output: templates/asynchronous_inference/python_depset.lock
-#    append_flags:
-#      - --python-version=${PYTHON_VERSION}
-#      - --python-platform=linux
-#      - --unsafe-package ray
-#    build_arg_sets:
-#      - ray2551_py312_cu128
-#
-#  - name: mcp_ray_serve_depset_${RAY_VERSION}_${PYTHON_VERSION}
-#    operation: expand
-#    source_depset: ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
-#    requirements:
-#      - templates/mcp-ray-serve/requirements.txt
-#    output: templates/mcp-ray-serve/python_depset.lock
-#    append_flags:
-#      - --python-version=${PYTHON_VERSION}
-#      - --python-platform=linux
-#      - --unsafe-package ray
-#    build_arg_sets:
-#      - ray2551_py312_cu128
-#
-#  - name: stable_diffusion_pretraining_depset_${RAY_VERSION}_${PYTHON_VERSION}
-#    operation: expand
-#    source_depset: ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
-#    requirements:
-#      - templates/stable-diffusion-pretraining/requirements.txt
-#    output: templates/stable-diffusion-pretraining/python_depset.lock
-#    append_flags:
-#      - --index https://download.pytorch.org/whl/cu128
-#      - --python-version=${PYTHON_VERSION}
-#      - --python-platform=linux
-#      - --unsafe-package ray
-#    build_arg_sets:
-#      - ray2551_py311_cu128
-#
-#  - name: ray_summit_core_masterclass_depset_${RAY_VERSION}_${PYTHON_VERSION}
-#    operation: expand
-#    source_depset: ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
-#    requirements:
-#      - templates/ray-summit-core-masterclass/requirements.txt
-#    output: templates/ray-summit-core-masterclass/python_depset.lock
-#    append_flags:
-#      - --index https://download.pytorch.org/whl/cu128
-#      - --python-version=${PYTHON_VERSION}
-#      - --python-platform=linux
-#      - --unsafe-package ray
-#    build_arg_sets:
-#      - ray2551_py312_cu128
-#
-#  - name: text_embeddings_depset_${RAY_VERSION}_${PYTHON_VERSION}
-#    operation: expand
-#    source_depset: ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
-#    requirements:
-#      - templates/text-embeddings/requirements.txt
-#    output: templates/text-embeddings/python_depset.lock
-#    append_flags:
-#      - --index https://download.pytorch.org/whl/cu124
-#      - --python-version=${PYTHON_VERSION}
-#      - --python-platform=linux
-#      - --unsafe-package ray
-#    build_arg_sets:
-#      - ray2551_py311_cu128
-#
-#  - name: e2e_timeseries_forecasting_depset_${RAY_VERSION}_${PYTHON_VERSION}
-#    operation: expand
-#    source_depset: ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
-#    requirements:
-#      - templates/e2e-timeseries-forecasting/requirements.txt
-#    output: templates/e2e-timeseries-forecasting/python_depset.lock
-#    append_flags:
-#      - --python-version=${PYTHON_VERSION}
-#      - --python-platform=linux
-#      - --unsafe-package ray
-#    build_arg_sets:
-#      - ray2551_py312_cu128
+
+  - name: asynchronous_inference_depset_${RAY_VERSION}_${PYTHON_VERSION}
+    operation: expand
+    source_depset: ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
+    requirements:
+      - templates/asynchronous_inference/requirements.txt
+    output: templates/asynchronous_inference/python_depset.lock
+    append_flags:
+      - --python-version=${PYTHON_VERSION}
+      - --python-platform=linux
+      - --unsafe-package ray
+    build_arg_sets:
+      - ray2551_py312_cu128
+
+  - name: mcp_ray_serve_depset_${RAY_VERSION}_${PYTHON_VERSION}
+    operation: expand
+    source_depset: ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
+    requirements:
+      - templates/mcp-ray-serve/requirements.txt
+    output: templates/mcp-ray-serve/python_depset.lock
+    append_flags:
+      - --python-version=${PYTHON_VERSION}
+      - --python-platform=linux
+      - --unsafe-package ray
+    build_arg_sets:
+      - ray2551_py312_cu128
+
+  - name: stable_diffusion_pretraining_depset_${RAY_VERSION}_${PYTHON_VERSION}
+    operation: expand
+    source_depset: ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
+    requirements:
+      - templates/stable-diffusion-pretraining/requirements.txt
+    output: templates/stable-diffusion-pretraining/python_depset.lock
+    append_flags:
+      - --index https://download.pytorch.org/whl/cu128
+      - --python-version=${PYTHON_VERSION}
+      - --python-platform=linux
+      - --unsafe-package ray
+    build_arg_sets:
+      - ray2551_py311_cu128
+
+  - name: ray_summit_core_masterclass_depset_${RAY_VERSION}_${PYTHON_VERSION}
+    operation: expand
+    source_depset: ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
+    requirements:
+      - templates/ray-summit-core-masterclass/requirements.txt
+    output: templates/ray-summit-core-masterclass/python_depset.lock
+    append_flags:
+      - --index https://download.pytorch.org/whl/cu128
+      - --python-version=${PYTHON_VERSION}
+      - --python-platform=linux
+      - --unsafe-package ray
+    build_arg_sets:
+      - ray2551_py312_cu128
+
+  - name: text_embeddings_depset_${RAY_VERSION}_${PYTHON_VERSION}
+    operation: expand
+    source_depset: ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
+    requirements:
+      - templates/text-embeddings/requirements.txt
+    output: templates/text-embeddings/python_depset.lock
+    append_flags:
+      - --index https://download.pytorch.org/whl/cu124
+      - --python-version=${PYTHON_VERSION}
+      - --python-platform=linux
+      - --unsafe-package ray
+    build_arg_sets:
+      - ray2551_py311_cu128
+
+  - name: e2e_timeseries_forecasting_depset_${RAY_VERSION}_${PYTHON_VERSION}
+    operation: expand
+    source_depset: ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
+    requirements:
+      - templates/e2e-timeseries-forecasting/requirements.txt
+    output: templates/e2e-timeseries-forecasting/python_depset.lock
+    append_flags:
+      - --python-version=${PYTHON_VERSION}
+      - --python-platform=linux
+      - --unsafe-package ray
+    build_arg_sets:
+      - ray2551_py312_cu128

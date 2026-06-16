@@ -1,9 +1,7 @@
-head_node_type:
-  name: head
+head_node:
   instance_type: m5.2xlarge
-
-worker_node_types:
-  - name: gpu-worker
-    instance_type: g4dn.xlarge   # T4 16GB — one per training worker
-    min_workers: 2
-    max_workers: 2
+worker_nodes:
+- name: gpu-worker
+  instance_type: g4dn.xlarge
+  min_nodes: 2
+  max_nodes: 2

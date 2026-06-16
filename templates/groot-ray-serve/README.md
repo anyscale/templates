@@ -1,5 +1,10 @@
 # Module 3: Robotics simulation at scale with Ray
 
+<div align="left">
+  <a target="_blank" href="https://console.anyscale.com/template-preview/groot-ray-serve"><img src="https://img.shields.io/badge/🚀 Run_on-Anyscale-9hf"></a>&nbsp;
+  <a href="https://github.com/anyscale/templates/tree/main/templates/groot-ray-serve" role="button"><img src="https://img.shields.io/static/v1?label=&message=View%20On%20GitHub&color=586069&logo=github&labelColor=2f363d"></a>&nbsp;
+</div>
+
 ### Ray Workshop: Boston, workshop module
 
 In this module you will see Ray Core and Ray Serve combined to run a humanoid robotics workload end to end:
@@ -15,6 +20,11 @@ The same primitives that scale LLM inference scale cleanly to robotics. By the e
 3. A simulation rollout that runs as a Ray Core task on a different GPU
 4. A clear picture of how to swap models, fan out simulators, and scale replicas. All one-line changes.
 
+## Get the code
+
+```bash
+git clone https://github.com/anyscale/templates && cd templates/templates/groot-ray-serve
+```
 
 
 > **One shared policy fleet. Many independent simulators.**

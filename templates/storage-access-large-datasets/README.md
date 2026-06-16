@@ -1,5 +1,10 @@
 # Storage Access and Large Datasets on Anyscale
 
+<div align="left">
+  <a target="_blank" href="https://console.anyscale.com/template-preview/storage-access-large-datasets"><img src="https://img.shields.io/badge/🚀 Run_on-Anyscale-9hf"></a>&nbsp;
+  <a href="https://github.com/anyscale/templates/tree/main/templates/storage-access-large-datasets" role="button"><img src="https://img.shields.io/static/v1?label=&message=View%20On%20GitHub&color=586069&logo=github&labelColor=2f363d"></a>&nbsp;
+</div>
+
 **⏱️ Time to complete**: 15-20 minutes
 
 This template demonstrates how to access and process large datasets from Amazon S3, Google Cloud Storage (GCS), and Azure Blob Storage using Ray Data on Anyscale. You'll learn authentication patterns, file format support, performance optimization, and best practices for cloud storage integration.
@@ -32,6 +37,12 @@ For this template, we'll primarily use `/mnt/cluster_storage/` for intermediate 
 ## Setup & Prerequisites
 
 Let's start by installing dependencies and importing the necessary libraries.
+
+## Get the code
+
+```bash
+git clone https://github.com/anyscale/templates && cd templates/templates/storage-access-large-datasets
+```
 
 
 ```python

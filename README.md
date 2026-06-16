@@ -9,6 +9,7 @@ BUILD.yaml                # Manifest of every template (entry point, image, comp
 templates/<name>/         # Template content — notebook or .py + Dockerfile (if custom image)
 tests/<name>/tests.sh     # Per-template smoke test, executed by CI
 configs/<name>/           # Compute configs: aws.yaml + gce.yaml (or reuse basic-single-node/)
+archive/                  # Retired / test-exempt templates — kept for reference, off the test gate
 ci/                       # Schema validators + the README auto-generator
 .claude/skills/template/  # Maintenance procedures (Ray bumps, formatting, publishing)
 ```
@@ -36,8 +37,10 @@ The sections below describe what the skill (or you, manually) does under the hoo
    - A `Dockerfile` only if you need a custom image — otherwise reference a stock `anyscale/ray:...` image
 2. **Test** at `tests/<name>/tests.sh` — runs in CI to confirm the template still works end-to-end
 3. **Compute config:** most templates reuse `configs/basic-single-node/`. If you need custom compute, add `configs/<name>/aws.yaml` + `configs/<name>/gce.yaml`
-4. **`BUILD.yaml` entry** — schema in [`.claude/skills/template/references/build-yaml-schema.yaml`](.claude/skills/template/references/build-yaml-schema.yaml), strictly validated by `ci/validate_build_yaml.py` (also runs as a pre-commit hook)
-5. **Custom image** (only if you set `cluster_env.byod`): build and push with [`.claude/skills/template/scripts/publish-custom-image.sh`](.claude/skills/template/scripts/publish-custom-image.sh)`<dockerfile-dir> <name> <ray-version>`. You need permissions to push to Anyscale's public GCP Artifact registry.
+4. **`BUILD.yaml` entry** — schema in [`.claude/skills/template/schemas/build-yaml-schema.yaml`](.claude/skills/template/schemas/build-yaml-schema.yaml), strictly validated by `ci/validate_build_yaml.py` (also runs as a pre-commit hook)
+5. **Custom image** (only if you set `cluster_env.byod`): build and push with [`.claude/skills/template/scripts/push-custom-image-to-gcp.sh`](.claude/skills/template/scripts/push-custom-image-to-gcp.sh)`<dockerfile-dir> <name> <ray-version>`. You need permissions to push to Anyscale's public GCP Artifact registry.
+
+**Retiring or fast-publishing.** Every template under `templates/` must have a test (CI enforces it). To retire one — kept for reference but off the test gate — or to publish an event template without waiting on tests, move it under `archive/`; see the `/template` skill (`workflows/archive-template.md`, and "Publish without the test gate" in `references/publish-to-backend.md`).
 
 ## Local development
 

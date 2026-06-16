@@ -1,0 +1,7 @@
+head_node:
+  instance_type: g5.4xlarge
+worker_nodes:
+- name: gpu_worker
+  instance_type: g5.4xlarge
+  min_nodes: 1
+  max_nodes: 1
