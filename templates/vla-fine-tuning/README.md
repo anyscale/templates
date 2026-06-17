@@ -308,8 +308,9 @@ def train_loop_per_worker(config: dict):
     # -- Build preprocessor with normalization stats ---------------------------
 
     from lerobot.policies.factory import make_pre_post_processors
+    from huggingface_hub import snapshot_download
     preprocessor, _ = make_pre_post_processors(
-        policy.module.config, pretrained_path=util.pi05_base_path(), dataset_stats=config["stats"],
+        policy.module.config, pretrained_path=snapshot_download("lerobot/pi05_base", revision="a538eb273274"), dataset_stats=config["stats"],
     )
 
     # -- Hyperparameters and LR schedule ----------------------------------------
