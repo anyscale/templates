@@ -14,6 +14,8 @@ Manage production templates (BUILD.yaml entries). No services to run.
 
 Local: edit → `pre-commit run --all-files` → push. Pre-commit covers lint, formatting, codebase conventions. `rayapp build all` mirrors CI's build job locally.
 
+Locked deps — most templates ship a fully-pinned `templates/<id>/python_depset.lock` compiled by `./update_deps.sh` (raydepsets) and gated by `check-depsets` in CI. Changing a template's deps or bumping Ray means recompiling the lock; the `/template` skill's `references/dependencies.md` (system) and `workflows/upgrade-dependencies.md` (Ray-version recompile) own this.
+
 Per-template tests — comment `/test-template <id> [<id>...]` (up to 3, parallel) on the PR to dispatch the Buildkite `template-test` pipeline (workspace + actual test run). For local iteration before pushing, `rayapp test <id>` runs the same flow (see `references/run-tests-locally-with-rayapp.md` in the `/template` skill for setup).
 
 Tested vs archived — every template under `templates/` must have a `test` block (the `ci/validate_build_yaml.py` gate enforces it). Untested content lives in `archive/` (test-exempt, not built or surfaced in the gallery): *retire* a stale template, or publish an event template *without the test gate* (urgent fix). Procedures: the `/template` skill's `workflows/archive-template.md` and the "Publish without the test gate" section of `references/publish-to-backend.md`.

@@ -21,6 +21,8 @@ Interview the user; explain each piece when you reach it. Collect:
 
 Move the content into `templates/<name>/`. For a notebook template, the main notebook **is** `README.ipynb` (the test runs it; `README.md` is its rendered copy — README convention in `../references/conventions.md`); scripts and Dockerfiles sit alongside it.
 
+**Dependencies.** If the template pins deps via a `python_depset.lock` (most do — system in `../references/dependencies.md`), drop its `requirements.txt` into `templates/<name>/` and add a per-template `expand` entry to `dependencies/template.depsets.yaml` (`source_depset` = the base lock for the template's image, `build_arg_sets` = the matching `ray<ver>_py<XX>` bundle). Compile its lock — `./update_deps.sh --name <the entry's name>` — and confirm `./update_deps.sh --check` is clean (that's the `check-depsets` CI gate). A stock-image template with only `!pip` installs needs no lock.
+
 ## 3. BUILD.yaml entry
 
 Append a list item per `../schemas/build-yaml-schema.yaml`. Set the image for the chosen case: `cluster_env.image_uri` (anyscale base) or `cluster_env.byod.{docker_image,ray_version}` (custom or third-party). For custom GCP, publish the image first (`.claude/skills/template/scripts/push-custom-image-to-gcp.sh <dockerfile-dir> <name> <ray-version>`) and use the printed URI. The entry also wires `compute_config` (step 4) and the `test` block (`command: bash tests.sh`, `tests_path: tests/<name>/`, and `timeout_in_sec` set a bit above the test's measured runtime — target < 30 min).
