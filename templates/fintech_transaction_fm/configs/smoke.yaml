@@ -34,8 +34,10 @@ pretrain:
   num_workers: 1
   use_gpu: false
   use_fsdp: false            # only worth it if the model outgrows one GPU
+  precision: fp32            # fp16 pays off on GPU tensor cores; smoke is CPU
 
 embed:
   num_workers: 8
   use_gpu: false
   batch_size: 256
+  precision: fp32

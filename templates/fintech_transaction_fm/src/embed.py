@@ -21,10 +21,14 @@ import torch
 
 
 class EmbeddingExtractor:
-    def __init__(self, checkpoint_dir: str, pooling: str = "last"):
+    def __init__(self, checkpoint_dir: str, pooling: str = "last", precision: str = "fp32"):
         from .model import build_model
 
         self.pooling = pooling
+        # fp16 inference: ~1.5-2.5x on T4 tensor cores and half the activation
+        # memory (so batch_size can roughly double at long seq_len). Outputs
+        # are cast back to fp32 before writing. T4s have no bf16.
+        self.precision = precision
 
         with open(os.path.join(checkpoint_dir, "model_config.json")) as f:
             mcfg = json.load(f)
@@ -58,8 +62,10 @@ class EmbeddingExtractor:
         tensors = {k: to_tensor(k, torch.long) for k in cols}
         if self.vocab.get("amount_mode") == "soft":
             tensors["d_amount_frac"] = to_tensor("d_amount_frac", torch.float32)
-        with torch.no_grad():
-            emb = self.model.sequence_embedding(tensors, pooling=self.pooling).cpu().numpy()
+        use_fp16 = self.precision == "fp16" and self.device == "cuda"
+        with torch.no_grad(), torch.autocast("cuda", dtype=torch.float16, enabled=use_fp16):
+            emb = self.model.sequence_embedding(tensors, pooling=self.pooling)
+        emb = emb.float().cpu().numpy()
         passthrough = [
             "card_id", "label", "split", "weight",
             "raw_amount", "raw_hour", "raw_dow", "raw_mcc", "raw_ts",
@@ -77,6 +83,7 @@ def extract_embeddings(
     use_gpu: bool = False,
     batch_size: int = 256,
     pooling: str = "last",
+    precision: str = "fp32",
     ds=None,
 ) -> str:
     """Run distributed batch embedding extraction and write Parquet.
@@ -91,7 +98,11 @@ def extract_embeddings(
         ds = ray.data.read_parquet(tokenized_path)
     ds = ds.map_batches(
         EmbeddingExtractor,
-        fn_constructor_kwargs={"checkpoint_dir": checkpoint_dir, "pooling": pooling},
+        fn_constructor_kwargs={
+            "checkpoint_dir": checkpoint_dir,
+            "pooling": pooling,
+            "precision": precision,
+        },
         batch_size=batch_size,
         compute=ray.data.ActorPoolStrategy(size=num_workers),
         num_gpus=1 if use_gpu else 0,

@@ -3,7 +3,7 @@
 #   python scripts/run_pipeline.py --scale ttest --source synthetic
 
 data:
-  num_cards: 300
+  num_cards: 50
 
 tokenize:
   seq_len: 16
@@ -25,8 +25,10 @@ pretrain:
   num_workers: 1
   use_gpu: false
   use_fsdp: false
+  precision: fp32
 
 embed:
   num_workers: 2
   use_gpu: false
   batch_size: 256
+  precision: fp32

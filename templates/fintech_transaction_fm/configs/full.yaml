@@ -28,8 +28,10 @@ pretrain:
   num_workers: 4
   use_gpu: true
   use_fsdp: false
+  precision: fp16   # T4 tensor cores; GradScaler handles fp16 underflow
 
 embed:
   num_workers: 4
   use_gpu: true
-  batch_size: 256            # seq 512: attention buffers cap T4 inference batch well below seq-128
+  batch_size: 512            # fp16 halves activation memory vs the fp32 256 T4 ceiling at seq 512
+  precision: fp16

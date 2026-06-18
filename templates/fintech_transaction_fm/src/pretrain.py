@@ -61,6 +61,12 @@ def train_func(config: dict):
     mask_prob = config.get("mask_prob", 0.15)
     torch.manual_seed(config.get("seed", 0) + ray.train.get_context().get_world_rank())
 
+    # Mixed precision: ~1.5-2x per step on T4 tensor cores and half the
+    # activation memory. fp16 (not bf16 — Turing has no bf16) needs gradient
+    # scaling so small gradients don't underflow to zero.
+    use_amp = config.get("precision", "fp32") == "fp16" and torch.cuda.is_available()
+    scaler = torch.amp.GradScaler("cuda", enabled=use_amp)
+
     for epoch in range(config["epochs"]):
         model.train()
         running, n_batches = 0.0, 0
@@ -73,11 +79,15 @@ def train_func(config: dict):
             if n == 0:
                 continue
             # Heads + loss run inside forward so DDP all-reduces every param.
-            loss, stats = model(corrupted, targets=targets, masked=masked, weighting=weighting)
+            with torch.autocast("cuda", dtype=torch.float16, enabled=use_amp):
+                loss, stats = model(
+                    corrupted, targets=targets, masked=masked, weighting=weighting
+                )
 
             optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
+            scaler.scale(loss).backward()
+            scaler.step(optimizer)
+            scaler.update()
             running += float(loss.item())
             n_batches += 1
             tot_n += n
@@ -132,6 +142,7 @@ def pretrain(
     use_gpu: bool = False,
     use_fsdp: bool = False,
     loss_weighting: str = "uncertainty",
+    precision: str = "fp32",
     storage_base: str | None = None,
     seed: int = 0,
 ) -> dict:
@@ -171,6 +182,7 @@ def pretrain(
             "lr": lr,
             "use_fsdp": use_fsdp,
             "loss_weighting": loss_weighting,
+            "precision": precision,
             "seed": seed,
         },
         scaling_config=ScalingConfig(num_workers=num_workers, use_gpu=use_gpu),

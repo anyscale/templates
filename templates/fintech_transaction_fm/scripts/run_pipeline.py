@@ -173,6 +173,7 @@ def main():
         num_workers=e["num_workers"],
         use_gpu=e["use_gpu"],
         batch_size=e["batch_size"],
+        precision=e["precision"],
     )
 
     print("=== [5/6] downstream fraud eval ===", flush=True)

@@ -1,0 +1,37 @@
+# Scale: fulltest — workspace shakedown of the `full` configuration.
+# Same model/seq/data as configs/full.yaml; shrunk only where the workspace
+# differs from the job cluster: 2 epochs (mechanics, not convergence),
+# 4 GPU workers (raise the workspace T4 group max to 4 first), and holdout_keep 0.1
+# (~520k eval windows instead of ~5.2M — the workspace head can't hold full's
+# stage-5 matrices; the real run does holdout 1.0 on the job's 64GB head).
+
+data:
+  num_cards: 200000
+
+tokenize:
+  seq_len: 512
+  target_eval_samples: 400000
+  max_pretrain_windows: null
+  holdout_keep: 0.1
+  shuffle_partitions: 128
+
+model:
+  d_model: 512
+  n_heads: 8
+  n_layers: 8
+  dim_ff: 2048
+
+pretrain:
+  epochs: 2
+  batch_size: 64             # T4-safe ceiling at seq 512 (same as full)
+  lr: 4.0e-4
+  num_workers: 4
+  use_gpu: true
+  use_fsdp: false
+  precision: fp16   # T4 tensor cores; GradScaler handles fp16 underflow
+
+embed:
+  num_workers: 4
+  use_gpu: true
+  batch_size: 512            # fp16 halves activation memory vs the fp32 256 ceiling
+  precision: fp16
