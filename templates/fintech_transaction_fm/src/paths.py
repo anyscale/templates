@@ -1,8 +1,17 @@
-"""Resolve a base directory for demo artifacts.
+"""Resolve base directories for demo artifacts.
 
-In an Anyscale Workspace we prefer shared cluster storage so every worker sees
-the same paths. On a fresh Anyscale Job (no workspace mount) or locally we fall
-back to a directory under the current working dir.
+Two storage tiers, both visible to every worker:
+
+* **ephemeral** (``/mnt/cluster_storage``) — fast, shared across the cluster's
+  nodes, but wiped when the cluster is torn down. Regenerated intermediates
+  (tokenized windows, checkpoint, embeddings, downstream metrics) live here.
+* **persistent** (``/mnt/user_storage``) — survives cluster teardown, so a new
+  cluster reuses the 266MB TabFormer download cache and the per-scale raw
+  Parquet instead of re-downloading + re-normalizing. The durable inputs
+  (``source``/``raw``/``splits``) live here.
+
+On a fresh Anyscale Job (no workspace mount) or locally both tiers fall back to
+a directory under the current working dir.
 """
 
 import os
@@ -19,12 +28,8 @@ def _scale_map() -> dict:
 SCALE_MAP = _scale_map()
 
 
-def get_demo_base_dir() -> str:
-    """Return a writable base dir for all artifacts, creating it if needed."""
-    candidates = [
-        "/mnt/cluster_storage/transaction-fm",  # workspace shared storage
-        os.path.join(os.getcwd(), "demo_data"),  # local / job fallback
-    ]
+def _first_writable(candidates: list) -> str:
+    """Return the first candidate whose parent exists and that we can create."""
     for path in candidates:
         parent = os.path.dirname(path.rstrip("/"))
         if os.path.isdir(parent) or parent == "":
@@ -39,12 +44,42 @@ def get_demo_base_dir() -> str:
     return path
 
 
-def artifact_paths(base_dir: str, scale: str) -> dict:
-    """Canonical artifact locations for a given scale."""
+def get_demo_base_dir() -> str:
+    """Ephemeral, cluster-shared base for regenerated intermediates."""
+    return _first_writable([
+        "/mnt/cluster_storage/transaction-fm",  # workspace shared storage (per-cluster)
+        os.path.join(os.getcwd(), "demo_data"),  # local / job fallback
+    ])
+
+
+def get_persistent_base_dir() -> str:
+    """Cross-cluster persistent base for the download cache + raw inputs.
+
+    ``/mnt/user_storage`` survives cluster teardown, so a new cluster reuses the
+    TabFormer download and per-scale raw Parquet instead of re-fetching them.
+    """
+    return _first_writable([
+        "/mnt/user_storage/transaction-fm",  # persists across clusters
+        os.path.join(os.getcwd(), "demo_data"),  # local / job fallback
+    ])
+
+
+# Keys whose outputs live on persistent storage and must NOT be cleaned between
+# runs — they are the cross-cluster cache the pipeline skips re-creating.
+PERSISTENT_KEYS = ("source", "raw", "splits")
+
+
+def artifact_paths(base_dir: str, scale: str, persistent_dir: str | None = None) -> dict:
+    """Canonical artifact locations for a given scale.
+
+    ``persistent_dir`` holds the durable inputs (``source``/``raw``/``splits``);
+    it defaults to ``base_dir`` so existing single-tier callers are unchanged.
+    """
+    p = persistent_dir or base_dir
     return {
-        "source": f"{base_dir}/source/",  # downloaded real-data cache (scale-independent)
-        "raw": f"{base_dir}/raw/{scale}/transactions.parquet",
-        "splits": f"{base_dir}/raw/{scale}/splits.json",
+        "source": f"{p}/source/",  # downloaded real-data cache (scale-independent)
+        "raw": f"{p}/raw/{scale}/transactions.parquet",
+        "splits": f"{p}/raw/{scale}/splits.json",
         "tokenized_pretrain": f"{base_dir}/tokenized/{scale}/pretrain/",
         "tokenized_eval": f"{base_dir}/tokenized/{scale}/eval/",
         "vocab": f"{base_dir}/tokenized/{scale}/vocab.json",
@@ -52,6 +87,18 @@ def artifact_paths(base_dir: str, scale: str) -> dict:
         "embeddings": f"{base_dir}/embeddings/{scale}/",
         "downstream": f"{base_dir}/downstream/{scale}/",
     }
+
+
+def resolve_artifact_paths(scale: str, base_dir: str | None = None) -> dict:
+    """Resolve paths with the two-tier split applied.
+
+    With no override, intermediates land on ephemeral cluster storage and the
+    durable inputs on persistent user storage. An explicit ``base_dir`` (local
+    runs / tests) keeps every artifact under that one directory.
+    """
+    if base_dir:
+        return artifact_paths(base_dir, scale, persistent_dir=base_dir)
+    return artifact_paths(get_demo_base_dir(), scale, persistent_dir=get_persistent_base_dir())
 
 
 def write_splits_meta(out_path: str, timestamps, is_fraud, source: str, n_cards: int) -> dict:

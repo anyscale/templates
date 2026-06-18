@@ -29,22 +29,28 @@ import sys
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from src.paths import artifact_paths, get_demo_base_dir  # noqa: E402
+from src.paths import (  # noqa: E402
+    PERSISTENT_KEYS,
+    get_demo_base_dir,
+    get_persistent_base_dir,
+    resolve_artifact_paths,
+)
 from src.scale_config import add_scale_args, load_scale  # noqa: E402
 
 
-def fresh_artifact_dirs(base: str, scale: str) -> None:
-    """Remove every stage output for this scale before running.
+def fresh_artifact_dirs(paths: dict) -> None:
+    """Remove every regenerated stage output before running.
 
     Ray's write_parquet APPENDS into an existing directory, and a job retry
     reuses the same cluster storage — leftovers from a previous attempt
-    silently double every downstream dataset. Only the scale-independent
-    source/ download cache survives; stage [1] rebuilds the raw data from it.
+    silently double every downstream dataset. The persistent inputs
+    (download cache + raw + splits, on user storage) survive; stage [1] reuses
+    them and only rebuilds when they're absent.
     """
     import shutil
 
-    for key, path in artifact_paths(base, scale).items():
-        if key == "source":
+    for key, path in paths.items():
+        if key in PERSISTENT_KEYS:
             continue
         path = path.rstrip("/")
         if os.path.isdir(path):
@@ -90,10 +96,12 @@ def main():
     args = p.parse_args()
 
     cfg = load_scale(args.scale, args.scale_config)
-    base = get_demo_base_dir()
-    paths = artifact_paths(base, args.scale)
+    base = get_demo_base_dir()  # ephemeral intermediates + checkpoints
+    paths = resolve_artifact_paths(args.scale)  # durable inputs on user storage
+    print(f"[paths] intermediates -> {base}", flush=True)
+    print(f"[paths] durable inputs -> {get_persistent_base_dir()}", flush=True)
     if not args.keep_artifacts:
-        fresh_artifact_dirs(base, args.scale)
+        fresh_artifact_dirs(paths)
 
     import ray
 

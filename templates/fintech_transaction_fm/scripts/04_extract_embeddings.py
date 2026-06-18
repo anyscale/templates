@@ -9,7 +9,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 import ray  # noqa: E402
 
 from src.embed import extract_embeddings  # noqa: E402
-from src.paths import artifact_paths, get_demo_base_dir  # noqa: E402
+from src.paths import resolve_artifact_paths  # noqa: E402
 from src.scale_config import add_scale_args, load_scale  # noqa: E402
 
 
@@ -23,8 +23,7 @@ def main():
     p.add_argument("--batch-size", type=int, default=None)
     args = p.parse_args()
 
-    base = args.base_dir or get_demo_base_dir()
-    paths = artifact_paths(base, args.scale)
+    paths = resolve_artifact_paths(args.scale, args.base_dir)
     embed_cfg = load_scale(args.scale, args.scale_config)["embed"]
 
     ray.init(ignore_reinit_error=True)

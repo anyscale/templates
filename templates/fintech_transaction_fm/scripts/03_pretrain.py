@@ -8,7 +8,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 
 import ray  # noqa: E402
 
-from src.paths import artifact_paths, get_demo_base_dir  # noqa: E402
+from src.paths import get_demo_base_dir, resolve_artifact_paths  # noqa: E402
 from src.pretrain import pretrain  # noqa: E402
 from src.scale_config import add_scale_args, load_scale  # noqa: E402
 
@@ -21,8 +21,8 @@ def main():
     p.add_argument("--use-gpu", action="store_true")
     args = p.parse_args()
 
-    base = args.base_dir or get_demo_base_dir()
-    paths = artifact_paths(base, args.scale)
+    base = args.base_dir or get_demo_base_dir()  # checkpoints stay on this tier
+    paths = resolve_artifact_paths(args.scale, args.base_dir)
     # Training knobs + architecture (see configs/<scale>.yaml).
     cfg = load_scale(args.scale, args.scale_config)
     preset = dict(cfg["pretrain"])

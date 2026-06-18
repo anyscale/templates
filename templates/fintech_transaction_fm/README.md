@@ -82,14 +82,15 @@ The loader also writes `splits.json` with **temporal 80/10/10 cutoffs** (train o
 
 ```python
 import pandas as pd
-from src.paths import SCALE_MAP, artifact_paths, get_demo_base_dir
+from src.paths import SCALE_MAP, resolve_artifact_paths
 from src.tabformer import prepare_tabformer
 
 SCALE = "small"        # "small" / "full" for the distributed story
 USE_GPU = True        # set True on a GPU cluster for train + embed
 
-BASE_DIR = get_demo_base_dir()
-paths = artifact_paths(BASE_DIR, SCALE)
+# Intermediates land on ephemeral /mnt/cluster_storage; the download cache +
+# raw data on persistent /mnt/user_storage, so a new cluster reuses them.
+paths = resolve_artifact_paths(SCALE)
 
 if not (os.path.exists(paths["raw"]) and os.path.exists(paths["splits"])):
     prepare_tabformer(

@@ -1,6 +1,9 @@
 # Run the full transaction-FM pipeline as an Anyscale Job.
-# The job cluster gets its own /mnt/cluster_storage (ephemeral, shared across
-# its nodes), which all stages use as the artifact base dir.
+# Storage is two-tier: regenerated intermediates go to the job cluster's own
+# /mnt/cluster_storage (ephemeral, shared across its nodes), while the durable
+# inputs (TabFormer download cache + raw Parquet) go to /mnt/user_storage so a
+# new cluster reuses them instead of re-downloading. If /mnt/user_storage isn't
+# mounted, paths.py falls back to a local dir automatically.
 name: fintech-transaction-fm
 entrypoint: python scripts/run_pipeline.py --scale small
 requirements: requirements.txt

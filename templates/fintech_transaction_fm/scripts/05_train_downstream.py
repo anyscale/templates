@@ -7,7 +7,7 @@ import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from src.downstream import print_summary, run_downstream  # noqa: E402
-from src.paths import artifact_paths, get_demo_base_dir  # noqa: E402
+from src.paths import resolve_artifact_paths  # noqa: E402
 from src.scale_config import add_scale_args, load_scale  # noqa: E402
 
 
@@ -18,8 +18,7 @@ def main():
     args = p.parse_args()
 
     load_scale(args.scale, args.scale_config)  # validate the name early
-    base = args.base_dir or get_demo_base_dir()
-    paths = artifact_paths(base, args.scale)
+    paths = resolve_artifact_paths(args.scale, args.base_dir)
     summary = run_downstream(
         embeddings_path=paths["embeddings"],
         output_dir=paths["downstream"],

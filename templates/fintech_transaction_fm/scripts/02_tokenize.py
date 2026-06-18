@@ -16,7 +16,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 
 import ray  # noqa: E402
 
-from src.paths import artifact_paths, get_demo_base_dir  # noqa: E402
+from src.paths import resolve_artifact_paths  # noqa: E402
 from src.scale_config import add_scale_args, load_scale  # noqa: E402
 from src.tokenizer import (  # noqa: E402
     PRETRAIN_DROP,
@@ -32,8 +32,7 @@ def main():
     p.add_argument("--base-dir", default=None)
     args = p.parse_args()
 
-    base = args.base_dir or get_demo_base_dir()
-    paths = artifact_paths(base, args.scale)
+    paths = resolve_artifact_paths(args.scale, args.base_dir)
     # Sampling knobs (see configs/<scale>.yaml for what each one means).
     preset = load_scale(args.scale, args.scale_config)["tokenize"]
     seq_len = preset["seq_len"]
