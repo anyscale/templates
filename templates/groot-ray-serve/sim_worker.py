@@ -1,15 +1,19 @@
 """
 Isaac Lab G1 sim worker - runs as a STANDALONE SUBPROCESS, not a Ray actor.
 
-WHY subprocess and not @ray.remote actor?
-Isaac Sim uses asyncio internally via omni.kit.async_engine. Inside Ray actor
-threads, MainEventLoopWrapper.g_main_event_loop is None, so scene loading
-crashes with 'NoneType' object has no attribute 'create_task'.
+WHY a subprocess and not a long-lived @ray.remote actor/task?
+Isaac Sim (Omniverse Kit) can be initialized only ONCE per process: AppLauncher /
+SimulationApp loads native extensions that cannot be re-launched or cleanly
+reused, and teardown is known to deadlock (SimulationApp.close /
+SimulationContext.stop hang). Ray reuses worker processes across calls, so
+booting Kit directly inside an actor/task would permanently taint that worker
+and leave no clean way to shut it down. A throwaway subprocess sidesteps both:
+it boots Kit once, runs the rollout, then hard-exits (see the SIGALRM + os._exit
+guard at the bottom of main) without taking the Ray worker down with it.
 
-Spawning a subprocess gives Isaac Sim a clean Python interpreter + event loop.
-The cost is: communicating with the Ray Serve policy via HTTP instead of Ray
-DeploymentHandle. Ray Serve exposes an HTTP endpoint at http://HEAD:8000 by
-default; we POST obs dicts and get actions back.
+The cost of the subprocess is talking to the Ray Serve policy over HTTP instead
+of a Ray DeploymentHandle. Ray Serve exposes an HTTP endpoint at
+http://HEAD:8000 by default; we POST obs dicts and get actions back.
 
 Usage (invoked by run_demo.py):
     python sim_worker.py \

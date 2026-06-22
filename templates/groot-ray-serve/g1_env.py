@@ -159,37 +159,6 @@ class G1LocomanipulationEnv:
 
             policy_obs = raw_obs.get("policy", raw_obs) if isinstance(raw_obs, dict) else raw_obs
 
-            # === DIAGNOSTIC: dump first observation so we can verify joint indexing ===
-            if self._step_count == 0:
-                print("\n" + "="*60)
-                print("[G1Env DEBUG] raw_obs type:", type(raw_obs).__name__)
-                if isinstance(raw_obs, dict):
-                    print("[G1Env DEBUG] raw_obs keys:", list(raw_obs.keys()))
-                print("[G1Env DEBUG] policy_obs type:", type(policy_obs).__name__)
-                if isinstance(policy_obs, dict):
-                    print("[G1Env DEBUG] policy_obs keys:", list(policy_obs.keys()))
-                    for k, v in policy_obs.items():
-                        if hasattr(v, "shape"):
-                            print(f"  {k}: shape={tuple(v.shape)} dtype={getattr(v, 'dtype', '?')}")
-                        else:
-                            print(f"  {k}: {type(v).__name__}")
-                    if "joint_pos" in policy_obs:
-                        jp = policy_obs["joint_pos"]
-                        if hasattr(jp, "detach"):
-                            jp = jp.detach().cpu().numpy()
-                        jp = np.asarray(jp).flatten()
-                        print(f"[G1Env DEBUG] joint_pos[:15]: {jp[:15]}")
-                        print(f"[G1Env DEBUG] joint_pos[15:]: {jp[15:]}")
-                try:
-                    robot = self.env.unwrapped.scene["robot"]
-                    print(f"[G1Env DEBUG] robot.joint_names ({len(robot.joint_names)}):")
-                    for i, n in enumerate(robot.joint_names):
-                        print(f"  [{i}] {n}")
-                except Exception as e:
-                    print(f"[G1Env DEBUG] couldn't get joint_names: {e}")
-                print("="*60 + "\n", flush=True)
-            # === END DIAGNOSTIC ===
-
             # ---------- Video ----------
             if isinstance(policy_obs, dict) and "rgb" in policy_obs:
                 rgb = _np(policy_obs["rgb"], dtype=np.uint8)
