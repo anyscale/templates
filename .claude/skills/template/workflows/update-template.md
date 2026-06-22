@@ -10,6 +10,8 @@ Ask which template (`<name>`) and what's changing — notebook/code, compute con
 
 Edit files under `templates/<name>/` (and `configs/<name>/` or `tests/<name>/` as needed). Author README content in `README.ipynb` (README convention in `../references/conventions.md`). If the change touches the image: identify the case in SKILL.md "Image URI cases" (for custom-GCP, rebuild and push via `.claude/skills/template/scripts/push-custom-image-to-gcp.sh`). For a Ray-**version** bump specifically, use `bump-ray-version.md` — it owns the full per-case bump procedure.
 
+**Dependency change** (add/remove/repin a package in a template that ships a `python_depset.lock`): edit `templates/<name>/requirements.txt`, then recompile its lock — `./update_deps.sh --name <the entry's name>` — and confirm `./update_deps.sh --check` is clean (the `check-depsets` gate). System + gotchas: `../references/dependencies.md`. This is *not* a Ray-version bump; recompiling **all** depsets for a new Ray version is `upgrade-dependencies.md`.
+
 ## 3. Format
 
 Apply `../references/conventions.md`. On updates, pay extra attention to **URLs alive** — links rot over time (check described in `../references/conventions.md`).
