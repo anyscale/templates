@@ -1,4 +1,4 @@
-# Module 3: Robotics simulation at scale with Ray
+# Robotics simulation at scale with Ray
 
 <div align="left">
   <a target="_blank" href="https://console.anyscale.com/template-preview/groot-ray-serve"><img src="https://img.shields.io/badge/🚀 Run_on-Anyscale-9hf"></a>&nbsp;
