@@ -28,7 +28,6 @@ from starlette.requests import Request
 
 
 @serve.deployment(
-    num_replicas=1,
     ray_actor_options={"num_cpus": 1},
     autoscaling_config={"min_replicas": 1, "max_replicas": 4, "target_ongoing_requests": 8},
 )
