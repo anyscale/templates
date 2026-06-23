@@ -1,8 +1,10 @@
 """
-Demo orchestrator: deploy GR00T (or Placeholder) via Ray Serve HTTP, then spawn
-Isaac Lab sim workers as SUBPROCESSES on Ray tasks (NOT as Ray actors — Isaac
-Sim's asyncio init breaks inside actor threads; subprocesses get clean
-interpreters + event loops).
+Demo orchestrator: deploy GR00T (or Placeholder) via Ray Serve HTTP, then run
+Isaac Lab sim workers as SUBPROCESSES launched from Ray tasks. Each rollout runs
+in a throwaway subprocess because Isaac Sim (Omniverse Kit) can be initialized
+only once per process and its teardown deadlocks; the subprocess boots Kit, runs
+the rollout, and hard-exits without tainting or crashing the long-lived Ray
+worker. (See sim_worker.py's module docstring for the full rationale.)
 
 Architecture:
 
