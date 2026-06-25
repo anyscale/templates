@@ -32,7 +32,52 @@ Pattern: put the *callbacks* and *steps* in `src/` as public functions; the note
 
 ## Show *why*, not just *what*
 
-A shown cell should answer **"what am I seeing and why does it matter,"** not narrate the API. Motivate each engineering/modeling choice from the data or the problem (*amounts are heavy-tailed → log-bucket them*; *fraud is 0.1% → report PR-AUC, not accuracy*; *workers run on other nodes → checkpoint to shared storage*). That justification belongs in the markdown around the lesson — not as a wall of comments inside hidden code, and not as prose with no code to anchor it.
+A shown cell should answer **"what am I seeing and why does it matter,"** not narrate the API. Motivate each engineering/modeling choice from the data or the problem (*amounts span orders of magnitude → log-bucket them*; *fraud is ~0.1% → report PR-AUC, not accuracy*; *workers run on other nodes → checkpoint to shared storage*). That justification belongs in the markdown around the lesson — not as a wall of comments inside hidden code, and not as prose with no code to anchor it.
+
+## Verify the claim against the data — never assert the shape from memory
+
+"Show *why*" only works if the *why* is true. The fastest way to lose a sharp reader is a confident, wrong characterization of the data: calling a distribution "heavy-tailed" when it's a tame lognormal (top 1% held only ~10% of the mass, max ~200× the median); "most cards are quiet" when the median card had 2,500 transactions; "then nothing for weeks" when 99.5% of gaps were under a week. Every one of those was a one-line check away, and every one shipped in a first draft.
+
+**Rule: if a sentence names a shape, a magnitude, or a rate, compute it before you write it.** `df.describe()`, a quantile, a `value_counts()`, "what share of the mass is in the top 1%" — all cheap. A shipped wrong adjective is not: it's the exact thing a reader catches, and it discredits the real lesson sitting next to it. This applies *doubly* to plot captions and section prose an agent generated from a template — those are guesses until the numbers confirm them.
+
+And the shape words are not interchangeable color: **heavy-tailed** (fat tail carrying real mass), **long-tailed** (thin tail stretching far along the axis), and **right-skewed / lognormal** are different shapes with different modeling consequences. Use the one the data shows, not the one that sounds impressive.
+
+## The closing cell banks the *transferable* lesson, not dataset trivia
+
+The takeaways/summary cell is where the reader files away "what do I reuse." A Ray Data notebook whose takeaways are three bullets about transactions and zero about Ray has thrown away its own point. **Lead the summary with the primitive** — the `read_csv → map_batches → groupby → write_parquet` streaming shape, "the driver never materializes the full table," "same code from mini to full, only the config changes" — then the domain/modeling observations second. If you organized the notebook around a Ray lesson, the closer has to bank it.
+
+## Purpose before mechanism — for every heading *and* lead sentence
+
+The single most common failure: leading with *how the code works* instead of *what it's for and produces*. It shows up two ways, and both must be fixed.
+
+**Headings** name the decision/output the reader takes away, not the phenomenon or the API. "Class imbalance" describes the data; **"How we measure performance"** is the lesson it drives. "One card at a time, across the cluster" is flavor; **"Turn each card's history into token sequences"** says what the cell produces. Name the section for the temporal split, not for "transaction volume rose over time."
+
+**Lead sentences** state purpose/output before any mechanism. *"The cell below groups the transactions by `card_id` and runs one function per card with `map_groups`"* leads with plumbing — the reader doesn't yet know what's being built or why they'd care. *"This cell is the tokenizer: it turns each card's raw transactions into the integer sequences the model trains on"* leads with the point; the `map_groups`/grouping/stateless details come **after**.
+
+The test to run on every heading and first sentence: **"Does this say what the reader is getting before how it's built? If I deleted the mechanism words (`groupby`, `map_groups`, 'one function per card'), is there still a point left?"** If not, rewrite. Mechanism is the second sentence, never the first.
+
+Tells that you've inverted it: a heading that's a chapter-epigraph phrase ("One card at a time…"), or a sentence starting "The cell below…", "This section covers…", "Here we group/call/run…".
+
+## Voice: write like an engineer to a peer, not a content model
+
+Generated demo prose has telltale filler patterns that make a sharp reader trust the content less. Cut them:
+
+- **Editorializing titles** — "Class imbalance — and why we don't report plain accuracy." Name the thing: "How we measure performance."
+- **The `**Label**:` bullet list** where every item is a bold noun + colon ("**Metric**: …", "**Sampling**: …"). Write sentences.
+- **Filler connectives** — "drives the rest of the series," "it's worth noting that," "the operationally meaningful number."
+- **Raising a concept only to dismiss it** — don't introduce AUC-ROC just to say you don't use it. If it isn't load-bearing, cut it.
+- **Naming a term then waving at it** — name the real term (`importance weighting`) *and* gloss it concretely ("keep 1 in 50 normals, weight each survivor ×50"), not with more abstraction ("counts for the many it represents").
+
+The test for any sentence: would an engineer write this to another engineer, or does it read like it's filling a section template?
+
+## Plots: restyle, don't restructure — and make the point visible
+
+Two different jobs; don't confuse them:
+
+- **"Make it look better" means change the *styling*, not the *structure*.** Theme it (seaborn `set_theme(style="white")` + `despine`), kill chartjunk (gridlines), human-format the axes (`600000 → 600k`). Do **not** silently re-axis it — relabeling a log-x with hand-written ticks (`$0.10, $1, $10`) changes *what the reader is looking at*, and they'll (rightly) call it weird. Keep the axes they expect.
+- **But the plot must actually show its point.** A long-tailed quantity on a linear y-axis is one tall bar and an invisible tail — put the y-axis on a log scale so the tail is visible. Revealing-the-point is fair; restructuring for its own sake is not.
+
+Gotcha: an unescaped `$` in a Jupyter **markdown** cell triggers MathJax and silently garbles everything between two dollar signs. Escape amounts as `\$57.20`. (Code cells and backtick spans are safe.)
 
 ## It must run — outputs don't ship
 
@@ -41,6 +86,8 @@ The anyscale/templates repo **strips notebook outputs** before commit (a `clear-
 - **Committed defaults must execute in the test environment** — the template's compute at CI/mini scale, usually **CPU**. Never commit the author's `use_gpu=True` or large-scale config as the default; expose scale-up through one obvious knob (`SCALE`, `num_workers`, `ScalingConfig`) and leave it at the runnable setting.
 - **Don't rely on committed outputs to tell the story.** The reader sees code + prose first and runs it themselves. Render plots/numbers in-cell so they appear on run, *and* state the expected result in prose so a reader knows what "working" looks like before they execute.
 - **The proof of correctness is a green papermill run, not a screenshot.** If a stage can't run at mini scale in CI time, shrink it (fewer cards/epochs/rows) rather than committing a version only a GPU cluster can execute.
+- **Trust papermill's *own* exit code, not a chained command's.** `papermill … > log 2>&1; echo done` reports the `echo`'s exit (0) and hides a failed run — a notebook that raised `NameError` looked "green." Read papermill's exit directly, or scan the executed notebook for cells with `output_type == "error"`. A false green is worse than no check.
+- **After moving or changing an import, re-run the *whole* notebook.** A later cell may still use the symbol you relocated. Rewriting one cell's imports silently broke a downstream cell that used `STATIC_FIELDS`; only a full top-to-bottom run caught it. Editing any cell means re-verifying all of them, not just the one you touched.
 
 ## Checklist
 
@@ -48,5 +95,11 @@ The anyscale/templates repo **strips notebook outputs** before commit (a `clear-
 - [ ] No lesson is hidden inside an incidental wrapper.
 - [ ] Inline-shown logic and any headless entry point compose the **same** `src/` helpers.
 - [ ] Each shown step says *why it matters*, motivated from the data/problem.
+- [ ] Every claim about the data's shape/magnitude/rate was **computed, not assumed** (and the shape word is the right one).
+- [ ] The closing/takeaways cell leads with the transferable Ray/Anyscale lesson, not dataset trivia.
+- [ ] Every heading and lead sentence leads with purpose/output, not mechanism — delete the API words and a point still remains.
+- [ ] Prose reads like an engineer wrote it — no editorializing titles, `**Label**:` lists, or concepts raised only to dismiss them.
+- [ ] Plots are styled not restructured, show their point (log scale for tails, human-formatted axes), and `$` is escaped in markdown.
 - [ ] Committed defaults run top-to-bottom under papermill at CI/mini scale (CPU); scale-up is one knob.
+- [ ] Verified by papermill's own exit code / zero `error` output cells — not a chained command's exit — and the *whole* notebook re-ran after any import change.
 - [ ] Expected results are described in prose (outputs will be stripped on commit).

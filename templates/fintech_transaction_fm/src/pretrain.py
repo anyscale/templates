@@ -117,6 +117,20 @@ def train_func(config: dict):
         ray.train.report(metrics, checkpoint=checkpoint)
 
 
+def save_checkpoint(result, checkpoint_out: str) -> None:
+    """Copy a ``TorchTrainer`` result's checkpoint to a canonical, all-nodes
+    path so downstream stages (embedding, serving) can load the weights.
+
+    ``result.checkpoint.as_directory()`` is a context manager pointing at
+    Ray-managed storage; we copy its contents (``model.pt`` + ``vocab.json`` +
+    ``model_config.json``) out to ``checkpoint_out``.
+    """
+    os.makedirs(checkpoint_out, exist_ok=True)
+    with result.checkpoint.as_directory() as ckpt_dir:
+        for fn in os.listdir(ckpt_dir):
+            shutil.copy(os.path.join(ckpt_dir, fn), os.path.join(checkpoint_out, fn))
+
+
 def pretrain(
     tokenized_path: str | None = None,
     vocab_path: str = "",
@@ -179,12 +193,7 @@ def pretrain(
     )
     result = trainer.fit()
 
-    os.makedirs(checkpoint_out, exist_ok=True)
-    # result.checkpoint.as_directory() is a context manager; copy its contents out
-    # to the canonical location so downstream stages can find the weights.
-    with result.checkpoint.as_directory() as ckpt_dir:
-        for fn in os.listdir(ckpt_dir):
-            shutil.copy(os.path.join(ckpt_dir, fn), os.path.join(checkpoint_out, fn))
+    save_checkpoint(result, checkpoint_out)
     m = result.metrics
     print(
         f"[pretrain] final mlm_loss={m.get('mlm_loss', float('nan')):.4f} "

@@ -191,6 +191,70 @@ def n_time_bucket_rows() -> int:
     return N_TIME_BUCKETS + _RESERVED + 2
 
 
+_DOW = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+
+
+def _money(x: float) -> str:
+    return f"${x:,.2f}" if x < 1 else f"${x:,.0f}"
+
+
+def _amount_label(tok: int) -> str:
+    """Decode an amount-bucket token back to its dollar range (for display)."""
+    b = int(tok) - _RESERVED
+    if b < 0:
+        return "pad"
+    hi = 10 ** _AMOUNT_EDGES[b] if b < len(_AMOUNT_EDGES) else float("inf")
+    if b == 0:
+        return f"<{_money(hi)}"
+    lo = 10 ** _AMOUNT_EDGES[b - 1]
+    return f">{_money(lo)}" if hi == float("inf") else f"{_money(lo)}-{_money(hi)}"
+
+
+def _gap_label(tok: int) -> str:
+    """Decode a time-bucket token back to an approximate inter-txn gap."""
+    b = int(tok) - _RESERVED
+    if b <= 0:
+        return "—"
+    h = 10 ** _TIME_EDGES[min(b - 1, len(_TIME_EDGES) - 1)]
+    return f"~{h:.0f}h" if h < 48 else f"~{h / 24:.0f}d"
+
+
+def decode_static_fields(row) -> dict:
+    """The static fields of a tokenized sample, decoded back to their values."""
+    return {
+        f: {v: k for k, v in STATIC_VOCAB[f].items()}.get(int(row[f"s_{f}"]), "OOV")
+        for f in STATIC_FIELDS
+    }
+
+
+def decode_dynamic_window(row, k: int = 8):
+    """Decode the last ``k`` real positions of a tokenized sample into a
+    human-readable transaction table (for display in the walkthrough).
+
+    Hashed fields (merchant, mcc) have no inverse, so they stay as bucket ids;
+    everything else is decoded to its value. Newest row is labeled ``target``.
+    """
+    import pandas as pd
+
+    cat_inv = {v: k for k, v in DYNAMIC_CATEGORICAL_VOCAB["merchant_category"].items()}
+    k = min(int(k), int(row["length"]))
+    tail = lambda c: np.asarray(row[c])[-k:]
+    df = pd.DataFrame(
+        {
+            "amount": [_amount_label(t) for t in tail("d_amount_bucket")],
+            "category": [cat_inv.get(int(t), "?") for t in tail("d_merchant_category")],
+            "merchant": [f"#{int(t)}" for t in tail("d_merchant_bucket")],
+            "hour": [int(t) - _RESERVED for t in tail("d_hour")],
+            "day": [_DOW[int(t) - _RESERVED] if 0 <= int(t) - _RESERVED < 7 else "?"
+                    for t in tail("d_day_of_week")],
+            "since_prev": [_gap_label(t) for t in tail("time_bucket")],
+        }
+    )
+    df.index = [f"t-{k - 1 - i}" if i < k - 1 else "target" for i in range(k)]
+    df.index.name = "position"
+    return df
+
+
 def write_vocab(output_path: str) -> None:
     os.makedirs(os.path.dirname(output_path.rstrip("/")), exist_ok=True)
     with open(output_path, "w") as f:

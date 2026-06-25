@@ -93,8 +93,13 @@ def extract_embeddings(
         EmbeddingExtractor,
         fn_constructor_kwargs={"checkpoint_dir": checkpoint_dir, "pooling": pooling},
         batch_size=batch_size,
-        compute=ray.data.ActorPoolStrategy(size=num_workers),
+        compute=ray.data.ActorPoolStrategy(min_size=1, max_size=num_workers),
         num_gpus=1 if use_gpu else 0,
+        # Give each actor an explicit, non-zero footprint. On the CPU path
+        # (num_gpus=0) an actor with no num_cpus has *zero* min scheduling
+        # resources, so the autoscaler's bundle-count estimate is infinite and
+        # it asserts during scale-up. num_cpus=1 makes the footprint finite.
+        num_cpus=1,
         batch_format="numpy",
     )
     ds.write_parquet(output_path)
