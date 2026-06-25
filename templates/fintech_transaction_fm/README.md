@@ -37,7 +37,7 @@ Every stage is the **same code** from laptop to multi-node cluster — you chang
 
 ---
 
-**Walkthrough:** this notebook runs end-to-end at `smoke` scale (a few thousand cards, a 2-layer model) so it completes in minutes on a small cluster. Flip `SCALE` to `small`/`full` and `USE_GPU=True` for the real distributed story.
+**Walkthrough:** this notebook runs end-to-end at `mini` scale (a few thousand cards, a 2-layer model) so it completes in minutes on a small cluster. Flip `SCALE` to `small`/`full` and `USE_GPU=True` for the real distributed story.
 
 ## Get the code
 
@@ -211,7 +211,7 @@ The headline result, evaluated with the **NVIDIA transaction-FM blueprint protoc
 2. **fm** — the FM embedding of the history window only
 3. **fusion** — embedding ++ raw features (Nubank's joint fusion)
 
-The lift of (2) and (3) over (1) is the case for a transaction FM. *(At `smoke` scale — 2 CPU epochs, a 2-layer model — expect fusion ≈ raw; the gap opens with the `small`/`full` GPU pretrain.)*
+The lift of (2) and (3) over (1) is the case for a transaction FM. *(At `mini` scale — 2 CPU epochs, a 2-layer model — expect fusion ≈ raw; the gap opens with the `small`/`full` GPU pretrain.)*
 
 
 

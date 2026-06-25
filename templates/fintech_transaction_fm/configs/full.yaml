@@ -2,7 +2,7 @@
 # blueprint decoder (8 layers, 512 hidden). The difference is the tokenizer:
 # 1 position per transaction instead of ~12 tokens, so seq_len 512 covers 512
 # txns vs ~315 in their 4096-token context. Scores every holdout transaction.
-# See configs/smoke.yaml for what each key means.
+# See configs/mini.yaml for what each key means.
 
 data:
   num_cards: 200000          # > the ~6.1k real cards = use every card

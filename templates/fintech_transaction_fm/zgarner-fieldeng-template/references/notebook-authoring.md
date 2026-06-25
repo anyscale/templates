@@ -38,9 +38,9 @@ A shown cell should answer **"what am I seeing and why does it matter,"** not na
 
 The anyscale/templates repo **strips notebook outputs** before commit (a `clear-notebook-outputs` pre-commit hook) and the test re-runs the notebook end-to-end with **papermill** to prove it executes. Consequences for how you author:
 
-- **Committed defaults must execute in the test environment** — the template's compute at CI/smoke scale, usually **CPU**. Never commit the author's `use_gpu=True` or large-scale config as the default; expose scale-up through one obvious knob (`SCALE`, `num_workers`, `ScalingConfig`) and leave it at the runnable setting.
+- **Committed defaults must execute in the test environment** — the template's compute at CI/mini scale, usually **CPU**. Never commit the author's `use_gpu=True` or large-scale config as the default; expose scale-up through one obvious knob (`SCALE`, `num_workers`, `ScalingConfig`) and leave it at the runnable setting.
 - **Don't rely on committed outputs to tell the story.** The reader sees code + prose first and runs it themselves. Render plots/numbers in-cell so they appear on run, *and* state the expected result in prose so a reader knows what "working" looks like before they execute.
-- **The proof of correctness is a green papermill run, not a screenshot.** If a stage can't run at smoke scale in CI time, shrink it (fewer cards/epochs/rows) rather than committing a version only a GPU cluster can execute.
+- **The proof of correctness is a green papermill run, not a screenshot.** If a stage can't run at mini scale in CI time, shrink it (fewer cards/epochs/rows) rather than committing a version only a GPU cluster can execute.
 
 ## Checklist
 
@@ -48,5 +48,5 @@ The anyscale/templates repo **strips notebook outputs** before commit (a `clear-
 - [ ] No lesson is hidden inside an incidental wrapper.
 - [ ] Inline-shown logic and any headless entry point compose the **same** `src/` helpers.
 - [ ] Each shown step says *why it matters*, motivated from the data/problem.
-- [ ] Committed defaults run top-to-bottom under papermill at CI/smoke scale (CPU); scale-up is one knob.
+- [ ] Committed defaults run top-to-bottom under papermill at CI/mini scale (CPU); scale-up is one knob.
 - [ ] Expected results are described in prose (outputs will be stripped on commit).

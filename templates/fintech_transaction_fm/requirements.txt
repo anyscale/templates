@@ -4,6 +4,7 @@ numba>=0.61  # JIT'd hash partitioning for the Ray Data groupby shuffles
 xgboost>=2.0
 scikit-learn>=1.3
 matplotlib>=3.7  # data-exploration plots in the notebook series
+seaborn>=0.13  # cleaner default styling for the exploration plots
 numpy>=1.24
 pandas>=2.0
 pyarrow>=14.0

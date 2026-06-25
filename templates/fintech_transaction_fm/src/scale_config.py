@@ -1,10 +1,10 @@
 """Per-scale pipeline settings: one YAML per scale under configs/.
 
 ``configs/<scale>.yaml`` is the single source of truth for everything that
-differs between smoke/small/full — data sampling, tokenization, model dims,
+differs between mini/small/full — data sampling, tokenization, model dims,
 training, and embedding extraction. To run a custom experiment:
 
-    cp configs/smoke.yaml configs/ttest.yaml    # edit it
+    cp configs/mini.yaml configs/ttest.yaml    # edit it
     python scripts/run_pipeline.py --scale ttest
 
 Any ``configs/<name>.yaml`` is auto-discovered as scale ``<name>``; pass
@@ -57,7 +57,7 @@ def load_scale(name: str, config_path: str | None = None) -> dict:
         if missing:
             raise SystemExit(
                 f"scale config {path} [{section}]: missing keys {missing} "
-                f"(every file must be self-contained; see configs/smoke.yaml)"
+                f"(every file must be self-contained; see configs/mini.yaml)"
             )
     return cfg
 

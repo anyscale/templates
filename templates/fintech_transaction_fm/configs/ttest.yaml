@@ -1,5 +1,5 @@
 # Scale: ttest — minimal local end-to-end check (synthetic data, CPU, minutes).
-# Copied from configs/smoke.yaml and shrunk. Run with:
+# Copied from configs/mini.yaml and shrunk. Run with:
 #   python scripts/run_pipeline.py --scale ttest --source synthetic
 
 data:

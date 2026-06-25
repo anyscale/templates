@@ -15,7 +15,7 @@ model checkpoint, the embeddings (the product), and downstream metrics +
 per-sample test scores.
 
 Usage:
-    python scripts/run_pipeline.py                      # smoke (CPU)
+    python scripts/run_pipeline.py                      # mini (CPU)
     python scripts/run_pipeline.py --scale small        # full TabFormer, GPU
     python scripts/run_pipeline.py --source synthetic   # offline data source
 
@@ -79,7 +79,7 @@ def ensure_raw_data(paths: dict, num_cards: int, source: str, seed: int = 42) ->
 
 def main():
     p = argparse.ArgumentParser()
-    add_scale_args(p, default="smoke")
+    add_scale_args(p, default="mini")
     p.add_argument("--source", choices=["tabformer", "synthetic"], default="tabformer")
     p.add_argument(
         "--keep-artifacts",

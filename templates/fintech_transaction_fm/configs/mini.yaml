@@ -1,10 +1,10 @@
-# Scale: smoke — CI / laptop sanity. ~2k cards, tiny model, CPU only.
+# Scale: mini — CI / laptop sanity. ~2k cards, tiny model, CPU only.
 #
 # One file per scale defines EVERYTHING that varies between runs — no
 # inheritance, no hidden defaults — so diffing two files shows the complete
 # difference between two scales. To run your own experiment:
 #
-#   cp configs/smoke.yaml configs/ttest.yaml    # edit it
+#   cp configs/mini.yaml configs/ttest.yaml    # edit it
 #   python scripts/run_pipeline.py --scale ttest
 #
 # (any configs/<name>.yaml is auto-discovered; or pass --scale-config <path>

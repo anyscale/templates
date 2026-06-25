@@ -1,6 +1,6 @@
 # Scale: small — all TabFormer cards, mid-size model, 2 GPUs.
 # Batch sized to actually load the GPUs (T4s were mostly idle at 128) with lr
-# scaled alongside. See configs/smoke.yaml for what each key means.
+# scaled alongside. See configs/mini.yaml for what each key means.
 
 data:
   num_cards: 20000           # > the ~6.1k real cards = use every card

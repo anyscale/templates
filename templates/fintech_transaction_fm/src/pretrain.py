@@ -2,7 +2,7 @@
 
 The training function is plain PyTorch. Ray Train handles the distributed parts:
 worker setup, dataset sharding, DDP/FSDP wrapping, checkpointing, and fault
-tolerance — the same code runs on 1 CPU worker (CI smoke) or N GPU workers
+tolerance — the same code runs on 1 CPU worker (CI mini) or N GPU workers
 (the real distributed story) by changing only ``ScalingConfig``.
 """
 
