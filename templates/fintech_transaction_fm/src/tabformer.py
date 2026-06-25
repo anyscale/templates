@@ -90,8 +90,13 @@ def _mcc_to_category(mcc: np.ndarray) -> np.ndarray:
     return np.select(conds, cats, default="other")
 
 
-def _normalize(b: pd.DataFrame) -> pd.DataFrame:
-    """Per-batch TabFormer -> canonical-schema normalization (stateless)."""
+def normalize_batch(b: pd.DataFrame) -> pd.DataFrame:
+    """Per-batch TabFormer -> canonical-schema normalization (stateless).
+
+    The ``map_batches`` callback the Part 2 notebook shows inline. The per-row
+    munging here (parsing "$57.20", MCC->category, modal home state) is the
+    dataset-specific part that stays out of the walkthrough.
+    """
     hm = b["Time"].str.split(":", expand=True).astype(np.int64)
     ts = pd.to_datetime(
         dict(year=b["Year"], month=b["Month"], day=b["Day"], hour=hm[0], minute=hm[1])
@@ -118,7 +123,7 @@ def _normalize(b: pd.DataFrame) -> pd.DataFrame:
     )
 
 
-def _card_statics(g: pd.DataFrame) -> pd.DataFrame:
+def card_statics(g: pd.DataFrame) -> pd.DataFrame:
     """Modal home state + channel for one card (runs inside a Ray groupby)."""
     return pd.DataFrame(
         {
@@ -127,6 +132,52 @@ def _card_statics(g: pd.DataFrame) -> pd.DataFrame:
             "card_type": [g["channel"].mode().iat[0]],
         }
     )
+
+
+def tabformer_csv_convert_options():
+    """PyArrow CSV read options: keep only the columns we use and read ``Time``
+    as a string ("HH:MM", parsed in ``normalize_batch``)."""
+    import pyarrow as pa
+    import pyarrow.csv as pacsv
+
+    return pacsv.ConvertOptions(
+        include_columns=_CSV_COLUMNS,
+        column_types={"Time": pa.string()},
+    )
+
+
+def sample_cards(ds, num_cards: int, seed: int = 42):
+    """Down-sample to ``num_cards`` distinct cards (each card = one sequence).
+
+    Returns ``ds`` unchanged when it has fewer cards than requested.
+    """
+    all_cards = np.sort(np.asarray(ds.unique("card_id")))
+    if num_cards >= len(all_cards):
+        return ds
+    chosen = set(
+        np.random.default_rng(seed).choice(all_cards, size=num_cards, replace=False).tolist()
+    )
+    return ds.map_batches(lambda b: b[b["card_id"].isin(chosen)], batch_format="pandas")
+
+
+def attach_statics(ds, statics: pd.DataFrame):
+    """Broadcast the small per-card statics table back onto every transaction.
+
+    issuer/bin_region aren't in TabFormer, so they're a constant ``UNKNOWN``
+    bucket; card_type/home_state come from the per-card ``card_statics`` groupby.
+    """
+    home_state = dict(zip(statics["card_id"], statics["home_state"]))
+    card_type = dict(zip(statics["card_id"], statics["card_type"]))
+
+    def _attach(b: pd.DataFrame) -> pd.DataFrame:
+        b = b.drop(columns=["channel", "state_norm"])
+        b["issuer"] = "UNKNOWN"
+        b["bin_region"] = "UNKNOWN"
+        b["card_type"] = b["card_id"].map(card_type)
+        b["home_state"] = b["card_id"].map(home_state)
+        return b
+
+    return ds.map_batches(_attach, batch_format="pandas")
 
 
 def prepare_tabformer(
@@ -138,9 +189,6 @@ def prepare_tabformer(
 ) -> str:
     """Normalize TabFormer to the canonical schema with Ray Data, sample cards,
     and write Parquet (``raw_out`` becomes a directory of shards)."""
-    import pyarrow as pa
-    import pyarrow.csv as pacsv
-
     import ray
 
     source_dir = source_dir or os.path.join(os.path.dirname(os.path.dirname(raw_out)), "source")
@@ -148,46 +196,21 @@ def prepare_tabformer(
     ray.init(ignore_reinit_error=True)
 
     print(f"[tabformer] reading {csv_path} with Ray Data ...")
+    # The same pipeline the Part 2 notebook walks through inline, composed from
+    # the public helpers so the headless and walkthrough paths can't drift.
     ds = ray.data.read_csv(
-        csv_path,
-        convert_options=pacsv.ConvertOptions(
-            include_columns=_CSV_COLUMNS,
-            column_types={"Time": pa.string()},  # keep "HH:MM" strings
-        ),
-    ).map_batches(_normalize, batch_format="pandas")
-
-    all_cards = np.sort(np.asarray(ds.unique("card_id")))
-    n_take = min(num_cards, len(all_cards))
-    if n_take < num_cards:
-        print(f"[tabformer] only {len(all_cards)} cards available (requested {num_cards}); using all")
-    if n_take < len(all_cards):
-        chosen = set(
-            np.random.default_rng(seed).choice(all_cards, size=n_take, replace=False).tolist()
-        )
-        ds = ds.map_batches(
-            lambda b: b[b["card_id"].isin(chosen)], batch_format="pandas"
-        )
-    ds = ds.materialize()
+        csv_path, convert_options=tabformer_csv_convert_options()
+    ).map_batches(normalize_batch, batch_format="pandas")
+    ds = sample_cards(ds, num_cards, seed=seed).materialize()
 
     # Per-card static fields via a distributed groupby (issuer/bin_region don't
     # exist in TabFormer). The result is tiny (~6k rows) — broadcast it back.
-    stats = (
+    statics = (
         ds.groupby("card_id", num_partitions=128)
-        .map_groups(_card_statics, batch_format="pandas")
+        .map_groups(card_statics, batch_format="pandas")
         .to_pandas()
     )
-    home_state = dict(zip(stats["card_id"], stats["home_state"]))
-    card_type = dict(zip(stats["card_id"], stats["card_type"]))
-
-    def attach_statics(b: pd.DataFrame) -> pd.DataFrame:
-        b = b.drop(columns=["channel", "state_norm"])
-        b["issuer"] = "UNKNOWN"
-        b["bin_region"] = "UNKNOWN"
-        b["card_type"] = b["card_id"].map(card_type)
-        b["home_state"] = b["card_id"].map(home_state)
-        return b
-
-    final = ds.map_batches(attach_statics, batch_format="pandas").materialize()
+    final = attach_statics(ds, statics).materialize()
     final.write_parquet(raw_out)
 
     # Split cutoffs + stats. Only two slim columns come to the driver
@@ -198,10 +221,10 @@ def prepare_tabformer(
         slim["timestamp"].to_numpy(),
         slim["is_fraud"].to_numpy(),
         source="tabformer",
-        n_cards=n_take,
+        n_cards=len(statics),
     )
     print(
-        f"[tabformer] {len(slim):,} transactions / {n_take:,} cards "
+        f"[tabformer] {len(slim):,} transactions / {len(statics):,} cards "
         f"({slim['is_fraud'].mean() * 100:.3f}% fraud) -> {raw_out}\n"
         f"[tabformer] temporal split: train<{meta['train_end']} val<{meta['val_end']}"
     )
