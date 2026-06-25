@@ -39,10 +39,19 @@ First, load the data from a remote URL then repartition the dataset to ensure th
 
 
 ```python
+import os
 import ray
 import datasets
 from PIL import Image
 from io import BytesIO
+
+# `uv pip install --system` above only installs on the driver/head node. Ray Data's
+# `from_huggingface` read tasks run on worker nodes, so propagate the locked deps
+# (notably `datasets`) to every worker via the runtime_env.
+ray.init(
+    ignore_reinit_error=True,
+    runtime_env={"pip": os.path.join(os.getcwd(), "python_depset.lock")},
+)
 
 # Load the BLIP3o/BLIP3o-Pretrain-Short-Caption dataset from Hugging Face with ~5M images.
 print("Loading BLIP3o/BLIP3o-Pretrain-Short-Caption dataset from Hugging Face...")
