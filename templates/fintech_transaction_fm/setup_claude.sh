@@ -16,7 +16,7 @@
 set -euo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-STATE="$HERE/.claude-state"
+STATE="$HERE/claude-state"
 CLAUDE="$HOME/.claude"
 
 backup() {
@@ -32,7 +32,7 @@ backup() {
                 cp "$d"/*.md "$STATE/projects/$d/" 2>/dev/null || true
               done )
     fi
-    if ( cd "$HERE" && git add .claude-state \
+    if ( cd "$HERE" && git add claude-state \
          && git commit -q -m "claude-state: settings + memory snapshot" \
          && git push origin HEAD ); then
         echo "[setup_claude] settings + memory committed and pushed to git."
