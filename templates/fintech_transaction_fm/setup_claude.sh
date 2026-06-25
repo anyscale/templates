@@ -1,58 +1,56 @@
 #!/usr/bin/env bash
-# Persist Claude Code across ephemeral Anyscale clusters.
+# Persist Claude Code config + memory across this EPHEMERAL DEMO cluster.
 #
-# Why this exists: /home (and so ~/.claude — settings, memory, auth) is on an
-# overlay filesystem that is DESTROYED when the cluster is torn down.
-# /mnt/user_storage is persistent NFS (your per-user share) and survives.
-# This script syncs the whole ~/.claude to/from there, and reinstalls the CLI.
+# Everything on the box is disposable here — the overlay home (~/.claude) AND
+# the /mnt NFS mounts can be wiped. The ONLY durable store is the git remote
+# (GitHub). So this stashes the small, NON-SECRET parts of ~/.claude into this
+# repo (which gets pushed) and restores them on a fresh cluster:
+#     settings.json            — your Claude Code settings
+#     projects/*/memory/*.md    — cross-session memory notes
+# Credentials, caches, sessions and history are deliberately EXCLUDED: re-auth
+# on a new cluster, and the rest regenerates. Nothing secret goes into git.
 #
-# Usage:
-#   ./setup_claude.sh backup     # run BEFORE shutting down: ~/.claude -> persistent NFS
-#   ./setup_claude.sh restore    # run on a FRESH cluster: persistent NFS -> ~/.claude (+ install CLI)
-#   ./setup_claude.sh            # same as restore
-#
-# Point it somewhere else (e.g. shared storage) by overriding the location:
-#   CLAUDE_BACKUP_DIR=/mnt/shared_storage/zach/.claude ./setup_claude.sh backup
-#
-# Tip: add `bash setup_claude.sh restore` to your Anyscale workspace startup
-# command so a new cluster comes up with your settings + memory already in place.
+#   ./setup_claude.sh backup    # ~/.claude essentials -> repo, then commit + push
+#   ./setup_claude.sh restore   # repo -> ~/.claude  (run this on a fresh cluster)
 
 set -euo pipefail
 
-BACKUP_DIR="${CLAUDE_BACKUP_DIR:-/mnt/user_storage/claude-backup/.claude}"
-CLAUDE_DIR="$HOME/.claude"
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+STATE="$HERE/.claude-state"
+CLAUDE="$HOME/.claude"
 
 backup() {
-    if [ ! -d "$CLAUDE_DIR" ]; then
-        echo "[setup_claude] nothing to back up — $CLAUDE_DIR does not exist"
-        return 0
+    rm -rf "$STATE"
+    mkdir -p "$STATE/projects"
+    [ -f "$CLAUDE/settings.json" ] && cp "$CLAUDE/settings.json" "$STATE/settings.json"
+    # Copy only the memory dirs (not the whole projects tree), preserving the
+    # project-key path so restore can slot them back.
+    if [ -d "$CLAUDE/projects" ]; then
+        ( cd "$CLAUDE/projects" && find . -type d -name memory -print0 2>/dev/null \
+            | while IFS= read -r -d '' d; do
+                mkdir -p "$STATE/projects/$d"
+                cp "$d"/*.md "$STATE/projects/$d/" 2>/dev/null || true
+              done )
     fi
-    mkdir -p "$BACKUP_DIR"
-    # --delete keeps the backup an exact mirror (drops files removed locally).
-    rsync -a --delete "$CLAUDE_DIR"/ "$BACKUP_DIR"/
-    echo "[setup_claude] backed up $CLAUDE_DIR -> $BACKUP_DIR ($(du -sh "$BACKUP_DIR" 2>/dev/null | cut -f1))"
+    if ( cd "$HERE" && git add .claude-state \
+         && git commit -q -m "claude-state: settings + memory snapshot" \
+         && git push origin HEAD ); then
+        echo "[setup_claude] settings + memory committed and pushed to git."
+    else
+        echo "[setup_claude] nothing new to push (or push failed — check git)."
+    fi
 }
 
 restore() {
-    if [ ! -d "$BACKUP_DIR" ]; then
-        echo "[setup_claude] no backup at $BACKUP_DIR yet — run './setup_claude.sh backup' first."
-        return 0
-    fi
-    mkdir -p "$CLAUDE_DIR"
-    # No --delete: overlay the backup onto whatever a fresh ~/.claude already has.
-    rsync -a "$BACKUP_DIR"/ "$CLAUDE_DIR"/
-    echo "[setup_claude] restored $BACKUP_DIR -> $CLAUDE_DIR"
-}
-
-install_cli() {
-    if ! command -v claude >/dev/null 2>&1; then
-        echo "[setup_claude] installing Claude CLI..."
-        curl -fsSL https://claude.ai/install.sh | bash
-    fi
+    [ -d "$STATE" ] || { echo "[setup_claude] no $STATE found — run backup first (or git pull)."; return 0; }
+    mkdir -p "$CLAUDE"
+    [ -f "$STATE/settings.json" ] && cp "$STATE/settings.json" "$CLAUDE/settings.json"
+    [ -d "$STATE/projects" ] && { mkdir -p "$CLAUDE/projects"; cp -a "$STATE/projects/." "$CLAUDE/projects/"; }
+    echo "[setup_claude] restored settings + memory into $CLAUDE"
 }
 
 case "${1:-restore}" in
     backup)  backup ;;
-    restore) install_cli; restore ;;
-    *)       echo "usage: $0 [backup|restore]"; exit 2 ;;
+    restore) restore ;;
+    *) echo "usage: $0 [backup|restore]"; exit 2 ;;
 esac
