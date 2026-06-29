@@ -142,7 +142,15 @@ class GR00TPolicyServer:
 
     @_gr00t_app.post("/predict")
     async def predict_http(self, request: Request):
-        """HTTP endpoint: accepts pickled obs dict, returns pickled response."""
+        """HTTP endpoint: accepts pickled obs dict, returns pickled response.
+
+        SECURITY: this unpickles the raw request body, which can execute
+        arbitrary code if the payload is malicious. It is acceptable ONLY
+        because this endpoint lives on a trusted, cluster-internal network
+        (sim workers on the same Ray cluster). Do NOT expose this deployment to
+        untrusted clients without switching to a safe serialization
+        (e.g. msgpack, or numpy .npz with allow_pickle=False).
+        """
         body = await request.body()
         obs_dict = pickle.loads(body)
         result = await self.predict(obs_dict)
@@ -216,6 +224,8 @@ class PlaceholderPolicyServer:
 
     @_placeholder_app.post("/predict")
     async def predict_http(self, request: Request):
+        # SECURITY: unpickles the raw request body — safe only on a trusted,
+        # cluster-internal network. See GR00TPolicyServer.predict_http.
         body = await request.body()
         obs_dict = pickle.loads(body)
         result = await self.predict(obs_dict)
