@@ -13,6 +13,9 @@ tokenize:
   max_pretrain_windows: null
   holdout_keep: 1.0          # exact full-data metrics (~5M eval windows)
   shuffle_partitions: 128
+  merchant_vocab: learned      # real ~100k merchant vocab -> InfoNCE + reco
+  merchant_top_k: 20000        # covers ~98% of TabFormer txns (see DESIGN.md)
+  merchant_aggregate: 1024     # shared buckets for the long tail + OOV
 
 model:
   d_model: 512
@@ -28,6 +31,7 @@ pretrain:
   num_workers: 4
   use_gpu: true
   use_fsdp: false
+  infonce_negatives: 1024      # shared negatives per batch (TREASURE Alg. 1)
 
 embed:
   num_workers: 4

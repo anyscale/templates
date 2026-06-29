@@ -15,9 +15,9 @@
 
 Banks and fintechs are converging on **transaction foundation models** (TFMs): a single self-supervised transformer pretrained on raw transaction sequences, producing a reusable **customer embedding** that powers fraud, churn, credit, and personalization — replacing dozens of hand-built feature pipelines. Stripe, Visa (TREASURE), Nubank, and Revolut (PRAGMA) have all published variants of this recipe.
 
-The model architecture is the easy part. The real challenges are with **engineering at scale**: tokenizing petabytes of transactions, pretraining across many GPUs, and re-embedding every customer on a schedule — then serving those embeddings both in batch and in real time.
+The model itself is small and not the hard part. The hard parts are **engineering at scale**: tokenizing petabytes of transactions, building a vocabulary over 100M+ merchants, pretraining across many GPUs, and re-embedding every customer on a schedule — then serving those embeddings both in batch and in real time.
 
-**This template** builds the whole distributed, scalable pipeline on Ray, with one modeling improvement over the standard NVIDIA blueprint: a **static/dynamic field split** in the tokenizer and model (the idea behind Visa TREASURE and FATA-Trans), which is cheaper and a stronger inductive bias than flattening every field into the token stream.
+**This template** builds that whole distributed pipeline on Ray and shows **one self-supervised backbone serving two downstream consumers — fraud *and* recommendation**. The model follows **FATA-Trans** (static/dynamic field split + time-aware positions + masked-feature pretraining), runs the **NVIDIA blueprint's** TabFormer fraud protocol as the baseline, and adopts **Visa TREASURE's** trick for high-cardinality categoricals — **InfoNCE with shared negative sampling** — so the real ~100k-merchant vocabulary is tractable and the same embedding ranks next-merchant recommendations. (TREASURE's other production pillar, payment-network signals, is the documented next step.)
 
 ---
 
@@ -25,10 +25,12 @@ The model architecture is the easy part. The real challenges are with **engineer
 
 ```
                        ┌─────────────────────── Anyscale ───────────────────────┐
- raw transactions ──►  │ [Ray Data]   static/dynamic tokenization (map_groups)   │
-   (Parquet, S3)       │ [Ray Train]  masked-feature pretraining (PyTorch + DDP)│
+ raw transactions ──►  │ [Ray Data]   distributed merchant vocab (freq + top-K)  │
+   (Parquet, S3)       │ [Ray Data]   static/dynamic tokenization (map_groups)   │
+                       │ [Ray Train]  masked pretrain + InfoNCE (PyTorch + DDP)  │
                        │ [Ray Data]   batch embedding extraction (CPU read+GPU)  │
-                       │ [XGBoost]    downstream fraud: raw vs FM vs fusion       │
+                       │ ├─ [XGBoost] fraud: raw vs FM vs fusion (AUC/PR-AUC)    │
+                       │ └─ [rank]    recommendation: next-merchant (HR@K/NDCG@K)│
                        │ [Ray Serve]  online embedding + fraud score (cached)     │
                        └─────────────────────────────────────────────────────────┘
 ```
@@ -160,7 +162,7 @@ print("  attention mask:", np.asarray(row["attention_mask"])[-8:].tolist())
 
 ## Step 4: Pretrain with Ray Train (masked-feature modeling, DDP)
 
-We pretrain by **masking dynamic-field tokens and predicting them** (the Stripe / Open-Banking objective — bidirectional context beats next-token for the fixed-window tasks fintech cares about). There's **one classification head per dynamic field**, and because those heads differ wildly in difficulty (merchant is ~2000-way, day-of-week is 9-way) we balance them with **uncertainty weighting** (Kendall & Gal) so the big head doesn't dominate.
+We pretrain by **masking dynamic-field tokens and predicting them** (the FATA-Trans / Stripe / Open-Banking objective — bidirectional context beats next-token for the fixed-window tasks fintech cares about, and masked-item prediction is also a strong recommendation objective à la BERT4Rec). Each dynamic field has its own head, balanced with **uncertainty weighting** (Kendall & Gal) so the big head doesn't dominate. On the **learned merchant-vocab path** (`small`/`full`), merchant is a real ~100k-way field, so its head uses **InfoNCE with shared negative sampling** (TREASURE Alg. 1) instead of a full softmax — only the positive plus a batch-shared pool of negatives are scored, keeping a 100k+ vocab tractable. The smoke/CI path hash-buckets merchant and stays plain cross-entropy.
 
 The training loop is plain PyTorch; **Ray Train** handles worker setup, dataset sharding, **DDP** wrapping, checkpointing, and fault tolerance. The model fits one GPU at every scale, so we use DDP (data-parallel) and scale by adding workers — go from 1 CPU worker (here) to N GPU workers by changing only `num_workers` and `use_gpu`. (`use_fsdp` is available for when the model itself outgrows a GPU.)
 
@@ -213,6 +215,8 @@ The headline result, evaluated with the **NVIDIA transaction-FM blueprint protoc
 
 The lift of (2) and (3) over (1) is the case for a transaction FM. *(At `smoke` scale — 2 CPU epochs, a 2-layer model — expect fusion ≈ raw; the gap opens with the `small`/`full` GPU pretrain.)*
 
+**Second consumer — next-merchant recommendation.** On the learned-vocab path the *same* embedding backbone also ranks the next merchant a card will transact with (BERT4Rec-style: mask the target, score it against the InfoNCE merchant table), reported as HR@K / NDCG@K next to a "recommend their most-frequent past merchant" baseline. This is the "one backbone, two consumers (fraud + recs)" payoff and runs automatically in the fused pipeline (`run_pipeline.py`) at `small`/`full`, or standalone via `scripts/06_recommend.py`. *(Synthetic merchants are random, so reco only carries signal on TabFormer.)*
+
 
 
 ```python
@@ -256,7 +260,7 @@ serve.shutdown()
 
 ## Step 9: Path to production
 
-The same code scales up by changing config, and runs as a scheduled **Anyscale Job**. `scripts/run_pipeline.py` wraps all six stages (data -> tokenize -> pretrain -> embed -> downstream -> validate) in one command:
+The same code scales up by changing config, and runs as a scheduled **Anyscale Job**. `scripts/run_pipeline.py` wraps every stage (data -> vocab -> tokenize -> pretrain -> embed -> fraud -> recommendation -> validate) in one command:
 
 ```bash
 # Full pipeline as a Job (GPU workers, autoscaling):
@@ -268,9 +272,11 @@ anyscale job submit --config-file job_config.yaml -- python scripts/run_pipeline
 
 | Stage | Ray primitive | Scale knob |
 |-------|---------------|-----------|
+| Merchant vocab | Ray Data `groupby().count()` | `merchant_top_k`, `merchant_aggregate` |
 | Tokenize | Ray Data `map_groups` | partitions / cluster size |
-| Pretrain | Ray Train + DDP | `num_workers`, `use_gpu` |
+| Pretrain | Ray Train + DDP | `num_workers`, `use_gpu`, `infonce_negatives` |
 | Batch embed | Ray Data `map_batches` | `num_workers`, `num_gpus` |
+| Recommend | Ray Data `map_batches` | `num_workers`, `num_gpus` |
 | Online serve | Ray Serve | replica autoscaling |
 
 

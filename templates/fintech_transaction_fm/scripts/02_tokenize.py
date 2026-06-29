@@ -49,6 +49,26 @@ def main():
 
     ray.init(ignore_reinit_error=True)
     ds = ray.data.read_parquet(paths["raw"])
+
+    # Learned merchant vocab (InfoNCE path): distributed frequency scan, top-K +
+    # aggregate tail. Hashed path (default) skips it.
+    merchant_vocab = None
+    if preset.get("merchant_vocab", "hashed") == "learned":
+        from src.merchant_vocab import build_merchant_vocab
+        from src.tokenizer import _RESERVED
+
+        merchant_vocab = build_merchant_vocab(
+            ds,
+            top_k=preset["merchant_top_k"],
+            n_aggregate=preset["merchant_aggregate"],
+            base=_RESERVED,
+        )
+        print(
+            f"[02] learned merchant vocab: {merchant_vocab['top_k']:,} top + "
+            f"{merchant_vocab['n_aggregate']:,} aggregate "
+            f"({merchant_vocab['coverage'] * 100:.1f}% covered)"
+        )
+
     tokenized = tokenize_dataset(
         ds,
         seq_len,
@@ -58,6 +78,7 @@ def main():
         holdout_keep=preset["holdout_keep"],
         max_pretrain_windows=preset["max_pretrain_windows"],
         num_partitions=preset["shuffle_partitions"],
+        merchant_vocab=merchant_vocab,
     ).materialize()
 
     # Arrow-level filters (no numpy round trip — handles empty blocks cleanly).
@@ -67,7 +88,7 @@ def main():
     pre.write_parquet(paths["tokenized_pretrain"])
     ev = tokenized.filter(expr=col("kind") == "eval").drop_columns(["kind"])
     ev.write_parquet(paths["tokenized_eval"])
-    write_vocab(paths["vocab"])
+    write_vocab(paths["vocab"], merchant_vocab=merchant_vocab)
     print(f"[02] pretrain windows -> {paths['tokenized_pretrain']}")
     print(f"[02] eval samples -> {paths['tokenized_eval']}")
     print(f"[02] vocab -> {paths['vocab']}")

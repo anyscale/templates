@@ -45,6 +45,7 @@ from .generate_data import (
     ISSUERS,
     MERCHANT_CATEGORIES,
 )
+from .merchant_vocab import _top_lookup, merchant_to_id, merchant_vocab_rows
 
 SPLIT_FIELDS = True  # False -> NVIDIA-style flat tokenization (extension point)
 AMOUNT_MODE = "hard"  # "hard" (default, verified) | "soft" (blend adjacent bins)
@@ -136,11 +137,20 @@ DYNAMIC_FIELDS = [
 STATIC_FIELDS = ["issuer", "card_type", "bin_region", "home_state"]
 
 
-def field_vocab_sizes() -> dict:
-    """Number of embedding rows per field (including reserved ids)."""
+def field_vocab_sizes(merchant_vocab: dict | None = None) -> dict:
+    """Number of embedding rows per field (including reserved ids).
+
+    With ``merchant_vocab`` (the learned-vocab path), the merchant table is sized
+    to top-K + aggregate buckets instead of the fixed hash-bucket count.
+    """
+    merchant_rows = (
+        merchant_vocab_rows(merchant_vocab)
+        if merchant_vocab
+        else N_MERCHANT_BUCKETS + _RESERVED
+    )
     sizes = {
         "amount_bucket": N_AMOUNT_BUCKETS + _RESERVED,
-        "merchant_bucket": N_MERCHANT_BUCKETS + _RESERVED,
+        "merchant_bucket": merchant_rows,
         "mcc": N_MCC_BUCKETS + _RESERVED,
     }
     for f, v in DYNAMIC_CATEGORICAL_VOCAB.items():
@@ -191,7 +201,14 @@ def n_time_bucket_rows() -> int:
     return N_TIME_BUCKETS + _RESERVED + 2
 
 
-def write_vocab(output_path: str) -> None:
+def write_vocab(output_path: str, merchant_vocab: dict | None = None) -> None:
+    """Persist the model-facing vocab spec.
+
+    ``merchant_vocab`` (built by ``merchant_vocab.build_merchant_vocab`` from a
+    distributed frequency scan) switches the merchant field to learned ids and
+    flags it for InfoNCE. Without it, the merchant field stays hash-bucketed and
+    ``infonce_fields`` is empty — the CI/smoke path is byte-for-byte unchanged.
+    """
     os.makedirs(os.path.dirname(output_path.rstrip("/")), exist_ok=True)
     with open(output_path, "w") as f:
         json.dump(
@@ -199,10 +216,15 @@ def write_vocab(output_path: str) -> None:
                 "split_fields": SPLIT_FIELDS,
                 "dynamic_fields": DYNAMIC_FIELDS,
                 "static_fields": STATIC_FIELDS,
-                "field_vocab_sizes": field_vocab_sizes(),
+                "field_vocab_sizes": field_vocab_sizes(merchant_vocab),
                 "time_aware": TIME_AWARE,
                 "n_time_buckets": n_time_bucket_rows(),
                 "amount_mode": AMOUNT_MODE,
+                "merchant_vocab_mode": "learned" if merchant_vocab else "hashed",
+                "merchant_vocab": merchant_vocab,
+                # InfoNCE only when the merchant vocab is genuinely large; the
+                # hash-bucketed path stays full-softmax cross-entropy.
+                "infonce_fields": ["merchant_bucket"] if merchant_vocab else [],
                 "pad": PAD,
                 "mask": MASK,
                 "oov": OOV,
@@ -281,6 +303,7 @@ def make_tokenize_group_fn(
     holdout_keep: float | None = None,
     max_pretrain_windows: int | None = None,
     emit: str = "both",
+    merchant_vocab: dict | None = None,
 ):
     """Build a ``map_groups`` UDF turning one card's transactions into padded,
     per-field token sequences (pretrain windows + per-transaction eval samples).
@@ -293,6 +316,10 @@ def make_tokenize_group_fn(
     windows — a pure compute optimization for single-consumer pipelines. Kept
     rows are identical to a "both" run filtered on ``kind`` (the one-row-per-
     card guard may still emit the other kind, so consumers filter regardless).
+
+    ``merchant_vocab`` (learned-vocab path) maps merchant ids to top-K/aggregate
+    embedding ids; the small top-K lookup is built once and captured. Without it,
+    merchants are hash-bucketed (the default).
     """
     t_train = np.datetime64(train_end, "s") if train_end else None
     t_val = np.datetime64(val_end, "s") if val_end else None
@@ -300,6 +327,7 @@ def make_tokenize_group_fn(
     # train. 1.0 = score every holdout transaction (exact full-data metrics).
     holdout_keep = normal_keep if holdout_keep is None else holdout_keep
     soft = AMOUNT_MODE == "soft"
+    merch_lookup = _top_lookup(merchant_vocab) if merchant_vocab else None
 
     def tokenize_group(group: dict) -> dict:
         n = len(group["card_id"])
@@ -316,9 +344,15 @@ def make_tokenize_group_fn(
         hr_v = DYNAMIC_CATEGORICAL_VOCAB["hour"]
         dw_v = DYNAMIC_CATEGORICAL_VOCAB["day_of_week"]
         # Tokenize the full sorted history once; windows below just slice it.
+        merch_ids = np.asarray(group["merchant_id"])[order]
+        merchant_col = (
+            merchant_to_id(merch_ids, merchant_vocab, merch_lookup)
+            if merchant_vocab
+            else _merchant_to_bucket(merch_ids)
+        )
         full = {
             "amount_bucket": _amount_to_bucket(amounts),
-            "merchant_bucket": _merchant_to_bucket(np.asarray(group["merchant_id"])[order]),
+            "merchant_bucket": merchant_col,
             "merchant_category": np.array(
                 [mc_v.get(c, OOV) for c in np.asarray(group["merchant_category"])[order]],
                 dtype=np.int64,
@@ -440,6 +474,7 @@ def tokenize_dataset(
     max_pretrain_windows: int | None = None,
     num_partitions: int | None = None,
     emit: str = "both",
+    merchant_vocab: dict | None = None,
 ):
     """Apply the tokenizer over a Ray Dataset grouped by card.
 
@@ -447,6 +482,7 @@ def tokenize_dataset(
     much larger clusters/datasets and produces hundreds of tiny output files at
     demo scales. ``emit`` (see ``make_tokenize_group_fn``) skips the other
     kind's window computation when the pipeline only consumes one.
+    ``merchant_vocab`` switches the merchant field to learned ids.
     """
     return ds.groupby("card_id", num_partitions=num_partitions).map_groups(
         make_tokenize_group_fn(
@@ -457,6 +493,7 @@ def tokenize_dataset(
             holdout_keep=holdout_keep,
             max_pretrain_windows=max_pretrain_windows,
             emit=emit,
+            merchant_vocab=merchant_vocab,
         ),
         batch_format="numpy",
     )

@@ -46,6 +46,9 @@ class TransactionFM(nn.Module):
         time_aware: bool = True,
         n_time_buckets: int = 0,
         amount_mode: str = "hard",
+        infonce_fields: list | tuple = (),
+        infonce_negatives: int = 1024,
+        infonce_max_anchors: int = 4096,
     ):
         super().__init__()
         self.dynamic_fields = dynamic_fields
@@ -53,6 +56,12 @@ class TransactionFM(nn.Module):
         self.d_model = d_model
         self.time_aware = time_aware and n_time_buckets > 0
         self.amount_mode = amount_mode  # "hard" | "soft" (soft-binned amount)
+        # High-cardinality fields trained with InfoNCE (shared negative sampling)
+        # instead of a full-softmax head — TREASURE Alg. 1. Empty in the hashed
+        # path, so smoke/CI keeps plain cross-entropy on every field.
+        self.infonce_fields = list(infonce_fields)
+        self.infonce_negatives = infonce_negatives
+        self.infonce_max_anchors = infonce_max_anchors
 
         self.dyn_emb = nn.ModuleDict(
             {f: nn.Embedding(field_vocab_sizes[f], d_model, padding_idx=PAD) for f in dynamic_fields}
@@ -78,9 +87,19 @@ class TransactionFM(nn.Module):
         )
         self.encoder = nn.TransformerEncoder(layer, num_layers=n_layers)
 
-        # One MLM classification head per dynamic field.
+        # Low-cardinality fields: a full-softmax classification head each.
+        # High-cardinality (InfoNCE) fields: a d_model->d_model projection whose
+        # output is scored against the field's own (tied) embedding table — no
+        # giant logit matrix, so a 100k-merchant vocab stays tractable.
         self.mlm_heads = nn.ModuleDict(
-            {f: nn.Linear(d_model, field_vocab_sizes[f]) for f in dynamic_fields}
+            {
+                f: nn.Linear(d_model, field_vocab_sizes[f])
+                for f in dynamic_fields
+                if f not in self.infonce_fields
+            }
+        )
+        self.infonce_proj = nn.ModuleDict(
+            {f: nn.Linear(d_model, d_model) for f in self.infonce_fields}
         )
         # Learned per-field homoscedastic log-variance (Kendall & Gal) so the
         # easy 9-way day head and the hard 2002-way merchant head are balanced
@@ -142,32 +161,46 @@ class TransactionFM(nn.Module):
         hidden = self.encode(batch)
         if targets is None:
             return hidden
-        logits = self.mlm_logits(hidden)
-        return self.field_loss(logits, targets, masked, weighting)
+        return self.field_loss(hidden, targets, masked, weighting)
 
-    def mlm_logits(self, hidden: torch.Tensor) -> dict:
-        return {f: head(hidden) for f, head in self.mlm_heads.items()}
+    def field_loss(self, hidden: torch.Tensor, targets: dict, masked, weighting: str = "uncertainty"):
+        """Per-field masked loss over the supervised positions, aggregated.
 
-    def field_loss(self, logits: dict, targets: dict, masked, weighting: str = "uncertainty"):
-        """Sum the per-field masked cross-entropies and report per-field stats.
+        Each field is either a full-softmax cross-entropy (low cardinality) or an
+        InfoNCE term against its tied embedding table (high cardinality). Masked
+        positions are flattened across the batch first, so InfoNCE's negatives
+        are shared across all samples and timesteps (TREASURE's memory trick).
 
         ``weighting="uncertainty"`` applies Kendall & Gal homoscedastic weighting
         (loss_f * exp(-s_f) + 0.5*s_f, with s_f a learned log-variance) so heads
         of very different difficulty/scale stay balanced. ``"mean"`` is the plain
         unweighted average.
 
-        Returns (total_loss, stats) where stats[field] = {"ce", "acc"} — the
-        masked cross-entropy and top-1 accuracy for that field. These per-field
-        numbers (not the weighted total, which drifts as the log-variances learn)
-        are what you watch to confirm training is working.
+        Returns (total_loss, stats) where stats[field] = {"ce", "acc"}. For
+        InfoNCE fields "acc" is the in-batch/negative-pool ranking accuracy (a
+        cheap training proxy); the real ranking quality is the recommendation
+        eval. These per-field numbers (not the weighted total, which drifts as
+        the log-variances learn) are what you watch to confirm training works.
         """
+        hid_m = hidden[masked]  # (M, D) — supervised positions, flattened
         ce, stats = {}, {}
         for f in self.dynamic_fields:
-            lg, tg = logits[f][masked], targets[f][masked]
-            ce[f] = F.cross_entropy(lg, tg)
-            with torch.no_grad():
-                acc = (lg.argmax(dim=-1) == tg).float().mean()
-            stats[f] = {"ce": float(ce[f].item()), "acc": float(acc.item())}
+            tg = targets[f][masked]
+            if f in self.infonce_fields:
+                loss_f, acc = infonce_loss(
+                    self.infonce_proj[f](hid_m),
+                    self.dyn_emb[f].weight,
+                    tg,
+                    self.infonce_negatives,
+                    self.infonce_max_anchors,
+                )
+            else:
+                lg = self.mlm_heads[f](hid_m)
+                loss_f = F.cross_entropy(lg, tg)
+                with torch.no_grad():
+                    acc = (lg.argmax(dim=-1) == tg).float().mean()
+            ce[f] = loss_f
+            stats[f] = {"ce": float(loss_f.item()), "acc": float(acc.item())}
 
         if weighting == "uncertainty":
             total = 0.0
@@ -200,12 +233,57 @@ class TransactionFM(nn.Module):
         return summed / counts
 
 
-def build_model(vocab_path: str, arch: dict, max_len: int = 64) -> TransactionFM:
+def infonce_loss(
+    hidden_a: torch.Tensor,
+    embedding: torch.Tensor,
+    labels: torch.Tensor,
+    n_negative: int,
+    max_anchors: int,
+):
+    """InfoNCE for a high-cardinality categorical field (TREASURE Alg. 1, MLM
+    variant). ``hidden_a`` are the projected anchor states at the M supervised
+    positions; ``embedding`` is the field's (tied) table.
+
+    The candidate pool for every anchor is **shared**: all M in-batch positives
+    (the anchors' own targets) plus ``n_negative`` random ids sampled once for
+    the whole batch. Reusing one negative pool across all anchors is the trick
+    that keeps a 100k+ vocab tractable — no per-position logit matrix. Anchors
+    that share a label (common here: 96% merchant repeat) are masked out of each
+    other's negatives so they aren't penalized as false negatives.
+    """
+    M, device = hidden_a.shape[0], hidden_a.device
+    if M == 0:
+        return hidden_a.sum() * 0.0, torch.zeros((), device=device)
+    if M > max_anchors:
+        keep = torch.randperm(M, device=device)[:max_anchors]
+        hidden_a, labels, M = hidden_a[keep], labels[keep], max_anchors
+
+    V = embedding.shape[0]
+    pos_emb = embedding[labels]                                  # (M, D)
+    neg_ids = torch.randint(V, (n_negative,), device=device)
+    neg_emb = embedding[neg_ids]                                 # (n_neg, D)
+
+    inbatch = hidden_a @ pos_emb.t()                             # (M, M)
+    negs = hidden_a @ neg_emb.t()                                # (M, n_neg)
+    same = labels[None, :] == labels[:, None]
+    eye = torch.eye(M, dtype=torch.bool, device=device)
+    inbatch = inbatch.masked_fill(same & ~eye, float("-inf"))    # drop false negs
+
+    logits = torch.cat([inbatch, negs], dim=1)                   # (M, M + n_neg)
+    target = torch.arange(M, device=device)                      # positive = diagonal
+    loss = F.cross_entropy(logits, target)
+    with torch.no_grad():
+        acc = (logits.argmax(dim=1) == target).float().mean()
+    return loss, acc
+
+
+def build_model(vocab_path: str, arch: dict, max_len: int = 64, infonce_negatives: int = 1024) -> TransactionFM:
     """Construct a model from a written vocab.json and explicit dims.
 
     ``arch`` is the `model:` block of configs/<scale>.yaml (d_model / n_heads /
     n_layers / dim_ff); checkpoint consumers read it back from the
-    model_config.json saved next to the weights.
+    model_config.json saved next to the weights. ``infonce_fields`` is read from
+    the vocab so embed/serve rebuild the same module layout as training.
     """
     with open(vocab_path) as f:
         vocab = json.load(f)
@@ -218,6 +296,8 @@ def build_model(vocab_path: str, arch: dict, max_len: int = 64) -> TransactionFM
         time_aware=vocab.get("time_aware", False),
         n_time_buckets=vocab.get("n_time_buckets", 0),
         amount_mode=vocab.get("amount_mode", "hard"),
+        infonce_fields=vocab.get("infonce_fields", []),
+        infonce_negatives=infonce_negatives,
         **cfg,
     )
 

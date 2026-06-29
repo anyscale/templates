@@ -113,7 +113,29 @@ def main():
         splits = json.load(f)
     tk = cfg["tokenize"]
     normal_keep = eval_normal_keep(splits, tk["target_eval_samples"])
-    write_vocab(paths["vocab"])
+
+    # Learned merchant vocab (InfoNCE path): one distributed frequency scan over
+    # the raw transactions, keeping the top-K merchants + aggregate buckets for
+    # the tail. The hashed path (default, smoke/CI) skips this entirely.
+    merchant_vocab = None
+    if tk.get("merchant_vocab", "hashed") == "learned":
+        from src.merchant_vocab import build_merchant_vocab
+        from src.tokenizer import _RESERVED
+
+        merchant_vocab = build_merchant_vocab(
+            ray.data.read_parquet(paths["raw"]),
+            top_k=tk["merchant_top_k"],
+            n_aggregate=tk["merchant_aggregate"],
+            base=_RESERVED,
+        )
+        print(
+            f"[1/6] learned merchant vocab: {merchant_vocab['top_k']:,} top + "
+            f"{merchant_vocab['n_aggregate']:,} aggregate buckets "
+            f"({merchant_vocab['n_unique']:,} unique merchants, "
+            f"{merchant_vocab['coverage'] * 100:.1f}% covered by top-K)",
+            flush=True,
+        )
+    write_vocab(paths["vocab"], merchant_vocab=merchant_vocab)
 
     def tokenized(emit: str):
         return tokenize_dataset(
@@ -126,6 +148,7 @@ def main():
             max_pretrain_windows=tk["max_pretrain_windows"],
             num_partitions=tk["shuffle_partitions"],
             emit=emit,
+            merchant_vocab=merchant_vocab,
         )
 
     print("=== [2/6] tokenize pretrain windows -> object store ===", flush=True)
@@ -171,6 +194,26 @@ def main():
     from src.downstream import print_summary, run_downstream
 
     print_summary(run_downstream(paths["embeddings"], paths["downstream"]))
+
+    # Second consumer of the same backbone: next-merchant recommendation. Needs
+    # the learned merchant vocab + InfoNCE head, so it's skipped on the hashed
+    # path. Re-tokenizes eval windows and streams them through the scorer.
+    if merchant_vocab is not None:
+        print("=== [+] next-merchant recommendation eval ===", flush=True)
+        from src.recommend import print_summary as rec_print
+        from src.recommend import run_recommend
+
+        rec_ev = tokenized("eval").filter(expr=col("kind") == "eval").drop_columns(["kind"])
+        rec_print(
+            run_recommend(
+                checkpoint_dir=paths["checkpoint"],
+                output_dir=paths["downstream"],
+                ds=rec_ev,
+                num_workers=e["num_workers"],
+                use_gpu=e["use_gpu"],
+                batch_size=e["batch_size"],
+            )
+        )
 
     print("=== [6/6] validate ===", flush=True)
     from scripts.validate_results import print_report, validate_pipeline

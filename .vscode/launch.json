@@ -1,0 +1,15 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "fm: run_pipeline (smoke)",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/templates/fintech_transaction_fm/scripts/run_pipeline.py",
+      "args": ["--scale", "smoke", "--source", "synthetic"],
+      "cwd": "${workspaceFolder}/templates/fintech_transaction_fm",
+      "console": "integratedTerminal",
+      "justMyCode": false
+    }
+  ]
+}

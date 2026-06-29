@@ -1,0 +1,38 @@
+# Scale: rtest — minimal local check of the LEARNED merchant-vocab + InfoNCE +
+# recommendation path (CPU, minutes). Synthetic data, so reco metrics are near-
+# random (synthetic merchants don't repeat per card) — this validates the code
+# path, not the metric. Real numbers come from TabFormer at small/full.
+#   python scripts/run_pipeline.py --scale rtest --source synthetic
+
+data:
+  num_cards: 400
+
+tokenize:
+  seq_len: 16
+  target_eval_samples: 3000
+  max_pretrain_windows: 4
+  holdout_keep: null
+  shuffle_partitions: 8
+  merchant_vocab: learned      # hashed | learned (learned -> InfoNCE + reco)
+  merchant_top_k: 500          # dedicated merchant ids
+  merchant_aggregate: 64       # shared buckets for the long tail + OOV
+
+model:
+  d_model: 32
+  n_heads: 2
+  n_layers: 2
+  dim_ff: 64
+
+pretrain:
+  epochs: 1
+  batch_size: 32
+  lr: 3.0e-4
+  num_workers: 1
+  use_gpu: false
+  use_fsdp: false
+  infonce_negatives: 128       # shared negatives per batch (TREASURE Alg. 1)
+
+embed:
+  num_workers: 2
+  use_gpu: false
+  batch_size: 256

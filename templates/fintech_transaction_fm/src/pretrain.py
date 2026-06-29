@@ -44,7 +44,12 @@ def train_func(config: dict):
     # Per-column dtypes: tokens are int64, the soft-bin amount weight is float32.
     dtypes = {"d_amount_frac": torch.float32} if vocab.get("amount_mode") == "soft" else None
 
-    model = build_model(vocab_path, arch=config["arch"], max_len=config["max_len"])
+    model = build_model(
+        vocab_path,
+        arch=config["arch"],
+        max_len=config["max_len"],
+        infonce_negatives=config.get("infonce_negatives", 1024),
+    )
 
     use_fsdp = config.get("use_fsdp", False) and torch.cuda.is_available()
     if use_fsdp:
@@ -132,6 +137,7 @@ def pretrain(
     use_gpu: bool = False,
     use_fsdp: bool = False,
     loss_weighting: str = "uncertainty",
+    infonce_negatives: int = 1024,
     storage_base: str | None = None,
     seed: int = 0,
 ) -> dict:
@@ -171,6 +177,7 @@ def pretrain(
             "lr": lr,
             "use_fsdp": use_fsdp,
             "loss_weighting": loss_weighting,
+            "infonce_negatives": infonce_negatives,
             "seed": seed,
         },
         scaling_config=ScalingConfig(num_workers=num_workers, use_gpu=use_gpu),
