@@ -51,15 +51,15 @@ inspired by TREASURE." That was imprecise. The accurate attribution:
 | Time-aware positional embedding | **FATA-Trans** | ✅ core |
 | Masked-feature (MLM) pretraining | **FATA-Trans** (15% static + 15% dynamic) | ✅ core |
 | End-to-end shape (tokenize → pretrain → embed → XGBoost fraud, TabFormer, temporal split) | **NVIDIA blueprint** (baseline to beat) | ✅ protocol |
-| InfoNCE high-cardinality loss + shared negatives | **TREASURE** (Alg. 1) | ➕ adding now |
-| Network-signal modeling (response/decline codes) | **TREASURE** | ➕ adding now |
-| Masked-modeling *as* sequential recommendation | **BERT4Rec** (mask last item, rank) | ➕ adding now |
+| InfoNCE high-cardinality loss + shared negatives | **TREASURE** (Alg. 1) | ✅ added |
+| Network-signal modeling (response/decline codes) | **TREASURE** | ✅ added |
+| Masked-modeling *as* sequential recommendation | **BERT4Rec** (mask last item, rank) | ✅ added |
 | Joint fusion (embedding ++ raw features) downstream | **Nubank** | ✅ done |
 
 So: **the architecture we built is FATA-Trans, on Ray.** NVIDIA is the baseline
 and the eval protocol. TREASURE is the production north-star and the source of
-the two pillars we're now adding (InfoNCE, network signals). Naming it
-"FATA-Trans on Ray, scaling toward TREASURE" is the honest framing for the blog.
+the two pillars we added (InfoNCE, network signals). Naming it "FATA-Trans on
+Ray, scaling toward TREASURE" is the honest framing for the blog.
 
 **Why MLM and not autoregressive (NVIDIA/TREASURE are causal)?** Two reasons,
 both now defensible by citation rather than hand-waving: (1) FATA-Trans is MLM,
@@ -123,22 +123,25 @@ wheelhouse), just messaged accurately.
 default (CPU can't afford a 100k-row head); `learned` + InfoNCE runs at
 `small`/`full`. Keeps CI green; the blog runs the big version.
 
-### 3. Network-signal head + channel-as-input (TREASURE's distinguishing pillar)
+### 3. Network-signal head + channel-as-input (TREASURE's distinguishing pillar) — DONE
 
-TabFormer carries two payment-network fields the loader currently **discards**.
-The de-risk shows both are strongly fraud-predictive:
+TabFormer carries two payment-network fields the loader used to **discard**;
+both are strongly fraud-predictive and are now modeled:
 
 * **`Use Chip` (channel: swipe/chip/online)** — known at auth time, varies per
   transaction, and Online txns have **16× the fraud rate** of Swipe (0.68% vs
-  0.043%). It's a legitimate **dynamic input field**. The current loader wrongly
-  collapses it to a *static per-card modal proxy*, throwing the signal away. Fix:
-  promote channel to a per-transaction dynamic field.
+  0.043%). Now a per-transaction **dynamic input field** (`channel` in
+  `DYNAMIC_FIELDS`); `card_type` stays the static modal channel. Both data
+  sources emit it (`generate_data.py`, `tabformer.py`).
 * **`Errors?` (decline/response codes: Insufficient Balance, Bad PIN, …)** —
-  known only *after* processing (2.7× fraud lift). Following TREASURE, this is an
-  **output-only network-signal prediction head**, never an input (as an input it
-  would leak the label). Predicting the current transaction's signal is the
-  literal thing TREASURE says makes it "first to holistically model
-  transactions," and it's a plausible lever on our fraud number.
+  known only *after* processing (2.7× fraud lift). Modeled as an **output-only
+  network-signal head** (`SIGNAL_FIELDS=["error"]`, `model.signal_heads`),
+  supervised at every valid position, **never an input** (as an input it would
+  leak). This is the literal thing TREASURE says makes it "first to holistically
+  model transactions." Always-on (both paths); cheap, and a plausible fraud
+  lever. Leakage guard: the signal is a `y_error` target column, never summed
+  into the embedding, so the pooled embedding the fraud head consumes never sees
+  it.
 
 ### 4. Recommendation eval — next-merchant (BERT4Rec-style)
 
@@ -207,9 +210,9 @@ since the previous transaction** (`time_bucket`), summed into each position.
 Upgrade paths: Time2Vec (continuous), or a relative-time attention bias
 (FATA-Trans/HSTU — needs a custom attention layer).
 
-**Channel (`Use Chip`) — dynamic input field (adding).** Known at auth time,
-16× fraud signal, varies per transaction. Promote from the current static modal
-proxy to a per-event dynamic categorical field.
+**Channel (`Use Chip`) — dynamic input field (implemented).** Known at auth
+time, 16× fraud signal, varies per transaction. A per-event dynamic categorical
+field (`channel`); `card_type` remains the static modal channel.
 
 **Amount representation (bucketing default, pluggable).** Money is heavy-tailed;
 we log-bucket into a categorical token. Spectrum, worst→best: (1) raw log1p+

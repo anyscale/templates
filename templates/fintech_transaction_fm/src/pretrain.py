@@ -39,6 +39,7 @@ def train_func(config: dict):
     with open(vocab_path) as f:
         vocab = json.load(f)
     dynamic_fields = vocab["dynamic_fields"]
+    signal_fields = vocab.get("signal_fields", [])
     weighting = config.get("loss_weighting", "uncertainty")
 
     # Per-column dtypes: tokens are int64, the soft-bin amount weight is float32.
@@ -95,12 +96,13 @@ def train_func(config: dict):
         # vocab size tells you whether it learned structure (ppl << vocab = good).
         metrics = {"epoch": epoch, "mlm_loss": running / max(n_batches, 1)}
         macro_acc = 0.0
-        for f in dynamic_fields:
+        for f in dynamic_fields + signal_fields:
             mean_ce = ce_sum[f] / max(tot_n, 1)
             acc = acc_sum[f] / max(tot_n, 1)
             metrics[f"acc_{f}"] = acc
             metrics[f"ppl_{f}"] = math.exp(min(mean_ce, 20.0))
-            macro_acc += acc
+            if f in dynamic_fields:
+                macro_acc += acc
         metrics["acc_macro"] = macro_acc / len(dynamic_fields)
 
         # Checkpoint on the last epoch (rank 0 writes the weights).

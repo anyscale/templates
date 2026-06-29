@@ -83,6 +83,18 @@ def generate_transactions(num_cards: int, seed: int = 42) -> pd.DataFrame:
         amount = np.round(amount, 2)
         is_fraud = np.zeros(n_txn, dtype=np.int64)
 
+        # --- Network signals (mirror TabFormer's Use Chip + Errors?) ---
+        # channel is a per-transaction INPUT (known at auth time); error is an
+        # OUTPUT-only signal (known only after processing). Both skew with fraud
+        # so the synthetic data exercises the network-signal head with real signal.
+        channel = rng.choice(["swipe", "chip", "online"], n_txn, p=[0.60, 0.28, 0.12])
+        error = np.full(n_txn, "none", dtype=object)
+        _ERR_TYPES = ["insufficient_balance", "bad_pin", "technical_glitch",
+                      "bad_card", "bad_cvv", "bad_exp", "bad_zip"]
+        base_err = rng.random(n_txn) < 0.012  # rare declines on normal traffic
+        if base_err.any():
+            error[base_err] = rng.choice(_ERR_TYPES, int(base_err.sum()))
+
         # --- Plant fraud patterns ---
         if rng.random() < 0.25:  # this card experiences fraud at all
             pattern = rng.integers(0, 4)
@@ -98,6 +110,12 @@ def generate_transactions(num_cards: int, seed: int = 42) -> pd.DataFrame:
             else:                   # velocity spike (cluster gaps tight)
                 amount[idx] = amount[idx] * rng.uniform(3, 8, len(idx))
             is_fraud[idx] = 1
+            # fraud skews to the online channel and triggers more declines
+            online = idx[rng.random(len(idx)) < 0.6]
+            channel[online] = "online"
+            decl = idx[rng.random(len(idx)) < 0.4]
+            if len(decl):
+                error[decl] = rng.choice(["insufficient_balance", "bad_pin", "bad_cvv"], len(decl))
 
         hour = pd.DatetimeIndex(ts).hour.to_numpy()
         dow = pd.DatetimeIndex(ts).dayofweek.to_numpy()
@@ -108,6 +126,7 @@ def generate_transactions(num_cards: int, seed: int = 42) -> pd.DataFrame:
                     int(c), issuer[c], card_type[c], bin_region[c], home_state[c],
                     str(ts[i]), float(amount[i]), int(merchant_id[i]),
                     str(cats[i]), int(mcc[i]), int(hour[i]), int(dow[i]),
+                    str(channel[i]), str(error[i]),
                     int(is_fraud[i]),
                 )
             )
@@ -119,7 +138,9 @@ def generate_transactions(num_cards: int, seed: int = 42) -> pd.DataFrame:
             "card_id", "issuer", "card_type", "bin_region", "home_state",
             # dynamic (per-transaction)
             "timestamp", "amount", "merchant_id", "merchant_category", "mcc",
-            "hour", "day_of_week",
+            "hour", "day_of_week", "channel",
+            # network signal (output-only — known after processing)
+            "error",
             # label
             "is_fraud",
         ],
@@ -151,5 +172,10 @@ def save_dataset(output_path: str, num_cards: int, seed: int = 42) -> str:
 
 # Static vs dynamic field declarations — imported by the tokenizer and model.
 STATIC_FIELDS = ["issuer", "card_type", "bin_region", "home_state"]
-DYNAMIC_CATEGORICAL_FIELDS = ["merchant_category", "mcc", "hour", "day_of_week"]
+DYNAMIC_CATEGORICAL_FIELDS = ["merchant_category", "mcc", "hour", "day_of_week", "channel"]
 DYNAMIC_NUMERIC_FIELDS = ["amount"]
+# Payment-network signal categories (output-only; "none" = clean authorization).
+ERROR_CATEGORIES = [
+    "none", "insufficient_balance", "bad_pin", "technical_glitch",
+    "bad_card", "bad_cvv", "bad_exp", "bad_zip", "other",
+]

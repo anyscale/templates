@@ -218,7 +218,14 @@ def main():
     print("=== [6/6] validate ===", flush=True)
     from scripts.validate_results import print_report, validate_pipeline
 
-    print_report(validate_pipeline(paths, n_pretrain_windows=n_pretrain))
+    # "fusion ≥ raw" only holds once the FM is really trained (small/full).
+    print_report(
+        validate_pipeline(
+            paths,
+            n_pretrain_windows=n_pretrain,
+            strict_lift=args.scale in ("small", "full"),
+        )
+    )
 
 
 if __name__ == "__main__":

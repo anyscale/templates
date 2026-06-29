@@ -22,6 +22,10 @@ Schema mapping notes (TabFormer -> canonical):
 * ``home_state``    = modal Merchant State per card (proxy; 2-letter US codes
   kept, countries -> FOREIGN, empty/online -> ONLINE)
 * ``card_type``     = modal transaction channel per card (swipe/chip/online)
+* ``channel``       = per-transaction "Use Chip" (swipe/chip/online) — dynamic
+  input, known at auth time (Online has ~16x the fraud rate of Swipe)
+* ``error``         = per-transaction "Errors?" mapped to a category — the
+  network signal; output-only (known after processing), never a model input
 * ``issuer`` / ``bin_region`` = not present in TabFormer -> "UNKNOWN"
 """
 
@@ -43,8 +47,26 @@ CSV_NAME = "card_transaction.v1.csv"
 
 _CSV_COLUMNS = [
     "User", "Card", "Year", "Month", "Day", "Time",
-    "Amount", "Use Chip", "Merchant Name", "Merchant State", "MCC", "Is Fraud?",
+    "Amount", "Use Chip", "Merchant Name", "Merchant State", "MCC", "Errors?", "Is Fraud?",
 ]
+
+# Errors? -> canonical network-signal category (same labels as the synthetic
+# generator). The field is multi-valued ("Bad PIN,Insufficient Balance,"); we
+# take the first error. Empty = "none" (clean authorization).
+_ERR_MAP = {
+    "insufficient balance": "insufficient_balance",
+    "bad pin": "bad_pin",
+    "technical glitch": "technical_glitch",
+    "bad card number": "bad_card",
+    "bad cvv": "bad_cvv",
+    "bad expiration": "bad_exp",
+    "bad zipcode": "bad_zip",
+}
+
+
+def _map_errors(col: "pd.Series") -> "pd.Series":
+    first = col.fillna("").str.split(",").str[0].str.strip().str.lower()
+    return first.map(lambda s: "none" if s == "" else _ERR_MAP.get(s, "other"))
 
 
 def ensure_download(source_dir: str) -> str:
@@ -109,6 +131,7 @@ def _normalize(b: pd.DataFrame) -> pd.DataFrame:
             "day_of_week": ts.dt.dayofweek.astype(np.int64),
             "is_fraud": (b["Is Fraud?"] == "Yes").astype(np.int64),
             "channel": b["Use Chip"].str.split(" ").str[0].str.lower(),
+            "error": _map_errors(b["Errors?"]),
             "state_norm": np.select(
                 [state.str.len() == 2, state.str.len() == 0],
                 [state, "ONLINE"],
@@ -180,7 +203,10 @@ def prepare_tabformer(
     card_type = dict(zip(stats["card_id"], stats["card_type"]))
 
     def attach_statics(b: pd.DataFrame) -> pd.DataFrame:
-        b = b.drop(columns=["channel", "state_norm"])
+        # Keep per-transaction channel + error (dynamic input + network signal);
+        # card_type is still the modal channel (static). Only state_norm is a
+        # scratch column used to derive home_state.
+        b = b.drop(columns=["state_norm"])
         b["issuer"] = "UNKNOWN"
         b["bin_region"] = "UNKNOWN"
         b["card_type"] = b["card_id"].map(card_type)

@@ -49,6 +49,8 @@ class TransactionFM(nn.Module):
         infonce_fields: list | tuple = (),
         infonce_negatives: int = 1024,
         infonce_max_anchors: int = 4096,
+        signal_fields: list | tuple = (),
+        signal_vocab_sizes: dict | None = None,
     ):
         super().__init__()
         self.dynamic_fields = dynamic_fields
@@ -62,6 +64,9 @@ class TransactionFM(nn.Module):
         self.infonce_fields = list(infonce_fields)
         self.infonce_negatives = infonce_negatives
         self.infonce_max_anchors = infonce_max_anchors
+        # Output-only network-signal fields (e.g. decline/response codes):
+        # predicted at every position, never embedded as input (would leak).
+        self.signal_fields = list(signal_fields)
 
         self.dyn_emb = nn.ModuleDict(
             {f: nn.Embedding(field_vocab_sizes[f], d_model, padding_idx=PAD) for f in dynamic_fields}
@@ -101,11 +106,17 @@ class TransactionFM(nn.Module):
         self.infonce_proj = nn.ModuleDict(
             {f: nn.Linear(d_model, d_model) for f in self.infonce_fields}
         )
+        # Network-signal prediction heads (one per signal field), scored at every
+        # valid position against the true current-transaction signal.
+        sizes = signal_vocab_sizes or {}
+        self.signal_heads = nn.ModuleDict(
+            {f: nn.Linear(d_model, sizes[f]) for f in self.signal_fields}
+        )
         # Learned per-field homoscedastic log-variance (Kendall & Gal) so the
         # easy 9-way day head and the hard 2002-way merchant head are balanced
         # automatically instead of letting the big head dominate the gradient.
         self.log_var = nn.ParameterDict(
-            {f: nn.Parameter(torch.zeros(())) for f in dynamic_fields}
+            {f: nn.Parameter(torch.zeros(())) for f in list(dynamic_fields) + self.signal_fields}
         )
 
     # --- input assembly ---
@@ -161,9 +172,9 @@ class TransactionFM(nn.Module):
         hidden = self.encode(batch)
         if targets is None:
             return hidden
-        return self.field_loss(hidden, targets, masked, weighting)
+        return self.field_loss(hidden, batch, targets, masked, weighting)
 
-    def field_loss(self, hidden: torch.Tensor, targets: dict, masked, weighting: str = "uncertainty"):
+    def field_loss(self, hidden: torch.Tensor, batch: dict, targets: dict, masked, weighting: str = "uncertainty"):
         """Per-field masked loss over the supervised positions, aggregated.
 
         Each field is either a full-softmax cross-entropy (low cardinality) or an
@@ -202,9 +213,24 @@ class TransactionFM(nn.Module):
             ce[f] = loss_f
             stats[f] = {"ce": float(loss_f.item()), "acc": float(acc.item())}
 
+        # Network-signal heads: supervised at every valid (non-pad) position,
+        # independent of MLM masking (the signal is never a model input, so
+        # predicting it at unmasked positions can't leak).
+        if self.signal_fields:
+            valid = batch["attention_mask"] == 1
+            hid_v = hidden[valid]
+            for f in self.signal_fields:
+                tg = batch[f"y_{f}"][valid].long()
+                lg = self.signal_heads[f](hid_v)
+                loss_f = F.cross_entropy(lg, tg)
+                with torch.no_grad():
+                    acc = (lg.argmax(dim=-1) == tg).float().mean()
+                ce[f] = loss_f
+                stats[f] = {"ce": float(loss_f.item()), "acc": float(acc.item())}
+
         if weighting == "uncertainty":
             total = 0.0
-            for f in self.dynamic_fields:
+            for f in self.dynamic_fields + self.signal_fields:
                 s = self.log_var[f]
                 total = total + torch.exp(-s) * ce[f] + 0.5 * s
         else:
@@ -298,6 +324,8 @@ def build_model(vocab_path: str, arch: dict, max_len: int = 64, infonce_negative
         amount_mode=vocab.get("amount_mode", "hard"),
         infonce_fields=vocab.get("infonce_fields", []),
         infonce_negatives=infonce_negatives,
+        signal_fields=vocab.get("signal_fields", []),
+        signal_vocab_sizes=vocab.get("signal_vocab_sizes"),
         **cfg,
     )
 

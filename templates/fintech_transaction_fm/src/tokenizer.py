@@ -42,6 +42,7 @@ import numpy as np
 from .generate_data import (
     BIN_REGIONS,
     CARD_TYPES,
+    ERROR_CATEGORIES,
     ISSUERS,
     MERCHANT_CATEGORIES,
 )
@@ -123,6 +124,8 @@ DYNAMIC_CATEGORICAL_VOCAB = {
     "merchant_category": _index_map(MERCHANT_CATEGORIES + ["other"]),
     "hour": _index_map(list(range(24))),
     "day_of_week": _index_map(list(range(7))),
+    # Transaction channel ("Use Chip"): a per-event INPUT, known at auth time.
+    "channel": _index_map(["swipe", "chip", "online"]),
 }
 
 # Order of dynamic fields fed to the model (one embedding table each).
@@ -133,8 +136,20 @@ DYNAMIC_FIELDS = [
     "mcc",
     "hour",
     "day_of_week",
+    "channel",
 ]
 STATIC_FIELDS = ["issuer", "card_type", "bin_region", "home_state"]
+
+# Payment-network signals (TREASURE's distinguishing pillar): predicted as
+# OUTPUTS, never fed as inputs (they're only known after a txn is processed, so
+# using them as features would leak the label). Each is a per-position
+# classification target carried as a ``y_<field>`` column.
+SIGNAL_VOCAB = {"error": _index_map(ERROR_CATEGORIES)}
+SIGNAL_FIELDS = ["error"]
+
+
+def signal_vocab_sizes() -> dict:
+    return {f: len(v) + _RESERVED for f, v in SIGNAL_VOCAB.items()}
 
 
 def field_vocab_sizes(merchant_vocab: dict | None = None) -> dict:
@@ -216,7 +231,9 @@ def write_vocab(output_path: str, merchant_vocab: dict | None = None) -> None:
                 "split_fields": SPLIT_FIELDS,
                 "dynamic_fields": DYNAMIC_FIELDS,
                 "static_fields": STATIC_FIELDS,
+                "signal_fields": SIGNAL_FIELDS,
                 "field_vocab_sizes": field_vocab_sizes(merchant_vocab),
+                "signal_vocab_sizes": signal_vocab_sizes(),
                 "time_aware": TIME_AWARE,
                 "n_time_buckets": n_time_bucket_rows(),
                 "amount_mode": AMOUNT_MODE,
@@ -260,6 +277,7 @@ def _stack_rows(rows: list, seq_len: int, soft: bool) -> dict:
         "weight": np.zeros(0, np.float64),
         "attention_mask": np.zeros((0, seq_len), np.int32),
         "time_bucket": np.zeros((0, seq_len), np.int32),
+        "y_error": np.zeros((0, seq_len), np.int32),
         "raw_amount": np.zeros(0, np.float32),
         "raw_hour": np.zeros(0, np.int64),
         "raw_dow": np.zeros(0, np.int64),
@@ -343,6 +361,8 @@ def make_tokenize_group_fn(
         mc_v = DYNAMIC_CATEGORICAL_VOCAB["merchant_category"]
         hr_v = DYNAMIC_CATEGORICAL_VOCAB["hour"]
         dw_v = DYNAMIC_CATEGORICAL_VOCAB["day_of_week"]
+        ch_v = DYNAMIC_CATEGORICAL_VOCAB["channel"]
+        er_v = SIGNAL_VOCAB["error"]
         # Tokenize the full sorted history once; windows below just slice it.
         merch_ids = np.asarray(group["merchant_id"])[order]
         merchant_col = (
@@ -360,7 +380,15 @@ def make_tokenize_group_fn(
             "mcc": _mcc_to_bucket(mccs),
             "hour": np.array([hr_v.get(int(h), OOV) for h in hours], dtype=np.int64),
             "day_of_week": np.array([dw_v.get(int(d), OOV) for d in dows], dtype=np.int64),
+            "channel": np.array(
+                [ch_v.get(str(c), OOV) for c in np.asarray(group["channel"])[order]],
+                dtype=np.int64,
+            ),
         }
+        # Network-signal target (output-only): tokenized per position, never in `full`.
+        error_ids = np.array(
+            [er_v.get(str(e), OOV) for e in np.asarray(group["error"])[order]], dtype=np.int64
+        )
         if soft:
             soft_lo, soft_frac = _amount_to_soft(amounts)
         statics = {f: int(STATIC_VOCAB[f].get(group[f][0], OOV)) for f in STATIC_FIELDS}
@@ -381,6 +409,11 @@ def make_tokenize_group_fn(
                 r[f"d_{f}"] = np.concatenate(
                     [np.full(pad, PAD, np.int32), arr[lo:hi].astype(np.int32)]
                 )
+            # Network-signal target column (PAD at padded positions; supervised
+            # at every valid position, masked or not — it's never an input).
+            r["y_error"] = np.concatenate(
+                [np.full(pad, PAD, np.int32), error_ids[lo:hi].astype(np.int32)]
+            )
             if soft:
                 r["d_amount_bucket"] = np.concatenate(
                     [np.full(pad, PAD, np.int32), soft_lo[lo:hi].astype(np.int32)]

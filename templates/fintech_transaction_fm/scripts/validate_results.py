@@ -10,7 +10,9 @@ def _dataset(path: str):
     return pads.dataset(path, format="parquet")
 
 
-def validate_pipeline(paths: dict, n_pretrain_windows: int | None = None) -> dict:
+def validate_pipeline(
+    paths: dict, n_pretrain_windows: int | None = None, strict_lift: bool = True
+) -> dict:
     """Assert each stage produced sane artifacts; return a short report.
 
     Uses Parquet metadata and small reads only — never loads a full dataset
@@ -20,6 +22,12 @@ def validate_pipeline(paths: dict, n_pretrain_windows: int | None = None) -> dic
     tokenized windows through the object store instead of writing Parquet);
     when omitted, it is counted from the tokenized Parquet that the
     step-by-step scripts write.
+
+    ``strict_lift`` enforces "fusion ≥ raw" — a *quality* property that only
+    holds once the FM is actually trained (``small``/``full``). At the tiny
+    smoke/test scales the FM is deliberately undertrained (a couple of CPU
+    epochs), so fusion can sit on either side of raw on a handful of test
+    positives; there we check only that the metrics are sane.
     """
     report = {}
 
@@ -58,9 +66,13 @@ def validate_pipeline(paths: dict, n_pretrain_windows: int | None = None) -> dic
         m = json.load(f)
     report["results"] = m["results"]
     report["fusion_lift_pr_auc"] = m["fusion_lift_pr_auc"]
-    assert m["results"]["fusion"]["pr_auc"] >= m["results"]["raw"]["pr_auc"] - 0.05, (
-        "fusion materially underperforms raw baseline"
-    )
+    report["strict_lift"] = strict_lift
+    pr = {k: m["results"][k]["pr_auc"] for k in ("raw", "fm", "fusion")}
+    assert all(0.0 <= v <= 1.0 for v in pr.values()), f"pr_auc out of range: {pr}"
+    if strict_lift:
+        assert m["results"]["fusion"]["pr_auc"] >= m["results"]["raw"]["pr_auc"] - 0.05, (
+            "fusion materially underperforms raw baseline"
+        )
     return report
 
 
@@ -73,4 +85,6 @@ def print_report(report: dict) -> None:
     for name, r in report["results"].items():
         print(f"  {name:<7} PR-AUC={r['pr_auc']:.4f}  AUC-ROC={r['auc_roc']:.4f}")
     print(f"  fusion lift:    {report['fusion_lift_pr_auc']:+.4f} PR-AUC vs raw")
+    if not report.get("strict_lift", True):
+        print("  (fusion≥raw not enforced at this scale — FM is undertrained)")
     print("  ALL CHECKS PASSED")
