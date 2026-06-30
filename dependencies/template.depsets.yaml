@@ -9,6 +9,11 @@ build_arg_sets:
     PYTHON_VERSION: "3.12"
     PYTHON_SHORT: "312"
     CUDA_VARIANT: "cu128"
+  ray2560_py312_cu130:
+    RAY_VERSION: "2.56.0"
+    PYTHON_VERSION: "3.12"
+    PYTHON_SHORT: "312"
+    CUDA_VARIANT: "cu130"
 
 depsets:
   - name: ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
@@ -23,6 +28,7 @@ depsets:
     build_arg_sets:
       - ray2551_py311_cu128
       - ray2551_py312_cu128
+      - ray2560_py312_cu130
 
     pre_hooks:
       - dependencies/scripts/fetch-ray-depsets.sh ${RAY_VERSION} ${PYTHON_SHORT}
@@ -39,6 +45,7 @@ depsets:
       - --unsafe-package ray
     build_arg_sets:
       - ray2551_py311_cu128
+      - ray2560_py312_cu130
     pre_hooks:
       - dependencies/scripts/fetch-ray-llm-depsets.sh ${RAY_VERSION} ${PYTHON_SHORT} ${CUDA_VARIANT}
       - dependencies/scripts/fetch-ray-constraints.sh ${RAY_VERSION} ${PYTHON_VERSION}
@@ -159,12 +166,12 @@ depsets:
       - templates/llm_batch_inference_vision/requirements.txt
     output: templates/llm_batch_inference_vision/python_depset.lock
     append_flags:
-      - --index https://download.pytorch.org/whl/cu128
+      - --index https://download.pytorch.org/whl/${CUDA_VARIANT}
       - --python-version=${PYTHON_VERSION}
       - --python-platform=x86_64-manylinux_2_31
       - --unsafe-package ray
     build_arg_sets:
-      - ray2551_py311_cu128
+      - ray2560_py312_cu130
 #
 #  - name: llm_finetuning_depset_${RAY_VERSION}_${PYTHON_VERSION}_${CUDA_VARIANT}
 #    operation: expand
