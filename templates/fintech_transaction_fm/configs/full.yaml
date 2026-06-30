@@ -33,3 +33,7 @@ embed:
   num_workers: 4
   use_gpu: true
   batch_size: 256            # seq 512: attention buffers cap T4 inference batch well below seq-128
+
+downstream:                  # distributed XGBoost fit (Ray Train) across all 4 GPUs
+  num_workers: 4
+  use_gpu: true

@@ -17,12 +17,14 @@ def main():
     p.add_argument("--base-dir", default=None)
     args = p.parse_args()
 
-    load_scale(args.scale, args.scale_config)  # validate the name early
+    cfg = load_scale(args.scale, args.scale_config)
     base = args.base_dir or get_demo_base_dir()
     paths = artifact_paths(base, args.scale)
     summary = run_downstream(
         embeddings_path=paths["embeddings"],
         output_dir=paths["downstream"],
+        num_workers=cfg["downstream"]["num_workers"],
+        use_gpu=cfg["downstream"]["use_gpu"],
     )
     print_summary(summary)
 

@@ -30,3 +30,7 @@ embed:
   num_workers: 2
   use_gpu: true
   batch_size: 2048
+
+downstream:                  # distributed XGBoost fit (Ray Train) across the 2 GPUs
+  num_workers: 2
+  use_gpu: true

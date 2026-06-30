@@ -39,3 +39,7 @@ embed:
   num_workers: 8
   use_gpu: false
   batch_size: 256
+
+downstream:                  # distributed XGBoost fit (Ray Train)
+  num_workers: 1             # single worker on CPU -> reproducible, runs in CI
+  use_gpu: false

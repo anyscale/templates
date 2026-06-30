@@ -7,8 +7,8 @@ requirements: requirements.txt
 compute_config:
   cloud: aws-public-us-west-2
   head_node:
-    # 64GB: the `full` downstream stage holds ~5M x 512-dim embeddings +
-    # per-split XGBoost matrices on the driver.
+    # 64GB headroom for the driver that coordinates the Ray Data shuffles and
+    # pulls per-stage results (e.g. the downstream test split it scores locally).
     instance_type: m5.4xlarge
   worker_nodes:
     # Single-GPU nodes: `small` needs 2 GPUs, `full` needs 4 — singles
