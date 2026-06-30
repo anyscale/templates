@@ -586,7 +586,7 @@
 - name: ray_train_workloads
   dir: templates/ray_train_workloads
   cluster_env:
-    image_uri: anyscale/ray:2.55.1-slim-py312-cu129
+    image_uri: anyscale/ray:2.56.0-slim-py312-cu129
   compute_config:
     AWS: configs/ray_train_workloads/aws.yaml
     GCP: configs/ray_train_workloads/gce.yaml
