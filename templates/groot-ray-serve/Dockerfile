@@ -10,7 +10,7 @@
 # WORKDIR directives — use sudo for root-only steps.
 # =============================================================================
 
-FROM anyscale/ray:2.55.1-slim-py311-cu129
+FROM anyscale/ray:2.56.0-slim-py311-cu129
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV PYTHONUNBUFFERED=1
