@@ -74,7 +74,7 @@ sudo apt-get update && \
 Install the required Python packages (these can also be included in your image):
 
 ```bash
-pip install --force-reinstall --no-cache-dir "unstructured[all-docs]==0.18.21" "pandas==2.3.3"
+pip install --force-reinstall --no-cache-dir "unstructured[all-docs]==0.18.21" "pandas==2.3.3" "transformers==4.57.3" "accelerate==1.10.1"
 ```
 
 Setup and initialize Ray Data:
@@ -106,7 +106,7 @@ ctx.enable_operator_progress_bars = False
 # You can skip this if your custom image already has these dependencies installed
 runtime_env = dict(
     pip= {
-        "packages": ["unstructured[all-docs]==0.18.21", "pandas==2.3.3", "transformers==4.57.3"],
+        "packages": ["unstructured[all-docs]==0.18.21", "pandas==2.3.3", "transformers==4.57.3", "accelerate==1.10.1"],
         "pip_install_options": ["--force-reinstall", "--no-cache-dir"]
     }
 )
