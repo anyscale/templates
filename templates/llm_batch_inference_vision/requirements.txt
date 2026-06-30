@@ -1,13 +1,14 @@
-# The test layers this lock on the stock anyscale/ray-llm:2.56.0-py312-cu130
-# image with `uv pip install --no-deps` and propagates it to workers via Ray's
-# runtime_env. Without a base-image constraint, `uv pip compile` resolves to
-# whatever satisfies our requirements (e.g. huggingface-hub==0.36.2, numpy 1.x),
-# which silently downgrades the image's numpy-2 / transformers-5 stack and
-# breaks imports like `is_offline_mode` from huggingface_hub. We pin the
-# overlap (numpy 2.2.6, pandas 2.3.3, pyarrow 23.0.1, huggingface-hub 1.13.0)
-# to the base image's versions so they reinstall as no-ops.
-datasets==4.4.2
-huggingface-hub==1.13.0
-numpy==2.2.6
+# Layered on the stock anyscale/ray-llm:2.56.0-py312-cu130 image (via `uv pip
+# install --no-deps` in the test, runtime_env for workers). The image still
+# ships the numpy-1 stack (numpy==1.26.4, pyarrow==19.0.1, pandas==2.3.3) — its
+# scipy build is numpy-1-only — but it picked up the new huggingface_hub 1.x
+# API that transformers==5.8.0 imports (`is_offline_mode`). So:
+#   - keep datasets at 3.6.0 (newest that resolves against numpy 1.x);
+#   - pin numpy/pyarrow/pandas to image versions so they reinstall as no-ops;
+#   - pin huggingface-hub==1.13.0 to match the image (a 0.x pin silently
+#     downgrades and breaks transformers' `is_offline_mode` import).
+datasets==3.6.0
+numpy==1.26.4
 pandas==2.3.3
-pyarrow==23.0.1
+pyarrow==19.0.1
+huggingface-hub==1.13.0
