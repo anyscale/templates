@@ -28,10 +28,29 @@ depsets:
     build_arg_sets:
       - ray2551_py311_cu128
       - ray2551_py312_cu128
-      - ray2560_py311_cu128
 
     pre_hooks:
       - dependencies/scripts/fetch-ray-depsets.sh ${RAY_VERSION} ${PYTHON_SHORT}
+      - dependencies/scripts/fetch-ray-constraints.sh ${RAY_VERSION} ${PYTHON_VERSION}
+
+  # Separate base-compile entry for Ray 2.56.0+ to avoid clobbering the
+  # ray2551_* pre_hook output at /tmp/ray-deps/ray_img_py${PYTHON_SHORT}.lock
+  # (raydepsets runs all pre_hooks before any compile). Uses a version-stamped
+  # source path via the -versioned fetch script. Roll this back into the entry
+  # above once all templates are on a single Ray version again.
+  - name: ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
+    operation: compile
+    requirements:
+      - /tmp/ray-deps/ray_${RAY_VERSION}_img_py${PYTHON_SHORT}.lock
+    output: dependencies/depsets/ray_${RAY_VERSION}_img_py${PYTHON_SHORT}.lock
+    append_flags:
+      - --python-version=${PYTHON_VERSION}
+      - --python-platform=linux
+      - --unsafe-package ray
+    build_arg_sets:
+      - ray2560_py311_cu128
+    pre_hooks:
+      - dependencies/scripts/fetch-ray-depsets-versioned.sh ${RAY_VERSION} ${PYTHON_SHORT}
       - dependencies/scripts/fetch-ray-constraints.sh ${RAY_VERSION} ${PYTHON_VERSION}
 
   - name: ray_llm_depset_${RAY_VERSION}_${PYTHON_VERSION}_${CUDA_VARIANT}
