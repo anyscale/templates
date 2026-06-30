@@ -677,7 +677,7 @@
 - name: ecommerce_batch_embeddings
   dir: templates/ecommerce_batch_embeddings
   cluster_env:
-    image_uri: anyscale/ray:2.55.1-py311-cu121
+    image_uri: anyscale/ray:2.56.0-py311-cu121
   compute_config:
     AWS: configs/ecommerce_batch_embeddings/aws.yaml
     GCP: configs/ecommerce_batch_embeddings/gce.yaml
