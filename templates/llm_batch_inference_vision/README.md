@@ -209,10 +209,10 @@ With the configuration and functions defined, build the processor.
 
 
 ```python
-from ray.data.llm import build_llm_processor
+from ray.data.llm import build_processor
 
 # Build the LLM processor with the configuration and functions.
-processor = build_llm_processor(
+processor = build_processor(
     processor_config,
     preprocess=preprocess,
     postprocess=postprocess,
@@ -262,7 +262,7 @@ Save your batch inference code as `batch_inference_vision.py`, then create a job
 # job.yaml
 name: my-llm-batch-inference-vision
 entrypoint: python batch_inference_vision.py
-image_uri: anyscale/ray-llm:2.55.1-py311-cu128
+image_uri: anyscale/ray-llm:2.56.0-py312-cu130
 compute_config:
   head_node:
     instance_type: m5.2xlarge
@@ -347,7 +347,7 @@ processor_config_large = vLLMEngineProcessorConfig(
 )
 
 # Build the LLM processor with the configuration and functions.
-processor_large = build_llm_processor(
+processor_large = build_processor(
     processor_config_large,
     preprocess=preprocess,
     postprocess=postprocess,
