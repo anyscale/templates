@@ -716,7 +716,7 @@
 - name: fintech_quant
   dir: templates/fintech_quant
   cluster_env:
-    image_uri: anyscale/ray:2.55.1-py311
+    image_uri: anyscale/ray:2.56.0-py311
   compute_config:
     AWS: configs/fintech_quant/aws.yaml
     GCP: configs/fintech_quant/gce.yaml
