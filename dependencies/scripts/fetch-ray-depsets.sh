@@ -5,8 +5,9 @@ RAY_VERSION="${1:?Usage: fetch-ray-depsets.sh <ray-version> <python-short>}"
 PYTHON_SHORT="${2:?Usage: fetch-ray-depsets.sh <ray-version> <python-short>}"
 
 DEST_DIR="/tmp/ray-deps"
-LOCK_FILE="ray_img_py${PYTHON_SHORT}.lock"
-URL="https://raw.githubusercontent.com/ray-project/ray/ray-${RAY_VERSION}/python/deplocks/ray_img/${LOCK_FILE}"
+LOCK_FILE="ray_${RAY_VERSION}_img_py${PYTHON_SHORT}.lock"
+UPSTREAM_FILE="ray_img_py${PYTHON_SHORT}.lock"
+URL="https://raw.githubusercontent.com/ray-project/ray/ray-${RAY_VERSION}/python/deplocks/ray_img/${UPSTREAM_FILE}"
 
 mkdir -p "$DEST_DIR"
 
