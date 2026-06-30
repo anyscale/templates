@@ -88,7 +88,7 @@ If you're using a hosted Redis instance, ensure that your Ray Serve cluster can 
 ## Step 2: Install Dependencies
 
 ```python
-!pip install -q ray[serve-async-inference]>=2.55.1 requests>=2.31.0 PyPDF2>=3.0.0 celery[redis]
+!pip install -q ray[serve-async-inference]>=2.56.0 requests>=2.31.0 PyPDF2>=3.0.0 celery[redis]
 ```
 
 ## Step 3: Start the Ray Serve Application
