@@ -10,7 +10,7 @@
 # WORKDIR directives — use sudo for root-only steps.
 # =============================================================================
 
-FROM anyscale/ray:2.55.1-slim-py311-cu129
+FROM anyscale/ray:2.56.0-slim-py311-cu129
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV PYTHONUNBUFFERED=1
@@ -95,6 +95,12 @@ RUN python -m pip install \
     pillow wandb gymnasium packaging ninja \
     numpy pandas matplotlib scipy requests \
     fastapi uvicorn
+
+# Restore the Ray base image's protobuf — Isaac Sim's transitive deps upgrade it
+# to protobuf 7.x, which removes the `FieldDescriptor.label` attribute that
+# Ray Serve's `_proto_to_dict` relies on (AttributeError at `serve.run`).
+# Anyscale Ray 2.56.0 ships protobuf 4.25.x; pin <5 to stay ABI-compatible.
+RUN python -m pip install "protobuf<5"
 
 # flash-attn is intentionally NOT installed; GR00T falls back to eager attention cleanly.
 # To enable later, install the matching prebuilt wheel post-build:
