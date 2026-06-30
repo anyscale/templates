@@ -122,8 +122,8 @@
   dir: templates/unstructured_data_ingestion
   cluster_env:
     byod:
-      docker_image: us-docker.pkg.dev/anyscale-workspace-templates/workspace-templates/unstructured_data_ingestion:2.55.1
-      ray_version: 2.55.1
+      docker_image: us-docker.pkg.dev/anyscale-workspace-templates/workspace-templates/unstructured_data_ingestion:2.56.0
+      ray_version: 2.56.0
   compute_config:
     GCP: configs/unstructured_data_ingestion/gce.yaml
     AWS: configs/unstructured_data_ingestion/aws.yaml
