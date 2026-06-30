@@ -651,7 +651,7 @@
 - name: biotech_boltz_screening
   dir: templates/biotech_boltz_screening
   cluster_env:
-    image_uri: anyscale/ray:2.55.1-py311-cu121
+    image_uri: anyscale/ray:2.56.0-py311-cu121
   compute_config:
     AWS: configs/biotech_boltz_screening/aws.yaml
     GCP: configs/biotech_boltz_screening/gce.yaml
