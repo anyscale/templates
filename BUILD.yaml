@@ -56,7 +56,7 @@
 - name: anyscale-jobs-intro
   dir: templates/anyscale-jobs-intro
   cluster_env:
-    image_uri: anyscale/ray:2.55.1-py311
+    image_uri: anyscale/ray:2.56.0-py311
   compute_config:
     AWS: configs/basic-single-node/aws.yaml
     GCP: configs/basic-single-node/gce.yaml

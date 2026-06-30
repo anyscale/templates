@@ -263,7 +263,7 @@ name: my-configured-job
 entrypoint: python main.py
 
 # Container image (we'll use the slim Ray image)
-image_uri: anyscale/ray:2.55.1-slim-py313-cu129
+image_uri: anyscale/ray:2.56.0-slim-py313-cu129
 
 # How many times to retry if the job fails
 max_retries: 2
@@ -339,7 +339,7 @@ The `working_dir` field tells Anyscale which local files to upload to the job cl
 ```python
 job_with_workdir = """name: job-with-dependencies
 entrypoint: python main.py
-image_uri: anyscale/ray:2.55.1-slim-py313-cu129
+image_uri: anyscale/ray:2.56.0-slim-py313-cu129
 
 # Upload the current directory to the job cluster
 # Anyscale automatically syncs these files to /home/ray on worker nodes
@@ -389,7 +389,7 @@ Now let's update our job config to install dependencies:
 ```python
 job_with_deps = """name: job-with-dependencies
 entrypoint: python main.py
-image_uri: anyscale/ray:2.55.1-slim-py313-cu129
+image_uri: anyscale/ray:2.56.0-slim-py313-cu129
 
 working_dir: .
 
@@ -428,7 +428,7 @@ Many jobs need secrets (API keys) or configuration (URLs, model names). The `env
 ```python
 job_with_env = """name: job-with-environment
 entrypoint: python main.py
-image_uri: anyscale/ray:2.55.1-slim-py313-cu129
+image_uri: anyscale/ray:2.56.0-slim-py313-cu129
 
 working_dir: .
 
@@ -502,7 +502,7 @@ Let's create a custom compute configuration:
 ```python
 job_with_compute = """name: job-with-custom-compute
 entrypoint: python main.py
-image_uri: anyscale/ray:2.55.1-slim-py313-cu129
+image_uri: anyscale/ray:2.56.0-slim-py313-cu129
 
 working_dir: .
 requirements:
@@ -718,7 +718,7 @@ print("✓ Created broken_main.py (will fail at x=5)")
 ```python
 failing_job_yaml = """name: debug-example-failing
 entrypoint: python broken_main.py
-image_uri: anyscale/ray:2.55.1-slim-py313-cu129
+image_uri: anyscale/ray:2.56.0-slim-py313-cu129
 working_dir: .
 max_retries: 0  # Don't retry, we want to see the failure
 """
@@ -797,7 +797,7 @@ print("✓ Created fixed_main.py")
 ```python
 fixed_job_yaml = """name: debug-example-fixed
 entrypoint: python fixed_main.py
-image_uri: anyscale/ray:2.55.1-slim-py313-cu129
+image_uri: anyscale/ray:2.56.0-slim-py313-cu129
 working_dir: .
 max_retries: 0
 """
@@ -868,7 +868,7 @@ import anyscale
 config = JobConfig(
     name="sdk-submitted-job",
     entrypoint="python main.py",
-    image_uri="anyscale/ray:2.55.1-slim-py313-cu129",
+    image_uri="anyscale/ray:2.56.0-slim-py313-cu129",
     working_dir=".",
     requirements=["emoji==2.8.0"],
     max_retries=2,
@@ -918,7 +918,7 @@ job_name = f"batch-inference-{timestamp}"
 config = JobConfig(
     name=job_name,
     entrypoint="python main.py",
-    image_uri="anyscale/ray:2.55.1-slim-py313-cu129",
+    image_uri="anyscale/ray:2.56.0-slim-py313-cu129",
     working_dir=".",
     requirements=["emoji==2.8.0"],
     env_vars={"BATCH_SIZE": "1000", "MODEL_NAME": "my-model-v2", "LOG_LEVEL": "INFO"},
@@ -946,7 +946,7 @@ You can also specify compute configuration programmatically:
 config = JobConfig(
     name="sdk-custom-compute",
     entrypoint="python main.py",
-    image_uri="anyscale/ray:2.55.1-slim-py313-cu129",
+    image_uri="anyscale/ray:2.56.0-slim-py313-cu129",
     working_dir=".",
     compute_config={
         "head_node": {"instance_type": "m5.2xlarge"},
@@ -1010,7 +1010,7 @@ import anyscale
 config = JobConfig(
     name="long-running-job",
     entrypoint="python long_main.py",
-    image_uri="anyscale/ray:2.55.1-slim-py313-cu129",
+    image_uri="anyscale/ray:2.56.0-slim-py313-cu129",
     working_dir=".",
 )
 
