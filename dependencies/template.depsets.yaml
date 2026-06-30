@@ -9,6 +9,16 @@ build_arg_sets:
     PYTHON_VERSION: "3.12"
     PYTHON_SHORT: "312"
     CUDA_VARIANT: "cu128"
+  ray2560_py311_cu128:
+    RAY_VERSION: "2.56.0"
+    PYTHON_VERSION: "3.11"
+    PYTHON_SHORT: "311"
+    CUDA_VARIANT: "cu128"
+  ray2560_py312_cu128:
+    RAY_VERSION: "2.56.0"
+    PYTHON_VERSION: "3.12"
+    PYTHON_SHORT: "312"
+    CUDA_VARIANT: "cu128"
 
 depsets:
   - name: ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
@@ -23,6 +33,7 @@ depsets:
     build_arg_sets:
       - ray2551_py311_cu128
       - ray2551_py312_cu128
+      - ray2560_py312_cu128
 
     pre_hooks:
       - dependencies/scripts/fetch-ray-depsets.sh ${RAY_VERSION} ${PYTHON_SHORT}
@@ -401,7 +412,7 @@ depsets:
       - --python-platform=linux
       - --unsafe-package ray
     build_arg_sets:
-      - ray2551_py312_cu128
+      - ray2560_py312_cu128
 
   - name: ray_train_workloads_depset_${RAY_VERSION}_${PYTHON_VERSION}
     operation: expand
