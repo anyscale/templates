@@ -1,0 +1,63 @@
+name: refresh-depsets
+
+# Weekly full recompile of every depset lock against current package indexes.
+# This is where "keep up with upstream" happens — deliberately, in one reviewable
+# PR — instead of ambient drift failing unrelated PRs' check-depsets gate.
+# See .claude/skills/template/references/dependencies.md.
+#
+# NOTE: opening a PR from GITHUB_TOKEN requires the repo/org setting
+# "Allow GitHub Actions to create and approve pull requests" to be enabled.
+
+on:
+  schedule:
+    - cron: "0 8 * * 1"   # Mondays 08:00 UTC
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: refresh-depsets
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Recompile all depset locks
+      # Full re-resolve against live indexes; retry to ride out transient upstream
+      # errors (e.g. download.pytorch.org 503s).
+      run: |
+        for attempt in 1 2 3; do
+          if ./update_deps.sh; then exit 0; fi
+          echo "::warning::update_deps attempt $attempt failed; retrying in $((attempt * 30))s" >&2
+          sleep $((attempt * 30))
+        done
+        echo "::error::update_deps failed after 3 attempts" >&2
+        exit 1
+
+    - name: Open or update a refresh PR if locks drifted
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        if [ -z "$(git status --porcelain)" ]; then
+          echo "No drift — all locks already up to date."
+          exit 0
+        fi
+        branch="deps/scheduled-lock-refresh"
+        git config user.name "github-actions[bot]"
+        git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        git checkout -B "$branch"
+        git add -A
+        git commit -s -m "chore(deps): scheduled depset lock refresh"
+        git push -f -u origin "$branch"
+        if gh pr view "$branch" --json state --jq .state 2>/dev/null | grep -q OPEN; then
+          echo "Refresh PR already open — updated its branch."
+        else
+          gh pr create --base main --head "$branch" \
+            --title "chore(deps): scheduled depset lock refresh" \
+            --body "Automated weekly recompile of all depset locks against current package indexes (\`./update_deps.sh\`). Review the drift and merge to keep the locks reproducible, so per-PR \`check-depsets\` stays green. Opened by \`.github/workflows/refresh-depsets.yaml\`."
+        fi
