@@ -91,6 +91,28 @@ if ! command -v buildkite-mcp-server >/dev/null 2>&1; then
   failures+=("buildkite-mcp-server not on PATH — Dockerfile bake step regressed; Buildkite MCP integration will fail to start")
 fi
 
+# Depset toolchain: a Ray bump on a lock-bearing template recompiles the lock via
+# update_deps.sh, which downloads the raydepsets binary (it bundles uv) and compiles.
+# Smoke-test that the binary is fetchable for this platform so a broken/unavailable
+# toolchain fails HERE, not mid-bump as a silent post-and-stop. Fetch to the path
+# update_deps.sh caches at, pre-warming it for the actual run.
+if [[ ! -x ./update_deps.sh ]]; then
+  failures+=("depset toolchain: ./update_deps.sh missing or not executable (wrong CWD, or repo not checked out?)")
+else
+  case "$(uname -s)-$(uname -m)" in
+    Linux-x86_64) rds_url="https://github.com/ray-project/raydepsets/releases/download/v0.0.1/raydepsets-linux-x86_64" ;;
+    Darwin-arm64) rds_url="https://github.com/ray-project/raydepsets/releases/download/v0.0.1/raydepsets-darwin-arm64" ;;
+    *)            rds_url="" ;;
+  esac
+  if [[ -z "$rds_url" ]]; then
+    failures+=("depset toolchain: no raydepsets v0.0.1 binary for $(uname -s)-$(uname -m) — run bumps on Linux-x86_64")
+  elif out=$(curl -fsSL "$rds_url" -o /tmp/raydepsets 2>&1) && chmod +x /tmp/raydepsets; then :; else
+    add_failure_with_output \
+      "depset toolchain: raydepsets binary not fetchable ($rds_url) — './update_deps.sh --check' will fail; check the pin/URL" \
+      "$out"
+  fi
+fi
+
 if [[ ${#failures[@]} -gt 0 ]]; then
   echo "Preflight FAILED:" >&2
   for f in "${failures[@]}"; do

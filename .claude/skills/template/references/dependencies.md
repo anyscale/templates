@@ -103,6 +103,13 @@ any drift fails the job.
 - **`check-depsets` couples every active entry to its committed lock, per branch.** To stack or
   split depset PRs, comment out the entries you're not building on that branch (this is why the
   config has large commented-out blocks — staged rollout).
+- **`check-depsets` re-resolves against *live* indexes, so unrelated PRs fail on collateral.** Every
+  run recompiles all active entries from live PyPI/PyTorch and diffs vs committed — a PR that touched
+  one template (or none) can go red on *another* template's **ambient drift** (upstream published
+  newer deps) or a **transient index 503**. Refresh drifted locks in-passing and include them; treat
+  503s as infra. The gate is scoped to PRs that change a lock's inputs and retries transient errors,
+  and a scheduled job recompiles the full matrix and opens a refresh PR when drift accumulates — so
+  collateral doesn't block unrelated PRs. Persistent drift in a lock you changed still fails, by design.
 - **Per-template locks are overwritten in place; base locks are version-stamped.** On a version
   bump, delete the stale `dependencies/depsets/ray_<old>_*` files once nothing references them.
 - **runtime_env pip hash mismatch** on version-bumped transitive deps: `uv` can emit one
