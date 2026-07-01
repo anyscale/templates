@@ -23,7 +23,7 @@ templates/
 
 Run the `check-build-yaml` hook first (see **Validate locally**) — it authoritatively covers BUILD.yaml schema, referenced paths, naming, and the compute-config schema check. Fix what it reports, then verify:
 
-- **BUILD.yaml entry** matches `../schemas/build-yaml-schema.yaml`. Under `cluster_env:`, use either `cluster_env.image_uri` OR `cluster_env.byod`, never both. Image taxonomy: SKILL.md "Image URI cases".
+- **BUILD.yaml entry** matches `../schemas/build-yaml-schema.yaml`. `owner_team` is required (`ray-serve` | `ray-data` | `llm` | `ray-train` | `general`) — deduce per that schema file's rule. Under `cluster_env:`, use either `cluster_env.image_uri` OR `cluster_env.byod`, never both. Image taxonomy: SKILL.md "Image URI cases".
 - **Compute configs** present at `configs/<name>/aws.yaml` and `configs/<name>/gce.yaml`. Schema: `../schemas/compute-config-schema.yaml`.
 - **Test** present at `tests/<name>/tests.sh`.
 - **Dependencies pinned.** Declare template deps in `templates/<name>/requirements.txt`, the BYOD `Dockerfile` (`RUN pip install "pkg==x.y.z"`), or notebook `!pip install` — with exact versions. (The repo-root `dependencies/` directory is Ray base-image constraint management, not per-template deps.)

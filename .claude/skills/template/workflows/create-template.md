@@ -25,7 +25,7 @@ Move the content into `templates/<name>/`. For a notebook template, the main not
 
 ## 3. BUILD.yaml entry
 
-Append a list item per `../schemas/build-yaml-schema.yaml`. Set the image for the chosen case: `cluster_env.image_uri` (anyscale base) or `cluster_env.byod.{docker_image,ray_version}` (custom or third-party). For custom GCP, publish the image first (`.claude/skills/template/scripts/push-custom-image-to-gcp.sh <dockerfile-dir> <name> <ray-version>`) and use the printed URI. The entry also wires `compute_config` (step 4) and the `test` block (`command: bash tests.sh`, `tests_path: tests/<name>/`, and `timeout_in_sec` set a bit above the test's measured runtime — target < 30 min).
+Append a list item per `../schemas/build-yaml-schema.yaml`. Set `owner_team` (required — `ray-serve` | `ray-data` | `llm` | `ray-train` | `general`, deduced from the template's center of gravity; the schema file has the rule + tie-break). Set the image for the chosen case: `cluster_env.image_uri` (anyscale base) or `cluster_env.byod.{docker_image,ray_version}` (custom or third-party). For custom GCP, publish the image first (`.claude/skills/template/scripts/push-custom-image-to-gcp.sh <dockerfile-dir> <name> <ray-version>`) and use the printed URI. The entry also wires `compute_config` (step 4) and the `test` block (`command: bash tests.sh`, `tests_path: tests/<name>/`, and `timeout_in_sec` set a bit above the test's measured runtime — target < 30 min).
 
 ## 4. Compute configs
 

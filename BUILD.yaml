@@ -2,6 +2,7 @@
 # https://github.com/anyscale/first-job
 # owner: @matthew-owen
 - name: job-intro
+  owner_team: general
   dir: templates/job-intro
   cluster_env:
     image_uri: anyscale/ray:2.55.1-py311
@@ -15,6 +16,7 @@
 
 # owner: @huaiwei
 - name: workspace-intro
+  owner_team: general
   dir: templates/workspace-intro
   cluster_env:
     image_uri: anyscale/ray:2.55.1-py311
@@ -28,6 +30,7 @@
 
 # owner: @maxpumperla, @aydin
 - name: workspaces-dev-flow
+  owner_team: general
   dir: templates/workspaces-dev-flow
   cluster_env:
     image_uri: anyscale/ray:2.55.1-py311
@@ -41,6 +44,7 @@
 
 # owner: @edward
 - name: service-intro
+  owner_team: ray-serve
   dir: templates/service-intro
   cluster_env:
     image_uri: anyscale/ray:2.55.1-py311
@@ -54,6 +58,7 @@
 
 # owner: @maxpumperla, @aydin
 - name: anyscale-jobs-intro
+  owner_team: general
   dir: templates/anyscale-jobs-intro
   cluster_env:
     image_uri: anyscale/ray:2.55.1-py311
@@ -67,6 +72,7 @@
 
 # owner: @maxpumperla, @aydin
 - name: storage-access-large-datasets
+  owner_team: ray-data
   dir: templates/storage-access-large-datasets
   cluster_env:
     image_uri: anyscale/ray:2.55.1-py311
@@ -80,6 +86,7 @@
 
 # owner: @maxpumperla, @aydin
 - name: ray-serve-observability
+  owner_team: ray-serve
   dir: templates/ray-serve-observability
   cluster_env:
     image_uri: anyscale/ray:2.55.1-py311
@@ -93,6 +100,7 @@
 
 # owner: @jasond
 - name: intro-ray-libraries
+  owner_team: general
   dir: templates/intro-ray-libraries
   cluster_env:
     image_uri: anyscale/ray:2.55.1-slim-py313-cu129
@@ -106,6 +114,7 @@
 
 # owner: @aydin
 - name: compute-config-cluster-shapes
+  owner_team: general
   dir: templates/compute-config-cluster-shapes
   cluster_env:
     image_uri: anyscale/ray:2.55.1-py311
@@ -119,6 +128,7 @@
 
 # owner: @stephen
 - name: unstructured_data_ingestion
+  owner_team: ray-data
   dir: templates/unstructured_data_ingestion
   cluster_env:
     byod:
@@ -134,6 +144,7 @@
 
 # owner: @aydin
 - name: model-multiplexing
+  owner_team: ray-serve
   dir: templates/model-multiplexing
   cluster_env:
     image_uri: anyscale/ray:2.55.1-slim-py312-cu128
@@ -147,6 +158,7 @@
 
 # owner: @aydin
 - name: model-composition-recsys
+  owner_team: ray-serve
   dir: templates/model-composition-recsys
   cluster_env:
     image_uri: anyscale/ray:2.55.1-slim-py312-cu129
@@ -160,6 +172,7 @@
 
 # owner: @akshay
 - name: serve-stable-diffusion-v2
+  owner_team: ray-serve
   dir: templates/serve-stable-diffusion-v2
   cluster_env:
     image_uri: anyscale/ray:2.55.1-py312-cu128
@@ -173,6 +186,7 @@
 
 # owner: @aydin
 - name: deployment-serve-llm
+  owner_team: llm
   dir: templates/deployment-serve-llm
   cluster_env:
     image_uri: anyscale/ray-llm:2.55.1-py311-cu128
@@ -186,6 +200,7 @@
 
 # owner: @omar
 - name: vla-fine-tuning
+  owner_team: ray-train
   dir: templates/vla-fine-tuning
   cluster_env:
     image_uri: anyscale/ray:2.55.1-py312-cu129
@@ -199,6 +214,7 @@
 
 # owner: @akshay
 - name: xgboost-training-and-serving
+  owner_team: ray-train
   dir: templates/xgboost-training-and-serving
   cluster_env:
     image_uri: anyscale/ray:2.55.1-slim-py312-cu128
@@ -212,6 +228,7 @@
 
 # owner: @aydin
 - name: e2e-timeseries-forecasting
+  owner_team: ray-train
   dir: templates/e2e-timeseries-forecasting
   cluster_env:
     image_uri: anyscale/ray:2.55.1-slim-py312-cu128
@@ -225,6 +242,7 @@
 
 # owner: @kunling
 - name: object-detection-video-processing
+  owner_team: ray-train
   dir: templates/object-detection-video-processing
   cluster_env:
     byod:
@@ -240,6 +258,7 @@
 
 # owner: @kunling
 - name: langchain-agent-ray-serve
+  owner_team: llm
   dir: templates/langchain-agent-ray-serve
   cluster_env:
     image_uri: anyscale/ray-llm:2.55.1-py311-cu128
@@ -253,6 +272,7 @@
 
 # owner: @kunling
 - name: mcp-ray-serve
+  owner_team: ray-serve
   dir: templates/mcp-ray-serve
   cluster_env:
     image_uri: anyscale/ray:2.55.1-py312
@@ -266,6 +286,7 @@
 
 # owner: @goku
 - name: entity-recognition-with-llms
+  owner_team: llm
   dir: templates/entity-recognition-with-llms
   cluster_env:
     image_uri: anyscale/ray-llm:2.55.1-py311-cu128
@@ -279,6 +300,7 @@
 
 # owner: @aydin
 - name: audio-dataset-curation-llm-judge
+  owner_team: llm
   dir: templates/audio-dataset-curation-llm-judge
   cluster_env:
     image_uri: anyscale/ray-llm:2.55.1-py311-cu128
@@ -292,6 +314,7 @@
 
 # owner: @tseah
 - name: distributing-pytorch
+  owner_team: ray-train
   dir: templates/distributing-pytorch
   cluster_env:
     image_uri: anyscale/ray:2.55.1-slim-py312-cu128
@@ -305,6 +328,7 @@
 
 # owner: @jasonli
 - name: pytorch-fsdp
+  owner_team: ray-train
   dir: templates/pytorch-fsdp
   cluster_env:
     image_uri: anyscale/ray:2.55.1-py312-cu128
@@ -318,6 +342,7 @@
 
 # owner: @tohtana
 - name: deepspeed_finetune
+  owner_team: ray-train
   dir: templates/deepspeed_finetune
   cluster_env:
     image_uri: anyscale/ray:2.55.1-py311-cu128
@@ -331,6 +356,7 @@
 
 # owner: @lehui
 - name: pytorch-profiling
+  owner_team: ray-train
   dir: templates/pytorch-profiling
   cluster_env:
     image_uri: anyscale/ray:2.55.1-py312-cu128
@@ -344,6 +370,7 @@
 
 # owner: @jasond
 - name: llm_finetuning
+  owner_team: llm
   dir: templates/llm_finetuning
   cluster_env:
     image_uri: anyscale/ray-llm:2.55.1-py311-cu128
@@ -357,6 +384,7 @@
 
 # owner: @goku
 - name: image-search-and-classification
+  owner_team: ray-data
   dir: templates/image-search-and-classification
   cluster_env:
     image_uri: anyscale/ray:2.55.1-slim-py312-cu128
@@ -370,6 +398,7 @@
 
 # owner: @kunling
 - name: e2e-rag-deepdive
+  owner_team: llm
   dir: templates/e2e-rag-deepdive
   cluster_env:
     byod:
@@ -385,6 +414,7 @@
 
 # owner: @eric
 - name: skyrl
+  owner_team: llm
   dir: templates/skyrl
   cluster_env:
     byod:
@@ -400,6 +430,7 @@
 
 # owner: @aydin
 - name: groot-ray-serve
+  owner_team: ray-serve
   dir: templates/groot-ray-serve
   cluster_env:
     byod:
@@ -415,6 +446,7 @@
 
 # owner: @scott-lee
 - name: text-embeddings
+  owner_team: ray-data
   dir: templates/text-embeddings
   cluster_env:
     image_uri: anyscale/ray:2.55.1-py311-cu124
@@ -428,6 +460,7 @@
 
 # owner: @justin, @mattd
 - name: finetune-stable-diffusion
+  owner_team: ray-train
   dir: templates/finetune-stable-diffusion
   cluster_env:
     image_uri: anyscale/ray:2.55.1-py311-cu128
@@ -441,6 +474,7 @@
 
 # owner: @sofian, @huaiwei
 - name: getting-started
+  owner_team: general
   dir: templates/getting-started
   cluster_env:
     image_uri: anyscale/ray:2.55.1-py311
@@ -454,6 +488,7 @@
 
 # owner: @yunxuan, @marwan
 - name: stable-diffusion-pretraining
+  owner_team: ray-train
   dir: templates/stable-diffusion-pretraining
   cluster_env:
     image_uri: anyscale/ray:2.55.1-py311-cu128
@@ -467,6 +502,7 @@
 
 # owner: @mattd
 - name: parallel-experiments
+  owner_team: ray-train
   dir: templates/parallel-experiments
   cluster_env:
     image_uri: anyscale/ray:2.55.1-slim-py313-cu129
@@ -480,6 +516,7 @@
 
 # owner: @suman-debnath
 - name: vhol-ray-data
+  owner_team: ray-data
   dir: templates/vhol-ray-data
   cluster_env:
     image_uri: anyscale/ray:2.55.1-py311-cu128
@@ -493,6 +530,7 @@
 
 # owner: @saihaj, @chris-ray-zhang, @soffer-anyscale
 - name: ray-data-batch-image-classification
+  owner_team: ray-data
   dir: templates/ray-data-batch-image-classification
   cluster_env:
     image_uri: anyscale/ray:2.55.1-py312-cu128
@@ -506,6 +544,7 @@
 
 # owner: @marwan
 - name: ray-summit-core-masterclass
+  owner_team: general
   dir: templates/ray-summit-core-masterclass
   cluster_env:
     image_uri: anyscale/ray:2.55.1-py312-cu128
@@ -519,6 +558,7 @@
 
 # owner: @kunling, @aydin
 - name: multi_agent_a2a
+  owner_team: llm
   dir: templates/multi_agent_a2a
   cluster_env:
     image_uri: anyscale/ray-llm:2.55.1-py311-cu128
@@ -532,6 +572,7 @@
 
 # owner: @aydin
 - name: llm_batch_inference_text
+  owner_team: llm
   dir: templates/llm_batch_inference_text
   cluster_env:
     image_uri: anyscale/ray-llm:2.55.1-py311-cu128
@@ -545,6 +586,7 @@
 
 # owner: @aydin
 - name: llm_batch_inference_vision
+  owner_team: llm
   dir: templates/llm_batch_inference_vision
   cluster_env:
     image_uri: anyscale/ray-llm:2.55.1-py311-cu128
@@ -558,6 +600,7 @@
 
 # owner: @tohtana
 - name: tensor_parallel_dtensor
+  owner_team: ray-train
   dir: templates/tensor_parallel_dtensor
   cluster_env:
     image_uri: anyscale/ray:2.55.1-py312-cu128
@@ -571,6 +614,7 @@
 
 # owner: @tohtana
 - name: tensor_parallel_autotp
+  owner_team: ray-train
   dir: templates/tensor_parallel_autotp
   cluster_env:
     image_uri: anyscale/ray:2.55.1-py311-cu128
@@ -584,6 +628,7 @@
 
 # owner: @ian-jordan, @aydin
 - name: ray_train_workloads
+  owner_team: ray-train
   dir: templates/ray_train_workloads
   cluster_env:
     image_uri: anyscale/ray:2.55.1-slim-py312-cu129
@@ -597,6 +642,7 @@
 
 # owner: @harshit-anyscale
 - name: asynchronous_inference
+  owner_team: ray-serve
   dir: templates/asynchronous_inference
   cluster_env:
     image_uri: anyscale/ray:2.55.1-slim-py312-cu128
@@ -610,6 +656,7 @@
 
 # owner: @ian-jordan, @aydin
 - name: tune_pytorch_asha
+  owner_team: ray-train
   dir: templates/tune_pytorch_asha
   cluster_env:
     image_uri: anyscale/ray:2.55.1-slim-py312-cu129
@@ -623,6 +670,7 @@
 
 # owner: @maxpumperla, @aydin
 - name: ray-tune-train-integration
+  owner_team: ray-train
   dir: templates/ray-tune-train-integration
   cluster_env:
     image_uri: anyscale/ray:2.55.1-py312-cu129
@@ -636,6 +684,7 @@
 
 # owner: @christian-stano
 - name: creatives_diffusion_finetuning
+  owner_team: ray-train
   dir: templates/creatives_diffusion_finetuning
   cluster_env:
     image_uri: anyscale/ray:2.55.1-py311-cu121
@@ -649,6 +698,7 @@
 
 # owner: @christian-stano
 - name: biotech_boltz_screening
+  owner_team: ray-data
   dir: templates/biotech_boltz_screening
   cluster_env:
     image_uri: anyscale/ray:2.55.1-py311-cu121
@@ -662,6 +712,7 @@
 
 # owner: @christian-stano
 - name: biotech_protein_embeddings
+  owner_team: ray-data
   dir: templates/biotech_protein_embeddings
   cluster_env:
     image_uri: anyscale/ray:2.55.1-py311-cu121
@@ -675,6 +726,7 @@
 
 # owner: @christian-stano
 - name: ecommerce_batch_embeddings
+  owner_team: ray-data
   dir: templates/ecommerce_batch_embeddings
   cluster_env:
     image_uri: anyscale/ray:2.55.1-py311-cu121
@@ -688,6 +740,7 @@
 
 # owner: @christian-stano
 - name: ecommerce_multi_model_serving
+  owner_team: ray-serve
   dir: templates/ecommerce_multi_model_serving
   cluster_env:
     image_uri: anyscale/ray:2.55.1-py311-cu121
@@ -701,6 +754,7 @@
 
 # owner: @christian-stano
 - name: fintech_fraud_risk
+  owner_team: ray-data
   dir: templates/fintech_fraud_risk
   cluster_env:
     image_uri: anyscale/ray:2.55.1-py311
@@ -714,6 +768,7 @@
 
 # owner: @christian-stano
 - name: fintech_quant
+  owner_team: general
   dir: templates/fintech_quant
   cluster_env:
     image_uri: anyscale/ray:2.55.1-py311
@@ -729,6 +784,7 @@
 # (see the template skill's publish-to-backend reference).
 # owner: @as-jding
 - name: ray-workshop-2026
+  owner_team: general
   dir: archive/events/2026-ray-workshop/ray-workshop-2026/content
   cluster_env:
     byod:
