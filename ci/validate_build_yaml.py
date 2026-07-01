@@ -8,7 +8,7 @@ import sys
 import urllib.error
 import urllib.request
 from pathlib import Path
-from typing import Any, List, Optional
+from typing import Any, List, Literal, Optional
 
 import yaml
 from pydantic import (
@@ -74,8 +74,19 @@ class Test(Strict):
     timeout_in_sec: int = Field(gt=0)
 
 
+# The team that owns a template, deduced from its content — the primary Ray
+# library / product surface it demonstrates. Single value even for multi-library
+# templates (pick the center of gravity; LLM wins when it's fundamentally an LLM
+# template). `general` is the fallback for platform / Ray Core / onboarding
+# content with no single-library owner (intros, multi-library surveys, pure Ray
+# Core). Deduction rule: the /template skill's schemas/build-yaml-schema.yaml.
+OwnerTeam = Literal["ray-serve", "ray-data", "llm", "ray-train", "general"]
+
+
 class Entry(Strict):
     name: str = Field(pattern=r"^[a-z0-9_-]+$")
+    # REQUIRED on every entry (incl. archive/). Deduced from content; see OwnerTeam.
+    owner_team: OwnerTeam
     # templates/<name>/ for active templates; archive/<...>/<name>/ for archived
     # ones (retired, past-event, or fast untested iteration).
     dir: str = Field(pattern=r"^(?:templates|archive)/")
@@ -400,7 +411,18 @@ def main() -> int:
     except ValidationError as e:
         print("FAIL: BUILD.yaml schema errors:", file=sys.stderr)
         for err in e.errors():
-            loc = ".".join(str(p) for p in err["loc"])
+            loc_parts = list(err["loc"])
+            # Schema errors index entries positionally; resolve the leading
+            # index to the entry `name` so the message points at a template
+            # (e.g. `job-intro.owner_team` rather than `0.owner_team`).
+            if loc_parts and isinstance(loc_parts[0], int) and isinstance(raw, list):
+                idx = loc_parts[0]
+                entry = raw[idx] if 0 <= idx < len(raw) else None
+                loc_parts[0] = (
+                    entry.get("name", f"entry[{idx}]")
+                    if isinstance(entry, dict) else f"entry[{idx}]"
+                )
+            loc = ".".join(str(p) for p in loc_parts)
             print(f"::error::{loc}: {err['msg']}", file=sys.stderr)
         return 1
 
