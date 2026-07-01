@@ -7,6 +7,14 @@ Ray version by adding a `build_arg_set` for that version and recompiling with `r
 `python_depset.lock` was compiled against must match — run this alongside
 `bump-ray-version.md`, not instead of it. System details: `../references/dependencies.md`.
 
+**Audience — a human upgrading the whole repo at once.** This is the batch path: add the new
+bundle, repoint *every* active entry, recompile the matrix, drop stale base locks. The automated
+per-template bump does **not** follow this — it keeps the old bundle and repoints only its own
+entry, because a single-template branch that replaces bundles or repoints all entries breaks
+`check-depsets` for every other template. That incremental recipe lives in `bump-ray-version.md`
+→ "Recompile the dependency lock." Use *this* file only when deliberately recompiling many
+templates together.
+
 Inputs: target Ray version `<NEW>` (e.g. `2.56.0`). Derive tokens: bundle prefix `ray2560`,
 `PYTHON_SHORT` `311`/`312`, `RAY_VERSION` `2.56.0`.
 
