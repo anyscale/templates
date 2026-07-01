@@ -25,15 +25,17 @@ pretrain:
   batch_size: 64             # T4-safe ceiling at seq 512 — the B x heads x S x S attention
                              # buffers + 2000-way merchant MLM head logits dominate memory
   lr: 4.0e-4
-  num_workers: 4
+  num_workers: 8             # DDP: more workers grow the global batch (64 x N), so this is a
+                             # modest, LR-safe bump; going wider would need an LR retune
   use_gpu: true
   use_fsdp: false
 
 embed:
-  num_workers: 4
+  num_workers: 16            # embarrassingly parallel forward pass — scales ~linearly; ~5M
+                             # eval windows / batch 256 keeps 16 replicas busy with headroom
   use_gpu: true
   batch_size: 256            # seq 512: attention buffers cap T4 inference batch well below seq-128
 
-downstream:                  # distributed XGBoost fit (Ray Train) across all 4 GPUs
-  num_workers: 4
+downstream:                  # distributed XGBoost fit (Ray Train)
+  num_workers: 16
   use_gpu: true

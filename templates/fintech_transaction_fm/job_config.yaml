@@ -11,14 +11,15 @@ compute_config:
     # pulls per-stage results (e.g. the downstream test split it scores locally).
     instance_type: m5.4xlarge
   worker_nodes:
-    # Single-GPU nodes: `small` needs 2 GPUs, `full` needs 4 — singles
-    # bin-pack exactly (no idle GPUs) and dodge g4dn.12xlarge capacity
-    # shortages. Cross-node DDP is cheap here: the model is a few M params,
-    # so gradients are tiny (and FSDP unnecessary).
+    # Single-GPU nodes that autoscale to the widest GPU stage. `full`'s embed
+    # stage runs up to 16 replicas (1 GPU each), so cap at 16; pretrain (8) and
+    # downstream (16) fit under it. Singles bin-pack exactly (no idle GPUs) and
+    # dodge g4dn.12xlarge capacity shortages. Cross-node DDP is cheap here: the
+    # model is a few M params, so gradients are tiny (and FSDP unnecessary).
     - name: gpu-1x
       instance_type: g4dn.xlarge
       min_nodes: 0
-      max_nodes: 4
+      max_nodes: 16
     # CPU muscle for the data stages (24M-row tokenize shuffle); GPU nodes
     # never spin up for shuffle work.
     - name: cpu-workers
