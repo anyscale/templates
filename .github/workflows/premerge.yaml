@@ -53,11 +53,15 @@ jobs:
   check-depsets:
     runs-on: ubuntu-latest
     steps:
-    - name: Depsets check temporarily disabled
-      # TEMPORARILY DISABLED. The gate re-resolves every lock against live PyPI/
-      # PyTorch on each PR, so it fails unrelated PRs on ambient drift or a
-      # transient download.pytorch.org 503. Kept as a passing no-op (not deleted)
-      # so a required status check of this name stays green instead of blocking
-      # merges. Re-enable via the scoped + retried replacement in #834.
-      run: |
-        echo "check-depsets temporarily disabled — see PR #834 to re-enable."
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0   # need the base commit to diff changed files
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+    - run: pip install pyyaml==6.0.3   # parses the depset config (pin matches requirements-dev.txt)
+
+    - name: Check depsets are up to date
+      # Scoped + retried; see ci/check_depsets.py. Checks only what a PR changed, so
+      # unrelated PRs don't fail on ambient drift or a transient index 503.
+      run: python3 ci/check_depsets.py "${{ github.event.pull_request.base.sha }}" "${{ github.sha }}"
