@@ -53,7 +53,12 @@ jobs:
   check-depsets:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0   # need the base commit to diff changed files
 
     - name: Check depsets are up to date
-      run: ./update_deps.sh --check
+      # Scoped + retried — see ci/check_depsets.py. Skips PRs that change no lock
+      # input (so unrelated PRs don't fail on ambient drift / a transient index
+      # 503); full check + retry when a lock input or shared config changed.
+      run: python3 ci/check_depsets.py "${{ github.event.pull_request.base.sha }}" "${{ github.sha }}"
