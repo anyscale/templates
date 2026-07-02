@@ -337,7 +337,11 @@ def pretrain(
             # loss — required for spot GPU nodes; the job-level retry would
             # otherwise redo the whole pipeline.
             failure_config=FailureConfig(max_failures=3),
-            checkpoint_config=CheckpointConfig(num_to_keep=2),
+            # Keep every epoch's checkpoint: scripts/probe_by_epoch.py scores
+            # fraud/reco per epoch to expose the merchant-vs-fraud training
+            # trade. Cost is bounded (~100MB/epoch at small, ~400MB at full)
+            # and the storage dies with the cluster anyway.
+            checkpoint_config=CheckpointConfig(num_to_keep=None),
         ),
     )
     result = trainer.fit()
