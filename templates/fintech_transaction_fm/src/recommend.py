@@ -20,6 +20,21 @@ We report HR@K / NDCG@K on the test split, next to a **frequency baseline**
 (recommend the card's most-frequent prior merchants) computed from the same
 window — the honest "is the FM beating 'just show them what they always buy?'"
 comparison. De-risk floor on TabFormer: top-10 historical merchants ≈ 65%.
+
+Headline HR@K alone is misleading, though: transaction behavior is dominated
+by repetition, and a frequency table encodes repetition perfectly at zero cost
+— but it is **structurally blind to merchants the card has never visited** (it
+scores them exactly zero). So every metric is also **split by target type**:
+
+* ``repeat`` — the true next merchant appears in the window's history (the
+  frequency baseline's home turf);
+* ``novel``  — it doesn't (frequency *cannot* rank it; the FM's real claim
+  lives here).
+
+Plus a parameter-free **hybrid**: recommend the card's history merchants by
+frequency first, then FM-ranked unseen merchants — frequency where it has an
+opinion, the FM where frequency is blind. By construction it matches the
+baseline on repeat targets and inherits the FM on novel ones.
 """
 
 from __future__ import annotations
@@ -97,12 +112,14 @@ class NextMerchantScorer:
             scores = proj @ E.t()                                      # (B, V)
             scores[:, : self.reserved] = float("-inf")                 # drop PAD/MASK/OOV
             true_score = scores.gather(1, true_merch[:, None]).squeeze(1)
-            rank = (scores > true_score[:, None]).sum(dim=1)           # 0-indexed rank
+            rank_t = (scores > true_score[:, None]).sum(dim=1)         # 0-indexed rank
 
-        rank = rank.cpu().numpy().astype(np.int64)
+        rank = rank_t.cpu().numpy().astype(np.int64)
         true_np = true_merch.cpu().numpy()
 
         # Frequency baseline: rank the card's prior merchants by recurrence.
+        # Alongside it: the repeat/novel target flag and the hybrid rank
+        # (frequency-ranked history first, then FM-ranked unseen merchants).
         merch_hist = (
             np.stack(batch["d_merchant_bucket"])
             if batch["d_merchant_bucket"].dtype == object
@@ -115,6 +132,8 @@ class NextMerchantScorer:
         )
         B = len(true_np)
         base_hit = {k: np.zeros(B, bool) for k in K_VALUES}
+        repeat = np.zeros(B, bool)
+        hybrid_rank = rank.copy()  # empty history -> hybrid degrades to pure FM
         for i in range(B):
             valid = attn[i, :-1] == 1
             h = merch_hist[i, :-1][valid]
@@ -124,10 +143,23 @@ class NextMerchantScorer:
             ranked = vals[np.argsort(cnts)[::-1]]
             for k in K_VALUES:
                 base_hit[k][i] = true_np[i] in ranked[:k]
+            repeat[i] = true_np[i] in vals
+            if repeat[i]:
+                # Hybrid = the frequency list itself on its home turf.
+                hybrid_rank[i] = int(np.nonzero(ranked == true_np[i])[0][0])
+            else:
+                # Novel target: the history occupies the first len(vals) slots,
+                # then unseen merchants in FM order — the FM rank among unseen
+                # ids is the full rank minus history ids scoring above true.
+                hist_ids = torch.as_tensor(vals, dtype=torch.long, device=scores.device)
+                above = int((scores[i, hist_ids] > true_score[i]).sum())
+                hybrid_rank[i] = len(vals) + int(rank[i]) - above
 
         out = {
             "split": batch["split"],
             "model_rank": rank,
+            "hybrid_rank": hybrid_rank,
+            "repeat": repeat,
             "dedicated": true_np < self.dedicated_hi,
         }
         for k in K_VALUES:
@@ -172,30 +204,55 @@ def run_recommend(
     )
     from ray.data.expressions import col
 
-    cols = ["split", "model_rank", "dedicated"] + [f"base_hit_{k}" for k in K_VALUES]
+    cols = ["split", "model_rank", "hybrid_rank", "repeat", "dedicated"]
+    cols += [f"base_hit_{k}" for k in K_VALUES]
     # Filter to the chosen split before collecting — no reason to pull the
     # train/val rows to the driver just to drop them.
     df = scored.filter(expr=col("split") == split).select_columns(cols).to_pandas()
     if len(df) == 0:
         raise RuntimeError(f"no '{split}'-split eval windows to score")
 
+    def _rank_metrics(r: np.ndarray) -> dict:
+        return {
+            **{f"hr@{k}": float((r < k).mean()) for k in K_VALUES},
+            **{
+                f"ndcg@{k}": float(np.where(r < k, 1.0 / np.log2(r + 2), 0.0).mean())
+                for k in K_VALUES
+            },
+        }
+
     rank = df["model_rank"].to_numpy()
+    hybrid = df["hybrid_rank"].to_numpy()
+    rep = df["repeat"].to_numpy().astype(bool)
+
+    # Per-segment view: repeat targets are the frequency baseline's home turf;
+    # novel targets are where it scores exactly zero and only the FM can rank.
+    by_target = {}
+    for name, seg in (("repeat", rep), ("novel", ~rep)):
+        n = int(seg.sum())
+        by_target[name] = {"n": n, "share": float(seg.mean())}
+        if n:
+            by_target[name].update(
+                {
+                    "model": {f"hr@{k}": float((rank[seg] < k).mean()) for k in K_VALUES},
+                    "frequency_baseline": {
+                        f"hr@{k}": float(df.loc[seg, f"base_hit_{k}"].mean())
+                        for k in K_VALUES
+                    },
+                    "hybrid": {f"hr@{k}": float((hybrid[seg] < k).mean()) for k in K_VALUES},
+                }
+            )
+
     summary = {
         "split": split,
         "n_samples": int(len(df)),
         "dedicated_target_rate": float(df["dedicated"].mean()),
-        "model": {
-            **{f"hr@{k}": float((rank < k).mean()) for k in K_VALUES},
-            **{
-                f"ndcg@{k}": float(
-                    np.where(rank < k, 1.0 / np.log2(rank + 2), 0.0).mean()
-                )
-                for k in K_VALUES
-            },
-        },
+        "model": _rank_metrics(rank),
+        "hybrid": _rank_metrics(hybrid),
         "frequency_baseline": {
             f"hr@{k}": float(df[f"base_hit_{k}"].mean()) for k in K_VALUES
         },
+        "by_target": by_target,
     }
     os.makedirs(output_dir, exist_ok=True)
     with open(os.path.join(output_dir, "recommend_metrics.json"), "w") as f:
@@ -209,10 +266,27 @@ def print_summary(summary: dict) -> None:
         f"{summary['n_samples']:,} windows; "
         f"{summary['dedicated_target_rate']:.1%} of targets are dedicated merchants)"
     )
-    print(f"{'metric':<10} {'FM':>10} {'freq-base':>12}")
-    print("-" * 34)
-    m, b = summary["model"], summary["frequency_baseline"]
+    m, b, h = summary["model"], summary["frequency_baseline"], summary["hybrid"]
+    print(f"{'metric':<10} {'FM':>10} {'freq-base':>12} {'hybrid':>10}")
+    print("-" * 45)
     for k in K_VALUES:
-        print(f"{'HR@' + str(k):<10} {m[f'hr@{k}']:>10.4f} {b[f'hr@{k}']:>12.4f}")
+        print(
+            f"{'HR@' + str(k):<10} {m[f'hr@{k}']:>10.4f} {b[f'hr@{k}']:>12.4f} "
+            f"{h[f'hr@{k}']:>10.4f}"
+        )
     for k in K_VALUES:
-        print(f"{'NDCG@' + str(k):<10} {m[f'ndcg@{k}']:>10.4f} {'—':>12}")
+        print(
+            f"{'NDCG@' + str(k):<10} {m[f'ndcg@{k}']:>10.4f} {'—':>12} "
+            f"{h[f'ndcg@{k}']:>10.4f}"
+        )
+    print("by target type (HR@10) — freq-base scores novel merchants exactly 0:")
+    for name, seg in summary["by_target"].items():
+        if seg["n"] == 0:
+            print(f"  {name:<7} n=0")
+            continue
+        print(
+            f"  {name:<7} n={seg['n']:<8,} ({seg['share']:.1%})  "
+            f"FM={seg['model']['hr@10']:.4f}  "
+            f"freq={seg['frequency_baseline']['hr@10']:.4f}  "
+            f"hybrid={seg['hybrid']['hr@10']:.4f}"
+        )
