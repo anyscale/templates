@@ -184,28 +184,50 @@ def train_feature_set(
     return RayTrainReportCallback.get_model(result.checkpoint)
 
 
-def evaluate(test_df, feature_cols, booster) -> tuple:
-    """Score the held-out test split on the driver and compute weighted metrics.
+def evaluate(test_ds, feature_cols, booster) -> tuple:
+    """Score the held-out test split *distributed* and compute weighted metrics.
 
-    The test split is small (the most-recent 10%), so we pull it to the driver
-    and predict in-process rather than spin up a distributed inference pass — the
-    distributed work that matters is the training above. Weighted metrics undo
-    the normal-downsampling: they estimate performance at the natural fraud
-    prevalence (what NVIDIA's blueprint reports), not on the fraud-enriched
-    sample we kept for compute reasons.
+    ``test_ds`` is a Ray Dataset, not a pandas frame. At ``full`` the test split
+    is millions of rows × hundreds of dims — ``holdout_keep: 1.0`` scores every
+    normal in the holdout period so the metrics are exact full-population values,
+    which makes the split far too large to pull onto the driver (doing so OOM-kills
+    the kernel). So we score with a ``map_batches`` that runs on the cluster and
+    pull back only the thin ``(proba, label, weight)`` columns; the weighted
+    metrics are computed on those. Same ``ScalingConfig``-free code path at every
+    scale — at ``mini`` the split is a few thousand rows and this is still cheap.
+
+    Weighted metrics undo the normal-downsampling: they estimate performance at
+    the natural fraud prevalence (what NVIDIA's blueprint reports), not on the
+    fraud-enriched sample we kept for compute reasons.
     """
+    import pandas as pd
     import xgboost as xgb
 
-    booster.set_param({"device": "cpu"})
-    proba = booster.predict(xgb.DMatrix(test_df[list(feature_cols)]))
-    y = test_df["label"].to_numpy()
-    w = test_df["weight"].to_numpy()
+    cols = list(feature_cols)
+    booster.set_param({"device": "cpu"})  # score on CPU workers; captured by the UDF
+
+    def _score(batch: "pd.DataFrame") -> "pd.DataFrame":
+        proba = booster.predict(xgb.DMatrix(batch[cols]))
+        return pd.DataFrame(
+            {
+                "proba": proba,
+                "label": batch["label"].to_numpy(),
+                "weight": batch["weight"].to_numpy(),
+            }
+        )
+
+    # Only the 3 thin columns come back to the driver (~24 B/row), never the
+    # hundreds-of-dims feature matrix.
+    scored = test_ds.map_batches(_score, batch_format="pandas").to_pandas()
+    y = scored["label"].to_numpy()
+    w = scored["weight"].to_numpy()
+    proba = scored["proba"].to_numpy()
     metrics = {
         "auc_roc": float(roc_auc_score(y, proba, sample_weight=w)),
         "pr_auc": float(average_precision_score(y, proba, sample_weight=w)),
         "pr_auc_sampled": float(average_precision_score(y, proba)),
     }
-    return metrics, proba
+    return metrics, scored
 
 
 def _eval_fingerprint(embeddings_path: str) -> str:
@@ -254,9 +276,13 @@ def run_downstream(
     import ray
     from ray.train import ScalingConfig
 
+    # Materialize the read + fan-out ONCE. Otherwise the lazy plan re-runs for
+    # every split below — 3x the Parquet I/O and expand_features fan-out at
+    # `full`; materializing makes each per-split filter() a cheap scan of the
+    # in-memory blocks instead.
     ds = ray.data.read_parquet(embeddings_path).map_batches(
         expand_features, batch_format="pandas"
-    )
+    ).materialize()
     splits = {s: ds.filter(expr=f"split == '{s}'").materialize() for s in _SPLITS}
     for s, sds in splits.items():
         if sds.count() == 0:
@@ -276,15 +302,15 @@ def run_downstream(
     storage_path = os.path.join(os.path.abspath(output_dir), "ray_results")
     os.makedirs(storage_path, exist_ok=True)
 
-    test_df = splits["test"].to_pandas()
     all_cols = ds.schema().names
+    n_test = splits["test"].count()
     print(
         f"[05] loaded  train={len(meta):,}  val={splits['val'].count():,}  "
-        f"test={len(test_df):,}  (emb_dim={len(feature_columns('fm', all_cols))}); "
+        f"test={n_test:,}  (emb_dim={len(feature_columns('fm', all_cols))}); "
         f"fitting num_workers={num_workers} use_gpu={use_gpu}",
         flush=True,
     )
-    results, test_proba = {}, {}
+    results, test_scored = {}, {}
     for name in ("raw", "fm", "fusion"):
         cols = feature_columns(name, all_cols)
         print(f"[05] training '{name}' ({len(cols)} features) ...", flush=True)
@@ -293,7 +319,8 @@ def run_downstream(
             splits["train"], splits["val"], cols, scaling,
             neg / max(pos, 1.0), storage_path,
         )
-        results[name], test_proba[name] = evaluate(test_df, cols, booster)
+        # Distributed scoring: only thin (proba, label, weight) rows return here.
+        results[name], test_scored[name] = evaluate(splits["test"], cols, booster)
         print(
             f"[05]   '{name}' done in {time.time() - t0:>4.0f}s  "
             f"AUC-ROC={results[name]['auc_roc']:.4f}  PR-AUC={results[name]['pr_auc']:.4f}",
@@ -333,16 +360,16 @@ def run_downstream(
     import pyarrow as pa
     import pyarrow.parquet as pq
 
-    names = list(test_proba)
-    y_te = test_df["label"].to_numpy()
-    w_te = test_df["weight"].to_numpy()
+    # Each scored frame carries its own aligned (proba, label, weight) — no
+    # cross-feature-set row-order assumption needed.
+    names = list(test_scored)
     pq.write_table(
         pa.table(
             {
-                "feature_set": np.repeat(np.array(names), len(test_df)),
-                "label": np.tile(y_te, len(names)),
-                "proba": np.concatenate([test_proba[n] for n in names]),
-                "weight": np.tile(w_te, len(names)),
+                "feature_set": np.repeat(np.array(names), n_test),
+                "label": np.concatenate([test_scored[n]["label"].to_numpy() for n in names]),
+                "proba": np.concatenate([test_scored[n]["proba"].to_numpy() for n in names]),
+                "weight": np.concatenate([test_scored[n]["weight"].to_numpy() for n in names]),
             }
         ),
         os.path.join(output_dir, "test_predictions.parquet"),
