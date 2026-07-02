@@ -26,7 +26,7 @@ and runs `raydepsets build dependencies/template.depsets.yaml --workspace-dir <r
 ```bash
 ./update_deps.sh                       # build every depset
 ./update_deps.sh --name <depset-name>  # build one (interpolated name, e.g. ray_depset_2.56.0_3.11)
-./update_deps.sh --check               # recompile to a temp dir, diff vs committed; the CI gate
+./update_deps.sh --check               # recompile to a temp dir, diff vs committed (local validation)
 ```
 
 ## Running it
@@ -92,18 +92,11 @@ Ray's published locks/constraints into `/tmp/ray-deps/`, with fallbacks for rele
    (see "What ships") — otherwise workers keep running stale deps.
 4. Pin the traps below.
 
-## CI gate
-
-`premerge.yaml` → **`check-depsets`** runs `./update_deps.sh --check`: recompiles all active entries into a
-temp dir and diffs against the committed locks; any drift fails.
-
 ## Gotchas
 
-- **The gate re-resolves against *live* indexes, so it fails on collateral.** Every run recompiles all
-  active entries from live PyPI/PyTorch, so a PR can go red on *another* template's **ambient drift**
-  (upstream shipped newer deps) or a **transient 503**. Refresh drifted locks in-passing and include them;
-  treat 503s as infra. (To stack/split depset PRs, comment out the entries you're not building — hence the
-  config's commented-out blocks.)
+- **`update_deps.sh` re-resolves against *live* indexes.** A fresh run can shift an untouched lock when
+  upstream ships newer deps (ambient drift) or fail on a transient PyPI/PyTorch 503. Refresh drifted locks
+  in-passing; treat 503s as infra.
 - **`runtime_env` pip hash mismatch** on bumped transitive deps: `uv` can emit one wrong-interpreter hash.
   Pin the offending package to the base-image version.
 - **Un-pinned floats.** `--system` installs float `numpy` to 2.x → pin `numpy`/`pandas`/`pyarrow` to the base
