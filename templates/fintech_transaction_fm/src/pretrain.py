@@ -106,6 +106,21 @@ def train_func(config: dict):
 
     # Resume after a worker failure: FailureConfig restarts land back here with
     # the last reported checkpoint attached.
+    # TensorBoard (rank 0): per-step curves are the debugging view the epoch
+    # metrics can't give — e.g. each head's loss trajectory while the InfoNCE
+    # ramp is in flight. Event files land on shared cluster storage; view with
+    # `tensorboard --logdir <storage_base>/tensorboard`. Telemetry must never
+    # kill training, so a missing tensorboard package just warns.
+    writer = None
+    if config.get("tensorboard_dir") and ray.train.get_context().get_world_rank() == 0:
+        try:
+            from torch.utils.tensorboard import SummaryWriter
+
+            writer = SummaryWriter(config["tensorboard_dir"])
+            print(f"[pretrain] tensorboard -> {config['tensorboard_dir']}")
+        except ImportError:
+            print("[pretrain] tensorboard not installed — skipping metric logging")
+
     start_epoch, global_step = 0, 0
     ckpt = ray.train.get_checkpoint()
     if ckpt is not None:
@@ -172,6 +187,14 @@ def train_func(config: dict):
             for f, d in stats.items():
                 ce_sum[f] += d["ce"] * n   # weight per-field means by #masked
                 acc_sum[f] += d["acc"] * n
+            if writer is not None:
+                # Rank 0's local values — a per-step debugging view, not a
+                # world-averaged metric (the epoch metrics below are averaged).
+                writer.add_scalar("train/loss", float(loss.item()), global_step)
+                writer.add_scalar("train/lr", scheduler.get_last_lr()[0], global_step)
+                writer.add_scalar("train/infonce_scale", infonce_scale, global_step)
+                for f, d in stats.items():
+                    writer.add_scalar(f"field_ce/{f}", d["ce"], global_step)
 
         # The weighted total drifts as the log-variances learn — watch the
         # per-field accuracy and perplexity instead. Perplexity vs. the field's
@@ -194,6 +217,11 @@ def train_func(config: dict):
             if f in dynamic_fields:
                 macro_acc += acc
         metrics["acc_macro"] = macro_acc / len(dynamic_fields)
+        if writer is not None:
+            for k, v in metrics.items():
+                if k != "epoch":
+                    writer.add_scalar(f"epoch/{k}", v, epoch)
+            writer.flush()
 
         # Checkpoint every epoch (rank 0 writes) so a failure mid-run resumes
         # instead of restarting from scratch. model.pt stays weights-only — the
@@ -225,6 +253,9 @@ def train_func(config: dict):
                 )
             checkpoint = Checkpoint.from_directory(tmp)
         ray.train.report(metrics, checkpoint=checkpoint)
+
+    if writer is not None:
+        writer.close()
 
 
 def pretrain(
@@ -271,6 +302,13 @@ def pretrain(
     ds = train_ds if train_ds is not None else ray.data.read_parquet(tokenized_path)
     n_rows = ds.count()  # sizes the LR schedule (cheap: metadata / materialized)
     storage_path = os.path.join(storage_base, "ray_results") if storage_base else None
+    # Unique per invocation: reusing a name resumes that run's latest
+    # checkpoint, which would silently skip training on a re-run. The
+    # in-run failure restore (FailureConfig) is unaffected by the name.
+    run_name = f"transaction_fm_pretrain_{time.strftime('%Y%m%d-%H%M%S')}"
+    tensorboard_dir = (
+        os.path.join(storage_base, "tensorboard", run_name) if storage_base else None
+    )
 
     trainer = TorchTrainer(
         train_func,
@@ -288,14 +326,12 @@ def pretrain(
             "infonce_warmup_frac": infonce_warmup_frac,
             "seed": seed,
             "n_rows": n_rows,
+            "tensorboard_dir": tensorboard_dir,
         },
         scaling_config=ScalingConfig(num_workers=num_workers, use_gpu=use_gpu),
         datasets={"train": ds},
         run_config=RunConfig(
-            # Unique per invocation: reusing a name resumes that run's latest
-            # checkpoint, which would silently skip training on a re-run. The
-            # in-run failure restore (FailureConfig) is unaffected by the name.
-            name=f"transaction_fm_pretrain_{time.strftime('%Y%m%d-%H%M%S')}",
+            name=run_name,
             storage_path=storage_path,
             # Restart in place (from the latest epoch checkpoint) on worker
             # loss — required for spot GPU nodes; the job-level retry would
