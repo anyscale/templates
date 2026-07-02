@@ -5,7 +5,7 @@ RAY_VERSION="${1:?Usage: fetch-ray-constraints.sh <ray-version> <python-version>
 PYTHON_VERSION="${2:?Usage: fetch-ray-constraints.sh <ray-version> <python-version>}"
 
 DEST_DIR="/tmp/ray-deps"
-DEST_FILE="requirements_compiled_py${PYTHON_VERSION}.txt"
+DEST_FILE="requirements_compiled_${RAY_VERSION}_py${PYTHON_VERSION}.txt"
 BASE_URL="https://raw.githubusercontent.com/ray-project/ray/ray-${RAY_VERSION}/python"
 
 mkdir -p "$DEST_DIR"

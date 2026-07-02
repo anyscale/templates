@@ -5,13 +5,13 @@ absl-py==1.4.0 \
     --hash=sha256:0d3fe606adfa4f7db64792dd4c7aee4ee0c38ab75dfd353b7a83ed3e957fcb47 \
     --hash=sha256:d2c244d01048ba476e7c080bd2c6df5e141d211de80223460d5b3b8a2a58433d
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   dm-tree
 aiohappyeyeballs==2.6.1 \
     --hash=sha256:c3f9d0113123803ccadfdf3f0faa505bc78e6a72d1cc4806cbd719826e943558 \
     --hash=sha256:f349ba8f4b75cb25c99c5c2d84e997e485204d2902a9597802b0371f09331fb8
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   aiohttp
 aiohttp==3.13.3 \
     --hash=sha256:01ad2529d4b5035578f5081606a465f3b814c542882804e2e8cda61adf5c71bf \
@@ -135,53 +135,53 @@ aiohttp==3.13.3 \
     --hash=sha256:fc353029f176fd2b3ec6cfc71be166aba1936fe5d73dd1992ce289ca6647a9aa \
     --hash=sha256:fee0c6bc7db1de362252affec009707a17478a00ec69f797d23ca256e36d5940
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   aiohttp-cors
     #   taskiq
     #   vllm
 aiohttp-cors==0.7.0 \
     --hash=sha256:0451ba59fdf6909d0e2cd21e4c0a43752bc0703d33fc78ae94d9d9321710193e \
     --hash=sha256:4d39c6d7100fd9764ed1caf8cebf0eb01bf5e3f24e2e073fda6234bc48b19f5d
-    # via -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    # via -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
 aiorwlock==1.3.0 \
     --hash=sha256:45baf8e4fa9a23e0bb325fbd67da80de1fd7ae1d4f59a6381754c60cec7b289b \
     --hash=sha256:83f12d87df4b9728a0b8fda1756585ab0d652b107bab59c6084e1b1ad692ab45
-    # via -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    # via -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
 aiosignal==1.4.0 \
     --hash=sha256:053243f8b92b990551949e63930a839ff0cf0b0ebbe0597b0f3fb19e1a0fe82e \
     --hash=sha256:f47eecd9468083c2029cc99945502cb7708b082c232f9aca65da147157b251c7
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   aiohttp
 amqp==5.3.1 \
     --hash=sha256:43b3319e1b4e7d1251833a93d672b4af1e40f3d632d479b98661a95f117880a2 \
     --hash=sha256:cddc00c725449522023bad949f70fff7b48f0b1ade74d170a6f10ab044739432
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   kombu
 annotated-doc==0.0.4 \
     --hash=sha256:571ac1dc6991c450b25a9c2d84a3705e2ae7a53467b5d111c24fa8baabbed320 \
     --hash=sha256:fbcda96e87e9c92ad167c2e53839e57503ecfda18804ea28102353485033faa4
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   fastapi
 annotated-types==0.6.0 \
     --hash=sha256:0641064de18ba7a25dee8f96403ebc39113d0cb953a01429249d5c7564666a43 \
     --hash=sha256:563339e807e53ffd9c267e99fc6d9ea23eb8443c08f112651963e24e22f84a5d
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   pydantic
 anthropic==0.84.0 \
     --hash=sha256:72f5f90e5aebe62dca316cb013629cfa24996b0f5a4593b8c3d712bc03c43c37 \
     --hash=sha256:861c4c50f91ca45f942e091d83b60530ad6d4f98733bfe648065364da05d29e7
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   vllm
 anyio==4.5.0 \
     --hash=sha256:c5a275fe5ca0afd788001f58fca1e69e29ce706d746e317d660e21f70c530ef9 \
     --hash=sha256:fdeb095b7cc5a5563175eedd926ec4ae55413bb4be5770c424af0ba46ccb4a78
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   anthropic
     #   httpx
     #   mcp
@@ -229,20 +229,20 @@ apache-tvm-ffi==0.1.9 \
     --hash=sha256:f3ec9149f207a7af3ea3531cad7a0b0d04ded06df4f51a547479d5eb489428dd \
     --hash=sha256:f45eb43499acac45ff6c93564f0ff2d3ca27b69656d540fd56ce59d51c0b4c65
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   flashinfer-python
     #   quack-kernels
 astor==0.8.1 \
     --hash=sha256:070a54e890cefb5b3739d19f30f5a5ec840ffc9c50ffa7d23cc9fc1a38ebbfc5 \
     --hash=sha256:6a6effda93f4e1ce9f618779b2dd1d9d84f1e32812c23a29b3fff6fd7f63fa5e
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   depyf
 attrs==25.1.0 \
     --hash=sha256:1c97078a80c814273a76b2a298a932eb681c87415c11dee0a6921de7f1b02c3e \
     --hash=sha256:c75a69e28a550a7e93789579c22aa26b0f5b83b75dc4e08fe092980051e1090a
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   aiohttp
     #   dm-tree
     #   jsonschema
@@ -251,7 +251,7 @@ audioread==3.1.0 \
     --hash=sha256:1c4ab2f2972764c896a8ac61ac53e261c8d29f0c6ccd652f84e18f08a4cab190 \
     --hash=sha256:b30d1df6c5d3de5dcef0fb0e256f6ea17bdcf5f979408df0297d8a408e2971b4
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   librosa
 av==17.0.0 \
     --hash=sha256:096cfd1e9fc896506726c7c42aaf9b370e78c2f257cde4d6ddb6c889bfcc49ec \
@@ -278,12 +278,12 @@ av==17.0.0 \
     --hash=sha256:ed4013fac77c309a4a68141dcf6148f1821bb1073a36d4289379762a6372f711 \
     --hash=sha256:f8ef8e8f1a0cbb2e0ad49266015e2277801a916e2186ac9451b493ff6dfdec27 \
     --hash=sha256:ffaf266a1a9c2148072de0a4b5ae98061465178d2cfaa69ee089761149342974
-    # via -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    # via -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
 billiard==4.2.1 \
     --hash=sha256:12b641b0c539073fc8d3f5b8b7be998956665c4233c7c1fcd66a7e677c4fb36f \
     --hash=sha256:40b59a4ac8806ba2c2369ea98d876bc6108b051c227baffd928c644d15d8f3cb
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   celery
 blake3==1.0.8 \
     --hash=sha256:003f61e8c41dd9931edddf1cc6a1bb680fb2ac0ad15493ef4a1df9adc59ce9df \
@@ -396,13 +396,13 @@ blake3==1.0.8 \
     --hash=sha256:fe1b02ab49bfd969ef50b9f17482a2011c77536654af21807ba5c2674e0bb2a0 \
     --hash=sha256:fe61d52da1d102aabb0e315d3fc613c11c103376aa0a8510aeee159939612f76
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   vllm
 cachetools==5.5.2 \
     --hash=sha256:1a661caa9175d26759571b2e19580f9d6393969e5dfca11fdb1f947a23e640d4 \
     --hash=sha256:d26a22bcc62eb95c3beabd9f1ee5e820d3d2704fe2967cbe350e20c8ffcd3f0a
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   google-auth
     #   vllm
 cbor2==5.8.0 \
@@ -451,17 +451,17 @@ cbor2==5.8.0 \
     --hash=sha256:f95fed480b2a0d843f294d2a1ef4cc0f6a83c7922927f9f558e1f5a8dc54b7ca \
     --hash=sha256:fddee9103a17d7bed5753f0c7fc6663faa506eb953e50d8287804eccf7b048e6
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   vllm
 celery==5.5.3 \
     --hash=sha256:0b5761a07057acee94694464ca482416b959568904c9dfa41ce8413a7d65d525 \
     --hash=sha256:6c972ae7968c2b5281227f01c3a3f984037d21c5129d07bf3550cc2afc6b10a5
-    # via -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    # via -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
 certifi==2025.1.31 \
     --hash=sha256:3d5da6925056f6f18f119200434a4780a94263f10d1c21d032a6f6b2baa20651 \
     --hash=sha256:ca78db4565a652026a4db2bcdf68f2fb589ea80d0be70e03929ed730746b84fe
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   httpcore
     #   httpx
     #   requests
@@ -535,7 +535,7 @@ cffi==1.17.1 \
     --hash=sha256:f7f5baafcc48261359e14bcd6d9bff6d4b28d9103847c9e136694cb0501aef87 \
     --hash=sha256:fc48c783f9c87e60831201f2cce7f3b2e4846bf4d8728eabe54d60700b318a0b
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   cryptography
     #   soundfile
 charset-normalizer==3.3.2 \
@@ -630,13 +630,13 @@ charset-normalizer==3.3.2 \
     --hash=sha256:fd1abc0d89e30cc4e02e4064dc67fcc51bd941eb395c502aac3ec19fab46b519 \
     --hash=sha256:ff8fa367d09b717b2a17a052544193ad76cd49979c805768879cb63d9ca50561
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   requests
 click==8.1.7 \
     --hash=sha256:ae74fb96c20a0277a1d615f1e4d73c8414f5a98db8b799a7931d1582f3390c28 \
     --hash=sha256:ca9853ad459e787e2192211578cc907e7594e294c7ccc834310722b41b9ca6de
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   celery
     #   click-didyoumean
     #   click-plugins
@@ -649,36 +649,36 @@ click-didyoumean==0.3.1 \
     --hash=sha256:4f82fdff0dbe64ef8ab2279bd6aa3f6a99c3b28c05aa09cbfc07c9d7fbb5a463 \
     --hash=sha256:5c4bb6007cfea5f2fd6583a2fb6701a22a41eb98957e63d0fac41c10e7c3117c
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   celery
 click-plugins==1.1.1.2 \
     --hash=sha256:008d65743833ffc1f5417bf0e78e8d2c23aab04d9745ba817bd3e71b0feb6aa6 \
     --hash=sha256:d7af3984a99d243c131aa1a828331e7630f4a88a9741fd05c927b204bcf92261
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   celery
 click-repl==0.3.0 \
     --hash=sha256:17849c23dba3d667247dc4defe1757fff98694e90fe37474f3feebb69ced26a9 \
     --hash=sha256:fb7e06deb8da8de86180a33a9da97ac316751c094c6899382da7feeeeb51b812
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   celery
 cloudpickle==3.1.1 \
     --hash=sha256:b216fa8ae4019d5482a8ac3c95d8f6346115d8835911fd4aefd1a445e4242c64 \
     --hash=sha256:c8c5a44295039331ee9dad40ba100a9c7297b6f988e50e87ccdf3765a668350e
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   gymnasium
     #   vllm
 colorful==0.5.5 \
     --hash=sha256:62c187e27c1433db9463ff93b1451898d1e7e23a7e553583fd9daeb6325182e4 \
     --hash=sha256:66f8c1264b2a26f7293b96a03bb7a76c4bc8b9634369a0bffdcd12d618056a1d
-    # via -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    # via -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
 compressed-tensors==0.13.0 \
     --hash=sha256:23893824d3498ea3f1a829f14a8fa85f9a5e76a34c711a038b8d7c619ca9a67c \
     --hash=sha256:3518799c9baf034eb642efb551db6b0537b8713d45a64fe4def26f7f8d6cabec
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   vllm
 cryptography==44.0.3 \
     --hash=sha256:02f55fb4f8b79c1221b0961488eaae21015b69b210e18c386b69de182ebb1259 \
@@ -719,7 +719,7 @@ cryptography==44.0.3 \
     --hash=sha256:fc3c9babc1e1faefd62704bb46a69f359a9819eb0292e40df3fb6e3574715cd4 \
     --hash=sha256:fe19d8bc5536a91a24a8133328880a41831b6c5df54599a8417b62fe015d3053
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   pyopenssl
 cuda-bindings==12.9.4 \
     --hash=sha256:1f53a7f453d4b2643d8663d036bafe29b5ba89eb904c133180f295df6dc151e5 \
@@ -747,18 +747,18 @@ cuda-bindings==12.9.4 \
     --hash=sha256:f69107389e6b9948969bfd0a20c4f571fd1aefcfb1d2e1b72cc8ba5ecb7918ab \
     --hash=sha256:fda147a344e8eaeca0c6ff113d2851ffca8f7dfc0a6c932374ee5c47caa649c8
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   cuda-python
     #   torch
 cuda-pathfinder==1.4.1 \
     --hash=sha256:40793006082de88e0950753655e55558a446bed9a7d9d0bcb48b2506d50ed82a
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   cuda-bindings
 cuda-python==12.9.4 \
     --hash=sha256:d2cacea882a69863f1e7d27ee71d75f0684f4c76910aff839067e4f89c902279
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   nvidia-cutlass-dsl-libs-base
 cupy-cuda12x==13.6.0 ; sys_platform != 'darwin' \
     --hash=sha256:297b4268f839de67ef7865c2202d3f5a0fb8d20bd43360bc51b6e60cb4406447 \
@@ -776,42 +776,42 @@ cupy-cuda12x==13.6.0 ; sys_platform != 'darwin' \
     --hash=sha256:e5426ae3b1b9cf59927481e457a89e3f0b50a35b114a8034ec9110e7a833434c \
     --hash=sha256:e78409ea72f5ac7d6b6f3d33d99426a94005254fa57e10617f430f9fd7c3a0a1 \
     --hash=sha256:f33c9c975782ef7a42c79b6b4fb3d5b043498f9b947126d792592372b432d393
-    # via -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    # via -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
 decorator==5.1.1 \
     --hash=sha256:637996211036b6385ef91435e4fae22989472f9d571faba8927ba8253acbc330 \
     --hash=sha256:b8c3f85900b9dc423225913c5aace94729fe1fa9763b38939a95226f02d37186
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   librosa
 depyf==0.20.0 \
     --hash=sha256:d31effad4261cebecb58955d832e448ace88f432328f95f82fd99c30fd9308d4 \
     --hash=sha256:fb7683bd72c44f67b56029df2c47721e9a02ffa4d7b19095f1c54c4ebf797a98
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   vllm
 dill==0.3.8 \
     --hash=sha256:3ebe3c479ad625c4553aca177444d89b486b1d84982eeacded644afc0cf797ca \
     --hash=sha256:c36ca9ffb54365bdd2f8eb3eff7d2a21237f8452b57ace88b1ac615b7e815bd7
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   depyf
 diskcache==5.6.3 \
     --hash=sha256:2c3a3fa2743d8535d832ec61c2054a1641f41775aa7c556758a109941e33e4fc \
     --hash=sha256:5e31b2d5fbad117cc363ebaf6b689474db18a1f6438bc82358b024abd4c2ca19
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   vllm
 distlib==0.3.7 \
     --hash=sha256:2e24928bc811348f0feb63014e97aaae3037f2cf48712d51ae61df7fd6075057 \
     --hash=sha256:9dafe54b34a028eafd95039d5e5d4851a13734540f1331060d31c9916e7147a8
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   virtualenv
 distro==1.9.0 \
     --hash=sha256:2fa77c6fd8940f116ee1d6b94a2f90b13b5ea8d019b98bc8bafdcabcdd9bdbed \
     --hash=sha256:7bffd925d65168f85027d8da9af6bddab658135b840670a223589bc0c8ef02b2
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   anthropic
     #   openai
 dm-tree==0.1.9 \
@@ -835,57 +835,57 @@ dm-tree==0.1.9 \
     --hash=sha256:e660d1779ddcbd1348410d08f67db4870d413a3ec4ba8b4b045bd5ce4bd8f35c \
     --hash=sha256:e97c34fcb44941c36b7ee81dcdbceba0fbe728bddcc77e5837ab2eb665bcbff8 \
     --hash=sha256:f68b0efad76703dd4648586c75618a48cdd671b68c3266fe980e323c15423607
-    # via -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    # via -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
 dnspython==2.8.0 \
     --hash=sha256:01d9bbc4a2d76bf0db7c1f729812ded6d912bd318d3b1cf81d30c0f845dbf3af \
     --hash=sha256:181d3c6996452cb1189c4046c61599b84a5a86e099562ffde77d26984ff26d0f
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   email-validator
 docstring-parser==0.17.0 \
     --hash=sha256:583de4a309722b3315439bb31d64ba3eebada841f2e2cee23b99df001434c912 \
     --hash=sha256:cf2569abd23dce8099b300f9b4fa8191e9582dda731fd533daf54c4551658708
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   anthropic
 einops==0.8.2 \
     --hash=sha256:54058201ac7087911181bfec4af6091bb59380360f069276601256a76af08193 \
     --hash=sha256:609da665570e5e265e27283aab09e7f279ade90c4f01bcfca111f3d3e13f2827
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   flashinfer-python
     #   vllm
 email-validator==2.3.0 \
     --hash=sha256:80f13f623413e6b197ae73bb10bf4eb0908faf509ad8362c5edeb0be7fd450b4 \
     --hash=sha256:9fc05c37f2f6cf439ff414f8fc46d917929974a82244c20eb10231ba60c54426
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   fastapi
     #   pydantic
 farama-notifications==0.0.4 \
     --hash=sha256:13fceff2d14314cf80703c8266462ebf3733c7d165336eee998fc58e545efd18 \
     --hash=sha256:14de931035a41961f7c056361dc7f980762a143d05791ef5794a751a2caf05ae
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   gymnasium
 fastapi==0.121.0 \
     --hash=sha256:06663356a0b1ee93e875bbf05a31fb22314f5bed455afaaad2b2dad7f26e98fa \
     --hash=sha256:8bdf1b15a55f4e4b0d6201033da9109ea15632cb76cf156e7b8b4019f2172106
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   model-hosting-container-standards
     #   vllm
 fastapi-cli==0.0.21 \
     --hash=sha256:457134b8f3e08d2d203a18db923a18bbc1a01d9de36fbe1fa7905c4d02a0e5c0 \
     --hash=sha256:57c6e043694c68618eee04d00b4d93213c37f5a854b369d2871a77dfeff57e91
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   fastapi
 fastapi-cloud-cli==0.11.0 \
     --hash=sha256:76857b0f09d918acfcb50ade34682ba3b2079ca0c43fda10215de301f185a7f8 \
     --hash=sha256:ecc83a5db106be35af528eccb01aa9bced1d29783efd48c8c1c831cf111eea99
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   fastapi-cli
 fastar==0.8.0 \
     --hash=sha256:003b59a7c3e405b6a7bff8fab17d31e0ccbc7f06730a8f8ca1694eeea75f3c76 \
@@ -1043,7 +1043,7 @@ fastar==0.8.0 \
     --hash=sha256:feb8f73ad25ad84f986dc53e7c6561b281ee2087500f6e400899c3bf1a3f6dc0 \
     --hash=sha256:ff85094f10003801339ac4fa9b20a3410c2d8f284d4cba2dc99de6e98c877812
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   fastapi-cloud-cli
 fastrlock==0.8.3 ; sys_platform != 'darwin' \
     --hash=sha256:001fd86bcac78c79658bac496e8a17472d64d558cd2227fdc768aa77f877fe40 \
@@ -1116,13 +1116,13 @@ fastrlock==0.8.3 ; sys_platform != 'darwin' \
     --hash=sha256:f68c551cf8a34b6460a3a0eba44bd7897ebfc820854e19970c52a76bf064a59f \
     --hash=sha256:fcb50e195ec981c92d0211a201704aecbd9e4f9451aea3a6f71ac5b1ec2c98cf
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   cupy-cuda12x
 filelock==3.17.0 \
     --hash=sha256:533dc2f7ba78dc2f0f531fc6c4940addf7b70a481e269a5a3b93be94ffbe8338 \
     --hash=sha256:ee4e77401ef576ebb38cd7f13b9b28893194acc20a8e68e18730ba9c0e54660e
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   huggingface-hub
     #   torch
     #   transformers
@@ -1132,7 +1132,7 @@ flashinfer-python==0.6.6 \
     --hash=sha256:0730ba7c7aad332961933bcebc5119762797161ede57d955f6fd199818ed1d92 \
     --hash=sha256:078f158636969eec1a0d3dea19c3ca90b426b66df89bbf7b7b8276ce2ec08148
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   vllm
 frozenlist==1.4.1 \
     --hash=sha256:04ced3e6a46b4cfffe20f9ae482818e34eba9b5fb0ce4056e4cc9b6e212d09b7 \
@@ -1213,39 +1213,39 @@ frozenlist==1.4.1 \
     --hash=sha256:fde5bd59ab5357e3853313127f4d3565fc7dad314a74d7b5d43c22c6a5ed2ced \
     --hash=sha256:fe1a06da377e3a1062ae5fe0926e12b84eceb8a50b350ddca72dc85015873f74
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   aiohttp
     #   aiosignal
 fsspec==2023.12.1 \
     --hash=sha256:6271f1d3075a378bfe432f6f42bf7e1d2a6ba74f78dd9b512385474c579146a0 \
     --hash=sha256:c4da01a35ac65c853f833e43f67802c25213f560820d54ddf248f92eddd5e990
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   huggingface-hub
     #   torch
 gguf==0.18.0 \
     --hash=sha256:af93f7ef198a265cbde5fa6a6b3101528bca285903949ab0a3e591cd993a1864 \
     --hash=sha256:b4659093d5d0dccdb5902a904d54b327f4052879fe5e90946ad5fce9f8018c2e
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   vllm
 google-api-core==2.24.2 \
     --hash=sha256:810a63ac95f3c441b7c0e43d344e372887f62ce9071ba972eacf32672e072de9 \
     --hash=sha256:81718493daf06d96d6bc76a91c23874dbf2fac0adbbf542831b805ee6e974696
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   opencensus
 google-auth==2.23.4 \
     --hash=sha256:79905d6b1652187def79d491d6e23d0cbb3a21d3c7ba0dbaa9c8a01906b13ff3 \
     --hash=sha256:d4bbc92fe4b8bfd2f3e8d88e5ba7085935da208ee38a134fc280e7ce682a05f2
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   google-api-core
 googleapis-common-protos==1.72.0 \
     --hash=sha256:4299c5a82d5ae1a9702ada957347726b167f9f8d1fc352477702a1e851ff4038 \
     --hash=sha256:e55a601c1b32b52d7a3e65f43563e2aa61bcd737998ee672ac9b951cd49319f5
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   google-api-core
     #   opentelemetry-exporter-otlp-proto-grpc
     #   opentelemetry-exporter-otlp-proto-http
@@ -1312,17 +1312,17 @@ grpcio==1.76.0 \
     --hash=sha256:fd5ef5932f6475c436c4a55e4336ebbe47bd3272be04964a03d316bbf4afbcbc \
     --hash=sha256:ff8a59ea85a1f2191a0ffcc61298c571bc566332f82e5f5be1b83c9d8e668a62
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   opentelemetry-exporter-otlp-proto-grpc
 gymnasium==1.2.2 \
     --hash=sha256:46d927328f8518bb5a689dbe270d228c1da2b08bcb71ae0152c10aa66f48d530 \
     --hash=sha256:f04ec362b1fdf73a8b327db5ef89384a3f2ba411e05d3521513414fbbb2199c8
-    # via -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    # via -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
 h11==0.16.0 \
     --hash=sha256:4e35b956cf45792e4caa5885e69fba00bdbc6ffafbfa020300e549b208ee5ff1 \
     --hash=sha256:63cf8bbe7522de3bf65932fda1d9c2772064ffb3dae62d55932da54b31cb6c86
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   httpcore
     #   uvicorn
 hf-transfer==0.1.9 \
@@ -1351,7 +1351,7 @@ hf-transfer==0.1.9 \
     --hash=sha256:e6ac4eddcd99575ed3735ed911ddf9d1697e2bd13aa3f0ad7e3904dd4863842e \
     --hash=sha256:ee8b10afedcb75f71091bcc197c526a6ebf5c58bbbadb34fdeee6160f55f619f \
     --hash=sha256:fc6bd19e1cc177c66bdef15ef8636ad3bde79d5a4f608c158021153b4573509d
-    # via -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    # via -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
 hf-xet==1.3.2 ; platform_machine == 'aarch64' or platform_machine == 'amd64' or platform_machine == 'arm64' or platform_machine == 'x86_64' \
     --hash=sha256:06b724a361f670ae557836e57801b82c75b534812e351a87a2c739f77d1e0635 \
     --hash=sha256:06cdbde243c85f39a63b28e9034321399c507bcd5e7befdd17ed2ccc06dfe14e \
@@ -1379,13 +1379,13 @@ hf-xet==1.3.2 ; platform_machine == 'aarch64' or platform_machine == 'amd64' or 
     --hash=sha256:e130ee08984783d12717444e538587fa2119385e5bd8fc2bb9f930419b73a7af \
     --hash=sha256:f93b7595f1d8fefddfede775c18b5c9256757824f7f6832930b49858483cd56f
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   huggingface-hub
 httpcore==1.0.9 \
     --hash=sha256:2d400746a40668fc9dec9810239072b40b4484b640a8c38fd654a024c7a1bf55 \
     --hash=sha256:6e34463af53fd2ab5d807f399a9b45ea31c3dfa2276f15a2c3f00afff6e176e8
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   httpx
 httptools==0.7.1 \
     --hash=sha256:04c6c0e6c5fb0739c5b8a9eb046d298650a0ff38cf42537fc372b28dc7e4472c \
@@ -1432,13 +1432,13 @@ httptools==0.7.1 \
     --hash=sha256:f65744d7a8bdb4bda5e1fa23e4ba16832860606fcc09d674d56e425e991539ec \
     --hash=sha256:f72fdbae2dbc6e68b8239defb48e6a5937b12218e6ffc2c7846cc37befa84362
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   uvicorn
 httpx==0.28.1 \
     --hash=sha256:75e98c5f16b0f35b567856f597f06ff2270a374470a5c2392242528e3e3e42fc \
     --hash=sha256:d909fcccc110f8c7faf814ca82a9a4d816bc5a6dbfea25d6591d6985b8ba59ad
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   anthropic
     #   fastapi
     #   fastapi-cloud-cli
@@ -1449,20 +1449,20 @@ httpx-sse==0.4.3 \
     --hash=sha256:0ac1c9fe3c0afad2e0ebb25a934a59f4c7823b60792691f779fad2c5568830fc \
     --hash=sha256:9b1ed0127459a66014aec3c56bebd93da3c1bc8bb6618c8082039a44889a755d
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   mcp
 huggingface-hub==0.36.2 \
     --hash=sha256:1934304d2fb224f8afa3b87007d58501acfda9215b334eed53072dd5e815ff7a \
     --hash=sha256:48f0c8eac16145dfce371e9d2d7772854a4f591bcb56c9cf548accf531d54270
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   tokenizers
     #   transformers
 idna==3.7 \
     --hash=sha256:028ff3aadf0609c1fd278d8ea3089299412a7a8b9bd005dd08b9f8285bcb5cfc \
     --hash=sha256:82fee1fc78add43492d3a1898bfa6d8a904cc97d8427f683ed8e798d07761aa0
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   anyio
     #   email-validator
     #   httpx
@@ -1565,30 +1565,30 @@ ijson==3.5.0 \
     --hash=sha256:f969ffb2b89c5cdf686652d7fb66252bc72126fa54d416317411497276056a18 \
     --hash=sha256:fdeee6957f92e0c114f65c55cf8fe7eabb80cfacab64eea6864060913173f66d
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   vllm
 importlib-metadata==6.11.0 \
     --hash=sha256:1231cf92d825c9e03cfc4da076a16de6422c863558229ea0b22b675657463443 \
     --hash=sha256:f0afba6205ad8f8947c7d338b5342d5db2afbfd82f9cbef7879a9539cc12eb9b
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   opentelemetry-api
 interegular==0.3.3 \
     --hash=sha256:b0c07007d48c89d6d19f7204972d369b2a77222722e126b6aa63aa721dc3b19c \
     --hash=sha256:d9b697b21b34884711399ba0f0376914b81899ce670032486d0d048344a76600
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   lm-format-enforcer
 izulu==0.50.0 \
     --hash=sha256:4e9ae2508844e7c5f62c468a8b9e2deba2f60325ef63f01e65b39fd9a6b3fab4 \
     --hash=sha256:cc8e252d5e8560c70b95380295008eeb0786f7b745a405a40d3556ab3252d5f5
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   taskiq
 jinja2==3.1.6 \
     --hash=sha256:85ece4451f492d0c13c5dd7c13a64681a86afae63a5f347908daf103ce6d2f67
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   fastapi
     #   memray
     #   torch
@@ -1696,65 +1696,65 @@ jiter==0.13.0 \
     --hash=sha256:fe49d3ff6db74321f144dff9addd4a5874d3105ac5ba7c5b77fac099cfae31ae \
     --hash=sha256:ff732bd0a0e778f43d5009840f20b935e79087b4dc65bd36f1cd0f9b04b8ff7f
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   anthropic
     #   openai
 jmespath==1.0.1 \
     --hash=sha256:02e2e4cc71b5bcab88332eebf907519190dd9e6e82107fa7f83b1003a6252980 \
     --hash=sha256:90261b206d6defd58fdd5e85f478bf633a2901798906be2ad389150c5c60edbe
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   model-hosting-container-standards
 joblib==1.5.3 \
     --hash=sha256:5fc3c5039fc5ca8c0276333a188bbd59d6b7ab37fe6632daa76bc7f9ec18e713 \
     --hash=sha256:8561a3269e6801106863fd0d6d84bb737be9e7631e33aaed3fb9ce5953688da3
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   librosa
     #   scikit-learn
 jsonref==1.1.0 \
     --hash=sha256:32fe8e1d85af0fdefbebce950af85590b22b60f9e95443176adbde4e1ecea552 \
     --hash=sha256:590dc7773df6c21cbf948b5dac07a72a251db28b0238ceecce0a2abfa8ec30a9
-    # via -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    # via -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
 jsonschema==4.23.0 \
     --hash=sha256:d71497fef26351a33265337fa77ffeb82423f3ea21283cd9467bb03999266bc4 \
     --hash=sha256:fbadb6f8b144a8f8cf9f0b89ba94501d143e50411a1278633f56a7acf7fd5566
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   mistral-common
 jsonschema-specifications==2024.10.1 \
     --hash=sha256:0f38b83639958ce1152d02a7f062902c41c8fd20d558b0c34344292d417ae272 \
     --hash=sha256:a09a0680616357d9a0ecf05c12ad234479f549239d0f5b55f3deea67475da9bf
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   jsonschema
 kombu==5.5.4 \
     --hash=sha256:886600168275ebeada93b888e831352fe578168342f0d1d5833d88ba0d847363 \
     --hash=sha256:a12ed0557c238897d8e518f1d1fdf84bd1516c5e305af2dacd85c2015115feb8
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   celery
 lark==1.2.2 \
     --hash=sha256:c2276486b02f0f1b90be155f2c8ba4a8e194d42775786db622faccd652d8e80c \
     --hash=sha256:ca807d0162cd16cef15a8feecb862d7319e7a09bdb13aef927968e45040fed80
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   vllm
 lazy-loader==0.5 \
     --hash=sha256:717f9179a0dbed357012ddad50a5ad3d5e4d9a0b8712680d4e687f5e6e6ed9b3 \
     --hash=sha256:ab0ea149e9c554d4ffeeb21105ac60bed7f3b4fd69b1d2360a4add51b170b005
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   librosa
 librosa==0.11.0 \
     --hash=sha256:0b6415c4fd68bff4c29288abe67c6d80b587e0e1e2cfb0aad23e4559504a7fa1 \
     --hash=sha256:f5ed951ca189b375bbe2e33b2abd7e040ceeee302b9bbaeeffdfddb8d0ace908
-    # via -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    # via -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
 linkify-it-py==2.0.3 ; sys_platform != 'win32' \
     --hash=sha256:68cda27e162e9215c17d786649d1da0021a451bdc436ef9e0fa0ba5234b9b048 \
     --hash=sha256:6bcbc417b0ac14323382aef5c5192c0075bf8a9d6b41820a2b66371eac6b6d79
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   markdown-it-py
 llguidance==1.3.0 ; platform_machine == 'aarch64' or platform_machine == 'arm64' or platform_machine == 'ppc64le' or platform_machine == 's390x' or platform_machine == 'x86_64' \
     --hash=sha256:0612bb3f034d2487b6e8f9561f02a94a6039d88273bf0c5c539a3bd3895e47d2 \
@@ -1766,7 +1766,7 @@ llguidance==1.3.0 ; platform_machine == 'aarch64' or platform_machine == 'arm64'
     --hash=sha256:bc17e9dd602c3879bf91664a64bf72f54c74dbfbeb24ccfab6a5fe435b12f7aa \
     --hash=sha256:f7685222660a762e481ac633d49cc559c64980fe2ee59c8f932a5bb5cbc0c2c2
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   vllm
 llvmlite==0.44.0 \
     --hash=sha256:07667d66a5d150abed9157ab6c0b9393c9356f229784a4385c02f99e94fc94d4 \
@@ -1791,19 +1791,19 @@ llvmlite==0.44.0 \
     --hash=sha256:eed7d5f29136bda63b6d7804c279e2b72e08c952b7c5df61f45db408e0ee52f3 \
     --hash=sha256:f01a394e9c9b7b1d4e63c327b096d10f6f0ed149ef53d38a09b3749dcf8c9610
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   numba
 lm-format-enforcer==0.11.3 \
     --hash=sha256:cf586350875def1ae7a8fba84fcbbfc8371424b6c9d05c1fcba70aa233fbf06f \
     --hash=sha256:e68081c108719cce284a9bcc889709b26ffb085a1945b5eba3a12cfa96d528da
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   vllm
 loguru==0.7.3 \
     --hash=sha256:19480589e77d47b8d85b2c827ad95d49bf31b0dcde16593892eb51dd18706eb6 \
     --hash=sha256:31a33c10c8e1e10422bfd431aeb5d351c7cf7fa671e3c4df004162264b28220c
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   compressed-tensors
 lz4==4.4.5 \
     --hash=sha256:0846e6e78f374156ccf21c631de80967e03cc3c01c373c665789dc0c5431e7fc \
@@ -1863,12 +1863,12 @@ lz4==4.4.5 \
     --hash=sha256:f6538aaaedd091d6e5abdaa19b99e6e82697d67518f114721b5248709b639fad \
     --hash=sha256:f9b8bde9909a010c75b3aea58ec3910393b758f3c219beed67063693df854db0 \
     --hash=sha256:ff1b50aeeec64df5603f17984e4b5be6166058dcf8f1e26a3da40d7a0f6ab547
-    # via -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    # via -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
 markdown-it-py==2.2.0 \
     --hash=sha256:5a35f8d1870171d9acc47b99612dc146129b631baf04970128b568f190d0cc30 \
     --hash=sha256:7c9a5e412688bc771c67432cbfebcdd686c93ce6484913dccf06cb5a0bea35a1
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   mdit-py-plugins
     #   rich
     #   textual
@@ -1935,25 +1935,25 @@ markupsafe==3.0.0 \
     --hash=sha256:f1c13c6c908811f867a8e9e66efb2d6c03d1cdd83e92788fe97f693c457dc44f \
     --hash=sha256:f846fd7c241e5bd4161e2a483663eb66e4d8e12130fcdc052f310f388f1d61c6
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   jinja2
 mcp==1.1.3 \
     --hash=sha256:71462d6cd7c06c14689dfcf110ff22286ba1b608cfc3515c0a5cbe33d131731a \
     --hash=sha256:af11018b8e9153cdd25f3722ec639fe7a462c00213a330fd6f593968341a9883
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   vllm
 mdit-py-plugins==0.3.5 ; sys_platform != 'win32' \
     --hash=sha256:ca9a0714ea59a24b2b044a1831f48d817dd0c817e84339f20e7889f392d77c4e \
     --hash=sha256:eee0adc7195e5827e17e02d2a258a2ba159944a0748f59c5099a4a27f78fcf6a
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   markdown-it-py
 mdurl==0.1.2 \
     --hash=sha256:84008a41e51615a49fc9966191ff91509e3c40b939176e643fd50a5c2196b8f8 \
     --hash=sha256:bb413d29f5eea38f31dd4754dd7377d4465116fb207585f97bf925588687c1ba
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   markdown-it-py
 memray==1.19.1 ; sys_platform != 'win32' \
     --hash=sha256:004588fbf0ac91fb15d58e09b16c5fc28644ee48893b04dfcd28338ae56e378d \
@@ -2005,28 +2005,28 @@ memray==1.19.1 ; sys_platform != 'win32' \
     --hash=sha256:f1a99cbb0b413a945e07529e521c7441cb46e4d5e6868dd810cbdaa80af0b74c \
     --hash=sha256:f7238113251d325da2d405b067ec180842b93a7fb10ff06fb3f7c261225b33ae \
     --hash=sha256:ff5cabd4ca6672c09e1f22ab95b95b845e94f41fbd4b17021a30603705636dbc
-    # via -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    # via -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
 meson==1.10.1 \
     --hash=sha256:c42296f12db316a4515b9375a5df330f2e751ccdd4f608430d41d7d6210e4317 \
     --hash=sha256:fe43d1cc2e6de146fbea78f3a062194bcc0e779efc8a0f0d7c35544dfb86731f
-    # via -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    # via -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
 mistral-common==1.10.0 \
     --hash=sha256:c594d1a05202b61e8f0d867ec6064df4c5e5d492c2c2bdb6fd8fb4872c6afd8b \
     --hash=sha256:e456ff101edbdfc094039ec6c26f7d0f73356729798d628a6e6e96c3917147bc
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   vllm
 model-hosting-container-standards==0.1.13 \
     --hash=sha256:27a1333410dde2719286a300a2803e24fdde407baa91894eb845c0f268aa194d \
     --hash=sha256:be307d4a988cc660df4e6bd8bdedb7917844bac940e332f9fd001cb385d7994c
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   vllm
 mpmath==1.3.0 \
     --hash=sha256:7a28eb2a9774d00c7bc92411c19a89209d5da7c4c9a9e227be8330a23a25b91f \
     --hash=sha256:a0b2b9fe80bbcd81a6647ff13108738cfb482d481d826cc0e02f5b35e5c88d2c
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   sympy
 msgpack==1.1.2 \
     --hash=sha256:0051fffef5a37ca2cd16978ae4f0aef92f164df86823871b5162812bebecd8e2 \
@@ -2092,7 +2092,7 @@ msgpack==1.1.2 \
     --hash=sha256:fac4be746328f90caa3cd4bc67e6fe36ca2bf61d5c6eb6d895b6527e3f05071e \
     --hash=sha256:fffee09044073e69f2bad787071aeec727183e7580443dfeb8556cbf1978d162
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   librosa
 msgspec==0.20.0 \
     --hash=sha256:00648b1e19cf01b2be45444ba9dc961bd4c056ffb15706651e64e5d6ec6197b7 \
@@ -2153,7 +2153,7 @@ msgspec==0.20.0 \
     --hash=sha256:f9a1697da2f85a751ac3cc6a97fceb8e937fc670947183fb2268edaf4016d1ee \
     --hash=sha256:fb1d934e435dd3a2b8cf4bbf47a8757100b4a1cfdc2afdf227541199885cdacb
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   vllm
 multidict==6.0.5 \
     --hash=sha256:01265f5e40f5a17f8241d52656ed27192be03bfa8764d88e8220141d1e4b3556 \
@@ -2247,14 +2247,14 @@ multidict==6.0.5 \
     --hash=sha256:fce28b3c8a81b6b36dfac9feb1de115bab619b3c13905b419ec71d03a3fc1423 \
     --hash=sha256:fe5d7785250541f7f5019ab9cba2c71169dc7d74d0f45253f8313f436458a4ef
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   aiohttp
     #   yarl
 networkx==3.6.1 \
     --hash=sha256:26b7c357accc0c8cde558ad486283728b65b6a95d85ee1cd66bafab4c8168509 \
     --hash=sha256:d47fbf302e7d9cbbb9e2555a0d267983d2aa476bac30e90dfbe5669bd57f3762
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   torch
 ninja==1.13.0 \
     --hash=sha256:11be2d22027bde06f14c343f01d31446747dbb51e72d00decca2eb99be911e2f \
@@ -2277,12 +2277,12 @@ ninja==1.13.0 \
     --hash=sha256:fb46acf6b93b8dd0322adc3a4945452a4e774b75b91293bafcc7b7f8e6517dfa \
     --hash=sha256:fb8ee8719f8af47fed145cced4a85f0755dd55d45b2bddaf7431fa89803c5f3e
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   flashinfer-python
     #   vllm
 nixl==1.0.0 \
     --hash=sha256:d4f2944e592358e53607276cdb4cc9d0827e11d5d6a8737edf020a134c3dca60
-    # via -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    # via -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
 nixl-cu12==1.0.0 \
     --hash=sha256:4fee0d052e0905b5507d5a6a656bcbd302ced4c4dd3456f17a81b5ea6d4e7a0d \
     --hash=sha256:585dccc8dbfe84f82ae092646f9ef891170bd7b4fc4721f98b45f5b7de1df601 \
@@ -2295,7 +2295,7 @@ nixl-cu12==1.0.0 \
     --hash=sha256:d4347c489c930fc4c2f35693be14dd6c54f7d094639b29564f477396bad664ab \
     --hash=sha256:f9a79b190bc627225452f4e168ba082f3670d3629490d882a95935a92161210d
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   nixl
 numba==0.61.2 \
     --hash=sha256:34fba9406078bac7ab052efbf0d13939426c753ad72946baaa5bf9ae0ebb8dd2 \
@@ -2320,7 +2320,7 @@ numba==0.61.2 \
     --hash=sha256:ea0247617edcb5dd61f6106a56255baab031acc4257bddaeddb3a1003b4ca3fd \
     --hash=sha256:efd3db391df53aaa5cfbee189b6c910a5b471488749fd6606c3f33fc984c2ae2
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   librosa
     #   vllm
 numpy==2.2.6 \
@@ -2380,7 +2380,7 @@ numpy==2.2.6 \
     --hash=sha256:fe27749d33bb772c80dcd84ae7e8df2adc920ae8297400dabec45f0dedb3f6de \
     --hash=sha256:fee4236c876c4e8369388054d02d0e9bb84821feb1a64dd59e137e6511a551f8
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   cupy-cuda12x
     #   dm-tree
     #   flashinfer-python
@@ -2407,7 +2407,7 @@ nvidia-cublas-cu12==12.8.4.1 ; sys_platform == 'linux' \
     --hash=sha256:8ac4e771d5a348c551b2a426eda6193c19aa630236b418086020df5ba9667142 \
     --hash=sha256:b86f6dd8935884615a0683b663891d43781b819ac4f2ba2b0c9604676af346d0
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   nvidia-cudnn-cu12
     #   nvidia-cusolver-cu12
     #   torch
@@ -2416,28 +2416,28 @@ nvidia-cuda-cupti-cu12==12.8.90 ; sys_platform == 'linux' \
     --hash=sha256:bb479dcdf7e6d4f8b0b01b115260399bf34154a1a2e9fe11c85c517d87efd98e \
     --hash=sha256:ea0cb07ebda26bb9b29ba82cda34849e73c166c18162d3913575b0c9db9a6182
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   torch
 nvidia-cuda-nvrtc-cu12==12.8.93 ; sys_platform == 'linux' \
     --hash=sha256:7a4b6b2904850fe78e0bd179c4b655c404d4bb799ef03ddc60804247099ae909 \
     --hash=sha256:a7756528852ef889772a84c6cd89d41dfa74667e24cca16bb31f8f061e3e9994 \
     --hash=sha256:fc1fec1e1637854b4c0a65fb9a8346b51dd9ee69e61ebaccc82058441f15bce8
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   torch
 nvidia-cuda-runtime-cu12==12.8.90 ; sys_platform == 'linux' \
     --hash=sha256:52bf7bbee900262ffefe5e9d5a2a69a30d97e2bc5bb6cc866688caa976966e3d \
     --hash=sha256:adade8dcbd0edf427b7204d480d6066d33902cab2a4707dcfc48a2d0fd44ab90 \
     --hash=sha256:c0c6027f01505bfed6c3b21ec546f69c687689aad5f1a377554bc6ca4aa993a8
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   torch
 nvidia-cudnn-cu12==9.10.2.21 ; sys_platform == 'linux' \
     --hash=sha256:949452be657fa16687d0930933f032835951ef0892b37d2d53824d1a84dc97a8 \
     --hash=sha256:c6288de7d63e6cf62988f0923f96dc339cea362decb1bf5b3141883392a7d65e \
     --hash=sha256:c9132cc3f8958447b4910a1720036d9eff5928cc3179b0a51fb6d167c6cc87d8
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   torch
 nvidia-cudnn-frontend==1.18.0 \
     --hash=sha256:06252021ef1e5a7256f1e70429a426b01792636c05cc547fe8e64c6885a9652e \
@@ -2459,7 +2459,7 @@ nvidia-cudnn-frontend==1.18.0 \
     --hash=sha256:e696a29a0d3c171ac81ad4374017771cf4c17081838a2115bde4c703fa9751c6 \
     --hash=sha256:f6d4d0b88d617b233a503c84980b54d840b60b2734497d1a7a071ec5293daec2
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   flashinfer-python
     #   vllm
 nvidia-cufft-cu12==11.3.3.83 ; sys_platform == 'linux' \
@@ -2467,34 +2467,34 @@ nvidia-cufft-cu12==11.3.3.83 ; sys_platform == 'linux' \
     --hash=sha256:7a64a98ef2a7c47f905aaf8931b69a3a43f27c55530c698bb2ed7c75c0b42cb7 \
     --hash=sha256:848ef7224d6305cdb2a4df928759dca7b1201874787083b6e7550dd6765ce69a
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   torch
 nvidia-cufile-cu12==1.13.1.3 ; sys_platform == 'linux' \
     --hash=sha256:1d069003be650e131b21c932ec3d8969c1715379251f8d23a1860554b1cb24fc \
     --hash=sha256:4beb6d4cce47c1a0f1013d72e02b0994730359e17801d395bdcbf20cfb3bb00a
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   torch
 nvidia-curand-cu12==10.3.9.90 ; sys_platform == 'linux' \
     --hash=sha256:b32331d4f4df5d6eefa0554c565b626c7216f87a06a4f56fab27c3b68a830ec9 \
     --hash=sha256:dfab99248034673b779bc6decafdc3404a8a6f502462201f2f31f11354204acd \
     --hash=sha256:f149a8ca457277da854f89cf282d6ef43176861926c7ac85b2a0fbd237c587ec
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   torch
 nvidia-cusolver-cu12==11.7.3.90 ; sys_platform == 'linux' \
     --hash=sha256:4376c11ad263152bd50ea295c05370360776f8c3427b30991df774f9fb26c450 \
     --hash=sha256:4a550db115fcabc4d495eb7d39ac8b58d4ab5d8e63274d3754df1c0ad6a22d34 \
     --hash=sha256:db9ed69dbef9715071232caa9b69c52ac7de3a95773c2db65bdba85916e4e5c0
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   torch
 nvidia-cusparse-cu12==12.5.8.93 ; sys_platform == 'linux' \
     --hash=sha256:1ec05d76bbbd8b61b06a80e1eaf8cf4959c3d4ce8e711b65ebd0443bb0ebb13b \
     --hash=sha256:9a33604331cb2cac199f2e7f5104dfbb8a5a898c367a53dfda9ff2acb6b6b4dd \
     --hash=sha256:9b6c161cb130be1a07a27ea6923df8141f3c295852f4b260c65f18f3e0a091dc
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   nvidia-cusolver-cu12
     #   torch
 nvidia-cusparselt-cu12==0.7.1 ; sys_platform == 'linux' \
@@ -2502,12 +2502,12 @@ nvidia-cusparselt-cu12==0.7.1 ; sys_platform == 'linux' \
     --hash=sha256:f1bb701d6b930d5a7cea44c19ceb973311500847f81b634d802b7b539dc55623 \
     --hash=sha256:f67fbb5831940ec829c9117b7f33807db9f9678dc2a617fbe781cac17b4e1075
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   torch
 nvidia-cutlass-dsl==4.4.1 \
     --hash=sha256:7b8ffa0117be35ef6c9a88f4462ee2a794efd0f7d9f65090e10a953e434fbfce
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   flashinfer-python
     #   quack-kernels
     #   vllm
@@ -2521,26 +2521,26 @@ nvidia-cutlass-dsl-libs-base==4.4.1 \
     --hash=sha256:f8e3ecf646074bea34b301be283578806e02b712f277717f3dd1b28671aefa95 \
     --hash=sha256:fb2dc0039061fa4e03db6ffc54eaebc7a3b590f45463be461f048b819bb99efe
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   nvidia-cutlass-dsl
 nvidia-ml-py==13.590.48 \
     --hash=sha256:8184d1be52914ac7f0991cd1c0d946c65dc88a840c754cd12c274b77b88760dd \
     --hash=sha256:fd43d30ee9cd0b7940f5f9f9220b68d42722975e3992b6c21d14144c48760e43
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   flashinfer-python
 nvidia-nccl-cu12==2.27.5 ; sys_platform == 'linux' \
     --hash=sha256:31432ad4d1fb1004eb0c56203dc9bc2178a1ba69d1d9e02d64a6938ab5e40e7a \
     --hash=sha256:ad730cf15cb5d25fe849c6e6ca9eb5b76db16a80f13f425ac68d8e2e55624457
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   torch
 nvidia-nvjitlink-cu12==12.8.93 ; sys_platform == 'linux' \
     --hash=sha256:81ff63371a7ebd6e6451970684f916be2eab07321b73c9d244dc2b4da7f73b88 \
     --hash=sha256:adccd7161ace7261e01bb91e44e88da350895c270d23f744f0820c818b7229e7 \
     --hash=sha256:bd93fbeeee850917903583587f4fc3a4eafa022e34572251368238ab5e6bd67f
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   nvidia-cufft-cu12
     #   nvidia-cusolver-cu12
     #   nvidia-cusparse-cu12
@@ -2549,20 +2549,20 @@ nvidia-nvshmem-cu12==3.4.5 ; sys_platform == 'linux' \
     --hash=sha256:042f2500f24c021db8a06c5eec2539027d57460e1c1a762055a6554f72c369bd \
     --hash=sha256:0b48363fc6964dede448029434c6abed6c5e37f823cb43c3bcde7ecfc0457e15
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   torch
 nvidia-nvtx-cu12==12.8.90 ; sys_platform == 'linux' \
     --hash=sha256:5b17e2001cc0d751a5bc2c6ec6d26ad95913324a4adb86788c944f8ce9ba441f \
     --hash=sha256:619c8304aedc69f02ea82dd244541a83c3d9d40993381b3b590f1adaed3db41e \
     --hash=sha256:d7ad891da111ebafbf7e015d34879f7112832fc239ff0d7d776b6cb685274615
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   torch
 openai==2.24.0 \
     --hash=sha256:1e5769f540dbd01cb33bc4716a23e67b9d695161a734aff9c5f925e2bf99a673 \
     --hash=sha256:fed30480d7d6c884303287bde864980a4b137b60553ffbcf9ab4a233b7a73d94
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   vllm
 openai-harmony==0.0.8 \
     --hash=sha256:007b0476a1f331f8130783f901f1da6f5a7057af1a4891f1b6a31dec364189b5 \
@@ -2579,17 +2579,17 @@ openai-harmony==0.0.8 \
     --hash=sha256:cbaa3bda75ef0d8836e1f8cc84af62f971b1d756d740efc95c38c3e04c0bfde2 \
     --hash=sha256:e4f709815924ec325b9a890e6ab2bbb0ceec8e319a4e257328eb752cf36b2efc
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   vllm
 opencensus==0.11.4 \
     --hash=sha256:a18487ce68bc19900336e0ff4655c5a116daf10c1b3685ece8d971bddad6a864 \
     --hash=sha256:cbef87d8b8773064ab60e5c2a1ced58bbaa38a6d052c41aec224958ce544eff2
-    # via -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    # via -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
 opencensus-context==0.1.3 \
     --hash=sha256:073bb0590007af276853009fac7e4bab1d523c3f03baf4cb4511ca38967c6039 \
     --hash=sha256:a03108c3c10d8c80bb5ddf5c8a1f033161fa61972a9917f9b9b3a18517f0088c
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   opencensus
 opencv-python-headless==4.13.0.92 \
     --hash=sha256:0525a3d2c0b46c611e2130b5fdebc94cf404845d8fa64d2f3a3b679572a5bd22 \
@@ -2601,14 +2601,14 @@ opencv-python-headless==4.13.0.92 \
     --hash=sha256:a7cf08e5b191f4ebb530791acc0825a7986e0d0dee2a3c491184bd8599848a4b \
     --hash=sha256:eb60e36b237b1ebd40a912da5384b348df8ed534f6f644d8e0b4f103e272ba7d
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   mistral-common
     #   vllm
 opentelemetry-api==1.39.0 \
     --hash=sha256:3c3b3ca5c5687b1b5b37e5c5027ff68eacea8675241b29f13110a8ffbb8f0459 \
     --hash=sha256:6130644268c5ac6bdffaf660ce878f10906b3e789f7e2daa5e169b047a2933b9
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   opentelemetry-exporter-otlp-proto-grpc
     #   opentelemetry-exporter-otlp-proto-http
     #   opentelemetry-exporter-prometheus
@@ -2619,36 +2619,36 @@ opentelemetry-exporter-otlp==1.39.0 \
     --hash=sha256:b405da0287b895fe4e2450dedb2a5b072debba1dfcfed5bdb3d1d183d8daa296 \
     --hash=sha256:fe155d6968d581b325574ad6dc267c8de299397b18d11feeda2206d0a47928a9
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   vllm
 opentelemetry-exporter-otlp-proto-common==1.39.0 \
     --hash=sha256:3d77be7c4bdf90f1a76666c934368b8abed730b5c6f0547a2ec57feb115849ac \
     --hash=sha256:a135fceed1a6d767f75be65bd2845da344dd8b9258eeed6bc48509d02b184409
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   opentelemetry-exporter-otlp-proto-grpc
     #   opentelemetry-exporter-otlp-proto-http
 opentelemetry-exporter-otlp-proto-grpc==1.39.0 \
     --hash=sha256:758641278050de9bb895738f35ff8840e4a47685b7e6ef4a201fe83196ba7a05 \
     --hash=sha256:7e7bb3f436006836c0e0a42ac619097746ad5553ad7128a5bd4d3e727f37fc06
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   opentelemetry-exporter-otlp
 opentelemetry-exporter-otlp-proto-http==1.39.0 \
     --hash=sha256:28d78fc0eb82d5a71ae552263d5012fa3ebad18dfd189bf8d8095ba0e65ee1ed \
     --hash=sha256:5789cb1375a8b82653328c0ce13a054d285f774099faf9d068032a49de4c7862
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   opentelemetry-exporter-otlp
 opentelemetry-exporter-prometheus==0.60b0 \
     --hash=sha256:4f616397040257fae4c5e5272b57b47c13372e3b7f0f2db2427fd4dbe69c60b5 \
     --hash=sha256:c6ae33e52cdd1dbfed1f7436935df94eb03c725b57322026d04e6fbc37108e6e
-    # via -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    # via -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
 opentelemetry-proto==1.39.0 \
     --hash=sha256:1e086552ac79acb501485ff0ce75533f70f3382d43d0a30728eeee594f7bf818 \
     --hash=sha256:c1fa48678ad1a1624258698e59be73f990b7fc1f39e73e16a9d08eef65dd838c
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   opentelemetry-exporter-otlp-proto-common
     #   opentelemetry-exporter-otlp-proto-grpc
     #   opentelemetry-exporter-otlp-proto-http
@@ -2656,7 +2656,7 @@ opentelemetry-sdk==1.39.0 \
     --hash=sha256:90cfb07600dfc0d2de26120cebc0c8f27e69bf77cd80ef96645232372709a514 \
     --hash=sha256:c22204f12a0529e07aa4d985f1bca9d6b0e7b29fe7f03e923548ae52e0e15dde
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   opentelemetry-exporter-otlp-proto-grpc
     #   opentelemetry-exporter-otlp-proto-http
     #   opentelemetry-exporter-prometheus
@@ -2665,13 +2665,13 @@ opentelemetry-semantic-conventions==0.60b0 \
     --hash=sha256:069530852691136018087b52688857d97bba61cd641d0f8628d2d92788c4f78a \
     --hash=sha256:227d7aa73cbb8a2e418029d6b6465553aa01cf7e78ec9d0bc3255c7b3ac5bf8f
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   opentelemetry-sdk
 opentelemetry-semantic-conventions-ai==0.4.13 \
     --hash=sha256:883a30a6bb5deaec0d646912b5f9f6dcbb9f6f72557b73d0f2560bf25d13e2d5 \
     --hash=sha256:94efa9fb4ffac18c45f54a3a338ffeb7eedb7e1bb4d147786e77202e159f0036
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   vllm
 ormsgpack==1.7.0 \
     --hash=sha256:0d88307ab45d95416ce4071b1b99326ca31362af01c3d206f15a0551a7a874bd \
@@ -2700,7 +2700,7 @@ ormsgpack==1.7.0 \
     --hash=sha256:e8385181bf195af80fc270e64fd477f1c414ffb05837320382e2ec9ca34be0ec \
     --hash=sha256:e86124cdbc8ed249806347c2fba96843e8941122b161b429139a0c973d270de4 \
     --hash=sha256:f9967a7f3647ad118751abf090f8397fda3e4bca6833340cab95a3f2bec598cd
-    # via -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    # via -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
 outlines-core==0.2.11 \
     --hash=sha256:0907ff25d79edbf8650268028de85a1b41b38696f147059e007da4626a1031f1 \
     --hash=sha256:132605b8dd1e3d1369da6a851992dd357f6376068292f6bd47caa7a28b794d19 \
@@ -2744,13 +2744,13 @@ outlines-core==0.2.11 \
     --hash=sha256:f4146da5957f97550eebd19e80635e48035886fd10f03e9735cc111caaf74e93 \
     --hash=sha256:fd4305ff8418d14059d95dc3276ca96ba1b5aa499908e1af8bb3c7207aa7ac68
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   vllm
 packaging==24.2 \
     --hash=sha256:09abb1bccd265c01f4a3aa3f7a7db064b36514d2cba19a2f694fe6150451a759 \
     --hash=sha256:c228a6dc5e932d346bc5739379109d49e8853dd8223571c7c5b55260edc0b97f
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   flashinfer-python
     #   huggingface-hub
     #   kombu
@@ -2816,12 +2816,12 @@ pandas==2.3.3 \
     --hash=sha256:ee67acbbf05014ea6c763beb097e03cd629961c8a632075eeb34247120abcb4b \
     --hash=sha256:f086f6fe114e19d92014a1966f43a3e62285109afe874f067f5abbdcbb10e59c \
     --hash=sha256:f8bfc0e12dc78f777f323f55c58649591b2cd0c43534e8355c51d3fede5f4dee
-    # via -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    # via -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
 partial-json-parser==0.2.1.1.post7 \
     --hash=sha256:145119e5eabcf80cbb13844a6b50a85c68bf99d376f8ed771e2a3c3b03e653ae \
     --hash=sha256:86590e1ba6bcb6739a2dfc17d2323f028cb5884f4c6ce23db376999132c9a922
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   vllm
 pillow==12.1.1 \
     --hash=sha256:02f84dfad02693676692746df05b89cf25597560db2857363a208e393429f5e9 \
@@ -2916,7 +2916,7 @@ pillow==12.1.1 \
     --hash=sha256:fc354a04072b765eccf2204f588a7a532c9511e8b9c7f900e1b64e3e33487090 \
     --hash=sha256:fc44ef1f3de4f45b50ccf9136999d71abb99dca7706bc75d222ed350b9fd2289
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   mistral-common
     #   torchvision
     #   vllm
@@ -2924,7 +2924,7 @@ platformdirs==3.11.0 \
     --hash=sha256:cf8ee52a3afdb965072dcc652433e0c7e3e40cf5ea1477cd4b3b1d2eb75495b3 \
     --hash=sha256:e9d171d00af68be50e9202731309c4e658fd8bc76f55c11c7dd760d023bda68e
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   pooch
     #   textual
     #   virtualenv
@@ -2932,13 +2932,13 @@ pooch==1.9.0 \
     --hash=sha256:de46729579b9857ffd3e741987a2f6d5e0e03219892c167c6578c0091fb511ed \
     --hash=sha256:f265597baa9f760d25ceb29d0beb8186c243d6607b0f60b83ecf14078dbc703b
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   librosa
 prometheus-client==0.19.0 \
     --hash=sha256:4585b0d1223148c27a225b10dbec5ae9bc4c81a99a3fa80774fa6209935324e1 \
     --hash=sha256:c88b1e6ecf6b41cd8fb5731c7ae919bf66df6ec6fafa555cd6c0e16ca169ae92
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   opentelemetry-exporter-prometheus
     #   prometheus-fastapi-instrumentator
     #   vllm
@@ -2946,13 +2946,13 @@ prometheus-fastapi-instrumentator==7.1.0 \
     --hash=sha256:978130f3c0bb7b8ebcc90d35516a6fe13e02d2eb358c8f83887cdef7020c31e9 \
     --hash=sha256:be7cd61eeea4e5912aeccb4261c6631b3f227d8924542d79eaf5af3f439cbe5e
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   vllm
 prompt-toolkit==3.0.41 \
     --hash=sha256:941367d97fc815548822aa26c2a269fdc4eb21e9ec05fc5d447cf09bad5d75f0 \
     --hash=sha256:f36fe301fafb7470e86aaf90f036eef600a3210be4decf461a5b1ca8403d3cb2
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   click-repl
 propcache==0.3.0 \
     --hash=sha256:02df07041e0820cacc8f739510078f2aadcfd3fc57eaeeb16d5ded85c872c89e \
@@ -3054,14 +3054,14 @@ propcache==0.3.0 \
     --hash=sha256:fb91d20fa2d3b13deea98a690534697742029f4fb83673a3501ae6e3746508b5 \
     --hash=sha256:fddb8870bdb83456a489ab67c6b3040a8d5a55069aa6f72f9d872235fbc52f54
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   aiohttp
     #   yarl
 proto-plus==1.26.1 \
     --hash=sha256:13285478c2dcf2abb829db158e1047e2f1e8d63a077d94263c2b88b043c75a66 \
     --hash=sha256:21a515a4c4c0088a773899e23c7bbade3d18f9c66c73edd4c7ee3816bc96a012
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   google-api-core
 protobuf==5.29.6 \
     --hash=sha256:36ade6ff88212e91aef4e687a971a11d7d24d6948a66751abc1b3238648f5d05 \
@@ -3076,7 +3076,7 @@ protobuf==5.29.6 \
     --hash=sha256:da9ee6a5424b6b30fd5e45c5ea663aef540ca95f9ad99d1e887e819cdf9b8723 \
     --hash=sha256:e3387f44798ac1106af0233c04fb8abf543772ff241169946f698b3a9a3d3ab9
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   google-api-core
     #   googleapis-common-protos
     #   opentelemetry-proto
@@ -3101,13 +3101,13 @@ psutil==5.9.6 \
     --hash=sha256:fb8a697f11b0f5994550555fcfe3e69799e5b060c8ecf9e2f75c69302cc35c0d \
     --hash=sha256:ff18b8d1a784b810df0b0fff3bcb50ab941c3b8e2c8de5726f9c71c601c611aa
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   vllm
 py-cpuinfo==9.0.0 \
     --hash=sha256:3cdbbf3fac90dc6f118bfd64384f309edeadd902d7c8fb17f02ffa1fc3f49690 \
     --hash=sha256:859625bc251f64e21f077d099d4162689c762b5d6a4c3c97553d56241c9674d5
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   vllm
 py-spy==0.4.0 ; python_full_version < '3.12' \
     --hash=sha256:47cdda4c34d9b6cb01f3aaeceb2e88faf57da880207fe72ff6ff97e9bb6cc8a9 \
@@ -3118,7 +3118,7 @@ py-spy==0.4.0 ; python_full_version < '3.12' \
     --hash=sha256:c5f06ffce4c9c98b7fc9f5e67e5e7db591173f1351837633f3f23d9378b1d18a \
     --hash=sha256:eee3d0bde85ca5cf4f01f012d461180ca76c24835a96f7b5c4ded64eb6a008ab \
     --hash=sha256:f2cf3f7130e7d780471faa5957441d3b4e0ec39a79b2c00f4c33d494f7728428
-    # via -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    # via -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
 pyarrow==19.0.1 \
     --hash=sha256:008a4009efdb4ea3d2e18f05cd31f9d43c388aad29c636112c2966605ba33466 \
     --hash=sha256:0148bb4fc158bfbc3d6dfe5001d93ebeed253793fff4435167f6ce1dc4bddeae \
@@ -3162,19 +3162,19 @@ pyarrow==19.0.1 \
     --hash=sha256:fc28912a2dc924dddc2087679cc8b7263accc71b9ff025a1362b004711661a69 \
     --hash=sha256:fca15aabbe9b8355800d923cc2e82c8ef514af321e18b437c3d782aa884eaeec \
     --hash=sha256:fd44d66093a239358d07c42a91eebf5015aa54fccba959db899f932218ac9cc8
-    # via -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    # via -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
 pyasn1==0.5.1 \
     --hash=sha256:4439847c58d40b1d0a573d07e3856e95333f1976294494c325775aeca506eb58 \
     --hash=sha256:6d391a96e59b23130a5cfa74d6fd7f388dbbe26cc8f1edf39fdddf08d9d6676c
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   pyasn1-modules
     #   rsa
 pyasn1-modules==0.3.0 \
     --hash=sha256:5bd01446b736eb9d31512a30d46c1ac3395d676c6f3cafa4c03eb54b9925631c \
     --hash=sha256:d3ccd6ed470d9ffbc716be08bd90efbd44d0734bc9303818f7336070984a162d
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   google-auth
 pybase64==1.4.3 \
     --hash=sha256:0010219ba56b15695676801dcc09388e04bd9bcbedce15129643e84f3fca415f \
@@ -3393,35 +3393,35 @@ pybase64==1.4.3 \
     --hash=sha256:fb852f900e27ffc4ec1896817535a0fa19610ef8875a096b59f21d0aa42ff172 \
     --hash=sha256:fc3fefa4ac57a030e1982b6fd2df71ae69460465227b057b90dadd53c60575ea
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   vllm
 pybind11==3.0.2 \
     --hash=sha256:432f01aeb68e361a3a7fc7575c2c7f497595bf640f747acd909ff238dd766e06 \
     --hash=sha256:f8a6500548919cc33bcd220d5f984688326f574fa97f1107f2f4fdb4c6fb019f
-    # via -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    # via -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
 pycountry==26.2.16 \
     --hash=sha256:115c4baf7cceaa30f59a4694d79483c9167dbce7a9de4d3d571c5f3ea77c305a \
     --hash=sha256:5b6027d453fcd6060112b951dd010f01f168b51b4bf8a1f1fc8c95c8d94a0801
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   pydantic-extra-types
 pycparser==2.21 \
     --hash=sha256:8ee45429555515e1f6b185e78100aea234072576aa43ab53aefcae078162fca9 \
     --hash=sha256:e644fdec12f7872f86c58ff790da456218b10f863970249516d60a5eaca77206
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   cffi
 pycron==3.2.0 \
     --hash=sha256:6d2349746270bd642b71b9f7187cf13f4d9ee2412b4710396a507b5fe4f60dac \
     --hash=sha256:e125a28aca0295769541a40633f70b602579df48c9cb357c36c28d2628ba2b13
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   taskiq
 pydantic==2.12.3 \
     --hash=sha256:1da1c82b0fc140bb0103bc1441ffe062154c8d38491189751ee00fd8ca65ce74 \
     --hash=sha256:6986454a854bc3bc6e5443e1369e06a3a456af9d339eda45510f517d9ea5c6bf
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   anthropic
     #   compressed-tensors
     #   fastapi
@@ -3555,54 +3555,54 @@ pydantic-core==2.41.4 \
     --hash=sha256:fc3b4c5a1fd3a311563ed866c2c9b62da06cb6398bee186484ce95c820db71cb \
     --hash=sha256:fc3b4cc4539e055cfa39a3763c939f9d409eb40e85813257dcd761985a108554
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   pydantic
 pydantic-extra-types==2.11.0 \
     --hash=sha256:4e9991959d045b75feb775683437a97991d02c138e00b59176571db9ce634f0e \
     --hash=sha256:84b864d250a0fc62535b7ec591e36f2c5b4d1325fa0017eb8cda9aeb63b374a6
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   mistral-common
 pygments==2.18.0 \
     --hash=sha256:786ff802f32e91311bff3889f6e9a86e81505fe99f2735bb6d60ae0c5004f199 \
     --hash=sha256:b8e6aca0523f3ab76fee51799c488e38782ac06eafcf95e7ba832985c8e7b13a
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   rich
 pyopenssl==25.0.0 \
     --hash=sha256:424c247065e46e76a37411b9ab1782541c23bb658bf003772c3405fbaa128e90 \
     --hash=sha256:cd2cef799efa3936bb08e8ccb9433a575722b9dd986023f1cabc4ae64e9dac16
-    # via -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    # via -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
 python-dateutil==2.8.2 \
     --hash=sha256:0123cacc1627ae19ddf3c27a5de5bd67ee4586fbdd6440d9748f8abb483d3e86 \
     --hash=sha256:961d03dc3453ebbc59dbdea9e4e11c5651520a876d0f4db161e8674aae935da9
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   celery
     #   pandas
 python-dotenv==1.2.2 \
     --hash=sha256:1d8214789a24de455a8b8bd8ae6fe3c6b69a5e3d64aa8a8e5d68e694bbcb285a \
     --hash=sha256:2c371a91fbd7ba082c2c1dc1f8bf89ca22564a087c2c287cd9b662adde799cf3
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   uvicorn
 python-json-logger==2.0.7 \
     --hash=sha256:23e7ec02d34237c5aa1e29a070193a4ea87583bb4e7f8fd06d3de8264c4b2e1c \
     --hash=sha256:f380b826a991ebbe3de4d897aeec42760035ac760345e57b812938dc8b35e2bd
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   vllm
 python-multipart==0.0.22 \
     --hash=sha256:2b2cd894c83d21bf49d702499531c7bafd057d730c201782048f7945d82de155 \
     --hash=sha256:7340bef99a7e0032613f56dc36027b959fd3b30a787ed62d310e951f7c3a3a58
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   fastapi
 pytz==2022.7.1 \
     --hash=sha256:01a0681c4b9684a28304615eba55d1ab31ae00bf68ec157ec3708a8182dbbcd0 \
     --hash=sha256:78f4f37d8198e0627c5f1143240bb0206b8691d8d7ac6d78fee88b78733f8c4a
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   pandas
 pyyaml==6.0.3 \
     --hash=sha256:00c4bdeba853cc34e7dd471f16b4114f4162dc03e6b7afcc2128711f0eca823c \
@@ -3679,7 +3679,7 @@ pyyaml==6.0.3 \
     --hash=sha256:fa160448684b4e94d80416c0fa4aac48967a969efe22931448d853ada8baf926 \
     --hash=sha256:fc09d0aa354569bc501d4e787133afc08552722d3ab34836a80547331bb5d4a0
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   gguf
     #   huggingface-hub
     #   lm-format-enforcer
@@ -3780,19 +3780,19 @@ pyzmq==27.1.0 \
     --hash=sha256:fbb4f2400bfda24f12f009cba62ad5734148569ff4949b1b6ec3b519444342e6 \
     --hash=sha256:ff8d114d14ac671d88c89b9224c63d6c4e5a613fe8acd5594ce53d752a3aafe9
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   vllm
 quack-kernels==0.3.1 \
     --hash=sha256:7ecc433bbdb74e8e59c9c314e760b3bc893eebccc1cf5f06be6ac2bed197636c \
     --hash=sha256:c0b810451c3afe7500330541c4c097c86402ede5c61dab1d83930be249df4b06
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   vllm
 referencing==0.36.2 \
     --hash=sha256:df2e89862cd09deabbdba16944cc3f10feb6b3e6f18e902f7cc25609a34775aa \
     --hash=sha256:e8699adbbf8b5c7de96d8ffa0eb5c158b3beafce084968e2ea8bb08c6794dcd0
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   jsonschema
     #   jsonschema-specifications
 regex==2026.2.28 \
@@ -3911,7 +3911,7 @@ regex==2026.2.28 \
     --hash=sha256:fd0ce43e71d825b7c0661f9c54d4d74bd97c56c3fd102a8985bcfea48236bacb \
     --hash=sha256:fd63453f10d29097cc3dc62d070746523973fb5aa1c66d25f8558bebd47fed61
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   tiktoken
     #   transformers
     #   vllm
@@ -3919,7 +3919,7 @@ requests==2.32.5 \
     --hash=sha256:2462f94637a34fd532264295e186976db0f5d453d1cdd31473c85a6a161affb6 \
     --hash=sha256:dbba0bac56e100853db0ea71b82b4dfd5fe2bf6d3754a8893c3af500cec7d7cf
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   flashinfer-python
     #   gguf
     #   google-api-core
@@ -3934,7 +3934,7 @@ rich==13.7.1 \
     --hash=sha256:4edbae314f59eb482f54e9e30bf00d33350aaa94f4bfcd4e9e3110e64d0d7222 \
     --hash=sha256:9be308cb1fe2f1f57d67ce99e95af38a1e2bc71ad9813b0e247cf7ffbcc3a432
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   memray
     #   rich-toolkit
     #   textual
@@ -3943,7 +3943,7 @@ rich-toolkit==0.19.7 \
     --hash=sha256:0288e9203728c47c5a4eb60fd2f0692d9df7455a65901ab6f898437a2ba5989d \
     --hash=sha256:133c0915872da91d4c25d85342d5ec1dfacc69b63448af1a08a0d4b4f23ef46e
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   fastapi-cli
     #   fastapi-cloud-cli
 rignore==0.7.6 \
@@ -4102,7 +4102,7 @@ rignore==0.7.6 \
     --hash=sha256:fe6c41175c36554a4ef0994cd1b4dbd6d73156fca779066456b781707402048e \
     --hash=sha256:ffa86694fec604c613696cb91e43892aa22e1fec5f9870e48f111c603e5ec4e9
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   fastapi-cloud-cli
 rpds-py==0.22.3 \
     --hash=sha256:009de23c9c9ee54bf11303a966edf4d9087cd43a6003672e6aa7def643d06518 \
@@ -4209,14 +4209,14 @@ rpds-py==0.22.3 \
     --hash=sha256:fda7cb070f442bf80b642cd56483b5548e43d366fe3f39b98e67cce780cded00 \
     --hash=sha256:feea821ee2a9273771bae61194004ee2fc33f8ec7db08117ef9147d4bbcbca8e
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   jsonschema
     #   referencing
 rsa==4.7.2 \
     --hash=sha256:78f9a9bf4e7be0c5ded4583326e7461e3a3c5aae24073648b4bdfa797d78c9d2 \
     --hash=sha256:9d689e6ca1b3038bc82bf8d23e944b6b6037bc02301a574935b2dd946e0353b9
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   google-auth
 safetensors==0.7.0 \
     --hash=sha256:0071bffba4150c2f46cae1432d31995d77acfd9f8db598b5d1a2ce67e8440ad2 \
@@ -4243,7 +4243,7 @@ safetensors==0.7.0 \
     --hash=sha256:e07d91d0c92a31200f25351f4acb2bc6aff7f48094e13ebb1d0fb995b54b6542 \
     --hash=sha256:f4729811a6640d019a4b7ba8638ee2fd21fa5ca8c7e7bdf0fed62068fcaac737
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   transformers
 scikit-learn==1.8.0 \
     --hash=sha256:00d6f1d66fbcf4eba6e356e1420d33cc06c70a45bb1363cd6f6a8e4ebbbdece2 \
@@ -4284,7 +4284,7 @@ scikit-learn==1.8.0 \
     --hash=sha256:fb65db5d7531bccf3a4f6bec3462223bea71384e2cda41da0f10b7c292b9e7c4 \
     --hash=sha256:fe1c011a640a9f0791146011dfd3c7d9669785f9fed2b2a5f9e207536cf5c2fd
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   librosa
 scipy==1.14.1 \
     --hash=sha256:0c2f95de3b04e26f5f3ad5bb05e74ba7f68b837133a4492414b3afd79dfe540e \
@@ -4321,7 +4321,7 @@ scipy==1.14.1 \
     --hash=sha256:edaf02b82cd7639db00dbff629995ef185c8df4c3ffa71a5562a595765a06ce1 \
     --hash=sha256:fef8c87f8abfb884dac04e97824b61299880c43f4ce675dd2cbeadd3c9b466d2
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   librosa
     #   scikit-learn
 sentencepiece==0.2.1 \
@@ -4391,13 +4391,13 @@ sentencepiece==0.2.1 \
     --hash=sha256:e37e4b4c4a11662b5db521def4e44d4d30ae69a1743241412a93ae40fdcab4bb \
     --hash=sha256:e52144670738b4b477fade6c2a9b6af71a8d0094514c9853ac9f6fc1fcfabae7
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   vllm
 sentry-sdk==2.54.0 \
     --hash=sha256:2620c2575128d009b11b20f7feb81e4e4e8ae08ec1d36cbc845705060b45cc1b \
     --hash=sha256:fd74e0e281dcda63afff095d23ebcd6e97006102cdc8e78a29f19ecdf796a0de
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   fastapi-cloud-cli
 setproctitle==1.3.7 \
     --hash=sha256:00afa6fc507967d8c9d592a887cdc6c1f5742ceac6a4354d111ca0214847732c \
@@ -4498,30 +4498,30 @@ setproctitle==1.3.7 \
     --hash=sha256:fe5ca35aeec6dc50cabab9bf2d12fbc9067eede7ff4fe92b8f5b99d92e21263f \
     --hash=sha256:ff3c1c32382fb71a200db8bab3df22f32e6ac7ec3170e92fa5b542cf42eed9a2
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   vllm
 shellingham==1.5.4 \
     --hash=sha256:7ecfff8f2fd72616f7481040475a65b2bf8af90a56c89140852d1120324e8686 \
     --hash=sha256:8dbca0739d487e5bd35ab3ca4b36e11c4078f3a234bfce294b0a0291363404de
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   typer
 six==1.16.0 \
     --hash=sha256:1e61c37477a1626458e36f7b1d82aa5c9b094fa4802892072e49de9c60c4c926 \
     --hash=sha256:8abb2f1d86890a2dfb989f9a77cfcfd3e47c2a354b01111771326f8aa26e0254
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   opencensus
     #   python-dateutil
 smart-open==6.2.0 \
     --hash=sha256:088bf00f9327c71e549bc2f86567d3320df5d89667f009ce1c16568976068ef7 \
     --hash=sha256:1b4df5c8365218f3852c507451920ccad606c80b0acb4e67508e50ba9b5d2632
-    # via -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    # via -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
 sniffio==1.3.1 \
     --hash=sha256:2f6da418d1f1e0fddd844478f41680e794e6051915791a034ff65e5f100525a2 \
     --hash=sha256:f4324edc670a0f49750a81b895f35c3adb843cca46f0530f79fc1babb23789dc
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   anthropic
     #   anyio
     #   openai
@@ -4535,7 +4535,7 @@ soundfile==0.13.1 \
     --hash=sha256:b2c68dab1e30297317080a5b43df57e302584c49e2942defdde0acccc53f0e5b \
     --hash=sha256:c734564fab7c5ddf8e9be5bf70bab68042cd17e9c214c06e365e20d64f9a69d5
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   librosa
 soxr==1.0.0 \
     --hash=sha256:158a4a9055958c4b95ef91dbbe280cabb00946b5423b25a9b0ce31bd9e0a271e \
@@ -4565,19 +4565,19 @@ soxr==1.0.0 \
     --hash=sha256:f8dc69fc18884e53b72f6141fdf9d80997edbb4fec9dc2942edcb63abbe0d023 \
     --hash=sha256:fdc41a1027ba46777186f26a8fba7893be913383414135577522da2fcc684490
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   librosa
 sse-starlette==2.1.3 \
     --hash=sha256:8ec846438b4665b9e8c560fcdea6bc8081a3abf7942faa95e5a744999d219772 \
     --hash=sha256:9cd27eb35319e1414e3d2558ee7414487f9529ce3b3cf9b21434fd110e017169
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   mcp
 starlette==0.49.1 \
     --hash=sha256:481a43b71e24ed8c43b11ea02f5353d77840e01480881b8cb5a26b8cae64a8cb \
     --hash=sha256:d92ce9f07e4a3caa3ac13a79523bd18e3bc0042bb8ff2d759a8e7dd0e1859875
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   fastapi
     #   mcp
     #   model-hosting-container-standards
@@ -4587,45 +4587,45 @@ supervisor==4.3.0 \
     --hash=sha256:0bcb763fddafba410f35cbde226aa7f8514b9fb82eb05a0c85f6588d1c13f8db \
     --hash=sha256:4a2bf149adf42997e1bb44b70c43b613275ec9852c3edacca86a9166b27e945e
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   model-hosting-container-standards
 sympy==1.14.0 \
     --hash=sha256:d3d3fe8df1e5a0b42f0e7bdf50541697dbe7d23746e894990c030e2b05e72517 \
     --hash=sha256:e091cc3e99d2141a0ba2847328f5479b05d94a6635cb96148ccb3f34671bd8f5
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   torch
 tabulate==0.9.0 \
     --hash=sha256:0095b12bf5966de529c0feb1fa08671671b3368eec77d7ef7ab114be2c068b3c \
     --hash=sha256:024ca478df22e9340661486f85298cff5f6dcdba14f3813e8830015b9ed1948f
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   flashinfer-python
 taskiq==0.12.1 \
     --hash=sha256:338dcf58eaca327e511a9380b2185bfa6a415dd79a5cf144546a2dbb95459298 \
     --hash=sha256:a8ade45e2e23edbadb972a88dec44e68c7daef83383d01fa3af48594a24a712a
-    # via -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    # via -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
 taskiq-dependencies==1.5.7 \
     --hash=sha256:0d3b240872ef152b719153b9526d866d2be978aeeaea6600e878414babc2dcb4 \
     --hash=sha256:6fcee5d159bdb035ef915d4d848826169b6f06fe57cc2297a39b62ea3e76036f
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   taskiq
 tensorboardx==2.6.2.2 \
     --hash=sha256:160025acbf759ede23fd3526ae9d9bfbfd8b68eb16c38a010ebe326dc6395db8 \
     --hash=sha256:c6476d7cd0d529b0b72f4acadb1269f9ed8b22f441e87a84f2a3b940bb87b666
-    # via -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    # via -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
 textual==4.0.0 ; sys_platform != 'win32' \
     --hash=sha256:1cab4ea3cfc0e47ae773405cdd6bc2a17ed76ff7b648379ac8017ea89c5ad28c \
     --hash=sha256:214051640f890676a670aa7d29cd2a37d27cfe6b2cf866e9d5abc3b6c89c5800
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   memray
 threadpoolctl==3.6.0 \
     --hash=sha256:43a0b8fd5a2928500110039e43a5eed8480b918967083ea48dc3ab9f13c4a7fb \
     --hash=sha256:8ab8b4aa3491d812b623328249fab5302a68d2d71745c8a4c719a2fcaba9f44e
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   scikit-learn
 tiktoken==0.12.0 \
     --hash=sha256:01d99484dc93b129cd0964f9d34eee953f2737301f18b3c7257bf368d7615baa \
@@ -4686,7 +4686,7 @@ tiktoken==0.12.0 \
     --hash=sha256:fc530a28591a2d74bce821d10b418b26a094bf33839e69042a6e86ddb7a7fb27 \
     --hash=sha256:ffc5288f34a8bc02e1ea7047b8d041104791d2ddbf42d1e5fa07822cbffe16bd
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   mistral-common
     #   vllm
 tokenizers==0.22.2 \
@@ -4715,7 +4715,7 @@ tokenizers==0.22.2 \
     --hash=sha256:e10bf9113d209be7cd046d40fbabbaf3278ff6d18eb4da4c500443185dc1896c \
     --hash=sha256:f01a9c019878532f98927d2bacb79bbb404b43d3437455522a00a30718cdedb5
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   transformers
     #   vllm
 torch==2.10.0+cu128 \
@@ -4741,7 +4741,7 @@ torch==2.10.0+cu128 \
     --hash=sha256:f1f8b840c64b645a4bc61a393db48effb9c92b2dc26c8373873911f0750d1ea7 \
     --hash=sha256:fbde8f6a9ec8c76979a0d14df21c10b9e5cab6f0d106a73ca73e2179bc597cae
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   compressed-tensors
     #   flashinfer-python
     #   nixl-cu12
@@ -4778,7 +4778,7 @@ torch-c-dlpack-ext==0.1.5 \
     --hash=sha256:e6f9da4bb9af70e27facc777458be62e10dbbbddda7672d16138db0553c5a524 \
     --hash=sha256:fba674110e1fab0b176bb5a28223e157db65c90767d4ba74abdbee9f537b0e9d
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   quack-kernels
 torchaudio==2.10.0+cu128 \
     --hash=sha256:08b56d10d1cd8536d40e18caceedc5567a30f5eb24381cde1dfa620724187c92 \
@@ -4803,7 +4803,7 @@ torchaudio==2.10.0+cu128 \
     --hash=sha256:e6aaaf49a986faef74e8d3a04412ed0bb17c748aaf6dc6bd748726d8beba0886 \
     --hash=sha256:e80f81a454f182a48310c16b68ec1cc2d439d76eebcf6ed03bd3a69fef9986b0
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   vllm
 torchvision==0.25.0+cu128 \
     --hash=sha256:068e519838b4a8b32a09521244b170edd8c2ac9eeb6538b7bf492cd70e57ebf5 \
@@ -4828,13 +4828,13 @@ torchvision==0.25.0+cu128 \
     --hash=sha256:e2e0317e3861bba1b5aeba7c1cb4bcd50937cf0bffdbea478619d1f5f73e9050 \
     --hash=sha256:ebf2b495c76097796b9a2eac9290efbcae96e0fd9e5ae52c40eff188610bb440
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   vllm
 tqdm==4.67.1 \
     --hash=sha256:26445eca388f82e72884e0d580d5464cd801a3ea01e63e5601bdff9ba6a48de2 \
     --hash=sha256:f8aef9c52c08c13a65f30ea34f4e5aac3fd1a34959879d7e59e63027286627f2
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   flashinfer-python
     #   gguf
     #   huggingface-hub
@@ -4845,7 +4845,7 @@ transformers==4.57.6 \
     --hash=sha256:4c9e9de11333ddfe5114bc872c9f370509198acf0b87a832a0ab9458e2bd0550 \
     --hash=sha256:55e44126ece9dc0a291521b7e5492b572e6ef2766338a610b9ab5afbb70689d3
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   compressed-tensors
     #   vllm
     #   xgrammar
@@ -4865,20 +4865,20 @@ triton==3.6.0 ; sys_platform == 'linux' \
     --hash=sha256:b6d800bda666ebbe7ec2146e3f5eb271ee87f8fac724011dc7f25dee9bfb5f7f \
     --hash=sha256:e021e87e8f266c6f87bf379b669c43c2800aac6247bdf5d518cb553e3c403c00
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   torch
     #   xgrammar
 typer==0.15.1 \
     --hash=sha256:7994fb7b8155b64d3402518560648446072864beefd44aa2dc36972a5972e847 \
     --hash=sha256:a0588c0a7fa68a1978a069818657778f86abe6ff5ea6abf472f940a08bfe4f0a
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   fastapi-cli
     #   fastapi-cloud-cli
 typing-extensions==4.15.0 \
     --hash=sha256:f0fa19c6845758ab08074a0cfa8b7aecb71c999ca73d62883bc25cc018c4e548
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   aiosignal
     #   anthropic
     #   apache-tvm-ffi
@@ -4913,33 +4913,33 @@ typing-inspection==0.4.2 \
     --hash=sha256:4ed1cacbdc298c220f1bd249ed5287caa16f34d44ef4e9c3d0cbad5b521545e7 \
     --hash=sha256:ba561c48a67c5958007083d386c3295464928b01faa735ab8547c5692e87f464
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   pydantic
 tzdata==2025.2 \
     --hash=sha256:1a403fada01ff9221ca8044d701868fa132215d84beb92242d9acd2147f667a8 \
     --hash=sha256:b60a638fcc0daffadf82fe0f57e53d06bdec2f36c4df66280ae79bce6bd6f2b9
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   kombu
     #   pandas
 uc-micro-py==1.0.3 ; sys_platform != 'win32' \
     --hash=sha256:d321b92cff673ec58027c04015fcaa8bb1e005478643ff4a500882eaab88c48a \
     --hash=sha256:db1dffff340817673d7b466ec86114a9dc0e9d4d9b5ba229d9d60e5c12600cd5
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   linkify-it-py
 urllib3==1.26.19 \
     --hash=sha256:37a0344459b199fce0e80b0d3569837ec6b6937435c5244e7fd73fa6006830f3 \
     --hash=sha256:3e3d753a8618b86d7de333b4223005f68720bcd6a7d2bcb9fbd2229ec7c1e429
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   requests
     #   sentry-sdk
 uvicorn==0.22.0 \
     --hash=sha256:79277ae03db57ce7d9aa0567830bbb51d7a612f54d6e1e3e92da3ef24c2c8ed8 \
     --hash=sha256:e9434d3bbf05f310e762147f769c9f21235ee118ba2d2bf1155a7196448bd996
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   fastapi
     #   fastapi-cli
     #   fastapi-cloud-cli
@@ -4995,25 +4995,25 @@ uvloop==0.22.1 ; platform_python_implementation != 'PyPy' and sys_platform != 'c
     --hash=sha256:ef6f0d4cc8a9fa1f6a910230cd53545d9a14479311e87e3cb225495952eb672c \
     --hash=sha256:fe94b4564e865d968414598eea1a6de60adba0c040ba4ed05ac1300de402cd42
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   uvicorn
 vine==5.1.0 \
     --hash=sha256:40fdf3c48b2cfe1c38a49e9ae2da6fda88e4794c810050a728bd7413811fb1dc \
     --hash=sha256:8b62e981d35c41049211cf62a0a1242d8c1ee9bd15bb196ce38aefd6799e61e0
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   amqp
     #   celery
     #   kombu
 virtualenv==20.29.1 \
     --hash=sha256:4e4cb403c0b0da39e13b46b1b2476e505cb0046b25f242bee80f62bf990b2779 \
     --hash=sha256:b8b8970138d32fb606192cb97f6cd4bb644fa486be9308fb9b63f81091b5dc35
-    # via -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    # via -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
 vllm==0.18.0 \
     --hash=sha256:0bc51491598f4bcd161b693b27cbe2864082d6c49fa9065965d94b371f6ae8ef \
     --hash=sha256:66a2c5bcf1bdf8de3e63b9fee067754068108cd510c65ffba70ff4368c33cba8 \
     --hash=sha256:9a1bee091db8dbb4664a2a09cd9c61912e9912a44af1ce12b8593a231d05971c
-    # via -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    # via -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
 watchfiles==0.19.0 \
     --hash=sha256:0089c6dc24d436b373c3c57657bf4f9a453b13767150d17284fc6162b2791911 \
     --hash=sha256:09ea3397aecbc81c19ed7f025e051a7387feefdb789cf768ff994c1228182fda \
@@ -5038,14 +5038,14 @@ watchfiles==0.19.0 \
     --hash=sha256:d9b073073e048081e502b6c6b0b88714c026a1a4c890569238d04aca5f9ca74b \
     --hash=sha256:fac19dc9cbc34052394dbe81e149411a62e71999c0a19e1e09ce537867f95ae0
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   uvicorn
     #   vllm
 wcwidth==0.2.13 \
     --hash=sha256:3da69048e4540d84af32131829ff948f1e022c1c6bdb8d6102117aac784f6859 \
     --hash=sha256:72ea0c06399eb286d978fdedb6923a9eb47e1c486ce63e9b4e64fc18303972b5
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   prompt-toolkit
 websockets==16.0 \
     --hash=sha256:0298d07ee155e2e9fda5be8a9042200dd2e3bb0b8a38482156576f863a9d457c \
@@ -5110,7 +5110,7 @@ websockets==16.0 \
     --hash=sha256:f4a32d1bd841d4bcbffdcb3d2ce50c09c3909fbead375ab28d0181af89fd04da \
     --hash=sha256:fd3cb4adb94a2a6e2b7c0d8d05cb94e6f1c81a0cf9dc2694fb65c7e8d94c42e4
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   uvicorn
 wrapt==1.14.1 \
     --hash=sha256:00b6d4ea20a906c0ca56d84f93065b398ab74b927a7a3dbd470f6fc503f95dc3 \
@@ -5188,7 +5188,7 @@ wrapt==1.14.1 \
     --hash=sha256:ee6acae74a2b91865910eef5e7de37dc6895ad96fa23603d1d27ea69df545015 \
     --hash=sha256:ef3f72c9666bba2bab70d2a8b79f2c6d2c1a42a7f7e2b0ec83bb2f9e383950af
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   dm-tree
 xgrammar==0.1.32 ; platform_machine == 'aarch64' or platform_machine == 'arm64' or platform_machine == 'ppc64le' or platform_machine == 's390x' or platform_machine == 'x86_64' \
     --hash=sha256:028f8d6a105d06549faee0afbebfaada90aa1941c081dcc88f3d5ef373dad934 \
@@ -5227,7 +5227,7 @@ xgrammar==0.1.32 ; platform_machine == 'aarch64' or platform_machine == 'arm64' 
     --hash=sha256:f9a637d4e0c541149e0d409c24f4ec79cd74d87508ee6a17a7e64a9b9c0cf56f \
     --hash=sha256:fe2ee94080d77b84e38cb6643b75a6ca29cf814a3e5d5da8e1176eae4034d662
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   vllm
 yarl==1.18.3 \
     --hash=sha256:00e5a1fea0fd4f5bfa7440a47eff01d9822a65b4488f7cff83155a0f31a2ecba \
@@ -5313,12 +5313,12 @@ yarl==1.18.3 \
     --hash=sha256:fe57328fbc1bfd0bd0514470ac692630f3901c0ee39052ae47acd1d90a436719 \
     --hash=sha256:fea09ca13323376a2fdfb353a5fa2e59f90cd18d7ca4eaa1fd31f0a8b4f91e62
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   aiohttp
 zipp==3.19.2 \
     --hash=sha256:f091755f667055f2d02b32c53771a7a6c8b47e1fdbc4b72a8b9072b3eef8015c
     # via
-    #   -r /tmp/ray-deps/rayllm_py311_cu128.lock
+    #   -r /tmp/ray-deps/rayllm_2.55.1_py311_cu128.lock
     #   importlib-metadata
 
 # The following packages were excluded from the output:
