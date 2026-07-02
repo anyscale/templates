@@ -25,7 +25,19 @@ curl -sf "https://hub.docker.com/v2/repositories/anyscale/ray/tags/<tag>/" >/dev
 
 Then bump `BUILD.yaml` `ray_version` and grep/update any in-template version strings.
 
-**Pair with the dependency recompile.** If `<name>` ships a `templates/<name>/python_depset.lock`, the image bump alone leaves its locked deps compiled against the old Ray version. The lock must be regenerated against `<version>` — see `upgrade-dependencies.md` (`references/dependencies.md` for the system). Image Ray version and lock Ray version must match.
+### Recompile the dependency lock
+
+The image Ray version and the template's locked deps must agree. Which case applies is decided by whether `<name>` has an entry in `dependencies/template.depsets.yaml` (equivalently, ships `templates/<name>/python_depset.lock`):
+
+- **No lock** (base-image or BYOD templates — e.g. `parallel-experiments`, `groot-ray-serve`, `intro-ray-libraries`) — nothing to recompile; the image bump *is* the whole change. Go to step 2.
+- **Has a lock** — regenerate it against `<version>`, **incrementally**. This is a *per-template* PR, so touch only this template's slice of the config:
+  1. Add a `ray<NEW>_py<PY>_cu<CU>` bundle to `build_arg_sets`, mirroring this template's existing `ray<OLD>_*` bundle (same Python/CUDA). **Add — do not replace** the old bundle; every other template still rides it.
+  2. Add that bundle to the base `compile` entry this template expands from (`ray_depset` or `ray_llm_depset`), so the new version-stamped base lock (`dependencies/depsets/ray_<NEW>_img_py<PY>.lock`) is generated and committed.
+  3. Repoint **only this template's** `expand` entry: its `build_arg_sets` `ray<OLD>_* → ray<NEW>_*`.
+  4. `./update_deps.sh --name <this-entry-name>` — regenerates this template's lock plus the base lock it derives from (runs natively on Linux or macOS; `../references/dependencies.md` "Running it"). Whole-repo batch upgrade: `upgrade-dependencies.md`.
+  5. Commit together: the `BUILD.yaml` bump, this template's `python_depset.lock`, the new base lock, and the `template.depsets.yaml` edit.
+
+  **Do not** repoint other entries or *replace* the old bundles — that's the whole-repo batch path (`upgrade-dependencies.md`, a human doing all templates at once). On a single-template branch it forces every other template's lock to regenerate, blowing up the diff and the merge.
 
 ## 2. Open the PR
 
@@ -53,7 +65,7 @@ Bump <name> to Ray <version>.
 
 ## 3. Validate via CI
 
-Comment `/test-template <name>` on the PR; follow `../references/testing-template.md` for dispatch + Buildkite-MCP monitoring. Green → step 5. Failure → step 4.
+Comment `/test-template <name>` on the PR (**required — the run cannot end before this; see "Done criteria" below**); follow `../references/testing-template.md` for dispatch + Buildkite-MCP monitoring. Green → step 5. Failure → step 4.
 
 ## 4. Fix on failure
 
@@ -62,3 +74,12 @@ Triage and recover per `../references/testing-template.md` "Recovery" (agent-fix
 ## 5. Mark ready + start the publish
 
 When all checks are green, mark the PR ready for review, **start a `tmpl-publish` build** (`../references/publish-to-backend.md`), and **add its Buildkite build link to the PR body** so reviewers can drive it. **Then return — the run ends here.** Don't wait for review, PR comments, or the publish gates: those manual gates govern the actual dev→staging→prod rollout after a human merges (the pipeline ships templates `main`).
+
+## Done criteria
+
+"Returns as soon as the job is done" means one of exactly **two** terminal states — never any other:
+
+- **Shipped** — checks green → PR marked ready + `tmpl-publish` build started + its link in the body (step 5).
+- **Blocked** — a hand-off comment posted explaining the failure, PR left as draft (step 4).
+
+Opening the draft PR is **not** "done." A draft with no `/test-template` dispatched and no hand-off comment is the one state you must never leave behind: it sits un-tested and un-triaged forever. If you have not reached **Shipped** or **Blocked**, you are not finished — dispatch the test (step 3) and follow through.
