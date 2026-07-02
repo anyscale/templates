@@ -29,29 +29,14 @@ and runs `raydepsets build dependencies/template.depsets.yaml --workspace-dir <r
 ./update_deps.sh --check               # recompile to a temp dir, diff vs committed; the CI gate
 ```
 
-## Running it (linux-x86_64 only; macOS via Docker)
+## Running it
 
-`raydepsets` v0.0.1 ships **only** a `linux-x86_64` build (a Python zipapp bundling a per-platform `uv`).
-
-- **On linux-x86_64** (CI, a devbox, the Cursor env): `./update_deps.sh …` just works.
-- **On macOS**: run it in a `linux/amd64` container with a `uname` shim — under qemu `platform.processor()`
-  is empty, so raydepsets aborts with `Unsupported platform/processor: Linux/`. Shim `uname -p → x86_64`:
-
-  ```bash
-  docker run --rm --platform linux/amd64 -v "$PWD":/w -w /w python:3.12 bash -c '
-    cat > /usr/local/bin/uname <<"EOF"
-  #!/bin/sh
-  [ "$1" = -p ] && echo x86_64 || exec /bin/uname "$@"
-  EOF
-    chmod +x /usr/local/bin/uname
-    bash update_deps.sh --name ray_depset_2.56.0_3.11   # or plain: bash update_deps.sh
-  '
-  ```
-
-Output is identical to a native Linux run (`uv` resolves for `--python-platform=linux` regardless of host).
-`--check` needs all entries (can't combine with `--name`). Base locks come from Ray's published `deplocks/`,
-which lag a release by days — the **image** lock (`deplocks/ray_img/`) usually lands before the **LLM** lock
-(`deplocks/llm/`), so an image bump can proceed while the LLM side waits.
+`raydepsets` v0.0.1 ships both `linux-x86_64` and `darwin-arm64` builds (Python zipapps bundling a
+per-platform `uv`), so `./update_deps.sh` runs natively on Linux **and** macOS — output is identical
+either way (`uv` always resolves for `--python-platform=linux`). `--check` needs all entries (can't
+combine with `--name`). Base locks come from Ray's published `deplocks/`, which lag a release by days —
+the **image** lock (`deplocks/ray_img/`) usually lands before the **LLM** lock (`deplocks/llm/`), so an
+image bump can proceed while the LLM side waits.
 
 ## The config: `dependencies/template.depsets.yaml`
 
@@ -102,7 +87,7 @@ Ray's published locks/constraints into `/tmp/ray-deps/`, with fallbacks for rele
 ## Changing a template's dependencies
 
 1. Edit `templates/<name>/requirements.txt`.
-2. Regenerate its lock: `./update_deps.sh --name <its-entry>` (linux/Docker — see "Running it").
+2. Regenerate its lock: `./update_deps.sh --name <its-entry>` (see "Running it").
 3. Confirm the template installs the regenerated lock on the driver **and** forwards it via `runtime_env`
    (see "What ships") — otherwise workers keep running stale deps.
 4. Pin the traps below.

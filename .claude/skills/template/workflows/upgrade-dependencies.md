@@ -36,7 +36,7 @@ base `compile` entries emit new version-stamped locks, and each `expand` entry's
 ./update_deps.sh                       # everything
 ./update_deps.sh --name <depset-name>  # one entry while iterating
 ```
-Runs on **linux-x86_64 only**; on macOS use Docker — see `../references/dependencies.md` "Running it".
+Runs natively on Linux or macOS — see `../references/dependencies.md` "Running it".
 
 **Batched rollout (recommended for a full bump).** `--check` and a full `./update_deps.sh` build the
 entire matrix and are slow. Split into grouped PRs the way the initial rollout did (see `git log`
