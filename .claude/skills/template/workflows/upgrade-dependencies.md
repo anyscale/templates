@@ -44,6 +44,7 @@ base `compile` entries emit new version-stamped locks, and each `expand` entry's
 ./update_deps.sh                       # everything
 ./update_deps.sh --name <depset-name>  # one entry while iterating
 ```
+Runs on **linux-x86_64 only**; on macOS use Docker — see `../references/dependencies.md` "Running it".
 
 **Batched rollout (recommended for a full bump).** `--check` and a full `./update_deps.sh` build the
 entire matrix and are slow. Split into grouped PRs the way the initial rollout did (see `git log`
@@ -64,5 +65,4 @@ Then sanity-check a representative lock installs and the template runs (`rayapp 
 `../references/testing-template.md`.
 
 ## Common failures
-See `../references/dependencies.md` "Gotchas" — runtime_env pip hash mismatch (pin to base-image
-version), `numpy` floating to 2.x under un-pinned `--system` installs, `datasets`/`fsspec` trap.
+See `../references/dependencies.md` "Gotchas".

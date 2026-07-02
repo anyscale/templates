@@ -38,12 +38,10 @@ The image Ray version and the template's locked deps must agree. Which case appl
   1. Add a `ray<NEW>_py<PY>_cu<CU>` bundle to `build_arg_sets`, mirroring this template's existing `ray<OLD>_*` bundle (same Python/CUDA). **Add — do not replace** the old bundle; every other template still rides it.
   2. Add that bundle to the base `compile` entry this template expands from (`ray_depset` or `ray_llm_depset`), so the new version-stamped base lock (`dependencies/depsets/ray_<NEW>_img_py<PY>.lock`) is generated and committed.
   3. Repoint **only this template's** `expand` entry: its `build_arg_sets` `ray<OLD>_* → ray<NEW>_*`.
-  4. `./update_deps.sh --name <this-entry-name>` — regenerates this template's lock plus the base lock it derives from. (System + tokens: `../references/dependencies.md`; whole-repo batch upgrade: `upgrade-dependencies.md`.)
+  4. `./update_deps.sh --name <this-entry-name>` — regenerates this template's lock plus the base lock it derives from. Runs on **linux-x86_64 only** (macOS: Docker) — see `../references/dependencies.md` "Running it"; whole-repo batch upgrade: `upgrade-dependencies.md`.
   5. Commit together: the `BUILD.yaml` bump, this template's `python_depset.lock`, the new base lock, and the `template.depsets.yaml` edit.
 
   **Do not** repoint other entries or *replace* the old bundles — that's the whole-repo batch path (`upgrade-dependencies.md`, a human doing all templates at once). On a single-template branch it forces every other template's lock to regenerate, blowing up the diff and the merge.
-
-> **`check-depsets` is repo-global — expect collateral failures.** The CI gate (`./update_deps.sh --check`) re-resolves **every** active lock against live indexes and diffs against what's committed, so it can go red on templates you never touched: (a) **ambient upstream drift** — an unrelated lock no longer matches a fresh resolve; regenerate the drifted locks in-passing and include them (expected, not a bump error); (b) **transient index errors** — e.g. a `download.pytorch.org` 503 mid-resolve; infra, re-run per `../references/testing-template.md`. Neither means your bump is wrong.
 
 ## 2. Open the PR
 

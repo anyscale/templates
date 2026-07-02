@@ -1,66 +1,78 @@
 # Template dependencies (depsets)
 
-How locked Python dependencies work for templates. The upgrade procedure lives in
-`../workflows/upgrade-dependencies.md`; this file is the system reference it leans on.
+How templates' locked Python deps work. System reference for the depset steps in
+`../workflows/upgrade-dependencies.md` (whole-repo) and `../workflows/bump-ray-version.md` (per-template).
 
-## What ships with a template
+## What ships, and how it reaches workers
 
-Most templates carry a fully-pinned, hashed **`templates/<name>/python_depset.lock`** alongside
-their `requirements.txt`. The template installs it into the driver and into Ray workers:
+Most templates carry a fully-pinned, hashed **`templates/<name>/python_depset.lock`** next to their
+`requirements.txt`. The template installs it in **both** places:
 
 ```python
-!uv pip install -r python_depset.lock --system --no-deps --no-cache-dir --index-strategy unsafe-best-match
-ray.init(runtime_env={"pip": os.path.join(DEMO_ROOT, "python_depset.lock"), ...})
+!uv pip install -r python_depset.lock --system --no-deps --no-cache-dir --index-strategy unsafe-best-match  # driver
+ray.init(runtime_env={"pip": os.path.join(DEMO_ROOT, "python_depset.lock"), ...})                            # workers
 ```
 
-So the lock must be self-consistent **and** consistent with the Ray version preinstalled in the
-template's image. A Ray-version bump that changes the image without recompiling the lock leaves the
-two out of sync — see `../workflows/bump-ray-version.md`.
+`--system` covers only the driver; **workers get the deps solely via `runtime_env`** — omit it and they
+silently run whatever the image shipped. The lock must also match the Ray version baked into the image; a
+bump that moves the image without recompiling the lock desyncs them (`../workflows/bump-ray-version.md`).
 
 ## The tool: `raydepsets`
 
-A standalone binary fetched by repo-root **`update_deps.sh`** from
-`github.com/ray-project/raydepsets/releases` (pinned `v0.0.1`), cached at `/tmp/raydepsets`. Run it
-through the wrapper, never directly:
+Repo-root **`update_deps.sh`** fetches the pinned `raydepsets` binary (v0.0.1, cached at `/tmp/raydepsets`)
+and runs `raydepsets build dependencies/template.depsets.yaml --workspace-dir <root>`, compiling via
+`uv pip compile --generate-hashes`. Always go through the wrapper:
 
 ```bash
 ./update_deps.sh                       # build every depset
-./update_deps.sh --name <depset-name>  # build one depset (+ its dependencies)
-./update_deps.sh --check               # recompile to a temp dir, diff vs committed locks, fail on drift
+./update_deps.sh --name <depset-name>  # build one (interpolated name, e.g. ray_depset_2.56.0_3.11)
+./update_deps.sh --check               # recompile to a temp dir, diff vs committed; the CI gate
 ```
 
-`update_deps.sh` expands to `raydepsets build dependencies/template.depsets.yaml --workspace-dir <repo-root> "$@"`.
-It compiles via `uv pip compile --generate-hashes`.
+## Running it (linux-x86_64 only; macOS via Docker)
 
-> The tool's upstream source is `~/repos/ray/ci/raydepsets/`, but that HEAD has drifted from the
-> pinned `v0.0.1` binary (HEAD's `expand` takes a `depsets:` list; v0.0.1 takes `source_depset:`).
-> **`dependencies/template.depsets.yaml` is the source of truth for the schema that actually runs.**
+`raydepsets` v0.0.1 ships **only** a `linux-x86_64` build (a Python zipapp bundling a per-platform `uv`).
+
+- **On linux-x86_64** (CI, a devbox, the Cursor env): `./update_deps.sh …` just works.
+- **On macOS**: run it in a `linux/amd64` container with a `uname` shim — under qemu `platform.processor()`
+  is empty, so raydepsets aborts with `Unsupported platform/processor: Linux/`. Shim `uname -p → x86_64`:
+
+  ```bash
+  docker run --rm --platform linux/amd64 -v "$PWD":/w -w /w python:3.12 bash -c '
+    cat > /usr/local/bin/uname <<"EOF"
+  #!/bin/sh
+  [ "$1" = -p ] && echo x86_64 || exec /bin/uname "$@"
+  EOF
+    chmod +x /usr/local/bin/uname
+    bash update_deps.sh --name ray_depset_2.56.0_3.11   # or plain: bash update_deps.sh
+  '
+  ```
+
+Output is identical to a native Linux run (`uv` resolves for `--python-platform=linux` regardless of host).
+`--check` needs all entries (can't combine with `--name`). Base locks come from Ray's published `deplocks/`,
+which lag a release by days — the **image** lock (`deplocks/ray_img/`) usually lands before the **LLM** lock
+(`deplocks/llm/`), so an image bump can proceed while the LLM side waits.
 
 ## The config: `dependencies/template.depsets.yaml`
 
-Two top-level keys.
-
-**`build_arg_sets`** — named `${VAR}` bundles. Today:
+Two top-level keys. **`build_arg_sets`** — named `${VAR}` bundles:
 
 ```yaml
 build_arg_sets:
   ray2551_py311_cu128: {RAY_VERSION: "2.55.1", PYTHON_VERSION: "3.11", PYTHON_SHORT: "311", CUDA_VARIANT: "cu128"}
-  ray2551_py312_cu128: {RAY_VERSION: "2.55.1", PYTHON_VERSION: "3.12", PYTHON_SHORT: "312", CUDA_VARIANT: "cu128"}
 ```
 
-**`depsets`** — a list of entries. Each entry's `build_arg_sets:` field lists which bundle(s) it
-expands over; the tool emits one concrete depset per bundle, substituting `${VAR}` into `name`,
-`output`, `requirements`, `source_depset`, `append_flags`, and `pre_hooks`.
+**`depsets`** — entries; each entry's `build_arg_sets:` lists the bundle(s) it builds over, and the tool
+emits one concrete depset per bundle, substituting `${VAR}` into every field. Two kinds:
 
-### Two kinds of entries
-
-**Base `compile`** (2 entries) — fetch Ray's published locks and compile the shared base locks.
-Output paths are **version-stamped**, so a new Ray version writes new files:
+**Base `compile`** (2 entries) — re-emit Ray's published image lock as the shared base lock, **version-stamped**
+(new Ray version → new file). The output is Ray's fetched `ray_img` lock recompiled for our target — `ray`
+excluded, re-hashed — so it's near-identical in content but reproducible and committable:
 
 ```yaml
 - name: ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
   operation: compile
-  requirements: [/tmp/ray-deps/ray_img_py${PYTHON_SHORT}.lock]
+  requirements: [/tmp/ray-deps/ray_img_py${PYTHON_SHORT}.lock]   # fetched by the pre_hooks
   output: dependencies/depsets/ray_${RAY_VERSION}_img_py${PYTHON_SHORT}.lock
   append_flags: [--python-version=${PYTHON_VERSION}, --python-platform=linux, --unsafe-package ray]
   build_arg_sets: [ray2551_py311_cu128, ray2551_py312_cu128]
@@ -69,10 +81,10 @@ Output paths are **version-stamped**, so a new Ray version writes new files:
     - dependencies/scripts/fetch-ray-constraints.sh ${RAY_VERSION} ${PYTHON_VERSION}
 ```
 
-`ray_llm_depset_*` is the same shape for the LLM image → `dependencies/depsets/rayllm_<ver>_*.lock`.
+`ray_llm_depset_*` is the same for the LLM image → `rayllm_<ver>_*.lock`.
 
-**Per-template `expand`** (the rest) — layer a template's `requirements.txt` on top of a base
-depset. Output is **NOT version-stamped** — overwritten in place:
+**Per-template `expand`** (the rest) — layer a template's `requirements.txt` on a base depset. Output is
+**overwritten in place** (not version-stamped):
 
 ```yaml
 - name: <tmpl>_depset_${RAY_VERSION}_${PYTHON_VERSION}
@@ -80,44 +92,36 @@ depset. Output is **NOT version-stamped** — overwritten in place:
   source_depset: ray_depset_${RAY_VERSION}_${PYTHON_VERSION}   # or ray_llm_depset_...
   requirements: [templates/<tmpl>/requirements.txt]
   output: templates/<tmpl>/python_depset.lock
-  append_flags: [--index https://download.pytorch.org/whl/<cuXXX>, --python-version=${PYTHON_VERSION}, --python-platform=linux, --unsafe-package ray]
   build_arg_sets: [ray2551_py312_cu128]
 ```
 
-Because `source_depset` interpolates `${RAY_VERSION}`, repointing an entry's `build_arg_sets:` to a
-new-version bundle automatically pulls from the new base lock — that's the lever the upgrade uses.
+`source_depset` interpolates `${RAY_VERSION}`, so repointing an entry's `build_arg_sets:` to a new-version
+bundle pulls from the new base lock — the lever both upgrade paths use. The `fetch-ray-*.sh` pre-hooks curl
+Ray's published locks/constraints into `/tmp/ray-deps/`, with fallbacks for releases predating `deplocks/`.
 
-### Pre-hooks
-`dependencies/scripts/fetch-ray-{depsets,llm-depsets,constraints}.sh` curl Ray's published locks and
-constraints for the target version from `raw.githubusercontent.com/ray-project/ray/ray-<version>/...`
-into `/tmp/ray-deps/` before the base compile. They carry fallbacks for older Ray releases that
-don't publish `deplocks/`.
+## Changing a template's dependencies
+
+1. Edit `templates/<name>/requirements.txt`.
+2. Regenerate its lock: `./update_deps.sh --name <its-entry>` (linux/Docker — see "Running it").
+3. Confirm the template installs the regenerated lock on the driver **and** forwards it via `runtime_env`
+   (see "What ships") — otherwise workers keep running stale deps.
+4. Pin the traps below.
 
 ## CI gate
-`.github/workflows/premerge.yaml` → **`check-depsets`** runs `./update_deps.sh --check`. It
-recompiles **all** active entries into a temp dir and unified-diffs against the committed locks;
-any drift fails the job.
+
+`premerge.yaml` → **`check-depsets`** runs `./update_deps.sh --check`: recompiles all active entries into a
+temp dir and diffs against the committed locks; any drift fails.
 
 ## Gotchas
 
-- **`check-depsets` couples every active entry to its committed lock, per branch.** To stack or
-  split depset PRs, comment out the entries you're not building on that branch (this is why the
-  config has large commented-out blocks — staged rollout).
-- **`check-depsets` re-resolves against *live* indexes, so unrelated PRs fail on collateral.** Every
-  run recompiles all active entries from live PyPI/PyTorch and diffs vs committed — a PR that touched
-  one template (or none) can go red on *another* template's **ambient drift** (upstream published
-  newer deps) or a **transient index 503**. Refresh drifted locks in-passing and include them; treat
-  503s as infra. The gate is scoped to PRs that change a lock's inputs and retries transient errors,
-  and a scheduled job recompiles the full matrix and opens a refresh PR when drift accumulates — so
-  collateral doesn't block unrelated PRs. Persistent drift in a lock you changed still fails, by design.
-- **Per-template locks are overwritten in place; base locks are version-stamped.** On a version
-  bump, delete the stale `dependencies/depsets/ray_<old>_*` files once nothing references them.
-- **runtime_env pip hash mismatch** on version-bumped transitive deps: `uv` can emit one
-  wrong-interpreter hash. Fix by pinning the offending package to the base-image version.
-- **`uv pip install --system` bypasses Anyscale's worker propagation**, and un-pinned depsets float
-  `numpy` to 2.x. Pin `numpy`/`pandas`/`pyarrow` to the base image; prefer the `runtime_env` pip
-  install for workers.
-- **Unpinned `datasets`** resolves to ancient `2.14.4` and breaks on modern `fsspec`. Pin
-  `datasets==3.6.0` + `fsspec==2023.12.1` in the template `requirements.txt`.
-- **Upstream lag:** Ray's `deplocks/` (and base images) publish a few days after a Ray release; a
-  bump can't complete until they're up.
+- **The gate re-resolves against *live* indexes, so it fails on collateral.** Every run recompiles all
+  active entries from live PyPI/PyTorch, so a PR can go red on *another* template's **ambient drift**
+  (upstream shipped newer deps) or a **transient 503**. Refresh drifted locks in-passing and include them;
+  treat 503s as infra. (To stack/split depset PRs, comment out the entries you're not building — hence the
+  config's commented-out blocks.)
+- **`runtime_env` pip hash mismatch** on bumped transitive deps: `uv` can emit one wrong-interpreter hash.
+  Pin the offending package to the base-image version.
+- **Un-pinned floats.** `--system` installs float `numpy` to 2.x → pin `numpy`/`pandas`/`pyarrow` to the base
+  image. Un-pinned `datasets` resolves to ancient `2.14.4` and breaks modern `fsspec` → pin `datasets==3.6.0`
+  + `fsspec==2023.12.1` in `requirements.txt`.
+- **Upstream lag:** Ray's `deplocks/` and base images publish days after a release; a bump waits on them.
