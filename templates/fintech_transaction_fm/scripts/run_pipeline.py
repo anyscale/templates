@@ -57,6 +57,32 @@ def fresh_artifact_dirs(base: str, scale: str) -> None:
         print(f"[clean] removed stale {path}", flush=True)
 
 
+def sync_tensorboard_events(base: str) -> None:
+    """Persist TensorBoard event files when running as an Anyscale Job.
+
+    A job runs on its own cluster, so the /mnt/cluster_storage this pipeline
+    writes to dies with the cluster — unlike a workspace, where the events
+    land on storage that outlives the run and the workspace TensorBoard
+    serves them directly. Copy them to $ANYSCALE_ARTIFACT_STORAGE (works for
+    s3:// and gs:// alike); compare job runs in a workspace by pulling them
+    down next to the local ones, e.g.:
+
+        aws s3 sync "$ANYSCALE_ARTIFACT_STORAGE/transaction-fm/tensorboard" \\
+            /mnt/cluster_storage/transaction-fm/tensorboard
+    """
+    dest_base = os.environ.get("ANYSCALE_ARTIFACT_STORAGE")
+    if not dest_base or os.environ.get("ANYSCALE_WORKSPACE_ID"):
+        return  # workspace (already durable) or not on Anyscale
+    src = os.path.join(base, "tensorboard")
+    if not os.path.isdir(src):
+        return
+    from pyarrow import fs as pafs
+
+    dest = dest_base.rstrip("/") + "/transaction-fm/tensorboard"
+    pafs.copy_files(src, dest)
+    print(f"[3/6] synced tensorboard events -> {dest}", flush=True)
+
+
 def ensure_raw_data(paths: dict, num_cards: int, source: str, seed: int = 42) -> None:
     """Stage [1]: prepare raw transactions + temporal splits (skip if cached)."""
     if os.path.exists(paths["raw"]) and os.path.exists(paths["splits"]):
@@ -181,6 +207,10 @@ def main():
         storage_base=base,
         **cfg["pretrain"],
     )
+    # Right after pretrain, not at pipeline end: the event files are complete
+    # once the trainer returns, and syncing now means a crash in the later
+    # stages (the historical failure mode at full scale) can't lose the curves.
+    sync_tensorboard_events(base)
     del pre  # release the object-store blocks before the embedding pass
 
     print("=== [4/6] tokenize eval windows -> embed (streaming CPU->GPU) ===", flush=True)
