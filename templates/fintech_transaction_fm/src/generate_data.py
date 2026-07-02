@@ -150,12 +150,22 @@ def generate_transactions(num_cards: int, seed: int = 42) -> pd.DataFrame:
 
 
 def save_dataset(output_path: str, num_cards: int, seed: int = 42) -> str:
-    """Generate and write the dataset to a single Parquet file."""
+    """Generate and write the dataset as a directory of Parquet shards.
+
+    Sharded (like the TabFormer path) rather than one file: read parallelism
+    downstream is bounded by the number of files, so a single giant Parquet
+    would serialize the tokenize stage's read no matter the cluster size.
+    """
     from .paths import write_splits_meta
 
-    os.makedirs(os.path.dirname(output_path.rstrip("/")), exist_ok=True)
     df = generate_transactions(num_cards, seed=seed)
-    df.to_parquet(output_path, index=False)
+    os.makedirs(output_path, exist_ok=True)
+    n_shards = max(1, min(32, len(df) // 50_000 + 1))
+    bounds = np.linspace(0, len(df), n_shards + 1, dtype=int)
+    for i, (lo, hi) in enumerate(zip(bounds[:-1], bounds[1:])):
+        df.iloc[lo:hi].to_parquet(
+            os.path.join(output_path, f"part-{i:04d}.parquet"), index=False
+        )
     write_splits_meta(
         os.path.join(os.path.dirname(output_path), "splits.json"),
         df["timestamp"].to_numpy().astype("datetime64[s]"),

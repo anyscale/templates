@@ -32,6 +32,7 @@ Schema mapping notes (TabFormer -> canonical):
 from __future__ import annotations
 
 import os
+import shutil
 import tarfile
 import urllib.request
 
@@ -78,7 +79,20 @@ def ensure_download(source_dir: str) -> str:
     tgz_path = os.path.join(source_dir, "transactions.tgz")
     if not os.path.exists(tgz_path):
         print(f"[tabformer] downloading {SOURCE_URL} (~266MB) ...")
-        urllib.request.urlretrieve(SOURCE_URL, tgz_path)
+        # Retry transient network failures; download to a temp name so a
+        # half-written archive is never mistaken for the cached one.
+        for attempt in range(3):
+            try:
+                with urllib.request.urlopen(SOURCE_URL, timeout=60) as r, open(
+                    tgz_path + ".partial", "wb"
+                ) as f:
+                    shutil.copyfileobj(r, f)
+                os.replace(tgz_path + ".partial", tgz_path)
+                break
+            except OSError as e:
+                if attempt == 2:
+                    raise
+                print(f"[tabformer] download failed ({e}); retrying ...")
     print(f"[tabformer] extracting {tgz_path} ...")
     with tarfile.open(tgz_path) as tar:
         tar.extractall(source_dir)
@@ -171,13 +185,16 @@ def prepare_tabformer(
     ray.init(ignore_reinit_error=True)
 
     print(f"[tabformer] reading {csv_path} with Ray Data ...")
+    # Materialize right after normalize: unique() below and every later stage
+    # then read from the object store instead of re-running the 24M-row
+    # CSV parse + normalize from source.
     ds = ray.data.read_csv(
         csv_path,
         convert_options=pacsv.ConvertOptions(
             include_columns=_CSV_COLUMNS,
             column_types={"Time": pa.string()},  # keep "HH:MM" strings
         ),
-    ).map_batches(_normalize, batch_format="pandas")
+    ).map_batches(_normalize, batch_format="pandas").materialize()
 
     all_cards = np.sort(np.asarray(ds.unique("card_id")))
     n_take = min(num_cards, len(all_cards))
@@ -189,8 +206,7 @@ def prepare_tabformer(
         )
         ds = ds.map_batches(
             lambda b: b[b["card_id"].isin(chosen)], batch_format="pandas"
-        )
-    ds = ds.materialize()
+        ).materialize()
 
     # Per-card static fields via a distributed groupby (issuer/bin_region don't
     # exist in TabFormer). The result is tiny (~6k rows) — broadcast it back.
@@ -214,6 +230,7 @@ def prepare_tabformer(
         return b
 
     final = ds.map_batches(attach_statics, batch_format="pandas").materialize()
+    del ds  # release the pre-statics blocks before the write + stats scans
     final.write_parquet(raw_out)
 
     # Split cutoffs + stats. Only two slim columns come to the driver

@@ -4,6 +4,12 @@
 name: fintech-transaction-fm
 entrypoint: python scripts/run_pipeline.py --scale small
 requirements: requirements.txt
+env_vars:
+  # Ray Data + Ray Train share these nodes and the pretrain windows are
+  # materialized in the object store — raise the object-store share from the
+  # 30% default so the data stages don't spill. Must be set before ray.init
+  # (i.e. here, at the cluster level), not from Python.
+  RAY_DEFAULT_OBJECT_STORE_MEMORY_PROPORTION: "0.5"
 compute_config:
   cloud: aws-public-us-west-2
   head_node:

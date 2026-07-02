@@ -35,6 +35,7 @@ def main():
         num_workers=args.num_workers or embed_cfg["num_workers"],
         use_gpu=args.use_gpu or embed_cfg["use_gpu"],
         batch_size=args.batch_size or embed_cfg["batch_size"],
+        gpus_per_worker=embed_cfg.get("gpus_per_worker"),
     )
 
 

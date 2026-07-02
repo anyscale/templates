@@ -13,13 +13,14 @@ import math
 import os
 import shutil
 import tempfile
+import time
 from collections import defaultdict
 
 import torch
 
 import ray
 import ray.train
-from ray.train import Checkpoint, RunConfig, ScalingConfig
+from ray.train import Checkpoint, CheckpointConfig, FailureConfig, RunConfig, ScalingConfig
 from ray.train.torch import TorchTrainer
 
 from .model import build_model, mask_batch
@@ -34,6 +35,20 @@ def train_func(config: dict):
     # *runs* reproducible for A/B comparisons), then per-rank reseed below so
     # MLM masking differs across workers deterministically.
     torch.manual_seed(config.get("seed", 0))
+
+    use_cuda = torch.cuda.is_available()
+    if use_cuda:
+        # TF32 matmuls for the FP32 ops that remain under autocast, cuDNN
+        # autotune for the fixed-shape encoder — free throughput on Ampere+.
+        torch.set_float32_matmul_precision("high")
+        torch.backends.cudnn.benchmark = True
+    # Mixed precision: bf16 where the GPU supports it (Ampere+), fp16 + loss
+    # scaling on older GPUs (T4/V100). CPU (CI smoke) stays fp32 — autocast and
+    # the scaler are both disabled there.
+    amp_dtype = None
+    if use_cuda:
+        amp_dtype = torch.bfloat16 if torch.cuda.is_bf16_supported() else torch.float16
+    scaler = torch.amp.GradScaler("cuda", enabled=amp_dtype is torch.float16)
 
     vocab_path = config["vocab_path"]
     with open(vocab_path) as f:
@@ -63,27 +78,73 @@ def train_func(config: dict):
     base = _unwrap(model)
 
     optimizer = torch.optim.AdamW(model.parameters(), lr=config["lr"])
+
+    # Linear warmup + cosine decay: constant LR is unstable early (especially at
+    # the large-batch scales, where lr is scaled up) and oscillates late.
+    world = ray.train.get_context().get_world_size()
+    steps_per_epoch = max(1, math.ceil(config["n_rows"] / (world * config["batch_size"])))
+    total_steps = steps_per_epoch * config["epochs"]
+    warmup_steps = max(1, int(0.05 * total_steps))
+
+    def _lr_lambda(step: int) -> float:
+        if step < warmup_steps:
+            return (step + 1) / warmup_steps
+        t = (step - warmup_steps) / max(1, total_steps - warmup_steps)
+        return 0.5 * (1.0 + math.cos(math.pi * min(t, 1.0)))
+
+    scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, _lr_lambda)
+
     train_shard = ray.train.get_dataset_shard("train")
     mask_prob = config.get("mask_prob", 0.15)
     torch.manual_seed(config.get("seed", 0) + ray.train.get_context().get_world_rank())
 
-    for epoch in range(config["epochs"]):
+    # Resume after a worker failure: FailureConfig restarts land back here with
+    # the last reported checkpoint attached.
+    start_epoch = 0
+    ckpt = ray.train.get_checkpoint()
+    if ckpt is not None:
+        with ckpt.as_directory() as d:
+            dev = ray.train.torch.get_device()
+            base.load_state_dict(torch.load(os.path.join(d, "model.pt"), map_location=dev))
+            state = torch.load(os.path.join(d, "train_state.pt"), map_location=dev)
+            optimizer.load_state_dict(state["optimizer"])
+            scheduler.load_state_dict(state["scheduler"])
+            scaler.load_state_dict(state["scaler"])
+            start_epoch = state["epoch"] + 1
+        print(f"[pretrain] resumed from checkpoint at epoch {start_epoch}")
+
+    for epoch in range(start_epoch, config["epochs"]):
         model.train()
         running, n_batches = 0.0, 0
         ce_sum, acc_sum, tot_n = defaultdict(float), defaultdict(float), 0
         for batch in train_shard.iter_torch_batches(
-            batch_size=config["batch_size"], dtypes=dtypes
+            batch_size=config["batch_size"],
+            dtypes=dtypes,
+            # Overlap batch prep with compute so the GPU never waits on the shard.
+            prefetch_batches=2,
+            # Per-epoch order variation. The dataset was globally shuffled once
+            # upstream (it comes out of the tokenizer grouped by card); this
+            # buffer re-randomizes locally each epoch without an all-to-all.
+            local_shuffle_buffer_size=max(8 * config["batch_size"], 1024),
         ):
             corrupted, targets, masked = mask_batch(batch, dynamic_fields, mask_prob)
             n = int(masked.sum())
             if n == 0:
                 continue
-            # Heads + loss run inside forward so DDP all-reduces every param.
-            loss, stats = model(corrupted, targets=targets, masked=masked, weighting=weighting)
-
             optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
+            # Heads + loss run inside forward so DDP all-reduces every param.
+            with torch.autocast(
+                "cuda", dtype=amp_dtype or torch.bfloat16, enabled=amp_dtype is not None
+            ):
+                loss, stats = model(corrupted, targets=targets, masked=masked, weighting=weighting)
+            if scaler.is_enabled():
+                scaler.scale(loss).backward()
+                scaler.step(optimizer)
+                scaler.update()
+            else:
+                loss.backward()
+                optimizer.step()
+            scheduler.step()
             running += float(loss.item())
             n_batches += 1
             tot_n += n
@@ -94,7 +155,11 @@ def train_func(config: dict):
         # The weighted total drifts as the log-variances learn — watch the
         # per-field accuracy and perplexity instead. Perplexity vs. the field's
         # vocab size tells you whether it learned structure (ppl << vocab = good).
-        metrics = {"epoch": epoch, "mlm_loss": running / max(n_batches, 1)}
+        metrics = {
+            "epoch": epoch,
+            "mlm_loss": running / max(n_batches, 1),
+            "lr": scheduler.get_last_lr()[0],
+        }
         macro_acc = 0.0
         for f in dynamic_fields + signal_fields:
             mean_ce = ce_sum[f] / max(tot_n, 1)
@@ -105,11 +170,23 @@ def train_func(config: dict):
                 macro_acc += acc
         metrics["acc_macro"] = macro_acc / len(dynamic_fields)
 
-        # Checkpoint on the last epoch (rank 0 writes the weights).
+        # Checkpoint every epoch (rank 0 writes) so a failure mid-run resumes
+        # instead of restarting from scratch. model.pt stays weights-only — the
+        # downstream consumers load it directly; resume state lives alongside
+        # in train_state.pt.
         checkpoint = None
-        if epoch == config["epochs"] - 1 and ray.train.get_context().get_world_rank() == 0:
+        if ray.train.get_context().get_world_rank() == 0:
             tmp = tempfile.mkdtemp()
             torch.save(base.state_dict(), os.path.join(tmp, "model.pt"))
+            torch.save(
+                {
+                    "optimizer": optimizer.state_dict(),
+                    "scheduler": scheduler.state_dict(),
+                    "scaler": scaler.state_dict(),
+                    "epoch": epoch,
+                },
+                os.path.join(tmp, "train_state.pt"),
+            )
             shutil.copy(vocab_path, os.path.join(tmp, "vocab.json"))
             with open(os.path.join(tmp, "model_config.json"), "w") as f:
                 json.dump(
@@ -165,6 +242,7 @@ def pretrain(
         arch = load_scale(size)["model"]
 
     ds = train_ds if train_ds is not None else ray.data.read_parquet(tokenized_path)
+    n_rows = ds.count()  # sizes the LR schedule (cheap: metadata / materialized)
     storage_path = os.path.join(storage_base, "ray_results") if storage_base else None
 
     trainer = TorchTrainer(
@@ -181,18 +259,33 @@ def pretrain(
             "loss_weighting": loss_weighting,
             "infonce_negatives": infonce_negatives,
             "seed": seed,
+            "n_rows": n_rows,
         },
         scaling_config=ScalingConfig(num_workers=num_workers, use_gpu=use_gpu),
         datasets={"train": ds},
-        run_config=RunConfig(name="transaction_fm_pretrain", storage_path=storage_path),
+        run_config=RunConfig(
+            # Unique per invocation: reusing a name resumes that run's latest
+            # checkpoint, which would silently skip training on a re-run. The
+            # in-run failure restore (FailureConfig) is unaffected by the name.
+            name=f"transaction_fm_pretrain_{time.strftime('%Y%m%d-%H%M%S')}",
+            storage_path=storage_path,
+            # Restart in place (from the latest epoch checkpoint) on worker
+            # loss — required for spot GPU nodes; the job-level retry would
+            # otherwise redo the whole pipeline.
+            failure_config=FailureConfig(max_failures=3),
+            checkpoint_config=CheckpointConfig(num_to_keep=2),
+        ),
     )
     result = trainer.fit()
 
     os.makedirs(checkpoint_out, exist_ok=True)
     # result.checkpoint.as_directory() is a context manager; copy its contents out
     # to the canonical location so downstream stages can find the weights.
+    # train_state.pt is resume-only — the canonical dir stays weights + config.
     with result.checkpoint.as_directory() as ckpt_dir:
         for fn in os.listdir(ckpt_dir):
+            if fn == "train_state.pt":
+                continue
             shutil.copy(os.path.join(ckpt_dir, fn), os.path.join(checkpoint_out, fn))
     m = result.metrics
     print(

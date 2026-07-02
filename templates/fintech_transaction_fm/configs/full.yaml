@@ -37,3 +37,5 @@ embed:
   num_workers: 4
   use_gpu: true
   batch_size: 256            # seq 512: attention buffers cap T4 inference batch well below seq-128
+  gpus_per_worker: 0.5       # model + seq-512 activations still fit 2x per
+                             # 16GB T4 — half the GPUs for the same throughput

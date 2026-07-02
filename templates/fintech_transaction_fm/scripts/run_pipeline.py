@@ -7,8 +7,9 @@ intermediates in the cluster:
 * tokenized **pretrain windows** are materialized in the object store and
   handed to Ray Train as a live Dataset — no Parquet round-trip, and each
   epoch iterates from memory instead of re-reading shared storage;
-* tokenized **eval windows** stream straight from the CPU tokenizer tasks into
-  the GPU embedding actors in one Ray Data topology — they never touch disk.
+* tokenized **eval windows** flow straight from the CPU tokenizer tasks into
+  the GPU embedding actors in one Ray Data topology — the group-by-card
+  shuffle stages its blocks through the object store, never a Parquet write.
 
 Only the durable artifacts hit storage: raw data (+ splits.json), vocab, the
 model checkpoint, the embeddings (the product), and downstream metrics +
@@ -123,7 +124,9 @@ def main():
         from src.tokenizer import _RESERVED
 
         merchant_vocab = build_merchant_vocab(
-            ray.data.read_parquet(paths["raw"]),
+            # The frequency scan only needs one column — reader-level pruning
+            # keeps the wide rows out of the read entirely.
+            ray.data.read_parquet(paths["raw"], columns=["merchant_id"]),
             top_k=tk["merchant_top_k"],
             n_aggregate=tk["merchant_aggregate"],
             base=_RESERVED,
@@ -156,6 +159,10 @@ def main():
         tokenized("pretrain")
         .filter(expr=col("kind") == "pretrain")
         .drop_columns(PRETRAIN_DROP)
+        # One global shuffle before caching: the tokenizer emits windows grouped
+        # by card, and a fixed card-correlated order hurts MLM convergence. The
+        # trainer adds a local shuffle buffer for per-epoch variation on top.
+        .random_shuffle(seed=0)
         .materialize()
     )
     n_pretrain = pre.count()
@@ -188,6 +195,7 @@ def main():
         num_workers=e["num_workers"],
         use_gpu=e["use_gpu"],
         batch_size=e["batch_size"],
+        gpus_per_worker=e.get("gpus_per_worker"),
     )
 
     print("=== [5/6] downstream fraud eval ===", flush=True)
@@ -212,6 +220,7 @@ def main():
                 num_workers=e["num_workers"],
                 use_gpu=e["use_gpu"],
                 batch_size=e["batch_size"],
+                gpus_per_worker=e.get("gpus_per_worker"),
             )
         )
 

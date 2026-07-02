@@ -36,6 +36,7 @@ def main():
         num_workers=e["num_workers"],
         use_gpu=args.use_gpu or e["use_gpu"],
         batch_size=e["batch_size"],
+        gpus_per_worker=e.get("gpus_per_worker"),
     )
     print_summary(summary)
 

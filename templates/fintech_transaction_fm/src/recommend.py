@@ -90,7 +90,7 @@ class NextMerchantScorer:
         if "d_amount_frac" in tensors:
             tensors["d_amount_frac"][:, -1] = 0.0
 
-        with torch.no_grad():
+        with torch.inference_mode():
             hidden = self.model.encode(tensors)[:, -1, :]              # (B, D)
             proj = self.model.infonce_proj["merchant_bucket"](hidden)  # (B, D)
             E = self.model.dyn_emb["merchant_bucket"].weight           # (V, D)
@@ -144,6 +144,7 @@ def run_recommend(
     use_gpu: bool = False,
     batch_size: int = 256,
     split: str = "test",
+    gpus_per_worker: float | None = None,
 ) -> dict:
     """Score next-merchant over eval windows; report HR@K / NDCG@K on ``split``.
 
@@ -156,17 +157,25 @@ def run_recommend(
 
     if ds is None:
         ds = ray.data.read_parquet(tokenized_path)
+    if gpus_per_worker is None:
+        gpus_per_worker = 1.0
     scored = ds.map_batches(
         NextMerchantScorer,
         fn_constructor_kwargs={"checkpoint_dir": checkpoint_dir},
         batch_size=batch_size,
-        compute=ray.data.ActorPoolStrategy(size=num_workers),
-        num_gpus=1 if use_gpu else 0,
+        # Same actor tuning as embed.py: deeper per-actor queue, fractional GPU
+        # (the FM is tiny), and no CPU slot held on the GPU replicas.
+        compute=ray.data.ActorPoolStrategy(size=num_workers, max_tasks_in_flight_per_actor=16),
+        num_gpus=gpus_per_worker if use_gpu else 0,
+        num_cpus=0 if use_gpu else 1,
         batch_format="numpy",
     )
+    from ray.data.expressions import col
+
     cols = ["split", "model_rank", "dedicated"] + [f"base_hit_{k}" for k in K_VALUES]
-    df = scored.select_columns(cols).to_pandas()
-    df = df[df["split"] == split]
+    # Filter to the chosen split before collecting — no reason to pull the
+    # train/val rows to the driver just to drop them.
+    df = scored.filter(expr=col("split") == split).select_columns(cols).to_pandas()
     if len(df) == 0:
         raise RuntimeError(f"no '{split}'-split eval windows to score")
 

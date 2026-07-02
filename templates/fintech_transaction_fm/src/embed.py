@@ -58,7 +58,7 @@ class EmbeddingExtractor:
         tensors = {k: to_tensor(k, torch.long) for k in cols}
         if self.vocab.get("amount_mode") == "soft":
             tensors["d_amount_frac"] = to_tensor("d_amount_frac", torch.float32)
-        with torch.no_grad():
+        with torch.inference_mode():
             emb = self.model.sequence_embedding(tensors, pooling=self.pooling).cpu().numpy()
         passthrough = [
             "card_id", "label", "split", "weight",
@@ -78,23 +78,36 @@ def extract_embeddings(
     batch_size: int = 256,
     pooling: str = "last",
     ds=None,
+    gpus_per_worker: float | None = None,
 ) -> str:
     """Run distributed batch embedding extraction and write Parquet.
 
     ``ds`` may be any Ray Dataset of tokenized eval windows — including a lazy
     one, so upstream CPU tokenization streams straight into the GPU actors
     through the object store. Falls back to reading ``tokenized_path``.
+
+    ``gpus_per_worker`` (only meaningful with ``use_gpu``) may be fractional:
+    the FM uses a few hundred MB of VRAM, so 0.25-0.5 packs several replicas
+    per GPU instead of reserving a whole, mostly-idle device each. Defaults to
+    a full GPU per replica.
     """
     import ray
 
     if ds is None:
         ds = ray.data.read_parquet(tokenized_path)
+    if gpus_per_worker is None:
+        gpus_per_worker = 1.0
     ds = ds.map_batches(
         EmbeddingExtractor,
         fn_constructor_kwargs={"checkpoint_dir": checkpoint_dir, "pooling": pooling},
         batch_size=batch_size,
-        compute=ray.data.ActorPoolStrategy(size=num_workers),
-        num_gpus=1 if use_gpu else 0,
+        # max_tasks_in_flight: queue several batches per actor (default 4 is
+        # sized for slow models) so the fast FM forward is never input-starved.
+        compute=ray.data.ActorPoolStrategy(size=num_workers, max_tasks_in_flight_per_actor=16),
+        num_gpus=gpus_per_worker if use_gpu else 0,
+        # GPU replicas shouldn't also hold CPU slots — those belong to the
+        # upstream tokenizer tasks feeding this stage.
+        num_cpus=0 if use_gpu else 1,
         batch_format="numpy",
     )
     ds.write_parquet(output_path)
@@ -114,7 +127,7 @@ def embedding_health(output_path: str, sample: int = 2000) -> dict:
     """
     import ray
 
-    df = ray.data.read_parquet(output_path).limit(sample).to_pandas()
+    df = ray.data.read_parquet(output_path, columns=["embedding"]).limit(sample).to_pandas()
     X = np.vstack(df["embedding"].to_numpy()).astype(np.float64)
     n = len(X)
     Xn = X / (np.linalg.norm(X, axis=1, keepdims=True) + 1e-8)
