@@ -79,7 +79,13 @@ def sync_tensorboard_events(base: str) -> None:
     from pyarrow import fs as pafs
 
     dest = dest_base.rstrip("/") + "/transaction-fm/tensorboard"
-    pafs.copy_files(src, dest)
+    try:
+        pafs.copy_files(src, dest)
+    except OSError as e:
+        # Telemetry must never kill the pipeline: a transient storage error
+        # here would otherwise abort the embed/fraud/reco stages downstream.
+        print(f"[3/6] WARNING: tensorboard sync to {dest} failed ({e})", flush=True)
+        return
     print(f"[3/6] synced tensorboard events -> {dest}", flush=True)
 
 
