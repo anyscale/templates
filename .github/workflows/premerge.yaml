@@ -59,4 +59,7 @@ jobs:
       # transient download.pytorch.org 503. Kept as a passing no-op (not deleted)
       # so a required status check of this name stays green instead of blocking
       # merges. Re-enable via the scoped + retried replacement in #834.
-      run: echo "check-depsets temporarily disabled — see PR #834 to re-enable."
+      # NOTE: block scalar (`run: |`) is required — an inline `run: echo "... #NNN"`
+      # treats the ` #` as a YAML comment and truncates the command.
+      run: |
+        echo "check-depsets temporarily disabled — see PR #834 to re-enable."
