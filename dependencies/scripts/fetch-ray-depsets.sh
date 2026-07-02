@@ -5,8 +5,12 @@ RAY_VERSION="${1:?Usage: fetch-ray-depsets.sh <ray-version> <python-short>}"
 PYTHON_SHORT="${2:?Usage: fetch-ray-depsets.sh <ray-version> <python-short>}"
 
 DEST_DIR="/tmp/ray-deps"
-LOCK_FILE="ray_img_py${PYTHON_SHORT}.lock"
-URL="https://raw.githubusercontent.com/ray-project/ray/ray-${RAY_VERSION}/python/deplocks/ray_img/${LOCK_FILE}"
+# Remote filename is version-agnostic (it lives under the ray-${RAY_VERSION} tag);
+# the local copy is namespaced by Ray version so concurrent multi-version builds
+# don't clobber each other's base lock in the shared /tmp/ray-deps dir.
+REMOTE_FILE="ray_img_py${PYTHON_SHORT}.lock"
+LOCK_FILE="ray_img_${RAY_VERSION}_py${PYTHON_SHORT}.lock"
+URL="https://raw.githubusercontent.com/ray-project/ray/ray-${RAY_VERSION}/python/deplocks/ray_img/${REMOTE_FILE}"
 
 mkdir -p "$DEST_DIR"
 

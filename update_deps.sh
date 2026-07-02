@@ -19,6 +19,10 @@ if [[ ! -x "$RAYDEPSETS_BIN" ]]; then
   chmod +x "$RAYDEPSETS_BIN"
 fi
 
+# Start from a clean scratch dir so no stale fetched base locks linger between
+# runs. Pre_hooks re-fetch everything they need; this just guarantees hermeticity.
+rm -rf /tmp/ray-deps
+
 echo "Running raydepsets..."
 "$RAYDEPSETS_BIN" build \
   "$REPO_ROOT/dependencies/template.depsets.yaml" \
