@@ -31,6 +31,7 @@ pretrain:
   use_gpu: false
   use_fsdp: false
   infonce_negatives: 128       # shared negatives per batch (TREASURE Alg. 1)
+  infonce_warmup_frac: 0.5     # exercises the anneal path (see small.yaml)
 
 embed:
   num_workers: 2

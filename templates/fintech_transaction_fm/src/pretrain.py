@@ -94,13 +94,19 @@ def train_func(config: dict):
 
     scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, _lr_lambda)
 
+    # InfoNCE warm-up: ramp the high-cardinality merchant objective in over the
+    # first ``infonce_warmup_frac`` of training so the fraud-relevant heads
+    # shape the representation first, instead of the big contrastive head
+    # dominating the gradient budget from step 0 (loss-budget dilution).
+    infonce_warmup_steps = int(config.get("infonce_warmup_frac", 0.0) * total_steps)
+
     train_shard = ray.train.get_dataset_shard("train")
     mask_prob = config.get("mask_prob", 0.15)
     torch.manual_seed(config.get("seed", 0) + ray.train.get_context().get_world_rank())
 
     # Resume after a worker failure: FailureConfig restarts land back here with
     # the last reported checkpoint attached.
-    start_epoch = 0
+    start_epoch, global_step = 0, 0
     ckpt = ray.train.get_checkpoint()
     if ckpt is not None:
         with ckpt.as_directory() as d:
@@ -111,6 +117,7 @@ def train_func(config: dict):
             scheduler.load_state_dict(state["scheduler"])
             scaler.load_state_dict(state["scaler"])
             start_epoch = state["epoch"] + 1
+            global_step = state.get("global_step", start_epoch * steps_per_epoch)
         print(f"[pretrain] resumed from checkpoint at epoch {start_epoch}")
 
     for epoch in range(start_epoch, config["epochs"]):
@@ -125,18 +132,31 @@ def train_func(config: dict):
             # Per-epoch order variation. The dataset was globally shuffled once
             # upstream (it comes out of the tokenizer grouped by card); this
             # buffer re-randomizes locally each epoch without an all-to-all.
+            # Seeded per epoch: order varies across epochs, not across runs.
             local_shuffle_buffer_size=max(8 * config["batch_size"], 1024),
+            local_shuffle_seed=config.get("seed", 0) + epoch,
         ):
             corrupted, targets, masked = mask_batch(batch, dynamic_fields, mask_prob)
             n = int(masked.sum())
             if n == 0:
                 continue
+            infonce_scale = (
+                1.0
+                if infonce_warmup_steps == 0
+                else min(1.0, global_step / infonce_warmup_steps)
+            )
             optimizer.zero_grad()
             # Heads + loss run inside forward so DDP all-reduces every param.
             with torch.autocast(
                 "cuda", dtype=amp_dtype or torch.bfloat16, enabled=amp_dtype is not None
             ):
-                loss, stats = model(corrupted, targets=targets, masked=masked, weighting=weighting)
+                loss, stats = model(
+                    corrupted,
+                    targets=targets,
+                    masked=masked,
+                    weighting=weighting,
+                    infonce_scale=infonce_scale,
+                )
             if scaler.is_enabled():
                 scaler.scale(loss).backward()
                 scaler.step(optimizer)
@@ -145,6 +165,7 @@ def train_func(config: dict):
                 loss.backward()
                 optimizer.step()
             scheduler.step()
+            global_step += 1
             running += float(loss.item())
             n_batches += 1
             tot_n += n
@@ -159,6 +180,10 @@ def train_func(config: dict):
             "epoch": epoch,
             "mlm_loss": running / max(n_batches, 1),
             "lr": scheduler.get_last_lr()[0],
+            "infonce_scale": (
+                1.0 if infonce_warmup_steps == 0
+                else min(1.0, global_step / infonce_warmup_steps)
+            ),
         }
         macro_acc = 0.0
         for f in dynamic_fields + signal_fields:
@@ -184,6 +209,7 @@ def train_func(config: dict):
                     "scheduler": scheduler.state_dict(),
                     "scaler": scaler.state_dict(),
                     "epoch": epoch,
+                    "global_step": global_step,
                 },
                 os.path.join(tmp, "train_state.pt"),
             )
@@ -217,6 +243,7 @@ def pretrain(
     use_fsdp: bool = False,
     loss_weighting: str = "uncertainty",
     infonce_negatives: int = 1024,
+    infonce_warmup_frac: float = 0.0,
     storage_base: str | None = None,
     seed: int = 0,
 ) -> dict:
@@ -258,6 +285,7 @@ def pretrain(
             "use_fsdp": use_fsdp,
             "loss_weighting": loss_weighting,
             "infonce_negatives": infonce_negatives,
+            "infonce_warmup_frac": infonce_warmup_frac,
             "seed": seed,
             "n_rows": n_rows,
         },

@@ -72,12 +72,19 @@ def _load_embeddings(embeddings_path: str):
     matrix, which OOM-kills the head node at `full` (~5M x 512 floats).
     Streaming record batches into one preallocated float32 matrix keeps the
     peak at ~1x.
+
+    Rows are then put in canonical (card_id, raw_ts, ...) order: the Parquet's
+    write order varies run to run (parallel embedding actors), and XGBoost's
+    ``subsample`` draw depends on row order even with a pinned seed — the
+    known source of fusion-metric variance. After the sort, stage-5 results
+    are a function of the embedding *set*, not of write interleaving.
     """
     import pyarrow as pa
     import pyarrow.compute as pc
     import pyarrow.dataset as pads
 
-    cols = ["embedding", "raw_amount", "raw_hour", "raw_dow", "raw_mcc", "label", "weight", "split"]
+    cols = ["embedding", "raw_amount", "raw_hour", "raw_dow", "raw_mcc",
+            "label", "weight", "split", "card_id", "raw_ts"]
     dset = pads.dataset(embeddings_path, format="parquet")
     n = dset.count_rows()
     split_values = pa.array(_SPLITS)
@@ -90,6 +97,8 @@ def _load_embeddings(embeddings_path: str):
     y = np.empty(n, np.int64)
     w = np.empty(n, np.float64)
     split_code = np.empty(n, np.int8)
+    cid = np.empty(n, np.int64)
+    ts = np.empty(n, np.int64)
 
     i = 0
     for batch in dset.to_batches(columns=cols, batch_size=32_768):
@@ -114,8 +123,18 @@ def _load_embeddings(embeddings_path: str):
         w[i : i + m] = batch.column("weight").to_numpy(zero_copy_only=False)
         codes = pc.fill_null(pc.index_in(batch.column("split"), value_set=split_values), -1)
         split_code[i : i + m] = codes.to_numpy(zero_copy_only=False)
+        cid[i : i + m] = batch.column("card_id").to_numpy(zero_copy_only=False)
+        ts[i : i + m] = batch.column("raw_ts").to_numpy(zero_copy_only=False)
         i += m
     assert i == n, f"read {i} rows, expected {n}"
+
+    # Canonical row order (see docstring). The fancy-index copy briefly doubles
+    # X_fm's footprint (~2x matrix peak at `full` — still well inside the head
+    # node); amt/mcc break the rare same-card-same-second ties.
+    order = np.lexsort((mcc, amt, ts, cid))
+    X_fm = X_fm[order]
+    amt, hour, dow, mcc = amt[order], hour[order], dow[order], mcc[order]
+    y, w, split_code = y[order], w[order], split_code[order]
 
     # Raw target-transaction features (carried through tokenize -> embed).
     X_raw = np.column_stack(

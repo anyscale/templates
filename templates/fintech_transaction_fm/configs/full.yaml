@@ -32,6 +32,7 @@ pretrain:
   use_gpu: true
   use_fsdp: false
   infonce_negatives: 1024      # shared negatives per batch (TREASURE Alg. 1)
+  infonce_warmup_frac: 0.3     # anneal the merchant head in (see small.yaml)
 
 embed:
   num_workers: 4

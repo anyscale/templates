@@ -29,6 +29,10 @@ pretrain:
   use_gpu: true
   use_fsdp: false
   infonce_negatives: 1024      # shared negatives per batch (TREASURE Alg. 1)
+  infonce_warmup_frac: 0.3     # ramp the merchant InfoNCE head in over the first
+                               # 30% of steps — the 10k-way contrastive objective
+                               # otherwise dominates the gradient budget and the
+                               # fraud-relevant heads starve (fm-AUC dilution)
 
 embed:
   num_workers: 2

@@ -161,7 +161,14 @@ class TransactionFM(nn.Module):
         x, pad_mask = self._embed(batch)
         return self.encoder(x, src_key_padding_mask=pad_mask)
 
-    def forward(self, batch: dict, targets: dict = None, masked=None, weighting: str = "uncertainty"):
+    def forward(
+        self,
+        batch: dict,
+        targets: dict = None,
+        masked=None,
+        weighting: str = "uncertainty",
+        infonce_scale: float = 1.0,
+    ):
         """Training forward returns the MLM loss; with ``targets=None`` returns
         the encoder hidden states.
 
@@ -172,9 +179,17 @@ class TransactionFM(nn.Module):
         hidden = self.encode(batch)
         if targets is None:
             return hidden
-        return self.field_loss(hidden, batch, targets, masked, weighting)
+        return self.field_loss(hidden, batch, targets, masked, weighting, infonce_scale)
 
-    def field_loss(self, hidden: torch.Tensor, batch: dict, targets: dict, masked, weighting: str = "uncertainty"):
+    def field_loss(
+        self,
+        hidden: torch.Tensor,
+        batch: dict,
+        targets: dict,
+        masked,
+        weighting: str = "uncertainty",
+        infonce_scale: float = 1.0,
+    ):
         """Per-field masked loss over the supervised positions, aggregated.
 
         Each field is either a full-softmax cross-entropy (low cardinality) or an
@@ -186,6 +201,15 @@ class TransactionFM(nn.Module):
         (loss_f * exp(-s_f) + 0.5*s_f, with s_f a learned log-variance) so heads
         of very different difficulty/scale stay balanced. ``"mean"`` is the plain
         unweighted average.
+
+        ``infonce_scale`` (0..1) multiplies each InfoNCE field's *entire*
+        weighted contribution — a warm-up anneal so the big contrastive head
+        doesn't dominate the gradient budget before the fraud-relevant heads
+        shape the representation. Scaling the whole term (not just the loss)
+        matters: a bare-loss scale of 0 would leave the 0.5*s regularizer
+        pushing the learned log-variance down while the head is dormant, then
+        amplify it explosively when the ramp ends. Stats report the unscaled
+        per-field loss so the merchant head's progress stays observable.
 
         Returns (total_loss, stats) where stats[field] = {"ce", "acc"}. For
         InfoNCE fields "acc" is the in-batch/negative-pool ranking accuracy (a
@@ -232,9 +256,15 @@ class TransactionFM(nn.Module):
             total = 0.0
             for f in self.dynamic_fields + self.signal_fields:
                 s = self.log_var[f]
-                total = total + torch.exp(-s) * ce[f] + 0.5 * s
+                term = torch.exp(-s) * ce[f] + 0.5 * s
+                if f in self.infonce_fields:
+                    term = term * infonce_scale
+                total = total + term
         else:
-            total = sum(ce.values()) / len(ce)
+            total = sum(
+                (ce[f] * infonce_scale if f in self.infonce_fields else ce[f])
+                for f in ce
+            ) / len(ce)
         return total, stats
 
     @torch.no_grad()
