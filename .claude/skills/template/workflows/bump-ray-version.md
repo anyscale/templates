@@ -4,10 +4,6 @@
 
 Cursor environment quirks — `GH_TOKEN=$ANYSCALE_GH_TOKEN` on `gh` writes, `cursor/...` branch naming, `pre-commit` not auto-firing under `core.hooksPath`, and the PR labels — live in **AGENTS.md "Cursor Cloud"**. Follow them there; this runbook does not restate them.
 
-## Batch vs per-template
-
-This runbook is the **per-template** path (one bump, one PR). For a **full-fleet** bump, recompile the depsets **once up front** rather than N times: a human runs `upgrade-dependencies.md` first — add the new bundle, repoint every entry, regenerate the matrix, drop stale base locks — and merges that single depset PR; then each run here is a pure `BUILD.yaml` image bump with no depset edit, so parallel PRs never collide on the shared `template.depsets.yaml` bundle or base lock. Bumping only one or a few templates? Skip the batch PR and let each run do its own incremental lock repoint (step 1, "Recompile the dependency lock"). The recompile rules are identical either way (`../references/dependencies.md`) — the only question is whether lock work happens once in a batch PR or inline per template.
-
 ## Setup — preflight
 
 Run `bash .cursor/preflight.sh`. It verifies the companion skills (incl. `/anyscale-platform-fix`), secrets, and auth. On a non-zero exit, handle per **AGENTS.md "Cursor Cloud → Preconditions"** (report stderr + stop) — at this point no PR exists yet, so that report lands in the run/CI output.
