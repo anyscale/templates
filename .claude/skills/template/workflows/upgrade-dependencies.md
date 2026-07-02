@@ -40,17 +40,17 @@ Runs natively on Linux or macOS — see `../references/dependencies.md` "Running
 
 **Batched rollout (recommended for a full bump).** `--check` and a full `./update_deps.sh` build the
 entire matrix and are slow. Split into grouped PRs the way the initial rollout did (see `git log`
-PRs #730–#738): comment out every entry except the batch you're recompiling on this branch, so
-`check-depsets` only gates the locks you changed. Uncomment in later PRs.
+PRs #730–#738): comment out every entry except the batch you're recompiling on this branch, so the
+branch rebuilds only that batch. Uncomment in later PRs.
 
 ## 5. Drop stale base locks
 Per-template `python_depset.lock` files are overwritten in place, but base locks are version-stamped.
 Delete `dependencies/depsets/ray_<OLD>_*` / `rayllm_<OLD>_*` once nothing references the old version.
 (Keep N-1 only if a rollback path is wanted — decide explicitly.)
 
-## 6. Validate (the CI gate)
+## 6. Validate
 ```bash
-./update_deps.sh --check    # must be clean — this is exactly the check-depsets job
+./update_deps.sh --check    # must be clean (recompiles all entries + diffs vs committed)
 ```
 Then sanity-check a representative lock installs and the template runs (`rayapp test <name>` /
 `references/run-tests-locally-with-rayapp.md`). For per-template test dispatch and recovery, reuse
