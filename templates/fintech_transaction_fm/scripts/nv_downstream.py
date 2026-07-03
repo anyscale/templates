@@ -162,6 +162,9 @@ def main():
     ap.add_argument("--eval-n", type=int, default=100_000)
     ap.add_argument("--model-dir", default=P["checkpoint"])
     ap.add_argument("--pooling", default="last", choices=["last", "last_real", "mean"])
+    ap.add_argument("--embed-max-len", type=int, default=None,
+                    help="truncate each window to its last N tokens before embedding "
+                         "(NVIDIA NB04 uses 128 ≈ 10 txns; default None = full window)")
     ap.add_argument("--num-workers", type=int, default=8)
     ap.add_argument("--embed-batch", type=int, default=64)
     ap.add_argument("--skip-embed", action="store_true",
@@ -180,7 +183,7 @@ def main():
         print(f"[nv] embedding sampled windows (tag={args.tag}) ...", flush=True)
         extract_embeddings(ds=sample_ds, checkpoint_dir=args.model_dir, output_path=emb_path,
                            num_workers=args.num_workers, use_gpu=True, batch_size=args.embed_batch,
-                           pooling=args.pooling)
+                           pooling=args.pooling, max_ctx=args.embed_max_len)
         embedding_health(emb_path)
     print(ray.get(fit_and_eval.remote(emb_path, P["raw"])), flush=True)
 

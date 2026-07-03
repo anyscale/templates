@@ -20,11 +20,44 @@ import numpy as np
 import torch
 
 
+def _truncate_to_last(batch: dict, K: int) -> dict:
+    """Keep each window's last K real tokens (BOS + most-recent txns … EOS).
+
+    Windows are right-padded [BOS, txn…, EOS, pad…]. For a window longer than K
+    we keep BOS + the final K-1 real tokens (which end in EOS/target), so the
+    embedded context is the most-recent ~K/13 transactions — matching NVIDIA's
+    NB04 MAX_LENGTH=128. Shorter windows are returned unchanged (re-padded to K).
+    """
+    ids = np.stack(batch["input_ids"]) if batch["input_ids"].dtype == object else np.asarray(batch["input_ids"])
+    am = np.stack(batch["attention_mask"]) if batch["attention_mask"].dtype == object else np.asarray(batch["attention_mask"])
+    B = ids.shape[0]
+    n = am.sum(1).astype(int)
+    out_ids = np.zeros((B, K), ids.dtype)
+    out_am = np.zeros((B, K), am.dtype)
+    for r in range(B):
+        nr = n[r]
+        if nr <= K:
+            out_ids[r, :nr] = ids[r, :nr]; out_am[r, :nr] = 1
+        else:
+            out_ids[r, 0] = ids[r, 0]                       # BOS
+            out_ids[r, 1:K] = ids[r, nr - (K - 1):nr]       # last K-1 real (…EOS)
+            out_am[r, :K] = 1
+    b = dict(batch)
+    b["input_ids"] = out_ids
+    b["attention_mask"] = out_am
+    return b
+
+
 class EmbeddingExtractor:
-    def __init__(self, checkpoint_dir: str, pooling: str = "last"):
+    def __init__(self, checkpoint_dir: str, pooling: str = "last", max_ctx: int | None = None):
         from .model import build_model
 
         self.pooling = pooling
+        # NVIDIA embeds each transaction from only its most-recent context
+        # (NB04 MAX_LENGTH=128 tokens ≈ 10 txns), even though pretraining uses
+        # 4096. max_ctx truncates each window to its last `max_ctx` real tokens
+        # so the customer vector reflects recent behavior, not a 314-txn average.
+        self.max_ctx = max_ctx
 
         with open(os.path.join(checkpoint_dir, "model_config.json")) as f:
             mcfg = json.load(f)
@@ -48,6 +81,8 @@ class EmbeddingExtractor:
             v = np.stack(batch[k]) if batch[k].dtype == object else batch[k]
             return torch.as_tensor(v, dtype=torch.long, device=self.device)
 
+        if self.max_ctx:
+            batch = _truncate_to_last(batch, self.max_ctx)
         tensors = {k: to_tensor(k) for k in ("input_ids", "attention_mask")}
         # bf16 autocast mirrors pretraining: at seq_len 4096 the fp32 attention
         # activations OOM even a 24 GiB A10G, and last-token pooling is unaffected
@@ -76,6 +111,7 @@ def extract_embeddings(
     use_gpu: bool = False,
     batch_size: int = 256,
     pooling: str = "last",
+    max_ctx: int | None = None,
     ds=None,
 ) -> str:
     """Run distributed batch embedding extraction and write Parquet.
@@ -90,7 +126,7 @@ def extract_embeddings(
         ds = ray.data.read_parquet(tokenized_path)
     ds = ds.map_batches(
         EmbeddingExtractor,
-        fn_constructor_kwargs={"checkpoint_dir": checkpoint_dir, "pooling": pooling},
+        fn_constructor_kwargs={"checkpoint_dir": checkpoint_dir, "pooling": pooling, "max_ctx": max_ctx},
         batch_size=batch_size,
         compute=ray.data.ActorPoolStrategy(min_size=1, max_size=num_workers),
         num_gpus=1 if use_gpu else 0,
