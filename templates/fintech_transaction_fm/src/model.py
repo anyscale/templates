@@ -94,10 +94,18 @@ class TransactionFM(nn.Module):
             attention_mask=batch["attention_mask"],
         ).last_hidden_state
         mask = batch["attention_mask"]
-        if pooling == "last":
-            last = mask.long().sum(dim=1) - 1  # index of last real token
-            return hidden[torch.arange(hidden.size(0), device=hidden.device), last]
-        m = mask.unsqueeze(-1).float()
+        n_real = mask.long().sum(dim=1)  # count of real tokens per row
+        ar = torch.arange(hidden.size(0), device=hidden.device)
+        if pooling in ("last", "last_token"):
+            # last non-pad position — but that's always <eos>, whose next-token
+            # target is the (masked) first pad, so it receives NO LM gradient and
+            # tends to collapse. Kept for parity/experiments.
+            return hidden[ar, (n_real - 1).clamp(min=0)]
+        if pooling == "last_real":
+            # the token BEFORE <eos> (the last real transaction token) — this one
+            # IS trained (it predicts <eos> after attending to the full history).
+            return hidden[ar, (n_real - 2).clamp(min=0)]
+        m = mask.unsqueeze(-1).float()  # "mean": average all real positions
         return (hidden * m).sum(dim=1) / m.sum(dim=1).clamp(min=1.0)
 
 

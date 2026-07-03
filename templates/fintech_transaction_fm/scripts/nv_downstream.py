@@ -161,6 +161,7 @@ def main():
     ap.add_argument("--train-total", type=int, default=1_000_000)
     ap.add_argument("--eval-n", type=int, default=100_000)
     ap.add_argument("--model-dir", default=P["checkpoint"])
+    ap.add_argument("--pooling", default="last", choices=["last", "last_real", "mean"])
     ap.add_argument("--num-workers", type=int, default=8)
     ap.add_argument("--embed-batch", type=int, default=64)
     ap.add_argument("--skip-embed", action="store_true",
@@ -179,7 +180,7 @@ def main():
         print(f"[nv] embedding sampled windows (tag={args.tag}) ...", flush=True)
         extract_embeddings(ds=sample_ds, checkpoint_dir=args.model_dir, output_path=emb_path,
                            num_workers=args.num_workers, use_gpu=True, batch_size=args.embed_batch,
-                           pooling="last")
+                           pooling=args.pooling)
         embedding_health(emb_path)
     print(ray.get(fit_and_eval.remote(emb_path, P["raw"])), flush=True)
 
