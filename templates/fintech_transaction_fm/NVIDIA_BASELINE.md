@@ -119,6 +119,42 @@ full merchant_id + raw city/state strings and ordinal-encode at downstream (need
 re-tokenize of eval). fm-only is the real question and is exact now.
 First full run (tag=sample_embeddings, 1M/100k) launched 2026-07-03 ~19:37; result TBD.
 
+## ✅ FM FIXED (2026-07-03) — the divergence was EMBEDDING CONTEXT LENGTH
+Symptom: fm-only AUC 0.62 (near random), fusion ≤ raw. Ruled out: pooling position
+(last vs last_real both collapsed), undertraining (we run ~16k steps to ppl 1.7 vs
+their 30-step demo), weight-load bug (75/75 keys match), tokenizer (ours == their
+default 12-field pipeline). **Root cause:** NVIDIA (NB04) pretrains at 4096 but
+**extracts each txn's embedding from only its last MAX_LENGTH=128 tokens (~10 txns),
+last_token pooled.** We embedded from up to 314 txns (seq_len 4096) → the last-token
+vector averages away into anisotropy. Fix: `EmbeddingExtractor(max_ctx=128)` truncates
+each window to BOS + last 127 real tokens (…EOS). Result (fast profile, noisy 34
+frauds): **fm AUC 0.62→0.795, fm AP 0.0023→0.0092, fusion 0.146 > raw 0.131** — FM
+now adds lift like NVIDIA. (High pairwise cosine 0.97 was benign transformer
+anisotropy, NOT collapse — a red herring.) Full 100k run in progress for stable nums.
+Faithfulness principle reaffirmed: this was a divergence to eliminate, not a knob.
+TODO make it clean in the pipeline: either tokenize eval windows at seq_len 128
+(matches NB04, 32x cheaper embed) or keep max_ctx truncation; wire into configs/nbs.
+
+## ⚠️ UPDATE — 128-ctx wasn't enough; the REAL divergence is SINGLE-TXN embedding
+Full 100k, 128-token-truncated embedding (stable, ~113 frauds):
+  raw AUC 0.986/AP 0.162 · fm AUC 0.781/AP 0.031 · fusion AUC 0.984/AP 0.142.
+Gap NOT closed: fm AUC 0.781 < NVIDIA 0.878, and **fusion 0.142 < raw 0.162** (FM adds
+NO lift — the whole point fails). Also the low-lr fusion/raw fits early-stop almost
+immediately on the noisy 100k val (fusion best_iter=0) — a fitting-stability confound.
+
+**THE fundamental divergence (from reading `src/tokenizer/pipeline.py::encode`):**
+NVIDIA's embedding (NB04) runs `encode(token_df, max_length=128)` where token_df has
+**one row per transaction**, and encode makes `<bos> col1..col12 <eos>` — i.e. **each
+transaction is embedded ALONE** (~14 real tokens; 128 is just pad headroom). Their FM is
+pretrained on multi-txn sequences (`to_corpus_lines`, chunk 315) but at INFERENCE embeds
+**single transactions**. WE embed the whole history window (up to 314 txns) → a blurry
+history summary, not NVIDIA's crisp per-transaction vector. That's why fusion doesn't add
+lift. **Fix = embed single transactions.** Our eval window ends with the target txn's 12
+tokens, so `--embed-max-len 14` (BOS + target 12 tokens + EOS) reproduces NVIDIA's
+single-txn encoding without re-tokenizing. Testing now (tag=fasttxn). If it works, make
+it clean: tokenize/encode eval as single-txn (or keep max_ctx=14) and wire to nb/configs.
+Reminder: high embedding cosine (~0.97) is benign anisotropy, NOT the problem.
+
 ## THE PLAN (resume here)
 Goal Zach set: match then beat NVIDIA, honestly, keeping the Ray pipeline clean.
 
