@@ -23,6 +23,15 @@ Schema mapping notes (TabFormer -> canonical):
   kept, countries -> FOREIGN, empty/online -> ONLINE)
 * ``card_type``     = modal transaction channel per card (swipe/chip/online)
 * ``issuer`` / ``bin_region`` = not present in TabFormer -> "UNKNOWN"
+
+Per-transaction fields kept for the downstream raw baseline (NVIDIA's 13-feature
+set uses these directly, not per-card summaries):
+
+* ``use_chip``       = transaction channel (swipe/chip/online) — the strongest
+  single fraud signal; NOT the same as the per-card ``card_type`` mode
+* ``merchant_state`` = this transaction's Merchant State (2-letter / ONLINE / FOREIGN)
+* ``merchant_city``  = this transaction's Merchant City (raw string)
+* ``zip``            = this transaction's merchant Zip (NaN for online)
 """
 
 from __future__ import annotations
@@ -43,7 +52,8 @@ CSV_NAME = "card_transaction.v1.csv"
 
 _CSV_COLUMNS = [
     "User", "Card", "Year", "Month", "Day", "Time",
-    "Amount", "Use Chip", "Merchant Name", "Merchant State", "MCC", "Is Fraud?",
+    "Amount", "Use Chip", "Merchant Name", "Merchant City", "Merchant State",
+    "Zip", "MCC", "Is Fraud?",
 ]
 
 
@@ -113,12 +123,20 @@ def normalize_batch(b: pd.DataFrame) -> pd.DataFrame:
             "hour": hm[0],
             "day_of_week": ts.dt.dayofweek.astype(np.int64),
             "is_fraud": (b["Is Fraud?"] == "Yes").astype(np.int64),
+            # Per-transaction fields NVIDIA's raw baseline uses. "channel" and
+            # "state_norm" also feed the per-card statics groupby below; both are
+            # kept on every row (see attach_statics) so the downstream raw baseline
+            # can match NVIDIA's 13-feature set. Channel (swipe/chip/ONLINE) is the
+            # single strongest fraud signal — collapsing it to a per-card mode threw
+            # it away.
             "channel": b["Use Chip"].str.split(" ").str[0].str.lower(),
             "state_norm": np.select(
                 [state.str.len() == 2, state.str.len() == 0],
                 [state, "ONLINE"],
                 default="FOREIGN",
             ),
+            "merchant_city": b["Merchant City"].fillna("").astype(str),
+            "zip": b["Zip"].astype(np.float64),  # NaN for online txns; encoded downstream
         }
     )
 
@@ -170,7 +188,10 @@ def attach_statics(ds, statics: pd.DataFrame):
     card_type = dict(zip(statics["card_id"], statics["card_type"]))
 
     def _attach(b: pd.DataFrame) -> pd.DataFrame:
-        b = b.drop(columns=["channel", "state_norm"])
+        # Promote the working columns to their canonical per-transaction names
+        # (kept, not dropped — the downstream raw baseline needs them) and add the
+        # per-card statics on top.
+        b = b.rename(columns={"channel": "use_chip", "state_norm": "merchant_state"})
         b["issuer"] = "UNKNOWN"
         b["bin_region"] = "UNKNOWN"
         b["card_type"] = b["card_id"].map(card_type)

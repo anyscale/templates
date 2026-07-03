@@ -6,21 +6,24 @@ data:
   num_cards: 20000           # > the ~6.1k real cards = use every card
 
 tokenize:
-  seq_len: 128
+  seq_len: 1024            # NOW IN TOKENS (~12/txn) -> ~78 txns of context
   target_eval_samples: 150000
   max_pretrain_windows: null
   holdout_keep: null
   shuffle_partitions: 128
 
-model:
+model:                     # mid-size Llama decoder
   d_model: 256
-  n_heads: 4
   n_layers: 4
-  dim_ff: 512
+  n_heads: 8
+  n_kv_heads: 2
+  head_dim: 32
+  dim_ff: 704
+  rope_theta: 500000.0
 
 pretrain:
   epochs: 15
-  batch_size: 512
+  batch_size: 32          # 1024-token sequences
   lr: 8.0e-4
   num_workers: 2
   use_gpu: true

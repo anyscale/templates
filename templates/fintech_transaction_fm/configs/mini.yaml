@@ -14,22 +14,25 @@ data:
   num_cards: 2000            # cards sampled from the source (each card = one txn sequence)
 
 tokenize:
-  seq_len: 32                # txns per window (the tokenizer emits 1 position per txn)
+  seq_len: 256               # NOW IN TOKENS (~12/txn) -> ~19 txns of context (CPU smoke)
   target_eval_samples: 30000 # eval-set sizing: all frauds + downsampled, importance-weighted normals
   max_pretrain_windows: 8    # cap pretrain windows per card (null = every non-overlapping window)
   holdout_keep: null         # fraction of val/test txns scored directly (null = downsample normals
                              # like train; 1.0 = score EVERY holdout txn — exact metrics, big eval set)
   shuffle_partitions: 32     # hash-shuffle partitions for the tokenize stage
 
-model:                       # transformer encoder dims (fits one GPU at every scale -> DDP)
+model:                       # tiny Llama decoder (fits one GPU/CPU -> DDP)
   d_model: 64
-  n_heads: 2
   n_layers: 2
+  n_heads: 4
+  n_kv_heads: 2
+  head_dim: 16
   dim_ff: 128
+  rope_theta: 500000.0
 
 pretrain:
   epochs: 2
-  batch_size: 64             # per training worker
+  batch_size: 8              # per training worker
   lr: 3.0e-4
   num_workers: 1
   use_gpu: false

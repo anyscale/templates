@@ -48,10 +48,18 @@ from sklearn.metrics import average_precision_score, roc_auc_score
 
 _SPLITS = ("train", "val", "test")
 
-# The four raw target-transaction features, after the same log-amount transform
-# the in-process baseline used. These are the ``raw`` feature set and the
-# tabular half of ``fusion``.
-RAW_FEATURE_COLS = ("f_log_amount", "raw_hour", "raw_dow", "raw_mcc")
+# The raw target-transaction features — the ``raw`` feature set and the tabular
+# half of ``fusion``. This mirrors NVIDIA's 13-column XGBoost baseline (User, Card,
+# Year, Month, Day, Hour, Amount, Use Chip, Merchant Name, Merchant City, Merchant
+# State, Zip, MCC) so the raw baseline is a fair, strong comparison — the earlier
+# 4-field version handicapped it and made the FM look better than it was. All
+# columns are numeric (ints/log-amount); XGBoost splits on them like NVIDIA's
+# OrdinalEncoder output.
+RAW_FEATURE_COLS = (
+    "f_log_amount", "raw_hour", "raw_dow", "raw_mcc",
+    "raw_use_chip", "raw_merchant_state", "raw_merchant_city", "raw_zip",
+    "raw_merchant_id", "raw_user", "raw_card", "raw_year", "raw_month", "raw_day",
+)
 # Columns carried through training that are NOT model features.
 _NON_FEATURE_COLS = ("label", "weight", "split")
 
@@ -76,6 +84,27 @@ def expand_features(batch):
     out["raw_hour"] = batch["raw_hour"].astype(np.float32)
     out["raw_dow"] = batch["raw_dow"].astype(np.float32)
     out["raw_mcc"] = batch["raw_mcc"].astype(np.float32)
+
+    # Extended raw baseline (NVIDIA's 13-col set). .get-guard so the notebook still
+    # runs on embeddings produced before these columns existed (they default to -1).
+    def _raw(name):
+        col = batch[name].to_numpy() if name in batch.columns else np.full(len(batch), -1)
+        return col.astype(np.float32)
+
+    for f in ("raw_use_chip", "raw_merchant_state", "raw_merchant_city", "raw_zip",
+              "raw_merchant_id"):
+        out[f] = _raw(f)
+    # Split the combined card id back into NVIDIA's User + Card.
+    cid = (batch["raw_card_id"].to_numpy(np.int64)
+           if "raw_card_id" in batch.columns else np.full(len(batch), -1, np.int64))
+    out["raw_user"] = (cid // 100).astype(np.float32)
+    out["raw_card"] = (cid % 100).astype(np.float32)
+    # Date parts from the target transaction's timestamp (NVIDIA uses Year/Month/Day).
+    ts = pd.to_datetime(batch["raw_ts"].to_numpy(np.int64), unit="s")
+    out["raw_year"] = np.asarray(ts.year, dtype=np.float32)
+    out["raw_month"] = np.asarray(ts.month, dtype=np.float32)
+    out["raw_day"] = np.asarray(ts.day, dtype=np.float32)
+
     out["label"] = batch["label"].astype(np.int64)
     out["weight"] = batch["weight"].astype(np.float64)
     out["split"] = batch["split"].astype(str)
@@ -102,10 +131,17 @@ def xgb_params(scale_pos_weight: float, use_gpu: bool) -> dict:
         "eval_metric": "aucpr",
         "tree_method": "hist",
         "device": "cuda" if use_gpu else "cpu",
-        "max_depth": 5,
-        "eta": 0.1,
+        # Stronger recipe for the imbalanced task (was max_depth 5 / eta 0.1): deeper
+        # trees capture more feature interactions, a lower eta + more rounds (see
+        # num_boost_round) learns more finely, and min_child_weight / reg_lambda
+        # regularize against the noisy rare class. Early stopping on val picks the
+        # round, so the higher ceiling can't overfit unchecked.
+        "max_depth": 8,
+        "min_child_weight": 5,
+        "eta": 0.03,
         "subsample": 0.8,
         "colsample_bytree": 0.8,
+        "reg_lambda": 2.0,
         "scale_pos_weight": scale_pos_weight,
         "seed": 0,  # pinned: subsampled fits at 0.1% prevalence vary a LOT
     }
@@ -168,8 +204,8 @@ def train_feature_set(
         train_loop_config={
             "label_column": "label",
             "params": xgb_params(scale_pos_weight, scaling_config.use_gpu),
-            "num_boost_round": 400,
-            "early_stopping_rounds": 30,
+            "num_boost_round": 800,   # lower eta -> more rounds; val early-stopping picks the best
+            "early_stopping_rounds": 50,
         },
         scaling_config=scaling_config,
         run_config=RunConfig(

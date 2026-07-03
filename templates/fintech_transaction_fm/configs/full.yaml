@@ -8,25 +8,32 @@ data:
   num_cards: 200000          # > the ~6.1k real cards = use every card
 
 tokenize:
-  seq_len: 512
+  seq_len: 4096             # NOW IN TOKENS (~12/txn) -> ~314 txns of context (NVIDIA uses 4096)
   target_eval_samples: 400000
   max_pretrain_windows: null
   holdout_keep: 1.0          # exact full-data metrics (~5M eval windows)
   shuffle_partitions: 128
 
-model:
+model:                       # Llama causal decoder — NVIDIA blueprint config verbatim
   d_model: 512
-  n_heads: 8
   n_layers: 8
-  dim_ff: 2048
+  n_heads: 8
+  n_kv_heads: 2              # grouped-query attention (4:1)
+  head_dim: 64
+  dim_ff: 1408               # SwiGLU intermediate
+  rope_theta: 500000.0
 
-pretrain:
-  epochs: 20                 # epochs are cheap: non-overlapping 512-txn windows = ~38k/epoch
-  batch_size: 64             # T4-safe ceiling at seq 512 — the B x heads x S x S attention
-                             # buffers + 2000-way merchant MLM head logits dominate memory
-  lr: 4.0e-4
-  num_workers: 8             # DDP: more workers grow the global batch (64 x N), so this is a
-                             # modest, LR-safe bump; going wider would need an LR retune
+pretrain:                    # causal-LM (next-token) pretraining of the Llama decoder
+  epochs: 8                  # 4096-token Llama seqs are heavy; ~8 epochs >> NVIDIA's ~3000 steps
+  batch_size: 4              # global 4x8=32; gradient checkpointing keeps peak ~9GiB on the 15.6GiB GPUs
+                             # full-vocab logits tensor (batch x seq x vocab) that OOM'd at 8
+  lr: 2.0e-4                 # cosine PEAK lr (NVIDIA blueprint)
+  lr_schedule: cosine        # warmup then cosine decay to min_lr_ratio*lr
+  warmup_ratio: 0.05
+  min_lr_ratio: 0.03         # floor = 3% of peak (NVIDIA: 6.5e-6 / 2e-4)
+  weight_decay: 0.077        # transaction-FM recipe
+  betas: [0.9, 0.95]         # lower beta2 for steadier late-training updates
+  num_workers: 8             # DDP: global batch = batch_size x N
   use_gpu: true
   use_fsdp: false
 

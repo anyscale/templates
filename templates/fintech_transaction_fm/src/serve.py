@@ -45,6 +45,7 @@ class TransactionEmbeddingService:
             os.path.join(checkpoint_dir, "vocab.json"),
             arch=mcfg["arch"],
             max_len=mcfg["max_len"],
+            objective=mcfg.get("objective", "mlm"),  # causal ckpts need the causal mask
         )
         state = torch.load(os.path.join(checkpoint_dir, "model.pt"), map_location=self.device)
         self.model.load_state_dict(state)

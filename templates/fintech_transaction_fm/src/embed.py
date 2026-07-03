@@ -40,29 +40,23 @@ class EmbeddingExtractor:
         state = torch.load(os.path.join(checkpoint_dir, "model.pt"), map_location=self.device)
         self.model.load_state_dict(state)
         self.model.to(self.device).eval()
-        print(f"[embed] loaded TransactionFM on {self.device}")
+        print(f"[embed] loaded TransactionFM (Llama) on {self.device}")
 
     def __call__(self, batch: dict) -> dict:
-        cols = (
-            [f"d_{f}" for f in self.vocab["dynamic_fields"]]
-            + [f"s_{f}" for f in self.vocab["static_fields"]]
-            + ["attention_mask"]
-        )
-        if self.vocab.get("time_aware"):
-            cols.append("time_bucket")
-
-        def to_tensor(k, dtype):
+        # Flat token stream: the model needs only input_ids + attention_mask.
+        def to_tensor(k):
             v = np.stack(batch[k]) if batch[k].dtype == object else batch[k]
-            return torch.as_tensor(v, dtype=dtype, device=self.device)
+            return torch.as_tensor(v, dtype=torch.long, device=self.device)
 
-        tensors = {k: to_tensor(k, torch.long) for k in cols}
-        if self.vocab.get("amount_mode") == "soft":
-            tensors["d_amount_frac"] = to_tensor("d_amount_frac", torch.float32)
+        tensors = {k: to_tensor(k) for k in ("input_ids", "attention_mask")}
         with torch.no_grad():
             emb = self.model.sequence_embedding(tensors, pooling=self.pooling).cpu().numpy()
         passthrough = [
             "card_id", "label", "split", "weight",
             "raw_amount", "raw_hour", "raw_dow", "raw_mcc", "raw_ts",
+            # extended raw target features for the NVIDIA-style baseline
+            "raw_use_chip", "raw_merchant_state", "raw_merchant_city",
+            "raw_zip", "raw_merchant_id", "raw_card_id",
         ]
         out = {k: batch[k] for k in passthrough if k in batch}
         out["embedding"] = [row for row in emb.astype(np.float32)]

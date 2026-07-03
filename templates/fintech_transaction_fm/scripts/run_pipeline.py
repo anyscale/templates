@@ -113,7 +113,7 @@ def main():
         splits = json.load(f)
     tk = cfg["tokenize"]
     normal_keep = eval_normal_keep(splits, tk["target_eval_samples"])
-    write_vocab(paths["vocab"])
+    write_vocab(paths["vocab"], tk["seq_len"])
 
     def tokenized(emit: str):
         return tokenize_dataset(

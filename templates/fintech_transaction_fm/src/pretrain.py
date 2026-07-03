@@ -1,9 +1,10 @@
-"""Distributed masked-feature-modeling pretraining with Ray Train.
+"""Distributed causal-LM pretraining with Ray Train.
 
-The training function is plain PyTorch. Ray Train handles the distributed parts:
-worker setup, dataset sharding, DDP/FSDP wrapping, checkpointing, and fault
-tolerance — the same code runs on 1 CPU worker (CI mini) or N GPU workers
-(the real distributed story) by changing only ``ScalingConfig``.
+Pretrains the Llama decoder (src/model.py) by next-token prediction over the flat
+token stream from src/flat_tokenizer.py — NVIDIA's transaction-FM recipe. The
+training function is plain PyTorch; Ray Train handles worker setup, dataset
+sharding, DDP/FSDP wrapping, and checkpointing — the same code runs on 1 CPU
+worker (CI mini) or N GPU workers by changing only ``ScalingConfig``.
 """
 
 from __future__ import annotations
@@ -13,7 +14,6 @@ import math
 import os
 import shutil
 import tempfile
-from collections import defaultdict
 
 import torch
 
@@ -22,7 +22,7 @@ import ray.train
 from ray.train import Checkpoint, RunConfig, ScalingConfig
 from ray.train.torch import TorchTrainer
 
-from .model import build_model, mask_batch
+from .model import build_model
 
 
 def _unwrap(model):
@@ -30,20 +30,12 @@ def _unwrap(model):
 
 
 def train_func(config: dict):
-    # Same init on every rank (DDP would broadcast anyway; this also makes
-    # *runs* reproducible for A/B comparisons), then per-rank reseed below so
-    # MLM masking differs across workers deterministically.
+    # Reduce CUDA fragmentation on long-sequence training (set before first alloc).
+    os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
+    # Same init on every rank (DDP broadcasts anyway; also makes runs reproducible).
     torch.manual_seed(config.get("seed", 0))
 
     vocab_path = config["vocab_path"]
-    with open(vocab_path) as f:
-        vocab = json.load(f)
-    dynamic_fields = vocab["dynamic_fields"]
-    weighting = config.get("loss_weighting", "uncertainty")
-
-    # Per-column dtypes: tokens are int64, the soft-bin amount weight is float32.
-    dtypes = {"d_amount_frac": torch.float32} if vocab.get("amount_mode") == "soft" else None
-
     model = build_model(vocab_path, arch=config["arch"], max_len=config["max_len"])
 
     use_fsdp = config.get("use_fsdp", False) and torch.cuda.is_available()
@@ -56,47 +48,76 @@ def train_func(config: dict):
         model = ray.train.torch.prepare_model(model)
     base = _unwrap(model)
 
-    optimizer = torch.optim.AdamW(model.parameters(), lr=config["lr"])
+    # AdamW betas/weight-decay (transaction-FM recipe: beta2 0.95, wd 0.077).
+    betas = tuple(config.get("betas", (0.9, 0.999)))
+    weight_decay = float(config.get("weight_decay", 0.0))
+    optimizer = torch.optim.AdamW(
+        model.parameters(), lr=config["lr"], betas=betas, weight_decay=weight_decay
+    )
+
+    # Warmup + cosine-decay LR schedule, stepped every optimizer step (needs
+    # total_steps = (sequences / workers / batch) * epochs, passed in).
+    scheduler = None
+    if config.get("lr_schedule") == "cosine" and int(config.get("total_steps", 0)) > 0:
+        total_steps = int(config["total_steps"])
+        warmup_steps = int(config.get("warmup_steps", 0))
+        min_lr_ratio = float(config.get("min_lr_ratio", 0.0))
+
+        def _lr_lambda(step):
+            if warmup_steps > 0 and step < warmup_steps:
+                return (step + 1) / warmup_steps
+            progress = (step - warmup_steps) / max(1, total_steps - warmup_steps)
+            progress = min(1.0, max(0.0, progress))
+            return min_lr_ratio + (1.0 - min_lr_ratio) * 0.5 * (1.0 + math.cos(math.pi * progress))
+
+        scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, _lr_lambda)
+
     train_shard = ray.train.get_dataset_shard("train")
-    mask_prob = config.get("mask_prob", 0.15)
-    torch.manual_seed(config.get("seed", 0) + ray.train.get_context().get_world_rank())
+    # Token ids/mask are int32 on disk; the model needs long indices. Single dtype
+    # (not a per-column dict) — the pretrain dataset is only input_ids/attention_mask.
+    dtypes = torch.long
 
     for epoch in range(config["epochs"]):
         model.train()
         running, n_batches = 0.0, 0
-        ce_sum, acc_sum, tot_n = defaultdict(float), defaultdict(float), 0
         for batch in train_shard.iter_torch_batches(
             batch_size=config["batch_size"], dtypes=dtypes
         ):
-            corrupted, targets, masked = mask_batch(batch, dynamic_fields, mask_prob)
-            n = int(masked.sum())
-            if n == 0:
-                continue
-            # Heads + loss run inside forward so DDP all-reduces every param.
-            loss, stats = model(corrupted, targets=targets, masked=masked, weighting=weighting)
+            input_ids, attn = batch["input_ids"], batch["attention_mask"]
+            # Next-token labels: predict every real position; ignore pads. The
+            # LlamaForCausalLM head shifts internally.
+            labels = input_ids.clone()
+            labels[attn == 0] = -100
+            # bf16 autocast: halves activation/attention memory and speeds A10G.
+            # (bf16 needs no GradScaler.) The full-vocab logits are the memory
+            # driver — keep per-worker batch small (see configs) to bound them.
+            with torch.autocast(device_type="cuda", dtype=torch.bfloat16,
+                                enabled=torch.cuda.is_available()):
+                loss, _ = model({"input_ids": input_ids, "attention_mask": attn, "labels": labels})
 
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
+            if scheduler is not None:
+                scheduler.step()
             running += float(loss.item())
             n_batches += 1
-            tot_n += n
-            for f, d in stats.items():
-                ce_sum[f] += d["ce"] * n   # weight per-field means by #masked
-                acc_sum[f] += d["acc"] * n
 
-        # The weighted total drifts as the log-variances learn — watch the
-        # per-field accuracy and perplexity instead. Perplexity vs. the field's
-        # vocab size tells you whether it learned structure (ppl << vocab = good).
-        metrics = {"epoch": epoch, "mlm_loss": running / max(n_batches, 1)}
-        macro_acc = 0.0
-        for f in dynamic_fields:
-            mean_ce = ce_sum[f] / max(tot_n, 1)
-            acc = acc_sum[f] / max(tot_n, 1)
-            metrics[f"acc_{f}"] = acc
-            metrics[f"ppl_{f}"] = math.exp(min(mean_ce, 20.0))
-            macro_acc += acc
-        metrics["acc_macro"] = macro_acc / len(dynamic_fields)
+        avg = running / max(n_batches, 1)
+        metrics = {
+            "epoch": epoch,
+            "lm_loss": avg,
+            "perplexity": math.exp(min(avg, 20.0)),
+            "lr": optimizer.param_groups[0]["lr"],
+        }
+        # Per-epoch progress (rank 0 only). report() ships metrics to the driver
+        # but doesn't surface them live, so this makes the curve visible in logs.
+        if ray.train.get_context().get_world_rank() == 0:
+            print(
+                f"[pretrain] epoch {epoch + 1}/{config['epochs']}  "
+                f"lm_loss={avg:.3f}  ppl={metrics['perplexity']:.1f}  lr={metrics['lr']:.2e}",
+                flush=True,
+            )
 
         # Checkpoint on the last epoch (rank 0 writes the weights).
         checkpoint = None
@@ -106,11 +127,7 @@ def train_func(config: dict):
             shutil.copy(vocab_path, os.path.join(tmp, "vocab.json"))
             with open(os.path.join(tmp, "model_config.json"), "w") as f:
                 json.dump(
-                    {
-                        "size": config["size"],
-                        "max_len": config["max_len"],
-                        "arch": config["arch"],
-                    },
+                    {"size": config["size"], "max_len": config["max_len"], "arch": config["arch"]},
                     f,
                 )
             checkpoint = Checkpoint.from_directory(tmp)
@@ -146,6 +163,12 @@ def pretrain(
     use_gpu: bool = False,
     use_fsdp: bool = False,
     loss_weighting: str = "uncertainty",
+    objective: str = "mlm",
+    weight_decay: float = 0.0,
+    betas: tuple = (0.9, 0.999),
+    lr_schedule: str | None = None,
+    warmup_ratio: float = 0.0,
+    min_lr_ratio: float = 0.0,
     storage_base: str | None = None,
     seed: int = 0,
 ) -> dict:
@@ -173,6 +196,13 @@ def pretrain(
     ds = train_ds if train_ds is not None else ray.data.read_parquet(tokenized_path)
     storage_path = os.path.join(storage_base, "ray_results") if storage_base else None
 
+    # Total optimizer steps for the LR schedule: each worker steps once per batch
+    # of its shard, so (windows / workers / batch) * epochs. Counted once here.
+    n_windows = int(ds.count())
+    steps_per_epoch = max(1, math.ceil(n_windows / max(num_workers, 1) / batch_size))
+    total_steps = steps_per_epoch * epochs
+    warmup_steps = int(warmup_ratio * total_steps)
+
     trainer = TorchTrainer(
         train_func,
         train_loop_config={
@@ -185,6 +215,13 @@ def pretrain(
             "lr": lr,
             "use_fsdp": use_fsdp,
             "loss_weighting": loss_weighting,
+            "objective": objective,
+            "weight_decay": weight_decay,
+            "betas": tuple(betas),
+            "lr_schedule": lr_schedule,
+            "total_steps": total_steps,
+            "warmup_steps": warmup_steps,
+            "min_lr_ratio": min_lr_ratio,
             "seed": seed,
         },
         scaling_config=ScalingConfig(num_workers=num_workers, use_gpu=use_gpu),
@@ -196,7 +233,7 @@ def pretrain(
     save_checkpoint(result, checkpoint_out)
     m = result.metrics
     print(
-        f"[pretrain] final mlm_loss={m.get('mlm_loss', float('nan')):.4f} "
-        f"macro_acc={m.get('acc_macro', float('nan')):.3f} -> {checkpoint_out}"
+        f"[pretrain] final lm_loss={m.get('lm_loss', float('nan')):.4f} "
+        f"perplexity={m.get('perplexity', float('nan')):.2f} -> {checkpoint_out}"
     )
     return m

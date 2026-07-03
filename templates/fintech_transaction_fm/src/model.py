@@ -1,23 +1,19 @@
-"""TransactionFM — a compact, field-split transaction encoder.
+"""TransactionFM — a compact Llama causal decoder over tokenized transactions.
 
-Architecture (deliberately small — the model is *not* the hard part):
+This is NVIDIA's transaction-FM blueprint architecture: a small Llama decoder
+pretrained by **next-token prediction** over the flat token stream from
+``flat_tokenizer`` (~12 tokens per transaction, one shared vocab). We build the
+decoder from ``transformers`` (LlamaConfig/LlamaForCausalLM) rather than
+hand-rolling RoPE/GQA/SwiGLU, with the exact hyperparameters from NVIDIA's
+released ``config.json`` (hidden 512, 8 layers, 8 query / 2 KV heads, head_dim
+64, SwiGLU intermediate 1408, RMSNorm, rope_theta 5e5).
 
-    dynamic field tokens ─ per-field embedding tables ─┐
-                                                       ├─ sum ─► per-txn vector
-    static field tokens ── per-field embedding tables ─┘        + positional
-                                                               + static (broadcast)
-                                                                     │
-                                                          Transformer encoder
-                                                          (bidirectional, MLM)
-                                                                     │
-                                          ┌──────────────────────────┼─────────────┐
-                                   MLM heads (pretrain)        mean-pool (embedding)
-                              one classifier per dynamic field   -> customer vector
+Two entry points, matching the old field-split model's API so the rest of the
+pipeline changes minimally:
 
-The encoder is bidirectional because the downstream tasks fintech cares about
-(fraud, churn, credit) are fixed-window classification, where masked-feature
-modeling beats next-token. Swap the attention mask + a causal head for the
-generative/NTP variant.
+* ``forward(batch)`` — training: causal-LM loss from ``input_ids``/``labels``.
+* ``sequence_embedding(batch, pooling="last")`` — the customer vector: the last
+  non-pad position's hidden state (right-padded, so it's the most recent txn).
 """
 
 from __future__ import annotations
@@ -26,224 +22,98 @@ import json
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 
-from .tokenizer import MASK, PAD
+from transformers import LlamaConfig, LlamaForCausalLM
+
+# NVIDIA decoder-foundation-model/config.json defaults (overridable via arch).
+_LLAMA_DEFAULTS = dict(
+    d_model=512, n_layers=8, n_heads=8, n_kv_heads=2, head_dim=64,
+    dim_ff=1408, rope_theta=500000.0, rms_eps=1e-5,
+)
 
 
 class TransactionFM(nn.Module):
     def __init__(
         self,
-        field_vocab_sizes: dict,
-        dynamic_fields: list,
-        static_fields: list,
-        d_model: int = 256,
-        n_heads: int = 4,
-        n_layers: int = 4,
-        dim_ff: int = 512,
-        dropout: float = 0.1,
-        max_len: int = 64,
-        time_aware: bool = True,
-        n_time_buckets: int = 0,
-        amount_mode: str = "hard",
+        vocab_size: int,
+        seq_length: int = 4096,
+        d_model: int = 512,
+        n_layers: int = 8,
+        n_heads: int = 8,
+        n_kv_heads: int = 2,
+        head_dim: int = 64,
+        dim_ff: int = 1408,
+        rope_theta: float = 500000.0,
+        rms_eps: float = 1e-5,
     ):
         super().__init__()
-        self.dynamic_fields = dynamic_fields
-        self.static_fields = static_fields
-        self.d_model = d_model
-        self.time_aware = time_aware and n_time_buckets > 0
-        self.amount_mode = amount_mode  # "hard" | "soft" (soft-binned amount)
-
-        self.dyn_emb = nn.ModuleDict(
-            {f: nn.Embedding(field_vocab_sizes[f], d_model, padding_idx=PAD) for f in dynamic_fields}
+        self.config = LlamaConfig(
+            vocab_size=vocab_size,
+            hidden_size=d_model,
+            num_hidden_layers=n_layers,
+            num_attention_heads=n_heads,
+            num_key_value_heads=n_kv_heads,
+            head_dim=head_dim,
+            intermediate_size=dim_ff,
+            hidden_act="silu",
+            rms_norm_eps=rms_eps,
+            rope_theta=rope_theta,
+            max_position_embeddings=max(seq_length, 8192),
+            attention_dropout=0.0,
+            pad_token_id=0, bos_token_id=1, eos_token_id=2,
+            tie_word_embeddings=False,
+            use_cache=False,  # training; no KV cache
         )
-        self.static_emb = nn.ModuleDict(
-            {f: nn.Embedding(field_vocab_sizes[f], d_model, padding_idx=PAD) for f in static_fields}
+        self.lm = LlamaForCausalLM(self.config)
+        # Gradient checkpointing: recompute activations in backward instead of
+        # storing all 8 layers' worth. Big memory saver at long context (4096
+        # tokens) on smaller GPUs (~15 GiB here), for a modest compute cost.
+        self.lm.gradient_checkpointing_enable()
+
+    def forward(self, batch: dict, **_):
+        """Causal-LM training step. ``batch`` has input_ids / attention_mask /
+        labels (labels = input_ids with pad -> -100; HF shifts internally)."""
+        out = self.lm(
+            input_ids=batch["input_ids"],
+            attention_mask=batch["attention_mask"],
+            labels=batch["labels"],
         )
-        self.pos_emb = nn.Embedding(max_len, d_model)        # ordinal: where in the sequence
-        if self.time_aware:
-            # time-aware: how long since the previous transaction
-            self.time_emb = nn.Embedding(n_time_buckets, d_model, padding_idx=PAD)
-        self.input_norm = nn.LayerNorm(d_model)
-        self.dropout = nn.Dropout(dropout)
-
-        layer = nn.TransformerEncoderLayer(
-            d_model=d_model,
-            nhead=n_heads,
-            dim_feedforward=dim_ff,
-            dropout=dropout,
-            batch_first=True,
-            activation="gelu",
-            norm_first=True,
-        )
-        self.encoder = nn.TransformerEncoder(layer, num_layers=n_layers)
-
-        # One MLM classification head per dynamic field.
-        self.mlm_heads = nn.ModuleDict(
-            {f: nn.Linear(d_model, field_vocab_sizes[f]) for f in dynamic_fields}
-        )
-        # Learned per-field homoscedastic log-variance (Kendall & Gal) so the
-        # easy 9-way day head and the hard 2002-way merchant head are balanced
-        # automatically instead of letting the big head dominate the gradient.
-        self.log_var = nn.ParameterDict(
-            {f: nn.Parameter(torch.zeros(())) for f in dynamic_fields}
-        )
-
-    # --- input assembly ---
-    def _embed(self, batch: dict):
-        any_field = batch[f"d_{self.dynamic_fields[0]}"]
-        B, S = any_field.shape
-        device = any_field.device
-
-        # .long(): token columns arrive as int32 (storage-efficient at long
-        # seq_len); nn.Embedding requires int64 indices.
-        x = torch.zeros(B, S, self.d_model, device=device)
-        for f in self.dynamic_fields:
-            if (
-                f == "amount_bucket"
-                and self.amount_mode == "soft"
-                and "d_amount_frac" in batch
-            ):
-                # Soft binning: blend the two adjacent bin embeddings so $86.99
-                # and $87.01 get near-identical vectors (no hard boundary).
-                lo = batch["d_amount_bucket"].long()
-                hi = torch.clamp(lo + 1, max=self.dyn_emb[f].num_embeddings - 1)
-                frac = batch["d_amount_frac"].unsqueeze(-1).float()  # [B,S,1]
-                x = x + (1.0 - frac) * self.dyn_emb[f](lo) + frac * self.dyn_emb[f](hi)
-            else:
-                x = x + self.dyn_emb[f](batch[f"d_{f}"].long())
-
-        static_vec = torch.zeros(B, self.d_model, device=device)
-        for f in self.static_fields:
-            static_vec = static_vec + self.static_emb[f](batch[f"s_{f}"].long())
-        x = x + static_vec.unsqueeze(1)  # broadcast static over all positions
-
-        pos = torch.arange(S, device=device).unsqueeze(0).expand(B, S)
-        x = x + self.pos_emb(pos)
-        if self.time_aware and "time_bucket" in batch:
-            x = x + self.time_emb(batch["time_bucket"].long())  # inter-txn gap
-        x = self.dropout(self.input_norm(x))
-
-        pad_mask = batch["attention_mask"] == 0  # True where padding
-        return x, pad_mask
-
-    def encode(self, batch: dict) -> torch.Tensor:
-        x, pad_mask = self._embed(batch)
-        return self.encoder(x, src_key_padding_mask=pad_mask)
-
-    def forward(self, batch: dict, targets: dict = None, masked=None, weighting: str = "uncertainty"):
-        """Training forward returns the MLM loss; with ``targets=None`` returns
-        the encoder hidden states.
-
-        The heads and ``log_var`` are applied *inside* ``forward`` on purpose, so
-        that under DDP every trainable parameter participates in the wrapped
-        forward pass and its gradients get all-reduced across workers.
-        """
-        hidden = self.encode(batch)
-        if targets is None:
-            return hidden
-        logits = self.mlm_logits(hidden)
-        return self.field_loss(logits, targets, masked, weighting)
-
-    def mlm_logits(self, hidden: torch.Tensor) -> dict:
-        return {f: head(hidden) for f, head in self.mlm_heads.items()}
-
-    def field_loss(self, logits: dict, targets: dict, masked, weighting: str = "uncertainty"):
-        """Sum the per-field masked cross-entropies and report per-field stats.
-
-        ``weighting="uncertainty"`` applies Kendall & Gal homoscedastic weighting
-        (loss_f * exp(-s_f) + 0.5*s_f, with s_f a learned log-variance) so heads
-        of very different difficulty/scale stay balanced. ``"mean"`` is the plain
-        unweighted average.
-
-        Returns (total_loss, stats) where stats[field] = {"ce", "acc"} — the
-        masked cross-entropy and top-1 accuracy for that field. These per-field
-        numbers (not the weighted total, which drifts as the log-variances learn)
-        are what you watch to confirm training is working.
-        """
-        ce, stats = {}, {}
-        for f in self.dynamic_fields:
-            lg, tg = logits[f][masked], targets[f][masked]
-            ce[f] = F.cross_entropy(lg, tg)
-            with torch.no_grad():
-                acc = (lg.argmax(dim=-1) == tg).float().mean()
-            stats[f] = {"ce": float(ce[f].item()), "acc": float(acc.item())}
-
-        if weighting == "uncertainty":
-            total = 0.0
-            for f in self.dynamic_fields:
-                s = self.log_var[f]
-                total = total + torch.exp(-s) * ce[f] + 0.5 * s
-        else:
-            total = sum(ce.values()) / len(ce)
-        return total, stats
+        # (loss, stats) to mirror the old model's return contract.
+        return out.loss, {"lm_loss": float(out.loss.detach().item())}
 
     @torch.no_grad()
-    def sequence_embedding(self, batch: dict, pooling: str = "mean") -> torch.Tensor:
-        """Pool final hidden states into one vector per sequence.
+    def sequence_embedding(self, batch: dict, pooling: str = "last") -> torch.Tensor:
+        """Pool the decoder's last hidden states into one vector per sequence.
 
-        ``"last"`` — the final position's hidden state. Sequences are
-        right-aligned (left-padded), so this is the most recent transaction:
-        the right readout for per-transaction labels (NVIDIA's blueprint pools
-        the last token the same way). Mean-pooling dilutes the target event
-        across the window — the longer the window, the worse it gets.
-
-        ``"mean"`` — masked mean over valid positions: a whole-history
-        customer summary, the right readout for card-level tasks.
+        ``last`` (default, and what NVIDIA uses): the final non-pad position —
+        the only one that has attended to the whole causal history. Sequences are
+        right-padded, so it's the most recent transaction.
         """
-        hidden = self.encode(batch)
+        hidden = self.lm.model(  # LlamaModel (no LM head)
+            input_ids=batch["input_ids"],
+            attention_mask=batch["attention_mask"],
+        ).last_hidden_state
+        mask = batch["attention_mask"]
         if pooling == "last":
-            return hidden[:, -1, :]
-        mask = batch["attention_mask"].unsqueeze(-1).float()
-        summed = (hidden * mask).sum(dim=1)
-        counts = mask.sum(dim=1).clamp(min=1.0)
-        return summed / counts
+            last = mask.long().sum(dim=1) - 1  # index of last real token
+            return hidden[torch.arange(hidden.size(0), device=hidden.device), last]
+        m = mask.unsqueeze(-1).float()
+        return (hidden * m).sum(dim=1) / m.sum(dim=1).clamp(min=1.0)
 
 
-def build_model(vocab_path: str, arch: dict, max_len: int = 64) -> TransactionFM:
-    """Construct a model from a written vocab.json and explicit dims.
+def build_model(vocab_path: str, arch: dict | None = None, max_len: int = 4096, **_) -> TransactionFM:
+    """Construct the decoder from a written flat-tokenizer vocab.json + arch dims.
 
-    ``arch`` is the `model:` block of configs/<scale>.yaml (d_model / n_heads /
-    n_layers / dim_ff); checkpoint consumers read it back from the
-    model_config.json saved next to the weights.
+    ``arch`` is the ``model:`` block of configs/<scale>.yaml (may override any
+    Llama dim); ``**_`` swallows legacy kwargs (e.g. ``objective``) from callers.
     """
     with open(vocab_path) as f:
         vocab = json.load(f)
-    cfg = arch
+    a = {**_LLAMA_DEFAULTS, **(arch or {})}
     return TransactionFM(
-        field_vocab_sizes=vocab["field_vocab_sizes"],
-        dynamic_fields=vocab["dynamic_fields"],
-        static_fields=vocab["static_fields"],
-        max_len=max_len,
-        time_aware=vocab.get("time_aware", False),
-        n_time_buckets=vocab.get("n_time_buckets", 0),
-        amount_mode=vocab.get("amount_mode", "hard"),
-        **cfg,
+        vocab_size=vocab["vocab_size"],
+        seq_length=vocab.get("seq_length", max_len),
+        d_model=a["d_model"], n_layers=a["n_layers"], n_heads=a["n_heads"],
+        n_kv_heads=a["n_kv_heads"], head_dim=a["head_dim"], dim_ff=a["dim_ff"],
+        rope_theta=a["rope_theta"], rms_eps=a["rms_eps"],
     )
-
-
-def mask_batch(batch: dict, dynamic_fields: list, mask_prob: float = 0.15):
-    """Masked-feature-modeling corruption.
-
-    Selects valid (non-pad) positions with probability ``mask_prob``, replaces
-    every dynamic field token at those positions with MASK, and returns
-    (corrupted_batch, targets, masked_positions) where targets hold the original
-    field ids and masked_positions is a [B,S] boolean of supervised positions.
-    """
-    attn = batch["attention_mask"]
-    rand = torch.rand(attn.shape, device=attn.device)
-    masked = (rand < mask_prob) & (attn == 1)
-
-    targets = {f: batch[f"d_{f}"].clone().long() for f in dynamic_fields}
-    corrupted = dict(batch)
-    for f in dynamic_fields:
-        col = batch[f"d_{f}"].clone()
-        col[masked] = MASK
-        corrupted[f"d_{f}"] = col
-    # If soft-binned amount is present, zero its blend weight at masked
-    # positions so the masked input is purely the MASK embedding.
-    if "d_amount_frac" in batch:
-        frac = batch["d_amount_frac"].clone()
-        frac[masked] = 0.0
-        corrupted["d_amount_frac"] = frac
-    return corrupted, targets, masked

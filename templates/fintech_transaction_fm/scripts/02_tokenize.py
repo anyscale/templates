@@ -67,7 +67,7 @@ def main():
     pre.write_parquet(paths["tokenized_pretrain"])
     ev = tokenized.filter(expr=col("kind") == "eval").drop_columns(["kind"])
     ev.write_parquet(paths["tokenized_eval"])
-    write_vocab(paths["vocab"])
+    write_vocab(paths["vocab"], seq_len)
     print(f"[02] pretrain windows -> {paths['tokenized_pretrain']}")
     print(f"[02] eval samples -> {paths['tokenized_eval']}")
     print(f"[02] vocab -> {paths['vocab']}")
