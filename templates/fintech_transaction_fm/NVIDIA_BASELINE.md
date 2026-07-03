@@ -90,6 +90,17 @@ XGB_PARAMS_COMBINED = {n_estimators:512, max_depth:12, lr:0.00305, colsample_byt
   AP ~0.05, AUC ~0.96. **Still ~2.4x below NVIDIA's 0.124, and on a different eval.**
 - fm-only AP 0.0023, AUC 0.634 (bug #2, untouched).
 
+## ✅ REPRODUCED (2026-07-03) — NVIDIA's raw baseline, exactly
+`scripts/repro_nvidia_raw.py` (their NB01 recipe, verbatim, run on a GPU worker off
+the on-disk CSV) gives **test AUC 0.9866 / AP 0.1248** vs NVIDIA's 0.9885 / 0.1238 —
+matched. Split reproduced too (train 19.5M/0.128%, test 2.44M, eval=100k stratified).
+**Conclusion: our DATA and FEATURES are sound.** Our pipeline's low raw AP
+(0.017→0.05) was ENTIRELY recipe divergence, not a data/feature defect. The knobs
+that matter, in order: OrdinalEncoder (not hashing) + having Merchant Name, balanced
+1M sample + spw=1.0 (not neg/pos), and the 100k-stratified eval (vs our full-holdout).
+Caveat: best_iter=1, fit 1.4s — the 100k/~112-fraud eval is noisy and a single strong
+tree already separates; this faithfully reproduces THEIR (equally noisy) number.
+
 ## THE PLAN (resume here)
 Goal Zach set: match then beat NVIDIA, honestly, keeping the Ray pipeline clean.
 
