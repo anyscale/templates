@@ -83,7 +83,7 @@ def sample_windows(train_total, eval_n):
 
 
 @ray.remote(num_gpus=1, num_cpus=6, memory=48 * 1024 ** 3)
-def fit_and_eval(emb_path, raw_src):
+def fit_and_eval(emb_path, raw_src, pca_dim=64):
     import time
     import numpy as np
     import pandas as pd
@@ -97,12 +97,15 @@ def fit_and_eval(emb_path, raw_src):
     print(f"[nv] embeddings sample: {len(df):,} rows  splits={df['split'].value_counts().to_dict()}", flush=True)
     emb = np.vstack(df["embedding"].to_numpy()).astype(np.float32)
     # NVIDIA (NB05) PCA-reduces the 512-dim embedding to 64 dims before XGBoost, for
-    # BOTH the fm-only and fusion feature sets. Fit on train rows only. Feeding the
-    # full 512 (as we did) is an unfaithful advantage — 8x more features.
-    train_mask0 = (df["split"] == "train").to_numpy()
-    pca = PCA(n_components=64, random_state=42).fit(emb[train_mask0])
-    emb = pca.transform(emb).astype(np.float32)
-    print(f"[nv] PCA 512->64  explained_var={pca.explained_variance_ratio_.sum():.3f}", flush=True)
+    # BOTH fm and fusion. Fit on train rows only. pca_dim=64 = faithful "match";
+    # pca_dim=0 = full 512 = the "scale up with Ray" variant (no compression).
+    if pca_dim and pca_dim < emb.shape[1]:
+        train_mask0 = (df["split"] == "train").to_numpy()
+        pca = PCA(n_components=pca_dim, random_state=42).fit(emb[train_mask0])
+        emb = pca.transform(emb).astype(np.float32)
+        print(f"[nv] PCA 512->{pca_dim}  explained_var={pca.explained_variance_ratio_.sum():.3f}", flush=True)
+    else:
+        print(f"[nv] no PCA — full {emb.shape[1]}-dim embedding (scale-up variant)", flush=True)
     EMB = [f"emb_{i}" for i in range(emb.shape[1])]
     X = pd.DataFrame(emb, columns=EMB, index=df.index)
 
@@ -183,6 +186,8 @@ def main():
     ap.add_argument("--embed-batch", type=int, default=64)
     ap.add_argument("--skip-embed", action="store_true",
                     help="reuse an existing embedded sample; re-run only the XGBoost fits")
+    ap.add_argument("--pca-dim", type=int, default=64,
+                    help="PCA-reduce embedding to this many dims (NVIDIA uses 64); 0 = full 512")
     args = ap.parse_args()
     emb_path = f"{BASE}/nv_downstream/{args.tag}_embeddings"
 
@@ -199,7 +204,7 @@ def main():
                            num_workers=args.num_workers, use_gpu=True, batch_size=args.embed_batch,
                            pooling=args.pooling, max_ctx=args.embed_max_len)
         embedding_health(emb_path)
-    print(ray.get(fit_and_eval.remote(emb_path, P["raw"])), flush=True)
+    print(ray.get(fit_and_eval.remote(emb_path, P["raw"], args.pca_dim)), flush=True)
 
 
 if __name__ == "__main__":

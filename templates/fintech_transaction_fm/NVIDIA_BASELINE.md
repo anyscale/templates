@@ -170,6 +170,35 @@ FITTING artifact, not "the FM adds no lift". Our raw is also stronger than NVIDI
 numbers, then fix fusion fit (candidates: larger/less-noisy val, or early-stop on
 aucpr — but that deviates from NVIDIA's 'auc'; investigate why theirs trains rounds).
 
+## 📊 STABLE FULL-HOLDOUT RESULTS (2026-07-03 late) — single-txn embed, 2718 test frauds
+The reliable read (2.44M test, ~2718 frauds — vs the noisy 100k/~100-fraud eval).
+Two more NVIDIA-faithfulness fixes applied to get here: (a) SINGLE-TXN embedding
+(`--embed-max-len 14`, matches NB04 encode), (b) PCA 512→64 before XGBoost (NB05).
+
+PCA-64 ("match", faithful):
+| feat | our AUC | our AP | best_iter | NVIDIA AUC/AP (100k eval) |
+|---|---|---|---|---|
+| raw    | 0.986 | 0.196 | 1  | 0.989/0.124 |
+| fm     | 0.944 | 0.027 | 432| 0.878/0.012 |
+| fusion | 0.986 | 0.094 | 10 | 0.993/0.176 |
+
+**HONEST RESULT: fusion does NOT beat raw for us (0.094 < 0.196).** Fits are healthy
+(fusion best_iter 10, not 0) so it's trustworthy — the FM adds no lift over raw. This
+DIFFERS from NVIDIA (their fusion 0.176 > raw 0.124). Note our eval ≠ theirs (full
+holdout vs 100k stratified); on 100k-stratified our raw ≈ their 0.124 (repro_nvidia_raw
+confirmed), so the AP scale isn't 1:1 comparable — but fusion-vs-raw is internal and valid.
+
+**Why fusion doesn't lift (hypothesis):** our single-txn embedding encodes the SAME 12
+fields raw uses → REDUNDANT with raw. NVIDIA's fm-alone is weaker (0.012) yet COMPLEMENTARY
+(lifts fusion), suggesting their shipped foundation model learned richer per-txn structure.
+Our pretrain hit ppl 1.7 (near-trivial) — likely learned a weak/redundant representation.
+So the remaining gap is PRETRAIN QUALITY, not the downstream/embedding plumbing (now faithful).
+512-dim (no-PCA, "scale up") variant running to confirm more dims don't flip it.
+
+Open threads: (1) is our raw legitimately stronger or eval-inflated? (2) does our pretrain
+under-learn vs NVIDIA's shipped ckpt (ppl 1.7 red flag; maybe needs their exact corpus/steps
+or the history-context matters after all)? (3) 100k-stratified vs full-holdout eval choice.
+
 ## THE PLAN (resume here)
 Goal Zach set: match then beat NVIDIA, honestly, keeping the Ray pipeline clean.
 
