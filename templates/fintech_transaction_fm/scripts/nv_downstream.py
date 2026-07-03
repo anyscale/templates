@@ -82,11 +82,12 @@ def sample_windows(train_total, eval_n):
     ]
 
 
-@ray.remote(num_gpus=1, num_cpus=6, memory=40 * 1024 ** 3)
-def fit_and_eval(emb_path):
+@ray.remote(num_gpus=1, num_cpus=6, memory=48 * 1024 ** 3)
+def fit_and_eval(emb_path, raw_src):
     import time
     import numpy as np
     import pandas as pd
+    from sklearn.preprocessing import OrdinalEncoder
     from sklearn.metrics import average_precision_score, roc_auc_score
     import xgboost as xgb
 
@@ -95,16 +96,37 @@ def fit_and_eval(emb_path):
     emb = np.vstack(df["embedding"].to_numpy()).astype(np.float32)
     EMB = [f"emb_{i}" for i in range(emb.shape[1])]
     X = pd.DataFrame(emb, columns=EMB, index=df.index)
-    cid = df["raw_card_id"].to_numpy(np.int64)
-    ts = pd.to_datetime(df["raw_ts"].to_numpy(np.int64), unit="s")
+
+    # EXACT raw features (NVIDIA's 13): join the real, UN-HASHED fields from the
+    # source parquet onto the evaluated rows by (card_id, second). No re-tokenize,
+    # no re-embed — the tokenizer's hashed passthrough is bypassed entirely here.
+    src = ray.data.read_parquet(raw_src, columns=[
+        "card_id", "timestamp", "amount", "merchant_id", "mcc", "use_chip",
+        "merchant_state", "merchant_city", "zip"]).to_pandas()
+    src["ts"] = src["timestamp"].astype("int64") // 1_000_000_000
+    src = src.drop_duplicates(["card_id", "ts"], keep="first")
+    key = pd.DataFrame({"card_id": df["card_id"].to_numpy(np.int64),
+                        "ts": df["raw_ts"].to_numpy(np.int64)})
+    j = key.merge(src, on=["card_id", "ts"], how="left").reset_index(drop=True)
+    print(f"[nv] raw join match rate: {j['merchant_id'].notna().mean():.3%}", flush=True)
+    tsd = pd.to_datetime(j["ts"].to_numpy(np.int64), unit="s")
+    cid = j["card_id"].to_numpy(np.int64)
     raw = pd.DataFrame(index=df.index)
-    raw["Amount"] = df["raw_amount"].astype(np.float32)
     raw["User"] = cid // 100; raw["Card"] = cid % 100
-    raw["Year"] = ts.year; raw["Month"] = ts.month; raw["Day"] = ts.day
-    raw["Hour"] = df["raw_hour"].astype(np.int32)
-    for c in ["raw_use_chip", "raw_merchant_state", "raw_merchant_city", "raw_zip",
-              "raw_merchant_id", "raw_mcc"]:
-        raw[c] = df[c].astype(np.float32)
+    raw["Year"] = tsd.year.to_numpy(); raw["Month"] = tsd.month.to_numpy()
+    raw["Day"] = tsd.day.to_numpy(); raw["Hour"] = tsd.hour.to_numpy()
+    raw["Amount"] = j["amount"].astype(np.float64).to_numpy()
+    raw["MerchantName"] = j["merchant_id"].fillna(-1).astype(np.int64).to_numpy()  # full id, passthrough
+    raw["MCC"] = j["mcc"].fillna(-1).astype(np.int64).to_numpy()
+    raw["Zip"] = j["zip"].astype(np.float64).to_numpy()  # NaN ok (online); XGBoost handles it
+    # OrdinalEncoder on the string categoricals, fit on TRAIN rows only (NVIDIA's scheme)
+    CAT = ["use_chip", "merchant_state", "merchant_city"]
+    cat_df = j[CAT].astype(str).fillna("NA")
+    train_mask = (df["split"] == "train").to_numpy()
+    enc = OrdinalEncoder(handle_unknown="use_encoded_value", unknown_value=-1).fit(cat_df[train_mask])
+    ev = enc.transform(cat_df)
+    for i, c in enumerate(("UseChip", "MerchantState", "MerchantCity")):
+        raw[c] = ev[:, i]
     RAW = list(raw.columns)
     full = pd.concat([X, raw], axis=1)
     full["label"] = df["label"].astype(int).to_numpy()
@@ -159,7 +181,7 @@ def main():
                            num_workers=args.num_workers, use_gpu=True, batch_size=args.embed_batch,
                            pooling="last")
         embedding_health(emb_path)
-    print(ray.get(fit_and_eval.remote(emb_path)), flush=True)
+    print(ray.get(fit_and_eval.remote(emb_path, P["raw"])), flush=True)
 
 
 if __name__ == "__main__":
