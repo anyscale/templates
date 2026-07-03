@@ -276,8 +276,13 @@ def make_tokenize_group_fn(seq_len, train_end=None, val_end=None, normal_keep=1.
 
 def _stack(rows, seq_len):
     if not rows:
-        out = {"card_id": np.zeros(0, np.int64), "kind": np.array([], dtype=object),
-               "split": np.array([], dtype=object), "label": np.zeros(0, np.int64),
+        # A card can legitimately produce zero rows (e.g. emit="pretrain" for a
+        # card whose transactions are all in the holdout period). Empty *object*
+        # arrays give Arrow no element type to infer ("ArrowConversionError: []"),
+        # so the string columns use a fixed-width unicode dtype, which Arrow maps
+        # to `string` — matching the non-empty blocks' inferred type.
+        out = {"card_id": np.zeros(0, np.int64), "kind": np.array([], dtype="<U16"),
+               "split": np.array([], dtype="<U16"), "label": np.zeros(0, np.int64),
                "weight": np.zeros(0, np.float64),
                "input_ids": np.zeros((0, seq_len), np.int32),
                "attention_mask": np.zeros((0, seq_len), np.int32)}

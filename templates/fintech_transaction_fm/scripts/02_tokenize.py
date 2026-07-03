@@ -57,25 +57,38 @@ def main():
     )
 
     ray.init(ignore_reinit_error=True)
-    ds = ray.data.read_parquet(paths["raw"])
-    tokenized = tokenize_dataset(
-        ds,
-        seq_len,
-        train_end=splits["train_end"],
-        val_end=splits["val_end"],
-        normal_keep=train_keep,
-        holdout_keep=holdout_keep,
-        max_pretrain_windows=preset["max_pretrain_windows"],
-        num_partitions=preset["shuffle_partitions"],
-    ).materialize()
-
-    # Arrow-level filters (no numpy round trip — handles empty blocks cleanly).
     from ray.data.expressions import col
 
-    pre = tokenized.filter(expr=col("kind") == "pretrain").drop_columns(PRETRAIN_DROP)
-    pre.write_parquet(paths["tokenized_pretrain"])
-    ev = tokenized.filter(expr=col("kind") == "eval").drop_columns(["kind"])
-    ev.write_parquet(paths["tokenized_eval"])
+    # Stream each emit straight to Parquet — never materialize the combined
+    # dataset. At full/train_keep=1.0 the eval set is ~24M windows x seq_len; a
+    # single materialize() would spill hundreds of GB through the object store.
+    # Tokenizing per-emit does roughly one full pass total (each pass builds only
+    # its own windows) and keeps the driver/head node out of the data path.
+    def tokenized(emit: str):
+        return tokenize_dataset(
+            ray.data.read_parquet(paths["raw"]),
+            seq_len,
+            train_end=splits["train_end"],
+            val_end=splits["val_end"],
+            normal_keep=train_keep,
+            holdout_keep=holdout_keep,
+            max_pretrain_windows=preset["max_pretrain_windows"],
+            num_partitions=preset["shuffle_partitions"],
+            emit=emit,
+        )
+
+    (
+        tokenized("pretrain")
+        .filter(expr=col("kind") == "pretrain")
+        .drop_columns(PRETRAIN_DROP)
+        .write_parquet(paths["tokenized_pretrain"])
+    )
+    (
+        tokenized("eval")
+        .filter(expr=col("kind") == "eval")
+        .drop_columns(["kind"])
+        .write_parquet(paths["tokenized_eval"])
+    )
     write_vocab(paths["vocab"], seq_len)
     print(f"[02] pretrain windows -> {paths['tokenized_pretrain']}")
     print(f"[02] eval samples -> {paths['tokenized_eval']}")
