@@ -23,6 +23,7 @@ REQUIRED_KEYS = {
     "tokenize": (
         "seq_len",
         "target_eval_samples",
+        "train_keep",
         "max_pretrain_windows",
         "holdout_keep",
         "shuffle_partitions",

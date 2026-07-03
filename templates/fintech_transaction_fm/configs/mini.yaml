@@ -15,7 +15,10 @@ data:
 
 tokenize:
   seq_len: 256               # NOW IN TOKENS (~12/txn) -> ~19 txns of context (CPU smoke)
-  target_eval_samples: 30000 # eval-set sizing: all frauds + downsampled, importance-weighted normals
+  target_eval_samples: 30000 # eval-set sizing (val/test) when holdout_keep is null:
+                             # all frauds + downsampled, importance-weighted normals
+  train_keep: 0.5            # fraction of train-period normals kept for downstream training
+                             # (full uses 1.0 = whole training set; kept low here for a fast CI)
   max_pretrain_windows: 8    # cap pretrain windows per card (null = every non-overlapping window)
   holdout_keep: null         # fraction of val/test txns scored directly (null = downsample normals
                              # like train; 1.0 = score EVERY holdout txn — exact metrics, big eval set)

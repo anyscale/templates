@@ -8,6 +8,7 @@ data:
 tokenize:
   seq_len: 16
   target_eval_samples: 3000
+  train_keep: 0.5
   max_pretrain_windows: 4
   holdout_keep: null
   shuffle_partitions: 8

@@ -112,7 +112,14 @@ def main():
     with open(paths["splits"]) as f:
         splits = json.load(f)
     tk = cfg["tokenize"]
-    normal_keep = eval_normal_keep(splits, tk["target_eval_samples"])
+    # train_keep sizes the downstream TRAINING set; holdout_keep sizes val/test
+    # (1.0 = exact metrics, null = fall back to target_eval_samples). See 02_tokenize.py.
+    train_keep = tk["train_keep"]
+    holdout_keep = (
+        tk["holdout_keep"]
+        if tk["holdout_keep"] is not None
+        else eval_normal_keep(splits, tk["target_eval_samples"])
+    )
     write_vocab(paths["vocab"], tk["seq_len"])
 
     def tokenized(emit: str):
@@ -121,8 +128,8 @@ def main():
             tk["seq_len"],
             train_end=splits["train_end"],
             val_end=splits["val_end"],
-            normal_keep=normal_keep,
-            holdout_keep=tk["holdout_keep"],
+            normal_keep=train_keep,
+            holdout_keep=holdout_keep,
             max_pretrain_windows=tk["max_pretrain_windows"],
             num_partitions=tk["shuffle_partitions"],
             emit=emit,

@@ -1,6 +1,56 @@
 # fintech_transaction_fm — changelog & status
 
-## ▶️ RESUME HERE — 2026-07-03, first full run of the new architecture LAUNCHED
+## ▶️ RESUME HERE — 2026-07-03 (evening), FIRST FULL RUN DONE + two bugs found
+
+The Llama-arch full run **finished** and came back WORSE than run 2, exposing two
+independent bugs (raw/XGBoost and the TFM representation). Results:
+
+| feature set | our AP | NVIDIA AP | our AUC | NVIDIA AUC |
+|---|---|---|---|---|
+| raw    | 0.017  | 0.124  | 0.879 | 0.989 |
+| fm     | 0.0023 | 0.0123 | 0.634 | 0.878 |
+| fusion | 0.021  | 0.176  | 0.878 | 0.993 |
+
+### BUG 1 — XGBoost/raw training set starved to 1.5% (FIXED in code, re-run pending)
+Full run's downstream splits: **train=321,077 · val=2,438,693 · test=2,438,690** — the
+*training* split is smaller than either eval split and only ~1.5% of the ~19.5M
+train-period txns. NVIDIA trains raw XGBoost on the **full** training set.
+Root cause: `eval_normal_keep()` derived a normal-keep of **0.0152** from
+`target_eval_samples: 400000` and the tokenizer applied it to the **train period**
+(`flat_tokenizer.py:253`). That knob was meant to size the *eval* set, but
+`holdout_keep: 1.0` overrides eval sizing — so it silently only throttled the
+*training* set. (296K normals × 0.0152 + all frauds = 321,077 ✓.)
+**Fix:** new `train_keep` config knob (full=1.0 → train on the whole training set,
+NVIDIA-parity; also the honest "distributed XGBoost scales" story). `holdout_keep`
+still governs val/test (1.0 = exact metrics); `target_eval_samples` now only bites
+when `holdout_keep` is null (mini/small CI). Touched: `scale_config.py` REQUIRED_KEYS,
+`02_tokenize.py`, `run_pipeline.py`, all `configs/*.yaml`. Validated at mini
+(`train_keep=0.5 holdout_keep=0.51`, green).
+
+### BUG 2 — TFM representation weak (NOT yet fixed)
+fm-only AP 0.0023 is WORSE than the old MLM's 0.0071 and far below NVIDIA's 0.0123;
+fm AUC 0.634 is near-random. The Llama last-token embedding isn't discriminative.
+Suspects to investigate after raw is fixed: pretrain under-converged, last-token
+pooling vs mean-pooling, embedding not carrying fraud signal. Part of this is the
+SAME starvation (fm downstream also trained on 321K) — re-measure after Bug 1.
+
+### Plan / next steps (be careful: do NOTHING heavy on the HEAD node — it OOM-crashed
+once on CPU work. All tokenize/embed/XGBoost must run distributed on the A10G workers.)
+1. Re-tokenize `full` with `train_keep=1.0` (distributed). Clear `tokenized/full`
+   first (Ray Data write_parquet would mix old+new files). **KEEP `model/full`** —
+   pretrain windows are deterministic & independent of `train_keep`, so the existing
+   pretrained Llama is still valid; skip the 2-4h pretrain.
+2. FAST raw signal: distributed raw-only XGBoost probe straight off `tokenized/full/eval`
+   (no embeddings needed — raw_* cols are in that parquet). Confirm raw AP → ~0.12.
+   MUST use `XGBoostTrainer` on workers, NOT in-process pandas on the driver.
+3. Then re-embed (24.4M windows now, ~2h on workers) → downstream fm+fusion.
+
+Note: `train_keep=1.0` grows the eval/embed set from ~5M to ~24.4M windows (~33G
+tokenized, embed ~2h). That's the real full run; heavy stages are referred out as Jobs.
+
+---
+
+## (prior) 2026-07-03, first full run of the new architecture LAUNCHED
 
 **GPU problem solved.** Last session was stuck on T4s (A10G/L4/L40S all `LaunchFailed`
 on capacity; 4096-token training on T4 ≈ 16 h). After a workspace reboot, **A10G (23.7 GB)

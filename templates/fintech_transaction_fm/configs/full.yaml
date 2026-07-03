@@ -9,9 +9,11 @@ data:
 
 tokenize:
   seq_len: 4096             # NOW IN TOKENS (~12/txn) -> ~314 txns of context (NVIDIA uses 4096)
-  target_eval_samples: 400000
+  target_eval_samples: 400000  # only sizes val/test when holdout_keep is null (unused here)
+  train_keep: 1.0            # keep EVERY train-period txn -> downstream XGBoost trains on the
+                             # full ~19.5M-row training set, matching NVIDIA's raw baseline
   max_pretrain_windows: null
-  holdout_keep: 1.0          # exact full-data metrics (~5M eval windows)
+  holdout_keep: 1.0          # exact full-data metrics (score every holdout txn)
   shuffle_partitions: 128
 
 model:                       # Llama causal decoder — NVIDIA blueprint config verbatim

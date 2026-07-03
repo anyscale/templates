@@ -40,11 +40,20 @@ def main():
 
     with open(paths["splits"]) as f:
         splits = json.load(f)
-    normal_keep = eval_normal_keep(splits, preset["target_eval_samples"])
+    # train_keep governs the downstream TRAINING set (train-period normals); at
+    # full it is 1.0 so raw XGBoost trains on the whole training set like NVIDIA.
+    # holdout_keep governs val/test — 1.0 for exact metrics, else fall back to the
+    # target_eval_samples-derived rate (keeps the mini/small eval set small).
+    train_keep = preset["train_keep"]
+    holdout_keep = (
+        preset["holdout_keep"]
+        if preset["holdout_keep"] is not None
+        else eval_normal_keep(splits, preset["target_eval_samples"])
+    )
     print(
         f"[02] temporal split train<{splits['train_end']} val<{splits['val_end']} | "
         f"~{int(splits['fraud_rate'] * splits['n_transactions']):,} frauds, "
-        f"normal_keep={normal_keep:.4f}"
+        f"train_keep={train_keep:.4f} holdout_keep={holdout_keep:.4f}"
     )
 
     ray.init(ignore_reinit_error=True)
@@ -54,8 +63,8 @@ def main():
         seq_len,
         train_end=splits["train_end"],
         val_end=splits["val_end"],
-        normal_keep=normal_keep,
-        holdout_keep=preset["holdout_keep"],
+        normal_keep=train_keep,
+        holdout_keep=holdout_keep,
         max_pretrain_windows=preset["max_pretrain_windows"],
         num_partitions=preset["shuffle_partitions"],
     ).materialize()
