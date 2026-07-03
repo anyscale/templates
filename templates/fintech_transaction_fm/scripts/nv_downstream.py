@@ -140,8 +140,13 @@ def fit_and_eval(emb_path, raw_src):
     results = {}
     for name in ("raw", "fm", "fusion"):
         Xtr, ytr = xy("train", cols[name]); Xva, yva = xy("val", cols[name]); Xte, yte = xy("test", cols[name])
+        # Early-stop on aucpr, not auc: at 0.1% fraud a strong feature set saturates
+        # val-AUC at the first tree, so auc-early-stopping quits at best_iter=0 (a
+        # 1-tree, underfit model). PR-AUC keeps improving, so the fit trains to a
+        # real optimum. This is the metric NVIDIA reports; only the early-stop signal
+        # changes, and it makes the raw/fusion fits meaningful instead of degenerate.
         clf = xgb.XGBClassifier(**PARAMS[name], scale_pos_weight=1.0, tree_method="hist",
-                                device="cuda", early_stopping_rounds=20, eval_metric="auc",
+                                device="cuda", early_stopping_rounds=30, eval_metric="aucpr",
                                 random_state=42)
         t0 = time.time()
         clf.fit(Xtr, ytr, eval_set=[(Xva, yva)], verbose=False)
