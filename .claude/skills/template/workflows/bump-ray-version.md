@@ -30,12 +30,12 @@ Then bump `BUILD.yaml` `ray_version` and grep/update any in-template version str
 The image Ray version and the template's locked deps must agree. Which case applies is decided by whether `<name>` has an entry in `dependencies/template.depsets.yaml` (equivalently, ships `templates/<name>/python_depset.lock`):
 
 - **No lock** (base-image or BYOD templates — e.g. `parallel-experiments`, `groot-ray-serve`, `intro-ray-libraries`) — nothing to recompile; the image bump *is* the whole change. Go to step 2.
-- **Has a lock** — regenerate it against `<version>`, **incrementally**. This is a *per-template* PR, so touch only this template's slice of the config:
+- **Has a lock** — regenerate it against `<version>`, **incrementally**. This is a *per-template* PR, so touch only this template's slice of the config. **Steps 1–2 are one-time per Ray version** — if a prior bump for `<version>` (an earlier template, or a base-locks PR) already added the `ray<NEW>` bundle and attached it to the base `compile` entry, skip to step 3:
   1. Add a `ray<NEW>_py<PY>_cu<CU>` bundle to `build_arg_sets`, mirroring this template's existing `ray<OLD>_*` bundle (same Python/CUDA). **Add — do not replace** the old bundle; every other template still rides it.
   2. Add that bundle to the base `compile` entry this template expands from (`ray_depset` or `ray_llm_depset`), so the new version-stamped base lock (`dependencies/depsets/ray_<NEW>_img_py<PY>.lock`) is generated and committed.
   3. Repoint **only this template's** `expand` entry: its `build_arg_sets` `ray<OLD>_* → ray<NEW>_*`.
   4. `./update_deps.sh --name <this-entry-name>` — regenerates this template's lock plus the base lock it derives from (runs natively on Linux or macOS; `../references/dependencies.md` "Running it"). Whole-repo batch upgrade: `upgrade-dependencies.md`.
-  5. Commit together: the `BUILD.yaml` bump, this template's `python_depset.lock`, the new base lock, and the `template.depsets.yaml` edit.
+  5. Commit together: the `BUILD.yaml` bump, this template's `python_depset.lock`, the `template.depsets.yaml` edit, and any newly-created base lock (only if steps 1–2 ran).
 
   **Do not** repoint other entries or *replace* the old bundles — that's the whole-repo batch path (`upgrade-dependencies.md`, a human doing all templates at once). On a single-template branch it forces every other template's lock to regenerate, blowing up the diff and the merge.
 
