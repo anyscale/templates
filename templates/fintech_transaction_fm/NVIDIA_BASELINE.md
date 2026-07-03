@@ -155,6 +155,21 @@ single-txn encoding without re-tokenizing. Testing now (tag=fasttxn). If it work
 it clean: tokenize/encode eval as single-txn (or keep max_ctx=14) and wire to nb/configs.
 Reminder: high embedding cosine (~0.97) is benign anisotropy, NOT the problem.
 
+## ✅✅ SINGLE-TXN EMBEDDING FIXES THE FM (2026-07-03 late)
+Embedding each txn ALONE (`--embed-max-len 14` = BOS + target's 12 tokens + EOS,
+matching NVIDIA's encode) — fast profile (noisy, 34 frauds):
+  raw AUC 0.990/AP 0.227(best_iter=0) · **fm AUC 0.953/AP 0.031(best_iter=388)** · fusion AUC 0.985/AP 0.054(best_iter=0).
+fm AUC progression by embed context: 4096→0.62, 128→0.78, **single-txn→0.953** (>NVIDIA 0.878).
+**FM is no longer the problem.** Full 100k stable run in progress (tag=fulltxn).
+
+REMAINING ISSUE — fusion fit early-stops at best_iter=0: raw features saturate val
+AUC by round 0, so early-stopping-on-'auc' (NVIDIA's setting) quits before the emb
+features can add AP. fm alone trains fine (best_iter=388). So "fusion !> raw" is a
+FITTING artifact, not "the FM adds no lift". Our raw is also stronger than NVIDIA's
+(AP ~0.16-0.23 vs 0.124) which worsens the saturation. Next: get stable single-txn
+numbers, then fix fusion fit (candidates: larger/less-noisy val, or early-stop on
+aucpr — but that deviates from NVIDIA's 'auc'; investigate why theirs trains rounds).
+
 ## THE PLAN (resume here)
 Goal Zach set: match then beat NVIDIA, honestly, keeping the Ray pipeline clean.
 
