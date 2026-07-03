@@ -101,6 +101,24 @@ that matter, in order: OrdinalEncoder (not hashing) + having Merchant Name, bala
 Caveat: best_iter=1, fit 1.4s — the 100k/~112-fraud eval is noisy and a single strong
 tree already separates; this faithfully reproduces THEIR (equally noisy) number.
 
+## HARNESS: `scripts/nv_downstream.py` (NVIDIA recipe on OUR embeddings)
+Ports NB05 onto our pipeline: balanced train sample + stratified eval + spw=1.0 +
+per-feature-set HPO params, measuring raw/fm/fusion the way NVIDIA does. KEY
+efficiency: embeds only the SAMPLED windows (~1.2M), not all 24.4M — but seq_len-4096
+embed is still the bottleneck (~45 min for 1.2M on ~8 A10G; I initially under-estimated
+this as "5 min"). Fast-iteration profile for tuning the FM:
+```
+python scripts/nv_downstream.py --tag full --train-total 1000000 --eval-n 100000  # final number
+python scripts/nv_downstream.py --tag fast --train-total 200000  --eval-n 30000   # fast iterate
+python scripts/nv_downstream.py --tag fast --skip-embed                           # re-fit XGB only (secs)
+python scripts/nv_downstream.py --tag exp --model-dir <new_fm_ckpt> ...           # eval a new FM
+```
+Headline = fm-only vs NVIDIA 0.0123 (needs no raw). raw here is APPROXIMATE (passthrough
+still hashes merchant_id/city); for exact raw parity, fix `_raw_features` to carry the
+full merchant_id + raw city/state strings and ordinal-encode at downstream (needs a
+re-tokenize of eval). fm-only is the real question and is exact now.
+First full run (tag=sample_embeddings, 1M/100k) launched 2026-07-03 ~19:37; result TBD.
+
 ## THE PLAN (resume here)
 Goal Zach set: match then beat NVIDIA, honestly, keeping the Ray pipeline clean.
 
