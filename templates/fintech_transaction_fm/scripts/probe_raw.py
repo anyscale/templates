@@ -92,8 +92,10 @@ def main():
     cols = list(RAW_FEATURE_COLS)
 
     t0 = time.time()
+    # sqrt(neg/pos): neg/pos itself is ~700 at natural prevalence and wrecks PR-AUC.
+    scale_pos_weight = (neg / max(pos, 1.0)) ** 0.5
     booster = train_feature_set(
-        splits["train"], splits["val"], cols, scaling, neg / max(pos, 1.0), storage
+        splits["train"], splits["val"], cols, scaling, scale_pos_weight, storage
     )
     metrics, _ = evaluate(splits["test"], cols, booster)
     print(f"[probe] raw done in {time.time()-t0:.0f}s", flush=True)

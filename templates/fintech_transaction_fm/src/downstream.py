@@ -332,6 +332,13 @@ def run_downstream(
     meta = splits["train"].select_columns(["label", "weight"]).to_pandas()
     pos = float(meta["label"].sum())
     neg = float(len(meta) - pos)
+    # scale_pos_weight = SQRT(neg/pos), not neg/pos. At the natural ~0.1% fraud
+    # rate neg/pos is ~700, and that extreme weight wrecks the ranking (PR-AUC
+    # collapses from ~0.05 to ~0.004 — the model over-predicts fraud everywhere).
+    # sqrt is the standard damping for severe imbalance; it counteracts the rare
+    # class without swamping it. (This only surfaced once train_keep=1.0 trained
+    # on the full natural-prevalence set; the old fraud-enriched train hid it.)
+    scale_pos_weight = (neg / max(pos, 1.0)) ** 0.5
     scaling = ScalingConfig(num_workers=num_workers, use_gpu=use_gpu)
     # Ray Train persists each fit's checkpoint here; must be reachable by every
     # node, so it lives under the (shared) output dir, not the head node's disk.
@@ -353,7 +360,7 @@ def run_downstream(
         t0 = time.time()
         booster = train_feature_set(
             splits["train"], splits["val"], cols, scaling,
-            neg / max(pos, 1.0), storage_path,
+            scale_pos_weight, storage_path,
         )
         # Distributed scoring: only thin (proba, label, weight) rows return here.
         results[name], test_scored[name] = evaluate(splits["test"], cols, booster)
