@@ -1,0 +1,5 @@
+# Local Claude Code state dumped into the workspace (caches, history, sessions,
+# mcp auth cache). The sanitized, tracked snapshot lives in claude-state/ via
+# setup_claude.sh. Never commit these raw dumps.
+dot.claude/
+last_claude_chat

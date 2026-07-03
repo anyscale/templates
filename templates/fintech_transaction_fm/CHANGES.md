@@ -1,33 +1,38 @@
 # fintech_transaction_fm — changelog & status
 
-## ⏸️ RESUME HERE — stopped 2026-07-02, cluster being terminated
+## ▶️ RESUME HERE — 2026-07-03, first full run of the new architecture LAUNCHED
 
-**All code is committed to git (branch `zgarner_transaction_foundation_model`). The
-`/mnt/cluster_storage/transaction-fm/*` artifacts (raw, tokenized, model, embeddings,
-the TabFormer CSV) are on the ephemeral cluster and WILL BE GONE.** So on a fresh
-cluster you start the data pipeline from scratch.
+**GPU problem solved.** Last session was stuck on T4s (A10G/L4/L40S all `LaunchFailed`
+on capacity; 4096-token training on T4 ≈ 16 h). After a workspace reboot, **A10G (23.7 GB)
+launches cleanly**, autoscaling to 8 for pretrain. The uncommitted `job_config.yaml` fix
+(g4dn/T4 → g5/A10G) + `requirements.txt` (+transformers/accelerate) are now committed.
 
-**State:** the full re-architecture to NVIDIA's design (flat tokenizer + Llama causal
-decoder + next-token pretrain + last-token embed) is DONE and `mini`-smoke-validated.
-The last thing running was the **first full pretrain (04)** — it works functionally
-but was **too slow to finish**: the cluster could only get **T4 GPUs** (A10G/L4/L40S
-all `LaunchFailed` — capacity), and 4096-token training on T4 is ~2 h/epoch ≈ 16 h.
-Never produced a full model/embeddings/06 table for the new architecture.
+**`/mnt/cluster_storage` PERSISTS across cluster restarts** — it is workspace-scoped, NOT
+ephemeral as an earlier note feared. So the expensive prep survived the reboot: `source/`
+(2.2 GB TabFormer CSV), `raw/full`, and `tokenized/full` (6.7 GB — 64,561 pretrain seqs,
+~5M eval) are all intact. **On resume you skip nb 01/02/03** and run only the
+pretrain → embed → downstream tail (the three artifacts the T4s never produced).
 
-**To resume (fresh cluster):**
-1. Run notebooks **01 → 06** in order, `SCALE="full"`, fresh kernel each. (raw data must
-   be regenerated — 02 re-downloads the TabFormer CSV + normalizes, ~15-20 min.)
-2. **DECIDE the pretrain size vs the GPUs you get** (this was the open question):
-   - If you get **A10G/A100/L40S**: keep `configs/full.yaml` as-is (seq_len 4096, epochs 8, batch 4). ~2-4 h.
-   - If you're stuck on **T4s**: cut `full.yaml` `tokenize.seq_len` to **1024** and `pretrain.epochs` to **4**
-     (≈8× less compute → ~1.5-2 h on T4). Lower fidelity (~78 vs 314 txns context) but a real result.
-3. Memory levers already in the code (keep): bf16 autocast + `gradient_checkpointing_enable()`
-   + `expandable_segments`. GPU-probed safe at batch 4 / seq 4096 / 15.6 GiB = 9.2 GiB peak.
-4. Then read 06's fusion PR-AUC vs NVIDIA's **0.176** — the whole point.
+**State (2026-07-03 ~11:55):** the full-scale tail is RUNNING headless on 8× A10G via the
+chained stage scripts — `scripts/03_pretrain.py → 04_extract_embeddings.py →
+05_train_downstream.py --scale full` (see scratchpad `run_full_tail.sh`; logs to
+`full_tail.log`). Config unchanged: `configs/full.yaml` seq_len 4096, 8 epochs, batch 4/worker
+(global 32), bf16. ~2-4 h pretrain + ~20 min embed + ~25 min downstream. This is the real
+"did the Llama re-architecture close the gap to NVIDIA" test.
+- One benign hiccup at startup: Ray Train's 60 s worker-group-startup timeout fired once while
+  the 7 extra A10G nodes were still autoscaling; it auto-rescheduled and reached RUNNING on the
+  retry. If it ever loops, set `RAY_TRAIN_WORKER_GROUP_START_TIMEOUT_S=300`.
 
-**Gotchas (bit us this session):** restart the kernel after any `src/*.py` edit; notebooks
+**When it finishes:** read 06's fusion PR-AUC vs NVIDIA's **0.1755** (old-arch best was 0.0301).
+The stage scripts read the persisted disk artifacts and DON'T wipe — only `run_pipeline.py` wipes.
+
+**Memory levers in the code (keep):** bf16 autocast (`src/pretrain.py`),
+`gradient_checkpointing_enable()` (`src/model.py`), `expandable_segments`.
+
+**Gotchas:** restart the kernel after any `src/*.py` edit (notebooks cache old code); notebooks
 skip-cache on existing stage outputs (clear the relevant `full/` dir to force regen);
-`scripts/run_pipeline.py --scale mini` is the fast headless smoke.
+`scripts/run_pipeline.py --scale mini` is the fast headless smoke (but it WIPES all stage
+outputs — don't run it against the persisted `full/` data).
 
 ---
 
@@ -65,7 +70,7 @@ Data is confirmed the **real IBM TabFormer** benchmark (24,386,900 txns, 6,139 c
 |---|---|---|---|
 | 1. original MLM, 4-feature raw | 0.785 / 0.0070 | 0.817 / 0.0088 | 0.854 / 0.0139 |
 | 2. MLM + 14-feature raw + cosine | 0.944 / 0.0257 | 0.821 / 0.0071 | 0.967 / **0.0301** |
-| 3. Llama causal decoder (NEW) | *(running — this is the real "match NVIDIA" test)* | | |
+| 3. Llama causal decoder (NEW) | *(running 2026-07-03 on 8× A10G — the real "match NVIDIA" test)* | | |
 
 Best complete result so far: **fusion AP 0.0301 vs NVIDIA 0.176** — level-ish on
 AUC-ROC, still ~6× below on AP. The fm-only gap (0.0071 vs 0.0123) said the
@@ -124,9 +129,8 @@ Timing (fp32): 03 ~15 min · 04 ~2–4 h (8 GPU) · 05 ~20 min · 06 ~25 min.
 
 1. **Read run 3's 06 table** — does the Llama embedding close the AP gap? fm-only vs NVIDIA's
    0.0123 is the clean representation test; fusion vs 0.176 is the headline.
-2. **bf16 mixed precision** in `train_func` (`src/pretrain.py`) — currently fp32, ~2× slower than
-   needed on A10G (NVIDIA used bf16+FSDP). ~halves pretrain time, frees memory to raise batch.
-   Deferred (Zach OK'd); do before the next pretrain.
+2. **bf16 mixed precision** — DONE. `train_func` (`src/pretrain.py`) wraps the forward in
+   `torch.autocast(bfloat16)`; no GradScaler needed. Live for run 3.
 3. **If AP still trails after run 3:** tune pretrain (more steps/epochs, LR), then consider
    packing multiple cards per 4096 sequence (NVIDIA-style) for more/denser training signal.
 4. **Cleanup:** residual stale prose in nb 03 intro cells (cosmetic); `ttest.yaml` still has the

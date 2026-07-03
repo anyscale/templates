@@ -1,5 +1,7 @@
 ray[data,train,serve]>=2.9
 torch>=2.1
+transformers>=4.40  # Llama causal decoder (LlamaConfig/LlamaForCausalLM) in src/model.py
+accelerate>=0.30  # required by transformers Trainer/model init on the Ray Train workers
 numba>=0.61  # JIT'd hash partitioning for the Ray Data groupby shuffles
 xgboost>=2.0
 scikit-learn>=1.3
