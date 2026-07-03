@@ -2,6 +2,14 @@
 
 ## ▶️ RESUME HERE — 2026-07-03 (evening), FIRST FULL RUN DONE + two bugs found
 
+> **NVIDIA's exact recipe + the parity plan are in [`NVIDIA_BASELINE.md`](NVIDIA_BASELINE.md).**
+> Short version: the raw gap isn't one bug — NVIDIA uses OrdinalEncoder (we hash),
+> balanced 1M sampling + `scale_pos_weight=1.0` (we did neg/pos≈700, now sqrt),
+> per-feature-set HPO params (we share one), and a 100k stratified eval (we score the
+> full 2.44M holdout — not comparable). Next step: reproduce NVIDIA's raw 0.124 exactly
+> from the on-disk CSV as a credibility check, then decide the template's stance.
+
+
 The Llama-arch full run **finished** and came back WORSE than run 2, exposing two
 independent bugs (raw/XGBoost and the TFM representation). Results:
 
@@ -11,21 +19,30 @@ independent bugs (raw/XGBoost and the TFM representation). Results:
 | fm     | 0.0023 | 0.0123 | 0.634 | 0.878 |
 | fusion | 0.021  | 0.176  | 0.878 | 0.993 |
 
-### BUG 1 — XGBoost/raw training set starved to 1.5% (FIXED in code, re-run pending)
-Full run's downstream splits: **train=321,077 · val=2,438,693 · test=2,438,690** — the
-*training* split is smaller than either eval split and only ~1.5% of the ~19.5M
-train-period txns. NVIDIA trains raw XGBoost on the **full** training set.
-Root cause: `eval_normal_keep()` derived a normal-keep of **0.0152** from
-`target_eval_samples: 400000` and the tokenizer applied it to the **train period**
-(`flat_tokenizer.py:253`). That knob was meant to size the *eval* set, but
-`holdout_keep: 1.0` overrides eval sizing — so it silently only throttled the
-*training* set. (296K normals × 0.0152 + all frauds = 321,077 ✓.)
-**Fix:** new `train_keep` config knob (full=1.0 → train on the whole training set,
-NVIDIA-parity; also the honest "distributed XGBoost scales" story). `holdout_keep`
-still governs val/test (1.0 = exact metrics); `target_eval_samples` now only bites
-when `holdout_keep` is null (mini/small CI). Touched: `scale_config.py` REQUIRED_KEYS,
-`02_tokenize.py`, `run_pipeline.py`, all `configs/*.yaml`. Validated at mini
-(`train_keep=0.5 holdout_keep=0.51`, green).
+### BUG 1 — XGBoost/raw: real cause was scale_pos_weight, not train-set size (FIXED)
+First hypothesis (train starved to 321K = 1.5% of ~19.5M) was WRONG. Added
+`train_keep=1.0` (train on the full set), but the raw-only probe then came back
+WORSE: AP 0.0085 (was 0.017). A held-out-sample sweep found the real culprit:
+**`scale_pos_weight = neg/pos` is ~700 at the natural 0.1% fraud rate and collapses
+PR-AUC.** Sweep (sample, 218 test frauds):
+
+| scale_pos_weight | AUC | AP |
+|---|---|---|
+| neg/pos = 661 (old code) | 0.812 | 0.0037 |
+| sqrt(neg/pos) = 26 | 0.959 | 0.053 |
+| fixed 12 | 0.966 | 0.051 |
+
+The old fraud-ENRICHED train hid this (downsampling normals kept neg/pos ~12);
+`train_keep=1.0` moved training to natural prevalence and exposed it. **Fix:**
+`scale_pos_weight = sqrt(neg/pos)` in `src/downstream.py` + `scripts/probe_raw.py`.
+Result: raw AP 0.017 → ~0.05, AUC → ~0.96 (NVIDIA 0.124 / 0.989 — now same ballpark,
+~2.4x below on AP; remaining gap = feature encoding / more rounds, revisit later).
+Features are NOT broken (top gain: merchant_state, mcc, use_chip, zip, merchant_id).
+`train_keep=1.0` is KEPT (more data + sane spw is the best combo, and the honest
+"distributed XGBoost on the full set" story). Both fixes committed+pushed.
+Full-data raw number pending (probe kept hitting Ray Train 60s worker-startup
+timeout as the cluster downscaled post-tokenize; rerun with
+`RAY_TRAIN_WORKER_GROUP_START_TIMEOUT_S=600` + fewer workers).
 
 ### BUG 2 — TFM representation weak (NOT yet fixed)
 fm-only AP 0.0023 is WORSE than the old MLM's 0.0071 and far below NVIDIA's 0.0123;
