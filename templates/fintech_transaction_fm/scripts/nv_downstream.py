@@ -37,7 +37,11 @@ BASE = get_demo_base_dir()
 P = artifact_paths(BASE, "full")
 EVAL_DIR = P["tokenized_eval"]
 
-# NVIDIA NB05 params (verbatim); scale_pos_weight=1.0, early_stopping 20, eval_metric auc
+# NVIDIA NB05 per-feature-set HPO params. NOTE: using DIFFERENT params per feature set
+# makes fusion-vs-raw uninterpretable (you're comparing two differently-tuned models, not
+# the effect of adding the embedding). We keep them for a faithful reproduction, but for
+# the real "does the FM add lift" question use --shared (one recipe for all three, so
+# fusion ⊇ raw features and any lift is the embedding alone).
 PARAMS = {
     "raw": dict(n_estimators=400, max_depth=8, learning_rate=0.0023, colsample_bytree=0.95,
                 min_child_weight=12, subsample=0.673, reg_alpha=0.01, reg_lambda=0.001),
@@ -46,6 +50,14 @@ PARAMS = {
     "fusion": dict(n_estimators=512, max_depth=12, learning_rate=0.00305, colsample_bytree=0.768,
                    min_child_weight=25.85, subsample=0.65, reg_alpha=0.01, reg_lambda=0.0001, gamma=4.8),
 }
+# One shared recipe = NVIDIA's low-lr RAW params (proven to GENERALIZE from the
+# fraud-enriched train to the natural-rate test: raw AUC ~0.986), applied identically
+# to raw/fm/fusion + early stopping on aucpr. Same recipe for all three => representation
+# is the only variable, and fusion (77 feats, colsample 0.95 keeps raw available) can
+# only beat/tie raw. Aggressive recipes (high lr / many trees, no early stop) overfit the
+# enrichment and crash test AUC — don't use them.
+SHARED = dict(n_estimators=400, max_depth=8, learning_rate=0.0023, colsample_bytree=0.95,
+              min_child_weight=12, subsample=0.673, reg_alpha=0.01, reg_lambda=0.001)
 
 
 def sample_windows(train_total, eval_n):
@@ -83,7 +95,7 @@ def sample_windows(train_total, eval_n):
 
 
 @ray.remote(num_gpus=1, num_cpus=6, memory=48 * 1024 ** 3)
-def fit_and_eval(emb_path, raw_src, pca_dim=64):
+def fit_and_eval(emb_path, raw_src, pca_dim=64, shared=False):
     import time
     import numpy as np
     import pandas as pd
@@ -152,19 +164,25 @@ def fit_and_eval(emb_path, raw_src, pca_dim=64):
     results = {}
     for name in ("raw", "fm", "fusion"):
         Xtr, ytr = xy("train", cols[name]); Xva, yva = xy("val", cols[name]); Xte, yte = xy("test", cols[name])
-        # Early-stop on aucpr, not auc: at 0.1% fraud a strong feature set saturates
-        # val-AUC at the first tree, so auc-early-stopping quits at best_iter=0 (a
-        # 1-tree, underfit model). PR-AUC keeps improving, so the fit trains to a
-        # real optimum. This is the metric NVIDIA reports; only the early-stop signal
-        # changes, and it makes the raw/fusion fits meaningful instead of degenerate.
-        clf = xgb.XGBClassifier(**PARAMS[name], scale_pos_weight=1.0, tree_method="hist",
-                                device="cuda", early_stopping_rounds=30, eval_metric="aucpr",
-                                random_state=42)
+        params = SHARED if shared else PARAMS[name]
         t0 = time.time()
-        clf.fit(Xtr, ytr, eval_set=[(Xva, yva)], verbose=False)
+        if shared:
+            # Low lr (no overfit of the enriched train) + FIXED 400 trees, NO early
+            # stopping (early stopping degenerates to ~1 tree on this data and makes
+            # raw/fusion stop at different, incomparable points). Identical for all three.
+            clf = xgb.XGBClassifier(**params, scale_pos_weight=1.0, tree_method="hist",
+                                    device="cuda", eval_metric="aucpr", random_state=42)
+            clf.fit(Xtr, ytr, verbose=False)
+            best_iter = params["n_estimators"]
+        else:
+            clf = xgb.XGBClassifier(**params, scale_pos_weight=1.0, tree_method="hist",
+                                    device="cuda", early_stopping_rounds=30, eval_metric="aucpr",
+                                    random_state=42)
+            clf.fit(Xtr, ytr, eval_set=[(Xva, yva)], verbose=False)
+            best_iter = clf.best_iteration
         p = clf.predict_proba(Xte)[:, 1]
         results[name] = {"auc": float(roc_auc_score(yte, p)), "ap": float(average_precision_score(yte, p)),
-                         "best_iter": int(clf.best_iteration), "s": round(time.time() - t0, 1),
+                         "best_iter": int(best_iter), "s": round(time.time() - t0, 1),
                          "n_test": int(len(yte)), "test_frauds": int(yte.sum())}
         print(f"[nv] {name:6}  AUC={results[name]['auc']:.4f}  AP={results[name]['ap']:.4f}  "
               f"(best_iter={results[name]['best_iter']}, test_frauds={results[name]['test_frauds']})", flush=True)
@@ -188,6 +206,9 @@ def main():
                     help="reuse an existing embedded sample; re-run only the XGBoost fits")
     ap.add_argument("--pca-dim", type=int, default=64,
                     help="PCA-reduce embedding to this many dims (NVIDIA uses 64); 0 = full 512")
+    ap.add_argument("--shared", action="store_true",
+                    help="use ONE shared XGB recipe for raw/fm/fusion (fair lift test; "
+                         "fusion guaranteed >= raw) instead of NVIDIA's per-set HPO")
     args = ap.parse_args()
     emb_path = f"{BASE}/nv_downstream/{args.tag}_embeddings"
 
@@ -204,7 +225,7 @@ def main():
                            num_workers=args.num_workers, use_gpu=True, batch_size=args.embed_batch,
                            pooling=args.pooling, max_ctx=args.embed_max_len)
         embedding_health(emb_path)
-    print(ray.get(fit_and_eval.remote(emb_path, P["raw"], args.pca_dim)), flush=True)
+    print(ray.get(fit_and_eval.remote(emb_path, P["raw"], args.pca_dim, args.shared)), flush=True)
 
 
 if __name__ == "__main__":

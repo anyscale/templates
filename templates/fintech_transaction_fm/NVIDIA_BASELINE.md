@@ -199,6 +199,29 @@ Open threads: (1) is our raw legitimately stronger or eval-inflated? (2) does ou
 under-learn vs NVIDIA's shipped ckpt (ppl 1.7 red flag; maybe needs their exact corpus/steps
 or the history-context matters after all)? (3) 100k-stratified vs full-holdout eval choice.
 
+## ✅ RESOLVED (2026-07-03 latest) — FUSION BEATS RAW; earlier "fusion<raw" was a fit bug
+The "fusion < raw" scare was a DOWNSTREAM XGBOOST artifact, not a bad FM:
+(a) raw & fusion were trained with DIFFERENT per-set HPO params (uninterpretable), and
+(b) early stopping on enriched-train/natural-test data collapsed to degenerate ~1-tree
+models (best_iter 0/1) that scored erratically (raw AP bounced 0.05↔0.23 by fit).
+
+Fair test = ONE identical recipe for raw/fm/fusion, low lr, FIXED 400 trees, NO early
+stopping (`--shared`, SHARED=RAW-params). Full holdout, 2718 frauds:
+| feat | AUC | AP |
+|---|---|---|
+| raw    | 0.976 | 0.0502 |
+| fm     | 0.838 | 0.0063 |
+| fusion | 0.985 | **0.0663** |
+**fusion − raw = +0.016 AP (+32%)** — FM adds real lift, same direction/order as NVIDIA
+(+42%, 0.124→0.176). Absolute AP lower than NVIDIA (conservative recipe + full-holdout
+eval, not their 100k); the LIFT is the comparable quantity and it's POSITIVE.
+
+Lesson: with skewed fraud + enriched train, XGBoost early-stopping is unstable; use fixed
+low-lr many-tree fits and the SAME recipe across feature sets for a fair representation test.
+Remaining polish: get absolute AP up (tune the shared recipe honestly), consider full-512
+"scale-up" (OOM'd in one worker — needs distributed XGB or test-only scoring), and clean up
+the pipeline/notebooks to bake in single-txn embed + PCA-64 + shared recipe.
+
 ## THE PLAN (resume here)
 Goal Zach set: match then beat NVIDIA, honestly, keeping the Ray pipeline clean.
 
