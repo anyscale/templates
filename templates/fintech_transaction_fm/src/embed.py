@@ -49,8 +49,13 @@ class EmbeddingExtractor:
             return torch.as_tensor(v, dtype=torch.long, device=self.device)
 
         tensors = {k: to_tensor(k) for k in ("input_ids", "attention_mask")}
-        with torch.no_grad():
-            emb = self.model.sequence_embedding(tensors, pooling=self.pooling).cpu().numpy()
+        # bf16 autocast mirrors pretraining: at seq_len 4096 the fp32 attention
+        # activations OOM even a 24 GiB A10G, and last-token pooling is unaffected
+        # by the reduced precision. no_grad drops the autograd tape (inference).
+        with torch.no_grad(), torch.autocast(
+            device_type="cuda", dtype=torch.bfloat16, enabled=torch.cuda.is_available()
+        ):
+            emb = self.model.sequence_embedding(tensors, pooling=self.pooling).float().cpu().numpy()
         passthrough = [
             "card_id", "label", "split", "weight",
             "raw_amount", "raw_hour", "raw_dow", "raw_mcc", "raw_ts",

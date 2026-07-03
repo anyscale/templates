@@ -41,7 +41,8 @@ embed:
   num_workers: 16            # embarrassingly parallel forward pass — scales ~linearly; ~5M
                              # eval windows / batch 256 keeps 16 replicas busy with headroom
   use_gpu: true
-  batch_size: 256            # seq 512: attention buffers cap T4 inference batch well below seq-128
+  batch_size: 64             # seq_len 4096: with bf16 autocast (see src/embed.py) a 64-window
+                             # batch peaks well under the A10G's 24 GiB; 256 OOM'd in fp32.
 
 downstream:                  # distributed XGBoost fit (Ray Train)
   num_workers: 16
