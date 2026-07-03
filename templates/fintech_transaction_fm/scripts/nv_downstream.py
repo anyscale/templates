@@ -91,9 +91,18 @@ def fit_and_eval(emb_path, raw_src):
     from sklearn.metrics import average_precision_score, roc_auc_score
     import xgboost as xgb
 
+    from sklearn.decomposition import PCA
+
     df = ray.data.read_parquet(emb_path).to_pandas()
     print(f"[nv] embeddings sample: {len(df):,} rows  splits={df['split'].value_counts().to_dict()}", flush=True)
     emb = np.vstack(df["embedding"].to_numpy()).astype(np.float32)
+    # NVIDIA (NB05) PCA-reduces the 512-dim embedding to 64 dims before XGBoost, for
+    # BOTH the fm-only and fusion feature sets. Fit on train rows only. Feeding the
+    # full 512 (as we did) is an unfaithful advantage — 8x more features.
+    train_mask0 = (df["split"] == "train").to_numpy()
+    pca = PCA(n_components=64, random_state=42).fit(emb[train_mask0])
+    emb = pca.transform(emb).astype(np.float32)
+    print(f"[nv] PCA 512->64  explained_var={pca.explained_variance_ratio_.sum():.3f}", flush=True)
     EMB = [f"emb_{i}" for i in range(emb.shape[1])]
     X = pd.DataFrame(emb, columns=EMB, index=df.index)
 
