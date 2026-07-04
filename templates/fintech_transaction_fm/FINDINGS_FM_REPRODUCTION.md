@@ -138,3 +138,21 @@ we formalize; treating it as a reproducibility finding, not an accusation."*
 - fusion > raw in 38.9% of draws
 
 **VERDICT: peak fusion reaches NVIDIA's 0.176 (2.2% of draws) -> a peak-to-peak comparable implementation is defensible (report as best-of-N with the variance above).**
+
+### CORRECTION to the auto-verdict above (reviewed)
+
+The auto-generated verdict ("peak reaches 0.176 → comparable is defensible") is **misleading and
+should not be used.** Reading the full distribution:
+- Fusion **usually loses to raw**: median 0.088 vs raw 0.115; fusion > raw in only **39% of draws**.
+  Their combined recipe overfits and typically underperforms plain raw (the fusion-below-raw
+  signature).
+- The fusion **peak (0.192) is eval-variance, not an FM lift.** The bootstrap resamples the same
+  test rows for both models, so an "easy" resample spikes everything — and on those same draws
+  **raw also hits ~0.19**. Fusion's peak does not come from the embedding adding signal.
+- Reporting the peak as "comparable to NVIDIA's 0.176" would be **cherry-picking a 2%-tail lucky
+  eval draw** (on which raw matched it anyway). It would not survive a rerun.
+
+**Corrected verdict: the +42% fusion lift does NOT reproduce, now airtight over 90 draws.** Their
+combined recipe overfits; fusion does not reliably beat raw; 0.176 is only a rare high-variance draw
+on which raw is equally strong. Reproducibility finding, not fraud (raw + embedding reproduce). There
+is no honest "comparable-lift" claim available from this evidence.
