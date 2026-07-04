@@ -107,6 +107,31 @@ footprint → the autoscaler's bundle-count estimate is infinite → assertion d
 
 ---
 
+## 9. Elastic 8×A10G provisioning — the capacity story, resolved (2026-07-04)
+**Symptom (good kind):** a clean full pretrain from an idle cluster. nb 04 requested 8 GPUs
+(`{'GPU':1.0}*8`, PACK placement group); the autoscaler went from 1 warm A10G to 8 running in
+**~2.5 min** (12:36 submit → 12:38:41 all 8 training), *including* recovering from one
+`4xa10g-48cpu-192gb: LaunchFailed` by falling back to eight `1xA10G` nodes. Ran 8 epochs in
+**1 h 59 m** (~14.9 min/epoch), final ppl 1.662, then **auto-terminated all 8 workers** back to
+the head when the job ended.
+**What Ray did:** the autoscaler matched a fleet to the workload on demand and released it after —
+no pre-provisioning, no stranded GPUs, and it routed around a capacity failure without intervention.
+This is the counterpart to §1/§2: same A10G capacity flakiness, now absorbed by elastic scheduling
++ the PACK group waiting for a complete worker set before `fit()`. **Where: 04 + 09** (the
+"match resources to workload / scale up then back down" beat). Runtimes logged to
+`/mnt/cluster_storage/transaction-fm/PRETRAIN_MONITOR.log` via `scripts/monitor_pretrain.py`.
+
+## 10. Ray Data re-reads the pretrain set every epoch (candidate optimization)
+**Symptom:** each epoch logs a fresh `Dataset train_2_N execution finished in ~440–490 s` — i.e.
+~8 min/epoch to re-read + re-split the 66k pretrain sequences from Parquet, roughly half of the
+~15 min/epoch wall time.
+**Root cause (to confirm):** the training loop re-iterates the Ray Dataset per epoch, so the read
+pipeline re-executes each time rather than reusing a materialized copy.
+**Candidate fix:** `materialize()` the pretrain dataset once (it fits — 66k sequences) so epochs 2–N
+read from the object store, *if* the read isn't already overlapping GPU compute via streaming
+backpressure (§5). **Needs measurement** before claiming a win — this is an honest open item, not a
+confirmed bottleneck. **Where: 09** (only if verified to be non-overlapped).
+
 ## Quick tuning knobs referenced above
 | stage | file | knob | this run | note |
 |---|---|---|---|---|

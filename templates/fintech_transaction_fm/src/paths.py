@@ -54,6 +54,44 @@ def artifact_paths(base_dir: str, scale: str) -> dict:
     }
 
 
+def _latest_mtime(path: str) -> float:
+    """Newest modification time under `path` (a file or a directory tree).
+
+    Artifacts here are Parquet *directories* written shard-by-shard, so a
+    directory's own mtime is unreliable — walk it and take the newest file.
+    Returns -1.0 if the path does not exist.
+    """
+    if not os.path.exists(path):
+        return -1.0
+    if os.path.isfile(path):
+        return os.path.getmtime(path)
+    newest = os.path.getmtime(path)
+    for root, _dirs, files in os.walk(path):
+        for name in files:
+            try:
+                newest = max(newest, os.path.getmtime(os.path.join(root, name)))
+            except OSError:
+                continue
+    return newest
+
+
+def stale_or_missing(output: str, inputs) -> bool:
+    """True if `output` must be rebuilt: it's absent, or older than any input.
+
+    Lets a notebook's skip-guard be *content-aware* instead of existence-only —
+    so a freshly regenerated upstream (e.g. a retrained model) can never be
+    silently ignored by a cached downstream artifact. `inputs` is a path or a
+    list of paths; inputs that don't exist are ignored (they can't be newer).
+    """
+    if isinstance(inputs, str):
+        inputs = [inputs]
+    out_mtime = _latest_mtime(output)
+    if out_mtime < 0:
+        return True  # missing -> build
+    newest_input = max((_latest_mtime(p) for p in inputs), default=-1.0)
+    return newest_input > out_mtime
+
+
 def write_splits_meta(out_path: str, timestamps, is_fraud, source: str, n_cards: int) -> dict:
     """Persist temporal split cutoffs + dataset stats next to the raw Parquet.
 
