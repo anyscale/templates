@@ -127,3 +127,14 @@ These are *our* template's issues, independent of the NVIDIA question, and worth
 published code. The raw and embedding results reproduce; the headline +42% fusion lift does not — the
 fusion model is unstable and does not beat the raw baseline. Confirming with repeated trials before
 we formalize; treating it as a reproducibility finding, not an accusation."*
+
+
+## Peak-hunt bootstrap (auto-written) — NVIDIA pipeline, fusion across seeds x eval-bootstraps
+- draws: 90
+- **fusion** AP: min 0.0459 / median 0.0875 / **max(peak) 0.1921**
+- **raw** AP: min 0.0418 / median 0.1148 / max 0.1944
+- NVIDIA reported fusion: 0.176
+- fusion reaches >= 0.176 in 2.2% of draws
+- fusion > raw in 38.9% of draws
+
+**VERDICT: peak fusion reaches NVIDIA's 0.176 (2.2% of draws) -> a peak-to-peak comparable implementation is defensible (report as best-of-N with the variance above).**
