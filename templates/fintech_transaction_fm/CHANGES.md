@@ -3,8 +3,9 @@
 ## ⏩ KICK OFF TOMORROW — exact steps
 
 State: pipeline is FIXED and baked into the notebooks; nb 03→06 all papermill-clean
-at mini; full clean run gives **fusion AP 0.0575 > raw 0.0466 (+24%)**. All full
-artifacts are pre-staged on `/mnt/cluster_storage/transaction-fm` (workspace-scoped,
+at mini; full clean end-to-end run (2026-07-04, retrained model) gives
+**fusion AP 0.0690 > raw 0.0500 (+38%)** — best to date, closing on NVIDIA's +42%.
+All full artifacts are pre-staged on `/mnt/cluster_storage/transaction-fm` (workspace-scoped,
 survives cluster restart): tokenized/full, model/full, embeddings/full, downstream/full.
 
 To run the notebooks end-to-end at full (each has SCALE="full" in its setup cell):
@@ -26,7 +27,49 @@ Recipe knobs live in `configs/full.yaml` (`embed.max_ctx=14`, `embed.balanced_tr
 
 ---
 
-## ▶️ RESUME HERE — 2026-07-04, PIPELINE FIXED + BAKED INTO NOTEBOOKS ✅
+## ▶️ RESUME HERE — 2026-07-04 (afternoon): FULL END-TO-END NOTEBOOK RUN, BEST RESULT ✅
+
+Ran the whole series in the notebooks (03→06) at full, with a fresh nb 04 retrain.
+**Result — fusion beats raw by +38% (best to date), vs NVIDIA's +42%:**
+
+| feature set | ours AUC | NVIDIA AUC | ours PR-AUC | NVIDIA PR-AUC |
+|---|---|---|---|---|
+| raw                 | 0.9764 | 0.9885 | 0.0500 | 0.1238 |
+| fm (embedding-only) | 0.8599 | 0.8775 | 0.0050 | 0.0123 |
+| **fusion**          | **0.9841** | 0.9925 | **0.0690** | 0.1755 |
+| **fusion lift vs raw** | | | **+38%** | **+42%** |
+
+Fusion lift **+0.0191 AP = +38%** (prior full run was +24%). Retrain to ppl 1.662
+(from 1.693) improved it. AUC lines up closely with NVIDIA (raw 0.976 vs 0.989, fusion
+0.984 vs 0.993). **Absolute PR-AUC is lower because of eval protocol, not modeling:** we
+score the full 2.44M holdout at natural 0.11% prevalence; NVIDIA scores a 100K stratified
+sample (~120 frauds), which inflates absolute AP. The comparable quantity is the **lift**,
+and +38% vs +42% is close. Shape is faithful — fm-alone weak but complementary, fusion >
+raw — so no modeling drift; Ray is the only difference.
+
+Three things landed today (all committed + pushed on `zgarner_transaction_foundation_model`):
+1. **nb 04 retrain** clean on 8×A10G: 1h59m, 8 epochs, ppl 1.662, fleet up in 2.5 min +
+   auto-scaled down after. Runtimes in `PRETRAIN_MONITOR.log` (`scripts/monitor_pretrain.py`).
+2. **Content-aware cache guards** (commit 6c15f613): `src.paths.stale_or_missing` — nb 03/05
+   rebuild when upstream is newer, so a retrain can't be silently ignored. **Caveat:** mtime
+   can't detect a PARTIAL write, so if you kill a stage mid-run, `rm -rf` its output dir before
+   rerunning (bit us twice with nb 05). See PERFORMANCE.md §11.
+3. **Stranded-GPU fix** (commit 9d34c640, PERFORMANCE.md §4a): nb 05 embed was pulling up 28
+   A10Gs / 6 used because the CPU-heavy `balanced_eval_sample` (~584→988 vCPU) had no CPU node
+   group in the WORKSPACE config → autoscaler grabbed A10Gs for their CPUs. Added a CPU worker
+   group (`m5.8xlarge` = `32cpu-128gb`, + `instance_ranking_strategy`); `job_config.yaml` already
+   had one. After the fix the re-run put sampling on CPU nodes and embedded the full 3.44M
+   (998K balanced train + 2.44M full test) cleanly.
+
+Also added talk/deck docs: `SCALING_TIERS.md`, `HOW_MUCH_DATA.md`.
+
+**Polish still open:** absolute AP conservative (raw 0.050 vs NVIDIA 0.124 — eval-protocol
+difference, not modeling); notebook prose pass; make the cache guard partial-write-proof
+(`_SUCCESS` marker); optional distributed-XGB for the 512-dim scale-up story.
+
+---
+
+## ▶️ (prior) 2026-07-04, PIPELINE FIXED + BAKED INTO NOTEBOOKS ✅
 
 The validated recipe is now IN the pipeline (src + notebooks), not just a harness.
 **Clean full-pipeline result (real TabFormer, full holdout, 2718 frauds):**
