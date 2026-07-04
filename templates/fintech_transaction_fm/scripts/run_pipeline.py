@@ -160,24 +160,28 @@ def main():
     )
     del pre  # release the object-store blocks before the embedding pass
 
-    print("=== [4/6] tokenize eval windows -> embed (streaming CPU->GPU) ===", flush=True)
-    from src.embed import extract_embeddings
+    print("=== [4/6] tokenize eval windows -> balanced-sample -> embed (CPU->GPU) ===", flush=True)
+    from src.embed import balanced_eval_sample, extract_embeddings
 
     ev = tokenized("eval").filter(expr=col("kind") == "eval").drop_columns(["kind"])
     e = cfg["embed"]
+    sampled = balanced_eval_sample(ds=ev, balanced_train=e["balanced_train"])
     extract_embeddings(
-        ds=ev,
+        ds=sampled,
         checkpoint_dir=paths["checkpoint"],
         output_path=paths["embeddings"],
         num_workers=e["num_workers"],
         use_gpu=e["use_gpu"],
         batch_size=e["batch_size"],
+        max_ctx=e["max_ctx"],
     )
 
     print("=== [5/6] downstream fraud eval ===", flush=True)
     from src.downstream import print_summary, run_downstream
 
-    print_summary(run_downstream(paths["embeddings"], paths["downstream"]))
+    print_summary(run_downstream(paths["embeddings"], paths["downstream"],
+                                 pca_dim=cfg["downstream"]["pca_dim"],
+                                 use_gpu=cfg["downstream"]["use_gpu"]))
 
     print("=== [6/6] validate ===", flush=True)
     from scripts.validate_results import print_report, validate_pipeline

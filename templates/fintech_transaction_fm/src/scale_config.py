@@ -30,8 +30,8 @@ REQUIRED_KEYS = {
     ),
     "model": ("d_model", "n_heads", "n_layers", "dim_ff"),
     "pretrain": ("epochs", "batch_size", "lr", "num_workers", "use_gpu", "use_fsdp"),
-    "embed": ("num_workers", "use_gpu", "batch_size"),
-    "downstream": ("num_workers", "use_gpu"),
+    "embed": ("num_workers", "use_gpu", "batch_size", "max_ctx", "balanced_train"),
+    "downstream": ("num_workers", "use_gpu", "pca_dim"),
 }
 
 

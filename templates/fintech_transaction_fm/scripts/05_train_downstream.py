@@ -23,7 +23,7 @@ def main():
     summary = run_downstream(
         embeddings_path=paths["embeddings"],
         output_dir=paths["downstream"],
-        num_workers=cfg["downstream"]["num_workers"],
+        pca_dim=cfg["downstream"]["pca_dim"],
         use_gpu=cfg["downstream"]["use_gpu"],
     )
     print_summary(summary)

@@ -39,13 +39,16 @@ pretrain:                    # causal-LM (next-token) pretraining of the Llama d
   use_gpu: true
   use_fsdp: false
 
-embed:
-  num_workers: 16            # embarrassingly parallel forward pass — scales ~linearly; ~5M
-                             # eval windows / batch 256 keeps 16 replicas busy with headroom
+embed:                       # single-transaction embeddings (NVIDIA NB04)
+  num_workers: 16            # embarrassingly parallel forward pass — scales ~linearly
   use_gpu: true
-  batch_size: 64             # seq_len 4096: with bf16 autocast (see src/embed.py) a 64-window
-                             # batch peaks well under the A10G's 24 GiB; 256 OOM'd in fp32.
+  batch_size: 256            # single-txn (max_ctx) windows are tiny -> big batches are fine
+  max_ctx: 14                # embed each txn ALONE: BOS + its ~12 field tokens + EOS
+                             # (NVIDIA embeds single txns even though pretrain is 4096)
+  balanced_train: 1000000    # balanced train sample (all fraud + ~10% mix) embedded for
+                             # downstream; test split embedded whole for a stable metric
 
-downstream:                  # distributed XGBoost fit (Ray Train)
-  num_workers: 16
+downstream:                  # XGBoost fit on the balanced sample (small -> one GPU worker)
+  num_workers: 1
   use_gpu: true
+  pca_dim: 64                # PCA-reduce the 512-dim embedding before XGBoost (NVIDIA NB05)

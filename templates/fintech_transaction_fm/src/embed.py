@@ -103,6 +103,40 @@ class EmbeddingExtractor:
         return out
 
 
+def balanced_eval_sample(tokenized_eval_path: str = None, balanced_train: int = 1_000_000,
+                         seed: int = 1, ds=None):
+    """Balanced train sample + full holdout test, drawn from tokenized eval.
+
+    Matches NVIDIA NB04: sample BEFORE embedding, so we embed ~``balanced_train`` +
+    the holdout (a few million windows) rather than all ~24M. The train sample keeps
+    every fraud + a random ~10%-fraud mix of normals (``scale_pos_weight=1.0``
+    downstream); the test split is kept whole for a stable held-out metric. Uses
+    ``random_sample`` (cheap per-row Bernoulli). Pass ``ds`` (an in-memory eval
+    Dataset, e.g. from the fused pipeline) or ``tokenized_eval_path`` (read from disk).
+    Returns a Ray Dataset ready for ``extract_embeddings(ds=...)``.
+    """
+    import ray
+
+    full = ds.materialize() if ds is not None else ray.data.read_parquet(tokenized_eval_path)
+
+    def cnt(s, lab=None):
+        d = full.filter(expr=f"split == '{s}'")
+        if lab is not None:
+            d = d.filter(expr=f"label == {lab}")
+        return d.count()
+
+    tr_fraud, tr_norm = cnt("train", 1), cnt("train", 0)
+    nf = min(tr_fraud, int(balanced_train * 0.1))
+    frac_tn = min(1.0, (balanced_train - nf) / max(tr_norm, 1))
+    print(f"[embed] balanced train: {nf:,} fraud + ~{int(frac_tn * tr_norm):,} normal "
+          f"(~{balanced_train:,}); test kept whole ({cnt('test'):,})", flush=True)
+
+    tr = full.filter(expr="split == 'train'")
+    train_ds = tr.filter(expr="label == 1").union(
+        tr.filter(expr="label == 0").random_sample(frac_tn, seed=seed))
+    return train_ds.union(full.filter(expr="split == 'test'"))
+
+
 def extract_embeddings(
     tokenized_path: str | None = None,
     checkpoint_dir: str = "",

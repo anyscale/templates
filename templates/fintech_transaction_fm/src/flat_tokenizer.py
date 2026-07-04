@@ -170,21 +170,36 @@ def eval_normal_keep(splits: dict, target_eval_samples: int) -> float:
     return float(min(1.0, normals_target / max(n_txn - n_fraud, 1.0)))
 
 
+# Raw-passthrough columns that are categorical STRINGS (OrdinalEncoded downstream,
+# fit on the train split — NVIDIA's scheme). The rest are numeric passthroughs.
+_RAW_STR_COLS = ("raw_use_chip", "raw_merchant_state", "raw_merchant_city")
+
+
 def _raw_features(i, amounts, hours, dows, mccs, ts, use_chips, states, cities, zips, merch, card_id):
-    """Raw target-transaction features for the downstream baseline (unchanged schema)."""
+    """Raw target-transaction features for the downstream baseline.
+
+    These mirror NVIDIA's 13-feature XGBoost baseline. Categoricals are carried as
+    RAW STRINGS (use_chip / merchant_state / merchant_city) and ordinal-encoded in
+    ``src/downstream`` with a train-fit encoder — NOT hashed here. ``merchant_id`` is
+    the FULL merchant identifier (NVIDIA's "Merchant Name"), passed through as an int
+    for XGBoost to split on. Hashing/truncating these (the old scheme) collided
+    distinct merchants/cities and crippled the raw baseline and fusion.
+    """
     return {
         "raw_amount": np.float32(amounts[i]), "raw_hour": int(hours[i]), "raw_dow": int(dows[i]),
         "raw_mcc": int(mccs[i]), "raw_ts": int(ts[i].astype(np.int64)),
-        "raw_use_chip": _CHIP_IDX.get(str(use_chips[i]).lower(), -1),
-        "raw_merchant_state": _STATE_IDX.get(states[i], -1),
-        "raw_merchant_city": _hash(cities[i], 100000) if str(cities[i]) else -1,
+        "raw_use_chip": str(use_chips[i]).lower(),
+        "raw_merchant_state": str(states[i]),
+        "raw_merchant_city": str(cities[i]),
         "raw_zip": (-1 if (zips[i] != zips[i]) else int(zips[i])),
-        "raw_merchant_id": int(merch[i]) % 100000, "raw_card_id": int(card_id),
+        "raw_merchant_id": int(merch[i]), "raw_card_id": int(card_id),
     }
 
 
 def _empty_raw(card_id):
-    d = {c: 0 for c in _RAW_COLS}
+    # Pretrain rows fill defaults then drop these (PRETRAIN_DROP); string cols must be
+    # "" (not 0) so a card's mixed pretrain+eval rows stack to a consistent str dtype.
+    d = {c: ("" if c in _RAW_STR_COLS else 0) for c in _RAW_COLS}
     d["raw_amount"] = np.float32(0.0)
     d["raw_card_id"] = int(card_id)
     return d
@@ -237,13 +252,20 @@ def make_tokenize_group_fn(seq_len, train_end=None, val_end=None, normal_keep=1.
 
         n_train = n if t_train is None else int(np.searchsorted(ts, t_train))
 
-        # Pretrain: non-overlapping blocks of train-period history.
+        # Pretrain: non-overlapping blocks of train-period history. A card whose
+        # transactions are ALL in the holdout period (n_train == 0) would otherwise
+        # emit zero pretrain rows; with emit="pretrain" that yields an empty group,
+        # and an empty tensor block can't be Arrow-converted (crashes the write). So
+        # such a card emits ONE window from its earliest transactions instead — it
+        # guarantees a non-empty group, is a negligible fraction of cards, and carries
+        # no label leakage (pretraining is self-supervised next-token, no fraud label).
+        n_pre = n_train if n_train >= 1 else min(n, max_txns)
         if emit in ("both", "pretrain"):
             made = 0
-            for lo in range(0, n_train, max_txns):
+            for lo in range(0, n_pre, max_txns):
                 if max_pretrain_windows is not None and made >= max_pretrain_windows:
                     break
-                hi = min(lo + max_txns, n_train)
+                hi = min(lo + max_txns, n_pre)
                 if hi - lo >= 1:
                     emit_row(lo, hi, "pretrain", "train", 0, None)
                     made += 1
@@ -287,7 +309,10 @@ def _stack(rows, seq_len):
                "input_ids": np.zeros((0, seq_len), np.int32),
                "attention_mask": np.zeros((0, seq_len), np.int32)}
         for c in _RAW_COLS:
-            out[c] = np.zeros(0, np.float32 if c == "raw_amount" else np.int64)
+            if c in _RAW_STR_COLS:
+                out[c] = np.array([], dtype="<U16")
+            else:
+                out[c] = np.zeros(0, np.float32 if c == "raw_amount" else np.int64)
         return out
     out = {}
     for k, v0 in rows[0].items():

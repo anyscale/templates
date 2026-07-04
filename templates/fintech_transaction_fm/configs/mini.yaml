@@ -41,11 +41,14 @@ pretrain:
   use_gpu: false
   use_fsdp: false            # only worth it if the model outgrows one GPU
 
-embed:
+embed:                       # single-transaction embeddings (NVIDIA NB04)
   num_workers: 8
   use_gpu: false
   batch_size: 256
+  max_ctx: 14                # embed each txn alone (BOS + ~12 field tokens + EOS)
+  balanced_train: 40000      # balanced train sample size (caps; mini keeps ~all)
 
-downstream:                  # distributed XGBoost fit (Ray Train)
-  num_workers: 1             # single worker on CPU -> reproducible, runs in CI
+downstream:                  # XGBoost fit on the balanced sample (small)
+  num_workers: 1             # single worker -> reproducible, runs in CI
   use_gpu: false
+  pca_dim: 64                # PCA the embedding before XGBoost (no-op when emb<=64 dims)
