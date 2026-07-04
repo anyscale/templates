@@ -1,92 +1,129 @@
-# Findings: reproducing NVIDIA's transaction-FM fraud result on Ray
+# Findings: reproducing NVIDIA's transaction-FM fraud result — full snapshot
 
-**Date:** 2026-07-04. **Status:** components reproduce; fusion lift does not reproduce in our
-reimplementation; one definitive check (running NVIDIA's literal fusion code) remains undone.
+**Date:** 2026-07-04 (late night). **Owner:** Zach. **Status:** near-final; one confirmation run
+(bootstrap) recommended before any external/leadership claim. This is a factual technical record —
+framing for leadership is Zach's call.
 
-This is a factual technical record. Confidence levels are stated explicitly because the eval on
-this benchmark is high-variance and because everything below is *our reimplementation* of NVIDIA's
-approach, not their literal code (except where noted).
+---
 
-## The question
+## TL;DR (read this first, worded for defensibility)
 
-NVIDIA's transaction-FM blueprint reports, on the IBM TabFormer fraud benchmark (24.4M txns,
-~0.12% fraud), that a foundation-model embedding fused with raw features beats raw alone by ~**+42%**
-PR-AUC (their published: raw AP **0.124**, embedding-only **0.012**, fusion **0.176**). Our goal:
-faithfully reproduce that, with Ray/Anyscale as the only difference (the scaling layer).
+We set out to faithfully reproduce NVIDIA's transaction-FM fraud result (their published: raw
+PR-AUC **0.124**, embedding-only **0.012**, fusion **0.176** → **+42%** lift) with Ray/Anyscale as
+the only difference. We ended up running **NVIDIA's own literal published code** end-to-end (their
+tokenizer, their pretrained model, their embedding, their fusion, their eval protocol) in this
+Anyscale environment.
 
-## Headline finding (stated carefully)
+**Result of running their literal code:**
+- **raw baseline reproduces** — AP 0.137 vs their 0.124 ✅
+- **embedding-only reproduces** — AP 0.012 vs their 0.012 ✅ (matches almost exactly)
+- **fusion does NOT reproduce** — AP **0.042** vs their reported **0.176** ❌, and it lands *below*
+  the raw baseline.
 
-- **NVIDIA's raw and embedding-only components reproduce** almost exactly once we corrected our
-  own errors. **They are vindicated on the components — no evidence of fabrication.**
-- **Their fusion *lift* (+42%) does not reproduce in our faithful reimplementation.** With a raw
-  baseline matching theirs and an embedding matching theirs, a combiner that *mathematically cannot
-  score below raw* still shows the embedding adding **zero** lift.
-- **We have NOT yet run NVIDIA's literal fusion code (their NB05).** So the defensible statement is
-  *"our faithful reimplementation does not reproduce the fusion lift,"* **not** *"the result is
-  irreproducible."* That distinction is the one remaining test (see bottom).
+So the two components are faithful; the headline **+42% fusion lift did not reproduce from their
+published code** on a fresh draw of their own protocol.
 
-## Numbers (PR-AUC / average precision, natural ~0.11% prevalence)
+**Do NOT (yet) state "NVIDIA's results are irreproducible" externally.** It needs the bootstrap
+confirmation below, and the honest framing is *"the fusion lift did not reproduce; the fusion model
+is unstable and collapsed below the raw baseline"* — a **reproducibility** problem, **not** fraud.
+Their raw and embedding numbers reproduce cleanly.
 
-| component | NVIDIA reported | ours (faithful) | status |
+---
+
+## The numbers (PR-AUC = average precision, natural ~0.11% fraud rate)
+
+| component | NVIDIA reported | ours via THEIR literal code | ours via OUR pipeline |
 |---|---|---|---|
-| raw (13 tabular features) | 0.124 | **0.11–0.12** | ✅ reproduces |
-| embedding-only (fm) | 0.012 | **0.011** | ✅ reproduces |
-| fusion (raw + fm) | 0.176 (+42%) | **≈ raw, +0.00 lift** | ❌ does not reproduce |
+| raw | 0.124 | 0.137 ✅ | 0.12–0.23 (see leakage note) |
+| embedding-only (fm) | 0.012 | 0.012 ✅ | 0.011 ✅ |
+| fusion | 0.176 (+42%) | **0.042 ❌ (below raw)** | ≈ raw, no lift ❌ |
 
-Bootstrapped over 50× 100K-stratified draws (NVIDIA's eval protocol): **fusion beats raw in 0–2%
-of draws.** NVIDIA's reported raw/fusion values are each individually reproducible as *single* draws
-(their raw ≈ our low end, their fusion ≈ our high end), but the paired +42% lift essentially never
-co-occurs in a faithful run.
+AUC-ROC all reproduce and are ~0.98+ (but AUC is not the operative metric at this fraud rate).
 
-## What we found and fixed along the way (methodology / defensibility)
+---
 
-1. **Downstream bug (ours):** our fraud classifier had early stopping removed, training a fixed
-   large number of trees → overfit the fraud-enriched training sample → raw collapsed to ~0.05.
-   Restoring early stopping on a natural-rate validation set fixed it (raw → 0.16+). Confirmed via
-   A/B on identical features: fixed-trees → 0.049, early-stop → 0.206.
-2. **Our raw was inflated by account-ID leakage (ours, the key error):** the raw features included
-   account identity (User, Card, Merchant Name). **92% of test transactions are from cards also seen
-   in training**, so a shallow tree memorizes which specific accounts are fraud-prone. This alone
-   accounted for ~+0.12 of our raw AP. **Dropping those identity features → raw = 0.116, matching
-   NVIDIA's 0.124.** So our earlier "raw beats NVIDIA" was an artifact of this leakage, not a real
-   result. This is why our raw was ~2× theirs.
-3. **Embedding context was the fm lever:** we had been embedding each transaction *alone*
-   (`max_ctx=14`), which is redundant with single-transaction raw features. NVIDIA's `MAX_LENGTH=128`
-   embeds each transaction with ~10 transactions of *history*. Re-embedding at `max_ctx=128`
-   (nb 05 knob `embed.max_ctx`) made our fm-alone match theirs exactly (0.011 vs 0.012) and made it
-   far more independent of raw (score correlation 0.36 → 0.13) — i.e. genuinely complementary.
-4. **Fusion still shows no lift** even after (1)–(3): a bulletproof AP-maximizing rank blend (which
-   can weight the embedding to zero and thus can never underperform raw) selects **pure raw** — the
-   embedding adds nothing on top of the honest raw. Single-XGBoost fusions overfit to *below* raw
-   (a broken-fit signature), and multiple recipes did not recover a lift.
+## What we established (high confidence)
 
-## Confidence
+1. **Their raw and embedding components are faithfully reproducible.** Running their literal
+   pipeline, both land on their reported numbers. NVIDIA is *vindicated on the components* — no
+   evidence of fabrication anywhere.
+2. **Their published +42% fusion lift did not reproduce** — not with our reimplementation, and not
+   with **their own literal code** on a fresh draw. In every configuration, fusion ≈ raw at best,
+   and here it collapsed *below* raw (AP 0.042 < 0.137).
+3. **fusion < raw is mathematically impossible for a well-fit model** (fusion contains every raw
+   feature plus the embedding). So their **combined XGBoost recipe overfits** — the same instability
+   appeared in our reimplementation and in their literal code. Their reported 0.176 most plausibly
+   came from a single favorable/unstable fit or eval draw.
 
-- **High confidence:** raw and fm components reproduce; our raw-leakage bug is real and quantified;
-  the early-stopping bug is real. These are backed by clean, bootstrapped runs.
-- **Well-evidenced but not final:** the fusion lift does not reproduce in our reimplementation
-  (matched components + bulletproof combiner + 50-draw bootstrap + multiple joint-model attempts).
-- **Caveats:** (a) the benchmark eval is high-variance (~120 frauds on NVIDIA's 100K-stratified
-  protocol), so all single numbers have wide error bars; (b) everything here is our reimplementation
-  of NVIDIA's method — we reproduced their *reported component numbers*, but did not run their
-  literal fusion code.
+## Bugs we found in OUR pipeline along the way (fixed / understood)
 
-## The one remaining definitive test
+These are *our* template's issues, independent of the NVIDIA question, and worth fixing regardless:
+- **Downstream early stopping was removed** → fixed trees overfit the fraud-enriched train → raw
+  collapsed to ~0.05. Restoring early stopping fixes it (A/B: 0.049 → 0.206).
+- **Account-ID leakage in raw:** our raw features (User/Card/Merchant) memorize fraud-prone accounts
+  (92% of test cards seen in training), inflating our raw to ~0.23 vs the honest ~0.12. Dropping the
+  identity features → 0.116 ≈ NVIDIA's 0.124. (This is why our earlier "we beat NVIDIA on raw" was an
+  artifact, not real.)
+- **Embedding context:** our template embedded single transactions (`max_ctx=14`), redundant with
+  single-transaction raw. NVIDIA's tokenizer uses history/temporal encoding (`MAX_LENGTH=128`,
+  time-delta + category hierarchy). Matching it made our fm-alone match theirs (0.011↔0.012).
 
-Run **NVIDIA's actual repository code** for the fusion step (`05_xgboost_fraud_detection.ipynb`,
-their real cuDF/XGBoost pipeline) end-to-end on this data.
-- If **their code yields +42% here** → the lift is real and the gap is a divergence in *our* fusion
-  reimplementation (most likely raw×embedding interactions our combiner/tuning doesn't capture); we
-  then diff their code against ours to find it. The FM's value is recovered.
-- If **their code also shows no lift here** → the reported lift does not reproduce even with their own
-  code, which is then a defensible, hard result.
+## The definitive test — methodology (so it's defensible)
 
-This is bounded work (clone repo, match RAPIDS/cuDF environment, run their pipeline) and is the step
-that converts "our reimplementation couldn't reproduce it" into a claim that holds up under scrutiny.
-It has **not** been done yet; no conclusion about NVIDIA's result should be published before it is.
+- Cloned NVIDIA's repo; downloaded their **actual pretrained model** (git-LFS, 58 MB safetensors)
+  via GitHub media URL.
+- Ran their **literal** `NB01 data-prep → NB04 embed → NB05 fusion` in this Anyscale env on a GPU
+  worker: their `FinancialTabularTokenizer` (temporal_encoding + category_hierarchy), their
+  `HuggingFaceDecoderInference` (last-token pooling, MAX_LENGTH=128), their per-feature-set HPO
+  params, their OrdinalEncoder raw handling, their temporal 80/10/10 split, their 100K-stratified
+  eval.
+- **Only non-literal change:** `cuml.preprocessing.KBinsDiscretizer` was unavailable (RAPIDS/CUDA-13
+  install issue), so it was shimmed to `sklearn.preprocessing.KBinsDiscretizer` with `subsample=None`
+  (identical quantile-binning math; only GPU→CPU compute differs). Everything else is their code.
+- That the raw (0.137) and fm (0.012) reproduce **validates the pipeline is faithful** — the shim
+  and data-prep are not distorting results.
 
-## What is NOT in question
+## Confidence + caveats (important)
 
-The Ray/Anyscale scaling pipeline itself — distributed tokenization of 24.4M transactions, decoder
-pretraining across GPU workers with Ray Train, distributed embedding extraction, downstream on the
-cluster — works and is independent of the modeling comparison above.
+- **Solid:** raw + fm reproduce; fusion (0.042) is far below both their 0.176 and our raw (0.137);
+  the fusion-below-raw overfit signature is consistent across our reimpl and their code.
+- **Not yet airtight:** this is **one fresh draw** of their protocol (their reported number was also
+  a single draw). The fusion fit is unstable, so a single run isn't proof it's *never* ~0.176.
+- **The ~120-fraud eval is inherently high variance** — all single numbers here have wide error bars.
+
+## NEXT STEPS (in order) — for when this is picked up
+
+1. **Bootstrap their fusion over ~20–50 fresh draws of their protocol** (re-embed is cached-able; the
+   fusion refit is cheap). Show fusion is *consistently* nowhere near 0.176 and averages ≈ raw. This
+   is the single step that turns "did not reproduce (one run)" into an unimpeachable result. **Do this
+   before any external claim.**
+2. If confirmed: the defensible statement is *"NVIDIA's raw and embedding results reproduce; their
+   +42% fusion lift does not reproduce from their published code — the fusion model is unstable and
+   collapses to/below the raw baseline across repeated trials."*
+3. Independently, **fix our own template** (early stopping restored, remove raw account-ID leakage,
+   adopt their history/temporal tokenizer) so it faithfully mirrors theirs — valuable regardless of
+   the fusion verdict, and it's what makes the Ray-scaling story honest.
+4. Consider contacting NVIDIA / filing an issue with the reproduction, given the components reproduce
+   but the headline lift doesn't — collaborative, not accusatory.
+
+## Reproducibility / where everything is
+
+- NVIDIA repo + **their weights**: cloned under the session scratchpad `nvidia_tfm/` (weights at
+  `models/decoder-foundation-model/model_real.safetensors`, staged for workers at
+  `/mnt/cluster_storage/nvidia_model/`). **Scratchpad is ephemeral — re-clone + re-download weights
+  if the node resets** (git-LFS pointer → fetch via GitHub media URL).
+- Their data parquets (their split): `/mnt/cluster_storage/nvidia_data/temporal_split/`
+  (train 19.5M / val_eval 100K / test_eval 100K).
+- Definitive run script: scratchpad `nv_embed_fuse.py` (their literal NB04+NB05, paths adapted).
+- Env: `cudf-cu12` + `cupy-cuda12x` (registered cluster-wide) + the KBinsDiscretizer sklearn shim
+  (`nvidia_tfm/cuml/`). **Note: installing cuDF bumped the workspace numpy to 2.4.x, which conflicts
+  with scipy 1.11/matplotlib — may need to pin numpy<2 back for other work.**
+- All prior analysis + numbers: `PERFORMANCE.md` (§13 downstream instability), commit history on
+  branch `zgarner_transaction_foundation_model`.
+
+## One-line status for leadership (Zach to finalize wording)
+
+*"We reproduced NVIDIA's transaction-FM pipeline faithfully on Anyscale, including running their own
+published code. The raw and embedding results reproduce; the headline +42% fusion lift does not — the
+fusion model is unstable and does not beat the raw baseline. Confirming with repeated trials before
+we formalize; treating it as a reproducibility finding, not an accusation."*
