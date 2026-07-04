@@ -32,12 +32,16 @@ Recipe knobs live in `configs/full.yaml` (`embed.max_ctx=14`, `embed.balanced_tr
 Ran the whole series in the notebooks (03→06) at full, with a fresh nb 04 retrain.
 **Result — fusion beats raw by +38% (best to date), vs NVIDIA's +42%:**
 
-| feature set | ours AUC | NVIDIA AUC | ours PR-AUC | NVIDIA PR-AUC |
+Both metrics are 0–1, **higher is better** (↑). AUC = can it rank a real fraud above a
+normal transaction (0.5 = coin flip, 1.0 = perfect); PR-AUC = how precisely it catches the
+*rare* frauds without false alarms (at 0.11% fraud, ~0.001 = random guessing).
+
+| feature set | ours AUC ↑ | NVIDIA AUC ↑ | ours PR-AUC ↑ | NVIDIA PR-AUC ↑ |
 |---|---|---|---|---|
-| raw                 | 0.9764 | 0.9885 | 0.0500 | 0.1238 |
-| fm (embedding-only) | 0.8599 | 0.8775 | 0.0050 | 0.0123 |
-| **fusion**          | **0.9841** | 0.9925 | **0.0690** | 0.1755 |
-| **fusion lift vs raw** | | | **+38%** | **+42%** |
+| raw (plain transaction fields)   | 0.9764 | 0.9885 | 0.0500 | 0.1238 |
+| fm (model embedding alone)       | 0.8599 | 0.8775 | 0.0050 | 0.0123 |
+| **fusion (raw + embedding)**     | **0.9841** | 0.9925 | **0.0690** | 0.1755 |
+| **fusion lift vs raw**           | | | **+38%** | **+42%** |
 
 Fusion lift **+0.0191 AP = +38%** (prior full run was +24%). Retrain to ppl 1.662
 (from 1.693) improved it. AUC lines up closely with NVIDIA (raw 0.976 vs 0.989, fusion
