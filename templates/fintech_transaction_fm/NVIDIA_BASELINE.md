@@ -222,6 +222,31 @@ Remaining polish: get absolute AP up (tune the shared recipe honestly), consider
 "scale-up" (OOM'd in one worker — needs distributed XGB or test-only scoring), and clean up
 the pipeline/notebooks to bake in single-txn embed + PCA-64 + shared recipe.
 
+## 🚧 PORT INTO THE PIPELINE before the full notebook run (fixes live in scripts/nv_downstream.py, NOT the notebooks yet)
+The validated fixes are in the `nv_downstream.py` harness. To make the actual notebook
+series (03 pretrain / 05 embed / 06 downstream) reproduce them, port each into src/ + nbs:
+
+1. **Embedding = single transaction** (not full history). `src/embed.py` already has
+   `max_ctx` (added) — wire it so nb 05 / `extract_embeddings` uses max_ctx≈14 (or better:
+   tokenize eval windows short). Matches NVIDIA NB04 `encode` (bos + 12 field tokens + eos).
+2. **Raw features (downstream): real un-hashed NVIDIA-13**, not the tokenizer's crc32 hash.
+   Port the source-join + OrdinalEncoder from `nv_downstream.fit_and_eval` into
+   `src/downstream.py::expand_features` (full merchant_id; ordinal-encode use_chip/
+   merchant_state/merchant_city; Amount raw; User/Card/Year/Month/Day). OR fix
+   `flat_tokenizer._raw_features` to carry raw strings + full merchant_id and re-tokenize.
+3. **Balanced train sample** (all fraud + normals to 1M) + **scale_pos_weight=1.0** —
+   replace src/downstream.py's current train sampling + sqrt(spw).
+4. **PCA 512→64** on embeddings before XGBoost (fit on train), for fm AND fusion.
+5. **One shared, fully-trained recipe** across raw/fm/fusion: fixed ~400 trees, low lr
+   (~0.0023), NO early stopping (early stopping is unstable on this enriched/natural split).
+6. **Eval choice:** full holdout (stable, ours) vs NVIDIA 100k-stratified — pick one and
+   state it. Lift (fusion−raw) is the headline; absolute AP depends on this choice.
+7. Pretrain (nb 03/04) is already faithful (chunk 315 / seq 4096) — model/full is valid; no
+   re-pretrain needed. Verified GOOD state at full: fusion AP 0.066 > raw 0.050 (+32%).
+
+Cached artifacts on `/mnt/cluster_storage` (survive restart): raw/full, tokenized/full
+(seq4096 eval), model/full (pretrained Llama), nv_downstream/holdout_embeddings (single-txn).
+
 ## THE PLAN (resume here)
 Goal Zach set: match then beat NVIDIA, honestly, keeping the Ray pipeline clean.
 
