@@ -190,6 +190,38 @@ already committed → same cost to completion). The lesson is to prevent the ove
 tolerate it. **Where: 09** (the headline "match resources to the workload" story — including where the
 default autoscaling gets it wrong and what to constrain).
 
+## 13. Downstream XGBoost is unstable on enriched-train / natural-test (2026-07-04)
+**This is the real root of the weak raw/fusion — not the features, not the FM.** Diagnosis chain
+(all measured, full 2.44M holdout unless noted):
+- Our raw features are *faithful* (loader: `card_id=User*100+Card`, `merchant_id=Merchant Name`);
+  swapping carried→source features gave the same 0.048, ruling features out.
+- A/B on identical features: **fixed 400 trees, no early stop → raw 0.049; early stopping on a
+  natural-rate val → raw 0.206 (best_iter=2).** So the original bug was: our downstream *removed*
+  early stopping and trained a fixed pile of trees, which **overfits the fraud-enriched training
+  sample and collapses on the natural-rate test.** (We removed early stopping earlier thinking the
+  1–2 tree result was degenerate — it was correct.)
+- But the fit is **pathologically unstable**: raw swung **0.169 → 0.088** between two runs differing
+  only in early-stop patience (20 vs 30 rounds) → 5 vs 42 trees. Fusion bounced 0.072–0.147 across
+  recipes. The optimum is only ~2–5 trees and the cliff is steep.
+
+**Why unstable (root cause):** (a) training on a fraud-*enriched* balanced sample (2.5–10% fraud)
+but evaluating at the *natural* 0.11% rate is a train/test distribution mismatch; (b) early stopping
+on val **AUC does not track test AP** — the metric we actually report — so maximizing val-AUC (more
+trees) overfits test-AP.
+
+**Fixes that target the cause (NOT blind parameter search):**
+1. **Early-stop on AP (`aucpr`), not AUC** — match the stopping objective to the reported metric.
+2. **Cut the enrichment mismatch** — train nearer the natural rate using `scale_pos_weight` instead
+   of aggressive resampling, so train and test distributions agree and the fit stops moving.
+3. **Use the proper natural-rate temporal VAL period** for early stopping (not a test holdout).
+4. **Or just fix a small tree count (~5)** — the optimum is tiny and stable there; sidesteps the
+   early-stopping fragility entirely.
+
+**Status:** raw reaches 0.17–0.21 (beats NVIDIA 0.124) once early-stopped; fm ~0.045 (beats their
+0.012); best fusion so far 0.147 (below their 0.176) but on an unstable fit — a stabilized recipe
+(fix #1/#2) is expected to lift it, since raw alone is already ~0.17–0.21 and the FM adds signal.
+**Where: 06 downstream (this is a `src/downstream.py` change) + 09.**
+
 ## Quick tuning knobs referenced above
 | stage | file | knob | this run | note |
 |---|---|---|---|---|

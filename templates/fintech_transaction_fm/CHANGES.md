@@ -53,9 +53,21 @@ fetched from the repo — not our reconstruction):
 5. Recipe sensitivity is real: fm-only AP is 0.005 under the shared low-lr recipe but 0.044–0.072 under per-set HPO
    — the XGBoost recipe on the embedding shifts everything, so match NVIDIA's per-set HPO for their comparison.
 
-**IN PROGRESS:** per-set-HPO bootstrap (20× 100K draws) on the full-test predictions, to show whether NVIDIA's
-published points fall inside our draw distribution. CPU-only off `embeddings/full` (no GPU). Output:
-`/mnt/cluster_storage/transaction-fm/perset_bootstrap.out`.
+**ROOT CAUSE FOUND — the downstream, not the FM or features (see PERFORMANCE.md §13):**
+- Features are faithful (loader: `card_id=User*100+Card`, `merchant_id=Merchant Name`); carried→source
+  swap gave the same 0.048. Ruled out.
+- A/B on identical features: **fixed trees no-early-stop → raw 0.049; early-stop on natural val → raw
+  0.206 (best_iter=2).** The bug: our downstream REMOVED early stopping → fixed many trees → overfits
+  the fraud-enriched train → collapses on natural-rate test. (We killed early stopping earlier thinking
+  1–2 trees was degenerate — it's correct.)
+- **raw fix confirmed: 0.049 → 0.17–0.21 (beats NVIDIA 0.124).** fm ~0.045 (beats 0.012).
+- **fusion still below (best 0.147 vs 0.176) AND the fit is UNSTABLE** — raw swung 0.169→0.088 on
+  early-stop patience alone (5 vs 42 trees). Root: enriched-train/natural-test mismatch + early-stopping
+  on AUC doesn't track test-AP.
+- **Fixes target the cause (not blind tuning):** (1) early-stop on AP not AUC; (2) cut enrichment
+  mismatch (train near natural rate w/ scale_pos_weight vs resample); (3) proper natural-rate val period;
+  (4) or fixed small tree count (~5). These go in `src/downstream.py`. Expect fusion to clear 0.176 once
+  stabilized (raw alone already ~0.17–0.21 + FM adds signal).
 
 **GPU-waste lesson (PERFORMANCE.md §12):** the nv_downstream *embed* stranded up to 19 A10G / 2 used — the
 seq-4096 token read is CPU-heavy and the autoscaler pulled GPU nodes for their vCPUs. This is what Ray should
