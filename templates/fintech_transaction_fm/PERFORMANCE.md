@@ -164,6 +164,32 @@ caching fix — the guard prevents *stale-upstream* reuse, but not *partial-self
 **Where: dev-workflow note** (not a notebook teaching moment) — belongs in the run instructions /
 CHANGES.md, not the reader-facing narrative.
 
+## 12. Embed-stage stranding: a CPU-bound read drags up GPU nodes (2026-07-04, nv_downstream)
+**Symptom:** running the NVIDIA-protocol downstream (`nv_downstream.py`, 8 GPU embed workers) the
+cluster climbed to **19 A10G provisioned / 2 in use** while ~250–430 CPU were busy. The embed's
+input read — decoding the sampled **seq-4096 token arrays** from tokenized eval — is CPU-heavy, and
+the autoscaler satisfied that CPU demand by launching A10G nodes **for their vCPUs**, stranding ~17
+GPUs. This is §4a again, now in the *embed* stage rather than the *sampling* stage: adding a CPU node
+group helped but did not fully confine the read to CPU nodes — GPU nodes still got pulled for CPU.
+**Why this matters (Zach's framing):** *this is exactly what Ray/Anyscale is supposed to right-size.*
+A heterogeneous CPU-read → GPU-forward pipeline should schedule the read on CPU nodes and bring up GPU
+nodes only for the actual GPU actors. That the default behavior over-provisions GPU nodes to serve a
+CPU-bound read is a real gap to address in the template's scaling story — not hand-wave.
+**Fixes (for the notebooks / a clean rerun):**
+- **Don't re-embed what already exists.** `embeddings/full` already holds the train+test embeddings
+  (single-txn, same model). nv_downstream re-embedded 1M train + 100K test + 100K val = ~1.2M windows,
+  but only the **~100K val** was actually missing. Embedding the redundant 1.1M is most of the waste.
+  Reuse existing embeddings; embed only the gap.
+- **Confine the read to CPU nodes** — e.g. a placement/resource constraint so the seq-4096 decode can't
+  land on GPU-node vCPUs, and/or cap the GPU worker group to exactly the actor count so idle GPU nodes
+  can't be provisioned for CPU spillover.
+- **Or embed at the single-transaction level up front** (max_ctx=14) so the read isn't decoding full
+  4096-token arrays it doesn't need.
+**Cost note:** on 2026-07-04 we let one such run finish rather than kill+restart (billed hourly, GPUs
+already committed → same cost to completion). The lesson is to prevent the over-provision, not to
+tolerate it. **Where: 09** (the headline "match resources to the workload" story — including where the
+default autoscaling gets it wrong and what to constrain).
+
 ## Quick tuning knobs referenced above
 | stage | file | knob | this run | note |
 |---|---|---|---|---|
