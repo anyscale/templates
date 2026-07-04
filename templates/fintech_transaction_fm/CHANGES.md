@@ -1,5 +1,31 @@
 # fintech_transaction_fm — changelog & status
 
+## ⏩ KICK OFF TOMORROW — exact steps
+
+State: pipeline is FIXED and baked into the notebooks; nb 03→06 all papermill-clean
+at mini; full clean run gives **fusion AP 0.0575 > raw 0.0466 (+24%)**. All full
+artifacts are pre-staged on `/mnt/cluster_storage/transaction-fm` (workspace-scoped,
+survives cluster restart): tokenized/full, model/full, embeddings/full, downstream/full.
+
+To run the notebooks end-to-end at full (each has SCALE="full" in its setup cell):
+1. **nb 01, 02** — setup / load. `raw/full` already exists; safe to skip if present.
+2. **nb 03 tokenize** — inputs cached; regenerates in ~40 min if you clear
+   `tokenized/full`, else the cell reuses it. (Uses `train_keep=1.0` + streaming now.)
+3. **nb 04 pretrain — SKIP.** `model/full` is valid (pretrain is unaffected by the
+   raw-feature change). Only re-run if you deliberately want to retrain (~2–4 h, 8×A10G).
+4. **nb 05 embed** — the cell skips if `embeddings/full` exists; delete that dir to
+   re-embed (~15–20 min: balanced 1M + 2.44M test, single-txn).
+5. **nb 06 downstream** — always runs the fit (~30 s on 1 GPU) → prints the raw/fm/fusion
+   table + fusion lift, writes `downstream/full/{downstream_metrics.json,test_predictions.parquet}`.
+
+If a FRESH cluster lost `/mnt/cluster_storage`: run 01→06 in order (03 re-tokenizes ~40 min,
+04 re-pretrains ~2–4 h). The code is the source of truth; artifacts are a cache.
+
+Recipe knobs live in `configs/full.yaml` (`embed.max_ctx=14`, `embed.balanced_train`,
+`downstream.pca_dim=64`). The validated recipe + all numbers are in `NVIDIA_BASELINE.md`.
+
+---
+
 ## ▶️ RESUME HERE — 2026-07-04, PIPELINE FIXED + BAKED INTO NOTEBOOKS ✅
 
 The validated recipe is now IN the pipeline (src + notebooks), not just a harness.
