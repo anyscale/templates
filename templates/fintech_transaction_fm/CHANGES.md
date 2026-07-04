@@ -27,7 +27,44 @@ Recipe knobs live in `configs/full.yaml` (`embed.max_ctx=14`, `embed.balanced_tr
 
 ---
 
-## ▶️ RESUME HERE — 2026-07-04 (afternoon): FULL END-TO-END NOTEBOOK RUN, BEST RESULT ✅
+## ▶️ RESUME HERE — 2026-07-04 (late): APPLES-TO-APPLES vs NVIDIA — investigation status
+
+Goal: compare OUR numbers to NVIDIA's **published** numbers (raw 0.1238 / fm 0.0123 / fusion 0.1755;
+their NB01 shows raw 0.1424) on their **exact protocol** — we do NOT re-derive their side.
+
+**Researched NVIDIA's actual code** (their `01_dataset_baseline.ipynb` / `05_xgboost_fraud_detection.ipynb`,
+fetched from the repo — not our reconstruction):
+- Split: temporal 80/10/10 by cumulative date — **same as ours** (my earlier temporal-vs-random guess was wrong).
+- 13 raw features; only the *string* cols (Use Chip, Merchant City/State) OrdinalEncoded, rest numeric passthrough.
+- Train: 1M balanced (~10% fraud). Eval: **100K stratified from test → only ~120 frauds.** Per-set HPO + early
+  stopping on val (auc). Embedding: last-token, single-txn, PCA 512→64.
+
+**Findings so far:**
+1. **Our FM embedding beats theirs on fm-only** (the cleanest comparison, recipe permitting): with per-set HPO,
+   fm AUC ~0.95 vs their 0.878, fm AP ~0.044–0.072 vs their 0.0123. Robust and favorable.
+2. **raw/fusion single-number comparisons at ~120 frauds are UNRELIABLE.** The faithful nv_downstream run gave
+   raw AP 0.29 with `best_iter=0` (early-stopping degenerated the model) and raw > fusion (nonsensical) — an
+   artifact, not signal.
+3. **The eval draw matters a lot** (answering "is NVIDIA's number luck of the draw?"): bootstrap of 20× 100K
+   subsamples (shared recipe) → fusion AP swings **0.051–0.129 (2.5×)**. So any single 100K number is noisy.
+   But even our max shared-recipe draw (0.129) < NVIDIA 0.176 → not *purely* luck; recipe/model matter too.
+4. **The stable, honest view is full-holdout AP** (2718 frauds): shared recipe raw 0.050 / fm 0.005 / fusion 0.069
+   (+38% lift); per-set-HPO (no early stop) raw 0.047 / fm 0.044 / fusion 0.064.
+5. Recipe sensitivity is real: fm-only AP is 0.005 under the shared low-lr recipe but 0.044–0.072 under per-set HPO
+   — the XGBoost recipe on the embedding shifts everything, so match NVIDIA's per-set HPO for their comparison.
+
+**IN PROGRESS:** per-set-HPO bootstrap (20× 100K draws) on the full-test predictions, to show whether NVIDIA's
+published points fall inside our draw distribution. CPU-only off `embeddings/full` (no GPU). Output:
+`/mnt/cluster_storage/transaction-fm/perset_bootstrap.out`.
+
+**GPU-waste lesson (PERFORMANCE.md §12):** the nv_downstream *embed* stranded up to 19 A10G / 2 used — the
+seq-4096 token read is CPU-heavy and the autoscaler pulled GPU nodes for their vCPUs. This is what Ray should
+right-size. For reruns: reuse existing embeddings (only val was missing), confine the read to CPU nodes, cap the
+GPU pool. Scoring off cached embeddings is CPU-only and cheap — do not re-embed train+test.
+
+---
+
+## ▶️ (prior) 2026-07-04 (afternoon): FULL END-TO-END NOTEBOOK RUN, BEST RESULT ✅
 
 Ran the whole series in the notebooks (03→06) at full, with a fresh nb 04 retrain.
 **Result — fusion beats raw by +38% (best to date), vs NVIDIA's +42%:**
