@@ -52,19 +52,34 @@ likely headroom for 128. **Where: 05 + 09.**
 
 ## 4. GPU utilization — two separate stories
 
-### 4a. Stranded GPUs: 24 provisioned, only 16 used (= 67%)
-**Symptom (this session):** `ray status` shows `16.0/24.0 GPU` — the "67%" on the dashboard.
-The embed stage runs **16 actors** (`embed.num_workers=16`) but **24 GPUs are up**, so **8 sit
-idle** (billed, doing nothing). The cluster is a lumpy mix: 20× `1xa10g` singles + 1× `4xa10g`
-(4-GPU) node.
-**Root cause:** (a) the 8 GPU nodes from pretrain (stage 04) hadn't scaled down before embed
-(stage 05) scaled up to 16; (b) the autoscaler satisfied part of the demand with a 4-GPU
-instance, overshooting the 16 needed with a lumpy shape.
-**Levers to explore:** shorter idle-node termination so stage-04 GPUs release before stage 05;
-pin the worker group to `1xA10G` singles so it bin-packs exactly (no 4-GPU straggler); size the
-actor pool to the provisioned cluster (or cap it). The template goal: **provisioned GPUs should
-track each stage's actual parallelism**, and idle nodes should scale down *between* stages.
-**Where: 09** (this is the headline "match resources to the workload" story).
+### 4a. Stranded GPUs: a CPU-only stage dragged up GPU nodes for their vCPUs (confirmed 2026-07-04)
+**Symptom (2026-07-04, nb 05 embed, interactive workspace):** `ray status` showed **`6.0/28.0 GPU`**
+— 28 A10Gs provisioned (20× `1xa10g` + 2× `4xa10g`), still climbing toward ~36 (2 more `4xa10g`
+launching), while only **6 GPU actors** were actually running. So ~22 GPUs sat billed and idle.
+**Root cause (confirmed, not the earlier guess):** the resource requests told the story —
+`{'CPU':1.0}: 584` alongside `{'CPU':1,'GPU':1}: 6`. The embed pipeline's first step,
+`balanced_eval_sample`, is a **CPU-heavy Ray Data scan/sample over the 24.4M eval rows** that
+requested ~**584 vCPUs**. The **workspace compute config had GPU nodes only** — no CPU-only group —
+so the autoscaler satisfied that CPU demand the only way it could: by launching A10G nodes **for
+their vCPUs**, stranding every one of those nodes' GPUs. (An earlier run's "stage-04 GPUs hadn't
+scaled down + a lumpy 4-GPU node" was a minor contributor; the *dominant* cause is the missing CPU
+node group. The transient nature matters too: the spike is during sampling and should relax toward
+the ~16 the actor pool needs once embedding dominates — but you pay for the over-provision meanwhile.)
+**Fix (decided 2026-07-04):** give the cluster a **CPU-only worker group** so CPU-only demand never
+lands on GPU nodes. `job_config.yaml` (the *Job* path) already had this — a `cpu-workers`
+(`m5.4xlarge`) group **plus** an `instance_ranking_strategy: custom_group_order [cpu-workers, gpu-1x]`.
+The **interactive workspace** cluster did not, which is why notebook runs hit it and the Job wouldn't.
+Add the same to the workspace compute config. Recommended CPU node: **`m5.8xlarge`** (32 vCPU / 128 GB —
+general-purpose, 4 GB/vCPU headroom for the wide 4096-token arrays; *not* the skinny c-family),
+`min_nodes: 0` (scales to zero, no idle cost) / `max_nodes: 16` (~512 vCPU, soaks the ~584 burst;
+the remainder queues briefly). The `group_order` flag is the load-bearing half — without it,
+price-based defaults still route CPU tasks onto the cheaper-per-node GPU instances.
+**What Ray does once the CPU group exists:** the autoscaler routes the CPU sample stage to CPU nodes
+and only brings up A10Gs for the actual GPU actors, so **provisioned GPUs track real parallelism**
+instead of shadowing CPU demand.
+**Where: 09** (the headline "match resources to the workload" story) — with the sharper sub-lesson
+that **interactive-workspace and Job compute configs can diverge**, so a fix in one isn't a fix in
+the other.
 
 ### 4b. Per-GPU saturation of the 16 working GPUs (open — needs measurement)
 **Hypothesis:** even the 16 busy GPUs may not be SM-saturated, because (i) batch 64 is small
@@ -131,6 +146,23 @@ pipeline re-executes each time rather than reusing a materialized copy.
 read from the object store, *if* the read isn't already overlapping GPU compute via streaming
 backpressure (§5). **Needs measurement** before claiming a win — this is an honest open item, not a
 confirmed bottleneck. **Where: 09** (only if verified to be non-overlapped).
+
+## 11. Killed-mid-run partial writes vs. the mtime cache guard (operational gotcha, 2026-07-04)
+**What happened:** nb 05 was interrupted twice while streaming embeddings to Parquet. Ray Data
+writes shards incrementally with no atomic commit, so each kill left a **partial** `embeddings/full`
+(e.g. 114,987 rows, `val` split not yet reached, only 1,072 frauds — vs the complete ~3.4M / all
+splits). The content-aware cache guard added this session (`src.paths.stale_or_missing`, mtime-based)
+then treats that half-written directory as **"current"** — it's newer than the model — and the next
+nb 05 run would **skip** and silently reuse the partial. So an interrupted stage needs its output dir
+**manually cleared** before re-running.
+**Root cause:** mtime tells you *when* a directory was last written, not *whether the write finished*.
+Staleness-by-timestamp can't distinguish complete from partial.
+**Fix options (not yet done):** write a completion marker (`_SUCCESS`) after the stage finishes and
+have the guard require it; or record the expected row count and verify it. Until then: **if you stop
+a stage mid-run, delete its output dir before re-running.** (This is the counterpart caveat to the
+caching fix — the guard prevents *stale-upstream* reuse, but not *partial-self* reuse.)
+**Where: dev-workflow note** (not a notebook teaching moment) — belongs in the run instructions /
+CHANGES.md, not the reader-facing narrative.
 
 ## Quick tuning knobs referenced above
 | stage | file | knob | this run | note |
