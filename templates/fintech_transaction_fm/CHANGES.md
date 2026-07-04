@@ -1,6 +1,39 @@
 # fintech_transaction_fm — changelog & status
 
-## ▶️ RESUME HERE — 2026-07-03 (evening), FIRST FULL RUN DONE + two bugs found
+## ▶️ RESUME HERE — 2026-07-04, PIPELINE FIXED + BAKED INTO NOTEBOOKS ✅
+
+The validated recipe is now IN the pipeline (src + notebooks), not just a harness.
+**Clean full-pipeline result (real TabFormer, full holdout, 2718 frauds):**
+raw AUC 0.974/AP 0.0466 · fm AUC 0.837/AP 0.0063 · **fusion AUC 0.984/AP 0.0575** →
+**fusion beats raw by +0.011 AP (+24%)** — the FM adds real lift (NVIDIA's lift is +42%).
+
+What changed to get here (all committed):
+- **Embedding = single transaction** (`embed.max_ctx=14`; NVIDIA NB04) — the big fix
+  (fm went from AUC 0.62 → working). Balanced train sample + full holdout are sampled
+  BEFORE embedding (`balanced_eval_sample`), so we embed ~1M+holdout, not all 24M.
+- **Raw features** carried as REAL values (full merchant_id + raw city/state/use_chip
+  strings) and OrdinalEncoded downstream — not hashed.
+- **downstream.py rewritten**: balanced sample + spw=1.0, PCA 512→64, ONE shared
+  fully-trained XGBoost recipe (fixed rounds, NO early stopping). Early stopping on
+  this enriched-train/natural-test split was degenerating fits and made fusion look < raw.
+- **Notebooks 05/06** now call the src functions (were inlining drifted copies);
+  papermill-execute clean end-to-end. Empty-group pretrain Arrow crash fixed.
+
+**Pre-staged for the full notebook run** (all fresh on /mnt/cluster_storage):
+tokenized/full (real-raw), model/full (valid — pretrain unaffected, SKIP nb 04),
+embeddings/full (single-txn), downstream/full. So the user's run is:
+nb 03 (tokenized ready) → skip 04 → nb 05 (embeddings ready, cell skips if present)
+→ nb 06 (downstream ~30s) → fusion > raw.
+
+Remaining polish (not blockers): absolute AP is conservative (raw 0.047 vs NVIDIA's
+0.124 — different eval: our full holdout vs their 100k stratified; the LIFT is the
+comparable quantity); prose pass on notebook markdown; optional distributed-XGB for the
+512-dim "scale-up beats them" story (in-worker OOMs at 512 on full holdout). See
+NVIDIA_BASELINE.md.
+
+---
+
+## ▶️ (prior) 2026-07-03 (evening), FIRST FULL RUN DONE + two bugs found
 
 > **NVIDIA's exact recipe + the parity plan are in [`NVIDIA_BASELINE.md`](NVIDIA_BASELINE.md).**
 > Short version: the raw gap isn't one bug — NVIDIA uses OrdinalEncoder (we hash),
