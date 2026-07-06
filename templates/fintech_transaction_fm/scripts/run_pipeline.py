@@ -30,7 +30,7 @@ import sys
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from src.paths import artifact_paths, get_demo_base_dir  # noqa: E402
+from src.paths import artifact_paths, get_demo_base_dir, tensorboard_root  # noqa: E402
 from src.scale_config import add_scale_args, load_scale  # noqa: E402
 
 
@@ -73,9 +73,11 @@ def sync_tensorboard_events(base: str) -> None:
     dest_base = os.environ.get("ANYSCALE_ARTIFACT_STORAGE")
     if not dest_base or os.environ.get("ANYSCALE_WORKSPACE_ID"):
         return  # workspace (already durable) or not on Anyscale
-    src = os.path.join(base, "tensorboard")
-    if not os.path.isdir(src):
+    src = tensorboard_root(base)
+    if not src or not os.path.isdir(src):
         return
+    if src.startswith("/mnt/user_storage"):
+        return  # already on durable user storage — no S3 copy needed
     from pyarrow import fs as pafs
 
     dest = dest_base.rstrip("/") + "/transaction-fm/tensorboard"

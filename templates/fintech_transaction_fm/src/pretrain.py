@@ -24,6 +24,7 @@ from ray.train import Checkpoint, CheckpointConfig, FailureConfig, RunConfig, Sc
 from ray.train.torch import TorchTrainer
 
 from .model import build_model, mask_batch
+from .paths import tensorboard_root
 
 
 def _unwrap(model):
@@ -306,9 +307,8 @@ def pretrain(
     # checkpoint, which would silently skip training on a re-run. The
     # in-run failure restore (FailureConfig) is unaffected by the name.
     run_name = f"transaction_fm_pretrain_{time.strftime('%Y%m%d-%H%M%S')}"
-    tensorboard_dir = (
-        os.path.join(storage_base, "tensorboard", run_name) if storage_base else None
-    )
+    tb_root = tensorboard_root(storage_base)
+    tensorboard_dir = os.path.join(tb_root, run_name) if tb_root else None
 
     trainer = TorchTrainer(
         train_func,
