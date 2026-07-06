@@ -99,7 +99,7 @@ class Entry(Strict):
     test: Optional[Test] = None
     # Actively maintained? Defaults to True. Archived entries (dir under
     # archive/) must set `maintained: false` so bulk operations — e.g. the
-    # Cursor Ray-version bump fanout (ci/trigger-cursor-bump.sh) — skip them
+    # Cursor Ray-version bump fanout (ci/trigger-cursor-bump.py) — skip them
     # (enforced by _archived_must_be_unmaintained below).
     maintained: bool = True
 

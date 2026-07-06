@@ -28,7 +28,7 @@ PR labels (apply all that fit):
 
 The `template-updater` Cursor Cloud agent owns Ray-version bumps end-to-end (open PR → CI → fix-loop → kick off publish) on every major/minor Ray release.
 
-**Launch the fanout** with `ci/trigger-cursor-bump.sh` — one agent (one draft PR) per template. `--all` covers every *maintained* `BUILD.yaml` entry (archived `maintained: false` entries are skipped); `--dry-run` / `--list` preview without launching. Reads `CURSOR_TEMPLATE_UPDATER_AUTH_TOKEN` (+ optional `CURSOR_TEMPLATE_UPDATER_WEBHOOK`); see the script header for the full env/flag contract.
+**Launch the fanout** with `ci/trigger-cursor-bump.py` — one agent (one draft PR) per template. `--all` covers every *maintained* `BUILD.yaml` entry (archived `maintained: false` entries are skipped); `--dry-run` / `--list` preview without launching. Reads `CURSOR_TEMPLATE_UPDATER_AUTH_TOKEN` (+ optional `CURSOR_TEMPLATE_UPDATER_WEBHOOK`); see the script header for the full env/flag contract.
 
 It runs **unattended**: it acts only on its initial task input, never reads or acts on PR comments, reviews, or other inbound messages mid-run, and **returns as soon as the job is done**. All of its Anyscale work — skill install, local `rayapp` tests, `/anyscale-platform-fix` — runs against **staging**; treat a staging failure as infra (ignore it), and touch prod only read-only to collect logs/info from a prod CI run.
 
