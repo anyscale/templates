@@ -1,0 +1,34 @@
+# XL run: NVIDIA-parity model (~29M params) at seq_len 1024 on 8x A10G.
+# See configs/xl.yaml. Same cloud/shape as job_config.yaml but g5 (24GB A10G)
+# instead of g4dn (16GB T4) — seq 1024 attention buffers don't fit a T4 — and
+# 8 single-GPU nodes for pretrain num_workers: 8.
+name: fintech-transaction-fm-xl
+entrypoint: python scripts/run_pipeline.py --scale xl
+requirements: requirements.txt
+env_vars:
+  RAY_DEFAULT_OBJECT_STORE_MEMORY_PROPORTION: "0.5"
+compute_config:
+  cloud: aws-public-us-west-2
+  head_node:
+    # 64GB: downstream holds the eval embeddings + XGBoost matrices on the
+    # driver. seq 1024 halves the window count vs full's seq 512, so this
+    # stays comfortable.
+    instance_type: m5.4xlarge
+  worker_nodes:
+    # 8x single-A10G (24GB) nodes — bin-pack exactly for pretrain num_workers: 8.
+    - name: gpu-1x
+      instance_type: g5.xlarge
+      min_nodes: 0
+      max_nodes: 8
+    - name: cpu-workers
+      instance_type: m5.4xlarge
+      min_nodes: 0
+      max_nodes: 1
+  flags:
+    instance_ranking_strategy:
+      - ranker_type: custom_group_order
+        ranker_config:
+          group_order:
+            - cpu-workers
+            - gpu-1x
+max_retries: 1

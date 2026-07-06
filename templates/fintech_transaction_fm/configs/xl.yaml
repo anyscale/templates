@@ -1,0 +1,42 @@
+# Scale: xl — push the core differentiator vs NVIDIA's blueprint: context length.
+# Same ~29M-param capacity as full.yaml (512d / 8L / 8H), but seq_len 1024 =
+# 1024 transactions of history per sample vs NVIDIA's ~315 (their 4096-token
+# context at ~12 tokens/txn). 1 position/txn is what buys us the 3.3x context
+# at parity capacity. Needs >16GB GPUs (seq^2 attention) — A10G/A100, not T4.
+# See configs/smoke.yaml for what each key means.
+
+data:
+  num_cards: 200000          # > the ~6.1k real cards = use every card
+
+tokenize:
+  seq_len: 1024              # 1024 txns/sample — the headline vs NVIDIA ~315
+  target_eval_samples: 400000
+  max_pretrain_windows: null
+  holdout_keep: 1.0          # exact full-data metrics -> stable fraud PR-AUC
+  shuffle_partitions: 128
+  merchant_vocab: learned
+  merchant_top_k: 20000
+  merchant_aggregate: 1024
+
+model:
+  d_model: 512               # NVIDIA-parity capacity (unchanged from full.yaml)
+  n_heads: 8
+  n_layers: 8
+  dim_ff: 2048
+
+pretrain:
+  epochs: 20
+  batch_size: 32             # A10G 24GB @ seq 1024: seq^2 attention buffers +
+                             # merchant MLM head logits. Tune down if OOM.
+  lr: 4.0e-4                 # global batch = 32 x 8 = 256, same as full.yaml
+  num_workers: 8             # 8 GPUs
+  use_gpu: true
+  use_fsdp: false
+  infonce_negatives: 1024
+  infonce_warmup_frac: 0.3   # anneal the merchant head in (see small.yaml)
+
+embed:
+  num_workers: 8
+  use_gpu: true
+  batch_size: 128            # seq 1024 inference: below full's seq-512 batch
+  gpus_per_worker: 0.5       # model + seq-1024 activations fit 2x per 24GB A10G
