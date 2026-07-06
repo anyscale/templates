@@ -77,6 +77,26 @@ Plan, grounded in the code (`src/pretrain.py`, `src/model.py`):
 arch, max_len)`; params `lr, epochs, batch_size, num_workers, max_len, lr_schedule='cosine',
 min_lr_ratio, weight_decay`. It already uses AdamW beta2 0.95 / wd 0.077 (the transaction-FM recipe).
 
+## Re-pretrain progress (2026-07-06 night)
+
+Corpus built at `/mnt/cluster_storage/nvpretrain/{ids.npy,attn.npy,vocab.json}` (64,335
+seqs × 4096, vocab 6251). Launcher: `_run_pretrain.py` (template root). It Ray-Trains our
+Llama on 8×A10G with the full-scale recipe. A clean 8-epoch run reached **ppl 1.7** (matches
+prior). Three gotchas that MUST be set in the `pretrain(...)` call (each cost a re-run):
+1. `use_gpu=True` — default is False → workers land on CPU (`Moving model to device: cpu`).
+2. `storage_base="/mnt/cluster_storage/transaction-fm"` — default writes checkpoints to
+   head-local `~/ray_results`, which GPU workers can't reach → `RuntimeError: Unable to set
+   up cluster storage` AT THE END (loses the whole run). Must be a shared FS path.
+3. The RunConfig name is hardcoded `transaction_fm_pretrain`; if that dir already exists under
+   the storage path, Ray Train tries to resume the OLD snapshot. Move it aside first
+   (`mv .../ray_results/transaction_fm_pretrain{,_OLD}`) so training starts fresh.
+Also expect one `WorkerGroupStartupTimeoutError` (count 1, max inf) while 8 A10Gs autoscale —
+it auto-retries and succeeds once GPUs are up.
+
+After pretrain: `save_checkpoint(result, "/mnt/cluster_storage/nvpretrain/model")` → export
+`model.lm` to an HF dir → `scripts/nvidia_repro/run_embed.py` pointed at OUR checkpoint (their
+tokenizer, single-txn) → `run_full_fresh.py` downstream. Target: fm ≥ 0.0123, fusion → 0.176+.
+
 ## Operational gotchas (bit us this session)
 
 - **Launch Ray jobs from a TINY working dir.** Launching with cwd=`/mnt/cluster_storage` made Ray
