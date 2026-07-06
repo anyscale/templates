@@ -35,8 +35,8 @@ pretrain:
                                # fraud-relevant heads starve (fm-AUC dilution)
 
 embed:
-  num_workers: 2
+  num_workers: 4
   use_gpu: true
   batch_size: 2048
-  gpus_per_worker: 0.5       # the FM uses a few hundred MB of VRAM — both
-                             # replicas pack onto one T4 instead of idling two
+  gpus_per_worker: 0.5       # the FM uses a few hundred MB of VRAM — pack 2
+                             # replicas per T4; 4 x 0.5 = 2.0 GPUs saturates both
