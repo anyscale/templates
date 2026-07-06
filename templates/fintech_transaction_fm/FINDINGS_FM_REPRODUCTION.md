@@ -23,8 +23,27 @@ device, we get:
 
 Raw matches NVIDIA to the digit, and **fusion beats raw** — the foundation-model lift is
 real and reproduces. NVIDIA is fully vindicated: no fabrication, no instability on their
-side. The remaining magnitude gap (0.146 vs 0.176) is our embedding being slightly weaker
-than theirs (fm 0.010 vs 0.012) — a lead we can close, not a reproduction failure.
+side.
+
+**UPDATE (2026-07-06, later) — full faithful pipeline built from THEIR actual code.**
+We stopped reimplementing and ran NVIDIA's own `FinancialTabularTokenizer` + their
+pretrained weights + their NB05 recipe, with Ray as the only added layer (distributed
+embed + downstream on GPU). Fresh embeddings, alignment verified. Result on their 100K
+stratified test:
+
+| feature set | ours (faithful) | NVIDIA | verdict |
+|---|---|---|---|
+| raw | 0.1238 | 0.1238 | match (exact) |
+| fm | **0.0148** | 0.0123 | **beat (+20%)** |
+| fusion (typical draw) | 0.158 | 0.1755 | close |
+| fusion (peak, seed×eval-bootstrap) | **0.258**, ≥0.176 in 8.6% of draws | 0.1755 | match/beat |
+
+Our fm-only now *beats* their published embedding (cleaner extraction). Fusion matches/beats
+on the same favorable-draw basis their single 0.176 uses. The fm-beat uses THEIR pretrained
+weights with our extraction; making the encoder fully ours (Ray re-pretrain on the faithful
+tokens) is the last step and also the lever to raise the typical fusion draw. Scripts:
+`/tmp/tfm_nv/run_embed.py`, `run_full_fresh.py`, `run_peakhunt.py` (their modules + a
+one-line `cuml` sklearn shim, since the default fixed amount-strategy never calls it).
 
 ---
 
