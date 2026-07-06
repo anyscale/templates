@@ -11,10 +11,10 @@ env_vars:
 compute_config:
   cloud: aws-public-us-west-2
   head_node:
-    # 64GB: downstream holds the eval embeddings + XGBoost matrices on the
-    # driver. seq 1024 halves the window count vs full's seq 512, so this
-    # stays comfortable.
-    instance_type: m5.4xlarge
+    # 128GB: downstream holds the eval embeddings + XGBoost matrices on the
+    # driver. 64GB was tight and the full-scale (holdout_keep 1.0) tail
+    # likely OOMed here; headroom + holdout_keep 0.1 is the fix.
+    instance_type: m5.8xlarge
   worker_nodes:
     # 8x single-A10G (24GB) nodes — bin-pack exactly for pretrain num_workers: 8.
     - name: gpu-1x

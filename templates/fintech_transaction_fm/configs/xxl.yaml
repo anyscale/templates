@@ -14,7 +14,8 @@ tokenize:
   seq_len: 2048              # 2048 txns/sample — 6.5x NVIDIA's ~315
   target_eval_samples: 400000
   max_pretrain_windows: null
-  holdout_keep: 1.0          # exact full-data metrics -> stable fraud PR-AUC
+  holdout_keep: 0.1          # ~0.5M eval windows (not ~5M): still thousands of
+                             # fraud cases for a stable PR-AUC, ~10x faster tail
   shuffle_partitions: 128
   merchant_vocab: learned
   merchant_top_k: 20000
