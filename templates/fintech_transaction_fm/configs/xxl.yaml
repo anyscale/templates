@@ -32,15 +32,15 @@ pretrain:
   batch_size: 16             # seq 2048 on A10G 24GB: batch 32 OOMed (memory
                              # scales worse than batch x seq at long seq +
                              # large contiguous tensors fragment), so halve.
-  lr: 3.0e-4                 # global batch = 16 x 8 = 128; ~sqrt-scaled down
-  num_workers: 8
+  lr: 3.0e-4                 # global batch = 16 x 4 = 64; conservative
+  num_workers: 4
   use_gpu: true
   use_fsdp: false
   infonce_negatives: 1024
   infonce_warmup_frac: 0.3   # anneal the merchant head in (see small.yaml)
 
 embed:
-  num_workers: 8
+  num_workers: 4
   use_gpu: true
   batch_size: 32             # seq 2048 inference: conservative to avoid OOM
   gpus_per_worker: 0.5
