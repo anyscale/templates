@@ -77,12 +77,32 @@ Plan, grounded in the code (`src/pretrain.py`, `src/model.py`):
 arch, max_len)`; params `lr, epochs, batch_size, num_workers, max_len, lr_schedule='cosine',
 min_lr_ratio, weight_decay`. It already uses AdamW beta2 0.95 / wd 0.077 (the transaction-FM recipe).
 
-## Re-pretrain progress (2026-07-06 night)
+## Re-pretrain progress (2026-07-06 night) — LIVE
 
-Corpus built at `/mnt/cluster_storage/nvpretrain/{ids.npy,attn.npy,vocab.json}` (64,335
-seqs × 4096, vocab 6251). Launcher: `_run_pretrain.py` (template root). It Ray-Trains our
-Llama on 8×A10G with the full-scale recipe. A clean 8-epoch run reached **ppl 1.7** (matches
-prior). Three gotchas that MUST be set in the `pretrain(...)` call (each cost a re-run):
+**Status:** run #3 in progress on 8×A10G, started ~23:16, epoch 2/8 (ppl 3.0), ETA ~01:15.
+Two earlier runs were lost to my bugs (~2h wasted): run #1 went to CPU (missing `use_gpu`);
+run #2 trained the full 8 epochs to ppl 1.7 but the checkpoint save failed (missing
+`storage_base` → head-local path). Both fixed in the launcher now.
+
+Scripts persisted to `scripts/nvidia_repro/`: `build_corpus.py` (step 1), `run_pretrain.py`
+(step 2, = the template-root `_run_pretrain.py`). Corpus already built at
+`/mnt/cluster_storage/nvpretrain/{ids.npy,attn.npy,vocab.json}` (64,335 seqs × 4096, vocab
+6251) — reuse it; only rebuild if `/mnt` is wiped.
+
+**To resume if the pretrain is lost:** from the template root, `python3 scripts/nvidia_repro/run_pretrain.py`
+(it loads the cached corpus npy, Ray-Trains 8×A10G, saves to `/mnt/cluster_storage/nvpretrain/model`).
+Move any existing `.../ray_results/transaction_fm_pretrain` dir aside first.
+
+**After pretrain (the final steps, not yet scripted):**
+1. Checkpoint lands at `/mnt/cluster_storage/nvpretrain/model/model.pt` (+ vocab.json).
+2. Export to an HF dir for the embedder: load `TransactionFM` (src/model), `load_state_dict`
+   from model.pt, then `model.lm.save_pretrained("/mnt/cluster_storage/nvpretrain/hf")`.
+3. Embed: `scripts/nvidia_repro/run_embed.py` but point `MODEL` at `.../nvpretrain/hf` (our
+   weights) instead of `nvidia_model` — their tokenizer, single-txn, last-token → nvfresh_*.npy.
+4. Downstream: `run_full_fresh.py` → raw/fm/fusion. Target: **fm ≥ 0.0123, fusion → 0.176+**
+   (our own FM beating NVIDIA is the goal; this run's ppl ~1.7 should get fm ≥ their 0.0123).
+
+The three gotchas that MUST be set in the `pretrain(...)` call (each cost a re-run):
 1. `use_gpu=True` — default is False → workers land on CPU (`Moving model to device: cpu`).
 2. `storage_base="/mnt/cluster_storage/transaction-fm"` — default writes checkpoints to
    head-local `~/ray_results`, which GPU workers can't reach → `RuntimeError: Unable to set
