@@ -26,9 +26,9 @@ model:
 
 pretrain:
   epochs: 20
-  batch_size: 32             # A10G 24GB @ seq 1024: seq^2 attention buffers +
-                             # merchant MLM head logits. Tune down if OOM.
-  lr: 4.0e-4                 # global batch = 32 x 8 = 256, same as full.yaml
+  batch_size: 64             # A10G 24GB @ seq 1024: batch 32 used only ~7.7/24
+                             # GiB, so pack 2x (~15 GiB, comfortable headroom).
+  lr: 6.0e-4                 # global batch = 64 x 8 = 512 (2x); ~sqrt-scaled up
   num_workers: 8             # 8 GPUs
   use_gpu: true
   use_fsdp: false

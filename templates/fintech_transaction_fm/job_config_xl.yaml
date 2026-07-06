@@ -4,6 +4,7 @@
 # 8 single-GPU nodes for pretrain num_workers: 8.
 name: fintech-transaction-fm-xl
 entrypoint: python scripts/run_pipeline.py --scale xl
+working_dir: .
 requirements: requirements.txt
 env_vars:
   RAY_DEFAULT_OBJECT_STORE_MEMORY_PROPORTION: "0.5"
