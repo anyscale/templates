@@ -8,6 +8,8 @@
 # --- Full schema with all fields ---
 
 - name: <template-name>          # REQUIRED. Unique identifier. Appears in console URL.
+  owner_team: <team>             # REQUIRED. One of: ray-serve | ray-data | llm | ray-train | general.
+                                 #   Deduced from content — see "owner_team deduction" below.
   dir: templates/<dir-name>      # REQUIRED. Path to template content (relative to repo root).
 
   # REQUIRED. Exactly one of: image_uri, or byod.
@@ -58,6 +60,30 @@
 #   anyscale/ray-llm:<ray-version>-py311-cu128      - LLM serving image
 #
 # See: https://docs.anyscale.com/reference/base-images
+
+# --- owner_team deduction (content → single value) ---
+#
+# The owning team, deduced from what the template is fundamentally ABOUT (its
+# center of gravity), not merely what it imports. Pick exactly one:
+#
+#   ray-serve  - non-LLM online model serving: @serve.deployment, model
+#                composition / multiplexing, inference APIs.
+#   ray-data   - non-LLM batch/streaming data pipelines & offline batch
+#                inference: map_batches, embeddings-at-scale, ETL.
+#   llm        - fundamentally LLM: vLLM, ray.serve.llm, ray.data.llm, LLM
+#                fine-tuning, RAG, LLM agents.
+#   ray-train  - distributed training / fine-tuning (TorchTrainer, FSDP,
+#                DeepSpeed, tensor-parallel) & Ray Tune HPO, non-LLM-centric.
+#   general    - platform / Ray Core / onboarding with no single-library owner:
+#                intros (jobs, workspaces, services, clusters), multi-library
+#                surveys, pure Ray Core task/actor parallelism.
+#
+# Multi-library tie-break: llm wins when the template is fundamentally an LLM
+# template (even if it also uses ray.data for batch or ray.train to fine-tune an
+# LLM). Otherwise pick the primary purpose — a Data→Train pipeline whose point is
+# training → ray-train; a batch-inference/embeddings pipeline → ray-data; a
+# serving demo → ray-serve. Teaching the platform/Core rather than a library →
+# general.
 
 # --- Cross-field rules (enforced by ci/validate_build_yaml.py) ---
 #

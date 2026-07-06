@@ -5,7 +5,7 @@ description: Create, maintain, format, and publish Anyscale console templates. U
 
 # Template skill
 
-A console template = a `BUILD.yaml` entry + `templates/<name>/` content + `configs/<name>/` compute configs + a `tests/<name>/` test. Every template under `templates/` is tested (the validator enforces it); `archive/` holds **test-exempt** content — retired/past-event templates, plus fast untested iteration that can still be published — via `workflows/archive-template.md`.
+A console template = a `BUILD.yaml` entry + `templates/<name>/` content + `configs/<name>/` compute configs + a `tests/<name>/` test. Every entry carries a required `owner_team` (`ray-serve` | `ray-data` | `llm` | `ray-train` | `general`), deduced from the template's content — the rule + tie-break live in `schemas/build-yaml-schema.yaml`. Every template under `templates/` is tested (the validator enforces it); `archive/` holds **test-exempt** content — retired/past-event templates, plus fast untested iteration that can still be published — via `workflows/archive-template.md`.
 
 **How to use:** create/update are **interactive** — interview the user, explain at the point of need, and ask for any missing input. **ray-bump is non-interactive** (the `template-updater` Cursor cloud agent; signals: `.cursor/` setup, a `cursor/...` branch, an automation trigger): never prompt, use defaults; on missing input or preflight failure, post to the PR and stop. Track multi-step runs with your task tool.
 
