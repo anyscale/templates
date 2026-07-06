@@ -1,8 +1,7 @@
 """Downstream fraud classification — the headline result, NVIDIA's blueprint recipe.
 
-This is the fair, faithful reproduction of NVIDIA's transaction-FM downstream
-(their notebooks 04/05), run on our Ray pipeline. Three feature sets are compared
-with ONE identical XGBoost recipe so the representation is the only variable:
+Faithful reproduction of NVIDIA's transaction-FM downstream (their notebook 05,
+``05_xgboost_fraud_detection``), run on our Ray pipeline. Three feature sets:
 
 1. ``raw``    — the target transaction's NVIDIA-13 tabular fields (the "what you
    have today" baseline).
@@ -12,23 +11,24 @@ with ONE identical XGBoost recipe so the representation is the only variable:
 The lift of ``fusion`` over ``raw`` is the whole point: does the foundation model
 add signal on top of hand-built features? On real TabFormer it does (fusion > raw).
 
-Recipe decisions that matter (each mirrors NVIDIA and/or fixes a real pitfall):
+The recipe MIRRORS NB05 exactly — this file must not invent modeling variants:
 
-* **Embedding = single transaction.** NVIDIA pretrains on long sequences but embeds
-  each transaction *alone* (``<bos>`` + its field tokens + ``<eos>``). Both the
-  balanced sampling and the single-txn embedding happen in the embed stage
-  (see ``src/embed``); this file consumes the resulting per-transaction embeddings.
-* **Balanced train sample + ``scale_pos_weight=1.0``.** Training rows are ~10% fraud
-  (done in the embed stage); at that ratio no extra reweighting is needed. Reweighting
-  a natural 0.1%-fraud set with ``neg/pos`` instead wrecks the ranking.
+* **Three per-feature-set XGBoost param sets** (``XGB_PARAMS_RAW/EMBED/COMBINED``),
+  copied verbatim from NB05. They are separately HPO-tuned; the combined set is
+  deliberately regularized (``gamma=4.8``, ``min_child_weight=25.85``, low ``lr``,
+  512 rounds) so the raw+embedding feature space does not overfit. Using one shared
+  recipe (an earlier divergence here) collapses ``fusion`` below ``raw`` — that was a
+  reimplementation bug, not a property of the data.
+* **Early stopping on a validation split** — ``early_stopping_rounds=20``,
+  ``eval_metric='auc'``, ``eval_set=[(X_val, y_val)]`` — exactly as NB05.
+* **Balanced train sample + ``scale_pos_weight=1.0``** (the embed stage produces the
+  ~10%-fraud train sample and the val/test splits, matching NB01/NB04).
 * **PCA 512 -> 64** on the embedding before XGBoost (fit on train), for ``fm`` and the
   embedding half of ``fusion``.
-* **OrdinalEncoder** for the string categoricals (use_chip / merchant_state /
-  merchant_city), fit on train — dense, collision-free codes (not hashing).
-* **One shared, fully-trained recipe** (fixed rounds, low LR, **no early stopping**).
-  Early stopping on this enriched-train / natural-test split is unstable — it collapses
-  to ~1-tree models and makes ``fusion`` look worse than ``raw`` even though fusion can
-  only add information. A fixed low-LR fit is stable and fair.
+* **OrdinalEncoder** for the string categoricals, fit on train.
+* **100K stratified eval** — val/test are subsampled to ``EVAL_SAMPLES`` preserving the
+  natural fraud rate (NB01's ``stratified_subsample``), so we score NVIDIA's exact
+  ``val_eval``/``test_eval`` protocol, not the full holdout.
 
 Metrics: **AUC-ROC and PR-AUC (Average Precision)**. At ~0.1% fraud AUC saturates, so
 PR-AUC — and specifically the fusion-minus-raw lift — is the operative number.
@@ -44,7 +44,7 @@ import os
 
 import ray
 
-_SPLITS = ("train", "test")
+_SPLITS = ("train", "val", "test")
 
 # NVIDIA's 13-feature raw baseline. ``MerchantName`` is the full merchant id (their
 # "Merchant Name"); User/Card/Year/Month/Day are split out from card_id/timestamp.
@@ -52,12 +52,28 @@ RAW_NUMERIC = ("Amount", "User", "Card", "Year", "Month", "Day", "Hour", "MCC", 
 RAW_CATEGORICAL = ("UseChip", "MerchantState", "MerchantCity")  # OrdinalEncoded (train-fit)
 RAW_FEATURES = list(RAW_NUMERIC + RAW_CATEGORICAL)
 
-# One shared XGBoost recipe for raw/fm/fusion — low LR + fixed rounds, NO early stopping
-# (see module docstring). scale_pos_weight=1.0 because the train sample is fraud-enriched.
-SHARED_XGB = dict(
+# NB05's three per-feature-set HPO param sets, verbatim. Do NOT collapse to one shared
+# recipe: the combined set's regularization (gamma, min_child_weight, low lr) is what
+# keeps fusion from overfitting. scale_pos_weight=1.0 (train sample is ~10% fraud).
+XGB_PARAMS_RAW = dict(
     n_estimators=400, max_depth=8, learning_rate=0.0023, colsample_bytree=0.95,
-    min_child_weight=12, subsample=0.673, reg_alpha=0.01, reg_lambda=0.001,
+    min_child_weight=12, subsample=0.673, reg_alpha=0.01, reg_lambda=0.001, random_state=42,
 )
+XGB_PARAMS_EMBED = dict(
+    n_estimators=435, max_depth=12, learning_rate=0.03774, colsample_bytree=0.587,
+    min_child_weight=2.61, subsample=0.569, reg_alpha=0.01364, reg_lambda=9.7e-05,
+    gamma=1.7, random_state=42,
+)
+XGB_PARAMS_COMBINED = dict(
+    n_estimators=512, max_depth=12, learning_rate=0.00305, colsample_bytree=0.768,
+    min_child_weight=25.85, subsample=0.65, reg_alpha=0.01, reg_lambda=0.0001,
+    gamma=4.8, random_state=42,
+)
+XGB_PARAMS = {"raw": XGB_PARAMS_RAW, "fm": XGB_PARAMS_EMBED, "fusion": XGB_PARAMS_COMBINED}
+
+# NB01 evaluates on 100K stratified subsamples of val/test (natural fraud rate preserved),
+# not the full holdout. eval_metric/early-stopping use val_eval; results report test_eval.
+EVAL_SAMPLES = 100_000
 
 # Columns read from the embeddings Parquet (never the token arrays).
 _READ_COLS = [
@@ -115,6 +131,18 @@ def _fit_and_score(embeddings_path: str, pca_dim: int, use_gpu: bool, output_dir
     print(f"[06] loaded {len(df):,} embeddings  splits={counts}", flush=True)
     train_mask = (df["split"] == "train").to_numpy()
     test_mask = (df["split"] == "test").to_numpy()
+    val_mask = (df["split"] == "val").to_numpy()
+    # NB05 early-stops on a real validation split. If the embed stage didn't emit one
+    # (mini/CI), carve the last 10% of the shuffled train rows as val so the fit path
+    # is identical everywhere.
+    if not val_mask.any():
+        tr_idx = np.where(train_mask)[0]
+        rng = np.random.RandomState(42)
+        rng.shuffle(tr_idx)
+        cut = tr_idx[: max(1, len(tr_idx) // 10)]
+        train_mask = train_mask.copy(); val_mask = np.zeros_like(train_mask)
+        train_mask[cut] = False; val_mask[cut] = True
+        print(f"[06] no val split — carved {val_mask.sum():,} val rows from train", flush=True)
 
     # --- embedding -> PCA(pca_dim), fit on train ---
     emb = np.vstack(df["embedding"].to_numpy()).astype(np.float32)
@@ -135,24 +163,48 @@ def _fit_and_score(embeddings_path: str, pca_dim: int, use_gpu: bool, output_dir
     y = df["label"].astype(int).to_numpy()
     cols = {"raw": RAW_FEATURES, "fm": EMB, "fusion": EMB + RAW_FEATURES}
 
+    # NB01's stratified_subsample: reduce val/test to EVAL_SAMPLES rows, preserving the
+    # natural fraud rate (sklearn train_test_split, stratify on label, rs=42). Train is
+    # the full balanced sample. This matches NVIDIA's val_eval/test_eval exactly.
+    from sklearn.model_selection import train_test_split
+
+    def _eval_subsample(mask):
+        idx = np.where(mask)[0]
+        if EVAL_SAMPLES >= len(idx):
+            return mask
+        _, keep = train_test_split(idx, test_size=EVAL_SAMPLES, stratify=y[idx],
+                                   random_state=42)
+        m = np.zeros_like(mask)
+        m[keep] = True
+        return m
+
+    val_mask = _eval_subsample(val_mask)
+    test_mask = _eval_subsample(test_mask)
+    print(f"[06] eval subsample -> val={val_mask.sum():,} ({y[val_mask].mean():.4%} fraud)  "
+          f"test={test_mask.sum():,} ({y[test_mask].mean():.4%} fraud)", flush=True)
+
     device = "cuda" if use_gpu else "cpu"
-    yte = y[test_mask]
+    ytr, yval, yte = y[train_mask], y[val_mask], y[test_mask]
     results, preds = {}, {}
     for name in ("raw", "fm", "fusion"):
         c = cols[name]
-        clf = xgb.XGBClassifier(**SHARED_XGB, scale_pos_weight=1.0, tree_method="hist",
-                                device=device, eval_metric="aucpr", random_state=42)
+        # NB05's train_xgb: per-feature-set params, early stopping on val, eval_metric='auc'.
+        clf = xgb.XGBClassifier(**XGB_PARAMS[name], scale_pos_weight=1.0, tree_method="hist",
+                                device=device, early_stopping_rounds=20, eval_metric="auc")
         t0 = time.time()
-        clf.fit(full.loc[train_mask, c], y[train_mask])  # fixed rounds, no early stopping
+        clf.fit(full.loc[train_mask, c], ytr,
+                eval_set=[(full.loc[val_mask, c], yval)], verbose=False)
         p = clf.predict_proba(full.loc[test_mask, c])[:, 1]
         preds[name] = p
         results[name] = {
             "auc_roc": float(roc_auc_score(yte, p)),
             "pr_auc": float(average_precision_score(yte, p)),
+            "best_iteration": int(clf.best_iteration),
             "s": round(time.time() - t0, 1),
         }
         print(f"[06] {name:6} AUC-ROC={results[name]['auc_roc']:.4f}  "
-              f"PR-AUC={results[name]['pr_auc']:.4f}  ({results[name]['s']}s)", flush=True)
+              f"PR-AUC={results[name]['pr_auc']:.4f}  best_iter={clf.best_iteration}  "
+              f"({results[name]['s']}s)", flush=True)
 
     # per-sample test scores (for offline ROC/PR curves)
     os.makedirs(output_dir, exist_ok=True)
@@ -165,9 +217,10 @@ def _fit_and_score(embeddings_path: str, pca_dim: int, use_gpu: bool, output_dir
 
     return {
         "n_train": int(train_mask.sum()),
+        "n_val": int(val_mask.sum()),
         "n_test": int(test_mask.sum()),
-        "train_fraud_rate": float(y[train_mask].mean()),
-        "test_fraud_rate": float(y[test_mask].mean()),
+        "train_fraud_rate": float(ytr.mean()),
+        "test_fraud_rate": float(yte.mean()),
         "embedding_dim": int(emb.shape[1]),
         "results": results,
         "fm_lift_pr_auc": results["fm"]["pr_auc"] - results["raw"]["pr_auc"],
