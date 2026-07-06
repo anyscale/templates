@@ -16,23 +16,28 @@
 # BUILD.yaml entry. `maintained: false` entries (archived templates) are always skipped;
 # a named entry that is unmaintained or absent from BUILD.yaml is skipped with a warning.
 #
+# SAFE BY DEFAULT: without --execute the script only PREVIEWS (prints the payloads
+# it would POST, makes zero API calls). Launching real agents requires an explicit
+# --execute — so a mistyped or swallowed flag can never launch anything.
+#
 # Usage:
 #   export CURSOR_TEMPLATE_UPDATER_AUTH_TOKEN=...          # from your vault
-#   ci/trigger-cursor-bump.sh [-v 2.56.0] [-r main] [--all] [--exclude a,b,c] [--list] [--dry-run] [<template>...]
+#   ci/trigger-cursor-bump.sh [-v 2.56.0] [-r main] [--all] [--exclude a,b,c] [--list] [--dry-run] [--execute] [<template>...]
 #
-#   # Test batch (one per image-URI case):
+#   # Preview (no --execute → no launch, no creds needed):
 #   ci/trigger-cursor-bump.sh -v 2.56.0 job-intro object-detection-video-processing skyrl
-#   # Fanout (all maintained, minus the already-done test batch):
-#   ci/trigger-cursor-bump.sh -v 2.56.0 --all --exclude job-intro,object-detection-video-processing,skyrl
-#   # Preview: list the resolved set, or print payloads, without launching (no creds needed):
 #   ci/trigger-cursor-bump.sh -v 2.56.0 --all --exclude job-intro,object-detection-video-processing,skyrl --list
-#   ci/trigger-cursor-bump.sh -v 2.56.0 job-intro --dry-run
+#   # Test batch (one per image-URI case) — add --execute to actually launch:
+#   ci/trigger-cursor-bump.sh -v 2.56.0 job-intro object-detection-video-processing skyrl --execute
+#   # Fanout (all maintained, minus the already-done test batch):
+#   ci/trigger-cursor-bump.sh -v 2.56.0 --all --exclude job-intro,object-detection-video-processing,skyrl --execute
 set -euo pipefail
 
 RAY_VERSION="2.56.0"
 REF="main"
 DRY_RUN=0
 LIST_ONLY=0
+EXECUTE=0
 USE_ALL=0
 EXCLUDE_CSV=""
 CURSOR_AGENTS_URL="${CURSOR_AGENTS_URL:-https://api.cursor.com/v0/agents}"
@@ -54,6 +59,7 @@ while [[ $# -gt 0 ]]; do
     --exclude)        EXCLUDE_CSV="$2"; shift 2 ;;
     --list)           LIST_ONLY=1; shift ;;
     --dry-run)        DRY_RUN=1; shift ;;
+    --execute)        EXECUTE=1; shift ;;
     -h|--help)        usage; exit 0 ;;
     --)               shift; while [[ $# -gt 0 ]]; do POSITIONAL="$(printf '%s\n%s' "$POSITIONAL" "$1")"; shift; done ;;
     -*)               echo "unknown flag: $1" >&2; exit 2 ;;
@@ -128,6 +134,13 @@ if [[ "$LIST_ONLY" == 1 ]]; then
   exit 0
 fi
 
+# SAFE BY DEFAULT: only --execute performs real API calls; anything else previews.
+# This makes a mistyped or swallowed flag fail closed (preview) instead of launching.
+if [[ "$EXECUTE" != 1 ]]; then
+  [[ "$DRY_RUN" == 1 ]] || echo "note: preview only — no agents launched. Re-run with --execute to launch for real." >&2
+  DRY_RUN=1
+fi
+
 # Auth is only needed to actually POST.
 TOKEN="${CURSOR_TEMPLATE_UPDATER_AUTH_TOKEN:-${CURSOR_API_KEY:-}}"
 [[ "$DRY_RUN" == 1 || -n "$TOKEN" ]] || {
@@ -171,10 +184,12 @@ Stop-and-report on any blocked precondition."
   fi
 
   echo "-- launching: $tmpl (Ray $RAY_VERSION) --"
+  # `|| true`: a single curl failure (network blip, 5xx) must not abort the
+  # whole batch under `set -e` — fall through to the unexpected-response branch.
   resp="$(curl -sS -X POST "$CURSOR_AGENTS_URL" \
     -H "Authorization: Bearer $TOKEN" \
     -H "Content-Type: application/json" \
-    -d "$payload")"
+    -d "$payload" || true)"
   if printf '%s' "$resp" | jq -e . >/dev/null 2>&1; then
     printf '%s' "$resp" | jq -r '"  agent: \(.id // "?")   status: \(.status // "?")   url: \(.target.url // .url // "?")"'
     launched=$((launched + 1))

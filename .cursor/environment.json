@@ -5,5 +5,5 @@
     "context": ".."
   },
   "install": "bash .cursor/install.sh",
-  "start": "sudo service docker start"
+  "start": "bash .cursor/start.sh"
 }
