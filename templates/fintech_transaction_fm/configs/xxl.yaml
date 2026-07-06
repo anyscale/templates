@@ -28,9 +28,10 @@ model:
 
 pretrain:
   epochs: 20
-  batch_size: 32             # seq 2048 on A10G 24GB: ~half the seq-1024 batch
-                             # (mem ~ batch x seq); ~14 GiB, safe headroom.
-  lr: 4.0e-4                 # global batch = 32 x 8 = 256, same as full.yaml
+  batch_size: 16             # seq 2048 on A10G 24GB: batch 32 OOMed (memory
+                             # scales worse than batch x seq at long seq +
+                             # large contiguous tensors fragment), so halve.
+  lr: 3.0e-4                 # global batch = 16 x 8 = 128; ~sqrt-scaled down
   num_workers: 8
   use_gpu: true
   use_fsdp: false
@@ -40,5 +41,5 @@ pretrain:
 embed:
   num_workers: 8
   use_gpu: true
-  batch_size: 64             # seq 2048 inference: half the seq-1024 embed batch
+  batch_size: 32             # seq 2048 inference: conservative to avoid OOM
   gpus_per_worker: 0.5
