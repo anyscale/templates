@@ -1,0 +1,30 @@
+# XXL run: NVIDIA-parity model (~29M params) at seq_len 2048 on 8x A10G.
+# See configs/xxl.yaml. Same shape as job_config_xl.yaml (g5.xlarge, 8 nodes);
+# only the scale differs (seq 2048 vs 1024).
+name: fintech-transaction-fm-xxl
+entrypoint: python scripts/run_pipeline.py --scale xxl
+working_dir: .
+requirements: requirements.txt
+env_vars:
+  RAY_DEFAULT_OBJECT_STORE_MEMORY_PROPORTION: "0.5"
+compute_config:
+  cloud: aws-public-us-west-2
+  head_node:
+    instance_type: m5.4xlarge
+  worker_nodes:
+    - name: gpu-1x
+      instance_type: g5.xlarge
+      min_nodes: 0
+      max_nodes: 8
+    - name: cpu-workers
+      instance_type: m5.4xlarge
+      min_nodes: 0
+      max_nodes: 1
+  flags:
+    instance_ranking_strategy:
+      - ranker_type: custom_group_order
+        ranker_config:
+          group_order:
+            - cpu-workers
+            - gpu-1x
+max_retries: 1
