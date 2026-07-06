@@ -30,14 +30,14 @@ pretrain:
   batch_size: 64             # A10G 24GB @ seq 1024: batch 32 used only ~7.7/24
                              # GiB, so pack 2x (~15 GiB, comfortable headroom).
   lr: 6.0e-4                 # global batch = 64 x 8 = 512 (2x); ~sqrt-scaled up
-  num_workers: 8             # 8 GPUs
+  num_workers: 4             # 4 GPUs
   use_gpu: true
   use_fsdp: false
   infonce_negatives: 1024
   infonce_warmup_frac: 0.3   # anneal the merchant head in (see small.yaml)
 
 embed:
-  num_workers: 8
+  num_workers: 4
   use_gpu: true
   batch_size: 128            # seq 1024 inference: below full's seq-512 batch
   gpus_per_worker: 0.5       # model + seq-1024 activations fit 2x per 24GB A10G
