@@ -1,0 +1,35 @@
+# Pretrain-only job: data -> tokenize -> pretrain (no eval). See run_pretrain.py.
+# Writes everything to /mnt/user_storage so the checkpoints + persisted eval set
+# survive the job and a separate eval job can read them. Fresh cluster =
+# consistent env (dodges the workspace's dependency-skew issues).
+name: fintech-transaction-fm-pretrain-xl
+entrypoint: python scripts/run_pretrain.py --scale xl --base-dir /mnt/user_storage/transaction-fm --use-gpu
+working_dir: .
+requirements: requirements.txt
+env_vars:
+  # Bigger object store for the 02 tokenize shuffle (24M rows) — must be set
+  # at cluster level before ray.init.
+  RAY_DEFAULT_OBJECT_STORE_MEMORY_PROPORTION: "0.5"
+compute_config:
+  cloud: aws-public-us-west-2
+  head_node:
+    instance_type: m5.4xlarge
+  worker_nodes:
+    # 4x single-A10G for pretrain (num_workers: 4 in configs/xl.yaml).
+    - name: gpu-1x
+      instance_type: g5.xlarge
+      min_nodes: 0
+      max_nodes: 4
+    # CPU muscle for the data + tokenize shuffle; keeps that work off the GPUs.
+    - name: cpu-workers
+      instance_type: m5.4xlarge
+      min_nodes: 0
+      max_nodes: 2
+  flags:
+    instance_ranking_strategy:
+      - ranker_type: custom_group_order
+        ranker_config:
+          group_order:
+            - cpu-workers
+            - gpu-1x
+max_retries: 1
