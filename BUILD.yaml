@@ -785,6 +785,7 @@
 # owner: @as-jding
 - name: ray-workshop-2026
   owner_team: general
+  maintained: false  # archived — excluded from bulk ops (e.g. the Ray-version bump fanout)
   dir: archive/events/2026-ray-workshop/ray-workshop-2026/content
   cluster_env:
     byod:

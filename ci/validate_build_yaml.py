@@ -97,6 +97,11 @@ class Entry(Strict):
     # (e.g. an urgent mid-event fix). Optional here so the validator can raise a
     # clear, actionable error instead of pydantic's generic "Field required".
     test: Optional[Test] = None
+    # Actively maintained? Defaults to True. Archived entries (dir under
+    # archive/) must set `maintained: false` so bulk operations — e.g. the
+    # Cursor Ray-version bump fanout (ci/trigger-cursor-bump.sh) — skip them
+    # (enforced by _archived_must_be_unmaintained below).
+    maintained: bool = True
 
     @model_validator(mode="after")
     def _templates_must_be_tested(self):
@@ -106,6 +111,16 @@ class Entry(Strict):
                 "must be tested. To publish without a test (fast event iteration "
                 "or a retired template), move it under archive/ instead; archive/ "
                 "entries are test-exempt."
+            )
+        return self
+
+    @model_validator(mode="after")
+    def _archived_must_be_unmaintained(self):
+        if self.dir.startswith("archive/") and self.maintained:
+            raise ValueError(
+                f"{self.name}: entries under archive/ must set `maintained: false` "
+                "— archived templates are excluded from bulk operations (e.g. the "
+                "Ray-version bump fanout). Add `maintained: false` to this entry."
             )
         return self
 
