@@ -49,7 +49,12 @@ def go():
         ids=pip.encode(tdf, max_length=ML)
         t0=time.time(); e=inf.extract_embeddings_batched(ids, batch_size=BS, show_progress=False)
         raw[split]=base.loc[rid,FC].reset_index(drop=True); emb[split]=e; y[split]=lbl
-        print(f"{split}: emb {e.shape} fraud {int(lbl.sum())}/{len(lbl)} in {time.time()-t0:.0f}s", flush=True)
+        # persist embeddings + labels (rid-order, aligned) so the seed x eval bootstrap can
+        # reuse them without re-embedding (OPEN #1 gotcha: this run used to discard them).
+        np.save(f"/mnt/cluster_storage/nvours_embed_{split}.npy", e)
+        np.save(f"/mnt/cluster_storage/nvours_lbl_{split}.npy", lbl)
+        print(f"{split}: emb {e.shape} fraud {int(lbl.sum())}/{len(lbl)} in {time.time()-t0:.0f}s  "
+              f"-> saved nvours_embed_{split}.npy", flush=True)
 
     pca=PCA(n_components=64,random_state=42)
     Xe={k:(pca.fit_transform(emb["train"]) if k=="train" else pca.transform(emb[k])) for k in ("train","val","test")}
