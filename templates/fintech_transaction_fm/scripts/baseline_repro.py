@@ -40,13 +40,14 @@ def find_cutoff_date(df, ratio):
 
 
 def balanced_train_sample(df, n=1_000_000, rs=42):
-    rng = np.random.default_rng(rs)
+    np.random.seed(rs)  # match NVIDIA's legacy global RNG exactly
     fraud = df.index[df["_target"] == 1].to_numpy()
     normal = df.index[df["_target"] == 0].to_numpy()
     n_fraud = min(len(fraud), int(n * 0.1))
     n_normal = min(len(normal), n - n_fraud)
-    idx = np.concatenate([rng.choice(fraud, n_fraud, replace=False),
-                          rng.choice(normal, n_normal, replace=False)])
+    idx = np.concatenate([np.random.choice(fraud, n_fraud, replace=False),
+                          np.random.choice(normal, n_normal, replace=False)])
+    np.random.shuffle(idx)
     return df.loc[idx]
 
 
@@ -64,7 +65,11 @@ def main():
     args = p.parse_args()
 
     t0 = time.time()
-    df = pd.read_csv(args.csv, dtype={"Merchant Name": str, "Zip": str, "Merchant State": str})
+    # Infer dtypes like NVIDIA's cuDF read: Merchant Name -> int64, Zip ->
+    # float64 (numeric passthrough), Merchant City/State/Use Chip -> object
+    # (ordinal-encoded). Forcing str made the two high-card numerics ordinal,
+    # which tanked AP. Only Amount ("$..") needs to stay string for cleaning.
+    df = pd.read_csv(args.csv)
     print(f"loaded {len(df):,} rows in {time.time()-t0:.0f}s")
 
     df["Hour"] = df["Time"].str.split(":", n=1, expand=True)[0].astype(int)
