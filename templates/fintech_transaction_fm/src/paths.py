@@ -40,20 +40,14 @@ def get_demo_base_dir() -> str:
 
 
 def tensorboard_root(base_dir: str | None) -> str | None:
-    """Where to write TensorBoard events, preferring durable user storage.
+    """TensorBoard events live in the run's artifact base: ``<base>/tensorboard``.
 
-    Heavy artifacts (datasets, embeddings) stay on cluster storage for speed,
-    but TB events are tiny and worth persisting: /mnt/user_storage is
-    user-scoped and outlives the cluster (workspaces always mount it; a job
-    only if the cloud does). When it isn't mounted we fall back to
-    <base>/tensorboard, which sync_tensorboard_events copies to S3 for jobs.
-    Point one `tensorboard --logdir /mnt/user_storage/transaction-fm/tensorboard`
-    at all runs, workspace and job alike.
+    They travel with the model artifacts, and each base-dir keeps its own set
+    (so a fresh base-dir doesn't mix its curves with a prior run's). Durable
+    when base_dir is on /mnt/user_storage; for a job writing to ephemeral
+    /mnt/cluster_storage, sync_tensorboard_events copies them to S3.
+    Point `tensorboard --logdir <base>/tensorboard` at a run.
     """
-    if os.path.isdir("/mnt/user_storage"):
-        durable = "/mnt/user_storage/transaction-fm/tensorboard"
-        os.makedirs(durable, exist_ok=True)
-        return durable
     return os.path.join(base_dir, "tensorboard") if base_dir else None
 
 
