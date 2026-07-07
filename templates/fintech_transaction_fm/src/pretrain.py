@@ -353,6 +353,9 @@ def pretrain(
             "n_rows": n_rows,
             "tensorboard_dir": tensorboard_dir,
         },
+        # GPU workers request {"GPU": 1} and zero CPUs by default, so they
+        # schedule fine on GPU nodes that advertise CPU: 0 (see job yamls —
+        # that override keeps CPU-only tasks from scaling up GPU nodes).
         scaling_config=ScalingConfig(num_workers=num_workers, use_gpu=use_gpu),
         datasets={"train": ds},
         run_config=RunConfig(

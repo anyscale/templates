@@ -25,15 +25,10 @@ compute_config:
       instance_type: g5.xlarge
       min_nodes: 0
       max_nodes: 8
+      resources:
+        CPU: 0    # GPU nodes invisible to CPU-only tasks (tokenize can't scale/land here)
     - name: cpu-workers
       instance_type: m5.4xlarge
       min_nodes: 0
-      max_nodes: 2
-  flags:
-    instance_ranking_strategy:
-      - ranker_type: custom_group_order
-        ranker_config:
-          group_order:
-            - cpu-workers
-            - gpu-1x
+      max_nodes: 4
 max_retries: 1
