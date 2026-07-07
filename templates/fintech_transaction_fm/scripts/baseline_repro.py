@@ -10,6 +10,8 @@ AP 0.1238 before we touch pretraining or our own encoding.
 """
 
 import argparse
+import os
+import sys
 import time
 
 import numpy as np
@@ -62,20 +64,39 @@ def main():
     p = argparse.ArgumentParser()
     p.add_argument("--csv", required=True)
     p.add_argument("--device", default="cuda")
+    p.add_argument("--via-normalize", action="store_true",
+                   help="build features by running OUR src.tabformer._normalize on the "
+                        "CSV (validates our pipeline reproduces the baseline), instead of "
+                        "reading the raw CSV columns directly")
     args = p.parse_args()
 
     t0 = time.time()
-    # Infer dtypes like NVIDIA's cuDF read: Merchant Name -> int64, Zip ->
-    # float64 (numeric passthrough), Merchant City/State/Use Chip -> object
-    # (ordinal-encoded). Forcing str made the two high-card numerics ordinal,
-    # which tanked AP. Only Amount ("$..") needs to stay string for cleaning.
-    df = pd.read_csv(args.csv)
-    print(f"loaded {len(df):,} rows in {time.time()-t0:.0f}s")
-
-    df["Hour"] = df["Time"].str.split(":", n=1, expand=True)[0].astype(int)
-    df["Amount"] = df["Amount"].str.replace("$", "", regex=False).str.replace(",", "", regex=False).astype(float)
-    df["_target"] = (df["Is Fraud?"].str.strip().str.lower() == "yes").astype(int)
-    df["date"] = pd.to_datetime(df[["Year", "Month", "Day"]])
+    if args.via_normalize:
+        sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+        from src.tabformer import _CSV_COLUMNS, _normalize
+        raw = pd.read_csv(args.csv, usecols=_CSV_COLUMNS, dtype={"Time": str, "Amount": str})
+        print(f"loaded {len(raw):,} rows in {time.time()-t0:.0f}s; applying OUR _normalize ...")
+        n = _normalize(raw)  # the exact transform our pipeline writes to raw parquet
+        ts = pd.to_datetime(n["timestamp"])
+        df = pd.DataFrame({
+            "User": n["user"].to_numpy(), "Card": n["card"].to_numpy(),
+            "Year": ts.dt.year.to_numpy(), "Month": ts.dt.month.to_numpy(), "Day": ts.dt.day.to_numpy(),
+            "Hour": n["hour"].to_numpy(), "Amount": n["amount"].to_numpy(),
+            "Use Chip": n["use_chip"].to_numpy(), "Merchant Name": n["merchant_id"].to_numpy(),
+            "Merchant City": n["merchant_city"].to_numpy(), "Merchant State": n["merchant_state_raw"].to_numpy(),
+            "Zip": n["zip"].to_numpy(), "MCC": n["mcc"].to_numpy(),
+            "_target": n["is_fraud"].to_numpy(),
+        })
+        df["date"] = ts.dt.normalize().to_numpy()
+    else:
+        # Infer dtypes like NVIDIA's cuDF read: Merchant Name -> int64, Zip ->
+        # float64 (numeric passthrough); Merchant City/State/Use Chip -> object.
+        df = pd.read_csv(args.csv)
+        print(f"loaded {len(df):,} rows in {time.time()-t0:.0f}s")
+        df["Hour"] = df["Time"].str.split(":", n=1, expand=True)[0].astype(int)
+        df["Amount"] = df["Amount"].str.replace("$", "", regex=False).str.replace(",", "", regex=False).astype(float)
+        df["_target"] = (df["Is Fraud?"].str.strip().str.lower() == "yes").astype(int)
+        df["date"] = pd.to_datetime(df[["Year", "Month", "Day"]])
 
     tr_cut = find_cutoff_date(df, 0.8)
     te_cut = find_cutoff_date(df, 0.9)

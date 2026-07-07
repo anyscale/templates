@@ -48,7 +48,8 @@ CSV_NAME = "card_transaction.v1.csv"
 
 _CSV_COLUMNS = [
     "User", "Card", "Year", "Month", "Day", "Time",
-    "Amount", "Use Chip", "Merchant Name", "Merchant State", "MCC", "Errors?", "Is Fraud?",
+    "Amount", "Use Chip", "Merchant Name", "Merchant City", "Merchant State",
+    "Zip", "MCC", "Errors?", "Is Fraud?",
 ]
 
 # Errors? -> canonical network-signal category (same labels as the synthetic
@@ -151,6 +152,16 @@ def _normalize(b: pd.DataFrame) -> pd.DataFrame:
                 [state, "ONLINE"],
                 default="FOREIGN",
             ),
+            # Raw fields preserved for the NVIDIA-recipe baseline (their 13
+            # FEATURE_COLS): User/Card identity, raw geo, raw Use Chip. Kept
+            # alongside the derived columns the FM uses; the baseline maps these
+            # back to NVIDIA's names. Zip stays numeric (passthrough like theirs).
+            "user": b["User"].astype(np.int64),
+            "card": b["Card"].astype(np.int64),
+            "use_chip": b["Use Chip"],
+            "merchant_city": b["Merchant City"].fillna(""),
+            "merchant_state_raw": state,
+            "zip": b["Zip"],
         }
     )
 
