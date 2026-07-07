@@ -138,7 +138,12 @@ DYNAMIC_FIELDS = [
     "day_of_week",
     "channel",
 ]
-STATIC_FIELDS = ["issuer", "card_type", "bin_region", "home_state"]
+# User/Card identity as static (per-card) fields — mirrors NVIDIA's CUST
+# (User, clipped 0-2999) and CARD (0-9) tokens. Identity is the dominant
+# TabFormer fraud signal (fraud clusters by user; same users span the split),
+# so the FM needs it for parity. card_id = User*100 + Card (see tabformer.py).
+N_USERS, N_CARDS = 3000, 10
+STATIC_FIELDS = ["issuer", "card_type", "bin_region", "home_state", "user", "card"]
 
 # Payment-network signals (TREASURE's distinguishing pillar): predicted as
 # OUTPUTS, never fed as inputs (they're only known after a txn is processed, so
@@ -172,6 +177,8 @@ def field_vocab_sizes(merchant_vocab: dict | None = None) -> dict:
         sizes[f] = len(v) + _RESERVED
     for f, v in STATIC_VOCAB.items():
         sizes[f] = len(v) + _RESERVED
+    sizes["user"] = N_USERS + _RESERVED  # identity statics (not string-vocab)
+    sizes["card"] = N_CARDS + _RESERVED
     return sizes
 
 
@@ -391,7 +398,12 @@ def make_tokenize_group_fn(
         )
         if soft:
             soft_lo, soft_frac = _amount_to_soft(amounts)
-        statics = {f: int(STATIC_VOCAB[f].get(group[f][0], OOV)) for f in STATIC_FIELDS}
+        # String-categorical statics via their vocab; user/card are integer
+        # identities recovered from card_id (= User*100 + Card), clipped like
+        # NVIDIA's CUST/CARD and offset past the reserved ids.
+        statics = {f: int(STATIC_VOCAB[f].get(group[f][0], OOV)) for f in STATIC_VOCAB}
+        statics["user"] = min(int(card_id) // 100, N_USERS - 1) + _RESERVED
+        statics["card"] = min(int(card_id) % 100, N_CARDS - 1) + _RESERVED
 
         rows = []
 
