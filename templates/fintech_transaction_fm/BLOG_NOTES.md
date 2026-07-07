@@ -112,8 +112,18 @@ Unique extras: Ray Serve real-time path; `anyscale job submit` reproducibility.
 - [ ] recompute our $ from the new jobs' actual wall-clocks + cluster cost in console
 - [ ] verify current us-west-2 pricing at publish time
 - [ ] optional demo: run one job on spot GPUs and show a preemption restore in logs
-- Honesty: their 3k steps may be minutes on 8x A100 — the argument is box
-  occupancy/right-sizing, not a training-speed benchmark.
+
+**DO NOT lead with training cost.** Their 3k-step run is ~200M tokens into
+29M params ≈ 3.4e16 FLOPs — plausibly 5-30 MIN on 8x A100 (~$5-10). At demo
+scale everyone's training is cheap; a reviewer kills that headline with
+6*params*tokens math. The durable infra arguments instead:
+1. EMBEDDING is the recurring production cost (re-score every txn, forever;
+   scales with volume) — commodity A10Gs + scale-to-zero compound there.
+2. TabFormer is 24M rows; a real issuer is 100-200x with recurring retrains —
+   the heterogeneous/spot/right-sizing PATTERN is what you pick for that.
+3. Accessibility (A100-80GB + quota vs any-cloud A10Gs) and reproducibility
+   (their 30-step demo config vs our from-scratch one-command retrain) hold
+   regardless of timing.
 
 ## Secondary material (use sparingly)
 
