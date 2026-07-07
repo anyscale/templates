@@ -44,8 +44,10 @@ def _load_embeddings(embeddings_path: str):
     X = None
     cid = np.empty(n, np.int64)
     ts = np.empty(n, np.int64)
+    amt = np.empty(n, np.float64)
     i = 0
-    for batch in dset.to_batches(columns=["embedding", "card_id", "raw_ts"], batch_size=32_768):
+    cols = ["embedding", "card_id", "raw_ts", "raw_amount"]
+    for batch in dset.to_batches(columns=cols, batch_size=32_768):
         m = batch.num_rows
         if m == 0:
             continue
@@ -58,9 +60,18 @@ def _load_embeddings(embeddings_path: str):
         X[i : i + m] = flat.reshape(m, -1)
         cid[i : i + m] = batch.column("card_id").to_numpy(zero_copy_only=False)
         ts[i : i + m] = batch.column("raw_ts").to_numpy(zero_copy_only=False)
+        amt[i : i + m] = batch.column("raw_amount").to_numpy(zero_copy_only=False)
         i += m
     assert i == n, f"read {i} embedding rows, expected {n}"
-    keys = pd.DataFrame({"card_id": cid, "_ts": ts, "_row": np.arange(n)})
+    # Amount in cents disambiguates same-card same-minute key collisions
+    # (TabFormer time is HH:MM). Those bursts are disproportionately FRAUD, so
+    # a (card_id, ts)-only join silently drops the most informative training
+    # rows. float32 raw_amount is exact to the cent through ~$40k.
+    keys = pd.DataFrame({
+        "card_id": cid, "_ts": ts,
+        "_amt_cents": np.round(amt * 100).astype(np.int64),
+        "_row": np.arange(n),
+    })
     return keys, X
 
 
@@ -76,19 +87,22 @@ def run_benchmark(
     emb_row = None
     if embeddings_path:
         keys, X_emb = _load_embeddings(embeddings_path)
-        keys = keys.drop_duplicates(["card_id", "_ts"], keep="first")
+        join_on = ["card_id", "_ts", "_amt_cents"]
+        keys = keys.drop_duplicates(join_on, keep="first")
         n0 = len(bench)
-        bench = bench.drop_duplicates(["card_id", "_ts"], keep="first").merge(
-            keys, on=["card_id", "_ts"], how="inner"
+        bench["_amt_cents"] = np.round(bench["Amount"].to_numpy() * 100).astype(np.int64)
+        bench = bench.drop_duplicates(join_on, keep="first").merge(
+            keys, on=join_on, how="inner"
         )
         matched = len(bench) / n0
         print(f"[05] embeddings joined: {len(bench):,}/{n0:,} benchmark rows ({matched:.2%})")
-        if matched < 0.99:
+        if matched < 0.999:
             raise RuntimeError(
-                f"only {matched:.1%} of benchmark rows have an embedding — "
+                f"only {matched:.2%} of benchmark rows have an embedding — "
                 "stage 02/04 must run on the same benchmark.parquet (re-run them)"
             )
         emb_row = bench.pop("_row").to_numpy()
+        bench = bench.drop(columns=["_amt_cents"])
 
     y = {s: g["_target"].to_numpy() for s, g in bench.groupby("split")}
     for s in ("train", "val", "test"):

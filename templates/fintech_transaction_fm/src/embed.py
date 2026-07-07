@@ -61,7 +61,7 @@ class EmbeddingExtractor:
         with torch.inference_mode():
             emb = self.model.sequence_embedding(tensors, pooling=self.pooling).cpu().numpy()
         passthrough = [
-            "card_id", "label", "split", "weight",
+            "card_id", "row_id", "label", "split", "weight",
             "raw_amount", "raw_hour", "raw_dow", "raw_mcc", "raw_ts",
         ]
         out = {k: batch[k] for k in passthrough if k in batch}
@@ -95,6 +95,31 @@ def extract_embeddings(
 
     if ds is None:
         ds = ray.data.read_parquet(tokenized_path)
+        # Job-level checkpointing (Anyscale runtime): processed rows are
+        # recorded by row_id, so a resubmitted/cancelled job resumes
+        # mid-dataset instead of re-embedding everything — the batch-inference
+        # twin of Ray Train's epoch checkpoints, and what makes spot GPUs safe
+        # here. https://docs.anyscale.com/runtime/data
+        # Import path moved across runtime versions; OSS Ray has neither ->
+        # silently skipped (local smoke). Parquet path only: row_id is in the
+        # schema and the input is durable.
+        # NOTE: the manifest is deleted on success (default) ON PURPOSE — 04
+        # re-runs embed the SAME row_ids with a retrained model; a persisted
+        # manifest would skip every row and emit nothing for the new model.
+        # Failure/cancel keeps it, which is exactly when resume is wanted.
+        try:
+            from ray.data.checkpoint import CheckpointConfig
+        except ImportError:
+            try:
+                from ray.anyscale.data.checkpoint import CheckpointConfig
+            except ImportError:
+                CheckpointConfig = None
+        if CheckpointConfig is not None and "row_id" in ds.schema().names:
+            ray.data.DataContext.get_current().checkpoint_config = CheckpointConfig(
+                id_column="row_id",
+                checkpoint_path=output_path.rstrip("/") + "_checkpoint",
+            )
+            print("[embed] Ray Data job-level checkpointing enabled (row_id)")
     if gpus_per_worker is None:
         gpus_per_worker = 1.0
     ds = ds.map_batches(

@@ -282,6 +282,7 @@ def _stack_rows(rows: list, seq_len: int, soft: bool) -> dict:
         "split": np.array([], dtype=object),
         "label": np.zeros(0, np.int64),
         "weight": np.zeros(0, np.float64),
+        "row_id": np.zeros(0, np.int64),
         "attention_mask": np.zeros((0, seq_len), np.int32),
         "time_bucket": np.zeros((0, seq_len), np.int32),
         "y_error": np.zeros((0, seq_len), np.int32),
@@ -303,7 +304,7 @@ def _stack_rows(rows: list, seq_len: int, soft: bool) -> dict:
 # Columns only the eval samples need — dropped from the pretrain windows
 # before they reach the trainer (string columns break torch batch conversion).
 PRETRAIN_DROP = [
-    "kind", "split", "label", "weight",
+    "kind", "split", "label", "weight", "row_id",
     "raw_amount", "raw_hour", "raw_dow", "raw_mcc", "raw_ts",
 ]
 
@@ -419,6 +420,9 @@ def make_tokenize_group_fn(
             r = {
                 "card_id": card_id, "length": L, "kind": kind, "split": split,
                 "label": label, "weight": np.float64(weight),
+                # Unique per eval row (card_id, target index) — the id column
+                # Ray Data job-level checkpointing keys on (see src/embed.py).
+                "row_id": card_id * 1_000_000_000 + (int(target) if target is not None else hi),
             }
             # Sequence columns are int32: vocabularies are tiny, and at long
             # seq_len the eval set is millions of windows — int64 doubles GBs
