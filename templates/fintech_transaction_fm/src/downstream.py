@@ -18,8 +18,8 @@ is the representation:
 1. ``raw``    — ~13 hand-engineered fields of the target transaction (NVIDIA's
    XGBoost baseline: amount, time, MCC, plus merchant/channel/geo/issuer
    categoricals). Recovered by joining the raw transactions on
-   (card_id, timestamp); categoricals are frequency-encoded with counts fit on
-   the TRAIN split only (leakage-free). This is the "what you have today" bar.
+   (card_id, timestamp); categoricals are target-encoded (smoothed train fraud
+   rate) fit on the TRAIN split only. This is the "what you have today" bar.
 2. ``fm``     — the FM embedding of the history window only (no raw fields).
 3. ``fusion`` — embedding concatenated with the raw fields (Nubank joint fusion).
 
@@ -43,11 +43,10 @@ from sklearn.metrics import average_precision_score, roc_auc_score
 _SPLITS = ("train", "val", "test")
 
 # NVIDIA-style hand-engineered baseline, joined from the raw transactions.
-# Numerics enter directly (amount log-scaled); categoricals are frequency
-# encoded (train-only counts). merchant_id is an opaque high-card int -> its
-# transaction frequency ("popular vs rare merchant") is the useful, leak-free
-# signal. NVIDIA's exact 13-feature list isn't published; this is the obvious
-# TabFormer set (12 features).
+# Numerics enter directly (amount log-scaled); categoricals are target-encoded
+# (smoothed train fraud rate) so each merchant/state/channel carries its
+# fraud propensity. NVIDIA's exact 13-feature list isn't published; this is the
+# obvious TabFormer set (12 features).
 _RAW_NUM = ("amount", "hour", "day_of_week", "mcc")
 _RAW_CAT = ("merchant_id", "merchant_category", "channel", "error",
             "issuer", "bin_region", "card_type", "home_state")
@@ -155,7 +154,7 @@ def _load_sorted(embeddings_path: str, want_fm: bool = True) -> dict:
     return out
 
 
-def _join_raw_features(cid, ts, raw_path: str, train_mask) -> tuple:
+def _join_raw_features(cid, ts, y, raw_path: str, train_mask) -> tuple:
     """Recover NVIDIA-style hand-engineered features for each eval target.
 
     Joins the raw transactions on (card_id, timestamp) to pull the fields the
@@ -190,12 +189,21 @@ def _join_raw_features(cid, ts, raw_path: str, train_mask) -> tuple:
     feats.append(np.sign(amt) * np.log1p(np.abs(amt))); names.append("log_amount")
     for c in ("hour", "day_of_week", "mcc"):
         feats.append(j[c].to_numpy(np.float32)); names.append(c)
+    # Smoothed target (fraud-rate) encoding, fit on TRAIN only: each category ->
+    # its train fraud rate, shrunk toward the global rate for rare categories.
+    # This injects the categorical fraud signal a strong baseline needs;
+    # frequency encoding threw it away. Train-only so test/val metrics don't
+    # leak their own labels (val early-stopping guards the train overfit).
     tm = np.asarray(train_mask)
+    yv = np.asarray(y).astype(np.float64)
+    global_rate = float(yv[tm].mean())
+    SMOOTH = 20.0
     for c in _RAW_CAT:
         vals = j[c].astype("object").to_numpy()
-        counts = pd.Series(vals[tm]).value_counts()  # train-only frequency
-        feats.append(pd.Series(vals).map(counts).fillna(0.0).to_numpy(np.float32))
-        names.append(f"{c}_freq")
+        stats = pd.DataFrame({"v": vals[tm], "y": yv[tm]}).groupby("v")["y"].agg(["sum", "count"])
+        enc = (stats["sum"] + SMOOTH * global_rate) / (stats["count"] + SMOOTH)
+        feats.append(pd.Series(vals).map(enc).fillna(global_rate).to_numpy(np.float32))
+        names.append(f"{c}_te")
     X = np.column_stack(feats).astype(np.float32)
     return X, names
 
@@ -271,7 +279,7 @@ def run_downstream(embeddings_path: str, output_dir: str, raw_path: str | None =
     y, w, X_fm = d["y"], d["w"], d["X_fm"]
 
     if raw_path:
-        X_raw, raw_feats = _join_raw_features(d["cid"], d["ts"], raw_path, masks["train"])
+        X_raw, raw_feats = _join_raw_features(d["cid"], d["ts"], y, raw_path, masks["train"])
     else:
         X_raw = np.column_stack(
             [np.sign(d["amt"]) * np.log1p(np.abs(d["amt"])), d["hour"], d["dow"], d["mcc"]]
@@ -330,7 +338,7 @@ def run_downstream_multi(models: dict, raw_path: str, output_dir: str) -> dict:
     base = _load_sorted(models[names[0]], want_fm=False)
     masks = _masks(base["split_code"])
     y, w = base["y"], base["w"]
-    X_raw, raw_feats = _join_raw_features(base["cid"], base["ts"], raw_path, masks["train"])
+    X_raw, raw_feats = _join_raw_features(base["cid"], base["ts"], y, raw_path, masks["train"])
     raw_only, _ = _run_sets({"raw": lambda m: X_raw[m]}, y, w, masks)
 
     per_model = {}
