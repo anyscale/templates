@@ -26,9 +26,9 @@ model:
 
 pretrain:
   epochs: 20                 # epochs are cheap: non-overlapping 512-txn windows = ~38k/epoch
-  batch_size: 64             # T4-safe ceiling at seq 512 — the B x heads x S x S attention
-                             # buffers + 2000-way merchant MLM head logits dominate memory
-  lr: 4.0e-4
+  batch_size: 128            # A10G-sized: batch 64 left GRAM at ~37% (9/24 GiB);
+                             # activations scale ~linearly -> ~18 GiB at 128
+  lr: 6.0e-4                 # ~sqrt(2) scale-up with the doubled global batch
   num_workers: 4
   use_gpu: true
   use_fsdp: false
@@ -38,6 +38,6 @@ pretrain:
 embed:
   num_workers: 4
   use_gpu: true
-  batch_size: 256            # seq 512: attention buffers cap T4 inference batch well below seq-128
+  batch_size: 512            # inference-only: GRAM sat at ~41% with 256 on A10G
   gpus_per_worker: 1.0       # one embed actor per A10G — 2-per-GPU OOMed at
                              # this seq/batch on a 24GB card

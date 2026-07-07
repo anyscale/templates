@@ -1,13 +1,18 @@
-# Full run, all stages (pretrain + eval), on its own cluster so it can run in
-# parallel with an xxl run on the workspace without fighting for GPUs.
-# seq 512 ~ NVIDIA blueprint context — the low end of the 512/1024/2048 curve.
-# Writes to /mnt/user_storage so results persist next to xl/xxl for comparison.
+# Full seq-512 run, all stages, from-scratch pretraining on the validated
+# benchmark pipeline. Reuses only the cached raw + benchmark.parquet (the rows
+# the baseline job just reproduced 0.9875/0.1421 on); every derived artifact is
+# regenerated so there is zero doubt what data fed the FM. The old (pre-rerun)
+# model is set aside, not deleted. Embed gets 8 GPUs (pure inference — free
+# speedup); pretrain stays at 4 workers so training dynamics are unchanged.
 name: fintech-transaction-fm-full
 entrypoint: >-
-  python scripts/run_pretrain.py --scale full --base-dir /mnt/user_storage/transaction-fm-v2 --use-gpu &&
-  python scripts/04_extract_embeddings.py --scale full --base-dir /mnt/user_storage/transaction-fm-v2 --use-gpu &&
-  python scripts/05_train_downstream.py --scale full --base-dir /mnt/user_storage/transaction-fm-v2 --with-embeddings &&
-  python scripts/06_recommend.py --scale full --base-dir /mnt/user_storage/transaction-fm-v2 --use-gpu
+  BASE=/mnt/user_storage/transaction-fm-v2 &&
+  rm -rf $BASE/tokenized/full $BASE/embeddings/full $BASE/downstream/full &&
+  (mv $BASE/model/full $BASE/model/full_old_$(date +%s) 2>/dev/null || true) &&
+  python scripts/run_pretrain.py --scale full --base-dir $BASE --use-gpu &&
+  python scripts/04_extract_embeddings.py --scale full --base-dir $BASE --use-gpu --num-workers 8 &&
+  python scripts/05_train_downstream.py --scale full --base-dir $BASE --with-embeddings &&
+  python scripts/06_recommend.py --scale full --base-dir $BASE --use-gpu
 working_dir: .
 requirements: requirements.txt
 env_vars:
@@ -20,7 +25,7 @@ compute_config:
     - name: gpu-1x
       instance_type: g5.xlarge
       min_nodes: 0
-      max_nodes: 4
+      max_nodes: 8
     - name: cpu-workers
       instance_type: m5.4xlarge
       min_nodes: 0

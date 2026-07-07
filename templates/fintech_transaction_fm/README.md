@@ -205,25 +205,45 @@ emb = pd.read_parquet(paths["embeddings"])
 print(f"{len(emb):,} transaction-window embeddings, dim={len(emb['embedding'].iloc[0])}")
 ```
 
-## Step 6: Downstream fraud — raw vs FM vs fusion
+## Step 6: Downstream fraud — the NVIDIA benchmark
 
-The headline result, evaluated with the **NVIDIA transaction-FM blueprint protocol**: temporal 80/10/10 split, per-transaction last-event fraud labels, AUC-ROC + PR-AUC at natural fraud prevalence (downsampled normals are importance-weighted back). Same XGBoost recipe, three feature sets:
+The headline result, evaluated with the **NVIDIA transaction-FM blueprint protocol, exactly** — not "inspired by". One module, `src/nvidia_baseline.py`, holds their notebooks' split/sampling/features/hyperparameters verbatim (temporal 80/10/10 by date, 1M class-balanced train, 100k stratified val/test at natural ~0.1% fraud, their 13 `FEATURE_COLS`, their per-model Optuna XGBoost params, their 512d→64d embedding PCA), and every stage consumes it: 01 writes the sampled rows to `benchmark.parquet`, 02 tokenizes eval windows for exactly those rows, 05 trains on them.
 
-1. **raw** — the target transaction's tabular fields (what you have today)
-2. **fm** — the FM embedding of the history window only
-3. **fusion** — embedding ++ raw features (Nubank's joint fusion)
+### Reproduce their baseline BEFORE any FM work (crucial)
 
-The lift of (2) and (3) over (1) is the case for a transaction FM. *(At `smoke` scale — 2 CPU epochs, a 2-layer model — expect fusion ≈ raw; the gap opens with the `small`/`full` GPU pretrain.)*
+The gate for everything else: prove the pipeline is on their data + protocol by reproducing their published baseline **with no FM stages at all** (05's baseline needs only `benchmark.parquet`):
 
-**Second consumer — next-merchant recommendation.** On the learned-vocab path the *same* embedding backbone also ranks the next merchant a card will transact with (BERT4Rec-style: mask the target, score it against the InfoNCE merchant table), reported as HR@K / NDCG@K next to a "recommend their most-frequent past merchant" baseline. This is the "one backbone, two consumers (fraud + recs)" payoff and runs automatically in the fused pipeline (`run_pipeline.py`) at `small`/`full`, or standalone via `scripts/06_recommend.py`. *(Synthetic merchants are random, so reco only carries signal on TabFormer.)*
+```bash
+# CPU-only — 01 skips normalize if raw exists, builds the benchmark sample; 05
+# trains the 13-feature baseline with their exact recipe:
+anyscale job submit -f job_baseline.yaml
+# or, on any cluster with the raw data at $BASE:
+python scripts/01_generate_data.py    --scale full --base-dir $BASE
+python scripts/05_train_downstream.py --scale full --base-dir $BASE
+```
 
+Verified 2026-07-07 (job `fintech-fm-nvidia-baseline`) on IBM TabFormer, 24,386,900 transactions:
 
+| | Test ROC-AUC | Test AP |
+|---|--:|--:|
+| **this pipeline (baseline)** | **0.9875** | **0.1421** |
+| NVIDIA blog | 0.9885 | 0.1238 |
+| NVIDIA notebook 01 | 0.9914 | 0.1424 |
+
+If you don't get ~0.987 / ~0.14 here, **stop** — the data prep has drifted and no FM comparison is meaningful (we learned this the hard way; see `EXPERIMENT_LOG.md`). Sampling is fully pinned: seeded (42, their RNG idiom), stable-sorted input, and `benchmark.parquet` is written once and reused by every stage.
+
+### Then add the FM
+
+`05 --with-embeddings` trains their notebook-05 trio on the same rows: **baseline** (13 raw features), **embeddings** (64d PCA of the FM embedding), **combined** (13 + 64d). The AP lift of combined over baseline is the case for a transaction FM — NVIDIA reports +41.8% AP for theirs.
+
+**Second consumer — next-merchant recommendation.** On the learned-vocab path the *same* embedding backbone also ranks the next merchant a card will transact with (BERT4Rec-style: mask the target, score it against the InfoNCE merchant table), reported as HR@K / NDCG@K next to a "recommend their most-frequent past merchant" baseline. This is the "one backbone, two consumers (fraud + recs)" payoff and runs automatically in the fused pipeline (`run_pipeline.py`) at `small`/`full`, or standalone via `scripts/06_recommend.py`. *(Synthetic merchants are random, so reco only carries signal on TabFormer; synthetic falls back to a raw/fm/fusion comparison on heuristic eval windows.)*
 
 ```python
-from src.downstream import run_downstream, print_summary
+from src.benchmark_downstream import run_benchmark, print_benchmark
 
-summary = run_downstream(paths["embeddings"], paths["downstream"])
-print_summary(summary)
+summary = run_benchmark(paths["benchmark"], paths["downstream"],
+                        embeddings_path=paths["embeddings"])
+print_benchmark(summary)
 ```
 
 ## Step 7: Online serving with Ray Serve
