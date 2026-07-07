@@ -119,32 +119,18 @@ def train_func(config: dict):
 
             writer = SummaryWriter(config["tensorboard_dir"])
             print(f"[pretrain] tensorboard -> {config['tensorboard_dir']}")
-            # Self-document the run: dump the ENTIRE scale YAML (every section,
-            # nothing hand-picked to drift) + the actual runtime values to the
-            # TEXT tab, as one yaml block.
+            # Self-document the run: the ENTIRE train_loop_config and the
+            # ENTIRE scale YAML, unfiltered, as one yaml block in the TEXT tab.
             import yaml
 
-            world = ray.train.get_context().get_world_size()
-            bs = config.get("batch_size")
             dump = {
-                "runtime": {
-                    "scale": config.get("size"),
-                    "seq_len": config.get("max_len"),
-                    "epochs": config.get("epochs"),
-                    "batch_size": bs,
-                    "num_workers": world,
-                    "global_batch": bs * world if bs else None,
-                    "lr": config.get("lr"),
-                    "mask_prob": mask_prob,
-                    "seed": config.get("seed"),
-                    "train_windows": config.get("n_rows"),
-                    "arch": config.get("arch"),
-                },
+                "train_loop_config": dict(config),
+                "world_size": ray.train.get_context().get_world_size(),
             }
             try:  # full configs/<scale>.yaml (may be absent for a custom path)
                 from .scale_config import load_scale
 
-                dump["scale_config"] = load_scale(config.get("size"))
+                dump["scale_config"] = load_scale(config["size"])
             except BaseException:  # load_scale raises SystemExit on unknown names
                 pass
             writer.add_text(
