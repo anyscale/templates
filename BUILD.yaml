@@ -246,8 +246,8 @@
   dir: templates/object-detection-video-processing
   cluster_env:
     byod:
-      docker_image: us-docker.pkg.dev/anyscale-workspace-templates/workspace-templates/object-detection-video-processing:2.55.1
-      ray_version: 2.55.1
+      docker_image: us-docker.pkg.dev/anyscale-workspace-templates/workspace-templates/object-detection-video-processing:2.56.0
+      ray_version: 2.56.0
   compute_config:
     AWS: configs/object-detection-video-processing/aws.yaml
     GCP: configs/object-detection-video-processing/gce.yaml
