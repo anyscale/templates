@@ -1,0 +1,35 @@
+# Full run, all stages (pretrain + eval), on its own cluster so it can run in
+# parallel with an xxl run on the workspace without fighting for GPUs.
+# seq 512 ~ NVIDIA blueprint context — the low end of the 512/1024/2048 curve.
+# Writes to /mnt/user_storage so results persist next to xl/xxl for comparison.
+name: fintech-transaction-fm-full
+entrypoint: >-
+  python scripts/run_pretrain.py --scale full --base-dir /mnt/user_storage/transaction-fm --use-gpu &&
+  python scripts/04_extract_embeddings.py --scale full --base-dir /mnt/user_storage/transaction-fm --use-gpu &&
+  python scripts/05_train_downstream.py --scale full --base-dir /mnt/user_storage/transaction-fm &&
+  python scripts/06_recommend.py --scale full --base-dir /mnt/user_storage/transaction-fm --use-gpu
+working_dir: .
+requirements: requirements.txt
+env_vars:
+  RAY_DEFAULT_OBJECT_STORE_MEMORY_PROPORTION: "0.5"
+compute_config:
+  cloud: aws-public-us-west-2
+  head_node:
+    instance_type: m5.4xlarge
+  worker_nodes:
+    - name: gpu-1x
+      instance_type: g5.xlarge
+      min_nodes: 0
+      max_nodes: 4
+    - name: cpu-workers
+      instance_type: m5.4xlarge
+      min_nodes: 0
+      max_nodes: 2
+  flags:
+    instance_ranking_strategy:
+      - ranker_type: custom_group_order
+        ranker_config:
+          group_order:
+            - cpu-workers
+            - gpu-1x
+max_retries: 1
