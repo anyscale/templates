@@ -82,6 +82,33 @@ stands (Claim 0 + cost table), and we HPO the fusion XGB as follow-up work.
 - [ ] $ cost of the full run (job cluster cost from console)
 - [ ] one-command reproducibility: job_baseline.yaml / job_full.yaml / job_xl.yaml
 
+## Claim 4 — infra economics (Anyscale vs their monolith) ▢ DRAFTED, verify numbers
+
+Their facts (README + blog, 2026-07): checkpoint trained ~3,000 steps on
+8x A100; reader rig = 1x A100 80GB / H100 running EVERYTHING in one NeMo
+container (cuDF tokenize, XGBoost, train, embed — "every step runs on the
+GPU"); blog states no duration and no cost. 3,000 steps x batch 16 x 4096
+tok ≈ ~200M tokens into a ~29M-param model.
+
+| | theirs | ours |
+|---|---|---|
+| topology | one GPU box occupied end-to-end | per-stage: CPU nodes for data, GPUs only for 03/04 |
+| GPU | A100 80GB ~$5/hr (8x A100 $33-41/hr) | g5.xlarge A10G $1.01/hr |
+| GPUs during tokenize | the A100 (cuDF) | 0 (verified live w/ CPU:0 fence) |
+| fault tolerance | torchrun in a notebook | per-epoch ckpt + FailureConfig + job retry -> spot-safe |
+| spot discount | n/a in blueprint | ~65% off GPU (g5 spot ~$0.35/hr) |
+| full-pipeline cost | ~$5-40+ (occupancy math, no published timings) | ~$6 on-demand, ~$3.50-4 spot (measured wall-clocks) |
+
+One-liner: they scale UP (bigger GPU doing everything); we scale OUT and to
+ZERO (each stage gets exactly the hardware it needs; idle costs nothing).
+Unique extras: Ray Serve real-time path; `anyscale job submit` reproducibility.
+
+- [ ] recompute our $ from the new jobs' actual wall-clocks + cluster cost in console
+- [ ] verify current us-west-2 pricing at publish time
+- [ ] optional demo: run one job on spot GPUs and show a preemption restore in logs
+- Honesty: their 3k steps may be minutes on 8x A100 — the argument is box
+  occupancy/right-sizing, not a training-speed benchmark.
+
 ## Secondary material (use sparingly)
 
 - Reco (06): frequency-dominated task — 95% repeat merchants; freq baseline
