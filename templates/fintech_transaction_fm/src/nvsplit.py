@@ -19,9 +19,21 @@ stratified each), plus a ``split_meta.json``. cuDF/GPU job (matches NVIDIA's NB0
 """
 import json
 import os
+import time
 
 import numpy as np
 import ray
+
+
+def _wait_for_files(file_paths, timeout: float = 300.0) -> None:
+    """Block until each path is visible on the caller's node — /mnt/cluster_storage is
+    NFS/EFS-backed, so a worker's write can lag a driver read by a fraction of a second."""
+    for p in file_paths:
+        t0 = time.time()
+        while not os.path.exists(p):
+            if time.time() - t0 > timeout:
+                raise TimeoutError(f"output not visible after {timeout}s: {p}")
+            time.sleep(0.5)
 
 # NVIDIA's 13 raw feature columns (NB01 FEATURE_COLS) — Hour is derived from Time.
 FEATURE_COLS = [
@@ -117,4 +129,7 @@ def build_temporal_split(csv_path: str, out_dir: str, eval_samples: int = 100_00
     (full). ``eval_samples`` sizes the stratified val/test eval subsets.
     """
     ray.init(ignore_reinit_error=True)
-    return ray.get(_build.remote(csv_path, out_dir, eval_samples, max_users, seed))
+    meta = ray.get(_build.remote(csv_path, out_dir, eval_samples, max_users, seed))
+    _wait_for_files([os.path.join(out_dir, f) for f in
+                     ("train.parquet", "val_eval.parquet", "test_eval.parquet", "split_meta.json")])
+    return meta

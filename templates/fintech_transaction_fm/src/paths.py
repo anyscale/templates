@@ -49,6 +49,8 @@ def artifact_paths(base_dir: str, scale: str) -> dict:
         # native TabFormer columns → {train,val_eval,test_eval}.parquet for the
         # NVIDIA-tokenizer pipeline (nb 03/05/06).
         "nvsplit": f"{base_dir}/nvsplit/{scale}/",
+        # NVIDIA-tokenizer pretrain corpus (src/nvcorpus.py): ids.npy/attn.npy/vocab.json
+        "nvcorpus": f"{base_dir}/nvcorpus/{scale}/",
         "tokenized_pretrain": f"{base_dir}/tokenized/{scale}/pretrain/",
         "tokenized_eval": f"{base_dir}/tokenized/{scale}/eval/",
         "vocab": f"{base_dir}/tokenized/{scale}/vocab.json",
