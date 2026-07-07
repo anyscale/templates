@@ -168,6 +168,8 @@ class TransactionFM(nn.Module):
         masked=None,
         weighting: str = "uncertainty",
         infonce_scale: float = 1.0,
+        seq_views: tuple | None = None,
+        seq_cl_scale: float = 0.0,
     ):
         """Training forward returns the MLM loss; with ``targets=None`` returns
         the encoder hidden states.
@@ -175,11 +177,60 @@ class TransactionFM(nn.Module):
         The heads and ``log_var`` are applied *inside* ``forward`` on purpose, so
         that under DDP every trainable parameter participates in the wrapped
         forward pass and its gradients get all-reduced across workers.
+
+        ``seq_views=(view1, view2, pair_valid)`` adds a CoLES-style
+        sequence-level contrastive term (see ``seq_contrastive_loss``), scaled
+        by ``seq_cl_scale``. Computed inside this forward so DDP grad sync
+        stays correct with the extra encode passes.
         """
         hidden = self.encode(batch)
         if targets is None:
             return hidden
-        return self.field_loss(hidden, batch, targets, masked, weighting, infonce_scale)
+        total, stats = self.field_loss(
+            hidden, batch, targets, masked, weighting, infonce_scale
+        )
+        if seq_views is not None and seq_cl_scale > 0.0:
+            loss_cl, acc_cl = self.seq_contrastive_loss(*seq_views)
+            total = total + seq_cl_scale * loss_cl
+            stats["seq_cl"] = {"ce": float(loss_cl.item()), "acc": float(acc_cl)}
+        return total, stats
+
+    def seq_contrastive_loss(self, view1: dict, view2: dict, pair_valid, temperature: float = 0.1):
+        """CoLES-style sequence-level InfoNCE (Babaev et al., SIGMOD 2022).
+
+        The two views are disjoint temporal halves of each window — two
+        sub-sequences of the same card — with static fields PAD'd out (else
+        matching them via the user/card id embedding is a trivial shortcut
+        that learns no behavior). Positives: (i, i); negatives: the rest of
+        the batch. Headless (loss directly on L2-normalized masked-mean
+        pooled states), as in CoLES — no extra parameters, so checkpoints
+        stay drop-in compatible with every consumer.
+
+        MLM learns per-position ("local") structure; this term is what makes
+        the POOLED embedding carry card-level ("global") behavior — the
+        readout the frozen-embeddings-into-XGBoost protocol consumes.
+        """
+
+        def pooled(view):
+            h = self.encode(view)
+            m = view["attention_mask"].unsqueeze(-1).float()
+            z = (h * m).sum(dim=1) / m.sum(dim=1).clamp(min=1.0)
+            return F.normalize(z, dim=-1)
+
+        z1, z2 = pooled(view1), pooled(view2)
+        valid = pair_valid.bool()
+        if not bool(valid.any()):
+            # keep encoder params in the graph so DDP reducers stay in sync
+            return (z1.sum() + z2.sum()) * 0.0, 0.0
+        sim = z1 @ z2.t() / temperature  # (B, B): halves of row i must find each other
+        labels = torch.arange(sim.shape[0], device=sim.device)
+        loss = 0.5 * (
+            F.cross_entropy(sim[valid], labels[valid])
+            + F.cross_entropy(sim.t()[valid], labels[valid])
+        )
+        with torch.no_grad():
+            acc = (sim.argmax(dim=1)[valid] == labels[valid]).float().mean()
+        return loss, float(acc.item())
 
     def field_loss(
         self,

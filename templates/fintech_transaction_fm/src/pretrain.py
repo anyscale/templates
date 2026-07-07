@@ -31,6 +31,43 @@ def _unwrap(model):
     return model.module if hasattr(model, "module") else model
 
 
+def _contrastive_views(batch: dict):
+    """Split each (left-padded) window into two disjoint temporal halves.
+
+    Two sub-sequences of the same card = a CoLES positive pair, built from the
+    window itself so there is NO dataset constraint (works at any seq_len and
+    for short cards; windows with <4 txns are excluded via pair_valid). Views
+    are half-length tensors (S/2), so the two extra encodes cost ~0.5x the
+    main forward, not 2x. Static fields are PAD'd out — matching halves via
+    the user/card id embedding would be a trivial shortcut.
+    """
+    am = batch["attention_mask"]
+    B, S = am.shape
+    V = S // 2
+    L = am.sum(dim=1).long()  # valid txns per window
+    h1 = L // 2
+    j = torch.arange(V, device=am.device).unsqueeze(0)  # (1, V)
+    start = (S - L).unsqueeze(1)  # first valid position (left-padded)
+
+    def build(h, base):
+        off = j - (V - h).unsqueeze(1)  # (B, V) target-aligned offsets
+        m = off >= 0
+        src = (base + off).clamp(0, S - 1)
+        view = {}
+        for k, t in batch.items():
+            if k.startswith("s_"):
+                view[k] = torch.zeros_like(t)  # statics -> PAD
+            elif t.dim() == 2 and t.shape[1] == S and not k.startswith("y_"):
+                g = t.gather(1, src)
+                view[k] = torch.where(m, g, torch.zeros_like(g))
+        view["attention_mask"] = m.to(am.dtype)
+        return view
+
+    v1 = build(h1, start)
+    v2 = build(L - h1, start + h1.unsqueeze(1))
+    return v1, v2, (L >= 4)
+
+
 def train_func(config: dict):
     # Same init on every rank (DDP would broadcast anyway; this also makes
     # *runs* reproducible for A/B comparisons), then per-rank reseed below so
@@ -103,6 +140,7 @@ def train_func(config: dict):
 
     train_shard = ray.train.get_dataset_shard("train")
     mask_prob = config.get("mask_prob", 0.15)
+    seq_cl_weight = config.get("seq_cl_weight", 0.0)
     torch.manual_seed(config.get("seed", 0) + ray.train.get_context().get_world_rank())
 
     # Resume after a worker failure: FailureConfig restarts land back here with
@@ -180,6 +218,11 @@ def train_func(config: dict):
                 if infonce_warmup_steps == 0
                 else min(1.0, global_step / infonce_warmup_steps)
             )
+            # CoLES-style views from the UNCORRUPTED batch (clean inputs; the
+            # contrastive term shares the MLM warm-up ramp).
+            seq_views = (
+                _contrastive_views(batch) if seq_cl_weight > 0.0 else None
+            )
             optimizer.zero_grad()
             # Heads + loss run inside forward so DDP all-reduces every param.
             with torch.autocast(
@@ -191,6 +234,8 @@ def train_func(config: dict):
                     masked=masked,
                     weighting=weighting,
                     infonce_scale=infonce_scale,
+                    seq_views=seq_views,
+                    seq_cl_scale=seq_cl_weight * infonce_scale,
                 )
             if scaler.is_enabled():
                 scaler.scale(loss).backward()
@@ -237,6 +282,9 @@ def train_func(config: dict):
             if f in dynamic_fields:
                 macro_acc += acc
         metrics["acc_macro"] = macro_acc / len(dynamic_fields)
+        if "seq_cl" in ce_sum:  # sequence-level contrastive health
+            metrics["seq_cl_loss"] = ce_sum["seq_cl"] / max(tot_n, 1)
+            metrics["acc_seq_cl"] = acc_sum["seq_cl"] / max(tot_n, 1)
         if writer is not None:
             for k, v in metrics.items():
                 if k != "epoch":
@@ -295,6 +343,7 @@ def pretrain(
     loss_weighting: str = "uncertainty",
     infonce_negatives: int = 1024,
     infonce_warmup_frac: float = 0.0,
+    seq_cl_weight: float = 0.0,
     storage_base: str | None = None,
     seed: int = 0,
 ) -> dict:
@@ -349,6 +398,7 @@ def pretrain(
             "loss_weighting": loss_weighting,
             "infonce_negatives": infonce_negatives,
             "infonce_warmup_frac": infonce_warmup_frac,
+            "seq_cl_weight": seq_cl_weight,
             "seed": seed,
             "n_rows": n_rows,
             "tensorboard_dir": tensorboard_dir,

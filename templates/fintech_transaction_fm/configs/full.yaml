@@ -26,14 +26,21 @@ model:
 
 pretrain:
   epochs: 20                 # epochs are cheap: non-overlapping 512-txn windows = ~38k/epoch
-  batch_size: 128            # A10G-sized: batch 64 left GRAM at ~37% (9/24 GiB);
-                             # activations scale ~linearly -> ~18 GiB at 128
-  lr: 6.0e-4                 # ~sqrt(2) scale-up with the doubled global batch
+  batch_size: 64             # the PROVEN recipe (loss 10.28). Batch 128 + lr 6e-4
+                             # halved optimizer steps (3,180 -> 1,600) and degraded
+                             # every per-field metric — update-count-bound regime;
+                             # do NOT re-bump to chase GRAM%.
+  lr: 4.0e-4
   num_workers: 4
   use_gpu: true
   use_fsdp: false
   infonce_negatives: 1024      # shared negatives per batch (TREASURE Alg. 1)
   infonce_warmup_frac: 0.3     # anneal the merchant head in (see small.yaml)
+  seq_cl_weight: 1.0           # CoLES-style card-level contrastive (two halves of
+                               # a window = positive pair): makes the POOLED
+                               # embedding carry global behavior — required for the
+                               # frozen-embeddings->XGBoost protocol. MLM alone
+                               # collapsed (pairwise cos 0.85-0.92, combined AP -71%).
 
 embed:
   num_workers: 4
