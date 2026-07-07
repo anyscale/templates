@@ -23,7 +23,36 @@ proves or kills it, and where that number comes from. No number, no claim.
 - Blog beat: "before claiming an FM helps, reproduce the baseline — ours was
   off by 0.22 AUC until we did" (EXPERIMENT_LOG.md has the confession arc).
 
-## Claim 1 — "Same benchmark, 8x cheaper sequence" ⏳ RUNNING (seq-512 job)
+## Claim 1 — "Same benchmark, 8x cheaper sequence" ⚠️ NOT SUPPORTED YET
+
+Status 2026-07-07 evening — the corrected (fixed-join, 100% row match) seq-512
+numbers vs the deterministic 0.9875/0.1421 baseline:
+
+| variant | embed-only ROC/AP | combined ROC/AP | combined AP lift |
+|---|---|---|---|
+| b128 model (UNDERTRAINED: loss 13.9 vs 10.3) | 0.7154 / 0.0023 | 0.9863 / 0.1016 | **-28.5%** |
+| xl seq-1024 (converged; biased join, re-score pending) | 0.7209 / 0.0022 | 0.9862 / 0.0719* | +15.8%* vs crippled 0.0621 |
+| navy seq-512 (converged, loss 10.28) x {last, mean} pooling | ⏳ running | ⏳ | the decisive test |
+
+*not quotable until re-scored with the fixed join.
+
+Embed-only ROC ~0.72 on BOTH models (incl. the converged xl) says the pooled
+embedding barely ranks fraud even though user/card identity is in the FM.
+Leading suspects: last-position pooling on a bidirectional encoder (mean
+being tested), then objective mismatch (MLM field marginals vs their CLM
+next-txn anomaly signal). If navy x mean is still negative -> pivot to
+objective work before spending anything on HPO.
+
+Two war stories captured on the way (both good blog material):
+- Batch-size trap: bumping 64->128 to "saturate GRAM" halved optimizer steps
+  (3,180->1,600) and degraded EVERY per-field metric; sqrt-lr scaling did not
+  save it. Small-model pretraining is update-count-bound. TB caught it.
+- Join-collision trap: (card_id, minute) join keys collide on same-minute
+  bursts, which are disproportionately FRAUD; deduping dropped ~189 of the
+  most informative train rows and halved baseline AP (0.0621 vs 0.1421).
+  Fixed by keying on (card_id, ts, amount-in-cents) -> 100.00% match.
+
+### Original data-point checklist (still what we need)
 
 Their 4096-token context = ~315 txns (12 tokens/txn). Our 512 positions =
 512 txns. Needed from `downstream/full/benchmark_metrics.json`:
