@@ -11,7 +11,8 @@ tokenize:
   seq_len: 512
   target_eval_samples: 400000
   max_pretrain_windows: null
-  holdout_keep: 1.0          # exact full-data metrics (~5M eval windows)
+  holdout_keep: 0.1          # ~0.5M eval windows — matches xl/xxl for a fair
+                             # 512/1024/2048 comparison (1.0 OOMed the driver)
   shuffle_partitions: 128
   merchant_vocab: learned      # real ~100k merchant vocab -> InfoNCE + reco
   merchant_top_k: 20000        # covers ~98% of TabFormer txns (see DESIGN.md)
@@ -38,5 +39,5 @@ embed:
   num_workers: 4
   use_gpu: true
   batch_size: 256            # seq 512: attention buffers cap T4 inference batch well below seq-128
-  gpus_per_worker: 0.5       # model + seq-512 activations still fit 2x per
-                             # 16GB T4 — half the GPUs for the same throughput
+  gpus_per_worker: 1.0       # one embed actor per A10G — 2-per-GPU OOMed at
+                             # this seq/batch on a 24GB card
