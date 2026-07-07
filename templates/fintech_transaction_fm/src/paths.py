@@ -55,6 +55,8 @@ def artifact_paths(base_dir: str, scale: str) -> dict:
         "tokenized_eval": f"{base_dir}/tokenized/{scale}/eval/",
         "vocab": f"{base_dir}/tokenized/{scale}/vocab.json",
         "checkpoint": f"{base_dir}/model/{scale}/",
+        # our pretrained decoder exported as a HuggingFace dir, for the embedder (nb 05)
+        "hf": f"{base_dir}/model_hf/{scale}/",
         "embeddings": f"{base_dir}/embeddings/{scale}/",
         "downstream": f"{base_dir}/downstream/{scale}/",
     }
