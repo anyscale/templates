@@ -7,8 +7,8 @@
 name: fintech-transaction-fm-full
 entrypoint: >-
   BASE=/mnt/user_storage/transaction-fm-v2 &&
-  rm -rf $BASE/tokenized/full $BASE/embeddings/full $BASE/downstream/full &&
-  (mv $BASE/model/full $BASE/model/full_old_$(date +%s) 2>/dev/null || true) &&
+  STAMP=$(date +%s) &&
+  for d in tokenized embeddings downstream model; do if [ -e $BASE/$d/full ]; then mv $BASE/$d/full $BASE/$d/full_old_$STAMP; fi; done &&
   python scripts/run_pretrain.py --scale full --base-dir $BASE --use-gpu &&
   python scripts/04_extract_embeddings.py --scale full --base-dir $BASE --use-gpu --num-workers 8 &&
   python scripts/05_train_downstream.py --scale full --base-dir $BASE --with-embeddings &&
