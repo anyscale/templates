@@ -1,29 +1,28 @@
 #!/usr/bin/env python3
-"""Trigger Cursor Cloud "template-updater" agents to bump templates to a Ray version.
+"""Fan out the "Template update" Cursor automation to bump templates to a Ray version.
 
-One agent -> one template -> one draft PR (each runs the non-interactive workflow
-.claude/skills/template/workflows/bump-ray-version.md, per AGENTS.md "Cursor Cloud").
+One POST to the automation's webhook -> one agent -> one template -> one draft PR.
+The agent prompt lives on the Cursor automation dashboard (single source of truth);
+this script only fans a {template_name, ray_version} payload out over the maintained
+BUILD.yaml entries. The automation runs .claude/skills/template/workflows/bump-ray-version.md.
 
-Credentials come from the environment — never hardcoded, never committed:
-  CURSOR_TEMPLATE_UPDATER_AUTH_TOKEN      Cursor API key, sent as Bearer (falls back to
-                                          CURSOR_API_KEY). Needed only to --execute.
-  CURSOR_TEMPLATE_UPDATER_WEBHOOK         optional  https URL for statusChange callbacks.
-  CURSOR_TEMPLATE_UPDATER_WEBHOOK_SECRET  optional  shared secret for the signature HMAC.
-  CURSOR_AGENTS_URL                       optional  default https://api.cursor.com/v0/agents.
-  TEMPLATES_REPO                          optional  default https://github.com/anyscale/templates.
+Credentials come from the environment — never hardcoded, never committed (needed only to --execute):
+  CURSOR_TEMPLATE_UPDATER_WEBHOOK     the automation's inbound webhook URL (the POST target).
+  CURSOR_TEMPLATE_UPDATER_AUTH_TOKEN  Bearer for the webhook — the automation's
+                                      "Generate auth header" value.
 
 Template selection: pass names explicitly, or --all for every *maintained* BUILD.yaml
 entry. `maintained: false` entries (archived templates) are always skipped; a named
 entry that is unmaintained or absent from BUILD.yaml is skipped with a warning.
 
 SAFE BY DEFAULT: without --execute the script only PREVIEWS (prints the payloads it
-would POST, makes zero API calls). Launching real agents requires an explicit --execute.
+would POST, makes zero API calls). Firing real agents requires an explicit --execute.
 
 Examples:
-  # Preview (no --execute -> no launch, no creds needed):
+  # Preview (no --execute -> no POST, no creds needed):
   ci/trigger-cursor-bump.py -v 2.56.0 job-intro object-detection-video-processing skyrl
   ci/trigger-cursor-bump.py --all --exclude job-intro,object-detection-video-processing,skyrl --list
-  # Test batch, then fanout -- add --execute to actually launch:
+  # Test batch, then fanout -- add --execute to actually fire:
   ci/trigger-cursor-bump.py -v 2.56.0 job-intro object-detection-video-processing skyrl --execute
   ci/trigger-cursor-bump.py -v 2.56.0 --all --exclude job-intro,object-detection-video-processing,skyrl --execute
 """
@@ -41,8 +40,6 @@ from pathlib import Path
 import yaml
 
 BUILD_YAML = Path(__file__).resolve().parent.parent / "BUILD.yaml"
-DEFAULT_AGENTS_URL = "https://api.cursor.com/v0/agents"  # v0 supports webhooks
-DEFAULT_REPO = "https://github.com/anyscale/templates"
 
 
 def warn(msg: str) -> None:
@@ -68,34 +65,9 @@ def resolve_templates(
     return final
 
 
-def build_payload(
-    template: str, ray_version: str, ref: str, repo: str,
-    webhook_url: str, webhook_secret: str,
-) -> dict:
-    prompt = (
-        f"You are the non-interactive `template-updater` Cursor Cloud agent. "
-        f"Run the Ray-version bump workflow at "
-        f".claude/skills/template/workflows/bump-ray-version.md for template "
-        f"'{template}', target Ray version {ray_version}. Follow AGENTS.md "
-        f"'Cursor Cloud' (preflight, cursor/ branch naming, "
-        f"GH_TOKEN=$ANYSCALE_GH_TOKEN on gh writes, ray-update + cursor-cloud PR "
-        f"labels). One template, one draft PR. Do not read or act on PR comments. "
-        f"Stop-and-report on any blocked precondition."
-    )
-    body: dict = {
-        "prompt": {"text": prompt},
-        "source": {"repository": repo, "ref": ref},
-    }
-    if webhook_url:
-        body["webhook"] = {"url": webhook_url}
-        if webhook_secret:
-            body["webhook"]["secret"] = webhook_secret
-    return body
-
-
-def launch(url: str, token: str, payload: dict) -> tuple[bool, str]:
-    """POST one agent. Returns (ok, one-line result). Never raises — a single
-    failure must not abort the batch."""
+def trigger(url: str, token: str, payload: dict) -> tuple[bool, str]:
+    """POST one payload to the automation webhook. Returns (ok, one-line result).
+    Never raises — a single failure must not abort the batch."""
     req = urllib.request.Request(
         url,
         data=json.dumps(payload).encode(),
@@ -104,16 +76,22 @@ def launch(url: str, token: str, payload: dict) -> tuple[bool, str]:
     )
     try:
         with urllib.request.urlopen(req, timeout=30) as resp:
-            data = json.load(resp)
+            status, body = resp.status, resp.read().decode(errors="replace")
     except urllib.error.HTTPError as e:
-        return False, f"  unexpected response: HTTP {e.code} {e.read().decode(errors='replace')[:500]}"
-    except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as e:
+        return False, f"  unexpected response: HTTP {e.code} {e.read().decode(errors='replace')[:300]}"
+    except (urllib.error.URLError, TimeoutError) as e:
         return False, f"  unexpected response: {e}"
-    target = data.get("target") or {}
-    return True, (
-        f"  agent: {data.get('id', '?')}   status: {data.get('status', '?')}   "
-        f"url: {target.get('url') or data.get('url', '?')}"
-    )
+    # Best-effort: surface an id/url if the response is JSON (shape isn't documented).
+    detail = ""
+    try:
+        data = json.loads(body)
+        if isinstance(data, dict):
+            ident = data.get("id") or data.get("agentId") or data.get("runId") or "?"
+            link = data.get("url") or (data.get("target") or {}).get("url")
+            detail = f"  id: {ident}" + (f"   url: {link}" if link else "")
+    except json.JSONDecodeError:
+        detail = f"  response: {body[:200]}" if body.strip() else ""
+    return True, f"  triggered (HTTP {status}){detail}"
 
 
 def parse_args(argv: list[str] | None) -> argparse.Namespace:
@@ -122,16 +100,15 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
     )
     p.add_argument("templates", nargs="*", help="template names to bump")
     p.add_argument("-v", "--ray-version", default="2.56.0")
-    p.add_argument("-r", "--ref", default="main")
     p.add_argument("--all", dest="all_", action="store_true",
                    help="bump every maintained BUILD.yaml entry")
     p.add_argument("--exclude", default="", help="comma-separated names to skip")
     p.add_argument("--list", dest="list_only", action="store_true",
                    help="print the resolved template set and exit")
     p.add_argument("--dry-run", action="store_true",
-                   help="print payloads without launching (implied unless --execute)")
+                   help="print payloads without firing (implied unless --execute)")
     p.add_argument("--execute", action="store_true",
-                   help="actually POST to the Cursor API (required to launch)")
+                   help="actually POST to the automation webhook (required to fire)")
     return p.parse_args(argv)
 
 
@@ -159,7 +136,7 @@ def main(argv: list[str] | None = None) -> int:
     exclude = {name for name in args.exclude.split(",") if name}
     final = resolve_templates(entries, requested, exclude)
     if not final:
-        warn("error: no templates to launch after filtering")
+        warn("error: no templates to fire after filtering")
         return 2
 
     if args.list_only:
@@ -167,53 +144,38 @@ def main(argv: list[str] | None = None) -> int:
         print("\n".join(final))
         return 0
 
-    # SAFE BY DEFAULT: only --execute performs real API calls; anything else previews.
+    # SAFE BY DEFAULT: only --execute performs real POSTs; anything else previews.
     # An explicit --dry-run also wins, so a stray --execute can't override it.
     preview = args.dry_run or not args.execute
     if preview and not args.dry_run:
-        warn("note: preview only — no agents launched. Re-run with --execute to launch for real.")
+        warn("note: preview only — nothing fired. Re-run with --execute to fire for real.")
 
-    token = os.environ.get("CURSOR_TEMPLATE_UPDATER_AUTH_TOKEN") or os.environ.get("CURSOR_API_KEY", "")
-    if not preview and not token:
-        warn("error: set CURSOR_TEMPLATE_UPDATER_AUTH_TOKEN (or CURSOR_API_KEY) to launch")
+    url = os.environ.get("CURSOR_TEMPLATE_UPDATER_WEBHOOK", "")
+    token = os.environ.get("CURSOR_TEMPLATE_UPDATER_AUTH_TOKEN", "")
+    if not preview and not (url and token):
+        warn("error: set CURSOR_TEMPLATE_UPDATER_WEBHOOK and "
+             "CURSOR_TEMPLATE_UPDATER_AUTH_TOKEN to fire")
         return 2
 
-    webhook_url = os.environ.get("CURSOR_TEMPLATE_UPDATER_WEBHOOK", "")
-    webhook_secret = os.environ.get("CURSOR_TEMPLATE_UPDATER_WEBHOOK_SECRET", "")
-    repo = os.environ.get("TEMPLATES_REPO", DEFAULT_REPO)
-    url = os.environ.get("CURSOR_AGENTS_URL", DEFAULT_AGENTS_URL)
+    warn(f"== {'PREVIEW — ' if preview else ''}firing {len(final)} agent(s) via the "
+         f"Template-update automation: Ray {args.ray_version} ==")
 
-    warn(f"== {'PREVIEW — ' if preview else ''}launching {len(final)} agent(s): "
-         f"Ray {args.ray_version}, ref {args.ref} ==")
-    warn("   webhook: on" if webhook_url else
-         "   webhook: off (set CURSOR_TEMPLATE_UPDATER_WEBHOOK to enable statusChange callbacks)")
-
-    launched = 0
+    fired = 0
     for template in final:
+        payload = {"template_name": template, "ray_version": args.ray_version}
         if preview:
-            # Redact the webhook values so nothing sensitive is printed; stdout
-            # stays pure JSON (pipe it to jq). Markers go to stderr.
             warn(f"-- preview: {template} --")
-            payload = build_payload(
-                template, args.ray_version, args.ref, repo,
-                "[redacted CURSOR_TEMPLATE_UPDATER_WEBHOOK]" if webhook_url else "",
-                "[redacted CURSOR_TEMPLATE_UPDATER_WEBHOOK_SECRET]" if webhook_secret else "",
-            )
-            print(json.dumps(payload, indent=2))
+            print(json.dumps(payload, indent=2))  # payload holds no secrets
             continue
-        warn(f"-- launching: {template} (Ray {args.ray_version}) --")
-        payload = build_payload(
-            template, args.ray_version, args.ref, repo, webhook_url, webhook_secret
-        )
-        ok, line = launch(url, token, payload)
+        warn(f"-- firing: {template} (Ray {args.ray_version}) --")
+        ok, line = trigger(url, token, payload)
         print(line)
-        if ok:
-            launched += 1
+        fired += ok
 
     if preview:
         warn(f"== preview complete: {len(final)} payload(s) ==")
     else:
-        warn(f"== launched {launched}/{len(final)} agent(s) ==")
+        warn(f"== fired {fired}/{len(final)} agent(s) ==")
     return 0
 
 
