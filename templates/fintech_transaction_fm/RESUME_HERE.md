@@ -3,6 +3,68 @@
 Read this first if picking the work back up. Full technical detail is in
 [`FINDINGS_FM_REPRODUCTION.md`](FINDINGS_FM_REPRODUCTION.md); this is the state + next step.
 
+---
+
+## ▶️ 2026-07-07 — NOTEBOOK SERIES REWRITTEN (OPEN #2 DONE) + FULL RUN REPRODUCES/BEATS NVIDIA
+
+The faithful pipeline now lives in the **notebook series itself** (nb02→06), not just
+`scripts/nvidia_repro/`. Rewrite done, verified end-to-end at mini AND run at full.
+
+**What changed (all committed + pushed on `zgarner_transaction_foundation_model`):**
+- **Vendored NVIDIA's tokenizer** into `src/nvidia_tokenizer/` + `src/decoder_inference.py`
+  (Apache-2.0, vocab 6251, cuml→sklearn fallback), so the notebooks use the *faithful* tokenizer
+  with no `/tmp/tfm_nv` dependency. `requirements.txt` gains `cudf-cu12`/`cupy-cuda12x` (GPU pipeline).
+- **nb02** (`src/nvsplit.py`) regenerates NVIDIA's temporal split **from the raw CSV** — 80/10/10 by
+  cumulative date + 100K stratified val/test, native columns. No precomputed-data dependency.
+- **nb03** (`src/nvcorpus.py`) builds the 4096-token pretrain corpus with NVIDIA's tokenizer.
+- **nb04** pretrains on it (Ray Train, TorchTrainer) + exports the checkpoint to a HF dir.
+- **nb05** (`src/nvembed.py`) single-transaction embed via `HuggingFaceDecoderInference`.
+- **nb06** (`src/nvscore.py`) NVIDIA NB05 downstream + the seed×eval fusion peak-hunt.
+- Each stage commits separately (dd35c68d → f67dc91d); NFS-visibility guards added (EFS write-then-read
+  race that papermill exposed). SCALE knob: `mini` (fast CPU/GPU smoke) → `full`.
+
+**FULL run (2026-07-07), nb02→06 end-to-end — reproduces the whole chain:**
+- split: train **19,508,123** (exact NVIDIA match) + 100K val/test (87/112 fraud)
+- corpus: **64,335 × 4096**, vocab 6251 (exact match to `build_corpus.py`)
+- pretrain: 8×A10G, ~1h56m, perplexity → ~1.7
+- **downstream result:**
+
+| feature set | ours | NVIDIA | note |
+|---|---|---|---|
+| **raw** | **0.1238** | 0.1238 | exact match — STABLE (early-stops at 1 tree) |
+| **fm** (embedding) | **0.0614** | 0.0123 | **~5× beat** — STABLE point estimate |
+| **fusion** | *a distribution*, see below | 0.1755 | draw-dependent on both sides |
+
+### Fusion is a DISTRIBUTION, not a single number — and that's how we report it
+
+A 100K eval at the natural ~0.11% rate has only **~112 frauds**, so any single AP is a high-variance
+draw. On top of that the fusion *fit* is seed-sensitive (wide 512+13-dim feature space, ~25K frauds
+in 1M train). So the fusion number moves on two axes — eval draw AND fit seed. Measured over 6 seeds
+× 120 test-bootstraps:
+
+- per-seed full-eval fusion AP: **0.081 – 0.161** (2× swing from the fit seed alone)
+- **typical (median): 0.136** ← the honest central estimate (a modest, real lift over raw 0.1238)
+- single nb06 fit (seed 42): 0.166 (just a high sample — do NOT quote as "the" result)
+- **peak (seed×eval): 0.284**; **fusion ≥ 0.1755 in 16.7% of draws**
+
+**Why report the range:** NVIDIA published a *single* fusion value (0.1755) from this same ~112-fraud
+eval, with no variance. We can't know if that's their typical result or a favorable draw — so the
+honest comparison is to show OUR full spread and note that 0.1755 sits **inside** it (we clear it in
+~1 of 6 draws; our peak on the same favorable-draw basis is 0.284). Quoting single-value-vs-single-value
+at this eval noise would be misleading in either direction.
+
+**Citeable claims (no asterisks):** raw **0.1238** (exact) and fm **0.0614** (~5×) — both stable.
+Fusion: report the distribution (typical ~0.14, peak 0.28, 17% ≥ 0.1755), never one number.
+
+**Follow-ups (not blocking):** (1) delete the now-unused OLD `src/flat_tokenizer.py` + `src/tokenizer.py`
+shim; (2) notebook prose says fm "~2×" in spots — full run got ~5×, update; (3) optional: bake the
+fusion-distribution framing (per-seed spread + a histogram with NVIDIA's 0.1755 marked) into nb06 +
+`FINDINGS_FM_REPRODUCTION.md`; (4) check nb01/07/08/09 for stale references to the old pipeline.
+**Ops lesson:** the pretrain dies if the notebook driver dies (a disconnect/restart killed it twice) —
+for long runs prefer a detached/headless launch.
+
+---
+
 ## Bottom line
 
 **NVIDIA's transaction-FM fraud result reproduces, and our faithful pipeline matches/beats it.**
