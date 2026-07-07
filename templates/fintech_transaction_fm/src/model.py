@@ -279,6 +279,11 @@ class TransactionFM(nn.Module):
 
         ``"mean"`` — masked mean over valid positions: a whole-history
         customer summary, the right readout for card-level tasks.
+
+        ``"all"`` — one encode, every readout: dict of {"last", "mean",
+        "max"}. The forward pass is 99% of the cost, the reductions are
+        free — batch extraction emits all of them so downstream experiments
+        never re-run the GPU pass to try a different pooling.
         """
         hidden = self.encode(batch)
         if pooling == "last":
@@ -286,7 +291,14 @@ class TransactionFM(nn.Module):
         mask = batch["attention_mask"].unsqueeze(-1).float()
         summed = (hidden * mask).sum(dim=1)
         counts = mask.sum(dim=1).clamp(min=1.0)
-        return summed / counts
+        if pooling == "mean":
+            return summed / counts
+        # masked max: padded positions -> -inf so they never win
+        maxed = hidden.masked_fill(mask == 0, float("-inf")).max(dim=1).values
+        if pooling == "max":
+            return maxed
+        assert pooling == "all", f"unknown pooling: {pooling}"
+        return {"last": hidden[:, -1, :], "mean": summed / counts, "max": maxed}
 
 
 def infonce_loss(

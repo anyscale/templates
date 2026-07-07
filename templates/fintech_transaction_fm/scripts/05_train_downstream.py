@@ -30,6 +30,9 @@ def main():
     # Overrides for scoring alternate embedding variants side-by-side.
     p.add_argument("--embeddings-path", default=None)
     p.add_argument("--output-dir", default=None)
+    p.add_argument("--embedding-column", default=None,
+                   help="pooling variant column (embedding_last/mean/max); "
+                        "default: 'embedding' if present else embedding_last")
     args = p.parse_args()
 
     load_scale(args.scale, args.scale_config)  # validate the name early
@@ -48,6 +51,7 @@ def main():
                 else None
             ),
             device=args.device,
+            embedding_column=args.embedding_column,
         )
         print_benchmark(summary)
     else:

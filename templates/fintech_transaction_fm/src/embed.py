@@ -59,13 +59,20 @@ class EmbeddingExtractor:
         if self.vocab.get("amount_mode") == "soft":
             tensors["d_amount_frac"] = to_tensor("d_amount_frac", torch.float32)
         with torch.inference_mode():
-            emb = self.model.sequence_embedding(tensors, pooling=self.pooling).cpu().numpy()
+            pooled = self.model.sequence_embedding(tensors, pooling="all")
         passthrough = [
             "card_id", "row_id", "label", "split", "weight",
             "raw_amount", "raw_hour", "raw_dow", "raw_mcc", "raw_ts",
         ]
         out = {k: batch[k] for k in passthrough if k in batch}
-        out["embedding"] = [row for row in emb.astype(np.float32)]
+        # Every readout from the ONE forward pass — trying another pooling
+        # downstream must never cost a GPU re-extraction. The requested
+        # default pooling also lands in "embedding" (back-compat column).
+        for name, t in pooled.items():
+            emb = t.cpu().numpy().astype(np.float32)
+            out[f"embedding_{name}"] = [row for row in emb]
+            if name == self.pooling:
+                out["embedding"] = out[f"embedding_{name}"]
         return out
 
 
@@ -133,6 +140,10 @@ def extract_embeddings(
         # GPU replicas shouldn't also hold CPU slots — those belong to the
         # upstream tokenizer tasks feeding this stage.
         num_cpus=0 if use_gpu else 1,
+        # num_cpus=0 also zeroes the default memory request; tasks actually
+        # peak ~1GiB (Ray's High Memory detector flagged it), so budget it
+        # explicitly to keep the scheduler honest about packing.
+        memory=2 * 1024**3,
         batch_format="numpy",
     )
     ds.write_parquet(output_path)

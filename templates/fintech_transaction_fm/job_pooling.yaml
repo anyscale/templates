@@ -1,17 +1,18 @@
-# Score the ORIGINAL (well-converged, loss-10.28) full checkpoint — set aside
-# by the rerun as model/full_old_* — with BOTH poolings, against the fixed
-# benchmark join. Purely additive: no model dir is moved or deleted (the
-# current batch-128 model stays at model/full and can be resumed later);
-# each variant writes to its own embeddings/downstream dirs.
+# Score an alternate checkpoint against the benchmark with EVERY pooling
+# readout — ONE GPU extraction pass (04 writes embedding_last/mean/max
+# columns from a single forward), then one cheap CPU scoring (05) per
+# column. Purely additive: no existing artifact is moved or deleted.
+# Default target: the original well-converged full checkpoint set aside by
+# the rerun (model/full_old_*).
 name: fintech-fm-pooling
 entrypoint: >-
   BASE=/mnt/user_storage/transaction-fm-v2 &&
   OLD=$(ls -d $BASE/model/full_old_* | head -1) &&
   echo "scoring checkpoint: $OLD" &&
-  python scripts/04_extract_embeddings.py --scale full --base-dir $BASE --use-gpu --num-workers 8 --checkpoint-dir $OLD --pooling last --output $BASE/embeddings/full_navy_last &&
-  python scripts/05_train_downstream.py --scale full --base-dir $BASE --with-embeddings --embeddings-path $BASE/embeddings/full_navy_last --output-dir $BASE/downstream/full_navy_last &&
-  python scripts/04_extract_embeddings.py --scale full --base-dir $BASE --use-gpu --num-workers 8 --checkpoint-dir $OLD --pooling mean --output $BASE/embeddings/full_navy_mean &&
-  python scripts/05_train_downstream.py --scale full --base-dir $BASE --with-embeddings --embeddings-path $BASE/embeddings/full_navy_mean --output-dir $BASE/downstream/full_navy_mean
+  python scripts/04_extract_embeddings.py --scale full --base-dir $BASE --use-gpu --num-workers 8 --checkpoint-dir $OLD --output $BASE/embeddings/full_navy &&
+  for P in last mean max; do
+  python scripts/05_train_downstream.py --scale full --base-dir $BASE --with-embeddings --embeddings-path $BASE/embeddings/full_navy --embedding-column embedding_$P --output-dir $BASE/downstream/full_navy_$P || exit 1;
+  done
 working_dir: .
 requirements: requirements.txt
 env_vars:

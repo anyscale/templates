@@ -34,24 +34,34 @@ from .nvidia_baseline import (
 )
 
 
-def _load_embeddings(embeddings_path: str):
-    """Stream embedding shards into (keys DataFrame, float32 matrix)."""
+def _load_embeddings(embeddings_path: str, embedding_column: str | None = None):
+    """Stream embedding shards into (keys DataFrame, float32 matrix).
+
+    ``embedding_column`` picks a pooling variant (extraction writes one column
+    per readout — embedding_last/mean/max — from a single forward pass).
+    Default: "embedding" (the extraction's default pooling) when present,
+    else "embedding_last".
+    """
     import pandas as pd
     import pyarrow.dataset as pads
 
     dset = pads.dataset(embeddings_path, format="parquet")
+    if embedding_column is None:
+        names = dset.schema.names
+        embedding_column = "embedding" if "embedding" in names else "embedding_last"
+    print(f"[05] embedding column: {embedding_column}")
     n = dset.count_rows()
     X = None
     cid = np.empty(n, np.int64)
     ts = np.empty(n, np.int64)
     amt = np.empty(n, np.float64)
     i = 0
-    cols = ["embedding", "card_id", "raw_ts", "raw_amount"]
+    cols = [embedding_column, "card_id", "raw_ts", "raw_amount"]
     for batch in dset.to_batches(columns=cols, batch_size=32_768):
         m = batch.num_rows
         if m == 0:
             continue
-        emb = batch.column("embedding")
+        emb = batch.column(embedding_column)
         if hasattr(emb, "storage"):
             emb = emb.storage  # unwrap Ray tensor extension array
         flat = emb.flatten().to_numpy(zero_copy_only=False)
@@ -80,13 +90,14 @@ def run_benchmark(
     output_dir: str,
     embeddings_path: str | None = None,
     device: str = "cpu",
+    embedding_column: str | None = None,
 ) -> dict:
     import pandas as pd
 
     bench = pd.read_parquet(benchmark_path)
     emb_row = None
     if embeddings_path:
-        keys, X_emb = _load_embeddings(embeddings_path)
+        keys, X_emb = _load_embeddings(embeddings_path, embedding_column)
         join_on = ["card_id", "_ts", "_amt_cents"]
         keys = keys.drop_duplicates(join_on, keep="first")
         n0 = len(bench)
