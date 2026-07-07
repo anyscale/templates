@@ -329,6 +329,7 @@ def make_tokenize_group_fn(
     max_pretrain_windows: int | None = None,
     emit: str = "both",
     merchant_vocab: dict | None = None,
+    eval_targets: dict | None = None,
 ):
     """Build a ``map_groups`` UDF turning one card's transactions into padded,
     per-field token sequences (pretrain windows + per-transaction eval samples).
@@ -345,6 +346,11 @@ def make_tokenize_group_fn(
     ``merchant_vocab`` (learned-vocab path) maps merchant ids to top-K/aggregate
     embedding ids; the small top-K lookup is built once and captured. Without it,
     merchants are hash-bucketed (the default).
+
+    ``eval_targets`` (card_id -> array of target timestamps, epoch seconds)
+    switches eval-window selection to EXACTLY those transactions — the
+    NVIDIA-protocol benchmark rows written by stage 01 — with weight 1.0 (no
+    downsampling to undo). ``normal_keep``/``holdout_keep`` are ignored then.
     """
     t_train = np.datetime64(train_end, "s") if train_end else None
     t_val = np.datetime64(val_end, "s") if val_end else None
@@ -468,13 +474,24 @@ def make_tokenize_group_fn(
                 hi = lo
 
         # --- Eval samples: window ends at the target transaction; label = its
-        # is_fraud; split by the target's timestamp. All frauds kept, normals
-        # downsampled deterministically.
-        rng = np.random.default_rng(card_id + 1)
-        keep_p = np.full(n, normal_keep)
-        if t_train is not None:
-            keep_p[int(np.searchsorted(ts, t_train)):] = holdout_keep
-        keep = (fraud == 1) | (rng.random(n) < keep_p)
+        # is_fraud; split by the target's timestamp.
+        if eval_targets is not None:
+            # Benchmark mode: exactly the stage-01 sampled rows, weight 1.0.
+            tgt = eval_targets.get(card_id)
+            keep_p = np.ones(n)  # no downsampling -> unit importance weights
+            keep = (
+                np.isin(ts.astype(np.int64), tgt)
+                if tgt is not None
+                else np.zeros(n, dtype=bool)
+            )
+        else:
+            # Heuristic mode (synthetic data): all frauds kept, normals
+            # downsampled deterministically.
+            rng = np.random.default_rng(card_id + 1)
+            keep_p = np.full(n, normal_keep)
+            if t_train is not None:
+                keep_p[int(np.searchsorted(ts, t_train)):] = holdout_keep
+            keep = (fraud == 1) | (rng.random(n) < keep_p)
         if emit == "pretrain":
             keep[:] = False  # eval windows not wanted; guard below still applies
         # Guarantee at least one output row per card: empty (0, seq_len)
@@ -520,6 +537,7 @@ def tokenize_dataset(
     num_partitions: int | None = None,
     emit: str = "both",
     merchant_vocab: dict | None = None,
+    eval_targets: dict | None = None,
 ):
     """Apply the tokenizer over a Ray Dataset grouped by card.
 
@@ -528,6 +546,7 @@ def tokenize_dataset(
     demo scales. ``emit`` (see ``make_tokenize_group_fn``) skips the other
     kind's window computation when the pipeline only consumes one.
     ``merchant_vocab`` switches the merchant field to learned ids.
+    ``eval_targets`` selects benchmark-exact eval windows (see above).
     """
     return ds.groupby("card_id", num_partitions=num_partitions).map_groups(
         make_tokenize_group_fn(
@@ -539,6 +558,7 @@ def tokenize_dataset(
             max_pretrain_windows=max_pretrain_windows,
             emit=emit,
             merchant_vocab=merchant_vocab,
+            eval_targets=eval_targets,
         ),
         batch_format="numpy",
     )

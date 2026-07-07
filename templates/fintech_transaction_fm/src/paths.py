@@ -57,6 +57,9 @@ def artifact_paths(base_dir: str, scale: str) -> dict:
         "source": f"{base_dir}/source/",  # downloaded real-data cache (scale-independent)
         "raw": f"{base_dir}/raw/{scale}/transactions.parquet",
         "splits": f"{base_dir}/raw/{scale}/splits.json",
+        # NVIDIA-protocol benchmark rows (1M balanced train + stratified
+        # val/test w/ their 13 features) — written by 01, consumed by 02/05.
+        "benchmark": f"{base_dir}/raw/{scale}/benchmark.parquet",
         "tokenized_pretrain": f"{base_dir}/tokenized/{scale}/pretrain/",
         "tokenized_eval": f"{base_dir}/tokenized/{scale}/eval/",
         "vocab": f"{base_dir}/tokenized/{scale}/vocab.json",

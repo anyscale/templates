@@ -1,0 +1,15 @@
+# NVIDIA-baseline repro through the pipeline, no FM stages: 01 builds
+# benchmark.parquet from the existing v2 raw (skips normalize), 05 trains the
+# 13-feature baseline with their exact recipe. Must print ~0.987 ROC-AUC /
+# ~0.147 AP (their published 0.9885 / 0.1238) — the gate before any FM work.
+name: fintech-fm-nvidia-baseline
+entrypoint: >-
+  python scripts/01_generate_data.py --scale full --base-dir /mnt/user_storage/transaction-fm-v2 &&
+  python scripts/05_train_downstream.py --scale full --base-dir /mnt/user_storage/transaction-fm-v2
+working_dir: .
+requirements: requirements.txt
+compute_config:
+  cloud: aws-public-us-west-2
+  head_node:
+    instance_type: m5.4xlarge
+max_retries: 0

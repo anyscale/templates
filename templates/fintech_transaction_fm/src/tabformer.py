@@ -177,6 +177,34 @@ def _card_statics(g: pd.DataFrame) -> pd.DataFrame:
     )
 
 
+def build_benchmark(raw_path: str, benchmark_out: str, train_n: int, holdout_n: int) -> None:
+    """Write the NVIDIA-protocol benchmark rows (see src/nvidia_baseline.py).
+
+    Reads the normalized raw parquet, applies THE exact split/sampling code the
+    standalone repro validated against NVIDIA's published numbers, and persists
+    the sampled rows (their 13 features + label + split + join keys). Stage 02
+    tokenizes eval windows for exactly these rows; stage 05 trains on them.
+    """
+    import pyarrow.dataset as pads
+
+    from .nvidia_baseline import frame_from_normalized, split_and_sample
+
+    cols = ["card_id", "timestamp", "user", "card", "hour", "amount", "use_chip",
+            "merchant_id", "merchant_city", "merchant_state_raw", "zip", "mcc", "is_fraud"]
+    n = pads.dataset(raw_path, format="parquet").to_table(columns=cols).to_pandas()
+    # Parquet shard order is nondeterministic — sort to CSV-like (User, Card,
+    # chronological) order so the seeded sampling is reproducible across runs.
+    n = n.sort_values(["user", "card", "timestamp", "amount", "merchant_id"],
+                      kind="mergesort").reset_index(drop=True)
+    print(f"[benchmark] NVIDIA-protocol sampling over {len(n):,} transactions ...")
+    df = frame_from_normalized(n)
+    bench = split_and_sample(df, train_n=train_n, holdout_n=holdout_n)
+    bench = bench.drop(columns=["date"])
+    os.makedirs(os.path.dirname(benchmark_out.rstrip("/")), exist_ok=True)
+    bench.to_parquet(benchmark_out, index=False)
+    print(f"[benchmark] {len(bench):,} rows -> {benchmark_out}")
+
+
 def prepare_tabformer(
     raw_out: str,
     splits_out: str,

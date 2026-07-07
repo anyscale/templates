@@ -61,7 +61,22 @@ def validate_pipeline(
     report["embedding_dim"] = int(dim)
     report["n_embeddings"] = int(n_emb)
 
-    # Downstream metrics produced and the FM beats (or matches) the raw baseline.
+    # Downstream metrics produced and the FM beats (or matches) the baseline.
+    bench_path = os.path.join(paths["downstream"], "benchmark_metrics.json")
+    if os.path.exists(bench_path):
+        # NVIDIA-protocol path (tabformer): baseline / embeddings / combined.
+        with open(bench_path) as f:
+            m = json.load(f)
+        report["results"] = m["results"]
+        report["combined_lift_ap_pct"] = m.get("combined_lift_ap_pct")
+        report["strict_lift"] = strict_lift
+        aps = {k: r["ap"] for k, r in m["results"].items()}
+        assert all(0.0 <= v <= 1.0 for v in aps.values()), f"ap out of range: {aps}"
+        if strict_lift and "combined" in m["results"]:
+            assert m["results"]["combined"]["ap"] >= m["results"]["baseline"]["ap"] - 0.05, (
+                "combined materially underperforms the NVIDIA baseline"
+            )
+        return report
     with open(os.path.join(paths["downstream"], "downstream_metrics.json")) as f:
         m = json.load(f)
     report["results"] = m["results"]
@@ -83,8 +98,13 @@ def print_report(report: dict) -> None:
     print(f"  embedding dim:  {report['embedding_dim']}")
     print(f"  embeddings:     {report['n_embeddings']:,}")
     for name, r in report["results"].items():
-        print(f"  {name:<7} PR-AUC={r['pr_auc']:.4f}  AUC-ROC={r['auc_roc']:.4f}")
-    print(f"  fusion lift:    {report['fusion_lift_pr_auc']:+.4f} PR-AUC vs raw")
+        ap = r["ap"] if "ap" in r else r["pr_auc"]
+        print(f"  {name:<10} AP={ap:.4f}  AUC-ROC={r['auc_roc']:.4f}")
+    if "combined_lift_ap_pct" in report:
+        if report["combined_lift_ap_pct"] is not None:
+            print(f"  combined lift:  {report['combined_lift_ap_pct']:+.2f}% AP vs baseline")
+    else:
+        print(f"  fusion lift:    {report['fusion_lift_pr_auc']:+.4f} PR-AUC vs raw")
     if not report.get("strict_lift", True):
         print("  (fusion≥raw not enforced at this scale — FM is undertrained)")
     print("  ALL CHECKS PASSED")

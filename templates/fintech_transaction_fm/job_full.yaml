@@ -6,7 +6,7 @@ name: fintech-transaction-fm-full
 entrypoint: >-
   python scripts/run_pretrain.py --scale full --base-dir /mnt/user_storage/transaction-fm-v2 --use-gpu &&
   python scripts/04_extract_embeddings.py --scale full --base-dir /mnt/user_storage/transaction-fm-v2 --use-gpu &&
-  python scripts/05_train_downstream.py --scale full --base-dir /mnt/user_storage/transaction-fm-v2 &&
+  python scripts/05_train_downstream.py --scale full --base-dir /mnt/user_storage/transaction-fm-v2 --with-embeddings &&
   python scripts/06_recommend.py --scale full --base-dir /mnt/user_storage/transaction-fm-v2 --use-gpu
 working_dir: .
 requirements: requirements.txt

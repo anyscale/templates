@@ -27,21 +27,36 @@ def main():
     cfg = load_scale(args.scale, args.scale_config)
     base = args.base_dir or get_demo_base_dir()
     paths = artifact_paths(base, args.scale)
-    if os.path.exists(paths["raw"]) and os.path.exists(paths["splits"]):
-        print(f"[01] raw data exists -> {paths['raw']} (skipping)")
-        return
+    have_raw = os.path.exists(paths["raw"]) and os.path.exists(paths["splits"])
+    if have_raw:
+        print(f"[01] raw data exists -> {paths['raw']} (skipping normalize)")
 
     if args.source == "tabformer":
-        from src.tabformer import prepare_tabformer
+        from src.tabformer import build_benchmark, prepare_tabformer
 
-        prepare_tabformer(
-            paths["raw"],
-            paths["splits"],
-            num_cards=cfg["data"]["num_cards"],
-            seed=args.seed,
-            source_dir=paths["source"],
-        )
-    else:
+        if not have_raw:
+            prepare_tabformer(
+                paths["raw"],
+                paths["splits"],
+                num_cards=cfg["data"]["num_cards"],
+                seed=args.seed,
+                source_dir=paths["source"],
+            )
+        # NVIDIA-protocol benchmark rows (exact repro split/sampling) — the
+        # eval set every later stage keys off. Sizes overridable per scale.
+        if not os.path.exists(paths["benchmark"]):
+            from src.nvidia_baseline import HOLDOUT_N, TRAIN_N
+
+            bench_cfg = cfg.get("benchmark") or {}
+            build_benchmark(
+                paths["raw"],
+                paths["benchmark"],
+                train_n=bench_cfg.get("train_n", TRAIN_N),
+                holdout_n=bench_cfg.get("holdout_n", HOLDOUT_N),
+            )
+        else:
+            print(f"[01] benchmark exists -> {paths['benchmark']} (skipping)")
+    elif not have_raw:
         from src.generate_data import save_dataset
 
         save_dataset(paths["raw"], num_cards=cfg["data"]["num_cards"], seed=args.seed)

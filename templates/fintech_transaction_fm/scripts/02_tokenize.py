@@ -40,12 +40,29 @@ def main():
 
     with open(paths["splits"]) as f:
         splits = json.load(f)
-    normal_keep = eval_normal_keep(splits, preset["target_eval_samples"])
-    print(
-        f"[02] temporal split train<{splits['train_end']} val<{splits['val_end']} | "
-        f"~{int(splits['fraud_rate'] * splits['n_transactions']):,} frauds, "
-        f"normal_keep={normal_keep:.4f}"
-    )
+
+    # NVIDIA-protocol benchmark rows (written by 01 on tabformer data): eval
+    # windows are emitted for EXACTLY these transactions. Heuristic
+    # downsampling is only the fallback for synthetic data (no benchmark file).
+    eval_targets, normal_keep = None, 1.0
+    if os.path.exists(paths["benchmark"]):
+        import pandas as pd
+
+        bench = pd.read_parquet(paths["benchmark"], columns=["card_id", "_ts"])
+        eval_targets = {
+            int(c): g.to_numpy() for c, g in bench.groupby("card_id")["_ts"]
+        }
+        print(
+            f"[02] temporal split train<{splits['train_end']} val<{splits['val_end']} | "
+            f"benchmark eval targets: {len(bench):,} rows / {len(eval_targets):,} cards"
+        )
+    else:
+        normal_keep = eval_normal_keep(splits, preset["target_eval_samples"])
+        print(
+            f"[02] temporal split train<{splits['train_end']} val<{splits['val_end']} | "
+            f"~{int(splits['fraud_rate'] * splits['n_transactions']):,} frauds, "
+            f"normal_keep={normal_keep:.4f}"
+        )
 
     ray.init(ignore_reinit_error=True)
     ds = ray.data.read_parquet(paths["raw"])
@@ -79,6 +96,7 @@ def main():
         max_pretrain_windows=preset["max_pretrain_windows"],
         num_partitions=preset["shuffle_partitions"],
         merchant_vocab=merchant_vocab,
+        eval_targets=eval_targets,
     ).materialize()
 
     # Arrow-level filters (no numpy round trip — handles empty blocks cleanly).

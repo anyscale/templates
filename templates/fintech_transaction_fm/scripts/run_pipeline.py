@@ -149,6 +149,30 @@ def main():
     tk = cfg["tokenize"]
     normal_keep = eval_normal_keep(splits, tk["target_eval_samples"])
 
+    # NVIDIA-protocol benchmark rows (tabformer only): eval windows are emitted
+    # for exactly these transactions, and stage [5/6] trains their notebook-05
+    # models on them. Synthetic keeps the heuristic eval sampling.
+    eval_targets = None
+    if args.source == "tabformer":
+        if not os.path.exists(paths["benchmark"]):
+            from src.nvidia_baseline import HOLDOUT_N, TRAIN_N
+            from src.tabformer import build_benchmark
+
+            bench_cfg = cfg.get("benchmark") or {}
+            build_benchmark(
+                paths["raw"],
+                paths["benchmark"],
+                train_n=bench_cfg.get("train_n", TRAIN_N),
+                holdout_n=bench_cfg.get("holdout_n", HOLDOUT_N),
+            )
+        import pandas as pd
+
+        bench_keys = pd.read_parquet(paths["benchmark"], columns=["card_id", "_ts"])
+        eval_targets = {
+            int(c): g.to_numpy() for c, g in bench_keys.groupby("card_id")["_ts"]
+        }
+        print(f"[1/6] benchmark eval targets: {len(bench_keys):,} rows", flush=True)
+
     # Learned merchant vocab (InfoNCE path): one distributed frequency scan over
     # the raw transactions, keeping the top-K merchants + aggregate buckets for
     # the tail. The hashed path (default, smoke/CI) skips this entirely.
@@ -186,6 +210,7 @@ def main():
             num_partitions=tk["shuffle_partitions"],
             emit=emit,
             merchant_vocab=merchant_vocab,
+            eval_targets=eval_targets,
         )
 
     print("=== [2/6] tokenize pretrain windows -> object store ===", flush=True)
@@ -237,9 +262,20 @@ def main():
     )
 
     print("=== [5/6] downstream fraud eval ===", flush=True)
-    from src.downstream import print_summary, run_downstream
+    if eval_targets is not None:
+        from src.benchmark_downstream import print_benchmark, run_benchmark
 
-    print_summary(run_downstream(paths["embeddings"], paths["downstream"]))
+        print_benchmark(
+            run_benchmark(
+                benchmark_path=paths["benchmark"],
+                output_dir=paths["downstream"],
+                embeddings_path=paths["embeddings"],
+            )
+        )
+    else:
+        from src.downstream import print_summary, run_downstream
+
+        print_summary(run_downstream(paths["embeddings"], paths["downstream"]))
 
     # Second consumer of the same backbone: next-merchant recommendation. Needs
     # the learned merchant vocab + InfoNCE head, so it's skipped on the hashed

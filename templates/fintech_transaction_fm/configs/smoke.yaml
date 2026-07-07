@@ -39,3 +39,7 @@ embed:
   num_workers: 8
   use_gpu: false
   batch_size: 256
+
+benchmark:                   # NVIDIA-protocol sample sizes (tabformer only);
+  train_n: 40000             # full scale omits this block -> 1M / 100k defaults
+  holdout_n: 10000

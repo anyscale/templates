@@ -34,3 +34,7 @@ embed:
   num_workers: 8
   use_gpu: false
   batch_size: 256
+
+benchmark:                   # NVIDIA-protocol sample sizes (see smoke.yaml)
+  train_n: 40000
+  holdout_n: 10000
