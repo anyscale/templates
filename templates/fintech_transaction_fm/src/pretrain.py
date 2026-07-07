@@ -119,6 +119,35 @@ def train_func(config: dict):
 
             writer = SummaryWriter(config["tensorboard_dir"])
             print(f"[pretrain] tensorboard -> {config['tensorboard_dir']}")
+            # Self-document the run: dump hyperparameters to the TEXT tab so each
+            # run's config is visible in TensorBoard instead of having to guess.
+            arch = config.get("arch") or {}
+            world = ray.train.get_context().get_world_size()
+            bs = config.get("batch_size")
+            hp = {
+                "scale": config.get("size"),
+                "seq_len": config.get("max_len"),
+                "epochs": config.get("epochs"),
+                "batch_size": bs,
+                "num_workers": world,
+                "global_batch": bs * world if bs else None,
+                "lr": config.get("lr"),
+                "infonce_negatives": config.get("infonce_negatives"),
+                "infonce_warmup_frac": config.get("infonce_warmup_frac"),
+                "mask_prob": mask_prob,
+                "seed": config.get("seed"),
+                "train_windows": config.get("n_rows"),
+                "d_model": arch.get("d_model"),
+                "n_heads": arch.get("n_heads"),
+                "n_layers": arch.get("n_layers"),
+                "dim_ff": arch.get("dim_ff"),
+            }
+            writer.add_text(
+                "hparams",
+                "| hyperparameter | value |\n|---|---|\n"
+                + "\n".join(f"| {k} | {v} |" for k, v in hp.items()),
+                0,
+            )
         except ImportError:
             print("[pretrain] tensorboard not installed — skipping metric logging")
 
