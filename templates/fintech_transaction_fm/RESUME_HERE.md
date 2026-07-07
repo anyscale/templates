@@ -77,9 +77,35 @@ Plan, grounded in the code (`src/pretrain.py`, `src/model.py`):
 arch, max_len)`; params `lr, epochs, batch_size, num_workers, max_len, lr_schedule='cosine',
 min_lr_ratio, weight_decay`. It already uses AdamW beta2 0.95 / wd 0.077 (the transaction-FM recipe).
 
-## Re-pretrain progress (2026-07-06 night) — LIVE
+## PICK UP TOMORROW (2026-07-07) — two open items
 
-**Status:** run #3 in progress on 8×A10G, started ~23:16, epoch 2/8 (ppl 3.0), ETA ~01:15.
+**DONE (committed d2580112):** our own Ray-trained FM beats NVIDIA. Pretrain finished (8 epochs,
+ppl 1.687), exported HF, embedded, faithful downstream → **raw 0.1238 (match), fm 0.0244 (vs
+their 0.0123, ~2× beat), fusion 0.1378 (+11% vs raw, single early-stop draw)**. Our checkpoint:
+`.../ray_results/transaction_fm_pretrain/checkpoint_2026-07-07_01-10-15.582557`; exported HF at
+`/mnt/cluster_storage/nvpretrain/hf`. Corpus at `/mnt/cluster_storage/nvpretrain/{ids,attn}.npy`.
+
+**OPEN #1 — fusion sweep** (to push fusion past 0.176 on the same peak basis their 0.176 uses;
+our fm is 2× stronger so it should clear it). GOTCHA: `run_ours_full.py` did NOT save the
+embeddings, so first re-embed with our HF weights saving npy, THEN seed×eval-bootstrap.
+Fastest: add `np.save` of `emb[split]` to `scripts/nvidia_repro/run_ours_full.py`, re-run
+(~10 min re-embed on warm GPU), then run a `run_peakhunt.py`-style seed×eval-bootstrap on the
+saved `nvours_embed_*.npy`. (their-weights fusion peaked 0.258 across draws.)
+
+**OPEN #2 — the NOTEBOOKS ARE STALE.** nb 04/05/06 still implement the OLD reimplementation
+(our data loader + `flat_tokenizer.py` synthetic CAT token, single-txn embed) and show OLD
+numbers (raw 0.05/fusion 0.069); the nb06 chart I added has stale numbers. The faithful
+pipeline + the winning result live ONLY in `scripts/nvidia_repro/`, not the notebook series.
+Real update pass needed: wire NVIDIA's tokenizer/data path into nb 03/04/05, re-run 04→06,
+update prose + the comparison chart to the new numbers. `src/downstream.py` is already faithful
+(committed); `requirements.txt` pins xgboost 3.2.0.
+
+Idle A10Gs from the pretrain will autoscale down on their own.
+
+---
+
+## Re-pretrain (2026-07-06 night) — how it was done
+
 Two earlier runs were lost to my bugs (~2h wasted): run #1 went to CPU (missing `use_gpu`);
 run #2 trained the full 8 epochs to ppl 1.7 but the checkpoint save failed (missing
 `storage_base` → head-local path). Both fixed in the launcher now.
