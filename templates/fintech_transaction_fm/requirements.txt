@@ -11,3 +11,7 @@ seaborn>=0.13  # cleaner default styling for the exploration plots
 numpy>=1.24
 pandas>=2.0
 pyarrow>=14.0
+# NVIDIA's tokenizer (src/nvidia_tokenizer/, vendored Apache-2.0) runs on RAPIDS — GPU required
+# for the tokenize + embed stages (nb 03/05). cuml is optional (numerical.py falls back to sklearn).
+cudf-cu12>=24.10
+cupy-cuda12x>=13.0
