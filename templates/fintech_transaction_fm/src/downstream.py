@@ -169,7 +169,10 @@ def _join_raw_features(cid, ts, raw_path: str, train_mask) -> tuple:
     cols = ["card_id", "timestamp", *(_RAW_NUM[0:1]), "hour", "day_of_week", "mcc", *_RAW_CAT]
     cols = list(dict.fromkeys(cols))  # dedupe while preserving order
     raw = pads.dataset(raw_path, format="parquet").to_table(columns=cols).to_pandas()
-    raw["_ts"] = raw["timestamp"].astype("int64")
+    # Match the tokenizer's raw_ts: it casts timestamp to datetime64[s] (seconds
+    # since epoch) — see tokenizer.py. The raw parquet is timestamp[us], so
+    # normalize to seconds here too (a raw int64 cast is microseconds -> 0 match).
+    raw["_ts"] = raw["timestamp"].to_numpy().astype("datetime64[s]").astype("int64")
     # (card_id, ts) is the target key; drop rare same-second dupes deterministically.
     raw = raw.drop_duplicates(["card_id", "_ts"], keep="first").set_index(["card_id", "_ts"])
     j = raw.reindex(pd.MultiIndex.from_arrays([np.asarray(cid), np.asarray(ts)]))
