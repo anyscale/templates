@@ -43,4 +43,4 @@ embed:
   num_workers: 4
   use_gpu: true
   batch_size: 32             # seq 2048 inference: conservative to avoid OOM
-  gpus_per_worker: 0.5
+  gpus_per_worker: 1.0       # one embed actor per A10G: 2-per-GPU OOMed at this seq/batch

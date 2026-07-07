@@ -40,4 +40,4 @@ embed:
   num_workers: 4
   use_gpu: true
   batch_size: 128            # seq 1024 inference: below full's seq-512 batch
-  gpus_per_worker: 0.5       # model + seq-1024 activations fit 2x per 24GB A10G
+  gpus_per_worker: 1.0       # one embed actor per A10G: 2-per-GPU OOMed at this seq/batch
