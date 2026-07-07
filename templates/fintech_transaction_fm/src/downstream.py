@@ -185,6 +185,13 @@ def _join_raw_features(cid, ts, y, raw_path: str, train_mask) -> tuple:
         )
 
     feats, names = [], []
+    # User + Card identity (ordinal), as in NVIDIA's baseline FEATURE_COLS. This
+    # is the dominant fraud signal on TabFormer (fraud clusters by user, same
+    # users span the temporal split) and the reason their raw baseline hits
+    # ~0.99. card_id = User*100 + Card (see tabformer.py), so recover both here.
+    cidv = np.asarray(cid).astype(np.int64)
+    feats.append((cidv // 100).astype(np.float32)); names.append("user")
+    feats.append((cidv % 100).astype(np.float32)); names.append("card")
     amt = j["amount"].to_numpy(np.float64)
     feats.append(np.sign(amt) * np.log1p(np.abs(amt))); names.append("log_amount")
     for c in ("hour", "day_of_week", "mcc"):
