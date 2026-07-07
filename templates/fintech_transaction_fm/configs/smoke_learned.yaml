@@ -1,0 +1,36 @@
+# Smoke, but with the learned merchant vocab + InfoNCE head (the FATA path) so
+# the e2e check also exercises contrastive pretraining and next-merchant reco
+# (06) — which plain smoke.yaml (hashed vocab) skips. Tiny/CPU, for flow only.
+data:
+  num_cards: 2000
+
+tokenize:
+  seq_len: 32
+  target_eval_samples: 30000
+  max_pretrain_windows: 8
+  holdout_keep: null
+  shuffle_partitions: 32
+  merchant_vocab: learned
+  merchant_top_k: 2000
+  merchant_aggregate: 256
+
+model:
+  d_model: 64
+  n_heads: 2
+  n_layers: 2
+  dim_ff: 128
+
+pretrain:
+  epochs: 2
+  batch_size: 64
+  lr: 3.0e-4
+  num_workers: 1
+  use_gpu: false
+  use_fsdp: false
+  infonce_negatives: 256
+  infonce_warmup_frac: 0.3
+
+embed:
+  num_workers: 8
+  use_gpu: false
+  batch_size: 256
