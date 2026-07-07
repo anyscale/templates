@@ -27,6 +27,9 @@ def main():
                    help="also train the embeddings-only and combined models "
                         "(requires stages 03/04)")
     p.add_argument("--device", default="cpu", help="XGBoost device (cpu | cuda)")
+    # Overrides for scoring alternate embedding variants side-by-side.
+    p.add_argument("--embeddings-path", default=None)
+    p.add_argument("--output-dir", default=None)
     args = p.parse_args()
 
     load_scale(args.scale, args.scale_config)  # validate the name early
@@ -38,8 +41,12 @@ def main():
 
         summary = run_benchmark(
             benchmark_path=paths["benchmark"],
-            output_dir=paths["downstream"],
-            embeddings_path=paths["embeddings"] if args.with_embeddings else None,
+            output_dir=args.output_dir or paths["downstream"],
+            embeddings_path=(
+                (args.embeddings_path or paths["embeddings"])
+                if args.with_embeddings
+                else None
+            ),
             device=args.device,
         )
         print_benchmark(summary)

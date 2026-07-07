@@ -1,0 +1,13 @@
+# Re-run stage 05 only (CPU) against existing embeddings — used when the
+# downstream/join code changes so the trio re-scores without re-tokenizing,
+# re-training, or re-embedding. Scale via -e SCALE=<scale> ... default full.
+name: fintech-fm-eval
+entrypoint: >-
+  python scripts/05_train_downstream.py --scale ${SCALE:-full} --base-dir /mnt/user_storage/transaction-fm-v2 --with-embeddings
+working_dir: .
+requirements: requirements.txt
+compute_config:
+  cloud: aws-public-us-west-2
+  head_node:
+    instance_type: m5.4xlarge
+max_retries: 0

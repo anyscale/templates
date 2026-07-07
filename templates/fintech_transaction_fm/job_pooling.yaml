@@ -1,0 +1,30 @@
+# Score the ORIGINAL (well-converged, loss-10.28) full checkpoint — set aside
+# by the rerun as model/full_old_* — with BOTH poolings, against the fixed
+# benchmark join. Purely additive: no model dir is moved or deleted (the
+# current batch-128 model stays at model/full and can be resumed later);
+# each variant writes to its own embeddings/downstream dirs.
+name: fintech-fm-pooling
+entrypoint: >-
+  BASE=/mnt/user_storage/transaction-fm-v2 &&
+  OLD=$(ls -d $BASE/model/full_old_* | head -1) &&
+  echo "scoring checkpoint: $OLD" &&
+  python scripts/04_extract_embeddings.py --scale full --base-dir $BASE --use-gpu --num-workers 8 --checkpoint-dir $OLD --pooling last --output $BASE/embeddings/full_navy_last &&
+  python scripts/05_train_downstream.py --scale full --base-dir $BASE --with-embeddings --embeddings-path $BASE/embeddings/full_navy_last --output-dir $BASE/downstream/full_navy_last &&
+  python scripts/04_extract_embeddings.py --scale full --base-dir $BASE --use-gpu --num-workers 8 --checkpoint-dir $OLD --pooling mean --output $BASE/embeddings/full_navy_mean &&
+  python scripts/05_train_downstream.py --scale full --base-dir $BASE --with-embeddings --embeddings-path $BASE/embeddings/full_navy_mean --output-dir $BASE/downstream/full_navy_mean
+working_dir: .
+requirements: requirements.txt
+env_vars:
+  RAY_DEFAULT_OBJECT_STORE_MEMORY_PROPORTION: "0.5"
+compute_config:
+  cloud: aws-public-us-west-2
+  head_node:
+    instance_type: m5.4xlarge
+  worker_nodes:
+    - name: gpu-1x
+      instance_type: g5.xlarge
+      min_nodes: 0
+      max_nodes: 8
+      resources:
+        CPU: 0    # GPU nodes invisible to CPU-only tasks
+max_retries: 0

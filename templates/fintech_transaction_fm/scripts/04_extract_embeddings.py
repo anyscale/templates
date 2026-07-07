@@ -21,6 +21,11 @@ def main():
     p.add_argument("--num-workers", type=int, default=None)
     p.add_argument("--use-gpu", action="store_true")
     p.add_argument("--batch-size", type=int, default=None)
+    # Overrides for scoring an alternate checkpoint / pooling side-by-side
+    # without touching the canonical model/embeddings dirs.
+    p.add_argument("--checkpoint-dir", default=None)
+    p.add_argument("--pooling", default="last", choices=["last", "mean"])
+    p.add_argument("--output", default=None)
     args = p.parse_args()
 
     base = args.base_dir or get_demo_base_dir()
@@ -30,11 +35,12 @@ def main():
     ray.init(ignore_reinit_error=True)
     extract_embeddings(
         tokenized_path=paths["tokenized_eval"],
-        checkpoint_dir=paths["checkpoint"],
-        output_path=paths["embeddings"],
+        checkpoint_dir=args.checkpoint_dir or paths["checkpoint"],
+        output_path=args.output or paths["embeddings"],
         num_workers=args.num_workers or embed_cfg["num_workers"],
         use_gpu=args.use_gpu or embed_cfg["use_gpu"],
         batch_size=args.batch_size or embed_cfg["batch_size"],
+        pooling=args.pooling,
         gpus_per_worker=embed_cfg.get("gpus_per_worker"),
     )
 
