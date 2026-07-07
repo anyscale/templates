@@ -27,4 +27,11 @@ compute_config:
       max_nodes: 8
       resources:
         CPU: 0    # GPU nodes invisible to CPU-only tasks
+    # Ray Data's parquet read/write tasks need CPU:1 slots somewhere: the
+    # Anyscale head advertises CPU:0 by default and gpu-1x is fenced, so a
+    # GPU-only config has ZERO schedulable CPUs (learned the hard way).
+    - name: cpu-workers
+      instance_type: m5.4xlarge
+      min_nodes: 0
+      max_nodes: 2
 max_retries: 0
