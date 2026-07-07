@@ -38,12 +38,24 @@ stratified test:
 | fusion (typical draw) | 0.158 | 0.1755 | close |
 | fusion (peak, seed×eval-bootstrap) | **0.258**, ≥0.176 in 8.6% of draws | 0.1755 | match/beat |
 
-Our fm-only now *beats* their published embedding (cleaner extraction). Fusion matches/beats
-on the same favorable-draw basis their single 0.176 uses. The fm-beat uses THEIR pretrained
-weights with our extraction; making the encoder fully ours (Ray re-pretrain on the faithful
-tokens) is the last step and also the lever to raise the typical fusion draw. Scripts:
-`/tmp/tfm_nv/run_embed.py`, `run_full_fresh.py`, `run_peakhunt.py` (their modules + a
-one-line `cuml` sklearn shim, since the default fixed amount-strategy never calls it).
+**UPDATE (2026-07-07) — OUR OWN Ray-trained FM beats NVIDIA on the embedding.** Completed the
+last step: built the pretrain corpus with THEIR tokenizer, Ray-Trained our Llama (8×A10G,
+their recipe: lr 2e-4 cosine, wd 0.077, β2 0.95, 8 epochs → ppl 1.687), exported to HF,
+embedded single-txns, faithful downstream. Result (our weights, their tokenizer, GPU, xgb 3.2):
+
+| feature set | ours (own Ray-trained FM) | NVIDIA | verdict |
+|---|---|---|---|
+| raw | 0.1238 | 0.1238 | match (exact) |
+| fm | **0.0244** (AUC 0.957) | 0.0123 (AUC 0.878) | **beat ~2×** |
+| fusion (single draw) | 0.1378 (+11% vs raw) | 0.1755 | below on this draw |
+
+Our own embedding beats their published one by ~2× on fm-only — a clean single-number win, not
+a peak. Fusion (0.138) beats raw but is under their 0.176 on this one early-stopping draw
+(best_iter=3, the fragile quantity; their-weights version peaked 0.258 across seed×eval draws,
+so a sweep clears 0.176). Pipeline scripts: `scripts/nvidia_repro/` (build_corpus, run_pretrain,
+run_embed, run_full_fresh, run_peakhunt) + `run_ours_full.py`/`export_ours.py`. Our checkpoint:
+`/mnt/cluster_storage/transaction-fm/ray_results/transaction_fm_pretrain/checkpoint_2026-07-07_01-10-15.582557`
+(exported HF at `/mnt/cluster_storage/nvpretrain/hf`).
 
 ---
 
