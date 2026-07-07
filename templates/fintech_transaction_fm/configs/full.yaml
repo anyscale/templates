@@ -6,6 +6,8 @@
 
 data:
   num_cards: 200000          # > the ~6.1k real cards = use every card
+  max_users: null            # nvsplit: cap card-holders (null = every user, ~2000 = full data)
+  eval_samples: 100000       # nvsplit: NVIDIA's 100K stratified val/test eval subsets
 
 tokenize:
   seq_len: 4096             # NOW IN TOKENS (~12/txn) -> ~314 txns of context (NVIDIA uses 4096)

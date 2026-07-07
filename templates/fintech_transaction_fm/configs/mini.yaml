@@ -12,6 +12,8 @@
 
 data:
   num_cards: 2000            # cards sampled from the source (each card = one txn sequence)
+  max_users: 200             # nvsplit: only 200 card-holders → small fast CPU/CI split
+  eval_samples: 100000       # nvsplit: >= mini val/test size, so eval keeps all rows
 
 tokenize:
   seq_len: 256               # NOW IN TOKENS (~12/txn) -> ~19 txns of context (CPU smoke)
