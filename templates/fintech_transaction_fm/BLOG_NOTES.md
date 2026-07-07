@@ -84,16 +84,22 @@ stands (Claim 0 + cost table), and we HPO the fusion XGB as follow-up work.
 
 ## Claim 4 — infra economics (Anyscale vs their monolith) ▢ DRAFTED, verify numbers
 
-Their facts (README + blog, 2026-07): checkpoint trained ~3,000 steps on
-8x A100; reader rig = 1x A100 80GB / H100 running EVERYTHING in one NeMo
+Their facts (README + blog, 2026-07): the SHIPPED checkpoint (what their
+published numbers ride on) was trained ~3,000 steps on 8x A100 (README L96);
+the reader rig is 1x A100 80GB / H100 (L108) running everything in one NeMo
 container (cuDF tokenize, XGBoost, train, embed — "every step runs on the
-GPU"); blog states no duration and no cost. 3,000 steps x batch 16 x 4096
-tok ≈ ~200M tokens into a ~29M-param model.
+GPU"). The repo config is a 30-step DEMO (max_steps: 30, "~2 min") — readers
+reproduce their inference, not their pretraining; the real 3,000-step run
+arrives as a git-lfs artifact. 3,000 steps x batch 16 x 4096 tok ≈ ~200M
+tokens into a ~29M-param model. Blog states no duration and no cost.
+Reproducibility beat: our pipeline retrains from scratch every run, on
+commodity GPUs, one `job submit`, with pinned benchmark rows + config dumps.
 
 | | theirs | ours |
 |---|---|---|
 | topology | one GPU box occupied end-to-end | per-stage: CPU nodes for data, GPUs only for 03/04 |
-| GPU | A100 80GB ~$5/hr (8x A100 $33-41/hr) | g5.xlarge A10G $1.01/hr |
+| pretraining hardware | 8x A100 node (~$33-41/hr; how the shipped ckpt was made) | 4x g5.xlarge A10G ($1.01/hr each) |
+| inference/downstream rig | 1x A100 80GB (~$5/hr) | 8x A10G for embed, CPU for XGBoost |
 | GPUs during tokenize | the A100 (cuDF) | 0 (verified live w/ CPU:0 fence) |
 | fault tolerance | torchrun in a notebook | per-epoch ckpt + FailureConfig + job retry -> spot-safe |
 | spot discount | n/a in blueprint | ~65% off GPU (g5 spot ~$0.35/hr) |
