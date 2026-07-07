@@ -165,7 +165,8 @@ def _join_raw_features(cid, ts, y, raw_path: str, train_mask) -> tuple:
     import pandas as pd
     import pyarrow.dataset as pads
 
-    cols = ["card_id", "timestamp", *(_RAW_NUM[0:1]), "hour", "day_of_week", "mcc", *_RAW_CAT]
+    cols = ["card_id", "timestamp", "amount", "hour", "day_of_week", "mcc",
+            "merchant_city", "merchant_state_raw", "zip", "use_chip", *_RAW_CAT]
     cols = list(dict.fromkeys(cols))  # dedupe while preserving order
     raw = pads.dataset(raw_path, format="parquet").to_table(columns=cols).to_pandas()
     # Match the tokenizer's raw_ts: it casts timestamp to datetime64[s] (seconds
@@ -212,7 +213,27 @@ def _join_raw_features(cid, ts, y, raw_path: str, train_mask) -> tuple:
         feats.append(pd.Series(vals).map(enc).fillna(global_rate).to_numpy(np.float32))
         names.append(f"{c}_te")
     X = np.column_stack(feats).astype(np.float32)
-    return X, names
+
+    # NVIDIA's 13-feature baseline (their FEATURE_COLS), encoded like their
+    # notebook: numeric passthrough for ids/amount/zip/time, ordinal (train-fit,
+    # unknown=-1) for the string categoricals. Built on these same rows so we get
+    # the NVIDIA baseline in-pipeline and can fuse the FM on top of it.
+    def _ord(series):
+        vv = np.asarray(series, dtype=object)
+        m = {c: i for i, c in enumerate(pd.unique(pd.Series(vv[tm]).dropna()))}
+        return pd.Series(vv).map(m).fillna(-1.0).to_numpy(np.float32)
+
+    tsj = pd.to_datetime(j["timestamp"])
+    X_nv = np.column_stack([
+        cidv // 100, cidv % 100,                                    # User, Card
+        tsj.dt.year.to_numpy(), tsj.dt.month.to_numpy(), tsj.dt.day.to_numpy(),
+        j["hour"].to_numpy(), j["amount"].to_numpy(), j["merchant_id"].to_numpy(),
+        j["zip"].to_numpy(), j["mcc"].to_numpy(),
+        _ord(j["use_chip"]), _ord(j["merchant_city"]), _ord(j["merchant_state_raw"]),
+    ]).astype(np.float32)
+    nv_names = ["user", "card", "year", "month", "day", "hour", "amount",
+                "merchant_name", "zip", "mcc", "use_chip", "merchant_city", "merchant_state"]
+    return X, names, X_nv, nv_names
 
 
 def _eval_fingerprint(embeddings_path: str) -> str:
@@ -265,12 +286,15 @@ def _run_sets(feature_sets: dict, y, w, masks: dict) -> tuple:
 
 
 def _lifts(results: dict) -> dict:
-    out = {}
-    if "raw" in results:
-        for k in ("fm", "fusion"):
-            if k in results:
-                out[f"{k}_lift_pr_auc"] = results[k]["pr_auc"] - results["raw"]["pr_auc"]
-                out[f"{k}_lift_auc_roc"] = results[k]["auc_roc"] - results["raw"]["auc_roc"]
+    # Lift is measured against the NVIDIA baseline when we have it, else raw.
+    base = "nvidia_baseline" if "nvidia_baseline" in results else "raw"
+    if base not in results:
+        return {}
+    out = {"lift_vs": base}
+    for k in ("fm", "fusion"):
+        if k in results:
+            out[f"{k}_lift_pr_auc"] = results[k]["pr_auc"] - results[base]["pr_auc"]
+            out[f"{k}_lift_auc_roc"] = results[k]["auc_roc"] - results[base]["auc_roc"]
     return out
 
 
@@ -286,18 +310,26 @@ def run_downstream(embeddings_path: str, output_dir: str, raw_path: str | None =
     y, w, X_fm = d["y"], d["w"], d["X_fm"]
 
     if raw_path:
-        X_raw, raw_feats = _join_raw_features(d["cid"], d["ts"], y, raw_path, masks["train"])
+        X_raw, raw_feats, X_nv, nv_feats = _join_raw_features(
+            d["cid"], d["ts"], y, raw_path, masks["train"]
+        )
+        feature_sets = {
+            "raw": lambda m: X_raw[m],                         # our joined + target-enc
+            "nvidia_baseline": lambda m: X_nv[m],              # NVIDIA's 13 features
+            "fm": lambda m: X_fm[m],
+            "fusion": lambda m: np.hstack([X_fm[m], X_nv[m]]),  # FM on the NVIDIA baseline
+        }
+        raw_feats = nv_feats  # what the reported baseline/fusion use
     else:
         X_raw = np.column_stack(
             [np.sign(d["amt"]) * np.log1p(np.abs(d["amt"])), d["hour"], d["dow"], d["mcc"]]
         ).astype(np.float32)
         raw_feats = ["log_amount", "hour", "day_of_week", "mcc"]
-
-    feature_sets = {
-        "raw": lambda m: X_raw[m],
-        "fm": lambda m: X_fm[m],
-        "fusion": lambda m: np.hstack([X_fm[m], X_raw[m]]),
-    }
+        feature_sets = {
+            "raw": lambda m: X_raw[m],
+            "fm": lambda m: X_fm[m],
+            "fusion": lambda m: np.hstack([X_fm[m], X_raw[m]]),
+        }
     results, test_proba = _run_sets(feature_sets, y, w, masks)
 
     summary = {
@@ -345,8 +377,11 @@ def run_downstream_multi(models: dict, raw_path: str, output_dir: str) -> dict:
     base = _load_sorted(models[names[0]], want_fm=False)
     masks = _masks(base["split_code"])
     y, w = base["y"], base["w"]
-    X_raw, raw_feats = _join_raw_features(base["cid"], base["ts"], y, raw_path, masks["train"])
-    raw_only, _ = _run_sets({"raw": lambda m: X_raw[m]}, y, w, masks)
+    X_raw, raw_feats, X_nv, nv_feats = _join_raw_features(
+        base["cid"], base["ts"], y, raw_path, masks["train"]
+    )
+    base_sets = {"raw": lambda m: X_raw[m], "nvidia_baseline": lambda m: X_nv[m]}
+    base_only, _ = _run_sets(base_sets, y, w, masks)  # baselines identical across models
 
     per_model = {}
     for n in names:
@@ -356,10 +391,10 @@ def run_downstream_multi(models: dict, raw_path: str, output_dir: str) -> dict:
         X_fm = d["X_fm"]
         fsets = {
             "fm": lambda m, X=X_fm: X[m],
-            "fusion": lambda m, X=X_fm: np.hstack([X[m], X_raw[m]]),
+            "fusion": lambda m, X=X_fm: np.hstack([X[m], X_nv[m]]),  # FM on NVIDIA baseline
         }
         res, _ = _run_sets(fsets, y, w, masks)
-        res = {"raw": raw_only["raw"], **res}
+        res = {**base_only, **res}
         per_model[n] = {
             "embedding_dim": int(X_fm.shape[1]),
             "results": res,
@@ -374,12 +409,12 @@ def run_downstream_multi(models: dict, raw_path: str, output_dir: str) -> dict:
             "trained once"
         ),
         "eval_fingerprint": fps[names[0]],
-        "raw_features": raw_feats,
+        "raw_features": nv_feats,
         "n_samples": {s: int(m.sum()) for s, m in masks.items()},
         "natural_fraud_rate": {
             s: float((w[m] * y[m]).sum() / w[m].sum()) for s, m in masks.items()
         },
-        "raw_baseline": raw_only["raw"],
+        "baselines": base_only,
         "models": per_model,
     }
     os.makedirs(output_dir, exist_ok=True)
