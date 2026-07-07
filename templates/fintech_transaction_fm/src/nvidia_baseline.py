@@ -154,6 +154,8 @@ def fit_eval(Xtr, ytr, Xva, yva, Xte, yte, params=None, device="cpu") -> dict:
         "val_ap": float(average_precision_score(yva, va)),
         "auc_roc": float(roc_auc_score(yte, te)),
         "ap": float(average_precision_score(yte, te)),
+        "best_iteration": int(model.best_iteration),
+        "n_features": int(Xtr.shape[1]),
     }
 
 
@@ -164,6 +166,6 @@ def pca_embeddings(X_train, X_val, X_test, dim=PCA_DIM):
     dim = min(dim, X_train.shape[1], len(X_train))
     pca = PCA(n_components=dim, random_state=RANDOM_STATE)
     Xtr = pca.fit_transform(X_train)
-    print(f"  PCA {X_train.shape[1]}d -> {dim}d "
-          f"(explained variance {pca.explained_variance_ratio_.sum():.2%})")
-    return Xtr, pca.transform(X_val), pca.transform(X_test)
+    explained = float(pca.explained_variance_ratio_.sum())
+    print(f"  PCA {X_train.shape[1]}d -> {dim}d (explained variance {explained:.2%})")
+    return Xtr, pca.transform(X_val), pca.transform(X_test), explained

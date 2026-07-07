@@ -113,10 +113,13 @@ def run_benchmark(
         params=XGB_PARAMS_RAW, device=device,
     )
 
+    pca_explained = None
     if embeddings_path:
         E = {s: X_emb[emb_row[m]] for s, m in masks.items()}
         Ep = {}
-        Ep["train"], Ep["val"], Ep["test"] = pca_embeddings(E["train"], E["val"], E["test"])
+        Ep["train"], Ep["val"], Ep["test"], pca_explained = pca_embeddings(
+            E["train"], E["val"], E["test"]
+        )
         print("[05] training embeddings-only (64d PCA, XGB_PARAMS_EMBED) ...")
         results["embeddings"] = fit_eval(
             Ep["train"], y["train"], Ep["val"], y["val"], Ep["test"], y["test"],
@@ -137,6 +140,14 @@ def run_benchmark(
         "n_samples": {s: int(m.sum()) for s, m in masks.items()},
         "fraud_rate": {s: float(bench.loc[m, "_target"].mean()) for s, m in masks.items()},
         "nvidia_reference": NVIDIA_REFERENCE,
+        # Self-documenting for the writeup: the exact recipe behind each number.
+        "xgb_params": {
+            "baseline": XGB_PARAMS_RAW,
+            **({"embeddings": XGB_PARAMS_EMBED, "combined": XGB_PARAMS_COMBINED}
+               if embeddings_path else {}),
+        },
+        "embedding_dim": int(X_emb.shape[1]) if embeddings_path else None,
+        "pca_explained_variance": pca_explained,
         "results": results,
     }
     for name in ("embeddings", "combined"):

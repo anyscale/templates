@@ -335,7 +335,13 @@ def pretrain(
     # Unique per invocation: reusing a name resumes that run's latest
     # checkpoint, which would silently skip training on a re-run. The
     # in-run failure restore (FailureConfig) is unaffected by the name.
-    run_name = f"transaction_fm_pretrain_{time.strftime('%Y%m%d-%H%M%S')}"
+    # Key hyperparams go in the name so TensorBoard's run list is
+    # self-describing (the full table is in the run's Text tab).
+    lr_tag = f"{lr:.0e}".replace("e-0", "e-")
+    run_name = (
+        f"fm_{size}_seq{max_len}_b{batch_size}x{num_workers}_lr{lr_tag}"
+        f"_{time.strftime('%Y%m%d-%H%M%S')}"
+    )
     tb_root = tensorboard_root(storage_base)
     tensorboard_dir = os.path.join(tb_root, run_name) if tb_root else None
 
