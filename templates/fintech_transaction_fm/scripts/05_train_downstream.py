@@ -23,6 +23,7 @@ def main():
     summary = run_downstream(
         embeddings_path=paths["embeddings"],
         output_dir=paths["downstream"],
+        raw_path=paths["raw"],  # full ~13-feature NVIDIA-style baseline via join
     )
     print_summary(summary)
 

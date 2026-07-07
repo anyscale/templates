@@ -15,12 +15,21 @@ the numbers are directly comparable when run on the real data:
 We compare three feature sets with the SAME XGBoost recipe so the only variable
 is the representation:
 
-1. ``raw``    — the target transaction's tabular fields (the "what you have today" baseline)
-2. ``fm``     — the FM embedding of the history window only (no raw fields at all)
-3. ``fusion`` — embedding concatenated with raw fields (Nubank's joint fusion)
+1. ``raw``    — ~13 hand-engineered fields of the target transaction (NVIDIA's
+   XGBoost baseline: amount, time, MCC, plus merchant/channel/geo/issuer
+   categoricals). Recovered by joining the raw transactions on
+   (card_id, timestamp); categoricals are frequency-encoded with counts fit on
+   the TRAIN split only (leakage-free). This is the "what you have today" bar.
+2. ``fm``     — the FM embedding of the history window only (no raw fields).
+3. ``fusion`` — embedding concatenated with the raw fields (Nubank joint fusion).
 
-The lift of (2) and (3) over (1) is the story: a pretrained transaction FM lets
-you drop or augment a hand-tuned feature pipeline.
+The lift of (2)/(3) over (1) is the story. With the full baseline, AUC-ROC
+saturates near the ceiling (little headroom), so PR-AUC / AP lift is the metric
+that matters — same as NVIDIA's +41.76% AP framing.
+
+``run_downstream_multi`` evaluates several models in one process: the ``raw``
+baseline is identical across them (same target set), so it is trained once and
+only ``fm``/``fusion`` re-run per model — and the raw join/encode happens once.
 """
 
 from __future__ import annotations
@@ -32,6 +41,16 @@ import numpy as np
 from sklearn.metrics import average_precision_score, roc_auc_score
 
 _SPLITS = ("train", "val", "test")
+
+# NVIDIA-style hand-engineered baseline, joined from the raw transactions.
+# Numerics enter directly (amount log-scaled); categoricals are frequency
+# encoded (train-only counts). merchant_id is an opaque high-card int -> its
+# transaction frequency ("popular vs rare merchant") is the useful, leak-free
+# signal. NVIDIA's exact 13-feature list isn't published; this is the obvious
+# TabFormer set (12 features).
+_RAW_NUM = ("amount", "hour", "day_of_week", "mcc")
+_RAW_CAT = ("merchant_id", "merchant_category", "channel", "error",
+            "issuer", "bin_region", "card_type", "home_state")
 
 
 def _fit_eval(X_tr, y_tr, X_va, y_va, X_te, y_te, w_te) -> tuple:
@@ -64,27 +83,26 @@ def _fit_eval(X_tr, y_tr, X_va, y_va, X_te, y_te, w_te) -> tuple:
     return metrics, proba
 
 
-def _load_embeddings(embeddings_path: str):
-    """Stream the embeddings Parquet into preallocated arrays.
+def _load_sorted(embeddings_path: str, want_fm: bool = True) -> dict:
+    """Stream the embeddings Parquet into preallocated arrays, canonically sorted.
 
     pandas would materialize the embedding column as millions of small object
-    arrays and np.vstack would copy them all again — peak memory ~3x the final
-    matrix, which OOM-kills the head node at `full` (~5M x 512 floats).
-    Streaming record batches into one preallocated float32 matrix keeps the
-    peak at ~1x.
+    arrays and vstack would copy them again (~3x peak). Streaming record
+    batches into one preallocated float32 matrix keeps the peak at ~1x.
 
-    Rows are then put in canonical (card_id, raw_ts, ...) order: the Parquet's
-    write order varies run to run (parallel embedding actors), and XGBoost's
-    ``subsample`` draw depends on row order even with a pinned seed — the
-    known source of fusion-metric variance. After the sort, stage-5 results
-    are a function of the embedding *set*, not of write interleaving.
+    Rows are put in canonical (card_id, raw_ts, amount, mcc) order so results
+    are a function of the embedding *set*, not of parallel-writer interleaving —
+    and so multiple models' rows align position-for-position (same target set).
+    Returns cid/ts as well so the raw features can be joined back.
     """
     import pyarrow as pa
     import pyarrow.compute as pc
     import pyarrow.dataset as pads
 
-    cols = ["embedding", "raw_amount", "raw_hour", "raw_dow", "raw_mcc",
+    cols = ["raw_amount", "raw_hour", "raw_dow", "raw_mcc",
             "label", "weight", "split", "card_id", "raw_ts"]
+    if want_fm:
+        cols = ["embedding"] + cols
     dset = pads.dataset(embeddings_path, format="parquet")
     n = dset.count_rows()
     split_values = pa.array(_SPLITS)
@@ -105,16 +123,14 @@ def _load_embeddings(embeddings_path: str):
         m = batch.num_rows
         if m == 0:
             continue
-        emb = batch.column("embedding")
-        if hasattr(emb, "storage"):
-            # Arrow extension array (Ray's tensor type, registered whenever
-            # ray.data is imported in the reading process) — unwrap to the
-            # underlying list storage so .flatten() works in both contexts.
-            emb = emb.storage
-        flat = emb.flatten().to_numpy(zero_copy_only=False)
-        if X_fm is None:
-            X_fm = np.empty((n, len(flat) // m), np.float32)
-        X_fm[i : i + m] = flat.reshape(m, -1)
+        if want_fm:
+            emb = batch.column("embedding")
+            if hasattr(emb, "storage"):
+                emb = emb.storage  # unwrap Ray tensor extension array
+            flat = emb.flatten().to_numpy(zero_copy_only=False)
+            if X_fm is None:
+                X_fm = np.empty((n, len(flat) // m), np.float32)
+            X_fm[i : i + m] = flat.reshape(m, -1)
         amt[i : i + m] = batch.column("raw_amount").to_numpy(zero_copy_only=False)
         hour[i : i + m] = batch.column("raw_hour").to_numpy(zero_copy_only=False)
         dow[i : i + m] = batch.column("raw_dow").to_numpy(zero_copy_only=False)
@@ -128,28 +144,65 @@ def _load_embeddings(embeddings_path: str):
         i += m
     assert i == n, f"read {i} rows, expected {n}"
 
-    # Canonical row order (see docstring). The fancy-index copy briefly doubles
-    # X_fm's footprint (~2x matrix peak at `full` — still well inside the head
-    # node); amt/mcc break the rare same-card-same-second ties.
     order = np.lexsort((mcc, amt, ts, cid))
-    X_fm = X_fm[order]
-    amt, hour, dow, mcc = amt[order], hour[order], dow[order], mcc[order]
-    y, w, split_code = y[order], w[order], split_code[order]
+    out = {
+        "cid": cid[order], "ts": ts[order],
+        "amt": amt[order], "hour": hour[order], "dow": dow[order], "mcc": mcc[order],
+        "y": y[order], "w": w[order], "split_code": split_code[order],
+    }
+    if want_fm:
+        out["X_fm"] = X_fm[order]
+    return out
 
-    # Raw target-transaction features (carried through tokenize -> embed).
-    X_raw = np.column_stack(
-        [np.sign(amt) * np.log1p(np.abs(amt)), hour, dow, mcc]
-    ).astype(np.float32)
-    return X_fm, X_raw, y, w, split_code
+
+def _join_raw_features(cid, ts, raw_path: str, train_mask) -> tuple:
+    """Recover NVIDIA-style hand-engineered features for each eval target.
+
+    Joins the raw transactions on (card_id, timestamp) to pull the fields the
+    embeddings don't carry (merchant, channel, geo, issuer, ...). Categoricals
+    are frequency-encoded with counts fit on the TRAIN split ONLY — leakage-free
+    (a fraud-rate/target encoding on all splits would inflate the baseline).
+    """
+    import pandas as pd
+    import pyarrow.dataset as pads
+
+    cols = ["card_id", "timestamp", *(_RAW_NUM[0:1]), "hour", "day_of_week", "mcc", *_RAW_CAT]
+    cols = list(dict.fromkeys(cols))  # dedupe while preserving order
+    raw = pads.dataset(raw_path, format="parquet").to_table(columns=cols).to_pandas()
+    raw["_ts"] = raw["timestamp"].astype("int64")
+    # (card_id, ts) is the target key; drop rare same-second dupes deterministically.
+    raw = raw.drop_duplicates(["card_id", "_ts"], keep="first").set_index(["card_id", "_ts"])
+    j = raw.reindex(pd.MultiIndex.from_arrays([np.asarray(cid), np.asarray(ts)]))
+
+    matched = float(j["amount"].notna().mean())
+    if matched < 0.99:
+        raise RuntimeError(
+            f"raw join matched only {matched:.1%} of eval targets on (card_id, "
+            "raw_ts) — the raw_ts units likely differ from raw timestamp; check "
+            "the tokenizer's raw_ts vs raw parquet 'timestamp' (int64 cast)."
+        )
+
+    feats, names = [], []
+    amt = j["amount"].to_numpy(np.float64)
+    feats.append(np.sign(amt) * np.log1p(np.abs(amt))); names.append("log_amount")
+    for c in ("hour", "day_of_week", "mcc"):
+        feats.append(j[c].to_numpy(np.float32)); names.append(c)
+    tm = np.asarray(train_mask)
+    for c in _RAW_CAT:
+        vals = j[c].astype("object").to_numpy()
+        counts = pd.Series(vals[tm]).value_counts()  # train-only frequency
+        feats.append(pd.Series(vals).map(counts).fillna(0.0).to_numpy(np.float32))
+        names.append(f"{c}_freq")
+    X = np.column_stack(feats).astype(np.float32)
+    return X, names
 
 
 def _eval_fingerprint(embeddings_path: str) -> str:
     """Order-independent hash of eval-set membership (card_id, ts, split, label).
 
-    Metrics from two runs are comparable iff their fingerprints match.
-    Eval sampling is deterministic (per-card seeded RNG in the tokenizer), so
-    this changes only when the raw data or the sampling knobs change — never
-    with model/training changes.
+    Metrics from two runs are comparable iff their fingerprints match — and the
+    multi-model path REQUIRES equal fingerprints so the shared raw baseline and
+    per-model embeddings row-align.
     """
     import hashlib
 
@@ -172,10 +225,7 @@ def _eval_fingerprint(embeddings_path: str) -> str:
     return hashlib.sha256(np.column_stack(cols)[order].tobytes()).hexdigest()[:16]
 
 
-def run_downstream(embeddings_path: str, output_dir: str) -> dict:
-    """Train + evaluate all three feature sets; persist a metrics summary."""
-    X_fm, X_raw, y, w, split_code = _load_embeddings(embeddings_path)
-
+def _masks(split_code) -> dict:
     masks = {s: split_code == c for c, s in enumerate(_SPLITS)}
     for s, m in masks.items():
         if m.sum() == 0:
@@ -183,20 +233,54 @@ def run_downstream(embeddings_path: str, output_dir: str) -> dict:
                 f"split '{s}' is empty — re-run 01/02 so splits.json temporal "
                 "cutoffs are written and applied during tokenization"
             )
-    tr, va, te = masks["train"], masks["val"], masks["test"]
+    return masks
 
-    # Assemble matrices per split instead of full-dataset (fusion would
-    # otherwise duplicate the entire embedding matrix — ~8GB at `full`).
+
+def _run_sets(feature_sets: dict, y, w, masks: dict) -> tuple:
+    tr, va, te = masks["train"], masks["val"], masks["test"]
+    results, proba = {}, {}
+    for name, fx in feature_sets.items():
+        results[name], proba[name] = _fit_eval(
+            fx(tr), y[tr], fx(va), y[va], fx(te), y[te], w[te]
+        )
+    return results, proba
+
+
+def _lifts(results: dict) -> dict:
+    out = {}
+    if "raw" in results:
+        for k in ("fm", "fusion"):
+            if k in results:
+                out[f"{k}_lift_pr_auc"] = results[k]["pr_auc"] - results["raw"]["pr_auc"]
+                out[f"{k}_lift_auc_roc"] = results[k]["auc_roc"] - results["raw"]["auc_roc"]
+    return out
+
+
+def run_downstream(embeddings_path: str, output_dir: str, raw_path: str | None = None) -> dict:
+    """Train + evaluate raw/fm/fusion for one model; persist a metrics summary.
+
+    ``raw_path`` (the raw transactions parquet) enables the full ~13-feature
+    NVIDIA-style baseline via join. If omitted, falls back to the 4 fields the
+    embeddings carry (amount, hour, dow, mcc) — weaker, kept for compatibility.
+    """
+    d = _load_sorted(embeddings_path, want_fm=True)
+    masks = _masks(d["split_code"])
+    y, w, X_fm = d["y"], d["w"], d["X_fm"]
+
+    if raw_path:
+        X_raw, raw_feats = _join_raw_features(d["cid"], d["ts"], raw_path, masks["train"])
+    else:
+        X_raw = np.column_stack(
+            [np.sign(d["amt"]) * np.log1p(np.abs(d["amt"])), d["hour"], d["dow"], d["mcc"]]
+        ).astype(np.float32)
+        raw_feats = ["log_amount", "hour", "day_of_week", "mcc"]
+
     feature_sets = {
         "raw": lambda m: X_raw[m],
         "fm": lambda m: X_fm[m],
         "fusion": lambda m: np.hstack([X_fm[m], X_raw[m]]),
     }
-    results, test_proba = {}, {}
-    for name, fx in feature_sets.items():
-        results[name], test_proba[name] = _fit_eval(
-            fx(tr), y[tr], fx(va), y[va], fx(te), y[te], w[te]
-        )
+    results, test_proba = _run_sets(feature_sets, y, w, masks)
 
     summary = {
         "protocol": (
@@ -205,6 +289,7 @@ def run_downstream(embeddings_path: str, output_dir: str) -> dict:
             "held-out most-recent 10% (NVIDIA transaction-FM blueprint protocol)"
         ),
         "eval_fingerprint": _eval_fingerprint(embeddings_path),
+        "raw_features": raw_feats,
         "n_samples": {s: int(m.sum()) for s, m in masks.items()},
         "fraud_rate": {s: float(y[m].mean()) for s, m in masks.items()},
         "natural_fraud_rate": {
@@ -212,17 +297,82 @@ def run_downstream(embeddings_path: str, output_dir: str) -> dict:
         },
         "embedding_dim": int(X_fm.shape[1]),
         "results": results,
-        "fm_lift_pr_auc": results["fm"]["pr_auc"] - results["raw"]["pr_auc"],
-        "fusion_lift_pr_auc": results["fusion"]["pr_auc"] - results["raw"]["pr_auc"],
+        **_lifts(results),
     }
 
     os.makedirs(output_dir, exist_ok=True)
     with open(os.path.join(output_dir, "downstream_metrics.json"), "w") as f:
         json.dump(summary, f, indent=2)
+    _write_test_predictions(output_dir, test_proba, y, w, masks["test"])
+    return summary
 
-    # Per-sample test scores so ROC/PR curves can be rebuilt offline. Apply
-    # `weight` when plotting to get natural-prevalence curves (same correction
-    # as the metrics above).
+
+def run_downstream_multi(models: dict, raw_path: str, output_dir: str) -> dict:
+    """Evaluate several models in one process against a shared eval set.
+
+    ``models`` maps a name -> that model's embeddings parquet path. All models
+    must share the eval set (same targets) — asserted via ``eval_fingerprint``.
+    The ``raw`` baseline and the raw join/encode run ONCE; only ``fm``/``fusion``
+    re-run per model. Writes one comparison JSON.
+    """
+    names = list(models)
+    fps = {n: _eval_fingerprint(p) for n, p in models.items()}
+    if len(set(fps.values())) != 1:
+        raise RuntimeError(
+            f"eval sets differ across models — can't share the baseline / "
+            f"row-align. fingerprints: {fps}"
+        )
+
+    # Shared: keys + labels (from any model, they match) and the raw baseline.
+    base = _load_sorted(models[names[0]], want_fm=False)
+    masks = _masks(base["split_code"])
+    y, w = base["y"], base["w"]
+    X_raw, raw_feats = _join_raw_features(base["cid"], base["ts"], raw_path, masks["train"])
+    raw_only, _ = _run_sets({"raw": lambda m: X_raw[m]}, y, w, masks)
+
+    per_model = {}
+    for n in names:
+        d = _load_sorted(models[n], want_fm=True)
+        if not (np.array_equal(d["cid"], base["cid"]) and np.array_equal(d["ts"], base["ts"])):
+            raise RuntimeError(f"model '{n}' rows don't align to the baseline after sort")
+        X_fm = d["X_fm"]
+        fsets = {
+            "fm": lambda m, X=X_fm: X[m],
+            "fusion": lambda m, X=X_fm: np.hstack([X[m], X_raw[m]]),
+        }
+        res, _ = _run_sets(fsets, y, w, masks)
+        res = {"raw": raw_only["raw"], **res}
+        per_model[n] = {
+            "embedding_dim": int(X_fm.shape[1]),
+            "results": res,
+            **_lifts(res),
+        }
+        del d, X_fm
+
+    summary = {
+        "protocol": (
+            "temporal 80/10/10 split; NVIDIA transaction-FM blueprint protocol; "
+            "shared eval set across models (equal eval_fingerprint), raw baseline "
+            "trained once"
+        ),
+        "eval_fingerprint": fps[names[0]],
+        "raw_features": raw_feats,
+        "n_samples": {s: int(m.sum()) for s, m in masks.items()},
+        "natural_fraud_rate": {
+            s: float((w[m] * y[m]).sum() / w[m].sum()) for s, m in masks.items()
+        },
+        "raw_baseline": raw_only["raw"],
+        "models": per_model,
+    }
+    os.makedirs(output_dir, exist_ok=True)
+    with open(os.path.join(output_dir, "compare_metrics.json"), "w") as f:
+        json.dump(summary, f, indent=2)
+    return summary
+
+
+def _write_test_predictions(output_dir, test_proba, y, w, te) -> None:
+    """Per-sample test scores so ROC/PR curves can be rebuilt offline (apply
+    `weight` for natural-prevalence curves)."""
     import pyarrow as pa
     import pyarrow.parquet as pq
 
@@ -240,7 +390,6 @@ def run_downstream(embeddings_path: str, output_dir: str) -> dict:
         os.path.join(output_dir, "test_predictions.parquet"),
     )
     print(f"[05] per-sample test scores -> {output_dir}/test_predictions.parquet")
-    return summary
 
 
 def print_summary(summary: dict) -> None:
@@ -251,14 +400,24 @@ def print_summary(summary: dict) -> None:
         f"samples  train={n['train']:,}  val={n['val']:,}  test={n['test']:,} "
         f"(natural test fraud rate {nfr['test']:.4%})"
     )
-    print(
-        f"eval fingerprint: {summary['eval_fingerprint']} "
-        "(metrics comparable across runs iff this matches)"
-    )
-    print(f"{'feature set':<10} {'AUC-ROC':>10} {'PR-AUC':>10}")
-    print("-" * 32)
-    for name, r in summary["results"].items():
-        print(f"{name:<10} {r['auc_roc']:>10.4f} {r['pr_auc']:>10.4f}")
-    print("-" * 32)
-    print(f"FM-only PR-AUC lift vs raw:  {summary['fm_lift_pr_auc']:+.4f}")
-    print(f"Fusion PR-AUC lift vs raw:   {summary['fusion_lift_pr_auc']:+.4f}")
+    print(f"eval fingerprint: {summary['eval_fingerprint']}")
+    print(f"raw baseline features ({len(summary['raw_features'])}): "
+          f"{', '.join(summary['raw_features'])}")
+
+    def _block(results, lifts):
+        print(f"{'feature set':<10} {'AUC-ROC':>10} {'PR-AUC':>10}")
+        print("-" * 32)
+        for name, r in results.items():
+            print(f"{name:<10} {r['auc_roc']:>10.4f} {r['pr_auc']:>10.4f}")
+        for k in ("fm", "fusion"):
+            if f"{k}_lift_pr_auc" in lifts:
+                print(f"  {k} lift: PR-AUC {lifts[f'{k}_lift_pr_auc']:+.4f}  "
+                      f"AUC {lifts[f'{k}_lift_auc_roc']:+.4f}")
+
+    if "models" in summary:  # multi
+        for name, m in summary["models"].items():
+            print(f"\n=== {name} ===")
+            _block(m["results"], m)
+    else:
+        print("-" * 32)
+        _block(summary["results"], summary)
