@@ -11,6 +11,14 @@ import ray
 
 
 def load_data(data_dir="./data"):
+    # In CI, short-circuit to the fake-data smoke set (see `load_test_data`
+    # below). The real CIFAR-10 download from cs.toronto.edu is slow enough
+    # (~25 kB/s from the workspace network) to blow past the per-test timeout;
+    # tests/parallel-experiments/tests.sh sets this env var so the notebook can
+    # still exercise the tune sweep end-to-end without hitting the network.
+    if os.environ.get("CIFAR_USE_FAKE") == "1":
+        return load_test_data()
+
     transform = transforms.Compose([
         transforms.ToTensor(),
         transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
