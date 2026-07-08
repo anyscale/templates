@@ -23,6 +23,14 @@ model:
   n_heads: 8
   n_layers: 8
   dim_ff: 2048
+  # RUN-2b ablation flags (gemini_ideas.txt; reviewer-vetted). Each is an
+  # independent knob; off = the exact previous architecture.
+  periodic_amount: true      # G2: Fourier channel on signed log-amount
+  periodic_time: true        # G3: Time2Vec channel on log time-deltas
+  n_periodic: 16
+  intra_tx_attention: false  # G1 DEFERRED: replaces the fusion operator +
+                             # inflates step time/memory — confounds Run-2's
+                             # tokenizer-parity question. Ablate separately.
 
 pretrain:
   epochs: 20                 # epochs are cheap: non-overlapping 512-txn windows = ~38k/epoch

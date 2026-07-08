@@ -23,6 +23,7 @@ generative/NTP variant.
 from __future__ import annotations
 
 import json
+import math
 
 import torch
 import torch.nn as nn
@@ -51,6 +52,13 @@ class TransactionFM(nn.Module):
         infonce_max_anchors: int = 4096,
         signal_fields: list | tuple = (),
         signal_vocab_sizes: dict | None = None,
+        # RUN-2b ablation flags (gemini_ideas.txt + TEARDOWN.md #3) — all
+        # default OFF = byte-identical to the previous architecture.
+        intra_tx_attention: bool = False,  # G1: field-stack MHA fusion
+        intra_tx_heads: int = 4,
+        periodic_amount: bool = False,     # G2: Fourier log-amount channel
+        periodic_time: bool = False,       # G3: Time2Vec delta channel
+        n_periodic: int = 16,
     ):
         super().__init__()
         self.dynamic_fields = dynamic_fields
@@ -80,6 +88,30 @@ class TransactionFM(nn.Module):
             self.time_emb = nn.Embedding(n_time_buckets, d_model, padding_idx=PAD)
         self.input_norm = nn.LayerNorm(d_model)
         self.dropout = nn.Dropout(dropout)
+
+        # G1 — intra-transaction attention fusion (FATA-Trans's field
+        # transformer, TEARDOWN.md #3): a small MHA over the per-field
+        # embedding stack with learned attribute-slot positions, added as a
+        # RESIDUAL on top of the summed representation (flag off = old model).
+        self.use_intra_tx = intra_tx_attention
+        if intra_tx_attention:
+            n_slots = len(dynamic_fields) + 1 + int(self.time_aware)  # fields + statics (+ gap)
+            self.attr_slot_emb = nn.Parameter(torch.randn(n_slots, d_model) * 0.02)
+            self.intra_attn = nn.MultiheadAttention(
+                d_model, intra_tx_heads, dropout=dropout, batch_first=True
+            )
+            self.intra_norm = nn.LayerNorm(d_model)
+        # G2/G3 — continuous channels (Gorishniy-style periodic features):
+        # learned frequency banks over signed log-amount / log time-delta,
+        # added alongside (not replacing) the bucketed tokens.
+        self.use_periodic_amount = periodic_amount
+        self.use_periodic_time = periodic_time
+        if periodic_amount:
+            self.amount_freq = nn.Parameter(torch.randn(n_periodic))
+            self.amount_proj = nn.Linear(2 * n_periodic, d_model)
+        if periodic_time:
+            self.tdelta_freq = nn.Parameter(torch.randn(n_periodic))
+            self.tdelta_proj = nn.Linear(2 * n_periodic, d_model)
 
         layer = nn.TransformerEncoderLayer(
             d_model=d_model,
@@ -127,6 +159,7 @@ class TransactionFM(nn.Module):
 
         # .long(): token columns arrive as int32 (storage-efficient at long
         # seq_len); nn.Embedding requires int64 indices.
+        parts = []  # per-field [B,S,d] embeddings (G1 attends over this stack)
         x = torch.zeros(B, S, self.d_model, device=device)
         for f in self.dynamic_fields:
             if (
@@ -139,19 +172,48 @@ class TransactionFM(nn.Module):
                 lo = batch["d_amount_bucket"].long()
                 hi = torch.clamp(lo + 1, max=self.dyn_emb[f].num_embeddings - 1)
                 frac = batch["d_amount_frac"].unsqueeze(-1).float()  # [B,S,1]
-                x = x + (1.0 - frac) * self.dyn_emb[f](lo) + frac * self.dyn_emb[f](hi)
+                e = (1.0 - frac) * self.dyn_emb[f](lo) + frac * self.dyn_emb[f](hi)
             else:
-                x = x + self.dyn_emb[f](batch[f"d_{f}"].long())
+                e = self.dyn_emb[f](batch[f"d_{f}"].long())
+            x = x + e
+            if self.use_intra_tx:
+                parts.append(e)
 
         static_vec = torch.zeros(B, self.d_model, device=device)
         for f in self.static_fields:
             static_vec = static_vec + self.static_emb[f](batch[f"s_{f}"].long())
         x = x + static_vec.unsqueeze(1)  # broadcast static over all positions
+        if self.use_intra_tx:
+            parts.append(static_vec.unsqueeze(1).expand(B, S, self.d_model))
 
         pos = torch.arange(S, device=device).unsqueeze(0).expand(B, S)
         x = x + self.pos_emb(pos)
         if self.time_aware and "time_bucket" in batch:
-            x = x + self.time_emb(batch["time_bucket"].long())  # inter-txn gap
+            te = self.time_emb(batch["time_bucket"].long())  # inter-txn gap
+            x = x + te
+            if self.use_intra_tx:
+                parts.append(te)
+
+        # G2/G3: continuous periodic channels ride alongside the buckets.
+        if self.use_periodic_amount and "d_amount_log" in batch:
+            v = batch["d_amount_log"].float().unsqueeze(-1)  # [B,S,1]
+            ang = 2.0 * math.pi * v * self.amount_freq
+            x = x + self.amount_proj(torch.cat([ang.sin(), ang.cos()], dim=-1))
+        if self.use_periodic_time and "d_delta_log" in batch:
+            v = batch["d_delta_log"].float().unsqueeze(-1)
+            ang = 2.0 * math.pi * v * self.tdelta_freq
+            x = x + self.tdelta_proj(torch.cat([ang.sin(), ang.cos()], dim=-1))
+
+        # G1: intra-transaction attention over the field stack, residual on
+        # top of the sum (gradient path through the sum stays intact — the
+        # attention only has to learn the interaction CORRECTIONS).
+        if self.use_intra_tx:
+            stack = torch.stack(parts, dim=2)  # [B,S,F,d]
+            stack = stack + self.attr_slot_emb.view(1, 1, -1, self.d_model)
+            flat = stack.reshape(B * S, stack.shape[2], self.d_model)
+            fused, _ = self.intra_attn(flat, flat, flat, need_weights=False)
+            x = x + self.intra_norm(fused.mean(dim=1).view(B, S, self.d_model))
+
         x = self.dropout(self.input_norm(x))
 
         pad_mask = batch["attention_mask"] == 0  # True where padding
@@ -500,4 +562,11 @@ def mask_batch(batch: dict, dynamic_fields: list, mask_prob: float = 0.15):
         frac = batch["d_amount_frac"].clone()
         frac[masked["amount_bucket"]] = 0.0
         corrupted["d_amount_frac"] = frac
+    # G2 leak fix (MANDATORY): the continuous log-amount channel must vanish
+    # wherever the amount token is masked, or the amount MLM head reads its
+    # own answer (canary: acc_amount_bucket ~1.0 from step 1).
+    if "d_amount_log" in batch and "amount_bucket" in masked:
+        al = batch["d_amount_log"].clone()
+        al[masked["amount_bucket"]] = 0.0
+        corrupted["d_amount_log"] = al
     return corrupted, targets, masked

@@ -95,8 +95,11 @@ def train_func(config: dict):
     signal_fields = vocab.get("signal_fields", [])
     weighting = config.get("loss_weighting", "uncertainty")
 
-    # Per-column dtypes: tokens are int64, the soft-bin amount weight is float32.
-    dtypes = {"d_amount_frac": torch.float32} if vocab.get("amount_mode") == "soft" else None
+    # dtypes=None: Ray's iter_torch_batches requires a dtypes dict to cover
+    # EVERY column (partial dicts KeyError on unlisted columns like card_id).
+    # Arrow already delivers int32 token columns and float32 continuous
+    # channels with their stored dtypes; the model casts (.long()/.float()).
+    dtypes = None
 
     model = build_model(
         vocab_path,

@@ -169,7 +169,18 @@ DYNAMIC_FIELDS = [
     "month",
     "direction",
     "prev_error",
+    "merchant_recency",  # RUN-2b: time since THIS card last hit THIS merchant
 ]
+
+# merchant_recency vocab: the log-hour gap buckets + a dedicated FIRST_VISIT
+# id — "new merchant for this card" is a classic novelty fraud signal the
+# per-card time delta cannot express.
+MERCHANT_FIRST_VISIT = N_TIME_BUCKETS + _RESERVED
+
+# Continuous input channels (RUN-2b, G2/G3): float columns emitted alongside
+# the bucketed tokens; the model consumes them only when its periodic_* flags
+# are on, so the schema is a strict superset of the old one.
+CONTINUOUS_FIELDS = ["amount_log", "delta_log"]
 # RUN-2 (TEARDOWN.md #5): user/card identity REMOVED from the FM input.
 # Broadcasting identity into every position made the pooled embedding and
 # its PCA identity-dominated (and gave the seq-CL task a trivial shortcut);
@@ -206,6 +217,7 @@ def field_vocab_sizes(merchant_vocab: dict | None = None) -> dict:
         "merchant_bucket": merchant_rows,
         "mcc": len(KNOWN_MCCS) + _RESERVED,  # exact closed vocab (RUN-2)
         "zip3": N_ZIP3 + _RESERVED,
+        "merchant_recency": N_TIME_BUCKETS + 1 + _RESERVED,  # + FIRST_VISIT
     }
     for f, v in DYNAMIC_CATEGORICAL_VOCAB.items():
         sizes[f] = len(v) + _RESERVED
@@ -275,6 +287,7 @@ def write_vocab(output_path: str, merchant_vocab: dict | None = None) -> None:
                 "time_aware": TIME_AWARE,
                 "n_time_buckets": n_time_bucket_rows(),
                 "amount_mode": AMOUNT_MODE,
+                "continuous_fields": CONTINUOUS_FIELDS,
                 "merchant_vocab_mode": "learned" if merchant_vocab else "hashed",
                 "merchant_vocab": merchant_vocab,
                 # InfoNCE only when the merchant vocab is genuinely large; the
@@ -316,6 +329,8 @@ def _stack_rows(rows: list, seq_len: int, soft: bool) -> dict:
         "row_id": np.zeros(0, np.int64),
         "attention_mask": np.zeros((0, seq_len), np.int32),
         "time_bucket": np.zeros((0, seq_len), np.int32),
+        "d_amount_log": np.zeros((0, seq_len), np.float32),
+        "d_delta_log": np.zeros((0, seq_len), np.float32),
         "y_error": np.zeros((0, seq_len), np.int32),
         "raw_amount": np.zeros(0, np.float32),
         "raw_hour": np.zeros(0, np.int64),
@@ -466,6 +481,24 @@ def make_tokenize_group_fn(
         # Previous txn's network signal: shifted one position, so it is known
         # at auth time — the target's own outcome never enters the input.
         full["prev_error"] = np.concatenate([[np.int64(OOV)], error_ids[:-1]])
+        # RUN-2b: per-merchant recency — hours since THIS card last hit THIS
+        # merchant (log-bucketed; dedicated FIRST_VISIT id for new merchants).
+        # Vectorized: sort by (merchant, time), diff within merchant runs.
+        mr = np.full(n, MERCHANT_FIRST_VISIT, dtype=np.int64)
+        ts_i = ts.astype(np.int64)
+        o2 = np.lexsort((ts_i, merch_ids))
+        same = merch_ids[o2][1:] == merch_ids[o2][:-1]
+        gaps_h = (ts_i[o2][1:] - ts_i[o2][:-1]) / 3600.0
+        repeat_idx = o2[1:][same]
+        mr[repeat_idx] = _delta_to_bucket(gaps_h[same])
+        full["merchant_recency"] = mr
+        # RUN-2b continuous channels (G2/G3): signed log-amount and the
+        # log-hour gap as floats, alongside their bucketed tokens.
+        amount_log_full = (np.sign(amounts) * np.log1p(np.abs(amounts))).astype(np.float32)
+        deltas_full = np.zeros(n, dtype=np.float64)
+        if n > 1:
+            deltas_full[1:] = (ts_i[1:] - ts_i[:-1]) / 3600.0
+        delta_log_full = np.log10(np.clip(deltas_full, 1e-2, None)).astype(np.float32)
         if soft:
             soft_lo, soft_frac = _amount_to_soft(amounts)
         # String-categorical statics via their vocab. RUN-2: user/card identity
@@ -509,6 +542,13 @@ def make_tokenize_group_fn(
             r["attention_mask"] = np.concatenate(
                 [np.zeros(pad, np.int32), np.ones(L, np.int32)]
             )
+            # Continuous channels (G2/G3), PAD -> 0.0.
+            r["d_amount_log"] = np.concatenate(
+                [np.zeros(pad, np.float32), amount_log_full[lo:hi]]
+            ).astype(np.float32)
+            r["d_delta_log"] = np.concatenate(
+                [np.zeros(pad, np.float32), delta_log_full[lo:hi]]
+            ).astype(np.float32)
             # Inter-transaction gap, recomputed within the window (first gap 0).
             deltas = np.zeros(L, dtype=np.float64)
             if L > 1:

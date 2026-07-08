@@ -56,6 +56,8 @@ class EmbeddingExtractor:
             return torch.as_tensor(v, dtype=dtype, device=self.device)
 
         tensors = {k: to_tensor(k, torch.long) for k in cols}
+        for c in self.vocab.get("continuous_fields", []):  # G2/G3 float channels
+            tensors[f"d_{c}"] = to_tensor(f"d_{c}", torch.float32)
         if self.vocab.get("amount_mode") == "soft":
             tensors["d_amount_frac"] = to_tensor("d_amount_frac", torch.float32)
         with torch.inference_mode():
@@ -106,6 +108,8 @@ class TargetReadoutExtractor(EmbeddingExtractor):
             return t.as_tensor(v, dtype=dtype, device=self.device)
 
         tensors = {k: to_tensor(k, t.long) for k in cols}
+        for c in self.vocab.get("continuous_fields", []):  # G2/G3 float channels
+            tensors[f"d_{c}"] = to_tensor(f"d_{c}", t.float32)
         if self.vocab.get("amount_mode") == "soft":
             tensors["d_amount_frac"] = to_tensor("d_amount_frac", t.float32)
 
@@ -121,6 +125,10 @@ class TargetReadoutExtractor(EmbeddingExtractor):
             frac = masked["d_amount_frac"].clone()
             frac[:, -1] = 0.0
             masked["d_amount_frac"] = frac
+        if "d_amount_log" in masked:  # G2 leak fix at the masked target too
+            al = masked["d_amount_log"].clone()
+            al[:, -1] = 0.0
+            masked["d_amount_log"] = al
 
         # single-transaction view: only the target position visible
         single = dict(tensors)
