@@ -66,7 +66,7 @@ For more information on LLM serving and Ray Serve, see the following:
 
 ## Dependencies and compute resource requirements
 
-**Docker Image:** For optimal compatibility and performance, use the Docker image `anyscale/ray-llm:2.52.0-py311-cu128`. This image includes Ray 2.52.0, Python 3.11, and CUDA 12.8 support, providing all necessary dependencies for LLM serving with GPU acceleration.
+**Docker Image:** For optimal compatibility and performance, use the Docker image `anyscale/ray-llm:2.56.0-py312-cu130`. This image includes Ray 2.56.0, Python 3.12, and CUDA 13.0 support, providing all necessary dependencies for LLM serving with GPU acceleration.
 
 **GPU Requirements:** The deployment requires two compute resources: one L4 GPU (g6.2xlarge instance, 24 GB GPU memory) for the LLM service, and one m5d.xlarge (4 vCPU) for the MCP and agent services.
 
