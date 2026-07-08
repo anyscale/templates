@@ -1,0 +1,28 @@
+# Full-test-period eval for the 40-epoch xxl model (chained after
+# job_xxl_continue). Same as job_fulltest, xxl only. Extraction at seq 2048
+# is ~4x the per-window cost of 512 — expect the longest fulltest pass.
+name: fintech-fm-fulltest-xxl
+entrypoint: >-
+  BASE=/mnt/user_storage/transaction-fm-v2 &&
+  python scripts/fulltest_eval.py --scale xxl --base-dir $BASE --device cuda &&
+  python scripts/bootstrap_ci.py --scale xxl_fulltest --base-dir $BASE --draws 500
+working_dir: .
+requirements: requirements.txt
+env_vars:
+  RAY_DEFAULT_OBJECT_STORE_MEMORY_PROPORTION: "0.3"
+compute_config:
+  cloud: aws-public-us-west-2
+  head_node:
+    instance_type: g5.8xlarge
+  worker_nodes:
+    - name: gpu-1x
+      instance_type: g5.xlarge
+      min_nodes: 0
+      max_nodes: 8
+      resources:
+        CPU: 0
+    - name: cpu-workers
+      instance_type: m5.4xlarge
+      min_nodes: 0
+      max_nodes: 4
+max_retries: 0
