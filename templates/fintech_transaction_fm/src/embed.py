@@ -76,6 +76,73 @@ class EmbeddingExtractor:
         return out
 
 
+class TargetReadoutExtractor(EmbeddingExtractor):
+    """Run-1 readout surgery (see TEARDOWN.md): target-conditioned features.
+
+    Per eval window (right-aligned, last position = target transaction):
+    * ``embedding_masked_last`` — target-position state with the target's
+      dynamic fields MASKED (the state the MLM actually trains)
+    * ``surprise`` — per-field CE of the true target fields = anomaly score
+      conditioned on history
+    * ``embedding_single`` — the window truncated to ONLY the target txn:
+      the direct analogue of NVIDIA's single-transaction embedding
+    """
+
+    def __call__(self, batch: dict) -> dict:
+        import torch as t
+
+        from .tokenizer import MASK
+
+        cols = (
+            [f"d_{f}" for f in self.vocab["dynamic_fields"]]
+            + [f"s_{f}" for f in self.vocab["static_fields"]]
+            + ["attention_mask"]
+        )
+        if self.vocab.get("time_aware"):
+            cols.append("time_bucket")
+
+        def to_tensor(k, dtype):
+            v = np.stack(batch[k]) if batch[k].dtype == object else batch[k]
+            return t.as_tensor(v, dtype=dtype, device=self.device)
+
+        tensors = {k: to_tensor(k, t.long) for k in cols}
+        if self.vocab.get("amount_mode") == "soft":
+            tensors["d_amount_frac"] = to_tensor("d_amount_frac", t.float32)
+
+        # true target field ids + masked-target view (last position -> MASK)
+        targets, masked = {}, dict(tensors)
+        for f in self.vocab["dynamic_fields"]:
+            col = tensors[f"d_{f}"]
+            targets[f] = col[:, -1].clone()
+            mcol = col.clone()
+            mcol[:, -1] = MASK
+            masked[f"d_{f}"] = mcol
+        if "d_amount_frac" in masked:
+            frac = masked["d_amount_frac"].clone()
+            frac[:, -1] = 0.0
+            masked["d_amount_frac"] = frac
+
+        # single-transaction view: only the target position visible
+        single = dict(tensors)
+        am = t.zeros_like(tensors["attention_mask"])
+        am[:, -1] = 1
+        single["attention_mask"] = am
+
+        with t.inference_mode():
+            h_masked, surprise = self.model.target_readout(masked, targets)
+            h_single = self.model.sequence_embedding(single, pooling="last")
+
+        passthrough = [
+            "card_id", "row_id", "label", "split", "weight",
+            "raw_amount", "raw_hour", "raw_dow", "raw_mcc", "raw_ts",
+        ]
+        out = {k: batch[k] for k in passthrough if k in batch}
+        out["embedding_masked_last"] = [r for r in h_masked.cpu().numpy().astype(np.float32)]
+        out["surprise"] = [r for r in surprise.cpu().numpy().astype(np.float32)]
+        out["embedding_single"] = [r for r in h_single.cpu().numpy().astype(np.float32)]
+        return out
+
+
 def extract_embeddings(
     tokenized_path: str | None = None,
     checkpoint_dir: str = "",
@@ -86,6 +153,7 @@ def extract_embeddings(
     pooling: str = "last",
     ds=None,
     gpus_per_worker: float | None = None,
+    readout: str = "pooled",
 ) -> str:
     """Run distributed batch embedding extraction and write Parquet.
 
@@ -130,7 +198,7 @@ def extract_embeddings(
     if gpus_per_worker is None:
         gpus_per_worker = 1.0
     ds = ds.map_batches(
-        EmbeddingExtractor,
+        TargetReadoutExtractor if readout == "target" else EmbeddingExtractor,
         fn_constructor_kwargs={"checkpoint_dir": checkpoint_dir, "pooling": pooling},
         batch_size=batch_size,
         # max_tasks_in_flight: queue several batches per actor (default 4 is

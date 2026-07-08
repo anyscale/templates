@@ -32,6 +32,7 @@ from src.nvidia_baseline import (  # noqa: E402
     FEATURE_COLS,
     XGB_PARAMS_COMBINED,
     XGB_PARAMS_EMBED,
+    XGB_PARAMS_RAW,
     make_encoder,
 )
 
@@ -155,9 +156,13 @@ def main():
             ("xgb", lambda: _xgb_probe(E, y, masks, XGB_PARAMS_EMBED, device=args.device)),
             ("logistic_fusion", lambda: _torch_probe(fused, y, masks, hidden=None, device=args.device)),
             ("xgb_fusion", lambda: _xgb_probe(fused, y, masks, XGB_PARAMS_COMBINED, device=args.device)),
+            # COMBINED's depth-12/lr-0.003 was Optuna-tuned for 77 dims; for
+            # low-dim features (e.g. the 7-dim surprise vector) the baseline
+            # recipe is the fair fusion harness.
+            ("xgb_fusion_rawparams", lambda: _xgb_probe(fused, y, masks, XGB_PARAMS_RAW, device=args.device)),
         ]
         for i, (mname, fit) in enumerate(fits, 1):
-            print(f"[probe] {i}/5 {mname}")
+            print(f"[probe] {i}/{len(fits)} {mname}")
             r[mname] = fit()
             print(f"[probe]   -> {mname}: auc={r[mname]['auc_roc']:.4f} ap={r[mname]['ap']:.4f}")
         results[name] = r

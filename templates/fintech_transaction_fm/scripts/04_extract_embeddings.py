@@ -26,6 +26,9 @@ def main():
     p.add_argument("--checkpoint-dir", default=None)
     p.add_argument("--pooling", default="last", choices=["last", "mean"])
     p.add_argument("--output", default=None)
+    p.add_argument("--readout", default="pooled", choices=["pooled", "target"],
+                   help="target = Run-1 readout surgery: masked-target state + "
+                        "per-field surprise + single-txn embedding (TEARDOWN.md)")
     args = p.parse_args()
 
     base = args.base_dir or get_demo_base_dir()
@@ -42,6 +45,7 @@ def main():
         batch_size=args.batch_size or embed_cfg["batch_size"],
         pooling=args.pooling,
         gpus_per_worker=embed_cfg.get("gpus_per_worker"),
+        readout=args.readout,
     )
 
 

@@ -319,6 +319,37 @@ class TransactionFM(nn.Module):
         return total, stats
 
     @torch.no_grad()
+    def target_readout(self, batch: dict, targets: dict):
+        """Run-1 readout surgery: target-conditioned features from an MLM.
+
+        ``batch`` must arrive with the LAST position's dynamic fields already
+        set to MASK (sequences are right-aligned; last position = the target
+        transaction). ``targets`` maps field -> (B,) true token ids at that
+        position. Returns:
+
+        * ``h_masked``  — the target-position hidden state under masking: the
+          ONLY state this MLM was ever trained to make informative (field_loss
+          supervises hidden[masked] exclusively), unlike the unmasked pooled
+          readouts that failed.
+        * ``surprise`` — (B, n_dynamic_fields) per-field cross-entropy of the
+          TRUE target fields under the MLM heads: literally "how anomalous is
+          this transaction given this card's history", the quantity a fraud
+          model wants. InfoNCE fields score against the full tied table
+          (exact softmax — cheap at inference).
+        """
+        hidden = self.encode(batch)
+        h = hidden[:, -1, :]
+        cols = []
+        for f in self.dynamic_fields:
+            tg = targets[f].long()
+            if f in self.infonce_fields:
+                logits = self.infonce_proj[f](h) @ self.dyn_emb[f].weight.t()
+            else:
+                logits = self.mlm_heads[f](h)
+            cols.append(F.cross_entropy(logits, tg, reduction="none"))
+        return h, torch.stack(cols, dim=1)
+
+    @torch.no_grad()
     def sequence_embedding(self, batch: dict, pooling: str = "mean") -> torch.Tensor:
         """Pool final hidden states into one vector per sequence.
 
