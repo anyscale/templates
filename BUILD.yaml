@@ -645,7 +645,7 @@
   owner_team: ray-serve
   dir: templates/asynchronous_inference
   cluster_env:
-    image_uri: anyscale/ray:2.55.1-slim-py312-cu128
+    image_uri: anyscale/ray:2.56.0-slim-py312-cu128
   compute_config:
     AWS: configs/basic-single-node/aws.yaml
     GCP: configs/basic-single-node/gce.yaml
