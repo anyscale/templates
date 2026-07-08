@@ -1,0 +1,36 @@
+# RUN-G1 — attention fusion vs summation, single-variable.
+# Run IMMEDIATELY AFTER the RUN-2 retrain: reuses its tokenized/full and
+# benchmark (KEPT in place — only model/embeddings/downstream move aside),
+# so the two runs differ in exactly one flag (configs/full_g1.yaml).
+# Skips 01/02 (data identical by construction) and 06 (reco not
+# decision-relevant here). Evaluated with the pooled trio AND the surprise
+# readout, same as RUN-2.
+name: fintech-fm-g1
+entrypoint: >-
+  BASE=/mnt/user_storage/transaction-fm-v2 &&
+  STAMP=$(date +%s) &&
+  for d in embeddings downstream model; do if [ -e $BASE/$d/full ]; then mv $BASE/$d/full $BASE/$d/full_old_$STAMP; fi; done &&
+  python scripts/03_pretrain.py --scale full --scale-config configs/full_g1.yaml --base-dir $BASE --use-gpu &&
+  python scripts/04_extract_embeddings.py --scale full --scale-config configs/full_g1.yaml --base-dir $BASE --use-gpu --num-workers 8 &&
+  python scripts/05_train_downstream.py --scale full --scale-config configs/full_g1.yaml --base-dir $BASE --with-embeddings &&
+  python scripts/04_extract_embeddings.py --scale full --scale-config configs/full_g1.yaml --base-dir $BASE --use-gpu --num-workers 8 --readout target --output $BASE/embeddings/full_g1_target
+working_dir: .
+requirements: requirements.txt
+env_vars:
+  RAY_DEFAULT_OBJECT_STORE_MEMORY_PROPORTION: "0.5"
+compute_config:
+  cloud: aws-public-us-west-2
+  head_node:
+    instance_type: m5.4xlarge
+  worker_nodes:
+    - name: gpu-1x
+      instance_type: g5.xlarge
+      min_nodes: 0
+      max_nodes: 8
+      resources:
+        CPU: 0
+    - name: cpu-workers
+      instance_type: m5.4xlarge
+      min_nodes: 0
+      max_nodes: 2
+max_retries: 1
