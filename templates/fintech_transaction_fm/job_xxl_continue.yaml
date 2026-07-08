@@ -1,0 +1,36 @@
+# Continue the 2048-context pretrain from epoch 20 to 40 (undertraining vs
+# burst-dilution diagnostic). Resumes the EXISTING ray_results run by name —
+# tokenized/xxl is reused (no 01/02), the prior model/embeddings/downstream
+# are set aside, and the LR schedule warm-restarts on the recomputed
+# 40-epoch cosine (disclosed: this is 20+20, not a pristine 40-epoch run).
+name: fintech-transaction-fm-xxl-continue
+entrypoint: >-
+  BASE=/mnt/user_storage/transaction-fm-v2 &&
+  RUN=$(ls -d $BASE/ray_results/fm_xxl_seq2048_* | sort | tail -1 | xargs basename) &&
+  echo "resuming run: $RUN" &&
+  STAMP=$(date +%s) &&
+  for d in embeddings downstream model; do if [ -e $BASE/$d/xxl ]; then mv $BASE/$d/xxl $BASE/$d/xxl_old_$STAMP; fi; done &&
+  python scripts/03_pretrain.py --scale xxl --scale-config configs/xxl40.yaml --base-dir $BASE --use-gpu --run-name $RUN &&
+  python scripts/04_extract_embeddings.py --scale xxl --base-dir $BASE --use-gpu --num-workers 8 &&
+  python scripts/05_train_downstream.py --scale xxl --base-dir $BASE --with-embeddings --device cuda &&
+  python scripts/bootstrap_ci.py --scale xxl --base-dir $BASE
+working_dir: .
+requirements: requirements.txt
+env_vars:
+  RAY_DEFAULT_OBJECT_STORE_MEMORY_PROPORTION: "0.5"
+compute_config:
+  cloud: aws-public-us-west-2
+  head_node:
+    instance_type: g5.4xlarge   # 05 no-PCA path needs the RAM; XGBoost on CUDA
+  worker_nodes:
+    - name: gpu-1x
+      instance_type: g5.xlarge
+      min_nodes: 0
+      max_nodes: 8
+      resources:
+        CPU: 0
+    - name: cpu-workers
+      instance_type: m5.4xlarge
+      min_nodes: 0
+      max_nodes: 4
+max_retries: 1

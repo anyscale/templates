@@ -19,6 +19,9 @@ def main():
     p.add_argument("--base-dir", default=None)
     p.add_argument("--num-workers", type=int, default=None)
     p.add_argument("--use-gpu", action="store_true")
+    p.add_argument("--run-name", default=None,
+                   help="resume an existing ray_results run by name (pair "
+                        "with a --scale-config that raises epochs)")
     args = p.parse_args()
 
     base = args.base_dir or get_demo_base_dir()
@@ -40,6 +43,7 @@ def main():
         max_len=cfg["tokenize"]["seq_len"],
         arch=cfg["model"],
         storage_base=base,
+        run_name=args.run_name,
         **preset,
     )
 

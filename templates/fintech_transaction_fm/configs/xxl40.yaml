@@ -1,0 +1,50 @@
+# CONTINUATION VARIANT of xxl.yaml: epochs 40. Use with --scale xxl --scale-config configs/xxl40.yaml --run-name <existing>.
+# Scale: xxl — max the context differentiator. Same ~29M-param NVIDIA-parity
+# model as full/xl (512d / 8L / 8H), but seq_len 2048 = 2048 transactions of
+# history per sample vs NVIDIA's ~315 (their 4096-token context at ~12
+# tokens/txn) — a ~6.5x context advantage at parity capacity. ~2048 is near
+# this data's ceiling (~3,900 txns/card avg) before windows are mostly padding.
+# The model uses memory-efficient attention, so memory ~ batch x seq (linear):
+# seq-1024/batch-64 measured ~13.8 GiB, so seq-2048/batch-32 ~ same. Needs
+# 24GB GPUs (A10G/L4). See configs/smoke.yaml for what each key means.
+
+data:
+  num_cards: 200000          # > the ~6.1k real cards = use every card
+
+tokenize:
+  seq_len: 2048              # 2048 txns/sample — 6.5x NVIDIA's ~315
+  target_eval_samples: 400000
+  max_pretrain_windows: null
+  holdout_keep: 0.1          # ~0.5M eval windows (not ~5M): still thousands of
+                             # fraud cases for a stable PR-AUC, ~10x faster tail
+  shuffle_partitions: 128
+  merchant_vocab: learned
+  merchant_top_k: 20000
+  merchant_aggregate: 1024
+
+model:
+  d_model: 512               # NVIDIA-parity capacity (unchanged from full/xl)
+  n_heads: 8
+  n_layers: 8
+  dim_ff: 2048
+  periodic_amount: true      # Fourier channel on signed log-amount
+  periodic_time: true        # Time2Vec channel on log time-deltas
+  n_periodic: 16
+
+pretrain:
+  epochs: 40                 # CONTINUATION: 20 -> 40 (warm-restarted cosine; see job_xxl_continue)
+  batch_size: 16             # seq 2048 on A10G 24GB: batch 32 OOMed (memory
+                             # scales worse than batch x seq at long seq +
+                             # large contiguous tensors fragment), so halve.
+  lr: 3.0e-4                 # global batch = 16 x 4 = 64; conservative
+  num_workers: 4
+  use_gpu: true
+  use_fsdp: false
+  infonce_negatives: 1024
+  infonce_warmup_frac: 0.3   # anneal the merchant head in (see small.yaml)
+
+embed:
+  num_workers: 4
+  use_gpu: true
+  batch_size: 32             # seq 2048 inference: conservative to avoid OOM
+  gpus_per_worker: 1.0       # one embed actor per A10G: 2-per-GPU OOMed at this seq/batch

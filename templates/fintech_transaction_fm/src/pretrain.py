@@ -301,6 +301,7 @@ def pretrain(
     infonce_warmup_frac: float = 0.0,
     storage_base: str | None = None,
     seed: int = 0,
+    run_name: str | None = None,
 ) -> dict:
     """Run distributed pretraining and persist the final checkpoint.
 
@@ -331,11 +332,15 @@ def pretrain(
     # in-run failure restore (FailureConfig) is unaffected by the name.
     # Key hyperparams go in the name so TensorBoard's run list is
     # self-describing (the full table is in the run's Text tab).
-    lr_tag = f"{lr:.0e}".replace("e-0", "e-")
-    run_name = (
-        f"fm_{size}_seq{max_len}_b{batch_size}x{num_workers}_lr{lr_tag}"
-        f"_{time.strftime('%Y%m%d-%H%M%S')}"
-    )
+    # ``run_name`` override: pass an EXISTING run's name (with a higher
+    # ``epochs``) to deliberately resume it — training continues from the
+    # last checkpoint's epoch under the recomputed (warm-restarted) schedule.
+    if run_name is None:
+        lr_tag = f"{lr:.0e}".replace("e-0", "e-")
+        run_name = (
+            f"fm_{size}_seq{max_len}_b{batch_size}x{num_workers}_lr{lr_tag}"
+            f"_{time.strftime('%Y%m%d-%H%M%S')}"
+        )
     tb_root = tensorboard_root(storage_base)
     tensorboard_dir = os.path.join(tb_root, run_name) if tb_root else None
 
