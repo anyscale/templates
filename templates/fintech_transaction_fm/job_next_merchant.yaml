@@ -1,0 +1,14 @@
+# Reco salvage probe: trained linear head on the FROZEN pooled-last embedding
+# -> next-merchant token. Uses the fulltest embeddings (1M train pairs, 2.4M
+# test pairs). Reference points: 06's masked-readout HR@10 0.077 (regressed),
+# de-risk naive full-history floor ~0.65.
+name: fintech-fm-next-merchant
+entrypoint: >-
+  python scripts/next_merchant_probe.py --base-dir /mnt/user_storage/transaction-fm-v2 --scale full --device cuda
+working_dir: .
+requirements: requirements.txt
+compute_config:
+  cloud: aws-public-us-west-2
+  head_node:
+    instance_type: g5.4xlarge   # 64GB host for the 3.5M x 512 matrix + GPU head
+max_retries: 0
