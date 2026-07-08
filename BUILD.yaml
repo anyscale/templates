@@ -659,7 +659,7 @@
   owner_team: ray-train
   dir: templates/tune_pytorch_asha
   cluster_env:
-    image_uri: anyscale/ray:2.55.1-slim-py312-cu129
+    image_uri: anyscale/ray:2.56.0-slim-py312-cu129
   compute_config:
     AWS: configs/tune_pytorch_asha/aws.yaml
     GCP: configs/tune_pytorch_asha/gce.yaml
