@@ -14,9 +14,9 @@
 
 NVIDIA's [transaction foundation model blueprint](https://github.com/NVIDIA-AI-Blueprints/transaction-foundation-model) sets a public bar for fraud detection with foundation models: pretrain a small Llama decoder on 24M card transactions (IBM TabFormer), embed transactions, and fuse the embedding with 13 raw features into XGBoost — test average precision **0.1755**, a +42% lift over their raw baseline.
 
-We built a transaction FM on Ray with a different tokenizer, objective, and readout — and its embedding **alone**, no fusion, no PCA, reaches **AP 0.27 on their own evaluation protocol**: +92% over the raw baseline, +55% over their published fusion headline. The core change fits in one sentence: **one position per transaction instead of ~12 tokens per transaction**, which buys 512–2048 transactions of context in the window where their tokenizer fits ~315 — and a masked-field objective that makes the history actually readable. Training runs in about two hours on four A10Gs; the whole result reproduces from a public template with three job submissions.
+We built a transaction FM on Ray with a different tokenizer, objective, and readout — and its embedding **alone**, no fusion, no PCA, reaches **AP 0.22–0.26 on their own evaluation protocol**, clearing their published fusion headline with bootstrap probability **0.94–0.99** at every context length we trained (512, 1024, and 2048 transactions). The core change fits in one sentence: **one position per transaction instead of ~12 tokens per transaction**, which buys 4–13x their ~315-transaction context at identical model capacity — and a masked-field objective plus a last-position readout that make the history actually usable. Training runs in about two hours on four A10Gs; the whole result reproduces from a public template with three job submissions.
 
-[B1: hero chart — bar chart of test AP: NVIDIA baseline 0.1238, NVIDIA fusion 0.1755, ours-512 0.258, ours-1024 0.273, ours-2048 0.223. One color for theirs, one for ours.]
+[B1: hero chart — AP dot + 95% CI whisker per model (NVIDIA baseline 0.1238, NVIDIA fusion 0.1755 as reference lines; ours: 512-linear 0.219, 512-xgb 0.258, 1024-xgb 0.220, 2048-xgb 0.227). One color for theirs, one for ours.]
 
 ## Why transaction foundation models — and why NVIDIA's blueprint is the right bar
 
@@ -51,25 +51,32 @@ The pipeline is Ray end-to-end: Ray Data builds the ~100k-merchant vocab and str
 
 ## Results
 
-Test set: 100k stratified rows at natural ~0.11% fraud prevalence.
+Test set: 100k stratified rows at natural ~0.11% fraud prevalence (**112
+frauds** — so every AP below is reported with a bootstrap 95% CI over 2,000
+test-set resamples; single-draw APs on this benchmark move by ±0.05 across
+harness details like XGBoost device, and we say so).
 
-| model | context (txns) | ROC-AUC | AP | AP lift vs raw |
+Environment for the table: xgboost==3.2.0 (their pin), XGBoost on CUDA
+(their device) — the same settings that reproduce their baseline exactly on
+the faithful-repro stack.
+
+| model | context (txns) | AP | AP 95% CI | P(beats their fusion 0.1755) |
 |---|---|---|---|---|
-| raw 13 features + their XGB (baseline) | — | 0.9875 | 0.1421 | — |
-| *NVIDIA published: baseline* | *~315* | *0.9885* | *0.1238* | — |
-| *NVIDIA published: fusion (their headline)* | *~315* | *0.9925* | *0.1755* | *+41.8%* |
-| their protocol (PCA64+XGB) on our embedding | 512 | [B5] | 0.1623 | +14.2% |
-| their protocol (PCA64+XGB) on our embedding | 1024 | 0.9905 | 0.1899 | +33.7% |
-| **our embedding → XGBoost, no PCA** | 512 | [B5] | **0.2581** | **+81.6%** |
-| **our embedding → XGBoost, no PCA** | 1024 | 0.9945 | **0.2730** | **+92.2%** |
-| **our embedding → XGBoost, no PCA** | **2048** | 0.9914 | **0.2233** | **+57.2%** |
-| our embedding → linear head, no PCA | 512 | [B5] | 0.226 ± 0.006 | +59% |
+| raw 13 features + their XGB (baseline) | — | 0.1399 | [0.091, 0.214] | 0.16 |
+| *NVIDIA published: baseline* | *~315* | *0.1238* | — | — |
+| *NVIDIA published: fusion (their headline)* | *~315* | *0.1755* | — | — |
+| their protocol (PCA64+XGB) on our embedding | 512 | 0.1679 | [0.117, 0.245] | 0.49 |
+| their protocol (PCA64+XGB) on our embedding | 1024 | 0.1957 | [0.140, 0.278] | 0.79 |
+| our embedding → linear head, no PCA | 512 | 0.2185 | [0.172, 0.280] | **0.96** |
+| **our embedding → XGBoost, no PCA** | 512 | **0.2581** | [0.188, 0.352] | **0.99** |
+| **our embedding → XGBoost, no PCA** | 1024 | **0.2203** | [0.165, 0.303] | **0.95** |
+| **our embedding → XGBoost, no PCA** | 2048 | **0.2273** | [0.158, 0.310] | **0.94** |
 
-[B7: context-scaling line chart — AP vs context length {512, 1024, 2048} for embed_xgb (0.258 → 0.273 → 0.223), with NVIDIA fusion 0.1755 as a horizontal reference line. The peak at 1024 is the finding.]
+[B7: figure — AP with CI whiskers per model row (dot-and-interval plot), NVIDIA fusion 0.1755 as a vertical reference line. This replaces a context-scaling line chart: the honest visual is overlapping intervals all sitting right of the reference line.]
 
-Three things to notice. First, the embedding **alone** beats their published *fusion* at every context length — no hand-built features in the winning row. Second, even **their own downstream protocol** (PCA to 64d, then XGBoost) applied to our embedding beats their fusion at 1024 and 2048 (0.1899 / 0.1802 vs 0.1755): the gain is in the representation, not the harness. Third — and we report this as measured — the context curve **peaks at 1024**: 512→1024 pays +6%, while 2048 gives some of it back (still +27% over their fusion). That shape is what the burst mechanism predicts: ~90% of the fraud-relevant history sits within a few hundred transactions, so past ~1024 the window mostly adds stale history that dilutes the last-position readout. The practical takeaway for TabFormer-scale data is a sweet spot around 1024 transactions — and the honest scaling claim is "4–13x their context is *architecturally free*; how much of it pays is a property of your data's burst structure." [TODO: consider an xxl variant with more epochs to separate dilution from undertraining — xxl's per-window exposure differs; cheap to note, optional to run.]
+Three things to notice — and one thing we deliberately do *not* claim. First, the embedding **alone** clears their published *fusion* headline with probability 0.94–0.99 at every context length — no hand-built features in the winning row, and the CIs sit almost entirely above their bar. Second, this benchmark is noisier than point estimates suggest: with 112 test frauds, even the raw **baseline** exceeds their fusion number in 16% of bootstrap draws — which means single-point "X% lift" claims on TabFormer (including their +41.8%) deserve intervals around them. We found this the hard way: re-running our own eval on a different XGBoost device moved the 1024 point by 0.05 while 512 didn't move at all. Third, and consequently: **we do not claim an ordering among 512/1024/2048** — their intervals overlap heavily and re-rank across harness details. The architectural claim survives untouched (4–13x their context at identical capacity, and every length beats their fusion); *which* long context is best is not resolvable at this test-set size. [B8b: appendix table — unpinned-CPU vs pinned-CUDA point estimates per row, as the sensitivity disclosure.]
 
-One honest wrinkle: the linear-head readout, which at 512 was stable across seeds (0.226 ± 0.006), degraded at longer context (0.124 at 1024, 0.127 at 2048) while XGBoost stayed strong. The signal is there — XGBoost finds it — but it becomes less *linearly* separable as the window grows. [TODO: 1-2 sentence explanation after investigation, or cut the linear row at 1024+ and note it.]
+One honest wrinkle: the linear-head readout, stable and strong at 512 (0.2185, P=0.96), degraded at longer context (~0.12–0.13 at 1024/2048) while XGBoost stayed strong. The signal is there — trees find it — but it becomes less *linearly* separable as the window grows. [TODO: 1-2 sentence explanation after investigation, or cut the linear row at 1024+ and note it.]
 
 ## Why it works — and how we know it's real
 
@@ -119,7 +126,7 @@ anyscale job submit -f job_xl.yaml
 ## Takeaways
 
 - **A transaction FM's embedding, alone, beats NVIDIA's published fusion headline by 55%+** on their own protocol — 0.27 vs 0.1755 test AP — using the same model capacity and a two-hour training run.
-- **Context length is a real, measurable lever with a data-dependent sweet spot**: one position per transaction buys 512–2048 transactions of history vs their ~315; on TabFormer AP peaks at 1024 (0.273) and holds +27% over their fusion even at 2048.
+- **Context length is architecturally free and uniformly sufficient**: one position per transaction buys 512–2048 transactions of history vs their ~315, and every length clears their fusion bar (P 0.94–0.99); TabFormer's 112-fraud test set cannot resolve an ordering among the long contexts, and we don't claim one.
 - **The readout matters as much as the model**: per-field masking + last-position extraction + no PCA is the difference between "the FM learned nothing" and the headline. NVIDIA's single-transaction embedding readout is their blueprint's real bottleneck, not their architecture.
 - **It's verified the boring way**: exact baseline reproduction, shuffled-label control at the AP floor, a velocity-feature bar that doesn't reach, and a faithfully-trained version of their own design topping out 4x lower.
 - Disclosures: one dataset (TabFormer); ~112 test frauds means single-draw AP is noisy — CIs in appendix [B4]; linear-head readout weakens at 1024+ while trees improve; [TODO: env-pin note after xgboost 3.2.0 rerun].
