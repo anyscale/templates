@@ -1,0 +1,18 @@
+# Readout probe — NO PCA anywhere: 5 classifiers x 3 embedding sets (all
+# already on disk; zero extraction) on the exact benchmark rows.
+# Decides whether the fraud signal is in the embeddings (PCA+GBM harness was
+# blind) or genuinely absent (objective pivot proceeds).
+name: fintech-fm-probe-controls
+entrypoint: >-
+  BASE=/mnt/user_storage/transaction-fm-v2 &&
+  EMB=$(ls -d $BASE/embeddings/full_old_* | tail -1) &&
+  echo "R2 embeddings at: $EMB" &&
+  python scripts/probe_embeddings.py --base-dir $BASE --scale full --device cuda --raw-control --seed 4
+  --set r2_pooled_last=$EMB:embedding_last
+working_dir: .
+requirements: requirements.txt
+compute_config:
+  cloud: aws-public-us-west-2
+  head_node:
+    instance_type: g5.2xlarge   # probes run on the head GPU; 32GB RAM holds 1.2M x 525 float32
+max_retries: 0
