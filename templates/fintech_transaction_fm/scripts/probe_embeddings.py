@@ -54,9 +54,14 @@ def _torch_probe(X, y, masks, hidden=None, device="cpu", epochs=6, lr=1e-3):
     from sklearn.metrics import average_precision_score, roc_auc_score
 
     tr, va, te = masks
-    mu, sd = X[tr].mean(0), X[tr].std(0) + 1e-6
-    Xt = {k: torch.as_tensor((X[m] - mu) / sd, dtype=torch.float32) for k, m in
-          {"tr": tr, "va": va, "te": te}.items()}
+    # float64 stats: fusion inputs include int64-scale ids (Merchant Name ~1e18)
+    # that overflow float32 moments; Zip carries NaN (XGB tolerates, torch not).
+    X64 = X.astype(np.float64)
+    mu, sd = np.nanmean(X64[tr], axis=0), np.nanstd(X64[tr], axis=0) + 1e-6
+    def _z(m):
+        z = np.nan_to_num((X64[m] - mu) / sd, nan=0.0, posinf=0.0, neginf=0.0)
+        return torch.as_tensor(np.clip(z, -10, 10), dtype=torch.float32)
+    Xt = {k: _z(m) for k, m in {"tr": tr, "va": va, "te": te}.items()}
     yt = {k: torch.as_tensor(y[m], dtype=torch.float32) for k, m in
           {"tr": tr, "va": va, "te": te}.items()}
     d = X.shape[1]
@@ -144,16 +149,17 @@ def main():
         fused = np.hstack([Xf, E]).astype(np.float32)
 
         r = {}
-        print("[probe] 1/5 logistic (embed only, 512d, no PCA)")
-        r["logistic"] = _torch_probe(E, y, masks, hidden=None, device=args.device)
-        print("[probe] 2/5 mlp 512->256 (embed only, no PCA)")
-        r["mlp"] = _torch_probe(E, y, masks, hidden=256, device=args.device)
-        print("[probe] 3/5 xgb EMBED params (raw 512d, no PCA)")
-        r["xgb"] = _xgb_probe(E, y, masks, XGB_PARAMS_EMBED, device=args.device)
-        print("[probe] 4/5 logistic fusion (13 feats + 512d)")
-        r["logistic_fusion"] = _torch_probe(fused, y, masks, hidden=None, device=args.device)
-        print("[probe] 5/5 xgb COMBINED params fusion (13 + 512d, no PCA)")
-        r["xgb_fusion"] = _xgb_probe(fused, y, masks, XGB_PARAMS_COMBINED, device=args.device)
+        fits = [
+            ("logistic", lambda: _torch_probe(E, y, masks, hidden=None, device=args.device)),
+            ("mlp", lambda: _torch_probe(E, y, masks, hidden=256, device=args.device)),
+            ("xgb", lambda: _xgb_probe(E, y, masks, XGB_PARAMS_EMBED, device=args.device)),
+            ("logistic_fusion", lambda: _torch_probe(fused, y, masks, hidden=None, device=args.device)),
+            ("xgb_fusion", lambda: _xgb_probe(fused, y, masks, XGB_PARAMS_COMBINED, device=args.device)),
+        ]
+        for i, (mname, fit) in enumerate(fits, 1):
+            print(f"[probe] {i}/5 {mname}")
+            r[mname] = fit()
+            print(f"[probe]   -> {mname}: auc={r[mname]['auc_roc']:.4f} ap={r[mname]['ap']:.4f}")
         results[name] = r
 
     print(f"\n{'set':<10} {'model':<16} {'ROC-AUC':>9} {'AP':>9}   (baseline 0.9875 / 0.1421)")
