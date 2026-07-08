@@ -140,7 +140,7 @@ depsets:
       - --python-platform=linux
       - --unsafe-package ray
     build_arg_sets:
-      - ray2551_py311_cu128
+      - ray2560_py311_cu128
 
   - name: audio_dataset_curation_llm_judge_depset_${RAY_VERSION}_${PYTHON_VERSION}_${CUDA_VARIANT}
     operation: expand
