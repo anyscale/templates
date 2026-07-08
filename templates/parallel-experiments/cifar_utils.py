@@ -11,6 +11,21 @@ import ray
 
 
 def load_data(data_dir="./data"):
+    # In CI, short-circuit to the fake-data smoke set (see `load_test_data`
+    # below). The real CIFAR-10 download from cs.toronto.edu is slow enough
+    # (~25 kB/s from the workspace network) to blow past the per-test timeout.
+    # We can't just check an env var here: this function runs inside Ray tune
+    # trials (i.e. on Ray workers) whose process env is not the driver's env,
+    # so a shell-exported `CIFAR_USE_FAKE=1` in tests.sh never reaches this
+    # code. Instead, tests.sh touches a marker file under ~/.parallel-
+    # experiments-use-fake-data — ~ (`/home/ray`) is EFS-shared across all
+    # nodes in an Anyscale workspace, so every Ray worker sees the same file.
+    if (
+        os.environ.get("CIFAR_USE_FAKE") == "1"
+        or os.path.exists(os.path.expanduser("~/.parallel-experiments-use-fake-data"))
+    ):
+        return load_test_data()
+
     transform = transforms.Compose([
         transforms.ToTensor(),
         transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
