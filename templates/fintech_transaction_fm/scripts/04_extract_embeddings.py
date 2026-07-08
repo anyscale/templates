@@ -29,6 +29,8 @@ def main():
     p.add_argument("--readout", default="pooled", choices=["pooled", "target"],
                    help="target = Run-1 readout surgery: masked-target state + "
                         "per-field surprise + single-txn embedding (TEARDOWN.md)")
+    p.add_argument("--limit", type=int, default=None,
+                   help="embed only the first N eval rows — subset e2e proofs")
     args = p.parse_args()
 
     base = args.base_dir or get_demo_base_dir()
@@ -36,7 +38,11 @@ def main():
     embed_cfg = load_scale(args.scale, args.scale_config)["embed"]
 
     ray.init(ignore_reinit_error=True)
+    ds = None
+    if args.limit:
+        ds = ray.data.read_parquet(paths["tokenized_eval"]).limit(args.limit)
     extract_embeddings(
+        ds=ds,
         tokenized_path=paths["tokenized_eval"],
         checkpoint_dir=args.checkpoint_dir or paths["checkpoint"],
         output_path=args.output or paths["embeddings"],

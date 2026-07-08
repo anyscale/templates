@@ -8,8 +8,8 @@ entrypoint: >-
   BASE=/mnt/user_storage/transaction-fm-v2 &&
   NAVY=$(ls -d $BASE/model/full_old_* | head -1) &&
   echo "cl ckpt: $BASE/model/full | navy ckpt: $NAVY" &&
-  python scripts/04_extract_embeddings.py --scale full --base-dir $BASE --use-gpu --num-workers 8 --readout target --output $BASE/embeddings/full_cl_target &&
-  python scripts/04_extract_embeddings.py --scale full --base-dir $BASE --use-gpu --num-workers 8 --readout target --checkpoint-dir $NAVY --output $BASE/embeddings/full_navy_target &&
+  ([ -d $BASE/embeddings/full_cl_target ] || python scripts/04_extract_embeddings.py --scale full --base-dir $BASE --use-gpu --num-workers 8 --readout target --output $BASE/embeddings/full_cl_target) &&
+  ([ -d $BASE/embeddings/full_navy_target ] || python scripts/04_extract_embeddings.py --scale full --base-dir $BASE --use-gpu --num-workers 8 --readout target --checkpoint-dir $NAVY --output $BASE/embeddings/full_navy_target) &&
   python scripts/probe_embeddings.py --base-dir $BASE --scale full --device cuda
   --set cl_masked=$BASE/embeddings/full_cl_target:embedding_masked_last
   --set cl_surprise=$BASE/embeddings/full_cl_target:surprise

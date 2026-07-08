@@ -37,7 +37,7 @@ from src.nvidia_baseline import (  # noqa: E402
 )
 
 
-def _join(bench, embeddings_path, embedding_column):
+def _join(bench, embeddings_path, embedding_column, min_match=0.999):
     """Same (card_id, ts, amount-cents) join as run_benchmark."""
     keys, X_emb = _load_embeddings(embeddings_path, embedding_column)
     join_on = ["card_id", "_ts", "_amt_cents"]
@@ -45,7 +45,9 @@ def _join(bench, embeddings_path, embedding_column):
     b = bench.copy()
     b["_amt_cents"] = np.round(b["Amount"].to_numpy() * 100).astype(np.int64)
     b = b.drop_duplicates(join_on, keep="first").merge(keys, on=join_on, how="inner")
-    assert len(b) / len(bench) > 0.999, f"join only matched {len(b)/len(bench):.2%}"
+    matched = len(b) / len(bench)
+    assert matched >= min_match, f"join only matched {matched:.2%} (need {min_match:.2%})"
+    print(f"[probe] joined {len(b):,}/{len(bench):,} ({matched:.2%})")
     return b, X_emb[b.pop("_row").to_numpy()]
 
 
@@ -129,6 +131,9 @@ def main():
     p.add_argument("--set", action="append", required=True,
                    help="name=<embeddings_path>:<embedding_column>")
     p.add_argument("--device", default="cpu")
+    p.add_argument("--min-match", type=float, default=0.999,
+                   help="required benchmark-row join fraction; lower it for "
+                        "subset e2e proofs on partial embeddings")
     args = p.parse_args()
 
     bench_path = f"{args.base_dir}/raw/{args.scale}/benchmark.parquet"
@@ -138,7 +143,7 @@ def main():
         name, rest = spec.split("=", 1)
         path, col = rest.rsplit(":", 1)
         print(f"\n=== {name}: {path} [{col}] ===")
-        b, E = _join(bench, path, col)
+        b, E = _join(bench, path, col, min_match=args.min_match)
         y = b["_target"].to_numpy().astype(np.int64)
         masks = tuple((b["split"] == s).to_numpy() for s in ("train", "val", "test"))
         pre = make_encoder()

@@ -191,18 +191,21 @@ def extract_embeddings(
         # manifest would skip every row and emit nothing for the new model.
         # Failure/cancel keeps it, which is exactly when resume is wanted.
         try:
-            from ray.data.checkpoint import CheckpointConfig
-        except ImportError:
             try:
-                from ray.anyscale.data.checkpoint import CheckpointConfig
+                from ray.data.checkpoint import CheckpointConfig
             except ImportError:
-                CheckpointConfig = None
-        if CheckpointConfig is not None and "row_id" in ds.schema().names:
-            ray.data.DataContext.get_current().checkpoint_config = CheckpointConfig(
-                id_column="row_id",
-                checkpoint_path=output_path.rstrip("/") + "_checkpoint",
-            )
-            print("[embed] Ray Data job-level checkpointing enabled (row_id)")
+                from ray.anyscale.data.checkpoint import CheckpointConfig
+            if "row_id" in ds.schema().names:
+                ckpt = output_path.rstrip("/") + "_checkpoint"
+                if "://" not in ckpt:  # pyarrow from_uri chokes on relative paths
+                    ckpt = os.path.abspath(ckpt)
+                ray.data.DataContext.get_current().checkpoint_config = CheckpointConfig(
+                    id_column="row_id",
+                    checkpoint_path=ckpt,
+                )
+                print(f"[embed] Ray Data job-level checkpointing enabled -> {ckpt}")
+        except Exception as e:  # resilience feature must never kill extraction
+            print(f"[embed] checkpointing unavailable ({type(e).__name__}: {e}) — continuing without")
     if gpus_per_worker is None:
         gpus_per_worker = 1.0
     ds = ds.map_batches(
@@ -237,10 +240,23 @@ def embedding_health(output_path: str, sample: int = 2000) -> dict:
     (→0 means collapse). Mean pairwise cosine is computed in closed form from the
     summed unit vectors, so it's O(n·d), not O(n²).
     """
+    import pyarrow.dataset as pads
+
     import ray
 
-    df = ray.data.read_parquet(output_path, columns=["embedding"]).limit(sample).to_pandas()
-    X = np.vstack(df["embedding"].to_numpy()).astype(np.float64)
+    # Pick an embedding column that actually exists: pooled outputs carry
+    # "embedding"; the target-readout outputs carry embedding_masked_last /
+    # embedding_single / surprise. (A hard-coded "embedding" here killed a
+    # job AFTER a successful 4.8GiB extraction — hence the discovery step.)
+    names = pads.dataset(output_path, format="parquet").schema.names
+    col = "embedding" if "embedding" in names else next(
+        (c for c in names if c.startswith("embedding")), None
+    )
+    if col is None:
+        print(f"[embed] health: no embedding column in {names} — skipping")
+        return {}
+    df = ray.data.read_parquet(output_path, columns=[col]).limit(sample).to_pandas()
+    X = np.vstack(df[col].to_numpy()).astype(np.float64)
     n = len(X)
     Xn = X / (np.linalg.norm(X, axis=1, keepdims=True) + 1e-8)
     s = Xn.sum(axis=0)
