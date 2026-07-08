@@ -203,7 +203,7 @@
   owner_team: ray-train
   dir: templates/vla-fine-tuning
   cluster_env:
-    image_uri: anyscale/ray:2.55.1-py312-cu129
+    image_uri: anyscale/ray:2.56.0-py312-cu129
   compute_config:
     AWS: configs/vla-fine-tuning/aws.yaml
     GCP: configs/vla-fine-tuning/gce.yaml
