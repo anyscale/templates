@@ -547,7 +547,7 @@
   owner_team: general
   dir: templates/ray-summit-core-masterclass
   cluster_env:
-    image_uri: anyscale/ray:2.55.1-py312-cu128
+    image_uri: anyscale/ray:2.56.0-py312-cu128
   compute_config:
     AWS: configs/ray-summit-core-masterclass/aws.yaml
     GCP: configs/ray-summit-core-masterclass/gce.yaml
