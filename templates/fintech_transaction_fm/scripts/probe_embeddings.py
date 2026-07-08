@@ -131,6 +131,8 @@ def main():
     p.add_argument("--set", action="append", required=True,
                    help="name=<embeddings_path>:<embedding_column>")
     p.add_argument("--device", default="cpu")
+    p.add_argument("--raw-control", action="store_true",
+                   help="also fit logistic/MLP on the 13 raw features alone")
     p.add_argument("--seed", type=int, default=0,
                    help="torch-probe init/shuffle seed — replication runs")
     p.add_argument("--min-match", type=float, default=0.999,
@@ -141,6 +143,23 @@ def main():
     bench_path = f"{args.base_dir}/raw/{args.scale}/benchmark.parquet"
     bench = pd.read_parquet(bench_path)
     results = {}
+    if args.raw_control:
+        # Fair-head control: same torch heads on the 13 RAW features alone —
+        # separates "embedding carries signal" from "MLP beats XGBoost".
+        y = bench["_target"].to_numpy().astype(np.int64)
+        masks = tuple((bench["split"] == s_).to_numpy() for s_ in ("train", "val", "test"))
+        pre = make_encoder()
+        F = pre.fit_transform(bench.loc[masks[0], FEATURE_COLS])
+        Xf = np.zeros((len(bench), F.shape[1]), np.float32)
+        Xf[masks[0]] = F
+        Xf[masks[1]] = pre.transform(bench.loc[masks[1], FEATURE_COLS])
+        Xf[masks[2]] = pre.transform(bench.loc[masks[2], FEATURE_COLS])
+        r = {}
+        for nm, hid in (("logistic_raw13", None), ("mlp_raw13", 256)):
+            print(f"[probe] control {nm}")
+            r[nm] = _torch_probe(Xf, y, masks, hidden=hid, device=args.device, seed=args.seed)
+            print(f"[probe]   -> {nm}: auc={r[nm]['auc_roc']:.4f} ap={r[nm]['ap']:.4f}")
+        results["raw13_control"] = r
     for spec in args.set:
         name, rest = spec.split("=", 1)
         path, col = rest.rsplit(":", 1)
