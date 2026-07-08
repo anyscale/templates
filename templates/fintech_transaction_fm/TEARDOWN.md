@@ -159,6 +159,16 @@ parked unless the remaining evals reverse.
      non-FM burst detector recovers
   6. cutoff unification — QUEUED
 
+**RUN-G1 (attention fusion): FAILED — OOM, parked (2026-07-08 ~01:30).**
+Both attempts died in step 1: the intra-tx attention stack tried to allocate
++8.00 GiB on top of 15.2 in use (A10G 22 GiB) — the exact pre-registered
+risk. Per the pre-agreed rule, NOT batch-hacked (update-count trap). Fix if
+G1 is revisited: chunk the [B*S, F, d] attention into slices (linear memory,
+identical math). R2's model/embeddings were MOVED aside by G1's entrypoint
+(model/full_old_<stamp>, embeddings/full_old_<stamp>) — intact. G1 is no
+longer on the critical path: the pooled-last result made the summation-vs-
+attention question academic for the blog.
+
 ## The three-run plan (agreed 2026-07-07 night)
 
 - **Run 1 — readout surgery, ZERO retraining** (STATUS: built, running).
