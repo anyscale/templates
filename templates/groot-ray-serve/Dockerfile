@@ -99,6 +99,14 @@ RUN python -m pip install \
     numpy pandas matplotlib scipy requests \
     fastapi uvicorn
 
+# Force-pin protobuf back to a Ray-compatible version. The Isaac Sim / Isaac Lab
+# / GR00T installs above transitively pull in protobuf 7.x, which breaks Ray
+# Serve at runtime with:
+#   AttributeError: 'google._upb._message.FieldDescriptor' object has no attribute 'label'
+# in ray/serve/_private/config.py::_proto_to_dict. Ray itself declares
+# `protobuf<7`; keep it aligned with the base image's 4.25.x line.
+RUN python -m pip install --no-deps "protobuf==4.25.8"
+
 # flash-attn is intentionally NOT installed; GR00T falls back to eager attention cleanly.
 # To enable later, install the matching prebuilt wheel post-build:
 #   pip install https://github.com/Dao-AILab/flash-attention/releases/download/v2.7.4.post1/\
