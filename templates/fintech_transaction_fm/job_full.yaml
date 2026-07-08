@@ -12,7 +12,8 @@ entrypoint: >-
   python scripts/run_pretrain.py --scale full --base-dir $BASE --use-gpu &&
   python scripts/04_extract_embeddings.py --scale full --base-dir $BASE --use-gpu --num-workers 8 &&
   python scripts/05_train_downstream.py --scale full --base-dir $BASE --with-embeddings &&
-  python scripts/06_recommend.py --scale full --base-dir $BASE --use-gpu
+  python scripts/06_recommend.py --scale full --base-dir $BASE --use-gpu &&
+  python scripts/04_extract_embeddings.py --scale full --base-dir $BASE --use-gpu --num-workers 8 --readout target --output $BASE/embeddings/full_r2_target
 working_dir: .
 requirements: requirements.txt
 env_vars:
