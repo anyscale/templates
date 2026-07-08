@@ -1,0 +1,33 @@
+# Context-scaling run: seq 2048 (= 2048 txns of history vs NVIDIA's ~315) on
+# the validated benchmark pipeline, from scratch — the second act after xl
+# (1024) paid. 01 normalizes raw/xxl + re-samples the benchmark
+# (deterministic: same sorted input + seed 42 -> same rows as raw/full's);
+# 05's baseline re-verifies ~0.987 independently before the embedding rows.
+name: fintech-transaction-fm-xxl
+entrypoint: >-
+  BASE=/mnt/user_storage/transaction-fm-v2 &&
+  STAMP=$(date +%s) &&
+  for d in tokenized embeddings downstream model; do if [ -e $BASE/$d/xxl ]; then mv $BASE/$d/xxl $BASE/$d/xxl_old_$STAMP; fi; done &&
+  python scripts/run_pretrain.py --scale xxl --base-dir $BASE --use-gpu &&
+  python scripts/04_extract_embeddings.py --scale xxl --base-dir $BASE --use-gpu --num-workers 8 &&
+  python scripts/05_train_downstream.py --scale xxl --base-dir $BASE --with-embeddings
+working_dir: .
+requirements: requirements.txt
+env_vars:
+  RAY_DEFAULT_OBJECT_STORE_MEMORY_PROPORTION: "0.5"
+compute_config:
+  cloud: aws-public-us-west-2
+  head_node:
+    instance_type: m5.4xlarge
+  worker_nodes:
+    - name: gpu-1x
+      instance_type: g5.xlarge
+      min_nodes: 0
+      max_nodes: 8
+      resources:
+        CPU: 0    # GPU nodes invisible to CPU-only tasks (tokenize can't scale/land here)
+    - name: cpu-workers
+      instance_type: m5.4xlarge
+      min_nodes: 0
+      max_nodes: 4
+max_retries: 1
