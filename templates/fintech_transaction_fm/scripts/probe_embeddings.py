@@ -138,6 +138,9 @@ def main():
     p.add_argument("--min-match", type=float, default=0.999,
                    help="required benchmark-row join fraction; lower it for "
                         "subset e2e proofs on partial embeddings")
+    p.add_argument("--shuffle-labels", action="store_true",
+                   help="leak sanity: permute TRAIN labels (seeded) before "
+                        "fitting; test AP must collapse to ~fraud prevalence")
     args = p.parse_args()
 
     bench_path = f"{args.base_dir}/raw/{args.scale}/benchmark.parquet"
@@ -167,6 +170,12 @@ def main():
         b, E = _join(bench, path, col, min_match=args.min_match)
         y = b["_target"].to_numpy().astype(np.int64)
         masks = tuple((b["split"] == s).to_numpy() for s in ("train", "val", "test"))
+        if args.shuffle_labels:
+            rng = np.random.default_rng(args.seed)
+            tr_idx = np.flatnonzero(masks[0])
+            y[tr_idx] = rng.permutation(y[tr_idx])
+            print(f"[probe] SHUFFLED {len(tr_idx):,} train labels (seed {args.seed}); "
+                  f"test prevalence {y[masks[2]].mean():.5f} = the AP floor")
         pre = make_encoder()
         F = pre.fit_transform(b.loc[masks[0], FEATURE_COLS])
         Fva, Fte = pre.transform(b.loc[masks[1], FEATURE_COLS]), pre.transform(b.loc[masks[2], FEATURE_COLS])
@@ -198,7 +207,8 @@ def main():
     for name, r in results.items():
         for m, v in r.items():
             print(f"{name:<10} {m:<16} {v['auc_roc']:>9.4f} {v['ap']:>9.4f}")
-    out = f"{args.base_dir}/downstream/{args.scale}_probe/probe_metrics_seed{args.seed}.json"
+    tag = "shuffled_" if args.shuffle_labels else ""
+    out = f"{args.base_dir}/downstream/{args.scale}_probe/probe_metrics_{tag}seed{args.seed}.json"
     os.makedirs(os.path.dirname(out), exist_ok=True)
     with open(out, "w") as f:
         json.dump(results, f, indent=2)

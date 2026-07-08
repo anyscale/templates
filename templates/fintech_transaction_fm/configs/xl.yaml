@@ -24,6 +24,11 @@ model:
   n_heads: 8
   n_layers: 8
   dim_ff: 2048
+  # RUN-2b flags propagated from full.yaml (CLEANUP.md §3) — the winning recipe.
+  periodic_amount: true      # G2: Fourier channel on signed log-amount
+  periodic_time: true        # G3: Time2Vec channel on log time-deltas
+  n_periodic: 16
+  intra_tx_attention: false  # G1 parked (never validated)
 
 pretrain:
   epochs: 20
@@ -35,6 +40,7 @@ pretrain:
   use_fsdp: false
   infonce_negatives: 1024
   infonce_warmup_frac: 0.3   # anneal the merchant head in (see small.yaml)
+  seq_cl_weight: 0.0         # OFF — falsified for fraud (see full.yaml)
 
 embed:
   num_workers: 4
