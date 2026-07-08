@@ -4,7 +4,7 @@ working_dir: .
 
 requirements: ./requirements.txt
 
-image_uri: anyscale/ray-llm:2.55.1-py311-cu128
+image_uri: anyscale/ray-llm:2.56.0-py312-cu130
 
 logging_config:
   encoding: JSON
