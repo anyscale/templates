@@ -449,7 +449,7 @@
   owner_team: ray-data
   dir: templates/text-embeddings
   cluster_env:
-    image_uri: anyscale/ray:2.55.1-py311-cu124
+    image_uri: anyscale/ray:2.56.0-py311-cu124
   compute_config:
     GCP: configs/text-embeddings/gce.yaml
     AWS: configs/text-embeddings/aws.yaml
