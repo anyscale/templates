@@ -56,98 +56,19 @@ class EmbeddingExtractor:
             return torch.as_tensor(v, dtype=dtype, device=self.device)
 
         tensors = {k: to_tensor(k, torch.long) for k in cols}
-        for c in self.vocab.get("continuous_fields", []):  # G2/G3 float channels
+        for c in self.vocab.get("continuous_fields", []):  # float channels
             tensors[f"d_{c}"] = to_tensor(f"d_{c}", torch.float32)
         if self.vocab.get("amount_mode") == "soft":
             tensors["d_amount_frac"] = to_tensor("d_amount_frac", torch.float32)
         with torch.inference_mode():
-            pooled = self.model.sequence_embedding(tensors, pooling="all")
+            pooled = self.model.sequence_embedding(tensors, pooling=self.pooling)
         passthrough = [
             "card_id", "row_id", "label", "split", "weight",
             "raw_amount", "raw_hour", "raw_dow", "raw_mcc", "raw_ts",
         ]
         out = {k: batch[k] for k in passthrough if k in batch}
-        # Every readout from the ONE forward pass — trying another pooling
-        # downstream must never cost a GPU re-extraction. The requested
-        # default pooling also lands in "embedding" (back-compat column).
-        for name, t in pooled.items():
-            emb = t.cpu().numpy().astype(np.float32)
-            out[f"embedding_{name}"] = [row for row in emb]
-            if name == self.pooling:
-                out["embedding"] = out[f"embedding_{name}"]
-        return out
-
-
-class TargetReadoutExtractor(EmbeddingExtractor):
-    """Run-1 readout surgery (see TEARDOWN.md): target-conditioned features.
-
-    Per eval window (right-aligned, last position = target transaction):
-    * ``embedding_masked_last`` — target-position state with the target's
-      dynamic fields MASKED (the state the MLM actually trains)
-    * ``surprise`` — per-field CE of the true target fields = anomaly score
-      conditioned on history
-    * ``embedding_single`` — the window truncated to ONLY the target txn:
-      the direct analogue of NVIDIA's single-transaction embedding
-    """
-
-    def __call__(self, batch: dict) -> dict:
-        import torch as t
-
-        from .tokenizer import MASK
-
-        cols = (
-            [f"d_{f}" for f in self.vocab["dynamic_fields"]]
-            + [f"s_{f}" for f in self.vocab["static_fields"]]
-            + ["attention_mask"]
-        )
-        if self.vocab.get("time_aware"):
-            cols.append("time_bucket")
-
-        def to_tensor(k, dtype):
-            v = np.stack(batch[k]) if batch[k].dtype == object else batch[k]
-            return t.as_tensor(v, dtype=dtype, device=self.device)
-
-        tensors = {k: to_tensor(k, t.long) for k in cols}
-        for c in self.vocab.get("continuous_fields", []):  # G2/G3 float channels
-            tensors[f"d_{c}"] = to_tensor(f"d_{c}", t.float32)
-        if self.vocab.get("amount_mode") == "soft":
-            tensors["d_amount_frac"] = to_tensor("d_amount_frac", t.float32)
-
-        # true target field ids + masked-target view (last position -> MASK)
-        targets, masked = {}, dict(tensors)
-        for f in self.vocab["dynamic_fields"]:
-            col = tensors[f"d_{f}"]
-            targets[f] = col[:, -1].clone()
-            mcol = col.clone()
-            mcol[:, -1] = MASK
-            masked[f"d_{f}"] = mcol
-        if "d_amount_frac" in masked:
-            frac = masked["d_amount_frac"].clone()
-            frac[:, -1] = 0.0
-            masked["d_amount_frac"] = frac
-        if "d_amount_log" in masked:  # G2 leak fix at the masked target too
-            al = masked["d_amount_log"].clone()
-            al[:, -1] = 0.0
-            masked["d_amount_log"] = al
-
-        # single-transaction view: only the target position visible
-        single = dict(tensors)
-        am = t.zeros_like(tensors["attention_mask"])
-        am[:, -1] = 1
-        single["attention_mask"] = am
-
-        with t.inference_mode():
-            h_masked, surprise = self.model.target_readout(masked, targets)
-            h_single = self.model.sequence_embedding(single, pooling="last")
-
-        passthrough = [
-            "card_id", "row_id", "label", "split", "weight",
-            "raw_amount", "raw_hour", "raw_dow", "raw_mcc", "raw_ts",
-        ]
-        out = {k: batch[k] for k in passthrough if k in batch}
-        out["embedding_masked_last"] = [r for r in h_masked.cpu().numpy().astype(np.float32)]
-        out["surprise"] = [r for r in surprise.cpu().numpy().astype(np.float32)]
-        out["embedding_single"] = [r for r in h_single.cpu().numpy().astype(np.float32)]
+        emb = pooled.cpu().numpy().astype(np.float32)
+        out["embedding"] = [row for row in emb]
         return out
 
 
@@ -161,7 +82,6 @@ def extract_embeddings(
     pooling: str = "last",
     ds=None,
     gpus_per_worker: float | None = None,
-    readout: str = "pooled",
 ) -> str:
     """Run distributed batch embedding extraction and write Parquet.
 
@@ -209,7 +129,7 @@ def extract_embeddings(
     if gpus_per_worker is None:
         gpus_per_worker = 1.0
     ds = ds.map_batches(
-        TargetReadoutExtractor if readout == "target" else EmbeddingExtractor,
+        EmbeddingExtractor,
         fn_constructor_kwargs={"checkpoint_dir": checkpoint_dir, "pooling": pooling},
         batch_size=batch_size,
         # max_tasks_in_flight: queue several batches per actor (default 4 is
@@ -240,23 +160,10 @@ def embedding_health(output_path: str, sample: int = 2000) -> dict:
     (→0 means collapse). Mean pairwise cosine is computed in closed form from the
     summed unit vectors, so it's O(n·d), not O(n²).
     """
-    import pyarrow.dataset as pads
-
     import ray
 
-    # Pick an embedding column that actually exists: pooled outputs carry
-    # "embedding"; the target-readout outputs carry embedding_masked_last /
-    # embedding_single / surprise. (A hard-coded "embedding" here killed a
-    # job AFTER a successful 4.8GiB extraction — hence the discovery step.)
-    names = pads.dataset(output_path, format="parquet").schema.names
-    col = "embedding" if "embedding" in names else next(
-        (c for c in names if c.startswith("embedding")), None
-    )
-    if col is None:
-        print(f"[embed] health: no embedding column in {names} — skipping")
-        return {}
-    df = ray.data.read_parquet(output_path, columns=[col]).limit(sample).to_pandas()
-    X = np.vstack(df[col].to_numpy()).astype(np.float64)
+    df = ray.data.read_parquet(output_path, columns=["embedding"]).limit(sample).to_pandas()
+    X = np.vstack(df["embedding"].to_numpy()).astype(np.float64)
     n = len(X)
     Xn = X / (np.linalg.norm(X, axis=1, keepdims=True) + 1e-8)
     s = Xn.sum(axis=0)

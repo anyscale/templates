@@ -1,9 +1,8 @@
-# Full seq-512 run, all stages, from-scratch pretraining on the validated
-# benchmark pipeline. Reuses only the cached raw + benchmark.parquet (the rows
-# the baseline job just reproduced 0.9875/0.1421 on); every derived artifact is
-# regenerated so there is zero doubt what data fed the FM. The old (pre-rerun)
-# model is set aside, not deleted. Embed gets 8 GPUs (pure inference — free
-# speedup); pretrain stays at 4 workers so training dynamics are unchanged.
+# Full seq-512 run, all stages, from-scratch pretraining: normalize + sample
+# the benchmark (01, cached if present), tokenize + pretrain (02-03), extract
+# embeddings (04), and print the headline fraud table (05). Any previous run's
+# artifacts are set aside, not deleted. Embed gets 8 GPUs (pure inference —
+# free speedup); pretrain stays at 4 workers so training dynamics are fixed.
 name: fintech-transaction-fm-full
 entrypoint: >-
   BASE=/mnt/user_storage/transaction-fm-v2 &&
@@ -11,9 +10,7 @@ entrypoint: >-
   for d in tokenized embeddings downstream model; do if [ -e $BASE/$d/full ]; then mv $BASE/$d/full $BASE/$d/full_old_$STAMP; fi; done &&
   python scripts/run_pretrain.py --scale full --base-dir $BASE --use-gpu &&
   python scripts/04_extract_embeddings.py --scale full --base-dir $BASE --use-gpu --num-workers 8 &&
-  python scripts/05_train_downstream.py --scale full --base-dir $BASE --with-embeddings &&
-  python scripts/06_recommend.py --scale full --base-dir $BASE --use-gpu &&
-  python scripts/04_extract_embeddings.py --scale full --base-dir $BASE --use-gpu --num-workers 8 --readout target --output $BASE/embeddings/full_r2_target
+  python scripts/05_train_downstream.py --scale full --base-dir $BASE --with-embeddings
 working_dir: .
 requirements: requirements.txt
 env_vars:

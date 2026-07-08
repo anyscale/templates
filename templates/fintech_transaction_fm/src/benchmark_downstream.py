@@ -1,18 +1,21 @@
-"""Stage 05 — NVIDIA notebook-05 fraud detection on the benchmark rows.
+"""Stage 05 — fraud detection on the benchmark rows: the headline table.
 
-Trains XGBoost exactly as NVIDIA's ``05_xgboost_fraud_detection.ipynb``, on
-the exact rows stage 01 sampled with their notebook-01 protocol
-(``benchmark.parquet``: 1M balanced train + 100k stratified val/test):
+Evaluates on the exact rows stage 01 sampled with NVIDIA's notebook-01
+protocol (``benchmark.parquet``: 1M balanced train + 100k stratified
+val/test):
 
-* ``baseline``  — their 13 raw features, ordinal-encoded (XGB_PARAMS_RAW).
-  Runs without embeddings; reproduces their published 0.9885 / 0.1238.
-* ``embeddings`` — FM embeddings only, PCA'd to 64d (XGB_PARAMS_EMBED).
-* ``combined``   — 13 raw + 64d PCA embeddings (XGB_PARAMS_COMBINED).
+* ``baseline``        — their 13 raw features, ordinal-encoded
+  (XGB_PARAMS_RAW). Runs without embeddings; reproduces their published
+  0.9885 / 0.1238.
+* ``embed_pca64_xgb`` — THEIR notebook-05 protocol on OUR embeddings:
+  PCA to 64d, then XGBoost (XGB_PARAMS_EMBED).
+* ``embed_logistic`` / ``embed_xgb`` — our readout: the raw embedding, no
+  PCA, into a linear head / XGBoost. This is the headline row.
 
-Embedding rows are joined back to benchmark rows on (card_id, raw_ts) — the
-eval windows were emitted for exactly these keys, so the join is ~exact.
-When embeddings are used, ALL models run on the matched subset so the
-comparison is row-identical.
+Embedding rows are joined back to benchmark rows on (card_id, raw_ts,
+amount-cents) — the eval windows were emitted for exactly these keys, so the
+join is ~exact. When embeddings are used, ALL models run on the matched
+subset so the comparison is row-identical.
 """
 
 from __future__ import annotations
@@ -25,7 +28,6 @@ import numpy as np
 from .nvidia_baseline import (
     FEATURE_COLS,
     NVIDIA_REFERENCE,
-    XGB_PARAMS_COMBINED,
     XGB_PARAMS_EMBED,
     XGB_PARAMS_RAW,
     fit_eval,
@@ -34,22 +36,13 @@ from .nvidia_baseline import (
 )
 
 
-def _load_embeddings(embeddings_path: str, embedding_column: str | None = None):
-    """Stream embedding shards into (keys DataFrame, float32 matrix).
-
-    ``embedding_column`` picks a pooling variant (extraction writes one column
-    per readout — embedding_last/mean/max — from a single forward pass).
-    Default: "embedding" (the extraction's default pooling) when present,
-    else "embedding_last".
-    """
+def _load_embeddings(embeddings_path: str):
+    """Stream embedding shards into (keys DataFrame, float32 matrix)."""
     import pandas as pd
     import pyarrow.dataset as pads
 
     dset = pads.dataset(embeddings_path, format="parquet")
-    if embedding_column is None:
-        names = dset.schema.names
-        embedding_column = "embedding" if "embedding" in names else "embedding_last"
-    print(f"[05] embedding column: {embedding_column}")
+    embedding_column = "embedding"
     n = dset.count_rows()
     X = None
     cid = np.empty(n, np.int64)
@@ -85,19 +78,66 @@ def _load_embeddings(embeddings_path: str, embedding_column: str | None = None):
     return keys, X
 
 
+def _logistic_probe(X, y, masks, device="cpu", epochs=6, lr=1e-3, seed=0):
+    """Linear head on the raw embedding: z-scored, pos-weighted BCE, best
+    epoch selected on val ROC-AUC (mirroring XGBoost's early stopping)."""
+    import torch
+    from sklearn.metrics import average_precision_score, roc_auc_score
+
+    tr, va, te = (masks[s] for s in ("train", "val", "test"))
+    X64 = X.astype(np.float64)
+    mu, sd = np.nanmean(X64[tr], axis=0), np.nanstd(X64[tr], axis=0) + 1e-6
+
+    def _z(m):
+        z = np.nan_to_num((X64[m] - mu) / sd, nan=0.0, posinf=0.0, neginf=0.0)
+        return torch.as_tensor(np.clip(z, -10, 10), dtype=torch.float32)
+
+    Xt = {k: _z(m) for k, m in {"tr": tr, "va": va, "te": te}.items()}
+    ytr = torch.as_tensor(y[tr], dtype=torch.float32)
+    torch.manual_seed(seed)
+    net = torch.nn.Linear(X.shape[1], 1).to(device)
+    pos_w = torch.tensor([(len(ytr) - ytr.sum()) / ytr.sum()], device=device)
+    lossf = torch.nn.BCEWithLogitsLoss(pos_weight=pos_w)
+    opt = torch.optim.Adam(net.parameters(), lr=lr, weight_decay=1e-4)
+    n = len(ytr)
+    best_auc, best_state = -1.0, None
+    for _ in range(epochs):
+        perm = torch.randperm(n)
+        for i in range(0, n, 8192):
+            idx = perm[i : i + 8192]
+            opt.zero_grad()
+            loss = lossf(net(Xt["tr"][idx].to(device)).squeeze(-1), ytr[idx].to(device))
+            loss.backward()
+            opt.step()
+        with torch.no_grad():
+            va_p = net(Xt["va"].to(device)).squeeze(-1).cpu().numpy()
+        auc = roc_auc_score(y[va], va_p)
+        if auc > best_auc:
+            best_auc = auc
+            best_state = {k: v.clone() for k, v in net.state_dict().items()}
+    net.load_state_dict(best_state)
+    with torch.no_grad():
+        te_p = net(Xt["te"].to(device)).squeeze(-1).cpu().numpy()
+    return {
+        "auc_roc": float(roc_auc_score(y[te], te_p)),
+        "ap": float(average_precision_score(y[te], te_p)),
+        "val_auc_roc": float(best_auc),
+        "n_features": int(X.shape[1]),
+    }
+
+
 def run_benchmark(
     benchmark_path: str,
     output_dir: str,
     embeddings_path: str | None = None,
     device: str = "cpu",
-    embedding_column: str | None = None,
 ) -> dict:
     import pandas as pd
 
     bench = pd.read_parquet(benchmark_path)
     emb_row = None
     if embeddings_path:
-        keys, X_emb = _load_embeddings(embeddings_path, embedding_column)
+        keys, X_emb = _load_embeddings(embeddings_path)
         join_on = ["card_id", "_ts", "_amt_cents"]
         keys = keys.drop_duplicates(join_on, keep="first")
         n0 = len(bench)
@@ -145,16 +185,20 @@ def run_benchmark(
         Ep["train"], Ep["val"], Ep["test"], pca_explained = pca_embeddings(
             E["train"], E["val"], E["test"]
         )
-        print("[05] training embeddings-only (64d PCA, XGB_PARAMS_EMBED) ...")
-        results["embeddings"] = fit_eval(
+        print("[05] training embed_pca64_xgb (their protocol: 64d PCA, XGB_PARAMS_EMBED) ...")
+        results["embed_pca64_xgb"] = fit_eval(
             Ep["train"], y["train"], Ep["val"], y["val"], Ep["test"], y["test"],
             params=XGB_PARAMS_EMBED, device=device,
         )
-        print("[05] training combined (13 raw + 64d PCA, XGB_PARAMS_COMBINED) ...")
-        C = {s: np.hstack([X_enc[s], Ep[s]]) for s in masks}
-        results["combined"] = fit_eval(
-            C["train"], y["train"], C["val"], y["val"], C["test"], y["test"],
-            params=XGB_PARAMS_COMBINED, device=device,
+        print("[05] training embed_logistic (raw embedding, no PCA, linear head) ...")
+        E_full = X_emb[emb_row]
+        yb = bench["_target"].to_numpy().astype(np.int64)
+        results["embed_logistic"] = _logistic_probe(E_full, yb, masks, device=device)
+        print("[05] training embed_xgb (raw embedding, no PCA, XGB_PARAMS_EMBED) ...")
+        Ef = {s: E_full[m] for s, m in masks.items()}
+        results["embed_xgb"] = fit_eval(
+            Ef["train"], y["train"], Ef["val"], y["val"], Ef["test"], y["test"],
+            params=XGB_PARAMS_EMBED, device=device,
         )
 
     summary = {
@@ -168,14 +212,14 @@ def run_benchmark(
         # Self-documenting for the writeup: the exact recipe behind each number.
         "xgb_params": {
             "baseline": XGB_PARAMS_RAW,
-            **({"embeddings": XGB_PARAMS_EMBED, "combined": XGB_PARAMS_COMBINED}
+            **({"embed_pca64_xgb": XGB_PARAMS_EMBED, "embed_xgb": XGB_PARAMS_EMBED}
                if embeddings_path else {}),
         },
         "embedding_dim": int(X_emb.shape[1]) if embeddings_path else None,
         "pca_explained_variance": pca_explained,
         "results": results,
     }
-    for name in ("embeddings", "combined"):
+    for name in ("embed_pca64_xgb", "embed_logistic", "embed_xgb"):
         if name in results:
             b, r = results["baseline"], results[name]
             summary[f"{name}_lift_ap_pct"] = (r["ap"] - b["ap"]) / b["ap"] * 100
@@ -191,15 +235,15 @@ def run_benchmark(
 
 def print_benchmark(summary: dict) -> None:
     ref = summary["nvidia_reference"]
-    print(f"\n{'model':<12} {'ROC-AUC':>10} {'AP':>10}   (test, 100k stratified)")
-    print("-" * 46)
+    print(f"\n{'model':<16} {'ROC-AUC':>10} {'AP':>10}   (test, 100k stratified)")
+    print("-" * 50)
     for name, r in summary["results"].items():
-        print(f"{name:<12} {r['auc_roc']:>10.4f} {r['ap']:>10.4f}")
-    print(f"{'nvidia base':<12} {ref['baseline']['auc_roc']:>10.4f} {ref['baseline']['ap']:>10.4f}")
-    print(f"{'nvidia comb':<12} {ref['combined']['auc_roc']:>10.4f} {ref['combined']['ap']:>10.4f}")
-    for name in ("embeddings", "combined"):
+        print(f"{name:<16} {r['auc_roc']:>10.4f} {r['ap']:>10.4f}")
+    print(f"{'nvidia base':<16} {ref['baseline']['auc_roc']:>10.4f} {ref['baseline']['ap']:>10.4f}")
+    print(f"{'nvidia fusion':<16} {ref['combined']['auc_roc']:>10.4f} {ref['combined']['ap']:>10.4f}")
+    for name in ("embed_pca64_xgb", "embed_logistic", "embed_xgb"):
         k = f"{name}_lift_ap_pct"
         if k in summary:
             print(f"  {name} vs baseline: AP {summary[k]:+.2f}%  "
                   f"ROC-AUC {summary[f'{name}_lift_auc_pct']:+.2f}%  "
-                  f"(NVIDIA combined: AP +41.8%)")
+                  f"(NVIDIA's fusion: AP +41.8%)")

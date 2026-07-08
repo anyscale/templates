@@ -1,9 +1,9 @@
 """Step 5 — downstream fraud detection, NVIDIA blueprint protocol.
 
-Trains their notebook-05 XGBoost models on the benchmark rows stage 01
-sampled (1M balanced train + 100k stratified val/test): the 13-raw-feature
-baseline by default; add ``--with-embeddings`` to also train the
-embeddings-only and combined (raw + FM embedding) models.
+Trains on the benchmark rows stage 01 sampled (1M balanced train + 100k
+stratified val/test): the 13-raw-feature baseline by default; add
+``--with-embeddings`` to print the full headline table (baseline /
+their-protocol PCA64+XGB / our no-PCA embedding readouts).
 
 Synthetic data has no benchmark file — falls back to the legacy raw/fm/fusion
 comparison on the heuristic eval windows.
@@ -24,15 +24,9 @@ def main():
     add_scale_args(p)
     p.add_argument("--base-dir", default=None)
     p.add_argument("--with-embeddings", action="store_true",
-                   help="also train the embeddings-only and combined models "
-                        "(requires stages 03/04)")
+                   help="also train the embedding models and print the "
+                        "headline table (requires stages 03/04)")
     p.add_argument("--device", default="cpu", help="XGBoost device (cpu | cuda)")
-    # Overrides for scoring alternate embedding variants side-by-side.
-    p.add_argument("--embeddings-path", default=None)
-    p.add_argument("--output-dir", default=None)
-    p.add_argument("--embedding-column", default=None,
-                   help="pooling variant column (embedding_last/mean/max); "
-                        "default: 'embedding' if present else embedding_last")
     args = p.parse_args()
 
     load_scale(args.scale, args.scale_config)  # validate the name early
@@ -44,14 +38,9 @@ def main():
 
         summary = run_benchmark(
             benchmark_path=paths["benchmark"],
-            output_dir=args.output_dir or paths["downstream"],
-            embeddings_path=(
-                (args.embeddings_path or paths["embeddings"])
-                if args.with_embeddings
-                else None
-            ),
+            output_dir=paths["downstream"],
+            embeddings_path=paths["embeddings"] if args.with_embeddings else None,
             device=args.device,
-            embedding_column=args.embedding_column,
         )
         print_benchmark(summary)
     else:

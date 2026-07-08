@@ -52,12 +52,8 @@ class TransactionFM(nn.Module):
         infonce_max_anchors: int = 4096,
         signal_fields: list | tuple = (),
         signal_vocab_sizes: dict | None = None,
-        # RUN-2b ablation flags (gemini_ideas.txt + TEARDOWN.md #3) — all
-        # default OFF = byte-identical to the previous architecture.
-        intra_tx_attention: bool = False,  # G1: field-stack MHA fusion
-        intra_tx_heads: int = 4,
-        periodic_amount: bool = False,     # G2: Fourier log-amount channel
-        periodic_time: bool = False,       # G3: Time2Vec delta channel
+        periodic_amount: bool = False,     # Fourier channel on signed log-amount
+        periodic_time: bool = False,       # Time2Vec channel on log time-deltas
         n_periodic: int = 16,
     ):
         super().__init__()
@@ -89,21 +85,9 @@ class TransactionFM(nn.Module):
         self.input_norm = nn.LayerNorm(d_model)
         self.dropout = nn.Dropout(dropout)
 
-        # G1 — intra-transaction attention fusion (FATA-Trans's field
-        # transformer, TEARDOWN.md #3): a small MHA over the per-field
-        # embedding stack with learned attribute-slot positions, added as a
-        # RESIDUAL on top of the summed representation (flag off = old model).
-        self.use_intra_tx = intra_tx_attention
-        if intra_tx_attention:
-            n_slots = len(dynamic_fields) + 1 + int(self.time_aware)  # fields + statics (+ gap)
-            self.attr_slot_emb = nn.Parameter(torch.randn(n_slots, d_model) * 0.02)
-            self.intra_attn = nn.MultiheadAttention(
-                d_model, intra_tx_heads, dropout=dropout, batch_first=True
-            )
-            self.intra_norm = nn.LayerNorm(d_model)
-        # G2/G3 — continuous channels (Gorishniy-style periodic features):
-        # learned frequency banks over signed log-amount / log time-delta,
-        # added alongside (not replacing) the bucketed tokens.
+        # Continuous channels (Gorishniy-style periodic features): learned
+        # frequency banks over signed log-amount / log time-delta, added
+        # alongside (not replacing) the bucketed tokens.
         self.use_periodic_amount = periodic_amount
         self.use_periodic_time = periodic_time
         if periodic_amount:
@@ -159,7 +143,6 @@ class TransactionFM(nn.Module):
 
         # .long(): token columns arrive as int32 (storage-efficient at long
         # seq_len); nn.Embedding requires int64 indices.
-        parts = []  # per-field [B,S,d] embeddings (G1 attends over this stack)
         x = torch.zeros(B, S, self.d_model, device=device)
         for f in self.dynamic_fields:
             if (
@@ -176,25 +159,18 @@ class TransactionFM(nn.Module):
             else:
                 e = self.dyn_emb[f](batch[f"d_{f}"].long())
             x = x + e
-            if self.use_intra_tx:
-                parts.append(e)
 
         static_vec = torch.zeros(B, self.d_model, device=device)
         for f in self.static_fields:
             static_vec = static_vec + self.static_emb[f](batch[f"s_{f}"].long())
         x = x + static_vec.unsqueeze(1)  # broadcast static over all positions
-        if self.use_intra_tx:
-            parts.append(static_vec.unsqueeze(1).expand(B, S, self.d_model))
 
         pos = torch.arange(S, device=device).unsqueeze(0).expand(B, S)
         x = x + self.pos_emb(pos)
         if self.time_aware and "time_bucket" in batch:
-            te = self.time_emb(batch["time_bucket"].long())  # inter-txn gap
-            x = x + te
-            if self.use_intra_tx:
-                parts.append(te)
+            x = x + self.time_emb(batch["time_bucket"].long())  # inter-txn gap
 
-        # G2/G3: continuous periodic channels ride alongside the buckets.
+        # Continuous periodic channels ride alongside the buckets.
         if self.use_periodic_amount and "d_amount_log" in batch:
             v = batch["d_amount_log"].float().unsqueeze(-1)  # [B,S,1]
             ang = 2.0 * math.pi * v * self.amount_freq
@@ -203,16 +179,6 @@ class TransactionFM(nn.Module):
             v = batch["d_delta_log"].float().unsqueeze(-1)
             ang = 2.0 * math.pi * v * self.tdelta_freq
             x = x + self.tdelta_proj(torch.cat([ang.sin(), ang.cos()], dim=-1))
-
-        # G1: intra-transaction attention over the field stack, residual on
-        # top of the sum (gradient path through the sum stays intact — the
-        # attention only has to learn the interaction CORRECTIONS).
-        if self.use_intra_tx:
-            stack = torch.stack(parts, dim=2)  # [B,S,F,d]
-            stack = stack + self.attr_slot_emb.view(1, 1, -1, self.d_model)
-            flat = stack.reshape(B * S, stack.shape[2], self.d_model)
-            fused, _ = self.intra_attn(flat, flat, flat, need_weights=False)
-            x = x + self.intra_norm(fused.mean(dim=1).view(B, S, self.d_model))
 
         x = self.dropout(self.input_norm(x))
 
@@ -230,8 +196,6 @@ class TransactionFM(nn.Module):
         masked=None,
         weighting: str = "uncertainty",
         infonce_scale: float = 1.0,
-        seq_views: tuple | None = None,
-        seq_cl_scale: float = 0.0,
     ):
         """Training forward returns the MLM loss; with ``targets=None`` returns
         the encoder hidden states.
@@ -239,67 +203,20 @@ class TransactionFM(nn.Module):
         The heads and ``log_var`` are applied *inside* ``forward`` on purpose, so
         that under DDP every trainable parameter participates in the wrapped
         forward pass and its gradients get all-reduced across workers.
-
-        ``seq_views=(view1, view2, pair_valid)`` adds a CoLES-style
-        sequence-level contrastive term (see ``seq_contrastive_loss``), scaled
-        by ``seq_cl_scale``. Computed inside this forward so DDP grad sync
-        stays correct with the extra encode passes.
         """
         hidden = self.encode(batch)
         if targets is None:
             return hidden
-        total, stats = self.field_loss(
+        return self.field_loss(
             hidden, batch, targets, masked, weighting, infonce_scale
         )
-        if seq_views is not None and seq_cl_scale > 0.0:
-            loss_cl, acc_cl = self.seq_contrastive_loss(*seq_views)
-            total = total + seq_cl_scale * loss_cl
-            stats["seq_cl"] = {"ce": float(loss_cl.item()), "acc": float(acc_cl)}
-        return total, stats
-
-    def seq_contrastive_loss(self, view1: dict, view2: dict, pair_valid, temperature: float = 0.1):
-        """CoLES-style sequence-level InfoNCE (Babaev et al., SIGMOD 2022).
-
-        The two views are disjoint temporal halves of each window — two
-        sub-sequences of the same card — with static fields PAD'd out (else
-        matching them via the user/card id embedding is a trivial shortcut
-        that learns no behavior). Positives: (i, i); negatives: the rest of
-        the batch. Headless (loss directly on L2-normalized masked-mean
-        pooled states), as in CoLES — no extra parameters, so checkpoints
-        stay drop-in compatible with every consumer.
-
-        MLM learns per-position ("local") structure; this term is what makes
-        the POOLED embedding carry card-level ("global") behavior — the
-        readout the frozen-embeddings-into-XGBoost protocol consumes.
-        """
-
-        def pooled(view):
-            h = self.encode(view)
-            m = view["attention_mask"].unsqueeze(-1).float()
-            z = (h * m).sum(dim=1) / m.sum(dim=1).clamp(min=1.0)
-            return F.normalize(z, dim=-1)
-
-        z1, z2 = pooled(view1), pooled(view2)
-        valid = pair_valid.bool()
-        if not bool(valid.any()):
-            # keep encoder params in the graph so DDP reducers stay in sync
-            return (z1.sum() + z2.sum()) * 0.0, 0.0
-        sim = z1 @ z2.t() / temperature  # (B, B): halves of row i must find each other
-        labels = torch.arange(sim.shape[0], device=sim.device)
-        loss = 0.5 * (
-            F.cross_entropy(sim[valid], labels[valid])
-            + F.cross_entropy(sim.t()[valid], labels[valid])
-        )
-        with torch.no_grad():
-            acc = (sim.argmax(dim=1)[valid] == labels[valid]).float().mean()
-        return loss, float(acc.item())
 
     def field_loss(
         self,
         hidden: torch.Tensor,
         batch: dict,
         targets: dict,
-        masked,
+        masked: dict,
         weighting: str = "uncertainty",
         infonce_scale: float = 1.0,
     ):
@@ -330,14 +247,11 @@ class TransactionFM(nn.Module):
         eval. These per-field numbers (not the weighted total, which drifts as
         the log-variances learn) are what you watch to confirm training works.
         """
-        # ``masked`` is a per-field dict (RUN-2 independent masking) or a
-        # single [B,S] bool shared by all fields (legacy whole-row masking).
-        per_field = isinstance(masked, dict)
-        hid_shared = None if per_field else hidden[masked]
+        # ``masked`` maps field -> [B,S] bool (independent per-field masks).
         ce, stats = {}, {}
         for f in self.dynamic_fields:
-            mf = masked[f] if per_field else masked
-            hid_m = hidden[mf] if per_field else hid_shared
+            mf = masked[f]
+            hid_m = hidden[mf]
             tg = targets[f][mf]
             if tg.numel() == 0:
                 # No positions drew this field's mask (tiny smoke batches):
@@ -396,37 +310,6 @@ class TransactionFM(nn.Module):
         return total, stats
 
     @torch.no_grad()
-    def target_readout(self, batch: dict, targets: dict):
-        """Run-1 readout surgery: target-conditioned features from an MLM.
-
-        ``batch`` must arrive with the LAST position's dynamic fields already
-        set to MASK (sequences are right-aligned; last position = the target
-        transaction). ``targets`` maps field -> (B,) true token ids at that
-        position. Returns:
-
-        * ``h_masked``  — the target-position hidden state under masking: the
-          ONLY state this MLM was ever trained to make informative (field_loss
-          supervises hidden[masked] exclusively), unlike the unmasked pooled
-          readouts that failed.
-        * ``surprise`` — (B, n_dynamic_fields) per-field cross-entropy of the
-          TRUE target fields under the MLM heads: literally "how anomalous is
-          this transaction given this card's history", the quantity a fraud
-          model wants. InfoNCE fields score against the full tied table
-          (exact softmax — cheap at inference).
-        """
-        hidden = self.encode(batch)
-        h = hidden[:, -1, :]
-        cols = []
-        for f in self.dynamic_fields:
-            tg = targets[f].long()
-            if f in self.infonce_fields:
-                logits = self.infonce_proj[f](h) @ self.dyn_emb[f].weight.t()
-            else:
-                logits = self.mlm_heads[f](h)
-            cols.append(F.cross_entropy(logits, tg, reduction="none"))
-        return h, torch.stack(cols, dim=1)
-
-    @torch.no_grad()
     def sequence_embedding(self, batch: dict, pooling: str = "mean") -> torch.Tensor:
         """Pool final hidden states into one vector per sequence.
 
@@ -438,26 +321,15 @@ class TransactionFM(nn.Module):
 
         ``"mean"`` — masked mean over valid positions: a whole-history
         customer summary, the right readout for card-level tasks.
-
-        ``"all"`` — one encode, every readout: dict of {"last", "mean",
-        "max"}. The forward pass is 99% of the cost, the reductions are
-        free — batch extraction emits all of them so downstream experiments
-        never re-run the GPU pass to try a different pooling.
         """
         hidden = self.encode(batch)
         if pooling == "last":
             return hidden[:, -1, :]
+        assert pooling == "mean", f"unknown pooling: {pooling}"
         mask = batch["attention_mask"].unsqueeze(-1).float()
         summed = (hidden * mask).sum(dim=1)
         counts = mask.sum(dim=1).clamp(min=1.0)
-        if pooling == "mean":
-            return summed / counts
-        # masked max: padded positions -> -inf so they never win
-        maxed = hidden.masked_fill(mask == 0, float("-inf")).max(dim=1).values
-        if pooling == "max":
-            return maxed
-        assert pooling == "all", f"unknown pooling: {pooling}"
-        return {"last": hidden[:, -1, :], "mean": summed / counts, "max": maxed}
+        return summed / counts
 
 
 def infonce_loss(
@@ -534,14 +406,13 @@ def build_model(vocab_path: str, arch: dict, max_len: int = 64, infonce_negative
 def mask_batch(batch: dict, dynamic_fields: list, mask_prob: float = 0.15):
     """Masked-feature-modeling corruption — INDEPENDENT per-field masks.
 
-    RUN-2 (TEARDOWN.md #3): each dynamic field draws its own mask (prob
-    ``mask_prob`` per field per valid position). Whole-transaction masking
-    made the pretext solvable from card marginals (identity/position/time
-    stayed visible while ALL fields vanished) and forfeited intra-transaction
-    conditional structure — with independent masks, predicting a hidden field
-    from its visible siblings (P(state|merchant,amount), P(mcc|merchant))
-    is most of the task, which is exactly the interaction signal the
-    downstream fusion needs.
+    Each dynamic field draws its own mask (prob ``mask_prob`` per field per
+    valid position). Whole-transaction masking would make the pretext solvable
+    from card marginals (identity/position/time stay visible while ALL fields
+    vanish) and forfeit intra-transaction conditional structure — with
+    independent masks, predicting a hidden field from its visible siblings
+    (P(state|merchant,amount), P(mcc|merchant)) is most of the task, which is
+    exactly the interaction signal the downstream fraud model needs.
 
     Returns (corrupted_batch, targets, masked) where ``masked`` maps
     field -> [B,S] bool of that field's supervised positions.
@@ -562,7 +433,7 @@ def mask_batch(batch: dict, dynamic_fields: list, mask_prob: float = 0.15):
         frac = batch["d_amount_frac"].clone()
         frac[masked["amount_bucket"]] = 0.0
         corrupted["d_amount_frac"] = frac
-    # G2 leak fix (MANDATORY): the continuous log-amount channel must vanish
+    # Leak fix (MANDATORY): the continuous log-amount channel must vanish
     # wherever the amount token is masked, or the amount MLM head reads its
     # own answer (canary: acc_amount_bucket ~1.0 from step 1).
     if "d_amount_log" in batch and "amount_bucket" in masked:

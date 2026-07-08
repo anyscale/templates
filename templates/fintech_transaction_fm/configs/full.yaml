@@ -23,14 +23,9 @@ model:
   n_heads: 8
   n_layers: 8
   dim_ff: 2048
-  # RUN-2b ablation flags (gemini_ideas.txt; reviewer-vetted). Each is an
-  # independent knob; off = the exact previous architecture.
-  periodic_amount: true      # G2: Fourier channel on signed log-amount
-  periodic_time: true        # G3: Time2Vec channel on log time-deltas
+  periodic_amount: true      # Fourier channel on signed log-amount
+  periodic_time: true        # Time2Vec channel on log time-deltas
   n_periodic: 16
-  intra_tx_attention: false  # G1 DEFERRED: replaces the fusion operator +
-                             # inflates step time/memory — confounds Run-2's
-                             # tokenizer-parity question. Ablate separately.
 
 pretrain:
   epochs: 20                 # epochs are cheap: non-overlapping 512-txn windows = ~38k/epoch
@@ -44,12 +39,6 @@ pretrain:
   use_fsdp: false
   infonce_negatives: 1024      # shared negatives per batch (TREASURE Alg. 1)
   infonce_warmup_frac: 0.3     # anneal the merchant head in (see small.yaml)
-  seq_cl_weight: 0.0           # OFF (RUN-2). The CoLES half-window term trains
-                               # same-card invariance ACROSS time — the opposite of
-                               # the within-card temporal deviation fraud needs
-                               # (TEARDOWN.md #4). Measured: un-collapsed the space
-                               # (cos 0.85->0.67) but no downstream change, and it
-                               # taxed the merchant head (reco HR@10 0.37->0.05).
 
 embed:
   num_workers: 4

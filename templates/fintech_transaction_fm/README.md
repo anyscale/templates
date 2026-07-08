@@ -5,19 +5,50 @@
   <a href="https://github.com/anyscale/templates/tree/main/templates/fintech_transaction_fm" role="button"><img src="https://img.shields.io/static/v1?label=&message=View%20On%20GitHub&color=586069&logo=github&labelColor=2f363d"></a>&nbsp;
 </div>
 
-**⏱️ Time to complete**: 45 min
+**⏱️ Time to complete**: 45 min (notebook walkthrough) / ~5 h of unattended jobs (full reproduction)
 
 ### Anyscale Technical Demo — Ray Data + Ray Train + Ray Serve
 
 ---
 
-## Business Context
+## What this is
+
+One self-supervised transformer pretrained on raw transaction sequences, producing a per-card **embedding** that beats the **NVIDIA transaction-FM blueprint** on its own TabFormer fraud protocol — with a plain linear head on the embedding, no fusion with hand-built features. The trick is the tokenizer: **1 position per transaction** (static/dynamic field split) instead of their ~12 tokens per transaction, so a 512-position window covers **512 transactions of history** vs ~315 in their 4096-token context — and scales to 1024/2048.
+
+## Reproduce the headline — three commands
+
+Each command is an Anyscale Job against durable storage (`/mnt/user_storage`); run them in order from this directory:
+
+```bash
+# 1. THE GATE — reproduce NVIDIA's published baseline through this pipeline (CPU)
+anyscale job submit -f job_baseline.yaml     # -> Test ROC-AUC ~0.9875 / AP ~0.1421
+
+# 2. THE HEADLINE — pretrain the FM from scratch + print the fraud table (4-8x A10G)
+anyscale job submit -f job_full.yaml
+
+# 3. THE SCALING STORY — same recipe at 1024 transactions of context
+anyscale job submit -f job_xl.yaml
+```
+
+Expected table from step 2 (seq 512, TabFormer, test split at natural ~0.1% fraud):
+
+| model            | what it is                                    | ROC-AUC | AP        |
+|------------------|-----------------------------------------------|---------|-----------|
+| baseline         | their 13 raw features + their XGBoost         | ~0.987  | ~0.14     |
+| embed_pca64_xgb  | their notebook-05 protocol on our embedding   | ~0.98   | ~0.16     |
+| embed_logistic   | our embedding, no PCA, linear head            | ~0.98   | **~0.23+**|
+| embed_xgb        | our embedding, no PCA, XGBoost                | ~0.98   | **~0.23+**|
+| *NVIDIA published* | *their baseline / their fusion*             | *0.9885 / 0.9925* | *0.1238 / 0.1755* |
+
+**Hardware**: the job yamls autoscale 0→8 `g5.xlarge` (A10G) GPU workers + CPU workers on `aws-public-us-west-2`; edit `compute_config` for your cloud. Pretraining at `full` is ~4 h on 4x A10G.
+
+---
+
+## Business context
 
 Banks and fintechs are converging on **transaction foundation models** (TFMs): a single self-supervised transformer pretrained on raw transaction sequences, producing a reusable **customer embedding** that powers fraud, churn, credit, and personalization — replacing dozens of hand-built feature pipelines. Stripe, Visa (TREASURE), Nubank, and Revolut (PRAGMA) have all published variants of this recipe.
 
-The model itself is small and not the hard part. The hard parts are **engineering at scale**: tokenizing petabytes of transactions, building a vocabulary over 100M+ merchants, pretraining across many GPUs, and re-embedding every customer on a schedule — then serving those embeddings both in batch and in real time.
-
-**This template** builds that whole distributed pipeline on Ray and shows **one self-supervised backbone serving two downstream consumers — fraud *and* recommendation**. The model follows **FATA-Trans** (static/dynamic field split + time-aware positions + masked-feature pretraining), runs the **NVIDIA blueprint's** TabFormer fraud protocol as the baseline, and adopts **Visa TREASURE's** trick for high-cardinality categoricals — **InfoNCE with shared negative sampling** — so the real ~100k-merchant vocabulary is tractable and the same embedding ranks next-merchant recommendations. It also models **payment-network signals** (decline/response codes) as an output-only head — TREASURE's distinguishing pillar (predicted, never fed in, so it can't leak).
+The model itself is small and not the hard part. The hard parts are **engineering at scale**: tokenizing petabytes of transactions, building a vocabulary over 100M+ merchants, pretraining across many GPUs, and re-embedding every customer on a schedule — then serving those embeddings both in batch and in real time. The model follows **FATA-Trans** (static/dynamic field split + time-aware positions + masked-feature pretraining) and adopts **Visa TREASURE's** InfoNCE with shared negative sampling so the real ~100k-merchant vocabulary is tractable — the same embedding also ranks next-merchant recommendations as a template extra.
 
 ---
 
@@ -29,7 +60,7 @@ The model itself is small and not the hard part. The hard parts are **engineerin
    (Parquet, S3)       │ [Ray Data]   static/dynamic tokenization (map_groups)   │
                        │ [Ray Train]  masked pretrain + InfoNCE (PyTorch + DDP)  │
                        │ [Ray Data]   batch embedding extraction (CPU read+GPU)  │
-                       │ ├─ [XGBoost] fraud: raw vs FM vs fusion (AUC/PR-AUC)    │
+                       │ ├─ [XGBoost] fraud: raw baseline vs FM embedding        │
                        │ └─ [rank]    recommendation: next-merchant (HR@K/NDCG@K)│
                        │ [Ray Serve]  online embedding + fraud score (cached)     │
                        └─────────────────────────────────────────────────────────┘
@@ -39,7 +70,7 @@ Every stage is the **same code** from laptop to multi-node cluster — you chang
 
 ---
 
-**Walkthrough:** this notebook runs end-to-end at `smoke` scale (a few thousand cards, a 2-layer model) so it completes in minutes on a small cluster. Flip `SCALE` to `small`/`full` and `USE_GPU=True` for the real distributed story.
+**Walkthrough:** the rest of this notebook runs the same pipeline end-to-end at `smoke` scale (a few thousand cards, a 2-layer model) so it completes in minutes on a small cluster. Flip `SCALE` to `small`/`full` and `USE_GPU=True` for the real distributed story.
 
 ## Get the code
 
@@ -205,45 +236,24 @@ emb = pd.read_parquet(paths["embeddings"])
 print(f"{len(emb):,} transaction-window embeddings, dim={len(emb['embedding'].iloc[0])}")
 ```
 
-## Step 6: Downstream fraud — the NVIDIA benchmark
+## Step 6: Downstream fraud — the headline table
 
-The headline result, evaluated with the **NVIDIA transaction-FM blueprint protocol, exactly** — not "inspired by". One module, `src/nvidia_baseline.py`, holds their notebooks' split/sampling/features/hyperparameters verbatim (temporal 80/10/10 by date, 1M class-balanced train, 100k stratified val/test at natural ~0.1% fraud, their 13 `FEATURE_COLS`, their per-model Optuna XGBoost params, their 512d→64d embedding PCA), and every stage consumes it: 01 writes the sampled rows to `benchmark.parquet`, 02 tokenizes eval windows for exactly those rows, 05 trains on them.
+Evaluated with the **NVIDIA transaction-FM blueprint protocol** (their notebook-01 split and sampling: temporal 80/10/10, 1M balanced train, 100k stratified val/test, their Optuna'd XGBoost params). Stage 05 prints one table:
 
-### Reproduce their baseline BEFORE any FM work (crucial)
+1. **baseline** — their 13 raw transaction features (the gate: reproduces their published numbers through this pipeline)
+2. **embed_pca64_xgb** — *their* notebook-05 protocol (PCA→64d + XGBoost) applied to *our* embedding
+3. **embed_logistic / embed_xgb** — our readout: the raw pooled-last embedding, no PCA, into a linear head / XGBoost
 
-The gate for everything else: prove the pipeline is on their data + protocol by reproducing their published baseline **with no FM stages at all** (05's baseline needs only `benchmark.parquet`):
+At `full` scale the no-PCA readouts are the headline — AP well above their published fusion. *(At `smoke` scale — 2 CPU epochs, a 2-layer model, synthetic fallback eval — expect embedding ≈ raw; the gap opens with the `small`/`full` GPU pretrain on TabFormer.)*
 
-```bash
-# CPU-only — 01 skips normalize if raw exists, builds the benchmark sample; 05
-# trains the 13-feature baseline with their exact recipe:
-anyscale job submit -f job_baseline.yaml
-# or, on any cluster with the raw data at $BASE:
-python scripts/01_generate_data.py    --scale full --base-dir $BASE
-python scripts/05_train_downstream.py --scale full --base-dir $BASE
-```
+**Template extra — next-merchant recommendation.** On the learned-vocab path the *same* backbone ranks the next merchant a card will transact with (BERT4Rec-style: mask the target, score it against the InfoNCE merchant table), reported as HR@K / NDCG@K via `scripts/06_recommend.py`. It is off the headline path — fraud is the story; reco shows the one-backbone-many-consumers shape.
 
-Verified 2026-07-07 (job `fintech-fm-nvidia-baseline`) on IBM TabFormer, 24,386,900 transactions:
-
-| | Test ROC-AUC | Test AP |
-|---|--:|--:|
-| **this pipeline (baseline)** | **0.9875** | **0.1421** |
-| NVIDIA blog | 0.9885 | 0.1238 |
-| NVIDIA notebook 01 | 0.9914 | 0.1424 |
-
-If you don't get ~0.987 / ~0.14 here, **stop** — the data prep has drifted and no FM comparison is meaningful (we learned this the hard way; see `EXPERIMENT_LOG.md`). Sampling is fully pinned: seeded (42, their RNG idiom), stable-sorted input, and `benchmark.parquet` is written once and reused by every stage.
-
-### Then add the FM
-
-`05 --with-embeddings` trains their notebook-05 trio on the same rows: **baseline** (13 raw features), **embeddings** (64d PCA of the FM embedding), **combined** (13 + 64d). The AP lift of combined over baseline is the case for a transaction FM — NVIDIA reports +41.8% AP for theirs.
-
-**Second consumer — next-merchant recommendation.** On the learned-vocab path the *same* embedding backbone also ranks the next merchant a card will transact with (BERT4Rec-style: mask the target, score it against the InfoNCE merchant table), reported as HR@K / NDCG@K next to a "recommend their most-frequent past merchant" baseline. This is the "one backbone, two consumers (fraud + recs)" payoff and runs automatically in the fused pipeline (`run_pipeline.py`) at `small`/`full`, or standalone via `scripts/06_recommend.py`. *(Synthetic merchants are random, so reco only carries signal on TabFormer; synthetic falls back to a raw/fm/fusion comparison on heuristic eval windows.)*
 
 ```python
-from src.benchmark_downstream import run_benchmark, print_benchmark
+from src.downstream import run_downstream, print_summary
 
-summary = run_benchmark(paths["benchmark"], paths["downstream"],
-                        embeddings_path=paths["embeddings"])
-print_benchmark(summary)
+summary = run_downstream(paths["embeddings"], paths["downstream"])
+print_summary(summary)
 ```
 
 ## Step 7: Online serving with Ray Serve
@@ -280,14 +290,12 @@ serve.shutdown()
 
 ## Step 9: Path to production
 
-The same code scales up by changing config, and runs as a scheduled **Anyscale Job**. `scripts/run_pipeline.py` wraps every stage (data -> vocab -> tokenize -> pretrain -> embed -> fraud -> recommendation -> validate) in one command:
+The same code scales up by changing config, and runs as scheduled **Anyscale Jobs** — the three yamls from the top of this README are the production path:
 
 ```bash
-# Full pipeline as a Job (GPU workers, autoscaling):
-anyscale job submit --config-file job_config.yaml
-
-# Larger scale:
-anyscale job submit --config-file job_config.yaml -- python scripts/run_pipeline.py --scale full
+anyscale job submit -f job_baseline.yaml   # gate: their baseline through this pipeline
+anyscale job submit -f job_full.yaml       # pretrain + extract + headline table (seq 512)
+anyscale job submit -f job_xl.yaml         # the same at 1024 transactions of context
 ```
 
 | Stage | Ray primitive | Scale knob |
@@ -299,6 +307,23 @@ anyscale job submit --config-file job_config.yaml -- python scripts/run_pipeline
 | Recommend | Ray Data `map_batches` | `num_workers`, `num_gpus` |
 | Online serve | Ray Serve | replica autoscaling |
 
+## Bring your own data
+
+Stage 01 ingests the raw TabFormer CSV schema. To run on your own transactions, provide a CSV with these columns (or adapt `src/tabformer._normalize`, ~40 lines):
+
+| column | example | notes |
+|--------|---------|-------|
+| `User`, `Card` | `29`, `1` | together they form the card id |
+| `Year`, `Month`, `Day`, `Time` | `2019`, `3`, `7`, `13:42` | transaction timestamp (minute resolution) |
+| `Amount` | `$57.20` | dollar string; sign carries refunds |
+| `Use Chip` | `Swipe Transaction` | channel |
+| `Merchant Name` | `-34...` (int64 id) | any stable merchant id |
+| `Merchant City` / `Merchant State` / `Zip` | `La Verne` / `CA` / `91750` | blank state = online |
+| `MCC` | `5912` | merchant category code |
+| `Errors?` | `Insufficient Balance` | payment-network signal (output-only head) |
+| `Is Fraud?` | `Yes` / `No` | the label |
+
+The load-bearing columns are card id, timestamp, amount, merchant id, MCC, and the label — the rest can be constant placeholders if you don't track them.
 
 ## Validate
 
