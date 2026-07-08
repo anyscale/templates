@@ -757,7 +757,7 @@
   owner_team: ray-data
   dir: templates/fintech_fraud_risk
   cluster_env:
-    image_uri: anyscale/ray:2.55.1-py311
+    image_uri: anyscale/ray:2.56.0-py311
   compute_config:
     AWS: configs/fintech_fraud_risk/aws.yaml
     GCP: configs/fintech_fraud_risk/gce.yaml
