@@ -2,7 +2,7 @@
 # Use this image to spin-up all your workers.
 
 # Start with an Anyscale base image.
-FROM anyscale/ray:2.55.1-py311-cu128
+FROM anyscale/ray:2.56.0-py311-cu128
 
 # Install system dependencies
 RUN sudo apt-get update -y \
