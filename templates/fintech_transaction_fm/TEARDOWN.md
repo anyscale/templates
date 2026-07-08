@@ -122,6 +122,37 @@ Verdict so far: flaws #1 (readout) and #2/#3/#7 (inputs/masking) were both
 real and BOTH fixes pay. The causal pivot (old Run-3) looks unnecessary —
 parked unless the remaining evals reverse.
 
+**R2 probe (no-PCA) + independent leak audit (2026-07-08 ~01:00):**
+- HEADLINE PROBE RESULT: R2 pooled-LAST embedding, raw 512d, small MLP:
+  **0.9975 ROC / 0.4655 AP** (baseline 0.1421; NVIDIA combined 0.1755).
+  Same embeddings under their exact PCA64+XGB harness: 0.1623 (+14.2%) —
+  THE protocol-faithful claim. Decomposition to report honestly:
+  0.1421 (their baseline) -> 0.1746 (single-txn, MLP) -> 0.4655 (full
+  history, MLP); PCA was destroying ~3x signal; mean pooling still dead
+  (position matters, not pooling flavor); fusion now HURTS (the
+  parity-complete FM subsumes the 13 features).
+- ADVERSARIAL AUDIT VERDICT: SUSPICIOUS-but-mechanically-CLEAN. All leak
+  vectors verified clean with empirical harnesses (prev_error shift,
+  stride/cutoff, probe alignment, dedup label-neutrality, metric wiring).
+  Mechanism validated in-data: 90.0% of test frauds have another fraud in
+  the previous 512 same-card txns vs 7.3% of normals — the history readout
+  legitimately detects mid-burst cards from auth-time-legal features.
+- DISCLOSED IMPURITY: 1,394 val-period txns (10.6h of the boundary day)
+  visible to pretraining via the quantile-vs-date cutoff mismatch; ZERO
+  test-period rows. Fix: unify splits.json to the date cutoff.
+- REQUIRED CONTROLS before publishing (status):
+  1. MLP-on-13-raw fair-head control — probe --raw-control built, rides G1 probe
+  2. seed variance — 3-seed job running (note: pre-fix seeds varied shuffle
+     only; init-seed fix landed d4747ecc; rerun 1 seed post-fix)
+  3. shuffled-label / shuffled-embedding sanity — QUEUED (morning)
+  4. checkpoint provenance — ATTESTED: embeddings/full extracted by the R2
+     job's own entrypoint immediately after 03's final checkpoint; no
+     probe_by_epoch selection involved
+  5. classical history-aggregates baseline (XGB on 13 + burst/velocity
+     features) — QUEUED (morning): quantifies how much of the lift a
+     non-FM burst detector recovers
+  6. cutoff unification — QUEUED
+
 ## The three-run plan (agreed 2026-07-07 night)
 
 - **Run 1 — readout surgery, ZERO retraining** (STATUS: built, running).
