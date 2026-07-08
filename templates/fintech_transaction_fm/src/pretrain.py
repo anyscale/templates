@@ -210,7 +210,8 @@ def train_func(config: dict):
             local_shuffle_seed=config.get("seed", 0) + epoch,
         ):
             corrupted, targets, masked = mask_batch(batch, dynamic_fields, mask_prob)
-            n = int(masked.sum())
+            # union of per-field masks: how many positions got any supervision
+            n = int(torch.stack(list(masked.values())).any(dim=0).sum())
             if n == 0:
                 continue
             infonce_scale = (

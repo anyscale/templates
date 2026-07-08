@@ -36,11 +36,12 @@ pretrain:
   use_fsdp: false
   infonce_negatives: 1024      # shared negatives per batch (TREASURE Alg. 1)
   infonce_warmup_frac: 0.3     # anneal the merchant head in (see small.yaml)
-  seq_cl_weight: 1.0           # CoLES-style card-level contrastive (two halves of
-                               # a window = positive pair): makes the POOLED
-                               # embedding carry global behavior — required for the
-                               # frozen-embeddings->XGBoost protocol. MLM alone
-                               # collapsed (pairwise cos 0.85-0.92, combined AP -71%).
+  seq_cl_weight: 0.0           # OFF (RUN-2). The CoLES half-window term trains
+                               # same-card invariance ACROSS time — the opposite of
+                               # the within-card temporal deviation fraud needs
+                               # (TEARDOWN.md #4). Measured: un-collapsed the space
+                               # (cos 0.85->0.67) but no downstream change, and it
+                               # taxed the merchant head (reco HR@10 0.37->0.05).
 
 embed:
   num_workers: 4

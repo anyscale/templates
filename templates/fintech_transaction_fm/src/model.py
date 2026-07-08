@@ -268,10 +268,25 @@ class TransactionFM(nn.Module):
         eval. These per-field numbers (not the weighted total, which drifts as
         the log-variances learn) are what you watch to confirm training works.
         """
-        hid_m = hidden[masked]  # (M, D) — supervised positions, flattened
+        # ``masked`` is a per-field dict (RUN-2 independent masking) or a
+        # single [B,S] bool shared by all fields (legacy whole-row masking).
+        per_field = isinstance(masked, dict)
+        hid_shared = None if per_field else hidden[masked]
         ce, stats = {}, {}
         for f in self.dynamic_fields:
-            tg = targets[f][masked]
+            mf = masked[f] if per_field else masked
+            hid_m = hidden[mf] if per_field else hid_shared
+            tg = targets[f][mf]
+            if tg.numel() == 0:
+                # No positions drew this field's mask (tiny smoke batches):
+                # touch the head with zero weight so DDP reducers stay in sync.
+                if f in self.infonce_fields:
+                    loss_f = self.infonce_proj[f](hidden[:, -1, :]).sum() * 0.0
+                else:
+                    loss_f = self.mlm_heads[f](hidden[:, -1, :]).sum() * 0.0
+                ce[f] = loss_f
+                stats[f] = {"ce": 0.0, "acc": 0.0}
+                continue
             if f in self.infonce_fields:
                 loss_f, acc = infonce_loss(
                     self.infonce_proj[f](hid_m),
@@ -455,27 +470,34 @@ def build_model(vocab_path: str, arch: dict, max_len: int = 64, infonce_negative
 
 
 def mask_batch(batch: dict, dynamic_fields: list, mask_prob: float = 0.15):
-    """Masked-feature-modeling corruption.
+    """Masked-feature-modeling corruption — INDEPENDENT per-field masks.
 
-    Selects valid (non-pad) positions with probability ``mask_prob``, replaces
-    every dynamic field token at those positions with MASK, and returns
-    (corrupted_batch, targets, masked_positions) where targets hold the original
-    field ids and masked_positions is a [B,S] boolean of supervised positions.
+    RUN-2 (TEARDOWN.md #3): each dynamic field draws its own mask (prob
+    ``mask_prob`` per field per valid position). Whole-transaction masking
+    made the pretext solvable from card marginals (identity/position/time
+    stayed visible while ALL fields vanished) and forfeited intra-transaction
+    conditional structure — with independent masks, predicting a hidden field
+    from its visible siblings (P(state|merchant,amount), P(mcc|merchant))
+    is most of the task, which is exactly the interaction signal the
+    downstream fusion needs.
+
+    Returns (corrupted_batch, targets, masked) where ``masked`` maps
+    field -> [B,S] bool of that field's supervised positions.
     """
     attn = batch["attention_mask"]
-    rand = torch.rand(attn.shape, device=attn.device)
-    masked = (rand < mask_prob) & (attn == 1)
-
-    targets = {f: batch[f"d_{f}"].clone().long() for f in dynamic_fields}
+    targets, masked = {}, {}
     corrupted = dict(batch)
     for f in dynamic_fields:
+        m = (torch.rand(attn.shape, device=attn.device) < mask_prob) & (attn == 1)
+        targets[f] = batch[f"d_{f}"].clone().long()
         col = batch[f"d_{f}"].clone()
-        col[masked] = MASK
+        col[m] = MASK
         corrupted[f"d_{f}"] = col
-    # If soft-binned amount is present, zero its blend weight at masked
-    # positions so the masked input is purely the MASK embedding.
-    if "d_amount_frac" in batch:
+        masked[f] = m
+    # If soft-binned amount is present, zero its blend weight at the amount
+    # field's masked positions so the masked input is purely the MASK embedding.
+    if "d_amount_frac" in batch and "amount_bucket" in masked:
         frac = batch["d_amount_frac"].clone()
-        frac[masked] = 0.0
+        frac[masked["amount_bucket"]] = 0.0
         corrupted["d_amount_frac"] = frac
     return corrupted, targets, masked

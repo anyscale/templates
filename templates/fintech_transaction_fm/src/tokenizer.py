@@ -74,7 +74,24 @@ SEQ_LEN_BY_SCALE = _seq_len_by_scale()
 # --- Deterministic field vocabularies (no data scan needed) ---
 N_AMOUNT_BUCKETS = 16
 N_MERCHANT_BUCKETS = 2000
-N_MCC_BUCKETS = 128  # hashed, like merchants — real data has open-ended MCC sets
+
+# RUN-2 (TEARDOWN.md): exact MCC vocabulary. TabFormer's MCC set is CLOSED
+# (109 codes, list from NVIDIA's blueprint tokenizer, Apache-2.0) — the old
+# `mcc % 128` hash guaranteed collisions for zero benefit. Unknown codes -> OOV.
+KNOWN_MCCS = [
+    -1, 1711, 3000, 3001, 3005, 3006, 3007, 3008, 3009, 3058, 3066,
+    3075, 3132, 3144, 3174, 3256, 3260, 3359, 3387, 3389, 3390, 3393,
+    3395, 3405, 3504, 3509, 3596, 3640, 3684, 3722, 3730, 3771, 3775,
+    3780, 4111, 4112, 4121, 4131, 4214, 4411, 4511, 4722, 4784, 4814,
+    4829, 4899, 4900, 5045, 5094, 5192, 5193, 5211, 5251, 5261, 5300,
+    5310, 5311, 5411, 5499, 5533, 5541, 5621, 5651, 5655, 5661, 5712,
+    5719, 5722, 5732, 5733, 5812, 5813, 5814, 5815, 5816, 5912, 5921,
+    5932, 5941, 5942, 5947, 5970, 5977, 6300, 7011, 7210, 7230, 7276,
+    7349, 7393, 7531, 7538, 7542, 7549, 7801, 7802, 7832, 7922, 7995,
+    7996, 8011, 8021, 8041, 8043, 8049, 8062, 8099, 8111, 8931, 9402,
+]
+_MCC_MAP = {c: i + _RESERVED for i, c in enumerate(KNOWN_MCCS)}
+N_ZIP3 = 1000  # per-txn 3-digit zip prefix (RUN-2; parity with NVIDIA's ZIP3)
 
 # log10(amount) bucket edges spanning ~$0.10 .. ~$100k.
 #
@@ -126,6 +143,16 @@ DYNAMIC_CATEGORICAL_VOCAB = {
     "day_of_week": _index_map(list(range(7))),
     # Transaction channel ("Use Chip"): a per-event INPUT, known at auth time.
     "channel": _index_map(["swipe", "chip", "online"]),
+    # RUN-2 (TEARDOWN.md #2/#7): per-transaction fields the old tokenizer
+    # deleted. merchant_state is THE geographic-novelty fraud axis (a per-card
+    # modal static cannot express "suddenly transacting in a new state");
+    # month adds seasonality; direction restores the refund sign abs() threw
+    # away; prev_error is the PREVIOUS txn's network signal (shifted by one,
+    # so it is known at auth time — never the target's own outcome).
+    "merchant_state": _index_map(US_STATES + ["ONLINE", "FOREIGN"]),
+    "month": _index_map(list(range(1, 13))),
+    "direction": _index_map(["debit", "credit"]),
+    "prev_error": _index_map(ERROR_CATEGORIES),
 }
 
 # Order of dynamic fields fed to the model (one embedding table each).
@@ -137,13 +164,19 @@ DYNAMIC_FIELDS = [
     "hour",
     "day_of_week",
     "channel",
+    "merchant_state",
+    "zip3",
+    "month",
+    "direction",
+    "prev_error",
 ]
-# User/Card identity as static (per-card) fields — mirrors NVIDIA's CUST
-# (User, clipped 0-2999) and CARD (0-9) tokens. Identity is the dominant
-# TabFormer fraud signal (fraud clusters by user; same users span the split),
-# so the FM needs it for parity. card_id = User*100 + Card (see tabformer.py).
-N_USERS, N_CARDS = 3000, 10
-STATIC_FIELDS = ["issuer", "card_type", "bin_region", "home_state", "user", "card"]
+# RUN-2 (TEARDOWN.md #5): user/card identity REMOVED from the FM input.
+# Broadcasting identity into every position made the pooled embedding and
+# its PCA identity-dominated (and gave the seq-CL task a trivial shortcut);
+# identity is already a raw feature in the downstream fusion, so the FM's
+# job is the behavioral/contextual signal identity can't carry.
+N_USERS, N_CARDS = 3000, 10  # kept for reference; no longer static fields
+STATIC_FIELDS = ["issuer", "card_type", "bin_region", "home_state"]
 
 # Payment-network signals (TREASURE's distinguishing pillar): predicted as
 # OUTPUTS, never fed as inputs (they're only known after a txn is processed, so
@@ -171,14 +204,13 @@ def field_vocab_sizes(merchant_vocab: dict | None = None) -> dict:
     sizes = {
         "amount_bucket": N_AMOUNT_BUCKETS + _RESERVED,
         "merchant_bucket": merchant_rows,
-        "mcc": N_MCC_BUCKETS + _RESERVED,
+        "mcc": len(KNOWN_MCCS) + _RESERVED,  # exact closed vocab (RUN-2)
+        "zip3": N_ZIP3 + _RESERVED,
     }
     for f, v in DYNAMIC_CATEGORICAL_VOCAB.items():
         sizes[f] = len(v) + _RESERVED
     for f, v in STATIC_VOCAB.items():
         sizes[f] = len(v) + _RESERVED
-    sizes["user"] = N_USERS + _RESERVED  # identity statics (not string-vocab)
-    sizes["card"] = N_CARDS + _RESERVED
     return sizes
 
 
@@ -208,9 +240,8 @@ def _merchant_to_bucket(merchant_id: np.ndarray) -> np.ndarray:
 
 
 def _mcc_to_bucket(mcc: np.ndarray) -> np.ndarray:
-    # Same hashing trick: MCC sets are open-ended in real data (TabFormer has
-    # ~109 distinct codes). Coarse semantics live in merchant_category.
-    return (mcc.astype(np.int64) % N_MCC_BUCKETS) + _RESERVED
+    # Exact vocabulary (RUN-2): TabFormer's MCC set is closed; unknown -> OOV.
+    return np.array([_MCC_MAP.get(int(m), OOV) for m in mcc], dtype=np.int64)
 
 
 def _delta_to_bucket(delta_hours: np.ndarray) -> np.ndarray:
@@ -403,14 +434,44 @@ def make_tokenize_group_fn(
         error_ids = np.array(
             [er_v.get(str(e), OOV) for e in np.asarray(group["error"])[order]], dtype=np.int64
         )
+        # RUN-2 per-transaction fields (TEARDOWN.md #2/#7). Synthetic data has
+        # no geo columns -> constant OOV (schema stays fixed across sources).
+        ms_v = DYNAMIC_CATEGORICAL_VOCAB["merchant_state"]
+        if "merchant_state_raw" in group:
+            st = np.asarray(group["merchant_state_raw"]).astype(str)[order]
+            full["merchant_state"] = np.array(
+                [ms_v.get(s if len(s) == 2 else ("ONLINE" if s == "" else "FOREIGN"), OOV)
+                 for s in st],
+                dtype=np.int64,
+            )
+        else:
+            full["merchant_state"] = np.full(n, OOV, dtype=np.int64)
+        if "zip" in group:
+            z = np.asarray(group["zip"], dtype=np.float64)[order]
+            zip3 = np.where(
+                np.isnan(z), OOV,
+                np.clip(np.nan_to_num(z) // 100, 0, N_ZIP3 - 1) + _RESERVED,
+            ).astype(np.int64)
+            full["zip3"] = zip3
+        else:
+            full["zip3"] = np.full(n, OOV, dtype=np.int64)
+        mo_v = DYNAMIC_CATEGORICAL_VOCAB["month"]
+        months = (ts.astype("datetime64[M]").astype(np.int64) % 12) + 1
+        full["month"] = np.array([mo_v[int(m)] for m in months], dtype=np.int64)
+        dir_v = DYNAMIC_CATEGORICAL_VOCAB["direction"]
+        full["direction"] = np.where(
+            np.asarray(group["amount"], dtype=np.float64)[order] < 0,
+            dir_v["credit"], dir_v["debit"],
+        ).astype(np.int64)
+        # Previous txn's network signal: shifted one position, so it is known
+        # at auth time — the target's own outcome never enters the input.
+        full["prev_error"] = np.concatenate([[np.int64(OOV)], error_ids[:-1]])
         if soft:
             soft_lo, soft_frac = _amount_to_soft(amounts)
-        # String-categorical statics via their vocab; user/card are integer
-        # identities recovered from card_id (= User*100 + Card), clipped like
-        # NVIDIA's CUST/CARD and offset past the reserved ids.
+        # String-categorical statics via their vocab. RUN-2: user/card identity
+        # is NOT an FM input anymore (TEARDOWN.md #5) — it dominated the pooled
+        # embedding while the downstream fusion already carries it raw.
         statics = {f: int(STATIC_VOCAB[f].get(group[f][0], OOV)) for f in STATIC_VOCAB}
-        statics["user"] = min(int(card_id) // 100, N_USERS - 1) + _RESERVED
-        statics["card"] = min(int(card_id) % 100, N_CARDS - 1) + _RESERVED
 
         rows = []
 
@@ -467,15 +528,19 @@ def make_tokenize_group_fn(
                 )
             rows.append(r)
 
-        # --- Pretraining windows: train-period only, newest first, non-overlapping.
+        # --- Pretraining windows: train-period only, newest first. RUN-2:
+        # stride seq_len//2 (50% overlap) — frozen non-overlapping boundaries
+        # showed the model the same windows every epoch (TEARDOWN.md #6);
+        # overlap doubles effective samples for free.
         n_train = n if t_train is None else int(np.searchsorted(ts, t_train))
+        stride = max(1, seq_len // 2)
         if emit in ("both", "pretrain"):
             hi, made = n_train, 0
             while hi >= 2 and (max_pretrain_windows is None or made < max_pretrain_windows):
                 lo = max(0, hi - seq_len)
                 emit_row(lo, hi, "pretrain", "train", 0, None)
                 made += 1
-                hi = lo
+                hi = hi - stride if lo > 0 else 0
 
         # --- Eval samples: window ends at the target transaction; label = its
         # is_fraud; split by the target's timestamp.
