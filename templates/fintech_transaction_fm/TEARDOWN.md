@@ -140,6 +140,12 @@ parked unless the remaining evals reverse.
 - DISCLOSED IMPURITY: 1,394 val-period txns (10.6h of the boundary day)
   visible to pretraining via the quantile-vs-date cutoff mismatch; ZERO
   test-period rows. Fix: unify splits.json to the date cutoff.
+- SEED REPLICATION (4 seeds, pooled-last no-PCA): MLP AP 0.33 +/- 0.10
+  (0.4655 was a favorable draw — report the range, never the max);
+  logistic 0.226 +/- 0.006 (tight); XGB 0.2581 (deterministic). DURABLE
+  CLAIM: embedding-only under stable heads = AP 0.23-0.26 at ROC ~0.997,
+  beating NVIDIA's combined headline (0.1755) by 30-47% and the baseline
+  by 60-82%.
 - REQUIRED CONTROLS before publishing (status):
   1. MLP-on-13-raw fair-head control — probe --raw-control built, rides G1 probe
   2. seed variance — 3-seed job running (note: pre-fix seeds varied shuffle
