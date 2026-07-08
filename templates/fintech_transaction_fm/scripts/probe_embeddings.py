@@ -68,6 +68,7 @@ def _torch_probe(X, y, masks, hidden=None, device="cpu", epochs=6, lr=1e-3, seed
     yt = {k: torch.as_tensor(y[m], dtype=torch.float32) for k, m in
           {"tr": tr, "va": va, "te": te}.items()}
     d = X.shape[1]
+    torch.manual_seed(seed)  # BEFORE construction: seed must control init too
     net = (
         torch.nn.Linear(d, 1)
         if hidden is None
@@ -79,7 +80,6 @@ def _torch_probe(X, y, masks, hidden=None, device="cpu", epochs=6, lr=1e-3, seed
     pos_w = torch.tensor([(len(yt["tr"]) - yt["tr"].sum()) / yt["tr"].sum()], device=device)
     lossf = torch.nn.BCEWithLogitsLoss(pos_weight=pos_w)
     opt = torch.optim.Adam(net.parameters(), lr=lr, weight_decay=1e-4)
-    torch.manual_seed(seed)
     n = len(yt["tr"])
     best_auc, best_state = -1.0, None
     for ep in range(epochs):
