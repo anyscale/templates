@@ -118,17 +118,23 @@ Doubling the window halves the number of windows per epoch — so at fixed epoch
 
 ## A second consumer: what the embedding knows about the next merchant
 
-The template also ships a next-merchant recommendation eval off the same backbone (BERT4Rec-style over the InfoNCE merchant table). The honest status is a ladder that proves the readout lesson a second time — same frozen embedding, four readouts, on 2.4M test pairs over a 21k-way merchant space:
+The template also ships a next-merchant recommendation eval off the same backbone. This subplot ends with the production answer, via the readout lesson one more time. First the ladder — same frozen embedding, readouts only, 21k-way merchant space:
 
 | readout of the same frozen embedding | HR@10 |
 |---|---|
 | masked-position readout (the original eval) | 0.077 |
 | the model's InfoNCE merchant table, zero-shot | 0.184 |
 | trained linear head | 0.397 |
-| **trained 2-layer MLP** | **0.523** |
-| *memorization floor: card's top-10 historical merchants* | *0.598* |
+| trained 2-layer MLP (+ hour/day/gap context features) | 0.535 |
 
-A readout change alone moves HR@10 by **6.8x** — but none of it yet beats plain memorization, on a dataset where 96% of transactions repeat a known merchant. A production recommender would blend the two (embedding logits + per-card frequency prior — the embedding's job is re-ranking and novelty, not beating memorization head-on); that hybrid is left in the template as future work.
+A readout change alone moves HR@10 by **7x** — but on data where 96% of transactions repeat a known merchant, a 3-line memorization baseline (the card's historical merchants ranked by count) still scores **0.647**, and the recommendation literature says that's normal: under fair evaluation, frequency baselines routinely beat neural sequence models [refs: next-basket "reality check" / Ludewig & Jannach]. The neural model shouldn't fight memorization — it should *correct* it. The standard production hybrid does exactly that:
+
+| hybrid (identical test events) | HR@10 |
+|---|---|
+| strongest memorization baseline (causal full-history counts) | 0.6474 |
+| **0.1·softmax(MLP) + 0.9·frequency prior (swept on val)** | **0.6582** |
+
+Small margin, unambiguous (paired on 400k events), and the decomposition is where the FM earns its budget: on the **35% of events where the next merchant is NOT in the card's top-10** — where memorization scores exactly 0.000 — the model recovers **HR@10 ≈ 0.16**, and on never-before-seen merchants (6% of events) the full-vocab MLP scores 0.077 where any history-based method scores zero. One backbone: fraud headline, plus a recommender that beats memorization overall *and* covers the slice memorization is mathematically blind to. [B-RECO-FIG: bar chart — overall / not-in-top10 / never-seen, naive vs hybrid.]
 
 ## Cost and scale on Anyscale
 
@@ -156,7 +162,7 @@ anyscale job submit -f job_xl.yaml     # and job_xxl.yaml
 
 - **A transaction FM's embedding, alone, beats NVIDIA's published fusion headline** on their exact protocol (P = 0.94–0.99 across 512–2048 context), and beats the identical-rows raw baseline by **+34–45% with non-overlapping CIs** on the full 2.44M-transaction test period.
 - **Context is architecturally free and it pays**: one position per transaction buys 4–13x their context at identical capacity; 1024 measurably beats 512 on the tight eval [B-PAIR]; the 2048 verdict — and whether its limit is data or training budget — is [B-XXL].
-- **The readout matters as much as the model**: per-field masking + last-position extraction + no PCA is the difference between "the FM learned nothing" and the headline — a lesson that repeated on the recommendation task (0.08 → 0.52 from readout changes alone). PCA-before-classifier destroyed the context advantage entirely in our measurements.
+- **The readout matters as much as the model**: per-field masking + last-position extraction + no PCA is the difference between "the FM learned nothing" and the headline — a lesson that repeated on the recommendation task (0.08 → 0.54 from readout changes alone, and past the memorization baseline once blended with the frequency prior). PCA-before-classifier destroyed the context advantage entirely in our measurements.
 - **Benchmark like you mean it**: exact baseline reproduction, shuffled-label control at the AP floor, a velocity-feature bar that doesn't reach, bootstrap CIs on a 112-fraud test set that nearly fooled us twice, and a full-test-period eval that finally resolves what the sample couldn't.
 - Disclosures: one dataset (TabFormer, static-poor); the 2048 model's training used a warm-restarted continuation; linear-head readout degrades at long context while trees improve; full-period and 100k-sample APs are not mutually comparable.
 
