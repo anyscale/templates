@@ -161,7 +161,7 @@
   owner_team: ray-serve
   dir: templates/model-composition-recsys
   cluster_env:
-    image_uri: anyscale/ray:2.55.1-slim-py312-cu129
+    image_uri: anyscale/ray:2.56.0-slim-py312-cu129
   compute_config:
     GCP: configs/basic-single-node/gce.yaml
     AWS: configs/basic-single-node/aws.yaml
