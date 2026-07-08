@@ -14,6 +14,10 @@ The goal is a **working, CI-green template on the new Ray version**, not a minim
 
 Do them, and note them in the PR body. Reserve **stop / Blocked** for what you genuinely cannot fix from the template's own files — an unpublished base image, a staging/Buildkite outage, or a change that would alter the template's *intent* rather than just make it run. **When unsure, prefer making an obvious, low-risk fix over bailing** — that isn't "guessing."
 
+## Fast-stop — is this template in scope?
+
+**Before anything else (including preflight):** look up `<name>` in `BUILD.yaml`. If it's **absent**, or its entry has **`maintained: false`** (archived templates carry this flag), **stop immediately and return** — you shouldn't have been triggered; don't spend on preflight or a bump.
+
 ## Setup — preflight
 
 Run `bash .cursor/preflight.sh`. It verifies the companion skills (incl. `/anyscale-platform-fix`), secrets, and auth. On a non-zero exit, handle per **AGENTS.md "Cursor Cloud → Preconditions"** (report stderr + stop) — at this point no PR exists yet, so that report lands in the run/CI output.

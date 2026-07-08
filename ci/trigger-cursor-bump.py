@@ -151,14 +151,14 @@ def main(argv: list[str] | None = None) -> int:
 
     exclude = {name for name in args.exclude.split(",") if name}
     final = resolve_templates(entries, requested, exclude, args.ray_version)
-    if not final:
-        warn("error: no templates to fire after filtering")
-        return 2
 
-    if args.list_only:
+    if args.list_only:  # a query — an empty set is a valid answer, not an error
         warn(f"resolved {len(final)} template(s):")
         print("\n".join(final))
         return 0
+    if not final:
+        warn("error: no templates to fire after filtering")
+        return 2
 
     # SAFE BY DEFAULT: only --execute performs real POSTs; anything else previews.
     # An explicit --dry-run also wins, so a stray --execute can't override it.

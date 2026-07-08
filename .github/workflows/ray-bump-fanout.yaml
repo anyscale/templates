@@ -1,23 +1,22 @@
 name: ray-bump-fanout
 
-# Fan the per-template Ray-version bump out when a new base-lock set lands on main.
-# The prompt lives on the "Template update" Cursor automation (single source of
-# truth); this workflow only derives the target version and POSTs
-# {template_name, ray_version} once per template via ci/trigger-cursor-bump.py.
+# Fan the per-template Ray-version bump out for a target version. The prompt lives
+# on the "Template update" Cursor automation (single source of truth); this only
+# resolves the target set and POSTs {template_name, ray_version} once per template
+# via ci/trigger-cursor-bump.py.
 #
-# Design:
-#   - Version is DERIVED from dependencies/depsets/ (newest version with both a
-#     ray_<v>_img_* and a rayllm_<v>_* base lock) — no signal file to maintain.
-#   - Idempotent: fires only the DELTA (maintained templates that don't already
-#     have a [ray-update-<v>] PR), so re-runs and unrelated depset commits are safe.
+# Fire it by pushing a versioned tag `ray-fanout-<v>` — the deliberate "go". The
+# tag encodes the version and can't be re-pushed without force, so it can't
+# double-fire. Or run it manually (workflow_dispatch); manual runs preview by default.
+#
+# Delta = maintained BUILD.yaml entries not already at <v> (the trigger script's
+# version-skip). BUILD.yaml is the single source of truth — no PR bookkeeping.
 #
 # Requires repo/org secrets: CURSOR_TEMPLATE_UPDATER_WEBHOOK, CURSOR_TEMPLATE_UPDATER_AUTH_TOKEN.
-# Depends on the webhook-model trigger script (PR #842) being on main.
 
 on:
   push:
-    branches: [main]
-    paths: ['dependencies/depsets/**']
+    tags: ['ray-fanout-*']
   workflow_dispatch:
     inputs:
       ray_version:
@@ -25,22 +24,20 @@ on:
         required: false
         default: ""
       dry_run:
-        description: "Preview only — no POSTs (manual runs default to preview)"
+        description: "Preview only — no POSTs"
         type: boolean
         default: true
 
 concurrency:
-  group: ray-bump-fanout      # one fanout at a time; never double-fire
+  group: ray-bump-fanout
   cancel-in-progress: false
 
 permissions:
   contents: read
-  pull-requests: read
 
 jobs:
   fanout:
     runs-on: ubuntu-latest
-    # environment: fanout   # uncomment to require a human approval before firing
     steps:
     - uses: actions/checkout@v4
     - uses: actions/setup-python@v5
@@ -49,49 +46,52 @@ jobs:
     - name: Install dev deps
       run: pip install -r requirements-dev.txt
 
-    - name: Derive target Ray version
+    - name: Resolve target Ray version
       id: version
       env:
         INPUT_VERSION: ${{ inputs.ray_version }}
       run: |
         V="$INPUT_VERSION"
+        # tag push: refs/tags/ray-fanout-2.56.0 -> 2.56.0
+        if [ -z "$V" ] && [ "$GITHUB_EVENT_NAME" = "push" ]; then
+          V="${GITHUB_REF#refs/tags/ray-fanout-}"
+        fi
+        # blank manual run: newest version with a complete base-lock set
         if [ -z "$V" ]; then
-          # newest version present as BOTH a ray_<v>_img_* and a rayllm_<v>_* lock
-          printf '%s\n' dependencies/depsets/ray_*_img_*.lock | grep -oP 'ray_\K[0-9.]+(?=_img_)' | sort -u > /tmp/img.txt
-          printf '%s\n' dependencies/depsets/rayllm_*.lock    | grep -oP 'rayllm_\K[0-9.]+(?=_)'   | sort -u > /tmp/llm.txt
+          printf '%s\n' dependencies/depsets/ray_*_img_*.lock | grep -oP 'ray_\K[0-9.]+(?=_img_)' | sort -u > /tmp/img.txt || true
+          printf '%s\n' dependencies/depsets/rayllm_*.lock    | grep -oP 'rayllm_\K[0-9.]+(?=_)'   | sort -u > /tmp/llm.txt || true
           V="$(comm -12 /tmp/img.txt /tmp/llm.txt | sort -V | tail -1)"
         fi
         if [ -z "$V" ]; then
-          echo "::error::no complete base-lock set (ray_<v>_img_* AND rayllm_<v>_*) in dependencies/depsets/"
+          echo "::error::could not determine target Ray version"; exit 1
+        fi
+        # the version must have a complete base-lock set (both families present)
+        if ! compgen -G "dependencies/depsets/ray_${V}_img_*.lock" >/dev/null \
+          || ! compgen -G "dependencies/depsets/rayllm_${V}_*.lock" >/dev/null; then
+          echo "::error::no complete base-lock set (ray_${V}_img_* AND rayllm_${V}_*) in dependencies/depsets/"
           exit 1
         fi
         echo "value=$V" >> "$GITHUB_OUTPUT"
         echo "Target Ray version: $V"
 
-    - name: Compute delta (maintained templates without a [ray-update-<v>] PR)
+    - name: Compute delta (maintained templates not already at the target)
       id: delta
       env:
-        GH_TOKEN: ${{ github.token }}
         V: ${{ steps.version.outputs.value }}
       run: |
-        # --list is version-aware: it already drops templates whose BUILD.yaml is
-        # at $V (merged bumps), leaving the "behind $V" set.
-        python3 ci/trigger-cursor-bump.py --all -v "$V" --list 2>/dev/null | sort -u > /tmp/maintained.txt
-        # ...minus template names that already have an in-flight [ray-update-<v>] PR
-        # (BUILD.yaml won't reflect those until they merge).
-        gh pr list --state all --limit 400 --json title -q '.[].title' \
-          | grep -oP "^\[ray-update-${V}\] Update \K[^ ]+" | sort -u > /tmp/have_pr.txt || true
-        comm -23 /tmp/maintained.txt /tmp/have_pr.txt > /tmp/delta.txt
+        # --list is version-aware: it drops maintained entries already at $V
+        # (BUILD.yaml is the source of truth), leaving the "behind $V" set.
+        python3 ci/trigger-cursor-bump.py --all -v "$V" --list 2>/dev/null | sort -u > /tmp/delta.txt
         n="$(grep -c . /tmp/delta.txt || true)"
         echo "count=$n" >> "$GITHUB_OUTPUT"
         {
-          echo "### Ray $V fanout — $n template(s) to fire"
+          echo "### Ray $V fanout — $n template(s) behind"
           echo '```'; cat /tmp/delta.txt; echo '```'
         } >> "$GITHUB_STEP_SUMMARY"
 
     - name: Nothing to do
       if: steps.delta.outputs.count == '0'
-      run: echo "Every maintained template already has a bump PR for this version — nothing to fire."
+      run: echo "Every maintained template is already at this version — nothing to fire."
 
     - name: Fire the fanout
       if: steps.delta.outputs.count != '0'
@@ -101,7 +101,7 @@ jobs:
         V: ${{ steps.version.outputs.value }}
         INPUT_DRY_RUN: ${{ inputs.dry_run }}
       run: |
-        # push (a merge) fires for real; manual runs preview unless dry_run=false.
+        # A tag push fires for real; manual runs preview unless dry_run=false.
         if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ] && [ "$INPUT_DRY_RUN" != "false" ]; then
           xargs -a /tmp/delta.txt python3 ci/trigger-cursor-bump.py -v "$V"
         else
