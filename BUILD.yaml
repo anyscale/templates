@@ -275,7 +275,7 @@
   owner_team: ray-serve
   dir: templates/mcp-ray-serve
   cluster_env:
-    image_uri: anyscale/ray:2.55.1-py312
+    image_uri: anyscale/ray:2.56.0-py312
   compute_config:
     AWS: configs/basic-single-node/aws.yaml
     GCP: configs/basic-single-node/gce.yaml
