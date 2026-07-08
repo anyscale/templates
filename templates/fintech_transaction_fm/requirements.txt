@@ -1,7 +1,7 @@
 ray[data,train,serve]>=2.9
 torch>=2.4  # torch.amp.GradScaler("cuda") / unified autocast API in pretrain
 numba>=0.61  # JIT'd hash partitioning for the Ray Data groupby shuffles
-xgboost>=2.0
+xgboost==3.2.0  # NVIDIA pin (see clean branch)
 scikit-learn>=1.3
 numpy>=1.24
 pandas>=2.0
