@@ -181,12 +181,14 @@ def run_benchmark(
     )
 
     pca_explained = None
+    embedding_dim = int(X_emb.shape[1]) if embeddings_path else None
     if embeddings_path:
         E = {s: X_emb[emb_row[m]] for s, m in masks.items()}
         Ep = {}
         Ep["train"], Ep["val"], Ep["test"], pca_explained = pca_embeddings(
             E["train"], E["val"], E["test"]
         )
+        del E  # several live copies of the 1.2M x 512 matrix OOM a 32GB host
         print("[05] training embed_pca64_xgb (their protocol: 64d PCA, XGB_PARAMS_EMBED) ...")
         results["embed_pca64_xgb"], test_preds["embed_pca64_xgb"] = fit_eval(
             Ep["train"], y["train"], Ep["val"], y["val"], Ep["test"], y["test"],
@@ -194,6 +196,7 @@ def run_benchmark(
         )
         print("[05] training embed_logistic (raw embedding, no PCA, linear head) ...")
         E_full = X_emb[emb_row]
+        del X_emb
         yb = bench["_target"].to_numpy().astype(np.int64)
         results["embed_logistic"], test_preds["embed_logistic"] = _logistic_probe(
             E_full, yb, masks, device=device
@@ -219,7 +222,7 @@ def run_benchmark(
             **({"embed_pca64_xgb": XGB_PARAMS_EMBED, "embed_xgb": XGB_PARAMS_EMBED}
                if embeddings_path else {}),
         },
-        "embedding_dim": int(X_emb.shape[1]) if embeddings_path else None,
+        "embedding_dim": embedding_dim,
         "pca_explained_variance": pca_explained,
         "results": results,
     }

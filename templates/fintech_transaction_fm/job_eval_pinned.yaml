@@ -17,5 +17,5 @@ requirements: requirements.txt
 compute_config:
   cloud: aws-public-us-west-2
   head_node:
-    instance_type: g5.2xlarge   # XGBoost on CUDA (their device) + torch logistic on GPU
+    instance_type: g5.4xlarge   # 64GB host RAM: the no-PCA path holds multiple 1.2M x 512 copies
 max_retries: 0
