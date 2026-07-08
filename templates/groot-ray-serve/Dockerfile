@@ -10,7 +10,7 @@
 # WORKDIR directives — use sudo for root-only steps.
 # =============================================================================
 
-FROM anyscale/ray:2.55.1-slim-py311-cu129
+FROM anyscale/ray:2.56.0-slim-py311-cu129
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV PYTHONUNBUFFERED=1
@@ -63,9 +63,12 @@ RUN git clone --depth 1 https://github.com/isaac-sim/IsaacLab.git /home/ray/Isaa
         -e source/isaaclab_rl
 
 # Isaac-GR00T (editable, --no-deps to skip the upstream py-version pin)
+# NOTE: Isaac-GR00T upstream is unpinned and periodically retightens its
+# requires-python (was `==3.10.*`, later `>=3.12,<3.13`); rewrite whatever
+# it currently declares so the build stays on the base image's Python.
 RUN git clone --depth 1 https://github.com/NVIDIA/Isaac-GR00T.git /home/ray/Isaac-GR00T && \
     cd /home/ray/Isaac-GR00T && \
-    sed -i 's|requires-python = "==3\.10\.\*"|requires-python = ">=3.10"|' pyproject.toml && \
+    sed -i -E 's|^requires-python = .*|requires-python = ">=3.10"|' pyproject.toml && \
     python -m pip install --no-deps -e .
 
 # GR00T runtime deps (the --no-deps above skipped these; pinned to GR00T's pyproject.toml)
