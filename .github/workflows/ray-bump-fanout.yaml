@@ -1,18 +1,13 @@
 name: ray-bump-fanout
 
-# Fan the per-template Ray-version bump out for a target version. The prompt lives
-# on the "Template update" Cursor automation (single source of truth); this only
-# resolves the target set and POSTs {template_name, ray_version} once per template
-# via ci/trigger-cursor-bump.py.
+# Fan the per-template Ray-version bump out. The prompt lives on the "Template
+# update" Cursor automation; this resolves the target version and POSTs
+# {template_name, ray_version} per template via ci/trigger-cursor-bump.py.
 #
-# Fire it by pushing a versioned tag `ray-fanout-<v>` — the deliberate "go". The
-# tag encodes the version and can't be re-pushed without force, so it can't
-# double-fire. Or run it manually (workflow_dispatch); manual runs preview by default.
+# Fire by pushing a `ray-fanout-<v>` tag (encodes the version; can't double-fire),
+# or run manually (workflow_dispatch — previews by default).
 #
-# Delta = maintained BUILD.yaml entries not already at <v> (the trigger script's
-# version-skip). BUILD.yaml is the single source of truth — no PR bookkeeping.
-#
-# Requires repo/org secrets: CURSOR_TEMPLATE_UPDATER_WEBHOOK, CURSOR_TEMPLATE_UPDATER_AUTH_TOKEN.
+# Requires secrets: CURSOR_TEMPLATE_UPDATER_WEBHOOK, CURSOR_TEMPLATE_UPDATER_AUTH_TOKEN.
 
 on:
   push:
@@ -56,9 +51,7 @@ jobs:
         if [ -z "$V" ] && [ "$GITHUB_EVENT_NAME" = "push" ]; then
           V="${GITHUB_REF#refs/tags/ray-fanout-}"
         fi
-        # ci/latest-depset-version.py validates a given version has a complete
-        # base-lock set, or derives the newest complete one; it exits non-zero
-        # (failing this step) if neither holds.
+        # validate the given version's base locks exist, else derive the newest (fails closed)
         if [ -n "$V" ]; then
           V="$(python3 ci/latest-depset-version.py --require "$V")"
         else
@@ -72,8 +65,7 @@ jobs:
       env:
         V: ${{ steps.version.outputs.value }}
       run: |
-        # --list is version-aware: it drops maintained entries already at $V
-        # (BUILD.yaml is the source of truth), leaving the "behind $V" set.
+        # version-aware --list drops entries already at $V (BUILD.yaml = source of truth)
         python3 ci/trigger-cursor-bump.py --all -v "$V" --list 2>/dev/null | sort -u > /tmp/delta.txt
         n="$(grep -c . /tmp/delta.txt || true)"
         echo "count=$n" >> "$GITHUB_OUTPUT"
