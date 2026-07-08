@@ -16,7 +16,7 @@ NVIDIA's [transaction foundation model blueprint](https://github.com/NVIDIA-AI-B
 
 We built a transaction FM on Ray with a different tokenizer, objective, and readout — and its embedding **alone**, no fusion, no PCA, reaches **AP 0.27 on their own evaluation protocol**: +92% over the raw baseline, +55% over their published fusion headline. The core change fits in one sentence: **one position per transaction instead of ~12 tokens per transaction**, which buys 512–2048 transactions of context in the window where their tokenizer fits ~315 — and a masked-field objective that makes the history actually readable. Training runs in about two hours on four A10Gs; the whole result reproduces from a public template with three job submissions.
 
-[B1: hero chart — bar chart of test AP: NVIDIA baseline 0.1238, NVIDIA fusion 0.1755, ours-512 0.258, ours-1024 0.273, ours-2048 «xxl AP». One color for theirs, one for ours.]
+[B1: hero chart — bar chart of test AP: NVIDIA baseline 0.1238, NVIDIA fusion 0.1755, ours-512 0.258, ours-1024 0.273, ours-2048 0.223. One color for theirs, one for ours.]
 
 ## Why transaction foundation models — and why NVIDIA's blueprint is the right bar
 
@@ -62,14 +62,14 @@ Test set: 100k stratified rows at natural ~0.11% fraud prevalence.
 | their protocol (PCA64+XGB) on our embedding | 1024 | 0.9905 | 0.1899 | +33.7% |
 | **our embedding → XGBoost, no PCA** | 512 | [B5] | **0.2581** | **+81.6%** |
 | **our embedding → XGBoost, no PCA** | 1024 | 0.9945 | **0.2730** | **+92.2%** |
-| **our embedding → XGBoost, no PCA** | **2048** | [B6: xxl ROC] | **[B6: xxl AP]** | [B6] |
+| **our embedding → XGBoost, no PCA** | **2048** | 0.9914 | **0.2233** | **+57.2%** |
 | our embedding → linear head, no PCA | 512 | [B5] | 0.226 ± 0.006 | +59% |
 
-[B7: context-scaling line chart — AP vs context length {512, 1024, 2048} for embed_xgb, with NVIDIA fusion 0.1755 as a horizontal reference line. This is the money figure if 2048 continues the trend.]
+[B7: context-scaling line chart — AP vs context length {512, 1024, 2048} for embed_xgb (0.258 → 0.273 → 0.223), with NVIDIA fusion 0.1755 as a horizontal reference line. The peak at 1024 is the finding.]
 
-Three things to notice. First, the embedding **alone** beats their published *fusion* at every context length — no hand-built features in the winning row. Second, even **their own downstream protocol** (PCA to 64d, then XGBoost) applied to our embedding beats their fusion at 1024 (0.1899 vs 0.1755): the gain is in the representation, not the harness. Third, AP grows with context length while everything else is held fixed — same capacity, same epochs, same protocol. [TODO if 2048 regresses: reframe third point as a saturation finding — "context helps until the window exceeds the data's burst structure" — with the same chart.]
+Three things to notice. First, the embedding **alone** beats their published *fusion* at every context length — no hand-built features in the winning row. Second, even **their own downstream protocol** (PCA to 64d, then XGBoost) applied to our embedding beats their fusion at 1024 and 2048 (0.1899 / 0.1802 vs 0.1755): the gain is in the representation, not the harness. Third — and we report this as measured — the context curve **peaks at 1024**: 512→1024 pays +6%, while 2048 gives some of it back (still +27% over their fusion). That shape is what the burst mechanism predicts: ~90% of the fraud-relevant history sits within a few hundred transactions, so past ~1024 the window mostly adds stale history that dilutes the last-position readout. The practical takeaway for TabFormer-scale data is a sweet spot around 1024 transactions — and the honest scaling claim is "4–13x their context is *architecturally free*; how much of it pays is a property of your data's burst structure." [TODO: consider an xxl variant with more epochs to separate dilution from undertraining — xxl's per-window exposure differs; cheap to note, optional to run.]
 
-One honest wrinkle: the linear-head readout, which at 512 was stable across seeds (0.226 ± 0.006), degraded at 1024 (0.124) while XGBoost improved. The signal is there — XGBoost finds it — but it becomes less *linearly* separable at longer context. [TODO: 1-2 sentence explanation after investigation, or cut the linear row at 1024+ and note it.]
+One honest wrinkle: the linear-head readout, which at 512 was stable across seeds (0.226 ± 0.006), degraded at longer context (0.124 at 1024, 0.127 at 2048) while XGBoost stayed strong. The signal is there — XGBoost finds it — but it becomes less *linearly* separable as the window grows. [TODO: 1-2 sentence explanation after investigation, or cut the linear row at 1024+ and note it.]
 
 ## Why it works — and how we know it's real
 
@@ -119,7 +119,7 @@ anyscale job submit -f job_xl.yaml
 ## Takeaways
 
 - **A transaction FM's embedding, alone, beats NVIDIA's published fusion headline by 55%+** on their own protocol — 0.27 vs 0.1755 test AP — using the same model capacity and a two-hour training run.
-- **Context length is the lever**: one position per transaction buys 512–2048 transactions of history vs their ~315, and AP scales with it ([TODO: confirm with 2048]).
+- **Context length is a real, measurable lever with a data-dependent sweet spot**: one position per transaction buys 512–2048 transactions of history vs their ~315; on TabFormer AP peaks at 1024 (0.273) and holds +27% over their fusion even at 2048.
 - **The readout matters as much as the model**: per-field masking + last-position extraction + no PCA is the difference between "the FM learned nothing" and the headline. NVIDIA's single-transaction embedding readout is their blueprint's real bottleneck, not their architecture.
 - **It's verified the boring way**: exact baseline reproduction, shuffled-label control at the AP floor, a velocity-feature bar that doesn't reach, and a faithfully-trained version of their own design topping out 4x lower.
 - Disclosures: one dataset (TabFormer); ~112 test frauds means single-draw AP is noisy — CIs in appendix [B4]; linear-head readout weakens at 1024+ while trees improve; [TODO: env-pin note after xgboost 3.2.0 rerun].
