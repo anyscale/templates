@@ -70,6 +70,38 @@ DELETE (one-off diagnostics; every result they produced is ledgered):
 - `gemini_ideas.txt` (mined; verdicts in TEARDOWN/commits)
 - local `demo_data/` (untracked smoke debris; regenerates in minutes)
 
+## 2b. Clean-repro branch — strip dead flags ENTIRELY (don't just default-off)
+
+Branch strategy: `geoff/fm_recs_and_fraud` stays frozen as the full research
+record (flags, dead ends, matches TEARDOWN commit-for-commit). Cut
+`geoff/fm_clean_repro` from it and REMOVE (not disable) everything the
+campaign falsified or never validated — the clean branch is the minimal
+faithful reproduction of the headline, and the 1024/2048 validation runs
+from it.
+
+REMOVE on the clean branch:
+- Sequence contrastive: `seq_cl_weight` knob, `seq_contrastive_loss`,
+  `_contrastive_views`, the seq_views/seq_cl_scale plumbing in
+  model.forward + pretrain loop, and the seq_cl TB metrics
+  (measured: no downstream lift, taxed the merchant head)
+- G1: `intra_tx_attention`/`intra_tx_heads` + the attr-slot/MHA code in
+  _embed + configs/full_g1.yaml (never successfully ran; lives on the
+  research branch if ever chunk-fixed)
+- Legacy whole-row masking support: the `isinstance(masked, dict)` tensor
+  branch in field_loss (mask_batch always returns dict now)
+- The one-off job yamls listed in §2
+
+KEEP on the clean branch (small, load-bearing, or part of the story):
+- periodic_amount / periodic_time / n_periodic (in the winning recipe)
+- multi-column pooled extraction (last/mean/max — 5 lines; reviewers will
+  ask for the pooling ablation) and TargetReadoutExtractor + surprise
+  (Run-1 is part of the published narrative)
+- heuristic eval sampling (synthetic/CI path) and src/downstream.py fallback
+- pre-campaign template features not on trial (soft amount mode)
+
+Acceptance for the clean branch: unit tests + synthetic smoke pass; then
+the 1024 run validates the pipeline end-to-end from clean code.
+
 ## 3. Config normalization BEFORE the 1024/2048 act
 
 `xl.yaml`/`xxl.yaml` predate RUN-2b. Propagate into both:
@@ -82,11 +114,18 @@ Then the act is: `job_xl.yaml` as-is (moves aside, retrains, trio + target
 extraction), then a probe with `--set xl_pooled_last=...:embedding_last
 --raw-control --seed N`. Same for a job_xxl clone if 1024 pays.
 
-## 4. Open items (from TEARDOWN, ordered)
+## 4. Open items (from TEARDOWN, ordered) — WITH TIMING
 
-1. Shuffled-label / shuffled-embedding sanity probe (cheap, pre-publish)
+1. Shuffled-label / shuffled-embedding sanity probe — kick IMMEDIATELY
+   after step 0 (restore): ~$2, 15 min, needs only benchmark + restored
+   embeddings; independent of the clean branch
 2. Classical burst-aggregates baseline (XGB on 13 raw + card-velocity
-   features) — the one control that could deflate the headline
+   features) — kick IN PARALLEL with #1, BEFORE any blog drafting and
+   before/alongside the 1024 run (it calibrates how impressed to be);
+   CPU-only, needs only raw parquet + benchmark.parquet, no FM artifacts
+   Suggested order overall: step 0 restore -> kick #1+#2 -> build clean
+   branch (§2b) + normalize xl config (§3) -> launch 1024 from the clean
+   branch while the controls finish
 3. Cutoff unification: splits.json quantile -> nvidia_baseline date cutoff
    (removes the 1,394-row val impurity); then ONE clean publication run
 4. Surprise ⊕ pooled-embedding fusion (untested, plausible small win)
