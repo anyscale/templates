@@ -406,7 +406,7 @@ depsets:
       - --python-platform=linux
       - --unsafe-package ray
     build_arg_sets:
-      - ray2551_py312_cu128
+      - ray2560_py312_cu128
 
   - name: xgboost_training_and_serving_depset_${RAY_VERSION}_${PYTHON_VERSION}
     operation: expand
