@@ -56,20 +56,13 @@ jobs:
         if [ -z "$V" ] && [ "$GITHUB_EVENT_NAME" = "push" ]; then
           V="${GITHUB_REF#refs/tags/ray-fanout-}"
         fi
-        # blank manual run: newest version with a complete base-lock set
-        if [ -z "$V" ]; then
-          printf '%s\n' dependencies/depsets/ray_*_img_*.lock | grep -oP 'ray_\K[0-9.]+(?=_img_)' | sort -u > /tmp/img.txt || true
-          printf '%s\n' dependencies/depsets/rayllm_*.lock    | grep -oP 'rayllm_\K[0-9.]+(?=_)'   | sort -u > /tmp/llm.txt || true
-          V="$(comm -12 /tmp/img.txt /tmp/llm.txt | sort -V | tail -1)"
-        fi
-        if [ -z "$V" ]; then
-          echo "::error::could not determine target Ray version"; exit 1
-        fi
-        # the version must have a complete base-lock set (both families present)
-        if ! compgen -G "dependencies/depsets/ray_${V}_img_*.lock" >/dev/null \
-          || ! compgen -G "dependencies/depsets/rayllm_${V}_*.lock" >/dev/null; then
-          echo "::error::no complete base-lock set (ray_${V}_img_* AND rayllm_${V}_*) in dependencies/depsets/"
-          exit 1
+        # ci/latest-depset-version.py validates a given version has a complete
+        # base-lock set, or derives the newest complete one; it exits non-zero
+        # (failing this step) if neither holds.
+        if [ -n "$V" ]; then
+          V="$(python3 ci/latest-depset-version.py --require "$V")"
+        else
+          V="$(python3 ci/latest-depset-version.py)"
         fi
         echo "value=$V" >> "$GITHUB_OUTPUT"
         echo "Target Ray version: $V"
