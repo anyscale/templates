@@ -118,12 +118,13 @@ def _logistic_probe(X, y, masks, device="cpu", epochs=6, lr=1e-3, seed=0):
     net.load_state_dict(best_state)
     with torch.no_grad():
         te_p = net(Xt["te"].to(device)).squeeze(-1).cpu().numpy()
-    return {
+    metrics = {
         "auc_roc": float(roc_auc_score(y[te], te_p)),
         "ap": float(average_precision_score(y[te], te_p)),
         "val_auc_roc": float(best_auc),
         "n_features": int(X.shape[1]),
     }
+    return metrics, te_p
 
 
 def run_benchmark(
@@ -172,10 +173,11 @@ def run_benchmark(
     X_enc.update({s: pre.transform(Xf[s]) for s in ("val", "test")})
 
     results = {}
+    test_preds = {"y": y["test"].astype(np.int64)}
     print("[05] training baseline (13 raw features, XGB_PARAMS_RAW) ...")
-    results["baseline"] = fit_eval(
+    results["baseline"], test_preds["baseline"] = fit_eval(
         X_enc["train"], y["train"], X_enc["val"], y["val"], X_enc["test"], y["test"],
-        params=XGB_PARAMS_RAW, device=device,
+        params=XGB_PARAMS_RAW, device=device, return_proba=True,
     )
 
     pca_explained = None
@@ -186,19 +188,21 @@ def run_benchmark(
             E["train"], E["val"], E["test"]
         )
         print("[05] training embed_pca64_xgb (their protocol: 64d PCA, XGB_PARAMS_EMBED) ...")
-        results["embed_pca64_xgb"] = fit_eval(
+        results["embed_pca64_xgb"], test_preds["embed_pca64_xgb"] = fit_eval(
             Ep["train"], y["train"], Ep["val"], y["val"], Ep["test"], y["test"],
-            params=XGB_PARAMS_EMBED, device=device,
+            params=XGB_PARAMS_EMBED, device=device, return_proba=True,
         )
         print("[05] training embed_logistic (raw embedding, no PCA, linear head) ...")
         E_full = X_emb[emb_row]
         yb = bench["_target"].to_numpy().astype(np.int64)
-        results["embed_logistic"] = _logistic_probe(E_full, yb, masks, device=device)
+        results["embed_logistic"], test_preds["embed_logistic"] = _logistic_probe(
+            E_full, yb, masks, device=device
+        )
         print("[05] training embed_xgb (raw embedding, no PCA, XGB_PARAMS_EMBED) ...")
         Ef = {s: E_full[m] for s, m in masks.items()}
-        results["embed_xgb"] = fit_eval(
+        results["embed_xgb"], test_preds["embed_xgb"] = fit_eval(
             Ef["train"], y["train"], Ef["val"], y["val"], Ef["test"], y["test"],
-            params=XGB_PARAMS_EMBED, device=device,
+            params=XGB_PARAMS_EMBED, device=device, return_proba=True,
         )
 
     summary = {
@@ -230,6 +234,12 @@ def run_benchmark(
     with open(out, "w") as f:
         json.dump(summary, f, indent=2)
     print(f"[05] metrics -> {out}")
+    # Per-model test probabilities: the input to scripts/bootstrap_ci.py (the
+    # 100k test set holds only ~112 frauds, so report AP with a CI, not a point).
+    pred_out = os.path.join(output_dir, "test_predictions.parquet")
+    pd.DataFrame({k: np.asarray(v, np.float32 if k != "y" else np.int64)
+                  for k, v in test_preds.items()}).to_parquet(pred_out, index=False)
+    print(f"[05] test predictions -> {pred_out}")
     return summary
 
 

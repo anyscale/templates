@@ -136,8 +136,13 @@ def make_encoder():
     )
 
 
-def fit_eval(Xtr, ytr, Xva, yva, Xte, yte, params=None, device="cpu") -> dict:
-    """Their train_xgb: fit w/ val early stopping, score val + test."""
+def fit_eval(Xtr, ytr, Xva, yva, Xte, yte, params=None, device="cpu", return_proba=False):
+    """Their train_xgb: fit w/ val early stopping, score val + test.
+
+    ``return_proba=True`` also returns the test probabilities, so callers can
+    persist them for bootstrap confidence intervals (the ~112-fraud test set
+    makes single-draw AP noisy).
+    """
     import xgboost as xgb
     from sklearn.metrics import average_precision_score, roc_auc_score
 
@@ -145,7 +150,7 @@ def fit_eval(Xtr, ytr, Xva, yva, Xte, yte, params=None, device="cpu") -> dict:
     model.fit(Xtr, ytr, eval_set=[(Xva, yva)], verbose=False)
     va = model.predict_proba(Xva)[:, 1]
     te = model.predict_proba(Xte)[:, 1]
-    return {
+    metrics = {
         "val_auc_roc": float(roc_auc_score(yva, va)),
         "val_ap": float(average_precision_score(yva, va)),
         "auc_roc": float(roc_auc_score(yte, te)),
@@ -153,6 +158,7 @@ def fit_eval(Xtr, ytr, Xva, yva, Xte, yte, params=None, device="cpu") -> dict:
         "best_iteration": int(model.best_iteration),
         "n_features": int(Xtr.shape[1]),
     }
+    return (metrics, te) if return_proba else metrics
 
 
 def pca_embeddings(X_train, X_val, X_test, dim=PCA_DIM):

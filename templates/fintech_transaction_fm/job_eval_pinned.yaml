@@ -1,0 +1,21 @@
+# Env-parity eval rerun (ZGARNER_INTEGRATION §2a/§2b): stage 05 from the
+# EXISTING embeddings under NVIDIA's pins — xgboost==3.2.0 (requirements.txt)
+# and XGBoost on CUDA — then bootstrap CIs from the saved test predictions.
+# No retraining anywhere; prior metrics are set aside, not overwritten.
+name: fintech-fm-eval-pinned
+entrypoint: >-
+  BASE=/mnt/user_storage/transaction-fm-v2 &&
+  python -c "import xgboost; print('xgboost', xgboost.__version__)" &&
+  for s in full xl xxl; do
+  if [ -e $BASE/embeddings/$s ]; then
+  cp -n $BASE/downstream/$s/benchmark_metrics.json $BASE/downstream/$s/benchmark_metrics_prepin.json 2>/dev/null;
+  python scripts/05_train_downstream.py --scale $s --base-dir $BASE --with-embeddings --device cuda &&
+  python scripts/bootstrap_ci.py --scale $s --base-dir $BASE || exit 1;
+  fi; done
+working_dir: .
+requirements: requirements.txt
+compute_config:
+  cloud: aws-public-us-west-2
+  head_node:
+    instance_type: g5.2xlarge   # XGBoost on CUDA (their device) + torch logistic on GPU
+max_retries: 0
