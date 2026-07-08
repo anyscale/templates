@@ -9,6 +9,8 @@ entrypoint: >-
   --set r2_surprise=$BASE/embeddings/full_r2_target:surprise
   --set r2_masked=$BASE/embeddings/full_r2_target:embedding_masked_last
   --set r2_single=$BASE/embeddings/full_r2_target:embedding_single
+  --set r2_pooled_last=$BASE/embeddings/full:embedding_last
+  --set r2_pooled_mean=$BASE/embeddings/full:embedding_mean
 working_dir: .
 requirements: requirements.txt
 compute_config:
