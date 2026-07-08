@@ -180,10 +180,6 @@ def save_dataset(output_path: str, num_cards: int, seed: int = 42) -> str:
     return output_path
 
 
-# Static vs dynamic field declarations — imported by the tokenizer and model.
-STATIC_FIELDS = ["issuer", "card_type", "bin_region", "home_state"]
-DYNAMIC_CATEGORICAL_FIELDS = ["merchant_category", "mcc", "hour", "day_of_week", "channel"]
-DYNAMIC_NUMERIC_FIELDS = ["amount"]
 # Payment-network signal categories (output-only; "none" = clean authorization).
 ERROR_CATEGORIES = [
     "none", "insufficient_balance", "bad_pin", "technical_glitch",

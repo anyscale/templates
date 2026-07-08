@@ -144,7 +144,7 @@ This is the core idea. NVIDIA's blueprint flattens every transaction into ~12 to
 
 The vocabulary is fully deterministic (fixed amount buckets + merchant hashing), so tokenization is a **stateless `map_groups`** with no global shuffle — exactly what Ray Data is built for. NVIDIA's RAPIDS path is single-GPU; this scales across the cluster.
 
-Two representation choices live here. **Positions are time-aware**: alongside the ordinal position we embed the log-bucketed *gap since the previous transaction*, because for transactions *when* matters more than ordinal slot. And **amount uses bucketing** (`AMOUNT_MODE`), with an optional `"soft"` mode that blends the two adjacent bin embeddings so $86.99 and $87.01 don't land on unrelated vectors.
+Three representation choices live here. Besides the bucketed tokens, the tokenizer emits two **continuous channels** — signed log-amount (`d_amount_log`) and log time-delta (`d_delta_log`) — that the model feeds through learned Fourier/Time2Vec frequency banks (`periodic_amount`/`periodic_time` in `configs/full.yaml`), giving it continuous resolution on the two fields fraud cares most about.  **Positions are time-aware**: alongside the ordinal position we embed the log-bucketed *gap since the previous transaction*, because for transactions *when* matters more than ordinal slot. And **amount uses bucketing** (`AMOUNT_MODE`), with an optional `"soft"` mode that blends the two adjacent bin embeddings so $86.99 and $87.01 don't land on unrelated vectors.
 
 > **What you'll see while this runs** (and why it's fine):
 > - **"Cluster does not have any available CPUs / job may hang"** — on a fresh or idle cluster the GPU worker is still launching; Ray Data waits and the warnings clear once it lands (~2 min). The head node intentionally schedules no work.
@@ -221,6 +221,9 @@ print("final MLM loss:", round(metrics["mlm_loss"], 4))
 
 The recurring production job: score every customer to a fresh embedding. This is a heterogeneous **CPU-read + GPU-infer** workload that streams through one Ray Data pipeline — the model loads once per replica, batches stream through, output is written idempotently. This is the stage with no clean public reference, and where Ray clearly earns its keep.
 
+The extractor emits **one `embedding` column**: the hidden state at the window's **last position**. Windows are right-aligned, so that position *is* the target transaction, read with the card's full history behind it — the readout the headline numbers use.
+
+
 
 ```python
 from src.embed import extract_embeddings
@@ -236,15 +239,13 @@ emb = pd.read_parquet(paths["embeddings"])
 print(f"{len(emb):,} transaction-window embeddings, dim={len(emb['embedding'].iloc[0])}")
 ```
 
-## Step 6: Downstream fraud — the headline table
+## Step 6: Downstream fraud
 
-Evaluated with the **NVIDIA transaction-FM blueprint protocol** (their notebook-01 split and sampling: temporal 80/10/10, 1M balanced train, 100k stratified val/test, their Optuna'd XGBoost params). Stage 05 prints one table:
+Two evaluation paths exist, and it matters which one you're looking at:
 
-1. **baseline** — their 13 raw transaction features (the gate: reproduces their published numbers through this pipeline)
-2. **embed_pca64_xgb** — *their* notebook-05 protocol (PCA→64d + XGBoost) applied to *our* embedding
-3. **embed_logistic / embed_xgb** — our readout: the raw pooled-last embedding, no PCA, into a linear head / XGBoost
+**The headline table (the jobs, not this notebook).** `job_baseline.yaml` → `job_full.yaml` evaluate on the **NVIDIA blueprint protocol**: stage 01 samples `benchmark.parquet` with their exact notebook-01 code (temporal 80/10/10, 1M balanced train, 100k stratified val/test), and stage 05 prints one table — **baseline** (their 13 raw features + their XGBoost), **embed_pca64_xgb** (*their* notebook-05 protocol on *our* embedding), and **embed_logistic / embed_xgb** (our readout: the raw pooled-last embedding, no PCA). At `full` scale the no-PCA readouts are the headline — AP well above NVIDIA's published fusion.
 
-At `full` scale the no-PCA readouts are the headline — AP well above their published fusion. *(At `smoke` scale — 2 CPU epochs, a 2-layer model, synthetic fallback eval — expect embedding ≈ raw; the gap opens with the `small`/`full` GPU pretrain on TabFormer.)*
+**This notebook's quick demo.** The cell below runs the lighter legacy comparison (raw vs FM vs fusion on the heuristic eval windows tokenized in Step 3) — it exercises the same embeddings end-to-end in minutes, but it is *not* the benchmark number. *(At walkthrough scale expect embedding ≈ raw; the gap opens with the `full` GPU pretrain on the benchmark protocol.)*
 
 **Template extra — next-merchant recommendation.** On the learned-vocab path the *same* backbone ranks the next merchant a card will transact with (BERT4Rec-style: mask the target, score it against the InfoNCE merchant table), reported as HR@K / NDCG@K via `scripts/06_recommend.py`. It is off the headline path — fraud is the story; reco shows the one-backbone-many-consumers shape.
 

@@ -27,9 +27,6 @@ The lift of (2)/(3) over (1) is the story. With the full baseline, AUC-ROC
 saturates near the ceiling (little headroom), so PR-AUC / AP lift is the metric
 that matters — same as NVIDIA's +41.76% AP framing.
 
-``run_downstream_multi`` evaluates several models in one process: the ``raw``
-baseline is identical across them (same target set), so it is trained once and
-only ``fm``/``fusion`` re-run per model — and the raw join/encode happens once.
 """
 
 from __future__ import annotations
@@ -323,71 +320,6 @@ def run_downstream(embeddings_path: str, output_dir: str, raw_path: str | None =
         json.dump(summary, f, indent=2)
     _write_test_predictions(output_dir, test_proba, y, w, masks["test"])
     return summary
-
-
-def run_downstream_multi(models: dict, raw_path: str, output_dir: str) -> dict:
-    """Evaluate several models in one process against a shared eval set.
-
-    ``models`` maps a name -> that model's embeddings parquet path. All models
-    must share the eval set (same targets) — asserted via ``eval_fingerprint``.
-    The ``raw`` baseline and the raw join/encode run ONCE; only ``fm``/``fusion``
-    re-run per model. Writes one comparison JSON.
-    """
-    names = list(models)
-    fps = {n: _eval_fingerprint(p) for n, p in models.items()}
-    if len(set(fps.values())) != 1:
-        raise RuntimeError(
-            f"eval sets differ across models — can't share the baseline / "
-            f"row-align. fingerprints: {fps}"
-        )
-
-    # Shared: keys + labels (from any model, they match) and the raw baseline.
-    base = _load_sorted(models[names[0]], want_fm=False)
-    masks = _masks(base["split_code"])
-    y, w = base["y"], base["w"]
-    X_raw, raw_feats = _join_raw_features(base["cid"], base["ts"], y, raw_path, masks["train"])
-    raw_only, _ = _run_sets({"raw": lambda m: X_raw[m]}, y, w, masks)
-
-    per_model = {}
-    for n in names:
-        d = _load_sorted(models[n], want_fm=True)
-        if not (np.array_equal(d["cid"], base["cid"]) and np.array_equal(d["ts"], base["ts"])):
-            raise RuntimeError(f"model '{n}' rows don't align to the baseline after sort")
-        X_fm = d["X_fm"]
-        fsets = {
-            "fm": lambda m, X=X_fm: X[m],
-            "fusion": lambda m, X=X_fm: np.hstack([X[m], X_raw[m]]),
-        }
-        res, _ = _run_sets(fsets, y, w, masks)
-        res = {"raw": raw_only["raw"], **res}
-        per_model[n] = {
-            "embedding_dim": int(X_fm.shape[1]),
-            "results": res,
-            **_lifts(res),
-        }
-        del d, X_fm
-
-    summary = {
-        "protocol": (
-            "temporal 80/10/10 split; NVIDIA transaction-FM blueprint protocol; "
-            "shared eval set across models (equal eval_fingerprint), raw baseline "
-            "trained once"
-        ),
-        "eval_fingerprint": fps[names[0]],
-        "raw_features": raw_feats,
-        "n_samples": {s: int(m.sum()) for s, m in masks.items()},
-        "natural_fraud_rate": {
-            s: float((w[m] * y[m]).sum() / w[m].sum()) for s, m in masks.items()
-        },
-        "raw_baseline": raw_only["raw"],
-        "models": per_model,
-    }
-    os.makedirs(output_dir, exist_ok=True)
-    with open(os.path.join(output_dir, "compare_metrics.json"), "w") as f:
-        json.dump(summary, f, indent=2)
-    return summary
-
-
 def _write_test_predictions(output_dir, test_proba, y, w, te) -> None:
     """Per-sample test scores so ROC/PR curves can be rebuilt offline (apply
     `weight` for natural-prevalence curves)."""

@@ -7,10 +7,8 @@ validated to reproduce their published Test ROC-AUC 0.9885 / AP 0.1238 (we
 measured 0.9873 / 0.1469 on the raw CSV). Consumers import from here so the
 pipeline and the repro can never diverge:
 
-* ``scripts/baseline_repro.py`` — standalone CSV validation
 * stage 01 — writes ``benchmark.parquet``: the sampled train/val/test rows
-* stage 05 — trains baseline (and, with embeddings, embed-only + combined)
-  on those SAME rows
+* stage 05 — trains the baseline and the embedding readouts on those SAME rows
 """
 
 from __future__ import annotations
@@ -49,8 +47,6 @@ XGB_PARAMS_COMBINED = dict(
     min_child_weight=25.85, subsample=0.65, reg_alpha=0.01, reg_lambda=0.0001,
     gamma=4.8, random_state=RANDOM_STATE, **_XGB_COMMON,
 )
-XGB_PARAMS = XGB_PARAMS_RAW  # back-compat alias (baseline_repro)
-
 # Their published test numbers (blog).
 NVIDIA_REFERENCE = {
     "baseline": {"auc_roc": 0.9885, "ap": 0.1238},
