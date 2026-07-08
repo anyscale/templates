@@ -70,37 +70,58 @@ DELETE (one-off diagnostics; every result they produced is ledgered):
 - `gemini_ideas.txt` (mined; verdicts in TEARDOWN/commits)
 - local `demo_data/` (untracked smoke debris; regenerates in minutes)
 
-## 2b. Clean-repro branch — strip dead flags ENTIRELY (don't just default-off)
+## 2b. Clean branch — a COOKBOOK, not a research artifact
 
-Branch strategy: `geoff/fm_recs_and_fraud` stays frozen as the full research
-record (flags, dead ends, matches TEARDOWN commit-for-commit). Cut
-`geoff/fm_clean_repro` from it and REMOVE (not disable) everything the
-campaign falsified or never validated — the clean branch is the minimal
-faithful reproduction of the headline, and the 1024/2048 validation runs
-from it.
+Goal reframe: this is a blog + cookbook (NVIDIA-blueprint shape), not a
+paper. The clean branch (`geoff/fm_clean_repro`) is the minimal
+bring-your-own-data golden path that reproduces the headline table with
+2-3 commands. Everything that was diagnostic scaffolding gets REMOVED —
+the research branch keeps the full record, the blog narrates the war
+stories, the repo ships only the recipe that won.
 
-REMOVE on the clean branch:
-- Sequence contrastive: `seq_cl_weight` knob, `seq_contrastive_loss`,
-  `_contrastive_views`, the seq_views/seq_cl_scale plumbing in
-  model.forward + pretrain loop, and the seq_cl TB metrics
-  (measured: no downstream lift, taxed the merchant head)
-- G1: `intra_tx_attention`/`intra_tx_heads` + the attr-slot/MHA code in
-  _embed + configs/full_g1.yaml (never successfully ran; lives on the
-  research branch if ever chunk-fixed)
-- Legacy whole-row masking support: the `isinstance(masked, dict)` tensor
-  branch in field_loss (mask_batch always returns dict now)
-- The one-off job yamls listed in §2
+The golden path the clean branch must support (and nothing more):
+```bash
+# 1. the gate: reproduce NVIDIA's baseline through this pipeline
+anyscale job submit -f job_baseline.yaml     # -> 0.9875 / 0.1421
+# 2. pretrain the FM + evaluate — prints the headline table
+anyscale job submit -f job_full.yaml         # -> embed-only beats their fusion
+# 3. (the scaling story) same at 1024 / 2048 transactions of context
+anyscale job submit -f job_xl.yaml
+```
 
-KEEP on the clean branch (small, load-bearing, or part of the story):
-- periodic_amount / periodic_time / n_periodic (in the winning recipe)
-- multi-column pooled extraction (last/mean/max — 5 lines; reviewers will
-  ask for the pooling ablation) and TargetReadoutExtractor + surprise
-  (Run-1 is part of the published narrative)
-- heuristic eval sampling (synthetic/CI path) and src/downstream.py fallback
-- pre-campaign template features not on trial (soft amount mode)
+REMOVE on the clean branch (diagnostic scaffolding, all falsified or
+off-path; research branch keeps everything):
+- seq-CL machinery (seq_cl_weight, seq_contrastive_loss, _contrastive_views,
+  plumbing + TB metrics)
+- G1 attention-fusion code + configs/full_g1.yaml
+- legacy whole-row masking branch in field_loss
+- TargetReadoutExtractor + target_readout + surprise (diagnostic key, not
+  the shipped signal — the blog TELLS this story, the repo doesn't ship it)
+- multi-pooling columns (mean/max + pooling="all") — extractor emits one
+  "embedding" column (last position), period
+- scripts/probe_embeddings.py, probe_by_epoch.py, eval_models.py and all
+  research knobs on 04/05 (--checkpoint-dir/--pooling/--output/--limit/
+  --embedding-column/--min-match/--seed/--raw-control)
+- one-off job yamls (§2 list) + gemini_ideas.txt + the campaign docs
+  (TEARDOWN/BLOG_NOTES/EXPERIMENT_LOG/AUTORESEARCH/CLEANUP stay on the
+  research branch only)
 
-Acceptance for the clean branch: unit tests + synthetic smoke pass; then
-the 1024 run validates the pipeline end-to-end from clean code.
+CHANGE on the clean branch:
+- Fold the headline eval INTO stage 05: run_benchmark prints one table —
+  baseline (13 raw + their XGB), their-protocol embed (PCA64+XGB, the
+  +14.2% row), ours embed-only no-PCA (logistic + XGB, the 0.23-0.26 row).
+  No fusion clutter, no PCA variants beyond the comparison row.
+- Rewrite README as the cookbook: the 3 commands, the expected table, the
+  bring-your-own-data column mapping (what your CSV needs), hardware notes
+  (4-8x A10G), and pointers to the blog for the story.
+
+KEEP: the winning recipe exactly — 13-field tokenizer, periodic amount/time
+channels, merchant InfoNCE, per-field masking, strided windows, pooled-last
+extraction; the synthetic/CI smoke path; 06 reco + serve stay as template
+extras but OFF the blog's golden path (reco regressed; revisit later).
+
+Acceptance: unit tests + synthetic smoke pass on the clean branch, then the
+1024 run from it IS the validation (clean code x new scale x same protocol).
 
 ## 3. Config normalization BEFORE the 1024/2048 act
 
@@ -114,20 +135,20 @@ Then the act is: `job_xl.yaml` as-is (moves aside, retrains, trio + target
 extraction), then a probe with `--set xl_pooled_last=...:embedding_last
 --raw-control --seed N`. Same for a job_xxl clone if 1024 pays.
 
-## 4. Open items (from TEARDOWN, ordered) — WITH TIMING
+## 4. Remaining work — WITH TIMING (blog-grade, not peer-review-grade)
 
-1. Shuffled-label / shuffled-embedding sanity probe — kick IMMEDIATELY
-   after step 0 (restore): ~$2, 15 min, needs only benchmark + restored
-   embeddings; independent of the clean branch
+Before publishing numbers (cheap sanity, not academic ritual):
+1. Shuffled-label sanity probe — right after step 0; ~15 min; even a blog
+   must not ship a leak
 2. Classical burst-aggregates baseline (XGB on 13 raw + card-velocity
-   features) — kick IN PARALLEL with #1, BEFORE any blog drafting and
-   before/alongside the 1024 run (it calibrates how impressed to be);
-   CPU-only, needs only raw parquet + benchmark.parquet, no FM artifacts
-   Suggested order overall: step 0 restore -> kick #1+#2 -> build clean
-   branch (§2b) + normalize xl config (§3) -> launch 1024 from the clean
-   branch while the controls finish
-3. Cutoff unification: splits.json quantile -> nvidia_baseline date cutoff
-   (removes the 1,394-row val impurity); then ONE clean publication run
-4. Surprise ⊕ pooled-embedding fusion (untested, plausible small win)
-5. G1 chunked-attention fix (parked); reco rework (parked)
-6. Seed-replicate anything new per AUTORESEARCH rules (3+ seeds, CIs)
+   features) — in parallel; and it's a great BLOG SECTION in its own right
+   ("how far do classical velocity features get you before you need the FM")
+3. Cutoff unification (splits.json quantile -> date) + one clean final run
+   from the clean branch — the 1024 run doubles as this
+
+Then: draft the blog from BLOG_NOTES (research branch). Everything else —
+surprise⊕embedding fusion, G1 chunk-fix, reco rework, more seeds — is
+research-branch backlog, strictly optional, not blocking the blog.
+
+Suggested order: step 0 restore -> kick #1+#2 -> cut clean branch (§2b) +
+normalize xl config (§3) -> launch 1024 from clean branch -> write.
