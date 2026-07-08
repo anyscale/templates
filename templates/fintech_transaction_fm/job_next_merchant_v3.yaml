@@ -1,0 +1,14 @@
+# Reco v3: beat the memorization floor. Candidate re-ranker (count/recency/
+# is-last/popularity + MLP & InfoNCE log-softmax features), alpha blend,
+# recency-decayed naive floor, and the novel-merchant slices — one job,
+# identical sampled events for every method, raw-merchant space throughout.
+name: fintech-fm-next-merchant-v3
+entrypoint: >-
+  python scripts/next_merchant_v3.py --base-dir /mnt/user_storage/transaction-fm-v2 --scale full --device cuda
+working_dir: .
+requirements: requirements.txt
+compute_config:
+  cloud: aws-public-us-west-2
+  head_node:
+    instance_type: g5.4xlarge
+max_retries: 0
