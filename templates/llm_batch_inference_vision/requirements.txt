@@ -1,14 +1,15 @@
-# datasets is layered onto the anyscale/ray-llm:2.56.0 (numpy-2 stack) base image
-# via `uv pip install --no-deps`, so we keep the delta purely additive. 3.6.0 is
-# the newest datasets that resolves against the base image's pandas/pyarrow
-# without pulling in a pandas-3 requirement, so we pin it alongside the base
-# image's numpy/pandas/pyarrow so they reinstall as no-ops (no ABI break, Ray-safe).
+# datasets 4.x requires the numpy-2 stack (numpy>=2, pyarrow>=21, pandas 3), which is
+# incompatible with the numpy-1.x base image (anyscale/ray-llm:2.56.0 still ships
+# numpy 1.26.4 + pyarrow 19.0.1 + scipy compiled against numpy 1.x). The test layers
+# this lock on the stock image with `uv pip install --no-deps`, so we keep the delta
+# purely additive: 3.6.0 is the newest datasets that resolves against the image's
+# numpy/pandas/pyarrow, which we pin so they reinstall as no-ops (no ABI break, Ray-safe).
 datasets==3.6.0
-numpy==2.2.6
+numpy==1.26.4
 pandas==2.3.3
-pyarrow==23.0.1
-# datasets only requires huggingface-hub>=0.24.0, but unsafe-best-match resolves
-# to a newer version than the image ships. Pin to the base-image version so it
-# reinstalls as a no-op (base image ships transformers 5.8.0 which pairs with
-# huggingface-hub 1.x).
+pyarrow==19.0.1
+# datasets only requires huggingface-hub>=0.24.0, but unsafe-best-match resolves to
+# a newer version than the image ships. Pin to the base-image version so it
+# reinstalls as a no-op (the 2.56.0 ray-llm image ships hf-hub 1.13.0 alongside
+# transformers 5.x).
 huggingface-hub==1.13.0
