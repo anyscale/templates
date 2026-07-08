@@ -386,7 +386,19 @@ def build_model(vocab_path: str, arch: dict, max_len: int = 64, infonce_negative
     """
     with open(vocab_path) as f:
         vocab = json.load(f)
-    cfg = arch
+    # Checkpoints trained before a flag was removed carry it in their
+    # model_config.json arch dict (e.g. intra_tx_attention: false). Unknown
+    # keys with falsy values are safely droppable; anything truthy means the
+    # weights genuinely need code this build no longer has — fail loudly.
+    import inspect
+
+    allowed = set(inspect.signature(TransactionFM.__init__).parameters) - {"self"}
+    unknown = {k: v for k, v in arch.items() if k not in allowed}
+    for k, v in unknown.items():
+        if v:
+            raise ValueError(f"checkpoint arch needs removed feature {k}={v!r}")
+        print(f"[model] dropping legacy arch key {k}={v!r} (feature removed, was off)")
+    cfg = {k: v for k, v in arch.items() if k in allowed}
     return TransactionFM(
         field_vocab_sizes=vocab["field_vocab_sizes"],
         dynamic_fields=vocab["dynamic_fields"],
