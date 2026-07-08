@@ -228,6 +228,106 @@ Missing, in priority order:
 [ ] Publication claims map 1:1 to ledger entries (no number, no claim)
 ```
 
+## 8. Prior art & further reading (URLs verified 2026-07)
+
+The gap this framework fills: autonomous research loops exist and close
+end-to-end, but experimental RIGOR is their documented weak layer — 42% of
+the AI Scientist's experiments failed on coding errors (Beel et al.,
+https://arxiv.org/abs/2502.14297); only 6 of 19 of CodeScientist's
+machine-generated "discoveries" survived expert review
+(https://arxiv.org/abs/2503.22708). The Iron Rules are that missing layer.
+
+**Autonomous loops & their failure modes** (→ Rules 2, 7; the review agents)
+- The AI Scientist / v2 — Sakana, 2024/25. https://arxiv.org/abs/2408.06292,
+  https://arxiv.org/abs/2504.08066 — the existence proof; v2's agentic tree
+  search over experiments prefigures the fidelity-ladder search.
+- Sakana "AI CUDA Engineer" incident, 2025 — https://sakana.ai/ai-cuda-engineer/
+  + https://techcrunch.com/2025/02/21/sakana-walks-back-claims-that-its-ai-can-dramatically-speed-up-model-training/
+  — agent exploited its own eval (claimed ~3.1x fell to ~1.5x after
+  decontamination): THE case for pinned evals audited adversarially.
+- Recent Frontier Models Are Reward Hacking — METR, 2025.
+  https://metr.org/blog/2025-06-05-recent-reward-hacking/ — frontier agents
+  exploiting grader bugs knowingly; the threat model canaries must assume.
+- AIDE — Weco, 2025. https://arxiv.org/abs/2502.13138 — tree search over ML
+  code scored by automated evaluation (the scaffolding behind top MLE-bench
+  results). Curie — UMich, 2025. https://arxiv.org/abs/2502.16069 — explicit
+  "rigor modules"; closest prior art to a built-in rigor layer.
+  AI Co-Scientist — Google, 2025. https://arxiv.org/abs/2502.18864 —
+  tournament-Elo hypothesis promotion. Agent Laboratory — 2025.
+  https://arxiv.org/abs/2501.04227 — human ideation + automated execution.
+  AlphaEvolve — DeepMind, 2025. https://deepmind.google/blog/alphaevolve-a-gemini-powered-coding-agent-for-designing-advanced-algorithms/
+  — the pinned evaluator as THE load-bearing component.
+- Measuring it: MLE-bench (https://arxiv.org/abs/2410.07095), MLAgentBench
+  (https://arxiv.org/abs/2310.03302), RE-Bench (https://arxiv.org/abs/2411.15114
+  — agents beat experts at short budgets, lose at long ones: run many cheap
+  parallel attempts), PaperBench (https://arxiv.org/abs/2504.01848 —
+  replication graded by 8,316 rubric sub-tasks), MLGym
+  (https://arxiv.org/abs/2502.14499).
+
+**Why "reproduce the baseline first" is a rule, not a taste** (→ Rules 1, 10)
+- Dacrema et al., RecSys 2019. https://arxiv.org/abs/1907.06902 — most
+  published neural recsys lost to tuned simple baselines.
+- Musgrave et al., A Metric Learning Reality Check, ECCV 2020.
+  https://arxiv.org/abs/2003.08505 — four years of claimed gains ~vanish
+  under a fair pinned protocol.
+- Melis et al., 2017. https://arxiv.org/abs/1707.05589 — equal tuning budget
+  makes plain LSTMs beat "superior" architectures; tuning is a confound.
+- Kapoor & Narayanan, Patterns 2023. https://arxiv.org/abs/2207.07048 —
+  leakage taxonomy across 294 papers / 17 fields; our fraud-burst join bug
+  is their taxonomy in the wild. The input-audit stage encodes this.
+- Pineau et al., JMLR 2021. https://arxiv.org/abs/2003.12206 — reproduction
+  as gating institutional process (NeurIPS reproducibility program).
+
+**Multi-fidelity & proxy calibration** (→ §3)
+- Hyperband (https://arxiv.org/abs/1603.06560) and ASHA
+  (https://arxiv.org/abs/1810.05934) — the successive-halving math; Ray Tune
+  (https://arxiv.org/abs/1807.05118) — the substrate.
+- muTransfer, Tensor Programs V. https://arxiv.org/abs/2203.03466 — the
+  theoretical license for tune-small-transfer-large (13M-param tuning beat
+  published BERT-large HPs).
+- GPT-4 Technical Report. https://arxiv.org/abs/2303.08774 — loss and
+  HumanEval predicted from 1,000-10,000x-cheaper runs: the industrial proof
+  that calibrated cheap rungs forecast expensive outcomes.
+- The cautionary NAS literature: NAS evaluation is frustratingly hard
+  (https://arxiv.org/abs/1912.12522 — protocol tricks + seed variance
+  manufacture fake gains); EcoNAS (https://arxiv.org/abs/2001.01233 — which
+  reduced-fidelity settings preserve rank order); NAS-Bench-Suite-Zero
+  (https://arxiv.org/abs/2210.03230 — proxy rank correlations are
+  inconsistent across tasks, sometimes negative: calibrate per-domain,
+  never assume).
+- Schaeffer et al., NeurIPS 2023. https://arxiv.org/abs/2304.15004 —
+  "emergence" as metric artifact; metric choice decides whether proxy-scale
+  signal exists at all.
+
+**Ledgers & engineering discipline** (→ Rules 5, 8, 9; §2)
+- Karpathy, A Recipe for Training Neural Networks, 2019.
+  http://karpathy.github.io/2019/04/25/recipe/ — the human protocol this
+  loop mechanizes ("neural nets fail silently; build the eval skeleton
+  first; change one thing at a time").
+- Sculley et al., Hidden Technical Debt in ML Systems, NeurIPS 2015 — why
+  pipeline hygiene belongs inside the research loop.
+- OPT-175B Chronicles — Meta, 2022.
+  https://github.com/facebookresearch/metaseq/tree/main/projects/OPT/chronicles
+  — the founding public experiment logbook (~2k incidents in 3 months, raw).
+- The Smol Training Playbook — Hugging Face, 2025.
+  https://huggingfacetb-smol-training-playbook.hf.space/ — codified
+  "derisking": one variable per ablation, never adopt untested changes;
+  ablations cost >half the final run's GPU-hours and are worth it.
+- Marin — Stanford, 2025. http://marin.community/blog/2025/05/19/announcement/
+  — experiments-as-code with unique run IDs and full lineage: a working
+  design for the results registry in §6.
+
+**Live reproduce-then-improve campaigns** (→ the post-training use case)
+- TinyZero — Berkeley, 2025. https://github.com/Jiayi-Pan/TinyZero — R1-Zero's
+  "aha moment" reproduced for <$30 on a 3B model: the archetype of a
+  calibrated micro-scale proxy for an expensive result.
+- Open-R1 — Hugging Face, 2025. https://huggingface.co/blog/open-r1 — an
+  organized community campaign validating a published pipeline step-by-step
+  before extending it.
+- SimpleRL-Zoo — 2025. https://arxiv.org/abs/2503.18892 — replication across
+  10 base models sorting which claimed phenomena generalize: replication
+  breadth as a claim filter.
+
 ## Appendix: the worked example
 
 The fintech campaign this framework is distilled from: gate = NVIDIA's
