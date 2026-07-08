@@ -51,7 +51,7 @@ def _join(bench, embeddings_path, embedding_column, min_match=0.999):
     return b, X_emb[b.pop("_row").to_numpy()]
 
 
-def _torch_probe(X, y, masks, hidden=None, device="cpu", epochs=6, lr=1e-3):
+def _torch_probe(X, y, masks, hidden=None, device="cpu", epochs=6, lr=1e-3, seed=0):
     """Logistic (hidden=None) or 1-hidden-layer MLP, z-scored, pos-weighted."""
     import torch
     from sklearn.metrics import average_precision_score, roc_auc_score
@@ -79,7 +79,7 @@ def _torch_probe(X, y, masks, hidden=None, device="cpu", epochs=6, lr=1e-3):
     pos_w = torch.tensor([(len(yt["tr"]) - yt["tr"].sum()) / yt["tr"].sum()], device=device)
     lossf = torch.nn.BCEWithLogitsLoss(pos_weight=pos_w)
     opt = torch.optim.Adam(net.parameters(), lr=lr, weight_decay=1e-4)
-    torch.manual_seed(0)
+    torch.manual_seed(seed)
     n = len(yt["tr"])
     best_auc, best_state = -1.0, None
     for ep in range(epochs):
@@ -131,6 +131,8 @@ def main():
     p.add_argument("--set", action="append", required=True,
                    help="name=<embeddings_path>:<embedding_column>")
     p.add_argument("--device", default="cpu")
+    p.add_argument("--seed", type=int, default=0,
+                   help="torch-probe init/shuffle seed — replication runs")
     p.add_argument("--min-match", type=float, default=0.999,
                    help="required benchmark-row join fraction; lower it for "
                         "subset e2e proofs on partial embeddings")
@@ -156,10 +158,10 @@ def main():
 
         r = {}
         fits = [
-            ("logistic", lambda: _torch_probe(E, y, masks, hidden=None, device=args.device)),
-            ("mlp", lambda: _torch_probe(E, y, masks, hidden=256, device=args.device)),
+            ("logistic", lambda: _torch_probe(E, y, masks, hidden=None, device=args.device, seed=args.seed)),
+            ("mlp", lambda: _torch_probe(E, y, masks, hidden=256, device=args.device, seed=args.seed)),
             ("xgb", lambda: _xgb_probe(E, y, masks, XGB_PARAMS_EMBED, device=args.device)),
-            ("logistic_fusion", lambda: _torch_probe(fused, y, masks, hidden=None, device=args.device)),
+            ("logistic_fusion", lambda: _torch_probe(fused, y, masks, hidden=None, device=args.device, seed=args.seed)),
             ("xgb_fusion", lambda: _xgb_probe(fused, y, masks, XGB_PARAMS_COMBINED, device=args.device)),
             # COMBINED's depth-12/lr-0.003 was Optuna-tuned for 77 dims; for
             # low-dim features (e.g. the 7-dim surprise vector) the baseline
@@ -177,7 +179,7 @@ def main():
     for name, r in results.items():
         for m, v in r.items():
             print(f"{name:<10} {m:<16} {v['auc_roc']:>9.4f} {v['ap']:>9.4f}")
-    out = f"{args.base_dir}/downstream/{args.scale}_probe/probe_metrics.json"
+    out = f"{args.base_dir}/downstream/{args.scale}_probe/probe_metrics_seed{args.seed}.json"
     os.makedirs(os.path.dirname(out), exist_ok=True)
     with open(out, "w") as f:
         json.dump(results, f, indent=2)
