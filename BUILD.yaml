@@ -434,8 +434,8 @@
   dir: templates/groot-ray-serve
   cluster_env:
     byod:
-      docker_image: us-docker.pkg.dev/anyscale-workspace-templates/workspace-templates/groot-ray-serve:2.55.1
-      ray_version: 2.55.1
+      docker_image: us-docker.pkg.dev/anyscale-workspace-templates/workspace-templates/groot-ray-serve:2.56.0
+      ray_version: 2.56.0
   compute_config:
     GCP: configs/groot-ray-serve/gce.yaml
     AWS: configs/groot-ray-serve/aws.yaml
