@@ -7,7 +7,7 @@
 > REMAINING BLANKS / GATES:
 > - [B-XXL] 2048 fulltest row (40-epoch model; job running)
 > - [B-PAIR] paired-bootstrap ordering stats (runs after B-XXL)
-> - [B-RECO] MLP / InfoNCE-readout next-merchant numbers (job running)
+> - DONE: reco readout ladder (MLP 0.523; blend hybrid optional)
 > - figures to export; Zach confirms repro-branch numbers/framings
 > - DONE: xgboost==3.2.0 + CUDA parity, bootstrap CIs, full-test-period eval
 
@@ -118,7 +118,17 @@ Doubling the window halves the number of windows per epoch — so at fixed epoch
 
 ## A second consumer: what the embedding knows about the next merchant
 
-The template also ships a next-merchant recommendation eval off the same backbone (BERT4Rec-style over the InfoNCE merchant table). The honest status: the *masked-position* readout scores HR@10 **0.077** — and the same frozen embedding through a trained head scores **0.397** (HR@1 0.185 over a 21k-way merchant space) — the readout lesson, again, on a second task. That's still below the memorization floor on this data (a card's top-10 historical merchants: HR@10 0.598, on a dataset where 96% of transactions repeat a known merchant). [B-RECO: MLP + InfoNCE-table readout numbers; if the MLP clears 0.598, promote this section.] A production recommender would blend the embedding with frequency priors — the embedding's job is re-ranking and novelty, not beating memorization head-on — and that hybrid is future work we've left in the template as an extra.
+The template also ships a next-merchant recommendation eval off the same backbone (BERT4Rec-style over the InfoNCE merchant table). The honest status is a ladder that proves the readout lesson a second time — same frozen embedding, four readouts, on 2.4M test pairs over a 21k-way merchant space:
+
+| readout of the same frozen embedding | HR@10 |
+|---|---|
+| masked-position readout (the original eval) | 0.077 |
+| the model's InfoNCE merchant table, zero-shot | 0.184 |
+| trained linear head | 0.397 |
+| **trained 2-layer MLP** | **0.523** |
+| *memorization floor: card's top-10 historical merchants* | *0.598* |
+
+A readout change alone moves HR@10 by **6.8x** — but none of it yet beats plain memorization, on a dataset where 96% of transactions repeat a known merchant. A production recommender would blend the two (embedding logits + per-card frequency prior — the embedding's job is re-ranking and novelty, not beating memorization head-on); that hybrid is left in the template as future work.
 
 ## Cost and scale on Anyscale
 
@@ -146,7 +156,7 @@ anyscale job submit -f job_xl.yaml     # and job_xxl.yaml
 
 - **A transaction FM's embedding, alone, beats NVIDIA's published fusion headline** on their exact protocol (P = 0.94–0.99 across 512–2048 context), and beats the identical-rows raw baseline by **+34–45% with non-overlapping CIs** on the full 2.44M-transaction test period.
 - **Context is architecturally free and it pays**: one position per transaction buys 4–13x their context at identical capacity; 1024 measurably beats 512 on the tight eval [B-PAIR]; the 2048 verdict — and whether its limit is data or training budget — is [B-XXL].
-- **The readout matters as much as the model**: per-field masking + last-position extraction + no PCA is the difference between "the FM learned nothing" and the headline — a lesson that repeated on the recommendation task (0.08 → 0.40 from a readout change alone). PCA-before-classifier destroyed the context advantage entirely in our measurements.
+- **The readout matters as much as the model**: per-field masking + last-position extraction + no PCA is the difference between "the FM learned nothing" and the headline — a lesson that repeated on the recommendation task (0.08 → 0.52 from readout changes alone). PCA-before-classifier destroyed the context advantage entirely in our measurements.
 - **Benchmark like you mean it**: exact baseline reproduction, shuffled-label control at the AP floor, a velocity-feature bar that doesn't reach, bootstrap CIs on a 112-fraud test set that nearly fooled us twice, and a full-test-period eval that finally resolves what the sample couldn't.
 - Disclosures: one dataset (TabFormer, static-poor); the 2048 model's training used a warm-restarted continuation; linear-head readout degrades at long context while trees improve; full-period and 100k-sample APs are not mutually comparable.
 
