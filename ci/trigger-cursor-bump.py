@@ -32,6 +32,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import sys
 import urllib.error
 import urllib.request
@@ -46,11 +47,24 @@ def warn(msg: str) -> None:
     print(msg, file=sys.stderr)
 
 
+def current_ray_version(entry: dict) -> str | None:
+    """The Ray version an entry currently pins — from byod.ray_version, or the
+    tag of a base image_uri (anyscale/ray[-llm]:<version>-…). None if unknown."""
+    cluster_env = entry.get("cluster_env", {})
+    if cluster_env.get("byod"):
+        return cluster_env["byod"].get("ray_version")
+    tag = cluster_env.get("image_uri", "").rsplit(":", 1)[-1]
+    m = re.match(r"(\d+\.\d+\.\d+)", tag)
+    return m.group(1) if m else None
+
+
 def resolve_templates(
-    entries: list[dict], requested: list[str], exclude: set[str]
+    entries: list[dict], requested: list[str], exclude: set[str], target_version: str
 ) -> list[str]:
     """Filter `requested` down to the launch set: drop excluded, unknown,
-    unmaintained, and duplicate names (each skip is reported to stderr)."""
+    unmaintained, already-at-`target_version`, and duplicate names (each skip is
+    reported to stderr). Skipping already-pinned entries keeps the fanout
+    idempotent — no wasted no-op agents for templates already on the target."""
     by_name = {e["name"]: e for e in entries}
     final: list[str] = []
     for name in requested:
@@ -60,6 +74,8 @@ def resolve_templates(
             warn(f"skip (not in BUILD.yaml): {name}")
         elif not by_name[name].get("maintained", True):
             warn(f"skip (maintained: false): {name}")
+        elif current_ray_version(by_name[name]) == target_version:
+            warn(f"skip (already at {target_version}): {name}")
         elif name not in final:
             final.append(name)
     return final
@@ -134,7 +150,7 @@ def main(argv: list[str] | None = None) -> int:
         return 2
 
     exclude = {name for name in args.exclude.split(",") if name}
-    final = resolve_templates(entries, requested, exclude)
+    final = resolve_templates(entries, requested, exclude, args.ray_version)
     if not final:
         warn("error: no templates to fire after filtering")
         return 2

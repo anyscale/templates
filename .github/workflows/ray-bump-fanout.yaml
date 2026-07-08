@@ -74,8 +74,11 @@ jobs:
         GH_TOKEN: ${{ github.token }}
         V: ${{ steps.version.outputs.value }}
       run: |
-        python3 ci/trigger-cursor-bump.py --all --list 2>/dev/null | sort -u > /tmp/maintained.txt
-        # template names that already have a [ray-update-<v>] PR (open/merged/closed)
+        # --list is version-aware: it already drops templates whose BUILD.yaml is
+        # at $V (merged bumps), leaving the "behind $V" set.
+        python3 ci/trigger-cursor-bump.py --all -v "$V" --list 2>/dev/null | sort -u > /tmp/maintained.txt
+        # ...minus template names that already have an in-flight [ray-update-<v>] PR
+        # (BUILD.yaml won't reflect those until they merge).
         gh pr list --state all --limit 400 --json title -q '.[].title' \
           | grep -oP "^\[ray-update-${V}\] Update \K[^ ]+" | sort -u > /tmp/have_pr.txt || true
         comm -23 /tmp/maintained.txt /tmp/have_pr.txt > /tmp/delta.txt
