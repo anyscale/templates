@@ -4,6 +4,16 @@
 
 Cursor environment quirks — `GH_TOKEN=$ANYSCALE_GH_TOKEN` on `gh` writes, `cursor/...` branch naming, `pre-commit` not auto-firing under `core.hooksPath`, and the PR labels — live in **AGENTS.md "Cursor Cloud"**. Follow them there; this runbook does not restate them.
 
+## Scope — fix forward, don't bail
+
+The goal is a **working, CI-green template on the new Ray version**, not a minimal version-string edit. The small, template-local changes needed to get there are **in scope and expected** — doing them is not overstepping:
+
+- take the closest published image variant for `<version>` even if its Python/CUDA differs from the old tag (step 1);
+- raise a too-low `test.timeout_in_sec`, or trim/cache a slow dataset download the test does;
+- pin/unpin a dependency, or make a small code/notebook fix for a moved API.
+
+Do them, and note them in the PR body. Reserve **stop / Blocked** for what you genuinely cannot fix from the template's own files — an unpublished base image, a staging/Buildkite outage, or a change that would alter the template's *intent* rather than just make it run. **When unsure, prefer making an obvious, low-risk fix over bailing** — that isn't "guessing."
+
 ## Setup — preflight
 
 Run `bash .cursor/preflight.sh`. It verifies the companion skills (incl. `/anyscale-platform-fix`), secrets, and auth. On a non-zero exit, handle per **AGENTS.md "Cursor Cloud → Preconditions"** (report stderr + stop) — at this point no PR exists yet, so that report lands in the run/CI output.
@@ -22,6 +32,8 @@ curl -sf "https://hub.docker.com/v2/repositories/anyscale/ray/tags/<tag>/" >/dev
 - **Anyscale base** — run the check above. Published → set `cluster_env.image_uri` to `anyscale/ray:<new-tag>`. **Not published yet → stop and report** (base images lag the Ray release by a few days); rerun once it lands.
 - **Anyscale custom on GCP** — the base is the Dockerfile `FROM` (an `anyscale/ray` tag); verify it with the same check. **Not published yet → stop and report.** Otherwise bump the `FROM` → ensure docker is up (`.cursor/start.sh` starts it at boot; re-run `bash .cursor/start.sh` if `docker info` fails — do **not** use `service docker start`, unsupported on this base) → run `.claude/skills/template/scripts/push-custom-image-to-gcp.sh <dockerfile-dir> <name> <ray-version>` (use the entry's `name`; the validator requires `<registry>/<name>:<ray-version>`) → update `cluster_env.byod.{docker_image,ray_version}` with the printed URI.
 - **Third-party** — query the upstream registry; pick the highest available tag with Ray **≤ requested** (upstream may lag — closest-below is acceptable). Update `cluster_env.byod.{docker_image,ray_version}`. Do **not** swap to `anyscale/ray`. **No tag at or below the requested version → stop and report.**
+
+**Tag variant (py/cuda):** the `<version>` line may not publish the *exact* `-py<X>-cu<Y>` variant the old tag used (e.g. `ray-llm:2.55.1-py311-cu128` → the 2.56.0 line ships `-py312-cu130`). Take the closest published `<version>` variant — a Python/CUDA shift that ships with the new image is **in scope, not a human decision**. Keep the same family (`slim`/gpu) and nearest py/cuda; only stop-and-report if *no* `<version>` image exists at all.
 
 Then bump `BUILD.yaml` `ray_version` and grep/update any in-template version strings.
 
@@ -69,7 +81,7 @@ Comment `/test-template <name>` on the PR (**required — the run cannot end bef
 
 ## 4. Fix on failure
 
-Triage and recover per `../references/testing-template.md` "Recovery" (agent-fixable → `/anyscale-platform-fix`; infra → don't retry). **No human to hand off to:** post the summary to the PR, leave it open as a draft, and end the run. **Cap the fix loop** — if it isn't green after ~2 fix→test cycles, treat it as infra (summarize + stop) rather than looping. **Ray-bump delta:** when `/anyscale-platform-fix` rebuilds a custom image, re-run `.claude/skills/template/scripts/push-custom-image-to-gcp.sh` and update `cluster_env.byod.{docker_image,ray_version}` before re-pushing, then return to step 3.
+Triage and recover per `../references/testing-template.md` "Recovery". **Default to fixing:** most Ray-bump failures are template-local (a too-low `test.timeout_in_sec`, a dep pin, a moved API, a py/cuda mismatch) and are yours to fix via `/anyscale-platform-fix` — that's in scope, not overstepping (see **Scope** above). Only failures you genuinely can't fix from the template's files are Blocked. **No human to hand off to:** if truly Blocked, post the summary to the PR, leave it as a draft, and end the run. **Cap the fix loop** — if it isn't green after ~3 fix→test cycles, stop and report as Blocked (don't loop indefinitely). **Ray-bump delta:** when `/anyscale-platform-fix` rebuilds a custom image, re-run `.claude/skills/template/scripts/push-custom-image-to-gcp.sh` and update `cluster_env.byod.{docker_image,ray_version}` before re-pushing, then return to step 3.
 
 ## 5. Mark ready + start the publish
 
