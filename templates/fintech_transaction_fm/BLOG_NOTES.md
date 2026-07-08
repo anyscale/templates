@@ -23,7 +23,32 @@ proves or kills it, and where that number comes from. No number, no claim.
 - Blog beat: "before claiming an FM helps, reproduce the baseline — ours was
   off by 0.22 AUC until we did" (EXPERIMENT_LOG.md has the confession arc).
 
-## Claim 1 — "Same benchmark, 8x cheaper sequence" ⚠️ NOT SUPPORTED YET
+## Claim 1 — RESOLVED 2026-07-08: the FM WINS, decisively
+
+Final overnight numbers (all on the pinned benchmark; full history in
+TEARDOWN.md, seed CIs + adversarial audit + fair-head control done):
+
+| | ROC | AP | vs baseline |
+|---|--:|--:|--:|
+| baseline (13 raw, their XGB) | 0.9875 | 0.1421 | — |
+| NVIDIA combined (their headline) | 0.9925 | 0.1755 | +23.5% |
+| ours, protocol-faithful (their PCA+XGB harness, embed-only) | 0.9914 | 0.1623 | +14.2% |
+| **ours, embed-only, stable heads (no PCA)** | **0.997** | **0.23-0.26** | **+60-82%** |
+| ours, embed-only MLP (report as range) | 0.994-0.998 | 0.33 +/- 0.10 | — |
+| fair-head control: same torch heads on raw 13 | 0.47-0.61 | ~0.001 | (the lift is the embedding) |
+
+The story: input parity + target-position readout turned a -98% embedding
+into one that beats their published FUSION headline embedding-ONLY, at 1
+position/txn vs their 12 tokens/txn. Mechanism (audited, measured): fraud
+is bursty (90% of test frauds have a prior fraud within the same card's
+last 512 txns vs 7.3% of normals) and the history readout legitimately
+detects mid-burst cards from auth-time-legal features. Disclosures: 1,394
+val-period (ZERO test) txns visible to pretraining via a cutoff mismatch
+(fix queued); reco regressed (HR@10 0.077) — one-backbone-two-tasks needs
+rework; remaining pre-publish controls: shuffled-label sanity + classical
+burst-aggregates baseline (queued).
+
+### Original framing (historical)
 
 Status 2026-07-07 evening — the corrected (fixed-join, 100% row match) seq-512
 numbers vs the deterministic 0.9875/0.1421 baseline:

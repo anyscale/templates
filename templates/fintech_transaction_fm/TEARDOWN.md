@@ -147,9 +147,11 @@ parked unless the remaining evals reverse.
   beating NVIDIA's combined headline (0.1755) by 30-47% and the baseline
   by 60-82%.
 - REQUIRED CONTROLS before publishing (status):
-  1. MLP-on-13-raw fair-head control — probe --raw-control built, rides G1 probe
-  2. seed variance — 3-seed job running (note: pre-fix seeds varied shuffle
-     only; init-seed fix landed d4747ecc; rerun 1 seed post-fix)
+  1. MLP-on-13-raw fair-head control — DONE: raw-13 under torch heads is
+     ROC 0.47-0.61 / AP ~0.001 (ordinal ids need trees) -> the lift is the
+     EMBEDDING, not the head choice
+  2. seed variance — DONE: 4 shuffle-seeds + 1 post-fix init-seed all in
+     band (logistic 0.216-0.232, MLP 0.24-0.47, XGB 0.2581 det.)
   3. shuffled-label / shuffled-embedding sanity — QUEUED (morning)
   4. checkpoint provenance — ATTESTED: embeddings/full extracted by the R2
      job's own entrypoint immediately after 03's final checkpoint; no
