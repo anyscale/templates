@@ -460,7 +460,7 @@ depsets:
       - --python-platform=linux
       - --unsafe-package ray
     build_arg_sets:
-      - ray2551_py311_cu128
+      - ray2560_py311_cu128
 
   - name: storage_access_large_datasets_depset_${RAY_VERSION}_${PYTHON_VERSION}
     operation: expand
