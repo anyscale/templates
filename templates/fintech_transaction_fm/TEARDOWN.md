@@ -95,6 +95,33 @@ the same ~29M params and ~3k steps).
 - CoLES: random overlapping slices, margin loss + hard negatives, GRU,
   card-LEVEL downstream labels.
 
+## RESULTS UPDATE (2026-07-08, overnight)
+
+**Run 1 (readout surgery, existing checkpoints — 33/36 fits):** every
+target-conditioned readout beat every pooled readout. The 7-dim SURPRISE
+vector: best standalone signal of the campaign (navy 0.853 ROC embed-only)
+and the first baseline-beater (cl surprise + 13 raw, RAW params:
+0.9859/0.1476 = +3.9% AP). Flaw #1 empirically confirmed. Fusion fits are
+params/variance-fragile (navy surprise: best standalone, worst fused) —
+never conclude from a single fusion fit.
+
+**Run 2 + 2b (tokenizer parity + G2/G3/recency retrain):** the pooled
+embedding CAME ALIVE — embeddings-only 0.9914 ROC / 0.1623 AP (**+14.2% over
+the 0.1421 baseline**, vs -98% before; NVIDIA's own embeddings-only is
+0.8775/0.0123). Embedding collapse cured (pairwise cos 0.854 -> 0.219).
+acc_mcc 0.28->0.955, acc_merchant_bucket 0.12->0.758 (sibling-visible
+masking learning intra-txn conditional structure, as designed). Leak canary
+clean (amount epoch-0 0.475, gradual curve). Caveats: trio's combined
+(PCA64 + their COMBINED params) collapsed AGAIN (0.0563) — third instance
+of fusion-harness pathology, resolved by the probe's rawparams/linear/MLP
+fusions; reco regressed hard (HR@10 0.077, ledgered, deprioritized); the
+navy-vs-R2 per-field crowding comparison is confounded by the masking
+change (task difficulty differs) — crowding remains unmeasured.
+
+Verdict so far: flaws #1 (readout) and #2/#3/#7 (inputs/masking) were both
+real and BOTH fixes pay. The causal pivot (old Run-3) looks unnecessary —
+parked unless the remaining evals reverse.
+
 ## The three-run plan (agreed 2026-07-07 night)
 
 - **Run 1 — readout surgery, ZERO retraining** (STATUS: built, running).
