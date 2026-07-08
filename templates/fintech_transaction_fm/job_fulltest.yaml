@@ -1,0 +1,31 @@
+# Full-test-period eval (playbook item 2): the same protocol on ALL ~2.44M
+# test rows (~2.7k frauds) instead of the 100k/112-fraud subsample — ~5x
+# tighter CIs, same expected AP. Uses EXISTING checkpoints; new artifacts go
+# to *_fulltest dirs. xxl runs separately after its 40-epoch continuation.
+name: fintech-fm-fulltest
+entrypoint: >-
+  BASE=/mnt/user_storage/transaction-fm-v2 &&
+  for s in full xl; do
+  python scripts/fulltest_eval.py --scale $s --base-dir $BASE --device cuda &&
+  python scripts/bootstrap_ci.py --scale ${s}_fulltest --base-dir $BASE --draws 500 || exit 1;
+  done
+working_dir: .
+requirements: requirements.txt
+env_vars:
+  RAY_DEFAULT_OBJECT_STORE_MEMORY_PROPORTION: "0.3"
+compute_config:
+  cloud: aws-public-us-west-2
+  head_node:
+    instance_type: g5.8xlarge   # 128GB host: no-PCA eval holds 3.55M x 512 copies; XGB on CUDA
+  worker_nodes:
+    - name: gpu-1x
+      instance_type: g5.xlarge
+      min_nodes: 0
+      max_nodes: 8
+      resources:
+        CPU: 0
+    - name: cpu-workers
+      instance_type: m5.4xlarge
+      min_nodes: 0
+      max_nodes: 4
+max_retries: 0
