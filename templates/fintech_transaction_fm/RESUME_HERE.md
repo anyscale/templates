@@ -78,6 +78,12 @@ the faithful comparison, never as silent changes to it:
    NB05 excuses the weak fm-only result "as expected for decoder-only models," and bidirectional
    objectives typically embed better (Nubank publishes both NTP and MLM variants). Candidate A/B:
    same corpus/arch, MLM objective, compare fm-only AP vs the causal baseline.
+4. **Distribute the data stages with Ray Data (2026-07-09 finding).** The faithful rewrite left
+   the series with NO Ray Data: split/corpus/embed are single-GPU Ray tasks running NVIDIA's code,
+   nb02's exploration is head-node pandas. nb01 now labels this honestly. Distributing them is
+   fidelity-safe (tokenization is independent per (user,card) → sharded corpus build produces
+   identical tokens) and is a real beyond-blueprint scalability claim ("we distributed their data
+   pipeline") we currently cannot make. Also restores the Ray Data story the template is sold on.
 
 **Follow-ups (not blocking):** (1) delete the now-unused OLD `src/flat_tokenizer.py` + `src/tokenizer.py`
 shim; (2) notebook prose says fm "~2×" in spots — full run got ~5×, update; (3) optional: bake the
