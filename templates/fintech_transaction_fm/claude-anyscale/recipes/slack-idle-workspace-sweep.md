@@ -27,39 +27,61 @@ MIN_UTIL_PCT=15             # flag anything under this GPU utilization…
 IDLE_GRACE_MIN=120          # …sustained for at least this long (don't nag on a lunch break)
 POLL_EVERY=300              # seconds between sweeps when run as a loop
 SLACK_CHANNEL="#anyscale-cost"
+STATE=/mnt/user_storage/idle-sweep   # small state dir: remembers when each ws first went idle
 # node $/hr lookup lives in AGENTS.md (or a small table); used to turn idle-hours into $ wasted
 ```
 
 ## The logic
 
 ```
-1. clouds ← anyscale cloud list        # id → region
-   workspaces ← anyscale workspace_v2 list   # name, id, STATE, cloud, CREATED BY (email), CREATED AT
-   keep those whose cloud.region == REGION and STATE == RUNNING with worker nodes up
-   (skip scaled-to-zero: no nodes → nothing to waste)
+1. clouds ← anyscale cloud list                 # id → region
+   workspaces ← anyscale workspace_v2 list        # name, id, STATE, cloud, CREATED BY (email)
+   keep those whose cloud.region == REGION and STATE == RUNNING
+   (TERMINATED = already gone; Anyscale idle-terminates on its own — see note)
 
-2. for each candidate workspace:
-     util%      ← <YOUR METRICS SOURCE>          # ← the one adapt-point, see note below
-     if util% >= MIN_UTIL_PCT: skip
-     idle_min   ← how long util has been under threshold   (≥ IDLE_GRACE_MIN to flag)
-     node_type  ← anyscale workspace_v2 status / its compute config
+2. for each RUNNING candidate — read utilization STRAIGHT FROM THE CLUSTER:
+     probe ← anyscale workspace_v2 run_command --id <id> -- \
+               'ray status 2>/dev/null; echo ---; \
+                nvidia-smi --query-gpu=utilization.gpu --format=csv,noheader,nounits 2>/dev/null'
+     # ray status → nodes up + GPUs/CPUs USED vs total + any pending demand
+     # nvidia-smi  → hardware GPU util %, per GPU
+     busy? ← (ray status shows GPUs in use OR pending demand) OR max(gpu%) >= MIN_UTIL_PCT
+     if busy: clear idle marker ($STATE/idle_<wsid>); skip
+
+3. idle bookkeeping — this is your "idle time so far":
+     idle_since ← $STATE/idle_<wsid>   # written the FIRST cycle we saw it idle (persists on /mnt/user_storage)
+     idle_min   ← now − idle_since
+     if idle_min < IDLE_GRACE_MIN: skip                      # don't nag on a lunch break
+     node_type  ← from the workspace's compute config
      $wasted    ← (idle_min/60) * $per_hr(node_type)
-     owner_id   ← slack lookup by email(CREATED BY)         # email → <@U…> for the @-mention
+     owner_id   ← slack users.lookupByEmail(CREATED BY)      # email → <@U…> for the @-mention
 
-3. post to SLACK_CHANNEL: @owner + workspace + util% + idle time + $wasted + console link
+4. post to SLACK_CHANNEL: @owner + workspace + util% + idle time + $wasted + console link
                           + reply options (keep / stop / ignore)
 
-4. (poll-chat) read the thread each cycle: on `keep` → snooze 24h; on `stop` → confirm, then
-   anyscale workspace_v2 terminate; on `ignore` → drop it for this sweep.
+5. (poll-chat) read the thread each cycle: `keep` → snooze 24h; `stop` → confirm, then
+   anyscale workspace_v2 terminate; `ignore` → drop it for this sweep.
 ```
 
-**The one adapt-point — where util% comes from.** It is *not* in `workspace_v2 list`. Feed it from
-whatever you already have:
-- SSH the workspace and read `ray status` / the Ray dashboard's GPU metrics, or
-- query your Prometheus/Grafana GPU-utilization series for that cluster.
+**Where util actually comes from — settled.** It is *not* in the `anyscale` CLI/API (checked:
+`workspace_v2 get`/`list`/`status` return state + owner + timestamps, and `anyscale cluster` only
+lists/archives — no metrics). You read it from the cluster itself with **`run_command`** (or
+`ssh`), which runs a probe *inside* the workspace where `ray` and the GPUs live:
 
-Everything else (owner, uptime, node type, cost math, the @-mention, the Slack round-trip) is
-straight off the CLI + Slack. Swap in your util call and the recipe is complete.
+- `ray status` — the honest busy/idle signal: nodes up, GPUs/CPUs allocated vs total, pending demand.
+- `nvidia-smi --query-gpu=utilization.gpu` — true hardware GPU %, if you want a percentage threshold.
+
+No external metrics infra needed — `run_command` works out of the box. (If you already run
+Prometheus/Grafana, Ray also exports `ray_node_gpus_utilization` there; query that instead of
+probing.) The "idle time so far" comes from *your own sampling*: the poll agent stamps `idle_since`
+the first cycle it sees a workspace idle and clears it the moment it's busy — so idle duration and
+$ wasted are measured, not guessed.
+
+> **Anyscale already idle-terminates workspaces.** One of the workspaces I listed for these guides
+> auto-terminated mid-writeup — the platform's own idle timeout at work. So this sweep is the
+> *second* line of defense: it catches workspaces whose idle-termination is disabled or set long,
+> or that pin worker nodes up. Worth checking a workspace's idle-termination setting before nagging
+> its owner.
 
 ## What it looks like in Slack
 
