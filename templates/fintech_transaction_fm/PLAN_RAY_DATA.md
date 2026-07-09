@@ -28,6 +28,57 @@ stays verbatim; anything we add sits beside it, never inside it.
 
 ## Stages (each lands separately: code + notebook + identity check, full scale, then commit)
 
+### Stage 0 — STATUS 2026-07-09: IN PROGRESS (resume notes below, written mid-build in case of session loss)
+
+**Files being built:**
+- `src/nvtokenize_cpu.py` — pandas mirror of `FinancialTokenizerPipeline.preprocess()` +
+  `transform()` (vendored files untouched). Merchant hash via `mmh3` (murmur3_x86_32, seed 0,
+  unsigned → matches cudf `Series.hash_values()` — TO BE VERIFIED, that's the point of Stage 0).
+  `pip install mmh3` needed (add to requirements only if adopted).
+- `scripts/verify_cpu_tokenizer.py` — two subcommands:
+  - `dump`: ONE `@ray.remote(num_gpus=1)` task (run from template root so `working_dir` ships
+    `src/`); reads `/mnt/cluster_storage/transaction-fm/nvsplit/full/train.parquet`; writes to
+    `/mnt/cluster_storage/transaction-fm/stage0/`: `merchant_hash_gpu.parquet` (ALL distinct
+    raw merchant names + cudf-cleaned string + cudf hash), `tokens_gpu.parquet` (first 200K
+    rows tagged `__row_id__` BEFORE preprocess → preprocess → fit → transform; saves
+    `__row_id__,user,card,time_full` + the 12 token columns), `vocab_gpu.json` (full
+    token→id vocab from `FinancialTabularTokenizer`, must be 6251).
+  - `compare`: local/CPU; pandas-reads the same train.parquet, `.head(200_000)` (same rows —
+    parquet row order is deterministic), runs `nvtokenize_cpu`, checks: (1) cleaned merchant
+    strings equal (catches cudf-vs-python regex `[^A-Z0-9\s\-]` divergence), (2) mmh3 == cudf
+    hashes as uint32, (3) `__row_id__` sequence after the (user,card,time_full) sort equal —
+    catches sort tie-break divergence (Time is minute-resolution → same-minute txns tie; CPU
+    uses stable mergesort; if cudf differs ONLY in tie order, also compare after sorting both
+    by (user,card,time_full,__row_id__) and report both results), (4) all 12 token columns
+    equal row-by-row, (5) CPU-built `FinancialTabularTokenizer` vocab == `vocab_gpu.json`.
+
+**Exact semantics already extracted from the vendored code (re-derive from these if lost):**
+- `preprocess`: lowercase/underscore col names; amt = `$`-strip → float → `amt_val` = sum of
+  ≥{10,50,100,500,1000,5000} (int32); merch_clean = upper + regex-remove `[^A-Z0-9\s\-]` →
+  `merch_hash = hash_values()`; mcc `fillna(-1).astype(int)` → `mcc_int` + `mcc_str=str`;
+  datetime from `Y-M(zfill2)-D(zfill2) Time(fillna "00:00")` fmt `%Y-%m-%d %H:%M` → hour/dow
+  (dayofweek)/month; card int clip 0-9; chip_upper = upper(use_chip); zip = fillna("00000") →
+  str → replace(".0","",regex=False) → first 3 chars zfill(3) → int; state = fillna("XX") upper
+  strip, ""→"XX"; cust = user int clip 0-2999; `time_full` = the datetime; **global sort by
+  (user, card, time_full)**; time_delta_s = per-(user,card) diff seconds fillna(0) clip≥0.
+- `transform` output = one column per step keyed by step id, order: `amt_val, merch_hash,
+  mcc_int, mcc_str, hour, dow, month, card, chip_upper, zip3, state_clean, cust`.
+- Token formats: FixedVocab = `f"{prefix}_{v:0{pad}d}"` after int32 clip to [min,max] — pads:
+  hour 2, month 2, zip3 3, all others 0 (AMT 0-6, DOW 0-6, CARD 0-9, CUST 0-2999);
+  merch = `f"MERCH_{hash % 2000}"`; ranges (CAT) = numpy range masks over INDUSTRY_RANGES,
+  default `CAT_GENERAL`; direct maps = `host.map(dict).fillna(default)` then `PREFIX_ + val`
+  (MCC passthrough of KNOWN_MCCS strings, default "-1"; CHIP via CHIP_MAPPING, default "UNK";
+  STATE passthrough ALL_STATES, default "XX").
+- `FinancialTabularTokenizer` vocab build is data-free pure Python → `encode` already works on
+  CPU. Specials: pad 0, bos 1, eos 2, sep 3, unk 4. vocab_size must equal 6251.
+
+**Known risks being tested:** murmur3 exactness; sort-tie stability; cudf regex semantics;
+zip float-string ".0" handling (replace removes ALL occurrences in both libs).
+
+**To resume after a crash:** finish/re-create the two files per above, `python
+scripts/verify_cpu_tokenizer.py dump` (waits for a GPU worker), then `... compare`. Paste the
+compare report into this file, then proceed to Stage 1.
+
 ### Stage 0 — proof of the risky bits (no notebook changes)
 Scratch script, GPU worker + CPU worker:
 1. cudf `hash_values` vs CPU `mmh3` on all distinct `Merchant Name` values → must match 100%.
