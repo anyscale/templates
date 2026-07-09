@@ -46,6 +46,8 @@ def _embed(hf_dir: str, split_dir: str, out_dir: str, balanced_train: int,
         src_files = (train_parquet_files(split_dir) if fname is None
                      else [os.path.join(split_dir, fname)])
         gdf = cudf.read_parquet(src_files)
+        if "__seq__" in gdf.columns:  # sharded split: restore CSV row order, then drop
+            gdf = gdf.sort_values("__seq__").drop(columns=["__seq__"]).reset_index(drop=True)
         fr = gdf["Is Fraud?"]
         lbl = ((fr == "Yes") | (fr == "1")).astype("int32").to_pandas().to_numpy()
         if split == "train":  # balanced ~10%-fraud training sample (NVIDIA NB01)

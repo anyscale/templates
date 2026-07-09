@@ -45,6 +45,8 @@ def _build(train_parquet: str, out_dir: str, seq_len: int, chunk: int,
     from src.nvsplit import train_parquet_files
 
     gdf = cudf.read_parquet(train_parquet_files(train_parquet))
+    if "__seq__" in gdf.columns:  # sharded split: restore CSV row order, then drop
+        gdf = gdf.sort_values("__seq__").drop(columns=["__seq__"]).reset_index(drop=True)
     print(f"[nvcorpus] train rows {len(gdf):,}", flush=True)
 
     pip = FinancialTokenizerPipeline(merchant_hash_size=merchant_hash)

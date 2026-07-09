@@ -41,6 +41,8 @@ def _compare_train(ref_file: str, new_dir: str) -> dict:
     ref = pd.read_parquet(ref_file)
     new = pd.concat([pd.read_parquet(f) for f in ordered_parquet_files(new_dir)],
                     ignore_index=True)
+    new = (new.sort_values("__seq__", kind="mergesort").drop(columns=["__seq__"])
+              .reset_index(drop=True))
     out = {"ref_rows": len(ref), "new_rows": len(new)}
     if len(ref) != len(new):
         out["equal"] = False

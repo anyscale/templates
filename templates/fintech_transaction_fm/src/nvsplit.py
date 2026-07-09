@@ -151,12 +151,76 @@ def build_temporal_split(csv_path: str, out_dir: str, eval_samples: int = 100_00
 
 # ---------------------------------------------------------------------------
 # Ray Data implementation — same protocol, CPU workers, no GPU anywhere.
+#
+# Ordering design: identity with the reference depends on CSV row order, but a
+# streaming engine does not guarantee which blocks land in which output file
+# (measured: preserve_order kept the stream ordered yet write tasks bundled
+# non-contiguous blocks). So order is carried EXPLICITLY: the one-time CSV →
+# parquet conversion tags every row with ``__seq__`` (its CSV position), every
+# distributed pass lets blocks land wherever, and the few consumers that need
+# exact order sort by ``__seq__``.
 # ---------------------------------------------------------------------------
 
+SEQ = "__seq__"
+
+
+@ray.remote(num_cpus=4)
+def _csv_to_shards(csv_path: str, out_dir: str, rows_per_shard: int) -> dict:
+    """One-time streaming CSV → parquet-shards conversion (single sequential task, so
+    ``__seq__`` is trivially the CSV row position). Pins ``Time`` (and the other string
+    columns cuDF infers as strings) so no reader re-infers them differently."""
+    import pyarrow as pa
+    import pyarrow.csv as pacsv
+    import pyarrow.parquet as pq
+
+    convert = pacsv.ConvertOptions(column_types={
+        "Time": pa.string(), "Amount": pa.string(), "Use Chip": pa.string(),
+        "Merchant City": pa.string(), "Merchant State": pa.string(),
+        "Errors?": pa.string(), "Is Fraud?": pa.string(), "Zip": pa.float64()})
+    os.makedirs(out_dir, exist_ok=True)
+    reader = pacsv.open_csv(csv_path, convert_options=convert)
+    seq = shard = 0
+    buf = []
+    buf_rows = 0
+
+    def _flush():
+        nonlocal shard, buf, buf_rows
+        if not buf:
+            return
+        tbl = pa.concat_tables(buf)
+        pq.write_table(tbl, os.path.join(out_dir, f"shard_{shard:05d}.parquet"))
+        shard += 1
+        buf, buf_rows = [], 0
+
+    for batch in reader:
+        tbl = pa.Table.from_batches([batch])
+        tbl = tbl.rename_columns([c.strip() for c in tbl.column_names])
+        tbl = tbl.append_column(SEQ, pa.array(np.arange(seq, seq + len(tbl)), pa.int64()))
+        seq += len(tbl)
+        buf.append(tbl)
+        buf_rows += len(tbl)
+        if buf_rows >= rows_per_shard:
+            _flush()
+    _flush()
+    return {"rows": seq, "shards": shard}
+
+
+def ensure_parquet_shards(csv_path: str, shards_dir: str,
+                          rows_per_shard: int = 1_000_000) -> dict:
+    """Convert the raw CSV to seq-tagged parquet shards once; reuse thereafter."""
+    ray.init(ignore_reinit_error=True)
+    marker = os.path.join(shards_dir, "_conversion_meta.json")
+    if os.path.exists(marker):
+        return json.load(open(marker))
+    meta = ray.get(_csv_to_shards.remote(csv_path, shards_dir, rows_per_shard))
+    with open(marker, "w") as f:
+        json.dump(meta, f)
+    return meta
+
+
 def normalize_batch(batch):
-    """Per-batch mirror of the reference preamble: strip column names, derive 'date'."""
+    """Per-batch mirror of the reference preamble: derive the 'date' column."""
     import pandas as pd
-    batch.columns = [c.strip() for c in batch.columns]
     date_str = (batch["Year"].astype(str) + "-"
                 + batch["Month"].astype(str).str.zfill(2) + "-"
                 + batch["Day"].astype(str).str.zfill(2))
@@ -188,12 +252,14 @@ def ordered_parquet_files(path: str):
 @ray.remote(num_cpus=4)
 def _stratified_eval(rows_dir: str, out_path: str, eval_samples: int, seed: int) -> dict:
     """The reference eval sampling, verbatim, on the collected val/test subset (~2.4M
-    rows). Seeded + order-sensitive, so it runs exactly once on exactly-ordered data."""
+    rows). Seeded + order-sensitive, so rows are restored to CSV order via ``__seq__``
+    first; the sample then matches the reference selection exactly."""
     import pandas as pd
     from sklearn.model_selection import train_test_split
 
     pdf = pd.concat([pd.read_parquet(f) for f in ordered_parquet_files(rows_dir)],
                     ignore_index=True)
+    pdf = pdf.sort_values(SEQ, kind="mergesort").drop(columns=[SEQ]).reset_index(drop=True)
     y = (pdf["Is Fraud?"].astype(str).str.lower() == "yes").astype(int)
     if eval_samples >= len(pdf):
         sub = pdf.reset_index(drop=True)
@@ -224,10 +290,13 @@ def build_temporal_split_distributed(csv_path: str, out_dir: str,
     """NVIDIA's temporal split as a Ray Data pipeline on CPU workers.
 
     Same protocol and (verified) same output as :func:`build_temporal_split`; the
-    difference is execution: the 24M-row CSV parse, date derivation, filtering and the
-    19.5M-row train write are distributed, and no stage touches a GPU. Train is written
-    to ``<out_dir>/train_parquet/`` as ordered shards (``ordered_parquet_files`` /
-    ``train_parquet_files`` read it back in row order).
+    difference is execution: date derivation, filtering and the 19.5M-row train write
+    run distributed on CPU workers, and no stage touches a GPU. Train lands at
+    ``<out_dir>/train_parquet/`` as shards whose rows carry ``__seq__`` (CSV position) —
+    consumers needing exact reference order sort by it.
+
+    ``max_users`` (mini/CI) keeps users ``< max_users`` — deterministic, but a different
+    subset than the GPU reference's seeded choice; mini has no identity contract.
     """
     import shutil
 
@@ -235,32 +304,29 @@ def build_temporal_split_distributed(csv_path: str, out_dir: str,
     import ray.data
 
     ray.init(ignore_reinit_error=True)
-    # Row order IS the contract here: the seeded eval sampling and the identity check
-    # against the reference output both depend on CSV order surviving the pipeline.
-    ray.data.DataContext.get_current().execution_options.preserve_order = True
 
     os.makedirs(out_dir, exist_ok=True)
-    norm_dir = os.path.join(out_dir, "_normalized_tmp")
     dirs = {"train": os.path.join(out_dir, "train_parquet"),
             "val": os.path.join(out_dir, "_val_rows_tmp"),
             "test": os.path.join(out_dir, "_test_rows_tmp")}
-    for d in (norm_dir, *dirs.values()):
+    for d in dirs.values():
         if os.path.isdir(d):
             shutil.rmtree(d)
 
-    # Parse the CSV once, distributed; land it as parquet so the three split filters
-    # below re-read columnar data instead of re-parsing 2.3GB of CSV per pass.
-    ds = ray.data.read_csv(csv_path).map_batches(normalize_batch, batch_format="pandas")
-    if max_users is not None:
-        users = sorted(ds.unique("User"))
-        if len(users) > max_users:
-            rng = np.random.RandomState(seed)
-            keep = set(rng.choice(np.array(users), size=max_users, replace=False).tolist())
-            ds = ds.map_batches(lambda b: b[b["User"].isin(keep)], batch_format="pandas")
-    ds.write_parquet(norm_dir)
+    # One-time CSV → seq-tagged parquet shards (cached under source_parquet/, reusable
+    # across runs and scales). Everything after this line is order-free Ray Data.
+    shards_dir = os.path.join(os.path.dirname(os.path.dirname(csv_path.rstrip("/"))),
+                              "source_parquet")
+    ensure_parquet_shards(csv_path, shards_dir)
 
-    ds = ray.data.read_parquet(ordered_parquet_files(norm_dir))
-    train_cutoff, test_cutoff = cutoff_dates(ds.groupby("date").count().to_pandas())
+    def _load():
+        ds = ray.data.read_parquet(ordered_parquet_files(shards_dir)) \
+                     .map_batches(normalize_batch, batch_format="pandas")
+        if max_users is not None:
+            ds = ds.map_batches(lambda b: b[b["User"] < max_users], batch_format="pandas")
+        return ds
+
+    train_cutoff, test_cutoff = cutoff_dates(_load().groupby("date").count().to_pandas())
     tr_cut, te_cut = pd.Timestamp(train_cutoff), pd.Timestamp(test_cutoff)
 
     parts = {
@@ -269,8 +335,7 @@ def build_temporal_split_distributed(csv_path: str, out_dir: str,
         "test": lambda b: b[b["date"] >= te_cut].drop(columns=["date"]),
     }
     for name, fn in parts.items():
-        ray.data.read_parquet(ordered_parquet_files(norm_dir)) \
-            .map_batches(fn, batch_format="pandas").write_parquet(dirs[name])
+        _load().map_batches(fn, batch_format="pandas").write_parquet(dirs[name])
 
     val_stats, test_stats, train_stats = ray.get([
         _stratified_eval.remote(dirs["val"], os.path.join(out_dir, "val_eval.parquet"),
@@ -279,7 +344,6 @@ def build_temporal_split_distributed(csv_path: str, out_dir: str,
                                 eval_samples, seed),
         _fraud_count.remote(dirs["train"]),
     ])
-    shutil.rmtree(norm_dir)
     shutil.rmtree(dirs["val"])
     shutil.rmtree(dirs["test"])
 
