@@ -53,7 +53,8 @@ STATE=/mnt/user_storage/idle-sweep   # small state dir: remembers when each ws f
      idle_min   ← now − idle_since
      if idle_min < IDLE_GRACE_MIN: skip                      # don't nag on a lunch break
      node_type  ← from the workspace's compute config
-     $wasted    ← (idle_min/60) * $per_hr(node_type)
+     $wasted    ← unused-hours from aggregated-instance-usage (if you have access), else
+                  (idle_min/60) * $per_hr(node_type) from your own sampling
      owner_id   ← slack users.lookupByEmail(CREATED BY)      # email → <@U…> for the @-mention
 
 4. post to SLACK_CHANNEL: @owner + workspace + util% + idle time + $wasted + console link
@@ -63,17 +64,24 @@ STATE=/mnt/user_storage/idle-sweep   # small state dir: remembers when each ws f
    anyscale workspace_v2 terminate; `ignore` → drop it for this sweep.
 ```
 
-**Where util actually comes from — settled.** It is *not* in the `anyscale` CLI/API (checked:
-`workspace_v2 get`/`list`/`status` return state + owner + timestamps, and `anyscale cluster` only
-lists/archives — no metrics). You read it from the cluster itself with **`run_command`** (or
-`ssh`), which runs a probe *inside* the workspace where `ray` and the GPUs live:
+**Where the numbers come from — the platform has all of this.** Ray exports per-node CPU/GPU
+utilization from every cluster; Anyscale aggregates it and renders the console **Dashboard**
+(Summary / Instance utilization / Resource utilization) and **Grafana** ("View in Grafana"). The
+"unused CPU/GPU-hours by workload" panels are allocated-minus-used hours, attributed per workload
+with owner — i.e. this recipe, minus the Slack nudge. Three ways to get at it programmatically,
+pick by access + freshness:
 
-- `ray status` — the honest busy/idle signal: nodes up, GPUs/CPUs allocated vs total, pending demand.
-- `nvidia-smi --query-gpu=utilization.gpu` — true hardware GPU %, if you want a percentage threshold.
+1. **`anyscale aggregated-instance-usage download-csv --start-date … --end-date … [--cloud …]`** —
+   the CLI export of that usage data (zipped CSV, per instance, filterable by cloud/project). The
+   cleanest "unused GPU-hours by workload" source for a scheduled cost sweep.
+   ⚠️ Needs org/billing permission — a normal user token gets `Permission denied`. Check access first.
+2. **Grafana / Prometheus** — the "View in Grafana" backend. Query `ray_node_gpus_utilization` &c.
+   with a Grafana API token; good for live *and* historical, if you have the endpoint.
+3. **`anyscale workspace_v2 run_command --id <id> -- 'ray status; nvidia-smi …'`** — reads the live
+   state straight off the cluster, no special permission. Best for the instant "is it idle right
+   now" check at nudge time. This is the fallback that always works, so it's what step 2 uses above.
 
-No external metrics infra needed — `run_command` works out of the box. (If you already run
-Prometheus/Grafana, Ray also exports `ray_node_gpus_utilization` there; query that instead of
-probing.) The "idle time so far" comes from *your own sampling*: the poll agent stamps `idle_since`
+If you can't get (1), the "idle time so far" comes from *your own sampling*: the poll agent stamps `idle_since`
 the first cycle it sees a workspace idle and clears it the moment it's busy — so idle duration and
 $ wasted are measured, not guessed.
 
