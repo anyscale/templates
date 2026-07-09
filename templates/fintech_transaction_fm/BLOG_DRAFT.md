@@ -5,7 +5,7 @@
 > repro → takeaways → CTA).
 >
 > REMAINING BLANKS / GATES:
-> - [B-XXL] 2048 fulltest row (40-epoch model; job running)
+> - DONE: 2048 fulltest (0.2665 — dilution confirmed, peak at 1024)
 > - [B-PAIR] paired-bootstrap ordering stats (runs after B-XXL)
 > - DONE: reco readout ladder (MLP 0.523; blend hybrid optional)
 > - figures to export; Zach confirms repro-branch numbers/framings
@@ -81,15 +81,15 @@ Same protocol, same trained models, same 1M training rows — the test split is 
 | our embedding → linear head, no PCA | 1024 | 0.1213 | [0.115, 0.128] |
 | **our embedding → XGBoost, no PCA** | 512 | **0.2788** | [0.262, 0.295] |
 | **our embedding → XGBoost, no PCA** | 1024 | **0.3027** | [0.285, 0.320] |
-| **our embedding → XGBoost, no PCA** | 2048 | **[B-XXL]** | [B-XXL] |
+| **our embedding → XGBoost, no PCA** | 2048 (40 ep) | **0.2665** | [0.250, 0.284] |
 
 [B7: figure — dot-and-CI plot of table 2, baseline as reference line.]
 
 What this table resolves:
 
 - **The embedding's lift is CI-separated, not just probable**: embed_xgb at 512 ([0.262, 0.295]) sits entirely above the baseline ([0.193, 0.226]) on identical rows — +34%; at 1024, +45%.
-- **Longer context pays — measurably**: 1024 beats 512 by +0.024 AP. Paired bootstrap (same resampled rows scored by both models): [B-PAIR: mean diff, 95% CI, P(1024>512)]. The 2048 verdict is [B-XXL/B-PAIR].
-- **PCA is where the context advantage dies**: their notebook-05 PCA64 step scores *identically* at 512 and 1024 (0.1998 vs 0.1999) and below the raw baseline — the 64 principal components of the embedding just don't contain the incremental history signal. If you take one harness lesson: don't compress a foundation-model embedding before the classifier without checking what it costs.
+- **Longer context pays — up to a data-dependent peak**: 1024 beats 512 by +0.024 AP, and 2048 falls back below both *even after doubling its training budget* (a 20-epoch continuation to control for undertraining) — 1024's interval is disjoint above 2048's. Paired bootstrap (same resampled rows scored by every model): [B-PAIR: mean diffs, 95% CIs, P(A>B) for 1024>512, 1024>2048, 512 vs 2048]. The peak is what the burst mechanism predicts: most fraud-relevant history sits within ~1024 transactions; beyond that the window adds stale history that dilutes the last-position readout.
+- **PCA is where the context advantage dies — until there's nothing left to lose**: their notebook-05 PCA64 step scores *identically* at 512 and 1024 (0.1998 vs 0.1999) and below the raw baseline — the incremental history signal doesn't survive 64 components. Corroborating the dilution story: at 2048, PCA64 catches up to the full embedding (0.270 vs 0.267) — by then there's little beyond 64 components left to destroy. If you take one harness lesson: don't compress a foundation-model embedding before the classifier without measuring what it costs.
 - **The linear head collapses at long context** (0.213 → 0.121) while trees improve. The signal is there — XGBoost finds more of it at 1024 than at 512 — but it stops being linearly separable as the window grows. Our best current explanation is in the undertraining section below.
 
 ## Why it works — and how we know it's real
@@ -114,7 +114,7 @@ Early versions of our own model looked *dead* downstream — because an MLM is o
 
 ### What long context costs at training time
 
-Doubling the window halves the number of windows per epoch — so at fixed epochs, every positional embedding and every long-range attention pattern gets half the training exposure. You can watch this in TensorBoard: per-field MLM accuracy *falls* with context length (macro 0.824 → 0.770 → 0.754 for 512/1024/2048 at 20 epochs) — the long-context models aren't under-challenged, they're **under-optimized**. The sharpest symptom is a "canary" field: predicting a masked transaction's *month* is nearly free (copy a neighbor's visible month), yet the 512 model only acquires that skill in a late, sharp phase transition — and the longer-context models never reach theirs within budget ([B16: field_ce/month figure across the three runs]). We continued the 2048 model to 40 epochs to separate this from genuine information saturation: pretext skill kept improving (macro 0.754 → 0.767, month still grinding), and the downstream verdict is [B-XXL]. This is also our best current explanation for the linear-head collapse: an undertrained long-context readout state is *blurrier* — the signal survives (trees find it) but its linear structure degrades.
+Doubling the window halves the number of windows per epoch — so at fixed epochs, every positional embedding and every long-range attention pattern gets half the training exposure. You can watch this in TensorBoard: per-field MLM accuracy *falls* with context length (macro 0.824 → 0.770 → 0.754 for 512/1024/2048 at 20 epochs) — the long-context models aren't under-challenged, they're **under-optimized**. The sharpest symptom is a "canary" field: predicting a masked transaction's *month* is nearly free (copy a neighbor's visible month), yet the 512 model only acquires that skill in a late, sharp phase transition — and the longer-context models never reach theirs within budget ([B16: field_ce/month figure across the three runs]). We continued the 2048 model to 40 epochs to separate this from genuine information saturation: pretext skill kept improving (macro 0.754 → 0.767, the month canary still grinding without its transition) — and the downstream verdict came back **dilution, not undertraining**: with double the budget, 2048 still lands below 1024 with disjoint intervals (0.2665 vs 0.3027 on the full test period). Long context is architecturally free in our tokenizer, but on this data its *value* peaks around 1024 transactions. The undertraining effect is real too — it explains the falling pretext accuracy and, we suspect, the linear-head collapse: a less crisply trained long-context readout state is *blurrier* — the signal survives (trees find it) but its linear structure degrades.
 
 ## A second consumer: what the embedding knows about the next merchant
 
@@ -161,7 +161,7 @@ anyscale job submit -f job_xl.yaml     # and job_xxl.yaml
 ## Takeaways
 
 - **A transaction FM's embedding, alone, beats NVIDIA's published fusion headline** on their exact protocol (P = 0.94–0.99 across 512–2048 context), and beats the identical-rows raw baseline by **+34–45% with non-overlapping CIs** on the full 2.44M-transaction test period.
-- **Context is architecturally free and it pays**: one position per transaction buys 4–13x their context at identical capacity; 1024 measurably beats 512 on the tight eval [B-PAIR]; the 2048 verdict — and whether its limit is data or training budget — is [B-XXL].
+- **Context is architecturally free, pays measurably, and peaks**: one position per transaction buys 4–13x their context at identical capacity; on the tight eval 1024 beats 512 (+0.024 AP) and 2048 falls back even at double training budget — the sweet spot tracks the data's burst structure (~1024 transactions here), and finding yours is a config change, not an architecture change.
 - **The readout matters as much as the model**: per-field masking + last-position extraction + no PCA is the difference between "the FM learned nothing" and the headline — a lesson that repeated on the recommendation task (0.08 → 0.54 from readout changes alone, and past the memorization baseline once blended with the frequency prior). PCA-before-classifier destroyed the context advantage entirely in our measurements.
 - **Benchmark like you mean it**: exact baseline reproduction, shuffled-label control at the AP floor, a velocity-feature bar that doesn't reach, bootstrap CIs on a 112-fraud test set that nearly fooled us twice, and a full-test-period eval that finally resolves what the sample couldn't.
 - Disclosures: one dataset (TabFormer, static-poor); the 2048 model's training used a warm-restarted continuation; linear-head readout degrades at long context while trees improve; full-period and 100k-sample APs are not mutually comparable.
