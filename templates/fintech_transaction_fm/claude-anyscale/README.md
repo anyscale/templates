@@ -169,6 +169,7 @@ plain-English ask → what Claude does. ✅ = I've actually run it against a rea
 | 8 | "Every morning, tell me what happened overnight." | _coming — scheduled cloud agent → Slack_ |
 | 9 | "Turn this into a job/compute config." | _coming — `/anyscale-platform-run`_ |
 | 10 | "Bump Ray across all our repos." | _coming — git-worktree fan-out + `template` skill_ |
+| 11 | "Slack me when someone leaves a workspace idle." | [`slack-idle-workspace-sweep.md`](recipes/slack-idle-workspace-sweep.md) — poll-chat + cost governance |
 
 *Reserve ideas: tear down idle clusters · auto-resume preempted spot jobs · diff two runs' metrics ·
 generate a runbook from a debug session · `/anyscale-platform-ask` for "how do I do X on Ray?" ·
