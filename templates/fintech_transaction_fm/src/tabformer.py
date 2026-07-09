@@ -250,3 +250,33 @@ def prepare_tabformer(
         f"[tabformer] temporal split: train<{meta['train_end']} val<{meta['val_end']}"
     )
     return raw_out
+
+
+# ---------------------------------------------------------------------------
+# Exploration helpers for the native-column split (Part 2's Ray Data cells).
+# ---------------------------------------------------------------------------
+
+def derive_explore_columns(b: pd.DataFrame) -> pd.DataFrame:
+    """Per-batch convenience columns for exploring the native-schema train split:
+    ``card_id``, ``is_fraud``, ``amount`` (float), ``timestamp``, ``month`` (period str).
+    The tokenizer in Part 3 uses the native columns directly — these are for analysis."""
+    b = b.copy()
+    b["card_id"] = b["User"] * 1000 + b["Card"]
+    b["is_fraud"] = (b["Is Fraud?"].astype(str).str.lower() == "yes").astype(int)
+    b["amount"] = (b["Amount"].astype(str).str.replace("$", "", regex=False)
+                   .str.replace(",", "", regex=False).astype(float))
+    b["timestamp"] = pd.to_datetime(
+        b["Year"].astype(str) + "-" + b["Month"].astype(str).str.zfill(2) + "-"
+        + b["Day"].astype(str).str.zfill(2) + " " + b["Time"].astype(str),
+        errors="coerce")
+    b["month"] = b["timestamp"].dt.to_period("M").astype(str)
+    return b
+
+
+def card_gap_hours(group: pd.DataFrame) -> pd.DataFrame:
+    """Per-card inter-transaction gaps in hours (for the burstiness plot): one card's
+    rows in, its positive time-ordered gaps out."""
+    ts = group["timestamp"].sort_values()
+    gaps = ts.diff().dt.total_seconds().div(3600.0).dropna()
+    gaps = gaps[gaps > 0]
+    return pd.DataFrame({"gap_hours": gaps.to_numpy()})

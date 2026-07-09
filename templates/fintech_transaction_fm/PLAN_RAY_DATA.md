@@ -107,7 +107,16 @@ Deliverable: `src/nvtokenize_cpu.py` (new module beside the vendored package —
 untouched) + a comparison report in this file. **If murmur3 identity fails, stop and rethink**
 (fallback: tokenize-to-strings stays on GPU workers, sharded; everything else still proceeds).
 
-### Stage 1 — STATUS 2026-07-09: ✅ SPLIT IDENTITY PASSED (notebook rewrite still open)
+### Stage 1 — STATUS 2026-07-09: ✅ COMPLETE (split identity passed + nb02 rewritten)
+
+nb02 rewrite done same day: Ray Data split shown inline (composing the same src/nvsplit
+pieces as the headless `build_temporal_split_distributed` — no forked logic), exploration
+fully distributed (groupby aggregations, per-card `map_groups` gaps, worker-side sampled
+histograms; no head-node 19.5M-row pandas), stale prose fixed (masked-feature→next-token,
+the wrong "importance weighting" eval description→NVIDIA's natural-rate stratified
+protocol, amount/time tokenizer claims corrected, "smoke" purged), SCALE default = mini.
+Papermill at mini: exit 0, no error cells, 6m56s (includes CPU autoscale + full-shard
+scans to filter 200 users).
 
 `scripts/verify_distributed_split.py compare` → `ALL_IDENTICAL: true`: cutoff dates equal;
 train **19,508,123/19,508,123 rows equal in values AND order** (restored via `__seq__`);

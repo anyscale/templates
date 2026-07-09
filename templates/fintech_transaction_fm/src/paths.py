@@ -43,6 +43,8 @@ def artifact_paths(base_dir: str, scale: str) -> dict:
     """Canonical artifact locations for a given scale."""
     return {
         "source": f"{base_dir}/source/",  # downloaded real-data cache (scale-independent)
+        # one-time CSV → seq-tagged parquet shards, the working format (scale-independent):
+        "source_parquet": f"{base_dir}/source_parquet/",
         "raw": f"{base_dir}/raw/{scale}/transactions.parquet",
         "splits": f"{base_dir}/raw/{scale}/splits.json",
         # NVIDIA-faithful temporal split regenerated from the CSV (src/nvsplit.py):
