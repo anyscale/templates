@@ -1,5 +1,20 @@
 # Transaction Foundation Models — Presentation Outline (DRAFT, unreviewed)
 
+## Captured beats for the rebuild (ours, verified — unlike the draft below)
+
+- **The hardware economics contrast (Zach, 2026-07-09):** NVIDIA's blueprint = single node,
+  single top-shelf GPU (their prereq: 1× A100 80GB / H100), not distributed — and that GPU
+  spends part of its life on dataframe work. Ours = data stages distributed across cheap
+  autoscaling CPU nodes; GPUs (A10Gs, not A100s) reserved for pretrain + embed forward passes
+  only; each pool scales independently and to zero. More scale, lower unit cost, no idle
+  expensive hardware. One-liner: "cudf made one GPU fast; Ray Data makes the pipeline wide.
+  We kept their math — provably, to the byte — and changed where it runs."
+- **The identity-check story (Stage 0, 2026-07-09):** distributing without changing results is
+  provable, not asserted — 91,265/91,265 merchant hashes, 200K/200K rows, 12/12 token columns,
+  vocab 6251 equal. Includes a good war story: cuDF's hash_values is murmur3 + Boost
+  hash_combine (reversed from known pairs) — 0/200K rows matched until that was found.
+  Deep-dive beat: "why you verify identity before you trust a port."
+
 > Provenance: sketched by a separate Claude session that had NO access to this template's
 > notebooks or results. Pasted in verbatim 2026-07-09. Treat every number and claim as
 > unverified until checked against (a) our actual run results (RESUME_HERE.md,
