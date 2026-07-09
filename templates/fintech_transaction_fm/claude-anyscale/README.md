@@ -141,6 +141,10 @@ fill in:
 - <e.g. macOS local runs segfault at the XGBoost stage — run that stage in a separate process>
 ```
 
+**A fully filled-in version from this project:** [`AGENTS_EXAMPLE.md`](AGENTS_EXAMPLE.md) — the real
+context file for the transaction-FM work these guides came out of, with the actual cloud, storage
+paths, run commands, and hard-won gotchas. Read it as a worked example, then write your own.
+
 **Rule of thumb: if you catch yourself typing the same ask twice, it belongs in here.** A prompt
 you retype is a convention you haven't written down yet — move it into `AGENTS.md` and "smoke it on
 the workspace" starts meaning the whole check, not just the run.
