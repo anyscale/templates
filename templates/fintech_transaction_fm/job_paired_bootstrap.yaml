@@ -1,0 +1,11 @@
+name: fintech-fm-paired-bootstrap
+entrypoint: >-
+  python scripts/paired_bootstrap.py --base-dir /mnt/user_storage/transaction-fm-v2
+  --runs full_fulltest xl_fulltest xxl_fulltest --column embed_xgb --draws 500
+working_dir: .
+requirements: requirements.txt
+compute_config:
+  cloud: aws-public-us-west-2
+  head_node:
+    instance_type: m5.4xlarge
+max_retries: 0
