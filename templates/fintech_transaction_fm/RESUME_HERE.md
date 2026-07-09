@@ -1,7 +1,33 @@
-# RESUME — fintech_transaction_fm (as of 2026-07-06, authoritative for this thread)
+# RESUME — fintech_transaction_fm (as of 2026-07-09, authoritative for this thread)
 
 Read this first if picking the work back up. Full technical detail is in
-[`FINDINGS_FM_REPRODUCTION.md`](FINDINGS_FM_REPRODUCTION.md); this is the state + next step.
+[`FINDINGS_FM_REPRODUCTION.md`](FINDINGS_FM_REPRODUCTION.md) (results) and
+[`PLAN_RAY_DATA.md`](PLAN_RAY_DATA.md) (the distributed rebuild); this is the state + next step.
+
+---
+
+## ▶️ 2026-07-09 — NOTEBOOKS 01–06 COMPLETE ON THE DISTRIBUTED PIPELINE; ZACH REVIEWING
+
+**Where things stand (all committed + pushed):**
+- **Zach's Ray Data directive is fully landed** (PLAN_RAY_DATA.md has every receipt): all data
+  stages distributed (split/corpus on CPU workers, embed as streaming CPU→GPU actors), every
+  output identity-verified vs NVIDIA's single-GPU reference — split 19.5M rows equal in
+  value+order, corpus bit-for-bit, labels/features byte-equal, embeddings kernel-precision,
+  downstream raw **0.1238 exact** on the fully distributed chain.
+- **nb01–06 rewritten/passed, papermill-green at mini, which is now genuinely CPU-only.**
+  All stale prose fixed ("smoke" purged repo-wide; masked-feature/static-dynamic/importance-
+  weighting/time-delta/log-binning claims corrected; fm quoted as RANGE **0.04–0.06 = 3–5×**
+  everywhere after the point-instability finding; nb06's false "fm overtakes raw at full"
+  fixed). nb01 leads with Model performance + Scalability up front in Zach's voice.
+- **`scripts/run_pipeline.py` REPLACED**: now composes the same five stage functions the
+  notebooks show (skip-guards + `--force`, no implicit wipes). Smoke-tested on cached mini.
+- **NEXT (Zach's order): he is manually reviewing 01–06 first.** Then the 07/08/09 rebuild:
+  nb08 first (backbone exists; verify with `--force` mini run), nb07 (needs a NEW Serve app —
+  `src/serve.py` still serves the OLD model/tokenizer), nb09 (rebuild bottleneck stories from
+  PERFORMANCE.md §§ incl. 14, delete dead modules: flat_tokenizer, generate_data, old
+  embed/downstream/serve, old numbered scripts). Then the presentation rebuild —
+  PRESENTATION_DRAFT.md holds the unverified draft + a "Captured beats" section of verified
+  material; external stats in the draft still need source-checking before any external use.
 
 ---
 
