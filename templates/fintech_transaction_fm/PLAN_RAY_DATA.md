@@ -185,6 +185,28 @@ NOT log bins), SCALE default mini, "smoke" purged.
   but sort deterministically anyway so re-runs are stable.)
 - Measure for PERFORMANCE.md: wall-clock 1 GPU (old) vs N CPU workers (new), scaling curve.
 
+### Stages 3+4 — STATUS 2026-07-09: ✅ PASSED (nb05 rewrite still open; fm-claim decision open)
+
+Stage 3 (`scripts/verify_distributed_embed.py`): labels + raw features **byte-equal** on
+all three splits; embeddings allclose (max abs diff 3.2e-5, min cosine 0.9999996) — the
+expected float-kernel signature of identical math on different batch boundaries. Ran as
+4 GPU actors (one autoscaled 4×A10G node) fed by CPU workers; seeded preamble exact.
+Two env bugs en route, both fixed+committed: this venv's torch routes bmm through a
+triton JIT and GPU workers have no C compiler (`TORCH_DISABLE_NATIVE_JIT=1` in the
+actor); a missing `_wait_for_files` import crashed the epilogue after all outputs landed.
+
+Stage 4 (downstream on the distributed-chain embeddings, GPU xgb 3.2, NB05 recipe):
+- raw **0.1238 — identical to every digit** (AUC 0.9885, best_iter 1): byte-equal
+  features → identical model. The chain CSV→shards→split→corpus→embed→downstream holds.
+- fusion 0.1642 vs reference 0.1658 (both best_iter 2) — within known draw noise.
+- **fm 0.0396 vs reference 0.0614 (best_iter 48 vs 147) — FINDING:** the fm point
+  estimate is NOT stable against float-level embedding perturbation; early stopping
+  moves the tree count and swings AP ~35% on 3e-5 input noise. fm still beats NVIDIA's
+  0.0123 by 3.2–5× in every run ever produced, but "0.0614, ~5×" as a single number now
+  has a known asterisk. **OPEN DECISION (Zach): quote fm as a range (0.04–0.06, 3–5×)
+  or with the fusion-style distribution framing in nb01/nb06/deck.** Do not silently
+  keep the favorable point.
+
 ### Stage 3 — nb05: streaming CPU→GPU embed (the heterogeneous showcase)
 - Balanced train sample: exact seeded selection as today, on the driver (small index op).
 - Ray Data: CPU workers tokenize per-transaction (`nvtokenize_cpu`) → `map_batches` with a GPU
