@@ -16,7 +16,7 @@ data:
   eval_samples: 100000       # nvsplit: >= mini val/test size, so eval keeps all rows
 
 tokenize:
-  seq_len: 256               # NOW IN TOKENS (~12/txn) -> ~19 txns of context (CPU smoke)
+  seq_len: 256               # NOW IN TOKENS (~12/txn) -> ~19 txns of context (CPU-sized context)
   target_eval_samples: 30000 # eval-set sizing (val/test) when holdout_keep is null:
                              # all frauds + downsampled, importance-weighted normals
   train_keep: 0.5            # fraction of train-period normals kept for downstream training
