@@ -1,4 +1,4 @@
-FROM anyscale/ray-llm:2.55.1-py311-cu128
+FROM anyscale/ray-llm:2.56.0-py312-cu130
 
 RUN python3 -m pip install --no-cache-dir \
     "pynvml==12.0.0" \
