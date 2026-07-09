@@ -328,6 +328,83 @@ machine-generated "discoveries" survived expert review
   10 base models sorting which claimed phenomena generalize: replication
   breadth as a claim filter.
 
+## 9. Day-2 addendum — the eval is an experiment too (paid for 2026-07-08)
+
+Day 2 took the win through controls, a context-scaling act, an environment-
+parity gate, and a second task. Every rule below was purchased with a
+wrong-narrative near-miss or a failed job, same as section 0.
+
+1. **A decision metric on few positives is a rumor.** The pinned 100k eval
+   holds 112 frauds; single-draw AP moves ±0.05–0.08. We drafted TWO false
+   context-scaling narratives from point estimates ("monotone", then "peaks
+   at 1024") before CIs existed. Rule: bootstrap CI on every reported
+   number; the count of POSITIVES (not rows) drives the eval plan.
+2. **Harness sensitivity is a treatment effect — measure it.** Flipping
+   XGBoost device+version moved one condition by 0.05 and re-ranked the
+   conditions while leaving another untouched. Pin the eval environment to
+   the reference's (their library versions, their device) and rerun the
+   whole table under the pin BEFORE narrating differences. If a harness
+   flip re-ranks your conditions, your differences were noise.
+3. **If the benchmark cannot answer your question, upgrade the benchmark,
+   not the claim.** The 100k test is a stratified random subsample — so
+   evaluating the ENTIRE test period is the same protocol with sampling
+   variance removed (2,724 frauds, ~5x tighter CIs). But AP is
+   eval-set-specific (our full-period baseline scores 0.208 vs 0.140 on the
+   draw): keep TWO tables — published-comparable and internal-tight — and
+   never compare numbers across them.
+4. **Ordering claims need PAIRED resampling.** Conditions scored on
+   identical rows deserve per-draw differences (report P(A>B) and a diff
+   CI), not overlapping marginal intervals. Pairing resolved a strict
+   1024 > 512 > 2048 ordering where marginal CIs said "unresolvable".
+5. **Tighten the eval BEFORE the discriminating experiment.** The 40-epoch
+   2048 continuation would have landed inside the 100k eval's noise and
+   answered nothing; sequencing the full-period eval first made it decisive.
+6. **Warm-restart continuation = the half-price discriminator.** Deliberate
+   run-name reuse (the auto-resume "gotcha", weaponized) + a raised-epochs
+   config continues a run from its last checkpoint under a recomputed
+   cosine. Fine for is-it-undertrained-or-saturated diagnosis; a disclosed
+   protocol deviation, not a headline row.
+7. **Watch canary FIELDS, not just losses.** Trivially-predictable fields
+   (calendar fields = copy a visible neighbor) are learned via late, sharp
+   phase transitions gated on positional/attention health — their absence
+   at long context exposed per-position exposure halving (windows/epoch
+   halve as context doubles). And pretext accuracy is not downstream value:
+   the 1024 model beat 512 downstream with WORSE MLM accuracy.
+8. **The readout thesis generalizes — sweep readouts before judging a
+   representation.** Same frozen embedding on next-merchant: 0.077 (masked
+   state) -> 0.184 (zero-shot InfoNCE table) -> 0.397 (linear) -> 0.535
+   (MLP+context) — a 7x swing with zero pretraining changes. Any verdict on
+   a representation obtained through one readout is a verdict on the readout.
+9. **Beat the strongest cheap baseline you can build, not the weakest one
+   quoted.** Static train-period top-10 memorization = 0.598; the honest
+   causal full-history floor = 0.647 (and recency decay HURT — measure,
+   don't assume). Literature check: frequency baselines routinely beat
+   neural sequence models under fair evaluation, so clearing the honest
+   floor via a prior-blend (0.658) plus a blind-slice decomposition (35% of
+   events where the baseline is structurally 0.000, model recovers 0.16) is
+   the durable form of the claim.
+10. **A faithful replication by someone else is your best control.** The
+    parallel branch that rebuilt the reference verbatim (vendored tokenizer,
+    exact architecture, pinned versions) became (a) proof the reference
+    reproduces, (b) the strongest possible ablation for our thesis ("their
+    design, trained by us, 4x below ours"), and (c) the source of the
+    env-sensitivity forensics. Coordinate such efforts; do not deduplicate
+    them.
+11. **Persist results as artifacts; never scrape logs.** Job-log streaming
+    truncates silently. Every stage writes its JSON/parquet to durable
+    storage and every consumer reads those. (The day we had to `cat` a
+    results file through a throwaway cluster job was the smell.)
+12. **Loader tolerance for removed flags:** on checkpoint load, drop unknown
+    arch keys whose value is falsy (feature was off — weights identical),
+    raise loudly if truthy. Paid for when post-cleanup code refused a
+    pre-cleanup checkpoint mid-eval.
+13. **Old rules, re-earned:** idempotent guarded restore scripts (an
+    accidental double-submit was a no-op instead of a disaster); mv-aside
+    on every rerun; micro-test fresh numeric code locally before any GPU
+    job (caught a wrong test expectation and an HR-denominator bug at zero
+    cost); and budget host RAM for eval paths that hold multiple copies of
+    an N x d matrix (the no-PCA path OOM'd a 32GB host at 1.2M x 512).
+
 ## Appendix: the worked example
 
 The fintech campaign this framework is distilled from: gate = NVIDIA's
