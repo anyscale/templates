@@ -15,3 +15,4 @@ pyarrow>=14.0
 # for the tokenize + embed stages (nb 03/05). cuml is optional (numerical.py falls back to sklearn).
 cudf-cu12>=24.10
 cupy-cuda12x>=13.0
+mmh3>=4.0  # CPU mirror of cuDF hash_values (src/nvtokenize_cpu.py, identity-verified in Stage 0)

@@ -28,7 +28,25 @@ stays verbatim; anything we add sits beside it, never inside it.
 
 ## Stages (each lands separately: code + notebook + identity check, full scale, then commit)
 
-### Stage 0 — STATUS 2026-07-09: IN PROGRESS (resume notes below, written mid-build in case of session loss)
+### Stage 0 — STATUS 2026-07-09: ✅ PASSED (report below; resume notes kept for reference)
+
+`scripts/verify_cpu_tokenizer.py compare` result (also at `/mnt/cluster_storage/transaction-fm/stage0/report.json`):
+merchant cleaning **91,265/91,265** equal; merchant hashes **91,265/91,265** equal; sort order
+after (user,card,time_full) **200,000/200,000** equal (cudf sort == pandas stable mergesort on
+this data — the tie-break risk did not materialize); **all 12 token columns 200,000/200,000**
+equal; vocab equal at **6251**. → `ALL_IDENTICAL: true`.
+
+Two divergences found and fixed in `src/nvtokenize_cpu.py` along the way:
+1. pandas raises on `fillna("00000")` for the nullable-float Zip column (cudf coerces) —
+   numeric path added, identical zip3 output (verified).
+2. cuDF `hash_values()` is NOT plain murmur3: libcudf applies Boost `hash_combine` to the
+   per-column murmur3, which for one column is `(murmur3_x86_32(bytes, seed 0) + 0x9E3779B9)
+   mod 2^32`. Reversed from known pairs, then verified on all 91,265 merchants.
+
+`FinancialTabularTokenizer` (vocab + encode) confirmed working as-is on a CPU-only node —
+no mirror needed for the encode side. `mmh3` added to requirements.txt.
+
+**→ Stage 1 (nb02 split/explore on Ray Data) is unblocked and next.**
 
 **Files being built:**
 - `src/nvtokenize_cpu.py` — pandas mirror of `FinancialTokenizerPipeline.preprocess()` +

@@ -39,9 +39,15 @@ def clean_merchant(raw: pd.Series) -> pd.Series:
 
 
 def merchant_hash(clean: pd.Series) -> np.ndarray:
-    """cuDF ``hash_values()`` equivalent: MurmurHash3_x86_32, seed 0, as uint32."""
+    """cuDF ``Series.hash_values()`` equivalent, verified byte-for-byte in Stage 0.
+
+    libcudf's row hash is MurmurHash3_x86_32 (seed 0) per column followed by Boost's
+    ``hash_combine`` against the row seed 0, which for a single column reduces to
+    ``murmur3(bytes) + 0x9E3779B9 (mod 2**32)``.
+    """
     import mmh3
-    return np.fromiter((mmh3.hash(s, signed=False) for s in clean.astype(str)),
+    return np.fromiter(((mmh3.hash(s, signed=False) + 0x9E3779B9) & 0xFFFFFFFF
+                        for s in clean.astype(str)),
                        dtype=np.uint32, count=len(clean))
 
 
@@ -77,7 +83,14 @@ def preprocess_cpu(df: pd.DataFrame) -> pd.DataFrame:
     df["card"] = df["card"].astype(int).clip(0, 9)
     df["chip_upper"] = df["use_chip"].astype(str).str.upper()
 
-    zip_col = df["zip"].fillna("00000").astype(str).str.replace(".0", "", regex=False)
+    # cudf fillna("00000") coerces on a float column; pandas raises. Numeric path: NaN->0.0
+    # ("0.0" -> "0" -> zfill "000", same zip3 as "00000"), non-null 91750.0 -> "91750.0"
+    # -> "91750" -> "917" — identical to the GPU path's string round-trip.
+    if pd.api.types.is_numeric_dtype(df["zip"]):
+        zip_col = df["zip"].astype("float64").fillna(0.0).astype(str)
+    else:
+        zip_col = df["zip"].fillna("00000").astype(str)
+    zip_col = zip_col.str.replace(".0", "", regex=False)
     df["zip3"] = zip_col.str[:3].str.zfill(3).astype(int)
 
     state = df["merchant_state"].fillna("XX").astype(str).str.upper().str.strip()
