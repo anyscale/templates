@@ -9,6 +9,21 @@
   pinned to match by construction; it appears only as the credibility line ("that's how you
   know the wins are the model, not the methodology"), never as an achievement.
 
+- **WHY our FM beats theirs — the narrative seed (Zach, 2026-07-09):** the 3–5× fm win
+  isolates to the WEIGHTS (their checkpoint in our harness reproduces their 0.0123; ours in
+  the same harness gets 0.024–0.06). The one known difference: they trained ~3,000 steps ≈
+  263M tokens ≈ ONE epoch (their committed config is literally max_steps:30); we trained
+  ~16,000 steps ≈ 2.1B tokens = 8 epochs with THEIR recipe. Leakage ruled out (label never
+  tokenized, temporal split, per-txn embedding; AUC 0.96-vs-0.878 agrees and is draw-stable).
+  Zach's narrative direction: something like "with Ray you don't have to give up early on
+  training because you ran out of compute" — his words, he called the literal line too dorky,
+  but the shape is right: they shipped an undertrained checkpoint because one node is what
+  they had; we finished the training run. Anticipates the audience's "why do you beat them
+  so much?" red-flag question head-on.
+  **Queued experiment (cheap, makes it bulletproof):** 1-epoch ablation — train our pipeline
+  ~2,000 steps (~15 min on 8×A10G), show fm lands ≈ their 0.012–0.015 → a two-point
+  tokens-vs-embedding-quality curve: "quality tracks training compute; they stopped at 1
+  epoch." Run before the deck is finalized.
 - **The hardware economics contrast (Zach, 2026-07-09):** NVIDIA's blueprint = single node,
   single top-shelf GPU (their prereq: 1× A100 80GB / H100), not distributed — and that GPU
   spends part of its life on dataframe work. Ours = data stages distributed across cheap
