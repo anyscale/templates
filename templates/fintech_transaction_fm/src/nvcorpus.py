@@ -106,12 +106,129 @@ def build_corpus(train_parquet: str, out_dir: str, seq_len: int = 4096, chunk: i
                  merchant_hash: int = 2000, max_seq=None) -> dict:
     """Build the pretrain corpus from ``train_parquet`` into ``out_dir`` (GPU task).
 
-    ``chunk`` = transactions per sequence (NVIDIA uses 315 → ~4096 tokens); ``max_seq``
-    caps the number of sequences (mini/CI). Requires Ray initialized with the template as
-    the working dir (the notebook's ``ray.init`` handles this) so ``src.nvidia_tokenizer``
-    is importable on the worker.
+    Reference implementation (NVIDIA's single-GPU shape). ``chunk`` = transactions per
+    sequence (NVIDIA uses 315 → ~4096 tokens); ``max_seq`` caps the number of sequences
+    (mini/CI). Requires Ray initialized with the template as the working dir (the
+    notebook's ``ray.init`` handles this) so ``src.nvidia_tokenizer`` is importable on
+    the worker.
     """
     ray.init(ignore_reinit_error=True)
     meta = ray.get(_build.remote(train_parquet, out_dir, seq_len, chunk, merchant_hash, max_seq))
+    _wait_for_files([os.path.join(out_dir, f) for f in ("ids.npy", "attn.npy", "vocab.json")])
+    return meta
+
+
+# ---------------------------------------------------------------------------
+# Ray Data implementation — the corpus build sharded per card on CPU workers.
+#
+# Tokenization is independent per (User, Card): the vocab is static (6251) and each
+# card's sequences depend only on that card's rows. So the 19.5M-row train split
+# shuffles into ~6.1K card groups, each group tokenizes + chunks + encodes on a CPU
+# worker via the identity-verified pandas mirror (src/nvtokenize_cpu, Stage 0), and a
+# final task assembles ids.npy/attn.npy in the reference's (user, card, chunk) order.
+# ---------------------------------------------------------------------------
+
+_TOK = None  # per-worker-process tokenizer cache (vocab build is data-free but not free)
+
+
+def tokenize_card_group(group, seq_len: int = 4096, chunk: int = 315,
+                        merchant_hash: int = 2000):
+    """One card's rows in (any order) → its encoded pretrain sequences out.
+
+    Mirrors the reference build exactly: restore CSV order (``__seq__``), derive the 12
+    token strings per transaction, chunk ``chunk`` consecutive transactions, join as
+    ``<bos> t1 <sep> t2 ... <eos>``, encode to ``seq_len`` ids.
+    """
+    import numpy as np
+    import pandas as pd
+
+    from src.nvidia_tokenizer import FinancialTabularTokenizer
+    from src.nvtokenize_cpu import preprocess_cpu, transform_cpu
+
+    global _TOK
+    if _TOK is None:
+        _TOK = FinancialTabularTokenizer(merchant_hash_size=merchant_hash,
+                                         category_hierarchy=True, temporal_encoding=True)
+
+    user, card = int(group["User"].iloc[0]), int(group["Card"].iloc[0])
+    if "__seq__" in group.columns:
+        group = group.sort_values("__seq__", kind="mergesort")
+    gp = preprocess_cpu(group)
+    td = transform_cpu(gp, merchant_hash_size=merchant_hash)
+    txt = td.iloc[:, 0].str.cat([td[c] for c in td.columns[1:]], sep=" ")
+
+    rows = []
+    for ci, lo in enumerate(range(0, len(txt), chunk)):
+        line = "<bos> " + " <sep> ".join(txt.iloc[lo:lo + chunk]) + " <eos>"
+        ids = _TOK.encode(line, max_length=seq_len)
+        rows.append({"user": user, "card": card, "chunk": ci,
+                     "ids": np.asarray(ids, dtype=np.int32).tolist()})
+    return pd.DataFrame(rows)
+
+
+@ray.remote(num_cpus=8)
+def _assemble(rows_dir: str, out_dir: str, seq_len: int, max_seq) -> dict:
+    """Collect the per-card sequences, order them exactly as the reference does
+    (pandas groupby sorts keys → (user, card, chunk) ascending), write npy + vocab."""
+    import sys
+    sys.path.insert(0, ".")
+    import numpy as np
+    import pandas as pd
+
+    from src.nvidia_tokenizer import FinancialTabularTokenizer
+    from src.nvsplit import ordered_parquet_files
+
+    df = pd.concat([pd.read_parquet(f) for f in ordered_parquet_files(rows_dir)],
+                   ignore_index=True)
+    df = df.sort_values(["user", "card", "chunk"], kind="mergesort").reset_index(drop=True)
+    if max_seq is not None and len(df) > max_seq:
+        df = df.iloc[:max_seq]
+
+    tok = FinancialTabularTokenizer(merchant_hash_size=2000, category_hierarchy=True,
+                                    temporal_encoding=True)
+    pad = tok.vocab.get("<pad>", 0)
+    ids = np.stack([np.asarray(r, dtype=np.int32) for r in df["ids"]])
+    attn = (ids != pad).astype(np.int32)
+
+    os.makedirs(out_dir, exist_ok=True)
+    np.save(os.path.join(out_dir, "ids.npy"), ids)
+    np.save(os.path.join(out_dir, "attn.npy"), attn)
+    with open(os.path.join(out_dir, "vocab.json"), "w") as f:
+        json.dump({"vocab_size": int(tok.vocab_size), "seq_length": int(seq_len),
+                   "pad": int(pad)}, f, indent=2)
+    return {"n_seq": int(len(ids)), "seq_len": int(seq_len),
+            "vocab_size": int(tok.vocab_size),
+            "real_token_frac": float(attn.sum() / attn.size)}
+
+
+def build_corpus_distributed(split_dir: str, out_dir: str, seq_len: int = 4096,
+                             chunk: int = 315, merchant_hash: int = 2000,
+                             max_seq=None) -> dict:
+    """The corpus build as a Ray Data pipeline: shuffle the train split into per-card
+    groups, tokenize+encode each on CPU workers, assemble in reference order.
+
+    Same output as :func:`build_corpus` (verified — see PLAN_RAY_DATA.md Stage 2);
+    execution is CPU-only and scales with the worker pool.
+    """
+    import shutil
+
+    import ray.data
+
+    from src.nvsplit import train_parquet_files
+
+    ray.init(ignore_reinit_error=True)
+    rows_dir = os.path.join(out_dir, "_seqs_tmp")
+    if os.path.isdir(rows_dir):
+        shutil.rmtree(rows_dir)
+    os.makedirs(rows_dir, exist_ok=True)
+
+    ray.data.read_parquet(train_parquet_files(split_dir)) \
+        .groupby(["User", "Card"]) \
+        .map_groups(lambda g: tokenize_card_group(g, seq_len, chunk, merchant_hash),
+                    batch_format="pandas") \
+        .write_parquet(rows_dir)
+
+    meta = ray.get(_assemble.remote(rows_dir, out_dir, seq_len, max_seq))
+    shutil.rmtree(rows_dir)
     _wait_for_files([os.path.join(out_dir, f) for f in ("ids.npy", "attn.npy", "vocab.json")])
     return meta
