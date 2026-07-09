@@ -17,6 +17,13 @@ Building the `fintech_transaction_fm` notebook series (templates/templates/finte
 
 - **VOICE: write in ZACH'S voice, not Claude's — he called the existing template/presentation prose "real cringe" (2026-07-09).** His verbatim sample of a good opening: *"Transaction foundation models are the latest generation of transformer models - like LLM's, but instead of language, they are focused on financial transactions. This lets transaction foundation models recognize distinct patterns like fraud, that traditional ml techniques can't detect. Today I'm gonna show you how to build your own transaction foundation model and achieve performance and scalability that surpasses comparable approaches by Nvidia."* What it does: defines by analogy in one breath (no bolded-term formal definitions, no company name-drop lists); each sentence advances what-it-is → why-you-care → what-you-get-today; spoken register, first person, direct confident claim, zero throat-clearing. Measure all presentation AND notebook prose against this sample.
 
+- **RESULT HIERARCHY (2026-07-09, Zach was FURIOUS about this):** the HEADLINE is always
+  (1) our foundation model beats NVIDIA's foundation model (fm 0.04–0.06 vs 0.0123, 3–5×) and
+  (2) our fusion beats their fusion (peak 0.284 vs 0.1755, clears it in ~1/6 draws). The raw
+  0.1238 exact match is a TERTIARY result — it is the CONTROL, pinned to match by construction
+  (their features, their recipe); leading with it "rewards the thing we don't care about."
+  Mention raw-match only as the calibration that makes the two wins trustworthy. This ordering
+  applies to every table, takeaway, summary, and deck slide.
 - **Lingo rules (2026-07-09):** no "smoke run"/"smoke test" phrasing — say what it literally is ("stops after 30 steps as a demonstration", "proves the plumbing"). And any number offered as impressively small/large MUST ship with its comparator ("30 steps" means nothing until you say ours is ~16,000). "smoke" still lingers in nb02/03/04/06 + configs/mini.yaml — purge on the step-through.
 
 **Why:** he reviews top-to-bottom and is exacting; getting altitude/voice/honesty right up front saves heavy iteration.
