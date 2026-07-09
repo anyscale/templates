@@ -14,6 +14,8 @@ import os
 
 import ray
 
+from src.nvsplit import _wait_for_files
+
 # NVIDIA's 13 raw feature columns (Hour derived from Time; Amount parsed from "$..,..").
 FC = ["User", "Card", "Year", "Month", "Day", "Hour", "Amount", "Use Chip",
       "Merchant Name", "Merchant City", "Merchant State", "Zip", "MCC"]
