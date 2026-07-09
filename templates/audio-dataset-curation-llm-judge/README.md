@@ -183,7 +183,10 @@ class Decoder:
         self.processor = AutoProcessor.from_pretrained(TRANSCRIPTION_MODEL)
 
     def __call__(self, batch):
-        token_ids = batch.pop("token_ids")
+        # Whisper's tokenizer probes token_ids with plain-Python truthiness
+        # (`if not token_ids`, `if has_prompt`, ...), so hand it plain nested lists
+        # rather than a pandas Series of numpy arrays.
+        token_ids = [ids.tolist() for ids in batch.pop("token_ids")]
         transcription = self.processor.batch_decode(token_ids, skip_special_tokens=True)
         batch["transcription"] = transcription
         return batch
