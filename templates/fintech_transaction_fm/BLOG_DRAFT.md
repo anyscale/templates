@@ -6,7 +6,7 @@
 >
 > REMAINING BLANKS / GATES:
 > - DONE: 2048 fulltest (0.2665 — dilution confirmed, peak at 1024)
-> - [B-PAIR] paired-bootstrap ordering stats (runs after B-XXL)
+> - DONE: paired bootstrap — strict ordering 1024 > 512 > 2048, all significant
 > - DONE: reco readout ladder (MLP 0.523; blend hybrid optional)
 > - figures to export; Zach confirms repro-branch numbers/framings
 > - DONE: xgboost==3.2.0 + CUDA parity, bootstrap CIs, full-test-period eval
@@ -88,7 +88,7 @@ Same protocol, same trained models, same 1M training rows — the test split is 
 What this table resolves:
 
 - **The embedding's lift is CI-separated, not just probable**: embed_xgb at 512 ([0.262, 0.295]) sits entirely above the baseline ([0.193, 0.226]) on identical rows — +34%; at 1024, +45%.
-- **Longer context pays — up to a data-dependent peak**: 1024 beats 512 by +0.024 AP, and 2048 falls back below both *even after doubling its training budget* (a 20-epoch continuation to control for undertraining) — 1024's interval is disjoint above 2048's. Paired bootstrap (same resampled rows scored by every model): [B-PAIR: mean diffs, 95% CIs, P(A>B) for 1024>512, 1024>2048, 512 vs 2048]. The peak is what the burst mechanism predicts: most fraud-relevant history sits within ~1024 transactions; beyond that the window adds stale history that dilutes the last-position readout.
+- **Longer context pays — up to a data-dependent peak**: 1024 beats 512 by +0.024 AP, and 2048 falls back below both *even after doubling its training budget* (a 20-epoch continuation to control for undertraining) — 1024's interval is disjoint above 2048's. Paired bootstrap (same resampled rows scored by every model) gives a strict ordering — **1024 > 512 > 2048**: 1024−512 = +0.024 [+0.011, +0.038] (P=1.000), 512−2048 = +0.012 [+0.001, +0.024] (P=0.982), 1024−2048 = +0.036 [+0.022, +0.049] (P=1.000). The peak is what the burst mechanism predicts: most fraud-relevant history sits within ~1024 transactions; beyond that the window adds stale history that dilutes the last-position readout.
 - **PCA is where the context advantage dies — until there's nothing left to lose**: their notebook-05 PCA64 step scores *identically* at 512 and 1024 (0.1998 vs 0.1999) and below the raw baseline — the incremental history signal doesn't survive 64 components. Corroborating the dilution story: at 2048, PCA64 catches up to the full embedding (0.270 vs 0.267) — by then there's little beyond 64 components left to destroy. If you take one harness lesson: don't compress a foundation-model embedding before the classifier without measuring what it costs.
 - **The linear head collapses at long context** (0.213 → 0.121) while trees improve. The signal is there — XGBoost finds more of it at 1024 than at 512 — but it stops being linearly separable as the window grows. Our best current explanation is in the undertraining section below.
 
