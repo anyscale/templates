@@ -32,17 +32,26 @@ def run():
         json.dump(meta, f, indent=2)
 
 
+def _norm_strings(df):
+    """Unify missing-value representation: object columns -> pandas 'string' dtype so
+    None/NaN/pd.NA all compare as the same missing value."""
+    for c in df.columns:
+        if df[c].dtype == object or str(df[c].dtype) == "string":
+            df[c] = df[c].astype("string")
+    return df
+
+
 @ray.remote(num_cpus=16)
 def _compare_train(ref_file: str, new_dir: str) -> dict:
     import pandas as pd
     sys.path.insert(0, ".")
     from src.nvsplit import ordered_parquet_files
 
-    ref = pd.read_parquet(ref_file)
+    ref = _norm_strings(pd.read_parquet(ref_file))
     new = pd.concat([pd.read_parquet(f) for f in ordered_parquet_files(new_dir)],
                     ignore_index=True)
-    new = (new.sort_values("__seq__", kind="mergesort").drop(columns=["__seq__"])
-              .reset_index(drop=True))
+    new = _norm_strings(new.sort_values("__seq__", kind="mergesort")
+                        .drop(columns=["__seq__"]).reset_index(drop=True))
     out = {"ref_rows": len(ref), "new_rows": len(new)}
     if len(ref) != len(new):
         out["equal"] = False
@@ -73,8 +82,8 @@ def compare():
     report["train_counts"] = {"ref": ref_meta["train"], "new": new_meta["train"]}
 
     for name in ("val_eval", "test_eval"):
-        ref = pd.read_parquet(f"{REF}/{name}.parquet")
-        new = pd.read_parquet(f"{NEW}/{name}.parquet")
+        ref = _norm_strings(pd.read_parquet(f"{REF}/{name}.parquet"))
+        new = _norm_strings(pd.read_parquet(f"{NEW}/{name}.parquet"))
         new = new[list(ref.columns)]
         try:
             pd.testing.assert_frame_equal(ref.reset_index(drop=True),

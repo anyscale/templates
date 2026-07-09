@@ -107,7 +107,31 @@ Deliverable: `src/nvtokenize_cpu.py` (new module beside the vendored package —
 untouched) + a comparison report in this file. **If murmur3 identity fails, stop and rethink**
 (fallback: tokenize-to-strings stays on GPU workers, sharded; everything else still proceeds).
 
-### Stage 1 — nb02: split + exploration on Ray Data (CPU workers)
+### Stage 1 — STATUS 2026-07-09: ✅ SPLIT IDENTITY PASSED (notebook rewrite still open)
+
+`scripts/verify_distributed_split.py compare` → `ALL_IDENTICAL: true`: cutoff dates equal;
+train **19,508,123/19,508,123 rows equal in values AND order** (restored via `__seq__`);
+`val_eval`/`test_eval` (seeded 100K stratified) **byte-equal**; fraud counts exact
+(24,924 / 87 / 112). Wall ~8 min including the one-time CSV→shards conversion; CPU-only
+(autoscaled 0→56→0→72 CPUs across runs; zero GPU requests).
+
+Three invisible-by-eyeball, total-by-consequence divergences caught by the harness en route:
+1. **Engine reordering:** `preserve_order=True` kept the stream ordered but write tasks
+   bundled non-contiguous blocks (descents at power-of-two boundaries) → switched to an
+   explicit `__seq__` (CSV position) column baked into the one-time conversion; all Ray
+   Data passes are order-free, order-sensitive consumers sort by `__seq__`.
+2. **Schema drift:** Arrow CSV inferred `Time` as `time64` ("06:21"→"06:21:00", would also
+   break the tokenizer's `%H:%M` parse) → dtypes pinned in the conversion.
+3. **Null semantics:** Arrow reads empty CSV strings as `""`, cuDF as null (12.5K
+   Merchant State / 98K Errors? rows) → `null_values=[""], strings_can_be_null=True`.
+   (Plus one checker artifact: pandas `string` vs `object` missing values compare unequal
+   in `assert_frame_equal` even with `check_dtype=False` — checker normalizes dtypes.)
+
+The conversion output `source_parquet/` (seq-tagged shards, pinned schema) is exactly the
+**preset-parquet demo artifact** Zach wanted — demo runs can start there and skip the CSV.
+
+**Still open for Stage 1:** rewrite nb02 (Ray Data split + exploration inline, mini default,
+purge stale masked-feature sentence + "smoke"), papermill at mini.
 
 **Note (Zach, 2026-07-09):** the single 2.3GB CSV can't be split by Ray Data → the first
 parse pass is ONE task (observed live). Fine for now — the implementation lands it as

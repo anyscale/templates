@@ -173,10 +173,14 @@ def _csv_to_shards(csv_path: str, out_dir: str, rows_per_shard: int) -> dict:
     import pyarrow.csv as pacsv
     import pyarrow.parquet as pq
 
-    convert = pacsv.ConvertOptions(column_types={
-        "Time": pa.string(), "Amount": pa.string(), "Use Chip": pa.string(),
-        "Merchant City": pa.string(), "Merchant State": pa.string(),
-        "Errors?": pa.string(), "Is Fraud?": pa.string(), "Zip": pa.float64()})
+    convert = pacsv.ConvertOptions(
+        column_types={
+            "Time": pa.string(), "Amount": pa.string(), "Use Chip": pa.string(),
+            "Merchant City": pa.string(), "Merchant State": pa.string(),
+            "Errors?": pa.string(), "Is Fraud?": pa.string(), "Zip": pa.float64()},
+        # cuDF nulls empty CSV fields; Arrow defaults them to "" for strings. Identity
+        # (verified): "" is the ONLY null token in this file — restrict to exactly that.
+        null_values=[""], strings_can_be_null=True)
     os.makedirs(out_dir, exist_ok=True)
     reader = pacsv.open_csv(csv_path, convert_options=convert)
     seq = shard = 0
