@@ -149,12 +149,12 @@ depsets:
       - templates/audio-dataset-curation-llm-judge/requirements.txt
     output: templates/audio-dataset-curation-llm-judge/python_depset.lock
     append_flags:
-      - --index https://download.pytorch.org/whl/cu128
+      - --index https://download.pytorch.org/whl/cu130
       - --python-version=${PYTHON_VERSION}
       - --python-platform=x86_64-manylinux_2_31
       - --unsafe-package ray
     build_arg_sets:
-      - ray2551_py311_cu128
+      - ray2560_py312_cu130
 
   - name: multi_agent_a2a_depset_${RAY_VERSION}_${PYTHON_VERSION}_${CUDA_VARIANT}
     operation: expand
