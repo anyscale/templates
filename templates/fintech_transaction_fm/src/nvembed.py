@@ -234,6 +234,20 @@ def _assemble_embed(shards_dir: str, out_path: str, dim: int) -> dict:
     return {"rows": int(emb.shape[0]), "dim": int(emb.shape[1])}
 
 
+def assemble_embeddings(shards_dir: str, out_path: str, prep_path=None,
+                        embed_dim: int = 512) -> dict:
+    """Public wrapper: restore reference order, write the ``embed_*.npy`` matrix, and
+    clean up the temp shard dir + prepared parquet."""
+    import shutil
+    ray.init(ignore_reinit_error=True)
+    meta = ray.get(_assemble_embed.remote(shards_dir, out_path, embed_dim))
+    shutil.rmtree(shards_dir)
+    if prep_path and os.path.exists(prep_path):
+        os.remove(prep_path)
+    _wait_for_files([out_path])
+    return meta
+
+
 def embed_splits_distributed(hf_dir: str, split_dir: str, out_dir: str,
                              balanced_train: int = 1_000_000, max_length: int = 128,
                              batch_size: int = 1024, merchant_hash: int = 2000,
@@ -271,12 +285,9 @@ def embed_splits_distributed(hf_dir: str, split_dir: str, out_dir: str,
                          num_gpus=(1 if use_gpu else 0),
                          concurrency=num_gpu_workers) \
             .write_parquet(shards)
-        meta = ray.get(_assemble_embed.remote(shards, os.path.join(out_dir, f"embed_{split}.npy"),
-                                              embed_dim))
-        shutil.rmtree(shards)
-        os.remove(prep["prep"])
+        meta = assemble_embeddings(shards, os.path.join(out_dir, f"embed_{split}.npy"),
+                                   prep["prep"], embed_dim)
         stats[split] = {"rows": prep["rows"], "fraud": prep["fraud"], **meta}
-    _wait_for_files([os.path.join(out_dir, f"embed_{s}.npy") for s in files])
     return {"embed_dim": embed_dim, "splits": stats}
 
 

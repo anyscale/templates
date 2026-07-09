@@ -185,6 +185,21 @@ NOT log bins), SCALE default mini, "smoke" purged.
   but sort deterministically anyway so re-runs are stable.)
 - Measure for PERFORMANCE.md: wall-clock 1 GPU (old) vs N CPU workers (new), scaling curve.
 
+### STATUS 2026-07-09 (end of day): ✅ ALL STAGES COMPLETE — the directive is landed
+
+- nb05 rewritten (streaming pipeline inline, composing prepare_embed_split →
+  encode_txn_batch → GPUEmbedder → assemble_embeddings, same pieces as the headless
+  path), papermill green at mini — **fully CPU-only**, which required a second documented
+  guard-only local change to vendored code: NVIDIA's `extract_embeddings_batched` calls
+  `pin_memory()`/`torch.cuda.*` unconditionally and cannot run without a CUDA driver
+  (see VENDORED.md). Their single-node assumption reaches the code level — deck material.
+- Stage 5 done: nb01 truth-synced (fm quoted as range 0.04–0.06 = 3–5×, per Zach
+  "don't care about the quote" → decide-and-flag; Scalability section carries the earned
+  claims + receipts; diagram/series-table/subtitle honest), papermill green.
+- Remaining series work is OUTSIDE this plan: nb04+nb06 prose passes ("smoke" purge,
+  fm-range wording, mini re-verification), nb07/08/09 rebuild decision (still the dead
+  old pipeline), then the presentation rebuild.
+
 ### Stages 3+4 — STATUS 2026-07-09: ✅ PASSED (nb05 rewrite still open; fm-claim decision open)
 
 Stage 3 (`scripts/verify_distributed_embed.py`): labels + raw features **byte-equal** on
