@@ -9,6 +9,13 @@
   only; each pool scales independently and to zero. More scale, lower unit cost, no idle
   expensive hardware. One-liner: "cudf made one GPU fast; Ray Data makes the pipeline wide.
   We kept their math — provably, to the byte — and changed where it runs."
+- **Scale-to-zero vs warm floors (Zach, 2026-07-09):** the cluster sawtoothing 0→56→0→72
+  CPUs during one afternoon is (a) tailored-to-workload AND (b) real waiting — which one
+  depends on `startup_time / job_time` (~2% for the 2h pretrain, ~30% for the 8-min split,
+  dominant for interactive dev). Resolution is asymmetric by pool cost: warm floor on the
+  cheap CPU pool when iterating or presenting, strict min=0 on GPUs. "Elasticity is a
+  per-pool policy — floor for latency, ceiling for cost." Full write-up: PERFORMANCE.md §14.
+  Deliberately NOT optimized in the repo — it's a conversation topic for nb09 + the deck.
 - **The identity-check story (Stage 0, 2026-07-09):** distributing without changing results is
   provable, not asserted — 91,265/91,265 merchant hashes, 200K/200K rows, 12/12 token columns,
   vocab 6251 equal. Includes a good war story: cuDF's hash_values is murmur3 + Boost

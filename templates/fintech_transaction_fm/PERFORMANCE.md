@@ -222,6 +222,33 @@ trees) overfits test-AP.
 (fix #1/#2) is expected to lift it, since raw alone is already ~0.17–0.21 and the FM adds signal.
 **Where: 06 downstream (this is a `src/downstream.py` change) + 09.**
 
+## 14. Scale-to-zero vs. warm floors — elasticity is a per-pool policy knob (2026-07-09)
+
+**Observation (Stage 1 of the Ray Data rebuild, measured live):** with `min_workers=0`
+everywhere, the CPU pool sawtoothed 0 → 56 CPUs → 0 → 72 CPUs across three split runs in
+one afternoon, each cold start costing ~2–3 min of waiting (matches the 8×A10G ~2.5 min
+from §9). Node *mix* varied per run (3×8cpu+1×32cpu, then 2×32cpu+1×8cpu) — the autoscaler
+fills the demand from whatever satisfies it fastest, so "how many nodes" is the wrong
+metric; total CPUs is the right one.
+
+**The trade, honestly:** scale-to-zero overhead = `startup_time / job_time`. For the 2-hour
+pretrain that's ~2% (obviously right to scale to zero — and it's the *expensive* pool).
+For the ~8-min split job it's ~30% (noticeable). For interactive development — many short
+runs separated by thinking — it's the dominant cost of the afternoon.
+
+**The resolution is asymmetric by pool cost:** give the cheap CPU pool a warm floor
+(`min_workers=1` on the 32-CPU group ≈ ~a dollar-plus/hr) during dev or before a live demo
+(pre-warming 5 min before presenting = a temporary floor); keep the GPU pool strictly
+min=0 — idle A10Gs/A100s are exactly what elasticity exists to prevent. Set per node
+group in the workspace/job compute config. NOT optimized in this repo on purpose —
+kept as a discussion point.
+
+**Demo/deck framing:** "elasticity is a policy you set per pool — floor for latency,
+ceiling for cost — and you set it differently for a \$0.30/hr CPU node than an A100."
+Contrast with the blueprint's fixed single node: it pays for its GPU whether working or
+idle, and can't grow past it. **Where: nb01 scalability section (one line), nb09 (the
+full discussion), deck segment 3.**
+
 ## Quick tuning knobs referenced above
 | stage | file | knob | this run | note |
 |---|---|---|---|---|
