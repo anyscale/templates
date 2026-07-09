@@ -289,7 +289,7 @@
   owner_team: llm
   dir: templates/entity-recognition-with-llms
   cluster_env:
-    image_uri: anyscale/ray-llm:2.55.1-py311-cu128
+    image_uri: anyscale/ray-llm:2.56.0-py312-cu130
   compute_config:
     AWS: configs/entity-recognition-with-llms/aws.yaml
     GCP: configs/entity-recognition-with-llms/gce.yaml
