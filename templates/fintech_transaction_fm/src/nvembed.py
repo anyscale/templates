@@ -31,6 +31,7 @@ def _embed(hf_dir: str, split_dir: str, out_dir: str, balanced_train: int,
     import cudf
     from src.nvidia_tokenizer import FinancialTabularTokenizer, FinancialTokenizerPipeline
     from src.decoder_inference import HuggingFaceDecoderInference
+    from src.nvsplit import train_parquet_files
 
     tok = FinancialTabularTokenizer(merchant_hash_size=merchant_hash, category_hierarchy=True,
                                     temporal_encoding=True)
@@ -38,10 +39,13 @@ def _embed(hf_dir: str, split_dir: str, out_dir: str, balanced_train: int,
     print(f"[nvembed] model loaded, embed_dim {inf.embedding_dim}", flush=True)
 
     os.makedirs(out_dir, exist_ok=True)
-    files = {"train": "train.parquet", "val": "val_eval.parquet", "test": "test_eval.parquet"}
+    files = {"train": None, "val": "val_eval.parquet", "test": "test_eval.parquet"}
     stats = {}
     for split, fname in files.items():
-        gdf = cudf.read_parquet(os.path.join(split_dir, fname))
+        # train may be the reference single file or the distributed sharded dir
+        src_files = (train_parquet_files(split_dir) if fname is None
+                     else [os.path.join(split_dir, fname)])
+        gdf = cudf.read_parquet(src_files)
         fr = gdf["Is Fraud?"]
         lbl = ((fr == "Yes") | (fr == "1")).astype("int32").to_pandas().to_numpy()
         if split == "train":  # balanced ~10%-fraud training sample (NVIDIA NB01)

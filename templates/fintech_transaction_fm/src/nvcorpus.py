@@ -42,8 +42,9 @@ def _build(train_parquet: str, out_dir: str, seq_len: int, chunk: int,
     sys.path.insert(0, ".")  # worker cwd = Ray working_dir (the template) → src.* resolves
     import cudf
     from src.nvidia_tokenizer import FinancialTabularTokenizer, FinancialTokenizerPipeline
+    from src.nvsplit import train_parquet_files
 
-    gdf = cudf.read_parquet(train_parquet)
+    gdf = cudf.read_parquet(train_parquet_files(train_parquet))
     print(f"[nvcorpus] train rows {len(gdf):,}", flush=True)
 
     pip = FinancialTokenizerPipeline(merchant_hash_size=merchant_hash)
