@@ -131,12 +131,19 @@ fill in:
 ## How we run things
 - Submit a job:   anyscale job submit -f jobs/<x>.yaml   (commit + push first — jobs pull from git)
 - Smoke locally:  python scripts/<entrypoint>.py --scale smoke
+- Smoke on GPUs:  run the same entrypoint on the warm workspace at --scale smoke
+- After a smoke:  SMOKE_OK is the success sentinel. Before promoting to a full job, confirm it
+  wrote embeddings, checkpoints, and TB events to their expected paths.
 - Cost: A10G ≈ $X/hr, A100 ≈ $Y/hr — price runs before launching
 
 ## Gotchas
 - <e.g. RunConfig.name reuse auto-resumes the last checkpoint — use unique names>
 - <e.g. macOS local runs segfault at the XGBoost stage — run that stage in a separate process>
 ```
+
+**Rule of thumb: if you catch yourself typing the same ask twice, it belongs in here.** A prompt
+you retype is a convention you haven't written down yet — move it into `AGENTS.md` and "smoke it on
+the workspace" starts meaning the whole check, not just the run.
 
 ---
 

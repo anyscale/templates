@@ -56,8 +56,18 @@ anyscale workspace_v2 ssh --id expwrk_XXXX -- '
 # 3. Have Claude watch the logfile for a success sentinel or an error, then review TensorBoard.
 ```
 
-Ask Claude: *"tail the smoke log until it prints `SMOKE_OK` or errors, then tell me if the
-plumbing held — did it write embeddings, checkpoints, and TB events where I expect?"*
+You don't retype the verification every time — it's the same check on every smoke, so it lives in
+your [`AGENTS.md`](../README.md#what-claude-needs-to-know-about-your-setup) as a convention:
+
+```
+## How we run things
+- After a smoke: SMOKE_OK is the success sentinel. Before promoting to a full job, confirm it
+  wrote embeddings, checkpoints, and TB events to their expected paths.
+```
+
+With that written down once, *"smoke it on the workspace"* is the whole ask — Claude tails the log
+to the sentinel (or an error) and tells you whether the plumbing held, because it knows what "held"
+means.
 
 ## What this rung catches that a laptop can't
 
