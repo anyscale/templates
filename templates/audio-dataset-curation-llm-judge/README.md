@@ -183,7 +183,10 @@ class Decoder:
         self.processor = AutoProcessor.from_pretrained(TRANSCRIPTION_MODEL)
 
     def __call__(self, batch):
-        token_ids = batch.pop("token_ids")
+        # Convert the pandas Series to a plain list so transformers.batch_decode
+        # can iterate token id arrays (recent versions do `if not token_ids:` up
+        # front, which errors on a Series).
+        token_ids = list(batch.pop("token_ids"))
         transcription = self.processor.batch_decode(token_ids, skip_special_tokens=True)
         batch["transcription"] = transcription
         return batch
