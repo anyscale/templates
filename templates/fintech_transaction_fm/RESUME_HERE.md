@@ -56,6 +56,29 @@ at this eval noise would be misleading in either direction.
 **Citeable claims (no asterisks):** raw **0.1238** (exact) and fm **0.0614** (~5×) — both stable.
 Fusion: report the distribution (typical ~0.14, peak 0.28, 17% ≥ 0.1755), never one number.
 
+### Beyond-the-blueprint extension candidates (Zach, 2026-07-09 — keep these on the list)
+
+Both diverge from NVIDIA's blueprint, so if built they ship as *labeled extensions* alongside
+the faithful comparison, never as silent changes to it:
+
+1. **History-aware embedding.** The blueprint (their NB04, our nb05) embeds each transaction
+   alone (~14 tokens); the deployed classifier can't see cross-transaction patterns. Embed with
+   the preceding history in context instead — the model's context is 8192 tokens (~600 txns).
+   Evidence it helps: a ~10-txn-context embed during the 2026-07-03 debugging raised fm AUC
+   0.62→0.795 and dropped embedding↔raw correlation 0.36→0.13 (complementary, what fusion wants).
+   Also makes the "fraud is visible in sequence" presentation example honest for the demo itself.
+2. **Static/dynamic field split** (Visa TREASURE / FATA-Trans lineage — the OLD design's idea,
+   removed in the faithful rewrite; nb01 prose still wrongly advertises it). NVIDIA's flat scheme
+   re-emits card-constant fields (card, cust, zip3, state) in all 12 tokens of every txn; encoding
+   statics once would cut tokens/txn → much longer effective history per 4096-token window +
+   cheaper pretrain. The old pipeline's weak results are NOT evidence against it (confounded by
+   its other bugs). Unproven; would need an A/B against the faithful baseline.
+3. **Masked-feature modeling (MLM)** — the OLD design's pretraining objective, replaced by the
+   blueprint's causal next-token in the faithful rewrite. Still a live alternative: NVIDIA's own
+   NB05 excuses the weak fm-only result "as expected for decoder-only models," and bidirectional
+   objectives typically embed better (Nubank publishes both NTP and MLM variants). Candidate A/B:
+   same corpus/arch, MLM objective, compare fm-only AP vs the causal baseline.
+
 **Follow-ups (not blocking):** (1) delete the now-unused OLD `src/flat_tokenizer.py` + `src/tokenizer.py`
 shim; (2) notebook prose says fm "~2×" in spots — full run got ~5×, update; (3) optional: bake the
 fusion-distribution framing (per-seed spread + a histogram with NVIDIA's 0.1755 marked) into nb06 +
