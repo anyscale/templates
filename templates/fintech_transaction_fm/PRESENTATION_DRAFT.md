@@ -2,6 +2,13 @@
 
 ## Captured beats for the rebuild (ours, verified — unlike the draft below)
 
+- **RESULT HIERARCHY (Zach, 2026-07-09 — non-negotiable ordering):** headline = (1) OUR
+  foundation model beats NVIDIA's foundation model, 0.04–0.06 vs 0.0123 = 3–5×, trained by
+  us from scratch; (2) OUR fusion beats their fusion — peak 0.284 vs their single-draw
+  0.1755, cleared in ~1/6 draws. The raw 0.1238 exact match is TERTIARY — the control,
+  pinned to match by construction; it appears only as the credibility line ("that's how you
+  know the wins are the model, not the methodology"), never as an achievement.
+
 - **The hardware economics contrast (Zach, 2026-07-09):** NVIDIA's blueprint = single node,
   single top-shelf GPU (their prereq: 1× A100 80GB / H100), not distributed — and that GPU
   spends part of its life on dataframe work. Ours = data stages distributed across cheap
