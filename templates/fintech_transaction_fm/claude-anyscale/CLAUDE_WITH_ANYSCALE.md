@@ -3,7 +3,7 @@
 *Geoff Counihan · distilled from the fintech transaction-FM campaign (2026-07-06 → 07-09),
 where Claude Code + Anyscale ran a multi-day GPU research campaign that beat NVIDIA's
 published TabFormer fraud benchmark. This is the **how-we-worked** companion to
-[`AUTORESEARCH.md`](templates/fintech_transaction_fm/AUTORESEARCH.md) (the **what-we-did**
+[`AUTORESEARCH.md`](AUTORESEARCH.md) (the **what-we-did**
 research methodology).*
 
 ---
