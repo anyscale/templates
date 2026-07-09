@@ -60,6 +60,12 @@ Tells that you've inverted it: a heading that's a chapter-epigraph phrase ("One 
 
 ## Voice: write like an engineer to a peer, not a content model
 
+Calibrate against this sample Zach wrote himself (an opening, presentation register — but the qualities transfer to notebook prose):
+
+> Transaction foundation models are the latest generation of transformer models - like LLM's, but instead of language, they are focused on financial transactions. This lets transaction foundation models recognize distinct patterns like fraud, that traditional ml techniques can't detect. Today I'm gonna show you how to build your own transaction foundation model and achieve performance and scalability that surpasses comparable approaches by Nvidia.
+
+What it does: defines the new thing **by analogy to a known thing, in one breath** — not a formal bolded-term definition, not a company name-drop list. Each sentence advances the reader: what it is → why you care → what you're getting. First person, direct, confident claim, zero throat-clearing. If a draft opening reads denser or more "impressive" than this, it's wrong.
+
 Generated demo prose has telltale filler patterns that make a sharp reader trust the content less. Cut them:
 
 - **Editorializing titles** — "Class imbalance — and why we don't report plain accuracy." Name the thing: "How we measure performance."
