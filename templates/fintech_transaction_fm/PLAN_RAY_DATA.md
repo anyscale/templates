@@ -108,6 +108,14 @@ untouched) + a comparison report in this file. **If murmur3 identity fails, stop
 (fallback: tokenize-to-strings stays on GPU workers, sharded; everything else still proceeds).
 
 ### Stage 1 — nb02: split + exploration on Ray Data (CPU workers)
+
+**Note (Zach, 2026-07-09):** the single 2.3GB CSV can't be split by Ray Data → the first
+parse pass is ONE task (observed live). Fine for now — the implementation lands it as
+parquet shards once and everything downstream is wide. But Zach may **preset the CSV as
+parquet files for the demo**: no real-world situation at scale starts from one giant CSV,
+so don't build the notebook narrative (or the deck) around the CSV-is-serial lesson —
+mention it at most as a one-liner, and keep the ingest step swappable (the pipeline
+already treats `_normalized_tmp/` parquet as the working format).
 - `ray.data.read_csv` → `map_batches` (strip cols, derive date) on CPU workers.
 - Cutoff dates: Ray Data `groupby("date").count()` (≈6K rows) → driver cumsum → same two dates.
 - Train filter + write via Ray Data (order-preserving); val/test subsets (~2.4M rows) collected
