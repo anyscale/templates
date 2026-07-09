@@ -157,6 +157,25 @@ already treats `_normalized_tmp/` parquet as the working format).
 - Identity: train rows 19,508,123; cutoff dates equal; val/test parquets byte-equal to reference.
 - Prose: fix the stale "masked-feature modeling" sentence while in there; SCALE default → mini.
 
+### Stage 2 — STATUS 2026-07-09: ✅ CORPUS IDENTITY PASSED BIT-FOR-BIT (nb03 rewritten, papermill pending)
+
+`scripts/verify_distributed_corpus.py compare` → `ALL_IDENTICAL: true`: ids.npy
+**(64,335 × 4096) exactly equal** to the single-GPU reference (array equality, not multiset),
+attn equal, vocab equal, real_token_frac identical to full precision. Wall **429s** on CPU
+workers, built FROM the Stage-1 distributed split → the chain CSV → shards → split → corpus
+is verified end-to-end. Order matching worked because pandas groupby sorts keys: assembling
+by (user, card, chunk) reproduces the reference row order exactly.
+
+Two ops lessons en route: (1) `mmh3` was in requirements.txt but not registered on cluster
+nodes — a worker-side ModuleNotFoundError; `pip install -r requirements.txt` in the
+workspace registers cluster-wide. (2) `python ... | tee log` returns TEE's exit code — the
+first failed run reported exit 0. Use `set -o pipefail` on any piped launch (same class of
+false-green as the papermill gotcha in the authoring skill).
+
+nb03 rewritten same day: groupby→map_groups pipeline inline, tokenizer bullets corrected
+(hour/dow/month NOT gap-tokens — gap tokenizer ships but is off; fixed-threshold amounts
+NOT log bins), SCALE default mini, "smoke" purged.
+
 ### Stage 2 — nb03: corpus build sharded per card (CPU workers)
 - Ray Data over the train split → `groupby(user, card)` → `map_groups`: CPU tokenize-to-strings
   (`nvtokenize_cpu`) → chunk 315 → join `<bos>/<sep>/<eos>` → `tok.encode` (already CPU).

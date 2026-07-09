@@ -201,6 +201,27 @@ def _assemble(rows_dir: str, out_dir: str, seq_len: int, max_seq) -> dict:
             "real_token_frac": float(attn.sum() / attn.size)}
 
 
+def fresh_seqs_dir(out_dir: str) -> str:
+    """Empty temp dir for the per-card sequence rows (consumed by assemble_corpus)."""
+    import shutil
+    rows_dir = os.path.join(out_dir, "_seqs_tmp")
+    if os.path.isdir(rows_dir):
+        shutil.rmtree(rows_dir)
+    os.makedirs(rows_dir, exist_ok=True)
+    return rows_dir
+
+
+def assemble_corpus(rows_dir: str, out_dir: str, seq_len: int, max_seq=None) -> dict:
+    """Collect the per-card sequences into ``ids.npy``/``attn.npy``/``vocab.json`` in
+    the reference's (user, card, chunk) order; removes the temp rows dir."""
+    import shutil
+    ray.init(ignore_reinit_error=True)
+    meta = ray.get(_assemble.remote(rows_dir, out_dir, seq_len, max_seq))
+    shutil.rmtree(rows_dir)
+    _wait_for_files([os.path.join(out_dir, f) for f in ("ids.npy", "attn.npy", "vocab.json")])
+    return meta
+
+
 def build_corpus_distributed(split_dir: str, out_dir: str, seq_len: int = 4096,
                              chunk: int = 315, merchant_hash: int = 2000,
                              max_seq=None) -> dict:
@@ -208,27 +229,19 @@ def build_corpus_distributed(split_dir: str, out_dir: str, seq_len: int = 4096,
     groups, tokenize+encode each on CPU workers, assemble in reference order.
 
     Same output as :func:`build_corpus` (verified — see PLAN_RAY_DATA.md Stage 2);
-    execution is CPU-only and scales with the worker pool.
+    execution is CPU-only and scales with the worker pool. This is the headless
+    composition of the pieces Part 3 shows inline: ``groupby(User, Card) →
+    map_groups(tokenize_card_group) → assemble_corpus``.
     """
-    import shutil
-
     import ray.data
 
     from src.nvsplit import train_parquet_files
 
     ray.init(ignore_reinit_error=True)
-    rows_dir = os.path.join(out_dir, "_seqs_tmp")
-    if os.path.isdir(rows_dir):
-        shutil.rmtree(rows_dir)
-    os.makedirs(rows_dir, exist_ok=True)
-
+    rows_dir = fresh_seqs_dir(out_dir)
     ray.data.read_parquet(train_parquet_files(split_dir)) \
         .groupby(["User", "Card"]) \
         .map_groups(lambda g: tokenize_card_group(g, seq_len, chunk, merchant_hash),
                     batch_format="pandas") \
         .write_parquet(rows_dir)
-
-    meta = ray.get(_assemble.remote(rows_dir, out_dir, seq_len, max_seq))
-    shutil.rmtree(rows_dir)
-    _wait_for_files([os.path.join(out_dir, f) for f in ("ids.npy", "attn.npy", "vocab.json")])
-    return meta
+    return assemble_corpus(rows_dir, out_dir, seq_len, max_seq)
