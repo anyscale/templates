@@ -192,7 +192,11 @@ class GPUEmbedder:
     """Ray Data actor: forward passes only. One per GPU; CPU workers feed it."""
 
     def __init__(self, hf_dir: str, merchant_hash: int = 2000, batch_size: int = 1024):
+        import os
         import sys
+        # This torch build routes some ops (bmm) through triton JIT, which needs a C
+        # compiler the GPU workers don't have — fall back to the standard kernels.
+        os.environ.setdefault("TORCH_DISABLE_NATIVE_JIT", "1")
         sys.path.insert(0, ".")
         from src.decoder_inference import HuggingFaceDecoderInference
         from src.nvidia_tokenizer import FinancialTabularTokenizer
