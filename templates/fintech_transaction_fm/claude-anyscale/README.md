@@ -111,39 +111,25 @@ Claude is only as good as the context you give it. The things that make it effec
 - **Cost model** — GPU types and rough $/hr, so Claude prices a run *before* launching it.
 
 **The punchline: put all of it in an `AGENTS.md` (or `CLAUDE.md`) at your repo root, once.** Claude
-reads it automatically every session, so you stop re-explaining your environment. A starter you can
-fill in:
+reads it automatically every session, so you stop re-explaining your environment. The sections that
+have earned their place:
 
 ```markdown
 # AGENTS.md — <your project>
 
-## Anyscale
-- Cloud: <name> (<cld_...>)   Project: <name> (<prj_...>)
-- Compute configs: cpu=<name>, gpu-small=<name>, gpu-big=<name>
-- Base image: <image>
-- Warm workspace: <name> (<expwrk_...>) — scale up for real-data GPU smokes
-
-## Storage
-- Durable artifacts: /mnt/user_storage/<project>/  (survives cluster teardown)
-- Scratch: /mnt/cluster_storage/  (per-cluster, ephemeral)
-- Object storage: s3://<bucket>/... | gs://<bucket>/...
-
-## How we run things
-- Submit a job:   anyscale job submit -f jobs/<x>.yaml   (commit + push first — jobs pull from git)
-- Smoke locally:  python scripts/<entrypoint>.py --scale smoke
-- Smoke on GPUs:  run the same entrypoint on the warm workspace at --scale smoke
-- After a smoke:  SMOKE_OK is the success sentinel. Before promoting to a full job, confirm it
-  wrote embeddings, checkpoints, and TB events to their expected paths.
-- Cost: A10G ≈ $X/hr, A100 ≈ $Y/hr — price runs before launching
-
-## Gotchas
-- <e.g. RunConfig.name reuse auto-resumes the last checkpoint — use unique names>
-- <e.g. macOS local runs segfault at the XGBoost stage — run that stage in a separate process>
+## Anyscale       — cloud + project ids, the warm workspace, your compute configs
+## Storage        — one durable base on /mnt/user_storage, shared by workspace AND jobs; the pinned eval
+## How we run     — one job config per rung (smoke / baseline / scaled-out), each a one-liner to submit
+## Progress       — metrics printed to logs (greppable) AND persisted to disk; how to watch a job
+## Rules          — move-aside not delete; reproduce the baseline first; smoke the entry point; dump verbatim
+## Gotchas        — the Anyscale/Ray footguns that bit you (so they bite you only once)
 ```
 
-**A fully filled-in version from this project:** [`AGENTS_EXAMPLE.md`](AGENTS_EXAMPLE.md) — the real
-context file for the transaction-FM work these guides came out of, with the actual cloud, storage
-paths, run commands, and hard-won gotchas. Read it as a worked example, then write your own.
+**A ready-to-adapt version:** [`AGENTS_EXAMPLE.md`](AGENTS_EXAMPLE.md) — the same sections filled
+with the parts that generalize: one job config per rung (smoke / baseline / scaled-out), metrics
+printed to the logs *and* persisted to shared `/mnt/user_storage`, the move-aside / reproduce-first
+/ smoke-the-entry-point rules, and the Ray gotchas. Copy it to your repo root as `AGENTS.md` and
+swap in your specifics.
 
 **Rule of thumb: if you catch yourself typing the same ask twice, it belongs in here.** A prompt
 you retype is a convention you haven't written down yet — move it into `AGENTS.md` and "smoke it on

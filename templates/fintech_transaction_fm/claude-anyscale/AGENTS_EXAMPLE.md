@@ -1,73 +1,80 @@
-# AGENTS_EXAMPLE.md — a worked example
+# AGENTS_EXAMPLE.md — a starting template
 
-A real, filled-in `AGENTS.md` from the transaction foundation-model project — the same campaign
-these guides were distilled from. Copy the *shape*; replace the specifics with yours.
+The `AGENTS.md` shape that's worked for me across Anyscale ML projects, distilled to the parts
+that generalize. It fits any "get a baseline running, then scale it out" process — fraud model,
+recommender, fine-tune, batch pipeline, whatever. Copy it to your repo root as `AGENTS.md` and
+fill in the `<placeholders>`.
 
 > **Why the `_EXAMPLE` suffix:** Claude Code auto-loads any file literally named `AGENTS.md` (or
-> `CLAUDE.md`) as standing instructions. This file is renamed so it *doesn't* get ingested — in
-> your repo, put the real thing at the root as `AGENTS.md`.
+> `CLAUDE.md`) as standing instructions. This file is renamed so it *doesn't* get ingested — the
+> real one goes at your repo root as `AGENTS.md`.
 
 ---
 
 ```markdown
-# AGENTS.md — transaction foundation model (fintech_transaction_fm)
+# AGENTS.md — <project>
 
 ## Anyscale
-- Cloud (where jobs + workspaces run): sa-demos `cld_g54aiirwj1s8t9ktgzikqur41k`
-  ⚠️ My *default* cloud is `nk-demo` — so `anyscale workspace_v2 ssh -n <name>` will NOT resolve
-     this project's workspaces (name lookup is default-cloud-scoped). SSH by `--id`, or pass
-     `--cloud cld_g54aiirwj1s8t9ktgzikqur41k`.
-- Project: `default_cld_g54aiirwj1s8t9ktgzikqur41k`
-- Warm workspace (real-data GPU smokes): transaction-foundation-model
-  `expwrk_wnk2e5xtrt3dt53x68ta1w7fwh` — TensorBoard on port 38399 (tunnel from the laptop).
-- Compute: 4–8× A10G (24GB). scale→config: seq512=full, seq1024=xl (batch 64),
-  seq2048=xxl (batch 16 — 32 OOM'd on 24GB).
+- Cloud (where jobs + workspaces run): <name> `<cld_...>`
+  ⚠️ If this is NOT your default cloud, `anyscale workspace_v2 ssh -n <name>` won't resolve this
+     project's workspaces (name lookup is default-cloud-scoped). SSH by `--id`, or pass `--cloud`.
+- Project: `<prj_...>`
+- Warm workspace (for real-data GPU smokes): <name> `<expwrk_...>`. TensorBoard: tunnel from the
+  laptop, not from inside the workspace.
+- Compute configs: cpu=<name>, gpu-small=<name>, gpu-big=<name>.
 
-## Storage
-- BASE=/mnt/user_storage/transaction-fm-v2   (durable; survives cluster teardown)
-- Pinned eval: $BASE/raw/full/benchmark.parquet — THE eval rows. Never regenerate casually.
-- Per-stage artifacts: $BASE/{tokenized,model,embeddings,downstream}/<scale>
-- v1 base /mnt/user_storage/transaction-fm/ kept for comparison (pre-benchmark era).
+## Storage — one persisted base, shared by the workspace AND every job
+- BASE=/mnt/user_storage/<project>   (durable; survives cluster teardown, and the SAME path is
+  mounted in the warm workspace and in every job — so a workspace smoke and a full job read/write
+  the identical artifacts, no copying)
+- Pinned eval artifact: $BASE/eval/...   — the frozen inputs every run is scored on. Version it;
+  never regenerate casually (a moving eval set makes all your numbers incomparable).
+- Per-run outputs: $BASE/<stage>/<run-name>/   (metrics.json, checkpoints, embeddings, TB events)
+- Scratch only: /mnt/cluster_storage/   (per-cluster, dies with the cluster — never the source of truth)
 
-## How we run things
-- Submit a job: commit + push first (jobs pull code from git), then:
-    anyscale job submit -f job_baseline.yaml   # the gate  → reproduces 0.9875 / 0.1421
-    anyscale job submit -f job_full.yaml        # pretrain + eval → prints the headline table
-    anyscale job submit -f job_xl.yaml          # the 1024 / 2048 context act
-- Smoke locally: python scripts/run_pretrain.py --scale smoke --base-dir <local>  (CPU, minutes)
-- Smoke on GPUs: same entrypoints at --scale smoke on the warm workspace, on a real-data sample.
-- After a smoke: verify it wrote model/ embeddings/ downstream/ + TB events under $BASE/<scale>
-  before promoting to a full job. (SMOKE_OK is the sentinel in the chained entrypoint.)
-- Watch a job: attach a monitor on the prodjob id; echo only on state change; on terminal state
-  grep the logs for the metrics (AP / ROC / embed_xgb) and failure signatures. Match EVERY
-  terminal state.
-- Cost: <fill in A10G $/hr> — price before launching. A full 8×A10G run is ≈ 2h.
+## How we run things — one config per rung, each a one-liner to launch
+Commit + push first (jobs pull code from git), then submit the rung you want:
+
+    anyscale job submit -f jobs/smoke.yaml      # tiny/sampled data, CPU or 1 GPU, minutes —
+                                                #   proves the code runs end-to-end. Says NOTHING about quality.
+    anyscale job submit -f jobs/baseline.yaml   # the reference/number to beat — REPRODUCE IT FIRST.
+    anyscale job submit -f jobs/full.yaml       # the real scaled-out run — the publishable numbers.
+
+Same entrypoint in all three; only the config differs (data size, compute, epochs). The smoke IS
+the run, just smaller — so nothing new can break at scale except scale itself.
+
+## Progress + results — print to the logs, persist to disk
+- Every stage prints its metrics to stdout in a greppable form, e.g.  `METRIC -> {"score": 0.87, ...}`
+  so progress is tail-able:
+      anyscale job logs --id <prodjob_...> | grep -E "METRIC ->|epoch|ERROR|Traceback"
+- AND every stage writes those metrics + artifacts to $BASE as JSON/parquet — because log streaming
+  truncates silently. The persisted file is the source of truth; the log line is just the heartbeat.
+- Hands-free watch: attach a monitor that echoes on state change and, on any terminal state, greps
+  the logs for the METRIC lines + failure signatures. Match EVERY terminal state — silence ≠ success.
+- Cost: <fill in $/hr per GPU tier> — price a run before launching it.
 
 ## Rules (each one was paid for — don't relearn them)
-- NEVER delete artifacts — move aside:
-    mv $BASE/$d/<scale> $BASE/$d/<scale>_old_$STAMP   # one $STAMP across all artifact kinds
-  Deleting an embeddings dir once cost a $4 / 50-min GPU re-extraction; a rename is free.
-- Dump configs/outputs VERBATIM — whole config object, original key names, zero filtering.
-- Smoke the ENTRY POINT (the real script e2e on tiny data), not just the unit — failures live in
-  the glue (writers, health checks, eval readers), not the tested core.
-- Reproduce the reference number through OUR pipeline before believing any lift; bootstrap-CI
-  every reported number (few positives → single point estimates are rumors).
-- One experiment = one off-by-default flag = one commit whose message names the experiment.
+- NEVER delete artifacts — move aside:  `mv $BASE/<dir> $BASE/<dir>_old_<stamp>`  (one stamp per
+  rerun, across every artifact kind). A rename is free; a delete can cost a GPU re-run.
+- Reproduce the baseline through YOUR pipeline before you believe any improvement over it.
+- Bootstrap-CI every reported number; with few positive examples, a single point estimate is a rumor.
+- Smoke the ENTRY POINT (the real script e2e on tiny data), not just the unit — failures live in the
+  glue (writers, health checks, eval readers), not the tested core.
+- Dump configs/outputs VERBATIM — whole config object, original key names, no filtering or renaming.
+- One change = one off-by-default flag = one commit whose message names the experiment.
 
-## Gotchas
-- `RunConfig.name` reuse auto-resumes the latest checkpoint → a re-run silently trains 0 epochs.
-  Use a unique run name per invocation (unless you deliberately want a warm restart).
-- macOS local runs segfault at the XGBoost stage (torch+xgboost libomp clash in the Ray driver)
-  — run stage 5 in a separate process locally; the cluster is unaffected.
-- `iter_torch_batches(dtypes=...)` must cover every column or be None (a partial dict KeyErrors
-  mid-train-loop).
-- GPU worker groups advertise `resources: {CPU: 0}` so CPU-heavy stages can't scale them up; keep
-  ≥1 CPU-capable group (the head is CPU:0 too, and data-plane tasks need CPU:1 somewhere).
-- Run the TensorBoard tunnel on the laptop, not inside the workspace.
+## Gotchas (Anyscale / Ray footguns)
+- `RunConfig.name` reuse auto-resumes the latest checkpoint → a re-run can silently train 0 epochs.
+  Use a unique run name per invocation (unless you deliberately want to resume).
+- `iter_torch_batches(dtypes=...)` must cover every column or be None (a partial dict KeyErrors).
+- GPU worker groups: advertise `resources: {CPU: 0}` so CPU-heavy stages can't scale them up; keep
+  ≥1 CPU-capable group somewhere.
+- Long workspace commands die with the SSH session — `setsid <cmd> > $BASE/x.log 2>&1 < /dev/null &`
+  and poll the logfile, not the process.
 ```
 
 ---
 
 *See [`README.md`](README.md#what-claude-needs-to-know-about-your-setup) for what each section is
-for, and why a filled-in `AGENTS.md` is the highest-leverage thing you can give Claude on a new
+for, and why a filled-in `AGENTS.md` is the highest-leverage thing you can hand Claude on a new
 project.*
