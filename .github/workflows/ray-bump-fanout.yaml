@@ -1,0 +1,94 @@
+name: ray-bump-fanout
+
+# Fan the per-template Ray-version bump out. The prompt lives on the "Template
+# update" Cursor automation; this resolves the target version and POSTs
+# {template_name, ray_version} per template via ci/trigger-cursor-bump.py.
+#
+# Fire by pushing a `ray-fanout-<v>` tag (encodes the version; can't double-fire),
+# or run manually (workflow_dispatch — previews by default).
+#
+# Requires secrets: CURSOR_TEMPLATE_UPDATER_WEBHOOK, CURSOR_TEMPLATE_UPDATER_AUTH_TOKEN.
+
+on:
+  push:
+    tags: ['ray-fanout-*']
+  workflow_dispatch:
+    inputs:
+      ray_version:
+        description: "Target Ray version (blank = derive newest complete set from dependencies/depsets/)"
+        required: false
+        default: ""
+      dry_run:
+        description: "Preview only — no POSTs"
+        type: boolean
+        default: true
+
+concurrency:
+  group: ray-bump-fanout
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  fanout:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+    - name: Install dev deps
+      run: pip install -r requirements-dev.txt
+
+    - name: Resolve target Ray version
+      id: version
+      env:
+        INPUT_VERSION: ${{ inputs.ray_version }}
+      run: |
+        V="$INPUT_VERSION"
+        # tag push: refs/tags/ray-fanout-2.56.0 -> 2.56.0
+        if [ -z "$V" ] && [ "$GITHUB_EVENT_NAME" = "push" ]; then
+          V="${GITHUB_REF#refs/tags/ray-fanout-}"
+        fi
+        # validate the given version's base locks exist, else derive the newest (fails closed)
+        if [ -n "$V" ]; then
+          V="$(python3 ci/latest-depset-version.py --require "$V")"
+        else
+          V="$(python3 ci/latest-depset-version.py)"
+        fi
+        echo "value=$V" >> "$GITHUB_OUTPUT"
+        echo "Target Ray version: $V"
+
+    - name: Compute delta (maintained templates not already at the target)
+      id: delta
+      env:
+        V: ${{ steps.version.outputs.value }}
+      run: |
+        # version-aware --list drops entries already at $V (BUILD.yaml = source of truth)
+        python3 ci/trigger-cursor-bump.py --all -v "$V" --list 2>/dev/null | sort -u > /tmp/delta.txt
+        n="$(grep -c . /tmp/delta.txt || true)"
+        echo "count=$n" >> "$GITHUB_OUTPUT"
+        {
+          echo "### Ray $V fanout — $n template(s) behind"
+          echo '```'; cat /tmp/delta.txt; echo '```'
+        } >> "$GITHUB_STEP_SUMMARY"
+
+    - name: Nothing to do
+      if: steps.delta.outputs.count == '0'
+      run: echo "Every maintained template is already at this version — nothing to fire."
+
+    - name: Fire the fanout
+      if: steps.delta.outputs.count != '0'
+      env:
+        CURSOR_TEMPLATE_UPDATER_WEBHOOK: ${{ secrets.CURSOR_TEMPLATE_UPDATER_WEBHOOK }}
+        CURSOR_TEMPLATE_UPDATER_AUTH_TOKEN: ${{ secrets.CURSOR_TEMPLATE_UPDATER_AUTH_TOKEN }}
+        V: ${{ steps.version.outputs.value }}
+        INPUT_DRY_RUN: ${{ inputs.dry_run }}
+      run: |
+        # A tag push fires for real; manual runs preview unless dry_run=false.
+        if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ] && [ "$INPUT_DRY_RUN" != "false" ]; then
+          xargs -a /tmp/delta.txt python3 ci/trigger-cursor-bump.py -v "$V"
+        else
+          xargs -a /tmp/delta.txt python3 ci/trigger-cursor-bump.py -v "$V" --execute
+        fi
