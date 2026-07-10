@@ -1,0 +1,104 @@
+name: ray-base-locks
+
+# Prepare the base depset locks for a new Ray version so a fanout can fire.
+#
+# ci/prepare-base-locks.py resolves the newest stable Ray and, once its deplocks
+# are published at ray-project/ray but we don't yet have the base-lock set,
+# recompiles ray_<v>_img_* + rayllm_<v>_* (copying the current matrix forward) and
+# this workflow opens a PR. A human reviews + merges it (the approval gate), then
+# pushes a `ray-fanout-<v>` tag to fire ray-bump-fanout.yaml.
+#
+# If Ray shipped a different py/cuda matrix, the script stops with 'needs human'
+# (rc=2) and a maintainer runs .claude/skills/template/workflows/upgrade-dependencies.md.
+
+on:
+  schedule:
+    - cron: "17 8 * * *"   # daily; Ray minors are ~monthly, so a daily poll suffices
+  workflow_dispatch:
+    inputs:
+      ray_version:
+        description: "Target Ray version (blank = newest stable on PyPI)"
+        required: false
+        default: ""
+      dry_run:
+        description: "Plan only — print the depsets.yaml diff, don't recompile or open a PR"
+        type: boolean
+        default: true
+
+concurrency:
+  group: ray-base-locks
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    steps:
+    # A PAT (if exposed as ANYSCALE_GH_TOKEN) makes the opened PR trigger premerge
+    # CI; otherwise it falls back to github.token and a maintainer nudges CI.
+    - uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.ANYSCALE_GH_TOKEN || github.token }}
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+    - name: Install deps
+      run: pip install "ruamel.yaml==0.18.6"
+
+    - name: Prepare base locks
+      id: prep
+      env:
+        GITHUB_TOKEN: ${{ github.token }}   # authenticates the deplock-discovery API calls
+        INPUT_VERSION: ${{ inputs.ray_version }}
+        INPUT_DRY_RUN: ${{ inputs.dry_run }}
+      run: |
+        set +e
+        args=()
+        [ -n "$INPUT_VERSION" ] && args+=(--version "$INPUT_VERSION")
+        # dispatch previews unless dry_run=false; the daily schedule always executes
+        if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ] && [ "$INPUT_DRY_RUN" != "false" ]; then
+          args+=(--dry-run)
+        fi
+        python3 ci/prepare-base-locks.py "${args[@]}"
+        echo "rc=$?" >> "$GITHUB_OUTPUT"
+
+    - name: Needs human
+      if: steps.prep.outputs.rc == '2'
+      run: |
+        echo "::error::prepare-base-locks needs a human (matrix change or recompile failure). Run workflows/upgrade-dependencies.md for this version."
+        exit 1
+
+    - name: Unexpected error
+      if: steps.prep.outputs.rc != '0' && steps.prep.outputs.rc != '2' && steps.prep.outputs.rc != '10'
+      run: |
+        echo "::error::prepare-base-locks exited ${{ steps.prep.outputs.rc }} (unexpected — likely a transient upstream/network error; the next scheduled run retries)."
+        exit 1
+
+    - name: Open the base-locks PR
+      if: steps.prep.outputs.rc == '10'
+      env:
+        GH_TOKEN: ${{ secrets.ANYSCALE_GH_TOKEN || github.token }}
+        V: ${{ steps.prep.outputs.version }}
+      run: |
+        branch="base-locks/ray-$V"
+        if gh pr list --state open --head "$branch" --json number --jq '.[0].number' | grep -q .; then
+          echo "A base-locks PR is already open for $branch — nothing to do."
+          exit 0
+        fi
+        git config user.name  "github-actions[bot]"
+        git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        git switch -c "$branch"
+        git add dependencies/
+        git commit -s \
+          -m "chore(deps): base locks for Ray $V" \
+          -m "Recompiled the ray_$V/rayllm_$V base locks so ray-bump-fanout can fire for $V."
+        git push -u origin "$branch"
+        gh pr create --base main --head "$branch" \
+          --title "[base-locks] Ray $V" \
+          --body "Automated base-lock recompile for Ray \`$V\` (the \`ray-base-locks\` workflow), so \`ray-bump-fanout\` can fire for it. Adds the \`$V\` \`build_arg_sets\` and the recompiled \`dependencies/depsets/ray_$V*\` / \`rayllm_$V*\` locks (matrix copied forward from the previous version; templates are untouched — each moves in its own fanout PR).
+
+        **Review + merge = the approval gate.** Then push \`ray-fanout-$V\` to start the fanout (ensure \`anyscale/ray:$V\` is also published first, or the per-template agents will stop at their image bump)."
+        gh pr edit "$branch" --add-label ray-update || true
