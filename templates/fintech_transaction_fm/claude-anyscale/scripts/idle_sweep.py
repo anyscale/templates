@@ -26,7 +26,12 @@ CLOUD = sys.argv[1] if len(sys.argv) > 1 else "aws-public-us-west-2"
 
 
 def sh(args):
-    return subprocess.run(args, capture_output=True, text=True).stdout
+    r = subprocess.run(args, capture_output=True, text=True)
+    if r.returncode != 0:
+        print(f"   ! command failed (exit {r.returncode}): {' '.join(args)}")
+        if r.stderr.strip():
+            print("   ! " + r.stderr.strip().replace("\n", "\n   ! "))
+    return r.stdout
 
 
 def is_gpu(it):
@@ -44,9 +49,12 @@ def uptime(ts):
 
 
 def main():
+    all_ws = json.loads(sh(["anyscale", "workspace_v2", "list", "--json",
+                            "--cloud", CLOUD]) or "[]")
     ws = json.loads(sh(["anyscale", "workspace_v2", "list", "--json",
                         "--state", "RUNNING", "--cloud", CLOUD]) or "[]")
-    print(f"=== idle-sweep DRY-RUN · {len(ws)} RUNNING workspace(s) in {CLOUD} · nothing modified ===\n")
+    print(f"=== idle-sweep DRY-RUN · scanned {len(all_ws)} workspace(s) in {CLOUD} "
+          f"· {len(ws)} RUNNING · nothing modified ===\n")
 
     would = flags = clean = 0
     for w in ws:
