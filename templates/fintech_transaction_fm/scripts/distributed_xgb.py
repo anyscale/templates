@@ -157,7 +157,12 @@ def main():
     if args.smoke:
         import tempfile
 
-        work = tempfile.mkdtemp(prefix="distxgb_smoke_")
+        # Smoke data must be visible to EVERY node: a head-local tempdir
+        # 404s the read tasks on multi-node clusters (found the hard way).
+        if os.path.isdir("/mnt/cluster_storage"):
+            work = tempfile.mkdtemp(prefix="distxgb_smoke_", dir="/mnt/cluster_storage")
+        else:
+            work = tempfile.mkdtemp(prefix="distxgb_smoke_")
         emb_path = os.path.join(work, "embeddings.parquet")
         make_smoke_parquet(emb_path)
         out_dir = args.output_dir or os.path.join(work, "out")
