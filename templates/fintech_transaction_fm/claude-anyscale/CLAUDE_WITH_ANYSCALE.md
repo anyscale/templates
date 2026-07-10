@@ -235,7 +235,7 @@ time:
 - **`workspace_v2 ssh -n <name>` resolves inside your *default* cloud/project**, not the org. If
   the workspace lives in another cloud, name lookup fails even though `list` shows it. **Fix: SSH
   by `--id expwrk_...`** (bypasses scoping), or pass `--cloud`. Port-forward TensorBoard from the
-  workspace with `--id ... -- -L 38399:localhost:38399`, and run the tunnel on your laptop.
+  workspace with `--id ... -- -L 6006:localhost:6006`, and run the tunnel on your laptop.
 - **GPU worker groups: advertise `resources: {CPU: 0}`** so CPU-heavy stages can't scale them up —
   but keep ≥1 CPU-capable group (the head is CPU:0 too, and data-plane tasks need CPU:1 somewhere).
 - **The autoscaler scales on pending logical resource requests, not utilization.**
