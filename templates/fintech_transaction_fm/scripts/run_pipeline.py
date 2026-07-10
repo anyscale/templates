@@ -275,7 +275,9 @@ def main():
     else:
         from src.downstream import print_summary, run_downstream
 
-        print_summary(run_downstream(paths["embeddings"], paths["downstream"]))
+        print_summary(
+            run_downstream(paths["embeddings"], paths["downstream"], raw_path=paths["raw"])
+        )
 
     # Second consumer of the same backbone: next-merchant recommendation. Needs
     # the learned merchant vocab + InfoNCE head, so it's skipped on the hashed

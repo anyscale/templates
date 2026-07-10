@@ -253,7 +253,7 @@ Two evaluation paths exist, and it matters which one you're looking at:
 ```python
 from src.downstream import run_downstream, print_summary
 
-summary = run_downstream(paths["embeddings"], paths["downstream"])
+summary = run_downstream(paths["embeddings"], paths["downstream"], raw_path=paths["raw"])
 print_summary(summary)
 ```
 
