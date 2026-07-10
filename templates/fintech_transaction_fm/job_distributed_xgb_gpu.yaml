@@ -1,0 +1,29 @@
+# Device-parity run: distributed XGBoost on 4x A10G (device=cuda), compared
+# against the CUDA-trained single-node record. CPU runs sit ~0.04 below the
+# record with distribution ruled out (1-worker control matched 4-worker) —
+# the campaign's documented CPU/CUDA sensitivity at xl. This is the
+# apples-to-apples verdict. Head stays m5.4xlarge: still no 128GB anywhere.
+name: fintech-fm-distributed-xgb-gpu
+entrypoint: >-
+  BASE=/mnt/user_storage/transaction-fm-v2 &&
+  python scripts/distributed_xgb.py --base-dir $BASE --run xl_fulltest
+  --num-workers 4 --gpu
+  --output-dir $BASE/downstream/xl_fulltest_distxgb_gpu
+working_dir: .
+requirements: requirements.txt
+compute_config:
+  cloud: aws-public-us-west-2
+  head_node:
+    instance_type: m5.4xlarge
+  worker_nodes:
+    - name: gpu-1x
+      instance_type: g5.xlarge
+      min_nodes: 0
+      max_nodes: 4
+      resources:
+        CPU: 0    # GPU nodes invisible to CPU-only tasks (reads/scoring go to cpu-workers)
+    - name: cpu-workers
+      instance_type: m5.4xlarge
+      min_nodes: 0
+      max_nodes: 2
+max_retries: 1

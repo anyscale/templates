@@ -105,6 +105,7 @@ class Scorer:
 
         self.bst = xgb.Booster()
         self.bst.load_model(model_path)
+        self.bst.set_param({"device": "cpu"})  # score on CPU even if CUDA-trained
         self.it_range = (0, best_iteration + 1) if best_iteration is not None else None
 
     def __call__(self, batch: dict) -> dict:
@@ -143,6 +144,9 @@ def main():
     p.add_argument("--output-dir", default=None)
     p.add_argument("--num-workers", type=int, default=4)
     p.add_argument("--cpus-per-worker", type=int, default=4)
+    p.add_argument("--gpu", action="store_true",
+                   help="train on CUDA (1 GPU/worker) — device parity with the "
+                        "single-node run of record, which was CUDA-trained")
     p.add_argument("--smoke", action="store_true",
                    help="self-contained synthetic run; no artifacts needed")
     args = p.parse_args()
@@ -188,7 +192,15 @@ def main():
               for s in ("train", "val", "test")}
 
     params, num_boost_round, early_stopping_rounds = native_params(XGB_PARAMS_EMBED)
-    params["nthread"] = args.cpus_per_worker
+    if args.gpu:
+        # Device parity matters: the campaign's pinned-eval episode measured
+        # a ~0.05 AP swing at xl from a CPU/CUDA flip alone. Compare CUDA
+        # against the CUDA-trained record, CPU against a CPU control.
+        params["device"] = "cuda"
+        worker_resources = {"GPU": 1, "CPU": 0}
+    else:
+        params["nthread"] = args.cpus_per_worker
+        worker_resources = {"CPU": args.cpus_per_worker}
     run_name = f"distxgb_{args.run}_{time.strftime('%Y%m%d-%H%M%S')}"
     trainer = XGBoostTrainer(
         train_func,
@@ -199,7 +211,8 @@ def main():
         },
         scaling_config=ScalingConfig(
             num_workers=num_workers,
-            resources_per_worker={"CPU": args.cpus_per_worker},
+            use_gpu=args.gpu,
+            resources_per_worker=worker_resources,
         ),
         datasets={"train": splits["train"], "val": splits["val"]},
         # Shard ONLY train. Distributed xgboost averages per-shard eval
