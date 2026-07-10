@@ -362,9 +362,28 @@ it, with the blind slices quantified."
 The mechanism, stated plainly:
 
 - **Experiments are job submissions.** New question → new YAML → `anyscale
-  job submit -f`. No infra edits, no cluster to keep warm, no queue to
-  negotiate. The three context lengths ran as three parallel jobs against
-  the same code.
+  job submit -f`. No infra edits, no cluster to keep warm — and no special
+  hardware carve-out either: these jobs landed in the same Anyscale queue as
+  the rest of the team's work, on the same finite pool of cloud quota. The
+  velocity came from the scheduler multiplexing capacity that happened to be
+  idle — the platform turns "nobody's using the GPUs right now" into
+  something one person can actually exploit, without negotiating for a
+  reservation. And in a busier production environment the same move still
+  works, because the queueing infra already exists: Anyscale job queues take
+  a `priority` per job, so a research campaign like this one would submit
+  low-priority and soak up whatever the daytime workloads leave idle —
+  saturating the fleet overnight and yielding the moment something more
+  important shows up. (On reserved capacity, Anyscale's scheduler can go
+  further and *preempt* a running low-priority job for a higher-priority
+  one.) And getting preempted is a fine outcome here, because the
+  checkpointing described above bounds what yielding costs: the embedding
+  stage resumes mid-dataset from its row-level manifest — which survives
+  failure and cancellation by design — and pretraining picks up from the
+  last epoch checkpoint, the same resume plumbing our 20→40-epoch
+  continuation exercised on purpose. Preemption costs you minutes of
+  recomputation, not the night. Nothing about the campaign's shape would
+  change; only one block in the YAML. The three context lengths ran as
+  three parallel jobs against the same code.
 - **Stages are decoupled through shared storage.** Every stage persists to
   `/mnt/user_storage`; eval-only questions (pinned env, fulltest, per-epoch
   probe, paired bootstrap) never paid for retraining.
