@@ -20,6 +20,24 @@ notice), `/schedule` (cadence).
 > `min_nodes: 0`. The owner returns to their exact setup, and the first job they launch autoscales a
 > GPU worker back. The only thing that stops costing money is the GPU that was sitting there idle.
 
+## Status — what's actually been run (not just described)
+
+The detection + dry-run half is real and verified — [`../scripts/idle_sweep.py`](../scripts/idle_sweep.py),
+run read-only against a live org (`aws-public-us-west-2`):
+
+- ✅ **Detection works on real workspaces.** It read 5 running workspaces' inline compute configs
+  (`workspace_v2 list/get --json`), classified GPU vs CPU nodes, and surfaced **2 real GPU-head
+  nodes** (a `g5.8xlarge` and a `g4dn.xlarge` head) — plus 3 clean.
+- ✅ **The workspace→config linkage is solved** — `workspace_v2 get --json --verbose` returns the
+  full inline `config.compute_config`, so no guesswork mapping a workspace to what to edit.
+- ✅ **The "would scale to zero" apply commands are generated** (dry-run, printed, nothing applied).
+- ⛔ **Not yet wired:** the `ray status`/`nvidia-smi` probe that confirms *actually idle right now*
+  (the script currently flags on config + uptime, which is **not** the same as idle), and running
+  the apply (it restarts the workspace — stays gated).
+
+So: the "which workspaces, whose, what to change" brain is proven on real data; the live idle-check
+and the enforce are the remaining pieces, and they need a running box you own + an explicit go.
+
 ---
 
 ## Config knobs
