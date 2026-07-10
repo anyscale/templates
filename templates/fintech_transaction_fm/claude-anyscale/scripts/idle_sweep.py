@@ -54,9 +54,9 @@ def uptime(ts):
 
 
 def main():
-    all_ws = json.loads(sh(["anyscale", "workspace_v2", "list", "--json",
+    all_ws = json.loads(sh(["anyscale", "workspace_v2", "list", "--no-interactive", "--json",
                             "--cloud", CLOUD]) or "[]")
-    ws = json.loads(sh(["anyscale", "workspace_v2", "list", "--json",
+    ws = json.loads(sh(["anyscale", "workspace_v2", "list", "--no-interactive", "--json",
                         "--state", "RUNNING", "--cloud", CLOUD]) or "[]")
     print(f"=== idle-sweep DRY-RUN · scanned {len(all_ws)} workspace(s) in {CLOUD} "
           f"· {len(ws)} RUNNING · nothing modified ===\n")
