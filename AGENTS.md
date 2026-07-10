@@ -20,6 +20,8 @@ Per-template tests — comment `/test-template <id> [<id>...]` (up to 3, paralle
 
 Tested vs archived — every template under `templates/` must have a `test` block (the `ci/validate_build_yaml.py` gate enforces it). Untested content lives in `archive/` (test-exempt, not built or surfaced in the gallery): *retire* a stale template, or publish an event template *without the test gate* (urgent fix). Procedures: the `/template` skill's `workflows/archive-template.md` and the "Publish without the test gate" section of `references/publish-to-backend.md`.
 
+Publish to prod — after a Ray-bump fanout, `/template`'s `workflows/publish-ray-bump-fanout.md` publishes the merged templates via a Claude agent team: a leader reviews + lands the bump PRs, then fans out worker agents (≤8 each) driving each through the `tmpl-publish` pipeline — retrying transient/infra failures, skipping genuine ones for human review. Pipeline mechanics + failure triage: `references/publish-to-backend.md`.
+
 PR labels (apply all that fit):
 - `cursor-cloud` — origin: Cursor Cloud agent.
 - `ray-update` — content: Ray version bump.

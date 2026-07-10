@@ -17,6 +17,7 @@ Invoked bare (just `/template`) by a human — i.e. **not** the ray-bump automat
 - **Update** content/config, no Ray bump → `workflows/update-template.md`
 - **Ray-version bump** (non-interactive) → `workflows/bump-ray-version.md`
 - **Upgrade locked dependencies** (recompile depsets for a new Ray version) → `workflows/upgrade-dependencies.md`
+- **Publish a Ray-bump fanout** to prod (agent team, once the per-template bump PRs exist) → `workflows/publish-ray-bump-fanout.md`
 - **Archive** a retired or past-event template → `workflows/archive-template.md`
 
 Supporting: `references/conventions.md` · `references/dependencies.md` · `references/testing-template.md` · `references/publish-to-backend.md` · `references/run-tests-locally-with-rayapp.md` · `schemas/build-yaml-schema.yaml` · `schemas/compute-config-schema.yaml` · `.claude/skills/template/scripts/push-custom-image-to-gcp.sh`.
