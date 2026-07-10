@@ -490,6 +490,129 @@ class TransactionFMService:
 Same model artifact, same repo, no export step between "research checkpoint"
 and "service."
 
+## Where the fusion path goes at scale: late vs joint fusion
+
+Everything above is **late fusion**: pretrain the FM once, freeze it, batch-
+extract embeddings, and train a cheap tabular model (XGBoost) on embeddings ⊕
+raw features. That's NVIDIA's design and ours — and it's worth being explicit
+that the *other* design exists, because [Nubank](https://blog.bytebytego.com/p/how-nubank-uses-ai-models-to-analyze)
+(the largest published deployment of this pattern, trillions of transactions
+across 100M+ users) reports moving to **joint fusion**: the transformer trained end-to-end with a
+DCNv2 tabular tower, so the embedding co-adapts to the downstream task instead
+of being frozen at whatever the pretext objective left behind.
+
+The infrastructure consequence is the interesting part, and our own job
+configs contain the foreshadowing. Late fusion at production scale is a
+**data problem**: the recurring batch-embed job, a distributed embedding⊕
+tabular join, leak-safe encoders fit on train only — and eventually a
+distributed XGBoost, because the driver-resident feature matrix is the first
+thing that breaks. Our fulltest job already had to specify a 128GB head node
+to hold a 3.55M×512 matrix in driver memory — and removing that wall is not a
+rewrite, it's swapping the sink. Distributing the *feature construction*
+alone doesn't help (the rows still funnel into one machine's RAM at fit
+time); the fix is distributing the trainer itself:
+
+```python
+# scripts/distributed_xgb.py — no node ever holds the full matrix
+def train_func(config):
+    dtrain = shard_matrix("train")   # THIS worker's shard only
+    dval = shard_matrix("val")       # replicated — see the war story below
+    xgboost.train(config["params"], dtrain, evals=[(dval, "val")],
+                  num_boost_round=435, early_stopping_rounds=20,
+                  callbacks=[RayTrainReportCallback()])
+
+trainer = XGBoostTrainer(
+    train_func,
+    scaling_config=ScalingConfig(num_workers=4, use_gpu=True),
+    datasets={"train": train_ds, "val": val_ds},
+    # shard ONLY train; every worker needs the same global val signal
+    dataset_config=ray.train.DataConfig(datasets_to_split=["train"]),
+)
+```
+
+We ran it, and it measures properly: on the xl (1024-context) fulltest
+embeddings, the distributed variant lands at **AP 0.3139 — inside the
+single-node run's bootstrap 95% CI [0.2849, 0.3201]** (point 0.3027), on an
+m5.4xlarge head. The eval scales with worker count, not driver RAM. It ships
+as the scale-out variant alongside the protocol-faithful single-node path
+(distributed hist doesn't grow bit-identical trees), and getting to "inside
+the CI" took exactly the discipline the harness encodes — two instructive
+failures first:
+
+1. **Sharded validation poisons early stopping.** By default Ray Train
+   shards *every* dataset; distributed XGBoost averages per-shard eval
+   metrics, so each worker early-stopped against a val shard holding as few
+   as **12 frauds**. The run "succeeded" at AP 0.264 — the CI verdict, not
+   the exit code, is what caught it. The `datasets_to_split=["train"]` line
+   above is the fix.
+2. **Device is a treatment effect.** With val fixed, CPU-trained runs
+   (0.281 distributed, 0.260 single-worker control — distribution
+   exonerated) still sat below the CUDA-trained record, reproducing the
+   ~0.05-AP CPU/CUDA sensitivity the campaign had already documented at
+   this context length. Compare like with like: the CUDA-vs-CUDA run is the
+   one that verdicts INSIDE. Joint
+fusion at production scale is a **training problem that is also a data
+problem**: token sequences and tabular features co-streamed per batch into a
+multi-tower torch model on DDP — which is *exactly* the Ray Data →
+`get_dataset_shard` → `iter_torch_batches` pattern our pretraining already
+uses, with a second input branch and a supervised loss. The pipeline you build
+for late fusion is the pipeline you graduate to joint fusion with.
+
+<details>
+<summary><b>Explainer: late vs joint fusion — the actual tradeoff</b></summary>
+
+**Late fusion** = frozen embeddings + GBDT. Its superpower is *organizational
+decoupling*: one pretrain amortizes across every downstream team (Nubank runs
+a centralized model repository for exactly this — embedding-only consumers
+never touch the trainer). The embedding is a stable interface; downstream
+iteration is a CPU XGBoost retrain measured in minutes; serving is a cached
+vector plus a tiny tree model. On rare-label problems (fraud at 0.1%
+prevalence) the frozen encoder also can't overfit the labels, because it
+never sees them.
+
+Its pathology is the one our results post documents at length: **the
+embedding was optimized for a pretext task, not your task, and whatever the
+readout throws away is unrecoverable.** Our "readout is where FM signal goes
+to die" lesson — mean-pooling, PCA compression, wrong-position extraction —
+is a late-fusion disease specifically. The GBDT can't send a gradient back to
+say "keep the burst structure, drop the merchant trivia." Nubank's phrasing:
+components train separately with limited synergy.
+
+**Joint fusion** = transformer + tabular tower (DCNv2: learned feature
+crosses, the recsys workhorse) trained end-to-end on the downstream label.
+The task gradient reaches the encoder, which dissolves the readout problem at
+the root — the model *learns* what state to expose. The costs are the mirror
+image: every task now owns a GPU training loop instead of a CPU fit; the
+shared-embedding amortization weakens (teams fine-tune variants instead of
+consuming one artifact); serving means running the transformer in the request
+path per task, not looking up a cached vector; and with 0.1% positive labels,
+an end-to-end model needs care (balanced sampling, frozen-then-unfreeze
+schedules, adapters) that a frozen-embedding GBDT simply doesn't.
+
+And one cost that matters specifically for a multi-consumer backbone: **the
+task gradient that fixes the readout also specializes the encoder.** Fine-tune
+jointly on fraud and the representation reshapes for fraud — the same weights
+get *worse* as a recommendation backbone, and vice versa. "One backbone, two
+consumers" is a late-fusion property. This is why a shared-repository model
+(Nubank's "embedding-only models or blended variants") forks the encoder for
+joint-fusion consumers rather than mutating the shared trunk — and why the
+in-between options (multi-task joint training with its task-weighting
+battles, adapters on a frozen trunk, distilling a joint model's gains back
+into the shared embedding) are an active design space rather than a solved
+menu.
+
+The pragmatic sequence most shops follow — and the reason the late-fusion
+pipeline isn't throwaway work: start late (cheap, decoupled, benchmarkable),
+use it to *prove the embedding carries signal* (our campaign, in one clause),
+then graduate the highest-value task to joint fusion while everyone else
+keeps consuming the frozen embedding. Infrastructure-wise the graduation is
+incremental: the batch-embed job keeps running for the late-fusion consumers,
+and the joint trainer reuses the same tokenized datasets, the same streaming
+pattern, and the same cluster shapes as pretraining. That's the real
+argument for building the data layer on one substrate: the fusion strategy
+can change without the pipeline changing.
+</details>
+
 ## What we're *not* claiming
 
 Honesty section, mirroring the results post's ethos. NVIDIA's single-GPU

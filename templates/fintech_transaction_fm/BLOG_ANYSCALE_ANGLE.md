@@ -141,3 +141,10 @@ job, so the unit of iteration was an hour."**
   0→8 ramp during fulltest, Serve replica scaling (nice-to-have).
 - [ ] Confirm RayTurbo numba hash-shuffle detail is safe to publish as
   Anyscale-runtime-specific.
+- [x] Distributed-XGB scale-out variant — DONE 2026-07-10 on the research
+  branch (`scripts/distributed_xgb.py` + 3 job yamls). Verified: CUDA-dist
+  AP 0.3139 INSIDE the single-node CI [0.2849, 0.3201]
+  (prodjob_3by9j9fjbzmimt553tbwvzpx61), m5.4xlarge head. War stories in the
+  draft: sharded-val early stopping (run 1, 0.2642) and the CPU/CUDA device
+  effect reproduced (0.2806 vs 1-worker control 0.2598). Blog section
+  updated with real code + receipts.
