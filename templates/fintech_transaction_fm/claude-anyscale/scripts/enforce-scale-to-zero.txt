@@ -1,40 +1,49 @@
-You are given the name of ONE Anyscale workspace that has a hardcoded (pinned) GPU worker
-group — a worker group with a GPU instance type and min_nodes > 0. The name is in the
-environment variable $TEST_WORKSPACE, in cloud aws-public-us-west-2.
+You are given the name of ONE Anyscale workspace with a pinned GPU worker group (a GPU
+instance type with min_nodes > 0). The name is in $TEST_WORKSPACE, cloud aws-public-us-west-2.
 
-Your job: update THAT workspace's compute config so the GPU worker group autoscales from zero
-— set min_nodes = 0 and keep max_nodes exactly as it is now (0 → current max). Change nothing
-else. Be terse; log every command you run and its full output.
+Goal: make that GPU worker group scale to zero — set min_nodes = 0, keep max_nodes as-is,
+change NOTHING else. On Anyscale a RUNNING workspace cannot have its compute config changed,
+so this is a real terminate -> update -> start (~3-5 min restart). Be terse; log every
+command and its output.
 
 ABSOLUTE RULES:
-  - Operate on ONLY the workspace whose name == $TEST_WORKSPACE. Never touch another workspace.
-  - NEVER terminate or delete anything. Compute-config change + workspace update only.
-  - Change ONLY min_nodes (-> 0) on the GPU worker group(s). Keep max_nodes, instance types,
-    head node, market/spot type, group names — everything else — byte-for-byte identical.
-  - If you are unsure of exact CLI flags/format, run `anyscale compute-config -h`,
-    `anyscale compute-config create -h`, and `anyscale workspace_v2 update -h` FIRST.
-    Do not assume syntax — this CLI is anyscale >= 0.26.
+  - Operate ONLY on the workspace whose name == $TEST_WORKSPACE. Never touch another.
+  - Change ONLY min_nodes (-> 0) on GPU worker group(s). Keep everything else identical:
+    head node, instance types, max_nodes, market type, group names, image, env, flags.
+  - You MUST run validate_config_diff.py and see "PASS" BEFORE you terminate/update anything.
+    If it prints any BAD line or FAIL, STOP and report — change nothing.
+  - Never delete a workspace. (terminate here = stop the cluster; the workspace itself
+    persists and /mnt storage survives.)
 
 STEPS:
-1. Resolve the workspace by name -> id + current compute config:
+
+1. RESOLVE — find the workspace, read its live compute config AND image:
      anyscale workspace_v2 list --no-interactive --json --cloud aws-public-us-west-2
-   Find the single entry whose name == $TEST_WORKSPACE. If zero or more than one match, STOP
-   and report — change nothing. Then read its config:
+       -> the single entry whose name == $TEST_WORKSPACE; note its id. Zero or >1 -> STOP.
      anyscale workspace_v2 get --id <id> --json --verbose
-   The compute config is at config.compute_config (head_node, worker_nodes[]).
+       -> config.compute_config (inline: head_node, worker_nodes[]) and config.image_uri.
+          RECORD image_uri — you must pass it back on update (step 4) or update fails with
+          "both the build ID and compute template ID must be provided".
 
-2. Identify the GPU worker group(s) with min_nodes > 0. GPU instance families on AWS:
-   g*, p*, inf*, trn*. Print the current min_nodes/max_nodes for each before changing.
+2. BUILD — write autozero.json = the live compute_config copied verbatim, with min_nodes set
+   to 0 on the GPU worker group(s) only (GPU families: g*, p*, inf*, trn*). JSON is valid
+   YAML, so a .json file works with -f.
 
-3. Build a new compute config IDENTICAL to the current one except min_nodes: 0 on those GPU
-   worker group(s) (max_nodes unchanged). Register it and point the workspace at it:
-     anyscale compute-config create -n <workspace>-autozero -f <new-config-file>
-     anyscale workspace_v2 update --id <id> --compute-config <workspace>-autozero
-   (Use the ACTUAL flags/format from the -h output above.)
+3. VALIDATE (required gate — do not skip):
+     python3 validate_config_diff.py <id> autozero.json
+   Proceed ONLY on "PASS" (exit 0). Any BAD line / FAIL -> STOP, report, change nothing.
 
-4. Verify: re-run `anyscale workspace_v2 get --id <id> --json --verbose` and confirm the GPU
-   group(s) now show min_nodes: 0 with max_nodes unchanged and nothing else differs. Print a
-   short before/after: group name, min_nodes N->0, max_nodes (unchanged).
+4. APPLY — terminate, update, start. Each must succeed before the next:
+     anyscale workspace_v2 terminate --id <id>
+     anyscale workspace_v2 wait --id <id> --state TERMINATED --timeout-s 480
+     anyscale compute-config create -n <name>-autozero -f autozero.json
+     anyscale workspace_v2 update <id> --compute-config <name>-autozero --image-uri <image_uri>
+     anyscale workspace_v2 start --id <id>
+     anyscale workspace_v2 wait --id <id> --state RUNNING --timeout-s 600
 
-NOTE: applying a new compute config re-provisions the workspace — it WILL restart. That is
-expected and fine for this test box (/mnt storage persists).
+5. VERIFY:
+     anyscale compute-config get <name>-autozero
+   Confirm the GPU group shows min_nodes: 0 with max_nodes unchanged and nothing else changed.
+   Print a short before/after (group name, min N->0, max unchanged) and the final state.
+
+Verified against anyscale 0.26 on 2026-07-10 (gpu-worker-workspace: g4dn.xlarge min 1->0).
