@@ -202,6 +202,12 @@ def main():
             resources_per_worker={"CPU": args.cpus_per_worker},
         ),
         datasets={"train": splits["train"], "val": splits["val"]},
+        # Shard ONLY train. Distributed xgboost averages per-shard eval
+        # metrics, so a sharded val (a few dozen frauds per worker) makes the
+        # early-stopping AUC noise — the first run stopped at round 42 and
+        # landed 0.26 AP vs single-node 0.30. Replicating val (~200MB) gives
+        # every worker the same global signal the single-node protocol used.
+        dataset_config=ray.train.DataConfig(datasets_to_split=["train"]),
         run_config=RunConfig(name=run_name, storage_path=storage_path),
     )
     result = trainer.fit()
