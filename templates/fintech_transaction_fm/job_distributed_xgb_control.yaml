@@ -1,0 +1,24 @@
+# Control for the distributed-XGB variant: SAME script, SAME CPU, ONE worker.
+# Isolates "distributed" as the only variable vs the 4-worker run. Context:
+# 4-worker CPU landed AP 0.2806 vs the single-node-of-record 0.3027 — but the
+# record was trained on CUDA, and the campaign's pinned-eval episode showed a
+# CPU/CUDA flip moves the xl point by ~0.05 AP. If 1-worker CPU ~= 4-worker
+# CPU, the residual gap is the known device effect, not distribution.
+name: fintech-fm-distributed-xgb-control
+entrypoint: >-
+  BASE=/mnt/user_storage/transaction-fm-v2 &&
+  python scripts/distributed_xgb.py --base-dir $BASE --run xl_fulltest
+  --num-workers 1 --cpus-per-worker 8
+  --output-dir $BASE/downstream/xl_fulltest_distxgb_ctrl1w
+working_dir: .
+requirements: requirements.txt
+compute_config:
+  cloud: aws-public-us-west-2
+  head_node:
+    instance_type: m5.4xlarge
+  worker_nodes:
+    - name: cpu-workers
+      instance_type: m5.4xlarge
+      min_nodes: 0
+      max_nodes: 1
+max_retries: 1
