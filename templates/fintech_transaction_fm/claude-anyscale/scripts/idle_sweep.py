@@ -19,18 +19,23 @@ STILL STUBBED ON PURPOSE (needs a live box / explicit go):
 
 Usage: python3 idle_sweep.py <cloud-name>
 """
-import subprocess, sys, json
+import subprocess, sys, json, os
 from datetime import datetime, timezone
 
 CLOUD = sys.argv[1] if len(sys.argv) > 1 else "aws-public-us-west-2"
+VERBOSE = os.environ.get("VERBOSE", "1").lower() not in ("0", "", "false", "no")
 
 
 def sh(args):
+    if VERBOSE:
+        print("   $ " + " ".join(args))
     r = subprocess.run(args, capture_output=True, text=True)
     if r.returncode != 0:
         print(f"   ! command failed (exit {r.returncode}): {' '.join(args)}")
         if r.stderr.strip():
             print("   ! " + r.stderr.strip().replace("\n", "\n   ! "))
+    elif VERBOSE:
+        print(f"   > exit 0, {len(r.stdout)} bytes stdout")
     return r.stdout
 
 
