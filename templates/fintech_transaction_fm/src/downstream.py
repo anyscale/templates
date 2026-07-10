@@ -274,24 +274,25 @@ def _lifts(results: dict) -> dict:
     return out
 
 
-def run_downstream(embeddings_path: str, output_dir: str, raw_path: str | None = None) -> dict:
+def run_downstream(embeddings_path: str, output_dir: str, raw_path: str) -> dict:
     """Train + evaluate raw/fm/fusion for one model; persist a metrics summary.
 
-    ``raw_path`` (the raw transactions parquet) enables the full ~13-feature
-    NVIDIA-style baseline via join. If omitted, falls back to the 4 fields the
-    embeddings carry (amount, hour, dow, mcc) — weaker, kept for compatibility.
+    ``raw_path`` (the raw transactions parquet) is required — it supplies the
+    full ~13-feature NVIDIA-style baseline via join. (There used to be a
+    4-feature fallback when it was omitted; that produced a crippled baseline
+    and invalid comparisons, so it's gone.)
     """
+    if not raw_path:
+        raise ValueError(
+            "raw_path is required: without the raw transactions parquet the "
+            "baseline degrades to 4 features and the raw/fm/fusion comparison "
+            "is invalid."
+        )
     d = _load_sorted(embeddings_path, want_fm=True)
     masks = _masks(d["split_code"])
     y, w, X_fm = d["y"], d["w"], d["X_fm"]
 
-    if raw_path:
-        X_raw, raw_feats = _join_raw_features(d["cid"], d["ts"], y, raw_path, masks["train"])
-    else:
-        X_raw = np.column_stack(
-            [np.sign(d["amt"]) * np.log1p(np.abs(d["amt"])), d["hour"], d["dow"], d["mcc"]]
-        ).astype(np.float32)
-        raw_feats = ["log_amount", "hour", "day_of_week", "mcc"]
+    X_raw, raw_feats = _join_raw_features(d["cid"], d["ts"], y, raw_path, masks["train"])
 
     feature_sets = {
         "raw": lambda m: X_raw[m],

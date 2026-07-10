@@ -144,7 +144,7 @@ def main():
             batch_size=e["batch_size"],
             gpus_per_worker=e.get("gpus_per_worker"),
         )
-        summary = run_downstream(emb_dir, out_dir)
+        summary = run_downstream(emb_dir, out_dir, raw_path=paths["raw"])
         row = {"epoch": epoch}
         for name, r in summary["results"].items():
             row[f"{name}_auc_roc"] = r["auc_roc"]
