@@ -1,22 +1,22 @@
 #!/usr/bin/env python3
 """
-Idle-workspace autoscaler — DETECTION + DRY-RUN APPLY (read-only; nothing is modified).
+Idle-workspace sweep — DETECTION ONLY (read-only; this script never mutates anything).
 
 Companion to ../recipes/slack-idle-workspace-sweep.md. For every RUNNING workspace in a
-cloud it reads the inline compute config (`workspace_v2 get --json --verbose`), flags PINNED
-GPU worker groups (GPU instance + min_nodes > 0) and GPU HEAD nodes, and prints the exact
-`compute-config create` / `workspace_v2 update` commands that WOULD scale a pinned workspace
-to zero.
+cloud it reads the inline compute config (`workspace_v2 get --json --verbose`) and flags
+PINNED GPU worker groups (GPU instance + min_nodes > 0) and GPU HEAD nodes.
 
-Verified read-only against a real org (aws-public-us-west-2): correctly classified 5 running
-workspaces, surfaced 2 real GPU-head nodes. The GPU-worker "WOULD scale to zero" branch is
-exercised by unit logic but hadn't hit a real pinned case at the time of writing.
+Verified read-only against aws-public-us-west-2 (2026-07-10): scanned 10 workspaces, 4
+running, correctly flagged distill-dev's g5.8xlarge GPU head.
 
-STILL STUBBED ON PURPOSE (needs a live box / explicit go):
-  - the ray-status/nvidia-smi probe that confirms it's *actually idle right now*
-    (this script flags on config + uptime, which is NOT the same as idle)
-  - actually running the apply commands (they restart the workspace; keep gated)
+The actual scale-to-zero enforce is deliberately NOT here — it lives in an isolated,
+single-workspace Claude prompt (../scripts/enforce-scale-to-zero.txt), so this detection
+tool stays pure read-only.
 
+STILL STUBBED: the ray-status/nvidia-smi probe that confirms *actually idle right now*
+(this flags on config + uptime, which is NOT the same as idle).
+
+Env: VERBOSE (default 1).
 Usage: python3 idle_sweep.py <cloud-name>
 """
 import subprocess, sys, json, os

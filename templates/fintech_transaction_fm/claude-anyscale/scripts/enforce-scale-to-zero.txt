@@ -1,0 +1,40 @@
+You are given the name of ONE Anyscale workspace that has a hardcoded (pinned) GPU worker
+group — a worker group with a GPU instance type and min_nodes > 0. The name is in the
+environment variable $TEST_WORKSPACE, in cloud aws-public-us-west-2.
+
+Your job: update THAT workspace's compute config so the GPU worker group autoscales from zero
+— set min_nodes = 0 and keep max_nodes exactly as it is now (0 → current max). Change nothing
+else. Be terse; log every command you run and its full output.
+
+ABSOLUTE RULES:
+  - Operate on ONLY the workspace whose name == $TEST_WORKSPACE. Never touch another workspace.
+  - NEVER terminate or delete anything. Compute-config change + workspace update only.
+  - Change ONLY min_nodes (-> 0) on the GPU worker group(s). Keep max_nodes, instance types,
+    head node, market/spot type, group names — everything else — byte-for-byte identical.
+  - If you are unsure of exact CLI flags/format, run `anyscale compute-config -h`,
+    `anyscale compute-config create -h`, and `anyscale workspace_v2 update -h` FIRST.
+    Do not assume syntax — this CLI is anyscale >= 0.26.
+
+STEPS:
+1. Resolve the workspace by name -> id + current compute config:
+     anyscale workspace_v2 list --no-interactive --json --cloud aws-public-us-west-2
+   Find the single entry whose name == $TEST_WORKSPACE. If zero or more than one match, STOP
+   and report — change nothing. Then read its config:
+     anyscale workspace_v2 get --id <id> --json --verbose
+   The compute config is at config.compute_config (head_node, worker_nodes[]).
+
+2. Identify the GPU worker group(s) with min_nodes > 0. GPU instance families on AWS:
+   g*, p*, inf*, trn*. Print the current min_nodes/max_nodes for each before changing.
+
+3. Build a new compute config IDENTICAL to the current one except min_nodes: 0 on those GPU
+   worker group(s) (max_nodes unchanged). Register it and point the workspace at it:
+     anyscale compute-config create -n <workspace>-autozero -f <new-config-file>
+     anyscale workspace_v2 update --id <id> --compute-config <workspace>-autozero
+   (Use the ACTUAL flags/format from the -h output above.)
+
+4. Verify: re-run `anyscale workspace_v2 get --id <id> --json --verbose` and confirm the GPU
+   group(s) now show min_nodes: 0 with max_nodes unchanged and nothing else differs. Print a
+   short before/after: group name, min_nodes N->0, max_nodes (unchanged).
+
+NOTE: applying a new compute config re-provisions the workspace — it WILL restart. That is
+expected and fine for this test box (/mnt storage persists).
