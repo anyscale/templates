@@ -3,6 +3,14 @@
 Regenerate the templates' locked Python deps (`templates/<name>/python_depset.lock`) against a new
 Ray version by adding a `build_arg_set` for that version and recompiling with `raydepsets`.
 
+**Base locks are mostly automated.** The `ray-base-locks` GitHub Action (`.github/workflows/ray-base-locks.yaml`
++ `ci/prepare-base-locks.py`) recompiles the *base* locks for a new Ray version and opens a PR as soon as
+Ray publishes that version's `deplocks/`, copying the current `(py, cuda)` matrix forward. Run this manual
+procedure when that job reports **needs human** — Ray changed the matrix (a py/cuda added, dropped, or moved),
+so the copy-forward can't apply — or for a whole-repo dependency change. Base locks are only half the job
+either way: repointing each template's `python_depset.lock` is the per-template fanout's work
+(`bump-ray-version.md`).
+
 **Pairs with the image bump.** A template's image Ray version and the Ray version its
 `python_depset.lock` was compiled against must match — run this alongside
 `bump-ray-version.md`, not instead of it. System details: `../references/dependencies.md`.
