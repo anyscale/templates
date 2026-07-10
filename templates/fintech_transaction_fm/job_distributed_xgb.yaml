@@ -1,0 +1,23 @@
+# Scale-out fusion variant: distributed XGBoost (embed_xgb) on the xl (seq
+# 1024) full-test-period embeddings. The single-node run of record needed a
+# 128GB head (job_fulltest.yaml) to hold the 3.55M x 512 matrix; this trains
+# the same recipe data-parallel on plain m5.4xlarge nodes — no node ever
+# holds the full matrix. Prints AP/ROC vs the single-node bootstrap CI.
+name: fintech-fm-distributed-xgb
+entrypoint: >-
+  BASE=/mnt/user_storage/transaction-fm-v2 &&
+  STAMP=$(date +%s) &&
+  if [ -e $BASE/downstream/xl_fulltest_distxgb ]; then mv $BASE/downstream/xl_fulltest_distxgb $BASE/downstream/xl_fulltest_distxgb_old_$STAMP; fi &&
+  python scripts/distributed_xgb.py --base-dir $BASE --run xl_fulltest --num-workers 4
+working_dir: .
+requirements: requirements.txt
+compute_config:
+  cloud: aws-public-us-west-2
+  head_node:
+    instance_type: m5.4xlarge   # the point: 64GB head, not the 128GB g5.8xlarge
+  worker_nodes:
+    - name: cpu-workers
+      instance_type: m5.4xlarge
+      min_nodes: 0
+      max_nodes: 4
+max_retries: 1
