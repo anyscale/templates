@@ -36,7 +36,10 @@ def main():
     results = json.load(open(results_path)) if os.path.exists(results_path) else {}
 
     ray.init(ignore_reinit_error=True,
-             runtime_env={"working_dir": os.path.dirname(os.path.dirname(os.path.abspath(__file__)))})
+             runtime_env={"working_dir": os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                          # torch's native JIT needs a C compiler workers don't have, and the
+                          # decision is frozen at torch import — must be set process-level.
+                          "env_vars": {"TORCH_DISABLE_NATIVE_JIT": "1"}})
 
     def save():
         with open(results_path, "w") as f:

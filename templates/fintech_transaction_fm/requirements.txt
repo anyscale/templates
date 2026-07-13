@@ -1,5 +1,7 @@
 ray[data,train,serve]>=2.9
-torch>=2.1
+torch==2.13.0  # PINNED: unpinned torch re-resolved mid-project to a build whose native
+               # JIT needs a C compiler workers lack (same failure class as the xgboost
+               # 3.3 incident). 2.13.0 + TORCH_DISABLE_NATIVE_JIT=1 is the proven combo.
 transformers>=4.40  # Llama causal decoder (LlamaConfig/LlamaForCausalLM) in src/model.py
 accelerate>=0.30  # required by transformers Trainer/model init on the Ray Train workers
 numba>=0.61  # JIT'd hash partitioning for the Ray Data groupby shuffles
