@@ -66,6 +66,8 @@ Calibrate against this sample Zach wrote himself (an opening, presentation regis
 
 What it does: defines the new thing **by analogy to a known thing, in one breath** — not a formal bolded-term definition, not a company name-drop list. Each sentence advances the reader: what it is → why you care → what you're getting. First person, direct, confident claim, zero throat-clearing. If a draft opening reads denser or more "impressive" than this, it's wrong.
 
+**The deeper AI tell is staging, not sentence length.** A draft was rejected twice for the same disease in two disguises: first as long em-dash-chained essay sentences with cute asides ("deserve a word of honesty," "deliberately boring"), then — after shortening — as *theatrical* short sentences: the dramatic negation-hook opener ("The foundation model never sees a fraud label."), the beat-drop mini-sentence for rhythm ("Similar transactions get similar embeddings."), the designed statement-then-elegant-elaboration arc. Every sentence was performing. Human engineer prose is informational: the subject comes first, facts arrive in the order you'd say them out loud, and nothing is staged for effect. Test: does the sentence exist to carry information, or to land? If it lands, rewrite it to carry.
+
 Generated demo prose has telltale filler patterns that make a sharp reader trust the content less. Cut them:
 
 - **Editorializing titles** — "Class imbalance — and why we don't report plain accuracy." Name the thing: "How we measure performance."
