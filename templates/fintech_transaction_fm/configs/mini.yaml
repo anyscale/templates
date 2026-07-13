@@ -54,3 +54,13 @@ downstream:                  # XGBoost fit on the balanced sample (small)
   num_workers: 1             # single worker -> reproducible, runs in CI
   use_gpu: false
   pca_dim: 64                # PCA the embedding before XGBoost (no-op when emb<=64 dims)
+
+finetune:                    # Part 7 — supervised fine-tune (beyond-blueprint extension)
+  epochs: 2
+  batch_size: 32
+  lr: 2.0e-5
+  num_workers: 1
+  use_gpu: false
+  max_length: 128            # single-txn token length (same as embed)
+  window_txns: 19            # history window: target + 18 preceding txns
+  window_tokens: 256

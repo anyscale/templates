@@ -61,6 +61,9 @@ def artifact_paths(base_dir: str, scale: str) -> dict:
         "hf": f"{base_dir}/model_hf/{scale}/",
         "embeddings": f"{base_dir}/embeddings/{scale}/",
         "downstream": f"{base_dir}/downstream/{scale}/",
+        # Part 7 supervised fine-tune (beyond-blueprint extension): labeled token sets
+        # + fine-tuned model checkpoints per variant.
+        "finetune": f"{base_dir}/finetune/{scale}/",
     }
 
 
