@@ -24,6 +24,27 @@ Building the `fintech_transaction_fm` notebook series (templates/templates/finte
   (their features, their recipe); leading with it "rewards the thing we don't care about."
   Mention raw-match only as the calibration that makes the two wins trustworthy. This ordering
   applies to every table, takeaway, summary, and deck slide.
+- **THE AI-PROSE TELL IS STAGING, NOT LENGTH (2026-07-13, rejected twice same day):** first
+  draft failed as em-dash essay sentences with cute idioms; the "fixed" version failed again
+  because the short sentences were THEATRICAL — dramatic negation-hook openers ("The
+  foundation model never sees a fraud label."), beat-drop rhythm sentences ("Similar
+  transactions get similar embeddings."), staged reveal arcs. Zach: "this style of writing
+  reeks of AI. You really cant tell?" His register is informational: subject first, facts in
+  speaking order, plain connectives ("So its...", "Here, we..."), nothing composed for
+  effect. Test every sentence: does it carry information or does it try to LAND? Codified in
+  the skill's voice section.
+
+- **No persona-metaphor definitions ("measures what a fraud team lives with") — Zach: "AI skeeze" (2026-07-13).** Define terms as literal fractions/quantities: "AP is the fraction of flagged transactions that are actually fraud, averaged across thresholds." Same family as the cute-idiom and staging bans; the tell is defining a metric via a vivid relatable persona instead of stating what it computes.
+
+- **No 'fm' abbreviation in prose (2026-07-13):** "It slows me down constantly trying to
+  remember what 'fm' is. Its a foundation model. Abbreviation here is harmful." Feature-set
+  is called **embedding** in prose/tables (raw / embedding / fusion); spell out "foundation
+  model" elsewhere. nb02–06 prose + nvscore's printed labels still say fm — sweep pending.
+  Related nb01 lessons same session: walk the parts IN ORDER from where the reader sits
+  (starting at "Parts 3&4" with no 1&2 is disorienting); introduce **raw** where it comes
+  from (the data, Part 2), not first mentioned in a bullet list; section title was his
+  parallel "What we're building" → "How we're building it".
+
 - **Lingo rules (2026-07-09):** no "smoke run"/"smoke test" phrasing — say what it literally is ("stops after 30 steps as a demonstration", "proves the plumbing"). And any number offered as impressively small/large MUST ship with its comparator ("30 steps" means nothing until you say ours is ~16,000). "smoke" still lingers in nb02/03/04/06 + configs/mini.yaml — purge on the step-through.
 
 **Why:** he reviews top-to-bottom and is exacting; getting altitude/voice/honesty right up front saves heavy iteration.

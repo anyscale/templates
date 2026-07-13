@@ -30,6 +30,12 @@ extension candidates" section).
    "as expected for decoder-only models"; bidirectional objectives typically embed better;
    Nubank publishes both NTP and MLM variants. A/B: same corpus/arch, MLM objective,
    compare fm-only AP.
+5. **Supervised fine-tuning vs fusion (Zach 2026-07-13, "really curious")** — nothing is
+   fine-tuned today (FM frozen after pretrain; only XGBoost sees labels = NVIDIA's design).
+   Experiment: classification head on the decoder. v1 single-txn (~1 GPU-hr, predicted to
+   lose to fusion — tokenizer lossy vs exact raw fields); v2 history-window head (could win —
+   first config using sequence context; Nubank's frozen→SFT move); v3 SFT+fuse likely best.
+   Labeled extension only. Details in repo RESUME_HERE.md item 5.
 4. **Ray Data across the data stages — a DIRECTIVE, not a candidate (Zach 2026-07-09):**
    "We have to use Ray Data and Ray in general to scale across the whole workload. The whole
    point of Ray's scalability story is that CPU-based workflow steps scale independently of
