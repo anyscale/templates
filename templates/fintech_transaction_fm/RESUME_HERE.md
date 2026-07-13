@@ -1,4 +1,24 @@
-# RESUME — fintech_transaction_fm (as of 2026-07-09, authoritative for this thread)
+# RESUME — fintech_transaction_fm (as of 2026-07-13, authoritative for this thread)
+
+---
+
+## ▶️ 2026-07-13 CHECKPOINT — nb01 reviewed through Model performance; RESUME AT: nb01 "Scalability" section
+
+Zach is reviewing nb01 top-to-bottom with heavy iteration. DONE (his sign-off): "What we're
+building" (his text — typos still to sweep: cant/its tains/fault-tollerant/Dont; SPOT-INSTANCE
+claim still unbacked), "How we're building it" (five-detector ladder), "Model performance"
+(AP+AUC-ROC explained in his phrasing, two tables with notes columns, raw-is-a-floor /
+no-feature-engineering protocol note). **NEXT: the "Scalability" section of nb01**, then the
+rest of nb01, then nb02–07 review.
+
+Also this session (all committed): **Part 7 fine-tune built + run at full** — see fine-tune
+results entry (5a) below; nb07 exists (papermill-green at mini, prose finalized around
+fine-tuned-ALONE = pipeline replacement, +raw = ensemble footnote); serving/job/scaling
+renumbered 08/09/10; fm→embedding rename repo-wide (code, notebooks, cached artifacts);
+torch pinned 2.13.0 (+TORCH_DISABLE_NATIVE_JIT=1 process-level in fine-tune runtime envs);
+paired-bootstrap: fine-tuned alone vs raw = PARITY (52% of draws, bootstrap_ft_vs_raw.json).
+Writing-voice rules tightened repeatedly — see memory fintech-tfm-working-style before
+drafting ANY prose.
 
 Read this first if picking the work back up. Full technical detail is in
 [`FINDINGS_FM_REPRODUCTION.md`](FINDINGS_FM_REPRODUCTION.md) (results) and
