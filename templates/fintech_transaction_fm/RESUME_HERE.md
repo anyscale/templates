@@ -104,6 +104,17 @@ the faithful comparison, never as silent changes to it:
    NB05 excuses the weak fm-only result "as expected for decoder-only models," and bidirectional
    objectives typically embed better (Nubank publishes both NTP and MLM variants). Candidate A/B:
    same corpus/arch, MLM objective, compare fm-only AP vs the causal baseline.
+5. **Supervised fine-tuning vs fusion (Zach, 2026-07-13: "really curious whether a fine-tuned
+   foundation model would beat the fusion one").** Today nothing is fine-tuned: the FM is
+   frozen after pretraining, only XGBoost sees labels (= NVIDIA's design, rung 1 "frozen
+   embeddings"). Experiment: classification head on the decoder, balanced-1M train, same eval.
+   v1 single-txn head (reuses Part 5 data path, ~1 GPU-hour) — predicted to LOSE to fusion:
+   tokenizer is lossy (amount→7 buckets, merchant→2000 hashes) while fusion gets exact raw
+   fields. v2 history-window head (~100 txns; shares data work with candidate #1) — could WIN:
+   first config that uses sequence context at inference; Nubank moved frozen→SFT for this
+   reason. v3 fine-tune + fuse (SFT score/embedding as a feature next to raw) — likely best.
+   Must ship as a labeled beyond-blueprint extension; never enters the faithful comparison.
+
 4. **Distribute the data stages with Ray Data — UPGRADED TO DIRECTIVE (Zach, 2026-07-09).**
    Not optional: "We have to use Ray Data and Ray in general to scale across the whole workload.
    The whole point of Ray's scalability story is that CPU-based workflow steps scale independently
