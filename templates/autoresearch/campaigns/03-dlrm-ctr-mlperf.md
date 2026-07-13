@@ -9,14 +9,14 @@ Reproduce the MLPerf Training DLRM-DCNv2 gate (validation AUROC 0.80275 within o
 the Criteo click logs) in a Ray Train pipeline, then push either efficiency (GPU-hours to the
 gate) or quality (AUC beyond it).
 
-## 2. Vertical & why Anyscale
+## 2. Why this is a good autoresearch testbed
 
-- **Vertical:** ad tech / e-commerce ranking (CTR prediction).
-- **Why Anyscale:** the "large data" story — 3.8TB materialized dataset, ~91–100GiB collective
-  embedding tables. Ray Data heterogeneous streaming ingest + Ray Train distributed
-  (TorchRec/DDP) with model-parallel embedding sharding. Echoes Amazon's 82% cost cut / 12×
-  larger datasets. The reference itself is a from-scratch benchmark, so it's a pure
-  reproduce-the-number exercise with a hard, audited target.
+- **What makes it clean:** an MLPerf reference with dozens of audited submissions → the hardest,
+  cleanest reproduction target in the set; a from-scratch benchmark, so it's a pure
+  reproduce-the-number + efficiency exercise against a hard, audited gate.
+- **Ray substrate it exercises:** the large-data path — Ray Data streaming ingest of a 3.8TB
+  dataset (no materialization) + Ray Train distributed with model-parallel embedding sharding
+  (~100GiB tables), the thing that makes the run tractable without one giant host.
 
 ## 3. Reference
 
@@ -48,8 +48,8 @@ a CI. Env pin: TorchRec + CUDA versions in the job image.
 
 - **Criteo click logs**, preprocessed multi-hot, **3.8TB materialized**, hosted by MLCommons via
   the R2 Downloader (no raw preprocessing needed — raw path needs 700GB RAM + 1–2 days).
-- **⚠️ License: Criteo dataset is CC BY-NC-SA 4.0 — NON-COMMERCIAL.** This blocks using results
-  in Anyscale *marketing* without legal sign-off. **PI decision required before starting:**
+- **⚠️ License: Criteo dataset is CC BY-NC-SA 4.0 — NON-COMMERCIAL.** This blocks any commercial
+  use of results without legal sign-off. **Decision required before starting:**
   either (a) treat this as an internal engineering benchmark only, or (b) substitute a
   commercially-usable CTR dataset (e.g. Avazu, or a synthetic multi-hot generator) and re-anchor
   the gate. Flagged here so it's decided at pre-registration, not discovered mid-campaign.

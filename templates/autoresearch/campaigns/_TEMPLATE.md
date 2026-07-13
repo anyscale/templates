@@ -12,13 +12,14 @@
 
 <What published result do we reproduce, and what's the "beat it" thesis in one sentence?>
 
-## 2. Vertical & why Anyscale
+## 2. Why this is a good autoresearch testbed
 
-- **Vertical:** <fintech / e-commerce / AI-natives / autonomy-physical-AI / creatives / adjacent: ...>
-- **Why it fits Anyscale:** <which Ray workload archetype; which named customer proof-point
-  this echoes (Pinterest 30×, Coinbase, Canva, Torc, Attentive, ...); the platform story
-  this campaign tells — scale-out-and-to-zero, batch-embed-as-recurring-cost, spot-safe FT,
-  one-backbone-many-consumers, agent-in-the-loop>
+- **What makes it clean:** <shipped code + eval + (ideally) checkpoints so a baseline is
+  establishable; a real reproduction gate; a portable improvement thesis the loop can act on>
+- **Ray substrate it exercises:** <which distributed-compute primitives the experiment loop
+  needs here — Ray Data streaming/reweighting or batch-embed, Ray Train parallel matrix runs,
+  Ray Tune ASHA multi-fidelity early-kill, Ray Serve eval rollouts. This is about what makes
+  running the matrix affordable and observable, not a business angle.>
 
 ## 3. Reference (the thing we reproduce)
 
@@ -27,6 +28,12 @@
 - **Ships:** training code? eval code? pretrained checkpoints? <yes/no each>
 - **Ray-native?** <Ray / torchrun / accelerate / slurm — drives how much rayification is real work>
 - **Reproduction landscape:** <independently reproduced? known critiques / contested claims?>
+- **`commercial_use`:** <`yes` / `no` / `needs-legal`> — can the reference's **code AND
+  weights AND every dataset license** support this campaign's *intended use*? (Only matters if
+  the use is beyond private research.) Check each separately — weights often carry a different
+  license than code (e.g. Llama-2 community clause), and datasets are often the strictest
+  (CC-BY-NC is non-commercial). A `no`/`needs-legal` is a **budget gate**
+  (`REQUIREMENTS.md` non-functional #7): no spend until the license risk is signed off.
 
 ## 4. The gate (Iron Rule #1 — reproduce from CODE, before any model work)
 
@@ -97,11 +104,21 @@ change); **context-length is a config knob, find the sweet spot on your data**;
 > on frozen weights should be expected to *hurt*. Any thesis that fails the mechanism check
 > gets ONE cheap probe (`AUTORESEARCH.md` §3 "probe before sweep") before it earns a sweep.
 
+> **If a hypothesis is a cost/efficiency beat, say so explicitly and name the baseline.**
+> When the reference published no cost number (usual for throughput/$-per-unit claims), you
+> are not "beating a published number" — you're beating a baseline you build. State it as a
+> competent single-GPU implementation on the same hardware budget, reasonably tuned, with the
+> quality metric held equal within CI (`REQUIREMENTS.md` non-functional #8). Never let it
+> read as beating the paper.
+
 ## 10. Budget envelope
 
 - **Wave:** <1 / 2 / 3> (per `BUDGET_POLICY.md`)
-- **Estimated GPU-hours:** smoke <..> · proxy sweep <..> · full runs <..> · controls/eval <..>
-  · **total <..>** (±50%, pre-calibration)
+- **Estimated GPU-hours (raw):** smoke <..> · proxy sweep <..> · full runs <..> · controls/eval
+  <..> · **total <..>** (±50%, pre-calibration)
+- **A10G-equivalent total:** <raw × tier rel-cost> — **this is what sets the wave** (T4 ×0.5,
+  L4 ×0.8, A10G ×1.0, L40S ×1.8, A100 ×3.5, H100 ×5.5). A campaign on A100/H100 hits its wave
+  ceiling at far fewer raw hours than one on A10G.
 - **GPU tier:** <T4/L4/A10G/L40S/A100/H100> — **spot?** <yes/no>
 - **Rough $:** on-demand <..> / spot <..>
 - **Approval needed:** <envelope; each full run; multi-node?>

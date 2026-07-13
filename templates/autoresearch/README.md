@@ -1,102 +1,108 @@
-# Autoresearch — a benchmark-anchored ML hill-climbing program on Anyscale
+# Autoresearch — a rigorous, agent-driven loop for empirically improving a model
 
-A program for running many **reproduce-then-beat** ML research campaigns on Anyscale,
-each one: `git clone` a published research repo → reproduce its number in a Rayified
-pipeline → iterate to push past it. Distilled from the fintech transaction-FM campaign
-(2026-07-06 → 07-11), which reproduced NVIDIA's TabFormer fraud benchmark and beat its
-published fusion headline (AP 0.1755) embedding-alone (AP 0.23–0.27). This directory
-turns that one hand-driven campaign into a repeatable, budgeted, multi-vertical program.
+A harness and methodology for an **individual MLE** to run disciplined, agent-driven research:
+take a concrete research question — *"what data mix / hyperparameter / reward shaping / readout
+maximizes my model's downstream metric?"* — run the full experimental loop against it, and come
+out with a **provenance-clean, defensible demonstration of whether the loop actually improved the
+model.** The human owns the question and the taste; the agent owns the orchestration, the
+bookkeeping, and the first-pass interpretation.
 
-> **Status: DESIGN / SEED PLANNING.** No campaign here has been launched. This is the
-> first push — requirements, a budget policy, and pre-registered seed plans for 9
-> candidate campaigns. The harness itself (`REQUIREMENTS.md`) is not built yet; we
-> iterate on it as we build. Nothing in `campaigns/` should be run until its plan is
-> reviewed and a budget envelope is approved.
+**The single outcome this exists to produce:** empirical evidence that the autoresearch loop can
+improve a model's measured performance — or an honest finding that, for this question, it can't.
+Nothing else. It is not a product pitch and carries no positioning; the technical design and its
+rationale live in `research_director.md`.
 
-## Where this lives (intent)
+**Ray / Anyscale is the compute substrate, and only that.** It's here because running an
+experiment matrix affordably and observably needs distributed compute: Ray Data to stream and
+reweight data mixes without recopying the dataset, Ray Train to run the matrix in parallel with
+fault recovery, Ray Tune (ASHA) to kill losing branches early, Ray Serve for eval rollouts. That's
+the whole role — the substrate that makes the loop tractable, not a vertical or a sales story.
 
-This directory is an **internal research program incubating inside the templates repo** — it is
-deliberately *not* a console template: no `BUILD.yaml` entry, no build/publish/CI. It sits next
-to `fintech_transaction_fm/` because that's the campaign it's distilled from and it inherits the
-repo's conventions. If it proves out, "autoresearch as a console template" (or its own repo) is a
-plausible product; until then, treat it as lab notes, not a shipping artifact. Because the disk
-is the source of truth, **paths must not bake in one person's laptop layout** — reference repos
-clone under a configurable `$AUTORESEARCH_REFS` root (default `~/anyscale/`), not a hardcoded home
-dir, and all durable artifacts live under `$BASE` on cluster storage.
+Distilled from the fintech transaction-FM campaign (2026-07-06 → 07-11), which reproduced a
+published fraud benchmark and then improved on it via the readout — the worked example in
+`campaigns/00-transaction-fm-fraud.md`.
 
-## What this is (and what already exists)
+## Who this is for
 
-The **methodology** is already written and battle-tested — do not reinvent it:
+An IC MLE who is either doing research inside their company, or experimenting with models on
+Anyscale to understand and write up what works. You bring a model and a question; the harness runs
+the rigorous loop and hands you a result you can trust.
 
-| Doc | What it gives you | Where |
-|---|---|---|
-| `AUTORESEARCH.md` | The rigorous loop: 10 Iron Rules, the DIAGNOSE→PROPOSE→REVIEW→RUN→SCORE state machine, the per-domain fidelity/proxy-axis table, the §6 tooling roadmap | `../fintech_transaction_fm/claude-anyscale/` |
-| `CLAUDE_WITH_ANYSCALE.md` | The PI operating manual: overnight monitors, fresh-context adversarial subagents, disk-as-source-of-truth, the escalation boundary | same dir |
-| `AGENTS_EXAMPLE.md` | The `AGENTS.md` starter every campaign copies to its repo root | same dir |
+## What counts as an outcome
 
-This directory adds the **program layer** on top:
+Every outcome first requires a **trusted baseline + a trusted eval** (reproduce a reference's
+number, bring your own scored model, or train an honest baseline). Then one of:
 
-| Doc | Question it answers |
+1. **A demonstrated improvement** — the loop moved the decision metric, and the move survives the
+   noise floor (CI-separated, paired bootstrap) against the *strongest* cheap baseline.
+2. **An efficiency win at held quality** — materially cheaper/faster with the metric held within
+   CI, measured against a competent same-budget baseline (`REQUIREMENTS.md` non-functional #8).
+3. **An honest rigor finding** — the improvement isn't real, or a published claim was overstated
+   (a leak, a noise-level gain, a robustness gap). A truthful negative is a first-class result.
+
+## The one non-negotiable
+
+**Establish a trusted baseline before you claim anything.** Two gates, in order:
+1. **Artifact gate** — run the reference's *shipped* eval on its *shipped* checkpoint, match the
+   number. (Skip if you're improving your own already-scored model.)
+2. **Pipeline gate** — reproduce that number through your own Ray pipeline, proving your data/eval
+   stack is sound.
+
+No trusted number, no claim. Improvement experiments don't spend budget until a baseline holds.
+
+## The loop
+
+The design is a **deterministic outer state machine that owns control flow, with focused agent
+loops inside each phase and explicit gates between phases** — so an unreliable reasoner is boxed
+in and its output stays trustworthy (`research_director.md` §3, §6):
+
+```
+FRAME ─G0─▶ DESIGN ─G1─▶ LAUNCH ─G2─▶ MONITOR ─G3─▶ EVALUATE ─G4─▶ INTERPRET ─G5─▶ REPORT
+```
+
+The sequencer (not the LLM) decides when a phase is done; each inner agent gets a scoped toolset;
+every number in the report traces to a measurement actually taken. Rounds loop: INTERPRET's
+recommended next matrix feeds a new DESIGN cycle until the stopping rule fires or you intervene.
+
+## Operating model
+
+- **You own** the question, the definition of "better" (the eval), the taste in experiment design,
+  and the "is this real?" sign-off. No headline result is trusted without your read.
+- **The agent owns** the grind: writing configs, launching and monitoring runs, killing losers,
+  running evals, first-pass interpretation, and drafting the report — largely unattended.
+- **The disk is the source of truth**, not any context window. Every result is a durable file;
+  every decision is a registry row. Any session (human or agent) can resume from disk alone.
+
+## Docs
+
+| Doc | What it is |
 |---|---|
-| `REQUIREMENTS.md` | What must the autoresearch **harness** do? (the §6 roadmap, made buildable) |
-| `BUDGET_POLICY.md` | How much money/GPU does each campaign get, who approves spend, how is it tracked? (formalizes what the PI did by hand) |
-| `SEED_INDEX.md` | The ranked menu of candidate campaigns, by vertical, cost, and confidence |
-| `campaigns/*.md` | One pre-registered seed plan per candidate run |
-| `campaigns/_TEMPLATE.md` | The seed-plan schema — copy it to start a new campaign |
+| `research_director.md` | The technical design + rationale: the phased loop, the gates, the Ray substrate mapping. The north star. |
+| `BEAT_IT.md` | The improvement engine: error-analysis → next test, the compounding recipe, anti-fooling-yourself rules. |
+| `REQUIREMENTS.md` | What the harness must do (R1 registry … R9 review), made buildable. |
+| `BUDGET_POLICY.md` | Cost discipline: GPU-hour caps, sample-size (parity) mode, submit-time enforcement. |
+| `SEED_INDEX.md` | The menu of candidate campaigns, by cost and reproduction confidence. |
+| `campaigns/*.md` | One pre-registered plan per candidate question; `_TEMPLATE.md` is the schema. |
+| `harness/` | The engine as tested code (registry, budget, metrics, error-analysis, feasibility, …). |
+| `AUTORESEARCH.md`, `CLAUDE_WITH_ANYSCALE.md` | The battle-tested methodology + operating notes from the worked example, in `../fintech_transaction_fm/claude-anyscale/`. |
 
-## The operating model (unchanged from the FM campaign)
+## How to start a campaign
 
-- **The PI owns** the benchmark choice, campaign sequencing, every dollar of GPU spend,
-  every irreversible action, and the "is this real?" sign-off.
-- **The agent (Claude Code) is the research engineer:** writes configs/scripts, submits
-  and monitors Anyscale jobs, chains runs, runs the fresh-context review agents, drafts
-  docs — largely unattended, event-driven off durable job monitors.
-- **The disk is the source of truth** — not any context window. Every result is a file
-  on `/mnt/user_storage`; every decision is a commit or a registry row. That is what
-  lets any session (human or agent) resume a campaign it didn't start.
+1. Copy `campaigns/_TEMPLATE.md` to `campaigns/NN-<slug>.md` and fill every field. The plan is a
+   **pre-registration** — once the first paid run happens it's frozen; changes land as new commits
+   marked `AMENDED`, and every registry row records the plan's commit SHA it ran under.
+2. Size the budget with `harness/feasibility.py` and set the envelope (`BUDGET_POLICY.md`).
+3. `git clone` the reference repo under `$AUTORESEARCH_REFS` (default `~/anyscale/`); durable
+   artifacts live under `$BASE` on cluster storage — no laptop-specific paths.
+4. Run the loop. Log every run to the registry (`REQUIREMENTS.md` R1) — no state in a context window.
 
-## The one thing every campaign must do first
+## Design assumptions (stated so they're easy to challenge)
 
-**Reproduce the reference's published number through YOUR Ray pipeline before touching a
-model.** Two gates, in order (Iron Rule #1):
-1. **Artifact gate** — run the reference's *shipped* eval on its *shipped* checkpoint,
-   match its reported number. Proves you hold their protocol.
-2. **Pipeline gate** — produce that same number through your Rayified harness. Proves
-   your data/eval stack is theirs.
-
-No number, no claim. A campaign that hasn't cleared both gates is not allowed to spend
-budget on "beat it" experiments.
-
-## How to start a new campaign
-
-1. Copy `campaigns/_TEMPLATE.md` to `campaigns/NN-<slug>.md` and fill every field. The seed
-   plan is a **pre-registration**: once the first paid run happens, the plan is frozen —
-   changes land as new commits marked `AMENDED`, never silent rewrites, and every registry
-   row records the seed-plan commit SHA it ran under (so you can't retroactively "predict"
-   the result).
-2. Get the budget envelope approved per `BUDGET_POLICY.md` (the PI signs off the total
-   and the smoke→proxy→full promotion gates).
-3. `git clone` the reference repo under `$AUTORESEARCH_REFS` (default `~/anyscale/`, where
-   `generative-recommenders` and `transaction-foundation-model` already sit).
-4. Copy `AGENTS_EXAMPLE.md` → the campaign's `AGENTS.md`; copy the nearest
-   `optimization-guides/workloads/<archetype>/{main.py,cluster_config.yaml}` as the
-   Rayification skeleton.
-5. Run the loop in `AUTORESEARCH.md`. Log every run to the results registry
-   (`REQUIREMENTS.md` R1) — no state in a context window.
-
-## Design assumptions baked into these docs
-
-Stated explicitly so they're easy to challenge as we iterate:
-
-1. **GPU-hours are the budget currency, not dollars.** Dollar figures drift with cloud
-   pricing and spot; GPU-hours are stable and convert via one table. See `BUDGET_POLICY.md`.
-2. **Reference numbers come from the repo's eval code, not its paper/blog.** Seed plans
-   name the published number as a *target to confirm from code*, never as ground truth
-   (the FM campaign's reference contradicted its own blog).
-3. **Campaigns are pre-registered.** The hypotheses, decision metric, eval pin, and
-   budget are written down *before* the first paid run — the seed plan is the pre-registration.
-4. **Cost estimates in seed plans are pre-calibration guesses.** They exist to size the
-   envelope; the proxy-calibration step (`AUTORESEARCH.md` §3) tightens them before any
-   full run. Treat them as ±50% (the guides' own guardrail on baseline estimates).
-5. **The program spans Anyscale's 5 service verticals plus adjacent good-fit domains.**
-   Vertical coverage, not just benchmark prestige, drives which campaigns ship first.
+1. **GPU-hours are the budget currency**, converted to dollars through one table; a dollar
+   envelope maps to A10G-equivalent hours (`harness/budget.py`).
+2. **Reference numbers come from the repo's eval code, not its paper/blog** — a target to confirm
+   from code, never trusted ground truth.
+3. **Campaigns are pre-registered** — hypotheses, decision metric, eval pin, and budget written
+   down *before* the first paid run.
+4. **Cost estimates are pre-calibration guesses** (±50%); the proxy-calibration step tightens them
+   before any full run.

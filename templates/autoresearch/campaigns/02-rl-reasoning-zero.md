@@ -1,22 +1,21 @@
 # Campaign 02 — Zero-RL reasoning (SimpleRL-Zoo / verl) reproduction, then extend
 
-> **Status: SEED (not started).** The LLM post-training vertical — Anyscale's heaviest
-> investment (4 dedicated workloads). verl is Ray-native, so this is the most substrate-natural
-> campaign in the program.
+> **Status: SEED (not started).** The LLM post-training domain — the heaviest campaign in the
+> set. verl is Ray-native, so this is the most substrate-natural campaign here.
 
 ## 1. One-liner
 
 Reproduce a published zero-RL result — GRPO from a base model lifting GSM8K/MATH accuracy —
 using the Ray-native verl stack, then test whether a cheaper/faster recipe holds the gain.
 
-## 2. Vertical & why Anyscale
+## 2. Why this is a good autoresearch testbed
 
-- **Vertical:** AI-natives / agentic reasoning (LLM post-training).
-- **Why Anyscale:** the `workloads/post-training` archetype is *already* a "clone a public
-  GRPO repo and rayify" template; verl uses **Ray natively** (PPO Ray Trainer, vLLM rollouts
-  inside training). Echoes Attentive (5× faster training, 99% cost cut). The story: one Ray
-  cluster co-locating rollout generation (vLLM) + reward scoring + policy training with
-  per-component autoscaling — the thing torchrun-in-a-notebook cannot do.
+- **What makes it clean:** verl is Ray-native (PPO Ray Trainer, vLLM rollouts inside training) and
+  simpleRL ships released checkpoints → a real artifact gate; the improvement levers (cheaper
+  recipe, reward shaping, rollout budget) are concrete.
+- **Ray substrate it exercises:** one cluster co-locating rollout generation (vLLM) + reward
+  scoring + policy training with per-component autoscaling — the thing a single-process torchrun
+  can't do; Ray Tune ASHA to kill losing recipes early.
 
 ## 3. Reference
 
@@ -88,13 +87,20 @@ learner) rather than re-plumbing — verl already speaks Ray.
 
 ## 10. Budget
 
-- **Wave 1 for the proxy/smoke (Qwen 1.5–3B), Wave 2 for the 7B full run.**
-- **GPU-hours:** smoke ~2 · proxy (3B, several recipes) ~30–50 · full (7B, 2 nodes ×8, ~15h) —
-  a single full run is ~120 GPU-hr → this is the budget-dominant campaign.
+- **Wave 1 for the proxy/smoke (Qwen 1.5–3B); Wave 3 for the 7B full run** — see the
+  A10G-equivalent math below; this is the budget-dominant campaign in the program.
+- **GPU-hours (raw):** smoke ~2 · proxy (3B, several recipes) ~30–50 · full (7B, 2 nodes ×8,
+  ~15h) — a single full run is ~120 raw GPU-hr.
+- **A10G-equivalent (what sets the wave):** the full run is on **H100** → 120 × 5.5 =
+  **~660 A10G-eq hr**, which is **Wave 3** (400–2,000), *not* Wave 2. The raw-hour count
+  (120) looks like Wave 2 and is misleading — the tier weighting is exactly why
+  `BUDGET_POLICY.md` denominates envelopes in A10G-equivalent hours. Proxy at 3B on A100
+  (~40 raw × 3.5 ≈ 140 A10G-eq) sits in Wave 2 on its own.
 - **GPU tier:** H100/A100 (7B GRPO with vLLM rollouts wants the memory + throughput); spot ON
   with checkpointing (RL runs are long — checkpointing bounds preemption cost). **Full run
   ~$400–700 on spot; multi-node → PI approval required.**
-- **Approval:** envelope + each full run + the multi-node request (Wave 2/3 gates).
+- **Approval:** envelope + each full run + the multi-node request (**Wave 3 gates** for the
+  7B run: PI signs off envelope, each full run, and the multi-node request).
 
 ## 11. Controls
 

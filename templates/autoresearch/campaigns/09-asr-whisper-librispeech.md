@@ -1,6 +1,6 @@
 # Campaign 09 — ASR (Whisper) on LibriSpeech: reproduce WER, then a fine-tune/cost beat
 
-> **Status: SEED (not started).** The speech vertical. A near-free eval gate and a clean Ray
+> **Status: SEED (not started).** The speech domain. A near-free eval gate and a clean Ray
 > Train fine-tune + Ray Data batch-transcription story.
 
 ## 1. One-liner
@@ -9,12 +9,12 @@ Reproduce Whisper's published LibriSpeech WER through a Ray-parallelized eval, t
 target domain via fine-tune, or beat the reference's transcription cost via Ray Data batch
 inference — WER held as the invariant.
 
-## 2. Vertical & why Anyscale
+## 2. Why this is a good autoresearch testbed
 
-- **Vertical:** contact center / media transcription (adjacent good-fit).
-- **Why Anyscale:** Ray Data batch transcription over huge audio corpora (audio-processing
-  ingest → GPU ASR, scale-to-zero, 3–10× cheaper than online) + Ray Train for domain fine-tune.
-  The batch-inference-over-audio story is a direct match to the media/contact-center use case.
+- **What makes it clean:** shipped inference/eval + checkpoints; text-normalization makes a clean,
+  well-known reproduction gate; domain fine-tune and decoding are concrete levers.
+- **Ray substrate it exercises:** Ray Data batch transcription over large audio corpora
+  (audio-decode CPU stage → GPU ASR, scale-to-zero) + Ray Train for the domain fine-tune.
 
 ## 3. Reference
 

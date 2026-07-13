@@ -3,16 +3,24 @@
 In the fintech-FM campaign, spend authority was an informal human-in-the-loop: "the PI
 approves every dollar of GPU spend" (`CLAUDE_WITH_ANYSCALE.md` §8), per-scale compute was
 hardcoded in each `job_*.yaml`, and there was **no cost cap, no shared budget layer, and no
-recorded cost ledger** — the dollar figures in the blog are still placeholders pulled from
-the console after the fact (`AUTORESEARCH.md` §6.4 lists submit-time cost caps as *missing*
-tooling). This document formalizes that governance so a campaign can run largely unattended
-without spending past its envelope.
+recorded cost ledger** — the dollar figures were placeholders pulled from the console after the
+fact (`AUTORESEARCH.md` §6.4 lists submit-time cost caps as *missing* tooling). This document
+formalizes cost discipline so a campaign can run largely unattended without spending past its
+envelope.
 
 ## Principle: GPU-hours are the currency, not dollars
 
 Dollar prices drift with cloud, region, spot market, and reservation. **GPU-hours are
 stable**; convert to dollars through one table at the end. Every budget below is stated in
 GPU-hours first. Anyscale's own cost guidance is ratio-based for exactly this reason.
+
+**But a raw GPU-hour is not one currency — it's six.** An A100-hour costs 3.5× an A10G-hour;
+an H100-hour, 5.5×. A cap stated in raw hours can be gamed by tier choice, and a wave label
+assigned by raw hours is wrong by up to 5.5×. So the unit is the **A10G-equivalent hour**:
+`raw GPU-hours × rel-cost` from the table below (A10G = 1.0). Every cap, envelope, and wave
+threshold in this doc is denominated in A10G-equivalent hours. The results registry stores
+both (`cost.gpu_hours` and `cost.a10g_equiv_hours`), and R4 enforces envelopes against the
+equivalent, never the raw count (`harness/registry.py`, `REQUIREMENTS.md` R1/R4).
 
 ### Conversion table (representative AWS us-west-2 on-demand — confirm against console)
 
@@ -69,7 +77,10 @@ Campaigns are grouped into waves by cost and reproduction confidence (see `SEED_
 Each campaign gets a total GPU-hour envelope covering *all* its runs — gates, proxy sweeps,
 the long tail of cheap control/eval jobs, and the hero full runs.
 
-| Wave | Profile | Envelope (GPU-hr) | ~$ on-demand | ~$ spot | Approval |
+Envelopes are in **A10G-equivalent hours** (see the currency note above) — so a campaign
+run mostly on A100/H100 hits its wave ceiling at far fewer *raw* hours than one run on A10G.
+
+| Wave | Profile | Envelope (A10G-eq hr) | ~$ on-demand | ~$ spot | Approval |
 |---|---|--:|--:|--:|---|
 | **1** | cheap, high-repro-confidence, fast first result (small models / frozen-embedding probes / tiny data) | **≤ 60** | ~$60 | ~$25 | PI signs off envelope; agent runs the loop |
 | **2** | mid (multi-GPU training, TB-scale data, or FM fine-tune) | **60–400** | $200–1,400 | $70–500 | PI signs off envelope + each full run |
@@ -78,6 +89,12 @@ the long tail of cheap control/eval jobs, and the hero full runs.
 The whole FM campaign — ~15 jobs, one hero pair, a long tail of minute-scale controls —
 plausibly cost **$50–150 of GPU total**. Wave-1 campaigns should land in that band. Waves
 exist so we ship a cheap, credible first result before committing to an OpenVLA-scale run.
+
+> **Worked example (why the unit matters).** Campaign 02's 7B RL full run is ~120 **H100**
+> hours. In raw hours that reads as Wave 2 (60–400). Weighted: 120 × 5.5 = **660 A10G-eq
+> hours → Wave 3.** The registry computes this automatically and the launcher (R4) would
+> refuse it under a Wave-2 envelope. A raw-hours policy would have waved the program's single
+> most expensive run through the *lighter* approval ritual.
 
 **Program-level cap:** the sum of active campaign envelopes cannot exceed the program's
 standing GPU-hour allocation (set by the PI per quarter). New full campaigns queue until an

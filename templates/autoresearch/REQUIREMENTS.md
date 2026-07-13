@@ -214,6 +214,23 @@ These are conditions on *every* campaign, enforced by the harness or the loop:
 6. **A faithful third-party replication is a first-class control**, not duplicated work — the
    strongest ablation and the source of env-sensitivity forensics (`AUTORESEARCH.md` §9.10,
    `ZGARNER_INTEGRATION.md`). Coordinate parallel replications; don't dedupe them.
+7. **Use-license gate.** If the intended use of a result is anything beyond private research,
+   "may we legally use this?" is a pre-registration gate, not per-campaign memory. Every seed
+   plan declares `commercial_use ∈ {yes, no, needs-legal}` covering the reference's *code AND
+   weights AND every dataset license* against the intended use. A `no`/`needs-legal` blocks
+   budget until the human signs the license risk — no spending on a result that can't be used for
+   what it's for. (The seeds already surface the landmines by hand: Criteo CC-BY-NC is
+   non-commercial (03); OpenVLA weights under Llama-2's >700M-MAU clause (06); ESM-3
+   non-commercial (08, dodged); MovieLens research-only (01). This makes the check a gate, not
+   a habit.)
+8. **A cost/efficiency beat is a distinct claim type from a metric beat**, with its own rigor
+   rule. When a campaign's headline is "cheaper/faster at held quality" (04 BEIR, 07 Chronos,
+   09 Whisper), the reference usually published *no* cost number — so the baseline is
+   self-built and can be made arbitrarily slow. The baseline MUST be *a competent single-GPU
+   implementation given the same hardware budget, reasonably tuned* — never the reference's
+   demo script — and the quality metric (nDCG@10 / WQL / WER) must be held equal within CI.
+   Report it as an efficiency result on a fair baseline, never as "beating the published
+   number" (there wasn't one). Anything less is racing a strawman you built to lose.
 
 ## Build order (proposed)
 

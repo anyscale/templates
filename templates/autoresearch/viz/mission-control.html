@@ -1,0 +1,709 @@
+<title>Autoresearch — Mission Control</title>
+<style>
+  :root {
+    /* telemetry console — cool instrument ground, two-signal palette */
+    --ground:#0c0f13; --panel:#12171e; --panel-2:#0f141a;
+    --line:#232c37; --line-soft:#1a222b;
+    --ink:#e7eef5; --ink-dim:#8896a6; --ink-faint:#54606e;
+    --signal:#35e0cf;      /* data / flow / pass / promote  */
+    --signal-deep:#1b9d92;
+    --heat:#ffab40;        /* gpu cost / budget / compute    */
+    --kill:#ff6b81;        /* kill / fail                    */
+    --hold:#c9a227;        /* pending / hold                 */
+    --glow: 0 0 0 1px var(--line), 0 8px 30px -12px #000;
+    --mono: ui-monospace, "JetBrains Mono", "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+    color-scheme: dark;
+  }
+  @media (prefers-color-scheme: light) {
+    :root {
+      --ground:#eef1f5; --panel:#ffffff; --panel-2:#f5f7fa;
+      --line:#d3dae2; --line-soft:#e4e9ef;
+      --ink:#111820; --ink-dim:#566476; --ink-faint:#8996a6;
+      --signal:#0d9488; --signal-deep:#0b7a70;
+      --heat:#c9760a; --kill:#d83a54; --hold:#9a7b0f;
+      --glow: 0 0 0 1px var(--line), 0 8px 24px -14px #9aa7b6;
+      color-scheme: light;
+    }
+  }
+  :root[data-theme="dark"]{
+    --ground:#0c0f13; --panel:#12171e; --panel-2:#0f141a; --line:#232c37; --line-soft:#1a222b;
+    --ink:#e7eef5; --ink-dim:#8896a6; --ink-faint:#54606e;
+    --signal:#35e0cf; --signal-deep:#1b9d92; --heat:#ffab40; --kill:#ff6b81; --hold:#c9a227;
+    --glow:0 0 0 1px var(--line),0 8px 30px -12px #000; color-scheme:dark;
+  }
+  :root[data-theme="light"]{
+    --ground:#eef1f5; --panel:#ffffff; --panel-2:#f5f7fa; --line:#d3dae2; --line-soft:#e4e9ef;
+    --ink:#111820; --ink-dim:#566476; --ink-faint:#8996a6;
+    --signal:#0d9488; --signal-deep:#0b7a70; --heat:#c9760a; --kill:#d83a54; --hold:#9a7b0f;
+    --glow:0 0 0 1px var(--line),0 8px 24px -14px #9aa7b6; color-scheme:light;
+  }
+
+  * { box-sizing:border-box; }
+  body {
+    margin:0; background:var(--ground); color:var(--ink);
+    font-family:var(--mono); font-size:13px; line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+    background-image:
+      linear-gradient(var(--line-soft) 1px, transparent 1px),
+      linear-gradient(90deg, var(--line-soft) 1px, transparent 1px);
+    background-size:44px 44px; background-position:-1px -1px;
+  }
+  .wrap { max-width:1280px; margin:0 auto; padding:22px 20px 60px; }
+  .tnum { font-variant-numeric:tabular-nums; }
+
+  /* ---- header ---- */
+  header { display:flex; flex-wrap:wrap; align-items:flex-end; gap:16px 26px; margin-bottom:20px; }
+  .brand h1 {
+    margin:0; font-size:20px; font-weight:700; letter-spacing:.02em; line-height:1.15;
+    text-wrap:balance;
+  }
+  .brand h1 .dim { color:var(--ink-dim); font-weight:500; }
+  .brand .sub { margin-top:5px; color:var(--ink-dim); font-size:11.5px; letter-spacing:.02em; max-width:62ch; }
+  .brand .tag {
+    display:inline-flex; align-items:center; gap:7px; margin-bottom:8px;
+    padding:3px 9px; border:1px solid var(--line); border-radius:2px;
+    color:var(--signal); font-size:10.5px; letter-spacing:.14em; text-transform:uppercase;
+  }
+  .tag .dot { width:6px; height:6px; border-radius:50%; background:var(--signal);
+    box-shadow:0 0 8px var(--signal); animation:blink 2s infinite; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.35} }
+
+  .transport { margin-left:auto; display:flex; align-items:center; gap:12px; }
+  .btn {
+    font-family:var(--mono); font-size:12px; color:var(--ink); cursor:pointer;
+    background:var(--panel); border:1px solid var(--line); border-radius:2px;
+    padding:7px 13px; letter-spacing:.03em; transition:border-color .15s, color .15s;
+  }
+  .btn:hover { border-color:var(--signal); color:var(--signal); }
+  .btn:focus-visible { outline:2px solid var(--signal); outline-offset:2px; }
+  .clock { color:var(--signal); font-size:12px; letter-spacing:.06em; min-width:112px; text-align:right; }
+  .clock .lbl { color:var(--ink-faint); }
+
+  input[type=range]{ -webkit-appearance:none; appearance:none; width:100%; height:4px;
+    background:var(--line); border-radius:3px; outline:none; margin:0; }
+  input[type=range]::-webkit-slider-thumb{ -webkit-appearance:none; width:15px; height:15px; border-radius:50%;
+    background:var(--signal); border:2px solid var(--ground); cursor:pointer; box-shadow:0 0 10px -1px var(--signal); }
+  input[type=range]::-moz-range-thumb{ width:15px; height:15px; border-radius:50%;
+    background:var(--signal); border:2px solid var(--ground); cursor:pointer; }
+
+  /* ---- layout grid ---- */
+  .grid { display:grid; grid-template-columns:236px 1fr 250px; gap:14px; align-items:start; }
+  @media (max-width:1080px){ .grid{ grid-template-columns:1fr; } }
+  .panel { background:var(--panel); border:1px solid var(--line); border-radius:4px; }
+  .panel > .head {
+    display:flex; align-items:center; justify-content:space-between; gap:8px;
+    padding:9px 12px; border-bottom:1px solid var(--line);
+    font-size:10.5px; letter-spacing:.16em; text-transform:uppercase; color:var(--ink-dim);
+  }
+  .panel > .head .k { color:var(--ink-faint); }
+
+  /* ---- campaign rail ---- */
+  .rail .rows { padding:5px; display:flex; flex-direction:column; gap:2px; }
+  .camp {
+    display:grid; grid-template-columns:26px 1fr auto; align-items:center; gap:8px;
+    padding:7px 8px; border:1px solid transparent; border-radius:3px; cursor:pointer;
+    text-align:left; background:none; color:inherit; font-family:var(--mono); width:100%;
+    transition:background .12s, border-color .12s;
+  }
+  .camp:hover { background:var(--panel-2); }
+  .camp[aria-selected="true"]{ border-color:var(--signal); background:var(--panel-2); }
+  .camp:focus-visible{ outline:2px solid var(--signal); outline-offset:1px; }
+  .camp .id { color:var(--ink-faint); font-size:11px; }
+  .camp .nm { font-size:11.5px; line-height:1.25; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .camp .vert { color:var(--ink-dim); font-size:9.5px; letter-spacing:.04em; text-transform:uppercase; }
+  .camp .stat { width:8px; height:8px; border-radius:50%; background:var(--ink-faint); }
+  .camp .stat.active { background:var(--signal); box-shadow:0 0 7px var(--signal); animation:blink 1.4s infinite; }
+  .camp .stat.done { background:var(--signal-deep); }
+  .camp .stat.pending { background:transparent; border:1px solid var(--ink-faint); }
+  .wavechip { font-size:9px; padding:1px 5px; border-radius:2px; border:1px solid var(--line);
+    color:var(--ink-dim); letter-spacing:.05em; }
+
+  /* ---- center: pipeline spine ---- */
+  .stage-wrap { padding:16px 14px 6px; }
+  .spine { position:relative; display:grid; grid-auto-flow:column; grid-auto-columns:1fr;
+    align-items:start; gap:0; }
+  .track { position:absolute; left:6%; right:6%; top:26px; height:2px; background:var(--line); z-index:0; }
+  .track .fill { position:absolute; left:0; top:0; height:100%; width:0;
+    background:linear-gradient(90deg,var(--signal-deep),var(--signal)); box-shadow:0 0 8px var(--signal);
+    transition:width .25s linear; }
+  .pulse { position:absolute; top:-3px; width:7px; height:7px; border-radius:50%;
+    background:var(--signal); box-shadow:0 0 9px 1px var(--signal); z-index:2; pointer-events:none; }
+  .pulse.heat { background:var(--heat); box-shadow:0 0 9px 1px var(--heat); }
+
+  .node { position:relative; z-index:1; display:flex; flex-direction:column; align-items:center;
+    gap:9px; padding:0 4px; cursor:default; }
+  .node .ring {
+    width:52px; height:52px; border-radius:50%; background:var(--panel-2);
+    border:2px solid var(--line); display:grid; place-items:center; position:relative;
+    transition:border-color .2s, box-shadow .2s; font-size:19px;
+  }
+  .node[data-kind="gate"] .ring, .node[data-kind="eval"] .ring { border-radius:8px; }
+  .node.lit .ring { border-color:var(--signal); box-shadow:0 0 0 4px color-mix(in srgb, var(--signal) 16%, transparent); }
+  .node.heat .ring { border-color:var(--heat); box-shadow:0 0 0 4px color-mix(in srgb, var(--heat) 16%, transparent); }
+  .node .glyph { color:var(--ink-dim); }
+  .node.lit .glyph { color:var(--signal); }
+  .node.heat .glyph { color:var(--heat); }
+  .node .cap { text-align:center; font-size:10px; letter-spacing:.04em; color:var(--ink-dim); max-width:96px; }
+  .node .cap b { color:var(--ink); font-weight:600; display:block; font-size:10.5px; letter-spacing:.02em; }
+  .node[tabindex]:focus-visible .ring { outline:2px solid var(--signal); outline-offset:3px; }
+
+  /* popover: "open questions here" */
+  .pop { position:absolute; top:64px; left:50%; transform:translateX(-50%) translateY(-6px);
+    width:225px; background:var(--panel); border:1px solid var(--signal); border-radius:5px;
+    padding:10px 11px; z-index:20; box-shadow:0 14px 40px -14px #000;
+    opacity:0; visibility:hidden; transition:opacity .15s, transform .15s; }
+  .node:hover .pop, .node:focus-within .pop { opacity:1; visibility:visible; transform:translateX(-50%) translateY(0); }
+  .pop::before{ content:""; position:absolute; top:-6px; left:50%; transform:translateX(-50%) rotate(45deg);
+    width:9px; height:9px; background:var(--panel); border-left:1px solid var(--signal); border-top:1px solid var(--signal); }
+  .pop .qh { font-size:9px; letter-spacing:.14em; text-transform:uppercase; color:var(--signal); margin-bottom:6px; }
+  .pop ul { margin:0; padding:0; list-style:none; display:flex; flex-direction:column; gap:5px; }
+  .pop li { font-size:10.5px; line-height:1.35; color:var(--ink-dim); padding-left:12px; position:relative; }
+  .pop li::before{ content:"→"; position:absolute; left:0; color:var(--ink-faint); }
+
+  .legend { display:flex; flex-wrap:wrap; gap:12px 18px; padding:12px 16px 14px; border-top:1px solid var(--line-soft);
+    margin-top:6px; font-size:10px; color:var(--ink-dim); letter-spacing:.03em; }
+  .legend .it { display:flex; align-items:center; gap:6px; }
+  .legend .sw { width:10px; height:10px; border-radius:2px; }
+
+  /* ---- hypothesis tree ---- */
+  .tree-head { display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; }
+  .tree-head .name { color:var(--ink); font-size:12px; letter-spacing:.02em; text-transform:none; }
+  .tree-head .thesis { color:var(--ink-dim); font-size:10.5px; text-transform:none; letter-spacing:0; }
+  .treebox { padding:6px 10px 14px; overflow-x:auto; }
+  svg.tree { display:block; width:100%; min-width:520px; height:auto; }
+  .tree .lnk { stroke:var(--line); stroke-width:1.5; fill:none; transition:stroke .3s; }
+  .tree .lnk.promote { stroke:var(--signal); }
+  .tree .lnk.kill { stroke:var(--kill); stroke-dasharray:3 3; opacity:.5; }
+  .tree .lnk.hold { stroke:var(--hold); }
+  .tree text { font-family:var(--mono); fill:var(--ink); }
+  .tree .rootn { fill:var(--panel-2); stroke:var(--signal); stroke-width:2; }
+  .tree .leaf { fill:var(--panel-2); stroke:var(--line); stroke-width:1.5; transition:stroke .3s, opacity .3s; }
+  .tree .leaf.promote { stroke:var(--signal); }
+  .tree .leaf.kill { stroke:var(--kill); opacity:.55; }
+  .tree .leaf.hold { stroke:var(--hold); }
+  .tree .badge { font-size:8.5px; letter-spacing:.02em; }
+
+  /* ---- telemetry column ---- */
+  .tel { display:flex; flex-direction:column; gap:14px; }
+  .meters { padding:11px 12px; display:flex; flex-direction:column; gap:11px; }
+  .meter .lab { display:flex; justify-content:space-between; align-items:baseline; font-size:10px; color:var(--ink-dim); }
+  .meter .lab .id { color:var(--ink); }
+  .meter .lab .val { color:var(--ink-dim); }
+  .meter .bar { position:relative; height:9px; margin-top:4px; background:var(--panel-2);
+    border:1px solid var(--line-soft); border-radius:2px; overflow:hidden; }
+  .meter .bar i { position:absolute; left:0; top:0; height:100%; width:0; background:var(--signal);
+    transition:width .25s linear, background .25s; }
+  .meter .bar i.warn { background:var(--heat); }
+  .meter .bar i.over { background:var(--kill); }
+  .meter .cap-line { position:absolute; top:-2px; height:13px; width:2px; background:var(--ink); opacity:.6; }
+  .meter .cap-line::after{ content:attr(data-l); position:absolute; top:-11px; left:50%; transform:translateX(-50%);
+    font-size:7.5px; color:var(--ink-faint); white-space:nowrap; }
+
+  .sm { padding:12px; display:flex; align-items:center; gap:14px; }
+  .sm .cycle { position:relative; width:74px; height:74px; flex:0 0 auto; }
+  .sm .cycle .st { position:absolute; width:8px; height:8px; border-radius:50%; background:var(--line);
+    transform:translate(-50%,-50%); transition:background .2s, box-shadow .2s; }
+  .sm .cycle .st.on { background:var(--signal); box-shadow:0 0 9px var(--signal); }
+  .sm .cycle svg { position:absolute; inset:0; }
+  .sm .now { font-size:10px; color:var(--ink-dim); line-height:1.7; }
+  .sm .now b { color:var(--signal); display:block; font-size:12px; letter-spacing:.08em; }
+
+  .log { padding:4px 0 6px; max-height:230px; overflow-y:auto; }
+  .log .row { display:grid; grid-template-columns:38px 16px 1fr; gap:7px; align-items:baseline;
+    padding:4px 12px; font-size:10.5px; border-bottom:1px solid var(--line-soft); }
+  .log .row .t { color:var(--ink-faint); }
+  .log .row .g { font-weight:700; text-align:center; }
+  .log .row .m { color:var(--ink-dim); line-height:1.3; }
+  .log .row .m em { color:var(--ink); font-style:normal; }
+  .g.promote{ color:var(--signal);} .g.kill{ color:var(--kill);} .g.gate{ color:var(--heat);} .g.hold{ color:var(--hold);}
+  .log .empty { padding:16px 12px; color:var(--ink-faint); font-size:10.5px; }
+
+  .foot { margin-top:16px; color:var(--ink-faint); font-size:10px; letter-spacing:.02em; line-height:1.6; }
+  .foot code { color:var(--ink-dim); }
+
+  /* ---- live-data drawer ---- */
+  .drawer { background:var(--panel); border:1px solid var(--signal); border-radius:5px;
+    padding:12px 13px; margin:-4px 0 14px; display:flex; flex-direction:column; gap:9px; }
+  .drawer-head { display:flex; justify-content:space-between; align-items:baseline; gap:14px;
+    font-size:11px; color:var(--ink-dim); line-height:1.4; }
+  .drawer-head b { color:var(--ink); }
+  .drawer-head code { color:var(--signal); }
+  .dsmode { color:var(--ink-faint); font-size:10px; letter-spacing:.08em; text-transform:uppercase; white-space:nowrap; }
+  .drawer textarea { width:100%; min-height:118px; resize:vertical; background:var(--panel-2);
+    color:var(--ink); border:1px solid var(--line); border-radius:3px; padding:9px 10px;
+    font-family:var(--mono); font-size:11px; line-height:1.5; }
+  .drawer textarea:focus-visible { outline:2px solid var(--signal); outline-offset:1px; }
+  .drawer-actions { display:flex; align-items:center; gap:10px; }
+  .loadmsg { font-size:11px; color:var(--ink-dim); }
+  .loadmsg.ok { color:var(--signal); } .loadmsg.err { color:var(--kill); }
+  .livebadge { display:none; align-items:center; gap:6px; padding:2px 8px; border-radius:2px;
+    border:1px solid var(--signal); color:var(--signal); font-size:9.5px; letter-spacing:.1em;
+    text-transform:uppercase; margin-left:8px; }
+  body.live .livebadge { display:inline-flex; }
+  body.live #play, body.live #scrub { opacity:.4; pointer-events:none; }
+
+  @media (prefers-reduced-motion: reduce){
+    .pulse, .camp .stat.active, .tag .dot { animation:none !important; }
+    * { transition:none !important; }
+  }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <span class="tag"><span class="dot"></span>autoresearch · mission control</span><span class="livebadge" id="livebadge">● live · registry</span>
+      <h1>Reproduce, then find the truth <span class="dim">the leaderboard hides.</span></h1>
+      <div class="sub">A live view of the program: ten reproduce-then-beat campaigns flowing through one
+        Ray pipeline — data source to serving — costed in A10G-equivalent hours, with every hypothesis
+        resolved to <b>promote</b>, <b>kill</b>, or <b>hold</b>. Scrub time. Hover a stage for the questions open there.</div>
+    </div>
+    <div class="transport">
+      <button class="btn" id="loadbtn" aria-label="load a real registry.jsonl">load registry ▾</button>
+      <button class="btn" id="play" aria-label="play or pause the program timeline">❚❚ pause</button>
+      <div class="clock tnum"><span class="lbl">T</span> <span id="clockval">00.0</span><span class="lbl">%</span></div>
+    </div>
+  </header>
+
+  <div id="drawer" class="drawer" hidden>
+    <div class="drawer-head">
+      <span><b>Live mode</b> — paste JSONL from <code>harness/registry.py</code> (one run/decision per line). Budget meters &amp; the registry log go live from real rows.</span>
+      <span class="dsmode" id="dsmode">source: demo</span>
+    </div>
+    <textarea id="regin" spellcheck="false" aria-label="registry JSONL input"></textarea>
+    <div class="drawer-actions">
+      <button class="btn" id="loadgo">▶ go live</button>
+      <button class="btn" id="demogo">↺ back to demo</button>
+      <span class="loadmsg" id="loadmsg"></span>
+    </div>
+  </div>
+
+  <div style="margin:-6px 0 16px"><input type="range" id="scrub" min="0" max="1000" value="0" aria-label="program timeline scrubber"></div>
+
+  <div class="grid">
+    <!-- campaigns -->
+    <div class="panel rail">
+      <div class="head"><span>Campaigns</span><span class="k">vertical · wave</span></div>
+      <div class="rows" id="rail" role="listbox" aria-label="campaigns"></div>
+    </div>
+
+    <!-- center -->
+    <div style="display:flex; flex-direction:column; gap:14px;">
+      <div class="panel">
+        <div class="head"><span>Ray pipeline</span><span class="k" id="spineflow">idle</span></div>
+        <div class="stage-wrap">
+          <div class="spine" id="spine">
+            <div class="track"><div class="fill" id="trackfill"></div></div>
+          </div>
+        </div>
+        <div class="legend">
+          <div class="it"><span class="sw" style="background:var(--signal)"></span>data / flow / promote</div>
+          <div class="it"><span class="sw" style="background:var(--heat)"></span>GPU cost / heat</div>
+          <div class="it"><span class="sw" style="background:var(--kill)"></span>kill / fail</div>
+          <div class="it"><span class="sw" style="background:var(--hold)"></span>hold / pending</div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="head tree-head">
+          <span>Hypothesis tree</span>
+          <span class="name" id="treename">—</span>
+          <span class="thesis" id="treethesis"></span>
+        </div>
+        <div class="treebox"><svg class="tree" id="tree" viewBox="0 0 640 260" preserveAspectRatio="xMinYMin meet" role="img" aria-label="hypothesis decision tree"></svg></div>
+      </div>
+    </div>
+
+    <!-- telemetry -->
+    <div class="tel">
+      <div class="panel">
+        <div class="head"><span>Budget</span><span class="k">A10G-eq hr</span></div>
+        <div class="meters" id="meters"></div>
+      </div>
+      <div class="panel">
+        <div class="head"><span>Loop state</span><span class="k">§ state machine</span></div>
+        <div class="sm">
+          <div class="cycle" id="cycle"></div>
+          <div class="now">phase<b id="phase">DIAGNOSE</b><span id="phasehint">reading the reference's code</span></div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="head"><span>Registry</span><span class="k">R1 · append-only</span></div>
+        <div class="log" id="log"><div class="empty">no rows yet — press play</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="foot">
+    Data model = <code>harness/registry.py</code> (runs + typed decisions, cost in raw &amp; A10G-equivalent hours).
+    Outcomes reflect the campaign plans &amp; <code>critiques.md</code>: efficiency beats and the ESM-2 readout
+    <span style="color:var(--signal)">promote</span>; the E5 pooling swap <span style="color:var(--kill)">kills</span>
+    on the mechanism check; campaign 02's 7B run reads <b>660 A10G-eq → Wave 3</b>, not the Wave-2 its raw hours suggest.
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  // ---- pipeline stages (the user's chain + the two rigor checkpoints) ----
+  var STAGES = [
+    {k:"source", ic:"🗄", t:"Data Source", s:"Ray Data ingest",
+      q:["Which dataset version? (drift is THE repro trap)","Redistributable / commercial-use license OK?","What's the input audit — what could we silently drop?"]},
+    {k:"prep", ic:"⚙", t:"Preprocess", s:"tokenize · chunk",
+      q:["Truncation / chunking — real signal loss?","Normalization & feature schema = theirs?","One protocol module for split + features?"]},
+    {k:"gate", ic:"⎉", t:"Repro Gate", s:"artifact + pipeline",
+      q:["Artifact gate green (their ckpt, their eval)?","Pipeline gate green (our Ray harness)?","No number, no claim — both before spend."]},
+    {k:"gpu", ic:"▮", t:"GPU Compute", s:"Ray Train / embed",
+      q:["Rung: smoke → proxy → full?","Context length — where's the sweet spot?","Which readout to train / read through?","Spot + checkpoint? Fractional GPU?"]},
+    {k:"registry", ic:"≣", t:"Registry", s:"R1 ledger",
+      q:["Bootstrap-CI every number (count positives)?","eval_pin consistent — comparing within one pin?","Decision: promote / kill / hold + why?"]},
+    {k:"eval", ic:"⊹", t:"Eval", s:"score + controls",
+      q:["Beaten the STRONGEST cheap baseline?","Shuffled-label control collapses to floor?","Leak-audit trigger armed for 'too good'?"]},
+    {k:"serve", ic:"◈", t:"Serve / Batch", s:"Ray Serve",
+      q:["Batch vs online (3–10× cheaper)?","Scale-to-zero + min_nodes 0?","One backbone → many consumers?"]}
+  ];
+
+  // ---- campaigns (from the seed plans; waves corrected per critiques) ----
+  // wave caps in A10G-eq hr: W1=60, W2=400, W3=2000
+  var C = [
+    {id:"00", nm:"Transaction-FM fraud", vert:"Fintech", wave:1, gpu:"A10G", tier:1.0, raw:20, metric:"AP", lic:"yes",
+     thesis:"embedding-alone beat their fusion — WON", done:true,
+     hyps:[["readout thesis","ok","promote"],["context = 1024","ok","promote"],["freq-prior blend","ok","promote"]]},
+    {id:"01", nm:"HSTU generative recsys", vert:"E-commerce", wave:1, gpu:"A10G", tier:1.0, raw:48, metric:"NDCG@10", lic:"needs-legal",
+     thesis:"readout + context + freq-blend, on Amazon Books",
+     hyps:[["readout head sweep","ok","hold"],["seq-length sweet spot","ok","promote"],["+popularity blend","ok","hold"]]},
+    {id:"02", nm:"Zero-RL reasoning", vert:"AI-natives", wave:3, gpu:"H100", tier:5.5, raw:120, metric:"pass@1", lic:"yes",
+     thesis:"cheaper recipe holds the GRPO gain",
+     hyps:[["GRPO-LoRA @ fraction","ok","promote"],["length-penalized reward","ok","hold"],["rollouts vs steps","ok","kill"]]},
+    {id:"03", nm:"DLRM-DCNv2 CTR", vert:"Ad tech", wave:2, gpu:"A100", tier:3.5, raw:50, metric:"AUROC", lic:"no",
+     thesis:"efficiency to the MLPerf gate — Criteo blocks marketing",
+     hyps:[["better shard / batch","ok","hold"],["deeper cross interaction","ok","kill"]]},
+    {id:"04", nm:"BEIR dense retrieval", vert:"Enterprise search", wave:1, gpu:"A10G", tier:1.0, raw:30, metric:"nDCG@10", lic:"yes",
+     thesis:"platform-efficiency demo; quality held",
+     hyps:[["encode-pipeline efficiency","efficiency","promote"],["pooling swap","fails-mech","kill"],["long-doc chunking","ok","hold"]]},
+    {id:"05", nm:"Prithvi geospatial FM", vert:"Autonomy/climate", wave:2, gpu:"A100", tier:3.5, raw:45, metric:"mIoU", lic:"yes",
+     thesis:"honest reckoning vs a tuned U-Net",
+     hyps:[["stronger decoder head","ok","hold"],["tuned-U-Net reckoning","finding","promote"],["temporal input helps?","ok","kill"]]},
+    {id:"06", nm:"OpenVLA robotics", vert:"Physical AI", wave:3, gpu:"A100", tier:3.5, raw:170, metric:"success rate", lic:"needs-legal",
+     thesis:"quantify the robustness gap (not raw success)",
+     hyps:[["robustness-gap finding","finding","promote"],["aug fine-tune recovers?","ok","hold"],["action-head swap","ok","kill"]]},
+    {id:"07", nm:"Chronos time-series FM", vert:"Retail/energy", wave:2, gpu:"A100", tier:3.5, raw:40, metric:"WQL/MASE", lic:"yes",
+     thesis:"domain fine-tune beats its own zero-shot",
+     hyps:[["domain fine-tune","ok","promote"],["decoding / quantization","ok","kill"],["leakage-honest subset","finding","hold"]]},
+    {id:"08", nm:"ESM-2 protein readout", vert:"Life sciences", wave:1, gpu:"A10G", tier:1.0, raw:12, metric:"Spearman ρ", lic:"yes",
+     thesis:"the PUREST test of the readout thesis",
+     hyps:[["readout ladder 0.54→0.79","ok","promote"],["best hidden layer","ok","hold"],["frozen vs light FT","ok","hold"]]},
+    {id:"09", nm:"ASR Whisper", vert:"Speech", wave:2, gpu:"A100", tier:3.5, raw:30, metric:"WER", lic:"yes",
+     thesis:"domain fine-tune + batch-transcription cost win",
+     hyps:[["domain fine-tune","ok","promote"],["batch-pipeline cost","efficiency","promote"],["decoding variants","ok","kill"]]}
+  ];
+  var CAP=[0,60,400,2000]; // wave -> A10G-eq cap
+  C.forEach(function(c){ c.eq = Math.round(c.raw*c.tier); });
+
+  // schedule each campaign on the global 0..1 clock, by wave
+  var startByWave={1:0.04,2:0.34,3:0.58}, dur={1:0.30,2:0.34,3:0.36};
+  C.forEach(function(c,i){
+    if(c.done){ c.a=0.0; c.d=0.16; }
+    else { var base=startByWave[c.wave]; c.a=base + (i%3)*0.045; c.d=dur[c.wave]; }
+    c.end=c.a+c.d;
+    // resolve times for each hypothesis, spread across the back half
+    c.hyps.forEach(function(h,j){ h.rt = c.a + c.d*(0.45 + 0.16*j); });
+    c.gateT = c.a + c.d*0.22;
+  });
+
+  var GLYPHMECH={ok:"✓ plausible", "fails-mech":"✗ probe first", efficiency:"$ efficiency", finding:"◎ finding"};
+
+  // ---- build DOM: stages ----
+  var spine=document.getElementById("spine");
+  STAGES.forEach(function(s){
+    var n=document.createElement("div"); n.className="node"; n.dataset.kind=s.k; n.tabIndex=0;
+    n.setAttribute("aria-label", s.t+". Open questions: "+s.q.join("; "));
+    n.innerHTML='<div class="ring"><span class="glyph">'+s.ic+'</span></div>'+
+      '<div class="cap"><b>'+s.t+'</b>'+s.s+'</div>'+
+      '<div class="pop"><div class="qh">open questions here</div><ul>'+
+        s.q.map(function(q){return "<li>"+q+"</li>";}).join("")+'</ul></div>';
+    spine.appendChild(n);
+  });
+  var nodeEls=[].slice.call(spine.querySelectorAll(".node"));
+
+  // ---- build DOM: rail ----
+  var rail=document.getElementById("rail"), selected=null;
+  C.forEach(function(c){
+    var b=document.createElement("button"); b.className="camp"; b.setAttribute("role","option"); b.dataset.id=c.id;
+    b.innerHTML='<span class="stat pending"></span>'+
+      '<span><span class="nm"><span class="id">'+c.id+'</span> '+c.nm+'</span>'+
+      '<span class="vert">'+c.vert+'</span></span>'+
+      '<span class="wavechip">W'+c.wave+'</span>';
+    b.addEventListener("click", function(){ select(c.id); });
+    rail.appendChild(b); c._el=b; c._stat=b.querySelector(".stat");
+  });
+
+  // ---- build DOM: budget meters ----
+  var meters=document.getElementById("meters");
+  C.forEach(function(c){
+    var cap=CAP[c.wave];
+    var m=document.createElement("div"); m.className="meter";
+    var capPct=Math.min(100, c.eq/cap*100);
+    // show the lower wave's cap line when a campaign visibly overruns it (the 02 story)
+    var lowCap = c.wave>1 ? CAP[c.wave-1] : 0;
+    var lowPct = lowCap? Math.min(100, lowCap/cap*100) : 0;
+    m.innerHTML='<div class="lab"><span class="id">'+c.id+' · <span style="color:var(--ink-dim)">W'+c.wave+'</span></span>'+
+      '<span class="val tnum"><span data-spent>0</span> / '+cap+'</span></div>'+
+      '<div class="bar"><i data-fill></i>'+
+        (lowCap?'<span class="cap-line" style="left:'+lowPct.toFixed(1)+'%" data-l="W'+(c.wave-1)+' cap"></span>':'')+
+      '</div>';
+    meters.appendChild(m);
+    c._fill=m.querySelector("[data-fill]"); c._spent=m.querySelector("[data-spent]"); c._cap=cap;
+  });
+
+  // ---- state machine cycle ----
+  var PHASES=[["DIAGNOSE","reading the reference's code"],["PROPOSE","ranking cheap hypotheses"],
+    ["REVIEW","fresh-context adversarial check"],["RUN","smoke → proxy → full"],["SCORE","CI + controls, promote/kill"]];
+  var cyc=document.getElementById("cycle"), R=30, cx=37, cy=37;
+  var svgNS="http://www.w3.org/2000/svg";
+  var ring=document.createElementNS(svgNS,"svg"); ring.setAttribute("viewBox","0 0 74 74");
+  var circ=document.createElementNS(svgNS,"circle");
+  circ.setAttribute("cx",cx);circ.setAttribute("cy",cy);circ.setAttribute("r",R);
+  circ.setAttribute("fill","none");circ.setAttribute("stroke","var(--line)");circ.setAttribute("stroke-width","1");
+  ring.appendChild(circ); cyc.appendChild(ring);
+  var stDots=PHASES.map(function(p,i){
+    var ang=-Math.PI/2 + i/PHASES.length*2*Math.PI;
+    var d=document.createElement("div"); d.className="st";
+    d.style.left=(cx+R*Math.cos(ang))+"px"; d.style.top=(cy+R*Math.sin(ang))+"px";
+    d.title=p[0]; cyc.appendChild(d); return d;
+  });
+
+  // ---- hypothesis tree render ----
+  var tree=document.getElementById("tree");
+  function renderTree(c, clock){
+    tree.innerHTML="";
+    document.getElementById("treename").textContent = c.id+" · "+c.nm;
+    document.getElementById("treethesis").textContent = "“"+c.thesis+"”";
+    var n=c.hyps.length, W=640, H=Math.max(150, 40+n*54);
+    tree.setAttribute("viewBox","0 0 "+W+" "+H);
+    var rx=40, ry=H/2, lx=W-250;
+    function mk(tag,at){ var e=document.createElementNS(svgNS,tag); for(var k in at) e.setAttribute(k,at[k]); return e; }
+    c.hyps.forEach(function(h,i){
+      var y=(i+0.5)*(H/n);
+      var resolved = clock>=h.rt && (c.done||clock>=c.a);
+      var state = resolved ? h[2] : "hold";
+      var path=mk("path",{d:"M"+(rx+22)+","+ry+" C"+(lx-70)+","+ry+" "+(lx-70)+","+y+" "+lx+","+y, class:"lnk "+state});
+      tree.appendChild(path);
+      tree.appendChild(mk("rect",{x:lx, y:y-15, width:206, height:30, rx:5, class:"leaf "+state}));
+      var label=mk("text",{x:lx+10, y:y-2, "font-size":"11"}); label.textContent=h[0]; tree.appendChild(label);
+      var badge=mk("text",{x:lx+10, y:y+11, class:"badge", fill:"var(--ink-dim)"});
+      badge.textContent=(resolved? state.toUpperCase()+"  ·  " : "")+GLYPHMECH[h[1]];
+      badge.setAttribute("fill", state==="kill"?"var(--kill)":state==="promote"?"var(--signal)":"var(--ink-dim)");
+      tree.appendChild(badge);
+    });
+    tree.appendChild(mk("circle",{cx:rx, cy:ry, r:22, class:"rootn"}));
+    var rt=mk("text",{x:rx, y:ry+4, "text-anchor":"middle", "font-size":"12", "font-weight":"700", fill:"var(--signal)"});
+    rt.textContent=c.id; tree.appendChild(rt);
+  }
+
+  function select(id){
+    selected=id;
+    C.forEach(function(c){ c._el.setAttribute("aria-selected", String(c.id===id)); });
+    renderTree(C.filter(function(c){return c.id===id;})[0], clock);
+  }
+
+  // ---- log ----
+  var logEl=document.getElementById("log");
+  function renderLog(clock){
+    var rows=[];
+    C.forEach(function(c){
+      if(clock>=c.gateT) rows.push([c.gateT, "gate","⎉", c.id+" repro gates <em>green</em> — spend unlocked"]);
+      c.hyps.forEach(function(h){
+        if(clock>=h.rt){
+          var g=h[2]==="promote"?"↑":h[2]==="kill"?"✕":"·";
+          rows.push([h.rt, h[2], g, c.id+" "+h[2]+": <em>"+h[0]+"</em>"]);
+        }
+      });
+    });
+    rows.sort(function(a,b){return b[0]-a[0];});
+    if(!rows.length){ logEl.innerHTML='<div class="empty">no rows yet — press play</div>'; return; }
+    logEl.innerHTML = rows.slice(0,40).map(function(r){
+      return '<div class="row"><span class="t tnum">'+(r[0]*100).toFixed(1)+'</span>'+
+        '<span class="g '+r[1]+'">'+r[2]+'</span><span class="m">'+r[3]+'</span></div>';
+    }).join("");
+  }
+
+  // ---- pulses along the spine ----
+  var pulses=[], spineHost=document.querySelector(".stage-wrap"), track=document.querySelector(".track");
+  function spawnPulse(heat){
+    var p=document.createElement("div"); p.className="pulse"+(heat?" heat":"");
+    spineHost.appendChild(p);
+    pulses.push({el:p, x:0, sp:0.16+Math.random()*0.12});
+  }
+  function trackGeom(){
+    var tb=track.getBoundingClientRect(), hb=spineHost.getBoundingClientRect();
+    return {left:tb.left-hb.left, width:tb.width, top:tb.top-hb.top};
+  }
+
+  // ---- master clock ----
+  var clock=0, playing=!reduce, last=null, mode="demo", liveData=null;
+  var scrub=document.getElementById("scrub"), clockval=document.getElementById("clockval");
+  var playBtn=document.getElementById("play");
+  playBtn.addEventListener("click", function(){ playing=!playing; playBtn.textContent=playing?"❚❚ pause":"▶ play"; last=null; if(playing) requestAnimationFrame(loop); });
+  scrub.addEventListener("input", function(){ clock=scrub.value/1000; playing=false; playBtn.textContent="▶ play"; applyState(); });
+  if(reduce){ clock=1; playBtn.textContent="▶ play"; }
+
+  function applyState(){
+    if(mode==="live") return;               // live mode renders from real rows, not the clock
+    clockval.textContent=(clock*100).toFixed(1);
+    scrub.value=Math.round(clock*1000);
+    // campaigns
+    var anyActive=false;
+    C.forEach(function(c){
+      var st="pending";
+      if(c.done){ st = clock>c.end? "done":"active"; }
+      else if(clock>=c.end) st="done";
+      else if(clock>=c.a) st="active";
+      c._stat.className="stat "+st;
+      if(st==="active") anyActive=true;
+      // budget fill
+      var frac = c.done ? (clock<c.end? clock/c.end:1) : (clock<=c.a?0: clock>=c.end?1:(clock-c.a)/c.d);
+      var spent=Math.round(c.eq*Math.max(0,Math.min(1,frac)));
+      c._spent.textContent=spent;
+      var pct=spent/c._cap*100;
+      c._fill.style.width=Math.min(100,pct).toFixed(1)+"%";
+      var lowCap = c.wave>1? CAP[c.wave-1]:1e9;
+      c._fill.className = spent>c._cap? "over" : spent>lowCap? "warn":"";
+    });
+    document.getElementById("spineflow").textContent = anyActive? "streaming":"idle";
+    // pipeline lit stages: light source→registry when active, heat the gpu node
+    var prog = anyActive? (Math.sin(clock*30)+1)/2 : 0;
+    nodeEls.forEach(function(n,i){
+      n.classList.toggle("lit", anyActive && i<=4);
+      n.classList.toggle("heat", anyActive && STAGES[i].k==="gpu");
+    });
+    document.getElementById("trackfill").style.width = anyActive? (55+prog*40).toFixed(0)+"%" : "0%";
+    // state machine phase from clock
+    var ph = Math.floor((clock*PHASES.length*4)%PHASES.length);
+    stDots.forEach(function(d,i){ d.classList.toggle("on", i===ph); });
+    document.getElementById("phase").textContent=PHASES[ph][0];
+    document.getElementById("phasehint").textContent=PHASES[ph][1];
+    renderLog(clock);
+    if(selected) renderTree(C.filter(function(c){return c.id===selected;})[0], clock);
+  }
+
+  function loop(ts){
+    if(!playing) return;
+    if(last==null) last=ts;
+    var dt=(ts-last)/1000; last=ts;
+    clock += dt*0.045;               // ~22s for a full program pass
+    if(clock>=1){ clock=1; playing=false; playBtn.textContent="▶ play"; }
+    applyState();
+    // pulses
+    var g=trackGeom();
+    if(!reduce && Math.random()<0.14) spawnPulse(Math.random()<0.4);
+    for(var i=pulses.length-1;i>=0;i--){
+      var p=pulses[i]; p.x += p.sp*dt*60/60;
+      p.el.style.left=(g.left + g.width*p.x)+"px";
+      p.el.style.top=g.top+"px";
+      if(p.x>=1){ p.el.remove(); pulses.splice(i,1); }
+    }
+    requestAnimationFrame(loop);
+  }
+
+  // ---- live mode: drive meters + log from a real registry.jsonl ----
+  var TERMINAL={SUCCEEDED:1,FAILED:1,ERRORED:1,TERMINATED:1,OUT_OF_RETRIES:1};
+  function cById(campId){ var k=String(campId).slice(0,2); return C.filter(function(c){return c.id===k;})[0]; }
+
+  function parseRegistry(text){
+    var lines=text.split(/\r?\n/).map(function(s){return s.trim();}).filter(Boolean);
+    var byC={}, nRuns=0, nDec=0, bad=0;
+    lines.forEach(function(ln){
+      var r; try{ r=JSON.parse(ln); }catch(e){ bad++; return; }
+      var c=cById(r.campaign); if(!c) return;
+      var b=byC[c.id]||(byC[c.id]={runs:{}, terminal:{}, decisions:[]});
+      if(r.type==="decision"){ b.decisions.push(r); nDec++; }
+      else { // run row (default)
+        var st=r.status||"RUNNING";
+        // keep terminal row over heartbeat, dedupe by run_id
+        if(TERMINAL[st] || !b.runs[r.run_id]) b.runs[r.run_id]={status:st, cost:r.cost||{}};
+        nRuns++;
+      }
+    });
+    // compute spend from terminal rows only (mirrors registry.campaign_spend)
+    Object.keys(byC).forEach(function(id){
+      var b=byC[id], eq=0, raw=0;
+      Object.keys(b.runs).forEach(function(rid){
+        var run=b.runs[rid];
+        if(TERMINAL[run.status]){ eq += (+run.cost.a10g_equiv_hours||0); raw += (+run.cost.gpu_hours||0); }
+      });
+      b.eq=Math.round(eq); b.raw=Math.round(raw*10)/10;
+    });
+    return {byC:byC, nRuns:nRuns, nDec:nDec, bad:bad, nLines:lines.length};
+  }
+
+  function renderLive(){
+    document.body.classList.add("live");
+    document.getElementById("spineflow").textContent="live · registry";
+    document.getElementById("dsmode").textContent="source: live";
+    document.getElementById("livebadge").textContent="● live · "+liveData.nRuns+" runs · "+liveData.nDec+" decisions";
+    // meters
+    C.forEach(function(c){
+      var b=liveData.byC[c.id]; var spent=b?b.eq:0;
+      c._spent.textContent=spent;
+      var pct=spent/c._cap*100;
+      c._fill.style.width=Math.min(100,pct).toFixed(1)+"%";
+      var lowCap=c.wave>1?CAP[c.wave-1]:1e9;
+      c._fill.className = spent>c._cap?"over": spent>lowCap?"warn":"";
+      var anyTerm=b && Object.keys(b.runs).some(function(r){return TERMINAL[b.runs[r].status];});
+      c._stat.className="stat "+(b?(anyTerm?"done":"active"):"pending");
+    });
+    // log from real rows (decisions first, then run terminal states), newest-input last -> show reversed
+    var rows=[];
+    C.forEach(function(c){
+      var b=liveData.byC[c.id]; if(!b) return;
+      b.decisions.forEach(function(d){
+        var g=d.decision==="promote"?"↑":d.decision==="kill"?"✕":"·";
+        rows.push([d.decision, g, c.id+" "+d.decision+": <em>"+(d.reason||"")+"</em>"]);
+      });
+      Object.keys(b.runs).forEach(function(rid){
+        var st=b.runs[rid].status;
+        rows.push([TERMINAL[st]?"gate":"hold", "•", c.id+" run <em>"+rid+"</em> — "+st]);
+      });
+    });
+    var logEl=document.getElementById("log");
+    logEl.innerHTML = rows.length? rows.reverse().map(function(r){
+      return '<div class="row"><span class="t tnum">—</span><span class="g '+r[0]+'">'+r[1]+'</span><span class="m">'+r[2]+'</span></div>';
+    }).join("") : '<div class="empty">no rows parsed — check the JSONL</div>';
+    // stages ambient-on to signal a live pipeline
+    nodeEls.forEach(function(n,i){ n.classList.toggle("lit", i<=4); n.classList.toggle("heat", STAGES[i].k==="gpu"); });
+    document.getElementById("trackfill").style.width="70%";
+  }
+
+  var SAMPLE=[
+    '{"type":"run","campaign":"08-esm2","run_id":"job_embed","cost":{"gpu_hours":3,"gpu_type":"A10G","a10g_equiv_hours":3},"status":"SUCCEEDED","eval_pin":"sha256:gb1"}',
+    '{"type":"run","campaign":"08-esm2","run_id":"job_probe","cost":{"gpu_hours":0.2,"gpu_type":"A10G","a10g_equiv_hours":0.2},"status":"SUCCEEDED","eval_pin":"sha256:gb1"}',
+    '{"type":"decision","campaign":"08-esm2","run_ids":["job_probe"],"decision":"promote","reason":"attention1d readout hits published 0.79"}',
+    '{"type":"run","campaign":"04-beir","run_id":"job_enc","cost":{"gpu_hours":18,"gpu_type":"A10G","a10g_equiv_hours":18},"status":"SUCCEEDED","eval_pin":"sha256:beir"}',
+    '{"type":"decision","campaign":"04-beir","run_ids":["job_pool"],"decision":"kill","reason":"pooling swap below mean-pool baseline (mechanism check)"}',
+    '{"type":"run","campaign":"02-rl","run_id":"job_7b","cost":{"gpu_hours":120,"gpu_type":"H100","a10g_equiv_hours":660},"status":"SUCCEEDED","eval_pin":"sha256:math500"}'
+  ].join("\n");
+
+  var drawer=document.getElementById("drawer"), regin=document.getElementById("regin"), loadmsg=document.getElementById("loadmsg");
+  regin.value=SAMPLE;
+  document.getElementById("loadbtn").addEventListener("click", function(){ drawer.hidden=!drawer.hidden; });
+  document.getElementById("loadgo").addEventListener("click", function(){
+    var d=parseRegistry(regin.value);
+    if(!d.nRuns && !d.nDec){ loadmsg.className="loadmsg err"; loadmsg.textContent="no valid rows parsed"+(d.bad?" ("+d.bad+" unparseable lines)":""); return; }
+    liveData=d; mode="live"; playing=false; playBtn.textContent="▶ play";
+    loadmsg.className="loadmsg ok"; loadmsg.textContent="live: "+d.nRuns+" runs, "+d.nDec+" decisions"+(d.bad?" · "+d.bad+" skipped":"");
+    renderLive();
+  });
+  document.getElementById("demogo").addEventListener("click", function(){
+    mode="demo"; document.body.classList.remove("live"); loadmsg.textContent=""; document.getElementById("dsmode").textContent="source: demo";
+    document.getElementById("livebadge").textContent="● live · registry";
+    if(!reduce){ playing=true; playBtn.textContent="❚❚ pause"; last=null; requestAnimationFrame(loop); }
+    applyState();
+  });
+
+  select("08");           // open on the honest readout-thesis test
+  applyState();
+  if(playing) requestAnimationFrame(loop);
+})();
+</script>

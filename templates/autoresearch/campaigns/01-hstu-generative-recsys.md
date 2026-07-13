@@ -1,6 +1,6 @@
 # Campaign 01 — HSTU generative recommender (Meta) vs SASRec
 
-> **Status: SEED (not started).** The natural second vertical off the FM work — same
+> **Status: SEED (not started).** The natural second domain off the FM work — same
 > sequential-encoder shape, a public benchmark with a pinned results table, and the repo is
 > already cloned at `~/anyscale/generative-recommenders`.
 
@@ -10,14 +10,13 @@ Reproduce Meta's HSTU sequential recommender's published HR@10/NDCG@10 on the pu
 MovieLens/Amazon benchmarks, then push it — the direct recsys analog of the transaction-FM
 readout/context work.
 
-## 2. Vertical & why Anyscale
+## 2. Why this is a good autoresearch testbed
 
-- **Vertical:** e-commerce / media & streaming recommendation.
-- **Why Anyscale:** maps to the e-commerce playbook (ranking/recsys) and echoes **Pinterest's
-  30× cost cut (Spark→Ray Data)** and Amazon's 82% cut. Ray Train DDP for the transducer +
-  Ray Data for sequence preprocessing + Ray Serve for the M-FALCON online path. HSTU's whole
-  thesis is *scaling* sequential recommenders — the ScalingConfig-only laptop→multinode story
-  is native here.
+- **What makes it clean:** ships training code + per-dataset configs + a verified results table;
+  a public benchmark; carries the readout / context-length / frequency-blend theses directly.
+- **Ray substrate it exercises:** Ray Train DDP for the transducer, Ray Data for sequence
+  preprocessing, Ray Tune ASHA over the config matrix. HSTU's thesis is *scaling* sequence models,
+  so the laptop→multinode path is exercised natively.
 
 ## 3. Reference
 

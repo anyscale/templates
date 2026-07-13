@@ -1,8 +1,8 @@
 # Campaign 05 — Prithvi geospatial FM (IBM-NASA) reproduction, then a downstream beat
 
 > **Status: SEED (not started).** A foundation-model-in-a-new-domain campaign (the
-> `AUTORESEARCH.md` "satellite imagery" case), high strategic value for the autonomy/climate
-> vertical. Medium confidence — the reference's margin over tuned baselines is contested.
+> `AUTORESEARCH.md` "satellite imagery" case) — geospatial segmentation. Medium confidence —
+> the reference's margin over tuned baselines is contested.
 
 ## 1. One-liner
 
@@ -10,14 +10,13 @@ Reproduce Prithvi-EO-2.0's published burn-scar segmentation mIoU via TerraTorch,
 whether the geospatial FM's advantage over a tuned U-Net is real and where a better
 readout/fine-tune closes or widens it.
 
-## 2. Vertical & why Anyscale
+## 2. Why this is a good autoresearch testbed
 
-- **Vertical:** autonomy / physical AI (Earth observation) — serving climate, insurance,
-  agriculture, disaster response.
-- **Why Anyscale:** the autonomy playbook's satellite/imagery branch — Ray Data heterogeneous
-  ingest of large multi-band raster tiles (binary-file ingestion, no materialization) + Ray
-  Train fine-tune. The reference fine-tunes on a single GPU via Lightning; the greenfield story
-  is "port a Lightning single-GPU fine-tune → Ray Train + Ray Data" and scale the tile pipeline.
+- **What makes it clean:** ships fine-tune + eval + downstream checkpoints (artifact gate
+  available); a contested margin over a tuned baseline makes the honest-reckoning finding valuable.
+- **Ray substrate it exercises:** Ray Data heterogeneous ingest of large multi-band raster tiles
+  (binary-file ingestion, no materialization) + Ray Train (porting a single-GPU Lightning fine-tune
+  → TorchTrainer) + Ray Data batch inference over a large area of interest.
 
 ## 3. Reference
 

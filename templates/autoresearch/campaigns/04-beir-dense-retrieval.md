@@ -1,7 +1,7 @@
 # Campaign 04 — BEIR dense retrieval (E5) reproduction, then a throughput/cost beat
 
 > **Status: SEED (not started).** The cheapest gate in the program and the purest Ray Data
-> batch-embedding story — a strong Wave-1 opener to prove the harness on a new vertical.
+> batch-embedding workload — a strong Wave-1 opener to prove the harness on a new domain.
 
 ## 1. One-liner
 
@@ -9,13 +9,14 @@ Reproduce a strong open dense retriever's published zero-shot nDCG@10 on BEIR, t
 **cost/throughput** (Ray Data batch-embedding) with retrieval quality held as the invariant —
 or on quality via a better readout/pooling.
 
-## 2. Vertical & why Anyscale
+## 2. Why this is a good autoresearch testbed
 
-- **Vertical:** enterprise search / RAG (AI-natives + creatives/productivity).
-- **Why Anyscale:** corpus embedding is Anyscale's **most-winnable workload** (batch-embeddings,
-  echoes Canva 50% cost / Mirakl 10M products/mo / Instacart semantic search). The reference
-  encodes corpora on a single GPU with faiss; the beat is heterogeneous Ray Data `map_batches`
-  (CPU chunk → GPU encode, fractional-GPU packing) with nDCG@10 as the correctness invariant.
+- **What makes it clean:** frozen encoder with shipped weights + eval → a baseline is cheap to
+  establish; pooling / chunking / embedding-efficiency are concrete improvement levers; nDCG@10
+  is the held invariant for the efficiency experiment.
+- **Ray substrate it exercises:** corpus embedding as a Ray Data `map_batches` + ActorPoolStrategy
+  pipeline (CPU chunk → GPU encode, fractional-GPU packing) vs the reference's single-GPU loop —
+  the throughput surface the efficiency experiment optimizes.
 
 ## 3. Reference
 

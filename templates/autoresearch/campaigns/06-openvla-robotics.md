@@ -10,18 +10,18 @@ Reproduce OpenVLA's published LIBERO success rate from its shipped checkpoints, 
 and attack the memorization/robustness gap the 2025 literature exposed — the defensible "beat"
 now that raw success rate is saturated.
 
-## 2. Vertical & why Anyscale
+## 2. Why this is a good autoresearch testbed
 
-- **Vertical:** physical AI / robotics (manufacturing, warehouse, autonomy).
-- **Why Anyscale:** two Ray stories — Ray Train (FSDP/LoRA) for the 7B fine-tune, and a **Ray
-  Tasks/actors fleet for parallel simulation rollout eval** (hundreds of episodes across many
-  MuJoCo workers — embarrassingly parallel, the RL/sim archetype). The eval fleet is the more
-  novel Anyscale angle: sim rollout is where robotics campaigns burn wall-clock.
+- **What makes it clean:** shipped checkpoints → eval without fine-tuning (cheap gate); the
+  robustness-gap finding is a well-supported, defensible thesis.
+- **Ray substrate it exercises:** Ray Train (FSDP/LoRA) for the 7B fine-tune, and — the harder
+  need — a decoupled CPU-sim-fleet → batched-GPU-policy-actor design for parallel rollout eval
+  (see §7), where sim rollout otherwise burns the wall-clock.
 
 ## 3. Reference
 
 - **Repo:** `github.com/openvla/openvla` — code **MIT**. **⚠️ Weights carry the Llama-2
-  Community License** (>700M-MAU clause), not MIT — flag for any commercial/marketing framing.
+  Community License** (>700M-MAU clause), not MIT — flag for any commercial use.
 - **Ships:** train, LoRA fine-tune, and the LIBERO eval harness
   (`experiments/robot/libero/run_libero_eval.py`); `openvla/openvla-7b` + four LIBERO fine-tunes.
   **Shipped checkpoints → eval without any fine-tune (the cheap gate).**
@@ -65,9 +65,19 @@ CI over rollouts (`AUTORESEARCH.md` §3 VLA row).
 | Stage | What | Ray lib |
 |---|---|---|
 | fine-tune (optional) | LoRA on 7B VLA | Ray Train (FSDP/LoRA) |
-| **rollout eval** | N episodes × M suites in parallel MuJoCo workers | **Ray Tasks / actor fleet** |
-| robustness eval | LIBERO-PRO/Plus perturbations, parallel | Ray Tasks fleet |
+| **rollout eval** | N episodes × M suites in parallel MuJoCo workers | **CPU sim fleet → batched GPU policy actors (decoupled — see below)** |
+| robustness eval | LIBERO-PRO/Plus perturbations, parallel | same decoupled fleet |
 | aggregate | success-rate table + CIs | driver |
+
+> **The rollout is not "embarrassingly parallel" if you put a 7B model in every worker.** A
+> LIBERO rollout is a loop: sim step (CPU) → policy inference (7B, GPU) → sim step → … If each
+> of 500 parallel workers owns a GPU-resident 7B model, the GPUs sit ~idle waiting on CPU sim
+> steps and the bill explodes. The correct architecture — and the actually novel Anyscale
+> story — is **decoupling: a large CPU fleet of MuJoCo sim workers streaming observations to a
+> small pool of *batched* GPU inference actors** (continuous batching / fractional-GPU packing,
+> the same instincts as the embed campaigns pointed at robotics). The ~10–20 GPU-hr eval-gate
+> budget below is only achievable under this design; a GPU-per-worker layout would be
+> multiples more.
 
 ## 8. Fidelity ladder
 

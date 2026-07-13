@@ -1,6 +1,6 @@
 # Campaign 08 — ESM-2 protein embeddings + FLIP readout ladder
 
-> **Status: SEED (not started).** The **purest test of the readout thesis** on a new vertical,
+> **Status: SEED (not started).** The **purest test of the readout thesis** in a new domain,
 > and the cheapest gate in the whole program — the recommended first campaign to shake out the
 > harness. Directly mirrors the transaction-FM frozen-embedding → probe-ladder pattern.
 
@@ -10,13 +10,14 @@ Reproduce a published FLIP protein-property Spearman using frozen ESM-2 embeddin
 then run the readout ladder (linear → MLP → attention-pooled) to show — as in the FM campaign —
 that the readout, not the representation, decides the number.
 
-## 2. Vertical & why Anyscale
+## 2. Why this is a good autoresearch testbed
 
-- **Vertical:** life sciences / drug discovery (adjacent good-fit; high strategic value).
-- **Why Anyscale:** the **textbook Ray Data batch-embedding workload** — a stateless map over a
-  frozen ESM-2, an actor pool of replicas across GPUs, write Parquet, then trivial CPU probes.
-  Maps 1:1 onto the `anyscale-workload-batch-embedding` skill. The embedding is the recurring
-  cost (re-embed every new protein library) — the same durable-cost story as fraud.
+- **What makes it clean:** frozen ESM-2 + a probe is the purest test of the readout thesis and the
+  cheapest gate in the set; the FLIP literature already shows a large readout swing to reproduce
+  and interrogate.
+- **Ray substrate it exercises:** the textbook Ray Data batch-embedding pattern — a stateless map
+  over a frozen encoder, an actor pool across GPUs, write Parquet once, then sweep trivial CPU
+  probes (extract-once / sweep-many).
 
 ## 3. Reference
 

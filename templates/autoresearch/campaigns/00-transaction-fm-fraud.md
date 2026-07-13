@@ -11,15 +11,15 @@ Reproduce NVIDIA's TabFormer transaction-FM fraud benchmark, then beat its publi
 headline (AP 0.1755) with a sequential encoder read the right way — **won: embedding-alone
 AP 0.23–0.27 at ROC ~0.997**.
 
-## 2. Vertical & why Anyscale
+## 2. Why this is a good autoresearch testbed
 
-- **Vertical:** fintech (fraud/risk).
-- **Why Anyscale:** heterogeneous Ray Data batch-embedding + Ray Train pretrain + Ray Serve;
-  echoes Coinbase (SageMaker→Ray, training hrs→sec). Platform story delivered:
-  scale-out-and-to-zero vs the reference's single-GPU monolith; **embedding-as-recurring-cost**
-  (re-score every transaction forever) as the durable claim (not training cost); spot-safe
-  fault tolerance; one backbone → two consumers (fraud + reco); the whole thing agent-driven
-  overnight.
+- **What makes it clean:** ships training + eval + a checkpoint, so a baseline is establishable
+  both ways (artifact + pipeline gate); a real published number to reproduce; the readout thesis
+  is a portable improvement lever the loop can act on. This is the worked example the whole loop
+  is distilled from.
+- **Ray substrate it exercises:** heterogeneous Ray Data batch-embedding (CPU-read + GPU-infer,
+  scale-to-zero), Ray Train DDP for pretraining, Ray Serve for the downstream. The embedding pass
+  is the recurring cost, so making it cheap and observable is what the substrate buys here.
 
 ## 3. Reference
 

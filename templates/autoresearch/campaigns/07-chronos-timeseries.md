@@ -10,13 +10,13 @@ Reproduce Chronos-T5's published zero-shot forecasting accuracy (WQL/MASE) on it
 benchmark, then beat *original Chronos-T5* via fine-tuning or a better readout — on the only
 generation with a fully shipped, runnable gate.
 
-## 2. Vertical & why Anyscale
+## 2. Why this is a good autoresearch testbed
 
-- **Vertical:** retail demand / energy / supply-chain forecasting (adjacent good-fit).
-- **Why Anyscale:** eval is **embarrassingly parallel across 27 datasets** → Ray Data / Ray
-  Tasks fan-out; batch inference over many series is the batch-inference archetype (3–10×
-  cheaper than online). Fine-tuning is Ray Train. A clean "batch-forecast millions of series,
-  scale-to-zero" story for retail/energy.
+- **What makes it clean:** ships train + eval + committed results CSVs + checkpoints (full
+  reproduction surface); fine-tune and decoding are concrete levers; classical baselines make a
+  strong honest floor to clear.
+- **Ray substrate it exercises:** eval is embarrassingly parallel across 27 datasets → Ray Data /
+  Ray Tasks fan-out; batch inference over many series; Ray Train for the fine-tune push.
 
 ## 3. Reference
 
