@@ -104,6 +104,17 @@ the faithful comparison, never as silent changes to it:
    NB05 excuses the weak fm-only result "as expected for decoder-only models," and bidirectional
    objectives typically embed better (Nubank publishes both NTP and MLM variants). Candidate A/B:
    same corpus/arch, MLM objective, compare fm-only AP vs the causal baseline.
+5a. **FINE-TUNE RESULTS (2026-07-13 full run, finetune/full/RESULTS.json — ANSWERED: YES).**
+   Test AP, same eval as Part 6: single-txn fine-tune alone **0.0907** (~2× frozen embedding,
+   < raw); single+raw **0.1425**; history fine-tune alone **0.1263** (FIRST no-raw-features
+   detector to beat raw 0.1238); **history fine-tune + raw 0.1988** — beats fusion typical
+   0.136, every measured fusion draw (max 0.161 across seeds), and NVIDIA's published 0.1755
+   on the same single-draw basis. AUC 0.9923. All variants: best epoch = 1 then overfit
+   (best-on-val selection = their early stopping; their raw XGBoost stops at 1 tree — the
+   task converges instantly at this fraud rate). Cost ~67 min of 8×A10G stage time.
+   Caveat: single draw at ~112 frauds — run the seed×bootstrap distribution before external
+   claims. Predictions (below) all held. Part 7 notebook prose can now be finalized.
+
 5. **Supervised fine-tuning vs fusion (Zach, 2026-07-13: "really curious whether a fine-tuned
    foundation model would beat the fusion one").** Today nothing is fine-tuned: the FM is
    frozen after pretraining, only XGBoost sees labels (= NVIDIA's design, rung 1 "frozen

@@ -2,6 +2,16 @@
 
 ## Captured beats for the rebuild (ours, verified — unlike the draft below)
 
+- **THE FINE-TUNE ENDING (2026-07-13, verified, finetune/full/RESULTS.json):** the deck's
+  third act. We reproduce the blueprint, beat it, then go where it never went: fine-tune the
+  foundation model. History-window fine-tune + raw = **AP 0.1988, single draw** — above
+  fusion typical (0.136), every measured fusion draw (max 0.161), and NVIDIA's published
+  0.1755 on the same basis. History fine-tune ALONE (0.1263) is the first no-raw-features
+  detector to beat the raw baseline — the "fraud is visible in sequence" thesis, finally
+  demonstrated by a deployed-shape model. Also honest beats: fine-tuning converges in ONE
+  epoch then overfits (same signature as their 1-tree XGBoost — the task, not the tooling);
+  single-txn variant confirms the lossy-tokenizer bottleneck (0.0907 < raw). Caveat before
+  externalizing: single draw, ~112 frauds; run the seed×bootstrap first.
 - **RESULT HIERARCHY (Zach, 2026-07-09 — non-negotiable ordering):** headline = (1) OUR
   foundation model beats NVIDIA's foundation model, 0.04–0.06 vs 0.0123 = 3–5×, trained by
   us from scratch; (2) OUR fusion beats their fusion — peak 0.284 vs their single-draw
