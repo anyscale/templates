@@ -262,6 +262,9 @@ def _predict(model, ids: np.ndarray, device, batch_size: int = 512) -> np.ndarra
 
 
 def train_func_ft(config: dict):
+    # This torch build routes some CUDA ops through a triton JIT that needs a C
+    # compiler the GPU workers don't have — use the standard kernels (see nvembed).
+    os.environ.setdefault("TORCH_DISABLE_NATIVE_JIT", "1")
     import torch
     from sklearn.metrics import average_precision_score
 
@@ -355,6 +358,7 @@ def finetune(hf_dir: str, tokens_dir: str, out_dir: str, variant: str = "single"
 
 @ray.remote
 def _score_task(hf_dir, model_dir, tokens_dir, variant, use_gpu, emb_dir):
+    os.environ.setdefault("TORCH_DISABLE_NATIVE_JIT", "1")  # no C compiler on workers
     import sys
     sys.path.insert(0, ".")
     import pandas as pd
