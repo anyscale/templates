@@ -4,10 +4,10 @@ Fits three XGBoost classifiers with NVIDIA's per-feature-set HPO params (verbati
 stopping on the val split, PCA(512→64) on the embedding, and OrdinalEncoded raw categoricals:
 
 * ``raw``    — NVIDIA's 13 tabular fields (the "what you have today" baseline),
-* ``fm``     — the foundation-model embedding alone,
+* ``embedding`` — the foundation-model embedding alone,
 * ``fusion`` — embedding + raw.
 
-The lift of ``fusion`` (and ``fm``) over ``raw`` is the headline. Mirrors
+The lift of ``fusion`` (and ``embedding``) over ``raw`` is the headline. Mirrors
 ``scripts/nvidia_repro/run_ours_full.py`` (single draw) and ``run_ours_peak.py`` (the
 seed×eval bootstrap that reports the peak fusion AP on the same favorable-single-draw basis
 NVIDIA's published 0.1755 uses). Reads the per-split ``embed_/lbl_/raw_`` files nb05 wrote.
@@ -31,7 +31,7 @@ P_EMB = dict(n_estimators=435, max_depth=12, learning_rate=0.03774, colsample_by
 P_COMB = dict(n_estimators=512, max_depth=12, learning_rate=0.00305, colsample_bytree=0.768,
               min_child_weight=25.85, subsample=0.65, reg_alpha=0.01, reg_lambda=0.0001,
               gamma=4.8, random_state=42)
-_PARAMS = {"raw": P_RAW, "fm": P_EMB, "fusion": P_COMB}
+_PARAMS = {"raw": P_RAW, "embedding": P_EMB, "fusion": P_COMB}
 
 
 def _load(emb_dir):
@@ -59,7 +59,7 @@ def _prep(emb, raw, pca_dim):
         remainder="passthrough")
     Xr = {"train": pre.fit_transform(raw["train"]),
           "val": pre.transform(raw["val"]), "test": pre.transform(raw["test"])}
-    feats = {"raw": Xr, "fm": Xe,
+    feats = {"raw": Xr, "embedding": Xe,
              "fusion": {sp: np.hstack([Xr[sp], Xe[sp]]) for sp in ("train", "val", "test")}}
     return feats, k
 
@@ -75,7 +75,7 @@ def _score(emb_dir, output_dir, pca_dim, use_gpu):
     feats, k = _prep(emb, raw, pca_dim)
     device = "cuda" if use_gpu else "cpu"
     results, preds = {}, {}
-    for name in ("raw", "fm", "fusion"):
+    for name in ("raw", "embedding", "fusion"):
         clf = xgb.XGBClassifier(**_PARAMS[name], scale_pos_weight=1.0, tree_method="hist",
                                 device=device, early_stopping_rounds=20, eval_metric="auc")
         t0 = time.time()
@@ -91,13 +91,13 @@ def _score(emb_dir, output_dir, pca_dim, use_gpu):
 
     os.makedirs(output_dir, exist_ok=True)
     pd.concat([pd.DataFrame({"feature_set": n, "label": y["test"], "proba": preds[n]})
-               for n in ("raw", "fm", "fusion")]).to_parquet(
+               for n in ("raw", "embedding", "fusion")]).to_parquet(
         os.path.join(output_dir, "test_predictions.parquet"), index=False)
     summary = {
         "n_train": int(len(y["train"])), "n_test": int(len(y["test"])),
         "train_fraud_rate": float(y["train"].mean()), "test_fraud_rate": float(y["test"].mean()),
         "embedding_dim": int(emb["train"].shape[1]), "pca_dim": int(k), "results": results,
-        "fm_lift_pr_auc": results["fm"]["pr_auc"] - results["raw"]["pr_auc"],
+        "embedding_lift_pr_auc": results["embedding"]["pr_auc"] - results["raw"]["pr_auc"],
         "fusion_lift_pr_auc": results["fusion"]["pr_auc"] - results["raw"]["pr_auc"],
     }
     with open(os.path.join(output_dir, "downstream_metrics.json"), "w") as f:
@@ -140,7 +140,7 @@ def _peak(emb_dir, pca_dim, use_gpu, n_seeds, n_boot, target):
 
 
 def run_downstream(emb_dir, output_dir, pca_dim=64, use_gpu=True):
-    """Fit + score raw/fm/fusion (NB05 recipe) on the Part-5 embeddings; writes metrics +
+    """Fit + score raw/embedding/fusion (NB05 recipe) on the Part-5 embeddings; writes metrics +
     per-sample test predictions. Returns the summary dict."""
     ray.init(ignore_reinit_error=True)
     opts = {"num_gpus": 1, "num_cpus": 8} if use_gpu else {"num_cpus": 2}
@@ -174,6 +174,6 @@ def print_summary(summary):
     for name, m in r.items():
         print(f"{name:<10} {m['auc_roc']:>10.4f} {m['pr_auc']:>10.4f} {m['best_iteration']:>10}")
     print("-" * 44)
-    print(f"FM-only PR-AUC lift vs raw:  {summary['fm_lift_pr_auc']:+.4f}")
+    print(f"Embedding-only PR-AUC lift vs raw:  {summary['embedding_lift_pr_auc']:+.4f}")
     print(f"Fusion  PR-AUC lift vs raw:  {summary['fusion_lift_pr_auc']:+.4f}   "
           f"({'FM adds signal' if summary['fusion_lift_pr_auc'] > 0 else 'no lift at this scale'})")

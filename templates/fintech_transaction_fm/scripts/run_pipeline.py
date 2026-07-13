@@ -145,7 +145,7 @@ def main(scale: str, force: bool) -> None:
 
     stage("embed", os.path.join(paths["embeddings"], "embed_test.npy"), _embed)
 
-    # ── Part 6: downstream raw vs fm vs fusion (NVIDIA NB05 recipe) ─────────
+    # ── Part 6: downstream raw vs embedding vs fusion (NVIDIA NB05 recipe) ─────────
     def _downstream():
         from src.nvscore import print_summary, run_downstream
         ds_cfg = cfg["downstream"]
