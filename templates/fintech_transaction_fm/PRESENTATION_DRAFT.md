@@ -2,6 +2,14 @@
 
 ## Captured beats for the rebuild (ours, verified — unlike the draft below)
 
+- **FINE-TUNE FRAMING CORRECTION (Zach, 2026-07-13, ANGRY — this ordering is the rule):**
+  the point of fine-tuning is REMOVING the raw pipeline. The story is fine-tuned ALONE:
+  0.1263, no raw features, no XGBoost, at/above the raw baseline it replaces ("retire the
+  fragile, ad-hoc, manually built xgboost pipeline" — his words in nb01). fine-tuned+raw
+  0.1988 stays as an ensemble footnote ("best score if you keep the pipeline — but keeping
+  it is what fine-tuning exists to avoid"), NEVER as the headline. NOTE for claims: 0.1263
+  vs raw 0.1238 is ~2% at ~112 frauds — run the seed×bootstrap before saying "beats" alone;
+  "matches, with no pipeline" is the safe wording until then.
 - **THE FINE-TUNE ENDING (2026-07-13, verified, finetune/full/RESULTS.json):** the deck's
   third act. We reproduce the blueprint, beat it, then go where it never went: fine-tune the
   foundation model. History-window fine-tune + raw = **AP 0.1988, single draw** — above
