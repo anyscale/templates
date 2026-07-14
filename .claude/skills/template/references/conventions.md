@@ -44,9 +44,9 @@ Run before pushing (CI runs the same hooks). Order matches `.pre-commit-config.y
 
 | Hook | Checks | `pre-commit run …` | Direct |
 |---|---|---|---|
-| `clear-notebook-outputs` | strips outputs + `execution_count` from `*.ipynb` (**mutating** — re-stage after) | `clear-notebook-outputs --files <paths>` | `python3 ci/clear-notebook-outputs.py templates/<name>/*.ipynb` |
-| `check-image-urls` | image refs in `*.ipynb`/`*.md` are absolute URLs | `check-image-urls --files <paths>` | `python3 ci/check-image-urls.py templates/<name>/*.ipynb templates/<name>/*.md` |
-| `check-readme` | `README.md` == nbconvert of `README.ipynb` | `check-readme --files <paths>` | `bash ci/check-readme.sh templates/<name>/README.ipynb` |
-| `check-build-yaml` | BUILD.yaml schema + referenced paths exist | `check-build-yaml --files BUILD.yaml` | `python3 ci/validate_build_yaml.py --no-network` |
+| `clear-notebook-outputs` | strips outputs + `execution_count` from `*.ipynb` (**mutating** — re-stage after) | `clear-notebook-outputs --files <paths>` | `python3 scripts/hooks/clear-notebook-outputs.py templates/<name>/*.ipynb` |
+| `check-image-urls` | image refs in `*.ipynb`/`*.md` are absolute URLs | `check-image-urls --files <paths>` | `python3 scripts/hooks/check-image-urls.py templates/<name>/*.ipynb templates/<name>/*.md` |
+| `check-readme` | `README.md` == nbconvert of `README.ipynb` | `check-readme --files <paths>` | `bash scripts/hooks/check-readme.sh templates/<name>/README.ipynb` |
+| `check-build-yaml` | BUILD.yaml schema + referenced paths exist | `check-build-yaml --files BUILD.yaml` | `python3 scripts/hooks/validate-build-yaml.py --no-network` |
 
 Run everything at once: `pre-commit run --all-files`. Regenerate a stale `README.md`: `jupyter nbconvert --to markdown templates/<name>/README.ipynb --output-dir templates/<name>/`.

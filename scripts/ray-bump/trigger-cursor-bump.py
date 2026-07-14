@@ -20,11 +20,11 @@ would POST, makes zero API calls). Firing real agents requires an explicit --exe
 
 Examples:
   # Preview (no --execute -> no POST, no creds needed):
-  ci/trigger-cursor-bump.py -v 2.56.0 job-intro object-detection-video-processing skyrl
-  ci/trigger-cursor-bump.py --all --exclude job-intro,object-detection-video-processing,skyrl --list
+  scripts/ray-bump/trigger-cursor-bump.py -v 2.56.0 job-intro object-detection-video-processing skyrl
+  scripts/ray-bump/trigger-cursor-bump.py --all --exclude job-intro,object-detection-video-processing,skyrl --list
   # Test batch, then fanout -- add --execute to actually fire:
-  ci/trigger-cursor-bump.py -v 2.56.0 job-intro object-detection-video-processing skyrl --execute
-  ci/trigger-cursor-bump.py -v 2.56.0 --all --exclude job-intro,object-detection-video-processing,skyrl --execute
+  scripts/ray-bump/trigger-cursor-bump.py -v 2.56.0 job-intro object-detection-video-processing skyrl --execute
+  scripts/ray-bump/trigger-cursor-bump.py -v 2.56.0 --all --exclude job-intro,object-detection-video-processing,skyrl --execute
 """
 
 from __future__ import annotations
@@ -40,7 +40,15 @@ from pathlib import Path
 
 import yaml
 
-BUILD_YAML = Path(__file__).resolve().parent.parent / "BUILD.yaml"
+def _repo_root() -> Path:
+    """Nearest ancestor dir containing BUILD.yaml (robust to where this script lives)."""
+    for p in Path(__file__).resolve().parents:
+        if (p / "BUILD.yaml").is_file():
+            return p
+    raise RuntimeError("repo root not found: no BUILD.yaml above this script")
+
+
+BUILD_YAML = _repo_root() / "BUILD.yaml"
 
 
 def warn(msg: str) -> None:

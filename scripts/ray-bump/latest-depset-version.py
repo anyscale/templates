@@ -17,7 +17,15 @@ import re
 import sys
 from pathlib import Path
 
-DEPSETS = Path(__file__).resolve().parent.parent / "dependencies" / "depsets"
+def _repo_root() -> Path:
+    """Nearest ancestor dir containing BUILD.yaml (robust to where this script lives)."""
+    for p in Path(__file__).resolve().parents:
+        if (p / "BUILD.yaml").is_file():
+            return p
+    raise RuntimeError("repo root not found: no BUILD.yaml above this script")
+
+
+DEPSETS = _repo_root() / "dependencies" / "depsets"
 
 
 def _versions(*patterns: str) -> set[str]:

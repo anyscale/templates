@@ -2,7 +2,7 @@ name: ray-base-locks
 
 # Prepare the base depset locks for a new Ray version so a fanout can fire.
 #
-# ci/prepare-base-locks.py resolves the newest stable Ray and, once its deplocks
+# scripts/ray-bump/prepare-base-locks.py resolves the newest stable Ray and, once its deplocks
 # are published at ray-project/ray but we don't yet have the base-lock set,
 # recompiles ray_<v>_img_* + rayllm_<v>_* (copying the current matrix forward) and
 # this workflow opens a PR. A human reviews + merges it (the approval gate), then
@@ -62,7 +62,7 @@ jobs:
         if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ] && [ "$INPUT_DRY_RUN" != "false" ]; then
           args+=(--dry-run)
         fi
-        python3 ci/prepare-base-locks.py "${args[@]}"
+        python3 scripts/ray-bump/prepare-base-locks.py "${args[@]}"
         echo "rc=$?" >> "$GITHUB_OUTPUT"
 
     - name: Needs human

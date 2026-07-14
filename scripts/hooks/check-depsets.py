@@ -11,7 +11,7 @@ index 503. This picks the narrowest still-correct check for a PR's changed files
   * full   — a global input changed (update_deps.sh, dependencies/{scripts,depsets}/*,
              or a shared part of the config), or any uncertainty. Never skip when unsure.
 
-Usage: check_depsets.py <base-sha> <head-sha>   (empty base-sha -> full check)
+Usage: check-depsets.py <base-sha> <head-sha>   (empty base-sha -> full check)
 """
 import re
 import subprocess
