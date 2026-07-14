@@ -17,7 +17,7 @@ NVIDIA's [transaction foundation model blueprint](https://github.com/NVIDIA-AI-B
 
 We built a transaction FM on Ray with a different tokenizer, objective, and readout, and evaluated it two ways. On **their exact protocol** (100k stratified test), our embedding **alone** — no fusion, no PCA — clears their published fusion headline with bootstrap probability **0.94–0.99 at every context length we trained** (512, 1024, 2048 transactions, at matched 20-epoch training budget). And on the **full 2.44M-transaction test period** (2,724 frauds, where confidence intervals shrink 5x), the embedding beats the identical-rows raw baseline by **+34% at 512 context and +45% at 1024**, with non-overlapping intervals. The core change fits in one sentence: **one position per transaction instead of ~12 tokens per transaction**, which buys 4–13x their ~315-transaction context at identical model capacity — plus a masked-field objective and a last-position readout that make the history actually usable. Training runs in about two hours on four A10Gs; everything reproduces from a public template with three job submissions.
 
-[B1: hero figure — two panels sharing a y-axis. Left: their-protocol 100k, AP dot + 95% CI per model with NVIDIA baseline 0.1238 / fusion 0.1755 reference lines. Right: full test period, baseline 0.2081 vs embed_xgb 0.2788 (512) / 0.3027 (1024) / 0.2665 (2048) with CI whiskers. Caption: the two panels are different eval sets — never compare across them.]
+![Two-panel hero: their-protocol 100k with NVIDIA reference lines (left) and the full test period (right), AP dots with 95% CI whiskers](figures/b1_hero.png)
 
 ## Why transaction foundation models — and why NVIDIA's blueprint is the right bar
 
@@ -41,7 +41,7 @@ Three details that turned out to be load-bearing (mechanism sections below):
 - **Continuous periodic channels**: learned Fourier/Time2Vec banks over signed log-amount and log time-delta ride alongside the bucketed tokens.
 - **The readout**: windows are right-aligned, so the last position *is* the target transaction, read with the card's full history behind it. That 512-d state goes straight into XGBoost — no PCA.
 
-The pipeline is Ray end-to-end: Ray Data builds the ~100k-merchant vocab and streams the field-split tokenization (`map_groups`, no global shuffle); Ray Train runs DDP masked pretraining (4 GPU workers, one `ScalingConfig` change from laptop to cluster); Ray Data streams CPU-read + GPU-infer embedding extraction; XGBoost consumes the parquet. [B2: pipeline architecture figure — reuse the README ASCII diagram as a proper graphic.]
+The pipeline is Ray end-to-end: Ray Data builds the ~100k-merchant vocab and streams the field-split tokenization (`map_groups`, no global shuffle); Ray Train runs DDP masked pretraining (4 GPU workers, one `ScalingConfig` change from laptop to cluster); Ray Data streams CPU-read + GPU-infer embedding extraction; XGBoost consumes the parquet. ![Pipeline architecture: raw parquet through Ray Data vocab + tokenize, Ray Train DDP pretrain, Ray Data GPU embedding extraction, XGBoost fraud + reco rank, Ray Serve](figures/b2_architecture.png)
 
 ## Benchmark setup
 
@@ -85,7 +85,7 @@ Same protocol, same trained models, same 1M training rows — the test split is 
 | **our embedding → XGBoost, no PCA** | 1024 | **0.3027** | [0.285, 0.320] |
 | **our embedding → XGBoost, no PCA** | 2048 (40 ep) | **0.2665** | [0.250, 0.284] |
 
-[B7: figure — dot-and-CI plot of table 2, baseline as reference line.]
+![Table 2 as dots with 95% CI whiskers; the raw-13 baseline drawn as a reference band](figures/b7_fulltest.png)
 
 What this table resolves:
 
@@ -98,7 +98,9 @@ What this table resolves:
 
 ### The fraud signal lives in the history, not the transaction
 
-TabFormer fraud is **bursty**: [B8: exact ledgered stat] **90% of test frauds have a prior same-card fraud within the preceding 512 transactions, versus 7.3% of normal transactions.** A model that reads one transaction can never see this; a model that reads 512+ can. That asymmetry is the whole game. [B9: figure — burst illustration or histogram of distance-to-previous-fraud.]
+TabFormer fraud is **bursty**: **90.0% of test frauds have a prior same-card fraud within the preceding 512 transactions, versus 7.3% of normal transactions** (ledgered in `figures/burst_stats.json`). A model that reads one transaction can never see this; a model that reads 512+ can. That asymmetry is the whole game.
+
+![Cumulative share of each group with a prior same-card fraud within x transactions; the 90%-vs-7% gap is read directly at the 512 line](figures/b9_burst.png)
 
 ### The strongest ablation we could build: their design, trained by us
 
@@ -112,11 +114,13 @@ The obvious objection: "maybe any transformer trained on this data does well, an
 
 ### The readout is where FM signal goes to die (it happened to us twice)
 
-Early versions of our own model looked *dead* downstream — because an MLM is only trained to make masked positions informative, and we were mean-pooling unmasked states and squashing them through PCA. The fix wasn't a bigger model: per-field masking, reading the **last position**, and dropping PCA took the same architecture from "no signal" to the headline. NVIDIA's pipeline embeds each transaction independently — by design, its embedding represents the transaction itself rather than the card's history. And the same lesson repeated on the recommendation side (below): a readout change alone moved next-merchant HR@10 from 0.08 to 0.40. If you take one modeling lesson from this post: before concluding your foundation model learned nothing, check what state you're reading and what your eval harness can see. [B11: optional figure — the surprise-vector diagnostic anecdote.]
+Early versions of our own model looked *dead* downstream — because an MLM is only trained to make masked positions informative, and we were mean-pooling unmasked states and squashing them through PCA. The fix wasn't a bigger model: per-field masking, reading the **last position**, and dropping PCA took the same architecture from "no signal" to the headline. NVIDIA's pipeline embeds each transaction independently — by design, its embedding represents the transaction itself rather than the card's history. And the same lesson repeated on the recommendation side (below): a readout change alone moved next-merchant HR@10 from 0.08 to 0.40. If you take one modeling lesson from this post: before concluding your foundation model learned nothing, check what state you're reading and what your eval harness can see.
 
 ### What long context costs at training time
 
-Doubling the window halves the number of windows per epoch — so at fixed epochs, every positional embedding and every long-range attention pattern gets half the training exposure. You can watch this in TensorBoard: per-field MLM accuracy *falls* with context length (macro 0.824 → 0.770 → 0.754 for 512/1024/2048 at 20 epochs) — the long-context models aren't under-challenged, they're **under-optimized**. The sharpest symptom is a "canary" field: predicting a masked transaction's *month* is nearly free (copy a neighbor's visible month), yet the 512 model only acquires that skill in a late, sharp phase transition — and the longer-context models never reach theirs within budget ([B16: field_ce/month figure across the three runs]). We continued the 2048 model to 40 epochs to separate this from genuine information saturation: pretext skill kept improving (macro 0.754 → 0.767, the month canary still grinding without its transition) — and the downstream verdict came back **dilution, not undertraining**: with double the budget, 2048 still lands below 1024 with disjoint intervals (0.2665 vs 0.3027 on the full test period). Long context is architecturally free in our tokenizer, but on this data its *value* peaks around 1024 transactions. The undertraining effect is real too — it explains the falling pretext accuracy and, we suspect, the linear-head collapse: a less crisply trained long-context readout state is *blurrier* — the signal survives (trees find it) but its linear structure degrades.
+Doubling the window halves the number of windows per epoch — so at fixed epochs, every positional embedding and every long-range attention pattern gets half the training exposure. You can watch this in TensorBoard: per-field MLM accuracy *falls* with context length (macro 0.824 → 0.770 → 0.754 for 512/1024/2048 at 20 epochs) — the long-context models aren't under-challenged, they're **under-optimized**. The sharpest symptom is a "canary" field: predicting a masked transaction's *month* is nearly free (copy a neighbor's visible month), yet the 512 model only acquires that skill in a late, sharp phase transition — and the longer-context models never reach theirs within budget (figure below). We continued the 2048 model to 40 epochs to separate this from genuine information saturation: pretext skill kept improving (macro 0.754 → 0.767, the month canary still grinding without its transition) — and the downstream verdict came back **dilution, not undertraining**: with double the budget, 2048 still lands below 1024 with disjoint intervals (0.2665 vs 0.3027 on the full test period). Long context is architecturally free in our tokenizer, but on this data its *value* peaks around 1024 transactions. The undertraining effect is real too — it explains the falling pretext accuracy and, we suspect, the linear-head collapse: a less crisply trained long-context readout state is *blurrier* — the signal survives (trees find it) but its linear structure degrades.
+
+![Month-canary cross-entropy per optimizer step and per-field macro accuracy per epoch, across the 512/1024/2048 runs](figures/b16_canary.png)
 
 ## A second consumer: what the embedding knows about the next merchant
 
@@ -136,14 +140,15 @@ A readout change alone moves HR@10 by **7x** — but on data where 96% of transa
 | strongest memorization baseline (causal full-history counts) | 0.6474 |
 | **0.1·softmax(MLP) + 0.9·frequency prior (swept on val)** | **0.6582** |
 
-Small margin, unambiguous (paired on 400k events), and the decomposition is where the FM earns its budget: on the **35% of events where the next merchant is NOT in the card's top-10** — where memorization scores exactly 0.000 — the model recovers **HR@10 ≈ 0.16**, and on never-before-seen merchants (6% of events) the full-vocab MLP scores 0.077 where any history-based method scores zero. One backbone: fraud headline, plus a recommender that beats memorization overall *and* covers the slice memorization is mathematically blind to. [B-RECO-FIG: bar chart — overall / not-in-top10 / never-seen, naive vs hybrid.]
+Small margin, unambiguous (paired on 400k events), and the decomposition is where the FM earns its budget: on the **35% of events where the next merchant is NOT in the card's top-10** — where memorization scores exactly 0.000 — the model recovers **HR@10 ≈ 0.16**, and on never-before-seen merchants (6% of events) the full-vocab MLP scores 0.077 where any history-based method scores zero. One backbone: fraud headline, plus a recommender that beats memorization overall *and* covers the slice memorization is mathematically blind to.
+
+![HR@10 by slice: overall, next-merchant-not-in-top-10, and never-seen merchants — memorization baseline vs the FM-powered method](figures/b_reco_slices.png)
 
 ## Cost and scale on Anyscale
 
 - 512-context: end-to-end job (data regen → tokenize → 20-epoch pretrain on 4x A10G → 8-GPU extraction → eval) ≈ 2 h. 1024-context: 1 h 50 m measured, ~45 min of it pretraining. 2048-context: ~2.5 h (+ ~2 h for the 40-epoch continuation). [B15: exact $ totals — roughly $15–25 per headline run at on-demand A10G prices.]
 - Tokenization is Ray Data `map_groups` over the full 24.4M-row table — the stage NVIDIA runs on a single GPU with RAPIDS; ours scales horizontally and streams into pretraining through the object store.
 - The full-test-period eval (3.5M windows tokenized + embedded + scored) runs as one ~1h job per scale on autoscaled 0→8 A10Gs — the eval infrastructure is itself a Ray Data story.
-- [B16 alt: TensorBoard curves figure if not used in the undertraining section.]
 
 ## Reproduce it in three commands
 

@@ -15,6 +15,8 @@ fraud benchmark to the fourth decimal, built a 2.44M-row upgraded evaluation,
 and beat their published fusion headline with our embedding alone — roughly 48
 hours of experiments at [B15: ~$15–25] per headline run.
 
+![Full-test-period results: the embedding beats the identical-rows raw baseline, CI-separated, at every context length](figures/a2_results.png)
+
 This post is about the part that made that cadence possible. Not "Ray is fast"
 — the model is 29M parameters; almost anything is fast. The claim is narrower
 and, we think, more useful: **on Ray + Anyscale, the marginal cost of one more
@@ -26,8 +28,9 @@ job. And an AI agent drove most of it through the CLI, overnight, unattended.
 
 Here's the pipeline, stage by stage, with the actual code.
 
-[B2: annotated architecture figure — each stage labeled with its Ray primitive
-and its scale knob]
+![Pipeline architecture, each stage annotated with its Ray primitive, scale knob, and hardware](figures/b2_architecture_anyscale.png)
+
+![Same program at every scale — the per-scale YAMLs are the entire diff](figures/a3_scale_knobs.png)
 
 ## The stage Ray was built for: batch embedding extraction
 
@@ -359,6 +362,12 @@ run* on three scales, a paired-bootstrap ordering analysis, and the
 recommendation subplot taken from "loses to a frequency baseline" to "beats
 it, with the blind slices quantified."
 
+<!-- TODO: reconcile the counts above with the ledgered figure — git on the
+clean branch says 133 total; the 161/115/52/45 stats are from campaign memory
+(the research branch) and don't match any checked-in history. -->
+
+![Commits per day, ledgered from git](figures/a6_commit_velocity.png)
+
 The mechanism, stated plainly:
 
 - **Experiments are job submissions.** New question → new YAML → `anyscale
@@ -467,8 +476,11 @@ subtle claim in the results post, and it started as "huh, look at that curve."
 The lesson we'd generalize: per-field/per-component curves on durable storage
 are cheap; write them *before* you need them.
 
-[TODO: screenshots — field_ce/month panel; autoscaler 0→8→0 timeline during a
-fulltest run; Ray dashboard during the streaming embed stage.]
+![The month-canary TensorBoard curves that motivated the 20-to-40-epoch continuation](figures/b16_canary.png)
+
+![GPUs held per pipeline stage: 0 during CPU stages, 4 for pretrain, 8 for embedding extraction, back to 0 — min_nodes: 0 does the rest](figures/a5_stage_gpus.png)
+
+[TODO: screenshot — Ray dashboard during the streaming embed stage.]
 
 ## The serving coda
 
@@ -612,6 +624,8 @@ pattern, and the same cluster shapes as pretraining. That's the real
 argument for building the data layer on one substrate: the fusion strategy
 can change without the pipeline changing.
 </details>
+
+![Distributed XGBoost on the 1024 embedding: three configurations fall short of the single-node CI band; the GPU run lands inside it](figures/a4_distributed_xgb.png)
 
 ## What we're *not* claiming
 
