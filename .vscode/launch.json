@@ -1,15 +1,121 @@
 {
   "version": "0.2.0",
   "configurations": [
+    // ---- workspace (Cursor over SSH to the Anyscale workspace) ----
+    // Real TabFormer data, one GPU everywhere (configs/dbg1gpu.yaml).
+    // Driver code steps normally; for code inside Ray workers (tokenizer
+    // map_groups, the Ray Train loop, embed actors) drop a breakpoint() and
+    // let the Ray Distributed Debugger attach — see DEBUGGING.md.
     {
-      "name": "fm: run_pipeline (smoke)",
+      "name": "fm ws: full pipeline (dbg1gpu, tabformer)",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/templates/fintech_transaction_fm/scripts/run_pipeline.py",
+      "args": ["--scale", "dbg1gpu", "--source", "tabformer"],
+      "cwd": "${workspaceFolder}/templates/fintech_transaction_fm",
+      "console": "integratedTerminal",
+      "justMyCode": false,
+      "env": { "RAY_DEBUG": "1" }
+    },
+    {
+      "name": "fm ws: 01 data (tabformer download + benchmark)",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/templates/fintech_transaction_fm/scripts/01_generate_data.py",
+      "args": ["--scale", "dbg1gpu", "--source", "tabformer"],
+      "cwd": "${workspaceFolder}/templates/fintech_transaction_fm",
+      "console": "integratedTerminal",
+      "justMyCode": false
+    },
+    {
+      "name": "fm ws: 02 tokenize",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/templates/fintech_transaction_fm/scripts/02_tokenize.py",
+      "args": ["--scale", "dbg1gpu"],
+      "cwd": "${workspaceFolder}/templates/fintech_transaction_fm",
+      "console": "integratedTerminal",
+      "justMyCode": false,
+      "env": { "RAY_DEBUG": "1" }
+    },
+    {
+      "name": "fm ws: 03 pretrain (1 GPU worker)",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/templates/fintech_transaction_fm/scripts/03_pretrain.py",
+      "args": ["--scale", "dbg1gpu", "--use-gpu"],
+      "cwd": "${workspaceFolder}/templates/fintech_transaction_fm",
+      "console": "integratedTerminal",
+      "justMyCode": false,
+      "env": { "RAY_DEBUG": "1" }
+    },
+    {
+      "name": "fm ws: 04 extract embeddings (1 GPU)",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/templates/fintech_transaction_fm/scripts/04_extract_embeddings.py",
+      "args": ["--scale", "dbg1gpu", "--use-gpu", "--num-workers", "1"],
+      "cwd": "${workspaceFolder}/templates/fintech_transaction_fm",
+      "console": "integratedTerminal",
+      "justMyCode": false,
+      "env": { "RAY_DEBUG": "1" }
+    },
+    {
+      "name": "fm ws: 05 downstream fraud (driver-side, plain stepping)",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/templates/fintech_transaction_fm/scripts/05_train_downstream.py",
+      "args": ["--scale", "dbg1gpu", "--with-embeddings"],
+      "cwd": "${workspaceFolder}/templates/fintech_transaction_fm",
+      "console": "integratedTerminal",
+      "justMyCode": false
+    },
+    {
+      "name": "fm ws: 06 recommend",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/templates/fintech_transaction_fm/scripts/06_recommend.py",
+      "args": ["--scale", "dbg1gpu", "--use-gpu"],
+      "cwd": "${workspaceFolder}/templates/fintech_transaction_fm",
+      "console": "integratedTerminal",
+      "justMyCode": false,
+      "env": { "RAY_DEBUG": "1" }
+    },
+
+    // ---- local (macOS laptop; template .venv, smoke scale, synthetic) ----
+    {
+      "name": "fm local: full pipeline (smoke, synthetic)",
       "type": "debugpy",
       "request": "launch",
       "program": "${workspaceFolder}/templates/fintech_transaction_fm/scripts/run_pipeline.py",
       "args": ["--scale", "smoke", "--source", "synthetic"],
       "cwd": "${workspaceFolder}/templates/fintech_transaction_fm",
+      "python": "${workspaceFolder}/templates/fintech_transaction_fm/.venv/bin/python",
       "console": "integratedTerminal",
-      "justMyCode": false
+      "justMyCode": false,
+      "env": { "RAY_DEBUG": "1", "OMP_NUM_THREADS": "1" }
+    },
+    {
+      "name": "fm local: 05 downstream (OMP single-thread — macOS segfault fix)",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/templates/fintech_transaction_fm/scripts/05_train_downstream.py",
+      "args": ["--scale", "smoke", "--with-embeddings"],
+      "cwd": "${workspaceFolder}/templates/fintech_transaction_fm",
+      "python": "${workspaceFolder}/templates/fintech_transaction_fm/.venv/bin/python",
+      "console": "integratedTerminal",
+      "justMyCode": false,
+      "env": { "OMP_NUM_THREADS": "1" }
+    },
+    {
+      "name": "fm: debug current file",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${file}",
+      "cwd": "${workspaceFolder}/templates/fintech_transaction_fm",
+      "console": "integratedTerminal",
+      "justMyCode": false,
+      "env": { "OMP_NUM_THREADS": "1" }
     }
   ]
 }

@@ -1,0 +1,39 @@
+# Scale: dbg1gpu — small's real-data recipe, everything on ONE GPU worker, for
+# stepping through the pipeline in a debugger (see DEBUGGING.md). Same data and
+# model as small; epochs cut so a debug loop is minutes, not an hour — the
+# numbers this produces are for understanding flow, not for quoting.
+
+data:
+  num_cards: 20000           # > the ~6.1k real cards = use every card
+
+tokenize:
+  seq_len: 128
+  target_eval_samples: 150000
+  max_pretrain_windows: null
+  holdout_keep: null
+  shuffle_partitions: 128
+  merchant_vocab: learned      # keep the InfoNCE + reco path steppable
+  merchant_top_k: 10000
+  merchant_aggregate: 512
+
+model:
+  d_model: 256
+  n_heads: 4
+  n_layers: 4
+  dim_ff: 512
+
+pretrain:
+  epochs: 4                  # debug budget (small uses 15)
+  batch_size: 512
+  lr: 8.0e-4
+  num_workers: 1             # ONE Ray Train worker = one process to attach to
+  use_gpu: true
+  use_fsdp: false
+  infonce_negatives: 1024
+  infonce_warmup_frac: 0.3
+
+embed:
+  num_workers: 1             # ONE embedding actor
+  use_gpu: true
+  batch_size: 2048
+  gpus_per_worker: 1.0       # whole GPU to the single replica
