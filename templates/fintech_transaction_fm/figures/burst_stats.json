@@ -1,0 +1,21 @@
+{
+  "definition": "distance in same-card transactions to most recent strictly-prior fraud; test-period rows (ts > val_end)",
+  "n_test": 2438690,
+  "n_test_fraud": 2718,
+  "fraud": {
+    "n": 2718,
+    "share_no_prior_fraud": 0.047829286239882265,
+    "share_within_315": 0.8951434878587197,
+    "share_within_512": 0.8995584988962473,
+    "share_within_1024": 0.9139072847682119,
+    "share_within_2048": 0.9323031640912436
+  },
+  "normal": {
+    "n": 2435972,
+    "share_no_prior_fraud": 0.42103111201606586,
+    "share_within_315": 0.04604116960293468,
+    "share_within_512": 0.07267489117280494,
+    "share_within_1024": 0.15039458581625734,
+    "share_within_2048": 0.28464448688244365
+  }
+}
