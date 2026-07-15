@@ -20,15 +20,15 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import ray
 
 
-def main():
+def main(scale: str):
     from src.finetune import (build_history_windows, build_single_txn_tokens,
                               finetune, score_finetuned)
     from src.paths import artifact_paths, get_demo_base_dir
     from src.scale_config import load_scale
 
-    cfg = load_scale("full")
+    cfg = load_scale(scale)
     base = get_demo_base_dir()
-    paths = artifact_paths(base, "full")
+    paths = artifact_paths(base, scale)
     ft = cfg["finetune"]
     FT = paths["finetune"]
     os.makedirs(FT, exist_ok=True)
@@ -44,17 +44,17 @@ def main():
     def save():
         with open(results_path, "w") as f:
             json.dump(results, f, indent=2)
-        print("[ft-full] RESULTS:", json.dumps(results), flush=True)
+        print("[ft] RESULTS:", json.dumps(results), flush=True)
 
     def stage(name, probe, fn):
         if os.path.exists(probe):
-            print(f"[ft-full] {name}: cached", flush=True)
+            print(f"[ft] {name}: cached", flush=True)
             return
         t0 = time.time()
         fn()
         results.setdefault("timings_s", {})[name] = round(time.time() - t0, 1)
         save()
-        print(f"[ft-full] {name}: done in {results['timings_s'][name]}s", flush=True)
+        print(f"[ft] {name}: done in {results['timings_s'][name]}s", flush=True)
 
     # ---- variant 1: single transaction --------------------------------------
     stage("tokens_single", os.path.join(FT, "ft_ids_test.npy"),
@@ -95,8 +95,11 @@ def main():
                                                     variant="history", use_gpu=ft["use_gpu"])
         save()
 
-    print("[ft-full] COMPLETE", flush=True)
+    print("[ft] COMPLETE", flush=True)
 
 
 if __name__ == "__main__":
-    main()
+    import argparse
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--scale", default="full", choices=["mini", "small", "full"])
+    main(ap.parse_args().scale)
