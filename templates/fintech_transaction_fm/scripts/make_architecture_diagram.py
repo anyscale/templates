@@ -29,13 +29,15 @@ ax.text(0.12, 2.85, "GPU workers\nRay Train / Serve\nautoscale 0 \u2192 8\u00d7A
 ax.text(0.12, 0.85, "Shared\nstorage", va="center", ha="left",
         fontsize=9.5, color=INK2, fontweight="bold", linespacing=1.5)
 
-def box(x, y, w, h, title, sub, color):
+def box(x, y, w, h, title, sub, nb, color):
     ax.add_patch(FancyBboxPatch((x, y), w, h, boxstyle="round,pad=0.03",
                                 fc="white", ec=color, lw=1.6, zorder=3))
-    ax.text(x + w / 2, y + h - 0.32, title, ha="center", va="center", fontsize=9.5,
+    ax.text(x + w / 2, y + h - 0.30, title, ha="center", va="center", fontsize=10,
             color=INK, fontweight="bold", zorder=4)
-    ax.text(x + w / 2, y + h / 2 - 0.22, sub, ha="center", va="center", fontsize=8.2,
+    ax.text(x + w / 2, y + h / 2 - 0.12, sub, ha="center", va="center", fontsize=8.2,
             color=INK2, zorder=4, linespacing=1.4)
+    ax.text(x + w / 2, y + 0.17, nb, ha="center", va="center", fontsize=7.3,
+            color=MUTED, zorder=4)
 
 def chip(x, label):
     w = 1.5
@@ -50,12 +52,12 @@ def arrow(x0, y0, x1, y1, color=INK2, lw=1.2, cs="arc3,rad=0"):
                                  lw=lw, mutation_scale=11, zorder=2,
                                  connectionstyle=cs, shrinkA=2, shrinkB=2))
 
-box(1.7, 4.25, 2.3, 1.35, "Parts 2\u20133 \u00b7 prepare", "split 24M txns,\ntokenize \u2192 corpus", BLUE)
-box(4.45, 2.15, 2.0, 1.35, "Part 4 \u00b7 pretrain", "next-token LM\n8 GPUs, 2 h", ORANGE)
-box(7.0, 4.25, 1.9, 1.35, "Part 5 \u00b7 tokenize", "per-transaction\ntokens", BLUE)
-box(7.0, 2.15, 1.9, 1.35, "Part 5 \u00b7 embed", "model forward\npass only", ORANGE)
-box(9.35, 2.15, 1.9, 1.35, "Parts 6\u20137 \u00b7 detectors", "3 XGBoost fits +\n2 fine-tunes", ORANGE)
-box(11.75, 2.15, 1.9, 1.35, "Part 8 \u00b7 serve", "embedding +\nfraud score API", ORANGE)
+box(1.7, 4.25, 2.3, 1.35, "Prepare data", "split 24M txns,\ntokenize \u2192 corpus", "notebooks 2\u20133", BLUE)
+box(4.45, 2.15, 2.0, 1.35, "Pretrain", "next-token LM\n8 GPUs, 2 h", "notebook 4", ORANGE)
+box(7.0, 4.25, 1.9, 1.35, "Tokenize", "per-transaction\ntokens", "notebook 5", BLUE)
+box(7.0, 2.15, 1.9, 1.35, "Embed", "model forward\npass only", "notebook 5", ORANGE)
+box(9.35, 2.15, 1.9, 1.35, "Train detectors", "3 XGBoost fits +\n2 fine-tunes", "notebooks 6\u20137", ORANGE)
+box(11.75, 2.15, 1.9, 1.35, "Serve", "embedding +\nfraud score API", "notebook 8", ORANGE)
 
 c_csv = chip(1.7, "TabFormer csv")
 c_corp = chip(4.45, "splits \u00b7 corpus")
