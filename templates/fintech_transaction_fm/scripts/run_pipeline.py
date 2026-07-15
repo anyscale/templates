@@ -41,7 +41,9 @@ def main(scale: str, force: bool) -> None:
     base = get_demo_base_dir()
     paths = artifact_paths(base, scale)
     ray.init(ignore_reinit_error=True,
-             runtime_env={"working_dir": os.path.dirname(os.path.dirname(os.path.abspath(__file__)))})
+             runtime_env={"working_dir": os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                          # torch's native JIT wants a C compiler the workers don't have
+                          "env_vars": {"TORCH_DISABLE_NATIVE_JIT": "1"}})
     timings = {}
 
     def stage(name, output_probe, fn):
