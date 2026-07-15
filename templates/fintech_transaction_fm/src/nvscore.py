@@ -87,7 +87,7 @@ def _score(emb_dir, output_dir, pca_dim, use_gpu):
                          "pr_auc": float(average_precision_score(y["test"], p)),
                          "best_iteration": int(clf.best_iteration), "s": round(time.time() - t0, 1)}
         print(f"[06] {name:6} AUC-ROC={results[name]['auc_roc']:.4f}  "
-              f"PR-AUC={results[name]['pr_auc']:.4f}  best_iter={clf.best_iteration}", flush=True)
+              f"AP={results[name]['pr_auc']:.4f}  best_iter={clf.best_iteration}", flush=True)
 
     os.makedirs(output_dir, exist_ok=True)
     pd.concat([pd.DataFrame({"feature_set": n, "label": y["test"], "proba": preds[n]})
@@ -169,11 +169,11 @@ def print_summary(summary):
     print(f"train={summary['n_train']:,} ({summary['train_fraud_rate']:.2%} fraud)  "
           f"test={summary['n_test']:,} ({summary['test_fraud_rate']:.4%} fraud)  "
           f"emb_dim={summary['embedding_dim']} → PCA {summary['pca_dim']}")
-    print(f"{'feature set':<10} {'AUC-ROC':>10} {'PR-AUC':>10} {'best_iter':>10}")
+    print(f"{'feature set':<10} {'AUC-ROC':>10} {'AP':>10} {'best_iter':>10}")
     print("-" * 44)
     for name, m in r.items():
         print(f"{name:<10} {m['auc_roc']:>10.4f} {m['pr_auc']:>10.4f} {m['best_iteration']:>10}")
     print("-" * 44)
-    print(f"Embedding-only PR-AUC lift vs raw:  {summary['embedding_lift_pr_auc']:+.4f}")
-    print(f"Fusion  PR-AUC lift vs raw:  {summary['fusion_lift_pr_auc']:+.4f}   "
-          f"({'FM adds signal' if summary['fusion_lift_pr_auc'] > 0 else 'no lift at this scale'})")
+    print(f"Embedding-only AP lift vs raw:  {summary['embedding_lift_pr_auc']:+.4f}")
+    print(f"Fusion AP lift vs raw:          {summary['fusion_lift_pr_auc']:+.4f}   "
+          f"({'the foundation model adds signal' if summary['fusion_lift_pr_auc'] > 0 else 'no lift at this scale'})")
