@@ -48,7 +48,7 @@ jobs:
       with:
         python-version: '3.12'
     - run: pip install -r requirements-dev.txt
-    - run: python ci/validate_build_yaml.py
+    - run: python scripts/hooks/validate-build-yaml.py
 
   check-depsets:
     runs-on: ubuntu-latest
@@ -62,6 +62,6 @@ jobs:
     - run: pip install pyyaml==6.0.3   # parses the depset config (pin matches requirements-dev.txt)
 
     - name: Check depsets are up to date
-      # Scoped + retried; see ci/check_depsets.py. Checks only what a PR changed, so
+      # Scoped + retried; see scripts/hooks/check-depsets.py. Checks only what a PR changed, so
       # unrelated PRs don't fail on ambient drift or a transient index 503.
-      run: python3 ci/check_depsets.py "${{ github.event.pull_request.base.sha }}" "${{ github.sha }}"
+      run: python3 scripts/hooks/check-depsets.py "${{ github.event.pull_request.base.sha }}" "${{ github.sha }}"

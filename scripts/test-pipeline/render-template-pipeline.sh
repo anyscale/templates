@@ -5,7 +5,13 @@ set -euo pipefail
 
 TEMPLATES="$TEMPLATE_NAMES"
 
-REQ_FILE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../requirements-dev.txt"
+# Repo root = nearest ancestor dir with BUILD.yaml (robust to where this script lives).
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+while [ "$ROOT" != "/" ] && [ ! -f "$ROOT/BUILD.yaml" ]; do
+  ROOT="$(dirname "$ROOT")"
+done
+[ -f "$ROOT/BUILD.yaml" ] || { echo "repo root not found: no BUILD.yaml above ${BASH_SOURCE[0]}" >&2; exit 1; }
+REQ_FILE="$ROOT/requirements-dev.txt"
 ANYSCALE_VERSION=$(awk -F= '/^anyscale==/{print $3}' "$REQ_FILE")
 : "${ANYSCALE_VERSION:?could not read anyscale pin from $REQ_FILE}"
 

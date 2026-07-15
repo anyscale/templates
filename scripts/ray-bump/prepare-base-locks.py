@@ -36,7 +36,15 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
+def _repo_root() -> Path:
+    """Nearest ancestor dir containing BUILD.yaml (robust to where this script lives)."""
+    for p in Path(__file__).resolve().parents:
+        if (p / "BUILD.yaml").is_file():
+            return p
+    raise RuntimeError("repo root not found: no BUILD.yaml above this script")
+
+
+REPO_ROOT = _repo_root()
 DEPSETS = REPO_ROOT / "dependencies" / "depsets"
 CONFIG = REPO_ROOT / "dependencies" / "template.depsets.yaml"
 UPDATE_DEPS = REPO_ROOT / "update_deps.sh"
@@ -95,7 +103,7 @@ def _lock_versions(*patterns: str) -> set[str]:
 def complete_versions() -> set[str]:
     """Versions present as BOTH a ray_<v>_img_* and an LLM base lock.
 
-    Keep the definition in sync with ci/latest-depset-version.py (same contract).
+    Keep the definition in sync with scripts/ray-bump/latest-depset-version.py (same contract).
     """
     img = _lock_versions(r"ray_(\d+\.\d+\.\d+)_img_")
     llm = _lock_versions(r"rayllm_(\d+\.\d+\.\d+)_", r"ray_(\d+\.\d+\.\d+)_llm_")

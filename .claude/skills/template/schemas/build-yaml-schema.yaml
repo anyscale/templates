@@ -85,7 +85,7 @@
 # serving demo → ray-serve. Teaching the platform/Core rather than a library →
 # general.
 
-# --- Cross-field rules (enforced by ci/validate_build_yaml.py) ---
+# --- Cross-field rules (enforced by scripts/hooks/validate-build-yaml.py) ---
 #
 # - tests_path basename must equal name → tests/<name>/
 # - compute_config GCP and AWS must share the same configs/<dir>/

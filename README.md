@@ -10,7 +10,7 @@ templates/<name>/         # Template content — notebook or .py + Dockerfile (i
 tests/<name>/tests.sh     # Per-template smoke test, executed by CI
 configs/<name>/           # Compute configs: aws.yaml + gce.yaml (or reuse basic-single-node/)
 archive/                  # Retired / test-exempt templates — kept for reference, off the test gate
-ci/                       # Schema validators + the README auto-generator
+scripts/                  # Repo automation — pre-commit hooks, test-pipeline, ray-bump (see scripts/README.md)
 .claude/skills/template/  # Maintenance procedures (Ray bumps, formatting, publishing)
 ```
 
@@ -37,7 +37,7 @@ The sections below describe what the skill (or you, manually) does under the hoo
    - A `Dockerfile` only if you need a custom image — otherwise reference a stock `anyscale/ray:...` image
 2. **Test** at `tests/<name>/tests.sh` — runs in CI to confirm the template still works end-to-end
 3. **Compute config:** most templates reuse `configs/basic-single-node/`. If you need custom compute, add `configs/<name>/aws.yaml` + `configs/<name>/gce.yaml`
-4. **`BUILD.yaml` entry** — schema in [`.claude/skills/template/schemas/build-yaml-schema.yaml`](.claude/skills/template/schemas/build-yaml-schema.yaml), strictly validated by `ci/validate_build_yaml.py` (also runs as a pre-commit hook)
+4. **`BUILD.yaml` entry** — schema in [`.claude/skills/template/schemas/build-yaml-schema.yaml`](.claude/skills/template/schemas/build-yaml-schema.yaml), strictly validated by `scripts/hooks/validate-build-yaml.py` (also runs as a pre-commit hook)
 5. **Custom image** (only if you set `cluster_env.byod`): build and push with [`.claude/skills/template/scripts/push-custom-image-to-gcp.sh`](.claude/skills/template/scripts/push-custom-image-to-gcp.sh)`<dockerfile-dir> <name> <ray-version>`. You need permissions to push to Anyscale's public GCP Artifact registry.
 
 **Retiring or fast-publishing.** Every template under `templates/` must have a test (CI enforces it). To retire one — kept for reference but off the test gate — or to publish an event template without waiting on tests, move it under `archive/`; see the `/template` skill (`workflows/archive-template.md`, and "Publish without the test gate" in `references/publish-to-backend.md`).
@@ -50,7 +50,7 @@ Requires Python 3.12 (matches CI and cursor cloud — `generate-readme` is byte-
 pip install -r requirements-dev.txt               # pinned dev deps (single source of truth)
 pre-commit install                                # auto-fire hooks on git commit
 pre-commit run --all-files                        # lint + schema + auto-README
-python3 ci/validate_build_yaml.py --no-network    # offline BUILD.yaml validation
+python3 scripts/hooks/validate-build-yaml.py --no-network    # offline BUILD.yaml validation
 bash ./update_deps.sh --check                     # dependency lockfile up-to-date check
 ```
 

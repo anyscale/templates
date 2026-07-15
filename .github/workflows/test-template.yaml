@@ -38,7 +38,7 @@ jobs:
       id: parse
       env:
         COMMENT_BODY: ${{ github.event.comment.body }}
-      run: bash ci/parse-test-template-comment.sh
+      run: bash scripts/test-pipeline/parse-test-template-comment.sh
 
     - name: Trigger Buildkite build
       env:

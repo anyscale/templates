@@ -18,25 +18,25 @@ repos:
       # already in good shape.
       - id: clear-notebook-outputs
         name: clear notebook outputs (mutating)
-        entry: python3 ci/clear-notebook-outputs.py
+        entry: python3 scripts/hooks/clear-notebook-outputs.py
         language: system
         pass_filenames: true
         files: \.ipynb$
       - id: check-image-urls
         name: image refs in notebooks and markdown must use absolute URLs
-        entry: python3 ci/check-image-urls.py
+        entry: python3 scripts/hooks/check-image-urls.py
         language: system
         pass_filenames: true
         files: \.(ipynb|md)$
       - id: check-readme
         name: README.md must match nbconvert output of README.ipynb
-        entry: bash ci/check-readme.sh
+        entry: bash scripts/hooks/check-readme.sh
         language: system
         pass_filenames: true
         files: ^templates/.+/(README\.ipynb|README\.md)$
       - id: check-build-yaml
         name: BUILD.yaml schema and referenced paths exist
-        entry: python3 ci/validate_build_yaml.py --no-network
+        entry: python3 scripts/hooks/validate-build-yaml.py --no-network
         language: system
         pass_filenames: false
         files: ^BUILD\.yaml$

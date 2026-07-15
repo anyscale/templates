@@ -21,7 +21,15 @@ from pydantic import (
 )
 
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
+def _repo_root() -> Path:
+    """Nearest ancestor dir containing BUILD.yaml (robust to where this script lives)."""
+    for p in Path(__file__).resolve().parents:
+        if (p / "BUILD.yaml").is_file():
+            return p
+    raise RuntimeError("repo root not found: no BUILD.yaml above this script")
+
+
+REPO_ROOT = _repo_root()
 
 ACCEPT = ", ".join([
     "application/vnd.oci.image.manifest.v1+json",
@@ -99,7 +107,7 @@ class Entry(Strict):
     test: Optional[Test] = None
     # Actively maintained? Defaults to True. Archived entries (dir under
     # archive/) must set `maintained: false` so bulk operations — e.g. the
-    # Cursor Ray-version bump fanout (ci/trigger-cursor-bump.py) — skip them
+    # Cursor Ray-version bump fanout (scripts/ray-bump/trigger-cursor-bump.py) — skip them
     # (enforced by _archived_must_be_unmaintained below).
     maintained: bool = True
 
