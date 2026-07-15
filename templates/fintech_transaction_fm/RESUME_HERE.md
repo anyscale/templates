@@ -336,3 +336,42 @@ tokenizer, single-txn) → `run_full_fresh.py` downstream. Target: fm ≥ 0.0123
   output to `/mnt` and read with the Read tool if `/tmp` fills.
 - XGBoost prints a benign "input data on cpu, booster on cuda" warning when predicting; results are
   correct.
+
+## Session log — 2026-07-15 (nb01–07 revision sweep)
+
+Zach is reviewing all of this manually from scratch. Commit range: `48a49cd7..1e6e2139`
+(18 commits, one topic each — the commit list is the review map).
+
+**Structural changes to know before reviewing:**
+- `01_setup.ipynb` → `01_overview.ipynb` (orientation only, zero code cells).
+  The pip-install + ray.init setup moved to the top of `02_load_and_explore_data.ipynb`.
+- `configs/small.yaml` rebuilt for the current pipeline (was stale: missing
+  data.max_users/eval_samples and the finetune block). Verified end to end on
+  2 GPUs: split→corpus→pretrain→embed→downstream via run_pipeline.py, plus both
+  fine-tune variants via run_finetune_full.py --scale small. ~30 min GPU total.
+- `scripts/run_finetune_full.py` now takes `--scale`.
+- TORCH_DISABLE_NATIVE_JIT added to run_pipeline.py and nb04 ray.init (GPU
+  pretrain crashed without it — nb04 at full/small was broken for users before this).
+- nvscore printed labels: PR-AUC→AP, FM→foundation model.
+- Every revised notebook (02–07) re-executed at mini; committed outputs are
+  coherent with SCALE="mini" and curated down to the informative lines
+  (Ray log noise stripped; all retained numbers are from the real runs).
+
+**Per-notebook revision pattern applied (01–07):** purpose-first lead, level-set
+section, promoted Ray-teaching section, Scaling factors section, prose takeaways
+(no **Label**: lists), AP terminology, idiom/staging sweep, mini-coherent outputs.
+
+**Factual corrections worth double-checking in review:**
+- nb03: MCC is NOT hashed (only merchant is); ~13 positions/txn (12 fields + <sep>).
+- nb04: embedding forward-ref corrected to single-transaction (NVIDIA protocol);
+  random init sits slightly ABOVE the uniform-perplexity ceiling (mini output shows it).
+- nb05: removed the claim that single-txn context is what makes embeddings
+  complementary (our July-03 measurements showed the opposite); replaced with
+  honest re-encoding framing + Part 7 forward-ref.
+- nb07: duplicated sentence removed; predictions now explicitly scored in takeaways.
+
+**Still pending (unchanged from before):**
+- nb08/09/10 need REBUILDS, not revisions (old pipeline / old serve app).
+- Typos in Zach's nb01 intro cell + stray empty "## " cell (his to fix, flagged).
+- Unbacked Spot-instances claim in nb01 intro.
+- Presentation rebuild (PRESENTATION_DRAFT.md).
