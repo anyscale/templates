@@ -16,9 +16,9 @@ data: "raw transactions\n(Parquet, 24.4M rows)" {class: art}
 pre: "Pretraining — Ray Data + Ray Train (4× A10G)" {
   class: box
   direction: right
-  preprocess: "Preprocess\n(normalize + splits)" {class: cpu}
-  tokenize: "Tokenize\n(map_groups, windows)" {class: cpu}
-  pretrain: "Pretrain FM\n(masked fields + InfoNCE, DDP)" {class: gpu}
+  preprocess: "Preprocess\n(normalize + splits)" {class: cpu; style.multiple: true}
+  tokenize: "Tokenize\n(map_groups · fans out across CPU workers)" {class: cpu; style.multiple: true}
+  pretrain: "Pretrain FM\n(DDP · 4× A10G workers)" {class: gpu; style.multiple: true}
   fm: "FM checkpoint" {class: art}
   preprocess -> tokenize -> pretrain -> fm
 }
@@ -26,7 +26,7 @@ pre: "Pretraining — Ray Data + Ray Train (4× A10G)" {
 embgen: "Embedding generation — Ray Data (0→8 GPUs)" {
   class: box
   direction: right
-  embed: "Batch embed\n(CPU read → GPU forward)" {class: gpu}
+  embed: "Batch embed\n(CPU read → GPU forward · 0→8 GPUs)" {class: gpu; style.multiple: true}
   embs: "embeddings\nparquet" {class: art}
   embed -> embs
 }
