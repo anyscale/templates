@@ -30,6 +30,8 @@ assertions that can't silently rot.
 | `significance.py` | **rigor** — multiple comparisons | `benjamini_hochberg()` (FDR) / `bonferroni()` across a campaign's `p_value_gain`s — so running many experiments doesn't manufacture a fake win (a nasty sim found 5-ish false positives at per-test significance). |
 | `holdout.py` | **rigor** — adaptive overfitting | `Thresholdout` (Dwork et al.): query the holdout through it; it returns dev unless dev/holdout diverge (the overfitting signature), then reveals the honest holdout and spends a budget query. Two-eval discipline with teeth. |
 | `canary.py` | **R3** — leak / target-leak | `shuffled_label_control` (metric must collapse to the prevalence floor or it's a leak), `too_good_too_early`, `embedding_collapse`, `audit()` → BROKEN/SUSPICIOUS/CLEAN. |
+| `hooks.py` | **R4 wired live** | Claude Code `PreToolUse`/`PostToolUse` entrypoints: the pre hook prices any `anyscale job submit` (worst-case fleet from the YAML + a mandatory `# autoresearch:` declaration) and refuses it via `budget.preflight()` **before it runs**; the post hook commits the estimate as the RUNNING registry row. Armed only when `AUTORESEARCH_BASE` is set. The "by physics, not discipline" close of budget.py's stubbed-wiring gap. |
+| `reconcile.py` | **R6** terminal rows | The single writer of terminal rows: sweeps RUNNING heartbeats, asks `anyscale job status` what actually happened, writes the terminal row at wall-clock x committed fleet (labeled upper bound). Back-fillable weeks later from job state alone — a Monitor adds freshness, not correctness. |
 | `feasibility.py` | **budget** — is $N even enough? | Combines compute-affordability (dollars → A10G-hr vs the plan), statistical power (MDE vs target gain), and a **learning-curve** power-law fit (`fit_power_law`) that extrapolates data/compute to a target — and flags when the target is *below the fitted floor* (no budget reaches it; change the method). Verdict: NOT_ENOUGH / PILOT_ONLY / GO. |
 
 Dollar budgets: `budget.to_a10g_hours($)` / `to_usd()` convert a `$100` envelope into the A10G-equivalent hours the caps use; `preflight(..., envelope_ah=to_a10g_hours(100))` enforces it.
@@ -40,7 +42,7 @@ Also in `metrics.py`: `p_value_gain` (one-sided bootstrap p for FDR), `min_detec
 
 ```bash
 cd harness
-for f in test_*.py; do python3 "$f"; done      # 93 tests, stdlib only, no pytest needed
+for f in test_*.py; do python3 "$f"; done      # 100 tests, stdlib only, no pytest needed
 ```
 
 ## The critiques these close
@@ -53,6 +55,35 @@ for f in test_*.py; do python3 "$f"; done      # 93 tests, stdlib only, no pytes
 - **#3 typed decisions / #4 single-writer idempotency** — `registry.py`.
 - **R8 / the "never delete" memory** — `artifacts.py`.
 
+## Wiring the submit hooks (repo `.claude/settings.json`)
+
+```json
+{"hooks": {
+  "PreToolUse":  [{"matcher": "Bash", "hooks": [{"type": "command",
+    "command": "python3 templates/autoresearch/harness/hooks.py pre"}]}],
+  "PostToolUse": [{"matcher": "Bash", "hooks": [{"type": "command",
+    "command": "python3 templates/autoresearch/harness/hooks.py post"}]}]
+}}
+```
+
+Arm with `export AUTORESEARCH_BASE=/mnt/user_storage/<campaign-base>` (unset = hooks are
+inert). Every job YAML then needs one declaration line or the submit is refused:
+
+```yaml
+# autoresearch: campaign=fintech_fm wave=1 rung=proxy est_hours=2.0 eval_pin=sha256:...
+```
+
+Reconcile open rows any time (idempotent; a job-state Monitor just makes it prompt):
+
+```bash
+python3 templates/autoresearch/harness/reconcile.py $AUTORESEARCH_BASE
+```
+
+Known gaps, on purpose: the gate reads the literal Bash command, so SDK submits or
+ssh-wrapped submits slip past it (guardrail, not security boundary — org-level instance
+allowlists are the hard layer), and wall-clock x max fleet over-counts autoscaled runs
+(the console stays the invoice of record).
+
 ## How a campaign uses it
 
 ```
@@ -64,5 +95,5 @@ cli  = launcher.submit(spec, pi_approved=...)   # BOUNDARY: returns the CLI, nev
 pin = evalpin.eval_pin(eval_spec)
 artifacts.move_aside([model, embeddings, tokenized], artifacts.make_stamp())  # never delete
 registry.append_run(BASE, {... "eval_pin": pin, "status": "RUNNING" ...})     # heartbeat
-# ... the monitor (R6, not built) writes the single terminal row on any terminal state ...
+# ... reconcile.py (R6) writes the single terminal row on any terminal state ...
 ```
