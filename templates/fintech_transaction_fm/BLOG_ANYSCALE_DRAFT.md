@@ -30,7 +30,16 @@ Here's the pipeline, stage by stage, with the actual code.
 
 ![Pipeline architecture, each stage annotated with its Ray primitive, scale knob, and hardware](figures/b2_architecture_anyscale.png)
 
-![Same program at every scale — the per-scale YAMLs are the entire diff](figures/a3_scale_knobs.png)
+Same program at every scale — the per-scale YAML is the *entire* diff:
+
+| knob | **smoke** | **small** | **full** (headline) | **xl** | **xxl** |
+|---|---|---|---|---|---|
+| cards sampled | 2,000 | 20,000 | 200,000 | 200,000 | 200,000 |
+| context (txns/window) | 32 | 128 | 512 | 1,024 | 2,048 |
+| d_model / layers | 64 / 2 | 256 / 4 | 512 / 8 | 512 / 8 | 512 / 8 |
+| pretrain epochs | 2 | 15 | 20 | 20 | 20 |
+| train workers × GPU | 1 × CPU | 2 × GPU | 4 × GPU | 4 × GPU | 4 × GPU |
+| embed workers (job_full overrides to 8) | 8 (CPU) | 4 (GPU) | 4 (GPU) | 4 (GPU) | 4 (GPU) |
 
 ## The stage Ray was built for: batch embedding extraction
 

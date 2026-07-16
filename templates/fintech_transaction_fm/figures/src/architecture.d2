@@ -1,0 +1,33 @@
+# Transaction-FM pipeline — Anyscale house style (flat 2D, pastel fills,
+# pale yellow = CPU stage, pale blue = GPU stage, cylinder = durable storage).
+# Render: d2 --pad 24 architecture.d2 out.svg
+
+direction: right
+
+classes: {
+  cpu: {style: {fill: "#fff2cc"; stroke: "#8a8a8a"; stroke-width: 1; border-radius: 8; font-size: 14}}
+  gpu: {style: {fill: "#c9daf8"; stroke: "#8a8a8a"; stroke-width: 1; border-radius: 8; font-size: 14}}
+  store: {shape: cylinder; style: {fill: "#ede7e3"; stroke: "#8a8a8a"; stroke-width: 1; font-size: 13}}
+  knob: {style: {fill: "#ffffff"; stroke: "#c3c2b7"; stroke-dash: 3; border-radius: 8; font-size: 12}}
+}
+
+raw: "raw transactions\n(Parquet, 24.4M rows)" {class: store}
+
+vocab: "Ray Data\nmerchant vocab\n(freq scan, top-K)" {class: cpu}
+tokenize: "Ray Data\ntokenize\n(map_groups, windows)" {class: cpu}
+pretrain: "Ray Train\nmasked pretrain + InfoNCE\n(PyTorch DDP, 4× A10G)" {class: gpu}
+embed: "Ray Data\nembedding extraction\n(CPU read → GPU forward, 0→8 GPUs)" {class: gpu}
+fraud: "XGBoost\nfraud readout\nraw-13 vs embedding" {class: cpu}
+reco: "rank\nnext-merchant reco\n(HR@K / NDCG@K)" {class: cpu}
+serve: "Ray Serve\nonline embed + score" {class: gpu}
+
+raw -> vocab
+vocab -> tokenize: "vocab.json"
+tokenize -> pretrain: "windows\n(object store)"
+pretrain -> embed: "checkpoint"
+embed -> fraud: "embeddings\nparquet"
+embed -> reco
+fraud -> serve
+reco -> serve
+
+knobs: "same code laptop → multi-node: the per-scale YAML is the entire diff\n(seq_len 512→2048 · workers × GPU · epochs)" {class: knob; near: bottom-center}
