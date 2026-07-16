@@ -196,19 +196,35 @@ cost while preserving the mechanism your hypotheses act on:
 Have: flags, ledger, monitors, review agents, entry-point smokes,
 skip-guards, verbatim config dumps, per-experiment commits.
 
-Missing, in priority order:
-1. **Results registry** — every run appends one JSONL row {commit, flags,
-   rung, seeds, decision+guard metrics, cost, wall-clock}; promote/kill
-   reads it programmatically. (Tonight that state lived in one agent's
-   context window — exactly what a fresh context can't resume.)
-2. **Experiment launcher** — `experiment.yaml` (base + flag deltas + rung +
-   seeds) → generated job spec → submit → auto-score → registry append.
-   Hand-written job specs hosted two of our infra bugs.
-3. **In-training canary aborts** (leak signatures, NaN, collapse, KL blowup)
-   so a doomed run costs minutes, not its budget.
-4. **Per-idea, per-rung cost caps** enforced at submit time.
-5. **Proxy calibration harness** — one command: build proxy, replay known
-   variants, report rank correlation.
+Status update (2026-07-16): items 1, 2 (spec half), and 4 are BUILT — see
+`templates/autoresearch/harness/` on `geoff/autoresearch_seeds`:
+
+1. **Results registry** — BUILT: `registry.py`, append-only JSONL, idempotent
+   on (run_id, status), cost stored in raw AND A10G-equivalent hours,
+   `reconstruct()` rebuilds a campaign from disk alone.
+2. **Experiment launcher** — spec generation BUILT (`launcher.py`); the live
+   submit is a deliberate PI boundary. The *enforcement* half arrived a
+   different way — see 4.
+3. **In-training canary aborts** — still missing (leak/NaN/collapse
+   signatures exist in `canary.py` but only as post-hoc audits).
+4. **Per-idea, per-rung cost caps at submit time** — BUILT, and the key
+   design lesson: caps written in a doc are advisory; caps in the agent
+   harness are physics. `hooks.py` wires Claude Code hooks to the budget:
+   a PreToolUse hook prices every `anyscale job submit` (worst-case fleet
+   parsed from the job YAML + a mandatory `# autoresearch:` declaration)
+   and refuses over-cap/over-envelope runs via `budget.preflight()` BEFORE
+   the command executes — the refusal reason streams back to the agent, so
+   it self-corrects instead of burning budget. A PostToolUse hook commits
+   the estimate as the RUNNING registry row, and `reconcile.py` (R6) later
+   writes the terminal row from `anyscale job status` actuals. Reconcile is
+   idempotent and back-fillable — we reconstructed a headline run's cost
+   (1.42 h wall-clock, 11.4 A10G-eq) from job state a week after it ran —
+   so a job-state Monitor adds freshness, never correctness. Motivating
+   scar: cost and wall-clock were the FM campaign's worst-ledgered numbers
+   (the blog carried a "–25/run" placeholder from memory; the computed
+   floor was ~–8, and two docs disagreed 2 h vs 4 h on pretrain time). AP
+   got receipts; money got vibes. The ledger fixes the class, not the bug.
+5. **Proxy calibration harness** — still missing.
 
 ## 7. Blank template — starting a new campaign
 

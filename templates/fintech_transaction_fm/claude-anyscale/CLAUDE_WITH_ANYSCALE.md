@@ -284,6 +284,30 @@ stick:
 7. **ultrathink, then go.** Reason about the simplest correct approach first; then act
    autonomously. The think-first gate is where over-engineering gets caught before it's committed.
 
+### Rules become physics: hooks + the run ledger
+
+Every rule above lives in memory/CLAUDE.md — which means it's advisory: a fresh context or a
+tired agent can drop it. The upgrade (built after the campaign, on `geoff/autoresearch_seeds`
+under `templates/autoresearch/harness/`) is to move the money rules into the harness itself:
+
+- **PreToolUse budget gate** (`hooks.py pre`) — every `anyscale job submit` Claude runs is
+  priced before it executes: worst-case GPU fleet parsed from the job YAML, cost checked
+  against the rung cap and the campaign envelope (`budget.preflight()`). Over budget or
+  undeclared → the tool call is blocked and Claude reads the reason. No discipline required.
+- **PostToolUse ledger** (`hooks.py post`) — the submit's committed estimate lands in the
+  append-only registry as a RUNNING row, automatically. The ledger keeps itself.
+- **Reconcile, not babysit** (`reconcile.py`) — terminal rows come from `anyscale job status`
+  actuals. The §2 Monitor pattern composes here (wake on job-state change → reconcile), but
+  the deeper point is that reconciliation is idempotent and back-fillable from Anyscale's own
+  records: we rebuilt a run's true cost a week after it finished. Freshness is optional;
+  truth is recoverable.
+
+Why this earned a build: cost and wall-clock were the campaign's *worst-ledgered* numbers —
+every AP got a bootstrap CI, while the blog shipped a "–25 per run" placeholder from
+memory (computed floor: ~–8) and two docs disagreed 2 h vs 4 h on the same pretrain. The
+pattern generalizes: any rule you find yourself repeating in ALL CAPS is a hook you haven't
+written yet.
+
 ---
 
 ## 8. What I delegate, reserve, and expect escalated
