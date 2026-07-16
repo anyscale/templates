@@ -1,33 +1,56 @@
-# Transaction-FM pipeline — Anyscale house style (flat 2D, pastel fills,
-# pale yellow = CPU stage, pale blue = GPU stage, cylinder = durable storage).
-# Render: d2 --pad 24 architecture.d2 out.svg
+# Transaction-FM pipeline — three-consumer layout (Geoff's sketch, 2026-07-16).
+# House style: flat 2D, pale yellow = CPU stage, pale blue = GPU stage,
+# cylinder = durable artifact. Render: d2 --pad 24 architecture.d2 out.svg
 
 direction: right
 
 classes: {
   cpu: {style: {fill: "#fff2cc"; stroke: "#8a8a8a"; stroke-width: 1; border-radius: 8; font-size: 14}}
   gpu: {style: {fill: "#c9daf8"; stroke: "#8a8a8a"; stroke-width: 1; border-radius: 8; font-size: 14}}
-  store: {shape: cylinder; style: {fill: "#ede7e3"; stroke: "#8a8a8a"; stroke-width: 1; font-size: 13}}
-  knob: {style: {fill: "#ffffff"; stroke: "#c3c2b7"; stroke-dash: 3; border-radius: 8; font-size: 12}}
+  art: {shape: cylinder; style: {fill: "#ede7e3"; stroke: "#8a8a8a"; stroke-width: 1; font-size: 13}}
+  box: {style: {stroke: "#52514e"; stroke-width: 1; border-radius: 12; fill: "#ffffff"; font-size: 15}}
 }
 
-raw: "raw transactions\n(Parquet, 24.4M rows)" {class: store}
+data: "raw transactions\n(Parquet, 24.4M rows)" {class: art}
 
-vocab: "Ray Data\nmerchant vocab\n(freq scan, top-K)" {class: cpu}
-tokenize: "Ray Data\ntokenize\n(map_groups, windows)" {class: cpu}
-pretrain: "Ray Train\nmasked pretrain + InfoNCE\n(PyTorch DDP, 4× A10G)" {class: gpu}
-embed: "Ray Data\nembedding extraction\n(CPU read → GPU forward, 0→8 GPUs)" {class: gpu}
-fraud: "XGBoost\nfraud readout\nraw-13 vs embedding" {class: cpu}
-reco: "rank\nnext-merchant reco\n(HR@K / NDCG@K)" {class: cpu}
-serve: "Ray Serve\nonline embed + score" {class: gpu}
+pre: "Pretraining — Ray Data + Ray Train (4× A10G)" {
+  class: box
+  direction: right
+  preprocess: "Preprocess\n(normalize + splits)" {class: cpu}
+  tokenize: "Tokenize\n(map_groups, windows)" {class: cpu}
+  pretrain: "Pretrain FM\n(masked fields + InfoNCE, DDP)" {class: gpu}
+  fm: "FM checkpoint" {class: art}
+  preprocess -> tokenize -> pretrain -> fm
+}
 
-raw -> vocab
-vocab -> tokenize: "vocab.json"
-tokenize -> pretrain: "windows\n(object store)"
-pretrain -> embed: "checkpoint"
-embed -> fraud: "embeddings\nparquet"
-embed -> reco
-fraud -> serve
-reco -> serve
+embgen: "Embedding generation — Ray Data (0→8 GPUs)" {
+  class: box
+  direction: right
+  embed: "Batch embed\n(CPU read → GPU forward)" {class: gpu}
+  embs: "embeddings\nparquet" {class: art}
+  embed -> embs
+}
 
-knobs: "same code laptop → multi-node: the per-scale YAML is the entire diff\n(seq_len 512→2048 · workers × GPU · epochs)" {class: knob; near: bottom-center}
+fraud: "Fraud training — XGBoost" {
+  class: box
+  direction: right
+  train: "Train fraud\n(raw-13 baseline vs embedding, identical rows)" {class: cpu}
+  model: "fraud model" {class: art}
+  train -> model
+}
+
+recs: "Recommendations — next merchant" {
+  class: box
+  direction: right
+  train: "Train recs\n(MLP readout + frequency hybrid)" {class: cpu}
+  model: "rec model" {class: art}
+  train -> model
+}
+
+data -> pre.preprocess
+pre.fm -> embgen.embed
+data -> embgen.embed
+embgen.embs -> fraud.train
+data -> fraud.train: "raw features\n(baseline + fusion)"
+embgen.embs -> recs.train
+data -> recs.train: "card history\n(frequency hybrid)"
