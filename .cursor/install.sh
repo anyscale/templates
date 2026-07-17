@@ -18,6 +18,10 @@
 #   PROD_ANYSCALE_CLI_TOKEN       read-only-exceptional: collect logs/info from a prod CI run
 set -euo pipefail
 
+# --- Tooling venv: re-sync /opt/venv from the mounted repo (authoritative over
+# the Dockerfile's build-time sync). ---
+uv sync --frozen
+
 # --- pre-commit hooks (auto-fire on git commit; idempotent) ---
 # Non-fatal: pre-commit refuses if core.hooksPath is set (Cursor sets it).
 # The agent can still run `pre-commit run --all-files` by hand.
@@ -25,8 +29,6 @@ if [ -f .pre-commit-config.yaml ] && [ -d .git ]; then
   pre-commit install \
     || echo "WARN: pre-commit install skipped — run 'pre-commit run --all-files' manually before committing."
 fi
-
-python3 -m pip install --break-system-packages -r requirements-dev.txt
 
 # --- rayapp (version pinned via repo's download_rayapp.sh; lives in the
 # repo so kept here rather than baked into the image) ---
