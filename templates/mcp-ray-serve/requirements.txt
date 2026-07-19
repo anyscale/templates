@@ -1,3 +1,6 @@
 mcp==1.11.0
 asyncio==3.4.3
-pydantic==2.9.2
+# pinned to the ray 2.56.0 base-image version so the head matches the replicas
+# (mcp 1.11.0 allows it: requires pydantic>=2.8.0,<3.0.0). Head-only install of an
+# older pydantic vs the image's on replicas is a cross-node deserialization skew.
+pydantic==2.12.4
