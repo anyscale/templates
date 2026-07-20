@@ -35,8 +35,9 @@ repos:
         pass_filenames: true
         files: ^templates/.+/(README\.ipynb|README\.md)$
       - id: check-build-yaml
-        name: BUILD.yaml schema and referenced paths exist
+        name: BUILD.yaml schema, referenced paths, and head-node policy
         entry: python3 scripts/hooks/validate-build-yaml.py --no-network
         language: system
         pass_filenames: false
-        files: ^BUILD\.yaml$
+        # Whole-repo validator (head-node checks over every config) — trigger on config edits too.
+        files: ^(BUILD\.yaml|configs/.*\.ya?ml)$
