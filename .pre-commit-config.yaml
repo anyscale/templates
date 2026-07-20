@@ -40,3 +40,9 @@ repos:
         language: system
         pass_filenames: false
         files: ^BUILD\.yaml$
+      - id: ray-bump-unit-tests
+        name: prepare-base-locks unit tests (minor-only gate)
+        entry: python3 scripts/ray-bump/test_prepare_base_locks.py
+        language: system
+        pass_filenames: false
+        files: ^scripts/ray-bump/(prepare-base-locks|test_prepare_base_locks)\.py$
