@@ -89,7 +89,7 @@ def _recover_targets(split_dir: str, shards_dir: str, balanced_train: int, seed:
     import pandas as pd
     from sklearn.model_selection import train_test_split
 
-    from .nvsplit import normalize_batch
+    from .nvsplit import normalize_date_column
 
     meta = json.load(open(os.path.join(split_dir, "split_meta.json")))
     tr_cut, te_cut = pd.Timestamp(meta["train_cutoff"]), pd.Timestamp(meta["test_cutoff"])
@@ -100,7 +100,7 @@ def _recover_targets(split_dir: str, shards_dir: str, balanced_train: int, seed:
                      for f in ordered_parquet_files(shards_dir)], ignore_index=True)
     if max_users is not None:
         src = src[src["User"] < max_users]
-    src = normalize_batch(src).sort_values("__seq__", kind="mergesort").reset_index(drop=True)
+    src = normalize_date_column(src).sort_values("__seq__", kind="mergesort").reset_index(drop=True)
     src["label"] = (src["Is Fraud?"].astype(str).str.lower() == "yes").astype("int32")
 
     out = {}

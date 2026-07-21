@@ -224,7 +224,7 @@ def ensure_parquet_shards(csv_path: str, shards_dir: str,
     return meta
 
 
-def normalize_batch(batch):
+def normalize_date_column(batch):
     """Per-batch mirror of the reference preamble: derive the 'date' column."""
     import pandas as pd
     date_str = (batch["Year"].astype(str) + "-"
@@ -320,7 +320,7 @@ def load_normalized(shards_dir: str, max_users=None):
     ``max_users`` (mini/CI) keeps users ``< max_users`` — deterministic subset."""
     import ray.data
     ds = ray.data.read_parquet(ordered_parquet_files(shards_dir)) \
-                 .map_batches(normalize_batch, batch_format="pandas")
+                 .map_batches(normalize_date_column, batch_format="pandas")
     if max_users is not None:
         ds = ds.map_batches(lambda b: b[b["User"] < max_users], batch_format="pandas")
     return ds

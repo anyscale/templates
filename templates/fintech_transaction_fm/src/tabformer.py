@@ -256,7 +256,7 @@ def prepare_tabformer(
 # Exploration helpers for the native-column split (Part 2's Ray Data cells).
 # ---------------------------------------------------------------------------
 
-def derive_explore_columns(b: pd.DataFrame) -> pd.DataFrame:
+def add_analysis_columns(b: pd.DataFrame) -> pd.DataFrame:
     """Per-batch convenience columns for exploring the native-schema train split:
     ``card_id``, ``is_fraud``, ``amount`` (float), ``timestamp``, ``month`` (period str).
     The tokenizer in Part 3 uses the native columns directly — these are for analysis."""
