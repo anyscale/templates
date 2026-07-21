@@ -375,3 +375,30 @@ section, promoted Ray-teaching section, Scaling factors section, prose takeaways
 - Typos in Zach's nb01 intro cell + stray empty "## " cell (his to fix, flagged).
 - Unbacked Spot-instances claim in nb01 intro.
 - Presentation rebuild (PRESENTATION_DRAFT.md).
+
+## Session log — 2026-07-21 (nb02 joint review with Zach — DONE)
+
+nb02 is finished and signed off. This was a live co-editing session; the durable lessons
+all went into `zgarner-fieldeng-template/references/notebook-authoring.md` (action tone,
+plain verbs, one-step comments, answer-at-the-line, grandstanding tell, negative-opener
+tell, no Ray-named negatives, Next-blurb rule, delete-don't-patch). READ IT before
+touching nb03+.
+
+Structural outcomes in nb02: Ray fully visible in cells (inline read/map_batches/filter,
+inline .remote/ray.get for the eval sampling; write_split_meta extracted from
+finalize_split in src/nvsplit.py — finalize_split still serves run_pipeline). Renames:
+normalize_batch→normalize_date_column, derive_explore_columns→add_analysis_columns.
+Split section = one h2 + steps (cutoffs always run and print; writes+sampling guarded).
+Fraud-burst card 66000 replaces card 0. Measurement section DELETED (content owned by
+Parts 1/6; bridge sentence at the fraud-rate print). filter(col-exprs) for predicates.
+
+PROCESS (hard-won): never write a file Zach is reviewing (chat-first patches);
+commit-on-disk before any write; re-diff at write time, never across a background run;
+after any src/ change tell him "kernel restart needed". His unsaved buffer was destroyed
+once; see memory fintech-tfm-no-concurrent-edits.
+
+Open observations: mini aggregations autoscaled to ~208 CPUs (flagged to Zach, his call —
+possible Part 10 material or cap the CPU group max). nb03+ Next blurbs still have the
+jargon-dump disease — fix during each notebook's pass.
+
+NEXT: nb03 review with Zach, same treatment, same bar.
