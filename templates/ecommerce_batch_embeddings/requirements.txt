@@ -1,7 +1,7 @@
 ray[data]>=2.9
 sentence-transformers>=2.2
 transformers>=4.35
-torch>=2.0
+torch==2.7.0
 pillow>=10.0
 # Pin cross-node-pickled libs to the base image (anyscale/ray:2.56.0-py311-cu121)
 # versions. Ray Data pickles pyarrow/numpy objects between the head and worker

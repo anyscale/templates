@@ -1,6 +1,6 @@
 ray[train,data]>=2.9
-torch==2.5.1
-torchvision==0.20.1
+torch==2.7.0
+torchvision==0.22.0
 diffusers>=0.25
 transformers>=4.35
 peft>=0.7

@@ -1,7 +1,7 @@
 ray[serve]>=2.9
 sentence-transformers>=2.2
 transformers>=4.35
-torch==2.5.1
+torch==2.7.0
 faiss-cpu>=1.7
 numpy==1.26.4
 pandas>=2.0

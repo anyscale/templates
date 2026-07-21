@@ -135,7 +135,7 @@ depsets:
       - templates/ecommerce_batch_embeddings/requirements.txt
     output: templates/ecommerce_batch_embeddings/python_depset.lock
     append_flags:
-      - --index https://download.pytorch.org/whl/cu121
+      - --index https://download.pytorch.org/whl/${CUDA_VARIANT}
       - --python-version=${PYTHON_VERSION}
       - --python-platform=linux
       - --unsafe-package ray
@@ -247,7 +247,7 @@ depsets:
       - templates/creatives_diffusion_finetuning/requirements.txt
     output: templates/creatives_diffusion_finetuning/python_depset.lock
     append_flags:
-      - --index https://download.pytorch.org/whl/cu121
+      - --index https://download.pytorch.org/whl/${CUDA_VARIANT}
       - --python-version=${PYTHON_VERSION}
       - --python-platform=linux
       - --unsafe-package ray
@@ -261,7 +261,7 @@ depsets:
       - templates/ecommerce_multi_model_serving/requirements.txt
     output: templates/ecommerce_multi_model_serving/python_depset.lock
     append_flags:
-      - --index https://download.pytorch.org/whl/cu121
+      - --index https://download.pytorch.org/whl/${CUDA_VARIANT}
       - --python-version=${PYTHON_VERSION}
       - --python-platform=linux
       - --unsafe-package ray
@@ -275,7 +275,7 @@ depsets:
       - templates/biotech_boltz_screening/requirements.txt
     output: templates/biotech_boltz_screening/python_depset.lock
     append_flags:
-      - --index https://download.pytorch.org/whl/cu121
+      - --index https://download.pytorch.org/whl/${CUDA_VARIANT}
       - --python-version=${PYTHON_VERSION}
       - --python-platform=linux
       - --unsafe-package ray
