@@ -30,6 +30,10 @@ Pattern: put the *callbacks* and *steps* in `src/` as public functions; the note
 
 **But hiding isn't free — a name the reader must look up is worse than the code itself.** A helper earns its place only when its *call site* reads clearly: name + args tell the reader what happens without opening `src/` (`ensure_download`, `normalize_batch`, `sample_cards`). If you'd invent a wrapper like `write_temporal_splits()` just to shorten a cell — and the reader would have to go read it to know what it does — the hiding cost more than it saved; show the few lines inline. The deciding question is never "is this incidental?" but **"would the reader have to look it up?"** Hide what's incidental *and* self-evident by name; inline what's incidental but short or would need an opaque new name.
 
+## A section you keep patching is a section to question
+
+Before improving a section for the third time, ask who owns its content. nb02 had a "how we measure performance" section that got rewritten twice and grew a demo cell — but the metric explanation was Part 1's, the score-noise caveat was Part 6's, and nb02 scores nothing, so no code could ever belong to it. The fix was deletion plus one bridge sentence where the fraud rate prints. The tell: every cell you try under the heading feels wrong. That means the heading is wrong, not the cells.
+
 ## Show *why*, not just *what*
 
 A shown cell should answer **"what am I seeing and why does it matter,"** not narrate the API. Motivate each engineering/modeling choice from the data or the problem (*amounts span orders of magnitude → log-bucket them*; *fraud is ~0.1% → report PR-AUC, not accuracy*; *workers run on other nodes → checkpoint to shared storage*). That justification belongs in the markdown around the lesson — not as a wall of comments inside hidden code, and not as prose with no code to anchor it.
