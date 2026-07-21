@@ -4,7 +4,6 @@ name: fintech-fraud-risk
 entrypoint: bash -c "python scripts/01_generate_data.py --scale medium && python scripts/02_train_model.py --scale medium && python scripts/03_run_scoring.py --scale medium"
 requirements: requirements.txt
 compute_config:
-  cloud: aws-public-us-west-2
   head_node:
     instance_type: m5.4xlarge
   worker_nodes:
