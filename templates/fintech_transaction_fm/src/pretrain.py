@@ -25,76 +25,129 @@ from ray.train.torch import TorchTrainer
 from .model import build_model
 
 
-def _unwrap(model):
+def unwrap(model):
+    """The bare model inside a DDP/FSDP wrapper (or the model itself)."""
     return model.module if hasattr(model, "module") else model
 
 
-def train_func(config: dict):
+_unwrap = unwrap  # backwards-compatible alias
+
+
+def build_pretrain_model(config: dict):
+    """Seed every rank identically and build the Llama decoder from the config."""
     # Reduce CUDA fragmentation on long-sequence training (set before first alloc).
     os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
     # Same init on every rank (DDP broadcasts anyway; also makes runs reproducible).
     torch.manual_seed(config.get("seed", 0))
+    return build_model(config["vocab_path"], arch=config["arch"], max_len=config["max_len"])
 
-    vocab_path = config["vocab_path"]
-    model = build_model(vocab_path, arch=config["arch"], max_len=config["max_len"])
 
-    use_fsdp = config.get("use_fsdp", False) and torch.cuda.is_available()
-    if use_fsdp:
-        from torch.distributed.fsdp import FullyShardedDataParallel as FSDP
+def wrap_fsdp(model):
+    """FSDP-wrap the model (used only when it can't fit on one GPU)."""
+    from torch.distributed.fsdp import FullyShardedDataParallel as FSDP
 
-        model = model.to(ray.train.torch.get_device())
-        model = FSDP(model)
-    else:
-        model = ray.train.torch.prepare_model(model)
-    base = _unwrap(model)
+    model = model.to(ray.train.torch.get_device())
+    return FSDP(model)
 
-    # AdamW betas/weight-decay (transaction-FM recipe: beta2 0.95, wd 0.077).
+
+def make_optimizer(model, config: dict):
+    """AdamW with the recipe's betas and weight decay."""
     betas = tuple(config.get("betas", (0.9, 0.999)))
     weight_decay = float(config.get("weight_decay", 0.0))
-    optimizer = torch.optim.AdamW(
+    return torch.optim.AdamW(
         model.parameters(), lr=config["lr"], betas=betas, weight_decay=weight_decay
     )
 
-    # Warmup + cosine-decay LR schedule, stepped every optimizer step (needs
-    # total_steps = (sequences / workers / batch) * epochs, passed in).
-    scheduler = None
-    if config.get("lr_schedule") == "cosine" and int(config.get("total_steps", 0)) > 0:
-        total_steps = int(config["total_steps"])
-        warmup_steps = int(config.get("warmup_steps", 0))
-        min_lr_ratio = float(config.get("min_lr_ratio", 0.0))
 
-        def _lr_lambda(step):
-            if warmup_steps > 0 and step < warmup_steps:
-                return (step + 1) / warmup_steps
-            progress = (step - warmup_steps) / max(1, total_steps - warmup_steps)
-            progress = min(1.0, max(0.0, progress))
-            return min_lr_ratio + (1.0 - min_lr_ratio) * 0.5 * (1.0 + math.cos(math.pi * progress))
+def make_lr_scheduler(optimizer, config: dict):
+    """Warmup + cosine-decay schedule, stepped every optimizer step (needs
+    total_steps = (windows / workers / batch) * epochs, passed in). None when
+    the config doesn't ask for a schedule."""
+    if config.get("lr_schedule") != "cosine" or int(config.get("total_steps", 0)) <= 0:
+        return None
+    total_steps = int(config["total_steps"])
+    warmup_steps = int(config.get("warmup_steps", 0))
+    min_lr_ratio = float(config.get("min_lr_ratio", 0.0))
 
-        scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, _lr_lambda)
+    def _lr_lambda(step):
+        if warmup_steps > 0 and step < warmup_steps:
+            return (step + 1) / warmup_steps
+        progress = (step - warmup_steps) / max(1, total_steps - warmup_steps)
+        progress = min(1.0, max(0.0, progress))
+        return min_lr_ratio + (1.0 - min_lr_ratio) * 0.5 * (1.0 + math.cos(math.pi * progress))
+
+    return torch.optim.lr_scheduler.LambdaLR(optimizer, _lr_lambda)
+
+
+def next_token_loss(model, batch):
+    """One forward pass: predict every real position's next token, ignore pads."""
+    input_ids, attn = batch["input_ids"], batch["attention_mask"]
+    # Next-token labels: predict every real position; ignore pads. The
+    # LlamaForCausalLM head shifts internally.
+    labels = input_ids.clone()
+    labels[attn == 0] = -100
+    # bf16 autocast: halves activation/attention memory and speeds A10G.
+    # (bf16 needs no GradScaler.) The full-vocab logits are the memory
+    # driver — keep per-worker batch small (see configs) to bound them.
+    with torch.autocast(device_type="cuda", dtype=torch.bfloat16,
+                        enabled=torch.cuda.is_available()):
+        loss, _ = model({"input_ids": input_ids, "attention_mask": attn, "labels": labels})
+    return loss
+
+
+def epoch_summary(epoch: int, avg_loss: float, optimizer, config: dict) -> dict:
+    """The epoch's metrics, printed once (rank 0) so the curve shows in logs."""
+    metrics = {
+        "epoch": epoch,
+        "lm_loss": avg_loss,
+        "perplexity": math.exp(min(avg_loss, 20.0)),
+        "lr": optimizer.param_groups[0]["lr"],
+    }
+    if ray.train.get_context().get_world_rank() == 0:
+        print(
+            f"[pretrain] epoch {epoch + 1}/{config['epochs']}  "
+            f"lm_loss={avg_loss:.3f}  ppl={metrics['perplexity']:.1f}  lr={metrics['lr']:.2e}",
+            flush=True,
+        )
+    return metrics
+
+
+def build_epoch_checkpoint(base_model, epoch: int, config: dict):
+    """A checkpoint with the weights + vocab + model config — only on the last
+    epoch, only from rank 0. Returns None otherwise."""
+    if epoch != config["epochs"] - 1 or ray.train.get_context().get_world_rank() != 0:
+        return None
+    tmp = tempfile.mkdtemp()
+    torch.save(base_model.state_dict(), os.path.join(tmp, "model.pt"))
+    shutil.copy(config["vocab_path"], os.path.join(tmp, "vocab.json"))
+    with open(os.path.join(tmp, "model_config.json"), "w") as f:
+        json.dump(
+            {"size": config["size"], "max_len": config["max_len"], "arch": config["arch"]},
+            f,
+        )
+    return Checkpoint.from_directory(tmp)
+
+
+def train_func(config: dict):
+    """The per-worker training loop — the same composition Part 4 shows inline."""
+    model = build_pretrain_model(config)
+    if config.get("use_fsdp", False) and torch.cuda.is_available():
+        model = wrap_fsdp(model)
+    else:
+        model = ray.train.torch.prepare_model(model)
+    base = unwrap(model)
+
+    optimizer = make_optimizer(model, config)
+    scheduler = make_lr_scheduler(optimizer, config)
 
     train_shard = ray.train.get_dataset_shard("train")
-    # Token ids/mask are int32 on disk; the model needs long indices. Single dtype
-    # (not a per-column dict) — the pretrain dataset is only input_ids/attention_mask.
-    dtypes = torch.long
-
     for epoch in range(config["epochs"]):
         model.train()
         running, n_batches = 0.0, 0
         for batch in train_shard.iter_torch_batches(
-            batch_size=config["batch_size"], dtypes=dtypes
+            batch_size=config["batch_size"], dtypes=torch.long
         ):
-            input_ids, attn = batch["input_ids"], batch["attention_mask"]
-            # Next-token labels: predict every real position; ignore pads. The
-            # LlamaForCausalLM head shifts internally.
-            labels = input_ids.clone()
-            labels[attn == 0] = -100
-            # bf16 autocast: halves activation/attention memory and speeds A10G.
-            # (bf16 needs no GradScaler.) The full-vocab logits are the memory
-            # driver — keep per-worker batch small (see configs) to bound them.
-            with torch.autocast(device_type="cuda", dtype=torch.bfloat16,
-                                enabled=torch.cuda.is_available()):
-                loss, _ = model({"input_ids": input_ids, "attention_mask": attn, "labels": labels})
-
+            loss = next_token_loss(model, batch)
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
@@ -103,34 +156,8 @@ def train_func(config: dict):
             running += float(loss.item())
             n_batches += 1
 
-        avg = running / max(n_batches, 1)
-        metrics = {
-            "epoch": epoch,
-            "lm_loss": avg,
-            "perplexity": math.exp(min(avg, 20.0)),
-            "lr": optimizer.param_groups[0]["lr"],
-        }
-        # Per-epoch progress (rank 0 only). report() ships metrics to the driver
-        # but doesn't surface them live, so this makes the curve visible in logs.
-        if ray.train.get_context().get_world_rank() == 0:
-            print(
-                f"[pretrain] epoch {epoch + 1}/{config['epochs']}  "
-                f"lm_loss={avg:.3f}  ppl={metrics['perplexity']:.1f}  lr={metrics['lr']:.2e}",
-                flush=True,
-            )
-
-        # Checkpoint on the last epoch (rank 0 writes the weights).
-        checkpoint = None
-        if epoch == config["epochs"] - 1 and ray.train.get_context().get_world_rank() == 0:
-            tmp = tempfile.mkdtemp()
-            torch.save(base.state_dict(), os.path.join(tmp, "model.pt"))
-            shutil.copy(vocab_path, os.path.join(tmp, "vocab.json"))
-            with open(os.path.join(tmp, "model_config.json"), "w") as f:
-                json.dump(
-                    {"size": config["size"], "max_len": config["max_len"], "arch": config["arch"]},
-                    f,
-                )
-            checkpoint = Checkpoint.from_directory(tmp)
+        metrics = epoch_summary(epoch, running / max(n_batches, 1), optimizer, config)
+        checkpoint = build_epoch_checkpoint(base, epoch, config)
         ray.train.report(metrics, checkpoint=checkpoint)
 
 
