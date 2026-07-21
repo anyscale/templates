@@ -58,6 +58,8 @@ The test to run on every heading and first sentence: **"Does this say what the r
 
 Tells that you've inverted it: a heading that's a chapter-epigraph phrase ("One card at a time…"), or a sentence starting "The cell below…", "This section covers…", "Here we group/call/run…".
 
+Two more heading rules from review. **Consecutive sections must not repeat the same noun** — "Why the split is temporal" / "The split as a Ray Data pipeline" / "The train split at a glance" is one activity wearing three headers; merge into one section with `###` steps, each step = short lead + the code cell that does exactly that step. **A title is one action verb plus a concrete object** ("Write the three splits") — never a double-verb compound ("Write the parts and draw the evaluation samples"); the second activity is explained inside.
+
 ## Voice: write like an engineer to a peer, not a content model
 
 Calibrate against this sample Zach wrote himself (an opening, presentation register — but the qualities transfer to notebook prose):
@@ -65,6 +67,12 @@ Calibrate against this sample Zach wrote himself (an opening, presentation regis
 > Transaction foundation models are the latest generation of transformer models - like LLM's, but instead of language, they are focused on financial transactions. This lets transaction foundation models recognize distinct patterns like fraud, that traditional ml techniques can't detect. Today I'm gonna show you how to build your own transaction foundation model and achieve performance and scalability that surpasses comparable approaches by Nvidia.
 
 What it does: defines the new thing **by analogy to a known thing, in one breath** — not a formal bolded-term definition, not a company name-drop list. Each sentence advances the reader: what it is → why you care → what you're getting. First person, direct, confident claim, zero throat-clearing. If a draft opening reads denser or more "impressive" than this, it's wrong.
+
+**Workshop register is action tone: lead with the task, not a description.** "The 80/10/10 boundaries are positions in time…" reads like documentation; **"We need two dates: the day by which 80% of all transactions have happened…"** reads like someone running a workshop. Open steps with *We need / We do / Now we*, keep the verbs on us, and let the mechanism arrive as the way we do the thing — never as the subject of the sentence. (Zach: "Speaking with more action tone instead of passive is better for a workshop.")
+
+**Connect the logical chain — no gap between goal and mechanism.** A paragraph that states a goal ("cutoffs are defined by counts") and then names an operation ("groupby by date") without the middle link ("we need each day's count, plus a running total over the days in order") reads as two unrelated facts. Walk goal → what that requires → the operation that provides it. If the reader could ask "what does that have to do with it?", the link is missing.
+
+**One word per concept, held for the whole notebook.** If the intro calls them "splits," the section titles, prose, and prints call them splits — never "parts" in one place and "splits" in another.
 
 **The deeper AI tell is staging, not sentence length.** A draft was rejected twice for the same disease in two disguises: first as long em-dash-chained essay sentences with cute asides ("deserve a word of honesty," "deliberately boring"), then — after shortening — as *theatrical* short sentences: the dramatic negation-hook opener ("The foundation model never sees a fraud label."), the beat-drop mini-sentence for rhythm ("Similar transactions get similar embeddings."), the designed statement-then-elegant-elaboration arc. Every sentence was performing. Human engineer prose is informational: the subject comes first, facts arrive in the order you'd say them out loud, and nothing is staged for effect. Test: does the sentence exist to carry information, or to land? If it lands, rewrite it to carry.
 
@@ -77,6 +85,22 @@ Generated demo prose has telltale filler patterns that make a sharp reader trust
 - **Naming a term then waving at it** — name the real term (`importance weighting`) *and* gloss it concretely ("keep 1 in 50 normals, weight each survivor ×50"), not with more abstraction ("counts for the many it represents").
 
 The test for any sentence: would an engineer write this to another engineer, or does it read like it's filling a section template?
+
+## Code comments: one step, one comment — and answer at the line that asks
+
+**A block comment explaining several chained lines is the tell that the chain should be split.** Three "rambling" comment lines above a three-step chain means: break the chain into three statements and give each a short comment of its own. One idea per comment, sitting on the line it describes. (Zach: "Speak plainly, one step at a time. You have three rambling lines of text that is supposed to explain a couple lines of code.")
+
+**Put the answer at the line that raises the question.** The comment on `read_parquet` is where "how does it know how many workers?" gets answered (it doesn't — one task per shard, scheduled on whatever CPUs exist, autoscaler adds more when tasks queue). The laziness of a Ray dataset is explained at the `to_pandas()` that triggers execution — not as an abstract claim three lines earlier that the very next statement silently falsifies. Never leave a comment whose truth expires within the same cell.
+
+**Names must read from the call site — and say the right provenance.** A generic name (`normalize_batch`) sounds like a black box and forces the reader to ask; a concrete one (`normalize_date_column`, `add_analysis_columns`) doesn't. Verbs carry provenance: "add_date_column" made the reviewer ask *where the date came from* — "normalize" says it's derived from fields already there. If a reviewer stops to ask what a function is, the name is wrong, whatever the docstring says.
+
+## Show the intermediate result, and use real examples
+
+**If a step computes something the reader can look at, show it.** The cutoff dates were computed inside a cache guard and never printed — moving the aggregation into its own always-run cell costs one worker-side scan and buys a visible result (`train < 2017-04-17 <= val < 2018-09-29 <= test`) plus, in the committed output, the autoscaler bringing CPU nodes up: the "declare work, hardware arrives" story in the artifact itself.
+
+**A real example from the data beats an invented one.** The one-card sequence showed card 0 (nothing to see) while the prose invented a hypothetical $900 purchase. One query found card 66000: routine Texas purchases, then a same-day burst of Mexico department-store charges escalating \$45 → \$514 — the series' sequence-context thesis, visible in ten rows. When the prose describes a pattern, find the pattern in the data and display it; hardcode the chosen example (with a comment saying why it was chosen) if a programmatic pick could select a different instance at another scale and desync the prose from the display.
+
+**Ray must be visible where Ray is the lesson.** `src/` helpers for taught stages hold pandas per-batch functions and sealed reference code only — never the `ray.data` calls themselves. A wrapper like `load_normalized()` that hides read + transform + filter obfuscates exactly what the notebook exists to teach ("we cannot be obfuscating ray usage because part of the task here is showing ray"). Corollary: use each Ray tool for its own job in the open — `filter(expr=col(...) == …)` for row predicates, `map_batches` for transforms — and if committed outputs are kept in the working branch, curate them to the informative lines (real results, plus infra lines that tell the Ray story, like autoscaler scale-up; never progress bars and logger spam).
 
 ## Plots: restyle, don't restructure — and make the point visible
 
@@ -111,3 +135,7 @@ The anyscale/templates repo **strips notebook outputs** before commit (a `clear-
 - [ ] Committed defaults run top-to-bottom under papermill at CI/mini scale (CPU); scale-up is one knob.
 - [ ] Verified by papermill's own exit code / zero `error` output cells — not a chained command's exit — and the *whole* notebook re-ran after any import change.
 - [ ] Expected results are described in prose (outputs will be stripped on commit).
+- [ ] Prose is in action tone (We need / We do), the goal→mechanism chain has no gaps, and one word per concept holds notebook-wide.
+- [ ] Chained code with a block comment is split: one statement, one short comment, answers at the line that raises the question.
+- [ ] Function names read from the call site with honest provenance; no Ray calls hidden in `src/` for taught stages.
+- [ ] Intermediate results are shown; examples come from the data (chosen instance hardcoded + justified), not invented.
