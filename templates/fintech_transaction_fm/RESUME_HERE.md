@@ -402,3 +402,33 @@ possible Part 10 material or cap the CPU group max). nb03+ Next blurbs still hav
 jargon-dump disease — fix during each notebook's pass.
 
 NEXT: nb03 review with Zach, same treatment, same bar.
+
+## Session log — 2026-07-22 (nb03 finished, nb04 in progress with Zach)
+
+**nb03 is DONE and signed off** (opening reset with LLM-tokenization analogy in Zach's
+register; design-choices section; Build the corpus with visible assemble_sequences task;
+Check the corpus; scaling factors in the limited-by-X pattern he approved ("Grouping is
+limited by how fast you can move data around" / "Tokenizing is limited only by how many
+cores you give it"); plain takeaways with reader-in-the-loop pointer to Part 4).
+
+**nb04 review is MID-FLIGHT — resume here tomorrow.** Done: intro (recap pattern), Load
+the training data (three files explained, window-0 integer callback to nb03), What we're
+training (causality folded into next-token paragraph), Train with Ray Train (Zach-approved
+message: typical PyTorch adapted in three numbered places; train_func now INLINE in the
+notebook — src/pretrain.py was REFACTORED into shared helpers (build_pretrain_model,
+wrap_fsdp, make_optimizer, make_lr_scheduler, next_token_loss, epoch_summary,
+build_epoch_checkpoint, unwrap); src train_func composes the same helpers for
+run_pipeline; refactor verified by BIT-IDENTICAL mini losses 8.742/8.668 across three
+runs). NOT yet reviewed: Read the results, Save the model for the later parts, Scaling
+factors, Takeaways/Next. Also pending: "corpus" purge in nb04's remaining prose if any,
+nb05-07 Next-blurb/corpus sweeps during their passes.
+
+**KERNEL RESTART required in nb04** (src/pretrain.py changed shape twice today).
+
+The authoring skill got many new rules today — READ notebook-authoring.md BEFORE writing
+anything: keep-reader-in-the-loop umbrella; affirmative framing everywhere; pre-flight
+tells before handing over; sweep-don't-spot-fix; terms of art must earn their place
+(corpus banned); no animate verbs for things; announced-contrast tell; grandstanding
+tell; Next-blurb one plain sentence; section-you-keep-patching rule; plain-verbs
+comments with Zach's model comment; last sentence must deserve last position;
+punctuation-pile tell; audit first AND last sentences hardest.
