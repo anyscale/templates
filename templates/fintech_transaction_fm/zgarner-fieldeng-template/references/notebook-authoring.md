@@ -92,6 +92,7 @@ Generated demo prose has telltale filler patterns that make a sharp reader trust
 - **The announced contrast** — "the same idea, with one big difference," "but here's the catch": trailering a difference instead of stating it. Put the two facts next to each other and let them differ: "An LLM tokenizer splits text into word pieces and learns its vocabulary. A transaction has no text to split." No setup line.
 - **Grandstanding** — announcing a thing's importance before saying what it is: "We built the artifact every later notebook reads" (Zach: "just fucking annoying waste of reading"). Say what you did, then contextualize if needed: "We built our training/validation/test (80/10/10) splits. Every later notebook reuses them."
 - **Raising a concept only to dismiss it** — don't introduce AUC-ROC just to say you don't use it. If it isn't load-bearing, cut it. Its sneakiest form is the **negative opener**: starting a section by demolishing a thing no one proposed ("accuracy is a useless score…", "this stage never needs a GPU…"). Open with what we do and why it fits; dismiss nothing. (Caught twice in one page, 2026-07-21.)
+- **Affirmative framing is the default for EVERY sentence, not just openers.** "No card depends on another" was corrected to "each card is independent" — same fact, stated as what IS. Negation makes the reader hold an absence; the affirmative hands them the property. Write the negative form only when the absence itself is the point (a warning, a disproof). (Caught in a one-sentence insert, 2026-07-21 — the rule was being applied only to openers.)
 - **Naming a term then waving at it** — name the real term (`importance weighting`) *and* gloss it concretely ("keep 1 in 50 normals, weight each survivor ×50"), not with more abstraction ("counts for the many it represents").
 
 The test for any sentence: would an engineer write this to another engineer, or does it read like it's filling a section template?
@@ -136,6 +137,10 @@ The anyscale/templates repo **strips notebook outputs** before commit (a `clear-
 - **The proof of correctness is a green papermill run, not a screenshot.** If a stage can't run at mini scale in CI time, shrink it (fewer cards/epochs/rows) rather than committing a version only a GPU cluster can execute.
 - **Trust papermill's *own* exit code, not a chained command's.** `papermill … > log 2>&1; echo done` reports the `echo`'s exit (0) and hides a failed run — a notebook that raised `NameError` looked "green." Read papermill's exit directly, or scan the executed notebook for cells with `output_type == "error"`. A false green is worse than no check.
 - **After moving or changing an import, re-run the *whole* notebook.** A later cell may still use the symbol you relocated. Rewriting one cell's imports silently broke a downstream cell that used `STATIC_FIELDS`; only a full top-to-bottom run caught it. Editing any cell means re-verifying all of them, not just the one you touched.
+
+## Run the tells BEFORE handing over — the checklist is a pre-flight, not a post-mortem
+
+The failure mode that exhausts a reviewer: the rules exist in this file and the prose still ships with violations, because the check only happens after they complain. Before returning ANY prose or comment — including one-sentence inserts — read it once against the tells (negative framing, announced contrast, grandstanding, jargon without gloss, staging, filler). A single sentence is not too small to check; the one-sentence insert is where the habits leak back in.
 
 ## After any voice correction: sweep, don't spot-fix
 
