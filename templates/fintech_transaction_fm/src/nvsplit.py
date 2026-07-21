@@ -136,6 +136,26 @@ def _build(csv_path: str, out_dir: str, eval_samples: int, max_users, seed: int)
     return meta
 
 
+def finalize_split(out_dir: str, dirs: dict, train_cutoff, test_cutoff,
+                   eval_samples: int, max_users=None, seed: int = 42) -> dict:
+    """After the three part writes: draw the seeded eval samples (one Ray task per
+    eval set + a fraud count), remove the temp row dirs, write ``split_meta.json``.
+    The notebook shows this same composition inline; this is the headless path."""
+    import shutil
+
+    val_stats, test_stats, train_stats = ray.get([
+        stratified_eval.remote(dirs["val"], os.path.join(out_dir, "val_eval.parquet"),
+                               eval_samples, seed),
+        stratified_eval.remote(dirs["test"], os.path.join(out_dir, "test_eval.parquet"),
+                               eval_samples, seed),
+        fraud_count.remote(dirs["train"]),
+    ])
+    shutil.rmtree(dirs["val"])
+    shutil.rmtree(dirs["test"])
+    return write_split_meta(out_dir, train_cutoff, test_cutoff, eval_samples,
+                            max_users, seed, train_stats, val_stats, test_stats)
+
+
 def build_temporal_split(csv_path: str, out_dir: str, eval_samples: int = 100_000,
                          max_users=None, seed: int = 42) -> dict:
     """Regenerate NVIDIA's temporal split from ``csv_path`` into ``out_dir`` (GPU task).
@@ -326,22 +346,10 @@ def load_normalized(shards_dir: str, max_users=None):
     return ds
 
 
-def finalize_split(out_dir: str, dirs: dict, train_cutoff, test_cutoff,
-                   eval_samples: int, max_users=None, seed: int = 42) -> dict:
-    """After the three part writes: draw the seeded 100K stratified eval samples, count
-    train frauds, remove the temp row dirs, and write ``split_meta.json``."""
-    import shutil
-
-    val_stats, test_stats, train_stats = ray.get([
-        stratified_eval.remote(dirs["val"], os.path.join(out_dir, "val_eval.parquet"),
-                               eval_samples, seed),
-        stratified_eval.remote(dirs["test"], os.path.join(out_dir, "test_eval.parquet"),
-                               eval_samples, seed),
-        fraud_count.remote(dirs["train"]),
-    ])
-    shutil.rmtree(dirs["val"])
-    shutil.rmtree(dirs["test"])
-
+def write_split_meta(out_dir: str, train_cutoff, test_cutoff, eval_samples: int,
+                     max_users, seed: int, train_stats: dict, val_stats: dict,
+                     test_stats: dict) -> dict:
+    """Assemble and write ``split_meta.json`` from the sampling/count task results."""
     meta = {
         "source": "tabformer_csv",
         "protocol": "NVIDIA NB01: 80/10/10 temporal by cumulative daily count + 100K stratified eval",
