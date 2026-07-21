@@ -137,6 +137,10 @@ The anyscale/templates repo **strips notebook outputs** before commit (a `clear-
 - **Trust papermill's *own* exit code, not a chained command's.** `papermill … > log 2>&1; echo done` reports the `echo`'s exit (0) and hides a failed run — a notebook that raised `NameError` looked "green." Read papermill's exit directly, or scan the executed notebook for cells with `output_type == "error"`. A false green is worse than no check.
 - **After moving or changing an import, re-run the *whole* notebook.** A later cell may still use the symbol you relocated. Rewriting one cell's imports silently broke a downstream cell that used `STATIC_FIELDS`; only a full top-to-bottom run caught it. Editing any cell means re-verifying all of them, not just the one you touched.
 
+## After any voice correction: sweep, don't spot-fix
+
+When the reviewer flags a sentence pattern ("speak plainly," "say what X does," "lead with the action"), the flagged sentence is never the only instance. Fix it, then immediately re-scan every markdown cell and comment in the notebook for the same pattern before handing back. Making the reviewer repeat the same correction on the next paragraph is the single fastest way to burn their patience — they are teaching a rule, not editing a line.
+
 ## Checklist
 
 - [ ] Every inline cell carries a transferable Ray/Anyscale lesson; domain munging is imported from `src/`.
