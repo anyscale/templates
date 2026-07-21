@@ -83,6 +83,7 @@ Generated demo prose has telltale filler patterns that make a sharp reader trust
 - **Editorializing titles** — "Class imbalance — and why we don't report plain accuracy." Name the thing: "How we measure performance."
 - **The `**Label**:` bullet list** where every item is a bold noun + colon ("**Metric**: …", "**Sampling**: …"). Write sentences.
 - **Filler connectives** — "drives the rest of the series," "it's worth noting that," "the operationally meaningful number."
+- **Grandstanding** — announcing a thing's importance before saying what it is: "We built the artifact every later notebook reads" (Zach: "just fucking annoying waste of reading"). Say what you did, then contextualize if needed: "We built our training/validation/test (80/10/10) splits. Every later notebook reuses them."
 - **Raising a concept only to dismiss it** — don't introduce AUC-ROC just to say you don't use it. If it isn't load-bearing, cut it. Its sneakiest form is the **negative opener**: starting a section by demolishing a thing no one proposed ("accuracy is a useless score…", "this stage never needs a GPU…"). Open with what we do and why it fits; dismiss nothing. (Caught twice in one page, 2026-07-21.)
 - **Naming a term then waving at it** — name the real term (`importance weighting`) *and* gloss it concretely ("keep 1 in 50 normals, weight each survivor ×50"), not with more abstraction ("counts for the many it represents").
 
