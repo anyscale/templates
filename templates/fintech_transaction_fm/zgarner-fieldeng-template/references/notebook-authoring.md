@@ -42,6 +42,8 @@ A shown cell should answer **"what am I seeing and why does it matter,"** not na
 
 "Show *why*" only works if the *why* is true. The fastest way to lose a sharp reader is a confident, wrong characterization of the data: calling a distribution "heavy-tailed" when it's a tame lognormal (top 1% held only ~10% of the mass, max ~200× the median); "most cards are quiet" when the median card had 2,500 transactions; "then nothing for weeks" when 99.5% of gaps were under a week. Every one of those was a one-line check away, and every one shipped in a first draft.
 
+**The rule covers difficulty claims too.** "Tokenizing transactions is simpler than tokenizing text" shipped in a project where the tokenizer was the single hardest thing to get right (hash mirroring, byte-identity verification, bucket design). If the work fought you, don't call it simple — say which part is mechanical and which part is hard.
+
 **Rule: if a sentence names a shape, a magnitude, or a rate, compute it before you write it.** `df.describe()`, a quantile, a `value_counts()`, "what share of the mass is in the top 1%" — all cheap. A shipped wrong adjective is not: it's the exact thing a reader catches, and it discredits the real lesson sitting next to it. This applies *doubly* to plot captions and section prose an agent generated from a template — those are guesses until the numbers confirm them.
 
 And the shape words are not interchangeable color: **heavy-tailed** (fat tail carrying real mass), **long-tailed** (thin tail stretching far along the axis), and **right-skewed / lognormal** are different shapes with different modeling consequences. Use the one the data shows, not the one that sounds impressive.
