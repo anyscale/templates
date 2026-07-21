@@ -111,6 +111,10 @@ The test for any sentence: would an engineer write this to another engineer, or 
 
 **Ray must be visible where Ray is the lesson.** `src/` helpers for taught stages hold pandas per-batch functions and sealed reference code only — never the `ray.data` calls themselves. A wrapper like `load_normalized()` that hides read + transform + filter obfuscates exactly what the notebook exists to teach ("we cannot be obfuscating ray usage because part of the task here is showing ray"). Corollary: use each Ray tool for its own job in the open — `filter(expr=col(...) == …)` for row predicates, `map_batches` for transforms — and if committed outputs are kept in the working branch, curate them to the informative lines (real results, plus infra lines that tell the Ray story, like autoscaler scale-up; never progress bars and logger spam).
 
+## The Next blurb is one plain sentence
+
+The closing "Next" pointer says what the reader does next, in words they already understand. No class names, no magic numbers, no feature lists — "`FinancialTabularTokenizer` (merchant hashing + category hierarchy + temporal encoding, vocab 6251)" is a jargon dump about a notebook the reader hasn't opened; "turn each card's transactions into the token sequences the model will train on" is the same pointer in plain words. The details belong in the next notebook, where they get explained.
+
 ## Plots: restyle, don't restructure — and make the point visible
 
 Two different jobs; don't confuse them:
