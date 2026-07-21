@@ -18,7 +18,7 @@ import time
 import ray
 
 
-def _wait_for_files(file_paths, timeout: float = 300.0) -> None:
+def wait_for_files(file_paths, timeout: float = 300.0) -> None:
     """Block until each path is visible on the caller's node. ``/mnt/cluster_storage`` is
     NFS/EFS-backed, so a file just written by a worker can lag a driver read by a fraction
     of a second (papermill runs cells back-to-back and hits this). Poll to make the
@@ -114,7 +114,7 @@ def build_corpus(train_parquet: str, out_dir: str, seq_len: int = 4096, chunk: i
     """
     ray.init(ignore_reinit_error=True)
     meta = ray.get(_build.remote(train_parquet, out_dir, seq_len, chunk, merchant_hash, max_seq))
-    _wait_for_files([os.path.join(out_dir, f) for f in ("ids.npy", "attn.npy", "vocab.json")])
+    wait_for_files([os.path.join(out_dir, f) for f in ("ids.npy", "attn.npy", "vocab.json")])
     return meta
 
 
@@ -167,7 +167,7 @@ def tokenize_card_group(group, seq_len: int = 4096, chunk: int = 315,
 
 
 @ray.remote(num_cpus=8)
-def _assemble(rows_dir: str, out_dir: str, seq_len: int, max_seq) -> dict:
+def assemble_sequences(rows_dir: str, out_dir: str, seq_len: int, max_seq) -> dict:
     """Collect the per-card sequences, order them exactly as the reference does
     (pandas groupby sorts keys → (user, card, chunk) ascending), write npy + vocab."""
     import sys
@@ -216,9 +216,9 @@ def assemble_corpus(rows_dir: str, out_dir: str, seq_len: int, max_seq=None) -> 
     the reference's (user, card, chunk) order; removes the temp rows dir."""
     import shutil
     ray.init(ignore_reinit_error=True)
-    meta = ray.get(_assemble.remote(rows_dir, out_dir, seq_len, max_seq))
+    meta = ray.get(assemble_sequences.remote(rows_dir, out_dir, seq_len, max_seq))
     shutil.rmtree(rows_dir)
-    _wait_for_files([os.path.join(out_dir, f) for f in ("ids.npy", "attn.npy", "vocab.json")])
+    wait_for_files([os.path.join(out_dir, f) for f in ("ids.npy", "attn.npy", "vocab.json")])
     return meta
 
 
