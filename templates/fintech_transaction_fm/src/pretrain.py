@@ -112,13 +112,13 @@ def epoch_summary(epoch: int, avg_loss: float, optimizer, config: dict) -> dict:
     return metrics
 
 
-def build_epoch_checkpoint(base_model, epoch: int, config: dict):
+def build_epoch_checkpoint(model, epoch: int, config: dict):
     """A checkpoint with the weights + vocab + model config — only on the last
-    epoch, only from rank 0. Returns None otherwise."""
+    epoch, only from rank 0. Returns None otherwise. Accepts the wrapped model."""
     if epoch != config["epochs"] - 1 or ray.train.get_context().get_world_rank() != 0:
         return None
     tmp = tempfile.mkdtemp()
-    torch.save(base_model.state_dict(), os.path.join(tmp, "model.pt"))
+    torch.save(unwrap(model).state_dict(), os.path.join(tmp, "model.pt"))
     shutil.copy(config["vocab_path"], os.path.join(tmp, "vocab.json"))
     with open(os.path.join(tmp, "model_config.json"), "w") as f:
         json.dump(
@@ -131,11 +131,8 @@ def build_epoch_checkpoint(base_model, epoch: int, config: dict):
 def train_func(config: dict):
     """The per-worker training loop — the same composition Part 4 shows inline."""
     model = build_pretrain_model(config)
-    if config.get("use_fsdp", False) and torch.cuda.is_available():
-        model = wrap_fsdp(model)
-    else:
-        model = ray.train.torch.prepare_model(model)
-    base = unwrap(model)
+    wants_fsdp = config.get("use_fsdp", False) and torch.cuda.is_available()
+    model = wrap_fsdp(model) if wants_fsdp else ray.train.torch.prepare_model(model)
 
     optimizer = make_optimizer(model, config)
     scheduler = make_lr_scheduler(optimizer, config)
@@ -157,8 +154,7 @@ def train_func(config: dict):
             n_batches += 1
 
         metrics = epoch_summary(epoch, running / max(n_batches, 1), optimizer, config)
-        checkpoint = build_epoch_checkpoint(base, epoch, config)
-        ray.train.report(metrics, checkpoint=checkpoint)
+        ray.train.report(metrics, checkpoint=build_epoch_checkpoint(model, epoch, config))
 
 
 def save_checkpoint(result, checkpoint_out: str) -> None:
