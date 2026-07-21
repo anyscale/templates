@@ -116,7 +116,8 @@ Ray's published locks/constraints into `/tmp/ray-deps/`, with fallbacks for rele
 3. Confirm the template installs the regenerated lock on the driver **and** forwards it via `runtime_env`
    at the right scope (Serve → app/deployment level; see "What ships" + "Runtime skew") — otherwise
    workers/replicas keep running stale deps.
-4. Check the lock didn't drag a base-framework package below the image ("Runtime skew"); pin the traps below.
+4. Check the lock didn't drag a base-framework package below the image ("Runtime skew"), and that `torch`'s
+   CUDA still matches the build image ("Gotchas"); pin the traps below.
 
 ## Gotchas
 
@@ -128,4 +129,9 @@ Ray's published locks/constraints into `/tmp/ray-deps/`, with fallbacks for rele
 - **Un-pinned floats.** `--system` installs float `numpy` to 2.x → pin `numpy`/`pandas`/`pyarrow` to the base
   image. Un-pinned `datasets` resolves to ancient `2.14.4` and breaks modern `fsspec` → pin `datasets==3.6.0`
   + `fsspec==2023.12.1` in `requirements.txt`.
+- **Torch CUDA must match the build image.** A template's `torch` (+ `torchvision`/`torchaudio`) must be
+  built for the image's `CUDA_VARIANT`. Write `--index https://download.pytorch.org/whl/${CUDA_VARIANT}`
+  (never a hardcoded `cu121`) so the index tracks the image, and **pin** `torch==<ver>` to a version that
+  ships wheels for that CUDA — an unpinned `torch>=…` lets `unsafe-best-match` pull PyPI's newest wheel, a
+  *newer* CUDA than the image, which fails at runtime. Fleet standard: `torch==2.7.0` → `+cu128`.
 - **Upstream lag:** Ray's `deplocks/` and base images publish days after a release; a bump waits on them.
