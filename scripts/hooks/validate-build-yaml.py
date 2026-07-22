@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate BUILD.yaml: schema, paths, name uniqueness, and (optionally) GCP image accessibility."""
+"""Validate BUILD.yaml: schema, paths, name uniqueness, head-node policy, and (optionally) GCP image accessibility."""
 
 from __future__ import annotations
 
@@ -346,6 +346,44 @@ def check_compute_configs(entries: list[Entry]) -> list[str]:
     return errors
 
 
+# -------------------------------- head node: unschedulable coordinator
+
+def check_head_nodes(entries: list[Entry]) -> list[str]:
+    """Every compute config's head node must be pinned unschedulable (resources
+    CPU: 0) — it is a coordinator, not a work node — with worker_nodes /
+    auto_select_worker_config to run the actual workload. This mirrors the
+    launch-time compute-config conversion, so the committed config equals what
+    ships to S3 (no silent head-resource injection at build time)."""
+    errors: list[str] = []
+    paths: set[str] = set()
+    for e in entries:
+        if e.dir.startswith("archive/"):
+            continue  # archived templates are retired/unmaintained — exempt, like the test requirement
+        paths.add(e.compute_config.GCP)
+        paths.add(e.compute_config.AWS)
+    for path in sorted(paths):
+        full = REPO_ROOT / path
+        if not full.is_file():
+            continue  # already reported by check_filesystem_and_uniqueness
+        data = yaml.safe_load(full.read_text()) or {}
+        head = data.get("head_node") or {}
+        res = head.get("resources")
+        cpu = res.get("CPU") if isinstance(res, dict) else None
+        has_capacity = bool(data.get("worker_nodes")) or bool(data.get("auto_select_worker_config"))
+
+        if cpu != 0:
+            errors.append(
+                f"{path}: head_node.resources.CPU must be 0 — the head is a coordinator, not a work "
+                f"node (got resources={res!r}). Add a `resources:` block with `CPU: 0`."
+            )
+        elif not has_capacity:
+            errors.append(
+                f"{path}: head is unschedulable (CPU: 0) but there are no worker_nodes and no "
+                f"auto_select_worker_config, so nothing can run. Add a worker group or auto_select."
+            )
+    return errors
+
+
 # ----------------------------------------------- GCP image naming + access
 
 GCP_BYOD_REGISTRY = (
@@ -454,6 +492,7 @@ def main() -> int:
 
     errors = check_filesystem_and_uniqueness(entries)
     errors.extend(check_compute_configs(entries))
+    errors.extend(check_head_nodes(entries))
     errors.extend(check_gcp_byod_images(entries, network=not args.no_network))
 
     if errors:
