@@ -2,7 +2,7 @@ ray[data]>=2.9
 boltz>=0.3
 torch==2.7.0
 numpy==1.26.4
-pandas>=2.0
+pandas==2.3.3
 pyarrow==19.0.1
 rdkit>=2023.9
 biopython>=1.82

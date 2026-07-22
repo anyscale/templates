@@ -4,7 +4,7 @@ transformers>=4.35
 torch==2.7.0
 faiss-cpu>=1.7
 numpy==1.26.4
-pandas>=2.0
+pandas==2.3.3
 pyarrow==19.0.1
 faker>=18.0
 requests

@@ -3,13 +3,10 @@ sentence-transformers>=2.2
 transformers>=4.35
 torch==2.7.0
 pillow>=10.0
-# Pin cross-node-pickled libs to the base image (anyscale/ray:2.56.0-py311-cu121)
-# versions. Ray Data pickles pyarrow/numpy objects between the head and worker
-# nodes; the head gets these from the python_depset.lock install while workers
-# run the base image, so upgrading them here causes "Incompatible checksums"
-# unpickle errors on workers. Keep them equal to the base image.
+# Pin cross-node-pickled libs (numpy/pyarrow/pandas) to the base image — Ray Data pickles them
+# between head and workers, so a version mismatch breaks unpickling.
 pyarrow==19.0.1
 numpy==1.26.4
-pandas>=2.0
+pandas==2.3.3
 faker>=18.0
 scikit-learn>=1.3

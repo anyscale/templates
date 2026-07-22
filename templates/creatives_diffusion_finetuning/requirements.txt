@@ -16,3 +16,5 @@ pillow>=10.0
 numpy==1.26.4
 pyarrow==19.0.1
 matplotlib>=3.7
+# Match the base image (cross-node pickle consistency).
+pandas==2.3.3
