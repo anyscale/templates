@@ -51,9 +51,10 @@ RUN curl -sSL https://sdk.cloud.google.com > /tmp/gcloud-install.sh \
  && bash /tmp/gcloud-install.sh --disable-prompts --install-dir=/opt \
  && rm /tmp/gcloud-install.sh
 
-# --- Buildkite MCP server (pinned; the cursor cloud automation's MCP config
-# invokes `buildkite-mcp-server stdio` and the binary reads BUILDKITE_API_TOKEN
-# from the agent's env, populated by the Cursor secret). ---
+# --- Buildkite MCP server binary (pinned). Only the binary is baked here; the
+# `buildkite-mcp` MCP server itself is declared on the "Template update" Cursor
+# automation (Tools → MCP), which invokes `buildkite-mcp-server stdio` and
+# supplies BUILDKITE_API_TOKEN from the automation's own MCP secret. ---
 ARG BK_MCP_VER=v1.0.0
 RUN curl -fsSL "https://github.com/buildkite/buildkite-mcp-server/releases/download/${BK_MCP_VER}/buildkite-mcp-server_Linux_x86_64.tar.gz" \
       | tar -xz -C /usr/local/bin buildkite-mcp-server \

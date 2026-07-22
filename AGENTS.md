@@ -53,6 +53,8 @@ Run `bash .cursor/preflight.sh` before any task. It checks:
 
 Use `.cursor/Dockerfile` and `.cursor/install.sh` as the canonical environment setup. Run `bash .cursor/install.sh`. If anything fails, read the files and reproduce their steps yourself.
 
+**Buildkite MCP:** the `buildkite-mcp` server the agent calls is declared on the **"Template update" automation** (Tools → MCP) — the single source. `.cursor/Dockerfile` only bakes the `buildkite-mcp-server` binary and `preflight.sh` validates the token; the server declaration and its token live on the automation. There is intentionally **no** repo-level `.cursor/mcp.json`, and the redundant team-level dashboard entry (Integrations & MCP → `buildkite`) is being retired too — don't re-introduce either.
+
 ### Cursor-specific quirks
 
 - **Branch naming:** Cursor auto-assigns `cursor/...`. (Outside Cursor, use `update/<template-name>/ray-<version>`.)
