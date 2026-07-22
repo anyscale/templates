@@ -1,5 +1,7 @@
 head_node:
   instance_type: n1-standard-8
+  resources:
+    CPU: 0
 worker_nodes:
 - name: 8CPU-32GB
   instance_type: n1-standard-8
