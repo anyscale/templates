@@ -1,3 +1,4 @@
 mcp==1.11.0
 asyncio==3.4.3
-pydantic==2.9.2
+# Match the base image so head and replicas agree (mcp allows pydantic>=2.8,<3); an older head-only pydantic is a cross-node skew.
+pydantic==2.12.4
