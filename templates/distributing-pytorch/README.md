@@ -22,7 +22,9 @@ git clone https://github.com/anyscale/templates && cd templates/templates/distri
 
 ## Step 1: Start with a basic single machine PyTorch example
 
-In this step you train a PyTorch VisionTransformer model to recognize objects using the open CIFAR-10 dataset. It's a minimal example that trains on a single machine. Note that the code has multiple functions to highlight the changes needed to run things with Ray.
+In this step you train a PyTorch VisionTransformer model to recognize objects using the open CIFAR-10 dataset. It's a minimal example that trains on a single machine (one GPU). Note that the code has multiple functions to highlight the changes needed to run things with Ray.
+
+Because the head node is a CPU-only coordinator, you run this single-machine example on a GPU worker by submitting it as a Ray task that requests one GPU. Steps 2 and 3 then distribute training across many workers with Ray Train and Ray Data.
 
 First, install and import the required Python modules.
 
@@ -151,11 +153,12 @@ def train_func():
         print({"epoch_num": epoch, "loss": valid_loss, "accuracy": accuracy})
 ```
 
-Finally, run training.
+Finally, run training. The head node is a CPU-only coordinator, so submit `train_func` as a Ray task requesting one GPU (`num_gpus=1`); Ray schedules it on a GPU worker, where `torch.cuda` is available.
 
 
 ```python
-train_func()
+train_on_gpu_worker = ray.remote(num_gpus=1)(train_func)
+ray.get(train_on_gpu_worker.remote())
 ```
 
 The training should take about 2 minutes and 10 seconds with an accuracy of about 0.35.  
