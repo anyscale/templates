@@ -10,6 +10,13 @@ yet, edits `dependencies/template.depsets.yaml` to add the version's
 `build_arg_sets` + wire them into the two base `compile` entries, then recompiles
 just those locks via `update_deps.sh`, leaving the changes staged for a PR.
 
+Version policy (minor-only): on the scheduled/auto path it acts only when the newest
+stable Ray advances the *minor* (or major) over our newest complete set — templates
+track minor Ray releases (~monthly), so a patch over the current minor (2.56.0 →
+2.56.1) is a no-op. A new minor adopts its newest patch (2.57.z, not forced 2.57.0).
+An explicit `--version` (or `--force`) bypasses the gate — a human override for a
+specific target.
+
 Copy-forward model: it clones the current newest-complete version's base-lock
 matrix (the image's Python set, the LLM's (py, cuda) set), substituting the new
 version, and verifies Ray published the matching deplocks at the `ray-<v>` tag. It
@@ -74,6 +81,11 @@ def compact(v: str) -> str:
     return v.replace(".", "")
 
 
+def _ver(s: str) -> tuple[int, ...]:
+    """Version string → int tuple for ordering (e.g. '2.56.1' → (2, 56, 1))."""
+    return tuple(int(x) for x in s.split("."))
+
+
 # ── upstream / repo state ──────────────────────────────────────────────────
 
 
@@ -87,7 +99,7 @@ def newest_stable_ray() -> str:
             stable.append(v)
     if not stable:
         raise RuntimeError("no stable ray release found on PyPI")
-    return max(stable, key=lambda s: tuple(int(x) for x in s.split(".")))
+    return max(stable, key=_ver)
 
 
 def _lock_versions(*patterns: str) -> set[str]:
@@ -112,7 +124,16 @@ def complete_versions() -> set[str]:
 
 def newest_complete() -> str | None:
     c = complete_versions()
-    return max(c, key=lambda s: tuple(int(x) for x in s.split("."))) if c else None
+    return max(c, key=_ver) if c else None
+
+
+def is_minor_upgrade(target: str, current: str | None) -> bool:
+    """Whether `target` advances (major, minor) beyond `current` — the only case the
+    scheduled path auto-prepares. Patch-only bumps (same major.minor) and versions
+    behind `current` return False; a missing `current` (bootstrap) returns True."""
+    if current is None:
+        return True
+    return _ver(target)[:2] > _ver(current)[:2]
 
 
 # ── Ray deplock discovery (what matrix did upstream actually ship?) ─────────
@@ -243,6 +264,17 @@ def main(argv: list[str] | None = None) -> int:
         log(f"error: bad version {target!r}")
         return 2
     log(f"Target Ray version: {target}")
+
+    # Minor-only gate (scheduled/auto path): templates track minor Ray releases, so a
+    # patch over the current minor (e.g. 2.56.0 → 2.56.1) shouldn't open a base-locks PR.
+    # An explicit --version (or --force) bypasses this — a human targeting a specific release.
+    if not args.version and not args.force:
+        current = newest_complete()
+        if not is_minor_upgrade(target, current):
+            log(f"Ray {target} is not a new minor over {current} "
+                "(templates track minor Ray releases; --version overrides) — nothing to do.")
+            set_output(status="skipped-patch", version=target)
+            return 0
 
     if target in complete_versions() and not args.force:
         log("Already have a complete base-lock set — nothing to do.")

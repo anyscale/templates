@@ -8,6 +8,10 @@ name: ray-base-locks
 # this workflow opens a PR. A human reviews + merges it (the approval gate), then
 # pushes a `ray-fanout-<v>` tag to fire ray-bump-fanout.yaml.
 #
+# Minor-only: on the daily schedule it acts only on a new Ray *minor* (patches over the
+# current minor, e.g. 2.56.0 → 2.56.1, are skipped). To force a specific version anyway
+# (incl. a patch), dispatch this workflow with the `ray_version` input set (→ --version).
+#
 # If Ray shipped a different py/cuda matrix, the script stops with 'needs human'
 # (rc=2) and a maintainer runs .claude/skills/template/workflows/upgrade-dependencies.md.
 
