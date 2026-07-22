@@ -1,7 +1,6 @@
 name: ecommerce-recommendation-serving
 image_uri: anyscale/ray:2.56.0-py311-cu128
 compute_config:
-  cloud: aws-public-us-west-2
   head_node:
     instance_type: m5.2xlarge
   worker_nodes:
@@ -13,15 +12,6 @@ applications:
   - import_path: deploy:app
     runtime_env:
       working_dir: ./
-requirements:
-  - ray[serve]>=2.9
-  - sentence-transformers>=2.2
-  - transformers>=4.35
-  - torch>=2.0
-  - faiss-cpu>=1.7
-  - numpy>=1.24
-  - pandas>=2.0
-  - pyarrow>=14.0
-  - faker>=18.0
-  - requests
-  - pydantic>=2.0
+# Fully-pinned lock (torch 2.5.1+cu121, matching the cu121 image above) so Service
+# replicas match the workspace/notebook env instead of re-resolving the loose >= list.
+requirements: python_depset.lock
