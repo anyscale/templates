@@ -41,7 +41,7 @@ processor_config = vLLMEngineProcessorConfig(
     batch_size=16,
     accelerator_type="L4",
     concurrency=4,
-    has_image=True,  # Enable image input.
+    prepare_multimodal_stage=True,  # Enable multimodal (image) input.
 )
 
 
@@ -78,8 +78,8 @@ def preprocess(row: dict[str, Any]) -> dict[str, Any]:
                         "text": "Describe this image in detail. Focus on the main subjects, actions, and setting."
                     },
                     {
-                        "type": "image",
-                        "image": image  # Ray Data accepts PIL Image or image URL.
+                        "type": "image_pil",
+                        "image_pil": image  # PIL Image object; for a URL use {"type": "image_url", "image_url": {"url": ...}}.
                     }
                 ]
             },
