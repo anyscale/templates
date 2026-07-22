@@ -36,15 +36,14 @@ RUN curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
 RUN apt-get update -qq && apt-get install -y docker.io fuse-overlayfs iptables \
  && rm -rf /var/lib/apt/lists/*
 
-# --- Python tooling (pinned via requirements-dev.txt, the single source of
-# truth shared with CI and human contributors). System-wide install so
-# binaries land in /usr/local/bin (already on PATH). --break-system-packages:
-# Ubuntu 24.04's Python 3.12 enforces PEP 668; safe in this single-purpose
-# container. ---
-COPY requirements-dev.txt /tmp/requirements-dev.txt
-RUN python3 -m pip install --no-warn-script-location --break-system-packages \
-      -r /tmp/requirements-dev.txt \
- && rm /tmp/requirements-dev.txt
+# --- uv + Python tooling (pinned via pyproject.toml + uv.lock). Venv lives at
+# /opt/venv (out-of-tree, survives the runtime repo bind-mount); its bin dir is on
+# PATH below so bare `pre-commit`/`python3` resolve. Build-time sync warms the
+# cache; install.sh re-syncs from the mounted repo at runtime. ---
+COPY --from=ghcr.io/astral-sh/uv:0.11.11 /uv /uvx /usr/local/bin/
+ENV UV_PROJECT_ENVIRONMENT=/opt/venv
+COPY pyproject.toml uv.lock /tmp/tooling/
+RUN cd /tmp/tooling && uv sync --frozen && rm -rf /tmp/tooling
 
 # --- gcloud SDK (installed at /opt/google-cloud-sdk; bin added to PATH below) ---
 RUN curl -sSL https://sdk.cloud.google.com > /tmp/gcloud-install.sh \
@@ -63,7 +62,7 @@ RUN curl -fsSL "https://github.com/buildkite/buildkite-mcp-server/releases/downl
 # --- Bake env into the image so ALL processes see it (login, non-login,
 # interactive, non-interactive). Replaces the prior /etc/profile.d/ + ~/.bashrc
 # dance, which depended on shell mode. ---
-ENV PATH=/opt/google-cloud-sdk/bin:$PATH
+ENV PATH=/opt/venv/bin:/opt/google-cloud-sdk/bin:$PATH
 ENV ANYSCALE_HOST=https://console.anyscale-staging.com
 
 WORKDIR /workspace

@@ -44,13 +44,13 @@ The sections below describe what the skill (or you, manually) does under the hoo
 
 ## Local development
 
-Requires Python 3.12 (matches CI and cursor cloud — `generate-readme` is byte-deterministic at that version).
+Requires Python 3.12 (matches CI and cursor cloud — `generate-readme` is byte-deterministic at that version); [uv](https://docs.astral.sh/uv/) provisions it automatically.
 
 ```bash
-pip install -r requirements-dev.txt               # pinned dev deps (single source of truth)
-pre-commit install                                # auto-fire hooks on git commit
-pre-commit run --all-files                        # lint + schema + auto-README
-python3 scripts/hooks/validate-build-yaml.py --no-network    # offline BUILD.yaml validation
+uv sync                                           # pinned dev deps from uv.lock (creates .venv)
+uv run pre-commit install                         # auto-fire hooks on git commit
+uv run pre-commit run --all-files                 # lint + schema + auto-README
+uv run python scripts/hooks/validate-build-yaml.py --no-network   # offline BUILD.yaml validation
 bash ./update_deps.sh --check                     # dependency lockfile up-to-date check
 ```
 
