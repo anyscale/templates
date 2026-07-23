@@ -175,9 +175,17 @@ The anyscale/templates repo **strips notebook outputs** before commit (a `clear-
 - **Trust papermill's *own* exit code, not a chained command's.** `papermill … > log 2>&1; echo done` reports the `echo`'s exit (0) and hides a failed run — a notebook that raised `NameError` looked "green." Read papermill's exit directly, or scan the executed notebook for cells with `output_type == "error"`. A false green is worse than no check.
 - **After moving or changing an import, re-run the *whole* notebook.** A later cell may still use the symbol you relocated. Rewriting one cell's imports silently broke a downstream cell that used `STATIC_FIELDS`; only a full top-to-bottom run caught it. Editing any cell means re-verifying all of them, not just the one you touched.
 
-## Run the tells BEFORE handing over — the checklist is a pre-flight, not a post-mortem
+## The review loop — iterate to fixpoint before any handover
 
-The failure mode that exhausts a reviewer: the rules exist in this file and the prose still ships with violations, because the check only happens after they complain. Before returning ANY prose or comment — including one-sentence inserts — read it once against the tells (negative framing, announced contrast, grandstanding, jargon without gloss, staging, filler). A single sentence is not too small to check; the one-sentence insert is where the habits leak back in.
+A single pass or a grep catches one rule; the reviewer needs all of them held at once. Every prose/comment handover runs this loop:
+
+**Pass A — high level.** What is this section FOR, in one sentence? Delete or move every paragraph that doesn't serve it. Check location (is this content owned by another notebook/section?), structure (headers over big code, code/prose interleave, recap-then-next after big cells), and duplication against the rest of the notebook.
+
+**Pass B — sentence by sentence.** Every sentence and comment against the full tells list: does it carry the claim (power = content, not form)? Affirmative? Plain verbs, no animate verbs for things? No curator phrases, announce-colons, announced contrasts, grandstanding, fragments-as-openers? Jargon glossed at first use? Right actor as subject (Ray where true)? Claims computed/verified at their own altitude? Comments survive being read alone? First/last sentence of each paragraph audited hardest.
+
+**Pass C — high level again.** Re-read the whole section after B's edits: flow intact, no new seams, no orphaned references, openers and closers still the strongest sentences, nothing now duplicated.
+
+**Repeat A→B→C until one full cycle produces zero changes.** Only then hand over. Log what each pass caught — a loop that catches nothing on its first cycle probably wasn't run.
 
 ## After any voice correction: sweep, don't spot-fix
 
