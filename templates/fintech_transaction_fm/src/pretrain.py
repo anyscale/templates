@@ -108,16 +108,18 @@ def build_epoch_checkpoint(model, epoch: int, config: dict):
 def train_func(config: dict):
     """The per-worker training loop — the same composition Part 4 shows inline."""
     os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
-    torch.manual_seed(config.get("seed", 0))          # same init on every worker
+    torch.manual_seed(config.get("seed", 0))    # fixed seed: every worker builds identical starting weights
     # vocab.json sets the vocab size, the config sets the dims (src/model.py).
     model = build_model(config["vocab_path"], arch=config["arch"], max_len=config["max_len"])
 
-    if config.get("use_fsdp", False) and torch.cuda.is_available():   # off at every preset
+    if config.get("use_fsdp", False) and torch.cuda.is_available():   # use_fsdp is false in every config we ship
         from torch.distributed.fsdp import FullyShardedDataParallel as FSDP
-        # PyTorch's model-sharding wrapper, on the worker group Ray already set up.
+        # For a model too big for one GPU: split the model itself across the workers
+        # (PyTorch FSDP, running on the workers Ray started).
         model = FSDP(model.to(ray.train.torch.get_device()))
     else:
-        model = ray.train.torch.prepare_model(model)            # wrap for distributed training
+        # Every worker trains a full copy of the model; Ray keeps the copies in sync.
+        model = ray.train.torch.prepare_model(model)
 
     optimizer = torch.optim.AdamW(model.parameters(), lr=config["lr"],
                                   betas=tuple(config.get("betas", (0.9, 0.999))),
