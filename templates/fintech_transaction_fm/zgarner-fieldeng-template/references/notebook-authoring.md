@@ -135,6 +135,10 @@ The umbrella rule behind many of the individual voice rules (Zach: "Many things 
 
 Every large code cell gets its own `###` header ("Defining the training function", "Run the training"). Two benefits: the notebook's structure stays visible while scrolling, and Jupyter makes headed sections collapsible, so a reader can fold the code away. (Zach's rule, 2026-07-23.)
 
+## Impact before mechanics — and mechanism-only facts may not deserve prose
+
+"Ray writes checkpoints to shared storage, so an interrupted run picks up where it left off" leads with plumbing and buries the product capability in the tail. Invert it: "Ray makes the run durable: if training is interrupted, it resumes from the last checkpoint instead of starting over" — what Ray does FOR the user first, the mechanics second (or in a code comment). And apply the test before writing the sentence at all: gradient averaging is pure mechanism with no user-felt impact — it belongs in the loop's code comment, not the prose. (Zach's quiz, 2026-07-23.)
+
 ## First and last sentences are power positions; first and second words are power words
 
 The reader's eye lands on openings, closings, and headings — put the point there. A transition that opens "Next, we count the total number of training steps" spends its power position on a bookkeeping detail; the point is "Now we run the training," and the step-count is a parenthetical on the way. Endings equally: close on the strong concrete fact (the scale span, the result), never on the minor detail. And a transition of two bare sentences is invisible when scrolling — give it a `###` heading so it reads as structure.
