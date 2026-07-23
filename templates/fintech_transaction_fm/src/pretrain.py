@@ -109,7 +109,8 @@ def train_func(config: dict):
     """The per-worker training loop — the same composition Part 4 shows inline."""
     os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
     torch.manual_seed(config.get("seed", 0))    # fixed seed: every worker builds identical starting weights
-    # vocab.json sets the vocab size, the config sets the dims (src/model.py).
+    # Build the model. vocab.json gives it the token count; the config gives its
+    # dimensions. build_model is 10 lines in src/model.py.
     model = build_model(config["vocab_path"], arch=config["arch"], max_len=config["max_len"])
 
     if config.get("use_fsdp", False) and torch.cuda.is_available():   # use_fsdp is false in every config we ship
