@@ -467,3 +467,37 @@ openings; self-contained prose after tables; at phase boundaries the Next gives 
 **NEXT: nb05 pass** (streaming CPU->GPU section, Next blurb, corpus purge, code-block
 headers, scaling section maybe as the new table format). Then nb06, nb07, then 08/09/10
 REBUILDS. Also pending: ###-header retrofit on nb02/nb03 big code cells.
+
+## Session log — 2026-07-23 (evening) — nb05 DONE; resume at nb06
+
+Context recovered from git after a lost session day; trust git over older log entries.
+
+**nb05 is DONE and signed off**: intro (Zach's), embedding section in short parsable
+pieces, pipeline section with concept bullets + GPUEmbedder class and both task
+submissions INLINE in the notebook (regenerated mini embeddings BIT-MATCH the prior
+build: example vector -1.843, 0.358, 0.152, -1.225...), collapse check replaced with a
+plain artifact check (collapse metric was a historical red herring — cried wolf July 3),
+scaling factors reset to facts-only after two skeeze rounds, takeaways opener unburied.
+prose_lint: 0 hits.
+
+**NEW TOOLING (use it every hand-back)**: `zgarner-fieldeng-template/scripts/prose_lint.py
+<nb>` greps the voice tells (now incl. dash-aside-sandwich, dash-inventory);
+`--imports <nb>` lists every src import with line count + Ray content (the show-or-hide
+audit). Its first run caught Zach's LOST corpus purge of nb03 (re-applied).
+
+**THE METHOD (today's biggest lesson, from Zach)**: validate sentences by JOB, not
+blacklist — label each sentence (claim / fact / consequence / pointer / gloss /
+instruction), check label fits position (opener=claim, closer=deliverable/pointer),
+check content fills label; unlabelable sentences get cut. Blacklist = cleanup only.
+Demonstrated on nb05's Next section. New named tells: dash-aside sandwich
+(verdict — whispered reason — so consequence), dash inventory (finished sentence +
+stapled backtick list). Correction word: "sandwich".
+
+**RESUME: nb06 tomorrow.** Recorded commitments for its pass: (1) retitle — its H1
+still says "Downstream fraud"; nb05's Next promises "Fraud detectors" and "downstream"
+is banned; (2) run --imports audit (run_downstream/peak_hunt HIDE their .remote
+submissions — flagged 2026-07-21, unfixed); (3) corpus/Next-blurb sweeps; (4) full
+job-label audit shipped WITH the hand-back, not extracted by Zach. Backlog (his call,
+pages closed): 11 linter hits in nb02/nb03, some in his own approved text.
+
+Also: keep improving editorial skills (his standing instruction).
