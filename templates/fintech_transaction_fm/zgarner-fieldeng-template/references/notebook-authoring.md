@@ -143,6 +143,8 @@ Every large code cell gets its own `###` header ("Defining the training function
 
 **Power means the claim itself, not the active-voice form.** "We watch two numbers" is short, active, We-led — and pure skeeze, because it announces that content is coming instead of delivering it. "Perplexity is the number to watch: how many tokens the model is choosing between" delivers. The test: if the first sentence were the only one the reader saw, did they learn the thing? Form-matching the power pattern while carrying no content is the failure mode to check for explicitly.
 
+**The colon is the skeeze marker when its left half is a content-free label.** "Perplexity is the number to watch: how many tokens…" stages a branding phrase before the payload; "Perplexity measures how many tokens the model is choosing between" just says it. Colons that introduce a concrete list survive — Zach's own "This job has two main steps: grouping the rows by card, then tokenizing each card." The test is the left half alone: if it taught nothing, delete it and let the right half be the sentence.
+
 The reader's eye lands on openings, closings, and headings — put the point there. A transition that opens "Next, we count the total number of training steps" spends its power position on a bookkeeping detail; the point is "Now we run the training," and the step-count is a parenthetical on the way. Endings equally: close on the strong concrete fact (the scale span, the result), never on the minor detail. And a transition of two bare sentences is invisible when scrolling — give it a `###` heading so it reads as structure.
 
 ## After big code, re-orient before advancing
