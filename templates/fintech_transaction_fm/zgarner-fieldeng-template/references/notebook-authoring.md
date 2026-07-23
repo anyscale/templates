@@ -181,6 +181,10 @@ The anyscale/templates repo **strips notebook outputs** before commit (a `clear-
 - **Trust papermill's *own* exit code, not a chained command's.** `papermill … > log 2>&1; echo done` reports the `echo`'s exit (0) and hides a failed run — a notebook that raised `NameError` looked "green." Read papermill's exit directly, or scan the executed notebook for cells with `output_type == "error"`. A false green is worse than no check.
 - **After moving or changing an import, re-run the *whole* notebook.** A later cell may still use the symbol you relocated. Rewriting one cell's imports silently broke a downstream cell that used `STATIC_FIELDS`; only a full top-to-bottom run caught it. Editing any cell means re-verifying all of them, not just the one you touched.
 
+## Validate sentences by their JOB, not against a blacklist
+
+The tells are a blacklist, and a sentence can dodge every named tell and still be empty. The actual validation (Zach 2026-07-23: "is that why you dont validate your sentences?"): give every sentence a label for the job it does — **claim, fact, consequence, pointer, gloss, or instruction** — then check two things: the label fits the position (a section opens with a claim; a body sentence is a fact or a consequence; a closer is a deliverable or a pointer), and the content fills the label (a claim actually claims the section's point; a fact is checkable). A sentence that takes no label has no job — cut it. The named tells are the common ways a sentence fakes a job: a sandwich is a verdict posing as a fact, a dash inventory is detail posing as part of a claim, a grandstand is importance posing as content. Label first; the blacklist is cleanup.
+
 ## The review loop — iterate to fixpoint before any handover
 
 A single pass or a grep catches one rule; the reviewer needs all of them held at once. Every prose/comment handover runs this loop:
