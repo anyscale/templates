@@ -1,0 +1,10 @@
+# The heavy dependencies (RDKit, PyTorch Geometric, openbabel, torch) come from
+# kMoL's conda environment (kmol/environment.yml) and are baked into the image —
+# they are NOT pip-installable cleanly here. See Dockerfile.
+#
+# This file lists only the serving-layer overlay added on top of kMoL's env:
+ray[serve]==2.9.3
+anyscale
+fastapi
+uvicorn[standard]
+requests

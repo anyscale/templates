@@ -1,0 +1,15 @@
+# kMoL is a DEPENDENCY, not vendored. Clone it here for local dev; never commit it.
+kmol/
+
+# Model artifacts and run outputs
+checkpoints/
+*.pt
+data/
+kmol_serve_logs/
+/tmp/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
