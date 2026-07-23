@@ -201,6 +201,55 @@ A single pass or a grep catches one rule; the reviewer needs all of them held at
 
 When the reviewer flags a sentence pattern ("speak plainly," "say what X does," "lead with the action"), the flagged sentence is never the only instance. Fix it, then immediately re-scan every markdown cell and comment in the notebook for the same pattern before handing back. Making the reviewer repeat the same correction on the next paragraph is the single fastest way to burn their patience — they are teaching a rule, not editing a line.
 
+## The scaling-factors section — the established pattern
+
+Every notebook 02+ ends its technical content with "## Scaling factors," and the pattern is fixed. Open on the measured fact or the concrete limit — never a frame ("The scaling problem is X", "Ray's answer is Y", "The arithmetic is linear" are labels posing as sentences; state the facts and let them argue). Body: what breaks and when, with the resource named (RAM, network bandwidth, GPU memory, cores) and a magnitude (GBs here, TBs at production; "past a few hundred million rows"). The table format from nb04/05: `What grows | The limit it hits | What absorbs it | Measured at full` — every number from a real run, "—" where unmeasured. Then the 10× arithmetic (same pool takes N× longer; N× the workers brings it back) and the fact that only a config line changes. Recurrence, elasticity, and GPU-vs-CPU are stated as facts when true, never as sales beats.
+
+## Explain at the general engineer's level — the real word, then its plain meaning
+
+Two failure directions, both real. Textbook-speak fails ("Grouping is bound by data movement" — no engineer says that); dumbed-down fails too ("Grouping is hard" — easy/difficult carry no information; Zach: "plain doesn't mean dumbed down"). The target: the claim an engineer would state at a whiteboard, with the term of art introduced in passing and the concrete resource named. "Grouping is limited by how fast you can move data around … nearly every row travels across the cluster network (data engineers call this a shuffle) … gigabytes here, terabytes at production scale." Real word, plain definition, named resource, magnitude.
+
+## Define at the moment of understanding — never by forward reference
+
+A term is glossed in the sentence right after the reader has just understood the thing it names: "…the difference between its guess and the real token is the training signal. This is what makes the model *causal*: every prediction uses only the past." Defining a term by pointing at output that hasn't happened yet ("what 'causal' means in the printout below") was rejected — "it's weird to explain something in the future." Related: numbers get ONE owner section (the full run's steps/hours belong to Scaling factors); other sections reference, never restate.
+
+## Don't over-prove — receipts are for the repo, not the reader
+
+One sentence of verification with a pointer is the ceiling: "The translation is verified byte-identical to NVIDIA's original (the checks are in `scripts/`)." Inventorying the verification scripts and what each compares is a distraction — Zach: "no one is standing around in disbelief; it's a distraction from the point of the work." The same instinct governs section existence: a weak check that needs an antidote paragraph to not mislead (the collapse check, which cried wolf on us in July) gets replaced by the plain artifact check, not defended harder.
+
+## When Ray is buried, refactor src — never annotate the burial
+
+Comments and prose excerpts pointing at Ray calls the reader can't see do not fix the problem (Zach: "you cannot bury the ray code… you're going to have to refactor src"). The pattern from nb04/nb05: extract the incidental pieces into small public helpers, define the composed function/class INLINE in the notebook with the Ray calls at their real lines, keep src's copy composing the identical helpers for the headless path. Acceptance for any refactor of validated code is a bit-match: deterministic mini runs must reproduce the prior outputs exactly (nb04: losses 8.742/8.668 across three refactor rounds; nb05: the example embedding vector). If the numbers move at all, revert.
+
+## Counter-rules — when the rule does NOT apply
+
+- **Negation is allowed when the absence is the point.** "The card's history is not in it" (the design caveat), "fraud labels play no part in this step" (self-supervision), "Memory is not the constraint here" (the contrast with training). State the affirmative fact first when one exists.
+- **A colon survives when its left half is content.** Zach's own "This job has two main steps: grouping the rows by card, then tokenizing each card." Delete only content-free label halves.
+- **A term of art survives when the plain phrase loses information** — and then it MUST be glossed at first use (shuffle, embarrassingly parallel, attention mask, causal). "Corpus" fails the test; "training data" loses nothing.
+- **A power sentence fails if it is the wrong claim.** "Embedding cost is linear in the transaction count" is strong and true and was still wrong as an opener — linearity was a property, not the section's point. The opener test is "is this THE section's claim," not "is this a strong sentence."
+- **Detail survives in code that dies in prose.** Filenames, seeds, API names, argument meanings: banned from concept-level bullets and takeaways, mandatory at their line in the code.
+- **His text is the baseline.** Preserve his sentences verbatim; flag typos once, never silently fix; fact-check his technical claims against the code and correct with evidence (the "autoscaled worker count" fix: the cluster autoscales nodes; the worker count is fixed).
+
+## The hand-back protocol — every time, in order
+
+1. **Before any write**: `git diff` the file; commit whatever is on disk (`wip:` is fine). Never write a file Zach is editing — chat-first patches until an explicit hand-off, and verify his "it's saved" against disk (his editor's saves lag; his nb03 corpus purge was silently lost this way).
+2. **Write**, re-loading the file at write time — never hold a loaded copy across a background run and then dump it.
+3. **Run the review loop (A/B/C) to fixpoint**, including the written job-label audit per sentence.
+4. **Run `scripts/prose_lint.py`** on the notebook and `--imports` on any notebook whose code changed. Zero hits or fix them.
+5. **Verify**: papermill at mini; check papermill's own exit + error outputs; bit-match when validated code moved. Graft outputs curated to informative lines (real results plus the autoscaler-arrival lines that show the elasticity story; no log spam, no float noise, display slices exact — 27 tokens is two transactions, not "~2").
+6. **Commit and push immediately**; note "kernel restart needed" whenever `src/` changed.
+7. **Hand back WITH the audit shown** — verdicts he can check, not conclusions he must extract. After any correction from him: sweep the whole notebook for the pattern before returning.
+
+## Unconfirmed (Possibly) — inferred from what he accepted, not stated by him
+
+- ~25–30 lines is the ceiling for an inline function before it reads as a wall; three visual blocks (setup / loop / report) is the fix he accepted.
+- Autoscaler node-arrival lines are worth keeping in committed outputs (he never objected; they show the elasticity story).
+- The NVIDIA punchline stays in nb04's takeaways (survived his cleanup).
+- Terse chat replies are preferred generally, and an answer's length should match the question's size ("EXPLAIN … WITH LESS WORDS").
+- Rhetorical questions in prose bodies are unresolved — question TITLES are banned; body questions have been avoided rather than ruled on.
+- A single em-dash aside per paragraph is acceptable; two in one sentence is the sandwich/pile territory.
+- Tables are now the preferred scaling-factors body; prose-only scaling sections (nb02/03 style) may be revisited when those pages reopen.
+
 ## Checklist
 
 - [ ] Every inline cell carries a transferable Ray/Anyscale lesson; domain munging is imported from `src/`.
@@ -213,6 +262,11 @@ When the reviewer flags a sentence pattern ("speak plainly," "say what X does," 
 - [ ] Prose reads like an engineer wrote it — no editorializing titles, `**Label**:` lists, or concepts raised only to dismiss them.
 - [ ] Plots are styled not restructured, show their point (log scale for tails, human-formatted axes), and `$` is escaped in markdown.
 - [ ] Committed defaults run top-to-bottom under papermill at CI/mini scale (CPU); scale-up is one knob.
+- [ ] Every sentence took a job label that fits its position; openers are the section's claim — the RIGHT claim.
+- [ ] prose_lint (and --imports where code changed) ran clean; the written audit ships with the hand-back.
+- [ ] Numbers have one owner section; verification is one sentence + a pointer; concept bullets have no API names or filenames.
+- [ ] Any refactor of validated code proved itself by bit-matching prior outputs.
+- [ ] The hand-back protocol ran in order: diff, wip-commit, write fresh, review loop, lint, verify, push, audit shown.
 - [ ] Verified by papermill's own exit code / zero `error` output cells — not a chained command's exit — and the *whole* notebook re-ran after any import change.
 - [ ] Expected results are described in prose (outputs will be stripped on commit).
 - [ ] Prose is in action tone (We need / We do), the goal→mechanism chain has no gaps, and one word per concept holds notebook-wide.
