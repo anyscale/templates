@@ -113,7 +113,8 @@ def train_func(config: dict):
     # dimensions. build_model is 10 lines in src/model.py.
     model = build_model(config["vocab_path"], arch=config["arch"], max_len=config["max_len"])
 
-    # Two ways to train across GPUs. Our model fits on one GPU, so every worker
+    # We choose between two ways to train across GPUs. Our model fits on one GPU,
+    # so every worker
     # trains a full copy and Ray keeps the copies in sync (prepare_model). If the
     # model were too big for one GPU, FSDP (PyTorch's "fully sharded data parallel")
     # would split the model itself across the workers. use_fsdp is false in every
