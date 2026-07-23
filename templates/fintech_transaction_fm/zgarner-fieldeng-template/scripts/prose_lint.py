@@ -32,6 +32,8 @@ RULES = [
         r"`[^`]+`\s*\+\s*`[^`]+`"), "md"),
     ("label-bullet", re.compile(
         r"^\s*[-*]\s+\*\*[\w /()]+\*\*\s*:"), "md"),
+    ("dash-inventory", re.compile(
+        r"—[^—.\n]*`[^`]+`\s*,\s*`[^`]+`[^.\n]*\.\s*$"), "md"),
     ("dash-aside-sandwich", re.compile(
         r"—[^.—\n]{5,90}—[^.\n]{0,60}\bso\b"), "md"),
     ("announced-contrast", re.compile(
