@@ -160,6 +160,24 @@ def train_func(config: dict):
         ray.train.report(metrics, checkpoint=build_epoch_checkpoint(model, epoch, config))
 
 
+def export_hf_model(checkpoint_dir: str, hf_dir: str) -> None:
+    """Rebuild the model from a checkpoint and save its inner Hugging Face model
+    to ``hf_dir`` — the directory Parts 5-8 load with ``from_pretrained``."""
+    from .model import build_model
+
+    with open(os.path.join(checkpoint_dir, "model_config.json")) as f:
+        mc = json.load(f)
+    m = build_model(vocab_path=os.path.join(checkpoint_dir, "vocab.json"),
+                    arch=mc["arch"], max_len=mc["max_len"])
+    sd = torch.load(os.path.join(checkpoint_dir, "model.pt"), map_location="cpu")
+    sd = sd["model_state_dict"] if isinstance(sd, dict) and "model_state_dict" in sd else sd
+    missing, unexpected = m.load_state_dict(sd, strict=False)
+    os.makedirs(hf_dir, exist_ok=True)
+    m.lm.save_pretrained(hf_dir)
+    print(f"exported HF decoder -> {hf_dir}  (state_dict: missing {len(missing)}, "
+          f"unexpected {len(unexpected)})")
+
+
 def save_checkpoint(result, checkpoint_out: str) -> None:
     """Copy a ``TorchTrainer`` result's checkpoint to a canonical, all-nodes
     path so downstream stages (embedding, serving) can load the weights.
