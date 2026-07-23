@@ -134,12 +134,25 @@ GPU count.
 
 ## Progress log
 
-- [ ] Stage 0 — environment
-- [ ] Stage 1 — load once
-- [ ] Stage 2 — batching
-- [ ] Stage 3 — GPU/CPU re-measure
+- [x] **Stage 0 — environment** — kMoL conda env builds; imports on CPU with 2 stubs;
+      Ray 2.51.2 (py3.9 ceiling) installed. Recipe in `ENVIRONMENT.md`,
+      automated by `scripts/setup_env.sh`. Verified in the workspace.
+- [x] **Stage 1 — load once** — proven standalone: `Predictor` loads all 5 checkpoints
+      once ("Restoring from Checkpoint" ×5), reused across calls.
+- [x] **Stage 2 — batching** — proven standalone: 3 SMILES → one PyG Batch →
+      `logits (3, 12)` + ensemble variance via `EnsembleNetwork` mean.
+- [~] **Ray Serve HTTP layer** — blocked mid-bring-up: a `serve.deployment` kwarg
+      needs confirming under Ray 2.51.2, and a `ray stop` mistake triggered a
+      workspace recovery. Resume: capture the exact decorator error, fix, `serve run`.
+- [ ] Stage 3 — GPU/CPU re-measure (needs GPU worker + working HTTP layer)
 - [ ] Stage 4 — load-gen validation
 - [ ] Stage 5 — thread hygiene
 - [ ] Stage 6 — warm start + autoscale
 - [ ] Stage 7 — consolidate + fractional GPU
 - [ ] Stage 8 — featurization split (stretch)
+
+### Notes / decisions surfaced
+- **py3.9 vs Anyscale base (py3.11 / Ray 2.56):** the productionization fork. Either
+  pin a Service image to Ray ≤ 2.51 or port kMoL to py3.11. See `ENVIRONMENT.md`.
+- **Synthetic checkpoints** (`scripts/make_synthetic_checkpoints.py`) unblock all
+  throughput work without the real trained weights.

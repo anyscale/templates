@@ -2,9 +2,22 @@
 # kMoL's conda environment (kmol/environment.yml) and are baked into the image —
 # they are NOT pip-installable cleanly here. See Dockerfile.
 #
-# This file lists only the serving-layer overlay added on top of kMoL's env:
-ray[serve]==2.9.3
+# This file lists only the serving-layer overlay added on top of kMoL's env.
+#
+# Ray is pinned to 2.51.2 — the NEWEST release with a Python 3.9 wheel (kMoL is
+# py3.9; Ray 2.56 has no py3.9 wheel). See ENVIRONMENT.md.
+ray[serve]==2.51.2
 anyscale
 fastapi
 uvicorn[standard]
 requests
+
+# kMoL pip deps missing from kmol/environment.yml (light ones; deepspeed/openfold
+# protein path intentionally omitted — see ENVIRONMENT.md and stubs/):
+disklist==0.4.0
+filelock==3.12.4
+boxsdk[jwt]==3.6.1
+torch-lr-finder==0.2.1
+ml-collections==0.1.0
+proDy
+biopython==1.81
