@@ -113,13 +113,15 @@ def train_func(config: dict):
     # dimensions. build_model is 10 lines in src/model.py.
     model = build_model(config["vocab_path"], arch=config["arch"], max_len=config["max_len"])
 
-    if config.get("use_fsdp", False) and torch.cuda.is_available():   # use_fsdp is false in every config we ship
+    # Two ways to train across GPUs. Our model fits on one GPU, so every worker
+    # trains a full copy and Ray keeps the copies in sync (prepare_model). If the
+    # model were too big for one GPU, FSDP (PyTorch's "fully sharded data parallel")
+    # would split the model itself across the workers. use_fsdp is false in every
+    # config we ship.
+    if config.get("use_fsdp", False) and torch.cuda.is_available():
         from torch.distributed.fsdp import FullyShardedDataParallel as FSDP
-        # For a model too big for one GPU: split the model itself across the workers
-        # (PyTorch FSDP, running on the workers Ray started).
         model = FSDP(model.to(ray.train.torch.get_device()))
     else:
-        # Every worker trains a full copy of the model; Ray keeps the copies in sync.
         model = ray.train.torch.prepare_model(model)
 
     optimizer = torch.optim.AdamW(model.parameters(), lr=config["lr"],
