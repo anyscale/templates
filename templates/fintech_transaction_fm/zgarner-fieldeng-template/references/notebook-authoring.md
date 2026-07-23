@@ -221,6 +221,31 @@ One sentence of verification with a pointer is the ceiling: "The translation is 
 
 Comments and prose excerpts pointing at Ray calls the reader can't see do not fix the problem (Zach: "you cannot bury the ray code… you're going to have to refactor src"). The pattern from nb04/nb05: extract the incidental pieces into small public helpers, define the composed function/class INLINE in the notebook with the Ray calls at their real lines, keep src's copy composing the identical helpers for the headless path. Acceptance for any refactor of validated code is a bit-match: deterministic mini runs must reproduce the prior outputs exactly (nb04: losses 8.742/8.668 across three refactor rounds; nb05: the example embedding vector). If the numbers move at all, revert.
 
+## Takeaways altitude — validated by a reverted rewrite
+
+The evidence is commit `41454b14`: a takeaways rewrite of mine was reverted wholesale, and Zach then edited even the kept version further. What the accepted versions do, and mine didn't:
+
+- **No metric re-argument.** My version re-made the perplexity case ("6,251 down to 1.7 — the model predicts almost perfectly") — an overclaim that even contradicted the notebook's own calibrated reading. The metrics section owns those numbers; the takeaway states what exists now.
+- **Product meaning first.** His edit: "We trained the foundation model, and its now ready to be used for prediction systems like fraud detection. All of the later approaches build on top of this foundation model." What it's FOR and what depends on it — not the mechanism, not the storage path.
+- **Ray is one clause at this altitude.** His edit compressed my four-verb enumeration to "wrapped in Ray, which handles the distributed scaling." The enumeration belongs next to the code; the takeaway keeps `ScalingConfig` as the single concrete fact.
+- **No API inventories.** "Ray wrapped our loop with three calls: prepare_model, get_dataset_shard, TorchTrainer" was in the rejected version. Function-name lists are code-level detail.
+
+## Micro-tells validated from his comment edits
+
+- **No line-count asides.** "(build_model is 10 lines in src/model.py)" — he first parenthesized mine, then deleted his own version of it. How long a helper is, is never the point.
+- **No cell-inventory sentences.** "Most of the cell below is `train_loop_config`, the settings…" — describing what the upcoming cell consists of is the counting tell in transition form. Say the action ("Now we configure the training run, and run it") and let the cell show itself.
+- **No metaphor labels for config.** "`ScalingConfig` is the scale knob:" became "`ScalingConfig` configures one CPU worker at `mini`, eight GPU workers at `full`." The direct verb replaces the branding phrase.
+- **Precision beats anthropomorphic gloss.** "The model's understanding of a transaction, written as numbers" was rejected for "the model's vector representation of a transaction." When a standard precise noun exists (embedding, vector representation, attention mask), use it and gloss it — don't paraphrase it into model-psychology.
+- **Timing detail stays out of transitions** ("a few minutes at `mini`" cut from a run-it transition; the header's time-to-complete line owns that).
+
+## The Ray Note convention (nb04-established structure)
+
+The prose section numbers its Ray integration points as **Ray Notes** ("adapted for Ray in three places…"), and the code comments reference them by name: `# See Ray Note #1 above`. Bare `(1)` markers in code were upgraded to this by Zach — the comment must say where the note is, not assume the reader tracked the numbering. Use this pairing wherever prose enumerates integration points that the code then shows.
+
+## Intros orient within the arc, not just the page
+
+His nb05 intro pattern: recap ("Previously in Part 4…"), then this notebook's role in the multi-notebook arc ("This notebook and the next build the first working fraud detector… This notebook produces the embeddings, and Part 6 trains on them"), then the later pointer ("Later, Part 7 builds a stronger detector by fine-tuning…"). When notebooks form a group, the intro places the reader in the group. Content ownership applies to intros too: my recurring-job sentence was cut from the intro because Scaling factors owns recurrence.
+
 ## Counter-rules — when the rule does NOT apply
 
 - **Negation is allowed when the absence is the point.** "The card's history is not in it" (the design caveat), "fraud labels play no part in this step" (self-supervision), "Memory is not the constraint here" (the contrast with training). State the affirmative fact first when one exists.
@@ -249,6 +274,8 @@ Comments and prose excerpts pointing at Ray calls the reader can't see do not fi
 - Rhetorical questions in prose bodies are unresolved — question TITLES are banned; body questions have been avoided rather than ruled on.
 - A single em-dash aside per paragraph is acceptable; two in one sentence is the sandwich/pile territory.
 - Tables are now the preferred scaling-factors body; prose-only scaling sections (nb02/03 style) may be revisited when those pages reopen.
+- He drafts with `[tbd]`/TBD markers for me to fill — fill the marker, preserve his frame around it.
+- Known linter backlog in CLOSED pages (his call, untouched): nb01 series table says "the pretrain corpus"; ~11 hits in nb02/nb03, several in his own approved text.
 
 ## Checklist
 
