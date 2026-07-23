@@ -114,7 +114,8 @@ def train_func(config: dict):
 
     if config.get("use_fsdp", False) and torch.cuda.is_available():   # off at every preset
         from torch.distributed.fsdp import FullyShardedDataParallel as FSDP
-        model = FSDP(model.to(ray.train.torch.get_device()))   # splits a too-big model across GPUs
+        # PyTorch's model-sharding wrapper, on the worker group Ray already set up.
+        model = FSDP(model.to(ray.train.torch.get_device()))
     else:
         model = ray.train.torch.prepare_model(model)            # wrap for distributed training
 
