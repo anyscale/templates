@@ -131,6 +131,10 @@ The test for any sentence: would an engineer write this to another engineer, or 
 
 The umbrella rule behind many of the individual voice rules (Zach: "Many things i've told you come down to that rule"). A multi-notebook workshop is one continuous experience for the reader; every named thing creates curiosity, and every unresolved mention is a loose end. So: when a takeaway names output files, add where they get opened ("Part 4 trains on these files directly, and opens by loading them — we'll look at what's inside there"). When a design choice pays off later, name the notebook that pays it off. When a term appears, gloss it now or say which part explains it. The reader should never hold an unanswered question the series has an answer to without being told where that answer lives. Corollary: those forward promises are commitments — when writing the later notebook, check the earlier ones' promises and honor them.
 
+## First and last sentences are power positions; first and second words are power words
+
+The reader's eye lands on openings, closings, and headings — put the point there. A transition that opens "Next, we count the total number of training steps" spends its power position on a bookkeeping detail; the point is "Now we run the training," and the step-count is a parenthetical on the way. Endings equally: close on the strong concrete fact (the scale span, the result), never on the minor detail. And a transition of two bare sentences is invisible when scrolling — give it a `###` heading so it reads as structure.
+
 ## After big code, re-orient before advancing
 
 The reader loses the thread inside a long code cell; the author never does — which is why the author skips the recap and the reader flounders. After any substantial code cell, the next markdown opens with one sentence of what was just built, then the next action. Zach's template: "In the last coding section we built the PyTorch training function, integrated with Ray for distributed training. Next, we count the total number of training steps — the learning-rate schedule needs it before training starts." Recap, then next, with the reason attached to the next.
