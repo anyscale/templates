@@ -64,7 +64,43 @@ def lint_notebook(path):
     return hits
 
 
+def audit_imports(nb_path):
+    """List every name a notebook imports from src/, with size and Ray content —
+    the facts for the show-or-hide call. Usage: prose_lint.py --imports <nb>"""
+    import glob
+    nb = json.load(open(nb_path))
+    imported = []
+    for c in nb.get("cells", []):
+        if c.get("cell_type") != "code":
+            continue
+        src = "".join(c.get("source", []))
+        for m in re.finditer(r"from (src\.\w+) import \(?([^)\n]+)\)?", src):
+            mod = m.group(1).replace(".", "/") + ".py"
+            names = [n.strip() for n in m.group(2).split(",") if n.strip()]
+            imported.append((mod, names))
+    for mod, names in imported:
+        try:
+            code = open(mod).read()
+        except OSError:
+            print(f"{mod}: NOT FOUND")
+            continue
+        for name in names:
+            dm = re.search(r"(@ray\.remote[^\n]*\n)?(def |class )" + name +
+                           r"\b.*?(?=\n@|\ndef |\nclass |\Z)", code, re.S)
+            if not dm:
+                print(f"{mod}:{name}  (not a def/class — constant or re-export)")
+                continue
+            body = dm.group(0)
+            rays = sorted(set(re.findall(r"@ray\.remote|ray\.get|\.remote\(|ray\.data\.\w+|"
+                                         r"map_batches|map_groups|ray\.train", body)))
+            print(f"{mod}:{name}  {body.count(chr(10))} lines  ray={rays or 'NONE'}")
+
+
 def main(paths):
+    if paths and paths[0] == "--imports":
+        for p in paths[1:]:
+            audit_imports(p)
+        return 0
     all_hits = []
     for p in paths:
         all_hits += lint_notebook(p)
