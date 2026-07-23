@@ -36,6 +36,16 @@ _unwrap = unwrap  # backwards-compatible alias
 
 
 
+def count_schedule_steps(n_windows: int, pretrain_cfg: dict) -> tuple:
+    """Total optimizer steps for the whole run, and how many of them warm up.
+    steps per epoch = windows / workers / batch size, rounded up."""
+    steps_per_epoch = max(1, math.ceil(n_windows / pretrain_cfg["num_workers"]
+                                       / pretrain_cfg["batch_size"]))
+    total_steps = steps_per_epoch * pretrain_cfg["epochs"]
+    warmup_steps = int(pretrain_cfg.get("warmup_ratio", 0.0) * total_steps)
+    return total_steps, warmup_steps
+
+
 def make_lr_scheduler(optimizer, config: dict):
     """Warmup + cosine-decay schedule, stepped every optimizer step (needs
     total_steps = (windows / workers / batch) * epochs, passed in). None when
