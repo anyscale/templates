@@ -40,7 +40,7 @@ import numpy as np
 import ray
 
 
-def _wait_for_files(file_paths, timeout: float = 300.0) -> None:
+def wait_for_files(file_paths, timeout: float = 300.0) -> None:
     """Block until each path is visible on the caller's node — /mnt/cluster_storage is
     NFS/EFS-backed, so a worker's write can lag a driver read by a fraction of a second."""
     for p in file_paths:
@@ -49,6 +49,9 @@ def _wait_for_files(file_paths, timeout: float = 300.0) -> None:
             if time.time() - t0 > timeout:
                 raise TimeoutError(f"output not visible after {timeout}s: {p}")
             time.sleep(0.5)
+
+_wait_for_files = wait_for_files  # backwards-compatible alias
+
 
 # NVIDIA's 13 raw feature columns (NB01 FEATURE_COLS) — Hour is derived from Time.
 FEATURE_COLS = [
@@ -166,7 +169,7 @@ def build_temporal_split(csv_path: str, out_dir: str, eval_samples: int = 100_00
     """
     ray.init(ignore_reinit_error=True)
     meta = ray.get(_build.remote(csv_path, out_dir, eval_samples, max_users, seed))
-    _wait_for_files([os.path.join(out_dir, f) for f in
+    wait_for_files([os.path.join(out_dir, f) for f in
                      ("train.parquet", "val_eval.parquet", "test_eval.parquet", "split_meta.json")])
     return meta
 
@@ -365,7 +368,7 @@ def write_split_meta(out_dir: str, train_cutoff, test_cutoff, eval_samples: int,
     }
     with open(os.path.join(out_dir, "split_meta.json"), "w") as f:
         json.dump(meta, f, indent=2)
-    _wait_for_files([os.path.join(out_dir, "val_eval.parquet"),
+    wait_for_files([os.path.join(out_dir, "val_eval.parquet"),
                      os.path.join(out_dir, "test_eval.parquet")])
     return meta
 

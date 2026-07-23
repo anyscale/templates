@@ -14,7 +14,7 @@ import os
 
 import ray
 
-from src.nvsplit import _wait_for_files
+from src.nvsplit import wait_for_files
 
 # NVIDIA's 13 raw feature columns (Hour derived from Time; Amount parsed from "$..,..").
 FC = ["User", "Card", "Year", "Month", "Day", "Hour", "Amount", "Use Chip",
@@ -216,7 +216,7 @@ class GPUEmbedder:
 
 
 @ray.remote(num_cpus=8)
-def _assemble_embed(shards_dir: str, out_path: str, dim: int) -> dict:
+def assemble_embed_task(shards_dir: str, out_path: str, dim: int) -> dict:
     """Restore reference row order (__pos__) and write the embedding matrix."""
     import sys
     sys.path.insert(0, ".")
@@ -240,11 +240,11 @@ def assemble_embeddings(shards_dir: str, out_path: str, prep_path=None,
     clean up the temp shard dir + prepared parquet."""
     import shutil
     ray.init(ignore_reinit_error=True)
-    meta = ray.get(_assemble_embed.remote(shards_dir, out_path, embed_dim))
+    meta = ray.get(assemble_embed_task.remote(shards_dir, out_path, embed_dim))
     shutil.rmtree(shards_dir)
     if prep_path and os.path.exists(prep_path):
         os.remove(prep_path)
-    _wait_for_files([out_path])
+    wait_for_files([out_path])
     return meta
 
 
