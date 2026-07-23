@@ -33,30 +33,7 @@ def unwrap(model):
 _unwrap = unwrap  # backwards-compatible alias
 
 
-def build_pretrain_model(config: dict):
-    """Seed every rank identically and build the Llama decoder from the config."""
-    # Reduce CUDA fragmentation on long-sequence training (set before first alloc).
-    os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
-    # Same init on every rank (DDP broadcasts anyway; also makes runs reproducible).
-    torch.manual_seed(config.get("seed", 0))
-    return build_model(config["vocab_path"], arch=config["arch"], max_len=config["max_len"])
 
-
-def wrap_fsdp(model):
-    """FSDP-wrap the model (used only when it can't fit on one GPU)."""
-    from torch.distributed.fsdp import FullyShardedDataParallel as FSDP
-
-    model = model.to(ray.train.torch.get_device())
-    return FSDP(model)
-
-
-def make_optimizer(model, config: dict):
-    """AdamW with the recipe's betas and weight decay."""
-    betas = tuple(config.get("betas", (0.9, 0.999)))
-    weight_decay = float(config.get("weight_decay", 0.0))
-    return torch.optim.AdamW(
-        model.parameters(), lr=config["lr"], betas=betas, weight_decay=weight_decay
-    )
 
 
 def make_lr_scheduler(optimizer, config: dict):
@@ -130,12 +107,20 @@ def build_epoch_checkpoint(model, epoch: int, config: dict):
 
 def train_func(config: dict):
     """The per-worker training loop — the same composition Part 4 shows inline."""
-    model = build_pretrain_model(config)
-    wants_fsdp = config.get("use_fsdp", False) and torch.cuda.is_available()
-    model = wrap_fsdp(model) if wants_fsdp else ray.train.torch.prepare_model(model)
+    os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
+    torch.manual_seed(config.get("seed", 0))          # same init on every worker
+    model = build_model(config["vocab_path"], arch=config["arch"], max_len=config["max_len"])
 
-    optimizer = make_optimizer(model, config)
-    scheduler = make_lr_scheduler(optimizer, config)
+    if config.get("use_fsdp", False) and torch.cuda.is_available():   # off at every preset
+        from torch.distributed.fsdp import FullyShardedDataParallel as FSDP
+        model = FSDP(model.to(ray.train.torch.get_device()))   # splits a too-big model across GPUs
+    else:
+        model = ray.train.torch.prepare_model(model)            # wrap for distributed training
+
+    optimizer = torch.optim.AdamW(model.parameters(), lr=config["lr"],
+                                  betas=tuple(config.get("betas", (0.9, 0.999))),
+                                  weight_decay=float(config.get("weight_decay", 0.0)))
+    scheduler = make_lr_scheduler(optimizer, config)            # warmup + cosine decay
 
     train_shard = ray.train.get_dataset_shard("train")
     for epoch in range(config["epochs"]):
