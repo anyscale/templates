@@ -131,6 +131,10 @@ The test for any sentence: would an engineer write this to another engineer, or 
 
 The umbrella rule behind many of the individual voice rules (Zach: "Many things i've told you come down to that rule"). A multi-notebook workshop is one continuous experience for the reader; every named thing creates curiosity, and every unresolved mention is a loose end. So: when a takeaway names output files, add where they get opened ("Part 4 trains on these files directly, and opens by loading them — we'll look at what's inside there"). When a design choice pays off later, name the notebook that pays it off. When a term appears, gloss it now or say which part explains it. The reader should never hold an unanswered question the series has an answer to without being told where that answer lives. Corollary: those forward promises are commitments — when writing the later notebook, check the earlier ones' promises and honor them.
 
+## Large code blocks get a subsection header
+
+Every large code cell gets its own `###` header ("Defining the training function", "Run the training"). Two benefits: the notebook's structure stays visible while scrolling, and Jupyter makes headed sections collapsible, so a reader can fold the code away. (Zach's rule, 2026-07-23.)
+
 ## First and last sentences are power positions; first and second words are power words
 
 The reader's eye lands on openings, closings, and headings — put the point there. A transition that opens "Next, we count the total number of training steps" spends its power position on a bookkeeping detail; the point is "Now we run the training," and the step-count is a parenthetical on the way. Endings equally: close on the strong concrete fact (the scale span, the result), never on the minor detail. And a transition of two bare sentences is invisible when scrolling — give it a `###` heading so it reads as structure.
