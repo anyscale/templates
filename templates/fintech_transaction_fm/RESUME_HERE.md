@@ -432,3 +432,38 @@ tells before handing over; sweep-don't-spot-fix; terms of art must earn their pl
 tell; Next-blurb one plain sentence; section-you-keep-patching rule; plain-verbs
 comments with Zach's model comment; last sentence must deserve last position;
 punctuation-pile tell; audit first AND last sentences hardest.
+
+## Session log — 2026-07-23 (nb04 DONE with Zach)
+
+**nb04 is COMPLETE and signed off section by section.** Final shape: intro (recap/why/
+roadmap) -> Load the training data (three files, window-0 integer callback) -> What we're
+training -> Train with Ray Train (Ray Notes #1-#3; "Defining the training function" =
+train_func INLINE, ~30 lines, seed/FSDP/AdamW visible, four size-disclosed helpers;
+"Run the training" = Zach's Ray-first paragraphs + streaming benefit + runtime closer;
+trainer cell does fit -> save_checkpoint -> export_hf_model, save-model section dissolved)
+-> Read the training results (Zach's structure: claim, bullet definitions, mini/full) ->
+Scaling factors (four-column table incl. "Measured at full" + three self-contained
+sentences incl. the 10x arithmetic) -> Takeaways (Zach-cleaned) -> Next (three-notebook
+fraud arc: 5 embeddings, 6 detectors, 7 fine-tune).
+
+**src/pretrain.py refactors (all bit-verified 8.742/8.668):** train_func inlined in the
+notebook mirroring src; count_schedule_steps + export_hf_model extracted; helpers:
+make_lr_scheduler, next_token_loss, epoch_summary, build_epoch_checkpoint, unwrap.
+KERNEL RESTART needed before running nb04.
+
+**Near-miss caught by output assertions:** an unasserted str.replace silently dropped the
+export call — papermill stayed green while the artifact vanished. RULE: every edit-script
+replace gets an assert; verification asserts on output CONTENT, not just exit codes.
+
+**Skill grew a lot — read notebook-authoring.md FIRST. New since last log:** the review
+loop (A/B/C passes to fixpoint); power = the claim, not the form (truth insufficient;
+inventory openers die); the content-free-label colon; the curator phrase; no sentence
+exists to set up another ("punchline setup" = banned concept); impact before mechanics;
+comments survive being read alone + branch comments tell whole stories; hidden helpers
+disclose sizes ("2 lines or 100?"); large code blocks get ### headers (collapsible);
+recap-then-next transitions; define term pairs together; sentence ENDINGS audited like
+openings; self-contained prose after tables; at phase boundaries the Next gives the ARC.
+
+**NEXT: nb05 pass** (streaming CPU->GPU section, Next blurb, corpus purge, code-block
+headers, scaling section maybe as the new table format). Then nb06, nb07, then 08/09/10
+REBUILDS. Also pending: ###-header retrofit on nb02/nb03 big code cells.
