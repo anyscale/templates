@@ -32,6 +32,8 @@ RULES = [
         r"`[^`]+`\s*\+\s*`[^`]+`"), "md"),
     ("label-bullet", re.compile(
         r"^\s*[-*]\s+\*\*[\w /()]+\*\*\s*:"), "md"),
+    ("dash-aside-sandwich", re.compile(
+        r"—[^.—\n]{5,90}—[^.\n]{0,60}\bso\b"), "md"),
     ("announced-contrast", re.compile(
         r"\b(with one (big )?difference|but here's the (catch|twist)|the catch is)\b", re.I), "both"),
     ("punctuation-pile", re.compile(
