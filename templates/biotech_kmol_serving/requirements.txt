@@ -21,3 +21,7 @@ torch-lr-finder==0.2.1
 ml-collections==0.1.0
 proDy
 biopython==1.81
+
+# kMoL's conda grpcio (1.54.2) segfaults Ray 2.51's runtime_env_agent; replace with
+# a pip wheel Ray accepts (the unused gRPC/federated path tolerates the newer version).
+grpcio==1.66.2

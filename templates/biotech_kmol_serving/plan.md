@@ -141,10 +141,11 @@ GPU count.
       once ("Restoring from Checkpoint" ×5), reused across calls.
 - [x] **Stage 2 — batching** — proven standalone: 3 SMILES → one PyG Batch →
       `logits (3, 12)` + ensemble variance via `EnsembleNetwork` mean.
-- [~] **Ray Serve HTTP layer** — blocked mid-bring-up: a `serve.deployment` kwarg
-      needs confirming under Ray 2.51.2, and a `ray stop` mistake triggered a
-      workspace recovery. Resume: capture the exact decorator error, fix, `serve run`.
-- [ ] Stage 3 — GPU/CPU re-measure (needs GPU worker + working HTTP layer)
+- [x] **Ray Serve HTTP layer** — LIVE and verified in the workspace (CPU). Single +
+      batched requests served over HTTP on Ray 2.51.2 / py3.9; load-once (5 restores)
+      and warm-up confirmed in replica logs. Harness: `scripts/serve_local.py`.
+- [~] Stage 3 — GPU/CPU re-measure — CPU baseline done: **~80 mol/s on 1 CPU replica**
+      with batching. GPU numbers need a GPU worker node (head is CPU-only).
 - [ ] Stage 4 — load-gen validation
 - [ ] Stage 5 — thread hygiene
 - [ ] Stage 6 — warm start + autoscale

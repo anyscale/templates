@@ -23,6 +23,9 @@ $PIP install --no-input \
   "torch-lr-finder==0.2.1" "ml-collections==0.1.0" "proDy" "biopython==1.81" \
   "ray[serve]==2.51.2" requests
 
+echo "==> replacing conda grpcio (segfaults Ray 2.51 runtime_env_agent) with a pip wheel"
+$PIP install --no-input "grpcio==1.66.2"
+
 echo "==> verifying import (with stubs on PYTHONPATH)"
 export PYTHONPATH="$ROOT/stubs:$ROOT:$ROOT/kmol/src"
 $PY -c "from kmol.model.executors import Predictor; from ray import serve; print('IMPORT_OK — ray', __import__('ray').__version__)"
