@@ -211,3 +211,5 @@ When the reviewer flags a sentence pattern ("speak plainly," "say what X does," 
 - [ ] Chained code with a block comment is split: one statement, one short comment, answers at the line that raises the question.
 - [ ] Function names read from the call site with honest provenance; no Ray calls hidden in `src/` for taught stages.
 - [ ] Intermediate results are shown; examples come from the data (chosen instance hardcoded + justified), not invented.
+
+- **Backstory openers are not power sentences even when skeeze-free** (Zach 2026-07-23, on "The foundation model trained on long card histories, but..."): opening on the tension/motivation is still setup. The section's first sentence is the claim or decision itself ("We embed each transaction on its own..."); the motivation moves to a later sentence.
