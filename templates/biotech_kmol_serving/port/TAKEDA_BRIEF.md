@@ -190,9 +190,47 @@ weights.
 
 ---
 
+## Model weights
+
+Every number in this brief was produced with **synthetic weights** — correct architecture
+and checkpoint format, random values. Throughput and latency are unaffected, since the
+tensor shapes and the compute are identical either way, but the prediction *values* carry
+no information.
+
+Synthetic weights were used because kMoL ships none: every config under `data/configs/`
+has `checkpoint_path: null`, and the repository contains no trained checkpoints for this
+architecture (the only `.pt`/`.pkl` files are SchNet featurizer test fixtures). The five
+weight files are produced by kMoL's own `cross_validation_folds: 5` training run, per
+dataset. There is also no usable public substitute — the loader requires kMoL's exact
+`state_dict` keys for 5 × `GraphConvolutionalNetwork`, which no HuggingFace molecular
+model provides.
+
+Two ways to get real predictions, and they are independent:
+
+**A. Your trained checkpoints — no code changes.** Put `model_0.pt` … `model_4.pt` in
+`port/checkpoints/` and restart. The port preserves kMoL's checkpoint format
+(`torch.save({"model": state_dict})`) and its exact class and attribute names, which is
+why kMoL `state_dict`s load unchanged. Production load uses `strict=True`, so a checkpoint
+that does not match this architecture fails at startup rather than silently serving a
+partly-random model. `scripts/port_check.py` then re-runs the parity check on your weights.
+
+**B. We train on public tox21.** kMoL ships both the recipe and the data: the `model`
+block of `data/configs/model/tox21.json` is byte-identical to a member of our ensemble
+config, and `data/datasets.zip` contains `tox21.csv` — 7,831 molecules, 12 sparse assay
+targets. `scripts/train_tox21.py` reproduces that recipe verbatim (AdamW lr 0.01 / weight
+decay 5.6e-4, OneCycleLR, masked BCE, batch 128, 200 epochs) using kMoL's MolWt-stratified
+80/20 split, training the five members concurrently as fractional-GPU tasks. On one L4
+that is minutes, and it yields a per-target ROC-AUC we can report. It produces a real
+model on public data — **not** a model of your endpoints, so it demonstrates realistic
+outputs rather than your accuracy.
+
+Option A is the one that answers "does this reproduce our numbers". Option B only makes
+the demo's outputs plausible while waiting.
+
 ## Limitations
 
-- **Synthetic weights.** No accuracy claim is made or implied.
+- **Synthetic weights.** No accuracy claim is made or implied. See "Model weights" above
+  for the two paths to real predictions.
 - **Load generated inside the cluster** by Ray actors calling the service, not by an
   external open-loop HTTP load generator. p50/p99 are indicative.
 - **No verified per-node scaling curve** on this molecule set. Node count was confirmed at
@@ -206,13 +244,19 @@ weights.
 
 ## Possible next steps
 
-1. Run the parity check and a throughput sample against your trained checkpoints. No code
-   changes required.
-2. Per-node scaling curve plus an external open-loop load test on your request mix
-   (single-molecule interactive versus bulk screening), for defensible p50/p99 and an
-   N-nodes-to-N×-throughput measurement.
-3. Cost per million molecules against your library's size distribution, using the bucket
-   rates above.
+1. **Your `model_0..4.pt` in `port/checkpoints/`** → we re-run the parity check and a
+   throughput sample on real weights. No code changes; see "Model weights" option A.
+2. **Your library's molecule-size distribution** (a heavy-atom-count histogram is enough)
+   → the per-bucket rates above convert directly into expected throughput, and therefore
+   cost per million molecules, for your actual deck rather than our molecule mix.
+
+Then, on our side:
+
+3. Per-node scaling curve plus an external open-loop load test on your request mix
+   (single-molecule interactive versus bulk screening), for defensible p50/p99 and a
+   measured N-nodes-to-N×-throughput claim — the linear-scaling question from the call.
+4. Optionally, train on public tox21 (option B above) so the demo returns plausible
+   predictions while (1) is in flight.
 
 ---
 

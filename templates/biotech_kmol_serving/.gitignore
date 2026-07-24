@@ -3,10 +3,17 @@ kmol/
 
 # Model artifacts and run outputs
 checkpoints/
+checkpoints_tox21/
 *.pt
 data/
 kmol_serve_logs/
 /tmp/
+
+# ...but DO vendor the public tox21 dataset. It comes from kMoL's own datasets.zip and is
+# what scripts/train_tox21.py trains on; without it in the repo the training run is not
+# reproducible from a clean checkout. Directory must be re-included before the file.
+!port/data/
+!port/data/tox21.csv.gz
 
 # Python
 __pycache__/
