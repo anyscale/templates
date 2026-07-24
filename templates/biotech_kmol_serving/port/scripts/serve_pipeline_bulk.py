@@ -59,7 +59,7 @@ POOL10 = [
 
 # Measured single-core featurization rates (kmol_divbench/phase1_results.json), used
 # only to size each run to a target duration.
-PER_CORE_EST = {"library": 131.0, "pool10": 407.0}
+PER_CORE_EST = {"library": 131.0, "pool10": 407.0, "pool3": 213.0}
 
 INGRESS_REPLICAS = int(os.environ.get("KMOL_INGRESS_REPLICAS", "4"))
 SHUFFLE_SEED = int(os.environ.get("KMOL_SHUFFLE_SEED", "0"))
@@ -178,6 +178,8 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--smoke", action="store_true", help="tiny correctness check, then exit")
     ap.add_argument("--pool10", action="store_true", help="use the old 10-SMILES pool")
+    ap.add_argument("--pool3", action="store_true",
+                    help="use the 3 compounds from the Takeda call (optimistic: ~213 mol/s/core)")
     ap.add_argument("--replicas", type=int, nargs="*", default=None)
     ap.add_argument("--gpus", type=int, default=1)
     ap.add_argument("--chunk", type=int, default=256)
@@ -188,8 +190,13 @@ def main():
 
     ray.init(address="auto", runtime_env={"working_dir": SHIP_DIR})
 
-    source = "pool10" if args.pool10 else "library"
-    pool = POOL10 if args.pool10 else load_library(LIBRARY)
+    if args.pool3:
+        from _molecules import SMILES as POOL3
+        source, pool = "pool3", POOL3
+    elif args.pool10:
+        source, pool = "pool10", POOL10
+    else:
+        source, pool = "library", load_library(LIBRARY)
     print(f"molecule source: {source}  n={len(pool)}", flush=True)
 
     if args.smoke:
@@ -241,7 +248,7 @@ def main():
     out = {
         "app": "serve_pipeline_app (two-stage composed Serve)",
         "molecule_source": source,
-        "library_path": None if args.pool10 else LIBRARY,
+        "library_path": LIBRARY if source == "library" else None,
         "library_n": len(pool),
         "shuffle_seed": SHUFFLE_SEED,
         "chunk": args.chunk,

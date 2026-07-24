@@ -32,6 +32,13 @@ SMILES_POOL = [
     "Clc1ccccc1C(=O)Nc1ccccc1", "COc1ccc2nc(sc2c1)N", "CC(=O)Nc1ccc(O)cc1",
 ]
 
+# KMOL_POOL3=1 swaps in the three compounds from the Takeda call, so this row can be
+# compared against the others in the 3-molecule table. Default behaviour is unchanged.
+if os.environ.get("KMOL_POOL3"):
+    import sys
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    from _molecules import SMILES as SMILES_POOL  # noqa: F811
+
 
 @serve.deployment(
     ray_actor_options={"num_gpus": NUM_GPUS, "num_cpus": 1, "runtime_env": TASK_PIP},

@@ -1,5 +1,13 @@
 # Ported kMoL molecule ensemble — serving stack (Python 3.11).
 #
+# THIS FILE IS FOR A STANDALONE BOX. Do NOT `pip install -r` it on an Anyscale
+# workspace head:
+#   * the torch pin below would DOWNGRADE the workspace image's torch, and
+#   * a workspace wraps `pip install` so anything installed is registered as a
+#     cluster-wide dependency on every node, not a local install.
+# On Anyscale, replicas and tasks get exactly these pins from the `runtime_env` in
+# each driver script instead — nothing needs installing on the head. See REPRODUCE.md §0.
+#
 # The default PyPI linux torch wheel is a CUDA 12.x build and runs on L4 (sm_89).
 # For a CPU-only box, install torch from the CPU index instead:
 #     pip install torch==2.5.1 --index-url https://download.pytorch.org/whl/cpu
@@ -10,4 +18,4 @@ numpy<2
 
 # Serving + benchmark drivers run on Ray. On an Anyscale workspace Ray is already
 # present; install this only for a standalone box.
-ray[serve]>=2.56
+# ray[serve]>=2.56

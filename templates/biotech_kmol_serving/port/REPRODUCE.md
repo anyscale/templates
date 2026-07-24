@@ -22,13 +22,34 @@ ones (below) or drop in real `model_*.pt`.
 
 ## 0. Setup
 
+Which path you take depends on where you are. **`pip install -r requirements.txt` is for a
+standalone box only** — see the warning in that file, and the workspace note below.
+
+**A. Standalone box (your own machine or a plain VM)**
+
 ```bash
 cd port
 pip install -r requirements.txt
 # CPU-only box: install torch from the CPU index (see requirements.txt header) first.
+```
 
-# Weights: SYNTHETIC (correct architecture/format, random values) — fine for throughput,
-# not for real predictions. For real outputs, put your trained model_0..4.pt in checkpoints/.
+**B. Anyscale workspace** — install nothing. Every driver script declares the pinned
+stack in its `runtime_env`, so replicas and tasks get it on the workers. Do **not** run
+`pip install -r requirements.txt` on the head: the `torch==2.5.1` pin downgrades the
+image's torch, and a workspace wraps `pip install` so whatever you install is registered
+as a **cluster-wide dependency on every node** (it prints "Successfully registered …
+packages to be installed on all cluster nodes"). `pip uninstall <pkgs>` reverses it.
+
+The one step that genuinely wants the stack on the head is checkpoint generation below,
+because it writes `.pt` files into the head-local bundle. On a workspace, either bring
+pre-generated `checkpoints/`, or install `torch_geometric rdkit` (torch is already in the
+image), generate, then `pip uninstall torch_geometric rdkit` to deregister.
+
+**Weights** — SYNTHETIC (correct architecture and format, random values): fine for
+throughput, meaningless for predictions. For real outputs put your trained
+`model_0..4.pt` in `checkpoints/` and skip this.
+
+```bash
 PYTHONPATH=. python scripts/make_synthetic_checkpoints.py configs/ensemble_serve.example.json checkpoints
 ```
 

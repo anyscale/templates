@@ -30,6 +30,8 @@ import time
 import ray
 from ray import serve
 
+from _molecules import EXPECTED_HEAVY_ATOMS, TAKEDA_THREE  # local, scripts/ is sys.path[0]
+
 _BUNDLE = os.environ.get("KMOL_BUNDLE", os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 if _BUNDLE not in sys.path:
     sys.path.insert(0, _BUNDLE)
@@ -40,17 +42,7 @@ OUT = os.environ.get("KMOL_OUT", "three_molecule_results.json")
 
 TASK_PIP = {"pip": ["torch==2.5.1", "torch_geometric==2.6.1", "rdkit==2024.3.5", "numpy<2"]}
 
-# The three compounds named on the 2026-07-23 call as routine sanity-check inputs.
-# Canonical SMILES; heavy-atom counts are recomputed at run time, not trusted from here.
-MOLECULES = [
-    # minoxidil is the pyrimidine 3-N-oxide — without the [n+]([O-]) it's a different
-    # compound and comes out at 14 heavy atoms instead of 15.
-    ("minoxidil", "Nc1cc(N2CCCCC2)[n+]([O-])c(N)n1"),
-    ("sildenafil (Viagra)",
-     "CCCc1nn(C)c2c(=O)[nH]c(-c3cc(S(=O)(=O)N4CCN(C)CC4)ccc3OCC)nc12"),
-    ("atorvastatin (Lipitor)",
-     "CC(C)c1c(C(=O)Nc2ccccc2)c(-c2ccccc2)c(-c2ccc(F)cc2)n1CC[C@@H](O)C[C@@H](O)CC(=O)O"),
-]
+MOLECULES = TAKEDA_THREE
 
 
 def latencies(call, reps, warmup=20):
@@ -131,6 +123,8 @@ def main():
 
     heavy = ray.get(sizes.remote())
     print("heavy atoms:", heavy, flush=True)
+    bad = {k: (heavy[k], v) for k, v in EXPECTED_HEAVY_ATOMS.items() if heavy.get(k) != v}
+    assert not bad, f"heavy-atom mismatch (got, expected): {bad} -- check the SMILES"
 
     results = {}
     for label, fn in (("monolith (serve_app.py)", run_monolith),

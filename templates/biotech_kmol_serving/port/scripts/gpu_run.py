@@ -31,13 +31,20 @@ SMILES_POOL = [
     "CC(C)Cc1ccc(cc1)C(C)C(=O)O", "CN1CCC[C@H]1c1cccnc1", "Oc1ccc2CC3C(Cc2c1)C1CCCCC1CC3",
     "Clc1ccccc1C(=O)Nc1ccccc1", "COc1ccc2nc(sc2c1)N", "CC(=O)Nc1ccc(O)cc1",
 ]
+
+# KMOL_POOL3=1 swaps in the three compounds from the Takeda call, so this row can be
+# compared against the others in the 3-molecule table. Default behaviour is unchanged.
+if os.environ.get("KMOL_POOL3"):
+    import sys
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    from _molecules import SMILES as SMILES_POOL  # noqa: F811
 BATCH_SIZES = [1, 8, 16, 32, 64, 128, 256, 512, 1024]
 ITERS = 50
 WARMUP = 10
 
 
 @ray.remote(num_gpus=1, runtime_env=TASK_PIP, max_retries=0)
-def gpu_task(config_path, ckpt_dir, ref_path):
+def gpu_task(config_path, ckpt_dir, ref_path, smiles_pool):
     import os
 
     import numpy as np
@@ -74,7 +81,7 @@ def gpu_task(config_path, ckpt_dir, ref_path):
         res["parity_pass"] = "skipped (no ref_logits.json)"
 
     def make_batch(n):
-        data = [feat.featurize(SMILES_POOL[i % len(SMILES_POOL)]) for i in range(n)]
+        data = [feat.featurize(smiles_pool[i % len(smiles_pool)]) for i in range(n)]
         return collate(data).to(dev)
 
     # ---- forward-only throughput (GPU-bound) ----
@@ -116,7 +123,8 @@ def main():
     ray.init(address="auto", runtime_env={"working_dir": SHIP_DIR})
     print("submitting GPU task (autoscaler will bring up an L4)...", flush=True)
     t0 = time.perf_counter()
-    res = ray.get(gpu_task.remote(CONFIG, CKPT_DIR, REF))
+    res = ray.get(gpu_task.remote(CONFIG, CKPT_DIR, REF, SMILES_POOL))
+    res["molecule_pool"] = SMILES_POOL
     res["wall_seconds_incl_autoscale_and_install"] = time.perf_counter() - t0
     with open(OUT, "w") as f:
         json.dump(res, f, indent=2)
