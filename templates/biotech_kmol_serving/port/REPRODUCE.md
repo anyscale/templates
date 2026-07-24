@@ -9,7 +9,8 @@ by env). Run everything from the bundle root: `cd port`.
 | Path | What |
 |---|---|
 | `kmolport/` | The ported package — torch / torch_geometric / rdkit only |
-| `serve_app.py` | Production Ray Serve deployment |
+| `serve_pipeline_app.py` | **Current** Serve app: Ingress → CPU Featurizer tier → GPU tier |
+| `serve_app.py` | Earlier single-deployment version (featurize + forward in one replica) |
 | `configs/` | `ensemble_serve.example.json` (GPU) + `.cpu.json` (CPU parity) |
 | `requirements.txt` | The serving stack |
 | `Dockerfile`, `service.yaml`, `service.image.yaml` | Deployment |
@@ -51,11 +52,20 @@ Run these on an Anyscale workspace (or any Ray cluster) whose GPU worker group i
 bundle as the Ray `working_dir`, installs CUDA torch on the GPU worker(s) via
 `runtime_env` pip, runs, and writes a JSON. **Launch detached and poll** (see gotchas):
 
+The composed-Serve driver additionally needs a **CPU-only worker group** (we used
+`m5.2xlarge`, min 0 / max ≥ 8): the featurizer tier requests no GPU, and giving it
+somewhere cheap to land is the thing being measured. Verify it launches with
+`request_resources(bundles=[{"CPU":1}]*24)` before a long run.
+
 ```bash
 cd port
+# P2 — current: composed two-stage Serve app. Smoke first, it's cheap.
+python scripts/serve_pipeline_bulk.py --smoke                                        # -> asserts SMOKE OK
+setsid nohup python scripts/serve_pipeline_bulk.py < /dev/null > pipe2.log 2>&1 & disown  # -> serve_pipeline_results.json
+# provenance runs (10-molecule pool):
 setsid nohup python scripts/gpu_run.py        < /dev/null > gpu.log   2>&1 & disown  # forward curve -> gpu_results.json
-setsid nohup python scripts/serve_bulk.py     < /dev/null > serve.log 2>&1 & disown  # served       -> serve_bulk_results.json
-setsid nohup python scripts/scaled_pipeline.py< /dev/null > pipe.log  2>&1 & disown  # 2-stage      -> pipeline_results.json
+setsid nohup python scripts/serve_bulk.py     < /dev/null > serve.log 2>&1 & disown  # monolith     -> serve_bulk_results.json
+setsid nohup python scripts/scaled_pipeline.py< /dev/null > pipe.log  2>&1 & disown  # raw actors   -> pipeline_results.json
 setsid nohup python scripts/scale_gpus.py     < /dev/null > scale.log 2>&1 & disown  # 1->4 GPU     -> scale_results.json
 
 # poll (first GPU run per node ~4-5 min for autoscale + torch install):
@@ -110,3 +120,20 @@ Both enable `query_auth_token_enabled` — requests need the bearer token Anysca
 - **GPU workers get deps from `runtime_env` pip** (`torch==2.5.1` → CUDA 12.x wheel,
   runs on L4). First actor on each new node installs (~3–5 min); later actors reuse it.
 - **Never `ray stop`** on a shared workspace — it kills the managed cluster.
+- **`cd x && cmd > log &` backgrounds the whole `&&` chain**, so a following `tail log`
+  runs in the *original* directory and reports "no such file". Use an absolute log path,
+  or wrap the chain: `(cd x && cmd > /abs/log 2>&1 &)`.
+- **`python scripts/foo.py` puts `scripts/` on `sys.path`, not the bundle root** — so
+  `import serve_pipeline_app` fails from a driver. `serve_pipeline_bulk.py` inserts the
+  bundle root itself; replicas get it from the `working_dir` runtime_env.
+- **This workspace's head node has 0 schedulable CPU.** `num_cpus=1` actors never land on
+  it; they force CPU (or GPU) worker nodes up. Worth knowing before attributing a result
+  to "one node".
+- **`m5.2xlarge` is 4 physical cores / 8 vCPU** (`Thread(s) per core: 2`). Ray schedules
+  per vCPU, so per-replica throughput roughly halves once a node packs past 4 replicas.
+  Normalize per node or per physical core before claiming a scaling efficiency.
+- **CPU worker nodes idle-terminate in ~a minute.** Pin them with
+  `request_resources(...)` for the duration of a multi-point sweep, and release in a
+  `finally`.
+- **`KMOL_LIBRARY`** points the composed-Serve driver at the molecule CSV (`smiles` column);
+  `--pool10` falls back to the old 10-SMILES set for comparison against P1/P1b/P1c.

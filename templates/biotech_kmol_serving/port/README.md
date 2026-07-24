@@ -25,6 +25,21 @@ torch_scatter. Deps: `torch`, `torch_geometric`, `rdkit`.
 Reusing kMoL's exact class/attribute structure is deliberate: it makes the checkpoint
 keys line up so kMoL `state_dict`s load unchanged.
 
+## Which molecule set a number used — read this first
+
+Throughput here depends heavily on molecule size (~0.285 ms per heavy atom), so every
+number below is tagged with its molecule set:
+
+| tag | set | mean featurize | single-core mol/s |
+|---|---|---:|---:|
+| **real library** | 15,751 unique tox21 + ZINC + ChEMBL-MW800+, shuffled | 7.65 ms | **131** |
+| **10-pool** | the old 10 hardcoded drug-like SMILES | 2.46 ms | **407** |
+
+The 10-pool is **3.1× optimistic** — its molecules average 12.1 heavy atoms. Sections P0,
+P1, P1b and P1c below were measured on the 10-pool and are kept for provenance; **P2 is
+the current number.** Never compare a 10-pool row against a real-library row. Stats:
+[`molecule_library_stats.json`](molecule_library_stats.json).
+
 ## Proven results (2026-07-23, one NVIDIA L4)
 
 **Parity — the port is numerically identical to real kMoL.**
@@ -51,7 +66,7 @@ keys line up so kMoL `state_dict`s load unchanged.
   has ~100× headroom. The lever for end-to-end throughput is parallelizing
   featurization across cores/replicas — which is exactly what Ray Serve does (P1).
 
-## P1 — served on Ray Serve, one L4, native autoscale
+## P1 — served on Ray Serve, one L4, native autoscale *(10-pool; monolithic deployment)*
 
 `port/scripts/serve_bulk.py` deploys the ported ensemble as **6 fractional-GPU
 replicas packed on a single L4** (`num_gpus=0.16`, `num_cpus=1`) on the managed
@@ -72,22 +87,32 @@ GPU-bound** — consistent with P0's forward-only 60k/s. Naive one-SMILES-per-re
 load (`serve_run.py`, `serve_singlereq_results.json`) tops out at ~244 mol/s: that's
 the *client/RPC* limit (REC 4 — "you're benchmarking the client"), not the service.
 
-## P1b — two-stage pipeline: how far one L4 actually goes
+## P1b — two-stage pipeline as raw Ray actors *(10-pool; mislabelled in earlier drafts)*
 
-`port/scripts/scaled_pipeline.py` runs the split as pure Ray actors: **12 CPU
-featurizer actors → 1 GPU forward actor** (no Serve/HTTP overhead, so it isolates the
-pipeline ceiling), processing 60k molecules.
+`port/scripts/scaled_pipeline.py` runs the split as pure Ray actors: **12 CPU featurizer
+actors → 1 GPU forward actor**, processing 60k molecules.
 
-| metric | mol/s | ×baseline |
-|---|---:|---:|
-| pipeline (12 featurizer cores → 1 L4) | **3,904** | **23.0×** |
-| featurize-only aggregate (same 12 cores) | 4,050 | — |
+| metric | mol/s |
+|---|---:|
+| pipeline (12 featurizer vCPU → 1 GPU actor) | **3,904** |
+| featurize-only aggregate (same 12 vCPU) | 4,050 |
 
-The pipeline rate (3,904) is within ~4% of the featurize-only rate (4,050): **the GPU
-adds almost nothing — it's ~7% utilized** (its forward ceiling is 60k/s). Throughput
-scales linearly with featurizer cores; one L4 stays idle until you reach ~60k mol/s.
+The useful conclusion holds: the pipeline rate is within ~4% of the featurize-only rate,
+so **the GPU adds almost nothing — it is ~7% utilized.** Two labels on this run were
+wrong in earlier drafts and are corrected here:
 
-## P1c — multi-GPU: near-linear scaling, 1→4 L4
+- **It was never a "one L4" number.** The featurizers are `num_cpus=1` with no GPU
+  request, and this workspace's head node has **0 schedulable CPU** (verified). Those 12
+  vCPU therefore came from GPU worker nodes — the autoscaler brought up roughly two
+  `g6.2xlarge` to satisfy them. Per single GPU node (8 vCPU) the comparable figure is
+  much lower.
+- **"No Serve/HTTP overhead" was a false contrast.** The P1 Serve benchmark
+  (`serve_bulk.py:78`) calls `handle.infer_bulk.remote(...)` — a `DeploymentHandle`, the
+  same Ray RPC path these actors use. Neither number involved HTTP, so the gap between
+  them was never Serve overhead; it was core count (12 vs 6) plus the monolith
+  serializing featurize-then-forward in one thread.
+
+## P1c — multi-GPU: near-linear scaling, 1→4 L4 *(10-pool; raw actors, compute capacity)*
 
 `port/scripts/scale_gpus.py` runs one self-contained mini-pipeline per L4 node
 (placement-group bundle = 1 GPU actor + 6 co-located featurizers, `STRICT_SPREAD` so
@@ -104,13 +129,69 @@ each bundle is a distinct node), then measures aggregate throughput at G = 1..4 
 node adds both an L4 and 8 vCPU, and since throughput is featurization-bound the two scale
 together — so adding nodes adds throughput almost perfectly linearly.
 
-**Conclusion — the single-GPU story, proven every way:** the old "~5 ms/molecule /
-~170 mol/s" was batch-size-1 launch overhead on the *offline* path, not a GPU limit.
-Ported to a supported PyTorch, one L4 does **60k mol/s of forward (353×)**, serves
-**1,697 mol/s end-to-end (10×)** as 6 fractional replicas, sustains **3,904 mol/s (23×)**
-in a two-stage pipeline, and the whole thing **scales near-linearly to 8,792 mol/s (52×)
-across 4 L4** — all featurization-bound, GPU to spare. The 4× goal is cleared by more than
-an order of magnitude.
+## P2 — the current number: two-stage **composed Ray Serve** app, real library
+
+`serve_pipeline_app.py` expresses the two-stage split as a single Serve application with
+three independently-scaled deployments, and `scripts/serve_pipeline_bulk.py` measures it:
+
+```
+Ingress (thin, no torch)  →  Featurizer (num_cpus=1, NO GPU)  →  GpuForward (num_gpus=1)
+```
+
+The `Featurizer` deployment requesting **no GPU** is the whole point: its replicas
+schedule onto plain CPU nodes and autoscale independently, instead of being pinned to a
+GPU node by a `num_gpus=0.16` slice the way the P1 monolith was.
+
+**One L4, growing only the CPU tier** (`m5.2xlarge`, real library, chunk 256, load from
+4 in-cluster client actors) — [`serve_pipeline_results.json`](serve_pipeline_results.json):
+
+| featurizer replicas (vCPU) | mol/s | per replica | p50 | p99 |
+|---:|---:|---:|---:|---:|
+| 6 | 631 | 105 | 4.6 s | 5.7 s |
+| 12 | 956 | 80 | 4.1 s | 7.9 s |
+| 24 | 1,775 | 74 | 3.9 s | 7.2 s |
+| 48 | **2,809** | 59 | 4.9 s | 7.5 s |
+
+**The per-replica decline is hyperthreading, not contention.** `m5.2xlarge` = 8 vCPU on
+**4 physical cores** (`lscpu`: `Thread(s) per core: 2`), and Ray schedules per vCPU — so
+48 replicas is 24 physical cores. At the one point where node count was verified (48
+replicas / 6 nodes): **468 mol/s per node ≈ 117 mol/s per physical core**, against **131
+mol/s** measured single-threaded → **~89% of ideal in real cores.**
+
+**What the bottleneck is not** — both tested by doubling and watching nothing happen:
+
+| change | mol/s | delta | file |
+|---|---:|---:|---|
+| baseline (48 replicas, 1 L4) | 2,809 | — | `serve_pipeline_results.json` |
+| 2 × L4 | 2,892 | **+3.0%** | `serve_pipeline_2gpu.json` |
+| 3× ingress replicas + 2× clients | 1,611 | **−9%** | `serve_pipeline_diag_ingress12.json` |
+
+So it is neither GPU-bound nor front-door-bound: it is CPU-featurization-bound, as
+designed, and the lever is CPU nodes.
+
+**Two implementation findings worth keeping:**
+- **Don't broker the `Batch` through the ingress.** Passing the featurizer's
+  `DeploymentResponse` into the GPU handle from the ingress makes Serve *materialize* it
+  there (`serialization.py → pickle.loads → torch_geometric`), which would put torch on
+  the front door plus a deserialize/reserialize of every batch on the one component all
+  traffic crosses. Having `Featurizer` call `GpuForward` itself gives the Batch exactly
+  one hop, CPU node → GPU node.
+- **Shuffle the library before chunking.** `molecules.csv` is grouped by source (tox21,
+  then ZINC, then ChEMBL-MW800+), so an in-order walk makes every chunk size-homogeneous
+  and makes each sweep point sample a different part of the size distribution. Unshuffled,
+  the sweep came out non-monotonic (12 replicas ≈ 24 replicas; per-replica rate 195 → 58).
+  The driver now shuffles with a fixed seed.
+
+**Conclusion.** The old "~5 ms/molecule" was batch-size-1 launch overhead on the *offline*
+path, not a GPU limit: the GNN forward runs at ~60k mol/s on one L4, ~20× more than the
+CPU tier can feed it. Served end-to-end on a genuinely hard, size-diverse library, the
+composed Serve app sustains **2,809 mol/s (0.36 ms/molecule) on one L4 plus six
+`m5.2xlarge`**, at ~89% of ideal per physical core, with the GPU nearly idle. The
+architecture conclusion is the durable one: **buy CPU, not GPUs.**
+
+**Still open:** synthetic weights (no accuracy claim), no external open-loop HTTP load
+test, and no verified per-node scaling curve on the real library — see
+[`TAKEDA_BRIEF.md`](TAKEDA_BRIEF.md) next steps.
 
 ## Deploy as a container (P3)
 
@@ -134,10 +215,16 @@ PYTHONPATH=. python scripts/make_synthetic_checkpoints.py configs/ensemble_serve
 PYTHONPATH=. python scripts/bench.py --config configs/ensemble_serve.example.json --ckpt-dir checkpoints --device cuda
 
 # on Ray / Anyscale (each writes a *_results.json):
-python scripts/gpu_run.py       # GPU parity + forward throughput curve
-python scripts/serve_bulk.py    # served throughput (Ray Serve)
-python scripts/scale_gpus.py    # multi-GPU scaling
+python scripts/gpu_run.py               # GPU parity + forward throughput curve
+python scripts/serve_pipeline_bulk.py --smoke   # composed Serve app: correctness check
+python scripts/serve_pipeline_bulk.py   # composed Serve app: CPU-tier sweep  <-- P2, current
+python scripts/serve_bulk.py            # monolithic deployment (P1, 10-pool; provenance)
+python scripts/scale_gpus.py            # multi-GPU scaling (P1c, 10-pool; provenance)
 ```
+
+The composed-Serve driver needs a CPU worker group on the cluster (we used `m5.2xlarge`,
+min 0 / max ≥ 8) in addition to the GPU group — that separation is the thing being
+measured. It reads the molecule library from `KMOL_LIBRARY`.
 
 Full step-by-step — including the py3.9 parity ground truth (run against **your own**
 kMoL install) and the detached-launch/poll pattern for Anyscale workspaces — is in

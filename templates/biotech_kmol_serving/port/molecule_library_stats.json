@@ -1,0 +1,228 @@
+{
+  "sources": {
+    "tox21_raw": 7831,
+    "zinc250k_sampled_raw": 3000,
+    "chembl_mw800plus_raw": 4926,
+    "raw_total": 15757,
+    "invalid_dropped": 0,
+    "unique_after_dedupe": 15751,
+    "kept_by_source_first_wins": {
+      "tox21": 7831,
+      "zinc250k": 3000,
+      "chembl_mw800plus": 4920
+    }
+  },
+  "summary_stats": {
+    "heavy_atom_count": {
+      "mean": 40.55501238016634,
+      "median": 24.0,
+      "std": 40.442864621880226,
+      "min": 1.0,
+      "p5": 8.0,
+      "p25": 16.0,
+      "p75": 61.0,
+      "p95": 107.0,
+      "max": 343.0
+    },
+    "molecular_weight": {
+      "mean": 583.4997516348169,
+      "median": 351.41,
+      "std": 572.3819735083114,
+      "min": 9.012,
+      "p5": 124.14099999999999,
+      "p25": 233.355,
+      "p75": 861.929,
+      "p95": 1525.498,
+      "max": 4863.477
+    },
+    "num_bonds": {
+      "mean": 42.51266586248492,
+      "median": 26.0,
+      "std": 41.83018842930925,
+      "min": 0.0,
+      "p5": 7.5,
+      "p25": 16.0,
+      "p75": 65.0,
+      "p95": 112.0,
+      "max": 347.0
+    },
+    "num_rings": {
+      "mean": 3.055361564345121,
+      "median": 3.0,
+      "std": 2.7076891469538586,
+      "min": 0.0,
+      "p5": 0.0,
+      "p25": 1.0,
+      "p75": 4.0,
+      "p95": 7.0,
+      "max": 42.0
+    },
+    "num_aromatic_atoms": {
+      "mean": 10.40010158085201,
+      "median": 9.0,
+      "std": 9.45984016530471,
+      "min": 0.0,
+      "p5": 0.0,
+      "p25": 5.0,
+      "p75": 15.0,
+      "p95": 30.0,
+      "max": 96.0
+    },
+    "smiles_length": {
+      "mean": 87.82083677226842,
+      "median": 46.0,
+      "std": 98.71242769509661,
+      "min": 2.0,
+      "p5": 12.0,
+      "p25": 28.0,
+      "p75": 133.0,
+      "p95": 241.0,
+      "max": 1089.0
+    }
+  },
+  "heavy_atom_histogram": {
+    "bin_edges": [
+      0,
+      10,
+      15,
+      20,
+      25,
+      30,
+      35,
+      40,
+      50,
+      60,
+      80,
+      100,
+      150,
+      344
+    ],
+    "counts": [
+      1270,
+      2178,
+      2076,
+      2426,
+      1688,
+      678,
+      193,
+      192,
+      733,
+      2601,
+      742,
+      593,
+      381
+    ]
+  },
+  "featurize_ms_vs_heavy_atoms_regression": {
+    "slope_ms_per_heavy_atom": 0.28453163818021393,
+    "intercept_ms": -3.8902296612438576,
+    "r2": 0.8572137508121775
+  },
+  "size_buckets": [
+    {
+      "bucket": "<15",
+      "n_molecules": 3448,
+      "mean_heavy_atoms": 10.136020881670534,
+      "mean_featurize_ms": 1.960905773040899,
+      "implied_single_core_mol_per_s": 509.96841038885697
+    },
+    {
+      "bucket": "15-25",
+      "n_molecules": 4502,
+      "mean_heavy_atoms": 19.734118169702356,
+      "mean_featurize_ms": 3.1182730613309046,
+      "implied_single_core_mol_per_s": 320.69032452635554
+    },
+    {
+      "bucket": "25-40",
+      "n_molecules": 2559,
+      "mean_heavy_atoms": 28.697538100820633,
+      "mean_featurize_ms": 4.2930290823884105,
+      "implied_single_core_mol_per_s": 232.93576186156506
+    },
+    {
+      "bucket": "40-60",
+      "n_molecules": 925,
+      "mean_heavy_atoms": 54.067027027027024,
+      "mean_featurize_ms": 8.38544957525399,
+      "implied_single_core_mol_per_s": 119.2541903717441
+    },
+    {
+      "bucket": "60+",
+      "n_molecules": 4317,
+      "mean_heavy_atoms": 90.697475098448,
+      "mean_featurize_ms": 18.748346258810006,
+      "implied_single_core_mol_per_s": 53.33803772319874
+    }
+  ],
+  "full_mix_aggregate": {
+    "n_molecules": 15751,
+    "mean_featurize_ms": 7.648954447703728,
+    "median_featurize_ms": 3.7100430054124445,
+    "implied_single_core_mol_per_s_mean": 130.73682250784057,
+    "implied_single_core_mol_per_s_median": 269.53865454959333
+  },
+  "old_10_pool": {
+    "molecules": [
+      {
+        "smiles": "CCO",
+        "heavy_atom_count": 3,
+        "featurize_ms": 1.2622799986274913
+      },
+      {
+        "smiles": "c1ccccc1",
+        "heavy_atom_count": 6,
+        "featurize_ms": 1.5015980025054887
+      },
+      {
+        "smiles": "CC(=O)OC1=CC=CC=C1C(=O)O",
+        "heavy_atom_count": 13,
+        "featurize_ms": 2.3424000028171577
+      },
+      {
+        "smiles": "CN1C=NC2=C1C(=O)N(C(=O)N2C)C",
+        "heavy_atom_count": 14,
+        "featurize_ms": 2.463912001985591
+      },
+      {
+        "smiles": "CC(C)Cc1ccc(cc1)C(C)C(=O)O",
+        "heavy_atom_count": 15,
+        "featurize_ms": 4.26936500298325
+      },
+      {
+        "smiles": "CN1CCC[C@H]1c1cccnc1",
+        "heavy_atom_count": 12,
+        "featurize_ms": 2.324891996977385
+      },
+      {
+        "smiles": "Oc1ccc2CC3C(Cc2c1)C1CCCCC1CC3",
+        "heavy_atom_count": 19,
+        "featurize_ms": 3.2637129988870583
+      },
+      {
+        "smiles": "Clc1ccccc1C(=O)Nc1ccccc1",
+        "heavy_atom_count": 16,
+        "featurize_ms": 2.68930199672468
+      },
+      {
+        "smiles": "COc1ccc2nc(sc2c1)N",
+        "heavy_atom_count": 12,
+        "featurize_ms": 2.3251390011864714
+      },
+      {
+        "smiles": "CC(=O)Nc1ccc(O)cc1",
+        "heavy_atom_count": 11,
+        "featurize_ms": 2.1303089961293153
+      }
+    ],
+    "mean_heavy_atoms": 12.1,
+    "median_heavy_atoms": 12.5,
+    "mean_featurize_ms": 2.457290999882389,
+    "implied_single_core_mol_per_s": 406.9522087729382
+  },
+  "paths": {
+    "molecules_csv": "/home/ray/default/kmol_divbench/molecules.csv",
+    "molecule_props_csv": "/home/ray/default/kmol_divbench/molecule_props.csv",
+    "phase1_results_json": "/home/ray/default/kmol_divbench/phase1_results.json"
+  }
+}

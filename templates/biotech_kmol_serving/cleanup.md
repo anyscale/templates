@@ -2,9 +2,10 @@
 
 **Internal only — do NOT ship to the customer.** (Lives at the template root, outside `port/`.)
 
-**Status: planning.** Execute the fixes *after* the molecule-diversity + true-throughput
-rework lands (§Molecules, §Throughput) — no point re-wording docs around numbers we're
-about to replace.
+**Status: substantially executed 2026-07-24.** The two-stage split is now a composed Ray
+Serve app (`port/serve_pipeline_app.py`) measured on the real 15,751-molecule library;
+`port/README.md` §P2 and `port/TAKEDA_BRIEF.md` are rewritten around it. Remaining opens
+are the ones needing Takeda's weights or an external open-loop load test.
 
 ## The core correction driving this plan
 None of our current "throughput" figures are an **open-loop served throughput**. They are:
