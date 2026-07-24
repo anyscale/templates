@@ -170,7 +170,13 @@ long work detached + poll; the GPU playbook is in the `geoff/fm_recs_and_fraud` 
 ## Progress log
 - [x] Wrapper/serve logic designed & CPU-proven (reusable)
 - [x] 7-rec → kMoL-class mapping validated
-- [ ] **P0 — port spike (START HERE)**
-- [ ] P1 — GPU throughput on Ray Serve (managed cluster, native autoscale)
+- [x] **P0 — port spike DONE.** Minimal port `port/kmolport/` (torch/PyG/rdkit only, no
+  openbabel/prody/openfold/torch_scatter). Parity: **0.000e+00** on CPU, **1.14e-05** on
+  an **L4** (torch 2.5.1+cu124) vs py3.9 kMoL. Throughput: **60,101 mol/s forward-only
+  (353× the 170/s baseline)**; end-to-end **~561 mol/s (3.3×)**, featurization-bound (GPU
+  has ~100× headroom). Confirmed torch runs on the L4. See `port/README.md` + `port/gpu_results.json`.
+- [ ] P1 — GPU throughput on Ray Serve (managed cluster, native autoscale). Adapt the
+  serve wrapper to `kmolport`; parallelize featurization across fractional-GPU replicas
+  (the end-to-end bottleneck, not the GPU).
 - [ ] P2 — locust load test
 - [ ] P3 — containerize → Anyscale Service
