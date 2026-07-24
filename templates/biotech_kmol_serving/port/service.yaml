@@ -1,0 +1,41 @@
+# Anyscale Service for the ported kMoL ensemble (kmolport).
+#
+# NOTE: deploying this is a persistent GPU-spend commitment — gated on Geoff's
+# approval (per plan.md P3). This file is prepared, not deployed. When approved:
+#     anyscale service deploy -f port/service.yaml
+#
+# The stack is now standard, so no custom image build is required: a stock modern
+# Anyscale Ray image + a pip runtime_env is enough (this is the whole point of the
+# port). For a faster cold start, bake the deps into an image instead (see Dockerfile).
+
+name: biotech-kmol-ensemble-serving
+
+# Stock modern image — py3.11 + CUDA 12; the ported deps come from runtime_env below.
+image_uri: anyscale/ray:2.56.0-py311-cu121
+
+# Ship the ported package + config + checkpoints, and install the standard deps.
+# (For production, replace working_dir with a git/remote URI and bake deps into an image.)
+working_dir: .
+runtime_env:
+  pip:
+    - torch==2.5.1
+    - torch_geometric==2.6.1
+    - rdkit==2024.3.5
+    - numpy<2
+
+applications:
+  - name: kmol
+    import_path: serve_app:app
+    args:
+      config_path: config.json
+      ckpt_dir: checkpoints
+
+# GPU workers autoscale natively. num_gpus per replica (0.16 => ~6 replicas/L4) and
+# replica bounds are set on the deployment in serve_app.py via KMOL_* env vars.
+compute_config:
+  head_node:
+    instance_type: m5.2xlarge
+  worker_nodes:
+    - instance_type: g6.2xlarge   # NVIDIA L4
+      min_nodes: 0
+      max_nodes: 4
