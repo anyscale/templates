@@ -1,0 +1,38 @@
+{
+  "app": "serve_pipeline_app (two-stage composed Serve)",
+  "molecule_source": "pool3",
+  "library_path": null,
+  "library_n": 3,
+  "shuffle_seed": 0,
+  "chunk": 256,
+  "gpu_replicas": 2,
+  "load_clients": 4,
+  "ingress_replicas": 4,
+  "target_duration_s": 12.0,
+  "results": [
+    {
+      "mols": 121856,
+      "chunk": 256,
+      "clients": 4,
+      "concurrency_per_client": 14,
+      "wall_s": 27.527316788000007,
+      "mol_s": 4426.730034694871,
+      "req_p50_ms": 2970.4221970000617,
+      "req_p99_ms": 5412.549994999836,
+      "requests": 476,
+      "featurizer_replicas": 48,
+      "gpu_replicas": 2,
+      "mol_s_per_featurizer_core": 92.22354238947649
+    }
+  ],
+  "peak_mol_s": 4426.730034694871,
+  "scaling_vs_min_replicas": [
+    {
+      "featurizer_replicas": 48,
+      "mol_s": 4426.730034694871,
+      "speedup_vs_base": 1.0,
+      "ideal": 1.0,
+      "efficiency_pct": 100.0
+    }
+  ]
+}

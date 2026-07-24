@@ -14,13 +14,16 @@ projection for their box, and any multiple of the undocumented ~170 mol/s baseli
 Hi <name>,
 
 After our call I put the kMoL 5-model molecule ensemble on Ray Serve on a GPU and measured
-it. On a single L4 it does **~820 molecules/sec** end-to-end using your three test
-compounds, and **~2,800/sec** against a 15,700-molecule size-diverse library once the CPU
-side is scaled out.
+it. Using your three test compounds, a single L4 does **~4,300 molecules/sec** end-to-end
+once the CPU side is scaled out alongside it.
 
-The part I didn't expect: it's bound by **RDKit featurization on CPU, not the GPU**.
-Doubling the GPUs moved throughput by 3%. That may explain the scaling you were seeing — on
-a 64-vCPU box, running either 8 CPUs or the single GPU leaves most of the machine idle.
+The part I didn't expect: it's bound by **RDKit featurization on CPU, not the GPU**. Two
+things convinced me. Doubling the GPUs moved throughput by 2% (4,343 → 4,427/sec). And
+running everything on the GPU node instead — so featurization is limited to that node's
+cores — drops it to 819/sec, a 5.3× difference from nothing but where the CPU work lands.
+
+That may explain the scaling you were seeing: on a 64-vCPU box, running either 8 CPUs or
+the single GPU leaves most of the machine idle, and it's the CPU side that sets throughput.
 
 One thing worth flagging: kMoL's Python 3.9 / torch 1.13 stack won't run on a current
 datacentre GPU at all, so I ported the molecule inference path to 3.11 and current PyTorch
@@ -51,12 +54,14 @@ Best,
 
 ## Before sending
 
-- Re-verify: ~820 mol/s (`port/three_monolith_bulk.json`, monolith on the three compounds,
-  one L4); ~2,800 mol/s (`port/serve_pipeline_results.json`, 48 CPU featurizer replicas +
-  1 L4 on the 15,751-molecule library); the +3% GPU-doubling result
-  (`port/serve_pipeline_2gpu.json`).
-- The ~2,800 figure needs **8 CPU worker nodes**; `takeda-kmol` is currently capped at 4,
-  so they cannot reproduce that number as the workspace stands. Either raise the cap before
-  they log in, or expect them to reproduce ~820–1,600 instead. The README says so, but it's
-  the most likely thing to make them think something is broken.
+- All three numbers are measured on the same three compounds in `takeda-kmol`, so they are
+  directly comparable: **4,343** mol/s (`port/three_twostage_1gpu.json`, 48 CPU featurizer
+  replicas + 1 L4), **4,427** on 2 L4 (`port/three_twostage_2gpu.json`), **819** for the
+  single-deployment version confined to the GPU node (`port/three_monolith_bulk.json`).
+- Deliberately not in the email: the 15,751-molecule library figure (2,809 mol/s). That
+  molecule set is **not shipped** — it was built in a workspace we no longer have access
+  to — so they cannot reproduce it. The bundled tox21 set is what the quickstart uses.
+- The 4,343 figure needs ~12 CPU worker nodes. Confirm `takeda-kmol`'s cap is still raised
+  before they log in; at the original cap of 4 the run *hangs* rather than erroring, which
+  is the most likely thing to make them think it's broken.
 - Confirm invites actually went out and that they can see the workspace.
