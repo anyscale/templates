@@ -1,0 +1,75 @@
+{
+  "what": "single-molecule request latency, one whole L4 and one worker per design",
+  "note": "one-element list per request, so @serve.batch wait time is not included",
+  "reps_per_molecule": 200,
+  "heavy_atoms": {
+    "minoxidil": 15,
+    "sildenafil (Viagra)": 33,
+    "atorvastatin (Lipitor)": 41
+  },
+  "molecules": {
+    "minoxidil": "Nc1cc(N2CCCCC2)[n+]([O-])c(N)n1",
+    "sildenafil (Viagra)": "CCCc1nn(C)c2c(=O)[nH]c(-c3cc(S(=O)(=O)N4CCN(C)CC4)ccc3OCC)nc12",
+    "atorvastatin (Lipitor)": "CC(C)c1c(C(=O)Nc2ccccc2)c(-c2ccccc2)c(-c2ccc(F)cc2)n1CC[C@@H](O)C[C@@H](O)CC(=O)O"
+  },
+  "results": {
+    "monolith (serve_app.py)": {
+      "minoxidil": {
+        "reps": 200,
+        "mean_ms": 23.0201684199983,
+        "p50_ms": 22.92337300013969,
+        "p99_ms": 25.095262999911938,
+        "min_ms": 21.52070499982983,
+        "max_ms": 25.182414000028075,
+        "n_logits": 12
+      },
+      "sildenafil (Viagra)": {
+        "reps": 200,
+        "mean_ms": 25.6515869950033,
+        "p50_ms": 25.636655999960567,
+        "p99_ms": 27.96450999994704,
+        "min_ms": 23.800187999995615,
+        "max_ms": 29.722890999892115,
+        "n_logits": 12
+      },
+      "atorvastatin (Lipitor)": {
+        "reps": 200,
+        "mean_ms": 26.16615888999945,
+        "p50_ms": 26.124072000129672,
+        "p99_ms": 27.965225999878385,
+        "min_ms": 24.765900000147667,
+        "max_ms": 28.0665919999592,
+        "n_logits": 12
+      }
+    },
+    "two_stage (serve_pipeline_app.py)": {
+      "minoxidil": {
+        "reps": 200,
+        "mean_ms": 32.143890209998744,
+        "p50_ms": 31.777571000020544,
+        "p99_ms": 36.32063999998536,
+        "min_ms": 29.887425999959305,
+        "max_ms": 36.45558199991683,
+        "n_logits": 12
+      },
+      "sildenafil (Viagra)": {
+        "reps": 200,
+        "mean_ms": 35.007731669987834,
+        "p50_ms": 34.749866000083784,
+        "p99_ms": 41.29773599993314,
+        "min_ms": 32.32340399995337,
+        "max_ms": 41.98657999995703,
+        "n_logits": 12
+      },
+      "atorvastatin (Lipitor)": {
+        "reps": 200,
+        "mean_ms": 35.728420130002405,
+        "p50_ms": 35.48988299985467,
+        "p99_ms": 40.649114000189,
+        "min_ms": 33.46131199987212,
+        "max_ms": 42.247215999850596,
+        "n_logits": 12
+      }
+    }
+  }
+}

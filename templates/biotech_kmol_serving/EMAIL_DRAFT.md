@@ -1,95 +1,62 @@
-# Draft email to Takeda — findings + the two asks
+# Draft email to Takeda
 
-**Internal.** Lives at the template root, outside `port/`, so it is not part of the
-shareable bundle. Edit freely; the numbers are all traceable to `port/*_results.json`.
+**Internal.** Template root, outside the shareable `port/` bundle.
 
-The two asks are (1) their trained `model_0..4.pt`, (2) their library's heavy-atom
-histogram. Everything else is context that justifies why those two things unblock us.
+Goal: they log into the workspace and run it themselves. Everything else is context.
+Deliberately *not* in the email: latency numbers (23–26 ms per single molecule needs the
+batch-size-1 explanation or it reads as a regression against their 5 ms), the ~3,700 mol/s
+projection for their box, and any multiple of the undocumented ~170 mol/s baseline.
 
 ---
 
-**Subject:** kMoL on Anyscale — early results, and two things we need from you
+**Subject:** kMoL on Ray Serve — have a go yourself
 
 Hi <name>,
 
-Following up on last week's call with a first set of results. Short version: we reproduced
-the kMoL 5-model molecule ensemble on Anyscale and the scaling problem you described looks
-like a CPU-versus-GPU allocation issue rather than anything wrong with Ray Serve. Full
-writeup with every number linked to the script that produced it is attached
-(`TAKEDA_BRIEF.md`); the highlights:
+After our call I put the kMoL 5-model molecule ensemble on Ray Serve on a GPU and measured
+it. On a single L4 it does **~820 molecules/sec** end-to-end using your three test
+compounds, and **~2,800/sec** against a 15,700-molecule size-diverse library once the CPU
+side is scaled out.
 
-**The workload is bound by CPU featurization, not by the GPU.** We doubled the GPU capacity
-and throughput moved 3% (2,809 → 2,892 molecules/sec). The GNN forward itself runs at
-roughly 24,000 molecules/sec on one L4 — about 8× more than the CPU tier can feed it. RDKit
-featurization is the constraint, and it is embarrassingly parallel across cores.
+The part I didn't expect: it's bound by **RDKit featurization on CPU, not the GPU**.
+Doubling the GPUs moved throughput by 3%. That may explain the scaling you were seeing — on
+a 64-vCPU box, running either 8 CPUs or the single GPU leaves most of the machine idle.
 
-**That reframes the "is the GPU worth it" question.** You measured 12 ms/molecule on 8 CPUs
-and 5 ms/molecule on the 1 GPU. Both of those were configurations on the same ~64 vCPU box,
-which means roughly 56 vCPU were not doing featurization work in either case. You were not
-really choosing between 8 CPUs and a GPU; you were using about an eighth of the machine
-either way. At the per-core rate we measured, that box projects to ~3,700 molecules/sec.
-That is a projection from our hardware, not a measurement on yours — which is part of why
-we are asking for the items below.
+One thing worth flagging: kMoL's Python 3.9 / torch 1.13 stack won't run on a current
+datacentre GPU at all, so I ported the molecule inference path to 3.11 and current PyTorch
+to match Anyscale's Ray version. It reuses kMoL's architecture and checkpoint format and
+matches the original bit-for-bit on CPU.
 
-**The cold starts are checkpoint reloading.** The offline `kmol predict` path loads all five
-checkpoints per call. Loading once into long-lived replicas, with a warm-up pass before the
-replica is marked healthy, removes it.
+I've sent you Anyscale invites. Once you're in, start the workspace called **takeda-kmol**
+and everything's there:
 
-**Measured, end to end:** 2,809 molecules/sec on one L4 plus six 8-vCPU CPU nodes, against a
-deliberately hard 15,751-molecule set (tox21 + ZINC + ChEMBL above 800 MW). That is
-0.36 ms/molecule and roughly $0.32 per million molecules at on-demand list pricing.
+- **`port/README.md`** — three commands to run it yourself, nothing to install
+- **`port/TAKEDA_BRIEF.md`** — the results so far, with the caveats
 
-Two caveats I want to be upfront about. All of the above runs on **synthetic weights** —
-correct architecture and checkpoint format, random values — so throughput and latency are
-real but the predictions carry no information. And throughput depends strongly on molecule
-size: featurization costs about 0.285 ms per heavy atom, so our numbers move by 2–3× purely
-with the size mix of the molecule set.
+Idle nodes scale to zero, so it costs nothing sitting there.
 
-Which leads to the two things that would help most:
+Two caveats. The weights are synthetic — right architecture and format, random values — so
+throughput is real but predictions are placeholders. Drop your trained `model_0.pt` …
+`model_4.pt` into `port/checkpoints/` and it picks them up with no code changes. And
+throughput depends heavily on molecule size (~0.285 ms per heavy atom), so if you can send
+a heavy-atom histogram of your library I can give you numbers for your actual deck rather
+than mine.
 
-**1. Your trained checkpoints.** If you can share `model_0.pt` … `model_4.pt`, they drop
-into `port/checkpoints/` with no code changes — we preserved kMoL's checkpoint format and
-class structure specifically so your `state_dict`s load unchanged. That lets us confirm
-numerical parity on real weights and give you throughput on a model you recognise. If
-sharing weights is awkward, the same check runs on your side with one command and we can
-just compare outputs.
-
-**2. Your library's molecule-size distribution.** A heavy-atom-count histogram is enough.
-We measured per-size-bucket rates (510 molecules/sec/core under 15 heavy atoms, down to 53
-above 60), so your distribution converts directly into expected throughput and cost for
-your actual deck instead of ours.
-
-Worth noting on the port itself: kMoL's frozen Python 3.9 / torch 1.13 / CUDA 11.7 stack
-cannot run on an L4 at all, so we ported the molecule inference path to current PyTorch. It
-reuses kMoL's exact architecture and checkpoint format and matches the original bit-for-bit
-on CPU (max abs difference 0.0) and to 1.1e-05 on GPU. That is code equivalence, not an
-accuracy result.
-
-Separately, if it is useful before your weights are available, we can train the ensemble on
-public tox21 using kMoL's own shipped recipe and dataset so the demo returns plausible
-predictions with a reportable ROC-AUC. That would be a real model on public data, not a
-model of your endpoints — happy to do it or skip it.
-
-Next on our side is the linear-scaling measurement you said would matter most: a per-node
-scaling curve with an external load generator on a realistic request mix, so we can put a
-defensible "N nodes gives N× throughput" number in writing rather than inferring it.
+Happy to get on a call once you've had a look.
 
 Best,
 <you>
 
 ---
 
-## Notes for whoever sends this
+## Before sending
 
-- **Numbers to re-check before sending**, in case later runs change them: 2,809 and 2,892
-  mol/s (`serve_pipeline_results.json`, `serve_pipeline_2gpu.json`), ~24,000 mol/s forward
-  ceiling (`three_gpu_ceiling.json` — 23,738 on the three test molecules; the older 60,101
-  figure was measured on a 10-molecule set and is ~2.5× optimistic), $0.32/M at on-demand
-  list.
-- **Deliberately not claimed:** any multiple of the "~170 mol/s baseline" (undocumented,
-  see `cleanup.md`), near-linear multi-node scaling on the real molecule set (not yet
-  measured), and anything about accuracy.
-- The ~3,700 mol/s projection for their box is the most persuasive line in the email and
-  the least substantiated. It is labelled as a projection here; keep it that way.
-- Their three routine test molecules (minoxidil, sildenafil, atorvastatin) are already
-  measured in the brief, which is a good detail to mention verbally — it shows we listened.
+- Re-verify: ~820 mol/s (`port/three_monolith_bulk.json`, monolith on the three compounds,
+  one L4); ~2,800 mol/s (`port/serve_pipeline_results.json`, 48 CPU featurizer replicas +
+  1 L4 on the 15,751-molecule library); the +3% GPU-doubling result
+  (`port/serve_pipeline_2gpu.json`).
+- The ~2,800 figure needs **8 CPU worker nodes**; `takeda-kmol` is currently capped at 4,
+  so they cannot reproduce that number as the workspace stands. Either raise the cap before
+  they log in, or expect them to reproduce ~820–1,600 instead. The README says so, but it's
+  the most likely thing to make them think something is broken.
+- Confirm invites actually went out and that they can see the workspace.

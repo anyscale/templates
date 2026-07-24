@@ -4,7 +4,46 @@
 path** to Python 3.11 + current PyTorch + PyTorch-Geometric. It exists so the
 5-model ensemble runs as ordinary Ray Serve actors on Anyscale's managed cluster
 with native GPU autoscaling — no frozen py3.9 stack, no isolated Ray, no NFS conda
-staging, no container gymnastics (see `../plan.md` for why the old approach dead-ended).
+staging, no container gymnastics.
+
+## Run it yourself — start here
+
+In the Anyscale workspace **`takeda-kmol`**, open a terminal. There is **nothing to
+install**: each script declares the pinned stack (`torch`, `torch_geometric`, `rdkit`) in
+its Ray `runtime_env`, so the workers install it themselves, and `checkpoints/` already
+holds demo weights.
+
+```bash
+cd ~/default/port
+
+# 1. Correctness check — deploys the app on one L4 and asserts a real prediction comes back
+python scripts/serve_pipeline_bulk.py --smoke
+
+# 2. Per-molecule latency on minoxidil / sildenafil / atorvastatin, both serving designs
+python scripts/bench_three_molecules.py --reps 100    # -> three_molecule_results.json
+
+# 3. Throughput with the CPU featurizer tier at 24 replicas on one L4
+python scripts/serve_pipeline_bulk.py --pool3 --replicas 24
+```
+
+The first run on a fresh GPU node takes ~4–5 minutes (node autoscale plus the
+`runtime_env` install); later runs reuse it. Idle nodes scale back to zero, so the
+workspace costs nothing sitting there.
+
+**Predictions are placeholders right now.** `checkpoints/` holds *synthetic* weights —
+correct architecture and checkpoint format, random values — so throughput and latency are
+real but the numbers coming out carry no information. To get real predictions, drop your
+trained `model_0.pt` … `model_4.pt` into `checkpoints/` and re-run; nothing else changes.
+See "Model weights" in [`TAKEDA_BRIEF.md`](TAKEDA_BRIEF.md).
+
+**Sizing note for this workspace.** Its CPU worker group maxes at 4 nodes (32 vCPU), so
+`--replicas 24` is about the largest that schedules. The 48-replica configuration behind
+the headline number in the brief needs that raised to ≥ 8 nodes — otherwise Serve waits
+forever for replicas it can never place.
+
+Results and interpretation live in [`TAKEDA_BRIEF.md`](TAKEDA_BRIEF.md); deeper
+reproduction notes, every other script, and the workspace gotchas are in
+[`REPRODUCE.md`](REPRODUCE.md).
 
 ## What it is
 
