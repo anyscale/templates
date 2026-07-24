@@ -72,10 +72,27 @@ GPU-bound** — consistent with P0's forward-only 60k/s. Naive one-SMILES-per-re
 load (`serve_run.py`, `serve_singlereq_results.json`) tops out at ~244 mol/s: that's
 the *client/RPC* limit (REC 4 — "you're benchmarking the client"), not the service.
 
-**Next lever (not yet built):** split featurization into a CPU-only Serve deployment
-(scale replicas across many cores) feeding a thin GPU forward deployment. The GPU can
-absorb ~60k mol/s, so throughput should scale with featurizer cores until the GPU
-saturates — well beyond 10×.
+## P1b — two-stage pipeline: how far one L4 actually goes
+
+`port/scripts/scaled_pipeline.py` runs the split as pure Ray actors: **12 CPU
+featurizer actors → 1 GPU forward actor** (no Serve/HTTP overhead, so it isolates the
+pipeline ceiling), processing 60k molecules.
+
+| metric | mol/s | ×baseline |
+|---|---:|---:|
+| pipeline (12 featurizer cores → 1 L4) | **3,904** | **23.0×** |
+| featurize-only aggregate (same 12 cores) | 4,050 | — |
+
+The pipeline rate (3,904) is within ~4% of the featurize-only rate (4,050): **the GPU
+adds almost nothing — it's ~7% utilized** (its forward ceiling is 60k/s). Throughput
+scales linearly with featurizer cores; one L4 stays idle until you reach ~60k mol/s.
+
+**Conclusion — the single-GPU story, proven three ways:** the old "~5 ms/molecule /
+~170 mol/s" was batch-size-1 launch overhead on the *offline* path, not a GPU limit.
+Ported to a supported PyTorch, one L4 does **60k mol/s of forward (353×)**, serves
+**1,697 mol/s end-to-end (10×)** as 6 fractional replicas, and sustains **3,904 mol/s
+(23×)** in a 12-core two-stage pipeline — all featurization-bound, GPU to spare. The 4×
+goal is cleared by a wide margin; scale featurizer cores to go further.
 
 ## How to reproduce
 

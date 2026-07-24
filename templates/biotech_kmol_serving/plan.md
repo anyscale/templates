@@ -181,9 +181,17 @@ long work detached + poll; the GPU playbook is in the `geoff/fm_recs_and_fraud` 
   (`port/serve_bulk_results.json`). CPU-featurization-bound, not GPU-bound. Naive
   1-SMILES-per-request tops out ~244/s = the client/RPC limit, not the service (REC 4).
   Scripts: `port/scripts/serve_bulk.py` (+ `serve_run.py`).
-- [ ] P2 — locust load test (independent multi-process HTTP confirmation of the ~1.7k/s).
-- [ ] **Two-stage split (the real throughput lever):** CPU-only featurizer deployment
-  (scale across cores) → thin GPU forward deployment. GPU ceiling is ~60k/s, so this
-  scales with featurizer cores far beyond 10×.
-- [ ] P3 — containerize → Anyscale Service (modern `anyscale/ray:*-py311-cu12x` + the
-  ported deps; trivial now that the stack is standard).
+- [x] **P1b — two-stage pipeline DONE (the real throughput lever).** 12 CPU featurizer
+  actors → 1 GPU forward actor (pure Ray, no Serve overhead): **3,904 mol/s = 23.0×
+  baseline** (`port/pipeline_results.json`), within 4% of the featurize-only rate
+  (4,050/s) — so the L4 is ~7% utilized; throughput scales linearly with featurizer
+  cores toward the 60k/s GPU ceiling. `port/scripts/scaled_pipeline.py`.
+- [ ] P2 — locust load test (independent multi-process HTTP confirmation). Optional now;
+  three methods already agree the GPU story holds.
+- [ ] P3 — containerize → Anyscale **Service** (modern `anyscale/ray:*-py311-cu12x` +
+  ported deps). **Deploy is gated on Geoff** (persistent GPU spend). Files can be
+  prepared; the actual `anyscale service deploy` waits for approval.
+
+**Bottom line: single-GPU story proven three ways** — 60k mol/s forward (353×), 1,697/s
+served (10×), 3,904/s pipeline (23×). All featurization-bound with GPU headroom; the 4×
+target is cleared by a wide margin.

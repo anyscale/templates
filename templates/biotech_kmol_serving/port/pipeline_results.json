@@ -1,0 +1,10 @@
+{
+  "gpu": "NVIDIA L4",
+  "featurizer_actors": 12,
+  "chunk": 256,
+  "total_mols": 60000,
+  "pipeline_wall_s": 15.36974568399819,
+  "pipeline_mol_s": 3903.7731159382447,
+  "featurize_only_mol_s": 4049.5474311946095,
+  "x_baseline": 22.963371270224968
+}
