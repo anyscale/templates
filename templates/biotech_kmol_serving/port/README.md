@@ -22,8 +22,8 @@ python scripts/serve_pipeline_bulk.py --smoke
 # 2. Per-molecule latency on minoxidil / sildenafil / atorvastatin, both serving designs
 python scripts/bench_three_molecules.py --reps 100    # -> three_molecule_results.json
 
-# 3. Throughput with the CPU featurizer tier at 24 replicas on one L4
-python scripts/serve_pipeline_bulk.py --pool3 --replicas 24
+# 3. Throughput vs CPU tier size on one L4 (scaling curve, real tox21 molecules)
+python scripts/serve_pipeline_bulk.py --replicas 64 32 16 8
 ```
 
 The first run on a fresh GPU node takes ~4–5 minutes (node autoscale plus the
@@ -36,10 +36,23 @@ real but the numbers coming out carry no information. To get real predictions, d
 trained `model_0.pt` … `model_4.pt` into `checkpoints/` and re-run; nothing else changes.
 See "Model weights" in [`TAKEDA_BRIEF.md`](TAKEDA_BRIEF.md).
 
-**Sizing note for this workspace.** Its CPU worker group maxes at 4 nodes (32 vCPU), so
-`--replicas 24` is about the largest that schedules. The 48-replica configuration behind
-the headline number in the brief needs that raised to ≥ 8 nodes — otherwise Serve waits
-forever for replicas it can never place.
+### Sizing, and why the GPU stays mostly idle on purpose
+
+The CPU worker group is capped at **16 `m5.2xlarge`** — 128 vCPU, which is **64 physical
+cores** (each node is 4 cores presented as 8 vCPU). Keep `--replicas` at or under ~96 so
+the featurizer tier plus the ingress and load clients all fit; ask for more than the cap
+and Serve waits indefinitely for replicas it can never place, which looks like a hang.
+
+At 16 nodes this projects to **~7,500 mol/s** (64 cores × the measured 117 mol/s per
+physical core), or ~0.13 ms/molecule and roughly **$0.26 per million molecules**.
+Projection from the per-core rate, not yet measured at this size.
+
+**That is ~44% of the GPU's forward capacity, and that is the intended operating point.**
+Saturating one L4 on realistically-sized molecules (~17,200 mol/s of forward) would take
+about **35 nodes — ~140 physical cores**, i.e. ~$14/hr of CPU to fill ~$1/hr of GPU. The
+finding this demo exists to show is that the GPU has that much headroom, not that you
+should pay to consume it. Size the CPU tier to the throughput you actually need and let
+the GPU idle.
 
 Results and interpretation live in [`TAKEDA_BRIEF.md`](TAKEDA_BRIEF.md); deeper
 reproduction notes, every other script, and the workspace gotchas are in
@@ -71,7 +84,8 @@ number below is tagged with its molecule set:
 
 | tag | set | mean featurize | single-core mol/s |
 |---|---|---:|---:|
-| **real library** | 15,751 unique tox21 + ZINC + ChEMBL-MW800+, shuffled | 7.65 ms | **131** |
+| **real library** | 15,751 unique tox21 + ZINC + ChEMBL-MW800+, shuffled. **Not shipped** — set `KMOL_LIBRARY` | 7.65 ms | **131** |
+| **tox21** | 7,831 molecules, vendored at `data/tox21.csv.gz`. The default | drug-like | ~300 |
 | **10-pool** | the old 10 hardcoded drug-like SMILES | 2.46 ms | **407** |
 
 The 10-pool is **3.1× optimistic** — its molecules average **12.1 heavy atoms**, versus a
