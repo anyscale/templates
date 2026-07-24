@@ -35,10 +35,37 @@ number below is tagged with its molecule set:
 | **real library** | 15,751 unique tox21 + ZINC + ChEMBL-MW800+, shuffled | 7.65 ms | **131** |
 | **10-pool** | the old 10 hardcoded drug-like SMILES | 2.46 ms | **407** |
 
-The 10-pool is **3.1× optimistic** — its molecules average 12.1 heavy atoms. Sections P0,
-P1, P1b and P1c below were measured on the 10-pool and are kept for provenance; **P2 is
-the current number.** Never compare a 10-pool row against a real-library row. Stats:
-[`molecule_library_stats.json`](molecule_library_stats.json).
+The 10-pool is **3.1× optimistic** — its molecules average **12.1 heavy atoms**, versus a
+median of 24 and a mean of 41 in the real library (p95 = 107, max = 343). Sections P0, P1, P1b and P1c below were
+measured on the 10-pool and **have not been re-run**; they are kept for provenance only.
+**P2 is the only section measured on the real library.** Never compare a 10-pool row
+against a real-library row.
+
+### Featurization (preprocessing) cost — the specs behind those rates
+
+Featurization is RDKit work on one CPU core and it is the whole bottleneck; the GPU
+forward is ~20× cheaper. Cost is close to linear in molecule size:
+
+> **featurize_ms ≈ 0.285 × (heavy atoms) − 3.89**  (r² = 0.86, fit over ~10–120 heavy
+> atoms — the negative intercept is a fit artifact, don't extrapolate it to tiny molecules)
+
+Per size bucket, single-core, measured over all 15,751 molecules:
+
+| heavy atoms | n | mean featurize | single-core mol/s |
+|---|---:|---:|---:|
+| < 15 | 3,448 | 1.96 ms | 510 |
+| 15–25 | 4,502 | 3.12 ms | 321 |
+| 25–40 | 2,559 | 4.29 ms | 233 |
+| 40–60 | 925 | 8.39 ms | 119 |
+| 60+ | 4,317 | 18.75 ms | 53 |
+| **full mix** | **15,751** | **7.65 ms** (median 3.71) | **131** (median 270) |
+
+Aggregate throughput is governed by the **mean** (total time is the sum), so 131 mol/s/core
+is the right number for a screen; the median matters for what a single request feels like.
+The 60+ bucket is 27% of the library (ChEMBL MW>800) and dominates the mean — a
+drug-like-only deck would land nearer 300 mol/s/core.
+
+Raw stats and histograms: [`molecule_library_stats.json`](molecule_library_stats.json).
 
 ## Proven results (2026-07-23, one NVIDIA L4)
 

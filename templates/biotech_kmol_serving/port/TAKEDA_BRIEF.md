@@ -94,19 +94,28 @@ perpetually cold" and "hot and fast."
 
 | Setup | topology | molecule set | throughput | **ms/molecule** |
 |---|---|---|---:|---:|
-| **Your 8-CPU baseline** | kMoL `predict`, reload-per-call, batch≈1 | yours | ~83 mol/s | **12 ms** |
-| **Your 1-GPU baseline** | kMoL `predict`, reload-per-call, on GPU | yours | ~200 mol/s | **5 ms** |
+| **Your box, using 8 CPUs** | kMoL `predict`, reload-per-call, batch≈1 | yours | ~83 mol/s | **12 ms** |
+| **Your box, using the 1 GPU** | kMoL `predict`, reload-per-call, on GPU | yours | ~200 mol/s | **5 ms** |
 | _your "worth it" bar (4× faster)_ | _target_ | — | — | _~1.3 ms_ |
 | **Served — two-stage Ray Serve, 1 L4 + 6 CPU nodes** | Ingress → 48 CPU featurizer replicas → 1 L4 forward tier | **real 15,751 library** | **2,809 mol/s** | **0.36 ms** |
 | Served — same, 2 L4 | evidence the GPU isn't the limit | real library | 2,892 mol/s | 0.35 ms |
 | _GPU forward ceiling_ | _pre-featurized batch replayed on the GPU — headroom, not a workload_ | _10-molecule set_ | _60,101 mol/s_ | _0.017 ms_ |
 
-**Like-for-like on one box.** Your 8-vCPU machine did ~200 mol/s (5 ms/molecule) ≈ 50
-mol/s per physical core. We sustain **~117 mol/s per physical core on a harder molecule
-set** — conservatively **~2.3× per core**, and probably better than that like-for-like
-since your baseline molecules are likely smaller than our ChEMBL-heavy mix. The bigger
-change is that it now **scales out**: throughput grew 631 → 2,809 mol/s as we added CPU
-capacity, on an unchanged single L4.
+**The single biggest opportunity is the box you already own.** You described it as ~64
+vCPU with 1 GPU, and the two baselines above used **8 CPUs** or **the 1 GPU**. Either way
+**~56 of those 64 vCPU are sitting idle** — and featurization, the actual bottleneck, is
+embarrassingly parallel across exactly those cores.
+
+64 vCPU is ~32 physical cores. At the **117 mol/s per physical core** we measured, that
+box projects to **≈3,700 mol/s (~0.27 ms/molecule)** without buying anything — against
+the ~200 mol/s you see today. Two honest flags on that figure: it is a **projection** from
+our measured per-core rate, not a run on your hardware, and it assumes featurization can
+keep all 32 cores busy (which is what the two-stage split exists to do). It is the first
+thing worth verifying with your real checkpoints.
+
+That also reframes the "is the GPU worth it?" question. The GPU was never the problem —
+one L4 has roughly 20× more forward capacity than a 64-vCPU box can feed it. You weren't
+choosing between 8 CPUs and 1 GPU; you were using ~12% of the machine either way.
 
 **Cost.** 6 × `m5.2xlarge` + 1 × `g6.2xlarge` at us-west-2 on-demand list is ≈ $3.28/hr
 for 2,809 mol/s ≈ 10.1 M molecules/hr → **≈ $0.32 per million molecules** on this library.
