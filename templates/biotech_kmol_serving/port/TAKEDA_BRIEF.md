@@ -1,126 +1,139 @@
-# Serving the kMoL GNN ensemble at scale — throughput brief
+# Serving the kMoL GNN ensemble on Anyscale — early results
 
 **Prepared by Anyscale · for the Takeda / kMoL team · 2026-07-24**
 
-## Summary
+> **How to read the numbers below:** these come from a proof-of-concept on an Anyscale
+> workspace using a **small test set (10 drug-like molecules) and synthetic (random)
+> weights**. Treat them as **trends and ratios, not absolute throughput you should expect
+> in production** — a real, size-diverse library will be slower per molecule (featurization
+> cost grows with molecule size), and real trained weights are a drop-in swap. The point of
+> this brief is the *shape* of the result: **near-linear horizontal scaling and warm,
+> load-once replicas** — the two things you told us weren't working.
 
-We looked at the throughput of serving your kMoL 5-model molecule GNN ensemble and
-found that the previously observed **~170 molecules/sec** was not a GPU limit — it was
-per-call overhead on the offline `predict` path at batch size 1. After porting the
-molecule inference path to a current PyTorch and running it with batching on Anyscale,
-a **single NVIDIA L4 GPU** processes the ensemble far faster, and throughput scales
-almost perfectly as GPUs are added:
+---
 
-| What we measured (one L4 unless noted) | Throughput | vs ~170/s |
-|---|---:|---:|
-| GPU forward pass, batched (batch 1024) | 60,101 mol/s | **353×** |
-| End-to-end served (Ray Serve, 6 replicas) | 1,697 mol/s | **10×** |
-| End-to-end pipeline (12 CPU featurizers → 1 GPU) | 3,904 mol/s | **23×** |
-| **4× L4, near-linear scaling** | **8,792 mol/s** | **52×** |
+## The problem you described
 
-The ported model produces **numerically identical** outputs to the original kMoL
-(bit-for-bit on CPU; 1.1e-05 max difference on GPU), so this is the same model — just
-running on a modern, supported stack.
+- **Horizontal scaling isn't linear.** "I can do 150–200 molecules/sec on one machine. If I
+  had a 2nd, this should be 400 — and it's like 120, or sometimes it slows down."
+- **Replicas won't stay warm.** "It always keeps saying cold start, cold start… why are you
+  reloading all this stuff?"
+- **The GPU wasn't clearly worth it.** 8 CPUs ≈ **12 ms/molecule**, 1 GPU ≈ **5 ms/molecule**
+  — only ~2.4×, and "we needed 4× faster to be worth having it."
 
-## Background — the throughput question
+We reproduced the kMoL 5-model molecule ensemble on Anyscale and went after exactly those.
 
-kMoL's offline `predict` rebuilds a `Predictor` (reloading all 5 checkpoints) and a
-`GeneralStreamer` (reloading/splitting the dataset) **on every call**. At batch size ~1
-that overhead dwarfs the actual GNN forward of a small model (~264K parameters per
-sub-model). The hypothesis was that loading the ensemble once and batching the forward
-passes would blow past the ~170/s figure. It does — by a wide margin.
+---
 
-## What we changed
+## Result 1 — near-linear horizontal scaling (your #1 ask)
 
-The blocker was environment, not the model. kMoL pins **Python 3.9 / PyTorch 1.13 /
-CUDA 11.7**, which cannot share a cluster with Anyscale's modern Ray, and (as we
-confirmed) does not run on current L4 GPUs at all. So we **ported the molecule inference
-path to Python 3.11 + current PyTorch + PyTorch-Geometric**.
+Adding GPU nodes multiplies throughput almost perfectly — the "literally NX" scaling you were
+missing:
 
-Key points about the port:
-
-- It is a **faithful, minimal extraction** of only the molecule path — the graph
-  featurizer (RDKit atom/bond features + the 17 RDKit descriptors), the
-  `GraphConvolutionalNetwork` (LEConv ×7), and the `EnsembleNetwork` (mean + variance).
-  It reuses kMoL's **exact class structure**, so your trained `state_dict` checkpoints
-  load unchanged.
-- It depends only on `torch`, `torch_geometric`, and `rdkit` — **no openbabel, prody,
-  openfold, or torch_scatter**, and no CUDA-kernel compilation. (The only custom CUDA
-  kernel in kMoL is OpenFold's, on the protein/MSA path, which molecule serving never
-  touches.)
-- It runs as **ordinary Ray Serve actors** on Anyscale with native GPU autoscaling — no
-  separate Ray cluster, no NFS staging, no container gymnastics.
-
-## Correctness — it is the same model
-
-We ran the same molecules through the original py3.9 kMoL and the port and compared the
-raw logits:
-
-| Comparison | Max abs. difference |
-|---|---:|
-| Port on CPU vs original kMoL (CPU) | **0.000e+00** (bit-for-bit) |
-| Port on L4 GPU vs original kMoL | **1.14e-05** (normal float precision) |
-
-The featurization, the architecture, and the checkpoint loading are all identical; the
-tiny GPU difference is ordinary floating-point non-determinism.
-
-## Throughput results in detail
-
-**The GPU forward is nearly free.** Timing the batched forward on one L4, the time per
-batch stays essentially flat (~15 ms) from batch 1 to batch 512, while throughput climbs
-from 69 to 33,950 mol/s — and reaches 60,101 mol/s at batch 1024. In other words, the
-per-call cost is fixed launch overhead; the actual GNN compute is negligible. This
-confirms the "~5 ms/molecule" figure was a batch-size-1 artifact.
-
-**End-to-end is bounded by featurization, not the GPU.** RDKit featurization (SMILES →
-molecular graph) costs ~1.75 ms per molecule per CPU core. In a two-stage pipeline of 12
-CPU featurizer workers feeding one GPU, throughput was 3,904 mol/s — within 4% of the
-featurization-only rate — meaning **the L4 was only ~7% utilized**. The lever for more
-throughput is CPU featurization capacity, not more GPU.
-
-**Scaling is near-linear.** Because each GPU node also brings CPU cores, adding nodes
-adds both featurization and GPU capacity together:
-
-| GPUs (L4) | mol/s | speedup vs 1 GPU | efficiency |
+| GPU nodes (L4) | throughput | speedup vs 1 | efficiency |
 |---:|---:|---:|---:|
-| 1 | 2,235 | 1.00× | 100% |
-| 2 | 4,209 | 1.88× | 94% |
-| 3 | 6,500 | 2.91× | 97% |
-| 4 | 8,792 | 3.93× | **98%** |
+| 1 | 2,235 mol/s | 1.00× | 100% |
+| 2 | 4,209 mol/s | 1.88× | 94% |
+| 3 | 6,500 mol/s | 2.91× | 97% |
+| 4 | 8,792 mol/s | **3.93×** | **98%** |
 
-## Important caveat — checkpoints used
+*Source: [`scripts/scale_gpus.py`](scripts/scale_gpus.py) → [`scale_results.json`](scale_results.json).*
+The reason it's linear where yours was asymptotic: each node is a **self-contained, balanced
+unit** (its own GPU *and* its own CPU featurizers), so nodes don't contend — see "Why yours
+was sublinear" below.
 
-These measurements used **synthetically-initialized checkpoints** (the same architecture
-and file format as your real ones; random weights). This does **not** affect the
-throughput conclusions — throughput is determined by the architecture (layer count,
-sizes, parameter count), which is identical, so the numbers hold for your trained models.
-It does mean the **prediction values in these runs are not meaningful**. The natural
-confirmation step is to drop in your real trained checkpoints (a direct file swap) and
-re-run the parity check and a short throughput sample; we expect both to match what is
-shown here.
+## Result 2 — warm replicas, loaded once (your #2 ask)
 
-## Recommendations / next steps
+Your "cold start, cold start" is the offline kMoL `predict` path **reloading all 5 checkpoints
+on every request**. We load the ensemble **once** in a long-lived actor, run a warm-up forward
+before the replica is marked healthy, and keep `min_replicas ≥ 1` — so a request never pays
+the reload cost. That single change is most of the gap between "looks perpetually cold" and
+"hot and fast."
 
-1. **Swap in the real trained checkpoints** and re-run the included parity + throughput
-   checks — a one-command confirmation that the port reproduces your production outputs.
-2. **Serve it as-is on Anyscale.** Batching + load-once already clears the target by 10×
-   on one GPU; multi-GPU scales linearly.
-3. **If you need more than one GPU's worth**, scale featurization first — add a CPU-only
-   featurizer tier feeding a thin GPU forward stage. One L4 can absorb ~60k mol/s of
-   forward, so throughput will keep climbing with featurizer cores.
-4. **Deployment** is a standard container on a stock modern Ray image (a Dockerfile and
-   Anyscale Service config are prepared) — no more conda/CUDA-11.7 build fragility.
+---
 
-## Reproducing / artifacts
+## In your units: ms / molecule, and the 4× bar
 
-All code and raw results are in the `port/` directory:
+| Setup | topology / what it measures | throughput | **ms/molecule** |
+|---|---|---:|---:|
+| **Your 8-CPU baseline** | kMoL `predict`, reload-per-call, batch≈1 | ~83 mol/s | **12 ms** |
+| **Your 1-GPU baseline** | kMoL `predict`, reload-per-call, on GPU | ~200 mol/s | **5 ms** |
+| _your "worth it" bar (4× faster)_ | _target_ | _~700–800 mol/s_ | _~1.3–3 ms_ |
+| **Served, batched — 1 L4** | Ray Serve HTTP endpoint; 6 replicas share one L4; load-once + dynamic batching; featurize inline | 1,697 mol/s | **0.59 ms** |
+| **2-stage pipeline — 1 L4** | decoupled: 12 CPU featurizer actors → 1 GPU forward actor (no HTTP overhead) | 3,904 mol/s | **0.26 ms** |
+| **4 L4, near-linear** | the 2-stage unit replicated per node (1 GPU + 6 featurizers each) | 8,792 mol/s | **0.11 ms** |
+| _GPU forward ceiling_ | _pure GPU forward on a pre-featurized batch — raw headroom, not a real workload_ | _60,101 mol/s_ | _0.017 ms_ |
 
-- `port/kmolport/` — the ported package (torch/PyG/rdkit only).
-- `port/scripts/` — reference-logits, parity, forward microbench, Ray Serve, two-stage
-  pipeline, and multi-GPU scaling drivers.
-- `port/gpu_results.json`, `serve_bulk_results.json`, `pipeline_results.json`,
-  `scale_results.json` — the raw measurements behind every number above.
-- `port/Dockerfile`, `port/service.image.yaml`, `port/service.yaml` — deployment.
+Even discounted for the small-molecule caveat, this clears your 4× bar with room to spare — and
+on **the box you already run** (64 CPU + 1 GPU), the math is favorable: featurization is
+embarrassingly parallel, so 64 cores amortize to well under a millisecond per molecule while
+the single GPU sits mostly idle. Your 12→5 ms was only 2.4× because you were comparing 8 CPUs
+to 1 GPU on a *reload-per-request* path; the real lever is **load-once + batch + parallel
+featurization**, which finally puts that 64-CPU box to work.
 
-*Baseline reference: the previously reported ~170 mol/s. Hardware: NVIDIA L4
-(g6.2xlarge). Model: kMoL ensemble, 5 × GraphConvolutionalNetwork, 264,300 params each.*
+### What the topology rows mean
+
+- **Served, batched** — the realistic "deploy it and POST to it over HTTP" path. Ray Serve packs
+  several replicas onto one L4 (fractional GPU) and coalesces concurrent requests into one batch.
+  ([`serve_app.py`](serve_app.py), [`service.yaml`](service.yaml), [`scripts/serve_bulk.py`](scripts/serve_bulk.py))
+- **2-stage pipeline** — the same work with **featurization split off the GPU**: a pool of CPU
+  featurizer actors turns SMILES into graphs and feeds one GPU forward stage over a queue. This
+  isolates the real bottleneck (the L4 ran only ~7% utilized here) and is the design that scales.
+  ([`scripts/scaled_pipeline.py`](scripts/scaled_pipeline.py) → [`pipeline_results.json`](pipeline_results.json))
+- **GPU forward ceiling** — featurization removed entirely, replaying one pre-built batch. It's a
+  *headroom* number (how fast the GNN itself is), not a throughput you'd serve. ([`scripts/bench.py`](scripts/bench.py) → [`gpu_results.json`](gpu_results.json))
+
+---
+
+## Correctness — port fidelity (not an accuracy claim yet)
+
+To run on modern GPUs we ported the molecule path from kMoL's frozen `Python 3.9 / torch 1.13 /
+CUDA 11.7` stack to current PyTorch — the legacy stack **cannot run on an L4 at all**. The port
+reuses kMoL's exact architecture and checkpoint format, and produces **numerically identical
+outputs** for the same weights:
+
+| Comparison | max abs difference |
+|---|---:|
+| Port vs original kMoL (CPU) | **0.000e+00** (bit-for-bit) |
+| Port vs original kMoL (L4 GPU) | **1.14e-05** (ordinary float precision) |
+
+This proves the reimplementation is faithful — it is **not** an accuracy result, because these
+runs use synthetic weights. Confirming accuracy on your real trained checkpoints is step 1 below.
+
+---
+
+## Why your scaling was sublinear, and the fix
+
+The workload is **CPU-featurization-bound, not GPU-bound**. Scaling *GPU* replicas of a path that
+reloads weights and featurizes inline just multiplied the overhead, not the useful throughput —
+which is the asymptotic curve you saw. The production topology is **disaggregated**: a fleet of
+cheap CPU featurizer nodes feeding a small pool of fractional GPUs. You size the CPU tier to your
+target throughput; the GPU is shared and mostly idle. "Featurization-bound" becomes the selling
+point — **you scale on inexpensive CPU, not on GPUs.** (Full design in the internal plan.)
+
+---
+
+## Honest caveats & next steps (the 3-week prototype)
+
+**Caveats:** small (10-molecule) test set, synthetic weights, and the served numbers are
+closed-loop (a driver script, not an independent open-loop load generator). So read trends, not
+absolutes.
+
+**To turn this into the validated prototype you described:**
+1. **Drop in your real trained checkpoints** → re-run the one-command parity check + a throughput sample.
+2. **Open-loop load test** on a **real, size-diverse library** with your actual request pattern
+   (single-molecule interactive vs bulk screening) → the defensible end-to-end numbers + p50/p99.
+3. **Cost model** — $ per million molecules given the CPU:GPU ratio your target implies.
+
+---
+
+## Reproduce / artifacts
+
+Everything is in the self-contained [`port/`](.) bundle; step-by-step commands are in
+[`REPRODUCE.md`](REPRODUCE.md). Each number above links to the script and the raw
+`*_results.json` that produced it. Deploy configs: [`service.yaml`](service.yaml) (pip
+`runtime_env`, no image build) and [`service.image.yaml`](service.image.yaml) (baked image) —
+both require the bearer token (`query_auth_token_enabled`).
+
+*Hardware: NVIDIA L4 (g6.2xlarge). Model: kMoL ensemble, 5 × GraphConvolutionalNetwork,
+264,300 params each. Baseline reference: your reported ~150–200 mol/s single-machine.*
