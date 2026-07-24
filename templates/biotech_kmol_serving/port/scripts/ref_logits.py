@@ -4,7 +4,7 @@ Runs kMoL's own Config + preprocessor + collater + Predictor on a fixed SMILES s
 and dumps logits + variance to JSON. The py3.11 port is validated against this.
 
 Usage (in the `kmol` conda env, cwd = kmol_serving):
-    python ref_logits.py configs/<ensemble>.json /home/ray/default/kmol_port/ref_logits.json
+    python ref_logits.py <your-config>.json ref_logits.json
 """
 import json
 import sys

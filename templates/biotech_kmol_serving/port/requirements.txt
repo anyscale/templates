@@ -1,0 +1,13 @@
+# Ported kMoL molecule ensemble — serving stack (Python 3.11).
+#
+# The default PyPI linux torch wheel is a CUDA 12.x build and runs on L4 (sm_89).
+# For a CPU-only box, install torch from the CPU index instead:
+#     pip install torch==2.5.1 --index-url https://download.pytorch.org/whl/cpu
+torch==2.5.1
+torch_geometric==2.6.1
+rdkit==2024.3.5
+numpy<2
+
+# Serving + benchmark drivers run on Ray. On an Anyscale workspace Ray is already
+# present; install this only for a standalone box.
+ray[serve]>=2.56

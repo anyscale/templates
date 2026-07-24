@@ -96,6 +96,48 @@ Now trivial: modern base image (`anyscale/ray:<ver>-py311-cu12x`) + `pip install
 deps. Deploy `service.yaml` as an Anyscale Service on GPU workers. **Do this LAST**, only
 after P1/P2 prove out. (Geoff's ordering; he approves GPU spend / compute changes.)
 
+### P4 — Disaggregated scaling: CPU featurizer fleet → fractional GPU pool (production topology)
+
+The workload is **CPU-featurization-bound, not GPU-bound** (P1b: the L4 sat ~7% utilized at
+3,904 mol/s; a single L4's forward ceiling is ~60k/s). So endpoint throughput is set by how
+much CPU featurization we provision — the GPU is nearly free. P1c's co-located design (1 GPU
++ 6 featurizers per `g6.2xlarge`) scaled near-linearly but is **CPU-starved per box** — 8 vCPU
+feed only ~1k mol/s on a realistic molecule mix while the L4 could absorb ~60×that.
+
+The efficient design **decouples the two tiers so each scales independently**:
+
+```
+SMILES → [ingress] → [CPU Featurizer pool: autoscaling, cheap CPU nodes, num_cpus=1 each]
+                        → shared queue → [GPU Forward pool: @serve.batch, fractional GPU]
+                        → logits
+```
+
+- **CPU Featurizer deployment** — RDKit → PyG `Data`; embarrassingly parallel (molecules are
+  independent), autoscales min→max on queue depth. Throughput scales ~linearly with replicas.
+- **GPU Forward deployment** — fractional `num_gpus` (0.16–0.25), `@serve.batch` dynamic
+  batching collects featurized graphs into one PyG `Batch` and runs the 5-model ensemble
+  forward. A small (even single, fractional) GPU pool absorbs a large featurizer fleet.
+
+**Why it wins:**
+1. **No head-of-line blocking** — featurization happens *before* batching, so a slow large
+   molecule joins a later batch when ready while fast molecules keep the GPU fed; the GPU
+   never stalls waiting on one slow featurization. (Contrast inline-on-GPU-replica, where a
+   slow molecule *does* stall the GPU.)
+2. **Independent scaling** — size the CPU tier to the target throughput; keep the GPU tier
+   tiny/fractional. Throughput is bounded by total featurizer cores, raised by adding **cheap
+   CPU**, until it meets the (distant) GPU ceiling.
+3. **Cost story flips** — you don't scale by buying GPUs; you scale cheap CPU featurization
+   and share a fraction of a GPU. "Featurization-bound" becomes the *selling point*.
+
+**Node-shape decision:** co-located (simple, CPU-starved) vs disaggregated (CPU-heavy
+featurizer nodes + a small GPU pool, efficient). **Disaggregated is the recommended production
+topology.**
+
+**Measure (Phase 2, on the diverse ~10k library):** scale the featurizer fleet until the GPU
+saturates; report the **CPU:GPU ratio per throughput target**, plus served open-loop mol/s +
+p50/p99 + *measured* GPU util. This turns "featurization-bound" from a caveat into "here's the
+CPU:GPU ratio to hit any throughput you need."
+
 ---
 
 ## What's genuinely reusable (don't rebuild these)
@@ -197,6 +239,9 @@ long work detached + poll; the GPU playbook is in the `geoff/fm_recs_and_fraud` 
 - [x] **Takeda brief** written: `port/TAKEDA_BRIEF.md`.
 - [ ] P2 — locust load test (independent multi-process HTTP confirmation). Optional; four
   methods already agree the GPU story holds.
+- [ ] **P4 — disaggregated featurizer fleet → fractional GPU pool** (see "The plan → P4").
+  The production scaling topology; scale CPU featurization to saturate a shared fractional
+  GPU. Measure on the diverse ~10k library; report CPU:GPU ratio per throughput target.
 
 **Bottom line: single-GPU story proven every way** — 60k mol/s forward (353×), 1,697/s
 served (10×), 3,904/s pipeline (23×), and **near-linear multi-GPU to 8,792/s on 4 L4

@@ -14,16 +14,21 @@ def load_config(config_path: str) -> dict:
 
 
 def build_ensemble(
-    config: dict, checkpoint_dir: Optional[str] = None, device: str = "cpu"
+    config: dict, checkpoint_dir: Optional[str] = None, device: str = "cpu",
+    strict: bool = False,
 ) -> EnsembleNetwork:
-    """Build the 5-model ensemble and load the checkpoints. Returns eval() model."""
+    """Build the 5-model ensemble and load the checkpoints. Returns eval() model.
+
+    strict=True raises on any checkpoint/architecture key mismatch (use in
+    production so a wrong checkpoint can't silently load a half-random model).
+    """
     model_configs = config["model"]["model_configs"]
     model = EnsembleNetwork(model_configs)
 
     ckpt_paths = config["checkpoint_path"]
     if checkpoint_dir is not None:
         ckpt_paths = [str(Path(checkpoint_dir) / Path(p).name) for p in ckpt_paths]
-    model.load_checkpoint(ckpt_paths, device=torch.device(device))
+    model.load_checkpoint(ckpt_paths, device=torch.device(device), strict=strict)
 
     model = model.to(device).eval()
     return model

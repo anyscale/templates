@@ -13,10 +13,11 @@ import time
 import ray
 from ray import serve
 
-SHIP_DIR = "/home/ray/default/kmol_ship"
-CONFIG = "config.json"        # relative to working_dir on the replica
-CKPT_DIR = "checkpoints"
-OUT = "/home/ray/default/kmol_port/serve_results.json"
+_BUNDLE = os.environ.get("KMOL_BUNDLE", os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+SHIP_DIR = os.environ.get("KMOL_SHIP_DIR", _BUNDLE)
+CONFIG = os.environ.get("KMOL_CONFIG", "configs/ensemble_serve.example.json")
+CKPT_DIR = os.environ.get("KMOL_CKPT_DIR", "checkpoints")
+OUT = os.environ.get("KMOL_OUT", "serve_results.json")
 
 # 6 replicas on ONE L4: 6*0.16=0.96 GPU, 6 CPUs (g6.2xlarge has 8 vCPU) leaves
 # headroom for the Serve proxy/raylet so a 2nd node isn't triggered — keeps this a

@@ -22,16 +22,20 @@ RUN pip install --no-cache-dir \
       rdkit==2024.3.5 \
       "numpy<2"
 
-# App: the minimal ported package + the Serve deployment + a config.
-# NOTE: checkpoints are copied here for a self-contained demo image. In production
-# prefer mounting them or pulling from cloud storage (S3/GCS) at startup, and keep
-# real trained weights out of the image.
+# App: the minimal ported package + the Serve deployment + configs + scripts.
 WORKDIR /home/ray/app
 COPY kmolport /home/ray/app/kmolport
-COPY serve_app.py config.json /home/ray/app/
-COPY checkpoints /home/ray/app/checkpoints
+COPY configs /home/ray/app/configs
+COPY scripts /home/ray/app/scripts
+COPY serve_app.py /home/ray/app/
 
 ENV PYTHONPATH=/home/ray/app
+
+# Self-contained demo weights (SYNTHETIC — correct architecture/format, random values).
+# For production, replace with real trained checkpoints: mount them at
+# /home/ray/app/checkpoints, or COPY them in and rebuild. Prediction values are only
+# meaningful with real weights; throughput is identical either way.
+RUN python scripts/make_synthetic_checkpoints.py configs/ensemble_serve.example.json checkpoints
 # Each Serve replica featurizes on its own core; keep torch intra-op threads at 1.
 ENV OMP_NUM_THREADS=1
 

@@ -13,10 +13,14 @@ import time
 import ray
 from ray import serve
 
-SHIP_DIR = "/home/ray/default/kmol_ship"
-CONFIG = "config.json"
-CKPT_DIR = "checkpoints"
-OUT = "/home/ray/default/kmol_port/serve_bulk_results.json"
+# Paths default to the port/ bundle (this file's grandparent dir) and are overridable
+# by env. SHIP_DIR is uploaded to replicas as the Ray working_dir; CONFIG/CKPT_DIR are
+# resolved relative to it on the replica.
+_BUNDLE = os.environ.get("KMOL_BUNDLE", os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+SHIP_DIR = os.environ.get("KMOL_SHIP_DIR", _BUNDLE)
+CONFIG = os.environ.get("KMOL_CONFIG", "configs/ensemble_serve.example.json")
+CKPT_DIR = os.environ.get("KMOL_CKPT_DIR", "checkpoints")
+OUT = os.environ.get("KMOL_OUT", "serve_bulk_results.json")
 
 NUM_GPUS = float(os.environ.get("KMOL_NUM_GPUS", "0.16"))
 NUM_REPLICAS = int(os.environ.get("KMOL_REPLICAS", "6"))

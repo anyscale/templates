@@ -10,14 +10,17 @@
 
 name: biotech-kmol-ensemble-serving
 
+# Require a bearer token for every request — no unauthenticated GPU endpoint.
+query_auth_token_enabled: true
+
 # Replace with your pushed image (built from port/Dockerfile). Everything the app
-# needs (kmolport, serve_app, config, checkpoints, deps) is baked in.
+# needs (kmolport, serve_app, configs, checkpoints, deps) is baked in.
 image_uri: <registry>/kmol-serve:latest
 
 applications:
   - name: kmol
     import_path: serve_app:app
-    # config_path/ckpt_dir default to the baked-in config.json / checkpoints.
+    # config_path/ckpt_dir default to the baked-in configs/ + checkpoints/.
 
 compute_config:
   head_node:

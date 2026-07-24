@@ -40,8 +40,10 @@ class KmolEnsemble:
         self._torch = torch
         self._collate = collate
         cfg = kmolport.load_config(config_path)
-        # [REC 1] load all 5 checkpoints once, here — not per request
-        self.model = kmolport.build_ensemble(cfg, checkpoint_dir=ckpt_dir, device="cuda")
+        # [REC 1] load all 5 checkpoints once, here — not per request. strict=True so a
+        # checkpoint that doesn't match the architecture fails startup (never serve a
+        # half-random model).
+        self.model = kmolport.build_ensemble(cfg, checkpoint_dir=ckpt_dir, device="cuda", strict=True)
         self.feat = kmolport.GraphFeaturizer()
         self.labels = list(cfg.get("loader", {}).get("target_column_names", []))
         self._infer.set_max_batch_size(int(os.environ.get("KMOL_MAX_BATCH", "128")))
@@ -86,7 +88,7 @@ class KmolEnsemble:
 
 
 def build_app(config_path: str = None, ckpt_dir: str = None) -> serve.Application:
-    config_path = config_path or os.environ.get("KMOL_CONFIG", "config.json")
+    config_path = config_path or os.environ.get("KMOL_CONFIG", "configs/ensemble_serve.example.json")
     ckpt_dir = ckpt_dir or os.environ.get("KMOL_CKPT_DIR", "checkpoints")
     return KmolEnsemble.bind(config_path, ckpt_dir)
 

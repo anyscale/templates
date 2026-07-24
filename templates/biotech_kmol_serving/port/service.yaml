@@ -10,11 +10,17 @@
 
 name: biotech-kmol-ensemble-serving
 
+# Require a bearer token for every request — do NOT expose an unauthenticated GPU
+# endpoint. Anyscale issues the token on deploy.
+query_auth_token_enabled: true
+
 # Stock modern image — py3.11 + CUDA 12; the ported deps come from runtime_env below.
 image_uri: anyscale/ray:2.56.0-py311-cu121
 
-# Ship the ported package + config + checkpoints, and install the standard deps.
-# (For production, replace working_dir with a git/remote URI and bake deps into an image.)
+# Ship the ported bundle (kmolport + configs + checkpoints + serve_app) and install
+# the standard deps. Stage real checkpoints into ./checkpoints before deploying
+# (they are gitignored). For production, point working_dir at a git/remote URI and
+# bake deps into an image (see Dockerfile / service.image.yaml).
 working_dir: .
 runtime_env:
   pip:
@@ -27,7 +33,7 @@ applications:
   - name: kmol
     import_path: serve_app:app
     args:
-      config_path: config.json
+      config_path: configs/ensemble_serve.example.json
       ckpt_dir: checkpoints
 
 # GPU workers autoscale natively. num_gpus per replica (0.16 => ~6 replicas/L4) and

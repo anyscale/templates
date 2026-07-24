@@ -7,16 +7,18 @@ GPU with no cross-node transfer. We then measure aggregate throughput using G=1.
 bundles and report speedup vs 1 GPU (ideal = G).
 """
 import json
+import os
 import time
 
 import ray
 from ray.util.placement_group import placement_group, remove_placement_group
 from ray.util.scheduling_strategies import PlacementGroupSchedulingStrategy
 
-SHIP_DIR = "/home/ray/default/kmol_ship"
-CONFIG = "config.json"
-CKPT_DIR = "checkpoints"
-OUT = "/home/ray/default/kmol_port/scale_results.json"
+_BUNDLE = os.environ.get("KMOL_BUNDLE", os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+SHIP_DIR = os.environ.get("KMOL_SHIP_DIR", _BUNDLE)
+CONFIG = os.environ.get("KMOL_CONFIG", "configs/ensemble_serve.example.json")
+CKPT_DIR = os.environ.get("KMOL_CKPT_DIR", "checkpoints")
+OUT = os.environ.get("KMOL_OUT", "scale_results.json")
 TASK_PIP = {"pip": ["torch==2.5.1", "torch_geometric==2.6.1", "rdkit==2024.3.5", "numpy<2"]}
 
 MAX_G = 4

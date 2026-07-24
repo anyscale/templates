@@ -7,14 +7,16 @@ Batch by object reference straight to the GPU actor. Pure Ray actors — no Serv
 overhead — so this isolates the pipeline ceiling for a single GPU.
 """
 import json
+import os
 import time
 
 import ray
 
-SHIP_DIR = "/home/ray/default/kmol_ship"
-CONFIG = "config.json"
-CKPT_DIR = "checkpoints"
-OUT = "/home/ray/default/kmol_port/pipeline_results.json"
+_BUNDLE = os.environ.get("KMOL_BUNDLE", os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+SHIP_DIR = os.environ.get("KMOL_SHIP_DIR", _BUNDLE)
+CONFIG = os.environ.get("KMOL_CONFIG", "configs/ensemble_serve.example.json")
+CKPT_DIR = os.environ.get("KMOL_CKPT_DIR", "checkpoints")
+OUT = os.environ.get("KMOL_OUT", "pipeline_results.json")
 TASK_PIP = {"pip": ["torch==2.5.1", "torch_geometric==2.6.1", "rdkit==2024.3.5", "numpy<2"]}
 
 K = 12          # CPU featurizer actors

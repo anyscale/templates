@@ -25,7 +25,7 @@ torch_scatter. Deps: `torch`, `torch_geometric`, `rdkit`.
 Reusing kMoL's exact class/attribute structure is deliberate: it makes the checkpoint
 keys line up so kMoL `state_dict`s load unchanged.
 
-## Proven results (2026-07-23, workspace `expwrk_9e9qajmqr7w6astmetm8v9tv9s`)
+## Proven results (2026-07-23, one NVIDIA L4)
 
 **Parity — the port is numerically identical to real kMoL.**
 - CPU (head, py3.11 / torch 2.5.1): max abs diff vs py3.9 kMoL (torch 1.13 / PyG 2.3)
@@ -122,18 +122,23 @@ on approval.**
 
 ## How to reproduce
 
-## How to reproduce
+`port/` is self-contained. From the bundle root (`cd port`):
 
 ```bash
-# 1) reference logits from real kMoL (py3.9 conda env, cwd = kmol_serving)
-PYTHONPATH=kmol/src:stubs python port/scripts/ref_logits.py \
-    configs/ensemble_serve.cpu.json ref_logits.json
+pip install -r requirements.txt      # torch / PyG / rdkit (CPU box: see file header)
 
-# 2) parity on py3.11 (torch + torch_geometric + rdkit installed)
-PYTHONPATH=port python port/scripts/port_check.py \
-    --config configs/ensemble_serve.example.json \
-    --ckpt-dir checkpoints --ref ref_logits.json --device cpu
+# demo weights (SYNTHETIC). For real predictions, drop your model_*.pt into checkpoints/.
+PYTHONPATH=. python scripts/make_synthetic_checkpoints.py configs/ensemble_serve.example.json checkpoints
 
-# 3) GPU parity + throughput on an autoscaled L4 (driver on the workspace head)
-python port/scripts/gpu_run.py    # submits a num_gpus=1 Ray task; writes gpu_results.json
+# local forward + end-to-end microbench
+PYTHONPATH=. python scripts/bench.py --config configs/ensemble_serve.example.json --ckpt-dir checkpoints --device cuda
+
+# on Ray / Anyscale (each writes a *_results.json):
+python scripts/gpu_run.py       # GPU parity + forward throughput curve
+python scripts/serve_bulk.py    # served throughput (Ray Serve)
+python scripts/scale_gpus.py    # multi-GPU scaling
 ```
+
+Full step-by-step — including the py3.9 parity ground truth (run against **your own**
+kMoL install) and the detached-launch/poll pattern for Anyscale workspaces — is in
+[`REPRODUCE.md`](REPRODUCE.md).

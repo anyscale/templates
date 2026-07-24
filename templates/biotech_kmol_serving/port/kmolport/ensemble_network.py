@@ -21,7 +21,8 @@ class EnsembleNetwork(AbstractNetwork):
     def out_features(self):
         return self.models[0].out_features
 
-    def load_checkpoint(self, checkpoint_paths: List[str], device: Optional[torch.device] = None):
+    def load_checkpoint(self, checkpoint_paths: List[str], device: Optional[torch.device] = None,
+                        strict: bool = False):
         n_models = len(self.models)
         n_checkpoints = len(checkpoint_paths)
         if n_models != n_checkpoints:
@@ -29,7 +30,7 @@ class EnsembleNetwork(AbstractNetwork):
                 f"Number of checkpoint_path should equal number of models. Got {n_models}, {n_checkpoints}."
             )
         for model, checkpoint_path in zip(self.models, checkpoint_paths):
-            model.load_checkpoint(checkpoint_path, device)
+            model.load_checkpoint(checkpoint_path, device, strict=strict)
 
     def get_requirements(self):
         return list(set(sum([model.get_requirements() for model in self.models], [])))
