@@ -23,8 +23,15 @@ python scripts/serve_pipeline_bulk.py --smoke
 python scripts/bench_three_molecules.py --reps 100    # -> three_molecule_results.json
 
 # 3. Throughput vs CPU tier size on one L4 (scaling curve, real tox21 molecules)
-python scripts/serve_pipeline_bulk.py --replicas 64 32 16 8
+python scripts/serve_pipeline_bulk.py --replicas 32 16 8
 ```
+
+Measured on this workspace with that exact command: **1,451 / 2,703 / 4,502 mol/s** at
+8 / 16 / 32 replicas — near-linear (1.86× then 1.67× per doubling, efficiency dropping as
+nodes pack). We deliberately stop at 32: a 64-replica point measured 3,428, *lower* than
+32, because the largest point in a sweep absorbs the cold-start cost of the nodes it just
+brought up. Re-run 64 on a warm cluster if you want it, but don't read the first number
+off a cold sweep.
 
 The first run on a fresh GPU node takes ~4–5 minutes (node autoscale plus the
 `runtime_env` install); later runs reuse it. Idle nodes scale back to zero, so the
@@ -33,8 +40,18 @@ workspace costs nothing sitting there.
 **Predictions are placeholders right now.** `checkpoints/` holds *synthetic* weights —
 correct architecture and checkpoint format, random values — so throughput and latency are
 real but the numbers coming out carry no information. To get real predictions, drop your
-trained `model_0.pt` … `model_4.pt` into `checkpoints/` and re-run; nothing else changes.
-See "Model weights" in [`TAKEDA_BRIEF.md`](TAKEDA_BRIEF.md).
+trained `model_0.pt` … `model_4.pt` into `checkpoints/` and re-run.
+
+⚠️ **One thing to expect if you do that.** `configs/ensemble_serve.example.json` is a
+**tox21** config — 12 output targets, `in_features: 45`, `hidden_features: 96`, LEConv ×7.
+If your model was trained on different endpoints, its `out_features` (and possibly other
+fields) will differ, and the load will **fail at startup with a key-mismatch error** rather
+than serve wrong numbers — production load uses `strict=True` deliberately, so a checkpoint
+that doesn't match the architecture can never be served half-random. That error is expected
+behaviour, not a bug: edit the `model.model_configs` block (and
+`loader.target_column_names`) in the config to match how you trained, and it will load.
+Send us the config you trained with and we can do it for you. Details in "Model weights" in
+[`TAKEDA_BRIEF.md`](TAKEDA_BRIEF.md).
 
 ### Sizing, and why the GPU stays mostly idle on purpose
 
