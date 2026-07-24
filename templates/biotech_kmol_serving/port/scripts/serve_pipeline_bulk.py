@@ -163,6 +163,23 @@ def deploy(feat_replicas, gpu_replicas, num_gpus):
     return serve.run(app, name=APP)
 
 
+def cluster_shape():
+    """Actual nodes/cores backing a measurement.
+
+    Recorded because per-core normalisation is the only unit that predicts this
+    workload, and inferring node counts from CPU arithmetic has been wrong more than
+    once: a node advertises 8 vCPU on 4 physical cores, and Ray schedules per vCPU.
+    """
+    nodes = [n for n in ray.nodes() if n.get("Alive")]
+    cpu_nodes = [n for n in nodes if n["Resources"].get("CPU") and not n["Resources"].get("GPU")]
+    return {
+        "alive_nodes": len(nodes),
+        "cpu_only_nodes": len(cpu_nodes),
+        "total_cpu": sum(int(n["Resources"].get("CPU", 0)) for n in nodes),
+        "total_gpu": sum(int(n["Resources"].get("GPU", 0)) for n in nodes),
+    }
+
+
 def measure(clients, total_mols, chunk, concurrency_per_client):
     n_chunks_total = max(len(clients), total_mols // chunk)
     per_client = max(1, n_chunks_total // len(clients))
@@ -251,9 +268,17 @@ def main():
             r = measure(clients, total, args.chunk, concurrency_per_client=max(2, (n // args.clients) + 2))
             r["featurizer_replicas"] = n
             r["gpu_replicas"] = args.gpus
-            r["mol_s_per_featurizer_core"] = r["mol_s"] / n
+            r["mol_s_per_featurizer_replica"] = r["mol_s"] / n
+            r["cluster"] = cluster_shape()
+            # A node is 8 vCPU on 4 physical cores; Ray schedules per vCPU. Physical
+            # cores is the unit that actually tracks throughput.
+            phys = r["cluster"]["total_cpu"] // 2
+            r["physical_cores_est"] = phys
+            r["mol_s_per_physical_core"] = r["mol_s"] / phys if phys else None
             results.append(r)
-            print(f"  {r['mol_s']:>10,.0f} mol/s  ({r['mol_s_per_featurizer_core']:.0f}/core)  "
+            print(f"  {r['mol_s']:>10,.0f} mol/s  ({r['mol_s_per_featurizer_replica']:.0f}/replica, "
+                  f"{r['cluster']['total_cpu']//2} phys cores => "
+                  f"{r['mol_s_per_physical_core']:.0f}/core)  "
                   f"p50={r['req_p50_ms']:.0f}ms p99={r['req_p99_ms']:.0f}ms  "
                   f"mols={r['mols']:,} in {r['wall_s']:.1f}s", flush=True)
     finally:

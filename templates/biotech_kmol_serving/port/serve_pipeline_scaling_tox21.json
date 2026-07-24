@@ -1,0 +1,101 @@
+{
+  "app": "serve_pipeline_app (two-stage composed Serve)",
+  "molecule_source": "tox21",
+  "library_path": "data/tox21.csv.gz",
+  "library_n": 7831,
+  "shuffle_seed": 0,
+  "chunk": 256,
+  "gpu_replicas": 1,
+  "load_clients": 4,
+  "ingress_replicas": 4,
+  "target_duration_s": 12.0,
+  "results": [
+    {
+      "mols": 230400,
+      "chunk": 256,
+      "clients": 4,
+      "concurrency_per_client": 18,
+      "wall_s": 67.21715520199996,
+      "mol_s": 3427.696386549021,
+      "req_p50_ms": 4469.398108000007,
+      "req_p99_ms": 14432.578489000009,
+      "requests": 900,
+      "featurizer_replicas": 64,
+      "gpu_replicas": 1,
+      "mol_s_per_featurizer_core": 53.557756039828455
+    },
+    {
+      "mols": 114688,
+      "chunk": 256,
+      "clients": 4,
+      "concurrency_per_client": 10,
+      "wall_s": 25.477064528000483,
+      "mol_s": 4501.617518531326,
+      "req_p50_ms": 2154.4920530000127,
+      "req_p99_ms": 3506.7982979999783,
+      "requests": 448,
+      "featurizer_replicas": 32,
+      "gpu_replicas": 1,
+      "mol_s_per_featurizer_core": 140.67554745410393
+    },
+    {
+      "mols": 57344,
+      "chunk": 256,
+      "clients": 4,
+      "concurrency_per_client": 6,
+      "wall_s": 21.214187745000345,
+      "mol_s": 2703.096658202931,
+      "req_p50_ms": 2008.6246779999897,
+      "req_p99_ms": 3371.9920379999735,
+      "requests": 224,
+      "featurizer_replicas": 16,
+      "gpu_replicas": 1,
+      "mol_s_per_featurizer_core": 168.94354113768318
+    },
+    {
+      "mols": 28672,
+      "chunk": 256,
+      "clients": 4,
+      "concurrency_per_client": 4,
+      "wall_s": 19.763739992999945,
+      "mol_s": 1450.7375633435395,
+      "req_p50_ms": 2798.2006519999914,
+      "req_p99_ms": 3322.2880219999524,
+      "requests": 112,
+      "featurizer_replicas": 8,
+      "gpu_replicas": 1,
+      "mol_s_per_featurizer_core": 181.34219541794243
+    }
+  ],
+  "peak_mol_s": 4501.617518531326,
+  "scaling_vs_min_replicas": [
+    {
+      "featurizer_replicas": 64,
+      "mol_s": 3427.696386549021,
+      "speedup_vs_base": 2.3627267075439553,
+      "ideal": 8.0,
+      "efficiency_pct": 29.534083844299442
+    },
+    {
+      "featurizer_replicas": 32,
+      "mol_s": 4501.617518531326,
+      "speedup_vs_base": 3.1029854277408875,
+      "ideal": 4.0,
+      "efficiency_pct": 77.57463569352218
+    },
+    {
+      "featurizer_replicas": 16,
+      "mol_s": 2703.096658202931,
+      "speedup_vs_base": 1.863256819498806,
+      "ideal": 2.0,
+      "efficiency_pct": 93.1628409749403
+    },
+    {
+      "featurizer_replicas": 8,
+      "mol_s": 1450.7375633435395,
+      "speedup_vs_base": 1.0,
+      "ideal": 1.0,
+      "efficiency_pct": 100.0
+    }
+  ]
+}
