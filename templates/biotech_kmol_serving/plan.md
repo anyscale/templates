@@ -175,8 +175,15 @@ long work detached + poll; the GPU playbook is in the `geoff/fm_recs_and_fraud` 
   an **L4** (torch 2.5.1+cu124) vs py3.9 kMoL. Throughput: **60,101 mol/s forward-only
   (353× the 170/s baseline)**; end-to-end **~561 mol/s (3.3×)**, featurization-bound (GPU
   has ~100× headroom). Confirmed torch runs on the L4. See `port/README.md` + `port/gpu_results.json`.
-- [ ] P1 — GPU throughput on Ray Serve (managed cluster, native autoscale). Adapt the
-  serve wrapper to `kmolport`; parallelize featurization across fractional-GPU replicas
-  (the end-to-end bottleneck, not the GPU).
-- [ ] P2 — locust load test
-- [ ] P3 — containerize → Anyscale Service
+- [x] **P1 — served on Ray Serve DONE.** 6 fractional-GPU replicas (`num_gpus=0.16`)
+  packed on ONE autoscaled L4, native on the managed cluster (runtime_env installed
+  CUDA torch, no container). Bulk/screening workload: **1,697 mol/s = 10.0× baseline**
+  (`port/serve_bulk_results.json`). CPU-featurization-bound, not GPU-bound. Naive
+  1-SMILES-per-request tops out ~244/s = the client/RPC limit, not the service (REC 4).
+  Scripts: `port/scripts/serve_bulk.py` (+ `serve_run.py`).
+- [ ] P2 — locust load test (independent multi-process HTTP confirmation of the ~1.7k/s).
+- [ ] **Two-stage split (the real throughput lever):** CPU-only featurizer deployment
+  (scale across cores) → thin GPU forward deployment. GPU ceiling is ~60k/s, so this
+  scales with featurizer cores far beyond 10×.
+- [ ] P3 — containerize → Anyscale Service (modern `anyscale/ray:*-py311-cu12x` + the
+  ported deps; trivial now that the stack is standard).

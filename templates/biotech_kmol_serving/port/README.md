@@ -51,6 +51,32 @@ keys line up so kMoL `state_dict`s load unchanged.
   has ~100× headroom. The lever for end-to-end throughput is parallelizing
   featurization across cores/replicas — which is exactly what Ray Serve does (P1).
 
+## P1 — served on Ray Serve, one L4, native autoscale
+
+`port/scripts/serve_bulk.py` deploys the ported ensemble as **6 fractional-GPU
+replicas packed on a single L4** (`num_gpus=0.16`, `num_cpus=1`) on the managed
+cluster — the autoscaler brought the node up, `runtime_env` installed CUDA torch on
+the replicas, no container. Each replica featurizes its own chunk (parallelism across
+replicas) and shares the cheap GPU forward.
+
+**Screening workload (chunked requests, `serve_bulk_results.json`):**
+
+| chunk | concurrency | mol/s | req p50 | req p99 |
+|---:|---:|---:|---:|---:|
+| 128 | 24 | 1,672 | 1.8 s | 3.1 s |
+| 256 | 24 | **1,697** | 3.5 s | 4.9 s |
+
+**Peak served: 1,697 mol/s on one L4 = 10.0× the ~170/s baseline.** It plateaus at
+~6× the per-core RDKit rate (6 replicas), i.e. it is **CPU-featurization-bound, not
+GPU-bound** — consistent with P0's forward-only 60k/s. Naive one-SMILES-per-request
+load (`serve_run.py`, `serve_singlereq_results.json`) tops out at ~244 mol/s: that's
+the *client/RPC* limit (REC 4 — "you're benchmarking the client"), not the service.
+
+**Next lever (not yet built):** split featurization into a CPU-only Serve deployment
+(scale replicas across many cores) feeding a thin GPU forward deployment. The GPU can
+absorb ~60k mol/s, so throughput should scale with featurizer cores until the GPU
+saturates — well beyond 10×.
+
 ## How to reproduce
 
 ```bash
