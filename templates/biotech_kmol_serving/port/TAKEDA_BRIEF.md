@@ -83,6 +83,24 @@ featurization**, which finally puts that 64-CPU box to work.
 - **GPU forward ceiling** — featurization removed entirely, replaying one pre-built batch. It's a
   *headroom* number (how fast the GNN itself is), not a throughput you'd serve. ([`scripts/bench.py`](scripts/bench.py) → [`gpu_results.json`](gpu_results.json))
 
+### Your own test molecules
+
+We ran the three drugs you sanity-check with — minoxidil, Viagra (sildenafil), Lipitor
+(atorvastatin) — end-to-end through the ported ensemble. Featurization time tracks molecule
+size just as expected, and two of the three are already in our 15,751-molecule test library
+(they come from tox21 — the model's own target domain):
+
+| Drug | heavy atoms | featurize time | in our test library? |
+|---|---:|---:|---|
+| minoxidil | 15 | 2.7 ms | no |
+| sildenafil (Viagra) | 33 | 5.2 ms | yes (as the citrate salt) |
+| atorvastatin (Lipitor) | 41 | 6.2 ms | yes (tox21) |
+
+Each produces a full 12-target tox21 prediction plus per-target variance. The sizes and
+timings are real; the prediction *values* aren't meaningful here (synthetic weights). Note the
+spread — Lipitor is ~1.7× the library's median size — which is exactly why per-molecule cost,
+and therefore throughput, depends on your library's size mix.
+
 ---
 
 ## Correctness — port fidelity (not an accuracy claim yet)
