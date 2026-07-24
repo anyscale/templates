@@ -1,0 +1,28 @@
+# Anyscale Service using the BAKED image (port/Dockerfile) — faster cold start than
+# the pip-runtime_env path in service.yaml. Build & push the image first, then set
+# image_uri below.
+#
+#   docker build -f port/Dockerfile -t <registry>/kmol-serve:latest port/
+#   docker push <registry>/kmol-serve:latest
+#   anyscale service deploy -f port/service.image.yaml
+#
+# NOTE: deploying is persistent GPU spend — gated on approval (plan.md P3).
+
+name: biotech-kmol-ensemble-serving
+
+# Replace with your pushed image (built from port/Dockerfile). Everything the app
+# needs (kmolport, serve_app, config, checkpoints, deps) is baked in.
+image_uri: <registry>/kmol-serve:latest
+
+applications:
+  - name: kmol
+    import_path: serve_app:app
+    # config_path/ckpt_dir default to the baked-in config.json / checkpoints.
+
+compute_config:
+  head_node:
+    instance_type: m5.2xlarge
+  worker_nodes:
+    - instance_type: g6.2xlarge   # NVIDIA L4; each node also brings 8 vCPU for featurization
+      min_nodes: 0
+      max_nodes: 4                 # linear scaling measured across 1-4 L4 (see TAKEDA_BRIEF.md)

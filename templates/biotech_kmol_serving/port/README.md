@@ -87,12 +87,40 @@ The pipeline rate (3,904) is within ~4% of the featurize-only rate (4,050): **th
 adds almost nothing — it's ~7% utilized** (its forward ceiling is 60k/s). Throughput
 scales linearly with featurizer cores; one L4 stays idle until you reach ~60k mol/s.
 
-**Conclusion — the single-GPU story, proven three ways:** the old "~5 ms/molecule /
+## P1c — multi-GPU: near-linear scaling, 1→4 L4
+
+`port/scripts/scale_gpus.py` runs one self-contained mini-pipeline per L4 node
+(placement-group bundle = 1 GPU actor + 6 co-located featurizers, `STRICT_SPREAD` so
+each bundle is a distinct node), then measures aggregate throughput at G = 1..4 GPUs.
+
+| GPUs | mol/s | speedup vs 1 | efficiency | ×baseline |
+|---:|---:|---:|---:|---:|
+| 1 | 2,235 | 1.00× | 100% | 13× |
+| 2 | 4,209 | 1.88× | 94% | 25× |
+| 3 | 6,500 | 2.91× | 97% | 38× |
+| 4 | **8,792** | **3.93×** | **98%** | **52×** |
+
+**3.93× on 4 GPUs = 98% scaling efficiency** (`port/scale_results.json`). Each g6.2xlarge
+node adds both an L4 and 8 vCPU, and since throughput is featurization-bound the two scale
+together — so adding nodes adds throughput almost perfectly linearly.
+
+**Conclusion — the single-GPU story, proven every way:** the old "~5 ms/molecule /
 ~170 mol/s" was batch-size-1 launch overhead on the *offline* path, not a GPU limit.
 Ported to a supported PyTorch, one L4 does **60k mol/s of forward (353×)**, serves
-**1,697 mol/s end-to-end (10×)** as 6 fractional replicas, and sustains **3,904 mol/s
-(23×)** in a 12-core two-stage pipeline — all featurization-bound, GPU to spare. The 4×
-goal is cleared by a wide margin; scale featurizer cores to go further.
+**1,697 mol/s end-to-end (10×)** as 6 fractional replicas, sustains **3,904 mol/s (23×)**
+in a two-stage pipeline, and the whole thing **scales near-linearly to 8,792 mol/s (52×)
+across 4 L4** — all featurization-bound, GPU to spare. The 4× goal is cleared by more than
+an order of magnitude.
+
+## Deploy as a container (P3)
+
+`port/Dockerfile` bakes the ported stack onto a stock modern Anyscale Ray image (no conda,
+no GPU-at-build, no CUDA-kernel compile — the whole point of the port). Pair with
+`port/service.image.yaml` (`anyscale service deploy`). `port/service.yaml` is the
+pip-`runtime_env` variant (no image build). **Deploying is persistent GPU spend — gated
+on approval.**
+
+## How to reproduce
 
 ## How to reproduce
 

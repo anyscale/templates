@@ -186,12 +186,19 @@ long work detached + poll; the GPU playbook is in the `geoff/fm_recs_and_fraud` 
   baseline** (`port/pipeline_results.json`), within 4% of the featurize-only rate
   (4,050/s) — so the L4 is ~7% utilized; throughput scales linearly with featurizer
   cores toward the 60k/s GPU ceiling. `port/scripts/scaled_pipeline.py`.
-- [ ] P2 — locust load test (independent multi-process HTTP confirmation). Optional now;
-  three methods already agree the GPU story holds.
-- [ ] P3 — containerize → Anyscale **Service** (modern `anyscale/ray:*-py311-cu12x` +
-  ported deps). **Deploy is gated on Geoff** (persistent GPU spend). Files can be
-  prepared; the actual `anyscale service deploy` waits for approval.
+- [x] **P1c — multi-GPU scaling DONE.** Placement-group pipeline (1 GPU + 6 featurizers
+  per L4 node, STRICT_SPREAD), G=1..4: **2,235 → 4,209 → 6,500 → 8,792 mol/s**, i.e.
+  **3.93× on 4 GPUs = 98% efficiency**, peak **52× baseline** (`port/scale_results.json`,
+  `port/scripts/scale_gpus.py`). Near-linear because each node adds an L4 *and* 8 vCPU.
+- [x] **P3 — container prepared.** `port/Dockerfile` (stock modern Ray image + ported
+  pip deps, no conda/no GPU-at-build), `port/service.image.yaml` (baked-image deploy),
+  `port/service.yaml` (runtime_env-pip variant). **Deploy gated on Geoff** (persistent
+  GPU spend); files ready, `anyscale service deploy` waits for approval.
+- [x] **Takeda brief** written: `port/TAKEDA_BRIEF.md`.
+- [ ] P2 — locust load test (independent multi-process HTTP confirmation). Optional; four
+  methods already agree the GPU story holds.
 
-**Bottom line: single-GPU story proven three ways** — 60k mol/s forward (353×), 1,697/s
-served (10×), 3,904/s pipeline (23×). All featurization-bound with GPU headroom; the 4×
-target is cleared by a wide margin.
+**Bottom line: single-GPU story proven every way** — 60k mol/s forward (353×), 1,697/s
+served (10×), 3,904/s pipeline (23×), and **near-linear multi-GPU to 8,792/s on 4 L4
+(52×, 98% efficiency)**. All featurization-bound with GPU headroom; the 4× target is
+cleared by more than an order of magnitude.
