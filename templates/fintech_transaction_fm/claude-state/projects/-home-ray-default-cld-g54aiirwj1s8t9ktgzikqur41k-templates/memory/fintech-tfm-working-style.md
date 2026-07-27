@@ -10,7 +10,7 @@ metadata:
 Building the `fintech_transaction_fm` notebook series (templates/templates/fintech_transaction_fm), Zach's guidance:
 
 **THE WRITING/REVIEW METHOD IS NOW FULLY CODIFIED IN THE REPO — read it before authoring
-anything he reviews:** `zgarner-fieldeng-template/references/notebook-authoring.md`
+anything he reviews:** TWO repo skills: `zgarner-prose` (general method, voice, tells, linter) + `zgarner-fieldeng-template` (notebook layer, collaboration protocol) — load BOTH
 (job-label sentence validation, power positions, the tell catalog, structure patterns,
 code craft, truth rules, the collaboration protocol) + `scripts/prose_lint.py` (run both
 modes before every hand-back). That document supersedes the voice notes that used to be
