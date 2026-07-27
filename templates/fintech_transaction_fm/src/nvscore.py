@@ -1,4 +1,4 @@
-"""Downstream fraud classification on the embeddings from Part 5 — NVIDIA's NB05 recipe.
+"""Fraud classifiers on the embeddings from Part 5 — NVIDIA's NB05 recipe.
 
 Fits three XGBoost classifiers with NVIDIA's per-feature-set HPO params (verbatim), early
 stopping on the val split, PCA(512→64) on the embedding, and OrdinalEncoded raw categoricals:
@@ -7,10 +7,14 @@ stopping on the val split, PCA(512→64) on the embedding, and OrdinalEncoded ra
 * ``embedding`` — the foundation-model embedding alone,
 * ``fusion`` — embedding + raw.
 
-The lift of ``fusion`` (and ``embedding``) over ``raw`` is the headline. Mirrors
+The lift of ``embedding`` (and ``fusion``) over ``raw`` is the headline. Mirrors
 ``scripts/nvidia_repro/run_ours_full.py`` (single draw) and ``run_ours_peak.py`` (the
 seed×eval bootstrap that reports the peak fusion AP on the same favorable-single-draw basis
 NVIDIA's published 0.1755 uses). Reads the per-split ``embed_/lbl_/raw_`` files nb05 wrote.
+
+``fit_and_score`` and ``fusion_bootstrap`` are Ray tasks submitted inline in nb06;
+``run_downstream``/``peak_hunt`` compose the same tasks for the headless path
+(``scripts/run_pipeline.py``).
 
 GPU is required for faithful numbers: on CPU, XGBoost early-stops the fusion model at a bad
 iteration and it collapses below raw (a documented divergence). xgboost is pinned to 3.2.0.
@@ -20,6 +24,8 @@ import os
 import time
 
 import ray
+
+from src.nvsplit import wait_for_files
 
 # NVIDIA NB05's three per-feature-set HPO param sets (verbatim). Do NOT collapse to one shared
 # recipe — the combined set's regularization is what keeps fusion from overfitting.
@@ -65,7 +71,9 @@ def _prep(emb, raw, pca_dim):
 
 
 @ray.remote
-def _score(emb_dir, output_dir, pca_dim, use_gpu):
+def fit_and_score(emb_dir, output_dir, pca_dim, use_gpu):
+    """Fit raw/embedding/fusion with NVIDIA's recipe and score them on the test split.
+    Writes metrics + per-transaction test scores to ``output_dir``; returns the summary dict."""
     import numpy as np
     import pandas as pd
     import xgboost as xgb
@@ -106,7 +114,9 @@ def _score(emb_dir, output_dir, pca_dim, use_gpu):
 
 
 @ray.remote
-def _peak(emb_dir, pca_dim, use_gpu, n_seeds, n_boot, target):
+def fusion_bootstrap(emb_dir, pca_dim, use_gpu, n_seeds=6, n_boot=120, target=0.1755):
+    """Refit fusion at ``n_seeds`` seeds and rescore each on ``n_boot`` resampled test sets.
+    Returns the peak AP, the fraction of draws ≥ ``target``, and the median full-eval draw."""
     import numpy as np
     import xgboost as xgb
     from sklearn.metrics import average_precision_score
@@ -140,28 +150,22 @@ def _peak(emb_dir, pca_dim, use_gpu, n_seeds, n_boot, target):
 
 
 def run_downstream(emb_dir, output_dir, pca_dim=64, use_gpu=True):
-    """Fit + score raw/embedding/fusion (NB05 recipe) on the Part-5 embeddings; writes metrics +
-    per-sample test predictions. Returns the summary dict."""
+    """Headless path (scripts/run_pipeline.py): submit ``fit_and_score`` the same way nb06 does."""
     ray.init(ignore_reinit_error=True)
     opts = {"num_gpus": 1, "num_cpus": 8} if use_gpu else {"num_cpus": 2}
-    summary = ray.get(_score.options(**opts).remote(emb_dir, output_dir, pca_dim, use_gpu))
-    # NFS/EFS visibility guard: the curves cell reads these immediately after (see nvcorpus).
-    for f in ("downstream_metrics.json", "test_predictions.parquet"):
-        p = os.path.join(output_dir, f)
-        t0 = time.time()
-        while not os.path.exists(p):
-            if time.time() - t0 > 300:
-                raise TimeoutError(f"output not visible: {p}")
-            time.sleep(0.5)
+    summary = ray.get(fit_and_score.options(**opts).remote(emb_dir, output_dir, pca_dim, use_gpu))
+    # Shared-storage visibility guard: the caller reads these files immediately after.
+    wait_for_files([os.path.join(output_dir, f)
+                    for f in ("downstream_metrics.json", "test_predictions.parquet")])
     return summary
 
 
 def peak_hunt(emb_dir, pca_dim=64, use_gpu=True, n_seeds=6, n_boot=120, target=0.1755):
-    """Seed×eval bootstrap of the fusion model — peak AP + fraction of 100K draws ≥ ``target``
-    (the same favorable-single-draw basis NVIDIA's 0.1755 uses), plus the typical (median) draw."""
+    """Headless path: submit ``fusion_bootstrap`` the same way nb06 does."""
     ray.init(ignore_reinit_error=True)
     opts = {"num_gpus": 1, "num_cpus": 8} if use_gpu else {"num_cpus": 2}
-    return ray.get(_peak.options(**opts).remote(emb_dir, pca_dim, use_gpu, n_seeds, n_boot, target))
+    return ray.get(fusion_bootstrap.options(**opts).remote(
+        emb_dir, pca_dim, use_gpu, n_seeds, n_boot, target))
 
 
 def print_summary(summary):
