@@ -231,7 +231,8 @@ Curate to the informative lines: real results, plus the infra lines that tell th
 3. **Commit whatever is on disk before any write** (`wip:` commits are fine) — everything that ever reached disk stays recoverable.
 4. **Re-load and re-diff at write time** — never hold a loaded copy across a background run and then dump it over the file.
 5. The node is ephemeral: **commit AND push promptly** — unpushed work dies with the node. Durable notes go in repo files, and `./setup_claude.sh backup` snapshots memory/settings.
-6. Tell him **"kernel restart needed"** whenever `src/` changed — Python won't re-read a loaded module, and the resulting ImportError looks like your bug.
+6. If he reports lost work, search in order: papermill/scratchpad snapshots (each captured disk at launch time), `.ipynb_checkpoints/`, `~/.vscode-server/data/User/History/*/entries.json`, git blobs.
+7. Tell him **"kernel restart needed"** whenever `src/` changed — Python won't re-read a loaded module, and the resulting ImportError looks like your bug.
 
 ## The hand-back protocol — every time, in order
 
