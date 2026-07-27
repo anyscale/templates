@@ -226,7 +226,7 @@ Curate to the informative lines: real results, plus the infra lines that tell th
 
 ## The file-safety rules (violating these destroyed his work once)
 
-1. **Never write a file he is editing.** Chat-first patches (paste-ready blocks) until an explicit hand-off ("i finished my edits, you go").
+1. **Never write a file he is editing.** Chat-first patches (paste-ready blocks) until an explicit hand-off ("i finished my edits, you go"). Every "reload the notebook" you ask of him is a chance for his unsaved buffer to die — his nb02 work was destroyed exactly this way.
 2. **Verify "it's saved" against disk** — his editor's saves lag. His nb03 corpus purge was silently lost this way and only recovered because the linter caught the words again. `git status` before believing any buffer state.
 3. **Commit whatever is on disk before any write** (`wip:` commits are fine) — everything that ever reached disk stays recoverable.
 4. **Re-load and re-diff at write time** — never hold a loaded copy across a background run and then dump it over the file.
