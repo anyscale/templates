@@ -3,15 +3,15 @@ entrypoint: python scripts/02_run_embedding.py --scale medium --bucketed
 
 runtime_env:
   working_dir: .
-  pip:
-    - ray[data]>=2.9
-    - transformers>=4.35
-    - torch>=2.1
-    - numpy>=1.24
-    - pandas>=2.0
-    - pyarrow>=14.0
-    - biopython>=1.82
-    - scikit-learn>=1.3
+  # Pin to the lock so the driver and workers share one env (a loose >= re-resolves per node).
+  pip: python_depset.lock
 
-compute_config: compute_config.yaml
+compute_config:
+  head_node:
+    instance_type: m5.2xlarge
+  worker_nodes:
+    - name: gpu-worker
+      instance_type: g5.xlarge
+      min_nodes: 1
+      max_nodes: 2
 max_retries: 2
