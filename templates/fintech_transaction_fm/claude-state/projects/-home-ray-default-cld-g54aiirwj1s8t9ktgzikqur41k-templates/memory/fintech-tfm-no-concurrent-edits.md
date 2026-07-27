@@ -1,33 +1,19 @@
 ---
 name: fintech-tfm-no-concurrent-edits
-description: NEVER write to a notebook Zach is actively reviewing/editing — chat-first patches only; his unsaved buffer got destroyed once (2026-07-21)
-metadata: 
-  node_type: memory
+description: File-safety protocol with Zach — now codified in the repo skill; this is the pointer + incident record
+metadata:
   type: feedback
-  originSessionId: 1a07737d-42d1-41f6-8e46-6e24a82d9b87
-  modified: 2026-07-21T17:00:03.453Z
 ---
 
-2026-07-21: While Zach was manually reviewing nb02 in his editor, I ran repeated
-edit→papermill→commit cycles on the same file and told him to "reload" after each.
-His unsaved buffer (a rewritten intro line + an HTML technical note) was discarded
-on reload — the work was lost with no disk trace (verified: papermill snapshots,
-Jupyter checkpoint, VS Code history, git all clean of it).
+The full protocol is CODIFIED in the repo (durable):
+`templates/fintech_transaction_fm/zgarner-fieldeng-template/references/notebook-authoring.md`,
+Part 7 "The file-safety rules" + "The hand-back protocol". Follow that document.
 
-**Why:** concurrent writes to a file he has open guarantee one side loses; "reload"
-instructions are exactly when unsaved work dies. He was rightly upset.
-
-**How to apply (Zach 2026-07-21, furious: "you could have fucking committed or
-anything. You need to reread the fucking notebook before blowing it over."):**
-1. COMMIT FIRST: before ANY write to a repo notebook, commit whatever is on disk
-   (even `wip: on-disk state before edits`) so disk state is always recoverable.
-2. REREAD AT WRITE TIME: `git diff` + re-load the file immediately before dumping,
-   not at hand-off time — NEVER hold a loaded copy across a background papermill
-   and then json.dump it (that window silently destroys his saves).
-3. While he is reviewing/editing a file: do NOT Write/Edit/json.dump it at all.
-   Put proposed changes in chat as paste-ready blocks. Only touch the file after an
-   explicit hand-off ("i finished my edits you go").
-4. If he reports lost work, check (in order): papermill/scratchpad snapshots,
-   .ipynb_checkpoints/, ~/.vscode-server/data/User/History/*/entries.json, git blobs.
+Incident record (why it exists): 2026-07-21, concurrent edit→papermill→commit cycles
+plus "reload" instructions destroyed Zach's unsaved nb02 buffer (an HTML technical
+note + intro rewrite) with no disk trace. 2026-07-23, his saved-to-buffer nb03 corpus
+purge was silently lost the same way and recovered only because prose_lint re-caught
+the banned word. His editor's saves LAG — always verify disk (`git status`) before
+believing "it's saved".
 
 See [[fintech-tfm-working-style]].
