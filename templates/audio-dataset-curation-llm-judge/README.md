@@ -56,6 +56,11 @@ TRANSCRIPTION_MODEL = "openai/whisper-tiny"
 JUDGE_MODEL = "unsloth/Meta-Llama-3.1-8B-Instruct"
 ```
 
+
+```python
+ray.init(runtime_env={"pip": os.path.join(os.getcwd(), "python_depset.lock")})
+```
+
 ## Streaming data ingestion
 
 `ray.data.read_parquet` reads the records lazily **and** distributes them across the cluster.
