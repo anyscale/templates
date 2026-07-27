@@ -1,20 +1,15 @@
 ---
 name: zgarner-fieldeng-template
-description: Zach Garner's writing and reviewing method for Anyscale demo templates and workshop notebooks. Use when authoring or reviewing ANY notebook prose, code comments, or structure he will read — and before every hand-back to him. Owns the craft and the collaboration protocol; the repo's `template` skill owns mechanics (BUILD.yaml, compute configs, tests, publish).
+description: Zach Garner's field-engineering craft for Anyscale demo templates — the notebook-specific layer on top of the zgarner-prose skill. Use when authoring or reviewing a template notebook: what to show vs hide, Ray visibility, notebook structure, outputs, and the collaboration protocol. REQUIRES zgarner-prose (sentence method, voice, tells, linter).
 ---
 
 # Field-engineering template craft
 
-This skill is a complete, transferable method built with Zach across the fintech_transaction_fm review sessions. It has three parts, and all three are load-bearing:
+The template-specific layer. **Load `zgarner-prose` first** — it owns the sentence method, voice, the tell catalog, truth rules, comment craft, and `scripts/prose_lint.py`. This skill owns what only exists in a template notebook.
 
-1. **`references/notebook-authoring.md`** — the method. Read it fully before writing anything he reviews. Part 1 (job-label sentence validation, power positions, the review loop) is the procedure; Parts 2–6 are the standards; Part 7 is the collaboration protocol whose file-safety rules have destroyed his work when violated; Part 8 is where the rules do NOT apply.
-2. **`scripts/prose_lint.py`** — the mechanical pre-flight. `prose_lint.py <nb.ipynb>` greps markdown and comments for the named tells; `prose_lint.py --imports <nb.ipynb>` audits every `src/` import for size and hidden Ray. Both run before every hand-back; zero hits or fix them.
-3. **The hand-back protocol** (end of the reference, mirrored in its checklist): diff → wip-commit → write fresh → review loop to fixpoint with a WRITTEN audit → lint → verify by papermill's own exit (bit-match if validated code moved) → commit+push → hand back with the audit shown.
-
-## The method, in one line
-
-Label every sentence's job (claim / fact / consequence / pointer / gloss / instruction), check the label against its position and the content against the label — the tell blacklist is cleanup, not the method — and never hand back without the written audit, the linter run, and a green verified run.
+1. **`references/notebook-authoring.md`** — Part 1: the show/hide boundary and Ray visibility (refactor src when Ray is buried; bit-match acceptance for refactors of validated code). Part 2: notebook structure (intro/arc pattern, one section per activity, Scaling factors, takeaways altitude, Next blurbs). Part 3: outputs, plots, papermill. Part 4: the collaboration protocol — file-safety rules that have destroyed his work when violated, and the seven-step hand-back. Part 5: counter-rules and unconfirmed notes.
+2. **The show-or-hide audit**: `../zgarner-prose/scripts/prose_lint.py --imports <nb.ipynb>` — every src import with size and Ray content, run whenever code changes.
 
 ## The craft, in one line
 
-Show the transferable Ray/Anyscale lesson inline; hide only what's incidental AND self-evident by name; motivate every step from the data; every number from a real run; keep the reader in the loop across the whole series.
+Show the transferable Ray/Anyscale lesson inline; hide only what's incidental AND self-evident by name; motivate every step from the data; every number from a real run; verify by papermill's own exit; and follow the hand-back protocol every single time.

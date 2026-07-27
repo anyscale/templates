@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Grep a notebook's markdown and code comments for the mechanical voice tells.
+"""Grep a document's markdown and code comments for the mechanical voice tells.
 
 Usage: python prose_lint.py <notebook.ipynb> [...]
 
