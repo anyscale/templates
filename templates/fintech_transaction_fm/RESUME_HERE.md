@@ -501,3 +501,34 @@ job-label audit shipped WITH the hand-back, not extracted by Zach. Backlog (his 
 pages closed): 11 linter hits in nb02/nb03, some in his own approved text.
 
 Also: keep improving editorial skills (his standing instruction).
+
+## Session log — 2026-07-27 — nb06 refactored solo, PENDING ZACH'S REVIEW
+
+Zach: "you have two freshly revised skills for prose and notebook creation, please
+review and work on refactoring 06 notebook on your own." Both skills re-read in full,
+then the whole hand-back protocol ran without him.
+
+**All four recorded commitments delivered**: (1) retitled to "Part 6: Fraud detectors —
+raw vs embedding vs fusion" (honors nb05's Next; "downstream" now appears only as the
+functional config/path key); (2) hidden Ray surfaced — src/nvscore.py `_score` →
+public `fit_and_score`, `_peak` → public `fusion_bootstrap`, both submitted INLINE in
+the notebook with .options()/.remote()/ray.get() at commented lines;
+run_downstream/peak_hunt remain as thin wrappers composing the same tasks for
+scripts/run_pipeline.py; (3) sweeps ran (banned words clean, Next rewritten to one
+plain sentence); (4) written job-label audit shipped with the hand-back.
+
+**BIT-MATCH verified** (papermill mini, exit 0, zero error cells): raw AP 0.0736/16,
+embedding 0.0128/288, fusion 0.0519/1, train=40,000 5.68%, test=100,000 0.1080%,
+peak 0.0645, median 0.0293, 0.0% ≥ 0.1755 — all identical to Zach's 2026-07-27 run.
+
+**Other changes**: recap-first intro; "What we're comparing" / "Fit the three
+classifiers" / "Bootstrap the fusion score" / "Read the results" / "Plot the curves"
+section reset; NEW Scaling factors section (single-GPU stage, driver-OOM incident from
+PERFORMANCE.md #11 as the measured row); takeaways at product altitude; seed-5 output
+line moved from the curves cell to the bootstrap cell (print-forwarding race).
+
+**Flagged, not fixed**: nb01 "Model performance" has typo "fruad" (Zach's text — flag
+once, never silently fix). Backlog unchanged: nb02/nb03 linter hits await his call.
+
+**RESUME**: Zach reviews nb06 (kernel restart needed — src/nvscore.py changed).
+Then nb07 pass; nb08–10 are rebuilds.
