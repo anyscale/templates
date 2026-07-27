@@ -93,6 +93,7 @@ Defines the new thing **by analogy to a known thing, in one breath** — no form
 ## Sentence-shape tells
 
 - **The dash-aside sandwich: verdict — whispered justification — consequence.** "Memory is easy here — inference keeps no gradients or optimizer state — so each actor runs large batches." Delete the verdict, promote the evidence, keep the consequence. Zach's correction word: **"sandwich."**
+- **The double em sandwich (Zach's name): a sentence split by a paired em-dash insertion that then resumes its frame.** "We train three fraud detectors — XGBoost classifiers on raw, embedding, and both — and compare them on the test set." The aside holds a whole list while the reader carries the suspended clause. Either the aside becomes the sentence's payload (colon list) or it moves to its own sentence. (Named 2026-07-27, caught in a sentence the author had just "fixed.")
 - **The dash inventory: a finished sentence with a parts list stapled on** ("…wrote the results to shared storage — `embed_`, `lbl_`, and `raw_` files per split."). Cut or promote, never dangle; in first position it buries the power sentence.
 - **The punctuation pile** — a sentence needing a colon, a parenthetical, AND a semicolon is several sentences pretending to be one. Zach's parody: "BLAH BLAH BLAH BLAH: BLAH, BLAH( BLAH BLAH); BLAH."
 - **The because-tail** — "X happens, because [long clause]." as a closer. Two direct sentences.
@@ -140,7 +141,7 @@ Don't claim the product shines where it's undifferentiated — and don't volunte
 - **A colon survives when its left half is content** (Zach's own: "This job has two main steps: grouping the rows by card, then tokenizing each card.").
 - **A term of art survives when the plain phrase loses information** — then it MUST be glossed at first use.
 - **A power sentence fails if it is the wrong claim** — strength of form never substitutes for being the point.
-- **A single em-dash aside per paragraph is acceptable**; two in one sentence is sandwich/pile territory. *(Inferred from acceptance, not stated.)*
+- **A single em-dash aside per paragraph is acceptable**; two in one sentence is the double em sandwich — banned. *(Confirmed by Zach 2026-07-27.)*
 - **Rhetorical questions in body prose: unresolved** — question titles are banned; body questions have been avoided rather than ruled on. *(Inferred.)*
 
 ---

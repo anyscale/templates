@@ -36,6 +36,8 @@ RULES = [
         r"—[^—.\n]*`[^`]+`\s*,\s*`[^`]+`[^.\n]*\.\s*$"), "md"),
     ("dash-aside-sandwich", re.compile(
         r"—[^.—\n]{5,90}—[^.\n]{0,60}\bso\b"), "md"),
+    ("double-em-sandwich", re.compile(
+        r"—[^—.\n]{5,120}—\s+(and|then|but|or|yet|which|while|before|after)\b"), "md"),
     ("announced-contrast", re.compile(
         r"\b(with one (big )?difference|but here's the (catch|twist)|the catch is)\b", re.I), "both"),
     ("punctuation-pile", re.compile(

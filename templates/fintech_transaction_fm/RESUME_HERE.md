@@ -540,3 +540,13 @@ the retitle — fixed to "Fraud detectors"); one hit in nb02's signed-off text (
 his call); nb07/nb09 hits die in their own passes. Also this pass: intro/floor sentences
 split, ordinal-encoding moved out of the bullet and glossed in the fit section, early
 stopping glossed plainly, "leakage-free" unpacked. Markdown-only — no rerun needed.
+
+**Second addendum (same day)**: Zach caught a "double em sandwich" in the intro (his
+name for it — a sentence split by a paired em-dash insertion that resumes its frame)
+and called out that my audit covered openers/closers in writing but body sentences only
+by eye. Full per-sentence audit rerun in writing: 18 more fixes (piles split, a verdict
+colon-left removed, control sentence deduped between Read-the-results and Takeaways,
+field inventory trimmed from the raw bullet, 512→64 detail moved to its code line).
+Tell codified: writing-method Part 3 + counter-rule confirmed + linter rule
+double-em-sandwich (regex tested against the offending sentence before trusting it).
+Lesson recorded: the WRITTEN audit is per-sentence, not per-power-position.
