@@ -13,10 +13,14 @@
 #   ANYSCALE_GH_TOKEN              gh write fallback on anyscale/templates
 #   STAGING_ANYSCALE_CLI_TOKEN    anyscale CLI auth + skills install (everything runs on staging)
 #   GCP_TEMPLATE_REGISTRY_SA_KEY   docker push to us-docker.pkg.dev
-#   BUILDKITE_API_TOKEN            Buildkite MCP server (Dockerfile-baked)
+#   BUILDKITE_API_TOKEN            Buildkite auth — preflight-validated (the buildkite-mcp server config lives on the "Template update" automation, not here)
 # Optional secret:
 #   PROD_ANYSCALE_CLI_TOKEN       read-only-exceptional: collect logs/info from a prod CI run
 set -euo pipefail
+
+# --- Tooling venv: re-sync /opt/venv from the mounted repo (authoritative over
+# the Dockerfile's build-time sync). ---
+uv sync --frozen
 
 # --- pre-commit hooks (auto-fire on git commit; idempotent) ---
 # Non-fatal: pre-commit refuses if core.hooksPath is set (Cursor sets it).
@@ -25,8 +29,6 @@ if [ -f .pre-commit-config.yaml ] && [ -d .git ]; then
   pre-commit install \
     || echo "WARN: pre-commit install skipped — run 'pre-commit run --all-files' manually before committing."
 fi
-
-python3 -m pip install --break-system-packages -r requirements-dev.txt
 
 # --- rayapp (version pinned via repo's download_rayapp.sh; lives in the
 # repo so kept here rather than baked into the image) ---
@@ -70,35 +72,6 @@ EOF
   ls ~/.claude/skills/
 else
   echo "WARN: STAGING_ANYSCALE_CLI_TOKEN not set — preflight will fail."
-fi
-
-# --- Cloud-agent MCP config: merge workspace .cursor/mcp.json into user-scope
-# ~/.cursor/mcp.json. Workspace-scope is read by Cursor IDE only; cloud agents
-# read user-scope at session boot. Merge rather than overwrite so any
-# pre-existing MCPs (e.g. ones Cursor itself populates) survive — workspace
-# entries win on key collision. ---
-if [ -f .cursor/mcp.json ]; then
-  mkdir -p ~/.cursor
-  python3 - <<'PY'
-import json, pathlib
-
-home = pathlib.Path.home() / ".cursor" / "mcp.json"
-ws = pathlib.Path(".cursor") / "mcp.json"
-
-merged = {}
-if home.exists():
-    try:
-        merged = json.loads(home.read_text())
-    except json.JSONDecodeError:
-        merged = {}
-
-ws_cfg = json.loads(ws.read_text())
-merged.setdefault("mcpServers", {})
-merged["mcpServers"].update(ws_cfg.get("mcpServers", {}))
-
-home.write_text(json.dumps(merged, indent=2) + "\n")
-print(f"Merged MCP servers from {ws} into {home}")
-PY
 fi
 
 # --- Preflight: validate the env this script just set up. Same script the

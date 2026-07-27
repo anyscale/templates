@@ -11,9 +11,9 @@ while [ "$ROOT" != "/" ] && [ ! -f "$ROOT/BUILD.yaml" ]; do
   ROOT="$(dirname "$ROOT")"
 done
 [ -f "$ROOT/BUILD.yaml" ] || { echo "repo root not found: no BUILD.yaml above ${BASH_SOURCE[0]}" >&2; exit 1; }
-REQ_FILE="$ROOT/requirements-dev.txt"
-ANYSCALE_VERSION=$(awk -F= '/^anyscale==/{print $3}' "$REQ_FILE")
-: "${ANYSCALE_VERSION:?could not read anyscale pin from $REQ_FILE}"
+PYPROJECT="$ROOT/pyproject.toml"
+ANYSCALE_VERSION=$(grep -oE 'anyscale==[0-9][0-9A-Za-z.+!-]*' "$PYPROJECT" | head -1 | cut -d= -f3)
+: "${ANYSCALE_VERSION:?could not read anyscale pin from $PYPROJECT}"
 
 for t in $TEMPLATES; do
   case "$t" in

@@ -21,7 +21,7 @@ Interview the user; explain each piece when you reach it. Collect:
 
 Move the content into `templates/<name>/`. For a notebook template, the main notebook **is** `README.ipynb` (the test runs it; `README.md` is its rendered copy — README convention in `../references/conventions.md`); scripts and Dockerfiles sit alongside it.
 
-**Dependencies.** If the template pins deps via a `python_depset.lock` (most do — system in `../references/dependencies.md`), drop its `requirements.txt` into `templates/<name>/` and add a per-template `expand` entry to `dependencies/template.depsets.yaml` (`source_depset` = the base lock for the template's image, `build_arg_sets` = the matching `ray<ver>_py<XX>` bundle). Compile its lock — `./update_deps.sh --name <the entry's name>` — and confirm `./update_deps.sh --check` is clean. A stock-image template with only `!pip` installs needs no lock.
+**Dependencies.** If the template pins deps via a `python_depset.lock` (most do — system in `../references/dependencies.md`), drop its `requirements.txt` into `templates/<name>/` and add a per-template `expand` entry to `dependencies/template.depsets.yaml` (`source_depset` = the base lock for the template's image, `build_arg_sets` = the matching `ray<ver>_py<XX>` bundle). Compile its lock — `./update_deps.sh --name <the entry's name>` — and confirm `./update_deps.sh --check` is clean. A stock-image template with only `!pip` installs needs no lock. **Serve/LLM template, or adding a dep that could move the image's framework (`fastapi`/`starlette`/`pydantic`/`vllm`/`torch`)?** Read `../references/dependencies.md` "Runtime skew" first — the wrong delivery scope or a downgraded framework passes tests but dies on the real multi-node launch.
 
 ## 3. BUILD.yaml entry
 

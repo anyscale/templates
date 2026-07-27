@@ -1,3 +1,5 @@
 head_node:
   instance_type: n2-standard-8
+  resources:
+    CPU: 0
 auto_select_worker_config: true

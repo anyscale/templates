@@ -1,5 +1,7 @@
 head_node:
   instance_type: m5.2xlarge
+  resources:
+    CPU: 0
 worker_nodes:
 - name: 1xT4:4CPU-16GB
   instance_type: g4dn.xlarge
