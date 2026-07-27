@@ -34,6 +34,8 @@ The reader's eye lands on openings, closings, and headings — put the point the
 
 Zach: "you have a rule of thumb about the first sentence but arent using it." Positional rules can't be grepped and don't survive as vibes. Before shipping, extract every section's first and last sentence, state the section's claim in one line, and answer in writing "is sentence one that claim?" Problem statements, definitions, motivation, and backstory all FAIL even when skeeze-free. If no written verdict table was produced, the review didn't happen.
 
+**The written audit covers every sentence, not only the power positions.** Auditing openers/closers in writing while eyeballing the body is how a double em sandwich shipped inside a sentence the author had just "fixed" (2026-07-27, Zach: "you need to go through each line, assess it, including its position in the paragraph/section"). Body sentences get the same written label-and-verdict treatment; position rules just differ by slot.
+
 ## The review loop — iterate to fixpoint before any handover
 
 - **Pass A — high level.** What is this section FOR, in one sentence? Delete or move every paragraph that doesn't serve it; check content ownership and duplication against the rest of the document.
