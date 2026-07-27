@@ -1,308 +1,289 @@
-# Authoring a template notebook
+# Authoring a template notebook — the complete method
 
-The craft of *what a good Anyscale demo-template notebook shows, hides, and proves.* Read it while authoring or reviewing notebook content — including the first draft `anyscale-template-agent` produces; these are the judgments to apply to it. (Mechanics — BUILD.yaml, compute configs, tests, publishing — live in the anyscale/templates repo's own `template` skill; this is only the craft.)
+This is Zach Garner's writing and reviewing method for workshop-grade template notebooks, consolidated for transfer. It was built sentence-by-sentence across the `fintech_transaction_fm` review sessions (July 2026); the quotes and dates are the provenance. Read it fully before writing anything he will review. The companion tool is `scripts/prose_lint.py`; the mechanics of the templates repo (BUILD.yaml, tests, publishing) belong to that repo's own `template` skill.
 
-## The one question: what to show, what to hide
+How to use it: Part 1 is the method — run it, don't skim it. Parts 2–6 are the standards the method checks against. Part 7 is the collaboration protocol; violating it has destroyed his work before. Part 8 lists where rules do NOT apply. The checklist at the end mirrors the hand-back protocol in order.
 
-A template teaches a **transferable lesson** — the Ray/Anyscale pattern the reader came to learn and will reuse. Every block of code is either *that lesson* or *incidental* to it. Show the lesson; hide the incidental.
+---
 
-Test each block: **"Is this teaching the pattern, or is it plumbing specific to this dataset/domain?"**
+# Part 1 — The method
 
-- **Show** (inline in the notebook) — the primitive the template is about (`ray.data` pipeline, `TorchTrainer` + `ScalingConfig`, `@serve.deployment`) and the handful of verbs that convey its shape.
-- **Hide** (import from `src/`) — dataset/domain munging, parsing, boilerplate; anything long that the reader won't reuse.
+## The umbrella principle: keep the reader in the loop
 
-**The failure mode is drawing the boundary in the wrong place — hiding the lesson *inside* an incidental wrapper.** A single `prepare_data()` import looks clean, but if loading the data is *itself* a distributed Ray Data job (read → transform → aggregate → write), that import buries the most on-thesis moment in the notebook. The reader sees `prepare_data()` and learns nothing transferable.
-
-### Canonical example — `fintech_transaction_fm`, "Load & explore the data"
-
-Loading the TabFormer dataset *is* a Ray Data pipeline. The first draft hid all of it behind one opaque `from src.tabformer import prepare_tabformer` call — in a notebook whose entire point is data loading at scale. The fix redraws the line:
-
-- **Shown inline:** `read_csv → map_batches(normalize_batch) → groupby("card_id").map_groups(card_statics) → write_parquet` — the four verbs, the distributed shape, and the "driver never materializes 24M rows" point.
-- **Hidden in `src/tabformer.py`:** the per-row munging (`"$57.20" → 57.20`, MCC → category, modal home-state) — dataset-specific, not a Ray lesson.
-
-## Show inline without forking logic
-
-When the notebook shows an inline version and a script/job needs a headless version, **both compose the same `src/` helpers** — never two copies of the logic that can drift.
-
-Pattern: put the *callbacks* and *steps* in `src/` as public functions; the notebook composes them in the open; the headless entry point (`prepare_*`, a `scripts/` stage, the job) composes the **identical** sequence. In the example, `prepare_tabformer()` was refactored to call the same `normalize_batch` / `sample_cards` / `card_statics` / `attach_statics` the notebook shows — so the walkthrough and the job can't produce different data.
-
-`src/` is the **hide bucket**; the notebook is the **show surface**. Reach for an import when code is (a) long, (b) incidental, or (c) must run identically headless. Inline it when it carries the lesson.
-
-**Every hidden helper raises the same silent question: is that 2 lines or 100?** The instructor can ignore a black box; the audience can't — each opaque call pulls attention away from the code that matters. Three remedies, in order: (a) inline anything trivial enough to recognize on sight — a 3-line AdamW constructor proves "ordinary PyTorch" better than a `make_optimizer` wrapper, and a visible `torch.manual_seed` shows reproducibility; (b) disclose the sizes of what stays hidden, in prose ("the next-token loss is ten lines; the longest, the cosine schedule, is fifteen") — the anxiety is about how much is hidden, not what; (c) a branch that never runs at any preset (FSDP) is pure wonder-bait — inline it with a comment saying it's off, or cut it. (Zach, 2026-07-23: "every obscuration makes the audience wonder whats actually going on.")
-
-**But hiding isn't free — a name the reader must look up is worse than the code itself.** A helper earns its place only when its *call site* reads clearly: name + args tell the reader what happens without opening `src/` (`ensure_download`, `normalize_batch`, `sample_cards`). If you'd invent a wrapper like `write_temporal_splits()` just to shorten a cell — and the reader would have to go read it to know what it does — the hiding cost more than it saved; show the few lines inline. The deciding question is never "is this incidental?" but **"would the reader have to look it up?"** Hide what's incidental *and* self-evident by name; inline what's incidental but short or would need an opaque new name.
-
-## A section you keep patching is a section to question
-
-Before improving a section for the third time, ask who owns its content. nb02 had a "how we measure performance" section that got rewritten twice and grew a demo cell — but the metric explanation was Part 1's, the score-noise caveat was Part 6's, and nb02 scores nothing, so no code could ever belong to it. The fix was deletion plus one bridge sentence where the fraud rate prints. The tell: every cell you try under the heading feels wrong. That means the heading is wrong, not the cells.
-
-## Show *why*, not just *what*
-
-A shown cell should answer **"what am I seeing and why does it matter,"** not narrate the API. Motivate each engineering/modeling choice from the data or the problem (*amounts span orders of magnitude → log-bucket them*; *fraud is ~0.1% → report PR-AUC, not accuracy*; *workers run on other nodes → checkpoint to shared storage*). That justification belongs in the markdown around the lesson — not as a wall of comments inside hidden code, and not as prose with no code to anchor it.
-
-## Verify the claim against the data — never assert the shape from memory
-
-"Show *why*" only works if the *why* is true. The fastest way to lose a sharp reader is a confident, wrong characterization of the data: calling a distribution "heavy-tailed" when it's a tame lognormal (top 1% held only ~10% of the mass, max ~200× the median); "most cards are quiet" when the median card had 2,500 transactions; "then nothing for weeks" when 99.5% of gaps were under a week. Every one of those was a one-line check away, and every one shipped in a first draft.
-
-**The rule covers difficulty claims too.** "Tokenizing transactions is simpler than tokenizing text" shipped in a project where the tokenizer was the single hardest thing to get right (hash mirroring, byte-identity verification, bucket design). If the work fought you, don't call it simple — say which part is mechanical and which part is hard.
-
-**Fact-check at the claim's own altitude.** "Ray distributes the base pytorch model either way" was wrongly flagged because the checker evaluated the wrapper layer (FSDP's sharding is PyTorch code) when the sentence made a platform claim (Ray runs the workers, group, and devices that make either branch distributed — without Ray, neither distributes anything). A platform-level statement is not falsified by mechanism-level attribution. Corollary: never "correct" a true sentence into weaker prose — the suggested fix demoted Ray from subject position to a trailing phrase, in a Ray workshop. When Ray truly is the actor, [Ray][verb] is the right shape.
-
-**Rule: if a sentence names a shape, a magnitude, or a rate, compute it before you write it.** `df.describe()`, a quantile, a `value_counts()`, "what share of the mass is in the top 1%" — all cheap. A shipped wrong adjective is not: it's the exact thing a reader catches, and it discredits the real lesson sitting next to it. This applies *doubly* to plot captions and section prose an agent generated from a template — those are guesses until the numbers confirm them.
-
-And the shape words are not interchangeable color: **heavy-tailed** (fat tail carrying real mass), **long-tailed** (thin tail stretching far along the axis), and **right-skewed / lognormal** are different shapes with different modeling consequences. Use the one the data shows, not the one that sounds impressive.
-
-**Honesty cuts both ways: never volunteer what reads as a Ray defect.** The honesty rule (don't claim Ray shines where it's undifferentiated) has a mirror: don't name Ray — or a Ray flag — as the thing that failed when the fact is true of every distributed engine. "A distributed engine doesn't promise which rows land in which output file, *even with Ray's `preserve_order` on*" was an unforced error: the italicized clause converts a neutral systems fact into a Ray gotcha, in prose whose job is to make Ray the obvious choice. State the limitation generically, then sell the design that handles it ("so every row carries its position in a `__seq__` column"). The operator-level Ray specifics belong in PERFORMANCE.md or a verification doc, not workshop prose. Test: if the sentence names Ray next to a negative, ask whether the negative is Ray-specific and whether the reader needs it *here* — usually no and no.
-
-## The closing cell banks the *transferable* lesson, not dataset trivia
-
-The takeaways/summary cell is where the reader files away "what do I reuse." A Ray Data notebook whose takeaways are three bullets about transactions and zero about Ray has thrown away its own point. **Lead the summary with the primitive** — the `read_csv → map_batches → groupby → write_parquet` streaming shape, "the driver never materializes the full table," "same code from mini to full, only the config changes" — then the domain/modeling observations second. If you organized the notebook around a Ray lesson, the closer has to bank it.
-
-## Purpose before mechanism — for every heading *and* lead sentence
-
-The single most common failure: leading with *how the code works* instead of *what it's for and produces*. It shows up two ways, and both must be fixed.
-
-**Headings** name the decision/output the reader takes away, not the phenomenon or the API. "Class imbalance" describes the data; **"How we measure performance"** is the lesson it drives. "One card at a time, across the cluster" is flavor; **"Turn each card's history into token sequences"** says what the cell produces. Name the section for the temporal split, not for "transaction volume rose over time."
-
-**Lead sentences** state purpose/output before any mechanism. *"The cell below groups the transactions by `card_id` and runs one function per card with `map_groups`"* leads with plumbing — the reader doesn't yet know what's being built or why they'd care. *"This cell is the tokenizer: it turns each card's raw transactions into the integer sequences the model trains on"* leads with the point; the `map_groups`/grouping/stateless details come **after**.
-
-The test to run on every heading and first sentence: **"Does this say what the reader is getting before how it's built? If I deleted the mechanism words (`groupby`, `map_groups`, 'one function per card'), is there still a point left?"** If not, rewrite. Mechanism is the second sentence, never the first.
-
-Tells that you've inverted it: a heading that's a chapter-epigraph phrase ("One card at a time…"), or a sentence starting "The cell below…", "This section covers…", "Here we group/call/run…".
-
-Two more heading rules from review. **Consecutive sections must not repeat the same noun** — "Why the split is temporal" / "The split as a Ray Data pipeline" / "The train split at a glance" is one activity wearing three headers; merge into one section with `###` steps, each step = short lead + the code cell that does exactly that step. **A title is one action verb plus a concrete object** ("Write the three splits") — never a double-verb compound ("Write the parts and draw the evaluation samples"); the second activity is explained inside.
-
-## Voice: write like an engineer to a peer, not a content model
-
-Calibrate against this sample Zach wrote himself (an opening, presentation register — but the qualities transfer to notebook prose):
-
-> Transaction foundation models are the latest generation of transformer models - like LLM's, but instead of language, they are focused on financial transactions. This lets transaction foundation models recognize distinct patterns like fraud, that traditional ml techniques can't detect. Today I'm gonna show you how to build your own transaction foundation model and achieve performance and scalability that surpasses comparable approaches by Nvidia.
-
-What it does: defines the new thing **by analogy to a known thing, in one breath** — not a formal bolded-term definition, not a company name-drop list. Each sentence advances the reader: what it is → why you care → what you're getting. First person, direct, confident claim, zero throat-clearing. If a draft opening reads denser or more "impressive" than this, it's wrong.
-
-**Workshop register is action tone: lead with the task, not a description.** "The 80/10/10 boundaries are positions in time…" reads like documentation; **"We need two dates: the day by which 80% of all transactions have happened…"** reads like someone running a workshop. Open steps with *We need / We do / Now we*, keep the verbs on us, and let the mechanism arrive as the way we do the thing — never as the subject of the sentence. (Zach: "Speaking with more action tone instead of passive is better for a workshop.")
-
-**Connect the logical chain — no gap between goal and mechanism.** A paragraph that states a goal ("cutoffs are defined by counts") and then names an operation ("groupby by date") without the middle link ("we need each day's count, plus a running total over the days in order") reads as two unrelated facts. Walk goal → what that requires → the operation that provides it. If the reader could ask "what does that have to do with it?", the link is missing.
-
-**One word per concept, held for the whole notebook.** If the intro calls them "splits," the section titles, prose, and prints call them splits — never "parts" in one place and "splits" in another.
-
-**The deeper AI tell is staging, not sentence length.** A draft was rejected twice for the same disease in two disguises: first as long em-dash-chained essay sentences with cute asides ("deserve a word of honesty," "deliberately boring"), then — after shortening — as *theatrical* short sentences: the dramatic negation-hook opener ("The foundation model never sees a fraud label."), the beat-drop mini-sentence for rhythm ("Similar transactions get similar embeddings."), the designed statement-then-elegant-elaboration arc. Every sentence was performing. Human engineer prose is informational: the subject comes first, facts arrive in the order you'd say them out loud, and nothing is staged for effect. Test: does the sentence exist to carry information, or to land? If it lands, rewrite it to carry.
-
-Generated demo prose has telltale filler patterns that make a sharp reader trust the content less. Cut them:
-
-- **Editorializing titles** — "Class imbalance — and why we don't report plain accuracy." Name the thing: "How we measure performance."
-- **The `**Label**:` bullet list** where every item is a bold noun + colon ("**Metric**: …", "**Sampling**: …"). Write sentences.
-- **Filler connectives** — "drives the rest of the series," "it's worth noting that," "the operationally meaningful number."
-- **The announced contrast** — "the same idea, with one big difference," "but here's the catch": trailering a difference instead of stating it. Put the two facts next to each other and let them differ: "An LLM tokenizer splits text into word pieces and learns its vocabulary. A transaction has no text to split." No setup line.
-- **The curator phrase** — "the number to watch," "the result that matters," "the knob worth understanding": assigning importance to a fact instead of stating the fact that creates the importance. Tour-guide voice — pointing at the exhibit instead of being it. State the fact plainly; if it matters, that shows.
-- **Grandstanding** — announcing a thing's importance before saying what it is: "We built the artifact every later notebook reads" (Zach: "just fucking annoying waste of reading"). Say what you did, then contextualize if needed: "We built our training/validation/test (80/10/10) splits. Every later notebook reuses them."
-- **Raising a concept only to dismiss it** — don't introduce AUC-ROC just to say you don't use it. If it isn't load-bearing, cut it. Its sneakiest form is the **negative opener**: starting a section by demolishing a thing no one proposed ("accuracy is a useless score…", "this stage never needs a GPU…"). Open with what we do and why it fits; dismiss nothing. (Caught twice in one page, 2026-07-21.)
-- **Affirmative framing is the default for EVERY sentence, not just openers.** "No card depends on another" was corrected to "each card is independent" — same fact, stated as what IS. Negation makes the reader hold an absence; the affirmative hands them the property. Write the negative form only when the absence itself is the point (a warning, a disproof). (Caught in a one-sentence insert, 2026-07-21 — the rule was being applied only to openers.)
-- **Naming a term then waving at it** — name the real term (`importance weighting`) *and* gloss it concretely ("keep 1 in 50 normals, weight each survivor ×50"), not with more abstraction ("counts for the many it represents").
-
-The test for any sentence: would an engineer write this to another engineer, or does it read like it's filling a section template?
-
-## Code comments: one step, one comment — and answer at the line that asks
-
-**A block comment explaining several chained lines is the tell that the chain should be split.** Three "rambling" comment lines above a three-step chain means: break the chain into three statements and give each a short comment of its own. One idea per comment, sitting on the line it describes. (Zach: "Speak plainly, one step at a time. You have three rambling lines of text that is supposed to explain a couple lines of code.")
-
-**A comment must survive being read alone.** Readers scan comments independent of the code, so each one is a self-contained plain sentence: a bare marker ("(1) wrap for distributed training") forces the reader to reconstruct what (1) was and what "wrap" means — write "This is Ray adaptation (1) from the prose above: every worker trains a full copy and Ray keeps the copies in sync." Corollary for branches: an else-comment must not imply the if lacks the property (commenting only the else with "distributed training" reads as the if being non-distributed) — each branch states its whole story. (Zach, 2026-07-23: "that took 5 minutes where it could have been 15s.")
-
-**Comment patterns from Zach's own edits (2026-07-23), the reference register:** when a concept is standard and the prose already covered it, the comment states provenance and moves on — "Same as NVIDIA's blueprint, basic stuff for transformers." beats three sentences re-teaching AdamW. Multi-part comments become dash bullets, one idea per line. Cross-references get a memorable NAME ("See Ray Note #1 above"), never a bare marker — and the prose must introduce that exact name, or the pointer dangles.
-
-**Put the answer at the line that raises the question.** The comment on `read_parquet` is where "how does it know how many workers?" gets answered (it doesn't — one task per shard, scheduled on whatever CPUs exist, autoscaler adds more when tasks queue). The laziness of a Ray dataset is explained at the `to_pandas()` that triggers execution — not as an abstract claim three lines earlier that the very next statement silently falsifies. Never leave a comment whose truth expires within the same cell.
-
-**The dash inventory: a finished sentence with a parts list stapled on.** "We embedded every split and wrote the results to shared storage — `embed_`, `lbl_`, and `raw_` files per split." The sentence ends at "storage"; the stapled list is code-level detail that belongs in the cell (or nowhere). Cut or promote, never dangle — and in first position the staple buries the power sentence the opener rule demands. prose_lint flags it as dash-inventory.
-
-**The dash-aside sandwich: verdict — whispered justification — consequence.** "Memory is easy here — inference keeps no gradients or optimizer state — so each actor runs large batches." Three beats performed as one sentence. Delete the verdict, promote the evidence to be the sentence, keep the consequence: "Inference keeps no gradients or optimizer state, so each actor runs large batches." Greppable (two em-dashes plus a trailing "so"); prose_lint flags it as dash-aside-sandwich.
-
-**Things do not "live," "ride along," "carry," or "sit" — they ARE and they're IN.** "The details live in src/model.py" was corrected to "the details are in src/model.py." Animate verbs for inanimate things are the flowery register leaking back one word at a time; the plain locational verb is always available. Same family: "carries the lesson," "the loop owns," "the receipt rests on." Say is / are / does / holds.
-
-**A technical term must earn its place: it buys precision the plain phrase lacks, or it goes.** "Shuffle" and "embarrassingly parallel" earn it — they name specific mechanics an engineer will meet again, and we gloss them on first use. "Corpus" does not — "training data" says the same thing to everyone, so "corpus" only alienates readers without NLP training (Zach: "i hate the word corpus… it alienates people who arent specifically trained"). Banned unless quoting someone else's artifact name. The test for any term of art: does the plain phrase lose information? If not, use the plain phrase.
-
-**Explain a function in plain verbs — what it literally does, no field jargon.** "stratified_eval draws the seeded eval sample" stacks three jargon words a reader must already know; "picks 100K random rows from a split, keeping the fraud rate the same as the whole split — the fixed seed makes it pick the same rows every run" says the same thing in words anyone can act on. Statistics verbs ("draw", "seeded", "stratified") never appear in a comment without their plain meaning doing the work. Zach's model comment: "# Clean up and write out the split metadata to split_meta.json." — subject, verb, object, done.
-
-**Names must read from the call site — and say the right provenance.** A generic name (`normalize_batch`) sounds like a black box and forces the reader to ask; a concrete one (`normalize_date_column`, `add_analysis_columns`) doesn't. Verbs carry provenance: "add_date_column" made the reviewer ask *where the date came from* — "normalize" says it's derived from fields already there. If a reviewer stops to ask what a function is, the name is wrong, whatever the docstring says.
-
-## Show the intermediate result, and use real examples
-
-**If a step computes something the reader can look at, show it.** The cutoff dates were computed inside a cache guard and never printed — moving the aggregation into its own always-run cell costs one worker-side scan and buys a visible result (`train < 2017-04-17 <= val < 2018-09-29 <= test`) plus, in the committed output, the autoscaler bringing CPU nodes up: the "declare work, hardware arrives" story in the artifact itself.
-
-**A real example from the data beats an invented one.** The one-card sequence showed card 0 (nothing to see) while the prose invented a hypothetical $900 purchase. One query found card 66000: routine Texas purchases, then a same-day burst of Mexico department-store charges escalating \$45 → \$514 — the series' sequence-context thesis, visible in ten rows. When the prose describes a pattern, find the pattern in the data and display it; hardcode the chosen example (with a comment saying why it was chosen) if a programmatic pick could select a different instance at another scale and desync the prose from the display.
-
-**Ray must be visible where Ray is the lesson.** `src/` helpers for taught stages hold pandas per-batch functions and sealed reference code only — never the `ray.data` calls themselves. A wrapper like `load_normalized()` that hides read + transform + filter obfuscates exactly what the notebook exists to teach ("we cannot be obfuscating ray usage because part of the task here is showing ray"). Corollary: use each Ray tool for its own job in the open — `filter(expr=col(...) == …)` for row predicates, `map_batches` for transforms — and if committed outputs are kept in the working branch, curate them to the informative lines (real results, plus infra lines that tell the Ray story, like autoscaler scale-up; never progress bars and logger spam).
-
-## Keep the reader in the loop — name it, then say where it resolves
-
-The umbrella rule behind many of the individual voice rules (Zach: "Many things i've told you come down to that rule"). A multi-notebook workshop is one continuous experience for the reader; every named thing creates curiosity, and every unresolved mention is a loose end. So: when a takeaway names output files, add where they get opened ("Part 4 trains on these files directly, and opens by loading them — we'll look at what's inside there"). When a design choice pays off later, name the notebook that pays it off. When a term appears, gloss it now or say which part explains it. The reader should never hold an unanswered question the series has an answer to without being told where that answer lives. Corollary: those forward promises are commitments — when writing the later notebook, check the earlier ones' promises and honor them.
-
-## Large code blocks get a subsection header
-
-Every large code cell gets its own `###` header ("Defining the training function", "Run the training"). Two benefits: the notebook's structure stays visible while scrolling, and Jupyter makes headed sections collapsible, so a reader can fold the code away. (Zach's rule, 2026-07-23.)
-
-## Impact before mechanics — and mechanism-only facts may not deserve prose
-
-"Ray writes checkpoints to shared storage, so an interrupted run picks up where it left off" leads with plumbing and buries the product capability in the tail. Invert it: "Ray makes the run durable: if training is interrupted, it resumes from the last checkpoint instead of starting over" — what Ray does FOR the user first, the mechanics second (or in a code comment). And apply the test before writing the sentence at all: gradient averaging is pure mechanism with no user-felt impact — it belongs in the loop's code comment, not the prose. (Zach's quiz, 2026-07-23.)
-
-## First and last sentences are power positions; first and second words are power words
-
-**Power means the claim itself, not the active-voice form.** "We watch two numbers" is short, active, We-led — and pure skeeze, because it announces that content is coming instead of delivering it. The test: if the first sentence were the only one the reader saw, did they learn the thing? Form-matching the power pattern while carrying no content is the failure mode to check for explicitly. **Truth is not sufficient**: "Training prints two numbers per epoch" is literally true and still fails — it inventories the content instead of delivering it. Any opener whose job is counting or listing what follows gets deleted; the structure shows itself.
-
-**No sentence exists to set up another.** If a sentence's function is "setup" for the one after it — framing a contrast, building to a reveal, seeding a punchline — it is staging, whatever its grammar looks like. Zach: "I dont punchline setup anything. I speak plainly. I use power sentences." Put the facts adjacent and let the difference speak: "NVIDIA's notebook trains a 30-step demonstration and downloads its real weights. Ours trains the full ~16,000 steps." Every sentence is itself the point.
-
-**The colon is the skeeze marker when its left half is a content-free label.** "Perplexity is the number to watch: how many tokens…" stages a branding phrase before the payload; "Perplexity measures how many tokens the model is choosing between" just says it. Colons that introduce a concrete list survive — Zach's own "This job has two main steps: grouping the rows by card, then tokenizing each card." The test is the left half alone: if it taught nothing, delete it and let the right half be the sentence.
-
-The reader's eye lands on openings, closings, and headings — put the point there. A transition that opens "Next, we count the total number of training steps" spends its power position on a bookkeeping detail; the point is "Now we run the training," and the step-count is a parenthetical on the way. Endings equally: close on the strong concrete fact (the scale span, the result), never on the minor detail. And a transition of two bare sentences is invisible when scrolling — give it a `###` heading so it reads as structure.
-
-## After big code, re-orient before advancing
-
-The reader loses the thread inside a long code cell; the author never does — which is why the author skips the recap and the reader flounders. After any substantial code cell, the next markdown opens with one sentence of what was just built, then the next action. Zach's template: "In the last coding section we built the PyTorch training function, integrated with Ray for distributed training. Next, we count the total number of training steps — the learning-rate schedule needs it before training starts." Recap, then next, with the reason attached to the next.
-
-## The Next blurb is one plain sentence
-
-The closing "Next" pointer says what the reader does next, in words they already understand. No class names, no magic numbers, no feature lists — "`FinancialTabularTokenizer` (merchant hashing + category hierarchy + temporal encoding, vocab 6251)" is a jargon dump about a notebook the reader hasn't opened; "turn each card's transactions into the token sequences the model will train on" is the same pointer in plain words. The details belong in the next notebook, where they get explained.
-
-## Plots: restyle, don't restructure — and make the point visible
-
-Two different jobs; don't confuse them:
-
-- **"Make it look better" means change the *styling*, not the *structure*.** Theme it (seaborn `set_theme(style="white")` + `despine`), kill chartjunk (gridlines), human-format the axes (`600000 → 600k`). Do **not** silently re-axis it — relabeling a log-x with hand-written ticks (`$0.10, $1, $10`) changes *what the reader is looking at*, and they'll (rightly) call it weird. Keep the axes they expect.
-- **But the plot must actually show its point.** A long-tailed quantity on a linear y-axis is one tall bar and an invisible tail — put the y-axis on a log scale so the tail is visible. Revealing-the-point is fair; restructuring for its own sake is not.
-
-Gotcha: an unescaped `$` in a Jupyter **markdown** cell triggers MathJax and silently garbles everything between two dollar signs. Escape amounts as `\$57.20`. (Code cells and backtick spans are safe.)
-
-## It must run — outputs don't ship
-
-The anyscale/templates repo **strips notebook outputs** before commit (a `clear-notebook-outputs` pre-commit hook) and the test re-runs the notebook end-to-end with **papermill** to prove it executes. Consequences for how you author:
-
-- **Committed defaults must execute in the test environment** — the template's compute at CI/mini scale, usually **CPU**. Never commit the author's `use_gpu=True` or large-scale config as the default; expose scale-up through one obvious knob (`SCALE`, `num_workers`, `ScalingConfig`) and leave it at the runnable setting.
-- **Don't rely on committed outputs to tell the story.** The reader sees code + prose first and runs it themselves. Render plots/numbers in-cell so they appear on run, *and* state the expected result in prose so a reader knows what "working" looks like before they execute.
-- **The proof of correctness is a green papermill run, not a screenshot.** If a stage can't run at mini scale in CI time, shrink it (fewer cards/epochs/rows) rather than committing a version only a GPU cluster can execute.
-- **Trust papermill's *own* exit code, not a chained command's.** `papermill … > log 2>&1; echo done` reports the `echo`'s exit (0) and hides a failed run — a notebook that raised `NameError` looked "green." Read papermill's exit directly, or scan the executed notebook for cells with `output_type == "error"`. A false green is worse than no check.
-- **After moving or changing an import, re-run the *whole* notebook.** A later cell may still use the symbol you relocated. Rewriting one cell's imports silently broke a downstream cell that used `STATIC_FIELDS`; only a full top-to-bottom run caught it. Editing any cell means re-verifying all of them, not just the one you touched.
+Zach: "Many things i've told you come down to that rule." A multi-notebook workshop is one continuous experience. Every named thing creates curiosity, and every unresolved mention is a loose end. When a takeaway names output files, say where they get opened. When a design choice pays off later, name the notebook that pays it off. When a term appears, gloss it now or say which part explains it. The reader should never hold an unanswered question the series has an answer to without being told where that answer lives. Forward pointers are commitments: when writing the later notebook, check the earlier ones' promises and honor them.
 
 ## Validate sentences by their JOB, not against a blacklist
 
-The tells are a blacklist, and a sentence can dodge every named tell and still be empty. The actual validation (Zach 2026-07-23: "is that why you dont validate your sentences?"): give every sentence a label for the job it does — **claim, fact, consequence, pointer, gloss, or instruction** — then check two things: the label fits the position (a section opens with a claim; a body sentence is a fact or a consequence; a closer is a deliverable or a pointer), and the content fills the label (a claim actually claims the section's point; a fact is checkable). A sentence that takes no label has no job — cut it. The named tells are the common ways a sentence fakes a job: a sandwich is a verdict posing as a fact, a dash inventory is detail posing as part of a claim, a grandstand is importance posing as content. Label first; the blacklist is cleanup.
+The tells (Part 3) are a blacklist, and a sentence can dodge every named tell and still be empty. The actual validation (Zach: "is that why you dont validate your sentences?"): give every sentence a label for the job it does — **claim, fact, consequence, pointer, gloss, or instruction** — then check two things:
+
+1. **The label fits the position.** A section opens with a claim. A body sentence is a fact or a consequence. A closer is a deliverable or a pointer.
+2. **The content fills the label.** A claim actually claims the section's point; a fact is checkable.
+
+A sentence that takes no label has no job — cut it. The named tells are the common ways a sentence fakes a job: a sandwich is a verdict posing as a fact, a dash inventory is detail posing as part of a claim, a grandstand is importance posing as content. Label first; the blacklist is cleanup.
+
+## First and last sentences are power positions
+
+The reader's eye lands on openings, closings, and headings — put the point there.
+
+- **Power means the claim itself, not the active-voice form.** "We watch two numbers" is short, active, We-led — and pure skeeze, because it announces that content is coming instead of delivering it. If the first sentence were the only one the reader saw, did they learn the thing?
+- **Truth is not sufficient.** "Training prints two numbers per epoch" is literally true and still fails — it inventories the content instead of delivering it. Any opener whose job is counting or listing what follows gets deleted; the structure shows itself.
+- **A power sentence fails if it is the wrong claim.** "Embedding cost is linear in the transaction count" is strong and true and was still wrong as an opener — linearity was a property, not the section's point (the point was: volume is the scale problem and pool size is the answer). The opener test is "is this THE section's claim," not "is this a strong sentence."
+- **Backstory openers fail even when skeeze-free** (Zach, on "The foundation model trained on long card histories, but…"): opening on the tension or motivation is still setup. The first sentence is the claim or decision itself ("We embed each transaction on its own…"); motivation moves to a later sentence.
+- **Closers must deserve the position.** A final sentence that reads like a code comment ("We compute one number before training: …") is a code comment — move it there. Close on the strong concrete fact (the scale span, the result), never on a minor detail, never on a "because"-tail, never on an aphorism.
+- **No sentence exists to set up another.** If a sentence's function is framing a contrast, building to a reveal, or seeding a punchline, it is staging regardless of its grammar. Zach: "I dont punchline setup anything. I speak plainly. I use power sentences." Put the facts adjacent and let the difference speak: "NVIDIA's notebook trains a 30-step demonstration and downloads its real weights. Ours trains the full ~16,000 steps."
+
+## The section-opener audit is a mandatory, WRITTEN step
+
+Zach: "you have a rule of thumb about the first sentence but arent using it." Positional rules can't be grepped and don't survive as vibes. Before shipping, extract every section's first and last sentence, state the section's claim in one line, and answer in writing "is sentence one that claim?" Problem statements, definitions, motivation, and backstory all FAIL even when skeeze-free. If no written verdict table was produced, the review didn't happen.
 
 ## The review loop — iterate to fixpoint before any handover
 
-A single pass or a grep catches one rule; the reviewer needs all of them held at once. Every prose/comment handover runs this loop:
+A single pass or a grep catches one rule; the reviewer needs all of them held at once.
 
-**Pass A — high level.** What is this section FOR, in one sentence? Delete or move every paragraph that doesn't serve it. Check location (is this content owned by another notebook/section?), structure (headers over big code, code/prose interleave, recap-then-next after big cells), and duplication against the rest of the notebook.
+- **Pass A — high level.** What is this section FOR, in one sentence? Delete or move every paragraph that doesn't serve it. Check location (is this content owned by another notebook or section?), structure (headers over big code, code/prose interleave, recap-then-next after big cells), and duplication against the rest of the notebook.
+- **Pass B — sentence by sentence.** The job-label audit (written), then every sentence and comment against the tells. First and last sentence of each paragraph audited hardest — first and second words are power words.
+- **Pass C — high level again.** Re-read after B's edits: flow intact, no new seams, no orphaned references, openers and closers still the strongest sentences, nothing now duplicated.
 
-**Pass B — sentence by sentence.** Every sentence and comment against the full tells list: does it carry the claim (power = content, not form)? Affirmative? Plain verbs, no animate verbs for things? No curator phrases, announce-colons, announced contrasts, grandstanding, fragments-as-openers? Jargon glossed at first use? Right actor as subject (Ray where true)? Claims computed/verified at their own altitude? Comments survive being read alone? First/last sentence of each paragraph audited hardest.
+Repeat A→B→C until one full cycle produces zero changes. Only then hand over. Log what each pass caught — a loop that catches nothing on its first cycle probably wasn't run.
 
-**Pass C — high level again.** Re-read the whole section after B's edits: flow intact, no new seams, no orphaned references, openers and closers still the strongest sentences, nothing now duplicated.
+## Sweep, don't spot-fix
 
-**Repeat A→B→C until one full cycle produces zero changes.** Only then hand over. Log what each pass caught — a loop that catches nothing on its first cycle probably wasn't run.
+When the reviewer flags a sentence pattern, the flagged sentence is never the only instance. Fix it, then immediately re-scan every markdown cell and comment in the notebook for the same pattern before handing back. Making the reviewer repeat the same correction on the next paragraph is the single fastest way to burn their patience — they are teaching a rule, not editing a line.
 
-## After any voice correction: sweep, don't spot-fix
+---
 
-When the reviewer flags a sentence pattern ("speak plainly," "say what X does," "lead with the action"), the flagged sentence is never the only instance. Fix it, then immediately re-scan every markdown cell and comment in the notebook for the same pattern before handing back. Making the reviewer repeat the same correction on the next paragraph is the single fastest way to burn their patience — they are teaching a rule, not editing a line.
+# Part 2 — Voice and register
 
-## The scaling-factors section — the established pattern
+## The calibration sample (Zach's own writing)
 
-Every notebook 02+ ends its technical content with "## Scaling factors," and the pattern is fixed. Open on the measured fact or the concrete limit — never a frame ("The scaling problem is X", "Ray's answer is Y", "The arithmetic is linear" are labels posing as sentences; state the facts and let them argue). Body: what breaks and when, with the resource named (RAM, network bandwidth, GPU memory, cores) and a magnitude (GBs here, TBs at production; "past a few hundred million rows"). The table format from nb04/05: `What grows | The limit it hits | What absorbs it | Measured at full` — every number from a real run, "—" where unmeasured. Then the 10× arithmetic (same pool takes N× longer; N× the workers brings it back) and the fact that only a config line changes. Recurrence, elasticity, and GPU-vs-CPU are stated as facts when true, never as sales beats.
+> Transaction foundation models are the latest generation of transformer models - like LLM's, but instead of language, they are focused on financial transactions. This lets transaction foundation models recognize distinct patterns like fraud, that traditional ml techniques can't detect. Today I'm gonna show you how to build your own transaction foundation model and achieve performance and scalability that surpasses comparable approaches by Nvidia.
 
-## Explain at the general engineer's level — the real word, then its plain meaning
+What it does: defines the new thing **by analogy to a known thing, in one breath** — not a formal bolded-term definition, not a company name-drop list. Each sentence advances the reader: what it is → why you care → what you're getting. First person, direct, confident claim, zero throat-clearing. If a draft reads denser or more "impressive" than this, it's wrong.
 
-Two failure directions, both real. Textbook-speak fails ("Grouping is bound by data movement" — no engineer says that); dumbed-down fails too ("Grouping is hard" — easy/difficult carry no information; Zach: "plain doesn't mean dumbed down"). The target: the claim an engineer would state at a whiteboard, with the term of art introduced in passing and the concrete resource named. "Grouping is limited by how fast you can move data around … nearly every row travels across the cluster network (data engineers call this a shuffle) … gigabytes here, terabytes at production scale." Real word, plain definition, named resource, magnitude.
+## The register rules
 
-## Define at the moment of understanding — never by forward reference
+- **Action tone: lead with the task, not a description.** "The 80/10/10 boundaries are positions in time…" reads like documentation; "We need two dates: the day by which 80% of all transactions have happened…" reads like someone running a workshop. Open steps with *We need / We do / Now we*; the mechanism arrives as the way we do the thing, never as the subject. (Zach: "Speaking with more action tone instead of passive is better for a workshop.")
+- **The general engineer's level: the real word, then its plain meaning.** Textbook-speak fails ("Grouping is bound by data movement" — Zach: "is that like a bowel movement?"); dumbed-down fails too ("Grouping is hard" — easy/difficult carry no information; "plain doesn't mean dumbed down"). The target is the claim an engineer would state at a whiteboard, with the term of art introduced in passing and the concrete resource named with a magnitude: "Grouping is limited by how fast you can move data around … nearly every row travels across the cluster network (data engineers call this a shuffle) … gigabytes here, terabytes at production scale."
+- **Connect the logical chain — no gap between goal and mechanism.** A paragraph that states a goal ("cutoffs are defined by counts") and then names an operation ("groupby by date") without the middle link ("we need each day's count, plus a running total over the days in order") reads as two unrelated facts. Walk goal → what that requires → the operation that provides it. If the reader could ask "what does that have to do with it?", the link is missing.
+- **One word per concept, held for the whole notebook — and the series.** If the intro calls them "splits," the section titles, prose, and prints call them splits. Never "parts" in one place and "splits" in another; never "sequences" in prints when the prose says "windows."
+- **Define at the moment of understanding — never by forward reference.** Gloss a term in the sentence right after the reader has just understood the thing it names: "…the difference between its guess and the real token is the training signal. This is what makes the model *causal*: every prediction uses only the past." Pointing at output that hasn't happened yet ("what 'causal' means in the printout below") was rejected: "it's weird to explain something in the future."
+- **Affirmative framing is the default for EVERY sentence, not just openers.** "No card depends on another" was corrected to "each card is independent" — same fact, stated as what IS. Negation makes the reader hold an absence; the affirmative hands them the property. (Caught in a one-sentence insert after the rule already existed — it was being applied only to openers.)
+- **Impact before mechanics — and mechanism-only facts may not deserve prose.** "Ray writes checkpoints to shared storage, so an interrupted run picks up where it left off" leads with plumbing. Invert: "Ray makes the run durable: if training is interrupted, it resumes from the last checkpoint instead of starting over." And apply the test before writing at all: gradient averaging is pure mechanism with no user-felt impact — it belongs in a code comment, not the prose.
+- **The deeper AI tell is staging, not sentence length.** A draft was rejected twice for the same disease in two disguises: long em-dash essay sentences with cute asides, then — after shortening — *theatrical* short sentences: the dramatic negation-hook opener ("The foundation model never sees a fraud label."), the beat-drop rhythm sentence, the designed statement-then-elegant-elaboration arc. Human engineer prose is informational: subject first, facts in speaking order, nothing staged for effect. Test every sentence: does it carry, or does it try to land?
+- **The final test for any sentence:** would an engineer write this to another engineer, or does it read like it's filling a section template?
 
-A term is glossed in the sentence right after the reader has just understood the thing it names: "…the difference between its guess and the real token is the training signal. This is what makes the model *causal*: every prediction uses only the past." Defining a term by pointing at output that hasn't happened yet ("what 'causal' means in the printout below") was rejected — "it's weird to explain something in the future." Related: numbers get ONE owner section (the full run's steps/hours belong to Scaling factors); other sections reference, never restate.
+---
 
-## Don't over-prove — receipts are for the repo, not the reader
+# Part 3 — The tell catalog (the blacklist; `prose_lint.py` greps the mechanical ones)
 
-One sentence of verification with a pointer is the ceiling: "The translation is verified byte-identical to NVIDIA's original (the checks are in `scripts/`)." Inventorying the verification scripts and what each compares is a distraction — Zach: "no one is standing around in disbelief; it's a distraction from the point of the work." The same instinct governs section existence: a weak check that needs an antidote paragraph to not mislead (the collapse check, which cried wolf on us in July) gets replaced by the plain artifact check, not defended harder.
+## Framing tells — sentences posing as content
 
-## When Ray is buried, refactor src — never annotate the burial
+- **Grandstanding** — announcing importance before the thing: "We built the artifact every later notebook reads" (Zach: "just fucking annoying waste of reading"). Say what you did, then contextualize: "We built our training/validation/test (80/10/10) splits. Every later notebook reuses them."
+- **The curator phrase** — "the number to watch," "the result that matters," "the knob worth understanding": assigning importance instead of stating the fact that creates it. Tour-guide voice — pointing at the exhibit instead of being it.
+- **Movie-preview lines** — "the one line that moves laptop → cluster," "the payoff is," "full stop." Dramatic emphasis is skeeze.
+- **The announced contrast** — "the same idea, with one big difference," "here's the catch": trailering a difference instead of stating it. Put the two facts adjacent: "An LLM tokenizer splits text into word pieces and learns its vocabulary. A transaction has no text to split."
+- **The announce-colon** — a content-free label staged before the payload: "Perplexity is the number to watch: how many tokens…" → "Perplexity measures how many tokens the model is choosing between." Test the left half alone: if it taught nothing, delete it. (Colons whose left half is content survive — see counter-rules.)
+- **Editorializing titles** — "Class imbalance — and why we don't report plain accuracy." Name the thing: "How we measure performance."
+- **Raising a concept only to dismiss it** — don't introduce AUC-ROC just to say you don't use it. Its sneakiest form is the **negative opener**: opening a section by demolishing a thing no one proposed ("accuracy is a useless score…", "this stage never needs a GPU…"). Open with what we do; dismiss nothing. (Caught twice in one page, 2026-07-21.)
+- **Filler connectives** — "drives the rest of the series," "it's worth noting that," "the operationally meaningful number."
+- **`**Label**:` bullet lists** — every item a bold noun + colon. Write sentences.
+- **Naming a term then waving at it** — name the real term AND gloss it concretely ("keep 1 in 50 normals, weight each survivor ×50"), not with more abstraction.
 
-Comments and prose excerpts pointing at Ray calls the reader can't see do not fix the problem (Zach: "you cannot bury the ray code… you're going to have to refactor src"). The pattern from nb04/nb05: extract the incidental pieces into small public helpers, define the composed function/class INLINE in the notebook with the Ray calls at their real lines, keep src's copy composing the identical helpers for the headless path. Acceptance for any refactor of validated code is a bit-match: deterministic mini runs must reproduce the prior outputs exactly (nb04: losses 8.742/8.668 across three refactor rounds; nb05: the example embedding vector). If the numbers move at all, revert.
+## Sentence-shape tells
 
-## Takeaways altitude — validated by a reverted rewrite
+- **The dash-aside sandwich: verdict — whispered justification — consequence.** "Memory is easy here — inference keeps no gradients or optimizer state — so each actor runs large batches." Delete the verdict, promote the evidence, keep the consequence: "Inference keeps no gradients or optimizer state, so each actor runs large batches." Zach's correction word for this family: **"sandwich."**
+- **The dash inventory: a finished sentence with a parts list stapled on.** "…wrote the results to shared storage — `embed_`, `lbl_`, and `raw_` files per split." The staple is code-level detail; cut or promote, never dangle. In first position it buries the power sentence.
+- **The punctuation pile** — a sentence needing a colon, a parenthetical, AND a semicolon is several sentences pretending to be one. Zach's parody: "BLAH BLAH BLAH BLAH: BLAH, BLAH( BLAH BLAH); BLAH."
+- **The because-tail** — "X happens, because [long clause]." as a closer. Two direct sentences: the fact, then the reason as its own statement.
+- **Notation-as-prose** — "`<bos>` + the 12 field tokens + `<eos>`" is not a sentence. Say it in English ("a 14-token sequence, its 12 field tokens wrapped in `<bos>` and `<eos>`"); the symbolic form lives in code and code comments only.
+- **Verbless fragments as sentences** — "Twelve tokens per transaction, all drawn from one shared vocabulary." Give it a verb.
+- **Walls of text** — one thick paragraph carrying five ideas. One idea per paragraph; short lists where the content is enumerable.
 
-The evidence is commit `41454b14`: a takeaways rewrite of mine was reverted wholesale, and Zach then edited even the kept version further. What the accepted versions do, and mine didn't:
+## Word tells
 
-- **No metric re-argument.** My version re-made the perplexity case ("6,251 down to 1.7 — the model predicts almost perfectly") — an overclaim that even contradicted the notebook's own calibrated reading. The metrics section owns those numbers; the takeaway states what exists now.
-- **Product meaning first.** His edit: "We trained the foundation model, and its now ready to be used for prediction systems like fraud detection. All of the later approaches build on top of this foundation model." What it's FOR and what depends on it — not the mechanism, not the storage path.
-- **Ray is one clause at this altitude.** His edit compressed my four-verb enumeration to "wrapped in Ray, which handles the distributed scaling." The enumeration belongs next to the code; the takeaway keeps `ScalingConfig` as the single concrete fact.
-- **No API inventories.** "Ray wrapped our loop with three calls: prepare_model, get_dataset_shard, TorchTrainer" was in the rejected version. Function-name lists are code-level detail.
+- **Animate verbs for inanimate things.** Things do not "live," "ride along," "carry," "sit," or "come home" — they ARE and they're IN. "The details live in src/model.py" → "the details are in src/model.py." Same family: "carries the lesson," "the loop owns," "sets the recurring bill."
+- **The term-of-art test: it buys precision the plain phrase lacks, or it goes.** "Shuffle" and "embarrassingly parallel" earn their place (specific mechanics an engineer will meet again — glossed at first use). "Corpus" fails — "training data" says the same thing to everyone (Zach: "i hate the word corpus… it alienates people who arent specifically trained"). Also banned: "smoke test/run," "de-facto," "fm" as an abbreviation, easy/hard as information-free verdicts.
+- **Jargon stacks in comments.** "stratified_eval draws the seeded eval sample" stacks three jargon words; "picks 100K random rows from a split, keeping the fraud rate the same as the whole split — the fixed seed makes it pick the same rows every run" says it in words anyone can act on. Statistics verbs (draw, seeded, stratified) never appear without their plain meaning doing the work.
+- **Anthropomorphic gloss where a precise noun exists.** "The model's understanding of a transaction, written as numbers" was rejected for "the model's vector representation of a transaction." Use the standard noun (embedding, attention mask) and gloss it — don't paraphrase it into model psychology.
 
-## Micro-tells validated from his comment edits
+---
 
-- **No line-count asides.** "(build_model is 10 lines in src/model.py)" — he first parenthesized mine, then deleted his own version of it. How long a helper is, is never the point.
-- **No cell-inventory sentences.** "Most of the cell below is `train_loop_config`, the settings…" — describing what the upcoming cell consists of is the counting tell in transition form. Say the action ("Now we configure the training run, and run it") and let the cell show itself.
-- **No metaphor labels for config.** "`ScalingConfig` is the scale knob:" became "`ScalingConfig` configures one CPU worker at `mini`, eight GPU workers at `full`." The direct verb replaces the branding phrase.
-- **Precision beats anthropomorphic gloss.** "The model's understanding of a transaction, written as numbers" was rejected for "the model's vector representation of a transaction." When a standard precise noun exists (embedding, vector representation, attention mask), use it and gloss it — don't paraphrase it into model-psychology.
-- **Timing detail stays out of transitions** ("a few minutes at `mini`" cut from a run-it transition; the header's time-to-complete line owns that).
+# Part 4 — Structure of a notebook
 
-## The Ray Note convention (nb04-established structure)
+## The intro pattern
 
-The prose section numbers its Ray integration points as **Ray Notes** ("adapted for Ray in three places…"), and the code comments reference them by name: `# See Ray Note #1 above`. Bare `(1)` markers in code were upgraded to this by Zach — the comment must say where the note is, not assume the reader tracked the numbering. Use this pairing wherever prose enumerates integration points that the code then shows.
+Recap first, at an altitude a returning reader absorbs without homework ("Previously in Part 2, we built the train/validation/test splits" — not "packed into fixed-length windows on shared storage," which forces them to remember details they don't need yet). Then why this notebook exists, then the roadmap in one or two sentences. When notebooks form a group, the intro places the reader in the group (his nb05 pattern: recap → this notebook's role in the fraud-detector arc → "Later, Part 7 builds a stronger detector…"). Content ownership applies to intros too — a recurring-cost sentence was cut from an intro because Scaling factors owned recurrence.
 
-## Intros orient within the arc, not just the page
+## Sections
 
-His nb05 intro pattern: recap ("Previously in Part 4…"), then this notebook's role in the multi-notebook arc ("This notebook and the next build the first working fraud detector… This notebook produces the embeddings, and Part 6 trains on them"), then the later pointer ("Later, Part 7 builds a stronger detector by fine-tuning…"). When notebooks form a group, the intro places the reader in the group. Content ownership applies to intros too: my recurring-job sentence was cut from the intro because Scaling factors owns recurrence.
+- **One section per activity.** Consecutive sections must not repeat the same noun — "Why the split is temporal" / "The split as a Ray Data pipeline" / "The train split at a glance" is one activity wearing three headers. Merge into one section with `###` steps: each step a short lead plus the code cell that does exactly that step.
+- **Titles: one action verb plus a concrete object** ("Write the three splits"), never a double-verb compound, never a "Why X" title, never a question, never a static label ("The model" → "What we're training"). Purpose before mechanism: name the decision or output, not the phenomenon or the API. The test for every heading and lead sentence: delete the mechanism words (`groupby`, `map_groups`, "one function per card") — if no point remains, rewrite; mechanism is the second sentence, never the first.
+- **A section you keep patching is a section to question.** Before improving it a third time, ask which notebook or section owns its content. A measurement section was rewritten twice and grew a demo cell before the honest answer surfaced: the metric explanation was Part 1's, the noise caveat was Part 6's, and the notebook scored nothing — deletion plus one bridge sentence was the fix. The tell: every cell you try under the heading feels wrong. The heading is wrong, not the cells.
+- **Don't over-prove — receipts are for the repo, not the reader.** One sentence of verification with a pointer is the ceiling: "The translation is verified byte-identical to NVIDIA's original (the checks are in `scripts/`)." Zach: "no one is standing around in disbelief; it's a distraction from the point of the work." Same instinct for weak checks: a check that needs an antidote paragraph to not mislead (the collapse check, which cried wolf on us in July) gets replaced by the plain artifact check, not defended harder.
+- **Show why, not just what.** Motivate each choice from the data or the problem (*amounts span orders of magnitude → bucket them*; *fraud is ~0.1% → AP, not accuracy*; *workers run on other nodes → checkpoint to shared storage*). The justification is markdown around the lesson — not a wall of comments in hidden code, not prose with no code to anchor it.
+- **Numbers get ONE owner section.** The full run's steps and hours belong to Scaling factors; other sections reference, never restate.
+- **Show the intermediate result.** If a step computes something the reader can look at, show it (the cutoff dates were computed inside a cache guard and never printed; moving them to an always-run cell bought a visible result and, in the output, the autoscaler bringing nodes up — the "declare work, hardware arrives" story in the artifact).
+- **Real examples beat invented ones.** The prose invented a hypothetical $900 fraud while the display showed boring card 0; one query found card 66000 — routine Texas purchases, then a same-day burst of Mexico charges escalating \$45 → \$514, the series' thesis visible in ten rows. Find the pattern in the data and display it; hardcode the chosen example (with a comment saying why) if a programmatic pick could desync prose from display across scales.
+- **Every notebook verifies what it built** before the next depends on it ("Check the training set," "Check the windows," "Check the embeddings") — a plain artifact check: counts, shapes, one concrete peek.
 
-## Counter-rules — when the rule does NOT apply
+## Around big code
 
-- **Negation is allowed when the absence is the point.** "The card's history is not in it" (the design caveat), "fraud labels play no part in this step" (self-supervision), "Memory is not the constraint here" (the contrast with training). State the affirmative fact first when one exists.
-- **A colon survives when its left half is content.** Zach's own "This job has two main steps: grouping the rows by card, then tokenizing each card." Delete only content-free label halves.
-- **A term of art survives when the plain phrase loses information** — and then it MUST be glossed at first use (shuffle, embarrassingly parallel, attention mask, causal). "Corpus" fails the test; "training data" loses nothing.
-- **A power sentence fails if it is the wrong claim.** "Embedding cost is linear in the transaction count" is strong and true and was still wrong as an opener — linearity was a property, not the section's point. The opener test is "is this THE section's claim," not "is this a strong sentence."
-- **Detail survives in code that dies in prose.** Filenames, seeds, API names, argument meanings: banned from concept-level bullets and takeaways, mandatory at their line in the code.
-- **His text is the baseline.** Preserve his sentences verbatim; flag typos once, never silently fix; fact-check his technical claims against the code and correct with evidence (the "autoscaled worker count" fix: the cluster autoscales nodes; the worker count is fixed).
+- **Large code cells get their own `###` header** ("Defining the training function", "Run the training") — structure stays visible while scrolling, and headed sections collapse in Jupyter.
+- **After big code, re-orient before advancing.** The reader loses the thread inside a long cell; the author never does — which is why the author skips the recap and the reader flounders. Zach's template: "In the last coding section we built the PyTorch training function, integrated with Ray for distributed training. Next, we count the total number of training steps — the learning-rate schedule needs it before training starts." Recap, then next, with the reason attached.
+- **No cell-inventory transitions.** "Most of the cell below is `train_loop_config`, the settings…" is the counting tell in transition form. Say the action ("Now we configure the training run, and run it") and let the cell show itself.
+- **Prose carries concepts; code carries names.** Filenames, function names, API names, seeds, and parameter meanings are banned from concept-level bullets and takeaways, mandatory at their line in the code. Zach: "save the detaily stuff for the code. I need higher level."
+
+## The Scaling factors section — the established pattern
+
+Every notebook 02+ ends its technical content with "## Scaling factors," and the pattern is fixed. Open on the measured fact or the concrete limit — never a frame ("The scaling problem is X", "Ray's answer is Y", "The arithmetic is linear" are labels posing as sentences; state the facts and let them argue). Body: what breaks and when, with the resource named (RAM, network bandwidth, GPU memory, cores) and a magnitude (GBs here, TBs at production; "past a few hundred million rows"). The table format: `What grows | The limit it hits | What absorbs it | Measured at full` — every number from a real run, "—" where unmeasured. Then the 10× arithmetic (the same pool takes N× longer; N× the workers brings it back) and the fact that only a config line changes. Recurrence, elasticity, and GPU-vs-CPU are stated as facts when true, never as sales beats.
+
+## Takeaways — altitude validated by a reverted rewrite
+
+The evidence is commit `41454b14`: a takeaways rewrite was reverted wholesale, and Zach edited even the kept version further. What the accepted versions do:
+
+- **No metric re-argument.** The metrics section owns those numbers; the takeaway states what exists now.
+- **Product meaning first.** His edit: "We trained the foundation model, and its now ready to be used for prediction systems like fraud detection. All of the later approaches build on top of this foundation model."
+- **Ray is one clause at this altitude** ("wrapped in Ray, which handles the distributed scaling"), with one concrete fact (`ScalingConfig`). The four-verb enumeration belongs next to the code.
+- **No API inventories, no line-count asides** ("build_model is 10 lines in src/model.py" — he parenthesized it, then deleted his own version), no timing details (the header's time-to-complete line owns those).
+- **Lead with the transferable Ray lesson, then the domain observations** — a Ray notebook whose takeaways are all dataset trivia threw away its own point.
+- When the takeaway names output artifacts, point to where they're opened next — and that pointer is a commitment the next notebook honors.
+
+## The Next blurb is one plain sentence
+
+What the reader does next, in words they already own. No class names, no magic numbers, no feature lists — "`FinancialTabularTokenizer` (merchant hashing + category hierarchy + temporal encoding, vocab 6251)" is a jargon dump about a notebook the reader hasn't opened; "turn each card's transactions into the token sequences the model will train on" is the same pointer in plain words.
+
+---
+
+# Part 5 — Code
+
+## What to show, what to hide
+
+A template teaches a **transferable lesson** — the Ray/Anyscale pattern the reader came to learn. Every block of code is either that lesson or incidental to it.
+
+- **Show** (inline in the notebook): the primitive the template is about and the handful of verbs that convey its shape.
+- **Hide** (import from `src/`): dataset/domain munging, parsing, sealed reference code, anything long the reader won't reuse.
+
+The failure mode is hiding the lesson inside an incidental wrapper: a clean-looking `prepare_data()` import that buries a full Ray Data pipeline. Canonical example: loading TabFormer IS a Ray Data pipeline (`read_csv → map_batches → groupby.map_groups → write_parquet` shown inline); the per-row munging (`"$57.20" → 57.20`) hides in `src/`.
+
+- **The deciding question is "would the reader have to look it up?"** — not "is this incidental?" A helper earns its place only when its call site reads clearly (`ensure_download`, `normalize_date_column`). If you'd invent an opaque wrapper just to shorten a cell, the hiding cost more than it saved.
+- **Every hidden helper raises the same silent question: is that 2 lines or 100?** (Zach: "every obscuration makes the audience wonder whats actually going on.") Remedies in order: (a) inline anything trivial enough to recognize on sight — a 3-line AdamW constructor proves "ordinary PyTorch" better than a `make_optimizer` wrapper; (b) disclose the sizes of what stays hidden, in prose; (c) a branch that never runs at any preset (FSDP) is wonder-bait — inline it with a comment saying it's off, or cut it.
+- **When Ray is buried, refactor `src` — never annotate the burial.** Comments and prose excerpts pointing at Ray calls the reader can't see do not fix the problem (Zach: "you cannot bury the ray code… you're going to have to refactor src"). The pattern: extract incidental pieces into small public helpers; define the composed function or class INLINE in the notebook with the Ray calls at their real lines; `src` keeps a copy composing the identical helpers for the headless path.
+- **Show inline without forking logic.** The notebook and any headless entry point compose the SAME `src/` helpers — never two copies of logic that can drift.
+- **Acceptance for any refactor of validated code is a bit-match.** Deterministic mini runs must reproduce prior outputs exactly (losses 8.742/8.668 across three refactor rounds; the example embedding vector across the actor inlining). If the numbers move at all, revert.
+- **Use each Ray tool for its own job, in the open**: `filter(expr=col(...) == …)` for row predicates, `map_batches` for transforms, `.remote()`/`ray.get()` shown at the call site for tasks.
+- **~25–30 lines is the ceiling** for an inline function before it reads as a wall; three visual blocks (setup / loop / report) is the accepted fix, plus splitting multi-purpose cells (arithmetic cell, then the trainer cell).
+
+## Comments
+
+- **One step, one comment, at its own line.** A block comment explaining a chained expression means the chain should be split (parenthesize a Ray Data chain so each step carries its comment). Zach: "Speak plainly, one step at a time."
+- **A comment must survive being read alone.** Readers scan comments independent of code. A bare marker ("(1) wrap for distributed training") forces reconstruction; write the whole story. Corollary for branches: an else-comment must not imply the if lacks the property — each branch states its whole story. (Zach: "that took 5 minutes where it could have been 15s.")
+- **First sentence of a name's first comment is "X is/does Y."** "FinancialTabularTokenizer is NVIDIA's tokenizer: it converts transactions to tokens and back." Never describe the operation while leaving the actor undefined.
+- **Answer at the line that raises the question.** "How does it know how many workers?" is answered on the `read_parquet` line (it doesn't — one task per shard, autoscaler adds nodes when tasks queue). Laziness is explained at the `to_pandas()` that triggers execution, never as an abstract claim the next statement silently falsifies. No comment whose truth expires within its own cell.
+- **Provenance-and-move-on for standard concepts** (from Zach's own edits): "Same as NVIDIA's blueprint, basic stuff for transformers." beats three sentences re-teaching AdamW. Multi-part comments become dash bullets, one idea per line.
+- **The Ray Note convention**: prose numbers the Ray integration points ("adapted for Ray in three places"), and code comments reference them by name — `# See Ray Note #1 above` — never a bare number. The prose must introduce that exact name or the pointer dangles.
+- **Names read from the call site with honest provenance.** `normalize_batch` sounds like a black box; `normalize_date_column` doesn't. "add_date_column" made the reviewer ask where the date came from — "normalize" says it's derived from existing fields. If a reviewer stops to ask what a function is, the name is wrong.
+- Zach's model comment, the reference register: `# Clean up and write out the split metadata to split_meta.json.` Subject, verb, object, done.
+
+## Plots and markdown gotchas
+
+- **"Make it look better" means styling, not structure**: theme it, kill chartjunk, human-format axes (600000 → 600k). Never silently re-axis — hand-relabeled log ticks change what the reader is looking at.
+- **But the plot must show its point**: a long-tailed quantity on a linear y-axis is one tall bar and an invisible tail — log the axis.
+- An unescaped `$` in Jupyter markdown triggers MathJax and silently garbles everything to the next `$`. Escape amounts: `\$57.20`.
+
+## Outputs, when committed on the working branch
+
+Curate to the informative lines: real results, plus the infra lines that tell the Ray story (autoscaler node arrivals). Never progress bars, logger spam, or float noise (`round(float(x), 3)`, not float32 `tolist()`). Display slices exact — 27 tokens is two full transactions, not "~2". The publish pipeline strips outputs; the reader must still get the story from code + prose + a described expected result.
+
+## It must run
+
+- Committed defaults execute at CI/mini scale (usually CPU); scale-up is one obvious knob left at the runnable setting.
+- The proof is a green papermill run. Trust papermill's OWN exit code — `papermill … | tail` chains report the tail's exit and have hidden a `NameError` as green. Scan the executed notebook for `output_type == "error"`.
+- After moving or changing an import, re-run the WHOLE notebook — a later cell may use the symbol you relocated.
+
+---
+
+# Part 6 — Truth
+
+- **Every number comes from a real run.** No invented, illustrative, or remembered numbers, ever. If a sentence names a shape, a magnitude, or a rate, compute it before writing it (`describe()`, a quantile, "what share is in the top 1%"). Wrong adjectives shipped repeatedly in first drafts — "heavy-tailed" for a tame lognormal, "most cards are quiet" when the median card had 2,500 transactions. Heavy-tailed, long-tailed, and right-skewed are different shapes with different consequences; use the one the data shows.
+- **Difficulty claims need verifying too.** "Tokenizing transactions is simpler than tokenizing text" shipped in a project where the tokenizer was the single hardest thing to get right. If the work fought you, don't call it simple — say which part is mechanical and which is hard.
+- **Fact-check at the claim's own altitude.** A platform-level statement ("Ray distributes the model either way") is not falsified by mechanism-level attribution (FSDP's sharding being PyTorch code). Never "correct" a true sentence into weaker prose — and when Ray truly is the actor, [Ray][verb] is the right shape, especially in a Ray workshop.
+- **Honesty cuts both ways.** Don't claim Ray shines where it's undifferentiated — and don't volunteer what reads as a Ray defect when the fact is true of every distributed engine ("even with Ray's `preserve_order` on" turned a neutral fact into a Ray gotcha). State the limitation generically, then the design that handles it. Operator-level caveats go in the performance docs, not workshop prose.
+- **Claims about the near-scale future stay honest**: "at 24M rows you can rent a bigger machine; at billions you can't" — hedged where unmeasured, concrete where measured.
+- The competitor appears as a punchline or a comparison anchor, never as an obsession — one comparability sentence where it earns its place, one punchline where the facts deliver it.
+
+---
+
+# Part 7 — Working with Zach (the collaboration protocol)
+
+## His text and his corrections
+
+- **His text is the baseline.** Preserve his sentences verbatim; never revert his wording; flag typos once and let him decide (never silently fix). He drafts with `[tbd]` markers for you to fill — fill the marker, preserve his frame.
+- **Fact-check his technical claims against the code and correct with evidence** — he expects it ("Fact check me on my updates"). Example: "worker count (autoscaled by Ray)" → the cluster autoscales nodes; the worker count is fixed.
+- **His correction shorthand**: "skeeze" (performed/salesy prose of any kind), "sandwich" (verdict — whispered reason — so consequence), "dash inventory" (stapled parts list), "blah blah blah" (structure parody — the sentence's shape is noise). When he names a pattern, codify it in this document and the linter the same day.
+- **His messaging hierarchy is inviolable.** Which result is the headline, what gets bolded, what's the control — once he sets it, every table, takeaway, and summary follows it. (The project-specific hierarchy is in project memory, not here.)
+- **Answer length matches question size.** "EXPLAIN THIS WITH LESS FUCKING WORDS" — a definition question gets three lines, not three paragraphs. Terse chat generally.
+- **Bias to action; ask questions in prose, never the multiple-choice widget** (he rejected the AskUserQuestion UI twice). When a call is yours, decide and flag it; when several threads are open, take the highest-value one.
+
+## The file-safety rules (violating these destroyed his work once)
+
+1. **Never write a file he is editing.** Chat-first patches (paste-ready blocks) until an explicit hand-off ("i finished my edits, you go").
+2. **Verify "it's saved" against disk** — his editor's saves lag. His nb03 corpus purge was silently lost this way and only recovered because the linter caught the words again. `git status` before believing any buffer state.
+3. **Commit whatever is on disk before any write** (`wip:` commits are fine) — everything that ever reached disk stays recoverable.
+4. **Re-load and re-diff at write time** — never hold a loaded copy across a background run and then dump it over the file.
+5. The node is ephemeral: **commit AND push promptly** — unpushed work dies with the node. Durable notes go in repo files, and `./setup_claude.sh backup` snapshots memory/settings.
+6. Tell him **"kernel restart needed"** whenever `src/` changed — Python won't re-read a loaded module, and the resulting ImportError looks like your bug.
 
 ## The hand-back protocol — every time, in order
 
-1. **Before any write**: `git diff` the file; commit whatever is on disk (`wip:` is fine). Never write a file Zach is editing — chat-first patches until an explicit hand-off, and verify his "it's saved" against disk (his editor's saves lag; his nb03 corpus purge was silently lost this way).
-2. **Write**, re-loading the file at write time — never hold a loaded copy across a background run and then dump it.
-3. **Run the review loop (A/B/C) to fixpoint**, including the written job-label audit per sentence.
-4. **Run `scripts/prose_lint.py`** on the notebook and `--imports` on any notebook whose code changed. Zero hits or fix them.
-5. **Verify**: papermill at mini; check papermill's own exit + error outputs; bit-match when validated code moved. Graft outputs curated to informative lines (real results plus the autoscaler-arrival lines that show the elasticity story; no log spam, no float noise, display slices exact — 27 tokens is two transactions, not "~2").
-6. **Commit and push immediately**; note "kernel restart needed" whenever `src/` changed.
-7. **Hand back WITH the audit shown** — verdicts he can check, not conclusions he must extract. After any correction from him: sweep the whole notebook for the pattern before returning.
+1. `git diff` the file; wip-commit what's on disk.
+2. Write, re-loading at write time.
+3. Run the review loop (A/B/C) to fixpoint, including the written job-label audit.
+4. Run `scripts/prose_lint.py` on the notebook, and `--imports` when code changed. Zero hits or fix them.
+5. Verify: papermill at mini, checked by its own exit and error-cell scan; bit-match when validated code moved; graft curated outputs.
+6. Commit and push immediately.
+7. Hand back WITH the audit shown — verdicts he can check, not conclusions he must extract. After any correction: sweep the whole notebook for the pattern before returning.
 
-## Unconfirmed (Possibly) — inferred from what he accepted, not stated by him
+---
 
-- ~25–30 lines is the ceiling for an inline function before it reads as a wall; three visual blocks (setup / loop / report) is the fix he accepted.
-- Autoscaler node-arrival lines are worth keeping in committed outputs (he never objected; they show the elasticity story).
-- The NVIDIA punchline stays in nb04's takeaways (survived his cleanup).
-- Terse chat replies are preferred generally, and an answer's length should match the question's size ("EXPLAIN … WITH LESS WORDS").
-- Rhetorical questions in prose bodies are unresolved — question TITLES are banned; body questions have been avoided rather than ruled on.
-- A single em-dash aside per paragraph is acceptable; two in one sentence is the sandwich/pile territory.
-- Tables are now the preferred scaling-factors body; prose-only scaling sections (nb02/03 style) may be revisited when those pages reopen.
-- He drafts with `[tbd]`/TBD markers for me to fill — fill the marker, preserve his frame around it.
+# Part 8 — Counter-rules: where the rules do NOT apply
+
+- **Negation is allowed when the absence is the point.** "The card's history is not in it" (the design caveat), "fraud labels play no part in this step" (self-supervision), "Memory is not the constraint here" (the contrast). State the affirmative fact first when one exists.
+- **A colon survives when its left half is content.** Zach's own: "This job has two main steps: grouping the rows by card, then tokenizing each card."
+- **A term of art survives when the plain phrase loses information** — then it MUST be glossed at first use (shuffle, embarrassingly parallel, attention mask, causal).
+- **Detail survives in code that dies in prose.** Filenames, seeds, API names: banned from concept bullets and takeaways, mandatory at their line in the code.
+- **A power sentence fails if it is the wrong claim** — strength of form never substitutes for being the section's point.
+- **[Ray][verb] is correct when Ray is truly the actor** — don't demote the platform from subject position out of misplaced modesty.
+
+# Part 9 — Unconfirmed (inferred from what he accepted, not stated by him)
+
+- Autoscaler node-arrival lines are worth keeping in committed outputs (show the elasticity story).
+- The NVIDIA punchline survives in takeaways when the facts deliver it (survived his cleanup).
+- A single em-dash aside per paragraph is acceptable; two in one sentence is sandwich/pile territory.
+- Rhetorical questions in prose bodies: unresolved — question titles are banned; body questions have been avoided rather than ruled on.
+- Tables are the preferred Scaling-factors body (nb04/05); earlier prose-only versions (nb02/03) may be revisited when those pages reopen.
 - Known linter backlog in CLOSED pages (his call, untouched): nb01 series table says "the pretrain corpus"; ~11 hits in nb02/nb03, several in his own approved text.
 
-## Checklist
+---
 
-- [ ] Every inline cell carries a transferable Ray/Anyscale lesson; domain munging is imported from `src/`.
-- [ ] No lesson is hidden inside an incidental wrapper.
-- [ ] Inline-shown logic and any headless entry point compose the **same** `src/` helpers.
-- [ ] Each shown step says *why it matters*, motivated from the data/problem.
-- [ ] Every claim about the data's shape/magnitude/rate was **computed, not assumed** (and the shape word is the right one).
-- [ ] The closing/takeaways cell leads with the transferable Ray/Anyscale lesson, not dataset trivia.
-- [ ] Every heading and lead sentence leads with purpose/output, not mechanism — delete the API words and a point still remains.
-- [ ] Prose reads like an engineer wrote it — no editorializing titles, `**Label**:` lists, or concepts raised only to dismiss them.
-- [ ] Plots are styled not restructured, show their point (log scale for tails, human-formatted axes), and `$` is escaped in markdown.
-- [ ] Committed defaults run top-to-bottom under papermill at CI/mini scale (CPU); scale-up is one knob.
-- [ ] Every sentence took a job label that fits its position; openers are the section's claim — the RIGHT claim.
-- [ ] prose_lint (and --imports where code changed) ran clean; the written audit ships with the hand-back.
-- [ ] Numbers have one owner section; verification is one sentence + a pointer; concept bullets have no API names or filenames.
-- [ ] Any refactor of validated code proved itself by bit-matching prior outputs.
-- [ ] The hand-back protocol ran in order: diff, wip-commit, write fresh, review loop, lint, verify, push, audit shown.
-- [ ] Verified by papermill's own exit code / zero `error` output cells — not a chained command's exit — and the *whole* notebook re-ran after any import change.
-- [ ] Expected results are described in prose (outputs will be stripped on commit).
-- [ ] Prose is in action tone (We need / We do), the goal→mechanism chain has no gaps, and one word per concept holds notebook-wide.
-- [ ] Chained code with a block comment is split: one statement, one short comment, answers at the line that raises the question.
-- [ ] Function names read from the call site with honest provenance; no Ray calls hidden in `src/` for taught stages.
-- [ ] Intermediate results are shown; examples come from the data (chosen instance hardcoded + justified), not invented.
+# The checklist (mirrors the protocol)
 
-- **Backstory openers are not power sentences even when skeeze-free** (Zach 2026-07-23, on "The foundation model trained on long card histories, but..."): opening on the tension/motivation is still setup. The section's first sentence is the claim or decision itself ("We embed each transaction on its own..."); the motivation moves to a later sentence.
+**Before writing**
+- [ ] `git diff`; wip-commit the on-disk state; confirm he's not mid-edit.
+- [ ] Read the neighboring notebooks' promises this page must honor.
 
-- **Section-opener audit is a mandatory, WRITTEN Pass B step** (Zach 2026-07-23: "you have a rule of thumb about the first sentence but arent using it"): positional rules can't be grepped and don't survive as vibes. Before shipping, extract every section's first and last sentence, state the section's claim in one line, and answer in writing "is sentence one that claim?" Problem statements, definitions, motivation, and backstory all FAIL even when skeeze-free. If no written verdict table was produced, the review didn't happen.
+**While writing**
+- [ ] Every sentence pre-labeled: claim / fact / consequence / pointer / gloss / instruction — label fits position, content fills label.
+- [ ] Openers are the section's claim (the RIGHT claim); closers deserve the position.
+- [ ] Action tone; affirmative default; one word per concept; chains with no gaps; terms glossed at the moment of understanding.
+- [ ] Concepts in prose, names in code; numbers have one owner section; verification is one sentence + pointer.
+- [ ] Ray visible where Ray is the lesson; helpers pass the look-it-up test; sizes disclosed; no never-runs branches.
+- [ ] Comments: one step one comment, X-does-Y first mention, survive being read alone, answer at the asking line.
+- [ ] Every shape/magnitude/difficulty claim computed or verified; every number from a real run.
 
-- **No notation-as-prose** (Zach 2026-07-23, on "We feed `<bos>` + the transaction's 12 field tokens + `<eos>`"): a `+`-sign token formula is not a sentence. Sequences, shapes, and formulas get said in English in prose ("a 14-token sequence, its 12 field tokens wrapped in `<bos>` and `<eos>`"); the symbolic form lives in code and code comments only.
+**Before handing back**
+- [ ] Review loop A/B/C to fixpoint, written opener/job audit produced.
+- [ ] `prose_lint.py` clean; `--imports` audited when code changed.
+- [ ] Papermill green by its own exit + error-cell scan; whole notebook re-run after any import change; bit-match if validated code moved.
+- [ ] Outputs curated (real results + story-telling infra lines only).
+- [ ] Committed, pushed; "kernel restart needed" flagged if `src/` changed.
+- [ ] The audit ships with the hand-back.
