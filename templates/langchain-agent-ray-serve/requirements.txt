@@ -1,5 +1,7 @@
 # Core dependencies
-fastapi
+# Match the ray-llm base image; build_openai_app is built against these (a downgrade breaks multi-node).
+fastapi==0.133.0
+starlette==1.0.1
 langchain
 langchain-mcp-adapters
 langchain-openai

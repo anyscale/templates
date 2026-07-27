@@ -35,11 +35,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-    - uses: actions/setup-python@v5
+    - uses: astral-sh/setup-uv@v8.3.2
       with:
         python-version: '3.12'
+        enable-cache: true
     - name: Install dev deps
-      run: pip install -r requirements-dev.txt
+      run: uv sync --frozen
 
     - name: Resolve target Ray version
       id: version
@@ -53,9 +54,9 @@ jobs:
         fi
         # validate the given version's base locks exist, else derive the newest (fails closed)
         if [ -n "$V" ]; then
-          V="$(python3 scripts/ray-bump/latest-depset-version.py --require "$V")"
+          V="$(uv run python3 scripts/ray-bump/latest-depset-version.py --require "$V")"
         else
-          V="$(python3 scripts/ray-bump/latest-depset-version.py)"
+          V="$(uv run python3 scripts/ray-bump/latest-depset-version.py)"
         fi
         echo "value=$V" >> "$GITHUB_OUTPUT"
         echo "Target Ray version: $V"
@@ -66,7 +67,7 @@ jobs:
         V: ${{ steps.version.outputs.value }}
       run: |
         # version-aware --list drops entries already at $V (BUILD.yaml = source of truth)
-        python3 scripts/ray-bump/trigger-cursor-bump.py --all -v "$V" --list 2>/dev/null | sort -u > /tmp/delta.txt
+        uv run python3 scripts/ray-bump/trigger-cursor-bump.py --all -v "$V" --list 2>/dev/null | sort -u > /tmp/delta.txt
         n="$(grep -c . /tmp/delta.txt || true)"
         echo "count=$n" >> "$GITHUB_OUTPUT"
         {
@@ -88,7 +89,7 @@ jobs:
       run: |
         # A tag push fires for real; manual runs preview unless dry_run=false.
         if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ] && [ "$INPUT_DRY_RUN" != "false" ]; then
-          xargs -a /tmp/delta.txt python3 scripts/ray-bump/trigger-cursor-bump.py -v "$V"
+          xargs -a /tmp/delta.txt uv run python3 scripts/ray-bump/trigger-cursor-bump.py -v "$V"
         else
-          xargs -a /tmp/delta.txt python3 scripts/ray-bump/trigger-cursor-bump.py -v "$V" --execute
+          xargs -a /tmp/delta.txt uv run python3 scripts/ray-bump/trigger-cursor-bump.py -v "$V" --execute
         fi

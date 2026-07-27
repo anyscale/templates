@@ -1,7 +1,7 @@
 head_node:
   instance_type: n2-standard-8
   resources:
-    CPU: 8
+    CPU: 0
 worker_nodes:
 - name: gpu-workers
   instance_type: n1-highcpu-4-nvidia-t4-16gb-1

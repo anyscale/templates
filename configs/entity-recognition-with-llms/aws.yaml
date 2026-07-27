@@ -1,5 +1,7 @@
 head_node:
   instance_type: m5.2xlarge
+  resources:
+    CPU: 0
 worker_nodes:
 - name: gpu-worker-4xL4
   instance_type: g6.12xlarge

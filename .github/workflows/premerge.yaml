@@ -14,41 +14,44 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-    - uses: actions/setup-python@v5
+    - uses: astral-sh/setup-uv@v8.3.2
       with:
         python-version: '3.12'
+        enable-cache: true
 
     - name: Install dev deps
-      run: pip install -r requirements-dev.txt
+      run: uv sync --frozen
 
     - name: Run pre-commit
-      run: pre-commit run --all-files --verbose
+      run: uv run pre-commit run --all-files --verbose
 
   build:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-    - uses: actions/setup-python@v5
+    - uses: astral-sh/setup-uv@v8.3.2
       with:
         python-version: '3.12'
+        enable-cache: true
 
     - name: Install dev deps
-      run: pip install -r requirements-dev.txt
+      run: uv sync --frozen
 
     - name: Build templates
       run: |
         bash ./download_rayapp.sh
-        ./rayapp build all
+        uv run ./rayapp build all
 
   validate-build-yaml:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-    - uses: actions/setup-python@v5
+    - uses: astral-sh/setup-uv@v8.3.2
       with:
         python-version: '3.12'
-    - run: pip install -r requirements-dev.txt
-    - run: python scripts/hooks/validate-build-yaml.py
+        enable-cache: true
+    - run: uv sync --frozen
+    - run: uv run python scripts/hooks/validate-build-yaml.py
 
   check-depsets:
     runs-on: ubuntu-latest
@@ -56,12 +59,13 @@ jobs:
     - uses: actions/checkout@v4
       with:
         fetch-depth: 0   # need the base commit to diff changed files
-    - uses: actions/setup-python@v5
+    - uses: astral-sh/setup-uv@v8.3.2
       with:
         python-version: '3.12'
-    - run: pip install pyyaml==6.0.3   # parses the depset config (pin matches requirements-dev.txt)
+        enable-cache: true
+    - run: uv sync --frozen
 
     - name: Check depsets are up to date
       # Scoped + retried; see scripts/hooks/check-depsets.py. Checks only what a PR changed, so
       # unrelated PRs don't fail on ambient drift or a transient index 503.
-      run: python3 scripts/hooks/check-depsets.py "${{ github.event.pull_request.base.sha }}" "${{ github.sha }}"
+      run: uv run python scripts/hooks/check-depsets.py "${{ github.event.pull_request.base.sha }}" "${{ github.sha }}"
