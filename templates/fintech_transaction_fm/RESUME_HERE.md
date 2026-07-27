@@ -532,3 +532,11 @@ once, never silently fix). Backlog unchanged: nb02/nb03 linter hits await his ca
 
 **RESUME**: Zach reviews nb06 (kernel restart needed — src/nvscore.py changed).
 Then nb07 pass; nb08–10 are rebuilds.
+
+**Addendum (same day, after Zach's look)**: he banned "upstream/downstream" as prose
+("needlessly jargony") — purged from nb06, codified in zgarner-prose (reference + linter
+banned-term). Sweep found: nb01 series-table row 6 said "Downstream fraud" (stale after
+the retitle — fixed to "Fraud detectors"); one hit in nb02's signed-off text (backlog,
+his call); nb07/nb09 hits die in their own passes. Also this pass: intro/floor sentences
+split, ordinal-encoding moved out of the bullet and glossed in the fit section, early
+stopping glossed plainly, "leakage-free" unpacked. Markdown-only — no rerun needed.

@@ -17,7 +17,7 @@ RULES = [
         r"\b(live[s]? in|rides? along|sits? (in|on|at)|carries|carry\b|owns\b|journey|"
         r"lands? (as|in|on)|comes? home|breathes?|wants? to)\b", re.I), "both"),
     ("banned-term", re.compile(
-        r"\b(corpus|smoke test|smoke run|de-facto|payoff|skeeze|full stop)\b", re.I), "md"),
+        r"\b(corpus|smoke test|smoke run|de-facto|payoff|skeeze|full stop|upstream|downstream)\b", re.I), "md"),
     ("fm-abbrev", re.compile(r"(?<![`/\w])fm(?![`\w])"), "md"),
     ("movie-preview", re.compile(
         r"\b(the one (line|knob|thing)|that's (all|it) it takes|is all it takes|"

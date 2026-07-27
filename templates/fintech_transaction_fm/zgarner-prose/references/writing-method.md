@@ -103,7 +103,7 @@ Defines the new thing **by analogy to a known thing, in one breath** — no form
 ## Word tells
 
 - **Animate verbs for inanimate things.** Things do not "live," "ride along," "carry," "sit," or "come home" — they ARE and they're IN. "The details live in src/model.py" → "the details are in src/model.py."
-- **The term-of-art test: it buys precision the plain phrase lacks, or it goes.** "Shuffle" and "embarrassingly parallel" earn it (glossed at first use). "Corpus" fails — "training data" says the same thing to everyone (Zach: "it alienates people who arent specifically trained"). Also banned: "smoke test/run," "de-facto," verdict words (easy/hard) as information.
+- **The term-of-art test: it buys precision the plain phrase lacks, or it goes.** "Shuffle" and "embarrassingly parallel" earn it (glossed at first use). "Corpus" fails — "training data" says the same thing to everyone (Zach: "it alienates people who arent specifically trained"). Also banned: "smoke test/run," "de-facto," "upstream/downstream" (pipeline-direction jargon, Zach: "needlessly jargony" — name the actual part or stage instead: "in Parts 2 through 5," "the pretraining stage"), verdict words (easy/hard) as information.
 - **Jargon stacks.** "draws the seeded stratified sample" stacks three insider words; "picks 100K random rows, keeping the fraud rate the same as the whole set — the fixed seed picks the same rows every run" is actionable by anyone. Field verbs never appear without their plain meaning doing the work.
 - **Anthropomorphic gloss where a precise noun exists.** "The model's understanding of a transaction, written as numbers" was rejected for "the model's vector representation of a transaction." Use the standard noun and gloss it.
 
