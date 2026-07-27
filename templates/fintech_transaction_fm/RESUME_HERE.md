@@ -550,3 +550,14 @@ field inventory trimmed from the raw bullet, 512→64 detail moved to its code l
 Tell codified: writing-method Part 3 + counter-rule confirmed + linter rule
 double-em-sandwich (regex tested against the offending sentence before trusting it).
 Lesson recorded: the WRITTEN audit is per-sentence, not per-power-position.
+
+**CLOSE-OUT 2026-07-27**: Zach out of time; everything committed and pushed through
+5c2c15da. nb06 state: fully refactored solo + two of his review rounds applied
+(upstream/downstream ban; the per-sentence audit after the double-em-sandwich catch) —
+he has NOT signed off on nb06 yet, so his review resumes there. One open style call
+flagged to him: "`mini` proves the pipeline and the evaluation harness, not a model
+you'd ship" (kept the negation; overrule welcome). Kernel restart needed on his side
+before running nb06 (src/nvscore.py changed). After nb06 sign-off: nb07 pass, then
+nb08–10 rebuilds. Backlog unchanged: nb02/03 linter hits (now incl. one "downstream"
+in his approved nb02 text), nb01 "pretrain corpus" row, 208-CPU mini autoscale note,
+existence-based skip-guard staleness.
