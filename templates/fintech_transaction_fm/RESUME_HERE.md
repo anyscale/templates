@@ -580,3 +580,12 @@ which predates those rules. Sync check done 2026-07-28: fieldeng identical to
 our last copy; the only gaps were yesterday's upstream/downstream ban and the
 per-sentence audit scope, ported and pushed (dadc703). nb06 sign-off still
 pending; run HIS linter over nb06 at review time.
+
+**2026-07-28 — nb06 revamped under the new skill versions (Zach's ask).** New-rule
+deltas applied: earned punctuation (five dashes/colons resolved to periods, commas, or
+parens), skim-test pass, skimmability glosses (embedding → "vector representation" on
+this page, stratified test set glossed inline), grounded title ("Plot the curves" →
+"Plot ROC and precision–recall"), Next colon → period. His linter: 0 hits on nb06.
+Linter itself gained heading/HTML awareness (his repo, cbf752d): markup lines skipped,
+headings keep word rules but skip punctuation rules. Markdown-only — outputs stand.
+Structure untouched (it carries his two July-27 review rounds). Sign-off still pending.
