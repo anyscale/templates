@@ -561,3 +561,22 @@ before running nb06 (src/nvscore.py changed). After nb06 sign-off: nb07 pass, th
 nb08–10 rebuilds. Backlog unchanged: nb02/03 linter hits (now incl. one "downstream"
 in his approved nb02 text), nb01 "pretrain corpus" row, 208-CPU mini autoscale note,
 existence-based skip-guard staleness.
+
+## Session log — 2026-07-28 — skills moved to zgarner-ai-skills (Zach's repo)
+
+The two writing skills now live in github.com/zachgarner/zgarner-ai-skills,
+checked out at `zgarner-ai-skills/` in this directory (untracked here; excluded
+via .git/info/exclude). Zach deleted the embedded `zgarner-prose/` and
+`zgarner-fieldeng-template/` copies; that deletion is committed. HIS REPO IS THE
+BASELINE — he has heavily rewritten writing-method.md (Lexicon in SKILL.md, skim
+test, earned punctuation, define-by-carving-boundary, backfire effect, grounded
+titles, "deliverable" job, --openers linter mode; Part 1 carries his July-27
+review marker). Read it fresh; do not rely on memory of the old copy.
+
+Linter path is now `zgarner-ai-skills/zgarner-prose/scripts/prose_lint.py`. His
+linter flags EVERY semicolon and every doubled —:; mark (earned punctuation), so
+expect hits on prose the old linter passed — including nb06's current text,
+which predates those rules. Sync check done 2026-07-28: fieldeng identical to
+our last copy; the only gaps were yesterday's upstream/downstream ban and the
+per-sentence audit scope, ported and pushed (dadc703). nb06 sign-off still
+pending; run HIS linter over nb06 at review time.
