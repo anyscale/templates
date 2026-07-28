@@ -625,3 +625,18 @@ duplicate); nb07 markdown outputs-field malformation fixed + fresh mini outputs 
 (its 23 prose lint hits = its own upcoming pass). OPEN QUESTION to Zach: move the
 fusion-range paragraph from Read the results into Evaluate the fusion model (proposed,
 unanswered). All verified: papermill exit 0, bit-match exact, linter 0 on nb06.
+
+**2026-07-28 (nb07) — full pass DONE: prose + structure + comments, then the Ray
+refactor on Zach's go.** Prose: recap intro honoring nb06's Next; "Two fine-tuned
+detectors"; jargon glossed; sandwiches/clefts/grandstands out; Scaling factors in the
+table pattern; takeaways lead with history-parity per the hierarchy. Code: all four
+src/finetune.py entry points surfaced — prepare_embed_split.remote + map_batches inline
+(cell 4), finetune_variant inline around TorchTrainer/ScalingConfig reused by both
+variants (cell 6), groupby/map_groups history pipeline inline (cell 10),
+score_finetuned_model public + .options(num_cpus/num_gpus from finetune config) inline
+(cells 8/11); headless wrappers recompose identical helpers for run_finetune_full.py.
+BIT-MATCH exact (table 0.0736/0.0128/0.0519/0.0446/0.0721 + history 0.0087/0.0206;
+best epoch 1 val AP 0.0617); papermill exit 0; imports audit shows zero hidden Ray;
+linter 0. Flagged, not done: "~315 transactions" → "hundreds" (315 = 4096/13, restore
+if he wants); "their raw model early-stops at one tree" dropped as unverifiable.
+NEXT: Zach's sign-off on nb06 + nb07, then nb08–10 rebuilds.
