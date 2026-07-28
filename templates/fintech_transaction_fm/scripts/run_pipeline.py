@@ -153,7 +153,7 @@ def main(scale: str, force: bool) -> None:
         ds_cfg = cfg["downstream"]
         summary = run_downstream(paths["embeddings"], paths["downstream"],
                                  pca_dim=ds_cfg["pca_dim"], use_gpu=ds_cfg["use_gpu"],
-                                 resources=ds_cfg.get("resources"))
+                                 hardware=ds_cfg.get("hardware"))
         print_summary(summary)
 
     stage("downstream", os.path.join(paths["downstream"], "downstream_metrics.json"),
