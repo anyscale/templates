@@ -589,3 +589,15 @@ this page, stratified test set glossed inline), grounded title ("Plot the curves
 Linter itself gained heading/HTML awareness (his repo, cbf752d): markup lines skipped,
 headings keep word rules but skip punctuation rules. Markdown-only — outputs stand.
 Structure untouched (it carries his two July-27 review rounds). Sign-off still pending.
+
+**2026-07-28 (later) — buried-verb cleft + editor collision, resolved.** Zach flagged
+two more patterns: the setup sentence ("gets scored on the job it was built for" —
+named no job, staged the next line; root cause codified as the referent test + the
+successor test, zgarner-ai-skills 210e553) and the buried-verb cleft ("is what makes" —
+register rule + linter with the definitional-gloss exception, fb5bcc7). Mid-fix his
+editor saved over my intro edit (cell-0 id regenerated to a UUID) — protocol caught it,
+zero loss, switched to chat-first; commit 1bedb5bb is mislabeled (records only the id
+change, not the intro cut — the real intro cut lands in THIS commit). On his hand-off
+the three patches applied: intro setup sentence cut, his comparability rewrite verbatim,
+the lift claim declefted. His linter: 0 hits. nb06 sign-off still pending — HE SAID
+"check in again next time": next session opens with his nb06 review.
