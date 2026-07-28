@@ -614,3 +614,14 @@ score" → "Score fusion many times" (audience test: sales engineers don't know
 bootstrap) with fusion_bootstrap → score_fusion_many_times to match. Old dead modules
 (src/downstream.py etc.) untouched — they die with the nb08-10 rebuilds. nb06+nb07
 papermill verification in flight at commit time; outputs graft on green.
+
+**2026-07-28 (late) — nb06 live-review round complete through the section merge.**
+Applied with Zach mid-review (his editor active; two collisions caught by protocol, zero
+loss): file renamed BY HIM to 06_embeddings_fraud_detection.ipynb; "Evaluate the fusion
+model" (his title) with full paragraph rewrite — bootstrap named+glossed shuffle-style,
+"draw" purged, evaluate_fusion function; print labels aligned to prose (single run, %
+of scores); Read the results + plots merged into one section (method paragraph cut as
+duplicate); nb07 markdown outputs-field malformation fixed + fresh mini outputs grafted
+(its 23 prose lint hits = its own upcoming pass). OPEN QUESTION to Zach: move the
+fusion-range paragraph from Read the results into Evaluate the fusion model (proposed,
+unanswered). All verified: papermill exit 0, bit-match exact, linter 0 on nb06.

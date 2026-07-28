@@ -12,7 +12,7 @@ The lift of ``embedding`` (and ``fusion``) over ``raw`` is the headline. Mirrors
 seed×eval bootstrap that reports the peak fusion AP on the same favorable-single-draw basis
 NVIDIA's published 0.1755 uses). Reads the per-split ``embed_/lbl_/raw_`` files nb05 wrote.
 
-``fit_and_score`` and ``score_fusion_many_times`` are Ray tasks submitted inline in nb06;
+``fit_and_score`` and ``evaluate_fusion`` are Ray tasks submitted inline in nb06;
 ``run_detectors``/``peak_hunt`` compose the same tasks for the headless path
 (``scripts/run_pipeline.py``).
 
@@ -114,7 +114,7 @@ def fit_and_score(emb_dir, output_dir, pca_dim, use_gpu):
 
 
 @ray.remote
-def score_fusion_many_times(emb_dir, pca_dim, use_gpu, n_seeds=6, n_boot=120, target=0.1755):
+def evaluate_fusion(emb_dir, pca_dim, use_gpu, n_seeds=6, n_boot=120, target=0.1755):
     """Refit fusion at ``n_seeds`` seeds and rescore each on ``n_boot`` resampled test sets.
     Returns the peak AP, the fraction of draws ≥ ``target``, and the median full-eval draw."""
     import numpy as np
@@ -169,7 +169,7 @@ def peak_hunt(emb_dir, pca_dim=64, use_gpu=True, n_seeds=6, n_boot=120, target=0
     if num_cpus is None:
         num_cpus, num_gpus = (8, 1) if use_gpu else (2, 0)
     opts = {"num_cpus": num_cpus, "num_gpus": num_gpus}
-    return ray.get(score_fusion_many_times.options(**opts).remote(
+    return ray.get(evaluate_fusion.options(**opts).remote(
         emb_dir, pca_dim, use_gpu, n_seeds, n_boot, target))
 
 
