@@ -10,7 +10,7 @@ can run — and scale — on CPU workers:
 
 The vendored files are untouched; NVIDIA's GPU path remains the reference implementation.
 Byte-identity of the two paths is proven by ``scripts/verify_cpu_tokenizer.py`` (Stage 0
-of PLAN_RAY_DATA.md) before anything downstream relies on this module. The one
+of PLAN_RAY_DATA.md) before any later stage relies on this module. The one
 non-obvious equivalence: cuDF ``Series.hash_values()`` is MurmurHash3_x86_32 with seed 0,
 reproduced here with ``mmh3.hash(utf8_bytes, signed=False)``.
 

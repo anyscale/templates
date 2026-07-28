@@ -11,10 +11,10 @@ series can build the split itself instead of depending on a precomputed
 
 Output columns are NVIDIA's **native** TabFormer schema (``User, Card, Year, Month,
 Day, Time, Amount, Use Chip, Merchant Name, Merchant City, Merchant State, Zip, MCC,
-Errors?, Is Fraud?``) — exactly what ``src.nvidia_tokenizer`` consumes downstream.
+Errors?, Is Fraud?``) — exactly what ``src.nvidia_tokenizer`` consumes next.
 
 Writes ``train.parquet`` (full temporal train — feeds the pretrain corpus + the
-balanced downstream train), ``val_eval.parquet`` and ``test_eval.parquet`` (100K
+balanced Part 6 training set), ``val_eval.parquet`` and ``test_eval.parquet`` (100K
 stratified each), plus a ``split_meta.json``.
 
 Two implementations of the same protocol:

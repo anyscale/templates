@@ -180,7 +180,7 @@ def export_hf_model(checkpoint_dir: str, hf_dir: str) -> None:
 
 def save_checkpoint(result, checkpoint_out: str) -> None:
     """Copy a ``TorchTrainer`` result's checkpoint to a canonical, all-nodes
-    path so downstream stages (embedding, serving) can load the weights.
+    path so later stages (embedding, serving) can load the weights.
 
     ``result.checkpoint.as_directory()`` is a context manager pointing at
     Ray-managed storage; we copy its contents (``model.pt`` + ``vocab.json`` +

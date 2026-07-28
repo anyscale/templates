@@ -127,7 +127,7 @@ def _recover_targets(split_dir: str, shards_dir: str, balanced_train: int, seed:
                 _, keep_idx = train_test_split(np.arange(len(part)), test_size=eval_samples,
                                                stratify=y, random_state=seed)
                 part = part.iloc[keep_idx].reset_index(drop=True)
-        # Final row order everywhere downstream is the preprocess sort (user, card, time);
+        # Final row order in every later stage is the preprocess sort (user, card, time);
         # within a card, CSV order == time order, so (User, Card, __seq__) reproduces it.
         part = part.sort_values(["User", "Card", "__seq__"], kind="mergesort")
         out[split] = part[["User", "Card", "__seq__", "label"]].reset_index(drop=True)

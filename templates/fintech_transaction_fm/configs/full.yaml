@@ -12,7 +12,7 @@ data:
 tokenize:
   seq_len: 4096             # NOW IN TOKENS (~12/txn) -> ~314 txns of context (NVIDIA uses 4096)
   target_eval_samples: 400000  # only sizes val/test when holdout_keep is null (unused here)
-  train_keep: 1.0            # keep EVERY train-period txn -> downstream XGBoost trains on the
+  train_keep: 1.0            # keep EVERY train-period txn -> Part 6's XGBoost trains on the
                              # full ~19.5M-row training set, matching NVIDIA's raw baseline
   max_pretrain_windows: null
   holdout_keep: 1.0          # exact full-data metrics (score every holdout txn)
@@ -48,15 +48,14 @@ embed:                       # single-transaction embeddings (NVIDIA NB04)
   max_ctx: 14                # embed each txn ALONE: BOS + its ~12 field tokens + EOS
                              # (NVIDIA embeds single txns even though pretrain is 4096)
   balanced_train: 1000000    # balanced train sample (all fraud + ~10% mix) embedded for
-                             # downstream; test split embedded whole for a stable metric
+                             # Part 6; test split embedded whole for a stable metric
 
-downstream:                  # XGBoost fit on the balanced sample (small -> one GPU worker)
+detectors:                  # XGBoost fit on the balanced sample (small -> one GPU worker)
   num_workers: 1
   use_gpu: true
   pca_dim: 64                # PCA-reduce the 512-dim embedding before XGBoost (NVIDIA NB05)
-  hardware:                 # Ray reservation: one GPU plus most of its node's cores
-    num_gpus: 1
-    num_cpus: 8
+  num_cpus: 8                # Ray reservation for the training task: one GPU plus most of its node's cores
+  num_gpus: 1
 
 finetune:                    # Part 7 — supervised fine-tune (beyond-blueprint extension)
   epochs: 3

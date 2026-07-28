@@ -60,7 +60,7 @@ def artifact_paths(base_dir: str, scale: str) -> dict:
         # our pretrained decoder exported as a HuggingFace dir, for the embedder (nb 05)
         "hf": f"{base_dir}/model_hf/{scale}/",
         "embeddings": f"{base_dir}/embeddings/{scale}/",
-        "downstream": f"{base_dir}/downstream/{scale}/",
+        "detectors": f"{base_dir}/detectors/{scale}/",
         # Part 7 supervised fine-tune (beyond-blueprint extension): labeled token sets
         # + fine-tuned model checkpoints per variant.
         "finetune": f"{base_dir}/finetune/{scale}/",
@@ -93,7 +93,7 @@ def stale_or_missing(output: str, inputs) -> bool:
 
     Lets a notebook's skip-guard be *content-aware* instead of existence-only —
     so a freshly regenerated upstream (e.g. a retrained model) can never be
-    silently ignored by a cached downstream artifact. `inputs` is a path or a
+    silently ignored by a later stage's cached artifact. `inputs` is a path or a
     list of paths; inputs that don't exist are ignored (they can't be newer).
     """
     if isinstance(inputs, str):
@@ -110,7 +110,7 @@ def write_splits_meta(out_path: str, timestamps, is_fraud, source: str, n_cards:
 
     Cutoffs follow the NVIDIA transaction-FM blueprint: 80/10/10 by transaction
     time, so the test set holds the most recent transactions (no temporal
-    leakage). The tokenizer and downstream stages read this file so every stage
+    leakage). The tokenizer and every later stage read this file so every stage
     agrees on the same split.
     """
     import json

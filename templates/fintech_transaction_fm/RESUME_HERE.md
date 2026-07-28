@@ -601,3 +601,16 @@ change, not the intro cut — the real intro cut lands in THIS commit). On his h
 the three patches applied: intro setup sentence cut, his comparability rewrite verbatim,
 the lift claim declefted. His linter: 0 hits. nb06 sign-off still pending — HE SAID
 "check in again next time": next session opens with his nb06 review.
+
+**2026-07-28 (cont.) — "downstream" is dead as a code name; live review round with Zach.**
+His calls this round, all applied: hardware choice belongs in the scale config, as FLAT
+keys read at the .options() call (num_cpus/num_gpus — his rejection of both my
+opts-dict and my "hardware" mapping); ds_cfg → scale_config (spoken-word names rule,
+codified in his repo 4f40d05); "downstream" renamed to "detectors" EVERYWHERE
+functional — config block, paths key, storage dir (mv'd on cluster storage incl. full
+artifacts, zero recompute), run_detectors, detector_metrics.json, run_pipeline stage,
+validate_results, nb07's reader line, live-file comment jargon; "Bootstrap the fusion
+score" → "Score fusion many times" (audience test: sales engineers don't know
+bootstrap) with fusion_bootstrap → score_fusion_many_times to match. Old dead modules
+(src/downstream.py etc.) untouched — they die with the nb08-10 rebuilds. nb06+nb07
+papermill verification in flight at commit time; outputs graft on green.

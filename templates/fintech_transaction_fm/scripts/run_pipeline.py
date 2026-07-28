@@ -9,7 +9,7 @@ order, with the same skip-guards — so the walkthrough and the job cannot drift
     build_corpus_distributed                         (Part 3 — per-card map_groups, CPU)
     TorchTrainer(train_func) + save/export           (Part 4 — Ray Train, N x GPU)
     embed_splits_distributed                         (Part 5 — CPU tokenize -> GPU actors)
-    run_downstream                                   (Part 6 — NVIDIA NB05 recipe, GPU)
+    run_detectors                                    (Part 6 — NVIDIA NB05 recipe, GPU)
 
 Each stage is skipped when its output already exists (delete a stage's output dir, or
 pass --force to rebuild everything). Nothing is wiped implicitly.
@@ -147,17 +147,17 @@ def main(scale: str, force: bool) -> None:
 
     stage("embed", os.path.join(paths["embeddings"], "embed_test.npy"), _embed)
 
-    # ── Part 6: downstream raw vs embedding vs fusion (NVIDIA NB05 recipe) ─────────
-    def _downstream():
-        from src.nvscore import print_summary, run_downstream
-        ds_cfg = cfg["downstream"]
-        summary = run_downstream(paths["embeddings"], paths["downstream"],
+    # ── Part 6: fraud detectors — raw vs embedding vs fusion (NVIDIA NB05 recipe) ──
+    def _detectors():
+        from src.nvscore import print_summary, run_detectors
+        ds_cfg = cfg["detectors"]
+        summary = run_detectors(paths["embeddings"], paths["detectors"],
                                  pca_dim=ds_cfg["pca_dim"], use_gpu=ds_cfg["use_gpu"],
-                                 hardware=ds_cfg.get("hardware"))
+                                 num_cpus=ds_cfg.get("num_cpus"), num_gpus=ds_cfg.get("num_gpus"))
         print_summary(summary)
 
-    stage("downstream", os.path.join(paths["downstream"], "downstream_metrics.json"),
-          _downstream)
+    stage("detectors", os.path.join(paths["detectors"], "detector_metrics.json"),
+          _detectors)
 
     print(f"[pipeline] complete — stage timings: {json.dumps(timings)}", flush=True)
 

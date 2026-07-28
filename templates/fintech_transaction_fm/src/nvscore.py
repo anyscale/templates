@@ -12,8 +12,8 @@ The lift of ``embedding`` (and ``fusion``) over ``raw`` is the headline. Mirrors
 seed×eval bootstrap that reports the peak fusion AP on the same favorable-single-draw basis
 NVIDIA's published 0.1755 uses). Reads the per-split ``embed_/lbl_/raw_`` files nb05 wrote.
 
-``fit_and_score`` and ``fusion_bootstrap`` are Ray tasks submitted inline in nb06;
-``run_downstream``/``peak_hunt`` compose the same tasks for the headless path
+``fit_and_score`` and ``score_fusion_many_times`` are Ray tasks submitted inline in nb06;
+``run_detectors``/``peak_hunt`` compose the same tasks for the headless path
 (``scripts/run_pipeline.py``).
 
 GPU is required for faithful numbers: on CPU, XGBoost early-stops the fusion model at a bad
@@ -108,13 +108,13 @@ def fit_and_score(emb_dir, output_dir, pca_dim, use_gpu):
         "embedding_lift_pr_auc": results["embedding"]["pr_auc"] - results["raw"]["pr_auc"],
         "fusion_lift_pr_auc": results["fusion"]["pr_auc"] - results["raw"]["pr_auc"],
     }
-    with open(os.path.join(output_dir, "downstream_metrics.json"), "w") as f:
+    with open(os.path.join(output_dir, "detector_metrics.json"), "w") as f:
         json.dump(summary, f, indent=2)
     return summary
 
 
 @ray.remote
-def fusion_bootstrap(emb_dir, pca_dim, use_gpu, n_seeds=6, n_boot=120, target=0.1755):
+def score_fusion_many_times(emb_dir, pca_dim, use_gpu, n_seeds=6, n_boot=120, target=0.1755):
     """Refit fusion at ``n_seeds`` seeds and rescore each on ``n_boot`` resampled test sets.
     Returns the peak AP, the fraction of draws ≥ ``target``, and the median full-eval draw."""
     import numpy as np
@@ -149,23 +149,27 @@ def fusion_bootstrap(emb_dir, pca_dim, use_gpu, n_seeds=6, n_boot=120, target=0.
             "target": target, "fusion_full_by_seed": fulls, "fusion_typical_median": float(np.median(fulls))}
 
 
-def run_downstream(emb_dir, output_dir, pca_dim=64, use_gpu=True, hardware=None):
+def run_detectors(emb_dir, output_dir, pca_dim=64, use_gpu=True, num_cpus=None, num_gpus=None):
     """Headless path (scripts/run_pipeline.py): submit ``fit_and_score`` the same way nb06 does."""
     ray.init(ignore_reinit_error=True)
-    opts = hardware or ({"num_gpus": 1, "num_cpus": 8} if use_gpu else {"num_cpus": 2})
+    if num_cpus is None:
+        num_cpus, num_gpus = (8, 1) if use_gpu else (2, 0)
+    opts = {"num_cpus": num_cpus, "num_gpus": num_gpus}
     summary = ray.get(fit_and_score.options(**opts).remote(emb_dir, output_dir, pca_dim, use_gpu))
     # Shared-storage visibility guard: the caller reads these files immediately after.
     wait_for_files([os.path.join(output_dir, f)
-                    for f in ("downstream_metrics.json", "test_predictions.parquet")])
+                    for f in ("detector_metrics.json", "test_predictions.parquet")])
     return summary
 
 
 def peak_hunt(emb_dir, pca_dim=64, use_gpu=True, n_seeds=6, n_boot=120, target=0.1755,
-              hardware=None):
+              num_cpus=None, num_gpus=None):
     """Headless path: submit ``fusion_bootstrap`` the same way nb06 does."""
     ray.init(ignore_reinit_error=True)
-    opts = hardware or ({"num_gpus": 1, "num_cpus": 8} if use_gpu else {"num_cpus": 2})
-    return ray.get(fusion_bootstrap.options(**opts).remote(
+    if num_cpus is None:
+        num_cpus, num_gpus = (8, 1) if use_gpu else (2, 0)
+    opts = {"num_cpus": num_cpus, "num_gpus": num_gpus}
+    return ray.get(score_fusion_many_times.options(**opts).remote(
         emb_dir, pca_dim, use_gpu, n_seeds, n_boot, target))
 
 

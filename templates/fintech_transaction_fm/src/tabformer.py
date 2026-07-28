@@ -24,7 +24,7 @@ Schema mapping notes (TabFormer -> canonical):
 * ``card_type``     = modal transaction channel per card (swipe/chip/online)
 * ``issuer`` / ``bin_region`` = not present in TabFormer -> "UNKNOWN"
 
-Per-transaction fields kept for the downstream raw baseline (NVIDIA's 13-feature
+Per-transaction fields kept for Part 6's raw baseline (NVIDIA's 13-feature
 set uses these directly, not per-card summaries):
 
 * ``use_chip``       = transaction channel (swipe/chip/online) — the strongest
@@ -125,7 +125,7 @@ def normalize_batch(b: pd.DataFrame) -> pd.DataFrame:
             "is_fraud": (b["Is Fraud?"] == "Yes").astype(np.int64),
             # Per-transaction fields NVIDIA's raw baseline uses. "channel" and
             # "state_norm" also feed the per-card statics groupby below; both are
-            # kept on every row (see attach_statics) so the downstream raw baseline
+            # kept on every row (see attach_statics) so Part 6's raw baseline
             # can match NVIDIA's 13-feature set. Channel (swipe/chip/ONLINE) is the
             # single strongest fraud signal — collapsing it to a per-card mode threw
             # it away.
@@ -136,7 +136,7 @@ def normalize_batch(b: pd.DataFrame) -> pd.DataFrame:
                 default="FOREIGN",
             ),
             "merchant_city": b["Merchant City"].fillna("").astype(str),
-            "zip": b["Zip"].astype(np.float64),  # NaN for online txns; encoded downstream
+            "zip": b["Zip"].astype(np.float64),  # NaN for online txns; encoded in Part 6m
         }
     )
 
@@ -189,7 +189,7 @@ def attach_statics(ds, statics: pd.DataFrame):
 
     def _attach(b: pd.DataFrame) -> pd.DataFrame:
         # Promote the working columns to their canonical per-transaction names
-        # (kept, not dropped — the downstream raw baseline needs them) and add the
+        # (kept, not dropped — Part 6's raw baseline needs them) and add the
         # per-card statics on top.
         b = b.rename(columns={"channel": "use_chip", "state_norm": "merchant_state"})
         b["issuer"] = "UNKNOWN"

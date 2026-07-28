@@ -40,7 +40,7 @@ def validate_pipeline(paths: dict, n_pretrain_windows: int | None = None) -> dic
     assert n_emb > 0, "no eval samples"
     first = emb.head(1, columns=["embedding"]).column("embedding").chunk(0)
     if hasattr(first, "storage"):
-        first = first.storage  # unwrap Ray's tensor extension (see downstream.py)
+        first = first.storage  # unwrap Ray's tensor extension (see detectors.py)
     dim = len(first[0].as_py())
     assert dim >= 16, f"embedding dim too small: {dim}"
     splits = set()
@@ -49,7 +49,7 @@ def validate_pipeline(paths: dict, n_pretrain_windows: int | None = None) -> dic
         if splits >= {"train", "test"}:
             break
     # The embed stage keeps the balanced train sample + the held-out test split
-    # (val isn't needed — the downstream fit uses fixed rounds, no early stopping).
+    # (val isn't needed — Part 6's training uses fixed rounds, no early stopping).
     assert splits >= {"train", "test"}, f"missing splits (have {splits})"
     report["n_sequences"] = int(n_emb)
     report["embedding_dim"] = int(dim)
@@ -59,7 +59,7 @@ def validate_pipeline(paths: dict, n_pretrain_windows: int | None = None) -> dic
     # feature sets trained, valid metrics) — NOT a check on the science: the
     # fusion-beats-raw lift only holds on real data at scale, not on the mini
     # synthetic smoke, so the lift is reported, not asserted.
-    with open(os.path.join(paths["downstream"], "downstream_metrics.json")) as f:
+    with open(os.path.join(paths["detectors"], "detector_metrics.json")) as f:
         m = json.load(f)
     report["results"] = m["results"]
     report["fusion_lift_pr_auc"] = m["fusion_lift_pr_auc"]

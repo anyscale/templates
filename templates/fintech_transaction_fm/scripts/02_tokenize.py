@@ -40,7 +40,7 @@ def main():
 
     with open(paths["splits"]) as f:
         splits = json.load(f)
-    # train_keep governs the downstream TRAINING set (train-period normals); at
+    # train_keep governs Part 6's TRAINING set (train-period normals); at
     # full it is 1.0 so raw XGBoost trains on the whole training set like NVIDIA.
     # holdout_keep governs val/test — 1.0 for exact metrics, else fall back to the
     # target_eval_samples-derived rate (keeps the mini/small eval set small).
