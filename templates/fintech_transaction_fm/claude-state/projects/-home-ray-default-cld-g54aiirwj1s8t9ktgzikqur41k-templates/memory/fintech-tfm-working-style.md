@@ -24,6 +24,13 @@ hand-back. That repo supersedes the voice notes that used to be duplicated here.
   (parity with raw, bootstrap 52% of draws — never headline fine-tuned+raw over it);
   raw 0.1238 exact match is the CONTROL, never the headline. Applies to every table,
   takeaway, and deck slide.
+- **NVIDIA framing (his words, 2026-07-28):** "NVIDIA is part of the story here, but its
+  really how Anyscale Ray lets you build Financial Transaction models. We are talking
+  about NVIDIA only because they have the first public blueprint and we build on top of
+  it because people are familiar with it." Lead every notebook with what we build;
+  NVIDIA-comparison is the measurement protocol, never the lead framing ("What we're
+  comparing" read as a grudge → became "Three fraud detectors"). Results sections keep
+  the beat-NVIDIA headline per the result hierarchy above.
 - **Real scale:** show lessons at full scale, refer heavy runs out as Anyscale Jobs;
   mini exists to prove plumbing, and its numbers mean nothing (say so).
 - **Every number from a real run** — his hardest rule; ranges where reruns move a value
