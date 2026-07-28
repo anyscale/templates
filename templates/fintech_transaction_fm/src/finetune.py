@@ -35,15 +35,25 @@ SPLITS = ("train", "val", "test")
 # Data: v1 single-transaction tokens (reuses the Part 5 preparation path)
 # ---------------------------------------------------------------------------
 
+def assemble_token_ids(shards: str, out_dir: str, split: str, prep: dict) -> dict:
+    """Read the tokenized shards, sort them back to Part 5's row order, and save
+    ``ft_ids_<split>.npy``. Cleans up the shards and the prep file. No Ray inside."""
+    import shutil
+
+    import pandas as pd
+    df = pd.concat([pd.read_parquet(f) for f in ordered_parquet_files(shards)],
+                   ignore_index=True).sort_values("__pos__", kind="mergesort")
+    ids = np.stack([np.asarray(r, dtype=np.int32) for r in df["ids"]])
+    np.save(os.path.join(out_dir, f"ft_ids_{split}.npy"), ids)
+    shutil.rmtree(shards)
+    os.remove(prep["prep"])
+    return {"rows": int(len(ids)), "fraud": prep["fraud"]}
+
+
 def build_single_txn_tokens(split_dir: str, out_dir: str, balanced_train: int = 1_000_000,
                             max_length: int = 128, seed: int = 42) -> dict:
-    """Tokenize each labeled transaction alone → ``ft_ids_<split>.npy`` +
-    ``lbl_<split>.npy`` + ``raw_<split>.parquet`` in the same row order Part 5 uses.
-
-    Composes the same pieces as the embed stage (seeded balanced sample + order-fixing
-    sort on a CPU task, then per-batch tokenization on CPU workers); the only
-    difference is that the token ids are the product instead of an intermediate.
-    """
+    """Headless path (scripts): the same pipeline nb07 runs inline — a CPU task draws
+    each split's sample, CPU workers tokenize it, ``assemble_token_ids`` saves it."""
     import shutil
 
     import ray.data
@@ -64,15 +74,7 @@ def build_single_txn_tokens(split_dir: str, out_dir: str, balanced_train: int = 
             .map_batches(lambda b: encode_txn_batch(b, max_length=max_length),
                          batch_format="pandas") \
             .write_parquet(shards)
-
-        import pandas as pd
-        df = pd.concat([pd.read_parquet(f) for f in ordered_parquet_files(shards)],
-                       ignore_index=True).sort_values("__pos__", kind="mergesort")
-        ids = np.stack([np.asarray(r, dtype=np.int32) for r in df["ids"]])
-        np.save(os.path.join(out_dir, f"ft_ids_{split}.npy"), ids)
-        shutil.rmtree(shards)
-        os.remove(prep["prep"])
-        stats[split] = {"rows": int(len(ids)), "fraud": prep["fraud"]}
+        stats[split] = assemble_token_ids(shards, out_dir, split, prep)
     _wait_for_files([os.path.join(out_dir, f"ft_ids_{s}.npy") for s in SPLITS])
     return stats
 
@@ -175,34 +177,24 @@ def tokenize_card_windows(group, targets_by_card: dict, window_txns: int,
     return pd.DataFrame(rows)
 
 
-def build_history_windows(split_dir: str, shards_dir: str, out_dir: str,
-                          balanced_train: int = 1_000_000, window_txns: int = 19,
-                          window_tokens: int = 256, seed: int = 42) -> dict:
-    """History-window tokens for every labeled row → ``ft_hist_ids_<split>.npy``, row
-    order identical to ``lbl_<split>.npy`` (asserted via the carried labels)."""
-    import shutil
-
-    import pandas as pd
-    import ray.data
-
-    ray.init(ignore_reinit_error=True)
-    os.makedirs(out_dir, exist_ok=True)
-
+def recover_targets_by_card(split_dir: str, shards_dir: str,
+                            balanced_train: int = 1_000_000, seed: int = 42) -> dict:
+    """{(user, card): [(split, position, source row, label), ...]} for every labeled
+    row — the work order for the window-building job. Pure pandas, no Ray."""
     targets = _recover_targets(split_dir, shards_dir, balanced_train, seed)
     by_card = {}
     for split, df in targets.items():
         for pos, (u, c, s, y) in enumerate(df.itertuples(index=False, name=None)):
             by_card.setdefault((int(u), int(c)), []).append((split, pos, int(s), int(y)))
+    return by_card
 
-    shards = os.path.join(out_dir, "_hist_tmp")
-    if os.path.isdir(shards):
-        shutil.rmtree(shards)
-    ray.data.read_parquet(ordered_parquet_files(shards_dir)) \
-        .groupby(["User", "Card"]) \
-        .map_groups(lambda g: tokenize_card_windows(g, by_card, window_txns, window_tokens),
-                    batch_format="pandas") \
-        .write_parquet(shards)
 
+def assemble_history_sets(shards: str, out_dir: str, window_tokens: int) -> dict:
+    """Read the window shards, sort each split back to label order (asserted against
+    ``lbl_<split>.npy``), and save ``ft_hist_ids_<split>.npy``. No Ray inside."""
+    import shutil
+
+    import pandas as pd
     df = pd.concat([pd.read_parquet(f) for f in ordered_parquet_files(shards)],
                    ignore_index=True)
     stats = {}
@@ -217,6 +209,29 @@ def build_history_windows(split_dir: str, shards_dir: str, out_dir: str,
     shutil.rmtree(shards)
     _wait_for_files([os.path.join(out_dir, f"ft_hist_ids_{s}.npy") for s in SPLITS])
     return stats
+
+
+def build_history_windows(split_dir: str, shards_dir: str, out_dir: str,
+                          balanced_train: int = 1_000_000, window_txns: int = 19,
+                          window_tokens: int = 256, seed: int = 42) -> dict:
+    """Headless path (scripts): the same group-by-card job nb07 runs inline."""
+    import shutil
+
+    import ray.data
+
+    ray.init(ignore_reinit_error=True)
+    os.makedirs(out_dir, exist_ok=True)
+
+    by_card = recover_targets_by_card(split_dir, shards_dir, balanced_train, seed)
+    shards = os.path.join(out_dir, "_hist_tmp")
+    if os.path.isdir(shards):
+        shutil.rmtree(shards)
+    ray.data.read_parquet(ordered_parquet_files(shards_dir)) \
+        .groupby(["User", "Card"]) \
+        .map_groups(lambda g: tokenize_card_windows(g, by_card, window_txns, window_tokens),
+                    batch_format="pandas") \
+        .write_parquet(shards)
+    return assemble_history_sets(shards, out_dir, window_tokens)
 
 
 # ---------------------------------------------------------------------------
@@ -357,7 +372,9 @@ def finetune(hf_dir: str, tokens_dir: str, out_dir: str, variant: str = "single"
 # ---------------------------------------------------------------------------
 
 @ray.remote
-def _score_task(hf_dir, model_dir, tokens_dir, variant, use_gpu, emb_dir):
+def score_finetuned_model(hf_dir, model_dir, tokens_dir, variant, use_gpu, emb_dir):
+    """Score the fine-tuned model on Part 6's test set, alone and as the raw ensemble.
+    Writes ``scores.json`` and ``test_scores.npy`` to ``model_dir``; returns the dict."""
     os.environ.setdefault("TORCH_DISABLE_NATIVE_JIT", "1")  # no C compiler on workers
     import sys
     sys.path.insert(0, ".")
@@ -369,7 +386,7 @@ def _score_task(hf_dir, model_dir, tokens_dir, variant, use_gpu, emb_dir):
     from sklearn.preprocessing import OrdinalEncoder
 
     from src.finetune import _predict, build_classifier
-    from src.nvscore import _PARAMS
+    from src.nvscore import _PARAMS  # NVIDIA's fusion parameters, unchanged
 
     device = torch.device("cuda" if use_gpu and torch.cuda.is_available() else "cpu")
     model = build_classifier(hf_dir)
@@ -407,17 +424,17 @@ def _score_task(hf_dir, model_dir, tokens_dir, variant, use_gpu, emb_dir):
                                  "pr_auc": float(average_precision_score(y["test"], p)),
                                  "best_iteration": int(clf.best_iteration)}
     np.save(os.path.join(model_dir, "test_scores.npy"), scores["test"])
+    with open(os.path.join(model_dir, "scores.json"), "w") as f:
+        json.dump(out, f, indent=2)
     return out
 
 
 def score_finetuned(hf_dir: str, model_dir: str, tokens_dir: str, emb_dir: str,
-                    variant: str = "single", use_gpu: bool = False) -> dict:
-    """Test-set AP/AUC for the fine-tuned model, alone and fused with the raw
-    features — same eval as Part 6, so the numbers slot into the same table."""
+                    variant: str = "single", use_gpu: bool = False,
+                    num_cpus: int = None, num_gpus: int = None) -> dict:
+    """Headless path (scripts): submit ``score_finetuned_model`` the same way nb07 does."""
     ray.init(ignore_reinit_error=True)
-    opts = {"num_gpus": 1, "num_cpus": 8} if use_gpu else {"num_cpus": 4}
-    res = ray.get(_score_task.options(**opts).remote(hf_dir, model_dir, tokens_dir,
-                                                     variant, use_gpu, emb_dir))
-    with open(os.path.join(model_dir, "scores.json"), "w") as f:
-        json.dump(res, f, indent=2)
-    return res
+    if num_cpus is None:
+        num_cpus, num_gpus = (8, 1) if use_gpu else (4, 0)
+    return ray.get(score_finetuned_model.options(num_cpus=num_cpus, num_gpus=num_gpus)
+                   .remote(hf_dir, model_dir, tokens_dir, variant, use_gpu, emb_dir))

@@ -61,3 +61,5 @@ finetune:                    # Part 7 — supervised fine-tune (beyond-blueprint
   max_length: 128
   window_txns: 19
   window_tokens: 256
+  score_num_cpus: 8          # Ray reservation for the scoring task
+  score_num_gpus: 1
