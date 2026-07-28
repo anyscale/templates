@@ -152,7 +152,8 @@ def main(scale: str, force: bool) -> None:
         from src.nvscore import print_summary, run_downstream
         ds_cfg = cfg["downstream"]
         summary = run_downstream(paths["embeddings"], paths["downstream"],
-                                 pca_dim=ds_cfg["pca_dim"], use_gpu=ds_cfg["use_gpu"])
+                                 pca_dim=ds_cfg["pca_dim"], use_gpu=ds_cfg["use_gpu"],
+                                 resources=ds_cfg.get("resources"))
         print_summary(summary)
 
     stage("downstream", os.path.join(paths["downstream"], "downstream_metrics.json"),

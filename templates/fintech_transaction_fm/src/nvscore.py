@@ -149,10 +149,10 @@ def fusion_bootstrap(emb_dir, pca_dim, use_gpu, n_seeds=6, n_boot=120, target=0.
             "target": target, "fusion_full_by_seed": fulls, "fusion_typical_median": float(np.median(fulls))}
 
 
-def run_downstream(emb_dir, output_dir, pca_dim=64, use_gpu=True):
+def run_downstream(emb_dir, output_dir, pca_dim=64, use_gpu=True, resources=None):
     """Headless path (scripts/run_pipeline.py): submit ``fit_and_score`` the same way nb06 does."""
     ray.init(ignore_reinit_error=True)
-    opts = {"num_gpus": 1, "num_cpus": 8} if use_gpu else {"num_cpus": 2}
+    opts = resources or ({"num_gpus": 1, "num_cpus": 8} if use_gpu else {"num_cpus": 2})
     summary = ray.get(fit_and_score.options(**opts).remote(emb_dir, output_dir, pca_dim, use_gpu))
     # Shared-storage visibility guard: the caller reads these files immediately after.
     wait_for_files([os.path.join(output_dir, f)
@@ -160,10 +160,11 @@ def run_downstream(emb_dir, output_dir, pca_dim=64, use_gpu=True):
     return summary
 
 
-def peak_hunt(emb_dir, pca_dim=64, use_gpu=True, n_seeds=6, n_boot=120, target=0.1755):
+def peak_hunt(emb_dir, pca_dim=64, use_gpu=True, n_seeds=6, n_boot=120, target=0.1755,
+              resources=None):
     """Headless path: submit ``fusion_bootstrap`` the same way nb06 does."""
     ray.init(ignore_reinit_error=True)
-    opts = {"num_gpus": 1, "num_cpus": 8} if use_gpu else {"num_cpus": 2}
+    opts = resources or ({"num_gpus": 1, "num_cpus": 8} if use_gpu else {"num_cpus": 2})
     return ray.get(fusion_bootstrap.options(**opts).remote(
         emb_dir, pca_dim, use_gpu, n_seeds, n_boot, target))
 
