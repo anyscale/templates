@@ -6,7 +6,8 @@ metadata:
 ---
 
 The full protocol is CODIFIED in the repo (durable):
-`templates/fintech_transaction_fm/zgarner-fieldeng-template/references/notebook-authoring.md`,
+`zgarner-ai-skills/zgarner-fieldeng-template/references/notebook-authoring.md`
+(github.com/zachgarner/zgarner-ai-skills, checked out inside the template dir),
 Part 7 "The file-safety rules" + "The hand-back protocol". Follow that document.
 
 Incident record (why it exists): 2026-07-21, concurrent edit→papermill→commit cycles
