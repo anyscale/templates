@@ -14,7 +14,13 @@ app = FastAPI()
 logger = logging.getLogger("MCPDeployment")
 
 
-@serve.deployment(num_replicas=3, ray_actor_options={"num_cpus": 0.5})
+@serve.deployment(
+    num_replicas=3,
+    ray_actor_options={
+        "num_cpus": 0.5,
+        "runtime_env": {"pip": os.path.abspath("python_depset.lock")},
+    },
+)
 @serve.ingress(app)
 class BraveSearchDeployment:
     """MCP deployment that exposes every tool provided by its server.

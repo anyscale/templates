@@ -13,7 +13,12 @@ set -euxo pipefail
 # --runtime-env-json. Customers running the template outside workspaces (where
 # they have docker/podman privileges) hit the real container path unchanged.
 
-bash build.sh
+# Python deps: the locked closure (matches what replicas get via runtime_env).
+uv pip install --system --no-deps --no-cache-dir --index-strategy unsafe-best-match \
+    -r python_depset.lock
+# Podman (used in the stdio examples).
+sudo apt-get update && sudo apt-get install -y podman
+
 pip install --no-cache-dir "papermill==2.7.0" "jupyter==1.1.1" "nbconvert==7.16.6"
 
 # Everything the replicas exec at request time (shim + node) must live on

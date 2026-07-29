@@ -1,3 +1,4 @@
+import os
 from typing import Any
 import httpx
 from fastapi import FastAPI
@@ -99,7 +100,10 @@ fastapi_app = FastAPI(lifespan=lifespan)
         "max_replicas": 20,
         "target_ongoing_requests": 5,
     },
-    ray_actor_options={"num_cpus": 0.2},
+    ray_actor_options={
+        "num_cpus": 0.2,
+        "runtime_env": {"pip": os.path.abspath("python_depset.lock")},
+    },
 )
 @serve.ingress(fastapi_app)
 class WeatherMCP:
