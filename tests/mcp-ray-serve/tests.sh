@@ -49,7 +49,10 @@ done
 for ev in "${env_vars[@]}"; do export "$ev"; done
 case "$image" in
   docker.io/mcp/brave-search) exec /tmp/node20/bin/npx -y --quiet @modelcontextprotocol/server-brave-search "${cmd_args[@]}" ;;
-  docker.io/mcp/fetch)        exec uvx --quiet mcp-server-fetch "${cmd_args[@]}" ;;
+  # Pin both sides: mcp-server-fetch declares mcp>=1.1.3 with no upper bound,
+  # and mcp 2.0.0 renamed McpError -> MCPError, breaking the import. mcp is
+  # pinned to the template's own version (requirements.txt / python_depset.lock).
+  docker.io/mcp/fetch)        exec uvx --quiet --with "mcp==1.11.0" "mcp-server-fetch==2026.7.10" "${cmd_args[@]}" ;;
   *) echo "podman-shim: unsupported image: $image" >&2; exit 1 ;;
 esac
 PODMAN_SHIM
