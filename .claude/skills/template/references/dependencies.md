@@ -19,6 +19,17 @@ but **not Ray Serve replicas** — serve/LLM templates must declare deps at the 
 (see "Runtime skew" below). The lock must also match the Ray version baked into the image; a bump that
 moves the image without recompiling the lock desyncs them (`../workflows/bump-ray-version.md`).
 
+**Why `runtime_env`, not a bare `pip install`.** In a *workspace*, a raw `pip install` auto-propagates to
+workers (a workspace-only convenience); `uv pip install` does **not** — it stays on the head. Since
+`/test-template` and the scheduled probe both launch *workspaces* (`rayapp test` / `rayapp probe`), a
+template that populates workers via bare `pip install` passes **both** — then fails the moment a customer
+runs it as a standalone Service/Job, which has no propagation. So: **worker deps travel by `runtime_env`
+(from the `.lock`); `uv pip` is driver-only.** Never lean on a bare `pip install` to reach workers in a
+ship-path template (pure workspace tutorials, where auto-propagation *is* the lesson, are the exception).
+This includes the **test scripts** (`tests/<name>/tests.sh`): they run under the probe's non-schedulable
+head, so their `serve run` / `ray.init` must carry the `.lock` via `runtime_env` — scoped to the apps that
+need the added deps (leave an LLM ingress on the `ray-llm` image) — not a head-only `--system` install (#929).
+
 ## Runtime skew — right scope, don't move the base framework
 
 The `expand` lock **layers on** the base image's env; it must not *re-resolve down* a package the image's
@@ -36,11 +47,16 @@ lands on a worker still on the image version and cross-node deserialization fail
 - **Deliver *added* deps at the right scope.** `ray.init(runtime_env=)` reaches Ray Core/Data workers but
   **not Serve replicas**; declare a serve/LLM template's added deps on the Serve **app-level** `runtime_env`
   (or `@serve.deployment(ray_actor_options={"runtime_env": …})`), never a head-only `--system` install.
+- **Secondary configs point at the same `.lock`.** A shipped `service_config.yaml` / `job_config.yaml`
+  (the standalone Service/Job path) must source its deps from the template's `python_depset.lock` via
+  `runtime_env`, not a hand-maintained pin list — a divergent list drifts silently from the tested lock.
 - **A genuine conflict → isolate it.** An added package that hard-pins a clashing version (e.g. `a2a-sdk`
   forcing an old `fastapi`) goes in *its own* deployment's `runtime_env` — the LLM ingress keeps the image
   framework; only that deployment gets the pin.
-- **Image = system deps only.** Bake apt/CUDA/`.so` into a custom image (custom-GCP case); never add a pip
-  layer there to dodge a lock conflict — that hides the same skew on another axis.
+- **Image = base + system deps only.** The base is `anyscale/ray` or `ray-llm` (`ray-ml` is deprecated —
+  don't use it). Bake apt/CUDA/`.so` into a custom image *on that base* only when a system dep needs it
+  (custom-GCP case); never add a pip layer there to dodge a lock conflict — that hides the same skew on
+  another axis.
 
 ## The tool: `raydepsets`
 
