@@ -640,3 +640,31 @@ best epoch 1 val AP 0.0617); papermill exit 0; imports audit shows zero hidden R
 linter 0. Flagged, not done: "~315 transactions" → "hundreds" (315 = 4096/13, restore
 if he wants); "their raw model early-stops at one tree" dropped as unverifiable.
 NEXT: Zach's sign-off on nb06 + nb07, then nb08–10 rebuilds.
+
+## Session close-out — 2026-07-29 — nb07 live review with Zach, paused mid-notebook
+
+Reviewed WITH him, applied and pushed section by section: intro (his rewrite is
+baseline — note his typos "This fine tuning training update its weights" / "for
+specific task", flagged once, unfixed), "What we're building" (three-item build list
+with the ensemble promoted to the final model — HIS call: "ensemble is the final big
+model, thats the peak of what we're building"), predictions device cut (performed
+rigor; takeaway callbacks removed), workshop-steps motivation, two-vs-three count fix,
+"frozen" swept for "fixed"/plain names, "Tokenize the labeled transactions" and "Score
+the single-transaction model" retitles, full fine-tuning named and glossed.
+
+**OPEN QUESTION (blocks the takeaways cut): result hierarchy.** Recorded rule says
+standalone-parity leads and the ensemble is never headlined over it; his new framing
+says the ensemble is the peak. He has NOT answered which way takeaways lean. ASK FIRST.
+
+**Remaining in nb07**: Scaling factors, Takeaways, Next (review with him or per his
+standing instructions). "variant" survives in takeaways prose (deliberate — swept
+elsewhere; fix in its round). nb06: his rewritten Next blurb is in (typo "the way an
+LLM are fine-tuned" flagged), plus an accidental-looking EMPTY CODE CELL near Next —
+he never answered whether to delete it. nb01 has one "frozen" (backlog).
+
+**Process state**: pre-commit lint hook active in this clone (copy in his skills repo,
+969cfa8 — reinstall per clone: cp zgarner-ai-skills/zgarner-prose/scripts/pre-commit
+.git/hooks/). prose_lint gained --audit (per-sentence worksheet — REQUIRED with every
+hand-back, protocol updated f0d3241). New skill rules today: referent test, successor
+test, merged-section-is-new-section, fixes-get-audited, instructional names are prose,
+buried-verb cleft (+linter), aside allowance revoked.
