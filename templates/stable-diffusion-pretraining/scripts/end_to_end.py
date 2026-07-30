@@ -64,6 +64,9 @@ logger = logging.getLogger(__name__)
 ### Type Definitions ###
 ResolutionDtype = Literal[256, 512]
 
+### Locked dependency closure, shipped to Ray workers through runtime_env ###
+DEPSET_LOCK = str(Path(__file__).parent.parent / "python_depset.lock")
+
 ### Import ABFSS utilities ###
 from abfss_utils import (
     is_abfss_path,
@@ -646,6 +649,11 @@ def train(
     validation_data_uri: str = "s3://anyscale-materials/stable-diffusion/laion_art_sample_valid.parquet",
 ):
     """Train a Stable Diffusion model."""
+    # The transformer/encoder actors and the TorchTrainer's GPU workers run off the head
+    # node, so a driver-side `uv pip install --system` never reaches them. Hand them the
+    # lock so torch, diffusers and transformers match the versions the driver resolved.
+    ray.init(runtime_env={"pip": DEPSET_LOCK}, ignore_reinit_error=True)
+
     ctx = ray.data.DataContext.get_current()
     ctx.enable_progress_bars = False
     ctx.execution_options.verbose_progress = False

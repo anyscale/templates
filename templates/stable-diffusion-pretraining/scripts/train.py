@@ -28,6 +28,7 @@ import subprocess
 import tempfile
 from contextlib import nullcontext
 from functools import partial
+from pathlib import Path
 from typing import ContextManager, Literal, Optional, cast, Mapping, Any, Union
 
 import lightning.pytorch as pl  # type: ignore
@@ -64,6 +65,9 @@ logger = logging.getLogger(__name__)
 
 ### Type definitions ###
 ResolutionDtype = Literal[256, 512]
+
+### Locked dependency closure, shipped to Ray workers through runtime_env ###
+DEPSET_LOCK = str(Path(__file__).parent.parent / "python_depset.lock")
 
 ### Constants ###
 CAPTION_LATENTS_KEY = "caption_latents"
@@ -582,6 +586,11 @@ def train(
     validation_data_uri: str = "s3://anyscale-materials/stable-diffusion/laion_art_sample_processed_valid_256.parquet",
 ):
     """Train a Stable Diffusion model."""
+    # The Ray Data loaders and the TorchTrainer's GPU workers run off the head node, so
+    # a driver-side `uv pip install --system` never reaches them. Hand them the lock so
+    # torch, diffusers and transformers match the versions the driver resolved.
+    ray.init(runtime_env={"pip": DEPSET_LOCK}, ignore_reinit_error=True)
+
     ctx = ray.data.DataContext.get_current()
     ctx.enable_progress_bars = False
     ctx.execution_options.verbose_progress = False

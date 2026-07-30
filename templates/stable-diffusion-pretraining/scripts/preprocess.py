@@ -39,6 +39,9 @@ logger = logging.getLogger("ray.data")
 ### Type Definitions ###
 ResolutionDtype = Literal[256, 512]
 
+### Locked dependency closure, shipped to Ray workers through runtime_env ###
+DEPSET_LOCK = str(Path(__file__).parent.parent / "python_depset.lock")
+
 
 ########################
 # Step 1: Data Loading #
@@ -236,6 +239,10 @@ def process(
     limit: int = 5,
 ):
     """Preprocess images and text for Stable Diffusion v2 model pre-training."""
+    # The transformer and encoder actors below run off the head node, so a driver-side
+    # `uv pip install --system` never reaches them. Hand them the lock instead.
+    ray.init(runtime_env={"pip": DEPSET_LOCK}, ignore_reinit_error=True)
+
     start_t = time.time()
     ds = get_laion_streaming_dataset(
         # Read.
