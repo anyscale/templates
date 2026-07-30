@@ -661,9 +661,10 @@ storage_path = "/mnt/cluster_storage/ray_train_tp_dtensor"  # Use persistent/sha
 run_config = RunConfig(
     name=experiment_name,
     storage_path=storage_path,
-    worker_runtime_env={
-        "pip": ["torch==2.9.1", "torchvision==0.24.1", "transformers==4.48.0", "datasets==2.21.0"],
-    },
+    # The hand-written list had drifted from the lock: no numpy==1.26.4, and a bare
+    # torch==2.9.1 where the lock pins torch==2.9.1+cu128 from the cu128 index. Point
+    # at the lock so workers install the same closure the driver did.
+    worker_runtime_env={"pip": os.path.join(os.getcwd(), "python_depset.lock")},
 )
 
 # Initialize and launch the trainer
