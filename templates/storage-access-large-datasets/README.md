@@ -46,8 +46,8 @@ git clone https://github.com/anyscale/templates && cd templates/templates/storag
 
 
 ```python
-# Install Google Cloud Storage filesystem support
-# Note: adlfs (Azure) is pre-installed on Anyscale base images
+# Install the cloud-storage filesystems. Neither gcsfs nor adlfs ships in the
+# Anyscale base image, and --system installs them on this node only.
 !uv pip install -r python_depset.lock --system --no-deps --no-cache-dir --index-strategy unsafe-best-match
 ```
 
@@ -64,6 +64,14 @@ import ray.data
 # Cloud storage filesystem imports
 import gcsfs
 import adlfs
+
+# `uv pip --system` above only covers this node. Ray Data opens the GCS and Azure
+# URIs from its read tasks, which run on workers, so pass the same lock through a
+# runtime_env or those tasks fail on `import gcsfs` / `import adlfs`.
+ray.init(
+    ignore_reinit_error=True,
+    runtime_env={"pip": os.path.join(os.getcwd(), "python_depset.lock")},
+)
 
 print(f"Ray version: {ray.__version__}")
 ```
@@ -191,7 +199,7 @@ ds_synthetic.show(3)
 
 ## Azure Blob Storage Access
 
-Azure Blob Storage uses the `adlfs` library (pre-installed on Anyscale base images).
+Azure Blob Storage uses the `adlfs` library, installed from the lock above.
 
 ### Azure Authentication
 
