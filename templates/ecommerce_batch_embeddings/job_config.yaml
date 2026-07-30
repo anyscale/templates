@@ -2,8 +2,11 @@
 name: ecommerce-batch-embeddings
 entrypoint: python scripts/run_pipeline.py --scale medium
 
-working_dir: .
-requirements: requirements.txt
+runtime_env:
+  working_dir: .
+  # Pin to the lock so the driver and workers share one env (a loose >= re-resolves per node).
+  # scripts/run_pipeline.py calls a bare ray.init(), so this config is the only dep source.
+  pip: python_depset.lock
 
 compute_config:
   head_node:
