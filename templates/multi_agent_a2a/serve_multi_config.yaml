@@ -23,7 +23,13 @@ applications:
 - name: mcp_web_search
   route_prefix: /mcp-web-search
   import_path: ray_serve_all_deployments:web_search_mcp_app
-  runtime_env: {}
+  # Every non-llm app installs the locked deps via runtime_env: the head-side
+  # `uv pip install` reaches the head only, and with the head unschedulable the
+  # replicas land on workers whose image lacks e.g. mcp>=1.2 (mcp.server.fastmcp).
+  # Absolute path: the pip file is read head-side, where /home/ray/default is the
+  # workspace root. The llm app stays on the image env (vLLM).
+  runtime_env:
+    pip: /home/ray/default/python_depset.lock
   deployments:
   - name: WebSearchMCP
     autoscaling_config:
@@ -35,7 +41,8 @@ applications:
 - name: mcp_weather
   route_prefix: /mcp-weather
   import_path: ray_serve_all_deployments:weather_mcp_app
-  runtime_env: {}
+  runtime_env:
+    pip: /home/ray/default/python_depset.lock
   deployments:
   - name: WeatherMCP
     autoscaling_config:
@@ -48,6 +55,7 @@ applications:
   route_prefix: /weather-agent
   import_path: ray_serve_all_deployments:weather_agent_app
   runtime_env:
+    pip: /home/ray/default/python_depset.lock
     env_vars:
       # Point the agent at the co-hosted services (local proxy on the same node).
       OPENAI_COMPAT_BASE_URL: http://127.0.0.1:8000/llm
@@ -62,6 +70,7 @@ applications:
   route_prefix: /research-agent
   import_path: ray_serve_all_deployments:research_agent_app
   runtime_env:
+    pip: /home/ray/default/python_depset.lock
     env_vars:
       OPENAI_COMPAT_BASE_URL: http://127.0.0.1:8000/llm
       OPENAI_API_KEY: local
@@ -75,6 +84,7 @@ applications:
   route_prefix: /travel-agent
   import_path: ray_serve_all_deployments:travel_agent_app
   runtime_env:
+    pip: /home/ray/default/python_depset.lock
     env_vars:
       OPENAI_COMPAT_BASE_URL: http://127.0.0.1:8000/llm
       OPENAI_API_KEY: local
@@ -89,6 +99,7 @@ applications:
   route_prefix: /a2a-weather
   import_path: ray_serve_all_deployments:a2a_weather_app
   runtime_env:
+    pip: /home/ray/default/python_depset.lock
     env_vars:
       A2A_AGENT_URL: http://127.0.0.1:8000/a2a-weather
       OPENAI_COMPAT_BASE_URL: http://127.0.0.1:8000/llm
@@ -103,6 +114,7 @@ applications:
   route_prefix: /a2a-research
   import_path: ray_serve_all_deployments:a2a_research_app
   runtime_env:
+    pip: /home/ray/default/python_depset.lock
     env_vars:
       A2A_AGENT_URL: http://127.0.0.1:8000/a2a-research
       OPENAI_COMPAT_BASE_URL: http://127.0.0.1:8000/llm
@@ -118,6 +130,7 @@ applications:
   route_prefix: /a2a-travel
   import_path: ray_serve_all_deployments:a2a_travel_app
   runtime_env:
+    pip: /home/ray/default/python_depset.lock
     env_vars:
       A2A_AGENT_URL: http://127.0.0.1:8000/a2a-travel
       OPENAI_COMPAT_BASE_URL: http://127.0.0.1:8000/llm

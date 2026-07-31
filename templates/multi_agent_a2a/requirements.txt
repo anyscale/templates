@@ -15,6 +15,12 @@ mcp==1.22.0
 # which removes FieldDescriptor.label and breaks Ray Serve's _proto_to_dict on the
 # protobuf-6.x base image (anyscale/ray-llm:2.56.0). Pin to the base-image version.
 protobuf==6.33.6
+# The Serve controller (on the head, where this lock is installed) cloudpickles
+# deployment defs; replicas on workers unpickle them against the image's pydantic.
+# A pydantic-core skew breaks SchemaValidator unpickling in OpenAiIngress.__init__
+# (TypeError: SchemaValidator.__new__() takes 1-2 args but 3 were given).
+# Pin to the base-image version.
+pydantic==2.12.4
 
 # Web search + fetch helpers
 protego==0.5.0
