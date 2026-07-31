@@ -127,7 +127,17 @@ def build_mcp_deployment(
 api = FastAPI()
 
 
-@serve.deployment
+# The Router deserializes mcp-typed responses (e.g. CallToolResult) returned
+# through the MCP deployment handles, so its replica needs the `mcp` package
+# just like the MCP servers do. Without a runtime_env it runs on the bare
+# image (no mcp) and every proxied call 500s with
+# ModuleNotFoundError: No module named 'mcp' whenever the replica lands on a
+# worker node (the head is unschedulable under the published compute config).
+@serve.deployment(
+    ray_actor_options={
+        "runtime_env": {"pip": os.path.abspath("python_depset.lock")},
+    }
+)
 @serve.ingress(api)
 class Router:
     def __init__(self, brave_search: DeploymentHandle, fetch: DeploymentHandle) -> None:
