@@ -571,7 +571,9 @@
   test:
     tests_path: tests/multi_agent_a2a/
     command: bash tests.sh
-    timeout_in_sec: 1800
+    # The agents now actually deploy and answer, so the run pays for their
+    # runtime_env install plus real LLM inference in the notebook's agent curls.
+    timeout_in_sec: 2700
 
 # owner: @aydin
 - name: llm_batch_inference_text
