@@ -102,7 +102,10 @@ def build_mcp_deployment(
     # Build kwargs for the decorator:
     deploy_kwargs: Dict[str, Any] = {
         "name": name,
-        "ray_actor_options": {"num_cpus": num_cpus},
+        "ray_actor_options": {
+            "num_cpus": num_cpus,
+            "runtime_env": {"pip": os.path.abspath("python_depset.lock")},
+        },
     }
     if autoscaling_config:
         deploy_kwargs["autoscaling_config"] = autoscaling_config

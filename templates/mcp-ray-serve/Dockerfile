@@ -6,4 +6,6 @@ RUN sudo apt-get update && \
     sudo apt-get install -y podman && \
     sudo rm -rf /var/lib/apt/lists/*
 
-RUN python3 -m pip install --no-cache-dir "mcp==1.11.0" "asyncio==3.4.3" "pydantic==2.9.2"
+COPY python_depset.lock /tmp/python_depset.lock
+RUN uv pip install --system --no-deps --no-cache-dir --index-strategy unsafe-best-match \
+    -r /tmp/python_depset.lock
