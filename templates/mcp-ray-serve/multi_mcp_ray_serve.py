@@ -69,7 +69,13 @@ class _BaseMCP:
 
     async def call_tool(self, tool_name: str, tool_args: Dict[str, Any]) -> Any:
         await self._ensure_ready()
-        return await self.session.call_tool(tool_name, tool_args)
+        result = await self.session.call_tool(tool_name, tool_args)
+        # Return plain JSON data, not the mcp CallToolResult object: the result
+        # crosses a Ray deployment handle, and unpickling an mcp-typed object
+        # would require the `mcp` package in the *consumer* replica's env
+        # (Router 500s with ModuleNotFoundError wherever that isn't true).
+        # list_tools above already returns plain dicts for the same reason.
+        return result.model_dump(mode="json")
 
     async def __del__(self):
         if hasattr(self, "_stack"):
@@ -127,17 +133,7 @@ def build_mcp_deployment(
 api = FastAPI()
 
 
-# The Router deserializes mcp-typed responses (e.g. CallToolResult) returned
-# through the MCP deployment handles, so its replica needs the `mcp` package
-# just like the MCP servers do. Without a runtime_env it runs on the bare
-# image (no mcp) and every proxied call 500s with
-# ModuleNotFoundError: No module named 'mcp' whenever the replica lands on a
-# worker node (the head is unschedulable under the published compute config).
-@serve.deployment(
-    ray_actor_options={
-        "runtime_env": {"pip": os.path.abspath("python_depset.lock")},
-    }
-)
+@serve.deployment
 @serve.ingress(api)
 class Router:
     def __init__(self, brave_search: DeploymentHandle, fetch: DeploymentHandle) -> None:
