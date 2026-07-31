@@ -182,7 +182,10 @@
   test:
     tests_path: tests/serve-stable-diffusion-v2/
     command: bash tests.sh
-    timeout_in_sec: 900
+    # The replicas now install the locked closure (torch + CUDA wheels) via
+    # runtime_env on top of GPU provisioning and the SDXL download; 900s was tight
+    # even before that.
+    timeout_in_sec: 2700
 
 # owner: @aydin
 - name: deployment-serve-llm
