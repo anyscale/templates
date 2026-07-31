@@ -512,7 +512,9 @@
   test:
     tests_path: tests/parallel-experiments/
     command: bash tests.sh
-    timeout_in_sec: 900
+    # The notebook trains the real CIFAR-10 sweep (18 CPU trials); ~10 min
+    # typical, so 900s is too tight once pip install + autoscaling are counted.
+    timeout_in_sec: 1800
 
 # owner: @suman-debnath
 - name: vhol-ray-data
