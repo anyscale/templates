@@ -25,8 +25,11 @@ def load_data(data_dir="./data"):
 
     # We add FileLock here because multiple workers will want to
     # download data, and this may cause overwrites since
-    # DataLoader is not threadsafe.
-    with FileLock(os.path.expanduser("~/.data.lock")):
+    # DataLoader is not threadsafe. The lock lives next to the data so it
+    # is shared by every process using the same directory — including
+    # across nodes when data_dir is on /mnt/cluster_storage.
+    os.makedirs(data_dir, exist_ok=True)
+    with FileLock(os.path.join(data_dir, ".data.lock")):
         trainset = torchvision.datasets.CIFAR10(
             root=data_dir, train=True, download=True, transform=transform)
 
