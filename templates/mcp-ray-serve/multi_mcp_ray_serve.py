@@ -70,11 +70,6 @@ class _BaseMCP:
     async def call_tool(self, tool_name: str, tool_args: Dict[str, Any]) -> Any:
         await self._ensure_ready()
         result = await self.session.call_tool(tool_name, tool_args)
-        # Return plain JSON data, not the mcp CallToolResult object: the result
-        # crosses a Ray deployment handle, and unpickling an mcp-typed object
-        # would require the `mcp` package in the *consumer* replica's env
-        # (Router 500s with ModuleNotFoundError wherever that isn't true).
-        # list_tools above already returns plain dicts for the same reason.
         return result.model_dump(mode="json")
 
     async def __del__(self):
