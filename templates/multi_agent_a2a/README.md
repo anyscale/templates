@@ -180,6 +180,8 @@ git clone https://github.com/anyscale/templates && cd templates/templates/multi_
 
 
 ```python
+# Driver-side install: `--system` only reaches this head node. The Serve replicas
+# get the same locked closure from each app's `runtime_env` in the deployment configs.
 !uv pip install -r python_depset.lock --system --no-deps --no-cache-dir --index-strategy unsafe-best-match
 ```
 

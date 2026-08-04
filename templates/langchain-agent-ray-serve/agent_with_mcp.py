@@ -10,16 +10,17 @@ from langgraph.checkpoint.memory import MemorySaver
 
 # ========== CONFIG ==========
 # Easy-to-edit default configurations.
-API_KEY = "VrBDo0s-qNOaP9kugBQtJQhGAIA6EUszb6iJHbB1xDQ"
-OPENAI_COMPAT_BASE_URL = (
-    "https://llm-deploy-qwen-service-jgz99.cld-kvedzwag2qa8i5bj.s.anyscaleuserdata.com"
-)
+# Defaults target the co-hosted apps on this node's Serve proxy (localhost:8000), so the
+# agent works out of the box when llm + weather + agent run in one Service/workspace.
+# Override with the OPENAI_COMPAT_BASE_URL / WEATHER_MCP_BASE_URL env vars to point at
+# separately-deployed services. (A hardcoded external service URL here previously left the
+# published template calling a dead endpoint -> 404 "Requested resource not found".)
+API_KEY = "local"
+OPENAI_COMPAT_BASE_URL = "http://localhost:8000/llm"
 MODEL = "Qwen/Qwen3-4B-Instruct-2507-FP8"
 TEMPERATURE = 0.01
-WEATHER_MCP_BASE_URL = (
-    "https://weather-mcp-service-jgz99.cld-kvedzwag2qa8i5bj.s.anyscaleuserdata.com"
-)
-WEATHER_MCP_TOKEN = "uyOArxwCNeTpxn0odOW7hGY57tXQNNrF16Yy8ziskrY"
+WEATHER_MCP_BASE_URL = "http://localhost:8000/weather"
+WEATHER_MCP_TOKEN = "local"
 
 # Environment variable overrides.
 # For deployment, you can override the above settings with environment variables.
@@ -33,8 +34,8 @@ WEATHER_MCP_TOKEN = os.getenv("WEATHER_MCP_TOKEN", WEATHER_MCP_TOKEN)
 llm = ChatOpenAI(
     model=MODEL,
     base_url=urljoin(
-        OPENAI_COMPAT_BASE_URL, "v1"
-    ),  ## urljoin automatically appends "/v1" to the base URL.
+        OPENAI_COMPAT_BASE_URL.rstrip("/") + "/", "v1"
+    ),  ## Force a trailing slash first: urljoin drops the last path segment without it (".../llm" + "v1" -> ".../v1").
     api_key=API_KEY,
     temperature=TEMPERATURE,
     streaming=False,
@@ -67,8 +68,8 @@ async def get_mcp_tools() -> List[Any]:
             {
                 "weather": {
                     "url": urljoin(
-                        WEATHER_MCP_BASE_URL, "mcp"
-                    ),  ## urljoin automatically appends "/mcp" to the base URL.
+                        WEATHER_MCP_BASE_URL.rstrip("/") + "/", "mcp"
+                    ),  ## Force a trailing slash first: urljoin drops the last path segment without it.
                     "transport": "streamable_http",
                     "headers": headers,
                 }

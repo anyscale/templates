@@ -1,8 +1,8 @@
 import json
 import requests
 
-base_url = "https://agent-service-langchain-jgz99.cld-kvedzwag2qa8i5bj.s.anyscaleuserdata.com"  ## replace with your service url
-token = "nZp2BEjdloNlwGyxoWSpdalYGtkhfiHtfXhmV4BQuyk"  ## replace with your service bearer token
+base_url = "https://agent-service-langchain-xxxxx.cld-xxxxxxxxxxxx.s.anyscaleuserdata.com"  ## replace with your service url
+token = "<your-service-bearer-token>"  ## replace with your service bearer token
 
 SERVER_URL = f"{base_url}/chat"  # For Anyscale deployment.
 HEADERS = {"Content-Type": "application/json", "Authorization": f"Bearer {token}"}
