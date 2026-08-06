@@ -46,8 +46,7 @@ git clone https://github.com/anyscale/templates && cd templates/templates/storag
 
 
 ```python
-# Install the cloud-storage filesystems. Neither gcsfs nor adlfs ships in the
-# Anyscale base image, and --system installs them on this node only.
+# Install the cloud-storage filesystems (gcsfs, adlfs) on this node.
 !uv pip install -r python_depset.lock --system --no-deps --no-cache-dir --index-strategy unsafe-best-match
 ```
 
@@ -65,9 +64,7 @@ import ray.data
 import gcsfs
 import adlfs
 
-# `uv pip --system` above only covers this node. Ray Data opens the GCS and Azure
-# URIs from its read tasks, which run on workers, so pass the same lock through a
-# runtime_env or those tasks fail on `import gcsfs` / `import adlfs`.
+# Ray Data's read tasks run on workers, so ship them the lock via runtime_env.
 ray.init(
     ignore_reinit_error=True,
     runtime_env={"pip": os.path.join(os.getcwd(), "python_depset.lock")},

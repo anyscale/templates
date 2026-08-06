@@ -1,10 +1,8 @@
 #!/usr/bin/env bash
 set -euxo pipefail
 
-# Install the lock, not the loose requirements.txt, so the driver matches what the
-# notebooks' runtime_env installs on Train workers, Data actors, and Serve replicas.
+# Install the locked closure the notebooks ship to Ray.
 uv pip install -r python_depset.lock --system --no-deps --no-cache-dir --index-strategy unsafe-best-match
-# Harness-only tooling; not part of the template's dependency closure.
 pip install -q papermill nbconvert==7.16.6 ipykernel
 
 # CI runs on a single CPU node; NB01 defaults to 4 GPU workers (real config, env-overridable).

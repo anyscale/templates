@@ -1,9 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Install the lock rather than a hand-typed subset: it is the closure the scripts hand
-# to Ray via runtime_env, and it carries the pins (numpy, pyarrow, torch+cu128) that the
-# loose list dropped.
+# Install the locked closure the scripts ship to Ray.
 uv pip install -r python_depset.lock --system --no-deps --no-cache-dir --index-strategy unsafe-best-match
 
 echo "=== Running preprocess.py validation ==="

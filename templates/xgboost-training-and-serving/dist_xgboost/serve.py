@@ -18,9 +18,7 @@ from dist_xgboost.constants import root_dir
 from dist_xgboost.data import load_model_and_preprocessor
 
 
-# Serve replicas are launched by the Serve controller, not as children of this driver,
-# so they don't inherit its environment. Pin them to the lock so the xgboost that
-# unpickles the model matches the one that trained it.
+# Serve replicas don't inherit the driver env, so pin them to the lock.
 @serve.deployment(
     num_replicas=2,
     ray_actor_options={

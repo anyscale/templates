@@ -68,9 +68,7 @@ def train_fn_per_worker(config: dict):
 
 
 def main():
-    # `pip` points at the lock because a head-only `uv pip install --system` never
-    # reaches Ray Train workers or Ray Data actors -- they would run the base image's
-    # xgboost/scikit-learn instead of the pinned versions the driver resolved with.
+    # Ray workers run off-head, so ship them the lock via runtime_env.
     ray.init(
         runtime_env={
             "py_modules": [dist_xgboost],

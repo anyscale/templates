@@ -12,7 +12,5 @@ compute_config:
       min_nodes: 1
       max_nodes: 1
 working_dir: .
-# Outside a workspace nothing propagates a head-node install, so the job's runtime_env
-# carries the fully-pinned closure to the driver and every Ray Data / Ray Train worker.
 requirements: python_depset.lock
 max_retries: 0

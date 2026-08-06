@@ -53,9 +53,7 @@ def confusion_matrix_batch(batch, threshold=0.5):
 
 
 def main():
-    # The `Validator` actor pool needs xgboost and `confusion_matrix_batch` needs
-    # scikit-learn, both off-head; `py_modules` ships this package alongside them
-    # because a `pip` runtime_env puts the actors in their own environment.
+    # Ray workers run off-head, so ship them the lock (and this package) via runtime_env.
     ray.init(
         runtime_env={
             "py_modules": [dist_xgboost],
