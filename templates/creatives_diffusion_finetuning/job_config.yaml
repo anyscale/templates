@@ -11,7 +11,5 @@ compute_config:
       max_nodes: 2
 env_vars:
   HF_HOME: /mnt/cluster_storage/hf_cache
-# Pin to the lock so the driver and workers share one env; the hand-maintained >= list
-# drifted from requirements.txt (unpinned datasets resolves to 2.14.4, numpy floats to 2.x).
 requirements: python_depset.lock
 max_retries: 2

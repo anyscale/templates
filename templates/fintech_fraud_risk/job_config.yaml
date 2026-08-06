@@ -2,8 +2,6 @@
 # Jobs use a fresh cluster without workspace /mnt/cluster_storage — run generate → train → score.
 name: fintech-fraud-risk
 entrypoint: bash -c "python scripts/01_generate_data.py --scale medium && python scripts/02_train_model.py --scale medium && python scripts/03_run_scoring.py --scale medium"
-# Pin to the lock so the Job ships the same numpy-2 stack the notebook/test validate;
-# the loose >= list leaves the image's numpy 1.26.4 in place instead.
 requirements: python_depset.lock
 compute_config:
   head_node:

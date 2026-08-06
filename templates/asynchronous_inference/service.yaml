@@ -6,7 +6,6 @@ applications:
     import_path: server:app
     runtime_env:
       working_dir: "."
-      # Pin to the lock so every replica shares one env (a loose >= re-resolves per node).
       pip: "python_depset.lock"
     deployments:
       - name: PDFProcessor
