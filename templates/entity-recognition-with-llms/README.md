@@ -48,23 +48,14 @@ This [Anyscale Workspace](https://docs.anyscale.com/platform/workspaces/) automa
 <img src="https://raw.githubusercontent.com/anyscale/foundational-ray-app/refs/heads/main/images/compute.png" width=500>
 
 ### Dependencies
-Start by downloading the dependencies required for this tutorial. Notice in your [`containerfile`](https://raw.githubusercontent.com/anyscale/e2e-llm-workflows/refs/heads/main/containerfile) you have a base image [`anyscale/ray-llm:latest-py311-cu124`](https://hub.docker.com/layers/anyscale/ray-llm/latest-py311-cu124/images/sha256-5a1c55f7f416d2d2eb5f4cdd13afeda25d4f7383406cfee1f1f60da495d1b50f) followed by a list of pip packages. If you're not on [Anyscale](https://console.anyscale.com/), you can pull this Docker image yourself and install the dependencies.
+Start by downloading the dependencies required for this tutorial. Notice in your `containerfile` you have a base image `anyscale/ray-llm:2.56.0-py312-cu130` followed by a list of pip packages. If you're not on [Anyscale](https://console.anyscale.com/), you can pull this Docker image yourself and install the dependencies.
 
 
 
 ```bash
 %%bash
 # Install dependencies
-pip install -q \
-    "pynvml==12.0.0" \
-    "hf_transfer==0.1.9" \
-    "tensorboard==2.19.0" \
-    "llamafactory@git+https://github.com/hiyouga/LlamaFactory.git" \
-    "transformers>=4.56.0,<5" \
-    "peft>=0.18" \
-    "trl>=0.18" \
-    "omegaconf" \
-    "torchdata"
+pip install -q -r requirements.txt
 ```
 
 ## Data ingestion
@@ -113,7 +104,7 @@ display(Code(filename="/mnt/cluster_storage/viggo/dataset_info.json", language="
 
 ## Fine-tuning
 
-Use [LLaMA-Factory](https://github.com/hiyouga/LlamaFactory) to perform fine-tuning on a GPU worker via Ray. Find the parameters for the training workload, post-training method, dataset location, train/val details, etc. in the `lora_sft_ray.yaml` config file. See the recipes for even more post-training methods, like SFT, pretraining, PPO, DPO, KTO, etc. [on GitHub](https://github.com/hiyouga/LlamaFactory/tree/main/examples).
+Use [LLaMA-Factory](https://github.com/hiyouga/LLaMA-Factory) to perform fine-tuning on a GPU worker via Ray. Find the parameters for the training workload, post-training method, dataset location, train/val details, etc. in the `lora_sft_ray.yaml` config file. See the recipes for even more post-training methods, like SFT, pretraining, PPO, DPO, KTO, etc. [on GitHub](https://github.com/hiyouga/LlamaFactory/tree/main/examples).
 
 **Note**: Ray also supports using other tools like [axolotl](https://axolotl-ai-cloud.github.io/axolotl/docs/ray-integration.html) or even [Ray Train + HF Accelerate + FSDP/DeepSpeed](https://docs.ray.io/en/latest/train/huggingface-accelerate.html) directly for complete control of your post-training workloads.
 
