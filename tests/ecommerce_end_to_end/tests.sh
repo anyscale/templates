@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
-set -euo pipefail
-pip install papermill
-papermill notebook.ipynb output.ipynb -k python3 --log-output
+set -euxo pipefail
+
+uv pip install -q --system papermill
+papermill README.ipynb /tmp/ecommerce_end_to_end.out.ipynb --log-output --kernel python3 --cwd .

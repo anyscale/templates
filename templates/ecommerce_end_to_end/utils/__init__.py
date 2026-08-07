@@ -4,11 +4,10 @@ Kept in a single .py file so both notebooks and scripts can import it.
 """
 
 import io
-import json
 import os
 import random
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
@@ -238,19 +237,13 @@ def make_training_text(product: Dict) -> str:
 # Dataset generation
 # ---------------------------------------------------------------------------
 
-def generate_catalog(
-    products: Optional[List[Dict]] = None,
-    output_dir: str = "data/raw",
-    seed: int = 42,
-) -> List[Dict]:
-    """Generate the synthetic product catalog and save images to disk.
+def generate_catalog(products: Optional[List[Dict]] = None) -> List[Dict]:
+    """Build the product catalog records, attaching each product's image bytes.
 
     Returns a list of records ready to be loaded into a Ray Dataset.
     """
     if products is None:
         products = PRODUCTS
-
-    Path(output_dir).mkdir(parents=True, exist_ok=True)
 
     records = []
     for i, p in enumerate(products):
@@ -268,7 +261,7 @@ def generate_catalog(
         }
         records.append(record)
 
-    print(f"Generated {len(records)} products in '{output_dir}'")
+    print(f"Generated {len(records)} catalog records")
     return records
 
 
@@ -309,42 +302,26 @@ def expand_catalog(
 
 
 # ---------------------------------------------------------------------------
-# Preprocessing helpers (used inside Ray Data map_batches)
-# ---------------------------------------------------------------------------
-
-def preprocess_image_batch(batch: Dict) -> Dict:
-    """Normalize image bytes to float32 tensor bytes (224x224x3, range [0,1]).
-
-    Suitable as a Ray Data map_batches function.
-    """
-    processed = []
-    for raw in batch["image_bytes"]:
-        img = np.array(
-            Image.open(io.BytesIO(raw)).convert("RGB").resize(IMAGE_SIZE)
-        ).astype(np.float32) / 255.0
-        # Store as bytes (float32 little-endian) to keep Parquet schema simple
-        processed.append(img.tobytes())
-    batch["image_tensor_bytes"] = processed
-    return batch
-
-
-def preprocess_text_batch(batch: Dict) -> Dict:
-    """Clean training text. Tokenization happens inside the trainer."""
-    batch["text_clean"] = [clean_text(t) for t in batch["training_text"]]
-    return batch
-
-
-def decode_image_tensor(raw: bytes) -> np.ndarray:
-    """Inverse of preprocess_image_batch: bytes -> float32 (224,224,3)."""
-    return np.frombuffer(raw, dtype=np.float32).reshape(*IMAGE_SIZE, 3)
-
-
-# ---------------------------------------------------------------------------
 # Ray helpers
 # ---------------------------------------------------------------------------
 
 def init_ray() -> None:
-    """Initialize Ray with reduced logging (idempotent)."""
+    """Initialize Ray with reduced logging (idempotent).
+
+    Two things happen here beyond ``ray.init``:
+
+    * **Worker dependencies.** The notebook's setup cell installs
+      ``python_depset.lock`` with ``uv pip install --system``, which only
+      reaches the driver. Ray Data actors and Ray Train workers run on
+      other nodes, so the same lock is forwarded through
+      ``runtime_env["pip"]`` — every worker installs the identical pinned
+      set. (Ray Serve replicas don't inherit this; Stage 4 passes the lock
+      to the Serve app explicitly.)
+    * **Small uploads.** When connecting to a remote cluster, Ray may
+      package the current working directory as the runtime_env
+      ``working_dir``. Exclude local artifacts workers never read so the
+      package stays under Ray's upload limit.
+    """
     import logging
     import ray
     import ray.data
@@ -353,10 +330,31 @@ def init_ray() -> None:
                  "ray._private", "ray.runtime_env"]:
         logging.getLogger(name).setLevel(logging.WARNING)
 
+    runtime_env = {
+        "excludes": [
+            # Large local crash dumps and temporary outputs can exceed Ray's
+            # runtime package upload limit.
+            "core.*",
+            "__pycache__/",
+            ".ipynb_checkpoints/",
+            ".git/",
+            "ray_results/",
+            "logs/",
+            "models/",
+            "data/raw/",
+            "*.ray_tmp/",
+        ]
+    }
+
+    lock = Path(__file__).parent.parent / "python_depset.lock"
+    if lock.exists():
+        runtime_env["pip"] = str(lock)
+
     ray.init(
         ignore_reinit_error=True,
         log_to_driver=False,
         logging_level=logging.WARNING,
+        runtime_env=runtime_env,
     )
     ray.data.DataContext.get_current().enable_progress_bars = True
 
@@ -364,15 +362,6 @@ def init_ray() -> None:
 # ---------------------------------------------------------------------------
 # Notebook convenience helpers
 # ---------------------------------------------------------------------------
-
-def attach_clean_text(records: List[Dict]) -> List[Dict]:
-    """Add a `text_clean` field to each record (in-place), derived from
-    `training_text`. Same cleaning rules as :func:`clean_text`.
-    """
-    for r in records:
-        r["text_clean"] = clean_text(r["training_text"])
-    return records
-
 
 def sample_per_category(
     records: List[Dict],
@@ -408,7 +397,6 @@ def resolve_artifact_paths(here: Optional[str] = None) -> Dict[str, str]:
     here = here or os.path.abspath(".")
     shared = "/mnt/cluster_storage"
     use_shared = os.path.isdir(shared)
-    base = shared if use_shared else os.path.join(here, "models")
 
     def _p(shared_name: str, local_name: str) -> str:
         return (

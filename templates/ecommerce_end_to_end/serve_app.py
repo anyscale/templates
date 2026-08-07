@@ -2,7 +2,7 @@
 E-Commerce Recommendation System — Ray Serve Application
 =========================================================
 
-Stage 3 of 3:  Online recommendation endpoint
+Stage 4 of 4:  Online recommendation endpoint
 
 Pipeline (multi-model composition)
 -----------------------------------
@@ -25,15 +25,14 @@ Run locally (development)
 
 Run as an Anyscale Service
 ---------------------------
-    anyscale service deploy -f service.yaml
+    anyscale service deploy -f setup/service.yaml
 
 Test
 ----
     python client.py
 
-Ray version: 2.x  (Ray ≥ 2.20)
-Base image:  anyscale/ray:2.47.1-slim-py312   (CPU-only)
-See https://docs.anyscale.com/reference/base-images for the latest images.
+Runs entirely on CPU — see the template's BUILD.yaml for the pinned base
+image, and https://docs.anyscale.com/reference/base-images for the latest.
 
 References
 ----------
@@ -54,7 +53,6 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from ray import serve
 from ray.serve.handle import DeploymentHandle
-from starlette.requests import Request
 
 # ---------------------------------------------------------------------------
 # Configuration
@@ -67,7 +65,7 @@ _HERE = Path(__file__).parent.resolve()
 #  1. Env var EMBEDDING_MODEL_DIR (explicit override)
 #  2. Cluster storage fine-tuned model (written by notebook when /mnt/cluster_storage exists)
 #  3. Local models/embedding_model (pushed or generated locally)
-#  4. HuggingFace model ID — pre-cached in container image (Dockerfile bakes it in)
+#  4. HuggingFace model ID — downloaded from the Hub on first load
 _CLUSTER_MODEL = Path("/mnt/cluster_storage") / "ecomm_embedding_model"
 _LOCAL_MODEL = _HERE / "models/embedding_model"
 _default_model_dir = (
@@ -135,8 +133,6 @@ class ImageToText:
 
         dummy = PILImage.new("RGB", (224, 224), color=(128, 128, 128))
         inputs = self.processor(images=dummy, return_tensors="pt").to(self.device)
-        import torch
-
         with torch.no_grad():
             self.model.generate(**inputs, max_new_tokens=30)
 
@@ -267,7 +263,7 @@ class RecommendationService:
     HTTP ingress that chains ImageToText → ProductRecommender.
 
     Both sub-deployments are called via async DeploymentHandle so the
-    orchstrator never blocks.
+    orchestrator never blocks.
     """
 
     def __init__(
@@ -334,14 +330,45 @@ class RecommendationService:
 # Application binding
 # ---------------------------------------------------------------------------
 
-app = RecommendationService.bind(
-    image_to_text=ImageToText.bind(),
-    product_recommender=ProductRecommender.bind(
-        embedding_model_dir=EMBEDDING_MODEL_DIR,
-        embeddings_path=EMBEDDINGS_PATH,
-        metadata_path=METADATA_PATH,
-    ),
-)
+
+def build_app(
+    embedding_model_dir: str | None = None,
+    embeddings_path: str | None = None,
+    metadata_path: str | None = None,
+    runtime_env: dict | None = None,
+):
+    """Bind the Serve app with explicit paths.
+
+    Lets the notebook drive Stage 4 without mutating ``os.environ`` and
+    reloading the module — the paths flow through ``bind()`` so each replica
+    gets them on construction.
+
+    ``runtime_env`` (e.g. ``{"pip": "<abs path>/python_depset.lock"}``) is
+    attached to every deployment when given. Serve replicas do **not**
+    inherit the driver's ``ray.init`` runtime_env, so the in-workspace
+    notebook flow passes the lock here to put torch/transformers on the
+    replicas. A standalone Anyscale Service installs `requirements`
+    cluster-wide instead (see setup/service.yaml) — leave it unset there.
+    """
+
+    def _with_env(deployment):
+        if not runtime_env:
+            return deployment
+        opts = dict(deployment.ray_actor_options or {})
+        opts["runtime_env"] = runtime_env
+        return deployment.options(ray_actor_options=opts)
+
+    return _with_env(RecommendationService).bind(
+        image_to_text=_with_env(ImageToText).bind(),
+        product_recommender=_with_env(ProductRecommender).bind(
+            embedding_model_dir=embedding_model_dir or EMBEDDING_MODEL_DIR,
+            embeddings_path=embeddings_path or EMBEDDINGS_PATH,
+            metadata_path=metadata_path or METADATA_PATH,
+        ),
+    )
+
+
+app = build_app()
 
 
 # ---------------------------------------------------------------------------

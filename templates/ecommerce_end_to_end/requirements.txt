@@ -1,0 +1,17 @@
+# ML stack — pinned to the versions proven on the anyscale/ray 2.56.0 base
+# image (same set as image-search-and-classification); numpy/pyarrow hold the
+# base-image versions so runtime_env workers match image-resident processes.
+torch==2.7.1
+transformers==4.52.3
+sentence-transformers
+hf_transfer
+pillow
+numpy==1.26.4
+pyarrow==19.0.1
+
+# Notebook visualization (Stage 2/3 plots + t-SNE). Not needed at serve time.
+matplotlib==3.10.0
+scikit-learn==1.6.0
+
+# The optional Streamlit demo UI is a laptop-side client, not a cluster
+# dependency — see setup/STREAMLIT_UI.md for how to run it.

@@ -804,9 +804,10 @@
 
 # owner: @daniel.arrizza
 - name: ecommerce_end_to_end
+  owner_team: general
   dir: templates/ecommerce_end_to_end
   cluster_env:
-    image_uri: anyscale/ray:2.55.1-py312
+    image_uri: anyscale/ray:2.56.0-py312
   compute_config:
     AWS: configs/ecommerce_end_to_end/aws.yaml
     GCP: configs/ecommerce_end_to_end/gce.yaml

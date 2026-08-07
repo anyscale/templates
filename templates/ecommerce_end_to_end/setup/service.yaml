@@ -1,5 +1,5 @@
 # Anyscale Service Configuration — E-Commerce Recommendation System
-# Deploy from project root with:  anyscale service deploy -f setup/service.yaml
+# Deploy from the template root with:  anyscale service deploy -f setup/service.yaml
 # Status:       anyscale service status --name ecomm-recommender-service
 
 name: ecomm-recommender-service
@@ -36,18 +36,12 @@ compute_config:
       min_nodes: 0
       max_nodes: 3
 
-# Base image — CPU-only, Python 3.12
-# Check https://docs.anyscale.com/reference/base-images for the latest
-image_uri: anyscale/ray:2.55.1-slim-py312
+# Base image — CPU-only, Python 3.12. Keep in sync with the template's
+# BUILD.yaml entry; see https://docs.anyscale.com/reference/base-images
+image_uri: anyscale/ray:2.56.0-py312
 
 working_dir: .
 
-requirements:
-  - torch
-  - transformers
-  - sentence-transformers
-  - hf_transfer
-  - pillow
-  - numpy
-  - fastapi
-  - pydantic
+# Same pinned dependency set the notebook uses — installed cluster-wide, so
+# the Serve replicas need no per-deployment runtime_env on this path.
+requirements: python_depset.lock
