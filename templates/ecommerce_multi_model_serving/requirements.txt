@@ -1,4 +1,6 @@
 ray[serve]>=2.9
+fastapi==0.133.0
+starlette==1.0.1
 sentence-transformers>=2.2
 transformers>=4.35
 # Newest torch with a cu128 wheel (PyPI has higher, but CPU-only — this keeps the GPU build).
