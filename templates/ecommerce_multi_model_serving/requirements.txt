@@ -1,7 +1,8 @@
 ray[serve]>=2.9
 sentence-transformers>=2.2
 transformers>=4.35
-torch==2.5.1
+# Newest torch with a cu128 wheel (PyPI has higher, but CPU-only — this keeps the GPU build).
+torch==2.11.0
 faiss-cpu>=1.7
 numpy==1.26.4
 pandas>=2.0
