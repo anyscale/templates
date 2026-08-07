@@ -1,17 +1,11 @@
 FROM anyscale/ray-llm:2.56.0-py312-cu130
 
+# LLaMA-Factory (git main) pulls peft/trl/datasets; keep transformers on the tested 4.x line.
 RUN python3 -m pip install --no-cache-dir \
-    "pynvml==12.0.0" \
-    "hf_transfer==0.1.9" \
-    "tensorboard==2.19.0" \
-    "llamafactory@git+https://github.com/hiyouga/LlamaFactory.git" \
+    "llamafactory@git+https://github.com/hiyouga/LLaMA-Factory.git" \
     "transformers>=4.56.0,<5" \
-    "peft>=0.18" \
-    "trl>=0.18" \
-    "omegaconf" \
-    "torchdata"
+    "pynvml==12.0.0" \
+    "tensorboard==2.19.0"
 
-# Fast upload/download
 ENV HF_HUB_ENABLE_HF_TRANSFER=1
-# Bypass LLaMA-Factory strict version checks (trl, transformers bounds)
 ENV DISABLE_VERSION_CHECK=1

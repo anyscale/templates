@@ -1,0 +1,5 @@
+# LLaMA-Factory (git main) pulls peft/trl/datasets; keep transformers on the tested 4.x line.
+llamafactory @ git+https://github.com/hiyouga/LLaMA-Factory.git
+transformers>=4.56.0,<5
+pynvml==12.0.0
+tensorboard==2.19.0
