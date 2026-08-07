@@ -260,13 +260,15 @@ depsets:
     requirements:
       - templates/ecommerce_multi_model_serving/requirements.txt
     output: templates/ecommerce_multi_model_serving/python_depset.lock
+    constraints:
+      - dependencies/depsets/ray_2.56.0_img_py312.lock
     append_flags:
-      - --index https://download.pytorch.org/whl/cu121
+      - --index https://download.pytorch.org/whl/cu128
       - --python-version=${PYTHON_VERSION}
       - --python-platform=linux
       - --unsafe-package ray
     build_arg_sets:
-      - ray2560_py311_cu128
+      - ray2560_py312_cu128
 
   - name: biotech_boltz_screening_depset_${RAY_VERSION}_${PYTHON_VERSION}
     operation: expand
