@@ -1,4 +1,5 @@
 # Save the following code as `weather_mcp_ray.py`.
+import os
 from typing import Any
 import httpx
 from fastapi import FastAPI
@@ -100,7 +101,14 @@ fastapi_app = FastAPI(lifespan=lifespan)
         "max_replicas": 20,
         "target_ongoing_requests": 5,
     },
-    ray_actor_options={"num_cpus": 0.2},
+    # The workspace `uv pip install --system` only reaches the head node, and
+    # replicas can land on a worker that has nothing but the base image. Declare
+    # the locked closure on the deployment so Ray installs it wherever a replica
+    # runs — otherwise `mcp.server.fastmcp` is missing off-head.
+    ray_actor_options={
+        "num_cpus": 0.2,
+        "runtime_env": {"pip": os.path.abspath("requirements.txt")},
+    },
 )
 @serve.ingress(fastapi_app)
 class WeatherMCP:

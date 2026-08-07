@@ -182,7 +182,10 @@
   test:
     tests_path: tests/serve-stable-diffusion-v2/
     command: bash tests.sh
-    timeout_in_sec: 900
+    # The replicas now install the locked closure (torch + CUDA wheels) via
+    # runtime_env on top of GPU provisioning and the SDXL download; 900s was tight
+    # even before that.
+    timeout_in_sec: 2700
 
 # owner: @aydin
 - name: deployment-serve-llm
@@ -512,7 +515,9 @@
   test:
     tests_path: tests/parallel-experiments/
     command: bash tests.sh
-    timeout_in_sec: 900
+    # The notebook trains the real CIFAR-10 sweep (18 CPU trials); ~10 min
+    # typical, so 900s is too tight once pip install + autoscaling are counted.
+    timeout_in_sec: 1800
 
 # owner: @suman-debnath
 - name: vhol-ray-data
@@ -568,7 +573,9 @@
   test:
     tests_path: tests/multi_agent_a2a/
     command: bash tests.sh
-    timeout_in_sec: 1800
+    # The agents now actually deploy and answer, so the run pays for their
+    # runtime_env install plus real LLM inference in the notebook's agent curls.
+    timeout_in_sec: 2700
 
 # owner: @aydin
 - name: llm_batch_inference_text

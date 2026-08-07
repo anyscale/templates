@@ -1,5 +1,6 @@
 import asyncio
 import json
+import os
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 from uuid import uuid4
@@ -100,7 +101,16 @@ async def chat(request: Request):
 # ----------------------------------------------------------------------
 # Ray Serve deployment wrapper.
 # ----------------------------------------------------------------------
-@serve.deployment(ray_actor_options={"num_cpus": 1})
+# The workspace `uv pip install --system` only reaches the head node, and replicas
+# can land on a worker that has nothing but the base image. Declare the locked
+# closure on the deployment so Ray installs it wherever a replica runs — otherwise
+# langchain/langgraph are missing off-head.
+@serve.deployment(
+    ray_actor_options={
+        "num_cpus": 1,
+        "runtime_env": {"pip": os.path.abspath("requirements.txt")},
+    }
+)
 @serve.ingress(fastapi_app)
 class LangGraphServeDeployment:
     """Ray Serve deployment that exposes the FastAPI app as ingress."""

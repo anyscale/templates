@@ -13,12 +13,24 @@ set -euxo pipefail
 # --runtime-env-json. Customers running the template outside workspaces (where
 # they have docker/podman privileges) hit the real container path unchanged.
 
-bash build.sh
+# Python deps: the locked closure (matches what replicas get via runtime_env).
+uv pip install --system --no-deps --no-cache-dir --index-strategy unsafe-best-match \
+    -r python_depset.lock
+# Podman (used in the stdio examples).
+sudo apt-get update && sudo apt-get install -y podman
+
 pip install --no-cache-dir "papermill==2.7.0" "jupyter==1.1.1" "nbconvert==7.16.6"
+
+# Everything the replicas exec at request time (shim + node) must live on
+# /mnt/cluster_storage: it is NFS-shared across all nodes, whereas /tmp is
+# per-node. Under the published (probe) compute config the head is
+# non-schedulable, so replicas run on autoscaled workers that never ran this
+# script — a /tmp install exists only on the head and the workers 500.
+CI_DIR=/mnt/cluster_storage/ci-mcp
 
 # Node 20 (brave-search MCP uses optional chaining — needs >=14; Debian's apt
 # nodejs is 12.x in this image).
-NODE_DIR=/tmp/node20
+NODE_DIR="$CI_DIR/node20"
 if [ ! -x "$NODE_DIR/bin/node" ]; then
   curl -fsSL https://nodejs.org/dist/v20.18.0/node-v20.18.0-linux-x64.tar.xz -o /tmp/node20.tar.xz
   mkdir -p "$NODE_DIR" && tar -xJf /tmp/node20.tar.xz -C "$NODE_DIR" --strip-components=1
@@ -26,8 +38,8 @@ fi
 
 # Podman shim. The Ray Serve replicas exec this when they think they're calling
 # the system podman; we forward stdio MCPs to their native CLI equivalents.
-mkdir -p /tmp/bin
-cat > /tmp/bin/podman <<'PODMAN_SHIM'
+mkdir -p "$CI_DIR/bin"
+cat > "$CI_DIR/bin/podman" <<'PODMAN_SHIM'
 #!/usr/bin/env bash
 # tests-only shim — see tests/mcp-ray-serve/tests.sh header.
 if [ "$1" != "run" ]; then
@@ -48,18 +60,21 @@ while [ $# -gt 0 ]; do
 done
 for ev in "${env_vars[@]}"; do export "$ev"; done
 case "$image" in
-  docker.io/mcp/brave-search) exec /tmp/node20/bin/npx -y --quiet @modelcontextprotocol/server-brave-search "${cmd_args[@]}" ;;
-  docker.io/mcp/fetch)        exec uvx --quiet mcp-server-fetch "${cmd_args[@]}" ;;
+  docker.io/mcp/brave-search) exec /mnt/cluster_storage/ci-mcp/node20/bin/npx -y --quiet @modelcontextprotocol/server-brave-search "${cmd_args[@]}" ;;
+  # Pin both sides: mcp-server-fetch declares mcp>=1.1.3 with no upper bound,
+  # and mcp 2.0.0 renamed McpError -> MCPError, breaking the import. mcp is
+  # pinned to the template's own version (requirements.txt / python_depset.lock).
+  docker.io/mcp/fetch)        exec uvx --quiet --with "mcp==1.11.0" "mcp-server-fetch==2026.7.10" "${cmd_args[@]}" ;;
   *) echo "podman-shim: unsupported image: $image" >&2; exit 1 ;;
 esac
 PODMAN_SHIM
-chmod +x /tmp/bin/podman
+chmod +x "$CI_DIR/bin/podman"
 
 set +x  # hide BRAVE_API_KEY from xtrace
 BRAVE_API_KEY=$(aws --region=us-west-2 secretsmanager get-secret-value \
   --secret-id brave-search-api-key --query SecretString --output text)
 export BRAVE_API_KEY
-RUNTIME_ENV_JSON=$(python -c "import json,os; print(json.dumps({'env_vars': {'BRAVE_API_KEY': os.environ['BRAVE_API_KEY'], 'PATH': '/tmp/bin:/tmp/node20/bin:/home/ray/anaconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'}}))")
+RUNTIME_ENV_JSON=$(python -c "import json,os; print(json.dumps({'env_vars': {'BRAVE_API_KEY': os.environ['BRAVE_API_KEY'], 'PATH': '/mnt/cluster_storage/ci-mcp/bin:/mnt/cluster_storage/ci-mcp/node20/bin:/home/ray/anaconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'}}))")
 set -x
 
 run_nb() {

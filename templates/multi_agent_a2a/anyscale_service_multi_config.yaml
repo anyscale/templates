@@ -2,8 +2,6 @@ name: multi-agent-a2a
 
 working_dir: .
 
-requirements: ./requirements.txt
-
 image_uri: anyscale/ray-llm:2.56.0-py312-cu130
 
 logging_config:
@@ -13,6 +11,12 @@ logging_config:
   enable_access_log: true
   additional_log_standard_attrs: []
 
+# Every non-LLM app installs only the delta the base image lacks via `pip:
+# requirements.txt` — NOT the full lock, which re-pins base packages (it was
+# downgrading the base's openai 2.34 -> 2.7 and 404-ing the agents' LLM calls). The
+# workspace `uv pip install --system` reaches the head node only, and the head is
+# unschedulable, so replicas land on a worker with just the base image; these install
+# on top of it. The llm app needs nothing beyond the ray-llm image.
 applications:
 - name: llm
   route_prefix: /llm
@@ -21,7 +25,8 @@ applications:
 - name: mcp_web_search
   route_prefix: /mcp-web-search
   import_path: ray_serve_all_deployments:web_search_mcp_app
-  runtime_env: {}
+  runtime_env:
+    pip: requirements.txt
   deployments:
   - name: WebSearchMCP
     autoscaling_config:
@@ -33,7 +38,8 @@ applications:
 - name: mcp_weather
   route_prefix: /mcp-weather
   import_path: ray_serve_all_deployments:weather_mcp_app
-  runtime_env: {}
+  runtime_env:
+    pip: requirements.txt
   deployments:
   - name: WeatherMCP
     autoscaling_config:
@@ -46,6 +52,7 @@ applications:
   route_prefix: /weather-agent
   import_path: ray_serve_all_deployments:weather_agent_app
   runtime_env:
+    pip: requirements.txt
     env_vars:
       # Point the agent at the co-hosted services (local proxy on the same node).
       OPENAI_COMPAT_BASE_URL: http://127.0.0.1:8000/llm
@@ -60,6 +67,7 @@ applications:
   route_prefix: /research-agent
   import_path: ray_serve_all_deployments:research_agent_app
   runtime_env:
+    pip: requirements.txt
     env_vars:
       OPENAI_COMPAT_BASE_URL: http://127.0.0.1:8000/llm
       OPENAI_API_KEY: local
@@ -73,6 +81,7 @@ applications:
   route_prefix: /travel-agent
   import_path: ray_serve_all_deployments:travel_agent_app
   runtime_env:
+    pip: requirements.txt
     env_vars:
       OPENAI_COMPAT_BASE_URL: http://127.0.0.1:8000/llm
       OPENAI_API_KEY: local
@@ -87,6 +96,7 @@ applications:
   route_prefix: /a2a-weather
   import_path: ray_serve_all_deployments:a2a_weather_app
   runtime_env:
+    pip: requirements.txt
     env_vars:
       A2A_AGENT_URL: http://127.0.0.1:8000/a2a-weather
       OPENAI_COMPAT_BASE_URL: http://127.0.0.1:8000/llm
@@ -101,6 +111,7 @@ applications:
   route_prefix: /a2a-research
   import_path: ray_serve_all_deployments:a2a_research_app
   runtime_env:
+    pip: requirements.txt
     env_vars:
       A2A_AGENT_URL: http://127.0.0.1:8000/a2a-research
       OPENAI_COMPAT_BASE_URL: http://127.0.0.1:8000/llm
@@ -116,6 +127,7 @@ applications:
   route_prefix: /a2a-travel
   import_path: ray_serve_all_deployments:a2a_travel_app
   runtime_env:
+    pip: requirements.txt
     env_vars:
       A2A_AGENT_URL: http://127.0.0.1:8000/a2a-travel
       OPENAI_COMPAT_BASE_URL: http://127.0.0.1:8000/llm

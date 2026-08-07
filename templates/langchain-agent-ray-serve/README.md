@@ -183,6 +183,7 @@ The `ray_serve_agent_deployment.py` script deploys the agent as a Ray Serve appl
 
 ```python
 import json
+import os
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 from uuid import uuid4
@@ -260,7 +261,15 @@ async def chat(request: Request):
 # ----------------------------------------------------------------------
 # Ray Serve deployment wrapper.
 # ----------------------------------------------------------------------
-@serve.deployment(ray_actor_options={"num_cpus": 1})
+# The workspace `uv pip install --system` only reaches the head node, and replicas
+# can land on a worker that has nothing but the base image. Declare the locked
+# closure on the deployment so Ray installs it wherever a replica runs.
+@serve.deployment(
+    ray_actor_options={
+        "num_cpus": 1,
+        "runtime_env": {"pip": os.path.abspath("python_depset.lock")},
+    }
+)
 @serve.ingress(fastapi_app)
 class LangGraphServeDeployment:
     pass
@@ -311,7 +320,7 @@ anyscale service deploy llm_deploy_qwen:app --name llm_deploy_qwen_service
 ```
 
 After deployment completes, you receive:
-- Service URL (for example, `https://llm-deploy-qwen-service-jgz99.cld-kvedzwag2qa8i5bj.s.anyscaleuserdata.com`)
+- Service URL (for example, `https://llm-deploy-qwen-service-xxxxx.cld-xxxxxxxxxxxx.s.anyscaleuserdata.com`)
 - API token for authentication
 
 **Save these values to configure the agent later.** Note: You don't need to add `/v1` to the URL manually; the code uses `urljoin` to append it automatically.
@@ -330,7 +339,7 @@ anyscale service deploy weather_mcp_ray:app --name weather_mcp_service
 ```
 
 After deployment completes, you receive:
-- Service URL (for example, `https://weather-mcp-service-jgz99.cld-kvedzwag2qa8i5bj.s.anyscaleuserdata.com`)
+- Service URL (for example, `https://weather-mcp-service-xxxxx.cld-xxxxxxxxxxxx.s.anyscaleuserdata.com`)
 - API token for authentication
 
 **Note:** You don't need to add `/mcp` to the URL manually; the code uses `urljoin` to append it automatically.
@@ -458,7 +467,7 @@ anyscale service deploy ray_serve_agent_deployment:app --name agent_service_lang
 #### Understanding the deployment output
 
 After running the deployment command, you receive:
-- **Service URL**: The HTTPS endpoint for your agent (for example, `https://agent-service-langchain-jgz99.cld-kvedzwag2qa8i5bj.s.anyscaleuserdata.com`)
+- **Service URL**: The HTTPS endpoint for your agent (for example, `https://agent-service-langchain-xxxxx.cld-xxxxxxxxxxxx.s.anyscaleuserdata.com`)
 - **Authorization token**: Bearer token for authenticating requests
 - **Service UI link**: Direct link to monitor your service in the Anyscale console
 
@@ -473,8 +482,8 @@ Once deployed, test your production agent with authenticated requests. Update th
 import json
 import requests
 
-base_url = "https://agent-service-langchain-jgz99.cld-kvedzwag2qa8i5bj.s.anyscaleuserdata.com" ## replace with your service url
-token = "nZp2BEjdloNlwGyxoWSpdalYGtkhfiHtfXhmV4BQuyk" ## replace with your service bearer token
+base_url = "https://agent-service-langchain-xxxxx.cld-xxxxxxxxxxxx.s.anyscaleuserdata.com" ## replace with your service url
+token = "<your-service-bearer-token>" ## replace with your service bearer token
 
 SERVER_URL = f"{base_url}/chat"  # For Anyscale deployment.
 HEADERS = {"Content-Type": "application/json",
