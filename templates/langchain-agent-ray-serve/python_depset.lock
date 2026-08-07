@@ -248,7 +248,7 @@ charset-normalizer==3.4.7 \
     --hash=sha256:fbccdc05410c9ee21bbf16a35f4c1d16123dcdeb8a1d38f33654fa21d0234f79 \
     --hash=sha256:fea24543955a6a729c45a73fe90e08c743f0b3334bbf3201e6c4bc1b0c7fa464
     # via requests
-click==8.3.2 \
+click==8.3.2 ; sys_platform != 'emscripten' \
     --hash=sha256:14162b8b3b3550a7d479eafa77dfd3c38d9dc8951f6f69c78913a8f9a7540fd5 \
     --hash=sha256:1924d2c27c5653561cd2cae4548d1406039cb79b858b747cfea24924bbc1616d
     # via uvicorn
@@ -325,7 +325,6 @@ httpx==0.27.1 \
     --hash=sha256:10877266452bbb4c7949734e5febc52d040fdf66f9e7c6d644a679f276d37de4 \
     --hash=sha256:ce9d45798d6d047b7db67d7949e371f2b453105a53d8df315564b2483d346878
     # via
-    #   -r templates/langchain-agent-ray-serve/requirements.txt
     #   langgraph-sdk
     #   langsmith
     #   mcp
@@ -520,9 +519,7 @@ mcp==1.22.0 \
 openai==2.7.2 \
     --hash=sha256:082ef61163074d8efad0035dd08934cf5e3afd37254f70fc9165dd6a8c67dcbd \
     --hash=sha256:116f522f4427f8a0a59b51655a356da85ce092f3ed6abeca65f03c8be6e073d9
-    # via
-    #   -r templates/langchain-agent-ray-serve/requirements.txt
-    #   langchain-openai
+    # via langchain-openai
 orjson==3.11.8 \
     --hash=sha256:0022bb50f90da04b009ce32c512dc1885910daa7cb10b7b0cba4505b16db82a8 \
     --hash=sha256:003646067cc48b7fcab2ae0c562491c9b5d2cbd43f1e5f16d98fd118c5522d34 \
@@ -1278,12 +1275,10 @@ uuid-utils==0.14.1 \
     # via
     #   langchain-core
     #   langsmith
-uvicorn==0.38.0 \
+uvicorn==0.38.0 ; sys_platform != 'emscripten' \
     --hash=sha256:48c0afd214ceb59340075b4a052ea1ee91c16fbc2a9b1469cca0e54566977b02 \
     --hash=sha256:fd97093bdd120a2609fc0d3afe931d4d4ad688b6e75f0f929fde1bc36fe0e91d
-    # via
-    #   -r templates/langchain-agent-ray-serve/requirements.txt
-    #   mcp
+    # via mcp
 xxhash==3.6.0 \
     --hash=sha256:01262da8798422d0685f7cef03b2bd3f4f46511b02830861df548d7def4402ad \
     --hash=sha256:01362c4331775398e7bb34e3ab403bc9ee9f7c497bc7dee6272114055277dd3c \

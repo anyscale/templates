@@ -1,12 +1,12 @@
-# Core dependencies
-# Match the ray-llm base image; build_openai_app is built against these (a downgrade breaks multi-node).
+# Only what the ray-llm base image lacks, pinned. fastapi/starlette match the base
+# version as guards (a transitive downgrade breaks build_openai_app on multi-node).
+# Everything else — openai, httpx, uvicorn, pydantic, torch — comes from the base
+# image and must NOT be re-pinned here: the depset was silently downgrading the base's
+# openai (2.34 -> 2.7), which 404s the agent's LLM call.
 fastapi==0.133.0
 starlette==1.0.1
-langchain
-langchain-mcp-adapters
-langchain-openai
-langgraph
-openai
-uvicorn
-httpx
-mcp
+langchain==1.3.1
+langchain-mcp-adapters==0.1.12
+langchain-openai==1.0.2
+langgraph==1.2.0
+mcp==1.22.0

@@ -2,11 +2,15 @@
 # Match the ray-llm base image; build_openai_app is built against these (a downgrade breaks multi-node).
 fastapi==0.133.0
 starlette==1.0.1
-langchain==1.0.5
+# langchain <1.1 caps langgraph at <1.1.0, whose loose prebuilt bound lets
+# langgraph-prebuilt float to a build importing langgraph.runtime.ExecutionInfo
+# (absent from langgraph-core 1.0.x) -> `create_agent` ImportError at replica
+# startup (DEPLOY_FAILED). langgraph 1.2.x pins its sub-packages tightly; keep
+# this stack aligned with langchain-agent-ray-serve.
+langchain==1.3.1
 langchain-mcp-adapters==0.1.12
 langchain-openai==1.0.2
-langgraph==1.0.3
-openai==2.7.2
+langgraph==1.2.0
 uvicorn==0.38.0
 a2a-sdk[http-server]==0.3.22
 httpx==0.28.1
