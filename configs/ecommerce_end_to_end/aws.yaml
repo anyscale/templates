@@ -1,0 +1,9 @@
+head_node:
+  instance_type: m5.2xlarge
+  resources:
+    CPU: 0
+worker_nodes:
+- name: cpu-worker
+  instance_type: m5.2xlarge
+  min_nodes: 1
+  max_nodes: 2

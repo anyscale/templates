@@ -1,0 +1,9 @@
+head_node:
+  instance_type: n2-standard-8
+  resources:
+    CPU: 0
+worker_nodes:
+- name: cpu-worker
+  instance_type: n2-standard-8
+  min_nodes: 1
+  max_nodes: 2

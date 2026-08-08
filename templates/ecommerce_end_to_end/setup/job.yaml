@@ -1,0 +1,32 @@
+# Anyscale Job — run the offline pipeline end to end on an ephemeral cluster.
+# The cluster spins up, executes the notebook, persists artifacts (fine-tuned
+# model + embedding matrix) to /mnt/cluster_storage, and tears down.
+# Submit from the template root with:  anyscale job submit -f setup/job.yaml
+
+name: ecommerce-end-to-end-notebook
+
+# Keep in sync with the template's BUILD.yaml entry.
+image_uri: anyscale/ray:2.56.0-py312
+
+working_dir: .
+
+# The notebook's setup cell installs python_depset.lock on the driver and
+# forwards it to Ray workers via runtime_env — the job env itself only needs
+# the notebook runner.
+requirements:
+  - papermill
+
+entrypoint: papermill README.ipynb /tmp/README.out.ipynb --log-output --kernel python3
+
+compute_config:
+  head_node:
+    instance_type: m5.2xlarge
+    resources:
+      CPU: 0
+  worker_nodes:
+    - name: cpu-worker
+      instance_type: m5.2xlarge
+      min_nodes: 1
+      max_nodes: 2
+
+max_retries: 0
