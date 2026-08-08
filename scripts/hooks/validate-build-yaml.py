@@ -421,20 +421,27 @@ def check_k8s_configs_declarative(entries: list[Entry]) -> list[str]:
         if not full.is_file():
             continue  # already reported by check_filesystem_and_uniqueness
         data = yaml.safe_load(full.read_text()) or {}
+        if not isinstance(data, dict):
+            continue  # malformed file — reported by check_compute_configs
         nodes = [("head_node", data.get("head_node") or {})]
         for i, worker in enumerate(data.get("worker_nodes") or []):
             nodes.append((f"worker_nodes[{i}]", worker or {}))
         for loc, node in nodes:
+            if not isinstance(node, dict):
+                continue  # malformed node — reported by check_compute_configs
             if node.get("instance_type") is not None:
                 errors.append(
                     f"{path}: {loc}.instance_type is not allowed in a K8S "
                     f"config — declare the shape with `required_resources` "
                     f"instead"
                 )
-            elif node.get("required_resources") is None:
+            elif not node.get("required_resources"):
+                # None, absent, or {} — the SDK rejects empty
+                # required_resources at deploy time (needs CPU>0 or memory>0).
                 errors.append(
-                    f"{path}: {loc} has no `required_resources` — K8S configs "
-                    f"are declarative; specify CPU/memory (+ GPU/accelerator)"
+                    f"{path}: {loc} needs a non-empty `required_resources` — "
+                    f"K8S configs are declarative; specify CPU/memory "
+                    f"(+ GPU/accelerator)"
                 )
     return errors
 
