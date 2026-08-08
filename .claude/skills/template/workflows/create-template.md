@@ -42,7 +42,7 @@ That returns the ComputeConfig shape `configs/` uses directly (full fields + pat
 - drop auto-detected node `resources` (with workers present, the head is unschedulable by default); keep explicit overrides like `CPU: 0`
 - keep `max_nodes` explicit on every worker group
 
-Write `configs/<name>/aws.yaml` and `gce.yaml` by instance family.
+Write `configs/<name>/aws.yaml` and `gce.yaml` by instance family; optionally `k8s.yaml` (declarative `required_resources`, no instance types — see the schema file's k8s.yaml pattern).
 
 **Fallback — guided Q&A.** No tested workspace → walk the user through those same fields.
 

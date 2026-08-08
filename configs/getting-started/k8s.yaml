@@ -1,0 +1,12 @@
+head_node:
+  required_resources:
+    CPU: 4
+    memory: 8Gi
+  resources:
+    CPU: 0
+worker_nodes:
+- name: cpu_worker
+  required_resources:
+    CPU: 8
+    memory: 32Gi
+  max_nodes: 2

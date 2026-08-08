@@ -74,6 +74,21 @@ class ComputeConfig(Strict):
     # archived ones (which co-locate their compute config under the template).
     GCP: str = Field(pattern=r"^(?:configs|archive)/.+/gce\.yaml$")
     AWS: str = Field(pattern=r"^(?:configs|archive)/.+/aws\.yaml$")
+    # Kubernetes-stack clouds (AKS/EKS/GKE) — one config covers all of them.
+    # Declarative shapes only (required_resources → free pods, no registered
+    # instance types; enforced by check_k8s_configs_declarative). Optional
+    # while templates migrate.
+    K8S: Optional[str] = Field(
+        default=None, pattern=r"^(?:configs|archive)/.+/k8s\.yaml$"
+    )
+
+
+def cloud_paths(cc: ComputeConfig):
+    """(cloud, path) pairs for an entry's compute configs; K8S only when set."""
+    for cloud in ("GCP", "AWS", "K8S"):
+        path = getattr(cc, cloud)
+        if path is not None:
+            yield cloud, path
 
 
 class Test(Strict):
@@ -229,24 +244,25 @@ def check_filesystem_and_uniqueness(entries: list[Entry]) -> list[str]:
                     f"equal name {e.name!r} (expected tests/{e.name}/)"
                 )
 
-        # GCP and AWS configs must live in the same directory under configs/.
+        # All clouds' configs must live in the same directory under configs/.
         # Catches one-cloud-customized-but-not-the-other mistakes.
-        gcp_parent = Path(e.compute_config.GCP).parent
-        aws_parent = Path(e.compute_config.AWS).parent
-        if gcp_parent != aws_parent:
+        parents = {c: Path(p).parent for c, p in cloud_paths(e.compute_config)}
+        same_dir = len(set(parents.values())) == 1
+        if not same_dir:
+            got = ", ".join(f"{c}: {p}" for c, p in parents.items())
             errors.append(
-                f"{e.name}.compute_config: GCP and AWS configs must live in "
-                f"the same `configs/<name>/` directory; got {gcp_parent} and "
-                f"{aws_parent}"
+                f"{e.name}.compute_config: all clouds' configs must live in "
+                f"the same `configs/<name>/` directory; got {got}"
             )
 
         # Custom compute config dirs must be named after the entry (the
         # `name` field is the source of truth across templates/, tests/,
         # and configs/). Shared `configs/basic-single-node/` is exempt.
+        gcp_parent = parents["GCP"]
         cfg_dir_basename = gcp_parent.name
         if (
             gcp_parent.parts and gcp_parent.parts[0] == "configs"
-            and gcp_parent == aws_parent
+            and same_dir
             and cfg_dir_basename != "basic-single-node"
             and cfg_dir_basename != e.name
         ):
@@ -258,8 +274,7 @@ def check_filesystem_and_uniqueness(entries: list[Entry]) -> list[str]:
 
         if not (REPO_ROOT / e.dir).is_dir():
             errors.append(f"{e.name}: dir not found: {e.dir}")
-        for cloud in ("GCP", "AWS"):
-            path = getattr(e.compute_config, cloud)
+        for cloud, path in cloud_paths(e.compute_config):
             if not (REPO_ROOT / path).is_file():
                 errors.append(f"{e.name}.compute_config.{cloud}: not found: {path}")
         if e.test is not None:
@@ -275,6 +290,7 @@ def check_filesystem_and_uniqueness(entries: list[Entry]) -> list[str]:
 BASIC_CONFIGS = (
     "configs/basic-single-node/aws.yaml",
     "configs/basic-single-node/gce.yaml",
+    "configs/basic-single-node/k8s.yaml",
 )
 
 
@@ -290,8 +306,7 @@ def check_redundant_compute_configs(entries: list[Entry]) -> list[str]:
             basics[p] = full.read_bytes()
 
     for e in entries:
-        for cloud in ("GCP", "AWS"):
-            path = getattr(e.compute_config, cloud)
+        for cloud, path in cloud_paths(e.compute_config):
             if path in BASIC_CONFIGS:
                 continue
             full = REPO_ROOT / path
@@ -299,6 +314,10 @@ def check_redundant_compute_configs(entries: list[Entry]) -> list[str]:
                 continue
             content = full.read_bytes()
             for basic_path, basic_bytes in basics.items():
+                # Same cloud only (aws vs aws, k8s vs k8s): a cross-cloud
+                # byte-match is never "reference the shared config instead".
+                if Path(basic_path).name != Path(path).name:
+                    continue
                 if content == basic_bytes:
                     warnings.append(
                         f"{e.name}.compute_config.{cloud}: {path} is byte-identical "
@@ -322,8 +341,8 @@ def check_compute_configs(entries: list[Entry]) -> list[str]:
     errors: list[str] = []
     paths: set[str] = set()
     for e in entries:
-        paths.add(e.compute_config.GCP)
-        paths.add(e.compute_config.AWS)
+        for _, path in cloud_paths(e.compute_config):
+            paths.add(path)
     for path in sorted(paths):
         full = REPO_ROOT / path
         if not full.is_file():
@@ -359,8 +378,8 @@ def check_head_nodes(entries: list[Entry]) -> list[str]:
     for e in entries:
         if e.dir.startswith("archive/"):
             continue  # archived templates are retired/unmaintained — exempt, like the test requirement
-        paths.add(e.compute_config.GCP)
-        paths.add(e.compute_config.AWS)
+        for _, path in cloud_paths(e.compute_config):
+            paths.add(path)
     for path in sorted(paths):
         full = REPO_ROOT / path
         if not full.is_file():
@@ -381,6 +400,92 @@ def check_head_nodes(entries: list[Entry]) -> list[str]:
                 f"{path}: head is unschedulable (CPU: 0) but there are no worker_nodes and no "
                 f"auto_select_worker_config, so nothing can run. Add a worker group or auto_select."
             )
+    return errors
+
+
+# ------------------------------------------ K8S configs must be declarative
+
+def check_k8s_configs_declarative(entries: list[Entry]) -> list[str]:
+    """Every node in a K8S config must be shaped with `required_resources`,
+    never `instance_type` — the backend resolves resource requirements into
+    free pods, while named instance types are per-cluster registrations on
+    K8s; naming one would silently reintroduce the registration dependency
+    the declarative form exists to avoid. Declarative constraints (per
+    https://docs.anyscale.com/configuration/compute/declarative): no
+    auto_select_worker_config, and GPU nodes carry the accelerator type in
+    `required_labels` (the launch-time GPU validation only reads the
+    ray.io/accelerator-type label, not `required_resources.accelerator`)."""
+    errors: list[str] = []
+    paths: set[str] = set()
+    for e in entries:
+        if e.compute_config.K8S is not None:
+            paths.add(e.compute_config.K8S)
+    for path in sorted(paths):
+        full = REPO_ROOT / path
+        if not full.is_file():
+            continue  # already reported by check_filesystem_and_uniqueness
+        data = yaml.safe_load(full.read_text()) or {}
+        if not isinstance(data, dict):
+            continue  # malformed file — reported by check_compute_configs
+        if data.get("auto_select_worker_config"):
+            errors.append(
+                f"{path}: auto_select_worker_config is not supported with "
+                f"declarative compute configs — declare explicit worker_nodes "
+                f"with `required_resources`"
+            )
+        nodes = [("head_node", data.get("head_node") or {})]
+        for i, worker in enumerate(data.get("worker_nodes") or []):
+            nodes.append((f"worker_nodes[{i}]", worker or {}))
+        for loc, node in nodes:
+            if not isinstance(node, dict):
+                continue  # malformed node — reported by check_compute_configs
+            if node.get("instance_type") is not None:
+                errors.append(
+                    f"{path}: {loc}.instance_type is not allowed in a K8S "
+                    f"config — declare the shape with `required_resources` "
+                    f"instead"
+                )
+                continue
+            rr = node.get("required_resources")
+            if not rr:
+                # None, absent, or {} — the SDK rejects empty
+                # required_resources at deploy time (needs CPU>0 or memory>0).
+                errors.append(
+                    f"{path}: {loc} needs a non-empty `required_resources` — "
+                    f"K8S configs are declarative; specify CPU/memory"
+                )
+                continue
+            if not isinstance(rr, dict):
+                continue  # malformed — reported by check_compute_configs
+            if rr.get("accelerator"):
+                errors.append(
+                    f"{path}: {loc}.required_resources.accelerator is not "
+                    f"read by the launch-time GPU validation — use "
+                    f"`required_labels: {{ray.io/accelerator-type: ...}}`"
+                )
+            # Mirror the backend's check_gpu_accelerator_consistency: GPU
+            # count and accelerator-type label come together (TPU labels are
+            # paired with TPU fields backend-side instead).
+            gpu = rr.get("GPU") or 0
+            accel = None
+            for label_key in ("required_labels", "labels"):
+                lbls = node.get(label_key)
+                if isinstance(lbls, dict) and lbls.get("ray.io/accelerator-type"):
+                    accel = lbls["ray.io/accelerator-type"]
+                    break
+            if accel and str(accel).upper().startswith("TPU"):
+                continue
+            if bool(gpu) != bool(accel):
+                if gpu:
+                    errors.append(
+                        f"{path}: {loc} sets GPU but no accelerator type — "
+                        f"add `required_labels: {{ray.io/accelerator-type: ...}}`"
+                    )
+                else:
+                    errors.append(
+                        f"{path}: {loc} sets ray.io/accelerator-type but no "
+                        f"GPU count in `required_resources`"
+                    )
     return errors
 
 
@@ -493,6 +598,7 @@ def main() -> int:
     errors = check_filesystem_and_uniqueness(entries)
     errors.extend(check_compute_configs(entries))
     errors.extend(check_head_nodes(entries))
+    errors.extend(check_k8s_configs_declarative(entries))
     errors.extend(check_gcp_byod_images(entries, network=not args.no_network))
 
     if errors:

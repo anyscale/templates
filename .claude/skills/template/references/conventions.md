@@ -15,7 +15,7 @@ templates/
 ├── BUILD.yaml                            # Template definitions
 ├── templates/<name>/                     # Content (code, notebooks, Dockerfiles)
 ├── tests/<name>/                         # Test scripts
-├── configs/<name>/                       # Compute configs (aws.yaml / gce.yaml)
+├── configs/<name>/                       # Compute configs (aws.yaml / gce.yaml [/ k8s.yaml])
 └── .claude/skills/template/schemas/      # BUILD.yaml + compute-config schemas
 ```
 
@@ -24,7 +24,7 @@ templates/
 Run the `check-build-yaml` hook first (see **Validate locally**) — it authoritatively covers BUILD.yaml schema, referenced paths, naming, and the compute-config schema check. Fix what it reports, then verify:
 
 - **BUILD.yaml entry** matches `../schemas/build-yaml-schema.yaml`. `owner_team` is required (`ray-serve` | `ray-data` | `llm` | `ray-train` | `general`) — deduce per that schema file's rule. Under `cluster_env:`, use either `cluster_env.image_uri` OR `cluster_env.byod`, never both. Image taxonomy: SKILL.md "Image URI cases".
-- **Compute configs** present at `configs/<name>/aws.yaml` and `configs/<name>/gce.yaml`. Schema: `../schemas/compute-config-schema.yaml`.
+- **Compute configs** present at `configs/<name>/aws.yaml` and `configs/<name>/gce.yaml`; optional `k8s.yaml` alongside them (declarative `required_resources`, K8s-stack clouds). Schema: `../schemas/compute-config-schema.yaml`.
 - **Test** present at `tests/<name>/tests.sh`.
 - **Dependencies pinned.** Declare template deps in `templates/<name>/requirements.txt`, the BYOD `Dockerfile` (`RUN pip install "pkg==x.y.z"`), or notebook `!pip install` — with exact versions. (The repo-root `dependencies/` directory is Ray base-image constraint management, not per-template deps.)
 - **README** — author content in `README.ipynb`; `README.md` is its `jupyter nbconvert --to markdown` render. Never hand-edit `README.md`; regenerate it (`check-readme` enforces a byte-exact match).
