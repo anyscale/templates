@@ -410,7 +410,11 @@ def check_k8s_configs_declarative(entries: list[Entry]) -> list[str]:
     never `instance_type` — the backend resolves resource requirements into
     free pods, while named instance types are per-cluster registrations on
     K8s; naming one would silently reintroduce the registration dependency
-    the declarative form exists to avoid."""
+    the declarative form exists to avoid. Declarative constraints (per
+    https://docs.anyscale.com/configuration/compute/declarative): no
+    auto_select_worker_config, and GPU nodes carry the accelerator type in
+    `required_labels` (the launch-time GPU validation only reads the
+    ray.io/accelerator-type label, not `required_resources.accelerator`)."""
     errors: list[str] = []
     paths: set[str] = set()
     for e in entries:
@@ -423,6 +427,12 @@ def check_k8s_configs_declarative(entries: list[Entry]) -> list[str]:
         data = yaml.safe_load(full.read_text()) or {}
         if not isinstance(data, dict):
             continue  # malformed file — reported by check_compute_configs
+        if data.get("auto_select_worker_config"):
+            errors.append(
+                f"{path}: auto_select_worker_config is not supported with "
+                f"declarative compute configs — declare explicit worker_nodes "
+                f"with `required_resources`"
+            )
         nodes = [("head_node", data.get("head_node") or {})]
         for i, worker in enumerate(data.get("worker_nodes") or []):
             nodes.append((f"worker_nodes[{i}]", worker or {}))
@@ -435,14 +445,47 @@ def check_k8s_configs_declarative(entries: list[Entry]) -> list[str]:
                     f"config — declare the shape with `required_resources` "
                     f"instead"
                 )
-            elif not node.get("required_resources"):
+                continue
+            rr = node.get("required_resources")
+            if not rr:
                 # None, absent, or {} — the SDK rejects empty
                 # required_resources at deploy time (needs CPU>0 or memory>0).
                 errors.append(
                     f"{path}: {loc} needs a non-empty `required_resources` — "
-                    f"K8S configs are declarative; specify CPU/memory "
-                    f"(+ GPU/accelerator)"
+                    f"K8S configs are declarative; specify CPU/memory"
                 )
+                continue
+            if not isinstance(rr, dict):
+                continue  # malformed — reported by check_compute_configs
+            if rr.get("accelerator"):
+                errors.append(
+                    f"{path}: {loc}.required_resources.accelerator is not "
+                    f"read by the launch-time GPU validation — use "
+                    f"`required_labels: {{ray.io/accelerator-type: ...}}`"
+                )
+            # Mirror the backend's check_gpu_accelerator_consistency: GPU
+            # count and accelerator-type label come together (TPU labels are
+            # paired with TPU fields backend-side instead).
+            gpu = rr.get("GPU") or 0
+            accel = None
+            for label_key in ("required_labels", "labels"):
+                lbls = node.get(label_key)
+                if isinstance(lbls, dict) and lbls.get("ray.io/accelerator-type"):
+                    accel = lbls["ray.io/accelerator-type"]
+                    break
+            if accel and str(accel).upper().startswith("TPU"):
+                continue
+            if bool(gpu) != bool(accel):
+                if gpu:
+                    errors.append(
+                        f"{path}: {loc} sets GPU but no accelerator type — "
+                        f"add `required_labels: {{ray.io/accelerator-type: ...}}`"
+                    )
+                else:
+                    errors.append(
+                        f"{path}: {loc} sets ray.io/accelerator-type but no "
+                        f"GPU count in `required_resources`"
+                    )
     return errors
 
 
