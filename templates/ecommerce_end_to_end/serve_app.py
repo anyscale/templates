@@ -352,10 +352,11 @@ def build_app(
     """
 
     def _with_env(deployment):
-        if not runtime_env:
-            return deployment
+        # hf_transfer only engages with this env var set — BLIP's first
+        # download on a replica is ~1GB. Caller-supplied keys win.
+        env = {"env_vars": {"HF_HUB_ENABLE_HF_TRANSFER": "1"}, **(runtime_env or {})}
         opts = dict(deployment.ray_actor_options or {})
-        opts["runtime_env"] = runtime_env
+        opts["runtime_env"] = env
         return deployment.options(ray_actor_options=opts)
 
     return _with_env(RecommendationService).bind(

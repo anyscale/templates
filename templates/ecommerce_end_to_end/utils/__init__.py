@@ -308,7 +308,7 @@ def expand_catalog(
 def init_ray() -> None:
     """Initialize Ray with reduced logging (idempotent).
 
-    Two things happen here beyond ``ray.init``:
+    Three things happen here beyond ``ray.init``:
 
     * **Worker dependencies.** The notebook's setup cell installs
       ``python_depset.lock`` with ``uv pip install --system``, which only
@@ -321,6 +321,9 @@ def init_ray() -> None:
       package the current working directory as the runtime_env
       ``working_dir``. Exclude local artifacts workers never read so the
       package stays under Ray's upload limit.
+    * **Fast model downloads.** ``HF_HUB_ENABLE_HF_TRANSFER=1`` on the
+      driver and workers so Hugging Face downloads go through the
+      ``hf_transfer`` accelerator shipped in the lock.
     """
     import logging
     import ray
@@ -349,6 +352,11 @@ def init_ray() -> None:
     lock = Path(__file__).parent.parent / "python_depset.lock"
     if lock.exists():
         runtime_env["pip"] = str(lock)
+
+    # Fast Hub downloads: the hf_transfer package (in the lock) only engages
+    # when this env var is set. Cover the driver and forward to workers.
+    os.environ.setdefault("HF_HUB_ENABLE_HF_TRANSFER", "1")
+    runtime_env["env_vars"] = {"HF_HUB_ENABLE_HF_TRANSFER": "1"}
 
     ray.init(
         ignore_reinit_error=True,
