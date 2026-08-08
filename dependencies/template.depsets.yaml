@@ -103,7 +103,8 @@ depsets:
 
   - name: tune_pytorch_asha_depset_${RAY_VERSION}_${PYTHON_VERSION}_${CUDA_VARIANT}
     operation: expand
-    source_depset: ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
+    depsets:
+      - ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
     requirements:
       - templates/tune_pytorch_asha/requirements.txt
     output: templates/tune_pytorch_asha/python_depset.lock
@@ -117,7 +118,8 @@ depsets:
 
   - name: biotech_protein_embeddings_depset_${RAY_VERSION}_${PYTHON_VERSION}
     operation: expand
-    source_depset: ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
+    depsets:
+      - ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
     requirements:
       - templates/biotech_protein_embeddings/requirements.txt
     output: templates/biotech_protein_embeddings/python_depset.lock
@@ -130,7 +132,8 @@ depsets:
 
   - name: ecommerce_batch_embeddings_depset_${RAY_VERSION}_${PYTHON_VERSION}
     operation: expand
-    source_depset: ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
+    depsets:
+      - ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
     requirements:
       - templates/ecommerce_batch_embeddings/requirements.txt
     output: templates/ecommerce_batch_embeddings/python_depset.lock
