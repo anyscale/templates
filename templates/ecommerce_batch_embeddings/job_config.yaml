@@ -2,8 +2,9 @@
 name: ecommerce-batch-embeddings
 entrypoint: python scripts/run_pipeline.py --scale medium
 
-working_dir: .
-requirements: requirements.txt
+runtime_env:
+  working_dir: .
+  pip: python_depset.lock
 
 compute_config:
   head_node:

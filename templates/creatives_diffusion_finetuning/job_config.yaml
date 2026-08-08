@@ -11,15 +11,5 @@ compute_config:
       max_nodes: 2
 env_vars:
   HF_HOME: /mnt/cluster_storage/hf_cache
-requirements:
-  - ray[train,data]>=2.9
-  - torch>=2.0
-  - torchvision>=0.15
-  - diffusers>=0.25
-  - transformers>=4.35
-  - peft>=0.7
-  - accelerate>=0.25
-  - datasets
-  - pillow>=10.0
-  - numpy>=1.24
+requirements: python_depset.lock
 max_retries: 2
