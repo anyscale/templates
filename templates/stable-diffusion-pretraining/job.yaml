@@ -1,0 +1,16 @@
+name: stable-diffusion-pretraining
+# Swap the entrypoint for scripts/preprocess.py or scripts/train.py to run either
+# stage on its own. Submit with: anyscale job submit -f job.yaml
+entrypoint: python scripts/end_to_end.py
+image_uri: anyscale/ray:2.56.0-py311-cu128
+compute_config:
+  head_node:
+    instance_type: m5.2xlarge
+  worker_nodes:
+    - name: 1xA10G:16CPU-64GB
+      instance_type: g5.4xlarge
+      min_nodes: 1
+      max_nodes: 1
+working_dir: .
+requirements: python_depset.lock
+max_retries: 0

@@ -9,6 +9,8 @@ import ray
 import xgboost
 from sklearn.metrics import confusion_matrix
 
+import dist_xgboost
+from dist_xgboost.constants import root_dir
 from dist_xgboost.data import load_model_and_preprocessor, prepare_data
 
 
@@ -51,6 +53,14 @@ def confusion_matrix_batch(batch, threshold=0.5):
 
 
 def main():
+    # Ray workers run off-head, so ship them the lock (and this package) via runtime_env.
+    ray.init(
+        runtime_env={
+            "py_modules": [dist_xgboost],
+            "pip": os.path.join(root_dir, "python_depset.lock"),
+        }
+    )
+
     _, _, test_dataset = prepare_data()
 
     preprocessor, _ = load_model_and_preprocessor()
