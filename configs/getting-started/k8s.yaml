@@ -1,7 +1,7 @@
 head_node:
   required_resources:
-    CPU: 8
-    memory: 32Gi
+    CPU: 4
+    memory: 8Gi
   resources:
     CPU: 0
 worker_nodes:

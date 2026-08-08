@@ -74,17 +74,23 @@ auto_select_worker_config: true        # Default: false. Omit if false. When tru
 #       max_nodes: 4
 #       market_type: PREFER_SPOT       # spot, fall back to on-demand
 #
-# k8s.yaml (Kubernetes-stack clouds — AKS/EKS/GKE): declarative shapes ONLY.
-# Every node sets required_resources, never instance_type (validator-enforced);
-# the backend resolves the requirements into free pods, so nothing needs to be
-# registered on the cloud. accelerator values must exist in the target clouds'
-# GPU pools — Azure has T4/A10/A100/H100, NOT L4/A10G:
+# k8s.yaml (Kubernetes-stack clouds — AKS/EKS/GKE): declarative shapes ONLY,
+# per https://docs.anyscale.com/configuration/compute/declarative. Every node
+# sets required_resources, never instance_type (validator-enforced); the
+# backend resolves the requirements into free pods, so nothing needs to be
+# registered on the cloud. auto_select_worker_config is NOT compatible with
+# declarative configs — declare explicit worker_nodes. GPU nodes pair the GPU
+# count with `required_labels: {ray.io/accelerator-type: ...}` — the label,
+# not a required_resources `accelerator` key (launch validation only reads
+# the label). Accelerator values must exist in the target clouds' GPU pools —
+# Azure has T4/A10/A100/H100, NOT L4/A10G:
 #   head_node:
-#     required_resources: {CPU: 8, memory: 32Gi}
+#     required_resources: {CPU: 4, memory: 8Gi}
 #     resources: {CPU: 0}
 #   worker_nodes:
 #     - name: gpu_worker
-#       required_resources: {CPU: 8, memory: 32Gi, GPU: 1, accelerator: T4}
+#       required_resources: {CPU: 4, memory: 16Gi, GPU: 1}
+#       required_labels: {ray.io/accelerator-type: T4}
 #       min_nodes: 2
 #       max_nodes: 2
 #

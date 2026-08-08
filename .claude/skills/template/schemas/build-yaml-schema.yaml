@@ -94,7 +94,8 @@
 # - tests_path basename must equal name → tests/<name>/
 # - compute_config paths (GCP, AWS, and K8S when present) must share the same configs/<dir>/
 # - that dir's basename must equal name, OR be `basic-single-node`
-# - K8S configs are declarative: every node sets required_resources, never instance_type
+# - K8S configs are declarative: every node sets required_resources, never instance_type;
+#   no auto_select_worker_config; GPU nodes pair the count with required_labels ray.io/accelerator-type
 # - For byod on the Anyscale GCP registry, docker_image must be exactly:
 #     us-docker.pkg.dev/anyscale-workspace-templates/workspace-templates/<name>:<byod.ray_version>
 #   (image basename == name, tag == byod.ray_version). push-custom-image-to-gcp.sh produces this form.
