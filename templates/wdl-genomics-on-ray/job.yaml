@@ -1,0 +1,117 @@
+# Assemble the whole of HG002 chromosome 20 as an Anyscale Job.
+#
+#   anyscale job submit --config-file job.yaml
+#
+# This is the production counterpart to the notebook: full coverage over all 64 Mbp of chr20,
+# with polishing on (Flye's own round -- medaka_rounds is 0; see the README).
+# Measured at 14h 44m -- 44 contigs, N50 33,279,582, L90 = 2.
+#
+# Provenance of that measurement, which matters because it is no longer the command line this
+# job runs: the 14h44m run executed upstream's bare invocation (`flye --nano-raw <reads>
+# --threads 30`, no coverage cap, Flye's default single polishing round). Today's inputs measure
+# the reads and derive `--nano-hq` -- which is what Flye's own docs prescribe for R10 chemistry,
+# and a different assembly algorithm from --nano-raw -- plus `--asm-coverage 40 --genome-size`.
+# So treat 14h44m as an order of magnitude, not a budget, and read `flye_params` in the outputs
+# for what any given run actually did. The measured table also captured contiguity only; a run
+# under today's defaults should record genome fraction and NGA50 alongside it.
+#
+# `inputs.chr20.json` passes s3:// URIs directly rather than staging them first; miniwdl
+# localizes File inputs itself, and at this size a single download per input is the right
+# trade whatever the notebook does for interactive speed.
+name: wdl-genomics-on-ray-chr20
+
+# The template's own image, which carries the toolchain (see Dockerfile). Under
+# `--container-runtime none` every tool has to be present on every node before the first task
+# dispatches, so there is deliberately no `requirements:` block here -- a job's requirements are
+# installed at cluster startup, *before* working_dir is staged, which is exactly the thing that
+# does not work. tools/BUILDING.md has the details.
+image_uri: us-docker.pkg.dev/anyscale-workspace-templates/workspace-templates/wdl-genomics-on-ray:2.56.0
+
+working_dir: .
+excludes:
+  - .ipynb_checkpoints
+  - __pycache__
+
+env_vars:
+  # Where the declared outputs are copied before the driver exits. Without this the run's
+  # results are deleted with the cluster the moment the job succeeds -- see the entrypoint.
+  WDL_ON_RAY_RESULTS: /mnt/user_storage/wdl-on-ray/results/chr20
+
+# The entrypoint must NOT `exec` the workflow. `exec` replaces the shell, so nothing can run
+# afterwards -- which is how a completed 14h44m assembly once lost every artifact it produced.
+# Capture the status, persist the outputs, then exit with the workflow's own code.
+#
+# It must also stay POSIX: Anyscale runs job entrypoints under /bin/sh (dash), where the
+# bash-only `set -o pipefail` dies with "Illegal option" before anything runs. Nothing here
+# pipes anything that matters, so `set -u` alone is the correct spelling.
+entrypoint: |
+  set -u
+  # TMPDIR here is the *driver's* only. Ray workers are separate processes on other nodes and
+  # inherit their own environment, so a task's temporary files land in the worker's /tmp --
+  # node-local disk, not this shared path. That is usually what you want (local scratch is
+  # faster), but it means a task that writes a large temporary file is bounded by the node's
+  # disk rather than by cluster storage. To move worker temporaries too, set TMPDIR in the
+  # WDL's `runtime { env: {...} }` or in the image, not here.
+  export TMPDIR=/mnt/cluster_storage/wdl-on-ray/tmp
+  RUN_DIR=/mnt/cluster_storage/wdl-on-ray/runs
+  CACHE_DIR=/mnt/cluster_storage/wdl-on-ray/cache
+  mkdir -p "$TMPDIR" "$RUN_DIR" "$CACHE_DIR"
+
+  # --call-cache lets a re-submission skip tasks that already finished, which on a
+  # 14-hour assembly is the difference between resuming and starting over. Read what
+  # it does and does not survive before relying on it. miniwdl's cache entry points at
+  # the output files in RUN_DIR and invalidates itself when they are gone
+  # (WDL/runtime/cache.py, _check_files_coherence). Both paths here are under
+  # /mnt/cluster_storage, which the platform recreates per job, so the cache covers a
+  # driver restart inside one cluster and buys nothing across a new one -- which is why
+  # max_retries stays 0 below.
+  #
+  # For resume that survives cluster replacement, put BOTH on a durable mount and let
+  # the job retry:
+  #     RUN_DIR=/mnt/user_storage/wdl-on-ray/runs
+  #     CACHE_DIR=/mnt/user_storage/wdl-on-ray/cache
+  # with max_retries: 1. The cost is that the run tree's intermediates, hundreds of GB
+  # for a chromosome, stay on durable storage instead of dying with the cluster.
+  #
+  # Under --container-runtime none the toolchain is not part of the cache key: WDL task
+  # inputs and the task's own source are. Rebuilding the image with a different Flye
+  # will reuse assemblies made by the old one. Clear CACHE_DIR when the image changes.
+  wdl-on-ray run wdl/pipelines/ONT/Assembly/ONTAssembleWithFlye.wdl \
+    -i wdl/pipelines/ONT/Assembly/inputs.chr20.json \
+    --container-runtime none \
+    --dir "$RUN_DIR" \
+    --call-cache "$CACHE_DIR" \
+    --verbose
+  STATUS=$?
+
+  OUTPUTS=$(ls -t "$RUN_DIR"/*/outputs.json 2>/dev/null | head -1 || true)
+  if [ -n "$OUTPUTS" ]; then
+    python persist_outputs.py --outputs "$OUTPUTS" || true
+  else
+    echo "no outputs.json found under $RUN_DIR -- nothing to persist" >&2
+  fi
+  exit $STATUS
+
+compute_config:
+  head_node:
+    instance_type: m5.2xlarge
+    resources:
+      CPU: 0
+  worker_nodes:
+    # 32 vCPU / 128 GiB. This is read together with inputs.chr20.json, not independently:
+    # runtime_attr_flye asks for 30 cpu_cores, and on Ray a request no node can satisfy is an
+    # indefinite wait rather than an error. Changing either one means changing both.
+    - instance_type: m5.8xlarge
+      min_nodes: 1
+      max_nodes: 3
+
+# 12h was not enough -- an earlier run was SIGTERMed at 12h01m, inside polishing. 24h leaves
+# roughly nine hours of headroom over the measured 14h44m.
+timeout_s: 86400
+
+# Node loss is handled inside the workflow: Ray node/worker death maps to miniwdl's
+# `Interrupted`, which routes to the WDL's own `runtime.preemptible`. A job-level retry runs on
+# a new cluster, and this job's call cache lives on /mnt/cluster_storage, so the retry would
+# find an empty cache and redo up to 14 hours of finished work. Raise this to 1 only together
+# with the durable RUN_DIR/CACHE_DIR described in the entrypoint.
+max_retries: 0

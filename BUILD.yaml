@@ -787,6 +787,27 @@
     command: bash tests.sh
     timeout_in_sec: 1800
 
+# owner: @eric-marriott
+- name: wdl-genomics-on-ray
+  owner_team: general
+  dir: templates/wdl-genomics-on-ray
+  cluster_env:
+    # Custom image, not a stock one: the workflow runs with `--container-runtime none`, so the
+    # bioinformatics toolchain has to be on every node before the first task dispatches, and a
+    # job's `requirements:` resolves before working_dir is staged. See the template's Dockerfile.
+    byod:
+      docker_image: us-docker.pkg.dev/anyscale-workspace-templates/workspace-templates/wdl-genomics-on-ray:2.56.0
+      ray_version: 2.56.0
+  compute_config:
+    AWS: configs/wdl-genomics-on-ray/aws.yaml
+    GCP: configs/wdl-genomics-on-ray/gce.yaml
+  test:
+    # The test runs the notebook at WDL_DEMO_SCALE=quick (~15 min of assembly). The Buildkite
+    # step is capped at 75 min regardless of this value, so this is headroom, not a target.
+    tests_path: tests/wdl-genomics-on-ray/
+    command: bash tests.sh
+    timeout_in_sec: 3600
+
 # Event template published from archive/ without the test gate
 # (see the template skill's publish-to-backend reference).
 # owner: @as-jding
