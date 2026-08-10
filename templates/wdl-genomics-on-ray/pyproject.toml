@@ -1,0 +1,38 @@
+[project]
+name = "wdl-on-ray"
+# Single-sourced from wdl_on_ray/_version.py, which is what `wdl-on-ray --version` and the
+# `doctor` output read. Two literals drift: the package can report one version while the
+# distribution metadata reports another, and nothing fails to make that visible.
+dynamic = ["version"]
+description = "Run WDL pipelines on Ray and Anyscale clusters"
+requires-python = ">=3.12"
+license = { text = "Apache-2.0" }
+# Ray is supplied by the base image, so it is deliberately not pinned here: pinning it
+# would let `pip install .` inside the Dockerfile pull a second Ray over the image's own,
+# which is the classic way to end up with a driver and workers on different versions.
+dependencies = [
+    "miniwdl==1.15.0",
+]
+
+[project.scripts]
+wdl-on-ray = "wdl_on_ray.cli:main"
+
+# miniwdl discovers container backends through this entry point group; the name ("ray") is
+# what `[scheduler] container_backend` selects. This is the entire integration surface --
+# the one line of configuration the template's pitch refers to.
+#
+# The backend also calls `register_backend()` at runtime, because entry points only exist
+# for an *installed* distribution and on a cluster this code can arrive as an uploaded
+# `working_dir` instead. Both routes are needed; neither is redundant.
+[project.entry-points."miniwdl.plugin.container_backend"]
+ray = "wdl_on_ray.backend:RayContainer"
+
+[build-system]
+requires = ["hatchling==1.28.0"]
+build-backend = "hatchling.build"
+
+[tool.hatch.version]
+path = "wdl_on_ray/_version.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["wdl_on_ray"]

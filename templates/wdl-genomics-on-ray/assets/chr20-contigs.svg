@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1120 470" font-family="Helvetica, Arial, sans-serif">
+  <rect x="0" y="0" width="1120" height="470" fill="#fcfcfb"/>
+
+  <!-- =============== panel A: the assembly against the chromosome =============== -->
+  <!-- scale: 64.4 Mbp -> 1000 px  (15.528 px/Mbp), origin x=60 -->
+  <text x="60" y="40" font-size="14" font-weight="700" fill="#0b0b0b">GRCh38 chromosome 20, 64.4 Mbp</text>
+
+  <!-- reference bar: p arm | centromere | q arm -->
+  <rect x="60" y="56" width="410" height="24" rx="6" fill="#f0efec" stroke="#c3c2b7"/>
+  <rect x="470" y="56" width="62" height="24" fill="#c3c2b7"/>
+  <rect x="532" y="56" width="528" height="24" rx="6" fill="#f0efec" stroke="#c3c2b7"/>
+  <text x="265" y="50" font-size="11.5" fill="#898781" text-anchor="middle">p arm</text>
+  <text x="501" y="50" font-size="11.5" fill="#898781" text-anchor="middle">centromere</text>
+  <text x="796" y="50" font-size="11.5" fill="#898781" text-anchor="middle">q arm</text>
+
+  <!-- assembled contigs, placed under the arms they cover -->
+  <text x="60" y="112" font-size="12" fill="#52514e">the assembly (44 contigs):</text>
+  <rect x="66" y="122" width="368" height="18" rx="4" fill="#2a78d6"/>
+  <text x="250" y="135" font-size="11.5" fill="#ffffff" text-anchor="middle" font-family="Menlo, Consolas, monospace">p arm, 23.7 Mbp</text>
+  <rect x="540" y="122" width="517" height="18" rx="4" fill="#2a78d6"/>
+  <text x="798" y="135" font-size="11.5" fill="#ffffff" text-anchor="middle" font-family="Menlo, Consolas, monospace">q arm, 33.3 Mbp</text>
+  <!-- the small stuff -->
+  <g fill="#9ec5f4">
+    <rect x="440" y="122" width="9" height="18" rx="2"/>
+    <rect x="453" y="122" width="6" height="18" rx="2"/>
+    <rect x="463" y="122" width="12" height="18" rx="2"/>
+    <rect x="479" y="122" width="5" height="18" rx="2"/>
+    <rect x="488" y="122" width="8" height="18" rx="2"/>
+  </g>
+  <text x="1064" y="136" font-size="11.5" fill="#898781">+ 37 more</text>
+
+  <text x="60" y="172" font-size="13" fill="#52514e">L50 = 1, L90 = 2. One contig per arm covers 98% of the q arm’s 33.9 Mbp and 90% of the p arm’s 26.3 Mbp;</text>
+  <text x="60" y="190" font-size="13" fill="#52514e">both stop at the centromere, whose satellite repeat is longer than these reads can bridge. The remaining</text>
+  <text x="60" y="208" font-size="13" fill="#52514e">5.2 Mbp sits in 42 contigs averaging 123 kb, about the size of the pericentromeric sequence they came from.</text>
+
+  <!-- =============== panel B: N50 vs NGA50 =============== -->
+  <line x1="24" y1="216" x2="1096" y2="216" stroke="#e1e0d9"/>
+
+  <text x="60" y="248" font-size="14" font-weight="700" fill="#0b0b0b">N50 against NGA50, on a separate unpolished run</text>
+
+  <!-- row 1: the contig as assembled -->
+  <text x="60" y="284" font-size="12.5" fill="#52514e">the largest contig, as assembled</text>
+  <rect x="60" y="296" width="517" height="18" rx="4" fill="#2a78d6"/>
+  <text x="318" y="309" font-size="11.5" fill="#ffffff" text-anchor="middle" font-family="Menlo, Consolas, monospace">one 33.25 Mbp contig</text>
+  <text x="590" y="309" font-size="12" fill="#52514e">N50 33.25 Mbp</text>
+
+  <!-- row 2: its alignment to the reference, without polishing -->
+  <text x="60" y="352" font-size="12.5" fill="#52514e">its aligned blocks against GRCh38, schematic (<tspan font-family="Menlo, Consolas, monospace" font-size="11.5">--iterations 0</tspan>)</text>
+  <g fill="#2a78d6">
+    <rect x="60"  y="364" width="41" height="18" rx="3"/>
+    <rect x="105" y="364" width="28" height="18" rx="3"/>
+    <rect x="137" y="364" width="35" height="18" rx="3"/>
+    <rect x="176" y="364" width="24" height="18" rx="3"/>
+    <rect x="204" y="364" width="44" height="18" rx="3"/>
+    <rect x="252" y="364" width="30" height="18" rx="3"/>
+    <rect x="286" y="364" width="38" height="18" rx="3"/>
+    <rect x="328" y="364" width="26" height="18" rx="3"/>
+    <rect x="358" y="364" width="42" height="18" rx="3"/>
+    <rect x="404" y="364" width="31" height="18" rx="3"/>
+    <rect x="439" y="364" width="36" height="18" rx="3"/>
+    <rect x="479" y="364" width="27" height="18" rx="3"/>
+    <rect x="510" y="364" width="40" height="18" rx="3"/>
+    <rect x="554" y="364" width="23" height="18" rx="3"/>
+  </g>
+  <text x="590" y="377" font-size="12" fill="#52514e">NGA50 2.1 Mbp, genome fraction 94.9%</text>
+
+  <text x="60" y="420" font-size="13" fill="#52514e">One contig, two statistics. Skipping polishing (<tspan font-family="Menlo, Consolas, monospace" font-size="11.5">--iterations 0</tspan>) leaves consensus error dense enough to break QUAST&#8217;s</text>
+  <text x="60" y="438" font-size="13" fill="#52514e">alignments, so 33.25 Mbp of contig aligns in blocks with a 2.1 Mbp median, scored as 85 misassemblies. Whether those</text>
+  <text x="60" y="456" font-size="13" fill="#52514e">breaks are real or its aligner failing through error is not separable here. Block widths illustrative. No polished counterpart ran.</text>
+</svg>

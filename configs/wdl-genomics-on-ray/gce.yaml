@@ -1,0 +1,25 @@
+head_node:
+  instance_type: n2-standard-8
+  resources:
+    CPU: 0
+worker_nodes:
+# 32 vCPU / 128 GiB, matching the AWS m5.8xlarge. Read together with the notebook's
+# runtime_attr_flye, which asks for 30 cpu_cores: on Ray a resource request that no node can
+# satisfy is an indefinite wait, not an error, so the instance type and the workflow's request
+# are one decision, not two. min_nodes: 1 so the first WDL task does not wait on a cold
+# autoscale.
+#
+# max_nodes: 3 because the notebook assembles a three-sample cohort. Each sample's Flye task
+# holds 30 of a node's 32 vCPUs, so three concurrent assemblies want three nodes, and getting
+# them is the demonstration. Measured at `quick` scale on this shape: the three assemblies
+# queued 32s, 93s and 93s, landed on three separate workers, and the cohort took 8m05s against
+# 7m52s for its slowest single sample. The smaller tasks pack into the 2 vCPUs left over rather
+# than booting anything.
+#
+# Lower this and the cohort still completes, just less concurrently; nothing hangs, because the
+# *per-task* requests still fit one node. Measured at max_nodes 2, the third assembly queues
+# 7m37s behind the first and the same run takes 13m16s.
+- name: assembly-worker
+  instance_type: n2-standard-32
+  min_nodes: 1
+  max_nodes: 3

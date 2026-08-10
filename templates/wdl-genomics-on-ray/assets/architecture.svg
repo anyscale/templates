@@ -1,0 +1,87 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1120 470" font-family="Helvetica, Arial, sans-serif">
+  <rect x="0" y="0" width="1120" height="470" fill="#fcfcfb"/>
+
+  <!-- ============ left panel: the WDL ============ -->
+  <rect x="24" y="28" width="300" height="360" rx="10" fill="#ffffff" stroke="#e1e0d9" stroke-width="1.5"/>
+  <text x="44" y="62" font-size="19" font-weight="700" fill="#0b0b0b">ONTAssembleWithFlye.wdl</text>
+  <rect x="44" y="76" width="216" height="24" rx="12" fill="#f0efec"/>
+  <text x="152" y="93" font-size="13" fill="#52514e" text-anchor="middle">Broad's, ported; see PIPELINE.md</text>
+
+  <g font-family="Menlo, Consolas, monospace" font-size="14" fill="#52514e">
+    <text x="44" y="132">MergeFastqs</text>
+    <text x="44" y="158">ComputeGenomeLength</text>
+    <text x="44" y="184">FastqStats</text>
+    <text x="44" y="210">MeasureDivergence</text>
+    <text x="44" y="236" fill="#0b0b0b" font-weight="700">Assemble (Flye)</text>
+    <text x="44" y="262">MedakaPolish</text>
+    <text x="44" y="286">Quast</text>
+    <text x="44" y="310">SummarizeQuastReport</text>
+    <text x="44" y="334">AlignAsPAF</text>
+    <text x="44" y="358">Paftools</text>
+  </g>
+
+  <!-- runtime block chip, tied to the Assemble row -->
+  <line x1="192" y1="231" x2="206" y2="231" stroke="#c3c2b7" stroke-width="1.2"/>
+  <rect x="206" y="204" width="110" height="72" rx="6" fill="#f9f9f7" stroke="#e1e0d9"/>
+  <g font-family="Menlo, Consolas, monospace" font-size="11.5" fill="#52514e">
+    <text x="216" y="222">runtime {</text>
+    <text x="216" y="238"> cpu: 30</text>
+    <text x="216" y="254"> mem: 32 GiB</text>
+    <text x="216" y="270">}</text>
+  </g>
+
+  <!-- ============ arrow 1 ============ -->
+  <line x1="324" y1="208" x2="374" y2="208" stroke="#52514e" stroke-width="2"/>
+  <path d="M 378 208 l -9 -5 v 10 z" fill="#52514e"/>
+
+  <!-- ============ middle panel: miniwdl ============ -->
+  <rect x="382" y="118" width="238" height="180" rx="10" fill="#ffffff" stroke="#e1e0d9" stroke-width="1.5"/>
+  <text x="402" y="152" font-size="19" font-weight="700" fill="#0b0b0b">miniwdl</text>
+  <g font-size="14" fill="#52514e">
+    <text x="402" y="180">parse &#183; type-check &#183;</text>
+    <text x="402" y="200">expand scatters &#183; call</text>
+    <text x="402" y="220">cache &#183; collect outputs</text>
+  </g>
+  <rect x="402" y="238" width="198" height="30" rx="6" fill="#eaf2fc" stroke="#2a78d6" stroke-width="1.2"/>
+  <text x="501" y="258" font-family="Menlo, Consolas, monospace" font-size="12" fill="#1c5cab" text-anchor="middle">container_backend = ray</text>
+
+  <!-- ============ arrow 2 ============ -->
+  <line x1="620" y1="208" x2="710" y2="208" stroke="#52514e" stroke-width="2"/>
+  <path d="M 714 208 l -9 -5 v 10 z" fill="#52514e"/>
+  <text x="666" y="190" font-size="12.5" fill="#52514e" text-anchor="middle">one Ray task</text>
+  <text x="666" y="230" font-size="12.5" fill="#52514e" text-anchor="middle">per WDL task</text>
+
+  <!-- ============ right panel: Ray cluster ============ -->
+  <rect x="720" y="28" width="376" height="360" rx="10" fill="#ffffff" stroke="#e1e0d9" stroke-width="1.5"/>
+  <text x="740" y="62" font-size="19" font-weight="700" fill="#0b0b0b">Ray cluster</text>
+  <text x="858" y="62" font-size="13" fill="#898781">autoscaling</text>
+
+  <!-- head node -->
+  <rect x="740" y="80" width="336" height="56" rx="8" fill="#f9f9f7" stroke="#c3c2b7" stroke-width="1.2"/>
+  <text x="756" y="104" font-size="14" font-weight="700" fill="#0b0b0b">head &#183; m5.2xlarge</text>
+  <text x="756" y="124" font-size="13" fill="#52514e">driver + miniwdl, CPU: 0, runs no WDL tasks</text>
+
+  <!-- worker 1 -->
+  <rect x="740" y="150" width="336" height="132" rx="8" fill="#ffffff" stroke="#2a78d6" stroke-width="1.5"/>
+  <text x="756" y="174" font-size="14" font-weight="700" fill="#0b0b0b">worker &#183; m5.8xlarge</text>
+  <text x="756" y="193" font-size="13" fill="#52514e">32 vCPU / 128 GiB</text>
+  <rect x="756" y="204" width="226" height="30" rx="6" fill="#eaf2fc"/>
+  <text x="768" y="224" font-family="Menlo, Consolas, monospace" font-size="12.5" fill="#1c5cab">Assemble &#8226; 30 CPUs / 32 GiB</text>
+  <text x="756" y="252" font-size="12.5" fill="#898781">smaller tasks pack in beside or after it:</text>
+  <text x="756" y="268" font-family="Menlo, Consolas, monospace" font-size="12" fill="#898781">Quast &#8226; 8&#160;&#160;&#8226;&#160;&#160;AlignAsPAF &#8226; 8</text>
+
+  <!-- worker 2 (autoscaled) -->
+  <rect x="740" y="292" width="336" height="72" rx="8" fill="#ffffff" stroke="#c3c2b7" stroke-width="1.5" stroke-dasharray="6 5"/>
+  <text x="756" y="316" font-size="14" font-weight="700" fill="#52514e">worker &#215;0&#8211;2 &#183; m5.8xlarge</text>
+  <text x="756" y="336" font-size="13" fill="#898781">added when queued tasks need it,</text>
+  <text x="756" y="354" font-size="13" fill="#898781">released when the graph narrows</text>
+
+  <!-- ============ bottom annotation: the mapping ============ -->
+  <line x1="24" y1="412" x2="1096" y2="412" stroke="#e1e0d9" stroke-width="1"/>
+  <g font-family="Menlo, Consolas, monospace" font-size="14">
+    <text x="120" y="446" fill="#52514e">runtime { cpu: 30&#160;&#160;memory: "32 GiB" }</text>
+    <text x="478" y="446" fill="#898781">&#8594;</text>
+    <text x="510" y="446" fill="#1c5cab">ray.remote(num_cpus=30, memory=32&lt;&lt;30)</text>
+  </g>
+  <text x="880" y="446" font-size="13" fill="#898781">nothing provisioned per task</text>
+</svg>
