@@ -242,7 +242,8 @@ depsets:
 
   - name: creatives_diffusion_finetuning_depset_${RAY_VERSION}_${PYTHON_VERSION}
     operation: expand
-    source_depset: ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
+    depsets:
+      - ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
     requirements:
       - templates/creatives_diffusion_finetuning/requirements.txt
     output: templates/creatives_diffusion_finetuning/python_depset.lock
@@ -256,7 +257,8 @@ depsets:
 
   - name: ecommerce_multi_model_serving_depset_${RAY_VERSION}_${PYTHON_VERSION}
     operation: expand
-    source_depset: ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
+    depsets:
+      - ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
     requirements:
       - templates/ecommerce_multi_model_serving/requirements.txt
     output: templates/ecommerce_multi_model_serving/python_depset.lock
@@ -268,9 +270,24 @@ depsets:
     build_arg_sets:
       - ray2560_py311_cu128
 
+  - name: ray_boltz_relaxed_depset_${RAY_VERSION}_${PYTHON_VERSION}
+    operation: relax
+    source_depset: ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
+    packages:
+      # boltz exact-pins these past/behind the base image pins (scipy==1.13.1 vs
+      # base 1.11.4, pyyaml==6.0.2 vs 6.0.3, requests==2.32.3 vs 2.32.5); let the
+      # template's own pins win for biotech_boltz_screening
+      - scipy
+      - pyyaml
+      - requests
+    output: dependencies/depsets/ray_${RAY_VERSION}_img_py${PYTHON_SHORT}_boltz_relaxed.lock
+    build_arg_sets:
+      - ray2560_py311_cu128
+
   - name: biotech_boltz_screening_depset_${RAY_VERSION}_${PYTHON_VERSION}
     operation: expand
-    source_depset: ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
+    depsets:
+      - ray_boltz_relaxed_depset_${RAY_VERSION}_${PYTHON_VERSION}
     requirements:
       - templates/biotech_boltz_screening/requirements.txt
     output: templates/biotech_boltz_screening/python_depset.lock
