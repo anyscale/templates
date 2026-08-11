@@ -63,7 +63,8 @@ depsets:
 
   - name: serve_stable_diffusion_depset_${RAY_VERSION}_${PYTHON_VERSION}_${CUDA_VARIANT}
     operation: expand
-    source_depset: ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
+    depsets:
+      - ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
     requirements:
       - templates/serve-stable-diffusion-v2/requirements.txt
     output: templates/serve-stable-diffusion-v2/python_depset.lock
@@ -90,7 +91,8 @@ depsets:
 
   - name: fintech_fraud_risk_depset_${RAY_VERSION}_${PYTHON_VERSION}
     operation: expand
-    source_depset: ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
+    depsets:
+      - ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
     requirements:
       - templates/fintech_fraud_risk/requirements.txt
     output: templates/fintech_fraud_risk/python_depset.lock
