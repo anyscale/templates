@@ -48,10 +48,10 @@ Cromwell run:
 - Upstream polishes with three rounds of medaka. `medaka_rounds` is 0 here, because medaka is not
   in this template's image, so the assemblies below carry Flye's own polishing round and nothing
   more. The two are not equivalent; see `PIPELINE.md`.
-- Flye's read-type flag, `--asm-coverage` and `--genome-size` are derived from the reads instead of
-  left at a hardcoded `--nano-raw`. For R10.4.1 sup reads that selects `--nano-hq`, which is what
-  Flye's documentation prescribes for R10 chemistry. `flye_impute_params = false` restores
-  upstream's command line exactly.
+- Flye's read-type flag comes from the reads' declared chemistry rather than a hardcoded
+  `--nano-raw`, so R10.4.1 selects `--nano-hq`, which is what Flye's documentation prescribes for
+  R10. `--asm-coverage` and `--genome-size` are derived from measured coverage.
+  `flye_impute_params = false` restores upstream's command line exactly.
 
 ## Where this fits
 
@@ -397,6 +397,11 @@ inputs = {
     "ONTAssembleCohort.samples": [
         {"name": s, "fastqs": [str(reads[s])], "ref_fasta": str(reference)} for s in SAMPLES
     ],
+    # The manifest records the chemistry; this is the line that gets it to the workflow,
+    # where it selects Flye's read mode. Before this the pipeline printed it to the reader
+    # and then derived the mode from a divergence measurement instead, which is confounded
+    # by repeat content and sent a whole chromosome to --nano-raw.
+    "ONTAssembleCohort.read_chemistry": manifest["chemistry"],
     "ONTAssembleCohort.flye_num_threads": 30,
     "ONTAssembleCohort.quast_num_threads": 8,
     "ONTAssembleCohort.align_num_threads": 8,
@@ -563,9 +568,15 @@ Genome fraction near 100% is close to guaranteed here and is not a quality resul
 selected by aligning to this reference, so covering it is what they were chosen for. The column
 worth reading is HG002, which has the most coverage of the three (89x against 75x and 59x) and
 still gives the least contiguous assembly. Coverage is the usual explanation for a contiguity
-difference and it is the wrong one here; the read stats printed above have the right one, which is
-that HG002 also has the highest measured read-to-read divergence, 0.0721 against 0.0370 and 0.0323.
-Three samples over one locus is how you notice that the two do not move together.
+difference and it is the wrong one here; HG002 also has the highest measured read-to-read
+divergence, 0.0721 against 0.0370 and 0.0323. Three samples over one locus is how you notice that
+the two do not move together.
+
+Read that divergence as a property of the reads *and* the region, not of the reads alone. The same
+HG002 reads measure 0.0721 over this 2 Mbp window, 0.0986 over 10 Mbp and 0.1532 over all of
+chr20, because the estimator counts spurious overlaps between repeat copies and the whole
+chromosome includes the centromere. It is reported, and `flye_params` flags it when it exceeds the
+`--nano-hq` band, but nothing in the pipeline branches on it.
 
 
 ```python

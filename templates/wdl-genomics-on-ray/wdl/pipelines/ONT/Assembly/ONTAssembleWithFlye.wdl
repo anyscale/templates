@@ -104,51 +104,38 @@ import "../../../tasks/QC/ReadStats.wdl" as ReadStats
 #                   own documented number ("typically, 40x longest reads is enough to
 #                   produce good disjointigs"). An earlier 30 here was not derived
 #                   from anything and traded disjointig quality for wall clock.
-#   --nano-hq       Chosen when *measured* pairwise read-read divergence is at or
-#                   under flye_nano_hq_max_divergence, whose default is Flye's
-#                   documented band expressed in the units this pipeline measures in.
-#                   Mind those units: an overlap carries both reads' errors, so
-#                   pairwise divergence runs up to ~2x the per-read error rate Flye's
-#                   guidance is framed in. Up to, not equal to: the factor is 2 only
-#                   when the two reads' errors are independent, and ONT's dominant
-#                   errors are homopolymer and context effects correlated between
-#                   reads, which agree instead of compounding. Halving therefore
-#                   understates per-read error, so the rule errs toward --nano-hq.
-#                   That is the right direction for a guard sited at the mode's
-#                   tolerance, and the wrong one for a gate at its typical value.
-#                   Flye documents --nano-hq for R10 / Guppy5+
-#                   sup reads under 5% error per read, which is ~0.10 pairwise, and
-#                   that is the default. An earlier 0.04 here was a per-read number
-#                   (~2%) compared against a pairwise measurement, miscalibrated by
-#                   the same factor of 2 this comment documents, which put R10.4.1
-#                   sup basecalls into --nano-raw, the mode Flye documents for R7-R9
-#                   chemistry.
+#   --nano-hq       Chosen by chemistry, which is what Flye's guidance selects on: its
+#                   USAGE.md says "For R10 data, use --nano-hq", and separately sends
+#                   R9 basecalled by Guppy5+ or in sup mode to the same mode. So
+#                   `read_chemistry` decides, and an unset chemistry keeps upstream's
+#                   --nano-raw rather than guessing.
 #
-#                   The measurement is a guard, not the primary evidence. Flye selects
-#                   an algorithm by chemistry and basecaller, not by a divergence
-#                   reading, and both are known metadata for any real read set: R10 +
-#                   Guppy5/dorado sup means --nano-hq, and this rule exists to catch
-#                   the case where a read set does not behave like its label. HG002's
-#                   sup basecalls measure 0.061 pairwise (~3% per read), comfortably
-#                   inside Flye's <5% band, so the rule and the chemistry agree here.
-#                   Set flye_read_mode explicitly to overrule both; flye_params in the
-#                   outputs records what any given run chose.
+#                   This used to be gated on the measured pairwise divergence against a
+#                   0.10 threshold, and that rule is wrong in a way only a full-size run
+#                   shows. Same sample, same chemistry, same basecaller, same published
+#                   FASTQ derivation, three region sizes:
 #
-#                   On the other Flye number: its R10 note reads "For R10 data, use
-#                   --nano-hq. Expected error rate is <3%." The prescription is the
-#                   first sentence and is unconditional; the <3% is a description of
-#                   the class, not a gate (the R9-Guppy5+ sentence has the same
-#                   grammar). Gating at the descriptive figure would flip these very
-#                   reads -- 0.061 pairwise is ~3.05% per read, over "3%" by less than
-#                   the estimator's own biases (heterozygosity, chimeric tails, dv
-#                   approximation all inflate it; the published reads are also
-#                   filtered at Q10, not Q20 -- see ReadStats.wdl) -- into
-#                   --nano-raw, the mode Flye's own table labels "ONT regular reads,
-#                   pre-Guppy5 (<20% error)", contradicting
-#                   the doc's own R10 instruction. So the guard sits at the mode's
-#                   *tolerance* (5% per read), where a wrong hq choice starts to cost
-#                   assemblies, not at the class's *typical value*, where it would
-#                   decide the mode on measurement noise.
+#                     chr20:1-3 Mbp        18,697 overlaps   0.0721  -> --nano-hq
+#                     chr20:1-11 Mbp      229,806 overlaps   0.0986  -> --nano-hq, by 1.4%
+#                     chr20:1-64.4 Mbp  6,379,175 overlaps   0.1532  -> --nano-raw
+#
+#                   The estimator tracks the region's repeat content, not the reads' error
+#                   rate. The first two regions are p-arm euchromatin; the third spans the
+#                   centromere, whose alpha-satellite generates spurious cross-alignments
+#                   between non-homologous copies that ava-ont's `dv` counts like any other
+#                   overlap. The rule therefore sent R10.4.1 dorado sup reads to --nano-raw,
+#                   which Flye's own table labels "ONT regular reads, pre-Guppy5 (<20%
+#                   error)" -- overriding correct metadata on a confounded number, which is
+#                   the exact failure the guard existed to prevent.
+#
+#                   MeasureDivergence still runs and its result is still emitted in
+#                   read_stats, because a read set that does not behave like its label is
+#                   worth seeing. It is now an annotation: flye_params carries
+#                   divergence_flag = ok | high | "not measured", and nothing branches on
+#                   it. flye_params also records read_mode_from, so a completed run says
+#                   whether its mode came from the chemistry, an explicit override, or
+#                   upstream's default.
+#
 #   --iterations    0 when Medaka is going to run, because Medaka redoes that same
 #                   consensus better and Flye's rounds are the single largest block of
 #                   wall clock in the pipeline. The invariant is that the *total*
@@ -181,13 +168,14 @@ workflow ONTAssembleWithFlye {
         flye_extra_args:     "extra options for flye, appended after any imputed ones"
 
         flye_impute_params:  "derive flye's parameters from the reads; false restores upstream's command line exactly"
-        flye_read_mode:      "explicit flye read type flag, e.g. '--nano-hq'; overrides the divergence measurement"
+        read_chemistry:      "the reads' flow cell chemistry, e.g. 'R10.4.1' or 'R10.4.1 (LSK114, E8.2, 400 bps)'. This is what selects Flye's read mode, because Flye's guidance selects on chemistry. Unset keeps upstream's --nano-raw"
+        flye_read_mode:      "explicit flye read type flag, e.g. '--nano-hq'; overrides the chemistry"
         flye_asm_coverage:   "explicit flye --asm-coverage; 0 disables coverage capping entirely"
         flye_iterations:     "explicit flye --iterations; overrides the rule based on medaka_rounds"
         flye_genome_size:    "explicit genome size in base pairs; overrides the estimate from ref_fasta"
 
         flye_asm_coverage_target:     "coverage to cap the disjointig stage at, and the threshold above which capping happens at all. Flye's docs: 'typically, 40x longest reads is enough to produce good disjointigs'"
-        flye_nano_hq_max_divergence:  "measured pairwise read-read divergence at or below which --nano-hq is chosen over --nano-raw. Pairwise runs ~2x per-read error, so the 0.10 default is Flye's documented --nano-hq band (<5% per read) expressed in the units this pipeline measures in"
+        flye_nano_hq_max_divergence:  "pairwise read-read divergence above which flye_params records divergence_flag = high. Nothing branches on it; it is a QC annotation. The 0.10 default is Flye's --nano-hq band (<5% per read) in the units MeasureDivergence reports, and it is exceeded by repeat-rich regions regardless of read quality"
 
         medaka_model:        "Medaka polishing model name. Must match the reads' chemistry and basecaller: R10.4.1 needs an r1041_* model, and an r941_* model on R10.4.1 data degrades the consensus silently. Run `medaka tools list_models`"
         medaka_rounds:       "number of Medaka polishing rounds; 0 (the default here) passes the draft through and leaves Flye's own round as the polish. Requires medaka on the workers to raise, and it is not in this template's image; see tools/BUILDING.md"
@@ -210,6 +198,8 @@ workflow ONTAssembleWithFlye {
 
         Int flye_num_threads = 16
         String flye_extra_args = ""
+
+        String? read_chemistry
 
         Boolean flye_impute_params = true
         String? flye_read_mode
@@ -294,14 +284,44 @@ workflow ONTAssembleWithFlye {
     Float genome_length = select_first([flye_genome_size, ComputeGenomeLength.length])
     Float read_coverage = FastqStats.total_bases / genome_length
 
-    # A negative divergence is MeasureDivergence reporting that it found too few
-    # overlaps to have an opinion, which must not read as "very clean reads".
+    # Read mode comes from the chemistry, which is what Flye's own guidance selects on
+    # ("For R10 data, use --nano-hq"). It is not derived from the divergence measurement,
+    # and there is a measurement behind that decision.
+    #
+    # An earlier version of this workflow gated the mode on measured pairwise divergence
+    # against a 0.10 threshold. Run on the same sample, same chemistry, same basecaller and
+    # the same published FASTQ derivation, at three region sizes:
+    #
+    #     chr20:1-3 Mbp     18,697 overlaps    0.0721   -> --nano-hq
+    #     chr20:1-11 Mbp   229,806 overlaps    0.0986   -> --nano-hq, by 1.4%
+    #     chr20:1-64.4 Mbp  6,379,175 overlaps  0.1532  -> --nano-raw
+    #
+    # The estimator tracks the region's repeat content, not the reads' error rate. The first
+    # two regions are p-arm euchromatin; the third spans the centromere, whose alpha-satellite
+    # produces spurious cross-alignments between non-homologous copies that ava-ont's `dv`
+    # counts like any other overlap. So the rule sent R10.4.1 dorado sup reads to --nano-raw,
+    # which Flye's table labels "ONT regular reads, pre-Guppy5 (<20% error)" -- overriding
+    # correct metadata on the strength of a confounded number, which is the exact failure the
+    # guard was written to prevent.
+    #
+    # `read_chemistry` is therefore the input that decides, and MeasureDivergence is kept as
+    # an observation: emitted in read_stats, and compared against the mode's tolerance only to
+    # raise a flag in flye_params. Nothing branches on it.
     Boolean divergence_measured = MeasureDivergence.divergence >= 0.0
-    Boolean reads_are_hq = if divergence_measured
-                           then MeasureDivergence.divergence <= flye_nano_hq_max_divergence
-                           else false
+    Boolean divergence_disagrees = if divergence_measured
+                                   then MeasureDivergence.divergence > flye_nano_hq_max_divergence
+                                   else false
 
-    String imputed_read_mode = if reads_are_hq then "--nano-hq" else "--nano-raw"
+    # R10 in any spelling (R10.4.1, r10.4.1, "R10.4.1 (LSK114, E8.2, 400 bps)") means --nano-hq,
+    # as does an R9 flow cell basecalled by Guppy5+ or in sup mode, which is the other case
+    # Flye's USAGE.md sends to --nano-hq. Anything else, including an unset chemistry, keeps
+    # upstream's --nano-raw: a caller who has not said what the reads are should get the
+    # conservative mode rather than an inference.
+    String chemistry_label = select_first([read_chemistry, ""])
+    Boolean chemistry_is_r10 = sub(chemistry_label, "(?i).*r10.*", "HQ") == "HQ"
+    Boolean chemistry_is_hq_r9 = sub(chemistry_label, "(?i).*r9.*(sup|guppy[5-9]).*", "HQ") == "HQ"
+    String imputed_read_mode = if (chemistry_is_r10 || chemistry_is_hq_r9)
+                               then "--nano-hq" else "--nano-raw"
     String resolved_read_mode = if defined(flye_read_mode)
                                 then select_first([flye_read_mode])
                                 else (if flye_impute_params then imputed_read_mode else "--nano-raw")
@@ -454,10 +474,20 @@ workflow ONTAssembleWithFlye {
         # run. `extra_args` is the authoritative copy either way.
         Map[String, String] flye_params = {
             "read_mode":    resolved_read_mode,
+            "read_mode_from": if defined(flye_read_mode) then "explicit"
+                              else (if !flye_impute_params then "upstream default"
+                                    else (if imputed_read_mode == "--nano-hq" then "chemistry"
+                                          else "chemistry unset or not high-accuracy")),
+            "chemistry":    chemistry_label,
             "extra_args":   resolved_flye_extra_args,
             "asm_coverage": "~{resolved_asm_coverage}",
             "iterations":   "~{sub(iterations_arg, '^ --iterations ', '')}",
             "genome_size":  if resolved_asm_coverage > 0 then "~{ceil(genome_length)}" else "",
+            # QC only, nothing branches on it. "high" means the measured pairwise
+            # divergence exceeded the --nano-hq band, which on a repeat-rich region
+            # happens regardless of read quality; see the header.
+            "divergence_flag": if !divergence_measured then "not measured"
+                               else (if divergence_disagrees then "high" else "ok"),
             "imputed":      "~{flye_impute_params}"
         }
 

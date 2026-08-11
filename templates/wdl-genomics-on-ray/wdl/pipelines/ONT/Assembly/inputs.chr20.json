@@ -3,6 +3,7 @@
     "s3://anyscale-public-materials/genomics/giab-trio-chr20/full/HG002.reads.fastq.gz"
   ],
   "ONTAssembleWithFlye.ref_fasta": "s3://anyscale-public-materials/genomics/giab-trio-chr20/full/reference.fa",
+  "ONTAssembleWithFlye.read_chemistry": "R10.4.1 (LSK114, E8.2, 400 bps)",
   "ONTAssembleWithFlye.participant_name": "HG002",
   "ONTAssembleWithFlye.prefix": "HG002_chr20_ONT",
   "ONTAssembleWithFlye.flye_num_threads": 30,

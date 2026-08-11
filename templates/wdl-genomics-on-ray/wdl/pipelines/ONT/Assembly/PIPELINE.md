@@ -47,7 +47,7 @@ they run concurrently.
 | memory request | `{ 'mem_gb': 100 + genome_size/1e7 }` fixed at the call site | `RuntimeAttr? runtime_attr_flye`, with upstream's formula as the fallback |
 | resources | fixed per task | `RuntimeAttr?` overrides per task, from the inputs file |
 | Flye tuning | not reachable | `flye_extra_args` |
-| read type | `--nano-raw`, hardcoded | `flye_read_mode`, derived from measured divergence |
+| read type | `--nano-raw`, hardcoded | selected from `read_chemistry`, as Flye's docs prescribe |
 | `--genome-size` | never passed | derived, and required by `--asm-coverage` |
 | `--asm-coverage` | never passed | derived from measured coverage |
 | `--iterations` | Flye's default | 0 when Medaka will re-polish anyway |
@@ -147,11 +147,16 @@ a node you have to actually possess on Ray, so size the compute config and the r
 together.
 
 The `Flye.wdl` task itself still defaults to `--nano-raw`, as upstream wrote it. The
-workflow above it selects the read mode per run: `--nano-hq` for R10 chemistry, as
-Flye's docs prescribe, with the measured pairwise divergence acting as a guard against
-a read set that does not behave like its label. The shipped GIAB reads measure 0.061
-pairwise against a 0.10 threshold, so they resolve to `--nano-hq` and the measurement
-and the chemistry agree. `flye_read_mode` overrides both, and `flye_impute_params =
-false` restores upstream's command line exactly. The units, the threshold's derivation
-and the estimator's known biases are in [the workflow header](ONTAssembleWithFlye.wdl)
-and [`ReadStats.wdl`](../../../tasks/QC/ReadStats.wdl).
+workflow above it selects the read mode from `read_chemistry`: R10 gets `--nano-hq`, as
+Flye's docs prescribe, as does R9 basecalled by Guppy5+ or in sup mode. An unset
+chemistry keeps `--nano-raw` rather than guessing. `flye_read_mode` overrides it, and
+`flye_impute_params = false` restores upstream's command line exactly.
+
+An earlier version gated this on measured read-to-read divergence instead, and that rule
+does not survive a full chromosome. The same sample measured 0.0721 over 2 Mbp, 0.0986
+over 10 Mbp and 0.1532 over all of chr20, because the estimator tracks repeat content and
+the whole chromosome includes the centromere. Against a 0.10 threshold that sends
+R10.4.1 sup reads to `--nano-raw`. The measurement is still taken and still reported, as
+`divergence_flag` in `flye_params` and `pairwise_divergence` in `read_stats`; nothing
+branches on it. [The workflow header](ONTAssembleWithFlye.wdl) has the numbers and
+[`ReadStats.wdl`](../../../tasks/QC/ReadStats.wdl) the estimator's known biases.
