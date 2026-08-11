@@ -14,10 +14,18 @@ from ray import serve
 from ray.serve.handle import DeploymentHandle
 from starlette.requests import Request
 
+from dist_xgboost.constants import root_dir
 from dist_xgboost.data import load_model_and_preprocessor
 
 
-@serve.deployment(num_replicas=2, ray_actor_options={"num_cpus": 2})
+# Serve replicas don't inherit the driver env, so pin them to the lock.
+@serve.deployment(
+    num_replicas=2,
+    ray_actor_options={
+        "num_cpus": 2,
+        "runtime_env": {"pip": os.path.join(root_dir, "python_depset.lock")},
+    },
+)
 class XGBoostModel:
     def __init__(self, loader):
         # pass in loader function from the outer context to

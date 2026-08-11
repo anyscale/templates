@@ -6,7 +6,7 @@ applications:
     import_path: server:app
     runtime_env:
       working_dir: "."
-      pip: "requirements.txt"
+      pip: "python_depset.lock"
     deployments:
       - name: PDFProcessor
         num_replicas: 2

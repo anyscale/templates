@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Pin versions to avoid CUDA driver incompatibility (image has CUDA 12.8)
-pip install papermill diffusers==0.34.0 transformers==4.47.0 accelerate==1.2.1 lightning==2.6.1 typer s3fs matplotlib Pillow 'torch>=2.5,<2.6' 'torchvision>=0.20,<0.21'
+# Install the locked closure the scripts ship to Ray.
+uv pip install -r python_depset.lock --system --no-deps --no-cache-dir --index-strategy unsafe-best-match
 
 echo "=== Running preprocess.py validation ==="
 python scripts/preprocess.py --limit 5 --resolution 512 --no-visualize-output

@@ -11,7 +11,7 @@ from ray.data.preprocessors import StandardScaler
 from ray.train import CheckpointConfig, Result, RunConfig, ScalingConfig
 from ray.train.xgboost import RayTrainReportCallback, XGBoostTrainer
 
-from dist_xgboost.constants import storage_path, preprocessor_path
+from dist_xgboost.constants import storage_path, preprocessor_path, root_dir
 from dist_xgboost.data import log_run_to_mlflow, prepare_data
 import dist_xgboost
 
@@ -68,7 +68,13 @@ def train_fn_per_worker(config: dict):
 
 
 def main():
-    ray.init(runtime_env={"py_modules": [dist_xgboost]})
+    # Ray workers run off-head, so ship them the lock via runtime_env.
+    ray.init(
+        runtime_env={
+            "py_modules": [dist_xgboost],
+            "pip": os.path.join(root_dir, "python_depset.lock"),
+        }
+    )
     # Load and split the dataset
     train_dataset, valid_dataset, _test_dataset = prepare_data()
 
