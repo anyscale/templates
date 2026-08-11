@@ -5,12 +5,12 @@
 #   s3://anyscale-public-materials/genomics/giab-trio-chr20/
 #     quick/     chr20:1,000,000-3,000,000    (~2 Mbp;  CI, ~15 min per sample)
 #     standard/  chr20:1,000,000-11,000,000   (~10 Mbp; the notebook default)
-#     full/      chr20:1-64,444,167           (64 Mbp;  job.yaml, HG002 only)
+#     full/      chr20:1-64,444,167           (64 Mbp;  job.yaml, the production cohort)
 #
 # each containing, per sample:
 #
 #     HG002.reads.fastq.gz  HG003.reads.fastq.gz  HG004.reads.fastq.gz
-#     reference.fa          reference.fa.fai      MANIFEST.json
+#     reference.fa          MANIFEST.json
 #
 # HG002 is the GIAB Ashkenazi son, HG003 the father, HG004 the mother -- the most
 # thoroughly characterised human samples there are. They are three independent
@@ -149,10 +149,11 @@ build() {
   samtools faidx ref.fa "$region" > "$name/reference.fa"
   samtools faidx "$name/reference.fa"
 
+  # Every scale carries every sample. `full` used to be HG002 only, on the reasoning that
+  # three 14-hour assemblies is not a demo -- but the production job is the cohort, and a
+  # cohort with one sample cannot show the thing the cohort exists to show. Set SAMPLES to
+  # narrow it.
   local samples_for_scale="$SAMPLES"
-  # The full chromosome exists for the single-sample production job, not the cohort:
-  # three 14-hour assemblies is not a demo. HG002 only.
-  [ "$name" = "full" ] && samples_for_scale="HG002"
 
   for sample in $samples_for_scale; do
     slice_sample "$name" "$sample" "$region"
@@ -212,9 +213,15 @@ manifest() {
     "$name/MANIFEST.json"
 }
 
-build quick    1000000  3000000
-build standard 1000000 11000000
-build full           1 "$CHROM_LEN"
+# SCALES narrows what gets rebuilt and republished. All three by default; set it to one
+# name to add or correct a single tier without re-uploading the others. Note that a scale
+# is rebuilt whole, manifest included, so narrowing SAMPLES *and* SCALES together would
+# publish a manifest listing only those samples.
+SCALES="${SCALES:-quick standard full}"
+
+case " $SCALES " in *" quick "*)    build quick    1000000  3000000     ;; esac
+case " $SCALES " in *" standard "*) build standard 1000000 11000000     ;; esac
+case " $SCALES " in *" full "*)     build full           1 "$CHROM_LEN" ;; esac
 
 if [ -n "$DRY_RUN" ]; then
   echo "== dry run: not uploading. Output in $WORK"
@@ -222,13 +229,13 @@ if [ -n "$DRY_RUN" ]; then
 fi
 
 echo "== upload to $DEST"
-for scale in quick standard full; do
+for scale in $SCALES; do
   aws s3 cp --recursive "$scale/" "$DEST/$scale/" --exclude "*.fai"
 done
 
 echo "== verify anonymously (what the notebook and CI actually do)"
 fail=0
-for scale in quick standard full; do
+for scale in $SCALES; do
   for object in MANIFEST.json reference.fa; do
     if aws s3 cp --no-sign-request "$DEST/$scale/$object" - >/dev/null 2>&1; then
       echo "   $scale/$object: anonymously readable"

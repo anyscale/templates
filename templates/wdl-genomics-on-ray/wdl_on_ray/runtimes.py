@@ -6,7 +6,8 @@ imports Ray, or holds miniwdl state, which keeps it unit-testable and keeps the
 worker side of the dispatch (:mod:`wdl_on_ray.job`) free of policy: the worker
 only ever executes argv lists handed to it.
 
-Six runtimes are supported; the first four in the order ``auto`` prefers them:
+Seven runtimes are supported. The first four are listed in the order ``auto`` prefers
+them; ``none``, ``native`` and ``ray`` are opt-in by name and never chosen by ``auto``:
 
 ``podman``
     Rootless-capable and the usual choice on a workstation or an HPC-ish node.

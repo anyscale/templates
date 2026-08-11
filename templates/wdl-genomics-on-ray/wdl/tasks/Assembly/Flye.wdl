@@ -43,14 +43,25 @@ import "../../structs/Structs.wdl"
 #     it, which discards the per-contig coverage/circularity/repeat table, the
 #     one artifact that distinguishes a collapsed repeat from a real contig.
 #
-# On `preemptible_tries: 0` in the task's default_attr, which is upstream's value
-# and is kept deliberately: Flye does not checkpoint. A preemption at hour twelve
-# does not resume, it restarts, so a preemptible budget on this task buys another
-# full-length attempt rather than a cheap recovery. Every other task in the
-# pipeline is minutes long and several do carry a budget (CallAssemblyVariants
-# uses 3). Size a spot policy per task, not per pipeline, and do not read Ray's
-# `Interrupted` -> `runtime.preemptible` mapping as meaning this task retries,
-# because as declared it does not.
+# On `preemptible_tries: 0` in the task's default_attr, which is upstream's value and is
+# kept because this file's job is to stay upstream. Do not read it as advice.
+#
+# It was written for an assembly that took 14h44m, where a preemption meant redoing most
+# of a run. Under this workflow's current defaults a full chr20 assembly is 1h19m on
+# c6i.16xlarge or about 2h23m on m5.8xlarge, and at that length a reclaimed node costs a
+# fraction of a spot node-hour to redo. inputs.chr20.json and inputs.chr20.cohort.json
+# therefore set `preemptible_tries: 3` on every task, which is the right place for it: a
+# spot policy is a property of the fleet you are renting, not of the assembler.
+#
+# Flye still does not checkpoint across a WDL retry. `--resume` reads its own `--out-dir`,
+# and miniwdl gives every attempt a fresh working directory, so a retry starts from
+# `configure`. Reaching the previous attempt is possible and deliberately not done; the
+# README's spot note says why. Above roughly ten hours per assembly the arithmetic
+# inverts and restart-from-zero starts to cost more than spot saves.
+#
+# So do not read the backend's Ray-node-loss -> `Interrupted` -> `runtime.preemptible`
+# mapping as meaning this task retries by default. As declared here it does not; it
+# retries because an inputs file gives it a budget.
 
 workflow Flye {
 

@@ -172,3 +172,17 @@ ci/bin
 
 # Other
 .DS_Store
+/.idea/inspectionProfiles/profiles_settings.xml
+/.idea/inspectionProfiles/Project_Default.xml
+/.idea/.gitignore
+/.idea/anyscale-templates-tooling.iml
+/.idea/default.iml
+/.idea/dist-xgboost.iml
+/.idea/doggos.iml
+/.idea/e2e_timeseries.iml
+/.idea/LanguageServersSettings.xml
+/.idea/modules.xml
+/.idea/nf-ray.iml
+/.idea/vcs.xml
+/.idea/vla.iml
+/.idea/wdl-on-ray.iml

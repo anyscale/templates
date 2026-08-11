@@ -60,7 +60,8 @@ workflow ONTAssembleCohort {
         medaka_use_gpu:      "request a GPU for medaka (needs a GPU node group in the Ray cluster)"
 
         flye_impute_params:  "derive Flye's parameters from each sample's own reads; false restores upstream's command line"
-        flye_read_mode:      "explicit flye read type flag for every sample; overrides the per-sample measurement"
+        read_chemistry:      "flow cell chemistry shared by every sample, e.g. 'R10.4.1'. This is what selects Flye's read mode. A cohort with mixed chemistry should not share one workflow: the model and the mode would be wrong for some of it"
+        flye_read_mode:      "explicit flye read type flag for every sample; overrides the chemistry"
     }
 
     input {
@@ -75,6 +76,7 @@ workflow ONTAssembleCohort {
         Boolean medaka_use_gpu = false
 
         Boolean flye_impute_params = true
+        String? read_chemistry
         String? flye_read_mode
 
         RuntimeAttr? runtime_attr_genome_length
@@ -106,6 +108,7 @@ workflow ONTAssembleCohort {
                 align_num_threads = align_num_threads,
 
                 flye_impute_params = flye_impute_params,
+                read_chemistry = read_chemistry,
                 flye_read_mode = flye_read_mode,
 
                 medaka_rounds = medaka_rounds,

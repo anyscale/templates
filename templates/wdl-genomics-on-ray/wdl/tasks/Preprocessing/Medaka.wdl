@@ -66,10 +66,17 @@ import "../../structs/Structs.wdl"
 #     task is retained because it is what upstream's pipeline calls; a chr20-scale
 #     or larger assembly is the case ONT would send to dorado polish instead.
 #
-# Packaging, for anyone adding medaka to the workers: medaka 1.x (which the r941
-# models ship with) requires Python <3.11; medaka >=2.1 runs on newer Pythons and
-# ships a newer model generation, so moving to it means re-choosing the model too.
-# tools/BUILDING.md covers getting it onto the cluster.
+# Packaging, for anyone turning this on. medaka is not in the cluster image, and the
+# reason is size rather than compatibility: 2.2.2 ships cp312 wheels and declares
+# python >=3.10,<3.14, so it installs on this image's 3.12.12 fine. What it costs is
+# 1.2 GB even with CPU-only torch, plus a numpy 1.26.4 -> 2.5.2 bump that breaks the
+# base environment's cupy. It therefore gets its own per-task image,
+# tools/Dockerfile.medaka-gpu, selected under `--container-runtime ray` by mapping the
+# tag this task already declares. tools/BUILDING.md has the worked example.
+#
+# The Python constraint that kept medaka out of this template belonged to the 1.x line
+# (which is what the r941 models ship with) and has not applied since 2.1.1. Moving to
+# 2.x means re-choosing the model, since the generations differ.
 
 task MedakaPolish {
 

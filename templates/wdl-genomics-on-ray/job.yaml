@@ -1,24 +1,30 @@
-# Assemble the whole of HG002 chromosome 20 as an Anyscale Job.
+# Assemble the GIAB Ashkenazi trio over all 64 Mbp of chromosome 20, as an Anyscale Job.
 #
-#   anyscale job submit --config-file job.yaml
+#   cd templates/wdl-genomics-on-ray && anyscale job submit --config-file job.yaml
 #
-# This is the production counterpart to the notebook: full coverage over all 64 Mbp of chr20,
-# with polishing on (Flye's own round -- medaka_rounds is 0; see the README).
-# Measured at 14h 44m -- 44 contigs, N50 33,279,582, L90 = 2.
+# Submit it from *this* directory. `working_dir: .` below is relative to the shell, not to
+# this file, so running it as `anyscale job submit --config-file templates/.../job.yaml` from
+# the repo root uploads the repo root instead and the job dies in seconds with
+# "[Errno 2] No such file or directory: 'wdl/pipelines/ONT/Assembly/ONTAssembleCohort.wdl'".
 #
-# Provenance of that measurement, which matters because it is no longer the command line this
-# job runs: the 14h44m run executed upstream's bare invocation (`flye --nano-raw <reads>
-# --threads 30`, no coverage cap, Flye's default single polishing round). Today's inputs measure
-# the reads and derive `--nano-hq` -- which is what Flye's own docs prescribe for R10 chemistry,
-# and a different assembly algorithm from --nano-raw -- plus `--asm-coverage 40 --genome-size`.
-# So treat 14h44m as an order of magnitude, not a budget, and read `flye_params` in the outputs
-# for what any given run actually did. The measured table also captured contiguity only; a run
-# under today's defaults should record genome fraction and NGA50 alongside it.
+# The production counterpart to the notebook, and a cohort for the same reason the notebook is
+# one: a single sample's task graph is a chain with one long task in it, so it has nothing to
+# pack and nothing to autoscale into. Three concurrent graphs have both, and that is the whole
+# claim this template makes. A production example that cannot demonstrate it is the wrong
+# example. `inputs.chr20.json` is still here for the single-sample case; point -i at it instead.
 #
-# `inputs.chr20.json` passes s3:// URIs directly rather than staging them first; miniwdl
-# localizes File inputs itself, and at this size a single download per input is the right
-# trade whatever the notebook does for interactive speed.
-name: wdl-genomics-on-ray-chr20
+# Measured, three samples at 64 Mbp on the shape below: see the README's time and cost section.
+# The single-sample equivalent is 1h19m25s of Flye on c6i.16xlarge/62 cores, or about 2h on the
+# m5.8xlarge/30 this ships with, and the three run concurrently rather than in series.
+#
+# Not `--asm-coverage`. Capping the disjointig stage at Flye's documented 40x was measured to
+# cost a third of the N50 (33.27 -> 11.06 Mbp) to save 14.6 minutes, so the target defaults to 0
+# and nothing is capped. ONTAssembleWithFlye.wdl's header carries the four-run grid.
+#
+# The inputs pass s3:// URIs directly rather than staging them first; miniwdl localizes File
+# inputs itself, and at this size one download per input is the right trade whatever the
+# notebook does for interactive speed.
+name: wdl-genomics-on-ray-chr20-trio
 
 # The template's own image, which carries the toolchain (see Dockerfile). Under
 # `--container-runtime none` every tool has to be present on every node before the first task
@@ -35,7 +41,7 @@ excludes:
 env_vars:
   # Where the declared outputs are copied before the driver exits. Without this the run's
   # results are deleted with the cluster the moment the job succeeds -- see the entrypoint.
-  WDL_ON_RAY_RESULTS: /mnt/user_storage/wdl-on-ray/results/chr20
+  WDL_ON_RAY_RESULTS: /mnt/user_storage/wdl-on-ray/results/chr20-trio
 
 # The entrypoint must NOT `exec` the workflow. `exec` replaces the shell, so nothing can run
 # afterwards -- which is how a completed 14h44m assembly once lost every artifact it produced.
@@ -76,8 +82,8 @@ entrypoint: |
   # Under --container-runtime none the toolchain is not part of the cache key: WDL task
   # inputs and the task's own source are. Rebuilding the image with a different Flye
   # will reuse assemblies made by the old one. Clear CACHE_DIR when the image changes.
-  wdl-on-ray run wdl/pipelines/ONT/Assembly/ONTAssembleWithFlye.wdl \
-    -i wdl/pipelines/ONT/Assembly/inputs.chr20.json \
+  wdl-on-ray run wdl/pipelines/ONT/Assembly/ONTAssembleCohort.wdl \
+    -i wdl/pipelines/ONT/Assembly/inputs.chr20.cohort.json \
     --container-runtime none \
     --dir "$RUN_DIR" \
     --call-cache "$CACHE_DIR" \
@@ -98,7 +104,8 @@ compute_config:
     resources:
       CPU: 0
   worker_nodes:
-    # 32 vCPU / 128 GiB. This is read together with inputs.chr20.json, not independently:
+    # 32 vCPU / 128 GiB. This is read together with inputs.chr20.cohort.json, not
+    # independently:
     # runtime_attr_flye asks for 30 cpu_cores, and on Ray a request no node can satisfy is an
     # indefinite wait rather than an error. Changing either one means changing both.
     - instance_type: m5.8xlarge

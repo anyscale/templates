@@ -86,6 +86,31 @@ _INTERRUPTION_ERRORS = (
 )
 
 
+def _is_interruption(exn: BaseException) -> bool:
+    """Did the node or worker go away, as opposed to the task failing on its merits?
+
+    ``isinstance``, not a name comparison. ``ObjectLostError`` has subclasses, and on
+    ray 2.56 three of them (``ObjectReconstructionFailedError``, which has its own
+    subclasses, plus ``ReferenceCountingAssertionError`` and ``ObjectFreedError``) are
+    not named in the tuple above. Those are raised when an object is lost *because* the
+    node holding it died, which is the reclaimed-spot case: it should spend the WDL's
+    ``runtime.preemptible`` budget. Matching on the exact name let them through as
+    ordinary failures, where they consumed ``maxRetries`` instead and bypassed the
+    pipeline's own preemption policy entirely.
+
+    The name tuple stays as a fallback, so a Ray release that renames or adds a class
+    still degrades to the previous behaviour rather than to nothing.
+    """
+    from ray import exceptions as ray_exceptions
+
+    classes = tuple(
+        cls
+        for cls in (getattr(ray_exceptions, name, None) for name in _INTERRUPTION_ERRORS)
+        if isinstance(cls, type)
+    )
+    return (classes and isinstance(exn, classes)) or type(exn).__name__ in _INTERRUPTION_ERRORS
+
+
 #: Whether :func:`connect` has run in this process.
 _connected = False
 
@@ -979,7 +1004,7 @@ class RayContainer(SubprocessBase):
             # routes it to WDL's runtime.preemptible retry budget, the correct
             # behaviour on reclaimed spot capacity.
             name = type(exn).__name__
-            if name in _INTERRUPTION_ERRORS:
+            if _is_interruption(exn):
                 logger.warning(_("Ray worker or node lost", error=name, detail=str(exn)))
                 raise Interrupted(f"Ray {name}") from None
             raise
