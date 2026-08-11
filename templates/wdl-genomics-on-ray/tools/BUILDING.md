@@ -164,6 +164,47 @@ The probe needs nothing in the image but Ray. Its code travels inside the task, 
 real dispatch path ships `wdl_on_ray.job`, so an image carrying one tool and no Python packages
 answers correctly instead of failing to deserialize.
 
+### A worked example: medaka on a GPU
+
+medaka is the case this mode exists for, and the template ships a Containerfile for it:
+[`Dockerfile.medaka-gpu`](Dockerfile.medaka-gpu).
+
+It is deliberately not in the cluster image. Every other tool here is a binary or a small
+source build carrying no Python dependencies, which is what lets them share one environment.
+medaka is a PyTorch application: it needs `numpy>=2.0` where the Ray base ships 1.26.4, and
+installing it costs 1.2 GB even with CPU-only wheels. Upgrading numpy underneath the base
+environment breaks `cupy`, which `ray.util.collective` imports. Pinning `numpy==2.2.6` does
+not help — `cupy-cuda12x` 13.4.0 declares `numpy<2.3`, but its wheel was compiled against the
+numpy 1.x C ABI, so the declaration is not the constraint that binds. A venv inside the
+cluster image does work and still costs the 1.2 GB.
+
+So it gets its own image, and only a run that asks for polishing pays for it:
+
+```bash
+anyscale image build -n wdl-medaka-gpu --containerfile tools/Dockerfile.medaka-gpu
+```
+
+Then map the tag `MedakaPolish` already declares, and send everything else to the cluster
+image:
+
+```ini
+[ray]
+container_runtime = ray
+task_image_map = {"us.gcr.io/broad-dsp-lrma/lr-medaka:0.1.0": "anyscale/image/wdl-medaka-gpu:1", "*": "cluster"}
+```
+
+and run with `medaka_rounds` above 0 and `medaka_use_gpu = true`. The WDL needs no edits:
+`MedakaPolish` already declares the image tag, `gpuCount: if use_gpu then 1 else 0` and a
+`gpu_type`, and the backend maps those onto Ray's accelerator resources. The cluster needs a
+GPU node group for the request to be satisfiable, or the task waits rather than failing.
+
+Two things that Containerfile does on purpose. It builds `FROM anyscale/ray:2.56.0-py312-cu128`,
+the CUDA variant of the *same* base as the cluster image, because a nested image's Ray and
+Python must match the cluster's exactly and that tag is Ray 2.56.0 / Python 3.12.12. And it
+pre-downloads the model with `medaka tools download_models`, because medaka otherwise fetches
+it on first use, which on a GPU node in a private subnet is a run that hangs rather than one
+that fails.
+
 ### Wiring it up
 
 Map each `runtime.docker` value to the image that should run it:

@@ -1,0 +1,62 @@
+# A per-task image for MedakaPolish, kept out of the cluster image on purpose.
+#
+#   anyscale image build -n wdl-medaka-gpu --containerfile tools/Dockerfile.medaka-gpu
+#
+# Why this is a separate image rather than another entry in tools/manifest.toml.
+#
+# medaka is the one tool in this pipeline that does not fit the manifest's model. The others
+# are a binary or a small source build with no Python dependencies at all, which is what lets
+# them coexist in one environment (see manifest.toml's header). medaka is a PyTorch
+# application: it pulls torch plus, on GPU, the whole CUDA runtime, and it requires
+# `numpy>=2.0` where the Ray base image ships 1.26.4. Installing it into the cluster image
+# costs 1.2 GB even in the CPU-only configuration, and upgrading numpy underneath the base
+# environment breaks `cupy`, which `ray.util.collective` imports.
+#
+# Measured, for anyone tempted to put it back in the cluster image:
+#
+#   pip install medaka                     torch + triton + cuda-toolkit + 15 nvidia-* wheels
+#   pip install medaka  (torch CPU index)  1.2 GB, numpy 1.26.4 -> 2.5.2, `import cupy` fails
+#   pin numpy==2.2.6                       still fails: cupy-cuda12x 13.4.0 declares
+#                                          numpy<2.3 but its wheel was built against the
+#                                          numpy 1.x C ABI, so the declaration is not the
+#                                          constraint that matters
+#   a venv inside the cluster image        works, base env untouched, still 1.2 GB
+#
+# So it lives here instead, and only the run that asks for polishing pays for it. Nine of the
+# ten tasks never touch this image.
+#
+# HOW IT IS SELECTED. MedakaPolish declares `docker: us.gcr.io/broad-dsp-lrma/lr-medaka:0.1.0`,
+# which under `--container-runtime ray` is *mapped* rather than pulled:
+#
+#   [ray]
+#   container_runtime = ray
+#   task_image_map = {"us.gcr.io/broad-dsp-lrma/lr-medaka:0.1.0": "anyscale/image/wdl-medaka-gpu:1", "*": "cluster"}
+#
+# The `"*"` entry sends every other task to the cluster image; without it an unmapped task
+# fails to dispatch by design. `wdl-on-ray probe-image` checks a built image against the
+# cluster before you depend on it. tools/BUILDING.md covers the rest.
+#
+# THE VERSION CONSTRAINT IS EXACT. A nested image's Ray and Python must match the cluster's,
+# Python to the patch level, so this is built from the CUDA variant of the same base the
+# cluster image uses: same Ray 2.56.0, same Python 3.12.12, plus a CUDA runtime.
+FROM anyscale/ray:2.56.0-py312-cu128
+
+# No --extra-index-url here, unlike the CPU-only install: the default wheels are the CUDA
+# ones, which is the entire point of this image. medaka 2.2.2 ships cp312 wheels and declares
+# python >=3.10,<3.14, so the "medaka needs Python <3.11" constraint that kept it out of this
+# template belongs to the medaka 1.x line and has not applied since 2.1.1.
+RUN pip install --no-cache-dir medaka==2.2.2
+
+# Fail the build rather than the run, the same way the cluster image's Dockerfile does. A
+# missing model or a torch that cannot see CUDA is otherwise discovered after the assembly
+# it was supposed to polish has already succeeded.
+RUN set -eux; \
+    medaka --version; \
+    python -c "import torch; print('torch', torch.__version__, 'cuda build:', torch.version.cuda)"; \
+    medaka tools list_models | tr ',' '\n' | grep -q 'r1041_e82_400bps_sup_v4.1.0'
+
+# The reads and the draft are the task's inputs, but the *model* is downloaded on first use by
+# default, which on a GPU node in a private subnet is a run that hangs rather than fails.
+# Baking the one this template's chemistry needs makes the task hermetic; add others here if
+# your reads differ. `medaka tools list_models` prints what this build carries.
+RUN medaka tools download_models --models r1041_e82_400bps_sup_v4.1.0

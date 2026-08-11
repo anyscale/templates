@@ -29,6 +29,7 @@ import os
 import shutil
 import subprocess
 import sys
+from collections import Counter
 from pathlib import Path
 
 #: Mounts that survive cluster termination. Not present on every Anyscale cloud, hence probed
@@ -65,27 +66,71 @@ def local_files(value: Json) -> list[str]:
     return []
 
 
+def _destination_names(sources: list[str]) -> list[str]:
+    """A unique name under the output's directory for each source, in order.
+
+    Two files in one output can share a basename: an ``Array[Array[File]]`` from a scatter
+    is the usual way, and every shard names its file the same thing. Flattening those into
+    one directory has the last copy silently overwrite the rest, and the persisted JSON then
+    points several entries at one file. Colliding names get an index directory; names that
+    are already unique keep the flat path they had, which is the common case and the one
+    people read.
+    """
+    totals = Counter(Path(source).name for source in sources)
+    seen: dict[str, int] = {}
+    names = []
+    for source in sources:
+        base = Path(source).name
+        if totals[base] == 1:
+            names.append(base)
+        else:
+            index = seen.get(base, 0)
+            seen[base] = index + 1
+            names.append(f"{index}/{base}")
+    return names
+
+
 def copy_out(sources: list[str], dest: str, prefix: str) -> list[str]:
-    """Copy ``sources`` under ``dest/prefix/``, returning the new locations."""
+    """Copy ``sources`` under ``dest/prefix/``, returning the new locations, in order."""
     written: list[str] = []
+    names = _destination_names(sources)
     if dest.startswith("s3://"):
         target = f"{dest.rstrip('/')}/{prefix}"
-        for source in sources:
+        for source, name in zip(sources, names):
             # One `cp` per file rather than a recursive sync: the sources are scattered across
             # per-task run directories, not a tree, and naming each one keeps the copy limited
             # to declared outputs.
-            destination = f"{target}/{Path(source).name}"
+            destination = f"{target}/{name}"
             subprocess.run(["aws", "s3", "cp", source, destination], check=True)
             written.append(destination)
         return written
 
     target_dir = Path(dest) / prefix
-    target_dir.mkdir(parents=True, exist_ok=True)
-    for source in sources:
-        local_destination = target_dir / Path(source).name
+    for source, name in zip(sources, names):
+        local_destination = target_dir / name
+        local_destination.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(source, local_destination)
         written.append(str(local_destination))
     return written
+
+
+def rewrite(value: Json, moved: dict[str, str]) -> Json:
+    """``value`` with every copied path replaced, and its shape preserved.
+
+    The old code reassembled the result as ``copied if isinstance(value, list) else copied[0]``,
+    which is right for ``File`` and ``Array[File]`` and wrong for everything else a WDL can
+    declare. A ``Map[String, File]`` copied every file and then recorded only the first, losing
+    the keys and the rest; an ``Array[Array[File]]`` came back flattened, so the persisted JSON
+    no longer had the shape the workflow declared and could not be read by code written against
+    it. Walking the original value fixes both, and needs no knowledge of the declared type.
+    """
+    if isinstance(value, str):
+        return moved.get(value, value)
+    if isinstance(value, dict):
+        return {key: rewrite(item, moved) for key, item in value.items()}
+    if isinstance(value, list):
+        return [rewrite(item, moved) for item in value]
+    return value
 
 
 def persist(outputs_json: Path, dest: str) -> dict[str, Json]:
@@ -111,10 +156,10 @@ def persist(outputs_json: Path, dest: str) -> dict[str, Json]:
         # `ONTAssembleWithFlye.asm_polished` -> `asm_polished`, which is enough to be
         # unambiguous within one workflow and reads better as a directory name.
         prefix = name.split(".")[-1]
-        copied: list[Json] = list(copy_out(sources, dest, prefix))
-        # An `Array[File]` output stays an array and a `File` stays a scalar, so the persisted
-        # JSON has the same shape as the original and can be read by the same code.
-        persisted[name] = copied if isinstance(outputs[name], list) else copied[0]
+        copied = copy_out(sources, dest, prefix)
+        # Same shape as the original, whatever that shape was, so the persisted JSON can be
+        # read by code written against the workflow's declared outputs.
+        persisted[name] = rewrite(outputs[name], dict(zip(sources, copied)))
         total += len(copied)
         print(f"  {name} -> {len(copied)} file(s)")
 
