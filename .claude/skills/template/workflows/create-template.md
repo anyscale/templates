@@ -68,8 +68,8 @@ Hand off to **`/register-template`** (the `console-template-plugin` in anyscale/
 
 ## 10. Optional — surface it as a Ray docs example
 
+IMPORTANT ! Only do this for a template meant to be a Ray docs example — most templates are console-gallery only. If you're not sure, ASK the user to confirm they have the green light from Ray docs team.
+
 Step 9 puts the template in the Anyscale console gallery. It does **not** put it on [docs.ray.io](https://docs.ray.io) — that's a separate registration in `ray-project/ray`. The Ray docs build fetches published template builds from `templates.ci.ray.io` and renders each one's `README.md` under `_collections/`, so a template must be published (step 9) before Ray can pull it. Three Ray-side edits: a `_TEMPLATE_COLLECTIONS` entry (`doc/source/template_collections.py`), a build pin (`doc/source/template_pins.json`), and an `examples.yml` entry for the owning library's gallery.
 
 Procedure: **[Publishing an example](https://docs.ray.io/en/master/ray-contribute/publishing-examples.html)** in the Ray contributor docs. (Linked on `/en/master/` because the page is newer than the current Ray release; it reaches `/en/latest/` with the next one.)
-
-Only do this for a template meant to be a Ray docs example — most templates are console-gallery only. If you're not sure, ask the Ray docs team.
