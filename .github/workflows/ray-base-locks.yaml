@@ -115,8 +115,14 @@ jobs:
         DETAIL: ${{ steps.complete.outputs.detail }}
       run: |
         branch="base-locks/ray-$V"
-        if gh pr list --state open --head "$branch" --json number --jq '.[0].number' | grep -q .; then
-          echo "A base-locks PR is already open for $branch — nothing to do."
+        # Separate "the query failed" from "no PR is open" — conflating them would
+        # delete the branch of a PR that is open, closing it and losing its review.
+        if ! open_pr="$(gh pr list --state open --head "$branch" --json number --jq '.[0].number')"; then
+          echo "::error::gh pr list failed for $branch; not touching it."
+          exit 1
+        fi
+        if [ -n "$open_pr" ]; then
+          echo "A base-locks PR is already open for $branch (#$open_pr) — nothing to do."
           exit 0
         fi
         # No open PR, but the branch can survive a closed one — a plain push would
