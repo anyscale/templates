@@ -26,7 +26,9 @@ UPDATE_DEPS = "./update_deps.sh"
 # Global inputs we can't attribute to specific templates -> a change means check all.
 # (CONFIG isn't here: its diff is analyzed, so a single-template edit can still scope.)
 GLOBAL_FILES = {"update_deps.sh"}
-GLOBAL_PREFIXES = ("dependencies/scripts/", "dependencies/depsets/")
+# dependencies/images/ holds the freezes every template lock is seeded from, so a
+# change there can move any lock — it is as global as the scripts themselves.
+GLOBAL_PREFIXES = ("dependencies/scripts/", "dependencies/depsets/", "dependencies/images/")
 
 # A depset entry's `output:` when it's a template lock; group(1) = the templates/<dir>.
 TEMPLATE_LOCK_RE = re.compile(r"(templates/[^/]+)/python_depset\.lock$")
