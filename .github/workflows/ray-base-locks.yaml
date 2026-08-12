@@ -82,19 +82,37 @@ jobs:
         echo "::error::prepare-base-locks exited ${{ steps.prep.outputs.rc }} (unexpected — likely a transient upstream/network error; the next scheduled run retries)."
         exit 1
 
-    # ray-llm templates seed their locks from these, so the fanout needs the new
-    # version's freeze committed alongside the base locks.
+    # Templates seed their locks from these, so the fanout needs the new version's
+    # freezes committed alongside the base locks.
     - name: Refresh image freezes
       if: steps.prep.outputs.rc == '10'
       env:
         V: ${{ steps.prep.outputs.version }}
       run: bash dependencies/scripts/refresh-image-freezes.sh "$V"
 
+    # Same gate the fanout uses, so the PR states up front whether pushing
+    # ray-fanout-<v> would actually be accepted.
+    - name: Check the version is complete
+      id: complete
+      if: steps.prep.outputs.rc == '10'
+      env:
+        V: ${{ steps.prep.outputs.version }}
+      run: |
+        if err="$(uv run python3 scripts/ray-bump/latest-depset-version.py --require "$V" 2>&1 >/dev/null)"; then
+          echo "ready=true" >> "$GITHUB_OUTPUT"
+        else
+          echo "ready=false" >> "$GITHUB_OUTPUT"
+          echo "detail=$err" >> "$GITHUB_OUTPUT"
+          echo "::warning::$err"
+        fi
+
     - name: Open the base-locks PR
       if: steps.prep.outputs.rc == '10'
       env:
         GH_TOKEN: ${{ secrets.ANYSCALE_GH_TOKEN || github.token }}
         V: ${{ steps.prep.outputs.version }}
+        READY: ${{ steps.complete.outputs.ready }}
+        DETAIL: ${{ steps.complete.outputs.detail }}
       run: |
         branch="base-locks/ray-$V"
         if gh pr list --state open --head "$branch" --json number --jq '.[0].number' | grep -q .; then
@@ -107,11 +125,21 @@ jobs:
         git add dependencies/
         git commit -s \
           -m "chore(deps): base locks for Ray $V" \
-          -m "Recompiled the ray_$V/rayllm_$V base locks and refreshed the tracked image freezes so ray-bump-fanout can fire for $V."
+          -m "Recompiled the ray_$V base locks and refreshed the tracked image freezes so ray-bump-fanout can fire for $V."
         git push -u origin "$branch"
+
+        if [ "$READY" = "true" ]; then
+          status="Every tracked image has a freeze — pushing \`ray-fanout-$V\` will be accepted."
+        else
+          status="⚠️ **Not ready to fan out.** $DETAIL
+        Merging is still fine (the base locks are correct); the fanout stays blocked until the missing images publish and the next scheduled run commits their freezes."
+        fi
+
         gh pr create --base main --head "$branch" \
           --title "[base-locks] Ray $V" \
-          --body "Automated base-lock recompile for Ray \`$V\` (the \`ray-base-locks\` workflow), so \`ray-bump-fanout\` can fire for it. Adds the \`$V\` \`build_arg_sets\` and the recompiled \`dependencies/depsets/ray_$V*\` / \`rayllm_$V*\` locks (matrix copied forward from the previous version; templates are untouched — each moves in its own fanout PR).
+          --body "Automated base-lock recompile for Ray \`$V\` (the \`ray-base-locks\` workflow), so \`ray-bump-fanout\` can fire for it. Adds the \`$V\` \`build_arg_sets\`, the recompiled \`dependencies/depsets/ray_$V*\` locks, and a freeze per tracked image (matrix copied forward from the previous version; templates are untouched — each moves in its own fanout PR).
 
-        **Review + merge = the approval gate.** Then push \`ray-fanout-$V\` to start the fanout (ensure \`anyscale/ray:$V\` is also published first, or the per-template agents will stop at their image bump)."
+        $status
+
+        **Review + merge = the approval gate.** Then push \`ray-fanout-$V\` to start the fanout."
         gh pr edit "$branch" --add-label ray-update || true
