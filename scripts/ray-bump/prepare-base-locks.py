@@ -43,6 +43,8 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
+from depset_versions import complete_versions, lock_versions, newest_complete
+
 def _repo_root() -> Path:
     """Nearest ancestor dir containing BUILD.yaml (robust to where this script lives)."""
     for p in Path(__file__).resolve().parents:
@@ -103,33 +105,7 @@ def newest_stable_ray() -> str:
 
 
 def _lock_versions(*patterns: str) -> set[str]:
-    rxs = [re.compile(p) for p in patterns]
-    out: set[str] = set()
-    for f in DEPSETS.glob("*.lock"):
-        for rx in rxs:
-            if m := rx.match(f.name):
-                out.add(m.group(1))
-    return out
-
-
-def _freeze_versions() -> set[str]:
-    rx = re.compile(r"[a-z-]+-(\d+\.\d+\.\d+)-py\d+.*\.freeze\.txt$")
-    return {m.group(1) for f in IMAGES.glob("*.freeze.txt") if (m := rx.match(f.name))}
-
-
-def complete_versions() -> set[str]:
-    """Versions with BOTH a ray_<v>_img_* base lock and an image freeze — the
-    freeze only exists once Anyscale published the image, which is what the
-    per-template agents need.
-
-    Keep the definition in sync with scripts/ray-bump/latest-depset-version.py (same contract).
-    """
-    return _lock_versions(r"ray_(\d+\.\d+\.\d+)_img_") & _freeze_versions()
-
-
-def newest_complete() -> str | None:
-    c = complete_versions()
-    return max(c, key=_ver) if c else None
+    return lock_versions(*patterns)
 
 
 def is_minor_upgrade(target: str, current: str | None) -> bool:
