@@ -2,9 +2,9 @@
 """Resolve the target Ray version for a fanout from dependencies/depsets/.
 
 The base locks there register the blessed image variants per Ray version:
-  ray_<v>_img_py<PY>.lock         (base image)
-  rayllm_<v>_py<PY>_cu<CU>.lock   (LLM image)
-A version is "complete" once both families are present. With no args this prints
+  ray_<v>_img_py<PY>.lock                        (base image lock)
+  dependencies/images/<image>-<v>-*.freeze.txt    (published image freeze)
+A version is "complete" once both are present. With no args this prints
 the newest complete version; with --require <v> it validates that <v> is complete
 (and echoes it). Exits non-zero with a message on stderr when there's nothing to
 resolve — so the caller can fail closed.
@@ -26,6 +26,7 @@ def _repo_root() -> Path:
 
 
 DEPSETS = _repo_root() / "dependencies" / "depsets"
+IMAGES = _repo_root() / "dependencies" / "images"
 
 
 def _versions(*patterns: str) -> set[str]:
@@ -39,11 +40,10 @@ def _versions(*patterns: str) -> set[str]:
 
 
 def complete_versions() -> set[str]:
-    """Versions present as BOTH a ray_<v>_img_* and a rayllm_<v>_* base lock
-    (the old ray_<v>_llm_* naming is also accepted for the LLM family)."""
-    img = _versions(r"ray_(\d+\.\d+\.\d+)_img_")
-    llm = _versions(r"rayllm_(\d+\.\d+\.\d+)_", r"ray_(\d+\.\d+\.\d+)_llm_")
-    return img & llm
+    """Versions with BOTH a ray_<v>_img_* base lock and a published image freeze."""
+    rx = re.compile(r"[a-z-]+-(\d+\.\d+\.\d+)-py\d+.*\.freeze\.txt$")
+    freezes = {m.group(1) for f in IMAGES.glob("*.freeze.txt") if (m := rx.match(f.name))}
+    return _versions(r"ray_(\d+\.\d+\.\d+)_img_") & freezes
 
 
 def _key(v: str) -> tuple[int, ...]:
@@ -64,8 +64,8 @@ def main(argv: list[str] | None = None) -> int:
     if args.require:
         if args.require not in complete:
             print(
-                f"error: no complete base-lock set (ray_{args.require}_img_* AND "
-                f"rayllm_{args.require}_*) in dependencies/depsets/",
+                f"error: no complete base-lock set (ray_{args.require}_img_* lock AND "
+                f"a dependencies/images/*-{args.require}-*.freeze.txt) present",
                 file=sys.stderr,
             )
             return 1
