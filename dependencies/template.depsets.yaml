@@ -690,7 +690,8 @@ depsets:
 
   - name: ecommerce_end_to_end_depset_${RAY_VERSION}_${PYTHON_VERSION}
     operation: expand
-    source_depset: ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
+    depsets:
+      - ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
     requirements:
       - templates/ecommerce_end_to_end/requirements.txt
     output: templates/ecommerce_end_to_end/python_depset.lock
