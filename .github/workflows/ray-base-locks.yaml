@@ -82,6 +82,14 @@ jobs:
         echo "::error::prepare-base-locks exited ${{ steps.prep.outputs.rc }} (unexpected — likely a transient upstream/network error; the next scheduled run retries)."
         exit 1
 
+    # ray-llm templates seed their locks from these, so the fanout needs the new
+    # version's freeze committed alongside the base locks.
+    - name: Refresh image freezes
+      if: steps.prep.outputs.rc == '10'
+      env:
+        V: ${{ steps.prep.outputs.version }}
+      run: bash dependencies/scripts/refresh-image-freezes.sh "$V"
+
     - name: Open the base-locks PR
       if: steps.prep.outputs.rc == '10'
       env:
@@ -99,7 +107,7 @@ jobs:
         git add dependencies/
         git commit -s \
           -m "chore(deps): base locks for Ray $V" \
-          -m "Recompiled the ray_$V/rayllm_$V base locks so ray-bump-fanout can fire for $V."
+          -m "Recompiled the ray_$V/rayllm_$V base locks and refreshed the tracked image freezes so ray-bump-fanout can fire for $V."
         git push -u origin "$branch"
         gh pr create --base main --head "$branch" \
           --title "[base-locks] Ray $V" \
