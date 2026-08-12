@@ -102,10 +102,18 @@ seeded version holds unless a requirement forces otherwise, so a template that g
 just pins it in `requirements.txt` and wins. That is the intended way to diverge from the image, and the
 divergence stays visible in the lock.
 
-**One class still floats:** a package the image *does* ship whose image version a requirement rejects (e.g.
-`uvicorn`, shipped at `0.22.0`, forced past it by `mcp`). The freeze wins the seed, so no previous-lock pin is
-carried; the freeze's version is then rejected, leaving no preference at all, and it resolves to newest. Pin
-those in `requirements.txt` if the exact version matters — `lock-vs-image.sh` lists every candidate.
+Two limits, both confirmed by testing:
+
+- **A rejected image version floats.** For a package the image *does* ship whose version a requirement rejects
+  (`uvicorn` at `0.22.0`, forced past it by `mcp`), the freeze wins the seed so no previous-lock pin is carried
+  — then the freeze's version is rejected, leaving no preference at all, and it resolves to newest. Pin it in
+  `requirements.txt` when the version matters; `lock-vs-image.sh` lists every candidate.
+- **Packages outside the freeze never re-resolve.** Carry-over is what stops daily drift, but it also means a
+  package the image doesn't ship keeps its locked version until someone edits `requirements.txt` — a regen
+  alone will never pick up an upstream security fix. Bump those deliberately.
+
+Removing a dep from `requirements.txt` *does* drop it from the lock: `uv` recomputes the package set from the
+requirement graph every time, and a stale preference can't hold in something nothing depends on.
 
 **A template on an image not listed in `tracked-images.txt` never gets a freeze refreshed for it.** Add the
 image there when you introduce it; `seed-image-freeze.sh` exits non-zero on a missing freeze, so the gap
