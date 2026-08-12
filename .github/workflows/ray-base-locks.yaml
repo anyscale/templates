@@ -119,6 +119,10 @@ jobs:
           echo "A base-locks PR is already open for $branch — nothing to do."
           exit 0
         fi
+        # No open PR, but the branch can survive a closed one — a plain push would
+        # then be rejected as non-fast-forward and the run would fail every day.
+        git push origin --delete "$branch" 2>/dev/null \
+          && echo "Removed the abandoned $branch (its PR was closed)." || true
         git config user.name  "github-actions[bot]"
         git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
         git switch -c "$branch"
