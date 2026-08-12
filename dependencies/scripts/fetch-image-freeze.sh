@@ -11,17 +11,26 @@ IMAGE="${1:?Usage: fetch-image-freeze.sh <image-name> <dest-file>}"
 DEST="${2:?Usage: fetch-image-freeze.sh <image-name> <dest-file>}"
 BASE="https://docs.anyscale.com/base-images"
 
-# .get on both keys: the index lists thousands of unrelated images, and one
-# malformed entry must not break the lookup for every image we track.
-FILENAME=$(curl -fsSL "$BASE/index.json" | IMAGE="$IMAGE" python3 -c '
+# The index lists CPU images with an explicit -cpu suffix; BUILD.yaml references
+# the bare alias (anyscale/ray:<v>-py311), so fall back to it.
+read -r FILENAME RESOLVED < <(curl -fsSL "$BASE/index.json" | IMAGE="$IMAGE" python3 -c '
 import json, os, sys
 image = os.environ["IMAGE"]
-print(next((e.get("filename") or "" for e in json.load(sys.stdin) if e.get("imageName") == image), ""))')
+# .get on both keys: the index lists thousands of unrelated images, and one
+# malformed entry must not break the lookup for every image we track.
+index = {e.get("imageName"): e.get("filename") for e in json.load(sys.stdin)}
+for name in (image, f"{image}-cpu"):
+    if index.get(name):
+        print(index[name], name)
+        break
+else:
+    print("", "")')
 
 if [ -z "$FILENAME" ]; then
   echo "Image not found in $BASE/index.json: $IMAGE" >&2
   exit 1
 fi
+[ "$RESOLVED" = "$IMAGE" ] || echo "note: $IMAGE resolved via $RESOLVED"
 
 mkdir -p "$(dirname "$DEST")"
 {
