@@ -26,11 +26,18 @@ import os, re, pathlib
 
 freeze = pathlib.Path(os.environ["FREEZE"])
 output = pathlib.Path(os.environ["OUTPUT"])
-pin = re.compile(r"^([A-Za-z0-9][A-Za-z0-9._-]*)==")
+# `[extras]` are tolerated so a stanza is never mistaken for an unnamed line and
+# silently dropped; `@` catches the direct-URL form pip freeze uses for VCS installs.
+pin = re.compile(r"^([A-Za-z0-9][A-Za-z0-9._-]*)(?:\[[^\]]*\])?\s*(?:==|@)")
 norm = lambda n: re.sub(r"[-_.]+", "-", n).lower()
 
 lines = freeze.read_text().splitlines()
 have = {norm(m.group(1)) for l in lines if (m := pin.match(l))}
+if len(have) < 50:
+    raise SystemExit(
+        f"{freeze} lists {len(have)} packages; a real image has hundreds. "
+        "Refusing to seed from a truncated or corrupt freeze."
+    )
 
 carried = 0
 if output.exists():
@@ -38,7 +45,9 @@ if output.exists():
     # package the freeze doesn't already cover
     keep = False
     for line in output.read_text().splitlines():
-        if line[:1] not in (" ", "\t"):
+        # a blank line continues the stanza: treating it as a new header would cut
+        # the remaining --hash lines and leave a dangling continuation backslash
+        if line.strip() and line[:1] not in (" ", "\t"):
             m = pin.match(line)
             keep = bool(m) and norm(m.group(1)) not in have
             carried += keep
