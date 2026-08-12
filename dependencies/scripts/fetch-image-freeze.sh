@@ -11,10 +11,12 @@ IMAGE="${1:?Usage: fetch-image-freeze.sh <image-name> <dest-file>}"
 DEST="${2:?Usage: fetch-image-freeze.sh <image-name> <dest-file>}"
 BASE="https://docs.anyscale.com/base-images"
 
+# .get on both keys: the index lists thousands of unrelated images, and one
+# malformed entry must not break the lookup for every image we track.
 FILENAME=$(curl -fsSL "$BASE/index.json" | IMAGE="$IMAGE" python3 -c '
 import json, os, sys
 image = os.environ["IMAGE"]
-print(next((e["filename"] for e in json.load(sys.stdin) if e.get("imageName") == image), ""))')
+print(next((e.get("filename") or "" for e in json.load(sys.stdin) if e.get("imageName") == image), ""))')
 
 if [ -z "$FILENAME" ]; then
   echo "Image not found in $BASE/index.json: $IMAGE" >&2
