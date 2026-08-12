@@ -41,8 +41,10 @@ def _versions(*patterns: str) -> set[str]:
 
 def complete_versions() -> set[str]:
     """Versions with BOTH a ray_<v>_img_* base lock and a published image freeze."""
-    rx = re.compile(r"[a-z-]+-(\d+\.\d+\.\d+)-py\d+.*\.freeze\.txt$")
-    freezes = {m.group(1) for f in IMAGES.glob("*.freeze.txt") if (m := rx.match(f.name))}
+    # the version is the only dash-delimited dotted-triple; anchoring on what
+    # follows it would miss variants (slim-, future tag families)
+    rx = re.compile(r"-(\d+\.\d+\.\d+)-")
+    freezes = {m.group(1) for f in IMAGES.glob("*.freeze.txt") if (m := rx.search(f.name))}
     return _versions(r"ray_(\d+\.\d+\.\d+)_img_") & freezes
 
 
