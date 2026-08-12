@@ -450,9 +450,22 @@ depsets:
     build_arg_sets:
       - ray2560_py312_cu128
 
+  - name: ray_pyarrow_relaxed_depset_${RAY_VERSION}_${PYTHON_VERSION}
+    operation: relax
+    source_depset: ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
+    packages:
+      # xgboost-training-and-serving (mlflow==2.19.0 needs pyarrow<19) and
+      # ray_train_workloads (pins pyarrow==14.0.2) both deliberately ship a
+      # pyarrow below the base image's 19.0.1; let their own pins win
+      - pyarrow
+    output: dependencies/depsets/ray_${RAY_VERSION}_img_py${PYTHON_SHORT}_pyarrow_relaxed.lock
+    build_arg_sets:
+      - ray2560_py312_cu128
+
   - name: xgboost_training_and_serving_depset_${RAY_VERSION}_${PYTHON_VERSION}
     operation: expand
-    source_depset: ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
+    depsets:
+      - ray_pyarrow_relaxed_depset_${RAY_VERSION}_${PYTHON_VERSION}
     requirements:
       - templates/xgboost-training-and-serving/requirements.txt
     output: templates/xgboost-training-and-serving/python_depset.lock
@@ -465,7 +478,8 @@ depsets:
 
   - name: ray_train_workloads_depset_${RAY_VERSION}_${PYTHON_VERSION}
     operation: expand
-    source_depset: ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
+    depsets:
+      - ray_pyarrow_relaxed_depset_${RAY_VERSION}_${PYTHON_VERSION}
     requirements:
       - templates/ray_train_workloads/requirements.txt
     output: templates/ray_train_workloads/python_depset.lock
@@ -479,7 +493,8 @@ depsets:
 
   - name: ray_tune_train_integration_depset_${RAY_VERSION}_${PYTHON_VERSION}
     operation: expand
-    source_depset: ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
+    depsets:
+      - ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
     requirements:
       - templates/ray-tune-train-integration/requirements.txt
     output: templates/ray-tune-train-integration/python_depset.lock
