@@ -565,7 +565,8 @@ depsets:
 
   - name: asynchronous_inference_depset_${RAY_VERSION}_${PYTHON_VERSION}
     operation: expand
-    source_depset: ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
+    depsets:
+      - ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
     requirements:
       - templates/asynchronous_inference/requirements.txt
     output: templates/asynchronous_inference/python_depset.lock
@@ -576,9 +577,21 @@ depsets:
     build_arg_sets:
       - ray2560_py312_cu128
 
+  - name: ray_uvicorn_relaxed_depset_${RAY_VERSION}_${PYTHON_VERSION}
+    operation: relax
+    source_depset: ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
+    packages:
+      # mcp-ray-serve's mcp==1.11.0 needs uvicorn>=0.23.1, newer than the base
+      # image pin (0.22.0); its previous standalone lock shipped 0.48.0
+      - uvicorn
+    output: dependencies/depsets/ray_${RAY_VERSION}_img_py${PYTHON_SHORT}_uvicorn_relaxed.lock
+    build_arg_sets:
+      - ray2560_py312_cu128
+
   - name: mcp_ray_serve_depset_${RAY_VERSION}_${PYTHON_VERSION}
     operation: expand
-    source_depset: ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
+    depsets:
+      - ray_uvicorn_relaxed_depset_${RAY_VERSION}_${PYTHON_VERSION}
     requirements:
       - templates/mcp-ray-serve/requirements.txt
     output: templates/mcp-ray-serve/python_depset.lock
@@ -591,7 +604,8 @@ depsets:
 
   - name: stable_diffusion_pretraining_depset_${RAY_VERSION}_${PYTHON_VERSION}
     operation: expand
-    source_depset: ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
+    depsets:
+      - ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
     requirements:
       - templates/stable-diffusion-pretraining/requirements.txt
     output: templates/stable-diffusion-pretraining/python_depset.lock
