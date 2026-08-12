@@ -306,7 +306,8 @@ depsets:
 
   - name: finetune_stable_diffusion_depset_${RAY_VERSION}_${PYTHON_VERSION}
     operation: expand
-    source_depset: ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
+    depsets:
+      - ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
     requirements:
       - templates/finetune-stable-diffusion/requirements.txt
     output: templates/finetune-stable-diffusion/python_depset.lock
@@ -320,7 +321,8 @@ depsets:
 
   - name: vhol_ray_data_depset_${RAY_VERSION}_${PYTHON_VERSION}
     operation: expand
-    source_depset: ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
+    depsets:
+      - ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
     requirements:
       - templates/vhol-ray-data/requirements.txt
     output: templates/vhol-ray-data/python_depset.lock
@@ -332,9 +334,21 @@ depsets:
     build_arg_sets:
       - ray2560_py311_cu128
 
+  - name: ray_pandas_relaxed_depset_${RAY_VERSION}_${PYTHON_VERSION}
+    operation: relax
+    source_depset: ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
+    packages:
+      # deepspeed_finetune deliberately ships pandas==1.5.3 (vs the base's 2.3.3);
+      # let the template's own pin win
+      - pandas
+    output: dependencies/depsets/ray_${RAY_VERSION}_img_py${PYTHON_SHORT}_pandas_relaxed.lock
+    build_arg_sets:
+      - ray2560_py311_cu128
+
   - name: deepspeed_finetune_depset_${RAY_VERSION}_${PYTHON_VERSION}
     operation: expand
-    source_depset: ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
+    depsets:
+      - ray_pandas_relaxed_depset_${RAY_VERSION}_${PYTHON_VERSION}
     requirements:
       - templates/deepspeed_finetune/requirements.txt
     output: templates/deepspeed_finetune/python_depset.lock
