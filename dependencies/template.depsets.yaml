@@ -362,7 +362,8 @@ depsets:
 
   - name: distributing_pytorch_depset_${RAY_VERSION}_${PYTHON_VERSION}
     operation: expand
-    source_depset: ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
+    depsets:
+      - ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
     requirements:
       - templates/distributing-pytorch/requirements.txt
     output: templates/distributing-pytorch/python_depset.lock
@@ -376,7 +377,8 @@ depsets:
 
   - name: pytorch_fsdp_depset_${RAY_VERSION}_${PYTHON_VERSION}
     operation: expand
-    source_depset: ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
+    depsets:
+      - ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
     requirements:
       - templates/pytorch-fsdp/requirements.txt
     output: templates/pytorch-fsdp/python_depset.lock
@@ -390,7 +392,8 @@ depsets:
 
   - name: pytorch_profiling_depset_${RAY_VERSION}_${PYTHON_VERSION}
     operation: expand
-    source_depset: ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
+    depsets:
+      - ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
     requirements:
       - templates/pytorch-profiling/requirements.txt
     output: templates/pytorch-profiling/python_depset.lock
