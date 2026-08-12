@@ -645,6 +645,7 @@ triton==3.4.0 ; platform_machine == 'x86_64' and sys_platform == 'linux' \
     --hash=sha256:e2b0afe420d202d96f50b847d744a487b780567975455e56f64b061152ee9554
     # via torch
 typing-extensions==4.15.0 \
+    --hash=sha256:0cea48d173cc12fa28ecabc3b837ea3cf6f38c6d1136f85cbaaf598984861466 \
     --hash=sha256:f0fa19c6845758ab08074a0cfa8b7aecb71c999ca73d62883bc25cc018c4e548
     # via torch
 tzdata==2025.2 \
