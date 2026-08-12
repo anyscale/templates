@@ -1,3 +1,7 @@
+# ray-llm templates seed their lock from a freeze of the image
+# (dependencies/scripts/seed-image-freeze.sh): the image is built with --no-deps,
+# so no resolvable lock describes it.
+
 build_arg_sets:
   ray2551_py311_cu128:
     RAY_VERSION: "2.55.1"
@@ -75,9 +79,6 @@ depsets:
     build_arg_sets:
       - ray2560_py312_cu128
 
-  # The ray-llm image is assembled with `pip install --no-deps`, so no resolvable
-  # lock describes it. Seed from a freeze of the image instead; uv reads the -o
-  # file as preferences, so image versions hold unless a requirement forces a move.
   - name: langchain_agent_ray_serve_depset_${RAY_VERSION}_${PYTHON_VERSION}
     operation: compile
     requirements:
@@ -91,7 +92,7 @@ depsets:
     build_arg_sets:
       - ray2560_py312_cu130
     pre_hooks:
-      - dependencies/scripts/seed-image-freeze.sh dependencies/images/ray-llm-2.56.0-py312-cu130.freeze.txt templates/langchain-agent-ray-serve/python_depset.lock
+      - dependencies/scripts/seed-image-freeze.sh dependencies/images/ray-llm-${RAY_VERSION}-py${PYTHON_SHORT}-${CUDA_VARIANT}.freeze.txt templates/langchain-agent-ray-serve/python_depset.lock
 
   - name: fintech_fraud_risk_depset_${RAY_VERSION}_${PYTHON_VERSION}
     operation: expand
@@ -151,9 +152,6 @@ depsets:
     build_arg_sets:
       - ray2560_py311_cu128
 
-  # The ray-llm image is assembled with `pip install --no-deps`, so no resolvable
-  # lock describes it. Seed from a freeze of the image instead; uv reads the -o
-  # file as preferences, so image versions hold unless a requirement forces a move.
   - name: audio_dataset_curation_llm_judge_depset_${RAY_VERSION}_${PYTHON_VERSION}_${CUDA_VARIANT}
     operation: compile
     requirements:
@@ -167,11 +165,8 @@ depsets:
     build_arg_sets:
       - ray2560_py312_cu130
     pre_hooks:
-      - dependencies/scripts/seed-image-freeze.sh dependencies/images/ray-llm-2.56.0-py312-cu130.freeze.txt templates/audio-dataset-curation-llm-judge/python_depset.lock
+      - dependencies/scripts/seed-image-freeze.sh dependencies/images/ray-llm-${RAY_VERSION}-py${PYTHON_SHORT}-${CUDA_VARIANT}.freeze.txt templates/audio-dataset-curation-llm-judge/python_depset.lock
 
-  # The ray-llm image is assembled with `pip install --no-deps`, so no resolvable
-  # lock describes it. Seed from a freeze of the image instead; uv reads the -o
-  # file as preferences, so image versions hold unless a requirement forces a move.
   - name: multi_agent_a2a_depset_${RAY_VERSION}_${PYTHON_VERSION}_${CUDA_VARIANT}
     operation: compile
     requirements:
@@ -185,11 +180,8 @@ depsets:
     build_arg_sets:
       - ray2560_py312_cu130
     pre_hooks:
-      - dependencies/scripts/seed-image-freeze.sh dependencies/images/ray-llm-2.56.0-py312-cu130.freeze.txt templates/multi_agent_a2a/python_depset.lock
+      - dependencies/scripts/seed-image-freeze.sh dependencies/images/ray-llm-${RAY_VERSION}-py${PYTHON_SHORT}-${CUDA_VARIANT}.freeze.txt templates/multi_agent_a2a/python_depset.lock
 
-  # The ray-llm image is assembled with `pip install --no-deps`, so no resolvable
-  # lock describes it. Seed from a freeze of the image instead; uv reads the -o
-  # file as preferences, so image versions hold unless a requirement forces a move.
   - name: llm_batch_inference_vision_depset_${RAY_VERSION}_${PYTHON_VERSION}_${CUDA_VARIANT}
     operation: compile
     requirements:
@@ -245,11 +237,8 @@ depsets:
 #    build_arg_sets:
 #      - ray2551_py311_cu128
     pre_hooks:
-      - dependencies/scripts/seed-image-freeze.sh dependencies/images/ray-llm-2.56.0-py312-cu130.freeze.txt templates/llm_batch_inference_vision/python_depset.lock
+      - dependencies/scripts/seed-image-freeze.sh dependencies/images/ray-llm-${RAY_VERSION}-py${PYTHON_SHORT}-${CUDA_VARIANT}.freeze.txt templates/llm_batch_inference_vision/python_depset.lock
 
-  # The ray-llm image is assembled with `pip install --no-deps`, so no resolvable
-  # lock describes it. Seed from a freeze of the image instead; uv reads the -o
-  # file as preferences, so image versions hold unless a requirement forces a move.
   - name: llm_finetuning_depset_${RAY_VERSION}_${PYTHON_VERSION}_${CUDA_VARIANT}
     operation: compile
     requirements:
@@ -263,7 +252,7 @@ depsets:
     build_arg_sets:
       - ray2560_py312_cu130
     pre_hooks:
-      - dependencies/scripts/seed-image-freeze.sh dependencies/images/ray-llm-2.56.0-py312-cu130.freeze.txt templates/llm_finetuning/python_depset.lock
+      - dependencies/scripts/seed-image-freeze.sh dependencies/images/ray-llm-${RAY_VERSION}-py${PYTHON_SHORT}-${CUDA_VARIANT}.freeze.txt templates/llm_finetuning/python_depset.lock
 
   - name: creatives_diffusion_finetuning_depset_${RAY_VERSION}_${PYTHON_VERSION}
     operation: expand

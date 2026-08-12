@@ -1,5 +1,5 @@
 # pip freeze of anyscale/ray-llm:2.56.0-py312-cu130
-# Fetched from https://docs.anyscale.com/base-images/ray_2.56.0_py312_cu130.json — regenerate with dependencies/scripts/fetch-image-freeze.sh
+# Regenerate with dependencies/scripts/fetch-image-freeze.sh
 absl-py==2.4.0
 adlfs==2023.8.0
 aiohappyeyeballs==2.6.1

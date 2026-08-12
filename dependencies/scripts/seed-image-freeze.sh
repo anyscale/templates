@@ -1,16 +1,10 @@
 #!/usr/bin/env bash
-# Seed a template's lock with the base image's package list before compiling.
+# Seed a lock with the base image's package list before compiling.
 #
-# uv treats an existing -o file as resolution *preferences*: a package listed there
-# keeps its version unless a requirement forces otherwise. Seeding with a freeze of
-# the image therefore reproduces what a user gets from `pip install` in a workspace
-# on that image — image versions stay put, and only what the template genuinely
-# needs moves. That is why these templates don't need image versions hand-copied
-# into requirements.txt.
-#
-# Seeding from the image (rather than from the previously committed lock) is what
-# makes it deterministic: the result is a function of freeze + requirements.txt,
-# not of whatever happened to be committed last.
+# uv reads the -o file as resolution preferences, so a package listed there keeps
+# its version unless a requirement forces otherwise — the same result as
+# `pip install` in a workspace on that image. Seeding from the freeze rather than
+# the committed lock makes it a function of freeze + requirements.txt only.
 #
 # Usage: seed-image-freeze.sh <freeze-file> <lock-output-path>
 set -euo pipefail
