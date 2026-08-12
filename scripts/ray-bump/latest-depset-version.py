@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """Resolve the target Ray version for a fanout from dependencies/depsets/.
 
-The base locks there register the blessed image variants per Ray version:
-  ray_<v>_img_py<PY>.lock                        (base image lock)
-  dependencies/images/<image>-<v>-*.freeze.txt    (published image freeze)
-A version is "complete" once both are present. With no args this prints
+A version is "complete" once it has both:
+  dependencies/depsets/ray_<v>_img_py<PY>.lock   (base image lock)
+  a freeze for EVERY image in dependencies/images/tracked-images.txt
+With no args this prints
 the newest complete version; with --require <v> it validates that <v> is complete
 (and echoes it). Exits non-zero with a message on stderr when there's nothing to
 resolve — so the caller can fail closed.
@@ -39,13 +39,28 @@ def _versions(*patterns: str) -> set[str]:
     return out
 
 
+def _expected_freezes(version: str) -> list[Path]:
+    """Where refresh-image-freezes.sh writes a freeze for each tracked image."""
+    out = []
+    for line in (IMAGES / "tracked-images.txt").read_text().splitlines():
+        if (line := line.strip()) and not line.startswith("#"):
+            image = line.replace("{version}", version)
+            out.append(IMAGES / f"{image.removeprefix('anyscale/').replace(':', '-')}.freeze.txt")
+    return out
+
+
 def complete_versions() -> set[str]:
-    """Versions with BOTH a ray_<v>_img_* base lock and a published image freeze."""
-    # the version is the only dash-delimited dotted-triple; anchoring on what
-    # follows it would miss variants (slim-, future tag families)
-    rx = re.compile(r"-(\d+\.\d+\.\d+)-")
-    freezes = {m.group(1) for f in IMAGES.glob("*.freeze.txt") if (m := rx.search(f.name))}
-    return _versions(r"ray_(\d+\.\d+\.\d+)_img_") & freezes
+    """Versions with a ray_<v>_img_* base lock and a freeze for EVERY tracked image.
+
+    Requiring all of them is what makes the fanout fail closed: images publish over
+    hours, and one present freeze is no evidence the rest landed. A template whose
+    image is still missing would fail at its seed pre_hook mid-fanout.
+    """
+    return {
+        v
+        for v in _versions(r"ray_(\d+\.\d+\.\d+)_img_")
+        if all(f.exists() for f in _expected_freezes(v))
+    }
 
 
 def _key(v: str) -> tuple[int, ...]:
@@ -66,8 +81,15 @@ def main(argv: list[str] | None = None) -> int:
     if args.require:
         if args.require not in complete:
             print(
-                f"error: no complete base-lock set (ray_{args.require}_img_* lock AND "
-                f"a dependencies/images/*-{args.require}-*.freeze.txt) present",
+                f"error: Ray {args.require} is not complete — needs a "
+                f"ray_{args.require}_img_* base lock and a freeze for every tracked "
+                f"image. Missing: "
+                + (
+                    ", ".join(
+                        f.name for f in _expected_freezes(args.require) if not f.exists()
+                    )
+                    or "(none — the base lock is what's absent)"
+                ),
                 file=sys.stderr,
             )
             return 1
