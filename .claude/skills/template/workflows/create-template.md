@@ -65,3 +65,11 @@ Commit on a branch and open a PR against `main`. Run `/test-template`, get it gr
 ## 9. Publish + register via the product gallery
 
 Hand off to **`/register-template`** (the `console-template-plugin` in anyscale/product). For a **new** template it owns the whole publish: the `workspace-templates.yaml` gallery entry **and** the `tmpl-publish` run (dev → dev-console test → staging → prod), interleaved in that order — the dev-console test needs both the artifact and the gallery entry to exist. **Don't run `tmpl-publish` yourself** here, and do no other product-repo work.
+
+## 10. Optional — surface it as a Ray docs example
+
+IMPORTANT ! Only do this for a template meant to be a Ray docs example — most templates are console-gallery only. If you're not sure, ASK the user to confirm they have the green light from Ray docs team.
+
+Step 9 puts the template in the Anyscale console gallery. It does **not** put it on [docs.ray.io](https://docs.ray.io) — that's a separate registration in `ray-project/ray`. The Ray docs build fetches published template builds from `templates.ci.ray.io` and renders each one's `README.md` under `_collections/`, so a template must be published (step 9) before Ray can pull it. Three Ray-side edits: a `_TEMPLATE_COLLECTIONS` entry (`doc/source/template_collections.py`), a build pin (`doc/source/template_pins.json`), and an `examples.yml` entry for the owning library's gallery.
+
+Procedure: **[Publishing an example](https://docs.ray.io/en/master/ray-contribute/publishing-examples.html)** in the Ray contributor docs. (Linked on `/en/master/` because the page is newer than the current Ray release; it reaches `/en/latest/` with the next one.)
