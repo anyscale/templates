@@ -1,0 +1,3 @@
+# Images to keep a freeze of, one per line, with the Ray version as {version}.
+# refresh-image-freezes.sh expands it and writes dependencies/images/<image>.freeze.txt.
+anyscale/ray-llm:{version}-py312-cu130
