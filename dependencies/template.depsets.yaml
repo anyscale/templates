@@ -407,7 +407,8 @@ depsets:
 #
   - name: image_search_and_classification_depset_${RAY_VERSION}_${PYTHON_VERSION}
     operation: expand
-    source_depset: ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
+    depsets:
+      - ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
     requirements:
       - templates/image-search-and-classification/requirements.txt
     output: templates/image-search-and-classification/python_depset.lock
@@ -421,7 +422,8 @@ depsets:
 
   - name: tensor_parallel_dtensor_depset_${RAY_VERSION}_${PYTHON_VERSION}
     operation: expand
-    source_depset: ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
+    depsets:
+      - ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
     requirements:
       - templates/tensor_parallel_dtensor/requirements.txt
     output: templates/tensor_parallel_dtensor/python_depset.lock
@@ -435,7 +437,8 @@ depsets:
 
   - name: ray_data_batch_image_classification_depset_${RAY_VERSION}_${PYTHON_VERSION}
     operation: expand
-    source_depset: ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
+    depsets:
+      - ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
     requirements:
       - templates/ray-data-batch-image-classification/requirements.txt
     output: templates/ray-data-batch-image-classification/python_depset.lock
