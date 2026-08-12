@@ -506,9 +506,23 @@ depsets:
     build_arg_sets:
       - ray2560_py312_cu128
 
+  - name: ray_fintech_quant_relaxed_depset_${RAY_VERSION}_${PYTHON_VERSION}
+    operation: relax
+    source_depset: ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
+    packages:
+      # fintech_quant's yfinance==1.2.2 needs websockets>=13 (base pins 11.0.3)
+      # and, via curl-cffi>=0.15, cffi>=2.0.0 (base pins 1.17.1); its previous
+      # standalone lock already shipped the newer versions
+      - websockets
+      - cffi
+    output: dependencies/depsets/ray_${RAY_VERSION}_img_py${PYTHON_SHORT}_fintech_quant_relaxed.lock
+    build_arg_sets:
+      - ray2560_py311_cu128
+
   - name: fintech_quant_depset_${RAY_VERSION}_${PYTHON_VERSION}
     operation: expand
-    source_depset: ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
+    depsets:
+      - ray_fintech_quant_relaxed_depset_${RAY_VERSION}_${PYTHON_VERSION}
     requirements:
       - templates/fintech_quant/requirements.txt
     output: templates/fintech_quant/python_depset.lock
@@ -521,7 +535,8 @@ depsets:
 
   - name: storage_access_large_datasets_depset_${RAY_VERSION}_${PYTHON_VERSION}
     operation: expand
-    source_depset: ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
+    depsets:
+      - ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
     requirements:
       - templates/storage-access-large-datasets/requirements.txt
     output: templates/storage-access-large-datasets/python_depset.lock
@@ -534,7 +549,8 @@ depsets:
 
   - name: tensor_parallel_autotp_depset_${RAY_VERSION}_${PYTHON_VERSION}
     operation: expand
-    source_depset: ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
+    depsets:
+      - ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
     requirements:
       - templates/tensor_parallel_autotp/requirements.txt
     output: templates/tensor_parallel_autotp/python_depset.lock
