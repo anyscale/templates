@@ -19,7 +19,9 @@ while IFS= read -r line; do
   image="${line//\{version\}/$VERSION}"
   dest="$ROOT/dependencies/images/$(echo "${image#anyscale/}" | tr ':' '-').freeze.txt"
   if ! "$ROOT/dependencies/scripts/fetch-image-freeze.sh" "$image" "$dest"; then
-    echo "::warning::no published freeze for $image yet — skipping"
+    # Unpublished and fetch-failed look the same from here; either way the freeze
+    # for this image is not current, which is what the completeness gate checks.
+    echo "::warning::no usable freeze for $image — its templates stay on the previous version's freeze"
     missing=$((missing + 1))
   fi
 done < "$LIST"
