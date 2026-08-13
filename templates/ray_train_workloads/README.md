@@ -28,7 +28,7 @@ The tutorials walk through common ML workload patterns—vision, tabular, time s
 
 Pre-install all requirements
 ```bash
-!uv pip install -r /home/ray/default/python_depset.lock --system --no-deps --no-cache-dir --index-strategy unsafe-best-match
+!pip install --no-cache-dir --no-deps -r /home/ray/default/python_depset.lock
 ```
 
 ### 1. Getting started
