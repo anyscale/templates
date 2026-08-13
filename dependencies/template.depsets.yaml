@@ -1,3 +1,7 @@
+# ray-llm templates seed their lock from a freeze of the image
+# (dependencies/scripts/seed-image-freeze.sh): the image is built with --no-deps,
+# so no resolvable lock describes it.
+
 build_arg_sets:
   ray2551_py311_cu128:
     RAY_VERSION: "2.55.1"
@@ -76,8 +80,7 @@ depsets:
       - ray2560_py312_cu128
 
   - name: langchain_agent_ray_serve_depset_${RAY_VERSION}_${PYTHON_VERSION}
-    operation: expand
-    source_depset: ray_llm_depset_${RAY_VERSION}_${PYTHON_VERSION}_${CUDA_VARIANT}
+    operation: compile
     requirements:
       - templates/langchain-agent-ray-serve/requirements.txt
     output: templates/langchain-agent-ray-serve/python_depset.lock
@@ -88,6 +91,8 @@ depsets:
       - --unsafe-package ray
     build_arg_sets:
       - ray2560_py312_cu130
+    pre_hooks:
+      - dependencies/scripts/seed-image-freeze.sh dependencies/images/ray-llm-${RAY_VERSION}-py${PYTHON_SHORT}-${CUDA_VARIANT}.freeze.txt templates/langchain-agent-ray-serve/python_depset.lock
 
   - name: fintech_fraud_risk_depset_${RAY_VERSION}_${PYTHON_VERSION}
     operation: expand
@@ -148,8 +153,7 @@ depsets:
       - ray2560_py311_cu128
 
   - name: audio_dataset_curation_llm_judge_depset_${RAY_VERSION}_${PYTHON_VERSION}_${CUDA_VARIANT}
-    operation: expand
-    source_depset: ray_llm_depset_${RAY_VERSION}_${PYTHON_VERSION}_${CUDA_VARIANT}
+    operation: compile
     requirements:
       - templates/audio-dataset-curation-llm-judge/requirements.txt
     output: templates/audio-dataset-curation-llm-judge/python_depset.lock
@@ -160,10 +164,11 @@ depsets:
       - --unsafe-package ray
     build_arg_sets:
       - ray2560_py312_cu130
+    pre_hooks:
+      - dependencies/scripts/seed-image-freeze.sh dependencies/images/ray-llm-${RAY_VERSION}-py${PYTHON_SHORT}-${CUDA_VARIANT}.freeze.txt templates/audio-dataset-curation-llm-judge/python_depset.lock
 
   - name: multi_agent_a2a_depset_${RAY_VERSION}_${PYTHON_VERSION}_${CUDA_VARIANT}
-    operation: expand
-    source_depset: ray_llm_depset_${RAY_VERSION}_${PYTHON_VERSION}_${CUDA_VARIANT}
+    operation: compile
     requirements:
       - templates/multi_agent_a2a/requirements.txt
     output: templates/multi_agent_a2a/python_depset.lock
@@ -174,10 +179,11 @@ depsets:
       - --unsafe-package ray
     build_arg_sets:
       - ray2560_py312_cu130
+    pre_hooks:
+      - dependencies/scripts/seed-image-freeze.sh dependencies/images/ray-llm-${RAY_VERSION}-py${PYTHON_SHORT}-${CUDA_VARIANT}.freeze.txt templates/multi_agent_a2a/python_depset.lock
 
   - name: llm_batch_inference_vision_depset_${RAY_VERSION}_${PYTHON_VERSION}_${CUDA_VARIANT}
-    operation: expand
-    source_depset: ray_llm_depset_${RAY_VERSION}_${PYTHON_VERSION}_${CUDA_VARIANT}
+    operation: compile
     requirements:
       - templates/llm_batch_inference_vision/requirements.txt
     output: templates/llm_batch_inference_vision/python_depset.lock
@@ -230,10 +236,11 @@ depsets:
 #      - --unsafe-package ray
 #    build_arg_sets:
 #      - ray2551_py311_cu128
+    pre_hooks:
+      - dependencies/scripts/seed-image-freeze.sh dependencies/images/ray-llm-${RAY_VERSION}-py${PYTHON_SHORT}-${CUDA_VARIANT}.freeze.txt templates/llm_batch_inference_vision/python_depset.lock
 
   - name: llm_finetuning_depset_${RAY_VERSION}_${PYTHON_VERSION}_${CUDA_VARIANT}
-    operation: expand
-    source_depset: ray_llm_depset_${RAY_VERSION}_${PYTHON_VERSION}_${CUDA_VARIANT}
+    operation: compile
     requirements:
       - templates/llm_finetuning/requirements.txt
     output: templates/llm_finetuning/python_depset.lock
@@ -244,6 +251,8 @@ depsets:
       - --unsafe-package ray
     build_arg_sets:
       - ray2560_py312_cu130
+    pre_hooks:
+      - dependencies/scripts/seed-image-freeze.sh dependencies/images/ray-llm-${RAY_VERSION}-py${PYTHON_SHORT}-${CUDA_VARIANT}.freeze.txt templates/llm_finetuning/python_depset.lock
 
   - name: creatives_diffusion_finetuning_depset_${RAY_VERSION}_${PYTHON_VERSION}
     operation: expand
