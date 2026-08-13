@@ -8,7 +8,6 @@ compute_config:
     - instance_type: g6.2xlarge
       min_nodes: 0
       max_nodes: 10
-requirements: # Python dependencies - can be list or path to requirements.txt
-  - datasets==4.4.2
+requirements: python_depset.lock
 working_dir: .
 max_retries: 2

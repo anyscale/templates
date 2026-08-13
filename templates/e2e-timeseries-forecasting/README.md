@@ -30,7 +30,7 @@ These tutorials implement an end-to-end time-series application including:
 Run the following:
 
 ```bash
-pip install -r requirements.txt && pip install -e .
+uv pip install -r python_depset.lock --system --no-deps --no-cache-dir --index-strategy unsafe-best-match && pip install -e .
 ```
 
 ## Acknowledgements
