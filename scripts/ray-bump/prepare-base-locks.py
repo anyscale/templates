@@ -3,7 +3,7 @@
 
 The fanout (`.github/workflows/ray-bump-fanout.yaml`) only fires a version whose
 `dependencies/depsets/` already holds a *complete* base-lock set — both a
-`ray_<v>_img_py*.lock` (image) and a `rayllm_<v>_*.lock` (LLM). Producing that set
+`ray_<v>_img_py*.lock` (image) and a freeze of each tracked image. Producing that set
 is otherwise a human hand-running `workflows/upgrade-dependencies.md`. This closes
 that gap: it resolves the newest stable Ray, and if we don't have its base locks
 yet, edits `dependencies/template.depsets.yaml` to add the version's
@@ -18,7 +18,7 @@ An explicit `--version` (or `--force`) bypasses the gate — a human override fo
 specific target.
 
 Copy-forward model: it clones the current newest-complete version's base-lock
-matrix (the image's Python set, the LLM's (py, cuda) set), substituting the new
+matrix (the image's Python set), substituting the new
 version, and verifies Ray published the matching deplocks at the `ray-<v>` tag. It
 does NOT invent a matrix: if Ray shipped a *different* one for <v> (a py/cuda
 added, dropped, or moved — as happened 2.55→2.56), it stops with 'needs human'
@@ -43,6 +43,8 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
+from depset_versions import complete_versions, lock_versions, newest_complete
+
 def _repo_root() -> Path:
     """Nearest ancestor dir containing BUILD.yaml (robust to where this script lives)."""
     for p in Path(__file__).resolve().parents:
@@ -53,12 +55,12 @@ def _repo_root() -> Path:
 
 REPO_ROOT = _repo_root()
 DEPSETS = REPO_ROOT / "dependencies" / "depsets"
+IMAGES = REPO_ROOT / "dependencies" / "images"
 CONFIG = REPO_ROOT / "dependencies" / "template.depsets.yaml"
 UPDATE_DEPS = REPO_ROOT / "update_deps.sh"
 
 # The two base compile entries, keyed by their (interpolated-name) templates.
 IMG_ENTRY = "ray_depset_${RAY_VERSION}_${PYTHON_VERSION}"
-LLM_ENTRY = "ray_llm_depset_${RAY_VERSION}_${PYTHON_VERSION}_${CUDA_VARIANT}"
 
 RAY_TAG = "ray-{v}"  # ray-project/ray release tag holding python/deplocks/
 
@@ -103,28 +105,7 @@ def newest_stable_ray() -> str:
 
 
 def _lock_versions(*patterns: str) -> set[str]:
-    rxs = [re.compile(p) for p in patterns]
-    out: set[str] = set()
-    for f in DEPSETS.glob("*.lock"):
-        for rx in rxs:
-            if m := rx.match(f.name):
-                out.add(m.group(1))
-    return out
-
-
-def complete_versions() -> set[str]:
-    """Versions present as BOTH a ray_<v>_img_* and an LLM base lock.
-
-    Keep the definition in sync with scripts/ray-bump/latest-depset-version.py (same contract).
-    """
-    img = _lock_versions(r"ray_(\d+\.\d+\.\d+)_img_")
-    llm = _lock_versions(r"rayllm_(\d+\.\d+\.\d+)_", r"ray_(\d+\.\d+\.\d+)_llm_")
-    return img & llm
-
-
-def newest_complete() -> str | None:
-    c = complete_versions()
-    return max(c, key=_ver) if c else None
+    return lock_versions(*patterns)
 
 
 def is_minor_upgrade(target: str, current: str | None) -> bool:
@@ -157,21 +138,13 @@ def _gh_contents(subdir: str, tag: str) -> list[str] | None:
         raise
 
 
-def discover_matrix(v: str) -> tuple[set[str] | None, set[tuple[str, str]]]:
-    """Published (image python-shorts, LLM (py, cuda)) for Ray <v>.
-    image is None when the tag/deplocks aren't published yet."""
-    tag = RAY_TAG.format(v=v)
-    img_files = _gh_contents("ray_img", tag)
-    llm_files = _gh_contents("llm", tag) or []
-    img = None
-    if img_files is not None:
-        img = {m.group(1) for f in img_files if (m := re.match(r"ray_img_py(\d+)\.lock$", f))}
-    llm = {
-        (m.group(1), m.group(2))
-        for f in llm_files
-        if (m := re.match(r"rayllm_py(\d+)_(cu\d+)\.lock$", f))
-    }
-    return img, llm
+def discover_matrix(v: str) -> set[str] | None:
+    """Published image python-shorts for Ray <v>, or None when the tag/deplocks
+    aren't published yet."""
+    img_files = _gh_contents("ray_img", RAY_TAG.format(v=v))
+    if img_files is None:
+        return None
+    return {m.group(1) for f in img_files if (m := re.match(r"ray_img_py(\d+)\.lock$", f))}
 
 
 # ── config edit (ruamel round-trip: preserve comments + layout) ─────────────
@@ -205,15 +178,15 @@ def bundle_name(v: str, b: dict) -> str:
     return f"ray{compact(v)}_py{b['PYTHON_SHORT']}_{b['CUDA_VARIANT']}"
 
 
-def apply_edit(cfg, target: str, prev_img: list[dict], prev_llm: list[dict]) -> list[str]:
-    """Add target bundles + wire them into the two base entries. Returns the
+def apply_edit(cfg, target: str, prev_img: list[dict]) -> list[str]:
+    """Add target bundles + wire them into the base image entry. Returns the
     build instance names to recompile."""
     from ruamel.yaml.comments import CommentedMap
     from ruamel.yaml.scalarstring import DoubleQuotedScalarString as dq
 
     bas = cfg["build_arg_sets"]
     instances: list[str] = []
-    for entry_name, prev_bundles in ((IMG_ENTRY, prev_img), (LLM_ENTRY, prev_llm)):
+    for entry_name, prev_bundles in ((IMG_ENTRY, prev_img),):
         entry = _find_entry(cfg, entry_name)
         for pb in prev_bundles:
             name = bundle_name(target, pb)
@@ -237,10 +210,8 @@ def apply_edit(cfg, target: str, prev_img: list[dict], prev_llm: list[dict]) -> 
     return instances
 
 
-def expected_outputs(target: str, prev_img: list[dict], prev_llm: list[dict]) -> list[Path]:
-    out = [DEPSETS / f"ray_{target}_img_py{b['PYTHON_SHORT']}.lock" for b in prev_img]
-    out += [DEPSETS / f"rayllm_{target}_py{b['PYTHON_SHORT']}_{b['CUDA_VARIANT']}.lock" for b in prev_llm]
-    return out
+def expected_outputs(target: str, prev_img: list[dict]) -> list[Path]:
+    return [DEPSETS / f"ray_{target}_img_py{b['PYTHON_SHORT']}.lock" for b in prev_img]
 
 
 def recompile(instances: list[str]) -> None:
@@ -290,14 +261,13 @@ def main(argv: list[str] | None = None) -> int:
 
     cfg = _yaml().load(CONFIG.read_text())
     prev_img = bundles_for(cfg, _find_entry(cfg, IMG_ENTRY), prev)
-    prev_llm = bundles_for(cfg, _find_entry(cfg, LLM_ENTRY), prev)
-    if not prev_img or not prev_llm:
+    if not prev_img:
         log(f"error: couldn't read {prev}'s base matrix from the config — needs human.")
         set_output(status="needs-human", version=target)
         return 2
 
     # Verify Ray published the deplocks this matrix needs at ray-<target>.
-    pub_img, pub_llm = discover_matrix(target)
+    pub_img = discover_matrix(target)
     if pub_img is None:
         log(f"Ray {target} deplocks not published yet (no {RAY_TAG.format(v=target)} tag / ray_img dir). Waiting.")
         set_output(status="waiting", version=target)
@@ -307,21 +277,11 @@ def main(argv: list[str] | None = None) -> int:
         log(f"Image matrix changed for {target}: need py{sorted(need_img)}, Ray published py{sorted(pub_img)} — needs human.")
         set_output(status="needs-human", version=target)
         return 2
-    if not pub_llm:
-        log(f"Ray {target} image deplocks are up but LLM deplocks aren't yet. Waiting.")
-        set_output(status="waiting", version=target)
-        return 0
-    need_llm = {(b["PYTHON_SHORT"], b["CUDA_VARIANT"]) for b in prev_llm}
-    if not need_llm <= pub_llm:
-        log(f"LLM matrix changed for {target}: need {sorted(need_llm)}, Ray published {sorted(pub_llm)} — needs human.")
-        set_output(status="needs-human", version=target)
-        return 2
-    extra = (pub_img - need_img, pub_llm - need_llm)
-    if extra[0] or extra[1]:
-        log(f"note: Ray also published variants not in our matrix (img py{sorted(extra[0])}, llm {sorted(extra[1])}); "
+    if extra := pub_img - need_img:
+        log(f"note: Ray also published image variants not in our matrix (py{sorted(extra)}); "
             "not auto-added — run upgrade-dependencies.md if you want them.")
 
-    instances = apply_edit(cfg, target, prev_img, prev_llm)
+    instances = apply_edit(cfg, target, prev_img)
     log(f"Base locks to build: {', '.join(instances)}")
 
     if args.dry_run:
@@ -343,7 +303,7 @@ def main(argv: list[str] | None = None) -> int:
         set_output(status="needs-human", version=target)
         return 2
 
-    missing = [str(o.relative_to(REPO_ROOT)) for o in expected_outputs(target, prev_img, prev_llm) if not o.exists()]
+    missing = [str(o.relative_to(REPO_ROOT)) for o in expected_outputs(target, prev_img) if not o.exists()]
     if missing:
         log(f"recompile did not produce: {missing} — needs human.")
         set_output(status="needs-human", version=target)

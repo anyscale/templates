@@ -16,6 +16,7 @@ import contextlib
 import importlib.util
 import json
 import os
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -25,7 +26,10 @@ from unittest.mock import Mock, patch
 _MODULE_PATH = Path(__file__).with_name("prepare-base-locks.py")
 _spec = importlib.util.spec_from_file_location("prepare_base_locks", _MODULE_PATH)
 pbl = importlib.util.module_from_spec(_spec)
+sys.path.insert(0, str(Path(__file__).parent))
 _spec.loader.exec_module(pbl)
+
+import depset_versions as dv  # noqa: E402  (needs the sys.path insert above)
 
 
 class _ReachedPrepare(Exception):
@@ -151,6 +155,60 @@ class NewestStableRayTest(unittest.TestCase):
 
         with patch.object(pbl.urllib.request, "urlopen", return_value=_Resp()):
             self.assertEqual(pbl.newest_stable_ray(), "2.57.2")
+
+
+class TestCompleteness(unittest.TestCase):
+    """The real freeze logic, against a fixture tree.
+
+    The rest of this file mocks newest_complete out, which is how the probe's copy
+    of this logic drifted from the resolver's unnoticed. These exercise it for real.
+    """
+
+    @contextlib.contextmanager
+    def _tree(self, freezes):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            (root / "dependencies" / "depsets").mkdir(parents=True)
+            images = root / "dependencies" / "images"
+            images.mkdir(parents=True)
+            (root / "dependencies" / "depsets" / "ray_2.99.0_img_py312.lock").touch()
+            (images / "tracked-images.txt").write_text(
+                "# comment\nanyscale/ray-llm:{version}-py312-cu130\n"
+                "anyscale/ray:{version}-slim-py312-cu128\n"
+            )
+            for name, packages in freezes.items():
+                (images / name).write_text("\n".join(f"pkg{i}==1.0" for i in range(packages)))
+            with patch.object(dv, "DEPSETS", root / "dependencies" / "depsets"), \
+                 patch.object(dv, "IMAGES", images):
+                yield
+
+    def test_all_freezes_present(self):
+        with self._tree({"ray-llm-2.99.0-py312-cu130.freeze.txt": 300,
+                         "ray-2.99.0-slim-py312-cu128.freeze.txt": 300}):
+            self.assertEqual(dv.complete_versions(), {"2.99.0"})
+
+    def test_partial_publish_is_incomplete(self):
+        """One freeze present is not evidence the rest landed."""
+        with self._tree({"ray-llm-2.99.0-py312-cu130.freeze.txt": 300}):
+            self.assertEqual(dv.complete_versions(), set())
+
+    def test_slim_freeze_counts(self):
+        """A `slim-` freeze must be recognised — an earlier regex skipped them."""
+        with self._tree({"ray-llm-2.99.0-py312-cu130.freeze.txt": 300,
+                         "ray-2.99.0-slim-py312-cu128.freeze.txt": 300}):
+            self.assertEqual(dv.missing_freezes("2.99.0"), [])
+
+    def test_empty_freeze_counts_as_missing(self):
+        """A failed fetch can leave a header-only file; it seeds nothing."""
+        with self._tree({"ray-llm-2.99.0-py312-cu130.freeze.txt": 300,
+                         "ray-2.99.0-slim-py312-cu128.freeze.txt": 0}):
+            self.assertEqual(dv.complete_versions(), set())
+            self.assertEqual([f.name for f in dv.missing_freezes("2.99.0")],
+                             ["ray-2.99.0-slim-py312-cu128.freeze.txt"])
+
+    def test_probe_and_resolver_agree(self):
+        """The two callers must gate on the same definition."""
+        self.assertIs(pbl.complete_versions, dv.complete_versions)
 
 
 if __name__ == "__main__":
