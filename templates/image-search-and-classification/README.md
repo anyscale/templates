@@ -68,7 +68,7 @@ uv add --editable ./doggos
 
 ```bash
 # Pip setup instructions
-pip install -q -r /home/ray/default/requirements.txt
+uv pip install -r /home/ray/default/python_depset.lock --system --no-deps --no-cache-dir --index-strategy unsafe-best-match
 pip install -e ./doggos
 ```
 
