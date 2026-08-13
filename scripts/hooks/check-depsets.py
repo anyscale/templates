@@ -28,7 +28,7 @@ UPDATE_DEPS = "./update_deps.sh"
 GLOBAL_FILES = {"update_deps.sh"}
 # dependencies/images/ holds the freezes every template lock is seeded from, so a
 # change there can move any lock — it is as global as the scripts themselves.
-GLOBAL_PREFIXES = ("dependencies/scripts/", "dependencies/depsets/", "dependencies/images/")
+GLOBAL_PREFIXES = ("dependencies/scripts/", "dependencies/images/")
 
 # A depset entry's `output:` when it's a template lock; group(1) = the templates/<dir>.
 TEMPLATE_LOCK_RE = re.compile(r"(templates/[^/]+)/python_depset\.lock$")
@@ -141,7 +141,7 @@ def scoped_check(affected: list, instances_by_dir: dict) -> int:
 
     print(f"Lock-bearing templates changed -> scoped check: {', '.join(affected)}", file=sys.stderr)
     # Each entry compiles independently, so regenerating one template is isolated from
-    # other templates' and base-lock drift.
+    # other templates' drift.
     for inst in instances:
         if not run_retry([UPDATE_DEPS, "--name", inst]):
             print(f"::error::failed to regenerate depset '{inst}' after retries", file=sys.stderr)

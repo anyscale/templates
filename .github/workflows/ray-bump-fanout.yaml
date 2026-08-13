@@ -15,7 +15,7 @@ on:
   workflow_dispatch:
     inputs:
       ray_version:
-        description: "Target Ray version (blank = derive newest complete set from dependencies/depsets/)"
+        description: "Target Ray version (blank = derive newest version with a full set of image freezes)"
         required: false
         default: ""
       dry_run:
@@ -52,7 +52,7 @@ jobs:
         if [ -z "$V" ] && [ "$GITHUB_EVENT_NAME" = "push" ]; then
           V="${GITHUB_REF#refs/tags/ray-fanout-}"
         fi
-        # validate the given version's base locks exist, else derive the newest (fails closed)
+        # validate the given version's image freezes exist, else derive the newest (fails closed)
         if [ -n "$V" ]; then
           V="$(uv run python3 scripts/ray-bump/latest-depset-version.py --require "$V")"
         else

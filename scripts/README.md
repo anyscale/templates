@@ -29,6 +29,6 @@ so they work from any working directory and are safe to relocate. The exceptions
 
 | Script | What it does | Invoked by |
 |---|---|---|
-| `latest-depset-version.py` | Resolves the newest "complete" Ray version from `dependencies/depsets/` (both base + LLM locks present). | `.github/workflows/ray-bump-fanout.yaml` |
-| `prepare-base-locks.py` | Recompiles + stages the base depset locks for a new Ray version (the workflow opens the PR); exits "needs human" on a matrix change. | `.github/workflows/ray-base-locks.yaml` |
+| `latest-depset-version.py` | Resolves the newest "complete" Ray version — one with a freeze of every image in `dependencies/images/tracked-images.txt`. | `.github/workflows/ray-bump-fanout.yaml` |
+| `prepare-ray-version.py` | Stages a new Ray version's `build_arg_sets` (the workflow fetches the freezes and opens the PR); exits "needs human" when the image matrix moves. | `.github/workflows/ray-version-prep.yaml` |
 | `trigger-cursor-bump.py` | Fans the "Template update" Cursor automation out over maintained `BUILD.yaml` entries (one draft PR per template); previews unless `--execute`. | `.github/workflows/ray-bump-fanout.yaml`; run by hand for a manual fanout (see `AGENTS.md`) |
