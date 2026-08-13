@@ -121,7 +121,7 @@ def train_cifar(config):
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.SGD(net.parameters(), lr=config["lr"], momentum=0.9)
 
-    trainset, _ = load_data("/mnt/local_storage/cifar_data")
+    trainset, _ = load_data("/mnt/cluster_storage/cifar_data")
 
     test_abs = int(len(trainset) * 0.8)
     train_subset, val_subset = random_split(
@@ -193,6 +193,14 @@ def train_cifar(config):
 The code below walks through how to parallelize the above training function in Tune. Go ahead and run the cell, it will take 5-10 minutes to complete on a multi-node cluster. While you're waiting, go ahead and proceed to the next section to learn how to monitor the execution.
 
 It will sweep across several choices for "l1", "l2", and "lr" of the net:
+
+Download the dataset once, from this driver node, into `/mnt/cluster_storage` — shared storage mounted on every node of the cluster. The trials below can then load it directly wherever they run, instead of each node downloading its own copy.
+
+
+```python
+# Fetch CIFAR-10 to shared storage; trials skip the download entirely.
+load_data("/mnt/cluster_storage/cifar_data")
+```
 
 
 ```python
