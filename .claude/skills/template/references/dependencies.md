@@ -94,26 +94,21 @@ image.
 | `seed-image-freeze.sh <freeze> <lock>` | writes the seed to the lock's path; each template's `pre_hook` |
 | `fetch-image-freeze.sh <image> <dest>` | pulls one image's package list from `docs.anyscale.com/base-images` |
 | `refresh-image-freezes.sh <ray-version>` | re-fetches every image in `dependencies/images/tracked-images.txt` |
-| `lock-vs-image.sh [name ...]` | reports what each template's lock overwrites in its image — the review check |
 
 The seed is the freeze **plus** the previous lock's pins for packages the image doesn't ship — otherwise every
 recompile re-floats untouched packages to newest-on-PyPI. uv reads it as **preferences, not constraints**: a
 seeded version holds unless a requirement forces otherwise, so a template that genuinely needs a newer package
-just pins it in `requirements.txt` and wins. That is the intended way to diverge from the image, and the
-divergence stays visible in the lock.
+just pins it in `requirements.txt` and wins. That is the intended way to diverge from the image.
 
 Two limits, both confirmed by testing:
 
 - **A rejected image version floats.** For a package the image *does* ship whose version a requirement rejects
   (`uvicorn` at `0.22.0`, forced past it by `mcp`), the freeze wins the seed so no previous-lock pin is carried
   — then the freeze's version is rejected, leaving no preference at all, and it resolves to newest. Pin it in
-  `requirements.txt` when the version matters; `lock-vs-image.sh` lists every candidate.
+  `requirements.txt` when the version matters.
 - **Packages outside the freeze never re-resolve.** Carry-over is what stops daily drift, but it also means a
   package the image doesn't ship keeps its locked version until someone edits `requirements.txt` — a regen
   alone will never pick up an upstream security fix. Bump those deliberately.
-
-Removing a dep from `requirements.txt` *does* drop it from the lock: `uv` recomputes the package set from the
-requirement graph every time, and a stale preference can't hold in something nothing depends on.
 
 **A template on an image not listed in `tracked-images.txt` never gets a freeze refreshed for it.** Add the
 image there when you introduce it; `seed-image-freeze.sh` exits non-zero on a missing freeze, so the gap
@@ -173,9 +168,7 @@ bundle instead of pinning the old image's freeze.
 3. Confirm the template installs the regenerated lock on the driver **and** forwards it via `runtime_env`
    at the right scope (Serve → app/deployment level; see "What ships" + "Runtime skew") — otherwise
    workers/replicas keep running stale deps.
-4. `dependencies/scripts/lock-vs-image.sh <name>` — every line it prints is a package pip **overwrites in the
-   running image**. Confirm each one traces to something in `requirements.txt`; an unexplained entry is drift,
-   and a downgrade of a framework package is the "Runtime skew" trap above.
+4. Scan the lock diff for a framework package moving below its image version — the "Runtime skew" trap above.
 
 ## Gotchas
 

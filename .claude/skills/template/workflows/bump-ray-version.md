@@ -51,8 +51,7 @@ The image Ray version and the template's locked deps must agree. Which case appl
   2. Add that bundle to the base `compile` entry (`ray_depset`), so the new version-stamped base lock (`dependencies/depsets/ray_<NEW>_img_py<PY>.lock`) is generated and committed.
   3. Repoint **only this template's** entry: its `build_arg_sets` `ray<OLD>_* → ray<NEW>_*`. Its `seed-image-freeze.sh` pre_hook interpolates `${RAY_VERSION}`, so it follows automatically — but if the new image's py/CUDA differ, fix the literal parts of the freeze filename to match the image you set in step 1. **The freeze must name the image the template now runs on**; nothing checks the pairing.
   4. `./update_deps.sh --name <this-entry-name>` — regenerates this template's lock plus the base lock it derives from (runs natively on Linux or macOS; `../references/dependencies.md` "Running it"). Whole-repo batch upgrade: `upgrade-dependencies.md`.
-  5. `dependencies/scripts/lock-vs-image.sh <name>` — review what the new lock overwrites in the new image. A framework downgrade (`torch`, `transformers`, `pydantic`, `starlette`, `vllm`) is the runtime-skew trap; a template pin holding an old version across the bump is the usual cause.
-  6. Commit together: the `BUILD.yaml` bump, this template's `python_depset.lock`, the `template.depsets.yaml` edit, and any newly-created base lock (only if steps 1–2 ran).
+  5. Commit together: the `BUILD.yaml` bump, this template's `python_depset.lock`, the `template.depsets.yaml` edit, and any newly-created base lock (only if steps 1–2 ran).
 
   **Do not** repoint other entries or *replace* the old bundles — that's the whole-repo batch path (`upgrade-dependencies.md`, a human doing all templates at once). On a single-template branch it forces every other template's lock to regenerate, blowing up the diff and the merge.
 

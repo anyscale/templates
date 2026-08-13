@@ -73,14 +73,11 @@ version-stamped. Delete `dependencies/depsets/ray_<OLD>_*` once nothing referenc
 
 ## 7. Validate
 ```bash
-./update_deps.sh --check                  # must be clean (recompiles all entries + diffs vs committed)
-dependencies/scripts/lock-vs-image.sh     # what each lock overwrites in its image
+./update_deps.sh --check    # must be clean (recompiles all entries + diffs vs committed)
 ```
-`--check` proves the locks regenerate identically; `lock-vs-image.sh` proves they describe the images.
-Scan its output for framework downgrades (`torch`, `transformers`, `pydantic`, `starlette`, `vllm`) — a
-template pin that held an old version across the bump shows up here and nowhere else. Then sanity-check a
-representative template runs (`rayapp test <name>` / `references/run-tests-locally-with-rayapp.md`). For
-per-template test dispatch and recovery, reuse `../references/testing-template.md`.
+Then sanity-check a representative template runs (`rayapp test <name>` /
+`references/run-tests-locally-with-rayapp.md`). For per-template test dispatch and recovery, reuse
+`../references/testing-template.md`.
 
 ## Common failures
 See `../references/dependencies.md` "Gotchas".
