@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Resolve the target Ray version for a fanout from dependencies/depsets/.
+"""Resolve the target Ray version for a fanout from the committed image freezes.
 
-Completeness is defined in depset_versions.py, shared with prepare-base-locks.py.
+Completeness is defined in depset_versions.py, shared with prepare-ray-version.py.
 With no args this prints the newest complete version; with --require <v> it
 validates that <v> is complete (and echoes it). Exits non-zero with a message on
 stderr when there's nothing to resolve — so the caller can fail closed.
@@ -21,7 +21,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     p.add_argument(
         "--require", metavar="VERSION",
-        help="validate this version has a complete base-lock set (instead of deriving the newest)",
+        help="validate this version has a freeze for every tracked image (instead of deriving the newest)",
     )
     args = p.parse_args(argv)
     complete = complete_versions()
@@ -29,13 +29,9 @@ def main(argv: list[str] | None = None) -> int:
     if args.require:
         if args.require not in complete:
             print(
-                f"error: Ray {args.require} is not complete — needs a "
-                f"ray_{args.require}_img_* base lock and a freeze for every tracked "
-                f"image. Missing: "
-                + (
-                    ", ".join(f.name for f in missing_freezes(args.require))
-                    or "(none — the base lock is what's absent)"
-                ),
+                f"error: Ray {args.require} is not complete — needs a freeze for "
+                f"every tracked image. Missing: "
+                + ", ".join(f.name for f in missing_freezes(args.require)),
                 file=sys.stderr,
             )
             return 1
@@ -43,7 +39,7 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if not complete:
-        print("error: no complete base-lock set in dependencies/depsets/", file=sys.stderr)
+        print("error: no Ray version has a freeze for every tracked image", file=sys.stderr)
         return 1
     print(max(complete, key=_key))
     return 0

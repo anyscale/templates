@@ -42,8 +42,8 @@ repos:
         # Whole-repo validator (head-node checks over every config) — trigger on config edits too.
         files: ^(BUILD\.yaml|configs/.*\.ya?ml)$
       - id: ray-bump-unit-tests
-        name: prepare-base-locks unit tests (minor-only gate)
-        entry: python3 scripts/ray-bump/test_prepare_base_locks.py
+        name: prepare-ray-version unit tests (minor-only gate)
+        entry: python3 scripts/ray-bump/test_prepare_ray_version.py
         language: system
         pass_filenames: false
-        files: ^scripts/ray-bump/(prepare-base-locks|test_prepare_base_locks)\.py$
+        files: ^scripts/ray-bump/(prepare-ray-version|test_prepare_ray_version|depset_versions)\.py$

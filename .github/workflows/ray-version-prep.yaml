@@ -1,19 +1,20 @@
-name: ray-base-locks
+name: ray-version-prep
 
-# Prepare the base depset locks for a new Ray version so a fanout can fire.
+# Prepare a new Ray version so a fanout can fire.
 #
-# scripts/ray-bump/prepare-base-locks.py resolves the newest stable Ray and, once its deplocks
-# are published at ray-project/ray but we don't yet have the base-lock set,
-# recompiles ray_<v>_img_* + rayllm_<v>_* (copying the current matrix forward) and
-# this workflow opens a PR. A human reviews + merges it (the approval gate), then
-# pushes a `ray-fanout-<v>` tag to fire ray-bump-fanout.yaml.
+# scripts/ray-bump/prepare-ray-version.py resolves the newest stable Ray and, once
+# Anyscale published its images but we don't yet hold their freezes, adds the version's
+# build_arg_sets (copying the current matrix forward); this workflow then fetches the
+# freezes and opens a PR. A human reviews + merges it (the approval gate), then pushes a
+# `ray-fanout-<v>` tag to fire ray-bump-fanout.yaml.
 #
 # Minor-only: on the daily schedule it acts only on a new Ray *minor* (patches over the
 # current minor, e.g. 2.56.0 → 2.56.1, are skipped). To force a specific version anyway
 # (incl. a patch), dispatch this workflow with the `ray_version` input set (→ --version).
 #
-# If Ray shipped a different py/cuda matrix, the script stops with 'needs human'
-# (rc=2) and a maintainer runs .claude/skills/template/workflows/upgrade-dependencies.md.
+# If an image we track has no tag for the new version the matrix moved: the script stops
+# with 'needs human' (rc=2) and a maintainer runs
+# .claude/skills/template/workflows/upgrade-dependencies.md.
 
 on:
   schedule:
@@ -30,7 +31,7 @@ on:
         default: true
 
 concurrency:
-  group: ray-base-locks
+  group: ray-version-prep
   cancel-in-progress: false
 
 permissions:
@@ -53,10 +54,9 @@ jobs:
     - name: Install deps
       run: uv sync --frozen --only-group ray-bump
 
-    - name: Prepare base locks
+    - name: Prepare the version
       id: prep
       env:
-        GITHUB_TOKEN: ${{ github.token }}   # authenticates the deplock-discovery API calls
         INPUT_VERSION: ${{ inputs.ray_version }}
         INPUT_DRY_RUN: ${{ inputs.dry_run }}
       run: |
@@ -67,23 +67,22 @@ jobs:
         if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ] && [ "$INPUT_DRY_RUN" != "false" ]; then
           args+=(--dry-run)
         fi
-        uv run python3 scripts/ray-bump/prepare-base-locks.py "${args[@]}"
+        uv run python3 scripts/ray-bump/prepare-ray-version.py "${args[@]}"
         echo "rc=$?" >> "$GITHUB_OUTPUT"
 
     - name: Needs human
       if: steps.prep.outputs.rc == '2'
       run: |
-        echo "::error::prepare-base-locks needs a human (matrix change or recompile failure). Run workflows/upgrade-dependencies.md for this version."
+        echo "::error::prepare-ray-version needs a human (the image matrix moved). Run workflows/upgrade-dependencies.md for this version."
         exit 1
 
     - name: Unexpected error
       if: steps.prep.outputs.rc != '0' && steps.prep.outputs.rc != '2' && steps.prep.outputs.rc != '10'
       run: |
-        echo "::error::prepare-base-locks exited ${{ steps.prep.outputs.rc }} (unexpected — likely a transient upstream/network error; the next scheduled run retries)."
+        echo "::error::prepare-ray-version exited ${{ steps.prep.outputs.rc }} (unexpected — likely a transient upstream/network error; the next scheduled run retries)."
         exit 1
 
-    # Templates seed their locks from these, so the fanout needs the new version's
-    # freezes committed alongside the base locks.
+    # Templates seed their locks from these — they are the whole payload of this PR.
     - name: Refresh image freezes
       if: steps.prep.outputs.rc == '10'
       env:
@@ -106,7 +105,7 @@ jobs:
           echo "::warning::$err"
         fi
 
-    - name: Open the base-locks PR
+    - name: Open the version-prep PR
       if: steps.prep.outputs.rc == '10'
       env:
         GH_TOKEN: ${{ secrets.ANYSCALE_GH_TOKEN || github.token }}
@@ -114,7 +113,7 @@ jobs:
         READY: ${{ steps.complete.outputs.ready }}
         DETAIL: ${{ steps.complete.outputs.detail }}
       run: |
-        branch="base-locks/ray-$V"
+        branch="ray-prep/$V"
         # Separate "the query failed" from "no PR is open" — conflating them would
         # delete the branch of a PR that is open, closing it and losing its review.
         if ! open_pr="$(gh pr list --state open --head "$branch" --json number --jq '.[0].number')"; then
@@ -122,7 +121,7 @@ jobs:
           exit 1
         fi
         if [ -n "$open_pr" ]; then
-          echo "A base-locks PR is already open for $branch (#$open_pr) — nothing to do."
+          echo "A version-prep PR is already open for $branch (#$open_pr) — nothing to do."
           exit 0
         fi
         # No open PR, but the branch can survive a closed one — a plain push would
@@ -134,20 +133,20 @@ jobs:
         git switch -c "$branch"
         git add dependencies/
         git commit -s \
-          -m "chore(deps): base locks for Ray $V" \
-          -m "Recompiled the ray_$V base locks and refreshed the tracked image freezes so ray-bump-fanout can fire for $V."
+          -m "chore(deps): image freezes for Ray $V" \
+          -m "Added the $V build_arg_sets and fetched a freeze of each tracked image so ray-bump-fanout can fire for $V."
         git push -u origin "$branch"
 
         if [ "$READY" = "true" ]; then
           status="Every tracked image has a freeze — pushing \`ray-fanout-$V\` will be accepted."
         else
           status="⚠️ **Not ready to fan out.** $DETAIL
-        Merging is still fine (the base locks are correct); the fanout stays blocked until the missing images publish and the next scheduled run commits their freezes."
+        Merging is still fine (the freezes present are correct); the fanout stays blocked until the missing images publish and the next scheduled run commits their freezes."
         fi
 
         gh pr create --base main --head "$branch" \
-          --title "[base-locks] Ray $V" \
-          --body "Automated base-lock recompile for Ray \`$V\` (the \`ray-base-locks\` workflow), so \`ray-bump-fanout\` can fire for it. Adds the \`$V\` \`build_arg_sets\`, the recompiled \`dependencies/depsets/ray_$V*\` locks, and a freeze per tracked image (matrix copied forward from the previous version; templates are untouched — each moves in its own fanout PR).
+          --title "[ray-prep] Ray $V" \
+          --body "Automated prep for Ray \`$V\` (the \`ray-version-prep\` workflow), so \`ray-bump-fanout\` can fire for it. Adds the \`$V\` \`build_arg_sets\` and a freeze of each tracked image (matrix copied forward from the previous version; templates are untouched — each moves in its own fanout PR).
 
         $status
 

@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Unit tests for prepare-base-locks.py — the minor-only version gate.
+"""Unit tests for prepare-ray-version.py — the minor-only version gate.
 
 Hermetic: mocks the two version-resolution funcs (newest_stable_ray = PyPI,
-newest_complete = local depsets), so nothing touches the network or the real
-dependencies/depsets/. The prepare path (which loads the config via ruamel) is
+newest_complete = local freezes), so nothing touches the network or the real
+dependencies/images/. The prepare path (which loads the config via ruamel) is
 stubbed with _yaml, so these tests need neither ruamel nor the real config —
 matching CI's pre-commit job, which installs requirements-dev.txt (no ruamel).
 
@@ -23,8 +23,8 @@ from pathlib import Path
 from unittest.mock import Mock, patch
 
 # The script's filename has hyphens, so load it by path rather than import.
-_MODULE_PATH = Path(__file__).with_name("prepare-base-locks.py")
-_spec = importlib.util.spec_from_file_location("prepare_base_locks", _MODULE_PATH)
+_MODULE_PATH = Path(__file__).with_name("prepare-ray-version.py")
+_spec = importlib.util.spec_from_file_location("prepare_ray_version", _MODULE_PATH)
 pbl = importlib.util.module_from_spec(_spec)
 sys.path.insert(0, str(Path(__file__).parent))
 _spec.loader.exec_module(pbl)
@@ -167,19 +167,15 @@ class TestCompleteness(unittest.TestCase):
     @contextlib.contextmanager
     def _tree(self, freezes):
         with tempfile.TemporaryDirectory() as d:
-            root = Path(d)
-            (root / "dependencies" / "depsets").mkdir(parents=True)
-            images = root / "dependencies" / "images"
+            images = Path(d) / "dependencies" / "images"
             images.mkdir(parents=True)
-            (root / "dependencies" / "depsets" / "ray_2.99.0_img_py312.lock").touch()
             (images / "tracked-images.txt").write_text(
                 "# comment\nanyscale/ray-llm:{version}-py312-cu130\n"
                 "anyscale/ray:{version}-slim-py312-cu128\n"
             )
             for name, packages in freezes.items():
                 (images / name).write_text("\n".join(f"pkg{i}==1.0" for i in range(packages)))
-            with patch.object(dv, "DEPSETS", root / "dependencies" / "depsets"), \
-                 patch.object(dv, "IMAGES", images):
+            with patch.object(dv, "IMAGES", images):
                 yield
 
     def test_all_freezes_present(self):

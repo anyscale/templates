@@ -69,7 +69,7 @@ and runs `raydepsets build dependencies/template.depsets.yaml --workspace-dir <r
 
 ```bash
 ./update_deps.sh                       # build every depset
-./update_deps.sh --name <depset-name>  # build one (interpolated name, e.g. ray_depset_2.56.0_3.11)
+./update_deps.sh --name <depset-name>  # build one (interpolated name, e.g. mcp_ray_serve_depset_2.56.0_3.12)
 ./update_deps.sh --check               # recompile to a temp dir, diff vs committed (local validation)
 ```
 
@@ -78,13 +78,17 @@ and runs `raydepsets build dependencies/template.depsets.yaml --workspace-dir <r
 `raydepsets` v0.0.1 ships both `linux-x86_64` and `darwin-arm64` builds (Python zipapps bundling a
 per-platform `uv`), so `./update_deps.sh` runs natively on Linux **and** macOS — output is identical
 either way (`uv` always resolves for `--python-platform=linux`). `--check` needs all entries (can't
-combine with `--name`). The base lock comes from Ray's published `deplocks/ray_img/`, which lags a release
-by days; template locks don't wait on it — they need only the image freeze.
+combine with `--name`). A recompile needs nothing from Ray's repo — only the committed image freeze.
+
+**`--check` leaves the working tree dirty.** The seed pre_hooks write into each lock's own path before uv
+runs, so afterwards those files hold the *seed*, not the compiled lock. The check itself is still valid
+(it compiles elsewhere and reports "Lock files are up to date") — but `git checkout -- templates/`
+afterwards, or you will commit seeds over your locks.
 
 ## Image freezes — what a template's lock is built against
 
-A template's lock is seeded from a **`pip freeze` of the published image it runs on**, not resolved against a
-base lock: a lock models a build *recipe*, a freeze measures the artifact that actually shipped. The
+A template's lock is seeded from a **`pip freeze` of the published image it runs on**: a lock models a build
+*recipe*, a freeze measures the artifact that actually shipped. The
 `ray-llm` image is built `--no-deps`, so its installed set is internally inconsistent and **no lock can
 reproduce it** — only a freeze describes it. `dependencies/images/<image>.freeze.txt` holds one per tracked
 image.
@@ -124,27 +128,9 @@ build_arg_sets:
 ```
 
 **`depsets`** — entries; each entry's `build_arg_sets:` lists the bundle(s) it builds over, and the tool
-emits one concrete depset per bundle, substituting `${VAR}` into every field. Two kinds:
-
-**Base `compile`** (1 entry, `ray_depset_*`) — re-emit Ray's published image lock, **version-stamped** (new Ray
-version → new file). No template reads it; it exists so `scripts/ray-bump/prepare-base-locks.py` has a
-per-version artifact to gate the fanout on. The `fetch-ray-*.sh` pre-hooks curl Ray's published
-locks/constraints into `/tmp/ray-deps/`, with fallbacks for releases predating `deplocks/`:
-
-```yaml
-- name: ray_depset_${RAY_VERSION}_${PYTHON_VERSION}
-  operation: compile
-  requirements: [/tmp/ray-deps/ray_img_${RAY_VERSION}_py${PYTHON_SHORT}.lock]   # fetched by the pre_hooks
-  output: dependencies/depsets/ray_${RAY_VERSION}_img_py${PYTHON_SHORT}.lock
-  append_flags: [--python-version=${PYTHON_VERSION}, --python-platform=linux, --unsafe-package ray]
-  build_arg_sets: [ray2551_py311_cu128, ray2551_py312_cu128]
-  pre_hooks:
-    - dependencies/scripts/fetch-ray-depsets.sh ${RAY_VERSION} ${PYTHON_SHORT}
-    - dependencies/scripts/fetch-ray-constraints.sh ${RAY_VERSION} ${PYTHON_VERSION}
-```
-
-**Per-template `compile`** (the rest) — resolve a template's `requirements.txt` against a seed of the image
-it runs on ("Image freezes" above). Output is **overwritten in place** (not version-stamped):
+emits one concrete depset per bundle, substituting `${VAR}` into every field. Every entry is a per-template
+`compile`: resolve a template's `requirements.txt` against a seed of the image it runs on ("Image freezes"
+above). Output is **overwritten in place** (not version-stamped):
 
 ```yaml
 - name: <tmpl>_depset_${RAY_VERSION}_${PYTHON_VERSION}
