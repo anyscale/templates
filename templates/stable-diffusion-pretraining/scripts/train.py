@@ -142,6 +142,7 @@ def load_precomputed_dataset(
         convert_precision,
         batch_size=None,
         concurrency=num_data_loading_workers,
+        runtime_env={"pip": DEPSET_LOCK},
     )
 
 

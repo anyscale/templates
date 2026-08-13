@@ -176,6 +176,7 @@ def get_laion_streaming_dataset(
         fn_constructor_kwargs={"resolution": resolution},
         concurrency=num_transformers,
         num_cpus=num_cpus_per_transformer,
+        runtime_env={"pip": DEPSET_LOCK},
     )
 
     ds = ds.map_batches(
@@ -186,6 +187,7 @@ def get_laion_streaming_dataset(
         batch_size=encoder_batch_size,
         concurrency=num_encoders,
         accelerator_type=encoder_accelerator_type,
+        runtime_env={"pip": DEPSET_LOCK},
     )
 
     cols = set(get_training_columns(resolution))
@@ -197,6 +199,7 @@ def get_laion_streaming_dataset(
         select_training_columns,
         zero_copy_batch=True,
         batch_size=training_batch_size,
+        runtime_env={"pip": DEPSET_LOCK},
     )
 
     return ds
