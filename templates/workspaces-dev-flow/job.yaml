@@ -5,4 +5,5 @@ compute_config:
   auto_select_worker_config: true
 runtime_env:
   working_dir: .
+requirements: requirements.txt
 max_retries: 0
