@@ -114,18 +114,38 @@ Two limits, both confirmed by testing:
   package the image doesn't ship keeps its locked version until someone edits `requirements.txt` — a regen
   alone will never pick up an upstream security fix. Bump those deliberately.
 
+**Never track an experimental image.** Anyscale ships pre-release variants (py3.14 today) that the console
+badges EXPERIMENTAL, and **neither `docs.anyscale.com/base-images` nor its `index.json` carries that flag** —
+they look identical to stable there. Only the API distinguishes them, so check before adding a line:
+
+```bash
+curl -fsSL -H "Authorization: Bearer $(jq -r .cli_token ~/.anyscale/credentials.json)" \
+  "$ANYSCALE_HOST/api/v2/application_templates/supported_base_images" \
+  | jq -r --arg i "anyscale/ray:<version>-<tag>" \
+      '.result.images[] | select(.docker_image_name==$i) | .is_experimental'
+```
+
+`true` → don't track it. Adding an image is the only way one enters the system (the refresh just expands
+`{version}` over the existing list), so this check is the whole guard.
+
 **A template on an image not listed in `tracked-images.txt` never gets a freeze refreshed for it.** Add the
 image there when you introduce it; `seed-image-freeze.sh` exits non-zero on a missing freeze, so the gap
 surfaces at the next recompile rather than silently.
 
 ## The config: `dependencies/template.depsets.yaml`
 
-Two top-level keys. **`build_arg_sets`** — named `${VAR}` bundles:
+Two top-level keys. **`build_arg_sets`** — named `${VAR}` bundles. They are the version lever: repointing one
+entry from `ray2560_*` to `ray2570_*` moves both what uv resolves for and which freeze it seeds from.
 
 ```yaml
 build_arg_sets:
-  ray2551_py311_cu128: {RAY_VERSION: "2.55.1", PYTHON_VERSION: "3.11", PYTHON_SHORT: "311", CUDA_VARIANT: "cu128"}
+  ray2560_py312:       {RAY_VERSION: "2.56.0", PYTHON_VERSION: "3.12", PYTHON_SHORT: "312"}
+  ray2560_py312_cu130: {RAY_VERSION: "2.56.0", PYTHON_VERSION: "3.12", PYTHON_SHORT: "312", CUDA_VARIANT: "cu130"}
 ```
+
+`CUDA_VARIANT` belongs in a bundle only where something interpolates it — today just the ray-llm freeze names.
+Elsewhere the freeze filename and the torch `--index` carry their CUDA literally, so a `CUDA_VARIANT` on those
+bundles would describe nothing and drift from the truth.
 
 **`depsets`** — entries; each entry's `build_arg_sets:` lists the bundle(s) it builds over, and the tool
 emits one concrete depset per bundle, substituting `${VAR}` into every field. Every entry is a per-template
@@ -137,7 +157,7 @@ above). Output is **overwritten in place** (not version-stamped):
   operation: compile
   requirements: [templates/<tmpl>/requirements.txt]
   output: templates/<tmpl>/python_depset.lock
-  build_arg_sets: [ray2560_py312_cu128]
+  build_arg_sets: [ray2560_py312]
   pre_hooks:
     - dependencies/scripts/seed-image-freeze.sh dependencies/images/ray-${RAY_VERSION}-py312-cu128.freeze.txt templates/<tmpl>/python_depset.lock
 ```

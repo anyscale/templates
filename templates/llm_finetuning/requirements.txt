@@ -8,3 +8,6 @@ bitsandbytes==0.47.0
 autoawq==0.2.9
 liger-kernel==0.6.2
 hf_transfer==0.1.9
+# mcp needs uvicorn>=0.23.1, which rejects the image's 0.22.0 — leaving the seed no
+# preference at all, so it re-floats to newest on every recompile. Pin what we tested.
+uvicorn==0.52.1

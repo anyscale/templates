@@ -144,7 +144,10 @@ def bundles_for(cfg, version) -> list[dict]:
 
 
 def bundle_name(v: str, b: dict) -> str:
-    return f"ray{compact(v)}_py{b['PYTHON_SHORT']}_{b['CUDA_VARIANT']}"
+    # CUDA_VARIANT is only carried where something interpolates it (the ray-llm
+    # freeze names); elsewhere the bundle is just (ray version, python).
+    suffix = f"_{b['CUDA_VARIANT']}" if "CUDA_VARIANT" in b else ""
+    return f"ray{compact(v)}_py{b['PYTHON_SHORT']}{suffix}"
 
 
 def apply_edit(cfg, target: str, prev_bundles: list[dict]) -> list[str]:
@@ -166,7 +169,8 @@ def apply_edit(cfg, target: str, prev_bundles: list[dict]) -> list[str]:
         m["RAY_VERSION"] = dq(target)
         m["PYTHON_VERSION"] = dq(pb["PYTHON_VERSION"])
         m["PYTHON_SHORT"] = dq(pb["PYTHON_SHORT"])
-        m["CUDA_VARIANT"] = dq(pb["CUDA_VARIANT"])
+        if "CUDA_VARIANT" in pb:  # only where an entry interpolates it
+            m["CUDA_VARIANT"] = dq(pb["CUDA_VARIANT"])
         bas[name] = m
         added.append(name)
     return added

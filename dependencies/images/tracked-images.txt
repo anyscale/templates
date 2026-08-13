@@ -1,5 +1,9 @@
 # Images to keep a freeze of, one per line, with the Ray version as {version}.
 # refresh-image-freezes.sh expands it and writes dependencies/images/<image>.freeze.txt.
+#
+# Only add an image the API reports is_experimental=false — the docs site and its
+# index.json don't carry that flag, so a pre-release variant (py3.14 today) looks
+# stable there. See references/dependencies.md "Image freezes".
 anyscale/ray-llm:{version}-py312-cu130
 anyscale/ray:{version}-py311
 anyscale/ray:{version}-py312
