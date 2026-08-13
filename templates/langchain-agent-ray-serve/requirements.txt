@@ -1,7 +1,7 @@
 # Only what the ray-llm base image lacks, pinned. fastapi/starlette match the base
 # version as guards (a transitive downgrade breaks build_openai_app on multi-node).
-# Everything else — openai, httpx, uvicorn, pydantic, torch — comes from the base
-# image and must NOT be re-pinned here: the depset was silently downgrading the base's
+# Everything else — openai, httpx, pydantic, torch — comes from the base image and
+# must NOT be re-pinned here: the depset was silently downgrading the base's
 # openai (2.34 -> 2.7), which 404s the agent's LLM call.
 fastapi==0.133.0
 starlette==1.0.1
@@ -10,3 +10,6 @@ langchain-mcp-adapters==0.1.12
 langchain-openai==1.0.2
 langgraph==1.2.0
 mcp==1.22.0
+# mcp needs uvicorn>=0.23.1, which rejects the image's 0.22.0 — leaving the seed no
+# preference at all, so it re-floats to newest on every recompile. Pin what we tested.
+uvicorn==0.52.1

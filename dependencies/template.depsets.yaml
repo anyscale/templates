@@ -3,16 +3,14 @@
 # lock: a lock models the build recipe, a freeze measures the shipped image.
 
 build_arg_sets:
-  ray2560_py311_cu128:
+  ray2560_py311:
     RAY_VERSION: "2.56.0"
     PYTHON_VERSION: "3.11"
     PYTHON_SHORT: "311"
-    CUDA_VARIANT: "cu128"
-  ray2560_py312_cu128:
+  ray2560_py312:
     RAY_VERSION: "2.56.0"
     PYTHON_VERSION: "3.12"
     PYTHON_SHORT: "312"
-    CUDA_VARIANT: "cu128"
   ray2560_py312_cu130:
     RAY_VERSION: "2.56.0"
     PYTHON_VERSION: "3.12"
@@ -20,7 +18,7 @@ build_arg_sets:
     CUDA_VARIANT: "cu130"
 
 depsets:
-  - name: serve_stable_diffusion_depset_${RAY_VERSION}_${PYTHON_VERSION}_${CUDA_VARIANT}
+  - name: serve_stable_diffusion_depset_${RAY_VERSION}_${PYTHON_VERSION}
     operation: compile
     requirements:
       - templates/serve-stable-diffusion-v2/requirements.txt
@@ -30,7 +28,7 @@ depsets:
       - --python-platform=linux
       - --unsafe-package ray
     build_arg_sets:
-      - ray2560_py312_cu128
+      - ray2560_py312
     pre_hooks:
       - dependencies/scripts/seed-image-freeze.sh dependencies/images/ray-${RAY_VERSION}-py312-cu128.freeze.txt templates/serve-stable-diffusion-v2/python_depset.lock
 
@@ -59,11 +57,11 @@ depsets:
       - --python-platform=linux
       - --unsafe-package ray
     build_arg_sets:
-      - ray2560_py311_cu128
+      - ray2560_py311
     pre_hooks:
       - dependencies/scripts/seed-image-freeze.sh dependencies/images/ray-${RAY_VERSION}-py311.freeze.txt templates/fintech_fraud_risk/python_depset.lock
 
-  - name: tune_pytorch_asha_depset_${RAY_VERSION}_${PYTHON_VERSION}_${CUDA_VARIANT}
+  - name: tune_pytorch_asha_depset_${RAY_VERSION}_${PYTHON_VERSION}
     operation: compile
     requirements:
       - templates/tune_pytorch_asha/requirements.txt
@@ -74,7 +72,7 @@ depsets:
       - --python-platform=linux
       - --unsafe-package ray
     build_arg_sets:
-      - ray2560_py312_cu128
+      - ray2560_py312
     pre_hooks:
       - dependencies/scripts/seed-image-freeze.sh dependencies/images/ray-${RAY_VERSION}-slim-py312-cu129.freeze.txt templates/tune_pytorch_asha/python_depset.lock
 
@@ -88,7 +86,7 @@ depsets:
       - --python-platform=x86_64-manylinux_2_31
       - --unsafe-package ray
     build_arg_sets:
-      - ray2560_py311_cu128
+      - ray2560_py311
     pre_hooks:
       - dependencies/scripts/seed-image-freeze.sh dependencies/images/ray-${RAY_VERSION}-py311-cu121.freeze.txt templates/biotech_protein_embeddings/python_depset.lock
 
@@ -103,7 +101,7 @@ depsets:
       - --python-platform=linux
       - --unsafe-package ray
     build_arg_sets:
-      - ray2560_py311_cu128
+      - ray2560_py311
     pre_hooks:
       - dependencies/scripts/seed-image-freeze.sh dependencies/images/ray-${RAY_VERSION}-py311-cu121.freeze.txt templates/ecommerce_batch_embeddings/python_depset.lock
 
@@ -178,7 +176,7 @@ depsets:
       - --python-platform=linux
       - --unsafe-package ray
     build_arg_sets:
-      - ray2560_py311_cu128
+      - ray2560_py311
     pre_hooks:
       - dependencies/scripts/seed-image-freeze.sh dependencies/images/ray-${RAY_VERSION}-py311-cu121.freeze.txt templates/creatives_diffusion_finetuning/python_depset.lock
 
@@ -193,7 +191,7 @@ depsets:
       - --python-platform=linux
       - --unsafe-package ray
     build_arg_sets:
-      - ray2560_py311_cu128
+      - ray2560_py311
     pre_hooks:
       - dependencies/scripts/seed-image-freeze.sh dependencies/images/ray-${RAY_VERSION}-py311-cu121.freeze.txt templates/ecommerce_multi_model_serving/python_depset.lock
 
@@ -208,7 +206,7 @@ depsets:
       - --python-platform=linux
       - --unsafe-package ray
     build_arg_sets:
-      - ray2560_py311_cu128
+      - ray2560_py311
     pre_hooks:
       - dependencies/scripts/seed-image-freeze.sh dependencies/images/ray-${RAY_VERSION}-py311-cu121.freeze.txt templates/biotech_boltz_screening/python_depset.lock
 
@@ -223,7 +221,7 @@ depsets:
       - --python-platform=linux
       - --unsafe-package ray
     build_arg_sets:
-      - ray2560_py311_cu128
+      - ray2560_py311
     pre_hooks:
       - dependencies/scripts/seed-image-freeze.sh dependencies/images/ray-${RAY_VERSION}-py311-cu128.freeze.txt templates/finetune-stable-diffusion/python_depset.lock
 
@@ -238,7 +236,7 @@ depsets:
       - --python-platform=linux
       - --unsafe-package ray
     build_arg_sets:
-      - ray2560_py311_cu128
+      - ray2560_py311
     pre_hooks:
       - dependencies/scripts/seed-image-freeze.sh dependencies/images/ray-${RAY_VERSION}-py311-cu128.freeze.txt templates/vhol-ray-data/python_depset.lock
 
@@ -253,7 +251,7 @@ depsets:
       - --python-platform=linux
       - --unsafe-package ray
     build_arg_sets:
-      - ray2560_py311_cu128
+      - ray2560_py311
     pre_hooks:
       - dependencies/scripts/seed-image-freeze.sh dependencies/images/ray-${RAY_VERSION}-py311-cu128.freeze.txt templates/deepspeed_finetune/python_depset.lock
 
@@ -268,7 +266,7 @@ depsets:
       - --python-platform=linux
       - --unsafe-package ray
     build_arg_sets:
-      - ray2560_py312_cu128
+      - ray2560_py312
     pre_hooks:
       - dependencies/scripts/seed-image-freeze.sh dependencies/images/ray-${RAY_VERSION}-slim-py312-cu128.freeze.txt templates/distributing-pytorch/python_depset.lock
 
@@ -283,7 +281,7 @@ depsets:
       - --python-platform=linux
       - --unsafe-package ray
     build_arg_sets:
-      - ray2560_py312_cu128
+      - ray2560_py312
     pre_hooks:
       - dependencies/scripts/seed-image-freeze.sh dependencies/images/ray-${RAY_VERSION}-py312-cu128.freeze.txt templates/pytorch-fsdp/python_depset.lock
 
@@ -298,7 +296,7 @@ depsets:
       - --python-platform=linux
       - --unsafe-package ray
     build_arg_sets:
-      - ray2560_py312_cu128
+      - ray2560_py312
 #
     pre_hooks:
       - dependencies/scripts/seed-image-freeze.sh dependencies/images/ray-${RAY_VERSION}-py312-cu128.freeze.txt templates/pytorch-profiling/python_depset.lock
@@ -314,7 +312,7 @@ depsets:
       - --python-platform=linux
       - --unsafe-package ray
     build_arg_sets:
-      - ray2560_py312_cu128
+      - ray2560_py312
     pre_hooks:
       - dependencies/scripts/seed-image-freeze.sh dependencies/images/ray-${RAY_VERSION}-slim-py312-cu128.freeze.txt templates/image-search-and-classification/python_depset.lock
 
@@ -329,7 +327,7 @@ depsets:
       - --python-platform=linux
       - --unsafe-package ray
     build_arg_sets:
-      - ray2560_py312_cu128
+      - ray2560_py312
     pre_hooks:
       - dependencies/scripts/seed-image-freeze.sh dependencies/images/ray-${RAY_VERSION}-py312-cu128.freeze.txt templates/tensor_parallel_dtensor/python_depset.lock
 
@@ -344,7 +342,7 @@ depsets:
       - --python-platform=linux
       - --unsafe-package ray
     build_arg_sets:
-      - ray2560_py312_cu128
+      - ray2560_py312
     pre_hooks:
       - dependencies/scripts/seed-image-freeze.sh dependencies/images/ray-${RAY_VERSION}-py312-cu128.freeze.txt templates/ray-data-batch-image-classification/python_depset.lock
 
@@ -358,7 +356,7 @@ depsets:
       - --python-platform=linux
       - --unsafe-package ray
     build_arg_sets:
-      - ray2560_py312_cu128
+      - ray2560_py312
     pre_hooks:
       - dependencies/scripts/seed-image-freeze.sh dependencies/images/ray-${RAY_VERSION}-slim-py312-cu128.freeze.txt templates/xgboost-training-and-serving/python_depset.lock
 
@@ -373,7 +371,7 @@ depsets:
       - --python-platform=linux
       - --unsafe-package ray
     build_arg_sets:
-      - ray2560_py312_cu128
+      - ray2560_py312
     pre_hooks:
       - dependencies/scripts/seed-image-freeze.sh dependencies/images/ray-${RAY_VERSION}-slim-py312-cu129.freeze.txt templates/ray_train_workloads/python_depset.lock
 
@@ -388,7 +386,7 @@ depsets:
       - --python-platform=linux
       - --unsafe-package ray
     build_arg_sets:
-      - ray2560_py312_cu128
+      - ray2560_py312
     pre_hooks:
       - dependencies/scripts/seed-image-freeze.sh dependencies/images/ray-${RAY_VERSION}-py312-cu129.freeze.txt templates/ray-tune-train-integration/python_depset.lock
 
@@ -402,7 +400,7 @@ depsets:
       - --python-platform=linux
       - --unsafe-package ray
     build_arg_sets:
-      - ray2560_py311_cu128
+      - ray2560_py311
     pre_hooks:
       - dependencies/scripts/seed-image-freeze.sh dependencies/images/ray-${RAY_VERSION}-py311.freeze.txt templates/fintech_quant/python_depset.lock
 
@@ -416,7 +414,7 @@ depsets:
       - --python-platform=linux
       - --unsafe-package ray
     build_arg_sets:
-      - ray2560_py311_cu128
+      - ray2560_py311
     pre_hooks:
       - dependencies/scripts/seed-image-freeze.sh dependencies/images/ray-${RAY_VERSION}-py311.freeze.txt templates/storage-access-large-datasets/python_depset.lock
 
@@ -431,7 +429,7 @@ depsets:
       - --python-platform=linux
       - --unsafe-package ray
     build_arg_sets:
-      - ray2560_py311_cu128
+      - ray2560_py311
 #
     pre_hooks:
       - dependencies/scripts/seed-image-freeze.sh dependencies/images/ray-${RAY_VERSION}-py311-cu128.freeze.txt templates/tensor_parallel_autotp/python_depset.lock
@@ -446,7 +444,7 @@ depsets:
       - --python-platform=linux
       - --unsafe-package ray
     build_arg_sets:
-      - ray2560_py312_cu128
+      - ray2560_py312
     pre_hooks:
       - dependencies/scripts/seed-image-freeze.sh dependencies/images/ray-${RAY_VERSION}-slim-py312-cu128.freeze.txt templates/asynchronous_inference/python_depset.lock
 
@@ -460,7 +458,7 @@ depsets:
       - --python-platform=linux
       - --unsafe-package ray
     build_arg_sets:
-      - ray2560_py312_cu128
+      - ray2560_py312
     pre_hooks:
       - dependencies/scripts/seed-image-freeze.sh dependencies/images/ray-${RAY_VERSION}-py312.freeze.txt templates/mcp-ray-serve/python_depset.lock
 
@@ -475,7 +473,7 @@ depsets:
       - --python-platform=linux
       - --unsafe-package ray
     build_arg_sets:
-      - ray2560_py311_cu128
+      - ray2560_py311
     pre_hooks:
       - dependencies/scripts/seed-image-freeze.sh dependencies/images/ray-${RAY_VERSION}-py311-cu128.freeze.txt templates/stable-diffusion-pretraining/python_depset.lock
 
@@ -490,7 +488,7 @@ depsets:
       - --python-platform=linux
       - --unsafe-package ray
     build_arg_sets:
-      - ray2560_py312_cu128
+      - ray2560_py312
     pre_hooks:
       - dependencies/scripts/seed-image-freeze.sh dependencies/images/ray-${RAY_VERSION}-py312-cu128.freeze.txt templates/ray-summit-core-masterclass/python_depset.lock
 
@@ -505,7 +503,7 @@ depsets:
       - --python-platform=linux
       - --unsafe-package ray
     build_arg_sets:
-      - ray2560_py311_cu128
+      - ray2560_py311
     pre_hooks:
       - dependencies/scripts/seed-image-freeze.sh dependencies/images/ray-${RAY_VERSION}-py311-cu124.freeze.txt templates/text-embeddings/python_depset.lock
 
@@ -519,7 +517,7 @@ depsets:
       - --python-platform=linux
       - --unsafe-package ray
     build_arg_sets:
-      - ray2560_py312_cu128
+      - ray2560_py312
     pre_hooks:
       - dependencies/scripts/seed-image-freeze.sh dependencies/images/ray-${RAY_VERSION}-slim-py312-cu128.freeze.txt templates/e2e-timeseries-forecasting/python_depset.lock
 
@@ -533,6 +531,6 @@ depsets:
       - --python-platform=linux
       - --unsafe-package ray
     build_arg_sets:
-      - ray2560_py312_cu128
+      - ray2560_py312
     pre_hooks:
       - dependencies/scripts/seed-image-freeze.sh dependencies/images/ray-${RAY_VERSION}-py312.freeze.txt templates/ecommerce_end_to_end/python_depset.lock

@@ -30,7 +30,7 @@ certifi==2025.1.31 \
     # via
     #   httpcore
     #   httpx
-click==8.1.7 ; sys_platform != 'emscripten' \
+click==8.1.7 \
     --hash=sha256:ae74fb96c20a0277a1d615f1e4d73c8414f5a98db8b799a7931d1582f3390c28 \
     --hash=sha256:ca9853ad459e787e2192211578cc907e7594e294c7ccc834310722b41b9ca6de
     # via uvicorn
@@ -351,7 +351,9 @@ typing-inspection==0.4.2 \
     # via
     #   pydantic
     #   pydantic-settings
-uvicorn==0.52.1 ; sys_platform != 'emscripten' \
+uvicorn==0.52.1 \
     --hash=sha256:112ec661814189acbccd3f7b86460147cc065fc92c0821afa78918780e4354dd \
     --hash=sha256:e4403f9d93188cf9d1088e9f40e3acd12630e2df8675316704379a7fc20fff6a
-    # via mcp
+    # via
+    #   -r templates/mcp-ray-serve/requirements.txt
+    #   mcp
