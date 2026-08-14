@@ -237,10 +237,7 @@ def main():
     args = get_args()
     print(args)
 
-    # Propagate the locked dependencies (torch, transformers, deepspeed, ...) to every
-    # Ray Train worker. In a multi-node cluster, packages installed on the head node are
-    # not available on worker nodes, so we ship the lockfile to each worker via the
-    # job-level runtime_env (a pip-based install).
+    # Ray Train workers run off-head, so ship them the lock via runtime_env.
     lock_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "python_depset.lock")
     if ray.is_initialized():
         ray.shutdown()

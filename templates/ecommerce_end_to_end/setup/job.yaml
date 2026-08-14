@@ -10,9 +10,7 @@ image_uri: anyscale/ray:2.56.0-py312
 
 working_dir: .
 
-# The notebook's setup cell installs python_depset.lock on the driver and
-# forwards it to Ray workers via runtime_env — the job env itself only needs
-# the notebook runner.
+# The notebook forwards the lock to workers itself; the job env needs only the source.
 requirements:
   - papermill
 

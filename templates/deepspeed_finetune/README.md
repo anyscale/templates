@@ -121,10 +121,7 @@ import os
 os.environ["RAY_TRAIN_V2_ENABLED"] = "1"  # Ensure Ray Train v2 APIs
 import ray
 
-# Propagate the locked dependencies (torch, transformers, deepspeed, ...) to every
-# Ray Train worker. In a multi-node cluster, packages installed on the head node are
-# not available on worker nodes, so we ship the lockfile to each worker via the
-# job-level runtime_env (a pip-based install).
+# Ray Train workers run off-head, so ship them the lock via runtime_env.
 if ray.is_initialized():
     ray.shutdown()
 ray.init(
@@ -196,7 +193,6 @@ def train_loop(config: Dict[str, Any]) -> None:
 
         # (8) Report metrics and save checkpoint
         report_metrics_and_save_checkpoint(ds_engine, {"loss": running_loss / num_batches, "epoch": epoch})
-
 ```
 
 Ray Train runs the `train_loop` on each worker, which naturally supports **data parallelism**. In this setup, each worker processes a unique shard of data, computes gradients locally, and participates in synchronization to keep model parameters consistent. On top of this, DeepSpeed partitions model and optimizer states across GPUs to reduce memory usage and communication overhead.
