@@ -14,10 +14,16 @@ ray.init(runtime_env={"pip": os.path.join(DEMO_ROOT, "python_depset.lock"), ...}
 ```
 
 `--system` covers only the driver; **workers get the deps solely via `runtime_env`** — omit it and they
-silently run whatever the image shipped. That `ray.init` env reaches Ray Core/Data workers (tasks/actors)
-but **not Ray Serve replicas** — serve/LLM templates must declare deps at the Serve app/deployment level
-(see "Runtime skew" below). The lock must also match the Ray version baked into the image; a bump that
-moves the image without recompiling the lock desyncs them (`../workflows/bump-ray-version.md`).
+silently run whatever the image shipped. `ray.init(runtime_env=)` is the standard: use it, and it covers
+Ray Core, Data and Train workers, plus Serve replicas that declare no `runtime_env` of their own. The lock
+must also match the Ray version baked into the image; a bump that moves the image without recompiling the
+lock desyncs them (`../workflows/bump-ray-version.md`).
+
+**One Serve rule: all or nothing.** `serve.run` hands the driver's `runtime_env` to any deployment that
+declares none, so the `ray.init` above already reaches those replicas. But declare *any* `runtime_env` on a
+deployment and it stops inheriting — only `working_dir` is backfilled and `pip` is dropped
+(`ray/serve/_private/build_app.py:_set_default_runtime_env`). So either leave a deployment's `runtime_env`
+alone, or give it the lock in full. Adding an `env_vars` to a working deployment silently strips its deps.
 
 **Why `runtime_env`, not a bare `pip install`.** In a *workspace*, a raw `pip install` auto-propagates to
 workers (a workspace-only convenience); `uv pip install` does **not** — it stays on the head. Since
@@ -47,9 +53,12 @@ version by default, so skew takes an explicit pin or a hard transitive requireme
 - **The base framework stack is ground truth.** Leave those packages unpinned and the freeze holds them at
   the image version — that is the default and usually the right answer. Moving one is on you to keep
   consistent cluster-wide.
-- **Deliver *added* deps at the right scope.** `ray.init(runtime_env=)` reaches Ray Core/Data workers but
-  **not Serve replicas**; declare a serve/LLM template's added deps on the Serve **app-level** `runtime_env`
-  (or `@serve.deployment(ray_actor_options={"runtime_env": …})`), never a head-only `--system` install.
+- **Deliver *added* deps with `ray.init(runtime_env=)`.** It is the standard and it reaches everything,
+  Serve replicas included, as long as those replicas declare no `runtime_env` of their own. Never rely on a
+  head-only `--system` install. Reach for a per-deployment `ray_actor_options={"runtime_env": …}` only when
+  one deployment genuinely needs something different — and then give it the lock in full (see "all or
+  nothing" above). Note `py_modules` cannot take a local directory at deployment scope; Ray uploads
+  directories only for `ray.init`.
 - **Secondary configs point at the same `.lock`.** A shipped `service_config.yaml` / `job_config.yaml`
   (the standalone Service/Job path) must source its deps from the template's `python_depset.lock` via
   `runtime_env`, not a hand-maintained pin list — a divergent list drifts silently from the tested lock.
