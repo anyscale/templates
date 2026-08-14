@@ -82,6 +82,10 @@ ray.init(
         # Install the locked deps into the Ray worker runtime_env so that
         # worker actors/tasks (not just the driver) can import them.
         "pip": os.path.join(DEMO_ROOT, "python_depset.lock"),
+        # boltz pulls chembl-structure-pipeline, which has no wheel and whose
+        # sdist build wants an unpinned setuptools — that trips pip's
+        # --require-hashes on our hashed lock. Build against the image's instead.
+        "env_vars": {"PIP_NO_BUILD_ISOLATION": "1"},
     },
 )
 
