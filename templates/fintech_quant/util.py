@@ -1,4 +1,6 @@
 
+import logging
+import math
 import time
 from datetime import datetime
 
@@ -9,13 +11,44 @@ import numpy as np
 import QuantLib as ql
 import yfinance as yf
 
+log = logging.getLogger(__name__)
+
+# A failed pricing is reported as NaN, never as a number. See the comment on the
+# `except RuntimeError` in get_iv() for why 0.0 was the wrong sentinel.
+PRICING_FAILED = float("nan")
+
+
+def count_priced(df, column="implied_volatility"):
+    """How many rows of `column` actually priced.
+
+    get_iv()/get_npv() return NaN when QuantLib can't solve, so a row that
+    failed is countable rather than invisible. Use this to report "N of M".
+    """
+    if column not in df:
+        return 0
+    return int(df[column].notna().sum())
+
+
 # Common, long print string, pulled out of notebook
 def get_symbols_stat_print(symbol, df):
-    return f"Stats for {symbol:>6}: {len(df):>5} options, calc'd IV for all  shocks in "
+    # Report priced-vs-total, not just total. A run that prices 900 of 1843
+    # contracts is not the same result as one that prices all 1843, and the
+    # summary line is the only place a user would notice the difference.
+    priced = count_priced(df)
+    total = len(df)
+    failed = total - priced
+    suffix = f" ({failed} FAILED to price -- see warnings above)" if failed else ""
+    return (
+        f"Stats for {symbol:>6}: {priced:>5} of {total:>5} options priced{suffix}, "
+        "calc'd IV for all  shocks in "
+    )
 
 def get_iv(option):
     """
     Get implied volatility for a given option
+
+    Returns NaN -- never 0.0 -- if QuantLib cannot solve for the vol, so a
+    failed calculation stays distinguishable from a genuine zero.
     """
     risk_free_rate = 0.0425
 
@@ -60,16 +93,55 @@ def get_iv(option):
             option_price, bsm_process, 1e-4, 1000, 1e-8, 4.0
         )
         return float(implied_volatility)
-    except:
-        return 0.0
+    except RuntimeError as exc:
+        # QuantLib's SWIG bindings surface every pricing/solver error as
+        # RuntimeError -- e.g. "root not bracketed" when the quoted price
+        # implies a vol outside the [1e-8, 4.0] search bounds. Catch that, and
+        # only that.
+        #
+        # This was `except: return 0.0`, which is wrong twice over:
+        #
+        #   1. A bare `except` also swallows KeyboardInterrupt and SystemExit
+        #      (so the job ignores Ctrl-C and shutdown) and hides real bugs --
+        #      a TypeError from a None `last_price`, a KeyError from a renamed
+        #      column -- as if they were market data the model couldn't fit.
+        #   2. 0.0 is a legal-looking volatility. A contract that failed to
+        #      price became indistinguishable from one that priced at zero, so
+        #      the run emitted a full-looking result set partly made of
+        #      failures and still reported success. Nothing downstream -- the
+        #      CSV, a mean, a risk number -- could tell the difference.
+        #
+        # NaN cannot be mistaken for a price, it stays visible through
+        # downstream arithmetic, and count_priced() turns it into a number the
+        # run can report.
+        log.warning(
+            "implied volatility failed for %s (%s strike=%s exp=%s last_price=%s): %s",
+            option.get("contractSymbol", "<unknown contract>"),
+            option.get("type"),
+            option.get("strike"),
+            option.get("expiration"),
+            option_price,
+            exc,
+        )
+        return PRICING_FAILED
 
 def get_npv(option, underlying_price, implied_volatility):
     """
     Get NPV for a given option
+
+    Returns NaN -- never 0.0 -- if the contract cannot be priced, so a failed
+    valuation is not silently aggregated as a zero-value position.
     """
     risk_free_rate = 0.0425
 
     volatility = float(implied_volatility)
+
+    # A non-finite vol means get_iv() already failed on this contract and
+    # already logged it. Propagate that failure rather than spend a 1000-step
+    # binomial solve to fail again and log the same contract twice.
+    if not math.isfinite(volatility):
+        return PRICING_FAILED
+
     spot_price = underlying_price
     option_price = option['last_price']
     dividend_yield = option['dividend_yield']
@@ -110,8 +182,23 @@ def get_npv(option, underlying_price, implied_volatility):
             option_price, bsm_process, 1e-4, 1000, 1e-8, 4.0
         )
         return american_option.NPV()
-    except:
-        return 0.0
+    except RuntimeError as exc:
+        # Same reasoning as get_iv(): QuantLib raises RuntimeError for solver
+        # and engine failures ("root not bracketed", "negative probability"),
+        # and a bare `except: return 0.0` turned an unpriced contract into a
+        # zero-valued one -- a number that flows into a scenario NPV total
+        # without ever looking wrong. NaN can't be mistaken for a valuation.
+        log.warning(
+            "NPV failed for %s (%s strike=%s exp=%s spot=%s vol=%s): %s",
+            option.get("contractSymbol", "<unknown contract>"),
+            option.get("type"),
+            option.get("strike"),
+            option.get("expiration"),
+            spot_price,
+            volatility,
+            exc,
+        )
+        return PRICING_FAILED
 
 _yf_cache_isolated = False
 
