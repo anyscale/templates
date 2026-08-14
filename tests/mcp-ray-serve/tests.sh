@@ -19,7 +19,7 @@ uv pip install --system --no-deps --no-cache-dir --index-strategy unsafe-best-ma
 # Podman (used in the stdio examples).
 sudo apt-get update && sudo apt-get install -y podman
 
-pip install --no-cache-dir "papermill==2.7.0" "jupyter==1.1.1" "nbconvert==7.16.6"
+uv pip install --system --no-cache-dir "papermill==2.7.0" "jupyter==1.1.1" "nbconvert==7.16.6"
 
 # Everything the replicas exec at request time (shim + node) must live on
 # /mnt/cluster_storage: it is NFS-shared across all nodes, whereas /tmp is

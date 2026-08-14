@@ -115,18 +115,25 @@ def check_driver():
 
 
 def check_tests_pip():
-    """tests.sh must not bare-`pip install` — it poisons runtime_env for the whole template."""
-    problems = []
+    """tests.sh must not bare-`pip install`. Only a template shipping a lock can be bitten
+    today, so only those fail; the rest are listed, since each becomes a live break the
+    moment it gains a lock."""
+    problems, latent = [], []
     for name, root, _ in templates():
         script = TESTS / name / "tests.sh"
         if not script.exists():
             continue
-        hashed = (root / LOCK).exists()
         for n, line in enumerate(script.read_text().splitlines(), 1):
             if line.lstrip().startswith("#") or not BARE_PIP_RE.search(line):
                 continue
-            severity = "poisons the hashed runtime_env" if hashed else "head-only; use uv"
-            problems.append(f"{name}: {script}:{n} bare pip install ({severity})\n      {line.strip()}")
+            found = f"{name}: {script}:{n}\n      {line.strip()}"
+            (problems if (root / LOCK).exists() else latent).append(found)
+
+    if latent:
+        print(f"note: {len(latent)} lock-less template(s) also bare-pip in tests.sh. Harmless "
+              "until they gain a lock; convert to `uv pip install --system` when touched:")
+        for f in latent:
+            print(f"  - {f}")
     return problems
 
 
