@@ -85,7 +85,7 @@ import subprocess
 os.environ["RAY_TRAIN_V2_ENABLED"] = "1"
 
 # Install Python dependencies (
-!pip install --no-cache-dir torch==2.8.0 torchvision==0.23.0
+!uv pip install -r /home/ray/default/python_depset.lock --system --no-deps --no-cache-dir --index-strategy unsafe-best-match
 ```
 
 

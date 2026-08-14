@@ -46,6 +46,11 @@ git clone https://github.com/anyscale/templates && cd templates/templates/ray-tu
 
 
 ```python
+!uv pip install -r python_depset.lock --system --no-deps --no-cache-dir --index-strategy unsafe-best-match
+```
+
+
+```python
 import ray
 from ray import train, tune
 from ray.train import RunConfig, ScalingConfig, CheckpointConfig, Checkpoint
@@ -66,7 +71,7 @@ import os
 import tempfile
 
 # Initialize Ray
-ray.init()
+ray.init(runtime_env={"pip": os.path.abspath("python_depset.lock")})
 
 # Check cluster resources
 resources = ray.cluster_resources()

@@ -1,7 +1,9 @@
 matplotlib==3.10.6
 torch==2.8.0
 torchvision==0.23.0
-pyarrow==14.0.2
+# Unpinned on purpose: pyarrow is part of the base image's managed runtime and Ray
+# Data enforces a floor on it. Pinning 14.0.2 here dragged it under that floor.
+pyarrow
 torchmetrics==1.8.2
 xgboost==3.0.5
 seaborn==0.13.2

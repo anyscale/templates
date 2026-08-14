@@ -11,8 +11,6 @@ export GRACE_PERIOD="${GRACE_PERIOD:-1}"
 export MAX_T="${MAX_T:-2}"
 export RANDOM_SEARCH_STEPS="${RANDOM_SEARCH_STEPS:-2}"
 
-# bayesian-optimization is commented out in requirements.txt (optional for
-# users); install it here so CI exercises the BayesOpt branch in Cell 24
-# instead of falling through its try/except ImportError.
-pip install -r requirements.txt papermill bayesian-optimization==1.4.3
+uv pip install -r python_depset.lock --system --no-deps --no-cache-dir --index-strategy unsafe-best-match
+uv pip install -q --system papermill
 papermill README.ipynb output.ipynb -k python3 --log-output
