@@ -1,5 +1,5 @@
 """
-Ray Data Boltz-1 screening pipeline.
+Ray Data protein screening pipeline.
 Orchestrates: read → CPU feature prep → GPU structure prediction → CPU classify → write
 """
 import time
@@ -8,7 +8,7 @@ import ray
 import ray.data
 
 from src.feature_prep import build_boltz_input_batch
-from src.boltz_predictor import BoltzPredictor
+from src.structure_scorer import SCORER_NAME, SimulatedStructureScorer
 from src.postprocess import classify_and_filter
 from src.utils import (
     calc_throughput, print_metrics_table, format_number,
@@ -24,12 +24,12 @@ def run_screening_pipeline(
     num_gpus: int = 4,
 ) -> dict:
     """
-    End-to-end Ray Data Boltz-1 screening pipeline.
+    End-to-end Ray Data protein screening pipeline.
 
     Stages:
       1. read_parquet           — distributed parallel read of candidate complexes
-      2. map_batches (CPU)      — parse sequences, build Boltz-1 input dicts
-      3. map_batches (GPU)      — Boltz-1 structure prediction (1 actor per GPU)
+      2. map_batches (CPU)      — parse sequences, build predictor input dicts
+      3. map_batches (GPU)      — confidence scoring (1 actor per GPU)
       4. map_batches (CPU)      — classify confidence tiers, filter
       5. write_parquet          — scored results + CIF bytes to output
 
@@ -59,14 +59,14 @@ def run_screening_pipeline(
     )
     stage_times["feature_prep"] = time.time() - t0
 
-    # ── Stage 3: GPU Structure Prediction ──────────────────────────────────
-    # One Boltz-1 actor per A10G GPU. Each actor loads the model once and
-    # processes all batches assigned to it. concurrency = num_gpus ensures
-    # we saturate the autoscaled GPU pool.
-    print(f"\n[3/5] Boltz-1 structure prediction — {num_gpus} GPU worker(s)")
+    # ── Stage 3: GPU Scoring ───────────────────────────────────────────────
+    # One actor per A10G GPU, constructed once and reused across every batch it is
+    # assigned. concurrency = num_gpus saturates the autoscaled GPU pool. Scores are
+    # simulated — see src/structure_scorer.py for the contract a real model plugs into.
+    print(f"\n[3/5] Structure scoring (simulated) — {num_gpus} GPU worker(s)")
     t0 = time.time()
     ds = ds.map_batches(
-        BoltzPredictor,
+        SimulatedStructureScorer,
         fn_constructor_kwargs={"weights_path": weights_path},
         batch_size=4,
         num_gpus=1,
@@ -108,7 +108,9 @@ def run_screening_pipeline(
         "Post-processing time": f"{stage_times['postprocess']:.1f}s",
         "Write time": f"{stage_times['write']:.1f}s",
         "Output path": output_path,
-        "Est. single-GPU time": estimate_single_node_time(total_complexes),
+        "Scorer": SCORER_NAME,
+        "Est. single-GPU time (real predictor @30s/complex)":
+            estimate_single_node_time(total_complexes),
         "Est. Anyscale job cost": estimate_job_cost(wall_time, num_gpu_workers=num_gpus),
     }
 

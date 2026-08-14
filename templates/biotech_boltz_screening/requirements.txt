@@ -1,5 +1,4 @@
 ray[data]>=2.9
-boltz>=0.3
 torch==2.5.1
 numpy==1.26.4
 pandas>=2.0

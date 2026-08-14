@@ -1,5 +1,5 @@
 """
-Step 1: Generate synthetic candidate complexes for Boltz-1 screening.
+Step 1: Generate synthetic candidate complexes for screening.
 
 Usage:
   python scripts/01_prepare_candidates.py --scale medium --complex-type pp

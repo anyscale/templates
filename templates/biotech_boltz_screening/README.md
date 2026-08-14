@@ -1,4 +1,4 @@
-# Biotech Protein Interaction Screening with Boltz-1
+# Biotech Protein Interaction Screening
 
 <div align="left">
   <a target="_blank" href="https://console.anyscale.com/template-preview/biotech_boltz_screening"><img src="https://img.shields.io/badge/🚀 Run_on-Anyscale-9hf"></a>&nbsp;
@@ -7,17 +7,19 @@
 
 **⏱️ Time to complete**: 30 min
 
+> **The scores in this template are simulated.** The Ray Data pipeline is real and is the point: CPU feature prep streaming into GPU actors streaming into CPU post-processing, autoscaling, with no intermediate materialization. The GPU stage stands in for a structure predictor so the template runs anywhere in minutes with no checkpoint download. `src/structure_scorer.py` is the one class you replace to screen for real, and it documents the contract.
+
 ### Anyscale Technical Demo — Ray Data on Anyscale Jobs
 
 ---
 
 ## Business Context
 
-A biotech team is designing a binder against a cancer target. They have **1,000 designed candidate proteins**. To rank them they need to fold each target+binder complex through **Boltz-1** (MIT license, AlphaFold3-competitive quality). On one A100 at ~30 seconds per complex, that's **8+ hours** — and a single CUDA OOM kills the run.
+A biotech team is designing a binder against a cancer target. They have **1,000 designed candidate proteins**. To rank them they need to fold each target+binder complex through a structure predictor such as **Boltz** (MIT license, AlphaFold3-competitive quality). On one A100 at ~30 seconds per complex, that's **8+ hours** — and a single CUDA OOM kills the run.
 
-**Today:** Researchers run Boltz-1 in a `for` loop on a single GPU. No fault tolerance, no observability, no way to burst.
+**Today:** Researchers run the predictor in a `for` loop on a single GPU. No fault tolerance, no observability, no way to burst.
 
-**With Ray Data on Anyscale:** Wrap the existing Boltz-1 Python entry point in a Ray Data actor, fan out across an autoscaling GPU pool, stream features in and confidence scores out, and produce a ranked candidate list with structures — in minutes.
+**With Ray Data on Anyscale:** Wrap the existing Python entry point in a Ray Data actor, fan out across an autoscaling GPU pool, stream features in and confidence scores out, and produce a ranked candidate list — in minutes.
 
 ---
 
@@ -29,17 +31,17 @@ Anyscale Job / Workspace
 +- [Ray Data] read_parquet ---------------------- Distributed parallel read
 +- [map_batches / CPU] feature_prep ------------- Parse sequences, build Boltz input
 |       m5.2xlarge x 1-4 nodes
-+- [map_batches / GPU] BoltzPredictor ----------- Boltz-1 structure prediction
++- [map_batches / GPU] SimulatedStructureScorer - Scoring stage (swap in a predictor)
 |       g5.2xlarge x 1-8 nodes (A10G, 1 GPU per actor)
 +- [map_batches / CPU] classify_and_filter ------ Confidence tiers + ranking
-+- [write_parquet] ------------------------------ Scored results + CIF bytes
++- [write_parquet] ------------------------------ Scored results, tagged with the scorer used
 ```
 
 Data streams between stages — no intermediate disk writes, no idle CPUs waiting on GPUs.
 
 ---
 
-**Timing note**: The full pipeline on 500 complexes with 4x A10G GPUs completes in ~4 minutes — compared to 4+ hours on a single GPU running sequentially. The speedup comes from three things working together: 4 GPUs processing batches in parallel, CPU feature prep streaming into GPU inference with no idle time between stages, and Ray Data's automatic load balancing across workers. During the run, open the Ray Dashboard to watch CPU and GPU workers in action.
+**Timing note**: With a real predictor at ~30s per complex, 500 complexes on 4x A10G finishes in roughly 4 minutes against 4+ hours sequentially — 4 GPUs in parallel, CPU feature prep streaming into GPU inference with no idle time between stages, and Ray Data load-balancing across workers. The simulated scorer returns immediately, so what you are watching here is the pipeline's scheduling and streaming behaviour, not that speedup. Open the Ray Dashboard during the run to see CPU and GPU workers in action.
 
 ## Get the code
 
@@ -147,29 +149,31 @@ for row in ds.take(3):
 
 ## Step 3: Walk the Pipeline Code
 
-Before running the full pipeline, let's look at how the **BoltzPredictor** callable class works. This is the core GPU stage — one actor per A10G GPU:
+Before running the full pipeline, let's look at the **SimulatedStructureScorer** callable class. This is the core GPU stage — one actor per A10G GPU:
 
-- **`__init__`**: Loads Boltz-1 weights onto CUDA once per actor. The ~1.5GB checkpoint is cached on `/mnt/cluster_storage/` so workers don't re-download.
-- **`__call__`**: Processes a batch of complexes, emitting confidence metrics (pLDDT, ipTM) and CIF structure bytes for each.
+- **`__init__`**: Runs once per actor. A real predictor loads its weights here, which is what amortizes a ~30s model load across every batch that actor handles; the stand-in loads nothing.
+- **`__call__`**: Processes a batch of complexes, emitting confidence metrics (pLDDT, ipTM) per complex, plus a `scorer` column recording where the numbers came from.
+
+**Swapping in a real predictor** means replacing this one class and keeping the rest. The contract Ray Data depends on — constructor args, input columns, output columns — is written out at the top of `src/structure_scorer.py`.
 
 **Key metrics:**
 - **pLDDT** (predicted Local Distance Difference Test): Per-residue confidence in the structure. 0-100, >70 is reliable.
 - **ipTM** (interface predicted Template Modeling): Confidence in the interaction interface. 0-1, >0.8 is high.
-- **confidence**: Boltz-1's aggregate score. This is what we rank by.
+- **confidence**: the aggregate of the two. This is what we rank by.
 
-The pipeline chains 5 stages: read → feature prep (CPU) → Boltz-1 predict (GPU) → classify (CPU) → write.
+The pipeline chains 5 stages: read → feature prep (CPU) → score (GPU) → classify (CPU) → write.
 
 
 ```python
-# Cell 4 - Inspect the pipeline code and BoltzPredictor class
+# Cell 4 - Inspect the pipeline code and the scoring class
 import inspect
-from src.boltz_predictor import BoltzPredictor
+from src.structure_scorer import SimulatedStructureScorer
 from src.pipeline import run_screening_pipeline
 
-# Show the BoltzPredictor class signature
-print("BoltzPredictor — Ray Data callable class (1 actor per GPU):")
-print(f"  __init__ args: {inspect.signature(BoltzPredictor.__init__)}")
-print(f"  __call__ args: {inspect.signature(BoltzPredictor.__call__)}")
+# Show the scoring class signature — this is the swap point for a real predictor
+print("SimulatedStructureScorer — Ray Data callable class (1 actor per GPU):")
+print(f"  __init__ args: {inspect.signature(SimulatedStructureScorer.__init__)}")
+print(f"  __call__ args: {inspect.signature(SimulatedStructureScorer.__call__)}")
 print()
 
 # Show the pipeline function signature
@@ -180,21 +184,21 @@ print()
 # Show the pipeline stages
 print("Pipeline stages:")
 print("  [1/5] Read candidate Parquet       — distributed parallel read")
-print("  [2/5] Feature prep (CPU)           — parse sequences, build Boltz input dicts")
-print("  [3/5] Boltz-1 prediction (GPU)     — structure prediction, 1 actor per A10G")
+print("  [2/5] Feature prep (CPU)           — parse sequences, build predictor input dicts")
+print("  [3/5] Scoring (GPU, simulated)     — 1 actor per A10G")
 print("  [4/5] Post-processing (CPU)        — classify confidence tiers, filter")
-print("  [5/5] Write scored Parquet          — results + CIF bytes")
+print("  [5/5] Write scored Parquet          — results + scorer provenance")
 ```
 
 ## Step 4: Run the Screening Pipeline
 
-This is the core of the demo. The next cell runs the full end-to-end pipeline: CPU feature prep streams directly into GPU structure prediction, which streams directly into CPU post-processing and Parquet writes. There are **no intermediate disk materializations** between stages.
+This is the core of the demo. The next cell runs the full end-to-end pipeline: CPU feature prep streams directly into the GPU scoring stage, which streams directly into CPU post-processing and Parquet writes. There are **no intermediate disk materializations** between stages.
 
-**Technical differentiator:** Ray Data's streaming execution means your GPU workers start predicting structures as soon as the first feature-prepped batch is ready. CPU and GPU stages run concurrently, maximizing hardware utilization. Open the Ray Dashboard to watch this live.
+**Technical differentiator:** Ray Data's streaming execution means your GPU workers start scoring as soon as the first feature-prepped batch is ready. CPU and GPU stages run concurrently, maximizing hardware utilization. Open the Ray Dashboard to watch this live.
 
 **TIP:** Open the Ray Dashboard -> Jobs tab to watch:
 - CPU workers handling sequence parsing and feature prep
-- A10G GPU workers activating for Boltz-1 structure prediction
+- A10G GPU workers activating for the scoring stage
 - Data streaming between stages (no intermediate writes)
 - Per-stage throughput and backpressure
 
@@ -203,13 +207,13 @@ This is the core of the demo. The next cell runs the full end-to-end pipeline: C
 # Cell 5 - Run the full screening pipeline
 from src.pipeline import run_screening_pipeline
 
-print("Starting Boltz-1 screening pipeline...")
+print("Starting screening pipeline (simulated scorer)...")
 print(f"  Input:   {INPUT_PATH}")
 print(f"  Output:  {OUTPUT_PATH}")
 print(f"  GPUs:    {NUM_GPUS} workers (concurrency={NUM_GPUS})\n")
 print("TIP: Open Ray Dashboard -> Jobs to watch:")
-print("  - CPU workers parsing sequences and building Boltz inputs")
-print("  - A10G GPU workers activating for structure prediction")
+print("  - CPU workers parsing sequences and building predictor inputs")
+print("  - A10G GPU workers activating for the scoring stage")
 print("  - Data streaming between stages (no intermediate writes)\n")
 
 metrics = run_screening_pipeline(
@@ -223,11 +227,11 @@ metrics = run_screening_pipeline(
 
 The next cell loads the scored output and shows:
 1. **Confidence tier distribution** — how many candidates fall into high/medium/low tiers
-2. **Top-10 candidates** ranked by Boltz-1 confidence score, with ipTM and pLDDT
+2. **Top-10 candidates** ranked by confidence score, with ipTM and pLDDT
 
-This is the key demo moment: the screening pipeline has ranked all candidates, and the top binders are immediately visible. These are the candidates a wet-lab team would take forward for experimental validation.
+This is the key demo moment: the pipeline has ranked every candidate and the top of the list is immediately available. With a real predictor wired into `src/structure_scorer.py`, this is the table a wet-lab team would triage from. **With the simulated scorer these rankings carry no biological meaning** — the `scorer` column on every row records that.
 
-**Business value:** What used to require a week of single-GPU compute and ad-hoc post-processing scripts is now a ranked Parquet table produced in minutes. The confidence distribution shows realistic spread — most random binders don't bind, but the few high-confidence hits are exactly what the team needs.
+**Business value:** what used to require a week of single-GPU compute and ad-hoc post-processing scripts becomes a ranked Parquet table produced in minutes, from the same model code.
 
 
 ```python
@@ -257,7 +261,7 @@ for lo, hi, count in zip(bins[:-1], bins[1:], counts):
 
 The next cell demonstrates two things:
 
-1. **3D structure rendering** — Using `py3Dmol` to render the predicted CIF structure of the top candidate inline. This is what a researcher would see before deciding to advance a binder to wet-lab validation.
+1. **3D structure rendering** — Using `py3Dmol` to render a predicted CIF structure inline, which is what a researcher would inspect before advancing a binder. The simulated scorer emits a placeholder instead of real atomic coordinates, so the cell below reports that rather than rendering; a real predictor's CIF bytes flow through the pipeline unchanged and render here.
 
 2. **Fault tolerance** — Ray Data automatically retries failed batches. If a GPU worker crashes mid-prediction (CUDA OOM, hardware fault), only the affected batch is re-run on another worker. The pipeline does not restart from scratch — this is critical for long-running screens.
 
@@ -269,7 +273,8 @@ The next cell demonstrates two things:
 
 # ── 3D Structure Render ──────────────────────────────────────────────────
 # Show the predicted structure of the top-ranked candidate.
-# py3Dmol renders CIF/PDB structures inline in Jupyter notebooks.
+# py3Dmol renders CIF/PDB structures inline in Jupyter notebooks. The simulated
+# scorer emits a placeholder, so this reports rather than rendering nothing.
 top_candidate = df.sort_values("confidence", ascending=False).iloc[0]
 print(f"Top candidate: {top_candidate['complex_id']}")
 print(f"  Confidence: {top_candidate['confidence']:.4f}")
@@ -277,10 +282,15 @@ print(f"  ipTM:       {top_candidate['iptm']:.4f}")
 print(f"  pLDDT:      {top_candidate['plddt_mean']:.1f}")
 print()
 
+is_simulated = top_candidate.get("scorer") == "simulated"
+
 try:
     import py3Dmol
     cif_data = top_candidate.get("cif_bytes", b"")
-    if isinstance(cif_data, bytes) and len(cif_data) > 0:
+    if is_simulated:
+        print("Scorer was 'simulated' — the cif_bytes column holds a placeholder, not coordinates.")
+        print("Wire a real predictor into src/structure_scorer.py to render a structure here.")
+    elif isinstance(cif_data, bytes) and len(cif_data) > 0:
         cif_str = cif_data.decode("utf-8") if isinstance(cif_data, bytes) else cif_data
         view = py3Dmol.view(width=600, height=400)
         view.addModel(cif_str, "cif")
@@ -290,7 +300,6 @@ try:
         print("3D structure rendered above (py3Dmol).")
     else:
         print("No CIF structure data available for inline rendering.")
-        print("(With a real Boltz-1 model, full atomic CIF structures are produced.)")
 except ImportError:
     print("py3Dmol not installed. To render structures inline:")
     print("  pip install py3Dmol")
@@ -349,12 +358,13 @@ print("""
 """)
 
 print("Key differentiators vs. single-GPU loop:")
-print("  Heterogeneous compute  -- CPU feature prep + GPU structure prediction in one pipeline")
+print("  Heterogeneous compute  -- CPU feature prep + GPU scoring in one pipeline")
 print("  Streaming execution    -- no intermediate disk writes between stages")
 print("  Fault tolerance        -- failed batches retry automatically, no full restart")
 print("  Autoscaling            -- GPU workers scale to demand, then scale to zero")
 print("  One codebase           -- same code runs in Workspace and as a scheduled Job")
 print()
-print("Same Boltz-1 Python. Ray Data scaling. GPUs autoscale to zero when idle.")
-print("You now have an internal AlphaFold-as-a-service.")
+print("Same model code. Ray Data scaling. GPUs autoscale to zero when idle.")
+print("Swap src/structure_scorer.py for a real predictor and this becomes an")
+print("internal folding service on the same pipeline.")
 ```

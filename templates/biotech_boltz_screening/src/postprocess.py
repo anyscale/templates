@@ -1,7 +1,7 @@
 """
 Post-processing: classify confidence tiers, add filter flags, extract top-K.
 
-Confidence tiers map Boltz-1's aggregate confidence score to actionable categories:
+Confidence tiers map the scorer's aggregate confidence score to actionable categories:
   - high   (>0.8): Strong predicted interaction. Priority for wet-lab validation.
   - medium (0.5-0.8): Moderate confidence. May warrant further computational analysis.
   - low    (<=0.5): Weak or no predicted interaction. Deprioritize.
