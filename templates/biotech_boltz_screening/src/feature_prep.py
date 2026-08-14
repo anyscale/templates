@@ -1,13 +1,14 @@
 """
-CPU stage: parse sequences, validate amino acids, and build Boltz-1 input dicts.
+CPU stage: parse sequences, validate amino acids, and build Boltz input dicts.
 
-This stage converts raw candidate rows (target_seq + binder_seq or ligand_smiles)
-into the YAML-style input schema that Boltz-1 expects. It also attaches MSA
-information:
-  - Pre-computed MSA path for the fixed target protein (realistic: screens fix
-    the target and vary the binder, so one MSA covers all complexes).
-  - MSA-free mode for candidate binders (small designed proteins have no
-    meaningful MSA anyway -- avoids shipping a 100GB sequence database).
+Converts raw candidate rows (target_seq + binder_seq or ligand_smiles) into the
+YAML schema `boltz predict` consumes.
+
+MSAs default to `empty`, Boltz's single-sequence mode. It costs accuracy, and it
+is what lets this template run anywhere: the alternative is `--use_msa_server`
+(network round-trip to an MMseqs2 server, rate-limited) or shipping a sequence
+database. Pass `target_msa_path` an `.a3m` to screen for real -- screens fix the
+target and vary the binder, so one alignment covers every complex.
 """
 import json
 
@@ -16,8 +17,8 @@ import numpy as np
 # ── Valid amino acid alphabet ────────────────────────────────────────────
 VALID_AA = set("ACDEFGHIKLMNPQRSTVWY")
 
-# Default path for pre-computed target MSA on the cluster
-DEFAULT_TARGET_MSA = "/mnt/cluster_storage/boltz-screening/assets/target_msa.a3m"
+# Boltz's literal for single-sequence mode. Override with a path to an .a3m.
+DEFAULT_TARGET_MSA = "empty"
 
 
 def _validate_sequence(seq: str) -> bool:
@@ -31,20 +32,21 @@ def _build_protein_protein_input(
     binder_seq: str,
     target_msa_path: str,
 ) -> dict:
-    """Build Boltz-1 input dict for a protein-protein complex.
+    """Build Boltz input dict for a protein-protein complex.
 
-    Boltz-1 input schema (YAML-style dict):
+    Boltz input schema (YAML):
       sequences:
         - protein:
             id: A
             sequence: <target_seq>
-            msa: <path_to_a3m>          # pre-computed MSA for target
+            msa: empty                  # or a path to an .a3m
         - protein:
             id: B
             sequence: <binder_seq>
-            msa: null                   # MSA-free mode for designed binders
+            msa: empty                  # single-sequence mode
     """
     return {
+        "version": 1,
         "sequences": [
             {
                 "protein": {
@@ -57,7 +59,8 @@ def _build_protein_protein_input(
                 "protein": {
                     "id": "B",
                     "sequence": binder_seq.upper(),
-                    "msa": None,  # MSA-free for binder candidates
+                    # Designed binders have no meaningful alignment anyway.
+                    "msa": "empty",
                 }
             },
         ]
@@ -70,19 +73,20 @@ def _build_protein_ligand_input(
     ligand_smiles: str,
     target_msa_path: str,
 ) -> dict:
-    """Build Boltz-1 input dict for a protein-ligand complex.
+    """Build Boltz input dict for a protein-ligand complex.
 
-    Boltz-1 input schema (YAML-style dict):
+    Boltz input schema (YAML):
       sequences:
         - protein:
             id: A
             sequence: <target_seq>
-            msa: <path_to_a3m>
+            msa: empty                  # or a path to an .a3m
         - ligand:
             id: B
             smiles: <SMILES>
     """
     return {
+        "version": 1,
         "sequences": [
             {
                 "protein": {
@@ -105,7 +109,7 @@ def build_boltz_input_batch(
     batch: dict,
     target_msa_path: str = DEFAULT_TARGET_MSA,
 ) -> dict:
-    """CPU map_batches function: convert a batch of candidate rows into Boltz-1 inputs.
+    """CPU map_batches function: convert a batch of candidate rows into Boltz inputs.
 
     For each row, validates sequences and builds the appropriate input dict
     (protein-protein or protein-ligand) based on the complex_type column.
@@ -119,7 +123,7 @@ def build_boltz_input_batch(
     out = {
         "complex_id": [],
         "complex_type": [],
-        "boltz_input": [],       # JSON-serialized Boltz-1 input dict
+        "boltz_input": [],       # JSON-serialized Boltz input dict
         "target_len": [],        # number of residues in target
         "binder_len": [],        # number of residues in binder (0 for ligand complexes)
         "is_valid": [],          # whether input passed validation

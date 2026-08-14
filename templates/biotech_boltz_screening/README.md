@@ -115,10 +115,12 @@ from src.candidate_generator import generate_candidates, SCALE_MAP, TARGET_SEQUE
 import ray.data
 import pandas as pd
 
-INPUT_PATH  = "/mnt/cluster_storage/boltz-screening/candidates/medium_pp.parquet"
-OUTPUT_PATH = "/mnt/cluster_storage/boltz-screening/results/medium/"
-SCALE       = "medium"  # 500 protein-protein complexes
-NUM_GPUS    = 4
+INPUT_PATH  = f"/mnt/cluster_storage/boltz-screening/candidates/{SCALE}_pp.parquet"
+OUTPUT_PATH = f"/mnt/cluster_storage/boltz-screening/results/{SCALE}/"
+# Real Boltz inference costs ~11s per complex per GPU, so the scale is a knob:
+# "small" (50) finishes in a few minutes, "medium" (500) in ~25 on 4 GPUs.
+SCALE       = os.getenv("SCREENING_SCALE", "medium")
+NUM_GPUS    = int(os.getenv("SCREENING_NUM_GPUS", "4"))
 
 # Generate synthetic candidates (skips if file already exists)
 if not os.path.exists(INPUT_PATH):
@@ -149,15 +151,19 @@ for row in ds.take(3):
 
 Before running the full pipeline, let's look at how the **BoltzPredictor** callable class works. This is the core GPU stage — one actor per A10G GPU:
 
-- **`__init__`**: Loads Boltz-1 weights onto CUDA once per actor. The ~1.5GB checkpoint is cached on `/mnt/cluster_storage/` so workers don't re-download.
-- **`__call__`**: Processes a batch of complexes, emitting confidence metrics (pLDDT, ipTM) and CIF structure bytes for each.
+- **`__init__`**: Points the actor at the shared weights cache. Boltz's ~5.5GB of checkpoints live on `/mnt/cluster_storage/`, downloaded once per cluster by `ensure_weights()` before the pipeline starts.
+- **`__call__`**: Writes the whole batch out as Boltz YAML and shells out to `boltz predict` **once**, then reads back each complex's confidence JSON and mmCIF.
+
+Boltz ships a CLI rather than a Python inference API, and that shapes the stage: a call costs roughly **31s of fixed model load plus 11s per complex** on an L4. Batching a whole Ray Data batch into one invocation is what stops you paying that 31s per complex — which is why `batch_size` here is 32, not 4.
 
 **Key metrics:**
 - **pLDDT** (predicted Local Distance Difference Test): Per-residue confidence in the structure. 0-100, >70 is reliable.
 - **ipTM** (interface predicted Template Modeling): Confidence in the interaction interface. 0-1, >0.8 is high.
-- **confidence**: Boltz-1's aggregate score. This is what we rank by.
+- **confidence**: Boltz's aggregate score (`confidence_score` in its output JSON). This is what we rank by.
 
-The pipeline chains 5 stages: read → feature prep (CPU) → Boltz-1 predict (GPU) → classify (CPU) → write.
+Boltz reports pLDDT on a 0-1 scale; the predictor scales it to 0-100, the convention the tiers in `postprocess.py` and the literature both use.
+
+The pipeline chains 5 stages: read → feature prep (CPU) → Boltz predict (GPU) → classify (CPU) → write.
 
 
 ```python
@@ -290,7 +296,6 @@ try:
         print("3D structure rendered above (py3Dmol).")
     else:
         print("No CIF structure data available for inline rendering.")
-        print("(With a real Boltz-1 model, full atomic CIF structures are produced.)")
 except ImportError:
     print("py3Dmol not installed. To render structures inline:")
     print("  pip install py3Dmol")
