@@ -36,8 +36,7 @@ uv pip install -r python_depset.lock --system --no-deps --no-cache-dir --index-s
 
 
 ```python
-# Connect to the Ray cluster and propagate dependencies to all workers.
-# Ray workers run off-head, so ship them the lock via runtime_env.
+# Propagate dependencies to the Ray cluster.
 import os
 import ray
 

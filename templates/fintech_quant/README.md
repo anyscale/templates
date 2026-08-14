@@ -39,8 +39,7 @@ from util import get_iv, get_npv, get_options_chain, save_csv, get_symbols_stat_
 
 os.environ["RAY_DEDUP_LOGS"] = "0"
 
-# Connect to the Ray cluster and propagate dependencies to all workers.
-# Ray workers run off-head, so ship them the lock via runtime_env.
+# Propagate dependencies to the Ray cluster.
 ray.init(
     ignore_reinit_error=True,
     runtime_env={"pip": os.path.join(os.getcwd(), "python_depset.lock")},

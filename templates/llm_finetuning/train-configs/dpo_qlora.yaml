@@ -56,7 +56,7 @@ resources_per_worker:
 
 ray_init_kwargs:
   runtime_env:
-    # Ray Train workers run on their own nodes; this is what puts the template's deps there.
+    # Train workers get their own runtime_env.
     pip: /home/ray/default/python_depset.lock
     env_vars:
       # If using gated models like meta-llama/Llama-3.1-8B-Instruct

@@ -101,7 +101,7 @@ fastapi_app = FastAPI(lifespan=lifespan)
         "max_replicas": 20,
         "target_ongoing_requests": 5,
     },
-    # Serve replicas run off-head, so pin them to the lock.
+    # Serve replicas don't inherit the driver's runtime_env.
     ray_actor_options={
         "num_cpus": 0.2,
         "runtime_env": {"pip": os.path.abspath("python_depset.lock")},

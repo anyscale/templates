@@ -586,7 +586,7 @@ def train(
     validation_data_uri: str = "s3://anyscale-materials/stable-diffusion/laion_art_sample_processed_valid_256.parquet",
 ):
     """Train a Stable Diffusion model."""
-    # Ray workers run off-head, so ship them the lock via runtime_env.
+    # Propagate dependencies to the Ray cluster.
     ray.init(runtime_env={"pip": DEPSET_LOCK}, ignore_reinit_error=True)
 
     ctx = ray.data.DataContext.get_current()

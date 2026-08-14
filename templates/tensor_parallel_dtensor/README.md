@@ -661,7 +661,7 @@ storage_path = "/mnt/cluster_storage/ray_train_tp_dtensor"  # Use persistent/sha
 run_config = RunConfig(
     name=experiment_name,
     storage_path=storage_path,
-    # Ship the lock to the Train workers via runtime_env.
+    # Train workers get their own runtime_env.
     worker_runtime_env={"pip": os.path.join(os.getcwd(), "python_depset.lock")},
 )
 

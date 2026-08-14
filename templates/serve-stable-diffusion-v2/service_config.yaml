@@ -15,5 +15,5 @@ applications:
   - import_path: main:stable_diffusion_app
     runtime_env:
       working_dir: ./
-# The CLI folds this into the app's Serve runtime_env.
+# Serve replicas don't inherit the driver's runtime_env.
 requirements: python_depset.lock

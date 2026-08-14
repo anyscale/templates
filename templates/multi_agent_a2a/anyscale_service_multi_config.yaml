@@ -11,7 +11,7 @@ logging_config:
   enable_access_log: true
   additional_log_standard_attrs: []
 
-# Every non-LLM app installs the template's lock; replicas run off-head.
+# Serve replicas don't inherit the driver's runtime_env.
 applications:
 - name: llm
   route_prefix: /llm

@@ -53,7 +53,7 @@ def confusion_matrix_batch(batch, threshold=0.5):
 
 
 def main():
-    # Ray workers run off-head, so ship them the lock (and this package) via runtime_env.
+    # Propagate dependencies and local modules to the Ray cluster.
     ray.init(
         runtime_env={
             "py_modules": [dist_xgboost],

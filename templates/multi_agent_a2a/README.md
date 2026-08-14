@@ -180,7 +180,7 @@ git clone https://github.com/anyscale/templates && cd templates/templates/multi_
 
 
 ```python
-# Driver-side install; the Serve replicas get the lock from the deployment configs.
+# Driver-side install only.
 !uv pip install -r python_depset.lock --system --no-deps --no-cache-dir --index-strategy unsafe-best-match
 ```
 

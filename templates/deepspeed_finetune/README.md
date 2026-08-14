@@ -121,7 +121,7 @@ import os
 os.environ["RAY_TRAIN_V2_ENABLED"] = "1"  # Ensure Ray Train v2 APIs
 import ray
 
-# Ray Train workers run off-head, so ship them the lock via runtime_env.
+# Propagate dependencies to the Ray cluster.
 if ray.is_initialized():
     ray.shutdown()
 ray.init(

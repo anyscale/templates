@@ -3,7 +3,7 @@ entrypoint: python scripts/02_run_embedding.py --scale medium --bucketed
 
 runtime_env:
   working_dir: .
-  # Pin to the lock so the driver and workers share one env (a loose >= re-resolves per node).
+  # Propagate dependencies to the Ray cluster.
   pip: python_depset.lock
 
 compute_config:

@@ -237,7 +237,7 @@ def main():
     args = get_args()
     print(args)
 
-    # Ray Train workers run off-head, so ship them the lock via runtime_env.
+    # Propagate dependencies to the Ray cluster.
     lock_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "python_depset.lock")
     if ray.is_initialized():
         ray.shutdown()

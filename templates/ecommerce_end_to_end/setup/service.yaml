@@ -42,6 +42,5 @@ image_uri: anyscale/ray:2.56.0-py312
 
 working_dir: .
 
-# Same pinned dependency set the notebook uses — installed cluster-wide, so
-# the Serve replicas need no per-deployment runtime_env on this path.
+# Propagate dependencies to the Ray cluster.
 requirements: python_depset.lock

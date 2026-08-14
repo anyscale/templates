@@ -34,8 +34,7 @@ The catalog plot shows one product image per category — the input shape the re
 
 
 ```python
-# Install this template's pinned dependencies on the driver. Ray workers
-# receive the same lock through runtime_env — see utils.init_ray().
+# Driver-side install only.
 !uv pip install -r python_depset.lock --system --no-deps --no-cache-dir --index-strategy unsafe-best-match
 
 ```
@@ -366,10 +365,7 @@ from ray import serve
 from serve_app import build_app
 from utils.viz import print_serve_topology
 
-# Pass paths through bind() — each replica gets them on construction, so we
-# don't have to mutate the driver's os.environ. The lock rides along as the
-# replicas' runtime_env: Serve replicas don't inherit the driver's
-# ray.init(runtime_env=...), so without it they'd miss torch/transformers.
+# Serve replicas don't inherit the driver's runtime_env.
 app = build_app(
     embedding_model_dir=paths["model_dir"],
     embeddings_path=paths["embeddings_path"],

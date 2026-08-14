@@ -12,6 +12,5 @@ applications:
   - import_path: deploy:app
     runtime_env:
       working_dir: ./
-# Fully-pinned lock (torch 2.5.1+cu121, matching the cu121 image above) so Service
-# replicas match the workspace/notebook env instead of re-resolving the loose >= list.
+# Propagate dependencies to the Ray cluster.
 requirements: python_depset.lock

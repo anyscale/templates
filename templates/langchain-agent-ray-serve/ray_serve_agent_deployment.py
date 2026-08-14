@@ -101,7 +101,7 @@ async def chat(request: Request):
 # ----------------------------------------------------------------------
 # Ray Serve deployment wrapper.
 # ----------------------------------------------------------------------
-# Serve replicas run off-head, so pin them to the lock.
+# Serve replicas don't inherit the driver's runtime_env.
 @serve.deployment(
     ray_actor_options={
         "num_cpus": 1,

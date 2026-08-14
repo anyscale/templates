@@ -10,7 +10,7 @@ from fastapi.responses import Response
 from ray import serve
 from ray.serve.handle import DeploymentHandle
 
-# Serve replicas run off-head, so pin them to the lock.
+# Serve replicas don't inherit the driver's runtime_env.
 RUNTIME_ENV = {"pip": str(Path(__file__).parent / "python_depset.lock")}
 
 # Create a FastAPI instance to handle HTTP parsing and validation.
