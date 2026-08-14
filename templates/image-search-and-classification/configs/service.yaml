@@ -50,7 +50,7 @@ env_vars: # (Optional) Dictionary of environment variables to set in the job.
     # MY_ENV_VAR: my_value
     # ANOTHER_ENV_VAR: another_value
 py_modules: # (Optional) A list of local directories or remote URIs that will be added to the Python path.
-    - /home/ray/default/doggos
+    - /home/ray/default/doggos/doggos
     # - /path/to/my_module
     # - s3://my_bucket/my_module
 py_executable: python  # uv run  # remove the requirements and py_modules
