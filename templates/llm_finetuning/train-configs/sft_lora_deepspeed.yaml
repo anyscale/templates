@@ -52,6 +52,8 @@ resources_per_worker:
   # See https://docs.ray.io/en/master/ray-core/accelerator-types.html#accelerator-types for a full list of accelerator types.
 ray_init_kwargs:
   runtime_env:
+    # Ray Train workers run on their own nodes; this is what puts the template's deps there.
+    pip: /home/ray/default/python_depset.lock
     env_vars:
       # If using wandb for experiments tracking
       WANDB_API_KEY: <your_wandb_token>
