@@ -142,7 +142,10 @@ def load_pi05_policy(pretrained_path=None):
 def load_checkpoint(checkpoint, policy, optimizer, scaler) -> tuple[int, int]:
     """Restore model/optimizer/scaler state from a Ray Train checkpoint.
 
-    Returns (start_epoch, start_step).
+    Returns (start_epoch, start_step) -- the epoch *after* the last one that
+    completed, because checkpoints are only written at epoch boundaries. The
+    input stream is not restored and cannot be; see make_checkpoint() for what
+    that costs.
     """
     import ray.cloudpickle as pickle
 
@@ -159,8 +162,36 @@ def load_checkpoint(checkpoint, policy, optimizer, scaler) -> tuple[int, int]:
 def make_checkpoint(policy, optimizer, scaler, epoch, step):
     """Serialize model + optimizer + scaler state into a Ray Train Checkpoint.
 
-    This captures everything needed to resume training: model weights,
-    optimizer state, gradient scaler state, and the current epoch/step.
+    Captures: model weights, optimizer state, gradient scaler state, and the
+    epoch/step counters as of the call.
+
+    Does NOT capture the position of the input stream. Ray Data rebuilds the
+    pipeline from LeRobotDatasource on every (re)start, and that datasource has
+    no offset -- get_read_tasks() always plans the same row ranges beginning at
+    row 0. Nothing written here can tell it to skip ahead. Three consequences
+    worth knowing before you rely on this:
+
+      * Resume granularity is a whole epoch, not a step. make_checkpoint() is
+        only called at an epoch boundary, and on restart the loop re-enters at
+        `epoch + 1` with the stream back at the beginning -- which is what an
+        epoch is, so the data itself stays consistent. The cost is that a
+        failure part way through an epoch discards that entire epoch's work,
+        and the samples already consumed in the aborted epoch are streamed
+        again. At the shipped num_epochs=2 that can be half the run.
+
+      * `step` counts micro-batches consumed, not rows reached. Nothing anchors
+        it to a position in the dataset, so it cannot be used as a data offset.
+
+      * `step` is also handed to build_lr_scheduler(..., last_step=step), which
+        treats it as an *optimizer*-step index. The optimizer steps once per
+        `grad_accum` micro-batches, so a resumed run re-enters its LR schedule
+        further along than it actually is. Check that before trusting the LR of
+        a restarted run.
+
+    Step-level resume is not a checkpoint tweak: LeRobotDatasource would have to
+    accept a start row, that row would have to be recorded here, and it would
+    have to be threaded back into read_datasource() on restart.
+
     The checkpoint is written to a temp directory and returned as a
     ray.train.Checkpoint for use with ray.train.report().
     """

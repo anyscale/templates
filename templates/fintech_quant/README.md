@@ -51,6 +51,7 @@ ray.init(
 - This baseline is useful for correctness checks and side-by-side timing.
 - Limitation: symbols are processed one at a time, so runtime grows roughly linearly with universe size.
 - Ray Core value: we keep the pricing logic and parallelize with minimal structural changes.
+- Failed pricings are visible, not silent: `get_iv`/`get_npv` return `NaN` (never `0.0`) when QuantLib can't solve a contract, log the contract that failed, and the per-symbol summary line reports **N of M options priced**. Copying this template means copying that behaviour — a distributed run that swallows pricing errors and substitutes `0.0` finishes green while quietly dropping part of its result set.
 
 
 
@@ -111,6 +112,8 @@ def price_option_chain(
 skip_non_ray = True
 
 if skip_non_ray:
+    # Output recorded from an earlier run, before the summary line began
+    # reporting priced-vs-total. A run today prints "N of M options priced".
     print(
         """
         Stats for   AAPL:  1843 options, calc'd IV for all shocks in 137.022463 sec
@@ -298,6 +301,8 @@ results = ray.get(futures)
 
 all_symbols_t.e("Total time for all symbols: ")
 
+# Output recorded from an earlier run, before the summary line began
+# reporting priced-vs-total. A run today prints "N of M options priced".
 print(
     """
     Total time for all symbols: 43.070964 sec
