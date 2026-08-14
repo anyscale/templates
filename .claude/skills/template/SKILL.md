@@ -17,6 +17,7 @@ Invoked bare (just `/template`) by a human — i.e. **not** the ray-bump automat
 - **Update** content/config, no Ray bump → `workflows/update-template.md`
 - **Ray-version bump** (non-interactive) → `workflows/bump-ray-version.md`
 - **Upgrade locked dependencies** (recompile depsets for a new Ray version) → `workflows/upgrade-dependencies.md`
+- **Launch a Ray-bump wave** (fire the Cursor agents that open the per-template bump PRs) → `workflows/launch-ray-bump-wave.md`
 - **Publish a Ray-bump fanout** to prod (agent team, once the per-template bump PRs exist) → `workflows/publish-ray-bump-fanout.md`
 - **Archive** a retired or past-event template → `workflows/archive-template.md`
 

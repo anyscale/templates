@@ -3,14 +3,16 @@ set -euxo pipefail
 
 # Notebook only documents the local `serve run` as a terminal step, so drive
 # main.py + query.py directly. Skips the prod `anyscale service deploy` path.
-pip install -q diffusers==0.25.0 transformers==4.36.2 accelerate==0.25.0 huggingface-hub==0.25.2
+uv pip install -r python_depset.lock --system --no-deps --no-cache-dir --index-strategy unsafe-best-match
 
 serve run main:stable_diffusion_app --non-blocking
 trap 'serve shutdown -y || true' EXIT
 
-# First request blocks through GPU provisioning + SDXL load, so retry the query.
+# First request blocks through GPU provisioning, the replicas' runtime_env build
+# (the lock carries torch + the CUDA stack) and the SDXL load, so retry for ~15 min.
+# Well inside the 2700s test budget in BUILD.yaml.
 ok=false
-for i in $(seq 1 5); do
+for i in $(seq 1 30); do
   python query.py || true
   if python -c "
 import os

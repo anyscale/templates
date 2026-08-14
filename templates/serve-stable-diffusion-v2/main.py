@@ -1,5 +1,6 @@
 import logging
 from io import BytesIO
+from pathlib import Path
 
 import torch
 from diffusers import DiffusionPipeline
@@ -8,6 +9,13 @@ from fastapi.responses import Response
 
 from ray import serve
 from ray.serve.handle import DeploymentHandle
+
+# Replicas run on worker nodes, which have nothing but the base image — and this
+# module imports diffusers at the top, so every replica needs the lock, ingress
+# included. Resolved here on the driver, where `serve run` imports this file.
+# A deployment that declares any runtime_env stops inheriting the driver's pip
+# (only working_dir is backfilled), so each one below states it in full.
+RUNTIME_ENV = {"pip": str(Path(__file__).parent / "python_depset.lock")}
 
 # Create a FastAPI instance to handle HTTP parsing and validation.
 # Learn more: https://docs.ray.io/en/latest/serve/http-guide.html#fastapi-http-deployments.
@@ -18,7 +26,7 @@ logger = logging.getLogger("ray.serve")
 
 # A serve deployment contains business logic or an ML model to handle incoming requests.
 # It consists of a number of replicas that are individual copies of the class or function defined within it.
-@serve.deployment(num_replicas=1)
+@serve.deployment(num_replicas=1, ray_actor_options={"runtime_env": RUNTIME_ENV})
 @serve.ingress(app)
 class APIIngress:
     def __init__(self, diffusion_model_handle) -> None:
@@ -54,7 +62,8 @@ class APIIngress:
         "num_gpus": 1,
         "num_cpus": 1,
         # Set this to your desired GPU type (e.g. T4, A10G, L4, V100, A100-40G, A100-80G).
-        "accelerator_type": "L4"
+        "accelerator_type": "L4",
+        "runtime_env": RUNTIME_ENV,
     },
     max_ongoing_requests=1,  # Maximum number of queries that are sent to a replica of this deployment without receiving a response.
     autoscaling_config={

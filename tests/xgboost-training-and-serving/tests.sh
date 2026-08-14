@@ -3,7 +3,7 @@ set -euxo pipefail
 
 # Install the locked closure the notebooks ship to Ray.
 uv pip install -r python_depset.lock --system --no-deps --no-cache-dir --index-strategy unsafe-best-match
-pip install -q papermill nbconvert==7.16.6 ipykernel
+uv pip install -q --system papermill nbconvert==7.16.6 ipykernel
 
 # CI runs on a single CPU node; NB01 defaults to 4 GPU workers (real config, env-overridable).
 export NUM_WORKERS=2 USE_GPU=false

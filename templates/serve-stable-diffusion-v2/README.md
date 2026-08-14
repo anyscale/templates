@@ -25,7 +25,7 @@ The application requires a few extra Python dependencies. Install them using `pi
 
 
 ```python
-!uv pip install python_depset.lock && echo 'Install complete!'
+!uv pip install -r python_depset.lock --system --no-deps --no-cache-dir --index-strategy unsafe-best-match && echo 'Install complete!'
 ```
 
 ## Step 2: Run the model locally

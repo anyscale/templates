@@ -38,6 +38,22 @@ The green path needs **no** local rayapp. (Recovery may: `/anyscale-platform-fix
 
 `rayapp test <name>` runs the template's test on a **staging** workspace — setup in `run-tests-locally-with-rayapp.md`. This is what the fix-loop iterates against before re-pushing.
 
+## The scheduled probe is not a source of truth
+
+The daily `template-probe` pipeline is **not** a second opinion on your branch. It creates a workspace from
+the **published** template artifact, then pushes in only `tests/<name>/tests.sh` from a clone of `main`. So
+it pairs whatever production is serving with main's tests, and every merged template PR widens that gap
+until the template is republished.
+
+A red probe therefore has two very different meanings, and the common one is the boring one:
+
+- the **published** template is genuinely broken, or
+- the publish is simply **behind `main`** — the code is fine and the fix is to publish, not to edit.
+
+Check the second before touching code. `/test-template` pushes your branch's actual files, so it is the only
+signal that reflects what you wrote. Never chase a probe failure with a code change you can't reproduce
+under `/test-template`.
+
 ## Recovery
 
 Read the Buildkite logs (via MCP) and classify:
