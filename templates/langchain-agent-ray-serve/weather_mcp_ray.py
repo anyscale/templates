@@ -107,7 +107,7 @@ fastapi_app = FastAPI(lifespan=lifespan)
     # runs — otherwise `mcp.server.fastmcp` is missing off-head.
     ray_actor_options={
         "num_cpus": 0.2,
-        "runtime_env": {"pip": os.path.abspath("requirements.txt")},
+        "runtime_env": {"pip": os.path.abspath("python_depset.lock")},
     },
 )
 @serve.ingress(fastapi_app)

@@ -744,8 +744,10 @@ storage_path = "/mnt/cluster_storage/ray_train_tp_autotp"  # Use persistent/shar
 run_config = RunConfig(
     name=experiment_name,
     storage_path=storage_path,
+    # Workers run on their own nodes with just the base image, which ships no torch.
+    # The lock is what the driver installed above, so they match.
     worker_runtime_env={
-        "pip": ["transformers==4.48.0", "datasets==2.21.0", "deepspeed==0.18.9"],
+        "pip": os.path.abspath("python_depset.lock"),
         "env_vars": {"PIP_NO_BUILD_ISOLATION": "1"},
     },
 )
