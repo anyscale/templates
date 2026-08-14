@@ -108,7 +108,7 @@ async def chat(request: Request):
 @serve.deployment(
     ray_actor_options={
         "num_cpus": 1,
-        "runtime_env": {"pip": os.path.abspath("requirements.txt")},
+        "runtime_env": {"pip": os.path.abspath("python_depset.lock")},
     }
 )
 @serve.ingress(fastapi_app)
