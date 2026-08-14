@@ -11,13 +11,29 @@ Usage:
 """
 
 import argparse
-import ray
-import subprocess
 import os
 import shutil
+import subprocess
+
+import ray
+
+_REQUIREMENTS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "requirements.txt")
 
 
-@ray.remote(num_gpus=1, num_cpus=4, accelerator_type="L4")
+def _pip_requirements() -> list:
+    with open(_REQUIREMENTS) as f:
+        return [line.strip() for line in f if line.strip() and not line.startswith("#")]
+
+
+@ray.remote(
+    num_gpus=1,
+    num_cpus=4,
+    accelerator_type="L4",
+    runtime_env={
+        "pip": _pip_requirements(),
+        "env_vars": {"HF_HUB_ENABLE_HF_TRANSFER": "1"},
+    },
+)
 def run_training(config_path: str) -> int:
     """Run LLaMA-Factory training on a GPU worker."""
     env = os.environ.copy()
