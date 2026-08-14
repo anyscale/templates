@@ -41,6 +41,14 @@ repos:
         pass_filenames: false
         # Whole-repo validator (head-node checks over every config) — trigger on config edits too.
         files: ^(BUILD\.yaml|configs/.*\.ya?ml)$
+      - id: check-dep-delivery
+        name: locks match their image, and templates install the lock they ship
+        # `tests-pip` is the third check; not gating until the 24 templates it
+        # flags are converted to `uv pip install --system`.
+        entry: python3 scripts/hooks/check-dep-delivery.py lock-image driver
+        language: system
+        pass_filenames: false
+        files: ^(BUILD\.yaml|dependencies/template\.depsets\.yaml|templates/)
       - id: ray-bump-unit-tests
         name: prepare-ray-version unit tests (minor-only gate)
         entry: python3 scripts/ray-bump/test_prepare_ray_version.py

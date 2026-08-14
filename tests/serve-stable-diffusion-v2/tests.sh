@@ -3,7 +3,7 @@ set -euxo pipefail
 
 # Notebook only documents the local `serve run` as a terminal step, so drive
 # main.py + query.py directly. Skips the prod `anyscale service deploy` path.
-pip install -q diffusers==0.25.0 transformers==4.36.2 accelerate==0.25.0 huggingface-hub==0.25.2
+uv pip install -r python_depset.lock --system --no-deps --no-cache-dir --index-strategy unsafe-best-match
 
 serve run main:stable_diffusion_app --non-blocking
 trap 'serve shutdown -y || true' EXIT
