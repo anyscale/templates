@@ -3,10 +3,10 @@ set -euxo pipefail
 
 # Driver-side install only. `--system` bypasses Anyscale's workspace propagation and
 # reaches this head node alone, which is enough for papermill and the asserts below.
-# The agent/MCP replicas get their deps from `pip: requirements.txt` on each app in
+# The agent/MCP replicas get their deps from the same lock via `pip:` on each app in
 # serve_multi_config.yaml — the head is unschedulable under the published compute
 # config, so they land on the worker with nothing but the base image.
-uv pip install -r requirements.txt --system --no-deps --no-cache-dir --index-strategy unsafe-best-match
+uv pip install -r python_depset.lock --system --no-deps --no-cache-dir --index-strategy unsafe-best-match
 uv pip install -q --system papermill "nbconvert==7.16.6" ipykernel
 
 set +x  # don't echo the resolved secret under xtrace
