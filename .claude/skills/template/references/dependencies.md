@@ -27,7 +27,8 @@ alone, or give it the lock in full. Adding an `env_vars` to a working deployment
 
 **Why `runtime_env`, not a bare `pip install`.** In a *workspace*, a raw `pip install` auto-propagates to
 workers (a workspace-only convenience); `uv pip install` does **not** — it stays on the head. Since
-`/test-template` and the scheduled probe both launch *workspaces* (`rayapp test` / `rayapp probe`), a
+`/test-template` and the scheduled probe both launch *workspaces* (`rayapp test` / `rayapp probe` — but see
+`testing-template.md`, only the former tests your branch), a
 template that populates workers via bare `pip install` passes **both** — then fails the moment a customer
 runs it as a standalone Service/Job, which has no propagation. So: **worker deps travel by `runtime_env`
 (from the `.lock`); `uv pip` is driver-only.** Never lean on a bare `pip install` to reach workers in a
@@ -35,6 +36,13 @@ ship-path template (pure workspace tutorials, where auto-propagation *is* the le
 This includes the **test scripts** (`tests/<name>/tests.sh`): they run under the probe's non-schedulable
 head, so their `serve run` / `ray.init` must carry the `.lock` via `runtime_env` — scoped to the apps that
 need the added deps (leave an LLM ingress on the `ray-llm` image) — not a head-only `--system` install (#929).
+
+**And a bare `pip install` in `tests.sh` breaks the template outright.** The propagation above works by the
+workspace *tracking* the install; the runtime-env hook then appends it, **unpinned**, to the pip list every
+actor receives. Against a hashed lock that one unhashed entry trips pip's `--require-hashes`, so **every**
+runtime env for that template fails to build — not just the actor that wanted the package. Use
+`uv pip install --system` in `tests.sh`, always; `check-dep-delivery.py tests-pip` enforces it for every
+template that ships a lock.
 
 ## Runtime skew — right scope, don't move the base framework
 
@@ -59,9 +67,14 @@ version by default, so skew takes an explicit pin or a hard transitive requireme
   one deployment genuinely needs something different — and then give it the lock in full (see "all or
   nothing" above). Note `py_modules` cannot take a local directory at deployment scope; Ray uploads
   directories only for `ray.init`.
-- **Secondary configs point at the same `.lock`.** A shipped `service_config.yaml` / `job_config.yaml`
-  (the standalone Service/Job path) must source its deps from the template's `python_depset.lock` via
-  `runtime_env`, not a hand-maintained pin list — a divergent list drifts silently from the tested lock.
+- **Secondary configs point at the same `.lock`, by absolute path.** A shipped `service_config.yaml` /
+  `job_config.yaml` (the standalone Service/Job path) must source its deps from the template's
+  `python_depset.lock` via `runtime_env`, not a hand-maintained pin list — a divergent list drifts silently
+  from the tested lock. Write `/home/ray/default/python_depset.lock`: a relative `requirements:` resolves
+  against **the CLI's working directory**, not the config's `working_dir`, so a config submitted from a
+  subdirectory dies with `FileNotFoundError`. `py_modules` entries follow the same rule and must name the
+  *importable package* dir (`doggos/doggos`), not the project root — the outer dir yields an empty
+  namespace package and an `import_path` under it cannot resolve.
 - **A genuine conflict → isolate it.** An added package that hard-pins a clashing version (e.g. `a2a-sdk`
   forcing an old `fastapi`) goes in *its own* deployment's `runtime_env` — the LLM ingress keeps the image
   framework; only that deployment gets the pin.
@@ -171,8 +184,9 @@ above). Output is **overwritten in place** (not version-stamped):
     - dependencies/scripts/seed-image-freeze.sh dependencies/images/ray-${RAY_VERSION}-py312-cu128.freeze.txt templates/<tmpl>/python_depset.lock
 ```
 
-The freeze **must name the image that template's `BUILD.yaml` entry actually runs on** — nothing checks the
-pairing, so a mismatch silently locks against the wrong environment. Keep `${RAY_VERSION}` (and
+The freeze **must name the image that template's `BUILD.yaml` entry actually runs on**, or the lock
+silently describes an environment the template never runs in. `check-dep-delivery.py lock-image` enforces
+the pairing (see "What CI enforces"). Keep `${RAY_VERSION}` (and
 `${PYTHON_SHORT}` / `${CUDA_VARIANT}` where they match the tag) interpolated so a version bump follows the
 bundle instead of pinning the old image's freeze.
 
@@ -184,6 +198,36 @@ bundle instead of pinning the old image's freeze.
    at the right scope (Serve → app/deployment level; see "What ships" + "Runtime skew") — otherwise
    workers/replicas keep running stale deps.
 4. Scan the lock diff for a framework package moving below its image version — the "Runtime skew" trap above.
+
+## Reviewing a template's dependency delivery
+
+Seven questions. Each has produced a real fleet-wide break, and the ones marked ✅ are now caught
+automatically — the rest still need eyes.
+
+| # | Question | Failure it catches |
+|---|---|---|
+| 1 | ✅ Does a user-facing file install the lock, with `-r`? | template ships a lock nothing installs; users run on whatever the image has |
+| 2 | Does every off-head unit get those deps *at its own scope*? | `map_batches` actors, `TorchTrainer` workers, `@ray.remote` tasks, Serve replicas that declare a partial `runtime_env` |
+| 3 | ✅ Does anything depend on a bare `pip install` reaching workers? | green in a workspace, broken as a Job or Service |
+| 4 | Does any hand-typed pin list disagree with the lock? | a notebook pin quietly compensating for a wrong lock is the dangerous shape |
+| 5 | Do the shipped Job/Service configs source the lock, by absolute path? | the standalone path nobody tests |
+| 6 | Does `tests.sh` install or configure something the template doesn't? | CI green while every user following the README fails |
+| 7 | ✅ Does the depset's seed freeze match `BUILD.yaml`'s image? | lock describes an environment the template never runs in |
+
+Dimension 6 is the highest-yield one to check by hand, because CI is what hides it. Read `tests.sh` and the
+README side by side and ask what the test does that a user wouldn't.
+
+### What CI enforces
+
+`scripts/hooks/check-dep-delivery.py`, via pre-commit (whole repo, ~0.2s). Run a single check by name:
+
+```bash
+python3 scripts/hooks/check-dep-delivery.py             # all three
+python3 scripts/hooks/check-dep-delivery.py tests-pip   # one
+```
+
+`tests-pip` fails only for templates that ship a lock, since that is what makes the trap live; it lists the
+lock-less ones instead, and they join the gate as they gain locks.
 
 ## Gotchas
 
