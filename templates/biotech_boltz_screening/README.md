@@ -115,12 +115,13 @@ from src.candidate_generator import generate_candidates, SCALE_MAP, TARGET_SEQUE
 import ray.data
 import pandas as pd
 
-INPUT_PATH  = f"/mnt/cluster_storage/boltz-screening/candidates/{SCALE}_pp.parquet"
-OUTPUT_PATH = f"/mnt/cluster_storage/boltz-screening/results/{SCALE}/"
 # Real Boltz inference costs ~11s per complex per GPU, so the scale is a knob:
 # "small" (50) finishes in a few minutes, "medium" (500) in ~25 on 4 GPUs.
 SCALE       = os.getenv("SCREENING_SCALE", "medium")
 NUM_GPUS    = int(os.getenv("SCREENING_NUM_GPUS", "4"))
+
+INPUT_PATH  = f"/mnt/cluster_storage/boltz-screening/candidates/{SCALE}_pp.parquet"
+OUTPUT_PATH = f"/mnt/cluster_storage/boltz-screening/results/{SCALE}/"
 
 # Generate synthetic candidates (skips if file already exists)
 if not os.path.exists(INPUT_PATH):
