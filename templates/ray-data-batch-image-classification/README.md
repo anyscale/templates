@@ -38,8 +38,7 @@ git clone https://github.com/anyscale/templates && cd templates/templates/ray-da
 import os
 import ray
 
-# Install deps on the driver (above) AND propagate them to worker nodes via
-# runtime_env, so the map_batches actors can import torch/torchvision.
+# Propagate dependencies to the Ray cluster.
 ray.init(
     ignore_reinit_error=True,
     runtime_env={"pip": os.path.join(os.getcwd(), "python_depset.lock")},

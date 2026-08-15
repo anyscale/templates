@@ -68,7 +68,7 @@ def train_fn_per_worker(config: dict):
 
 
 def main():
-    # Ray workers run off-head, so ship them the lock via runtime_env.
+    # Propagate dependencies to the Ray cluster.
     ray.init(
         runtime_env={
             "py_modules": [dist_xgboost],

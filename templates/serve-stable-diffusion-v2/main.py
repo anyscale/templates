@@ -10,11 +10,7 @@ from fastapi.responses import Response
 from ray import serve
 from ray.serve.handle import DeploymentHandle
 
-# Replicas run on worker nodes, which have nothing but the base image — and this
-# module imports diffusers at the top, so every replica needs the lock, ingress
-# included. Resolved here on the driver, where `serve run` imports this file.
-# A deployment that declares any runtime_env stops inheriting the driver's pip
-# (only working_dir is backfilled), so each one below states it in full.
+# Serve replicas don't inherit the driver's runtime_env.
 RUNTIME_ENV = {"pip": str(Path(__file__).parent / "python_depset.lock")}
 
 # Create a FastAPI instance to handle HTTP parsing and validation.

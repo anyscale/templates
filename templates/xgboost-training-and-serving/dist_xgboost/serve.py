@@ -18,7 +18,7 @@ from dist_xgboost.constants import root_dir
 from dist_xgboost.data import load_model_and_preprocessor
 
 
-# Serve replicas don't inherit the driver env, so pin them to the lock.
+# Serve replicas don't inherit the driver's runtime_env.
 @serve.deployment(
     num_replicas=2,
     ray_actor_options={

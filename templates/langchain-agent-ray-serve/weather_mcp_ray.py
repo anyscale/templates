@@ -101,10 +101,7 @@ fastapi_app = FastAPI(lifespan=lifespan)
         "max_replicas": 20,
         "target_ongoing_requests": 5,
     },
-    # The workspace `uv pip install --system` only reaches the head node, and
-    # replicas can land on a worker that has nothing but the base image. Declare
-    # the locked closure on the deployment so Ray installs it wherever a replica
-    # runs — otherwise `mcp.server.fastmcp` is missing off-head.
+    # Serve replicas don't inherit the driver's runtime_env.
     ray_actor_options={
         "num_cpus": 0.2,
         "runtime_env": {"pip": os.path.abspath("python_depset.lock")},

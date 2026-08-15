@@ -101,10 +101,7 @@ async def chat(request: Request):
 # ----------------------------------------------------------------------
 # Ray Serve deployment wrapper.
 # ----------------------------------------------------------------------
-# The workspace `uv pip install --system` only reaches the head node, and replicas
-# can land on a worker that has nothing but the base image. Declare the locked
-# closure on the deployment so Ray installs it wherever a replica runs — otherwise
-# langchain/langgraph are missing off-head.
+# Serve replicas don't inherit the driver's runtime_env.
 @serve.deployment(
     ray_actor_options={
         "num_cpus": 1,

@@ -71,7 +71,7 @@ if DEMO_ROOT not in sys.path:
 import ray
 
 # In Anyscale Workspace, Ray is pre-initialized.
-# runtime_env working_dir ensures Ray workers can import src.* from this repo.
+# Propagate dependencies to the Ray cluster.
 ray.init(
     ignore_reinit_error=True,
     runtime_env={

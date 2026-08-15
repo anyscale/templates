@@ -46,7 +46,7 @@ git clone https://github.com/anyscale/templates && cd templates/templates/storag
 
 
 ```python
-# Install the cloud-storage filesystems (gcsfs, adlfs) on this node.
+# Driver-side install only.
 !uv pip install -r python_depset.lock --system --no-deps --no-cache-dir --index-strategy unsafe-best-match
 ```
 
@@ -64,7 +64,7 @@ import ray.data
 import gcsfs
 import adlfs
 
-# Ray Data's read tasks run on workers, so ship them the lock via runtime_env.
+# Propagate dependencies to the Ray cluster.
 ray.init(
     ignore_reinit_error=True,
     runtime_env={"pip": os.path.join(os.getcwd(), "python_depset.lock")},

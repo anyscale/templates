@@ -1,7 +1,5 @@
 # Anyscale Service config for the SDXL app: anyscale service deploy -f service_config.yaml
 name: stable-diffusion-service
-# Keep in sync with this template's BUILD.yaml cluster_env — python_depset.lock is
-# compiled against this image, so a different tag re-resolves the base env.
 image_uri: anyscale/ray:2.56.0-py312-cu128
 compute_config:
   head_node:
@@ -17,7 +15,5 @@ applications:
   - import_path: main:stable_diffusion_app
     runtime_env:
       working_dir: ./
-# Fully-pinned lock. The CLI folds this into the app's Serve runtime_env, so every
-# replica installs the exact closure the workspace ran with; the workspace's own
-# `uv pip install --system` reaches the head node only and never the replicas.
+# Serve replicas don't inherit the driver's runtime_env.
 requirements: python_depset.lock

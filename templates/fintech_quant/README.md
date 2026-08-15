@@ -39,10 +39,7 @@ from util import get_iv, get_npv, get_options_chain, save_csv, get_symbols_stat_
 
 os.environ["RAY_DEDUP_LOGS"] = "0"
 
-# Connect to the Ray cluster and propagate dependencies to all workers.
-# Installing with `uv pip --system` above only affects the driver, so set a
-# runtime_env pointing at python_depset.lock to ensure Ray workers install the
-# same pinned dependencies (for example, QuantLib).
+# Propagate dependencies to the Ray cluster.
 ray.init(
     ignore_reinit_error=True,
     runtime_env={"pip": os.path.join(os.getcwd(), "python_depset.lock")},

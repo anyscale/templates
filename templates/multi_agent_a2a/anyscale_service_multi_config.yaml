@@ -11,11 +11,7 @@ logging_config:
   enable_access_log: true
   additional_log_standard_attrs: []
 
-# Every non-LLM app installs the template's lock. The workspace `uv pip install
-# --system` reaches the head node only, and the head is unschedulable, so replicas land
-# on a worker with just the base image; these install on top of it. Absolute path: a
-# relative one resolves against the CLI's working directory, and tests.sh runs a copy of
-# this config from /tmp. The llm app needs nothing beyond the ray-llm image.
+# Serve replicas don't inherit the driver's runtime_env.
 applications:
 - name: llm
   route_prefix: /llm

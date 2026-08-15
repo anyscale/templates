@@ -239,7 +239,7 @@ def process(
     limit: int = 5,
 ):
     """Preprocess images and text for Stable Diffusion v2 model pre-training."""
-    # Ray workers run off-head, so ship them the lock via runtime_env.
+    # Propagate dependencies to the Ray cluster.
     ray.init(runtime_env={"pip": DEPSET_LOCK}, ignore_reinit_error=True)
 
     start_t = time.time()

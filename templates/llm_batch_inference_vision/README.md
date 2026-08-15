@@ -45,9 +45,7 @@ import datasets
 from PIL import Image
 from io import BytesIO
 
-# `uv pip install --system` above only installs on the driver/head node. Ray Data's
-# `from_huggingface` read tasks run on worker nodes, so propagate the locked deps
-# (notably `datasets`) to every worker via the runtime_env.
+# Propagate dependencies to the Ray cluster.
 ray.init(
     ignore_reinit_error=True,
     runtime_env={"pip": os.path.join(os.getcwd(), "python_depset.lock")},
