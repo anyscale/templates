@@ -3,7 +3,14 @@ set -euo pipefail
 
 pip install -q papermill nbconvert==7.16.6
 
-# NB03 deploys a 32B LLM to the cluster Serve controller; free it on any exit.
+# The template ships Qwen2.5-32B at TP=4, which spends ~16 min loading weights and
+# does it twice (NB03's Serve app, then NB07's own batch engine). CI runs the 7B of
+# the same family instead: identical chat template and prompt behaviour, so NB05's
+# prompt engineering and NB06's eval still mean something, but it fits one GPU.
+export RAG_LLM_MODEL="${RAG_LLM_MODEL:-Qwen/Qwen2.5-7B-Instruct}"
+export RAG_LLM_TP="${RAG_LLM_TP:-1}"
+
+# NB03 deploys the LLM to the cluster Serve controller; free it on any exit.
 trap 'serve shutdown -y || true' EXIT
 
 # NB01 (doc processing) + NB02 (Ray Data ingestion → ChromaDB at /mnt/cluster_storage/vector_store).
@@ -28,7 +35,7 @@ assert len(hits) > 0, "retrieval returned no results"
 print("Retrieval smoke passed")
 PY
 
-# NB03 deploys Qwen2.5-32B (TP=4, L4) via Ray Serve. Strip its `serve shutdown` cell
+# NB03 deploys the LLM via Ray Serve. Strip its `serve shutdown` cell
 # (tagged skip-in-ci) so the app PERSISTS on the cluster for NB04-06's localhost queries.
 jupyter nbconvert --to notebook "notebooks/03_Deploy_LLM_with_Ray_Serve.ipynb" \
   --TagRemovePreprocessor.enabled=True \
@@ -46,25 +53,27 @@ for nb in \
   papermill "notebooks/${nb}.ipynb" "/tmp/${nb}.out.ipynb" -k python3 --log-output --cwd notebooks
 done
 
-# Free the 4xL4 before NB07 builds its OWN 32B batch LLM. serve shutdown is async, so
-# wait (bounded poll) for the GPUs to be reclaimed to avoid contention at NB07 vLLM init.
+# Free the GPUs before NB07 builds its OWN batch LLM. serve shutdown is async, so
+# wait (bounded poll) for them to be reclaimed to avoid contention at NB07 vLLM init.
 serve shutdown -y || true
 python - <<'PY'
+import os
 import time
+need = int(os.getenv("RAG_LLM_TP", "4"))
 try:
     import ray
     ray.init(address="auto", log_to_driver=False)
     freed = False
     for _ in range(30):  # up to ~5 min
-        if ray.available_resources().get("GPU", 0) >= 4:
+        if ray.available_resources().get("GPU", 0) >= need:
             freed = True
             break
         time.sleep(10)
-    print("4 GPUs reclaimed" if freed else "WARN: <4 GPUs free after wait; proceeding")
+    print(f"{need} GPUs reclaimed" if freed else f"WARN: <{need} GPUs free after wait; proceeding")
 except Exception as e:
     print(f"WARN: GPU-reclaim poll skipped ({e}); proceeding")
 PY
 
-# NB07: self-contained Ray Data batch inference over the eval CSV (own L4/TP=4 vLLM).
+# NB07: self-contained Ray Data batch inference over the eval CSV (own vLLM engine).
 papermill "notebooks/07_Evaluate_RAG_with_Ray_Data_LLM_Batch_inference.ipynb" \
   "/tmp/07_batch.out.ipynb" -k python3 --log-output --cwd notebooks
