@@ -1,0 +1,152 @@
+# Requirements that are not `==` pinned, grandfathered in.
+#
+# This is a BACKLOG, not configuration. Every line is a template whose lock re-resolves
+# to whatever is newest when it is rebuilt, so the template's behaviour can change with
+# nobody editing it. Fix by pinning `==` at the newest version that works on that
+# template's image, then delete the line here -- the check reports entries it no longer
+# needs. If a loose spec is genuinely required, put a trailing comment on the
+# requirement saying why and drop the line here instead.
+#
+# Format: <template>/<package>
+
+
+# asynchronous_inference
+asynchronous_inference/celery                       # celery[redis]
+asynchronous_inference/pypdf2                       # PyPDF2>=3.0.0
+asynchronous_inference/requests                     # requests>=2.31.0
+
+# biotech_boltz_screening
+biotech_boltz_screening/biopython                   # biopython>=1.82
+biotech_boltz_screening/boltz                       # boltz>=0.3
+biotech_boltz_screening/pandas                      # pandas>=2.0
+biotech_boltz_screening/py3dmol                     # py3Dmol
+biotech_boltz_screening/ray                         # ray[data]>=2.9
+biotech_boltz_screening/rdkit                       # rdkit>=2023.9
+
+# biotech_protein_embeddings
+biotech_protein_embeddings/biopython                # biopython>=1.82
+biotech_protein_embeddings/pandas                   # pandas>=2.0
+biotech_protein_embeddings/ray                      # ray[data]>=2.9
+biotech_protein_embeddings/scikit-learn             # scikit-learn>=1.3
+biotech_protein_embeddings/transformers             # transformers>=4.35
+
+# creatives_diffusion_finetuning
+creatives_diffusion_finetuning/accelerate           # accelerate>=0.25
+creatives_diffusion_finetuning/diffusers            # diffusers>=0.25
+creatives_diffusion_finetuning/matplotlib           # matplotlib>=3.7
+creatives_diffusion_finetuning/peft                 # peft>=0.7
+creatives_diffusion_finetuning/pillow               # pillow>=10.0
+creatives_diffusion_finetuning/ray                  # ray[train,data]>=2.9
+creatives_diffusion_finetuning/transformers         # transformers>=4.35
+
+# deepspeed_finetune
+deepspeed_finetune/deepspeed                        # deepspeed
+
+# ecommerce_batch_embeddings
+ecommerce_batch_embeddings/faker                    # faker>=18.0
+ecommerce_batch_embeddings/pandas                   # pandas>=2.0
+ecommerce_batch_embeddings/pillow                   # pillow>=10.0
+ecommerce_batch_embeddings/ray                      # ray[data]>=2.9
+ecommerce_batch_embeddings/scikit-learn             # scikit-learn>=1.3
+ecommerce_batch_embeddings/sentence-transformers    # sentence-transformers>=2.2
+ecommerce_batch_embeddings/torch                    # torch>=2.0
+ecommerce_batch_embeddings/transformers             # transformers>=4.35
+
+# ecommerce_end_to_end
+ecommerce_end_to_end/hf_transfer                    # hf_transfer
+ecommerce_end_to_end/pillow                         # pillow
+ecommerce_end_to_end/sentence-transformers          # sentence-transformers
+
+# ecommerce_multi_model_serving
+ecommerce_multi_model_serving/faiss-cpu             # faiss-cpu>=1.7
+ecommerce_multi_model_serving/faker                 # faker>=18.0
+ecommerce_multi_model_serving/pandas                # pandas>=2.0
+ecommerce_multi_model_serving/pydantic              # pydantic>=2.0
+ecommerce_multi_model_serving/ray                   # ray[serve]>=2.9
+ecommerce_multi_model_serving/requests              # requests
+ecommerce_multi_model_serving/sentence-transformers # sentence-transformers>=2.2
+ecommerce_multi_model_serving/transformers          # transformers>=4.35
+
+# entity-recognition-with-llms
+entity-recognition-with-llms/llamafactory           # llamafactory @ git+https://github.com/hiyouga/LLaMA-Factory.git
+entity-recognition-with-llms/transformers           # transformers>=4.56.0,<5
+
+# fintech_fraud_risk
+fintech_fraud_risk/numpy                            # numpy>=1.24
+fintech_fraud_risk/pandas                           # pandas>=2.0
+fintech_fraud_risk/pyarrow                          # pyarrow>=14.0
+fintech_fraud_risk/ray                              # ray[data]>=2.9
+fintech_fraud_risk/scikit-learn                     # scikit-learn>=1.3
+fintech_fraud_risk/xgboost                          # xgboost>=2.0
+
+# fintech_quant
+fintech_quant/numpy                                 # numpy
+fintech_quant/pandas                                # pandas
+
+# pytorch-fsdp
+pytorch-fsdp/matplotlib                             # matplotlib
+
+# pytorch-profiling
+pytorch-profiling/matplotlib                        # matplotlib
+pytorch-profiling/torch_tb_profiler                 # torch_tb_profiler
+
+# ray-summit-core-masterclass
+ray-summit-core-masterclass/matplotlib              # matplotlib
+ray-summit-core-masterclass/pandas                  # pandas
+ray-summit-core-masterclass/requests                # requests
+ray-summit-core-masterclass/scikit-learn            # scikit-learn
+ray-summit-core-masterclass/tqdm                    # tqdm
+ray-summit-core-masterclass/xgboost                 # xgboost
+
+# ray-tune-train-integration
+ray-tune-train-integration/torch                    # torch>=2.5.0,<2.6.0
+ray-tune-train-integration/torchvision              # torchvision>=0.20.0,<0.21.0
+
+# ray-workshop-2026
+ray-workshop-2026/accelerate                        # accelerate>=1.5
+ray-workshop-2026/backoff                           # backoff>=2.2
+ray-workshop-2026/datasets                          # datasets>=2.0
+ray-workshop-2026/diffusers                         # diffusers>=0.32
+ray-workshop-2026/fastapi                           # fastapi>=0.100
+ray-workshop-2026/filelock                          # filelock>=3.0
+ray-workshop-2026/langdetect                        # langdetect>=1.0
+ray-workshop-2026/locust                            # locust>=2.0
+ray-workshop-2026/matplotlib                        # matplotlib>=3.7
+ray-workshop-2026/numpy                             # numpy>=1.24
+ray-workshop-2026/pandas                            # pandas>=2.0
+ray-workshop-2026/peft                              # peft>=0.5
+ray-workshop-2026/pillow                            # Pillow>=10.0
+ray-workshop-2026/psutil                            # psutil>=5.9
+ray-workshop-2026/pyarrow                           # pyarrow
+ray-workshop-2026/pydantic                          # pydantic>=2.0
+ray-workshop-2026/requests                          # requests>=2.31
+ray-workshop-2026/sentence-transformers             # sentence-transformers>=2.0
+ray-workshop-2026/starlette                         # starlette>=0.27
+ray-workshop-2026/torch                             # torch>=2.0
+ray-workshop-2026/torchvision                       # torchvision>=0.15
+ray-workshop-2026/tqdm                              # tqdm>=4.65
+ray-workshop-2026/transformers                      # transformers>=4.50
+
+# ray_train_workloads
+ray_train_workloads/gymnasium                       # gymnasium
+ray_train_workloads/pyarrow                         # pyarrow
+
+# stable-diffusion-pretraining
+stable-diffusion-pretraining/matplotlib             # matplotlib
+stable-diffusion-pretraining/pillow                 # Pillow
+stable-diffusion-pretraining/s3fs                   # s3fs
+stable-diffusion-pretraining/torch                  # torch>=2.5,<2.6
+stable-diffusion-pretraining/torchvision            # torchvision>=0.20,<0.21
+stable-diffusion-pretraining/typer                  # typer
+
+# storage-access-large-datasets
+storage-access-large-datasets/adlfs                 # adlfs
+storage-access-large-datasets/gcsfs                 # gcsfs
+
+# text-embeddings
+text-embeddings/torch                               # torch<2.5
+
+# xgboost-training-and-serving
+xgboost-training-and-serving/ipykernel              # ipykernel>=6.29.5
+xgboost-training-and-serving/ipywidgets             # ipywidgets>=8.1.6
+xgboost-training-and-serving/xgboost                # xgboost>=3.0.0

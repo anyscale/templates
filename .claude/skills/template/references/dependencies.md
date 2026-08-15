@@ -199,9 +199,36 @@ bundle instead of pinning the old image's freeze.
    workers/replicas keep running stale deps.
 4. Scan the lock diff for a framework package moving below its image version — the "Runtime skew" trap above.
 
+## How to pin
+
+**Every requirement is `==`, at the newest version that works on that template's image.**
+
+`>=` and bare names are not pins. They tell the resolver "anything newer is fine", so the lock
+silently re-resolves to whatever is current every time it is rebuilt — the template's behaviour
+changes with nobody editing it, and CI passes because it tests the drift. `<` is worse: an upper
+bound with no lower one freezes a template in the past. `text-embeddings` carried `torch<2.5`,
+`langchain==0.1.17` and `transformers==4.40.2` for a year that way.
+
+A loose spec needs a **trailing comment saying why** — `check-dep-delivery.py pin-style` fails
+without one. Real reasons: upstream publishes no tagged releases; a documented incompatibility;
+a range the template deliberately spans. "It worked when I wrote it" is not one.
+
+Two consequences worth spelling out:
+
+- **`==` alone doesn't mean current.** A pin set 18 months ago is exactly as stale as no pin, just
+  deterministically so. Freshness is re-checked on every Ray bump — see
+  `workflows/launch-ray-bump-wave.md`.
+- **For `torch`, "newest that works" is bounded by the image's CUDA index, not PyPI.**
+  `download.pytorch.org/whl/cu128` publishes torch from 2.7.0 and `cu129` from 2.8.0. Pin below the
+  floor and uv falls back to PyPI, the wheel loses its CUDA tag (`torch==2.7.0+cu128` becomes
+  `torch==2.7.0`), and the lock still compiles. Check the index before pinning torch.
+
+`dependencies/loose-pins-allowlist.txt` grandfathers what predates this rule. It is a backlog, not
+configuration — pin an entry properly and delete its line.
+
 ## Reviewing a template's dependency delivery
 
-Seven questions. Each has produced a real fleet-wide break, and the ones marked ✅ are now caught
+Eight questions. Each has produced a real fleet-wide break, and the ones marked ✅ are now caught
 automatically — the rest still need eyes.
 
 | # | Question | Failure it catches |
@@ -213,6 +240,7 @@ automatically — the rest still need eyes.
 | 5 | Do the shipped Job/Service configs source the lock, by absolute path? | the standalone path nobody tests |
 | 6 | Does `tests.sh` install or configure something the template doesn't? | CI green while every user following the README fails |
 | 7 | ✅ Does the depset's seed freeze match `BUILD.yaml`'s image? | lock describes an environment the template never runs in |
+| 8 | ✅ Is every requirement `==`, at a version that is still current? | the lock re-resolves on every rebuild, or freezes the template years behind |
 
 Dimension 6 is the highest-yield one to check by hand, because CI is what hides it. Read `tests.sh` and the
 README side by side and ask what the test does that a user wouldn't.
@@ -222,12 +250,16 @@ README side by side and ask what the test does that a user wouldn't.
 `scripts/hooks/check-dep-delivery.py`, via pre-commit (whole repo, ~0.2s). Run a single check by name:
 
 ```bash
-python3 scripts/hooks/check-dep-delivery.py             # all three
+python3 scripts/hooks/check-dep-delivery.py             # all four
 python3 scripts/hooks/check-dep-delivery.py tests-pip   # one
 ```
 
 `tests-pip` fails only for templates that ship a lock, since that is what makes the trap live; it lists the
 lock-less ones instead, and they join the gate as they gain locks.
+
+`pin-style` fails on any requirement that is neither `==` nor commented, except those grandfathered in
+`dependencies/loose-pins-allowlist.txt`. It prints how many remain and flags allowlist entries it no
+longer needs, so the backlog is a number that only goes down.
 
 ## Gotchas
 
