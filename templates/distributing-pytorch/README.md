@@ -66,6 +66,10 @@ Next, define a function that returns PyTorch DataLoaders for train and test data
 
 ```python
 def get_dataloaders(batch_size):
+    # The canonical CIFAR-10 host throttles to ~80 kB/s; this mirror is the same
+    # archive and torchvision still verifies its checksum.
+    datasets.CIFAR10.url = "https://air-example-data.s3.us-west-2.amazonaws.com/cifar-10-python.tar.gz"
+
     # Transform to normalize the input images.
     transform = transforms.Compose([ToTensor(), Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
 
