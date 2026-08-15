@@ -30,7 +30,7 @@ depsets:
     build_arg_sets:
       - ray2560_py312
     pre_hooks:
-      - dependencies/scripts/seed-image-freeze.sh dependencies/images/ray-${RAY_VERSION}-py312-cu128.freeze.txt templates/serve-stable-diffusion-v2/python_depset.lock
+      - dependencies/scripts/seed-image-freeze.sh dependencies/images/ray-${RAY_VERSION}-py312-cu129.freeze.txt templates/serve-stable-diffusion-v2/python_depset.lock
 
   - name: langchain_agent_ray_serve_depset_${RAY_VERSION}_${PYTHON_VERSION}
     operation: compile
@@ -88,7 +88,7 @@ depsets:
     build_arg_sets:
       - ray2560_py311
     pre_hooks:
-      - dependencies/scripts/seed-image-freeze.sh dependencies/images/ray-${RAY_VERSION}-py311-cu121.freeze.txt templates/biotech_protein_embeddings/python_depset.lock
+      - dependencies/scripts/seed-image-freeze.sh dependencies/images/ray-${RAY_VERSION}-py311-cu128.freeze.txt templates/biotech_protein_embeddings/python_depset.lock
 
   - name: ecommerce_batch_embeddings_depset_${RAY_VERSION}_${PYTHON_VERSION}
     operation: compile
@@ -103,7 +103,7 @@ depsets:
     build_arg_sets:
       - ray2560_py311
     pre_hooks:
-      - dependencies/scripts/seed-image-freeze.sh dependencies/images/ray-${RAY_VERSION}-py311-cu121.freeze.txt templates/ecommerce_batch_embeddings/python_depset.lock
+      - dependencies/scripts/seed-image-freeze.sh dependencies/images/ray-${RAY_VERSION}-py311-cu128.freeze.txt templates/ecommerce_batch_embeddings/python_depset.lock
 
   - name: audio_dataset_curation_llm_judge_depset_${RAY_VERSION}_${PYTHON_VERSION}_${CUDA_VARIANT}
     operation: compile
@@ -178,7 +178,7 @@ depsets:
     build_arg_sets:
       - ray2560_py311
     pre_hooks:
-      - dependencies/scripts/seed-image-freeze.sh dependencies/images/ray-${RAY_VERSION}-py311-cu121.freeze.txt templates/creatives_diffusion_finetuning/python_depset.lock
+      - dependencies/scripts/seed-image-freeze.sh dependencies/images/ray-${RAY_VERSION}-py311-cu128.freeze.txt templates/creatives_diffusion_finetuning/python_depset.lock
 
   - name: ecommerce_multi_model_serving_depset_${RAY_VERSION}_${PYTHON_VERSION}
     operation: compile
@@ -193,7 +193,7 @@ depsets:
     build_arg_sets:
       - ray2560_py311
     pre_hooks:
-      - dependencies/scripts/seed-image-freeze.sh dependencies/images/ray-${RAY_VERSION}-py311-cu121.freeze.txt templates/ecommerce_multi_model_serving/python_depset.lock
+      - dependencies/scripts/seed-image-freeze.sh dependencies/images/ray-${RAY_VERSION}-py311-cu128.freeze.txt templates/ecommerce_multi_model_serving/python_depset.lock
 
   - name: biotech_boltz_screening_depset_${RAY_VERSION}_${PYTHON_VERSION}
     operation: compile
@@ -208,7 +208,7 @@ depsets:
     build_arg_sets:
       - ray2560_py311
     pre_hooks:
-      - dependencies/scripts/seed-image-freeze.sh dependencies/images/ray-${RAY_VERSION}-py311-cu121.freeze.txt templates/biotech_boltz_screening/python_depset.lock
+      - dependencies/scripts/seed-image-freeze.sh dependencies/images/ray-${RAY_VERSION}-py311-cu128.freeze.txt templates/biotech_boltz_screening/python_depset.lock
 
   - name: finetune_stable_diffusion_depset_${RAY_VERSION}_${PYTHON_VERSION}
     operation: compile
@@ -268,7 +268,7 @@ depsets:
     build_arg_sets:
       - ray2560_py312
     pre_hooks:
-      - dependencies/scripts/seed-image-freeze.sh dependencies/images/ray-${RAY_VERSION}-slim-py312-cu128.freeze.txt templates/distributing-pytorch/python_depset.lock
+      - dependencies/scripts/seed-image-freeze.sh dependencies/images/ray-${RAY_VERSION}-slim-py312-cu129.freeze.txt templates/distributing-pytorch/python_depset.lock
 
   - name: pytorch_fsdp_depset_${RAY_VERSION}_${PYTHON_VERSION}
     operation: compile
@@ -283,7 +283,7 @@ depsets:
     build_arg_sets:
       - ray2560_py312
     pre_hooks:
-      - dependencies/scripts/seed-image-freeze.sh dependencies/images/ray-${RAY_VERSION}-py312-cu128.freeze.txt templates/pytorch-fsdp/python_depset.lock
+      - dependencies/scripts/seed-image-freeze.sh dependencies/images/ray-${RAY_VERSION}-py312-cu129.freeze.txt templates/pytorch-fsdp/python_depset.lock
 
   - name: pytorch_profiling_depset_${RAY_VERSION}_${PYTHON_VERSION}
     operation: compile
@@ -299,7 +299,7 @@ depsets:
       - ray2560_py312
 #
     pre_hooks:
-      - dependencies/scripts/seed-image-freeze.sh dependencies/images/ray-${RAY_VERSION}-py312-cu128.freeze.txt templates/pytorch-profiling/python_depset.lock
+      - dependencies/scripts/seed-image-freeze.sh dependencies/images/ray-${RAY_VERSION}-py312-cu129.freeze.txt templates/pytorch-profiling/python_depset.lock
 
   - name: image_search_and_classification_depset_${RAY_VERSION}_${PYTHON_VERSION}
     operation: compile
@@ -314,7 +314,7 @@ depsets:
     build_arg_sets:
       - ray2560_py312
     pre_hooks:
-      - dependencies/scripts/seed-image-freeze.sh dependencies/images/ray-${RAY_VERSION}-slim-py312-cu128.freeze.txt templates/image-search-and-classification/python_depset.lock
+      - dependencies/scripts/seed-image-freeze.sh dependencies/images/ray-${RAY_VERSION}-slim-py312-cu129.freeze.txt templates/image-search-and-classification/python_depset.lock
 
   - name: tensor_parallel_dtensor_depset_${RAY_VERSION}_${PYTHON_VERSION}
     operation: compile
@@ -322,14 +322,14 @@ depsets:
       - templates/tensor_parallel_dtensor/requirements.txt
     output: templates/tensor_parallel_dtensor/python_depset.lock
     append_flags:
-      - --index https://download.pytorch.org/whl/cu128
+      - --index https://download.pytorch.org/whl/cu129
       - --python-version=${PYTHON_VERSION}
       - --python-platform=linux
       - --unsafe-package ray
     build_arg_sets:
       - ray2560_py312
     pre_hooks:
-      - dependencies/scripts/seed-image-freeze.sh dependencies/images/ray-${RAY_VERSION}-py312-cu128.freeze.txt templates/tensor_parallel_dtensor/python_depset.lock
+      - dependencies/scripts/seed-image-freeze.sh dependencies/images/ray-${RAY_VERSION}-py312-cu129.freeze.txt templates/tensor_parallel_dtensor/python_depset.lock
 
   - name: ray_data_batch_image_classification_depset_${RAY_VERSION}_${PYTHON_VERSION}
     operation: compile
@@ -344,7 +344,7 @@ depsets:
     build_arg_sets:
       - ray2560_py312
     pre_hooks:
-      - dependencies/scripts/seed-image-freeze.sh dependencies/images/ray-${RAY_VERSION}-py312-cu128.freeze.txt templates/ray-data-batch-image-classification/python_depset.lock
+      - dependencies/scripts/seed-image-freeze.sh dependencies/images/ray-${RAY_VERSION}-py312-cu129.freeze.txt templates/ray-data-batch-image-classification/python_depset.lock
 
   - name: xgboost_training_and_serving_depset_${RAY_VERSION}_${PYTHON_VERSION}
     operation: compile
@@ -358,7 +358,7 @@ depsets:
     build_arg_sets:
       - ray2560_py312
     pre_hooks:
-      - dependencies/scripts/seed-image-freeze.sh dependencies/images/ray-${RAY_VERSION}-slim-py312-cu128.freeze.txt templates/xgboost-training-and-serving/python_depset.lock
+      - dependencies/scripts/seed-image-freeze.sh dependencies/images/ray-${RAY_VERSION}-slim-py312-cu129.freeze.txt templates/xgboost-training-and-serving/python_depset.lock
 
   - name: ray_train_workloads_depset_${RAY_VERSION}_${PYTHON_VERSION}
     operation: compile
@@ -446,7 +446,7 @@ depsets:
     build_arg_sets:
       - ray2560_py312
     pre_hooks:
-      - dependencies/scripts/seed-image-freeze.sh dependencies/images/ray-${RAY_VERSION}-slim-py312-cu128.freeze.txt templates/asynchronous_inference/python_depset.lock
+      - dependencies/scripts/seed-image-freeze.sh dependencies/images/ray-${RAY_VERSION}-slim-py312-cu129.freeze.txt templates/asynchronous_inference/python_depset.lock
 
   - name: mcp_ray_serve_depset_${RAY_VERSION}_${PYTHON_VERSION}
     operation: compile
@@ -490,7 +490,7 @@ depsets:
     build_arg_sets:
       - ray2560_py312
     pre_hooks:
-      - dependencies/scripts/seed-image-freeze.sh dependencies/images/ray-${RAY_VERSION}-py312-cu128.freeze.txt templates/ray-summit-core-masterclass/python_depset.lock
+      - dependencies/scripts/seed-image-freeze.sh dependencies/images/ray-${RAY_VERSION}-py312-cu129.freeze.txt templates/ray-summit-core-masterclass/python_depset.lock
 
   - name: text_embeddings_depset_${RAY_VERSION}_${PYTHON_VERSION}
     operation: compile
@@ -505,7 +505,7 @@ depsets:
     build_arg_sets:
       - ray2560_py311
     pre_hooks:
-      - dependencies/scripts/seed-image-freeze.sh dependencies/images/ray-${RAY_VERSION}-py311-cu124.freeze.txt templates/text-embeddings/python_depset.lock
+      - dependencies/scripts/seed-image-freeze.sh dependencies/images/ray-${RAY_VERSION}-py311-cu128.freeze.txt templates/text-embeddings/python_depset.lock
 
   - name: e2e_timeseries_forecasting_depset_${RAY_VERSION}_${PYTHON_VERSION}
     operation: compile
@@ -519,7 +519,7 @@ depsets:
     build_arg_sets:
       - ray2560_py312
     pre_hooks:
-      - dependencies/scripts/seed-image-freeze.sh dependencies/images/ray-${RAY_VERSION}-slim-py312-cu128.freeze.txt templates/e2e-timeseries-forecasting/python_depset.lock
+      - dependencies/scripts/seed-image-freeze.sh dependencies/images/ray-${RAY_VERSION}-slim-py312-cu129.freeze.txt templates/e2e-timeseries-forecasting/python_depset.lock
 
   - name: ecommerce_end_to_end_depset_${RAY_VERSION}_${PYTHON_VERSION}
     operation: compile
