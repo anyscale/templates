@@ -137,7 +137,7 @@ TAXONOMY_PATH = f"{INPUT_DIR}/taxonomy_lookup.parquet"
 PAIRS_PATH = f"{INPUT_DIR}/homolog_test_pairs.csv"
 OUTPUT_NAIVE = f"{BASE_DIR}/embeddings/naive/"
 OUTPUT_BUCKETED = f"{BASE_DIR}/embeddings/bucketed/"
-SCALE = "medium"  # 100K sequences
+SCALE = os.getenv("EMBEDDING_SCALE", "medium")  # 10K / 100K / 500K sequences
 
 # Generate synthetic corpus (skips if file already exists)
 if not os.path.exists(INPUT_PATH):
