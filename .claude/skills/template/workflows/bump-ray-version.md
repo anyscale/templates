@@ -41,6 +41,27 @@ curl -sf "https://hub.docker.com/v2/repositories/anyscale/ray/tags/<tag>/" >/dev
 
 Then bump `BUILD.yaml` `ray_version` and grep/update any in-template version strings.
 
+### Refresh the pins
+
+The image just changed, so this is the moment to re-check what `requirements.txt` asks for. A pin
+set at some past bump is not evidence it is still right — it is only evidence nobody looked.
+
+For each requirement, move it to `==` at the **newest version that works on the new image**:
+
+- **`torch` / `torchvision` / `torchaudio`** — bounded by the image's CUDA wheel index, not PyPI.
+  `curl -sS https://download.pytorch.org/whl/<cu>/torch/ | grep -oE 'torch-[0-9.]+'` lists what is
+  actually published; `cu128` starts at 2.7.0 and `cu129` at 2.8.0. Pin below the floor and uv
+  falls back to PyPI, the wheel silently loses its CUDA tag, and the lock still compiles. Keep
+  torch and torchvision on their matching pair.
+- **Everything else** — `pip index versions <pkg>`, then pin `==` to the newest that resolves.
+- **Already `==` at the newest available** — leave it; that is the target state, not a no-op to fix.
+- **Can't be pinned** (upstream ships no tagged releases, a documented incompatibility) — leave it
+  loose *with a trailing comment saying why*, or `pin-style` fails.
+
+Drop any line you fix from `dependencies/loose-pins-allowlist.txt`. Don't bulk-bump a pin you have
+no way to test — if a package is central to what the template demonstrates and the jump is large,
+say so in the PR body and leave it, rather than shipping an untested upgrade.
+
 ### Recompile the dependency lock
 
 The image Ray version and the template's locked deps must agree. Which case applies is decided by whether `<name>` has an entry in `dependencies/template.depsets.yaml` (equivalently, ships `templates/<name>/python_depset.lock`):
@@ -48,7 +69,7 @@ The image Ray version and the template's locked deps must agree. Which case appl
 - **No lock** (base-image or BYOD templates — e.g. `parallel-experiments`, `groot-ray-serve`, `intro-ray-libraries`) — nothing to recompile; the image bump *is* the whole change. Go to step 2.
 - **Has a lock** — regenerate it against `<version>`, **incrementally**. This is a *per-template* PR, so touch only this template's slice of the config. **Step 1 is one-time per Ray version** — if a prior bump for `<version>` (an earlier template, or the version-prep PR) already added the `ray<NEW>` bundle, skip to step 2:
   1. Add a `ray<NEW>_py<PY>_cu<CU>` bundle to `build_arg_sets`, mirroring this template's existing `ray<OLD>_*` bundle (same Python/CUDA). **Add — do not replace** the old bundle; every other template still rides it.
-  2. Repoint **only this template's** entry: its `build_arg_sets` `ray<OLD>_* → ray<NEW>_*`. Its `seed-image-freeze.sh` pre_hook interpolates `${RAY_VERSION}`, so it follows automatically — but if the new image's py/CUDA differ, fix the literal parts of the freeze filename to match the image you set in step 1. **The freeze must name the image the template now runs on**; nothing checks the pairing.
+  2. Repoint **only this template's** entry: its `build_arg_sets` `ray<OLD>_* → ray<NEW>_*`. Its `seed-image-freeze.sh` pre_hook interpolates `${RAY_VERSION}`, so it follows automatically — but if the new image's py/CUDA differ, fix the literal parts of the freeze filename to match the image you set in step 1. **The freeze must name the image the template now runs on** — `check-dep-delivery.py lock-image` fails the commit if it doesn't.
   3. `./update_deps.sh --name <this-entry-name>` — regenerates this template's lock (runs natively on Linux or macOS; `../references/dependencies.md` "Running it"). Whole-repo batch upgrade: `upgrade-dependencies.md`.
   4. Commit together: the `BUILD.yaml` bump, this template's `python_depset.lock`, and the `template.depsets.yaml` edit.
 

@@ -56,6 +56,11 @@ prompt is **not** in this repo — it lives on the Cursor automation dashboard, 
 source of truth; the payload is only `{template_name, ray_version}`. Each agent then runs
 `bump-ray-version.md` non-interactively.
 
+Each agent also re-pins that template's `requirements.txt` to the newest versions its new image
+supports (`bump-ray-version.md` → "Refresh the pins"). The wave is the only recurring moment the
+whole fleet's dependencies get looked at, so expect PRs to carry pin bumps alongside the image
+bump — review those as behaviour changes, not boilerplate.
+
 ## 4. Re-firing after a partial wave
 
 Safe. The delta recomputes from `BUILD.yaml`, so anything already landed at `<v>` is skipped and

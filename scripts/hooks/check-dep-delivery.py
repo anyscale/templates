@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Static dependency-delivery checks (see .claude/skills/template/references/dependencies.md).
 
-Three failure modes that are invisible to `template-test` because CI happens to paper
+Four failure modes that are invisible to `template-test` because CI happens to paper
 over each one:
 
   lock-image  A lock seeded from image A while BUILD.yaml runs the template on image B.
@@ -12,8 +12,11 @@ over each one:
               runtime-env hook appends it, unpinned, to every actor's pip list; one
               unhashed entry trips pip's --require-hashes against a hashed lock and
               every runtime env for that template fails to build.
+  pin-style   A requirement that isn't `==`. The lock then re-resolves to whatever is
+              newest whenever it's regenerated, so a template's behaviour changes
+              without anyone editing it -- and CI passes, because it tests the drift.
 
-Usage: check-dep-delivery.py [lock-image|driver|tests-pip ...]   (default: all)
+Usage: check-dep-delivery.py [lock-image|driver|tests-pip|pin-style ...]   (default: all)
 """
 import re
 import sys
@@ -23,8 +26,12 @@ import yaml
 
 BUILD_YAML = Path("BUILD.yaml")
 DEPSETS = Path("dependencies/template.depsets.yaml")
+PIN_EXCEPTIONS = Path("dependencies/loose-pins-allowlist.txt")
 TESTS = Path("tests")
 LOCK = "python_depset.lock"
+
+# Leading package name of a requirement, before any extras, specifier or URL.
+REQ_NAME_RE = re.compile(r"^([A-Za-z0-9][A-Za-z0-9._-]*)")
 
 # `ray-2.56.0-py311-cu121.freeze.txt` -> `anyscale/ray:2.56.0-py311-cu121`
 FREEZE_RE = re.compile(r"^(ray(?:-llm)?)-(\d+\.\d+\.\d+.*)\.freeze\.txt$")
@@ -137,10 +144,74 @@ def check_tests_pip():
     return problems
 
 
+def requirement_lines(path: Path):
+    """[(lineno, package, spec, has_justification)] for real requirements only."""
+    for n, raw in enumerate(path.read_text().splitlines(), 1):
+        line, _, comment = raw.partition("#")
+        spec = line.strip()
+        if not spec or spec.startswith("-"):
+            continue
+        package = REQ_NAME_RE.match(spec)
+        yield n, (package.group(1).lower() if package else spec), spec, bool(comment.strip())
+
+
+def check_pin_style():
+    """Every requirement is `==`, or carries a trailing comment saying why it isn't.
+
+    The allowlist grandfathers what predates the rule so the check is green today; it is
+    a backlog, not a config, and every entry removed is a template that stopped drifting.
+    """
+    allowed = set()
+    if PIN_EXCEPTIONS.exists():
+        for line in PIN_EXCEPTIONS.read_text().splitlines():
+            entry = line.split("#")[0].strip()
+            if entry:
+                allowed.add(entry)
+
+    problems, grandfathered, stale = [], 0, []
+    roots = {name: root for name, root, _ in templates()}
+    for name, root in roots.items():
+        req = root / "requirements.txt"
+        if not req.exists():
+            continue
+        for n, package, spec, justified in requirement_lines(req):
+            if "==" in spec and "@" not in spec:
+                continue
+            if justified:
+                continue
+            if f"{name}/{package}" in allowed:
+                grandfathered += 1
+                continue
+            problems.append(
+                f"{name}: {req}:{n}\n      {spec}\n"
+                f"      Pin it with `==` at the newest version that works on this template's "
+                f"image, or add a trailing comment saying why it can't be."
+            )
+
+    for entry in sorted(allowed):
+        tmpl, _, package = entry.partition("/")
+        req = roots.get(tmpl, Path("/nonexistent")) / "requirements.txt"
+        if not req.exists() or not any(
+            p == package and not ("==" in s and "@" not in s) and not j
+            for _, p, s, j in requirement_lines(req)
+        ):
+            stale.append(entry)
+
+    if grandfathered:
+        print(f"note: {grandfathered} loose pin(s) still grandfathered in {PIN_EXCEPTIONS}. "
+              "Each one re-resolves to whatever is newest when its lock is rebuilt.")
+    if stale:
+        print(f"note: {len(stale)} allowlist entry/entries no longer needed — delete them:")
+        for entry in stale:
+            print(f"  - {entry}")
+    return problems
+
+
 CHECKS = {
     "lock-image": check_lock_image,
     "driver": check_driver,
     "tests-pip": check_tests_pip,
+    "pin-style": check_pin_style,
 }
 
 if __name__ == "__main__":
