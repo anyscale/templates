@@ -680,6 +680,13 @@ warehouse_dataset = (
     .with_column("pipeline_version", lit("1.0"))               # Which version of pipeline?
     .with_column("processing_engine", lit("ray_data"))         # What tool processed it?
 )
+
+# MATERIALIZE ONCE BEFORE FANNING OUT
+# Ray Data is lazy: every consumer below (the main table, the per-team extracts,
+# and the two summary tables) would otherwise re-run this whole pipeline from the
+# S3 read, including the zero-shot classification. Materializing computes it once
+# and keeps the result in the object store for all four to share.
+warehouse_dataset = warehouse_dataset.materialize()
 ```
 
 ### Write to data warehouse with partitioning
