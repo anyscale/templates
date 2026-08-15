@@ -13,7 +13,7 @@ llm_config = LLMConfig(
         "tensor_parallel_size": int(os.getenv("RAG_LLM_TP", "4")),
         "trust_remote_code": True,
     },
-    accelerator_type="A10G",
+    accelerator_type="L4",
     deployment_config={
         "autoscaling_config": {"target_ongoing_requests": 32},
         "max_ongoing_requests": 64,
