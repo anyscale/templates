@@ -1,12 +1,16 @@
+# memory is in bytes, not a "32Gi" quantity string: the published bundle is
+# parsed straight into the backend's PhysicalResources (`memory: int`), and
+# only the SDK path converts suffixes — a string passes local `compute-config
+# create -f` and 422s on launch. 8Gi = 8589934592, 32Gi = 34359738368.
 head_node:
   required_resources:
     CPU: 4
-    memory: 8Gi
+    memory: 8589934592
   resources:
     CPU: 0
 worker_nodes:
 - name: cpu_worker
   required_resources:
     CPU: 8
-    memory: 32Gi
+    memory: 34359738368
   max_nodes: 2

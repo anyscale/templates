@@ -463,6 +463,22 @@ def check_k8s_configs_declarative(entries: list[Entry]) -> list[str]:
                     f"read by the launch-time GPU validation — use "
                     f"`required_labels: {{ray.io/accelerator-type: ...}}`"
                 )
+            # memory is bytes, never a Kubernetes quantity string. `rayapp
+            # build` copies required_resources verbatim into the published
+            # bundle, and the console clone path parses that bundle into the
+            # backend's PhysicalResources, whose `memory` is an int — "8Gi"
+            # there is a 422. Only the SDK (`compute-config create -f`)
+            # converts suffixes, so a string survives local testing and fails
+            # at launch; nothing else in the pipeline catches it.
+            mem = rr.get("memory")
+            if mem is not None and (isinstance(mem, bool) or not isinstance(mem, int)):
+                errors.append(
+                    f"{path}: {loc}.required_resources.memory must be an "
+                    f"integer number of bytes, not {mem!r} — the published "
+                    f"bundle goes to the backend unconverted "
+                    f"(8Gi = 8589934592, 16Gi = 17179869184, "
+                    f"32Gi = 34359738368)"
+                )
             # Mirror the backend's check_gpu_accelerator_consistency: GPU
             # count and accelerator-type label come together (TPU labels are
             # paired with TPU fields backend-side instead).
