@@ -41,7 +41,7 @@ need the added deps (leave an LLM ingress on the `ray-llm` image) — not a head
 workspace *tracking* the install; the runtime-env hook then appends it, **unpinned**, to the pip list every
 actor receives. Against a hashed lock that one unhashed entry trips pip's `--require-hashes`, so **every**
 runtime env for that template fails to build — not just the actor that wanted the package. Use
-`uv pip install --system` in `tests.sh`, always; `check-dep-delivery.py tests-pip` enforces it for every
+`uv pip install --system` in `tests.sh`, always; `check-dep-delivery.py bare-pip` enforces it for every
 template that ships a lock.
 
 ## Runtime skew — right scope, don't move the base framework
@@ -184,7 +184,7 @@ above). Output is **overwritten in place** (not version-stamped):
 ```
 
 The freeze **must name the image that template's `BUILD.yaml` entry actually runs on**, or the lock
-silently describes an environment the template never runs in. `check-dep-delivery.py lock-image` enforces
+silently describes an environment the template never runs in. `check-dep-delivery.py depset-config` enforces
 the pairing (see "What CI enforces"). Keep `${RAY_VERSION}` (and
 `${PYTHON_SHORT}` / `${CUDA_VARIANT}` where they match the tag) interpolated so a version bump follows the
 bundle instead of pinning the old image's freeze.
@@ -249,20 +249,26 @@ README side by side and ask what the test does that a user wouldn't.
 `scripts/hooks/check-dep-delivery.py`, via pre-commit (whole repo, ~0.2s). Run a single check by name:
 
 ```bash
-python3 scripts/hooks/check-dep-delivery.py             # all five
-python3 scripts/hooks/check-dep-delivery.py tests-pip   # one
+python3 scripts/hooks/check-dep-delivery.py                # all four
+python3 scripts/hooks/check-dep-delivery.py bare-pip       # one
 ```
 
-`tests-pip` fails only for templates that ship a lock, since that is what makes the trap live; it lists the
-lock-less ones instead, and they join the gate as they gain locks.
+`bare-pip` fails only for templates that ship a lock, since that is what makes the trap live. A lock-less
+template is left alone — for a pure workspace tutorial the bare install *is* the lesson — and joins the gate
+automatically if it ever gains a lock.
 
 `pin-style` fails on any requirement that is neither `==` nor commented.
 
-`depset-config` fails on a template lock compiled without `include_setuptools: true`. uv drops
-setuptools from a lock by default, and Ray's runtime env is a virtualenv that seeds its own -- so a
-locked package wanting a newer one makes pip collect it unpinned, unhashed, against a lock full of
-hashes, and every runtime env for that template fails to build. With the flag on, setuptools is
-either pinned at the image's version or absent because nothing in the graph wants it.
+`depset-config` checks each depset entry two ways. **The freeze must name the image `BUILD.yaml` runs
+the template on** — the lock is seeded from that freeze, so pointing it elsewhere makes every pin
+describe an environment the template never runs in. `${RAY_VERSION}` interpolates on a bump, but the
+literal py/CUDA parts don't, so moving a template between images is where this slips.
+
+**And the entry must set `include_setuptools: true`.** uv drops setuptools from a lock by default,
+while Ray's runtime env is a virtualenv seeding its own — so a locked package wanting a newer one
+makes pip collect it unpinned, unhashed, against a lock full of hashes, and every runtime env for
+that template fails to build. With the flag on, setuptools is either pinned at the image's version
+or absent because nothing in the graph wants it.
 
 ## Gotchas
 
