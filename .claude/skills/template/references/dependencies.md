@@ -39,7 +39,8 @@ need the added deps (leave an LLM ingress on the `ray-llm` image) — not a head
 
 **And a bare `pip install` in `tests.sh` breaks the template outright.** The propagation above works by the
 workspace *tracking* the install; the runtime-env hook then appends it, **unpinned**, to the pip list every
-actor receives. Against a hashed lock that one unhashed entry trips pip's `--require-hashes`, so **every**
+actor receives. A lock full of hashes puts pip in hash-checking mode by itself — nobody passes
+`--require-hashes`, it is the mode pip names in the error — and that one unhashed entry then fails **every**
 runtime env for that template fails to build — not just the actor that wanted the package. Use
 `uv pip install --system` in `tests.sh`, always; `check-dep-delivery.py bare-pip` enforces it for every
 template that ships a lock.
@@ -253,22 +254,19 @@ python3 scripts/hooks/check-dep-delivery.py                # all four
 python3 scripts/hooks/check-dep-delivery.py bare-pip       # one
 ```
 
-`bare-pip` fails only for templates that ship a lock, since that is what makes the trap live. A lock-less
-template is left alone — for a pure workspace tutorial the bare install *is* the lesson — and joins the gate
-automatically if it ever gains a lock.
+| check | fails when |
+|---|---|
+| `depset-config` | an entry's seed freeze names an image other than the one `BUILD.yaml` runs, or it omits `include_setuptools: true` |
+| `lock-installed` | a template ships a lock nothing installs, or installs it without `-r` |
+| `bare-pip` | a lock-bearing template bare-`pip install`s in `tests.sh` |
+| `pin-style` | a requirement is neither `==` nor commented |
 
-`pin-style` fails on any requirement that is neither `==` nor commented.
+`include_setuptools` matters because uv drops setuptools from a lock while Ray's runtime env is a
+virtualenv seeding its own: a locked package wanting a newer one makes pip collect it unpinned and
+unhashed against a hashed lock, and every runtime env for that template then fails to build.
 
-`depset-config` checks each depset entry two ways. **The freeze must name the image `BUILD.yaml` runs
-the template on** — the lock is seeded from that freeze, so pointing it elsewhere makes every pin
-describe an environment the template never runs in. `${RAY_VERSION}` interpolates on a bump, but the
-literal py/CUDA parts don't, so moving a template between images is where this slips.
-
-**And the entry must set `include_setuptools: true`.** uv drops setuptools from a lock by default,
-while Ray's runtime env is a virtualenv seeding its own — so a locked package wanting a newer one
-makes pip collect it unpinned, unhashed, against a lock full of hashes, and every runtime env for
-that template fails to build. With the flag on, setuptools is either pinned at the image's version
-or absent because nothing in the graph wants it.
+`bare-pip` skips lock-less templates — for a pure workspace tutorial the bare install *is* the lesson —
+and they join the gate automatically if they ever gain a lock.
 
 ## Gotchas
 

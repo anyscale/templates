@@ -36,7 +36,7 @@ The sections below describe what the skill (or you, manually) does under the hoo
    - **Minimum:** a hand-written `README.md` (this is what's rendered in the Anyscale console preview)
    - A `Dockerfile` only if you need a custom image — otherwise reference a stock `anyscale/ray:...` image
 2. **Test** at `tests/<name>/tests.sh` — runs in CI to confirm the template still works end-to-end
-3. **Compute config:** most templates reuse `configs/basic-single-node/`. If you need custom compute, add `configs/<name>/aws.yaml` + `configs/<name>/gce.yaml`
+3. **Compute config:** add `configs/<name>/aws.yaml` + `configs/<name>/gce.yaml` (38 of 57 templates have their own). A single-node template can reuse `configs/basic-single-node/` instead
 4. **`BUILD.yaml` entry** — schema in [`.claude/skills/template/schemas/build-yaml-schema.yaml`](.claude/skills/template/schemas/build-yaml-schema.yaml), strictly validated by `scripts/hooks/validate-build-yaml.py` (also runs as a pre-commit hook)
 5. **Custom image** (only if you set `cluster_env.byod`): build and push with [`.claude/skills/template/scripts/push-custom-image-to-gcp.sh`](.claude/skills/template/scripts/push-custom-image-to-gcp.sh)`<dockerfile-dir> <name> <ray-version>`. You need permissions to push to Anyscale's public GCP Artifact registry.
 
@@ -44,7 +44,7 @@ The sections below describe what the skill (or you, manually) does under the hoo
 
 ## Local development
 
-Requires Python 3.12 (matches CI and cursor cloud — `generate-readme` is byte-deterministic at that version); [uv](https://docs.astral.sh/uv/) provisions it automatically.
+Requires Python 3.12 (matches CI and Cursor Cloud — nbconvert's README render is byte-identical only at the same version, and `check-readme` compares bytes); [uv](https://docs.astral.sh/uv/) provisions it automatically.
 
 ```bash
 uv sync                                           # pinned dev deps from uv.lock (creates .venv)
