@@ -25,8 +25,18 @@ XGBOOST_CONFIGS = {
     "name": "xgboost",
 }
 
-# dataset
-X_data, y_data = fetch_california_housing(return_X_y=True, as_frame=True)
+
+def load_california_housing():
+    """
+    Fetch the California housing dataset as (features, target) frames.
+
+    Call this once, on the driver, and hand the frames to the actors through
+    Ray's object store. Do not call it from actor code: sklearn downloads into a
+    single unlocked path under ``~/scikit_learn_data`` and deletes the archive
+    when it is done, so two actor processes starting together on the same node
+    truncate or unlink each other's copy of ``cal_housing.tgz``.
+    """
+    return fetch_california_housing(return_X_y=True, as_frame=True)
 
 
 class ActorCls:
@@ -34,7 +44,7 @@ class ActorCls:
     Base class for our Ray Actor workers models
     """
 
-    def __init__(self, configs: Dict[Any, Any]) -> None:
+    def __init__(self, configs: Dict[Any, Any], X_data, y_data) -> None:
         self.configs = configs
         self.name = configs["name"]
         self.state = STATES[0]
@@ -63,8 +73,8 @@ class RFRActor(ActorCls):
     An actor model to train and score the calfornia house data using Random Forest Regressor
     """
 
-    def __init__(self, configs):
-        super().__init__(configs)
+    def __init__(self, configs, X_data, y_data):
+        super().__init__(configs, X_data, y_data)
         self.estimators = configs["n_estimators"]
 
     def train_and_evaluate_model(self) -> Dict[Any, Any]:
@@ -107,8 +117,8 @@ class DTActor(ActorCls):
     An actor model to train and score the calfornia house data using Decision Tree Regressor
     """
 
-    def __init__(self, configs):
-        super().__init__(configs)
+    def __init__(self, configs, X_data, y_data):
+        super().__init__(configs, X_data, y_data)
         self.max_depth = configs["max_depth"]
 
     def train_and_evaluate_model(self) -> Dict[Any, Any]:
@@ -149,8 +159,8 @@ class XGBoostActor(ActorCls):
     An actor model to train and score the calfornia house data using XGBoost Regressor
     """
 
-    def __init__(self, configs):
-        super().__init__(configs)
+    def __init__(self, configs, X_data, y_data):
+        super().__init__(configs, X_data, y_data)
 
         self.max_depth = configs["max_depth"]
         self.estimators = configs["n_estimators"]
