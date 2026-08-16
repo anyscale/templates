@@ -24,8 +24,38 @@ for t in $TEMPLATES; do
   esac
 done
 
+# BUILD.yaml's `timeout_in_sec` bounds the *test*; the job timeout bounds everything
+# around it too -- workspace create, cluster start, image pull, dep install. So the
+# job's must be the looser of the two, or it fires first and a slow-but-healthy run
+# reads as a template bug. A flat 75 did exactly that to the two templates that
+# budget more: biotech_boltz_screening at 90min and e2e-rag-deepdive at 120.
+#
+# Stdlib only, on purpose: this renders on a bare agent, and adding a pyyaml install
+# to the fan-out step to read one integer is a poor trade.
+STARTUP_ALLOWANCE_MIN=30
+template_timeout_min() {
+  python3 - "$ROOT/BUILD.yaml" "$1" "$STARTUP_ALLOWANCE_MIN" <<'PY'
+import re, sys
+
+build, want, allowance = sys.argv[1], sys.argv[2], int(sys.argv[3])
+name, budget = None, None
+for line in open(build):
+    entry = re.match(r"^- name:\s*(\S+)", line)
+    if entry:
+        name = entry.group(1)
+        continue
+    seconds = re.match(r"^\s+timeout_in_sec:\s*(\d+)", line)
+    if seconds and name == want:
+        budget = int(seconds.group(1))
+        break
+# No entry, or none declared: keep what every step used before.
+print(max(75, -(-budget // 60) + allowance) if budget else 75)
+PY
+}
+
 echo "steps:"
 for t in $TEMPLATES; do
+  TIMEOUT="$(template_timeout_min "$t")"
   cat <<STEP
   - label: "Test template: $t"
     env:
@@ -71,11 +101,21 @@ for t in $TEMPLATES; do
         kill "\$\$WATCHER_PID" 2>/dev/null || true
         wait "\$\$WATCHER_PID" 2>/dev/null || true
         exit \$\$EXIT
-    timeout_in_minutes: 75
+    timeout_in_minutes: ${TIMEOUT}
     agents:
       queue: small
     retry:
-      automatic: true
+      automatic:
+        # Agent-level deaths only -- the job never returned a status of its own, so
+        # there is nothing in it to read. A command that *did* return stays red, even
+        # when the cause was infra: a PyPI 502 surfaces as an ordinary exit 1, and
+        # retrying that hides an outage behind a green tick. It also tripled the wall
+        # clock on genuinely broken templates, which is how build 641 read as one
+        # 78-minute run instead of two dead attempts and a good one.
+        - exit_status: -1
+          limit: 2
+        - exit_status: 255
+          limit: 2
     plugins:
       - docker#v5.9.0:
           image: "830883877497.dkr.ecr.us-west-2.amazonaws.com/anyscale/forge:241125"
