@@ -1,7 +1,14 @@
 name: stable-diffusion-pretraining
-# Swap the entrypoint for scripts/preprocess.py or scripts/train.py to run either
-# stage on its own. Submit with: anyscale job submit -f job.yaml
-entrypoint: python scripts/end_to_end.py
+# Swap scripts/end_to_end.py for scripts/preprocess.py or scripts/train.py to run
+# either stage on its own. Submit with: anyscale job submit -f job.yaml
+#
+# Deps come from the lock only: `uv pip install --system` covers the driver, and each
+# script's ray.init(runtime_env={"pip": ...}) covers the workers. Don't add a
+# `requirements:` key -- it sets the job runtime_env's `pip`, which collides with the
+# scripts' and makes ray.init() raise (Ray won't merge two runtime_envs sharing a field).
+entrypoint: >-
+  uv pip install -r python_depset.lock --system --no-deps --no-cache-dir --index-strategy unsafe-best-match
+  && python scripts/end_to_end.py
 image_uri: anyscale/ray:2.56.0-py311-cu128
 compute_config:
   head_node:
@@ -12,5 +19,4 @@ compute_config:
       min_nodes: 1
       max_nodes: 1
 working_dir: .
-requirements: python_depset.lock
 max_retries: 0
