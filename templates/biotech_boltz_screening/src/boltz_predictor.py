@@ -23,8 +23,11 @@ import json
 import os
 import shutil
 import subprocess
+import tarfile
 import tempfile
 import time
+import urllib.request
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import yaml
@@ -35,7 +38,30 @@ DEFAULT_CACHE = "/mnt/cluster_storage/boltz_cache"
 _SENTINEL = ".boltz_cache_complete"
 # What a complete cache holds. `mols.tar` is deliberately absent: it is the
 # archive `mols/` is extracted from, and keeping it costs 1.9GB for nothing.
-_ARTIFACTS = ("boltz2_conf.ckpt", "boltz2_aff.ckpt", "mols")
+#
+# `boltz2_aff.ckpt` is absent too, and not fetched at all. Boltz only loads the
+# affinity model when the input YAML carries a `properties: affinity` block, and
+# this template's inputs never do -- it screens for fold and interface confidence
+# (pLDDT, ipTM), which come from the confidence model. Fetching it anyway cost
+# 2.06GB of the 6.2GB, a third of the download, for a checkpoint nothing opened.
+_ARTIFACTS = ("boltz2_conf.ckpt", "mols")
+
+# Boltz's own downloader fetches these serially, one urlretrieve after another.
+# Overlapping them is worth a little; the real saving is the third of the bytes
+# that no longer move at all.
+_HF = "https://huggingface.co/boltz-community/boltz-2/resolve/main"
+_DOWNLOADS = ((f"{_HF}/boltz2_conf.ckpt", "boltz2_conf.ckpt"), (f"{_HF}/mols.tar", "mols.tar"))
+
+
+def _fetch(url: str, dest: Path) -> None:
+    """Download one artifact, into `.part` first.
+
+    The rename lands only on success, so an interrupted fetch cannot leave
+    something at the real name for a later run to trust.
+    """
+    part = Path(f"{dest}.part")
+    urllib.request.urlretrieve(url, str(part))  # noqa: S310
+    part.replace(dest)
 
 
 def ensure_weights(cache_dir: str = DEFAULT_CACHE) -> None:
@@ -45,9 +71,17 @@ def ensure_weights(cache_dir: str = DEFAULT_CACHE) -> None:
     which this template's compute config leaves GPU-less (`CPU: 0`, m5.2xlarge),
     so there is nothing here for `boltz predict` to run on.
 
-    A shared cache turns a killed job into a landmine: Boltz decides what to fetch
-    by checking whether each file exists, so a run interrupted mid-download leaves
-    a truncated .ckpt that every later run happily loads and dies on
+    Fetches the artifacts directly rather than calling `boltz.main.download_boltz2`,
+    which always pulls the affinity checkpoint this template never opens and fetches
+    the files one after another. Boltz still finds what it needs -- it locates
+    weights by path, and its own downloader is a no-op once they are there.
+
+    Populating the cache measured 1216s for 6.17GB, and the prints below break that
+    into transfer and extraction so the next run says which half to attack.
+
+    A shared cache turns a killed job into a landmine: whoever fetches decides by
+    checking whether each file exists, so a run interrupted mid-download leaves a
+    truncated .ckpt that every later run happily loads and dies on
     (`PytorchStreamReader failed reading zip archive`). The sentinel goes in last,
     after every artifact is present, so a partial cache is discarded and refetched
     rather than trusted.
@@ -57,7 +91,7 @@ def ensure_weights(cache_dir: str = DEFAULT_CACHE) -> None:
         print(f"  Boltz weights ready in {cache}")
         return
 
-    for stale in (*cache.glob("*.ckpt"), cache / "mols.tar", cache / "mols"):
+    for stale in (*cache.glob("*.ckpt"), *cache.glob("*.part"), cache / "mols.tar", cache / "mols"):
         if stale.is_dir():
             print(f"  Discarding possibly-incomplete {stale.name}/")
             shutil.rmtree(stale)
@@ -66,10 +100,18 @@ def ensure_weights(cache_dir: str = DEFAULT_CACHE) -> None:
             stale.unlink()
     cache.mkdir(parents=True, exist_ok=True)
 
-    print(f"  Fetching Boltz weights into {cache} (~6GB, once per cluster)...")
-    from boltz.main import download_boltz2
+    print(f"  Fetching Boltz weights into {cache} (~4.2GB, once per cluster)...")
+    t0 = time.time()
+    with ThreadPoolExecutor(max_workers=len(_DOWNLOADS)) as pool:
+        for future in [pool.submit(_fetch, url, cache / name) for url, name in _DOWNLOADS]:
+            future.result()
+    fetched = sum((cache / name).stat().st_size for _, name in _DOWNLOADS)
+    print(f"  Downloaded {fetched / 1e9:.1f}GB in {time.time() - t0:.0f}s")
 
-    download_boltz2(cache)
+    t0 = time.time()
+    with tarfile.open(cache / "mols.tar", "r") as tar:
+        tar.extractall(cache)
+    print(f"  Extracted the CCD archive in {time.time() - t0:.0f}s")
 
     missing = [name for name in _ARTIFACTS if not (cache / name).exists()]
     if missing:
