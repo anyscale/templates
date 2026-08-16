@@ -1,23 +1,25 @@
-numpy>=1.24
-pandas>=2.0
-pyarrow
-torch>=2.0
-torchvision>=0.15
-transformers>=4.50
-diffusers>=0.32
-accelerate>=1.5
-sentence-transformers>=2.0
-langdetect>=1.0
-Pillow>=10.0
-fastapi>=0.100
-starlette>=0.27
-pydantic>=2.0
-requests>=2.31
-tqdm>=4.65
-filelock>=3.0
-backoff>=2.2
-matplotlib>=3.7
-datasets>=2.0
-peft>=0.5
-psutil>=5.9
-locust>=2.0
+# No depset/lock here — this file is pip-installed directly, so an unpinned line
+# upgrades the image's own stack (anyscale/ray-llm:2.54.0-py311-cu128) at install time.
+numpy==1.26.4
+pandas==1.5.3  # this image ships 1.5.3; the rest of the fleet's ray-llm images ship 2.3.3
+pyarrow==19.0.1
+torch==2.9.1  # PEP 440 ignores the image wheel's +cu128 local tag, so this installs nothing
+torchvision==0.24.1
+transformers==4.57.3
+diffusers==0.37.1  # 0.38.0+ wants safetensors>=0.8.0; the image ships 0.5.3
+accelerate==1.14.0
+sentence-transformers==5.7.0
+langdetect==1.0.9
+Pillow==10.4.0
+fastapi==0.121.0
+starlette==0.49.1
+pydantic==2.12.4
+requests==2.32.5
+tqdm==4.67.1
+filelock==3.17.0
+backoff==2.2.1
+matplotlib==3.7.4
+datasets==4.0.0  # 4.1.0+ wants pyarrow>=21; the image ships 19.0.1 and Ray Data is built on it
+peft==0.20.0
+psutil==5.9.6
+locust==2.46.3
