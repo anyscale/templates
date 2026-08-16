@@ -17,6 +17,7 @@ so they work from any working directory and are safe to relocate. The exceptions
 | `check-readme.sh` | Verifies `README.md` byte-matches `nbconvert` of `README.ipynb` (never mutates). | pre-commit (`check-readme`) |
 | `validate-build-yaml.py` | Validates the `BUILD.yaml` schema and that referenced paths exist (`--no-network` runs it offline). | pre-commit (`check-build-yaml`); `.github/workflows/premerge.yaml` |
 | `check-depsets.py` | Verifies a PR's dependency locks are current — scoped to the changed templates (skip / scoped / full), retrying transient index errors. | `.github/workflows/premerge.yaml` (CI only) |
+| `check-dep-delivery.py` | Four checks CI would otherwise miss: `depset-config`, `lock-installed`, `bare-pip`, `pin-style`. System reference: the `/template` skill's `references/dependencies.md`. | pre-commit (`check-dep-delivery`) |
 
 ## `test-pipeline/` — `/test-template` PR comment → Buildkite
 
@@ -41,3 +42,7 @@ Both maintain `dependencies/`, which holds only data: the freezes and `template.
 | `latest-depset-version.py` | Resolves the newest "complete" Ray version — one with a freeze of every image in `dependencies/images/tracked-images.txt`. | `.github/workflows/ray-bump-fanout.yaml` |
 | `prepare-ray-version.py` | Stages a new Ray version's `build_arg_sets` (the workflow fetches the freezes and opens the PR); exits "needs human" when the image matrix moves. | `.github/workflows/ray-version-prep.yaml` |
 | `trigger-cursor-bump.py` | Fans the "Template update" Cursor automation out over maintained `BUILD.yaml` entries (one draft PR per template); previews unless `--execute`. | `.github/workflows/ray-bump-fanout.yaml`; run by hand for a manual fanout (see `AGENTS.md`) |
+
+`depset_versions.py` is the shared module behind these — which Ray versions have a complete set of image
+freezes, and where each freeze lives. Both scripts above and `depsets/refresh-image-freezes.py` import it
+rather than re-deriving; `test_prepare_ray_version.py` covers it, and pre-commit runs those tests.
