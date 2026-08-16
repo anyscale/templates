@@ -249,7 +249,7 @@ README side by side and ask what the test does that a user wouldn't.
 `scripts/hooks/check-dep-delivery.py`, via pre-commit (whole repo, ~0.2s). Run a single check by name:
 
 ```bash
-python3 scripts/hooks/check-dep-delivery.py             # all four
+python3 scripts/hooks/check-dep-delivery.py             # all five
 python3 scripts/hooks/check-dep-delivery.py tests-pip   # one
 ```
 
@@ -257,6 +257,12 @@ python3 scripts/hooks/check-dep-delivery.py tests-pip   # one
 lock-less ones instead, and they join the gate as they gain locks.
 
 `pin-style` fails on any requirement that is neither `==` nor commented.
+
+`depset-config` fails on a template lock compiled without `include_setuptools: true`. uv drops
+setuptools from a lock by default, and Ray's runtime env is a virtualenv that seeds its own -- so a
+locked package wanting a newer one makes pip collect it unpinned, unhashed, against a lock full of
+hashes, and every runtime env for that template fails to build. With the flag on, setuptools is
+either pinned at the image's version or absent because nothing in the graph wants it.
 
 ## Gotchas
 

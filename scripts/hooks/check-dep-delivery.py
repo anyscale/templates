@@ -15,38 +15,28 @@ over each one:
   pin-style   A requirement that isn't `==`. The lock then re-resolves to whatever is
               newest whenever it's regenerated, so a template's behaviour changes
               without anyone editing it -- and CI passes, because it tests the drift.
-  venv-seed   A locked package whose runtime requirement on setuptools/pip/wheel the
-              runtime env already contradicts. Ray builds that env with a virtualenv
-              that seeds its own setuptools, and pip never collects a requirement the
-              seeded copy already satisfies -- so only a lower bound *above* the seed
-              forces an upgrade, and that upgrade resolves unpinned to newest, has no
-              hash in the lock, and fails --require-hashes. Sixteen templates ship a
-              package that requires setuptools and fifteen are fine, so the bound is
-              what matters, never the presence.
+  depset-config  A template lock compiled without `include_setuptools: true`. uv then
+              drops setuptools from the lock, while Ray builds each runtime env as a
+              virtualenv seeding its own -- so a locked package wanting a newer one
+              makes pip collect it unpinned and unhashed, which against a hashed lock
+              puts pip in hash-checking mode and fails every runtime env for the
+              template. With the flag on, setuptools is either pinned at the image's
+              version or absent because nothing in the graph wants it.
 
-Usage: check-dep-delivery.py [lock-image|driver|tests-pip|pin-style|venv-seed ...]
+Usage: check-dep-delivery.py [lock-image|driver|tests-pip|pin-style|depset-config ...]
                                                                        (default: all)
-       check-dep-delivery.py --refresh   rebuild dependencies/venv-seed-cache.txt from
-                                         PyPI (network; the checks themselves never fetch)
 """
 import re
 import sys
 from pathlib import Path
 
 import yaml
-from packaging.requirements import InvalidRequirement, Requirement
 
 BUILD_YAML = Path("BUILD.yaml")
 DEPSETS = Path("dependencies/template.depsets.yaml")
 IMAGES = Path("dependencies/images")
-SEED_CACHE = Path("dependencies/venv-seed-cache.txt")
 TESTS = Path("tests")
 LOCK = "python_depset.lock"
-
-# The packages a virtualenv seeds into the env it creates, so pip finds them already
-# installed. raydepsets strips setuptools from every lock by default; pip and wheel it
-# leaves alone, but the same "already satisfied, never collected" rule governs all three.
-SEEDED = ("pip", "setuptools", "wheel")
 
 # Leading package name of a requirement, before any extras, specifier or URL.
 REQ_NAME_RE = re.compile(r"^([A-Za-z0-9][A-Za-z0-9._-]*)")
@@ -64,10 +54,6 @@ BARE_PIP_RE = re.compile(r"(?<!uv )\bpip\d?\s+install\b")
 
 # Files a user actually runs. Excludes the lock itself and generated READMEs' twin.
 SOURCE_GLOBS = ("*.ipynb", "*.md", "*.py", "*.sh", "*.yaml", "*.yml", "*.toml")
-
-# Python versions to test a dependency's marker against when deciding, at refresh time,
-# whether it can ever apply at runtime. Anything false for all of them is extras-only.
-PY_CANDIDATES = ("3.9", "3.10", "3.11", "3.12", "3.13", "3.14")
 
 
 def norm(name):
@@ -239,289 +225,26 @@ def check_pin_style():
     return problems
 
 
-def marker_env(python_version):
-    """A Linux cluster node running `python_version`, with no extra requested — so a
-    requirement gated behind `extra == "dev"` evaluates false rather than raising."""
-    return {
-        "python_version": python_version,
-        "python_full_version": f"{python_version}.0",
-        "implementation_version": f"{python_version}.0",
-        "implementation_name": "cpython",
-        "platform_python_implementation": "CPython",
-        "platform_system": "Linux",
-        "platform_machine": "x86_64",
-        "sys_platform": "linux",
-        "os_name": "posix",
-        "extra": "",
-    }
+def check_depset_config():
+    """Every template lock is compiled with `include_setuptools: true`.
 
-
-def marker_applies(marker, python_version):
-    """A marker we can't evaluate is treated as live: over-reporting is recoverable,
-    silently dropping a requirement is the bug this check exists to catch."""
-    if marker is None:
-        return True
-    try:
-        return bool(marker.evaluate(marker_env(python_version)))
-    except Exception:
-        return True
-
-
-def read_seed_cache():
-    """({(virtualenv, python, package): version}, {(package, version): [requirement]}).
-
-    A `requires` key with an empty list is a positive record of "this version declares
-    none" — it is what keeps an unseen version distinguishable from a checked one.
+    uv drops setuptools from a lock by default. Ray builds each runtime env as a
+    virtualenv that seeds its own setuptools, so a locked package requiring a newer
+    one makes pip collect it -- unpinned, and unhashed against a lock full of hashes,
+    which puts pip in hash-checking mode and fails every runtime env for the template.
+    With the flag on, setuptools is either in the lock at the image's version (the
+    seed decides it) or absent because nothing in the graph wants it. Both are safe;
+    the flag is what makes the second case the only alternative to the first.
     """
-    seeds, requires = {}, {}
-    if not SEED_CACHE.exists():
-        return seeds, requires
-    for raw in SEED_CACHE.read_text().splitlines():
-        line = raw.strip()
-        if not line or line.startswith("#"):
-            continue
-        kind, _, rest = line.partition(" ")
-        if kind == "seed":
-            venv, python, package, version = rest.split(" ", 3)
-            seeds[(venv, python, norm(package))] = version
-        elif kind == "requires":
-            package, version, spec = rest.split(" ", 2)
-            entry = requires.setdefault((norm(package), version), [])
-            if spec != "-":
-                entry.append(spec)
-    return seeds, requires
-
-
-def check_venv_seed():
-    """No locked package may require a seeded package at a version the runtime env's
-    virtualenv doesn't already provide, unless the lock pins that package too.
-
-    The seed is never assumed: the images' virtualenv version comes from their freezes,
-    and its bundled versions from dependencies/venv-seed-cache.txt. A freeze naming a
-    virtualenv the cache has no seeds for is a failure, not a fallback.
-    """
-    seeds, requires = read_seed_cache()
-    if not seeds:
-        return [
-            f"{SEED_CACHE} is missing or has no seed versions, so what the runtime env "
-            f"already provides is unknown.\n"
-            f"      Run `python3 scripts/hooks/check-dep-delivery.py --refresh`."
-        ]
-
-    known_requirers = {package for package, _ in requires}
-    names = {d: name for name, d, _ in templates()}
-    freezes, problems = {}, []
-
-    for tdir, freeze, python in depset_targets():
-        lock = tdir / LOCK
-        name = names.get(tdir, str(tdir))
-        if not lock.exists():
-            continue
-        if not freeze.exists():
-            problems.append(f"{name}: depset seeds from {freeze}, which doesn't exist")
-            continue
-
-        if freeze not in freezes:
-            freezes[freeze] = pins(freeze)
-        image = freezes[freeze]
-        venv = image.get("virtualenv")
-        if not venv:
-            problems.append(
-                f"{name}: {freeze} pins no virtualenv, so the version Ray's runtime env "
-                f"seeds into every actor can't be established."
-            )
-            continue
-        if not any(cached == venv for cached, _, _ in seeds):
-            problems.append(
-                f"{name}: {freeze} ships virtualenv=={venv}, which {SEED_CACHE} has no "
-                f"seed versions for.\n"
-                f"      Run `python3 scripts/hooks/check-dep-delivery.py --refresh`."
-            )
-            continue
-
-        locked = pins(lock)
-        for package, version in sorted(locked.items()):
-            if package not in known_requirers:
-                continue
-            specs = requires.get((package, version))
-            if specs is None:
-                problems.append(
-                    f"{name}: {lock} pins {package}=={version}, a package that requires a "
-                    f"seeded package at some versions, but {SEED_CACHE} has no metadata for "
-                    f"this one.\n"
-                    f"      Run `python3 scripts/hooks/check-dep-delivery.py --refresh`."
-                )
-                continue
-
-            for raw in specs:
-                try:
-                    req = Requirement(raw)
-                except InvalidRequirement:
-                    continue
-                if not marker_applies(req.marker, python):
-                    continue
-
-                seeded = norm(req.name)
-                provided = seeds.get((venv, python, seeded))
-                if provided == "-":
-                    # virtualenv bundles nothing for this pair, so the image's own copy
-                    # is what shows through the env's system-site-packages.
-                    provided, origin = image.get(seeded), f"{freeze.name} ships"
-                else:
-                    origin = f"virtualenv {venv} seeds"
-                if provided is None:
-                    problems.append(
-                        f"{name}: neither virtualenv {venv} nor {freeze.name} provides "
-                        f"{seeded}, and {SEED_CACHE} records no seed for python {python}.\n"
-                        f"      Run `python3 scripts/hooks/check-dep-delivery.py --refresh`."
-                    )
-                    continue
-
-                if req.specifier.contains(provided, prereleases=True):
-                    continue
-                if seeded in locked:
-                    continue
-
-                problems.append(
-                    f"{name}: {lock}\n"
-                    f"      {package}=={version} requires `{raw}`, and {origin} "
-                    f"{seeded} {provided}, which doesn't satisfy it.\n"
-                    f"      pip leaves an already-satisfied requirement alone, so only a bound "
-                    f"the seed misses forces it to collect {seeded} — unpinned, resolving to "
-                    f"newest, with no hash in the lock. --require-hashes then fails every "
-                    f"runtime env for this template.\n"
-                    f"      Emit {seeded} into the lock (`include_{seeded}: true` on this "
-                    f"depset in {DEPSETS}) and recompile."
-                )
-    return problems
-
-
-def refresh():
-    """Rebuild SEED_CACHE from PyPI and the virtualenv wheels the images ship.
-
-    Network-bound and manual, so the hook never fetches. Entries are merged, never
-    dropped: released metadata is immutable, and a version that leaves the locks today
-    is one `git revert` away from coming back.
-    """
-    import ast
-    import io
-    import json
-    import urllib.request
-    import zipfile
-    from concurrent.futures import ThreadPoolExecutor
-
-    seeds, requires = read_seed_cache()
-
-    def pypi(name, version):
-        url = f"https://pypi.org/pypi/{name}/{version}/json"
-        with urllib.request.urlopen(url, timeout=30) as resp:
-            return json.load(resp)
-
-    virtualenvs = set()
-    for freeze in sorted(IMAGES.glob("*.freeze.txt")):
-        version = pins(freeze).get("virtualenv")
-        if version:
-            virtualenvs.add(version)
-    print(f"images ship virtualenv {', '.join(sorted(virtualenvs)) or '(none found)'}")
-
-    for venv in sorted(virtualenvs):
-        meta = pypi("virtualenv", venv)
-        url = next(f["url"] for f in meta["urls"] if f["packagetype"] == "bdist_wheel")
-        with urllib.request.urlopen(url, timeout=120) as resp:
-            wheel = zipfile.ZipFile(io.BytesIO(resp.read()))
-        src = wheel.read("virtualenv/seed/wheels/embed/__init__.py").decode()
-        bundle = next(
-            ast.literal_eval(node.value)
-            for node in ast.parse(src).body
-            if isinstance(node, ast.Assign)
-            and any(getattr(t, "id", None) == "BUNDLE_SUPPORT" for t in node.targets)
-        )
-        for python, dists in bundle.items():
-            for package in SEEDED:
-                filename = dists.get(package)
-                # `setuptools-75.8.0-py3-none-any.whl` -> `75.8.0`
-                seeds[(venv, python, package)] = filename.split("-")[1] if filename else "-"
-        print(f"  virtualenv {venv}: seeds for python {', '.join(bundle)}")
-
-    wanted = set()
-    for lock in sorted(Path("templates").glob(f"*/{LOCK}")):
-        wanted |= set(pins(lock).items())
-
-    def fetch(pair):
-        name, version = pair
-        # A lock can pin a local version (`2.7.0+cu128`) served by the torch index; PyPI
-        # only knows the upstream release, whose requirements are the ones that matter.
-        for candidate in (version, version.split("+")[0]):
-            try:
-                meta = pypi(name, candidate)
-            except Exception:
-                continue
-            found = []
-            for raw in meta["info"].get("requires_dist") or []:
-                try:
-                    req = Requirement(raw)
-                except InvalidRequirement:
-                    continue
-                if norm(req.name) not in SEEDED:
-                    continue
-                # Keep anything that can apply on some Python; that drops requirements
-                # reachable only through an extra, which nothing installs at runtime.
-                if any(marker_applies(req.marker, py) for py in PY_CANDIDATES):
-                    found.append(raw)
-            return pair, found
-        return pair, None
-
-    with ThreadPoolExecutor(max_workers=16) as pool:
-        fetched = dict(pool.map(fetch, sorted(wanted)))
-
-    missing = [p for p, reqs in fetched.items() if reqs is None]
-    for name, version in sorted(missing):
-        print(f"  warning: no PyPI metadata for {name}=={version}; leaving it uncached")
-
-    # A package already tracked stays tracked, so a version that stopped requiring
-    # anything is still recorded as checked rather than silently becoming unknown.
-    requirers = {name for (name, _), reqs in fetched.items() if reqs}
-    requirers |= {name for name, _ in requires}
-    for pair, reqs in fetched.items():
-        if reqs is not None and pair[0] in requirers:
-            requires[pair] = reqs
-
-    lines = [
-        "# Cached package metadata for the `venv-seed` check in scripts/hooks/check-dep-delivery.py.",
-        "# Generated — do not hand-edit. Refresh with:",
-        "#",
-        "#   python3 scripts/hooks/check-dep-delivery.py --refresh",
-        "#",
-        "# `seed <virtualenv> <python> <package> <version>` — what that virtualenv installs into",
-        "# every env it creates, read from its own BUNDLE_SUPPORT. Ray builds each runtime env",
-        "# this way, and the seeded copy shadows the image's, so it is the version pip sees as",
-        "# already installed. `-` means that virtualenv bundles nothing for the pair and the",
-        "# image's own copy shows through instead. Which virtualenv the images ship comes from",
-        "# dependencies/images/*.freeze.txt; a freeze naming one this file has no seeds for fails",
-        "# the check rather than falling back to a guess.",
-        "#",
-        "# `requires <package> <version> <requirement>` — every runtime requirement on pip,",
-        "# setuptools or wheel declared by a package some lock pins, verbatim from PyPI, with `-`",
-        "# recording that the version declares none. Requirements reachable only through an extra",
-        "# are dropped: nothing installs them. Only packages that require one of these somewhere",
-        "# are tracked, so an unlisted version of a listed package fails the check as unknown.",
-        "",
+    cfg = yaml.safe_load(DEPSETS.read_text())
+    return [
+        f"{Path(depset['output']).parent.name}: {DEPSETS} entry `{depset['name']}` "
+        f"compiles a template lock without `include_setuptools: true`.\n"
+        f"      Add it and recompile (`./update_deps.sh --name {depset['name']}`)."
+        for depset in cfg["depsets"]
+        if Path(depset.get("output", "")).name == LOCK
+        and depset.get("include_setuptools") is not True
     ]
-    lines += [
-        f"seed {venv} {python} {package} {version}"
-        for (venv, python, package), version in sorted(seeds.items())
-    ]
-    lines.append("")
-    for (name, version), reqs in sorted(requires.items()):
-        for raw in sorted(reqs) or ["-"]:
-            lines.append(f"requires {name} {version} {raw}")
-
-    SEED_CACHE.write_text("\n".join(lines) + "\n")
-    tracked = len({name for name, _ in requires})
-    print(
-        f"wrote {SEED_CACHE}: {len(seeds)} seed versions, "
-        f"{len(requires)} package versions across {tracked} package(s) that require one"
-    )
 
 
 CHECKS = {
@@ -529,13 +252,10 @@ CHECKS = {
     "driver": check_driver,
     "tests-pip": check_tests_pip,
     "pin-style": check_pin_style,
-    "venv-seed": check_venv_seed,
+    "depset-config": check_depset_config,
 }
 
 if __name__ == "__main__":
-    if "--refresh" in sys.argv[1:]:
-        refresh()
-        sys.exit(0)
     selected = sys.argv[1:] or list(CHECKS)
     failed = False
     for check in selected:
