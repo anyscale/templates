@@ -44,6 +44,23 @@ def print_metrics_table(metrics: dict):
     print("═" * width + "\n")
 
 
+def print_dataset_stats(stats: str):
+    """Print Ray Data's own per-operator execution report.
+
+    The honest source for per-stage timings. Ray Data is lazy, so wall-clocking
+    around each `map_batches()` call in the driver measures plan construction —
+    every stage reads ~0s and the whole pipeline's cost lands on the terminal
+    write. These numbers are recorded by the executor as the operators actually
+    run, so they survive that.
+    """
+    width = 52
+    print("\n" + "═" * width)
+    print("  RAY DATA STATS — REAL PER-OPERATOR TIMINGS")
+    print("═" * width)
+    print(stats)
+    print("═" * width + "\n")
+
+
 def format_number(n: int) -> str:
     return f"{n:,}"
 
