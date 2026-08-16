@@ -279,20 +279,22 @@ distlib==0.3.7 \
     --hash=sha256:2e24928bc811348f0feb63014e97aaae3037f2cf48712d51ae61df7fd6075057 \
     --hash=sha256:9dafe54b34a028eafd95039d5e5d4851a13734540f1331060d31c9916e7147a8
     # via virtualenv
-faiss-cpu==1.14.2 \
-    --hash=sha256:292124ba3d2bbeed920ef8519451cfba0f139b77db1607170cffbe68dc72e604 \
-    --hash=sha256:6ba528b5803fe5206bbb38e6ea2c537de0d1482a47c5765982af4e4a48c135e2 \
-    --hash=sha256:9bfbbb323347e4bbb861dcc4db80d27ca750a2a1375d6b28c39729d2f9cc6217 \
-    --hash=sha256:a20011b8a97318e6d5e29143a773277ca71f1c33140024aeec91f05ad56cdd04 \
-    --hash=sha256:a9d81699ff3ae6e25244efda48c52e406963bbce16d5754073725c14620885c6 \
-    --hash=sha256:b340c33212351f04d4f167cb7b22c9e756705a634d3b7b58987651f3ba1f6217 \
-    --hash=sha256:b736813d853d36693f7b5affdc8788adfa73efa2f45ac6493c8ce2cbb2584f19 \
-    --hash=sha256:d81857f1fcf6c5dc76f75b35112158f731aeb7804ca971c51d74edf6e9b1b8c7 \
-    --hash=sha256:ec4784d9a14973f2eead3a3480e6d14e74253b234e2c12717d4319f21dfadfcd
+faiss-cpu==1.15.0 \
+    --hash=sha256:22dddb013e764aad66dac6cd15b49c7598d60339e0591b73b5e081629419c21b \
+    --hash=sha256:30da3029952f0de69f16ce31946fd63fc3e292c867749bbcd2c0a0f09fd06f65 \
+    --hash=sha256:37170d5e9ead4b6bfd9c314afc39e17e92064068a0c5a4063dd3f39568c2667e \
+    --hash=sha256:50ea471ef1f4f3580eda8ab0ec9727d4bf65fd71c444bf306ce7cdbba8a42b21 \
+    --hash=sha256:5b940897b317febaa761088513a3db164fad3ac71a5e1ed7be9a052c9bf1a447 \
+    --hash=sha256:5d0a2d5d33fe023e263d0d355a837f20db67578e3be27fc5f4012a273274abf6 \
+    --hash=sha256:88fbe1acac6978869063cb2f9477f85718da596a6e0a17751618f9c756bce255 \
+    --hash=sha256:90169515a95ea58a9a95d419e518907927a8ef54c46788396365ec5902c9c8df \
+    --hash=sha256:dd383bb1ce06fabcff5785f998f253aa88f88dcbe1fe36c922417cd6666dd896 \
+    --hash=sha256:e0fe7278f3784b7d205ae715a115801cafb75f6e55db6b0fbe83c4ff379f003f \
+    --hash=sha256:ec9b29aae29e428c085c2d49dbb02e4673cdea75db418d420f9e60e0b4184498
     # via -r templates/ecommerce_multi_model_serving/requirements.txt
-faker==40.19.1 \
-    --hash=sha256:265259b37c013838baaae34940207288170df385d6c5281413fce56a3504d580 \
-    --hash=sha256:76fa71fd3bf320db25e5504eb356f9a76b8a95cd6098524d006f446035b6b89d
+faker==40.36.0 \
+    --hash=sha256:754048c76c03afa7de83eee8f4bcee3cf668cbb7d995f54a4e9678db7f110308 \
+    --hash=sha256:82b9497d9cfe017048075bcf969298a74b1b6e39f5e4dad1211085d1133f7b62
     # via -r templates/ecommerce_multi_model_serving/requirements.txt
 fastapi==0.133.0 \
     --hash=sha256:0a78878483d60702a1dde864c24ab349a1a53ef4db6b6f74f8cd4a2b2bc67d2f \
@@ -1725,30 +1727,24 @@ rsa==4.7.2 \
     --hash=sha256:78f9a9bf4e7be0c5ded4583326e7461e3a3c5aae24073648b4bdfa797d78c9d2 \
     --hash=sha256:9d689e6ca1b3038bc82bf8d23e944b6b6037bc02301a574935b2dd946e0353b9
     # via google-auth
-safetensors==0.7.0 \
-    --hash=sha256:0071bffba4150c2f46cae1432d31995d77acfd9f8db598b5d1a2ce67e8440ad2 \
-    --hash=sha256:07663963b67e8bd9f0b8ad15bb9163606cd27cc5a1b96235a50d8369803b96b0 \
-    --hash=sha256:12f49080303fa6bb424b362149a12949dfbbf1e06811a88f2307276b0c131afd \
-    --hash=sha256:1d060c70284127fa805085d8f10fbd0962792aed71879d00864acda69dbab981 \
-    --hash=sha256:42cb091236206bb2016d245c377ed383aa7f78691748f3bb6ee1bfa51ae2ce6a \
-    --hash=sha256:473b32699f4200e69801bf5abf93f1a4ecd432a70984df164fc22ccf39c4a6f3 \
-    --hash=sha256:54bef08bf00a2bff599982f6b08e8770e09cc012d7bba00783fc7ea38f1fb37d \
-    --hash=sha256:5d72abdb8a4d56d4020713724ba81dac065fedb7f3667151c4a637f1d3fb26c0 \
-    --hash=sha256:672132907fcad9f2aedcb705b2d7b3b93354a2aec1b2f706c4db852abe338f85 \
-    --hash=sha256:6999421eb8ba9df4450a16d9184fcb7bef26240b9f98e95401f17af6c2210b71 \
-    --hash=sha256:7b95a3fa7b3abb9b5b0e07668e808364d0d40f6bbbf9ae0faa8b5b210c97b140 \
-    --hash=sha256:8469155f4cb518bafb4acf4865e8bb9d6804110d2d9bdcaa78564b9fd841e104 \
-    --hash=sha256:94fd4858284736bb67a897a41608b5b0c2496c9bdb3bf2af1fa3409127f20d57 \
-    --hash=sha256:b0f6d66c1c538d5a94a73aa9ddca8ccc4227e6c9ff555322ea40bdd142391dd4 \
-    --hash=sha256:c74af94bf3ac15ac4d0f2a7c7b4663a15f8c2ab15ed0fc7531ca61d0835eccba \
-    --hash=sha256:c82f4d474cf725255d9e6acf17252991c3c8aac038d6ef363a4bf8be2f6db517 \
-    --hash=sha256:cdab83a366799fa730f90a4ebb563e494f28e9e92c4819e556152ad55e43591b \
-    --hash=sha256:cfdead2f57330d76aa7234051dadfa7d4eedc0e5a27fd08e6f96714a92b00f09 \
-    --hash=sha256:d1239932053f56f3456f32eb9625590cc7582e905021f94636202a864d470755 \
-    --hash=sha256:dac7252938f0696ddea46f5e855dd3138444e82236e3be475f54929f0c510d48 \
-    --hash=sha256:dc92bc2db7b45bda4510e4f51c59b00fe80b2d6be88928346e4294ce1c2abe7c \
-    --hash=sha256:e07d91d0c92a31200f25351f4acb2bc6aff7f48094e13ebb1d0fb995b54b6542 \
-    --hash=sha256:f4729811a6640d019a4b7ba8638ee2fd21fa5ca8c7e7bdf0fed62068fcaac737
+safetensors==0.8.0 \
+    --hash=sha256:040070828e36dc8e122178bbbd5830ff9e97920affb84cbe0f46442497bed358 \
+    --hash=sha256:096ec1a98435df7beb08853bb5aa9081a84f23d0adc67ed1a0a10550f608373f \
+    --hash=sha256:2ddf52eac562eda224f99acfa7889d02968c1fd59a5b011ae7d8137c37e9c02d \
+    --hash=sha256:3ae091f16662658bdc019a4ff6cb4c085bb7d725eb5978b183ffd265863b6d2d \
+    --hash=sha256:4124502b78f03534117c848f87a39b8f31e577b15eff423bf8bfb95f2a8c30d0 \
+    --hash=sha256:4a95ae2b05d7726d751da4ebf626a2ca782b706e101bd894c95bc2450b1cffcc \
+    --hash=sha256:7a46e5ff292c356d6991e60942ba7f79817682d3a2cef0702136448cb9c4d235 \
+    --hash=sha256:7bc0a787ba8a35be368ee3574edfa2b1ad389eebd0a72e482ae275490e3f6c98 \
+    --hash=sha256:87eec7ffed2b809f05a398a8becb7d013f19f7837cd15d9748580d6cf30dbaf4 \
+    --hash=sha256:8e080062fcde23be189565e1c3305d16751a218ecf9412c8601e64204eb6f846 \
+    --hash=sha256:8e9f537aa183a38ace122d27303dcd986b26bd2a7591f9181d7f0c396f4677ca \
+    --hash=sha256:c554f85858e05226d3c2828e32395e677434685d6d94594a41643361c5e837f0 \
+    --hash=sha256:c80201d22cbf405b80647a60ada77bba06c8fba2da2743ba1e89cdcc39a81f25 \
+    --hash=sha256:f7838e5135a406ad3e02efdcb8cf2e5397d368b0154537c4fec682dbc544d452 \
+    --hash=sha256:fabaf3e0f18a6618d9b36560682562157f77c2b71fcffc7b432be2baed9d753d \
+    --hash=sha256:fcdd41ec4628fee5799f807c73c353629130fbd942aa23d83c623dd6c9d52d78 \
+    --hash=sha256:fd6f3f93c9a0a7cc2788ee63fb763353d4bd2e89b0751bc78fcf7dda00bea774
     # via transformers
 scikit-learn==1.5.2 \
     --hash=sha256:03b6158efa3faaf1feea3faa884c840ebd61b6484167c711548fce208ea09445 \
@@ -1807,9 +1803,9 @@ scipy==1.11.4 \
     # via
     #   scikit-learn
     #   sentence-transformers
-sentence-transformers==5.5.1 \
-    --hash=sha256:02b7740dfc60bdbbcb6061625f5d97a5c1a4e2d3baac5f9391b912bb5eae2290 \
-    --hash=sha256:4fe11d433badc5282d32f7fc08bc714216b7a5aca426f9df77a45a554756deb7
+sentence-transformers==5.7.0 \
+    --hash=sha256:b78141da3d8137e70d965866e2ca43190b9266f3d4d8752e250ded75e7136730 \
+    --hash=sha256:fd8c8fc35e6323631dff9f3760969ebf7980dc3cfda0ab1354bc6a774cc0e5d8
     # via -r templates/ecommerce_multi_model_serving/requirements.txt
 shellingham==1.5.4 \
     --hash=sha256:7ecfff8f2fd72616f7481040475a65b2bf8af90a56c89140852d1120324e8686 \
@@ -1864,7 +1860,9 @@ tokenizers==0.22.2 \
     --hash=sha256:df6c4265b289083bf710dff49bc51ef252f9d5be33a45ee2bed151114a56207b \
     --hash=sha256:e10bf9113d209be7cd046d40fbabbaf3278ff6d18eb4da4c500443185dc1896c \
     --hash=sha256:f01a9c019878532f98927d2bacb79bbb404b43d3437455522a00a30718cdedb5
-    # via transformers
+    # via
+    #   sentence-transformers
+    #   transformers
 torch==2.5.1+cu121 \
     --hash=sha256:1bfe18b79b0ff9be9383257a66c3f84621ce5f384f02c0a7c79503583d6ffd4b \
     --hash=sha256:222be02548c2e74a21a8fbc8e5b8d2eef9f9faee865d70385d2eb1b9aabcbc76 \
@@ -1885,9 +1883,9 @@ tqdm==4.67.1 \
     #   huggingface-hub
     #   sentence-transformers
     #   transformers
-transformers==5.9.0 \
-    --hash=sha256:1d19509bcff7028ebc6b277d71caa712e8353778463d38764237d14b42b52788 \
-    --hash=sha256:25997cb8fa6053533171634b6162d7df54346530ec2aa9b42bb834e63668c842
+transformers==5.15.0 \
+    --hash=sha256:bbf98f57b2ddd7c4ecbccfa2c0069017aa6fd01cc204bd50cbc0eeadcf2a13b8 \
+    --hash=sha256:d7f007736f67749ae9490c4f8cb5d30b452ae2d68c8675e50ba8d63ea7feb107
     # via
     #   -r templates/ecommerce_multi_model_serving/requirements.txt
     #   sentence-transformers
