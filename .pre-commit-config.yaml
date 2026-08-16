@@ -43,16 +43,11 @@ repos:
         files: ^(BUILD\.yaml|configs/.*\.ya?ml)$
       - id: check-dep-delivery
         name: locks match their image, are installed, and survive the harness and runtime env
-        entry: python scripts/hooks/check-dep-delivery.py
-        # Not `language: system` like its siblings: venv-seed needs `packaging` to parse
-        # requirement strings, and a system python is not guaranteed to have it. A managed
-        # env pins both deps so the hook can't fail on the runner's interpreter.
-        language: python
-        additional_dependencies: ["pyyaml==6.0.3", "packaging==26.2"]
+        entry: python3 scripts/hooks/check-dep-delivery.py
+        language: system
         pass_filenames: false
-        # All of dependencies/, not just the depsets: the image freezes carry the
-        # virtualenv whose seeds venv-seed reasons about, and venv-seed-cache
-        # decides what that check accepts.
+        # All of dependencies/, not just the depsets: lock-image reads the freezes
+        # to learn which image a lock was seeded from.
         files: ^(BUILD\.yaml|dependencies/|templates/|tests/)
       - id: ray-bump-unit-tests
         name: prepare-ray-version unit tests (minor-only gate)

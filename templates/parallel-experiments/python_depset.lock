@@ -724,6 +724,10 @@ s3fs==2026.3.0 \
     --hash=sha256:2fa40a64c03003cfa5ae0e352788d97aa78ae8f9e25ea98b28ce9d21ba10c1b8 \
     --hash=sha256:ce8b30a9dc5e01c5127c96cb7377290243a689a251ef9257336ac29d72d7b0d8
     # via -r templates/parallel-experiments/requirements.txt
+setuptools==75.8.0 \
+    --hash=sha256:c5afc8f407c626b8313a86e10311dd3f661c6cd9c09d4bf8c15c0e11f9f2b0e6 \
+    --hash=sha256:e3982f444617239225d675215d51f6ba05f845d4eec313da4418fdbb56fb27e3
+    # via torch
 six==1.16.0 \
     --hash=sha256:1e61c37477a1626458e36f7b1d82aa5c9b094fa4802892072e49de9c60c4c926 \
     --hash=sha256:8abb2f1d86890a2dfb989f9a77cfcfd3e47c2a354b01111771326f8aa26e0254
@@ -953,6 +957,3 @@ yarl==1.18.3 \
     --hash=sha256:fe57328fbc1bfd0bd0514470ac692630f3901c0ee39052ae47acd1d90a436719 \
     --hash=sha256:fea09ca13323376a2fdfb353a5fa2e59f90cd18d7ca4eaa1fd31f0a8b4f91e62
     # via aiohttp
-
-# The following packages were excluded from the output:
-# setuptools
