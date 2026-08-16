@@ -1,5 +1,6 @@
-torch<2.5
+torch==2.7.0
 langchain==0.1.17
+# optimum.bettertransformer (util/embedding_util.py) refuses transformers>=4.49, capping both.
 transformers==4.40.2
 optimum==1.19.2
 numpy==1.26.4

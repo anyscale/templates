@@ -1,10 +1,11 @@
-ray[data]>=2.9
+ray[data]==2.56.0
 boltz==2.2.1
 # boltz only asks for torch>=2.2; newest floats past the cu128 image and breaks the hashed lock.
 torch==2.7.0
 numpy==1.26.4
-pandas>=2.0
+pandas==2.3.3
 pyarrow==19.0.1
-rdkit>=2023.9
-biopython>=1.82
-py3Dmol
+rdkit==2026.3.2
+# boltz==2.2.1 requires exactly this; a newer biopython makes the resolve unsatisfiable.
+biopython==1.84
+py3Dmol==2.5.5
