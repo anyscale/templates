@@ -38,7 +38,6 @@ from packaging.requirements import InvalidRequirement, Requirement
 
 BUILD_YAML = Path("BUILD.yaml")
 DEPSETS = Path("dependencies/template.depsets.yaml")
-PIN_EXCEPTIONS = Path("dependencies/loose-pins-allowlist.txt")
 IMAGES = Path("dependencies/images")
 SEED_CACHE = Path("dependencies/venv-seed-cache.txt")
 TESTS = Path("tests")
@@ -221,54 +220,22 @@ def requirement_lines(path: Path):
 
 
 def check_pin_style():
-    """Every requirement is `==`, or carries a trailing comment saying why it isn't.
-
-    The allowlist grandfathers what predates the rule so the check is green today; it is
-    a backlog, not a config, and every entry removed is a template that stopped drifting.
-    """
-    allowed = set()
-    if PIN_EXCEPTIONS.exists():
-        for line in PIN_EXCEPTIONS.read_text().splitlines():
-            entry = line.split("#")[0].strip()
-            if entry:
-                allowed.add(entry)
-
-    problems, grandfathered, stale = [], 0, []
-    roots = {name: root for name, root, _ in templates()}
-    for name, root in roots.items():
+    """Every requirement is `==`, or carries a trailing comment saying why it isn't."""
+    problems = []
+    for name, root, _ in templates():
         req = root / "requirements.txt"
         if not req.exists():
             continue
-        for n, package, spec, justified in requirement_lines(req):
+        for n, _package, spec, justified in requirement_lines(req):
             if "==" in spec and "@" not in spec:
                 continue
             if justified:
-                continue
-            if f"{name}/{package}" in allowed:
-                grandfathered += 1
                 continue
             problems.append(
                 f"{name}: {req}:{n}\n      {spec}\n"
                 f"      Pin it with `==` at the newest version that works on this template's "
                 f"image, or add a trailing comment saying why it can't be."
             )
-
-    for entry in sorted(allowed):
-        tmpl, _, package = entry.partition("/")
-        req = roots.get(tmpl, Path("/nonexistent")) / "requirements.txt"
-        if not req.exists() or not any(
-            p == package and not ("==" in s and "@" not in s) and not j
-            for _, p, s, j in requirement_lines(req)
-        ):
-            stale.append(entry)
-
-    if grandfathered:
-        print(f"note: {grandfathered} loose pin(s) still grandfathered in {PIN_EXCEPTIONS}. "
-              "Each one re-resolves to whatever is newest when its lock is rebuilt.")
-    if stale:
-        print(f"note: {len(stale)} allowlist entry/entries no longer needed — delete them:")
-        for entry in stale:
-            print(f"  - {entry}")
     return problems
 
 

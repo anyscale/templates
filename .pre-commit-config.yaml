@@ -51,8 +51,8 @@ repos:
         additional_dependencies: ["pyyaml==6.0.3", "packaging==26.2"]
         pass_filenames: false
         # All of dependencies/, not just the depsets: the image freezes carry the
-        # virtualenv whose seeds venv-seed reasons about, and the two data files
-        # (venv-seed-cache, loose-pins-allowlist) decide what the checks accept.
+        # virtualenv whose seeds venv-seed reasons about, and venv-seed-cache
+        # decides what that check accepts.
         files: ^(BUILD\.yaml|dependencies/|templates/|tests/)
       - id: ray-bump-unit-tests
         name: prepare-ray-version unit tests (minor-only gate)
