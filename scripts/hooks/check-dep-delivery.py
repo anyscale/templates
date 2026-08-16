@@ -1,29 +1,27 @@
 #!/usr/bin/env python3
 """Static dependency-delivery checks (see .claude/skills/template/references/dependencies.md).
 
-Five failure modes that are invisible to `template-test` because CI happens to paper
+Four failure modes that are invisible to `template-test` because CI happens to paper
 over each one:
 
-  lock-image  A lock seeded from image A while BUILD.yaml runs the template on image B.
-              The lock then describes packages that aren't in the image it pins against.
-  driver      A template ships a lock nothing installs, so users run on whatever the
-              image happens to have. Green in CI when tests.sh installs deps separately.
-  tests-pip   A bare `pip install` in tests.sh. A workspace *tracks* it and the
-              runtime-env hook appends it, unpinned, to every actor's pip list; one
-              unhashed entry trips pip's --require-hashes against a hashed lock and
-              every runtime env for that template fails to build.
-  pin-style   A requirement that isn't `==`. The lock then re-resolves to whatever is
-              newest whenever it's regenerated, so a template's behaviour changes
-              without anyone editing it -- and CI passes, because it tests the drift.
-  depset-config  A template lock compiled without `include_setuptools: true`. uv then
-              drops setuptools from the lock, while Ray builds each runtime env as a
-              virtualenv seeding its own -- so a locked package wanting a newer one
-              makes pip collect it unpinned and unhashed, which against a hashed lock
-              puts pip in hash-checking mode and fails every runtime env for the
-              template. With the flag on, setuptools is either pinned at the image's
-              version or absent because nothing in the graph wants it.
+  depset-config   A depset entry naming a freeze for one image while BUILD.yaml runs the
+                  template on another, or compiling a lock without `include_setuptools:
+                  true`. The first makes the lock describe an environment the template
+                  never runs in; the second lets pip collect setuptools unpinned into a
+                  hashed lock, which fails every runtime env for that template.
+  lock-installed  A template ships a lock and nothing installs it, so users run on
+                  whatever the image happens to have -- or installs it without `-r`, so
+                  uv reads the filename as a package name and hard fails. Green in CI
+                  whenever tests.sh installs the deps some other way.
+  bare-pip        A bare `pip install` in tests.sh. A workspace *tracks* it and the
+                  runtime-env hook appends it, unpinned, to every actor's pip list; one
+                  unhashed entry trips pip's hash-checking mode against a hashed lock and
+                  every runtime env for that template fails to build.
+  pin-style       A requirement that isn't `==`. The lock then re-resolves to whatever is
+                  newest whenever it's regenerated, so a template's behaviour changes
+                  without anyone editing it -- and CI passes, because it tests the drift.
 
-Usage: check-dep-delivery.py [lock-image|driver|tests-pip|pin-style|depset-config ...]
+Usage: check-dep-delivery.py [depset-config|lock-installed|bare-pip|pin-style ...]
                                                                        (default: all)
 """
 import re
@@ -117,8 +115,25 @@ def source_files(root: Path):
             yield f
 
 
-def check_lock_image():
-    """Each depset's seed freeze must name the image BUILD.yaml runs that template on."""
+def check_depset_config():
+    """Each depset entry must name the image its template runs on, and pin setuptools.
+
+    Two ways an entry goes wrong, both invisible to the compile itself:
+
+    freeze/image  The lock is *seeded* from the freeze this entry names, so every pin in
+                  it describes that image. Point it at a different one than BUILD.yaml
+                  runs and the lock asserts versions the runtime doesn't have -- then
+                  installs them into every runtime env. `${RAY_VERSION}` interpolates on
+                  a bump, but the literal py/CUDA parts don't, so moving a template
+                  between images is where this slips.
+    setuptools    uv drops setuptools from a lock by default, while Ray builds each
+                  runtime env as a virtualenv seeding its own. A locked package wanting
+                  a newer one then makes pip collect it -- unpinned, unhashed against a
+                  lock full of hashes, which puts pip in hash-checking mode and fails
+                  every runtime env for the template. With `include_setuptools: true`
+                  it is either pinned at the image's version or absent because nothing
+                  in the graph wants it.
+    """
     by_dir = {d: (name, image) for name, d, image in templates()}
     cfg = yaml.safe_load(DEPSETS.read_text())
     arg_sets = cfg["build_arg_sets"]
@@ -126,11 +141,20 @@ def check_lock_image():
 
     for depset in cfg["depsets"]:
         out = Path(depset.get("output", ""))
+        if out.name != LOCK:
+            continue
+
+        if depset.get("include_setuptools") is not True:
+            problems.append(
+                f"{out.parent.name}: {DEPSETS} entry `{depset['name']}` compiles a "
+                f"template lock without `include_setuptools: true`.\n"
+                f"      Add it and recompile (`./update_deps.sh --name {depset['name']}`)."
+            )
+
         entry = by_dir.get(out.parent)
-        if not entry or out.name != LOCK:
+        if not entry:
             continue
         name, image = entry
-
         for hook in depset.get("pre_hooks", []):
             m = SEED_RE.search(hook)
             if not m:
@@ -149,7 +173,7 @@ def check_lock_image():
     return problems
 
 
-def check_driver():
+def check_lock_installed():
     """A template that ships a lock must install it, with `-r`, somewhere a user runs."""
     problems = []
     for name, root, _ in templates():
@@ -171,26 +195,23 @@ def check_driver():
     return problems
 
 
-def check_tests_pip():
-    """tests.sh must not bare-`pip install`. Only a template shipping a lock can be bitten
-    today, so only those fail; the rest are listed, since each becomes a live break the
-    moment it gains a lock."""
-    problems, latent = [], []
+def check_bare_pip():
+    """tests.sh must not bare-`pip install`.
+
+    Only a template shipping a lock can be bitten, so only those fail. A lock-less
+    template is left alone rather than reported: for a pure workspace tutorial the
+    bare install *is* the lesson, and it only becomes a break if that template ever
+    gains a lock -- at which point this fails and says so.
+    """
+    problems = []
     for name, root, _ in templates():
         script = TESTS / name / "tests.sh"
-        if not script.exists():
+        if not script.exists() or not (root / LOCK).exists():
             continue
         for n, line in enumerate(script.read_text().splitlines(), 1):
             if line.lstrip().startswith("#") or not BARE_PIP_RE.search(line):
                 continue
-            found = f"{name}: {script}:{n}\n      {line.strip()}"
-            (problems if (root / LOCK).exists() else latent).append(found)
-
-    if latent:
-        print(f"note: {len(latent)} lock-less template(s) also bare-pip in tests.sh. Harmless "
-              "until they gain a lock; convert to `uv pip install --system` when touched:")
-        for f in latent:
-            print(f"  - {f}")
+            problems.append(f"{name}: {script}:{n}\n      {line.strip()}")
     return problems
 
 
@@ -225,34 +246,11 @@ def check_pin_style():
     return problems
 
 
-def check_depset_config():
-    """Every template lock is compiled with `include_setuptools: true`.
-
-    uv drops setuptools from a lock by default. Ray builds each runtime env as a
-    virtualenv that seeds its own setuptools, so a locked package requiring a newer
-    one makes pip collect it -- unpinned, and unhashed against a lock full of hashes,
-    which puts pip in hash-checking mode and fails every runtime env for the template.
-    With the flag on, setuptools is either in the lock at the image's version (the
-    seed decides it) or absent because nothing in the graph wants it. Both are safe;
-    the flag is what makes the second case the only alternative to the first.
-    """
-    cfg = yaml.safe_load(DEPSETS.read_text())
-    return [
-        f"{Path(depset['output']).parent.name}: {DEPSETS} entry `{depset['name']}` "
-        f"compiles a template lock without `include_setuptools: true`.\n"
-        f"      Add it and recompile (`./update_deps.sh --name {depset['name']}`)."
-        for depset in cfg["depsets"]
-        if Path(depset.get("output", "")).name == LOCK
-        and depset.get("include_setuptools") is not True
-    ]
-
-
 CHECKS = {
-    "lock-image": check_lock_image,
-    "driver": check_driver,
-    "tests-pip": check_tests_pip,
-    "pin-style": check_pin_style,
     "depset-config": check_depset_config,
+    "lock-installed": check_lock_installed,
+    "bare-pip": check_bare_pip,
+    "pin-style": check_pin_style,
 }
 
 if __name__ == "__main__":

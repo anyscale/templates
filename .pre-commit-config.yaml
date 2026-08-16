@@ -46,7 +46,7 @@ repos:
         entry: python3 scripts/hooks/check-dep-delivery.py
         language: system
         pass_filenames: false
-        # All of dependencies/, not just the depsets: lock-image reads the freezes
+        # All of dependencies/, not just the depsets: depset-config reads the freezes
         # to learn which image a lock was seeded from.
         files: ^(BUILD\.yaml|dependencies/|templates/|tests/)
       - id: ray-bump-unit-tests
