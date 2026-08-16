@@ -523,6 +523,36 @@ depsets:
     pre_hooks:
       - dependencies/scripts/seed-image-freeze.sh dependencies/images/ray-${RAY_VERSION}-slim-py312-cu129.freeze.txt templates/e2e-timeseries-forecasting/python_depset.lock
 
+  - name: intro_ray_libraries_depset_${RAY_VERSION}_${PYTHON_VERSION}
+    operation: compile
+    requirements:
+      - templates/intro-ray-libraries/requirements.txt
+    output: templates/intro-ray-libraries/python_depset.lock
+    append_flags:
+      - --index https://download.pytorch.org/whl/cu129
+      - --python-version=${PYTHON_VERSION}
+      - --python-platform=linux
+      - --unsafe-package ray
+    build_arg_sets:
+      - ray2560_py312
+    pre_hooks:
+      - dependencies/scripts/seed-image-freeze.sh dependencies/images/ray-${RAY_VERSION}-slim-py312-cu129.freeze.txt templates/intro-ray-libraries/python_depset.lock
+
+  - name: parallel_experiments_depset_${RAY_VERSION}_${PYTHON_VERSION}
+    operation: compile
+    requirements:
+      - templates/parallel-experiments/requirements.txt
+    output: templates/parallel-experiments/python_depset.lock
+    append_flags:
+      - --index https://download.pytorch.org/whl/cu129
+      - --python-version=${PYTHON_VERSION}
+      - --python-platform=linux
+      - --unsafe-package ray
+    build_arg_sets:
+      - ray2560_py312
+    pre_hooks:
+      - dependencies/scripts/seed-image-freeze.sh dependencies/images/ray-${RAY_VERSION}-slim-py312-cu129.freeze.txt templates/parallel-experiments/python_depset.lock
+
   - name: ecommerce_end_to_end_depset_${RAY_VERSION}_${PYTHON_VERSION}
     operation: compile
     requirements:
