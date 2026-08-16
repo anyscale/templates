@@ -1,6 +1,6 @@
 ray[train,data]==2.56.0  # tracks the image's Ray; --unsafe-package keeps it out of the lock
-torch==2.5.1
-torchvision==0.20.1
+torch==2.7.0
+torchvision==0.22.0
 diffusers==0.38.0  # 0.39 raises its torch floor to 2.6, above this template's torch
 transformers==4.57.6  # last 4.x; the 5.x break needs a test run against diffusers first
 peft==0.20.0

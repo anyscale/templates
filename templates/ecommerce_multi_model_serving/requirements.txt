@@ -1,7 +1,7 @@
 ray[serve]==2.56.0  # tracks the image's Ray; --unsafe-package keeps it out of the lock
 sentence-transformers==5.7.0
 transformers==5.15.0
-torch==2.5.1
+torch==2.7.0
 faiss-cpu==1.15.0
 numpy==1.26.4
 pandas==2.3.3
