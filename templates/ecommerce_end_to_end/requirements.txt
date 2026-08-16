@@ -1,11 +1,11 @@
 # ML stack — pinned to the versions proven on the anyscale/ray 2.56.0 base
-# image (same set as image-search-and-classification); numpy/pyarrow hold the
-# base-image versions so runtime_env workers match image-resident processes.
+# image (same set as image-search-and-classification); numpy/pyarrow/pillow hold
+# the base-image versions so runtime_env workers match image-resident processes.
 torch==2.7.1
 transformers==4.52.3
-sentence-transformers
-hf_transfer
-pillow
+sentence-transformers==5.7.0
+hf_transfer==0.1.9
+pillow==10.4.0
 numpy==1.26.4
 pyarrow==19.0.1
 
