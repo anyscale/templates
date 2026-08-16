@@ -1,4 +1,5 @@
 QuantLib==1.42
 yfinance==1.2.2
-pandas
-numpy
+# pandas/numpy hold the base-image versions; the lock installs --no-deps over it.
+pandas==2.3.3
+numpy==1.26.4

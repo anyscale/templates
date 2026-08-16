@@ -1,3 +1,3 @@
 torch==2.7.0
 torchvision==0.22.0
-matplotlib
+matplotlib==3.9.4  # base-image version; the lock installs --no-deps, so a higher pin replaces it

@@ -1,4 +1,4 @@
 torch==2.7.0
 torchvision==0.22.0
-matplotlib
-torch_tb_profiler
+matplotlib==3.9.4  # base-image version; the lock installs --no-deps, so a higher pin replaces it
+torch_tb_profiler==0.4.3
