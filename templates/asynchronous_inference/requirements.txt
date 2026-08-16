@@ -1,4 +1,4 @@
-# requests/celery hold the base-image versions; PyPDF2 is frozen at 3.0.1 upstream (now pypdf).
+# requests/celery hold the base-image versions; pypdf is the maintained successor to PyPDF2.
 requests==2.32.5
-PyPDF2==3.0.1
+pypdf==6.16.1
 celery[redis]==5.5.3
