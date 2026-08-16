@@ -1,5 +1,5 @@
 # pip freeze of anyscale/ray:2.56.0-py311-cu124
-# Regenerate with dependencies/scripts/fetch-image-freeze.sh
+# Regenerate with scripts/depsets/refresh-image-freezes.py
 adlfs==2023.8.0
 aiohappyeyeballs==2.6.1
 aiohttp==3.13.3

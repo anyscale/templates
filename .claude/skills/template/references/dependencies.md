@@ -118,8 +118,7 @@ image.
 | Script | Does |
 |---|---|
 | `seed-image-freeze.sh <freeze> <lock>` | writes the seed to the lock's path; each template's `pre_hook` |
-| `fetch-image-freeze.sh <image> <dest>` | pulls one image's package list from `docs.anyscale.com/base-images` |
-| `refresh-image-freezes.sh <ray-version>` | re-fetches every image in `dependencies/images/tracked-images.txt` |
+| `refresh-image-freezes.py <ray-version> [image ...]` | re-fetches every image in `dependencies/images/tracked-images.txt`, or just the ones named |
 
 The seed is the freeze **plus** the previous lock's pins for packages the image doesn't ship — otherwise every
 recompile re-floats untouched packages to newest-on-PyPI. uv reads it as **preferences, not constraints**: a
@@ -181,7 +180,7 @@ above). Output is **overwritten in place** (not version-stamped):
   output: templates/<tmpl>/python_depset.lock
   build_arg_sets: [ray2560_py312]
   pre_hooks:
-    - dependencies/scripts/seed-image-freeze.sh dependencies/images/ray-${RAY_VERSION}-py312-cu128.freeze.txt templates/<tmpl>/python_depset.lock
+    - scripts/depsets/seed-image-freeze.sh dependencies/images/ray-${RAY_VERSION}-py312-cu128.freeze.txt templates/<tmpl>/python_depset.lock
 ```
 
 The freeze **must name the image that template's `BUILD.yaml` entry actually runs on**, or the lock

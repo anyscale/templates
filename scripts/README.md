@@ -25,6 +25,16 @@ so they work from any working directory and are safe to relocate. The exceptions
 | `parse-test-template-comment.sh` | Parses a `/test-template <id>…` PR comment into a validated, ≤3-name list (checked against `BUILD.yaml`) and emits a GitHub-Actions output. | `.github/workflows/test-template.yaml` |
 | `render-template-pipeline.sh` | Renders the Buildkite `template-test` pipeline YAML for the requested templates (`TEMPLATE_NAMES`). | `.buildkite/pipeline.template-test.yaml` |
 
+## `depsets/` — the image freezes templates lock against
+
+Both maintain `dependencies/`, which holds only data: the freezes, `template.depsets.yaml`,
+and `venv-seed-cache.txt`.
+
+| Script | What it does | Invoked by |
+|---|---|---|
+| `refresh-image-freezes.py` | Fetches a published image's package list from `docs.anyscale.com/base-images` into `dependencies/images/<image>.freeze.txt`. Whole tracked list by default, or just the images named; a named image that fails is an error, one from the list is a skip. | `.github/workflows/ray-version-prep.yaml`; run by hand to add one image |
+| `seed-image-freeze.sh` | Writes a lock's seed — the image freeze plus the previous lock's pins for packages the image doesn't ship — to the lock's own path before uv compiles over it. | `pre_hook` on every entry in `dependencies/template.depsets.yaml` |
+
 ## `ray-bump/` — Ray-version bump automation
 
 | Script | What it does | Invoked by |
