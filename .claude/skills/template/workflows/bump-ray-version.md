@@ -58,9 +58,9 @@ For each requirement, move it to `==` at the **newest version that works on the 
 - **Can't be pinned** (upstream ships no tagged releases, a documented incompatibility) — leave it
   loose *with a trailing comment saying why*, or `pin-style` fails.
 
-Drop any line you fix from `dependencies/loose-pins-allowlist.txt`. Don't bulk-bump a pin you have
-no way to test — if a package is central to what the template demonstrates and the jump is large,
-say so in the PR body and leave it, rather than shipping an untested upgrade.
+Don't bulk-bump a pin you have no way to test — if a package is central to what the template
+demonstrates and the jump is large, say so in the PR body and leave it, rather than shipping an
+untested upgrade.
 
 ### Recompile the dependency lock
 

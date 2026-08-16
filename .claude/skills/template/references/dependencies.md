@@ -223,8 +223,8 @@ Two consequences worth spelling out:
   floor and uv falls back to PyPI, the wheel loses its CUDA tag (`torch==2.7.0+cu128` becomes
   `torch==2.7.0`), and the lock still compiles. Check the index before pinning torch.
 
-`dependencies/loose-pins-allowlist.txt` grandfathers what predates this rule. It is a backlog, not
-configuration — pin an entry properly and delete its line.
+Every template pins `==` today. A spec that genuinely can't be pinned needs the trailing comment —
+there is no allowlist to add it to.
 
 ## Reviewing a template's dependency delivery
 
@@ -257,9 +257,7 @@ python3 scripts/hooks/check-dep-delivery.py tests-pip   # one
 `tests-pip` fails only for templates that ship a lock, since that is what makes the trap live; it lists the
 lock-less ones instead, and they join the gate as they gain locks.
 
-`pin-style` fails on any requirement that is neither `==` nor commented, except those grandfathered in
-`dependencies/loose-pins-allowlist.txt`. It prints how many remain and flags allowlist entries it no
-longer needs, so the backlog is a number that only goes down.
+`pin-style` fails on any requirement that is neither `==` nor commented.
 
 ## Gotchas
 
