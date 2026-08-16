@@ -1,6 +1,14 @@
 # Every template seeds its lock from a freeze of the image it runs on
 # (scripts/depsets/seed-image-freeze.sh) rather than resolving against a base
 # lock: a lock models the build recipe, a freeze measures the shipped image.
+#
+# Every entry sets `include_setuptools: true`. uv drops setuptools from a lock by
+# default, but Ray builds each runtime env as a virtualenv whose own seeded copy
+# shadows the image's -- so a locked package requiring a newer setuptools makes pip
+# collect it unpinned, and a lock full of hashes puts pip in hash-checking mode,
+# where an unhashed collect fails every runtime env for that template. Pinning it
+# from the seed (the image's own version) removes the question.
+# scripts/hooks/check-dep-delivery.py `depset-config` keeps this true for new entries.
 
 build_arg_sets:
   ray2560_py311:
@@ -23,6 +31,7 @@ depsets:
     requirements:
       - templates/serve-stable-diffusion-v2/requirements.txt
     output: templates/serve-stable-diffusion-v2/python_depset.lock
+    include_setuptools: true
     append_flags:
       - --python-version=${PYTHON_VERSION}
       - --python-platform=linux
@@ -37,6 +46,7 @@ depsets:
     requirements:
       - templates/langchain-agent-ray-serve/requirements.txt
     output: templates/langchain-agent-ray-serve/python_depset.lock
+    include_setuptools: true
     append_flags:
       - --index https://download.pytorch.org/whl/cu130
       - --python-version=${PYTHON_VERSION}
@@ -52,6 +62,7 @@ depsets:
     requirements:
       - templates/fintech_fraud_risk/requirements.txt
     output: templates/fintech_fraud_risk/python_depset.lock
+    include_setuptools: true
     append_flags:
       - --python-version=${PYTHON_VERSION}
       - --python-platform=linux
@@ -66,6 +77,7 @@ depsets:
     requirements:
       - templates/tune_pytorch_asha/requirements.txt
     output: templates/tune_pytorch_asha/python_depset.lock
+    include_setuptools: true
     append_flags:
       - --index https://download.pytorch.org/whl/cu128
       - --python-version=${PYTHON_VERSION}
@@ -81,6 +93,7 @@ depsets:
     requirements:
       - templates/biotech_protein_embeddings/requirements.txt
     output: templates/biotech_protein_embeddings/python_depset.lock
+    include_setuptools: true
     append_flags:
       - --python-version=${PYTHON_VERSION}
       - --python-platform=x86_64-manylinux_2_31
@@ -95,6 +108,7 @@ depsets:
     requirements:
       - templates/ecommerce_batch_embeddings/requirements.txt
     output: templates/ecommerce_batch_embeddings/python_depset.lock
+    include_setuptools: true
     append_flags:
       - --index https://download.pytorch.org/whl/cu128
       - --python-version=${PYTHON_VERSION}
@@ -110,6 +124,7 @@ depsets:
     requirements:
       - templates/audio-dataset-curation-llm-judge/requirements.txt
     output: templates/audio-dataset-curation-llm-judge/python_depset.lock
+    include_setuptools: true
     append_flags:
       - --index https://download.pytorch.org/whl/cu130
       - --python-version=${PYTHON_VERSION}
@@ -125,6 +140,7 @@ depsets:
     requirements:
       - templates/multi_agent_a2a/requirements.txt
     output: templates/multi_agent_a2a/python_depset.lock
+    include_setuptools: true
     append_flags:
       - --index https://download.pytorch.org/whl/cu130
       - --python-version=${PYTHON_VERSION}
@@ -140,6 +156,7 @@ depsets:
     requirements:
       - templates/llm_batch_inference_vision/requirements.txt
     output: templates/llm_batch_inference_vision/python_depset.lock
+    include_setuptools: true
     append_flags:
       - --index https://download.pytorch.org/whl/cu130
       - --python-version=${PYTHON_VERSION}
@@ -155,6 +172,7 @@ depsets:
     requirements:
       - templates/llm_finetuning/requirements.txt
     output: templates/llm_finetuning/python_depset.lock
+    include_setuptools: true
     append_flags:
       - --index https://download.pytorch.org/whl/cu130
       - --python-version=${PYTHON_VERSION}
@@ -170,6 +188,7 @@ depsets:
     requirements:
       - templates/creatives_diffusion_finetuning/requirements.txt
     output: templates/creatives_diffusion_finetuning/python_depset.lock
+    include_setuptools: true
     append_flags:
       - --index https://download.pytorch.org/whl/cu128
       - --python-version=${PYTHON_VERSION}
@@ -185,6 +204,7 @@ depsets:
     requirements:
       - templates/ecommerce_multi_model_serving/requirements.txt
     output: templates/ecommerce_multi_model_serving/python_depset.lock
+    include_setuptools: true
     append_flags:
       - --index https://download.pytorch.org/whl/cu128
       - --python-version=${PYTHON_VERSION}
@@ -200,7 +220,6 @@ depsets:
     requirements:
       - templates/biotech_boltz_screening/requirements.txt
     output: templates/biotech_boltz_screening/python_depset.lock
-    # Pin setuptools rather than inheriting whatever the runtime env's virtualenv seeds.
     include_setuptools: true
     append_flags:
       - --index https://download.pytorch.org/whl/cu128
@@ -217,6 +236,7 @@ depsets:
     requirements:
       - templates/finetune-stable-diffusion/requirements.txt
     output: templates/finetune-stable-diffusion/python_depset.lock
+    include_setuptools: true
     append_flags:
       - --index https://download.pytorch.org/whl/cu128
       - --python-version=${PYTHON_VERSION}
@@ -232,6 +252,7 @@ depsets:
     requirements:
       - templates/vhol-ray-data/requirements.txt
     output: templates/vhol-ray-data/python_depset.lock
+    include_setuptools: true
     append_flags:
       - --index https://download.pytorch.org/whl/cu128
       - --python-version=${PYTHON_VERSION}
@@ -247,6 +268,7 @@ depsets:
     requirements:
       - templates/deepspeed_finetune/requirements.txt
     output: templates/deepspeed_finetune/python_depset.lock
+    include_setuptools: true
     append_flags:
       - --index https://download.pytorch.org/whl/cu128
       - --python-version=${PYTHON_VERSION}
@@ -262,6 +284,7 @@ depsets:
     requirements:
       - templates/distributing-pytorch/requirements.txt
     output: templates/distributing-pytorch/python_depset.lock
+    include_setuptools: true
     append_flags:
       - --index https://download.pytorch.org/whl/cu128
       - --python-version=${PYTHON_VERSION}
@@ -277,6 +300,7 @@ depsets:
     requirements:
       - templates/pytorch-fsdp/requirements.txt
     output: templates/pytorch-fsdp/python_depset.lock
+    include_setuptools: true
     append_flags:
       - --index https://download.pytorch.org/whl/cu128
       - --python-version=${PYTHON_VERSION}
@@ -292,6 +316,7 @@ depsets:
     requirements:
       - templates/pytorch-profiling/requirements.txt
     output: templates/pytorch-profiling/python_depset.lock
+    include_setuptools: true
     append_flags:
       - --index https://download.pytorch.org/whl/cu128
       - --python-version=${PYTHON_VERSION}
@@ -308,6 +333,7 @@ depsets:
     requirements:
       - templates/image-search-and-classification/requirements.txt
     output: templates/image-search-and-classification/python_depset.lock
+    include_setuptools: true
     append_flags:
       - --index https://download.pytorch.org/whl/cu128
       - --python-version=${PYTHON_VERSION}
@@ -323,6 +349,7 @@ depsets:
     requirements:
       - templates/tensor_parallel_dtensor/requirements.txt
     output: templates/tensor_parallel_dtensor/python_depset.lock
+    include_setuptools: true
     append_flags:
       - --index https://download.pytorch.org/whl/cu129
       - --python-version=${PYTHON_VERSION}
@@ -338,6 +365,7 @@ depsets:
     requirements:
       - templates/ray-data-batch-image-classification/requirements.txt
     output: templates/ray-data-batch-image-classification/python_depset.lock
+    include_setuptools: true
     append_flags:
       - --index https://download.pytorch.org/whl/cu128
       - --python-version=${PYTHON_VERSION}
@@ -353,6 +381,7 @@ depsets:
     requirements:
       - templates/xgboost-training-and-serving/requirements.txt
     output: templates/xgboost-training-and-serving/python_depset.lock
+    include_setuptools: true
     append_flags:
       - --python-version=${PYTHON_VERSION}
       - --python-platform=linux
@@ -367,6 +396,7 @@ depsets:
     requirements:
       - templates/ray_train_workloads/requirements.txt
     output: templates/ray_train_workloads/python_depset.lock
+    include_setuptools: true
     append_flags:
       - --index https://download.pytorch.org/whl/cu128
       - --python-version=${PYTHON_VERSION}
@@ -382,6 +412,7 @@ depsets:
     requirements:
       - templates/ray-tune-train-integration/requirements.txt
     output: templates/ray-tune-train-integration/python_depset.lock
+    include_setuptools: true
     append_flags:
       - --index https://download.pytorch.org/whl/cu128
       - --python-version=${PYTHON_VERSION}
@@ -397,6 +428,7 @@ depsets:
     requirements:
       - templates/fintech_quant/requirements.txt
     output: templates/fintech_quant/python_depset.lock
+    include_setuptools: true
     append_flags:
       - --python-version=${PYTHON_VERSION}
       - --python-platform=linux
@@ -411,6 +443,7 @@ depsets:
     requirements:
       - templates/storage-access-large-datasets/requirements.txt
     output: templates/storage-access-large-datasets/python_depset.lock
+    include_setuptools: true
     append_flags:
       - --python-version=${PYTHON_VERSION}
       - --python-platform=linux
@@ -425,6 +458,7 @@ depsets:
     requirements:
       - templates/tensor_parallel_autotp/requirements.txt
     output: templates/tensor_parallel_autotp/python_depset.lock
+    include_setuptools: true
     append_flags:
       - --index https://download.pytorch.org/whl/cu128
       - --python-version=${PYTHON_VERSION}
@@ -441,6 +475,7 @@ depsets:
     requirements:
       - templates/asynchronous_inference/requirements.txt
     output: templates/asynchronous_inference/python_depset.lock
+    include_setuptools: true
     append_flags:
       - --python-version=${PYTHON_VERSION}
       - --python-platform=linux
@@ -455,6 +490,7 @@ depsets:
     requirements:
       - templates/mcp-ray-serve/requirements.txt
     output: templates/mcp-ray-serve/python_depset.lock
+    include_setuptools: true
     append_flags:
       - --python-version=${PYTHON_VERSION}
       - --python-platform=linux
@@ -469,6 +505,7 @@ depsets:
     requirements:
       - templates/stable-diffusion-pretraining/requirements.txt
     output: templates/stable-diffusion-pretraining/python_depset.lock
+    include_setuptools: true
     append_flags:
       - --index https://download.pytorch.org/whl/cu128
       - --python-version=${PYTHON_VERSION}
@@ -484,6 +521,7 @@ depsets:
     requirements:
       - templates/ray-summit-core-masterclass/requirements.txt
     output: templates/ray-summit-core-masterclass/python_depset.lock
+    include_setuptools: true
     append_flags:
       - --index https://download.pytorch.org/whl/cu128
       - --python-version=${PYTHON_VERSION}
@@ -499,6 +537,7 @@ depsets:
     requirements:
       - templates/text-embeddings/requirements.txt
     output: templates/text-embeddings/python_depset.lock
+    include_setuptools: true
     append_flags:
       - --index https://download.pytorch.org/whl/cu128
       - --python-version=${PYTHON_VERSION}
@@ -514,6 +553,7 @@ depsets:
     requirements:
       - templates/e2e-timeseries-forecasting/requirements.txt
     output: templates/e2e-timeseries-forecasting/python_depset.lock
+    include_setuptools: true
     append_flags:
       - --python-version=${PYTHON_VERSION}
       - --python-platform=linux
@@ -528,6 +568,7 @@ depsets:
     requirements:
       - templates/intro-ray-libraries/requirements.txt
     output: templates/intro-ray-libraries/python_depset.lock
+    include_setuptools: true
     append_flags:
       - --index https://download.pytorch.org/whl/cu129
       - --python-version=${PYTHON_VERSION}
@@ -543,6 +584,7 @@ depsets:
     requirements:
       - templates/parallel-experiments/requirements.txt
     output: templates/parallel-experiments/python_depset.lock
+    include_setuptools: true
     append_flags:
       - --index https://download.pytorch.org/whl/cu129
       - --python-version=${PYTHON_VERSION}
@@ -558,6 +600,7 @@ depsets:
     requirements:
       - templates/ecommerce_end_to_end/requirements.txt
     output: templates/ecommerce_end_to_end/python_depset.lock
+    include_setuptools: true
     append_flags:
       - --python-version=${PYTHON_VERSION}
       - --python-platform=linux

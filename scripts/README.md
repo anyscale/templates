@@ -27,8 +27,7 @@ so they work from any working directory and are safe to relocate. The exceptions
 
 ## `depsets/` — the image freezes templates lock against
 
-Both maintain `dependencies/`, which holds only data: the freezes, `template.depsets.yaml`,
-and `venv-seed-cache.txt`.
+Both maintain `dependencies/`, which holds only data: the freezes and `template.depsets.yaml`.
 
 | Script | What it does | Invoked by |
 |---|---|---|
