@@ -23,6 +23,7 @@
   compute_config:
     GCP: configs/basic-single-node/gce.yaml
     AWS: configs/basic-single-node/aws.yaml
+    K8S: configs/basic-single-node/k8s.yaml
   test:
     tests_path: tests/workspace-intro/
     command: bash tests.sh
@@ -338,6 +339,7 @@
   compute_config:
     AWS: configs/pytorch-fsdp/aws.yaml
     GCP: configs/pytorch-fsdp/gce.yaml
+    K8S: configs/pytorch-fsdp/k8s.yaml
   test:
     tests_path: tests/pytorch-fsdp/
     command: bash tests.sh
@@ -484,6 +486,7 @@
   compute_config:
     GCP: configs/getting-started/gce.yaml
     AWS: configs/getting-started/aws.yaml
+    K8S: configs/getting-started/k8s.yaml
   test:
     tests_path: tests/getting-started/
     command: bash tests.sh
