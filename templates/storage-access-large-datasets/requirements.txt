@@ -1,4 +1,6 @@
-gcsfs
-adlfs
+# gcsfs hard-pins fsspec to its own version; 2023.12.1 is the one the image ships.
+gcsfs==2023.12.1
+# adlfs ships in the image at this version; the lock installs --no-deps over it.
+adlfs==2023.8.0
 numpy==1.26.4
 pyarrow==19.0.1
