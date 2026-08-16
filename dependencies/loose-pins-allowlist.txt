@@ -29,15 +29,6 @@ biotech_protein_embeddings/ray                      # ray[data]>=2.9
 biotech_protein_embeddings/scikit-learn             # scikit-learn>=1.3
 biotech_protein_embeddings/transformers             # transformers>=4.35
 
-# creatives_diffusion_finetuning
-creatives_diffusion_finetuning/accelerate           # accelerate>=0.25
-creatives_diffusion_finetuning/diffusers            # diffusers>=0.25
-creatives_diffusion_finetuning/matplotlib           # matplotlib>=3.7
-creatives_diffusion_finetuning/peft                 # peft>=0.7
-creatives_diffusion_finetuning/pillow               # pillow>=10.0
-creatives_diffusion_finetuning/ray                  # ray[train,data]>=2.9
-creatives_diffusion_finetuning/transformers         # transformers>=4.35
-
 # deepspeed_finetune
 deepspeed_finetune/deepspeed                        # deepspeed
 
@@ -48,7 +39,6 @@ ecommerce_batch_embeddings/pillow                   # pillow>=10.0
 ecommerce_batch_embeddings/ray                      # ray[data]>=2.9
 ecommerce_batch_embeddings/scikit-learn             # scikit-learn>=1.3
 ecommerce_batch_embeddings/sentence-transformers    # sentence-transformers>=2.2
-ecommerce_batch_embeddings/torch                    # torch>=2.0
 ecommerce_batch_embeddings/transformers             # transformers>=4.35
 
 # ecommerce_end_to_end
@@ -56,27 +46,9 @@ ecommerce_end_to_end/hf_transfer                    # hf_transfer
 ecommerce_end_to_end/pillow                         # pillow
 ecommerce_end_to_end/sentence-transformers          # sentence-transformers
 
-# ecommerce_multi_model_serving
-ecommerce_multi_model_serving/faiss-cpu             # faiss-cpu>=1.7
-ecommerce_multi_model_serving/faker                 # faker>=18.0
-ecommerce_multi_model_serving/pandas                # pandas>=2.0
-ecommerce_multi_model_serving/pydantic              # pydantic>=2.0
-ecommerce_multi_model_serving/ray                   # ray[serve]>=2.9
-ecommerce_multi_model_serving/requests              # requests
-ecommerce_multi_model_serving/sentence-transformers # sentence-transformers>=2.2
-ecommerce_multi_model_serving/transformers          # transformers>=4.35
-
 # entity-recognition-with-llms
 entity-recognition-with-llms/llamafactory           # llamafactory @ git+https://github.com/hiyouga/LLaMA-Factory.git
 entity-recognition-with-llms/transformers           # transformers>=4.56.0,<5
-
-# fintech_fraud_risk
-fintech_fraud_risk/numpy                            # numpy>=1.24
-fintech_fraud_risk/pandas                           # pandas>=2.0
-fintech_fraud_risk/pyarrow                          # pyarrow>=14.0
-fintech_fraud_risk/ray                              # ray[data]>=2.9
-fintech_fraud_risk/scikit-learn                     # scikit-learn>=1.3
-fintech_fraud_risk/xgboost                          # xgboost>=2.0
 
 # fintech_quant
 fintech_quant/numpy                                 # numpy
