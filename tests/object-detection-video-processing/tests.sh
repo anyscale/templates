@@ -3,6 +3,10 @@ set -euxo pipefail
 
 pip install -q papermill nbconvert==7.16.6
 
+# Each training epoch costs ~5 min on this cluster. The notebook defaults to 2;
+# one is enough to prove the loop runs.
+export OBJDET_NUM_EPOCHS="${OBJDET_NUM_EPOCHS:-1}"
+
 # NB4 cells 13/15/17 (`anyscale service deploy/status` + the leaked-token prod
 # query) are tagged skip-in-ci. The local `serve run` test path (cells 7/9/11)
 # still runs.
