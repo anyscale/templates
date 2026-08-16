@@ -14,7 +14,7 @@ from typing import Dict, Any
 import requests
 from fastapi import FastAPI
 from pydantic import BaseModel, HttpUrl
-from PyPDF2 import PdfReader
+from pypdf import PdfReader
 
 from ray import serve
 from ray.serve.handle import DeploymentHandle

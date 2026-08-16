@@ -203,7 +203,7 @@ import io
 import time
 from typing import Dict, Any
 import requests
-from PyPDF2 import PdfReader
+from pypdf import PdfReader
 from ray import serve
 from ray.serve.schema import CeleryAdapterConfig, TaskProcessorConfig
 from ray.serve.task_consumer import (
