@@ -9,6 +9,7 @@ dependencies = [
     "anyscale==0.26.99",
     "pyyaml==6.0.3",
     "pydantic==2.13.3",
+    "packaging==26.2",
 ]
 
 [dependency-groups]
