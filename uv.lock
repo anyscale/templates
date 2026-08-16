@@ -115,6 +115,7 @@ source = { virtual = "." }
 dependencies = [
     { name = "anyscale" },
     { name = "nbconvert" },
+    { name = "packaging" },
     { name = "pre-commit" },
     { name = "pydantic" },
     { name = "pyyaml" },
@@ -129,6 +130,7 @@ ray-bump = [
 requires-dist = [
     { name = "anyscale", specifier = "==0.26.99" },
     { name = "nbconvert", specifier = "==7.17.1" },
+    { name = "packaging", specifier = "==26.2" },
     { name = "pre-commit", specifier = "==3.8.0" },
     { name = "pydantic", specifier = "==2.13.3" },
     { name = "pyyaml", specifier = "==6.0.3" },

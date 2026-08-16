@@ -1,0 +1,73 @@
+# Cached package metadata for the `venv-seed` check in scripts/hooks/check-dep-delivery.py.
+# Generated — do not hand-edit. Refresh with:
+#
+#   python3 scripts/hooks/check-dep-delivery.py --refresh
+#
+# `seed <virtualenv> <python> <package> <version>` — what that virtualenv installs into
+# every env it creates, read from its own BUNDLE_SUPPORT. Ray builds each runtime env
+# this way, and the seeded copy shadows the image's, so it is the version pip sees as
+# already installed. `-` means that virtualenv bundles nothing for the pair and the
+# image's own copy shows through instead. Which virtualenv the images ship comes from
+# dependencies/images/*.freeze.txt; a freeze naming one this file has no seeds for fails
+# the check rather than falling back to a guess.
+#
+# `requires <package> <version> <requirement>` — every runtime requirement on pip,
+# setuptools or wheel declared by a package some lock pins, verbatim from PyPI, with `-`
+# recording that the version declares none. Requirements reachable only through an extra
+# are dropped: nothing installs them. Only packages that require one of these somewhere
+# are tracked, so an unlisted version of a listed package fails the check as unknown.
+
+seed 20.29.1 3.10 pip 24.3.1
+seed 20.29.1 3.10 setuptools 75.8.0
+seed 20.29.1 3.10 wheel 0.45.1
+seed 20.29.1 3.11 pip 24.3.1
+seed 20.29.1 3.11 setuptools 75.8.0
+seed 20.29.1 3.11 wheel 0.45.1
+seed 20.29.1 3.12 pip 24.3.1
+seed 20.29.1 3.12 setuptools 75.8.0
+seed 20.29.1 3.12 wheel 0.45.1
+seed 20.29.1 3.13 pip 24.3.1
+seed 20.29.1 3.13 setuptools 75.8.0
+seed 20.29.1 3.13 wheel 0.45.1
+seed 20.29.1 3.14 pip 24.3.1
+seed 20.29.1 3.14 setuptools 75.8.0
+seed 20.29.1 3.14 wheel 0.45.1
+seed 20.29.1 3.8 pip 24.3.1
+seed 20.29.1 3.8 setuptools 75.3.0
+seed 20.29.1 3.8 wheel 0.45.1
+seed 20.29.1 3.9 pip 24.3.1
+seed 20.29.1 3.9 setuptools 75.8.0
+seed 20.29.1 3.9 wheel 0.45.1
+
+requires chembl-structure-pipeline 1.2.2 setuptools >=46.4.0
+requires tensorboard 2.18.0 setuptools>=41.0.0
+requires tensorboard 2.20.0 setuptools>=41.0.0
+requires torch 2.10.0+cu129 setuptools; python_version >= "3.12"
+requires torch 2.11.0 setuptools<82
+requires torch 2.11.0+cu130 setuptools<82
+requires torch 2.12.0 setuptools<82
+requires torch 2.13.0 setuptools>=77.0.3
+requires torch 2.3.0 -
+requires torch 2.4.1 setuptools
+requires torch 2.4.1+cu124 setuptools
+requires torch 2.5.1 setuptools; python_version >= "3.12"
+requires torch 2.5.1+cu121 setuptools; python_version >= "3.12"
+requires torch 2.6.0 setuptools; python_version >= "3.12"
+requires torch 2.7.0 setuptools; python_version >= "3.12"
+requires torch 2.7.0+cu128 setuptools; python_version >= "3.12"
+requires torch 2.7.1 setuptools; python_version >= "3.12"
+requires torch 2.7.1+cu128 setuptools; python_version >= "3.12"
+requires torch 2.8.0+cu128 setuptools; python_version >= "3.12"
+requires torch 2.9.1+cu129 setuptools; python_version >= "3.12"
+requires triton 3.0.0 -
+requires triton 3.1.0 -
+requires triton 3.2.0 -
+requires triton 3.3.0 setuptools>=40.8.0
+requires triton 3.3.1 setuptools>=40.8.0
+requires triton 3.4.0 setuptools>=40.8.0
+requires triton 3.5.1 -
+requires triton 3.6.0 -
+requires triton 3.7.0 -
+requires triton 3.7.1 -
+requires wandb 0.18.7 setuptools
+requires wandb 0.21.3 -
