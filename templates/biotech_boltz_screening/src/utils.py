@@ -1,5 +1,5 @@
 """
-Timing, metrics, and display utilities for the Boltz-1 screening pipeline demo.
+Timing, metrics, and display utilities for the Boltz screening pipeline demo.
 """
 import time
 from contextlib import contextmanager
@@ -22,10 +22,10 @@ def calc_throughput(num_items: int, elapsed_seconds: float) -> float:
 
 def estimate_single_node_time(num_complexes: int) -> str:
     """
-    Single-GPU Boltz-1 estimate: ~30 seconds per complex on one A100.
-    This is the baseline researchers experience without Ray Data.
+    Single-GPU Boltz estimate. Measured on an L4: ~31s of fixed model load plus
+    ~11s per complex. This is the baseline researchers experience without Ray Data.
     """
-    seconds = num_complexes * 30
+    seconds = 31 + num_complexes * 11
     if seconds < 60:
         return f"{seconds:.0f}s"
     elif seconds < 3600:

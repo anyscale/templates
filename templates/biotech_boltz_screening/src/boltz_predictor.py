@@ -7,7 +7,7 @@ batch. That matters: measured on an L4, a call costs ~31s of fixed startup (mode
 load) plus ~11s per complex, so a batch of 32 pays the startup once instead of 32
 times. Keep `batch_size` high for the same reason.
 
-Weights are ~5.5GB and are cached on shared cluster storage so a node downloads
+Weights are ~6GB and are cached on shared cluster storage so a cluster downloads
 them at most once. `ensure_weights()` runs on the driver before the pipeline
 starts -- see the note there about why "the file exists" is not good enough.
 
@@ -21,6 +21,7 @@ Metrics come straight from Boltz's confidence JSON:
 """
 import json
 import os
+import shutil
 import subprocess
 import tempfile
 import time
@@ -32,40 +33,51 @@ BOLTZ_VERSION = "2.2.1"
 SCORER_NAME = f"boltz-{BOLTZ_VERSION}"
 DEFAULT_CACHE = "/mnt/cluster_storage/boltz_cache"
 _SENTINEL = ".boltz_cache_complete"
+# What a complete cache holds. `mols.tar` is deliberately absent: it is the
+# archive `mols/` is extracted from, and keeping it costs 1.9GB for nothing.
+_ARTIFACTS = ("boltz2_conf.ckpt", "boltz2_aff.ckpt", "mols")
 
 
 def ensure_weights(cache_dir: str = DEFAULT_CACHE) -> None:
-    """Download Boltz's weights once, on the driver, before any actor starts.
+    """Populate the shared Boltz cache once, on the driver, before any actor starts.
 
-    A shared cache turns a killed job into a landmine: Boltz only checks whether
-    a checkpoint file exists, so a run interrupted mid-download leaves a truncated
-    .ckpt that every later run happily loads and dies on
-    (`PytorchStreamReader failed reading zip archive`). The sentinel is written
-    only after a prediction has actually succeeded against these weights, so a
-    partial download is never mistaken for a complete one.
+    Downloads only -- no warm-up prediction. The driver runs on the head node,
+    which this template's compute config leaves GPU-less (`CPU: 0`, m5.2xlarge),
+    so there is nothing here for `boltz predict` to run on.
+
+    A shared cache turns a killed job into a landmine: Boltz decides what to fetch
+    by checking whether each file exists, so a run interrupted mid-download leaves
+    a truncated .ckpt that every later run happily loads and dies on
+    (`PytorchStreamReader failed reading zip archive`). The sentinel goes in last,
+    after every artifact is present, so a partial cache is discarded and refetched
+    rather than trusted.
     """
     cache = Path(cache_dir)
     if (cache / _SENTINEL).exists():
         print(f"  Boltz weights ready in {cache}")
         return
 
+    for stale in (*cache.glob("*.ckpt"), cache / "mols.tar", cache / "mols"):
+        if stale.is_dir():
+            print(f"  Discarding possibly-incomplete {stale.name}/")
+            shutil.rmtree(stale)
+        elif stale.exists():
+            print(f"  Discarding possibly-truncated {stale.name}")
+            stale.unlink()
     cache.mkdir(parents=True, exist_ok=True)
-    for stale in cache.glob("*.ckpt"):
-        print(f"  Discarding possibly-truncated checkpoint: {stale.name}")
-        stale.unlink()
 
-    print(f"  Fetching Boltz weights into {cache} (~5.5GB, once per cluster)...")
-    with tempfile.TemporaryDirectory() as tmp:
-        warm = Path(tmp) / "in"
-        warm.mkdir()
-        (warm / "warmup.yaml").write_text(yaml.safe_dump({
-            "version": 1,
-            "sequences": [
-                {"protein": {"id": "A", "sequence": "MKQLEDKVEELLSKNYHLENEVARLKKLV", "msa": "empty"}},
-            ],
-        }, sort_keys=False))
-        _run_boltz(warm, Path(tmp) / "out", cache)
+    print(f"  Fetching Boltz weights into {cache} (~6GB, once per cluster)...")
+    from boltz.main import download_boltz2
 
+    download_boltz2(cache)
+
+    missing = [name for name in _ARTIFACTS if not (cache / name).exists()]
+    if missing:
+        raise RuntimeError(
+            f"Boltz cache in {cache} is incomplete after download: {', '.join(missing)}"
+        )
+
+    (cache / "mols.tar").unlink(missing_ok=True)
     (cache / _SENTINEL).write_text(f"{SCORER_NAME}\n")
     print("  Boltz weights ready")
 

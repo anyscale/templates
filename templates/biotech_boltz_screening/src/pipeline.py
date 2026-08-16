@@ -36,8 +36,8 @@ def run_screening_pipeline(
 
     Returns a metrics dict for display.
     """
-    # One `boltz predict` call downloads ~5.5GB. Do it here, once, rather than
-    # letting every actor race for the same cache.
+    # Boltz pulls ~6GB of weights the first time it runs. Do it here, once, rather
+    # than letting every actor race for the same cache.
     ensure_weights(cache_dir)
 
     pipeline_start = time.time()

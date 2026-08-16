@@ -200,6 +200,8 @@ depsets:
     requirements:
       - templates/biotech_boltz_screening/requirements.txt
     output: templates/biotech_boltz_screening/python_depset.lock
+    # Pin setuptools rather than inheriting whatever the runtime env's virtualenv seeds.
+    include_setuptools: true
     append_flags:
       - --index https://download.pytorch.org/whl/cu128
       - --python-version=${PYTHON_VERSION}
