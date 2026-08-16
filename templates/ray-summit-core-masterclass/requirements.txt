@@ -1,10 +1,10 @@
 torch==2.7.0
 torchvision==0.22.0
-xgboost
-scikit-learn
+xgboost==3.2.0
+scikit-learn==1.5.2
 pillow==10.4.0
-tqdm
-matplotlib
-pandas
+tqdm==4.67.1
+matplotlib==3.9.4
+pandas==2.3.3
 pyarrow==19.0.1
-requests
+requests==2.32.5

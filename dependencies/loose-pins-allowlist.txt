@@ -61,14 +61,6 @@ pytorch-fsdp/matplotlib                             # matplotlib
 pytorch-profiling/matplotlib                        # matplotlib
 pytorch-profiling/torch_tb_profiler                 # torch_tb_profiler
 
-# ray-summit-core-masterclass
-ray-summit-core-masterclass/matplotlib              # matplotlib
-ray-summit-core-masterclass/pandas                  # pandas
-ray-summit-core-masterclass/requests                # requests
-ray-summit-core-masterclass/scikit-learn            # scikit-learn
-ray-summit-core-masterclass/tqdm                    # tqdm
-ray-summit-core-masterclass/xgboost                 # xgboost
-
 # ray-tune-train-integration
 ray-tune-train-integration/torch                    # torch>=2.5.0,<2.6.0
 ray-tune-train-integration/torchvision              # torchvision>=0.20.0,<0.21.0
@@ -101,14 +93,6 @@ ray-workshop-2026/transformers                      # transformers>=4.50
 # ray_train_workloads
 ray_train_workloads/gymnasium                       # gymnasium
 ray_train_workloads/pyarrow                         # pyarrow
-
-# stable-diffusion-pretraining
-stable-diffusion-pretraining/matplotlib             # matplotlib
-stable-diffusion-pretraining/pillow                 # Pillow
-stable-diffusion-pretraining/s3fs                   # s3fs
-stable-diffusion-pretraining/torch                  # torch>=2.5,<2.6
-stable-diffusion-pretraining/torchvision            # torchvision>=0.20,<0.21
-stable-diffusion-pretraining/typer                  # typer
 
 # storage-access-large-datasets
 storage-access-large-datasets/adlfs                 # adlfs
