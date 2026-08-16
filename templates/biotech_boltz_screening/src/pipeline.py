@@ -11,7 +11,7 @@ from src.feature_prep import build_boltz_input_batch
 from src.boltz_predictor import SCORER_NAME, BoltzPredictor, ensure_weights
 from src.postprocess import classify_and_filter
 from src.utils import (
-    calc_throughput, print_metrics_table, format_number,
+    calc_throughput, print_dataset_stats, print_metrics_table, format_number,
     estimate_single_node_time, estimate_job_cost,
 )
 
@@ -34,6 +34,12 @@ def run_screening_pipeline(
       4. map_batches (CPU)      — classify confidence tiers, filter
       5. write_parquet          — scored results + CIF bytes to output
 
+    Stages 2-4 only add operators to a plan. Ray Data is lazy: nothing runs until
+    the terminal `write_parquet()` in stage 5, so a wall-clock around each
+    `map_batches()` call measures plan construction, not work. The real per-operator
+    breakdown comes from `ds.stats()` after the write — Ray Data measures it from
+    inside the execution, which is the only place the numbers exist.
+
     Returns a metrics dict for display.
     """
     # Boltz pulls ~6GB of weights the first time it runs. Do it here, once, rather
@@ -41,36 +47,30 @@ def run_screening_pipeline(
     ensure_weights(cache_dir)
 
     pipeline_start = time.time()
-    stage_times = {}
 
     # ── Stage 1: Read ──────────────────────────────────────────────────────
     print(f"\n[1/5] Reading candidates from {candidates_path}")
-    t0 = time.time()
     ds = ray.data.read_parquet(candidates_path, override_num_blocks=num_gpus * 4)
     total_complexes = ds.count()
-    stage_times["read"] = time.time() - t0
-    print(f"  Candidates loaded: {format_number(total_complexes)}")
+    print(f"  Candidates found: {format_number(total_complexes)}")
 
     # ── Stage 2: CPU Feature Prep ──────────────────────────────────────────
     # Parse sequences, validate amino acids, build Boltz YAML input dicts.
     # Attaches pre-computed MSA for the target, MSA-free for binder candidates.
-    print(f"\n[2/5] Feature prep — CPU workers (parse sequences, build Boltz inputs)")
-    t0 = time.time()
+    print("\n[2/5] Queueing feature prep — CPU workers (parse sequences, build Boltz inputs)")
     ds = ds.map_batches(
         lambda batch: build_boltz_input_batch(batch, target_msa_path),
         batch_size=64,
         num_cpus=1,
         batch_format="numpy",
     )
-    stage_times["feature_prep"] = time.time() - t0
 
     # ── Stage 3: GPU Structure Prediction ──────────────────────────────────
     # One Boltz actor per GPU; concurrency = num_gpus saturates the autoscaled
     # pool. Each batch becomes a single `boltz predict` call, which costs ~31s of
     # model load plus ~11s per complex on an L4 — so a large batch_size is what
     # keeps that startup from being paid over and over.
-    print(f"\n[3/5] Boltz structure prediction — {num_gpus} GPU worker(s)")
-    t0 = time.time()
+    print(f"\n[3/5] Queueing Boltz structure prediction — {num_gpus} GPU worker(s)")
     ds = ds.map_batches(
         BoltzPredictor,
         fn_constructor_kwargs={"cache_dir": cache_dir},
@@ -79,25 +79,22 @@ def run_screening_pipeline(
         concurrency=num_gpus,
         batch_format="numpy",
     )
-    stage_times["prediction"] = time.time() - t0
 
     # ── Stage 4: CPU Post-processing ───────────────────────────────────────
     # Classify confidence tiers (high/medium/low), add passed_filter flag.
-    print(f"\n[4/5] Post-processing — classify confidence tiers, filter")
-    t0 = time.time()
+    print("\n[4/5] Queueing post-processing — classify confidence tiers, filter")
     ds = ds.map_batches(
         classify_and_filter,
         batch_size=256,
         num_cpus=1,
         batch_format="numpy",
     )
-    stage_times["postprocess"] = time.time() - t0
 
-    # ── Stage 5: Write Results ─────────────────────────────────────────────
-    print(f"\n[5/5] Writing scored results to {output_path}")
-    t0 = time.time()
+    # ── Stage 5: Execute and Write ─────────────────────────────────────────
+    # The terminal operation. Stages 2-4 built a plan and ran nothing; they
+    # execute here, streamed, as write_parquet() pulls batches through it.
+    print(f"\n[5/5] Executing the plan, writing scored results to {output_path}")
     ds.write_parquet(output_path)
-    stage_times["write"] = time.time() - t0
 
     # ── Metrics ────────────────────────────────────────────────────────────
     wall_time = time.time() - pipeline_start
@@ -108,11 +105,6 @@ def run_screening_pipeline(
         "Wall time": f"{wall_time:.1f}s ({wall_time / 60:.1f} min)",
         "Throughput": f"{throughput:.2f} complexes/sec",
         "GPU workers": str(num_gpus),
-        "Read time": f"{stage_times['read']:.1f}s",
-        "Feature prep time": f"{stage_times['feature_prep']:.1f}s",
-        "Prediction time": f"{stage_times['prediction']:.1f}s",
-        "Post-processing time": f"{stage_times['postprocess']:.1f}s",
-        "Write time": f"{stage_times['write']:.1f}s",
         "Output path": output_path,
         "Scorer": SCORER_NAME,
         "Est. single-GPU time": estimate_single_node_time(total_complexes),
@@ -120,4 +112,14 @@ def run_screening_pipeline(
     }
 
     print_metrics_table(metrics)
+
+    # Per-stage timings, measured by Ray Data itself during the execution above.
+    # Two things to know when reading it. Operators are not 1:1 with the stages
+    # printed above — Ray Data fuses neighbours that share a compute strategy, so
+    # post-processing shows up as `MapBatches(classify_and_filter)->Write`, while
+    # `MapBatches(BoltzPredictor)` stays separate because it is the only actor-pool
+    # stage and the only one asking for a GPU. And the per-operator wall times
+    # overlap rather than partition the run: stages stream concurrently, so they
+    # sum to more than the pipeline's wall time.
+    print_dataset_stats(ds.stats())
     return metrics
