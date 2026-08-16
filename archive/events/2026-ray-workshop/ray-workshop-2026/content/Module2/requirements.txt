@@ -1,5 +1,7 @@
-torch==2.6.0
-torchvision==0.21.0
-transformers==4.50.0
-diffusers==0.32.2
-accelerate==1.5.2
+# Mirrors the top-level requirements.txt — the old lower pins here downgraded the
+# image's torch/transformers out from under Ray on every run of this notebook.
+torch==2.9.1
+torchvision==0.24.1
+transformers==4.57.3
+diffusers==0.37.1
+accelerate==1.14.0
