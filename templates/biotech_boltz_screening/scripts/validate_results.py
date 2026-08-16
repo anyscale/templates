@@ -1,5 +1,5 @@
 """
-Validate Boltz-1 screening output: confidence distribution and top-10 candidates.
+Validate Boltz screening output: confidence distribution and top-10 candidates.
 
 Usage:
   python scripts/validate_results.py --input /mnt/cluster_storage/boltz-screening/results/medium/

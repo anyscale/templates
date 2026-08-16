@@ -4,7 +4,8 @@ entrypoint: python scripts/02_run_screening.py --scale medium --num-gpus 4
 runtime_env:
   working_dir: .
   # Pin to the lock so the driver and workers share one env (a loose >= re-resolves per node).
-  pip: python_depset.lock
+  # Absolute: a relative path resolves against the CLI's working directory, not working_dir.
+  pip: /home/ray/default/python_depset.lock
 
 compute_config:
   head_node:

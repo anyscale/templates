@@ -1,4 +1,4 @@
-# Biotech Protein Interaction Screening with Boltz-1
+# Biotech Protein Interaction Screening with Boltz-2
 
 <div align="left">
   <a target="_blank" href="https://console.anyscale.com/template-preview/biotech_boltz_screening"><img src="https://img.shields.io/badge/🚀 Run_on-Anyscale-9hf"></a>&nbsp;
@@ -13,11 +13,11 @@
 
 ## Business Context
 
-A biotech team is designing a binder against a cancer target. They have **1,000 designed candidate proteins**. To rank them they need to fold each target+binder complex through **Boltz-1** (MIT license, AlphaFold3-competitive quality). On one A100 at ~30 seconds per complex, that's **8+ hours** — and a single CUDA OOM kills the run.
+A biotech team is designing a binder against a cancer target. They have **1,000 designed candidate proteins**. To rank them they need to fold each target+binder complex through **Boltz-2** (MIT license, AlphaFold3-competitive quality). On one GPU at ~11 seconds per complex, that's **3+ hours** — and a single CUDA OOM kills the run.
 
-**Today:** Researchers run Boltz-1 in a `for` loop on a single GPU. No fault tolerance, no observability, no way to burst.
+**Today:** Researchers run Boltz in a `for` loop on a single GPU. No fault tolerance, no observability, no way to burst.
 
-**With Ray Data on Anyscale:** Wrap the existing Boltz-1 Python entry point in a Ray Data actor, fan out across an autoscaling GPU pool, stream features in and confidence scores out, and produce a ranked candidate list with structures — in minutes.
+**With Ray Data on Anyscale:** Wrap the Boltz CLI in a Ray Data actor, fan out across an autoscaling GPU pool, stream features in and confidence scores out, and produce a ranked candidate list with structures — in minutes.
 
 ---
 
@@ -28,9 +28,9 @@ Anyscale Job / Workspace
 |
 +- [Ray Data] read_parquet ---------------------- Distributed parallel read
 +- [map_batches / CPU] feature_prep ------------- Parse sequences, build Boltz input
-|       m5.2xlarge x 1-4 nodes
-+- [map_batches / GPU] BoltzPredictor ----------- Boltz-1 structure prediction
-|       g5.2xlarge x 1-8 nodes (A10G, 1 GPU per actor)
+|       runs on the GPU nodes' CPUs (the head is non-schedulable)
++- [map_batches / GPU] BoltzPredictor ----------- Boltz structure prediction
+|       g5.2xlarge x 1-4 nodes (A10G, 1 GPU per actor)
 +- [map_batches / CPU] classify_and_filter ------ Confidence tiers + ranking
 +- [write_parquet] ------------------------------ Scored results + CIF bytes
 ```
@@ -39,7 +39,7 @@ Data streams between stages — no intermediate disk writes, no idle CPUs waitin
 
 ---
 
-**Timing note**: The full pipeline on 500 complexes with 4x A10G GPUs completes in ~4 minutes — compared to 4+ hours on a single GPU running sequentially. The speedup comes from three things working together: 4 GPUs processing batches in parallel, CPU feature prep streaming into GPU inference with no idle time between stages, and Ray Data's automatic load balancing across workers. During the run, open the Ray Dashboard to watch CPU and GPU workers in action.
+**Timing note**: The full pipeline on 500 complexes with 4x A10G GPUs completes in ~25 minutes — compared to ~1.5 hours on a single GPU running sequentially. The speedup comes from three things working together: 4 GPUs processing batches in parallel, CPU feature prep streaming into GPU inference with no idle time between stages, and Ray Data's automatic load balancing across workers. During the run, open the Ray Dashboard to watch CPU and GPU workers in action.
 
 ## Get the code
 
@@ -115,10 +115,13 @@ from src.candidate_generator import generate_candidates, SCALE_MAP, TARGET_SEQUE
 import ray.data
 import pandas as pd
 
-INPUT_PATH  = "/mnt/cluster_storage/boltz-screening/candidates/medium_pp.parquet"
-OUTPUT_PATH = "/mnt/cluster_storage/boltz-screening/results/medium/"
-SCALE       = "medium"  # 500 protein-protein complexes
-NUM_GPUS    = 4
+# Real Boltz inference costs ~11s per complex per GPU, so the scale is a knob:
+# "small" (50) finishes in a few minutes, "medium" (500) in ~25 on 4 GPUs.
+SCALE       = os.getenv("SCREENING_SCALE", "medium")
+NUM_GPUS    = int(os.getenv("SCREENING_NUM_GPUS", "4"))
+
+INPUT_PATH  = f"/mnt/cluster_storage/boltz-screening/candidates/{SCALE}_pp.parquet"
+OUTPUT_PATH = f"/mnt/cluster_storage/boltz-screening/results/{SCALE}/"
 
 # Generate synthetic candidates (skips if file already exists)
 if not os.path.exists(INPUT_PATH):
@@ -149,15 +152,19 @@ for row in ds.take(3):
 
 Before running the full pipeline, let's look at how the **BoltzPredictor** callable class works. This is the core GPU stage — one actor per A10G GPU:
 
-- **`__init__`**: Loads Boltz-1 weights onto CUDA once per actor. The ~1.5GB checkpoint is cached on `/mnt/cluster_storage/` so workers don't re-download.
-- **`__call__`**: Processes a batch of complexes, emitting confidence metrics (pLDDT, ipTM) and CIF structure bytes for each.
+- **`__init__`**: Points the actor at the shared weights cache. Boltz's ~5.5GB of checkpoints live on `/mnt/cluster_storage/`, downloaded once per cluster by `ensure_weights()` before the pipeline starts.
+- **`__call__`**: Writes the whole batch out as Boltz YAML and shells out to `boltz predict` **once**, then reads back each complex's confidence JSON and mmCIF.
+
+Boltz ships a CLI rather than a Python inference API, and that shapes the stage: a call costs roughly **31s of fixed model load plus 11s per complex** on an L4. Batching a whole Ray Data batch into one invocation is what stops you paying that 31s per complex — which is why `batch_size` here is 32, not 4.
 
 **Key metrics:**
 - **pLDDT** (predicted Local Distance Difference Test): Per-residue confidence in the structure. 0-100, >70 is reliable.
 - **ipTM** (interface predicted Template Modeling): Confidence in the interaction interface. 0-1, >0.8 is high.
-- **confidence**: Boltz-1's aggregate score. This is what we rank by.
+- **confidence**: Boltz's aggregate score (`confidence_score` in its output JSON). This is what we rank by.
 
-The pipeline chains 5 stages: read → feature prep (CPU) → Boltz-1 predict (GPU) → classify (CPU) → write.
+Boltz reports pLDDT on a 0-1 scale; the predictor scales it to 0-100, the convention the tiers in `postprocess.py` and the literature both use.
+
+The pipeline chains 5 stages: read → feature prep (CPU) → Boltz predict (GPU) → classify (CPU) → write.
 
 
 ```python
@@ -181,7 +188,7 @@ print()
 print("Pipeline stages:")
 print("  [1/5] Read candidate Parquet       — distributed parallel read")
 print("  [2/5] Feature prep (CPU)           — parse sequences, build Boltz input dicts")
-print("  [3/5] Boltz-1 prediction (GPU)     — structure prediction, 1 actor per A10G")
+print("  [3/5] Boltz prediction (GPU)       — structure prediction, 1 actor per A10G")
 print("  [4/5] Post-processing (CPU)        — classify confidence tiers, filter")
 print("  [5/5] Write scored Parquet          — results + CIF bytes")
 ```
@@ -194,7 +201,7 @@ This is the core of the demo. The next cell runs the full end-to-end pipeline: C
 
 **TIP:** Open the Ray Dashboard -> Jobs tab to watch:
 - CPU workers handling sequence parsing and feature prep
-- A10G GPU workers activating for Boltz-1 structure prediction
+- A10G GPU workers activating for Boltz structure prediction
 - Data streaming between stages (no intermediate writes)
 - Per-stage throughput and backpressure
 
@@ -203,7 +210,7 @@ This is the core of the demo. The next cell runs the full end-to-end pipeline: C
 # Cell 5 - Run the full screening pipeline
 from src.pipeline import run_screening_pipeline
 
-print("Starting Boltz-1 screening pipeline...")
+print("Starting Boltz screening pipeline...")
 print(f"  Input:   {INPUT_PATH}")
 print(f"  Output:  {OUTPUT_PATH}")
 print(f"  GPUs:    {NUM_GPUS} workers (concurrency={NUM_GPUS})\n")
@@ -223,7 +230,7 @@ metrics = run_screening_pipeline(
 
 The next cell loads the scored output and shows:
 1. **Confidence tier distribution** — how many candidates fall into high/medium/low tiers
-2. **Top-10 candidates** ranked by Boltz-1 confidence score, with ipTM and pLDDT
+2. **Top-10 candidates** ranked by Boltz confidence score, with ipTM and pLDDT
 
 This is the key demo moment: the screening pipeline has ranked all candidates, and the top binders are immediately visible. These are the candidates a wet-lab team would take forward for experimental validation.
 
@@ -290,7 +297,6 @@ try:
         print("3D structure rendered above (py3Dmol).")
     else:
         print("No CIF structure data available for inline rendering.")
-        print("(With a real Boltz-1 model, full atomic CIF structures are produced.)")
 except ImportError:
     print("py3Dmol not installed. To render structures inline:")
     print("  pip install py3Dmol")
@@ -355,6 +361,6 @@ print("  Fault tolerance        -- failed batches retry automatically, no full r
 print("  Autoscaling            -- GPU workers scale to demand, then scale to zero")
 print("  One codebase           -- same code runs in Workspace and as a scheduled Job")
 print()
-print("Same Boltz-1 Python. Ray Data scaling. GPUs autoscale to zero when idle.")
+print("Same Boltz CLI. Ray Data scaling. GPUs autoscale to zero when idle.")
 print("You now have an internal AlphaFold-as-a-service.")
 ```

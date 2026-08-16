@@ -715,7 +715,8 @@
   test:
     tests_path: tests/biotech_boltz_screening/
     command: bash tests.sh
-    timeout_in_sec: 1800
+    # Measured: 1216s to populate the 6.17GB Boltz cache, 1045s to screen 50 complexes.
+    timeout_in_sec: 5400
 
 # owner: @christian-stano
 - name: biotech_protein_embeddings

@@ -1,5 +1,5 @@
 """
-Ray Data Boltz-1 screening pipeline.
+Ray Data Boltz screening pipeline.
 Orchestrates: read → CPU feature prep → GPU structure prediction → CPU classify → write
 """
 import time
@@ -8,7 +8,7 @@ import ray
 import ray.data
 
 from src.feature_prep import build_boltz_input_batch
-from src.boltz_predictor import BoltzPredictor
+from src.boltz_predictor import SCORER_NAME, BoltzPredictor, ensure_weights
 from src.postprocess import classify_and_filter
 from src.utils import (
     calc_throughput, print_metrics_table, format_number,
@@ -19,22 +19,27 @@ from src.utils import (
 def run_screening_pipeline(
     candidates_path: str,
     output_path: str,
-    weights_path: str = "/mnt/cluster_storage/boltz/boltz1.ckpt",
-    target_msa_path: str = "/mnt/cluster_storage/boltz-screening/assets/target_msa.a3m",
+    cache_dir: str = "/mnt/cluster_storage/boltz_cache",
+    target_msa_path: str = "empty",
     num_gpus: int = 4,
+    batch_size: int = 32,
 ) -> dict:
     """
-    End-to-end Ray Data Boltz-1 screening pipeline.
+    End-to-end Ray Data Boltz screening pipeline.
 
     Stages:
       1. read_parquet           — distributed parallel read of candidate complexes
-      2. map_batches (CPU)      — parse sequences, build Boltz-1 input dicts
-      3. map_batches (GPU)      — Boltz-1 structure prediction (1 actor per GPU)
+      2. map_batches (CPU)      — parse sequences, build Boltz input YAML
+      3. map_batches (GPU)      — Boltz structure prediction (1 actor per GPU)
       4. map_batches (CPU)      — classify confidence tiers, filter
       5. write_parquet          — scored results + CIF bytes to output
 
     Returns a metrics dict for display.
     """
+    # Boltz pulls ~6GB of weights the first time it runs. Do it here, once, rather
+    # than letting every actor race for the same cache.
+    ensure_weights(cache_dir)
+
     pipeline_start = time.time()
     stage_times = {}
 
@@ -47,7 +52,7 @@ def run_screening_pipeline(
     print(f"  Candidates loaded: {format_number(total_complexes)}")
 
     # ── Stage 2: CPU Feature Prep ──────────────────────────────────────────
-    # Parse sequences, validate amino acids, build Boltz-1 YAML-style input dicts.
+    # Parse sequences, validate amino acids, build Boltz YAML input dicts.
     # Attaches pre-computed MSA for the target, MSA-free for binder candidates.
     print(f"\n[2/5] Feature prep — CPU workers (parse sequences, build Boltz inputs)")
     t0 = time.time()
@@ -60,15 +65,16 @@ def run_screening_pipeline(
     stage_times["feature_prep"] = time.time() - t0
 
     # ── Stage 3: GPU Structure Prediction ──────────────────────────────────
-    # One Boltz-1 actor per A10G GPU. Each actor loads the model once and
-    # processes all batches assigned to it. concurrency = num_gpus ensures
-    # we saturate the autoscaled GPU pool.
-    print(f"\n[3/5] Boltz-1 structure prediction — {num_gpus} GPU worker(s)")
+    # One Boltz actor per GPU; concurrency = num_gpus saturates the autoscaled
+    # pool. Each batch becomes a single `boltz predict` call, which costs ~31s of
+    # model load plus ~11s per complex on an L4 — so a large batch_size is what
+    # keeps that startup from being paid over and over.
+    print(f"\n[3/5] Boltz structure prediction — {num_gpus} GPU worker(s)")
     t0 = time.time()
     ds = ds.map_batches(
         BoltzPredictor,
-        fn_constructor_kwargs={"weights_path": weights_path},
-        batch_size=4,
+        fn_constructor_kwargs={"cache_dir": cache_dir},
+        batch_size=batch_size,
         num_gpus=1,
         concurrency=num_gpus,
         batch_format="numpy",
@@ -108,6 +114,7 @@ def run_screening_pipeline(
         "Post-processing time": f"{stage_times['postprocess']:.1f}s",
         "Write time": f"{stage_times['write']:.1f}s",
         "Output path": output_path,
+        "Scorer": SCORER_NAME,
         "Est. single-GPU time": estimate_single_node_time(total_complexes),
         "Est. Anyscale job cost": estimate_job_cost(wall_time, num_gpu_workers=num_gpus),
     }

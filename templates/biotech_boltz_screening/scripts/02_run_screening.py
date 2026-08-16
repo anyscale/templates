@@ -1,5 +1,5 @@
 """
-Step 2: Run the Boltz-1 screening pipeline on Ray Data.
+Step 2: Run the Boltz screening pipeline on Ray Data.
 
 Usage:
   python scripts/02_run_screening.py --scale medium --num-gpus 4
@@ -23,11 +23,11 @@ BASE_DIR = "/mnt/cluster_storage/boltz-screening"
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Boltz-1 Protein Screening Pipeline")
+    parser = argparse.ArgumentParser(description="Boltz Protein Screening Pipeline")
     parser.add_argument("--scale", choices=["small", "medium", "large"], default="medium",
                         help="small=50, medium=500, large=2000 candidates")
     parser.add_argument("--num-gpus", type=int, default=4,
-                        help="Number of GPU workers for Boltz-1 inference")
+                        help="Number of GPU workers for Boltz inference")
     parser.add_argument("--complex-type", choices=["pp", "pl"], default="pp",
                         help="pp=protein-protein, pl=protein-ligand")
     parser.add_argument("--input", default=None, help="Override input path")

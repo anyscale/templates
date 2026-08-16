@@ -17,7 +17,6 @@ asynchronous_inference/requests                     # requests>=2.31.0
 
 # biotech_boltz_screening
 biotech_boltz_screening/biopython                   # biopython>=1.82
-biotech_boltz_screening/boltz                       # boltz>=0.3
 biotech_boltz_screening/pandas                      # pandas>=2.0
 biotech_boltz_screening/py3dmol                     # py3Dmol
 biotech_boltz_screening/ray                         # ray[data]>=2.9
