@@ -6,13 +6,14 @@ echo "=== SkyRL Template Test ==="
 # Mirror the template README: clone + pin to the commit the BYOD image is built for.
 git clone https://github.com/NovaSky-AI/SkyRL.git
 cd SkyRL/
-git checkout acbc21c
+git checkout abd553a1
 
 # CI-only patch: switch `uv run --isolated` to `--frozen` in run_gsm8k.sh.
-# SkyRL's top-level `requires-python = ">=3.11"` makes uv's universal resolver
-# consider Python 3.14 + arm64-macOS, where ray==2.51.1 has no wheels, so
-# `--isolated` fails resolution. `--frozen` uses the shipped uv.lock and skips
-# resolution — equivalent runtime for our (linux x86_64 / py3.12) CI box.
+# `--isolated` resolves from scratch, and SkyRL's top-level
+# `requires-python = ">=3.11"` sends uv's universal resolver at Pythons and
+# platforms the GPU stack ships no wheels for. `--frozen` uses the shipped
+# uv.lock: same runtime on our linux x86_64 / py3.12 box, and it is what holds
+# Ray at the version the BYOD image is built for.
 sed -i 's/uv run --isolated/uv run --frozen/g' examples/train/gsm8k/run_gsm8k.sh
 
 # run_gsm8k.sh reads DATA_DIR to build data.train_data/data.val_data, so the
