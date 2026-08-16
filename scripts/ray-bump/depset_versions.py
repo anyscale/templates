@@ -26,7 +26,7 @@ def _repo_root() -> Path:
 
 IMAGES = _repo_root() / "dependencies" / "images"
 
-# A freeze this small is a failed fetch, not an image — see fetch-image-freeze.sh.
+# A freeze this small is a failed fetch, not an image — see refresh-image-freezes.py.
 MIN_FREEZE_PACKAGES = 50
 
 
@@ -40,7 +40,7 @@ def tracked_images() -> list[str]:
 
 
 def freeze_path(image: str) -> Path:
-    """Where refresh-image-freezes.sh writes this image's freeze."""
+    """Where refresh-image-freezes.py writes this image's freeze."""
     return IMAGES / f"{image.removeprefix('anyscale/').replace(':', '-')}.freeze.txt"
 
 

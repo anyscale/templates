@@ -87,7 +87,7 @@ jobs:
       if: steps.prep.outputs.rc == '10'
       env:
         V: ${{ steps.prep.outputs.version }}
-      run: bash dependencies/scripts/refresh-image-freezes.sh "$V"
+      run: python3 scripts/depsets/refresh-image-freezes.py "$V"
 
     # Same gate the fanout uses, so the PR states up front whether pushing
     # ray-fanout-<v> would actually be accepted.

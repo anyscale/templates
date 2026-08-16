@@ -37,7 +37,7 @@ Template locks are seeded from `dependencies/images/<image>.freeze.txt`
 (`../references/dependencies.md` "Image freezes"). Fetch `<NEW>`'s:
 
 ```bash
-bash dependencies/scripts/refresh-image-freezes.sh <NEW>
+python3 scripts/depsets/refresh-image-freezes.py <NEW>
 ```
 
 It **warns and continues** on an image that isn't published yet, so read its output: a skipped image

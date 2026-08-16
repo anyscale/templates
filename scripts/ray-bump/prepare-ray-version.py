@@ -7,7 +7,7 @@ Producing that set is otherwise a human hand-running `workflows/upgrade-dependen
 This closes the gap: it resolves the newest stable Ray and, when we don't have that
 version yet, adds its `build_arg_sets` to `dependencies/template.depsets.yaml`, leaving
 the change staged for a PR. The caller then refreshes the freezes themselves
-(`dependencies/scripts/refresh-image-freezes.sh`).
+(`scripts/depsets/refresh-image-freezes.py`).
 
 Version policy (minor-only): on the scheduled/auto path it acts only when the newest
 stable Ray advances the *minor* (or major) over our newest complete set — templates
@@ -111,7 +111,7 @@ def unpublished_images(v: str) -> list[str]:
     """Tracked images with no published `<v>` tag.
 
     The index lists CPU images under an explicit -cpu suffix while BUILD.yaml uses the
-    bare alias, so accept either — same fallback as fetch-image-freeze.sh.
+    bare alias, so accept either — same fallback as refresh-image-freezes.py.
     """
     # the CDN 403s urllib's default User-Agent
     req = urllib.request.Request(IMAGE_INDEX, headers={"User-Agent": "prepare-ray-version"})
