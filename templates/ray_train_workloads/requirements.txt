@@ -1,9 +1,8 @@
 matplotlib==3.10.6
 torch==2.8.0
 torchvision==0.23.0
-# Unpinned on purpose: pyarrow is part of the base image's managed runtime and Ray
-# Data enforces a floor on it. Pinning 14.0.2 here dragged it under that floor.
-pyarrow
+# Ray Data enforces a floor on pyarrow; this is the image's own version, so it clears it.
+pyarrow==19.0.1
 torchmetrics==1.8.2
 xgboost==3.0.5
 seaborn==0.13.2
@@ -12,4 +11,5 @@ lightning==2.5.5
 datasets==2.19.2
 pandas==2.3.3
 tqdm==4.67.1
-gymnasium
+# gymnasium ships in the image at this version; the lock installs --no-deps over it.
+gymnasium==1.2.2

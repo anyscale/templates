@@ -1,4 +1,6 @@
-torch>=2.5.0,<2.6.0
-torchvision>=0.20.0,<0.21.0
+# Newest pair the depset's cu128 index publishes; below its 2.7.0 floor uv falls back
+# to PyPI and the wheel loses its CUDA tag (that is how 2.5.1 landed here untagged).
+torch==2.11.0
+torchvision==0.26.0
 tensorboard==2.18.0
 bayesian-optimization==1.4.3
