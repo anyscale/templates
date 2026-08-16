@@ -28,7 +28,17 @@ git clone https://github.com/anyscale/templates && cd templates/templates/parall
 
 
 ```python
-!pip install --no-cache-dir torch==2.10.0 torchvision==0.25.0 s3fs==2026.3.0
+# Locked deps on the driver; runtime_env hands the same lock to every Tune trial.
+!uv pip install -r python_depset.lock --system --no-deps --no-cache-dir --index-strategy unsafe-best-match
+
+import os
+
+import ray
+
+ray.init(
+    ignore_reinit_error=True,
+    runtime_env={"pip": os.path.join(os.getcwd(), "python_depset.lock")},
+)
 ```
 
 
