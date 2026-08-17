@@ -6,7 +6,9 @@ requires-python = "==3.12.*"
 dependencies = [
     "pre-commit==3.8.0",
     "nbconvert==7.17.1",
-    "anyscale==0.26.99",
+    # >= 0.26.107: earlier versions' `workspace_v2 run_command` only spoke
+    # legacy port-22 SSH, unreachable on Kubernetes clouds (AKS/EKS/GKE).
+    "anyscale==0.26.107",
     "pyyaml==6.0.3",
     "pydantic==2.13.3",
 ]

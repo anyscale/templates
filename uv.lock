@@ -71,7 +71,7 @@ wheels = [
 
 [[package]]
 name = "anyscale"
-version = "0.26.99"
+version = "0.26.107"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiohttp" },
@@ -103,9 +103,9 @@ dependencies = [
     { name = "websockets" },
     { name = "wrapt" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/fd/31/83e2d06eea4f54dabb4adcd40f86b57cf02c25631b7e0b56e9703fa1ec71/anyscale-0.26.99.tar.gz", hash = "sha256:a66aae2926258ba0d833ef08cc2488438c02ee21a1d5d0acef78fb35fa637ddd", size = 1746852, upload-time = "2026-04-29T22:16:39.364Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/4e/26/036b165b61938c47555a2ac1d94fbbdae1e03c7a4f2a1ab122e9dd285416/anyscale-0.26.107.tar.gz", hash = "sha256:12f9cba4199abbfefe2da32b3cfbce68b33762a513b74449bab22ba6e23e4ece", size = 1904394, upload-time = "2026-08-10T23:23:41.693Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/8e/6e/91070b6c337ff930ae3020cebc498088a16fa7af7b7a79d35762e9066ae1/anyscale-0.26.99-py3-none-any.whl", hash = "sha256:4f98715d3f16b110bc04dfe0d5762c5ee49c032633fcf459be3da6f0d9ed980b", size = 3143068, upload-time = "2026-04-29T22:16:36.633Z" },
+    { url = "https://files.pythonhosted.org/packages/0f/8a/4bb68e987b24abc772e9707ca5fb54017d4b0fa4e4ba0061d579e4ea356a/anyscale-0.26.107-py3-none-any.whl", hash = "sha256:b6544af91f30091fd17a6fd317f29e0df62f243ceaed6b9e6d7e005283e8f978", size = 3442359, upload-time = "2026-08-10T23:23:39.744Z" },
 ]
 
 [[package]]
@@ -127,7 +127,7 @@ ray-bump = [
 
 [package.metadata]
 requires-dist = [
-    { name = "anyscale", specifier = "==0.26.99" },
+    { name = "anyscale", specifier = "==0.26.107" },
     { name = "nbconvert", specifier = "==7.17.1" },
     { name = "pre-commit", specifier = "==3.8.0" },
     { name = "pydantic", specifier = "==2.13.3" },
