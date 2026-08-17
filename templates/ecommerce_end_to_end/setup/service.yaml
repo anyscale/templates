@@ -38,7 +38,7 @@ compute_config:
 
 # Base image — CPU-only, Python 3.12. Keep in sync with the template's
 # BUILD.yaml entry; see https://docs.anyscale.com/reference/base-images
-image_uri: anyscale/ray:2.56.0-py312
+image_uri: anyscale/ray:2.57.0-py312
 
 working_dir: .
 
