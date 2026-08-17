@@ -69,7 +69,8 @@ class _BaseMCP:
 
     async def call_tool(self, tool_name: str, tool_args: Dict[str, Any]) -> Any:
         await self._ensure_ready()
-        return await self.session.call_tool(tool_name, tool_args)
+        result = await self.session.call_tool(tool_name, tool_args)
+        return result.model_dump(mode="json")
 
     async def __del__(self):
         if hasattr(self, "_stack"):
