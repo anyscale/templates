@@ -74,7 +74,12 @@ def price_option_chain(
     total_t = ft()
 
     # Fetch options chain data
-    df = pd.DataFrame(get_options_chain(symbol)['options'])
+    chain = get_options_chain(symbol)
+    if chain.get('error'):
+        # Surfaces the actual fetch failure (rate limit, no listed options, cache
+        # collision) instead of a KeyError three frames down on a worker.
+        raise RuntimeError(f"{symbol}: could not fetch options chain — {chain['error']}")
+    df = pd.DataFrame(chain['options'])
 
     # Calculate base implied volatility
     df["implied_volatility"] = df.apply(lambda row: get_iv(row), axis=1)
@@ -155,7 +160,12 @@ def parallel_price_option_chain(
     total_t = ft()
 
     # Fetch options chain data
-    df = pd.DataFrame(get_options_chain(symbol)['options'])
+    chain = get_options_chain(symbol)
+    if chain.get('error'):
+        # Surfaces the actual fetch failure (rate limit, no listed options, cache
+        # collision) instead of a KeyError three frames down on a worker.
+        raise RuntimeError(f"{symbol}: could not fetch options chain — {chain['error']}")
+    df = pd.DataFrame(chain['options'])
 
     # Calculate base implied volatility
     df["implied_volatility"] = df.apply(lambda row: get_iv(row), axis=1)
@@ -241,7 +251,12 @@ def more_parallel_price_option_chain(
     total_t = ft()
 
     # Fetch options chain data
-    df = pd.DataFrame(get_options_chain(symbol)['options'])
+    chain = get_options_chain(symbol)
+    if chain.get('error'):
+        # Surfaces the actual fetch failure (rate limit, no listed options, cache
+        # collision) instead of a KeyError three frames down on a worker.
+        raise RuntimeError(f"{symbol}: could not fetch options chain — {chain['error']}")
+    df = pd.DataFrame(chain['options'])
  
     # Calculate base implied volatility
     df["implied_volatility"] = df.apply(lambda row: get_iv(row), axis=1)
