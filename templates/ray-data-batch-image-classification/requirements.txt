@@ -1,3 +1,2 @@
 torch==2.7.1
 torchvision==0.22.1
-pyarrow==23.0.1  # image version; ray is --unsafe-package, so nothing in the lock pulls Ray Data's pyarrow
