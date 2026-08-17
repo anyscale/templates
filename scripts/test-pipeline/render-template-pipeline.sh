@@ -24,14 +24,13 @@ for t in $TEMPLATES; do
   esac
 done
 
-# BUILD.yaml's `timeout_in_sec` bounds the *test*; the job timeout bounds everything
-# around it too -- workspace create, cluster start, image pull, dep install. So the
-# job's must be the looser of the two, or it fires first and a slow-but-healthy run
-# reads as a template bug. A flat 75 did exactly that to the two templates that
-# budget more: biotech_boltz_screening at 90min and e2e-rag-deepdive at 120.
+# `timeout_in_sec` bounds the test; the job timeout also covers workspace create,
+# cluster start, image pull and dep install, so it has to be the looser of the two or
+# a slow-but-healthy run reads as a template bug. A flat 75 did exactly that to
+# biotech_boltz_screening (90min) and e2e-rag-deepdive (120).
 #
-# Stdlib only, on purpose: this renders on a bare agent, and adding a pyyaml install
-# to the fan-out step to read one integer is a poor trade.
+# Stdlib only, on purpose: this renders on a bare agent, and installing pyyaml to read
+# one integer is a poor trade.
 STARTUP_ALLOWANCE_MIN=30
 template_timeout_min() {
   python3 - "$ROOT/BUILD.yaml" "$1" "$STARTUP_ALLOWANCE_MIN" <<'PY'
@@ -106,12 +105,11 @@ for t in $TEMPLATES; do
       queue: small
     retry:
       automatic:
-        # Agent-level deaths only -- the job never returned a status of its own, so
-        # there is nothing in it to read. A command that *did* return stays red, even
-        # when the cause was infra: a PyPI 502 surfaces as an ordinary exit 1, and
-        # retrying that hides an outage behind a green tick. It also tripled the wall
-        # clock on genuinely broken templates, which is how build 641 read as one
-        # 78-minute run instead of two dead attempts and a good one.
+        # Agent-level deaths only -- the job returned no status of its own, so there is
+        # nothing to read. A command that *did* return stays red even when the cause was
+        # infra: a PyPI 502 looks like an ordinary exit 1, and retrying it hides an
+        # outage behind a green tick (build 641 read as one 78-minute run instead of two
+        # dead attempts and a good one).
         - exit_status: -1
           limit: 2
         - exit_status: 255

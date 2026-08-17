@@ -1,27 +1,19 @@
 #!/usr/bin/env python3
 """Prepare a new Ray version so a fanout can fire.
 
-The fanout (`.github/workflows/ray-bump-fanout.yaml`) only fires a version we hold a
-freeze for on every tracked image — templates seed their locks from those freezes.
-Producing that set is otherwise a human hand-running `workflows/upgrade-dependencies.md`.
-This closes the gap: it resolves the newest stable Ray and, when we don't have that
-version yet, adds its `build_arg_sets` to `dependencies/template.depsets.yaml`, leaving
-the change staged for a PR. The caller then refreshes the freezes themselves
-(`scripts/depsets/refresh-image-freezes.py`).
+The fanout only fires a version we hold a freeze for on every tracked image. This
+resolves the newest stable Ray and, if we don't have it, adds its `build_arg_sets` to
+`dependencies/template.depsets.yaml` and leaves the change staged for a PR. The caller
+then refreshes the freezes (`scripts/depsets/refresh-image-freezes.py`).
 
-Version policy (minor-only): on the scheduled/auto path it acts only when the newest
-stable Ray advances the *minor* (or major) over our newest complete set — templates
-track minor Ray releases (~monthly), so a patch over the current minor (2.56.0 →
-2.56.1) is a no-op. A new minor adopts its newest patch (2.57.z, not forced 2.57.0).
-An explicit `--version` (or `--force`) bypasses the gate — a human override for a
-specific target.
+Minor-only: on the auto path it acts only when the newest stable Ray advances the minor
+or major, since templates track minor releases — 2.56.0 → 2.56.1 is a no-op, and a new
+minor adopts its newest patch. `--version` / `--force` bypass the gate.
 
-Copy-forward model: it clones the newest-complete version's bundle matrix (python +
-CUDA), substituting the new version, and checks Anyscale published every tracked image
-for it. It does NOT invent a matrix: if an image we track has no `<v>` tag (a py/cuda
-moved, as happened 2.55→2.56), it stops rather than guess, and a human runs
-`upgrade-dependencies.md`. The PR is human-reviewed either way, so the job need only be
-correct-or-obviously-stuck.
+Copy-forward: it clones the newest-complete version's bundle matrix, substituting the
+new version, and checks Anyscale published every tracked image for it. It never invents
+a matrix — if a tracked image has no `<v>` tag (a py/cuda moved, as at 2.55→2.56) it
+stops and a human runs `upgrade-dependencies.md`.
 
 Exit codes: 0 = nothing to do (already current / waiting on upstream / dry-run);
             10 = changes prepared (caller should open a PR);

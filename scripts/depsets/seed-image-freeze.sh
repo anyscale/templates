@@ -1,16 +1,15 @@
 #!/usr/bin/env bash
 # Seed a lock with resolution preferences before compiling.
 #
-# uv reads the -o file as preferences: a package listed there keeps its version
-# unless a requirement forces otherwise. Seed it with the image freeze, then carry
-# over the previous lock's pins for packages the image does NOT ship.
+# uv reads the -o file as preferences: a listed package keeps its version unless a
+# requirement forces otherwise. Seed it with the image freeze, then carry over the
+# previous lock's pins for packages the image does NOT ship.
 #
-#   image packages     -> the image's version   (the lock describes the real image)
-#   everything else    -> its previously locked version (a bump is a deliberate edit,
-#                         not a side effect of regenerating)
+#   image packages  -> the image's version
+#   everything else -> its previously locked version
 #
-# Without the carry-over, regenerating re-resolves every non-image package to
-# whatever is newest that day — the drift this whole setup exists to prevent.
+# Without the carry-over, regenerating re-resolves every non-image package to whatever
+# is newest that day — the drift this whole setup exists to prevent.
 #
 # Usage: seed-image-freeze.sh <freeze-file> <lock-output-path>
 set -euo pipefail

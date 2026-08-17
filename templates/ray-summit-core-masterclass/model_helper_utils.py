@@ -9,7 +9,6 @@ from sklearn.metrics import mean_squared_error
 from sklearn.model_selection import train_test_split
 from sklearn.tree import DecisionTreeRegressor
 
-# states to inspect
 STATES = ["INITIALIZED", "RUNNING", "DONE"]
 
 DECISION_TREE_CONFIGS = {"max_depth": 10, "name": "decision_tree"}

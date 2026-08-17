@@ -7,9 +7,8 @@ batch. That matters: measured on an L4, a call costs ~31s of fixed startup (mode
 load) plus ~11s per complex, so a batch of 32 pays the startup once instead of 32
 times. Keep `batch_size` high for the same reason.
 
-The cache is ~6.2GB and is built in two halves. `ensure_weights()` downloads it
-onto shared cluster storage, once per cluster, on the driver; `_node_cache()` then
-unpacks the CCD onto each node's own disk. Both docstrings say why.
+The ~6.2GB cache is built in two halves: `ensure_weights()` downloads it to shared
+storage once per cluster, `_node_cache()` unpacks the CCD onto each node's own disk.
 
 Metrics come straight from Boltz's confidence JSON:
   - pLDDT: per-residue confidence in the fold, averaged. Boltz reports 0-1;
@@ -38,22 +37,17 @@ SCORER_NAME = f"boltz-{BOLTZ_VERSION}"
 DEFAULT_CACHE = "/mnt/cluster_storage/boltz_cache"
 _SENTINEL = ".boltz_cache_complete"
 
-# Exactly what `boltz.main.download_boltz2` would fetch, deliberately. Every
-# `boltz predict` call runs that function against the `--cache` it is handed and
-# re-downloads whatever is missing -- including the affinity checkpoint, which it
-# fetches unconditionally and then only opens for inputs that ask for affinity.
-# Leaving one out therefore does not save the transfer, it moves it into the
-# actors, where several race to write the same shared path.
+# Exactly what `boltz.main.download_boltz2` would fetch, deliberately: `boltz predict`
+# calls it against its `--cache` every time and re-downloads anything missing -- the
+# affinity checkpoint included, which it fetches unconditionally and opens only for
+# inputs asking for affinity. Trimming this list moves the transfer into the actors,
+# where several race to write the same shared path; it does not save it.
 _HF = "https://huggingface.co/boltz-community/boltz-2/resolve/main"
 _DOWNLOADS = {name: f"{_HF}/{name}" for name in ("boltz2_conf.ckpt", "boltz2_aff.ckpt", "mols.tar")}
 
 
 def _fetch(url: str, dest: Path) -> None:
-    """Download one artifact, into `.part` first.
-
-    The rename lands only on success, so an interrupted fetch cannot leave
-    something at the real name for a later run to trust.
-    """
+    """Download to `.part` and rename, so an interrupted fetch leaves nothing to trust."""
     part = Path(f"{dest}.part")
     urllib.request.urlretrieve(url, str(part))  # noqa: S310
     part.replace(dest)
@@ -62,20 +56,14 @@ def _fetch(url: str, dest: Path) -> None:
 def ensure_weights(cache_dir: str = DEFAULT_CACHE) -> None:
     """Download the Boltz cache once per cluster, on the driver, before any actor starts.
 
-    Downloads only -- no unpacking, no warm-up prediction. The driver runs on the
-    head node, which this template's compute config leaves GPU-less (`CPU: 0`,
-    m5.2xlarge), so there is nothing here for `boltz predict` to run on; unpacking
-    belongs on the nodes that read it, for the reason `_node_cache` gives.
+    Downloads only: the head node is GPU-less here (`CPU: 0`), and unpacking belongs
+    on the nodes that read it, for the reason `_node_cache` gives. Fetches directly
+    rather than via `boltz.main.download_boltz2` only to overlap the three transfers.
 
-    Fetches the artifacts directly rather than calling `boltz.main.download_boltz2`
-    only to overlap the three transfers, which that function does one after another.
-
-    A shared cache turns a killed job into a landmine: whoever fetches decides by
-    checking whether each file exists, so a run interrupted mid-download leaves a
-    truncated .ckpt that every later run happily loads and dies on
-    (`PytorchStreamReader failed reading zip archive`). The sentinel goes in last,
-    after every artifact is present, so a partial cache is discarded and refetched
-    rather than trusted.
+    A shared cache turns a killed job into a landmine, since every reader decides by
+    checking whether a file exists: a run interrupted mid-download leaves a truncated
+    .ckpt that later runs load and die on (`PytorchStreamReader failed reading zip
+    archive`). The sentinel goes in last, so a partial cache is refetched, not trusted.
     """
     cache = Path(cache_dir)
     if (cache / _SENTINEL).exists():
@@ -111,17 +99,13 @@ def ensure_weights(cache_dir: str = DEFAULT_CACHE) -> None:
 def _node_cache(shared: Path) -> Path:
     """Give this node its own Boltz cache directory, and return it.
 
-    Boltz stores the CCD as 45k small pickles. Unpacking those onto
-    /mnt/cluster_storage measured 1033s, against 31s to pull the same bytes down as
-    one sequential file: shared storage charges a network round trip per file, and
-    45k of them is the entire cost. Unpacking the same archive to local disk takes
-    ~10s, so each node does its own -- concurrently with every other node, and off
-    the driver's critical path.
+    Boltz stores the CCD as 45k small pickles, and shared storage charges a network
+    round trip per file: unpacking them onto /mnt/cluster_storage measured 1033s
+    against 11s on local disk, so every node unpacks its own, in parallel.
 
-    The downloaded files stay symlinks into the shared copy rather than being copied
-    per node. `boltz predict` only checks that they exist, except for the confidence
-    checkpoint, which it reads once per call as a single 2.1GB sequential read --
-    the one access pattern shared storage is good at.
+    The downloads stay symlinks into the shared copy. `boltz predict` only checks that
+    they exist, except the confidence checkpoint, which it reads as one 2.1GB
+    sequential read -- the access pattern shared storage is good at.
     """
     shared = shared.resolve()  # symlinks resolve from `local`, so a relative target dangles
     local = _local_root() / "boltz_cache"
