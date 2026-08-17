@@ -14,7 +14,6 @@ import json
 
 import numpy as np
 
-# ── Valid amino acid alphabet ────────────────────────────────────────────
 VALID_AA = set("ACDEFGHIKLMNPQRSTVWY")
 
 # Boltz's literal for single-sequence mode. Override with a path to an .a3m.
@@ -134,7 +133,6 @@ def build_boltz_input_batch(
         complex_type = batch["complex_type"][i]
         target_seq = batch["target_seq"][i]
 
-        # Handle numpy bytes/strings
         if isinstance(complex_id, bytes):
             complex_id = complex_id.decode("utf-8")
         if isinstance(complex_type, bytes):

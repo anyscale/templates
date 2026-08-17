@@ -34,16 +34,14 @@ def run_screening_pipeline(
       4. map_batches (CPU)      — classify confidence tiers, filter
       5. write_parquet          — scored results + CIF bytes to output
 
-    Stages 2-4 only add operators to a plan. Ray Data is lazy: nothing runs until
-    the terminal `write_parquet()` in stage 5, so a wall-clock around each
-    `map_batches()` call measures plan construction, not work. The real per-operator
-    breakdown comes from `ds.stats()` after the write — Ray Data measures it from
-    inside the execution, which is the only place the numbers exist.
+    Stages 2-4 only add operators to a plan. Ray Data is lazy: nothing runs until the
+    terminal `write_parquet()`, so a wall-clock around each `map_batches()` call would
+    measure plan construction, not work. Real per-operator timings come from
+    `ds.stats()` after the write.
 
     Returns a metrics dict for display.
     """
-    # Boltz pulls ~6.2GB of weights the first time it runs. Do it here, once, rather
-    # than letting every actor race for the same cache.
+    # Once here, rather than every actor racing for the same cache.
     ensure_weights(cache_dir)
 
     pipeline_start = time.time()
@@ -113,13 +111,8 @@ def run_screening_pipeline(
 
     print_metrics_table(metrics)
 
-    # Per-stage timings, measured by Ray Data itself during the execution above.
-    # Two things to know when reading it. Operators are not 1:1 with the stages
-    # printed above — Ray Data fuses neighbours that share a compute strategy, so
-    # post-processing shows up as `MapBatches(classify_and_filter)->Write`, while
-    # `MapBatches(BoltzPredictor)` stays separate because it is the only actor-pool
-    # stage and the only one asking for a GPU. And the per-operator wall times
-    # overlap rather than partition the run: stages stream concurrently, so they
-    # sum to more than the pipeline's wall time.
+    # Reading these: operators aren't 1:1 with the stages above (Ray Data fuses
+    # neighbours sharing a compute strategy), and their wall times overlap rather than
+    # partition the run, so they sum to more than the pipeline's.
     print_dataset_stats(ds.stats())
     return metrics

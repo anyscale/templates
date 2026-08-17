@@ -1,13 +1,11 @@
 """Which Ray versions we hold a complete dependency set for.
 
 A version is complete once `dependencies/images/` holds a usable freeze for every
-image in `tracked-images.txt`. That is the whole condition: templates seed their
-locks from those freezes, and a freeze only exists once Anyscale published the
-image — which is the thing a per-template bump actually waits on.
+image in `tracked-images.txt`. That is the whole condition: a freeze exists only once
+Anyscale published the image, which is what a per-template bump actually waits on.
 
-Both the daily probe (`prepare-ray-version.py`) and the fanout's resolver
-(`latest-depset-version.py`) import this. They used to each carry their own copy
-and drifted, so keep it here.
+The daily probe (`prepare-ray-version.py`) and the fanout's resolver
+(`latest-depset-version.py`) both import this — they used to carry copies and drifted.
 """
 
 from __future__ import annotations

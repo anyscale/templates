@@ -82,12 +82,9 @@ class Test(Strict):
     timeout_in_sec: int = Field(gt=0)
 
 
-# The team that owns a template, deduced from its content — the primary Ray
-# library / product surface it demonstrates. Single value even for multi-library
-# templates (pick the center of gravity; LLM wins when it's fundamentally an LLM
-# template). `general` is the fallback for platform / Ray Core / onboarding
-# content with no single-library owner (intros, multi-library surveys, pure Ray
-# Core). Deduction rule: the /template skill's schemas/build-yaml-schema.yaml.
+# The primary Ray library or product surface a template demonstrates — one value even
+# for multi-library templates, `general` when there's no single owner. Deduction rule
+# and tie-break: the /template skill's schemas/build-yaml-schema.yaml.
 OwnerTeam = Literal["ray-serve", "ray-data", "llm", "ray-train", "general"]
 
 

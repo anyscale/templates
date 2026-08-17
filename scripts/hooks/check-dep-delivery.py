@@ -1,25 +1,8 @@
 #!/usr/bin/env python3
 """Static dependency-delivery checks (see .claude/skills/template/references/dependencies.md).
 
-Four failure modes that are invisible to `template-test` because CI happens to paper
-over each one:
-
-  depset-config   A depset entry naming a freeze for one image while BUILD.yaml runs the
-                  template on another, or compiling a lock without `include_setuptools:
-                  true`. The first makes the lock describe an environment the template
-                  never runs in; the second lets pip collect setuptools unpinned into a
-                  hashed lock, which fails every runtime env for that template.
-  lock-installed  A template ships a lock and nothing installs it, so users run on
-                  whatever the image happens to have -- or installs it without `-r`, so
-                  uv reads the filename as a package name and hard fails. Green in CI
-                  whenever tests.sh installs the deps some other way.
-  bare-pip        A bare `pip install` in tests.sh. A workspace *tracks* it and the
-                  runtime-env hook appends it, unpinned, to every actor's pip list; one
-                  unhashed entry trips pip's hash-checking mode against a hashed lock and
-                  every runtime env for that template fails to build.
-  pin-style       A requirement that isn't `==`. The lock then re-resolves to whatever is
-                  newest whenever it's regenerated, so a template's behaviour changes
-                  without anyone editing it -- and CI passes, because it tests the drift.
+Four ways a template's locked deps fail to reach its workers, all of which `template-test`
+passes anyway. Each check's docstring says how.
 
 Usage: check-dep-delivery.py [depset-config|lock-installed|bare-pip|pin-style ...]
                                                                        (default: all)
@@ -50,7 +33,6 @@ LOCK_INSTALL_RE = re.compile(rf"-r\s+\S*{re.escape(LOCK)}")
 LOCK_NO_R_RE = re.compile(rf"pip\s+install\s+(?:-(?!r\b)\S+\s+)*\S*{re.escape(LOCK)}")
 BARE_PIP_RE = re.compile(r"(?<!uv )\bpip\d?\s+install\b")
 
-# Files a user actually runs. Excludes the lock itself and generated READMEs' twin.
 SOURCE_GLOBS = ("*.ipynb", "*.md", "*.py", "*.sh", "*.yaml", "*.yml", "*.toml")
 
 
@@ -106,8 +88,8 @@ def pins(path):
 
 
 def source_files(root: Path):
-    """Every file a user runs, minus the nbconvert twins — those mirror a notebook's
-    install line, so counting them lets an edited notebook still look installed."""
+    """Every file a user runs. Skips nbconvert twins, which mirror the notebook's install
+    line and would let an edited notebook still look installed."""
     for glob in SOURCE_GLOBS:
         for f in root.rglob(glob):
             if f.suffix == ".md" and f.with_suffix(".ipynb").exists():
@@ -118,21 +100,13 @@ def source_files(root: Path):
 def check_depset_config():
     """Each depset entry must name the image its template runs on, and pin setuptools.
 
-    Two ways an entry goes wrong, both invisible to the compile itself:
-
-    freeze/image  The lock is *seeded* from the freeze this entry names, so every pin in
-                  it describes that image. Point it at a different one than BUILD.yaml
-                  runs and the lock asserts versions the runtime doesn't have -- then
-                  installs them into every runtime env. `${RAY_VERSION}` interpolates on
-                  a bump, but the literal py/CUDA parts don't, so moving a template
-                  between images is where this slips.
-    setuptools    uv drops setuptools from a lock by default, while Ray builds each
-                  runtime env as a virtualenv seeding its own. A locked package wanting
-                  a newer one then makes pip collect it -- unpinned, unhashed against a
-                  lock full of hashes, which puts pip in hash-checking mode and fails
-                  every runtime env for the template. With `include_setuptools: true`
-                  it is either pinned at the image's version or absent because nothing
-                  in the graph wants it.
+    freeze/image  The lock is seeded from the named freeze, so its pins describe that
+                  image. `${RAY_VERSION}` interpolates on a bump but the py/CUDA parts
+                  don't, so moving a template between images is where this slips.
+    setuptools    uv drops setuptools from a lock by default; Ray's runtime env is a
+                  virtualenv seeding its own. A locked package wanting a newer one makes
+                  pip collect it unhashed, which trips hash-checking mode against the
+                  hashed lock and fails every runtime env for the template.
     """
     by_dir = {d: (name, image) for name, d, image in templates()}
     cfg = yaml.safe_load(DEPSETS.read_text())
@@ -174,7 +148,11 @@ def check_depset_config():
 
 
 def check_lock_installed():
-    """A template that ships a lock must install it, with `-r`, somewhere a user runs."""
+    """A template that ships a lock must install it, with `-r`, somewhere a user runs.
+
+    Without the install users get whatever the image has; without `-r`, uv reads the
+    filename as a package name and hard fails.
+    """
     problems = []
     for name, root, _ in templates():
         if not (root / LOCK).exists():
@@ -198,10 +176,10 @@ def check_lock_installed():
 def check_bare_pip():
     """tests.sh must not bare-`pip install`.
 
-    Only a template shipping a lock can be bitten, so only those fail. A lock-less
-    template is left alone rather than reported: for a pure workspace tutorial the
-    bare install *is* the lesson, and it only becomes a break if that template ever
-    gains a lock -- at which point this fails and says so.
+    A workspace tracks it and appends it unpinned to every actor's pip list, and one
+    unhashed entry trips hash-checking mode against the hashed lock. Only templates
+    shipping a lock can be bitten, so only those fail -- for a pure workspace tutorial
+    the bare install *is* the lesson.
     """
     problems = []
     for name, root, _ in templates():
@@ -227,7 +205,11 @@ def requirement_lines(path: Path):
 
 
 def check_pin_style():
-    """Every requirement is `==`, or carries a trailing comment saying why it isn't."""
+    """Every requirement is `==`, or carries a trailing comment saying why it isn't.
+
+    A loose spec re-resolves to newest on every recompile, so the template's behaviour
+    changes with nobody editing it -- and CI passes, because it tests the drift.
+    """
     problems = []
     for name, root, _ in templates():
         req = root / "requirements.txt"

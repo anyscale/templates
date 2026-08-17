@@ -7,18 +7,13 @@ A freeze is the pip package list of a published Anyscale base image. Templates s
 their locks from it, so a lock describes the image the template actually runs on
 rather than whatever PyPI served the day it was compiled.
 
-With no image arguments this refreshes every entry in `tracked-images.txt`, and an
-image that isn't published yet is skipped with a warning rather than failing the run:
-base locks land before every variant exists, and the next scheduled run picks it up.
-An image named explicitly on the command line is the opposite case -- you asked for
-that one, so failing to get it is an error.
+With no image arguments this refreshes every entry in `tracked-images.txt`, skipping
+unpublished images with a warning -- base locks land before every variant exists, and
+the next run picks them up. An image named on the command line is the opposite case:
+you asked for it, so failing to get it is an error.
 
-Where a freeze lives, and what makes one usable, are defined once in
-`scripts/ray-bump/depset_versions.py`. The daily probe and the fanout resolver
-already import them; so does this, rather than keeping another copy in shell.
-
-Its output is data, and lives apart from this: `dependencies/` holds the freezes and
-the depset config, `scripts/` holds the automation that maintains them.
+Freeze paths and what makes one usable live in `scripts/ray-bump/depset_versions.py`,
+which the daily probe and the fanout resolver already import.
 """
 
 from __future__ import annotations

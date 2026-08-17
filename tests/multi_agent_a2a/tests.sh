@@ -1,11 +1,10 @@
 #!/usr/bin/env bash
 set -euxo pipefail
 
-# Driver-side install only. `--system` bypasses Anyscale's workspace propagation and
-# reaches this head node alone, which is enough for papermill and the asserts below.
-# The agent/MCP replicas get their deps from the same lock via `pip:` on each app in
-# serve_multi_config.yaml — the head is unschedulable under the published compute
-# config, so they land on the worker with nothing but the base image.
+# Driver-side install only: `--system` bypasses workspace propagation and reaches this
+# head node alone, which is all papermill and the asserts below need. The agent/MCP
+# replicas get the same lock via `pip:` on each app in serve_multi_config.yaml — the
+# head is unschedulable here, so they land on the worker with only the base image.
 uv pip install -r python_depset.lock --system --no-deps --no-cache-dir --index-strategy unsafe-best-match
 uv pip install -q --system papermill "nbconvert==7.16.6" ipykernel
 
@@ -17,19 +16,17 @@ BRAVE_API_KEY=$(aws secretsmanager get-secret-value \
 export BRAVE_API_KEY
 set -x
 
-# Two generated configs, both derived from the shipped serve_multi_config.yaml so the
-# apps keep their runtime_env verbatim:
-#   * .ci.yaml      — all apps, plus BRAVE_API_KEY injected into mcp_web_search's
-#                     runtime_env (`serve run` doesn't forward the runner's shell env
-#                     to replicas; customers set it via the Dependencies tab).
-#   * .infra.yaml   — llm + the two MCP servers only.
-# The agents are deployed in a second pass against an already-warm LLM: build_agent()
-# resolves MCP/LLM during __init__ and fail-fast retries expire well before the L4
-# cold start finishes, which marks the agent apps DEPLOY_FAILED (terminal). Splitting
-# the deploy is what lets this test assert on an agent at all.
-# TODO: template-side fix — retry MCP/LLM discovery with backoff (or
-# defer it past __init__) so a single `serve run serve_multi_config.yaml` suffices; then
-# the two passes collapse back into one and `python tests/run_all.py` becomes viable.
+# Two configs derived from the shipped serve_multi_config.yaml, so apps keep their
+# runtime_env verbatim:
+#   * .ci.yaml    — all apps, plus BRAVE_API_KEY injected into mcp_web_search's
+#                   runtime_env (`serve run` doesn't forward the runner's shell env;
+#                   customers set it via the Dependencies tab).
+#   * .infra.yaml — llm + the two MCP servers only.
+# Agents deploy in a second pass against an already-warm LLM: build_agent() resolves
+# MCP/LLM during __init__ and its retries expire before the L4 cold start finishes,
+# marking the agent apps DEPLOY_FAILED (terminal).
+# TODO: template-side fix — retry MCP/LLM discovery with backoff, or defer it past
+# __init__, so one `serve run` suffices and the two passes collapse back into one.
 python - <<'PY'
 import os
 import yaml
@@ -58,9 +55,9 @@ serve run /tmp/serve_multi_config.infra.yaml --non-blocking
 trap 'serve shutdown -y || true' EXIT
 
 # Block until the LLM app finishes loading on the L4 worker (the slowest deployment).
-# L4 provisioning + vLLM cold-start can exceed 10 min, so wait up to ~20 min and fail
-# loudly (dumping serve status + routes) if it never comes up. Without this gate the loop
-# silently falls through, the notebook/smoke test below hit the proxy's 404 fallback, and
+# L4 provisioning + vLLM cold-start can exceed 10 min, so wait ~20 and fail loudly with
+# serve status + routes. Without this gate the loop falls through silently, the
+# notebook/smoke test below hit the proxy's 404 fallback, and
 # the run dies with an opaque JSONDecodeError instead of "LLM never became ready".
 llm_ready=0
 for _ in $(seq 1 240); do
