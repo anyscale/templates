@@ -1,4 +1,4 @@
-ray[data]==2.56.0  # tracks the image's Ray; --unsafe-package keeps it out of the lock
+ray[data]==2.57.0  # tracks the image's Ray; --unsafe-package keeps it out of the lock
 xgboost==3.2.0
 numpy==1.26.4
 pandas==2.3.3
