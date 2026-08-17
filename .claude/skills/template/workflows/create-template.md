@@ -42,6 +42,8 @@ That returns the ComputeConfig shape `configs/` uses directly (full fields + pat
 - drop auto-detected node `resources` (with workers present, the head is unschedulable by default); keep explicit overrides like `CPU: 0`
 - keep `max_nodes` explicit on every worker group
 
+**Set `enable_cross_zone_scaling: true` on any multi-GPU worker shape.** One zone routinely runs out of the 4x/8x sizes, and the autoscaler will keep retrying in that zone until the test dies: `entity-recognition-with-llms` lost 38 of its 43 minutes to `g6.12xlarge` capacity, while `e2e-rag-deepdive` asks for the same instance with cross-zone scaling on and hit capacity 4 times. `market_type: PREFER_SPOT` widens the pool further, at the cost of a preemption mid-run.
+
 Write `configs/<name>/aws.yaml` and `gce.yaml` by instance family.
 
 **Fallback — guided Q&A.** No tested workspace → walk the user through those same fields.

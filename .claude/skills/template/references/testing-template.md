@@ -22,7 +22,9 @@ Canon — apply each:
   ```
   Templates with no such cells use plain papermill — don't add a strip step you don't need.
 - **No redundant service/job tests** when a local path exists. If the template demos both a local run and a Service/Job deployment of the same logic, test only the local path.
-- **Shrink runtime with env vars** — epochs, model size, dataset read from env (e.g. `epochs = int(os.getenv("EPOCHS", 100))` — reads as real config, not test scaffolding). **Target < 30 min per test.** Prefer cheap GPUs (A10 `g5.*`, L4 `g6.*`) over A100/H100.
+- **Shrink runtime with env vars** — epochs, model size, dataset read from env (e.g. `epochs = int(os.getenv("EPOCHS", 100))` — reads as real config, not test scaffolding). **Target < 30 min per test.** Prefer cheap GPUs (A10 `g5.*`, L4 `g6.*`) over A100/H100 — and on multi-GPU shapes, pair that with `enable_cross_zone_scaling` (`../workflows/create-template.md` step 4), or the cheap instance you picked is the one the zone has run out of.
+- **Expand big archives on the node, not on `/mnt/cluster_storage`.** Shared storage charges a network round trip per file: fine for a few large sequential reads, ruinous for many small ones. Unpacking Boltz's 45k-file CCD there measured 1033s against 16s on `/mnt/local_storage`, where every node builds its own copy in parallel. Download once to shared storage, expand per node.
+- **`timeout_in_sec` bounds the test, not the job** — cluster start and image pull sit outside it. It also sets the Buildkite job timeout, at `max(75, ceil(timeout_in_sec/60) + 30)` minutes, so inflating it to hide a slow test widens the CI budget with it.
 - **`tests.sh` holds local-only orchestration** — serve run + readiness poll + shutdown, redis spin-up, hard gates, secret fetching — so the notebook stays clean. Serve + poll + `trap` shutdown example: `tests/deployment-serve-llm/tests.sh`.
 
 ## Validate — default (human / interactive)
@@ -30,7 +32,8 @@ Canon — apply each:
 Zero local setup. Comment `/test-template <name>` on the PR (up to 3 templates in parallel — AGENTS.md). This **only dispatches** the Buildkite `template-test` pipeline (workspace creation + the real test run), so:
 
 - **Monitor via the Buildkite MCP** — the workspace, image pull, and test logs live there. `gh pr checks` shows only the dispatch step, not the test result.
-- Green → done. Failure → **Recovery**.
+- Green → done — but **confirm the notebook actually finished**. `rayapp test` has reported `Success: true` for a run whose SSH session dropped mid-notebook: papermill logged `Executing Cell 23` and no `Ending Cell 23`, the training cell never got a GPU, and the last four cells never ran. The log's `Executing Cell N` and `Ending Cell N` counts must match.
+- Failure → **Recovery**.
 
 The green path needs **no** local rayapp. (Recovery may: `/anyscale-platform-fix` iterates against `rayapp test` — see `run-tests-locally-with-rayapp.md` for setup.)
 
