@@ -59,9 +59,13 @@ version by default, so skew takes an explicit pin or a hard transitive requireme
 
 **Author guidance, not a gate — you own your `requirements.txt`.** But heed it:
 
-- **The base framework stack is ground truth.** Leave those packages unpinned and the freeze holds them at
-  the image version — that is the default and usually the right answer. Moving one is on you to keep
-  consistent cluster-wide.
+- **Keep `requirements.txt` minimal — list only what the image doesn't ship.** The lock is seeded from the
+  image freeze, so a base-stack package left out already holds at the image version; naming it buys nothing
+  and quietly declares you want to *diverge*. A pin equal to the freeze is a no-op until the image moves and
+  a downgrade after — that is how 2.57 put `numpy==1.26.4` on a numpy-2.2.6 image in 10 templates. Delete
+  such a line, don't re-pin it. The one case a pin is the only lever is a transitive requirement that
+  rejects the freeze's version ("Image freezes" below); comment it with the dep that forced it. Moving a
+  package off the image version is on you to keep consistent cluster-wide.
 - **Deliver *added* deps with `ray.init(runtime_env=)`.** It is the standard and it reaches everything,
   Serve replicas included, as long as those replicas declare no `runtime_env` of their own. Never rely on a
   head-only `--system` install. Reach for a per-deployment `ray_actor_options={"runtime_env": …}` only when
