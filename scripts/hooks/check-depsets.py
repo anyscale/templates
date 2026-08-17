@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 """Scoped, resilient check-depsets (see .claude/skills/template/references/dependencies.md).
 
-`./update_deps.sh --check` re-resolves *every* lock against live PyPI/PyTorch, so on
+`./scripts/depsets/update_deps.sh --check` re-resolves *every* lock against live PyPI/PyTorch, so on
 every PR it fails unrelated PRs on another template's ambient drift or a transient
 index 503. This picks the narrowest still-correct check for a PR's changed files:
   * skip   — no lock input changed.
   * scoped — regenerate + diff only the affected templates' locks. A template is
              affected if its requirements/lock changed, or if only its own entry in
              the depset config changed (the base entries + build_arg_sets map identical).
-  * full   — a global input changed (update_deps.sh, dependencies/{scripts,depsets}/*,
-             or a shared part of the config), or any uncertainty. Never skip when unsure.
+  * full   — a global input changed (scripts/depsets/*, dependencies/images/*, or a
+             shared part of the config), or any uncertainty. Never skip when unsure.
 
 Usage: check-depsets.py <base-sha> <head-sha>   (empty base-sha -> full check)
 """
@@ -21,13 +21,13 @@ import time
 import yaml
 
 CONFIG = "dependencies/template.depsets.yaml"
-UPDATE_DEPS = "./update_deps.sh"
+UPDATE_DEPS = "./scripts/depsets/update_deps.sh"
 
 # Global inputs we can't attribute to specific templates -> a change means check all.
 # (CONFIG isn't here: its diff is analyzed, so a single-template edit can still scope.)
-GLOBAL_FILES = {"update_deps.sh"}
 # dependencies/images/ holds the freezes every template lock is seeded from, so a
-# change there can move any lock — it is as global as scripts/depsets/ itself.
+# change there can move any lock — it is as global as scripts/depsets/ itself, which
+# covers update_deps.sh and the seed hook.
 GLOBAL_PREFIXES = ("scripts/depsets/", "dependencies/images/")
 
 # A depset entry's `output:` when it's a template lock; group(1) = the templates/<dir>.
@@ -47,7 +47,7 @@ def run_retry(cmd: list, attempts: int = 3) -> bool:
 
 
 def full_check() -> int:
-    """All-sets `./update_deps.sh --check` — for global changes and fail-safe."""
+    """All-sets `./scripts/depsets/update_deps.sh --check` — for global changes and fail-safe."""
     if run_retry([UPDATE_DEPS, "--check"]):
         return 0
     print("::error::check-depsets (full) failed after retries", file=sys.stderr)
@@ -110,7 +110,7 @@ def git_show(ref: str, path: str):
 def classify(files: list, head_cfg: dict, base_config_text) -> tuple:
     """(action, affected, reason): action is 'full' | 'skip' | 'scoped'. base_config_text
     is CONFIG at the base commit (None if CONFIG is unchanged, or unreadable)."""
-    if any(f in GLOBAL_FILES or f.startswith(GLOBAL_PREFIXES) for f in files):
+    if any(f.startswith(GLOBAL_PREFIXES) for f in files):
         return "full", [], "a global input changed"
 
     lock_dirs = set(template_instances(head_cfg))
@@ -150,7 +150,7 @@ def scoped_check(affected: list, instances_by_dir: dict) -> int:
     # A regenerated lock that differs from the committed one means the commit is stale.
     locks = [f"{d}/python_depset.lock" for d in affected]
     if subprocess.run(["git", "diff", "--exit-code", "--"] + locks).returncode != 0:
-        print("::error::depset lock(s) out of date — run `./update_deps.sh` and commit the result:", file=sys.stderr)
+        print("::error::depset lock(s) out of date — run `./scripts/depsets/update_deps.sh` and commit the result:", file=sys.stderr)
         for lock in locks:
             print(f"::error::  {lock}", file=sys.stderr)
         return 1

@@ -86,20 +86,20 @@ version by default, so skew takes an explicit pin or a hard transitive requireme
 
 ## The tool: `raydepsets`
 
-Repo-root **`update_deps.sh`** fetches the pinned `raydepsets` binary (v0.0.1, cached at `/tmp/raydepsets`)
+Repo-root **`./scripts/depsets/update_deps.sh`** fetches the pinned `raydepsets` binary (v0.0.1, cached at `/tmp/raydepsets`)
 and runs `raydepsets build dependencies/template.depsets.yaml --workspace-dir <root>`, compiling via
 `uv pip compile --generate-hashes`. Always go through the wrapper:
 
 ```bash
-./update_deps.sh                       # build every depset
-./update_deps.sh --name <depset-name>  # build one (interpolated name, e.g. mcp_ray_serve_depset_2.56.0_3.12)
-./update_deps.sh --check               # recompile to a temp dir, diff vs committed (local validation)
+./scripts/depsets/update_deps.sh                       # build every depset
+./scripts/depsets/update_deps.sh --name <depset-name>  # build one (interpolated name, e.g. mcp_ray_serve_depset_2.56.0_3.12)
+./scripts/depsets/update_deps.sh --check               # recompile to a temp dir, diff vs committed (local validation)
 ```
 
 ## Running it
 
 `raydepsets` v0.0.1 ships both `linux-x86_64` and `darwin-arm64` builds (Python zipapps bundling a
-per-platform `uv`), so `./update_deps.sh` runs natively on Linux **and** macOS — output is identical
+per-platform `uv`), so `./scripts/depsets/update_deps.sh` runs natively on Linux **and** macOS — output is identical
 either way (`uv` always resolves for `--python-platform=linux`). `--check` needs all entries (can't
 combine with `--name`). A recompile needs nothing from Ray's repo — only the committed image freeze.
 
@@ -193,7 +193,7 @@ bundle instead of pinning the old image's freeze.
 ## Changing a template's dependencies
 
 1. Edit `templates/<name>/requirements.txt`.
-2. Regenerate its lock: `./update_deps.sh --name <its-entry>` (see "Running it").
+2. Regenerate its lock: `./scripts/depsets/update_deps.sh --name <its-entry>` (see "Running it").
 3. Confirm the template installs the regenerated lock on the driver **and** forwards it via `runtime_env`
    at the right scope (Serve → app/deployment level; see "What ships" + "Runtime skew") — otherwise
    workers/replicas keep running stale deps.
