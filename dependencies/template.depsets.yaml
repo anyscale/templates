@@ -160,7 +160,7 @@ depsets:
       - --python-platform=x86_64-manylinux_2_31
       - --unsafe-package ray
     build_arg_sets:
-      - ray2560_py312_cu130
+      - ray2570_py312_cu130
     pre_hooks:
       - scripts/depsets/seed-image-freeze.sh dependencies/images/ray-llm-${RAY_VERSION}-py${PYTHON_SHORT}-${CUDA_VARIANT}.freeze.txt templates/multi_agent_a2a/python_depset.lock
 

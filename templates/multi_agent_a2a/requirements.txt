@@ -17,7 +17,7 @@ httpx==0.28.1
 mcp==1.22.0
 # a2a-sdk only requires protobuf>=5.29.5, but unsafe-best-match resolves it to 7.x,
 # which removes FieldDescriptor.label and breaks Ray Serve's _proto_to_dict on the
-# protobuf-6.x base image (anyscale/ray-llm:2.56.0). Pin to the base-image version.
+# protobuf-6.x base image (anyscale/ray-llm:2.57.0). Pin to the base-image version.
 protobuf==6.33.6
 
 # Web search + fetch helpers
