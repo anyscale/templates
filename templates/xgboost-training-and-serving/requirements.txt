@@ -1,7 +1,4 @@
 # ipykernel/ipywidgets sit above the image's 6.27.1/8.1.3, where the old >= floors already resolved.
 ipykernel==7.3.0
 ipywidgets==8.1.8
-matplotlib==3.10.8  # image version; nothing else requires it, so unlisted it drops out of the lock
-mlflow==3.11.1  # image version; nothing else requires it, so unlisted it drops out of the lock
-scikit-learn==1.7.2  # image version; nothing else requires it, so unlisted it drops out of the lock
 xgboost==3.2.0
