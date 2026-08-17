@@ -62,10 +62,14 @@ version by default, so skew takes an explicit pin or a hard transitive requireme
 - **Keep `requirements.txt` minimal — list only what the image doesn't ship.** The lock is seeded from the
   image freeze, so a base-stack package left out already holds at the image version; naming it buys nothing
   and quietly declares you want to *diverge*. A pin equal to the freeze is a no-op until the image moves and
-  a downgrade after — that is how 2.57 put `numpy==1.26.4` on a numpy-2.2.6 image in 10 templates. Delete
-  such a line, don't re-pin it. The one case a pin is the only lever is a transitive requirement that
-  rejects the freeze's version ("Image freezes" below); comment it with the dep that forced it. Moving a
-  package off the image version is on you to keep consistent cluster-wide.
+  a downgrade after — that is how 2.57 put `numpy==1.26.4` on a numpy-2.2.6 image in 10 templates.
+  **Delete such a line only when something else in the set pulls the package in.** The seed is a
+  *preference*, not a requirement: it fixes a version but never adds a package, so deleting a leaf dep your
+  own code imports drops it from the lock entirely. `ray` is `--unsafe-package`, which hides Ray's own
+  dependencies from the resolver — so anything the image ships *for* Ray (`pyarrow` for Ray Data, `fastapi`
+  for Ray Serve) is always leaf-like and its line is permanently load-bearing. When a line has to stay, pin
+  it at the **image** version and say what needs it. Moving a package off the image version is on you to
+  keep consistent cluster-wide.
 - **Deliver *added* deps with `ray.init(runtime_env=)`.** It is the standard and it reaches everything,
   Serve replicas included, as long as those replicas declare no `runtime_env` of their own. Never rely on a
   head-only `--system` install. Reach for a per-deployment `ray_actor_options={"runtime_env": …}` only when
