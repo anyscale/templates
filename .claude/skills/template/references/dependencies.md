@@ -84,6 +84,17 @@ version by default, so skew takes an explicit pin or a hard transitive requireme
   subdirectory dies with `FileNotFoundError`. `py_modules` entries follow the same rule and must name the
   *importable package* dir (`doggos/doggos`), not the project root — the outer dir yields an empty
   namespace package and an `import_path` under it cannot resolve.
+- **…but `requirements:` has a 120 KB ceiling, and locks are mostly hashes.** The CLI reads that file and
+  inlines it into the submitted `runtime_env`, which the API caps at 122880 bytes — over it, submission
+  fails with *"the size of the runtime_env config has exceeded the maximum limit"*. `--generate-hashes`
+  makes hashes 94–97% of a lock's bytes, so this arrives on package count, not dependency weight: ~100
+  packages is enough, and eleven locks already exceed it. Check `wc -c` before shipping a config that names
+  the lock. Over the line, a **Job** moves deps into the entrypoint —
+  `uv pip install -r python_depset.lock --system --no-deps … && python …` for the driver, plus
+  `ray.init(runtime_env=)` in the script for workers (`templates/stable-diffusion-pretraining/job.yaml`) —
+  which never inlines anything because the file is read cluster-side. Don't set both: Ray refuses to merge
+  two `runtime_env`s sharing `pip`. A **Service** has no entrypoint to hide the install in, so its deps have
+  to be baked into the image it runs on.
 - **A genuine conflict → isolate it.** An added package that hard-pins a clashing version (e.g. `a2a-sdk`
   forcing an old `fastapi`) goes in *its own* deployment's `runtime_env` — the LLM ingress keeps the image
   framework; only that deployment gets the pin.
