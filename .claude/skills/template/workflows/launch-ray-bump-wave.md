@@ -14,7 +14,7 @@ Three stages, each gated by a human:
 ## 1. Merge the prep PR
 
 Nothing can fan out until the target version has a freeze for **every** image in
-`dependencies/images/tracked-images.txt` — `latest-depset-version.py --require <v>` fails closed,
+`dependencies/images/tracked-images.txt` — `depset_versions.py --require <v>` fails closed,
 and the fanout runs that same gate. The prep PR says up front whether it passes; if it opens with
 **"⚠️ Not ready to fan out"**, merge it anyway (the freezes it does carry are correct) and wait for
 the next scheduled run to add the rest once Anyscale publishes those images.
