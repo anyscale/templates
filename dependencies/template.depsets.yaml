@@ -25,6 +25,19 @@ build_arg_sets:
     PYTHON_SHORT: "312"
     CUDA_VARIANT: "cu130"
 
+  ray2570_py311:
+    RAY_VERSION: "2.57.0"
+    PYTHON_VERSION: "3.11"
+    PYTHON_SHORT: "311"
+  ray2570_py312:
+    RAY_VERSION: "2.57.0"
+    PYTHON_VERSION: "3.12"
+    PYTHON_SHORT: "312"
+  ray2570_py312_cu130:
+    RAY_VERSION: "2.57.0"
+    PYTHON_VERSION: "3.12"
+    PYTHON_SHORT: "312"
+    CUDA_VARIANT: "cu130"
 depsets:
   - name: serve_stable_diffusion_depset_${RAY_VERSION}_${PYTHON_VERSION}
     operation: compile
