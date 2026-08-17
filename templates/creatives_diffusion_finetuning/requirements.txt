@@ -9,6 +9,4 @@ accelerate==1.14.0
 # unpinned spec resolves there once fsspec floats to a 2025+ release — and that
 # old datasets can't recognise the new fsspec LocalFileSystem (load_dataset
 # raises "Loading a dataset cached in a LocalFileSystem is not supported").
-# Pin to the Ray-base-image versions, which are mutually compatible.
 datasets==3.6.0
-matplotlib==3.10.8  # leaf dep of src/utils.py; nothing pulls it in, so unpinned it drops out of the lock
