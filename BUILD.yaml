@@ -610,7 +610,7 @@
   owner_team: ray-train
   dir: templates/tensor_parallel_dtensor
   cluster_env:
-    image_uri: anyscale/ray:2.56.0-py312-cu129
+    image_uri: anyscale/ray:2.57.0-py312-cu129
   compute_config:
     AWS: configs/tensor_parallel_dtensor/aws.yaml
     GCP: configs/tensor_parallel_dtensor/gce.yaml
