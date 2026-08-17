@@ -103,7 +103,7 @@
   owner_team: general
   dir: templates/intro-ray-libraries
   cluster_env:
-    image_uri: anyscale/ray:2.56.0-slim-py312-cu129
+    image_uri: anyscale/ray:2.57.0-slim-py312-cu129
   compute_config:
     AWS: configs/intro-ray-libraries/aws.yaml
     GCP: configs/intro-ray-libraries/gce.yaml
