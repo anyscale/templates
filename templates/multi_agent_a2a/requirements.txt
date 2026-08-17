@@ -1,7 +1,4 @@
 # Core dependencies
-# Match the ray-llm base image; build_openai_app is built against these (a downgrade breaks multi-node).
-fastapi==0.133.0
-starlette==1.0.1
 # langchain <1.1 caps langgraph at <1.1.0, whose loose prebuilt bound lets
 # langgraph-prebuilt float to a build importing langgraph.runtime.ExecutionInfo
 # (absent from langgraph-core 1.0.x) -> `create_agent` ImportError at replica
@@ -13,12 +10,7 @@ langchain-openai==1.0.2
 langgraph==1.2.0
 uvicorn==0.38.0
 a2a-sdk[http-server]==0.3.22
-httpx==0.28.1
 mcp==1.22.0
-# a2a-sdk only requires protobuf>=5.29.5, but unsafe-best-match resolves it to 7.x,
-# which removes FieldDescriptor.label and breaks Ray Serve's _proto_to_dict on the
-# protobuf-6.x base image (anyscale/ray-llm:2.57.0). Pin to the base-image version.
-protobuf==6.33.6
 
 # Web search + fetch helpers
 protego==0.5.0
