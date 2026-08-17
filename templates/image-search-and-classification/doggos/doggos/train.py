@@ -2,6 +2,7 @@ import json
 import os
 import shutil
 import tempfile
+from pathlib import Path
 
 import mlflow
 import numpy as np
@@ -13,6 +14,8 @@ from doggos.utils import add_class, set_seeds
 from ray.train.torch import TorchTrainer
 
 import ray
+
+DEPSET_LOCK = str(Path(__file__).resolve().parents[2] / "python_depset.lock")
 
 
 def train_epoch(ds, batch_size, model, num_classes, loss_fn, optimizer):
@@ -122,6 +125,8 @@ def train_loop_per_worker(config):
 
 
 if __name__ == "__main__":
+
+    ray.init(runtime_env={"pip": DEPSET_LOCK}, ignore_reinit_error=True)
 
     # Train loop config
     model_registry = "/mnt/user_storage/mlflow/doggos"

@@ -1,5 +1,6 @@
 import os
 import shutil
+from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -10,6 +11,8 @@ from scipy.spatial.distance import cdist
 from transformers import CLIPModel, CLIPProcessor
 
 import ray
+
+DEPSET_LOCK = str(Path(__file__).resolve().parents[2] / "python_depset.lock")
 
 
 class EmbedImages(object):
@@ -87,6 +90,8 @@ def display_top_matches(url, matches):
 
 
 if __name__ == "__main__":
+
+    ray.init(runtime_env={"pip": DEPSET_LOCK}, ignore_reinit_error=True)
 
     # Load data
     ds = ray.data.read_images(

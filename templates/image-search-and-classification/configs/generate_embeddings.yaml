@@ -45,7 +45,11 @@ excludes: # (Optional) List of files to exclude from being packaged up for the j
     - '**/.DS_Store/**'
     - '**/__pycache__/**'
 
-requirements: /home/ray/default/python_depset.lock
+# Skip a job-level `requirements:` here: it packs the whole lock into the job's
+# runtime_env and the anyscale API rejects configs over 122880 bytes. Instead the
+# entrypoint installs the lock on the driver (`uv pip install --system`), and
+# `doggos/doggos/embed.py` sets `ray.init(runtime_env={"pip": ...})` so workers
+# get the same deps.
 env_vars: # (Optional) Dictionary of environment variables to set in the job.
     # MY_ENV_VAR: my_value
     # ANOTHER_ENV_VAR: another_value
@@ -57,9 +61,11 @@ py_modules: # (Optional) A list of local directories or remote URIs that will be
 # When empty, this uses the default Anyscale Cloud in your organization.
 cloud:
 
-# The script to run in your job. You can also do "uv run main.py" if you have a
-# pyproject.toml file in your working_dir.
-entrypoint: python doggos/doggos/embed.py  # uv run doggos/doggos/embed.py  # remove the requirements and py_modules
+# Install the lock on the driver, then run the script (workers get the same lock
+# via ray.init(runtime_env=...) inside embed.py).
+entrypoint: >-
+    uv pip install -r python_depset.lock --system --no-deps --no-cache-dir --index-strategy unsafe-best-match
+    && python doggos/doggos/embed.py
 
 # If there is an error, do not retry.
 max_retries: 0
