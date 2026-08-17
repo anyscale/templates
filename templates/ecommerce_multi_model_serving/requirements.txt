@@ -1,11 +1,11 @@
-ray[serve]==2.56.0  # tracks the image's Ray; --unsafe-package keeps it out of the lock
+ray[serve]==2.57.0  # tracks the image's Ray; --unsafe-package keeps it out of the lock
 sentence-transformers==5.7.0
 transformers==5.15.0
 torch==2.7.0
 faiss-cpu==1.15.0
-numpy==1.26.4
+numpy==2.2.6
 pandas==2.3.3
-pyarrow==19.0.1
+pyarrow==23.0.1
 faker==40.36.0
-requests==2.32.5
-pydantic==2.12.4
+requests==2.34.2
+pydantic==2.13.4
