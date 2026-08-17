@@ -2972,11 +2972,10 @@ urllib3==1.26.20 \
     # via
     #   requests
     #   sentry-sdk
-uvicorn==0.52.1 \
-    --hash=sha256:112ec661814189acbccd3f7b86460147cc065fc92c0821afa78918780e4354dd \
-    --hash=sha256:e4403f9d93188cf9d1088e9f40e3acd12630e2df8675316704379a7fc20fff6a
+uvicorn==0.22.0 \
+    --hash=sha256:79277ae03db57ce7d9aa0567830bbb51d7a612f54d6e1e3e92da3ef24c2c8ed8 \
+    --hash=sha256:e9434d3bbf05f310e762147f769c9f21235ee118ba2d2bf1155a7196448bd996
     # via
-    #   -r templates/llm_finetuning/requirements.txt
     #   gradio
     #   llamafactory
 wandb==0.21.3 \
