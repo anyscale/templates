@@ -122,7 +122,7 @@ def check_depset_config():
             problems.append(
                 f"{out.parent.name}: {DEPSETS} entry `{depset['name']}` compiles a "
                 f"template lock without `include_setuptools: true`.\n"
-                f"      Add it and recompile (`./update_deps.sh --name {depset['name']}`)."
+                f"      Add it and recompile (`./scripts/depsets/update_deps.sh --name {depset['name']}`)."
             )
 
         entry = by_dir.get(out.parent)

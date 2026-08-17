@@ -51,7 +51,7 @@ uv sync                                           # pinned dev deps from uv.lock
 uv run pre-commit install                         # auto-fire hooks on git commit
 uv run pre-commit run --all-files                 # lint + schema + auto-README
 uv run python scripts/hooks/validate-build-yaml.py --no-network   # offline BUILD.yaml validation
-bash ./update_deps.sh --check                     # dependency lockfile up-to-date check
+bash ./scripts/depsets/update_deps.sh --check                     # dependency lockfile up-to-date check
 ```
 
 For `rayapp` (the local test runner), GCP/anyscale auth, and the full dev environment, see [`.cursor/install.sh`](.cursor/install.sh) — it's the source of truth.

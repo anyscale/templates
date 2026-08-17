@@ -28,11 +28,12 @@ so they work from any working directory and are safe to relocate. The exceptions
 
 ## `depsets/` — the image freezes templates lock against
 
-Both maintain `dependencies/`, which holds only data: the freezes and `template.depsets.yaml`.
+These maintain `dependencies/`, which holds only data: the freezes and `template.depsets.yaml`.
 
 | Script | What it does | Invoked by |
 |---|---|---|
 | `refresh-image-freezes.py` | Fetches a published image's package list from `docs.anyscale.com/base-images` into `dependencies/images/<image>.freeze.txt`. Whole tracked list by default, or just the images named; a named image that fails is an error, one from the list is a skip. | `.github/workflows/ray-version-prep.yaml`; run by hand to add one image |
+| `update_deps.sh` | Fetches the pinned `raydepsets` binary and compiles the depset locks. `--check` recompiles to a temp dir and diffs against what's committed. Resolves the repo root itself, so it runs from any cwd. | humans (the repo's most-run command); `scripts/hooks/check-depsets.py` in premerge CI; `.cursor/preflight.sh` |
 | `seed-image-freeze.sh` | Writes a lock's seed — the image freeze plus the previous lock's pins for packages the image doesn't ship — to the lock's own path before uv compiles over it. | `pre_hook` on every entry in `dependencies/template.depsets.yaml` |
 
 ## `ray-bump/` — Ray-version bump automation

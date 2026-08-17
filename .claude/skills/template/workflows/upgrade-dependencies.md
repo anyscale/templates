@@ -51,12 +51,12 @@ Change each depset's `build_arg_sets:` list from `ray<OLD>_*` → `ray<NEW>_*`. 
 
 ## 5. Recompile (batch if needed)
 ```bash
-./update_deps.sh                       # everything
-./update_deps.sh --name <depset-name>  # one entry while iterating
+./scripts/depsets/update_deps.sh                       # everything
+./scripts/depsets/update_deps.sh --name <depset-name>  # one entry while iterating
 ```
 Runs natively on Linux or macOS — see `../references/dependencies.md` "Running it".
 
-**Batched rollout (recommended for a full bump).** `--check` and a full `./update_deps.sh` build the
+**Batched rollout (recommended for a full bump).** `--check` and a full `./scripts/depsets/update_deps.sh` build the
 entire matrix and are slow. Split into grouped PRs the way the initial rollout did (see `git log`
 PRs #730–#738): comment out every entry except the batch you're recompiling on this branch, so the
 branch rebuilds only that batch. Uncomment in later PRs.
@@ -67,7 +67,7 @@ branch rebuilds only that batch. Uncomment in later PRs.
 
 ## 7. Validate
 ```bash
-./update_deps.sh --check    # must be clean (recompiles all entries + diffs vs committed)
+./scripts/depsets/update_deps.sh --check    # must be clean (recompiles all entries + diffs vs committed)
 ```
 Then sanity-check a representative template runs (`rayapp test <name>` /
 `references/run-tests-locally-with-rayapp.md`). For per-template test dispatch and recovery, reuse

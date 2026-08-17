@@ -1,7 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Repo root = nearest ancestor dir with BUILD.yaml, so this works from any cwd.
 REPO_ROOT="$(cd "$(dirname "$0")" && pwd)"
+while [[ "$REPO_ROOT" != "/" && ! -f "$REPO_ROOT/BUILD.yaml" ]]; do
+  REPO_ROOT="$(dirname "$REPO_ROOT")"
+done
+[[ -f "$REPO_ROOT/BUILD.yaml" ]] || { echo "repo root not found: no BUILD.yaml above $0" >&2; exit 1; }
+
 RAYDEPSETS_BASE_URL="https://github.com/ray-project/raydepsets/releases/download/v0.0.1"
 RAYDEPSETS_BIN="/tmp/raydepsets"
 
