@@ -1,3 +1,2 @@
 ray[data]==2.57.0  # tracks the image's Ray; --unsafe-package keeps it out of the lock
 xgboost==3.2.0
-scikit-learn==1.7.2  # leaf dep of src/model_training.py; nothing pulls it in, so unpinned it drops out of the lock
