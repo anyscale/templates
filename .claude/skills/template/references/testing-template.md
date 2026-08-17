@@ -32,6 +32,16 @@ Canon — apply each:
 Zero local setup. Comment `/test-template <name>` on the PR (up to 3 templates in parallel — AGENTS.md). This **only dispatches** the Buildkite `template-test` pipeline (workspace creation + the real test run), so:
 
 - **Monitor via the Buildkite MCP** — the workspace, image pull, and test logs live there. `gh pr checks` shows only the dispatch step, not the test result.
+- **Poll every 5 minutes until the job reaches a terminal state**, and say what you saw each time. Across 93
+  passing runs of the 2.57 wave: median **10 min**, p90 **21 min**, longest **24 min**
+  (`ray_train_workloads`); the quickest finish in 3. So expect ~2 polls, ~5 on a slow one. Polling beats
+  sleeping through a fixed guess: most runs are done long before the tail, and a failure at minute 4 is
+  worth acting on at minute 5 rather than minute 25. Never end the run with the job still `running` —
+  "dispatched" is not a result (see `../workflows/bump-ray-version.md` → "Done criteria").
+- **Past ~30 min, stop waiting and look.** That is beyond every observed run, so the job is not merely slow.
+  Read the log: still pulling the image or creating the workspace is infra; papermill sitting on one cell is
+  the template. Buildkite kills it at `max(75, ceil(timeout_in_sec/60) + 30)` minutes, which is a ceiling,
+  not a schedule — a job that needs it has already gone wrong.
 - Green → done — but **confirm the notebook actually finished**. `rayapp test` has reported `Success: true` for a run whose SSH session dropped mid-notebook: papermill logged `Executing Cell 23` and no `Ending Cell 23`, the training cell never got a GPU, and the last four cells never ran. The log's `Executing Cell N` and `Ending Cell N` counts must match.
 - Failure → **Recovery**.
 
