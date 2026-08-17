@@ -5,7 +5,4 @@ diffusers==0.27.2
 peft==0.10.0
 transformers==4.39.1
 huggingface_hub==0.25.2
-# Pin numpy/pyarrow to the Ray base-image versions so the runtime env doesn't
-# override the shipped stack.
-numpy==2.2.6
-pyarrow==23.0.1
+pyarrow==23.0.1  # utils.py uses pyarrow.fs; nothing pulls it in, so unpinned it drops out of the lock

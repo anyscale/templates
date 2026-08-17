@@ -249,7 +249,6 @@ numpy==2.2.6 \
     --hash=sha256:fe27749d33bb772c80dcd84ae7e8df2adc920ae8297400dabec45f0dedb3f6de \
     --hash=sha256:fee4236c876c4e8369388054d02d0e9bb84821feb1a64dd59e137e6511a551f8
     # via
-    #   -r templates/finetune-stable-diffusion/requirements.txt
     #   accelerate
     #   diffusers
     #   peft
