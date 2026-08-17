@@ -1,4 +1,4 @@
-FROM anyscale/ray:2.56.0-py312-cu129
+FROM anyscale/ray:2.57.0-py312-cu129
 
 # C compiler for Triton’s runtime build step (vLLM V1 engine)
 # https://github.com/vllm-project/vllm/issues/2997
