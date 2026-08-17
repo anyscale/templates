@@ -248,7 +248,7 @@ print("""
 print("Scale up:")
 print("""
   anyscale job submit -f job_config.yaml --working-dir ./ \\
-    --override-entrypoint 'python scripts/run_training.py --num-workers 8 --num-epochs 10'
+    --override-entrypoint 'uv pip install -r python_depset.lock --system --no-deps --no-cache-dir --index-strategy unsafe-best-match && python scripts/run_training.py --num-workers 8 --num-epochs 10'
 """)
 
 print("What you get with Ray Train vs. DIY distributed:")
