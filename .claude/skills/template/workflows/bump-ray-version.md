@@ -53,6 +53,9 @@ For each requirement, move it to `==` at the **newest version that works on the 
   actually published; `cu128` starts at 2.7.0 and `cu129` at 2.8.0. Pin below the floor and uv
   falls back to PyPI, the wheel silently loses its CUDA tag, and the lock still compiles. Keep
   torch and torchvision on their matching pair.
+- **Already shipped by the new image** — delete the line instead of re-pinning it. The freeze then holds
+  the package at the image version, here and on every later bump; a pin that merely restates the image
+  becomes a downgrade the next time the image moves (`references/dependencies.md`).
 - **Everything else** — `pip index versions <pkg>`, then pin `==` to the newest that resolves.
 - **Already `==` at the newest available** — leave it; that is the target state, not a no-op to fix.
 - **Can't be pinned** (upstream ships no tagged releases, a documented incompatibility) — leave it

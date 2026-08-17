@@ -61,7 +61,30 @@ supports (`bump-ray-version.md` → "Refresh the pins"). The wave is the only re
 whole fleet's dependencies get looked at, so expect PRs to carry pin bumps alongside the image
 bump — review those as behaviour changes, not boilerplate.
 
-## 4. Re-firing after a partial wave
+## 4. Check the wave landed
+
+`N triggered (HTTP 200)` means Cursor accepted the payload, not that an agent ran. Count PRs against
+the previewed delta:
+
+```bash
+gh pr list --limit 300 --state all --search "[ray-update-<v>] in:title" --json title --jq length
+```
+
+Short means those agents produced nothing, usually by exiting at `.cursor/preflight.sh`. Several of
+its checks reach GitHub, so one incident strands every agent still in preflight rather than breaking
+one template. Two traps when reading the runs page:
+
+- **Stranded runs show `Succeeded`** — reporting a precondition failure and stopping is the policy,
+  so `Failed · 24h` can read 0 with a quarter of the fleet missing. Find them by shape: a real bump
+  takes 15–45m and 5–10 tools, a stranded one exits under 5m on one.
+- **`gh auth status` reports an unreachable GitHub as `The token in GH_TOKEN is invalid`**, so the
+  agent will ask you to rotate `ANYSCALE_GH_TOKEN`. If other agents opened PRs as
+  `svc-template-updater` in the same window, the token is fine — re-fire once GitHub recovers.
+
+Stranded and still-queued look identical from the repo (no branch, no PR); only the runs page
+separates them, and re-firing a queued template duplicates its PR.
+
+## 5. Re-firing after a partial wave
 
 Safe. The delta recomputes from `BUILD.yaml`, so anything already landed at `<v>` is skipped and
 only the stragglers get new agents. Templates whose PR is still open but unmerged **will** get a

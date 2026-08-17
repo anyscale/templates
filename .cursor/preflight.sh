@@ -14,6 +14,26 @@ add_failure_with_output() {
   failures+=("$summary"$'\n'"      Raw error:"$'\n'"$indented")
 }
 
+# Run a network check up to 3 times (5s, 10s backoff), echoing the last attempt's
+# output. Without this a single upstream 5xx reads as a bad credential and strands
+# every agent in the wave — see workflows/launch-ray-bump-wave.md.
+retry() {
+  local i out rc=1
+  for i in 1 2 3; do
+    # The `else` is load-bearing: a false `if` with no else exits 0, so reading $?
+    # after `fi` would report every failed attempt as a success.
+    if out=$("$@" 2>&1); then
+      printf '%s' "$out"
+      return 0
+    else
+      rc=$?
+    fi
+    [[ $i -lt 3 ]] && sleep $((i * 5))
+  done
+  printf '%s' "$out"
+  return "$rc"
+}
+
 # 1. Companion skills (anyscale skills install lays them down as
 # anyscale-platform-{ask,fix,run,inspect}/).
 for s in ask fix run inspect; do
@@ -30,7 +50,9 @@ for var in ANYSCALE_GH_TOKEN STAGING_ANYSCALE_CLI_TOKEN GCP_TEMPLATE_REGISTRY_SA
 done
 
 # 3. Auth verified
-if out=$(GH_TOKEN="${ANYSCALE_GH_TOKEN:-}" gh auth status 2>&1); then :; else
+gh_failed=0
+if out=$(retry env GH_TOKEN="${ANYSCALE_GH_TOKEN:-}" gh auth status); then :; else
+  gh_failed=1
   add_failure_with_output \
     "gh auth: 'gh auth status' failed with ANYSCALE_GH_TOKEN — check token validity/scopes" \
     "$out"
@@ -38,7 +60,8 @@ fi
 
 # `gh auth status` validates the token but won't flag tokens that are valid
 # yet not SSO-authorized for the org — every PR write would 404.
-if out=$(GH_TOKEN="${ANYSCALE_GH_TOKEN:-}" gh api /repos/anyscale/templates 2>&1); then :; else
+if out=$(retry env GH_TOKEN="${ANYSCALE_GH_TOKEN:-}" gh api /repos/anyscale/templates); then :; else
+  gh_failed=1
   add_failure_with_output \
     "gh repo access: ANYSCALE_GH_TOKEN can't fetch anyscale/templates — likely missing SSO authorization for the org" \
     "$out"
@@ -58,8 +81,8 @@ fi
 
 # Everything runs against staging; the Cursor agent never tests or fixes on prod.
 # --no-interactive prevents the CLI from prompting (would hang in CI).
-if out=$(ANYSCALE_HOST=https://console.anyscale-staging.com \
-         anyscale cloud list --no-interactive 2>&1); then :; else
+if out=$(retry env ANYSCALE_HOST=https://console.anyscale-staging.com \
+         anyscale cloud list --no-interactive); then :; else
   add_failure_with_output \
     "anyscale auth: 'anyscale cloud list' against staging failed — check STAGING_ANYSCALE_CLI_TOKEN is a valid staging token" \
     "$out"
@@ -68,18 +91,23 @@ fi
 # Buildkite MCP server starts with a stale token and only 401s mid-task —
 # probe the API directly to surface that here.
 if [[ -n "${BUILDKITE_API_TOKEN:-}" ]]; then
-  if out=$(curl -sS -H "Authorization: Bearer $BUILDKITE_API_TOKEN" \
-           https://api.buildkite.com/v2/access-token 2>&1); then
-    if ! echo "$out" | grep -q '"uuid"'; then
+  # Read the status code rather than grepping the body: plain `curl -sS` exits 0 on a
+  # 503, so a body check alone reports an outage as a revoked token.
+  out=$(curl -sS --retry 3 --retry-delay 5 -w '\n%{http_code}' \
+        -H "Authorization: Bearer $BUILDKITE_API_TOKEN" \
+        https://api.buildkite.com/v2/access-token 2>&1)
+  code=$(printf '%s' "$out" | tail -n1)
+  case "$code" in
+    200) ;;
+    401|403)
       add_failure_with_output \
-        "buildkite auth: BUILDKITE_API_TOKEN rejected by api.buildkite.com — token expired or revoked" \
-        "$out"
-    fi
-  else
-    add_failure_with_output \
-      "buildkite auth: 'curl https://api.buildkite.com/v2/access-token' failed" \
-      "$out"
-  fi
+        "buildkite auth: BUILDKITE_API_TOKEN rejected by api.buildkite.com (HTTP $code) — token expired or revoked" \
+        "$out" ;;
+    *)
+      add_failure_with_output \
+        "buildkite auth: api.buildkite.com unreachable after retries (HTTP $code) — transient; re-fire rather than rotating the token" \
+        "$out" ;;
+  esac
 fi
 
 # 4. Tools
@@ -106,7 +134,9 @@ else
   esac
   if [[ -z "$rds_url" ]]; then
     failures+=("depset toolchain: no raydepsets v0.0.1 binary for $(uname -s)-$(uname -m) — run bumps on Linux-x86_64")
-  elif out=$(curl -fsSL "$rds_url" -o /tmp/raydepsets 2>&1) && chmod +x /tmp/raydepsets; then :; else
+  elif out=$(curl -fsSL --retry 3 --retry-delay 5 "$rds_url" -o /tmp/raydepsets 2>&1) \
+       && chmod +x /tmp/raydepsets; then :; else
+    gh_failed=1  # hosted on GitHub releases, so an outage lands here too
     add_failure_with_output \
       "depset toolchain: raydepsets binary not fetchable ($rds_url) — './scripts/depsets/update_deps.sh --check' will fail; check the pin/URL" \
       "$out"
@@ -118,6 +148,16 @@ if [[ ${#failures[@]} -gt 0 ]]; then
   for f in "${failures[@]}"; do
     echo "  - $f" >&2
   done
+  # `gh auth status` prints "the token is invalid" whether the token is bad or GitHub
+  # is unreachable, so name the difference here — otherwise the report asks a human to
+  # rotate a working secret mid-incident.
+  if [[ "${gh_failed:-0}" == 1 ]] \
+     && ! curl -sS -o /dev/null --max-time 10 https://api.github.com/zen 2>/dev/null; then
+    echo "" >&2
+    echo "  NOTE: api.github.com is unreachable from this box, so the GitHub failures above" >&2
+    echo "  are most likely an incident rather than a bad ANYSCALE_GH_TOKEN. Do not rotate" >&2
+    echo "  the secret — re-fire this template once GitHub recovers." >&2
+  fi
   exit 1
 fi
 
