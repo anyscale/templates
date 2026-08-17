@@ -1,5 +1,5 @@
 # Images to keep a freeze of, one per line, with the Ray version as {version}.
-# refresh-image-freezes.sh expands it and writes dependencies/images/<image>.freeze.txt.
+# scripts/depsets/refresh-image-freezes.py expands it and writes <image>.freeze.txt here.
 #
 # Only add an image the API reports is_experimental=false — the docs site and its
 # index.json don't carry that flag, so a pre-release variant (py3.14 today) looks
