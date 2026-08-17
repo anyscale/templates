@@ -74,7 +74,6 @@ pydantic==2.12.3 \
     --hash=sha256:1da1c82b0fc140bb0103bc1441ffe062154c8d38491189751ee00fd8ca65ce74 \
     --hash=sha256:6986454a854bc3bc6e5443e1369e06a3a456af9d339eda45510f517d9ea5c6bf
     # via
-    #   -r templates/mcp-ray-serve/requirements.txt
     #   mcp
     #   pydantic-settings
 pydantic-core==2.41.4 \
