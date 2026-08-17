@@ -1127,7 +1127,6 @@ starlette==1.0.1 \
     --hash=sha256:512399c5f1de7fac99c88572212ded9ddeddef2fb32afa82d724000e88b38f4f \
     --hash=sha256:7c0e69b2ee1c848bd54669d908500117a3ee13de603a21427e5c6fc1adf98dcd
     # via
-    #   -r templates/langchain-agent-ray-serve/requirements.txt
     #   fastapi
     #   mcp
     #   sse-starlette
