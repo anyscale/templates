@@ -39,10 +39,8 @@ Both maintain `dependencies/`, which holds only data: the freezes and `template.
 
 | Script | What it does | Invoked by |
 |---|---|---|
-| `latest-depset-version.py` | Resolves the newest "complete" Ray version — one with a freeze of every image in `dependencies/images/tracked-images.txt`. | `.github/workflows/ray-bump-fanout.yaml` |
+| `depset_versions.py` | Which Ray versions have a freeze of every image in `dependencies/images/tracked-images.txt`, and where each freeze lives. Importable, and the CLI both workflows resolve their target version with — no args prints the newest complete version, `--require <v>` validates one, and either exits non-zero so callers fail closed. | `.github/workflows/ray-bump-fanout.yaml`; `.github/workflows/ray-version-prep.yaml`; imported by the two scripts below and `depsets/refresh-image-freezes.py` |
 | `prepare-ray-version.py` | Stages a new Ray version's `build_arg_sets` (the workflow fetches the freezes and opens the PR); exits "needs human" when the image matrix moves. | `.github/workflows/ray-version-prep.yaml` |
 | `trigger-cursor-bump.py` | Fans the "Template update" Cursor automation out over maintained `BUILD.yaml` entries (one draft PR per template); previews unless `--execute`. | `.github/workflows/ray-bump-fanout.yaml`; run by hand for a manual fanout (see `AGENTS.md`) |
 
-`depset_versions.py` is the shared module behind these — which Ray versions have a complete set of image
-freezes, and where each freeze lives. Both scripts above and `depsets/refresh-image-freezes.py` import it
-rather than re-deriving; `test_prepare_ray_version.py` covers it, and pre-commit runs those tests.
+`test_prepare_ray_version.py` covers `prepare-ray-version.py` and `depset_versions.py`; pre-commit runs it.

@@ -4,13 +4,23 @@ A version is complete once `dependencies/images/` holds a usable freeze for ever
 image in `tracked-images.txt`. That is the whole condition: a freeze exists only once
 Anyscale published the image, which is what a per-template bump actually waits on.
 
-The daily probe (`prepare-ray-version.py`) and the fanout's resolver
-(`latest-depset-version.py`) both import this — they used to carry copies and drifted.
+Importable by `prepare-ray-version.py` and `scripts/depsets/refresh-image-freezes.py`
+— they used to carry copies of this and drifted.
+
+Also the CLI both workflows resolve their target version with. No args prints the
+newest complete version; `--require <v>` validates that one. Either way it exits
+non-zero with a message on stderr when there is nothing to resolve, so a caller that
+propagates the exit code fails closed:
+
+    python3 scripts/ray-bump/depset_versions.py
+    python3 scripts/ray-bump/depset_versions.py --require 2.57.0
 """
 
 from __future__ import annotations
 
+import argparse
 import re
+import sys
 from pathlib import Path
 
 
@@ -80,3 +90,36 @@ def version_key(v: str) -> tuple[int, ...]:
 def newest_complete() -> str | None:
     c = complete_versions()
     return max(c, key=version_key) if c else None
+
+
+def main(argv: list[str] | None = None) -> int:
+    p = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+    p.add_argument(
+        "--require", metavar="VERSION",
+        help="validate this version has a freeze for every tracked image "
+             "(instead of deriving the newest)",
+    )
+    args = p.parse_args(argv)
+
+    if args.require:
+        if missing := missing_freezes(args.require):
+            print(
+                f"error: Ray {args.require} is not complete — needs a freeze for every "
+                f"tracked image. Missing: " + ", ".join(f.name for f in missing),
+                file=sys.stderr,
+            )
+            return 1
+        print(args.require)
+        return 0
+
+    if not (newest := newest_complete()):
+        print("error: no Ray version has a freeze for every tracked image", file=sys.stderr)
+        return 1
+    print(newest)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

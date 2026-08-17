@@ -97,7 +97,7 @@ jobs:
       env:
         V: ${{ steps.prep.outputs.version }}
       run: |
-        if err="$(uv run python3 scripts/ray-bump/latest-depset-version.py --require "$V" 2>&1 >/dev/null)"; then
+        if err="$(uv run python3 scripts/ray-bump/depset_versions.py --require "$V" 2>&1 >/dev/null)"; then
           echo "ready=true" >> "$GITHUB_OUTPUT"
         else
           echo "ready=false" >> "$GITHUB_OUTPUT"

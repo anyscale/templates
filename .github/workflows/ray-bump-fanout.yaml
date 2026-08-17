@@ -54,9 +54,9 @@ jobs:
         fi
         # validate the given version's image freezes exist, else derive the newest (fails closed)
         if [ -n "$V" ]; then
-          V="$(uv run python3 scripts/ray-bump/latest-depset-version.py --require "$V")"
+          V="$(uv run python3 scripts/ray-bump/depset_versions.py --require "$V")"
         else
-          V="$(uv run python3 scripts/ray-bump/latest-depset-version.py)"
+          V="$(uv run python3 scripts/ray-bump/depset_versions.py)"
         fi
         echo "value=$V" >> "$GITHUB_OUTPUT"
         echo "Target Ray version: $V"
