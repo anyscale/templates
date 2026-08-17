@@ -209,22 +209,38 @@ def check_pin_style():
 
     A loose spec re-resolves to newest on every recompile, so the template's behaviour
     changes with nobody editing it -- and CI passes, because it tests the drift.
+
+    The remedy depends on who ships the package. "Pin it at what the image has" is the
+    wrong advice when the image already has it: that pin is a no-op until the image moves
+    and a silent downgrade after (Ray 2.57 put numpy==1.26.4 on a numpy-2.2.6 image in ten
+    templates this way). So when the package appears in the freeze this template's lock is
+    seeded from, say delete instead.
     """
     problems = []
+    freezes = {d: f for d, f, _ in depset_targets()}
     for name, root, _ in templates():
         req = root / "requirements.txt"
         if not req.exists():
             continue
-        for n, _package, spec, justified in requirement_lines(req):
+        freeze = freezes.get(root)
+        shipped = pins(freeze) if freeze and freeze.is_file() else {}
+        for n, package, spec, justified in requirement_lines(req):
             if "==" in spec and "@" not in spec:
                 continue
             if justified:
                 continue
-            problems.append(
-                f"{name}: {req}:{n}\n      {spec}\n"
-                f"      Pin it with `==` at the newest version that works on this template's "
-                f"image, or add a trailing comment saying why it can't be."
-            )
+            if have := shipped.get(norm(package)):
+                remedy = (
+                    f"The image already ships {package}=={have} — delete this line and the "
+                    f"freeze holds it there. Keep it only if something rejects that version, "
+                    f"and say what in a trailing comment."
+                )
+            else:
+                remedy = (
+                    "Pin it with `==` at the newest version that works on this template's "
+                    "image, or add a trailing comment saying why it can't be."
+                )
+            problems.append(f"{name}: {req}:{n}\n      {spec}\n      {remedy}")
     return problems
 
 
