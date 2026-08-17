@@ -3,4 +3,3 @@ torchvision==0.21.0
 transformers==4.50.0
 diffusers==0.32.2
 accelerate==1.5.2
-pyarrow==23.0.1  # Ray Data's parquet IO needs it, but ray is image-provided and not in this file, so unpinned it drops out of the lock
