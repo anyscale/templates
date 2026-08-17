@@ -390,7 +390,7 @@
   owner_team: ray-data
   dir: templates/image-search-and-classification
   cluster_env:
-    image_uri: anyscale/ray:2.56.0-slim-py312-cu129
+    image_uri: anyscale/ray:2.57.0-slim-py312-cu129
   compute_config:
     AWS: configs/image-search-and-classification/aws.yaml
     GCP: configs/image-search-and-classification/gce.yaml
