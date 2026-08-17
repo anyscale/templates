@@ -723,7 +723,7 @@
   owner_team: ray-data
   dir: templates/biotech_protein_embeddings
   cluster_env:
-    image_uri: anyscale/ray:2.56.0-py311-cu128
+    image_uri: anyscale/ray:2.57.0-py311-cu128
   compute_config:
     AWS: configs/biotech_protein_embeddings/aws.yaml
     GCP: configs/biotech_protein_embeddings/gce.yaml
