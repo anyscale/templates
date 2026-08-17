@@ -1,4 +1,4 @@
-FROM anyscale/ray-llm:2.56.0-py312-cu130
+FROM anyscale/ray-llm:2.57.0-py312-cu130
 
 # Install system dependencies
 RUN sudo apt-get update && \
