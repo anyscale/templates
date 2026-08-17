@@ -5,4 +5,3 @@ diffusers==0.27.2
 peft==0.10.0
 transformers==4.39.1
 huggingface_hub==0.25.2
-pyarrow==23.0.1  # utils.py uses pyarrow.fs; nothing pulls it in, so unpinned it drops out of the lock
