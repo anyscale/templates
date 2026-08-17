@@ -3,8 +3,6 @@ sentence-transformers==5.7.0
 transformers==5.15.0
 torch==2.7.0
 faiss-cpu==1.15.0
-pandas==2.3.3  # leaf dep of src/; ray[serve] doesn't pull it in, so unpinned it drops out of the lock
-pyarrow==23.0.1  # parquet engine for pandas, which doesn't declare it -- same drop-out as above
 faker==40.36.0
 requests==2.34.2
 pydantic==2.13.4
