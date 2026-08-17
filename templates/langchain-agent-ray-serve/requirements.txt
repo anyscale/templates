@@ -2,7 +2,6 @@
 # Everything else — openai, httpx, pydantic, torch — comes from the base image and
 # must NOT be re-pinned here: the depset was silently downgrading the base's
 # openai (2.34 -> 2.7), which 404s the agent's LLM call.
-fastapi==0.133.0  # image version; ray is --unsafe-package so nothing pulls it, and skew breaks build_openai_app
 langchain==1.3.15
 langchain-mcp-adapters==0.1.12
 langchain-openai==1.0.2
