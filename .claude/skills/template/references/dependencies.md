@@ -93,8 +93,11 @@ version by default, so skew takes an explicit pin or a hard transitive requireme
   `uv pip install -r python_depset.lock --system --no-deps … && python …` for the driver, plus
   `ray.init(runtime_env=)` in the script for workers (`templates/stable-diffusion-pretraining/job.yaml`) —
   which never inlines anything because the file is read cluster-side. Don't set both: Ray refuses to merge
-  two `runtime_env`s sharing `pip`. A **Service** has no entrypoint to hide the install in, so its deps have
-  to be baked into the image it runs on.
+  two `runtime_env`s sharing `pip`. A **Service** has no entrypoint, but it does take `py_executable:` —
+  the CLI forwards it to `runtime_env["py_executable"]` as a short string
+  (`anyscale/_private/workload/workload_sdk.py`), so `uv run` resolves deps on the cluster and nothing is
+  inlined. Set it there rather than baking pip deps into the image: an image layer is for system deps only
+  (see below), and a hand-written layer drifts from the tested lock exactly like a hand-written pin list.
 - **A genuine conflict → isolate it.** An added package that hard-pins a clashing version (e.g. `a2a-sdk`
   forcing an old `fastapi`) goes in *its own* deployment's `runtime_env` — the LLM ingress keeps the image
   framework; only that deployment gets the pin.
