@@ -11,8 +11,4 @@ accelerate==1.14.0
 # raises "Loading a dataset cached in a LocalFileSystem is not supported").
 # Pin to the Ray-base-image versions, which are mutually compatible.
 datasets==3.6.0
-fsspec==2023.12.1
-pillow==11.3.0
-numpy==2.2.6
-pyarrow==23.0.1
-matplotlib==3.10.8
+matplotlib==3.10.8  # leaf dep of src/utils.py; nothing pulls it in, so unpinned it drops out of the lock

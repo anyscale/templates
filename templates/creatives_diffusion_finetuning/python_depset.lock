@@ -586,7 +586,6 @@ fsspec==2023.12.1 \
     --hash=sha256:6271f1d3075a378bfe432f6f42bf7e1d2a6ba74f78dd9b512385474c579146a0 \
     --hash=sha256:c4da01a35ac65c853f833e43f67802c25213f560820d54ddf248f92eddd5e990
     # via
-    #   -r templates/creatives_diffusion_finetuning/requirements.txt
     #   datasets
     #   huggingface-hub
     #   ray
@@ -1139,7 +1138,6 @@ numpy==2.2.6 \
     --hash=sha256:fe27749d33bb772c80dcd84ae7e8df2adc920ae8297400dabec45f0dedb3f6de \
     --hash=sha256:fee4236c876c4e8369388054d02d0e9bb84821feb1a64dd59e137e6511a551f8
     # via
-    #   -r templates/creatives_diffusion_finetuning/requirements.txt
     #   accelerate
     #   contourpy
     #   datasets
@@ -1411,7 +1409,6 @@ pillow==11.3.0 \
     --hash=sha256:fdae223722da47b024b867c1ea0be64e0df702c5e0a60e27daad39bf960dd1e4 \
     --hash=sha256:fe27fb049cdcca11f11a7bfda64043c37b30e6b91f10cb5bab275806c32f6ab3
     # via
-    #   -r templates/creatives_diffusion_finetuning/requirements.txt
     #   diffusers
     #   matplotlib
     #   torchvision
@@ -1627,7 +1624,6 @@ pyarrow==23.0.1 \
     --hash=sha256:fa8e51cb04b9f8c9c5ace6bab63af9a1f88d35c0d6cbf53e8c17c098552285e1 \
     --hash=sha256:fed7020203e9ef273360b9e45be52a2a47d3103caf156a30ace5247ffb51bdbd
     # via
-    #   -r templates/creatives_diffusion_finetuning/requirements.txt
     #   datasets
     #   ray
 pydantic==2.12.3 ; python_full_version < '3.14' \
