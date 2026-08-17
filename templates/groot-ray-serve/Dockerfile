@@ -55,8 +55,16 @@ RUN python -m pip install \
     --extra-index-url https://pypi.nvidia.com
 
 # Isaac Lab (editable, into /home/ray)
-RUN git clone --depth 1 https://github.com/isaac-sim/IsaacLab.git /home/ray/IsaacLab && \
+# Pinned to v2.3.2 (last release for the Isaac Sim 5.1.0 stack, and the last release
+# to support py3.10/3.11). Upstream's default branch has since moved to release/3.0.0-beta2,
+# which pairs with a newer Isaac Sim and pins `python_requires=">=3.12"` — cloning an unpinned
+# `--depth 1` snapshot would silently break the build (pip errors "isaaclab requires >=3.12").
+# v2.3.2 pins `flatdict==4.0.1`, which has no PyPI wheel; its sdist's setup.py imports
+# `pkg_resources`, removed from modern isolated-build-env setuptools (81+). Widen the pin so
+# pip can pick a version that ships a wheel (flatdict 4.1.0 does).
+RUN git clone --depth 1 --branch v2.3.2 https://github.com/isaac-sim/IsaacLab.git /home/ray/IsaacLab && \
     cd /home/ray/IsaacLab && \
+    sed -i -E 's|"flatdict==4\.0\.1"|"flatdict>=4.0.1"|' source/isaaclab/setup.py && \
     python -m pip install \
         -e source/isaaclab \
         -e source/isaaclab_tasks \
