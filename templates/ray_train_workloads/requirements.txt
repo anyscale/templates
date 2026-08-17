@@ -3,7 +3,5 @@ torchvision==0.23.0
 torchmetrics==1.8.2
 xgboost==3.0.5
 seaborn==0.13.2
-scikit-learn==1.7.2  # image version; nothing else requires it, so unlisted it drops out of the lock
 lightning==2.5.5
 datasets==2.19.2
-gymnasium==1.2.2  # image version; nothing else requires it, so unlisted it drops out of the lock
