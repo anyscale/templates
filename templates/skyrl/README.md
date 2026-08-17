@@ -21,14 +21,14 @@ git clone https://github.com/anyscale/templates && cd templates/templates/skyrl
 ```
 
 ## Setup
-SkyRL uses the [uv + Ray integration](https://www.anyscale.com/blog/uv-ray-pain-free-python-dependencies-in-clusters) for dependency management, ensuring a consistent set of dependencies get shipped to all Ray workers. This template uses the `novaskyai/skyrl-train-ray-2.51.1-slim-py312-cu128-megatron-2.10-te` docker image to ensure all necessary system depedencies are installed. The exact Dockerfile can be found at [SkyRL/docker/Dockerfile](https://github.com/NovaSky-AI/SkyRL/blob/acbc21ccf4e14d48848ab2bb094d8e00d8886072/docker/Dockerfile.megatron).
+SkyRL uses the [uv + Ray integration](https://www.anyscale.com/blog/uv-ray-pain-free-python-dependencies-in-clusters) for dependency management, ensuring a consistent set of dependencies get shipped to all Ray workers. This template uses the `novaskyai/skyrl-train-ray-2.56.0-py3.12-cu12.8` docker image to ensure all necessary system depedencies are installed. The exact Dockerfile can be found at [SkyRL/docker/Dockerfile](https://github.com/NovaSky-AI/SkyRL/blob/abd553a125bb9284f1333ccba475f5fc3e512e18/docker/Dockerfile).
 
 First, clone SkyRL:
 
 ```bash
 git clone https://github.com/NovaSky-AI/SkyRL.git
 cd SkyRL/
-git checkout acbc21c
+git checkout abd553a1
 ```
 
 ## GRPO for solving math problems (GSM8K)
