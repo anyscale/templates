@@ -288,7 +288,7 @@ depsets:
       - --python-platform=linux
       - --unsafe-package ray
     build_arg_sets:
-      - ray2560_py311
+      - ray2570_py311
     pre_hooks:
       - scripts/depsets/seed-image-freeze.sh dependencies/images/ray-${RAY_VERSION}-py311-cu128.freeze.txt templates/deepspeed_finetune/python_depset.lock
 
