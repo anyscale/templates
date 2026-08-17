@@ -480,7 +480,7 @@
   owner_team: general
   dir: templates/getting-started
   cluster_env:
-    image_uri: anyscale/ray:2.56.0-py311
+    image_uri: anyscale/ray:2.57.0-py311
   compute_config:
     GCP: configs/getting-started/gce.yaml
     AWS: configs/getting-started/aws.yaml
