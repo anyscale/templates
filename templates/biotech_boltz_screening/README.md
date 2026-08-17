@@ -152,7 +152,7 @@ for row in ds.take(3):
 
 Before running the full pipeline, let's look at how the **BoltzPredictor** callable class works. This is the core GPU stage — one actor per A10G GPU:
 
-- **`__init__`**: Points the actor at the shared weights cache. Boltz's ~4.2GB of weights live on `/mnt/cluster_storage/`, downloaded once per cluster by `ensure_weights()` before the pipeline starts. That skips Boltz's 2.06GB affinity checkpoint, which only loads when an input asks for affinity — this screen asks for fold and interface confidence instead.
+- **`__init__`**: Builds this node's Boltz cache. `ensure_weights()` downloads the ~6.2GB of weights and the CCD archive onto `/mnt/cluster_storage/` once per cluster; each actor then unpacks the CCD onto node-local disk. That split is worth the extra step: the CCD is 45k small pickles, and shared storage charges a network round trip per file — 1033s to unpack it there against ~10s on a local disk.
 - **`__call__`**: Writes the whole batch out as Boltz YAML and shells out to `boltz predict` **once**, then reads back each complex's confidence JSON and mmCIF.
 
 Boltz ships a CLI rather than a Python inference API, and that shapes the stage: a call costs roughly **31s of fixed model load plus 11s per complex** on an L4. Batching a whole Ray Data batch into one invocation is what stops you paying that 31s per complex — which is why `batch_size` here is 32, not 4.

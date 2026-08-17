@@ -7,9 +7,9 @@ batch. That matters: measured on an L4, a call costs ~31s of fixed startup (mode
 load) plus ~11s per complex, so a batch of 32 pays the startup once instead of 32
 times. Keep `batch_size` high for the same reason.
 
-Weights are ~6GB and are cached on shared cluster storage so a cluster downloads
-them at most once. `ensure_weights()` runs on the driver before the pipeline
-starts -- see the note there about why "the file exists" is not good enough.
+The cache is ~6.2GB and is built in two halves. `ensure_weights()` downloads it
+onto shared cluster storage, once per cluster, on the driver; `_node_cache()` then
+unpacks the CCD onto each node's own disk. Both docstrings say why.
 
 Metrics come straight from Boltz's confidence JSON:
   - pLDDT: per-residue confidence in the fold, averaged. Boltz reports 0-1;
@@ -19,6 +19,7 @@ Metrics come straight from Boltz's confidence JSON:
     better; >0.8 suggests high confidence in the interaction geometry.
   - confidence: Boltz's aggregate score, 0-1. The primary ranking metric.
 """
+import fcntl
 import json
 import os
 import shutil
@@ -36,21 +37,15 @@ BOLTZ_VERSION = "2.2.1"
 SCORER_NAME = f"boltz-{BOLTZ_VERSION}"
 DEFAULT_CACHE = "/mnt/cluster_storage/boltz_cache"
 _SENTINEL = ".boltz_cache_complete"
-# What a complete cache holds. `mols.tar` is deliberately absent: it is the
-# archive `mols/` is extracted from, and keeping it costs 1.9GB for nothing.
-#
-# `boltz2_aff.ckpt` is absent too, and not fetched at all. Boltz only loads the
-# affinity model when the input YAML carries a `properties: affinity` block, and
-# this template's inputs never do -- it screens for fold and interface confidence
-# (pLDDT, ipTM), which come from the confidence model. Fetching it anyway cost
-# 2.06GB of the 6.2GB, a third of the download, for a checkpoint nothing opened.
-_ARTIFACTS = ("boltz2_conf.ckpt", "mols")
 
-# Boltz's own downloader fetches these serially, one urlretrieve after another.
-# Overlapping them is worth a little; the real saving is the third of the bytes
-# that no longer move at all.
+# Exactly what `boltz.main.download_boltz2` would fetch, deliberately. Every
+# `boltz predict` call runs that function against the `--cache` it is handed and
+# re-downloads whatever is missing -- including the affinity checkpoint, which it
+# fetches unconditionally and then only opens for inputs that ask for affinity.
+# Leaving one out therefore does not save the transfer, it moves it into the
+# actors, where several race to write the same shared path.
 _HF = "https://huggingface.co/boltz-community/boltz-2/resolve/main"
-_DOWNLOADS = ((f"{_HF}/boltz2_conf.ckpt", "boltz2_conf.ckpt"), (f"{_HF}/mols.tar", "mols.tar"))
+_DOWNLOADS = {name: f"{_HF}/{name}" for name in ("boltz2_conf.ckpt", "boltz2_aff.ckpt", "mols.tar")}
 
 
 def _fetch(url: str, dest: Path) -> None:
@@ -65,19 +60,15 @@ def _fetch(url: str, dest: Path) -> None:
 
 
 def ensure_weights(cache_dir: str = DEFAULT_CACHE) -> None:
-    """Populate the shared Boltz cache once, on the driver, before any actor starts.
+    """Download the Boltz cache once per cluster, on the driver, before any actor starts.
 
-    Downloads only -- no warm-up prediction. The driver runs on the head node,
-    which this template's compute config leaves GPU-less (`CPU: 0`, m5.2xlarge),
-    so there is nothing here for `boltz predict` to run on.
+    Downloads only -- no unpacking, no warm-up prediction. The driver runs on the
+    head node, which this template's compute config leaves GPU-less (`CPU: 0`,
+    m5.2xlarge), so there is nothing here for `boltz predict` to run on; unpacking
+    belongs on the nodes that read it, for the reason `_node_cache` gives.
 
-    Fetches the artifacts directly rather than calling `boltz.main.download_boltz2`,
-    which always pulls the affinity checkpoint this template never opens and fetches
-    the files one after another. Boltz still finds what it needs -- it locates
-    weights by path, and its own downloader is a no-op once they are there.
-
-    Populating the cache measured 1216s for 6.17GB, and the prints below break that
-    into transfer and extraction so the next run says which half to attack.
+    Fetches the artifacts directly rather than calling `boltz.main.download_boltz2`
+    only to overlap the three transfers, which that function does one after another.
 
     A shared cache turns a killed job into a landmine: whoever fetches decides by
     checking whether each file exists, so a run interrupted mid-download leaves a
@@ -100,28 +91,64 @@ def ensure_weights(cache_dir: str = DEFAULT_CACHE) -> None:
             stale.unlink()
     cache.mkdir(parents=True, exist_ok=True)
 
-    print(f"  Fetching Boltz weights into {cache} (~4.2GB, once per cluster)...")
+    print(f"  Fetching Boltz weights into {cache} (~6.2GB, once per cluster)...")
     t0 = time.time()
     with ThreadPoolExecutor(max_workers=len(_DOWNLOADS)) as pool:
-        for future in [pool.submit(_fetch, url, cache / name) for url, name in _DOWNLOADS]:
+        for future in [pool.submit(_fetch, url, cache / name) for name, url in _DOWNLOADS.items()]:
             future.result()
-    fetched = sum((cache / name).stat().st_size for _, name in _DOWNLOADS)
-    print(f"  Downloaded {fetched / 1e9:.1f}GB in {time.time() - t0:.0f}s")
 
-    t0 = time.time()
-    with tarfile.open(cache / "mols.tar", "r") as tar:
-        tar.extractall(cache)
-    print(f"  Extracted the CCD archive in {time.time() - t0:.0f}s")
-
-    missing = [name for name in _ARTIFACTS if not (cache / name).exists()]
+    missing = [name for name in _DOWNLOADS if not (cache / name).exists()]
     if missing:
         raise RuntimeError(
             f"Boltz cache in {cache} is incomplete after download: {', '.join(missing)}"
         )
 
-    (cache / "mols.tar").unlink(missing_ok=True)
+    fetched = sum((cache / name).stat().st_size for name in _DOWNLOADS)
     (cache / _SENTINEL).write_text(f"{SCORER_NAME}\n")
-    print("  Boltz weights ready")
+    print(f"  Downloaded {fetched / 1e9:.1f}GB in {time.time() - t0:.0f}s")
+
+
+def _node_cache(shared: Path) -> Path:
+    """Give this node its own Boltz cache directory, and return it.
+
+    Boltz stores the CCD as 45k small pickles. Unpacking those onto
+    /mnt/cluster_storage measured 1033s, against 31s to pull the same bytes down as
+    one sequential file: shared storage charges a network round trip per file, and
+    45k of them is the entire cost. Unpacking the same archive to local disk takes
+    ~10s, so each node does its own -- concurrently with every other node, and off
+    the driver's critical path.
+
+    The downloaded files stay symlinks into the shared copy rather than being copied
+    per node. `boltz predict` only checks that they exist, except for the confidence
+    checkpoint, which it reads once per call as a single 2.1GB sequential read --
+    the one access pattern shared storage is good at.
+    """
+    shared = shared.resolve()  # symlinks resolve from `local`, so a relative target dangles
+    local = _local_root() / "boltz_cache"
+    local.mkdir(parents=True, exist_ok=True)
+
+    with (local / ".lock").open("w") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)  # actors sharing a node set this up once
+        for name in _DOWNLOADS:
+            link = local / name
+            link.unlink(missing_ok=True)
+            link.symlink_to(shared / name)
+
+        if not (local / _SENTINEL).exists():
+            shutil.rmtree(local / "mols", ignore_errors=True)
+            t0 = time.time()
+            with tarfile.open(local / "mols.tar", "r") as tar:
+                tar.extractall(local, filter="data")
+            (local / _SENTINEL).write_text(f"{SCORER_NAME}\n")
+            print(f"  Unpacked the CCD into {local} in {time.time() - t0:.0f}s")
+
+    return local
+
+
+def _local_root() -> Path:
+    """This node's own disk. /mnt/local_storage is the instance NVMe on Anyscale."""
+    nvme = Path("/mnt/local_storage")
+    return nvme if os.access(nvme, os.W_OK) else Path(tempfile.gettempdir())
 
 
 def _run_boltz(in_dir: Path, out_dir: Path, cache: Path) -> Path:
@@ -152,7 +179,7 @@ class BoltzPredictor:
     """Ray Data callable class. One actor per GPU."""
 
     def __init__(self, cache_dir: str = DEFAULT_CACHE):
-        self.cache = Path(cache_dir)
+        self.cache = _node_cache(Path(cache_dir))
         os.environ.setdefault("BOLTZ_CACHE", str(self.cache))
 
     def __call__(self, batch: dict) -> dict:

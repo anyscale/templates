@@ -42,7 +42,7 @@ def run_screening_pipeline(
 
     Returns a metrics dict for display.
     """
-    # Boltz pulls ~6GB of weights the first time it runs. Do it here, once, rather
+    # Boltz pulls ~6.2GB of weights the first time it runs. Do it here, once, rather
     # than letting every actor race for the same cache.
     ensure_weights(cache_dir)
 
