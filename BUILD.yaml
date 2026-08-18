@@ -826,10 +826,12 @@
 #
 # The notebook's cells have NOT been executed: the gate below blocks the GPU cells, and
 # fabricating an output would be publishing a measurement nobody took. Outputs ship cleared.
-# Open question for a reviewer: whether tests.sh should become `papermill README.ipynb` now
-# that a notebook exists -- testing-template.md's canon says a test mimics the user running
-# the notebook top to bottom. It currently drives the scripts instead, which is the same
-# sequence, and changing it is a bigger move than this PR should make unreviewed.
+#
+# tests.sh papermills the notebook, which is the canonical form (49 of 57 tests.sh do). That
+# switch needed the notebook's cells rewritten from `!python script.py` to subprocess with
+# `check=True` first: MEASURED, IPython's shell escape does not raise on a non-zero exit, so
+# under papermill a stage could die, the next cell run, and the job exit 0. A bang-escape
+# notebook would have made this test weaker than the script-driving version it replaced.
 #
 # KNOWN RED TEST, deliberately. Two of the three models are gated on Hugging Face and gating
 # is per ACCOUNT. tests.sh prefers an HF_TOKEN from the environment and falls back to Secrets
@@ -839,7 +841,7 @@
 # facebook/dinov3-vitl16-pretrain-lvd1689m -- two clicks, and no token change substitutes for
 # them. It fails in the preflight, which names the account and the remedy, rather than in a
 # 403 several GB into a model download.
-# owner: UNASSIGNED -- set before merge
+# owner: @em-anyscale
 - name: ray-data-multimodel-frame-enrichment
   owner_team: ray-data
   dir: templates/ray-data-multimodel-frame-enrichment
