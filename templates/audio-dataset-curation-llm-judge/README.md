@@ -46,6 +46,7 @@ import os
 
 import numpy as np
 import ray
+from ray.data import SaveMode
 import soundfile as sf
 import torch
 import torchaudio.transforms as T
@@ -270,7 +271,7 @@ As this is a distributed workload, the destination storage needs to be writable 
 # This line triggers the lazy execution of the entire pipeline.
 output_dir = "/mnt/cluster_storage/filtered_dataset/"
 os.makedirs(output_dir, exist_ok=True)
-ds.write_parquet(output_dir)
+ds.write_parquet(output_dir, mode=SaveMode.OVERWRITE)
 ```
 
 `write_parquet` triggers the full execution of the data pipeline and streams the results into a series of local Parquet files. Ray automatically shards these files across multiple outputs for efficient downstream reading:

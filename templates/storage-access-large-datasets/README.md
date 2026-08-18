@@ -53,6 +53,7 @@ git clone https://github.com/anyscale/templates && cd templates/templates/storag
 
 ```python
 import ray
+from ray.data import SaveMode
 import pandas as pd
 import os
 from pathlib import Path
@@ -455,7 +456,7 @@ After processing, write results back to S3, GCS, or Azure. Ray Data supports mul
 ```python
 # Write processed data to cluster storage
 output_path_s3 = "/mnt/cluster_storage/output/s3_processed"
-ds_normalized.write_parquet(output_path_s3)
+ds_normalized.write_parquet(output_path_s3, mode=SaveMode.OVERWRITE)
 
 print(f"✓ Data written to {output_path_s3}")
 
@@ -469,7 +470,7 @@ print(f"✓ Data written to {output_path_s3}")
 ```python
 # Write to cluster storage (GCS write would require authenticated filesystem)
 output_path_gcs = "/mnt/cluster_storage/output/gcs_processed"
-ds_synthetic.write_parquet(output_path_gcs)
+ds_synthetic.write_parquet(output_path_gcs, mode=SaveMode.OVERWRITE)
 
 print(f"✓ Data written to {output_path_gcs}")
 
@@ -483,7 +484,7 @@ print(f"✓ Data written to {output_path_gcs}")
 ```python
 # Write to cluster storage
 output_path_azure = "/mnt/cluster_storage/output/azure_processed"
-ds_synthetic.write_parquet(output_path_azure)
+ds_synthetic.write_parquet(output_path_azure, mode=SaveMode.OVERWRITE)
 
 print(f"✓ Data written to {output_path_azure}")
 
@@ -497,11 +498,11 @@ print(f"✓ Data written to {output_path_azure}")
 ```python
 # Write as CSV
 csv_output = "/mnt/cluster_storage/output/data.csv"
-ds_normalized.write_csv(csv_output)
+ds_normalized.write_csv(csv_output, mode=SaveMode.OVERWRITE)
 
 # Write as JSON Lines
 json_output = "/mnt/cluster_storage/output/data.jsonl"
-ds_json.write_json(json_output)
+ds_json.write_json(json_output, mode=SaveMode.OVERWRITE)
 
 print(f"✓ Multiple format outputs written")
 ```
@@ -645,7 +646,7 @@ When working across cloud providers:
 #          Then submits a job that reads from /mnt/shared_storage/ and writes to GCS
 
 cross_cloud_path = "/mnt/shared_storage/intermediate_data"
-ds_s3.write_parquet(cross_cloud_path)
+ds_s3.write_parquet(cross_cloud_path, mode=SaveMode.OVERWRITE)
 
 print(f"✓ Intermediate data written to shared storage: {cross_cloud_path}")
 print("This path is accessible from jobs and services running on different clusters")

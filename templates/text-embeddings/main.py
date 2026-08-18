@@ -1,5 +1,6 @@
 import os
 import ray
+from ray.data import SaveMode
 import uuid
 import numpy as np
 from langchain.text_splitter import RecursiveCharacterTextSplitter
@@ -102,6 +103,6 @@ embedded_ds = chunked_ds.map_batches(
 )
 
 # Write results to cloud storage
-embedded_ds.write_parquet(OUTPUT_PATH, try_create_dir=False)
+embedded_ds.write_parquet(OUTPUT_PATH, try_create_dir=False, mode=SaveMode.OVERWRITE)
 
 print(f"Computed embeddings are written into {OUTPUT_PATH}.")

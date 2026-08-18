@@ -6,7 +6,7 @@ import time
 
 import ray
 import ray.data
-from ray.data import ActorPoolStrategy
+from ray.data import ActorPoolStrategy, SaveMode
 
 from src.preprocess import preprocess_product
 from src.embed import ProductEmbedder
@@ -60,7 +60,7 @@ def run_embedding_pipeline(
 
     # ── Stage 4: Write ─────────────────────────────────────────────────────
     print(f"\n[4/4] Writing embeddings to {output_path}")
-    ds.write_parquet(output_path)
+    ds.write_parquet(output_path, mode=SaveMode.OVERWRITE)
 
     # ── Metrics ────────────────────────────────────────────────────────────
     wall_time = time.time() - pipeline_start

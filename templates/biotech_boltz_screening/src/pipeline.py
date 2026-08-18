@@ -6,6 +6,7 @@ import time
 
 import ray
 import ray.data
+from ray.data import SaveMode
 
 from src.feature_prep import build_boltz_input_batch
 from src.boltz_predictor import SCORER_NAME, BoltzPredictor, ensure_weights
@@ -92,7 +93,7 @@ def run_screening_pipeline(
     # The terminal operation. Stages 2-4 built a plan and ran nothing; they
     # execute here, streamed, as write_parquet() pulls batches through it.
     print(f"\n[5/5] Executing the plan, writing scored results to {output_path}")
-    ds.write_parquet(output_path)
+    ds.write_parquet(output_path, mode=SaveMode.OVERWRITE)
 
     # ── Metrics ────────────────────────────────────────────────────────────
     wall_time = time.time() - pipeline_start
