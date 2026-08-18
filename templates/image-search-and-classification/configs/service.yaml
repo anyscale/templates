@@ -64,9 +64,12 @@ cloud:
 applications:
 - import_path: doggos.serve:app
   runtime_env:
-    # Absolute path — a relative `requirements:` / `pip:` resolves against the
-    # CLI's working directory, not the config's `working_dir`, so a config
-    # submitted from a subdirectory would die with FileNotFoundError.
-    pip: /home/ray/default/python_depset.lock
+    # Relative paths — Ray Serve resolves them against the app's `working_dir`
+    # (extracted on the cluster from the top-level `working_dir` above), which
+    # matches the templates/asynchronous_inference/service.yaml pattern. The
+    # "absolute path" guidance in references/dependencies.md is for a top-level
+    # `requirements:` (which the CLI resolves against its own cwd); it doesn't
+    # apply here at `applications[].runtime_env`.
+    pip: python_depset.lock
     py_modules:
-      - /home/ray/default/doggos/doggos
+      - doggos/doggos
