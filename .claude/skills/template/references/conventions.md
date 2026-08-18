@@ -38,6 +38,18 @@ Run the `check-build-yaml` hook first (see **Validate locally**) — it authorit
 
 (`rayapp build` converts configs to the legacy bundle format at publish time — ray-project/rayci#492 — so published bundles still carry the legacy schema the console clone path parses.)
 
+⚠️ **Editing a compute config in this repo does not change how the template runs.** `rayapp` lists the
+existing configs and, on a name it already finds, skips — `Compute config %q already exists, skipping
+creation` (`rayapp/compute_config.go`; it only ever calls `CreateComputeConfig`, never an update). The name
+comes from `generateComputeConfigName` and does not track the file's contents, so a changed
+`configs/<name>/{aws,gce}.yaml` keeps resolving to the same, stale config. **Someone must push a new
+compute-config version by hand for the edit to take effect.**
+
+Budget for this whenever you change an instance type, `market_type`, node counts, or
+`enable_cross_zone_scaling`: the PR looks like it fixed the cluster and hasn't. It cost the 2.57 wave three
+capacity retries on `entity-recognition-with-llms`, whose `enable_cross_zone_scaling: true` had been merged
+hours earlier and was still inert.
+
 ## Validate locally
 
 Run before pushing (CI runs the same hooks). Order matches `.pre-commit-config.yaml` — cheap notebook-hygiene first so the slow nbconvert-based `check-readme` runs last. Per hook: the scoped `pre-commit` call, and the direct script call for iterating one check in isolation.
