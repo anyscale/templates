@@ -1,0 +1,33 @@
+# Resolved against the image this template's BUILD.yaml entry runs on:
+# `anyscale/ray:2.57.0-py312-cu129`.
+#
+# What that image ships, read from the committed freeze
+# (dependencies/images/ray-2.57.0-py312-cu129.freeze.txt):
+#
+#   numpy   2.2.6      pyarrow 23.0.1      ray 2.57.0
+#   torch   ABSENT     torchvision ABSENT
+#
+# `-cu129` in the tag is the CUDA runtime, not PyTorch. Only the `ray-llm` images ship torch;
+# on plain `anyscale/ray` the template supplies it, which is the whole content of this file.
+torch==2.9.1
+
+# Why 2.9.1 and not newer: the cu129 wheel index publishes cp312 builds of torch from 2.8.0
+# through 2.13.0 (checked against download.pytorch.org/whl/cu129/torch/), so several newer
+# versions resolve. 2.9.1 is the one measured clean on this exact image -- both here and by the
+# neighbouring ray-data-multimodel-frame-enrichment template, which pins the same version on
+# the same image. Newer wheels exist and are untested here; bump deliberately, on a run, not
+# because the index moved.
+#
+# The depset entry passes `--index https://download.pytorch.org/whl/cu129` so the wheel tracks
+# the image's CUDA rather than PyPI's default build. Pin below that index's floor and uv falls
+# back to PyPI, the wheel loses its CUDA tag, and the lock still compiles -- silently wrong.
+
+# NOT here, deliberately:
+#   torchvision -- this pipeline calls torch.from_numpy, torch.nn.functional.interpolate and
+#                  .cpu().numpy(). It loads no model and decodes no image formats, so there is
+#                  nothing for torchvision to do. The sibling template needs it; this one does not.
+#   numpy, pyarrow -- the image ships 2.2.6 and 23.0.1 and the lock is seeded from that freeze,
+#                  so both hold at the image version without a line here. Pinning them would be
+#                  a no-op until the image moves and a silent DOWNGRADE of Ray's own stack after,
+#                  which is how Ray 2.57 put numpy==1.26.4 on a numpy-2.2.6 image in ten
+#                  templates. Leave them to the image.
