@@ -44,6 +44,11 @@ Hand each worker this. It first loads the Buildkite MCP tools (deferred — `Too
 
 Sharp edge: unblocking `input-tmpl-name` needs a *fields* payload; if the MCP can't send unblock fields, fall back to a REST `curl` (`PUT .../jobs/{id}/unblock` with `BUILDKITE_API_TOKEN`) for that one call.
 
+**Standing workers down takes evidence, not an assertion.** Give each worker its own templates,
+their winning build numbers, and the job-level states — and invite it to check. A bare "the wave is complete"
+loses to a worker's own tracking, correctly: `publish-to-backend.md` tells it correlated failures are infra to
+retry, so without per-template facts it has no grounds to override that and will keep re-firing.
+
 ## 5. Verify before you report
 
 Audit the wave from Buildkite, not from the results dir, and have someone other than the driver do it if you can — the driver cannot see its own blind spots. Two checks that have each caught a real defect:

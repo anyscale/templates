@@ -102,6 +102,10 @@ version by default, so skew takes an explicit pin or a hard transitive requireme
     is inlined either way. Whichever you pick, **never** bake pip deps into the image to dodge the cap:
     an image layer is for system deps only (see below), and a hand-written layer drifts from the tested
     lock exactly like a hand-written pin list.
+- **A comment justifying a pin is evidence nobody rechecked, not evidence the pin is right.**
+  Re-verify it against upstream at every bump. `transformers==4.57.6` carried "LLaMA-Factory caps transformers
+  at the 4.x line" long after upstream had moved to `>=4.55.0,<=5.8.0`; the stale note kept a downgrade in place
+  until the image's vLLM refused to import it.
 - **A genuine conflict → isolate it.** An added package that hard-pins a clashing version (e.g. `a2a-sdk`
   forcing an old `fastapi`) goes in *its own* deployment's `runtime_env` — the LLM ingress keeps the image
   framework; only that deployment gets the pin.

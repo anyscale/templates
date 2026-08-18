@@ -69,7 +69,10 @@ under `/test-template`.
 
 ## Recovery
 
-Read the Buildkite logs (via MCP) and classify:
+Read the Buildkite logs (via MCP) and classify: **Classify from the terminal failure — match against
+the last ~120 lines, not the whole log.** A transient the build *survived* is not what killed it: a
+recovered capacity blip at line 1998 of a 27k-line log once masked a real `vLLM requires transformers>=5.5.3`
+break at line 27300, and the run was scored infra.
 
 - **Agent-fixable (default — most failures)** — anything rooted in the template's own files: code/notebook, Dockerfile, config, or BUILD.yaml — **including a `test.timeout_in_sec` that's too low, or a slow/oversized dataset download the test does** (raise the timeout, or trim/cache the download). These are yours to fix, not to bail on. Delegate to **`/anyscale-platform-fix`**, which iterates against `rayapp test <name>` on **staging** until green. (Interactive/human path only: if the skill is missing, `anyscale skills install -p claude-code -y -f` — needs `anyscale login`. In Cursor, preflight guarantees it.)
 - **Infra (external only — not fixable from the template's files)** — workspace-creation *platform* failures, Anyscale API/SSO errors, Buildkite / GitHub-Actions runner errors, **or staging itself failing**. A test that *times out because the template downloads or does too much* is **not** infra — that's a `timeout_in_sec`/download fix (agent-fixable, above). **Don't retry blindly, and never switch to prod.** If `rayapp test <name>` passes locally on staging, trust that, summarize the infra failure on the PR, and hand off to a human.
