@@ -11,37 +11,55 @@ independent flow per template in parallel.
 
 ## Pipeline stages
 
-`init` → **`input-tmpl-name`** (manual input) → `build-template` + `test-template` →
-**`block-publish-dev`** → `publish-dev` → **`block-publish-staging`** → `publish-staging` →
-**`block-publish-production`** → `publish-production`.
+Twelve jobs. The three marked `manual` are the gates you Unblock; each releases the publish jobs
+under it, which then run on their own.
 
-Bold = manual gates you Unblock. **Never unblock a publish step until this pipeline's
-`test-template` job is green.** Note: that in-pipeline `test-template` job is *not* the PR-comment
-`/test-template` from `testing-template.md` — this one runs as a stage of the publish build itself.
+```
+init
+Input template name                              <- manual
+Build template
+Test template
+Publish to dev                                   <- manual
+Publish to dev-aws and preview-aws
+Publish to staging                               <- manual
+Publish to staging-aws
+Publish to staging-azure
+Publish to predeploy and production              <- manual
+Publish to predeploy-aws and production-aws
+Publish to predeploy-azure and production-azure
+```
 
-`input-tmpl-name` fields:
+**Never unblock a publish gate until this build's `Test template` job is green.** Note: that
+in-pipeline `Test template` job is *not* the PR-comment `/test-template` from `testing-template.md` —
+this one runs as a stage of the publish build itself.
+
+`Input template name` fields:
 - `tmpl-name=<name>`
 - `tmpl-branch=main`
 - `tmpl-commit=HEAD`
 
 **A build's own `state` is not a publish result.** Buildkite reports the *build* as `passed` the moment
-everything ahead of a manual gate is green, so one parked at `block-publish-dev` reads `passed` while every
-publish job under it is still `blocked`. Judge a template done by the **production job's** state, never the
-build's — the build says `passed` twice on the way through, and only the second one means published.
+everything ahead of a manual gate is green, so one parked at `Publish to dev` reads `passed` while every
+publish job under it is still `blocked`. Judge a template done by **both** production jobs —
+`Publish to predeploy-aws and production-aws` *and* `Publish to predeploy-azure and production-azure` —
+never by the build's state. Missing the azure half is the easy way to call a template published when
+half of it isn't.
 
 ## Run it (Buildkite MCP)
 
 1. **Trigger build:** `org_slug=anyscale`, `pipeline_slug=tmpl-publish`, `branch=master`,
    `message=<name>`. Runs against the latest `tmpl-publish` pipeline on `master`. (The templates
    content published is set by the `tmpl-*` input fields above — latest `main`.) Init runs ~10–60s.
-2. **Unblock `input-tmpl-name`** with the three fields above.
-3. Wait `build-template` (~2–3 min) **and** `test-template` (~5–10 min, up to ~45–60 for some) →
-   passed. On any stage failure, triage per **Failure handling** below. Then **unblock `block-publish-dev`**.
-4. Wait `publish-dev` → passed (~3–5 min). **Unblock `block-publish-staging`**.
-5. Wait `publish-staging` → passed (~3–5 min). **Unblock `block-publish-production`**.
-6. Wait `publish-production` → passed (~3–5 min).
+2. **Unblock `Input template name`** with the three fields above.
+3. Wait `Build template` (~2–3 min) **and** `Test template` (~5–10 min, up to ~45–60 for some) →
+   passed. On any stage failure, triage per **Failure handling** below. Then **unblock `Publish to dev`**.
+4. Wait `Publish to dev-aws and preview-aws` → passed (~3–5 min). **Unblock `Publish to staging`**.
+5. Wait `Publish to staging-aws` **and** `Publish to staging-azure` → passed (~3–5 min).
+   **Unblock `Publish to predeploy and production`**.
+6. Wait `Publish to predeploy-aws and production-aws` **and**
+   `Publish to predeploy-azure and production-azure` → passed (~3–5 min).
 
-**Anyscale auth errors** in `build-template` / `test-template` usually mean a prod/staging env or token mismatch — see `run-tests-locally-with-rayapp.md` "Auth errors?".
+**Anyscale auth errors** in `Build template` / `Test template` usually mean a prod/staging env or token mismatch — see `run-tests-locally-with-rayapp.md` "Auth errors?".
 
 ## Failure handling — retry or skip?
 
@@ -51,7 +69,7 @@ build's — the build says `passed` twice on the way through, and only the secon
 |---|---|---|
 | **Transient / infra** | Buildkite API 429/5xx, timeouts, DNS/connection reset; job `broken`, lost agent, runner disconnect; **cluster capacity** — "worker group startup timed out", "insufficient cluster resources", instance/quota-launch timeout, spot reclaim; image-pull backoff / registry 5xx; Anyscale control-plane 5xx or a one-off token-refresh blip; **≥2 templates failing at the same instant with the same error** (shared infra event) | **Retry** |
 | **Cancelled / external** | Whole build flips to `canceled` with `user_canceled_via_api` and `canceled_by` null, every job stamped at the same instant, logs empty or cut mid-line | **Stop — find who cancelled it.** Never retry |
-| **Genuine** | `test-template` assertion / notebook failure that **reproduces on retry**; `build-template` failure from the template's deps or Dockerfile (depset conflict, package not found, real compile error); a publish stage where the **backend rejects** the artifact (manifest/schema invalid, missing field); a persistent auth/config error you can't fix; **any failure identical across the full retry budget** | **Skip + report** |
+| **Genuine** | `Test template` assertion / notebook failure that **reproduces on retry**; `Build template` failure from the template's deps or Dockerfile (depset conflict, package not found, real compile error); a publish stage where the **backend rejects** the artifact (manifest/schema invalid, missing field); a persistent auth/config error you can't fix; **any failure identical across the full retry budget** | **Skip + report** |
 
 **A cancelled build cannot be retried** — recovery needs a fresh trigger, so every cancel costs a re-trigger from the budget below.
 
@@ -67,10 +85,10 @@ merged content) and the current pipeline, whereas a rebuild replays the original
 
 ## Publish without the test gate (events / urgent fixes)
 
-For an event template that must ship or be fixed faster than the test pipeline (~5–60 min). `rayapp` treats `test` as optional and the BUILD.yaml validator requires it only under `templates/`, so an entry pointing at `archive/` publishes with no `test-template` stage:
+For an event template that must ship or be fixed faster than the test pipeline (~5–60 min). `rayapp` treats `test` as optional and the BUILD.yaml validator requires it only under `templates/`, so an entry pointing at `archive/` publishes with no `Test template` stage:
 
 1. Put the template under `archive/` and point its `BUILD.yaml` entry's `dir` + `compute_config` there, with **no `test` field** (`templates/` demands a test; `archive/` is exempt). The move: `../workflows/archive-template.md`.
-2. Publish as above — `test-template` has nothing to run, so the fix ships immediately.
+2. Publish as above — `Test template` has nothing to run, so the fix ships immediately.
 3. After the event: restore it to `templates/` **with a test**, or retire it (`../workflows/archive-template.md`).
 
 Use sparingly — it bypasses the test gate. Anything not under event-time pressure stays in `templates/`, tested.

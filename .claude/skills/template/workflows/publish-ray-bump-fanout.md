@@ -9,7 +9,7 @@ This runs the per-template flow in `../references/publish-to-backend.md` at flee
 - **Leader (you):** discover → review + land → fan out → aggregate. Owns all merges and the human hand-off list.
 - **Worker** (subagent, `general-purpose`; Bash + Read + Buildkite MCP): one batch of ≤8 templates, all **in parallel**.
 - **Concurrency = everything at once.** A worker triggers every build in its batch up front, then drives them together, advancing whichever gate is ready. Wall-clock is one template's run (~25–40 min), not the batch's sum.
-- **The cost is retries, not correctness.** Past ~8–10 in-flight, `test-template` starts failing on cluster-capacity contention (worker-group startup timeouts) — spurious reds that read like template bugs. Treat them as infra and retry per `../references/publish-to-backend.md` **Failure handling**; cross-template correlation is what tells you it was one event. Drop back to a smaller wave only if retries stop clearing.
+- **The cost is retries, not correctness.** Past ~8–10 in-flight, `Test template` starts failing on cluster-capacity contention (worker-group startup timeouts) — spurious reds that read like template bugs. Treat them as infra and retry per `../references/publish-to-backend.md` **Failure handling**; cross-template correlation is what tells you it was one event. Drop back to a smaller wave only if retries stop clearing.
 
 ## 1. Discover & scope
 
@@ -37,7 +37,7 @@ The vetted templates are now on `main` (the pipeline publishes `main` HEAD).
 Hand each worker this. It first loads the Buildkite MCP tools (deferred — `ToolSearch` "buildkite"; authenticate if prompted) and reads `../references/publish-to-backend.md` (incl. its **Failure handling** section). Then it runs step 1 for its whole batch, triggers **every** build at once, and loops over the full set advancing whichever gate is ready:
 
 1. **Pre-publish review** — confirm the merged bump actually landed (`git show origin/main -- templates/<name> BUILD.yaml`): image tag → `<version>`, lock recompiled if the template ships one. Wrong → record `SKIPPED:review:<why>`, next. Never publish a bad artifact.
-2. **Publish** per `publish-to-backend.md`: trigger → unblock `input-tmpl-name` (fields) → **wait `build-template` + `test-template` pass** → dev → staging → prod. Invariant: **never unblock a publish gate before `test-template` is green.**
+2. **Publish** per `publish-to-backend.md`: trigger → unblock `Input template name` (fields) → **wait `Build template` + `Test template` pass** → dev → staging → prod. Invariant: **never unblock a publish gate before `Test template` is green.**
 3. **On any failure, any stage** → classify per **Failure handling** in `publish-to-backend.md`: transient/infra → bounded retry; genuine → capture the failing job's log tail + build URL, record `SKIPPED:<stage>:<reason>`, next template.
 4. **Record** one line per template to `<results-dir>/<name>.json` as it goes — `{status: PUBLISHED|SKIPPED, stage, reason, build_url}`. On entry, skip any template already `PUBLISHED` (idempotent resume after a kill). **The results dir is a cache of Buildkite state, never the source of truth** — a missing entry means nobody wrote it yet, *not* that the template needs publishing. Treating it as authoritative re-fires builds for already-live templates, and the leader's driver then walks each one to a second production publish.
 5. **Return** a compact per-template summary to the leader.
@@ -53,8 +53,8 @@ retry, so without per-template facts it has no grounds to override that and will
 
 Audit the wave from Buildkite, not from the results dir, and have someone other than the driver do it if you can — the driver cannot see its own blind spots. Two checks that have each caught a real defect:
 
-- **Freshness, not a build-number proxy.** A template counts as republished only when its winning build started *after that template's own bump commit* — one wave build was created 7s after the final commit, so "build number ≥ N" happens to work until it doesn't. Stronger still, and the check to prefer: read the **image tag the `test-template` log actually exercised** and compare it to `BUILD.yaml` on `main`. That verifies the effect rather than the timing, and settles the builds created inside the merge window, where timing alone is only suggestive.
-- **Ordering.** No publish job may have started before its build's `test-template` finished green. Check `started_at` against `finished_at` across every publish job in the wave; a violation means a gate opened on an untested build.
+- **Freshness, not a build-number proxy.** A template counts as republished only when its winning build started *after that template's own bump commit* — one wave build was created 7s after the final commit, so "build number ≥ N" happens to work until it doesn't. Stronger still, and the check to prefer: read the **image tag the `Test template` log actually exercised** and compare it to `BUILD.yaml` on `main`. That verifies the effect rather than the timing, and settles the builds created inside the merge window, where timing alone is only suggestive.
+- **Ordering.** No publish job may have started before its build's `Test template` finished green. Check `started_at` against `finished_at` across every publish job in the wave; a violation means a gate opened on an untested build.
 
 Reconcile the ledger against Buildkite in **both** directions: entries claiming `PUBLISHED` that job state doesn't support, and green templates with no entry.
 
