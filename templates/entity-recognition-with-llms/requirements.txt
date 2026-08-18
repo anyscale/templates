@@ -1,5 +1,4 @@
-# LLaMA-Factory pulls peft/trl/datasets; it caps transformers at the 4.x line tested here.
+# LLaMA-Factory pulls peft/trl/datasets, and picks whatever transformers the image ships within its own cap.
 llamafactory @ git+https://github.com/hiyouga/LLaMA-Factory.git@f28afaf6355af515454dfb16c97d728307c93897  # no release wheel; commit is main as of #939, the last CI-validated state
-transformers==4.57.6
 pynvml==13.0.1
 tensorboard==2.21.0
