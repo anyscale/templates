@@ -2,5 +2,6 @@
 # to PyPI and the wheel loses its CUDA tag (that is how 2.5.1 landed here untagged).
 torch==2.11.0
 torchvision==0.26.0
-tensorboard==2.18.0
+tensorboard==2.21.0
+# Ray's BayesOptSearch integration + README both target 1.4.3; a 3.x jump has breaking API changes.
 bayesian-optimization==1.4.3

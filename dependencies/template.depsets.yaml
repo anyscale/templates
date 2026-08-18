@@ -432,7 +432,7 @@ depsets:
       - --python-platform=linux
       - --unsafe-package ray
     build_arg_sets:
-      - ray2560_py312
+      - ray2570_py312
     pre_hooks:
       - scripts/depsets/seed-image-freeze.sh dependencies/images/ray-${RAY_VERSION}-py312-cu129.freeze.txt templates/ray-tune-train-integration/python_depset.lock
 
