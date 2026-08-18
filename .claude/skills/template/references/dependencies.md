@@ -76,28 +76,32 @@ version by default, so skew takes an explicit pin or a hard transitive requireme
   one deployment genuinely needs something different — and then give it the lock in full (see "all or
   nothing" above). Note `py_modules` cannot take a local directory at deployment scope; Ray uploads
   directories only for `ray.init`.
-- **Secondary configs point at the same `.lock`, by absolute path.** A shipped `service_config.yaml` /
-  `job_config.yaml` (the standalone Service/Job path) must source its deps from the template's
-  `python_depset.lock` via `runtime_env`, not a hand-maintained pin list — a divergent list drifts silently
-  from the tested lock. Write `/home/ray/default/python_depset.lock`: a relative `requirements:` resolves
-  against **the CLI's working directory**, not the config's `working_dir`, so a config submitted from a
-  subdirectory dies with `FileNotFoundError`. `py_modules` entries follow the same rule and must name the
-  *importable package* dir (`doggos/doggos`), not the project root — the outer dir yields an empty
-  namespace package and an `import_path` under it cannot resolve.
-- **…but `requirements:` has a 120 KB ceiling, and locks are mostly hashes.** The CLI reads that file and
-  inlines it into the submitted `runtime_env`, which the API caps at 122880 bytes — over it, submission
-  fails with *"the size of the runtime_env config has exceeded the maximum limit"*. `--generate-hashes`
-  makes hashes 94–97% of a lock's bytes, so this arrives on package count, not dependency weight: ~100
-  packages is enough, and eleven locks already exceed it. Check `wc -c` before shipping a config that names
-  the lock. Over the line, a **Job** moves deps into the entrypoint —
-  `uv pip install -r python_depset.lock --system --no-deps … && python …` for the driver, plus
-  `ray.init(runtime_env=)` in the script for workers (`templates/stable-diffusion-pretraining/job.yaml`) —
-  which never inlines anything because the file is read cluster-side. Don't set both: Ray refuses to merge
-  two `runtime_env`s sharing `pip`. A **Service** has no entrypoint, but it does take `py_executable:` —
-  the CLI forwards it to `runtime_env["py_executable"]` as a short string
-  (`anyscale/_private/workload/workload_sdk.py`), so `uv run` resolves deps on the cluster and nothing is
-  inlined. Set it there rather than baking pip deps into the image: an image layer is for system deps only
-  (see below), and a hand-written layer drifts from the tested lock exactly like a hand-written pin list.
+- **Secondary configs point at the same `.lock`.** A shipped `service_config.yaml` / `job_config.yaml` (the
+  standalone Service/Job path) must source its deps from the template's `python_depset.lock` via
+  `runtime_env`, not a hand-maintained pin list — a divergent list drifts silently from the tested lock.
+  `py_modules` entries must name the *importable package* dir (`doggos/doggos`), not the project root — the
+  outer dir yields an empty namespace package and an `import_path` under it cannot resolve. Three shapes,
+  picked by config type:
+  - **Default — top-level `requirements: /home/ray/default/python_depset.lock`.** The CLI resolves that path
+    against **its own cwd**, not the config's `working_dir`, so a relative one dies with `FileNotFoundError`
+    when submitted from a subdirectory. It then **inlines the file** into the submitted runtime_env, which
+    the API caps at **122880 bytes** (a hard Linux `MAX_ARG_STRLEN` limit, not tunable). Locks only grow
+    across Ray bumps, so a config that fit last bump can stop fitting with no local edit — then switch to
+    the shape below for that config type.
+  - **Job — install on the driver, hand workers the lock.** Drop `requirements:`. Prefix the `entrypoint`
+    with `uv pip install -r python_depset.lock --system --no-deps --no-cache-dir --index-strategy unsafe-best-match &&`,
+    and call `ray.init(runtime_env={"pip": <abs lock path>})` in the script's `__main__` before any
+    `ray.data` / `ray.train` use. Ray's own runtime_env agent reads the lock cluster-side, so nothing is
+    inlined. Precedent: `templates/stable-diffusion-pretraining/job.yaml`.
+  - **Service — Ray Serve's app-scope `runtime_env`.** Drop `requirements:`. Put `pip: python_depset.lock`
+    and `py_modules` under `applications[i].runtime_env`, **relative to the app's `working_dir`** — Serve
+    resolves them cluster-side, the opposite of the top-level rule. Deployments inherit it, per the one
+    Serve rule above. Precedent: `templates/asynchronous_inference/service.yaml`. A Service also takes
+    `py_executable:`, which the CLI forwards to `runtime_env["py_executable"]` as a short string
+    (`anyscale/_private/workload/workload_sdk.py`), so `uv run` resolves deps on the cluster and nothing
+    is inlined either way. Whichever you pick, **never** bake pip deps into the image to dodge the cap:
+    an image layer is for system deps only (see below), and a hand-written layer drifts from the tested
+    lock exactly like a hand-written pin list.
 - **A genuine conflict → isolate it.** An added package that hard-pins a clashing version (e.g. `a2a-sdk`
   forcing an old `fastapi`) goes in *its own* deployment's `runtime_env` — the LLM ingress keeps the image
   framework; only that deployment gets the pin.
@@ -259,7 +263,7 @@ automatically — the rest still need eyes.
 | 2 | Does every off-head unit get those deps *at its own scope*? | `map_batches` actors, `TorchTrainer` workers, `@ray.remote` tasks, Serve replicas that declare a partial `runtime_env` |
 | 3 | ✅ Does anything depend on a bare `pip install` reaching workers? | green in a workspace, broken as a Job or Service |
 | 4 | Does any hand-typed pin list disagree with the lock? | a notebook pin quietly compensating for a wrong lock is the dangerous shape |
-| 5 | Do the shipped Job/Service configs source the lock, by absolute path? | the standalone path nobody tests |
+| 5 | Do the shipped Job/Service configs source the lock, in the shape their config type needs? | the standalone path nobody tests — top-level `requirements:` is capped at 122880 bytes |
 | 6 | Does `tests.sh` install or configure something the template doesn't? | CI green while every user following the README fails |
 | 7 | ✅ Does the depset's seed freeze match `BUILD.yaml`'s image? | lock describes an environment the template never runs in |
 | 8 | ✅ Is every requirement `==`, at a version that is still current? | the lock re-resolves on every rebuild, or freezes the template years behind |
@@ -300,6 +304,9 @@ and they join the gate automatically if they ever gain a lock.
   `datasets==3.6.0`. (`fsspec` is in the image now; pinning it is no longer needed.)
 - **`runtime_env` pip hash mismatch** on bumped transitive deps: `uv` can emit one wrong-interpreter hash.
   Pin the offending package to the base-image version.
+- **`runtime_env` config has exceeded the maximum limit of 122880 bytes** at `anyscale job submit` /
+  `service deploy`: a top-level `requirements: <lock>` is inlining a lock that has outgrown the cap. Move it
+  to the job/service shape under "Secondary configs point at the same `.lock`".
 - **Torch CUDA must match the build image.** Only `ray-llm` ships `torch`; on plain `anyscale/ray` the template
   supplies it. Write `--index https://download.pytorch.org/whl/${CUDA_VARIANT}` (never a hardcoded `cu121`) so
   the index tracks the image, and **pin** `torch==<ver>` to a version with wheels for that CUDA — an unpinned

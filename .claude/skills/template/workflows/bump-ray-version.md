@@ -10,7 +10,8 @@ The goal is a **working, CI-green template on the new Ray version**, not a minim
 
 - take the `anyscale/ray[-llm]` variant that `dependencies/images/` holds a freeze of for `<version>`, even if its Python/CUDA differs from the old tag (step 1);
 - raise a too-low `test.timeout_in_sec`, or trim/cache a slow dataset download the test does;
-- pin/unpin a dependency, or make a small code/notebook fix for a moved API.
+- pin/unpin a dependency, or make a small code/notebook fix for a moved API;
+- port a shipped `job.yaml` / `service.yaml` off top-level `requirements: <lock>` when the recompiled lock crosses the 122880-byte `runtime_env` cap (`../references/dependencies.md`, "Secondary configs point at the same `.lock`").
 
 Do them, and note them in the PR body. Reserve **stop / Blocked** for what you genuinely cannot fix from the template's own files — an unpublished base image, a staging/Buildkite outage, or a change that would alter the template's *intent* rather than just make it run. **When unsure, prefer making an obvious, low-risk fix over bailing** — that isn't "guessing."
 

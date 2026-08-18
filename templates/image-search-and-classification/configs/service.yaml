@@ -6,7 +6,7 @@ name: doggos-app
 # like anyscale/ray:2.43.0-slim-py312-cu125, a user-provided base image (provided
 # that it meets certain specs), or you can build new images using the Anyscale
 # image builder at https://console.anyscale-staging.com/v2/container-images.
-image_uri:  anyscale/ray:2.56.0-slim-py312-cu128
+image_uri:  anyscale/ray:2.57.0-slim-py312-cu128
 # containerfile: /home/ray/default/containerfile
 
 # When empty, Anyscale will auto-select the instance types. You can also specify
@@ -45,15 +45,17 @@ excludes: # (Optional) List of files to exclude from being packaged up for the j
     - '**/.DS_Store/**'
     - '**/__pycache__/**'
 
-requirements: /home/ray/default/python_depset.lock
+# Skip a top-level `requirements: /home/ray/default/python_depset.lock` here:
+# the anyscale CLI would inline the whole lock into the service-create API
+# payload and hit the 122880-byte runtime_env cap (same failure the sibling
+# job configs hit; see doggos/doggos/{embed,train}.py for the job-side fix).
+# The Ray Serve equivalent is to hand the lock to the app under
+# `applications[0].runtime_env.pip` as a file path — Ray Serve's runtime_env
+# agent reads the file on the cluster instead of inlining it CLI-side. Same
+# pattern as templates/asynchronous_inference/service.yaml.
 env_vars: # (Optional) Dictionary of environment variables to set in the job.
     # MY_ENV_VAR: my_value
     # ANOTHER_ENV_VAR: another_value
-py_modules: # (Optional) A list of local directories or remote URIs that will be added to the Python path.
-    - /home/ray/default/doggos/doggos
-    # - /path/to/my_module
-    # - s3://my_bucket/my_module
-py_executable: python  # uv run  # remove the requirements and py_modules
 
 # When empty, this uses the default Anyscale Cloud in your organization.
 cloud:
@@ -61,3 +63,13 @@ cloud:
 # Specify the Ray Serve app to deploy.
 applications:
 - import_path: doggos.serve:app
+  runtime_env:
+    # Relative paths — Ray Serve resolves them against the app's `working_dir`
+    # (extracted on the cluster from the top-level `working_dir` above), which
+    # matches the templates/asynchronous_inference/service.yaml pattern. The
+    # "absolute path" guidance in references/dependencies.md is for a top-level
+    # `requirements:` (which the CLI resolves against its own cwd); it doesn't
+    # apply here at `applications[].runtime_env`.
+    pip: python_depset.lock
+    py_modules:
+      - doggos/doggos
