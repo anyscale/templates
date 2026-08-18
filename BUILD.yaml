@@ -566,7 +566,7 @@
   owner_team: llm
   dir: templates/multi_agent_a2a
   cluster_env:
-    image_uri: anyscale/ray-llm:2.56.0-py312-cu130
+    image_uri: anyscale/ray-llm:2.57.0-py312-cu130
   compute_config:
     AWS: configs/multi_agent_a2a/aws.yaml
     GCP: configs/multi_agent_a2a/gce.yaml

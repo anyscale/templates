@@ -2,7 +2,7 @@ name: multi-agent-a2a
 
 working_dir: .
 
-image_uri: anyscale/ray-llm:2.56.0-py312-cu130
+image_uri: anyscale/ray-llm:2.57.0-py312-cu130
 
 logging_config:
   encoding: JSON
