@@ -7,8 +7,9 @@ This runs the per-template flow in `../references/publish-to-backend.md` at flee
 ## Roles & concurrency
 
 - **Leader (you):** discover → review + land → fan out → aggregate. Owns all merges and the human hand-off list.
-- **Worker** (subagent, `general-purpose`; Bash + Read + Buildkite MCP): one batch of ≤8 templates, published **sequentially**.
-- **Concurrency = parallel across workers, sequential within a worker.** Keep total in-flight builds at ~8–10. More has driven `test-template` to fail on cluster-capacity contention (worker-group startup timeouts) — spurious failures that read like template bugs. 54 templates → 7 workers → ≤7 concurrent builds, safely under the line.
+- **Worker** (subagent, `general-purpose`; Bash + Read + Buildkite MCP): one batch of ≤8 templates, all **in parallel**.
+- **Concurrency = everything at once.** A worker triggers every build in its batch up front, then drives them together, advancing whichever gate is ready. Wall-clock is one template's run (~25–40 min), not the batch's sum.
+- **The cost is retries, not correctness.** Past ~8–10 in-flight, `test-template` starts failing on cluster-capacity contention (worker-group startup timeouts) — spurious reds that read like template bugs. Treat them as infra and retry per `../references/publish-to-backend.md` **Failure handling**; cross-template correlation is what tells you it was one event. Drop back to a smaller wave only if retries stop clearing.
 
 ## 1. Discover & scope
 
@@ -33,7 +34,7 @@ The vetted templates are now on `main` (the pipeline publishes `main` HEAD).
 
 ## 4. Worker contract
 
-Hand each worker this. It first loads the Buildkite MCP tools (deferred — `ToolSearch` "buildkite"; authenticate if prompted) and reads `../references/publish-to-backend.md` (incl. its **Failure handling** section). Then, for **each** template in its batch, **sequentially**:
+Hand each worker this. It first loads the Buildkite MCP tools (deferred — `ToolSearch` "buildkite"; authenticate if prompted) and reads `../references/publish-to-backend.md` (incl. its **Failure handling** section). Then it runs step 1 for its whole batch, triggers **every** build at once, and loops over the full set advancing whichever gate is ready:
 
 1. **Pre-publish review** — confirm the merged bump actually landed (`git show origin/main -- templates/<name> BUILD.yaml`): image tag → `<version>`, lock recompiled if the template ships one. Wrong → record `SKIPPED:review:<why>`, next. Never publish a bad artifact.
 2. **Publish** per `publish-to-backend.md`: trigger → unblock `input-tmpl-name` (fields) → **wait `build-template` + `test-template` pass** → dev → staging → prod. Invariant: **never unblock a publish gate before `test-template` is green.**

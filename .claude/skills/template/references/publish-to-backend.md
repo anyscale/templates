@@ -24,6 +24,11 @@ Bold = manual gates you Unblock. **Never unblock a publish step until this pipel
 - `tmpl-branch=main`
 - `tmpl-commit=HEAD`
 
+**A build's own `state` is not a publish result.** Buildkite reports the *build* as `passed` the moment
+everything ahead of a manual gate is green, so one parked at `block-publish-dev` reads `passed` while every
+publish job under it is still `blocked`. Judge a template done by the **production job's** state, never the
+build's — the build says `passed` twice on the way through, and only the second one means published.
+
 ## Run it (Buildkite MCP)
 
 1. **Trigger build:** `org_slug=anyscale`, `pipeline_slug=tmpl-publish`, `branch=master`,
