@@ -1,0 +1,18 @@
+# One L4 -- 24 GB, which is 22.35 GiB, and 22.03 GiB usable as torch reports it. Measured
+# on a g6, 2026-08-17; "24 GiB" is a unit error worth about 2 GiB of headroom that is not
+# there. This is the card this repo's GPU templates use.
+#
+# `packing.py --stages measured --vram 22.03` is this template's own four models: one actor
+# of each holds 5.53 GiB, so 75% of the card is free. `--stages shipped` is the SOURCE
+# engagement's configuration on a DIFFERENT model set, tuned on a 48 GiB workstation card,
+# and its actor counts over-commit an L4. Do not read its 21.01 GiB as this set's footprint.
+# The CI config in tests/tests.sh is the reduced set, not the shipped one.
+head_node:
+  instance_type: m5.2xlarge
+  resources:
+    CPU: 0
+worker_nodes:
+- name: gpu-worker
+  instance_type: g6.4xlarge
+  min_nodes: 1
+  max_nodes: 2
