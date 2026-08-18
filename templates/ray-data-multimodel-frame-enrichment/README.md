@@ -38,10 +38,27 @@ GPU and no weights.
 
 
 ```python
+import os
+import subprocess
+import sys
+
+
+def run(*args):
+    """Run one of this template's scripts, and FAIL LOUDLY if it fails.
+
+    Deliberately not `!python script.py`. IPython's shell escape does NOT raise on a
+    non-zero exit -- measured: a cell running `!python -c "sys.exit(7)"` completes, the
+    next cell runs, and papermill exits 0. Every stage below is invoked from a cell, so
+    with `!` a CI run of this notebook would report success for a pipeline that died.
+    `check=True` is what makes a green run mean something.
+    """
+    subprocess.run([sys.executable, *args], check=True)
+
+
 # Rung 1: no GPU, no weights, no cluster, nothing installed. If these fail, nothing below
 # is worth running.
-!python tests/test_packing.py
-!python tests/test_pipeline.py
+run("tests/test_packing.py")
+run("tests/test_pipeline.py")
 ```
 
 ## `num_gpus` is admission control, not a memory limit
@@ -73,7 +90,7 @@ prints it as `UNMEASURED` so it cannot be quoted as one.
 
 ```python
 # The source engagement's shipped configuration on the 48 GiB card it was tuned on.
-!python packing.py
+run("packing.py")
 ```
 
 Co-residency is the constraint the per-stage view misses, and `packing.py` carries **two
@@ -103,10 +120,14 @@ busy one.
 
 
 ```python
-# This template's own four models, on the card in configs/. This is the assertion the CI
-# test makes -- co-residency of one actor per stage, against the measured 22.03 GiB an L4
-# actually reports rather than a nominal 24.
-!python packing.py --stages measured --vram 22.03
+# This template's own four models, on the card in configs/, against the measured 22.03 GiB
+# an L4 actually reports rather than a nominal 24.
+#
+# `--strict` makes this a GATE rather than a report: exit 1 if the four models cannot be
+# co-resident, if a stage is over-committed, or if the relative-cost ordering has inverted.
+# Worth knowing before you spend money on the real thing, which is why it is a cell and not
+# something only CI does.
+run("packing.py", "--stages", "measured", "--vram", "22.03", "--strict")
 ```
 
 ### And it is worth doing: at least 26.5% faster than running the stages serially
@@ -186,14 +207,19 @@ budget would make the template demonstrate something it does not claim.
 
 
 ```python
-import os
-
-# Override to point somewhere else. The CI test uses 24 frames at 640x480; the geometry and
-# the count are the two things you are allowed to shrink.
+# Read from the environment so a run can be shrunk without editing the notebook. These
+# defaults are the demo; the CI test exports smaller ones. The frame COUNT and the frame
+# GEOMETRY are the two things you may shrink -- the number of resident models is not,
+# because that is the whole claim.
 FIXTURE = os.environ.get("FIXTURE_DIR", "/mnt/cluster_storage/frames")
 OUTPUT = os.environ.get("OUTPUT_DIR", "/mnt/cluster_storage/frames-enriched")
+FRAMES = os.environ.get("FRAMES", "48")
+FILES = os.environ.get("FILES", "4")
+WIDTH = os.environ.get("WIDTH", "640")
+HEIGHT = os.environ.get("HEIGHT", "480")
 
-!python make_fixture.py --out {FIXTURE} --frames 24 --files 4 --width 640 --height 480
+run("make_fixture.py", "--out", FIXTURE, "--frames", FRAMES, "--files", FILES,
+    "--width", WIDTH, "--height", HEIGHT)
 ```
 
 `--stub` runs the whole DAG with no weights and no GPU, which is how the shapes get tested
@@ -202,7 +228,7 @@ one does not fail, it hangs.
 
 
 ```python
-!python pipeline.py --input {FIXTURE} --stub
+run("pipeline.py", "--input", FIXTURE, "--stub")
 ```
 
 ## Dependencies: the driver install does not reach the models
@@ -213,7 +239,20 @@ run different resolutions of the same pins.
 
 
 ```python
-!uv pip install -r python_depset.lock --system --no-deps --no-cache-dir --index-strategy unsafe-best-match
+# `uv`, not this kernel's python, so it is spelled out rather than routed through run().
+# Still check=True: a half-finished install must not read as a working environment.
+#
+# Written as one command string and split, rather than as a list of quoted arguments, and
+# that is not cosmetic. scripts/hooks/check-dep-delivery.py proves a template installs its
+# own lock by matching the requirements flag immediately followed by whitespace and the lock
+# filename, in the files a user runs. A hand-written argument list puts a comma and a quote
+# between the two, the match fails, and the template reads as one that ships a lock nothing
+# installs. Keep them adjacent in the source text.
+INSTALL = (
+    "uv pip install -r python_depset.lock --system --no-deps --no-cache-dir "
+    "--index-strategy unsafe-best-match"
+)
+subprocess.run(INSTALL.split(), check=True)
 ```
 
 **That install reaches the driver only, and the models do not run there.** Every stage of
@@ -261,14 +300,16 @@ assert os.environ.get("HF_TOKEN"), (
 
 
 ```python
-# The CI-scale configuration: one actor per stage, which is what fits an L4. The shipped
-# counts (10 detectors) need the 48 GiB class -- see packing.py.
-os.environ.update(
+# One actor per stage, which is what fits the L4 in configs/. The shipped counts (10
+# detectors) need the 48 GiB class -- see packing.py, which refused above if they did not
+# fit. `setdefault`, so anything already exported wins over these.
+for key, value in dict(
     DETECTOR_ACTORS="1", EMB_ACTORS="1", METRICS_ACTORS="1",
     DETECTOR_BATCH="2", EMB_BATCH="8", METRICS_BATCH="8", METRICS_SUBBATCH="2",
-)
+).items():
+    os.environ.setdefault(key, value)
 
-!python pipeline.py --input {FIXTURE} --output {OUTPUT}
+run("pipeline.py", "--input", FIXTURE, "--output", OUTPUT)
 ```
 
 Every assertion below is about the **answer**, not the speed: a per-frame count that matches
@@ -306,7 +347,10 @@ verdict against the rule above and writes every run to a JSONL, including the fa
 
 
 ```python
-# !python measure_packing.py --input {FIXTURE} --frames 96 --runs 3
+# Left commented on purpose: 20 minutes of GPU, and it is a measurement rather than a step
+# in the pipeline. Uncomment to re-derive the number yourself.
+#
+# run("measure_packing.py", "--input", FIXTURE, "--frames", "96", "--runs", "3")
 ```
 
 ## Running it: the levers
