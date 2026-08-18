@@ -816,3 +816,34 @@
     tests_path: tests/ecommerce_end_to_end/
     command: bash tests.sh
     timeout_in_sec: 1800
+
+# owner_team ray-data: the template teaches fractional-GPU actor packing across
+# heterogeneous Ray Data stages and has no Train/Serve/LLM surface.
+#
+# KNOWN RED TEST, deliberately. Two of the three models are gated on Hugging Face and gating
+# is per ACCOUNT. tests.sh prefers an HF_TOKEN from the environment and falls back to Secrets
+# Manager (`anyscale_hf_token`) the way tests/vla-fine-tuning/tests.sh does; that secret
+# belongs to svc-huggingface@anyscale.com, which is on neither gated list as of 2026-08-18.
+# So this test fails until that account accepts the terms on facebook/sam3 and
+# facebook/dinov3-vitl16-pretrain-lvd1689m -- two clicks, and no token change substitutes for
+# them. It fails in the preflight, which names the account and the remedy, rather than in a
+# 403 several GB into a model download.
+# owner: UNASSIGNED -- set before merge
+- name: ray-data-multimodel-frame-enrichment
+  owner_team: ray-data
+  dir: templates/ray-data-multimodel-frame-enrichment
+  cluster_env:
+    image_uri: anyscale/ray:2.57.0-py312-cu129
+  compute_config:
+    AWS: configs/ray-data-multimodel-frame-enrichment/aws.yaml
+    GCP: configs/ray-data-multimodel-frame-enrichment/gce.yaml
+  test:
+    tests_path: tests/ray-data-multimodel-frame-enrichment/
+    command: bash tests.sh
+    # A GUESS, not a measurement, and above the skill's sub-30-minute target: three model
+    # downloads and four model loads before the first batch, plus a runtime env carrying
+    # torch. Nobody has timed this test end to end -- it cannot run until the gated-list
+    # blocker above clears -- so the first green run should replace this with the real
+    # figure. 3600 is the value 8 other entries use, chosen to fail on a hang rather than
+    # on a slow but healthy start.
+    timeout_in_sec: 3600
