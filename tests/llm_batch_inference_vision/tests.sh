@@ -4,6 +4,7 @@ set -euxo pipefail
 # CI shrink — notebook defaults (10000 images, concurrency 4) are the real demo.
 export DATASET_LIMIT=8 CONCURRENCY=1
 
+uv pip install -r python_depset.lock --system --no-deps --no-cache-dir --index-strategy unsafe-best-match
 uv pip install -q --system papermill nbconvert==7.16.6 ipykernel
 jupyter nbconvert --to notebook README.ipynb \
     --TagRemovePreprocessor.enabled=True \

@@ -7,5 +7,6 @@ set -euo pipefail
 export TUNE_NUM_SAMPLES="${TUNE_NUM_SAMPLES:-2}"
 export TUNE_NUM_EPOCHS="${TUNE_NUM_EPOCHS:-1}"
 
+uv pip install -r python_depset.lock --system --no-deps --no-cache-dir --index-strategy unsafe-best-match
 uv pip install -q --system nbmake==1.5.5 pytest==9.0.2
 pytest --nbmake . -s -vv

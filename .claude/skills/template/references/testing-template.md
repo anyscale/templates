@@ -12,6 +12,7 @@ Canon — apply each:
   papermill README.ipynb /tmp/<name>.out.ipynb --log-output --kernel python3 --cwd .
   ```
   (`tests/audio-dataset-curation-llm-judge/tests.sh` is a minimal 0-tag *structure* example; it omits `--cwd .` only because it uses no relative paths.)
+- **Install the notebook's deps in `tests.sh` too, before papermill.** A notebook's `!uv pip install` cannot fail its cell — IPython runs it in a subshell and discards the status — so a 502 there lets the run continue and die cells later on an unrelated `ModuleNotFoundError`, naming a package that was pinned correctly all along. Repeating the install under `set -e` reports the real error where it happened; the notebook's re-run then fetches nothing (`Checked N packages`), and its `!` line stays readable for users.
 - **Strip CI-only cells with a tag — only when needed.** If some cells can't run in CI (SSH keys, multi-GPU/H100), tag them `skip-in-ci` and remove them before papermill:
   ```bash
   jupyter nbconvert --to notebook README.ipynb \

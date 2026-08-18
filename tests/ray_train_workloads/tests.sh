@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -euxo pipefail
 
+uv pip install -r python_depset.lock --system --no-deps --no-cache-dir --index-strategy unsafe-best-match
 uv pip install -q --system papermill
 
 # Minimal-scale run of all 7 tutorial notebooks: the env knobs below shrink epochs /

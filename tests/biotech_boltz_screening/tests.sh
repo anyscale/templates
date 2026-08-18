@@ -7,5 +7,6 @@ set -euxo pipefail
 export SCREENING_SCALE="${SCREENING_SCALE:-small}"
 export SCREENING_NUM_GPUS="${SCREENING_NUM_GPUS:-4}"
 
+uv pip install -r python_depset.lock --system --no-deps --no-cache-dir --index-strategy unsafe-best-match
 uv pip install -q --system papermill
 papermill README.ipynb /tmp/biotech_boltz_screening.out.ipynb --log-output --kernel python3 --cwd .
