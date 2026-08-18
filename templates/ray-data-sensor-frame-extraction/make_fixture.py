@@ -45,7 +45,23 @@ def make_frames(n: int, width: int, height: int, bpp: int, seed: int = 0):
         yield ((base + noise + i) % 4096).astype(np.uint16).tobytes()[:nbytes]
 
 
-def write_list_uint8(frames, path: Path, row_group_size: int) -> float:
+def geometry_metadata(width: int, height: int, bpp: int) -> dict:
+    """Frame geometry, written into the Parquet schema so it travels with the data.
+
+    pipeline.py used to carry the geometry as a module constant while this script took
+    --width/--height and its own docstring told you to raise them. A mismatch either raised
+    ValueError (fixture smaller than the constant) or SILENTLY CROPPED every frame (fixture
+    larger), and the silent half is the one that produces plausible wrong output. A reader
+    cannot be expected to keep two files in sync, so the file answers the question.
+    """
+    return {
+        b"frame_width": str(width).encode(),
+        b"frame_height": str(height).encode(),
+        b"bytes_per_pixel": str(bpp).encode(),
+    }
+
+
+def write_list_uint8(frames, path: Path, row_group_size: int, meta: dict) -> float:
     """The layout that turns up by default. One Parquet INT32 value, one definition
     level and one repetition level PER BYTE."""
     tbl = pa.table(
@@ -54,12 +70,13 @@ def write_list_uint8(frames, path: Path, row_group_size: int) -> float:
             "data": pa.array([list(f) for f in frames], type=pa.list_(pa.uint8())),
         }
     )
+    tbl = tbl.replace_schema_metadata(meta)
     t0 = time.perf_counter()
     pq.write_table(tbl, path, compression="zstd", row_group_size=row_group_size)
     return time.perf_counter() - t0
 
 
-def write_fixed_binary(frames, path: Path, row_group_size: int) -> float:
+def write_fixed_binary(frames, path: Path, row_group_size: int, meta: dict) -> float:
     """The recommended layout: FIXED_LEN_BYTE_ARRAY, required, no dictionary.
     One Parquet value per frame; the reader preallocates from the footer."""
     width = len(frames[0])
@@ -67,7 +84,8 @@ def write_fixed_binary(frames, path: Path, row_group_size: int) -> float:
         [
             pa.field("frame_id", pa.int64(), nullable=False),
             pa.field("data", pa.binary(width), nullable=False),
-        ]
+        ],
+        metadata=meta,
     )
     tbl = pa.table(
         {
@@ -108,6 +126,8 @@ def main() -> int:
     (out / "list_uint8").mkdir(parents=True, exist_ok=True)
     (out / "fixed_binary").mkdir(parents=True, exist_ok=True)
 
+    meta = geometry_metadata(args.width, args.height, args.bytes_per_pixel)
+
     slow_total = fast_total = 0.0
     for f in range(args.files):
         frames = list(
@@ -116,14 +136,17 @@ def main() -> int:
             )
         )
         slow_total += write_list_uint8(
-            frames, out / "list_uint8" / f"part-{f:05d}.parquet", args.row_group_size
+            frames, out / "list_uint8" / f"part-{f:05d}.parquet", args.row_group_size, meta
         )
         fast_total += write_fixed_binary(
-            frames, out / "fixed_binary" / f"part-{f:05d}.parquet", args.row_group_size
+            frames, out / "fixed_binary" / f"part-{f:05d}.parquet", args.row_group_size, meta
         )
 
     rows = args.files * args.frames
     print(f"wrote {rows} rows x 2 layouts to {out}")
+    print(f"  geometry {args.width}x{args.height} x {args.bytes_per_pixel}B "
+          f"= {args.width * args.height * args.bytes_per_pixel / 1e6:.1f} MB/row, "
+          f"recorded in the Parquet schema metadata")
     print(f"  list<uint8>          write: {slow_total:7.2f}s")
     print(f"  binary(N) required   write: {fast_total:7.2f}s")
     if fast_total > 0:
