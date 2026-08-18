@@ -10,7 +10,8 @@ The goal is a **working, CI-green template on the new Ray version**, not a minim
 
 - take the `anyscale/ray[-llm]` variant that `dependencies/images/` holds a freeze of for `<version>`, even if its Python/CUDA differs from the old tag (step 1);
 - raise a too-low `test.timeout_in_sec`, or trim/cache a slow dataset download the test does;
-- pin/unpin a dependency, or make a small code/notebook fix for a moved API.
+- pin/unpin a dependency, or make a small code/notebook fix for a moved API;
+- port a shipped `job.yaml` / `service.yaml` off a top-level `requirements: <lock>` when the recompiled lock crosses the anyscale API's 122880-byte `runtime_env` cap — the CI failure looks like `The size of the runtime_env config has exceeded the maximum limit of 122880 bytes` at `anyscale job submit` / `anyscale service deploy`. Fix per `../references/dependencies.md` "Secondary configs point at the same `.lock`" (jobs: driver `uv pip install` in `entrypoint` + `ray.init(runtime_env=…)` in the script; services: move the lock under `applications[].runtime_env.pip`). A bump can trip this on a config that was fine before — locks only grow.
 
 Do them, and note them in the PR body. Reserve **stop / Blocked** for what you genuinely cannot fix from the template's own files — an unpublished base image, a staging/Buildkite outage, or a change that would alter the template's *intent* rather than just make it run. **When unsure, prefer making an obvious, low-risk fix over bailing** — that isn't "guessing."
 
