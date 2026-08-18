@@ -820,6 +820,14 @@
 # owner_team ray-data: the template teaches fractional-GPU actor packing across
 # heterogeneous Ray Data stages and has no Train/Serve/LLM surface.
 #
+# THE FIRST SCRIPT TEMPLATE IN THIS REPO, and that needs a decision rather than a merge.
+# create-template.md asks "notebook or script?" and testing-template.md carries a test shape
+# for each, so the instructions permit it -- but all 56 existing templates ship at least one
+# .ipynb, and README.md here is hand-written rather than an nbconvert render. If the gallery
+# needs a notebook, the fix is to author README.ipynb and EXECUTE it, then regenerate
+# README.md; that needs the GPU and the token the gate below is blocking, so it cannot be
+# faked in the meantime.
+#
 # KNOWN RED TEST, deliberately. Two of the three models are gated on Hugging Face and gating
 # is per ACCOUNT. tests.sh prefers an HF_TOKEN from the environment and falls back to Secrets
 # Manager (`anyscale_hf_token`) the way tests/vla-fine-tuning/tests.sh does; that secret
