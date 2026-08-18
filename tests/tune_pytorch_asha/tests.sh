@@ -2,6 +2,7 @@
 set -euo pipefail
 
 # The notebook installs torch/torchvision/etc. itself; we just need the runner.
+uv pip install -r python_depset.lock --system --no-deps --no-cache-dir --index-strategy unsafe-best-match
 uv pip install -q --system papermill
 
 # Fast synthetic-data path: 2 trials x 2 epochs of FakeData (no CIFAR-10 download).
