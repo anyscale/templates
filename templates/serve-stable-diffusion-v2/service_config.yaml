@@ -1,6 +1,6 @@
 # Anyscale Service config for the SDXL app: anyscale service deploy -f service_config.yaml
 name: stable-diffusion-service
-image_uri: anyscale/ray:2.56.0-py312-cu128
+image_uri: anyscale/ray:2.57.0-py312-cu128
 compute_config:
   head_node:
     instance_type: m5.2xlarge
