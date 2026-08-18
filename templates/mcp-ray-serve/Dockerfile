@@ -1,4 +1,4 @@
-FROM anyscale/ray:2.56.0-py312
+FROM anyscale/ray:2.57.0-py312
 
 RUN mkdir -p /home/ray/default
 
