@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 import ray
 import ray.data
+from ray.data import SaveMode
 
 from src.feature_engineering import join_user_features, join_merchant_features, compute_features
 from src.fraud_scorer import FraudScorer
@@ -91,7 +92,7 @@ def run_fraud_scoring_pipeline(
     # ── Stage 5: Write results ─────────────────────────────────
     print(f"\n[5/5] Writing scored transactions to {output_path}")
     t0 = time.time()
-    ds.write_parquet(output_path)
+    ds.write_parquet(output_path, mode=SaveMode.OVERWRITE)
     stage_times["write"] = time.time() - t0
 
     # ── Metrics ────────────────────────────────────────────────

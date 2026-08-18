@@ -15,6 +15,7 @@ import time
 import pandas as pd
 import ray
 import ray.data
+from ray.data import SaveMode
 
 from src.fasta_loader import read_parquet_corpus
 from src.cpu_transforms import validate_and_filter, assign_length_bucket
@@ -103,7 +104,7 @@ def run_embedding_pipeline_naive(
     # ── Stage 5: Write ────────────────────────────────────────────────────
     print(f"\n[5/5] Writing embeddings to {output_path}")
     t0 = time.time()
-    ds.write_parquet(output_path)
+    ds.write_parquet(output_path, mode=SaveMode.OVERWRITE)
     stage_times["write"] = time.time() - t0
 
     # ── Metrics ───────────────────────────────────────────────────────────
@@ -230,7 +231,7 @@ def run_embedding_pipeline_bucketed(
     # ── Stage 7: Write ────────────────────────────────────────────────────
     print(f"\n[7/7] Writing embeddings to {output_path}")
     t0 = time.time()
-    ds.write_parquet(output_path)
+    ds.write_parquet(output_path, mode=SaveMode.OVERWRITE)
     stage_times["write"] = time.time() - t0
 
     # ── Metrics ───────────────────────────────────────────────────────────

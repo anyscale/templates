@@ -58,6 +58,7 @@ Let's import the dependencies we will use in this template.
 
 ```python
 import ray
+from ray.data import SaveMode
 import uuid
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 
@@ -309,13 +310,13 @@ if OUTPUT_PATH.startswith("abfss://"):
         )
         
         # IMPORTANT: pass the filesystem object so PyArrow/fsspec treats the path as abfss
-        embedded_ds.write_parquet(OUTPUT_PATH, filesystem=fs, try_create_dir=False)
+        embedded_ds.write_parquet(OUTPUT_PATH, filesystem=fs, try_create_dir=False, mode=SaveMode.OVERWRITE)
     else:
         # Fallback to regular write if parsing fails
-        embedded_ds.write_parquet(OUTPUT_PATH, try_create_dir=False)
+        embedded_ds.write_parquet(OUTPUT_PATH, try_create_dir=False, mode=SaveMode.OVERWRITE)
 else:
     # For S3, GCS, or local storage, use regular write
-    embedded_ds.write_parquet(OUTPUT_PATH, try_create_dir=False)
+    embedded_ds.write_parquet(OUTPUT_PATH, try_create_dir=False, mode=SaveMode.OVERWRITE)
 ```
 
 We can also use Ray Data to read back the output files to ensure the results are as expected.
