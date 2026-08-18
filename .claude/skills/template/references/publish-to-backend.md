@@ -24,6 +24,11 @@ Bold = manual gates you Unblock. **Never unblock a publish step until this pipel
 - `tmpl-branch=main`
 - `tmpl-commit=HEAD`
 
+**A build's own `state` is not a publish result.** Buildkite reports the *build* as `passed` the moment
+everything ahead of a manual gate is green, so one parked at `block-publish-dev` reads `passed` while every
+publish job under it is still `blocked`. Judge a template done by the **production job's** state, never the
+build's — the build says `passed` twice on the way through, and only the second one means published.
+
 ## Run it (Buildkite MCP)
 
 1. **Trigger build:** `org_slug=anyscale`, `pipeline_slug=tmpl-publish`, `branch=master`,
@@ -40,14 +45,17 @@ Bold = manual gates you Unblock. **Never unblock a publish step until this pipel
 
 ## Failure handling — retry or skip?
 
-On a job reaching a terminal non-passed state at **any** stage, classify before acting — bias to **retry the ambiguous; skip only the clearly template-caused or the reproducible**:
+**Read the last ~120 lines, not the whole log** — a transient the build survived is not what killed it. On a job reaching a terminal non-passed state at **any** stage, classify before acting — bias to **retry the ambiguous; skip only the clearly template-caused or the reproducible**:
 
 | Class | Fingerprint | Action |
 |---|---|---|
 | **Transient / infra** | Buildkite API 429/5xx, timeouts, DNS/connection reset; job `broken`, lost agent, runner disconnect; **cluster capacity** — "worker group startup timed out", "insufficient cluster resources", instance/quota-launch timeout, spot reclaim; image-pull backoff / registry 5xx; Anyscale control-plane 5xx or a one-off token-refresh blip; **≥2 templates failing at the same instant with the same error** (shared infra event) | **Retry** |
+| **Cancelled / external** | Whole build flips to `canceled` with `user_canceled_via_api` and `canceled_by` null, every job stamped at the same instant, logs empty or cut mid-line | **Stop — find who cancelled it.** Never retry |
 | **Genuine** | `test-template` assertion / notebook failure that **reproduces on retry**; `build-template` failure from the template's deps or Dockerfile (depset conflict, package not found, real compile error); a publish stage where the **backend rejects** the artifact (manifest/schema invalid, missing field); a persistent auth/config error you can't fix; **any failure identical across the full retry budget** | **Skip + report** |
 
-**Retry budget** per template per stage: ~2 `retry_job` + 1 full re-trigger (a fresh build re-resolves `main` HEAD + the latest pipeline), backoff 30–60s. API/network transients (429/5xx/timeout) → just retry the call; they don't consume the budget. **Cross-template correlation wins** — several templates failing together at one moment is one infra event; retry, don't skip. (In the 2.56.0 fanout, three templates hit `exit -1` at the same instant under 49-way concurrency; a sequential re-run passed all three — capacity, not bugs.)
+**A cancelled build cannot be retried** — recovery needs a fresh trigger, so every cancel costs a re-trigger from the budget below.
+
+**Retry budget** per template per stage: ~2 `retry_job` + 1 full re-trigger (a fresh build re-resolves `main` HEAD + the latest pipeline), backoff 30–60s. API/network transients (429/5xx/timeout) → just retry the call; they don't consume the budget. **Cross-template correlation proves a shared cause, not an infra cause** — a cleanup or guard script correlates perfectly too. Retry only once you've ruled out the cancelled/external row above; three workers once spent their budgets retrying into a deliberate mass-cancel. (In the 2.56.0 fanout, three templates hit `exit -1` at the same instant under 49-way concurrency; a sequential re-run passed all three — capacity, not bugs.)
 
 **Skip = hand off, don't fix.** On a genuine failure, capture the failing job's log tail + build URL, record it, and move on — repairing a broken bump is a human's call (or a `../workflows/bump-ray-version.md` fix loop), out of scope for a publish run.
 
