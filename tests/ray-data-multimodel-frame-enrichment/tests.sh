@@ -146,10 +146,24 @@ def get(url):
 kind, val, body = get("https://huggingface.co/api/whoami-v2")
 if kind == "unreachable":
     sys.exit(f"cannot reach huggingface.co: {val}. This is a network finding, not a gate one.")
+
+# WHOAMI FIRST, AND ITS FAILURE IS A DIFFERENT FAILURE. 401 means the token itself did not
+# authenticate, and a corrected token DOES fix that; 403 on a file means the token is fine and
+# the account is not on the gated list, where no token change helps. An earlier version of
+# this check printed the per-account remedy for both -- so a developer with a typo in their
+# token was told to go and accept terms they had already accepted. Measured: with a bogus
+# token every request 401s, and that branch is the one that used to give the wrong advice.
+if val != 200:
+    sys.exit(
+        f"HF_TOKEN did not authenticate: /api/whoami-v2 returned HTTP {val}.\n"
+        "This is a CREDENTIAL failure, not a gate one -- Hugging Face does not know who you\n"
+        "are, so a corrected token DOES fix it. Check the token is a live read token; in CI,\n"
+        "check what Secrets Manager returned for anyscale_hf_token."
+    )
 try:
-    who = json.loads(body).get("name", "unknown") if body else f"unknown (HTTP {val})"
+    who = json.loads(body).get("name", "unknown") if body else "unknown (empty whoami body)"
 except ValueError:
-    who = f"unknown (unparseable whoami response, HTTP {val})"
+    who = "unknown (unparseable whoami response)"
 
 denied, unreachable = [], []
 for repo in GATED:
@@ -157,17 +171,26 @@ for repo in GATED:
     if kind == "unreachable":
         unreachable.append(f"{repo} -> {val}")
     elif val != 200:
-        denied.append(f"{repo} -> HTTP {val}")
+        denied.append((repo, val))
 
 if unreachable:
     sys.exit(f"could not check gated access: {'; '.join(unreachable)}")
 if denied:
-    sys.exit(
-        f"Hugging Face account '{who}' cannot read: {', '.join(denied)}.\n"
-        "Accept the terms once on each model card with that account. The gate is\n"
-        "per-account, not per-token, so no token change fixes it; a fine-grained read\n"
-        "token is sufficient once the terms are accepted."
-    )
+    listing = ", ".join(f"{repo} -> HTTP {code}" for repo, code in denied)
+    if {code for _, code in denied} == {403}:
+        remedy = (
+            "Accept the terms once on each model card with that account. The gate is\n"
+            "per-account, not per-token, so no token change fixes it; a fine-grained read\n"
+            "token is sufficient once the terms are accepted."
+        )
+    else:
+        remedy = (
+            "The token authenticated, so this is not the ordinary gate refusal (403). Read\n"
+            "the status above before changing anything: 401 here after a successful whoami\n"
+            "means the token lacks read scope on the repo, and anything else is Hugging Face\n"
+            "telling you something this check does not model."
+        )
+    sys.exit(f"Hugging Face account '{who}' cannot read: {listing}.\n{remedy}")
 print(f"gated access ok as '{who}'")
 PY
 
