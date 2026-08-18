@@ -737,7 +737,7 @@
   owner_team: ray-data
   dir: templates/ecommerce_batch_embeddings
   cluster_env:
-    image_uri: anyscale/ray:2.56.0-py311-cu128
+    image_uri: anyscale/ray:2.57.0-py311-cu128
   compute_config:
     AWS: configs/ecommerce_batch_embeddings/aws.yaml
     GCP: configs/ecommerce_batch_embeddings/gce.yaml
