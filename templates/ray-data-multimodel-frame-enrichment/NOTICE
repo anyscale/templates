@@ -1,0 +1,26 @@
+This template loads three public models at runtime (the metrics stage carries none). It redistributes none of their weights;
+each is pulled from its own hub repository by the user running the template. The licence
+terms below still travel with any output or derivative you publish.
+
+  facebook/sam3
+      SAM License (Meta). Commercial use permitted. Derivatives and any redistributed
+      weights remain under the SAM License. Military, ITAR-restricted and illegal uses are
+      excluded. GATED on Hugging Face: accept the terms on the model card once.
+      https://github.com/facebookresearch/sam3/blob/main/LICENSE
+
+  facebook/dinov3-vitl16-pretrain-lvd1689m
+      DINOv3 License (Meta). Commercial use permitted. If you distribute the materials or
+      a derivative you must include a copy of the licence, and you must display
+      "Built with DINOv3" in related documentation or UI. Research published using it must
+      acknowledge it. GATED on Hugging Face: accept the terms on the model card once.
+      https://ai.meta.com/resources/models-and-libraries/dinov3-license/
+
+  google/siglip2-base-patch16-224
+      Apache-2.0. Not gated.
+
+Built with DINOv3.
+
+NOT USED, DELIBERATELY: the source engagement's pipeline also touched YOLO variants.
+Ultralytics YOLO is AGPL-3.0 and YOLOv9/YOLOR are GPL-3.0, which would carry copyleft
+obligations into anything built around this template. Any substitute for the detector or
+metrics stage has to be licence-checked before it goes in.
