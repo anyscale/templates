@@ -3,5 +3,4 @@ langchain==0.1.17
 # optimum.bettertransformer (util/embedding_util.py) refuses transformers>=4.49, capping both.
 transformers==4.40.2
 optimum==1.19.2
-numpy==1.26.4
-pyarrow==19.0.1
+numpy==1.26.4  # below the image's 2.2.6, but langchain 0.1.17 caps numpy<2
