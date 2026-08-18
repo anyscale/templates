@@ -816,3 +816,32 @@
     tests_path: tests/ecommerce_end_to_end/
     command: bash tests.sh
     timeout_in_sec: 1800
+
+# owner_team ray-data: the template teaches the Parquet read path -- blob-column physical type,
+# row-group sizing, read-task CPU, decoder threads -- and has no Train/Serve/LLM surface.
+#
+# MEASURED on this repo's own configs/ (one g6.4xlarge L4, m5.2xlarge head):
+# prodjob_mnm3w6i1azkcfq22q8radiaxt5 for the sweeps, prodjob_gdtvnpvf1we3xfz7qi8si59bji for
+# tests.sh. At the CI knob the layout lever is worth ~1.6x on the read and ~4.1x on the write
+# (n=3, within 3%) -- NOT the 7x-23x the source engagement saw at production scale, and two of
+# the other levers did not move measurably at all. The notebook says so in the cell that carries
+# the engagement's figures. Read that cell before quoting the title.
+# owner: @em-anyscale
+- name: ray-data-sensor-frame-extraction
+  owner_team: ray-data
+  dir: templates/ray-data-sensor-frame-extraction
+  cluster_env:
+    image_uri: anyscale/ray:2.57.0-py312-cu129
+  compute_config:
+    AWS: configs/ray-data-sensor-frame-extraction/aws.yaml
+    GCP: configs/ray-data-sensor-frame-extraction/gce.yaml
+  test:
+    tests_path: tests/ray-data-sensor-frame-extraction/
+    command: bash tests.sh
+    # MEASURED, not a guess: 338s of tests.sh wall time on
+    # prodjob_gdtvnpvf1we3xfz7qi8si59bji, running the notebook through papermill exactly as CI
+    # does -- exit 0, all six code cells executed, Executing/Ending counts matched at 19.
+    # Cluster start and image pull sit outside this. The headroom covers the two variable
+    # parts: a 1.2 GiB torch download to the driver, and Ray building the lock's virtualenv on
+    # the worker (~85s, measured). A transient PyPI 502 already failed one of these runs.
+    timeout_in_sec: 1200
