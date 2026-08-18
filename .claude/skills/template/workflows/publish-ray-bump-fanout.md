@@ -39,12 +39,21 @@ Hand each worker this. It first loads the Buildkite MCP tools (deferred — `Too
 1. **Pre-publish review** — confirm the merged bump actually landed (`git show origin/main -- templates/<name> BUILD.yaml`): image tag → `<version>`, lock recompiled if the template ships one. Wrong → record `SKIPPED:review:<why>`, next. Never publish a bad artifact.
 2. **Publish** per `publish-to-backend.md`: trigger → unblock `input-tmpl-name` (fields) → **wait `build-template` + `test-template` pass** → dev → staging → prod. Invariant: **never unblock a publish gate before `test-template` is green.**
 3. **On any failure, any stage** → classify per **Failure handling** in `publish-to-backend.md`: transient/infra → bounded retry; genuine → capture the failing job's log tail + build URL, record `SKIPPED:<stage>:<reason>`, next template.
-4. **Record** one line per template to `<results-dir>/<name>.json` as it goes — `{status: PUBLISHED|SKIPPED, stage, reason, build_url}`. On entry, skip any template already `PUBLISHED` (idempotent resume after a kill).
+4. **Record** one line per template to `<results-dir>/<name>.json` as it goes — `{status: PUBLISHED|SKIPPED, stage, reason, build_url}`. On entry, skip any template already `PUBLISHED` (idempotent resume after a kill). **The results dir is a cache of Buildkite state, never the source of truth** — a missing entry means nobody wrote it yet, *not* that the template needs publishing. Treating it as authoritative re-fires builds for already-live templates, and the leader's driver then walks each one to a second production publish.
 5. **Return** a compact per-template summary to the leader.
 
 Sharp edge: unblocking `input-tmpl-name` needs a *fields* payload; if the MCP can't send unblock fields, fall back to a REST `curl` (`PUT .../jobs/{id}/unblock` with `BUILDKITE_API_TOKEN`) for that one call.
 
-## 5. Aggregate & report
+## 5. Verify before you report
+
+Audit the wave from Buildkite, not from the results dir, and have someone other than the driver do it if you can — the driver cannot see its own blind spots. Two checks that have each caught a real defect:
+
+- **Freshness, not a build-number proxy.** A template counts as republished only when its winning build started *after that template's own bump commit* — one wave build was created 7s after the final commit, so "build number ≥ N" happens to work until it doesn't.
+- **Ordering.** No publish job may have started before its build's `test-template` finished green. Check `started_at` against `finished_at` across every publish job in the wave; a violation means a gate opened on an untested build.
+
+Reconcile the ledger against Buildkite in **both** directions: entries claiming `PUBLISHED` that job state doesn't support, and green templates with no entry.
+
+## 6. Aggregate & report
 
 Collect the workers' summaries (and the results dir):
 - ✅ **Published** (n)
