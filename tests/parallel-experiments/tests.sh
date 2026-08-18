@@ -6,3 +6,6 @@ set -euo pipefail
 # appended unpinned to every actor's runtime env and trips the lock's --require-hashes.
 uv pip install -q --system papermill==2.7.0
 papermill README.ipynb /tmp/parallel-experiments.out.ipynb --log-output --kernel python3 --cwd .
+
+# Reached only on success; the test pipeline fails a "pass" that lacks it.
+echo "RAYAPP_TESTS_COMPLETE"

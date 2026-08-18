@@ -29,3 +29,6 @@ Image.open('image.png').verify()
 done
 
 [ "$ok" = "true" ] || { echo "serve-stable-diffusion did not return a valid image in time." >&2; exit 1; }
+
+# Reached only on success; the test pipeline fails a "pass" that lacks it.
+echo "RAYAPP_TESTS_COMPLETE"

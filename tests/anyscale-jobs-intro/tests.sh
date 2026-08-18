@@ -2,3 +2,6 @@
 set -euo pipefail
 pip install -r requirements.txt papermill
 papermill README.ipynb output.ipynb -k python3 --log-output
+
+# Reached only on success; the test pipeline fails a "pass" that lacks it.
+echo "RAYAPP_TESTS_COMPLETE"

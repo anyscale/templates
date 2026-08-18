@@ -11,3 +11,6 @@ jupyter nbconvert --to notebook README.ipynb \
     --TagRemovePreprocessor.remove_cell_tags='["skip-in-ci"]' \
     --output /tmp/llm_batch_inference_vision.ci.ipynb
 papermill /tmp/llm_batch_inference_vision.ci.ipynb /tmp/llm_batch_inference_vision.out.ipynb --log-output --kernel python3 --cwd .
+
+# Reached only on success; the test pipeline fails a "pass" that lacks it.
+echo "RAYAPP_TESTS_COMPLETE"

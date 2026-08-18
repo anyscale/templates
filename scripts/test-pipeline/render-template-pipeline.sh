@@ -99,6 +99,16 @@ for t in $TEMPLATES; do
         set -e
         kill "\$\$WATCHER_PID" 2>/dev/null || true
         wait "\$\$WATCHER_PID" 2>/dev/null || true
+        # rayapp's exit code is not the test's. \`anyscale workspace_v2 run_command\`
+        # always exits 0 -- the CLI drops the SDK's returncode -- so rayapp decides
+        # pass/fail by grepping its own output for "exec failed with exit code". A
+        # session that dies mid-notebook prints no such line, and the run reads green.
+        # Every tests.sh ends by echoing this marker, which travels the same channel:
+        # no marker on a pass means the test never reached its last line.
+        if [ "\$\$EXIT" -eq 0 ] && ! grep -q RAYAPP_TESTS_COMPLETE "\$\$LOG"; then
+          echo "rayapp reported success but \$\$TEMPLATE_NAME never printed its completion marker" >&2
+          EXIT=1
+        fi
         exit \$\$EXIT
     timeout_in_minutes: ${TIMEOUT}
     agents:

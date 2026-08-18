@@ -62,3 +62,6 @@ if ! grep -Eq "Step [0-9]+:" /tmp/skyrl_train.log; then
 fi
 
 echo "=== SkyRL Template Test PASSED ==="
+
+# Reached only on success; the test pipeline fails a "pass" that lacks it.
+echo "RAYAPP_TESTS_COMPLETE"

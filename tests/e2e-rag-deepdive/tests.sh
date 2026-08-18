@@ -77,3 +77,6 @@ PY
 # NB07: self-contained Ray Data batch inference over the eval CSV (own vLLM engine).
 papermill "notebooks/07_Evaluate_RAG_with_Ray_Data_LLM_Batch_inference.ipynb" \
   "/tmp/07_batch.out.ipynb" -k python3 --log-output --cwd notebooks
+
+# Reached only on success; the test pipeline fails a "pass" that lacks it.
+echo "RAYAPP_TESTS_COMPLETE"

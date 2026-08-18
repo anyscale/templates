@@ -18,3 +18,6 @@ yaml.safe_dump(config, open(path, "w"), sort_keys=False)
 PY
 
 papermill README.ipynb /tmp/entity-recognition-with-llms.out.ipynb --log-output --kernel python3 --cwd .
+
+# Reached only on success; the test pipeline fails a "pass" that lacks it.
+echo "RAYAPP_TESTS_COMPLETE"

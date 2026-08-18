@@ -10,3 +10,6 @@ jupyter nbconvert --to notebook "VHOL_without_output.ipynb" \
   --TagRemovePreprocessor.remove_cell_tags='["skip-in-ci"]' \
   --output "/tmp/VHOL.ci.ipynb"
 papermill "/tmp/VHOL.ci.ipynb" "/tmp/VHOL.out.ipynb" --log-output --kernel python3 --cwd .
+
+# Reached only on success; the test pipeline fails a "pass" that lacks it.
+echo "RAYAPP_TESTS_COMPLETE"

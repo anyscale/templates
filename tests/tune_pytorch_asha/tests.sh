@@ -13,3 +13,6 @@ export SMOKE_TEST=true
 for nb in *.ipynb; do
   papermill "$nb" "/tmp/${nb%.ipynb}.out.ipynb" -k python3 --log-output --cwd .
 done
+
+# Reached only on success; the test pipeline fails a "pass" that lacks it.
+echo "RAYAPP_TESTS_COMPLETE"

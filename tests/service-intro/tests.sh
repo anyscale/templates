@@ -21,3 +21,6 @@ papermill README.ipynb output.ipynb -k python3 --log-output
 
 mv service.yaml.bak service.yaml
 mv README.ipynb.bak README.ipynb
+
+# Reached only on success; the test pipeline fails a "pass" that lacks it.
+echo "RAYAPP_TESTS_COMPLETE"

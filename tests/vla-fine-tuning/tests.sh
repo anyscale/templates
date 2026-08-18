@@ -19,3 +19,6 @@ uv pip install -q papermill ipykernel
 # deps (uv-pinned transformers, lerobot, local modules), not a stray python3.
 uv run python -m ipykernel install --user --name vla --display-name vla
 uv run papermill README.ipynb /tmp/vla.out.ipynb --log-output --kernel vla --cwd .
+
+# Reached only on success; the test pipeline fails a "pass" that lacks it.
+echo "RAYAPP_TESTS_COMPLETE"

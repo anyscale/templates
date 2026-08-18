@@ -14,3 +14,6 @@ for nb in dpo_qlora.ipynb kto_lora.ipynb sft_lora_deepspeed.ipynb cpt_deepspeed.
     --output "/tmp/${base}.ci.ipynb"
   papermill "/tmp/${base}.ci.ipynb" "/tmp/${base}.out.ipynb" --log-output --kernel python3 --cwd .
 done
+
+# Reached only on success; the test pipeline fails a "pass" that lacks it.
+echo "RAYAPP_TESTS_COMPLETE"

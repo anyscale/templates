@@ -10,3 +10,6 @@ export TUNE_NUM_EPOCHS="${TUNE_NUM_EPOCHS:-1}"
 uv pip install -r python_depset.lock --system --no-deps --no-cache-dir --index-strategy unsafe-best-match
 uv pip install -q --system nbmake==1.5.5 pytest==9.0.2
 pytest --nbmake . -s -vv
+
+# Reached only on success; the test pipeline fails a "pass" that lacks it.
+echo "RAYAPP_TESTS_COMPLETE"

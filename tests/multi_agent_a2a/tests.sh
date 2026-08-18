@@ -179,3 +179,6 @@ content = json_or_die(r, "POST /v1/chat/completions")["choices"][0]["message"]["
 assert content, "LLM returned empty content"
 print(f"OK: LLM chat completion via {model_id}")
 PY
+
+# Reached only on success; the test pipeline fails a "pass" that lacks it.
+echo "RAYAPP_TESTS_COMPLETE"

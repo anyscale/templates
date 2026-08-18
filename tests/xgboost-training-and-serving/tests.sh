@@ -23,3 +23,6 @@ papermill notebooks/02-Validation.ipynb /tmp/02-val.out.ipynb --log-output --ker
 # teardown backstop in case a cell fails before the notebook's own serve.shutdown().
 trap 'serve shutdown -y || true' EXIT
 papermill notebooks/03-Serving.ipynb /tmp/03-serve.out.ipynb --log-output --kernel python3 --cwd notebooks
+
+# Reached only on success; the test pipeline fails a "pass" that lacks it.
+echo "RAYAPP_TESTS_COMPLETE"

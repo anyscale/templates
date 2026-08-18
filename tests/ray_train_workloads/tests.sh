@@ -20,3 +20,6 @@ for nb in \
 do
   papermill "${nb}.ipynb" "/tmp/$(basename "${nb}").out.ipynb" --log-output --kernel python3 --cwd .
 done
+
+# Reached only on success; the test pipeline fails a "pass" that lacks it.
+echo "RAYAPP_TESTS_COMPLETE"

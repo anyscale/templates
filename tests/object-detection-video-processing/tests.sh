@@ -17,3 +17,6 @@ for nb in 1.object_detection_train 2.object_detection_batch_inference_eval 3.vid
     --output "/tmp/${nb}.ci.ipynb"
   papermill "/tmp/${nb}.ci.ipynb" "/tmp/${nb}.out.ipynb" --log-output --kernel python3 --cwd .
 done
+
+# Reached only on success; the test pipeline fails a "pass" that lacks it.
+echo "RAYAPP_TESTS_COMPLETE"

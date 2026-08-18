@@ -9,3 +9,6 @@ export HF_TOKEN=$(aws --region=us-west-2 secretsmanager get-secret-value \
 
 pip install papermill
 papermill README.ipynb output.ipynb -k python3 --log-output
+
+# Reached only on success; the test pipeline fails a "pass" that lacks it.
+echo "RAYAPP_TESTS_COMPLETE"

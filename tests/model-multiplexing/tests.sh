@@ -11,3 +11,6 @@ jupyter nbconvert --to notebook README.ipynb \
   --TagRemovePreprocessor.remove_cell_tags='["skip-in-ci"]' \
   --output /tmp/model-multiplexing.ci.ipynb
 papermill /tmp/model-multiplexing.ci.ipynb /tmp/model-multiplexing.out.ipynb --log-output --kernel python3 --cwd .
+
+# Reached only on success; the test pipeline fails a "pass" that lacks it.
+echo "RAYAPP_TESTS_COMPLETE"

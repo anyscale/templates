@@ -39,3 +39,6 @@ for _ in $(seq 1 60); do
 done
 
 python query_agent.py
+
+# Reached only on success; the test pipeline fails a "pass" that lacks it.
+echo "RAYAPP_TESTS_COMPLETE"

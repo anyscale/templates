@@ -109,3 +109,6 @@ serve run --non-blocking --runtime-env-json "$RUNTIME_ENV_JSON" multi_mcp_ray_se
 set -x
 for _ in $(seq 1 60); do curl -sf http://localhost:8000/brave_search/tools >/dev/null 2>&1 && break; sleep 5; done
 run_nb "04 Deploy_multiple_mcp_stdio_docker_images_with_ray_serve.ipynb"
+
+# Reached only on success; the test pipeline fails a "pass" that lacks it.
+echo "RAYAPP_TESTS_COMPLETE"

@@ -23,3 +23,6 @@ jupyter nbconvert --to notebook Ray_Core_6_ADAG_experimental.ipynb \
 papermill /tmp/nb6.ci.ipynb /tmp/nb6.out.ipynb --log-output --kernel python3 --cwd .
 
 echo "Tests passed successfully!"
+
+# Reached only on success; the test pipeline fails a "pass" that lacks it.
+echo "RAYAPP_TESTS_COMPLETE"

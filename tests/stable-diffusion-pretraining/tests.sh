@@ -15,3 +15,6 @@ echo "=== Running end_to_end.py validation ==="
 python scripts/end_to_end.py --experiment-name sd-e2e-v254-$(date +%s) --limit 5 --max-steps 10 --checkpoint-every-n-steps 100 --val-check-interval 100
 
 echo "=== All validations passed ==="
+
+# Reached only on success; the test pipeline fails a "pass" that lacks it.
+echo "RAYAPP_TESTS_COMPLETE"
