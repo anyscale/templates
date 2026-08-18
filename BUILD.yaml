@@ -306,7 +306,7 @@
   owner_team: llm
   dir: templates/audio-dataset-curation-llm-judge
   cluster_env:
-    image_uri: anyscale/ray-llm:2.56.0-py312-cu130
+    image_uri: anyscale/ray-llm:2.57.0-py312-cu130
   compute_config:
     AWS: configs/audio-dataset-curation-llm-judge/aws.yaml
     GCP: configs/audio-dataset-curation-llm-judge/gce.yaml
