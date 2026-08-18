@@ -582,7 +582,7 @@
   owner_team: llm
   dir: templates/llm_batch_inference_text
   cluster_env:
-    image_uri: anyscale/ray-llm:2.56.0-py312-cu130
+    image_uri: anyscale/ray-llm:2.57.0-py312-cu130
   compute_config:
     AWS: configs/llm_batch_inference_text/aws.yaml
     GCP: configs/llm_batch_inference_text/gce.yaml
