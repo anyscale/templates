@@ -619,6 +619,6 @@ depsets:
       - --python-platform=linux
       - --unsafe-package ray
     build_arg_sets:
-      - ray2560_py312
+      - ray2570_py312
     pre_hooks:
       - scripts/depsets/seed-image-freeze.sh dependencies/images/ray-${RAY_VERSION}-py312.freeze.txt templates/ecommerce_end_to_end/python_depset.lock
