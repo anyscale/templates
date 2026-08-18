@@ -76,42 +76,27 @@ version by default, so skew takes an explicit pin or a hard transitive requireme
   one deployment genuinely needs something different — and then give it the lock in full (see "all or
   nothing" above). Note `py_modules` cannot take a local directory at deployment scope; Ray uploads
   directories only for `ray.init`.
-- **Secondary configs point at the same `.lock`.** A shipped `service_config.yaml` /
-  `job_config.yaml` (the standalone Service/Job path) must source its deps from the template's
-  `python_depset.lock` via `runtime_env`, not a hand-maintained pin list — a divergent list drifts silently
-  from the tested lock. `py_modules` entries must name the *importable package* dir (`doggos/doggos`), not
-  the project root — the outer dir yields an empty namespace package and an `import_path` under it cannot
-  resolve. Two ways in, both established in-repo, chosen by config type:
-  - **Top-level `requirements: /home/ray/default/python_depset.lock`** (the default). The anyscale CLI
-    reads the file relative to *its own cwd* and **inlines the contents** into the runtime_env it submits.
-    Two knock-on rules: use an **absolute path** (a relative one dies with `FileNotFoundError` when the
-    config is submitted from a subdirectory, not against the config's `working_dir`); and know that the
-    anyscale service/job-create API rejects any runtime_env config over **122880 bytes** (Linux
-    `MAX_ARG_STRLEN`), so a lock whose non-comment/non-blank size approaches ~120 KiB will trip
-    `The size of the runtime_env config has exceeded the maximum limit of 122880 bytes` at submit time —
-    and locks only grow across Ray bumps (2.57's freeze added enough hashes to push
-    `templates/image-search-and-classification/python_depset.lock` from ~119 KB stripped to ~126 KB, over
-    the cap, on a bump that added no packages). Fine while the lock stays comfortably under; otherwise use
-    the escape hatches below.
-  - **Job configs (`job.yaml`) — driver install in `entrypoint` + `ray.init(runtime_env=…)` in the
-    script.** Drop the `requirements:` key. In the yaml,
-    `entrypoint: uv pip install -r python_depset.lock --system --no-deps --no-cache-dir --index-strategy unsafe-best-match && python <script>.py`
-    installs on the driver; inside the script (in `__main__`, before any `ray.data` / `ray.train` use),
-    `ray.init(runtime_env={"pip": DEPSET_LOCK}, ignore_reinit_error=True)` (with
-    `DEPSET_LOCK = str(Path(__file__).resolve().parents[…] / "python_depset.lock")`) hands the lock to
-    workers via Ray's own runtime_env agent, which reads the file on the cluster instead of inlining it
-    into the size-capped API payload. Precedents: `templates/stable-diffusion-pretraining/job.yaml`,
-    `templates/image-search-and-classification/configs/{generate_embeddings,train_model}.yaml` (+
-    `doggos/doggos/{embed,train}.py`).
-  - **Service configs (`service.yaml`) — Ray Serve's app-scope `runtime_env`.** Drop the top-level
-    `requirements:` and move the lock and `py_modules` under `applications[i].runtime_env`
-    (`pip: python_depset.lock`, `py_modules: [<pkg dir>]`). Paths under `applications[].runtime_env` are
-    **relative to the app's `working_dir` extracted on the cluster** (Ray Serve resolves them there, not
-    against the CLI's cwd), so relative wins here — the opposite of the top-level rule. Both deployments
-    then reach the lock by inheriting the app's runtime_env (per the "One Serve rule" above — leave
-    deployments' `runtime_env` alone so they inherit the app's `pip`). Precedent:
-    `templates/asynchronous_inference/service.yaml` (`applications[0].runtime_env: {working_dir: ".",
-    pip: "python_depset.lock"}`).
+- **Secondary configs point at the same `.lock`.** A shipped `service_config.yaml` / `job_config.yaml` (the
+  standalone Service/Job path) must source its deps from the template's `python_depset.lock` via
+  `runtime_env`, not a hand-maintained pin list — a divergent list drifts silently from the tested lock.
+  `py_modules` entries must name the *importable package* dir (`doggos/doggos`), not the project root — the
+  outer dir yields an empty namespace package and an `import_path` under it cannot resolve. Three shapes,
+  picked by config type:
+  - **Default — top-level `requirements: /home/ray/default/python_depset.lock`.** The CLI resolves that path
+    against **its own cwd**, not the config's `working_dir`, so a relative one dies with `FileNotFoundError`
+    when submitted from a subdirectory. It then **inlines the file** into the submitted runtime_env, which
+    the API caps at **122880 bytes** (a hard Linux `MAX_ARG_STRLEN` limit, not tunable). Locks only grow
+    across Ray bumps, so a config that fit last bump can stop fitting with no local edit — then switch to
+    the shape below for that config type.
+  - **Job — install on the driver, hand workers the lock.** Drop `requirements:`. Prefix the `entrypoint`
+    with `uv pip install -r python_depset.lock --system --no-deps --no-cache-dir --index-strategy unsafe-best-match &&`,
+    and call `ray.init(runtime_env={"pip": <abs lock path>})` in the script's `__main__` before any
+    `ray.data` / `ray.train` use. Ray's own runtime_env agent reads the lock cluster-side, so nothing is
+    inlined. Precedent: `templates/stable-diffusion-pretraining/job.yaml`.
+  - **Service — Ray Serve's app-scope `runtime_env`.** Drop `requirements:`. Put `pip: python_depset.lock`
+    and `py_modules` under `applications[i].runtime_env`, **relative to the app's `working_dir`** — Serve
+    resolves them cluster-side, the opposite of the top-level rule. Deployments inherit it, per the one
+    Serve rule above. Precedent: `templates/asynchronous_inference/service.yaml`.
 - **A genuine conflict → isolate it.** An added package that hard-pins a clashing version (e.g. `a2a-sdk`
   forcing an old `fastapi`) goes in *its own* deployment's `runtime_env` — the LLM ingress keeps the image
   framework; only that deployment gets the pin.
@@ -273,7 +258,7 @@ automatically — the rest still need eyes.
 | 2 | Does every off-head unit get those deps *at its own scope*? | `map_batches` actors, `TorchTrainer` workers, `@ray.remote` tasks, Serve replicas that declare a partial `runtime_env` |
 | 3 | ✅ Does anything depend on a bare `pip install` reaching workers? | green in a workspace, broken as a Job or Service |
 | 4 | Does any hand-typed pin list disagree with the lock? | a notebook pin quietly compensating for a wrong lock is the dangerous shape |
-| 5 | Do the shipped Job/Service configs source the lock via `runtime_env` in the right shape for their type? | the standalone path nobody tests — see "Secondary configs point at the same `.lock`": top-level `requirements:` uses an absolute path but is capped at 122880 bytes, so a large lock forces the escape hatch (jobs: driver `uv pip install` + `ray.init(runtime_env=…)` in the script; services: `applications[].runtime_env.pip: <relative>`) |
+| 5 | Do the shipped Job/Service configs source the lock, in the shape their config type needs? | the standalone path nobody tests — top-level `requirements:` is capped at 122880 bytes |
 | 6 | Does `tests.sh` install or configure something the template doesn't? | CI green while every user following the README fails |
 | 7 | ✅ Does the depset's seed freeze match `BUILD.yaml`'s image? | lock describes an environment the template never runs in |
 | 8 | ✅ Is every requirement `==`, at a version that is still current? | the lock re-resolves on every rebuild, or freezes the template years behind |
@@ -314,15 +299,9 @@ and they join the gate automatically if they ever gain a lock.
   `datasets==3.6.0`. (`fsspec` is in the image now; pinning it is no longer needed.)
 - **`runtime_env` pip hash mismatch** on bumped transitive deps: `uv` can emit one wrong-interpreter hash.
   Pin the offending package to the base-image version.
-- **The anyscale API's 122880-byte `runtime_env` cap on job/service create** (Linux `MAX_ARG_STRLEN`).
-  Trips at submit time when a shipped `job.yaml` / `service.yaml` uses top-level `requirements: <lock>` and
-  the lock's non-comment/non-blank size crosses ~120 KiB. Locks grow across Ray bumps (2.57 pushed
-  `templates/image-search-and-classification/python_depset.lock` from ~119 KB stripped to ~126 KB with no
-  new packages, just longer freeze hashes), so a config that squeaked under one bump can trip the next
-  without any local edit. Switch to the escape hatches in "Secondary configs point at the same `.lock`":
-  jobs → driver `uv pip install` in `entrypoint` + `ray.init(runtime_env=…)` in the script; services →
-  move the lock under `applications[].runtime_env.pip` (relative to the app's `working_dir`, matching
-  `templates/asynchronous_inference/service.yaml`).
+- **`runtime_env` config has exceeded the maximum limit of 122880 bytes** at `anyscale job submit` /
+  `service deploy`: a top-level `requirements: <lock>` is inlining a lock that has outgrown the cap. Move it
+  to the job/service shape under "Secondary configs point at the same `.lock`".
 - **Torch CUDA must match the build image.** Only `ray-llm` ships `torch`; on plain `anyscale/ray` the template
   supplies it. Write `--index https://download.pytorch.org/whl/${CUDA_VARIANT}` (never a hardcoded `cu121`) so
   the index tracks the image, and **pin** `torch==<ver>` to a version with wheels for that CUDA — an unpinned
