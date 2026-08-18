@@ -405,8 +405,8 @@
   dir: templates/e2e-rag-deepdive
   cluster_env:
     byod:
-      docker_image: us-docker.pkg.dev/anyscale-workspace-templates/workspace-templates/e2e-rag-deepdive:2.56.0
-      ray_version: 2.56.0
+      docker_image: us-docker.pkg.dev/anyscale-workspace-templates/workspace-templates/e2e-rag-deepdive:2.57.0
+      ray_version: 2.57.0
   compute_config:
     AWS: configs/e2e-rag-deepdive/aws.yaml
     GCP: configs/e2e-rag-deepdive/gce.yaml
