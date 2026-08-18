@@ -53,7 +53,7 @@ retry, so without per-template facts it has no grounds to override that and will
 
 Audit the wave from Buildkite, not from the results dir, and have someone other than the driver do it if you can — the driver cannot see its own blind spots. Two checks that have each caught a real defect:
 
-- **Freshness, not a build-number proxy.** A template counts as republished only when its winning build started *after that template's own bump commit* — one wave build was created 7s after the final commit, so "build number ≥ N" happens to work until it doesn't.
+- **Freshness, not a build-number proxy.** A template counts as republished only when its winning build started *after that template's own bump commit* — one wave build was created 7s after the final commit, so "build number ≥ N" happens to work until it doesn't. Stronger still, and the check to prefer: read the **image tag the `test-template` log actually exercised** and compare it to `BUILD.yaml` on `main`. That verifies the effect rather than the timing, and settles the builds created inside the merge window, where timing alone is only suggestive.
 - **Ordering.** No publish job may have started before its build's `test-template` finished green. Check `started_at` against `finished_at` across every publish job in the wave; a violation means a gate opened on an untested build.
 
 Reconcile the ledger against Buildkite in **both** directions: entries claiming `PUBLISHED` that job state doesn't support, and green templates with no entry.
