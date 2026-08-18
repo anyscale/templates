@@ -5,7 +5,7 @@
   <a href="https://github.com/anyscale/templates/tree/main/templates/ray-data-sensor-frame-extraction" role="button"><img src="https://img.shields.io/static/v1?label=&message=View%20On%20GitHub&color=586069&logo=github&labelColor=2f363d"></a>&nbsp;
 </div>
 
-**⏱️ Time to complete**: ~25 min — an estimate, not yet a measurement. See "Which numbers here are measured" below.
+**⏱️ Time to complete**: ~15 min, of which **5.6 min is measured execution** — see "Which numbers here are measured" below.
 
 Batch pipelines over multi-megabyte rows — camera frames, point clouds, fixed-shape tensors —
 usually stall somewhere that is not the GPU. This template builds one end to end, then shows you
@@ -25,7 +25,7 @@ wrong template — the levers here move the read, and moving the read will not h
 |---|---|---|
 | Blob column | `list<uint8>` — one Parquet value + a definition level + a repetition level **per byte** | `binary(N)` `required`, no dictionary — one value per frame |
 | Row groups | writer default (often one per file) | sized so a read task has real work and can parallelise |
-| Read task CPU | `num_cpus=0.25`, "reads are I/O-bound" | `num_cpus=1.0` unless the equation says otherwise — below 1.0 pins the decoder to one thread |
+| Read task CPU | `num_cpus=0.25`, "reads are I/O-bound" | `num_cpus=1.0` unless the equation says otherwise — below 1.0 pins the decoder to one thread. The mechanism is real; at the CI knob it made no measurable difference, see the measurements below |
 | GPU stage | one actor per GPU, `num_gpus=1` | fractional GPU packing with `num_cpus=0`, sized to leave cores for the read |
 | Diagnosis | operator span | operator **UDF time** — spans overlap under the streaming executor and can sum past wall clock |
 
@@ -44,14 +44,41 @@ prints, the read-side rows/s for both layouts and the ratio between them, and th
 in `ds.stats()`. These are the numbers to trust and the only ones you should quote about your own
 fleet.
 
-**Measured while building this template**, on a developer laptop (macOS arm64, local SSD, Python
-3.12, numpy 2.2.6, pyarrow 23.0.1) — **not** on the compute configs this template ships:
+**Measured on the fleet this template ships**, which is the set to read first. One
+`g6.4xlarge` L4 worker and an `m5.2xlarge` head, Ray 2.57.0, `torch 2.9.1+cu129` installed from
+this template's own lock, at the CI knob below — 96 frames of 16.7 MB in 4 files per layout:
 
-- the recommended layout was cheaper to write in **every** run — four out of four — but the
-  multiplier ranged from **2.1x to 7.0x** across scales, at one run per point. The direction is
-  the finding; the multiplier is noisy at small frame counts and is a property of your fixture,
-  which is exactly why the notebook prints yours rather than asserting one;
-- the fixture at the default knob below cost about **11 s and 4.8 GB of peak RSS per file**.
+| what | measured |
+|---|---|
+| write-side ratio | **4.08x, 4.13x, 4.19x** — three independent runs, within 3% of each other |
+| read-side ratio | **1.5x–1.6x** — `binary(N)` 16.49–16.81 rows/s against `list<uint8>` 10.39–11.41 (3 timed runs per arm, ranges do not overlap), and 16.14 against 9.90 = 1.63x on a separate run of this notebook |
+| read task `num_cpus` 1.0 vs 0.25 | **no measurable difference** — 16.67–17.00 against 16.24–16.87 rows/s, ranges overlap |
+| decoder threads 1 → 4 | **≥ 1.2%**, and 4 → 8 not separable at 2 runs per arm |
+| on disk | 794 MB vs 798 MB — the two layouts are **the same size**, because zstd compresses the per-value bookkeeping away |
+
+**Read that against the engagement figures below, because it does not match them.** The
+direction reproduced every time; the *magnitude* did not come close. At this scale the gap is
+1.5x, not an order of magnitude, and two of the levers did not move at all. The reasons are
+visible in the numbers above and are worth more than the ratio:
+
+- the layouts are **the same size on disk**, so the read moves the same bytes either way and
+  only the decode differs. The order-of-magnitude figures come from a regime where the naive
+  layout also costs far more I/O;
+- 4 files means 4 read tasks on a 16-vCPU worker, so the read never becomes CPU-bound and the
+  one-thread-decoder trap has nothing to bite on;
+- 1.6 GB per layout fits in page cache on a 32 GiB node, so after the first run the storage is
+  not in the path at all.
+
+**The notebook's own runtime is measured too:** 338 s end to end through papermill on the fleet
+above, all six code cells executed, no errors. Cluster start and image pull sit outside that.
+
+Raise the scale and this moves. That is a hypothesis, not a measurement, and it is stated as one.
+
+**Measured while building this template**, on a developer laptop (macOS arm64, local SSD) —
+weaker evidence, kept only because it shows the spread: the recommended layout was cheaper to
+write in every one of five runs, but the multiplier ranged **2.1x to 7.0x**, twice at the *same*
+scale differing by more than 2x. A magnitude off one run per arm is not a measurement, which is
+why `measure_layout.py` refuses to score an arm with fewer than two timed runs.
 
 **From the source engagement, on a different fleet and a different dataset. Not reproduced here,
 and nothing in this template re-measures them.** Treat them as direction, not magnitude:
@@ -65,11 +92,15 @@ and nothing in this template re-measures them.** Treat them as direction, not ma
   GPUs** — the GPU was never the constraint, and packing mattered more than count;
 - an object-store fraction of **0.6** held a peak of **69.4 GiB with zero spill**.
 
-**Not yet measured at all.** Whether the read is the binding operator on the compute configs in
-`configs/ray-data-sensor-frame-extraction/` — this template has not been run there. That is the
-template's central claim, so the cell that reports the binding operator is the one to read first,
-and the time-to-complete estimate above should be replaced with a real figure on the first
-end-to-end run.
+**Measured, and it did not come out the way the template's title implies.** At the CI knob on
+the fleet above, `ds.stats()` put the read operator's span at 2.44 s and the GPU stage's at
+1.99 s, with the GPU actors accumulating 3.4 s of UDF time across two of them — roughly 0.85 of
+saturation — against a 5.8 s pipeline. **At this scale the GPU stage is nearer the constraint
+than the read.** The read binds in the engagement's production regime, not at 96 frames, and a
+reader running the CI knob should expect what is written here rather than the headline.
+
+**Still not measured.** Whether the read binds at production scale on *this* fleet: that needs a
+fixture large enough to leave page cache, which the CI knob deliberately is not.
 
 ## Get the code
 
@@ -207,8 +238,13 @@ runs on.
 
 The lock has to be installed in **two** places, and the second one is the one people omit:
 
-- `uv pip install -r python_depset.lock --system` covers **the driver only**;
+- `uv pip install --system`, reading the lock as a requirements file, covers **the driver only**;
 - `ray.init(runtime_env={"pip": ...})` is what reaches **Ray Data's `map_batches` actors**.
+
+(The exact install command is the code cell below. It is deliberately not repeated in this
+prose: the repo's dependency-delivery gate finds the install by pattern-matching the source
+files, and a copy in a markdown cell satisfies the gate without installing anything — which is
+precisely how this notebook passed that check for a while with its install line deleted.)
 
 Install only on the driver and the actors silently run whatever the image shipped. That passes in a
 workspace — a workspace tracks a plain `pip install` and propagates it — and then fails the moment
@@ -237,7 +273,21 @@ print(f"{LOCK} present ({LOCK.stat().st_size} bytes)")
 
 
 ```python
-!uv pip install -r python_depset.lock --system --no-deps --no-cache-dir --index-strategy unsafe-best-match
+import subprocess
+
+# A `!command` cell CANNOT fail a notebook. Papermill runs the next cell and exits 0 even when
+# the command exited non-zero, so an install written that way is unasserted -- and a silent
+# install failure here surfaces much later as a torch ImportError inside a Ray actor, which is a
+# far worse place to read it from. So this goes through subprocess with check=True.
+#
+# One shell string rather than an argv list, deliberately: the repo's dependency-delivery gate
+# looks for the requirements flag immediately followed by the lock filename, and an argv list
+# puts a quote and a comma between them.
+subprocess.run(
+    "uv pip install -r python_depset.lock --system --no-deps --no-cache-dir "
+    "--index-strategy unsafe-best-match",
+    shell=True, check=True,
+)
 ```
 
 ## The A/B
@@ -247,6 +297,12 @@ environment, so nothing below changes the code between arms — only the input p
 
 **Report the ratio you got, not a number this template hardcodes.** The direction reproduces; the
 multiplier depends on your fixture, your storage and your instance family.
+
+One run per arm is enough to show the direction and no more. For a magnitude you can quote, use
+`measure_layout.py`, which takes several timed runs per arm and refuses to score an arm with
+fewer than two. Note the warmup below: the first run on a fresh cluster pays for the worker's
+`runtime_env` build, and leaving it in the timed comparison is enough on its own to invert the
+result.
 
 
 ```python
@@ -267,6 +323,15 @@ def run_arm(layout: str) -> float:
         raise AssertionError(f"pipeline.py printed no rate for {layout}")
     return float(match.group(1))
 
+
+# WARM UP FIRST, and this is not optional. The first pipeline run on a fresh cluster also pays
+# for Ray building the runtime_env virtualenv from python_depset.lock on the worker: measured at
+# 89.5s against 9.5s for the next run. That cost lands entirely in whichever arm runs first, and
+# without this line the recommended layout measured 1.07 rows/s against 10.07 -- reported as
+# 0.11x, i.e. the template disproving itself, on every fresh cluster. It was a real CI failure,
+# not a hypothetical.
+print("warmup run (discarded -- it pays for the runtime_env build on the worker)")
+run_arm("fixed_binary")
 
 fast = run_arm("fixed_binary")
 slow = run_arm("list_uint8")
@@ -289,8 +354,15 @@ operator spans overlap, and on one measured run they summed to 2.1x the pipeline
 ranking by span will hand you the wrong answer with total confidence.
 
 Rank by `udf_total / (span x parallelism)`. The operator sitting near 1.0 is the one holding the
-pipeline. For this workload shape it should be the read — that is the whole claim, and it is the
-claim not yet checked on this template's own compute configs.
+pipeline.
+
+**But that metric cannot rank a read.** Ray reports `UDF time: 0us` for read operators, because a
+read has no user function — so `udf_total / (span x parallelism)` is 0 for the read *by
+construction*, no matter how hard the read is working. Measured on this template's own fleet:
+`ReadFiles` reported a 2.44 s span and `UDF time: 0us min, 0us max, 0us total`. Rank the map
+stages by UDF time; judge the read by its **span** and its **output bytes per second** against
+what your storage can actually deliver. Ranking the read by UDF time will tell you the read is
+free, with total confidence, every time.
 
 Then look at the executor's `Active & requested resources` line. Requested exceeding cluster size
 means the read and a downstream CPU stage are already fighting each other for cores, and no reader
