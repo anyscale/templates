@@ -1,7 +1,7 @@
-ray[train,data]==2.56.0  # tracks the image's Ray; --unsafe-package keeps it out of the lock
+ray[train,data]==2.57.0  # tracks the image's Ray; --unsafe-package keeps it out of the lock
 torch==2.7.0
 torchvision==0.22.0
-diffusers==0.38.0  # 0.39 raises its torch floor to 2.6, above this template's torch
+diffusers==0.39.0
 transformers==4.57.6  # last 4.x; the 5.x break needs a test run against diffusers first
 peft==0.20.0
 accelerate==1.14.0
@@ -9,10 +9,4 @@ accelerate==1.14.0
 # unpinned spec resolves there once fsspec floats to a 2025+ release — and that
 # old datasets can't recognise the new fsspec LocalFileSystem (load_dataset
 # raises "Loading a dataset cached in a LocalFileSystem is not supported").
-# Pin to the Ray-base-image versions, which are mutually compatible.
 datasets==3.6.0
-fsspec==2023.12.1
-pillow==10.4.0
-numpy==1.26.4
-pyarrow==19.0.1
-matplotlib==3.9.4

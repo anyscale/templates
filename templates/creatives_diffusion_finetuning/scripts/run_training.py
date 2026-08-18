@@ -8,7 +8,8 @@ import argparse
 import sys
 import os
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, REPO_ROOT)
 
 import ray
 
@@ -24,7 +25,14 @@ def main():
     parser.add_argument("--lr", type=float, default=1e-4)
     args = parser.parse_args()
 
-    ray.init(ignore_reinit_error=True)
+    # Train workers get the locked deps only from here. The job config cannot use
+    # `requirements:` -- that inlines this 175 KB lock into the submitted runtime_env,
+    # past its 120 KB cap -- so the entrypoint installs it for the driver and this
+    # covers everything Ray schedules.
+    ray.init(
+        runtime_env={"pip": os.path.join(REPO_ROOT, "python_depset.lock")},
+        ignore_reinit_error=True,
+    )
 
     print(f"Loading Pokemon dataset...")
     train_ds = load_pokemon_dataset()
