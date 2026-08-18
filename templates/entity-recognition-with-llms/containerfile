@@ -1,11 +1,10 @@
-FROM anyscale/ray-llm:2.56.0-py312-cu130
+FROM anyscale/ray-llm:2.57.0-py312-cu130
 
-# LLaMA-Factory pulls peft/trl/datasets; it caps transformers at the 4.x line tested here.
+# LLaMA-Factory pulls peft/trl/datasets, and picks whatever transformers the image ships within its own cap.
 RUN python3 -m pip install --no-cache-dir \
     "llamafactory@git+https://github.com/hiyouga/LLaMA-Factory.git@f28afaf6355af515454dfb16c97d728307c93897" \
-    "transformers==4.57.6" \
-    "pynvml==12.0.0" \
-    "tensorboard==2.19.0"
+    "pynvml==13.0.1" \
+    "tensorboard==2.21.0"
 
 ENV HF_HUB_ENABLE_HF_TRANSFER=1
 ENV DISABLE_VERSION_CHECK=1

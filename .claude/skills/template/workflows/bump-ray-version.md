@@ -105,7 +105,7 @@ Bump <name> to Ray <version>.
 
 ## 3. Validate via CI
 
-Comment `/test-template <name>` on the PR (**required — the run cannot end before this; see "Done criteria" below**); follow `../references/testing-template.md` for dispatch + Buildkite-MCP monitoring. Green → step 5. Failure → step 4.
+Comment `/test-template <name>` on the PR (**required — the run cannot end before this; see "Done criteria" below**); follow `../references/testing-template.md` for dispatch + Buildkite-MCP monitoring. Then **poll the build every 5 minutes until it reaches a terminal state** — median run is 10 min, p90 21, and nothing has taken past 25, so that is ~2 checks and ~5 on a slow one. Don't sleep through a fixed guess and don't return while it is still `running`. Green → step 5. Failure → step 4, immediately: a failure at minute 4 is worth acting on at minute 5.
 
 ## 4. Fix on failure
 

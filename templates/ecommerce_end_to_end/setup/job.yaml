@@ -6,7 +6,7 @@
 name: ecommerce-end-to-end-notebook
 
 # Keep in sync with the template's BUILD.yaml entry.
-image_uri: anyscale/ray:2.56.0-py312
+image_uri: anyscale/ray:2.57.0-py312
 
 working_dir: .
 

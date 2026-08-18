@@ -4,9 +4,5 @@ accelerate==1.2.1
 lightning==2.6.1
 typer==0.23.1
 s3fs==2023.12.1
-matplotlib==3.9.4
-Pillow==10.4.0
 torch==2.5.1
 torchvision==0.20.1
-numpy==1.26.4
-pyarrow==19.0.1

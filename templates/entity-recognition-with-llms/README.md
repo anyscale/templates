@@ -48,7 +48,7 @@ This [Anyscale Workspace](https://docs.anyscale.com/platform/workspaces/) automa
 <img src="https://raw.githubusercontent.com/anyscale/foundational-ray-app/refs/heads/main/images/compute.png" width=500>
 
 ### Dependencies
-Start by downloading the dependencies required for this tutorial. Notice in your `containerfile` you have a base image `anyscale/ray-llm:2.56.0-py312-cu130` followed by a list of pip packages. If you're not on [Anyscale](https://console.anyscale.com/), you can pull this Docker image yourself and install the dependencies.
+Start by downloading the dependencies required for this tutorial. Notice in your `containerfile` you have a base image `anyscale/ray-llm:2.57.0-py312-cu130` followed by a list of pip packages. If you're not on [Anyscale](https://console.anyscale.com/), you can pull this Docker image yourself and install the dependencies.
 
 
 

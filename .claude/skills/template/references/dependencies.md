@@ -96,7 +96,12 @@ version by default, so skew takes an explicit pin or a hard transitive requireme
   - **Service — Ray Serve's app-scope `runtime_env`.** Drop `requirements:`. Put `pip: python_depset.lock`
     and `py_modules` under `applications[i].runtime_env`, **relative to the app's `working_dir`** — Serve
     resolves them cluster-side, the opposite of the top-level rule. Deployments inherit it, per the one
-    Serve rule above. Precedent: `templates/asynchronous_inference/service.yaml`.
+    Serve rule above. Precedent: `templates/asynchronous_inference/service.yaml`. A Service also takes
+    `py_executable:`, which the CLI forwards to `runtime_env["py_executable"]` as a short string
+    (`anyscale/_private/workload/workload_sdk.py`), so `uv run` resolves deps on the cluster and nothing
+    is inlined either way. Whichever you pick, **never** bake pip deps into the image to dodge the cap:
+    an image layer is for system deps only (see below), and a hand-written layer drifts from the tested
+    lock exactly like a hand-written pin list.
 - **A genuine conflict → isolate it.** An added package that hard-pins a clashing version (e.g. `a2a-sdk`
   forcing an old `fastapi`) goes in *its own* deployment's `runtime_env` — the LLM ingress keeps the image
   framework; only that deployment gets the pin.
