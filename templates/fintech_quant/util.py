@@ -3,6 +3,7 @@ import time
 from datetime import datetime
 
 import os
+import tempfile
 import pandas as pd
 import numpy as np
 import QuantLib as ql
@@ -112,10 +113,32 @@ def get_npv(option, underlying_price, implied_volatility):
     except:
         return 0.0
 
+_yf_cache_isolated = False
+
+def isolate_yf_cache():
+    """Give this process its own yfinance cache directory.
+
+    yfinance keeps cookies and timezones in one on-disk SQLite file. These calls run
+    concurrently across Ray workers, and sharing that file makes them collide
+    ("UNIQUE constraint failed: _cookieschema.strategy"), which fails the fetch.
+    """
+    global _yf_cache_isolated
+    if _yf_cache_isolated:
+        return
+    setter = getattr(yf, "set_tz_cache_location", None)
+    if setter:  # not present on every yfinance release
+        setter(os.path.join(tempfile.gettempdir(), f"yf-cache-{os.getpid()}"))
+    _yf_cache_isolated = True
+
 def get_options_chain(symbol):
     """
     Get options chain data for a stock
+
+    Always returns a dict with an 'options' list. On failure that list is empty and
+    'error' says why -- callers can read `chain['options']` unconditionally, and a
+    fetch failure shows up as its own message rather than a KeyError on a worker.
     """
+    isolate_yf_cache()
     try:
         # Get ticker data
         ticker = yf.Ticker(symbol)
@@ -139,6 +162,7 @@ def get_options_chain(symbol):
                 return {
                     'symbol': symbol,
                     'current_price': current_price,
+                    'options': [],
                     'error': 'No options data available'
                 }
 
@@ -198,6 +222,7 @@ def get_options_chain(symbol):
             return {
                 'symbol': symbol,
                 'current_price': current_price,
+                'options': [],
                 'error': f'Error retrieving options data: {str(e)}'
             }
 
@@ -205,7 +230,7 @@ def get_options_chain(symbol):
 
     except Exception as e:
         print(f"Error in get_options_chain: {str(e)}")
-        return {'error': str(e)}
+        return {'symbol': symbol, 'options': [], 'error': str(e)}
 
 # NOTE:
 #   Saving to csv isn't completely necessary for the demo, but
