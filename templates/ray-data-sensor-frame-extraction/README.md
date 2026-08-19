@@ -31,7 +31,7 @@ One `g6.4xlarge` L4 worker, `m5.2xlarge` head, Ray 2.57.0, `torch 2.9.1+cu129`, 
 |---|---|---|
 | **Blob column physical type, write side** | **~4.1x** cheaper to write as `binary(N)` `required` | **4.08x, 4.13x, 4.19x** — three independent runs, within 3%. The strongest result here |
 | **Blob column physical type, read side** | **~1.6x** faster | 16.49–16.81 vs 10.39–11.41 rows/s, 3 timed runs per arm, ranges do not overlap; 1.63x on a separate run |
-| **On-disk size** | **no difference** — 794 MB vs 798 MB | this is *why* the read-side win is small, and it is the most useful thing on this page |
+| **On-disk size** | **no difference** — 831.7 MB vs 836.0 MB, 0.5% apart | this is *why* the read-side win is small, and it is the most useful thing on this page |
 | **Read task `num_cpus` 1.0 vs 0.25** | **no measurable effect** | 16.67–17.00 vs 16.24–16.87 rows/s — ranges overlap |
 | **Decoder threads 1 → 4** | **≥ 1.2%** | and 4 → 8 not separable at 2 runs per arm |
 | **Which operator binds** | **not the read** | read span 2.44 s against the GPU stage's 1.99 s with 3.4 s of UDF across two actors |
@@ -51,9 +51,12 @@ regular, which is exactly what a general-purpose compressor is good at, and it v
 vanishes:
 
 ```
-794 MB   fixed_binary/     <- binary(N) required, no dictionary
-798 MB   list_uint8/       <- one value + def level + rep level PER BYTE
+831.7 MB   fixed_binary/     <- binary(N) required, no dictionary
+836.0 MB   list_uint8/       <- one value + def level + rep level PER BYTE
 ```
+
+(`du -sh` reports those as 794M and 798M, because `du` counts MiB. Same files, same 0.5% gap —
+the cell below prints the exact byte totals so the two never disagree in front of you.)
 
 **Half a percent apart** — and that holds across scales: 4 rows on a laptop came out 34.7 MB
 against 34.8 MB, 0.3% apart, so it is a property of the encoding-plus-codec pair rather than an
@@ -256,7 +259,8 @@ for layout in ["fixed_binary", "list_uint8"]:
     total = sum(os.path.getsize(f) for f in glob.glob(os.path.join(FIXTURE, layout, "*.parquet")))
     print(f"{layout:14s} {total / 1e6:8.1f} MB on disk")
 print("\nIf those two numbers are close, compression has already removed most of what the "
-      "layout was going to buy you on the READ path. Measured here: 794 MB vs 798 MB.")
+      "layout was going to buy you on the READ path. Measured on this template's own fleet: "
+      "831.7 MB against 836.0 MB, 0.5% apart.")
 ```
 
 ### The write side is the sturdy result
