@@ -833,14 +833,21 @@
 # under papermill a stage could die, the next cell run, and the job exit 0. A bang-escape
 # notebook would have made this test weaker than the script-driving version it replaced.
 #
-# KNOWN RED TEST, deliberately. Two of the three models are gated on Hugging Face and gating
-# is per ACCOUNT. tests.sh prefers an HF_TOKEN from the environment and falls back to Secrets
-# Manager (`anyscale_hf_token`) the way tests/vla-fine-tuning/tests.sh does; that secret
-# belongs to svc-huggingface@anyscale.com, which is on neither gated list as of 2026-08-18.
-# So this test fails until that account accepts the terms on facebook/sam3 and
-# facebook/dinov3-vitl16-pretrain-lvd1689m -- two clicks, and no token change substitutes for
-# them. It fails in the preflight, which names the account and the remedy, rather than in a
-# 403 several GB into a model download.
+# It papermills a STRIPPED copy; the committed notebook keeps every cell, so a reader gets the
+# four-model path. tests.sh asserts the strip actually happened rather than trusting it.
+#
+# NO SHARED TOKEN, BY LICENCE. SAM 3 and DINOv3 are gated on Hugging Face and their terms are
+# accepted PER ACCOUNT by whoever runs the template, so a service account cannot agree on a
+# reader's behalf. tests/vla-fine-tuning/tests.sh pulls an organisation secret for its gated
+# model; this template deliberately does not, and nothing here reads `anyscale_hf_token`.
+#
+# CI therefore runs the half that needs nobody's permission, and the gated cells are removed
+# by TAG (`skip-in-ci`, stripped by tests.sh) rather than skipped by inferring from a missing
+# credential -- an inferred skip is an untested branch that becomes the only branch that ever
+# runs, green forever while asserting nothing. What CI proves and what it cannot is written
+# out at the top of tests.sh: the packing arithmetic under --strict, the stage answers, the
+# four-stage stub DAG, and REAL two-model co-residency of the ungated pair on one card. The
+# four-model claim rests on that arithmetic plus the reader's own run.
 # owner: @em-anyscale
 - name: ray-data-multimodel-frame-enrichment
   owner_team: ray-data
@@ -853,10 +860,12 @@
   test:
     tests_path: tests/ray-data-multimodel-frame-enrichment/
     command: bash tests.sh
-    # A GUESS, not a measurement, and above the skill's sub-30-minute target: three model
-    # downloads and four model loads before the first batch, plus a runtime env carrying
-    # torch. Nobody has timed this test end to end -- it cannot run until the gated-list
-    # blocker above clears -- so the first green run should replace this with the real
-    # figure. 3600 is the value 8 other entries use, chosen to fail on a hang rather than
-    # on a slow but healthy start.
-    timeout_in_sec: 3600
+    # STILL A GUESS, but a smaller job than the one 3600 was sized for. That figure assumed
+    # three gated model downloads and four model loads; CI now pulls one ungated model
+    # (SigLIP2's vision tower) and loads two stages. What remains is the torch/transformers
+    # install on the driver plus the same closure again as a runtime env on the worker, which
+    # is the bulk of it. 1800 is the repo's modal value and brings this under the skill's
+    # sub-30-minute target. Nobody has timed it end to end -- replace this with the real
+    # figure after the first green run, and note it bounds the test only: cluster start and
+    # image pull sit outside it.
+    timeout_in_sec: 1800

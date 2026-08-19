@@ -16,7 +16,12 @@ token — so no token setting substitutes for accepting the terms yourself:
 
 Approval on both is usually immediate, but it is an approval and not a download, so it can
 sit. `--stub` needs none of this: it exercises all four stages and every output shape with no
-weights, no token and no GPU, which is also what CI runs before it touches the real thing.
+weights, no token and no GPU.
+
+**Nobody can do those three steps for you, and that shapes this whole template.** The terms
+are accepted per *account*, so there is no shared token here: CI runs the ungated half on a
+real GPU and the four-model cells are tagged out of it. What you get by bringing your own
+token is the part CI structurally cannot have.
 
 The failure mode if you skip step 1 or 2 is worth recognising, because the two look nothing
 alike. **401** means Hugging Face does not know who you are — a missing or malformed token.
@@ -276,18 +281,165 @@ print("transformers", transformers.__version__, "torch", torch.__version__,
       "torchvision", torchvision.__version__, "sam3 ->", Sam3Model.config_class.__name__)
 ```
 
-## The real run
+## First, the half that needs no permission from anyone
 
-Your own `HF_TOKEN`, from the account that accepted both sets of terms. `pipeline.py`
-refuses with the two-step remedy rather than dying several GB into a download if it is
-missing.
+SigLIP2 is not gated and the metrics stage carries no weights at all, so those two stages
+can run on a real GPU with real weights and no token. Worth doing before the gated download:
+it proves the GPU is there, the runtime env reached the actors, the fractional reservations
+schedule, and two models genuinely share one card.
 
-The CI test does more than this cell: it resolves the token from AWS Secrets Manager when
-the environment has none, and preflights both gated repos with a **file** fetch before
-loading anything — `/api/models/<repo>` answers 200 anonymously for both of these, so the
-metadata endpoint cannot tell you whether you can pull. That orchestration lives in
-`tests/tests.sh` rather than here on purpose, so the notebook stays clean of secret
-fetching.
+**It is two models, not four, and it is not the claim this template makes.** The four-model
+figure rests on `packing.py`'s arithmetic above plus your own run below. `pipeline.py` prints
+which of the two it gave you, because a number whose scope you have to infer is a number that
+gets misquoted.
+
+This is also exactly what CI runs, for the licensing reason in the next section.
+
+
+```python
+UNGATED_OUT = os.environ.get("UNGATED_OUTPUT_DIR", OUTPUT + "-ungated")
+
+# Real GPU, real SigLIP2 weights, no token. `--ungated-only` is a DECLARED mode, not an
+# inferred one: it never looks at whether a credential happens to be present. A run that
+# silently drops stages when a token is missing is an untested branch that becomes the only
+# branch anyone ever runs.
+run("pipeline.py", "--input", FIXTURE, "--output", UNGATED_OUT, "--ungated-only")
+```
+
+
+```python
+import ray
+
+ds = ray.data.read_parquet(UNGATED_OUT)
+rows = ds.take_all()
+assert rows, "the ungated run produced no rows"
+
+# What two stages on real weights can be held to. The image embedder is SigLIP2's vision
+# tower, so the width is a real width and not a stub's; sharpness is finite because the
+# metrics kernel ran on the card.
+import math
+
+widths = {len(r["image_embedding"]) for r in rows}
+assert widths and min(widths) >= 256, f"image embedding width {widths} looks like a stub"
+assert all(math.isfinite(float(r["sharpness"])) for r in rows), "a sharpness score is not finite"
+assert "image" not in rows[0], "the blob column must not survive to the output"
+
+print(f"ungated pair: {len(rows)} rows, image embedding width {widths}, "
+      f"all sharpness finite")
+```
+
+## Now the gated half, which only you can authorise
+
+SAM 3 and DINOv3 are gated on Hugging Face, and **the terms are accepted per account by the
+person who runs this.** That is a licensing constraint, not a configuration one, and it has
+one consequence worth stating plainly: **there is no shared token for this template.** CI does
+not hold one, this repo does not fetch one, and the cells below are removed from the CI run
+rather than run with a service account's credentials.
+
+`templates/vla-fine-tuning` reads a shared organisation token from Secrets Manager for its
+gated model. **This template deliberately does not follow that pattern** — SAM 3's licence is
+accepted per account, so a shared credential would be standing in for a person's agreement.
+The pattern this template follows instead is: the reader brings their own token, and CI runs
+only the half that needs none.
+
+So: accept the terms on both model pages (top of this notebook), create a token, export it as
+`HF_TOKEN`, and run the rest. The cells from here down are tagged `skip-in-ci`.
+
+
+```python
+# Preflight the gate before loading anything. Without this the failure is a 403 traceback
+# several GB into a model download, naming neither the cause nor the remedy.
+#
+# A FILE fetch is the only request that answers this. `/api/models/<repo>` returns 200
+# anonymously for both of these, so the metadata endpoint cannot tell you whether you can
+# pull.
+import json, os, sys, urllib.error, urllib.request
+
+GATED = ["facebook/sam3", "facebook/dinov3-vitl16-pretrain-lvd1689m"]
+token = os.environ.get("HF_TOKEN", "").strip()
+if not token:
+    sys.exit("HF_TOKEN is empty. Accept the terms on both gated model pages with your own\n"
+             "Hugging Face account, create a token (a fine-grained READ token is enough),\n"
+             "and export it as HF_TOKEN. Nobody can do this step for you: SAM 3 and DINOv3\n"
+             "are licensed per ACCOUNT.")
+
+
+def get(url):
+    """Returns ('http', status, body) or ('unreachable', message, None).
+
+    DENIED and UNREACHABLE are different claims and must not share a branch. Catching only
+    HTTPError would let a proxy or DNS failure raise straight through this preflight as a
+    traceback, which is the failure mode the preflight exists to replace.
+
+    The body is read INSIDE the `with`. Returning the response object instead closed it on
+    the way out and the success path died on an empty read -- found by exercising the
+    granted branch, which the two failure branches had looked fine without.
+    """
+    req = urllib.request.Request(url, headers={"Authorization": f"Bearer {token}"})
+    try:
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            return ("http", resp.status, resp.read())
+    except urllib.error.HTTPError as exc:
+        return ("http", exc.code, None)
+    except Exception as exc:  # URLError, SSL, timeout, anything else
+        return ("unreachable", f"{type(exc).__name__}: {exc}", None)
+
+
+kind, val, body = get("https://huggingface.co/api/whoami-v2")
+if kind == "unreachable":
+    sys.exit(f"cannot reach huggingface.co: {val}. This is a network finding, not a gate one.")
+
+# WHOAMI FIRST, AND ITS FAILURE IS A DIFFERENT FAILURE. 401 means the token itself did not
+# authenticate, and a corrected token DOES fix that; 403 on a file means the token is fine and
+# the account is not on the gated list, where no token change helps. An earlier version of
+# this check printed the per-account remedy for both -- so a developer with a typo in their
+# token was told to go and accept terms they had already accepted. Measured: with a bogus
+# token every request 401s, and that branch is the one that used to give the wrong advice.
+if val != 200:
+    sys.exit(
+        f"HF_TOKEN did not authenticate: /api/whoami-v2 returned HTTP {val}.\n"
+        "This is a CREDENTIAL failure, not a gate one -- Hugging Face does not know who you\n"
+        "are, so a corrected token DOES fix it. Check the token is a live read token; in CI,\n"
+        "and that it is the account that accepted the terms."
+    )
+try:
+    who = json.loads(body).get("name", "unknown") if body else "unknown (empty whoami body)"
+except ValueError:
+    who = "unknown (unparseable whoami response)"
+
+denied, unreachable = [], []
+for repo in GATED:
+    kind, val, _ = get(f"https://huggingface.co/{repo}/resolve/main/config.json")
+    if kind == "unreachable":
+        unreachable.append(f"{repo} -> {val}")
+    elif val != 200:
+        denied.append((repo, val))
+
+if unreachable:
+    sys.exit(f"could not check gated access: {'; '.join(unreachable)}")
+if denied:
+    listing = ", ".join(f"{repo} -> HTTP {code}" for repo, code in denied)
+    if {code for _, code in denied} == {403}:
+        remedy = (
+            "Accept the terms once on each model card with that account. The gate is\n"
+            "per-account, not per-token, so no token change fixes it; a fine-grained read\n"
+            "token is sufficient once the terms are accepted."
+        )
+    else:
+        remedy = (
+            "The token authenticated, so this is not the ordinary gate refusal (403). Read\n"
+            "the status above before changing anything: 401 here after a successful whoami\n"
+            "means the token lacks read scope on the repo, and anything else is Hugging Face\n"
+            "telling you something this check does not model."
+        )
+    sys.exit(f"Hugging Face account '{who}' cannot read: {listing}.\n{remedy}")
+print(f"gated access ok as '{who}'")
+```
+
+### Your own four-model run
+
+`pipeline.py` refuses with the two-step remedy rather than dying several GB into a download if
+`HF_TOKEN` is missing.
 
 
 ```python
@@ -319,8 +471,6 @@ nothing.
 
 
 ```python
-import ray
-
 ds = ray.data.read_parquet(OUTPUT)
 rows = ds.take_all()
 assert rows, "the real run produced no rows"
@@ -392,8 +542,13 @@ meant.
 ## Models and licences
 
 All four are public. Two are gated on Hugging Face and need their terms accepted once by
-the account behind your `HF_TOKEN`; `templates/vla-fine-tuning` is the repo's existing
-pattern for that, including how CI supplies the token.
+the account behind your `HF_TOKEN`.
+
+`templates/vla-fine-tuning` supplies its gated model's token to CI from an organisation
+secret. **This template does not, and the difference is the licence rather than the
+plumbing:** SAM 3's terms are accepted per account, so a service account holding a shared
+credential would be standing in for a person's agreement. CI therefore runs only the ungated
+stages (`pipeline.py --ungated-only`) and the gated cells are tagged `skip-in-ci`.
 
 | stage | model | licence |
 |---|---|---|
@@ -421,9 +576,11 @@ Three of these exist because the source engagement shipped without them:
 - **Degenerate input.** A frame with no detections yields an empty `(0, dim)` array, not an
   exception. The source engagement found that one in production, from the customer.
 
-`tests/` runs the arithmetic and the stage answers with no GPU and no weights; the repo's CI
-test then runs the DAG and the real four-model run on top of them. Both assert feasibility and
-correctness and never a throughput ratio: one run per arm is not a measurement.
+`tests/` runs the arithmetic and the stage answers with no GPU and no weights. The repo's CI
+test runs those, the four-stage stub DAG, and a real two-model co-residency run on one card --
+the ungated pair -- and it says so in its own header rather than implying it covered four.
+Everything asserted is feasibility or correctness and never a throughput ratio: one run per
+arm is not a measurement.
 
 ## Layout
 

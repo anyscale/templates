@@ -367,5 +367,49 @@ class ImageEmbedderRealPath(unittest.TestCase):
         self.assertEqual(len(out["frame_id"]), 3)
 
 
+class GatedStageSelection(unittest.TestCase):
+    """Which stages CI is allowed to run, which is a licensing question, not a tuning one.
+
+    SAM 3 and DINOv3 are gated on Hugging Face and their terms are accepted PER ACCOUNT by
+    the person who runs the template. No shared credential can stand in for that, so CI runs
+    the ungated half. That makes `stage_plan` load-bearing: if it ever returned a gated stage
+    under `ungated_only`, CI would try to pull weights it has no right to and fail on a 401
+    that looks like an infrastructure problem.
+    """
+
+    def test_the_full_plan_is_all_four_in_order(self):
+        self.assertEqual(pl.stage_plan(False), ["detector", "obj", "img", "metrics"])
+
+    def test_the_ungated_plan_drops_exactly_the_gated_stages(self):
+        gated = [key for key, _cls, is_gated in pl.STAGES if is_gated]
+        plan = pl.stage_plan(True)
+        for key in gated:
+            self.assertNotIn(key, plan, f"{key} is gated and must not be in the CI plan")
+        self.assertEqual(plan, ["img", "metrics"], "order must survive the filter")
+
+    def test_the_ungated_plan_is_not_empty_so_ci_still_measures_something(self):
+        # A filter that removed everything would make the CI run vacuously green, which is
+        # the failure mode this whole arrangement is trying to avoid.
+        self.assertTrue(pl.stage_plan(True))
+
+    def test_the_gated_flags_match_the_gated_model_repositories(self):
+        # Ties the flag to the fact rather than to a comment. Both gated stages load a
+        # `facebook/` repo; neither ungated stage does.
+        model_of = {"detector": pl.DETECTOR_MODEL, "obj": pl.OBJECT_EMBED_MODEL,
+                    "img": pl.IMAGE_EMBED_MODEL, "metrics": ""}
+        for key, _cls, is_gated in pl.STAGES:
+            with self.subTest(stage=key):
+                self.assertEqual(is_gated, model_of[key].startswith("facebook/"))
+
+    def test_the_object_embedder_never_outlives_the_detector(self):
+        # Not a preference: it embeds the detector's crops, so without `boxes` there is
+        # nothing to embed. Any plan carrying `obj` must carry `detector` too.
+        for ungated_only in (False, True):
+            plan = pl.stage_plan(ungated_only)
+            if "obj" in plan:
+                self.assertIn("detector", plan)
+                self.assertLess(plan.index("detector"), plan.index("obj"))
+
+
 if __name__ == "__main__":
     unittest.main(argv=[sys.argv[0]], verbosity=2)
