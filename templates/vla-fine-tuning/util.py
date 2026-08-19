@@ -102,6 +102,7 @@ def load_pi05_policy(pretrained_path=None):
     Also applies the attention mask monkey-patch (see above) so training
     doesn't crash on sequence-length mismatches.
     """
+    from lerobot.configs.policies import PreTrainedConfig
     from lerobot.policies.pi05 import PI05Policy
 
     if pretrained_path is None:
@@ -109,8 +110,18 @@ def load_pi05_policy(pretrained_path=None):
 
     apply_pi05_attention_mask_patch()
 
+    # pi05_base's config.json declares dtype "float32" and lerobot honours it, so the
+    # 4.1B params land fp32 -- 15.4 GiB of a 22 GiB L4 before a single activation, which
+    # is why this template OOMed. `bfloat16` is lerobot's own precision mode: it keeps
+    # the vision tower, projector and layernorms fp32 on purpose ("toggle causes
+    # optimizer same dtype error"), which a blanket .half() would trample.
+    # from_pretrained's own signature takes neither dtype nor device -- they land in
+    # **kwargs and are dropped silently -- so the config is the only way in.
+    config = PreTrainedConfig.from_pretrained(pretrained_path)
+    config.dtype = "bfloat16"
+
     policy = PI05Policy.from_pretrained(
-        pretrained_path, device="cuda", dtype=torch.float16, train_expert_only=True,
+        pretrained_path, config=config, device="cuda", train_expert_only=True,
     )
 
     # Freeze everything, then unfreeze the small trainable heads.
@@ -122,6 +133,12 @@ def load_pi05_policy(pretrained_path=None):
         if name in {"action_in_proj", "action_out_proj", "time_mlp_in", "time_mlp_out"}:
             for p in module.parameters():
                 p.requires_grad = True
+
+    # bfloat16 casts these four too, which would leave the optimizer with bf16 master
+    # weights. Only 2.2 M params, so fp32 here costs ~9 MB and keeps the update precise.
+    for p in policy.parameters():
+        if p.requires_grad and p.dtype is not torch.float32:
+            p.data = p.data.float()
 
     return policy
 
@@ -160,9 +177,14 @@ def make_checkpoint(policy, optimizer, scaler, epoch, step):
     import ray.train
 
     ckpt_dir = tempfile.mkdtemp(prefix="pi05_ckpt_")
+    # Move weights to CPU before pickling. Pickled CUDA tensors deserialize straight
+    # back onto the device, so a resume would load the whole model on top of the one
+    # already there and OOM before the first step.
+    model_state = {k: v.cpu() if hasattr(v, "cpu") else v
+                   for k, v in policy.module.state_dict().items()}
     with open(os.path.join(ckpt_dir, "state.pkl"), "wb") as f:
         pickle.dump(
-            {"model": policy.module.state_dict(), "optim": optimizer.state_dict(),
+            {"model": model_state, "optim": optimizer.state_dict(),
              "scaler": scaler.state_dict(), "epoch": epoch, "step": step},
             f,
         )
@@ -177,9 +199,10 @@ def make_checkpoint(policy, optimizer, scaler, epoch, step):
 def truncate_batch(batch: dict, max_len: int) -> dict:
     """Clip sequence and mask tensors to max_len tokens.
 
-    PI0.5 can produce very long token sequences depending on the number of
-    cameras and action horizon. Truncating caps GPU memory usage at the cost
-    of losing some context. Set max_len=0 to disable.
+    Only clips the keys listed below, and only if the preprocessor emits them.
+    PI0.5 builds its own image+text sequence inside the forward pass, so this
+    does not bound peak memory -- the masks it builds there run past 1000
+    tokens whatever max_len says. Set max_len=0 to disable.
     """
     if not max_len:
         return batch
@@ -247,7 +270,7 @@ def train_step(policy, batch, preprocessor, max_len, grad_accum, scaler):
     batch.pop("task", None)
     batch.pop("task_index", None)
 
-    with torch.autocast("cuda", torch.float16):
+    with torch.autocast("cuda", torch.bfloat16):
         out = policy(batch)
         loss = out.loss if hasattr(out, "loss") else out[0]
 

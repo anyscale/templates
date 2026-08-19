@@ -1,0 +1,9 @@
+# The cu129 image ships neither torch nor the model stack, so pin those here; lerobot
+# owns the rest of its tree (transformers, opencv, draccus, safetensors, einops, tqdm).
+ray[data,train]==2.57.0  # tracks the image's Ray; --unsafe-package keeps it out of the lock
+lerobot[pi]==0.6.1  # the `pi` extra pulls transformers 5.x, which carries PI0 upstream
+torch==2.7.1  # lerobot allows <2.12, which floats to a cu130 build on this cu129 image
+torchvision==0.22.1  # must track torch's minor
+huggingface-hub==1.28.0  # imported directly for snapshot_download
+av==15.1.0  # lerobot_datasource decodes mp4 frames with av.open directly
+s3fs==2025.9.0  # fsspec dispatches the s3:// dataset root to it
