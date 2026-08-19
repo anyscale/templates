@@ -1,0 +1,399 @@
+<title>SkyRL Cluster Map</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<style>
+  :root{
+    --paper:#F5F8F7; --surface:#FFFFFF; --sunken:#EDF2F1; --stagefill:#FFFFFF;
+    --ink:#0F1D20; --body:#233538; --muted:#66807F;
+    --rule:#D8E1DF; --rule-strong:#B4C4C1;
+    --amber:#B85F22; --teal:#20707F;
+    --amber-soft:#F5E4D8; --teal-soft:#DEECEF;
+    --sans:"IBM Plex Sans",ui-sans-serif,system-ui,sans-serif;
+    --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root:not([data-theme="light"]){
+      --paper:#0E1B1E; --surface:#15262A; --sunken:#122125; --stagefill:#1B2F34;
+      --ink:#E6F0ED; --body:#C4D4D1; --muted:#89A2A1;
+      --rule:#26393D; --rule-strong:#3C565B;
+      --amber:#E89257; --teal:#63B4C2;
+      --amber-soft:#33241A; --teal-soft:#14302F;
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#0E1B1E; --surface:#15262A; --sunken:#122125; --stagefill:#1B2F34;
+    --ink:#E6F0ED; --body:#C4D4D1; --muted:#89A2A1;
+    --rule:#26393D; --rule-strong:#3C565B;
+    --amber:#E89257; --teal:#63B4C2;
+    --amber-soft:#33241A; --teal-soft:#14302F;
+  }
+  *{box-sizing:border-box} html,body{margin:0}
+  body{background:var(--paper); color:var(--body); font-family:var(--sans);
+    font-size:15px; line-height:1.55; -webkit-font-smoothing:antialiased;}
+  .shell{max-width:1340px; margin:0 auto; padding:26px 22px 40px;}
+  header{display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between;
+    gap:14px 30px; padding-bottom:14px; margin-bottom:16px; border-bottom:1px solid var(--rule);}
+  h1{font-size:23px; font-weight:600; letter-spacing:-.02em; color:var(--ink); margin:0; line-height:1.15;}
+  .sub{font-size:13.5px; color:var(--muted); margin:5px 0 0;}
+  .facts{display:flex; flex-wrap:wrap; gap:6px 20px; font-family:var(--mono); font-size:11.5px; color:var(--muted);}
+  .facts b{color:var(--body); font-weight:500;}
+  .hint{display:inline-flex; align-items:center; gap:8px; font-family:var(--mono); font-size:11.5px;
+    color:var(--teal); background:var(--teal-soft); border:1px solid var(--teal);
+    padding:5px 11px; border-radius:20px; margin-bottom:13px;}
+  .hint::before{content:""; width:7px; height:7px; border-radius:50%; background:var(--teal);}
+  .stage-wrap{background:var(--surface); border:1px solid var(--rule); border-radius:8px; padding:8px; overflow-x:auto;}
+  svg.map{display:block; width:100%; min-width:1060px; height:auto;}
+
+  .frame-w{fill:none; stroke:var(--ink); stroke-width:2;}
+  .zonelabel{font-family:var(--mono); font-size:10.5px; font-weight:600; letter-spacing:1.5px; fill:var(--muted);}
+  .box{fill:var(--sunken); stroke:var(--rule-strong); stroke-width:1.5; transition:stroke .12s,stroke-width .12s;}
+  .box-quiet{fill:none; stroke:var(--rule-strong); stroke-width:1.4; stroke-dasharray:5 4;}
+  .stg{fill:var(--stagefill); stroke:var(--rule-strong); stroke-width:1.2; transition:stroke .12s,stroke-width .12s,fill .12s;}
+  .t-name{font-family:var(--sans); font-size:13.5px; font-weight:600; fill:var(--ink);}
+  .t-sub{font-family:var(--mono); font-size:10px; fill:var(--muted);}
+  .t-stg{font-family:var(--sans); font-size:12px; font-weight:600; fill:var(--ink);}
+  .t-line{font-family:var(--mono); font-size:10px; fill:var(--muted);}
+  .t-hot{font-family:var(--mono); font-size:10px; font-weight:600; fill:var(--amber);}
+  .flow{fill:none; stroke:var(--body); stroke-width:1.6; transition:stroke .12s,stroke-width .12s;}
+  .flow-back{stroke-dasharray:5 4;}
+  .flow-hot{stroke:var(--amber); stroke-width:2.4;}
+  .hit{fill:none; stroke:transparent; stroke-width:26;}
+  .t-flow{font-family:var(--mono); font-size:10px; fill:var(--body);}
+  .t-flowhot{font-family:var(--mono); font-size:10px; font-weight:600; fill:var(--amber);}
+  .badge{fill:var(--surface); stroke:var(--body); stroke-width:1.3;}
+  .badge-hot{fill:var(--surface); stroke:var(--amber); stroke-width:1.7;}
+  .t-badge{font-family:var(--mono); font-size:10px; font-weight:600; fill:var(--ink); text-anchor:middle;}
+  .gpu{fill:none; stroke:var(--rule-strong); stroke-width:1.2;}
+  .mk{fill:var(--body);} .mk-h{fill:var(--amber);}
+
+  .hz{cursor:pointer; outline:none;}
+  .hz:hover .box,.hz:focus-visible .box{stroke:var(--teal); stroke-width:2.4;}
+  .hz:hover .stg,.hz:focus-visible .stg{stroke:var(--teal); stroke-width:2.4; fill:var(--teal-soft);}
+  .hz:hover .box-quiet,.hz:focus-visible .box-quiet{stroke:var(--teal); stroke-width:2.2;}
+  .hz:hover .flow,.hz:focus-visible .flow{stroke:var(--teal); stroke-width:2.8;}
+  .hz:hover .flow-hot,.hz:focus-visible .flow-hot{stroke:var(--amber); stroke-width:3.4;}
+  .hz:hover .gpu,.hz:focus-visible .gpu{stroke:var(--teal); stroke-width:2;}
+  svg.map.dim .hz:not(.on){opacity:.24; transition:opacity .12s;}
+
+  .panel{margin-top:14px; border:1px solid var(--rule); border-radius:8px; background:var(--surface);
+    padding:18px 20px; min-height:172px; display:grid;
+    grid-template-columns:minmax(0,1.1fr) minmax(0,1fr); gap:12px 34px;}
+  .panel.idle{grid-template-columns:1fr;}
+  .p-kicker{font-family:var(--mono); font-size:10.5px; font-weight:600; letter-spacing:.14em;
+    text-transform:uppercase; color:var(--teal); margin:0 0 7px;}
+  .p-kicker.hot{color:var(--amber);}
+  .p-title{font-size:19px; font-weight:600; letter-spacing:-.015em; color:var(--ink); margin:0 0 8px; line-height:1.2;}
+  .p-desc{margin:0; font-size:14.5px; color:var(--body); max-width:62ch;}
+  .p-math{margin:11px 0 0; font-family:var(--mono); font-size:12.5px; color:var(--ink);
+    background:var(--sunken); border-left:3px solid var(--teal); padding:9px 13px; border-radius:0 4px 4px 0;
+    overflow-x:auto; white-space:nowrap;}
+  .p-math.hot{border-left-color:var(--amber);}
+  .p-facts{margin:0; padding:0; list-style:none; display:flex; flex-direction:column; gap:7px;}
+  .p-facts li{display:grid; grid-template-columns:minmax(104px,auto) 1fr; gap:12px;
+    font-family:var(--mono); font-size:11.5px; line-height:1.45; padding-bottom:7px; border-bottom:1px solid var(--rule);}
+  .p-facts li:last-child{border-bottom:none; padding-bottom:0;}
+  .p-facts b{color:var(--muted); font-weight:500;}
+  .p-facts span{color:var(--ink); font-variant-numeric:tabular-nums;}
+  .p-facts span.warn{color:var(--amber); font-weight:600;}
+  footer{margin-top:22px; font-family:var(--mono); font-size:11.5px; color:var(--muted); line-height:1.7;}
+  @media (max-width:760px){.panel{grid-template-columns:1fr; min-height:0;} header{align-items:flex-start;}}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important;}}
+</style>
+
+<div class="shell">
+  <header>
+    <div>
+      <h1>SkyRL Cluster Map</h1>
+      <p class="sub">One GRPO step end to end — the machines, the processes and the maths — as it actually ran.</p>
+    </div>
+    <div class="facts">
+      <span>model <b>Qwen3-VL-2B</b></span><span>group <b>G = 4</b></span>
+      <span>batch <b>16 × 4 = 64</b></span><span>step <b>~120s</b></span>
+    </div>
+  </header>
+
+  <div class="hint">Hover or tab through any stage, box or arrow — 9 numbered stages make one loop</div>
+
+  <div class="stage-wrap">
+  <svg class="map" id="map" viewBox="0 0 1200 900" role="img" aria-label="Interactive map of one GRPO training step: the head node ships code to a GPU worker where an orchestrator samples a batch, vLLM engines render and generate four samples per prompt, the environment scores them into rewards, group normalisation turns rewards into advantages, FSDP policy workers recompute logprobs and apply a clipped surrogate loss, and NCCL broadcasts the new weights back to the engines to close the loop.">
+    <defs>
+      <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7.5" markerHeight="7.5" orient="auto-start-reverse"><path class="mk" d="M0,0 L10,5 L0,10 z"/></marker>
+      <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7.5" markerHeight="7.5" orient="auto-start-reverse"><path class="mk-h" d="M0,0 L10,5 L0,10 z"/></marker>
+    </defs>
+
+    <!-- HEAD -->
+    <g class="hz" data-k="head" tabindex="0" role="button" aria-label="Head node">
+      <rect class="box-quiet" x="40" y="28" width="420" height="96" rx="5"/>
+      <text class="zonelabel" x="58" y="52">HEAD NODE · m5.2xlarge · CPU ONLY</text>
+      <text class="t-line" x="58" y="74">bash run_pathvlm.sh → uv run → ray.init() → ray.get(task)</text>
+      <text class="t-line" x="58" y="92">…then blocks for the rest of the run</text>
+      <text class="t-hot" x="58" y="112">CPU = 0 schedulable — nothing can run here</text>
+    </g>
+    <g class="hz" data-k="ship" tabindex="0" role="button" aria-label="Code shipment">
+      <path class="hit" d="M250 124 V 178"/>
+      <path class="flow" d="M250 124 V 174" marker-end="url(#a)"/>
+      <circle class="badge" cx="250" cy="149" r="11"/><text class="t-badge" x="250" y="153">0</text>
+      <text class="t-flow" x="272" y="143">ships working_dir = the SkyRL repo</text>
+      <text class="t-flow" x="272" y="159">+ py_executable = "uv run --isolated"</text>
+    </g>
+
+    <!-- WORKER -->
+    <rect class="frame-w" x="40" y="180" width="1120" height="696" rx="6"/>
+    <text class="zonelabel" x="58" y="204">GPU WORKER · g5.12xlarge · 4 × A10G 24GB · 10.0.104.69</text>
+
+    <!-- ORCHESTRATOR -->
+    <g class="hz" data-k="orch" tabindex="0" role="button" aria-label="Orchestrator">
+      <rect class="box" x="72" y="222" width="290" height="618" rx="5"/>
+      <text class="t-name" x="90" y="248">Orchestrator</text>
+      <text class="t-sub" x="90" y="266">Ray TASK, not an actor · pid 13114</text>
+      <text class="t-hot" x="90" y="282">1 of 48 vCPU · holds no GPU</text>
+    </g>
+    <g class="hz" data-k="s1" tabindex="0" role="button" aria-label="Stage 1 sample batch">
+      <rect class="stg" x="90" y="292" width="254" height="82" rx="4"/>
+      <circle class="badge" cx="110" cy="312" r="11"/><text class="t-badge" x="110" y="316">1</text>
+      <text class="t-stg" x="130" y="316">Sample the batch</text>
+      <text class="t-line" x="106" y="338">16 prompts drawn from 1,998</text>
+      <text class="t-line" x="106" y="356">each = 1 patch + the 9-class question</text>
+    </g>
+    <g class="hz" data-k="s4" tabindex="0" role="button" aria-label="Stage 4 reward">
+      <rect class="stg" x="90" y="446" width="254" height="94" rx="4"/>
+      <circle class="badge-hot" cx="110" cy="466" r="11"/><text class="t-badge" x="110" y="470">4</text>
+      <text class="t-stg" x="130" y="470">Reward — your env.py</text>
+      <text class="t-line" x="106" y="492">NctCrcEnv.step() × 64, on CPU</text>
+      <text class="t-line" x="106" y="510">1.0 correct + 0.2 well-formed</text>
+      <text class="t-hot" x="106" y="528">r ∈ { 0.0, 0.2, 1.0, 1.2 }</text>
+    </g>
+    <g class="hz" data-k="s5" tabindex="0" role="button" aria-label="Stage 5 group advantages">
+      <rect class="stg" x="90" y="558" width="254" height="104" rx="4"/>
+      <circle class="badge" cx="110" cy="578" r="11"/><text class="t-badge" x="110" y="582">5</text>
+      <text class="t-stg" x="130" y="582">Group advantages</text>
+      <text class="t-line" x="106" y="604">within each group of G = 4:</text>
+      <text class="t-hot" x="106" y="622">A = (r − mean) / std</text>
+      <text class="t-line" x="106" y="644">1 scalar → every token of that sample</text>
+    </g>
+    <g class="hz" data-k="store" tabindex="0" role="button" aria-label="Shared storage">
+      <rect class="stg" x="90" y="712" width="254" height="104" rx="4"/>
+      <text class="t-stg" x="106" y="736">/mnt/cluster_storage</text>
+      <text class="t-line" x="106" y="758">NFS — the only path the trainer sees</text>
+      <text class="t-line" x="106" y="776">train.parquet · ckpts · eval dumps</text>
+      <text class="t-hot" x="106" y="798">/home/ray/default is NOT visible here</text>
+    </g>
+
+    <!-- vLLM -->
+    <g class="hz" data-k="vllm" tabindex="0" role="button" aria-label="vLLM engines">
+      <rect class="box" x="520" y="222" width="330" height="232" rx="5"/>
+      <text class="t-name" x="538" y="248">4 × vLLM engines — the generator</text>
+      <text class="t-sub" x="538" y="266">VLLMServerActor 14354–57 · 1 GPU each · sleeps while training</text>
+    </g>
+    <g class="hz" data-k="s2" tabindex="0" role="button" aria-label="Stage 2 render">
+      <rect class="stg" x="538" y="280" width="294" height="76" rx="4"/>
+      <circle class="badge" cx="558" cy="300" r="11"/><text class="t-badge" x="558" y="304">2</text>
+      <text class="t-stg" x="578" y="304">Render — tokenise</text>
+      <text class="t-line" x="554" y="326">chat template → token ids + pixel features</text>
+      <text class="t-line" x="554" y="344">vLLM is the source of truth, not HF</text>
+    </g>
+    <g class="hz" data-k="s3" tabindex="0" role="button" aria-label="Stage 3 generate">
+      <rect class="stg" x="538" y="366" width="294" height="76" rx="4"/>
+      <circle class="badge" cx="558" cy="386" r="11"/><text class="t-badge" x="558" y="390">3</text>
+      <text class="t-stg" x="578" y="390">Generate G = 4 per prompt</text>
+      <text class="t-line" x="554" y="412">temperature 0.8 → 64 completions</text>
+      <text class="t-line" x="554" y="430">keeps old_logprobs, 1 float per token</text>
+    </g>
+
+    <!-- FSDP -->
+    <g class="hz" data-k="fsdp" tabindex="0" role="button" aria-label="FSDP policy workers">
+      <rect class="box" x="520" y="510" width="330" height="330" rx="5"/>
+      <text class="t-name" x="538" y="536">4 × FSDP policy — the trainer</text>
+      <text class="t-sub" x="538" y="554">17446, 17800–02 · bf16 · grad checkpointing · 78% of the step</text>
+    </g>
+    <g class="hz" data-k="s6" tabindex="0" role="button" aria-label="Stage 6 recompute logprobs">
+      <rect class="stg" x="538" y="568" width="294" height="68" rx="4"/>
+      <circle class="badge" cx="558" cy="588" r="11"/><text class="t-badge" x="558" y="592">6</text>
+      <text class="t-stg" x="578" y="592">Recompute logprobs</text>
+      <text class="t-line" x="554" y="614">teacher-force the same 64 sequences</text>
+      <text class="t-line" x="554" y="630">→ new_logprobs · 13.5s</text>
+    </g>
+    <g class="hz" data-k="s7" tabindex="0" role="button" aria-label="Stage 7 clipped surrogate loss">
+      <rect class="stg" x="538" y="648" width="294" height="88" rx="4"/>
+      <circle class="badge" cx="558" cy="668" r="11"/><text class="t-badge" x="558" y="672">7</text>
+      <text class="t-stg" x="578" y="672">Clipped surrogate loss</text>
+      <text class="t-hot" x="554" y="694">ratio = exp(new − old), clip [0.8, 1.2]</text>
+      <text class="t-line" x="554" y="712">loss = −min(ratio·A, clipped·A)</text>
+      <text class="t-line" x="554" y="730">no KL term — use_kl_loss=false</text>
+    </g>
+    <g class="hz" data-k="s8" tabindex="0" role="button" aria-label="Stage 8 optimizer step">
+      <rect class="stg" x="538" y="748" width="294" height="68" rx="4"/>
+      <circle class="badge" cx="558" cy="768" r="11"/><text class="t-badge" x="558" y="772">8</text>
+      <text class="t-stg" x="578" y="772">Backward + AdamW</text>
+      <text class="t-line" x="554" y="794">grad clip 1.0 · lr 1.0e-6</text>
+      <text class="t-line" x="554" y="810">policy_train total · 94.3s</text>
+    </g>
+
+    <!-- FLOWS -->
+    <g class="hz" data-k="fA" tabindex="0" role="button" aria-label="Prompts to engines">
+      <path class="hit" d="M362 320 H 516"/>
+      <path class="flow" d="M362 320 H 512" marker-end="url(#a)"/>
+      <text class="t-flow" x="439" y="292" text-anchor="middle">prompt = 166 tokens</text>
+      <text class="t-flow" x="439" y="308" text-anchor="middle">103 text + 63 vision</text>
+    </g>
+    <g class="hz" data-k="fB" tabindex="0" role="button" aria-label="Completions back to orchestrator">
+      <path class="hit" d="M516 410 H 362"/>
+      <path class="flow flow-back" d="M516 410 H 366" marker-end="url(#a)"/>
+      <text class="t-flow" x="441" y="382" text-anchor="middle">64 completions, ~227 tok</text>
+      <text class="t-flow" x="441" y="398" text-anchor="middle">+ old_logprobs</text>
+    </g>
+    <g class="hz" data-k="fC" tabindex="0" role="button" aria-label="Sequences and advantages to trainer">
+      <path class="hit" d="M362 602 H 516"/>
+      <path class="flow" d="M362 602 H 512" marker-end="url(#a)"/>
+      <text class="t-flow" x="439" y="574" text-anchor="middle">64 sequences + 64 advantages</text>
+      <text class="t-flow" x="439" y="590" text-anchor="middle">+ old_logprobs</text>
+    </g>
+    <g class="hz" data-k="sync" tabindex="0" role="button" aria-label="Stage 9 NCCL weight broadcast">
+      <path class="hit" d="M850 782 H 890 V 404 H 854"/>
+      <path class="flow flow-hot" d="M850 782 H 890 V 404 H 858" marker-end="url(#ah)"/>
+      <circle class="badge-hot" cx="890" cy="594" r="11"/><text class="t-badge" x="890" y="598">9</text>
+      <text class="t-flowhot" x="906" y="590">NCCL sync · 6.0s</text>
+      <text class="t-flow" x="906" y="606">closes the loop</text>
+    </g>
+
+    <!-- GPUs -->
+    <g class="hz" data-k="gpus" tabindex="0" role="button" aria-label="Shared GPUs">
+      <rect class="box" x="1010" y="222" width="150" height="618" rx="5"/>
+      <text class="t-name" x="1026" y="248">4 × A10G</text>
+      <text class="t-sub" x="1026" y="266">only these 2 use</text>
+      <text class="t-sub" x="1026" y="278">the cards</text>
+      <rect class="gpu" x="1026" y="284" width="118" height="86" rx="4"/>
+      <text class="t-line" x="1038" y="312">GPU 0</text><text class="t-line" x="1038" y="330">engine</text><text class="t-line" x="1038" y="348">+ policy</text>
+      <rect class="gpu" x="1026" y="382" width="118" height="86" rx="4"/>
+      <text class="t-line" x="1038" y="410">GPU 1</text><text class="t-line" x="1038" y="428">engine</text><text class="t-line" x="1038" y="446">+ policy</text>
+      <rect class="gpu" x="1026" y="480" width="118" height="86" rx="4"/>
+      <text class="t-line" x="1038" y="508">GPU 2</text><text class="t-line" x="1038" y="526">engine</text><text class="t-line" x="1038" y="544">+ policy</text>
+      <rect class="gpu" x="1026" y="578" width="118" height="86" rx="4"/>
+      <text class="t-line" x="1038" y="606">GPU 3</text><text class="t-line" x="1038" y="624">engine</text><text class="t-line" x="1038" y="642">+ policy</text>
+      <text class="t-hot" x="1026" y="700">no critic</text>
+      <text class="t-hot" x="1026" y="718">no ref model</text>
+      <text class="t-line" x="1026" y="742">GRPO needs</text>
+      <text class="t-line" x="1026" y="758">no value net;</text>
+      <text class="t-line" x="1026" y="774">KL is off</text>
+    </g>
+  </svg>
+  </div>
+
+  <div class="panel idle" id="panel" aria-live="polite">
+    <div>
+      <p class="p-kicker" id="pk">nine stages, one loop</p>
+      <h2 class="p-title" id="pt">The whole RL loop on one screen</h2>
+      <p class="p-desc" id="pd">Stage 0 ships your code to the worker. Then it cycles: sample a batch, render and generate four samples per prompt, score them with your own env code, normalise rewards within each group into advantages, recompute logprobs, apply the clipped surrogate loss, step AdamW, and broadcast the new weights back into the engines. Hover any stage to read the maths and the measured cost.</p>
+    </div>
+    <ul class="p-facts" id="pf"></ul>
+  </div>
+
+  <footer>
+    Every pid, tensor size, hyperparameter and timing measured from the live pathvlm_2b run, 2026-08-19.<br>
+    Prompt length tokenised with the real Qwen3-VL-2B processor. Companion docs — RUNSHEET.md · README.md · ARCHITECTURE.md.
+  </footer>
+</div>
+
+<script>
+(function(){
+var D={
+ head:{k:"stage 0 · bootstrap",t:"The head node does almost nothing",
+  d:"Your shell parses the config, uploads the SkyRL repo as a Ray working directory, submits exactly one task, then blocks for the rest of the run. It never holds a model, a GPU, an environment or a row of data.",
+  f:[["hardware","m5.2xlarge, CPU only"],["schedulable CPU","0.0 — by Anyscale design",1],["holds","nothing — blocks on ray.get()"],["gotcha","exported env vars do NOT follow",1]]},
+ ship:{k:"stage 0 · bootstrap",t:"Code and dependencies travel to the worker",
+  d:"There is no pre-baked image — the base conda environment on both nodes has no torch, no vLLM and no SkyRL. Ray's uv hook uploads the working directory and sets a uv command as the interpreter, so every worker process rebuilds the same environment on arrival. Only the SkyRL repo travels this way; the template stays put and ships its env class by value inside the task.",
+  f:[["hook","RAY_RUNTIME_ENV_HOOK"],["working_dir","os.getcwd(), the SkyRL repo"],["rebuild","266 packages in 703ms"],["consequence","worker cannot import env.py",1]]},
+ orch:{k:"the conductor",t:"A plain Ray task — no actor, no GPU",
+  d:"This is a decorated function, not a class, so it is a NORMAL_TASK and never appears in `ray list actors`. It asks for one CPU and zero GPUs, so it consumes 1 of the worker's 48 vCPUs and never touches a card. It sits inside the GPU node only because Anyscale gives the head node CPU = 0 schedulable, leaving nowhere else for a CPU task to be placed.",
+  m:"@ray.remote(num_cpus=1) def pathvlm_entrypoint(...)",
+  f:[["ray type","NORMAL_TASK, not an actor"],["requests","1 CPU · 0 GPU"],["owns stages","1 · 4 · 5, all on CPU"],["why this node","head has CPU = 0",1]]},
+ s1:{k:"stage 1 · orchestrator",t:"Sample 16 prompts",
+  d:"The dataloader draws a training batch from the class-balanced parquet. Images are already embedded in each prompt as base64 JPEG data URIs — there is no separate image column, which is how SkyRL's multimodal schema works.",
+  m:"16 prompts × G=4 samples = 64 sequences",
+  f:[["train pool","1,998 rows, 222 per class"],["batch","train_batch_size = 16"],["length filter","1998 → 1998, none dropped"],["image","224×224 H&E patch"]]},
+ fA:{k:"tensors · orchestrator → engines",t:"A prompt is 166 tokens",
+  d:"Measured with the real Qwen3-VL-2B processor: the chat template plus the 9-class question is 103 text tokens, and the 224×224 patch expands into 63 vision tokens that occupy placeholder slots in the sequence. The pixels ride alongside as a feature tensor.",
+  m:"166 tokens = 103 text + 63 vision",
+  f:[["text tokens","103"],["vision tokens","63"],["budget","max_prompt_length = 1024"],["headroom","6× — room for multi-image"]]},
+ s2:{k:"stage 2 · vLLM",t:"Render — and why it happens here",
+  d:"Before generating, the conversation is turned into token ids by vLLM itself rather than by an HF processor. This is deliberate: rendering on the trainer side caused measurable logprob drift and reward collapse on VLMs. One tokeniser owning both sampling and recomputation is what keeps stage 7's ratio honest.",
+  f:[["endpoint","render_chat_completion"],["source of truth","vLLM, not HF"],["prevents","logprob drift"],["bug class","the same as SFT→RL handoff",1]]},
+ s3:{k:"stage 3 · vLLM",t:"Generate four samples per prompt",
+  d:"The same prompt is sampled G=4 times at temperature 0.8. The temperature matters: GRPO derives its advantage from variance inside the group, so identical completions would give a std of zero and no gradient at all. Each completion keeps one logprob per sampled token — not the full vocabulary distribution.",
+  m:"64 completions · mean 227 tokens · temp 0.8",
+  f:[["group size","n_samples_per_prompt = 4"],["temperature","0.8 train · 0.0 eval"],["cost","4.1s — 3% of the step"],["kept","1 float per sampled token"]]},
+ fB:{k:"tensors · engines → orchestrator",t:"Completions come back with their logprobs",
+  d:"A 227-token completion contributes 227 floats, not 227 × 151k. The full logit vector exists only transiently inside the forward pass and is discarded the moment a token is sampled. These become the 'old' logprobs that stage 7 measures the update against.",
+  f:[["returned","64 completions"],["mean length","227 tokens"],["logprobs","1 scalar per sampled token"],["truncated","6 of 198 hit the 1024 cap"]]},
+ s4:{k:"stage 4 · your code",t:"Reward — the seam you own",
+  d:"skyrl_gym.make() runs inside the generator loop, so one NctCrcEnv object exists per trajectory in the orchestrator process. A regex pulls the answer tag, a string compare comes next, and that is the whole reward. No GPU. This is exactly where an in-house reward model would be called instead.",
+  m:"r = 1.0·correct + 0.2·well_formed",
+  f:[["values","0.0 · 0.2 · 1.0 · 1.2"],["cost","0.00s — free next to training"],["verified","re-derived 0.72727 from raw text"],["phase 3","swap the rule for a model here",1]]},
+ s5:{k:"stage 5 · orchestrator",t:"Group normalisation — the 'GR' in GRPO",
+  d:"Each reward is normalised against the other three samples of its own prompt. That group statistic replaces a value network entirely, which is why no critic exists anywhere on this cluster. The result is one scalar per completion, broadcast to every token in it.",
+  m:"A_i = (r_i − mean(group)) / std(group)",
+  f:[["estimator","advantage_estimator = grpo"],["norm by std","true"],["shape","1 scalar → all tokens"],["failure mode","equal rewards → zero advantage",1]]},
+ fC:{k:"tensors · orchestrator → trainer",t:"What actually ships to the trainer",
+  d:"Token ids, an attention mask, a response mask marking only the completion tokens where loss may land, the pixel features, the old logprobs from stage 3, and the advantages from stage 5. Notably absent: no logits, no reward-model state, no environment state.",
+  m:"64 seqs × (~166 prompt + ~227 response) tokens",
+  f:[["response_mask","1 on completion tokens only"],["advantages","64 scalars, broadcast"],["old_logprobs","from vLLM, at sample time"],["not included","logits — they never persist"]]},
+ s6:{k:"stage 6 · trainer",t:"Recompute logprobs on the training side",
+  d:"The FSDP policy teacher-forces the very same sequences and reads off its own logprob for each completion token. This is the measurement that stage 7 compares against — and the reason vLLM had to own tokenisation back in stage 2, because any disagreement here shows up as a wrong ratio rather than an error.",
+  f:[["cost","13.5s — 11% of the step"],["method","teacher forcing, no sampling"],["output","new_logprobs, 64 × response len"],["risk","tokeniser mismatch = silent drift",1]]},
+ s7:{k:"stage 7 · trainer",t:"The clipped surrogate loss",
+  d:"Per token, the ratio of new to old probability is clipped to a trust region, and the loss takes the pessimistic branch. A positive advantage pushes that token's probability up, a negative one pushes it down. With KL disabled there is no reference model anywhere in the cluster — enabling it would add a third resident copy per GPU.",
+  m:"loss = −min(ratio·A, clip(ratio, 0.8, 1.2)·A)",
+  f:[["eps_clip","0.2 low / 0.2 high"],["policy_loss_type","regular"],["reduction","token_mean_legacy"],["use_kl_loss","false — no ref model",1]]},
+ s8:{k:"stage 8 · trainer",t:"Backward and the optimizer step",
+  d:"Gradients flow through both the language model and the vision tower, are clipped to unit norm, and AdamW takes a step. Together with stage 6 this is 94.3 seconds — 78% of the entire step — because the micro-batch is 1 with gradient checkpointing on, the conservative setting for 24 GB cards.",
+  f:[["learning rate","1.0e-6"],["grad clip","max_grad_norm = 1.0"],["policy_train","94.3s — 78% of the step",1],["first knob","micro_train_batch_size_per_gpu"]]},
+ sync:{k:"stage 9 · the gate",t:"The arrow the whole spike turns on",
+  d:"Updated weights are broadcast over NCCL straight into the sleeping inference engines, which wake and generate the next batch from the new policy. If this silently failed, training would run forever and change nothing — which is why 'do step-2 generations differ from step-1' is the single most important check in the project.",
+  f:[["transport","NCCL, GPU to GPU"],["time","6.0s"],["verified","policy_loss 9.96e-05, non-zero"],["phase 4 risk","does it survive LoRA?",1]]},
+ vllm:{k:"the generator",t:"Four engines, one GPU each",
+  d:"Each is an HTTP server wrapping a vLLM engine that spawns a child process holding the model shard. Because they share GPUs with the trainer they run in sleep mode: memory is released during stages 6–8 and restored before the next rollout.",
+  f:[["actors","VLLMServerActor 14354–14357"],["children","EngineCore → RayWorkerProc"],["sleep mode","on, forced by colocate_all"],["max_model_len","4096 — set by hand",1]]},
+ fsdp:{k:"the trainer",t:"Where 78% of the clock goes",
+  d:"The policy is sharded across all four GPUs and owns stages 6, 7 and 8. Both the vision tower and the language model are trained — this is the box that answers whether a VLM survives the training side, not just the rollout side.",
+  f:[["actors","17446, 17800, 17801, 17802"],["strategy","FSDP, bf16, grad checkpointing"],["stages 6–8","94.3s combined"],["proves","vision tower trains, loss non-zero"]]},
+ store:{k:"the only shared filesystem",t:"If the trainer reads it, it lives here",
+  d:"The worker cannot see /home/ray/default — that is node-local overlay, however much it looks like a shared home directory. Three things break if you forget, and only one of them is loud: a missing parquet throws, a missing token warns, and a missing tensorboard path silently discards every metric.",
+  f:[["type","NFS, visible cluster-wide"],["holds","parquet · ckpts · exports · logs"],["node-local trap","/home/ray/default",1],["ephemeral trap","/tmp/ray/session_*",1]]},
+ gpus:{k:"memory tenancy",t:"Two tenants per GPU, not four",
+  d:"The textbook picture stacks four workloads on every GPU — engine, policy, frozen reference and reward model. This run has two. GRPO removes the value network by construction, KL is off so no reference copy is instantiated, and the reward is a rule running on CPU.",
+  f:[["on the cards","vLLM engine + FSDP policy only"],["not on the cards","the orchestrator — CPU only"],["absent","critic — GRPO needs none"],["absent","reference — use_kl_loss=false"],["enabling KL","adds a 3rd copy per GPU",1]]}
+};
+var map=document.getElementById("map"),panel=document.getElementById("panel"),
+    pk=document.getElementById("pk"),pt=document.getElementById("pt"),
+    pd=document.getElementById("pd"),pf=document.getElementById("pf");
+var zones=[].slice.call(map.querySelectorAll(".hz"));
+var hot={sync:1,s7:1,s4:1,s8:1};
+function show(k,el){
+  var d=D[k]; if(!d) return;
+  zones.forEach(function(z){z.classList.remove("on")});
+  if(el) el.classList.add("on");
+  map.classList.add("dim"); panel.classList.remove("idle");
+  pk.textContent=d.k; pk.className="p-kicker"+(hot[k]?" hot":"");
+  pt.textContent=d.t;
+  pd.innerHTML=""; pd.textContent=d.d;
+  if(d.m){
+    var m=document.createElement("span");
+    m.className="p-math"+(hot[k]?" hot":""); m.style.display="block"; m.textContent=d.m;
+    pd.appendChild(m);
+  }
+  pf.innerHTML="";
+  d.f.forEach(function(r){
+    var li=document.createElement("li"),b=document.createElement("b"),s=document.createElement("span");
+    b.textContent=r[0]; s.textContent=r[1]; if(r[2]) s.className="warn";
+    li.appendChild(b); li.appendChild(s); pf.appendChild(li);
+  });
+}
+zones.forEach(function(z){
+  var k=z.getAttribute("data-k");
+  z.addEventListener("mouseenter",function(){show(k,z)});
+  z.addEventListener("focus",function(){show(k,z)});
+  z.addEventListener("click",function(){show(k,z)});
+});
+})();
+</script>

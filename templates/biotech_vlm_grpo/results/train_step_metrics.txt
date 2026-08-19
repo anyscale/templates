@@ -1,0 +1,780 @@
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:01:22.752 | INFO     | skyrl.train.dataset.dataset:_read_files_and_tokenize:63 - Total dataset size: 1998
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:01:44.475 | INFO     | skyrl.train.dataset.dataset:_read_files_and_tokenize:84 - Filtered dataset size: 1998
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:01:44.734 | INFO     | skyrl.train.dataset.dataset:_read_files_and_tokenize:63 - Total dataset size: 198
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:02:05.681 | INFO     | skyrl.train.dataset.dataset:_read_files_and_tokenize:84 - Filtered dataset size: 198
+(VLLMServerActor pid=14354, ip=10.0.104.69) (EngineCore pid=14901) (RayWorkerProc pid=15443) (Worker pid=15443) INFO 08-19 17:04:30 [gpu_worker.py:221] Sleep mode freed 19.19 GiB memory, 0.92 GiB memory is still in use.(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:05:32.434 | INFO     | skyrl.train.trainer:train:288 - Finished: 'sync_weights', time cost: 5.72s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:06:22.165 | INFO     | skyrl.train.utils.trainer_utils:dump_per_dataset_eval_results:373 - Dumped aggregated eval metrics to /mnt/cluster_storage/exports/pathvlm_2b/dumped_evals/global_step_0_evals/aggregated_results.jsonl
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:06:22.176 | INFO     | skyrl.train.trainer:train:303 - Finished: 'eval', time cost: 49.74s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:07:01.984 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 4.39s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:07:02.668 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 0.6375000000000001, reward/mean_positive_reward: 0.6375000000000001
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:07:17.667 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 14.99s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:07:17.677 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 0.6375000476837158, avg_response_length: 227.328125
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:08:54.324 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 96.65s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:09:05.449 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 10.85s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:09:05.450 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 127.86s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:09:10.848 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 5.30s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:09:11.500 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 0.7625000000000001, reward/mean_positive_reward: 0.7625000000000001
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:09:24.914 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.41s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:09:24.918 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 0.7625000476837158, avg_response_length: 227.65625
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:10:59.875 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 94.96s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:11:06.283 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 6.03s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:11:06.283 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 120.74s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:11:11.855 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 5.48s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:11:12.514 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 0.7468750000000001, reward/mean_positive_reward: 0.7468750000000001
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:11:25.985 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.46s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:11:25.989 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 0.7468749284744263, avg_response_length: 229.46875
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:13:01.323 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 95.33s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:13:07.910 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 6.18s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:13:07.910 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 121.53s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:13:12.339 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 4.32s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:13:12.978 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 0.7468750000000001, reward/mean_positive_reward: 0.7468750000000001
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:13:26.435 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.45s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:13:26.440 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 0.7468750476837158, avg_response_length: 217.09375
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:15:00.764 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 94.32s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:15:07.192 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 6.02s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:15:07.192 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 119.18s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:15:11.399 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 4.10s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:15:12.040 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 0.8093750000000001, reward/mean_positive_reward: 0.8093750000000001
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:15:25.363 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.32s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:15:25.368 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 0.8093749284744263, avg_response_length: 228.21875
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:17:00.516 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 95.15s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:17:06.907 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 6.03s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:17:06.907 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 119.61s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:17:11.120 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 4.11s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:17:11.783 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 0.653125, reward/mean_positive_reward: 0.653125
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:17:25.045 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.26s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:17:25.050 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 0.6531250476837158, avg_response_length: 226.484375
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:18:59.065 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 94.02s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:19:05.344 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 5.92s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:19:05.344 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 118.33s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:19:10.497 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 5.07s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:19:11.189 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 0.840625, reward/mean_positive_reward: 0.840625
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:19:24.874 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.68s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:19:24.878 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 0.8406250476837158, avg_response_length: 225.1875
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:20:58.937 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 94.06s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:21:05.251 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 5.91s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:21:05.251 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 119.82s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:21:10.047 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 4.71s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:21:10.679 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 0.7937500000000001, reward/mean_positive_reward: 0.7937500000000001
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:21:23.799 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.11s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:21:23.803 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 0.7937500476837158, avg_response_length: 216.046875
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:22:58.456 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 94.65s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:23:04.796 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 5.93s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:23:04.796 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 119.45s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:23:08.595 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 3.71s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:23:09.267 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 0.98125, reward/mean_positive_reward: 0.98125
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:23:22.420 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.15s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:23:22.424 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 0.9812499284744263, avg_response_length: 198.078125
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:24:56.993 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 94.57s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:25:03.393 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 6.00s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:25:03.393 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 118.51s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:25:08.605 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 5.13s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:25:09.297 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 0.6375000000000001, reward/mean_positive_reward: 0.6375000000000001
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:25:22.771 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.47s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:25:22.775 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 0.6375000476837158, avg_response_length: 218.953125
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:26:57.336 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 94.56s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:27:03.750 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 6.03s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:27:03.751 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 120.28s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) Evaluation Progress: 100%|██████████| 1/1 [00:48<00:00, 48.66s/it]2026-08-19 17:27:52.494 | INFO     | skyrl.train.utils.trainer_utils:dump_per_dataset_eval_results:373 - Dumped aggregated eval metrics to /mnt/cluster_storage/exports/pathvlm_2b/dumped_evals/global_step_10_evals/aggregated_results.jsonl
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:27:52.497 | INFO     | skyrl.train.trainer:train:518 - Finished: 'eval', time cost: 48.67s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:27:56.996 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 4.35s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:27:57.695 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 0.6218750000000001, reward/mean_positive_reward: 0.6218750000000001
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:28:11.021 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.32s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:28:11.025 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 0.6218750476837158, avg_response_length: 222.546875
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:29:45.926 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 94.90s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:29:52.408 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 6.08s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:29:52.408 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 119.76s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:29:56.541 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 4.04s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:29:57.245 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 0.903125, reward/mean_positive_reward: 0.903125
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:30:10.443 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.19s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:30:10.448 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 0.9031249284744263, avg_response_length: 202.171875
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:31:44.982 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 94.53s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:31:51.336 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 5.96s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:31:51.336 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 118.84s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:31:55.072 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 3.62s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:31:55.722 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 0.7937500000000001, reward/mean_positive_reward: 0.7937500000000001
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:32:08.930 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.20s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:32:08.935 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 0.7937500476837158, avg_response_length: 197.28125
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:33:43.953 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 95.02s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:33:50.375 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 6.01s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:33:50.375 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 118.93s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:33:54.706 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 4.24s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:33:55.333 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 0.85625, reward/mean_positive_reward: 0.85625
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:34:08.504 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.17s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:34:08.508 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 0.8562499284744263, avg_response_length: 197.375
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:35:43.953 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 95.44s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:35:50.322 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 5.96s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:35:50.322 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 119.86s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:35:54.176 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 3.77s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:35:54.807 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 0.7, reward/mean_positive_reward: 0.7
+(VLLMServerActor pid=14355, ip=10.0.104.69) INFO 08-19 17:35:57 [loggers.py:310] Engine 000: Avg prompt throughput: 187.0 tokens/s, Avg generation throughput: 418.1 tokens/s, Running: 0 reqs, Waiting: 0 reqs, GPU KV cache usage: 0.0%, Prefix cache hit rate: 46.4%(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:36:07.976 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.16s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:36:07.980 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 0.7000000476837158, avg_response_length: 197.171875
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:37:42.634 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 94.65s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:37:49.000 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 5.96s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:37:49.000 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 118.59s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:37:53.587 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 4.50s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:37:54.261 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 0.7156250000000001, reward/mean_positive_reward: 0.7156250000000001
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:38:07.446 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.18s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:38:07.450 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 0.7156250476837158, avg_response_length: 202.09375
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:39:42.658 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 95.21s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:39:49.073 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 6.01s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:39:49.073 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 119.99s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:39:52.836 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 3.68s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:39:53.468 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 0.7468750000000001, reward/mean_positive_reward: 0.7468750000000001
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:40:06.581 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.11s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:40:06.586 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 0.7468750476837158, avg_response_length: 194.234375
+(VLLMServerActor pid=14355, ip=10.0.104.69) INFO 08-19 17:40:07 [loggers.py:310] Engine 000: Avg prompt throughput: 0.0 tokens/s, Avg generation throughput: 0.0 tokens/s, Running: 0 reqs, Waiting: 0 reqs, GPU KV cache usage: 0.0%, Prefix cache hit rate: 43.2% [repeated 4x across cluster](pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:41:40.619 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 94.03s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:41:47.069 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 6.04s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:41:47.069 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 117.92s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:41:51.444 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 4.24s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:41:52.118 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 0.996875, reward/mean_positive_reward: 0.996875
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:42:05.450 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.33s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:42:05.454 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 0.9968749284744263, avg_response_length: 194.078125
+(VLLMServerActor pid=14354, ip=10.0.104.69) INFO:     10.0.104.69:58110 - "GET /health HTTP/1.1" 200 OK [repeated 4x across cluster](pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:43:40.990 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 95.53s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:43:47.349 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 5.96s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:43:47.349 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 120.15s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:43:51.494 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 4.04s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:43:52.152 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 0.79375, reward/mean_positive_reward: 0.79375
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:44:05.778 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.62s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:44:05.783 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 0.7937499284744263, avg_response_length: 207.65625
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:45:40.947 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 95.16s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:45:47.366 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 6.02s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:45:47.366 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 119.92s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:45:51.352 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 3.88s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:45:52.036 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 0.6375000000000001, reward/mean_positive_reward: 0.6375000000000001
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:46:05.365 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.32s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:46:05.369 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 0.6375000476837158, avg_response_length: 204.84375
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:47:40.739 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 95.37s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:47:47.203 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 6.06s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:47:47.203 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 119.73s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:48:36.105 | INFO     | skyrl.train.utils.trainer_utils:dump_per_dataset_eval_results:373 - Dumped aggregated eval metrics to /mnt/cluster_storage/exports/pathvlm_2b/dumped_evals/global_step_20_evals/aggregated_results.jsonl
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:48:36.108 | INFO     | skyrl.train.trainer:train:518 - Finished: 'eval', time cost: 48.81s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:48:40.761 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 4.48s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:48:41.448 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 0.809375, reward/mean_positive_reward: 0.809375
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:48:54.815 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.36s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:48:54.819 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 0.8093749284744263, avg_response_length: 213.1875
+(VLLMServerActor pid=14354, ip=10.0.104.69) INFO 08-19 17:48:57 [loggers.py:310] Engine 000: Avg prompt throughput: 0.0 tokens/s, Avg generation throughput: 0.0 tokens/s, Running: 0 reqs, Waiting: 0 reqs, GPU KV cache usage: 0.0%, Prefix cache hit rate: 15.8% [repeated 3x across cluster](pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:50:29.539 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 94.72s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:50:35.868 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 5.97s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:50:35.869 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 119.59s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:50:40.413 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 4.45s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:50:41.056 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 0.91875, reward/mean_positive_reward: 0.91875
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:50:54.224 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.16s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:50:54.229 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 0.9187499284744263, avg_response_length: 213.421875
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:52:29.462 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 95.23s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:52:35.806 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 5.94s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:52:35.806 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 119.84s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:52:39.260 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 3.35s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:52:39.979 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 1.028125, reward/mean_positive_reward: 1.028125
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:52:53.220 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.24s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:52:53.224 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 1.0281249284744263, avg_response_length: 200.703125
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:54:27.831 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 94.61s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:54:34.097 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 5.91s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:54:34.098 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 118.19s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:54:40.286 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 6.10s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:54:41.004 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 0.7781250000000001, reward/mean_positive_reward: 0.7781250000000001
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:54:54.389 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.38s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:54:54.393 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 0.7781250476837158, avg_response_length: 209.890625
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:56:28.766 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 94.37s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:56:35.270 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 6.10s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:56:35.270 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 121.09s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:56:39.126 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 3.76s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:56:39.760 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 0.903125, reward/mean_positive_reward: 0.903125
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:56:52.981 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.22s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:56:52.985 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 0.9031250476837158, avg_response_length: 205.5625
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:58:27.760 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 94.78s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:59:56.314 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 6.01s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 17:59:56.314 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 200.95s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:00:00.433 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 4.01s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:00:01.089 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 0.7625, reward/mean_positive_reward: 0.7625
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:00:14.297 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.20s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:00:14.301 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 0.7624999284744263, avg_response_length: 212.640625
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:01:49.159 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 94.86s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:01:55.509 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 5.98s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:01:55.509 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 119.09s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:01:59.404 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 3.81s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:02:00.036 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 0.7312500000000001, reward/mean_positive_reward: 0.7312500000000001
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:02:13.402 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.36s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:02:13.406 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 0.7312500476837158, avg_response_length: 212.859375
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:03:47.402 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 94.00s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:03:54.124 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 6.36s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:03:54.124 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 118.53s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:03:58.622 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 4.40s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:03:59.260 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 0.778125, reward/mean_positive_reward: 0.778125
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:04:12.778 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.51s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:04:12.782 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 0.7781249284744263, avg_response_length: 206.40625
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:05:47.772 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 94.99s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:05:54.163 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 5.99s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:05:54.163 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 119.95s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:06:04.544 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 10.29s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:06:05.487 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 0.9156250000000001, reward/mean_positive_reward: 0.9156250000000001
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:06:19.279 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.79s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:06:19.283 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 0.9156249761581421, avg_response_length: 225.625
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:07:54.568 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 95.28s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:08:00.902 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 5.96s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:08:00.902 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 126.65s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:08:04.931 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 3.95s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:08:05.615 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 0.7625, reward/mean_positive_reward: 0.7625
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:08:19.278 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.66s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:08:19.282 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 0.7625000476837158, avg_response_length: 217.71875
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:09:53.840 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 94.56s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:10:00.402 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 6.16s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:10:00.402 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 119.42s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:10:48.478 | INFO     | skyrl.train.utils.trainer_utils:dump_per_dataset_eval_results:373 - Dumped aggregated eval metrics to /mnt/cluster_storage/exports/pathvlm_2b/dumped_evals/global_step_30_evals/aggregated_results.jsonl
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:10:48.489 | INFO     | skyrl.train.trainer:train:518 - Finished: 'eval', time cost: 48.01s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:10:52.827 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 4.16s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:10:53.477 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 0.746875, reward/mean_positive_reward: 0.746875
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:11:06.977 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.49s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:11:06.981 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 0.7468750476837158, avg_response_length: 204.171875
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:12:40.736 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 93.75s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:12:47.248 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 6.15s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:12:47.248 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 118.58s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:12:51.595 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 4.24s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:12:52.282 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 0.91875, reward/mean_positive_reward: 0.91875
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:13:05.760 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.47s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:13:05.764 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 0.9187499284744263, avg_response_length: 202.359375
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:14:39.572 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 93.81s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:14:45.981 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 6.01s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:14:45.981 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 118.62s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:14:50.050 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 3.96s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:14:50.709 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 0.8718750000000001, reward/mean_positive_reward: 0.8718750000000001
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:15:04.253 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.54s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:15:04.257 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 0.8718749284744263, avg_response_length: 207.15625
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:16:38.535 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 94.28s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:16:44.921 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 5.98s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:16:44.921 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 118.83s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:16:48.936 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 3.93s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:16:49.608 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 0.95, reward/mean_positive_reward: 0.95
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:17:03.114 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.50s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:17:03.118 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 0.9499999284744263, avg_response_length: 213.671875
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:18:37.727 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 94.61s
+(VLLMServerActor pid=14356, ip=10.0.104.69) INFO 08-19 18:18:38 [api_router.py:38] wake up the engine with tags: ['weights'] [repeated 3x across cluster](pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:18:44.048 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 5.96s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:18:44.048 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 119.05s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:18:49.519 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 5.38s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:18:50.158 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 0.996875, reward/mean_positive_reward: 0.996875
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:19:03.762 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.60s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:19:03.766 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 0.9968749284744263, avg_response_length: 213.4375
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:20:38.532 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 94.77s
+(VLLMServerActor pid=14356, ip=10.0.104.69) (EngineCore pid=14894) (RayWorkerProc pid=15442) (Worker pid=15442) INFO 08-19 18:18:50 [cumem.py:271] CuMemAllocator: sleep freed 16.76 GiB memory in total, of which 0.00 GiB is backed up in CPU and the rest 16.76 GiB is discarded directly. [repeated 3x across cluster](pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:20:44.950 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 6.04s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:20:44.950 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 120.82s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:20:49.207 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 4.11s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:20:49.841 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 0.8406250000000001, reward/mean_positive_reward: 0.8406250000000001
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:21:03.129 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.28s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:21:03.133 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 0.8406249284744263, avg_response_length: 203.921875
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:22:37.847 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 94.71s
+(VLLMServerActor pid=14356, ip=10.0.104.69) (EngineCore pid=14894) INFO 08-19 18:22:39 [abstract.py:345] It took 0.239656 seconds to wake up tags ['weights']. [repeated 3x across cluster](pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:22:44.235 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 5.98s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:22:44.235 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 119.14s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:22:48.653 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 4.32s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:22:49.351 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 0.871875, reward/mean_positive_reward: 0.871875
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:23:02.526 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.17s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:23:02.530 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 0.8718749284744263, avg_response_length: 207.015625
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:24:37.238 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 94.71s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:24:43.592 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 5.99s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:24:43.592 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 119.26s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:24:48.018 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 4.27s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:24:48.747 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 0.809375, reward/mean_positive_reward: 0.809375
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:25:01.997 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.24s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:25:02.002 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 0.8093750476837158, avg_response_length: 212.015625
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:26:36.883 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 94.88s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:26:43.236 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 5.95s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:26:43.236 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 119.49s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:26:47.037 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 3.69s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:26:47.702 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 0.9031250000000001, reward/mean_positive_reward: 0.9031250000000001
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:27:00.899 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.19s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:27:00.903 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 0.9031249284744263, avg_response_length: 203.46875
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:28:35.849 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 94.95s
+(VLLMServerActor pid=14354, ip=10.0.104.69) (EngineCore pid=14901) (RayWorkerProc pid=15443) (Worker pid=15443) WARNING 08-19 18:28:41 [layerwise.py:268] MRotaryEmbedding: Failed to load weights(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:28:42.370 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 6.12s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:28:42.370 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 119.03s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:28:46.653 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 4.19s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:28:47.314 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 0.8875, reward/mean_positive_reward: 0.8875
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:29:00.500 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.18s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:29:00.504 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 0.8874999284744263, avg_response_length: 219.875
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:30:35.705 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 95.20s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:30:42.271 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 6.16s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:30:42.272 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 119.81s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) Evaluation Progress: 100%|██████████| 1/1 [00:48<00:00, 48.42s/it]2026-08-19 18:31:30.789 | INFO     | skyrl.train.utils.trainer_utils:dump_per_dataset_eval_results:373 - Dumped aggregated eval metrics to /mnt/cluster_storage/exports/pathvlm_2b/dumped_evals/global_step_40_evals/aggregated_results.jsonl
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:31:30.793 | INFO     | skyrl.train.trainer:train:518 - Finished: 'eval', time cost: 48.42s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:31:35.178 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 4.23s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:31:35.840 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 0.8562500000000001, reward/mean_positive_reward: 0.8562500000000001
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:31:49.176 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.33s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:31:49.187 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 0.8562499284744263, avg_response_length: 215.890625
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:33:23.723 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 94.54s
+(VLLMServerActor pid=14354, ip=10.0.104.69) (EngineCore pid=14901) INFO 08-19 18:33:30 [abstract.py:345] It took 0.323964 seconds to wake up tags ['kv_cache'].(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:33:30.248 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 6.13s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:33:30.248 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 119.30s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:33:34.124 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 3.78s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:33:34.762 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 0.7625, reward/mean_positive_reward: 0.7625
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:33:47.954 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.19s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:33:47.958 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 0.7624999284744263, avg_response_length: 218.921875
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:35:22.506 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 94.55s
+(VLLMServerActor pid=14356, ip=10.0.104.69) (EngineCore pid=14894) INFO 08-19 18:35:23 [abstract.py:345] It took 0.288664 seconds to wake up tags ['weights']. [repeated 3x across cluster](pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:35:28.930 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 6.02s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:35:28.931 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 118.59s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:35:33.032 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 4.02s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:35:33.705 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 1.028125, reward/mean_positive_reward: 1.028125
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:35:47.365 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.65s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:35:47.369 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 1.0281249284744263, avg_response_length: 203.640625
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:37:21.132 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 93.76s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:37:27.544 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 6.00s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:37:27.544 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 118.53s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:37:31.879 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 4.26s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:37:32.514 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 0.8562500000000001, reward/mean_positive_reward: 0.8562500000000001
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:37:45.786 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.27s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:37:45.791 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 0.8562499284744263, avg_response_length: 210.546875
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:39:20.644 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 94.85s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:39:27.064 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 6.02s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:39:27.065 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 119.44s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:39:31.457 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 4.29s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:39:32.113 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 0.8250000000000001, reward/mean_positive_reward: 0.8250000000000001
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:39:45.479 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.36s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:39:45.483 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 0.8250000476837158, avg_response_length: 208.84375
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:41:20.178 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 94.69s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:41:26.525 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 5.94s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:41:26.526 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 119.36s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:41:31.149 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 4.22s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:41:31.832 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 0.95, reward/mean_positive_reward: 0.95
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:41:45.020 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.18s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:41:45.024 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 0.9499999284744263, avg_response_length: 214.890625
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:43:20.956 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 95.93s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:43:27.554 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 6.19s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:43:27.554 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 120.63s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:43:31.533 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 3.87s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:43:32.186 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 0.8562500000000001, reward/mean_positive_reward: 0.8562500000000001
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:43:45.619 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.43s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:43:45.623 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 0.8562499284744263, avg_response_length: 207.5
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:45:21.362 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 95.74s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:45:27.813 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 6.09s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:45:27.813 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 120.15s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:45:31.967 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 4.04s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:45:32.655 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 0.528125, reward/mean_positive_reward: 0.528125
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:45:45.779 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.12s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:45:45.783 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 0.5281250476837158, avg_response_length: 214.484375
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:47:20.190 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 94.41s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:47:26.631 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 6.01s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:47:26.631 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 118.71s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:47:36.906 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 10.16s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:47:37.660 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 0.9, reward/mean_positive_reward: 0.9
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:47:51.457 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.79s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:47:51.461 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 0.8999999761581421, avg_response_length: 213.609375
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:49:26.454 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 94.99s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:49:33.059 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 6.19s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:49:33.059 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 126.31s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:49:37.610 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 4.47s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:49:38.306 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 0.7156250000000001, reward/mean_positive_reward: 0.7156250000000001
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:49:52.452 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 14.14s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:49:52.457 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 0.7156250476837158, avg_response_length: 216.296875
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:51:26.612 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 94.16s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:52:35.162 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 6.04s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:52:35.163 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 182.02s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:53:23.770 | INFO     | skyrl.train.utils.trainer_utils:dump_per_dataset_eval_results:373 - Dumped aggregated eval metrics to /mnt/cluster_storage/exports/pathvlm_2b/dumped_evals/global_step_50_evals/aggregated_results.jsonl
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:53:23.782 | INFO     | skyrl.train.trainer:train:518 - Finished: 'eval', time cost: 48.54s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:53:27.666 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 3.73s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:53:28.366 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 0.7, reward/mean_positive_reward: 0.7
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:53:41.589 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.22s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:53:41.593 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 0.6999999284744263, avg_response_length: 214.890625
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:55:16.299 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 94.70s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:55:22.772 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 6.11s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:55:22.772 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 118.84s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:55:27.061 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 4.19s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:55:27.750 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 0.840625, reward/mean_positive_reward: 0.840625
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:55:40.824 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.07s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:55:40.828 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 0.8406249284744263, avg_response_length: 198.4375
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:57:15.710 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 94.88s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:57:22.188 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 6.12s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:57:22.188 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 119.32s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:57:32.386 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 10.10s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:57:33.046 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 0.853125, reward/mean_positive_reward: 0.853125
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:57:46.915 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.86s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:57:46.919 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 0.8531249761581421, avg_response_length: 220.0
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:59:22.424 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 95.50s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:59:28.890 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 6.05s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:59:28.890 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 126.61s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:59:32.545 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 3.57s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:59:33.188 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 1.0125, reward/mean_positive_reward: 1.0125
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:59:46.509 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.32s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 18:59:46.513 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 1.0124999284744263, avg_response_length: 196.84375
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:01:21.828 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 95.31s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:01:28.238 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 6.00s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:01:28.238 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 119.27s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:01:32.427 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 4.10s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:01:33.109 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 0.8406250000000001, reward/mean_positive_reward: 0.8406250000000001
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:01:46.644 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.53s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:01:46.648 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 0.8406249284744263, avg_response_length: 204.59375
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:03:21.712 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 95.06s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:03:28.068 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 5.95s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:03:28.068 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 119.74s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:03:32.565 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 4.35s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:03:33.224 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 0.7000000000000001, reward/mean_positive_reward: 0.7000000000000001
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:03:46.545 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.32s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:03:46.549 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 0.7000000476837158, avg_response_length: 212.1875
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:05:20.856 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 94.31s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:05:27.297 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 6.04s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:05:27.297 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 119.08s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:05:30.962 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 3.56s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:05:31.610 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 0.825, reward/mean_positive_reward: 0.825
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:05:44.721 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.10s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:05:44.725 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 0.8249999284744263, avg_response_length: 206.328125
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:07:19.327 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 94.60s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:07:25.739 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 6.01s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:07:25.740 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 118.34s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:07:29.477 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 3.65s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:07:30.167 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 0.85625, reward/mean_positive_reward: 0.85625
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:07:43.727 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.55s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:07:43.731 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 0.8562499284744263, avg_response_length: 202.109375
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:09:18.717 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 94.99s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:09:25.049 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 5.93s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:09:25.049 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 119.23s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:09:28.658 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 3.52s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:09:29.296 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 0.8218750000000001, reward/mean_positive_reward: 0.8218750000000001
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:09:42.688 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.39s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:09:42.693 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 0.8218749761581421, avg_response_length: 196.265625
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:11:17.343 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 94.65s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:11:23.754 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 6.01s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:11:23.754 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 118.62s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:11:27.959 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 4.12s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:11:28.633 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 0.6375, reward/mean_positive_reward: 0.6375
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:11:42.149 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.51s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:11:42.153 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 0.6374999284744263, avg_response_length: 215.0
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:13:18.753 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 96.60s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:13:25.151 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 5.99s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:13:25.151 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 121.31s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) Evaluation Progress: 100%|██████████| 1/1 [00:49<00:00, 49.07s/it]2026-08-19 19:14:14.313 | INFO     | skyrl.train.utils.trainer_utils:dump_per_dataset_eval_results:373 - Dumped aggregated eval metrics to /mnt/cluster_storage/exports/pathvlm_2b/dumped_evals/global_step_60_evals/aggregated_results.jsonl
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:14:14.324 | INFO     | skyrl.train.trainer:train:518 - Finished: 'eval', time cost: 49.08s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:14:18.596 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 4.11s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:14:19.302 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 1.059375, reward/mean_positive_reward: 1.059375
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:14:32.542 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.23s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:14:32.546 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 1.0593749284744263, avg_response_length: 211.78125
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:16:07.151 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 94.60s
+(VLLMServerActor pid=14356, ip=10.0.104.69) (EngineCore pid=14894) (RayWorkerProc pid=15442) (Worker pid=15442) INFO 08-19 19:14:19 [gpu_worker.py:221] Sleep mode freed 17.4 GiB memory, 1.43 GiB memory is still in use. [repeated 3x across cluster](pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:16:13.592 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 6.04s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:16:13.593 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 119.11s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:16:17.371 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 3.70s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:16:18.028 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 0.996875, reward/mean_positive_reward: 0.996875
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:16:31.169 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.14s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:16:31.174 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 0.9968749284744263, avg_response_length: 206.421875
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:18:06.081 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 94.91s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:18:12.488 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 6.00s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:18:12.489 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 118.81s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:18:16.711 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 4.12s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:18:17.384 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 0.8562500000000001, reward/mean_positive_reward: 0.8562500000000001
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:18:30.556 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.17s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:18:30.561 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 0.8562499284744263, avg_response_length: 204.171875
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:20:04.872 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 94.31s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:20:11.314 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 6.04s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:20:11.314 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 118.73s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:20:15.420 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 4.02s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:20:16.102 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 0.621875, reward/mean_positive_reward: 0.621875
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:20:29.638 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.53s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:20:29.642 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 0.6218750476837158, avg_response_length: 221.5
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:22:04.176 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 94.53s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:22:10.626 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 6.04s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:22:10.626 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 119.23s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:22:14.909 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 4.20s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:22:15.559 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 0.8562500000000001, reward/mean_positive_reward: 0.8562500000000001
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:22:29.033 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.47s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:22:29.038 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 0.8562499284744263, avg_response_length: 216.515625
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:24:03.689 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 94.65s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:24:10.180 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 6.04s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:24:10.180 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 119.47s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:24:14.016 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 3.75s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:24:14.744 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 0.7468750000000001, reward/mean_positive_reward: 0.7468750000000001
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:24:27.913 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.16s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:24:27.917 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 0.7468750476837158, avg_response_length: 206.34375
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:26:02.272 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 94.36s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:26:08.652 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 5.98s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:26:08.653 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 118.39s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:26:12.678 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 3.94s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:26:13.382 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 0.7156250000000001, reward/mean_positive_reward: 0.7156250000000001
+(VLLMServerActor pid=14357, ip=10.0.104.69) (EngineCore pid=14908) (RayWorkerProc pid=15444) (Worker pid=15444) WARNING 08-19 19:26:07 [layerwise.py:268] MRotaryEmbedding: Failed to load weights [repeated 3x across cluster](pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:26:26.899 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.51s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:26:26.903 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 0.7156250476837158, avg_response_length: 208.671875
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:28:02.293 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 95.39s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:28:08.647 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 5.99s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:28:08.647 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 119.91s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:28:12.608 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 3.88s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:28:13.306 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 0.79375, reward/mean_positive_reward: 0.79375
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:28:26.704 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.39s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:28:26.708 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 0.7937500476837158, avg_response_length: 212.15625
+(VLLMServerActor pid=14356, ip=10.0.104.69) (EngineCore pid=14894) INFO 08-19 19:28:13 [abstract.py:327] It took 0.605997 seconds to fall asleep. [repeated 3x across cluster](pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:30:01.145 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 94.44s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:30:07.567 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 6.02s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:30:07.567 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 118.84s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:30:12.076 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 4.40s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:30:12.754 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 0.9, reward/mean_positive_reward: 0.9
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:30:26.126 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.37s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:30:26.130 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 0.8999999761581421, avg_response_length: 199.1875
+(VLLMServerActor pid=14355, ip=10.0.104.69) INFO 08-19 19:30:27 [loggers.py:310] Engine 000: Avg prompt throughput: 0.0 tokens/s, Avg generation throughput: 0.0 tokens/s, Running: 0 reqs, Waiting: 0 reqs, GPU KV cache usage: 0.0%, Prefix cache hit rate: 34.6% [repeated 4x across cluster](pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:32:00.906 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 94.78s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:32:07.336 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 6.03s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:32:07.337 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 119.67s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:32:11.345 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 3.84s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:32:12.007 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 0.8875000000000001, reward/mean_positive_reward: 0.8875000000000001
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:32:25.482 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.47s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:32:25.486 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 0.8874999284744263, avg_response_length: 213.453125
+(VLLMServerActor pid=14354, ip=10.0.104.69) INFO 08-19 19:32:28 [loggers.py:310] Engine 000: Avg prompt throughput: 0.0 tokens/s, Avg generation throughput: 0.0 tokens/s, Running: 0 reqs, Waiting: 0 reqs, GPU KV cache usage: 0.0%, Prefix cache hit rate: 36.5% [repeated 3x across cluster](pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:33:59.361 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 93.87s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:34:05.755 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 5.93s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:34:05.755 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 118.25s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:34:55.021 | INFO     | skyrl.train.utils.trainer_utils:dump_per_dataset_eval_results:373 - Dumped aggregated eval metrics to /mnt/cluster_storage/exports/pathvlm_2b/dumped_evals/global_step_70_evals/aggregated_results.jsonl
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:34:55.033 | INFO     | skyrl.train.trainer:train:518 - Finished: 'eval', time cost: 49.19s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:34:59.943 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 4.71s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:35:00.629 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 0.7312500000000001, reward/mean_positive_reward: 0.7312500000000001
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:35:14.015 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.38s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:35:14.020 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 0.7312499284744263, avg_response_length: 226.921875
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:36:48.712 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 94.69s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:36:55.030 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 5.96s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:36:55.030 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 119.80s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:36:59.484 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 4.36s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:37:00.126 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 0.903125, reward/mean_positive_reward: 0.903125
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:37:13.426 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.29s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:37:13.430 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 0.9031249284744263, avg_response_length: 217.96875
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:38:47.684 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 94.25s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:38:54.038 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 5.99s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:38:54.038 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 118.92s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:38:58.220 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 4.10s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:38:58.856 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 0.965625, reward/mean_positive_reward: 0.965625
+(VLLMServerActor pid=14356, ip=10.0.104.69) (EngineCore pid=14894) (RayWorkerProc pid=15442) (Worker pid=15442) WARNING 08-19 19:38:53 [layerwise.py:268] RotaryEmbedding: Failed to load weights [repeated 3x across cluster](pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:39:12.045 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.18s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:39:12.050 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 0.9656249284744263, avg_response_length: 214.078125
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:40:46.332 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 94.28s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:40:52.832 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 6.09s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:40:52.832 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 118.71s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:40:56.794 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 3.88s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:40:57.502 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 0.621875, reward/mean_positive_reward: 0.621875
+(VLLMServerActor pid=14357, ip=10.0.104.69) (EngineCore pid=14908) (RayWorkerProc pid=15444) (Worker pid=15444) INFO 08-19 19:40:57 [cumem.py:271] CuMemAllocator: sleep freed 16.76 GiB memory in total, of which 0.00 GiB is backed up in CPU and the rest 16.76 GiB is discarded directly. [repeated 3x across cluster](pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:41:10.786 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.28s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:41:10.790 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 0.6218750476837158, avg_response_length: 211.328125
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:42:45.715 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 94.92s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:42:52.132 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 6.06s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:42:52.132 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 119.22s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:42:55.711 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 3.50s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:42:56.376 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 0.996875, reward/mean_positive_reward: 0.996875
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:43:09.545 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.16s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:43:09.549 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 0.9968749284744263, avg_response_length: 205.796875
+(VLLMServerActor pid=14354, ip=10.0.104.69) INFO:     10.0.104.69:54464 - "GET /health HTTP/1.1" 200 OK(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:44:44.648 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 95.10s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:45:53.527 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 5.87s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:45:53.527 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 181.32s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:45:57.653 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 4.04s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:45:58.293 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 0.7468750000000001, reward/mean_positive_reward: 0.7468750000000001
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:46:11.433 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.13s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:46:11.437 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 0.7468750476837158, avg_response_length: 209.234375
+(VLLMServerActor pid=14354, ip=10.0.104.69) INFO:     10.0.104.69:43576 - "GET /health HTTP/1.1" 200 OK(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:47:45.927 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 94.49s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:47:52.269 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 5.94s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:47:52.269 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 118.66s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:47:56.248 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 3.85s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:47:57.012 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 0.825, reward/mean_positive_reward: 0.825
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:48:10.448 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.42s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:48:10.452 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 0.8250000476837158, avg_response_length: 209.171875
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:49:44.602 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 94.15s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:49:51.062 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 6.06s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:49:51.062 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 118.67s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:49:55.182 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 4.01s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:49:55.874 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 0.8406250000000001, reward/mean_positive_reward: 0.8406250000000001
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:50:10.100 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 14.22s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:50:10.104 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 0.8406249284744263, avg_response_length: 213.78125
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:51:44.298 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 94.19s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:51:50.642 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 5.85s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:51:50.642 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 119.47s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:51:54.299 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 3.57s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:51:54.993 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 0.996875, reward/mean_positive_reward: 0.996875
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:52:08.095 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.10s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:52:08.100 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 0.9968749284744263, avg_response_length: 204.46875
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:53:42.877 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 94.78s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:53:49.327 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 6.05s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:53:49.327 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 118.60s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:53:53.592 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 4.16s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:53:54.248 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 0.7156250000000001, reward/mean_positive_reward: 0.7156250000000001
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:54:07.664 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.41s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:54:07.668 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 0.7156250476837158, avg_response_length: 203.6875
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:55:42.303 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 94.63s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:55:48.718 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 6.01s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:55:48.718 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 119.28s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:56:36.845 | INFO     | skyrl.train.utils.trainer_utils:dump_per_dataset_eval_results:373 - Dumped aggregated eval metrics to /mnt/cluster_storage/exports/pathvlm_2b/dumped_evals/global_step_80_evals/aggregated_results.jsonl
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:56:36.854 | INFO     | skyrl.train.trainer:train:518 - Finished: 'eval', time cost: 48.03s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:56:40.817 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 3.78s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:56:41.540 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 0.903125, reward/mean_positive_reward: 0.903125
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:56:54.843 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.30s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:56:54.848 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 0.9031249284744263, avg_response_length: 211.71875
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:58:28.950 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 94.10s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:58:35.306 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 5.95s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:58:35.307 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 118.27s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:58:39.816 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 4.38s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:58:40.496 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 0.903125, reward/mean_positive_reward: 0.903125
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:58:53.755 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.25s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 19:58:53.759 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 0.9031249284744263, avg_response_length: 218.6875
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:00:28.531 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 94.77s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:00:34.943 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 6.05s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:00:34.944 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 119.51s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:00:39.390 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 4.37s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:00:40.086 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 0.871875, reward/mean_positive_reward: 0.871875
+(VLLMServerActor pid=14357, ip=10.0.104.69) (EngineCore pid=14908) (RayWorkerProc pid=15444) (Worker pid=15444) INFO 08-19 20:00:39 [cumem.py:271] CuMemAllocator: sleep freed 16.76 GiB memory in total, of which 0.00 GiB is backed up in CPU and the rest 16.76 GiB is discarded directly. [repeated 2x across cluster](pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:00:53.340 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.25s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:00:53.344 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 0.8718749284744263, avg_response_length: 217.65625
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:02:27.955 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 94.61s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:02:34.374 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 6.02s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:02:34.374 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 119.35s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:02:38.914 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 4.45s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:02:39.553 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 0.7000000000000001, reward/mean_positive_reward: 0.7000000000000001
+(VLLMServerActor pid=14357, ip=10.0.104.69) (EngineCore pid=14908) (RayWorkerProc pid=15444) (Worker pid=15444) INFO 08-19 20:02:39 [cumem.py:271] CuMemAllocator: sleep freed 16.76 GiB memory in total, of which 0.00 GiB is backed up in CPU and the rest 16.76 GiB is discarded directly. [repeated 3x across cluster](pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:02:53.008 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.45s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:02:53.012 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 0.7000000476837158, avg_response_length: 212.921875
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:04:28.530 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 95.52s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:04:35.021 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 6.09s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:04:35.022 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 120.56s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:04:39.325 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 4.21s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:04:39.978 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 0.996875, reward/mean_positive_reward: 0.996875
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:04:53.265 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.28s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:04:53.270 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 0.9968749284744263, avg_response_length: 210.078125
+(VLLMServerActor pid=14354, ip=10.0.104.69) INFO 08-19 20:04:58 [loggers.py:310] Engine 000: Avg prompt throughput: 0.0 tokens/s, Avg generation throughput: 0.0 tokens/s, Running: 0 reqs, Waiting: 0 reqs, GPU KV cache usage: 0.0%, Prefix cache hit rate: 50.2% [repeated 3x across cluster](pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:06:28.108 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 94.84s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:06:34.713 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 6.20s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:06:34.713 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 119.60s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:06:38.502 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 3.70s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:06:39.163 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 0.95, reward/mean_positive_reward: 0.95
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:06:52.497 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.33s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:06:52.501 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 0.9499999284744263, avg_response_length: 211.109375
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:08:27.332 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 94.83s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:08:33.640 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 5.95s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:08:33.640 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 118.83s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:08:37.465 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 3.74s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:08:38.173 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 1.121875, reward/mean_positive_reward: 1.121875
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:08:51.279 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.10s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:08:51.283 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 1.1218749284744263, avg_response_length: 207.765625
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:10:26.927 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 95.64s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:10:33.337 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 6.01s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:10:33.337 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 119.61s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:10:37.739 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 4.31s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:10:38.407 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 0.98125, reward/mean_positive_reward: 0.98125
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:10:51.649 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.24s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:10:51.653 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 0.9812499284744263, avg_response_length: 205.625
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:12:26.436 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 94.78s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:12:32.781 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 5.94s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:12:32.781 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 119.35s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:12:36.988 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 4.12s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:12:37.651 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 0.8093750000000001, reward/mean_positive_reward: 0.8093750000000001
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:12:50.719 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.06s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:12:50.723 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 0.8093750476837158, avg_response_length: 214.6875
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:14:24.322 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 93.60s
+(VLLMServerActor pid=14354, ip=10.0.104.69) INFO 08-19 20:14:30 [api_router.py:38] wake up the engine with tags: ['kv_cache'](pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:14:30.691 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 5.97s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:14:30.691 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 117.82s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:14:35.289 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 4.50s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:14:35.980 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 0.746875, reward/mean_positive_reward: 0.746875
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:14:49.231 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.25s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:14:49.235 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 0.7468749284744263, avg_response_length: 220.21875
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:16:23.924 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 94.69s
+(VLLMServerActor pid=14354, ip=10.0.104.69) (EngineCore pid=14901) INFO 08-19 20:16:30 [abstract.py:345] It took 0.339977 seconds to wake up tags ['kv_cache'].(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:16:30.347 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 5.99s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:16:30.347 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 119.56s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:17:19.783 | INFO     | skyrl.train.utils.trainer_utils:dump_per_dataset_eval_results:373 - Dumped aggregated eval metrics to /mnt/cluster_storage/exports/pathvlm_2b/dumped_evals/global_step_90_evals/aggregated_results.jsonl
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:17:19.787 | INFO     | skyrl.train.trainer:train:518 - Finished: 'eval', time cost: 49.31s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:17:24.486 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 4.55s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:17:25.124 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 1.028125, reward/mean_positive_reward: 1.028125
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:17:38.521 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.39s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:17:38.525 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 1.0281249284744263, avg_response_length: 208.53125
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:19:13.988 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 95.46s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:19:20.292 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 5.90s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:19:20.292 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 120.35s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:19:24.878 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 4.50s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:19:25.554 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 0.91875, reward/mean_positive_reward: 0.91875
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:19:38.774 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.21s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:19:38.779 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 0.9187499284744263, avg_response_length: 218.1875
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:21:13.193 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 94.41s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:21:19.697 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 6.10s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:21:19.697 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 119.32s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:21:24.019 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 4.21s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:21:24.671 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 1.028125, reward/mean_positive_reward: 1.028125
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:21:37.981 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.30s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:21:37.986 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 1.0281249284744263, avg_response_length: 214.78125
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:23:13.041 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 95.05s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:23:19.305 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 5.90s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:23:19.305 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 119.49s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:23:23.646 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 4.23s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:23:24.319 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 0.91875, reward/mean_positive_reward: 0.91875
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:23:37.596 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.27s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:23:37.600 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 0.9187499284744263, avg_response_length: 214.6875
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:25:12.599 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 95.00s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:25:19.308 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 6.31s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:25:19.309 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 119.90s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:25:23.352 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 3.94s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:25:24.068 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 0.98125, reward/mean_positive_reward: 0.98125
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:25:37.307 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.23s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:25:37.312 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 0.9812499284744263, avg_response_length: 200.9375
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:27:12.013 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 94.70s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:27:18.443 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 6.03s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:27:18.444 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 119.03s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:27:22.625 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 4.07s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:27:23.318 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 0.840625, reward/mean_positive_reward: 0.840625
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:27:36.704 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.38s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:27:36.708 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 0.8406249284744263, avg_response_length: 213.09375
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:29:10.926 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 94.22s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:29:17.315 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 5.98s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:29:17.315 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 118.76s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:29:21.688 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 4.26s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:29:22.342 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 0.7312500000000001, reward/mean_positive_reward: 0.7312500000000001
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:29:35.642 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.29s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:29:35.647 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 0.7312500476837158, avg_response_length: 216.46875
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:31:10.366 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 94.72s
+(VLLMServerActor pid=14356, ip=10.0.104.69) INFO 08-19 20:31:11 [api_router.py:38] wake up the engine with tags: ['weights'] [repeated 3x across cluster](pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:31:16.824 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 6.10s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:31:16.824 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 119.40s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:31:21.613 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 4.68s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:31:22.261 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 0.98125, reward/mean_positive_reward: 0.98125
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:31:35.617 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.35s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:31:35.622 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 0.9812499284744263, avg_response_length: 214.546875
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:33:10.529 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 94.91s
+(VLLMServerActor pid=14356, ip=10.0.104.69) INFO 08-19 20:33:11 [api_router.py:38] wake up the engine with tags: ['weights'] [repeated 3x across cluster](pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:33:16.941 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 6.00s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:33:16.941 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 120.01s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:33:21.215 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 4.15s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:33:21.916 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 0.91875, reward/mean_positive_reward: 0.91875
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:33:35.187 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.27s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:33:35.191 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 0.9187499284744263, avg_response_length: 211.640625
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:35:09.863 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 94.67s
+(VLLMServerActor pid=14356, ip=10.0.104.69) INFO 08-19 20:35:10 [api_router.py:38] wake up the engine with tags: ['weights'] [repeated 3x across cluster](pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:35:16.296 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 6.03s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:35:16.296 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 119.23s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:35:20.685 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 4.24s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:35:21.333 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 0.9343750000000001, reward/mean_positive_reward: 0.9343750000000001
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:35:34.759 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.42s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:35:34.764 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 0.9343749284744263, avg_response_length: 223.171875
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:37:09.824 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 95.06s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:38:21.881 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 6.03s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:38:21.881 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 185.44s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:39:10.670 | INFO     | skyrl.train.utils.trainer_utils:dump_per_dataset_eval_results:373 - Dumped aggregated eval metrics to /mnt/cluster_storage/exports/pathvlm_2b/dumped_evals/global_step_100_evals/aggregated_results.jsonl
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:39:10.674 | INFO     | skyrl.train.trainer:train:518 - Finished: 'eval', time cost: 48.71s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:39:15.270 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 4.43s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:39:15.965 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 1.1375, reward/mean_positive_reward: 1.1375
+(VLLMServerActor pid=14355, ip=10.0.104.69) INFO 08-19 20:39:28 [loggers.py:310] Engine 000: Avg prompt throughput: 0.0 tokens/s, Avg generation throughput: 0.0 tokens/s, Running: 0 reqs, Waiting: 0 reqs, GPU KV cache usage: 0.0%, Prefix cache hit rate: 16.9% [repeated 4x across cluster](pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:39:29.116 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.15s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:39:29.121 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 1.1374999284744263, avg_response_length: 214.6875
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:41:03.151 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 94.03s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:41:09.673 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 6.12s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:41:09.673 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 118.84s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:41:13.798 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 4.05s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:41:14.455 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 0.746875, reward/mean_positive_reward: 0.746875
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:41:27.644 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.18s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:41:27.649 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 0.7468750476837158, avg_response_length: 218.203125
+(VLLMServerActor pid=14354, ip=10.0.104.69) INFO 08-19 20:41:28 [loggers.py:310] Engine 000: Avg prompt throughput: 0.0 tokens/s, Avg generation throughput: 0.0 tokens/s, Running: 0 reqs, Waiting: 0 reqs, GPU KV cache usage: 0.0%, Prefix cache hit rate: 24.5% [repeated 3x across cluster](pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:43:01.348 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 93.70s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:43:07.685 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 5.94s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:43:07.686 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 117.93s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:43:11.811 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 3.98s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:43:12.778 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 1.0125, reward/mean_positive_reward: 1.0125
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:43:26.191 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.41s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:43:26.196 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 1.0124999284744263, avg_response_length: 215.046875
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:45:00.361 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 94.16s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:45:07.057 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 6.28s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:45:07.057 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 119.23s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:45:10.910 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 3.67s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:45:11.555 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 0.8250000000000001, reward/mean_positive_reward: 0.8250000000000001
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:45:24.672 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.11s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:45:24.676 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 0.8250000476837158, avg_response_length: 213.3125
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:46:58.609 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 93.93s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:47:05.293 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 6.32s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:47:05.294 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 118.06s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:47:09.720 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 4.34s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:47:10.427 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 0.6531250000000001, reward/mean_positive_reward: 0.6531250000000001
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:47:23.638 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.21s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:47:23.642 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 0.6531250476837158, avg_response_length: 219.09375
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:48:58.460 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 94.82s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:49:04.810 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 5.95s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:49:04.810 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 119.43s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:49:08.597 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 3.69s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:49:09.249 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 0.934375, reward/mean_positive_reward: 0.934375
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:49:23.014 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.76s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:49:23.019 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 0.9343749284744263, avg_response_length: 221.8125
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:50:58.321 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 95.30s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:51:04.929 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 6.20s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:51:04.930 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 120.03s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:51:08.752 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 3.73s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:51:09.457 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 0.91875, reward/mean_positive_reward: 0.91875
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:51:22.866 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.40s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:51:22.870 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 0.9187499284744263, avg_response_length: 210.96875
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:52:58.819 | INFO     | skyrl.train.trainer:train_critic_and_policy:1569 - Finished: 'policy_train', time cost: 95.95s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:53:05.300 | INFO     | skyrl.train.trainer:train:493 - Finished: 'sync_weights', time cost: 6.08s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:53:05.300 | INFO     | skyrl.train.trainer:train:342 - Finished: 'step', time cost: 120.28s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:53:09.924 | INFO     | skyrl.train.trainer:train:361 - Finished: 'generate', time cost: 4.52s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:53:10.632 | INFO     | skyrl.train.trainer:postprocess_generator_output:1116 - reward/avg_pass_at_4: 1.0, reward/avg_raw_reward: 0.8718750000000001, reward/mean_positive_reward: 0.8718750000000001
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:53:24.023 | INFO     | skyrl.train.trainer:train:424 - Finished: 'fwd_logprobs_values_reward', time cost: 13.38s
+(pathvlm_entrypoint pid=13114, ip=10.0.104.69) 2026-08-19 20:53:24.027 | INFO     | skyrl.train.trainer:compute_advantages_and_returns:1226 - avg_final_rewards: 0.8718749284744263, avg_response_length: 221.90625

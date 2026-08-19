@@ -1,0 +1,5 @@
+__pycache__/
+*.pyc
+# Raw driver logs stay local — the repo root .gitignore already excludes *.log.
+# Distilled evidence lives in results/ instead.
+logs/
