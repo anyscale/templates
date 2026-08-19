@@ -140,7 +140,7 @@ def main() -> int:
         default="zstd",
         choices=["none", "snappy", "gzip", "brotli", "lz4", "zstd"],
         help="Parquet codec. The default matters more than it looks: zstd compresses away most "
-        "of the per-value bookkeeping the layout difference is made of, which is why the two "
+        "of the per-value bookkeeping the layout difference is made of, so the two "
         "layouts come out nearly the same size on disk. Try `none` to see the raw gap.",
     )
     ap.add_argument(
