@@ -1,45 +1,38 @@
 # Multi-model frame enrichment on one GPU
 
-Four stages on the same GPU, three of them models: promptable detection, an object
-embedder, a whole-frame embedder, and no-reference quality metrics. The interesting part is
-not any one model, it is fitting all four onto one card so none of them starves the others.
+Four stages on one GPU, three of them models: promptable detection, an object embedder, a
+whole-frame embedder, and no-reference quality metrics. The work is in fitting all four onto
+one card so none of them starves the others.
 
-## Before you run it: your own token, and two forms
+## Before you run it: your own token
 
-Two of the three models are **gated**, and gating on Hugging Face is per **account**, not per
-token — so no token setting substitutes for accepting the terms yourself:
+Two of the three models are gated, and gating on Hugging Face is per account. No token setting
+substitutes for accepting the terms yourself:
 
 1. accept the terms at <https://huggingface.co/facebook/sam3>
 2. accept the terms at <https://huggingface.co/facebook/dinov3-vitl16-pretrain-lvd1689m>
-3. create a token at <https://huggingface.co/settings/tokens> — a **fine-grained read** token
-   is enough — and export it as `HF_TOKEN`
+3. create a token at <https://huggingface.co/settings/tokens> — a fine-grained read token is
+   enough — and export it as `HF_TOKEN`
 
-Approval on both is usually immediate, but it is an approval and not a download, so it can
-sit. `--stub` needs none of this: it exercises all four stages and every output shape with no
-weights, no token and no GPU.
+Approval on both is usually immediate, but it is an approval and not a download, so it can sit.
+`--stub` needs none of it: all four stages and every output shape, with no weights, no token and
+no GPU.
 
-**Nobody can do those three steps for you, and that shapes this whole template.** The terms
-are accepted per *account*, so there is no shared token here: CI runs the ungated half on a
-real GPU and the four-model cells are tagged out of it. What you get by bringing your own
-token is the part CI structurally cannot have.
+There is no shared token for this template, because nobody can accept those terms on your
+behalf. CI runs the ungated half on a real GPU and the four-model cells are tagged out of it.
 
-The failure mode if you skip step 1 or 2 is worth recognising, because the two look nothing
-alike. **401** means Hugging Face does not know who you are — a missing or malformed token.
-**403 "you are not in the authorized list"** means your token is fine and your *account* has
-not accepted the terms; a new token will not fix it. The CI test for this template
-preflights both and names which one it got.
+Two failure modes, and they look nothing alike. `401` means Hugging Face does not know who you
+are: a missing or malformed token. `403 "you are not in the authorized list"` means your token is
+fine and your account has not accepted the terms, and a new token will not fix it. The preflight
+cell below reports which one it got.
 
-## The order of this notebook is not cosmetic
+## Why the install comes after the arithmetic
 
-The dependency install sits **below** the arithmetic and the stub run, and moving it up is
-free while moving a torch-using cell up is not. Measured on the base image
-`anyscale/ray:2.57.0-py312-cu129`: it ships numpy, pyarrow and ray, and **no torch,
-torchvision or transformers at all** — `-cu129` is the CUDA runtime, not PyTorch. So
-everything before the install cell runs on the bare image, which is what makes those cells
-runnable anywhere, including on a laptop with no GPU.
+Everything above the install cell runs on the bare image, so it runs anywhere, including a
+laptop with no GPU. Moving a torch-using cell above the install breaks that.
 
-`tests/` is the same idea in test form: it runs the arithmetic and the stage answers with no
-GPU and no weights.
+Measured on `anyscale/ray:2.57.0-py312-cu129`: it ships numpy, pyarrow and ray, and no torch,
+torchvision or transformers. `-cu129` is the CUDA runtime, not PyTorch.
 
 
 ```python
@@ -51,11 +44,10 @@ import sys
 def run(*args):
     """Run one of this template's scripts, and FAIL LOUDLY if it fails.
 
-    Deliberately not `!python script.py`. IPython's shell escape does NOT raise on a
-    non-zero exit -- measured: a cell running `!python -c "sys.exit(7)"` completes, the
-    next cell runs, and papermill exits 0. Every stage below is invoked from a cell, so
-    with `!` a CI run of this notebook would report success for a pipeline that died.
-    `check=True` is what makes a green run mean something.
+    Do not use `!python script.py` here. IPython's shell escape does not raise on a non-zero
+    exit: measured, a cell running `!python -c "sys.exit(7)"` completes, the next cell runs,
+    and papermill exits 0. Every stage below is invoked from a cell, so a green run would say
+    nothing about whether the pipeline finished.
     """
     subprocess.run([sys.executable, *args], check=True)
 
@@ -68,29 +60,28 @@ run("tests/test_pipeline.py")
 
 ## `num_gpus` is admission control, not a memory limit
 
-This is the trap the template exists for. `num_gpus=0.02` does not cap an actor's VRAM. It
-tells Ray it may place fifty of them on one card, because the fractions sum to 1.0, and
-CUDA then decides whether that was true. The two limits come from different numbers:
+`num_gpus=0.02` does not cap an actor's VRAM. It tells Ray it may place 50 of them on one card,
+because the fractions sum to 1.0, and CUDA then decides whether that was true. The two limits
+come from different numbers:
 
 ```
 by fraction :  floor(1 / num_gpus)                  actors per GPU
 by VRAM     :  floor(vram_per_gpu / vram_per_actor)  actors per GPU
 ```
 
-`packing.py` computes both. On the source engagement's own shipped configuration, on the
-48 GiB card it was tuned on:
+`packing.py` computes both. On the source engagement's shipped configuration, on the 48 GiB card
+it was tuned on:
 
 | stage | `num_gpus` | GiB/actor | by fraction | by VRAM | binds |
 |---|---|---|---|---|---|
 | detector | 0.20 | 9.60 · unmeasured | 5 | 5 | both |
-| object embedder | 0.05 | 7.65 | 20 | 6 | **VRAM** |
+| object embedder | 0.05 | 7.65 | 20 | 6 | VRAM |
 | image embedder | 0.05 | 0.96 | 20 | 50 | fraction |
-| metrics | 0.02 | 2.80 | 50 | 17 | **VRAM** |
+| metrics | 0.02 | 2.80 | 50 | 17 | VRAM |
 
-Read only the fractions and you would provision three times the object-embedder actors
-that fit. Note the two embedders: **same fraction, eight times the memory.** The
-detector's per-actor figure is its fraction share rather than a measurement, and the tool
-prints it as `UNMEASURED` so it cannot be quoted as one.
+Read only the fractions and you provision three times the object-embedder actors that fit. The
+two embedders take the same fraction and 8x the memory apart. The detector's per-actor figure is
+its fraction share, and the tool prints `UNMEASURED` beside it.
 
 
 ```python
@@ -98,117 +89,103 @@ prints it as `UNMEASURED` so it cannot be quoted as one.
 run("packing.py")
 ```
 
-Co-residency is the constraint the per-stage view misses, and `packing.py` carries **two
-tables** because the numbers above are the source engagement's on the source engagement's
-model set:
+Per-stage capacity does not answer whether the set fits together. `packing.py` carries two
+tables, because the numbers above are the source engagement's on its own model set:
 
 | | one actor of each stage | card | headroom |
 |---|---|---|---|
 | `--stages shipped` (their models) | 21.01 GiB | 48 GiB G2 | 56% |
-| `--stages measured` (sam3 + dinov3 + siglip2) | **5.53 GiB** | 22.03 GiB L4 | **75%** |
+| `--stages measured` (sam3 + dinov3 + siglip2) | 5.53 GiB | 22.03 GiB L4 | 75% |
 
-The measured row is two GPU probe jobs on a g6 L4, not arithmetic. An earlier version of
-this section quoted the 21.01 GiB figure as *this* set's footprint and concluded it fit a
-24 GiB L4 with 12.5% headroom. Two errors: the models are not the same models, and **an L4
-is 24 GB, which is 22.35 GiB, of which torch reports 22.03 usable** — so `--vram 24` was a
-unit error worth about 2 GiB of headroom that does not exist. On the real capacity the
-source table leaves 5%, which `packing.py`'s own rule flags as the band the batch-192 OOM
-lived in.
+The measured row is two GPU probe jobs on a g6 L4. Do not read the shipped table's 21.01 GiB as
+this set's footprint: different models. An L4 is 24 GB, which is 22.35 GiB, of which torch
+reports 22.03 usable, so pass `--vram 22.03`. At 22.03 the shipped set leaves 5%, which
+`packing.py` flags as the band the batch-192 OOM lived in.
 
-The shipped *actor counts* still over-commit the L4, which is the other half of what
-`packing.py` prints.
+The shipped actor counts still over-commit an L4, which is the other half of what `packing.py`
+prints.
 
-One caveat travels with the measured table and is not a formality: the object embedder's
-0.59 GiB was measured at **one crop per frame**. Its cost scales with detections, not
-frames, so that figure is a floor for a nearly-empty batch and not a per-actor budget for a
-busy one.
+The object embedder's measured 0.59 GiB was taken at one crop per frame. Its cost scales with
+detections, not frames, so treat it as a floor for a nearly-empty batch and not a per-actor
+budget for a busy one.
 
 
 ```python
-# This template's own four models, on the card in configs/, against the measured 22.03 GiB
-# an L4 actually reports rather than a nominal 24.
+# This template's own four models, on the card in configs/, against the 22.03 GiB an L4
+# reports rather than a nominal 24.
 #
-# `--strict` makes this a GATE rather than a report: exit 1 if the four models cannot be
-# co-resident, if a stage is over-committed, or if the relative-cost ordering has inverted.
-# Worth knowing before you spend money on the real thing, which is why it is a cell and not
-# something only CI does.
+# `--strict` exits 1 if the four models cannot be co-resident, if a stage is over-committed,
+# or if the relative-cost ordering has inverted. Worth knowing before the GPU spend.
 run("packing.py", "--stages", "measured", "--vram", "22.03", "--strict")
 ```
 
-### And it is worth doing: at least 26.5% faster than running the stages serially
+### Whether packing pays: at least 26.5% over running the stages serially
 
-Feasibility is arithmetic; whether packing *pays* is not. Measured on one L4, 96 frames at
-640×480, one actor per stage:
+Measured on one L4, 96 frames at 640x480, one actor per stage:
 
 | arm | rows/s (n=3) | spread |
 |---|---|---|
-| **co-resident** — four stages sharing the card | **1.2619 / 1.2631 / 1.2792** | 1.4% |
+| co-resident — four stages sharing the card | 1.2619 / 1.2631 / 1.2792 | 1.4% |
 | serial — each stage alone with the whole GPU, materialized between | 0.9882 / 0.9903 / 0.9979 | 1.0% |
 
-Verdict: **SEPARABLE, co-resident > serial by ≥ 26.5%.** Three rounds agreed.
+Verdict: SEPARABLE, co-resident > serial by >= 26.5%. Three rounds agreed.
 
-The verdict is one blunt rule and it is worth stating rather than citing: an arm needs at
-least two runs, and two arms are separable only when the *worst* run of the better arm beats
-the *best* run of the worse one. Here 1.2619 > 0.9979, and the margin quoted is that gap, not
-a ratio of means. Ranges that overlap are not separable at that sample size, however far apart
-their averages sit. `measure_packing.py` applies exactly this rule to the runs it collects.
+The rule behind that verdict: an arm needs at least two runs, and two arms are separable only
+when the worst run of the better arm beats the best run of the worse one. Here 1.2619 > 0.9979,
+and the margin quoted is that gap, not a ratio of means. Overlapping ranges are not separable at
+that sample size, however far apart their averages sit. `measure_packing.py` applies this rule
+to the runs it collects.
 
-**Quote the scope with it.** This is end-to-end wall clock *including warm model loads* on a
-96-frame fixture — a CI-scale answer to a CI-scale question. It is a different quantity from
-the ~49.7 rows/s steady-state figure below, and the two must not be compared. Whether the
-margin holds at production scale, or with the shipped actor counts on a bigger card, is not
-measured.
+Quote the scope with the number. This is end-to-end wall clock including warm model loads on a
+96-frame fixture. It is a different quantity from the ~49.7 rows/s steady-state figure below.
+Whether the margin holds at production scale, or with the shipped actor counts on a bigger card,
+is not measured.
 
-Re-derive it with **`measure_packing.py`** (one GPU, the gated weights, ~20 min). It writes a
-JSONL of every run and prints the verdict against the rule above, so nothing about the number
-lives outside the template. Its docstring carries the three guards the failed rounds bought
-and names the failure each one prevents — the short version is that a cost paid once by
-whichever arm runs first will make your better arm look worse, and no amount of interleaving
-fixes it.
+Re-derive it with `measure_packing.py`: one GPU, the gated weights, about 20 minutes. It writes
+a JSONL of every run and prints the verdict. Its docstring carries the three guards and the
+failure each one prevents. The short version: a cost paid once by whichever arm runs first will
+make your better arm look worse.
 
-## Each label is a forward pass, and that is the model's rule not a knob
+## Each label costs a forward pass
 
-`LABELS` defaults to two concepts, which is **two detector passes per microbatch**. SAM 3's
-Promptable Concept Segmentation takes one noun phrase and returns every instance of it, so
-the label dimension cannot be batched away the way the frame dimension can.
+`LABELS` defaults to two concepts, which is two detector passes per microbatch. SAM 3's
+Promptable Concept Segmentation takes one noun phrase and returns every instance of it, so the
+label dimension does not batch the way the frame dimension does.
 
-**The labels have to be concrete, and that is measured rather than stylistic.** This
-template shipped `object,shape,region` as its default, and on an L4 against its own fixture
-that returns **nothing at any threshold down to 0.05**:
+Each label must be a concrete noun phrase. Measured on an L4 against this template's own
+fixture, boxes per frame at the shipped threshold of 0.4:
 
-| prompt | boxes per frame at the shipped threshold 0.4 |
+| prompt | boxes per frame |
 |---|---|
 | `object` / `shape` / `region` | 0 0 0 0 |
 | `rectangle` | 1 0 0 3 |
 | `bright square` | 1 1 1 2 |
 
-The control that makes this a statement about the words rather than about the model: the
-same weights, same GPU, same threshold, on a COCO photograph find 2 cats, 2 remote controls
-and 1 couch. PCS grounds noun phrases; abstractions ground to nothing. If you change the
-imagery, re-check the labels against it — a label that grounds to nothing still costs a
-full forward pass and reads downstream as "there was nothing there".
+`object,shape,region` returns nothing at any threshold down to 0.05. The same weights, same GPU
+and same threshold find 2 cats, 2 remote controls and 1 couch in a COCO photograph, so the words
+are what changed. PCS grounds noun phrases; abstractions ground to nothing.
 
-It matters because the obvious code is wrong. `Sam3Processor` hands `text` straight to its
-tokenizer, so `list[str]` is one prompt *per image*, and `text=[labels] * len(frames)` is
-`list[list[str]]` — HuggingFace's pre-tokenized-*words* form, which needs
-`is_split_into_words=True` that the processor never passes. On real weights the fast
-tokenizer rejects it:
+Re-check the labels if you change the imagery. A label that grounds to nothing still costs a
+full forward pass, and reads downstream as an empty frame.
+
+Do not write `text=[labels] * len(frames)`. `Sam3Processor` hands `text` straight to its
+tokenizer, so `list[str]` is one prompt per image; `list[list[str]]` is HuggingFace's
+pre-tokenized-words form, which needs `is_split_into_words=True` that the processor never
+passes. On real weights the fast tokenizer rejects it:
 
 ```
 TypeError: TextEncodeInput must be Union[TextInputSequence, Tuple[InputSequence, InputSequence]]
 ```
 
-This template did exactly that until `facebook/sam3` became readable. An earlier version of
-this section said the wrong call returned plausible boxes for the phrase
-`"object shape region"`; it does not, and that was written from reading the library rather
-than running it. Budget the detector at `L` passes and keep `L` small.
+Budget the detector at `L` passes and keep `L` small.
 
 ## The fixture, and the whole DAG with no weights
 
-`make_fixture.py` generates frames, so there is no download, no attribution and no licence
-to track. The frame **count** and the frame **geometry** may both shrink — neither carries
-the lesson — but the number of resident models may not. Dropping to two stages to fit a
-budget would make the template demonstrate something it does not claim.
+`make_fixture.py` generates frames, so there is no download, no attribution and no licence to
+track.
+
+Frame count and frame geometry may shrink; neither carries the lesson. Do not trim the
+resident-model count to fit a budget.
 
 
 ```python
@@ -228,15 +205,15 @@ run("make_fixture.py", "--out", FIXTURE, "--frames", FRAMES, "--files", FILES,
 ```
 
 `--stub` runs the whole DAG with no weights and no GPU, which is how the shapes get tested
-anywhere. It drops the GPU reservations too — asking for `num_gpus=0.2` on a box without
-one does not fail, it hangs.
+anywhere. It drops the GPU reservations too: `num_gpus=0.2` on a box without one does not fail,
+it hangs.
 
 
 ```python
 run("pipeline.py", "--input", FIXTURE, "--stub")
 ```
 
-## Dependencies: the driver install does not reach the models
+## Dependencies
 
 `python_depset.lock` is the compiled closure of `requirements.txt` against a freeze of this
 template's base image. Install the lock, not `requirements.txt`, or the driver and the actors
@@ -244,15 +221,14 @@ run different resolutions of the same pins.
 
 
 ```python
-# `uv`, not this kernel's python, so it is spelled out rather than routed through run().
-# Still check=True: a half-finished install must not read as a working environment.
+# `uv`, not this kernel's python, so this one is spelled out instead of going through run().
+# Keep check=True: a half-finished install must not read as a working environment.
 #
-# Written as one command string and split, rather than as a list of quoted arguments, and
-# that is not cosmetic. scripts/hooks/check-dep-delivery.py proves a template installs its
-# own lock by matching the requirements flag immediately followed by whitespace and the lock
-# filename, in the files a user runs. A hand-written argument list puts a comma and a quote
-# between the two, the match fails, and the template reads as one that ships a lock nothing
-# installs. Keep them adjacent in the source text.
+# Keep the requirements flag and the lock filename adjacent in the source text.
+# scripts/hooks/check-dep-delivery.py proves a template installs its own lock by matching the
+# flag followed by whitespace and the filename. A hand-written argument list puts a comma and
+# a quote between them, the match fails, and the template reads as shipping a lock nothing
+# installs.
 INSTALL = (
     "uv pip install -r python_depset.lock --system --no-deps --no-cache-dir "
     "--index-strategy unsafe-best-match"
@@ -260,12 +236,10 @@ INSTALL = (
 subprocess.run(INSTALL.split(), check=True)
 ```
 
-**That install reaches the driver only, and the models do not run there.** Every stage of
-this pipeline is a Ray Data actor on a GPU worker, and neither the compute config's head
-node nor a `uv pip install --system` puts torch there. `pipeline.py` hands the same lock to
-the actors with `ray.init(runtime_env={"pip": .../python_depset.lock})` — that is the line
-that makes the four models importable where they actually load. Delete it and every stage
-fails on `import torch` while the driver looks fine.
+That install reaches the driver only, and the models do not run there. Every stage is a Ray Data
+actor on a GPU worker, and a `uv pip install --system` does not propagate. `pipeline.py` hands
+the actors the same lock with `ray.init(runtime_env={"pip": .../python_depset.lock})`. Delete
+that line and every stage fails on `import torch` while the driver looks fine.
 
 
 ```python
@@ -281,28 +255,25 @@ print("transformers", transformers.__version__, "torch", torch.__version__,
       "torchvision", torchvision.__version__, "sam3 ->", Sam3Model.config_class.__name__)
 ```
 
-## First, the half that needs no permission from anyone
+## First, the half that needs no token
 
-SigLIP2 is not gated and the metrics stage carries no weights at all, so those two stages
-can run on a real GPU with real weights and no token. Worth doing before the gated download:
-it proves the GPU is there, the runtime env reached the actors, the fractional reservations
-schedule, and two models genuinely share one card.
+SigLIP2 is not gated and the metrics stage carries no weights, so those two stages run on a real
+GPU with real weights and no token. Worth running before the gated download: it shows the GPU is
+there, the runtime env reached the actors, the fractional reservations schedule, and two models
+share one card.
 
-**It is two models, not four, and it is not the claim this template makes.** The four-model
-figure rests on `packing.py`'s arithmetic above plus your own run below. `pipeline.py` prints
-which of the two it gave you, because a number whose scope you have to infer is a number that
-gets misquoted.
+Two models, not four. The four-model figure rests on `packing.py`'s arithmetic above plus your
+own run below. `pipeline.py` prints which pair it ran.
 
-This is also exactly what CI runs, for the licensing reason in the next section.
+This is what CI runs, for the licensing reason in the next section.
 
 
 ```python
 UNGATED_OUT = os.environ.get("UNGATED_OUTPUT_DIR", OUTPUT + "-ungated")
 
-# Real GPU, real SigLIP2 weights, no token. `--ungated-only` is a DECLARED mode, not an
-# inferred one: it never looks at whether a credential happens to be present. A run that
-# silently drops stages when a token is missing is an untested branch that becomes the only
-# branch anyone ever runs.
+# Real GPU, real SigLIP2 weights, no token. `--ungated-only` is a flag and never reads a
+# credential. Do not make it infer from a missing token: a run that silently drops stages
+# becomes an untested branch that is the only branch anyone runs.
 run("pipeline.py", "--input", FIXTURE, "--output", UNGATED_OUT, "--ungated-only")
 ```
 
@@ -330,20 +301,16 @@ print(f"ungated pair: {len(rows)} rows, image embedding width {widths}, "
 
 ## Now the gated half, which only you can authorise
 
-SAM 3 and DINOv3 are gated on Hugging Face, and **the terms are accepted per account by the
-person who runs this.** That is a licensing constraint, not a configuration one, and it has
-one consequence worth stating plainly: **there is no shared token for this template.** CI does
-not hold one, this repo does not fetch one, and the cells below are removed from the CI run
-rather than run with a service account's credentials.
+SAM 3 and DINOv3 are gated on Hugging Face and their terms are accepted per account by whoever
+runs this. So there is no shared token for this template: CI does not hold one, this repo does
+not fetch one, and the cells below are stripped from the CI run.
 
-`templates/vla-fine-tuning` reads a shared organisation token from Secrets Manager for its
-gated model. **This template deliberately does not follow that pattern** — SAM 3's licence is
-accepted per account, so a shared credential would be standing in for a person's agreement.
-The pattern this template follows instead is: the reader brings their own token, and CI runs
-only the half that needs none.
+`templates/vla-fine-tuning` reads a shared organisation token from Secrets Manager for its gated
+model. Do not copy that here. SAM 3's licence is accepted per account, and a shared credential
+would stand in for a person's agreement.
 
-So: accept the terms on both model pages (top of this notebook), create a token, export it as
-`HF_TOKEN`, and run the rest. The cells from here down are tagged `skip-in-ci`.
+Accept the terms on both model pages, create a token, export it as `HF_TOKEN`, and run the rest.
+The cells from here down are tagged `skip-in-ci`.
 
 
 ```python
@@ -438,8 +405,8 @@ print(f"gated access ok as '{who}'")
 
 ### Your own four-model run
 
-`pipeline.py` refuses with the two-step remedy rather than dying several GB into a download if
-`HF_TOKEN` is missing.
+`pipeline.py` refuses with the two-step remedy if `HF_TOKEN` is missing, before starting a
+multi-GB download.
 
 
 ```python
@@ -452,9 +419,8 @@ assert os.environ.get("HF_TOKEN"), (
 
 
 ```python
-# One actor per stage, which is what fits the L4 in configs/. The shipped counts (10
-# detectors) need the 48 GiB class -- see packing.py, which refused above if they did not
-# fit. `setdefault`, so anything already exported wins over these.
+# One actor per stage, which fits the L4 in configs/. The shipped counts (10 detectors) need
+# the 48 GiB class; see packing.py. `setdefault`, so anything already exported wins.
 for key, value in dict(
     DETECTOR_ACTORS="1", EMB_ACTORS="1", METRICS_ACTORS="1",
     DETECTOR_BATCH="2", EMB_BATCH="8", METRICS_BATCH="8", METRICS_SUBBATCH="2",
@@ -464,10 +430,9 @@ for key, value in dict(
 run("pipeline.py", "--input", FIXTURE, "--output", OUTPUT)
 ```
 
-Every assertion below is about the **answer**, not the speed: a per-frame count that matches
-its own detections, a real embedding width, and at least one frame the detector actually
-fired on. A pipeline that returns zero detections everywhere completes happily and measures
-nothing.
+Every assertion below is about the answer, not the speed: a per-frame count matching its own
+detections, a real embedding width, and at least one frame the detector fired on. A pipeline
+returning zero detections everywhere completes and measures nothing.
 
 
 ```python
@@ -488,67 +453,55 @@ assert detected > 0, "the detector found nothing on any frame -- the fixture or 
 print(f"{len(rows)} rows, {detected} detections, embedding dim {dims}")
 ```
 
-### Optional: re-derive the packing claim yourself
+### Optional: re-derive the packing number
 
-One GPU, the gated weights, about 20 minutes. It interleaves the arms, warms the node that
-does the work, and throws away one pass of each arm before timing anything — three guards,
-each of which exists because a round without it measured the wrong thing. It prints the
-verdict against the rule above and writes every run to a JSONL, including the failures.
+One GPU, the gated weights, about 20 minutes. It interleaves the arms, warms the node that does
+the work, and throws away one untimed pass of each arm. It prints the verdict against the rule
+above and writes every run to a JSONL, failures included.
 
 
 ```python
-# Left commented on purpose: 20 minutes of GPU, and it is a measurement rather than a step
-# in the pipeline. Uncomment to re-derive the number yourself.
+# Left commented: 20 minutes of GPU, and a measurement rather than a pipeline step.
+# Uncomment to re-derive the number.
 #
 # run("measure_packing.py", "--input", FIXTURE, "--frames", "96", "--runs", "3")
 ```
 
-## Running it: the levers
+## The levers
 
-`pipeline.py` is the control panel. Every lever is one the source engagement measured, each
-carries its effect inline, and each says what should flip it.
+`pipeline.py` is the control panel. Each lever carries its measured effect and what should
+change it.
 
 | lever | default | why |
 |---|---|---|
 | `DOWNLOAD_NUM_CPUS` | 1.0 | a divisor, not a budget: 0.1 on 96 cores opened ~950 read slots and one 64-row block took 430 s |
 | `DETECTOR_BATCH` | 4 | the detector is the throughput floor at ~13 images/s per actor with all SMs busy, and raising the batch does not raise throughput |
-| `TORCH_COMPILE` | `default` | `reduce-overhead` was expected to win and was **rejected**: its CUDA graphs produce overwritten-output failures inside Ray actors |
-| `METRICS_SUBBATCH` | 4 | decoupled from the Ray batch. Batch 192–256 OOMed at 30+ GiB/actor; Ray batch 32 with sub-batch 4 landed at 4.95 GiB |
+| `TORCH_COMPILE` | `default` | `reduce-overhead` was measured and rejected: its CUDA graphs produce overwritten-output failures inside Ray actors |
+| `METRICS_SUBBATCH` | 4 | decoupled from the Ray batch. Batch 192-256 OOMed at 30+ GiB/actor; Ray batch 32 with sub-batch 4 landed at 4.95 GiB |
 | `EMB_ACTORS` | 4 | fixed pool, `min_size == max_size`: the autoscaler parks below the GPU count on whole-GPU actors |
 
-## What the numbers mean, and which ones not to quote
-
-The honest end-to-end figure for this shape on the source fleet is **~49.7 rows/s**, from a
-fixed 131k×2 confirmation run. Two larger numbers circulate and neither is this pipeline
-end to end:
+## Rates for this shape, and their scope
 
 | rate | scope |
 |---|---|
-| **~49.7 rows/s** | **full end to end, fixed confirmation run** |
+| ~49.7 rows/s | end to end, fixed 131k x 2 confirmation run |
 | ~88 rows/s | active compute only; a watcher bug inserted 3h15m of idle, and the output prefix held ~321k duplicate rows from earlier runs |
 | 209.999 rows/s | extraction only, no detector |
-| 39.65 rows/s = 9.9 images/s | 99.18K images in 2h47m, GPU 93–99% |
+| 39.65 rows/s = 9.9 images/s | 99.18K images in 2h47m, GPU 93-99% |
 
-The general lesson underneath them is the method: a broad sweep proposes and a fixed,
-repeated, anchored A/B disposes. On the source engagement the honest end-to-end numbers came
-from the second kind and were **lower** than everything quoted from the first. Two
-conclusions reversed that way, including one that had already been written up as a +3.4%
-win.
+~49.7 rows/s is the end-to-end figure. The larger two are not this pipeline end to end.
 
 State the unit as well as the scope. rows/s, images/s and detections/s differ here by the
-detections per frame, and the published figures for this shape differ by which one they
-meant.
+detections per frame, and published figures for this shape differ by which one they meant.
+
+On the source engagement the numbers from fixed, repeated, anchored A/B runs came out lower than
+everything quoted from exploratory sweeps. Two conclusions reversed that way, one of them after
+being written up as a +3.4% win.
 
 ## Models and licences
 
-All four are public. Two are gated on Hugging Face and need their terms accepted once by
-the account behind your `HF_TOKEN`.
-
-`templates/vla-fine-tuning` supplies its gated model's token to CI from an organisation
-secret. **This template does not, and the difference is the licence rather than the
-plumbing:** SAM 3's terms are accepted per account, so a service account holding a shared
-credential would be standing in for a person's agreement. CI therefore runs only the ungated
-stages (`pipeline.py --ungated-only`) and the gated cells are tagged `skip-in-ci`.
+All four are public. Two are gated on Hugging Face and need their terms accepted once by the
+account behind your `HF_TOKEN`.
 
 | stage | model | licence |
 |---|---|---|
@@ -557,45 +510,48 @@ stages (`pipeline.py --ungated-only`) and the gated cells are tagged `skip-in-ci
 | image embedder | `google/siglip2-base-patch16-224` | Apache-2.0 |
 | metrics | no model: gradient energy in plain torch | n/a, no weights |
 
-See `NOTICE`. DINOv3 asks for a "Built with DINOv3" acknowledgement, which is why that line
-is in it. **Substituting a model is not a free swap**: a detector that is cheap relative to
-the embedders inverts the shape and teaches the wrong defaults, so `packing.py` checks the
-relative-cost ordering and fails if it flips. YOLO variants are deliberately absent —
-Ultralytics is AGPL-3.0 and YOLOv9/YOLOR are GPL-3.0.
+`templates/vla-fine-tuning` supplies its gated model's token to CI from an organisation secret.
+Do not copy that here: SAM 3's terms are accepted per account, so a service account would be
+standing in for a person's agreement. CI runs `pipeline.py --ungated-only` and the gated cells
+are tagged `skip-in-ci`.
+
+See `NOTICE`. DINOv3 asks for a "Built with DINOv3" acknowledgement, which is the last line
+in it.
+
+Substituting a model is not a free swap. A detector that is cheap next to the embedders inverts
+the shape and the packing defaults stop transferring, so `packing.py` checks the relative-cost
+ordering and fails if it flips. YOLO variants are absent: Ultralytics is AGPL-3.0 and
+YOLOv9/YOLOR are GPL-3.0.
 
 ## Guards worth copying
 
-Three of these exist because the source engagement shipped without them:
-
-- **`require_pretrained`.** One embedding model logged a random-initialization warning and
-  carried on, emitting confident garbage at full speed. A warning nobody reads is not a
-  guard, so this raises.
-- **Per-frame scatter.** The object embedder embeds a whole batch of crops in one forward
-  pass and its output is per row. Getting that wrong writes the batch total into every
-  row's count, which reads like a formatting difference and is a wrong answer.
+- **Raise on unloaded weights.** A random-initialization warning is logged and ignored, and the
+  model then emits garbage at full speed.
+- **Per-frame scatter.** The object embedder embeds a whole batch of crops in one forward pass
+  and its output column is per row. Writing the batch total into every row reads like a
+  formatting difference and is a wrong answer.
 - **Degenerate input.** A frame with no detections yields an empty `(0, dim)` array, not an
-  exception. The source engagement found that one in production, from the customer.
+  exception.
 
-`tests/` runs the arithmetic and the stage answers with no GPU and no weights. The repo's CI
-test runs those, the four-stage stub DAG, and a real two-model co-residency run on one card --
-the ungated pair -- and it says so in its own header rather than implying it covered four.
-Everything asserted is feasibility or correctness and never a throughput ratio: one run per
-arm is not a measurement.
+`tests/` runs the arithmetic and the stage answers with no GPU and no weights. The CI test runs
+those, the four-stage stub DAG, and a two-model co-residency run on one card with the ungated
+pair; its header says so. Everything asserted is feasibility or correctness, never a throughput
+ratio: one run per arm is not a measurement.
 
 ## Layout
 
 ```
 packing.py           the arithmetic. no GPU, no weights, no cluster
-measure_packing.py   whether packing PAYS. one GPU, the gated weights, ~20 min
-pipeline.py          four stages, fractional GPUs, --stub for CPU
+measure_packing.py   whether packing pays. one GPU, the gated weights, ~20 min
+pipeline.py          four stages, fractional GPUs, --stub for CPU, --ungated-only for CI
 make_fixture.py      synthetic frames, so there is no dataset licence to track
-requirements.txt     what this template adds to the base image, and why each pin exists
-python_depset.lock   the compiled closure of those pins. installed on the driver AND
-                     handed to the actors by pipeline.py -- see the note above
-tests/               test_packing.py, test_pipeline.py -- both runnable anywhere
+requirements.txt     what this template adds to the base image, and why each pin is there
+python_depset.lock   the compiled closure of those pins, installed on the driver and handed
+                     to the actors by pipeline.py
+tests/               test_packing.py, test_pipeline.py, both runnable anywhere
 NOTICE               the two Meta licences and their obligations
 ```
 
-The compute configs and the CI test live in the `anyscale/templates` repo rather than in the
-template, at `configs/ray-data-multimodel-frame-enrichment/{aws,gce}.yaml` (one L4 — 24 GB =
-22.35 GiB) and `tests/ray-data-multimodel-frame-enrichment/tests.sh`.
+The compute configs and the CI test live in the `anyscale/templates` repo, at
+`configs/ray-data-multimodel-frame-enrichment/{aws,gce}.yaml` (one L4, 24 GB = 22.35 GiB) and
+`tests/ray-data-multimodel-frame-enrichment/tests.sh`.

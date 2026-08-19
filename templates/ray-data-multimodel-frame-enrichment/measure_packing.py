@@ -1,65 +1,55 @@
 #!/usr/bin/env python3
-"""Measure whether co-residency actually beats running the stages serially.
+"""Measure whether co-residency beats running the stages serially.
 
     HF_TOKEN=hf_... python measure_packing.py --frames 96 --runs 3
     HF_TOKEN=hf_... python measure_packing.py --out arms.jsonl   # every run, for re-scoring
 
-`packing.py` computes whether four models FIT on one card. This measures whether packing
-them was worth doing. It exists because the README quotes a number -- co-residency ahead by
->=26.5% on one L4 -- and a quoted number with no runnable path back to it is how a claim
-outlives the thing it was measured on. Re-run this after any change to the model set, the
-image, the batch sizes or the card.
+`packing.py` computes whether four models fit on one card. This measures whether packing them
+paid. Re-run it after any change to the model set, the image, the batch sizes or the card.
 
-NEEDS: one GPU, the gated weights, and about 20 minutes. This is the opposite of rung 1.
+NEEDS: one GPU, the gated weights, and about 20 minutes.
 
 TWO ARMS
 
   coresident  the DAG `pipeline.build()` produces: four stages, fractional GPU reservations
-              summing to <1, all resident on one card together.
-  serial      the same four stages, each given the WHOLE GPU and run to completion before
-              the next starts. This is what you do if you do not pack.
+              summing to <1, all resident on one card.
+  serial      the same four stages, each given the whole GPU and run to completion before the
+              next starts.
 
-The `materialize()` in the serial arm is load-bearing, not stylistic. Without it Ray Data
-pipelines the stages and both arms are the same arm with different numbers.
+Keep the `materialize()` in the serial arm. Without it Ray Data pipelines the stages and both
+arms measure the same thing.
 
-WHAT THIS HARNESS IS MOSTLY MADE OF, AND WHY
+THREE GUARDS, AND THE FAILURE EACH ONE PREVENTS
 
-Three of the first four attempts at this measurement measured the wrong thing, and none of
-them errored. Each guard below is one of them:
+Three of the first four attempts measured the wrong thing and none of them errored.
 
-  1. NO WARMUP. The HuggingFace download is paid once, by whichever arm runs first, and it
-     cost ~175 s against a ~75 s run. The first arm looked 3x worse than itself.
-  2. WARMUP IN THE DRIVER. The driver is the head node; the actors run on a worker, and the
-     HuggingFace cache is per-node. The "warmup" finished in 24 s -- too fast for ~5 GB, the
-     only tell -- and the first arm was still penalised. `warmup()` is a Ray task holding a
-     GPU so it lands where the work does, and it PRINTS THE HOSTNAME AND DURATION so the
-     next person can see that it went to the right place.
-  3. FIRST TIMED RUN OF THE SESSION IS SLOW ANYWAY, by ~2x, reproducible to within 1% across
-     runs, cause never isolated (fixture page cache, per-process CUDA setup, processor files
-     the model warmup does not touch -- unknown). So each arm gets one THROWAWAY pass that
-     is not timed and not recorded.
+  1. No warmup. The HuggingFace download is paid once, by whichever arm runs first, and cost
+     ~175 s against a ~75 s run. The first arm looked 3x worse than itself.
+  2. Warmup in the driver. The driver is the head node, the actors run on a worker, and the
+     HuggingFace cache is per node. That warmup finished in 24 s, too fast for ~5 GB, and the
+     first arm was still penalised. `_warm_this_node` is a Ray task holding a GPU, and it
+     prints the hostname and duration so you can see where it ran.
+  3. The first timed run of a session is ~2x slow anyway, reproducible to within 1% across
+     runs, cause never isolated. Candidates: fixture page cache, per-process CUDA setup,
+     processor files the model warmup does not touch. So each arm gets one throwaway pass,
+     untimed and unrecorded.
 
-The throwaway is inside the harness on purpose. Discarding a run after seeing it is a
-decision about the data; discarding it before is a protocol. Same arithmetic, and only one
-of them is honest. Rounds that dropped a run post-hoc read >=27.7% and >=27.9%; this harness
-read >=26.5% with nothing excluded, and only the last one was claimable.
+Keep the throwaway inside the harness. Rounds that dropped a run after seeing it read >=27.7%
+and >=27.9%; this harness read >=26.5% with nothing excluded.
 
-ARMS ARE INTERLEAVED (A,B,A,B,...). Running one arm to completion and then the other
-confounds arm with time: anything that drifts lands entirely on one of them.
+The arms interleave (A,B,A,B,...). Running one arm to completion and then the other confounds
+arm with time.
 
-THE VERDICT IS TWO BLUNT RULES, NOT A RATIO OF MEANS. `separable()` below applies them:
+THE VERDICT IS TWO RULES, NOT A RATIO OF MEANS. `separable()` applies them:
 
   SINGLE   an arm with one timed run has no observed spread, so any delta from it is
-           unfalsifiable and is refused rather than reported.
+           unfalsifiable. Refused.
   OVERLAP  two arms whose observed ranges overlap are NOT separable at this sample size,
            however far apart their averages sit.
 
-Separable means the WORST run of the better arm beats the BEST run of the worse one, and the
-margin printed is that gap -- a lower bound. It is a weaker statement than a significance
-test and a much stronger one than comparing averages, and it is the one that would have
-caught every wrong margin this harness was written for. The >=26.5% in the README is this
-rule applied to the run recorded below, so it can be re-derived from what ships rather than
-taken on trust.
+Separable means the worst run of the better arm beats the best run of the worse one, and the
+margin printed is that gap: a lower bound. The >=26.5% in the README is this rule applied to
+the runs recorded below.
 """
 
 from __future__ import annotations
@@ -74,7 +64,7 @@ import traceback
 
 
 def _warm_this_node(repos: list[tuple[str, str]]) -> str:
-    """Runs inside a Ray task, so it warms the node that will do the work."""
+    """Runs inside a Ray task, so it warms the node that does the work."""
     import gc
 
     import torch
@@ -92,13 +82,11 @@ def separable(better: list[float], worse: list[float],
               better_name: str = "coresident", worse_name: str = "serial") -> str:
     """The verdict line, by the two rules in the module docstring. Returns text, not a bool.
 
-    A bool would be read as "packing wins" or "packing loses", and UNSUPPORTED is neither:
-    it says the runs cannot answer the question. Collapsing those two into one flag is the
-    mistake the rules exist to prevent, so the outcome is a sentence you have to read.
+    Do not return a bool. UNSUPPORTED is neither "packing wins" nor "packing loses" -- it says
+    the runs cannot answer the question -- and a flag collapses the two.
 
-    The margin is `(min(better) - max(worse)) / max(worse)`, which is a LOWER bound: the
-    worst run of the better arm against the best run of the worse one. A ratio of the two
-    averages would read higher and would not be supported by three runs.
+    The margin is `(min(better) - max(worse)) / max(worse)`, a lower bound. A ratio of the two
+    averages reads higher and three runs do not support it.
     """
     if len(better) < 2 or len(worse) < 2:
         return (f"UNSUPPORTED  need >=2 timed runs per arm, have {len(better)} {better_name} "
@@ -140,7 +128,7 @@ def main(argv: list[str] | None = None) -> int:
     ray.init(ignore_reinit_error=True, runtime_env=pipeline.runtime_env())
     if not ray.cluster_resources().get("GPU"):
         raise SystemExit("no GPU in this cluster. Ray does not fail on an unsatisfiable "
-                         "resource, it waits -- so this refuses now rather than hanging.")
+                         "resource, it waits. Refusing now beats hanging.")
     print(f"cluster: {ray.cluster_resources().get('GPU')} GPU, "
           f"LABELS={pipeline.LABELS}", flush=True)
 
@@ -171,8 +159,8 @@ def main(argv: list[str] | None = None) -> int:
         [(pipeline.DETECTOR_MODEL, "Sam3Model"),
          (pipeline.OBJECT_EMBED_MODEL, "AutoModel"),
          (pipeline.IMAGE_EMBED_MODEL, "AutoModel")]))
-    print(f"warmup: weights cached on {host} in {time.perf_counter() - t0:.1f}s. Well under "
-          f"a minute means already cached, or warmed the wrong node.", flush=True)
+    print(f"warmup: weights cached on {host} in {time.perf_counter() - t0:.1f}s. Under a "
+          f"minute means cached, or the wrong node.", flush=True)
 
     print("throwaway pass of each arm (not timed, not recorded)", flush=True)
     for name, fn in arms:
@@ -211,8 +199,8 @@ def main(argv: list[str] | None = None) -> int:
 
     print(f"\n{len(ok)}/{len(records)} runs usable, written to {args.out}")
     print(separable(by_arm.get("coresident", []), by_arm.get("serial", [])))
-    print("Every run is in the JSONL, including the failures, so the verdict can be "
-          "re-derived or re-scored by a stricter test without re-running the GPU.")
+    print("Every run is in the JSONL, failures included, so the verdict can be re-scored "
+          "without re-running the GPU.")
     return 0 if len(ok) == len(records) else 1
 
 
