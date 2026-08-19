@@ -9,13 +9,8 @@ set -x
 # 20 steps = 2 grad-accum cycles (grad_accum=8) + flush; ~10s vs the full ~95h, 2-epoch run.
 export MAX_TRAIN_STEPS=20
 
-uv sync
-# Use `uv pip install` (uv's native installer), not `uv run pip install`: uv venvs
-# don't ship pip by default, so `uv run pip` falls through to the workspace's
-# /home/ray/anaconda3/bin/pip — which has an Anyscale-injected `import snapshot_util`
-# that ModuleNotFoundErrors outside the workspace controller's runtime.
-uv pip install -q papermill ipykernel
-# Register a venv-backed kernelspec so papermill runs against the uv-synced
-# deps (uv-pinned transformers, lerobot, local modules), not a stray python3.
-uv run python -m ipykernel install --user --name vla --display-name vla
-uv run papermill README.ipynb /tmp/vla.out.ipynb --log-output --kernel vla --cwd .
+uv pip install -q --system papermill
+
+# Default kernel, no `uv run`, no `uv sync`: the notebook installs its own deps in
+# cell 1, so this is exactly what a reader who opens it and hits Run All gets.
+papermill README.ipynb /tmp/vla.out.ipynb --log-output --kernel python3 --cwd .

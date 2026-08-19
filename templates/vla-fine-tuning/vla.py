@@ -102,7 +102,7 @@ import ray
 
 ray.init(
     runtime_env={
-        "py_executable": "uv run",
+        "pip": os.path.join(os.getcwd(), "requirements.lock"),
         "working_dir": ".",
         "env_vars": {"HF_TOKEN": HF_TOKEN},
     },

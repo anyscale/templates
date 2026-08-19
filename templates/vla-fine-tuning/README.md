@@ -70,22 +70,17 @@ git clone https://github.com/anyscale/templates && cd templates/templates/vla-fi
 | File | Description |
 |------|-------------|
 | `README.ipynb` (this notebook) | Interactive walkthrough — open in Jupyter and run cells top-to-bottom |
-| `vla.py` | Job script — same pipeline, submittable with `uv run python vla.py` |
+| `vla.py` | Job script — same pipeline, submittable with `python vla.py` |
 | `util.py` | Training utilities — model loading, checkpointing, collation, training step helpers |
 | `lerobot_datasource.py` | Custom Ray Data datasource for LeRobot v3 datasets |
+| `requirements.lock` | Worker dependency set, exported from `uv.lock` — regenerate with the command in its header |
 
 ## 0. Setup
 
 ### Dependencies
 
-This template uses [uv](https://docs.astral.sh/uv/) for dependency management.
-Open a terminal and run:
-
-```bash
-uv sync
-```
-
-When prompted for a Jupyter kernel, select the Python environment named **vla** (`.venv/bin/python`).
+Run the cell below on the default `python3` kernel. It installs the same pinned set
+the Ray workers get, so the notebook and the workers agree on every version.
 
 ### HuggingFace Token
 
@@ -94,10 +89,12 @@ Google requires you to **accept the model license** before the weights can be do
 
 1. Navigate to the [model page](https://huggingface.co/google/paligemma-3b-pt-224) and accept the license.
 2. Generate an access token at [huggingface.co/settings/tokens](https://huggingface.co/settings/tokens).
-3. Export it before running:
+3. Set `HF_TOKEN` in the workspace's **Dependencies → Environment variables** tab, or `export HF_TOKEN=hf_...` before launching Jupyter.
+
 
 ```bash
-export HF_TOKEN=hf_...
+%%bash
+uv pip install -r requirements.lock --system --no-deps --no-cache-dir --index-strategy unsafe-best-match
 ```
 
 ## GPU Requirements
@@ -162,18 +159,13 @@ if not HF_TOKEN:
 
 
 ```python
-# The Anyscale base image registers a RAY_RUNTIME_ENV_HOOK that imports a
-# package only available in the system Python. With `py_executable="uv run"`,
-# the driver runs from the project venv (no `uv run` ancestor process), so
-# Ray falls through to the hook and crashes on the missing import. Disable it.
 import os
-os.environ.pop("RAY_RUNTIME_ENV_HOOK", None)
 
 import ray
 
 ray.init(
     runtime_env={
-        "py_executable": "uv run",
+        "pip": os.path.join(os.getcwd(), "requirements.lock"),
         "working_dir": ".",
         "env_vars": {"HF_TOKEN": HF_TOKEN},
     },
