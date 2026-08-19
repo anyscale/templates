@@ -356,7 +356,7 @@ train_loop_config = {
     "stats": stats,
     "total_rows": source.meta.total_frames,
     "num_epochs": 2,
-    "batch_size": 1,   # L4 (24 GB); see the GPU Requirements table
+    "batch_size": 1,
     "grad_accum": 8,
     "lr":         1e-4,
     "warmup_frac": 0.1,
