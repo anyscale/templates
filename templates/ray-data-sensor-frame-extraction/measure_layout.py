@@ -69,6 +69,150 @@ SWEEPS: dict[str, list[tuple[str, str, dict]]] = {
 }
 
 
+# ------------------------------------------------------------------------------------------
+# The ON-DISK grid. No GPU, no cluster, no Ray -- bytes at rest, so it runs anywhere pyarrow
+# does. Decomposed from the Parquet FOOTER rather than from `du`: every row group's column
+# chunk carries total_uncompressed_size (post-ENCODING, pre-COMPRESSION) and
+# total_compressed_size, which separates the two mechanisms instead of inferring from one
+# whole-file number. Units are explicit: MB = 1e6, MiB = 2**20.
+# ------------------------------------------------------------------------------------------
+# pyarrow 23.0.1 accepts these names and rejects two obvious guesses: "uncompressed" is not
+# a name (use "none", which the footer then reports as UNCOMPRESSED), and "lz4_raw" -- a
+# genuinely distinct Parquet codec, and the one to prefer for interop -- is NOT accepted by
+# this pyarrow's writer at all. So this measures LZ4, and says so rather than implying
+# otherwise. Verified by trying every name.
+CODECS = ["none", "snappy", "gzip", "brotli", "lz4", "zstd"]
+PAYLOADS = ["sensor", "quantized", "random"]
+ZSTD_LEVELS = [1, 3, 9, 22]
+MB = 1e6
+MiB = 2 ** 20
+
+
+def _frame(width, height, bpp, payload, seed=0) -> bytes:
+    import numpy as np
+
+    rng = np.random.default_rng(seed)
+    n = width * height * bpp
+    if payload == "random":
+        return os.urandom(n)
+    if payload == "quantized":
+        return (rng.integers(0, 16, size=n, dtype=np.uint16) * 256).astype(np.uint16).tobytes()[:n]
+    base = np.linspace(0, 4095, n, dtype=np.uint16)
+    noise = rng.integers(0, 64, size=n, dtype=np.uint16)
+    return ((base + noise) % 4096).astype(np.uint16).tobytes()[:n]
+
+
+def _blob_chunk(path: Path):
+    """(uncompressed_bytes, compressed_bytes, encodings) for the blob column, summed over
+    row groups. total_uncompressed_size is AFTER encoding and BEFORE compression -- that is
+    the number that says whether the per-value bookkeeping ever existed on disk."""
+    import pyarrow.parquet as pq
+
+    md = pq.ParquetFile(str(path)).metadata
+    unc = comp = 0
+    enc = ()
+    codec_used = ""
+    for rg in range(md.num_row_groups):
+        g = md.row_group(rg)
+        for c in range(g.num_columns):
+            col = g.column(c)
+            if col.path_in_schema.split(".")[0] != "data":
+                continue
+            unc += col.total_uncompressed_size
+            comp += col.total_compressed_size
+            enc = col.encodings
+            codec_used = col.compression
+    return unc, comp, enc, codec_used
+
+
+def _write_pair(tmp: Path, payload_bytes: bytes, codec, level, rows, rgs, list_dict):
+    """Write both layouts of the same payload and return their footer decompositions."""
+    import pyarrow as pa
+    import pyarrow.parquet as pq
+
+    width = len(payload_bytes)
+    frames = [payload_bytes] * rows
+    kw = dict(compression=codec, compression_level=level, row_group_size=rgs)
+
+    fix = tmp / "fix.parquet"
+    pq.write_table(pa.table({"data": pa.array(frames, type=pa.binary(width))}),
+                   str(fix), use_dictionary=False, **kw)
+    lst = tmp / "lst.parquet"
+    pq.write_table(pa.table({"data": pa.array([list(f) for f in frames],
+                                              type=pa.list_(pa.uint8()))}),
+                   str(lst), use_dictionary=list_dict, **kw)
+    out = (_blob_chunk(fix), _blob_chunk(lst))
+    fix.unlink(); lst.unlink()
+    return out
+
+
+def on_disk_grid(out_root: Path, width: int, height: int, bpp: int) -> list:
+    import tempfile
+
+    rows = []
+    payload_cache = {p: _frame(width, height, bpp, p) for p in PAYLOADS}
+    raw = width * height * bpp
+    print(f"payload {raw:,} bytes ({raw / MB:.1f} MB = {raw / MiB:.1f} MiB) per frame, 1 frame, "
+          f"1 row group\n")
+
+    def row(tag, codec, level, payload, list_dict, rgs=1):
+        with tempfile.TemporaryDirectory() as td:
+            (fu, fc, fe, fcod), (lu, lc, le, lcod) = _write_pair(
+                Path(td), payload_cache[payload], codec, level, 1, rgs, list_dict)
+        rows.append({"axis": tag, "codec": codec, "level": level, "payload": payload,
+                     "list_dictionary": list_dict, "row_group_size": rgs,
+                     "binary_uncompressed": fu, "binary_compressed": fc,
+                     "list_uncompressed": lu, "list_compressed": lc,
+                     "gap_uncompressed": lu / fu, "gap_compressed": lc / fc,
+                     "binary_encodings": list(fe), "list_encodings": list(le),
+                     "footer_codec": lcod})
+        print(f"{codec:12s} {str(level):>5s} {payload:9s} dict={str(list_dict):5s} "
+              f"| binary {fu/MB:8.1f}/{fc/MB:8.1f} | list {lu/MB:8.1f}/{lc/MB:8.1f} "
+              f"| gap unc {lu/fu:5.2f}x comp {lc/fc:5.2f}x")
+
+    hdr = (f"{'codec':12s} {'lvl':>5s} {'payload':9s} {'dict':10s} "
+           f"| {'binary unc/comp MB':>19s} | {'list unc/comp MB':>19s} | gap")
+    print("=== A. codec x payload x dictionary (row group = 1 row) ===")
+    print(hdr); print("-" * len(hdr))
+    for codec in CODECS:
+        for payload in PAYLOADS:
+            for list_dict in (True, False):
+                row("codec-payload-dict", codec, None, payload, list_dict)
+
+    print("\n=== B. zstd level, default payload, both dictionary settings ===")
+    print(hdr); print("-" * len(hdr))
+    for lvl in ZSTD_LEVELS:
+        for list_dict in (True, False):
+            row("zstd-level", "zstd", lvl, "sensor", list_dict)
+
+    print("\n=== C. rows per row group, zstd default payload ===")
+    print(hdr); print("-" * len(hdr))
+    for rgs in (1, 4, 16):
+        for list_dict in (True, False):
+            with tempfile.TemporaryDirectory() as td:
+                (fu, fc, _, _), (lu, lc, _, _) = _write_pair(
+                    Path(td), payload_cache["sensor"], "zstd", None, 16, rgs, list_dict)
+            rows.append({"axis": "row-group", "codec": "zstd", "level": None,
+                         "payload": "sensor", "list_dictionary": list_dict,
+                         "row_group_size": rgs, "rows": 16,
+                         "binary_uncompressed": fu, "binary_compressed": fc,
+                         "list_uncompressed": lu, "list_compressed": lc,
+                         "gap_uncompressed": lu / fu, "gap_compressed": lc / fc})
+            print(f"{'zstd':12s} {'-':>5s} {'sensor':9s} dict={str(list_dict):5s} "
+                  f"| binary {fu/MB:8.1f}/{fc/MB:8.1f} | list {lu/MB:8.1f}/{lc/MB:8.1f} "
+                  f"| gap unc {lu/fu:5.2f}x comp {lc/fc:5.2f}x   (rows/group={rgs}, 16 rows)")
+
+    print("""
+`gap unc` is list<uint8> / binary(N) on total_uncompressed_size -- AFTER Parquet encoding,
+BEFORE the codec. That is the number that says whether the per-value bookkeeping ever reached
+disk. `gap comp` is the same ratio after the codec.
+
+BYTES AT REST ONLY. This grid does not measure read throughput. Where a gap reopens, whether
+the read ratio follows is a separate measurement: run `--sweep layout` against that fixture
+instead of assuming it does.""")
+    return rows
+
+
 def one_run(input_dir: Path, env_overrides: dict) -> tuple[float, float, str]:
     """One pipeline.py run. Returns (rows_per_s, wall_seconds, stdout)."""
     env = dict(os.environ)
@@ -111,8 +255,15 @@ def separable(better: list[float], worse: list[float],
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--input", required=True, help="fixture root (contains fixed_binary/ and list_uint8/)")
-    ap.add_argument("--sweep", default="layout", choices=sorted(SWEEPS), help="which lever to measure")
+    ap.add_argument("--input", required=True,
+                    help="fixture root containing fixed_binary/ and list_uint8/. For --sweep "
+                         "on-disk this is the root the grid WRITES under.")
+    ap.add_argument("--width", type=int, default=3848, help="--sweep on-disk: frame width")
+    ap.add_argument("--height", type=int, default=2168, help="--sweep on-disk: frame height")
+    ap.add_argument("--bpp", type=int, default=2, help="--sweep on-disk: bytes per pixel")
+    ap.add_argument("--sweep", default="layout", choices=sorted(SWEEPS) + ["on-disk"],
+                    help="which lever to measure. `on-disk` is the codec x payload grid for "
+                         "bytes at rest -- no GPU, no cluster, no Ray.")
     ap.add_argument("--runs", type=int, default=3, help="timed runs per arm; >=2 or nothing is separable")
     ap.add_argument("--warmup", type=int, default=1,
                     help="untimed runs per arm before timing starts. Default 1 and you want it: "
@@ -122,6 +273,13 @@ def main(argv: list[str] | None = None) -> int:
                          "rather than chosen after seeing which arm it landed in.")
     ap.add_argument("--out", default=None, help="write the per-run records here as JSON")
     args = ap.parse_args(argv)
+
+    if args.sweep == "on-disk":
+        rows = on_disk_grid(Path(args.input), args.width, args.height, args.bpp)
+        if args.out:
+            Path(args.out).write_text(json.dumps({"sweep": "on-disk", "grid": rows}, indent=2) + "\n")
+            print(f"\nwrote {args.out}")
+        return 0
 
     if args.runs < 2:
         raise SystemExit(

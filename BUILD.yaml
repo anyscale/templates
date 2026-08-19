@@ -826,9 +826,16 @@
 # template now leads with what did:
 #
 #   - the WRITE side wins ~4.1x, replicated -- 4.08x / 4.13x / 4.19x, three runs within 3%;
-#   - the READ side wins ~1.6x, not 7x-23x, because zstd compresses away the per-value
-#     bookkeeping the layout is about: the two layouts are 831.7 MB and 836.0 MB on disk. That
-#     finding is the most valuable content in the template and sits near the top;
+#   - the layout is a CPU lever, not an I/O lever, and that is the template's central content.
+#     `list<uint8>` gets Parquet physical type INT32, so every payload byte occupies four -- an
+#     exact 4.00x type expansion. It does not reach disk under default settings because
+#     RLE_DICTIONARY maps the 256 byte values to one index byte each, landing on binary(N):
+#     1.00x. The condition is a named flag, `use_dictionary`, not the codec -- measured from the
+#     footer's total_uncompressed_size across 36 cells (6 codecs x 3 payloads x dictionary
+#     on/off) plus symmetric cells, on pyarrow 23.0.1 as the image ships. Compression cannot be
+#     the mechanism: the effect is complete with codec `none` and survives os.urandom. What
+#     differs is DECODE: ~11x from byte-identical inputs, ~4.5x under zstd (the codec adds a
+#     cost common to both arms). End to end with the GPU stage that is ~1.6x, by Amdahl;
 #   - the read was NOT the binding stage here (read span 2.44s vs the GPU stage's 1.99s with
 #     3.4s UDF over two actors), the num_cpus trap did not move at all, and decoder threads
 #     1->4 bought >=1.2% rather than 2.15x.

@@ -17,6 +17,7 @@ production regime; the ratio holds, the wall clock does not.
 from __future__ import annotations
 
 import argparse
+import os
 import time
 from pathlib import Path
 
@@ -31,15 +32,32 @@ DEFAULT_HEIGHT = 2168
 DEFAULT_BYTES_PER_PIXEL = 2  # 12-bit packed into uint16
 
 
-def make_frames(n: int, width: int, height: int, bpp: int, seed: int = 0):
-    """Deterministic pseudo-sensor payloads. Content is irrelevant; size and
-    uniformity are the point."""
+def make_frames(n: int, width: int, height: int, bpp: int, seed: int = 0,
+                payload: str = "sensor"):
+    """Deterministic payloads. Size and uniformity are the point, not content.
+
+    `payload` selects COMPRESSIBILITY, which turns out to matter more than anything else
+    about the content:
+
+    sensor  a gradient plus noise. Compresses the way sensor data does -- neither
+            incompressible (which would flatter the fast layout) nor constant (which would
+            flatter the slow one).
+    random  os.urandom per row. The incompressible FLOOR, not a realistic sensor payload.
+            Real data sits between the two, and closer to `sensor` for anything with
+            spatial structure.
+    """
     rng = np.random.default_rng(seed)
     nbytes = width * height * bpp
     for i in range(n):
-        # A gradient plus noise compresses like sensor data does -- neither
-        # incompressible (which would flatter the fast layouts) nor constant
-        # (which would flatter the slow ones).
+        if payload == "random":
+            yield os.urandom(nbytes)
+            continue
+        if payload == "quantized":
+            # A middle entropy point: 4-bit noise widened to the full range, so it compresses
+            # some but far less than the gradient. Real sensor data sits between the ends;
+            # NONE of these three is real sensor data.
+            q = rng.integers(0, 16, size=nbytes, dtype=np.uint16) * 256
+            yield q.astype(np.uint16).tobytes()[:nbytes]
         base = np.linspace(0, 4095, nbytes, dtype=np.uint16)
         noise = rng.integers(0, 64, size=nbytes, dtype=np.uint16)
         yield ((base + noise + i) % 4096).astype(np.uint16).tobytes()[:nbytes]
@@ -61,7 +79,8 @@ def geometry_metadata(width: int, height: int, bpp: int) -> dict:
     }
 
 
-def write_list_uint8(frames, path: Path, row_group_size: int, meta: dict) -> float:
+def write_list_uint8(frames, path: Path, row_group_size: int, meta: dict,
+                     compression: str = "zstd", level=None, use_dictionary: bool = True) -> float:
     """The layout that turns up by default. One Parquet INT32 value, one definition
     level and one repetition level PER BYTE."""
     tbl = pa.table(
@@ -72,11 +91,13 @@ def write_list_uint8(frames, path: Path, row_group_size: int, meta: dict) -> flo
     )
     tbl = tbl.replace_schema_metadata(meta)
     t0 = time.perf_counter()
-    pq.write_table(tbl, path, compression="zstd", row_group_size=row_group_size)
+    pq.write_table(tbl, path, compression=compression, compression_level=level,
+                   use_dictionary=use_dictionary, row_group_size=row_group_size)
     return time.perf_counter() - t0
 
 
-def write_fixed_binary(frames, path: Path, row_group_size: int, meta: dict) -> float:
+def write_fixed_binary(frames, path: Path, row_group_size: int, meta: dict,
+                       compression: str = "zstd", level=None) -> float:
     """The recommended layout: FIXED_LEN_BYTE_ARRAY, required, no dictionary.
     One Parquet value per frame; the reader preallocates from the footer."""
     width = len(frames[0])
@@ -98,7 +119,8 @@ def write_fixed_binary(frames, path: Path, row_group_size: int, meta: dict) -> f
     pq.write_table(
         tbl,
         path,
-        compression="zstd",
+        compression=compression,
+        compression_level=level,
         use_dictionary=False,
         row_group_size=row_group_size,
     )
@@ -113,6 +135,34 @@ def main() -> int:
     ap.add_argument("--width", type=int, default=DEFAULT_WIDTH)
     ap.add_argument("--height", type=int, default=DEFAULT_HEIGHT)
     ap.add_argument("--bytes-per-pixel", type=int, default=DEFAULT_BYTES_PER_PIXEL)
+    ap.add_argument(
+        "--compression",
+        default="zstd",
+        choices=["none", "snappy", "gzip", "brotli", "lz4", "zstd"],
+        help="Parquet codec. The default matters more than it looks: zstd compresses away most "
+        "of the per-value bookkeeping the layout difference is made of, which is why the two "
+        "layouts come out nearly the same size on disk. Try `none` to see the raw gap.",
+    )
+    ap.add_argument(
+        "--payload",
+        default="sensor",
+        choices=["sensor", "quantized", "random"],
+        help="`sensor` is a gradient plus noise, compressible like real frames. `random` is "
+        "os.urandom, the incompressible floor -- not realistic, but it bounds the question.",
+    )
+    ap.add_argument(
+        "--compression-level", type=int, default=None,
+        help="codec level, for zstd/gzip/brotli. None uses pyarrow's default (zstd 1 in "
+        "pyarrow 23; the level a fixture was written at is not recorded in the footer, so "
+        "record it yourself).",
+    )
+    ap.add_argument(
+        "--no-dictionary", action="store_true",
+        help="disable dictionary encoding on the list<uint8> column. This is the single "
+        "biggest lever on the ON-DISK gap and it is ON by pyarrow default: with it on, the "
+        "256 possible byte values become a dictionary and indices bit-pack to 1 byte each, so "
+        "the per-value bookkeeping never reaches disk. Turn it off to see the textbook 4x.",
+    )
     ap.add_argument(
         "--row-group-size",
         type=int,
@@ -132,18 +182,23 @@ def main() -> int:
     for f in range(args.files):
         frames = list(
             make_frames(
-                args.frames, args.width, args.height, args.bytes_per_pixel, seed=f
+                args.frames, args.width, args.height, args.bytes_per_pixel, seed=f,
+                payload=args.payload,
             )
         )
         slow_total += write_list_uint8(
-            frames, out / "list_uint8" / f"part-{f:05d}.parquet", args.row_group_size, meta
+            frames, out / "list_uint8" / f"part-{f:05d}.parquet", args.row_group_size, meta,
+            args.compression, args.compression_level, not args.no_dictionary
         )
         fast_total += write_fixed_binary(
-            frames, out / "fixed_binary" / f"part-{f:05d}.parquet", args.row_group_size, meta
+            frames, out / "fixed_binary" / f"part-{f:05d}.parquet", args.row_group_size, meta,
+            args.compression, args.compression_level
         )
 
     rows = args.files * args.frames
     print(f"wrote {rows} rows x 2 layouts to {out}")
+    print(f"  codec {args.compression} level {args.compression_level}, "
+          f"payload {args.payload}, list dictionary {not args.no_dictionary}")
     print(f"  geometry {args.width}x{args.height} x {args.bytes_per_pixel}B "
           f"= {args.width * args.height * args.bytes_per_pixel / 1e6:.1f} MB/row, "
           f"recorded in the Parquet schema metadata")

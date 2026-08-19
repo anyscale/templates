@@ -11,8 +11,11 @@
 #
 #   1. the WRITE side wins, ~4.1x, replicated (4.08x / 4.13x / 4.19x, within 3%). This is the
 #      headline, and the fixture cell asserts its DIRECTION.
-#   2. the READ side wins, ~1.6x rather than 7x-23x, because compression closes most of the gap.
-#      The A/B cell asserts that direction too, with the small expected margin spelled out.
+#   2. the READ side wins END TO END, ~1.6x. The A/B cell asserts that direction too. Note the
+#      channel: Arrow's DECODE of the blob column differs by ~11x from byte-identical inputs, and
+#      what shrinks it to 1.6x here is Amdahl -- this pipeline has a GPU stage. The on-disk gap is
+#      1.00x under pyarrow's defaults because dictionary encoding, not the codec, removes the
+#      per-value bookkeeping; `measure_layout.py --sweep on-disk` prints all 36 cells.
 #
 # Both assertions are on the SIGN, never on a threshold: a number here would be fleet-dependent
 # and would go stale, and a CI test guarding a magnitude the template no longer claims is worse
