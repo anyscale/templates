@@ -11,15 +11,18 @@ Batch pipelines over multi-megabyte rows — camera frames, point clouds, fixed-
 usually stored as Parquet, and the *physical type* of the blob column is the lever people reach
 for first. The advice you will find says one layout beats the other by an order of magnitude.
 
-**On the fleet this template ships, it does not.** The write side wins by ~4.1x, reproducibly. The
-read side wins by ~1.6x, not 7x–23x, because `zstd` compresses away the per-value bookkeeping the
-layout is supposed to be about — the two layouts come out **the same size on disk**. And the read
-was not the binding stage at all.
+**Measured, it is a CPU lever and not an I/O lever, and that difference decides whether it helps
+you.** With pyarrow's default settings the two layouts are the **same size on disk** — within 1%
+across every codec tested — so the read moves identical bytes either way. What differs is decode:
+Arrow decodes `binary(N)` about **11x** faster than `list<uint8>` from identical bytes. End to end,
+with a GPU stage attached, that came out at **~1.6x** on this fleet, because blob decode is only
+part of the wall clock. And the textbook "4x more bytes" appears only if you turn **dictionary
+encoding off**.
 
 So this template does two things. It builds the pipeline end to end over two byte-identical
-layouts, and it hands you `measure_layout.py`, the harness that tells you which way the lever
-points **on your hardware, with your data, at your scale** — because that is the only place the
-answer is valid. The measured numbers below are this fleet's, not yours.
+layouts, and it hands you `measure_layout.py`, which measures the two channels — bytes at rest and
+decode CPU — **separately**, because they move independently and a single ratio hides which one you
+have. Every number below is bounded to the grid that produced it.
 
 ## What this template measured
 
@@ -27,53 +30,116 @@ One `g6.4xlarge` L4 worker, `m5.2xlarge` head, Ray 2.57.0, `torch 2.9.1+cu129`, 
 16.7 MB in 4 files per layout — the configuration in
 `configs/ray-data-sensor-frame-extraction/`.
 
-| lever | result | strength |
+| lever | result | how it was measured |
 |---|---|---|
-| **Blob column physical type, write side** | **~4.1x** cheaper to write as `binary(N)` `required` | **4.08x, 4.13x, 4.19x** — three independent runs, within 3%. The strongest result here |
-| **Blob column physical type, read side** | **~1.6x** faster | 16.49–16.81 vs 10.39–11.41 rows/s, 3 timed runs per arm, ranges do not overlap; 1.63x on a separate run |
-| **On-disk size** | **no difference** — 831.7 MB vs 836.0 MB, 0.5% apart | this is *why* the read-side win is small, and it is the most useful thing on this page |
-| **Read task `num_cpus` 1.0 vs 0.25** | **no measurable effect** | 16.67–17.00 vs 16.24–16.87 rows/s — ranges overlap |
+| **Layout — bytes at rest** | **no difference**, 1.00x; and **0.50x** (list *smaller*) on low-entropy data | Parquet footer `total_uncompressed_size`, 36 cells: 6 codecs x 3 payloads x dictionary on/off |
+| **Layout — decode CPU** | **~11x** for `binary(N)` from identical bytes with no codec; **~4.5x** under zstd | `pq.read_table`, warm cache, 3 timed runs + a warmup per arm, ranges non-overlapping |
+| **Layout — write side** | **~4.1x** cheaper to write as `binary(N)` | 4.08x / 4.13x / 4.19x / 4.10x — four independent fleet runs, within 3% |
+| **Layout — end to end, with the GPU stage** | **~1.6x** | 16.49–16.81 vs 10.39–11.41 rows/s on the fleet, 3 timed runs per arm; 1.63x on two later runs |
+| **Dictionary encoding OFF** | **4.00x** more bytes for `list<uint8>` — the textbook figure, and only here | footer, all 18 dictionary-off cells; identical under every codec |
+| **Row-group size 1 / 4 / 16 rows** | **no effect on the gap** | footer, zstd; all three identical |
+| **Read task `num_cpus` 1.0 vs 0.25** | **no measurable effect** | 16.67–17.00 vs 16.24–16.87 rows/s on the fleet — ranges overlap |
 | **Decoder threads 1 → 4** | **≥ 1.2%** | and 4 → 8 not separable at 2 runs per arm |
-| **Which operator binds** | **not the read** | read span 2.44 s against the GPU stage's 1.99 s with 3.4 s of UDF across two actors |
+| **Which operator binds** | **not the read** | read span 2.44 s vs the GPU stage's 1.99 s with 3.4 s UDF across two actors |
+
+The first four rows are one lever measured in four channels, and **they do not agree**: no win at
+rest, a large win on decode, ~4.1x on the write, a modest win end to end. Which one you get depends
+on what fraction of your pipeline is blob decode.
 
 Every one of those is a measurement on *one* fleet at *one* scale. The transferable part is the
 method, not the multipliers.
 
-## The finding worth taking away: compression eats the layout win
+## The finding worth taking away: dictionary encoding, not compression
 
-A `list<uint8>` blob column stores **one Parquet value, one definition level and one repetition
-level per byte**. A `binary(N)` `required` column stores one value per frame and the reader
-preallocates from the footer. On the face of it that is an enormous difference in work, and it is
-— *before compression*.
+A `list<uint8>` blob column gets Parquet physical type **INT32**, so every byte of your payload
+occupies **four** bytes before anything else happens. That is a *type expansion*, and it is where
+the usual 4x claim comes from — measured, it is exactly 4.00x, not approximately.
 
-Then `zstd` runs over it. The per-value bookkeeping in the `list<uint8>` encoding is extremely
-regular, which is exactly what a general-purpose compressor is good at, and it very nearly
-vanishes:
+**But it does not reach disk under default settings**, because Parquet encodes before it compresses.
+There are only 256 distinct byte values, so `RLE_DICTIONARY` maps them to a 256-entry dictionary
+with roughly one index byte per value — which lands almost exactly on `binary(N)`. Measured from the
+footer's `total_uncompressed_size` — post-encoding, pre-codec — on a 16.7 MB frame with pyarrow
+23.0.1, the version the base image ships:
 
+| | encoded bytes | vs `binary(N)` |
+|---|---|---|
+| `binary(N)` `required`, no dictionary | 16,684,961 | — |
+| `list<uint8>`, **dictionary ON** (pyarrow's default) | 16,719,140 | **1.00x** |
+| `list<uint8>`, **dictionary OFF** | 66,739,776 | **4.00x** |
+
+The encodings confirm which mechanism it is: `('PLAIN', 'RLE', 'RLE_DICTIONARY')` with the
+dictionary on, `('RLE', 'PLAIN')` with it off.
+
+**So the textbook 4x is real, and the condition is a named flag: `use_dictionary`.** With pyarrow's
+default it is 1.00x, and *no codec changes that* — the encoded gap was 1.00x in all 18 dictionary-on
+cells and 4.00x in all 18 dictionary-off cells, across `none`, `snappy`, `gzip`, `brotli`, `lz4` and
+`zstd`, and across all three payloads including `os.urandom`. Row-group size at 1, 4 and 16 rows did
+not move it either. This is checkable rather than vague: **if you disable dictionary encoding on a
+`list<uint8>` blob column — which people do for high-cardinality columns — the layout is worth up to
+4x at rest. If you leave it on, it is worth nothing at rest.**
+
+**Compression is not the mechanism**, and it cannot be: the effect is complete with codec `none`, and
+it survives an incompressible payload. Worse, compression can *invert* the dictionary-off gap —
+`zstd` squeezes the 4x-larger `list<uint8>` to 0.86x, below `binary(N)`, because INT32 with three
+zero bytes per value is trivially compressible. On-disk size is not a reliable guide to this lever in
+either direction.
+
+**And it is only the *list* column's flag that matters.** Varying `use_dictionary` on `binary(N)` too
+— all four combinations, both payloads, `none` and `zstd` — moved its encoded size by **17 bytes** out
+of 16.7 MB. So the asymmetry in this template's writer is real but immaterial, and it is stated rather
+than hidden: `make_fixture.py` writes `binary(N)` with `use_dictionary=False` and `list<uint8>` at
+pyarrow's default of `True`, i.e. **each layout as you would actually write it** — a dictionary over
+unique multi-megabyte values is pathological, so nobody enables it there, and nobody disables it on a
+byte column by accident. `--no-dictionary` writes the symmetric cell if you want it.
+
+**One version caveat, because it bit this measurement.** These numbers are pyarrow **23.0.1**, which
+is what the base image ships. On pyarrow 25.0.1 the dictionary-off *compressed* gaps come out
+differently — 1.28x rather than 0.86x for zstd on the gradient payload — so the compressed column of
+this grid is version-dependent. The *uncompressed* 4.00x / 1.00x split held in both.
+
+### So where does the win come from? Decode CPU.
+
+Holding bytes constant — same codec, same cell, warm cache — Arrow's decode differs by an order of
+magnitude, because it still has to build a variable-length list array from millions of indices
+rather than memcpy one fixed-width value:
+
+| cell | `binary(N)` | `list<uint8>` | ratio |
+|---|---|---|---|
+| no codec, dictionary on — **identical bytes** | 12,936–13,783 MB/s | 1,065–1,384 | **10.94x** |
+| `zstd`, dictionary on — the shipped default | 6,355–9,356 MB/s | 1,102–1,503 | **4.51x** |
+| no codec, dictionary off — `list` moves 4x the bytes | 10,460–12,259 MB/s | 1,039–1,378 | **8.30x** |
+
+Three things worth carrying to your own data:
+
+- **The lever is real and large, on CPU.** ~11x on decode, from byte-identical inputs. It is not an
+  I/O lever at all under default settings.
+- **A codec shrinks the measured ratio** without making the layout choice matter less: decompression
+  is a cost common to both arms, and it dominates the fast one (`binary(N)` fell from ~13,100 to
+  ~6,400 MB/s under zstd while `list<uint8>` barely moved). A ratio measured under compression
+  understates the decode difference.
+- **Whether any of it reaches your wall clock depends on Amdahl.** With this template's GPU stage
+  attached, the same lever was worth ~1.6x end to end, because blob decode is one part of the
+  pipeline. Measure the channel you can actually spend.
+
+**None of the three payloads is real sensor data.** They are a gradient-plus-noise frame, a
+quantized 4-bit-noise frame, and `os.urandom` — a compressible case, a middle case and the
+incompressible floor. Real data sits between them, and closer to the first for anything with spatial
+structure.
+
+### Reproduce the grid
+
+The on-disk half needs no GPU, no cluster and no Ray — it is a question about bytes at rest:
+
+```bash
+python measure_layout.py --input /tmp/grid --sweep on-disk
 ```
-831.7 MB   fixed_binary/     <- binary(N) required, no dictionary
-836.0 MB   list_uint8/       <- one value + def level + rep level PER BYTE
-```
 
-(`du -sh` reports those as 794M and 798M, because `du` counts MiB. Same files, same 0.5% gap —
-the cell below prints the exact byte totals so the two never disagree in front of you.)
-
-**Half a percent apart** — and that holds across scales: 4 rows on a laptop came out 34.7 MB
-against 34.8 MB, 0.3% apart, so it is a property of the encoding-plus-codec pair rather than an
-artifact of this fixture size. So the two layouts move the same bytes off storage, the I/O is
-identical, and the only thing left to differ is **decode CPU** — which is where the ~1.6x comes from, and why
-it is 1.6x and not an order of magnitude. The published order-of-magnitude figures come from a
-regime where the naive layout also costs far more I/O; compressed, at this scale, it does not.
-
-Two consequences worth carrying to your own data:
-
-- **A layout or encoding win measured uncompressed does not survive compression unchanged.** Check
-  the on-disk sizes before you believe a read-side ratio. It costs one `du`.
-- **The write side is a different question and it kept its win.** Compression does not help the
-  *writer*: it still has to emit and encode every one of those values before the compressor sees
-  them. That is why ~4.1x on the write is the sturdiest number here, and it is usually the easier
-  side to change — the producing team is being asked for something that makes their own job
-  cheaper, not for a favour.
+That prints all 36 cells with both footer numbers per cell, plus the `zstd` level sweep (1, 3, 9,
+22 — note pyarrow 23's default is level **1**, not 3) and the row-group sweep. Two naming traps it
+encodes so you do not hit them: pyarrow rejects `"uncompressed"` (the name is `"none"`, which the
+footer then reports as `UNCOMPRESSED`), and it rejects `"lz4_raw"` outright — a genuinely distinct
+Parquet codec, and the one to prefer for interop, but this pyarrow's writer will not take it, so the
+grid measures `LZ4` and says so.
 
 ## What changes
 
@@ -258,9 +324,10 @@ print()
 for layout in ["fixed_binary", "list_uint8"]:
     total = sum(os.path.getsize(f) for f in glob.glob(os.path.join(FIXTURE, layout, "*.parquet")))
     print(f"{layout:14s} {total / 1e6:8.1f} MB on disk")
-print("\nIf those two numbers are close, compression has already removed most of what the "
-      "layout was going to buy you on the READ path. Measured on this template's own fleet: "
-      "831.7 MB against 836.0 MB, 0.5% apart.")
+print("\nIf those two numbers are close, the layout is NOT going to buy you I/O -- the read moves "
+      "the same bytes either way, so any win has to come from decode. Parquet's dictionary "
+      "encoding is what closes this gap, not the codec; measured on this fleet, 831.7 MB against "
+      "836.0 MB (0.5% apart). Run `--sweep on-disk` for the full grid.")
 ```
 
 ### The write side is the sturdy result
@@ -339,10 +406,12 @@ subprocess.run(
 
 Same `pipeline.py`, same payload bytes, two physical layouts. Only the input path changes.
 
-**What this cell establishes is a direction, not a magnitude.** One run per arm is enough to show
-the sign and nothing more. On this fleet the direction held every time and came out at **~1.6x**;
-for a number you can quote, use `measure_layout.py` further down, which takes several timed runs
-per arm and refuses to score an arm with fewer than two.
+**What this cell establishes is a direction, not a magnitude — and it is the END-TO-END channel.**
+One run per arm shows the sign and nothing more. On this fleet the direction held every time and
+came out at **~1.6x**, far below the ~11x decode difference measured from identical bytes: this
+pipeline has a GPU stage, and blob decode is only part of its wall clock. For a number you can quote
+in either channel, use `measure_layout.py`, which takes several timed runs per arm and refuses to
+score an arm with fewer than two.
 
 **Note the warmup, and do not remove it.** The first pipeline run on a fresh cluster also pays for
 Ray building the `runtime_env` virtualenv from the lock on the worker — measured at 85.1 s against
@@ -379,8 +448,9 @@ fast = run_arm("fixed_binary")
 slow = run_arm("list_uint8")
 
 print(f"fixed_binary {fast:.2f} rows/s vs list<uint8> {slow:.2f} rows/s -> {fast / slow:.2f}x")
-print("Direction only. Measured ~1.6x on this fleet, NOT the 7x-23x in the field notes -- "
-      "compression closes most of the gap. See 'compression eats the layout win' above.")
+print("Direction only, and END TO END. Measured ~1.6x on this fleet -- the DECODE difference is "
+      "~11x from identical bytes, but blob decode is one part of this pipeline's wall clock, so "
+      "Amdahl takes most of it here. See the dictionary-encoding section above.")
 
 assert fast > slow, (
     "the recommended layout was not faster to read here. At this scale the expected margin is "
