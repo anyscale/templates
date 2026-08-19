@@ -36,10 +36,12 @@ import numpy as np
 # claim false and made the cheap tests need the expensive dependency.
 
 # --------------------------------------------------------------------------------------
-# Model set. All public. The two Meta repos are GATED: accept the terms once on the model
-# card with the account behind your HF_TOKEN. The repo's own precedent for this is
-# templates/vla-fine-tuning, which reads HF_TOKEN from the environment and whose CI pulls
-# it from Secrets Manager.
+# Model set. All public. The two Meta repos are GATED, and their terms are accepted PER
+# ACCOUNT by the person running this -- so HF_TOKEN comes from the reader's environment and
+# there is no shared token anywhere in this template. `templates/vla-fine-tuning` pulls an
+# organisation secret for its gated model; this template deliberately does not, because a
+# service account cannot agree to SAM 3's licence on a reader's behalf. CI runs
+# `--ungated-only` instead.
 # --------------------------------------------------------------------------------------
 DETECTOR_MODEL = os.environ.get("DETECTOR_MODEL", "facebook/sam3")
 OBJECT_EMBED_MODEL = os.environ.get("OBJECT_EMBED_MODEL", "facebook/dinov3-vitl16-pretrain-lvd1689m")
@@ -441,19 +443,57 @@ class Metrics:
         return out
 
 
-def build(input_path: str, stub: bool = False):
-    """The four-stage DAG.
+# The stages, in order, as (key, class, batch-size-getter). Kept OUT of `build()` and
+# free of any Ray import so the selection below is testable without a cluster -- the
+# gated/ungated split is a licensing decision and it should not take a GPU to check that it
+# selects what it says it selects.
+#
+# GATED tells you which stages need weights whose terms are accepted PER ACCOUNT by the
+# person running this. It is a property of the model repository, not a configuration knob.
+STAGES = [
+    ("detector", "Detector", True),
+    ("obj", "ObjectEmbedder", True),
+    ("img", "ImageEmbedder", False),
+    ("metrics", "Metrics", False),
+]
+
+
+def stage_plan(ungated_only: bool = False) -> list[str]:
+    """The stage keys to build, in order.
+
+    `ungated_only` drops the two stages whose weights are gated -- SAM 3 and DINOv3 -- and
+    leaves SigLIP2 plus the weightless metrics stage. That is a REAL two-model co-residency
+    run on one card, and it is not the four-model claim; whoever reads its output has to be
+    told which one they got, which is why this returns a list rather than mutating a global.
+
+    The object embedder goes with the detector and not by choice: it embeds the detector's
+    crops, so without `boxes` there is nothing for it to embed.
+    """
+    return [key for key, _cls, gated in STAGES if not (ungated_only and gated)]
+
+
+def build(input_path: str, stub: bool = False, ungated_only: bool = False):
+    """The DAG. Four stages by default; two under `ungated_only`.
 
     `stub` drops the GPU reservations as well as the weights, and it has to. Asking for
     `num_gpus=0.2` on a box with no GPU does not fail -- the actor pool simply never
     admits, the dataset never produces a batch, and a CPU-only test HANGS instead of
     reporting anything. Found by running it: the first version of this file sat for ten
     minutes on a laptop with the fixture already written.
+
+    `ungated_only` keeps the GPU and the real weights and drops the gated stages. It exists
+    because the two Meta models are licensed per ACCOUNT: a shared CI credential cannot
+    accept those terms on anyone's behalf, so CI runs the half it may legitimately run
+    rather than pretending to run all of it. See `stage_plan`.
     """
     gpu = {"detector": DETECTOR_GPU, "obj": OBJ_EMB_GPU,
            "img": IMG_EMB_GPU, "metrics": METRICS_GPU}
     actors = {"detector": DETECTOR_ACTORS, "obj": EMB_ACTORS,
               "img": EMB_ACTORS, "metrics": METRICS_ACTORS}
+    batch = {"detector": DETECTOR_BATCH, "obj": EMB_BATCH,
+             "img": EMB_BATCH, "metrics": METRICS_BATCH}
+    cls = {"detector": Detector, "obj": ObjectEmbedder,
+           "img": ImageEmbedder, "metrics": Metrics}
     if stub:
         gpu = dict.fromkeys(gpu, 0.0)
         # One actor per stage: the stub asserts the DAG and the shapes, and a laptop
@@ -485,10 +525,9 @@ def build(input_path: str, stub: bool = False):
     )
     # Fixed actor pools: min_size == max_size. The autoscaler parks below the GPU count on
     # whole-GPU actors, which is the difference between one GPU busy and all of them.
-    ds = ds.map_batches(Detector, batch_size=DETECTOR_BATCH, **pool("detector"))
-    ds = ds.map_batches(ObjectEmbedder, batch_size=EMB_BATCH, **pool("obj"))
-    ds = ds.map_batches(ImageEmbedder, batch_size=EMB_BATCH, **pool("img"))
-    return ds.map_batches(Metrics, batch_size=METRICS_BATCH, **pool("metrics"))
+    for stage in stage_plan(ungated_only):
+        ds = ds.map_batches(cls[stage], batch_size=batch[stage], **pool(stage))
+    return ds
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -497,6 +536,10 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--output", default=None)
     ap.add_argument("--stub", action="store_true",
                     help="no weights, no GPU: exercises the DAG and every shape")
+    ap.add_argument("--ungated-only", action="store_true",
+                    help="real GPU and real weights, but only the stages whose models are "
+                         "not gated (SigLIP2 + metrics). Needs no HF_TOKEN. This is TWO-model "
+                         "co-residency, not the four-model claim")
     # `--no-stats`, not `--stats`. `action="store_true", default=True` was unreachable in one
     # direction: the flag could only ever set what it already was, so the dataset stats were
     # unconditional and the option documented a choice nobody had. Ray Data's per-stage
@@ -510,7 +553,7 @@ def main(argv: list[str] | None = None) -> int:
         os.environ["STUB"] = "1"
         globals()["STUB"] = True
 
-    if not args.stub and not os.environ.get("HF_TOKEN"):
+    if not args.stub and not args.ungated_only and not os.environ.get("HF_TOKEN"):
         raise SystemExit(
             "Set HF_TOKEN before running. Two of the three models are GATED, so this needs\n"
             "your own Hugging Face token and your own acceptance of their terms -- gating is\n"
@@ -529,7 +572,11 @@ def main(argv: list[str] | None = None) -> int:
     import ray
 
     ray.init(ignore_reinit_error=True, runtime_env=runtime_env(stub=args.stub))
-    ds = build(args.input, stub=args.stub)
+    ds = build(args.input, stub=args.stub, ungated_only=args.ungated_only)
+    if args.ungated_only:
+        print(f"UNGATED-ONLY: {len(stage_plan(True))} of {len(STAGES)} stages "
+              f"({', '.join(stage_plan(True))}). The two gated models are absent, so this "
+              f"run says nothing about the four-model claim.")
 
     t0 = time.perf_counter()
     if args.output:

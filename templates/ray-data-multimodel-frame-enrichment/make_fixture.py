@@ -16,8 +16,14 @@ WHAT MUST NOT SHRINK, AND WHAT MAY
 
 This template's thesis is CO-RESIDENCY: four models sharing one GPU without starving each
 other. So the frame COUNT and the frame GEOMETRY may both shrink for CI -- neither carries
-the lesson -- but the number of resident models may not. Dropping to two stages to fit a
-budget would make the template demonstrate something it does not claim.
+the lesson -- but the number of resident models may not be trimmed TO FIT A BUDGET. Dropping
+to two stages because four are expensive would make the template demonstrate something it
+does not claim.
+
+CI does run two, and that is not an exception to the rule above. Two of the four models are
+gated on Hugging Face and licensed per ACCOUNT, so CI has no right to their weights at all;
+`pipeline.py --ungated-only` names the pair it ran and the four-model claim rests on
+`packing.py`'s arithmetic plus the reader's own run. Reason, not budget.
 
 Note that this is the opposite of the sibling template, where geometry is the whole point
 because the read binds. Same corpus, two theses, two different things you are allowed to
