@@ -820,12 +820,25 @@
 # owner_team ray-data: the template teaches the Parquet read path -- blob-column physical type,
 # row-group sizing, read-task CPU, decoder threads -- and has no Train/Serve/LLM surface.
 #
-# MEASURED on this repo's own configs/ (one g6.4xlarge L4, m5.2xlarge head):
-# prodjob_mnm3w6i1azkcfq22q8radiaxt5 for the sweeps, prodjob_gdtvnpvf1we3xfz7qi8si59bji for
-# tests.sh. At the CI knob the layout lever is worth ~1.6x on the read and ~4.1x on the write
-# (n=3, within 3%) -- NOT the 7x-23x the source engagement saw at production scale, and two of
-# the other levers did not move measurably at all. The notebook says so in the cell that carries
-# the engagement's figures. Read that cell before quoting the title.
+# WHAT IT TEACHES, and this is not what it was lifted to teach. The source engagement's finding
+# was "the read binds, and the blob column's Parquet physical type is worth 7x-23x". Measured on
+# this repo's own configs/ (one g6.4xlarge L4, m5.2xlarge head) that did not reproduce, so the
+# template now leads with what did:
+#
+#   - the WRITE side wins ~4.1x, replicated -- 4.08x / 4.13x / 4.19x, three runs within 3%;
+#   - the READ side wins ~1.6x, not 7x-23x, because zstd compresses away the per-value
+#     bookkeeping the layout is about: the two layouts are 794 MB and 798 MB on disk. That
+#     finding is the most valuable content in the template and sits near the top;
+#   - the read was NOT the binding stage here (read span 2.44s vs the GPU stage's 1.99s with
+#     3.4s UDF over two actors), the num_cpus trap did not move at all, and decoder threads
+#     1->4 bought >=1.2% rather than 2.15x.
+#
+# So the transferable lesson is the METHOD -- measure a layout or encoding win on your own fleet
+# before believing it -- and measure_layout.py is a first-class artifact, not scaffolding. Every
+# engagement figure is retained and labelled as theirs, on a different fleet and dataset; the
+# contrast is the point, not a correction. Still unmeasured: whether the read binds at
+# production scale. Evidence: prodjob_mnm3w6i1azkcfq22q8radiaxt5 (sweeps),
+# prodjob_gdtvnpvf1we3xfz7qi8si59bji (tests.sh).
 # owner: @em-anyscale
 - name: ray-data-sensor-frame-extraction
   owner_team: ray-data
