@@ -73,6 +73,7 @@ git clone https://github.com/anyscale/templates && cd templates/templates/vla-fi
 | `vla.py` | Job script — same pipeline, submittable with `uv run python vla.py` |
 | `util.py` | Training utilities — model loading, checkpointing, collation, training step helpers |
 | `lerobot_datasource.py` | Custom Ray Data datasource for LeRobot v3 datasets |
+| `requirements.lock` | Worker dependency set, exported from `uv.lock` — regenerate with the command in its header |
 
 ## 0. Setup
 
@@ -163,9 +164,9 @@ if not HF_TOKEN:
 
 ```python
 # The Anyscale base image registers a RAY_RUNTIME_ENV_HOOK that imports a
-# package only available in the system Python. With `py_executable="uv run"`,
-# the driver runs from the project venv (no `uv run` ancestor process), so
-# Ray falls through to the hook and crashes on the missing import. Disable it.
+# package only available in the system Python. The `vla` kernel runs from the
+# project venv, so Ray falls through to the hook and crashes on the missing
+# import. Disable it.
 import os
 os.environ.pop("RAY_RUNTIME_ENV_HOOK", None)
 
@@ -173,7 +174,7 @@ import ray
 
 ray.init(
     runtime_env={
-        "py_executable": "uv run",
+        "pip": os.path.join(os.getcwd(), "requirements.lock"),
         "working_dir": ".",
         "env_vars": {"HF_TOKEN": HF_TOKEN},
     },
