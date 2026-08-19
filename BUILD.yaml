@@ -827,7 +827,7 @@
 #
 #   - the WRITE side wins ~4.1x, replicated -- 4.08x / 4.13x / 4.19x, three runs within 3%;
 #   - the READ side wins ~1.6x, not 7x-23x, because zstd compresses away the per-value
-#     bookkeeping the layout is about: the two layouts are 794 MB and 798 MB on disk. That
+#     bookkeeping the layout is about: the two layouts are 831.7 MB and 836.0 MB on disk. That
 #     finding is the most valuable content in the template and sits near the top;
 #   - the read was NOT the binding stage here (read span 2.44s vs the GPU stage's 1.99s with
 #     3.4s UDF over two actors), the num_cpus trap did not move at all, and decoder threads
