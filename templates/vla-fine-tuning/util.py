@@ -110,13 +110,9 @@ def load_pi05_policy(pretrained_path=None):
 
     apply_pi05_attention_mask_patch()
 
-    # pi05_base's config.json declares dtype "float32" and lerobot honours it, so the
-    # 4.1B params land fp32 -- 15.4 GiB of a 22 GiB L4 before a single activation, which
-    # is why this template OOMed. `bfloat16` is lerobot's own precision mode: it keeps
-    # the vision tower, projector and layernorms fp32 on purpose ("toggle causes
-    # optimizer same dtype error"), which a blanket .half() would trample.
-    # from_pretrained's own signature takes neither dtype nor device -- they land in
-    # **kwargs and are dropped silently -- so the config is the only way in.
+    # pi05_base's config.json says "float32", so the 4.1B params land fp32: 15.4 GiB of
+    # a 22 GiB L4. lerobot reads precision off the config, and from_pretrained drops a
+    # `dtype` kwarg into **kwargs unused, so this is the only way in.
     config = PreTrainedConfig.from_pretrained(pretrained_path)
     config.dtype = "bfloat16"
 
@@ -134,8 +130,7 @@ def load_pi05_policy(pretrained_path=None):
             for p in module.parameters():
                 p.requires_grad = True
 
-    # bfloat16 casts these four too, which would leave the optimizer with bf16 master
-    # weights. Only 2.2 M params, so fp32 here costs ~9 MB and keeps the update precise.
+    # bfloat16 casts the trainable heads too; 2.2 M params, so fp32 master weights cost ~9 MB.
     for p in policy.parameters():
         if p.requires_grad and p.dtype is not torch.float32:
             p.data = p.data.float()
@@ -177,9 +172,7 @@ def make_checkpoint(policy, optimizer, scaler, epoch, step):
     import ray.train
 
     ckpt_dir = tempfile.mkdtemp(prefix="pi05_ckpt_")
-    # Move weights to CPU before pickling. Pickled CUDA tensors deserialize straight
-    # back onto the device, so a resume would load the whole model on top of the one
-    # already there and OOM before the first step.
+    # Pickled CUDA tensors reload onto the device, so a resume would OOM against the live model.
     model_state = {k: v.cpu() if hasattr(v, "cpu") else v
                    for k, v in policy.module.state_dict().items()}
     with open(os.path.join(ckpt_dir, "state.pkl"), "wb") as f:
@@ -199,10 +192,8 @@ def make_checkpoint(policy, optimizer, scaler, epoch, step):
 def truncate_batch(batch: dict, max_len: int) -> dict:
     """Clip sequence and mask tensors to max_len tokens.
 
-    Only clips the keys listed below, and only if the preprocessor emits them.
-    PI0.5 builds its own image+text sequence inside the forward pass, so this
-    does not bound peak memory -- the masks it builds there run past 1000
-    tokens whatever max_len says. Set max_len=0 to disable.
+    Clips only the keys below, if the preprocessor emits them. PI0.5 builds its
+    sequence inside the forward pass, so this does not bound peak memory.
     """
     if not max_len:
         return batch
