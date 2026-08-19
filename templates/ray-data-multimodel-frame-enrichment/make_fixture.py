@@ -6,33 +6,21 @@
 
 WHY SYNTHETIC
 
-The source engagement's input was a private camera corpus. Public image sets exist and
-several are permissively licensed (Open Images V7 annotations and images are CC-BY-4.0),
-but every one of them adds a download, an attribution obligation and a licence to track,
-for a fixture whose only job is to be four models' worth of work. Generating it removes
-all three. The sibling `ray-data-sensor-frame-extraction` template made the same call.
+Public image sets are available and several are permissively licensed (Open Images V7 is
+CC-BY-4.0 both ways), but each adds a download, an attribution obligation and a licence to
+track. Generating the frames removes all three.
 
-WHAT MUST NOT SHRINK, AND WHAT MAY
+WHAT MAY SHRINK
 
-This template's thesis is CO-RESIDENCY: four models sharing one GPU without starving each
-other. So the frame COUNT and the frame GEOMETRY may both shrink for CI -- neither carries
-the lesson -- but the number of resident models may not be trimmed TO FIT A BUDGET. Dropping
-to two stages because four are expensive would make the template demonstrate something it
-does not claim.
+Frame count and frame geometry, for CI. Neither carries the lesson.
 
-CI does run two, and that is not an exception to the rule above. Two of the four models are
-gated on Hugging Face and licensed per ACCOUNT, so CI has no right to their weights at all;
-`pipeline.py --ungated-only` names the pair it ran and the four-model claim rests on
-`packing.py`'s arithmetic plus the reader's own run. Reason, not budget.
-
-Note that this is the opposite of the sibling template, where geometry is the whole point
-because the read binds. Same corpus, two theses, two different things you are allowed to
-shrink. Read the thesis before you shrink anything.
+Do not trim the resident-model count to fit a budget. CI does run two of the four, because
+two are gated on Hugging Face and licensed per account, so CI has no right to their weights;
+`pipeline.py --ungated-only` names the pair it ran. That is a licence, not a budget.
 
 Each frame carries a few high-contrast shapes on a textured background, so a promptable
 detector has something to find. A pure-noise fixture returns zero detections and the
-downstream stages then measure nothing, which is a fixture that passes while testing
-nothing.
+downstream stages then measure nothing.
 """
 
 from __future__ import annotations
@@ -45,17 +33,16 @@ import numpy as np
 import pyarrow as pa
 import pyarrow.parquet as pq
 
-# Fixed so the fixture is reproducible: the same --seed and geometry always produce the
-# same bytes, which is what lets a captured output be compared across runs.
+# Fixed so the fixture is reproducible: the same --seed and geometry produce the same bytes.
 DEFAULT_SEED = 20260817
 
 
 def one_frame(rng: np.random.Generator, w: int, h: int, n_shapes: int) -> tuple[np.ndarray, list]:
     """A textured RGB frame plus the ground-truth boxes of the shapes drawn into it."""
     # Low-frequency background, so the detector is not scoring against flat colour.
-    # Tile COUNT is rounded up and the result cropped: rounding down left a black strip
-    # along any edge whose geometry was not a multiple of the tile (240 is not a multiple
-    # of 64), and a black band is a texture artifact a detector can legitimately fire on.
+    # Round the tile count up and crop. Rounding down leaves a black strip along any edge
+    # whose geometry is not a multiple of the tile (240 is not a multiple of 64), and a
+    # detector will fire on the band.
     tile = 64
     small = rng.integers(
         40, 90,
@@ -90,9 +77,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--out", required=True, type=Path)
     ap.add_argument("--frames", type=int, default=48)
     ap.add_argument("--files", type=int, default=4,
-                    help="one file per read task; 1 file of 2 row groups gave the source "
-                         "engagement 2 blocks and 2 usable workers, which is the "
-                         "structural trap its unstarving lever exists for")
+                    help="one file per read task. 1 file of 2 row groups yields 2 blocks and "
+                         "2 usable workers, whatever the cluster size")
     ap.add_argument("--width", type=int, default=640)
     ap.add_argument("--height", type=int, default=480)
     ap.add_argument("--shapes", type=int, default=4)
@@ -122,9 +108,8 @@ def main(argv: list[str] | None = None) -> int:
             truth[fid] = boxes
         table = pa.table({
             "frame_id": pa.array(ids, pa.string()),
-            # A fixed-size binary column: every row is the same multi-hundred-KB blob, which
-            # is the shape the source workload had and the reason its Parquet file is a
-            # catalogue around a blob store rather than a columnar format.
+            # A fixed-size binary column: every row is the same multi-hundred-KB blob, so the
+            # Parquet file is a catalogue around a blob store.
             "image": pa.array(blobs, pa.binary(frame_bytes)),
             "width": pa.array([args.width] * count, pa.int32()),
             "height": pa.array([args.height] * count, pa.int32()),

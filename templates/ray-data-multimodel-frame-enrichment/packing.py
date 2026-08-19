@@ -1,69 +1,57 @@
 #!/usr/bin/env python3
-"""Will this multi-model packing actually fit, and what binds when it does not?
+"""Does this multi-model packing fit on one GPU, and what binds when it does not?
 
-    python packing.py                             # the engagement's shipped configuration
-    python packing.py --stages measured --vram 22.03   # THIS template's four models, on an L4
-    python packing.py --strict                    # exit 1 if any GPU is over-committed
+    python packing.py                                  # the source engagement's config
+    python packing.py --stages measured --vram 22.03    # this template's four models, on an L4
+    python packing.py --strict                         # exit 1 if any GPU is over-committed
     python packing.py --json
 
-Two tables, and the difference matters. `--stages shipped` is the source engagement's
-configuration on the source engagement's MODEL SET, which is where every lever in the
-README was measured. `--stages measured` is this template's own sam3 + dinov3 + siglip2,
-measured on a g6 L4. Reading the shipped table's 21.01 GiB as this set's footprint was a
-real mistake in an earlier version of this file's README: the measured set is 5.53 GiB.
+Two tables. `--stages shipped` is the source engagement's configuration on its own model set,
+which is where every lever in the README was measured. `--stages measured` is this template's
+sam3 + dinov3 + siglip2, measured on a g6 L4. Their footprints differ: 21.01 GiB shipped,
+5.53 GiB measured. Do not quote one for the other.
 
-An L4 is 24 **GB**, which is 22.35 GiB, and torch reports 22.03 GiB usable. `--vram 24`
-is a unit error worth about 2 GiB of headroom that does not exist.
+An L4 is 24 GB, which is 22.35 GiB, of which torch reports 22.03 usable. Pass `--vram 22.03`;
+`--vram 24` invents about 2 GiB of headroom.
 
-THE TRAP THIS ANSWERS
+THE TRAP
 
-`num_gpus=0.02` is an ADMISSION-CONTROL TOKEN, not a memory limit. Ray will happily place
-50 actors of that stage on one GPU because the fractions sum to 1.0, and CUDA will then
-OOM, because nothing in the fraction says anything about VRAM. The two limits are
-computed from different numbers and the smaller one wins:
+`num_gpus=0.02` is an admission-control token and does not cap VRAM. Ray will place 50 actors
+of that stage on one GPU because the fractions sum to 1.0, and CUDA then OOMs. The two limits
+come from different numbers and the smaller wins:
 
     by fraction :  floor(1 / num_gpus)                     actors per GPU
     by VRAM     :  floor(vram_per_gpu / vram_per_actor)     actors per GPU
 
-On the source engagement's own shipped configuration the fraction budget allows 20
-object-embedder actors on one GPU and VRAM allows 6. Anyone reading only the fractions in
-the config would provision three times the actors that fit. That is the arithmetic behind
-"pack the GPUs, do not count them", and it is why this file is executable rather than a
-paragraph.
+On the shipped configuration the fraction budget allows 20 object-embedder actors on one GPU
+and VRAM allows 6. Reading only the fractions provisions three times what fits.
 
-DOES PACKING ACTUALLY BUY ANYTHING? MEASURED: YES, >=26.5% ON ONE L4.
+WHETHER PACKING PAYS: MEASURED, >=26.5% ON ONE L4
 
-Not arithmetic, and not asserted by this file -- recorded here because a tool that computes
-feasibility should say whether feasibility was worth pursuing. On one L4, 96 frames at
-640x480, one actor per stage:
+Not asserted here. On one L4, 96 frames at 640x480, one actor per stage:
 
     coresident  n=3  1.2619 / 1.2631 / 1.2792 rows/s   (spread 1.4%)
     serial      n=3  0.9882 / 0.9903 / 0.9979 rows/s   (spread 1.0%)
     verdict: SEPARABLE, coresident > serial by >= 26.5%
 
-`serial` = each stage alone with the whole GPU, `materialize()` between stages, so the models
-are never co-resident. The metric is end-to-end wall clock INCLUDING warm model loads, which
-is a different quantity from the ~49.7 rows/s steady-state figure quoted below; do not compare
-them. Three rounds agreed (>=27.7%, >=27.9%, >=26.5%); the first two needed a run discarded
-and so could not carry the claim, and the third put the throwaway inside the harness instead.
-Full scope, and the failure each guard prevents, is in `measure_packing.py`'s docstring.
+`serial` gives each stage the whole GPU with `materialize()` between stages, so the models are
+never co-resident. The metric is end-to-end wall clock including warm model loads. Do not
+compare it to the ~49.7 rows/s steady-state figure below. Three rounds ran: >=27.7%, >=27.9%,
+>=26.5%. The first two needed a run discarded; the third put the throwaway inside the harness.
 
-**Re-run it with `measure_packing.py`** after any change to the model set, the image, the
-batch sizes or the card. That script carries the three guards those failed rounds bought --
-a warmup on the node that does the work, a throwaway pass per arm, and interleaved arms --
-and it reports a bounded verdict rather than a ratio: an arm needs two runs, and two arms
-are separable only when the worst run of the better one beats the best run of the worse one.
+Re-run `measure_packing.py` after any change to the model set, the image, the batch sizes or
+the card. It carries the three guards and the failure each one prevents.
 
-WHY NO WALL-CLOCK NUMBER IS ASSERTED HERE
+WHAT THIS FILE ASSERTS
 
-This is rung 1: it needs no cluster, no GPU and no weights, so nothing can block it. It
-asserts feasibility and ordering, never throughput. The measured throughput for this shape
-is fleet-specific and the honest end-to-end figure is ~49.7 rows/s on the source fleet's
-fixed confirmation run -- not the 88 rows/s (active compute only, and its output prefix
-carried ~321k duplicate rows) and not the 209.999 rows/s (extraction only, no detector).
-Those belong in the README with their scope, not in a test.
+Feasibility and ordering, never throughput. It needs no cluster, no GPU and no weights.
+Throughput for this shape is fleet-specific:
 
-Stdlib only, on purpose.
+    ~49.7 rows/s    end to end, fixed confirmation run on the source fleet
+    ~88 rows/s      active compute only; output prefix carried ~321k duplicate rows
+    209.999 rows/s  extraction only, no detector
+
+Stdlib only.
 """
 
 from __future__ import annotations
@@ -78,10 +66,9 @@ from dataclasses import asdict, dataclass
 class Stage:
     """One model stage, as it appears in a Ray Data `map_batches` call.
 
-    `vram_gib` is measured per actor AT `batch`/`subbatch`, and does not survive a change
-    to either: the source engagement OOMed at batch 192-256 with 30+ GiB per actor and
-    landed at 4.95 GiB by moving to batch 32. A VRAM figure without its batch is not a
-    number you can plan with.
+    `vram_gib` is measured per actor at `batch`/`subbatch` and does not survive a change to
+    either: batch 192-256 OOMed at 30+ GiB per actor, and batch 32 landed at 4.95 GiB. Record
+    the batch alongside the VRAM figure.
     """
 
     name: str
@@ -127,7 +114,7 @@ class Stage:
 # 0.96 GiB, metrics ~2.8 GiB at sub-batch 4. The detector figure is the one the source
 # never recorded per-actor; 0.2 of a 48 GiB card is 9.6 GiB of fraction budget and the
 # stage is the throughput floor at ~13 images/s per actor, so it is entered here as its
-# fraction share and flagged UNMEASURED rather than invented.
+# fraction share, flagged UNMEASURED.
 SHIPPED = [
     Stage("detector", num_gpus=0.2, vram_gib=9.6, actors=10, batch=4),
     Stage("object-embedder", num_gpus=0.05, vram_gib=7.65, actors=4, batch=32),
@@ -144,8 +131,7 @@ UNMEASURED = {"detector"}  # vram_gib is its fraction share, not a measurement
 # mistake these numbers replace.
 #
 # Peak allocated ABOVE the pre-stage baseline, so weights plus activations for that stage
-# alone. Each figure is meaningless without the batch beside it, which is why `batch` is a
-# field rather than a comment.
+# alone. `batch` is a field, not a comment: a VRAM figure without its batch does not plan.
 #
 #   detector          batch 8, 2 labels   4.19 GiB   (weights alone 1.60)
 #   object-embedder   batch 4             0.59 GiB   <- see the caveat below
@@ -173,9 +159,8 @@ STAGE_SETS = {"shipped": SHIPPED, "measured": MEASURED_L4}
 # that costs least to tell.
 UNMEASURED_BY_SET = {"shipped": UNMEASURED, "measured": set()}
 
-# A FLOOR for this template's own model set, from the hub file sizes rather than a
-# measurement (2026-08-17, once the gated repos became readable). Weights only: no
-# activations, no workspace, no allocator slack.
+# A FLOOR for this template's own model set, from the hub file sizes, 2026-08-17. Not a
+# measurement. Weights only: no activations, no workspace, no allocator slack.
 #
 #   facebook/sam3                model.safetensors  3.44 GB fp32  -> ~1.72 GB bf16
 #   facebook/dinov3-vitl16       model.safetensors  1.21 GB fp32  -> ~0.61 GB bf16
@@ -186,8 +171,7 @@ UNMEASURED_BY_SET = {"shipped": UNMEASURED, "measured": set()}
 # Two things follow, and neither is a per-actor figure. The table above is the SOURCE
 # ENGAGEMENT's measurement on a DIFFERENT model set, so these floors do not replace it --
 # they bound it. And the object embedder's 7.65 GiB against a 0.61 GB weight floor says
-# activations at batch 32 dominate its footprint by an order of magnitude, which is why a
-# VRAM number without its batch is useless. The GPU measurement that replaces the
+# activations at batch 32 dominate its footprint by an order of magnitude. The GPU measurement that replaces the
 # detector's UNMEASURED entry has these numbers to sanity-check itself against: a measured
 # per-actor figure BELOW its own weight floor is a measurement error, not a win.
 
@@ -232,8 +216,8 @@ def plan(stages: list[Stage], vram_per_gpu: float = DEFAULT_VRAM_GIB,
 def overcommitted(stages: list[Stage], vram_per_gpu: float) -> list[str]:
     """Stages whose requested actors do not fit the GPUs their fractions imply.
 
-    This is the failure the fraction hides: `num_gpus` says the placement is legal and
-    VRAM says it is not, and Ray schedules on the first of those.
+    `num_gpus` says the placement is legal and VRAM says it is not. Ray schedules on the
+    first.
     """
     bad = []
     for s in stages:
@@ -262,12 +246,9 @@ def coresident_footprint(stages: list[Stage], actors_each: int = 1) -> float:
 def check_coresidency(stages: list[Stage], vram_per_gpu: float) -> list[str]:
     """Can all four stages actually sit on one card together?
 
-    The per-stage checks above ask "how many of THIS stage fit", which is the wrong
-    question for this template: the thesis is that four DIFFERENT models share a GPU. The
-    first version of this file only checked stages independently and would have called an
-    L4 fine for a set whose one-actor-each footprint is 21.0 GiB and whose two-detector
-    variant is 30.6 GiB. Co-residency is the constraint; per-stage capacity is a side
-    condition.
+    The per-stage checks ask how many of one stage fit. This asks whether the set fits, which
+    is the binding constraint here. Checking stages independently calls an L4 fine for a set
+    whose one-actor-each footprint is 21.0 GiB and whose two-detector variant is 30.6 GiB.
     """
     problems = []
     one = coresident_footprint(stages, 1)
@@ -291,9 +272,8 @@ def check_coresidency(stages: list[Stage], vram_per_gpu: float) -> list[str]:
 def check_ordering(stages: list[Stage]) -> list[str]:
     """The relative-cost ordering the shape depends on.
 
-    This is the reason a substitute model set cannot be chosen casually: a detector that
-    is cheap relative to the embedders inverts the shape and teaches the wrong defaults. Direction only -- no magnitude is asserted,
-    because the magnitudes are this fleet's.
+    A detector that is cheap next to the embedders inverts the shape, and the packing defaults
+    stop transferring. Direction only; the magnitudes are this fleet's.
     """
     by_name = {s.name: s for s in stages}
     problems = []
@@ -344,9 +324,8 @@ def main(argv: list[str] | None = None) -> int:
     stages = STAGE_SETS[args.stages]
     verdicts = plan(stages, args.vram, UNMEASURED_BY_SET[args.stages])
     over = overcommitted(stages, args.vram)
-    # The ordering rule ("the object embedder is the VRAM hog") is a property of a LOADED
-    # batch. On the measured table it is one crop per frame, so the rule is not applicable
-    # rather than violated, and reporting it would train the reader to ignore the check.
+    # The ordering rule ("the object embedder is the VRAM hog") is a property of a loaded
+    # batch. The measured table is one crop per frame, so the rule does not apply there.
     order = [] if args.stages == "measured" else check_ordering(stages)
     cores = check_coresidency(stages, args.vram)
 

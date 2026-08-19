@@ -1,89 +1,50 @@
-# Resolved against the base image by running it, 2026-08-17, not by reading the tag.
+# Resolved by running the base image, 2026-08-17.
 #
-# TARGET IMAGE: `anyscale/ray:2.57.0-py312-cu129`, which is what `anyscale/templates` is on
-# and what its closest sibling `ray-data-batch-image-classification` uses. This file
-# previously targeted `2.56.0-py312-cu128`; both the Ray version and the CUDA version moved.
-#
-# What the target image ships, MEASURED on a job declaring no requirements at all:
+# TARGET IMAGE: anyscale/ray:2.57.0-py312-cu129, the version anyscale/templates is on. What it
+# ships, measured on a job declaring no requirements at all:
 #
 #   torch  ABSENT      numpy    2.2.6      pandas 2.3.3
 #   torchvision ABSENT pyarrow  23.0.1     ray    2.57.0     Pillow 11.3.0
 #   transformers ABSENT
 #
-# So the three big ones still have to be installed. `-cu129` is the CUDA runtime, not
-# PyTorch -- an earlier version of this file said torch was provided and told you not to pin
-# it, which is the mistake a probe job caught. And transformers declares `torch>=2.5` under
-# its `torch` EXTRA rather than as a core dependency, so installing transformers alone
-# resolves cleanly and leaves the image torch-less. Both halves are why these pins are here.
+# So the three below have to be installed. `-cu129` is the CUDA runtime, not PyTorch. And
+# transformers declares `torch>=2.5` under its `torch` extra, not as a core dependency, so
+# installing transformers alone resolves cleanly and leaves the image torch-less.
 #
-# MEASURED on the target image: this file installs clean, exit 0. Installed straight from
-# PyPI it gives `torch 2.9.1+cu128` -- PyPI's default 2.9.1 build is a cu128 one -- and that
-# runs fine on the newer runtime.
+# TORCH'S CUDA COMES FROM THE DEPSET INDEX, NOT FROM PyPI. python_depset.lock is compiled with
+# `--index https://download.pytorch.org/whl/cu129` (dependencies/template.depsets.yaml) and
+# holds the cu129 builds of both, matching the image. Installed straight from PyPI these same
+# two lines give PyPI's default build, which is cu128 for this version and also runs on the
+# newer runtime. templates/tensor_parallel_dtensor pins this identical pair on this identical
+# image and locks the same two wheels.
 #
-# THAT IS NOT WHAT SHIPS, and the difference is the depset. What a user and the CI test both
-# install is `python_depset.lock`, compiled with
-# `--index https://download.pytorch.org/whl/cu129` (dependencies/template.depsets.yaml), so
-# the resolved wheel is the **cu129** build of the same version and the CUDA tracks the image
-# instead of tracking whatever PyPI defaults to that month. The lock beside this file holds
-# `torch==2.9.1+cu129` and `torchvision==0.24.1+cu129`, compiled from these two lines and
-# nothing else. The precedent is exact: `templates/tensor_parallel_dtensor` pins this
-# identical pair on this identical image and locks the same two wheels.
-#
-# An earlier version of this note said no cu129 wheel exists for 2.9.1 and that no template
-# in the repo reaches for a torch index. Both were wrong, and wrong in the same way as the
-# base-image claims above: measured on one resolution path and written up as a fact about all
-# of them. `download.pytorch.org/whl/cu129` publishes 2.9.1, and 27 depset entries pass a
-# `--index` for torch. If you bump either pin, check that index for a wheel first -- below
-# its floor uv falls back to PyPI, the wheel silently loses its CUDA tag, and the lock still
-# compiles.
+# Check that index for a wheel before bumping either pin. Below its floor uv falls back to
+# PyPI, the wheel loses its CUDA tag, and the lock still compiles.
 torch==2.9.1
 torchvision==0.24.1
 
-# SAM 3 needs transformers 5.x, and that is the one hard version constraint here.
-# `facebook/sam3`'s config.json declares `transformers_version: 5.0.0.dev0`, and
-# `src/transformers/models/sam3/` first appears in the v5.0.0 tag (checked against the tags).
-# So 5.0.0 is the floor and 5.15.0 is the pin -- the newest stable, and the repo's other
-# templates pin an exact version rather than a range. 5.15.0 resolves against the image's
-# numpy 2.2.6 -- transformers only asks for `numpy>=1.17`, so it is indifferent, which is the
-# other half of why numpy needs no pin below -- and the install exits 0.
+# SAM 3 needs transformers 5.x. `facebook/sam3`'s config.json declares
+# `transformers_version: 5.0.0.dev0`, and `src/transformers/models/sam3/` first appears in the
+# v5.0.0 tag. So 5.0.0 is the floor and 5.15.0 is the pin, the newest stable. It resolves
+# against the image's numpy 2.2.6, since transformers asks only for `numpy>=1.17`.
 transformers==5.15.0
 
-# numpy and pyarrow are DELIBERATELY NOT PINNED, and this used to say the opposite.
+# DO NOT PIN numpy OR pyarrow HERE. The image ships numpy 2.2.6 and pyarrow 23.0.1, and a pin
+# at an older version downgrades Ray's own stack. Nothing in this file drags either one:
+# transformers asks for `numpy>=1.17` and torch 2.9.1 accepts numpy 2.x.
 #
-# An earlier version pinned `numpy==1.26.4` and `pyarrow==19.0.1` "so they reinstall as
-# no-ops rather than being dragged to the numpy-2 stack by a transitive resolve". That was
-# true of `anyscale/ray:2.56.0-py312-cu128`. It is FALSE of the image this template now
-# targets: `2.57.0-py312-cu129` ships **numpy 2.2.6 and pyarrow 23.0.1**, measured on a job
-# that declared no requirements at all. Against that image those two pins are not no-ops --
-# they are a DOWNGRADE of Ray's own stack from numpy 2 to numpy 1, which is precisely the
-# ABI risk the old comment was written to avoid, pointing the other way.
-#
-# Neither dependency needs a pin here: transformers asks for `numpy>=1.17` and torch 2.9.1
-# accepts numpy 2.x, so nothing in this file drags either one. Leave them to the image.
-#
-# The general form, since this file has now been wrong about the base image twice: a pin
-# whose justification is "this matches what the image ships" is a claim with an expiry date,
-# and it expires silently when the image moves. Re-measure on a job with NO `requirements:`
-# key -- with one, the platform installs your pins before the entrypoint runs and you
-# measure your own treatment.
+# A pin justified by "this matches what the image ships" expires silently when the image moves.
+# Re-measure on a job with no `requirements:` key; with one, the platform installs your pins
+# before the entrypoint runs and you measure your own treatment.
 
-# NOT here, deliberately:
+# NOT here:
 #   accelerate    -- only needed for `device_map`, and this pipeline calls `.to(device)`.
 #   torchmetrics  -- an earlier README and NOTICE credited it; the metrics stage computes
 #                    gradient-energy sharpness in plain torch, in one kernel.
 #
-# torchvision is NOT optional even though transformers 5.x ships PIL fallbacks for image
-# processors. The evidence is the SigLIP2 backend swap, and it is a correctness question
-# rather than a speed one: WITHOUT torchvision the processor resolved to
-# `SiglipImageProcessorPil`, WITH it to `SiglipImageProcessor`. The swap is silent, so a
-# pipeline that "works" without torchvision preprocesses differently than the one you
-# measured.
+# Keep torchvision even though transformers 5.x ships PIL fallbacks for image processors.
+# Without it the SigLIP2 processor resolves to `SiglipImageProcessorPil`; with it, to
+# `SiglipImageProcessor`. The swap is silent and changes preprocessing.
 #
-# Two corrections to an earlier version of this note, both from running it on the card:
-#   - it named `DINOv3ViTImageProcessorFast` as the class that forces torchvision. That is
-#     not the class `AutoImageProcessor` selects -- with torch AND torchvision installed it
-#     resolves to `DINOv3ViTImageProcessor`, the non-Fast one.
-#   - it cited "DINOv3 raised without torchvision" as proof torchvision was required. That
-#     probe had no torch installed EITHER, so it cannot separate the two, and the error it
-#     raised named PyTorch first. The SigLIP2 swap above is the half that is actually
-#     controlled, so it is the half quoted here.
+# With torch and torchvision installed, `AutoImageProcessor` selects `DINOv3ViTImageProcessor`,
+# not the Fast variant.
