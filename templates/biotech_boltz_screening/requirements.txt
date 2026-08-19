@@ -1,4 +1,3 @@
-ray[data]==2.57.0
 boltz==2.2.1
 # boltz only asks for torch>=2.2; newest floats past the cu128 image and breaks the hashed lock.
 torch==2.7.0
