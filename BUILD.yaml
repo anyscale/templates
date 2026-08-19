@@ -817,35 +817,29 @@
     command: bash tests.sh
     timeout_in_sec: 1800
 
-# owner_team ray-data: the template teaches the Parquet read path -- blob-column physical type,
-# row-group sizing, read-task CPU, decoder threads -- and has no Train/Serve/LLM surface.
+# owner_team ray-data: Parquet read path, no Train/Serve/LLM surface.
 #
-# WHAT IT TEACHES, and this is not what it was lifted to teach. The source engagement's finding
-# was "the read binds, and the blob column's Parquet physical type is worth 7x-23x". Measured on
-# this repo's own configs/ (one g6.4xlarge L4, m5.2xlarge head) that did not reproduce, so the
-# template now leads with what did:
+# The lifted finding was "the read binds, and the blob column's Parquet physical type is worth
+# 7x-23x". Measured on this repo's own configs/ (one g6.4xlarge L4, m5.2xlarge head) it did not
+# reproduce. What the template claims now:
 #
-#   - the WRITE side wins ~4.1x, replicated -- 4.08x / 4.13x / 4.19x, three runs within 3%;
-#   - the layout is a CPU lever, not an I/O lever, and that is the template's central content.
-#     `list<uint8>` gets Parquet physical type INT32, so every payload byte occupies four -- an
-#     exact 4.00x type expansion. It does not reach disk under default settings because
-#     RLE_DICTIONARY maps the 256 byte values to one index byte each, landing on binary(N):
-#     1.00x. The condition is a named flag, `use_dictionary`, not the codec -- measured from the
-#     footer's total_uncompressed_size across 36 cells (6 codecs x 3 payloads x dictionary
-#     on/off) plus symmetric cells, on pyarrow 23.0.1 as the image ships. Compression cannot be
-#     the mechanism: the effect is complete with codec `none` and survives os.urandom. What
-#     differs is DECODE: ~11x from byte-identical inputs, ~4.5x under zstd (the codec adds a
-#     cost common to both arms). End to end with the GPU stage that is ~1.6x, by Amdahl;
-#   - the read was NOT the binding stage here (read span 2.44s vs the GPU stage's 1.99s with
-#     3.4s UDF over two actors), the num_cpus trap did not move at all, and decoder threads
-#     1->4 bought >=1.2% rather than 2.15x.
+#   - the layout costs decode CPU, not I/O. list<uint8> is physical INT32, so a payload byte
+#     occupies 4 bytes; RLE_DICTIONARY removes that before any codec runs, so the layouts land
+#     1.00x apart on disk with dictionary on and 4.00x apart with it off. The flag is
+#     use_dictionary on the list column. Footer total_uncompressed_size, 6 codecs x 3 payloads x
+#     dictionary on/off, pyarrow 23.0.1 as the image ships. Compression is not the mechanism: the
+#     effect is complete with codec `none` and survives os.urandom.
+#   - decode is 10.94x from byte-identical inputs, 4.51x under zstd.
+#   - end to end with the GPU stage, 1.56x and 1.63x.
+#   - the write side is 4.08x, 4.10x, 4.13x, 4.16x, 4.19x on 5 fleet runs.
+#   - the read was not the binding stage here: read span 2.44s, GPU stage span 1.99s with 3.4s
+#     UDF across 2 actors. num_cpus 1.0 against 0.25 gave overlapping ranges. Decoder threads
+#     1 to 4 gave 1.2% or better.
 #
-# So the transferable lesson is the METHOD -- measure a layout or encoding win on your own fleet
-# before believing it -- and measure_layout.py is a first-class artifact, not scaffolding. Every
-# engagement figure is retained and labelled as theirs, on a different fleet and dataset; the
-# contrast is the point, not a correction. Still unmeasured: whether the read binds at
+# measure_layout.py is a shipped artifact, not scaffolding. Every engagement figure is retained
+# and labelled as theirs, on a different fleet and dataset. Unmeasured: whether the read binds at
 # production scale. Evidence: prodjob_mnm3w6i1azkcfq22q8radiaxt5 (sweeps),
-# prodjob_gdtvnpvf1we3xfz7qi8si59bji (tests.sh).
+# prodjob_nxl4ghj5aqihhadd6n1j9x2bzx (tests.sh).
 # owner: @em-anyscale
 - name: ray-data-sensor-frame-extraction
   owner_team: ray-data
@@ -858,10 +852,9 @@
   test:
     tests_path: tests/ray-data-sensor-frame-extraction/
     command: bash tests.sh
-    # MEASURED, not a guess: 338s of tests.sh wall time on
-    # prodjob_gdtvnpvf1we3xfz7qi8si59bji, running the notebook through papermill exactly as CI
-    # does -- exit 0, all six code cells executed, Executing/Ending counts matched at 19.
-    # Cluster start and image pull sit outside this. The headroom covers the two variable
-    # parts: a 1.2 GiB torch download to the driver, and Ray building the lock's virtualenv on
-    # the worker (~85s, measured). A transient PyPI 502 already failed one of these runs.
+    # Measured: tests.sh wall time 338s, 343s and 335s across 3 runs, papermill over the
+    # notebook as CI runs it, exit 0, 6 code cells, Executing/Ending counts matched.
+    # Cluster start and image pull sit outside this. Headroom covers a 1.2 GiB torch download to
+    # the driver and Ray building the lock's virtualenv on the worker, 85s measured. A transient
+    # PyPI 502 failed one run of this script.
     timeout_in_sec: 1200

@@ -19,7 +19,7 @@ neighbouring ray-data-multimodel-frame-enrichment template's measure_packing.py:
 The verdict is a sentence, not a boolean, because UNSUPPORTED and OVERLAP are not "the lever
 does not work" -- they say these runs cannot answer the question.
 
-One confound is handled by default rather than left to the reader. The first pipeline run on a
+One confound is handled by default. The first pipeline run on a
 fresh cluster also pays for Ray building the runtime_env virtualenv from python_depset.lock on
 the worker: measured on a g6.4xlarge, 104.4s against 8.3s for the next run of the same arm. That
 lands entirely in whichever arm happens to go first, and on the first attempt it made the
@@ -46,7 +46,7 @@ RATE_RE = re.compile(r"=\s*([0-9.]+) rows/s")
 # An arm is (name, fixture subdirectory, environment overrides for pipeline.py). pipeline.py
 # reads every lever from the environment at import, so a subprocess per run is what makes a
 # sweep possible at all -- and it is also how the notebook and tests.sh invoke it, so the
-# harness measures the shipped path rather than a private one.
+# harness measures the shipped path.
 SWEEPS: dict[str, list[tuple[str, str, dict]]] = {
     # The headline claim: the Parquet physical type of the blob column.
     "layout": [
@@ -71,7 +71,7 @@ SWEEPS: dict[str, list[tuple[str, str, dict]]] = {
 
 # ------------------------------------------------------------------------------------------
 # The ON-DISK grid. No GPU, no cluster, no Ray -- bytes at rest, so it runs anywhere pyarrow
-# does. Decomposed from the Parquet FOOTER rather than from `du`: every row group's column
+# does. Decomposed from the Parquet FOOTER, not from `du`: every row group's column
 # chunk carries total_uncompressed_size (post-ENCODING, pre-COMPRESSION) and
 # total_compressed_size, which separates the two mechanisms instead of inferring from one
 # whole-file number. Units are explicit: MB = 1e6, MiB = 2**20.
@@ -79,8 +79,7 @@ SWEEPS: dict[str, list[tuple[str, str, dict]]] = {
 # pyarrow 23.0.1 accepts these names and rejects two obvious guesses: "uncompressed" is not
 # a name (use "none", which the footer then reports as UNCOMPRESSED), and "lz4_raw" -- a
 # genuinely distinct Parquet codec, and the one to prefer for interop -- is NOT accepted by
-# this pyarrow's writer at all. So this measures LZ4, and says so rather than implying
-# otherwise. Verified by trying every name.
+# this pyarrow's writer at all. This measures LZ4. Verified by trying every name.
 CODECS = ["none", "snappy", "gzip", "brotli", "lz4", "zstd"]
 PAYLOADS = ["sensor", "quantized", "random"]
 ZSTD_LEVELS = [1, 3, 9, 22]
@@ -270,7 +269,7 @@ def main(argv: list[str] | None = None) -> int:
                          "the FIRST run of a sweep also pays for Ray building the runtime_env "
                          "virtualenv from python_depset.lock on the worker, measured at ~95s "
                          "against ~8s for a warm run. Discarding it is declared here, up front, "
-                         "rather than chosen after seeing which arm it landed in.")
+                         "and not chosen after seeing which arm it landed in.")
     ap.add_argument("--out", default=None, help="write the per-run records here as JSON")
     args = ap.parse_args(argv)
 

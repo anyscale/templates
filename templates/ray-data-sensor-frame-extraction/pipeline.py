@@ -36,7 +36,7 @@ READ_CONCURRENCY = int(os.environ.get("READ_CONCURRENCY", "0")) or None
 #   ONE-THREAD DECODER. On thin rows and many small files that is fine and buys
 #   concurrency. On multi-megabyte blob columns, decode is the work.
 # Flip to <1.0 only if: rows are thin, files are many, and ds.stats() shows the read
-# stage is already running wider than the core count.
+# stage is running wider than the core count.
 READ_NUM_CPUS = float(os.environ.get("READ_NUM_CPUS", "1.0"))
 
 # DECODE THREADS, scoped to the read operator so it does not resize every actor in the
@@ -59,15 +59,15 @@ GPU_BATCH_SIZE = int(os.environ.get("GPU_BATCH_SIZE", "8"))
 # job config's env_vars, where it is a silent no-op. The compute config's own
 # object-store-memory field takes precedence over the environment variable.
 # 0.6 held peak 69.4 GiB with zero spill on the source fleet. Lower it if workers are
-# being KILLED rather than spilling: prefetched batches live in the heap, and an
-# oversized object store is what starves them.
+# being KILLED and not spilling. Prefetched batches live in the heap, and an oversized
+# object store starves them.
 
 OUT_HEIGHT = int(os.environ.get("OUT_HEIGHT", "720"))
 
 # DEPENDENCY DELIVERY. The lock reaches the driver through the install line in the README
-# notebook (deliberately not repeated here -- check-dep-delivery's lock-installed check greps
-# for that line, and a copy of it in a comment would satisfy the check without installing
-# anything); it reaches the map_batches ACTORS only
+# notebook. Do not repeat that line here: check-dep-delivery's lock-installed check greps for
+# it, and a copy in a comment satisfies the check without installing anything. It reaches the
+# map_batches ACTORS only
 # through ray.init(runtime_env=...) below. Install on the driver alone and the actors run
 # whatever the image shipped -- which is no torch -- and that passes in a workspace, because a
 # workspace tracks a plain pip install and propagates it, then fails as a standalone Job or
@@ -117,8 +117,8 @@ def read_geometry(input_path: str) -> tuple[int, int, int]:
 class ISP:
     """The GPU transform stage: demosaic-shaped work plus a downsample.
 
-    Deliberately arithmetic-light. On this workload shape the GPU stage is NOT the
-    bottleneck, and a template whose GPU stage binds would disprove its own thesis.
+    Arithmetic-light. Measured on one L4, the GPU stage span was 1.99s against the read's
+    2.44s, so it is closer to the constraint at CI scale.
     """
 
     def __init__(self, width: int, height: int, out_height: int = OUT_HEIGHT):
@@ -200,7 +200,7 @@ def main() -> int:
             f"{LOCK_PATH} not found, so the map_batches actors would run whatever the image "
             "ships -- and this template's image ships no torch. Compile the lock with "
             "./scripts/depsets/update_deps.sh, or set ALLOW_IMAGE_DEPS=1 if you have "
-            "deliberately provisioned torch another way."
+            "provisioned torch another way."
         )
     ray.init(ignore_reinit_error=True, runtime_env=runtime_env)
     ds = build(args.input)
