@@ -830,8 +830,8 @@
 #     dictionary on/off, pyarrow 23.0.1 as the image ships. Compression is not the mechanism: the
 #     effect is complete with codec `none` and survives os.urandom.
 #   - decode is 10.94x from byte-identical inputs, 4.51x under zstd.
-#   - end to end with the GPU stage, 1.56x and 1.63x.
-#   - the write side is 4.08x, 4.10x, 4.13x, 4.16x, 4.19x on 5 fleet runs.
+#   - end to end with the GPU stage, 1.56x, 1.62x and 1.63x.
+#   - the write side is 4.08x to 4.19x on 6 fleet runs, spread 2.7%.
 #   - the read was not the binding stage here: read span 2.44s, GPU stage span 1.99s with 3.4s
 #     UDF across 2 actors. num_cpus 1.0 against 0.25 gave overlapping ranges. Decoder threads
 #     1 to 4 gave 1.2% or better.
@@ -839,7 +839,7 @@
 # measure_layout.py is a shipped artifact, not scaffolding. Every engagement figure is retained
 # and labelled as theirs, on a different fleet and dataset. Unmeasured: whether the read binds at
 # production scale. Evidence: prodjob_mnm3w6i1azkcfq22q8radiaxt5 (sweeps),
-# prodjob_nxl4ghj5aqihhadd6n1j9x2bzx (tests.sh).
+# prodjob_a3frvx4lnihv86wtbrz1gsuzy7 (tests.sh at this commit's parent, the prose pass).
 # owner: @em-anyscale
 - name: ray-data-sensor-frame-extraction
   owner_team: ray-data
@@ -852,8 +852,9 @@
   test:
     tests_path: tests/ray-data-sensor-frame-extraction/
     command: bash tests.sh
-    # Measured: tests.sh wall time 338s, 343s and 335s across 3 runs, papermill over the
-    # notebook as CI runs it, exit 0, 6 code cells, Executing/Ending counts matched.
+    # Measured: tests.sh wall time 335s, 338s, 343s and 348s across 4 runs, papermill over the
+    # notebook as CI runs it, exit 0, 6 code cells, Executing/Ending counts matched. 1200 leaves
+    # 3.4x headroom over the slowest.
     # Cluster start and image pull sit outside this. Headroom covers a 1.2 GiB torch download to
     # the driver and Ray building the lock's virtualenv on the worker, 85s measured. A transient
     # PyPI 502 failed one run of this script.
