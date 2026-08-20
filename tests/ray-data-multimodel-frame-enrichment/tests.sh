@@ -21,6 +21,11 @@
 #     metrics stage, at the fractional GPU reservations the template ships. This is also the
 #     only path that shows the runtime env reaching the actors.
 #
+# Run end to end on a fleet at 2026-08-19, prodjob_7vlhzuirl3p8wt7jp2tcnyfhuk, one g6.4xlarge:
+# 228 s, exit 0, 27/27 papermill cells, and `ungated pair: 24 rows, image embedding width
+# {768}, all sharpness finite`. The actors ran on the worker (10.0.40.254), not the head, so
+# the 768-wide embeddings could only come from the lock arriving by runtime env.
+#
 # WHAT IT DOES NOT COVER
 #   - four models on one GPU. The gated pair is absent. That claim rests on the arithmetic
 #     above plus the reader's own run.
