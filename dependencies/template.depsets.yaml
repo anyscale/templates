@@ -622,3 +622,18 @@ depsets:
       - ray2570_py312
     pre_hooks:
       - scripts/depsets/seed-image-freeze.sh dependencies/images/ray-${RAY_VERSION}-py312.freeze.txt templates/ecommerce_end_to_end/python_depset.lock
+
+  - name: vla_fine_tuning_depset_${RAY_VERSION}_${PYTHON_VERSION}
+    operation: compile
+    requirements:
+      - templates/vla-fine-tuning/requirements.txt
+    output: templates/vla-fine-tuning/python_depset.lock
+    include_setuptools: true
+    append_flags:
+      - --python-version=${PYTHON_VERSION}
+      - --python-platform=linux
+      - --unsafe-package ray
+    build_arg_sets:
+      - ray2570_py312
+    pre_hooks:
+      - scripts/depsets/seed-image-freeze.sh dependencies/images/ray-${RAY_VERSION}-py312-cu129.freeze.txt templates/vla-fine-tuning/python_depset.lock

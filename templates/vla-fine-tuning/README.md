@@ -73,7 +73,7 @@ git clone https://github.com/anyscale/templates && cd templates/templates/vla-fi
 | `vla.py` | Job script — same pipeline, submittable with `python vla.py` |
 | `util.py` | Training utilities — model loading, checkpointing, collation, training step helpers |
 | `lerobot_datasource.py` | Custom Ray Data datasource for LeRobot v3 datasets |
-| `requirements.lock` | Worker dependency set, exported from `uv.lock` — regenerate with the command in its header |
+| `python_depset.lock` | Fully-pinned closure, compiled by `scripts/depsets/update_deps.sh` |
 
 ## 0. Setup
 
@@ -94,7 +94,7 @@ Google requires you to **accept the model license** before the weights can be do
 
 ```bash
 %%bash
-uv pip install -r requirements.lock --system --no-deps --no-cache-dir --index-strategy unsafe-best-match
+uv pip install -r python_depset.lock --system --no-deps --no-cache-dir --index-strategy unsafe-best-match
 ```
 
 ## GPU Requirements
@@ -165,7 +165,7 @@ import ray
 
 ray.init(
     runtime_env={
-        "pip": os.path.join(os.getcwd(), "requirements.lock"),
+        "pip": os.path.join(os.getcwd(), "python_depset.lock"),
         "working_dir": ".",
         "env_vars": {"HF_TOKEN": HF_TOKEN},
     },
