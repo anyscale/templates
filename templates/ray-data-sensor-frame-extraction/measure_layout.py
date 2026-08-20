@@ -212,6 +212,121 @@ instead of assuming it does.""")
     return rows
 
 
+# ------------------------------------------------------------------------------------------
+# Storage sweep: layout x dictionary x mount, cold and warm. Needs a cluster, because
+# /mnt/cluster_storage only exists on one. Codec is `none` throughout: that is the only
+# configuration where list<uint8> occupies 4x the bytes, so it is the only place an I/O
+# component can appear at all.
+#
+# Cold is real. fsync, then posix_fadvise(POSIX_FADV_DONTNEED) drops that file's clean pages
+# with no root and no need for a fixture larger than RAM. Linux only.
+#
+# Runs inside a Ray task requesting CPU so it lands on a worker. A head node pinned to
+# CPU: 0, which is this repo's policy, cannot take it, and the head's local disk and cgroup
+# CPU limit are not what the pipeline's read tasks see.
+# ------------------------------------------------------------------------------------------
+STORAGE_MOUNTS = ["/mnt/local_storage", "/mnt/cluster_storage"]
+
+
+def _fadvise_dontneed(path: Path) -> None:
+    fd = os.open(str(path), os.O_RDONLY)
+    try:
+        os.posix_fadvise(fd, 0, 0, os.POSIX_FADV_DONTNEED)
+    finally:
+        os.close(fd)
+
+
+def storage_sweep(frames: int, runs: int) -> list:
+    """Measure both layouts from each mount, cold and warm. Returns per-arm records."""
+    import ray
+
+    @ray.remote(num_cpus=1)
+    def _arm(frames: int, runs: int, mounts: list) -> dict:
+        import numpy as np
+        import pyarrow as pa
+        import pyarrow.parquet as pq
+
+        W, H, BPP = 3848, 2168, 2
+        n = W * H * BPP
+        rng = np.random.default_rng(0)
+        base = np.linspace(0, 4095, n, dtype=np.uint16)
+        noise = rng.integers(0, 64, size=n, dtype=np.uint16)
+        payload = ((base + noise) % 4096).astype(np.uint16).tobytes()[:n]
+        logical = frames * n
+        res = {"host": os.uname().nodename, "nproc": os.cpu_count(), "arms": []}
+
+        for mnt in mounts:
+            if not Path(mnt).is_dir():
+                continue
+            for use_dict in (True, False):
+                for layout in ("fixed_binary", "list_uint8"):
+                    d = Path(mnt) / f"sweep-{'dict' if use_dict else 'nodict'}"
+                    d.mkdir(parents=True, exist_ok=True)
+                    f = d / f"{layout}.parquet"
+                    if layout == "fixed_binary":
+                        tbl = pa.table({"data": pa.array([payload] * frames,
+                                                         type=pa.binary(n))})
+                        flag = False
+                    else:
+                        tbl = pa.table({"data": pa.array([list(payload)] * frames,
+                                                         type=pa.list_(pa.uint8()))})
+                        flag = use_dict
+                    pq.write_table(tbl, str(f), compression="none",
+                                   use_dictionary=flag, row_group_size=1)
+                    del tbl
+                    on_disk = f.stat().st_size
+
+                    def timed():
+                        t0 = time.perf_counter()
+                        tb = pq.read_table(str(f))
+                        dt = time.perf_counter() - t0
+                        del tb
+                        return dt
+
+                    cold = []
+                    for _ in range(runs):
+                        _fadvise_dontneed(f)
+                        cold.append(timed())
+                    timed()                      # declared warmup for the warm series
+                    warm = [timed() for _ in range(runs)]
+                    res["arms"].append({
+                        "mount": mnt, "list_dictionary": use_dict, "layout": layout,
+                        "on_disk_bytes": on_disk, "logical_bytes": logical,
+                        "cold_MBps": [logical / s / 1e6 for s in cold],
+                        "warm_MBps": [logical / s / 1e6 for s in warm],
+                    })
+                    f.unlink()
+        return res
+
+    ray.init(ignore_reinit_error=True)
+    res = ray.get(_arm.remote(frames, runs, STORAGE_MOUNTS))
+    print(f"worker {res['host']}, nproc {res['nproc']}, {frames} frames\n")
+    hdr = (f"{'mount':22s} {'dict':5s} {'layout':13s} {'on disk MB':>11s} "
+           f"{'cold MB/s':>19s} {'warm MB/s':>19s}")
+    print(hdr); print("-" * len(hdr))
+    for a in res["arms"]:
+        print(f"{a['mount']:22s} {str(a['list_dictionary']):5s} {a['layout']:13s} "
+              f"{a['on_disk_bytes']/1e6:11.1f} "
+              f"{min(a['cold_MBps']):8.1f}-{max(a['cold_MBps']):<10.1f} "
+              f"{min(a['warm_MBps']):8.1f}-{max(a['warm_MBps']):<10.1f}")
+    print("\nratio fixed_binary over list<uint8>, on logical bytes:")
+    for mnt in STORAGE_MOUNTS:
+        for ud in (True, False):
+            sel = {a["layout"]: a for a in res["arms"]
+                   if a["mount"] == mnt and a["list_dictionary"] == ud}
+            if len(sel) != 2:
+                continue
+            fb, lu = sel["fixed_binary"], sel["list_uint8"]
+            for label in ("cold_MBps", "warm_MBps"):
+                lo = min(fb[label]) / max(lu[label])
+                hi = max(fb[label]) / min(lu[label])
+                sep = "SEPARABLE" if min(fb[label]) > max(lu[label]) else "OVERLAP"
+                print(f"  {mnt:22s} dict={str(ud):5s} bytes "
+                      f"{lu['on_disk_bytes']/fb['on_disk_bytes']:4.2f}x "
+                      f"{label[:4]:5s} {lo:6.2f}-{hi:<6.2f}x {sep}")
+    return res["arms"]
+
+
 def one_run(input_dir: Path, env_overrides: dict) -> tuple[float, float, str]:
     """One pipeline.py run. Returns (rows_per_s, wall_seconds, stdout)."""
     env = dict(os.environ)
@@ -257,12 +372,16 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--input", required=True,
                     help="fixture root containing fixed_binary/ and list_uint8/. For --sweep "
                          "on-disk this is the root the grid WRITES under.")
+    ap.add_argument("--frames", type=int, default=12,
+                    help="--sweep storage: frames per layout per arm")
     ap.add_argument("--width", type=int, default=3848, help="--sweep on-disk: frame width")
     ap.add_argument("--height", type=int, default=2168, help="--sweep on-disk: frame height")
     ap.add_argument("--bpp", type=int, default=2, help="--sweep on-disk: bytes per pixel")
-    ap.add_argument("--sweep", default="layout", choices=sorted(SWEEPS) + ["on-disk"],
-                    help="which lever to measure. `on-disk` is the codec x payload grid for "
-                         "bytes at rest -- no GPU, no cluster, no Ray.")
+    ap.add_argument("--sweep", default="layout",
+                    choices=sorted(SWEEPS) + ["on-disk", "storage"],
+                    help="which lever to measure. `on-disk` is the codec x payload x dictionary "
+                         "grid for bytes at rest, no GPU and no cluster. `storage` is layout x "
+                         "dictionary x mount, cold and warm, and needs a cluster.")
     ap.add_argument("--runs", type=int, default=3, help="timed runs per arm; >=2 or nothing is separable")
     ap.add_argument("--warmup", type=int, default=1,
                     help="untimed runs per arm before timing starts. Default 1 and you want it: "
@@ -272,6 +391,19 @@ def main(argv: list[str] | None = None) -> int:
                          "and not chosen after seeing which arm it landed in.")
     ap.add_argument("--out", default=None, help="write the per-run records here as JSON")
     args = ap.parse_args(argv)
+
+    if args.sweep == "storage":
+        if args.runs < 2:
+            raise SystemExit(
+                "--runs must be >= 2 for --sweep storage. One run per arm has no observed "
+                "spread, so a cold-against-warm or layout-against-layout delta from it is "
+                "unfalsifiable."
+            )
+        rows = storage_sweep(args.frames, args.runs)
+        if args.out:
+            Path(args.out).write_text(json.dumps({"sweep": "storage", "arms": rows}, indent=2) + "\n")
+            print(f"\nwrote {args.out}")
+        return 0
 
     if args.sweep == "on-disk":
         rows = on_disk_grid(Path(args.input), args.width, args.height, args.bpp)

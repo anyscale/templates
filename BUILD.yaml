@@ -835,6 +835,13 @@
 #   - the read was not the binding stage here: read span 2.44s, GPU stage span 1.99s with 3.4s
 #     UDF across 2 actors. num_cpus 1.0 against 0.25 gave overlapping ranges. Decoder threads
 #     1 to 4 gave 1.2% or better.
+#   - storage does not turn it into an I/O lever, measured on the worker across
+#     /mnt/local_storage and /mnt/cluster_storage, cold and warm, codec none. Slow storage
+#     SHRINKS the advantage: 32x warm on local disk down to 3.2x cold on the shared mount,
+#     because the mount caps the fast layout while list<uint8> is already CPU-bound at
+#     65-128 MB/s of logical payload in every arm. Dictionary off adds a real but small I/O
+#     component, 3.2x to 4.6x cold on the shared mount. Mount cold throughput: local
+#     1906.6 MB/s, cluster_storage 138.2 MB/s.
 #
 # measure_layout.py is a shipped artifact, not scaffolding. Every engagement figure is retained
 # and labelled as theirs, on a different fleet and dataset. Unmeasured: whether the read binds at
