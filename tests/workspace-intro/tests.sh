@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-pip install -q uv pip install -q --system emoji
-papermill nbconvert==7.16.6 ipykernel
+uv pip install -q --system emoji
+pip install -q papermill nbconvert==7.16.6 ipykernel
 
 # The notebook runs `my_repo/my_app.py` but never writes it — stub a real script.
 mkdir -p my_repo
