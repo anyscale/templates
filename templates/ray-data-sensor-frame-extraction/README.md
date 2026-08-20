@@ -12,7 +12,7 @@ and writes them back. It ships the same payload in two Parquet layouts and measu
 
 The layout choice costs decode CPU, not I/O. On disk the two layouts are within 1% of each other
 with dictionary encoding on, and 4.00x apart with it off. Arrow decodes `binary(N)` 10.94x faster
-than `list<uint8>` from byte-identical inputs, 4.51x under zstd, and 1.56x to 1.64x end to end
+than `list<uint8>` from byte-identical inputs, 4.51x under zstd, and 1.56x to 1.65x end to end
 once the GPU stage is attached.
 
 `measure_layout.py` measures bytes at rest and decode separately. Point it at your own Parquet.
@@ -29,8 +29,8 @@ figures are macOS arm64, pyarrow 23.0.1, warm page cache.
 | Layout, bytes at rest, dictionary off | 4.00x | same grid, every dictionary-off cell |
 | Layout, decode CPU, no codec | 10.94x. 12,936-13,783 MB/s against 1,065-1,384 | `pq.read_table`, 3 timed runs + warmup per arm |
 | Layout, decode CPU, zstd | 4.51x. 6,355-9,356 MB/s against 1,102-1,503 | same |
-| Layout, write side | 4.08x to 4.19x on 7 fleet runs, spread 2.7% | `make_fixture.py` timings |
-| Layout, end to end with the GPU stage | 1.56x to 1.64x on 4 fleet runs. 15.92-16.81 rows/s against 10.07-10.21 | fleet, 3 timed runs per arm |
+| Layout, write side | 4.07x to 4.19x on 8 fleet runs, spread 2.9% | `make_fixture.py` timings |
+| Layout, end to end with the GPU stage | 1.56x to 1.65x on 5 fleet runs. 15.92-16.81 rows/s against 9.94-10.21 | fleet, 3 timed runs per arm |
 | Read task `num_cpus` 1.0 against 0.25 | no measurable difference. 16.67-17.00 against 16.24-16.87 rows/s, ranges overlap | fleet |
 | Decoder threads 1 to 4 | 1.2% or better. 4 to 8 not separable at 2 runs per arm | fleet |
 | Row-group size 1, 4, 16 rows | no effect on the on-disk gap | footer, zstd |
@@ -135,7 +135,7 @@ This template comes from a customer engagement whose data is private. The pipeli
 levers are the engagement's. The fixture is synthetic.
 
 **Measured on the fleet this template ships.** The table above, plus notebook execution times of
-335 s to 348 s across 5 runs through papermill, all 6 code cells, no errors.
+335 s to 354 s across 6 runs through papermill, all 6 code cells, no errors.
 
 **Measured on a developer laptop.** The decode table, pyarrow 23.0.1, macOS arm64, warm cache. Also
 the write-side ratio during development, which ranged 2.1x to 7.0x across 5 runs, twice at the same
@@ -283,8 +283,8 @@ print("\nClose numbers mean the layout buys no I/O and any win comes from decode
 ### Write side
 
 Compression does not help the writer. It encodes every per-byte value before the codec runs, so the
-write-side gap holds where the read-side on-disk gap does not. Measured 4.08x to 4.19x across 7
-fleet runs, spread 2.7%.
+write-side gap holds where the read-side on-disk gap does not. Measured 4.07x to 4.19x across 8
+fleet runs, spread 2.9%.
 
 The recommended layout is cheaper for the producing team too.
 
@@ -349,11 +349,11 @@ subprocess.run(
 Same `pipeline.py`, same payload bytes, two layouts. Only the input path changes.
 
 One run per arm gives the sign, not a magnitude. On this fleet the direction held every run, at
-1.56x to 1.64x. The decode gap from byte-identical inputs is 10.94x; this pipeline has a GPU stage,
+1.56x to 1.65x. The decode gap from byte-identical inputs is 10.94x; this pipeline has a GPU stage,
 so most of it does not reach the wall clock. Use `measure_layout.py` for a magnitude.
 
 Keep the warmup run. The first pipeline run on a fresh cluster pays for Ray building the
-`runtime_env` virtualenv from the lock on the worker, measured at 85.1 s and 92.7 s against 5.8 s
+`runtime_env` virtualenv from the lock on the worker, measured at 85.1 s to 94.0 s against 5.8 s
 and 5.9 s for the next run, and it lands in whichever arm runs first. Without it this cell reported
 1.07 rows/s against 10.07, or 0.11x.
 

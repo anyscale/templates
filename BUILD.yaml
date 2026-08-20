@@ -830,8 +830,8 @@
 #     dictionary on/off, pyarrow 23.0.1 as the image ships. Compression is not the mechanism: the
 #     effect is complete with codec `none` and survives os.urandom.
 #   - decode is 10.94x from byte-identical inputs, 4.51x under zstd.
-#   - end to end with the GPU stage, 1.56x to 1.64x on 4 fleet runs.
-#   - the write side is 4.08x to 4.19x on 7 fleet runs, spread 2.7%.
+#   - end to end with the GPU stage, 1.56x to 1.65x on 5 fleet runs.
+#   - the write side is 4.07x to 4.19x on 8 fleet runs, spread 2.9%.
 #   - the read was not the binding stage here: read span 2.44s, GPU stage span 1.99s with 3.4s
 #     UDF across 2 actors. num_cpus 1.0 against 0.25 gave overlapping ranges. Decoder threads
 #     1 to 4 gave 1.2% or better.
@@ -839,7 +839,7 @@
 # measure_layout.py is a shipped artifact, not scaffolding. Every engagement figure is retained
 # and labelled as theirs, on a different fleet and dataset. Unmeasured: whether the read binds at
 # production scale. Evidence: prodjob_mnm3w6i1azkcfq22q8radiaxt5 (sweeps),
-# prodjob_f1dmfinf949ugxxqna7uis7gcz (tests.sh).
+# prodjob_ahrqy85kid81ttws4eq6wi7uge (tests.sh).
 # owner: @em-anyscale
 - name: ray-data-sensor-frame-extraction
   owner_team: ray-data
@@ -852,7 +852,7 @@
   test:
     tests_path: tests/ray-data-sensor-frame-extraction/
     command: bash tests.sh
-    # Measured: tests.sh wall time 335s to 348s across 5 runs, papermill over the notebook as CI
+    # Measured: tests.sh wall time 335s to 354s across 6 runs, papermill over the notebook as CI
     # runs it, exit 0, 6 code cells, Executing/Ending counts matched. 1200 leaves 3.4x headroom
     # over the slowest.
     # Cluster start and image pull sit outside this. Headroom covers a 1.2 GiB torch download to
