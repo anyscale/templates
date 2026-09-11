@@ -1,0 +1,42 @@
+# Dependency spec for the TRL arm of the PathAI GRPO spike.
+#
+# This is a uv project so that Ray's uv runtime-env hook can replicate the exact
+# environment onto the GPU worker nodes (the base image has no torch/trl). Same
+# mechanism the SkyRL arm uses, see ../biotech_vlm_grpo/run_pathvlm.sh.
+#
+# Ray and torch are pinned to what this cluster already runs: ray 2.56.0 is the
+# cluster's version (driver must match), torch 2.11.0+cu128 is the proven build on
+# the g5 workers (cu12.8 image). Everything else floats to the latest release at
+# the time the lock was written; uv.lock is the actual pin.
+[project]
+name = "biotech-vlm-grpo-trl"
+version = "0.1.0"
+description = "PathAI-shaped GRPO with vanilla TRL (HF generate rollouts, no vLLM) under Ray Train"
+requires-python = "==3.12.*"
+dependencies = [
+    "ray[default,train]==2.56.0",
+    "torch==2.11.0; sys_platform == 'linux'",
+    "torchvision; sys_platform == 'linux'",
+    "trl>=1.13.0",
+    "transformers>=5.17.0",
+    "peft>=0.20.0",
+    "accelerate>=1.15.0",
+    "datasets>=4.0.0",
+    "pillow>=11.3.0",
+    "nvidia-ml-py",
+    "tensorboard",
+    "wandb",
+    "matplotlib",
+]
+
+[tool.uv]
+package = false
+
+[tool.uv.sources]
+torch = [{ index = "pytorch-cu128", marker = "sys_platform == 'linux'" }]
+torchvision = [{ index = "pytorch-cu128", marker = "sys_platform == 'linux'" }]
+
+[[tool.uv.index]]
+name = "pytorch-cu128"
+url = "https://download.pytorch.org/whl/cu128"
+explicit = true
