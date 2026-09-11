@@ -78,6 +78,8 @@ Changes relative to the original draft of this file (the draft was truncated mid
   3. Metrics are injected by wrapping `trainer.log` rather than from an `on_log`
      callback: integration callbacks (TensorBoard, W&B) are registered before any
      callback we add, so an `on_log` mutation would arrive after they already logged.
+     The `ray.train.report` call does live in `on_log`, because by then TRL has merged
+     its own `reward` / `completions/*` metrics into the same dict.
 """
 
 from __future__ import annotations
@@ -536,20 +538,28 @@ class GRPOStepTimingCallback(TrainerCallback):
 
     # ---- emission -------------------------------------------------------------------
     def inject_into_logs(self, logs: dict) -> None:
-        """Called from the wrapped trainer.log on every rank, for train-mode logs only."""
+        """Called from the wrapped trainer.log on every rank, for train-mode logs only.
+        Runs *before* GRPOTrainer.log merges its own metrics, so this only adds ours."""
         if self.pending is None:
             return
         logs.update(self.pending)
-        if self.report_to_ray and _ray_rank() is not None:
-            # Ray Train V2: report() is a barrier, so every rank reports (each with its
-            # own rank-local numbers). Only rank 0's dict is attached to checkpoints;
-            # a driver-side UserCallback sees all of them.
-            numeric = {k: v for k, v in logs.items() if isinstance(v, (int, float, str))}
-            try:
-                _ray_train.report(numeric)
-            except Exception:
-                pass
         self.pending = None
+
+    def on_log(self, args, state, control, logs=None, **kwargs):
+        """Fires after HF/TRL assembled the full log dict (loss, reward, completions/*,
+        our timing/*). Forward it to Ray Train when inside a worker.
+
+        Ray Train V2: report() is a barrier, so every rank reports (each with its own
+        rank-local timing). Only rank 0's dict is attached to checkpoints; a driver-side
+        UserCallback sees all of them."""
+        if not (self.report_to_ray and logs and _ray_rank() is not None):
+            return
+        numeric = {k: v for k, v in logs.items() if isinstance(v, (int, float, str))}
+        numeric["step"] = state.global_step
+        try:
+            _ray_train.report(numeric)
+        except Exception:
+            pass
 
 
 def _wrap_trainer_log(trainer, cb: GRPOStepTimingCallback) -> bool:

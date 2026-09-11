@@ -273,6 +273,27 @@ def main_ray():
     )
     result = trainer.fit()
     print("[ray] result:", result)
+    print_step_table(os.path.join(RUN_ROOT, "ray_reported_metrics.jsonl"))
+
+
+def print_step_table(path: str) -> None:
+    """Per-step summary from what rank 0 passed to ray.train.report (the controller's own
+    stdout is not forwarded to the driver, so the UserCallback's prints land in the Train
+    controller log; this puts the same table in the driver log)."""
+    if not os.path.exists(path):
+        return
+    print(f"{'step':>4} {'step_s':>7} {'gen_s':>6} {'wait_s':>6} {'rwd_s':>6} {'fwd_s':>6} {'bwd_s':>6} "
+          f"{'opt_s':>6} {'reward':>7} {'len':>5} {'pad%':>5} {'spread':>6}")
+    for line in open(path):
+        m = json.loads(line)["ranks"][0] or {}
+        if "timing/step_s" not in m:
+            continue
+        g = lambda k, d=0.0: m.get(k, d)
+        print(f"{int(g('step', -1)):>4} {g('timing/step_s'):>7.1f} {g('timing/generate_s'):>6.1f} "
+              f"{g('timing/sync_wait_s'):>6.1f} {g('timing/reward_s'):>6.3f} {g('timing/forward_s'):>6.2f} "
+              f"{g('timing/backward_s'):>6.2f} {g('timing/optimizer_s'):>6.2f} {g('reward', float('nan')):>7.3f} "
+              f"{g('completions/mean_length', float('nan')):>5.0f} {100 * g('rollout/padding_waste_frac'):>5.1f} "
+              f"{g('rollout/generate_s_rank_spread'):>6.1f}")
 
 
 if __name__ == "__main__":
