@@ -1,7 +1,7 @@
 # Optional custom image.
 #
 # The default `anyscale/ray-llm:2.57.0-py312-cu130` image already ships
-# vLLM 0.25.1 (>= the model's required 0.18.1) with the built-in "nemotron_v3"
+# vLLM 0.25.1 with the built-in "nemotron_v3"
 # reasoning parser, so you normally do NOT need this Dockerfile.
 #
 # Use it only if you need a newer/pinned vLLM, or to bundle the model's

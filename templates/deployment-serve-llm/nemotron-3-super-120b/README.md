@@ -13,7 +13,7 @@ This tutorial deploys [`nvidia/NVIDIA-Nemotron-3-Super-120B-A12B-FP8`](https://h
 
 ## Configure Ray Serve LLM
 
-Ray Serve LLM builds an OpenAI-compatible app from an [`LLMConfig`](https://docs.ray.io/en/latest/serve/api/doc/ray.serve.llm.LLMConfig.html) via [`build_openai_app`](https://docs.ray.io/en/latest/serve/api/doc/ray.serve.llm.build_openai_app.html). The `engine_kwargs` below are the snake_case translation of NVIDIA's validated `vllm serve` flags from the model card.
+Ray Serve LLM builds an OpenAI-compatible app from an [`LLMConfig`](https://docs.ray.io/en/latest/serve/api/doc/ray.serve.llm.LLMConfig.html) via [`build_openai_app`](https://docs.ray.io/en/latest/serve/api/doc/ray.serve.llm.build_openai_app.html). The `engine_kwargs` below are validated for the Ray 2.57.0 / vLLM 0.25.1 image this template ships on, cross-checked against NVIDIA's model card and [vLLM's recipes](https://recipes.vllm.ai/nvidia/NVIDIA-Nemotron-3-Super-120B-A12B-BF16?hardware=h100&variant=fp8&features=tool_calling%2Creasoning%2Cspec_decoding).
 
 
 ```python
@@ -36,23 +36,17 @@ llm_config = LLMConfig(
     ),
     # runtime_env=dict(env_vars={"HF_TOKEN": os.environ.get("HF_TOKEN")}),
     engine_kwargs=dict(
-        tensor_parallel_size=4,
-        enable_expert_parallel=True,
+        tensor_parallel_size=8,
         max_model_len=262144,  # 256k
         kv_cache_dtype="fp8",
         mamba_ssm_cache_dtype="float32",
         gpu_memory_utilization=0.9,
         trust_remote_code=True,
-        enable_chunked_prefill=True,
-        # NOTE: the model card's `swap_space=0` is INVALID on vLLM 0.25.1
-        # (the V1 engine removed CPU KV-swap) and is omitted. Its
-        # `async_scheduling=True` / `max_cudagraph_capture_size=128` ARE valid
-        # 0.25.1 perf tweaks -- uncomment to try them:
-        # async_scheduling=True,
-        # max_cudagraph_capture_size=128,
+        max_cudagraph_capture_size=128,
         reasoning_parser="nemotron_v3",
-        # enable_auto_tool_choice=True,   # uncomment for agents/tool use
-        # tool_call_parser="qwen3_coder", # uncomment for agents/tool use
+        enable_auto_tool_choice=True,
+        tool_call_parser="qwen3_xml",
+        speculative_config={"method": "mtp", "num_speculative_tokens": 3},
     ),
 )
 
@@ -61,29 +55,15 @@ app = build_openai_app({"llm_configs": [llm_config]})
 
 **Note:** Before moving to a production setup, migrate to a [Serve config file](https://docs.ray.io/en/latest/serve/production-guide/config.html) to make your deployment version-controlled, reproducible, and easier to maintain for CI/CD pipelines. For an example, see [Serving LLMs - Quickstart Examples: Production Guide](https://docs.ray.io/en/latest/serve/llm/quick-start.html#production-deployment).
 
-**Key settings explained:**
-
-- `tensor_parallel_size=4` + `enable_expert_parallel=True` — NVIDIA's validated H100 layout; the 4 GPUs must be on the same node (NVLink).
-- `kv_cache_dtype="fp8"` and `mamba_ssm_cache_dtype="float32"` — FP8 KV cache to save memory; float32 for the Mamba-2 SSM cache for numerical stability.
-- `trust_remote_code=True` — required for the custom `nemotron_h` architecture.
-- `reasoning_parser="nemotron_v3"` — separates `<think>` reasoning traces from the final answer.
-- `max_model_len=262144` — 256k context. For up to 1M, set env var `VLLM_ALLOW_LONG_MAX_MODEL_LEN=1` and raise to `1048576` (needs more GPU memory).
-
-### Optional features
-
-- **Tool / function calling** (agentic use): uncomment `enable_auto_tool_choice=True` and `tool_call_parser="qwen3_coder"`. This model was designed for tool use — enable it if you're building agents.
-- **Speculative decoding** via the built-in MTP head — faster decode for low-entropy outputs (code, summarization). See the [vLLM speculative decoding docs](https://docs.vllm.ai/en/latest/features/spec_decode.html); NVIDIA also ships an updated [MTPv2 checkpoint](https://huggingface.co/nvidia/Nemotron-3-Super-120B-A12B-BF16-MTPv2).
-- **Structured output**: works at request time via `response_format` — no engine config needed. Always bound schema fields and pass `max_tokens`.
-
 ---
 
 ## Deploy locally
 
 **Prerequisites**
 
-- Access to 4× H100-80&nbsp;GB GPUs on one node.
+- Access to 8× H100-80&nbsp;GB GPUs on one node.
 
-**Dependencies:** this template targets **Ray 2.57.0** and **vLLM 0.25.1** (matching the `anyscale/ray-llm:2.57.0` image; the model requires vLLM ≥ 0.18.1).
+**Dependencies:** this template targets **Ray 2.57.0** and **vLLM 0.25.1**, matching the `anyscale/ray-llm:2.57.0` image.
 
 
 ```python
@@ -152,7 +132,7 @@ The repo also includes `client_streaming.py`, which streams the reasoning trace,
 
 For production deployment, use Anyscale services to deploy the Ray Serve app to a dedicated cluster without modifying the code. Anyscale ensures scalability, fault tolerance, and load balancing, keeping the service resilient against node failures, high traffic, and rolling updates. For more details, see [Serve LLMs with Anyscale](https://docs.anyscale.com/llm/serving).
 
-This template runs on **H100 GPUs**. Because `tensor_parallel_size=4`, all 4 GPUs of a replica must stay on one node (over NVLink); `auto_select_worker_config: true` lets Anyscale pick a suitable multi-GPU node (for example an 8× H100 `p5.48xlarge`) for you.
+This template runs on **H100 GPUs**. Because `tensor_parallel_size=8`, all 8 GPUs of a replica must stay on one node (over NVLink); `auto_select_worker_config: true` lets Anyscale pick a suitable 8× H100 node (for example a `p5.48xlarge`) for you.
 
 ### Launch the service
 
@@ -220,7 +200,7 @@ Set `log_engine_metrics: true` in your LLM config to enable the Serve LLM Dashbo
 vLLM logs the maximum concurrency it can support for your config. To increase it:
 
 - **Reduce** `max_model_len` — less KV-cache memory per request (avoid for agent workloads that need long context).
-- **Increase** `tensor_parallel_size` — e.g. TP=8 on a full 8× H100 node aggregates more memory/bandwidth for longer context.
+- **Drop** `speculative_config` — MTP trades memory and prefill throughput for decode latency; removing it frees memory for more concurrent requests.
 - **Scale replicas** — raise `max_replicas` for more concurrent capacity under bursty traffic.
 
 See [Choose a GPU for LLM serving](https://docs.anyscale.com/llm/serving/gpu-guidance), [Performance optimization](https://docs.anyscale.com/llm/serving/performance-optimization), and [Parameter tuning](https://docs.anyscale.com/llm/serving/parameter-tuning).
@@ -233,9 +213,11 @@ See [Choose a GPU for LLM serving](https://docs.anyscale.com/llm/serving/gpu-gui
 
 **`trust_remote_code` / unknown architecture** — ensure `trust_remote_code=True` is set and you're on the `anyscale/ray-llm:2.57.0` image (vLLM 0.25.1) or newer.
 
-**`ValueError: Unknown engine argument: <name>`** — Ray Serve LLM validates every `engine_kwarg` against the installed vLLM's engine args. The NVIDIA model card was written for vLLM 0.18.1; on 0.25.1 (the V1 engine) `swap_space` was removed and raises this error, so it's omitted here. If you hit this for another key, remove or rename that flag for your vLLM version (the card's `async_scheduling` and `max_cudagraph_capture_size` are still valid in 0.25.1).
+**`ValueError: Unknown engine argument: <name>`** — Ray Serve LLM validates every `engine_kwarg` against the installed vLLM's engine args. NVIDIA's model card is written for an older vLLM, so some of its flags don't exist on 0.25.1 — notably `swap_space`, which the V1 engine removed. If you copy a flag off the card and hit this, drop or rename it for your vLLM version.
 
-**Service stuck starting / no GPUs available** — if the cluster can't acquire a 4× H100 node (capacity exhausted or quota limits in your cloud), the service stays in a starting state. Confirm your cloud has H100 quota/availability, or set `accelerator_type` to another GPU your cloud offers.
+**Structured output returns invalid JSON** — with MTP speculative decoding enabled (`speculative_config`), `response_format` requests come back malformed: a duplicated opening `{`, unbalanced braces, or a field that runs on until `max_tokens`. The grammar state machine doesn't advance correctly in the speculative-decoding path ([vllm#34650](https://github.com/vllm-project/vllm/issues/34650)); reproduced on vLLM 0.25.1 with this config. Two workarounds: use **tool calling** (`tools` + `tool_choice`) instead, which is schema-constrained and unaffected; or remove `speculative_config` from `engine_kwargs`, which restores `response_format` (and frees KV cache — ~25.7M vs ~19.1M tokens at TP=8). Also note `min_p` and `logit_bias` are silently ignored while speculative decoding is on.
+
+**Service stuck starting / no GPUs available** — if the cluster can't acquire an 8× H100 node (capacity exhausted or quota limits in your cloud), the service stays in a starting state. Confirm your cloud has H100 quota/availability, or set `accelerator_type` to another GPU your cloud offers.
 
 **Reasoning content appears empty when streaming** — the OpenAI SDK doesn't surface `reasoning`/`reasoning_content` as typed fields; read them off `delta.model_extra` as shown in `client_streaming.py`.
 
@@ -243,4 +225,4 @@ See [Choose a GPU for LLM serving](https://docs.anyscale.com/llm/serving/gpu-gui
 
 ## Summary
 
-You deployed `NVIDIA-Nemotron-3-Super-120B-A12B-FP8` with Ray Serve LLM on 4× H100 GPUs using tensor + expert parallelism, FP8 weights and KV cache, a 256k context, and reasoning-trace parsing — from local development to a production Anyscale Service.
+You deployed `NVIDIA-Nemotron-3-Super-120B-A12B-FP8` with Ray Serve LLM on 8× H100 GPUs using tensor parallelism, FP8 weights and KV cache, a 256k context, MTP speculative decoding, and reasoning-trace parsing — from local development to a production Anyscale Service.

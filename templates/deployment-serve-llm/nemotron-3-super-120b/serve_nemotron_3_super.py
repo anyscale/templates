@@ -8,9 +8,11 @@ from ray.serve.llm import LLMConfig, build_openai_app
 # 120B-total / 12B-active LatentMoE (Mamba-2 + MoE + Attention hybrid) with a
 # built-in Multi-Token-Prediction (MTP) head. Ships as an FP8 checkpoint.
 #
-# NVIDIA's validated H100 recipe uses tensor_parallel_size=4 + expert
-# parallelism at a 256k context. The engine_kwargs below are the snake_case
-# translation of the `vllm serve` flags from the model card.
+# vLLM's recipes serve this model at tensor_parallel_size=8 on a single H100
+# node, with MTP speculative decoding and no expert parallelism. The
+# engine_kwargs below follow that layout, validated for the Ray 2.57.0 /
+# vLLM 0.25.1 image this template ships on and cross-checked against NVIDIA's
+# model card and vLLM's recipes (recipes.vllm.ai).
 llm_config = LLMConfig(
     model_loading_config=dict(
         model_id="nvidia/nemotron-3-super",
@@ -19,7 +21,7 @@ llm_config = LLMConfig(
     accelerator_type="H100",
     deployment_config=dict(
         autoscaling_config=dict(
-            # Start with 1 replica (4 H100s via tensor_parallel_size=4). Raise
+            # Start with 1 replica (8 H100s via tensor_parallel_size=8). Raise
             # max_replicas for more concurrency, or set min_replicas=0 for
             # production scale-to-zero (first request incurs a cold start).
             min_replicas=1,
@@ -30,8 +32,7 @@ llm_config = LLMConfig(
     # runtime_env=dict(env_vars={"HF_TOKEN": os.environ.get("HF_TOKEN")}),
     engine_kwargs=dict(
         # --- Parallelism (single node, NVLink) -----------------------------
-        tensor_parallel_size=4,
-        enable_expert_parallel=True,  # MoE expert parallelism
+        tensor_parallel_size=8,
         # --- Context ------------------------------------------------------
         # Model supports up to 1M tokens. To go beyond this, set env var
         # VLLM_ALLOW_LONG_MAX_MODEL_LEN=1 and raise max_model_len to 1048576.
@@ -42,22 +43,29 @@ llm_config = LLMConfig(
         gpu_memory_utilization=0.9,
         trust_remote_code=True,  # required: custom "nemotron_h" architecture
         # --- Scheduling / throughput --------------------------------------
-        enable_chunked_prefill=True,
-        # NOTE: NVIDIA's model card (written for vLLM 0.18.1) also passes
-        # `swap_space=0`, which is INVALID on vLLM 0.25.1 -- the V1 engine
-        # removed CPU KV-swap, so Ray raises "Unknown engine argument:
-        # swap_space". It is therefore removed. The card's
-        # `async_scheduling=True` and `max_cudagraph_capture_size=128` ARE
-        # valid in 0.25.1 and can be re-added as perf tweaks; they're left off
-        # here to keep the first deploy minimal.
+        # Caps the CUDA-graph capture size (default: min(max_num_seqs*2, 512))
+        # to cut warmup memory; part of NVIDIA's validated command.
+        max_cudagraph_capture_size=128,
         # --- Reasoning ----------------------------------------------------
         # Splits <think>...</think> traces from the final answer.
         reasoning_parser="nemotron_v3",
-        # --- Tool / function calling (OPTIONAL — uncomment for agents) -----
-        # This model is built for agentic/tool-use workloads. Enable both
-        # flags below to serve OpenAI-style tool calls.
-        # enable_auto_tool_choice=True,
-        # tool_call_parser="qwen3_coder",
+        # --- Tool / function calling --------------------------------------
+        # This model is built for agentic/tool-use workloads, so tool calling
+        # is on by default; both flags are inert for requests that pass no
+        # `tools`. `qwen3_xml` is the streaming-capable parser for this model
+        # family.
+        enable_auto_tool_choice=True,
+        tool_call_parser="qwen3_xml",
+        # --- Speculative decoding -----------------------------------------
+        # Uses the checkpoint's built-in MTP head for faster decode on
+        # low-entropy output (code, summarization). Three caveats:
+        #  1. Structured output (`response_format`) returns INVALID JSON while
+        #     this is on -- the grammar FSM mis-advances in the spec-decode
+        #     path (vllm#34650), reproduced on vLLM 0.25.1. Use tool calling
+        #     instead, or drop this kwarg. See README Troubleshooting.
+        #  2. `min_p` and `logit_bias` are silently ignored.
+        #  3. Draft state costs KV cache: ~19.1M vs ~25.7M tokens at TP=8.
+        speculative_config={"method": "mtp", "num_speculative_tokens": 3},
     ),
 )
 
