@@ -125,6 +125,14 @@ glass with no tissue ... consistent with background."*). Templated data, so this
 the pipeline learns the format and the label, nothing more. Full log in
 `results/sft_vlm_log_history.jsonl`.
 
+`MODE=llm` (Qwen2.5-0.5B-Instruct on the text-only twin, 8.8M LoRA params): loss 1.29 →
+0.04, eval loss 0.21 at step 10 → 0.08 at step 20, eval token accuracy 0.98. The greedy
+sample reproduces the reference answer verbatim, which on templated data is expected
+memorisation. Log in `results/sft_llm_log_history.jsonl`. Note the two modes need
+different row shapes: VLM rows use content-part lists (the processor's chat template
+renders the image slot), text-only rows use plain-string `content` (Qwen2.5's template
+concatenates it as a string). `record_to_trl()` handles both.
+
 ## Files
 
 | File | What |

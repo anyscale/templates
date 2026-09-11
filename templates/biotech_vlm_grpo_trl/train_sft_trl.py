@@ -68,21 +68,22 @@ def record_to_trl(rec: dict, data_dir: str, vlm: bool) -> dict:
     question = turns[0]["value"].replace("<image>", "").strip()
     answer = turns[1]["value"]
     if vlm:
-        user_content = [{"type": "image"}, {"type": "text", "text": question}]
-    else:
-        user_content = [{"type": "text", "text": question}]
-    row = {
-        "prompt": [
-            {"role": "system", "content": [{"type": "text", "text": SYSTEM_PROMPT}]},
-            {"role": "user", "content": user_content},
-        ],
-        "completion": [{"role": "assistant", "content": [{"type": "text", "text": answer}]}],
-    }
-    if vlm:
+        # Content-part lists: the processor's chat template renders the image placeholder.
         from PIL import Image
 
-        row["images"] = [Image.open(os.path.join(data_dir, rec["image"])).convert("RGB")]
-    return row
+        return {
+            "prompt": [
+                {"role": "system", "content": [{"type": "text", "text": SYSTEM_PROMPT}]},
+                {"role": "user", "content": [{"type": "image"}, {"type": "text", "text": question}]},
+            ],
+            "completion": [{"role": "assistant", "content": [{"type": "text", "text": answer}]}],
+            "images": [Image.open(os.path.join(data_dir, rec["image"])).convert("RGB")],
+        }
+    # Plain-string content: text-only chat templates (Qwen2.5) concatenate `content` as a str.
+    return {
+        "prompt": [{"role": "system", "content": SYSTEM_PROMPT}, {"role": "user", "content": question}],
+        "completion": [{"role": "assistant", "content": answer}],
+    }
 
 
 def build_dataset(jsonl_path: str, vlm: bool):
@@ -91,10 +92,12 @@ def build_dataset(jsonl_path: str, vlm: bool):
     data_dir = os.path.dirname(jsonl_path)
     with open(jsonl_path) as f:
         rows = [record_to_trl(json.loads(line), data_dir, vlm) for line in f if line.strip()]
-    msg = List({"role": Value("string"), "content": List({"type": Value("string"), "text": Value("string")})})
-    feats = {"prompt": msg, "completion": msg}
     if vlm:
-        feats["images"] = List(Image())
+        msg = List({"role": Value("string"), "content": List({"type": Value("string"), "text": Value("string")})})
+        feats = {"prompt": msg, "completion": msg, "images": List(Image())}
+    else:
+        msg = List({"role": Value("string"), "content": Value("string")})
+        feats = {"prompt": msg, "completion": msg}
     return Dataset.from_list(rows, features=Features(feats))
 
 
@@ -215,8 +218,11 @@ def _sample_generation(trainer, row: dict, vlm: bool) -> None:
     with torch.no_grad():
         out = model.generate(**inputs, max_new_tokens=96, do_sample=False)
     text = proc.batch_decode(out[:, inputs["input_ids"].shape[1]:], skip_special_tokens=True)[0]
-    print("[sample] question :", row["prompt"][-1]["content"][-1]["text"])
-    print("[sample] reference:", row["completion"][0]["content"][0]["text"])
+    def _text(content):  # content-part list (VLM rows) or plain string (LLM rows)
+        return content[-1]["text"] if isinstance(content, list) else content
+
+    print("[sample] question :", _text(row["prompt"][-1]["content"]))
+    print("[sample] reference:", _text(row["completion"][0]["content"]))
     print("[sample] model    :", text.strip())
 
 
