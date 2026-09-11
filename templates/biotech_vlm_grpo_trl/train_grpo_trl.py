@@ -134,6 +134,8 @@ def train_func(config: dict | None = None):
     run_root = config.get("run_root", RUN_ROOT)
     os.environ.setdefault("HF_HOME", config.get("hf_home", HF_HOME))
     os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
+    # transformers 5 removed TrainingArguments.logging_dir; the TensorBoard callback reads this instead
+    os.environ.setdefault("TENSORBOARD_LOGGING_DIR", os.path.join(run_root, "tensorboard"))
 
     t0 = time.perf_counter()
     train_ds = build_dataset(os.path.join(DATA_DIR, "train.parquet"), limit=TRAIN_ROWS)
@@ -154,7 +156,6 @@ def train_func(config: dict | None = None):
     args = GRPOConfig(
         output_dir=os.path.join(run_root, "out"),
         run_name=RUN_NAME,
-        logging_dir=os.path.join(run_root, "tensorboard"),
         report_to=report_to,
         # --- the GRPO shape, matching the SkyRL arm where the knobs correspond ---
         use_vllm=False,
