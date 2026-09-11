@@ -57,7 +57,7 @@ LR = float(os.environ.get("LR", "1e-5"))
 TEMPERATURE = float(os.environ.get("TEMPERATURE", "0.8"))
 LORA_R = int(os.environ.get("LORA_R", "16"))
 TRAIN_ROWS = int(os.environ.get("TRAIN_ROWS", "0"))  # 0 = all 1,998
-PROFILE_EVERY = int(os.environ.get("PROFILE_EVERY", "5"))
+PROFILE_EVERY = int(os.environ.get("PROFILE_EVERY", "0"))  # >0 writes ~2 GB per trace; opt in
 SEED = int(os.environ.get("SEED", "42"))
 
 

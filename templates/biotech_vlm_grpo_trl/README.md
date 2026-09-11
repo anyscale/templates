@@ -46,6 +46,85 @@ Stacked bar of the phases per step:
 uv run --frozen python plot_step_breakdown.py /mnt/cluster_storage/trl_grpo/pathvlm_2b_trl/log_history.jsonl step_breakdown.png
 ```
 
+## Smoke run results (2026-09-11, 4x A10G, `bash run_trl.sh` defaults)
+
+10 optimizer steps, 4 GPUs x 4 completions = 16 completions (4 prompts x 4 generations)
+per step, `max_completion_length=384`, LoRA r=16 (17.4M trainable params, 0.81% of
+2.14B). Wall clock from launch to first step on a warm worker: ~3 min (uv env 10 s,
+model load, 50 s to decode 1,998 base64 images into a HF dataset on each rank).
+
+Rank 0's `timing/*` per step (seconds), plus TRL's own reward columns:
+
+| step | step | generate | sync_wait | reward | fwd | bwd | opt | ms/tok | reward | zero-std groups | mean len | pad waste | gen spread |
+|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| 1 | 26.7 | 19.0 | 6.4 | 0.001 | 0.37 | 0.78 | 0.05 | 63 | 0.51 | 50% | 235 | 16% | 8.3 |
+| 2 | 25.4 | 12.8 | 11.3 | 0.001 | 0.39 | 0.75 | 0.00 | 62 | 0.81 | 25% | 228 | 12% | 11.9 |
+| 3 | 25.5 | 15.5 | 8.7 | 0.006 | 0.39 | 0.75 | 0.00 | 63 | 0.56 | 25% | 260 | 19% | 9.3 |
+| 4 | 25.2 | 16.5 | 7.5 | 0.001 | 0.39 | 0.75 | 0.00 | 63 | 0.50 | 50% | 246 | 11% | 9.1 |
+| 5* | 34.5 | 30.3 | 3.1 | 0.001 | 0.36 | 0.64 | 0.00 | 107 | 0.51 | 75% | 260 | 11% | 5.2 |
+| 6 | 29.9 | 21.9 | 6.9 | 0.006 | 0.36 | 0.73 | 0.00 | 77 | 0.58 | 50% | 233 | 16% | 13.6 |
+| 7 | 25.9 | 24.3 | 0.5 | 0.010 | 0.34 | 0.66 | 0.00 | 77 | 0.51 | 75% | 238 | 28% | 6.4 |
+| 8 | 26.4 | 22.9 | 2.4 | 0.001 | 0.34 | 0.66 | 0.00 | 76 | 0.45 | 100% | 239 | 23% | 7.5 |
+| 9 | 30.9 | 16.8 | 12.8 | 0.001 | 0.40 | 0.75 | 0.00 | 77 | 1.06 | 75% | 221 | 13% | 13.3 |
+| 10* | 42.1 | 23.6 | 17.2 | 0.001 | 0.41 | 0.76 | 0.00 | 106 | 0.69 | 25% | 222 | 15% | 17.7 |
+
+`*` = torch.profiler was capturing (the run used `PROFILE_EVERY=5`; it is now opt-in).
+
+What the numbers say:
+
+- **Mean step 29.3 s. HF generate is 20.4 s (70%) and waiting for the slowest rank's
+  generate is another 7.7 s (26%). Rollout + waiting = 96% of the step.** Forward,
+  backward and optimizer together are 1.1 s. This is the stacked bar
+  (`results/step_breakdown.png`) and the whole argument for a rollout engine.
+- **The straggler is always the rank whose longest completion hit the 384 cap.**
+  Per-rank rows in `results/grpo_ray_reported_metrics.jsonl`: every step, the rank
+  with `sync_wait ~ 0` has `completion_len_max = 384` (or the step's global max), and
+  the others wait 5 to 17 s for it. Batched HF generate runs the whole batch to its
+  longest sequence; DDP then runs the whole step to its slowest rank. Two levels of
+  the same tail problem.
+- **Decode is ~62 ms/token on an A10G for a 2B model at batch 4** (steps 1 to 4),
+  i.e. ~65 tokens/s per GPU. Prefill including the ViT forward is 0.1 s once the
+  CUDA graphs are warm (1.4 s on step 1). `padding_waste_frac` 11 to 28%: that share
+  of decode steps produces padding for sequences that already finished.
+- **GPU SM utilization: ~30% during generate, 70 to 96% in forward, 99% in backward.**
+  Peak memory 4.8 GB during generate, 6.2 GB in backward, on 24 GB cards. There is
+  room to raise `PER_DEVICE_BS` to 16; it would mostly make generate slower.
+- Reward functions cost ~1 ms; TRL's cross-rank gather inside the reward stage is
+  invisible because the barrier before it already absorbed the skew.
+- `frac_reward_zero_std` 25 to 100%: with only 4 prompts per step, many groups of 4
+  agree on the reward and contribute zero advantage (step 8 had loss 0 and grad norm
+  0). Use more prompts per step for signal; this run was sized for timing, not
+  learning. Mean reward 0.51 to 0.69 over 10 steps is noise at n=16.
+- The SkyRL arm's steady state on the same GPUs was ~120 s/step for 64 completions
+  (vLLM generate ~5 s, FSDP full-parameter train ~95 s). Different batch, different
+  trainer, different knobs: do not read the two as a throughput comparison. Read them
+  as "where does the time go": generation here, training there.
+
+Evidence in `results/`: `grpo_log_history.jsonl` (all 11 records rank 0 logged),
+`grpo_ray_reported_metrics.jsonl` (all 4 ranks per step), `grpo_step2_log_record.json`
+(one full record, 67 keys), `grpo_sample_completions.md` (steps 1, 5, 10 with rewards
+and advantages), `step_breakdown.png`. One 1.5 GB profiler trace remains at
+`/mnt/cluster_storage/trl_grpo/pathvlm_2b_trl/traces/grpo_step10_rank0.json`.
+
+### SFT skeleton smoke run (`bash run_sft.sh`, MODE=vlm)
+
+Qwen3-VL-2B + LoRA on 179 fake tile-QA records, 4 GPUs, 20 steps, eval every 10:
+
+| | step 1 | step 10 | step 20 |
+|---|---:|---:|---:|
+| train loss | 2.52 | 1.41 | 0.79 |
+| train token accuracy | 0.48 | 0.71 | 0.82 |
+| eval loss | | 1.29 | 0.88 |
+| eval token accuracy | | 0.73 | 0.79 |
+
+1.4 s/step. TRL inferred `completion_only_loss=True` and used its vision collator.
+Post-training greedy sample on a held-out tile, question "Is tumor epithelium present
+in this tile?": *"No. The tile shows uniform purple background with no cellular
+detail, consistent with background stain."* (reference: *"No. The tile shows empty
+glass with no tissue ... consistent with background."*). Templated data, so this shows
+the pipeline learns the format and the label, nothing more. Full log in
+`results/sft_vlm_log_history.jsonl`.
+
 ## Files
 
 | File | What |

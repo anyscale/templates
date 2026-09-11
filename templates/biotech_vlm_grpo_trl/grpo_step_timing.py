@@ -50,8 +50,11 @@ Options for instrument_grpo_trainer(trainer, ...):
   gpu_sampler=True            background pynvml sampler (needs `pip install nvidia-ml-py`)
   barrier_after_generate=True adds dist.barrier() after generate to measure straggler wait;
                               slight perturbation, only active in train mode
-  profile_every=0             >0: torch.profiler capture of one full step every N steps
-  profile_dir="./traces"      where Chrome traces land (Perfetto-viewable)
+  profile_every=0             >0: torch.profiler capture of one full step every N steps, rank 0 only.
+                              Measured: ~1.9 GB per trace for a 30 s step with HF generate (the decode
+                              loop is thousands of tiny kernels), and Perfetto will not open that. Use
+                              it for short debugging steps, not as a default.
+  profile_dir="./traces"      where Chrome traces land
   report_to_ray=True          ray.train.report from every rank when inside a Ray Train worker
                               (Ray Train V2 makes report() a barrier, so all ranks must call it)
 
@@ -123,6 +126,13 @@ except ImportError:
 
 def _dist_ok() -> bool:
     return dist.is_available() and dist.is_initialized()
+
+
+def _is_rank0() -> bool:
+    r = _ray_rank()
+    if r is None:
+        r = dist.get_rank() if _dist_ok() else 0
+    return r == 0
 
 
 def _sync() -> None:
@@ -433,7 +443,8 @@ class GRPOStepTimingCallback(TrainerCallback):
             opt = getattr(self.trainer, "optimizer", None)
             if opt is not None:
                 self.wrapped["optimizer"] = self.timer.wrap(opt, "step", "optimizer")
-        if self.profile_every and (state.global_step + 1) % self.profile_every == 0:
+        # Rank 0 only: a full-step trace of a 30 s HF decode loop is ~2 GB per rank.
+        if self.profile_every and (state.global_step + 1) % self.profile_every == 0 and _is_rank0():
             os.makedirs(self.profile_dir, exist_ok=True)
             self._prof = torch.profiler.profile(
                 activities=[torch.profiler.ProfilerActivity.CPU, torch.profiler.ProfilerActivity.CUDA],
