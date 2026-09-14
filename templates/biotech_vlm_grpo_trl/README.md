@@ -19,120 +19,102 @@ Also in here, because the POV's Workload 1 starts with SFT: `train_sft_trl.py`, 
 TRL `SFTTrainer` + Ray Train skeleton (LLM or VLM) on fake slide-tile QA data, so
 there is runnable code before PathAI's data or JSON shape arrives.
 
-## What goes in, what comes out
+## Data
 
-### Where the data comes from
+- Dataset: `1aurent/NCT-CRC-HE` on Hugging Face. 224x224 H&E colorectal tissue patches, 9 classes, public.
+- Split used: `CRC-VAL-HE-7K` (7,180 patches). Sampled 1,998 train / 198 val, class-balanced (222 / 22 per class), disjoint.
+- Script: `../biotech_vlm_grpo/nct_crc_dataset.py`. Output: `/mnt/cluster_storage/data/nct_crc/{train,val}.parquet`. Same files the SkyRL arm trains on.
 
-- **Source:** the public Hugging Face dataset `1aurent/NCT-CRC-HE` (NCT-CRC-HE-100K:
-  224x224 H&E-stained colorectal tissue patches, 9 tissue classes, ungated). We sample
-  from its `CRC-VAL-HE-7K` split because the 100K split is stored sorted by class
-  (a balanced subsample would mean downloading most of 15 GB).
-- **Preparation:** `../biotech_vlm_grpo/nct_crc_dataset.py` (the SkyRL arm's script)
-  draws a class-balanced, disjoint **1,998 train / 198 val** (222 / 22 per class) and
-  writes `/mnt/cluster_storage/data/nct_crc/{train,val}.parquet`. Each row holds the
-  patch as a base64 JPEG inside the prompt plus `reward_spec.ground_truth`, the class
-  name. `run_trl.sh` regenerates it if missing. The **same parquet** feeds the SkyRL
-  arm, so both arms train on identical prompts and labels.
-- **For TRL:** `to_trl_rows()` in `train_grpo_trl.py` decodes the base64 into a PIL image
-  and puts it in an `images` column, leaves an `{"type": "image"}` slot in the user
-  turn (TRL fills it at rollout time), and passes `ground_truth` through to the reward
-  functions.
+## Preprocessing
 
-### What the model sees (the input)
+`to_trl_rows()` in `train_grpo_trl.py`, one parquet row in, one TRL row out:
 
-Every training row is the same two-message chat with one image; only the patch and the
-label change. First five rows of `train.parquet`, in order (`results/grpo_train_samples.png`):
+| parquet | TRL row |
+|---|---|
+| base64 JPEG inside the prompt | PIL image in an `images` column |
+| system + user message text | same text; user turn gets an `{"type": "image"}` slot that TRL fills at rollout time |
+| `reward_spec.ground_truth` (class name) | `ground_truth` column, passed to the reward functions |
 
-![five training patches](results/grpo_train_samples.png)
+## Input
 
-| # | ground truth | what the patch shows |
-|---|---|---|
-| 1 | cancer-associated stroma | pink fibrous matrix, scattered spindle nuclei |
-| 2 | background | blank glass, one speck of debris |
-| 3 | colorectal adenocarcinoma epithelium | crowded gland with a lumen, irregular nuclei |
-| 4 | mucus | pale wispy extracellular material, few cells |
-| 5 | smooth muscle | parallel eosinophilic fibres, elongated nuclei |
+One image plus this prompt, identical for every row:
 
 ```
 system: You are a pathology assistant. Examine the tissue patch and reason step by
         step before answering.
-user:   <image>  What tissue type is shown? Choose one of: [adipose, background,
+user:   <image> What tissue type is shown? Choose one of: [adipose, background,
         debris, lymphocytes, mucus, smooth muscle, normal colon mucosa,
         cancer-associated stroma, colorectal adenocarcinoma epithelium]. Think step
         by step, then give your final answer as <answer>class_name</answer>.
 ```
 
-After the Qwen3-VL processor this is ~166 prompt tokens, 64 of them vision tokens
-(the processor resizes the 224 px patch to a 16x16 patch grid, merged 2x2 to 64 tokens).
+~166 tokens after the Qwen3-VL processor, 64 of them image tokens.
 
-### What the model produces (the output)
+First 5 train rows (`results/grpo_train_samples.png`):
 
-`GRPOTrainer` samples **4 completions per prompt** at temperature 0.8 with HF
-`model.generate`, up to 384 new tokens each (`max_completion_length`). Three real
-completions from step 10 of the smoke run (`results/grpo_sample_completions.md`), with
-the reward each earned:
+![five training patches](results/grpo_train_samples.png)
 
-- **correct, well-formed (reward 1.2, advantage +0.50):** *"1. The image shows a dense
-  collection of small, round cells with prominent nuclei, arranged in a somewhat
-  disorganized pattern. 2. The cells are tightly packed and have a uniform appearance,
-  which is typical of lymphocytes. 3. There is no evidence of adipose tissue, mucus, or
-  smooth muscle. [...] `<answer>lymphocytes</answer>`"*
-- **wrong class, well-formed (reward 0.2, advantage -1.50):** *"1. The image shows a
-  dense collection of small, darkly stained cells with round nuclei. 2. These cells are
-  arranged in a loose, irregular pattern [...] typical of a highly cellular tissue.
-  [...]"* — closed with an `<answer>` tag naming the wrong class.
-- **no answer tag (reward 0.0, advantage -1.50):** *"To determine the correct tissue
-  type shown in the image, let's follow a step-by-step analysis: 1. **Observe the
-  cellular architecture** [...]"* — ran to the 384-token cap mid-list and never emitted
-  `<answer>`. This is what `completions/clipped_ratio` counts.
+| # | ground_truth |
+|---|---|
+| 1 | cancer-associated stroma |
+| 2 | background |
+| 3 | colorectal adenocarcinoma epithelium |
+| 4 | mucus |
+| 5 | smooth muscle |
 
-Mean completion length in the smoke run was ~230 tokens; 0 to 6% hit the cap.
+## Output
 
-### How the outputs are rewarded
+Per prompt: 4 completions, temperature 0.8, max 384 new tokens, HF `model.generate`.
+Expected shape: reasoning, then `<answer>class_name</answer>`.
 
-Two plain Python functions in `rewards.py`, identical scoring to the SkyRL arm's
-`env.py`, summed by TRL:
+Three real completions from step 10 (`results/grpo_sample_completions.md`):
+
+| completion (shortened) | parsed answer | reward |
+|---|---|---|
+| "1. The image shows a dense collection of small, round cells with prominent nuclei ... 2. ... typical of lymphocytes. 3. There is no evidence of adipose tissue, mucus, or smooth muscle. [...] `<answer>lymphocytes</answer>`" | lymphocytes, correct | 1.2 |
+| "1. The image shows a dense collection of small, darkly stained cells with round nuclei. 2. These cells are arranged in a loose, irregular pattern [...] `<answer>…</answer>`" | wrong class | 0.2 |
+| "To determine the correct tissue type shown in the image, let's follow a step-by-step analysis: 1. **Observe the cellular architecture** [...]" | none, hit the 384-token cap | 0.0 |
+
+Mean completion length ~230 tokens. 0 to 6% hit the cap (`completions/clipped_ratio`).
+
+## Reward
+
+`rewards.py`, two functions, TRL sums them. Same scoring as the SkyRL arm's `env.py`.
 
 | function | value | rule |
 |---|---|---|
-| `label_reward` | 1.0 / 0.0 | contents of the **last** `<answer>…</answer>` block, lower-cased, whitespace- and punctuation-normalised, aliases mapped (`LYM`→lymphocytes, `tumor`→colorectal adenocarcinoma epithelium, …), equals the ground-truth class |
-| `format_reward` | 0.2 / 0.0 | there is a non-empty `<answer>` block at all, right or wrong |
+| `label_reward` | 1.0 or 0.0 | text of the last `<answer>…</answer>` block equals `ground_truth`. Case, whitespace and punctuation ignored. Aliases accepted (`LYM` → lymphocytes, `tumor` → colorectal adenocarcinoma epithelium, ...) |
+| `format_reward` | 0.2 or 0.0 | a non-empty `<answer>` block exists, right or wrong |
 
-So a completion scores **1.2** (right + tagged), **0.2** (wrong + tagged) or **0.0**
-(no tag). The format bonus keeps a group from collapsing to all-zero reward early in
-training while the model is still learning the output contract.
+Totals: 1.2 correct, 0.2 wrong, 0.0 no tag.
 
-GRPO then normalises rewards **within each group of 4** completions of the same prompt:
-advantage = (reward − group mean) / group std, broadcast to every token of that
-completion. That is where the ±1.50 and +0.50 above come from. If all 4 completions
-score the same, the group's advantages are all zero and it contributes no gradient
-(`frac_reward_zero_std`); with only 4 prompts per step in the smoke run that happened
-to 25 to 100% of groups, which is why the smoke run is sized for timing, not learning.
-There is no reward model, no reference model and no KL term (`beta=0`); the loss is the
-clipped-ratio policy-gradient loss on the sampled completions, LoRA weights only.
+Advantage per completion = (reward − mean of its group of 4) / std of the group, applied
+to every token of that completion. All 4 equal → advantage 0 → no gradient from that
+group (`frac_reward_zero_std`). No reward model, no reference model, no KL (`beta=0`).
+Only LoRA weights update.
 
-### Throughput: think in tokens/s per GPU, use ms per decode step as the diagnostic
+## Throughput units
 
-The cost of GRPO is completions per GPU-hour, an aggregate throughput number:
-`rollout/tokens_per_s` (completion tokens ÷ generate seconds, this rank) and
-`rollout/samples_per_gpu_hour` are the headline metrics; the smoke run did ~65 tok/s
-per A10G at batch 4. `timing/generate/ms_per_decode_step` is milliseconds per **decode step
-of the whole batch** (62 ms at batch 4), not per-sequence latency: it tells you whether
-the kernel path is healthy and barely moves as batch grows, which is exactly why
-aggregate tok/s does. The case for vLLM / SkyRL is made in tok/s: continuous batching
-keeps the per-step latency flat while filling the batch, and the padding waste (11 to
-28% here) goes away.
+- Headline: tokens/s per GPU (`rollout/tokens_per_s`) and completions per GPU-hour
+  (`rollout/samples_per_gpu_hour`). Smoke run: ~65 tok/s per A10G at batch 4.
+- Diagnostic: `timing/generate/ms_per_decode_step`, ms for one decode step of the whole
+  batch (62 ms at batch 4). Not per-sequence latency. Stays flat as batch grows, which
+  is why tok/s grows with batch and why a batching engine (vLLM, SkyRL) wins.
 
-### The SFT skeleton's data
+## SFT data
 
-`make_sft_data.py` takes the **same 198 val patches**, saves them as PNG tiles and
-writes LLaVA-style JSONL: `{"image": "tiles/…png", "conversations": [{"from": "human",
-"value": "<image>\nWhat tissue type is shown in this tile?"}, {"from": "gpt", "value":
-"This tile shows lymphocytes: densely packed small round cells …"}], "metadata": {…}}`.
-The answers are templated from the label, so it is fake QA on real tissue: it proves the
-plumbing (vision collator, completion-only loss, Ray Train), not the model. A text-only
-twin replaces the image with the templated morphology description in the question.
-The real slide + QA data will replace this through one function, `record_to_trl()`.
+`make_sft_data.py`: the same 198 val patches → PNG tiles + JSONL.
+
+```json
+{"image": "tiles/nctcrc_000123.png",
+ "conversations": [{"from": "human", "value": "<image>\nWhat tissue type is shown in this tile?"},
+                   {"from": "gpt",   "value": "This tile shows lymphocytes: densely packed small round cells ..."}],
+ "metadata": {"label": "lymphocytes"}}
+```
+
+Questions and answers are templated from the label. Text-only twin: the image is replaced
+by the templated description in the question. Fake QA on real tissue; it tests the
+pipeline, not the model. Real data: change `record_to_trl()` in `train_sft_trl.py`.
 
 ## Run it
 
