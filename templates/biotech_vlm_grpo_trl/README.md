@@ -67,15 +67,40 @@ First 5 train rows (`results/grpo_train_samples.png`):
 Per prompt: 4 completions, temperature 0.8, max 384 new tokens, HF `model.generate`.
 Expected shape: reasoning, then `<answer>class_name</answer>`.
 
-Three real completions from step 10 (`results/grpo_sample_completions.md`):
+One group for training row 1 (the cancer-associated stroma patch, #1 above). The four
+completions below are illustrative, written to show the four ways a rollout scores; the
+reward and advantage arithmetic is exact.
 
-| completion (shortened) | parsed answer | reward |
-|---|---|---|
-| "1. The image shows a dense collection of small, round cells with prominent nuclei ... 2. ... typical of lymphocytes. 3. There is no evidence of adipose tissue, mucus, or smooth muscle. [...] `<answer>lymphocytes</answer>`" | lymphocytes, correct | 1.2 |
-| "1. The image shows a dense collection of small, darkly stained cells with round nuclei. 2. These cells are arranged in a loose, irregular pattern [...] `<answer>…</answer>`" | wrong class | 0.2 |
-| "To determine the correct tissue type shown in the image, let's follow a step-by-step analysis: 1. **Observe the cellular architecture** [...]" | none, hit the 384-token cap | 0.0 |
+**Completion 1** (reward 1.2, advantage +0.86)
 
-Mean completion length ~230 tokens. 0 to 6% hit the cap (`completions/clipped_ratio`).
+> 1. The patch is dominated by pink, fibrillar material with elongated, wavy collagen bundles. 2. Scattered within it are spindle-shaped cells with elongated dark nuclei, consistent with fibroblasts. 3. There are no glands, no goblet cells and no crypt architecture, so this is not normal mucosa or adenocarcinoma epithelium. 4. The fibres are irregular and loosely arranged rather than in the tight parallel fascicles of smooth muscle. 5. Loose, cellular fibrous tissue adjacent to a tumour is desmoplastic stroma. `<answer>cancer-associated stroma</answer>`
+
+**Completion 2** (reward 1.2, advantage +0.86)
+
+> The tissue shows a fibrous background with spindle nuclei and no epithelial structures. The collagen is disorganised, which argues against muscle and for reactive connective tissue. `<answer>stroma</answer>`
+
+**Completion 3** (reward 0.2, advantage −0.70)
+
+> 1. The image shows elongated eosinophilic fibres with cigar-shaped nuclei arranged roughly in parallel. 2. There are no glands or epithelial cells. 3. Parallel eosinophilic fibres with elongated nuclei are characteristic of muscle. 4. This is most consistent with the muscularis propria. `<answer>smooth muscle</answer>`
+
+**Completion 4** (reward 0.0, advantage −1.01)
+
+> To classify this patch, I will go through the candidate classes one by one. **Adipose**: no clear lipid vacuoles are present, so adipose is unlikely. **Background**: the field is filled with tissue, so it is not background. **Debris**: the material is structured and cellular, not amorphous, so debris is unlikely. **Lymphocytes**: there is no dense population of small round dark cells. **Mucus**: the material is fibrillar rather than pale and homogeneous. **Smooth muscle**: the fibres are eosinophilic and elongated, which is compatible, but the arrangement is loose. **Normal colon mucosa**: there are no crypts or goblet cells. **Cancer-associated stroma**: the loose fibrous matrix with
+
+*(hit the 384-token cap before emitting an answer tag)*
+
+| # | parsed answer | label_reward | format_reward | reward | advantage |
+|---|---|---|---|---|---|
+| 1 | cancer-associated stroma | 1.0 | 0.2 | 1.2 | +0.86 |
+| 2 | stroma → alias → cancer-associated stroma | 1.0 | 0.2 | 1.2 | +0.86 |
+| 3 | smooth muscle | 0.0 | 0.2 | 0.2 | −0.70 |
+| 4 | none | 0.0 | 0.0 | 0.0 | −1.01 |
+
+Group mean 0.65, std 0.64. Advantage = (reward − 0.65) / (0.64 + 1e-4). Every token of
+completion 1 and 2 is pushed up by 0.86, every token of 4 is pushed down by 1.01.
+
+Real completions from the smoke run are in `results/grpo_sample_completions.md`. Mean
+completion length there ~230 tokens; 0 to 6% hit the cap (`completions/clipped_ratio`).
 
 ## Reward
 
