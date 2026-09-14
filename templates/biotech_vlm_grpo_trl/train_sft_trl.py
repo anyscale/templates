@@ -298,6 +298,8 @@ def main_ray(argv: list[str], script_args: ScriptArguments):
 
     hf_home = os.environ.get("HF_HOME", "/mnt/cluster_storage/hf_cache")
     env_vars = {"HF_HOME": hf_home}
+    if os.environ.get("UV_PROJECT_ENVIRONMENT"):  # one uv env per node, see run_trl.sh
+        env_vars["UV_PROJECT_ENVIRONMENT"] = os.environ["UV_PROJECT_ENVIRONMENT"]
     if os.environ.get("HF_TOKEN"):
         env_vars["HF_TOKEN"] = os.environ["HF_TOKEN"]
     # No `excludes` here: under `ray job submit` the job already owns working_dir/excludes and Ray

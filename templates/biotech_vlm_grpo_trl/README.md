@@ -338,6 +338,44 @@ One assumption to check on first use: `uv` must be on the job cluster's PATH (it
 `/home/ray/.local/bin/uv` on this workspace; confirm it comes from the image and not from
 the workspace's persisted home).
 
+## Data pipeline with Ray Data
+
+`prepare_data.py` turns `nct_crc_dataset.py`'s parquet into a TRL-ready parquet once, as a
+Ray Data pipeline (`read_parquet → map(decode base64 → JPEG bytes, reshape prompt) →
+write_parquet`, order preserved). `run_trl.sh` runs it when `<data_dir>/trl/train` is
+missing; `build_dataset()` uses it when present and falls back to the raw parquet otherwise.
+
+Why it is preprocessing and not a streaming dataloader: TRL's GRPO needs every DDP rank
+to hold the **same** dataset. Each prompt is repeated `num_generations` times and the
+global batch is sliced across ranks so one group's completions line up; per-worker shards
+would silently mis-group rewards. Without the prepared parquet each of the 4 workers
+decodes all 1,998 images itself (~50 s, 4x duplicated); with it, the decode runs once
+across the cluster's CPUs and workers load in seconds. Same shape a slide-tile pipeline
+takes at scale.
+
+## Rollouts on a vLLM server (Ray actor)
+
+`configs/grpo_vllm_server.yaml` switches the GRPO arm to TRL's **server mode**:
+`use_vllm: true`, `vllm_mode: server`. Rollouts run on a `trl vllm-serve` process and the
+trainer pushes its weights (LoRA merged) to it over NCCL after every optimizer step.
+
+The Ray part is `vllm_server_actor.py`: the server runs as a `@ray.remote(num_gpus=1)`
+actor, so Ray schedules the generator and the trainer as two resource bundles on the same
+cluster. `train_grpo_trl.py --ray` starts it when the config asks for server mode and no
+`--vllm_server_base_url` is given, passes the URL to the trainer, and stops it at the end.
+On this node: 1 GPU serves, 3 train (`num_gpus: 3`).
+
+```bash
+bash run_trl.sh --config configs/grpo_vllm_server.yaml      # run_trl.sh adds --extra vllm
+```
+
+The `vllm` optional extra (`vllm==0.26.0`, cu129 wheel, which links the libcudart torch
+cu128 supplies) is in `pyproject.toml` / `uv.lock`; the run script adds `--extra vllm`
+when it sees `use_vllm: true`. `grpo_step_timing.py` reports the push as
+`timing/weight_sync_s`; `timing/generate_s` becomes the vLLM call. `vllm_mode: colocate`
+(engine inside each training process, sleep mode) is a config-only alternative once the
+extra is installed; the baseline config keeps `use_vllm: false`.
+
 ## Checkpointing and resume
 
 Both scripts save every `save_steps` (`save_strategy: steps`, `save_total_limit: 2` in the
@@ -483,6 +521,9 @@ concatenates it as a string). `record_to_trl()` handles both.
 | `train_grpo_trl.py` | the GRPO script. `TrlParser` config, reads the parquet, reshapes rows for TRL, `GRPOTrainer` + LoRA, `--ray` wraps the same body in `TorchTrainer` |
 | `rewards.py` | `label_reward` (1.0) and `format_reward` (0.2); self-test with `python rewards.py` |
 | `nct_crc_dataset.py` | downloads NCT-CRC-HE and writes the class-balanced train/val parquet |
+| `prepare_data.py` | Ray Data: raw parquet → TRL-ready parquet, once |
+| `vllm_server_actor.py` | `trl vllm-serve` as a Ray actor on its own GPU(s), for `configs/grpo_vllm_server.yaml` |
+| `rollout_demo.py` | sample one GRPO group for one training row and show rewards + advantages |
 | `grpo_step_timing.py` | the instrumentation. Monkeypatches the trainer instance; returns a dict of what it managed to wrap |
 | `plot_step_breakdown.py` | stacked bar from `log_history.jsonl` |
 | `train_sft_trl.py` | `SFTTrainer` + LoRA, `--mode vlm\|llm`, `--ray`; `record_to_trl()` is the one function that knows the JSON shape |
@@ -537,8 +578,9 @@ you never see them. The keys above are a superset of what they cover.
 
 ## Known limits and choices
 
-- **Not TRL's vLLM mode.** `use_vllm=True` (server or colocate) is the next arm; this
-  one is deliberately the PathAI baseline shape.
+- The default config is the PathAI baseline shape (`use_vllm: false`, HF `generate`).
+  `configs/grpo_vllm_server.yaml` is the vLLM-server arm; `vllm_mode: colocate` is the
+  config-only third option.
 - `beta=0`: no reference model, no KL.
   `num_iterations=1`, so old log-probs are not recomputed; the step is generate →
   reward → one forward/backward.

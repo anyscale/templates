@@ -16,6 +16,8 @@ if [ -f "$HOME/.workspacerc" ]; then
 fi
 export RAY_RUNTIME_ENV_HOOK=ray._private.runtime_env.uv_runtime_env_hook.hook
 export HF_HOME="${HF_HOME:-/mnt/cluster_storage/hf_cache}"
+# One shared uv env per node (not a 7 GB .venv inside every uploaded working_dir copy).
+export UV_PROJECT_ENVIRONMENT="${UV_PROJECT_ENVIRONMENT:-$HOME/.venvs/biotech_vlm_grpo_trl}"
 
 case " $* " in *" --config "*) ;; *) set -- --config configs/sft_vlm_smoke.yaml "$@" ;; esac
 

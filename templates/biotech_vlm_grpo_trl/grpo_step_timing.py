@@ -31,6 +31,7 @@ Metric families (all seconds unless suffixed):
   timing/backward_s                 accelerator.backward, summed over micro-batches
                                     (DDP gradient all-reduce lives in here)
   timing/optimizer_s                optimizer.step
+  timing/weight_sync_s              vLLM modes only: push of the trainer's weights to the engine
   timing/other_s                    step_s - everything above (decode, padding, advantages, ...)
   timing/*_frac                     phase / step_s for generate, reward, forward, backward, sync_wait
 
@@ -486,6 +487,7 @@ class GRPOStepTimingCallback(TrainerCallback):
             "timing/forward_s": t.get("forward", 0.0),
             "timing/backward_s": t.get("backward", 0.0),
             "timing/optimizer_s": t.get("optimizer", 0.0),
+            "timing/weight_sync_s": t.get("weight_sync", 0.0),
         }
         if st.decode_steps:
             m["timing/generate/prefill_s"] = st.prefill_s
@@ -506,6 +508,7 @@ class GRPOStepTimingCallback(TrainerCallback):
                 "timing/forward_s",
                 "timing/backward_s",
                 "timing/optimizer_s",
+                "timing/weight_sync_s",
             )
         )
         m["timing/other_s"] = max(total - known, 0.0)
@@ -624,6 +627,9 @@ def instrument_grpo_trainer(
     wrapped["completion_capture"] = _wrap_completion_capture(trainer, state)
     wrapped["reward_total"] = timer.wrap(trainer, "_calculate_rewards", "reward")
     wrapped["reward_funcs"] = _wrap_reward_funcs(trainer, timer)
+    # vLLM modes: weight push to the engine (TRL calls it before generate when the step changed)
+    vg = getattr(trainer, "vllm_generation", None)
+    wrapped["weight_sync"] = timer.wrap(vg, "sync_weights", "weight_sync") if vg is not None else False
     wrapped["forward"] = timer.wrap(trainer, "compute_loss", "forward")
     wrapped["backward"] = timer.wrap(trainer.accelerator, "backward", "backward") if getattr(trainer, "accelerator", None) else False
     wrapped["optimizer"] = False  # wrapped lazily on the first on_step_begin

@@ -149,7 +149,22 @@ def to_trl_rows(parquet_path: str, limit: int = 0) -> list[dict]:
 def build_dataset(parquet_path: str, limit: int = 0):
     from datasets import Dataset, Features, Image, List, Value
 
-    rows = to_trl_rows(parquet_path, limit)
+    prepared = os.path.join(os.path.dirname(parquet_path), "trl", os.path.basename(parquet_path).replace(".parquet", ""))
+    if os.path.isdir(prepared):
+        # Written once by prepare_data.py (Ray Data). Images stay JPEG bytes; the HF Image
+        # feature decodes lazily on access, so this takes seconds instead of ~50 s per rank.
+        import pyarrow.parquet as pq
+
+        t = pq.read_table(prepared)
+        rows = [
+            {"prompt": json.loads(pr), "images": [{"bytes": im, "path": None}], "ground_truth": gt}
+            for pr, im, gt in zip(t.column("prompt").to_pylist(), t.column("image").to_pylist(), t.column("ground_truth").to_pylist())
+        ]
+        if limit:
+            rows = rows[:limit]
+        print(f"[data] using prepared parquet {prepared}")
+    else:
+        rows = to_trl_rows(parquet_path, limit)
     features = Features(
         {
             "prompt": List(
@@ -276,6 +291,8 @@ def main_ray(argv: list[str], script_args: ScriptArguments):
     # is genuinely environmental: run_trl.sh / job_grpo.yaml set it, and we forward it.
     hf_home = os.environ.get("HF_HOME", "/mnt/cluster_storage/hf_cache")
     env_vars = {"HF_HOME": hf_home}
+    if os.environ.get("UV_PROJECT_ENVIRONMENT"):  # one uv env per node, see run_trl.sh
+        env_vars["UV_PROJECT_ENVIRONMENT"] = os.environ["UV_PROJECT_ENVIRONMENT"]
     if os.environ.get("HF_TOKEN"):
         env_vars["HF_TOKEN"] = os.environ["HF_TOKEN"]
     # With RAY_RUNTIME_ENV_HOOK=...uv_runtime_env_hook.hook set, ray.init() also adds
@@ -295,6 +312,22 @@ def main_ray(argv: list[str], script_args: ScriptArguments):
     snapshot_download(model_id, revision=revision)
     print(f"[hub] {model_id}@{revision[:8]} cached in {hf_home} ({time.perf_counter() - t0:.0f}s)")
 
+    # TRL server mode: rollouts on a vLLM server that runs as a Ray actor on its own GPU(s).
+    # Started here when the config asks for it and no URL was given; see vllm_server_actor.py.
+    vllm_actor = None
+    if _lookup(argv, "use_vllm", default="false").lower() == "true" and _lookup(argv, "vllm_mode", default="server") == "server" \
+            and _lookup(argv, "vllm_server_base_url", default="") == "":
+        from vllm_server_actor import start_vllm_server
+
+        url, vllm_actor = start_vllm_server(
+            model=model_id,
+            revision=revision,
+            tensor_parallel_size=int(_lookup(argv, "vllm_tensor_parallel_size", default="1")),
+            gpu_memory_utilization=float(_lookup(argv, "vllm_gpu_memory_utilization", default="0.85")),
+            max_model_len=int(_lookup(argv, "vllm_max_model_length", default="4096")),
+        )
+        argv = argv + ["--vllm_server_base_url", url]
+
     os.makedirs(run_root, exist_ok=True)
     reported = os.path.join(run_root, "ray_reported_metrics.jsonl")
     trainer = TorchTrainer(
@@ -309,7 +342,12 @@ def main_ray(argv: list[str], script_args: ScriptArguments):
             callbacks=[StepMetricsToDriver(reported)],
         ),
     )
-    result = trainer.fit()
+    try:
+        result = trainer.fit()
+    finally:
+        if vllm_actor is not None:
+            ray.get(vllm_actor.stop.remote())
+            ray.kill(vllm_actor)
     print("[ray] result:", result)
     print_step_table(reported)
 

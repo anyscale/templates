@@ -21,6 +21,8 @@ if [ -f "$HOME/.workspacerc" ]; then
 fi
 export RAY_RUNTIME_ENV_HOOK=ray._private.runtime_env.uv_runtime_env_hook.hook
 export HF_HOME="${HF_HOME:-/mnt/cluster_storage/hf_cache}"
+# One shared uv env per node (not a 7 GB .venv inside every uploaded working_dir copy).
+export UV_PROJECT_ENVIRONMENT="${UV_PROJECT_ENVIRONMENT:-$HOME/.venvs/biotech_vlm_grpo_trl}"
 
 # Default config unless the caller passed one.
 case " $* " in *" --config "*) ;; *) set -- --config configs/grpo_smoke.yaml "$@" ;; esac
@@ -38,4 +40,20 @@ if [ ! -f "$DATA_DIR/train.parquet" ]; then
   uv run --frozen python nct_crc_dataset.py --output_dir "$DATA_DIR"
 fi
 
-exec uv run --frozen python train_grpo_trl.py --ray "$@"
+# Ray Data preprocessing, once: TRL-ready parquet so workers skip the per-rank image decode.
+if [ ! -d "$DATA_DIR/trl/train" ]; then
+  echo "=== preparing TRL-ready parquet with Ray Data ==="
+  uv run --frozen python prepare_data.py --data_dir "$DATA_DIR"
+fi
+
+# vLLM server mode needs the vllm extra in the environment (both driver and workers).
+EXTRA=()
+if python3 - "$@" <<'PY'
+import sys, yaml
+argv = sys.argv[1:]
+v = argv[argv.index("--use_vllm") + 1].lower() if "--use_vllm" in argv else str(yaml.safe_load(open(argv[argv.index("--config") + 1])).get("use_vllm", False)).lower()
+sys.exit(0 if v == "true" else 1)
+PY
+then EXTRA=(--extra vllm); fi
+
+exec uv run --frozen "${EXTRA[@]}" python train_grpo_trl.py --ray "$@"
