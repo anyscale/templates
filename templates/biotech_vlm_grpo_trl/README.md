@@ -37,13 +37,42 @@ there is runnable code before PathAI's data or JSON shape arrives.
 
 ## Two training modes on the same patches
 
-| | GRPO (`train_grpo_trl.py`) | SFT (`train_sft_trl.py`) |
+| | SFT (`train_sft_trl.py`) | GRPO (`train_grpo_trl.py`) |
 |---|---|---|
-| input | patch + fixed classification prompt | patch + a question |
-| what the model does in training | **generates** 4 completions per prompt | nothing generated; the target answer is fed in (teacher forcing) |
-| what the loss uses | a **reward** per completion → group-normalised advantage | the fixed **target** text, next-token cross-entropy on target tokens only |
-| data needed per row | image + class label | image + question + answer text |
-| data here | real labels from NCT-CRC-HE | real tiles, templated QA (fake) until PathAI's slide QA arrives |
+| input | patch + a question | patch + fixed classification prompt |
+| what the model does in training | nothing generated; the target answer is fed in (teacher forcing) | **generates** 4 completions per prompt |
+| what the loss uses | the fixed **target** text, next-token cross-entropy on target tokens only | a **reward** per completion → group-normalised advantage |
+| data needed per row | image + question + answer text | image + class label |
+| data here | real tiles, templated QA (fake) until PathAI's slide QA arrives | real labels from NCT-CRC-HE |
+
+## SFT: input, target, loss
+
+Row 1, the cancer-associated stroma patch (#1 above); the GRPO section below uses the same patch. One SFT row is one
+prompt and one fixed target; nothing is sampled and nothing is rewarded.
+
+```
+input  (loss masked):  system: You are a pathology assistant. Answer questions about the tissue shown.
+                       user:   <image> What tissue type is shown in this tile?
+target (loss applied): assistant: This tile shows cancer-associated stroma: loose fibrous
+                       matrix with scattered activated fibroblasts and irregular collagen.
+```
+
+Loss: next-token cross-entropy on the target tokens only (`completion_only_loss`, inferred
+by TRL from the prompt/completion columns). LoRA weights only.
+
+Data: `make_sft_data.py` takes the same 198 val patches, saves them as PNG tiles and writes
+LLaVA-style JSONL:
+
+```json
+{"image": "tiles/nctcrc_000123.png",
+ "conversations": [{"from": "human", "value": "<image>\nWhat tissue type is shown in this tile?"},
+                   {"from": "gpt",   "value": "This tile shows lymphocytes: densely packed small round cells ..."}],
+ "metadata": {"label": "lymphocytes"}}
+```
+
+Questions and answers are templated from the label, so it is fake QA on real tissue: it
+tests the pipeline, not the model. Text-only twin: the image is replaced by the templated
+description in the question. Real data: change `record_to_trl()` in `train_sft_trl.py`.
 
 ## GRPO: input
 
@@ -135,35 +164,6 @@ First 5 train rows (`results/grpo_train_samples.png`):
 | 3 | colorectal adenocarcinoma epithelium |
 | 4 | mucus |
 | 5 | smooth muscle |
-
-## SFT: input, target, loss
-
-Same patch as the GRPO group above (row 1, cancer-associated stroma). One SFT row is one
-prompt and one fixed target; nothing is sampled and nothing is rewarded.
-
-```
-input  (loss masked):  system: You are a pathology assistant. Answer questions about the tissue shown.
-                       user:   <image> What tissue type is shown in this tile?
-target (loss applied): assistant: This tile shows cancer-associated stroma: loose fibrous
-                       matrix with scattered activated fibroblasts and irregular collagen.
-```
-
-Loss: next-token cross-entropy on the target tokens only (`completion_only_loss`, inferred
-by TRL from the prompt/completion columns). LoRA weights only.
-
-Data: `make_sft_data.py` takes the same 198 val patches, saves them as PNG tiles and writes
-LLaVA-style JSONL:
-
-```json
-{"image": "tiles/nctcrc_000123.png",
- "conversations": [{"from": "human", "value": "<image>\nWhat tissue type is shown in this tile?"},
-                   {"from": "gpt",   "value": "This tile shows lymphocytes: densely packed small round cells ..."}],
- "metadata": {"label": "lymphocytes"}}
-```
-
-Questions and answers are templated from the label, so it is fake QA on real tissue: it
-tests the pipeline, not the model. Text-only twin: the image is replaced by the templated
-description in the question. Real data: change `record_to_trl()` in `train_sft_trl.py`.
 
 ## Run it
 
