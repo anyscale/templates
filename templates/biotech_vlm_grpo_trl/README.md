@@ -45,6 +45,18 @@ there is runnable code before PathAI's data or JSON shape arrives.
 | data needed per row | image + question + answer text | image + class label |
 | data here | real tiles, templated QA (fake) until PathAI's slide QA arrives | real labels from NCT-CRC-HE |
 
+First 5 train rows (`results/grpo_train_samples.png`):
+
+![five training patches](results/grpo_train_samples.png)
+
+| # | ground_truth |
+|---|---|
+| 1 | cancer-associated stroma |
+| 2 | background |
+| 3 | colorectal adenocarcinoma epithelium |
+| 4 | mucus |
+| 5 | smooth muscle |
+
 ## SFT: input, target, loss
 
 Row 1, the cancer-associated stroma patch (#1 above); the GRPO section below uses the same patch. One SFT row is one
@@ -153,18 +165,6 @@ Only LoRA weights update.
   batch (62 ms at batch 4). Not per-sequence latency. Stays flat as batch grows, which
   is why tok/s grows with batch and why a batching engine (vLLM, SkyRL) wins.
 
-First 5 train rows (`results/grpo_train_samples.png`):
-
-![five training patches](results/grpo_train_samples.png)
-
-| # | ground_truth |
-|---|---|
-| 1 | cancer-associated stroma |
-| 2 | background |
-| 3 | colorectal adenocarcinoma epithelium |
-| 4 | mucus |
-| 5 | smooth muscle |
-
 ## Run it
 
 ```bash
@@ -266,7 +266,6 @@ Three views of the same per-step numbers, cheapest first:
 1. **The stacked bar** — `results/step_breakdown.png` for the recorded run; open it in
    the workspace file browser. Regenerate for any run with:
 
-
    ```bash
    uv run --frozen python plot_step_breakdown.py /mnt/cluster_storage/trl_grpo/pathvlm_2b_trl/log_history.jsonl step_breakdown.png
    ```
@@ -284,7 +283,6 @@ Three views of the same per-step numbers, cheapest first:
    ```
 
    then open port 6006 from the workspace's Ports panel (or VS Code's port forward).
-
 
 ## Smoke run results (2026-09-11, 4x A10G, `bash run_trl.sh` defaults)
 
