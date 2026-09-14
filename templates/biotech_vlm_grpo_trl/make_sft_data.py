@@ -13,8 +13,8 @@ Record shape written here:
       "slide_id": "FAKE-SLIDE-0007",                 # stand-in for a TCGA / PathAI slide id
       "image": "tiles/nctcrc_000123.png",            # path relative to the JSONL's directory
       "conversations": [
-        {"from": "human", "value": "<image>\nWhat tissue type is shown in this tile?"},
-        {"from": "gpt",   "value": "This tile shows lymphocytes: ..."}
+        {"from": "human", "value": "<image>\nDescribe what you see in this tile step by step, then give the tissue type as <answer>class_name</answer>."},
+        {"from": "gpt",   "value": "1. This is an H&E-stained colorectal tissue patch. 2. The dominant feature is ... 4. The pattern is most consistent with lymphocytes. <answer>lymphocytes</answer>"}
       ],
       "metadata": {"label": "lymphocytes", "source": "NCT-CRC-HE CRC-VAL-HE-7K", "tile_px": 224}
     }
@@ -53,11 +53,34 @@ DESCRIPTIONS = {
     "colorectal adenocarcinoma epithelium": "crowded irregular glands with nuclear pleomorphism and loss of polarity",
 }
 
+# The one feature whose absence rules a class out; used to write the "not X" steps.
+HALLMARK = {
+    "adipose": "lipid vacuoles",
+    "background": "empty glass",
+    "debris": "amorphous necrotic material",
+    "lymphocytes": "sheets of small dark round cells",
+    "mucus": "pale mucin pools",
+    "smooth muscle": "parallel eosinophilic fibre bundles",
+    "normal colon mucosa": "regular crypts with goblet cells",
+    "cancer-associated stroma": "loose reactive fibrous matrix",
+    "colorectal adenocarcinoma epithelium": "crowded irregular glands",
+}
+
+# Every question asks for the visual reasoning first and the answer in <answer> tags:
+# the same output contract the GRPO arm rewards, so SFT teaches the format GRPO refines.
 QUESTIONS = [
-    ("What tissue type is shown in this tile?", "This tile shows {label}: {desc}."),
-    ("Describe the histology in this patch.", "The patch shows {desc}, consistent with {label}."),
-    ("Is tumor epithelium present in this tile?", "{yesno}. The tile shows {desc}, consistent with {label}."),
+    "Describe what you see in this tile step by step, then give the tissue type as <answer>class_name</answer>.",
+    "Walk through the histologic features of this patch and how they lead to your diagnosis. End with <answer>class_name</answer>.",
+    "Reason from the image: what structures and cells are present, what do they rule out, and what tissue type is this? Finish with <answer>class_name</answer>.",
 ]
+
+ANSWER_TEMPLATE = (
+    "1. This is an H&E-stained colorectal tissue patch. "
+    "2. The dominant feature is {desc}. "
+    "3. No {not1}, so not {other1}; no {not2}, so not {other2}. "
+    "4. The pattern is most consistent with {label}. "
+    "<answer>{label}</answer>"
+)
 
 
 def _tiles_from_parquet(parquet_path: str, tiles_dir: str, limit: int, seed: int) -> list[dict]:
@@ -92,9 +115,12 @@ def make_records(tiles: list[dict], seed: int) -> list[dict]:
     records = []
     for i, t in enumerate(tiles):
         label = t["label"]
-        q, a_tmpl = rng.choice(QUESTIONS)
-        is_tumor = label == "colorectal adenocarcinoma epithelium"
-        answer = a_tmpl.format(label=label, desc=DESCRIPTIONS[label], yesno="Yes" if is_tumor else "No")
+        q = rng.choice(QUESTIONS)
+        others = rng.sample([c for c in DESCRIPTIONS if c != label], 2)
+        answer = ANSWER_TEMPLATE.format(
+            desc=DESCRIPTIONS[label], label=label,
+            not1=HALLMARK[others[0]], other1=others[0], not2=HALLMARK[others[1]], other2=others[1],
+        )
         records.append(
             {
                 "id": f"nctcrc_{i:06d}",

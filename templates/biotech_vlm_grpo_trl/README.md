@@ -39,9 +39,9 @@ there is runnable code before PathAI's data or JSON shape arrives.
 
 | | SFT (`train_sft_trl.py`) | GRPO (`train_grpo_trl.py`) |
 |---|---|---|
-| input | patch + a question | patch + fixed classification prompt |
+| input | patch + "describe your reasoning, then answer in `<answer>` tags" | patch + fixed 9-class prompt, same `<answer>` contract |
 | what the model does in training | nothing generated; the target answer is fed in (teacher forcing) | **generates** 4 completions per prompt |
-| what the loss uses | the fixed **target** text, next-token cross-entropy on target tokens only | a **reward** per completion → group-normalised advantage |
+| what the loss uses | the fixed **target** text (reasoning + tag), next-token cross-entropy on target tokens only | a **reward** per completion → group-normalised advantage |
 | data needed per row | image + question + answer text | image + class label |
 | data here | real tiles, templated QA (fake) until PathAI's slide QA arrives | real labels from NCT-CRC-HE |
 
@@ -59,32 +59,36 @@ First 5 train rows (`results/grpo_train_samples.png`):
 
 ## SFT: input, target, loss
 
-Row 1, the cancer-associated stroma patch (#1 above); the GRPO section below uses the same patch. One SFT row is one
-prompt and one fixed target; nothing is sampled and nothing is rewarded.
+Row 1, the cancer-associated stroma patch (#1 above); the GRPO section below uses the
+same patch. One SFT row is one prompt and one fixed target; nothing is sampled and
+nothing is rewarded. The question asks for the visual reasoning first and the answer in
+`<answer>` tags, and the target is written that way: SFT teaches the output contract
+that GRPO then rewards.
 
 ```
-input  (loss masked):  system: You are a pathology assistant. Answer questions about the tissue shown.
-                       user:   <image> What tissue type is shown in this tile?
-target (loss applied): assistant: This tile shows cancer-associated stroma: loose fibrous
-                       matrix with scattered activated fibroblasts and irregular collagen.
+input  (loss masked):  system: You are a pathology assistant. Examine the tissue patch and
+                               reason step by step before answering.
+                       user:   <image> Describe what you see in this tile step by step, then give the tissue type as <answer>class_name</answer>.
+target (loss applied): assistant: 1. This is an H&E-stained colorectal tissue patch. 2. The dominant feature is loose fibrous matrix with scattered activated fibroblasts and irregular collagen. 3. No sheets of small dark round cells, so not lymphocytes; no parallel eosinophilic fibre bundles, so not smooth muscle. 4. The pattern is most consistent with cancer-associated stroma. <answer>cancer-associated stroma</answer>
 ```
 
 Loss: next-token cross-entropy on the target tokens only (`completion_only_loss`, inferred
-by TRL from the prompt/completion columns). LoRA weights only.
+by TRL from the prompt/completion columns). Targets are 84 to 111 tokens. LoRA weights only.
 
 Data: `make_sft_data.py` takes the same 198 val patches, saves them as PNG tiles and writes
-LLaVA-style JSONL:
+LLaVA-style JSONL, one of three question phrasings per record, the target templated from
+the class label (feature of the class, two classes it is not, conclusion, tag):
 
 ```json
 {"image": "tiles/nctcrc_000123.png",
- "conversations": [{"from": "human", "value": "<image>\nWhat tissue type is shown in this tile?"},
-                   {"from": "gpt",   "value": "This tile shows lymphocytes: densely packed small round cells ..."}],
+ "conversations": [{"from": "human", "value": "<image>\nDescribe what you see in this tile step by step, then give the tissue type as <answer>class_name</answer>."},
+                   {"from": "gpt",   "value": "1. This is an H&E-stained colorectal tissue patch. 2. The dominant feature is ... 3. No ..., so not ...; no ..., so not .... 4. The pattern is most consistent with lymphocytes. <answer>lymphocytes</answer>"}],
  "metadata": {"label": "lymphocytes"}}
 ```
 
-Questions and answers are templated from the label, so it is fake QA on real tissue: it
-tests the pipeline, not the model. Text-only twin: the image is replaced by the templated
-description in the question. Real data: change `record_to_trl()` in `train_sft_trl.py`.
+Fake QA on real tissue: it tests the pipeline and the format, not pathology. Text-only twin:
+the image is replaced by the templated description in the question. Real slide QA replaces
+this through one function, `record_to_trl()` in `train_sft_trl.py`.
 
 ## GRPO: input
 

@@ -31,7 +31,9 @@ import sys
 import time
 from dataclasses import dataclass, field
 
-SYSTEM_PROMPT = "You are a pathology assistant. Answer questions about the tissue shown."
+# Same system prompt as the GRPO arm (../biotech_vlm_grpo/nct_crc_dataset.py): SFT teaches the
+# "reason from the image, then <answer>" contract that GRPO then rewards.
+SYSTEM_PROMPT = "You are a pathology assistant. Examine the tissue patch and reason step by step before answering."
 
 
 @dataclass
