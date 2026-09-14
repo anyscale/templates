@@ -1,8 +1,7 @@
 # Dependency spec for the TRL arm of the PathAI GRPO spike.
 #
 # This is a uv project so that Ray's uv runtime-env hook can replicate the exact
-# environment onto the GPU worker nodes (the base image has no torch/trl). Same
-# mechanism the SkyRL arm uses, see ../biotech_vlm_grpo/run_pathvlm.sh.
+# environment onto the GPU worker nodes (the base image has no torch/trl).
 #
 # Ray and torch are pinned to what this cluster already runs: ray 2.56.0 is the
 # cluster's version (driver must match), torch 2.11.0+cu128 is the proven build on

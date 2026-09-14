@@ -5,7 +5,7 @@ Stacked bar of one GRPO step's phases, per step, from the run's log_history.json
 
 Reads the `timing/*_s` keys that grpo_step_timing.py injected into the HF log stream.
 This is the chart that argues for a faster rollout engine: the generate slice is the
-part vLLM / SkyRL take out of the step.
+part a rollout engine (vLLM) takes out of the step.
 """
 
 import json

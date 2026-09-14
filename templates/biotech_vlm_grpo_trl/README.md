@@ -1,8 +1,7 @@
 # Biotech VLM GRPO — TRL arm (+ TRL SFT skeleton)
 
-The PathAI-baseline counterpart to `../biotech_vlm_grpo`: the **same** NCT-CRC-HE
-patches, prompt, and rule reward, but run through **vanilla Hugging Face TRL**
-instead of SkyRL.
+GRPO and SFT on NCT-CRC-HE colorectal tissue patches with **vanilla Hugging Face TRL**,
+launched with Ray Train. Standalone: everything needed is in this directory.
 
 - `GRPOTrainer` with `use_vllm=False`: rollouts come from HF `model.generate`
   inside the trainer, on the weights being trained. No inference engine, no
@@ -23,7 +22,7 @@ there is runnable code before PathAI's data or JSON shape arrives.
 
 - Dataset: `1aurent/NCT-CRC-HE` on Hugging Face. 224x224 H&E colorectal tissue patches, 9 classes, public.
 - Split used: `CRC-VAL-HE-7K` (7,180 patches). Sampled 1,998 train / 198 val, class-balanced (222 / 22 per class), disjoint.
-- Script: `../biotech_vlm_grpo/nct_crc_dataset.py`. Output: `/mnt/cluster_storage/data/nct_crc/{train,val}.parquet`. Same files the SkyRL arm trains on.
+- Script: `nct_crc_dataset.py` (run once; `run_trl.sh` does it if the parquet is missing). Output: `/mnt/cluster_storage/data/nct_crc/{train,val}.parquet`.
 
 ## Preprocessing
 
@@ -224,7 +223,7 @@ completion length there ~230 tokens; 0 to 6% hit the cap (`completions/clipped_r
 
 ## GRPO: reward and advantage
 
-`rewards.py`, two functions, TRL sums them. Same scoring as the SkyRL arm's `env.py`.
+`rewards.py`, two functions, TRL sums them.
 
 | function | value | rule |
 |---|---|---|
@@ -299,8 +298,7 @@ environment before `transformers` is imported; it is set in the run scripts and 
 YAML `env_vars`, not in the training config.
 
 Not used, on purpose: Pydantic (nothing in TRL, HF or Ray Train uses it; it would be a
-third config system) and Hydra/OmegaConf (what the SkyRL arm uses; `TrlParser` already
-does the job on the TRL side).
+third config system) and Hydra/OmegaConf (`TrlParser` already does the job here).
 
 ## Submit it as a job instead of running the script
 
@@ -428,10 +426,6 @@ What the numbers say:
   agree on the reward and contribute zero advantage (step 8 had loss 0 and grad norm
   0). Use more prompts per step for signal; this run was sized for timing, not
   learning. Mean reward 0.51 to 0.69 over 10 steps is noise at n=16.
-- The SkyRL arm's steady state on the same GPUs was ~120 s/step for 64 completions
-  (vLLM generate ~5 s, FSDP full-parameter train ~95 s). Different batch, different
-  trainer, different knobs: do not read the two as a throughput comparison. Read them
-  as "where does the time go": generation here, training there.
 
 The recorded JSONL files in `results/` predate the rename of `timing/generate/ms_per_token`
 to `timing/generate/ms_per_decode_step` (same quantity: milliseconds per whole-batch decode
@@ -486,8 +480,9 @@ concatenates it as a string). `record_to_trl()` handles both.
 
 | File | What |
 |---|---|
-| `train_grpo_trl.py` | the GRPO script. `TrlParser` config, reads the SkyRL parquet, reshapes rows for TRL, `GRPOTrainer` + LoRA, `--ray` wraps the same body in `TorchTrainer` |
-| `rewards.py` | `label_reward` (1.0) and `format_reward` (0.2), same scoring as `../biotech_vlm_grpo/env.py`; self-test with `python rewards.py` |
+| `train_grpo_trl.py` | the GRPO script. `TrlParser` config, reads the parquet, reshapes rows for TRL, `GRPOTrainer` + LoRA, `--ray` wraps the same body in `TorchTrainer` |
+| `rewards.py` | `label_reward` (1.0) and `format_reward` (0.2); self-test with `python rewards.py` |
+| `nct_crc_dataset.py` | downloads NCT-CRC-HE and writes the class-balanced train/val parquet |
 | `grpo_step_timing.py` | the instrumentation. Monkeypatches the trainer instance; returns a dict of what it managed to wrap |
 | `plot_step_breakdown.py` | stacked bar from `log_history.jsonl` |
 | `train_sft_trl.py` | `SFTTrainer` + LoRA, `--mode vlm\|llm`, `--ray`; `record_to_trl()` is the one function that knows the JSON shape |
@@ -500,7 +495,7 @@ concatenates it as a string). `record_to_trl()` handles both.
 
 ## How the environment reaches the GPU worker
 
-Same cluster facts as the SkyRL arm (`../biotech_vlm_grpo/ARCHITECTURE.md`): the head
+On this workspace the head
 node is CPU-only and its base conda has no torch; the 4x A10G worker autoscales on
 demand. So this is a uv project, and `RAY_RUNTIME_ENV_HOOK=...uv_runtime_env_hook.hook`
 makes `ray.init()` ship this directory as `working_dir` and `uv run --frozen` as the
@@ -544,14 +539,13 @@ you never see them. The keys above are a superset of what they cover.
 
 - **Not TRL's vLLM mode.** `use_vllm=True` (server or colocate) is the next arm; this
   one is deliberately the PathAI baseline shape.
-- `beta=0`: no reference model, no KL, matching the SkyRL arm's `use_kl_loss=false`.
+- `beta=0`: no reference model, no KL.
   `num_iterations=1`, so old log-probs are not recomputed; the step is generate →
   reward → one forward/backward.
 - LoRA targets the language model's projections only; Qwen3-VL's vision tower uses
   different module names and stays frozen.
-- `max_completion_length: 384` vs. SkyRL's 1024: HF `generate` runs every sequence to the
-  longest, so a long cap is paid on every step. The SkyRL run's mean completion was
-  ~230 tokens; 384 truncates the tail and the `format_reward` teaches conciseness.
+- `max_completion_length: 384`: HF `generate` runs every sequence to the longest, so a
+  long cap is paid on every step. Mean completion length is ~230 tokens; 384 truncates the tail and the `format_reward` teaches conciseness.
 - Eval is not wired into the GRPO script (HF `generate` over 198 val rows × 4 GPUs is
   slow); the SFT script does eval every `eval_steps`.
 - Checkpoints hold the LoRA adapter only (plus optimizer state); the base model is

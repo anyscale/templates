@@ -1,7 +1,7 @@
 """
 Rule rewards for NCT-CRC-HE tissue classification, as plain TRL reward functions.
 
-Scoring is identical to the SkyRL arm (../biotech_vlm_grpo/env.py, NctCrcEnv.step):
+Scoring:
 
     label_reward   1.0 if the last <answer>...</answer> block canonicalises to the
                    ground-truth class, else 0.0
@@ -10,13 +10,8 @@ Scoring is identical to the SkyRL arm (../biotech_vlm_grpo/env.py, NctCrcEnv.ste
 
     total          1.2 correct + well-formed, 0.2 wrong + well-formed, 0.0 no tags
 
-TRL sums the reward functions (reward_weights default to 1.0 each), so the group
-sees the same scalar the SkyRL env emits. They are two separate functions rather
-than one so that grpo_step_timing.py can time each by name.
-
-The answer-normalisation tables are copied verbatim from env.py rather than
-imported: env.py depends on skyrl_gym, which is not (and should not be) in this
-environment. Keep the two in sync if either changes.
+TRL sums the reward functions (reward_weights default to 1.0 each). They are two
+separate functions rather than one so that grpo_step_timing.py can time each by name.
 """
 
 import re
@@ -115,7 +110,7 @@ def format_reward(completions, **kwargs) -> list[float]:
 
 
 if __name__ == "__main__":
-    # The same 8 cases the SkyRL env was checked against.
+    # 8 scoring cases.
     cases = [
         ("Looks like immune cells. <answer>lymphocytes</answer>", "lymphocytes", 1.2),
         ("<answer>debris</answer>", "lymphocytes", 0.2),

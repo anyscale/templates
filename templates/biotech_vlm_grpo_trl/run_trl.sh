@@ -6,7 +6,7 @@
 #   bash run_trl.sh --max_steps 30 --num_gpus 2            # override any config key
 #   bash run_trl.sh --config configs/my_run.yaml           # a different config
 #
-# Same cluster facts as ../biotech_vlm_grpo/run_pathvlm.sh: the head node is CPU-only
+# Cluster facts: the head node is CPU-only
 # and has no torch, so the environment is a uv project and Ray's uv runtime-env hook
 # rebuilds it on the worker (working_dir = this directory, py_executable = uv run).
 set -eo pipefail
@@ -25,8 +25,7 @@ export HF_HOME="${HF_HOME:-/mnt/cluster_storage/hf_cache}"
 # Default config unless the caller passed one.
 case " $* " in *" --config "*) ;; *) set -- --config configs/grpo_smoke.yaml "$@" ;; esac
 
-# The dataset is the SkyRL arm's parquet; regenerate it if missing (workspace only:
-# the sibling directory is not part of a job's working_dir).
+# Build the dataset parquet on first run.
 DATA_DIR=$(python3 - "$@" <<'PY'
 import sys, yaml
 argv = sys.argv[1:]
@@ -34,9 +33,9 @@ if "--data_dir" in argv: print(argv[argv.index("--data_dir") + 1]); sys.exit()
 print(yaml.safe_load(open(argv[argv.index("--config") + 1])).get("data_dir", "/mnt/cluster_storage/data/nct_crc"))
 PY
 )
-if [ ! -f "$DATA_DIR/train.parquet" ] && [ -f ../biotech_vlm_grpo/nct_crc_dataset.py ]; then
-  echo "=== $DATA_DIR/train.parquet missing; generating with the SkyRL arm's script ==="
-  uv run --frozen python ../biotech_vlm_grpo/nct_crc_dataset.py --output_dir "$DATA_DIR"
+if [ ! -f "$DATA_DIR/train.parquet" ]; then
+  echo "=== $DATA_DIR/train.parquet missing; generating with nct_crc_dataset.py ==="
+  uv run --frozen python nct_crc_dataset.py --output_dir "$DATA_DIR"
 fi
 
 exec uv run --frozen python train_grpo_trl.py --ray "$@"

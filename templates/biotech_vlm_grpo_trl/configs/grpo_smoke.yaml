@@ -6,7 +6,7 @@ env:
   TOKENIZERS_PARALLELISM: "false"
 
 # --- ScriptArguments (ours) ---
-data_dir: /mnt/cluster_storage/data/nct_crc   # the SkyRL arm's parquet
+data_dir: /mnt/cluster_storage/data/nct_crc   # written by nct_crc_dataset.py
 train_rows: 0                                  # 0 = all 1,998
 profile_every: 0                               # >0 writes ~2 GB per trace; opt in
 
@@ -22,7 +22,7 @@ lora_dropout: 0.0
 lora_target_modules: [q_proj, k_proj, v_proj, o_proj, gate_proj, up_proj, down_proj]
 lora_task_type: CAUSAL_LM
 
-# --- GRPOConfig: the GRPO shape, matching the SkyRL arm where knobs correspond ---
+# --- GRPOConfig: the GRPO shape ---
 output_dir: /mnt/cluster_storage/trl_grpo/pathvlm_2b_trl/out   # run root = its parent
 run_name: pathvlm_2b_trl
 use_vllm: false                  # HF generate inside the trainer: the PathAI baseline shape
@@ -31,7 +31,7 @@ per_device_train_batch_size: 4   # completions per GPU per step; x GPUs must div
 gradient_accumulation_steps: 1
 max_completion_length: 384
 temperature: 0.8
-beta: 0.0                        # no reference model, no KL (SkyRL arm: use_kl_loss=false)
+beta: 0.0                        # no reference model, no KL
 learning_rate: 1.0e-5
 max_steps: 10
 

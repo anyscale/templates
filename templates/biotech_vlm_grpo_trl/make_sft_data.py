@@ -20,7 +20,7 @@ Record shape written here:
     }
 
 Tiles are real H&E: the 224x224 NCT-CRC-HE patches already on cluster storage
-(the SkyRL arm's val.parquet, 198 class-balanced patches), so the VLM actually sees
+(val.parquet from nct_crc_dataset.py, 198 class-balanced patches), so the VLM actually sees
 tissue. The QA text is templated from the class label, so it is *synthetic*: this
 dataset proves the plumbing, not the model.
 

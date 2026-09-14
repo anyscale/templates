@@ -5,8 +5,8 @@
 #   bash run_sft.sh --config configs/sft_llm_smoke.yaml    # text-only twin
 #   bash run_sft.sh --max_steps 50 --eval_steps 25         # override any config key
 #
-# Generates the fake JSONL dataset on first run (needs the SkyRL arm's NCT-CRC
-# val.parquet for the tiles; see make_sft_data.py).
+# Generates the fake JSONL dataset on first run (tiles come from the NCT-CRC val.parquet
+# written by nct_crc_dataset.py; see make_sft_data.py).
 set -eo pipefail
 TEMPLATE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$TEMPLATE_DIR"
@@ -27,6 +27,9 @@ print(yaml.safe_load(open(argv[argv.index("--config") + 1])).get("data_dir", "/m
 PY
 )
 if [ ! -f "$DATA_DIR/train.jsonl" ]; then
+  if [ ! -f /mnt/cluster_storage/data/nct_crc/val.parquet ]; then
+    uv run --frozen python nct_crc_dataset.py --output_dir /mnt/cluster_storage/data/nct_crc
+  fi
   echo "=== generating fake SFT data in $DATA_DIR ==="
   uv run --frozen python make_sft_data.py --output_dir "$DATA_DIR"
 fi

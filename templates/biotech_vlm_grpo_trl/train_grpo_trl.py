@@ -1,14 +1,12 @@
 """
-Vanilla TRL GRPO on NCT-CRC-HE with Qwen3-VL-2B-Instruct -- the "TRL arm" of the
-PathAI spike, sitting next to the SkyRL arm in ../biotech_vlm_grpo.
+Vanilla TRL GRPO on NCT-CRC-HE with Qwen3-VL-2B-Instruct.
 
 What "vanilla" means here:
   * `GRPOTrainer` with `use_vllm=False`: rollouts come from HF `model.generate`
     inside the trainer, on the same weights that train. No weight sync, no engine.
   * PyTorch DDP via accelerate (whatever the launcher hands us), LoRA via peft.
-  * The same data, prompt and reward as the SkyRL arm. The parquet written by
-    ../biotech_vlm_grpo/nct_crc_dataset.py is read directly and reshaped in memory
-    into TRL's conversational-VLM row format (see `to_trl_rows`).
+  * Data: the parquet written by nct_crc_dataset.py, reshaped in memory into TRL's
+    conversational-VLM row format (see `to_trl_rows`).
   * One extra line: `instrument_grpo_trainer(trainer)` from grpo_step_timing.py, which
     breaks every optimizer step into rollout / reward / forward / backward / sync.
 
@@ -48,7 +46,7 @@ class ScriptArguments:
 
     data_dir: str = field(
         default="/mnt/cluster_storage/data/nct_crc",
-        metadata={"help": "Directory with the SkyRL arm's train.parquet (../biotech_vlm_grpo/nct_crc_dataset.py)."},
+        metadata={"help": "Directory with train.parquet from nct_crc_dataset.py."},
     )
     train_rows: int = field(default=0, metadata={"help": "Use only the first N train rows; 0 = all 1,998."})
     profile_every: int = field(
@@ -112,9 +110,9 @@ def parse_script_args_only(argv: list[str]) -> ScriptArguments:
 
 def to_trl_rows(parquet_path: str, limit: int = 0) -> list[dict]:
     """
-    SkyRL parquet row  ->  TRL conversational-VLM row.
+    nct_crc_dataset.py parquet row  ->  TRL conversational-VLM row.
 
-    SkyRL stores the image *inside* the prompt as a base64 data URI content part.
+    The parquet stores the image *inside* the prompt as a base64 data URI content part.
     TRL wants the image out-of-band in an `images` column and a `{"type": "image"}`
     placeholder in the user turn (TRL fills the placeholder at rollout time). The
     prompt text is taken from the parquet verbatim so the two arms see identical
@@ -282,7 +280,7 @@ def main_ray(argv: list[str], script_args: ScriptArguments):
         env_vars["HF_TOKEN"] = os.environ["HF_TOKEN"]
     # With RAY_RUNTIME_ENV_HOOK=...uv_runtime_env_hook.hook set, ray.init() also adds
     # working_dir=cwd (this directory) and py_executable="uv run ..." so the workers
-    # rebuild this exact uv environment. Same trick as the SkyRL arm.
+    # rebuild this exact uv environment.
     # No `excludes` here: under `ray job submit` the job already owns working_dir/excludes and Ray
     # refuses to merge the same field twice; Ray 2.56 skips .venv and __pycache__ by default anyway.
     ray.init(runtime_env={"env_vars": env_vars})
