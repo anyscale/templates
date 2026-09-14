@@ -35,7 +35,17 @@ there is runnable code before PathAI's data or JSON shape arrives.
 | system + user message text | same text; user turn gets an `{"type": "image"}` slot that TRL fills at rollout time |
 | `reward_spec.ground_truth` (class name) | `ground_truth` column, passed to the reward functions |
 
-## Input
+## Two training modes on the same patches
+
+| | GRPO (`train_grpo_trl.py`) | SFT (`train_sft_trl.py`) |
+|---|---|---|
+| input | patch + fixed classification prompt | patch + a question |
+| what the model does in training | **generates** 4 completions per prompt | nothing generated; the target answer is fed in (teacher forcing) |
+| what the loss uses | a **reward** per completion → group-normalised advantage | the fixed **target** text, next-token cross-entropy on target tokens only |
+| data needed per row | image + class label | image + question + answer text |
+| data here | real labels from NCT-CRC-HE | real tiles, templated QA (fake) until PathAI's slide QA arrives |
+
+## GRPO: input
 
 One image plus this prompt, identical for every row:
 
@@ -62,7 +72,7 @@ First 5 train rows (`results/grpo_train_samples.png`):
 | 4 | mucus |
 | 5 | smooth muscle |
 
-## Output
+## GRPO: output, 4 rollouts per prompt
 
 Per prompt: 4 completions, temperature 0.8, max 384 new tokens, HF `model.generate`.
 Expected shape: reasoning, then `<answer>class_name</answer>`.
@@ -102,7 +112,7 @@ completion 1 and 2 is pushed up by 0.86, every token of 4 is pushed down by 1.01
 Real completions from the smoke run are in `results/grpo_sample_completions.md`. Mean
 completion length there ~230 tokens; 0 to 6% hit the cap (`completions/clipped_ratio`).
 
-## Reward
+## GRPO: reward and advantage
 
 `rewards.py`, two functions, TRL sums them. Same scoring as the SkyRL arm's `env.py`.
 
@@ -118,7 +128,7 @@ to every token of that completion. All 4 equal → advantage 0 → no gradient f
 group (`frac_reward_zero_std`). No reward model, no reference model, no KL (`beta=0`).
 Only LoRA weights update.
 
-## Throughput units
+## GRPO: throughput units
 
 - Headline: tokens/s per GPU (`rollout/tokens_per_s`) and completions per GPU-hour
   (`rollout/samples_per_gpu_hour`). Smoke run: ~65 tok/s per A10G at batch 4.
@@ -126,9 +136,23 @@ Only LoRA weights update.
   batch (62 ms at batch 4). Not per-sequence latency. Stays flat as batch grows, which
   is why tok/s grows with batch and why a batching engine (vLLM, SkyRL) wins.
 
-## SFT data
+## SFT: input, target, loss
 
-`make_sft_data.py`: the same 198 val patches → PNG tiles + JSONL.
+Same patch as the GRPO group above (row 1, cancer-associated stroma). One SFT row is one
+prompt and one fixed target; nothing is sampled and nothing is rewarded.
+
+```
+input  (loss masked):  system: You are a pathology assistant. Answer questions about the tissue shown.
+                       user:   <image> What tissue type is shown in this tile?
+target (loss applied): assistant: This tile shows cancer-associated stroma: loose fibrous
+                       matrix with scattered activated fibroblasts and irregular collagen.
+```
+
+Loss: next-token cross-entropy on the target tokens only (`completion_only_loss`, inferred
+by TRL from the prompt/completion columns). LoRA weights only.
+
+Data: `make_sft_data.py` takes the same 198 val patches, saves them as PNG tiles and writes
+LLaVA-style JSONL:
 
 ```json
 {"image": "tiles/nctcrc_000123.png",
@@ -137,9 +161,9 @@ Only LoRA weights update.
  "metadata": {"label": "lymphocytes"}}
 ```
 
-Questions and answers are templated from the label. Text-only twin: the image is replaced
-by the templated description in the question. Fake QA on real tissue; it tests the
-pipeline, not the model. Real data: change `record_to_trl()` in `train_sft_trl.py`.
+Questions and answers are templated from the label, so it is fake QA on real tissue: it
+tests the pipeline, not the model. Text-only twin: the image is replaced by the templated
+description in the question. Real data: change `record_to_trl()` in `train_sft_trl.py`.
 
 ## Run it
 
