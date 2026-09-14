@@ -1,0 +1,41 @@
+# TRL SFT smoke test, LLM mode: Qwen2.5-0.5B-Instruct on the text-only twin of the tile QA (make_sft_data.py).
+# Keys: ScriptArguments (train_sft_trl.py), trl.SFTConfig, trl.ModelConfig. CLI overrides any key.
+env:
+  TOKENIZERS_PARALLELISM: "false"
+
+# --- ScriptArguments ---
+data_dir: /mnt/cluster_storage/data/pathai_sft_fake
+mode: llm
+sample_after_train: true
+
+# --- ModelConfig ---
+model_name_or_path: Qwen/Qwen2.5-0.5B-Instruct
+model_revision: main
+dtype: bfloat16
+use_peft: true
+lora_r: 16
+lora_alpha: 32
+lora_dropout: 0.05
+lora_target_modules: [q_proj, k_proj, v_proj, o_proj, gate_proj, up_proj, down_proj]
+lora_task_type: CAUSAL_LM
+
+# --- SFTConfig ---
+output_dir: /mnt/cluster_storage/trl_sft/sft_llm_fake/out
+run_name: sft_llm_fake
+per_device_train_batch_size: 4
+per_device_eval_batch_size: 4
+gradient_accumulation_steps: 1
+learning_rate: 1.0e-4
+max_steps: 20
+max_length: 1024
+packing: false                   # the vision collator does not pack; keep both modes identical
+bf16: true
+gradient_checkpointing: true
+gradient_checkpointing_kwargs: {use_reentrant: false}
+logging_steps: 1
+eval_strategy: steps
+eval_steps: 10
+report_to: [tensorboard]
+save_strategy: "no"
+seed: 42
+dataloader_num_workers: 0

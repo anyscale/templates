@@ -3,19 +3,21 @@ Vanilla TRL SFT + Ray Train, LLM or VLM -- the end-to-end skeleton for PathAI's
 Workload 1 (weeks 1-2: SFT on Ray Train), built on fake data so nothing waits on
 their code or their JSON.
 
-    MODE=vlm  Qwen3-VL-2B-Instruct on slide tiles + QA pairs   (default)
-    MODE=llm  Qwen2.5-0.5B-Instruct on the text-only twin of the same QA
+    --config configs/sft_vlm_smoke.yaml    Qwen3-VL-2B-Instruct on slide tiles + QA pairs
+    --config configs/sft_llm_smoke.yaml    Qwen2.5-0.5B-Instruct on the text-only twin
 
 The training body is plain `SFTTrainer` + LoRA. Ray Train's only job is to start
 N processes with torch.distributed set up and hand each one a GPU; accelerate inside
 the Trainer sees the env vars and does DDP as usual. Every worker runs this same
 function unchanged.
 
-Launchers:
+Configuration follows TRL's own scripts (trl/scripts/sft.py): `TrlParser` over
+`ScriptArguments` (ours), `SFTConfig` and `ModelConfig`, filled from `--config <yaml>`
+with CLI flags overriding.
 
-    python train_sft_trl.py                                 # 1 GPU
-    accelerate launch --num_processes N train_sft_trl.py    # N-GPU DDP (PathAI today)
-    python train_sft_trl.py --ray                           # same body under TorchTrainer
+    python train_sft_trl.py --config configs/sft_vlm_smoke.yaml               # 1 GPU
+    accelerate launch --num_processes 4 train_sft_trl.py --config ...         # DDP (PathAI today)
+    python train_sft_trl.py --config configs/sft_vlm_smoke.yaml --ray         # under TorchTrainer
 
 Data: JSONL produced by make_sft_data.py. The ONE place that knows the JSON shape is
 `record_to_trl()`. Swap it when the real shape lands.
@@ -23,30 +25,60 @@ Data: JSONL produced by make_sft_data.py. The ONE place that knows the JSON shap
 
 from __future__ import annotations
 
-import argparse
 import json
 import os
 import sys
 import time
-
-MODE = os.environ.get("MODE", "vlm")
-MODEL_ID = os.environ.get("MODEL", "Qwen/Qwen3-VL-2B-Instruct" if MODE == "vlm" else "Qwen/Qwen2.5-0.5B-Instruct")
-MODEL_REVISION = os.environ.get("MODEL_REVISION", "main")
-DATA_DIR = os.environ.get("SFT_DATA_DIR", "/mnt/cluster_storage/data/pathai_sft_fake")
-RUN_NAME = os.environ.get("RUN_NAME", f"sft_{MODE}_fake")
-RUN_ROOT = os.environ.get("RUN_ROOT", f"/mnt/cluster_storage/trl_sft/{RUN_NAME}")
-HF_HOME = os.environ.get("HF_HOME", "/mnt/cluster_storage/hf_cache")
-
-NUM_GPUS = int(os.environ.get("NUM_GPUS", "4"))
-MAX_STEPS = int(os.environ.get("MAX_STEPS", "20"))
-PER_DEVICE_BS = int(os.environ.get("PER_DEVICE_BS", "4"))
-MAX_LENGTH = int(os.environ.get("MAX_LENGTH", "1024"))
-LR = float(os.environ.get("LR", "1e-4"))
-LORA_R = int(os.environ.get("LORA_R", "16"))
-EVAL_STEPS = int(os.environ.get("EVAL_STEPS", "10"))  # 0 = no eval
-SEED = int(os.environ.get("SEED", "42"))
+from dataclasses import dataclass, field
 
 SYSTEM_PROMPT = "You are a pathology assistant. Answer questions about the tissue shown."
+
+
+@dataclass
+class ScriptArguments:
+    data_dir: str = field(
+        default="/mnt/cluster_storage/data/pathai_sft_fake",
+        metadata={"help": "Directory with {train,val}[_text].jsonl and tiles/ from make_sft_data.py."},
+    )
+    mode: str = field(default="vlm", metadata={"help": "'vlm' (tiles + QA, image column) or 'llm' (text-only twin)."})
+    sample_after_train: bool = field(
+        default=True, metadata={"help": "Greedy-decode one val example on rank 0 after training and print it."}
+    )
+    ray: bool = field(default=False, metadata={"help": "Run the training function inside ray.train TorchTrainer."})
+    num_gpus: int = field(default=4, metadata={"help": "Ray Train workers (one GPU each). Only with --ray."})
+
+
+def _resolve_config_path(argv: list[str]) -> list[str]:
+    """Make a relative --config path resolve against this file's directory.
+
+    Ray Train workers chdir into the run's storage directory, so `configs/x.yaml` would
+    otherwise be looked up in the wrong place. This directory is the uploaded working_dir
+    on the worker, so the YAML is always next to this script."""
+    argv = list(argv)
+    if "--config" in argv:
+        i = argv.index("--config") + 1
+        if not os.path.isabs(argv[i]) and not os.path.exists(argv[i]):
+            argv[i] = os.path.join(os.path.dirname(os.path.abspath(__file__)), argv[i])
+    return argv
+
+
+def parse(argv: list[str]):
+    argv = _resolve_config_path(argv)
+    from trl import ModelConfig, SFTConfig, TrlParser
+
+    parser = TrlParser((ScriptArguments, SFTConfig, ModelConfig))
+    return parser.parse_args_and_config(args=argv)
+
+
+def parse_script_args_only(argv: list[str]) -> ScriptArguments:
+    """Driver-side parse. SFTConfig cannot be built on the CPU-only head (bf16 check)."""
+    from trl import TrlParser
+
+    parser = TrlParser((ScriptArguments,))
+    (script_args, _remaining) = parser.parse_args_and_config(
+        args=_resolve_config_path(argv), return_remaining_strings=True, fail_with_unknown_args=False
+    )
+    return script_args
 
 
 # ----------------------------------------------------------------------------------
@@ -104,58 +136,32 @@ def build_dataset(jsonl_path: str, vlm: bool):
 # ----------------------------------------------------------------------------------
 # the train function: identical body for plain / accelerate / Ray Train
 # ----------------------------------------------------------------------------------
-def train_func(config: dict | None = None):
-    from peft import LoraConfig
-    from transformers import TrainerCallback
-    from trl import SFTConfig, SFTTrainer
+def train_func(config: dict):
+    # `config` must be a REQUIRED parameter: Ray Train passes train_loop_config only to a
+    # function with one required positional; with a default it calls train_func() bare.
+    argv = config["argv"]
+    script_args, training_args, model_args = parse(argv)
 
-    config = config or {}
-    run_root = config.get("run_root", RUN_ROOT)
-    os.environ.setdefault("HF_HOME", config.get("hf_home", HF_HOME))
-    os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
-    # transformers 5 removed TrainingArguments.logging_dir; the TensorBoard callback reads this instead
+    from transformers import TrainerCallback
+    from trl import SFTTrainer, get_peft_config
+
+    run_root = os.path.dirname(training_args.output_dir.rstrip("/"))
     os.environ.setdefault("TENSORBOARD_LOGGING_DIR", os.path.join(run_root, "tensorboard"))
-    vlm = MODE == "vlm"
+    vlm = script_args.mode == "vlm"
     suffix = "" if vlm else "_text"
+    do_eval = training_args.eval_strategy != "no"
 
     t0 = time.perf_counter()
-    train_ds = build_dataset(os.path.join(DATA_DIR, f"train{suffix}.jsonl"), vlm)
-    val_ds = build_dataset(os.path.join(DATA_DIR, f"val{suffix}.jsonl"), vlm) if EVAL_STEPS else None
-    print(f"[data] mode={MODE} train={len(train_ds)} val={len(val_ds) if val_ds else 0} "
+    train_ds = build_dataset(os.path.join(script_args.data_dir, f"train{suffix}.jsonl"), vlm)
+    val_ds = build_dataset(os.path.join(script_args.data_dir, f"val{suffix}.jsonl"), vlm) if do_eval else None
+    print(f"[data] mode={script_args.mode} train={len(train_ds)} val={len(val_ds) if val_ds else 0} "
           f"({time.perf_counter() - t0:.1f}s) columns={train_ds.column_names}")
 
-    peft_config = LoraConfig(
-        r=LORA_R,
-        lora_alpha=2 * LORA_R,
-        lora_dropout=0.05,
-        # LM projections only; leaves Qwen3-VL's vision tower (qkv/proj/linear_fc*) frozen.
-        target_modules=["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"],
-        task_type="CAUSAL_LM",
-    )
-
-    report_to = ["wandb"] if os.environ.get("WANDB_API_KEY") else ["tensorboard"]
-    args = SFTConfig(
-        output_dir=os.path.join(run_root, "out"),
-        run_name=RUN_NAME,
-        report_to=report_to,
-        per_device_train_batch_size=PER_DEVICE_BS,
-        per_device_eval_batch_size=PER_DEVICE_BS,
-        gradient_accumulation_steps=1,
-        learning_rate=LR,
-        max_steps=MAX_STEPS,
-        max_length=MAX_LENGTH,
-        packing=False,  # vision collator does not pack; keep the two modes identical
-        bf16=True,
-        model_init_kwargs={"dtype": "bfloat16", "revision": MODEL_REVISION},
-        gradient_checkpointing=True,
-        gradient_checkpointing_kwargs={"use_reentrant": False},
-        logging_steps=1,
-        eval_strategy="steps" if EVAL_STEPS else "no",
-        eval_steps=EVAL_STEPS or None,
-        save_strategy="no",
-        seed=SEED,
-        dataloader_num_workers=0,
-    )
+    training_args.model_init_kwargs = {
+        "revision": model_args.model_revision,
+        "dtype": model_args.dtype,
+        **({"attn_implementation": model_args.attn_implementation} if model_args.attn_implementation else {}),
+    }
 
     class RayReportCallback(TrainerCallback):
         """Forward every HF log dict to ray.train.report when inside a Ray Train worker.
@@ -180,14 +186,15 @@ def train_func(config: dict | None = None):
             self.ray_train.report(numeric)
 
     trainer = SFTTrainer(
-        model=MODEL_ID,
-        args=args,
+        model=model_args.model_name_or_path,
+        args=training_args,
         train_dataset=train_ds,
         eval_dataset=val_ds,
-        peft_config=peft_config,
+        peft_config=get_peft_config(model_args),
         callbacks=[RayReportCallback()],
     )
-    trainer.model.print_trainable_parameters()
+    if hasattr(trainer.model, "print_trainable_parameters"):
+        trainer.model.print_trainable_parameters()
     print(f"[sft] completion_only_loss={trainer.completion_only_loss} vlm_collator={trainer._is_vlm}")
 
     trainer.train()
@@ -198,9 +205,8 @@ def train_func(config: dict | None = None):
             for rec in trainer.state.log_history:
                 f.write(json.dumps(rec) + "\n")
         print(f"[done] wrote {len(trainer.state.log_history)} log records to {path}")
-        # A qualitative check: greedy answer for one val example, before vs after is
-        # visible by comparing with the dataset answer printed next to it.
-        if val_ds is not None:
+        # A qualitative check: greedy answer for one val example next to the reference.
+        if script_args.sample_after_train and val_ds is not None:
             _sample_generation(trainer, val_ds[0], vlm)
 
 
@@ -218,6 +224,7 @@ def _sample_generation(trainer, row: dict, vlm: bool) -> None:
     with torch.no_grad():
         out = model.generate(**inputs, max_new_tokens=96, do_sample=False)
     text = proc.batch_decode(out[:, inputs["input_ids"].shape[1]:], skip_special_tokens=True)[0]
+
     def _text(content):  # content-part list (VLM rows) or plain string (LLM rows)
         return content[-1]["text"] if isinstance(content, list) else content
 
@@ -229,11 +236,16 @@ def _sample_generation(trainer, row: dict, vlm: bool) -> None:
 # ----------------------------------------------------------------------------------
 # Ray Train launcher
 # ----------------------------------------------------------------------------------
-def main_ray():
+def main_ray(argv: list[str], script_args: ScriptArguments):
     import ray
     from ray.train import RunConfig, ScalingConfig
     from ray.train.torch import TorchTrainer
     from ray.train.v2.api.callback import UserCallback
+
+    from train_grpo_trl import _lookup  # same helpers, same conventions
+
+    run_root = os.path.dirname(_lookup(argv, "output_dir").rstrip("/"))
+    run_name = _lookup(argv, "run_name", default=os.path.basename(run_root))
 
     class LossToDriver(UserCallback):
         def __init__(self, path: str):
@@ -243,37 +255,54 @@ def main_ray():
         def after_report(self, run_context, metrics, checkpoint):
             with open(self.path, "a") as f:
                 f.write(json.dumps({"ranks": metrics}) + "\n")
-            m = metrics[0] or {}
-            keys = [k for k in ("loss", "eval_loss", "mean_token_accuracy", "eval_mean_token_accuracy", "learning_rate") if k in m]
-            print(f"[ray.train.report] step={m.get('step')} " + " ".join(f"{k}={m[k]:.4g}" for k in keys), flush=True)
 
-    env_vars = {"HF_HOME": HF_HOME, "TOKENIZERS_PARALLELISM": "false", "MODE": MODE}
+    hf_home = os.environ.get("HF_HOME", "/mnt/cluster_storage/hf_cache")
+    env_vars = {"HF_HOME": hf_home}
     if os.environ.get("HF_TOKEN"):
         env_vars["HF_TOKEN"] = os.environ["HF_TOKEN"]
-    ray.init(runtime_env={"env_vars": env_vars, "excludes": [".venv", "out", "traces", "logs", "results"]})
+    # No `excludes` here: under `ray job submit` the job already owns working_dir/excludes and Ray
+    # refuses to merge the same field twice; Ray 2.56 skips .venv and __pycache__ by default anyway.
+    ray.init(runtime_env={"env_vars": env_vars})
 
     from huggingface_hub import snapshot_download
 
-    os.environ["HF_HOME"] = HF_HOME
-    snapshot_download(MODEL_ID, revision=MODEL_REVISION)
+    os.environ["HF_HOME"] = hf_home
+    snapshot_download(_lookup(argv, "model_name_or_path"), revision=_lookup(argv, "model_revision", default="main"))
 
-    os.makedirs(RUN_ROOT, exist_ok=True)
+    os.makedirs(run_root, exist_ok=True)
+    reported = os.path.join(run_root, "ray_reported_metrics.jsonl")
     trainer = TorchTrainer(
         train_func,
-        train_loop_config={"run_root": RUN_ROOT, "hf_home": HF_HOME},
-        scaling_config=ScalingConfig(num_workers=NUM_GPUS, use_gpu=True),
+        train_loop_config={"argv": argv},
+        scaling_config=ScalingConfig(num_workers=script_args.num_gpus, use_gpu=True),
         run_config=RunConfig(
-            name=RUN_NAME,
-            storage_path=os.path.join(os.path.dirname(RUN_ROOT.rstrip("/")), "ray_results"),
-            callbacks=[LossToDriver(os.path.join(RUN_ROOT, "ray_reported_metrics.jsonl"))],
+            name=run_name,
+            storage_path=os.path.join(os.path.dirname(run_root), "ray_results"),
+            callbacks=[LossToDriver(reported)],
         ),
     )
     print("[ray] result:", trainer.fit())
+    print_loss_table(reported)
+
+
+def print_loss_table(path: str) -> None:
+    if not os.path.exists(path):
+        return
+    print(f"{'step':>4} {'loss':>7} {'tok_acc':>7} {'eval_loss':>9} {'eval_acc':>8}")
+    for line in open(path):
+        m = json.loads(line)["ranks"][0] or {}
+        if "loss" in m:
+            print(f"{int(m.get('step', -1)):>4} {m['loss']:>7.3f} {m.get('mean_token_accuracy', float('nan')):>7.3f}")
+        elif "eval_loss" in m:
+            print(f"{int(m.get('step', -1)):>4} {'':>7} {'':>7} {m['eval_loss']:>9.3f} "
+                  f"{m.get('eval_mean_token_accuracy', float('nan')):>8.3f}")
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--ray", action="store_true")
-    cli = parser.parse_args()
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-    main_ray() if cli.ray else train_func()
+    argv = sys.argv[1:]
+    script_args = parse_script_args_only(argv)
+    if script_args.ray:
+        main_ray(argv, script_args)
+    else:
+        train_func({"argv": argv})

@@ -22,29 +22,123 @@ there is runnable code before PathAI's data or JSON shape arrives.
 ## Run it
 
 ```bash
-bash run_trl.sh                                   # GRPO, 4 GPUs, 10 steps (the smoke test)
-NUM_GPUS=2 MAX_STEPS=30 MAX_COMPLETION=512 bash run_trl.sh
-bash run_sft.sh                                   # SFT, VLM mode (Qwen3-VL-2B on tiles + QA)
-MODE=llm bash run_sft.sh                          # SFT, text-only twin (Qwen2.5-0.5B-Instruct)
+bash run_trl.sh                                          # GRPO smoke test: configs/grpo_smoke.yaml
+bash run_trl.sh --max_steps 30 --num_gpus 2 --max_completion_length 512   # override any key
+bash run_sft.sh                                          # SFT, VLM: configs/sft_vlm_smoke.yaml
+bash run_sft.sh --config configs/sft_llm_smoke.yaml      # SFT, text-only twin
 ```
 
 Both scripts source `~/.workspacerc` for `HF_TOKEN`, set Ray's uv runtime-env hook,
-and launch from this directory. Outputs land on shared storage:
+default `--config` if you did not pass one, and `exec` the Python script with `--ray`.
+Outputs land next to `output_dir` on shared storage (`<run_root>` = its parent):
 
 | what | where |
 |---|---|
-| per-step metrics (HF log stream, incl. `timing/*`) | `/mnt/cluster_storage/trl_grpo/<run>/log_history.jsonl` |
-| what every rank passed to `ray.train.report` | `/mnt/cluster_storage/trl_grpo/<run>/ray_reported_metrics.jsonl` |
-| TensorBoard | `tensorboard --logdir /mnt/cluster_storage/trl_grpo/<run>/tensorboard` |
-| sampled completions per step (TRL `log_completions`) | `/mnt/cluster_storage/trl_grpo/<run>/out/completions/*.parquet` |
-| torch.profiler traces (every `PROFILE_EVERY` steps) | `/mnt/cluster_storage/trl_grpo/<run>/traces/grpo_step<N>_rank<R>.json` (Perfetto) |
-| Ray Train run state / worker logs | `/mnt/cluster_storage/trl_grpo/ray_results/<run>` and the Ray dashboard → Train |
+| per-step metrics (HF log stream, incl. `timing/*`) | `<run_root>/log_history.jsonl` |
+| what every rank passed to `ray.train.report` | `<run_root>/ray_reported_metrics.jsonl` |
+| TensorBoard | `tensorboard --logdir <run_root>/tensorboard` |
+| sampled completions per step (TRL `log_completions`) | `<run_root>/out/completions/*.parquet` |
+| torch.profiler traces (`--profile_every N`, rank 0) | `<run_root>/traces/grpo_step<N>_rank0.json` |
+| Ray Train run state / worker logs | `<run_root>/../ray_results/<run_name>` and the Ray dashboard → Train |
 
-Stacked bar of the phases per step:
+For the smoke configs `<run_root>` is `/mnt/cluster_storage/trl_grpo/pathvlm_2b_trl`
+and `/mnt/cluster_storage/trl_sft/sft_{vlm,llm}_fake`.
+
+## Configuration: two layers, both existing standards
+
+**What trains** is TRL's own convention, the same one `trl/scripts/grpo.py` and
+`trl/scripts/sft.py` use: `TrlParser` over three dataclasses, filled from a YAML via
+`--config` with CLI flags overriding.
+
+| dataclass | owns | examples |
+|---|---|---|
+| `ScriptArguments` (ours, in each script) | data + launcher | `data_dir`, `train_rows`, `profile_every`, `ray`, `num_gpus`; SFT: `mode`, `sample_after_train` |
+| `trl.GRPOConfig` / `trl.SFTConfig` | every training knob | `num_generations`, `max_completion_length`, `learning_rate`, `max_steps`, `bf16`, `report_to`, `output_dir` |
+| `trl.ModelConfig` | model + LoRA | `model_name_or_path`, `model_revision`, `dtype`, `use_peft`, `lora_r`, `lora_target_modules` |
+
+`configs/grpo_smoke.yaml`, `configs/sft_vlm_smoke.yaml`, `configs/sft_llm_smoke.yaml`
+are the recorded runs. Every key in them is a flag: `--max_steps 30` on the CLI beats
+the YAML. A YAML `env:` block is applied by `TrlParser` in every process before
+training starts (used for `TOKENIZERS_PARALLELISM`). Under `--ray` the driver forwards
+argv to each worker and each worker parses it, exactly as `accelerate launch` starts N
+processes that each parse the same argv; `GRPOConfig` has to be built inside the worker
+because it initialises the distributed state.
+
+**How the job runs** is the Anyscale job YAML (`job_grpo.yaml`, `job_sft.yaml`): name,
+entrypoint, `working_dir`, `excludes`, `env_vars`, retries, and outside a workspace the
+image and compute config. Training overrides go on the entrypoint line. The only
+training-adjacent env var left is `HF_HOME`, because it has to be in the process
+environment before `transformers` is imported; it is set in the run scripts and the job
+YAML `env_vars`, not in the training config.
+
+Not used, on purpose: Pydantic (nothing in TRL, HF or Ray Train uses it; it would be a
+third config system) and Hydra/OmegaConf (what the SkyRL arm uses; `TrlParser` already
+does the job on the TRL side).
+
+## Submit it as a job instead of running the script
+
+`bash run_trl.sh` runs as a bare Ray driver attached to the workspace: no entry in the
+Workloads tab, and it dies with your terminal. Two launchers give you a proper job; the
+entrypoint is the same `bash run_trl.sh --config ...` either way.
+
+**On this workspace's cluster** (`ray job submit`; verified with a 3-step run and the
+text-only SFT run after the config refactor). Same cluster, so `/mnt/cluster_storage`
+and the data are already there. The `excludes` matter: `.venv` is 7 GB.
 
 ```bash
-uv run --frozen python plot_step_breakdown.py /mnt/cluster_storage/trl_grpo/pathvlm_2b_trl/log_history.jsonl step_breakdown.png
+cd ~/default/templates/templates/biotech_vlm_grpo_trl
+ray job submit --no-wait --submission-id pathvlm-trl-grpo \
+  --runtime-env-json '{"working_dir": ".", "excludes": [".venv", "results", "__pycache__", "*.png"]}' \
+  -- bash run_trl.sh --config configs/grpo_smoke.yaml
+ray job logs -f pathvlm-trl-grpo        # or: ray job status / ray job stop
 ```
+
+Swap in `run_sft.sh --config configs/sft_vlm_smoke.yaml` (or `sft_llm_smoke.yaml`) for
+the SFT skeleton. Overrides go after the config: `-- bash run_trl.sh --config
+configs/grpo_smoke.yaml --max_steps 30`.
+
+**As an Anyscale Job on its own cluster** (`anyscale job submit -f job_grpo.yaml`; from
+inside a workspace it inherits the workspace's image and compute config). Not verified
+end to end here. A job cluster starts with an **empty** `/mnt/cluster_storage`, so the
+job YAMLs point every path at `/mnt/user_storage` (persists across clusters); copy the
+data there once:
+
+```bash
+mkdir -p /mnt/user_storage/data
+cp -r /mnt/cluster_storage/data/nct_crc /mnt/cluster_storage/data/pathai_sft_fake /mnt/user_storage/data/
+anyscale job submit -f job_grpo.yaml      # or job_sft.yaml
+```
+
+One assumption to check on first use: `uv` must be on the job cluster's PATH (it is at
+`/home/ray/.local/bin/uv` on this workspace; confirm it comes from the image and not from
+the workspace's persisted home).
+
+## Seeing the metrics
+
+Three views of the same per-step numbers, cheapest first:
+
+1. **The stacked bar** — `results/step_breakdown.png` for the recorded run; open it in
+   the workspace file browser. Regenerate for any run with:
+
+
+   ```bash
+   uv run --frozen python plot_step_breakdown.py /mnt/cluster_storage/trl_grpo/pathvlm_2b_trl/log_history.jsonl step_breakdown.png
+   ```
+
+2. **The per-step table in the driver log** — printed after `trainer.fit()` returns
+   (columns: step_s, gen_s, wait_s, rwd_s, fwd_s, bwd_s, opt_s, reward, len, pad%,
+   spread). With `ray job submit` it is at the end of `ray job logs <id>`. The same
+   numbers, all ranks, are in `<RUN_ROOT>/ray_reported_metrics.jsonl`.
+
+3. **TensorBoard**, for curves across a longer run. Everything under `timing/`,
+   `rollout/`, `gpu/` sits next to TRL's `reward`, `completions/*`:
+
+   ```bash
+   uv run --frozen tensorboard --logdir /mnt/cluster_storage/trl_grpo/pathvlm_2b_trl/tensorboard --port 6006
+   ```
+
+   then open port 6006 from the workspace's Ports panel (or VS Code's port forward).
+
 
 ## Smoke run results (2026-09-11, 4x A10G, `bash run_trl.sh` defaults)
 
@@ -68,7 +162,7 @@ Rank 0's `timing/*` per step (seconds), plus TRL's own reward columns:
 | 9 | 30.9 | 16.8 | 12.8 | 0.001 | 0.40 | 0.75 | 0.00 | 77 | 1.06 | 75% | 221 | 13% | 13.3 |
 | 10* | 42.1 | 23.6 | 17.2 | 0.001 | 0.41 | 0.76 | 0.00 | 106 | 0.69 | 25% | 222 | 15% | 17.7 |
 
-`*` = torch.profiler was capturing (the run used `PROFILE_EVERY=5`; it is now opt-in).
+`*` = torch.profiler was capturing (the run used `profile_every: 5`; it is now opt-in and rank 0 only).
 
 What the numbers say:
 
@@ -88,7 +182,7 @@ What the numbers say:
   of decode steps produces padding for sequences that already finished.
 - **GPU SM utilization: ~30% during generate, 70 to 96% in forward, 99% in backward.**
   Peak memory 4.8 GB during generate, 6.2 GB in backward, on 24 GB cards. There is
-  room to raise `PER_DEVICE_BS` to 16; it would mostly make generate slower.
+  room to raise `per_device_train_batch_size` to 16; it would mostly make generate slower.
 - Reward functions cost ~1 ms; TRL's cross-rank gather inside the reward stage is
   invisible because the barrier before it already absorbed the skew.
 - `frac_reward_zero_std` 25 to 100%: with only 4 prompts per step, many groups of 4
@@ -106,7 +200,7 @@ Evidence in `results/`: `grpo_log_history.jsonl` (all 11 records rank 0 logged),
 and advantages), `step_breakdown.png`. One 1.5 GB profiler trace remains at
 `/mnt/cluster_storage/trl_grpo/pathvlm_2b_trl/traces/grpo_step10_rank0.json`.
 
-### SFT skeleton smoke run (`bash run_sft.sh`, MODE=vlm)
+### SFT skeleton smoke run (`bash run_sft.sh`, configs/sft_vlm_smoke.yaml)
 
 Qwen3-VL-2B + LoRA on 179 fake tile-QA records, 4 GPUs, 20 steps, eval every 10:
 
@@ -125,7 +219,7 @@ glass with no tissue ... consistent with background."*). Templated data, so this
 the pipeline learns the format and the label, nothing more. Full log in
 `results/sft_vlm_log_history.jsonl`.
 
-`MODE=llm` (Qwen2.5-0.5B-Instruct on the text-only twin, 8.8M LoRA params): loss 1.29 →
+`configs/sft_llm_smoke.yaml` (Qwen2.5-0.5B-Instruct on the text-only twin, 8.8M LoRA params): loss 1.29 →
 0.04, eval loss 0.21 at step 10 → 0.08 at step 20, eval token accuracy 0.98. The greedy
 sample reproduces the reference answer verbatim, which on templated data is expected
 memorisation. Log in `results/sft_llm_log_history.jsonl`. Note the two modes need
@@ -137,13 +231,15 @@ concatenates it as a string). `record_to_trl()` handles both.
 
 | File | What |
 |---|---|
-| `train_grpo_trl.py` | the GRPO script. Reads the SkyRL parquet, reshapes rows for TRL, `GRPOTrainer` + LoRA, `--ray` wraps the same body in `TorchTrainer` |
+| `train_grpo_trl.py` | the GRPO script. `TrlParser` config, reads the SkyRL parquet, reshapes rows for TRL, `GRPOTrainer` + LoRA, `--ray` wraps the same body in `TorchTrainer` |
 | `rewards.py` | `label_reward` (1.0) and `format_reward` (0.2), same scoring as `../biotech_vlm_grpo/env.py`; self-test with `python rewards.py` |
 | `grpo_step_timing.py` | the instrumentation. Monkeypatches the trainer instance; returns a dict of what it managed to wrap |
 | `plot_step_breakdown.py` | stacked bar from `log_history.jsonl` |
-| `train_sft_trl.py` | `SFTTrainer` + LoRA, `MODE=vlm\|llm`, `--ray`; `record_to_trl()` is the one function that knows the JSON shape |
+| `train_sft_trl.py` | `SFTTrainer` + LoRA, `--mode vlm\|llm`, `--ray`; `record_to_trl()` is the one function that knows the JSON shape |
+| `configs/*.yaml` | the training configs (TrlParser: ScriptArguments + GRPOConfig/SFTConfig + ModelConfig) for the recorded runs |
+| `job_grpo.yaml`, `job_sft.yaml` | Anyscale job configs for `anyscale job submit -f` |
 | `make_sft_data.py` | fake LLaVA-style JSONL: real 224px H&E tiles from the NCT-CRC val split + templated QA; text-only twin |
-| `run_trl.sh`, `run_sft.sh` | launchers |
+| `run_trl.sh`, `run_sft.sh` | launchers: default `--config`, dataset bootstrap, `exec ... --ray` |
 | `pyproject.toml`, `uv.lock` | the environment (ray 2.56.0, torch 2.11.0+cu128, trl 1.13.0, transformers 5.17.0, peft 0.20.0) |
 | `results/` | distilled evidence from the smoke run (see below) |
 
@@ -198,11 +294,11 @@ you never see them. The keys above are a superset of what they cover.
   reward → one forward/backward.
 - LoRA targets the language model's projections only; Qwen3-VL's vision tower uses
   different module names and stays frozen.
-- `MAX_COMPLETION=384` vs. SkyRL's 1024: HF `generate` runs every sequence to the
+- `max_completion_length: 384` vs. SkyRL's 1024: HF `generate` runs every sequence to the
   longest, so a long cap is paid on every step. The SkyRL run's mean completion was
   ~230 tokens; 384 truncates the tail and the `format_reward` teaches conciseness.
 - Eval is not wired into the GRPO script (HF `generate` over 198 val rows × 4 GPUs is
-  slow); the SFT script does eval every `EVAL_STEPS`.
+  slow); the SFT script does eval every `eval_steps`.
 - Not a registered Anyscale template (no `BUILD.yaml` entry, compute configs, depset
   lock, or test block). Use the `/template` skill if that is wanted.
 

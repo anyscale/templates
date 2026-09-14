@@ -1,0 +1,31 @@
+# Anyscale Job: TRL GRPO arm.   anyscale job submit -f job_grpo.yaml
+#
+# Layering: this file owns HOW the job runs (entrypoint, upload, env, retries, and when
+# not submitted from a workspace, image + compute). configs/grpo_smoke.yaml owns WHAT
+# trains (TrlParser: ScriptArguments + GRPOConfig + ModelConfig). Training overrides go
+# on the entrypoint line, e.g. `--max_steps 30`.
+#
+# Submitted from inside a workspace, the job inherits the workspace's image and compute
+# config, so both are omitted here. A job cluster starts with an EMPTY /mnt/cluster_storage,
+# so paths point at /mnt/user_storage (persists across clusters). Once:
+#   mkdir -p /mnt/user_storage/data && cp -r /mnt/cluster_storage/data/nct_crc /mnt/user_storage/data/
+name: pathvlm-trl-grpo
+entrypoint: >-
+  bash run_trl.sh --config configs/grpo_smoke.yaml
+  --data_dir /mnt/user_storage/data/nct_crc
+  --output_dir /mnt/user_storage/trl_grpo/pathvlm_2b_trl/out
+working_dir: .
+excludes: [".venv", "results", "__pycache__", "*.png"]
+env_vars:
+  # HF_HOME must be in the process environment before transformers is imported, so it
+  # is an env var rather than a config key.
+  HF_HOME: /mnt/user_storage/hf_cache
+max_retries: 0
+# Outside a workspace, uncomment and pin:
+# image_uri: novaskyai/skyrl-train-ray-2.56.0-py3.12-cu12.8
+# compute_config:
+#   head_node: {instance_type: m5.2xlarge}
+#   worker_nodes:
+#     - instance_type: g5.12xlarge
+#       min_nodes: 1
+#       max_nodes: 1

@@ -1,0 +1,14 @@
+# Anyscale Job: TRL SFT skeleton.   anyscale job submit -f job_sft.yaml
+# See job_grpo.yaml for the layering and the /mnt/user_storage note. Once:
+#   mkdir -p /mnt/user_storage/data && cp -r /mnt/cluster_storage/data/pathai_sft_fake /mnt/user_storage/data/
+# Text-only twin: swap configs/sft_vlm_smoke.yaml for configs/sft_llm_smoke.yaml.
+name: pathvlm-trl-sft
+entrypoint: >-
+  bash run_sft.sh --config configs/sft_vlm_smoke.yaml
+  --data_dir /mnt/user_storage/data/pathai_sft_fake
+  --output_dir /mnt/user_storage/trl_sft/sft_vlm_fake/out
+working_dir: .
+excludes: [".venv", "results", "__pycache__", "*.png"]
+env_vars:
+  HF_HOME: /mnt/user_storage/hf_cache
+max_retries: 0

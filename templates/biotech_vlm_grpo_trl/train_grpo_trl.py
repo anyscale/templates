@@ -12,53 +12,83 @@ What "vanilla" means here:
   * One extra line: `instrument_grpo_trainer(trainer)` from grpo_step_timing.py, which
     breaks every optimizer step into rollout / reward / forward / backward / sync.
 
-Launchers (the train function body is identical in all three):
+Configuration follows TRL's own scripts (trl/scripts/grpo.py): `TrlParser` over three
+dataclasses -- `ScriptArguments` (ours: data, launcher), `GRPOConfig` (every training
+knob) and `ModelConfig` (model id, revision, dtype, LoRA) -- filled from a YAML via
+`--config` with CLI flags overriding. `configs/grpo_smoke.yaml` is the smoke test.
 
-    python train_grpo_trl.py                       # 1 GPU, plain process
-    accelerate launch --num_processes N train_grpo_trl.py    # N-GPU DDP, PathAI's shape
-    python train_grpo_trl.py --ray                 # same body inside ray.train TorchTrainer
+    python train_grpo_trl.py --config configs/grpo_smoke.yaml                 # 1 GPU
+    accelerate launch --num_processes 4 train_grpo_trl.py --config ...        # DDP, PathAI's shape
+    python train_grpo_trl.py --config configs/grpo_smoke.yaml --ray           # same body under Ray Train
+    python train_grpo_trl.py --config ... --max_steps 30 --learning_rate 2e-5 # override anything
+
+Under `--ray`, the driver forwards argv to every worker and each worker re-parses it,
+exactly like `accelerate launch` starts N processes that each parse the same argv.
+`GRPOConfig` must be built inside the worker (it initialises the distributed state).
 
 On this workspace only `--ray` runs: the head node has no GPU, the 4x A10G worker is
-Ray-managed. See run_trl.sh.
-
-Everything is configured by environment variables (defaults below) so the run
-script can override without argument plumbing.
+Ray-managed. See run_trl.sh and job_grpo.yaml.
 """
 
 from __future__ import annotations
 
-import argparse
 import base64
 import io
 import json
 import os
 import sys
 import time
+from dataclasses import dataclass, field
 
-# ----------------------------------------------------------------------------------
-# configuration (env vars; every one has a default that runs the smoke test)
-# ----------------------------------------------------------------------------------
-MODEL_ID = os.environ.get("MODEL", "Qwen/Qwen3-VL-2B-Instruct")
-# Hub revision pinned at the time of writing (2026-09-11) so the two arms compare
-# like with like. Override with MODEL_REVISION=main to float.
-MODEL_REVISION = os.environ.get("MODEL_REVISION", "89644892e4d85e24eaac8bacfd4f463576704203")
 
-DATA_DIR = os.environ.get("DATA_DIR", "/mnt/cluster_storage/data/nct_crc")
-RUN_NAME = os.environ.get("RUN_NAME", "pathvlm_2b_trl")
-RUN_ROOT = os.environ.get("RUN_ROOT", f"/mnt/cluster_storage/trl_grpo/{RUN_NAME}")
-HF_HOME = os.environ.get("HF_HOME", "/mnt/cluster_storage/hf_cache")
+@dataclass
+class ScriptArguments:
+    """Ours. Everything about training itself lives in GRPOConfig / ModelConfig."""
 
-NUM_GPUS = int(os.environ.get("NUM_GPUS", "4"))
-MAX_STEPS = int(os.environ.get("MAX_STEPS", "10"))
-NUM_GENERATIONS = int(os.environ.get("NUM_GENERATIONS", "4"))
-PER_DEVICE_BS = int(os.environ.get("PER_DEVICE_BS", "4"))  # completions per GPU per step
-MAX_COMPLETION = int(os.environ.get("MAX_COMPLETION", "384"))
-LR = float(os.environ.get("LR", "1e-5"))
-TEMPERATURE = float(os.environ.get("TEMPERATURE", "0.8"))
-LORA_R = int(os.environ.get("LORA_R", "16"))
-TRAIN_ROWS = int(os.environ.get("TRAIN_ROWS", "0"))  # 0 = all 1,998
-PROFILE_EVERY = int(os.environ.get("PROFILE_EVERY", "0"))  # >0 writes ~2 GB per trace; opt in
-SEED = int(os.environ.get("SEED", "42"))
+    data_dir: str = field(
+        default="/mnt/cluster_storage/data/nct_crc",
+        metadata={"help": "Directory with the SkyRL arm's train.parquet (../biotech_vlm_grpo/nct_crc_dataset.py)."},
+    )
+    train_rows: int = field(default=0, metadata={"help": "Use only the first N train rows; 0 = all 1,998."})
+    profile_every: int = field(
+        default=0,
+        metadata={"help": ">0: torch.profiler trace of one full step every N steps, rank 0 only. ~2 GB per trace."},
+    )
+    ray: bool = field(default=False, metadata={"help": "Run the training function inside ray.train TorchTrainer."})
+    num_gpus: int = field(default=4, metadata={"help": "Ray Train workers (one GPU each). Only with --ray."})
+
+
+def _resolve_config_path(argv: list[str]) -> list[str]:
+    """Make a relative --config path resolve against this file's directory.
+
+    Ray Train workers chdir into the run's storage directory, so `configs/x.yaml` would
+    otherwise be looked up in the wrong place. This directory is the uploaded working_dir
+    on the worker, so the YAML is always next to this script."""
+    argv = list(argv)
+    if "--config" in argv:
+        i = argv.index("--config") + 1
+        if not os.path.isabs(argv[i]) and not os.path.exists(argv[i]):
+            argv[i] = os.path.join(os.path.dirname(os.path.abspath(__file__)), argv[i])
+    return argv
+
+
+def parse(argv: list[str]):
+    argv = _resolve_config_path(argv)
+    from trl import GRPOConfig, ModelConfig, TrlParser
+
+    parser = TrlParser((ScriptArguments, GRPOConfig, ModelConfig))
+    return parser.parse_args_and_config(args=argv)
+
+
+def parse_script_args_only(argv: list[str]) -> ScriptArguments:
+    """Driver-side parse. GRPOConfig cannot be built on the CPU-only head (bf16 check)."""
+    from trl import TrlParser
+
+    parser = TrlParser((ScriptArguments,))
+    (script_args, _remaining) = parser.parse_args_and_config(
+        args=_resolve_config_path(argv), return_remaining_strings=True, fail_with_unknown_args=False
+    )
+    return script_args
 
 
 def to_trl_rows(parquet_path: str, limit: int = 0) -> list[dict]:
@@ -122,78 +152,48 @@ def build_dataset(parquet_path: str, limit: int = 0):
 # ----------------------------------------------------------------------------------
 # the train function: identical body for plain / accelerate / Ray Train
 # ----------------------------------------------------------------------------------
-def train_func(config: dict | None = None):
-    import torch
-    from peft import LoraConfig
-    from trl import GRPOConfig, GRPOTrainer
+def train_func(config: dict):
+    # `config` must be a REQUIRED parameter: Ray Train passes train_loop_config only to a
+    # function with one required positional; with a default it calls train_func() bare.
+    argv = config["argv"]
+    script_args, training_args, model_args = parse(argv)
+
+    from trl import GRPOTrainer, get_peft_config
 
     from grpo_step_timing import instrument_grpo_trainer
     from rewards import format_reward, label_reward
 
-    config = config or {}
-    run_root = config.get("run_root", RUN_ROOT)
-    os.environ.setdefault("HF_HOME", config.get("hf_home", HF_HOME))
-    os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
-    # transformers 5 removed TrainingArguments.logging_dir; the TensorBoard callback reads this instead
+    # Everything the run writes sits next to output_dir: <run_root>/{out,tensorboard,traces,...}
+    run_root = os.path.dirname(training_args.output_dir.rstrip("/"))
+    # transformers 5 removed TrainingArguments.logging_dir; the TensorBoard callback reads this instead.
     os.environ.setdefault("TENSORBOARD_LOGGING_DIR", os.path.join(run_root, "tensorboard"))
 
     t0 = time.perf_counter()
-    train_ds = build_dataset(os.path.join(DATA_DIR, "train.parquet"), limit=TRAIN_ROWS)
+    train_ds = build_dataset(os.path.join(script_args.data_dir, "train.parquet"), limit=script_args.train_rows)
     print(f"[data] {len(train_ds)} train rows in {time.perf_counter() - t0:.1f}s; columns={train_ds.column_names}")
 
-    # LoRA on the language model's projections only. Qwen3-VL's vision tower uses
-    # different module names (qkv / proj / linear_fc1 / linear_fc2), so this list
-    # leaves it frozen. `target_modules="all-linear"` would adapt the ViT too.
-    peft_config = LoraConfig(
-        r=LORA_R,
-        lora_alpha=2 * LORA_R,
-        lora_dropout=0.0,
-        target_modules=["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"],
-        task_type="CAUSAL_LM",
-    )
-
-    report_to = ["wandb"] if os.environ.get("WANDB_API_KEY") else ["tensorboard"]
-    args = GRPOConfig(
-        output_dir=os.path.join(run_root, "out"),
-        run_name=RUN_NAME,
-        report_to=report_to,
-        # --- the GRPO shape, matching the SkyRL arm where the knobs correspond ---
-        use_vllm=False,
-        num_generations=NUM_GENERATIONS,
-        per_device_train_batch_size=PER_DEVICE_BS,
-        gradient_accumulation_steps=1,
-        max_completion_length=MAX_COMPLETION,
-        temperature=TEMPERATURE,
-        beta=0.0,  # no reference model, no KL (SkyRL arm: use_kl_loss=false)
-        learning_rate=LR,
-        max_steps=MAX_STEPS,
-        # --- plumbing ---
-        bf16=True,
-        model_init_kwargs={"dtype": "bfloat16", "revision": MODEL_REVISION},
-        gradient_checkpointing=True,
-        gradient_checkpointing_kwargs={"use_reentrant": False},
-        logging_steps=1,
-        log_completions=True,
-        num_completions_to_print=2,
-        save_strategy="no",
-        seed=SEED,
-        dataloader_num_workers=0,
-    )
+    # As in trl/scripts/grpo.py: the model is loaded by the trainer from ModelConfig.
+    training_args.model_init_kwargs = {
+        "revision": model_args.model_revision,
+        "dtype": model_args.dtype,
+        **({"attn_implementation": model_args.attn_implementation} if model_args.attn_implementation else {}),
+    }
 
     trainer = GRPOTrainer(
-        model=MODEL_ID,
+        model=model_args.model_name_or_path,
         reward_funcs=[label_reward, format_reward],
-        args=args,
+        args=training_args,
         train_dataset=train_ds,
-        peft_config=peft_config,
+        peft_config=get_peft_config(model_args),
     )
 
     # ---- the one extra line ----
     wrapped = instrument_grpo_trainer(
-        trainer, profile_every=PROFILE_EVERY, profile_dir=os.path.join(run_root, "traces")
+        trainer, profile_every=script_args.profile_every, profile_dir=os.path.join(run_root, "traces")
     )
     print("instrumented:", wrapped)
-    trainer.model.print_trainable_parameters()
+    if hasattr(trainer.model, "print_trainable_parameters"):
+        trainer.model.print_trainable_parameters()
 
     trainer.train()
 
@@ -209,19 +209,23 @@ def train_func(config: dict | None = None):
 # ----------------------------------------------------------------------------------
 # Ray Train launcher (the "OSS Ray arm"): same body, TorchTrainer does DDP setup
 # ----------------------------------------------------------------------------------
-def main_ray():
+def main_ray(argv: list[str], script_args: ScriptArguments):
     import ray
     from ray.train import RunConfig, ScalingConfig
     from ray.train.torch import TorchTrainer
     from ray.train.v2.api.callback import UserCallback
 
+    # The run root is needed driver-side (results path, reported-metrics file) without
+    # building GRPOConfig here: read output_dir the cheap way, from the merged argv/YAML.
+    run_root = os.path.dirname(_lookup(argv, "output_dir").rstrip("/"))
+    run_name = _lookup(argv, "run_name", default=os.path.basename(run_root))
+
     class StepMetricsToDriver(UserCallback):
         """
         Runs on the Ray Train controller. Receives what every rank passed to
-        ray.train.report() each step, prints a one-line summary and appends the full
-        dicts to a JSONL on shared storage. (Ray 2.56's Train dashboard shows run /
-        worker state and system metrics, not user-reported metrics; this is how you
-        see them.)
+        ray.train.report() each step and appends the full dicts to a JSONL on shared
+        storage. (Ray 2.56's Train dashboard shows run / worker state and system
+        metrics, not user-reported metrics; this file and TensorBoard are how you see them.)
         """
 
         def __init__(self, path: str):
@@ -231,55 +235,66 @@ def main_ray():
         def after_report(self, run_context, metrics, checkpoint):
             with open(self.path, "a") as f:
                 f.write(json.dumps({"ranks": metrics}) + "\n")
-            m = metrics[0] or {}
-            if "timing/step_s" in m:
-                print(
-                    f"[ray.train.report] step={int(m.get('step', -1))} "
-                    f"step_s={m['timing/step_s']:.1f} gen={m.get('timing/generate_s', 0):.1f} "
-                    f"sync_wait={m.get('timing/sync_wait_s', 0):.2f} reward={m.get('timing/reward_s', 0):.2f} "
-                    f"fwd={m.get('timing/forward_s', 0):.1f} bwd={m.get('timing/backward_s', 0):.1f} "
-                    f"| reward={m.get('reward', float('nan')):.3f} "
-                    f"len={m.get('completions/mean_length', float('nan')):.0f} "
-                    f"spread={m.get('rollout/generate_s_rank_spread', 0):.2f}s",
-                    flush=True,
-                )
 
-    env_vars = {"HF_HOME": HF_HOME, "TOKENIZERS_PARALLELISM": "false"}
+    # HF_HOME must be in the process environment before transformers is imported, so it
+    # is genuinely environmental: run_trl.sh / job_grpo.yaml set it, and we forward it.
+    hf_home = os.environ.get("HF_HOME", "/mnt/cluster_storage/hf_cache")
+    env_vars = {"HF_HOME": hf_home}
     if os.environ.get("HF_TOKEN"):
         env_vars["HF_TOKEN"] = os.environ["HF_TOKEN"]
     # With RAY_RUNTIME_ENV_HOOK=...uv_runtime_env_hook.hook set, ray.init() also adds
     # working_dir=cwd (this directory) and py_executable="uv run ..." so the workers
     # rebuild this exact uv environment. Same trick as the SkyRL arm.
-    ray.init(runtime_env={"env_vars": env_vars, "excludes": [".venv", "out", "traces", "logs", "results"]})
+    # No `excludes` here: under `ray job submit` the job already owns working_dir/excludes and Ray
+    # refuses to merge the same field twice; Ray 2.56 skips .venv and __pycache__ by default anyway.
+    ray.init(runtime_env={"env_vars": env_vars})
 
-    # Pre-fetch the model on the driver so 4 workers do not race the Hub for it.
+    # Pre-fetch the model on the driver so N workers do not race the Hub for it.
     from huggingface_hub import snapshot_download
 
-    os.environ["HF_HOME"] = HF_HOME
+    model_id = _lookup(argv, "model_name_or_path")
+    revision = _lookup(argv, "model_revision", default="main")
+    os.environ["HF_HOME"] = hf_home
     t0 = time.perf_counter()
-    snapshot_download(MODEL_ID, revision=MODEL_REVISION)
-    print(f"[hub] {MODEL_ID}@{MODEL_REVISION[:8]} cached in {HF_HOME} ({time.perf_counter() - t0:.0f}s)")
+    snapshot_download(model_id, revision=revision)
+    print(f"[hub] {model_id}@{revision[:8]} cached in {hf_home} ({time.perf_counter() - t0:.0f}s)")
 
-    os.makedirs(RUN_ROOT, exist_ok=True)
+    os.makedirs(run_root, exist_ok=True)
+    reported = os.path.join(run_root, "ray_reported_metrics.jsonl")
     trainer = TorchTrainer(
         train_func,
-        train_loop_config={"run_root": RUN_ROOT, "hf_home": HF_HOME},
-        scaling_config=ScalingConfig(num_workers=NUM_GPUS, use_gpu=True),
+        train_loop_config={"argv": argv},
+        scaling_config=ScalingConfig(num_workers=script_args.num_gpus, use_gpu=True),
         run_config=RunConfig(
-            name=RUN_NAME,
-            storage_path=os.path.join(os.path.dirname(RUN_ROOT.rstrip("/")), "ray_results"),
-            callbacks=[StepMetricsToDriver(os.path.join(RUN_ROOT, "ray_reported_metrics.jsonl"))],
+            name=run_name,
+            storage_path=os.path.join(os.path.dirname(run_root), "ray_results"),
+            callbacks=[StepMetricsToDriver(reported)],
         ),
     )
     result = trainer.fit()
     print("[ray] result:", result)
-    print_step_table(os.path.join(RUN_ROOT, "ray_reported_metrics.jsonl"))
+    print_step_table(reported)
+
+
+def _lookup(argv: list[str], key: str, default: str | None = None) -> str:
+    """Value of `key` from the CLI (`--key v`) or, failing that, the `--config` YAML."""
+    flag = f"--{key}"
+    if flag in argv:
+        return argv[argv.index(flag) + 1]
+    if "--config" in argv:
+        import yaml
+
+        with open(_resolve_config_path(argv)[argv.index("--config") + 1]) as f:
+            cfg = yaml.safe_load(f) or {}
+        if key in cfg:
+            return str(cfg[key])
+    if default is None:
+        raise SystemExit(f"{flag} is required (on the CLI or in the --config YAML)")
+    return default
 
 
 def print_step_table(path: str) -> None:
-    """Per-step summary from what rank 0 passed to ray.train.report (the controller's own
-    stdout is not forwarded to the driver, so the UserCallback's prints land in the Train
-    controller log; this puts the same table in the driver log)."""
+    """Per-step summary from what rank 0 passed to ray.train.report, in the driver log."""
     if not os.path.exists(path):
         return
     print(f"{'step':>4} {'step_s':>7} {'gen_s':>6} {'wait_s':>6} {'rwd_s':>6} {'fwd_s':>6} {'bwd_s':>6} "
@@ -297,12 +312,11 @@ def print_step_table(path: str) -> None:
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--ray", action="store_true", help="run inside ray.train.torch.TorchTrainer")
-    cli = parser.parse_args()
     # This file is run by path; make its directory importable for rewards / timing.
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-    if cli.ray:
-        main_ray()
+    argv = sys.argv[1:]
+    script_args = parse_script_args_only(argv)
+    if script_args.ray:
+        main_ray(argv, script_args)
     else:
-        train_func()
+        train_func({"argv": argv})

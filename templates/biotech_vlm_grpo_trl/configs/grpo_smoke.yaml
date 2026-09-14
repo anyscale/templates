@@ -1,0 +1,48 @@
+# TRL GRPO smoke test: 4 GPUs x 4 completions per step, 10 steps, ~5 min of training.
+# Keys are fields of ScriptArguments (train_grpo_trl.py), trl.GRPOConfig and trl.ModelConfig.
+# Any key can be overridden on the CLI:  --max_steps 30 --learning_rate 2e-5
+# The `env` block is applied by TrlParser in every process before training starts.
+env:
+  TOKENIZERS_PARALLELISM: "false"
+
+# --- ScriptArguments (ours) ---
+data_dir: /mnt/cluster_storage/data/nct_crc   # the SkyRL arm's parquet
+train_rows: 0                                  # 0 = all 1,998
+profile_every: 0                               # >0 writes ~2 GB per trace; opt in
+
+# --- ModelConfig ---
+model_name_or_path: Qwen/Qwen3-VL-2B-Instruct
+model_revision: 89644892e4d85e24eaac8bacfd4f463576704203   # pinned 2026-09-11; "main" to float
+dtype: bfloat16
+use_peft: true
+lora_r: 16
+lora_alpha: 32
+lora_dropout: 0.0
+# LM projections only; Qwen3-VL's vision tower (qkv/proj/linear_fc*) stays frozen.
+lora_target_modules: [q_proj, k_proj, v_proj, o_proj, gate_proj, up_proj, down_proj]
+lora_task_type: CAUSAL_LM
+
+# --- GRPOConfig: the GRPO shape, matching the SkyRL arm where knobs correspond ---
+output_dir: /mnt/cluster_storage/trl_grpo/pathvlm_2b_trl/out   # run root = its parent
+run_name: pathvlm_2b_trl
+use_vllm: false                  # HF generate inside the trainer: the PathAI baseline shape
+num_generations: 4
+per_device_train_batch_size: 4   # completions per GPU per step; x GPUs must divide by num_generations
+gradient_accumulation_steps: 1
+max_completion_length: 384
+temperature: 0.8
+beta: 0.0                        # no reference model, no KL (SkyRL arm: use_kl_loss=false)
+learning_rate: 1.0e-5
+max_steps: 10
+
+# --- GRPOConfig: plumbing ---
+bf16: true
+gradient_checkpointing: true
+gradient_checkpointing_kwargs: {use_reentrant: false}
+logging_steps: 1
+log_completions: true            # writes out/completions/completions_<step>.parquet
+num_completions_to_print: 2
+report_to: [tensorboard]         # or [wandb] with WANDB_API_KEY in the environment
+save_strategy: "no"
+seed: 42
+dataloader_num_workers: 0
