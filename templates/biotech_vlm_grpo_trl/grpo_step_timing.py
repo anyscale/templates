@@ -21,7 +21,8 @@ Metric families (all seconds unless suffixed):
   timing/generate_s                 rollout wall clock (HF generate or vLLM call), THIS rank only
   timing/generate/prefill_s         HF generate only: entry -> first decode token (incl. ViT forward)
   timing/generate/decode_s          HF generate only: first -> last decode token
-  timing/generate/ms_per_token      decode_s / decode steps
+  timing/generate/ms_per_decode_step  decode_s / decode steps, i.e. one forward of the whole
+                                      batch, NOT per-sequence latency
   timing/sync_wait_s                dist.barrier() right after this rank's generate returns:
                                     how long the fast ranks waited for the slowest rollout
   timing/reward_s                   all reward funcs (+ TRL's cross-rank gather of rewards)
@@ -489,7 +490,7 @@ class GRPOStepTimingCallback(TrainerCallback):
         if st.decode_steps:
             m["timing/generate/prefill_s"] = st.prefill_s
             m["timing/generate/decode_s"] = st.decode_s
-            m["timing/generate/ms_per_token"] = 1000.0 * st.decode_s / max(st.decode_steps, 1)
+            m["timing/generate/ms_per_decode_step"] = 1000.0 * st.decode_s / max(st.decode_steps, 1)
         for k, v in t.items():
             if k.startswith("reward/"):
                 m[f"timing/{k}_s"] = v

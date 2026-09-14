@@ -116,7 +116,7 @@ clipped-ratio policy-gradient loss on the sampled completions, LoRA weights only
 The cost of GRPO is completions per GPU-hour, an aggregate throughput number:
 `rollout/tokens_per_s` (completion tokens ÷ generate seconds, this rank) and
 `rollout/samples_per_gpu_hour` are the headline metrics; the smoke run did ~65 tok/s
-per A10G at batch 4. `timing/generate/ms_per_token` is milliseconds per **decode step
+per A10G at batch 4. `timing/generate/ms_per_decode_step` is milliseconds per **decode step
 of the whole batch** (62 ms at batch 4), not per-sequence latency: it tells you whether
 the kernel path is healthy and barely moves as batch grows, which is exactly why
 aggregate tok/s does. The case for vLLM / SkyRL is made in tok/s: continuous batching
@@ -264,7 +264,7 @@ model load, 50 s to decode 1,998 base64 images into a HF dataset on each rank).
 
 Rank 0's `timing/*` per step (seconds), plus TRL's own reward columns:
 
-| step | step | generate | sync_wait | reward | fwd | bwd | opt | ms/tok | reward | zero-std groups | mean len | pad waste | gen spread |
+| step | step | generate | sync_wait | reward | fwd | bwd | opt | ms/step | reward | zero-std groups | mean len | pad waste | gen spread |
 |---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
 | 1 | 26.7 | 19.0 | 6.4 | 0.001 | 0.37 | 0.78 | 0.05 | 63 | 0.51 | 50% | 235 | 16% | 8.3 |
 | 2 | 25.4 | 12.8 | 11.3 | 0.001 | 0.39 | 0.75 | 0.00 | 62 | 0.81 | 25% | 228 | 12% | 11.9 |
@@ -308,6 +308,10 @@ What the numbers say:
   (vLLM generate ~5 s, FSDP full-parameter train ~95 s). Different batch, different
   trainer, different knobs: do not read the two as a throughput comparison. Read them
   as "where does the time go": generation here, training there.
+
+The recorded JSONL files in `results/` predate the rename of `timing/generate/ms_per_token`
+to `timing/generate/ms_per_decode_step` (same quantity: milliseconds per whole-batch decode
+step); new runs use the new key.
 
 Evidence in `results/`: `grpo_log_history.jsonl` (all 11 records rank 0 logged),
 `grpo_ray_reported_metrics.jsonl` (all 4 ranks per step), `grpo_step2_log_record.json`
@@ -375,7 +379,7 @@ or write is on `/mnt/cluster_storage`; the model is pre-fetched into
 |---|---|---|
 | `timing/tokenize_s` | `_tokenize_prompts` | chat template + image preprocessing, CPU |
 | `timing/generate_s` | `_generate_single_turn` | the pure HF `generate`. Not `_generate`: that one also runs a cross-rank `gather`, which would hide straggler wait inside generate time |
-| `timing/generate/{prefill,decode}_s`, `ms_per_token` | a `LogitsProcessor` injected into `model.generate` | first decode step marks the end of prefill (incl. the ViT forward) |
+| `timing/generate/{prefill,decode}_s`, `ms_per_decode_step` | a `LogitsProcessor` injected into `model.generate` | first decode step marks the end of prefill (incl. the ViT forward) |
 | `timing/sync_wait_s` | `dist.barrier()` right after this rank's generate returns | how long fast ranks wait for the slowest rollout, measured *before* TRL's first gather |
 | `timing/reward_s`, `timing/reward/<fn>_s` | `_calculate_rewards`, each reward func | includes TRL's gather of rewards across ranks |
 | `timing/forward_s`, `timing/backward_s` | `compute_loss`, `accelerator.backward` | DDP all-reduce is inside backward |
