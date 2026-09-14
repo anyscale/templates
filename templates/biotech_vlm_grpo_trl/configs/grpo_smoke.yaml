@@ -43,6 +43,8 @@ logging_steps: 1
 log_completions: true            # writes out/completions/completions_<step>.parquet
 num_completions_to_print: 2
 report_to: [tensorboard]         # or [wandb] with WANDB_API_KEY in the environment
-save_strategy: "no"
+save_strategy: steps            # HF checkpoint-N under output_dir; Ray Train copies it to ray_results
+save_steps: 5
+save_total_limit: 2
 seed: 42
 dataloader_num_workers: 0

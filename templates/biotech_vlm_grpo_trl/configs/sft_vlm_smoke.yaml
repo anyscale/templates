@@ -36,6 +36,8 @@ logging_steps: 1
 eval_strategy: steps
 eval_steps: 10
 report_to: [tensorboard]
-save_strategy: "no"
+save_strategy: steps            # HF checkpoint-N under output_dir; Ray Train copies it to ray_results
+save_steps: 10
+save_total_limit: 2
 seed: 42
 dataloader_num_workers: 0

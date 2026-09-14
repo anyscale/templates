@@ -38,6 +38,7 @@ import json
 import os
 import sys
 import time
+from contextlib import nullcontext
 from dataclasses import dataclass, field
 
 
@@ -56,6 +57,14 @@ class ScriptArguments:
     )
     ray: bool = field(default=False, metadata={"help": "Run the training function inside ray.train TorchTrainer."})
     num_gpus: int = field(default=4, metadata={"help": "Ray Train workers (one GPU each). Only with --ray."})
+    max_failures: int = field(
+        default=1, metadata={"help": "Ray Train: restart the worker group from the last checkpoint this many times."}
+    )
+    resume_from: str | None = field(
+        default=None,
+        metadata={"help": "Resume from a Hugging Face checkpoint dir (…/checkpoint-N). Under Ray Train a checkpoint "
+                          "restored after a failure takes precedence."},
+    )
 
 
 def _resolve_config_path(argv: list[str]) -> list[str]:
@@ -70,6 +79,16 @@ def _resolve_config_path(argv: list[str]) -> list[str]:
         if not os.path.isabs(argv[i]) and not os.path.exists(argv[i]):
             argv[i] = os.path.join(os.path.dirname(os.path.abspath(__file__)), argv[i])
     return argv
+
+
+def _ray_worker() -> bool:
+    try:
+        import ray.train
+
+        ray.train.get_context().get_world_rank()
+        return True
+    except Exception:
+        return False
 
 
 def parse(argv: list[str]):
@@ -195,7 +214,26 @@ def train_func(config: dict):
     if hasattr(trainer.model, "print_trainable_parameters"):
         trainer.model.print_trainable_parameters()
 
-    trainer.train()
+    # Checkpointing. HF writes <output_dir>/checkpoint-N every `save_steps` (rank 0, shared
+    # storage). Inside Ray Train, Ray's own RayTrainReportCallback copies each one into the
+    # run's storage_path as a Ray Train checkpoint (kept: CheckpointConfig.num_to_keep), and
+    # ray.train.get_checkpoint() hands it back after a worker failure so training resumes.
+    resume_from = script_args.resume_from
+    ckpt_ctx = nullcontext(None)
+    if _ray_worker():
+        import ray.train
+        from ray.train.huggingface.transformers import RayTrainReportCallback
+
+        trainer.add_callback(RayTrainReportCallback())
+        ray_ckpt = ray.train.get_checkpoint()
+        if ray_ckpt is not None:
+            ckpt_ctx = ray_ckpt.as_directory()
+    with ckpt_ctx as ray_ckpt_dir:
+        if ray_ckpt_dir is not None:
+            resume_from = os.path.join(ray_ckpt_dir, "checkpoint")
+        if resume_from:
+            print(f"[resume] from {resume_from}")
+        trainer.train(resume_from_checkpoint=resume_from)
 
     # Persist the full per-step log so the run can be reviewed without W&B/TB.
     if trainer.accelerator.is_main_process:
@@ -211,7 +249,7 @@ def train_func(config: dict):
 # ----------------------------------------------------------------------------------
 def main_ray(argv: list[str], script_args: ScriptArguments):
     import ray
-    from ray.train import RunConfig, ScalingConfig
+    from ray.train import CheckpointConfig, FailureConfig, RunConfig, ScalingConfig
     from ray.train.torch import TorchTrainer
     from ray.train.v2.api.callback import UserCallback
 
@@ -268,6 +306,8 @@ def main_ray(argv: list[str], script_args: ScriptArguments):
         run_config=RunConfig(
             name=run_name,
             storage_path=os.path.join(os.path.dirname(run_root), "ray_results"),
+            checkpoint_config=CheckpointConfig(num_to_keep=2),
+            failure_config=FailureConfig(max_failures=script_args.max_failures),
             callbacks=[StepMetricsToDriver(reported)],
         ),
     )

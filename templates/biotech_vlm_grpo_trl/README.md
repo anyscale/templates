@@ -340,6 +340,20 @@ One assumption to check on first use: `uv` must be on the job cluster's PATH (it
 `/home/ray/.local/bin/uv` on this workspace; confirm it comes from the image and not from
 the workspace's persisted home).
 
+## Checkpointing and resume
+
+Both scripts save every `save_steps` (`save_strategy: steps`, `save_total_limit: 2` in the
+configs). What happens with a checkpoint depends on the launcher:
+
+| launcher | where the checkpoint goes | how to resume |
+|---|---|---|
+| plain / `accelerate launch` | `<output_dir>/checkpoint-N` (HF format: LoRA adapter, optimizer, scheduler, trainer state) | `--resume_from <output_dir>/checkpoint-N` |
+| `--ray` (Ray Train) | same HF dir, plus Ray's `RayTrainReportCallback` copies it into `<run_root>/../ray_results/<run_name>/checkpoint_*/checkpoint/` (Ray Train checkpoint, `num_to_keep=2`) | automatic: on a worker failure Ray Train restarts the group up to `--max_failures` times (default 1) and `ray.train.get_checkpoint()` hands the last checkpoint back; the script passes it to `trainer.train(resume_from_checkpoint=...)`. Manual: `--resume_from` as above. |
+
+HF writes the checkpoint from rank 0 onto shared storage; every rank then reports it to
+Ray Train (that is how Ray's callback works, and `report` is a barrier, so all ranks must).
+`ray.train.get_checkpoint()` is `None` on a fresh start.
+
 ## Seeing the metrics
 
 Three views of the same per-step numbers, cheapest first:
@@ -528,6 +542,8 @@ you never see them. The keys above are a superset of what they cover.
   ~230 tokens; 384 truncates the tail and the `format_reward` teaches conciseness.
 - Eval is not wired into the GRPO script (HF `generate` over 198 val rows × 4 GPUs is
   slow); the SFT script does eval every `eval_steps`.
+- Checkpoints hold the LoRA adapter only (plus optimizer state); the base model is
+  reloaded from the Hub cache on resume.
 - Not a registered Anyscale template (no `BUILD.yaml` entry, compute configs, depset
   lock, or test block). Use the `/template` skill if that is wanted.
 
