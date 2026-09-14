@@ -60,18 +60,6 @@ user:   <image> What tissue type is shown? Choose one of: [adipose, background,
 
 ~166 tokens after the Qwen3-VL processor, 64 of them image tokens.
 
-First 5 train rows (`results/grpo_train_samples.png`):
-
-![five training patches](results/grpo_train_samples.png)
-
-| # | ground_truth |
-|---|---|
-| 1 | cancer-associated stroma |
-| 2 | background |
-| 3 | colorectal adenocarcinoma epithelium |
-| 4 | mucus |
-| 5 | smooth muscle |
-
 ## GRPO: output, 4 rollouts per prompt
 
 Per prompt: 4 completions, temperature 0.8, max 384 new tokens, HF `model.generate`.
@@ -135,6 +123,18 @@ Only LoRA weights update.
 - Diagnostic: `timing/generate/ms_per_decode_step`, ms for one decode step of the whole
   batch (62 ms at batch 4). Not per-sequence latency. Stays flat as batch grows, which
   is why tok/s grows with batch and why a batching engine (vLLM, SkyRL) wins.
+
+First 5 train rows (`results/grpo_train_samples.png`):
+
+![five training patches](results/grpo_train_samples.png)
+
+| # | ground_truth |
+|---|---|
+| 1 | cancer-associated stroma |
+| 2 | background |
+| 3 | colorectal adenocarcinoma epithelium |
+| 4 | mucus |
+| 5 | smooth muscle |
 
 ## SFT: input, target, loss
 
