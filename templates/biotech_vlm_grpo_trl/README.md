@@ -19,6 +19,121 @@ Also in here, because the POV's Workload 1 starts with SFT: `train_sft_trl.py`, 
 TRL `SFTTrainer` + Ray Train skeleton (LLM or VLM) on fake slide-tile QA data, so
 there is runnable code before PathAI's data or JSON shape arrives.
 
+## What goes in, what comes out
+
+### Where the data comes from
+
+- **Source:** the public Hugging Face dataset `1aurent/NCT-CRC-HE` (NCT-CRC-HE-100K:
+  224x224 H&E-stained colorectal tissue patches, 9 tissue classes, ungated). We sample
+  from its `CRC-VAL-HE-7K` split because the 100K split is stored sorted by class
+  (a balanced subsample would mean downloading most of 15 GB).
+- **Preparation:** `../biotech_vlm_grpo/nct_crc_dataset.py` (the SkyRL arm's script)
+  draws a class-balanced, disjoint **1,998 train / 198 val** (222 / 22 per class) and
+  writes `/mnt/cluster_storage/data/nct_crc/{train,val}.parquet`. Each row holds the
+  patch as a base64 JPEG inside the prompt plus `reward_spec.ground_truth`, the class
+  name. `run_trl.sh` regenerates it if missing. The **same parquet** feeds the SkyRL
+  arm, so both arms train on identical prompts and labels.
+- **For TRL:** `to_trl_rows()` in `train_grpo_trl.py` decodes the base64 into a PIL image
+  and puts it in an `images` column, leaves an `{"type": "image"}` slot in the user
+  turn (TRL fills it at rollout time), and passes `ground_truth` through to the reward
+  functions.
+
+### What the model sees (the input)
+
+Every training row is the same two-message chat with one image; only the patch and the
+label change. First five rows of `train.parquet`, in order (`results/grpo_train_samples.png`):
+
+![five training patches](results/grpo_train_samples.png)
+
+| # | ground truth | what the patch shows |
+|---|---|---|
+| 1 | cancer-associated stroma | pink fibrous matrix, scattered spindle nuclei |
+| 2 | background | blank glass, one speck of debris |
+| 3 | colorectal adenocarcinoma epithelium | crowded gland with a lumen, irregular nuclei |
+| 4 | mucus | pale wispy extracellular material, few cells |
+| 5 | smooth muscle | parallel eosinophilic fibres, elongated nuclei |
+
+```
+system: You are a pathology assistant. Examine the tissue patch and reason step by
+        step before answering.
+user:   <image>  What tissue type is shown? Choose one of: [adipose, background,
+        debris, lymphocytes, mucus, smooth muscle, normal colon mucosa,
+        cancer-associated stroma, colorectal adenocarcinoma epithelium]. Think step
+        by step, then give your final answer as <answer>class_name</answer>.
+```
+
+After the Qwen3-VL processor this is ~166 prompt tokens, 64 of them vision tokens
+(the processor resizes the 224 px patch to a 16x16 patch grid, merged 2x2 to 64 tokens).
+
+### What the model produces (the output)
+
+`GRPOTrainer` samples **4 completions per prompt** at temperature 0.8 with HF
+`model.generate`, up to 384 new tokens each (`max_completion_length`). Three real
+completions from step 10 of the smoke run (`results/grpo_sample_completions.md`), with
+the reward each earned:
+
+- **correct, well-formed (reward 1.2, advantage +0.50):** *"1. The image shows a dense
+  collection of small, round cells with prominent nuclei, arranged in a somewhat
+  disorganized pattern. 2. The cells are tightly packed and have a uniform appearance,
+  which is typical of lymphocytes. 3. There is no evidence of adipose tissue, mucus, or
+  smooth muscle. [...] `<answer>lymphocytes</answer>`"*
+- **wrong class, well-formed (reward 0.2, advantage -1.50):** *"1. The image shows a
+  dense collection of small, darkly stained cells with round nuclei. 2. These cells are
+  arranged in a loose, irregular pattern [...] typical of a highly cellular tissue.
+  [...]"* — closed with an `<answer>` tag naming the wrong class.
+- **no answer tag (reward 0.0, advantage -1.50):** *"To determine the correct tissue
+  type shown in the image, let's follow a step-by-step analysis: 1. **Observe the
+  cellular architecture** [...]"* — ran to the 384-token cap mid-list and never emitted
+  `<answer>`. This is what `completions/clipped_ratio` counts.
+
+Mean completion length in the smoke run was ~230 tokens; 0 to 6% hit the cap.
+
+### How the outputs are rewarded
+
+Two plain Python functions in `rewards.py`, identical scoring to the SkyRL arm's
+`env.py`, summed by TRL:
+
+| function | value | rule |
+|---|---|---|
+| `label_reward` | 1.0 / 0.0 | contents of the **last** `<answer>…</answer>` block, lower-cased, whitespace- and punctuation-normalised, aliases mapped (`LYM`→lymphocytes, `tumor`→colorectal adenocarcinoma epithelium, …), equals the ground-truth class |
+| `format_reward` | 0.2 / 0.0 | there is a non-empty `<answer>` block at all, right or wrong |
+
+So a completion scores **1.2** (right + tagged), **0.2** (wrong + tagged) or **0.0**
+(no tag). The format bonus keeps a group from collapsing to all-zero reward early in
+training while the model is still learning the output contract.
+
+GRPO then normalises rewards **within each group of 4** completions of the same prompt:
+advantage = (reward − group mean) / group std, broadcast to every token of that
+completion. That is where the ±1.50 and +0.50 above come from. If all 4 completions
+score the same, the group's advantages are all zero and it contributes no gradient
+(`frac_reward_zero_std`); with only 4 prompts per step in the smoke run that happened
+to 25 to 100% of groups, which is why the smoke run is sized for timing, not learning.
+There is no reward model, no reference model and no KL term (`beta=0`); the loss is the
+clipped-ratio policy-gradient loss on the sampled completions, LoRA weights only.
+
+### Throughput: think in tokens/s per GPU, use ms per decode step as the diagnostic
+
+The cost of GRPO is completions per GPU-hour, an aggregate throughput number:
+`rollout/tokens_per_s` (completion tokens ÷ generate seconds, this rank) and
+`rollout/samples_per_gpu_hour` are the headline metrics; the smoke run did ~65 tok/s
+per A10G at batch 4. `timing/generate/ms_per_token` is milliseconds per **decode step
+of the whole batch** (62 ms at batch 4), not per-sequence latency: it tells you whether
+the kernel path is healthy and barely moves as batch grows, which is exactly why
+aggregate tok/s does. The case for vLLM / SkyRL is made in tok/s: continuous batching
+keeps the per-step latency flat while filling the batch, and the padding waste (11 to
+28% here) goes away.
+
+### The SFT skeleton's data
+
+`make_sft_data.py` takes the **same 198 val patches**, saves them as PNG tiles and
+writes LLaVA-style JSONL: `{"image": "tiles/…png", "conversations": [{"from": "human",
+"value": "<image>\nWhat tissue type is shown in this tile?"}, {"from": "gpt", "value":
+"This tile shows lymphocytes: densely packed small round cells …"}], "metadata": {…}}`.
+The answers are templated from the label, so it is fake QA on real tissue: it proves the
+plumbing (vision collator, completion-only loss, Ray Train), not the model. A text-only
+twin replaces the image with the templated morphology description in the question.
+The real slide + QA data will replace this through one function, `record_to_trl()`.
+
 ## Run it
 
 ```bash
