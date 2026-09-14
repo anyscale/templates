@@ -445,22 +445,34 @@ and advantages), `step_breakdown.png`. One 1.5 GB profiler trace remains at
 
 ### SFT skeleton smoke run (`bash run_sft.sh`, configs/sft_vlm_smoke.yaml)
 
-Qwen3-VL-2B + LoRA on 179 fake tile-QA records, 4 GPUs, 20 steps, eval every 10:
+Qwen3-VL-2B + LoRA on 179 fake tile records with reasoning-style targets (84 to 111
+tokens), 4 GPUs, 20 steps, eval every 10 (run 2026-09-14, via `ray job submit`):
 
 | | step 1 | step 10 | step 20 |
 |---|---:|---:|---:|
-| train loss | 2.52 | 1.41 | 0.79 |
-| train token accuracy | 0.48 | 0.71 | 0.82 |
-| eval loss | | 1.29 | 0.88 |
-| eval token accuracy | | 0.73 | 0.79 |
+| train loss | 2.39 | 1.21 | 0.76 |
+| train token accuracy | 0.58 | 0.72 | 0.82 |
+| eval loss | | 1.14 | 0.77 |
+| eval token accuracy | | 0.75 | 0.82 |
 
-1.4 s/step. TRL inferred `completion_only_loss=True` and used its vision collator.
-Post-training greedy sample on a held-out tile, question "Is tumor epithelium present
-in this tile?": *"No. The tile shows uniform purple background with no cellular
-detail, consistent with background stain."* (reference: *"No. The tile shows empty
-glass with no tissue ... consistent with background."*). Templated data, so this shows
-the pipeline learns the format and the label, nothing more. Full log in
-`results/sft_vlm_log_history.jsonl`.
+~2 s/step. TRL inferred `completion_only_loss=True` and used its vision collator.
+Post-training greedy sample on a held-out tile (a `background` tile):
+
+> **model:** 1. This is a H&E-stained colorectal tissue patch. 2. No prominent mitotic
+> figures, so not adenocarcinoma. 3. No large necrotic areas, so not chronic inflammation.
+> 4. The dominant feature is uniform pinkish-staining background with scattered pale cells,
+> which is most consistent with normal colorectal mucosa. `<answer>normal colorectal mucosa</answer>`
+>
+> **reference:** 1. This is an H&E-stained colorectal tissue patch. 2. The dominant feature
+> is empty glass with no tissue, only faint out-of-focus artifact. 3. No amorphous necrotic
+> material, so not debris; no lipid vacuoles, so not adipose. 4. The pattern is most
+> consistent with background. `<answer>background</answer>`
+
+After 20 steps the model has the **format** (four numbered steps, rule-outs, a tag) but
+not the **content**: wrong class, invented rule-outs, and a class name that is not in the
+label set. That is the expected state after a tiny SFT and exactly what the GRPO stage is
+for: the format reward is already satisfied, the label reward is what remains to learn.
+Full log in `results/sft_vlm_log_history.jsonl`.
 
 `configs/sft_llm_smoke.yaml` (Qwen2.5-0.5B-Instruct on the text-only twin, 8.8M LoRA params): loss 1.29 →
 0.04, eval loss 0.21 at step 10 → 0.08 at step 20, eval token accuracy 0.98. The greedy
