@@ -291,7 +291,7 @@ What the numbers say:
   the others wait 5 to 17 s for it. Batched HF generate runs the whole batch to its
   longest sequence; DDP then runs the whole step to its slowest rank. Two levels of
   the same tail problem.
-- **Decode is ~62 ms/token on an A10G for a 2B model at batch 4** (steps 1 to 4),
+- **Decode is ~62 ms per whole-batch step on an A10G for a 2B model at batch 4** (steps 1 to 4),
   i.e. ~65 tokens/s per GPU. Prefill including the ViT forward is 0.1 s once the
   CUDA graphs are warm (1.4 s on step 1). `padding_waste_frac` 11 to 28%: that share
   of decode steps produces padding for sequences that already finished.
