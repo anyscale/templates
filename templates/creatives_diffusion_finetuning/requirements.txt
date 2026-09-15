@@ -1,9 +1,9 @@
-torch==2.7.0
-torchvision==0.22.0
-diffusers==0.39.0
+torch==2.8.0
+torchvision==0.23.0
+diffusers==0.39.0  # 0.40.0 needs huggingface-hub>=1, transformers 4.x caps it <1
 transformers==4.57.6  # last 4.x; the 5.x break needs a test run against diffusers first
 peft==0.20.0
-accelerate==1.14.0
+accelerate==1.15.0
 # datasets 2.14.4 is the last release without an fsspec upper bound, so an
 # unpinned spec resolves there once fsspec floats to a 2025+ release — and that
 # old datasets can't recognise the new fsspec LocalFileSystem (load_dataset
