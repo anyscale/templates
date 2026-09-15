@@ -1,0 +1,163 @@
+# The bioinformatics toolchain for this template, pinned once.
+#
+# Three consumers read this file, and none of them is the source of truth:
+#
+#   build_tools.sh    installs the toolchain into a prefix -- this is what the Dockerfile runs
+#   build_wheels.sh   packages the same builds as pip wheels, for the stock-image route
+#   wdl_on_ray/envs.py   derives a per-task runtime_env under `--container-runtime native`
+#
+# All three verify the same sha256, so every route produces byte-identical payloads. That is
+# the property that makes the alternatives trustworthy rather than merely convenient.
+#
+# Why upstream release tarballs and not bioconda: the tools have to run in the Anyscale Ray
+# image, whose Python is an Anaconda install at /home/ray/anaconda3. Installing bioconda
+# packages into that base environment fails -- conda tries to downgrade
+# requests/setuptools/platformdirs and refuses. These payloads carry no Python dependencies at
+# all, only binaries and shims, so there is nothing for a solver to disagree about.
+#
+# `kind` selects how the payload is obtained:
+#
+#   binary   unpack upstream's prebuilt release as-is. Deliberately no patchelf and no RPATH
+#            rewriting: these are built against old glibc and must keep depending on the
+#            image's glibc, not on some other closure.
+#   source   built from the release tarball, statically where possible, for the same reason.
+#   pypi     already a Python distribution; needs no payload, only a dependency edge and a shim.
+#
+# `provides` maps the name that lands on PATH to its path inside the built payload.
+#
+# Only what ONTAssembleWithFlye actually calls is listed. Upstream this repo was extracted
+# from also packages canu (plus a 53 MB JRE for canu's MHAP overlapper) and medaka; the Flye
+# pipeline needs neither, and per-tool payloads mean dropping them costs nothing elsewhere.
+
+[tools.minimap2]
+version = "2.28"
+kind    = "binary"
+url     = "https://github.com/lh3/minimap2/releases/download/v2.28/minimap2-2.28_x64-linux.tar.bz2"
+sha256  = "51f2cf0e486d0f9f88ace1aa58fdc56571382a676ea0889ae607301c60693377"
+strip   = 1
+
+# One fetch covers three of the pipeline's tools. Upstream ships k8 and paftools.js inside the
+# minimap2 binary release, so a separate k8 pin is not merely unnecessary but weaker: this is
+# necessarily the k8 build that this paftools.js was released against, which a separate pin
+# could not guarantee. CallAssemblyVariants.Paftools is the only caller and needs both.
+[tools.minimap2.provides]
+minimap2      = "minimap2"
+k8            = "k8"
+"paftools.js" = "paftools.js"
+
+[tools.samtools]
+version = "1.21"
+kind    = "source"
+url     = "https://github.com/samtools/samtools/releases/download/1.21/samtools-1.21.tar.bz2"
+sha256  = "05724b083a6b6f0305fcae5243a056cc36cf826309c3cb9347a6b89ee3fc5ada"
+# strip is load-bearing: the tarball unpacks to samtools-1.21/, and the build recipe
+# cds into the unpack directory expecting ./configure at its top level.
+strip   = 1
+# Upstream publishes no prebuilt binary, so this one is built. Only `samtools dict` is used,
+# by Utils.ComputeGenomeLength.
+#
+# htslib is deliberately *not* pinned separately. The release tarball bundles the matching
+# htslib (htslib-1.21 inside samtools-1.21), and configure's default search finds and builds
+# that bundled copy. The two projects release in lockstep, so it is version-matched by
+# construction -- stronger than a second pin that has to be kept aligned by hand.
+
+[tools.samtools.provides]
+samtools = "bin/samtools"
+
+[tools.bcftools]
+version = "1.21"
+kind    = "source"
+url     = "https://github.com/samtools/bcftools/releases/download/1.21/bcftools-1.21.tar.bz2"
+sha256  = "528a4cc1d3555368db75a700b22a3c95da893fd1827f6d304716dfd45ea4e282"
+strip   = 1
+# Only `bcftools norm` is used, and by the README notebook's Step 6b rather than by any WDL
+# task. paftools.js derives its variants from minimap2's `cs` tag, which places an indel
+# wherever the alignment happened to put it; inside a homopolymer that position is arbitrary
+# and differs between two independently aligned assemblies, so comparing unnormalized callsets
+# across samples counts one variant twice. Step 6b does exactly that comparison and ONT
+# assemblies are indel-rich.
+#
+# Deliberately not folded into CallAssemblyVariants.Paftools. That task declares
+# `us.gcr.io/broad-dsp-lrma/lr-asm:0.1.13`, which carries no bcftools, so calling it there
+# would make the WDL's own declared image insufficient and break the task under every runtime
+# that honours `runtime.docker`. Step 6b runs on the driver, which always has this image.
+#
+# Version-matched to samtools 1.21 on purpose: this tarball bundles htslib-1.21, the same
+# htslib samtools builds, so `bcftools norm` and `samtools` agree about CRAM/BCF handling
+# without a third pin to keep aligned by hand.
+
+[tools.bcftools.provides]
+bcftools = "bin/bcftools"
+
+[tools.flye]
+version = "2.9.5"
+kind    = "source"
+url     = "https://github.com/fenderglass/Flye/archive/refs/tags/2.9.5.tar.gz"
+sha256  = "7b384266d83b1e66bcaf82d49d35ac6c587bad9146e8f3b752a220291f6b1a6f"
+strip   = 1
+# The assembler. Upstream ships source only, and it cannot be built on a worker either: the
+# stock image has gcc and make but no zlib headers, so Flye's `make` fails -- and its setup.py
+# error handler raises `TypeError: exit expected at most 1 argument, got 2` on the way out,
+# hiding the real cause. Building it into the image means that never happens at run time.
+#
+# Note for anyone comparing against the WDL: Flye.wdl declares `runtime.docker` as
+# lr-flye:2.8.3, and under `--container-runtime none` that tag is advisory -- what actually
+# runs is the version pinned here. See the template's README for why, and what it costs.
+
+[tools.flye.provides]
+flye = "bin/flye"
+
+[tools.quast]
+version      = "5.2.0"
+kind         = "pypi"
+requirements = ["quast==5.2.0", "setuptools==80.9.0", "matplotlib==3.9.4"]
+needs        = ["minimap2"]
+# `needs` is load-bearing, not documentation. QUAST's *reference-based* metrics --
+# misassemblies, mismatch and indel rates, genome fraction, NGA50 -- come from aligning contigs
+# to the reference with minimap2, and QUAST does not ship that binary. It ships minimap2's
+# *source* and compiles it in `setup.py`, where a failed build only appends to
+# `modules_failed_to_install`: the install still succeeds. So a missing aligner produces a
+# QUAST run that exits 0 with a quietly contiguity-only report. Both a 1 Mbp demo and a 62 Mbp
+# chr20 assembly came back missing exactly those metrics before this edge existed.
+#
+# It resolves without a compiler because QUAST calls
+# `get_path_to_program('minimap2', <bundled dir>, min_version='2.19')`, which falls back to
+# every entry in $PATH -- and minimap2 above puts one there. 2.28 clears the 2.19 floor.
+# Quast.wdl then *verifies* it worked, because the failure mode is a task that succeeds.
+#
+# setuptools is also load-bearing. QUAST 5.2.0 does
+# `from distutils.version import LooseVersion`, and distutils was removed in Python 3.12; it
+# fails at import until setuptools supplies the vendored distutils, which setuptools dropped
+# in 81. matplotlib because Quast.wdl globs `basic_stats/*.pdf` as a task output; without it
+# QUAST warns "Can't draw plots" and that glob comes back empty.
+#
+# Both are pinned exactly rather than left as a range or a bare name. The four tarballs above are
+# sha256-verified, so leaving two PyPI dependencies to resolve at image-build time meant the
+# image's contents depended on the day it was built -- and `setuptools<81` in particular would
+# have silently picked up every release below the ceiling. Exact pins make a rebuild reproduce
+# the same image. Transitive dependencies still resolve freely; pinning those needs a lock file,
+# which is the next step up if you need bit-identical rebuilds.
+#
+# The values are the ones the base image already carries, which is what the bare names above
+# actually resolved to: pip treats an installed, satisfying version as done and installs nothing,
+# so `matplotlib` and `setuptools<81` were never fetched at all. Writing the versions down changes
+# nothing about what runs -- it only stops a future base image changing it silently.
+#
+# From the base image itself -- `docker run --rm anyscale/ray:2.56.0-py312 pip show matplotlib
+# setuptools` -- and confirmed against the published inventory
+# (https://docs.anyscale.com/reference/base-images/ray-2560/py312): matplotlib 3.9.4,
+# setuptools 80.9.0. Re-run that on a Ray bump and move these pins with it, rather than
+# picking the newest release -- an earlier draft of this line said 3.11.1 on the theory that
+# it was "what pip resolves today", which would have *upgraded* matplotlib by two minor
+# versions the moment the image was rebuilt.
+#
+# matplotlib is the one to watch. QUAST 5.2.0 is from 2022 and its plotting code predates
+# several matplotlib API removals, so a newer matplotlib can turn `basic_stats/*.pdf` back into
+# an empty glob. Quast.wdl's guard does not cover that -- it checks the reference-based metrics,
+# not the plots -- so verify the PDFs exist after changing this line.
+#
+# `provides` is prefix-relative here, not payload-relative: pip installs QUAST's own entry
+# point as `quast.py`, and the WDL calls `quast`, so the shim bridges the two.
+
+[tools.quast.provides]
+quast = "bin/quast.py"
