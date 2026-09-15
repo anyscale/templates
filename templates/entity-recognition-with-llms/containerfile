@@ -1,4 +1,4 @@
-FROM anyscale/ray-llm:2.57.0-py312-cu130
+FROM anyscale/ray-llm:2.58.0-py312-cu130
 
 # LLaMA-Factory pulls peft/trl/datasets, and picks whatever transformers the image ships within its own cap.
 RUN python3 -m pip install --no-cache-dir \
