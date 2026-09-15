@@ -327,6 +327,7 @@ httpx==0.28.1 \
     --hash=sha256:d909fcccc110f8c7faf814ca82a9a4d816bc5a6dbfea25d6591d6985b8ba59ad
     # via
     #   a2a-sdk
+    #   langchain-core
     #   langgraph-sdk
     #   langsmith
     #   mcp
@@ -337,9 +338,9 @@ httpx-sse==0.4.3 \
     # via
     #   a2a-sdk
     #   mcp
-idna==3.12 \
-    --hash=sha256:60ffaa1858fac94c9c124728c24fcde8160f3fb4a7f79aa8cdd33a9d1af60a67 \
-    --hash=sha256:724e9952cc9e2bd7550ea784adb098d837ab5267ef67a1ab9cf7846bdbdd8254
+idna==3.18 \
+    --hash=sha256:7f952cbe720b688055e3f87de14f5c3e5fdaa8bc3928985c4077ca689de849a2 \
+    --hash=sha256:ffb385a7e039654cef1ab9ef32c6fafe283c0c0467bba1d9029738ce4a14a848
     # via
     #   anyio
     #   httpx
@@ -475,13 +476,13 @@ jsonschema-specifications==2025.9.1 \
     --hash=sha256:98802fee3a11ee76ecaca44429fda8a41bff98b00a0f2838151b113f210cc6fe \
     --hash=sha256:b540987f239e745613c7a9176f3edb72b832a4ac465cf02712288397832b5e8d
     # via jsonschema
-langchain==1.3.1 \
-    --hash=sha256:154e9c30c90b391eba4315296f6bf6b6fac6b058ddea4cc771a10470968fe36f \
-    --hash=sha256:bc283c220233230f48b8e50ab1fbf1b688bcb206d933fa448d40a9b143177f62
+langchain==1.3.15 \
+    --hash=sha256:ab4b775b9703f7e37babe0b325dbbaef25573bda60ecf79f7850bc875f252795 \
+    --hash=sha256:c0d2d0d51ed7da249e8ab7487173872059a9dd46fb071d905957485b7334f987
     # via -r templates/multi_agent_a2a/requirements.txt
-langchain-core==1.4.0 \
-    --hash=sha256:1dc341eed802ed9c117c0df3923c991e5e9e226571e5725c194eeb5bd93d1a7f \
-    --hash=sha256:23cbbdb46e38ddd1dd5247e6167e96013eae74bea4c5949c550809970a9e565c
+langchain-core==1.6.3 \
+    --hash=sha256:114fe1868c9ed60606662b9dd0074bf3152cc6b0b1522ba37cbd6b04f55ca77d \
+    --hash=sha256:88b430944fbd4d40fa98135d6c873581d497b6f33515d01962337548e918df2f
     # via
     #   langchain
     #   langchain-mcp-adapters
@@ -489,6 +490,7 @@ langchain-core==1.4.0 \
     #   langgraph
     #   langgraph-checkpoint
     #   langgraph-prebuilt
+    #   langgraph-sdk
 langchain-mcp-adapters==0.1.12 \
     --hash=sha256:0c7baa974278e44148b36fe6cb04173e9bf3c540619017a8f1bb602f90a24c1f \
     --hash=sha256:ea9894ed8baf83dce485cf4fb64d7afb74c34b95e2e627fde6bf307eaa49ea1c
@@ -497,13 +499,15 @@ langchain-openai==1.0.2 \
     --hash=sha256:621e8295c52db9a1fc74806a0bd227ea215c132c6c5e421d2982c9ee78468769 \
     --hash=sha256:b3eb9b82752063b46452aa868d8c8bc1604e57631648c3bc325bba58d3aeb143
     # via -r templates/multi_agent_a2a/requirements.txt
-langchain-protocol==0.0.16 \
-    --hash=sha256:3658c142c5d0fb3a023a4be442ce4c15c6d626aab6135eb79a76dc64ad19c3c3 \
-    --hash=sha256:806c7cdd951b1c4f692fa40fce60821ff0f221d4360e27673ddf2c2b99c2b7ff
-    # via langchain-core
-langgraph==1.2.0 \
-    --hash=sha256:03fd5895a8d4b70db1ff63ebc3bacead29dd20cd794a8b1a483e7ec9018f7a65 \
-    --hash=sha256:4a9baaf62afc5d5f63144a50095140a34b9aa9b7cea695d25326d564775348e7
+langchain-protocol==0.0.19 \
+    --hash=sha256:4cdf879a492a35980fd859ae792d3c65458ccaae504e183c9a10d7eac1f0720f \
+    --hash=sha256:79d90a1425122ac87e8052e2ec054fbd09c3edbf341bdfb6397112a495c7bf8c
+    # via
+    #   langchain-core
+    #   langgraph-sdk
+langgraph==1.2.11 \
+    --hash=sha256:8bab70de7b2d00b5300fb289bcf38d8b241400f3184c1e95e8ce706fb0e8686b \
+    --hash=sha256:9ecfe11e50d338b34b15cf4d8a442642de103e8ae6971320efba84e4542eb363
     # via
     #   -r templates/multi_agent_a2a/requirements.txt
     #   langchain
@@ -517,9 +521,9 @@ langgraph-prebuilt==1.1.0 \
     --hash=sha256:3c579cf6eed2d17f9c157c2d0fcaddcd8688524e7022d3b22b37a3bf4589d528 \
     --hash=sha256:51e311747d755b751d5c6b39b0c1446124d3a7643d2515017e6714b323508fc9
     # via langgraph
-langgraph-sdk==0.3.15 \
-    --hash=sha256:29e805003d2c6e296823dd71992610976fd0428cefaa8b3304fd91f2247037de \
-    --hash=sha256:3838773acf7456d158165385d49f48f1e856f28b56ccd99ea139a8f27004815d
+langgraph-sdk==0.4.4 \
+    --hash=sha256:39afe416c91742925e6f8a93715f566d499b36e1b636b804a4ffe3190e4f4e64 \
+    --hash=sha256:4e651ffa09de695681579396375377bdde23bedbc8e35b070e615cbd5af7da8b
     # via langgraph
 langsmith==0.8.8 \
     --hash=sha256:9d00e54f54d833c1914003527ff03ad0364741034330da72f0adbeaba852b6cf \
@@ -1586,9 +1590,9 @@ uuid-utils==0.16.0 \
     # via
     #   langchain-core
     #   langsmith
-uvicorn==0.38.0 \
-    --hash=sha256:48c0afd214ceb59340075b4a052ea1ee91c16fbc2a9b1469cca0e54566977b02 \
-    --hash=sha256:fd97093bdd120a2609fc0d3afe931d4d4ad688b6e75f0f929fde1bc36fe0e91d
+uvicorn==0.52.3 \
+    --hash=sha256:116af2710dbf47c80f463cd20ee4884b6662f4c9f227d797ddc7279d2fcc2c7c \
+    --hash=sha256:18857b9e6579300be55c91c0a1cfd37d9a2cf0cabea33b88275f199eb73b8b58
     # via
     #   -r templates/multi_agent_a2a/requirements.txt
     #   mcp
@@ -1666,7 +1670,9 @@ websockets==15.0.1 \
     --hash=sha256:f29d80eb9a9263b8d109135351caf568cc3f80b9928bccde535c235de55c22d9 \
     --hash=sha256:f7a866fbc1e97b5c617ee4116daaa09b722101d4a3c170c787450ba409f9736f \
     --hash=sha256:fcd5cf9e305d7b8338754470cf69cf81f420459dbae8a3b40cee57417f4614a7
-    # via langsmith
+    # via
+    #   langgraph-sdk
+    #   langsmith
 xxhash==3.7.0 \
     --hash=sha256:01cf5c5333aed26cc8d5eea33b8d6398e085e365a704b7372fabdf7ab06441a9 \
     --hash=sha256:030c0fd688fce3569fbb49a2feefd4110cbb0b650186fb4610759ecfac677548 \
