@@ -6,7 +6,7 @@ echo "=== SkyRL Template Test ==="
 # Mirror the template README: clone + pin to the commit the BYOD image is built for.
 git clone https://github.com/NovaSky-AI/SkyRL.git
 cd SkyRL/
-git checkout abd553a1
+git checkout 94d53895
 
 # CI-only patch: switch `uv run --isolated` to `--frozen` in run_gsm8k.sh.
 # `--isolated` resolves from scratch, and SkyRL's top-level
