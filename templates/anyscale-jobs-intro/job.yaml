@@ -7,14 +7,14 @@ name: anyscale-jobs-intro-example
 entrypoint: python main.py
 
 # Container image (pinned version for reproducibility)
-image_uri: anyscale/ray:2.57.0-slim-py313-cu129
+image_uri: anyscale/ray:2.58.0-slim-py313-cu129
 
 # Upload current directory to job cluster
 working_dir: .
 
 # Python dependencies
 requirements:
-  - emoji==2.8.0
+  - emoji==2.15.0
 
 # Environment variables
 env_vars:

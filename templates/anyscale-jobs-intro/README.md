@@ -263,7 +263,7 @@ name: my-configured-job
 entrypoint: python main.py
 
 # Container image (we'll use the slim Ray image)
-image_uri: anyscale/ray:2.57.0-slim-py313-cu129
+image_uri: anyscale/ray:2.58.0-slim-py313-cu129
 
 # How many times to retry if the job fails
 max_retries: 2
@@ -339,7 +339,7 @@ The `working_dir` field tells Anyscale which local files to upload to the job cl
 ```python
 job_with_workdir = """name: job-with-dependencies
 entrypoint: python main.py
-image_uri: anyscale/ray:2.57.0-slim-py313-cu129
+image_uri: anyscale/ray:2.58.0-slim-py313-cu129
 
 # Upload the current directory to the job cluster
 # Anyscale automatically syncs these files to /home/ray on worker nodes
@@ -374,7 +374,7 @@ Most jobs need additional packages beyond what's in the base image. The `require
 ```python
 # Create a requirements.txt for our job
 requirements_content = """# requirements.txt
-emoji==2.8.0
+emoji==2.15.0
 """
 
 with open("requirements.txt", "w") as f:
@@ -389,14 +389,14 @@ Now let's update our job config to install dependencies:
 ```python
 job_with_deps = """name: job-with-dependencies
 entrypoint: python main.py
-image_uri: anyscale/ray:2.57.0-slim-py313-cu129
+image_uri: anyscale/ray:2.58.0-slim-py313-cu129
 
 working_dir: .
 
 # Install Python dependencies before running the job
 # Can be a path to requirements.txt or an inline list
 requirements:
-  - emoji==2.8.0
+  - emoji==2.15.0
 
 max_retries: 2
 """
@@ -411,11 +411,11 @@ with open("job_with_deps.yaml", "w") as f:
 2. **Path to file** — `requirements: requirements.txt` — Better for many packages
 
 **Why pin versions?**
-`emoji==2.8.0` instead of `emoji` ensures your job uses the exact version you tested with. Unpinned dependencies can break when packages update.
+`emoji==2.15.0` instead of `emoji` ensures your job uses the exact version you tested with. Unpinned dependencies can break when packages update.
 
 **What happens during job startup?**
 1. Cluster provisions
-2. Anyscale runs `pip install emoji==2.8.0` on all nodes
+2. Anyscale runs `pip install emoji==2.15.0` on all nodes
 3. Your entrypoint executes
 
 This means job startup is slightly slower with dependencies, but once installed, execution is fast.
@@ -428,12 +428,12 @@ Many jobs need secrets (API keys) or configuration (URLs, model names). The `env
 ```python
 job_with_env = """name: job-with-environment
 entrypoint: python main.py
-image_uri: anyscale/ray:2.57.0-slim-py313-cu129
+image_uri: anyscale/ray:2.58.0-slim-py313-cu129
 
 working_dir: .
 
 requirements:
-  - emoji==2.8.0
+  - emoji==2.15.0
 
 # Environment variables available to your job
 env_vars:
@@ -502,11 +502,11 @@ Let's create a custom compute configuration:
 ```python
 job_with_compute = """name: job-with-custom-compute
 entrypoint: python main.py
-image_uri: anyscale/ray:2.57.0-slim-py313-cu129
+image_uri: anyscale/ray:2.58.0-slim-py313-cu129
 
 working_dir: .
 requirements:
-  - emoji==2.8.0
+  - emoji==2.15.0
 
 # Custom compute configuration
 compute_config:
@@ -718,7 +718,7 @@ print("✓ Created broken_main.py (will fail at x=5)")
 ```python
 failing_job_yaml = """name: debug-example-failing
 entrypoint: python broken_main.py
-image_uri: anyscale/ray:2.57.0-slim-py313-cu129
+image_uri: anyscale/ray:2.58.0-slim-py313-cu129
 working_dir: .
 max_retries: 0  # Don't retry, we want to see the failure
 """
@@ -797,7 +797,7 @@ print("✓ Created fixed_main.py")
 ```python
 fixed_job_yaml = """name: debug-example-fixed
 entrypoint: python fixed_main.py
-image_uri: anyscale/ray:2.57.0-slim-py313-cu129
+image_uri: anyscale/ray:2.58.0-slim-py313-cu129
 working_dir: .
 max_retries: 0
 """
@@ -868,9 +868,9 @@ import anyscale
 config = JobConfig(
     name="sdk-submitted-job",
     entrypoint="python main.py",
-    image_uri="anyscale/ray:2.57.0-slim-py313-cu129",
+    image_uri="anyscale/ray:2.58.0-slim-py313-cu129",
     working_dir=".",
-    requirements=["emoji==2.8.0"],
+    requirements=["emoji==2.15.0"],
     max_retries=2,
 )
 
@@ -918,9 +918,9 @@ job_name = f"batch-inference-{timestamp}"
 config = JobConfig(
     name=job_name,
     entrypoint="python main.py",
-    image_uri="anyscale/ray:2.57.0-slim-py313-cu129",
+    image_uri="anyscale/ray:2.58.0-slim-py313-cu129",
     working_dir=".",
-    requirements=["emoji==2.8.0"],
+    requirements=["emoji==2.15.0"],
     env_vars={"BATCH_SIZE": "1000", "MODEL_NAME": "my-model-v2", "LOG_LEVEL": "INFO"},
     max_retries=3,
 )
@@ -946,7 +946,7 @@ You can also specify compute configuration programmatically:
 config = JobConfig(
     name="sdk-custom-compute",
     entrypoint="python main.py",
-    image_uri="anyscale/ray:2.57.0-slim-py313-cu129",
+    image_uri="anyscale/ray:2.58.0-slim-py313-cu129",
     working_dir=".",
     compute_config={
         "head_node": {"instance_type": "m5.2xlarge"},
@@ -1010,7 +1010,7 @@ import anyscale
 config = JobConfig(
     name="long-running-job",
     entrypoint="python long_main.py",
-    image_uri="anyscale/ray:2.57.0-slim-py313-cu129",
+    image_uri="anyscale/ray:2.58.0-slim-py313-cu129",
     working_dir=".",
 )
 
