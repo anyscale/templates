@@ -155,25 +155,15 @@ Fill in the following placeholder values for the `BASE_URL` and `API_KEY` in the
 
 
 ```python
-import json
-import subprocess
+import anyscale
 
-# Extract service information from the status command
+# Extract service information via the Anyscale Python SDK, which is more
+# robust than parsing the CLI's stdout (whose text output can be interleaved
+# with warnings from the CLI itself).
 def extract_service_info(service_name):
-    """Extract the API token and base URL from anyscale service status command."""
-    try:
-        # Run the service status command
-        result = subprocess.check_output(
-            ["anyscale", "service", "status", "--json", f"--name={service_name}"],
-            text=True,
-        )
-    except subprocess.CalledProcessError as e:
-        print(f"Error running service status command: {e}")
-        return None, None
-
-    # Extract query_auth_token
-    parsed_result = json.loads(result)
-    return parsed_result["query_auth_token"], parsed_result["query_url"]
+    """Extract the API token and base URL from the Anyscale service status."""
+    status = anyscale.service.status(name=service_name)
+    return status.query_auth_token, status.query_url
 
 # Extract the service info for the deployed service
 API_KEY, BASE_URL = extract_service_info(SERVICE_NAME)
