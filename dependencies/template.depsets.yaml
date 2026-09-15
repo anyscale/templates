@@ -38,6 +38,11 @@ build_arg_sets:
     PYTHON_VERSION: "3.12"
     PYTHON_SHORT: "312"
     CUDA_VARIANT: "cu130"
+
+  ray2580_py311:
+    RAY_VERSION: "2.58.0"
+    PYTHON_VERSION: "3.11"
+    PYTHON_SHORT: "311"
 depsets:
   - name: serve_stable_diffusion_depset_${RAY_VERSION}_${PYTHON_VERSION}
     operation: compile
@@ -288,7 +293,7 @@ depsets:
       - --python-platform=linux
       - --unsafe-package ray
     build_arg_sets:
-      - ray2570_py311
+      - ray2580_py311
     pre_hooks:
       - scripts/depsets/seed-image-freeze.sh dependencies/images/ray-${RAY_VERSION}-py311-cu128.freeze.txt templates/deepspeed_finetune/python_depset.lock
 
