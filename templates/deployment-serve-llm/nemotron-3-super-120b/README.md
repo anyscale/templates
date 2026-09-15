@@ -13,7 +13,7 @@ This tutorial deploys [`nvidia/NVIDIA-Nemotron-3-Super-120B-A12B-FP8`](https://h
 
 ## Configure Ray Serve LLM
 
-Ray Serve LLM builds an OpenAI-compatible app from an [`LLMConfig`](https://docs.ray.io/en/latest/serve/api/doc/ray.serve.llm.LLMConfig.html) via [`build_openai_app`](https://docs.ray.io/en/latest/serve/api/doc/ray.serve.llm.build_openai_app.html). The `engine_kwargs` below are validated for the Ray 2.57.0 / vLLM 0.25.1 image this template ships on, cross-checked against NVIDIA's model card and [vLLM's recipes](https://recipes.vllm.ai/nvidia/NVIDIA-Nemotron-3-Super-120B-A12B-BF16?hardware=h100&variant=fp8&features=tool_calling%2Creasoning%2Cspec_decoding).
+Ray Serve LLM builds an OpenAI-compatible app from an [`LLMConfig`](https://docs.ray.io/en/latest/serve/api/doc/ray.serve.llm.LLMConfig.html) via [`build_openai_app`](https://docs.ray.io/en/latest/serve/api/doc/ray.serve.llm.build_openai_app.html). The `engine_kwargs` below are validated for the Ray 2.58.0 / vLLM 0.26.0 image this template ships on, cross-checked against NVIDIA's model card and [vLLM's recipes](https://recipes.vllm.ai/nvidia/NVIDIA-Nemotron-3-Super-120B-A12B-BF16?hardware=h100&variant=fp8&features=tool_calling%2Creasoning%2Cspec_decoding).
 
 
 ```python
@@ -63,12 +63,12 @@ app = build_openai_app({"llm_configs": [llm_config]})
 
 - Access to 8× H100-80&nbsp;GB GPUs on one node.
 
-**Dependencies:** this template targets **Ray 2.57.0** and **vLLM 0.25.1**, matching the `anyscale/ray-llm:2.57.0` image.
+**Dependencies:** this template targets **Ray 2.58.0** and **vLLM 0.26.0**, matching the `anyscale/ray-llm:2.58.0` image.
 
 
 ```python
-!pip install "ray[serve,llm]==2.57.0"
-!pip install "vllm==0.25.1"
+!pip install "ray[serve,llm]==2.58.0"
+!pip install "vllm==0.26.0"
 ```
 
 **Beware:** this is an expensive deployment.
@@ -141,7 +141,7 @@ Anyscale provides out-of-the-box images (`anyscale/ray-llm`) pre-loaded with Ray
 ```yaml
 # service.yaml
 name: deploy-nemotron-3-super
-image_uri: anyscale/ray-llm:2.57.0-py312-cu130 # Anyscale Ray Serve LLM image. To build an image from a custom Dockerfile, set `containerfile: ./Dockerfile`
+image_uri: anyscale/ray-llm:2.58.0-py312-cu130 # Anyscale Ray Serve LLM image. To build an image from a custom Dockerfile, set `containerfile: ./Dockerfile`
 compute_config:
   auto_select_worker_config: true
 working_dir: .

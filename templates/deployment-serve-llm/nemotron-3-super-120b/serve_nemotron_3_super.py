@@ -10,8 +10,8 @@ from ray.serve.llm import LLMConfig, build_openai_app
 #
 # vLLM's recipes serve this model at tensor_parallel_size=8 on a single H100
 # node, with MTP speculative decoding and no expert parallelism. The
-# engine_kwargs below follow that layout, validated for the Ray 2.57.0 /
-# vLLM 0.25.1 image this template ships on and cross-checked against NVIDIA's
+# engine_kwargs below follow that layout, validated for the Ray 2.58.0 /
+# vLLM 0.26.0 image this template ships on and cross-checked against NVIDIA's
 # model card and vLLM's recipes (recipes.vllm.ai).
 llm_config = LLMConfig(
     model_loading_config=dict(
