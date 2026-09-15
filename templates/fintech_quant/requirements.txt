@@ -1,2 +1,2 @@
-QuantLib==1.42
-yfinance==1.2.2
+QuantLib==1.43
+yfinance==1.2.2  # holding on 1.2.2 — 1.3+ is a large API jump, not tested here
