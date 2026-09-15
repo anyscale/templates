@@ -1,6 +1,6 @@
 # The ray-llm image doesn't ship `datasets`, so pin it explicitly. 5.0.1 is the
 # newest release; its numpy>=1.17 / pyarrow>=21 / hf-hub<2.0 requirements are all
-# satisfied by anyscale/ray-llm:2.57.0-py312-cu130 (numpy 2.2.6, pyarrow 23.0.1,
+# satisfied by anyscale/ray-llm:2.58.0-py312-cu130 (numpy 2.2.6, pyarrow 23.0.1,
 # huggingface_hub 1.13.0), so numpy/pandas/pyarrow/hf-hub stay unpinned and
 # inherit the image versions via the seeded freeze.
 datasets==5.0.1
