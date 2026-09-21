@@ -488,6 +488,19 @@ If you are using an Anyscale Workspace, in addition to the Ray Train and Metrics
 
 ![Data Dashboard](https://raw.githubusercontent.com/ray-project/ray/master/doc/source/train/examples/pytorch/distributing-pytorch/images/data_dashboard.png)
 
+> **If your GPU is idle after this step, the data path is binding.** That is a
+> different problem from the one this tutorial solves, and it does not respond to
+> more actors or a bigger prefetch buffer. Start by checking whether the work
+> *fits*: a job holding a fraction of a host's GPUs receives roughly that
+> fraction of its cores, cgroup-enforced, so a 1-of-8-GPU container on a 96-core
+> host gets ~12 cores and not 96. Confirm with `cat /sys/fs/cgroup/cpu.max`. If
+> the per-sample CPU cost times your target throughput exceeds that budget, no
+> amount of tuning closes the gap — change the per-sample cost instead, usually
+> by precomputing a columnar cache so the per-sample work becomes a read. For
+> the tuning levers that do apply once the work fits, see
+> [Ray Data performance tips](https://docs.ray.io/en/latest/data/performance-tips.html)
+> and [data loading for Ray Train](https://docs.ray.io/en/latest/train/user-guides/data-loading-preprocessing.html).
+
 ## Summary
 
 In this notebook, you:
