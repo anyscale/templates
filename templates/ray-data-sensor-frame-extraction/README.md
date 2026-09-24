@@ -13,7 +13,8 @@ and writes them back. It ships the same payload in two Parquet layouts and measu
 The layout choice costs decode CPU, not I/O. On disk the two layouts are within 1% of each other
 with dictionary encoding on, and 4.00x apart with it off. Arrow decodes `binary(N)` 10.94x faster
 than `list<uint8>` from byte-identical inputs, 4.51x under zstd, and 1.56x to 1.65x end to end
-once the GPU stage is attached.
+once the GPU stage is attached, on Ray 2.57.0. Two runs on Ray 2.58.0 measured 1.76x and 1.78x
+end to end.
 
 The advantage is largest on fast storage and smallest on slow storage, which is what a decode
 lever looks like. On `/mnt/cluster_storage` cold it falls to 3.2x.
@@ -26,24 +27,37 @@ One `g6.4xlarge` L4 worker, `m5.2xlarge` head, Ray 2.57.0, `torch 2.9.1+cu129`. 
 16.7 MB in 4 files per layout, from `configs/ray-data-sensor-frame-extraction/`. Local decode
 figures are macOS arm64, pyarrow 23.0.1, warm page cache.
 
+Rows marked Ray 2.58.0 are two `rayapp test` runs of this notebook on 2026-09-24, one on the
+Anyscale prod console and one on staging. Same fleet, `anyscale/ray:2.58.0-py312-cu129`,
+`torch 2.9.1+cu129`, one fixture write and one timed run per layout after the warmup, each. Where
+a row gives two 2.58.0 values, prod is first.
+
 | lever | result | instrument |
 |---|---|---|
 | Layout, bytes at rest, dictionary on | 1.00x. 0.50x on the quantized payload, list smaller | footer `total_uncompressed_size`, 6 codecs x 3 payloads |
 | Layout, bytes at rest, dictionary off | 4.00x | same grid, every dictionary-off cell |
+| Layout, bytes at rest, shipped fixture, Ray 2.58.0 | `binary(N)` 831.7 MB against 836.0 MB on both runs | file sizes, zstd, dictionary on |
 | Layout, decode CPU, no codec | 10.94x. 12,936-13,783 MB/s against 1,065-1,384 | `pq.read_table`, 3 timed runs + warmup per arm |
 | Layout, decode CPU, zstd | 4.51x. 6,355-9,356 MB/s against 1,102-1,503 | same |
 | Layout, write side | 4.07x to 4.19x on 8 fleet runs, spread 2.9% | `make_fixture.py` timings |
+| Layout, write side, Ray 2.58.0 | 4.18x and 4.04x on 2 runs. 12.65 s and 13.39 s against 52.94 s and 54.14 s | `make_fixture.py` timings, 1 per run |
 | Layout, end to end with the GPU stage | 1.56x to 1.65x on 5 fleet runs. 15.92-16.81 rows/s against 9.94-10.21 | fleet, 3 timed runs per arm |
+| Layout, end to end, Ray 2.58.0 | 1.76x and 1.78x on 2 runs, above the 2.57.0 range on both. 16.19 and 16.72 rows/s against 9.20 and 9.41 | the notebook's A/B, 1 timed run per arm |
 | Read task `num_cpus` 1.0 against 0.25 | no measurable difference. 16.67-17.00 against 16.24-16.87 rows/s, ranges overlap | fleet |
 | Decoder threads 1 to 4 | 1.2% or better. 4 to 8 not separable at 2 runs per arm | fleet |
 | Row-group size 1, 4, 16 rows | no effect on the on-disk gap | footer, zstd |
 | Binding operator | read span 2.44 s, GPU stage span 1.99 s with 3.4 s UDF across 2 actors | `ds.stats()` |
+| Binding operator, Ray 2.58.0 | read span 2.6 s and 2.39 s, read UDF time 0us on both. GPU stage span 1.9 s and 2.05 s with 3.63 s and 3.33 s UDF across 2 actors | `ds.stats()`, timed `binary(N)` run |
 | Layout on local disk, cold | 12.16x to 22.11x. Warm 31.92x to 32.33x | `pq.read_table` on the worker, 2 runs per arm |
 | Layout on `/mnt/cluster_storage`, cold | 3.17x to 3.23x with equal bytes, 4.48x to 4.72x with dictionary off | same |
 | Mount cold throughput | local 1906.6 MB/s, `/mnt/cluster_storage` 138.2 MB/s | sequential read after `posix_fadvise` |
 
-The first six rows are one lever in four channels. They disagree. Which one you get depends on how
+The first nine rows are one lever in four channels. They disagree. Which one you get depends on how
 much of your pipeline is blob decode.
+
+End to end on Ray 2.58.0 is above the 2.57.0 range on both runs, 1.76x and 1.78x against 1.56x to
+1.65x. `binary(N)` at 16.19 and 16.72 rows/s is inside its 2.57.0 range, and `list<uint8>` at 9.20
+and 9.41 is below its own. That is 2 runs at 1 timed run per arm. Why it moved is unmeasured.
 
 ## Why the on-disk gap closes
 
@@ -103,7 +117,8 @@ and dominates the fast one: `binary(N)` fell from about 13,100 to about 6,400 MB
 `list<uint8>` stayed near 1,200. A ratio measured under compression understates the decode gap.
 
 With this template's GPU stage attached, the same lever measured 1.56x to 1.65x end to end across 5
-fleet runs. Measure the channel you can spend.
+fleet runs on Ray 2.57.0, and 1.76x and 1.78x across 2 on Ray 2.58.0. Measure the channel you can
+spend.
 
 ### Storage speed and the byte asymmetry, measured
 
@@ -182,6 +197,8 @@ levers are the engagement's. The fixture is synthetic.
 
 **Measured on the fleet this template ships.** The table above, plus `tests.sh` wall times of 335 s
 to 354 s across 6 runs on Ray 2.57.0, papermill over this notebook, all 6 code cells, no errors.
+On Ray 2.58.0, two `rayapp test` runs on 2026-09-24, one on the prod console and one on staging,
+exited 0 in 9 min 26 s and 9 min 17 s, start to finish with workspace start and teardown included.
 
 **Measured on a developer laptop.** The decode table, pyarrow 23.0.1, macOS arm64, warm cache. Also
 the write-side ratio during development, which ranged 2.1x to 7.0x across 5 runs, twice at the same
@@ -330,7 +347,7 @@ print("\nClose numbers mean the layout buys no I/O and any win comes from decode
 
 Compression does not help the writer. It encodes every per-byte value before the codec runs, so the
 write-side gap holds where the read-side on-disk gap does not. Measured 4.07x to 4.19x across 8
-fleet runs, spread 2.9%.
+fleet runs on Ray 2.57.0, spread 2.9%, and 4.18x and 4.04x across 2 on Ray 2.58.0.
 
 The recommended layout is cheaper for the producing team too.
 
@@ -395,13 +412,15 @@ subprocess.run(
 Same `pipeline.py`, same payload bytes, two layouts. Only the input path changes.
 
 One run per arm gives the sign, not a magnitude. On this fleet the direction held every run, at
-1.56x to 1.65x. The decode gap from byte-identical inputs is 10.94x; this pipeline has a GPU stage,
-so most of it does not reach the wall clock. Use `measure_layout.py` for a magnitude.
+1.56x to 1.65x on Ray 2.57.0 and 1.76x and 1.78x on Ray 2.58.0. The decode gap from byte-identical
+inputs is 10.94x; this pipeline has a GPU stage, so most of it does not reach the wall clock. Use
+`measure_layout.py` for a magnitude.
 
 Keep the warmup run. The first pipeline run on a fresh cluster pays for Ray building the
 `runtime_env` virtualenv from the lock on the worker, measured at 85.1 s to 94.0 s against 5.8 s
-and 5.9 s for the next run, and it lands in whichever arm runs first. Without it this cell reported
-1.07 rows/s against 10.07, or 0.11x.
+and 5.9 s for the next run on Ray 2.57.0, and 96.8 s and 89.1 s against 5.9 s and 5.7 s on Ray
+2.58.0. It lands in whichever arm runs first. Without it this cell reported 1.07 rows/s against
+10.07, or 0.11x.
 
 
 ```python
@@ -448,12 +467,15 @@ under the streaming executor, and on one measured run they summed to 2.1x the pi
 
 UDF time cannot rank a read. Ray reports `UDF time: 0us` for read operators because a read has no
 user function, so `udf_total / (span x parallelism)` is 0 for the read whatever it is doing.
-Measured: `ReadFiles` span 2.44 s, `UDF time: 0us min, 0us max, 0us total`. Judge the read by its
-span and its output bytes per second against what your storage delivers.
+Measured: `ReadFiles` span 2.44 s, `UDF time: 0us min, 0us max, 0us total` on Ray 2.57.0, and 0us
+again on both Ray 2.58.0 runs. Judge the read by its span and its output bytes per second against
+what your storage delivers.
 
 On this fleet the read's span was 2.44 s and the GPU stage's was 1.99 s with 3.4 s of UDF across 2
-actors, about 0.85 of saturation, against a 5.8 s pipeline. At this scale the GPU stage is closer to
-the constraint than the read. The engagement saw the read bind at production scale.
+actors, about 0.85 of saturation, against a 5.8 s pipeline, on Ray 2.57.0. On Ray 2.58.0 the read's
+was 2.6 s and 2.39 s and the GPU stage's 1.9 s and 2.05 s with 3.63 s and 3.33 s of UDF, about 0.96
+and 0.81, against 5.9 s and 5.7 s pipelines. At this scale the GPU stage is closer to the constraint
+than the read. The engagement saw the read bind at production scale.
 
 ## The harness
 
