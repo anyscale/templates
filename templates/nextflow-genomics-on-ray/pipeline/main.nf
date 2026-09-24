@@ -52,6 +52,17 @@ def scales() {
     ]
 }
 
+/*
+ * Every boolean param goes through this. Under the strict parser a param given on
+ * the command line arrives as a String, and a non-empty String is true in Groovy,
+ * so `--annotate false` turned annotation *on*: the first local run of this
+ * pipeline printed "annotate yes" for exactly that command line. The same trap as
+ * the numeric params below, one type over.
+ */
+def flag(value) {
+    return value instanceof Boolean ? value : value.toString().trim().toLowerCase() in ['true', 'yes', '1']
+}
+
 workflow {
 
     def SCALES = scales()
@@ -73,14 +84,16 @@ workflow {
     def n_shards    = (params.annotate_shards ?: preset.annotate_shards) as Integer
     if( n_intervals < 2 )
         error "--intervals must be >= 2 (got ${n_intervals}); the scatter is the point"
+    def deepvariant = flag(params.deepvariant)
+    def annotate    = flag(params.annotate)
 
     log.info """
     ${workflow.manifest.name} ${workflow.manifest.version}
       scale        ${params.scale}  (${preset.note})
       region       ${region}
       intervals    ${n_intervals}   -> ${n_intervals} x samples calling tasks
-      callers      GATK HaplotypeCaller${params.deepvariant ? ' + DeepVariant' : ''}
-      annotate     ${params.annotate ? "yes (${n_shards} GPU shards)" : 'no'}
+      callers      GATK HaplotypeCaller${deepvariant ? ' + DeepVariant' : ''}
+      annotate     ${annotate ? "yes (${n_shards} GPU shards)" : 'no'}
       workDir      ${workflow.workDir}
       outdir       ${params.outdir}
     """.stripIndent()
@@ -88,7 +101,7 @@ workflow {
     // Checked here, on the head node, because every node runs the same image: a
     // missing DeepVariant is missing everywhere, and finding out at the first
     // DEEPVARIANT task means finding out after alignment and BQSR.
-    if( params.deepvariant ) {
+    if( deepvariant ) {
         def dv_prefix = System.getenv('NF_RAY_DEEPVARIANT_PREFIX') ?: '/opt/nf-tools/envs/deepvariant'
         if( !file("${dv_prefix}/bin/run_deepvariant").exists() )
             error "--deepvariant needs ${dv_prefix}/bin/run_deepvariant, which this image does not have. " +
@@ -185,7 +198,7 @@ workflow {
     // -- second caller --------------------------------------------------------
 
     ch_dv_calls = channel.empty()
-    if( params.deepvariant ) {
+    if( deepvariant ) {
         DEEPVARIANT(ch_bam, ch_reference, region)
         ch_dv_calls = DEEPVARIANT.out.vcf.map { meta, vcf, tbi ->
             tuple(meta, 'deepvariant', vcf, tbi)
@@ -208,7 +221,7 @@ workflow {
     // -- GPU annotation -------------------------------------------------------
 
     ch_scores = channel.empty()
-    if( params.annotate ) {
+    if( annotate ) {
         SHARD_VCF(GATK4_VARIANTFILTRATION.out.vcf, n_shards)
         ANNOTATE_VARIANTS(SHARD_VCF.out.shards.flatten(), ch_reference)
         COLLECT_SCORES(ANNOTATE_VARIANTS.out.scores.collect())

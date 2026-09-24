@@ -19,6 +19,7 @@ installed, on an image whose test dependencies are pinned elsewhere.
 from __future__ import annotations
 
 import os
+import re
 import socket
 import sys
 import tempfile
@@ -555,6 +556,21 @@ def _() -> None:
         # The specific shape that was wrong: arithmetic straight off params.
         assert "params.shards - 1" not in text, f"{name}: string arithmetic on a param"
         assert "params.intervals - 1" not in text, f"{name}: string arithmetic on a param"
+
+
+@check("nextflow: boolean params go through flag(), never straight into an if")
+def _() -> None:
+    # The same coercion rule, one type over, and also observed: `--annotate false`
+    # arrives as the String "false", which Groovy treats as true, so a local run
+    # printed "annotate yes" for exactly that command line.
+    path = os.path.join(_TEMPLATE, "pipeline", "main.nf")
+    with open(path) as handle:
+        text = handle.read()
+    for param in ("annotate", "deepvariant"):
+        assert f"flag(params.{param})" in text, f"main.nf: params.{param} is not coerced"
+        # Read anywhere else, raw, it is a truthiness test on a String.
+        raw = re.findall(rf"params\.{param}\b", text)
+        assert len(raw) == 1, f"main.nf reads params.{param} raw {len(raw) - 1} more time(s)"
 
 
 # -- report -------------------------------------------------------------------

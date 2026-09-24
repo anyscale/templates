@@ -20,7 +20,7 @@
  */
 
 process SHARD_VCF {
-    tag "${params.annotate_shards} shards"
+    tag "${n_shards} shards"
     label 'process_low'
 
     input:

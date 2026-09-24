@@ -16,7 +16,7 @@
  */
 
 process MAKE_INTERVALS {
-    tag "${params.intervals} intervals"
+    tag "${n_intervals} intervals"
     label 'process_single'
 
     input:
