@@ -21,7 +21,7 @@ curl -sL "https://github.com/ray-project/rayci/releases/download/${RAYAPP_VERSIO
 ```bash
 export ANYSCALE_HOST="https://console.anyscale-staging.com"  # always staging — local tests + fixes never run against prod
 export ANYSCALE_CLI_TOKEN="<staging token>"                  # from the staging console's API tokens
-pip install anyscale==0.26.87
+pip install anyscale==0.26.107  # keep in sync with the pyproject.toml pin
 ```
 
 **Always staging.** Local rayapp runs against **staging** (`https://console.anyscale-staging.com`) only — never prod, even if the CI run used prod. Use a staging `ANYSCALE_CLI_TOKEN` (ask the user if you don't have one). If staging itself fails — auth or the test — treat it as an **infra issue and ignore it**; don't chase the failure on prod. (Prod is read-only-exceptional — see `testing-template.md` Recovery.)
