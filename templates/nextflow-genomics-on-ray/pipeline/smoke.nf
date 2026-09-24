@@ -16,8 +16,8 @@
  * awk, a truncated write over NFS -- shows up here as a changed number rather
  * than as a subtly wrong variant call three hours in.
  *
- *   nextflow run pipeline/smoke.nf -profile ray
- *   nextflow run pipeline/smoke.nf -profile ray --shards 12 --hold 30
+ *   nextflow run pipeline/smoke.nf -profile ray --outdir smoke-results
+ *   nextflow run pipeline/smoke.nf -profile ray --outdir smoke-results --shards 12 --hold 30
  *
  * It sits beside main.nf rather than in a subdirectory on purpose: Nextflow
  * resolves nextflow.config relative to the script's own directory, so a smoke
@@ -29,7 +29,13 @@ nextflow.enable.dsl = 2
 
 params.shards = 4
 params.hold   = 8      // seconds per shard; long enough to observe placement
-params.outdir = 'smoke-results'
+
+// No `params.outdir` default here. This script shares nextflow.config with
+// main.nf, a config param beats a script default, and so the one this file used
+// to set ('smoke-results') was silently replaced by main.nf's 'results' -- the
+// smoke run published into the real pipeline's output directory (observed).
+// Outputs go under ${params.outdir}/smoke instead; pass --outdir to keep this
+// run's trace.txt apart from main.nf's as well.
 
 /*
  * One shard. Deliberately asks for more than one CPU so that a cluster whose
@@ -40,7 +46,7 @@ process SHARD {
     tag "shard-${idx}"
     cpus 2
     memory 2.GB
-    publishDir "${params.outdir}", mode: 'copy'
+    publishDir "${params.outdir}/smoke", mode: 'copy'
 
     input:
     val idx
@@ -78,7 +84,7 @@ process SHARD {
 process COLLECT {
     cpus 1
     memory 1.GB
-    publishDir "${params.outdir}", mode: 'copy'
+    publishDir "${params.outdir}/smoke", mode: 'copy'
 
     input:
     path reports
@@ -124,7 +130,7 @@ workflow {
     workflow.onComplete = {
         log.info """
         smoke ${workflow.success ? 'OK' : 'FAILED'}  duration=${workflow.duration}
-        results: ${params.outdir}/checksums.txt
+        results: ${params.outdir}/smoke/checksums.txt
         """.stripIndent()
     }
 }
