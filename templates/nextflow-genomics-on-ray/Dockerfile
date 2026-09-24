@@ -3,7 +3,6 @@
 #   ../../.claude/skills/template/scripts/push-custom-image-to-gcp.sh \
 #       . nextflow-genomics-on-ray 2.58.0
 #
-# Or, on a machine with podman and no docker daemon:  bash tools/push-image-podman.sh
 # Or, to build one you own:  anyscale image build -n my-nf-tools --containerfile Dockerfile
 #
 # --- why a custom image rather than a stock one plus `requirements:` ---------
@@ -95,7 +94,13 @@ ENV PATH=/opt/nf-tools/bin:${PATH}
 # The toolchain. Copied before the rest of the template so that editing the
 # executor or the pipeline does not invalidate this layer -- it is by far the
 # most expensive one.
-COPY --chown=ray:users tools/ /opt/nf-tools/src/tools/
+#
+# Named files, not `tools/`. The directory also holds scripts that are not build
+# inputs (stage-demo-data.sh, lock-envs.sh), and copying all of it meant editing
+# one of those rebuilt the conda envs -- and baked whatever else happened to be
+# sitting in a working tree into the image. `env.*` picks up a lock file too.
+COPY --chown=ray:users tools/build_tools.sh tools/manifest.toml tools/run_deepvariant.sh \
+     tools/env.* /opt/nf-tools/src/tools/
 RUN bash /opt/nf-tools/src/tools/build_tools.sh /opt/nf-tools
 
 # The main environment goes on PATH, *last*. The others deliberately do not; see

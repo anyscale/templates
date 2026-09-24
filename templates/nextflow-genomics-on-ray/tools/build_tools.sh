@@ -86,8 +86,9 @@ for spec in "$HERE"/env.*.yml; do
     lock="$HERE/env.$env_name.lock"
 
     if [[ -f "$lock" ]]; then
-        # An --explicit lock is byte-reproducible: exact URLs plus hashes, no
-        # solver involved. Preferred when present; tools/lock-envs.sh writes it.
+        # An --explicit lock names exact package URLs plus hashes, so no solver
+        # is involved. Preferred when present; tools/lock-envs.sh writes it from
+        # a built image.
         log "conda env '$env_name' (from lock)"
         micromamba create -y -p "$target" --file "$lock"
     else
