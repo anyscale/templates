@@ -219,9 +219,11 @@ def main() -> int:
         "differ by the camera count, and a real-time bar is quoted in one of them."
     )
     if args.stats:
-        # Rank operators by UDF time, not by span: under the streaming executor spans
-        # overlap and on one measured run summed to 2.1x the pipeline's wall clock.
-        # The binding operator is the one at udf_total / (span x parallelism) ~ 1.0.
+        # Rank map stages by UDF time, not by span: under the streaming executor spans
+        # overlap and on one measured run summed to 2.1x the pipeline's wall clock. A map
+        # stage at udf_total / (span x parallelism) ~ 1.0 is saturated. That ratio cannot
+        # rank a read: Ray reports UDF time 0us for read operators, which have no user
+        # function. Judge the read by its span and output bytes/s against your storage.
         print("\n" + ds.stats())
     return 0
 
