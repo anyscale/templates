@@ -37,9 +37,18 @@ STORAGE = os.getenv("STORAGE_DIR") or (
 print(f"{NUM_ROWS=} {PRIOR_FRACTION=} {NUM_SHARDS=} {JOIN_PARTITIONS=} {STORAGE=}")
 ```
 
+## Install the dependencies
+
+`python_depset.lock` pins everything this template adds to the image: torch built for CUDA 12.9, transformers and huggingface-hub, and pyarrow held at 23.0.1. This cell installs it on the driver only. The workers get the same file from `ray.init` below, through `runtime_env`.
+
+
+```python
+!uv pip install -r python_depset.lock --system --no-deps --no-cache-dir --index-strategy unsafe-best-match
+```
+
 ## Start Ray with the guardrails on
 
-`incremental.py` holds every function this notebook uses. Shipping it with `py_modules` makes it importable on every worker.
+`incremental.py` holds every function this notebook uses. Shipping it with `py_modules` makes it importable on every worker, and `pip` installs the lock there.
 
 Two guardrails go on before any work runs:
 
@@ -52,7 +61,7 @@ import ray
 
 import incremental as inc
 
-ray.init(runtime_env={"py_modules": [inc]})
+ray.init(runtime_env={"pip": os.path.abspath("python_depset.lock"), "py_modules": [inc]})
 inc.enable_hang_detection()
 inc.arm_driver_stack_dump(after_s=45 * 60)
 print([d.__name__ for d in ray.data.DataContext.get_current().issue_detectors_config.detectors])
