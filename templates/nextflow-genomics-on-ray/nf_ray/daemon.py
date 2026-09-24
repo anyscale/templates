@@ -394,9 +394,9 @@ class Scheduler:
 
     @staticmethod
     def _log_beside_task(work_dir: str, message: str) -> None:
-        with contextlib.suppress(OSError):
-            with open(os.path.join(work_dir, job.LOG_FILENAME), "a") as out:
-                out.write(f"[nf-ray] {message}\n")
+        path = os.path.join(work_dir, job.LOG_FILENAME)
+        with contextlib.suppress(OSError), open(path, "a") as out:
+            out.write(f"[nf-ray] {message}\n")
 
     def _append_placement(self, entry: Entry) -> None:
         """Append one row to the consolidated placement record.

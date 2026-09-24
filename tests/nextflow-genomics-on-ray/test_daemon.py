@@ -19,6 +19,7 @@ directory.
 
 from __future__ import annotations
 
+import contextlib
 import os
 import sys
 import tempfile
@@ -132,10 +133,8 @@ def _() -> None:
         barrier = threading.Barrier(2)
 
         def hold() -> None:
-            try:
+            with contextlib.suppress(threading.BrokenBarrierError):
                 barrier.wait(timeout=0.5)
-            except threading.BrokenBarrierError:
-                pass
 
         ray.wait_hook = hold
         threads = [threading.Thread(target=s.reap_once) for _ in range(2)]

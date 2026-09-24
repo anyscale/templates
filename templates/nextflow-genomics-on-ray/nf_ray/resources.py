@@ -229,14 +229,18 @@ def check_schedulable(
     label = f"process {process!r}" if process else "this task"
     problems = []
     if request.num_cpus > limits.cpus:
-        problems.append(f"cpus {request.num_cpus:g} > {limits.cpus:g} available on the largest node")
+        problems.append(
+            f"cpus {request.num_cpus:g} > {limits.cpus:g} available on the largest node"
+        )
     if request.memory and request.memory > limits.memory_bytes:
         problems.append(
             f"memory {_gib(request.memory)} > {_gib(limits.memory_bytes)} "
             "available on the largest node"
         )
     if request.num_gpus > limits.gpus:
-        problems.append(f"gpus {request.num_gpus:g} > {limits.gpus:g} available on the largest node")
+        problems.append(
+            f"gpus {request.num_gpus:g} > {limits.gpus:g} available on the largest node"
+        )
 
     if not problems:
         return request

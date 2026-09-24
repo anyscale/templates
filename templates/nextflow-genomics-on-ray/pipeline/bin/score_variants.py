@@ -32,10 +32,11 @@ fewer in an image that has to agree with Ray on its interpreter.
 from __future__ import annotations
 
 import argparse
+import gzip
 import os
 import sys
+from collections.abc import Iterator
 from dataclasses import dataclass
-from typing import Iterator
 
 DEFAULT_MODEL = os.environ.get(
     "NF_RAY_SCORER_MODEL", "InstaDeepAI/nucleotide-transformer-v2-50m-multi-species"
@@ -88,7 +89,9 @@ class IndexedFasta:
                 self._index[name] = _FaiEntry(
                     int(length), int(offset), int(line_bases), int(line_width)
                 )
-        self._fh = open(path, "rb")
+        # Held for the object's lifetime -- one open per scorer, not per fetch --
+        # and closed by close().
+        self._fh = open(path, "rb")  # noqa: SIM115
 
     def __contains__(self, contig: str) -> bool:
         return contig in self._index
@@ -112,7 +115,8 @@ class IndexedFasta:
         def byte_offset(pos: int) -> int:
             # `line_width` includes the newline, `line_bases` does not; the gap is
             # what turns a base coordinate into a file offset.
-            return entry.offset + pos // entry.line_bases * entry.line_width + pos % entry.line_bases
+            whole_lines, column = divmod(pos, entry.line_bases)
+            return entry.offset + whole_lines * entry.line_width + column
 
         self._fh.seek(byte_offset(start))
         raw = self._fh.read(byte_offset(end) - byte_offset(start))
@@ -147,8 +151,6 @@ def read_vcf(path: str) -> Iterator[Variant]:
     opener = open
     mode = "rt"
     if path.endswith(".gz"):
-        import gzip
-
         opener = gzip.open  # type: ignore[assignment]
 
     with opener(path, mode) as handle:  # type: ignore[operator]
@@ -191,8 +193,10 @@ class VariantScorer:
         device: str | None = None,
         revision: str = DEFAULT_REVISION,
     ) -> None:
-        import torch
-        from transformers import AutoModelForMaskedLM, AutoTokenizer
+        # Lazy: the reference and VCF plumbing above is imported and tested with
+        # neither installed.
+        import torch  # noqa: PLC0415
+        from transformers import AutoModelForMaskedLM, AutoTokenizer  # noqa: PLC0415
 
         self.context = context
         self.fasta = IndexedFasta(reference)
@@ -267,7 +271,6 @@ class VariantScorer:
         ]
 
     def _embed(self, sequences: list[str]):
-        torch = self._torch
         encoded = self.tokenizer(
             sequences, return_tensors="pt", padding=True, truncation=True
         ).to(self.device)

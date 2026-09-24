@@ -19,6 +19,7 @@ installed, on an image whose test dependencies are pinned elsewhere.
 from __future__ import annotations
 
 import os
+import socket
 import sys
 import tempfile
 import traceback
@@ -414,8 +415,6 @@ def _() -> None:
     # The work dir is on NFS, where a unix socket may not bind and flock on the
     # lock file beside it is unreliable; and sun_path is 108 bytes on Linux (104
     # on macOS), which <workDir>/.nf-ray.sock outgrew with a long enough workDir.
-    import socket
-
     a = default_socket_path("/mnt/cluster_storage/nf-work")
     b = default_socket_path("/mnt/cluster_storage/other-run")
     assert a.startswith("/tmp/nf-ray-") and a.endswith(".sock"), a

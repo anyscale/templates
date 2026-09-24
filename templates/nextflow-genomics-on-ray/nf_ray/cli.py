@@ -61,7 +61,7 @@ def _config(args: argparse.Namespace) -> Config:
 
 def cmd_submit(args: argparse.Namespace) -> int:
     """Submit one job script. Prints the line ``parseJobId`` matches."""
-    from nf_ray import client
+    from nf_ray import client  # noqa: PLC0415 -- lazy by design; see the module docstring
 
     config = _config(args)
     # The task's work directory is the CWD, because AbstractGridExecutor runs the
@@ -75,7 +75,7 @@ def cmd_submit(args: argparse.Namespace) -> int:
 
 def cmd_status(args: argparse.Namespace) -> int:
     """Print the whole queue, one ``<id> <state>`` per line."""
-    from nf_ray import client
+    from nf_ray import client  # noqa: PLC0415 -- lazy by design; see the module docstring
 
     config = _config(args)
     if not client.ping(config.socket_path):
@@ -89,7 +89,7 @@ def cmd_status(args: argparse.Namespace) -> int:
 
 
 def cmd_kill(args: argparse.Namespace) -> int:
-    from nf_ray import client
+    from nf_ray import client  # noqa: PLC0415 -- lazy by design; see the module docstring
 
     config = _config(args)
     if client.ping(config.socket_path):
@@ -102,14 +102,14 @@ def cmd_kill(args: argparse.Namespace) -> int:
 
 def cmd_daemon(args: argparse.Namespace) -> int:
     """Run the daemon in the foreground. Normally started by ``submit``."""
-    from nf_ray import daemon
+    from nf_ray import daemon  # noqa: PLC0415 -- pulls in Ray; only this path needs it
 
     daemon.serve(_config(args))
     return 0
 
 
 def cmd_up(args: argparse.Namespace) -> int:
-    from nf_ray import client
+    from nf_ray import client  # noqa: PLC0415 -- lazy by design; see the module docstring
 
     config = _config(args)
     client.ensure_daemon(config.socket_path, config.work_dir)
@@ -118,7 +118,7 @@ def cmd_up(args: argparse.Namespace) -> int:
 
 
 def cmd_down(args: argparse.Namespace) -> int:
-    from nf_ray import client
+    from nf_ray import client  # noqa: PLC0415 -- lazy by design; see the module docstring
 
     config = _config(args)
     client.shutdown(config.socket_path)
@@ -159,7 +159,7 @@ def cmd_doctor(args: argparse.Namespace) -> int:
         )
 
     try:
-        import ray
+        import ray  # noqa: PLC0415 -- doctor reports a missing Ray, so it must not fail at import
 
         print(f"  ray              {ray.__version__}")
         if not ray.__version__.startswith("2.58."):
@@ -203,7 +203,7 @@ def cmd_doctor(args: argparse.Namespace) -> int:
         if not found:
             problems.append(f"{tool} is not on PATH")
 
-    from nf_ray import client
+    from nf_ray import client  # noqa: PLC0415 -- lazy by design; see the module docstring
 
     if client.ping(config.socket_path):
         info = client.info(config.socket_path)
@@ -225,9 +225,9 @@ def cmd_doctor(args: argparse.Namespace) -> int:
 
 def cmd_probe_image(args: argparse.Namespace) -> int:
     """Run one task inside a candidate ``ext.image`` and report what it sees."""
-    import ray
+    import ray  # noqa: PLC0415 -- the hot subcommands must not import Ray
 
-    from nf_ray import daemon, job
+    from nf_ray import daemon, job  # noqa: PLC0415 -- as above
 
     config = _config(args)
     # Route through the daemon's own connect logic rather than calling ray.init
