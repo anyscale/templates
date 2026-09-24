@@ -114,6 +114,14 @@ vcfeval is run separately for SNPs and indels. A combined F1 hides which moved,
 and the two fail for different reasons: SNP F1 is dominated by sequencing error,
 indel F1 by alignment and local reassembly.
 
+Both sides are split, the calls in `SUBSET_VARIANT_TYPE` and the truth set in
+`RTG_VCFEVAL`, after splitting multi-allelic records. Splitting only the calls
+counted the other type's truth variants as false negatives (measured on the
+synthetic trio: SNP recall 0.70, indel 0.30, with every planted variant called).
+Splitting before matching rather than stratifying after it is an approximation
+at complex sites, where one representation is an MNP and the other a SNP plus
+an indel; hap.py's stratified counts would be exact there.
+
 `--evaluation-regions` rather than `--bed-regions`: the former restricts *scoring*
 to the high-confidence set while still allowing calls just outside it to
 participate in haplotype matching. The latter truncates haplotypes and invents

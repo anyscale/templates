@@ -107,13 +107,24 @@ process RTG_VCFEVAL {
 
     script:
     def region_arg = region ? "--region ${region}" : ""
+    def selector = vtype == 'snp' ? '-v snps' : '-v indels'
     """
+    # The truth set is split the way SUBSET_VARIANT_TYPE split the calls: vcfeval
+    # scores one callset against one baseline, and a whole baseline counts every
+    # truth indel as a missed SNP and every truth SNP as a missed indel. Measured on
+    # the synthetic trio, where every planted variant was called and none was
+    # false: SNP recall read 0.70 and indel recall 0.30, the two types' shares of
+    # the truth set. Multi-allelic records are split first, as the calls' were.
+    bcftools norm -m -any -Ou ${truth_vcf} \\
+      | bcftools view ${selector} -Oz -o baseline.${vtype}.vcf.gz
+    tabix -p vcf baseline.${vtype}.vcf.gz
+
     # --evaluation-regions, not --bed-regions: the former restricts *scoring* to
     # the high-confidence set while still letting vcfeval use calls just outside
     # it for haplotype matching. The latter would truncate the haplotypes and
     # invent mismatches at every boundary.
     rtg vcfeval \\
-        --baseline ${truth_vcf} \\
+        --baseline baseline.${vtype}.vcf.gz \\
         --calls ${vcf} \\
         --evaluation-regions ${truth_bed} \\
         --template ${sdf} \\
