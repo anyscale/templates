@@ -26,15 +26,19 @@ import tempfile
 import traceback
 
 # tests.sh runs with the template directory as CWD (papermill needs `--cwd .`),
-# so that is where nf_ray lives. Fall back to a path relative to this file so the
-# test is also runnable directly from a checkout.
+# and rayapp, so CI, flattens templates/<name>/ and tests/<name>/ into that one
+# directory. So look there first, and fall back to the repo layout so the test is
+# also runnable directly from a checkout. _TEMPLATE is whichever was found: the
+# smoke.nf and main.nf checks below read files through it, and a repo-only path
+# would fail every one of them under rayapp.
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _TEMPLATE = os.path.abspath(
     os.path.join(_HERE, "..", "..", "templates", "nextflow-genomics-on-ray")
 )
-for candidate in (os.getcwd(), _TEMPLATE):
+for candidate in (os.getcwd(), _HERE, _TEMPLATE):
     if os.path.isdir(os.path.join(candidate, "nf_ray")):
         sys.path.insert(0, candidate)
+        _TEMPLATE = candidate
         break
 
 from nf_ray import directives, envs, errors, resources  # noqa: E402

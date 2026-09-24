@@ -816,3 +816,26 @@
     tests_path: tests/ecommerce_end_to_end/
     command: bash tests.sh
     timeout_in_sec: 1800
+
+# owner: @em-anyscale
+- name: nextflow-genomics-on-ray
+  owner_team: general
+  dir: templates/nextflow-genomics-on-ray
+  cluster_env:
+    # Custom image, not a stock one: Nextflow processes run with no container runtime inside
+    # a Ray worker, so the toolchain has to be on every node before the first task dispatches,
+    # and a job's `requirements:` resolves before working_dir is staged. It also carries the
+    # nf-ray executor plugin and the scorer's model. See the template's Dockerfile.
+    byod:
+      docker_image: us-docker.pkg.dev/anyscale-workspace-templates/workspace-templates/nextflow-genomics-on-ray:2.58.0
+      ray_version: 2.58.0
+  compute_config:
+    AWS: configs/nextflow-genomics-on-ray/aws.yaml
+    GCP: configs/nextflow-genomics-on-ray/gce.yaml
+  test:
+    # Offline unit checks first, then the notebook at NF_DEMO_SCALE=quick. Not measured: the
+    # template has never run on a cluster, and this is the WDL sibling's value until the first
+    # /test-template run gives a real one. The Buildkite step is capped at 90 min for it.
+    tests_path: tests/nextflow-genomics-on-ray/
+    command: bash tests.sh
+    timeout_in_sec: 3600
