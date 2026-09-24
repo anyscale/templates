@@ -77,7 +77,10 @@ process BWAMEM2_MEM {
     // Sorting takes memory per thread on top of the alignment itself, so it gets
     // a slice of the task's allocation rather than samtools' default, which is
     // per-thread and unaware of what the task was actually given.
-    def sort_mem = Math.max(1, (int) (task.memory.toGiga() / (task.cpus * 2)))
+    // `x as int`, never `(int) x`: Nextflow's strict parser has no C-style
+    // casts, reads `(int) (expr)` as a call to `int`, and fails the task with
+    // "No signature of method: static int.call()". Every heap below does the same.
+    def sort_mem = Math.max(1, (task.memory.toGiga() / (task.cpus * 2)) as int)
     """
     bwa-mem2 mem \\
         -t ${task.cpus} \\
@@ -105,7 +108,7 @@ process GATK4_MARKDUPLICATES {
     // GATK is a JVM tool inside a wrapper: -Xmx has to be set explicitly or it
     // takes a fraction of the *node's* RAM, not the task's. On a shared node that
     // is how one task's heap gets another task's memory and both die.
-    def heap = Math.max(1, (int) (task.memory.toGiga() * 0.8))
+    def heap = Math.max(1, (task.memory.toGiga() * 0.8) as int)
     """
     gatk --java-options "-Xmx${heap}g" MarkDuplicates \\
         --INPUT ${bam} \\
@@ -130,7 +133,7 @@ process GATK4_BASERECALIBRATOR {
     tuple val(meta), path("${meta.id}.recal.table"), emit: table
 
     script:
-    def heap = Math.max(1, (int) (task.memory.toGiga() * 0.8))
+    def heap = Math.max(1, (task.memory.toGiga() * 0.8) as int)
     """
     gatk --java-options "-Xmx${heap}g" BaseRecalibrator \\
         --input ${bam} \\
@@ -153,7 +156,7 @@ process GATK4_APPLYBQSR {
     tuple val(meta), path("${meta.id}.recal.bam"), path("${meta.id}.recal.bam.bai"), emit: bam
 
     script:
-    def heap = Math.max(1, (int) (task.memory.toGiga() * 0.8))
+    def heap = Math.max(1, (task.memory.toGiga() * 0.8) as int)
     """
     gatk --java-options "-Xmx${heap}g" ApplyBQSR \\
         --input ${bam} \\

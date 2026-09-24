@@ -69,7 +69,10 @@ process GATK4_HAPLOTYPECALLER {
           path("${meta.id}.${interval.baseName}.g.vcf.gz.tbi"), emit: gvcf
 
     script:
-    def heap = Math.max(1, (int) (task.memory.toGiga() * 0.8))
+    // `x as int`, never `(int) x`: Nextflow's strict parser has no C-style
+    // casts, reads `(int) (expr)` as a call to `int`, and fails the task with
+    // "No signature of method: static int.call()". Every heap below does the same.
+    def heap = Math.max(1, (task.memory.toGiga() * 0.8) as int)
     """
     gatk --java-options "-Xmx${heap}g" HaplotypeCaller \\
         --input ${bam} \\
@@ -92,7 +95,7 @@ process GATK4_GENOMICSDBIMPORT {
     tuple val(interval_id), path("genomicsdb_${interval_id}"), path(interval), emit: db
 
     script:
-    def heap = Math.max(1, (int) (task.memory.toGiga() * 0.8))
+    def heap = Math.max(1, (task.memory.toGiga() * 0.8) as int)
     """
     # --genomicsdb-workspace-path must NOT exist; GenomicsDBImport creates it and
     # refuses to write into a directory Nextflow has already staged.
@@ -117,7 +120,7 @@ process GATK4_GENOTYPEGVCFS {
     tuple path("joint.${interval_id}.vcf.gz"), path("joint.${interval_id}.vcf.gz.tbi"), emit: vcf
 
     script:
-    def heap = Math.max(1, (int) (task.memory.toGiga() * 0.8))
+    def heap = Math.max(1, (task.memory.toGiga() * 0.8) as int)
     """
     gatk --java-options "-Xmx${heap}g" GenotypeGVCFs \\
         --reference ${fasta} \\
@@ -139,7 +142,7 @@ process GATK4_MERGEVCFS {
     tuple path("joint.vcf.gz"), path("joint.vcf.gz.tbi"), emit: vcf
 
     script:
-    def heap = Math.max(1, (int) (task.memory.toGiga() * 0.8))
+    def heap = Math.max(1, (task.memory.toGiga() * 0.8) as int)
     """
     # Sorted so the merge order is deterministic. `path vcfs` arrives in whatever
     # order the channel emitted, which depends on which interval finished first --
@@ -165,7 +168,7 @@ process GATK4_VARIANTFILTRATION {
     tuple path("joint.filtered.vcf.gz"), path("joint.filtered.vcf.gz.tbi"), emit: vcf
 
     script:
-    def heap = Math.max(1, (int) (task.memory.toGiga() * 0.8))
+    def heap = Math.max(1, (task.memory.toGiga() * 0.8) as int)
     // GATK's published hard-filter thresholds, not VQSR. VQSR needs far more
     // variants than a single chromosome provides -- it would either refuse to
     // build a model or build a bad one -- and this is the documented fallback for
