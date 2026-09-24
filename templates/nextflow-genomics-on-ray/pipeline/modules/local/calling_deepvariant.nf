@@ -1,16 +1,21 @@
 /*
- * DeepVariant: the second caller.
+ * DeepVariant: the optional second caller. Off by default (`--deepvariant`).
  *
  * One truth set scored against two callers is a far more useful readout than
  * either alone -- it shows what the *method* contributes rather than only what
  * the pipeline produced, and it is the comparison GIAB exists to support.
  *
- * Runs on CPU. DeepVariant's GPU support exists only in Google's own `-gpu`
- * Docker image and covers only the `call_variants` stage; bioconda's package is
- * CPU TensorFlow, pinned to `python <3.11`. Since the cluster runs 3.12 and a Ray
- * driver and its workers must agree on the interpreter, it lives in a quarantined
- * conda environment and is reached only through tools/run_deepvariant.sh. See
- * that script for why the isolation is enforced rather than assumed.
+ * But the image has no DeepVariant to run. bioconda's deepvariant 1.10.0 ships
+ * wrapper scripts and not the binaries or models they call, so main.nf refuses
+ * `--deepvariant` at startup unless a real install is present; PIPELINE.md has
+ * the detail and the one change that turns this on.
+ *
+ * It would run on CPU. DeepVariant's GPU support exists only in Google's own
+ * `-gpu` Docker image and covers only the `call_variants` stage. DeepVariant pins
+ * `python <3.11` and a Ray driver and its workers must agree on the interpreter,
+ * so an install lives in its own environment, reached only through
+ * tools/run_deepvariant.sh. See that script for why the isolation is enforced
+ * rather than assumed.
  *
  * Not scattered by interval, unlike HaplotypeCaller. run_deepvariant is a
  * three-stage pipeline (make_examples, call_variants, postprocess_variants) that

@@ -23,7 +23,7 @@ page.
 | `GATK4_GENOMICSDBIMPORT`, `GATK4_GENOTYPEGVCFS` | `nf-core/modules/gatk4/*` | unchanged in shape |
 | `GATK4_MERGEVCFS` | `nf-core/modules/gatk4/mergevcfs` | sorted input list — see below |
 | `GATK4_VARIANTFILTRATION` | `nf-core/modules/gatk4/variantfiltration` | hard filters, not VQSR — see below |
-| `DEEPVARIANT` | `nf-core/modules/deepvariant` | CPU, quarantined env — see below |
+| `DEEPVARIANT` | `nf-core/modules/deepvariant` | off by default, no binaries to run — see below |
 | `RTG_FORMAT`, `RTG_VCFEVAL` | `nf-core/modules/rtgtools/*` | `--evaluation-regions`, split by variant type |
 | `MULTIQC` | `nf-core/modules/multiqc` | unchanged |
 
@@ -65,12 +65,24 @@ sarek passes dbSNP, Mills and 1000G indels to BQSR. This passes one, subset to
 chr20, to keep the staged demo data small. The recalibration is slightly less well
 informed as a result.
 
-### DeepVariant runs on CPU, in a quarantined environment
+### DeepVariant is off by default
 
-DeepVariant pins `python <3.11`; the cluster runs 3.12, and a Ray driver and its
-workers must agree on the interpreter to the patch. So it gets its own conda
-environment which is never on `PATH`, reached only through
-`tools/run_deepvariant.sh`.
+The plan had DeepVariant as a second caller, from bioconda, in its own python
+3.10 environment (it pins `python <3.11`, and a Ray driver and its workers must
+agree on the interpreter to the patch). That cannot work with the package as
+published. bioconda's `deepvariant` 1.10.0 (`pyh697b589_0`) is a 235 KB noarch
+package: three `dv_*.py` wrappers and `tf_slim`. The wrappers call
+`$PREFIX/BINARYSUB/make_examples.zip` and a `WGSMODELSUB` checkpoint, literal
+placeholders, because the recipe's `build.sh` has the steps that install
+Google's binaries and models commented out. There is no `run_deepvariant` and no
+model in it. (Read from the package and its bundled recipe, 2026-09-24.)
+
+So `params.deepvariant` defaults to `false`, the image builds no DeepVariant
+environment, and `--deepvariant true` stops at startup with that explanation
+rather than after alignment. The `DEEPVARIANT` process, its benchmark wiring and
+`tools/run_deepvariant.sh` are kept: installing Google's own DeepVariant 1.10.0
+into a 3.10 environment so that `bin/run_deepvariant` exists is the one change
+that turns it on, and the wrapper still keeps that environment off `PATH`.
 
 GPU DeepVariant was considered and rejected: GPU support exists only in Google's
 own `-gpu` Docker image and covers only the `call_variants` stage, so using it
@@ -78,7 +90,7 @@ would mean rebuilding DeepVariant on a Ray-matched base. The sibling WDL templat
 lost the equivalent fight with medaka and shipped it disabled; this template's GPU
 work is a separate process instead.
 
-Also not scattered by interval, unlike HaplotypeCaller: `run_deepvariant` is a
+Not scattered by interval, unlike HaplotypeCaller: `run_deepvariant` is a
 three-stage pipeline that shards internally, and an outer scatter would mean
 re-merging partial callsets whose records disagree at shard boundaries.
 

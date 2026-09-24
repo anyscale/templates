@@ -7,7 +7,8 @@
  *   nextflow run pipeline/main.nf -profile ray
  *
  * The pipeline is deliberately ordinary -- GATK Best Practices as nf-core/sarek
- * implements it, plus DeepVariant as a second caller and rtg vcfeval for scoring.
+ * implements it, rtg vcfeval for scoring, and DeepVariant as an optional second
+ * caller (off by default; see PIPELINE.md for why).
  * Nothing in this file, in modules/, or in conf/base.config knows it is running
  * on Ray. That is the claim: `-profile ray` is the diff.
  *
@@ -84,6 +85,16 @@ workflow {
       workDir      ${workflow.workDir}
       outdir       ${params.outdir}
     """.stripIndent()
+
+    // Checked here, on the head node, because every node runs the same image: a
+    // missing DeepVariant is missing everywhere, and finding out at the first
+    // DEEPVARIANT task means finding out after alignment and BQSR.
+    if( params.deepvariant ) {
+        def dv_prefix = System.getenv('NF_RAY_DEEPVARIANT_PREFIX') ?: '/opt/nf-tools/envs/deepvariant'
+        if( !file("${dv_prefix}/bin/run_deepvariant").exists() )
+            error "--deepvariant needs ${dv_prefix}/bin/run_deepvariant, which this image does not have. " +
+                  "bioconda's deepvariant 1.10.0 ships no binaries; see pipeline/PIPELINE.md."
+    }
 
     if( !params.samplesheet ) error "--samplesheet is required"
     if( !params.reference )   error "--reference is required"

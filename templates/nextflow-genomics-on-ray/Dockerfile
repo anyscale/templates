@@ -23,8 +23,14 @@
 #
 # Python 3.12 and Ray 2.58.0, everywhere, asserted at build time below. A Ray
 # driver and its workers must agree on both to the patch, and `ext.image` fails
-# outright on a mismatch. The one tool that cannot meet that (DeepVariant, which
-# pins python <3.11) gets a quarantined environment and is never on PATH.
+# outright on a mismatch.
+#
+# DeepVariant is not in this image. bioconda's deepvariant 1.10.0
+# (pyh697b589_0) is a 235 KB noarch package holding three dv_*.py wrappers whose
+# BINARY_DIR is the literal placeholder `$PREFIX/BINARYSUB`: the recipe's steps
+# that install Google's binaries and models are commented out, so there is
+# nothing for the wrappers to run. The pipeline keeps the process behind
+# `--deepvariant`, off by default; see pipeline/PIPELINE.md.
 
 # =============================================================================
 # Stage 1: build the Nextflow executor plugin.
@@ -176,10 +182,7 @@ RUN set -eux; \
     rtg version | head -2; \
     multiqc --version; \
     test "$(command -v aws)" = /usr/local/bin/aws; \
-    aws --version; \
-    /opt/nf-tools/envs/deepvariant/bin/python --version; \
-    test ! -e /opt/nf-tools/envs/deepvariant/bin/run_deepvariant || echo "deepvariant present"; \
-    python -c "import sys; assert '3.10' not in sys.version, 'deepvariant env leaked onto PATH'"
+    aws --version
 
 # The plugin is resolvable offline and names itself `ray`. Checked here because
 # the alternative place to discover it is a pipeline that has already staged its

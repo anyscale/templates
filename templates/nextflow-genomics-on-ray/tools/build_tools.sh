@@ -10,9 +10,9 @@
 #                   Just Nextflow -- see the file for why it is not from conda.
 #
 #   env.*.yml       conda environments. Everything else. A solve pins a whole
-#                   dependency tree at once, and DeepVariant in particular *must*
-#                   have its own environment because it pins python <3.11 while
-#                   the cluster runs 3.12.
+#                   dependency tree at once. One per file; a tool whose pins
+#                   cannot live beside the others' (a python <3.11, say) gets a
+#                   file of its own and stays off PATH.
 #
 # Run by the Dockerfile, but standalone on purpose: `bash tools/build_tools.sh
 # ~/nf-tools` reproduces the toolchain on any Linux box without building an image,
@@ -102,21 +102,19 @@ done
 #
 # The Dockerfile puts $PREFIX/bin first on PATH and $PREFIX/envs/main/bin last,
 # after the image's own /home/ray/anaconda3/bin, and nothing else. Last because
-# the main env carries its own python, which must not shadow the image's. The
-# other environments are reached by absolute path:
-#
-#   deepvariant  pins python <3.11, so it must never shadow the cluster's 3.12.
-#                Called through tools/run_deepvariant.sh.
+# the main env carries its own python, which must not shadow the image's. Any
+# other environment is reached by absolute path, never through PATH.
 #
 # That is the whole quarantine, and it is why this script does not symlink each
 # environment's executables into a shared bin/. Putting every env on PATH would
-# work right up until something resolved `python` to 3.10 and a Ray worker
-# refused to start -- a failure that surfaces as a task timeout, several
-# processes into a scatter, with nothing in the log naming the interpreter.
-# The one wrapper that has to cross the quarantine boundary goes on PATH, so a
-# process script can call it by name. It is a shim, not a tool: it unsets the
-# caller's Python environment, asserts the interpreter it lands on really is 3.10,
-# and execs DeepVariant.
+# work right up until something resolved `python` to the wrong interpreter and a
+# Ray worker refused to start -- a failure that surfaces as a task timeout,
+# several processes into a scatter, with nothing in the log naming it.
+#
+# run_deepvariant.sh goes on PATH so the DEEPVARIANT process can call it by name.
+# No DeepVariant environment is built (see the Dockerfile header for why), so
+# today it only explains that and exits 127; it is the place a real install
+# plugs in.
 install -m 0755 "$HERE/run_deepvariant.sh" "$PREFIX/bin/run_deepvariant.sh"
 
 log "verifying the main env"
