@@ -8,8 +8,9 @@ column. A template cannot demonstrate that with someone else's dataset, and the
 customer data it was derived from is private. So the template makes its own, and the
 reader measures the lever on their own hardware.
 
-Defaults are the CI-affordable knob. Raise --frames (and --width/--height) to see the
-production regime; the ratio holds, the wall clock does not.
+Defaults are the CI-affordable knob. Raise --frames (and --width/--height) toward the
+production regime; the wall clock grows with it, and whether the ratios hold at that scale is
+unmeasured.
 
     python make_fixture.py --out /mnt/cluster_storage/fixture --frames 256
 """
@@ -139,9 +140,9 @@ def main() -> int:
         "--compression",
         default="zstd",
         choices=["none", "snappy", "gzip", "brotli", "lz4", "zstd"],
-        help="Parquet codec. The default matters more than it looks: zstd compresses away most "
-        "of the per-value bookkeeping the layout difference is made of, so the two "
-        "layouts come out nearly the same size on disk. Try `none` to see the raw gap.",
+        help="Parquet codec. It is not what brings the two layouts to nearly the same size on "
+        "disk for the default payload: dictionary encoding on the list column does that before "
+        "any codec runs, and does it with `none` too. See --no-dictionary for the raw gap.",
     )
     ap.add_argument(
         "--payload",
@@ -161,7 +162,9 @@ def main() -> int:
         help="disable dictionary encoding on the list<uint8> column. This is the single "
         "biggest lever on the ON-DISK gap and it is ON by pyarrow default: with it on, the "
         "256 possible byte values become a dictionary and indices bit-pack to 1 byte each, so "
-        "the per-value bookkeeping never reaches disk. Turn it off to see the textbook 4x.",
+        "the per-value bookkeeping never reaches disk. Turn it off with --compression none to see "
+        "the textbook 4x; under zstd the 4x list column compresses back to 0.86x of binary(N) "
+        "on pyarrow 23.0.1.",
     )
     ap.add_argument(
         "--row-group-size",

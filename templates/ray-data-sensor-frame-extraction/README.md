@@ -512,5 +512,5 @@ Whether the read binds at production scale on this fleet is unmeasured.
 ## Where to go next
 
 - [Ray Data documentation](https://docs.ray.io/en/latest/data/data.html)
-- [Reading Parquet](https://docs.ray.io/en/latest/data/loading-data.html#reading-parquet-files) and [`map_batches`](https://docs.ray.io/en/latest/data/transforming-data.html)
+- [Reading Parquet](https://docs.ray.io/en/latest/data/loading-data.html#reading-files) and [`map_batches`](https://docs.ray.io/en/latest/data/transforming-data.html)
 - [ComputeConfig reference](https://docs.anyscale.com/reference/compute-config-api#computeconfig). This template's fleet is in `configs/ray-data-sensor-frame-extraction/`.
