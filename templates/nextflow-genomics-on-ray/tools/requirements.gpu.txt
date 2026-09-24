@@ -1,0 +1,19 @@
+# torch, from the CUDA-12.8 wheel index.
+#
+# Separate from ../requirements.txt because of `--index-url` below. That
+# directive replaces the default index for everything installed from this file,
+# so it has to be the *only* thing in the file -- put it in the main requirements
+# and every package there becomes resolvable from a non-PyPI host.
+--index-url https://download.pytorch.org/whl/cu128
+
+# Pinned to the newest torch that publishes a +cu128 build for cp312, which is
+# what the base image (anyscale/ray:2.56.0-py312-cu128) provides.
+#
+# Not the newest torch. From 2.10 onward torch depends on CUDA 13
+# (cuda-toolkit==13.0.3, nvidia-cudnn-cu13, nvidia-nccl-cu13) and would drag a
+# second, mismatched CUDA runtime into a cu128 image. Moving up means moving the
+# base image to a -cu130 tag first, and re-pinning both together.
+#
+# Declares no numpy constraint, so the image's numpy 1.26.4 -- which pyarrow and
+# Ray Data are built against -- is left alone.
+torch==2.9.1+cu128

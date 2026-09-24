@@ -1,0 +1,42 @@
+// Build for the `nf-ray` Nextflow executor plugin.
+//
+// Built in a throwaway Docker stage (see ../Dockerfile), which is why there is no
+// gradle wrapper checked in here: the builder image supplies Gradle, and a wrapper
+// jar in the template would be a binary nobody reviews.
+//
+// `gradle installPlugin` extracts the built zip to
+// $NXF_PLUGINS_DIR/nf-ray-<version>, and the Dockerfile copies exactly that
+// directory into the shipped image. Nothing from this stage -- Gradle, the JDK's
+// compiler, the dependency cache -- survives into it.
+
+plugins {
+    id 'io.nextflow.nextflow-plugin' version '1.0.0-beta.15'
+}
+
+// Must be semantic versioning: NextflowPluginConfig.validate() rejects anything
+// else. Kept in step with nf_ray/_version.py by hand -- they are two halves of
+// one integration and a version skew between them is a real bug, so `nf-ray
+// doctor` prints both.
+version = '0.1.0'
+
+nextflowPlugin {
+    // The *minimum* Nextflow this plugin requires, and the API it compiles
+    // against. Deliberately the older maintained stable line rather than the
+    // newest release: the plugin overrides seven long-stable AbstractGridExecutor
+    // methods, so compiling against 25.10 and running on the 26.04 the image
+    // ships widens the range this works on at no cost. The Dockerfile pins the
+    // runtime version; this pins the floor.
+    nextflowVersion = '25.10.0'
+
+    provider = 'anyscale'
+    className = 'ai.anyscale.nfray.RayPlugin'
+    description = 'Run Nextflow processes as Ray tasks on an autoscaling cluster'
+
+    // Nextflow discovers the executor through this list plus the @ServiceName
+    // annotation on the class. Both are required: the annotation supplies the
+    // name `executor 'ray'` matches, this list makes the class visible to the
+    // plugin manager at all.
+    extensionPoints = [
+        'ai.anyscale.nfray.RayExecutor'
+    ]
+}

@@ -1,0 +1,36 @@
+# Binary artifacts fetched directly, with a checksum.
+#
+# Almost everything this template needs comes from bioconda instead (see the
+# env.*.yml files beside this one) -- a conda solve pins versions and hashes for
+# a whole dependency tree, and re-solving is how you upgrade a toolchain without
+# hand-maintaining twenty checksums. What lands here is the short list conda
+# should not deliver:
+#
+#   nextflow  -- the engine itself. Putting the thing that runs the pipeline
+#                inside an environment the pipeline can modify is a bootstrap
+#                problem waiting to happen, and bioconda's nextflow package lags
+#                releases by days to weeks.
+#
+# Checksums are of the file at `url`, taken by streaming it (`curl -sSL <url> |
+# shasum -a 256`), and build_tools.sh verifies before installing. A mismatch is
+# fatal, not a warning: the whole point is to notice when a "stable" release
+# artifact is re-cut under the same tag, which does happen.
+
+[tools.nextflow]
+version = "26.04.6"
+kind    = "binary"
+url     = "https://github.com/nextflow-io/nextflow/releases/download/v26.04.6/nextflow-26.04.6-dist"
+sha256  = "182a63c74074e2dc7956ffa3c8cd59de952ed2c44394e21faf5e1736b945444c"
+# The -dist artifact is the self-contained launcher: it needs a JVM and nothing
+# else, so it does not phone home to Maven on first run the way the small
+# `nextflow` bootstrap script does. That matters on a cluster with no egress, and
+# it is the difference between a 3-second and a 90-second first task.
+install = "bin/nextflow"
+mode    = "0755"
+provides = ["nextflow"]
+
+# Pinned deliberately at the newest stable rather than the 25.10 line the plugin
+# compiles against. Every AbstractGridExecutor method the plugin overrides is
+# byte-identical between 25.10.7 and 26.04.6 -- checked, not assumed -- so
+# compiling against the older floor and running on the newer release widens the
+# range nf-ray works on at no cost.
