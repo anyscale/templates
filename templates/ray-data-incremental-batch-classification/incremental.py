@@ -29,8 +29,9 @@ from ray.data import SaveMode
 KEY_COLUMNS: tuple[str, ...] = ("doc_id", "company", "lang")
 LABELS: tuple[str, ...] = ("positive", "negative", "neutral")
 # Pass the hypothesis template explicitly. Leaving it out makes the
-# zero-shot pipeline wrap every label in "This example is {}.", which changes
-# which label wins on a noticeable share of real rows.
+# zero-shot pipeline wrap every label in "This example is {}.". In the source
+# engagement that changed which label won on a noticeable share of rows; not
+# measured here.
 HYPOTHESIS_TEMPLATE = "The sentiment of this text is {}."
 
 MODEL_ID = "MoritzLaurer/mDeBERTa-v3-base-xnli-multilingual-nli-2mil7"
@@ -127,9 +128,10 @@ def make_synthetic_frames(
 def _key_hashes(batch: pd.DataFrame, cols: Sequence[str]) -> tuple[np.ndarray, np.ndarray]:
     """16-byte blake2b per row over the key columns, and a mask of rows with no NULL key.
 
-    128 bits, not 64: at hundreds of millions of prior keys a 64-bit collision
-    becomes likely enough per run to silently drop a row that should have been
-    classified.
+    128 bits, not 64. A new row is wrongly matched with probability of about
+    (prior keys) / 2**bits: at 10**9 prior keys and 10**9 new rows per run, a
+    64-bit hash expects one silently dropped row every 18 runs, a 128-bit hash
+    about 3e-21 per run. Arithmetic, not a measurement.
     """
     keys = batch[list(cols)]
     valid = ~keys.isna().any(axis=1).to_numpy()
@@ -243,9 +245,9 @@ def download_model_once(model_id: str, dest: str) -> str:
     """Download the model to shared storage once, from the driver.
 
     Without this, every classifier actor downloads its own copy when it starts.
-    At hundreds of actors that is hundreds of simultaneous downloads of the
-    same file, and the hub answers with HTTP 429 and the actors die in their
-    constructors. For production, bake the weights into the image instead.
+    In the source engagement a few hundred actors downloading the same file at
+    once drew HTTP 429 from the hub, and the actors died in their constructors.
+    For production, bake the weights into the image instead.
     """
     from huggingface_hub import snapshot_download
 
@@ -266,12 +268,13 @@ class ZeroShotClassifier:
         from transformers import pipeline
 
         on_gpu = torch.cuda.is_available()
-        # bfloat16, not float16: DeBERTa-v3 overflows to NaN in float16.
+        # bfloat16, not float16: the model card says mDeBERTa does not support
+        # FP16. float16 was not tried here.
         self.pipe = pipeline(
             "zero-shot-classification",
             model=model_dir,
             device=0 if on_gpu else -1,
-            torch_dtype=torch.bfloat16 if on_gpu else torch.float32,
+            dtype=torch.bfloat16 if on_gpu else torch.float32,
         )
         self.labels = list(labels)
         self.hypothesis_template = hypothesis_template
