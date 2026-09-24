@@ -215,7 +215,16 @@ def build_fixture(root: Path) -> tuple[Path, Path, dict[str, str]]:
 def main() -> int:
     cells = notebook_cells()
 
-    with tempfile.TemporaryDirectory() as tmp:
+    # Step 6b reads the fixture's VCFs through Ray Data, and the template's head node offers
+    # `CPU: 0` (configs/wdl-genomics-on-ray/*.yaml), so that read runs on a worker. A default
+    # TemporaryDirectory is on the driver's local disk, which no worker can see: under rayapp
+    # this failed as `ray::ListFiles() FileNotFoundError .../vcf-normalized/HG003.norm.vcf`.
+    # The notebook keeps WORK on /mnt/cluster_storage for the same reason, so the fixture goes
+    # there whenever it exists. Off Anyscale, the default is fine, because 6b skips without ray.
+    shared = Path("/mnt/cluster_storage")
+    fixture_parent = str(shared) if shared.is_dir() and os.access(shared, os.W_OK) else None
+
+    with tempfile.TemporaryDirectory(dir=fixture_parent, prefix="wdl-readout-") as tmp:
         root = Path(tmp)
         runs, reference, first_summary = build_fixture(root)
 
