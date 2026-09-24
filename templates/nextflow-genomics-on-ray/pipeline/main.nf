@@ -26,8 +26,7 @@ include { BWAMEM2_INDEX; FASTP; BWAMEM2_MEM; GATK4_MARKDUPLICATES;
 include { MAKE_INTERVALS; GATK4_HAPLOTYPECALLER; GATK4_GENOMICSDBIMPORT;
           GATK4_GENOTYPEGVCFS; GATK4_MERGEVCFS; GATK4_VARIANTFILTRATION } from './modules/local/calling_gatk.nf'
 include { DEEPVARIANT } from './modules/local/calling_deepvariant.nf'
-include { RTG_FORMAT; SPLIT_SAMPLE; SUBSET_VARIANT_TYPE; RTG_VCFEVAL;
-          COLLECT_BENCHMARK } from './modules/local/benchmark.nf'
+include { BENCHMARK } from './modules/local/benchmark.nf'
 include { SHARD_VCF; ANNOTATE_VARIANTS; COLLECT_SCORES } from './modules/local/annotate.nf'
 include { MULTIQC; COLLECT_PLACEMENT } from './modules/local/reporting.nf'
 
@@ -100,14 +99,29 @@ workflow {
     if( !params.reference )   error "--reference is required"
     if( !params.outdir )      error "--outdir is required"
 
-    ch_samples = channel
+    ch_rows = channel
         .fromPath(params.samplesheet, checkIfExists: true)
         .splitCsv(header: true)
+
+    ch_samples = ch_rows.map { row ->
+        if( !row.sample || !row.fastq_1 || !row.fastq_2 )
+            error "samplesheet needs columns: sample,fastq_1,fastq_2 (got ${row.keySet()})"
+        tuple([id: row.sample], [file(row.fastq_1, checkIfExists: true),
+                                 file(row.fastq_2, checkIfExists: true)])
+    }
+
+    // One truth set *per sample*, from the samplesheet's optional truth_vcf and
+    // truth_bed columns. GIAB publishes a benchmark VCF and a high-confidence BED
+    // for each of HG002, HG003 and HG004, and scoring the son's calls against
+    // the father's truth would report the difference between two people as caller
+    // error. A row without them is called but not scored.
+    ch_truth = ch_rows
+        .filter { row -> row.truth_vcf && row.truth_bed }
         .map { row ->
-            if( !row.sample || !row.fastq_1 || !row.fastq_2 )
-                error "samplesheet needs columns: sample,fastq_1,fastq_2 (got ${row.keySet()})"
-            tuple([id: row.sample], [file(row.fastq_1, checkIfExists: true),
-                                     file(row.fastq_2, checkIfExists: true)])
+            tuple([id: row.sample],
+                  file(row.truth_vcf,          checkIfExists: true),
+                  file("${row.truth_vcf}.tbi", checkIfExists: true),
+                  file(row.truth_bed,          checkIfExists: true))
         }
 
     // The reference travels as one tuple everywhere. GATK needs all three files
@@ -122,12 +136,6 @@ workflow {
     ch_known_sites = channel.value(tuple(
         file(params.known_sites,          checkIfExists: true),
         file("${params.known_sites}.tbi", checkIfExists: true),
-    ))
-
-    ch_truth = channel.value(tuple(
-        file(params.truth_vcf,          checkIfExists: true),
-        file("${params.truth_vcf}.tbi", checkIfExists: true),
-        file(params.truth_bed,          checkIfExists: true),
     ))
 
     // -- preprocessing: FASTQ -> analysis-ready BAM ---------------------------
@@ -195,17 +203,7 @@ workflow {
 
     ch_to_score = ch_gatk_calls.mix(ch_dv_calls)
 
-    RTG_FORMAT(ch_reference)
-    SPLIT_SAMPLE(ch_to_score, ch_reference)
-
-    // samples x callers x {snp, indel}. SNPs and indels fail for different
-    // reasons, and a combined F1 would hide which one moved.
-    ch_typed = SPLIT_SAMPLE.out.vcf.combine(channel.of('snp', 'indel'))
-    SUBSET_VARIANT_TYPE(ch_typed)
-
-    RTG_VCFEVAL(SUBSET_VARIANT_TYPE.out.vcf, RTG_FORMAT.out.sdf, ch_truth, region)
-    // The vcfeval directories, not their summary.txt files: see COLLECT_BENCHMARK.
-    COLLECT_BENCHMARK(RTG_VCFEVAL.out.dir.collect())
+    BENCHMARK(ch_to_score, ch_reference, ch_truth, region)
 
     // -- GPU annotation -------------------------------------------------------
 
@@ -225,8 +223,14 @@ workflow {
         .collect()
     MULTIQC(ch_reports)
 
-    // Ordering only: the placement record is complete once the work is.
-    COLLECT_PLACEMENT(COLLECT_BENCHMARK.out.table.map { _table -> 'done' })
+    // Ordering only: the placement record is complete once the work is. Waits on
+    // every terminal output rather than on the benchmark alone, which emits
+    // nothing when no sample has a truth set.
+    ch_done = GATK4_VARIANTFILTRATION.out.vcf
+        .mix(BENCHMARK.out, ch_scores, MULTIQC.out.report)
+        .collect()
+        .map { _outputs -> 'done' }
+    COLLECT_PLACEMENT(ch_done)
 
     // Inside the entry workflow, and with an equals sign. The strict parser does
     // not allow statements at script level, so the familiar top-level

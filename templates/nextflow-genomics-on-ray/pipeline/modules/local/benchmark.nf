@@ -13,7 +13,8 @@
  * left-aligned indel and its right-aligned twin are correctly the same call.
  *
  * Scored on chr20 ∩ the GIAB high-confidence BED ∩ the demo slice. Outside that
- * intersection the truth set does not make a claim, so neither should we.
+ * intersection the truth set does not make a claim, so neither should we. Each
+ * sample against its own truth set -- see BENCHMARK at the end of this file.
  */
 
 process RTG_FORMAT {
@@ -95,9 +96,9 @@ process RTG_VCFEVAL {
     publishDir "${params.outdir}/benchmark", mode: params.publish_mode
 
     input:
-    tuple val(meta), val(caller), val(vtype), path(vcf), path(tbi)
+    tuple val(meta), val(caller), val(vtype), path(vcf), path(tbi),
+          path(truth_vcf), path(truth_tbi), path(truth_bed)
     path sdf
-    tuple path(truth_vcf), path(truth_tbi), path(truth_bed)
     val  region
 
     output:
@@ -157,4 +158,42 @@ process COLLECT_BENCHMARK {
     """
     collect_vcfeval.py --output benchmark.tsv ${eval_dirs}
     """
+}
+
+/*
+ * The whole scoring stage, as one unit main.nf calls and a test can call alone.
+ *
+ * Every comparison is against *that sample's* truth set: the calls and the
+ * truth sets meet on meta.id, one truth set per sample, with `combine(by: 0)`
+ * rather than `join` because each sample has several callsets to score (callers
+ * x {snp, indel}) and one truth set to score them all against.
+ */
+workflow BENCHMARK {
+    take:
+    ch_calls       // tuple(meta, caller, vcf, tbi); a joint VCF is fine, SPLIT_SAMPLE subsets it
+    ch_reference   // value channel: tuple(fasta, fai, dict)
+    ch_truth       // tuple(meta, truth_vcf, truth_tbi, truth_bed), one per sample
+    region         // val: the region scored, or null for all of it
+
+    main:
+    RTG_FORMAT(ch_reference)
+    SPLIT_SAMPLE(ch_calls, ch_reference)
+
+    // samples x callers x {snp, indel}. SNPs and indels fail for different
+    // reasons, and a combined F1 would hide which one moved.
+    ch_typed = SPLIT_SAMPLE.out.vcf.combine(channel.of('snp', 'indel'))
+    SUBSET_VARIANT_TYPE(ch_typed)
+
+    ch_against_truth = SUBSET_VARIANT_TYPE.out.vcf
+        .map { meta, caller, vtype, vcf, tbi -> tuple(meta.id, meta, caller, vtype, vcf, tbi) }
+        .combine(ch_truth.map { meta, tvcf, ttbi, tbed -> tuple(meta.id, tvcf, ttbi, tbed) }, by: 0)
+        .map { _id, meta, caller, vtype, vcf, tbi, tvcf, ttbi, tbed ->
+            tuple(meta, caller, vtype, vcf, tbi, tvcf, ttbi, tbed)
+        }
+
+    RTG_VCFEVAL(ch_against_truth, RTG_FORMAT.out.sdf, region)
+    COLLECT_BENCHMARK(RTG_VCFEVAL.out.dir.collect())
+
+    emit:
+    COLLECT_BENCHMARK.out.table   // benchmark.tsv
 }

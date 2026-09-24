@@ -24,7 +24,7 @@ import json
 import os
 import sys
 
-COLUMNS = ["sample", "fastq_1", "fastq_2"]
+COLUMNS = ["sample", "fastq_1", "fastq_2", "truth_vcf", "truth_bed"]
 
 
 class ManifestError(RuntimeError):
@@ -77,6 +77,25 @@ def build_rows(manifest: dict, data_dir: str, verify: bool) -> list[dict[str, st
                             f"  expected {want}\n  actual   {got}"
                         )
             row[column] = os.path.abspath(path)
+
+        # The sample's own truth set, when the manifest has one. Per sample
+        # because GIAB publishes one per genome; main.nf scores each sample's
+        # calls against its own and leaves a row with empty columns unscored.
+        truth_vcf, truth_bed = sample.get("truth_vcf"), sample.get("truth_bed")
+        row["truth_vcf"] = row["truth_bed"] = ""
+        if truth_vcf or truth_bed:
+            if not (truth_vcf and truth_bed):
+                raise ManifestError(
+                    f"{sample['id']}: manifest lists one of truth_vcf/truth_bed but not both"
+                )
+            for rel in (truth_vcf, f"{truth_vcf}.tbi", truth_bed):
+                if not os.path.exists(os.path.join(data_dir, rel)):
+                    raise ManifestError(
+                        f"{sample['id']}: manifest lists {rel} but "
+                        f"{os.path.join(data_dir, rel)} is missing."
+                    )
+            row["truth_vcf"] = os.path.abspath(os.path.join(data_dir, truth_vcf))
+            row["truth_bed"] = os.path.abspath(os.path.join(data_dir, truth_bed))
         rows.append(row)
 
     if not rows:
