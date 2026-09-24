@@ -817,6 +817,23 @@
     command: bash tests.sh
     timeout_in_sec: 1800
 
+# owner_team ray-data: a Ray Data join, map_batches GPU actors and a partitioned write, with no
+# Train/Serve/LLM surface.
+#
+# README.ipynb is the source; README.md is its nbconvert render. Never hand-edit the .md;
+# regenerate it, because check-readme compares bytes.
+#
+# From a customer engagement whose data is private. The data is synthetic; the model is public,
+# MIT and ungated. The notebook's Provenance section says what ran where. Its table's ratios
+# (1.73x and 2.35x packing on A10G) are the engagement's, on another cluster, and not this
+# notebook's.
+#
+# Measured on a 4-CPU laptop, Ray 2.58.0: the broadcast probe and the hash left_anti join return
+# the same rows, NULL-key rows included, and the probe starts no HashShuffleAggregator; one root
+# _SUCCESS against one per partition. The classifier alone on a laptop CPU, torch 2.13.0 and
+# transformers 5.17.0: 30 rows, no NaN scores. Not yet run on this entry's compute config.
+#
+# Unmeasured: the probe under worker loss, and run_pipeline.py / job.yaml, never submitted.
 # owner: @em-anyscale
 - name: ray-data-incremental-batch-classification
   owner_team: ray-data
@@ -829,4 +846,8 @@
   test:
     tests_path: tests/ray-data-incremental-batch-classification/
     command: bash tests.sh
+    # ESTIMATE, NOT MEASURED. 1800 bounds a notebook estimated at 15 minutes on one GPU worker:
+    # a torch download to the driver, the lock's virtualenv on each worker, a 578 MB model
+    # download and two classify passes. Replace it with a measured value once tests.sh has run
+    # on this config. Cluster start and image pull sit outside it.
     timeout_in_sec: 1800
