@@ -988,13 +988,15 @@ on an unpolished assembly. The workflow now emits both arms' QUAST columns from 
 the paired table is one `medaka_rounds > 0` run away. `PIPELINE.md` has the rest.
 
 One queue time in that run is worth reading before you size a cluster. HG004's `Assemble` waited
-**639.1 s** where HG002's and HG003's waited 92.6 s and 31.9 s, and it was not waiting for a node:
-all three workers were up inside 100 seconds. It was waiting for CPU on the first one, where all
-three `MeasureDivergence` tasks had landed and HG002's ran for 669.8 s. `Assemble` reserves 30 of
-a worker's 32 cores, so any 4-core neighbour on that node blocks it. Divergence is a diagnostic
-now that the read mode comes from the declared chemistry, which leaves ten minutes of one sample's
-critical path behind a task nothing branches on. A cluster sized exactly to the cohort pays that;
-one more node than samples does not.
+about **587 s**, from dispatch to Flye's first log line, and it was not waiting for a node: all
+three workers were up inside 100 seconds. It was waiting for CPU on the first one, where all three
+`MeasureDivergence` tasks had landed and HG002's ran for 669.8 s. `Assemble` reserves 30 of a
+worker's 32 cores, so any 4-core neighbour on that node blocks it. (`seconds_queued` reports 639.1 s
+here. It stops when the driver sees `ray_placement.json` on shared storage, which inflates long
+waits.) It cost the cohort nothing. HG004 is the smallest sample, so its `Assemble` dispatches
+first, and it still finished 1410 s before HG002; that worker is the `min_nodes` one, up either
+way. A fourth node is not the fix either: HG004's request was passed over twice as the other
+workers came up. `MeasureDivergence` also still feeds `flye_params` and the Step 6 readout.
 
 Spot suits every task here, the assembly included, which is a change from what this template used
 to say. That advice was written when a chromosome took 14h44m and a reclaimed node meant redoing
