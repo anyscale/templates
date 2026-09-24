@@ -18,7 +18,7 @@ import faulthandler
 import hashlib
 import sys
 import time
-from typing import Iterable, Sequence
+from typing import Mapping, Sequence
 
 import numpy as np
 import pandas as pd
@@ -28,11 +28,16 @@ from ray.data import SaveMode
 
 KEY_COLUMNS: tuple[str, ...] = ("doc_id", "company", "lang")
 LABELS: tuple[str, ...] = ("positive", "negative", "neutral")
-# Pass the hypothesis template explicitly. Leaving it out makes the
-# zero-shot pipeline wrap every label in "This example is {}.", which changed
-# the winning label on 681 of 2,000 of this template's synthetic rows (laptop
-# CPU, float32, 2026-09-24).
-HYPOTHESIS_TEMPLATE = "The sentiment of this text is {}."
+# What the model reads for each label, inside HYPOTHESIS_TEMPLATE. The wording
+# decides the answer: with the bare label words and "The sentiment of this text
+# is {}.", the model labelled 0 of 643 neutral sentences neutral (642 came out
+# negative) and 137 of 701 negative ones neutral. These phrases and the template
+# below labelled all 2,000 of the same rows as written (laptop CPU, float32,
+# 2026-09-24).
+LABEL_PHRASES: dict[str, str] = {"positive": "good news", "negative": "bad news", "neutral": "routine news"}
+# Pass the hypothesis template explicitly; the zero-shot pipeline's default is
+# "This example is {}.".
+HYPOTHESIS_TEMPLATE = "This text is {}."
 
 MODEL_ID = "MoritzLaurer/mDeBERTa-v3-base-xnli-multilingual-nli-2mil7"
 # Only the files inference needs: the safetensors weights and the tokenizer.
@@ -123,6 +128,15 @@ def make_synthetic_frames(
     null_twins = today.loc[null_rows, list(KEY_COLUMNS)].copy()
     prior = pd.concat([seen, extra, null_twins], ignore_index=True)
     return today, prior
+
+
+def label_confusion(df: pd.DataFrame) -> pd.DataFrame:
+    """Count classified synthetic rows by the label each sentence was written to carry (rows)
+    and the label the model gave it (columns)."""
+    written = {t: label for sentences in _TEXT.values() for label, t in zip(LABELS, sentences)}
+    expected = pd.Series([written[t.replace(c, "{e}")] for t, c in zip(df["text"], df["company"])], index=df.index)
+    table = pd.crosstab(expected.rename("written as"), df["label"].rename("labelled"))
+    return table.reindex(index=list(LABELS), columns=list(LABELS), fill_value=0)
 
 
 def _key_hashes(batch: pd.DataFrame, cols: Sequence[str]) -> tuple[np.ndarray, np.ndarray]:
@@ -267,12 +281,16 @@ def download_model_once(model_id: str, dest: str) -> str:
 
 
 class ZeroShotClassifier:
-    """One model per actor; classifies a batch of texts against fixed labels."""
+    """One model per actor; classifies a batch of texts against fixed labels.
+
+    The model scores ``label_phrases``' values; the ``label`` column gets the
+    matching key, so rewording a phrase does not rename the output.
+    """
 
     def __init__(
         self,
         model_dir: str,
-        labels: Iterable[str] = LABELS,
+        label_phrases: Mapping[str, str] = LABEL_PHRASES,
         hypothesis_template: str = HYPOTHESIS_TEMPLATE,
         inference_batch_size: int = 32,
     ):
@@ -288,19 +306,19 @@ class ZeroShotClassifier:
             device=0 if on_gpu else -1,
             dtype=torch.bfloat16 if on_gpu else torch.float32,
         )
-        self.labels = list(labels)
+        self.label_of = {phrase: label for label, phrase in label_phrases.items()}
         self.hypothesis_template = hypothesis_template
         self.inference_batch_size = inference_batch_size
 
     def __call__(self, batch: pd.DataFrame) -> pd.DataFrame:
         results = self.pipe(
             list(batch["text"]),
-            candidate_labels=self.labels,
+            candidate_labels=list(self.label_of),
             hypothesis_template=self.hypothesis_template,
             batch_size=self.inference_batch_size,
         )
         batch = batch.copy()
-        batch["label"] = [r["labels"][0] for r in results]
+        batch["label"] = [self.label_of[r["labels"][0]] for r in results]
         batch["score"] = [float(r["scores"][0]) for r in results]
         return batch
 
