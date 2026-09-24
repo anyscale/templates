@@ -1,4 +1,5 @@
-# See configs/aws.yaml: same L4 class (24 GB = 22.35 GiB), same reduced actor counts in CI.
+# See aws.yaml beside this file: same L4 class (24 GB = 22.35 GiB), same reduced actor counts
+# in CI.
 head_node:
   instance_type: n2-standard-8
   resources:
