@@ -1,0 +1,37 @@
+head_node:
+  instance_type: m5.2xlarge
+  resources:
+    CPU: 0
+worker_nodes:
+# 16 vCPU / 128 GiB. Read together with pipeline/conf/base.config's resourceLimits (16 CPU,
+# 80 GB) and pipeline/conf/ray.config's maxNode* (the same numbers): on Ray a resource request
+# that no node can satisfy is an indefinite wait, not an error, so the instance type and the
+# pipeline's ceiling are one decision, not two. test_config_agreement.py checks the three agree.
+#
+# Highmem because of what Ray schedules, not what the instance has. Ray 2.58.0 advertises about
+# 70% of a node's free memory as `memory` and keeps the rest for the object store, so this node
+# schedules roughly 85 GiB (derived from Ray's code, not yet measured here) and the 80 GB ceiling
+# sits under it. nf-core's process_high asks for 72 GB; on a 64 GiB m5.4xlarge, which schedules
+# about 42 GiB, it would never start.
+#
+# min_nodes: 1 so the first task does not wait on a cold autoscale. max_nodes: 4 bounds the cost
+# of the scatter rather than matching it: HaplotypeCaller asks for 6 CPU / 36 GB, so two fit a
+# node, and `quick`'s 24 calling tasks run in three waves of eight. Not yet measured; tune it
+# after the first run.
+- name: cpu-worker
+  instance_type: r6i.4xlarge
+  min_nodes: 1
+  max_nodes: 4
+# One NVIDIA L4, for ANNOTATE_VARIANTS (label process_gpu) and the notebook's Ray Data pass.
+# `nvidia-l4` is the accelerator the pipeline asks for, and g6 (AWS) and g2 (GCP) are both L4,
+# so the request is the same on both clouds. 8 vCPU / 32 GiB schedules about 20 GiB, which is
+# why process_gpu carries its own 18 GB resourceLimits in base.config.
+#
+# min_nodes: 0: the GPU leg is the last stage of the DAG, so a node started for it at the
+# beginning would sit idle through alignment and calling.
+- name: gpu-worker
+  instance_type: g6.2xlarge
+  min_nodes: 0
+  max_nodes: 2
+# GPU capacity is the scarce part; let the autoscaler look in every zone for it.
+enable_cross_zone_scaling: true

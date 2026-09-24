@@ -179,7 +179,7 @@ class Config:
 
         env {
           NF_RAY_MAX_NODE_CPUS      = '16'
-          NF_RAY_MAX_NODE_MEMORY_GB = '64'
+          NF_RAY_MAX_NODE_MEMORY_GB = '80'
           NF_RAY_MAX_NODE_GPUS      = '1'
         }
 
