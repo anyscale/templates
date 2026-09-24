@@ -9,8 +9,7 @@ before it starts rather than several processes in.
 
 The manifests below are in the shape tools/stage-demo-data.sh writes and
 tests/nextflow-genomics-on-ray/synthetic_trio.py writes; the second is also run
-end to end, through the real pipeline, in the local check described in that
-script's docstring.
+end to end, through the real pipeline, by the synthetic-trio gate in tests.sh.
 """
 
 from __future__ import annotations
