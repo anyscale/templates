@@ -17,12 +17,16 @@ process MULTIQC {
     path report_files
 
     output:
-    path "multiqc_report.html", emit: report
-    path "multiqc_data", emit: data
+    path "*multiqc_report.html", emit: report
+    path "*_data", emit: data
 
     script:
+    // Globs, as nf-core's MULTIQC module declares them. The data directory is
+    // named after the report: `--filename multiqc_report.html` made multiqc 1.35
+    // write multiqc_report_data/, while this process declared multiqc_data/, so
+    // every run failed here on a missing output (seen on the first native run).
     """
-    multiqc --force --filename multiqc_report.html .
+    multiqc --force .
     """
 }
 
