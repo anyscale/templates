@@ -1,0 +1,92 @@
+# Call variants across the GIAB Ashkenazi trio over all of chromosome 20, as an Anyscale Job.
+#
+#   cd templates/nextflow-genomics-on-ray && anyscale job submit --config-file job.yaml
+#
+# Submit it from *this* directory. `working_dir: .` below is relative to the shell, not to
+# this file, so submitting from the repo root uploads the repo root and the entrypoint finds
+# no pipeline/.
+#
+# This cannot run yet: the `full` scale it reads,
+# s3://anyscale-public-materials/genomics/giab-trio-illumina-chr20/full/, has not been
+# published (tools/stage-demo-data.sh builds it), and neither has the image. Nothing about
+# its time or cost has been measured, so this file states neither.
+#
+# The production counterpart to the notebook, and a cohort for the same reason the notebook
+# is one: three samples over 48 intervals is 144 HaplotypeCaller tasks with nothing
+# serialising them but the cluster's size, which is the thing this template exists to show.
+name: nextflow-genomics-on-ray-chr20-trio
+
+# The template's own image, which carries the toolchain, the nf-ray plugin and the scorer's
+# model (see Dockerfile). Processes run with no container runtime, so every tool has to be on
+# every node before the first task dispatches; a job's `requirements:` is installed at
+# cluster startup, before working_dir is staged, which is why there is none here.
+image_uri: us-docker.pkg.dev/anyscale-workspace-templates/workspace-templates/nextflow-genomics-on-ray:2.58.0
+
+working_dir: .
+excludes:
+  - .ipynb_checkpoints
+  - __pycache__
+  - .nextflow
+  - work
+
+env_vars:
+  NF_DEMO_SCALE: full
+  # Where the published results are copied before the entrypoint exits. Without it they are
+  # deleted with the cluster the moment the job succeeds -- see the entrypoint.
+  NF_RAY_RESULTS: /mnt/user_storage/nextflow-genomics-on-ray/results/chr20-trio
+
+# The entrypoint must NOT `exec` the pipeline: nothing could run afterwards, and the results
+# would die with the cluster. Capture the status, persist, then exit with the pipeline's own
+# code. It must also stay POSIX: Anyscale runs job entrypoints under /bin/sh (dash), where
+# `set -o pipefail` is "Illegal option" and nothing runs at all.
+entrypoint: |
+  set -u
+  DATA=/mnt/cluster_storage/nf-genomics/data/full
+  OUT=/mnt/cluster_storage/nf-genomics/results
+  mkdir -p "$DATA" "$OUT"
+  aws s3 sync --no-sign-request --only-show-errors \
+    s3://anyscale-public-materials/genomics/giab-trio-illumina-chr20/full/ "$DATA/"
+  python pipeline/bin/make_samplesheet.py --data-dir "$DATA" --output "$DATA/samplesheet.csv"
+
+  # -resume is not here on purpose. It needs the work directory from the previous attempt,
+  # and /mnt/cluster_storage is recreated per job, so there is nothing to resume from -- which
+  # is also why max_retries stays 0 below. Node loss is handled inside the run: nf-ray maps a
+  # lost node onto an exit code nf-core's errorStrategy retries.
+  nextflow run pipeline/main.nf -profile ray \
+    --scale full \
+    --samplesheet "$DATA/samplesheet.csv" \
+    --reference "$DATA/reference/chr20.fa" \
+    --known_sites "$DATA/known_sites/dbsnp138.chr20.vcf.gz" \
+    --outdir "$OUT"
+  STATUS=$?
+
+  python persist_outputs.py --results "$OUT" || true
+  exit $STATUS
+
+# Inline, and the same shapes as configs/nextflow-genomics-on-ray/aws.yaml: the pipeline's
+# resource ceiling (pipeline/conf/base.config, conf/ray.config) is sized to these nodes, and a
+# request no node can satisfy pends forever on Ray rather than failing. max_nodes is higher
+# than the template's config because `full` has six times `quick`'s calling tasks; it is a
+# cost bound, not a measurement.
+compute_config:
+  head_node:
+    instance_type: m5.2xlarge
+    resources:
+      CPU: 0
+  worker_nodes:
+    - name: cpu-worker
+      instance_type: r6i.4xlarge
+      min_nodes: 1
+      max_nodes: 8
+    - name: gpu-worker
+      instance_type: g6.2xlarge
+      min_nodes: 0
+      max_nodes: 2
+  enable_cross_zone_scaling: true
+
+# Unmeasured; a first run should replace this with its wall clock plus headroom.
+timeout_s: 43200
+
+# A job-level retry runs on a new cluster with an empty work directory, so it would redo
+# everything. Retries belong inside the run, where they are per task.
+max_retries: 0

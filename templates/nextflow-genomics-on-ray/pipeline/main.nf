@@ -33,9 +33,10 @@ include { MULTIQC; COLLECT_PLACEMENT } from './modules/local/reporting.nf'
 /*
  * Scale presets. Same tools, same DAG, same resource requests -- only the number
  * of bases differs, so a green CI run at `quick` exercises the code path a reader
- * gets at `standard`. The regions match what tools/stage-demo-data.sh published;
- * tests/ asserts the two agree, because a silent mismatch would have the pipeline
- * scoring a region the data does not cover.
+ * gets at `standard`. The regions match what tools/stage-demo-data.sh publishes,
+ * and tests/nextflow-genomics-on-ray/test_config_agreement.py fails if the two
+ * drift, because a silent mismatch would have the pipeline scoring a region the
+ * data does not cover.
  *
  * A function, not a top-level `def`: the strict parser does not allow statements
  * to be mixed with script declarations, so that a script included as a module
