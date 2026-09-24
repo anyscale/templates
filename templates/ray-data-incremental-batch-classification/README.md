@@ -8,14 +8,14 @@ Each step compares the version most first drafts reach for with the one this tem
 |---|---|---|---|
 | Skip rows already classified | `Dataset.join(join_type="left_anti")` against the prior output | Broadcast 16-byte key hashes and filter in a streaming `map_batches` | The hash join shuffles both sides through stateful `HashShuffleAggregator` actors: losing one fails the dataset, and they keep GPU nodes busy while using no GPU. The probe has no shuffle and streams straight into the GPU stage. |
 | Model weights | Each actor downloads from the Hugging Face Hub when it starts | Download once to shared storage, or bake into the image | In the source engagement, a few hundred simultaneous downloads of one file drew HTTP 429 and the actors died in their constructors. |
-| GPU packing | One actor per GPU | `num_gpus=0.5`: two actors per GPU | A base-size model leaves most of an A10G or L4 idle. In the source engagement, on A10G GPUs, two actors per GPU measured 1.73x the rows/s of one and four measured 2.35x. The classify cell below measures this notebook's own ratio. |
+| GPU packing | One actor per GPU | `num_gpus=0.5`: two actors per GPU | Measured here, on the included AWS config's one A10G: 1.10x the rows/s of one actor, but only one actor had work in that run, so it is not yet a packing ratio (see the classify cell). The source engagement's 1.73x for two actors per GPU and 2.35x for four are that workload's figures, on its own data, and are not reproduced here. |
 | Completion marker | `_SUCCESS` in every partition directory, written from the driver | One `_SUCCESS` at the output root | Thousands of partitions means thousands of sequential requests after the data is already written. In the source engagement that was tens of minutes on object storage, and throttling on the prefix. |
 | Failure bounds | None | Job `timeout_s`, Ray Data's hanging-execution detector | A stalled Ray Data job raises nothing. Its no-progress guard turns itself off when the plan contains a shuffle, and job clusters do not idle-terminate. |
 | pyarrow | Whatever the lockfile resolves | `pyarrow==23.0.1`, inside the 22–23 window | 21 and older deadlock on concurrent partitioned writes under S3 throttling ([apache/arrow#47124](https://github.com/apache/arrow/issues/47124), fixed in 22). 24.x can deadlock at interpreter exit with a live `S3FileSystem` ([apache/arrow#50188](https://github.com/apache/arrow/issues/50188)). |
 
-The ratios and failure modes in this table come from a customer engagement whose data is private, on Ray 2.55.1 in September 2026. None is reproduced here unless a cell below measures it. Treat the ratios as directions: they do not transfer as absolutes. **Provenance**, at the end, says what this notebook has measured and where.
+The failure modes in this table, and every ratio credited to the source engagement, come from a customer engagement whose data is private, on Ray 2.55.1 in September 2026. None is reproduced here unless a cell below measures it. Treat the ratios as directions: they do not transfer as absolutes. **Provenance**, at the end, says what this notebook has measured and where.
 
-**Runtime:** estimated at 15 minutes at the default scale on the included compute config (one GPU worker); not yet measured on a cluster.
+**Runtime:** 11 min 50 s for the CI test, workspace start to teardown, on the included AWS compute config (one g5.2xlarge GPU worker), 2026-09-24.
 
 ## Configure
 
@@ -158,7 +158,11 @@ if len(rates) == 2:
 classified.to_pandas()[["company", "lang", "text", "label", "score"]].head()
 ```
 
-The ratio is printed, not asserted. Both timings include actor start-up, which is a large share of a short run. No GPU ratio has been measured by this notebook yet; whether a longer run shows a larger one is unmeasured.
+The ratio is printed, not asserted. Both timings include actor start-up, which is a large share of a short run.
+
+On the included AWS config, one A10G on a g5.2xlarge, on 2026-09-24, over 10,081 rows: 260 rows/s with one actor per GPU and 287 with `gpu_fraction=0.5`, 1.10x. That is this notebook's measured number, and it is not a packing ratio. `new_rows` reached the classifier as one block, so Ray Data could run one task at a time: it warned that the operator "can launch at most 1 task(s)", and it reported 0.5 of 1 GPU in use at every progress line of the second pass. One actor did all the work in both passes. What two actors that both have work buy on this GPU is unmeasured.
+
+The source engagement measured 1.73x for two actors per A10G and 2.35x for four. Those are the originating workload's figures, on its own data; this notebook has not reproduced them.
 
 The labels are not this template's lesson, but read them before you trust them. Measured on a laptop CPU in float32 over 2,000 rows on 2026-09-24: all 656 positive sentences came out `positive`, 564 of 701 negative ones `negative` and the other 137 `neutral`, and 642 of 643 neutral ones `negative`. The model never picked `neutral` for a neutral sentence. Choose the labels and the hypothesis template against your own data.
 
@@ -203,7 +207,7 @@ print(open("job.yaml").read())
 
 - The broadcast probe returned the same rows as the hash `left_anti` join, NULL-key rows included, without starting any shuffle aggregators.
 - The model downloads once, from the driver, and every actor loads that copy.
-- The classify cell prints what two actors per GPU buy on your GPU. This template has not yet measured it on one.
+- The classify cell prints what two actors per GPU buy on your GPU. Its one run on an A10G printed 1.10x with only one actor working, so this template has not yet measured packing.
 - One root `_SUCCESS` replaced one marker per partition.
 - `job.yaml` bounds the job with `timeout_s`; the notebook runs with the hanging-execution detector on and a one-shot driver stack dump armed.
 
@@ -213,8 +217,10 @@ Next steps: point `TODAY_PATH`, `PRIOR_PATH` and `OUTPUT_PATH` at your own data,
 
 This template comes from a customer engagement whose data is private. The pipeline shape and the levers are the engagement's. The data is synthetic and the model is public: [`MoritzLaurer/mDeBERTa-v3-base-xnli-multilingual-nli-2mil7`](https://huggingface.co/MoritzLaurer/mDeBERTa-v3-base-xnli-multilingual-nli-2mil7), MIT, ungated, checked on 2026-09-24.
 
-**Measured on a 14-CPU macOS laptop, Ray 2.58.0, torch 2.13.0 on CPU, transformers 5.17.0, 2026-09-24.** This notebook end to end through papermill, 23 of 23 cells, 3 min 17 s, with two substitutions: the lock install was skipped and `ray.init` carried no `pip`, because the lock holds Linux CUDA wheels. `CLASSIFY_ROWS=2000` capped the classifier. That run gave the anti-join numbers above, 200 per-partition markers against 1 root marker, the label counts after the classify cell, and the hypothesis-template count. Its classify cell also printed 30 and 33 rows/s, 1.11x: that is **not** a GPU packing ratio. On Apple Silicon Ray reports one GPU that torch cannot use, so both passes ran on CPU, in float32, with one CPU actor against two.
+**Measured on a 14-CPU macOS laptop, Ray 2.58.0, torch 2.13.0 on CPU, transformers 5.17.0, 2026-09-24.** This notebook end to end through papermill, 23 of 23 cells, 3 min 17 s, with two substitutions: the lock install was skipped and `ray.init` carried no `pip`, because the lock holds Linux CUDA wheels. `CLASSIFY_ROWS=2000` capped the classifier. That run gave the anti-join numbers above, 200 per-partition markers against 1 root marker, the label counts after the classify cell, and the hypothesis-template count. Its classify cell also printed 30 and 33 rows/s, 1.11x: that is **not** a GPU packing ratio. On Apple Silicon Ray reports one GPU that torch cannot use, so both passes ran on CPU, in float32, and the input was one block, so one actor had work in each pass.
 
-**From the source engagement, on a different cluster and a different dataset.** Not reproduced here: the 1.73x and 2.35x packing ratios on A10G; HTTP 429 at a few hundred simultaneous model downloads; the hash join as the stage that stalled at production scale; tens of minutes of per-partition markers on object storage.
+**Measured on the included AWS compute config, 2026-09-24.** One CI run: head m5.2xlarge, one g5.2xlarge (A10G) GPU worker, Ray 2.58.0; 23 of 23 cells; 11 min 50 s workspace start to teardown. It showed the lock reaching the workers through `runtime_env`, the actors loading the model from shared storage, and the classifier running on the GPU in bfloat16. Its classify cell printed 260 and 287 rows/s over 10,081 rows, 1.10x, with one actor working in both passes, as the classify section explains.
 
-**Unmeasured.** Everything on a cluster: no cell has run on the included compute config, so the GPU packing ratio, bfloat16 on a GPU, the lock arriving on a worker through `runtime_env`, the model on shared storage and the runtime estimate above are all untested. Whether the probe survives losing a worker: a single-node join starts no aggregators to kill, so this is untested here and was untested in the source engagement. `run_pipeline.py` and `job.yaml` have not been submitted.
+**From the source engagement, on a different cluster and a different dataset.** Not reproduced here: the 1.73x (two actors per GPU) and 2.35x (four) packing ratios on A10G; HTTP 429 at a few hundred simultaneous model downloads; the hash join as the stage that stalled at production scale; tens of minutes of per-partition markers on object storage.
+
+**Unmeasured.** The GPU packing ratio with two actors that both have work. Whether the probe survives losing a worker: a single-node join starts no aggregators to kill, so this is untested here and was untested in the source engagement. `run_pipeline.py` and `job.yaml` have not been submitted.
