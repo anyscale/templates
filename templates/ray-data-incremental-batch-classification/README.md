@@ -212,6 +212,8 @@ Three settings in `job.yaml` are the difference between a failed run and a run t
 - **`max_retries`** re-runs the whole job, so the worst case is `timeout_s * (max_retries + 1)`. Use 0 while a pipeline is still unstable.
 - **pyarrow** stays pinned in `requirements.txt` so a rebuilt image cannot float into a version with a known write or exit deadlock. Check the version the job actually ran with, not the one the lockfile names: a mutable image tag can serve a different build.
 
+`job.yaml` also carries its own compute config, the cluster this notebook runs on in CI: a head with `CPU: 0`, one g5.2xlarge GPU worker and up to two m5.2xlarge CPU workers. Without one, a job lands on the cloud's default compute config. The instance types are AWS's; on GCP use n2-standard-8 for the head and the CPU workers and g2-standard-8-nvidia-l4-1 for the GPU worker.
+
 
 ```python
 print(open("job.yaml").read())
