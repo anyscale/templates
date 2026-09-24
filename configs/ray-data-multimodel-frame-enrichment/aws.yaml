@@ -3,8 +3,8 @@
 # there. This is the card this repo's GPU templates use.
 #
 # `packing.py --stages measured --vram 22.03` is this template's own four models: one actor
-# of each holds 5.53 GiB, so 75% of the card is free. `--stages shipped` is the SOURCE
-# engagement's configuration on a DIFFERENT model set, tuned on a 48 GiB workstation card,
+# of each holds 5.53 GiB, so 75% of the card is free. `--stages shipped` is the ORIGINATING
+# workload's configuration on a DIFFERENT model set, tuned on a 48 GiB workstation card,
 # and its actor counts over-commit an L4. Do not read its 21.01 GiB as this set's footprint.
 # The CI config in tests/ray-data-multimodel-frame-enrichment/tests.sh is the reduced set, not
 # the shipped one.

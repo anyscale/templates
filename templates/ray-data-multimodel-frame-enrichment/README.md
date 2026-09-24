@@ -71,8 +71,8 @@ by fraction :  floor(1 / num_gpus)                  actors per GPU
 by VRAM     :  floor(vram_per_gpu / vram_per_actor)  actors per GPU
 ```
 
-`packing.py` computes both. On the source engagement's shipped configuration, on the 48 GiB card
-it was tuned on:
+`packing.py` computes both. On the originating workload's shipped configuration, on the 48 GiB
+card it was tuned on:
 
 | stage | `num_gpus` | GiB/actor | by fraction | by VRAM | binds |
 |---|---|---|---|---|---|
@@ -87,12 +87,12 @@ its fraction share, and the tool prints `UNMEASURED` beside it.
 
 
 ```python
-# The source engagement's shipped configuration on the 48 GiB card it was tuned on.
+# The originating workload's shipped configuration on the 48 GiB card it was tuned on.
 run("packing.py")
 ```
 
 Per-stage capacity does not answer whether the set fits together. `packing.py` carries two
-tables, because the numbers above are the source engagement's on its own model set:
+tables, because the numbers above are the originating workload's on its own model set:
 
 | | one actor of each stage | card | headroom |
 |---|---|---|---|
@@ -496,9 +496,9 @@ change it.
 State the unit as well as the scope. rows/s, images/s and detections/s differ here by the
 detections per frame, and published figures for this shape differ by which one they meant.
 
-On the source engagement the numbers from fixed, repeated, anchored A/B runs came out lower than
-everything quoted from exploratory sweeps. Two conclusions reversed that way, one of them after
-being written up as a +3.4% win.
+On the originating workload the numbers from fixed, repeated, anchored A/B runs came out lower
+than everything quoted from exploratory sweeps. Two conclusions reversed that way, one of them
+after being written up as a +3.4% win.
 
 ## Models and licences
 
