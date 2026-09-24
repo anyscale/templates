@@ -431,6 +431,7 @@ inputs = {
     "ONTAssembleCohort.runtime_attr_read_divergence": {"cpu_cores": 4,  "mem_gb": 16, "disk_gb": 100, "preemptible_tries": 3},
     "ONTAssembleCohort.runtime_attr_merge_fastqs":    {"cpu_cores": 4,  "mem_gb": 16, "disk_gb": 100, "preemptible_tries": 3},
     "ONTAssembleCohort.runtime_attr_flye":            {"cpu_cores": 30, "mem_gb": 32, "disk_gb": 500, "preemptible_tries": 3},
+    "ONTAssembleCohort.runtime_attr_medaka":          {"cpu_cores": 4,  "mem_gb": 16, "disk_gb": 200, "preemptible_tries": 3},
     "ONTAssembleCohort.runtime_attr_quast":           {"cpu_cores": 8,  "mem_gb": 32, "disk_gb": 100, "preemptible_tries": 3},
     "ONTAssembleCohort.runtime_attr_quast_summary":   {"cpu_cores": 1,  "mem_gb": 4,  "disk_gb": 20, "preemptible_tries": 3},
     "ONTAssembleCohort.runtime_attr_align_paf":       {"cpu_cores": 8,  "mem_gb": 32, "disk_gb": 100, "preemptible_tries": 3},
