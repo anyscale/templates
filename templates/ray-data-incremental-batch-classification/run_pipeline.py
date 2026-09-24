@@ -1,9 +1,10 @@
 """Batch entrypoint for job.yaml: the notebook's pipeline, without the comparisons.
 
-Reads today's rows and the keys already classified, drops the already-classified
-rows with the broadcast probe, classifies the rest with fractional GPUs, and
-writes partitioned Parquet with one root _SUCCESS. Generates synthetic input
-first if none exists.
+Reads today's rows and the keys already classified, splits today's rows into
+blocks for the classifier's actors, drops the already-classified rows with the
+broadcast probe, classifies the rest with fractional GPUs, and writes
+partitioned Parquet with one root _SUCCESS. Generates synthetic input first if
+none exists.
 """
 
 import os
@@ -34,11 +35,16 @@ def main() -> None:
         ray.data.from_pandas(today_df).write_parquet(today_path, mode=ray.data.SaveMode.OVERWRITE)
         ray.data.from_pandas(prior_df).write_parquet(prior_path, mode=ray.data.SaveMode.OVERWRITE)
 
-    today = ray.data.read_parquet(today_path)
+    gpu_fraction = float(os.getenv("GPU_FRACTION", "0.5"))
+    # Split today's rows into blocks for the classifier's actor pool here, before the probe:
+    # repartition(num_blocks) waits for its whole input, so after the probe it would hold the
+    # GPU stage until the probe finished. The probe keeps one output block per input block, so
+    # the classifier receives these blocks, and the probe's own four actors get work too.
+    today = inc.split_for_actors(ray.data.read_parquet(today_path), inc.classify_actors(gpu_fraction))
     prior = ray.data.read_parquet(prior_path)
     new_rows = inc.anti_join_probe(today, prior)
     model_dir = inc.download_model_once(inc.MODEL_ID, f"{storage}/models/mdeberta")
-    classified = inc.classify(new_rows, model_dir, gpu_fraction=float(os.getenv("GPU_FRACTION", "0.5")))
+    classified = inc.classify(new_rows, model_dir, gpu_fraction=gpu_fraction)
     result = inc.write_partitioned(classified, os.getenv("OUTPUT_PATH", f"{storage}/out"), "shard", marker="root")
     print(result)
 
