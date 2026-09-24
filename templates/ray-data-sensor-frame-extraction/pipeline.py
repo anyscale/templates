@@ -2,8 +2,9 @@
 """The template's pipeline: read multi-megabyte sensor frames from Parquet, transform
 them on a GPU actor pool, downsample, write.
 
-This is the OPTIMIZATION CONTROL PANEL for the template. Every knob below is one the
-source engagement measured, each carries its measured effect inline, and the defaults
+This is the OPTIMIZATION CONTROL PANEL for the template. The levers below are the source
+engagement's. Each comment gives the effect the engagement measured, where it measured one,
+and what this template's fleet measured, where it did; the two can disagree. The defaults
 are workload-shaped -- each default's comment says which data property justifies it and
 what different property should flip it.
 
@@ -24,9 +25,10 @@ import ray
 # Levers
 # --------------------------------------------------------------------------------------
 
-# READ CONCURRENCY. Cap it only when a CPU stage DOWNSTREAM of the read is what binds
-# (measured 1.66-1.91x there). On a read-bound pipeline the same cap measured 0.56x --
-# same knob, opposite sign. Establish the binding operator from ds.stats() first.
+# READ CONCURRENCY. Cap it only when a CPU stage DOWNSTREAM of the read is what binds.
+# The source engagement measured 1.66-1.91x there, and 0.56x for the same cap on a
+# read-bound pipeline -- same knob, opposite sign. Not measured on this template's fleet.
+# Establish the binding operator from ds.stats() first.
 READ_CONCURRENCY = int(os.environ.get("READ_CONCURRENCY", "0")) or None
 
 # READ TASK CPU. Why the default is 1.0:
@@ -35,22 +37,28 @@ READ_CONCURRENCY = int(os.environ.get("READ_CONCURRENCY", "0")) or None
 #   So num_cpus < 1.0 does not just make read tasks "cheap" -- it gives each one a
 #   ONE-THREAD DECODER. On thin rows and many small files that is fine and buys
 #   concurrency. On multi-megabyte blob columns, decode is the work.
+# Measured on this template's fleet, Ray 2.57.0: no measurable difference, 16.67-17.00
+# rows/s at 1.0 against 16.24-16.87 at 0.25, ranges overlapping. The default rests on
+# the mechanism, not on a measured win. See the README's results table.
 # Flip to <1.0 only if: rows are thin, files are many, and ds.stats() shows the read
 # stage is running wider than the core count.
 READ_NUM_CPUS = float(os.environ.get("READ_NUM_CPUS", "1.0"))
 
 # DECODE THREADS, scoped to the read operator so it does not resize every actor in the
 # job. Governing equation: threads_per_task x concurrent_tasks ~= cores.
-# Measured worth up to 2.15x on local disk while the read stage is under-parallel, ~1.6x
-# from object storage (Amdahl: the network half of the task is untouched), and a COST
-# past the crossover -- +52% wall clock at 8 threads on a large object-storage read.
+# The source engagement measured up to 2.15x on local disk while the read stage was
+# under-parallel, ~1.6x from object storage (Amdahl: the network half of the task is
+# untouched), and a COST past the crossover -- +52% wall clock at 8 threads on a large
+# object-storage read. On this template's fleet, Ray 2.57.0, 1 to 4 threads gave 1.2% or
+# better and 4 to 8 did not separate at 2 runs per arm. See the README's results table.
 # 0 means "leave it alone", which is the right default until the equation says otherwise.
 READ_OMP_THREADS = int(os.environ.get("READ_OMP_THREADS", "0"))
 
 # GPU ACTOR POOL. Fractional GPU with num_cpus=0 so the pool does not compete with the
 # read stage for cores. The source engagement's champion ran 8 actors x 0.5 GPU and
 # occupied 4 of 8 available GPUs -- the GPU was never the constraint, and packing
-# mattered more than count.
+# mattered more than count. On this template's fleet, one L4 and 2 actors, the GPU stage
+# was closer to the constraint than the read. See the README's binding-operator rows.
 GPU_ACTORS = int(os.environ.get("GPU_ACTORS", "2"))
 GPU_PER_ACTOR = float(os.environ.get("GPU_PER_ACTOR", "0.5"))
 GPU_BATCH_SIZE = int(os.environ.get("GPU_BATCH_SIZE", "8"))
