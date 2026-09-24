@@ -179,7 +179,10 @@ def connect(ray_cfg: ray_config.RayConfig, logger: logging.Logger) -> None:
     logger.notice(  # type: ignore[attr-defined]
         _(
             "connected to Ray",
-            address=kwargs.get("address", "local"),
+            # The GCS it actually joined, not what was asked for: a bare ray.init() that found
+            # the running cluster used to log "local" here, the same as one that started a new
+            # empty instance, which hid exactly that failure.
+            address=ray.get_runtime_context().gcs_address,
             nodes=len([n for n in ray.nodes() if n.get("Alive")]),
             cluster_cpus=int(ray.cluster_resources().get("CPU", 0)),
             cluster_gpus=int(ray.cluster_resources().get("GPU", 0)),
