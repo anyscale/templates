@@ -43,20 +43,44 @@ def count_priced(df, columns=None):
     return int(df[columns].notna().all(axis=1).sum())
 
 
-# Common, long print string, pulled out of notebook
-def get_symbols_stat_print(symbol, df):
+def _stats_label(symbol, priced, total):
     # Report priced-vs-total, not just total. A run that prices 900 of 1843
     # contracts is not the same result as one that prices all 1843, and the
     # summary line is the only place a user would notice the difference.
-    # "Priced" means the IV and every scenario NPV -- see count_priced().
-    priced = count_priced(df)
-    total = len(df)
     failed = total - priced
-    suffix = f" ({failed} FAILED to price -- see warnings above)" if failed else ""
+    suffix = f" ({failed} FAILED to price -- see the per-contract warnings)" if failed else ""
     return (
         f"Stats for {symbol:>6}: {priced:>5} of {total:>5} options priced{suffix}, "
         "calc'd IV for all  shocks in "
     )
+
+
+# Common, long print string, pulled out of notebook
+def get_symbols_stat_print(symbol, df):
+    # "Priced" means the IV and every scenario NPV -- see count_priced().
+    return _stats_label(symbol, count_priced(df), len(df))
+
+
+def pricing_summary(symbol, df, path, seconds):
+    """What a Ray pricing task returns: the CSV path plus its priced/total counts.
+
+    The counts travel back in the return value so the driver can print them.
+    A print() inside a task reaches the notebook only through Ray's worker log
+    forwarding, which can drop lines: on CI runs the AAPL summary never arrived.
+    """
+    return {
+        "symbol": symbol,
+        "path": path,
+        "priced": count_priced(df),
+        "total": len(df),
+        "seconds": seconds,
+    }
+
+
+def print_pricing_summary(summaries):
+    """Print one "N of M options priced" line per pricing_summary(), on the driver."""
+    for s in summaries:
+        print(f"{_stats_label(s['symbol'], s['priced'], s['total'])}{s['seconds']:.6f} sec")
 
 def get_iv(option):
     """
@@ -369,9 +393,13 @@ class FuncTimer:
     def s(self):
         self.start_time = time.perf_counter()
 
-    def e(self, label="Elapsed time"):
+    def elapsed(self):
+        """Seconds since s(), without printing or resetting."""
         if self.start_time is None:
             raise RuntimeError("Timer was not started.")
-        duration = time.perf_counter() - self.start_time
+        return time.perf_counter() - self.start_time
+
+    def e(self, label="Elapsed time"):
+        duration = self.elapsed()
         print(f"{label}{duration:.6f} sec")
         self.start_time = None  # reset for reuse
