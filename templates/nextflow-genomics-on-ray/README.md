@@ -332,7 +332,7 @@ node_ids = sorted({p["node_id"] for p, _ in rows})
 colours = {n: plt.cm.tab10(i % 10) for i, n in enumerate(node_ids)}
 
 fig, ax = plt.subplots(figsize=(12, max(4, len(rows) * 0.12)))
-for y, (p, t) in enumerate(rows):
+for y, (p, _t) in enumerate(rows):
     submitted, finished = float(p["submitted"]) - t0, float(p["finished"]) - t0
     started = float(p["started"]) - t0 if float(p["started"]) else submitted
     ax.barh(y, started - submitted, left=submitted, color="0.85", height=0.8)
@@ -341,12 +341,14 @@ ax.set_yticks(range(len(rows)))
 ax.set_yticklabels([t["name"] for _, t in rows], fontsize=5)
 ax.invert_yaxis()
 ax.set_xlabel("seconds since the first submit")
-ax.set_title(f"{len(rows)} tasks on {len(node_ids)} Ray node(s); grey is queued, colour is the node")
+ax.set_title(f"{len(rows)} tasks on {len(node_ids)} Ray node(s); grey is queued, "
+             "colour is the node")
 plt.tight_layout()
 plt.show()
 
 span = max(float(p["finished"]) for p, _ in rows) - t0
-print(f"{len(rows)} tasks, {len(node_ids)} node(s), {span / 60:.1f} min from first submit to last finish")
+print(f"{len(rows)} tasks, {len(node_ids)} node(s), "
+      f"{span / 60:.1f} min from first submit to last finish")
 if ANNOTATE:
     gpu_nodes = {p["node_id"] for p, t in rows if t["process"].endswith("ANNOTATE_VARIANTS")}
     cpu_nodes = {p["node_id"] for p, t in rows if t["process"].endswith("HAPLOTYPECALLER")}
@@ -433,7 +435,8 @@ else:
     assert len(both) == len(scored) == len(nextflow), (len(both), len(scored), len(nextflow))
     diff = (both["embedding_distance_raydata"] - both["embedding_distance_nextflow"]).abs()
     print(f"{len(scored):,} variants scored both ways; largest difference {diff.max():.2e}")
-    print(scored.nlargest(5, "embedding_distance")[keys + ["embedding_distance"]].to_string(index=False))
+    top = scored.nlargest(5, "embedding_distance")[keys + ["embedding_distance"]]
+    print(top.to_string(index=False))
 ```
 
 ## Step 8: Persist the outputs
