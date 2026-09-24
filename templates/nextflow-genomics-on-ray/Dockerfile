@@ -37,8 +37,18 @@
 #
 # Gradle, the JDK compiler and ~500 MB of dependency cache stay here. The shipped
 # image gets one extracted directory.
+#
+# JDK 21, although the image runs Java 17. The io.nextflow.nextflow-plugin Gradle
+# plugin asks for a Java 21 toolchain, and in gradle:8.14-jdk17 compileGroovy
+# fails with "Cannot find a Java installation ... matching: {languageVersion=21}".
+# It still emits Java 17 bytecode (class-file major version 61, checked on the
+# built RayExecutor.class), which is what the image's openjdk-17 loads.
+#
+# $BUILDPLATFORM, because the output is JVM bytecode and runs anywhere. On an
+# amd64 builder this changes nothing; on an arm64 one it keeps Gradle out of
+# emulation.
 # =============================================================================
-FROM gradle:8.14-jdk17 AS plugin-build
+FROM --platform=$BUILDPLATFORM gradle:8.14-jdk21 AS plugin-build
 
 WORKDIR /src
 COPY nf-ray-plugin/ /src/
