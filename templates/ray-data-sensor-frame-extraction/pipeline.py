@@ -29,7 +29,7 @@ import ray
 # same knob, opposite sign. Establish the binding operator from ds.stats() first.
 READ_CONCURRENCY = int(os.environ.get("READ_CONCURRENCY", "0")) or None
 
-# READ TASK CPU. The trap this template exists to teach.
+# READ TASK CPU. Why the default is 1.0:
 #   Ray sets OMP_NUM_THREADS = max(1, floor(num_cpus)) when it is not already set, and
 #   pyarrow sizes its Arrow CPU thread pool from that ONCE PER WORKER PROCESS.
 #   So num_cpus < 1.0 does not just make read tasks "cheap" -- it gives each one a

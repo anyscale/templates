@@ -48,19 +48,23 @@ RATE_RE = re.compile(r"=\s*([0-9.]+) rows/s")
 # sweep possible at all -- and it is also how the notebook and tests.sh invoke it, so the
 # harness measures the shipped path.
 SWEEPS: dict[str, list[tuple[str, str, dict]]] = {
-    # The headline claim: the Parquet physical type of the blob column.
+    # The Parquet physical type of the blob column. What it measured on this template's
+    # fleet is in the README's results table.
     "layout": [
         ("fixed_binary", "fixed_binary", {}),
         ("list_uint8", "list_uint8", {}),
     ],
-    # The trap: num_cpus < 1.0 on a read task gives it a ONE-THREAD decoder, because Ray sets
-    # OMP_NUM_THREADS = max(1, floor(num_cpus)) and pyarrow sizes its thread pool from that
-    # once per worker process.
+    # Read task CPU. num_cpus < 1.0 gives a read task a ONE-THREAD decoder, because Ray
+    # sets OMP_NUM_THREADS = max(1, floor(num_cpus)) and pyarrow sizes its thread pool from
+    # that once per worker process. On this template's fleet, Ray 2.57.0, this sweep
+    # returned OVERLAP.
     "read-cpus": [
         ("num_cpus=1.0", "fixed_binary", {"READ_NUM_CPUS": "1.0"}),
         ("num_cpus=0.25", "fixed_binary", {"READ_NUM_CPUS": "0.25"}),
     ],
-    # Decoder threads, scoped to the read operator. Past the crossover this is a cost.
+    # Decoder threads, scoped to the read operator. The source engagement measured a cost
+    # past the crossover. On this template's fleet, Ray 2.57.0, 1 to 4 was SEPARABLE by
+    # >= 1.2% and 4 to 8 did not separate at 2 runs per arm.
     "decode-threads": [
         ("omp=1", "fixed_binary", {"READ_OMP_THREADS": "1"}),
         ("omp=4", "fixed_binary", {"READ_OMP_THREADS": "4"}),

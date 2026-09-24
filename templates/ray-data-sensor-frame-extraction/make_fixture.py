@@ -3,9 +3,9 @@
 written in two physical layouts from byte-identical payloads.
 
 Why this exists: the workload this template teaches reads multi-megabyte opaque blobs
-out of Parquet, and the single largest lever on it is the *physical type* of that blob
-column. A template cannot demonstrate that with someone else's dataset, and the
-customer data it was derived from is private. So the template makes its own, and the
+out of Parquet, and the lever this template measures on it is the *physical type* of
+that blob column. A template cannot demonstrate that with someone else's dataset, and
+the customer data it was derived from is private. So the template makes its own, and the
 reader measures the lever on their own hardware.
 
 Defaults are the CI-affordable knob. Raise --frames (and --width/--height) toward the
@@ -26,8 +26,8 @@ import numpy as np
 import pyarrow as pa
 import pyarrow.parquet as pq
 
-# A single-plane 12-bit Bayer frame at this geometry is ~16.7 MB, which is the regime
-# where per-value Parquet bookkeeping dominates. Smaller frames blunt the lesson.
+# A single-plane 12-bit Bayer frame at this geometry is ~16.7 MB, the frame size every
+# fleet figure in the README was measured at. Smaller frames are unmeasured.
 DEFAULT_WIDTH = 3848
 DEFAULT_HEIGHT = 2168
 DEFAULT_BYTES_PER_PIXEL = 2  # 12-bit packed into uint16
