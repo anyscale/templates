@@ -849,7 +849,7 @@
   owner_team: ray-data
   dir: templates/ray-data-multimodel-frame-enrichment
   cluster_env:
-    image_uri: anyscale/ray:2.57.0-py312-cu129
+    image_uri: anyscale/ray:2.58.0-py312-cu129
   compute_config:
     AWS: configs/ray-data-multimodel-frame-enrichment/aws.yaml
     GCP: configs/ray-data-multimodel-frame-enrichment/gce.yaml

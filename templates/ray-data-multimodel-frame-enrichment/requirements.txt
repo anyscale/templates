@@ -1,11 +1,14 @@
-# Resolved by running the base image, 2026-08-17.
+# Resolved by running the base image, 2026-08-17, on anyscale/ray:2.57.0-py312-cu129.
 #
-# TARGET IMAGE: anyscale/ray:2.57.0-py312-cu129, the version anyscale/templates is on. What it
-# ships, measured on a job declaring no requirements at all:
+# TARGET IMAGE: anyscale/ray:2.58.0-py312-cu129, the version anyscale/templates is on. What the
+# 2.57.0 image shipped, measured on a job declaring no requirements at all:
 #
 #   torch  ABSENT      numpy    2.2.6      pandas 2.3.3
 #   torchvision ABSENT pyarrow  23.0.1     ray    2.57.0     Pillow 11.3.0
 #   transformers ABSENT
+#
+# The 2.58.0 freeze (dependencies/images/ray-2.58.0-py312-cu129.freeze.txt) lists the same for
+# every row but ray. That is read from the freeze, not re-measured on a job.
 #
 # So the three below have to be installed. `-cu129` is the CUDA runtime, not PyTorch. And
 # transformers declares `torch>=2.5` under its `torch` extra, not as a core dependency, so
@@ -25,8 +28,9 @@ torchvision==0.24.1
 
 # SAM 3 needs transformers 5.x. `facebook/sam3`'s config.json declares
 # `transformers_version: 5.0.0.dev0`, and `src/transformers/models/sam3/` first appears in the
-# v5.0.0 tag. So 5.0.0 is the floor and 5.15.0 is the pin, the newest stable. It resolves
-# against the image's numpy 2.2.6, since transformers asks only for `numpy>=1.17`.
+# v5.0.0 tag. So 5.0.0 is the floor and 5.15.0 is the pin, the newest stable on 2026-08-17.
+# 5.17.0 is out since and untested here. It resolves against the image's numpy 2.2.6, since
+# transformers asks only for `numpy>=1.17`.
 transformers==5.15.0
 
 # DO NOT PIN numpy OR pyarrow HERE. The image ships numpy 2.2.6 and pyarrow 23.0.1, and a pin
