@@ -849,8 +849,9 @@
   test:
     tests_path: tests/ray-data-incremental-batch-classification/
     command: bash tests.sh
-    # ESTIMATE, NOT MEASURED. 1800 bounds a notebook estimated at 15 minutes on one GPU worker:
-    # a torch download to the driver, the lock's virtualenv on each worker, a 578 MB model
-    # download and two classify passes. Replace it with a measured value once tests.sh has run
-    # on this config. Cluster start and image pull sit outside it.
+    # MEASURED on the AWS config (one g5.2xlarge), 2026-09-24: the rayapp test took 11 min 41 s,
+    # and tests.sh, which this bounds, under 9 minutes of it (workspace RUNNING to cleanup). The
+    # untimed first join is 189.6 s of that, most of it while the autoscaler adds a CPU worker,
+    # which cloud capacity can stretch. 1800 leaves more than 3x headroom. The GCP config has not
+    # been measured. Cluster start and image pull sit outside it.
     timeout_in_sec: 1800
