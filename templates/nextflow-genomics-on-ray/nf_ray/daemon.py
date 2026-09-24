@@ -118,6 +118,11 @@ class Scheduler:
     def __init__(self, config: Config) -> None:
         self.config = config
         self._lock = threading.RLock()
+        # Serialises reaping. Two callers reap: the reaper thread, and every
+        # `status` request (the server is threaded, so several at once). Without
+        # this, two of them could take the same snapshot of live tasks, both see
+        # a ref ready, and both finish it -- two placement rows for one task.
+        self._reap_lock = threading.Lock()
         self._entries: dict[int, Entry] = {}
         self._next_id = 1
         self._stop = threading.Event()
@@ -300,28 +305,41 @@ class Scheduler:
             pending = [e for e in self._entries.values() if e.state == PENDING]
         for entry in pending:
             marker = os.path.join(entry.work_dir, job.PLACEMENT_FILENAME)
+            # The stat is outside the lock (it is NFS); the transition is not.
+            # A task can finish between the snapshot and here, and moving a DONE
+            # entry back to RUNNING would leave it live with no ref to wait on.
             if os.path.exists(marker):
-                entry.state = RUNNING
-                entry.started = time.time()
+                with self._lock:
+                    if entry.state == PENDING:
+                        entry.state = RUNNING
+                        entry.started = time.time()
 
     def reap_once(self) -> None:
-        """Collect finished tasks and record their outcomes."""
+        """Collect finished tasks and record their outcomes.
+
+        Safe to call from several threads at once; see ``_reap_lock``.
+        """
         import ray  # noqa: PLC0415
 
-        with self._lock:
-            live = [e for e in self._entries.values() if e.state not in _TERMINAL]
-        if live:
-            refs = [e.ref for e in live]
-            ready, _ = ray.wait(
-                refs, num_returns=len(refs), timeout=0, fetch_local=False
-            )
-            by_ref = {id(e.ref): e for e in live}
-            for ref in ready:
-                entry = by_ref.get(id(ref))
-                if entry is not None:
-                    self._finish(entry, ref)
+        with self._reap_lock:
+            with self._lock:
+                live = [
+                    e
+                    for e in self._entries.values()
+                    if e.state not in _TERMINAL and e.ref is not None
+                ]
+            if live:
+                refs = [e.ref for e in live]
+                ready, _ = ray.wait(refs, num_returns=len(refs), timeout=0, fetch_local=False)
+                # ray.wait returns the ObjectRef objects it was given, so identity
+                # is enough to map them back.
+                by_ref = {id(e.ref): e for e in live}
+                for ref in ready:
+                    entry = by_ref.get(id(ref))
+                    if entry is not None:
+                        self._finish(entry, ref)
 
-        self._expire()
+            self._expire()
 
     def _finish(self, entry: Entry, ref: object) -> None:
         import ray  # noqa: PLC0415
@@ -331,19 +349,21 @@ class Scheduler:
             result: job.TaskResult = ray.get(ref)
         except BaseException as exn:  # noqa: BLE001 -- Ray raises many types
             code = errors.exit_code_for(exn)
-            entry.state = CANCELLED if code == errors.EXIT_CANCELLED else ERROR
-            entry.exit_code = code
-            entry.detail = errors.describe(exn)
+            with self._lock:
+                entry.state = CANCELLED if code == errors.EXIT_CANCELLED else ERROR
+                entry.exit_code = code
+                entry.detail = errors.describe(exn)
             log.warning("task %s failed in Ray: %s", entry.task_id, entry.detail)
             self._write_exitcode_if_absent(entry.work_dir, code)
             self._log_beside_task(entry.work_dir, entry.detail)
         else:
-            entry.state = DONE
-            entry.exit_code = result.exit_code
-            entry.node_id = result.node_id
-            entry.node_ip = result.node_ip
-            if not entry.started and result.started_epoch:
-                entry.started = result.started_epoch
+            with self._lock:
+                entry.state = DONE
+                entry.exit_code = result.exit_code
+                entry.node_id = result.node_id
+                entry.node_ip = result.node_ip
+                if not entry.started and result.started_epoch:
+                    entry.started = result.started_epoch
             log.info(
                 "task %s exited %s on %s after %.1fs",
                 entry.task_id,
