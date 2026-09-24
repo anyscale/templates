@@ -823,10 +823,11 @@
 # README.ipynb is the source; README.md is its nbconvert render. Never hand-edit the .md;
 # regenerate it, because check-readme compares bytes.
 #
-# Outputs ship cleared. The 9 cells CI runs have executed on a fleet
-# (prodjob_7vlhzuirl3p8wt7jp2tcnyfhuk, SUCCEEDED); the 5 gated cells have not run anywhere,
-# because they need a token nobody can supply on a reader's behalf. Do not paste an output into
-# a cell to fill the gap.
+# Outputs ship cleared. The 9 cells CI runs have executed on a fleet twice: on
+# anyscale/ray:2.57.0-py312-cu129 (prodjob_7vlhzuirl3p8wt7jp2tcnyfhuk, SUCCEEDED), and on
+# 2.58.0-py312-cu129 under `rayapp test` on staging (expwrk_t7443rhiucgkrd6ka9lcxr45de, passed
+# 2026-09-24). The 5 gated cells have not run anywhere, because they need a token nobody can
+# supply on a reader's behalf. Do not paste an output into a cell to fill the gap.
 #
 # NO SHARED TOKEN, BY LICENCE. SAM 3 and DINOv3 are gated on Hugging Face and their terms are
 # accepted per account by whoever runs the template. tests/vla-fine-tuning/tests.sh pulls an
@@ -856,9 +857,14 @@
   test:
     tests_path: tests/ray-data-multimodel-frame-enrichment/
     command: bash tests.sh
-    # MEASURED ONCE: 228 s for `bash tests.sh`, on prodjob_7vlhzuirl3p8wt7jp2tcnyfhuk, one
-    # g6.4xlarge worker in us-west-2, cold SigLIP2 download included. 900 leaves about 4x
-    # headroom for a slower runtime-env build or a cold image cache; one run is not a spread.
-    # This bounds the test only. Cluster start and image pull sit outside it, and were a
-    # further 110 s on that run.
+    # MEASURED ONCE, ON 2.57.0: 228 s for `bash tests.sh`, on
+    # prodjob_7vlhzuirl3p8wt7jp2tcnyfhuk, anyscale/ray:2.57.0-py312-cu129, one g6.4xlarge
+    # worker in us-west-2, cold SigLIP2 download included. 900 leaves about 4x headroom for a
+    # slower runtime-env build or a cold image cache; one run is not a spread. This bounds the
+    # test only. Cluster start and image pull sit outside it, and were a further 110 s on that
+    # run.
+    #
+    # Not re-measured on 2.58.0. The staging `rayapp test` above ran tests.sh under
+    # `timeout 900` and passed: 7m22s from rayapp's first log line to the workspace delete, of
+    # which the wait for RUNNING was 1m48s. rayapp logs no separate time for tests.sh.
     timeout_in_sec: 900

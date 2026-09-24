@@ -32,7 +32,9 @@ Everything above the install cell runs on the bare image, so it runs anywhere, i
 laptop with no GPU. Moving a torch-using cell above the install breaks that.
 
 Measured on `anyscale/ray:2.57.0-py312-cu129`: it ships numpy, pyarrow and ray, and no torch,
-torchvision or transformers. `-cu129` is the CUDA runtime, not PyTorch.
+torchvision or transformers. For `2.58.0-py312-cu129`, which this template runs on, the image's
+package freeze lists the same; that is read from the freeze, not measured on a job. `-cu129` is
+the CUDA runtime, not PyTorch.
 
 
 ```python
