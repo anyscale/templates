@@ -503,7 +503,7 @@ On this fleet it returned `OVERLAP` for the `num_cpus` sweep and `SEPARABLE ... 
 
 Point `--input` at your own Parquet and add an arm to `SWEEPS`.
 
-## The decoder thread-pool trap
+## Read task CPU and decoder threads
 
 Ray sets `OMP_NUM_THREADS = max(1, floor(num_cpus))` when it is not already set, and pyarrow sizes
 its Arrow CPU thread pool from that once per worker process. `num_cpus=0.25` on a read task gives
