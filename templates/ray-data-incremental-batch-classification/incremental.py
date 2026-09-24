@@ -7,6 +7,7 @@ Each function here is one lever from the notebook:
 - ``prior_key_hashes`` +
   ``ProbeFilter``             the alternative: broadcast 16-byte key hashes, filter
 - ``download_model_once``     fetch the model to shared storage one time
+- ``split_for_actors``        enough blocks that every classifier actor has work
 - ``classify``                zero-shot classification with fractional GPUs
 - ``write_partitioned``       partitioned Parquet write with one root ``_SUCCESS``
 - ``enable_hang_detection``   turn on Ray Data's hanging-execution detector
@@ -323,24 +324,57 @@ class ZeroShotClassifier:
         return batch
 
 
+# Blocks per classifier actor, for split_for_actors. Ray Data hands an actor one block per
+# task. In Ray 2.58 each actor holds up to 2 tasks in flight and takes work as soon as it is
+# ready, without waiting for the rest of the pool, so with one block per actor the first actor
+# up can take every block: the first cluster run fed its 10,081 rows to the classifier as one
+# block, and its two-actors-per-GPU pass ran on one actor. Four per actor leaves blocks for the
+# actors that start later, and stays far from the thousands of small blocks that would each
+# write one file per output partition.
+BLOCKS_PER_ACTOR = 4
+
+
+def classify_actors(gpu_fraction: float = 1.0, num_actors: int | None = None) -> int:
+    """The number of classifier actors ``classify`` starts on this cluster.
+
+    ``1 / gpu_fraction`` per GPU, sized to the GPUs present, never above: an
+    actor pool larger than the GPU count leaves the extra actors pending for
+    the whole run. Two CPU actors on a cluster with no GPU.
+    """
+    if num_actors:
+        return num_actors
+    gpus = int(ray.cluster_resources().get("GPU", 0))
+    return max(1, int(gpus / gpu_fraction)) if gpus else 2
+
+
+def split_for_actors(ds, actors: int):
+    """Repartition ``ds`` into ``BLOCKS_PER_ACTOR`` blocks per classifier actor.
+
+    ``repartition(num_blocks)`` waits for all of ``ds`` before it splits. Apply
+    it to materialized rows, or ahead of the stages that should stream, as
+    run_pipeline.py does; between the probe and the classifier it would hold
+    the GPU stage until the probe finished.
+    """
+    return ds.repartition(actors * BLOCKS_PER_ACTOR)
+
+
 def classify(ds, model_dir: str, *, gpu_fraction: float = 1.0, num_actors: int | None = None, batch_size: int = 64):
     """Zero-shot classification, packing ``1 / gpu_fraction`` actors per GPU.
 
-    A base-size classifier leaves most of an A10G or L4 idle with one actor.
-    ``gpu_fraction=0.5`` puts two actors on each GPU. Size the actor count to
-    the GPUs you have, never above: an actor pool larger than the GPU count
-    leaves the extra actors pending for the whole run.
+    ``gpu_fraction=0.5`` puts two actors on each GPU, which pays when one actor
+    leaves the GPU underused. Every actor needs blocks to work on: give ``ds``
+    at least ``BLOCKS_PER_ACTOR`` blocks per actor (``split_for_actors``).
     """
-    gpus = int(ray.cluster_resources().get("GPU", 0))
+    actors = classify_actors(gpu_fraction, num_actors)
     kwargs = dict(
         fn_constructor_kwargs={"model_dir": model_dir},
         batch_format="pandas",
         batch_size=batch_size,
+        concurrency=actors,
     )
-    if gpus:
-        actors = num_actors or max(1, int(gpus / gpu_fraction))
-        return ds.map_batches(ZeroShotClassifier, num_gpus=gpu_fraction, concurrency=actors, **kwargs)
-    return ds.map_batches(ZeroShotClassifier, num_cpus=1, concurrency=num_actors or 2, **kwargs)
+    if ray.cluster_resources().get("GPU", 0):
+        return ds.map_batches(ZeroShotClassifier, num_gpus=gpu_fraction, **kwargs)
+    return ds.map_batches(ZeroShotClassifier, num_cpus=1, **kwargs)
 
 
 def _write_marker(fs: pafs.FileSystem, directory: str) -> None:
