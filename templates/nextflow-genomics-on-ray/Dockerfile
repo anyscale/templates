@@ -126,11 +126,29 @@ RUN pip install --no-cache-dir /tmp/nf-ray && rm -rf /tmp/nf-ray
 # The model the GPU process scores with, baked in. Downloading it per task would
 # have every node in a fan-out pull the same 200 MB from Hugging Face at once, and
 # would make the pipeline need egress it otherwise does not.
+#
+# `*.py` is not optional: the model runs its own modelling code (esm_config.py,
+# modeling_esm.py) via trust_remote_code, and ANNOTATE_VARIANTS sets
+# HF_HUB_OFFLINE=1, so code missing here cannot be fetched later. The revision is
+# pinned for the same reason -- remote code should be code someone read. The
+# second command loads it offline and runs one forward pass, so a transformers
+# upgrade that breaks the model's code fails here rather than on a GPU node.
 ENV HF_HOME=/opt/nf-tools/hf
 ENV NF_RAY_SCORER_MODEL=InstaDeepAI/nucleotide-transformer-v2-50m-multi-species
+ENV NF_RAY_SCORER_REVISION=81b29e5786726d891dbf929404ef20adca5b36f1
 RUN python -c "\
 from huggingface_hub import snapshot_download; \
-snapshot_download('${NF_RAY_SCORER_MODEL}', allow_patterns=['*.json','*.safetensors','*.txt','*.model'])" \
+snapshot_download('${NF_RAY_SCORER_MODEL}', revision='${NF_RAY_SCORER_REVISION}', \
+                  allow_patterns=['*.json', '*.safetensors', '*.txt', '*.py'], \
+                  ignore_patterns=['jax_model/*'])" \
+    && HF_HUB_OFFLINE=1 python -c "\
+import os; \
+from transformers import AutoModelForMaskedLM, AutoTokenizer; \
+name, rev = os.environ['NF_RAY_SCORER_MODEL'], os.environ['NF_RAY_SCORER_REVISION']; \
+tok = AutoTokenizer.from_pretrained(name, revision=rev, trust_remote_code=True); \
+model = AutoModelForMaskedLM.from_pretrained(name, revision=rev, trust_remote_code=True).eval(); \
+out = model(**tok(['ACGTACGTACGTAAAAAA'], return_tensors='pt'), output_hidden_states=True); \
+print('scorer model loads offline; last hidden state', tuple(out.hidden_states[-1].shape))" \
     && du -sh ${HF_HOME}
 
 # --- verification ------------------------------------------------------------

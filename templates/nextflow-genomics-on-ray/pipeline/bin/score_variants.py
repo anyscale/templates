@@ -41,6 +41,14 @@ DEFAULT_MODEL = os.environ.get(
     "NF_RAY_SCORER_MODEL", "InstaDeepAI/nucleotide-transformer-v2-50m-multi-species"
 )
 
+#: The model repo's commit, pinned. The model runs its own modelling code
+#: (``trust_remote_code``), so an unpinned revision would mean running whatever
+#: the repo's owner pushed last. The image downloads exactly this revision, and
+#: with ``HF_HUB_OFFLINE=1`` nothing else is reachable anyway.
+DEFAULT_REVISION = os.environ.get(
+    "NF_RAY_SCORER_REVISION", "81b29e5786726d891dbf929404ef20adca5b36f1"
+)
+
 #: Bases either side of the variant. The model's tokenizer is 6-mer based with a
 #: 2048-token limit, so ~12 kb is the ceiling; 1 kb is comfortably inside it and
 #: keeps the batch small enough that an L4 is not the bottleneck.
@@ -181,15 +189,30 @@ class VariantScorer:
         model_name: str = DEFAULT_MODEL,
         context: int = DEFAULT_CONTEXT,
         device: str | None = None,
+        revision: str = DEFAULT_REVISION,
     ) -> None:
         import torch
-        from transformers import AutoModel, AutoTokenizer
+        from transformers import AutoModelForMaskedLM, AutoTokenizer
 
         self.context = context
         self.fasta = IndexedFasta(reference)
         self.device = device or ("cuda" if torch.cuda.is_available() else "cpu")
-        self.tokenizer = AutoTokenizer.from_pretrained(model_name)
-        self.model = AutoModel.from_pretrained(model_name).to(self.device).eval()
+        # AutoModelForMaskedLM with trust_remote_code, not AutoModel. The v2
+        # nucleotide transformers are a modified ESM (rotary embeddings, a
+        # bias-free SwiGLU) that upstream transformers does not implement; the
+        # repo ships the code, and its config.json maps only the task heads, so
+        # AutoModel has nothing to resolve to. The embedding is taken from the
+        # encoder's last hidden state below; the LM head is loaded and unused.
+        self.tokenizer = AutoTokenizer.from_pretrained(
+            model_name, revision=revision, trust_remote_code=True
+        )
+        self.model = (
+            AutoModelForMaskedLM.from_pretrained(
+                model_name, revision=revision, trust_remote_code=True
+            )
+            .to(self.device)
+            .eval()
+        )
         self._torch = torch
 
     def _windows(self, variant: Variant) -> tuple[str, str]:
@@ -248,8 +271,10 @@ class VariantScorer:
         encoded = self.tokenizer(
             sequences, return_tensors="pt", padding=True, truncation=True
         ).to(self.device)
-        output = self.model(**encoded)
-        hidden = output.last_hidden_state
+        # A masked-LM output carries logits, not last_hidden_state; the encoder's
+        # final layer is the last entry of hidden_states.
+        output = self.model(**encoded, output_hidden_states=True)
+        hidden = output.hidden_states[-1]
         # Mean-pool over real tokens only. Including padding would make the score
         # depend on the longest sequence in the batch, which would make the same
         # variant score differently depending on what it was batched with -- and
@@ -283,11 +308,14 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--reference", required=True)
     parser.add_argument("--output", required=True)
     parser.add_argument("--model", default=DEFAULT_MODEL)
+    parser.add_argument("--revision", default=DEFAULT_REVISION)
     parser.add_argument("--context", type=int, default=DEFAULT_CONTEXT)
     parser.add_argument("--batch-size", type=int, default=32)
     args = parser.parse_args(argv)
 
-    scorer = VariantScorer(args.reference, model_name=args.model, context=args.context)
+    scorer = VariantScorer(
+        args.reference, model_name=args.model, context=args.context, revision=args.revision
+    )
     print(f"score_variants: model={args.model} device={scorer.device}", file=sys.stderr)
 
     written = 0
