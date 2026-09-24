@@ -825,10 +825,11 @@
 #
 #   - the layout costs decode CPU, not I/O. list<uint8> is physical INT32, so a payload byte
 #     occupies 4 bytes; RLE_DICTIONARY removes that before any codec runs, so the layouts land
-#     1.00x apart on disk with dictionary on and 4.00x apart with it off. The flag is
-#     use_dictionary on the list column. Footer total_uncompressed_size, 6 codecs x 3 payloads x
-#     dictionary on/off, pyarrow 23.0.1 as the image ships. Compression is not the mechanism: the
-#     effect is complete with codec `none` and survives os.urandom.
+#     1.00x apart on disk with dictionary on (0.50x, list smaller, on the quantized payload,
+#     whose bytes take 16 values) and 4.00x apart with it off. The flag is use_dictionary on the
+#     list column. Footer total_uncompressed_size, 6 codecs x 3 payloads x dictionary on/off,
+#     pyarrow 23.0.1 as the image ships. Compression is not the mechanism: the effect is complete
+#     with codec `none` and survives os.urandom.
 #   - decode is 10.94x from byte-identical inputs, 4.51x under zstd.
 #   - end to end with the GPU stage, 1.56x to 1.65x on 5 fleet runs.
 #   - the write side is 4.07x to 4.19x on 8 fleet runs, spread 2.9%.
