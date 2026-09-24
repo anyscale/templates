@@ -38,8 +38,8 @@
 #
 # THE VERSION CONSTRAINT IS EXACT. A nested image's Ray and Python must match the cluster's,
 # Python to the patch level, so this is built from the CUDA variant of the same base the
-# cluster image uses: same Ray 2.56.0, same Python 3.12.12, plus a CUDA runtime.
-FROM anyscale/ray:2.56.0-py312-cu128
+# cluster image uses: same Ray 2.58.0, same Python 3.12.13, plus a CUDA runtime.
+FROM anyscale/ray:2.58.0-py312-cu128
 
 # No --extra-index-url here, unlike the CPU-only install: the default wheels are the CUDA
 # ones, which is the entire point of this image. medaka 2.2.2 ships cp312 wheels and declares

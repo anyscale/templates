@@ -110,7 +110,7 @@ flye = "bin/flye"
 [tools.quast]
 version      = "5.2.0"
 kind         = "pypi"
-requirements = ["quast==5.2.0", "setuptools==80.9.0", "matplotlib==3.9.4"]
+requirements = ["quast==5.2.0", "setuptools==80.9.0", "matplotlib==3.10.8"]
 needs        = ["minimap2"]
 # `needs` is load-bearing, not documentation. QUAST's *reference-based* metrics --
 # misassemblies, mismatch and indel rates, genome fraction, NGA50 -- come from aligning contigs
@@ -143,13 +143,13 @@ needs        = ["minimap2"]
 # so `matplotlib` and `setuptools<81` were never fetched at all. Writing the versions down changes
 # nothing about what runs -- it only stops a future base image changing it silently.
 #
-# From the base image itself -- `docker run --rm anyscale/ray:2.56.0-py312 pip show matplotlib
-# setuptools` -- and confirmed against the published inventory
-# (https://docs.anyscale.com/reference/base-images/ray-2560/py312): matplotlib 3.9.4,
-# setuptools 80.9.0. Re-run that on a Ray bump and move these pins with it, rather than
-# picking the newest release -- an earlier draft of this line said 3.11.1 on the theory that
-# it was "what pip resolves today", which would have *upgraded* matplotlib by two minor
-# versions the moment the image was rebuilt.
+# From the base image -- `dependencies/images/ray-2.58.0-py312.freeze.txt` at the repo root, and
+# the published inventory (https://docs.anyscale.com/reference/base-images/ray-2580/py312):
+# matplotlib 3.10.8, setuptools 80.9.0. On 2.56.0 it was 3.9.4, read with
+# `docker run --rm anyscale/ray:2.56.0-py312 pip show matplotlib setuptools`. Re-read the base
+# image on a Ray bump and move these pins with it, rather than picking the newest release -- an
+# earlier draft of this line said 3.11.1 on the theory that it was "what pip resolves today",
+# which would have *upgraded* matplotlib by two minor versions the moment the image was rebuilt.
 #
 # matplotlib is the one to watch. QUAST 5.2.0 is from 2022 and its plotting code predates
 # several matplotlib API removals, so a newer matplotlib can turn `basic_stats/*.pdf` back into

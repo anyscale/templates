@@ -797,8 +797,8 @@
     # bioinformatics toolchain has to be on every node before the first task dispatches, and a
     # job's `requirements:` resolves before working_dir is staged. See the template's Dockerfile.
     byod:
-      docker_image: us-docker.pkg.dev/anyscale-workspace-templates/workspace-templates/wdl-genomics-on-ray:2.56.0
-      ray_version: 2.56.0
+      docker_image: us-docker.pkg.dev/anyscale-workspace-templates/workspace-templates/wdl-genomics-on-ray:2.58.0
+      ray_version: 2.58.0
   compute_config:
     AWS: configs/wdl-genomics-on-ray/aws.yaml
     GCP: configs/wdl-genomics-on-ray/gce.yaml

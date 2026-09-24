@@ -28,8 +28,8 @@ not free-form. The BUILD.yaml validator requires the image basename to equal the
 the tag to equal `byod.ray_version`:
 
 ```bash
-../../.claude/skills/template/scripts/push-custom-image-to-gcp.sh . wdl-genomics-on-ray 2.56.0
-# -> us-docker.pkg.dev/anyscale-workspace-templates/workspace-templates/wdl-genomics-on-ray:2.56.0
+../../.claude/skills/template/scripts/push-custom-image-to-gcp.sh . wdl-genomics-on-ray 2.58.0
+# -> us-docker.pkg.dev/anyscale-workspace-templates/workspace-templates/wdl-genomics-on-ray:2.58.0
 ```
 
 ### Adding a tool
@@ -129,9 +129,9 @@ cluster's base image. `us.gcr.io/broad-dsp-lrma/lr-flye:2.8.3` is not built that
 start. What you build instead is a small image per task class, from the same base this template's
 `Dockerfile` uses, carrying that task's tools from the same `manifest.toml`.
 
-For this template's base, `anyscale/ray:2.56.0-py312`, that target is **Ray 2.56.0 and Python
-3.12.12** ([base-image
-reference](https://docs.anyscale.com/reference/base-images/ray-2560/py312), or read it off any
+For this template's base, `anyscale/ray:2.58.0-py312`, that target is **Ray 2.58.0 and Python
+3.12.13** ([base-image
+reference](https://docs.anyscale.com/reference/base-images/ray-2580/py312), or read it off any
 candidate base with `docker run --rm <image> python -c 'import ray, sys;
 print(ray.__version__, sys.version.split()[0])'`). Note that the image's *Debian* `python3` is
 3.10.12 and is not the interpreter Ray runs on; matching that one instead is a plausible and
@@ -198,9 +198,9 @@ and run with `medaka_rounds` above 0 and `medaka_use_gpu = true`. The WDL needs 
 `gpu_type`, and the backend maps those onto Ray's accelerator resources. The cluster needs a
 GPU node group for the request to be satisfiable, or the task waits rather than failing.
 
-Two things that Containerfile does on purpose. It builds `FROM anyscale/ray:2.56.0-py312-cu128`,
+Two things that Containerfile does on purpose. It builds `FROM anyscale/ray:2.58.0-py312-cu128`,
 the CUDA variant of the *same* base as the cluster image, because a nested image's Ray and
-Python must match the cluster's exactly and that tag is Ray 2.56.0 / Python 3.12.12. And it
+Python must match the cluster's exactly and that tag is Ray 2.58.0 / Python 3.12.13. And it
 pre-downloads the model with `medaka tools download_models`, because medaka otherwise fetches
 it on first use, which on a GPU node in a private subnet is a run that hangs rather than one
 that fails.

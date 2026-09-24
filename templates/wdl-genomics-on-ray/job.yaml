@@ -31,7 +31,7 @@ name: wdl-genomics-on-ray-chr20-trio
 # dispatches, so there is deliberately no `requirements:` block here -- a job's requirements are
 # installed at cluster startup, *before* working_dir is staged, which is exactly the thing that
 # does not work. tools/BUILDING.md has the details.
-image_uri: us-docker.pkg.dev/anyscale-workspace-templates/workspace-templates/wdl-genomics-on-ray:2.56.0
+image_uri: us-docker.pkg.dev/anyscale-workspace-templates/workspace-templates/wdl-genomics-on-ray:2.58.0
 
 working_dir: .
 excludes:

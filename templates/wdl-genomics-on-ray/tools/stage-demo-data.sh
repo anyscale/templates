@@ -52,7 +52,7 @@
 # inside the image:
 #
 #   podman run --rm -v ~/.aws:/home/ray/.aws:ro -v "$PWD":/work -w /work \
-#     us-docker.pkg.dev/anyscale-workspace-templates/workspace-templates/wdl-genomics-on-ray:2.56.0 \
+#     us-docker.pkg.dev/anyscale-workspace-templates/workspace-templates/wdl-genomics-on-ray:2.58.0 \
 #     bash tools/stage-demo-data.sh
 #
 # `--dry-run` derives and verifies everything locally without uploading.

@@ -1,7 +1,7 @@
 # Cluster image for the wdl-genomics-on-ray template.
 #
 # Build and push:
-#   ../../.claude/skills/template/scripts/push-custom-image-to-gcp.sh . wdl-genomics-on-ray 2.56.0
+#   ../../.claude/skills/template/scripts/push-custom-image-to-gcp.sh . wdl-genomics-on-ray 2.58.0
 #
 # Or build your own copy under any name (see the README section "Build your own image"):
 #   anyscale image build -n my-wdl-tools --containerfile Dockerfile
@@ -24,7 +24,7 @@
 # Baking the toolchain in has none of those failure modes: the tools are present at node boot,
 # nothing resolves at run time, and the image is the same on every node by construction.
 # tools/BUILDING.md documents the wheel routes for anyone who wants them anyway.
-FROM anyscale/ray:2.56.0-py312
+FROM anyscale/ray:2.58.0-py312
 
 # Build dependencies for the two `kind = "source"` tools in the manifest. zlib1g-dev is the
 # one that actually bites: without it Flye's make fails, and its setup.py error handler raises
