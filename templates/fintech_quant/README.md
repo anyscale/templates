@@ -35,7 +35,7 @@ import os
 import pandas as pd
 import ray
 
-from util import get_iv, get_npv, get_options_chain, save_csv, get_symbols_stat_print as SYMBOL_STATS_PRINT, FuncTimer as ft
+from util import get_iv, get_npv, get_options_chain, save_csv, get_symbols_stat_print as SYMBOL_STATS_PRINT, pricing_summary, print_pricing_summary, FuncTimer as ft
 
 os.environ["RAY_DEDUP_LOGS"] = "0"
 
@@ -139,6 +139,7 @@ else:
 - Best practice: submit all tasks first, then call `ray.get(futures)` once to preserve parallelism.
 - For uneven symbol workloads, `ray.wait(...)` helps process completed work early and keep workers busy.
 - Operational benefit: unfinished tasks can be rescheduled if a worker fails, reducing rerun risk for long pricing jobs.
+- Report from the driver: a `print()` inside a task reaches the notebook only through Ray's worker log forwarding, which can drop or delay lines. The tasks below return their priced/total counts with the CSV path, and the driver prints the **N of M options priced** lines after `ray.get`.
 
 
 
@@ -148,7 +149,7 @@ def parallel_price_option_chain(
     symbol: str,
     iv_shocks = [0.05, 0.10],    # Shock percents to apply
     price_shocks = [0.05, 0.10], # Shock percents to apply
-) -> str:
+) -> dict:
     """
     Price an options chain for a given symbol with various shocks to implied volatility and underlying price.
     
@@ -157,7 +158,7 @@ def parallel_price_option_chain(
     - iv_shocks : List of shocks to apply to implied volatility.
     - price_shocks List of shocks to apply to the underlying stock price.
     
-    Returns the path to the CSV file containing the results.
+    Returns the CSV path and its priced/total counts (see pricing_summary), for the driver to print.
     
     """
     total_t = ft()
@@ -191,8 +192,9 @@ def parallel_price_option_chain(
     # Save results to CSV
     new_file_path = save_csv(df, symbol)
 
-    total_t.e(SYMBOL_STATS_PRINT(symbol, df))
-    return new_file_path
+    # Return the counts rather than print them here: worker stdout reaches the
+    # notebook only through Ray's log forwarding, which can drop lines.
+    return pricing_summary(symbol, df, new_file_path, total_t.elapsed())
 ```
 
 
@@ -203,6 +205,7 @@ all_symbols_t = ft()
 futures = [parallel_price_option_chain.remote(symbol) for symbol in symbol_list]
 results = ray.get(futures) # ray.wait(...)
 
+print_pricing_summary(results)  # on the driver, from the returned counts
 all_symbols_t.e("Total time for all symbols: ")
 # this will run for ~2-3 minutes. let's look at the Anyscale observability (e.g. metrics) tabs in the meantime
 ```
@@ -248,7 +251,7 @@ def more_parallel_price_option_chain(
     - iv_shocks : List of shocks to apply to implied volatility.
     - price_shocks List of shocks to apply to the underlying stock price.
     
-    Returns the path to the CSV file containing the results.
+    Returns the CSV path and its priced/total counts (see pricing_summary), for the driver to print.
     
     """
     total_t = ft()
@@ -287,8 +290,9 @@ def more_parallel_price_option_chain(
     # Save results to CSV
     new_file_path = save_csv(df, symbol)
 
-    total_t.e(SYMBOL_STATS_PRINT(symbol, df))
-    return new_file_path
+    # Return the counts rather than print them here: worker stdout reaches the
+    # notebook only through Ray's log forwarding, which can drop lines.
+    return pricing_summary(symbol, df, new_file_path, total_t.elapsed())
 ```
 
 
@@ -299,6 +303,7 @@ all_symbols_t = ft()
 futures = [more_parallel_price_option_chain.remote(symbol) for symbol in symbol_list]
 results = ray.get(futures)
 
+print_pricing_summary(results)  # on the driver, from the returned counts
 all_symbols_t.e("Total time for all symbols: ")
 
 # Output recorded from an earlier run, before the summary line began
