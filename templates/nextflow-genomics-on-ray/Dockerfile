@@ -163,6 +163,12 @@ print('scorer model loads offline; last hidden state', tuple(out.hidden_states[-
 # build that gets this far cannot be the one where a stray dependency upgraded
 # Ray or numpy -- which is a failure that otherwise appears as a worker that will
 # not start, on a cluster, twenty minutes later.
+#
+# bash with pipefail, because the default /bin/sh here is dash, where
+# `tool --version | head -1` succeeds whatever the tool does. And `sed -n`, not
+# `head`, to take the first lines: sed reads to the end, so a tool that writes a
+# lot cannot die of SIGPIPE and fail the build for the wrong reason.
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 RUN set -eux; \
     test "$(command -v python)" = /home/ray/anaconda3/bin/python; \
     test "$(command -v samtools)" = /opt/nf-tools/envs/main/bin/samtools; \
@@ -174,13 +180,16 @@ RUN set -eux; \
     java -version; \
     nextflow -version; \
     nf-ray --version; \
-    bwa-mem2 version || true; \
-    samtools --version | head -1; \
-    bcftools --version | head -1; \
-    fastp --version 2>&1 | head -1; \
-    gatk --list 2>&1 | head -3; \
-    rtg version | head -2; \
+    bwa-mem2 version; \
+    samtools --version | sed -n 1p; \
+    bcftools --version | sed -n 1p; \
+    tabix --version | sed -n 1p; \
+    bgzip --version | sed -n 1p; \
+    fastp --version 2>&1 | sed -n 1p; \
+    gatk --version; \
+    rtg version | sed -n 1,2p; \
     multiqc --version; \
+    jq --version; \
     test "$(command -v aws)" = /usr/local/bin/aws; \
     aws --version
 
