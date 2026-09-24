@@ -1,6 +1,7 @@
 
 import logging
 import math
+import re
 import time
 from datetime import datetime
 
@@ -18,15 +19,28 @@ log = logging.getLogger(__name__)
 PRICING_FAILED = float("nan")
 
 
-def count_priced(df, column="implied_volatility"):
-    """How many rows of `column` actually priced.
+def _pricing_columns(df):
+    """The implied_volatility column plus every scenario NPV column (s1_npv, s2_npv, ...)."""
+    return [c for c in df.columns
+            if c == "implied_volatility" or re.fullmatch(r"s\d+_npv", str(c))]
+
+
+def count_priced(df, columns=None):
+    """How many rows priced in every one of `columns`.
 
     get_iv()/get_npv() return NaN when QuantLib can't solve, so a row that
     failed is countable rather than invisible. Use this to report "N of M".
+
+    By default a row counts only if its implied volatility *and* every
+    scenario NPV came back. Checking the IV alone is not enough: get_npv()
+    re-solves an implied vol at the shocked spot, so a contract whose base IV
+    priced can still fail a scenario (see the comment in get_npv()).
     """
-    if column not in df:
+    if columns is None:
+        columns = _pricing_columns(df)
+    if not columns or any(c not in df for c in columns):
         return 0
-    return int(df[column].notna().sum())
+    return int(df[columns].notna().all(axis=1).sum())
 
 
 # Common, long print string, pulled out of notebook
@@ -34,6 +48,7 @@ def get_symbols_stat_print(symbol, df):
     # Report priced-vs-total, not just total. A run that prices 900 of 1843
     # contracts is not the same result as one that prices all 1843, and the
     # summary line is the only place a user would notice the difference.
+    # "Priced" means the IV and every scenario NPV -- see count_priced().
     priced = count_priced(df)
     total = len(df)
     failed = total - priced
@@ -103,8 +118,12 @@ def get_iv(option):
         #
         #   1. A bare `except` also swallows KeyboardInterrupt and SystemExit
         #      (so the job ignores Ctrl-C and shutdown) and hides real bugs --
-        #      a TypeError from a None `last_price`, a KeyError from a renamed
-        #      column -- as if they were market data the model couldn't fit.
+        #      a TypeError from a None `last_price` -- as if they were market
+        #      data the model couldn't fit. None is what get_options_chain()
+        #      stores when yfinance's chain has no `lastPrice` column, so a
+        #      renamed upstream column arrives here as that TypeError, and
+        #      used to price every contract at 0.0. (A KeyError never reached
+        #      this handler: the option[...] lookups are above the `try`.)
         #   2. 0.0 is a legal-looking volatility. A contract that failed to
         #      price became indistinguishable from one that priced at zero, so
         #      the run emitted a full-looking result set partly made of
@@ -188,6 +207,13 @@ def get_npv(option, underlying_price, implied_volatility):
         # and a bare `except: return 0.0` turned an unpriced contract into a
         # zero-valued one -- a number that flows into a scenario NPV total
         # without ever looking wrong. NaN can't be mistaken for a valuation.
+        #
+        # The solve that fails here is usually the impliedVolatility() call
+        # above, not NPV(): it re-solves last_price at the *shocked* spot, and
+        # a quote the model can't reach at that spot -- typically a put whose
+        # intrinsic value there exceeds its quote -- has no root to find. So a
+        # contract whose base IV priced can still fail a scenario, which is
+        # why count_priced() checks every sN_npv column.
         log.warning(
             "NPV failed for %s (%s strike=%s exp=%s spot=%s vol=%s): %s",
             option.get("contractSymbol", "<unknown contract>"),
