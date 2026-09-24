@@ -30,7 +30,19 @@ import tempfile
 import textwrap
 from pathlib import Path
 
-TEMPLATE = Path(__file__).resolve().parents[2] / "templates" / "wdl-genomics-on-ray"
+#: Where README.ipynb is. rayapp, and so CI, flattens templates/<name>/ and tests/<name>/ into
+#: one directory, which puts the notebook beside this file; a repo checkout keeps it two levels
+#: up. Only the repo path was here before, so this script had never passed under rayapp: it
+#: raised FileNotFoundError before the first assembly.
+_HERE = Path(__file__).resolve().parent
+TEMPLATE = next(
+    (
+        d
+        for d in (_HERE, _HERE.parents[1] / "templates" / "wdl-genomics-on-ray")
+        if (d / "README.ipynb").is_file()
+    ),
+    _HERE.parents[1] / "templates" / "wdl-genomics-on-ray",
+)
 SAMPLES = ["HG002", "HG003", "HG004"]
 
 #: Cells to exercise, and what each is. Indices are resolved by content, not position,
