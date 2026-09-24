@@ -570,8 +570,9 @@ def _() -> None:
     path = os.path.join(_TEMPLATE, "pipeline", "main.nf")
     with open(path) as handle:
         text = handle.read()
-    for param in ("annotate", "deepvariant"):
-        assert f"flag(params.{param})" in text, f"main.nf: params.{param} is not coerced"
+    coerced = re.findall(r"flag\(params\.(\w+)\)", text)
+    assert "annotate" in coerced, "main.nf: params.annotate is not coerced"
+    for param in coerced:
         # Read anywhere else, raw, it is a truthiness test on a String.
         raw = re.findall(rf"params\.{param}\b", text)
         assert len(raw) == 1, f"main.nf reads params.{param} raw {len(raw) - 1} more time(s)"

@@ -179,8 +179,12 @@ process COLLECT_BENCHMARK {
  *
  * Every comparison is against *that sample's* truth set: the calls and the
  * truth sets meet on meta.id, one truth set per sample, with `combine(by: 0)`
- * rather than `join` because each sample has several callsets to score (callers
- * x {snp, indel}) and one truth set to score them all against.
+ * rather than `join` because each sample has several callsets to score (one per
+ * variant type) and one truth set to score them all against.
+ *
+ * `caller` is a label, carried into the output directory names and so into
+ * benchmark.tsv. main.nf passes 'gatk'; calls from another caller, mixed into
+ * ch_calls under their own label, would be scored the same way.
  */
 workflow BENCHMARK {
     take:
@@ -193,8 +197,8 @@ workflow BENCHMARK {
     RTG_FORMAT(ch_reference)
     SPLIT_SAMPLE(ch_calls, ch_reference)
 
-    // samples x callers x {snp, indel}. SNPs and indels fail for different
-    // reasons, and a combined F1 would hide which one moved.
+    // samples x {snp, indel}. SNPs and indels fail for different reasons, and a
+    // combined F1 would hide which one moved.
     ch_typed = SPLIT_SAMPLE.out.vcf.combine(channel.of('snp', 'indel'))
     SUBSET_VARIANT_TYPE(ch_typed)
 

@@ -7,10 +7,9 @@
  *   nextflow run pipeline/main.nf -profile ray
  *
  * The pipeline is deliberately ordinary -- GATK Best Practices as nf-core/sarek
- * implements it, rtg vcfeval for scoring, and DeepVariant as an optional second
- * caller (off by default; see PIPELINE.md for why).
- * Nothing in this file, in modules/, or in conf/base.config knows it is running
- * on Ray. That is the claim: `-profile ray` is the diff.
+ * implements it, and rtg vcfeval for scoring. Nothing in this file, in
+ * modules/, or in conf/base.config knows it is running on Ray. That is the
+ * claim: `-profile ray` is the diff.
  *
  * The shape that matters is the scatter. Three samples over N intervals is
  * 3 x N independent calling tasks, converging per interval for joint genotyping
@@ -25,7 +24,6 @@ include { BWAMEM2_INDEX; FASTP; BWAMEM2_MEM; GATK4_MARKDUPLICATES;
           GATK4_BASERECALIBRATOR; GATK4_APPLYBQSR; SAMTOOLS_STATS } from './modules/local/preprocessing.nf'
 include { MAKE_INTERVALS; GATK4_HAPLOTYPECALLER; GATK4_GENOMICSDBIMPORT;
           GATK4_GENOTYPEGVCFS; GATK4_MERGEVCFS; GATK4_VARIANTFILTRATION } from './modules/local/calling_gatk.nf'
-include { DEEPVARIANT } from './modules/local/calling_deepvariant.nf'
 include { BENCHMARK } from './modules/local/benchmark.nf'
 include { SHARD_VCF; ANNOTATE_VARIANTS; COLLECT_SCORES } from './modules/local/annotate.nf'
 include { MULTIQC; COLLECT_PLACEMENT } from './modules/local/reporting.nf'
@@ -85,7 +83,6 @@ workflow {
     def n_shards    = (params.annotate_shards ?: preset.annotate_shards) as Integer
     if( n_intervals < 2 )
         error "--intervals must be >= 2 (got ${n_intervals}); the scatter is the point"
-    def deepvariant = flag(params.deepvariant)
     def annotate    = flag(params.annotate)
 
     log.info """
@@ -93,21 +90,11 @@ workflow {
       scale        ${params.scale}  (${preset.note})
       region       ${region}
       intervals    ${n_intervals}   -> ${n_intervals} x samples calling tasks
-      callers      GATK HaplotypeCaller${deepvariant ? ' + DeepVariant' : ''}
+      caller       GATK HaplotypeCaller
       annotate     ${annotate ? "yes (${n_shards} GPU shards)" : 'no'}
       workDir      ${workflow.workDir}
       outdir       ${params.outdir}
     """.stripIndent()
-
-    // Checked here, on the head node, because every node runs the same image: a
-    // missing DeepVariant is missing everywhere, and finding out at the first
-    // DEEPVARIANT task means finding out after alignment and BQSR.
-    if( deepvariant ) {
-        def dv_prefix = System.getenv('NF_RAY_DEEPVARIANT_PREFIX') ?: '/opt/nf-tools/envs/deepvariant'
-        if( !file("${dv_prefix}/bin/run_deepvariant").exists() )
-            error "--deepvariant needs ${dv_prefix}/bin/run_deepvariant, which this image does not have. " +
-                  "bioconda's deepvariant 1.10.0 ships no binaries; see pipeline/PIPELINE.md."
-    }
 
     if( !params.samplesheet ) error "--samplesheet is required"
     if( !params.reference )   error "--reference is required"
@@ -196,28 +183,16 @@ workflow {
     )
     GATK4_VARIANTFILTRATION(GATK4_MERGEVCFS.out.vcf, ch_reference)
 
-    // -- second caller --------------------------------------------------------
-
-    ch_dv_calls = channel.empty()
-    if( deepvariant ) {
-        DEEPVARIANT(ch_bam, ch_reference, region)
-        ch_dv_calls = DEEPVARIANT.out.vcf.map { meta, vcf, tbi ->
-            tuple(meta, 'deepvariant', vcf, tbi)
-        }
-    }
-
     // -- benchmarking ---------------------------------------------------------
 
     // The joint callset carries every sample, so it is fanned back out per sample
-    // to be scored; DeepVariant already produced one VCF each.
+    // to be scored. 'gatk' labels the callset in benchmark.tsv.
     ch_gatk_calls = ch_bam
         .map { meta, _bam, _bai -> meta }
         .combine(GATK4_VARIANTFILTRATION.out.vcf)
         .map { meta, vcf, tbi -> tuple(meta, 'gatk', vcf, tbi) }
 
-    ch_to_score = ch_gatk_calls.mix(ch_dv_calls)
-
-    BENCHMARK(ch_to_score, ch_reference, ch_truth, region)
+    BENCHMARK(ch_gatk_calls, ch_reference, ch_truth, region)
 
     // -- GPU annotation -------------------------------------------------------
 

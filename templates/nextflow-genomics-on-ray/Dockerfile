@@ -23,13 +23,6 @@
 # Python 3.12 and Ray 2.58.0, everywhere, asserted at build time below. A Ray
 # driver and its workers must agree on both to the patch, and `ext.image` fails
 # outright on a mismatch.
-#
-# DeepVariant is not in this image. bioconda's deepvariant 1.10.0
-# (pyh697b589_0) is a 235 KB noarch package holding three dv_*.py wrappers whose
-# BINARY_DIR is the literal placeholder `$PREFIX/BINARYSUB`: the recipe's steps
-# that install Google's binaries and models are commented out, so there is
-# nothing for the wrappers to run. The pipeline keeps the process behind
-# `--deepvariant`, off by default; see pipeline/PIPELINE.md.
 
 # =============================================================================
 # Stage 1: build the Nextflow executor plugin.
@@ -99,13 +92,13 @@ ENV PATH=/opt/nf-tools/bin:${PATH}
 # inputs (stage-demo-data.sh, lock-envs.sh), and copying all of it meant editing
 # one of those rebuilt the conda envs -- and baked whatever else happened to be
 # sitting in a working tree into the image. `env.*` picks up a lock file too.
-COPY --chown=ray:users tools/build_tools.sh tools/manifest.toml tools/run_deepvariant.sh \
-     tools/env.* /opt/nf-tools/src/tools/
+COPY --chown=ray:users tools/build_tools.sh tools/manifest.toml tools/env.* \
+     /opt/nf-tools/src/tools/
 RUN bash /opt/nf-tools/src/tools/build_tools.sh /opt/nf-tools
 
-# The main environment goes on PATH, *last*. The others deliberately do not; see
-# build_tools.sh. This must be ENV rather than a shell profile, because process
-# scripts run from Ray worker processes that never source one.
+# The main environment goes on PATH, *last*; any other environment stays off it
+# (see build_tools.sh). This must be ENV rather than a shell profile, because
+# process scripts run from Ray worker processes that never source one.
 #
 # Last, not first, because the env carries its own python (conda-forge 3.12.x,
 # which multiqc needs). Put first, it shadowed the image's: `python` became the

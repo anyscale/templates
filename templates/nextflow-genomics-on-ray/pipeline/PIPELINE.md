@@ -23,7 +23,6 @@ page.
 | `GATK4_GENOMICSDBIMPORT`, `GATK4_GENOTYPEGVCFS` | `nf-core/modules/gatk4/*` | unchanged in shape |
 | `GATK4_MERGEVCFS` | `nf-core/modules/gatk4/mergevcfs` | sorted input list — see below |
 | `GATK4_VARIANTFILTRATION` | `nf-core/modules/gatk4/variantfiltration` | hard filters, not VQSR — see below |
-| `DEEPVARIANT` | `nf-core/modules/deepvariant` | off by default, no binaries to run — see below |
 | `RTG_FORMAT`, `RTG_VCFEVAL` | `nf-core/modules/rtgtools/*` | `--evaluation-regions`, split by variant type |
 | `MULTIQC` | `nf-core/modules/multiqc` | unchanged |
 
@@ -64,35 +63,6 @@ numbers here should not be compared to a published genome-wide sarek benchmark.
 sarek passes dbSNP, Mills and 1000G indels to BQSR. This passes one, subset to
 chr20, to keep the staged demo data small. The recalibration is slightly less well
 informed as a result.
-
-### DeepVariant is off by default
-
-The plan had DeepVariant as a second caller, from bioconda, in its own python
-3.10 environment (it pins `python <3.11`, and a Ray driver and its workers must
-agree on the interpreter to the patch). That cannot work with the package as
-published. bioconda's `deepvariant` 1.10.0 (`pyh697b589_0`) is a 235 KB noarch
-package: three `dv_*.py` wrappers and `tf_slim`. The wrappers call
-`$PREFIX/BINARYSUB/make_examples.zip` and a `WGSMODELSUB` checkpoint, literal
-placeholders, because the recipe's `build.sh` has the steps that install
-Google's binaries and models commented out. There is no `run_deepvariant` and no
-model in it. (Read from the package and its bundled recipe, 2026-09-24.)
-
-So `params.deepvariant` defaults to `false`, the image builds no DeepVariant
-environment, and `--deepvariant true` stops at startup with that explanation
-rather than after alignment. The `DEEPVARIANT` process, its benchmark wiring and
-`tools/run_deepvariant.sh` are kept: installing Google's own DeepVariant 1.10.0
-into a 3.10 environment so that `bin/run_deepvariant` exists is the one change
-that turns it on, and the wrapper still keeps that environment off `PATH`.
-
-GPU DeepVariant was considered and rejected: GPU support exists only in Google's
-own `-gpu` Docker image and covers only the `call_variants` stage, so using it
-would mean rebuilding DeepVariant on a Ray-matched base. The sibling WDL template
-lost the equivalent fight with medaka and shipped it disabled; this template's GPU
-work is a separate process instead.
-
-Not scattered by interval, unlike HaplotypeCaller: `run_deepvariant` is a
-three-stage pipeline that shards internally, and an outer scatter would mean
-re-merging partial callsets whose records disagree at shard boundaries.
 
 ### `MergeVcfs` input is sorted
 
@@ -138,7 +108,7 @@ State these wherever the results are shown, not in a footnote.
 - **Scored on an intersection.** chr20 ∩ the GIAB high-confidence BED ∩ the demo
   slice. Outside it the truth set makes no claim.
 - **One chromosome, hard filters, one known-sites resource.** Not comparable to a
-  published genome-wide sarek or DeepVariant benchmark.
+  published genome-wide sarek benchmark.
 - **The annotation score is a proxy.** Embedding distance from a nucleotide
   language model. It correlates with "this changes the sequence in a way the model
   noticed" — it is not a pathogenicity score and is not comparable to SpliceAI or
@@ -149,24 +119,29 @@ State these wherever the results are shown, not in a footnote.
 ```
 samplesheet ──> FASTP ──> BWAMEM2_MEM ──> MARKDUPLICATES ──> BQSR ──> analysis-ready BAM
                                                                           │
-                          ┌───────────────────────────────────────────────┤
-                          │  x N intervals                                │  per sample
-                          v                                               v
-                 HAPLOTYPECALLER (3 x N tasks)                      DEEPVARIANT
-                          │  group by interval                            │
-                          v                                               │
-                 GENOMICSDBIMPORT ──> GENOTYPEGVCFS                       │
-                          │  gather                                       │
-                          v                                               │
-                 MERGEVCFS ──> VARIANTFILTRATION ─────┬───────────────────┤
-                                                      │                   │
-                                     SHARD_VCF        │  split per sample, per type
-                                          │           v                   v
-                                   ANNOTATE_VARIANTS  RTG_VCFEVAL  (samples x callers x types)
-                                     (GPU, x shards)          │
-                                          │                   v
-                                   COLLECT_SCORES      COLLECT_BENCHMARK ──> benchmark.tsv
+                          ┌───────────────────────────────────────────────┘
+                          │  x N intervals
+                          v
+                 HAPLOTYPECALLER (3 x N tasks)
+                          │  group by interval
+                          v
+                 GENOMICSDBIMPORT ──> GENOTYPEGVCFS
+                          │  gather
+                          v
+                 MERGEVCFS ──> VARIANTFILTRATION
+                                      │
+                          ┌───────────┴───────────┐
+                          │                       │  split per sample, per type
+                          v                       v
+                      SHARD_VCF              RTG_VCFEVAL  (samples x types)
+                          │                       │
+                          v                       v
+                  ANNOTATE_VARIANTS        COLLECT_BENCHMARK ──> benchmark.tsv
+                   (GPU, x shards)
+                          │
+                          v
+                   COLLECT_SCORES
 ```
 
 At `standard` scale: 3 samples, 24 intervals → 72 concurrent HaplotypeCaller
-tasks, 24 joint-genotyping tasks, 12 vcfeval comparisons, 8 GPU shards.
+tasks, 24 joint-genotyping tasks, 6 vcfeval comparisons, 8 GPU shards.

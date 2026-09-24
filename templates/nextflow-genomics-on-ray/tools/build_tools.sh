@@ -111,12 +111,6 @@ done
 # work right up until something resolved `python` to the wrong interpreter and a
 # Ray worker refused to start -- a failure that surfaces as a task timeout,
 # several processes into a scatter, with nothing in the log naming it.
-#
-# run_deepvariant.sh goes on PATH so the DEEPVARIANT process can call it by name.
-# No DeepVariant environment is built (see the Dockerfile header for why), so
-# today it only explains that and exits 127; it is the place a real install
-# plugs in.
-install -m 0755 "$HERE/run_deepvariant.sh" "$PREFIX/bin/run_deepvariant.sh"
 
 log "verifying the main env"
 for exe in nextflow bwa-mem2 samtools bcftools fastp gatk rtg multiqc; do

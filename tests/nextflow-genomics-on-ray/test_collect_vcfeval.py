@@ -170,7 +170,7 @@ def _() -> None:
         for name, want in (
             ("HG002.gatk.snp", ("HG002", "gatk", "snp")),
             # A sample id containing a dot is ordinary; caller and type never do.
-            ("HG002.hiseq.deepvariant.indel", ("HG002.hiseq", "deepvariant", "indel")),
+            ("HG002.hiseq.gatk.indel", ("HG002.hiseq", "gatk", "indel")),
         ):
             os.makedirs(os.path.join(tmp, name))
             assert cv.label_from_path(os.path.join(tmp, name)) == want

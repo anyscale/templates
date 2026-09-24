@@ -32,15 +32,12 @@ autoscaler adds a node when nothing fits, and nothing is provisioned per task.
 
 The processes are adapted from [nf-core/modules](https://github.com/nf-core/modules) (MIT);
 [`pipeline/PIPELINE.md`](https://github.com/anyscale/templates/blob/main/templates/nextflow-genomics-on-ray/pipeline/PIPELINE.md) has the per-process table and every
-divergence. Four of them change what a run produces, and matter if you compare against sarek:
+divergence. Three of them change what a run produces, and matter if you compare against sarek:
 
 - **No `container` directives.** There is no container runtime inside a Ray worker to nest into,
   so the tools come from this template's image instead of per-process biocontainers.
 - **Hard filters, not VQSR.** One chromosome is too few variants to train VQSR's model.
 - **One known-sites resource** (dbSNP 138) for BQSR, not three.
-- **DeepVariant is off.** bioconda's `deepvariant` 1.10.0 ships wrapper scripts but not the
-  binaries or models they call, so the second caller is wired but has nothing to run.
-  `PIPELINE.md` says what turns it on.
 
 ## Where this fits
 
@@ -375,12 +372,12 @@ high-confidence BED. They are not comparable to a published genome-wide benchmar
 import pandas as pd
 
 bench = pd.read_csv(RESULTS / "benchmark" / "benchmark.tsv", sep="\t")
-# Every sample x caller x type, or the table is quietly missing a comparison.
-callers = sorted(bench["caller"].unique())
-assert len(bench) == len(SAMPLES) * len(callers) * 2, bench
+# Every sample x type, or the table is quietly missing a comparison.
+assert len(bench) == len(SAMPLES) * 2, bench
 assert set(bench["sample"]) == set(SAMPLES), bench["sample"].unique()
+assert set(bench["caller"]) == {"gatk"}, bench["caller"].unique()
 
-table = bench.pivot_table(index=["sample", "caller"], columns="variant_type",
+table = bench.pivot_table(index="sample", columns="variant_type",
                           values=["precision", "recall", "f1"])
 print(table.round(4).to_string())
 ```
