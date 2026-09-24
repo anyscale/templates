@@ -241,6 +241,18 @@ def count_actors(class_name: str) -> int | None:
         return None
 
 
+def timed_materialize(fn, *args, count_class: str = "HashShuffleAggregator", **kwargs):
+    """Materialize ``fn(*args, **kwargs)``.
+
+    Returns the materialized dataset, the wall-clock seconds, and how many
+    ``count_class`` actors the run started.
+    """
+    before = count_actors(count_class)
+    t0 = time.perf_counter()
+    ds = fn(*args, **kwargs).materialize()
+    return ds, time.perf_counter() - t0, count_actors(count_class) - before
+
+
 def download_model_once(model_id: str, dest: str) -> str:
     """Download the model to shared storage once, from the driver.
 

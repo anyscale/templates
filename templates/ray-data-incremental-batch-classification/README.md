@@ -15,7 +15,7 @@ Each step compares the version most first drafts reach for with the one this tem
 
 The failure modes in this table, and every ratio credited to the source engagement, come from a customer engagement whose data is private, on Ray 2.55.1 in September 2026. None is reproduced here unless a cell below measures it. Treat the ratios as directions: they do not transfer as absolutes. **Provenance**, at the end, says what this notebook has measured and where.
 
-**Runtime:** 11 min 50 s for the CI test, workspace start to teardown, on the included AWS compute config (one g5.2xlarge GPU worker), 2026-09-24.
+**Runtime:** 11 min 50 s for the CI test, workspace start to teardown, on the included AWS compute config (one g5.2xlarge GPU worker), 2026-09-24. That run predates the join warmup, which runs each anti-join once more.
 
 ## Configure
 
@@ -92,31 +92,40 @@ today_df.head()
 
 Both must return exactly the same rows, NULL-key rows included.
 
+**Time them on a warm cluster.** Each path runs once, untimed, before the timed runs. On the included AWS config the first join is what made the autoscaler add a CPU worker, and a new node installs the lock through `runtime_env` before it runs anything; timing that first run charges the node launch to the join, and hands the probe that runs after it a bigger cluster. The warmup line prints both untimed runs and the cluster's CPU count before and after. If the cluster changes size during the timed runs anyway, the cell says so.
+
 
 ```python
-aggregators_before = inc.count_actors("HashShuffleAggregator")
+# Warm up: run each path once, untimed. The first join can make an autoscaling cluster add
+# a CPU worker, and a new node installs the lock through runtime_env before it runs
+# anything. Timing that run charges the node launch to the join.
+cpus_cold = ray.cluster_resources().get("CPU", 0)
+_, warmup_join_s, warmup_join_aggregators = inc.timed_materialize(inc.anti_join_hash, today, prior, num_partitions=JOIN_PARTITIONS)
+_, warmup_probe_s, warmup_probe_aggregators = inc.timed_materialize(inc.anti_join_probe, today, prior)
+cpus_warm = ray.cluster_resources().get("CPU", 0)
+print(f"warmup, untimed: join {warmup_join_s:.1f}s, probe {warmup_probe_s:.1f}s, cluster CPUs {cpus_cold:.0f} -> {cpus_warm:.0f}")
 
-t0 = time.perf_counter()
-joined = inc.anti_join_hash(today, prior, num_partitions=JOIN_PARTITIONS).materialize()
-t_join = time.perf_counter() - t0
-aggregators_after_join = inc.count_actors("HashShuffleAggregator")
-
-t0 = time.perf_counter()
-new_rows = inc.anti_join_probe(today, prior).materialize()
-t_probe = time.perf_counter() - t0
-aggregators_after_probe = inc.count_actors("HashShuffleAggregator")
+# The comparison: the same two paths again, on the warmed cluster.
+joined, t_join, join_aggregators = inc.timed_materialize(inc.anti_join_hash, today, prior, num_partitions=JOIN_PARTITIONS)
+new_rows, t_probe, probe_aggregators = inc.timed_materialize(inc.anti_join_probe, today, prior)
+cpus_after = ray.cluster_resources().get("CPU", 0)
 
 join_keys, probe_keys = inc.key_set(joined), inc.key_set(new_rows)
-print(f"hash left_anti : {joined.count():>8} rows  {t_join:6.1f}s  aggregator actors started: {aggregators_after_join - aggregators_before}")
-print(f"broadcast probe: {new_rows.count():>8} rows  {t_probe:6.1f}s  aggregator actors started: {aggregators_after_probe - aggregators_after_join}")
+print(f"hash left_anti : {joined.count():>8} rows  {t_join:6.1f}s  aggregator actors started: {join_aggregators}")
+print(f"broadcast probe: {new_rows.count():>8} rows  {t_probe:6.1f}s  aggregator actors started: {probe_aggregators}")
 print(f"NULL-key rows kept: join={sum(None in k for k in join_keys)} probe={sum(None in k for k in probe_keys)} expected={null_key_rows}")
+if cpus_after != cpus_warm:
+    print(f"NOT A FAIR COMPARISON: the cluster went from {cpus_warm:.0f} to {cpus_after:.0f} CPUs during the timed runs")
 
 assert join_keys == probe_keys, "the probe and the join disagree"
 assert sum(None in k for k in probe_keys) == null_key_rows, "a NULL-key row was dropped"
-assert aggregators_after_probe == aggregators_after_join, "the probe started shuffle aggregators"
+assert join_aggregators > 0 and warmup_join_aggregators > 0, "the join started no shuffle aggregators"
+assert probe_aggregators == warmup_probe_aggregators == 0, "the probe started shuffle aggregators"
 ```
 
-On a 14-CPU macOS laptop with Ray 2.58.0 at the default 20,000 rows, on 2026-09-24, the join started 14 aggregator actors and took 5.8 s; the probe started none and took 1.9 s. Both returned the same 10,081 rows and kept all 371 NULL-key rows. At this size the timings are noise-sensitive. The structural difference is the one that grows: the join's aggregator count scales with `num_partitions` and each aggregator reserves CPU, while the probe adds one filter to a stream that was already running.
+On a 14-CPU macOS laptop with Ray 2.58.0 at the default 20,000 rows, on 2026-09-24, after the warmup: the join started 14 aggregator actors and took 3.8 s; the probe started none and took 2.6 s. Both returned the same 10,081 rows and kept all 371 NULL-key rows. The untimed warmup runs took 4.4 s and 1.9 s, and with no autoscaler the laptop stayed at 14 CPUs. An earlier version of this cell, with no warmup and one run of each, measured 5.8 s against 1.9 s on the same laptop. At this size the timings are noise-sensitive: the probe's timed run was slower than its warmup. The structural difference is the one that grows: the join's aggregator count scales with `num_partitions` and each aggregator reserves CPU, while the probe adds one filter to a stream that was already running.
+
+On the included AWS config, on 2026-09-24, the version without the warmup printed 187.0 s for the join, with 24 aggregators, and 4.0 s for the probe, with none. Those two numbers are not a comparison. The cluster started with 8 CPUs, all on the GPU worker, because the head has `CPU: 0`. During the join Ray Data reported 24.0 GiB of memory active and requested against the cluster's 18.9 GiB, the autoscaler launched an m5.2xlarge CPU worker, and the cluster reached 16 CPUs about a minute into the join. The join finished almost two minutes after that, most likely while the new node installed the lock through `runtime_env`, and the probe then ran on the larger, warm cluster. The warmup takes that cost out of the comparison. The warm numbers on this config have not been measured yet.
 
 ## Download the model once
 
@@ -217,9 +226,9 @@ Next steps: point `TODAY_PATH`, `PRIOR_PATH` and `OUTPUT_PATH` at your own data,
 
 This template comes from a customer engagement whose data is private. The pipeline shape and the levers are the engagement's. The data is synthetic and the model is public: [`MoritzLaurer/mDeBERTa-v3-base-xnli-multilingual-nli-2mil7`](https://huggingface.co/MoritzLaurer/mDeBERTa-v3-base-xnli-multilingual-nli-2mil7), MIT, ungated, checked on 2026-09-24.
 
-**Measured on a 14-CPU macOS laptop, Ray 2.58.0, torch 2.13.0 on CPU, transformers 5.17.0, 2026-09-24.** This notebook end to end through papermill, 23 of 23 cells, 3 min 17 s, with two substitutions: the lock install was skipped and `ray.init` carried no `pip`, because the lock holds Linux CUDA wheels. `CLASSIFY_ROWS=2000` capped the classifier. That run gave the anti-join numbers above, 200 per-partition markers against 1 root marker, the label counts after the classify cell, and the hypothesis-template count. Its classify cell also printed 30 and 33 rows/s, 1.11x: that is **not** a GPU packing ratio. On Apple Silicon Ray reports one GPU that torch cannot use, so both passes ran on CPU, in float32, and the input was one block, so one actor had work in each pass.
+**Measured on a 14-CPU macOS laptop, Ray 2.58.0, torch 2.13.0 on CPU, transformers 5.17.0, 2026-09-24.** This notebook end to end through papermill, twice, 23 of 23 cells each time, with two substitutions: the lock install was skipped and `ray.init` carried no `pip`, because the lock holds Linux CUDA wheels. `CLASSIFY_ROWS=2000` capped the classifier. The first run, 3 min 17 s, before the join warmup, gave the unwarmed 5.8 s and 1.9 s, 200 per-partition markers against 1 root marker, the label counts after the classify cell, and the hypothesis-template count. The second, 2 min 58 s, gave the warm anti-join numbers. Their classify cells printed 30 and 33 rows/s (1.11x), then 30 and 34 (1.13x): **not** GPU packing ratios. On Apple Silicon Ray reports one GPU that torch cannot use, so both passes ran on CPU, in float32, and the input was one block, so one actor had work in each pass.
 
-**Measured on the included AWS compute config, 2026-09-24.** One CI run: head m5.2xlarge, one g5.2xlarge (A10G) GPU worker, Ray 2.58.0; 23 of 23 cells; 11 min 50 s workspace start to teardown. It showed the lock reaching the workers through `runtime_env`, the actors loading the model from shared storage, and the classifier running on the GPU in bfloat16. Its classify cell printed 260 and 287 rows/s over 10,081 rows, 1.10x, with one actor working in both passes, as the classify section explains.
+**Measured on the included AWS compute config, 2026-09-24.** One CI run: head m5.2xlarge, one g5.2xlarge (A10G) GPU worker, Ray 2.58.0; 23 of 23 cells; 11 min 50 s workspace start to teardown. It showed the lock reaching the workers through `runtime_env`, the actors loading the model from shared storage, and the classifier running on the GPU in bfloat16. Its classify cell printed 260 and 287 rows/s over 10,081 rows, 1.10x, with one actor working in both passes, as the classify section explains. Its anti-join timings predate the warmup; the join section says why they are not a comparison.
 
 **From the source engagement, on a different cluster and a different dataset.** Not reproduced here: the 1.73x (two actors per GPU) and 2.35x (four) packing ratios on A10G; HTTP 429 at a few hundred simultaneous model downloads; the hash join as the stage that stalled at production scale; tens of minutes of per-partition markers on object storage.
 
