@@ -65,9 +65,11 @@ off.
 
 The flag is `use_dictionary` on the list column. Off, the layout is worth up to 4x at rest, and
 people do turn it off for high-cardinality columns. On, it is worth nothing at rest. The encoded gap
-was 1.00x in every dictionary-on cell and 4.00x in every dictionary-off cell, across `none`,
-`snappy`, `gzip`, `brotli`, `lz4` and `zstd`, and across all three payloads including `os.urandom`.
-Row-group size at 1, 4 and 16 rows did not change it.
+was 4.00x in every dictionary-off cell, across `none`, `snappy`, `gzip`, `brotli`, `lz4` and `zstd`
+and across all three payloads including `os.urandom`. With the dictionary on it was 1.00x for the
+gradient and `os.urandom` payloads and 0.50x for the quantized one, list smaller: its bytes take 16
+distinct values, so each index packs into 4 bits. Row-group size at 1, 4 and 16 rows did not
+change it.
 
 Compression is not the mechanism. The effect is complete with codec `none` and survives an
 incompressible payload. With the dictionary off, zstd compresses the 4x-larger `list<uint8>` to
