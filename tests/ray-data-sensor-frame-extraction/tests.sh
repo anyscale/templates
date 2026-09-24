@@ -9,8 +9,9 @@
 # its own fleet refuted the magnitude and the binding stage, and the notebook says so up front.
 # What survived measurement is:
 #
-#   1. the WRITE side wins, ~4.1x, replicated (4.08x / 4.13x / 4.19x, within 3%). This is the
-#      headline, and the fixture cell asserts its DIRECTION.
+#   1. the WRITE side wins, ~4.1x, replicated across fleet runs; the range and run count are in
+#      the README's results table. This is the headline, and the fixture cell asserts its
+#      DIRECTION.
 #   2. the READ side wins END TO END, ~1.6x. The A/B cell asserts that direction too. Note the
 #      channel: Arrow's DECODE of the blob column differs by ~11x from byte-identical inputs, and
 #      what shrinks it to 1.6x here is Amdahl -- this pipeline has a GPU stage. The on-disk gap is

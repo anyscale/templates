@@ -386,9 +386,9 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--warmup", type=int, default=1,
                     help="untimed runs per arm before timing starts. Default 1 and you want it: "
                          "the FIRST run of a sweep also pays for Ray building the runtime_env "
-                         "virtualenv from python_depset.lock on the worker, measured at ~95s "
-                         "against ~8s for a warm run. Discarding it is declared here, up front, "
-                         "and not chosen after seeing which arm it landed in.")
+                         "virtualenv from python_depset.lock on the worker, measured at 104.4s "
+                         "against 8.3s for the next run on a g6.4xlarge. Discarding it is declared "
+                         "here, up front, and not chosen after seeing which arm it landed in.")
     ap.add_argument("--out", default=None, help="write the per-run records here as JSON")
     args = ap.parse_args(argv)
 
