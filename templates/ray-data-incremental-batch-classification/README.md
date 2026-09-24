@@ -116,7 +116,7 @@ assert sum(None in k for k in probe_keys) == null_key_rows, "a NULL-key row was 
 assert aggregators_after_probe == aggregators_after_join, "the probe started shuffle aggregators"
 ```
 
-On a 4-CPU macOS laptop with Ray 2.58.0 at the default 20,000 rows, on 2026-09-23, the join started 14 aggregator actors and took 7.2 s; the probe started none and took 2.5 s. At this size the timings are noise-sensitive. The structural difference is the one that grows: the join's aggregator count scales with `num_partitions` and each aggregator reserves CPU, while the probe adds one filter to a stream that was already running.
+On a 14-CPU macOS laptop with Ray 2.58.0 at the default 20,000 rows, on 2026-09-24, the join started 14 aggregator actors and took 5.8 s; the probe started none and took 1.9 s. Both returned the same 10,081 rows and kept all 371 NULL-key rows. At this size the timings are noise-sensitive. The structural difference is the one that grows: the join's aggregator count scales with `num_partitions` and each aggregator reserves CPU, while the probe adds one filter to a stream that was already running.
 
 ## Download the model once
 
@@ -134,7 +134,7 @@ sorted(os.listdir(model_dir))
 
 Each actor loads the model once and classifies batches of text against three labels. Two details matter:
 
-- **Pass `hypothesis_template` explicitly.** Without it the pipeline wraps each label in `"This example is {}."`, which in the source engagement changed the winning label on a noticeable share of rows. Not measured here.
+- **Pass `hypothesis_template` explicitly.** Without it the pipeline wraps each label in `"This example is {}."`, which changed the winning label on 681 of 2,000 of this notebook's synthetic rows (34.1%), measured on a laptop CPU in float32 on 2026-09-24.
 - **Load in bfloat16 on GPU, not float16.** The [model card](https://huggingface.co/MoritzLaurer/mDeBERTa-v3-base-xnli-multilingual-nli-2mil7) says mDeBERTa does not support FP16. This notebook did not try float16.
 
 The comparison runs the same rows with one actor per GPU and then with two (`gpu_fraction=0.5`). The actor count is sized to the GPUs in the cluster, never above: a pool larger than the GPU count leaves the extra actors pending for the whole run. On a cluster with no GPU the cell runs once on CPU actors.
@@ -158,7 +158,9 @@ if len(rates) == 2:
 classified.to_pandas()[["company", "lang", "text", "label", "score"]].head()
 ```
 
-The ratio is printed, not asserted. Both timings include actor start-up, which is a large share of a short run, so at the default scale the gain looks smaller than it is. Raise `NUM_ROWS` to see it grow.
+The ratio is printed, not asserted. Both timings include actor start-up, which is a large share of a short run. No GPU ratio has been measured by this notebook yet; whether a longer run shows a larger one is unmeasured.
+
+The labels are not this template's lesson, but read them before you trust them. Measured on a laptop CPU in float32 over 2,000 rows on 2026-09-24: all 656 positive sentences came out `positive`, 564 of 701 negative ones `negative` and the other 137 `neutral`, and 642 of 643 neutral ones `negative`. The model never picked `neutral` for a neutral sentence. Choose the labels and the hypothesis template against your own data.
 
 ## Write partitioned output with one completion marker
 
@@ -200,10 +202,10 @@ print(open("job.yaml").read())
 ## Summary
 
 - The broadcast probe returned the same rows as the hash `left_anti` join, NULL-key rows included, without starting any shuffle aggregators.
-- The model downloaded once, and every actor loaded it from shared storage.
-- Packing two actors per GPU raised throughput on the same hardware.
+- The model downloads once, from the driver, and every actor loads that copy.
+- The classify cell prints what two actors per GPU buy on your GPU. This template has not yet measured it on one.
 - One root `_SUCCESS` replaced one marker per partition.
-- The job runs under a timeout, with the hanging-execution detector on and a one-shot driver stack dump armed.
+- `job.yaml` bounds the job with `timeout_s`; the notebook runs with the hanging-execution detector on and a one-shot driver stack dump armed.
 
 Next steps: point `TODAY_PATH`, `PRIOR_PATH` and `OUTPUT_PATH` at your own data, set `timeout_s` from your own run times, and bake the model into your image before scaling the actor pool.
 
@@ -211,8 +213,8 @@ Next steps: point `TODAY_PATH`, `PRIOR_PATH` and `OUTPUT_PATH` at your own data,
 
 This template comes from a customer engagement whose data is private. The pipeline shape and the levers are the engagement's. The data is synthetic and the model is public: [`MoritzLaurer/mDeBERTa-v3-base-xnli-multilingual-nli-2mil7`](https://huggingface.co/MoritzLaurer/mDeBERTa-v3-base-xnli-multilingual-nli-2mil7), MIT, ungated, checked on 2026-09-24.
 
-**Measured on a 4-CPU macOS laptop, Ray 2.58.0.** On 2026-09-23, every cell but the model download and the classify cell, with the classifier stubbed out: the numbers in the text after the anti-join cell. On 2026-09-24, the anti-join logic again at 5,000 and 20,000 rows, the same rows from both paths and every NULL-key row kept, and the classifier on its own on CPU with torch 2.13.0 and transformers 5.17.0: 30 rows labelled, no NaN scores.
+**Measured on a 14-CPU macOS laptop, Ray 2.58.0, torch 2.13.0 on CPU, transformers 5.17.0, 2026-09-24.** This notebook end to end through papermill, 23 of 23 cells, 3 min 17 s, with two substitutions: the lock install was skipped and `ray.init` carried no `pip`, because the lock holds Linux CUDA wheels. `CLASSIFY_ROWS=2000` capped the classifier. That run gave the anti-join numbers above, 200 per-partition markers against 1 root marker, the label counts after the classify cell, and the hypothesis-template count. Its classify cell also printed 30 and 33 rows/s, 1.11x: that is **not** a GPU packing ratio. On Apple Silicon Ray reports one GPU that torch cannot use, so both passes ran on CPU, in float32, with one CPU actor against two.
 
-**From the source engagement, on a different cluster and a different dataset.** Not reproduced here: the 1.73x and 2.35x packing ratios on A10G; HTTP 429 at a few hundred simultaneous model downloads; the hash join as the stage that stalled at production scale; tens of minutes of per-partition markers on object storage; the hypothesis template changing labels.
+**From the source engagement, on a different cluster and a different dataset.** Not reproduced here: the 1.73x and 2.35x packing ratios on A10G; HTTP 429 at a few hundred simultaneous model downloads; the hash join as the stage that stalled at production scale; tens of minutes of per-partition markers on object storage.
 
-**Unmeasured.** Whether the probe survives losing a worker: a single-node join starts no aggregators to kill, so this is untested here and was untested in the source engagement. `run_pipeline.py` and `job.yaml` have not been submitted.
+**Unmeasured.** Everything on a cluster: no cell has run on the included compute config, so the GPU packing ratio, bfloat16 on a GPU, the lock arriving on a worker through `runtime_env`, the model on shared storage and the runtime estimate above are all untested. Whether the probe survives losing a worker: a single-node join starts no aggregators to kill, so this is untested here and was untested in the source engagement. `run_pipeline.py` and `job.yaml` have not been submitted.
