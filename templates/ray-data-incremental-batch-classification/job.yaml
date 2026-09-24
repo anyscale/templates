@@ -1,9 +1,16 @@
 # Run the pipeline as an Anyscale job:
 #   anyscale job submit --config-file job.yaml
+#
+# Deps come from the lock only: the entrypoint's `uv pip install --system` covers the driver,
+# and run_pipeline.py's ray.init(runtime_env={"pip": ...}) covers the workers. Don't add a
+# `requirements:` key. It sets the job runtime_env's `pip`, and Ray 2.58.0 refuses to merge it
+# with the script's: ray.init raises "Failed to merge the Job's runtime env"
+# (ray/_private/worker.py).
 name: incremental-batch-classification
-entrypoint: python run_pipeline.py
+entrypoint: >-
+  uv pip install -r python_depset.lock --system --no-deps --no-cache-dir --index-strategy unsafe-best-match
+  && python run_pipeline.py
 image_uri: anyscale/ray:2.58.0-py312-cu129
-requirements: requirements.txt
 working_dir: .
 # timeout_s is the only bound a job has. A Ray Data job that stops making
 # progress raises nothing: the no-progress guard turns itself off when the plan

@@ -14,7 +14,10 @@ import incremental as inc
 
 
 def main() -> None:
-    ray.init(runtime_env={"py_modules": [inc]})
+    # The entrypoint in job.yaml installs the lock on the driver; this hands the same file to
+    # every worker. A driver-side install never reaches them.
+    lock = os.path.join(os.path.dirname(os.path.abspath(__file__)), "python_depset.lock")
+    ray.init(runtime_env={"pip": lock, "py_modules": [inc]})
     inc.enable_hang_detection()
     # One stack dump of every driver thread if the job is still running at 50
     # minutes; with job.yaml's 60-minute timeout that leaves a record of where
