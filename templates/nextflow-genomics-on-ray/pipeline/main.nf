@@ -204,7 +204,8 @@ workflow {
     SUBSET_VARIANT_TYPE(ch_typed)
 
     RTG_VCFEVAL(SUBSET_VARIANT_TYPE.out.vcf, RTG_FORMAT.out.sdf, ch_truth, region)
-    COLLECT_BENCHMARK(RTG_VCFEVAL.out.summary.collect())
+    // The vcfeval directories, not their summary.txt files: see COLLECT_BENCHMARK.
+    COLLECT_BENCHMARK(RTG_VCFEVAL.out.dir.collect())
 
     // -- GPU annotation -------------------------------------------------------
 

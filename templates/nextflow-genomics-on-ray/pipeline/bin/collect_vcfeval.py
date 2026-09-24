@@ -6,13 +6,21 @@ about what was compared -- the sample, the caller and the variant type live only
 in the directory name. This collects both halves into ``benchmark.tsv``, which is
 the single artifact the notebook reads and the one a reader can diff between runs.
 
+    collect_vcfeval.py --output benchmark.tsv HG002.gatk.snp HG002.gatk.indel ...
+
+Give it the vcfeval output *directories*, as COLLECT_BENCHMARK stages them. A
+staged directory keeps the name RTG_VCFEVAL gave it, which is where the labels
+are. A staged ``summary.txt`` does not help: its parent is a Nextflow hash
+directory, and twelve of them in one task are an input file name collision.
+
 **On the parsing.** The format below was read off the tool's actual output, and
-the tests for it use a fixture captured from a real run rather than one written to
-match this code. That distinction is not pedantry: the sibling WDL template
-shipped a readout bug for months because its fixture encoded the same wrong
-assumption the code did, so the test could only ever agree with itself. If you
-change this parser, re-capture the fixture from a real `rtg vcfeval` -- do not
-edit the fixture to match.
+the tests for it use summaries captured from real ``rtg vcfeval`` runs (see
+tests/nextflow-genomics-on-ray/test_collect_vcfeval.py for which run) rather than
+text written to match this code. That distinction is not pedantry: the sibling
+WDL template shipped a readout bug for months because its fixture encoded the
+same wrong assumption the code did, so the test could only ever agree with
+itself. If you change this parser, re-capture the fixtures from a real run -- do
+not edit them to match.
 
 vcfeval emits two rows: one at the best-F-measure score threshold, and one labelled
 ``None`` for "no threshold applied". The ``None`` row is the one to report, because
@@ -118,19 +126,34 @@ def parse_summary(path: str) -> dict[str, str]:
     return dict(zip(EXPECTED_COLUMNS, rows[-1], strict=True))
 
 
+def resolve(path: str) -> tuple[str, str]:
+    """``(summary.txt path, directory whose name carries the labels)``.
+
+    Accepts a vcfeval output directory, which is what COLLECT_BENCHMARK passes,
+    or a ``summary.txt`` inside one. ``abspath``, never ``realpath``: a staged
+    input is a symlink named ``HG002.gatk.snp`` pointing into a hash directory,
+    and resolving it would throw the name away.
+    """
+    path = os.path.abspath(path)
+    if os.path.isdir(path):
+        return os.path.join(path, "summary.txt"), os.path.basename(path)
+    return path, os.path.basename(os.path.dirname(path))
+
+
 def label_from_path(path: str) -> tuple[str, str, str]:
-    """Recover (sample, caller, variant_type) from the containing directory.
+    """Recover (sample, caller, variant_type) from the vcfeval output directory.
 
     RTG_VCFEVAL names its output directory ``<sample>.<caller>.<vtype>``. Parsed
     from the right, because a sample id may itself contain a dot (HG002.hiseq is a
     perfectly ordinary thing to call a sample) while the caller and type never do.
     """
-    directory = os.path.basename(os.path.dirname(os.path.abspath(path)))
+    _summary, directory = resolve(path)
     parts = directory.rsplit(".", 2)
     if len(parts) != 3:
         raise SummaryFormatError(
             f"cannot read sample/caller/type from directory {directory!r} "
-            f"(expected <sample>.<caller>.<vtype>)"
+            f"(expected <sample>.<caller>.<vtype>). Pass the vcfeval output "
+            "directories themselves: a staged summary.txt's parent is a hash directory."
         )
     return parts[0], parts[1], parts[2]
 
@@ -138,13 +161,15 @@ def label_from_path(path: str) -> tuple[str, str, str]:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     parser.add_argument("--output", required=True)
-    parser.add_argument("summaries", nargs="+")
+    parser.add_argument(
+        "eval_dirs", nargs="+", help="vcfeval output directories (or summary.txt inside them)"
+    )
     args = parser.parse_args(argv)
 
     rows = []
-    for path in args.summaries:
+    for path in args.eval_dirs:
         sample, caller, vtype = label_from_path(path)
-        parsed = parse_summary(path)
+        parsed = parse_summary(resolve(path)[0])
         rows.append(
             {
                 "sample": sample,

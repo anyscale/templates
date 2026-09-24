@@ -137,7 +137,7 @@ process COLLECT_BENCHMARK {
     publishDir "${params.outdir}/benchmark", mode: params.publish_mode
 
     input:
-    path summaries
+    path eval_dirs
 
     output:
     path "benchmark.tsv", emit: table
@@ -146,13 +146,15 @@ process COLLECT_BENCHMARK {
     // One tidy table, so the notebook does not have to walk a directory tree and
     // so `benchmark.tsv` is the single artifact a reader can diff between runs.
     //
-    // The filename carries sample/caller/type because vcfeval's summary.txt does
-    // not: it reports the numbers and nothing about what produced them.
+    // The *directories*, not their summary.txt files. vcfeval's summary.txt says
+    // nothing about what was compared -- sample, caller and type live only in the
+    // directory name RTG_VCFEVAL chose -- and collecting the files instead staged
+    // twelve inputs all named summary.txt into one task, which Nextflow rejects as
+    // an input file name collision. A staged directory keeps its name; a staged
+    // file's parent is a hash directory.
     //
-    // Called bare: Nextflow puts <projectDir>/bin on PATH for every task, which
-    // is also what makes the same file importable by the notebook's Ray Data
-    // step without a second copy.
+    // Called bare: Nextflow puts <projectDir>/bin on PATH for every task.
     """
-    collect_vcfeval.py --output benchmark.tsv ${summaries}
+    collect_vcfeval.py --output benchmark.tsv ${eval_dirs}
     """
 }
