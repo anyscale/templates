@@ -7,12 +7,16 @@
 # medaka is the one tool in this pipeline that does not fit the manifest's model. The others
 # are a binary or a small source build with no Python dependencies at all, which is what lets
 # them coexist in one environment (see manifest.toml's header). medaka is a PyTorch
-# application: it pulls torch plus, on GPU, the whole CUDA runtime, and it requires
-# `numpy>=2.0` where the Ray base image ships 1.26.4. Installing it into the cluster image
-# costs 1.2 GB even in the CPU-only configuration, and upgrading numpy underneath the base
-# environment breaks `cupy`, which `ray.util.collective` imports.
+# application: it pulls torch plus, on GPU, the whole CUDA runtime, and installing it into the
+# cluster image costs 1.2 GB even in the CPU-only configuration.
 #
-# Measured, for anyone tempted to put it back in the cluster image:
+# On 2.56.0 it also broke the base: medaka requires `numpy>=2.0`, that base shipped 1.26.4, and
+# upgrading numpy underneath it broke `cupy`, which `ray.util.collective` imports. The 2.58.0
+# base ships numpy 2.2.6 and cupy-cuda12x 13.6.0, and `medaka==2.2.2` resolves against its full
+# freeze without moving a base package (uv pip compile, 2026-09-24; resolved, not installed). So
+# on 2.58.0 the case for a separate image is size and the CUDA runtime, not numpy.
+#
+# Measured on anyscale/ray:2.56.0-py312, for anyone tempted to put it back in the cluster image:
 #
 #   pip install medaka                     torch + triton + cuda-toolkit + 15 nvidia-* wheels
 #   pip install medaka  (torch CPU index)  1.2 GB, numpy 1.26.4 -> 2.5.2, `import cupy` fails
@@ -45,7 +49,13 @@ FROM anyscale/ray:2.58.0-py312-cu128
 # ones, which is the entire point of this image. medaka 2.2.2 ships cp312 wheels and declares
 # python >=3.10,<3.14, so the "medaka needs Python <3.11" constraint that kept it out of this
 # template belongs to the medaka 1.x line and has not applied since 2.1.1.
-RUN pip install --no-cache-dir medaka==2.2.2
+#
+# torch is pinned because medaka asks only for `torch~=2.9`, and from 2.11 PyPI's default torch
+# is CUDA 13 (cuda-toolkit 13.0.x, nvidia-cudnn-cu13), a second runtime this cu128 base does
+# not match; unpinned, pip picks 2.14.0. 2.10.0 is the newest still on CUDA 12.8
+# (nvidia-cuda-runtime-cu12==12.8.90), read from PyPI metadata 2026-09-24. This image has not
+# been built with it yet.
+RUN pip install --no-cache-dir medaka==2.2.2 torch==2.10.0
 
 # Fail the build rather than the run, the same way the cluster image's Dockerfile does. A
 # missing model or a torch that cannot see CUDA is otherwise discovered after the assembly
@@ -53,6 +63,7 @@ RUN pip install --no-cache-dir medaka==2.2.2
 RUN set -eux; \
     medaka --version; \
     python -c "import torch; print('torch', torch.__version__, 'cuda build:', torch.version.cuda)"; \
+    python -c "import torch; assert (torch.version.cuda or '').startswith('12.8'), torch.version.cuda"; \
     medaka tools list_models | tr ',' '\n' | grep -q 'r1041_e82_400bps_sup_v4.1.0'
 
 # The reads and the draft are the task's inputs, but the *model* is downloaded on first use by

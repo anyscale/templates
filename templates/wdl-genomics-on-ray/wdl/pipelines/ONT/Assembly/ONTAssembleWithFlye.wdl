@@ -71,8 +71,9 @@ import "../../../tasks/QC/ReadStats.wdl" as ReadStats
 #     polishing round. Nothing scientific drives it. medaka is not in the cluster
 #     image, so under `--container-runtime none` a default of 3 would exit 127
 #     *after* the hours-long assembly had succeeded. It is kept out for size, not
-#     compatibility: 1.2 GB and a numpy bump that breaks cupy, so it ships as a
-#     separate per-task image instead (tools/Dockerfile.medaka-gpu). Raise this above
+#     compatibility: 1.2 GB and, on the 2.56.0 base, a numpy bump that broke cupy,
+#     so it ships as a separate per-task image instead (tools/Dockerfile.medaka-gpu).
+#     Raise this above
 #     0 with that image mapped under `--container-runtime ray`, and pick a model
 #     matching your chemistry.
 #   * Flye's parameters are imputed from measurements instead of left undeclared.

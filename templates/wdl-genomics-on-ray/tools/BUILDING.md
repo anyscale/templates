@@ -171,12 +171,14 @@ medaka is the case this mode exists for, and the template ships a Containerfile 
 
 It is deliberately not in the cluster image. Every other tool here is a binary or a small
 source build carrying no Python dependencies, which is what lets them share one environment.
-medaka is a PyTorch application: it needs `numpy>=2.0` where the Ray base ships 1.26.4, and
-installing it costs 1.2 GB even with CPU-only wheels. Upgrading numpy underneath the base
-environment breaks `cupy`, which `ray.util.collective` imports. Pinning `numpy==2.2.6` does
-not help — `cupy-cuda12x` 13.4.0 declares `numpy<2.3`, but its wheel was compiled against the
-numpy 1.x C ABI, so the declaration is not the constraint that binds. A venv inside the
-cluster image does work and still costs the 1.2 GB.
+medaka is a PyTorch application, and installing it costs 1.2 GB even with CPU-only wheels. On
+the 2.56.0 base it also broke the environment: medaka needs `numpy>=2.0`, that base shipped
+1.26.4, and upgrading numpy underneath it broke `cupy`, which `ray.util.collective` imports.
+Pinning `numpy==2.2.6` did not help there, because `cupy-cuda12x` 13.4.0 declared `numpy<2.3`
+but its wheel was compiled against the numpy 1.x C ABI. A venv inside the cluster image did
+work and still cost the 1.2 GB. The 2.58.0 base ships numpy 2.2.6 with `cupy-cuda12x` 13.6.0,
+and `medaka==2.2.2` resolves against its freeze without moving a base package (resolved on
+2026-09-24, not installed). So on 2.58.0 the reason is size and the CUDA runtime, not numpy.
 
 So it gets its own image, and only a run that asks for polishing pays for it:
 

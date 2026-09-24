@@ -68,9 +68,10 @@ import "../../structs/Structs.wdl"
 #
 # Packaging, for anyone turning this on. medaka is not in the cluster image, and the
 # reason is size rather than compatibility: 2.2.2 ships cp312 wheels and declares
-# python >=3.10,<3.14, so it installs on this image's 3.12.12 fine. What it costs is
-# 1.2 GB even with CPU-only torch, plus a numpy 1.26.4 -> 2.5.2 bump that breaks the
-# base environment's cupy. It therefore gets its own per-task image,
+# python >=3.10,<3.14, so it installs on this image's 3.12.13 fine. What it costs is
+# 1.2 GB even with CPU-only torch; on the 2.56.0 base it also forced a numpy
+# 1.26.4 -> 2.5.2 bump that broke cupy, which the 2.58.0 base (numpy 2.2.6) no longer
+# does. It therefore gets its own per-task image,
 # tools/Dockerfile.medaka-gpu, selected under `--container-runtime ray` by mapping the
 # tag this task already declares. tools/BUILDING.md has the worked example.
 #
