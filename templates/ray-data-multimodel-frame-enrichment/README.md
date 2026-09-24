@@ -368,8 +368,8 @@ if val != 200:
     sys.exit(
         f"HF_TOKEN did not authenticate: /api/whoami-v2 returned HTTP {val}.\n"
         "This is a CREDENTIAL failure, not a gate one -- Hugging Face does not know who you\n"
-        "are, so a corrected token DOES fix it. Check the token is a live read token; in CI,\n"
-        "and that it is the account that accepted the terms."
+        "are, so a corrected token DOES fix it. Check the token is a live read token, and\n"
+        "that it belongs to the account that accepted the terms."
     )
 try:
     who = json.loads(body).get("name", "unknown") if body else "unknown (empty whoami body)"
@@ -502,8 +502,8 @@ being written up as a +3.4% win.
 
 ## Models and licences
 
-All four are public. Two are gated on Hugging Face and need their terms accepted once by the
-account behind your `HF_TOKEN`.
+All three models are public. Two are gated on Hugging Face and need their terms accepted once
+by the account behind your `HF_TOKEN`.
 
 | stage | model | licence |
 |---|---|---|
