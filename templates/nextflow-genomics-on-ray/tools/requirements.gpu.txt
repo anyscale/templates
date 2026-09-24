@@ -7,13 +7,13 @@
 --index-url https://download.pytorch.org/whl/cu128
 
 # Pinned to the newest torch that publishes a +cu128 build for cp312, which is
-# what the base image (anyscale/ray:2.56.0-py312-cu128) provides.
+# what the base image (anyscale/ray:2.58.0-py312-cu128) provides.
 #
 # Not the newest torch. From 2.10 onward torch depends on CUDA 13
 # (cuda-toolkit==13.0.3, nvidia-cudnn-cu13, nvidia-nccl-cu13) and would drag a
 # second, mismatched CUDA runtime into a cu128 image. Moving up means moving the
 # base image to a -cu130 tag first, and re-pinning both together.
 #
-# Declares no numpy constraint, so the image's numpy 1.26.4 -- which pyarrow and
+# Declares no numpy constraint, so the image's numpy 2.2.6 -- which pyarrow and
 # Ray Data are built against -- is left alone.
 torch==2.9.1+cu128

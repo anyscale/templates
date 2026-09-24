@@ -1,13 +1,13 @@
 # Python additions to the base image, for reproducing this template off Anyscale.
 #
 # On Anyscale you do not need this file: the template's image
-# (us-docker.pkg.dev/.../nextflow-genomics-on-ray:2.56.0) already has all of it.
+# (us-docker.pkg.dev/.../nextflow-genomics-on-ray:2.58.0) already has all of it.
 # It is here so the same environment can be rebuilt elsewhere, and so the pins are
 # reviewable in the repo rather than only inside a layer.
 #
-# Base image: anyscale/ray:2.56.0-py312-cu128
-#   ray 2.56.0, python 3.12, numpy 1.26.4, pandas 2.3.3, pyarrow 19.0.1,
-#   matplotlib 3.9.4, ipykernel 6.27.1
+# Base image: anyscale/ray:2.58.0-py312-cu128
+#   ray 2.58.0, python 3.12.13, numpy 2.2.6, pandas 2.3.3, pyarrow 23.0.1,
+#   matplotlib 3.10.8, ipykernel 7.2.0
 #
 # Ray is deliberately absent. Installing it here would let pip pull a second Ray
 # over the image's own, and a driver and its workers on different Ray versions is

@@ -162,10 +162,10 @@ def cmd_doctor(args: argparse.Namespace) -> int:
         import ray
 
         print(f"  ray              {ray.__version__}")
-        if not ray.__version__.startswith("2.56."):
+        if not ray.__version__.startswith("2.58."):
             problems.append(
                 f"ray is {ray.__version__}, but this template is built and tested "
-                "against 2.56.0; `ext.image` in particular requires an exact match"
+                "against 2.58.0; `ext.image` in particular requires an exact match"
             )
     except ImportError:
         problems.append("ray is not importable in this interpreter")
@@ -248,7 +248,7 @@ def cmd_probe_image(args: argparse.Namespace) -> int:
         print(
             "\nRay extracts its own and Python's version from the image and refuses a\n"
             "mismatch, so a stock biocontainer will always fail here. Rebuild the tool\n"
-            "on top of anyscale/ray:2.56.0-py312-cu128 and probe that instead.",
+            "on top of anyscale/ray:2.58.0-py312-cu128 and probe that instead.",
             file=sys.stderr,
         )
         return 1

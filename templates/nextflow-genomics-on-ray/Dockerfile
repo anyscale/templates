@@ -1,7 +1,7 @@
 # Cluster image for the nextflow-genomics-on-ray template.
 #
 #   ../../.claude/skills/template/scripts/push-custom-image-to-gcp.sh \
-#       . nextflow-genomics-on-ray 2.56.0
+#       . nextflow-genomics-on-ray 2.58.0
 #
 # Or, on a machine with podman and no docker daemon:  bash tools/push-image-podman.sh
 # Or, to build one you own:  anyscale image build -n my-nf-tools --containerfile Dockerfile
@@ -21,7 +21,7 @@
 #
 # --- the version contract ---------------------------------------------------
 #
-# Python 3.12 and Ray 2.56.0, everywhere, asserted at build time below. A Ray
+# Python 3.12 and Ray 2.58.0, everywhere, asserted at build time below. A Ray
 # driver and its workers must agree on both to the patch, and `ext.image` fails
 # outright on a mismatch. The one tool that cannot meet that (DeepVariant, which
 # pins python <3.11) gets a quarantined environment and is never on PATH.
@@ -50,7 +50,7 @@ RUN gradle --no-daemon installPlugin \
 # =============================================================================
 # Stage 2: the cluster image.
 # =============================================================================
-FROM anyscale/ray:2.56.0-py312-cu128
+FROM anyscale/ray:2.58.0-py312-cu128
 
 USER root
 # openjdk: Nextflow's own runtime, and GATK's and rtg's. One JRE serves all three.
@@ -133,8 +133,8 @@ snapshot_download('${NF_RAY_SCORER_MODEL}', allow_patterns=['*.json','*.safetens
 # not start, on a cluster, twenty minutes later.
 RUN set -eux; \
     python -c "import sys; assert sys.version_info[:2] == (3, 12), sys.version"; \
-    python -c "import ray; assert ray.__version__ == '2.56.0', ray.__version__"; \
-    python -c "import numpy; assert numpy.__version__.startswith('1.26.'), numpy.__version__"; \
+    python -c "import ray; assert ray.__version__ == '2.58.0', ray.__version__"; \
+    python -c "import numpy; assert numpy.__version__.startswith('2.2.'), numpy.__version__"; \
     python -c "import torch; print('torch', torch.__version__); assert torch.version.cuda.startswith('12.8'), torch.version.cuda"; \
     python -c "import transformers; print('transformers', transformers.__version__)"; \
     java -version; \
