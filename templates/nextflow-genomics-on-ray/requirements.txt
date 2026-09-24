@@ -14,26 +14,41 @@
 # the one failure `ext.image` cannot survive.
 #
 # matplotlib is *not* listed for the same reason in reverse: the image ships
-# 3.9.4 and the notebook is written against it. Pinning "the newest" here would
+# 3.10.8 and the notebook is written against it. Pinning "the newest" here would
 # quietly upgrade it on every rebuild.
+#
+# Checked against dependencies/images/ray-2.58.0-py312-cu128.freeze.txt with
+#   uv pip compile --python-version 3.12 --python-platform x86_64-manylinux_2_28 \
+#       -c <freeze> requirements.txt
+# which resolves with every package the image already has left at its image
+# version. The additions are the four below plus regex and hf-xet.
 
 # --- the GPU annotation leg -------------------------------------------------
 # Runs in two places, on purpose: the ANNOTATE_VARIANTS process calls
 # bin/score_variants.py through Nextflow, and the notebook's Ray Data step calls
 # the same module over the whole callset. One implementation, seen twice.
 #
-# torch itself is NOT here -- it needs the CUDA-128 wheel index and lives in
+# torch itself is NOT here -- it needs the CUDA-12.8 wheel index and lives in
 # tools/requirements.gpu.txt, which pins it with its own --index-url. Splitting
 # it out keeps --extra-index-url off this file, so nothing else can be silently
 # resolved from a non-PyPI index.
-transformers==5.15.0
-huggingface-hub==1.0.5
-safetensors==0.7.0
-tokenizers==0.23.4
+#
+# transformers 4.x, not 5.x. The scorer's model ships its own modelling code
+# (trust_remote_code), and that code imports `find_pruneable_heads_and_indices`
+# from transformers.pytorch_utils, which 5.x removed: on 5.15.0 the load fails
+# with ImportError. On 4.57.6, the last 4.x release, it loads and runs a forward
+# pass (checked on CPU with torch 2.9.1). The other three are the newest each of
+# 4.57.6's own ranges allows: hub <1.0, tokenizers <=0.23.0 (PyPI has no 0.23.0,
+# so 0.22.x), safetensors >=0.4.3.
+transformers==4.57.6
+huggingface-hub==0.36.2
+safetensors==0.8.0
+tokenizers==0.22.2
 
 # --- notebook and staging ---------------------------------------------------
-# The notebook fetches demo data anonymously; boto3 is in the image but the CLI
-# is not, and `aws s3 cp --no-sign-request` is what the README tells you to run.
-# (Anonymous, not signed: a signed request is evaluated against the node's role
-# and can fail on a public bucket where anonymous succeeds.)
-awscli==1.42.30
+# Nothing to add. The notebook fetches demo data with `aws s3 cp
+# --no-sign-request`, and the base image already ships AWS CLI v2 at
+# /usr/local/bin/aws (aws-cli/2.36.27, read from anyscale/ray:2.58.0-py312). An
+# `awscli` pin here would do harm twice: v1 pins botocore exactly (1.42.30 wants
+# 1.40.30), which breaks the image's boto3 1.29.7, and pip puts its `aws` in
+# /home/ray/anaconda3/bin, ahead of /usr/local/bin on PATH, shadowing v2.

@@ -6,13 +6,13 @@
 # and every package there becomes resolvable from a non-PyPI host.
 --index-url https://download.pytorch.org/whl/cu128
 
-# Pinned to the newest torch that publishes a +cu128 build for cp312, which is
-# what the base image (anyscale/ray:2.58.0-py312-cu128) provides.
+# A +cu128 build, to match the base image (anyscale/ray:2.58.0-py312-cu128).
 #
-# Not the newest torch. From 2.10 onward torch depends on CUDA 13
-# (cuda-toolkit==13.0.3, nvidia-cudnn-cu13, nvidia-nccl-cu13) and would drag a
-# second, mismatched CUDA runtime into a cu128 image. Moving up means moving the
-# base image to a -cu130 tag first, and re-pinning both together.
+# 2.9.1 is the version the scorer was written and checked against, not a
+# ceiling. The cu128 index also carries 2.10.0 and 2.11.0 builds for cp312, and
+# they stay on CUDA 12.8 (2.11.0+cu128 declares cuda-toolkit==12.8.1 and
+# nvidia-cudnn-cu12), so moving up is a re-test of the scorer rather than a
+# base-image change. Only the default PyPI builds moved to CUDA 13.
 #
 # Declares no numpy constraint, so the image's numpy 2.2.6 -- which pyarrow and
 # Ray Data are built against -- is left alone.

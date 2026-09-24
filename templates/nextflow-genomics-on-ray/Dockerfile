@@ -157,6 +157,7 @@ RUN set -eux; \
     gatk --list 2>&1 | head -3; \
     rtg version | head -2; \
     multiqc --version; \
+    test "$(command -v aws)" = /usr/local/bin/aws; \
     aws --version; \
     /opt/nf-tools/envs/deepvariant/bin/python --version; \
     test ! -e /opt/nf-tools/envs/deepvariant/bin/run_deepvariant || echo "deepvariant present"; \
