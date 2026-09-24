@@ -820,8 +820,8 @@
 # owner_team ray-data: Parquet read path, no Train/Serve/LLM surface.
 #
 # The lifted finding was "the read binds, and the blob column's Parquet physical type is worth
-# 7x-23x". Measured on this repo's own configs/ (one g6.4xlarge L4, m5.2xlarge head) it did not
-# reproduce. What the template claims now:
+# 7x-23x". Measured on this repo's own configs/ (one g6.4xlarge L4, m5.2xlarge head) on Ray
+# 2.57.0, it did not reproduce. What the template claims now:
 #
 #   - the layout costs decode CPU, not I/O. list<uint8> is physical INT32, so a payload byte
 #     occupies 4 bytes; RLE_DICTIONARY removes that before any codec runs, so the layouts land
@@ -830,7 +830,8 @@
 #     list column. Footer total_uncompressed_size, 6 codecs x 3 payloads x dictionary on/off,
 #     pyarrow 23.0.1 as the image ships. Compression is not the mechanism: the effect is complete
 #     with codec `none` and survives os.urandom.
-#   - decode is 10.94x from byte-identical inputs, 4.51x under zstd.
+#   - decode is 10.94x from byte-identical inputs, 4.51x under zstd, on a macOS arm64 laptop,
+#     warm cache.
 #   - end to end with the GPU stage, 1.56x to 1.65x on 5 fleet runs.
 #   - the write side is 4.07x to 4.19x on 8 fleet runs, spread 2.9%.
 #   - the read was not the binding stage here: read span 2.44s, GPU stage span 1.99s with 3.4s
@@ -847,7 +848,8 @@
 # measure_layout.py is a shipped artifact, not scaffolding. Every engagement figure is retained
 # and labelled as theirs, on a different fleet and dataset. Unmeasured: whether the read binds at
 # production scale. Evidence: prodjob_mnm3w6i1azkcfq22q8radiaxt5 (sweeps),
-# prodjob_ahrqy85kid81ttws4eq6wi7uge (tests.sh).
+# prodjob_ahrqy85kid81ttws4eq6wi7uge (tests.sh), prodjob_l6gmktnb38knsk1s7ag8djjg3i and
+# prodjob_plvai31pc9sh7fvyia2sddsqdz (storage).
 # owner: @em-anyscale
 - name: ray-data-sensor-frame-extraction
   owner_team: ray-data
@@ -860,10 +862,10 @@
   test:
     tests_path: tests/ray-data-sensor-frame-extraction/
     command: bash tests.sh
-    # Measured: tests.sh wall time 335s to 354s across 6 runs, papermill over the notebook as CI
-    # runs it, exit 0, 6 code cells, Executing/Ending counts matched. 1200 leaves 3.4x headroom
-    # over the slowest.
+    # Measured on Ray 2.57.0: tests.sh wall time 335s to 354s across 6 runs, papermill over the
+    # notebook as CI runs it, exit 0, 6 code cells, Executing/Ending counts matched. 1200 leaves
+    # 3.4x headroom over the slowest.
     # Cluster start and image pull sit outside this. Headroom covers a 1.2 GiB torch download to
-    # the driver and Ray building the lock's virtualenv on the worker, 85s measured. A transient
-    # PyPI 502 failed one run of this script.
+    # the driver and Ray building the lock's virtualenv on the worker, 85.1s to 94.0s over 3 runs.
+    # A transient PyPI 502 failed one run of this script.
     timeout_in_sec: 1200

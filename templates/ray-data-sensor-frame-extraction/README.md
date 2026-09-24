@@ -5,7 +5,7 @@
   <a href="https://github.com/anyscale/templates/tree/main/templates/ray-data-sensor-frame-extraction" role="button"><img src="https://img.shields.io/static/v1?label=&message=View%20On%20GitHub&color=586069&logo=github&labelColor=2f363d"></a>&nbsp;
 </div>
 
-**⏱️ Time to complete**: ~15 min. Measured execution is 5.6 min.
+**⏱️ Time to complete**: ~15 min. Measured execution is 5.6 to 5.9 min, on Ray 2.57.0.
 
 This template reads multi-megabyte sensor frames from Parquet, transforms them on a GPU actor pool,
 and writes them back. It ships the same payload in two Parquet layouts and measures the difference.
@@ -102,8 +102,8 @@ A codec lowers the measured ratio without changing the layout choice. Decompress
 and dominates the fast one: `binary(N)` fell from about 13,100 to about 6,400 MB/s under zstd while
 `list<uint8>` stayed near 1,200. A ratio measured under compression understates the decode gap.
 
-With this template's GPU stage attached, the same lever measured 1.56x and 1.63x end to end. Measure
-the channel you can spend.
+With this template's GPU stage attached, the same lever measured 1.56x to 1.65x end to end across 5
+fleet runs. Measure the channel you can spend.
 
 ### Storage speed and the byte asymmetry, measured
 
@@ -180,8 +180,8 @@ Every lever is an environment variable in `pipeline.py`, with its measured effec
 This template comes from a customer engagement whose data is private. The pipeline shape and the
 levers are the engagement's. The fixture is synthetic.
 
-**Measured on the fleet this template ships.** The table above, plus notebook execution times of
-335 s to 354 s across 6 runs through papermill, all 6 code cells, no errors.
+**Measured on the fleet this template ships.** The table above, plus `tests.sh` wall times of 335 s
+to 354 s across 6 runs on Ray 2.57.0, papermill over this notebook, all 6 code cells, no errors.
 
 **Measured on a developer laptop.** The decode table, pyarrow 23.0.1, macOS arm64, warm cache. Also
 the write-side ratio during development, which ranged 2.1x to 7.0x across 5 runs, twice at the same
