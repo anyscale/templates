@@ -134,8 +134,11 @@ process RTG_VCFEVAL {
         --threads ${task.cpus}
 
     # vcfeval exits 0 having written a summary even when nothing matched, so an
-    # empty result is a real possibility and it must not look like success.
-    if ! grep -qE '^ *(None|[0-9])' ${meta.id}.${caller}.${vtype}/summary.txt; then
+    # empty result is a real possibility and it must not look like success. The
+    # unthresholded `None` row is what a scored comparison always has; the earlier
+    # check here matched any line starting with a digit, which rtg's "0 total
+    # baseline variants" message does (captured: exit 0, that one line).
+    if ! grep -qE '^ +None ' ${meta.id}.${caller}.${vtype}/summary.txt; then
         echo "vcfeval produced no scored rows for ${meta.id}/${caller}/${vtype}" >&2
         cat ${meta.id}.${caller}.${vtype}/summary.txt >&2
         exit 1
