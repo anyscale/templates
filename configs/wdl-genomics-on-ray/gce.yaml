@@ -19,7 +19,19 @@ worker_nodes:
 # Lower this and the cohort still completes, just less concurrently; nothing hangs, because the
 # *per-task* requests still fit one node. Measured at max_nodes 2, the third assembly queues
 # 7m37s behind the first and the same run takes 13m16s.
+#
+# market_type: PREFER_SPOT. Every task carries preemptible_tries: 3 (the inputs JSONs and the
+# notebook's inputs), and a reclaimed node surfaces as node or worker loss, which the backend maps
+# to miniwdl's Interrupted and so to that budget; a lost task reruns from its start, a lost Flye
+# from `configure`. The schema allows market_type on worker groups only, so the head stays on
+# demand. GCE spot pricing for n2-standard-32 is unverified here. No real reclaim has hit this yet.
+# Multi-zone, as configs/text-embeddings/gce.yaml does, so a spot shortage in one zone is not a stall.
 - name: assembly-worker
   instance_type: n2-standard-32
   min_nodes: 1
   max_nodes: 3
+  market_type: PREFER_SPOT
+advanced_instance_config:
+  instance_properties:
+    labels:
+      as-feature-multi-zone: 'true'

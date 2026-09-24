@@ -112,6 +112,7 @@ compute_config:
     - instance_type: m5.8xlarge
       min_nodes: 1
       max_nodes: 3
+      market_type: PREFER_SPOT  # as configs/wdl-genomics-on-ray/aws.yaml, which says why
 
 # The measured run is 2h03m56s, so 24h is mostly headroom, and it is headroom for the runs that
 # are not this one: a slower instance type, a whole genome rather than one chromosome, or a spot

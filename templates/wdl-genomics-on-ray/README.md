@@ -1006,7 +1006,9 @@ than fatal. Modelled against interruption rates from 1.5% to 15% per node-hour, 
 of the bill and a resume mechanism would recover a further $0.05-$0.61 per cohort run, which is
 why there is no resume mechanism. The arithmetic inverts around ten hours per assembly: past
 roughly `T = 1/rate`, restart-from-zero costs more than spot saves, and a whole-genome run belongs
-back on demand.
+back on demand. The worker groups ask for it (`market_type: PREFER_SPOT`, in `configs/` and
+`job.yaml`); the head stays on demand. The retry path is traced in code but has not yet met a
+real reclaim.
 
 ### What that job encodes
 
