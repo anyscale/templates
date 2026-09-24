@@ -11,6 +11,11 @@ uv pip install -q --system 'papermill==2.7.0'
 # Buildkite step is capped at max(75, timeout_in_sec/60 + 30) minutes, 90 for this template.
 export NF_DEMO_SCALE=quick
 
+# The GPU leg stays in the template and out of CI: ANNOTATE_VARIANTS asks for an L4, and a run
+# that waits on L4 capacity in the test cloud's zone is red for a reason the template cannot
+# fix. The notebook reads this and skips the process and its Ray Data step (Step 7).
+export NF_ANNOTATE=false
+
 # Offline first, and deliberately before anything expensive. Plain scripts, not pytest
 # (pytest collects none of them), each exiting non-zero on a failed check:
 #

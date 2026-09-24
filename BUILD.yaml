@@ -833,9 +833,10 @@
     AWS: configs/nextflow-genomics-on-ray/aws.yaml
     GCP: configs/nextflow-genomics-on-ray/gce.yaml
   test:
-    # Offline unit checks first, then the notebook at NF_DEMO_SCALE=quick. Not measured: the
-    # template has never run on a cluster, and this is the WDL sibling's value until the first
-    # /test-template run gives a real one. The Buildkite step is capped at 90 min for it.
+    # Offline unit checks first, then the notebook at NF_DEMO_SCALE=quick with the GPU leg off
+    # (NF_ANNOTATE=false). Not measured: the template has never run on a cluster, and this is
+    # the WDL sibling's value until the first /test-template run gives a real one. The
+    # Buildkite step is capped at 90 min for it.
     tests_path: tests/nextflow-genomics-on-ray/
     command: bash tests.sh
     timeout_in_sec: 3600

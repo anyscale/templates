@@ -90,7 +90,7 @@ tools, same DAG, same resource requests.
 Neither has been timed on this template's compute config yet, so this section carries no numbers.
 
 `NF_ANNOTATE=false` skips the GPU leg, both the Nextflow process and the Ray Data step in Step 7,
-for a cluster with no L4 to give it.
+for a cluster with no L4 to give it. CI sets it, so a test run never waits on L4 capacity.
 
 `nf-ray doctor` reports what the executor would decide without running anything: the interpreter
 and Ray versions it would hand to workers, whether the work directory is on shared storage, and
