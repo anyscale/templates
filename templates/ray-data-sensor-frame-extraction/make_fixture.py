@@ -210,9 +210,8 @@ def main() -> int:
     if fast_total > 0:
         print(f"  write-side ratio: {slow_total / fast_total:.2f}x")
     print(
-        "\nNote: the write-side gap is the first half of the lesson. The producing team "
-        "is usually told they must change their writer for the reader's benefit; "
-        "measured, the recommended layout is also cheaper to WRITE."
+        "\nNote: the producing team is usually told they must change their writer for the "
+        "reader's benefit; measured, the recommended layout is also cheaper to WRITE."
     )
     return 0
 
