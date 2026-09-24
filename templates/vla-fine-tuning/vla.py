@@ -79,8 +79,10 @@ What that means in practice:
     the dataset is what an epoch is -- but every batch processed in the
     interrupted epoch is thrown away and re-consumed. With num_epochs=2 below,
     a failure late in the second epoch costs close to half the run.
-  * FailureConfig(max_failures=1) allows exactly one such restart. A second
-    failure ends the run.
+  * FailureConfig(max_failures=1) allows one such restart after a worker
+    error; a second worker error ends the run. Node preemptions are budgeted
+    separately (max_preemption_failures, unlimited by default on Ray 2.58),
+    and each one costs the same epoch replay.
   * `step` is a count of micro-batches consumed, not a row offset into the
     dataset. Don't read it as one.
 
@@ -390,9 +392,10 @@ def train_loop_per_worker(config: dict):
 # ============================================================================
 #
 # TorchTrainer is the single entry point for distributed PyTorch on Ray.
-# To scale to 8, 16, or 32 GPUs: change num_workers. The training code, data
-# pipeline, and checkpointing all adapt automatically -- but see the caveat
-# below before treating throughput as a function of num_workers.
+# To scale to 8, 16, or 32 GPUs: change num_workers, and give the compute
+# config the GPUs to match -- the shipped one tops out at 4. The training code,
+# data pipeline, and checkpointing all adapt automatically -- but see the
+# caveat below before treating throughput as a function of num_workers.
 # See: https://docs.ray.io/en/latest/train/api/doc/ray.train.torch.TorchTrainer.html
 #
 # SCALING CAVEAT -- num_workers is not the binding constraint on multi-node
@@ -400,9 +403,11 @@ def train_loop_per_worker(config: dict):
 # The compute configs shipped with this template (configs/vla-fine-tuning/)
 # request four single-GPU nodes: one L4 each, min_nodes=max_nodes=4. That is
 # the arrangement in which *every* DDP gradient allreduce crosses the network,
-# because no two GPUs share a host. Raising num_workers on that shape adds
-# GPUs and adds inter-node traffic at the same time, so measured throughput
-# can flatten or regress while the config looks like it scaled.
+# because no two GPUs share a host. At num_workers=4 that config is already
+# full, so scaling out on this shape means raising max_nodes as well, and every
+# node added brings one GPU and one more host for each allreduce to cross --
+# measured throughput can flatten or regress while the config looks like it
+# scaled.
 #
 # Two things to do before scaling out:
 #

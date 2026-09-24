@@ -143,9 +143,11 @@ def load_checkpoint(checkpoint, policy, optimizer, scaler) -> tuple[int, int]:
     """Restore model/optimizer/scaler state from a Ray Train checkpoint.
 
     Returns (start_epoch, start_step) -- the epoch *after* the last one that
-    completed, because checkpoints are only written at epoch boundaries. The
-    input stream is not restored and cannot be; see make_checkpoint() for what
-    that costs.
+    completed, because checkpoints are only written at epoch boundaries. (The
+    exception is README.ipynb's max_train_steps cap: it checkpoints where it
+    cuts an epoch short, under that epoch's number, so resuming from it skips
+    the rest of that epoch.) The input stream is not restored and cannot be;
+    see make_checkpoint() for what that costs.
     """
     import ray.cloudpickle as pickle
 
@@ -172,7 +174,8 @@ def make_checkpoint(policy, optimizer, scaler, epoch, step):
     worth knowing before you rely on this:
 
       * Resume granularity is a whole epoch, not a step. make_checkpoint() is
-        only called at an epoch boundary, and on restart the loop re-enters at
+        only called at an epoch boundary (README.ipynb's max_train_steps cap
+        aside -- see load_checkpoint()), and on restart the loop re-enters at
         `epoch + 1` with the stream back at the beginning -- which is what an
         epoch is, so the data itself stays consistent. The cost is that a
         failure part way through an epoch discards that entire epoch's work,
@@ -185,8 +188,13 @@ def make_checkpoint(policy, optimizer, scaler, epoch, step):
       * `step` is also handed to build_lr_scheduler(..., last_step=step), which
         treats it as an *optimizer*-step index. The optimizer steps once per
         `grad_accum` micro-batches, so a resumed run re-enters its LR schedule
-        further along than it actually is. Check that before trusting the LR of
-        a restarted run.
+        `grad_accum` times further along than it actually is -- with the
+        shipped L4 settings (grad_accum=8, num_epochs=2), at four times the
+        schedule's whole length. lr_lambda does not clamp progress, so the
+        cosine wraps round: the resumed second epoch starts at 0.75x the base
+        LR where an uninterrupted run is at 0.59x, and with the A100 settings
+        (grad_accum=2) it starts at 0 and climbs back to 0.59x. Check that
+        before trusting the LR of a restarted run.
 
     Step-level resume is not a checkpoint tweak: LeRobotDatasource would have to
     accept a start row, that row would have to be recorded here, and it would
