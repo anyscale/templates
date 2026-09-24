@@ -1,0 +1,10 @@
+# Installed on top of anyscale/ray:2.58.0-py312-cu129, which ships pyarrow 23.0.1.
+# pyarrow is pinned anyway: 21 and older deadlock on concurrent partitioned
+# writes under S3 throttling (apache/arrow#47124, fixed in 22), and 24.x can
+# deadlock at interpreter exit with a live S3FileSystem (apache/arrow#50188).
+pyarrow==23.0.1
+torch==2.8.0
+transformers==4.56.2
+huggingface-hub==0.35.3
+tokenizers==0.22.1
+sentencepiece==0.2.1
