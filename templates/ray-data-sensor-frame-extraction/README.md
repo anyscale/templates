@@ -5,7 +5,9 @@
   <a href="https://github.com/anyscale/templates/tree/main/templates/ray-data-sensor-frame-extraction" role="button"><img src="https://img.shields.io/static/v1?label=&message=View%20On%20GitHub&color=586069&logo=github&labelColor=2f363d"></a>&nbsp;
 </div>
 
-**⏱️ Time to complete**: ~15 min. Measured execution is 5.6 to 5.9 min, on Ray 2.57.0.
+**⏱️ Time to complete**: about 9½ min, measured. Two `rayapp test` runs on Ray 2.58.0 took
+9 min 26 s on prod and 9 min 17 s on staging, workspace start and teardown included; see
+Provenance. Notebook execution alone measured 5.6 to 5.9 min on Ray 2.57.0.
 
 This template reads multi-megabyte sensor frames from Parquet, transforms them on a GPU actor pool,
 and writes them back. It ships the same payload in two Parquet layouts and measures the difference.
