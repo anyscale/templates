@@ -19,12 +19,12 @@ neighbouring ray-data-multimodel-frame-enrichment template's measure_packing.py:
 The verdict is a sentence, not a boolean, because UNSUPPORTED and OVERLAP are not "the lever
 does not work" -- they say these runs cannot answer the question.
 
-One confound is handled by default. The first pipeline run on a
-fresh cluster also pays for Ray building the runtime_env virtualenv from python_depset.lock on
-the worker: measured on a g6.4xlarge, 104.4s against 8.3s for the next run of the same arm. That
-lands entirely in whichever arm happens to go first, and on the first attempt it made the
-recommended layout look 17x SLOWER than the naive one and turned a real result into OVERLAP. So
---warmup defaults to 1 untimed run per arm. It is declared here, not chosen after the fact.
+One confound is handled by default. The first pipeline run on a fresh cluster also pays for Ray
+building the runtime_env virtualenv from python_depset.lock on the worker: measured on a
+g6.4xlarge on Ray 2.57.0, 104.4s against 8.3s for the next run of the same arm. That lands
+entirely in whichever arm happens to go first, and on the first attempt it made the recommended
+layout look 17x SLOWER than the naive one and turned a real result into OVERLAP. So --warmup
+defaults to 1 untimed run per arm. It is declared here, not chosen after the fact.
 
     python measure_layout.py --input /mnt/cluster_storage/sensor-fixture --runs 3
 """
@@ -391,8 +391,9 @@ def main(argv: list[str] | None = None) -> int:
                     help="untimed runs per arm before timing starts. Default 1 and you want it: "
                          "the FIRST run of a sweep also pays for Ray building the runtime_env "
                          "virtualenv from python_depset.lock on the worker, measured at 104.4s "
-                         "against 8.3s for the next run on a g6.4xlarge. Discarding it is declared "
-                         "here, up front, and not chosen after seeing which arm it landed in.")
+                         "against 8.3s for the next run on a g6.4xlarge on Ray 2.57.0. Discarding "
+                         "it is declared here, up front, and not chosen after seeing which arm it "
+                         "landed in.")
     ap.add_argument("--out", default=None, help="write the per-run records here as JSON")
     args = ap.parse_args(argv)
 
