@@ -96,11 +96,17 @@ process GATK4_GENOMICSDBIMPORT {
 
     script:
     def heap = Math.max(1, (task.memory.toGiga() * 0.8) as int)
+    // One line, joined with spaces. The obvious multi-line join is an escaping
+    // trap: inside this GString a separator of ' \\\\\n' renders as two
+    // backslashes then a newline, bash reads that as a literal backslash and the
+    // end of the command, and the second sample's line runs on its own as
+    // `--variant: command not found`. It only bites with more than one sample.
+    def variants = gvcfs.collect { gvcf -> "--variant ${gvcf}" }.join(' ')
     """
     # --genomicsdb-workspace-path must NOT exist; GenomicsDBImport creates it and
     # refuses to write into a directory Nextflow has already staged.
     gatk --java-options "-Xmx${heap}g" GenomicsDBImport \\
-        ${gvcfs.collect { gvcf -> "--variant ${gvcf}" }.join(' \\\\\n        ')} \\
+        ${variants} \\
         --intervals ${interval} \\
         --genomicsdb-workspace-path genomicsdb_${interval_id} \\
         --batch-size 50 \\
