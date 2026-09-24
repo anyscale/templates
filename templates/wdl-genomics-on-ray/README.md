@@ -50,7 +50,8 @@ Cromwell run:
   more. The two are not equivalent; see `PIPELINE.md`.
 - Flye's read-type flag comes from the reads' declared chemistry rather than a hardcoded
   `--nano-raw`, so R10.4.1 selects `--nano-hq`, which is what Flye's documentation prescribes for
-  R10. `--asm-coverage` and `--genome-size` are derived from measured coverage.
+  R10. `--asm-coverage` and its companion `--genome-size` are derived from measured coverage but
+  are off by default, since capping cost a third of the N50 on this data.
   `flye_impute_params = false` restores upstream's command line exactly.
 
 ## Where this fits
@@ -116,12 +117,13 @@ include cluster provisioning and staging the reads:
 
 Three samples for about one sample's wall clock, 1.03x at both scales, because each assembly gets
 a worker of its own once the cluster has scaled to three. An already-running workspace skips the
-provisioning counted above.
+provisioning counted above. `job.yaml` runs the same workflow over the whole 64 Mbp chromosome per
+sample, where the ratio tightens to 1.006; see Time and cost estimates.
 
 The reference has to match the region. `ComputeGenomeLength` derives the assembler's genome size
-from it, so handing it all of GRCh38 would size the memory request for a 3.1 Gbp assembly and
-suppress `--asm-coverage`, because 500 Mbp of reads over 3.1 Gbp is below the coverage threshold
-that emits it.
+from it, so handing it all of GRCh38 would size the memory request for a 3.1 Gbp assembly. It
+would also silently disable coverage capping for anyone who has turned it on, since 500 Mbp of
+reads over 3.1 Gbp falls below the threshold that emits `--asm-coverage` at all.
 
 `wdl-on-ray doctor` reports what the backend would decide without running anything, including
 which container runtimes this node can use and whether the call cache is on.
@@ -909,41 +911,94 @@ run(["python", str(TEMPLATE_DIR / "persist_outputs.py"), "--outputs", str(output
 
 The notebook path above is sized to run while you watch it. A real assembly is a batch job, and
 [`job.yaml`](https://github.com/anyscale/templates/blob/main/templates/wdl-genomics-on-ray/job.yaml)
-is that job: one sample, all 64 Mbp of chromosome 20, at full coverage.
+is that job: the same trio, all 64 Mbp of chromosome 20 for each of the three samples, at the
+coverage the reads came at.
 
 ```bash
+cd templates/wdl-genomics-on-ray
 anyscale job submit --config-file job.yaml
 ```
 
+Submit it from that directory. `working_dir: .` is relative to the shell rather than to the config
+file, so submitting from the repository root uploads the wrong tree and the job dies in seconds on
+a missing WDL.
+
 ### Time and cost estimates
 
-Representative, from a single HG002 chr20 run on the compute config in `job.yaml`. Read the caveat
-below before quoting any of it.
+One green run of that job on the `m5.8xlarge` worker group it ships with, at 97x, 80x and 63x
+coverage, uncapped, on the Ray 2.56.0 image this template used before its 2.58.0 bump.
 
-| | |
-|---|---|
-| Wall clock | ~14h 44m, of which the assembly finished at 4h53m and the rest was polishing |
-| Contigs | 44, totalling 62,097,887 bp |
-| N50 | 33,279,582 (L50 = 1) |
-| N90 | 23,650,082 (L90 = 2) |
-| GC | 44.00% against the reference's 43.80% |
-| Genome fraction, NGA50, misassemblies | not captured on this run |
-| Worker node-hours | ~15, one `m5.8xlarge` plus an `m5.2xlarge` head |
-| Cost | ~$30 at us-east-1 on-demand list, roughly $23 worker and $6 head |
+| | HG002 | HG003 | HG004 |
+|---|---|---|---|
+| Flye | 1h55m33s | 1h44m12s | 1h24m04s |
+| Sample, end to end | 2h01m15s | 1h48m46s | 1h37m45s |
+| # contigs | 62 | 71 | 52 |
+| N50 | 33,263,886 | 16,721,982 | 33,233,489 |
+| L50 / L90 | 1 / 2 | 2 / 3 | 1 / 2 |
+| NGA50 | 2,082,054 | 2,188,745 | 1,960,991 |
+| Genome fraction (%) | 95.798 | 95.854 | 95.820 |
+| # mismatches per 100 kbp | 154.02 | 142.61 | 149.30 |
+| # misassemblies | 121 | 111 | 129 |
 
-**This run does not reproduce under today's defaults.** It executed upstream's bare invocation,
-`flye --nano-raw <reads> --threads 30`, with no coverage cap and no genome size. Today's inputs
-derive `--nano-hq --iterations 1 --asm-coverage 40 --genome-size`, and `--nano-hq` is a different
-error model, so treat the wall clock as an order of magnitude and read each run's `flye_params`
-output for the flags that produced it. It also reports contiguity only: N50 says how long the
-pieces are and nothing about whether they are right, and this run predates the `Genome fraction`
-assertion in Step 6 that exists to stop contiguity standing in for a complete evaluation.
+The workflow spans **2h01m58s** and the job **2h03m56s**, over three workers and a head node that
+holds no tasks: about **6 worker node-hours**, or **$10** at us-east-1 on-demand list. Node-hours
+are the durable unit, since instance pricing moves and varies by region and commitment.
 
-Node-hours are the durable unit; instance pricing moves and varies by region and commitment.
+Three samples finish in the wall clock of the slowest one, **2h01m58s against 2h01m15s**. The
+node-hours are what the three cost in series and what changes is the latency. Against a
+per-task-VM backend the node-hours also come out the same, and what changes there is the boot
+latency and idle tail on each of the 30 tasks, paid 30 times rather than never. Step 5 runs the
+same comparison at demo scale, where it comes out at 1.03 and depends on getting the third worker.
+
+**This section used to publish 14h44m for a single sample.** That was the same assembly on the
+same instance type, and the comparison is clean: both runs uncapped, both at 97x, both with Flye's
+one polishing iteration, N50 33,279,582 then against HG002's 33,263,886 here. The read mode is the
+only difference and it is worth **7.6x**. Most of it is the polishing stage, 9h51m under
+`--nano-raw` against **31m15s** under `--nano-hq`, the two error models doing very different
+amounts of correction per position; everything before polishing came down 3.5x, 4h53m to 1h24m.
+`--asm-coverage` explains none of this, since the cap reaches only the disjointig stage and both
+runs had it off. The cap was dropped for its own reason, that capping at Flye's documented 40x
+cost a third of the N50 to save fourteen minutes. `ONTAssembleWithFlye.wdl`'s header carries the
+four-run grid that separates the two levers.
+
+The old table reported contiguity and nothing else, which is how one N50 stood in for a result as
+long as it did. The columns belong together: N50 says how long the pieces are, genome fraction and
+NGA50 say whether they are right. Here they say the contigs are chromosome-arm length and the
+alignment blocks inside them are not, which is the gap Step 6 is about.
+
+`L90` is the line to read for structure. HG002 and HG004 hold 90% of the assembly in two contigs,
+33.26 and 25.78 Mbp for HG002, 33.23 and 25.85 Mbp for HG004: one per chromosome arm, 98% of the q
+arm's 33.9 Mbp of assemblable sequence and 98% of the p arm's 26.3 Mbp, both stopping at the
+centromere. The remaining 5.3 Mbp sits in 60 contigs averaging 89 kb, about the size of the
+pericentromeric sequence they came from. HG003 needs three contigs for the same 90% and the break
+is in one arm: its p arm comes out whole at 25.78 Mbp while its q arm splits into 16.72 and 16.54.
+Its genome fraction, NGA50, mismatch rate and misassembly count are the best of the three, so that
+break costs contiguity and nothing else.
+
+![The assembly against chromosome 20, one contig per arm stopping at the centromere, and the N50-against-NGA50 gap measured on a separate unpolished run](https://raw.githubusercontent.com/anyscale/templates/main/templates/wdl-genomics-on-ray/assets/chr20-contigs.png)
+
+The first panel is that 14h44m run. Today's flags reproduce its q-arm contig to 0.05% and extend
+the p arm from 23.65 to 25.78 Mbp. The second panel is a *different* run again, assembled with
+`--nano-raw --iterations 0 --asm-coverage 30 --genome-size 64444167` to measure what skipping
+polishing costs. Contiguity barely moved (N50 33.25 Mbp) while NGA50 came out at 2.1 Mbp and
+genome fraction at 94.9%: consensus error dense enough to break QUAST's alignments turns one
+33 Mbp contig into blocks with a 2.1 Mbp median. No polished counterpart was ever measured, so the
+size of that effect is not established by this data, only that the two statistics disagree sharply
+on an unpolished assembly. The workflow now emits both arms' QUAST columns from a single run, so
+the paired table is one `medaka_rounds > 0` run away. `PIPELINE.md` has the rest.
+
+One queue time in that run is worth reading before you size a cluster. HG004's `Assemble` waited
+**639.1 s** where HG002's and HG003's waited 92.6 s and 31.9 s, and it was not waiting for a node:
+all three workers were up inside 100 seconds. It was waiting for CPU on the first one, where all
+three `MeasureDivergence` tasks had landed and HG002's ran for 669.8 s. `Assemble` reserves 30 of
+a worker's 32 cores, so any 4-core neighbour on that node blocks it. Divergence is a diagnostic
+now that the read mode comes from the declared chemistry, which leaves ten minutes of one sample's
+critical path behind a task nothing branches on. A cluster sized exactly to the cohort pays that;
+one more node than samples does not.
 
 Spot suits every task here, the assembly included, which is a change from what this template used
 to say. That advice was written when a chromosome took 14h44m and a reclaimed node meant redoing
-most of it. At 1h19m it does not: a preempted attempt costs a fraction of a spot node-hour to
+most of it. At two hours it does not: a preempted attempt costs a fraction of a spot node-hour to
 redo, and the inputs files give every task `preemptible_tries: 3`, so node loss is budgeted rather
 than fatal. Modelled against interruption rates from 1.5% to 15% per node-hour, spot saves 58-64%
 of the bill and a resume mechanism would recover a further $0.05-$0.61 per cohort run, which is
@@ -951,34 +1006,11 @@ why there is no resume mechanism. The arithmetic inverts around ten hours per as
 roughly `T = 1/rate`, restart-from-zero costs more than spot saves, and a whole-genome run belongs
 back on demand.
 
-The cohort is the more interesting comparison, and it has been measured rather than projected. At
-`quick` scale on this template's compute config, three samples took 8m05s of workflow time against
-7m52s for the slowest of them alone: three assemblies for the wall clock of one, on three workers,
-for the same node-hours as running them one after another. The saving is latency, not compute.
-Against a per-task-VM backend the node-hours come out the same and what changes is the boot latency
-and idle tail on each of the 30 tasks, paid 30 times instead of never. That result depends on
-getting the third worker: capped at two, the same run takes 13m16s, because one assembly waits
-7m37s for a node.
-
-`L90 = 2` is the line worth reading. Two contigs, 33.3 Mbp and 23.7 Mbp, hold 90% of the assembly:
-one per chromosome arm, 98% of the q arm's 33.9 Mbp of assemblable sequence and 90% of the p arm's
-26.3 Mbp. Both stop at the centromere. The remaining 5.2 Mbp sits in 42 contigs averaging 123 kb,
-about the size of the pericentromeric sequence they came from.
-
-![The assembly against chromosome 20, one contig per arm stopping at the centromere, and the N50-against-NGA50 gap measured on a separate unpolished run](https://raw.githubusercontent.com/anyscale/templates/main/templates/wdl-genomics-on-ray/assets/chr20-contigs.png)
-
-The figure's second panel is a *different* run, and neither panel is today's command line. It
-assembled with `--nano-raw --iterations 0 --asm-coverage 30 --genome-size 64444167` to measure what
-skipping polishing costs. Contiguity barely moved (N50 33.25 Mbp) while NGA50 came out at 2.1 Mbp
-and genome fraction at 94.9%: consensus error dense enough to break QUAST's alignments turns one
-33 Mbp contig into blocks with a 2.1 Mbp median. No polished counterpart was ever measured, so the
-size of that effect is not established by this data, only that the two statistics disagree sharply
-on an unpolished assembly. The workflow now emits both arms' QUAST columns from a single run, so
-the paired table is one `medaka_rounds > 0` run away. `PIPELINE.md` has the rest.
-
 ### What that job encodes
 
-`timeout_s: 86400`. An earlier attempt at 12h was SIGTERMed at 12h01m, inside polishing.
+`timeout_s: 86400`, against a measured 2h03m56s. The headroom is for the runs that are not this
+one: a slower instance type, a whole genome rather than one chromosome, or a spot fleet spending
+part of its budget on retries. An earlier 12h ceiling SIGTERMed a run at 12h01m, inside polishing.
 
 `WDL_ON_RAY_RESULTS`. Without it the outputs die with the cluster, as Step 7 explains.
 

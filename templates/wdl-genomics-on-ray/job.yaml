@@ -13,9 +13,10 @@
 # claim this template makes. A production example that cannot demonstrate it is the wrong
 # example. `inputs.chr20.json` is still here for the single-sample case; point -i at it instead.
 #
-# Measured, three samples at 64 Mbp on the shape below: see the README's time and cost section.
-# The single-sample equivalent is 1h19m25s of Flye on c6i.16xlarge/62 cores, or about 2h on the
-# m5.8xlarge/30 this ships with, and the three run concurrently rather than in series.
+# Measured on the shape below: 2h03m56s for all three, against 1h55m33s of Flye for the slowest
+# sample on its own. The three run concurrently rather than in series, so the cohort costs the
+# same node-hours as one sample at a time and roughly a third of the wall clock. The README's
+# time and cost section has the per-sample assembly metrics.
 #
 # Not `--asm-coverage`. Capping the disjointig stage at Flye's documented 40x was measured to
 # cost a third of the N50 (33.27 -> 11.06 Mbp) to save 14.6 minutes, so the target defaults to 0
@@ -112,13 +113,15 @@ compute_config:
       min_nodes: 1
       max_nodes: 3
 
-# 12h was not enough -- an earlier run was SIGTERMed at 12h01m, inside polishing. 24h leaves
-# roughly nine hours of headroom over the measured 14h44m.
+# The measured run is 2h03m56s, so 24h is mostly headroom, and it is headroom for the runs that
+# are not this one: a slower instance type, a whole genome rather than one chromosome, or a spot
+# fleet spending part of its preemptible_tries budget. A 12h ceiling here once SIGTERMed a run at
+# 12h01m, inside polishing, which is the failure this is sized against.
 timeout_s: 86400
 
 # Node loss is handled inside the workflow: Ray node/worker death maps to miniwdl's
 # `Interrupted`, which routes to the WDL's own `runtime.preemptible`. A job-level retry runs on
 # a new cluster, and this job's call cache lives on /mnt/cluster_storage, so the retry would
-# find an empty cache and redo up to 14 hours of finished work. Raise this to 1 only together
-# with the durable RUN_DIR/CACHE_DIR described in the entrypoint.
+# find an empty cache and reassemble all three samples from scratch. Raise this to 1 only
+# together with the durable RUN_DIR/CACHE_DIR described in the entrypoint.
 max_retries: 0
