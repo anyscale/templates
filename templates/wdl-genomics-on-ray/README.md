@@ -161,6 +161,12 @@ WORK = pathlib.Path("/mnt/cluster_storage/wdl-on-ray")
 DATA_DIR, RUN_DIR, SMOKE_DIR = WORK / "data", WORK / "runs", WORK / "smoke"
 for d in (DATA_DIR, RUN_DIR, SMOKE_DIR):
     d.mkdir(parents=True, exist_ok=True)
+# Pin Ray's temp root before moving TMPDIR. On Linux, Ray finds a running cluster through
+# <TMPDIR>/ray/ray_current_cluster, and a workspace sets no RAY_ADDRESS, so moving TMPDIR alone
+# made `wdl-on-ray run` start a second, empty Ray on the head instead of joining this one. The
+# head offers CPU: 0, so the smoke test waited forever (staging, 2026-09-24). Jobs get
+# RAY_ADDRESS from the platform and never hit this.
+os.environ.setdefault("RAY_TMPDIR", os.environ.get("TMPDIR", "/tmp"))
 os.environ["TMPDIR"] = str(WORK / "tmp")
 pathlib.Path(os.environ["TMPDIR"]).mkdir(parents=True, exist_ok=True)
 
