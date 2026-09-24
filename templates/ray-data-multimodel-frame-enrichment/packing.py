@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 """Does this multi-model packing fit on one GPU, and what binds when it does not?
 
-    python packing.py                                  # the source engagement's config
+    python packing.py                                  # the originating workload's config
     python packing.py --stages measured --vram 22.03    # this template's four models, on an L4
     python packing.py --strict                         # exit 1 if any GPU is over-committed
     python packing.py --json
 
-Two tables. `--stages shipped` is the source engagement's configuration on its own model set,
-which is where every lever in the README was measured. `--stages measured` is this template's
-sam3 + dinov3 + siglip2, measured on a g6 L4. Their footprints differ: 21.01 GiB shipped,
-5.53 GiB measured. Do not quote one for the other.
+Two tables. `--stages shipped` is the originating workload's configuration on its own model
+set, which is where every lever in the README was measured. `--stages measured` is this
+template's sam3 + dinov3 + siglip2, measured on a g6 L4. Their footprints differ: 21.01 GiB
+shipped, 5.53 GiB measured. Do not quote one for the other.
 
 An L4 is 24 GB, which is 22.35 GiB, of which torch reports 22.03 usable. Pass `--vram 22.03`;
 `--vram 24` invents about 2 GiB of headroom.
@@ -104,7 +104,7 @@ class Stage:
         return "both"
 
 
-# The configuration behind the source engagement's best full run (G2 fleet, 2026-06-09):
+# The configuration behind the originating workload's best full run (G2 fleet, 2026-06-09):
 #
 #   detector : 10 actors x num_gpus 0.2, batch 4, bfloat16, torch.compile DEFAULT mode
 #   metrics  :  8-24 actors x num_gpus 0.02, batch 32, sub-batch 4
@@ -125,7 +125,7 @@ SHIPPED = [
 UNMEASURED = {"detector"}  # vram_gib is its fraction share, not a measurement
 
 # THIS TEMPLATE'S OWN MODEL SET, MEASURED. Two GPU probe jobs on a g6 L4, 2026-08-17,
-# 640x480 frames, bf16, no torch.compile. `SHIPPED` above is the SOURCE ENGAGEMENT's
+# 640x480 frames, bf16, no torch.compile. `SHIPPED` above is the ORIGINATING WORKLOAD's
 # configuration on a different model set, and its 21.01 GiB one-each footprint describes
 # their models, not sam3 + dinov3 + siglip2. Quoting it as this set's footprint was the
 # mistake these numbers replace.
@@ -140,9 +140,9 @@ UNMEASURED = {"detector"}  # vram_gib is its fraction share, not a measurement
 #
 # CAVEAT ON THE OBJECT EMBEDDER, and it is the same trap as everywhere else in this file:
 # it was measured at ONE crop per frame, so 4 crops total. Its cost scales with DETECTIONS,
-# not with frames, and the source engagement's 7.65 GiB was 32 frames' worth of crops. This
-# figure is a floor for a nearly-empty batch and must not be read as a per-actor budget for
-# a busy one. It is entered here because a measured floor beats an invented number, and
+# not with frames, and the originating workload's 7.65 GiB was 32 frames' worth of crops.
+# This figure is a floor for a nearly-empty batch and must not be read as a per-actor budget
+# for a busy one. It is entered here because a measured floor beats an invented number, and
 # flagged for the same reason.
 MEASURED_L4 = [
     Stage("detector", num_gpus=0.2, vram_gib=4.19, actors=1, batch=8),
@@ -154,7 +154,7 @@ MEASURED_L4 = [
 STAGE_SETS = {"shipped": SHIPPED, "measured": MEASURED_L4}
 
 # Which stages carry a fraction share instead of a measurement, PER TABLE. The detector is
-# the source engagement's one gap; on the measured table it is the best-measured stage of
+# the originating workload's one gap; on the measured table it is the best-measured stage of
 # the four, and printing "(UNMEASURED)" beside a real figure would be a lie in the direction
 # that costs least to tell.
 UNMEASURED_BY_SET = {"shipped": UNMEASURED, "measured": set()}
@@ -168,8 +168,8 @@ UNMEASURED_BY_SET = {"shipped": UNMEASURED, "measured": set()}
 #                                                    towers; this template uses the vision
 #                                                    tower only, so less)
 #
-# Two things follow, and neither is a per-actor figure. The table above is the SOURCE
-# ENGAGEMENT's measurement on a DIFFERENT model set, so these floors do not replace it --
+# Two things follow, and neither is a per-actor figure. The table above is the ORIGINATING
+# WORKLOAD's measurement on a DIFFERENT model set, so these floors do not replace it --
 # they bound it. And the object embedder's 7.65 GiB against a 0.61 GB weight floor says
 # activations at batch 32 dominate its footprint by an order of magnitude. The GPU measurement that replaces the
 # detector's UNMEASURED entry has these numbers to sanity-check itself against: a measured
@@ -263,8 +263,8 @@ def check_coresidency(stages: list[Stage], vram_per_gpu: float) -> list[str]:
         problems.append(
             f"one actor of each stage holds {one:.2f} GiB of {vram_per_gpu:g} GiB, leaving "
             f"{headroom:.2f} GiB ({headroom / vram_per_gpu:.0%}). Activation peaks are not "
-            f"in these steady-state figures; under 10% headroom is where the source "
-            f"engagement's batch-192 OOM lived"
+            f"in these steady-state figures; under 10% headroom is where the originating "
+            f"workload's batch-192 OOM lived"
         )
     return problems
 
@@ -316,7 +316,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--strict", action="store_true",
                     help="exit 1 if any stage is over-committed or the ordering inverted")
     ap.add_argument("--stages", choices=sorted(STAGE_SETS), default="shipped",
-                    help="'shipped' is the source engagement's config on ITS model set; "
+                    help="'shipped' is the originating workload's config on ITS model set; "
                          "'measured' is this template's own four models, measured on an L4")
     ap.add_argument("--json", action="store_true")
     args = ap.parse_args(argv)

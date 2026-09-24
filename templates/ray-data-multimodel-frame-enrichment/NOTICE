@@ -20,7 +20,7 @@ terms below still travel with any output or derivative you publish.
 
 Built with DINOv3.
 
-NOT USED, DELIBERATELY: the source engagement's pipeline also touched YOLO variants.
+NOT USED, DELIBERATELY: the originating workload's pipeline also touched YOLO variants.
 Ultralytics YOLO is AGPL-3.0 and YOLOv9/YOLOR are GPL-3.0, which would carry copyleft
 obligations into anything built around this template. Any substitute for the detector or
 metrics stage has to be licence-checked before it goes in.
