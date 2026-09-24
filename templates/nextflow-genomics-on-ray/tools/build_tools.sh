@@ -100,8 +100,10 @@ done
 
 # --- PATH ---------------------------------------------------------------------
 #
-# The Dockerfile puts $PREFIX/envs/main/bin and $PREFIX/bin on PATH, in that
-# order, and nothing else. The other environments are reached by absolute path:
+# The Dockerfile puts $PREFIX/bin first on PATH and $PREFIX/envs/main/bin last,
+# after the image's own /home/ray/anaconda3/bin, and nothing else. Last because
+# the main env carries its own python, which must not shadow the image's. The
+# other environments are reached by absolute path:
 #
 #   deepvariant  pins python <3.11, so it must never shadow the cluster's 3.12.
 #                Called through tools/run_deepvariant.sh.

@@ -82,10 +82,18 @@ ENV PATH=/opt/nf-tools/bin:${PATH}
 COPY --chown=ray:users tools/ /opt/nf-tools/src/tools/
 RUN bash /opt/nf-tools/src/tools/build_tools.sh /opt/nf-tools
 
-# The main environment goes on PATH. The others deliberately do not; see
+# The main environment goes on PATH, *last*. The others deliberately do not; see
 # build_tools.sh. This must be ENV rather than a shell profile, because process
 # scripts run from Ray worker processes that never source one.
-ENV PATH=/opt/nf-tools/envs/main/bin:/opt/nf-tools/bin:${PATH}
+#
+# Last, not first, because the env carries its own python (conda-forge 3.12.x,
+# which multiqc needs). Put first, it shadowed the image's: `python` became the
+# env's interpreter, `import ray` failed in the verification step below, and
+# `nf-ray` and score_variants.py would have picked it up at run time too.
+# Appended, `python` stays /home/ray/anaconda3/bin/python, and the tools still
+# resolve because nothing earlier on PATH carries their names -- the
+# verification step checks both.
+ENV PATH=${PATH}:/opt/nf-tools/envs/main/bin
 
 # The executor plugin, from stage 1. NXF_PLUGINS_DIR points Nextflow here, so it
 # resolves nf-ray offline -- a cluster with no route to the plugin registry still
@@ -132,6 +140,8 @@ snapshot_download('${NF_RAY_SCORER_MODEL}', allow_patterns=['*.json','*.safetens
 # Ray or numpy -- which is a failure that otherwise appears as a worker that will
 # not start, on a cluster, twenty minutes later.
 RUN set -eux; \
+    test "$(command -v python)" = /home/ray/anaconda3/bin/python; \
+    test "$(command -v samtools)" = /opt/nf-tools/envs/main/bin/samtools; \
     python -c "import sys; assert sys.version_info[:2] == (3, 12), sys.version"; \
     python -c "import ray; assert ray.__version__ == '2.58.0', ray.__version__"; \
     python -c "import numpy; assert numpy.__version__.startswith('2.2.'), numpy.__version__"; \
