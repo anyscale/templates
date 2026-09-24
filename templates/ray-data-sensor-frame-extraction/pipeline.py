@@ -125,8 +125,11 @@ def read_geometry(input_path: str) -> tuple[int, int, int]:
 class ISP:
     """The GPU transform stage: demosaic-shaped work plus a downsample.
 
-    Arithmetic-light. Measured on one L4, the GPU stage span was 1.99s against the read's
-    2.44s, so it is closer to the constraint at CI scale.
+    Arithmetic-light. Measured on one L4, Ray 2.57.0: GPU stage span 1.99s against the
+    read's 2.44s. Spans overlap under the streaming executor and do not rank stages. The
+    GPU stage's 3.4s of UDF across 2 actors in that 1.99s is about 0.85 of saturation, and
+    that is why it is closer to the constraint than the read at CI scale. The read cannot be
+    ranked by UDF time; see "Which operator binds" in the README.
     """
 
     def __init__(self, width: int, height: int, out_height: int = OUT_HEIGHT):
