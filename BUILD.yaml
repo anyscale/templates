@@ -828,10 +828,13 @@
 # (1.73x and 2.35x packing on A10G) are the engagement's, on another cluster, and not this
 # notebook's.
 #
-# Measured on a 4-CPU laptop, Ray 2.58.0: the broadcast probe and the hash left_anti join return
-# the same rows, NULL-key rows included, and the probe starts no HashShuffleAggregator; one root
-# _SUCCESS against one per partition. The classifier alone on a laptop CPU, torch 2.13.0 and
-# transformers 5.17.0: 30 rows, no NaN scores. Not yet run on this entry's compute config.
+# Measured on a 14-CPU macOS laptop, 2026-09-24, Ray 2.58.0, torch 2.13.0 on CPU: the notebook
+# end to end through papermill, 23/23 cells, 3 min 17 s, with the lock install skipped and no
+# `pip` in ray.init (the lock is Linux CUDA wheels) and CLASSIFY_ROWS=2000. The probe and the hash
+# left_anti join returned the same 10,081 rows, all 371 NULL-key rows kept, 14 aggregators
+# against 0; 200 per-partition markers against 1. The 1.11x that run printed is two CPU actors
+# against one: Ray on Apple Silicon reports a GPU torch cannot use. Not yet run on this entry's
+# compute config, so no GPU cell has run anywhere.
 #
 # Unmeasured: the probe under worker loss, and run_pipeline.py / job.yaml, never submitted.
 # owner: @em-anyscale
