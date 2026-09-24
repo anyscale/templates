@@ -277,9 +277,9 @@ class RayExecutor extends AbstractGridExecutor implements ExtensionPoint {
                 return
             out.put('NF_RAY_' + camelToUpper(key), String.valueOf(v))
         }
-        // Always last, so it cannot be shadowed by the scope: the daemon sites its
-        // socket here, and two runs pointing at one socket would share a Ray driver
-        // and each other's task ids.
+        // Always last, so it cannot be shadowed by the scope: the daemon keys its
+        // socket on this path, and two runs pointing at one socket would share a
+        // Ray driver and each other's task ids.
         if( session?.workDir != null )
             out.put('NF_RAY_WORK_DIR', session.workDir.toString())
         return out

@@ -39,7 +39,7 @@ def _add_common(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--socket",
         default="",
-        help="daemon socket (default: <workDir>/.nf-ray.sock, or NF_RAY_SOCKET)",
+        help="daemon socket (default: /tmp/nf-ray-<workDir hash>.sock, or NF_RAY_SOCKET)",
     )
     parser.add_argument(
         "--work-dir",

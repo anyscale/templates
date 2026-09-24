@@ -18,6 +18,7 @@ Defaults worth their comments are commented at the field.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 from dataclasses import dataclass, field
@@ -38,6 +39,14 @@ SHARED_STORAGE_PREFIXES = (
 )
 
 _TRUE = frozenset({"1", "true", "yes", "on"})
+
+#: Where the daemon's socket goes by default. Node-local on purpose: the socket
+#: only ever connects processes on the head node (Nextflow, the CLI it spawns, the
+#: daemon), and the work directory is on NFS, where a unix socket may not be
+#: supported at all and the lock file beside it relies on flock over the network.
+#: A fixed /tmp rather than $TMPDIR, because a notebook that points TMPDIR at
+#: shared storage would otherwise move the socket straight back onto it.
+SOCKET_DIR = "/tmp"
 
 # Defaults live here, once, and are referenced by both the dataclass field and
 # `from_env`. Writing the literal in both places is how a default silently
@@ -98,8 +107,9 @@ class Config:
 
     socket_path: str = ""
     """Unix socket the CLI uses to reach the daemon. Defaults to
-    ``<work_dir>/.nf-ray.sock`` so two concurrent pipelines in different work
-    directories get their own daemon without coordinating."""
+    ``/tmp/nf-ray-<hash of work_dir>.sock`` (see :func:`default_socket_path`), so
+    two concurrent pipelines in different work directories get their own daemon
+    without coordinating, and the socket stays off NFS."""
 
     work_dir: str = ""
     """Nextflow's ``workDir``. Used to site the socket and to warn when it is not
@@ -182,7 +192,7 @@ class Config:
     @classmethod
     def from_env(cls, work_dir: str = "") -> Config:
         resolved_work_dir = work_dir or _env("WORK_DIR") or os.getcwd()
-        socket_path = _env("SOCKET") or os.path.join(resolved_work_dir, ".nf-ray.sock")
+        socket_path = _env("SOCKET") or default_socket_path(resolved_work_dir)
         placement = _env("PLACEMENT_TSV") or os.path.join(
             resolved_work_dir, "nf_ray_placement.tsv"
         )
@@ -232,6 +242,19 @@ class Config:
             max_node_memory_gb=_env_float("MAX_NODE_MEMORY_GB", 0.0),
             max_node_gpus=_env_float("MAX_NODE_GPUS", 0.0),
         )
+
+
+def default_socket_path(work_dir: str) -> str:
+    """The daemon socket for *work_dir*: node-local, and short.
+
+    Keyed by a hash of the absolute work directory, which keeps "one daemon per
+    work directory" without putting the socket inside it. The hash also keeps the
+    path at a fixed 33 characters, well inside the 108 bytes ``sun_path`` allows;
+    ``<work_dir>/.nf-ray.sock`` grew with the work directory and failed to bind
+    past that limit.
+    """
+    digest = hashlib.sha256(os.path.abspath(work_dir).encode()).hexdigest()[:16]
+    return os.path.join(SOCKET_DIR, f"nf-ray-{digest}.sock")
 
 
 def is_shared_storage(path: str) -> bool:

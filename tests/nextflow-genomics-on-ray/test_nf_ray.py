@@ -36,7 +36,12 @@ for candidate in (os.getcwd(), _TEMPLATE):
         break
 
 from nf_ray import directives, envs, errors, resources  # noqa: E402
-from nf_ray.config import Config, is_shared_storage, shared_storage_warning  # noqa: E402
+from nf_ray.config import (  # noqa: E402
+    Config,
+    default_socket_path,
+    is_shared_storage,
+    shared_storage_warning,
+)
 
 GIB = 1 << 30
 MIB = 1 << 20
@@ -398,10 +403,40 @@ def _() -> None:
         assert config.max_node_memory_gb == 64.0
         assert config.image_map == {"a": "b"}
         assert config.extra_resources == {"nvme": 1.0}
-        assert config.socket_path == "/mnt/cluster_storage/nf-work/.nf-ray.sock"
+        assert config.socket_path == default_socket_path("/mnt/cluster_storage/nf-work")
     finally:
         os.environ.clear()
         os.environ.update(saved)
+
+
+@check("config: the daemon socket is node-local, per work dir, and short")
+def _() -> None:
+    # The work dir is on NFS, where a unix socket may not bind and flock on the
+    # lock file beside it is unreliable; and sun_path is 108 bytes on Linux (104
+    # on macOS), which <workDir>/.nf-ray.sock outgrew with a long enough workDir.
+    import socket
+
+    a = default_socket_path("/mnt/cluster_storage/nf-work")
+    b = default_socket_path("/mnt/cluster_storage/other-run")
+    assert a.startswith("/tmp/nf-ray-") and a.endswith(".sock"), a
+    assert a != b, "two work dirs must not share a daemon"
+    assert a == default_socket_path("/mnt/cluster_storage/nf-work/"), "must not depend on a slash"
+
+    deep = "/mnt/cluster_storage/" + "/".join(["a-rather-long-directory-name"] * 10)
+    path = default_socket_path(deep)
+    assert len(path) == len(a) < 104, path
+    old_style = os.path.join(deep, ".nf-ray.sock")
+    for candidate, should_bind in ((path, True), (old_style, False)):
+        with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as sock:
+            try:
+                sock.bind(candidate)
+            except OSError as exn:
+                assert not should_bind, f"{candidate}: {exn}"
+                # Refused for its length, before the missing directory matters.
+                assert "too long" in str(exn), exn
+            else:
+                assert should_bind, f"{candidate} bound despite being {len(candidate)} bytes"
+                os.unlink(candidate)
 
 
 @check("config: Ray-level retries are off by default, from both directions")
