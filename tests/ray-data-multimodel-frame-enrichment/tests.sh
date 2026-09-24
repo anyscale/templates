@@ -21,10 +21,15 @@
 #     metrics stage, at the fractional GPU reservations the template ships. This is also the
 #     only path that shows the runtime env reaching the actors.
 #
-# Run end to end on a fleet at 2026-08-19, prodjob_7vlhzuirl3p8wt7jp2tcnyfhuk, one g6.4xlarge:
-# 228 s, exit 0, 27/27 papermill cells, and `ungated pair: 24 rows, image embedding width
-# {768}, all sharpness finite`. The actors ran on the worker (10.0.40.254), not the head, so
-# the 768-wide embeddings could only come from the lock arriving by runtime env.
+# Run end to end on a fleet at 2026-08-19 on anyscale/ray:2.57.0-py312-cu129,
+# prodjob_7vlhzuirl3p8wt7jp2tcnyfhuk, one g6.4xlarge: 228 s, exit 0, 27/27 papermill cells, and
+# `ungated pair: 24 rows, image embedding width {768}, all sharpness finite`. The actors ran on
+# the worker (10.0.40.254), not the head, so the 768-wide embeddings could only come from the
+# lock arriving by runtime env.
+#
+# Run again at 2026-09-24 on 2.58.0-py312-cu129, `rayapp test` on staging,
+# expwrk_t7443rhiucgkrd6ka9lcxr45de: passed, 27/27 papermill cells, the same `ungated pair`
+# line. rayapp logs no separate time for this script.
 #
 # WHAT IT DOES NOT COVER
 #   - four models on one GPU. The gated pair is absent. That claim rests on the arithmetic
@@ -51,8 +56,9 @@ export DETECTOR_BATCH=2 EMB_BATCH=8 METRICS_BATCH=8 METRICS_SUBBATCH=2
 
 # Do not install the template's lock here. The notebook installs it partway through, where a
 # user would, and the cells above that point run on the bare image: it ships numpy, pyarrow and
-# ray, and no torch, torchvision or transformers (measured; -cu129 is the CUDA runtime, not
-# PyTorch). Installing it here would test something the user never runs.
+# ray, and no torch, torchvision or transformers (measured on 2.57.0, and the 2.58.0 freeze
+# lists the same; -cu129 is the CUDA runtime, not PyTorch). Installing it here would test
+# something the user never runs.
 #
 # Use uv pip, never bare pip. A workspace tracks a bare install and appends it unpinned to every
 # actor's pip list; one unhashed entry puts pip in hash-checking mode against a hashed lock and
