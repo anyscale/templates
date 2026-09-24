@@ -312,6 +312,13 @@ def train_loop_per_worker(config: dict):
 
         # Flush any leftover accumulated gradients at epoch end.
         if accum_count > 0:
+            # Average over the micro-batches actually accumulated in this window.
+            correction = grad_accum / accum_count
+
+            for p in policy.parameters():
+                if p.grad is not None:
+                    p.grad.mul_(correction)
+
             util.optimizer_step(policy, optimizer, scaler, scheduler)
 
         # -- End of epoch: report metrics and checkpoint -----------------------
