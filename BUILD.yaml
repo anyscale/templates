@@ -803,8 +803,8 @@
     AWS: configs/wdl-genomics-on-ray/aws.yaml
     GCP: configs/wdl-genomics-on-ray/gce.yaml
   test:
-    # The test runs the notebook at WDL_DEMO_SCALE=quick (~15 min of assembly). The Buildkite
-    # step is capped at 75 min regardless of this value, so this is headroom, not a target.
+    # Runs the notebook at WDL_DEMO_SCALE=quick, about 15 min end to end with workspace start.
+    # The Buildkite step allows this value plus a 30 min startup allowance.
     tests_path: tests/wdl-genomics-on-ray/
     command: bash tests.sh
     timeout_in_sec: 3600

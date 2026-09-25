@@ -3,21 +3,19 @@ head_node:
   resources:
     CPU: 0
 worker_nodes:
-# 32 vCPU / 128 GiB. Read together with the notebook's runtime_attr_flye, which asks for 30
-# cpu_cores: on Ray a resource request that no node can satisfy is an indefinite wait, not an
-# error, so the instance type and the workflow's request are one decision, not two.
-# min_nodes: 1 so the first WDL task does not wait on a cold autoscale.
+# 32 vCPU / 128 GiB, sized with the notebook's runtime_attr_flye (30 cpu_cores, and
+# flye_num_threads 30): change the instance type and those together. min_nodes: 1 so the
+# first WDL task does not wait on a cold autoscale.
 #
-# max_nodes: 3 because the notebook assembles a three-sample cohort. Each sample's Flye task
-# holds 30 of a node's 32 vCPUs, so three concurrent assemblies want three nodes, and getting
-# them is the demonstration. Measured at `quick` scale on this shape: the three assemblies
-# queued 32s, 93s and 93s, landed on three separate workers, and the cohort took 8m05s against
-# 7m52s for its slowest single sample. The smaller tasks pack into the 2 vCPUs left over rather
-# than booting anything.
+# max_nodes: 3, one worker per concurrent assembly, since each sample's Flye task holds 30 of a
+# node's 32 vCPUs. Measured at `quick` scale on this shape (Ray 2.56.0 image): the three
+# assemblies queued 32s, 93s and 93s by `seconds_queued`, which overstates long waits, landed
+# on three separate workers, and the cohort took 8m05s against 7m52s for its slowest sample.
+# Tasks of 2 CPUs or fewer fit beside an assembly; the rest run on nodes already up.
 #
 # Lower this and the cohort still completes, just less concurrently; nothing hangs, because the
-# *per-task* requests still fit one node. Measured at max_nodes 2, the third assembly queues
-# 7m37s behind the first and the same run takes 13m16s.
+# *per-task* requests still fit one node. Measured at max_nodes 2, the third assembly queued
+# 7m37s behind the first and the same run took 13m16s.
 #
 # market_type: PREFER_SPOT. Every task carries preemptible_tries: 3 (the inputs JSONs and the
 # notebook's inputs), and a reclaimed node surfaces as node or worker loss, which the backend maps

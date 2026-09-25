@@ -4,16 +4,15 @@
 Runs README.ipynb's Step 6 / 6b cells against a synthetic `outputs.json` in the shape
 ONTAssembleCohort.wdl declares. No cluster, no data, no assembly -- seconds, not hours.
 
-The bug this exists for shipped once and was invisible for months. `SummarizeQuastReport`
-mangles QUAST metric names (`sed 's/ /_/g'`), so `quast_summary` is keyed
-`Genome_fraction_(%)`, not `Genome fraction (%)`. The notebook looked up the display
-names, which matched four keys out of nine and made its own guard unfalsifiable:
+The contract it guards: `SummarizeQuastReport` mangles QUAST metric names
+(`sed 's/ /_/g'`), so `quast_summary` is keyed `Genome_fraction_(%)`, not
+`Genome fraction (%)`. A notebook that looks up the display names matches four keys out
+of nine and makes its own guard unfalsifiable:
 
     assert "Genome fraction (%)" in summary   # never true, whatever QUAST produced
 
-Nothing caught it, because CI had never reached that cell -- the demo data 404'd two
-steps earlier. Any mismatch between a WDL output name and what the notebook reads is
-the same class of failure, and this catches all of it before an assembly runs.
+Any mismatch between a WDL output name and what the notebook reads is the same class of
+failure, and this catches it before an assembly runs.
 
 Executes the cells' real source, so it cannot drift from what ships.
 """
@@ -32,8 +31,7 @@ from pathlib import Path
 
 #: Where README.ipynb is. rayapp, and so CI, flattens templates/<name>/ and tests/<name>/ into
 #: one directory, which puts the notebook beside this file; a repo checkout keeps it two levels
-#: up. Only the repo path was here before, so this script had never passed under rayapp: it
-#: raised FileNotFoundError before the first assembly.
+#: up.
 _HERE = Path(__file__).resolve().parent
 TEMPLATE = next(
     (
@@ -110,9 +108,7 @@ def write_vcf(path: Path, sample: str, positions: list[int], ref_length: int) ->
     """The header paftools.js writes under `call -f`, not a minimal one.
 
     paftools.js:467-474 emits ##contig for every reference sequence plus ##FORMAT=GT.
-    A fixture without them passes a naive line parser and is rejected by `bcftools norm`,
-    which is how the first version of this fixture reported a bug in the notebook that
-    was really a bug in the fixture.
+    A fixture without them passes a naive line parser and is rejected by `bcftools norm`.
     """
     with path.open("w") as handle:
         handle.write("##fileformat=VCFv4.1\n")
@@ -194,16 +190,13 @@ def build_fixture(root: Path) -> tuple[Path, Path, dict[str, str]]:
             for _ in SAMPLES
         ],
     }
-    # The bare mapping, because that is what miniwdl actually writes to the run-root file --
-    # the {"dir", "outputs"} envelope is CLI stdout only. The first fixture used the envelope
-    # (copied from the then-unexercised notebook, circularly) and hid exactly that mismatch.
+    # The bare mapping, because that is what miniwdl actually writes to the run-root file;
+    # the {"dir", "outputs"} envelope is CLI stdout only.
     (run_dir / "outputs.json").write_text(json.dumps(outputs))
 
-    # The decoy that broke the first real cohort run:
-    # miniwdl writes an envelope-less outputs.json inside every nested sub-workflow
-    # directory, and one of them carried a newer mtime than the run root's. A readout that
-    # globs recursively and sorts by mtime picks this file and dies on the missing
-    # "outputs" key -- so the fixture plants one, newer, exactly where miniwdl puts it.
+    # A decoy: miniwdl writes an outputs.json inside every nested sub-workflow directory,
+    # and one of them can be newer than the run root's. A readout that globs recursively
+    # and sorts by mtime would pick it, so the fixture plants one, newer, under the run.
     decoy = run_dir / "call-assemble-0" / "call-flye" / "outputs.json"
     decoy.parent.mkdir(parents=True, exist_ok=True)
     decoy.write_text(json.dumps({"ONTAssembleWithFlye.asm_polished": "bare, no envelope"}))
@@ -217,10 +210,10 @@ def main() -> int:
 
     # Step 6b reads the fixture's VCFs through Ray Data, and the template's head node offers
     # `CPU: 0` (configs/wdl-genomics-on-ray/*.yaml), so that read runs on a worker. A default
-    # TemporaryDirectory is on the driver's local disk, which no worker can see: under rayapp
-    # this failed as `ray::ListFiles() FileNotFoundError .../vcf-normalized/HG003.norm.vcf`.
-    # The notebook keeps WORK on /mnt/cluster_storage for the same reason, so the fixture goes
-    # there whenever it exists. Off Anyscale, the default is fine, because 6b skips without ray.
+    # TemporaryDirectory is on the driver's local disk, which no worker can see (the symptom
+    # is `ray::ListFiles() FileNotFoundError .../vcf-normalized/HG003.norm.vcf`). The notebook
+    # keeps WORK on /mnt/cluster_storage for the same reason, so the fixture goes there
+    # whenever it exists. Off Anyscale, the default is fine, because 6b skips without ray.
     shared = Path("/mnt/cluster_storage")
     fixture_parent = str(shared) if shared.is_dir() and os.access(shared, os.W_OK) else None
 
