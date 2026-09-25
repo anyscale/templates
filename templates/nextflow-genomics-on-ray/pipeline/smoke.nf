@@ -80,6 +80,12 @@ process SHARD {
  * Gather. Exists so the pipeline has a real dependency edge -- a fan-out with no
  * join proves the scheduler can start tasks but not that outputs are readable
  * from another node, which is the failure mode that actually bites on a cluster.
+ *
+ * Through a bin/ script, for the same reason. Nextflow puts the project's bin/
+ * on every task's PATH, but the project sits on the node running Nextflow, and
+ * a worker sees it only because the executor copies bin/ to shared storage. The
+ * first cluster run, before it did, got as far as main.nf's COLLECT_BENCHMARK
+ * and died there with `command not found`.
  */
 process COLLECT {
     cpus 1
@@ -95,14 +101,7 @@ process COLLECT {
 
     script:
     """
-    export LC_ALL=C
-    cat ${reports} | sort > smoke-summary.tsv
-
-    # The oracle. Compare this file across dispatch modes; it must not change.
-    grep '^checksum' smoke-summary.tsv | cut -f2 | sort -n > checksums.txt
-
-    echo "shards: \$(grep -c '^shard' smoke-summary.tsv)"
-    echo "distinct hosts: \$(grep '^hostname' smoke-summary.tsv | cut -f2 | sort -u | wc -l)"
+    smoke_collect.sh ${reports}
     """
 }
 

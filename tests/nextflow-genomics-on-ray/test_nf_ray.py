@@ -533,6 +533,35 @@ def _() -> None:
     assert "export LC_ALL=C" in text, "smoke.nf must pin locale or the oracle drifts"
 
 
+@check("smoke: the gather runs a bin/ script, so the smoke run checks bin/ reaches workers")
+def _() -> None:
+    # The first cluster run died at main.nf's COLLECT_BENCHMARK, `collect_vcfeval.py:
+    # command not found`: bin/ was on the head node only. smoke.nf's COLLECT goes
+    # through bin/ so that the 60-second run fails that way first.
+    with open(os.path.join(_TEMPLATE, "pipeline", "smoke.nf")) as handle:
+        text = handle.read()
+    collect = text[text.index("process COLLECT") :]
+    assert "smoke_collect.sh ${reports}" in collect, "smoke.nf COLLECT no longer calls bin/"
+    script = os.path.join(_TEMPLATE, "pipeline", "bin", "smoke_collect.sh")
+    assert os.path.isfile(script), f"{script} is missing"
+
+
+@check("plugin: tasks run bin/ from an executable copy on shared storage")
+def _() -> None:
+    # By inspection: running it takes Nextflow and two Ray nodes. What it pins is that
+    # getBinDir(), which Nextflow appends to every task's PATH, is not left at its
+    # default of <projectDir>/bin, a directory only the head node has, and that the
+    # copy is made executable, since rayapp's zip unpacks bin/ at 0644.
+    plugin_src = os.path.join(_TEMPLATE, "nf-ray-plugin", "src", "main", "groovy")
+    path = os.path.join(plugin_src, "ai", "anyscale", "nfray", "RayExecutor.groovy")
+    with open(path) as handle:
+        text = handle.read()
+    assert re.search(r"@Override\s+Path getBinDir\(\)", text), "getBinDir() is not overridden"
+    assert "stagedBinDir = stageBinDir()" in text, "register() no longer copies bin/"
+    assert "getTempDir('bin')" in text, "bin/ is no longer copied under the work directory"
+    assert "OWNER_EXECUTE" in text, "the copy of bin/ is no longer made executable"
+
+
 @check("nextflow: numeric params are coerced before arithmetic")
 def _() -> None:
     # A regression guard for an observed bug, not a hypothetical one.

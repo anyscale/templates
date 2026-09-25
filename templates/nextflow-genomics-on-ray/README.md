@@ -207,7 +207,8 @@ candidate before a pipeline depends on it.
 
 `smoke.nf` fans out a few shards and gathers them. It calls no genomics tool and reads no data, so
 when it fails the failure is the executor's, and that is worth knowing before an hour of alignment
-depends on the answer.
+depends on the answer. The gather runs `pipeline/bin/smoke_collect.sh`, so it also checks that the
+pipeline's `bin/` reaches a worker, which only the executor's copy on shared storage makes true.
 
 It is also an equivalence oracle. Shard *i* sums the thousand integers from `i*1000+1`, so its
 checksum is `1,000,000*i + 500,500` whatever node ran it; a changed number means the environment
