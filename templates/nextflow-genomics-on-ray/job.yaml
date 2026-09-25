@@ -6,10 +6,10 @@
 # this file, so submitting from the repo root uploads the repo root and the entrypoint finds
 # no pipeline/.
 #
-# This cannot run yet: the `full` scale it reads,
-# s3://anyscale-public-materials/genomics/giab-trio-illumina-chr20/full/, has not been
-# published (tools/stage-demo-data.sh builds it), and neither has the image. Nothing about
-# its time or cost has been measured, so this file states neither.
+# The `full` scale it reads, s3://anyscale-public-materials/genomics/giab-trio-illumina-chr20/full/,
+# and the image are both published (2026-09-25; tools/stage-demo-data.sh builds the data). The
+# job itself has not been run, so nothing about its time or cost is measured, and this file
+# states neither.
 #
 # The production counterpart to the notebook, and a cohort for the same reason the notebook
 # is one: three samples over 48 intervals is 144 HaplotypeCaller tasks with nothing
