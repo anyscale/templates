@@ -44,14 +44,14 @@ no part. With the dictionary off, zstd shrinks the list column to 0.86x of `bina
 ## Decode on a laptop
 
 `pq.read_table`, warm cache, 3 timed runs after a warmup per arm, macOS arm64, pyarrow 23.0.1.
-Ranges don't overlap. Decompression costs both arms and dominates the fast one, so a ratio measured
+Ranges don't overlap; each ratio runs from the worst pairing of runs to the best. Decompression costs both arms and dominates the fast one, so a ratio measured
 under compression understates the decode gap.
 
 | configuration | bytes on disk | `binary(N)`, MB/s | `list<uint8>`, MB/s | ratio |
 |---|---|---|---|---|
-| no codec, dictionary on | identical | 12,936-13,783 | 1,065-1,384 | 10.94x |
-| zstd, dictionary on, as shipped | 1.00x | 6,355-9,356 | 1,102-1,503 | 4.51x |
-| no codec, dictionary off | list 4x | 10,459-12,259 | 1,039-1,378 | 8.30x |
+| no codec, dictionary on | identical | 12,936-13,783 | 1,065-1,384 | 9.35x-12.94x |
+| zstd, dictionary on, as shipped | 1.00x | 6,355-9,356 | 1,102-1,503 | 4.23x-8.49x |
+| no codec, dictionary off | list 4x | 10,459-12,259 | 1,039-1,378 | 7.59x-11.80x |
 
 ## Storage on the cluster worker
 
