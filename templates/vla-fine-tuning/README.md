@@ -35,10 +35,9 @@ Ray splits this cleanly:
 
 - **[Ray Train](https://docs.ray.io/en/latest/train/train.html)** handles (2): it launches distributed PyTorch workers across
   GPUs, manages DDP synchronization, checkpointing, and fault recovery.
-  If a worker dies, training restarts from the last *completed epoch* — not
-  from scratch, but not from the point of failure either. See
-  [Checkpoint and resume](#4-ray-train--distributed-training-loop) for what the
-  checkpoint does and does not restore.
+  If a worker dies, training restarts from the last checkpoint, which this
+  template writes at the end of each epoch (see
+  [Checkpoint and resume](#checkpoint-and-resume)).
 
 The result: you write a short, single-file script that scales from 1 GPU
 on a laptop to 32 GPUs across a cluster, with zero changes to your code.
@@ -124,30 +123,14 @@ spill to disk. If you see frequent object store spillage, reduce the data pipeli
 throughput to match training speed — for example, lower `map_batches` concurrency
 or decrease the number of CPU data workers so the producer and consumer stay in balance.
 
-> **Scaling caveat — `num_workers` is not the binding constraint on multi-node.**
-> The compute configs shipped with this template (`configs/vla-fine-tuning/`)
-> request **four single-GPU nodes** (one L4 each, `min_nodes = max_nodes = 4`).
-> That is the arrangement where *every* DDP gradient allreduce crosses the
-> network, because no two GPUs share a host. At `num_workers = 4` that config is
-> already full, so scaling out on this shape means raising `max_nodes` as well,
-> and every node added brings one GPU and one more host for each allreduce to
-> cross — throughput can flatten or regress while the config looks like it
-> scaled. Before scaling out:
->
-> 1. **Verify the interconnect is actually in use.** High-bandwidth fabrics (EFA,
->    InfiniBand, RDMA) do not engage by default — they need the right instance
->    type, driver, and NCCL configuration, and NCCL silently falls back to TCP
->    when any of that is missing. The fallback works; it is just one to two
->    orders of magnitude slower on an allreduce, and nothing in the training logs
->    says so. Run a multi-node NCCL allreduce benchmark and confirm the bus
->    bandwidth matches what the hardware advertises. *(Field observation from
->    other hardware, not a measurement of this template: the same 16-GPU
->    allreduce ran roughly 25× apart — tens of GB/s versus hundreds — purely on
->    whether RDMA was in use.)*
-> 2. **Pack GPUs into fewer nodes rather than spreading them across more.** Eight
->    GPUs on one host allreduce over NVLink/PCIe; eight GPUs on eight hosts
->    allreduce over the network. Choosing one multi-GPU instance type instead of
->    N single-GPU ones is usually a bigger win than any change to `num_workers`.
+**Scaling past 4 GPUs.** The shipped compute configs (`configs/vla-fine-tuning/`)
+run four single-L4 nodes (`min_nodes = max_nodes = 4`), so `num_workers = 4` fills
+them. To add workers, raise `max_nodes` to match `num_workers`, or move to a
+multi-GPU instance type. On single-GPU nodes every DDP allreduce crosses the
+network, but the gradients are small here: only the action and time heads train,
+about 2M parameters. If you unfreeze more of the model, pack GPUs into fewer,
+larger nodes. On EFA or InfiniBand instances, check that NCCL uses the fabric
+rather than falling back to TCP; `NCCL_DEBUG=INFO` logs the transport it picked.
 
 ## 1. Configuration
 
@@ -268,66 +251,49 @@ Under the hood, Ray Train:
 - Streams data shards via Ray Data (no manual `DistributedSampler` needed)
 - Coordinates checkpointing so only rank 0 writes, but all ranks sync
 - Handles fault tolerance: if a worker dies, training restarts from the
-  last checkpoint, not from scratch — which here means the last *completed
-  epoch*, since that is the only place this loop checkpoints
+  last checkpoint
 
 All of this happens transparently. The code below reads like **single-GPU
 training code** — Ray handles the distribution.
 
 Docs: [Getting Started with PyTorch](https://docs.ray.io/en/latest/train/getting-started-pytorch.html)
 
-### Checkpoint and resume — what is and isn't restored
+### Checkpoint and resume
 
-> **Read this before relying on restart behaviour for a long run.**
->
-> **Restored:** model weights, optimizer state, gradient scaler state, and the
-> epoch/step counters (`util.make_checkpoint` / `util.load_checkpoint`).
->
-> **Not restored: the position of the input stream.** `lerobot_datasource.py` has
-> no concept of an offset — `LeRobotDatasource.get_read_tasks()` always plans the
-> same row ranges starting at row 0 — and nothing in the checkpoint could tell it
-> otherwise. Ray Data rebuilds the whole pipeline from the datasource on every
-> restart.
->
-> What that means in practice:
->
-> - **Resume is epoch-granular, not step-granular.** A checkpoint is written only
->   at an epoch boundary (`max_train_steps` aside; see below), so on restart the
->   loop re-enters at `epoch + 1` with the stream back at the beginning. The data
->   stays consistent — re-reading the dataset is what an epoch *is* — but every
->   batch processed in the interrupted epoch is discarded and re-consumed. With
->   `num_epochs = 2` below, a failure late in the second epoch costs close to half
->   the run.
-> - `FailureConfig(max_failures=1)` allows one such restart after a worker error;
->   a second worker error ends the run. Node preemptions are budgeted separately
->   (`max_preemption_failures`, unlimited by default on Ray 2.58), and each one
->   costs the same epoch replay.
-> - **`step` counts micro-batches consumed, not rows reached.** Nothing anchors it
->   to a position in the dataset, so it is not a data offset. It is also passed to
->   `build_lr_scheduler(..., last_step=step)`, which treats it as an *optimizer*-step
->   index — and the optimizer steps once per `grad_accum` micro-batches, so a
->   resumed run re-enters its LR schedule `grad_accum` times further along than it
->   actually is. With the settings below (`grad_accum = 8`, `num_epochs = 2`) that
->   puts it at four times the schedule's whole length, and `lr_lambda` does not
->   clamp progress, so the cosine wraps round: the resumed second epoch starts at
->   0.75× the base LR where an uninterrupted run is at 0.59×. With the A100
->   settings (`grad_accum = 2`) it starts at 0 and climbs back to 0.59×.
-> - **`max_train_steps` and resume do not compose.** When the cap trips it breaks
->   out mid-epoch, and the loop still writes that epoch's checkpoint as if the
->   epoch had finished. Resuming from it skips the rest of that epoch, and because
->   the restored `step` is cumulative, a resume under the same cap trips it on its
->   first batch and exits reporting completion. Nor is this only a failure-path
->   problem: Ray Train restores from `RunConfig(name, storage_path)`, so running
->   this notebook again on the same cluster after a capped run starts from the
->   capped checkpoint. The cap is a smoke-test knob, not a way to run training in
->   segments; before a full run that follows a capped one, change `RUN_NAME` or
->   delete the run's directory under `RUN_STORAGE_PATH`.
->
-> Adding mid-epoch checkpointing *without* datasource resumption would make this
-> worse, not better: the model and optimizer would resume mid-epoch while the
-> stream restarted from row 0, silently re-training on data already seen. Doing it
-> properly means teaching `LeRobotDatasource` to start at a given row, recording
-> that row in the checkpoint, and threading it back into `read_datasource()`.
+A checkpoint (`util.make_checkpoint`) holds the model weights, optimizer and
+grad-scaler state, and the epoch and step counters. It doesn't hold the LR
+scheduler, which is rebuilt from `step` on resume, or the position in the data
+stream: `LeRobotDatasource` has no offset, so every restart re-reads the dataset
+from the beginning. In practice:
+
+- A restart resumes at the start of the epoch after the last completed one. Work
+  in the interrupted epoch is lost, and a failure in the first epoch starts over.
+  With `num_epochs = 2` below, one failure can cost up to half the run.
+- `FailureConfig(max_failures=1)` allows one restart after a worker error; a
+  second ends the run. Node preemptions have their own budget
+  (`max_preemption_failures`, unlimited by default in Ray 2.58), and each one
+  also replays the interrupted epoch.
+- The LR schedule is off after a restart. `step` counts micro-batches, but
+  `build_lr_scheduler(..., last_step=step)` treats it as an optimizer-step count,
+  so the resumed schedule is `grad_accum` times too far along. `lr_lambda`
+  doesn't clamp, so the cosine wraps around. With the settings below
+  (`grad_accum = 8`, `num_epochs = 2`), the resumed second epoch starts at 0.75×
+  the base LR instead of 0.59×. With the A100 settings (`grad_accum = 2`), it
+  starts at 0 and rises to 0.59×, the reverse of the planned decay. Check the
+  logged `lr` after a restart. To fix it, save `scheduler.state_dict()` in the
+  checkpoint and load it on resume.
+- Ray Train resumes any earlier run it finds under the same `RUN_NAME` and
+  `RUN_STORAGE_PATH`, so a second run of this notebook continues the first.
+  After a full run, the second trains nothing. After a `MAX_TRAIN_STEPS` smoke
+  test, it skips the rest of the epoch the cap cut short, since the cap
+  checkpoints that epoch early; with the cap still set, it stops after one
+  batch. To start fresh, change `RUN_NAME` or delete the run's directory under
+  `RUN_STORAGE_PATH`.
+
+A mid-epoch checkpoint alone won't give step-level resume. The stream would still
+start over, so the model would re-train on rows it saw before the failure.
+Step-level resume also needs a data read that can skip consumed rows, which
+`LeRobotDatasource` doesn't support.
 
 
 ```python
@@ -369,10 +335,8 @@ def train_loop_per_worker(config: dict):
     # ray.train.get_checkpoint() returns the last checkpoint saved by
     # ray.train.report() -- if this is a fresh run, it returns None.
     # On failure recovery, Ray automatically passes the most recent checkpoint
-    # back here, so training resumes from the start of the epoch after the last
-    # one that completed -- not from where it left off. This loop checkpoints
-    # once per epoch and the input stream restarts at row 0 regardless; see
-    # "Checkpoint and resume" above.
+    # back here, so training resumes at the start of the epoch after the last
+    # completed one (see "Checkpoint and resume" above).
     # Docs: https://docs.ray.io/en/latest/train/user-guides/checkpoints.html
 
     checkpoint = ray.train.get_checkpoint()                                # <-- RAY TRAIN: fault tolerance
@@ -456,14 +420,9 @@ def train_loop_per_worker(config: dict):
         # ray.train.report() is a synchronization barrier -- every worker must
         # call it. Only rank 0 creates the actual checkpoint.
         #
-        # LIMITATION -- this is the only place the run checkpoints, so it is also
-        # the only place it can resume from. make_checkpoint() stores
-        # model/optimizer/scaler/epoch/step but cannot store where the input
-        # stream had got to: lerobot_datasource.py has no offset, so Ray Data
-        # replans from row 0 on every restart. A crash at 90% of an epoch replays
-        # that whole epoch. Don't add mid-epoch checkpointing without datasource
-        # resumption -- that would resume the model mid-epoch while the stream
-        # restarts from the beginning, silently re-training on seen data.
+        # This is the loop's only checkpoint, so a restart replays the whole
+        # interrupted epoch. Read "Checkpoint and resume" above before adding a
+        # mid-epoch one.
         # Docs: https://docs.ray.io/en/latest/train/api/doc/ray.train.report.html
         avg_loss = epoch_loss_sum / max(epoch_loss_count, 1)
         metrics = {"epoch": epoch, "steps": step, "loss": avg_loss, "lr": scheduler.get_last_lr()[0]}
@@ -483,11 +442,9 @@ def train_loop_per_worker(config: dict):
 
 [`TorchTrainer`](https://docs.ray.io/en/latest/train/api/doc/ray.train.torch.TorchTrainer.html)
 is the single entry point for distributed PyTorch on Ray.
-To scale to 8, 16, or 32 GPUs: change `num_workers`, and give the compute config
-the GPUs to match (the shipped one tops out at 4). The training code, data
-pipeline, and checkpointing all adapt automatically — but whether it *goes
-faster* is a hardware question, not a `num_workers` question. See the
-[scaling caveat](#gpu-requirements) under GPU Requirements before scaling out.
+To scale to 8, 16, or 32 GPUs: change `num_workers` and give the compute config
+the GPUs to match; the shipped one stops at 4 (see [GPU Requirements](#gpu-requirements)).
+The training code, data pipeline, and checkpointing adapt automatically.
 
 
 ```python
@@ -519,10 +476,8 @@ train_loop_config = {
 #   num_workers=4       -> 4 GPU workers, each running train_loop_per_worker
 #   use_gpu=True        -> each worker gets 1 GPU
 #   accelerator_type    -> request a specific GPU type (e.g. "L4", "A100")
-# With the shipped compute config this is 4 single-GPU nodes, so every allreduce
-# goes over the network. Read the scaling caveat under "GPU Requirements" before
-# raising num_workers -- verify the interconnect first, and prefer packing GPUs
-# into fewer nodes over spreading them across more.
+# The shipped compute config has 4 single-L4 nodes. To raise num_workers, raise
+# its max_nodes too (see "GPU Requirements").
 # Docs: https://docs.ray.io/en/latest/train/api/doc/ray.train.ScalingConfig.html
 scaling_config = ray.train.ScalingConfig(num_workers=4, use_gpu=True, accelerator_type="L4")
 
@@ -563,16 +518,13 @@ This notebook demonstrated distributed fine-tuning of the **PI0.5 VLA model** on
 
 3. **Ray Train distributed training** — `train_loop_per_worker` runs on each GPU
    with automatic DDP wrapping (`prepare_model`), data sharding (`get_dataset_shard`),
-   and fault-tolerant checkpointing (`get_checkpoint` / `report`). Checkpoints are
-   written once per epoch and the input stream has no resumable offset, so a
-   restart replays the interrupted epoch — see
-   [Checkpoint and resume](#4-ray-train--distributed-training-loop).
+   and fault-tolerant checkpointing (`get_checkpoint` / `report`) once per epoch.
+   A restart replays the interrupted epoch; see
+   [Checkpoint and resume](#checkpoint-and-resume).
 
 4. **Launch** — `TorchTrainer` ties it all together. To scale from 1 to N GPUs,
-   change `ScalingConfig.num_workers`; the code adapts automatically. Throughput
-   does not follow automatically on multi-node — verify the interconnect and
-   prefer fewer, denser nodes (see the
-   [scaling caveat](#gpu-requirements)).
+   change `ScalingConfig.num_workers` and give the compute config N GPUs; the
+   code adapts automatically.
 
 ### Job submission
 
