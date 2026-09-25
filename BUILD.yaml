@@ -817,19 +817,10 @@
     command: bash tests.sh
     timeout_in_sec: 1800
 
-# owner_team ray-data: fractional-GPU actor packing across heterogeneous Ray Data stages, with
-# no Train/Serve/LLM surface.
-#
-# Outputs ship cleared. The 9 code cells CI runs have passed on a fleet twice (runs under
-# timeout_in_sec below). The 5 gated code cells have not run anywhere: they need a token
-# nobody can supply on a reader's behalf. Do not paste an output into a cell to fill the gap.
-#
-# No shared token, by licence: SAM 3 and DINOv3 terms are accepted per account.
-# tests/vla-fine-tuning/tests.sh pulls an organisation secret for its gated model; do not copy
-# that here. Nothing here reads anyscale_hf_token.
-#
-# CI runs the ungated half by tag (skip-in-ci, stripped by tests.sh). Do not replace the tag
-# with "skip when HF_TOKEN is unset". tests.sh lists what the run covers and what it does not.
+# owner_team ray-data: fractional-GPU packing across Ray Data stages, no Train, Serve or LLM.
+# CI runs the 9 ungated code cells. The 5 skip-in-ci cells need a per-account HF token for
+# SAM 3 and DINOv3 and have not run anywhere: share no token (no org secret, no
+# anyscale_hf_token), and paste no outputs in to fill the gap. tests.sh says what CI covers.
 # owner: @em-anyscale
 - name: ray-data-multimodel-frame-enrichment
   owner_team: ray-data
@@ -842,14 +833,7 @@
   test:
     tests_path: tests/ray-data-multimodel-frame-enrichment/
     command: bash tests.sh
-    # 228 s for `bash tests.sh`, measured once on 2.57.0: prodjob_7vlhzuirl3p8wt7jp2tcnyfhuk
-    # (SUCCEEDED), anyscale/ray:2.57.0-py312-cu129, one g6.4xlarge worker in us-west-2, cold
-    # SigLIP2 download included. 900 is about 4x that, for a slower runtime-env build or a cold
-    # image cache; one run is not a spread. Cluster start and image pull sit outside the timeout
-    # and took a further 110 s on that run.
-    #
-    # Not re-measured on 2.58.0. A staging `rayapp test` there
-    # (expwrk_t7443rhiucgkrd6ka9lcxr45de, 2026-09-24) passed under `timeout 900`: 7m22s from
-    # rayapp's first log line to the workspace delete, 1m48s of it waiting for RUNNING. rayapp
-    # logs no separate time for tests.sh.
+    # tests.sh took 228 s once on 2.57.0 (prodjob_7vlhzuirl3p8wt7jp2tcnyfhuk, one g6.4xlarge,
+    # cold SigLIP2 download); 900 is ~4x, for a slow runtime-env build or cold image cache. Not
+    # re-timed on 2.58.0, where staging rayapp test expwrk_t7443rhiucgkrd6ka9lcxr45de passed.
     timeout_in_sec: 900
