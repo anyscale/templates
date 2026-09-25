@@ -48,10 +48,10 @@ SWEEPS: dict[str, list[tuple[str, str, dict]]] = {
         ("fixed_binary", "fixed_binary", {}),
         ("list_uint8", "list_uint8", {}),
     ],
-    # Read task CPU. num_cpus < 1.0 gives a read task a one-thread decoder, because Ray sets
-    # OMP_NUM_THREADS = max(1, floor(num_cpus)) and pyarrow sizes its thread pool from that
-    # once per worker process. On this template's cluster, Ray 2.57.0, this sweep returned
-    # OVERLAP.
+    # Read task CPU. Both arms give each read task a one-thread decoder (Ray sets
+    # OMP_NUM_THREADS = max(1, floor(num_cpus))); they differ in how many read tasks share a
+    # core. On this template's cluster, Ray 2.57.0, this sweep returned OVERLAP: the fixture's
+    # 4 files make only 4 read tasks on 16 vCPUs. To test it, use more files than cores.
     "read-cpus": [
         ("num_cpus=1.0", "fixed_binary", {"READ_NUM_CPUS": "1.0"}),
         ("num_cpus=0.25", "fixed_binary", {"READ_NUM_CPUS": "0.25"}),

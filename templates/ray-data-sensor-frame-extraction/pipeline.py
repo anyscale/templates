@@ -30,14 +30,14 @@ import ray
 # ds.stats() first. 0 leaves the read uncapped.
 READ_CONCURRENCY = int(os.environ.get("READ_CONCURRENCY", "0")) or None
 
-# Read task CPU, default 1.0. Ray sets OMP_NUM_THREADS = max(1, floor(num_cpus)) when it is
-# unset, and pyarrow sizes its CPU thread pool from that once per worker process, so
-# num_cpus < 1.0 also gives each read task a one-thread decoder. That is fine for thin rows
-# and many small files; on multi-megabyte blob columns, decode is most of the read's work.
-# Measured on this template's cluster, Ray 2.57.0: 16.67-17.00 rows/s at 1.0 against
-# 16.24-16.87 at 0.25, ranges overlapping. The default rests on the mechanism; no win was
-# measured. Go below 1.0 only if rows are thin, files are many, and ds.stats() shows the
-# read stage is running wider than the core count.
+# Read task CPU, default 1.0. The decoder gets one thread either way: Ray sets
+# OMP_NUM_THREADS = max(1, floor(num_cpus)) when it is unset, and pyarrow sizes its CPU
+# thread pool from that once per worker process. What num_cpus changes is how many read
+# tasks share a core. On multi-megabyte blob columns decode is most of the read's work, so
+# the default gives each read task a core. Measured on this template's cluster, Ray 2.57.0:
+# 16.67-17.00 rows/s at 1.0 against 16.24-16.87 at 0.25, ranges overlapping; 4 files make
+# only 4 read tasks on 16 vCPUs, so the fixture can't separate the two. Go below 1.0 only
+# when rows are thin, files are many, and read tasks wait on storage rather than decode.
 READ_NUM_CPUS = float(os.environ.get("READ_NUM_CPUS", "1.0"))
 
 # Decoder threads, set for the read operator only so other actors keep their thread pools.

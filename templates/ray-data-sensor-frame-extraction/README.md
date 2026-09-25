@@ -30,7 +30,7 @@ an `m5.2xlarge` head, with 96 frames per layout.
 | | `binary(N)` against `list<uint8>` | Measured on |
 |---|---|---|
 | Write time | 4.01x to 4.19x faster | cluster, Ray 2.57.0 and 2.58.0, 11 runs |
-| Decode, `pq.read_table`, warm cache | 10.94x faster with no codec, 4.51x with zstd | macOS arm64 laptop, pyarrow 23.0.1, 3 runs per arm |
+| Decode, `pq.read_table`, warm cache | 9.35x to 12.94x faster with no codec, 4.23x to 8.49x with zstd | macOS arm64 laptop, pyarrow 23.0.1, 3 runs per arm, ratio range over the runs |
 | Decode, `pq.read_table`, no codec | about 32x faster warm from local disk, 3.2x cold from `/mnt/cluster_storage` | cluster worker, 12 frames, 2 runs per arm |
 | End to end, this pipeline | 1.56x to 1.78x faster | cluster, Ray 2.57.0 and 2.58.0, 8 runs |
 | Size on disk, zstd | within 1%: 831.7 MB against 836.0 MB | cluster, every run |
@@ -191,9 +191,7 @@ print(f"{LOCK} present ({LOCK.stat().st_size} bytes)")
 ```python
 import subprocess
 
-# check=True, since a failed `!` cell doesn't fail the notebook. One string, since the
-# dependency-delivery hook wants the requirements flag next to the lock filename; a copy
-# quoted in markdown would pass that hook without installing anything.
+# check=True: a failed `!` cell wouldn't fail the notebook.
 subprocess.run(
     "uv pip install -r python_depset.lock --system --no-deps --no-cache-dir "
     "--index-strategy unsafe-best-match",
