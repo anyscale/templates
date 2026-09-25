@@ -153,9 +153,9 @@ print()
 for layout in ["fixed_binary", "list_uint8"]:
     total = sum(os.path.getsize(f) for f in glob.glob(os.path.join(FIXTURE, layout, "*.parquet")))
     print(f"{layout:14s} {total / 1e6:8.1f} MB on disk")
-print("\nClose numbers mean the layout buys no I/O and any win comes from decode. Dictionary "
-      "encoding closes this gap, not the codec. On this fleet: 831.7 MB against 836.0 MB. "
-      "Run `--sweep on-disk` for the grid.")
+print("\nClose sizes mean the layout buys no I/O and any gain comes from decode. Dictionary "
+      "encoding closes the gap, not the codec; the shipped cluster measured 831.7 MB against "
+      "836.0 MB. Run `--sweep on-disk` for the grid.")
 ```
 
 To check your own data, run the two helpers on your files: the footer says whether the change
@@ -235,9 +235,9 @@ fast = run_arm("fixed_binary")
 slow = run_arm("list_uint8")
 
 print(f"fixed_binary {fast:.2f} rows/s vs list<uint8> {slow:.2f} rows/s -> {fast / slow:.2f}x")
-print("End-to-end channel. Decode alone is much larger from byte-identical inputs; the GPU stage "
-      "takes most of the difference out of the wall clock here. See the results table in this "
-      "README for both figures.")
+print("That is the end-to-end gain. Decode alone speeds up far more from byte-identical "
+      "inputs; here the GPU stage absorbs most of the difference. The results table has "
+      "both figures.")
 
 assert fast > slow, (
     "the recommended layout was not faster to read. The expected end-to-end margin is small, "
