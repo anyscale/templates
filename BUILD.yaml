@@ -822,10 +822,9 @@
   owner_team: general
   dir: templates/nextflow-genomics-on-ray
   cluster_env:
-    # Custom image: processes run with no container runtime inside a Ray worker, so the bioconda
-    # toolchain (GATK, bwa-mem2, samtools, rtg-tools) and a JRE must be on every node before the
-    # first task, and pip `requirements:` cannot install them. It also carries the nf-ray
-    # executor plugin and the scorer's model. See the template's Dockerfile.
+    # Custom image: a Ray worker has no container runtime, so the bioconda toolchain (GATK,
+    # bwa-mem2, samtools, rtg-tools) and a JRE must be on every node, and pip `requirements:`
+    # cannot install them. It also carries the nf-ray plugin and the scorer's model (Dockerfile).
     byod:
       docker_image: us-docker.pkg.dev/anyscale-workspace-templates/workspace-templates/nextflow-genomics-on-ray:2.58.0
       ray_version: 2.58.0
@@ -833,12 +832,10 @@
     AWS: configs/nextflow-genomics-on-ray/aws.yaml
     GCP: configs/nextflow-genomics-on-ray/gce.yaml
   test:
-    # Offline unit checks, then the gate (main.nf end to end under -profile ray on a synthetic
-    # trio the test generates, asserting a perfect score), then the notebook at
-    # NF_DEMO_SCALE=quick, the only stage that needs the staged demo data. The GPU leg is off
-    # throughout (NF_ANNOTATE=false). Prod, 2026-09-25, AWS config: the whole rayapp test took
-    # 12m42s, including workspace start (1m53s), the gate (3m02s) and the notebook's pipeline
-    # (4m47s). 3600 is headroom; the Buildkite step is capped at 90 min.
+    # Unit checks, then the gate (main.nf under -profile ray on a generated synthetic trio, which
+    # must score 1.0), then the notebook at NF_DEMO_SCALE=quick on the staged data, all with
+    # NF_ANNOTATE=false. Prod, 2026-09-25, AWS config: 12m42s in all (workspace start 1m53s, gate
+    # 3m02s, the notebook's pipeline 4m47s). 3600 is headroom; Buildkite caps the step at 90 min.
     tests_path: tests/nextflow-genomics-on-ray/
     command: bash tests.sh
     timeout_in_sec: 3600
