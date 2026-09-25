@@ -1,34 +1,23 @@
-# Resolved against the image this template's BUILD.yaml entry runs on:
-# `anyscale/ray:2.58.0-py312-cu129`.
-#
-# What that image ships, read from the committed freeze
-# (dependencies/images/ray-2.58.0-py312-cu129.freeze.txt):
-#
-#   numpy   2.2.6      pyarrow 23.0.1      ray 2.58.0
-#   torch   ABSENT     torchvision ABSENT
-#
-# `-cu129` in the tag is the CUDA runtime, not PyTorch. Only the `ray-llm` images ship torch;
-# on plain `anyscale/ray` the template supplies it, which is the whole content of this file.
+# Resolved against `anyscale/ray:2.58.0-py312-cu129`, the image in this template's BUILD.yaml
+# entry. Its freeze (dependencies/images/ray-2.58.0-py312-cu129.freeze.txt) has numpy 2.2.6,
+# pyarrow 23.0.1 and ray 2.58.0, and no torch or torchvision: `-cu129` in the tag is the CUDA
+# runtime. Only the `ray-llm` images ship torch.
 torch==2.9.1
 
-# Why 2.9.1 and not newer: the cu129 wheel index publishes cp312 builds of torch from 2.8.0
-# through 2.13.0 (checked against download.pytorch.org/whl/cu129/torch/), so several newer
-# versions resolve. 2.9.1 is the one measured clean on `anyscale/ray:2.57.0-py312-cu129` -- both
-# here and by the neighbouring ray-data-multimodel-frame-enrichment template, which pins the
-# same version on the same image. The 2.58.0 image moved nothing this template imports (numpy
-# 2.2.6 and pyarrow 23.0.1 are unchanged in its freeze, and it still ships no torch). Newer
-# wheels exist and are untested here; bump deliberately, on a run, not because the index moved.
+# 2.9.1 ran clean on `anyscale/ray:2.57.0-py312-cu129`, here and in the neighbouring
+# ray-data-multimodel-frame-enrichment template, which pins the same version on the same image,
+# and in this template's 3 test runs on 2.58.0. The cu129 index has cp312 torch wheels from
+# 2.8.0 to 2.13.0 (download.pytorch.org/whl/cu129/torch/). Newer ones are untested here; bump on
+# a run, not because the index moved.
 #
-# The depset entry passes `--index https://download.pytorch.org/whl/cu129` so the wheel tracks
-# the image's CUDA rather than PyPI's default build. Pin below that index's floor and uv falls
-# back to PyPI, the wheel loses its CUDA tag, and the lock still compiles -- silently wrong.
-
-# NOT here, deliberately:
-#   torchvision -- this pipeline calls torch.from_numpy, torch.nn.functional.interpolate and
-#                  .cpu().numpy(). It loads no model and decodes no image formats, so there is
-#                  nothing for torchvision to do. The sibling template needs it; this one does not.
-#   numpy, pyarrow -- the image ships 2.2.6 and 23.0.1 and the lock is seeded from that freeze,
-#                  so both hold at the image version without a line here. Pinning them would be
-#                  a no-op until the image moves and a silent DOWNGRADE of Ray's own stack after,
-#                  which is how Ray 2.57 put numpy==1.26.4 on a numpy-2.2.6 image in ten
-#                  templates. Leave them to the image.
+# The depset entry passes `--index https://download.pytorch.org/whl/cu129` so the wheel matches
+# the image's CUDA. Pin below that index's floor and uv falls back to PyPI: the lock still
+# compiles, with a wheel that has silently lost its CUDA tag.
+#
+# Not listed, on purpose:
+#   torchvision     the pipeline uses torch.from_numpy, torch.nn.functional.interpolate and
+#                   .cpu().numpy(), and loads no model or image format. The sibling template
+#                   needs it; this one does not.
+#   numpy, pyarrow  the lock is seeded from the image freeze, so both stay at the image's
+#                   versions. A pin would do nothing until the image moves, then silently
+#                   downgrade Ray's own stack.
