@@ -1,21 +1,20 @@
 #!/usr/bin/env nextflow
 
 /*
- * GIAB Ashkenazi trio germline short-variant calling, benchmarked against the
- * GIAB v4.2.1 truth set.
+ * Germline short-variant calling for the three GIAB Ashkenazi trio samples,
+ * each benchmarked against its own GIAB v4.2.1 truth set.
  *
  *   nextflow run pipeline/main.nf -profile ray
  *
- * The pipeline is deliberately ordinary -- GATK Best Practices as nf-core/sarek
- * implements it, and rtg vcfeval for scoring. Nothing in this file, in
- * modules/, or in conf/base.config knows it is running on Ray. That is the
- * claim: `-profile ray` is the diff.
+ * GATK Best Practices in nf-core/sarek's shape, with the divergences listed in
+ * PIPELINE.md, and rtg vcfeval for scoring. Nothing in this file, in modules/
+ * or in conf/base.config refers to Ray; `-profile ray` adds the executor.
  *
- * The shape that matters is the scatter. Three samples over N intervals is
- * 3 x N independent calling tasks, converging per interval for joint genotyping
- * and then once more for the callset. A single-sample pipeline is a chain, and a
- * chain gives an autoscaler nothing to do -- which is why the demonstration is a
- * cohort.
+ * The scatter is what the scheduler sees. Three samples over N intervals is
+ * 3 x N independent calling tasks, which converge per interval for joint
+ * genotyping and once more for the callset. One sample would still scatter
+ * over N intervals; three add the joint-genotyping step. The pedigree is not
+ * used.
  */
 
 nextflow.enable.dsl = 2
@@ -29,12 +28,12 @@ include { SHARD_VCF; ANNOTATE_VARIANTS; COLLECT_SCORES } from './modules/local/a
 include { MULTIQC; COLLECT_PLACEMENT } from './modules/local/reporting.nf'
 
 /*
- * Scale presets. Same tools, same DAG, same resource requests -- only the number
- * of bases differs, so a green CI run at `quick` exercises the code path a reader
- * gets at `standard`. The regions match what tools/stage-demo-data.sh publishes,
- * and tests/nextflow-genomics-on-ray/test_config_agreement.py fails if the two
- * drift, because a silent mismatch would have the pipeline scoring a region the
- * data does not cover.
+ * Scale presets. The processes, tools and resource requests are the same at
+ * every scale; the region, interval count and GPU shard count differ, so a green
+ * CI run at `quick` exercises the code path a reader gets at `standard`. The
+ * regions match what tools/stage-demo-data.sh publishes, and
+ * tests/nextflow-genomics-on-ray/test_config_agreement.py fails if the two
+ * drift, since the pipeline would then score a region the data does not cover.
  *
  * A function, not a top-level `def`: the strict parser does not allow statements
  * to be mixed with script declarations, so that a script included as a module
@@ -54,9 +53,8 @@ def scales() {
 /*
  * Every boolean param goes through this. Under the strict parser a param given on
  * the command line arrives as a String, and a non-empty String is true in Groovy,
- * so `--annotate false` turned annotation *on*: the first local run of this
- * pipeline printed "annotate yes" for exactly that command line. The same trap as
- * the numeric params below, one type over.
+ * so without it `--annotate false` would turn annotation on. The numeric params
+ * below have the same problem, one type over.
  */
 def flag(value) {
     return value instanceof Boolean ? value : value.toString().trim().toLowerCase() in ['true', 'yes', '1']
@@ -75,10 +73,10 @@ workflow {
     def region  = params.region ?: preset.region
 
     // `as Integer`, always. A param supplied on the command line arrives as a
-    // String, and Groovy's arithmetic on Strings is silently something else
-    // entirely -- `"4" - 1` is string subtraction yielding "4", and a Range built
-    // from it compares by character code. The smoke pipeline turned `--shards 4`
-    // into 53 shards this way, and reported success.
+    // String, and Groovy's arithmetic on Strings means something else: `"4" - 1`
+    // is string subtraction and yields "4", and a Range built from it compares by
+    // character code. Unconverted, smoke.nf's `--shards 4` runs 53 shards and
+    // reports success.
     def n_intervals = (params.intervals ?: preset.intervals) as Integer
     def n_shards    = (params.annotate_shards ?: preset.annotate_shards) as Integer
     if( n_intervals < 2 )
@@ -159,10 +157,9 @@ workflow {
     MAKE_INTERVALS(ch_reference, n_intervals, region)
     ch_intervals = MAKE_INTERVALS.out.intervals.flatten()
 
-    // The cross product IS the fan-out: every sample against every interval, all
-    // independent, all submitted at once. This is the line the template's claim
-    // rests on -- 3 samples x 24 intervals = 72 concurrent HaplotypeCaller tasks
-    // with nothing serialising them but the cluster's size.
+    // The cross product is the fan-out: every sample against every interval, all
+    // independent and submitted at once. At `standard`, 3 samples x 24 intervals
+    // = 72 HaplotypeCaller tasks, as many running at once as the cluster has room for.
     ch_calling_units = ch_bam.combine(ch_intervals)
     GATK4_HAPLOTYPECALLER(ch_calling_units, ch_reference)
 

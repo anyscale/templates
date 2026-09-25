@@ -1,11 +1,10 @@
 /*
  * Report aggregation.
  *
- * MultiQC over the QC artifacts every stage drops, plus the placement record the
- * executor wrote. The second one is not standard and is the interesting half: it
- * is what lets the notebook draw a Gantt chart of which Ray node ran which task,
- * which is the only way to tell "the cluster scaled and the work spread out" from
- * "everything queued behind one node".
+ * MultiQC over the QC files the preprocessing stages write, plus a copy of the
+ * executor's placement record. The notebook's Gantt chart reads the placement
+ * record to show which Ray node ran each task, and so whether the work spread
+ * across nodes or queued behind one.
  */
 
 process MULTIQC {

@@ -1,22 +1,22 @@
 /*
  * The GPU leg.
  *
- * One process in this DAG asks for an accelerator, and that is the whole point of
- * it being here: `accelerator 1, type: 'nvidia-l4'` becomes `num_gpus=1,
- * accelerator_type='L4'` on a Ray task, the autoscaler starts a GPU node for it,
- * and it runs alongside CPU calling tasks on the same cluster with no second
- * scheduler and no data movement.
+ * The one process in this DAG that asks for an accelerator. `accelerator 1,
+ * type: 'nvidia-l4'` becomes `num_gpus=1, accelerator_type='L4'` on a Ray task,
+ * the autoscaler starts a GPU node for it, and it runs on the same cluster as the
+ * CPU tasks, reading the callset from shared storage, with no second scheduler.
  *
- * What it computes is a proxy, and the README says so plainly: a nucleotide
- * language model embeds the reference and alternate sequence around each variant
- * and the distance between the two embeddings is reported. That correlates with
- * "this changes the sequence in a way the model noticed". It is not a
- * pathogenicity score and is not comparable to SpliceAI or CADD.
+ * What it computes is not a variant-effect score. A DNA language model embeds
+ * the reference window around each PASS variant with and without the alternate
+ * allele, and the L2 distance between the two mean-pooled embeddings is
+ * reported: zero-shot, uncalibrated, and not validated against pathogenicity,
+ * function or call quality. The model reads 6-mer tokens, so an indel whose
+ * length is not a multiple of six scores well above a SNP from re-tokenization
+ * alone.
  *
- * The scoring itself lives in bin/score_variants.py, which the notebook's Ray Data
- * step also imports. One implementation, called two ways -- which is what makes
- * "the same work, one shard here and the whole callset there" a real comparison
- * rather than two implementations that happen to agree.
+ * The scoring lives in bin/score_variants.py, which the notebook's Ray Data step
+ * also imports, so the per-shard results here and the notebook's whole-callset
+ * pass come from one implementation and can be compared directly.
  */
 
 process SHARD_VCF {

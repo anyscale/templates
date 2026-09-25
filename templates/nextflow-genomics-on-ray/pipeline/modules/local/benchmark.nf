@@ -1,20 +1,17 @@
 /*
- * Score the callset against the GIAB v4.2.1 truth set.
+ * Score the callset against each sample's GIAB v4.2.1 truth set.
  *
- * This is the readout the whole pipeline exists to produce. Contiguity or a
- * variant count tells you the run finished; precision and recall against a truth
- * set tell you whether it was *right*, and that is a much harder thing to be
- * accidentally satisfied by.
+ * A variant count says the run finished; precision and recall against a truth
+ * set say whether the calls are right.
  *
  * `rtg vcfeval` rather than hap.py: it is the comparison engine hap.py itself
- * calls under `--engine=vcfeval`, it is a single JVM tool with no Python-2
- * inheritance, and it does the thing that makes variant comparison hard --
- * matching variants by the haplotypes they imply rather than by position, so a
- * left-aligned indel and its right-aligned twin are correctly the same call.
+ * runs under `--engine=vcfeval`, it is a single JVM tool, and it matches
+ * variants by the haplotypes they imply rather than by position, so a
+ * left-aligned indel and its right-aligned equivalent are the same call.
  *
- * Scored on chr20 ∩ the GIAB high-confidence BED ∩ the demo slice. Outside that
- * intersection the truth set does not make a claim, so neither should we. Each
- * sample against its own truth set -- see BENCHMARK at the end of this file.
+ * Scored on the region intersected with GIAB's benchmark regions; outside them
+ * the truth set makes no claim. Each sample is scored against its own truth
+ * set; see BENCHMARK at the end of this file.
  */
 
 process RTG_FORMAT {
@@ -199,8 +196,8 @@ workflow BENCHMARK {
     RTG_FORMAT(ch_reference)
     SPLIT_SAMPLE(ch_calls, ch_reference)
 
-    // samples x {snp, indel}. SNPs and indels fail for different reasons, and a
-    // combined F1 would hide which one moved.
+    // samples x {snp, indel}. SNPs and indels have different error profiles,
+    // and a combined F1 would hide which one moved.
     ch_typed = SPLIT_SAMPLE.out.vcf.combine(channel.of('snp', 'indel'))
     SUBSET_VARIANT_TYPE(ch_typed)
 

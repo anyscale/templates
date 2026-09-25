@@ -1,16 +1,13 @@
 /*
  * FASTQ to analysis-ready BAM: GATK Best Practices preprocessing.
  *
- * Adapted from nf-core/modules (MIT) -- see PIPELINE.md for the per-process
- * provenance table and every declared divergence. The shape is nf-core's on
- * purpose: a reader who knows sarek should recognise every step, because the
- * claim this template makes is about the executor, not about the biology.
+ * Adapted from nf-core/modules (MIT); PIPELINE.md has the per-process
+ * provenance and every divergence. The shape is nf-core's, so a reader who
+ * knows sarek recognises each step.
  *
- * The `container` directives nf-core carries are dropped rather than kept as
- * decoration. There is no container runtime inside a Ray worker to honour them,
- * so a directive here would be a promise the executor cannot keep. Tools come
- * from the image; `-profile conda` is the escape hatch. That divergence is
- * declared, not hidden.
+ * nf-core's `container` directives are dropped. There is no container runtime
+ * inside a Ray worker to honour them, so tools come from the image;
+ * `-profile conda` is the alternative. PIPELINE.md lists this divergence.
  */
 
 process BWAMEM2_INDEX {

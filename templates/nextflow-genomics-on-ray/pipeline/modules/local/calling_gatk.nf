@@ -1,16 +1,14 @@
 /*
- * GATK joint germline calling: the interval scatter that gives this pipeline its
- * shape.
+ * GATK joint germline calling, scattered by interval.
  *
  * Per sample: HaplotypeCaller in GVCF mode, once per interval.
  * Per interval: GenomicsDBImport across all samples, then GenotypeGVCFs.
- * Then gather, filter, and you have a joint callset.
+ * Then gather and filter for the joint callset.
  *
- * The two-dimensional scatter is the point. Three samples over 24 intervals is 72
- * independent calling tasks, and they are what the autoscaler has to work with --
- * a single-sample pipeline is a chain, and a chain gives a scheduler nothing to
- * demonstrate. Upstream sarek scatters this way for the same reason HPC users do:
- * because HaplotypeCaller is the wall-clock cost of the whole run.
+ * The scatter is two-dimensional: three samples over 24 intervals is 72
+ * independent calling tasks, which is what the autoscaler has to work with.
+ * sarek scatters by interval for the same reason HPC users do: HaplotypeCaller
+ * dominates the run's wall-clock time.
  *
  * Adapted from nf-core/modules (MIT). See PIPELINE.md.
  */
@@ -161,6 +159,12 @@ process GATK4_MERGEVCFS {
     """
 }
 
+/*
+ * Hard filters, with GATK's SNP thresholds applied to every record, indels
+ * included. GATK's indel thresholds are looser (FS > 200, ReadPosRankSum < -20,
+ * no MQ or MQRankSum filter), so indel recall is at most what GATK's indel recipe
+ * gives. PIPELINE.md has the detail.
+ */
 process GATK4_VARIANTFILTRATION {
     tag "joint"
     label 'process_low'

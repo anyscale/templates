@@ -1,28 +1,25 @@
 #!/usr/bin/env nextflow
 
 /*
- * A 60-second pipeline that exercises the executor and nothing else.
+ * A one-minute pipeline that exercises the executor and nothing else.
  *
- * It calls no genomics tool, reads no reference, and downloads nothing, so when
- * it fails the failure is the executor's. That matters because the real pipeline
- * takes minutes to reach its first interesting task, and "my cluster is
- * misconfigured" and "bwa-mem2 is unhappy" look identical from a stack trace.
- * Run this first. The README does.
+ * It calls no genomics tool, reads no reference and downloads nothing, so when
+ * it fails the failure is the executor's or the cluster's. The real pipeline
+ * takes minutes to reach its first interesting task, and a misconfigured cluster
+ * and an unhappy bwa-mem2 can look alike in a stack trace. Run this first; the
+ * README does.
  *
- * It also serves as the cross-dispatch equivalence oracle. Every shard's output
- * is a pure function of its index, so the checksums must be byte-identical
- * whether the task ran locally, on a Ray worker, or inside a per-process image.
- * A mode that quietly changes the environment -- a different locale, a different
- * awk, a truncated write over NFS -- shows up here as a changed number rather
- * than as a subtly wrong variant call three hours in.
+ * Every shard's output is a pure function of its index, so the checksums must
+ * be identical wherever a task ran: locally, on a Ray worker, or inside a
+ * per-process image. A change in the environment (a different locale, a
+ * different awk, a truncated write over NFS) shows up here as a changed number.
  *
  *   nextflow run pipeline/smoke.nf -profile ray --outdir smoke-results
  *   nextflow run pipeline/smoke.nf -profile ray --outdir smoke-results --shards 12 --hold 30
  *
- * It sits beside main.nf rather than in a subdirectory on purpose: Nextflow
- * resolves nextflow.config relative to the script's own directory, so a smoke
- * pipeline one level down would quietly run *without* the `ray` profile it
- * exists to test, and pass.
+ * It sits beside main.nf, not in a subdirectory, because Nextflow reads
+ * nextflow.config from the script's own directory: one level down, it would run
+ * without the `ray` profile it exists to test, and pass.
  */
 
 nextflow.enable.dsl = 2
@@ -31,11 +28,10 @@ params.shards = 4
 params.hold   = 8      // seconds per shard; long enough to observe placement
 
 // No `params.outdir` default here. This script shares nextflow.config with
-// main.nf, a config param beats a script default, and so the one this file used
-// to set ('smoke-results') was silently replaced by main.nf's 'results' -- the
-// smoke run published into the real pipeline's output directory (observed).
-// Outputs go under ${params.outdir}/smoke instead; pass --outdir to keep this
-// run's trace.txt apart from main.nf's as well.
+// main.nf, where a config param beats a script default, so a default here would
+// be replaced by main.nf's 'results' and the smoke run would publish into the
+// real pipeline's output directory. Outputs go under ${params.outdir}/smoke;
+// pass --outdir to keep this run's trace.txt apart from main.nf's as well.
 
 /*
  * One shard. Deliberately asks for more than one CPU so that a cluster whose
@@ -77,15 +73,15 @@ process SHARD {
 }
 
 /*
- * Gather. Exists so the pipeline has a real dependency edge -- a fan-out with no
- * join proves the scheduler can start tasks but not that outputs are readable
- * from another node, which is the failure mode that actually bites on a cluster.
+ * Gather. Gives the pipeline a real dependency edge: a fan-out with no join
+ * shows the scheduler can start tasks, not that one node can read another's
+ * outputs, which is the failure that bites on a cluster.
  *
- * Through a bin/ script, for the same reason. Nextflow puts the project's bin/
+ * Through a bin/ script for the same reason. Nextflow puts the project's bin/
  * on every task's PATH, but the project sits on the node running Nextflow, and
- * a worker sees it only because the executor copies bin/ to shared storage. The
- * first cluster run, before it did, got as far as main.nf's COLLECT_BENCHMARK
- * and died there with `command not found`.
+ * a worker sees bin/ only because the executor copies it to shared storage.
+ * Without that copy, main.nf's COLLECT_BENCHMARK fails on a worker with
+ * `command not found`.
  */
 process COLLECT {
     cpus 1
@@ -106,16 +102,12 @@ process COLLECT {
 }
 
 workflow {
-    // `as Integer` is not defensive noise -- it is load-bearing.
-    //
-    // A param given on the command line arrives as a String. Groovy's `"4" - 1`
-    // is *string* subtraction (remove the first "1", of which there is none), so
-    // it yields "4"; then `0.."4"` compares an Integer against a String by
-    // character code, and '4' is 52. `--shards 4` therefore produced 53 shards,
-    // silently, with the run reporting success.
-    //
-    // Observed, not theorised: the first local run of this pipeline did exactly
-    // that. Coerce every numeric param at the point of use.
+    // `as Integer` is load-bearing. A param given on the command line arrives as
+    // a String. Groovy's `"4" - 1` is string subtraction (remove the first "1", of
+    // which there is none), so it yields "4"; then `0.."4"` compares an Integer
+    // against a String by character code, and '4' is 52. Without the coercion,
+    // `--shards 4` runs 53 shards and reports success. Coerce every numeric param
+    // at the point of use.
     def n_shards = params.shards as Integer
     if( n_shards < 1 )
         error "--shards must be >= 1, got ${params.shards}"
