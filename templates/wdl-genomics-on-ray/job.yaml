@@ -3,35 +3,32 @@
 #   cd templates/wdl-genomics-on-ray && anyscale job submit --config-file job.yaml
 #
 # Submit it from *this* directory. `working_dir: .` below is relative to the shell, not to
-# this file, so running it as `anyscale job submit --config-file templates/.../job.yaml` from
-# the repo root uploads the repo root instead and the job dies in seconds with
+# this file, so running `anyscale job submit --config-file templates/.../job.yaml` from the
+# repo root uploads the repo root instead, and the job dies in seconds with
 # "[Errno 2] No such file or directory: 'wdl/pipelines/ONT/Assembly/ONTAssembleCohort.wdl'".
 #
-# The production counterpart to the notebook, and a cohort for the same reason the notebook is
-# one: a single sample's task graph is a chain with one long task in it, so it has nothing to
-# pack and nothing to autoscale into. Three concurrent graphs have both, and that is the whole
-# claim this template makes. A production example that cannot demonstrate it is the wrong
-# example. `inputs.chr20.json` is still here for the single-sample case; point -i at it instead.
+# The production counterpart to the notebook: three samples, so their task graphs share the
+# worker pool. For one sample, run ONTAssembleWithFlye.wdl with -i inputs.chr20.json instead.
 #
-# Measured on the shape below: 2h03m56s for all three, against 1h55m33s of Flye for the slowest
-# sample on its own. The three run concurrently rather than in series, so the cohort costs the
-# same node-hours as one sample at a time and roughly a third of the wall clock. The README's
-# time and cost section has the per-sample assembly metrics.
+# One measured run on this shape (Ray 2.56.0 image, on-demand workers): 2h03m56s for the job,
+# against 2h01m15s end to end for the slowest sample, 1h55m33s of it in Flye. The samples run
+# concurrently, so the cohort uses about the node-hours of running them one after another, but
+# finishes in 2h04m rather than the 5h28m their end-to-end times add up to. The README's time
+# and cost section has the per-sample assembly metrics.
 #
-# Not `--asm-coverage`. Capping the disjointig stage at Flye's documented 40x was measured to
-# cost a third of the N50 (33.27 -> 11.06 Mbp) to save 14.6 minutes, so the target defaults to 0
-# and nothing is capped. ONTAssembleWithFlye.wdl's header carries the four-run grid.
+# No `--asm-coverage`: capping at Flye's documented 40x cut the N50 to a third
+# (33.27 -> 11.06 Mbp) to save 14.6 minutes, so the target defaults to 0 and nothing is
+# capped. ONTAssembleWithFlye.wdl's header has the four-run grid.
 #
-# The inputs pass s3:// URIs directly rather than staging them first; miniwdl localizes File
-# inputs itself, and at this size one download per input is the right trade whatever the
-# notebook does for interactive speed.
+# The inputs pass s3:// URIs directly. miniwdl downloads each input once per run, so there is
+# no separate staging step.
 name: wdl-genomics-on-ray-chr20-trio
 
 # The template's own image, which carries the toolchain (see Dockerfile). Under
-# `--container-runtime none` every tool has to be present on every node before the first task
-# dispatches, so there is deliberately no `requirements:` block here -- a job's requirements are
-# installed at cluster startup, *before* working_dir is staged, which is exactly the thing that
-# does not work. tools/BUILDING.md has the details.
+# `--container-runtime none` every tool has to be on every node before the first task
+# dispatches, and a job's `requirements:` is installed at cluster startup, *before* working_dir
+# is staged, so there is deliberately no `requirements:` block here. tools/BUILDING.md has the
+# details.
 image_uri: us-docker.pkg.dev/anyscale-workspace-templates/workspace-templates/wdl-genomics-on-ray:2.58.0
 
 working_dir: .
@@ -40,45 +37,42 @@ excludes:
   - __pycache__
 
 env_vars:
-  # Where the declared outputs are copied before the driver exits. Without this the run's
-  # results are deleted with the cluster the moment the job succeeds -- see the entrypoint.
+  # Where the declared outputs are copied before the driver exits. Without it they are
+  # deleted with the cluster when the job succeeds; see the entrypoint.
   WDL_ON_RAY_RESULTS: /mnt/user_storage/wdl-on-ray/results/chr20-trio
 
-# The entrypoint must NOT `exec` the workflow. `exec` replaces the shell, so nothing can run
-# afterwards -- which is how a completed 14h44m assembly once lost every artifact it produced.
-# Capture the status, persist the outputs, then exit with the workflow's own code.
+# The entrypoint must not `exec` the workflow: `exec` replaces the shell, so the persist step
+# after it would never run. Capture the status, persist the outputs, then exit with the
+# workflow's own code.
 #
-# It must also stay POSIX: Anyscale runs job entrypoints under /bin/sh (dash), where the
-# bash-only `set -o pipefail` dies with "Illegal option" before anything runs. Nothing here
-# pipes anything that matters, so `set -u` alone is the correct spelling.
+# Keep it POSIX: Anyscale runs job entrypoints under /bin/sh (dash), where the bash-only
+# `set -o pipefail` fails with "Illegal option" before anything runs. Nothing here pipes
+# anything that matters, so `set -u` is enough.
 entrypoint: |
   set -u
-  # TMPDIR here is the *driver's* only. Ray workers are separate processes on other nodes and
-  # inherit their own environment, so a task's temporary files land in the worker's /tmp --
-  # node-local disk, not this shared path. That is usually what you want (local scratch is
-  # faster), but it means a task that writes a large temporary file is bounded by the node's
-  # disk rather than by cluster storage. To move worker temporaries too, set TMPDIR in the
-  # WDL's `runtime { env: {...} }` or in the image, not here.
+  # This TMPDIR is the driver's only. Ray workers on other nodes have their own environment,
+  # so a task's temporary files land in the worker's /tmp, on node-local disk: usually faster,
+  # but bounded by that node's disk. To give each task a temporary directory inside its own
+  # working directory on shared storage, set miniwdl's `[file_io] mount_tmpdir = true`, or
+  # pass TMPDIR through `[task_runtime] env`.
   export TMPDIR=/mnt/cluster_storage/wdl-on-ray/tmp
   RUN_DIR=/mnt/cluster_storage/wdl-on-ray/runs
   CACHE_DIR=/mnt/cluster_storage/wdl-on-ray/cache
   mkdir -p "$TMPDIR" "$RUN_DIR" "$CACHE_DIR"
 
-  # --call-cache lets a re-submission skip tasks that already finished, which on a
-  # 14-hour assembly is the difference between resuming and starting over. Read what
-  # it does and does not survive before relying on it. miniwdl's cache entry points at
-  # the output files in RUN_DIR and invalidates itself when they are gone
+  # --call-cache records finished tasks so a rerun can skip them. miniwdl's cache entry
+  # points at the output files in RUN_DIR and invalidates itself when they are gone
   # (WDL/runtime/cache.py, _check_files_coherence). Both paths here are under
-  # /mnt/cluster_storage, which the platform recreates per job, so the cache covers a
-  # driver restart inside one cluster and buys nothing across a new one -- which is why
+  # /mnt/cluster_storage, which the platform recreates per job, so as configured the cache
+  # only helps a rerun on the same cluster, which a job does not get. That is why
   # max_retries stays 0 below.
   #
   # For resume that survives cluster replacement, put BOTH on a durable mount and let
   # the job retry:
   #     RUN_DIR=/mnt/user_storage/wdl-on-ray/runs
   #     CACHE_DIR=/mnt/user_storage/wdl-on-ray/cache
-  # with max_retries: 1. The cost is that the run tree's intermediates, hundreds of GB
-  # for a chromosome, stay on durable storage instead of dying with the cluster.
+  # with max_retries: 1. The cost is that the run tree's intermediates, several GB per
+  # sample, stay on durable storage instead of dying with the cluster.
   #
   # Under --container-runtime none the toolchain is not part of the cache key: WDL task
   # inputs and the task's own source are. Rebuilding the image with a different Flye
@@ -105,24 +99,20 @@ compute_config:
     resources:
       CPU: 0
   worker_nodes:
-    # 32 vCPU / 128 GiB. This is read together with inputs.chr20.cohort.json, not
-    # independently:
-    # runtime_attr_flye asks for 30 cpu_cores, and on Ray a request no node can satisfy is an
-    # indefinite wait rather than an error. Changing either one means changing both.
+    # 32 vCPU / 128 GiB. inputs.chr20.cohort.json sets runtime_attr_flye to 30 cpu_cores and
+    # flye_num_threads to 30 to fit it, so change the instance type and those two together.
     - instance_type: m5.8xlarge
       min_nodes: 1
       max_nodes: 3
       market_type: PREFER_SPOT  # as configs/wdl-genomics-on-ray/aws.yaml, which says why
 
-# The measured run is 2h03m56s, so 24h is mostly headroom, and it is headroom for the runs that
-# are not this one: a slower instance type, a whole genome rather than one chromosome, or a spot
-# fleet spending part of its preemptible_tries budget. A 12h ceiling here once SIGTERMed a run at
-# 12h01m, inside polishing, which is the failure this is sized against.
+# 24 h against the measured 2h03m56s: room for a slower instance type, a whole genome rather
+# than one chromosome, or a spot fleet spending part of its preemptible_tries budget.
 timeout_s: 86400
 
-# Node loss is handled inside the workflow: Ray node/worker death maps to miniwdl's
-# `Interrupted`, which routes to the WDL's own `runtime.preemptible`. A job-level retry runs on
-# a new cluster, and this job's call cache lives on /mnt/cluster_storage, so the retry would
+# Node loss is handled inside the workflow: Ray node or worker loss becomes miniwdl's
+# `Interrupted`, which spends the task's `runtime.preemptible` budget. A job-level retry runs
+# on a new cluster, and this job's call cache lives on /mnt/cluster_storage, so a retry would
 # find an empty cache and reassemble all three samples from scratch. Raise this to 1 only
 # together with the durable RUN_DIR/CACHE_DIR described in the entrypoint.
 max_retries: 0

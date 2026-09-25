@@ -34,11 +34,13 @@
 #
 #   [ray]
 #   container_runtime = ray
-#   task_image_map = {"us.gcr.io/broad-dsp-lrma/lr-medaka:0.1.0": "anyscale/image/wdl-medaka-gpu:1", "*": "cluster"}
+#   task_image_map = {"us.gcr.io/broad-dsp-lrma/lr-medaka:0.1.0": "anyscale/image/wdl-medaka-gpu:1"}
+#   task_image_fallback = cluster
 #
-# The `"*"` entry sends every other task to the cluster image; without it an unmapped task
-# fails to dispatch by design. `wdl-on-ray probe-image` checks a built image against the
-# cluster before you depend on it. tools/BUILDING.md covers the rest.
+# task_image_fallback = cluster sends every other task to the cluster image; without it an
+# unmapped task fails to dispatch by design. (A `"*"` entry in the map would instead send them
+# all to one image URI.) `wdl-on-ray probe-image` checks a built image against the cluster
+# before you depend on it. tools/BUILDING.md covers the rest.
 #
 # THE VERSION CONSTRAINT IS EXACT. A nested image's Ray and Python must match the cluster's,
 # Python to the patch level, so this is built from the CUDA variant of the same base the
