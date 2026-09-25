@@ -52,8 +52,8 @@ LABELS = [s for s in os.environ.get("LABELS", "bright square,rectangle").split("
 # --------------------------------------------------------------------------------------
 
 # CPUs per read task, so read parallelism is cores divided by this. At 0.1 on 96 cores the
-# read stage opened ~950 slots and one 64-row block took 430 s. The value is fleet-specific;
-# the direction transfers.
+# read stage opened ~950 slots and one 64-row block took 430 s. The right value depends on
+# the cluster; the direction transfers.
 DOWNLOAD_NUM_CPUS = float(os.environ.get("DOWNLOAD_NUM_CPUS", "1.0"))
 
 # Detector. The slowest stage, at ~13 images/s per actor with all SMs busy. A larger batch
