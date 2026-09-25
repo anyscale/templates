@@ -7,94 +7,101 @@
 
 **⏱️ Time to complete**: ~20 min (~10 min at `quick` scale; see Step 1)
 
-A miniwdl backend that runs each WDL task as a
-[Ray task](https://docs.ray.io/en/latest/ray-core/tasks.html) rather than provisioning a VM for it.
-The pipeline it runs here is [Broad Institute's ONT assembly
-workflow](https://github.com/broadinstitute/long-read-pipelines): Flye assembles a region of human
-chromosome 20 from Oxford Nanopore reads, QUAST evaluates the assembly, and minimap2 and paftools
-call variants against the reference. Three samples, the GIAB Ashkenazi trio, run through three
-copies of that pipeline on one autoscaling cluster.
+This template runs a WDL workflow over a cohort on one autoscaling Ray cluster, with no Cromwell
+server and no Terra workspace. miniwdl runs the workflow as a single process on the head node, and
+the `wdl_on_ray` backend in this template turns each WDL task into a
+[Ray task](https://docs.ray.io/en/latest/ray-core/tasks.html) that lands on a worker that is
+already up, instead of on a VM booted for it.
 
-[WDL](https://openwdl.org/) is the language of GATK Best Practices, WARP and Terra. On Cromwell's
-cloud backends the unit of execution is a VM per task, so a workflow's wall clock carries one
-instance boot per task and its dependency graph never reaches a scheduler that could pack it.
-Cromwell's HPC backends do pack, and so do miniwdl-slurm and Nextflow on Kubernetes. What none of
-them do is put the workflow on the same cluster as the Python, Ray Data or training work
-downstream of it, which is what Step 6b uses.
+The workflow is a port of [Broad Institute's ONT assembly
+pipeline](https://github.com/broadinstitute/long-read-pipelines): Flye assembles each sample de
+novo, QUAST evaluates the assembly against GRCh38, and minimap2 and paftools call
+assembly-versus-reference variants. The samples are the GIAB Ashkenazi trio (HG002, HG003, HG004),
+each assembled independently over a region of chromosome 20.
 
-miniwdl discovers container backends through a Python entry point, and this template registers one
-called `ray`. A workflow selects it with `[scheduler] container_backend = ray`. miniwdl keeps doing
-all the language work (parsing, type checking, scatter expansion, call caching, input localization,
-output collection); the backend replaces only the part that decides *where* a task's command runs.
+You finish with a Flye assembly, a QUAST report and a paftools VCF per sample, a timeline of which
+node ran each task, and a `job.yaml` that runs the trio over all 64 Mbp of chr20. One measured run
+of that job took 2h04m and cost about $10 at on-demand prices (see Time and cost estimates).
 
-`runtime { cpu: 30  memory: "32 GiB" }` in the WDL becomes `num_cpus=30, memory=32<<30` on the Ray
-task. The scheduler places it, and nothing is provisioned per task.
+Compared with Terra or Cromwell's Google backend, which give each task its own VM:
+
+- small tasks run on nodes that are already up, instead of each paying an instance boot;
+- the worker pool grows and shrinks with the cohort's queued tasks and can run on spot, with a
+  lost node charged to the task's `preemptible` budget;
+- the outputs land on a cluster that runs Python, so downstream analysis can run there too
+  (Step 6b).
+
+Cromwell's HPC backends and miniwdl-slurm also pack tasks onto shared nodes; this backend does the
+same on a managed, autoscaling cluster.
+
+miniwdl still does the language work: parsing, type checking, scatters, call caching, input
+localization and output collection. The backend, selected with
+`[scheduler] container_backend = ray`, decides only where each task's command runs:
+`runtime { cpu: 30  memory: "32 GiB" }` becomes a Ray request for 30 CPUs and 32 GiB, and nothing
+is provisioned per task.
 
 ![One Ray task per WDL task: the WDL's tasks, miniwdl's language layer, and the autoscaling Ray cluster they land on](https://raw.githubusercontent.com/anyscale/templates/main/templates/wdl-genomics-on-ray/assets/architecture.png)
 
 ### What was ported
 
-Seven of the ten `.wdl` files are Broad's, adapted from long-read-pipelines 4.0.68 (`02089d9`) and
+Seven of the ten `.wdl` files are adapted from long-read-pipelines 4.0.68 (`02089d9`) under
 BSD-3-Clause; the notice is in `wdl/LICENSE`. `ReadStats.wdl`, `ONTAssembleCohort.wdl` and
-`smoke.wdl` have no upstream counterpart and are Apache-2.0. Most of the diff is portability:
-`gsutil` calls, GCS-only paths, `/proc/cpuinfo` core counts. Each file's header lists its own
-divergences and
+`smoke.wdl` are new, under Apache-2.0. Most of the diff is portability: `gsutil` calls, GCS-only
+paths, `/proc/cpuinfo` core counts. Each file's header lists its own changes, and
 [`PIPELINE.md`](https://github.com/anyscale/templates/blob/main/templates/wdl-genomics-on-ray/wdl/pipelines/ONT/Assembly/PIPELINE.md)
 tabulates them.
 
-Two of those change what a default run produces, which matters if you plan to compare against a
-Cromwell run:
+Two change what a default run produces, which matters if you compare against a Cromwell run:
 
-- Upstream polishes with three rounds of medaka. `medaka_rounds` is 0 here, because medaka is not
-  in this template's image, so the assemblies below carry Flye's own polishing round and nothing
-  more. The two are not equivalent; see `PIPELINE.md`.
-- Flye's read-type flag comes from the reads' declared chemistry rather than a hardcoded
-  `--nano-raw`, so R10.4.1 selects `--nano-hq`, which is what Flye's documentation prescribes for
-  R10. `--asm-coverage` and its companion `--genome-size` are derived from measured coverage but
-  are off by default, since capping cost a third of the N50 on this data.
-  `flye_impute_params = false` restores upstream's command line exactly.
+- `medaka_rounds` is 0, where upstream runs three rounds of medaka. medaka is not in this
+  template's image, so the assemblies below carry only Flye's own polishing round, which is not
+  equivalent; see `PIPELINE.md`.
+- Flye's read-type flag comes from the reads' declared chemistry instead of upstream's hardcoded
+  `--nano-raw`, so R10.4.1 reads get `--nano-hq`, which is what Flye's documentation prescribes
+  for R10. `--asm-coverage` is off by default: capping at Flye's documented 40x cut the N50 to a
+  third on the full chr20 reads. `flye_impute_params = false` restores upstream's command line
+  exactly.
 
 ## Where this fits
 
-Existing WDL, elastic compute, no rewrite. Tasks whose resource requests differ by an order of
-magnitude, where a VM per task wastes both money and minutes. Cohorts, where those savings
-multiply: three samples here is a demonstration, and 500 samples is 500 of these graphs sharing one
-autoscaling pool, with the small tasks packing onto nodes that are already up. Step 5 shows why the
-demo is three samples rather than one.
+It fits existing WDL that runs across many samples and whose tasks differ widely in size: here,
+ten tasks per sample, from 1 to 30 CPUs. One sample's graph is a chain with one long task in it,
+which leaves the scheduler little to pack; a cohort gives it several graphs at once (Step 5). The
+backend runs WDL only.
 
-Per-task container images are the case to check first. A validated clinical pipeline needs the
-image its WDL declares, and Ray can give each task its own image, but those images have to be built
-against the cluster's own Ray and Python versions rather than pulled as the WDL names them. The
-note after Step 2 covers what each container mode costs.
-
-CWL and Nextflow estates have the same scheduling problem. This backend speaks WDL only.
+Check the container model first. A validated clinical pipeline needs each task to run in the image
+its WDL declares. Ray can run each task in its own image, but that image has to be rebuilt on the
+cluster's Ray and Python versions and mapped from the declared tag. The Containers note after
+Step 2 compares the modes.
 
 ## Scope
 
-What the backend does with a `runtime {}` block, and what it leaves alone:
+What the backend does with each `runtime {}` key:
 
-| | |
+| key | what the backend does |
 |---|---|
-| `cpu`, `memory` | become `num_cpus` and `memory` on the Ray task |
-| `gpuCount`, `gpuType`, `acceleratorType` | mapped to Ray accelerator resources |
-| `docker` | honoured under `podman`, `apptainer`, `singularity` and `ray`; advisory under `none` |
-| `preemptible` | Ray node and worker death maps to miniwdl's `Interrupted`, which routes here |
-| `maxRetries` | miniwdl's, unchanged. Ray-level retries default to 0 so they cannot bypass it |
-| `disks` | parsed, then logged and discarded unless you set `[ray] disk_resource_name` |
+| `cpu`, `memory` | requests them from Ray as `num_cpus` and `memory` |
+| `gpuCount`, `gpuType`, `acceleratorType` | maps them to Ray GPU and accelerator-type requests |
+| `docker` | runs it as declared under `podman`, `docker`, `apptainer` and `singularity`; maps it to a rebuilt image under `ray`; treats it as advisory under `none` |
+| `preemptible` | spends it on Ray node or worker loss, which the backend raises as miniwdl's `Interrupted` |
+| `maxRetries` | leaves it to miniwdl; Ray-level retries default to 0 so they cannot bypass it |
+| `disks` | logs it and otherwise ignores it, unless you set `[ray] disk_resource_name` |
 
-Three limits worth knowing before you port anything:
+Three limits to know before you port anything:
 
-- **A task's ceiling is the largest node, not the cluster.** miniwdl clamps `runtime.cpu` against a
-  limit the backend computes once at startup, defaulting to the biggest node then alive. On a
-  cluster that has not scaled up yet, pass `--max-cpu` to tell it what is coming.
-- **An unsatisfiable request waits rather than failing.** Ray cannot distinguish "no node this big
-  exists" from "the autoscaler has not caught up", so a task asking for more CPU than any instance
-  type offers hangs with no error.
-- **Call caching is off unless you ask for it.** That is miniwdl's default, and its cache directory
-  is node-local, so both have to move together: `--call-cache DIR` on shared storage sets all
-  three. `job.yaml` shows the arrangement and what it does and does not survive.
+- A task's ceiling is the largest node that is up when the run starts. miniwdl clamps
+  `runtime.cpu` and `runtime.memory` to it and logs a warning. If the big workers are not up yet,
+  pass `--max-cpu` (and set `[ray] max_memory_bytes`) to the worker shape.
+- Above that ceiling a request waits instead of failing. Ray keeps a request that no node can
+  serve pending, so a request larger than every instance type (possible once you raise the
+  ceiling by hand), or a GPU request with no GPU worker group, queues with no error.
+- Call caching is off by default, as in miniwdl, and miniwdl's default cache directory is
+  node-local. `--call-cache DIR` turns it on with DIR as the cache, and DIR must be on shared
+  storage. `job.yaml` shows what that does and does not survive.
 
 ## Set-up
+
+A workspace launched from this template already has the files. Elsewhere:
 
 ```bash
 git clone https://github.com/anyscale/templates && cd templates/templates/wdl-genomics-on-ray
@@ -102,31 +109,26 @@ git clone https://github.com/anyscale/templates && cd templates/templates/wdl-ge
 
 ## Step 1: Check the cluster and the toolchain
 
-One knob controls how much work this notebook does. `standard` is the default and assembles a
-10 Mbp region of chromosome 20 for each of three samples. `quick` does 2 Mbp per sample and is
-what CI runs; set `WDL_DEMO_SCALE=quick` before launching Jupyter to use it. Only the region size
-differs; both run the same code over the same GIAB reads.
+`WDL_DEMO_SCALE` sets how much the notebook assembles. `standard`, the default, is a 10 Mbp region
+of chromosome 20 per sample; `quick`, which CI runs, is 2 Mbp. Set `WDL_DEMO_SCALE=quick` in the
+environment, or change `SCALE` in the cell below. Both run the same pipeline, tools and resource
+requests over the same GIAB reads.
 
-Measured end to end, each submitted as a job against this template's compute config, so these
-include cluster provisioning and staging the reads:
+Measured as Anyscale Jobs on this template's AWS compute config (`m5.8xlarge` workers, Ray 2.56.0
+image), so cluster provisioning and read staging are included:
 
-| | notebook, end to end | the cohort workflow alone | slowest single sample |
+| scale | notebook, end to end | cohort workflow | slowest sample in that run |
 |---|---|---|---|
 | `quick` | ~10 min | 8m05s | 7m52s |
 | `standard` | ~17 min | 14m00s | 13m32s |
 
-Three samples for about one sample's wall clock, 1.03x at both scales, because each assembly gets
-a worker of its own once the cluster has scaled to three. An already-running workspace skips the
-provisioning counted above. `job.yaml` runs the same workflow over the whole 64 Mbp chromosome per
-sample, where the ratio tightens to 1.006; see Time and cost estimates.
+At both scales the cohort takes 1.03x its slowest sample's wall clock, because each assembly gets a
+worker of its own once the cluster has scaled to three. A workspace that is already running skips
+the provisioning. Over the whole 64 Mbp chromosome (`job.yaml`) the ratio is 1.006.
 
-The reference has to match the region. `ComputeGenomeLength` derives the assembler's genome size
-from it, so handing it all of GRCh38 would size the memory request for a 3.1 Gbp assembly. It
-would also silently disable coverage capping for anyone who has turned it on, since 500 Mbp of
-reads over 3.1 Gbp falls below the threshold that emits `--asm-coverage` at all.
-
-`wdl-on-ray doctor` reports what the backend would decide without running anything, including
-which container runtimes this node can use and whether the call cache is on.
+The cell prints the scale and data location, then runs `wdl-on-ray doctor`, which reports what the
+backend would decide without running anything. Check that `none` reads `always available` and
+that the default run dir is on shared storage.
 
 
 ```python
@@ -135,9 +137,8 @@ import os
 import pathlib
 import subprocess
 
-# `standard` is what a reader gets; CI sets `quick`. Only the size of the region differs:
-# the pipeline, the tools and the resource requests are identical, so a green `quick` run and
-# a `standard` run exercise the same code path.
+# `standard` by default; CI sets `quick`. Only the region size differs, so both scales
+# exercise the same pipeline, tools and resource requests.
 SCALE = os.getenv("WDL_DEMO_SCALE", "standard")
 SCALES = {
     "quick":    {"region": "chr20:1,000,000-3,000,000",  "span": "2 Mbp",  "expect": "~10 min"},
@@ -147,10 +148,9 @@ if SCALE not in SCALES:
     raise ValueError(f"WDL_DEMO_SCALE must be one of {sorted(SCALES)}, got {SCALE!r}")
 CFG = SCALES[SCALE]
 
-# The GIAB Ashkenazi trio: son, father, mother. Three samples rather than one because a
-# single sample's task graph is a chain (merge, measure, assemble, polish, evaluate)
-# and a chain gives the scheduler nothing to do. Three at once is what this backend is
-# for, and it is how real work arrives.
+# The GIAB Ashkenazi trio (son, father, mother), assembled independently. Three samples
+# because one sample's task graph is a chain (merge, measure, assemble, polish, evaluate),
+# which leaves the scheduler nothing to pack.
 SAMPLES = ["HG002", "HG003", "HG004"]
 
 TEMPLATE_DIR = pathlib.Path.cwd()
@@ -158,16 +158,16 @@ DATA_URI = f"s3://anyscale-public-materials/genomics/giab-trio-chr20/{SCALE}"
 
 # Every node of the cluster can see /mnt/cluster_storage, and the backend requires that: a WDL
 # task's working directory has to be readable by whichever node runs the task that consumes its
-# output. /mnt/local_storage would silently produce "file not found" on the second task.
+# output. /mnt/local_storage would fail with "file not found" on the second task.
 WORK = pathlib.Path("/mnt/cluster_storage/wdl-on-ray")
 DATA_DIR, RUN_DIR, SMOKE_DIR = WORK / "data", WORK / "runs", WORK / "smoke"
 for d in (DATA_DIR, RUN_DIR, SMOKE_DIR):
     d.mkdir(parents=True, exist_ok=True)
 # Pin Ray's temp root before moving TMPDIR. On Linux, Ray finds a running cluster through
 # <TMPDIR>/ray/ray_current_cluster, and a workspace sets no RAY_ADDRESS, so moving TMPDIR alone
-# made `wdl-on-ray run` start a second, empty Ray on the head instead of joining this one. The
-# head offers CPU: 0, so the smoke test waited forever (staging, 2026-09-24). Jobs get
-# RAY_ADDRESS from the platform and never hit this.
+# would make `wdl-on-ray run` start a second, empty Ray on the head instead of joining this
+# one; the head offers CPU: 0, so every task would wait forever. Jobs get RAY_ADDRESS from the
+# platform.
 os.environ.setdefault("RAY_TMPDIR", os.environ.get("TMPDIR", "/tmp"))
 os.environ["TMPDIR"] = str(WORK / "tmp")
 pathlib.Path(os.environ["TMPDIR"]).mkdir(parents=True, exist_ok=True)
@@ -193,18 +193,16 @@ run(["wdl-on-ray", "doctor"])
 
 ## Step 2: Read the workflow you're about to run
 
-Read these before they run. They declare tasks, their inputs and outputs, and a `runtime {}` block
-per task, and they are the same WDL a Cromwell backend would consume.
+Both files are WDL 1.0 with no Ray-specific syntax. `ONTAssembleWithFlye.wdl` is the per-sample
+pipeline, adapted from Broad's; its header lists the divergences from upstream.
+`ONTAssembleCohort.wdl` scatters it over a sample list and adds no tasks.
 
-`ONTAssembleWithFlye.wdl` is the per-sample pipeline, adapted from Broad's, and its header lists
-the divergences from upstream. `ONTAssembleCohort.wdl` scatters it over a sample list: twenty lines
-of WDL, no new tasks, and the only reason the cluster has anything to schedule.
+![The pipeline's task graph, with the CPU and memory request each task carries into its Ray resource request](https://raw.githubusercontent.com/anyscale/templates/main/templates/wdl-genomics-on-ray/assets/pipeline-dag.png)
 
-The `runtime {}` blocks are where Ray gets its scheduling information. `cpu` becomes `num_cpus`,
-`memory` becomes `memory`, and `docker` is read but honoured only under some container runtimes,
-which the note below the cell covers.
-
-![The pipeline's task graph: measurement tasks derive Flye's parameters, and every task carries the CPU/memory request that becomes its Ray resource request](https://raw.githubusercontent.com/anyscale/templates/main/templates/wdl-genomics-on-ray/assets/pipeline-dag.png)
+The cell type-checks the cohort workflow with miniwdl, lists each file's calls, and prints
+`Flye.Assemble`'s `runtime {}` block, which is where Ray gets the task's request. The check prints
+the document tree and exits 0; its two `NameCollision` lines are lint warnings about call names
+inherited from upstream.
 
 
 ```python
@@ -233,65 +231,54 @@ print("\n".join(block[: block.index("}") + 1].splitlines()))
 
 ### Containers
 
-Every WDL task declares a `docker` image, and on Cromwell that image is what the command runs in.
-Reproducing that on Ray is the awkward part of the port. Ray is already running inside a container,
-and the obvious way to start another one is unavailable: `podman` installs and pulls images fine,
-but `podman run` fails at `container-init exec` under both `crun` and `runc`. That rules out
-driving a container CLI from inside the worker. It does not rule out per-task images, which Ray
-supplies another way.
+On Cromwell, each task's command runs in the image its `docker` key names. On Anyscale, Ray itself
+runs inside a container, and a nested container CLI does not work there: `podman` installs and
+pulls images, but `podman run` fails at `container-init exec` under both `crun` and `runc`. Ray can
+still give each task its own image, by starting the task's worker process inside it.
 
-Four modes, and `--container-runtime auto` picks the first of podman, docker, apptainer or
-singularity that it finds, falling back to `none`.
+| `--container-runtime` | where a task's command runs | `runtime.docker` |
+|---|---|---|
+| `none` (this notebook) | in the Ray worker's environment, with tools from the cluster image | advisory |
+| `ray` | in a Ray worker that Ray starts inside a per-task image | mapped through `[ray] task_image_map` |
+| `native` | in the Ray worker, with the task's tools from a Ray `runtime_env` built from the manifest | optionally mapped through `[ray] image_env_map` |
+| `podman`, `docker`, `apptainer`, `singularity` | in a nested container the backend starts on the worker, where the platform allows one | run as declared |
 
-**`none`, which the notebook runs.** The task command executes in the Ray worker's environment and
-the toolchain comes from the cluster image. The declared tag becomes advisory: `Flye.wdl` declares
-`lr-flye:2.8.3` while the Flye that runs is the 2.9.5 pinned in
-[`tools/manifest.toml`](https://github.com/anyscale/templates/blob/main/templates/wdl-genomics-on-ray/tools/manifest.toml).
-Those are not the same assembler; `--nano-hq` does not exist in 2.8.3. What runs is still pinned
-and reproducible, just pinned in the manifest rather than in the WDL. Tasks get separate working
-directories but share the node's environment, so they are not isolated from each other.
+`auto`, the default, picks the first of `podman`, `docker`, `apptainer` or `singularity` it finds on
+the driver's node, and otherwise falls back to `none`.
 
-This mode has a ceiling. Five tools fit in one image comfortably. A GATK Best Practices pipeline is
-dozens of tools spanning Java, Perl and pinned Pythons, and one image that satisfies all of them is
-the situation per-task containers exist to avoid.
+Under `none` the declared tag is a label. `Flye.wdl` declares `lr-flye:2.8.3`, but the Flye that
+runs is the 2.9.5 pinned in
+[`tools/manifest.toml`](https://github.com/anyscale/templates/blob/main/templates/wdl-genomics-on-ray/tools/manifest.toml),
+and the two are not the same assembler: `--nano-hq` does not exist in 2.8.3. The toolchain is still
+pinned, in the manifest instead of the WDL. Tasks get separate working directories but share the
+node's environment. Five tools fit in one image; a GATK Best Practices pipeline, with dozens of
+tools across Java, Perl and pinned Pythons, does not.
 
-**`ray`, per-task images.** Ray's `runtime_env` accepts an `image_uri` and runs the *worker
-process* inside it, so the platform does the nesting and the `podman` failure never arises.
-`runtime.docker` then names something that really ran. The cost is that a task image's Ray and
-Python must match the cluster's exactly, Python to the patch level, so images are built from the
-cluster's base and the WDL's declared tags are *mapped* through `[ray] task_image_map` rather than
-honoured verbatim. `wdl-on-ray probe-image <uri>` runs one task in a candidate image and reports
-whether the versions line up and whether the shared run directory is readable and writable from
-inside it.
+Under `ray`, `runtime.docker` names what actually ran. Each task image's Ray and Python must match
+the cluster's exactly, Python to the patch level, so you build task images from the cluster's base
+and map the WDL's declared tags to them. `wdl-on-ray probe-image <uri>` runs one task in a
+candidate image and checks the versions, and whether the shared run directory is readable and
+writable inside it.
 [`tools/BUILDING.md`](https://github.com/anyscale/templates/blob/main/templates/wdl-genomics-on-ray/tools/BUILDING.md)
-covers the rest: image self-containment, the run directory's path inside each image, and the
-privileged container that Kubernetes-backed clouds need.
-
-**`podman`, `docker`, `apptainer`, `singularity`.** miniwdl's own backends, which work wherever
-nested containers are allowed, including local development, and give per-task isolation as the WDL
-declares it.
-
-**`native`.** Ray supplies each task's tools through a per-task runtime environment derived from
-the manifest, with no image at all. `BUILDING.md` covers it.
+covers the rest, including the privileged container that Kubernetes-backed clouds need.
 
 ## Step 3: Run a 60-second workflow first
 
 `smoke.wdl` makes some seeds, scatters over them and gathers the results. It needs no genomics
-tools and no data, so it confirms that WDL tasks really are being dispatched to Ray workers before
-an hour of assembly depends on the answer.
+tools and no data, so it confirms that WDL tasks reach Ray workers before any assembly depends on
+it.
 
-The backend writes a `ray_placement.json` next to every task's other artifacts, recording the node
-that ran it. The second half of the cell reads those, and Step 5's timeline is drawn from the same
-files. This run sets `[ray] scheduling_strategy = SPREAD` as an environment override, with nothing
-in the WDL changing, so the shards prefer spreading over whatever workers exist. Eight 2-CPU shards
-fit comfortably on one 32-vCPU worker, so until the cluster has grown a second worker, expect the
-tally to read one node.
+The backend writes a `ray_placement.json` beside each task's other files, recording the node that
+ran it. The second half of the cell tallies those files, and Step 5's timeline reads the same ones.
+This run sets `[ray] scheduling_strategy = SPREAD` through an environment variable, with no change
+to the WDL. Eight 2-CPU shards fit on one 32-vCPU worker, so until the cluster has a second worker,
+expect the tally to read one node.
 
 
 ```python
-# SPREAD is best-effort: shards spread over whatever workers exist at dispatch time. The
-# default strategy suits the real pipeline better, keeping data-adjacent tasks together,
-# so the override lives on this one command rather than in a config file.
+# SPREAD is best-effort: shards spread over whatever workers exist at dispatch time. Ray's
+# default strategy packs before it spreads, which suits the real pipeline, so the override
+# lives on this one command rather than in a config file.
 run([
     "wdl-on-ray", "run", str(TEMPLATE_DIR / "wdl/smoke/smoke.wdl"),
     "shards=8",
@@ -318,30 +305,35 @@ for node, tasks in nodes.items():
 
 The reads are the GIAB Ashkenazi trio, HG002 (son), HG003 (father) and HG004 (mother), from ONT's
 public [`s3://ont-open-data`](https://registry.opendata.aws/ont-open-data/) release `giab_2023.05`:
-R10.4.1 chemistry, dorado sup basecalls, already aligned to GRCh38. `tools/stage-demo-data.sh`
+R10.4.1 chemistry, dorado sup v4.1.0 basecalls, aligned to GRCh38. `tools/stage-demo-data.sh`
 slices one chromosome-20 region out of those alignments and pairs it with the matching reference
-slice. Both the source and the script are public, so the derivation is reproducible.
+slice, so the derivation is reproducible from public inputs.
 
-Each scale ships a `MANIFEST.json` recording, per sample, the read count, total bases, read N50,
-coverage and sha256, plus the chemistry and basecaller. Those last two decide Flye's read mode and
-which medaka model is correct, and neither is recoverable from a FASTQ.
+Each scale's `MANIFEST.json` records, per sample, the read count, total bases, read N50, coverage
+and sha256, plus the chemistry and basecaller. Those two decide Flye's read mode and the correct
+medaka model, and these FASTQs do not carry them. The cell stages the files to cluster storage,
+prints the manifest and checks each FASTQ against its sha256.
 
-**This is a regional re-assembly of reference-selected reads, not a de novo assembly.** Reads from
-a divergent haplotype that failed to align are absent by construction, as is anything unmapped, so
-the hardest reads a real assembly must handle are gone. Reads mismapped *into* the region from
-paralogous sequence elsewhere are present. Whole reads are emitted rather than the overlapping
-portion, so coverage at the edges tapers over about one read length and the reported coverage runs
-a percent or two high. Supplementary alignments are dropped (`-F 0x900`), which also drops reads
-crossing a structural breakpoint at the boundary. Contiguity and genome fraction are correspondingly
-optimistic. Treat it as a demonstration of the pipeline, not a benchmark of the assembler.
+Flye assembles these reads de novo, but they were selected by their alignment to GRCh38, which
+makes the problem easier than a real assembly:
 
-The slice also renames the contig to `chr20:<start>-<end>` and numbers coordinates from 1 within
-it, so the VCFs in Step 6b are slice-local and are not comparable to a GIAB truth set without
-lifting them back.
+- Reads from a divergent haplotype that failed to align are absent, as is anything unmapped.
+  Reads mismapped into the region from paralogous sequence elsewhere are present.
+- Whole reads are kept, not just the overlapping portion, so coverage tapers over about one read
+  length at the edges and the reported coverage runs a percent or two high.
+- Secondary and supplementary records are dropped (`-F 0x900`), so a read whose primary
+  alignment falls outside the region is absent even if part of it aligns inside, as happens
+  across a structural breakpoint at the boundary.
 
-miniwdl can localize an `s3://` URI for a `File` input by itself, so passing the URIs straight
-through would also work. Staging once here is faster, because three tasks per sample read the
-reference and would otherwise fetch it nine times.
+Contiguity and genome fraction are optimistic as a result. Treat the numbers as a check on the
+pipeline, not a benchmark of the assembler.
+
+The reference slice is named `chr20:<start>-<end>`, with coordinates numbered from 1 within it, so
+the VCFs in Step 6b are slice-local and need lifting back before any comparison with a GIAB truth
+set.
+
+miniwdl could localize the `s3://` URIs itself, once per run. Staging here lets the cell check the
+checksums before anything runs, and a re-run skips the download.
 
 
 ```python
@@ -367,7 +359,7 @@ for entry in manifest["samples"]:
     print(f"{entry['sample']:<8}{entry['reads']:>10,}{entry['bases']:>14,}"
           f"{entry['read_n50']:>10,}{entry['coverage']:>9}x")
 
-# The manifest's checksums are the point of publishing them: verify rather than assume.
+# Check each FASTQ against the manifest's sha256 before anything runs on it.
 import hashlib
 
 for entry in manifest["samples"]:
@@ -379,33 +371,27 @@ print("\nall checksums match the manifest")
 
 ## Step 5: Assemble the cohort
 
-Three samples, one workflow, one cluster. Each sample runs the same ten-task pipeline (merge the
-reads, measure them, estimate a genome length, assemble with Flye, polish, evaluate with QUAST,
-summarize the report, align to the reference with minimap2, call variants with paftools) and all
-three graphs are live at once.
+One workflow runs the ten-task pipeline for all three samples at once: merge the reads, measure
+them (two tasks), compute the genome length, assemble with Flye, polish, evaluate and summarize
+with QUAST, align to the reference and call variants. Each `Assemble` asks for 30 CPUs and takes a
+worker to itself. The 1- to 8-CPU tasks run on nodes that are already up, and only those of 2 CPUs
+or fewer fit beside a running assembly. On a VM-per-task backend each small task would pay an
+instance boot.
 
-That is what gives the scheduler something to do. One sample's pipeline is a chain with a single
-long task in the middle: nothing to pack, nothing to autoscale into. Three concurrent chains have
-both. Each `Assemble` wants 30 CPUs and takes a worker to itself, while the 1-, 2- and 4-CPU
-measurement tasks from the *other* samples fill the gaps on nodes that are already up. On a
-per-task-VM backend each of those small tasks pays an instance boot.
+The inputs below set every task's resources. The requests are per task, not per sample, so more
+samples means more tasks eligible at once, not bigger nodes. Three settings are worth reading:
 
-`runtime_attr_flye` is measured rather than inherited. A full-chromosome run peaked at 17.6 GiB
-resident against the 110 GiB upstream reserves, and that 110 was upstream's whole-genome default
-rather than anything derived. 32 GiB is still roughly double the observed peak.
+- `runtime_attr_flye` asks for 30 CPUs and 32 GiB. One full-chromosome run peaked at 17.6 GiB
+  resident, against the 106 GiB that upstream's formula (100 GiB plus 1 GiB per 10 Mbp of genome)
+  reserves for chr20. The 30 CPUs fit the 32-vCPU worker in this template's compute config;
+  change the two together.
+- `read_chemistry` comes from the manifest and selects Flye's read mode.
+- `medaka_rounds: 0` makes `MedakaPolish` pass the draft through unchanged, since medaka is not in
+  the cluster image (see Turn polishing on). Flye then keeps its own polishing round, because the
+  workflow never lets the total number of polishing passes reach zero. That rule guards against a
+  silent no-op; it does not make the two polishers equivalent.
 
-`cpu_cores: 30` fits the 32-vCPU worker in this template's compute config, and the two have to move
-together. A request no instance type can satisfy does not fail; Ray cannot tell "no node this big
-exists" from "the autoscaler has not caught up yet", so the workflow waits with no error.
-
-The requests are per task, not per sample. Adding samples does not enlarge the cluster this needs,
-it enlarges how many tasks are eligible to run at once, and the autoscaler answers that.
-
-`medaka_rounds: 0` skips medaka, which is absent from this template's image: medaka 1.x is pinned
-below Python 3.11 while this image runs 3.12, and medaka 2.x is a different major version with a
-different model generation and a deep-learning payload. Flye's own polishing round is what the
-assemblies below carry. The workflow will not let total polishing passes reach zero, which is a
-guard against a silent no-op rather than a claim that the two polishers are equivalent.
+While it runs, each task logs `task started on Ray worker` with its queue time and node.
 
 
 ```python
@@ -413,19 +399,14 @@ inputs = {
     "ONTAssembleCohort.samples": [
         {"name": s, "fastqs": [str(reads[s])], "ref_fasta": str(reference)} for s in SAMPLES
     ],
-    # The manifest records the chemistry; this is the line that gets it to the workflow,
-    # where it selects Flye's read mode. Before this the pipeline printed it to the reader
-    # and then derived the mode from a divergence measurement instead, which is confounded
-    # by repeat content and sent a whole chromosome to --nano-raw.
+    # From the manifest; this is what selects Flye's read mode.
     "ONTAssembleCohort.read_chemistry": manifest["chemistry"],
     "ONTAssembleCohort.flye_num_threads": 30,
     "ONTAssembleCohort.quast_num_threads": 8,
     "ONTAssembleCohort.align_num_threads": 8,
-    # Medaka is absent from this template's image, as the cell above explains;
-    # tools/BUILDING.md covers adding it. Rounds 0 does not skip the task: MedakaPolish still
-    # runs and copies the draft through untouched, which is why it appears in the task list.
-    # Flye's own polishing round is then the only one applied, and the workflow's invariant is
-    # that total polishing passes never reach zero.
+    # 0 does not skip the task: MedakaPolish still runs and copies the draft through
+    # unchanged, which is why it appears in the task list. Flye's own polishing round is
+    # then the only one applied.
     "ONTAssembleCohort.medaka_rounds": 0,
     "ONTAssembleCohort.medaka_use_gpu": False,
     "ONTAssembleCohort.runtime_attr_fastq_stats":     {"cpu_cores": 1,  "mem_gb": 4,  "disk_gb": 50, "preemptible_tries": 3},
@@ -456,19 +437,18 @@ run([
 
 ### How the run used the cluster
 
-Every WDL task above ran as one Ray task, and each left two timestamps behind. The backend writes
-`ray_placement.json` the moment a task starts holding resources on a worker, and miniwdl closes
-`task.log` when it finishes. Those two are enough to draw the whole run, including which tasks
-overlapped, where the wall clock went and which node each landed on, with no instrumentation added.
+Each WDL task left two timestamps: the backend writes `ray_placement.json` when the task starts
+holding resources on a worker, and miniwdl last writes `task.log` when the task finishes. The cell
+draws one bar per task from those, grouped by sample and coloured by node, with no added
+instrumentation.
 
-Colour is the node, so a task's colour says which worker it landed on. Small tasks from one sample
-sharing a colour with another sample's assembly is the bin-packing this approach is for. Then check
-the total span against one sample's, and against the queue times, because the cohort is only ever
-as wide as the cluster it got. On a `quick` run against this template's compute config the three
-assemblies queued 32s, 93s and 93s and landed on three separate workers, giving 8m05s total against
-7m52s for the slowest single sample. The 93s is the autoscaler bringing up workers two and three
-from `min_nodes: 1`. Cap the same run at two workers and the third assembly queues 7m37s behind the
-first instead, and the total goes to 13m16s.
+Look for small tasks from one sample sharing a colour with another sample's assembly, which is
+tasks packing onto a node that is already up, and compare the total span with one sample's. On a
+`quick` run on this template's AWS compute config (Ray 2.56.0 image), the three assemblies queued
+32 s, 93 s and 93 s as the backend's `seconds_queued` reports them (it overstates long waits), and
+landed on three separate workers; the cohort took 8m05s against 7m52s for its slowest sample. The
+93 s is the autoscaler bringing up workers two and three from `min_nodes: 1`. With `max_nodes: 2`,
+the third assembly queued 7m37s behind the first and the run took 13m16s.
 
 
 ```python
@@ -477,11 +457,9 @@ import matplotlib.pyplot as plt
 run_dir = max(RUN_DIR.glob("*/outputs.json"), key=lambda p: p.stat().st_mtime).parent
 
 # One row per task, not per attempt. started = when the backend wrote
-# ray_placement.json; finished = miniwdl's last write to task.log. A task that was
-# interrupted and retried still draws one bar, spanning its first attempt's start to its
-# last attempt's end, coloured by the node the *first* attempt landed on: the placement
-# file lives at the task directory rather than the per-attempt work directory, and is not
-# rewritten on retry. Measured by forcing the retry path with a mocked interruption.
+# ray_placement.json; finished = miniwdl's last write to task.log. The placement file sits
+# in the task directory, and each attempt's Ray task rewrites it (job.execute_and_record),
+# so a retried task's bar starts at its last attempt and takes that attempt's node.
 #
 # miniwdl nests a sub-workflow's calls under the scatter shard that made them, so the
 # path from the run directory carries the sample: .../call-assemble/shard-1/call-Flye/...
@@ -543,30 +521,34 @@ plt.show()
 
 ## Step 6: Read the assemblies
 
-miniwdl collects every declared workflow output into the run directory and reports absolute paths
-in `outputs.json`. The cohort emits one array per artifact, in `samples` order, from the assemblies
-themselves through to the maps recording what each run measured and chose.
+miniwdl collects every declared workflow output into the run directory and lists them in
+`outputs.json`. The cohort emits one array per output, in `samples` order, from the assemblies to
+`flye_params` and `read_stats`, which record what each sample measured and chose.
 
-QUAST evaluates the draft and the polished consensus in a single run whenever both exist, so the
-two columns come from one reference, one set of thresholds and one execution. With
-`medaka_rounds = 0` there is only one assembly per sample, and the cell says so rather than
-printing a column against itself.
+The cell prints the QUAST metrics per sample, the Flye flags each sample ran with, and the read
+statistics. With `medaka_rounds = 0` there is one assembly per sample, so QUAST reports one column
+each. With polishing on, QUAST evaluates the draft and the polished assembly in one run, against
+one reference with one set of thresholds.
 
-Polishing moves bases and leaves contig boundaries alone, so N50 barely responds; the metrics that
-answer "did it help" are the alignment-based ones. Note the floor under the mismatch rate. These
-samples are not GRCh38, and a haplotype-collapsed human assembly carries roughly 85-95 real SNVs
-per 100 kbp against the reference before any assembly error at all, so QUAST's mismatch rate cannot
-separate variants from error. It is a relative measure between arms or between samples, not an
-error rate. QUAST also counts mismatches over aligned bases only and excludes indels, which for ONT
-is the error class that matters.
+The cell also asserts that QUAST produced a `Genome fraction` line. QUAST computes its
+reference-based metrics with a minimap2 it builds from source at install time, and when that build
+is missing QUAST still exits 0 with a contiguity-only report. `Quast.wdl` fails the task in that
+case; the assert is a second check.
 
-The cell asserts that QUAST produced a `Genome fraction` line. QUAST's reference-based metrics need
-an aligner it ships only as source, and when that build fails QUAST still exits 0 and writes a
-report carrying contiguity metrics only. Two full runs came back missing those numbers before
-anyone noticed.
+Against GRCh38, a different individual's haploid reference, read the columns this way:
 
-For comparison, one green run at `quick` scale on the trio, with today's derived flags
-(`--nano-hq --iterations 1`, identical for all three):
+- The mismatch rate has a floor. A haplotype-collapsed human assembly carries roughly 85-95 real
+  SNVs per 100 kbp against GRCh38 before any assembly error, so the rate compares a sample's draft
+  and polished columns; it is not an error rate. It also excludes indels, the ONT error class that
+  matters most; read `# indels per 100 kbp` for those.
+- QUAST scores any rearrangement against the reference larger than 1 kbp (its default
+  `--extensive-mis-size`) as a misassembly and breaks NGA50's aligned blocks there, so both count
+  the sample's own structural variants along with assembly errors.
+- Genome fraction near 100% is expected here, because the reads were selected by aligning to this
+  reference.
+- Polishing moves bases, not contig boundaries, so N50 barely responds to it.
+
+One `quick` run on the trio (Ray 2.56.0 image, `--nano-hq --iterations 1` for all three):
 
 | | HG002 | HG003 | HG004 |
 |---|---|---|---|
@@ -578,38 +560,32 @@ For comparison, one green run at `quick` scale on the trio, with today's derived
 | # indels per 100 kbp | 33.08 | 30.37 | 32.03 |
 | # misassemblies | 6 | 3 | 6 |
 
-Each sample comes out as a single contig spanning its region, which is what a 2 Mbp window at
-60-90x should give. Expect your own numbers near these rather than identical to them: Flye's
-repeat graph is thread-order sensitive, so the alignment-based columns move by a percent or two
-between runs of the same input, and genome fraction barely at all.
+Each sample assembles as one contig spanning its 2 Mbp region, as expected at 60-90x. Expect your
+numbers near these rather than identical: Flye's result depends on thread order, so the
+alignment-based columns move by a percent or two between runs of the same input, and genome
+fraction barely at all. A rerun on the Ray 2.58.0 image (2026-09-24) matched genome fraction
+exactly and N50 to within 0.06%.
 
-Genome fraction near 100% is close to guaranteed here and is not a quality result: the reads were
-selected by aligning to this reference, so covering it is what they were chosen for. The columns
-worth reading are NGA50 and genome fraction, and they do not order the way the read stats above
-would suggest. HG003 leads on both while sitting in the middle on coverage (75x against 89x and
-59x) and last on read N50. Coverage and read length are the usual explanations for a contiguity
-difference and neither orders this one. Three samples over a single locus is how you notice that,
-and it is the reason the demo assembles a trio rather than one genome.
+Coverage and read length do not explain the differences between samples. HG003 has the highest
+NGA50 and the fewest misassemblies while sitting in the middle on coverage (75x against 89x and
+59x) and last on read N50. HG002 lands within 1% of its mother, HG004, on NGA50, genome fraction,
+mismatch rate and misassembly count, which fits the two sharing sequence that differs from GRCh38
+in this window. Read these columns as differences from GRCh38, not as a ranking of the assemblies.
 
-An earlier version of this table had HG002 fragmenting into two contigs where its parents each
-gave one, and explained it by HG002's higher read-to-read divergence. That was wrong: the split
-was `--asm-coverage 40` discarding depth this sample needed, and it disappeared when the cap did.
-The divergence is real but it is a property of the reads *and* the region, not of the reads alone.
-The same HG002 reads measure 0.0721 over this 2 Mbp window, 0.0986 over 10 Mbp and 0.1532 over all
-of chr20, because the estimator counts spurious overlaps between repeat copies and the whole
-chromosome includes the centromere. `flye_params` flags it when it exceeds the `--nano-hq` band;
-nothing in the pipeline branches on it.
+`read_stats` also reports `pairwise_divergence`, which depends on the region as much as on the
+reads: the same HG002 reads measure 0.0721 over this 2 Mbp window, 0.0986 over 10 Mbp and 0.1532
+over all of chr20, because the estimator counts spurious overlaps between repeat copies and the
+whole chromosome includes the centromere. `flye_params` flags a value above the `--nano-hq` band;
+nothing branches on it.
 
 
 ```python
 # One level only: run roots are RUN_DIR's direct children. miniwdl also writes an
-# envelope-less outputs.json inside every nested sub-workflow directory, and (measured, on
-# the first real cohort run) one of those can carry a newer mtime than the run root's, so
-# a recursive glob sorted by mtime picks it and dies on the missing "outputs" key.
+# outputs.json inside each nested sub-workflow directory, and one of those can be newer
+# than the run root's, so a recursive glob sorted by mtime would pick the wrong file.
 outputs_path = max(RUN_DIR.glob("*/outputs.json"), key=lambda p: p.stat().st_mtime)
-# miniwdl's outputs.json file is the bare name -> value mapping; the {"dir", "outputs"}
-# envelope exists only on the CLI's *stdout*, measured on the first run that ever reached
-# this cell. Accept both, like persist_outputs.py.
+# miniwdl's outputs.json is the bare name -> value mapping; the {"dir", "outputs"}
+# envelope appears only on the CLI's stdout. Accept both, like persist_outputs.py.
 report = json.loads(outputs_path.read_text())
 outputs = report.get("outputs", report)
 
@@ -620,8 +596,8 @@ def quast_key(name):
     SummarizeQuastReport builds that map by running `sed 's/ /_/g'` and `s/>=/gt/`
     over QUAST's space-aligned report.txt, so "Genome fraction (%)" arrives as
     "Genome_fraction_(%)" and only single-word metrics (N50, NGA50) survive intact.
-    Looking the display names up directly matched four keys out of nine and left the
-    assert below impossible to satisfy, whatever QUAST had produced.
+    Looking up the display names directly would match four keys out of nine and make the
+    assert below impossible to satisfy, whatever QUAST produced.
     """
     return name.replace(" ", "_").replace(">=", "gt")
 
@@ -666,20 +642,11 @@ for name, path in zip(names, outputs["ONTAssembleCohort.assemblies"]):
     print(f"  {name}  {path}")
 ```
 
-The QUAST numbers above summarize contiguity at two points; the whole curve shows more. An Nx curve
-reads "contigs of at least this length cover x% of the assembly". NGx changes the denominator to
-the reference length and nothing else, so the two curves separate wherever the assembly's total
-length differs from the reference's: above when the assembly is longer, which it is here because
-the region slice overhangs its boundaries, below when shorter. Neither curve is alignment-aware.
-Genome fraction and NGA50 in the table are, and they are the ones that know whether any of this
-sequence is in the right place.
-
-At `quick` scale the region is 2 Mbp and a handful of contigs make the steps chunky. The result is
-real, just small.
-
-Both curves apply QUAST's 500 bp contig floor, so the N50 annotated on the plot is the N50 printed
-above. Counting every contig instead, including the sub-500 bp fragments QUAST discards, computes a
-different statistic and labels it with the same name.
+The next cell plots Nx (solid) and NGx (dashed) for each assembly, with QUAST's 500 bp contig
+floor, so each curve at x = 50 is the N50 or NG50 printed above. The assembly usually runs longer
+than the reference slice, because whole reads overhang the region's edges, which puts NGx on or
+above Nx. Neither curve uses alignments. At `quick` scale each sample is one contig, so its two
+curves coincide as one flat line at the contig's length.
 
 
 ```python
@@ -687,10 +654,8 @@ import bisect
 
 import matplotlib.pyplot as plt
 
-# QUAST's own default. Applying it here too is the difference between this plot's N50
-# and the N50 printed in the cell above being the same number: QUAST reports on contigs
-# >= 500 bp, so counting everything computes a different statistic and annotates it with
-# the same name.
+# QUAST's default contig floor, so the curve at x = 50 is the N50 QUAST printed above;
+# counting every contig would compute a different statistic under the same name.
 MIN_CONTIG = 500
 
 
@@ -733,8 +698,8 @@ INK, MUTED, GRID = "#0b0b0b", "#898781", "#e1e0d9"
 palette = ["#2a78d6", "#eb6834", "#1baf7a"]
 fig, ax = plt.subplots(figsize=(8, 4.5), dpi=110)
 for (name, lengths), color in zip(assemblies.items(), palette):
-    # Solid: Nx, against the assembly's own length. Dashed: NGx, against the reference;
-    # the two separate where the assembly stops covering the region.
+    # Solid: Nx, against the assembly's own length. Dashed: NGx, against the reference's;
+    # the two separate wherever those lengths differ.
     for pts, style, label in (
         (nx_points(lengths, sum(lengths)), "-", f"{name}  Nx"),
         (nx_points(lengths, ref_len), "--", f"{name}  NGx"),
@@ -765,32 +730,30 @@ plt.show()
 
 ### Step 6b: Analyze the outputs in the same cluster
 
-The assemblies are files on shared storage and the cluster that made them is still up with Ray on
-it. No new job, no new cluster, no hand-off: the next cell is Ray code in this process, reading the
-workflow's declared outputs.
+The outputs are files on shared storage, and the cluster that made them is still up, so the next
+cell is plain Ray code in this notebook, with no new job and no copy.
 
-The example is a trio concordance check. HG002 is the son of HG003 and HG004, so a variant called in
-the child is usually present in at least one parent. Ray Data reads the three paftools VCFs, parses
-them in parallel, and joins them on position.
+It compares the trio's variant calls. HG002 is the son of HG003 and HG004, so most of the variants
+called in the child should appear in at least one parent. The cell normalizes each paftools VCF
+with `bcftools norm`, reads and parses the three with Ray Data on the workers, and compares them
+as `(chrom, pos, ref, alt)` sets. It prints each sample's call count, then the share of HG002's
+calls found in either parent. Three effects keep the "in neither parent" share well above zero:
 
-Three things bound what that number can mean, and they are worth reading before the output:
+- Allele dropout. Flye collapses haplotypes, so each assembly carries one mosaic haplotype and a
+  heterozygous site appears in it roughly at random. A variant the child inherited can be missing
+  from the parent that transmitted it. Allele sampling alone puts roughly 25-40% of the child's
+  calls in neither parent.
+- Representation. paftools places an indel wherever the alignment's `cs` tag put it, which inside
+  a homopolymer is arbitrary, so two assemblies can spell one indel two ways. The
+  `bcftools norm -f <ref> -m -any` step removes most of that.
+- Callable regions. `paftools call -L` calls only inside alignment blocks above its length
+  threshold, and the three assemblies break differently, so a call in a block that one sample
+  cleared and another did not counts as unshared.
 
-- **Allele dropout.** Flye collapses haplotypes, so each sample contributes one mosaic haplotype and
-  a heterozygous site appears or does not roughly at random. A variant the child really inherited
-  can be absent from the parent that transmitted it. On allele sampling alone, something like 25-40%
-  "in neither parent" is the expectation, not a defect.
-- **Representation.** The comparison keys on `(chrom, pos, ref, alt)`, and paftools places an indel
-  wherever the alignment's `cs` tag put it. Inside a homopolymer that position is arbitrary, so two
-  independently aligned assemblies can spell one indel two ways. `bcftools norm -f <ref> -m -any`
-  before comparing removes most of it; the cell below does that.
-- **Callable regions differ.** `paftools call -L` calls variants only inside alignment blocks above
-  its threshold, and the three assemblies do not fragment identically, so a call sitting in a block
-  one sample cleared and another did not counts as unshared for mechanical reasons.
-
-So this is a consistency check on three independent assemblies, not a Mendelian violation rate. A
-real one needs diploid callsets, a benchmark region list, and coordinates that are not slice-local.
-What it does show is that the three outputs agree the way three related genomes should, and that
-checking took one cell on the cluster that produced them.
+This is a consistency check on three independent assemblies, not a Mendelian error rate, which
+would need diploid callsets, benchmark regions and coordinates that are not slice-local. It also
+has no unrelated control: much of any genome's variation against GRCh38 is common in the
+population, so an unrelated sample would share many of these calls too.
 
 
 ```python
@@ -798,15 +761,13 @@ import os
 
 import ray
 
-# Ray is already running: the WDL backend has been submitting tasks to this cluster for
-# the whole notebook. Nothing new is provisioned here.
+# The cluster the WDL tasks ran on; nothing new is provisioned here.
 vcfs = dict(zip(names, outputs["ONTAssembleCohort.vcfs"]))
 
-# Normalize before comparing. paftools derives each variant from minimap2's `cs` tag, which
-# places an indel wherever the alignment happened to put it; inside a homopolymer that
-# position is arbitrary, so two independently aligned assemblies spell one indel two ways
-# and the set intersection below counts it as two variants. `-m -any` also splits
-# multiallelic records so a site with two ALTs compares allele by allele.
+# Normalize before comparing: paftools places an indel wherever minimap2's `cs` tag put
+# it, so inside a homopolymer two assemblies can spell one indel two ways, and the set
+# comparison below would count it twice. `-m -any` also splits multiallelic records, so a
+# site with two ALTs compares allele by allele.
 NORM_DIR = WORK / "vcf-normalized"
 NORM_DIR.mkdir(parents=True, exist_ok=True)
 if not pathlib.Path(f"{reference}.fai").exists():
@@ -891,16 +852,14 @@ print("against zero. It is a consistency check, not a violation rate.")
 
 ## Step 7: Persist the outputs
 
-`/mnt/cluster_storage` is shared across the nodes of *one* cluster and is deleted when that cluster
-terminates. In a workspace that is fine, since the cluster is yours and stays up. As an Anyscale
-Job it is a trap, because a job terminates its cluster on success, so a run that finishes correctly
-destroys its own results. A 14h44m chromosome-20 assembly completed, reported a 33.3 Mbp N50, and
-left nothing behind but the driver log.
+`/mnt/cluster_storage` is shared by the nodes of one cluster and is deleted when that cluster
+terminates. In a workspace that is fine, since the cluster stays up. An Anyscale Job terminates its
+cluster when it succeeds, so a job that leaves its results there loses them by finishing.
 
 [`persist_outputs.py`](https://github.com/anyscale/templates/blob/main/templates/wdl-genomics-on-ray/persist_outputs.py)
-copies the *declared outputs only*, leaving the run tree and its gigabytes of intermediates behind,
-to `WDL_ON_RAY_RESULTS` or to the first writable durable mount (`/mnt/user_storage`, then
-`/mnt/shared_storage`).
+copies the declared outputs only, not the run tree and its intermediates, to `WDL_ON_RAY_RESULTS`
+or else to the first writable durable mount (`/mnt/user_storage`, then `/mnt/shared_storage`). It
+prints one line per output and the total file count.
 
 
 ```python
@@ -909,24 +868,24 @@ run(["python", str(TEMPLATE_DIR / "persist_outputs.py"), "--outputs", str(output
 
 ## Run it as a job
 
-The notebook path above is sized to run while you watch it. A real assembly is a batch job, and
+The notebook assembles a 2 or 10 Mbp region so you can watch it.
 [`job.yaml`](https://github.com/anyscale/templates/blob/main/templates/wdl-genomics-on-ray/job.yaml)
-is that job: the same trio, all 64 Mbp of chromosome 20 for each of the three samples, at the
-coverage the reads came at.
+runs the same trio over all 64 Mbp of chromosome 20 per sample, at the coverage the reads came at,
+as an Anyscale Job:
 
 ```bash
 cd templates/wdl-genomics-on-ray
 anyscale job submit --config-file job.yaml
 ```
 
-Submit it from that directory. `working_dir: .` is relative to the shell rather than to the config
-file, so submitting from the repository root uploads the wrong tree and the job dies in seconds on
+Submit it from that directory. `working_dir: .` is relative to the shell, not to the config file,
+so submitting from the repository root uploads the wrong tree and the job fails within seconds on
 a missing WDL.
 
 ### Time and cost estimates
 
-One green run of that job on the `m5.8xlarge` worker group it ships with, at 97x, 80x and 63x
-coverage, uncapped, on the Ray 2.56.0 image this template used before its 2.58.0 bump.
+One run of that job: Ray 2.56.0 image, three on-demand `m5.8xlarge` workers, 97x, 80x and 63x
+coverage, no coverage cap.
 
 | | HG002 | HG003 | HG004 |
 |---|---|---|---|
@@ -940,131 +899,115 @@ coverage, uncapped, on the Ray 2.56.0 image this template used before its 2.58.0
 | # mismatches per 100 kbp | 154.02 | 142.61 | 149.30 |
 | # misassemblies | 121 | 111 | 129 |
 
-The workflow spans **2h01m58s** and the job **2h03m56s**, over three workers and a head node that
-holds no tasks: about **6 worker node-hours**, or **$10** at us-east-1 on-demand list. Node-hours
-are the durable unit, since instance pricing moves and varies by region and commitment.
+The workflow took 2h01m58s and the job 2h03m56s, on three workers plus a head node that runs no
+tasks: about 6 worker node-hours, or $10 at us-east-1 on-demand list prices. Carry node-hours over
+rather than dollars, since prices vary by region and commitment. The cohort finished in its slowest
+sample's time, 2h01m58s against 2h01m15s. A VM-per-task backend would use similar node-hours; the
+difference is 30 instance boots, one per task, against three workers here.
 
-Three samples finish in the wall clock of the slowest one, **2h01m58s against 2h01m15s**. The
-node-hours are what the three cost in series and what changes is the latency. Against a
-per-task-VM backend the node-hours also come out the same, and what changes there is the boot
-latency and idle tail on each of the 30 tasks, paid 30 times rather than never. Step 5 runs the
-same comparison at demo scale, where it comes out at 1.03 and depends on getting the third worker.
+Read mode is the largest lever on time. An earlier single-sample run of HG002 used upstream's
+`--nano-raw` on the same instance type and reads (97x, uncapped, Flye's one polishing round):
 
-**This section used to publish 14h44m for a single sample.** That was the same assembly on the
-same instance type, and the comparison is clean: both runs uncapped, both at 97x, both with Flye's
-one polishing iteration, N50 33,279,582 then against HG002's 33,263,886 here. The read mode is the
-only difference and it is worth **7.6x**. Most of it is the polishing stage, 9h51m under
-`--nano-raw` against **31m15s** under `--nano-hq`, the two error models doing very different
-amounts of correction per position; everything before polishing came down 3.5x, 4h53m to 1h24m.
-`--asm-coverage` explains none of this, since the cap reaches only the disjointig stage and both
-runs had it off. The cap was dropped for its own reason, that capping at Flye's documented 40x
-cost a third of the N50 to save fourteen minutes. `ONTAssembleWithFlye.wdl`'s header carries the
-four-run grid that separates the two levers.
+| HG002, full chr20, `m5.8xlarge` | `--nano-raw` (earlier run) | `--nano-hq` (this run) |
+|---|---|---|
+| Flye, total | 14h44m | 1h55m33s |
+| polishing stage | 9h51m | 31m15s |
+| everything before polishing | 4h53m | 1h24m |
+| N50 | 33,279,582 | 33,263,886 |
 
-The old table reported contiguity and nothing else, which is how one N50 stood in for a result as
-long as it did. The columns belong together: N50 says how long the pieces are, genome fraction and
-NGA50 say whether they are right. Here they say the contigs are chromosome-arm length and the
-alignment blocks inside them are not, which is the gap Step 6 is about.
+`--nano-hq` is 7.6x faster for the same N50. The coverage cap is a contiguity lever rather than a
+speed one: capping at 40x cut the N50 to a third to save 14.6 minutes on c6i.16xlarge
+(`ONTAssembleWithFlye.wdl`'s header has the four-run grid).
 
-`L90` is the line to read for structure. HG002 and HG004 hold 90% of the assembly in two contigs,
-33.26 and 25.78 Mbp for HG002, 33.23 and 25.85 Mbp for HG004: one per chromosome arm, 98% of the q
-arm's 33.9 Mbp of assemblable sequence and 98% of the p arm's 26.3 Mbp, both stopping at the
-centromere. The remaining 5.3 Mbp sits in 60 contigs averaging 89 kb, about the size of the
-pericentromeric sequence they came from. HG003 needs three contigs for the same 90% and the break
-is in one arm: its p arm comes out whole at 25.78 Mbp while its q arm splits into 16.72 and 16.54.
-Its genome fraction, NGA50, mismatch rate and misassembly count are the best of the three, so that
-break costs contiguity and nothing else.
+The contigs are chromosome-arm length. HG002 and HG004 hold 90% of the assembly in two contigs, one
+per arm: 33.26 and 25.78 Mbp for HG002, 33.23 and 25.85 Mbp for HG004, which is 98% of the q arm's
+33.9 Mbp of assemblable sequence and 98% of the p arm's 26.3 Mbp, each stopping at the centromere.
+HG002's remaining 5.3 Mbp is in 60 contigs averaging 89 kb. HG003 needs three contigs for the same
+90%: its p arm comes out whole at 25.78 Mbp and its q arm splits into 16.72 and 16.54 Mbp, while its
+genome fraction and NGA50 are in line with the other two.
+
+NGA50 is about 2 Mbp in every full-chr20 run here: 1.96-2.19 Mbp across the trio, 1.83-2.08 Mbp
+in the `--nano-hq` pair of the four-run grid, and 2.1 Mbp in an unpolished run, so polishing is not
+what limits it. As in Step 6, QUAST breaks aligned blocks at every rearrangement against GRCh38
+over 1 kbp, the sample's own structural variants included, so NGA50 and the misassembly count
+measure distance from the reference as much as assembly error.
 
 ![The assembly against chromosome 20, one contig per arm stopping at the centromere, and the N50-against-NGA50 gap measured on a separate unpolished run](https://raw.githubusercontent.com/anyscale/templates/main/templates/wdl-genomics-on-ray/assets/chr20-contigs.png)
 
-The first panel is that 14h44m run. Today's flags reproduce its q-arm contig to 0.05% and extend
-the p arm from 23.65 to 25.78 Mbp. The second panel is a *different* run again, assembled with
-`--nano-raw --iterations 0 --asm-coverage 30 --genome-size 64444167` to measure what skipping
-polishing costs. Contiguity barely moved (N50 33.25 Mbp) while NGA50 came out at 2.1 Mbp and
-genome fraction at 94.9%: consensus error dense enough to break QUAST's alignments turns one
-33 Mbp contig into blocks with a 2.1 Mbp median. No polished counterpart was ever measured, so the
-size of that effect is not established by this data, only that the two statistics disagree sharply
-on an unpolished assembly. The workflow now emits both arms' QUAST columns from a single run, so
-the paired table is one `medaka_rounds > 0` run away. `PIPELINE.md` has the rest.
+The first panel is the 14h44m `--nano-raw` run; the current flags reproduce its q-arm contig to
+within 0.05% and extend its p-arm contig from 23.65 to 25.78 Mbp. The second panel is the
+unpolished run (`--nano-raw --iterations 0 --asm-coverage 30 --genome-size 64444167`): N50 33.25
+Mbp, NGA50 2.1 Mbp, genome fraction 94.9%. The polished runs above reach the same NGA50, so its gap
+from N50 is not a polishing effect.
 
-One queue time in that run is worth reading before you size a cluster. HG004's `Assemble` waited
-about **587 s**, from dispatch to Flye's first log line, and it was not waiting for a node: all
-three workers were up inside 100 seconds. It was waiting for CPU on the first one, where all three
-`MeasureDivergence` tasks had landed and HG002's ran for 669.8 s. `Assemble` reserves 30 of a
-worker's 32 cores, so any 4-core neighbour on that node blocks it. (`seconds_queued` reports 639.1 s
-here. It stops when the driver sees `ray_placement.json` on shared storage, which inflates long
-waits.) It cost the cohort nothing. HG004 is the smallest sample, so its `Assemble` dispatches
-first, and it still finished 1410 s before HG002; that worker is the `min_nodes` one, up either
-way. A fourth node is not the fix either: HG004's request was passed over twice as the other
-workers came up. `MeasureDivergence` also still feeds `flye_params` and the Step 6 readout.
+A sizing note from the same run: `Assemble` reserves 30 of a worker's 32 cores, so any 4-core
+neighbour blocks it. HG004's `Assemble` waited about 587 s from dispatch to Flye's first log line,
+with all three workers up inside 100 s, because all three `MeasureDivergence` tasks had landed on
+the first worker and HG002's ran for 669.8 s. It cost the cohort nothing: HG004 is the smallest
+sample, so its measurements finish first, and it still finished 1410 s before HG002. A fourth node would not
+have helped, since HG004's request was passed over twice as the other workers came up. The task
+log's `seconds_queued` reads 639.1 s, because it stops when the driver sees `ray_placement.json`
+on shared storage.
 
-Spot suits every task here, the assembly included, which is a change from what this template used
-to say. That advice was written when a chromosome took 14h44m and a reclaimed node meant redoing
-most of it. At two hours it does not: a preempted attempt costs a fraction of a spot node-hour to
-redo, and the inputs files give every task `preemptible_tries: 3`, so node loss is budgeted rather
-than fatal. Modelled against interruption rates from 1.5% to 15% per node-hour, spot saves 58-64%
-of the bill and a resume mechanism would recover a further $0.05-$0.61 per cohort run, which is
-why there is no resume mechanism. The arithmetic inverts around ten hours per assembly: past
-roughly `T = 1/rate`, restart-from-zero costs more than spot saves, and a whole-genome run belongs
-back on demand. The worker groups ask for it (`market_type: PREFER_SPOT`, in `configs/` and
-`job.yaml`); the head stays on demand. The retry path is traced in code but has not yet met a
-real reclaim.
+The worker groups now ask for spot (`market_type: PREFER_SPOT`, in `configs/` and `job.yaml`) and
+fall back to on-demand when spot has no capacity; the head stays on demand. The run above was
+entirely on demand, and the retry path has been traced in code but has not yet met a real reclaim.
+Every task in the inputs files has `preemptible_tries: 3`, so a reclaimed node costs a retry of the
+tasks on it, not the run, and a retried task restarts from zero. The spot figures are estimates:
+
+| spot, estimated rather than measured | |
+|---|---|
+| Spot Advisor discount, `m5.8xlarge`, us-west-2, 2026-09-24 | -69%, taking this run from about $10 to about $3.65 |
+| saving, modelled at assumed interruptions of 1.5-15% per node-hour | 58-64% |
+| what a resume mechanism would add | $0.05-$0.61 per cohort run, so there is none |
+| where restart-from-zero stops paying | roughly `1/rate` hours per assembly: ten hours at 10% per node-hour |
 
 ### What that job encodes
 
-`timeout_s: 86400`, against a measured 2h03m56s. The headroom is for the runs that are not this
-one: a slower instance type, a whole genome rather than one chromosome, or a spot fleet spending
-part of its budget on retries. An earlier 12h ceiling SIGTERMed a run at 12h01m, inside polishing.
-
-`WDL_ON_RAY_RESULTS`. Without it the outputs die with the cluster, as Step 7 explains.
-
-`--call-cache`, and `max_retries: 0` despite it. A job-level retry runs on a new cluster, and this
-job's cache lives on `/mnt/cluster_storage`, which the platform recreates per job; miniwdl
-invalidates a cache entry whose output files have gone, so the retry would find nothing to reuse.
-The entrypoint carries the durable arrangement that does survive, and what it costs.
-
-`preemptible_tries` comes from the inputs file, not the WDL, and is 3 on every task. The task
-defaults stay at upstream's values so the WDL keeps running unmodified elsewhere; a spot policy is
-a property of the fleet you are renting rather than of the assembler. Check what your own pipeline
-declares before relying on spot, because a task left at 0 on a spot fleet fails the whole workflow
-on its first reclaim.
+- `timeout_s: 86400`, against a measured 2h03m56s, leaves room for a slower instance type, a whole
+  genome, or a spot fleet spending retries.
+- `WDL_ON_RAY_RESULTS` is where Step 7's copy goes; without it the outputs go with the cluster.
+- `--call-cache` runs with `max_retries: 0`. A job-level retry runs on a new cluster, and this
+  job's cache is on `/mnt/cluster_storage`, which the platform recreates per job, so a retry would
+  find nothing to reuse. The entrypoint's comments show the durable arrangement and its cost.
+- `preemptible_tries: 3` comes from the inputs file. The task defaults stay at upstream's values,
+  mostly 0, so the WDL still runs unmodified elsewhere. Check what your own pipeline declares
+  before relying on spot: a task with `preemptible` and `maxRetries` both at 0 fails the workflow
+  on its first reclaim.
 
 ## Adding a tool
 
-Whichever container mode you pick, the tools have to come from somewhere.
 [`tools/manifest.toml`](https://github.com/anyscale/templates/blob/main/templates/wdl-genomics-on-ray/tools/manifest.toml)
-pins each one's version, URL and sha256, and three consumers read it: the image build, the wheel
-build, and `native` mode's per-task environments.
+pins each tool's version, URL and sha256. The image build, the wheel build and `native` mode's
+per-task environments all read it.
 
 Under `none`, the notebook's mode, every tool has to be on every node before the first task
-dispatches, so the manifest builds one image containing all of them:
+dispatches, so the manifest builds one image that holds all of them. Add a `[tools.<name>]` block
+and rebuild from the template directory:
 
 ```bash
 anyscale image build -n my-wdl-tools --containerfile Dockerfile
 ```
 
-Add a `[tools.<name>]` block and rebuild. The fetch, the checksum check and the PATH shim are
-generic; only `kind = "source"` needs a build recipe.
-[`tools/BUILDING.md`](https://github.com/anyscale/templates/blob/main/templates/wdl-genomics-on-ray/tools/BUILDING.md)
+The fetch, the checksum check and the PATH shim are generic; only `kind = "source"` needs a build
+recipe. [`tools/BUILDING.md`](https://github.com/anyscale/templates/blob/main/templates/wdl-genomics-on-ray/tools/BUILDING.md)
 has the procedure.
 
-Past the point where one image stops being reasonable, `--container-runtime ray` stops being
-optional: build a small image per task class from the cluster's base, map each `runtime.docker`
-value in `[ray] task_image_map`, and check the map in next to the WDL. Run `wdl-on-ray probe-image`
-against each one before depending on it.
+When one image stops being reasonable, switch to `--container-runtime ray`: build a small image per
+task class from the cluster's base, map each `runtime.docker` value in `[ray] task_image_map`, keep
+the map in version control next to the WDL, and run `wdl-on-ray probe-image` against each image
+first.
 
-The same manifest also builds pip wheels (`tools/build_wheels.sh`) for a stock `anyscale/ray`
-image. Read `BUILDING.md` before choosing that route. The wheels alone are not enough: a job's
-`requirements:` is installed at cluster startup *before* the working directory is staged, and pip
-fetches an `https://` index anonymously, so neither a wheel shipped with the submission nor one in
-a private bucket is reachable. They have to be staged to `/mnt/user_storage` first. The custom
-image exists to avoid that.
+The manifest can also build pip wheels (`tools/build_wheels.sh`) for a stock `anyscale/ray` image,
+but a job can only install them after they are staged to `/mnt/user_storage`; `BUILDING.md`
+explains why, and the custom image avoids it.
 
 ## Next steps
 
 ### Point it at your own reads
 
-The inputs file is the whole change. Nothing in the WDL or the compute config has to move:
+Start from `wdl/pipelines/ONT/Assembly/inputs.chr20.cohort.json`, which carries the
+`runtime_attr_*` sizing, and replace the samples and chemistry:
 
 ```json
 {
@@ -1078,53 +1021,61 @@ The inputs file is the whole change. Nothing in the WDL or the compute config ha
 }
 ```
 
-`fastqs` is one entry per flow cell for *one* sample; miniwdl localizes `gs://`, `s3://` and
-`https://` itself. Three things bite in practice:
+`fastqs` takes one entry per flow cell of one sample; miniwdl localizes `gs://`, `s3://` and
+`https://` itself. Four things to check:
 
-- **The reference sets the genome size.** `ComputeGenomeLength` sums it, so a whole GRCh38
-  against one chromosome's reads sizes the memory request for 3.1 Gbp. Pass
-  `flye_genome_size` explicitly when the reference is not the thing you are assembling.
-- **`read_chemistry` selects the read mode.** R10 gets `--nano-hq`; unset keeps upstream's
-  `--nano-raw` rather than guessing. Get it from your run metadata, not from a FASTQ.
-- **`runtime_attr_flye` must fit a node you actually have.** A request no instance type
-  satisfies waits forever rather than failing. Upstream's own sizing for a 3.1 Gbp genome is
-  16 cores and ~410 GiB.
+- The reference sets the genome size. `ComputeGenomeLength` sums every sequence in `ref_fasta`, and
+  the workflow uses the total as Flye's genome size and, when `runtime_attr_flye` is unset, to size
+  its memory request. QUAST and paftools also evaluate against the whole reference. For reads from
+  one region, pass the matching reference slice, or at least set
+  `ONTAssembleCohort.assemble.flye_genome_size`.
+- `read_chemistry` selects the read mode: R10 gets `--nano-hq`, and unset keeps upstream's
+  `--nano-raw`. Take it from your run metadata; a FASTQ may not record it.
+- `runtime_attr_flye` has to fit a node you have. Upstream's sizing for a 3.1 Gbp genome is 16
+  cores and ~410 GiB, far above this template's 128 GiB workers, so a whole genome needs a larger
+  worker group.
+- Above ~100 Mbp, set `ONTAssembleCohort.assemble.quast_is_large` to `true` for QUAST's `--large`.
 
 ### Run your own WDL
 
-`wdl-on-ray check <your.wdl>` first: it is miniwdl's type checker and costs seconds. Then read
-the Scope table above for what the backend does and does not do with a `runtime {}` block —
-`disks` in particular is parsed and discarded.
-
-Getting your tools onto the cluster is the long pole on a real port, not the WDL.
-[`tools/BUILDING.md`](https://github.com/anyscale/templates/blob/main/templates/wdl-genomics-on-ray/tools/BUILDING.md) covers the four routes and when each stops working.
+Start with `wdl-on-ray check <your.wdl>`, miniwdl's type checker, which takes seconds. Then read the
+Scope table for what the backend does with each `runtime {}` key; `disks`, for one, is logged and
+ignored. On a real port, getting the tools onto the cluster usually takes longer than the WDL;
+[`tools/BUILDING.md`](https://github.com/anyscale/templates/blob/main/templates/wdl-genomics-on-ray/tools/BUILDING.md) covers the four routes and where each stops working.
 
 ### Turn polishing on
 
-`medaka_rounds` is 0 here, which is the largest divergence from upstream. medaka lives in its
-own image because it costs 1.2 GB and a numpy upgrade the cluster image cannot take:
+`medaka_rounds` is 0 here, the largest divergence from upstream. medaka has its own image,
+[`tools/Dockerfile.medaka-gpu`](https://github.com/anyscale/templates/blob/main/templates/wdl-genomics-on-ray/tools/Dockerfile.medaka-gpu),
+because it would add about 1.2 GB to the cluster image even with CPU-only torch (measured on the
+2.56.0 base), and GPU polishing needs a CUDA base. That image has not yet been built or run.
 
 ```bash
 anyscale image build -n wdl-medaka-gpu --containerfile tools/Dockerfile.medaka-gpu
 ```
 
-then map it under `--container-runtime ray`, set `medaka_rounds` above 0 and `medaka_use_gpu`
-true, and pick a model matching your chemistry *and sampling rate* — `medaka tools list_models`.
-A mismatched model degrades the consensus without erroring. Raising it also switches Flye's own
-polishing off and turns on QUAST's polished-against-draft comparison.
+Then add a GPU worker group to the compute config, map the image under `--container-runtime ray`
+(`tools/BUILDING.md` has the config), and set `medaka_rounds` above 0 and `medaka_use_gpu` to true.
+`MedakaPolish` asks for a T4 unless you set `ONTAssembleCohort.assemble.MedakaPolish.gpu_type`.
+Check that `medaka_model` matches your chemistry *and sampling rate* with
+`medaka tools list_models`; a mismatched model degrades the consensus without an error. With medaka
+on, Flye skips its own polishing round, and QUAST reports the draft and the polished assembly side
+by side. For human-scale polishing, ONT now points to `dorado polish` rather than medaka.
 
 ### Scale the cohort
 
-Add entries to `samples`. The resource requests are per task, not per sample, so a bigger cohort
-does not need bigger nodes — it needs a higher `max_nodes`, and the autoscaler does the rest.
-Three samples at 64 Mbp took 2h04m on three workers, against ~2h for one sample alone.
+Add entries to `samples`. The requests are per task, so a bigger cohort needs more nodes, not
+bigger ones: raise `max_nodes`. Pass `--task-concurrency` too. By default the task pool is sized
+once, at startup: to the cluster's CPU count at that moment (capped at 200) when `RAY_ADDRESS` is
+set, as in a job, and otherwise to the head node's core count, as in a workspace. That caps how
+many tasks the autoscaler ever sees queued. Three samples over 64 Mbp took 2h04m on three workers,
+against 2h01m15s for the slowest of them.
 
 ### Make it cheaper
 
-Every task carries `preemptible_tries: 3`, so node loss is budgeted rather than fatal. Add
-`market_type: PREFER_SPOT` to the worker group and a run costs roughly a third of on-demand.
-Above about ten hours per assembly that inverts: restart-from-zero starts costing more than
-spot saves, because Flye does not checkpoint across a retry.
+The workers already run on spot, and every task in the inputs files carries
+`preemptible_tries: 3`; Time and cost estimates has the estimate and its assumptions. The saving
+shrinks for long assemblies, because Flye does not checkpoint across a retry.
 
 ### Read the backend
 
