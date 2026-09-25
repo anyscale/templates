@@ -20,7 +20,7 @@ Measured on the included AWS compute config (one g5.2xlarge GPU worker with an A
 | Labels, bfloat16 | All 10,081 rows labelled as written |
 | CI test runtime | 11 min 41 s, workspace start to teardown, including about 3 minutes of untimed first join while the autoscaler adds a CPU worker |
 
-The data is synthetic and the model public. [NOTES.md](NOTES.md) has the per-step figures, the laptop runs and what ran where.
+The data is synthetic and the model public. [NOTES.md](https://github.com/anyscale/templates/blob/main/templates/ray-data-incremental-batch-classification/NOTES.md) has the per-step figures, the laptop runs and what ran where.
 
 ## Set up
 
