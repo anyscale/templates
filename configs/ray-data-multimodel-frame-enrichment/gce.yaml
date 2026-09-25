@@ -1,5 +1,4 @@
-# See aws.yaml beside this file: same L4 class (24 GB = 22.35 GiB), same reduced actor counts
-# in CI.
+# Same shape as aws.yaml beside it: one L4 per GPU worker (24 GB = 22.35 GiB, 22.03 usable).
 head_node:
   instance_type: n2-standard-8
   resources:
