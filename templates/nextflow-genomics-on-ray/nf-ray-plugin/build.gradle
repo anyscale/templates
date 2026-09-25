@@ -22,10 +22,10 @@ version = '0.1.0'
 nextflowPlugin {
     // The *minimum* Nextflow this plugin requires, and the API it compiles
     // against. Deliberately the older maintained stable line rather than the
-    // newest release: the plugin overrides seven long-stable AbstractGridExecutor
-    // methods, so compiling against 25.10 and running on the 26.04 the image
-    // ships widens the range this works on at no cost. The Dockerfile pins the
-    // runtime version; this pins the floor.
+    // newest release: the plugin overrides AbstractGridExecutor's long-stable
+    // grid methods plus getBinDir(), register() and shutdown(), so compiling
+    // against 25.10 and running on the 26.04 the image ships widens the range this
+    // works on. The Dockerfile pins the runtime version; this pins the floor.
     nextflowVersion = '25.10.0'
 
     provider = 'anyscale'

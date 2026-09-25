@@ -63,8 +63,8 @@ class Directives:
     runtime: str = ""
     time_minutes: int = 0
     extra: dict[str, str] = field(default_factory=dict)
-    """Directives this version does not recognize, kept so ``nf-ray doctor`` can
-    report them instead of silently dropping a request the user made."""
+    """Directives this version does not recognize, kept rather than dropped.
+    Nothing acts on them yet."""
 
 
 def _as_float(key: str, value: str) -> float:
@@ -151,7 +151,7 @@ def render_command(script: str) -> list[str]:
 
 
 def format_header(directives: Directives) -> str:
-    """Render *directives* back to header text. Used by tests and ``doctor``."""
+    """Render *directives* back to header text, the inverse of :func:`parse_header`."""
     lines = []
     for key, value in (
         ("name", directives.name),

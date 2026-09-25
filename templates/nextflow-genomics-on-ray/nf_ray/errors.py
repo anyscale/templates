@@ -13,20 +13,20 @@ using the codes below. They are chosen to land inside the band nf-core's
 
     errorStrategy = { task.exitStatus in ((130..145) + 104 + (175..177)) ? 'retry' : 'finish' }
 
-which means an unmodified nf-core pipeline gets sensible behaviour from a Ray
-cluster with no edits at all. Two of the mappings do real work:
+so nf-core's default ``errorStrategy`` retries them without changes. Two of the
+mappings matter most:
 
-* **OOM becomes 137.** Ray's memory monitor killing a worker is the same event as
-  the kernel's OOM killer, and 137 is what nf-core's retry logic expects for it.
-  Because nf-core scales every request by ``task.attempt``, the retry comes back
-  asking for twice the memory -- which is the correct response and happens with
-  no intervention.
-* **Preemption becomes 175, not a Nextflow-level failure.** A spot instance going
-  away is infrastructure, not a bad task, and conflating the two is how a
-  pipeline burns its ``maxRetries`` budget on events that were never its fault.
+* OOM becomes 137. Ray's memory monitor killing a worker is the equivalent of the
+  kernel's OOM killer, and 137 is the code nf-core's retry logic expects for it.
+  Because nf-core scales every request by ``task.attempt``, the retry asks for
+  twice the memory.
+* A lost node becomes 175, inside the retry band, so Nextflow retries the task
+  instead of failing it once ``exitReadTimeout`` passes with no exit file. The
+  retry counts against ``maxRetries`` like any other.
 
-A code *outside* the retryable band is deliberate for the cases that will not fix
-themselves on a second attempt.
+The one code outside the retryable band, :data:`EXIT_FRAMEWORK`, is for Ray
+failures this module does not recognise, which a second attempt is unlikely to
+fix.
 """
 
 from __future__ import annotations

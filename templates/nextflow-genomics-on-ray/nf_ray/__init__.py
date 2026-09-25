@@ -12,11 +12,11 @@ for HPC schedulers:
 
 * this package -- the Ray side of those three commands.
 
-The seam matters. Nextflow's grid-executor CLI contract has been stable for a
-decade, whereas Ray's Java API is documented as "experimental and only supported
-by the community" and would have to load a JNI library inside Nextflow's pf4j
-plugin classloader. Keeping Ray in Python costs one ``fork``/``exec`` per submit
-and buys a plugin small enough to read in one sitting.
+The seam matters. Nextflow's grid-executor contract is long-stable, whereas Ray's
+Java API is documented as "experimental and only supported by the community" and
+would have to load a JNI library inside Nextflow's pf4j plugin classloader.
+Keeping Ray in Python costs one ``fork``/``exec`` per submit and keeps the plugin
+small.
 
 Ownership is the one subtlety. A Ray task is owned by the process that submitted
 it and is cancelled when that process exits, so ``nf-ray submit`` cannot submit

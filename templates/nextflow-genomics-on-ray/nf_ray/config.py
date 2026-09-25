@@ -1,10 +1,10 @@
 """Typed configuration for the Ray side of the executor.
 
-Every setting arrives as an ``NF_RAY_*`` environment variable. That is not a
-compromise, it is the only channel that reaches all three places the settings
-have to be visible: the Nextflow JVM (which spawns ``nf-ray``), the daemon (a
-separate long-lived process), and the CLI (a fresh process per submit). A
-Nextflow config scope would reach only the first.
+Every setting arrives as an ``NF_RAY_*`` environment variable, the one channel
+that reaches all three places the settings have to be visible: the Nextflow JVM
+(which spawns ``nf-ray``), the daemon (a separate long-lived process), and the
+CLI (a fresh process per submit). A Nextflow config scope would reach only the
+first.
 
 The Groovy plugin forwards a ``ray { ... }`` scope into this namespace, so all
 three of these are spellings of the same setting::
@@ -49,9 +49,9 @@ _TRUE = frozenset({"1", "true", "yes", "on"})
 SOCKET_DIR = "/tmp"
 
 # Defaults live here, once, and are referenced by both the dataclass field and
-# `from_env`. Writing the literal in both places is how a default silently
-# becomes two defaults: the dataclass says one thing, the env reader another,
-# and whichever the test happens to exercise is the one that stays honest.
+# `from_env`. Written as a literal in both places, a default can drift into two:
+# the dataclass says one thing, the env reader another, and a test catches only
+# the one it exercises.
 DEFAULT_TASK_MAX_RETRIES = 0
 DEFAULT_POLL_INTERVAL = 0.25
 DEFAULT_IDLE_TIMEOUT = 3600.0
@@ -127,13 +127,13 @@ class Config:
     count and defeat ``task.attempt``-scaled resource requests."""
 
     scheduling_strategy: str = DEFAULT_SCHEDULING_STRATEGY
-    """``SPREAD`` is useful for demonstrating placement and for I/O-bound fan-out;
-    ``DEFAULT`` packs, which is what you want when the autoscaler is paying by
-    the node."""
+    """``DEFAULT`` is Ray's default placement, which favours nodes that already
+    have work and then less-loaded ones. ``SPREAD`` distributes tasks over live
+    nodes, which is useful for demonstrating placement and for I/O-bound fan-out."""
 
     default_accelerator: str = ""
-    """Applied to GPU tasks that name no model. nf-core modules say
-    ``nvidia.com/gpu``, which names none, so without this a GPU process would be
+    """Applied to GPU tasks that name no model: a bare ``accelerator 1``, or
+    ``nvidia.com/gpu``, names none, so without this a GPU process would be
     scheduled onto any accelerator the cluster happens to have."""
 
     extra_resources: dict[str, float] = field(default_factory=dict)
@@ -172,22 +172,19 @@ class Config:
 
     ``ray.nodes()`` only reports nodes that are already alive, so on a cluster
     whose big worker group sits at ``min_nodes: 0`` the observed ceiling is
-    whatever happens to be running -- which would reject a 72 GB request that the
-    autoscaler could satisfy in two minutes. The autoscaler's configured node
+    whatever happens to be running, which would reject a 72 GB request that the
+    autoscaler could satisfy by starting a node. The autoscaler's configured node
     types are not reachable through a public API, so the template's ``ray``
-    profile states them instead, copied from the compute config:
+    profile states them instead, copied from the compute config
+    (``ray { maxNodeCpus = 16 ... }`` in conf/ray.config, which the plugin passes
+    on as):
 
-        env {
-          NF_RAY_MAX_NODE_CPUS      = '16'
-          NF_RAY_MAX_NODE_MEMORY_GB = '80'
-          NF_RAY_MAX_NODE_GPUS      = '1'
-        }
+        NF_RAY_MAX_NODE_CPUS=16  NF_RAY_MAX_NODE_MEMORY_GB=80  NF_RAY_MAX_NODE_GPUS=1
 
-    This is the same coupling the compute configs' own comments describe from the
-    other side -- the instance type and the pipeline's resource request are one
-    decision, not two -- so writing it down in both places is the point, not
-    duplication. Left at zero, the ceiling falls back to the largest node seen
-    alive so far, and an all-zero ceiling disables the check."""
+    The compute configs' comments describe the same coupling from the other side:
+    the instance type and the pipeline's resource request are one decision.
+    Left at zero, the ceiling falls back to the largest node seen alive so far,
+    and a cluster with no worker alive yet gets no check at all."""
 
     @classmethod
     def from_env(cls, work_dir: str = "") -> Config:

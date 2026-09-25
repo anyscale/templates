@@ -8,19 +8,17 @@ process exits. ``nf-ray submit`` runs for a few milliseconds and dies, so it
 cannot submit: it would hand Ray a task and immediately orphan it. Something has
 to stay alive for the length of the pipeline and hold the references.
 
-That something could have been a detached actor, and the first design here was
-one. A plain driver process is better, for a reason worth writing down: its
-lifetime is already exactly right. It comes up with the run and goes away with
-it, and if it dies the run is dead anyway -- whereas a detached actor outlives the
-run by construction, so a killed pipeline leaves a stale actor holding tasks, and
-the *next* run has to decide whether to adopt or evict it. That decision has no
-good answer. So: one daemon per work directory, owning its own tasks, cancelling
-them on the way out.
+That something could be a detached actor. A plain driver process fits better,
+because its lifetime is already right: it comes up with the run and goes away
+with it, and if it dies the run is dead anyway. A detached actor outlives the run
+by construction, so a killed pipeline would leave a stale actor holding tasks,
+and the next run would have to decide whether to adopt or evict it. So: one
+daemon per work directory, owning its own tasks, cancelling them on the way out.
 
-The unix socket in front of it is not for isolation, it is for latency. Nextflow
-spawns one process per submit; a client that had to ``import ray`` would spend
-about a second doing it, several hundred times. A stdlib-only client on a socket
-costs a few milliseconds.
+The unix socket in front of it is there for latency. Nextflow spawns one process
+per submit; a client that had to ``import ray`` would spend about a second doing
+it, several hundred times. A stdlib-only client on a socket costs a few
+milliseconds.
 
 What it does that Nextflow cannot see
 -------------------------------------

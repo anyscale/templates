@@ -11,16 +11,14 @@ the single artifact the notebook reads and the one a reader can diff between run
 Give it the vcfeval output *directories*, as COLLECT_BENCHMARK stages them. A
 staged directory keeps the name RTG_VCFEVAL gave it, which is where the labels
 are. A staged ``summary.txt`` does not help: its parent is a Nextflow hash
-directory, and twelve of them in one task are an input file name collision.
+directory, and several of them in one task are an input file name collision.
 
-**On the parsing.** The format below was read off the tool's actual output, and
-the tests for it use summaries captured from real ``rtg vcfeval`` runs (see
+**On the parsing.** The format below was read off the tool's output, and the
+tests use summaries captured from real ``rtg vcfeval`` runs (see
 tests/nextflow-genomics-on-ray/test_collect_vcfeval.py for which run) rather than
-text written to match this code. That distinction is not pedantry: the sibling
-WDL template shipped a readout bug for months because its fixture encoded the
-same wrong assumption the code did, so the test could only ever agree with
-itself. If you change this parser, re-capture the fixtures from a real run -- do
-not edit them to match.
+text written to match this code, so a test cannot pass by sharing the parser's
+assumptions. If you change this parser, re-capture the fixtures from a real run;
+do not edit them to match.
 
 vcfeval emits two rows: one at the best-F-measure score threshold, and one labelled
 ``None`` for "no threshold applied". The ``None`` row is the one to report, because

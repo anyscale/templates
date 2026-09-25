@@ -17,16 +17,16 @@ Nextflow                                     Ray
 Two of those rows carry the interesting decisions.
 
 ``time`` has no Ray equivalent. A grid scheduler enforces a wall-clock limit and
-kills the job; Ray does not. Rather than pretend, the directive is parsed,
-reported by ``nf-ray doctor``, and otherwise ignored -- and the README says so.
-Silently accepting a limit you do not enforce is worse than not accepting it.
+kills the job; Ray does not. So the directive is parsed, recorded as
+``time_minutes_ignored`` in the request the daemon logs and writes beside the
+task, and otherwise ignored, and the README says so.
 
 ``memory`` is where a Nextflow pipeline meets an autoscaling cluster, and it is
 the one place this module refuses to be quiet. On Ray, a request no node can
-satisfy is an *indefinite wait*, not an error: the autoscaler looks for an
-instance type that fits, finds none, and the task pends forever with no log line
-saying why. nf-core's ``base.config`` ships ``process_high_memory`` at 200 GB and
-scales every request by ``task.attempt``, so this is not a hypothetical. So
+satisfy waits indefinitely instead of failing: the autoscaler finds no instance
+type that fits, the task stays pending, and Nextflow gets nothing back.
+nf-core's ``base.config`` ships ``process_high_memory`` at 200 GB and scales every
+request by ``task.attempt``, so this happens in practice. So
 :func:`check_schedulable` fails fast with the two numbers and the two files the
 reader can change. Set ``NF_RAY_CLAMP_RESOURCES=1`` to clamp to the largest node
 instead, which is occasionally what you want for a smoke test and never what you
@@ -42,12 +42,12 @@ from typing import Any
 
 from nf_ray.directives import Directives
 
-#: Accelerator spellings seen in real Nextflow pipelines, mapped onto Ray
-#: ``accelerator_type`` values. nf-core modules use the Kubernetes device-plugin
-#: form (``nvidia.com/gpu``), which names no model and therefore maps to "any
-#: GPU"; nf-core institutional configs and Cromwell-derived pipelines use the
-#: GCE names. Unrecognized values pass through unchanged so Ray's own spellings
-#: ("A10G", "L40S", ...) work directly in a `type:` field.
+#: Accelerator spellings seen in Nextflow pipelines, mapped onto Ray
+#: ``accelerator_type`` values. The Kubernetes device-plugin form
+#: (``nvidia.com/gpu``) names no model and so maps to "any GPU", like a bare
+#: ``accelerator 1``; GCE-style names map to Ray's. Unrecognized values pass
+#: through unchanged, so Ray's own spellings ("A10G", "L40S", ...) work directly in
+#: a `type:` field.
 ACCELERATOR_ALIASES = {
     "nvidia-tesla-k80": "K80",
     "nvidia-tesla-p4": "P4",
@@ -74,8 +74,8 @@ MB = 1 << 20
 class Unschedulable(RuntimeError):
     """A request no node in the cluster can satisfy.
 
-    Raised at submit time rather than left to pend, because a pending Ray task
-    produces no diagnostic of its own.
+    Raised at submit time rather than left to pend, because Nextflow gets nothing
+    back from a Ray task that never schedules.
     """
 
 
@@ -84,11 +84,11 @@ class NodeLimits:
     """The largest single node the cluster can currently offer.
 
     One task is one process on one node, so the ceiling that matters is the
-    largest *node*, never the cluster total -- a 4-node cluster with 32 GB each
-    cannot run a 64 GB task. Reported by :mod:`nf_ray.daemon` from
-    ``ray.nodes()``, widened by the autoscaler's configured maximums when those
-    are visible, so a cold cluster that has not scaled up yet does not reject a
-    request it will be able to satisfy in two minutes.
+    largest *node*, never the cluster total: a 4-node cluster with 32 GB each
+    cannot run a 64 GB task. :mod:`nf_ray.daemon` builds it from the declared
+    ``NF_RAY_MAX_NODE_*`` values when they are set, so a cold cluster does not
+    reject a request the autoscaler can satisfy by starting a node, and otherwise
+    from the largest node ``ray.nodes()`` has shown so far.
     """
 
     cpus: float = 0.0
@@ -110,8 +110,9 @@ class RayRequest:
     resources: dict[str, float] = field(default_factory=dict)
     accelerator_type: str | None = None
     time_minutes: int = 0
-    """Parsed from Nextflow's ``time`` directive. Not enforced -- Ray has no
-    wall-clock limit. Carried so ``doctor`` can report that it was ignored."""
+    """Parsed from Nextflow's ``time`` directive. Not enforced: Ray has no
+    wall-clock limit. Carried so the request recorded beside the task shows it was
+    ignored."""
 
     def options(self) -> dict[str, Any]:
         """The subset ``ray.remote(...).options()`` accepts."""
@@ -175,10 +176,10 @@ def build_request(
 
     :param directives: the parsed ``#RAY`` header.
     :param extra_resources: custom resources demanded of every task, from
-        ``[ray] extra_resources``. Useful for pinning a whole pipeline onto a
-        labelled node group.
-    :param default_accelerator_type: applied to GPU tasks that name no model,
-        which is the common case since nf-core modules say ``nvidia.com/gpu``.
+        ``ray.extraResources`` (``NF_RAY_EXTRA_RESOURCES``). Useful for pinning a
+        whole pipeline onto a labelled node group.
+    :param default_accelerator_type: applied to GPU tasks that name no model, such
+        as a bare ``accelerator 1`` or ``nvidia.com/gpu``.
     """
     num_cpus = float(directives.cpus or 1)
     memory = directives.memory_mb * MB if directives.memory_mb else None

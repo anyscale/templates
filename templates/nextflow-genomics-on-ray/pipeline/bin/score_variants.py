@@ -1,18 +1,19 @@
 #!/usr/bin/env python3
-"""Score variants with a DNA language model, on a GPU.
+"""Score variants by DNA language model embedding distance, on a GPU.
 
-**What this is.** For each variant, the reference and alternate sequences of a
-window around it are embedded by a nucleotide language model, and the distance
-between the two embeddings is reported. A variant the model considers unremarkable
-moves the embedding very little; one that disrupts a pattern the model learned
-moves it more.
+**What this computes.** For each variant, a nucleotide language model embeds the
+reference sequence of a window around it, and the same window with the alternate
+allele substituted. The output is the L2 distance and the cosine similarity between
+the two mean-pooled final-layer embeddings: a zero-shot measure of how much the
+model's representation of the window changes.
 
-**What this is not.** Not a clinical score, not a validated pathogenicity
-predictor, and not comparable to SpliceAI or CADD. Embedding distance is a proxy
-that correlates with "this changes the sequence in a way the model noticed", which
-is a weaker claim than any of those tools make. It is here because it is a real,
-current, GPU-bound genomics workload with an honest implementation -- not because
-the number should go in a report.
+**Limits.** It is not a likelihood score (the LM head is loaded and unused), not a
+validated pathogenicity or clinical score, not comparable to SpliceAI or CADD, and
+not a call-quality signal, since it sees neither reads nor genotypes. The tokenizer
+is 6-mer based, so an indel whose length is not a multiple of six shifts the
+tokenization of everything after it and scores well above a SNP for that reason
+alone; compare SNPs with SNPs. It is here as a GPU workload that reads the callset,
+not as a number to report.
 
 **Why it exists in this template.** It runs in two places from one implementation:
 
@@ -174,10 +175,11 @@ class VariantScorer:
     """Embed the reference and alternate windows and report their distance.
 
     Callable on a dict of columns so it can be handed straight to Ray Data's
-    ``map_batches`` with no adapter:
+    ``map_batches`` with no adapter, as the notebook's Step 7 does:
 
         ds.map_batches(VariantScorer, fn_constructor_kwargs={"reference": ref},
-                       batch_size=64, num_gpus=1, concurrency=2)
+                       batch_size=64, num_gpus=1,
+                       compute=ray.data.ActorPoolStrategy(size=2))
 
     and used directly from the CLI below for the Nextflow process. The model is
     loaded once per instance -- per actor under Ray, per invocation under

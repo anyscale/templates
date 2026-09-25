@@ -1,5 +1,5 @@
-// The plugin id Nextflow resolves. Must match `plugins { id 'nf-ray' }` in
-// nextflow.config, the directory the install task creates
+// The plugin id Nextflow resolves. Must match `plugins { id 'nf-ray@0.1.0' }` in
+// pipeline/conf/ray.config, the directory the install task creates
 // ($NXF_PLUGINS_DIR/nf-ray-<version>), and the Nextflow plugin-id pattern
 // [a-zA-Z0-9-]{5,64}.
 rootProject.name = 'nf-ray'

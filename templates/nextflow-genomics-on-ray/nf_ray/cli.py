@@ -12,9 +12,9 @@ and ``parseQueueStatus`` on the other side. Changing a line here means changing 
 regex there.
 
 The rest are for humans: ``up``/``down`` to control the daemon explicitly,
-``doctor`` to report every decision the executor would make without running
-anything, and ``probe-image`` to check an ``ext.image`` candidate before a pipeline
-depends on it.
+``doctor`` to report the executor's configuration and this node's environment
+without running anything, and ``probe-image`` to check an ``ext.image`` candidate
+before a pipeline depends on it.
 
 The hot subcommands deliberately import only :mod:`nf_ray.client` and
 :mod:`nf_ray.config`. Importing :mod:`nf_ray.daemon` here would pull Ray into
@@ -79,9 +79,9 @@ def cmd_status(args: argparse.Namespace) -> int:
 
     config = _config(args)
     if not client.ping(config.socket_path):
-        # No daemon means no tasks. An empty queue is the honest answer and lets
+        # No daemon means no tasks. An empty queue is the correct answer and lets
         # Nextflow's own bookkeeping decide what that means; an error here would
-        # fail a pipeline that has simply not submitted anything yet.
+        # fail a pipeline that has not submitted anything yet.
         return 0
     for task_id, state in client.status(config.socket_path):
         print(f"{task_id} {state}")
@@ -145,7 +145,13 @@ EXPECTED_TOOLS = (
 
 
 def cmd_doctor(args: argparse.Namespace) -> int:
-    """Report every decision the executor would make, without running anything."""
+    """Report the executor's configuration and this node's environment, running nothing.
+
+    Configuration comes from ``NF_RAY_*`` environment variables only. The plugin
+    forwards a pipeline's ``ray {}`` scope to nf-ray as those variables, so a doctor
+    run by hand does not see that scope: its declared ceiling reads "none" unless
+    ``NF_RAY_MAX_NODE_*`` are set in the shell.
+    """
     config = _config(args)
     problems: list[str] = []
 
@@ -231,10 +237,9 @@ def cmd_probe_image(args: argparse.Namespace) -> int:
 
     config = _config(args)
     # Route through the daemon's own connect logic rather than calling ray.init
-    # directly. The WDL template's equivalent command did the latter and passed
-    # address="auto" straight through, so it failed with a raw ConnectionError off
-    # a cluster instead of starting a local Ray -- exactly where you want to try
-    # an image first.
+    # directly, so that off a cluster it starts a local Ray instead of failing with
+    # a ConnectionError from address="auto", which is where you want to try an
+    # image first.
     scheduler = daemon.Scheduler(config)
     try:
         remote = ray.remote(job.probe).options(  # type: ignore[arg-type]

@@ -1,9 +1,8 @@
 """Copy a finished run's published results somewhere that outlives the cluster.
 
-Anyscale terminates a job's cluster when the job *succeeds*, and `/mnt/cluster_storage` is
-deleted with it. So a run that publishes there, which is the default because it is shared
-across nodes and fast, destroys its own results by finishing correctly. The WDL sibling
-template learned this from a 14h44m assembly that left nothing behind but the driver log.
+Anyscale terminates a job's cluster when the job ends, and `/mnt/cluster_storage` goes with
+it. So a run that publishes there, the default because it is shared across nodes and fast,
+loses its results even when it succeeds.
 
 Nextflow makes the copy small. Every process that produces a result declares a
 `publishDir`, so `--outdir` already holds the declared outputs and nothing else -- the

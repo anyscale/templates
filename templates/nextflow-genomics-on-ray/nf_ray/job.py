@@ -12,12 +12,13 @@ library**, and Ray is imported lazily inside the one function that needs it.
 
 Two things this module deliberately does *not* do.
 
-It does not build a container invocation. Nextflow already does that -- when
+It does not build a container invocation. Nextflow already does that: when
 ``docker.enabled`` or ``apptainer.enabled`` is set, the container command is
-written into ``.command.run`` before the executor ever sees it. So podman,
-Apptainer and Singularity support come free and stay Nextflow's business. Only
-Ray's ``image_uri`` is ours, because that is a Ray-level concept Nextflow has no
-vocabulary for, and it is handled on the driver in :mod:`nf_ray.envs`.
+written into ``.command.run`` before the executor ever sees it. On a node with a
+container runtime, podman, Apptainer and Singularity would therefore stay
+Nextflow's business; this template's image has none. Only Ray's ``image_uri`` is
+ours, because that is a Ray-level concept Nextflow has no vocabulary for, and it
+is handled on the driver in :mod:`nf_ray.envs`.
 
 It does not write ``.exitcode``. Nextflow's wrapper writes that itself from an
 ``EXIT`` trap, and it is the authority on the task's own exit status. The daemon
@@ -35,9 +36,9 @@ from dataclasses import dataclass, field, replace
 
 #: Written into the task's work directory the moment the task starts running,
 #: which is how the driver learns the task stopped *queueing*. Ray offers no
-#: started-callback, and the queue/run distinction is the entire difference
-#: between "my cluster is too small" and "my task is slow". The consolidated
-#: Gantt chart in the notebook is built from these.
+#: started-callback, and the queue/run distinction is how to tell "my cluster is
+#: too small" from "my task is slow". The daemon notices the file on its next
+#: status poll, and the notebook's Gantt chart draws the queue time from that.
 PLACEMENT_FILENAME = ".nf-ray.placement"
 
 #: Where this module's own diagnostics go. Never the task's `.command.err`, which

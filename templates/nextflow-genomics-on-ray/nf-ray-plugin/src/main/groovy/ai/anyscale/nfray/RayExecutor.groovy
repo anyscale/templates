@@ -24,19 +24,18 @@ import org.pf4j.ExtensionPoint
  *
  * <p>Nextflow already knows how to talk to a batch scheduler: write directives
  * into the job script, submit it with a command, poll a queue, cancel by id. This
- * executor supplies those four things for Ray, so `executor 'ray'` behaves exactly
- * like `executor 'slurm'` from the pipeline's point of view -- which is the whole
- * point. An unmodified nf-core pipeline needs no edits, only a profile.
+ * executor supplies those four things for Ray, so from the pipeline's side
+ * `executor 'ray'` works like `executor 'slurm'`. Processes that declare
+ * containers still need one of the routes in the README's "Containers" section;
+ * only this template's pipeline has been run this way.
  *
  * <p>The Ray side lives in Python ({@code nf-ray}, in this template's {@code nf_ray}
- * package) and is reached by running it. That is not a workaround for a missing
- * Java API -- Ray does ship one -- but a deliberate choice. Ray's Java API is
+ * package) and is reached by running it. Ray does ship a Java API, but it is
  * documented as "experimental and only supported by the community", its version
  * must match Ray Python exactly, and {@code ray-runtime} loads a JNI library that
  * would have to initialise inside Nextflow's pf4j plugin classloader, in
- * Nextflow's own JVM. Against that, one {@code fork}/{@code exec} per submit buys
- * a plugin small enough to read in one sitting and a Ray integration that survives
- * a Ray upgrade.
+ * Nextflow's own JVM. One {@code fork}/{@code exec} per submit keeps the plugin
+ * small and free of any dependency on the Ray version.
  *
  * <p><b>Contract with the Python side.</b> Three things must agree, and each is
  * asserted by the offline unit tests in
@@ -213,10 +212,10 @@ class RayExecutor extends AbstractGridExecutor implements ExtensionPoint {
      * the machine running Nextflow. A grid executor gets away with that on HPC, where the
      * project sits on a filesystem every node mounts. A Ray cluster shares only
      * /mnt/cluster_storage: the pipeline lives in the workspace's or the job's working
-     * directory on the head node, so the first process to call a bin/ script failed on a
-     * worker with `collect_vcfeval.py: command not found`, exit 127. Tasks get a copy under
-     * the work directory instead, which every node must see anyway. The AWS Batch executor
-     * does the same with S3.
+     * directory on the head node, so a task that calls a bin/ script on a worker fails
+     * with `command not found`, exit 127. Tasks get a copy under the work directory
+     * instead, which every node must see anyway. The AWS Batch executor does the same
+     * with S3.
      *
      * <p>Module-level bin directories ({@code nextflow.enable.moduleBinaries}) are not
      * copied.
@@ -342,12 +341,11 @@ class RayExecutor extends AbstractGridExecutor implements ExtensionPoint {
     /**
      * The CLI invocation, with the `ray` config scope forwarded as environment.
      *
-     * <p>Every setting has to reach three separate processes -- this JVM, the
-     * daemon, and a fresh CLI per submit -- and only the environment gets to all
+     * <p>Every setting has to reach three separate processes (this JVM, the
+     * daemon, and a fresh CLI per submit), and only the environment gets to all
      * three. Java cannot mutate its own environment, so the settings are pushed
-     * through {@code env} on each call instead, which has the side benefit that
-     * the full configuration is visible in {@code .command.log} when a submit
-     * fails.
+     * through {@code env} on each call instead, which also puts the full
+     * configuration in the command line Nextflow reports when a submit fails.
      */
     private List<String> cli() {
         final List<String> argv = ['/usr/bin/env']
