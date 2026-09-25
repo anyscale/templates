@@ -15,14 +15,13 @@ set -euxo pipefail
 # ../../tests/nextflow-genomics-on-ray/tests.sh` is the same layout.
 here="$(dirname "$0")"
 
-# Pinned: an unpinned test dependency makes "the template broke" and "papermill changed"
-# the same red build, and only one of those is worth waking up for.
+# Pinned, so that a papermill release cannot turn this template's test red.
 uv pip install -q --system 'papermill==2.7.0'
 
 # The notebook's default is `standard`, three samples x 10 Mbp of chr20, which is what a
-# reader gets and is deliberately more than CI should spend. CI runs `quick`, 2 Mbp: same
-# pipeline, same tools, same resource requests, same cohort shape, only fewer bases. The
-# Buildkite step is capped at max(75, timeout_in_sec/60 + 30) minutes, 90 for this template.
+# reader gets and more than CI should spend. CI runs `quick`, 2 Mbp over 8 intervals: the same
+# processes, tools and resource requests on fewer bases. The Buildkite step is capped at
+# max(75, timeout_in_sec/60 + 30) minutes, 90 for this template.
 export NF_DEMO_SCALE=quick
 
 # The GPU leg stays in the template and out of CI: ANNOTATE_VARIANTS asks for an L4, and a run

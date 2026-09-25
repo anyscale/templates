@@ -14,11 +14,8 @@ synthetic_trio.py (amd64 toolchain from tools/env.main.yml, 2026-09-24):
     no-baseline/           `--region chrS:1-500`, where the truth has nothing:
                            one line, no header, and rtg still exits 0
 
-That matters more than it looks. The sibling WDL template shipped a readout bug
-for months because its test fixture encoded the same wrong assumption as the code
-it was testing, so the test could only ever agree with itself. An earlier version
-of this file did the same: its fixture was hand-written, 106 dashes where rtg
-writes 100, while the parser's docstring said it had been captured.
+A fixture written to match the parser can only ever agree with it, so these are
+rtg's bytes, not a transcription of them.
 
 The header is also rtg-tools' own source, ``RocContainer.writeSummary``::
 
@@ -208,8 +205,8 @@ def _() -> None:
 
 @check("staged summary.txt files fail loudly: their parent is a hash directory")
 def _() -> None:
-    # What the old COLLECT_BENCHMARK would have handed over, had Nextflow not
-    # refused the twelve same-named inputs first.
+    # What collecting summary.txt files would hand over, had Nextflow not
+    # refused the same-named inputs first.
     with tempfile.TemporaryDirectory() as root:
         work, task = os.path.join(root, "work"), os.path.join(root, "task")
         os.makedirs(task)

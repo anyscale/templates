@@ -8,15 +8,13 @@
 # --- why a custom image rather than a stock one plus `requirements:` ---------
 #
 # This template runs Nextflow processes with no container runtime. A Ray worker
-# is already inside a container and cannot nest another, so a process that
-# declares `container 'quay.io/biocontainers/...'` has nothing to run it -- the
-# toolchain has to be present on every node before the first task dispatches.
+# is already inside a container and cannot start another, so a process that
+# declares `container 'quay.io/biocontainers/...'` has nothing to run it, and the
+# toolchain has to be on every node before the first task dispatches.
 #
-# An Anyscale job's `requirements:` cannot do that job here: it resolves *before*
-# working_dir is staged, so it cannot see a wheelhouse shipped with the code, and
-# a published index is fetched anonymously. Pre-staging wheels on
-# /mnt/user_storage works but is a separate job to keep in sync. Baking is
-# simpler and is what the WDL sibling template settled on for the same reason.
+# An Anyscale job's `requirements:` installs pip packages, and the toolchain is
+# bioconda packages plus a JRE, so it is baked in here. Baking also keeps every
+# node on the same tool versions.
 #
 # --- the version contract ---------------------------------------------------
 #

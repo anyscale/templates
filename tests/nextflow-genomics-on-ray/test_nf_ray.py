@@ -109,12 +109,11 @@ def _() -> None:
 
 @check("header: stops at the script body")
 def _() -> None:
-    # The body carries a line that *would* parse as a header -- `#RAY -cpus 999`
-    # at column 0, inside a heredoc -- so scanning past the body silently
-    # multiplies the request by 166x with nothing downstream to flag it. An
-    # earlier version of this fixture had the same string inside a quoted
-    # `echo`, where the header regex could never have matched it either way,
-    # and the test passed with the cutoff removed.
+    # The body carries a line that *would* parse as a header, `#RAY -cpus 999`
+    # at column 0 inside a heredoc, so scanning past the body multiplies the
+    # request by 166x with nothing downstream to flag it. The decoy has to be
+    # parseable: inside a quoted `echo` the header regex could never match it,
+    # and the test would pass with the cutoff removed.
     assert "\n#RAY -cpus 999\n" in REAL_HEADER, "fixture must contain a parseable decoy"
     assert directives.parse_header(REAL_HEADER).cpus == 6.0
 
@@ -187,7 +186,7 @@ def _() -> None:
 
 @check("resources: nvidia.com/gpu means 'any GPU', not a model named that")
 def _() -> None:
-    # Every nf-core module spells it this way. Passing it through as an
+    # The Kubernetes device-plugin spelling. Passing it through as an
     # accelerator_type would make the task unschedulable on every node.
     d = directives.parse_header("#RAY -gpus 1\n#RAY -accelerator nvidia.com/gpu\n")
     assert resources.build_request(d).accelerator_type is None
@@ -535,9 +534,9 @@ def _() -> None:
 
 @check("smoke: the gather runs a bin/ script, so the smoke run checks bin/ reaches workers")
 def _() -> None:
-    # The first cluster run died at main.nf's COLLECT_BENCHMARK, `collect_vcfeval.py:
-    # command not found`: bin/ was on the head node only. smoke.nf's COLLECT goes
-    # through bin/ so that the 60-second run fails that way first.
+    # Without the executor's copy of bin/, main.nf's COLLECT_BENCHMARK fails on a
+    # worker with `collect_vcfeval.py: command not found`. smoke.nf's COLLECT goes
+    # through bin/ so that the one-minute run fails that way first.
     with open(os.path.join(_TEMPLATE, "pipeline", "smoke.nf")) as handle:
         text = handle.read()
     collect = text[text.index("process COLLECT") :]
@@ -564,7 +563,7 @@ def _() -> None:
 
 @check("nextflow: numeric params are coerced before arithmetic")
 def _() -> None:
-    # A regression guard for an observed bug, not a hypothetical one.
+    # A regression guard for an observed bug.
     #
     # A param given on the command line arrives as a String. Groovy's `"4" - 1` is
     # *string* subtraction -- it removes the first "1", finds none, and returns

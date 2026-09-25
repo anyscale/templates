@@ -27,7 +27,7 @@
 #   reads      GIAB's NHGRI Illumina 300x novoalign BAMs, GRCh38 (contig `chr20`,
 #              LN 64,444,167 in the BAM header, the same as the reference below)
 #   reference  chr20 of GCA_000001405.15_GRCh38_no_alt_analysis_set, the copy in
-#              ONT's open-data bucket the WDL sibling template also uses
+#              ONT's open-data bucket
 #   known      the Broad hg38 bundle's dbSNP 138, sliced to chr20
 #   truth      GIAB NISTv4.2.1 GRCh38 benchmark VCF + _noinconsistent BED, per sample
 #
@@ -36,10 +36,11 @@
 # collated, and written as paired FASTQ with singletons dropped.
 #
 # The reads are *reference-selected*, and that bounds what the results mean: a pair
-# is here because it aligned to the region, so reads that would mismap *into* chr20
-# from elsewhere in the genome are absent by construction, and precision reads a
-# little high against a whole-genome run. pipeline/PIPELINE.md says so where the
-# numbers are shown.
+# is here because GIAB's whole-genome alignment put it in the region, and the
+# pipeline realigns it against chr20 alone, so reads from elsewhere in the genome
+# that a whole-genome run would misplace into chr20 are mostly absent, and
+# precision reads high against a whole-genome run. pipeline/PIPELINE.md, "Bounds
+# on the numbers", has the rest.
 #
 # ---------------------------------------------------------------------------------
 # Needs samtools built with libcurl, bcftools, tabix, bgzip, python3 and (to

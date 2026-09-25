@@ -28,7 +28,7 @@
 # bin/score_variants.py through Nextflow, and the notebook's Ray Data step calls
 # the same module over the whole callset. One implementation, seen twice.
 #
-# torch itself is NOT here -- it needs the CUDA-12.8 wheel index and lives in
+# torch is not here: it needs the CUDA-12.8 wheel index and lives in
 # tools/requirements.gpu.txt, which pins it with its own --index-url. Splitting
 # it out keeps --extra-index-url off this file, so nothing else can be silently
 # resolved from a non-PyPI index.
@@ -46,7 +46,7 @@ safetensors==0.8.0
 tokenizers==0.22.2
 
 # --- notebook and staging ---------------------------------------------------
-# Nothing to add. The notebook fetches demo data with `aws s3 cp
+# Nothing to add. The notebook fetches demo data with `aws s3 sync
 # --no-sign-request`, and the base image already ships AWS CLI v2 at
 # /usr/local/bin/aws (aws-cli/2.36.27, read from anyscale/ray:2.58.0-py312). An
 # `awscli` pin here would do harm twice: v1 pins botocore exactly (1.42.30 wants

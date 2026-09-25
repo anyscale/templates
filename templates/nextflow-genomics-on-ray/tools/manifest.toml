@@ -22,9 +22,9 @@ kind    = "binary"
 url     = "https://github.com/nextflow-io/nextflow/releases/download/v26.04.6/nextflow-26.04.6-dist"
 sha256  = "182a63c74074e2dc7956ffa3c8cd59de952ed2c44394e21faf5e1736b945444c"
 # The -dist artifact is the self-contained launcher: it needs a JVM and nothing
-# else, so it does not phone home to Maven on first run the way the small
+# else, so it does not download its dependencies on first run the way the small
 # `nextflow` bootstrap script does. That matters on a cluster with no egress, and
-# it is the difference between a 3-second and a 90-second first task.
+# it keeps the first run from waiting on a download.
 install = "bin/nextflow"
 mode    = "0755"
 provides = ["nextflow"]
