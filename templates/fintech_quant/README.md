@@ -51,7 +51,7 @@ ray.init(
 - This baseline is useful for correctness checks and side-by-side timing.
 - Limitation: symbols are processed one at a time, so runtime grows roughly linearly with universe size.
 - Ray Core value: we keep the pricing logic and parallelize with minimal structural changes.
-- Failed pricings are visible, not silent: `get_iv`/`get_npv` return `NaN` (never `0.0`) when QuantLib can't solve a contract, log the contract that failed, and the per-symbol summary line reports **N of M options priced**, where a contract counts as priced only if its implied volatility and every scenario NPV came back. Copying this template means copying that behaviour — a distributed run that swallows pricing errors and substitutes `0.0` finishes green while quietly dropping part of its result set.
+- A contract counts as *priced* when QuantLib solves its implied vol from the last trade price and returns an NPV in every shock scenario. If either step fails, `get_iv`/`get_npv` log the contract and return `NaN` rather than `0.0`, which would pass for a real vol or NPV. Each symbol's summary line reports **N of M options priced**. Check it before aggregating: pandas `sum()` and `mean()` skip `NaN` by default.
 
 
 
@@ -112,8 +112,7 @@ def price_option_chain(
 skip_non_ray = True
 
 if skip_non_ray:
-    # Output recorded from an earlier run, before the summary line began
-    # reporting priced-vs-total. A run today prints "N of M options priced".
+    # Recorded output from an earlier version; current runs print "N of M options priced".
     print(
         """
         Stats for   AAPL:  1843 options, calc'd IV for all shocks in 137.022463 sec
@@ -139,7 +138,7 @@ else:
 - Best practice: submit all tasks first, then call `ray.get(futures)` once to preserve parallelism.
 - For uneven symbol workloads, `ray.wait(...)` helps process completed work early and keep workers busy.
 - Operational benefit: unfinished tasks can be rescheduled if a worker fails, reducing rerun risk for long pricing jobs.
-- Report from the driver: a `print()` inside a task reaches the notebook only through Ray's worker log forwarding, which can drop or delay lines. The tasks below return their priced/total counts with the CSV path, and the driver prints the **N of M options priced** lines after `ray.get`.
+- Report from the driver: each task below returns its CSV path and priced/total counts, and the driver prints the **N of M options priced** lines after `ray.get`. A `print()` inside a task reaches the notebook through Ray's log forwarding, which can deliver it late or not at all.
 
 
 
@@ -192,8 +191,6 @@ def parallel_price_option_chain(
     # Save results to CSV
     new_file_path = save_csv(df, symbol)
 
-    # Return the counts rather than print them here: worker stdout reaches the
-    # notebook only through Ray's log forwarding, which can drop lines.
     return pricing_summary(symbol, df, new_file_path, total_t.elapsed())
 ```
 
@@ -290,8 +287,6 @@ def more_parallel_price_option_chain(
     # Save results to CSV
     new_file_path = save_csv(df, symbol)
 
-    # Return the counts rather than print them here: worker stdout reaches the
-    # notebook only through Ray's log forwarding, which can drop lines.
     return pricing_summary(symbol, df, new_file_path, total_t.elapsed())
 ```
 
@@ -306,8 +301,7 @@ results = ray.get(futures)
 print_pricing_summary(results)  # on the driver, from the returned counts
 all_symbols_t.e("Total time for all symbols: ")
 
-# Output recorded from an earlier run, before the summary line began
-# reporting priced-vs-total. A run today prints "N of M options priced".
+# Recorded output from an earlier version; current runs print "N of M options priced".
 print(
     """
     Total time for all symbols: 43.070964 sec
