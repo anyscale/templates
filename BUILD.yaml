@@ -820,31 +820,16 @@
 # owner_team ray-data: fractional-GPU actor packing across heterogeneous Ray Data stages, with
 # no Train/Serve/LLM surface.
 #
-# README.ipynb is the source; README.md is its nbconvert render. Never hand-edit the .md;
-# regenerate it, because check-readme compares bytes.
+# Outputs ship cleared. The 9 code cells CI runs have passed on a fleet twice (runs under
+# timeout_in_sec below). The 5 gated code cells have not run anywhere: they need a token
+# nobody can supply on a reader's behalf. Do not paste an output into a cell to fill the gap.
 #
-# Outputs ship cleared. The 9 cells CI runs have executed on a fleet twice: on
-# anyscale/ray:2.57.0-py312-cu129 (prodjob_7vlhzuirl3p8wt7jp2tcnyfhuk, SUCCEEDED), and on
-# 2.58.0-py312-cu129 under `rayapp test` on staging (expwrk_t7443rhiucgkrd6ka9lcxr45de, passed
-# 2026-09-24). The 5 gated cells have not run anywhere, because they need a token nobody can
-# supply on a reader's behalf. Do not paste an output into a cell to fill the gap.
+# No shared token, by licence: SAM 3 and DINOv3 terms are accepted per account.
+# tests/vla-fine-tuning/tests.sh pulls an organisation secret for its gated model; do not copy
+# that here. Nothing here reads anyscale_hf_token.
 #
-# NO SHARED TOKEN, BY LICENCE. SAM 3 and DINOv3 are gated on Hugging Face and their terms are
-# accepted per account by whoever runs the template. tests/vla-fine-tuning/tests.sh pulls an
-# organisation secret for its gated model; do not copy that here, and nothing here reads
-# anyscale_hf_token.
-#
-# CI runs the ungated half. The gated cells are removed by tag (skip-in-ci, stripped by
-# tests.sh); do not replace that with "skip when HF_TOKEN is unset", which is an untested branch
-# that becomes the only branch that runs. tests.sh states what the run covers and what it does
-# not: packing arithmetic under --strict, the stage answers, the four-stage stub DAG, and
-# two-model co-residency of the ungated pair on one card. The four-model claim rests on that
-# arithmetic plus the reader's own run.
-#
-# tests.sh papermills a stripped copy of the notebook and checks the strip happened.
-#
-# Keep the notebook's cells on subprocess with check=True. Measured: IPython's `!cmd` does not
-# raise on a non-zero exit, so a stage can die, the next cell run, and papermill exit 0.
+# CI runs the ungated half by tag (skip-in-ci, stripped by tests.sh). Do not replace the tag
+# with "skip when HF_TOKEN is unset". tests.sh lists what the run covers and what it does not.
 # owner: @em-anyscale
 - name: ray-data-multimodel-frame-enrichment
   owner_team: ray-data
@@ -857,14 +842,14 @@
   test:
     tests_path: tests/ray-data-multimodel-frame-enrichment/
     command: bash tests.sh
-    # MEASURED ONCE, ON 2.57.0: 228 s for `bash tests.sh`, on
-    # prodjob_7vlhzuirl3p8wt7jp2tcnyfhuk, anyscale/ray:2.57.0-py312-cu129, one g6.4xlarge
-    # worker in us-west-2, cold SigLIP2 download included. 900 leaves about 4x headroom for a
-    # slower runtime-env build or a cold image cache; one run is not a spread. This bounds the
-    # test only. Cluster start and image pull sit outside it, and were a further 110 s on that
-    # run.
+    # 228 s for `bash tests.sh`, measured once on 2.57.0: prodjob_7vlhzuirl3p8wt7jp2tcnyfhuk
+    # (SUCCEEDED), anyscale/ray:2.57.0-py312-cu129, one g6.4xlarge worker in us-west-2, cold
+    # SigLIP2 download included. 900 is about 4x that, for a slower runtime-env build or a cold
+    # image cache; one run is not a spread. Cluster start and image pull sit outside the timeout
+    # and took a further 110 s on that run.
     #
-    # Not re-measured on 2.58.0. The staging `rayapp test` above ran tests.sh under
-    # `timeout 900` and passed: 7m22s from rayapp's first log line to the workspace delete, of
-    # which the wait for RUNNING was 1m48s. rayapp logs no separate time for tests.sh.
+    # Not re-measured on 2.58.0. A staging `rayapp test` there
+    # (expwrk_t7443rhiucgkrd6ka9lcxr45de, 2026-09-24) passed under `timeout 900`: 7m22s from
+    # rayapp's first log line to the workspace delete, 1m48s of it waiting for RUNNING. rayapp
+    # logs no separate time for tests.sh.
     timeout_in_sec: 900
