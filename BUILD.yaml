@@ -817,15 +817,9 @@
     command: bash tests.sh
     timeout_in_sec: 1800
 
-# owner_team ray-data: a Ray Data join, map_batches GPU actors and a partitioned write, with no
-# Train/Serve/LLM surface.
-#
-# README.ipynb is the source; README.md is its nbconvert render. Never hand-edit the .md;
-# regenerate it, because check-readme compares bytes.
-#
-# The data is synthetic; the model is public, MIT and ungated. Measured 2026-09-24 in two CI
-# runs on the AWS config (23/23 cells; the second ran the current code) and in laptop papermill
-# runs on CPU. The README's Provenance section says which figure came from where. Unmeasured:
+# owner_team ray-data: a Ray Data join, map_batches GPU actors and a partitioned write.
+# README.md is the nbconvert render of README.ipynb; regenerate it, never hand-edit it.
+# Synthetic data, public MIT model. The template's NOTES.md says what ran where. Unmeasured:
 # the GCP config, the probe under worker loss, and job.yaml / run_pipeline.py on a cluster.
 # owner: @em-anyscale
 - name: ray-data-incremental-batch-classification

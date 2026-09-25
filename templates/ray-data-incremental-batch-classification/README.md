@@ -1,41 +1,30 @@
 # Incremental batch classification with Ray Data
 
-A daily Ray Data job that classifies only the rows it hasn't classified before, on GPUs, writes them as partitioned Parquet with one completion marker, and stops at a time bound.
-
-The template also ships the pipeline as a job: `run_pipeline.py` and `job.yaml`. The notebook runs every step on synthetic data, and runs the usual approach beside three of them so you can compare on your cluster.
+A daily Ray Data job that classifies only the rows it hasn't classified before, on GPUs, writes them as partitioned Parquet with one completion marker, and ends at a time bound. The notebook runs each step on synthetic data, three of them beside the usual approach; `run_pipeline.py` and `job.yaml` run the same pipeline as a job.
 
 | Step | Usual approach | This template | What it buys |
 |---|---|---|---|
-| Skip rows already classified | Hash `left_anti` join against the prior output | Broadcast probe: hash the prior keys to 16 bytes each, broadcast the set, filter in a streaming `map_batches` | No shuffle aggregators: they hold CPU and memory on the GPU nodes, and losing one fails the join |
-| Load the model | Every actor downloads it from the Hugging Face Hub at start-up | Download once to shared storage, or bake it into the image | No burst of Hub requests, which the Hub rate-limits with HTTP 429 |
-| Pack the GPU | One actor per GPU | `gpu_fraction=0.5`: two actors per GPU | More rows/s from a GPU that one actor underuses |
-| Mark the output complete | `_SUCCESS` in every partition directory, written from the driver | One `_SUCCESS` at the output root | One request instead of one per partition |
-| Bound the run | None | Job `timeout_s`, the hanging-execution detector, a one-shot driver stack dump | A stalled run ends and leaves a trace. Ray Data's own no-progress timeout is off for any plan with an all-to-all operation, such as a join or `repartition(num_blocks)`. |
-| Pin pyarrow | Unpinned | `pyarrow==23.0.1`, inside 22.x-23.x | Avoids a dataset-writer deadlock on concurrent writes, fixed in 22 ([apache/arrow#47124](https://github.com/apache/arrow/issues/47124)), and a 24.x deadlock at interpreter exit with a live `S3FileSystem` ([apache/arrow#50188](https://github.com/apache/arrow/issues/50188)) |
+| Skip rows already classified | Hash `left_anti` join against the prior output | Broadcast probe: hash each prior key to 16 bytes, broadcast the set, filter in a streaming `map_batches` | No shuffle aggregators, which hold CPU and memory on the GPU nodes and fail the join if one is lost; the classifier starts on the first filtered block |
+| Load the model | Every actor downloads it from the Hugging Face Hub | Download once to shared storage, or bake it into the image | No burst of Hub requests, which the Hub rate-limits with HTTP 429 |
+| Pack the GPU | One actor per GPU | Two per GPU: `gpu_fraction=0.5` | More rows/s from a GPU one actor underuses |
+| Mark the output complete | `_SUCCESS` in every partition, written from the driver | One `_SUCCESS` at the output root | One request instead of one per partition |
+| Bound the run | None | Job `timeout_s`, the hanging-execution detector, one driver stack dump | A stalled run ends and leaves a trace |
+| Pin pyarrow | Unpinned | `pyarrow==23.0.1` | Avoids two known deadlocks: concurrent dataset writes before 22 ([apache/arrow#47124](https://github.com/apache/arrow/issues/47124)), and interpreter exit with a live `S3FileSystem` in 24.x ([apache/arrow#50188](https://github.com/apache/arrow/issues/50188)) |
 
 Measured on the included AWS compute config (one g5.2xlarge GPU worker with an A10G, Ray 2.58.0) on 2026-09-24:
 
 | Measure | Result |
 |---|---|
 | Anti-join, 20,000 rows, warm cluster | Hash join 6.0 s with 24 aggregators; probe 2.3 s with none; same 10,081 rows kept |
-| GPU packing, 10,081 rows | 267 rows/s with one actor, 398 with two: 1.49x |
+| GPU packing, 10,081 rows | 267 rows/s with one actor, 398 with two: 1.49x, actor start-up included |
 | Labels, bfloat16 | All 10,081 rows labelled as written |
 | CI test runtime | 11 min 41 s, workspace start to teardown, including about 3 minutes of untimed first join while the autoscaler adds a CPU worker |
 
-Laptop figures are labelled as such. Provenance, at the end, lists what ran where.
+The data is synthetic and the model public. [NOTES.md](NOTES.md) has the per-step figures, the laptop runs and what ran where.
 
-## Configure
+## Set up
 
-The cell reads its settings from environment variables and prints them.
-
-| Variable | Default | Sets |
-|---|---|---|
-| `NUM_ROWS` | 20000 | Rows in today's batch |
-| `PRIOR_FRACTION` | 0.5 | Share of today's keys an earlier run already classified |
-| `NUM_SHARDS` | 200 | Output partitions |
-| `JOIN_PARTITIONS` | 64 | `num_partitions` for the hash join |
-| `CLASSIFY_ROWS` | 0, meaning all | Cap on the rows sent to the model |
-| `STORAGE_DIR` | `/mnt/cluster_storage/incremental-demo`, or `/tmp/incremental-demo` without cluster storage | Where the inputs, the model and the outputs go |
+This reads the demo's settings from environment variables and prints them; everything the notebook writes goes under `STORAGE_DIR`.
 
 
 ```python
@@ -43,7 +32,7 @@ import os
 import time
 
 NUM_ROWS = int(os.getenv("NUM_ROWS", "20000"))
-PRIOR_FRACTION = float(os.getenv("PRIOR_FRACTION", "0.5"))
+PRIOR_FRACTION = float(os.getenv("PRIOR_FRACTION", "0.5"))  # share of today's keys already classified
 NUM_SHARDS = int(os.getenv("NUM_SHARDS", "200"))  # partitions in the output
 JOIN_PARTITIONS = int(os.getenv("JOIN_PARTITIONS", "64"))
 CLASSIFY_ROWS = int(os.getenv("CLASSIFY_ROWS", "0")) or None  # cap rows sent to the model
@@ -53,25 +42,14 @@ STORAGE = os.getenv("STORAGE_DIR") or (
 print(f"{NUM_ROWS=} {PRIOR_FRACTION=} {NUM_SHARDS=} {JOIN_PARTITIONS=} {STORAGE=}")
 ```
 
-## Install the dependencies
-
-`python_depset.lock` pins what this template adds to the image: torch built for CUDA 12.9, transformers, huggingface-hub, and pyarrow at 23.0.1. This cell installs it on the driver. The workers get the same file through `runtime_env` in the next cell.
+This installs `python_depset.lock` on the driver: torch built for CUDA 12.9, transformers, huggingface-hub and pyarrow, pinned on top of the image.
 
 
 ```python
 !uv pip install -r python_depset.lock --system --no-deps --no-cache-dir --index-strategy unsafe-best-match
 ```
 
-## Start Ray with the guardrails on
-
-`incremental.py` holds every function the notebook calls. `runtime_env` ships it to the workers with `py_modules`, by file path, and installs the lock there with `pip`. Passing the module object instead fails when the driver runs as a Ray job, because `ray.init` deep-copies the runtime env to merge it with the job's.
-
-Two guardrails go on before any work runs:
-
-- Ray Data's hanging-execution detector. It warns, naming the operator and the task, when a task makes no progress for longer than its operator's mean task time plus 10 standard deviations. It judges an operator only after 10 of its tasks finish, so on the included config it can't flag a classify pass, which runs 8 tasks. Ray 2.58 ships it off: each task it flags costs a State API call of up to a second on the executor thread.
-- A one-shot dump of every driver thread's stack, 45 minutes in. Where the cluster blocks debugger attach, an in-process dump is the only record of where a silent driver was stuck. Every dump reads Python frames without holding the GIL and can crash the driver, so this one fires once.
-
-The cell prints the active detectors; `HangingExecutionIssueDetector` should be among them.
+This starts Ray with the lock and `incremental.py` shipped to the workers, turns on Ray Data's hanging-execution detector and arms one driver stack dump for 45 minutes in; `HangingExecutionIssueDetector` should be in the printed list.
 
 
 ```python
@@ -85,11 +63,9 @@ inc.arm_driver_stack_dump(after_s=45 * 60)
 print([d.__name__ for d in ray.data.DataContext.get_current().issue_detectors_config.detectors])
 ```
 
-## Generate today's batch and the prior output
+## Skip rows already classified
 
-`today` has one row per key `(doc_id, company, lang)`, with the text to classify and a `shard` column that becomes the output partition. `prior` holds the keys an earlier run classified, plus some no longer in today's batch. About 2% of today's rows have a NULL `lang`, and `prior` holds a NULL-`lang` twin of each. NULL never equals NULL in a join, so both paths below must keep all of them.
-
-The cell prints the row counts and the NULL-key count, then the first rows of `today`.
+This writes a synthetic `today` and `prior`, with about 2% of today's rows NULL in the key column `lang`, and prints the counts; NULL never equals NULL in a join, so both paths below must keep those rows.
 
 
 ```python
@@ -104,28 +80,18 @@ print(f"today: {len(today_df)} rows, prior: {len(prior_df)} keys, NULL-key rows 
 today_df.head()
 ```
 
-## Skip what was already classified: hash join vs broadcast probe
-
-The hash join, `Dataset.join(join_type="left_anti")`, keeps the rows of `today` with no match in `prior`. It hash-shuffles both sides through `HashShuffleAggregator` actors, one per partition up to the cluster's maximum CPU count: 24 on the included config, 14 on the laptop. They hold the shuffle state in memory and Ray doesn't restart them, so losing one fails the dataset. Ray Data spreads them across nodes, each reserving CPU and memory, so a GPU node running one can't scale down.
-
-The broadcast probe hashes the prior keys to 16-byte digests in a `map_batches` on the workers, collects them into one sorted array and puts it in the object store. A streaming `map_batches` then drops each of today's rows whose digest is in the set; rows with a NULL key always pass. With no shuffle and no aggregators, a GPU stage downstream starts on the first filtered block. The set costs 16 bytes per prior key.
-
-The digests are 128-bit because a new row falsely matches a prior key with probability about (prior keys) / 2^bits. At 10^9 prior keys and 10^9 new rows a day, a 64-bit digest silently drops about one row every 18 days; a 128-bit digest, about 3 x 10^-21 rows a day. Both figures are arithmetic.
-
-The cell runs each path once untimed, then times both on the warm cluster: in CI the first join made the autoscaler add a CPU worker, and timing it would charge the node launch to the join. It prints the untimed times and the CPU count before and after, and `NOT A FAIR COMPARISON` if the cluster changes size during the timed runs. It asserts that both paths keep the same keys, NULL-key rows included, and that only the join starts aggregators.
+This runs the hash join and the probe once untimed, so a node the autoscaler adds isn't charged to either, then times both; look for equal row and NULL-key counts, aggregators for the join only, and no `NOT A FAIR COMPARISON` line.
 
 
 ```python
-# Warm up: run each path once, untimed. The first join can make an autoscaling cluster add
-# a CPU worker, and a new node installs the lock through runtime_env before it runs
-# anything. Timing that run charges the node launch to the join.
+# Untimed warm-up, so a node the autoscaler adds isn't charged to the join.
 cpus_cold = ray.cluster_resources().get("CPU", 0)
 _, warmup_join_s, warmup_join_aggregators = inc.timed_materialize(inc.anti_join_hash, today, prior, num_partitions=JOIN_PARTITIONS)
 _, warmup_probe_s, warmup_probe_aggregators = inc.timed_materialize(inc.anti_join_probe, today, prior)
 cpus_warm = ray.cluster_resources().get("CPU", 0)
 print(f"warmup, untimed: join {warmup_join_s:.1f}s, probe {warmup_probe_s:.1f}s, cluster CPUs {cpus_cold:.0f} -> {cpus_warm:.0f}")
 
-# The comparison: the same two paths again, on the warmed cluster.
+# Timed, on the warmed cluster.
 joined, t_join, join_aggregators = inc.timed_materialize(inc.anti_join_hash, today, prior, num_partitions=JOIN_PARTITIONS)
 new_rows, t_probe, probe_aggregators = inc.timed_materialize(inc.anti_join_probe, today, prior)
 cpus_after = ray.cluster_resources().get("CPU", 0)
@@ -143,26 +109,9 @@ assert join_aggregators > 0 and warmup_join_aggregators > 0, "the join started n
 assert probe_aggregators == warmup_probe_aggregators == 0, "the probe started shuffle aggregators"
 ```
 
-Results at 20,000 rows, 2026-09-24:
+## Classify with fractional GPUs
 
-| Where | Path | Untimed run | Timed, warm | Aggregators | Rows kept (NULL-key) |
-|---|---|---|---|---|---|
-| AWS config | Hash join | 189.6 s | 6.0 s | 24 | 10,081 (371) |
-| AWS config | Probe | 4.0 s | 2.3 s | 0 | 10,081 (371) |
-| 14-CPU laptop | Hash join | 4.4 s | 3.8 s | 14 | 10,081 (371) |
-| 14-CPU laptop | Probe | 1.9 s | 2.6 s | 0 | 10,081 (371) |
-
-The untimed join's 189.6 s covers the cluster growing from 8 CPUs to 16. It starts with the GPU worker's 8, because the head has `CPU: 0`. In the first CI run Ray Data reported 24.0 GiB of memory active and requested during the join, against the cluster's 18.9 GiB; the autoscaler added a CPU worker, which then installed the lock. The cluster kept its size through the timed runs. The laptop has no autoscaler and stayed at 14 CPUs.
-
-At this size the timings are noisy: the laptop's timed probe ran slower than its untimed one. The structural cost is the aggregator pool, each actor reserving CPU and memory, while the probe adds one filter to a stream already running.
-
-## Download the model once
-
-The classifier is [`MoritzLaurer/mDeBERTa-v3-base-xnli-multilingual-nli-2mil7`](https://huggingface.co/MoritzLaurer/mDeBERTa-v3-base-xnli-multilingual-nli-2mil7) (MIT), a multilingual NLI model used for zero-shot classification. The driver downloads it once to shared storage and every actor loads that copy. `MODEL_FILES` in `incremental.py` limits the download to what inference needs: about 578 MB of the repository's 2.6 GB.
-
-If every actor downloads its own copy at start-up, a large pool sends the Hub a burst of requests for the same files. The Hub rate-limits bursts with HTTP 429, and an actor whose download fails dies in its constructor. For production, bake the weights into the image.
-
-The cell lists the downloaded files.
+This downloads [`MoritzLaurer/mDeBERTa-v3-base-xnli-multilingual-nli-2mil7`](https://huggingface.co/MoritzLaurer/mDeBERTa-v3-base-xnli-multilingual-nli-2mil7), a multilingual NLI model (MIT) for zero-shot classification, to shared storage once, only the 578 MB of 2.6 GB that inference needs, and lists the files.
 
 
 ```python
@@ -170,19 +119,7 @@ model_dir = inc.download_model_once(inc.MODEL_ID, f"{STORAGE}/models/mdeberta")
 sorted(os.listdir(model_dir))
 ```
 
-## Classify with fractional GPUs
-
-Each actor loads the model once and classifies batches of text against three labels. The cell classifies the same rows with one actor per GPU, then two (`gpu_fraction=0.5`), and prints rows/s for each pass and the ratio. The pool is sized to the cluster's GPUs, since actors beyond what they can hold stay pending for the whole run. With no GPU, the cell runs one pass on two CPU actors.
-
-Every actor needs blocks. Ray Data hands an actor one block per task, and in Ray 2.58 a ready actor takes up to two tasks without waiting for the rest of the pool. One block per actor can leave the later actors idle; one block in total always does. The cell splits the rows once into `BLOCKS_PER_ACTOR` (4) blocks per actor of the larger pool, prints the row and block counts, and classifies the same blocks in both passes.
-
-On the labels:
-
-- The model reads each label inside the hypothesis template, so word the labels for the model and check them against rows you know. `LABEL_PHRASES` in `incremental.py` has it score "This text is good news.", "This text is bad news." and "This text is routine news."; the `label` column keeps the names `positive`, `negative` and `neutral`.
-- Pass `hypothesis_template` explicitly. The pipeline's default is `"This example is {}."`, and the template that works depends on the labels.
-- On GPU the actors load the model in bfloat16. The [model card](https://huggingface.co/MoritzLaurer/mDeBERTa-v3-base-xnli-multilingual-nli-2mil7) says mDeBERTa does not support FP16; float16 was not tried here.
-
-After the timings, the cell prints a table of each synthetic sentence's intended label (rows) against the label the model gave it (columns), then five classified rows.
+This classifies the new rows with one actor per GPU, then two, on the same blocks; look for the rows/s ratio and a label table with every count on the diagonal (written label down, the model's across).
 
 
 ```python
@@ -190,8 +127,7 @@ to_classify = new_rows.limit(CLASSIFY_ROWS) if CLASSIFY_ROWS else new_rows
 has_gpu = ray.cluster_resources().get("GPU", 0) >= 1
 fractions = [1.0, 0.5] if has_gpu else [1.0]
 
-# Split the rows once, into BLOCKS_PER_ACTOR blocks per actor of the largest pool below, so
-# every actor has blocks to work on and both passes classify the same blocks.
+# Split once, so every actor has blocks and both passes classify the same ones.
 largest_pool = max(inc.classify_actors(fraction) for fraction in fractions)
 to_classify = inc.split_for_actors(to_classify, largest_pool).materialize()
 n_rows = to_classify.count()
@@ -212,34 +148,9 @@ print(inc.label_confusion(out))
 out[["company", "lang", "text", "label", "score"]].head()
 ```
 
-Rows/s on the included AWS config, one A10G, bfloat16, 10,081 rows, 2026-09-24:
+## Write partitioned output with one marker
 
-| Classifier input | One actor per GPU | Two actors per GPU | Ratio |
-|---|---|---|---|
-| 8 blocks, split as in this cell | 267 | 398 | 1.49x |
-| 1 block, first CI run, before the split | 260 | 287 | 1.10x |
-
-With one block, Ray Data warned that the operator "can launch at most 1 task(s)" and showed 0.5 of 1 GPU in use throughout the two-actor pass: one actor did all the work. With 8 blocks it showed 1 of 1 GPU in use once both actors were up, and no warning. If your classifier gets that warning, give it more blocks. Both timings include actor start-up, a large share of a run this short; the ratio over a longer run is unmeasured, and the cell doesn't assert it.
-
-On the laptop, CPU only, the cell printed 36 and 63 rows/s over 2,000 rows in 8 blocks (1.74x): two CPU actors against one, which says nothing about GPU packing.
-
-Rows labelled as written, 2026-09-24:
-
-| Wording | Run | positive | negative | neutral |
-|---|---|---|---|---|
-| `LABEL_PHRASES` | AWS config, A10G, bfloat16, 10,081 rows | 3,356 of 3,356 | 3,401 of 3,401 | 3,324 of 3,324 |
-| `LABEL_PHRASES` | Laptop CPU, float32, 2,000 rows | 656 of 656 | 701 of 701 | 643 of 643 |
-| Bare names in "The sentiment of this text is {}." | Laptop CPU, float32, 2,000 rows | 656 of 656 | 564 of 701 | 0 of 643 |
-
-With the bare names, the 137 missed negative rows were all the Spanish sentence, labelled `neutral`, and the neutral rows came out 642 `negative` and 1 `positive`. Leaving out `hypothesis_template` changed the top label on 681 of those 2,000 rows (34.1%) with the bare names, and on none with `LABEL_PHRASES`. In a laptop sweep of 14 hypothesis templates over 180 of the sentences (Apple GPU, float32), no label set with the bare word `neutral` labelled more than 30% of the neutral sentences `neutral`.
-
-`LABEL_PHRASES` was chosen against these rows, so it fits this data. Test your labels against your own rows.
-
-## Write partitioned output with one completion marker
-
-Downstream jobs wait for a `_SUCCESS` object before they read. Writing a marker into every partition from the driver adds one sequential request per partition after the data is written, and object storage can throttle that many requests on one prefix. One marker at the output root carries the same signal. `write_parquet` blocks until every file is written, so a marker written after it returns never announces a partial output.
-
-The cell writes the same rows both ways, to `out-per-partition/` and `out/`, and prints each marker count and the time spent on markers: 200 markers against 1 on the laptop. `write_partitioned` uses `SaveMode.OVERWRITE`, which deletes everything under the output path first.
+This writes the classified rows to `out-per-partition/`, with a `_SUCCESS` in every partition, and to `out/`, with one at the root; look for 200 markers against 1, and each marker time.
 
 
 ```python
@@ -253,47 +164,33 @@ assert inc.count_markers(f"{STORAGE}/out-per-partition") == partitions
 assert inc.count_markers(f"{STORAGE}/out") == 1
 ```
 
-## Run it as a job, with a bound
+## Run it as a job on your data
 
-`run_pipeline.py` is this notebook's pipeline without the comparisons, and `job.yaml` submits it:
-
-```bash
-anyscale job submit --config-file job.yaml
-```
-
-The script splits today's rows for the classifier before the probe, because `repartition(num_blocks)` waits for its whole input: between the probe and the classifier it would hold the GPU stage until the probe finished. It is also an all-to-all operation, so Ray Data's no-progress timeout is off for the whole plan, and `timeout_s` is this job's only bound.
-
-In `job.yaml`:
-
-- `timeout_s` ends the job; job clusters don't idle-terminate. Set it about 30% above your longest healthy run. It applies per attempt.
-- `max_retries` reruns the whole job, so the worst case is `timeout_s * (max_retries + 1)`. Use 0 while the pipeline is still unstable.
-- The compute config is the one CI runs this notebook on: a head with `CPU: 0`, one g5.2xlarge GPU worker and up to two m5.2xlarge CPU workers. Without one, a job lands on the cloud's default. On GCP, use n2-standard-8 for the head and the CPU workers and g2-standard-8-nvidia-l4-1 for the GPU worker.
-
-`requirements.txt` pins pyarrow so a rebuilt image can't move the job onto a version with a known deadlock. Check the version the job ran with, since a mutable image tag can serve a different build.
-
-To run on your data, set `TODAY_PATH`, `PRIOR_PATH` and `OUTPUT_PATH` under `env_vars`, and mind two overwrites. Each run deletes everything under `OUTPUT_PATH` before it writes. And unless `os.path.isdir` finds both `TODAY_PATH` and `PRIOR_PATH`, the script writes synthetic data to both, over any input there: on a first run with no prior output yet, and on any `s3://` or `gs://` path, which `os.path.isdir` can't see.
-
-The next cell prints `job.yaml`.
+`run_pipeline.py` is this pipeline without the comparisons, `anyscale job submit --config-file job.yaml` submits it, and the cell prints `job.yaml`.
 
 
 ```python
 print(open("job.yaml").read())
 ```
 
-## Next steps
+To run it on your data, set `TODAY_PATH`, `PRIOR_PATH` and `OUTPUT_PATH` under `env_vars`. Today's rows need a `text` column, the key columns in `KEY_COLUMNS` (`doc_id`, `company`, `lang`) and a `shard` column to partition by, and the prior output needs the keys; edit `KEY_COLUMNS` in `incremental.py` and the partition column in `run_pipeline.py` to match your table. The script only reads `PRIOR_PATH`: adding each run's keys to it is up to you.
 
-- Point `TODAY_PATH`, `PRIOR_PATH` and `OUTPUT_PATH` at your own data, minding the two overwrites above.
-- Set `timeout_s` from your own run times.
-- Bake the model into your image before you grow the actor pool.
+Two overwrites can destroy data:
 
-## Provenance
+- Every run deletes everything under `OUTPUT_PATH` before it writes.
+- Unless `os.path.isdir` finds both `TODAY_PATH` and `PRIOR_PATH`, the script writes synthetic data over both. That includes a first run with no prior output yet, and every `s3://` or `gs://` path, which `os.path.isdir` can't see. Remove that block from `run_pipeline.py` before a real run.
 
-The data is synthetic. The model, [`MoritzLaurer/mDeBERTa-v3-base-xnli-multilingual-nli-2mil7`](https://huggingface.co/MoritzLaurer/mDeBERTa-v3-base-xnli-multilingual-nli-2mil7), is public, MIT-licensed and ungated (checked 2026-09-24).
+In `job.yaml`:
 
-- Included AWS config (head m5.2xlarge, one g5.2xlarge GPU worker with an A10G, Ray 2.58.0), 2026-09-24: two CI runs, 23 of 23 cells each. The second ran this notebook's code. The first predates the join warmup, the label rewording and the input split; only its one-block packing row and 24.0 GiB memory reading appear above.
-- 14-CPU macOS laptop (Ray 2.58.0, torch 2.13.0 on CPU, transformers 5.17.0), 2026-09-24: three papermill runs as the code changed, with `CLASSIFY_ROWS=2000`, the lock install skipped and no `pip` in `ray.init`, since the lock holds Linux CUDA wheels. The last took 2 min 9 s. Ray reports a GPU on Apple Silicon, but the classifier uses only CUDA, so every laptop pass ran on CPU.
-- Same laptop: `run_pipeline.py` once at `NUM_ROWS=2000`, with the same substitution. Its two classifier actors took 518 and 492 of the 1,010 new rows, with no "can launch at most" warning. Separately, `ZeroShotClassifier` outside Ray reproduced both wordings' label counts on the notebook's 2,000 rows.
+- `timeout_s` is the job's only bound: job clusters don't idle-terminate, and Ray Data's no-progress timeout is off for any plan with an all-to-all operation, such as the script's `repartition`. Set it about 30% above your longest healthy run; 3600 is a placeholder, since the job hasn't run on a cluster.
+- `max_retries` reruns the whole job and `timeout_s` applies per attempt, so the worst case is `timeout_s * (max_retries + 1)`. Use 0 until the pipeline is stable.
+- The compute config is the one CI runs the notebook on. On GCP, use n2-standard-8 for the head and CPU workers and g2-standard-8-nvidia-l4-1 for the GPU worker.
 
-Unmeasured: the probe under worker loss, `job.yaml` and `run_pipeline.py` on a cluster, and the GCP config.
+Bake the model into your image before you grow the actor pool.
 
-Figures from the originating workload, not reproduced here: 1.73x and 2.35x packing for two and four actors per A10G, HTTP 429 at a few hundred simultaneous model downloads, the hash join as the stage that stalled at production scale, and tens of minutes spent writing per-partition markers on object storage.
+## What to watch
+
+- **Prior-key count.** The probe's memory grows with the prior output, not today's batch. Its set is 16 bytes per prior key, the driver needs about 4 times that to build it, and `ProbeFilter`'s `np.isin` copies and re-sorts the set for every batch, using about 3.7 times its size (measured with numpy on a laptop). At 10^8 prior keys that's a 1.6 GB set and about 6 GB per batch, so measure it at your scale, or look keys up with `np.searchsorted` on the sorted set.
+- **Blocks.** If Ray Data warns that the classifier "can launch at most 1 task(s)", give it more blocks: with all its rows in one block, one of two actors did all the work, for 1.10x (first CI run).
+- **Labels.** The model reads each label inside the hypothesis template, so word the labels for it, pass `hypothesis_template` explicitly, and check both against rows you know. With the bare names in "The sentiment of this text is {}.", 0 of 643 neutral rows came out `neutral` (laptop, CPU); `LABEL_PHRASES` was chosen against this template's synthetic rows.
+- **Small-run timings.** At 20,000 rows the join and probe seconds are mostly noise; what grows with scale is the join's aggregator pool, one actor per partition up to the cluster's maximum CPU count.
