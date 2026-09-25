@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
-"""The template's pipeline: read multi-megabyte sensor frames from Parquet, transform
-them on a GPU actor pool, downsample, write.
+"""Read multi-megabyte sensor frames from Parquet, normalise and downsample them on a GPU
+actor pool, then write the result or count the rows.
 
-This is the OPTIMIZATION CONTROL PANEL for the template. The levers below are the source
-engagement's. Each comment gives the effect the engagement measured, where it measured one,
-and what this template's fleet measured, where it did; the two can disagree. The defaults
-are workload-shaped -- each default's comment says which data property justifies it and
-what different property should flip it.
+Every lever is an environment variable read at import. Each lever's comment says what the
+default assumes about the data, when to change it, and what was measured: on this template's
+cluster (one g6.4xlarge L4 worker) or, where labelled, on the source workload at production
+scale. The two can disagree.
 
     python pipeline.py --input /mnt/cluster_storage/fixture/fixed_binary
 """
@@ -25,61 +24,56 @@ import ray
 # Levers
 # --------------------------------------------------------------------------------------
 
-# READ CONCURRENCY. Cap it only when a CPU stage DOWNSTREAM of the read is what binds.
-# The source engagement measured 1.66-1.91x there, and 0.56x for the same cap on a
-# read-bound pipeline -- same knob, opposite sign. Not measured on this template's fleet.
-# Establish the binding operator from ds.stats() first.
+# Read concurrency. Cap it only when a CPU stage downstream of the read binds. On the source
+# workload the cap gave 1.66-1.91x there and 0.56x on a read-bound pipeline: same knob,
+# opposite sign. Not measured on this template's cluster. Find the binding operator in
+# ds.stats() first. 0 leaves the read uncapped.
 READ_CONCURRENCY = int(os.environ.get("READ_CONCURRENCY", "0")) or None
 
-# READ TASK CPU. Why the default is 1.0:
-#   Ray sets OMP_NUM_THREADS = max(1, floor(num_cpus)) when it is not already set, and
-#   pyarrow sizes its Arrow CPU thread pool from that ONCE PER WORKER PROCESS.
-#   So num_cpus < 1.0 does not just make read tasks "cheap" -- it gives each one a
-#   ONE-THREAD DECODER. On thin rows and many small files that is fine and buys
-#   concurrency. On multi-megabyte blob columns, decode is the work.
-# Measured on this template's fleet, Ray 2.57.0: no measurable difference, 16.67-17.00
-# rows/s at 1.0 against 16.24-16.87 at 0.25, ranges overlapping. The default rests on
-# the mechanism, not on a measured win. See the README's results table.
-# Flip to <1.0 only if: rows are thin, files are many, and ds.stats() shows the read
-# stage is running wider than the core count.
+# Read task CPU, default 1.0. Ray sets OMP_NUM_THREADS = max(1, floor(num_cpus)) when it is
+# unset, and pyarrow sizes its CPU thread pool from that once per worker process, so
+# num_cpus < 1.0 also gives each read task a one-thread decoder. That is fine for thin rows
+# and many small files; on multi-megabyte blob columns, decode is most of the read's work.
+# Measured on this template's cluster, Ray 2.57.0: 16.67-17.00 rows/s at 1.0 against
+# 16.24-16.87 at 0.25, ranges overlapping. The default rests on the mechanism; no win was
+# measured. Go below 1.0 only if rows are thin, files are many, and ds.stats() shows the
+# read stage is running wider than the core count.
 READ_NUM_CPUS = float(os.environ.get("READ_NUM_CPUS", "1.0"))
 
-# DECODE THREADS, scoped to the read operator so it does not resize every actor in the
-# job. Governing equation: threads_per_task x concurrent_tasks ~= cores.
-# The source engagement measured up to 2.15x on local disk while the read stage was
-# under-parallel, ~1.6x from object storage (Amdahl: the network half of the task is
-# untouched), and a COST past the crossover -- +52% wall clock at 8 threads on a large
-# object-storage read. On this template's fleet, Ray 2.57.0, 1 to 4 threads gave 1.2% or
-# better and 4 to 8 did not separate at 2 runs per arm. See the README's results table.
-# 0 means "leave it alone", which is the right default until the equation says otherwise.
+# Decoder threads, set for the read operator only so other actors keep their thread pools.
+# Size them so threads_per_task x concurrent_tasks ~= cores. On the source workload: up to
+# 2.15x on local disk while the read was under-parallel, about 1.6x from object storage (the
+# network part of the task does not speed up), and +52% wall clock at 8 threads, past that
+# point, on a large object-storage read. On this template's cluster, Ray 2.57.0, 1 to 4
+# threads gained 1.2% or better and 4 to 8 did not separate at 2 runs per arm.
+# 0 leaves OMP_NUM_THREADS alone, the right default until the sizing rule says otherwise.
 READ_OMP_THREADS = int(os.environ.get("READ_OMP_THREADS", "0"))
 
-# GPU ACTOR POOL. Fractional GPU with num_cpus=0 so the pool does not compete with the
-# read stage for cores. The source engagement's champion ran 8 actors x 0.5 GPU and
-# occupied 4 of 8 available GPUs -- the GPU was never the constraint, and packing
-# mattered more than count. On this template's fleet, one L4 and 2 actors, the GPU stage
-# was closer to the constraint than the read. See the README's binding-operator rows.
+# GPU actor pool. Fractional GPUs and num_cpus=0, so the pool does not take cores from the
+# read. The source workload's best configuration ran 8 actors x 0.5 GPU on 4 of 8 available
+# GPUs; its GPU was never the constraint, and packing mattered more than actor count. On this
+# template's cluster, one L4 and 2 actors, the GPU stage was closer to the constraint than the
+# read. See "Which operator binds" in the README.
 GPU_ACTORS = int(os.environ.get("GPU_ACTORS", "2"))
 GPU_PER_ACTOR = float(os.environ.get("GPU_PER_ACTOR", "0.5"))
 GPU_BATCH_SIZE = int(os.environ.get("GPU_BATCH_SIZE", "8"))
 
-# OBJECT STORE. Set the fraction where it takes effect -- image or compute config, NOT a
-# job config's env_vars, where it is a silent no-op. The compute config's own
-# object-store-memory field takes precedence over the environment variable.
-# 0.6 held peak 69.4 GiB with zero spill on the source fleet. Lower it if workers are
-# being KILLED and not spilling. Prefetched batches live in the heap, and an oversized
-# object store starves them.
+# Object store, not set in this file. Set the fraction
+# (RAY_DEFAULT_OBJECT_STORE_MEMORY_PROPORTION) in the image or the compute config; in a job
+# config's env_vars it is a silent no-op. The compute config's object_store_memory field takes
+# precedence over the variable. On the source workload 0.6 held a 69.4 GiB peak with zero
+# spill. Lower it if workers are killed rather than spilling: prefetched batches live in the
+# heap, and an oversized object store starves them.
 
 OUT_HEIGHT = int(os.environ.get("OUT_HEIGHT", "720"))
 
-# DEPENDENCY DELIVERY. The lock reaches the driver through the install line in the README
-# notebook. Do not repeat that line here: check-dep-delivery's lock-installed check greps for
-# it, and a copy in a comment satisfies the check without installing anything. It reaches the
-# map_batches ACTORS only
-# through ray.init(runtime_env=...) below. Install on the driver alone and the actors run
-# whatever the image shipped -- which is no torch -- and that passes in a workspace, because a
-# workspace tracks a plain pip install and propagates it, then fails as a standalone Job or
-# Service, which has no propagation.
+# Dependency delivery. The README notebook installs the lock on the driver. The map_batches
+# actors get it only through ray.init(runtime_env=...) in main(); without that they run the
+# image's packages, which include no torch. That passes in a workspace, which propagates a
+# plain pip install, and fails as a standalone Job or Service.
+# Don't copy the notebook's install line into this file: check-dep-delivery's lock-installed
+# check searches source files for it, and a copy in a comment passes the check without
+# installing anything.
 LOCK_PATH = Path(
     os.environ.get("PYTHON_DEPSET_LOCK")
     or Path(__file__).resolve().parent / "python_depset.lock"
@@ -87,12 +81,10 @@ LOCK_PATH = Path(
 
 
 def read_geometry(input_path: str) -> tuple[int, int, int]:
-    """Ask the fixture for its frame geometry instead of hardcoding it.
+    """Return (width, height, bytes_per_pixel) from the fixture's Parquet schema metadata.
 
-    make_fixture.py records width/height/bytes-per-pixel in the Parquet schema metadata, so a
-    reader who raises --width/--height -- which its docstring tells them to do -- gets a
-    pipeline that follows. The previous module constant raised ValueError on a smaller fixture
-    and SILENTLY CROPPED a larger one.
+    make_fixture.py writes the geometry there, so the pipeline follows any --width/--height.
+    Files without it need FRAME_WIDTH and FRAME_HEIGHT, and optionally BYTES_PER_PIXEL.
     """
     import glob
 
@@ -123,13 +115,11 @@ def read_geometry(input_path: str) -> tuple[int, int, int]:
 
 
 class ISP:
-    """The GPU transform stage: demosaic-shaped work plus a downsample.
+    """The GPU stage: normalise each 12-bit frame and downsample it bilinearly to OUT_HEIGHT.
 
-    Arithmetic-light. Measured on one L4, Ray 2.57.0: GPU stage span 1.99s against the
-    read's 2.44s. Spans overlap under the streaming executor and do not rank stages. The
-    GPU stage's 3.4s of UDF across 2 actors in that 1.99s is about 0.85 of saturation, and
-    that is why it is closer to the constraint than the read at CI scale. The read cannot be
-    ranked by UDF time; see "Which operator binds" in the README.
+    Light arithmetic. On one L4, Ray 2.57.0, it ran at about 0.85 saturation (3.4s of UDF
+    across 2 actors in a 1.99s span), closer to the constraint than the read at this
+    template's scale. See "Which operator binds" in the README.
     """
 
     def __init__(self, width: int, height: int, out_height: int = OUT_HEIGHT):
@@ -154,9 +144,9 @@ class ISP:
                     "here produces plausible wrong output."
                 )
             frames.append(arr.reshape(height, width))
-        # One host-to-device transfer per BATCH, not per frame. Per-image device
-        # round-trips inside a UDF are the single most expensive habit on GPU image
-        # stages -- see the sibling pattern on device syncs.
+        # One host-to-device transfer per batch, not per frame. Per-image device round-trips
+        # inside a UDF are a common and costly mistake on GPU image stages; see the sibling
+        # pattern on device syncs.
         t = torch.from_numpy(np.stack(frames).astype(np.float32)).to(self.device)
         t = t.unsqueeze(1) / 4095.0
         scale = self.out_height / height
@@ -187,19 +177,20 @@ def build(input_path: str):
         batch_size=GPU_BATCH_SIZE,
         num_gpus=GPU_PER_ACTOR,
         num_cpus=0,
-        # `concurrency=` is DEPRECATED on map_batches as of Ray 2.51 in favour of `compute=`.
-        # Note this does NOT apply to read_parquet's own `concurrency=` above, which is a live
-        # parameter with no deprecation -- same word, two different APIs.
+        # Ray 2.51 deprecated map_batches' `concurrency=` in favour of `compute=`.
+        # read_parquet's `concurrency=` above is a different parameter and is not deprecated.
         compute=ray.data.ActorPoolStrategy(size=GPU_ACTORS),
     )
 
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--input", required=True)
-    ap.add_argument("--output", default=None)
-    # A flag that defaulted to True could never be turned off; --no-stats is the off switch.
-    ap.add_argument("--stats", action=argparse.BooleanOptionalAction, default=True)
+    ap.add_argument("--input", required=True,
+                    help="directory of Parquet files, such as a fixture's fixed_binary/")
+    ap.add_argument("--output", default=None,
+                    help="write the transformed frames here as Parquet; without it, count rows")
+    ap.add_argument("--stats", action=argparse.BooleanOptionalAction, default=True,
+                    help="print ds.stats() after the run")
     args = ap.parse_args()
 
     # The actors get their deps here or nowhere. See LOCK_PATH above.
@@ -230,11 +221,10 @@ def main() -> int:
         "differ by the camera count, and a real-time bar is quoted in one of them."
     )
     if args.stats:
-        # Rank map stages by UDF time, not by span: under the streaming executor spans
-        # overlap and on one measured run summed to 2.1x the pipeline's wall clock. A map
-        # stage at udf_total / (span x parallelism) ~ 1.0 is saturated. That ratio cannot
-        # rank a read: Ray reports UDF time 0us for read operators, which have no user
-        # function. Judge the read by its span and output bytes/s against your storage.
+        # Rank map stages by UDF time; spans overlap under the streaming executor. A map stage
+        # at udf_total / (span x parallelism) ~ 1.0 is saturated. Reads have no user function
+        # and report 0us of UDF time, so judge the read by its span and output bytes/s
+        # against your storage.
         print("\n" + ds.stats())
     return 0
 
