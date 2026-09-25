@@ -1,20 +1,15 @@
-# Run the pipeline as an Anyscale job:
-#   anyscale job submit --config-file job.yaml
+# Submit with: anyscale job submit --config-file job.yaml
 #
-# Deps come from the lock only: the entrypoint's `uv pip install --system` covers the driver,
-# and run_pipeline.py's ray.init(runtime_env={"pip": ...}) covers the workers. Don't add a
-# `requirements:` key. It sets the job runtime_env's `pip`, and Ray 2.58.0 refuses to merge it
-# with the script's: ray.init raises "Failed to merge the Job's runtime env"
-# (ray/_private/worker.py).
+# Deps come from the lock only: the entrypoint installs it on the driver, run_pipeline.py's
+# runtime_env on the workers. Don't add a `requirements:` key; Ray 2.58.0 won't merge it with
+# the script's runtime_env ("Failed to merge the Job's runtime env").
 name: incremental-batch-classification
 entrypoint: >-
   uv pip install -r python_depset.lock --system --no-deps --no-cache-dir --index-strategy unsafe-best-match
   && python run_pipeline.py
 image_uri: anyscale/ray:2.58.0-py312-cu129
-# The cluster this template runs on in CI. Without a compute_config the job lands on the
-# cloud's default compute config instead. The head has CPU: 0, so Ray schedules the work on
-# the workers. AWS instance types; on GCP use n2-standard-8 for the head and the CPU workers
-# and g2-standard-8-nvidia-l4-1 for the GPU worker.
+# The cluster CI runs the notebook on; without a compute_config the job gets the cloud's
+# default. On GCP: n2-standard-8 for the head and CPU workers, g2-standard-8-nvidia-l4-1 for GPU.
 compute_config:
   head_node:
     instance_type: m5.2xlarge
@@ -29,20 +24,15 @@ compute_config:
       instance_type: m5.2xlarge
       max_nodes: 2
 working_dir: .
-# timeout_s is this job's only bound. Job clusters don't idle-terminate, and Ray
-# Data's no-progress timeout is off for this plan because run_pipeline.py's
-# repartition is an all-to-all operation. Set it about 30% above your longest
-# healthy run; it applies per attempt. 3600 is not measured: this job has not
-# run on a cluster yet.
+# The job's only bound: Ray Data's no-progress timeout is off for this plan. Set it about 30%
+# above your longest healthy run; it applies per attempt. 3600 is unmeasured.
 timeout_s: 3600
-# Each retry re-runs the whole job, so the worst case is
-# timeout_s * (max_retries + 1). Use 0 while a pipeline is still unstable.
+# Each retry reruns the whole job. Use 0 while the pipeline is unstable.
 max_retries: 1
 # run_pipeline.py also reads TODAY_PATH, PRIOR_PATH and OUTPUT_PATH (default: under
-# STORAGE_DIR, /mnt/cluster_storage/incremental-demo) and STACK_DUMP_AFTER_S (3000). Each
-# run deletes everything under OUTPUT_PATH first. Unless os.path.isdir finds both
-# TODAY_PATH and PRIOR_PATH, the script writes synthetic data to both, over anything there,
-# including any s3:// or gs:// path.
+# STORAGE_DIR, /mnt/cluster_storage/incremental-demo) and STACK_DUMP_AFTER_S (3000). Each run
+# deletes everything under OUTPUT_PATH. Unless os.path.isdir finds both TODAY_PATH and
+# PRIOR_PATH, it writes synthetic data over both, including any s3:// or gs:// path.
 env_vars:
   NUM_ROWS: "200000"
   GPU_FRACTION: "0.5"

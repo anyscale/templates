@@ -833,9 +833,6 @@
   test:
     tests_path: tests/ray-data-incremental-batch-classification/
     command: bash tests.sh
-    # Measured on the AWS config (one g5.2xlarge), 2026-09-24: the rayapp test took 11 min 41 s,
-    # and tests.sh, which this bounds, under 9 minutes of it (workspace RUNNING to cleanup). The
-    # untimed first join is 189.6 s of that, most of it while the autoscaler adds a CPU worker,
-    # which cloud capacity can stretch. 1800 leaves more than 3x headroom. Cluster start and
-    # image pull sit outside it. The GCP config has not been measured.
+    # AWS config, 2026-09-24: the rayapp test took 11 min 41 s and tests.sh, which this bounds,
+    # under 9 of them; the first join's autoscaler wait (most of 189.6 s) can stretch. 3x+ headroom.
     timeout_in_sec: 1800
