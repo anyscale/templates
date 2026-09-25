@@ -170,11 +170,14 @@ resolved = subprocess.run(
     check=True, capture_output=True, text=True,
 ).stdout.splitlines()
 
-for prefix in ("process.executor", "process.resourceLimits", "process.withLabel:process_",
+# `-flat` quotes selector keys, process.'withLabel:process_medium'.cpus, so that prefix
+# carries the quote. Each prefix must match: an empty section would read as "no label requests".
+for prefix in ("process.executor", "process.resourceLimits", "process.'withLabel:process_",
                "executor.", "ray.", "workDir"):
-    for line in resolved:
-        if line.startswith(prefix) and "errorStrategy" not in line and "time" not in line:
-            print(line)
+    shown = [line for line in resolved
+             if line.startswith(prefix) and "errorStrategy" not in line and "time" not in line]
+    assert shown, f"`nextflow config -flat` printed nothing under {prefix!r}"
+    print("\n".join(shown))
 ```
 
 ### Executors
