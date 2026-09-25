@@ -8,21 +8,13 @@ worker_nodes:
 # first WDL task does not wait on a cold autoscale.
 #
 # max_nodes: 3, one worker per concurrent assembly, since each sample's Flye task holds 30 of a
-# node's 32 vCPUs. Measured at `quick` scale on this shape (Ray 2.56.0 image): the three
-# assemblies queued 32s, 93s and 93s by `seconds_queued`, which overstates long waits, landed
-# on three separate workers, and the cohort took 8m05s against 7m52s for its slowest sample.
-# Tasks of 2 CPUs or fewer fit beside an assembly; the rest run on nodes already up.
-#
-# Lower this and the cohort still completes, just less concurrently; nothing hangs, because the
-# *per-task* requests still fit one node. Measured at max_nodes 2, the third assembly queued
-# 7m37s behind the first and the same run took 13m16s.
+# node's 32 vCPUs. Fewer still completes, less concurrently, because every per-task request fits
+# one node; the template's NOTES.md has the queue times measured at 3 and at 2.
 #
 # market_type: PREFER_SPOT. Every task carries preemptible_tries: 3 (the inputs JSONs and the
-# notebook's inputs), and a reclaimed node surfaces as node or worker loss, which the backend maps
-# to miniwdl's Interrupted and so to that budget; a lost task reruns from its start, a lost Flye
-# from `configure`. The schema allows market_type on worker groups only, so the head stays on
-# demand. Estimated, not measured: the Spot Advisor's -69% for m5.8xlarge (us-west-2, 2026-09-24)
-# would take the measured trio from about $10 to about $3.65. No real reclaim has hit this yet.
+# notebook's inputs), and the backend maps a reclaimed node to miniwdl's Interrupted, so a lost
+# task reruns from its start. The schema allows market_type on worker groups only, so the head
+# stays on demand. No real reclaim has hit this yet; NOTES.md has the cost estimate.
 - name: assembly-worker
   instance_type: m5.8xlarge
   min_nodes: 1

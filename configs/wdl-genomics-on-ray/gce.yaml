@@ -8,7 +8,7 @@ worker_nodes:
 # those together. min_nodes: 1 so the first WDL task does not wait on a cold autoscale.
 #
 # max_nodes: 3, one worker per concurrent assembly, since each sample's Flye task holds 30 of a
-# node's 32 vCPUs. The queue and wall-clock timings in aws.yaml were measured on AWS.
+# node's 32 vCPUs. The timings in the template's NOTES.md were measured on AWS.
 #
 # market_type: PREFER_SPOT, for the reasons in aws.yaml. The schema allows market_type on worker
 # groups only, so the head stays on demand. GCE spot pricing for n2-standard-32 is unverified

@@ -3,7 +3,7 @@
 # Build and push:
 #   ../../.claude/skills/template/scripts/push-custom-image-to-gcp.sh . wdl-genomics-on-ray 2.58.0
 #
-# Or build your own copy under any name (see the README section "Build your own image"):
+# Or build your own copy under any name (see "Build your own image" in tools/BUILDING.md):
 #   anyscale image build -n my-wdl-tools --containerfile Dockerfile
 #
 # Why a custom image rather than the stock anyscale/ray one plus `requirements:`.
