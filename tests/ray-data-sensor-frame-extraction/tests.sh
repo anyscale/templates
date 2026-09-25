@@ -11,8 +11,8 @@
 #
 #   1. the WRITE side wins, ~4.1x, replicated across fleet runs; the range and run count are in
 #      the README's results table. The fixture cell asserts its DIRECTION.
-#   2. the READ side wins END TO END, 1.56x to 1.65x on 5 fleet runs on Ray 2.57.0 and 1.76x and
-#      1.78x on 2 runs on Ray 2.58.0. The A/B cell asserts that direction too. Note the channel:
+#   2. the READ side wins END TO END, 1.56x to 1.65x on 5 fleet runs on Ray 2.57.0 and 1.69x to
+#      1.78x on 3 runs on Ray 2.58.0. The A/B cell asserts that direction too. Note the channel:
 #      Arrow's DECODE of the blob column differs by ~11x from byte-identical inputs, and what
 #      shrinks it to those figures here is Amdahl -- this pipeline has a GPU stage. The on-disk
 #      gap is 1.00x under pyarrow's defaults because dictionary encoding, not the codec, removes
