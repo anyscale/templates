@@ -88,8 +88,11 @@ compute_config:
       max_nodes: 2
   enable_cross_zone_scaling: true
 
-# Unmeasured; a first run should replace this with its wall clock plus headroom.
-timeout_s: 43200
+# 3 h, about four times the measured run's 47 minutes, so a slow capacity day still fits. It was
+# 12 h before any run. Tightened because the failure it guards against is a stall, such as an L4
+# that never arrives or a request no node can place, and a stalled run should stop within hours
+# rather than hold a cluster for half a day.
+timeout_s: 10800
 
 # A job-level retry runs on a new cluster with an empty work directory, so it would redo
 # everything. Retries belong inside the run, where they are per task.
