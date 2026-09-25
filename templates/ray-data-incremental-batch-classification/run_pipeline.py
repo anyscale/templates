@@ -3,8 +3,11 @@
 Reads today's rows and the keys already classified, splits today's rows into
 blocks for the classifier's actors, drops the already-classified rows with the
 broadcast probe, classifies the rest with fractional GPUs, and writes
-partitioned Parquet with one root _SUCCESS. Generates synthetic input first if
-none exists.
+partitioned Parquet with one root _SUCCESS.
+
+Unless os.path.isdir finds both TODAY_PATH and PRIOR_PATH, it first writes
+synthetic data to both, over anything there: on a first run with no prior
+output, and on any s3:// or gs:// path, which os.path.isdir cannot see.
 """
 
 import os
@@ -18,8 +21,9 @@ def main() -> None:
     # The entrypoint in job.yaml installs the lock on the driver; this hands the same file to
     # every worker. A driver-side install never reaches them.
     lock = os.path.join(os.path.dirname(os.path.abspath(__file__)), "python_depset.lock")
-    # A path, not the module object: as a Ray job the driver's runtime_env is deep-copied into
-    # the job's, and a module object cannot be copied ("cannot pickle 'module' object").
+    # Ship the module by path: as a Ray job, ray.init deep-copies the job's and the driver's
+    # runtime_env to merge them, and a module object cannot be copied ("cannot pickle 'module'
+    # object").
     ray.init(runtime_env={"pip": lock, "py_modules": [inc.__file__]})
     inc.enable_hang_detection()
     # One stack dump of every driver thread if the job is still running at 50
@@ -39,7 +43,9 @@ def main() -> None:
     # Split today's rows into blocks for the classifier's actor pool here, before the probe:
     # repartition(num_blocks) waits for its whole input, so after the probe it would hold the
     # GPU stage until the probe finished. The probe keeps one output block per input block, so
-    # the classifier receives these blocks, and the probe's own four actors get work too.
+    # the classifier receives these blocks, and the probe's own four actors get work too. The
+    # repartition also turns off Ray Data's no-progress timeout for this plan, so job.yaml's
+    # timeout_s is the only bound.
     today = inc.split_for_actors(ray.data.read_parquet(today_path), inc.classify_actors(gpu_fraction))
     prior = ray.data.read_parquet(prior_path)
     new_rows = inc.anti_join_probe(today, prior)

@@ -1,16 +1,18 @@
 """Helpers for the incremental batch classification template.
 
-Each function here is one lever from the notebook:
+The notebook's steps, in order:
 
-- ``make_synthetic_frames``   generates today's rows and the keys already classified
-- ``anti_join_hash``          the default: a hash-shuffle ``left_anti`` join
-- ``prior_key_hashes`` +
-  ``ProbeFilter``             the alternative: broadcast 16-byte key hashes, filter
-- ``download_model_once``     fetch the model to shared storage one time
+- ``make_synthetic_frames``   today's rows and the keys already classified
+- ``anti_join_hash``          the usual approach: a hash-shuffle ``left_anti`` join
+- ``anti_join_probe``         the broadcast probe: ``prior_key_hashes``, then ``ProbeFilter``
+- ``download_model_once``     fetch the model to shared storage once
 - ``split_for_actors``        enough blocks that every classifier actor has work
 - ``classify``                zero-shot classification with fractional GPUs
 - ``write_partitioned``       partitioned Parquet write with one root ``_SUCCESS``
 - ``enable_hang_detection``   turn on Ray Data's hanging-execution detector
+- ``arm_driver_stack_dump``   one stack dump of the driver's threads, later
+
+The rest support the notebook's comparisons.
 """
 
 from __future__ import annotations
@@ -30,11 +32,10 @@ from ray.data import SaveMode
 KEY_COLUMNS: tuple[str, ...] = ("doc_id", "company", "lang")
 LABELS: tuple[str, ...] = ("positive", "negative", "neutral")
 # What the model reads for each label, inside HYPOTHESIS_TEMPLATE. The wording
-# decides the answer: with the bare label words and "The sentiment of this text
-# is {}.", the model labelled 0 of 643 neutral sentences neutral (642 came out
-# negative) and 137 of 701 negative ones neutral. These phrases and the template
-# below labelled all 2,000 of the same rows as written (laptop CPU, float32,
-# 2026-09-24).
+# decides the answer: the bare label names inside "The sentiment of this text is
+# {}." labelled 0 of 643 neutral sentences neutral, and these phrases labelled all
+# 2,000 of the same rows as written (laptop CPU, float32, 2026-09-24). Check any
+# rewording against rows whose labels you know.
 LABEL_PHRASES: dict[str, str] = {"positive": "good news", "negative": "bad news", "neutral": "routine news"}
 # Pass the hypothesis template explicitly; the zero-shot pipeline's default is
 # "This example is {}.".
@@ -42,8 +43,8 @@ HYPOTHESIS_TEMPLATE = "This text is {}."
 
 MODEL_ID = "MoritzLaurer/mDeBERTa-v3-base-xnli-multilingual-nli-2mil7"
 # Only the files inference needs: the safetensors weights and the tokenizer.
-# The repo also carries a PyTorch .bin copy and an ONNX export; skipping them
-# keeps the download to about 578 MB instead of several GB.
+# Skipping the repo's PyTorch .bin copy and ONNX exports keeps the download to
+# about 578 MB of 2.6 GB.
 MODEL_FILES = [
     "config.json",
     "model.safetensors",
@@ -143,10 +144,10 @@ def label_confusion(df: pd.DataFrame) -> pd.DataFrame:
 def _key_hashes(batch: pd.DataFrame, cols: Sequence[str]) -> tuple[np.ndarray, np.ndarray]:
     """16-byte blake2b per row over the key columns, and a mask of rows with no NULL key.
 
-    128 bits, not 64. A new row is wrongly matched with probability of about
-    (prior keys) / 2**bits: at 10**9 prior keys and 10**9 new rows per run, a
-    64-bit hash expects one silently dropped row every 18 runs, a 128-bit hash
-    about 3e-21 per run. Arithmetic, not a measurement.
+    128 bits because a new row falsely matches with probability about
+    (prior keys) / 2**bits. At 10**9 prior keys and 10**9 new rows per run, a
+    64-bit hash silently drops about one row every 18 runs; a 128-bit hash,
+    about 3e-21 rows per run. Both figures are arithmetic.
     """
     keys = batch[list(cols)]
     valid = ~keys.isna().any(axis=1).to_numpy()
@@ -159,12 +160,14 @@ def _key_hashes(batch: pd.DataFrame, cols: Sequence[str]) -> tuple[np.ndarray, n
 
 
 def anti_join_hash(today, prior, *, num_partitions: int, cols: Sequence[str] = KEY_COLUMNS):
-    """The default: ``Dataset.join(..., join_type="left_anti")``.
+    """The usual approach: ``Dataset.join(..., join_type="left_anti")``.
 
-    Correct, and it hash-shuffles BOTH sides through ``HashShuffleAggregator``
-    actors sized by ``num_partitions``. Those actors hold shuffle state in
-    memory, so losing one ends the whole dataset, and they keep GPU nodes busy
-    (and un-reclaimable) while using no GPU.
+    Correct, and it hash-shuffles both sides through ``HashShuffleAggregator``
+    actors, one per partition up to the cluster's maximum CPU count. They hold
+    the shuffle state in memory and are not restarted, so losing one fails the
+    dataset. They reserve CPU and memory on GPU nodes while using no GPU, which
+    keeps those nodes from scaling down. The join also turns off Ray Data's
+    no-progress timeout for its plan.
     """
     return today.join(
         prior.select_columns(list(cols)),
@@ -178,8 +181,8 @@ def prior_key_hashes(prior, cols: Sequence[str] = KEY_COLUMNS) -> np.ndarray:
     """Hash the prior keys on the workers; bring back only the 16-byte hashes.
 
     Hashing is a ``map_batches`` across the cluster. Draining the prior keys
-    through the driver and hashing them there in one Python loop is the slow
-    version of the same thing: it runs single-threaded while every GPU waits.
+    through the driver and hashing them in one Python loop gives the same set,
+    single-threaded, while every GPU waits.
     """
 
     def to_hashes(batch: pd.DataFrame) -> pd.DataFrame:
@@ -194,13 +197,13 @@ def prior_key_hashes(prior, cols: Sequence[str] = KEY_COLUMNS) -> np.ndarray:
 
 
 class ProbeFilter:
-    """Keep rows whose key hash is NOT in the broadcast prior set.
+    """Keep rows whose key hash is absent from the broadcast prior set.
 
     Rows with any NULL key column are always kept: NULL never equals NULL in a
     join, so a NULL-key row can never have been "already classified". Folding
     NULL to a sentinel value and probing it like any other key removes those
-    rows, and a test that uses a hand-written reference with the same mistake
-    passes anyway.
+    rows, and a test against a hand-written reference with the same mistake
+    still passes.
     """
 
     def __init__(self, prior_ref, cols: Sequence[str] = KEY_COLUMNS):
@@ -214,11 +217,11 @@ class ProbeFilter:
 
 
 def anti_join_probe(today, prior, *, cols: Sequence[str] = KEY_COLUMNS, concurrency: int = 4):
-    """The alternative: broadcast the prior hashes, filter today in a streaming map.
+    """The broadcast probe: broadcast the prior hashes, filter today in a streaming map.
 
-    No shuffle, no aggregator actors, and the filter fuses into the stream, so
-    GPU work downstream starts as soon as the first filtered blocks exist.
-    Memory: about 16 bytes per prior key in every filter actor.
+    No shuffle and no aggregator actors, and the filter streams, so GPU work
+    downstream starts as soon as the first filtered blocks exist. The broadcast
+    set is 16 bytes per prior key.
     """
     prior_ref = ray.put(prior_key_hashes(prior, cols))
     return today.map_batches(
@@ -271,10 +274,10 @@ def timed_materialize(fn, *args, count_class: str = "HashShuffleAggregator", **k
 def download_model_once(model_id: str, dest: str) -> str:
     """Download the model to shared storage once, from the driver.
 
-    Without this, every classifier actor downloads its own copy when it starts.
-    In the source engagement a few hundred actors downloading the same file at
-    once drew HTTP 429 from the hub, and the actors died in their constructors.
-    For production, bake the weights into the image instead.
+    Otherwise every classifier actor downloads its own copy when it starts. A
+    large pool then sends the Hub a burst of requests for the same files, the
+    Hub can answer with HTTP 429, and an actor whose download fails dies in its
+    constructor. For production, bake the weights into the image instead.
     """
     from huggingface_hub import snapshot_download
 
@@ -299,8 +302,8 @@ class ZeroShotClassifier:
         from transformers import pipeline
 
         on_gpu = torch.cuda.is_available()
-        # bfloat16, not float16: the model card says mDeBERTa does not support
-        # FP16. float16 was not tried here.
+        # bfloat16 on GPU: the model card says mDeBERTa does not support FP16.
+        # float16 was not tried here.
         self.pipe = pipeline(
             "zero-shot-classification",
             model=model_dir,
@@ -326,11 +329,10 @@ class ZeroShotClassifier:
 
 # Blocks per classifier actor, for split_for_actors. Ray Data hands an actor one block per
 # task. In Ray 2.58 each actor holds up to 2 tasks in flight and takes work as soon as it is
-# ready, without waiting for the rest of the pool, so with one block per actor the first actor
-# up can take every block: the first cluster run fed its 10,081 rows to the classifier as one
-# block, and its two-actors-per-GPU pass ran on one actor. Four per actor leaves blocks for the
-# actors that start later, and stays far from the thousands of small blocks that would each
-# write one file per output partition.
+# ready, without waiting for the rest of the pool, so with one block per actor the first
+# actors up can take every block and leave the rest idle. Four per actor leaves blocks for
+# the actors that start later, and stays far from the thousands of small blocks that would
+# each write one file per output partition.
 BLOCKS_PER_ACTOR = 4
 
 
@@ -350,10 +352,12 @@ def classify_actors(gpu_fraction: float = 1.0, num_actors: int | None = None) ->
 def split_for_actors(ds, actors: int):
     """Repartition ``ds`` into ``BLOCKS_PER_ACTOR`` blocks per classifier actor.
 
-    ``repartition(num_blocks)`` waits for all of ``ds`` before it splits. Apply
-    it to materialized rows, or ahead of the stages that should stream, as
-    run_pipeline.py does; between the probe and the classifier it would hold
-    the GPU stage until the probe finished.
+    ``repartition(num_blocks)`` is an all-to-all operation. It waits for all
+    of ``ds`` before it splits, and it turns off Ray Data's no-progress
+    timeout for any plan that contains it. Apply it to materialized rows, or
+    ahead of the stages that should stream, as run_pipeline.py does; between
+    the probe and the classifier it would hold the GPU stage until the probe
+    finished.
     """
     return ds.repartition(actors * BLOCKS_PER_ACTOR)
 
@@ -385,12 +389,12 @@ def _write_marker(fs: pafs.FileSystem, directory: str) -> None:
 def write_partitioned(ds, path: str, partition_col: str, *, marker: str = "root") -> dict:
     """Partitioned Parquet write, then a completion marker.
 
-    ``marker="root"`` writes one ``_SUCCESS`` at the output root.
-    ``marker="per_partition"`` writes one in every partition directory, one
-    object at a time from the driver: the habit Spark jobs carry over. With
-    thousands of partitions on object storage that is thousands of sequential
-    requests, minutes of wall clock after the data itself is written, and
-    enough request rate to draw throttling on the same prefix.
+    Writes with ``SaveMode.OVERWRITE``, which deletes everything under
+    ``path`` first. ``marker="root"`` writes one ``_SUCCESS`` at the output
+    root. ``marker="per_partition"`` writes one in every partition directory,
+    one object at a time from the driver: with thousands of partitions on
+    object storage, that is thousands of sequential requests after the data is
+    written, all on one prefix, which the store can throttle.
     """
     fs, root = pafs.FileSystem.from_uri(path)
     t0 = time.perf_counter()
@@ -418,12 +422,14 @@ def count_markers(path: str) -> int:
 
 
 def enable_hang_detection(ctx=None):
-    """Add Ray Data's hanging-execution detector, which ships commented out of the defaults.
+    """Add Ray Data's hanging-execution detector, which Ray 2.58 leaves out of the defaults.
 
-    It logs a warning naming the operator and the stuck task when a task runs
-    far longer than its peers. It only warns: the job-level ``timeout_s`` is
-    what actually ends a run that stops making progress. The import path is
-    internal to Ray Data and may move between releases.
+    It warns, naming the operator and the task, when a task makes no progress
+    for longer than its operator's mean task time plus 10 standard deviations,
+    and only after the operator has finished 10 tasks. Each task it flags costs
+    a State API call of up to a second on the executor thread, which is why it
+    ships off. It only warns; the job's ``timeout_s`` ends a stalled run. The
+    import path is internal to Ray Data and may move between releases.
     """
     from ray.data import DataContext
     from ray.data._internal.issue_detection.detectors import HangingExecutionIssueDetector
@@ -439,8 +445,8 @@ def arm_driver_stack_dump(after_s: float) -> None:
     """Dump every driver thread's stack to stderr once, ``after_s`` seconds from now.
 
     On clusters where no process can be ptrace-attached, this in-process dump
-    is the only way to see where a silent driver is blocked. Use
-    ``repeat=False``: a repeating dump reads Python frames without the GIL and
-    can crash the driver it is meant to observe.
+    is the only way to see where a silent driver is blocked. Every dump reads
+    Python frames without holding the GIL and can crash the driver it
+    observes, so this one fires once (``repeat=False``).
     """
     faulthandler.dump_traceback_later(after_s, repeat=False, exit=False, file=sys.stderr)
