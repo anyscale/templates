@@ -5,7 +5,7 @@
   <a href="https://github.com/anyscale/templates/tree/main/templates/nextflow-genomics-on-ray" role="button"><img src="https://img.shields.io/static/v1?label=&message=View%20On%20GitHub&color=586069&logo=github&labelColor=2f363d"></a>&nbsp;
 </div>
 
-**⏱️ Time to complete**: not yet measured; see Step 1
+**⏱️ Time to complete**: 4m52s for the `quick` pipeline (prod, 2026-09-25); `standard`, the default, not yet timed. See Step 1
 
 A Nextflow executor, `executor 'ray'`, that runs each process as a
 [Ray task](https://docs.ray.io/en/latest/ray-core/tasks.html) on an autoscaling cluster. The pipeline
@@ -88,7 +88,11 @@ region of chromosome 20 for each of three samples; `quick` does 2 Mbp and is wha
 `NF_DEMO_SCALE=quick` before launching Jupyter to use it. Only the region size differs: same
 tools, same DAG, same resource requests.
 
-Neither has been timed on this template's compute config yet, so this section carries no numbers.
+Measured once, at `quick` only: prod, 2026-09-25, on the AWS compute config (an m5.2xlarge head
+with `CPU: 0`, r6i.4xlarge CPU workers, and the g6.2xlarge GPU group left unused because the run had
+`NF_ANNOTATE=false`). The Step 5 pipeline ran its 81 tasks in 4m52s, 1.4 CPU hours by Nextflow's
+count, and the Step 3 smoke run took 36 s with its eight shards on two nodes. `standard` has not
+been timed.
 
 `NF_ANNOTATE=false` skips the GPU leg, both the Nextflow process and the Ray Data step in Step 7,
 for a cluster with no L4 to give it. CI sets it, so a test run never waits on L4 capacity.

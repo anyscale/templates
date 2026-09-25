@@ -836,9 +836,10 @@
     # Offline unit checks; then the gate, main.nf end to end under -profile ray on a synthetic
     # trio the test generates, asserting a perfect score; then the notebook at
     # NF_DEMO_SCALE=quick, the one stage that needs the demo data staged. The GPU leg is off
-    # throughout (NF_ANNOTATE=false). Not measured: the template has never run on a cluster,
-    # and this is the WDL sibling's value until the first /test-template run gives a real one.
-    # The Buildkite step is capped at 90 min for it.
+    # throughout (NF_ANNOTATE=false). Measured on prod, 2026-09-25, on the AWS config: the whole
+    # rayapp test took 14 min, workspace start (3 min), the gate (2m52s) and the notebook's quick
+    # pipeline (4m52s) included, ending at a Gantt-cell bug since fixed. 3600 is headroom. The
+    # Buildkite step is capped at 90 min for it.
     tests_path: tests/nextflow-genomics-on-ray/
     command: bash tests.sh
     timeout_in_sec: 3600
