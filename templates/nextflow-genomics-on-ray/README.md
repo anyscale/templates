@@ -74,7 +74,7 @@ refuses a task image whose Ray or Python version differs from the cluster's;
 | `standard` | 1-11 Mb | 24, 8 | this notebook | 171 | 13m22s | 4.6 | 4 CPU, 2 L4 | 0.9932-0.9943 | 0.9411-0.9501 |
 | `full` | all | 48, 16 | `job.yaml` | 299 | 44m07s | 25.1 | up to 6 CPU, 2 L4 | 0.9920-0.9922 | 0.9446-0.9503 |
 
-Measured on prod, 2026-09-25, on AWS: an m5.2xlarge head with `CPU: 0`, r6i.4xlarge CPU workers and
+Measured on Anyscale on AWS, 2026-09-25: an m5.2xlarge head with `CPU: 0`, r6i.4xlarge CPU workers and
 g6.2xlarge L4 workers. Wall time is the pipeline's, CPU hours are Nextflow's count, and F1 is the
 range over the three samples, each against its own GIAB v4.2.1 benchmark. Cost was not measured. Set
 `NF_DEMO_SCALE` before Jupyter starts to pick a scale, and `NF_ANNOTATE=false` to skip the GPU
@@ -86,7 +86,7 @@ The scores show the pipeline working end to end against GIAB's truth sets, withi
   GRCh38 BAM falls in the region, subsampled to about 30x and realigned here against chr20 alone.
   Reads a whole-genome run would misplace into chr20 are mostly absent, so precision reads high.
 - Hard filters replace sarek's VQSR, which GATK recommends for at least one whole genome or about 30
-  exomes. They apply GATK's SNP thresholds to indels as well, so indel recall is lower than GATK's
+  exomes. They apply GATK's SNP thresholds to indels as well, so indel recall is at most what GATK's
   indel recipe would give.
 - BQSR gets dbSNP 138 alone, where sarek adds Mills and a known-indels set.
 - The callset covers one region of one chromosome, so none of these numbers compares with a
@@ -179,8 +179,8 @@ for prefix in ("process.executor", "process.resourceLimits", "process.'withLabel
 
 `smoke.nf` fans out eight shards and gathers them through `pipeline/bin/smoke_collect.sh`, calling
 no genomics tool, so a failure here is the executor's or the cluster's. The cell checks every
-shard's checksum and prints how many nodes the shards used; on prod the test took 36 s on two nodes,
-in each of three runs.
+shard's checksum and prints how many nodes the shards used; in each of three measured runs it took
+36 s on two nodes.
 
 
 ```python
@@ -243,7 +243,7 @@ run(["nextflow", "run", PIPELINE / "main.nf", "-profile", "ray",
 ```
 
 The next cell joins the executor's placement record to `trace.txt` and draws a bar per task,
-coloured by node, with queue time, node boot included, in grey. At `standard` on prod it drew 170
+coloured by node, with queue time, node boot included, in grey. At `standard` it drew 170
 tasks on 6 nodes, the GPU tasks on 2 of their own: one fewer than Nextflow's count, because
 `COLLECT_PLACEMENT`, which copies the record, is left out.
 
@@ -300,7 +300,7 @@ if ANNOTATE:
 ## Step 6: Benchmark the callset against GIAB
 
 The cell prints `rtg vcfeval`'s unthresholded precision, recall and F1 for each sample and variant
-type. At `standard` on prod:
+type. At `standard`, in the measured run:
 
 | sample | SNP precision | SNP recall | SNP F1 | indel precision | indel recall | indel F1 |
 |---|---|---|---|---|---|---|
@@ -327,7 +327,7 @@ print(table.round(4).to_string())
 
 The cell reruns the GPU process's scorer over every PASS variant as one Ray Data job on the same
 L4s, checks that both paths scored the same variants, and prints the largest difference and the five
-highest scores; expect indels. At `standard` on prod it scored 25,197 variants on two L4 actors in
+highest scores; expect indels. At `standard` it scored 25,197 variants on two L4 actors in
 116 s, within 2.88e-05 of the pipeline's scores.
 
 
@@ -394,7 +394,7 @@ runs the pipeline at `full` and persists the results. Submit it from the templat
 anyscale job submit --config-file job.yaml
 ```
 
-Its inline compute config allows up to 8 CPU and 2 L4 workers. On prod the job took about 47 min
+Its inline compute config allows up to 8 CPU and 2 L4 workers. In the measured run the job took about 47 min
 from submission to persisted results and copied 173 files to
 `/mnt/user_storage/nextflow-genomics-on-ray/results/chr20-trio`. `max_retries` is 0 because a
 job-level retry starts a new cluster with an empty work directory; retries happen per task.

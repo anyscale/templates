@@ -7,7 +7,7 @@
 # so submitting from the repo root uploads the repo root and the entrypoint finds no pipeline/.
 # tools/stage-demo-data.sh builds the `full` data the entrypoint syncs.
 #
-# Measured on prod, 2026-09-25, with this file as committed: the pipeline ran 299 tasks in
+# Measured on Anyscale, 2026-09-25, with this file as committed: the pipeline ran 299 tasks in
 # 44m07s, 25.1 CPU hours by Nextflow's count, and the job took about 47 minutes from submission
 # to persisted results. SNP F1 was 0.9920-0.9922 across the three samples and indel F1
 # 0.9446-0.9503. The reads are reference-selected, so precision reads high against a

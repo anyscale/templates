@@ -65,6 +65,12 @@ SNP thresholds on indels, one known-sites resource and one region. How they are 
   `None` row: a threshold chosen to maximise F-measure against the truth set being scored is
   fitted to the answer.
 
+The GPU score has no benchmark. A local check on CPU, with the pinned model revision at 40
+positions in chr20:1.00-1.03 Mb, gave median scores of 0.133 for SNPs (maximum 0.263), 0.921 and
+0.927 for 1 bp insertions and deletions, 1.450 for 2 bp insertions, 0.904 for 3 bp deletions, and
+0.199 and 0.168 for 6 bp insertions and deletions. Every 1 bp indel scored above the highest SNP;
+indels whose length is a multiple of six scored like SNPs.
+
 ## The DAG
 
 ```
