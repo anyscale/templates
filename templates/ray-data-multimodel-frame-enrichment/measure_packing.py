@@ -1,32 +1,36 @@
 #!/usr/bin/env python3
 """Measure whether co-residency beats running the stages serially.
 
-    HF_TOKEN=hf_... python measure_packing.py --frames 96 --runs 3
+    HF_TOKEN=hf_... python measure_packing.py --runs 3
     HF_TOKEN=hf_... python measure_packing.py --out arms.jsonl   # every run, for re-scoring
 
-`packing.py` computes whether four models fit on one card. This measures whether packing them
-paid. Re-run it after any change to the model set, the image, the batch sizes or the card.
+`packing.py` computes whether the four stages fit on one card; this measures whether packing
+them paid. Re-run it after any change to the model set, the image, the batch sizes or the card.
 
-NEEDS: one GPU, the gated weights, and about 20 minutes.
+NEEDS: one GPU, the gated weights (HF_TOKEN on every node, since the warmup task and the actors
+run on the GPU worker), and about 20 minutes. It times the fixture at --input as it is:
+--frames and --files do not change it. Actor counts and batch sizes come from pipeline.py's
+environment variables. The README's figure used one actor per stage; pipeline.py's defaults
+need more than one GPU.
 
 TWO ARMS
 
-  coresident  the DAG `pipeline.build()` produces: four stages, fractional GPU reservations
-              summing to <1, all resident on one card.
+  coresident  the DAG `pipeline.build()` produces: four stages with fractional GPU
+              reservations, all resident on one card at one actor per stage.
   serial      the same four stages, each given the whole GPU and run to completion before the
               next starts.
 
 Keep the `materialize()` in the serial arm. Without it Ray Data pipelines the stages and both
 arms measure the same thing.
 
-THREE GUARDS, AND THE FAILURE EACH ONE PREVENTS
+THREE GUARDS
 
-Three of the first four attempts measured the wrong thing and none of them errored.
+Each one fixes a failure that produced a wrong number and no error.
 
-  1. No warmup. The HuggingFace download is paid once, by whichever arm runs first, and cost
+  1. No warmup. The Hugging Face download is paid once, by whichever arm runs first, and cost
      ~175 s against a ~75 s run. The first arm looked 3x worse than itself.
   2. Warmup in the driver. The driver is the head node, the actors run on a worker, and the
-     HuggingFace cache is per node. That warmup finished in 24 s, too fast for ~5 GB, and the
+     Hugging Face cache is per node. That warmup finished in 24 s, too fast for ~5 GB, and the
      first arm was still penalised. `_warm_this_node` is a Ray task holding a GPU, and it
      prints the hostname and duration so you can see where it ran.
   3. The first timed run of a session is ~2x slow anyway, reproducible to within 1% across
@@ -40,16 +44,18 @@ and >=27.9%; this harness read >=26.5% with nothing excluded.
 The arms interleave (A,B,A,B,...). Running one arm to completion and then the other confounds
 arm with time.
 
-THE VERDICT IS TWO RULES, NOT A RATIO OF MEANS. `separable()` applies them:
+VERDICT
+
+`separable()` applies two rules:
 
   SINGLE   an arm with one timed run has no observed spread, so any delta from it is
            unfalsifiable. Refused.
-  OVERLAP  two arms whose observed ranges overlap are NOT separable at this sample size,
+  OVERLAP  two arms whose observed ranges overlap are not separable at this sample size,
            however far apart their averages sit.
 
-Separable means the worst run of the better arm beats the best run of the worse one, and the
-margin printed is that gap: a lower bound. The >=26.5% in the README is this rule applied to
-the runs recorded below.
+Separable means the worst run of the faster arm beats the best run of the slower one, and the
+margin printed is that gap: a lower bound, which a ratio of means would overstate. The README's
+>=26.5% is this rule applied to the runs in tests/test_packing.py (class Separability).
 """
 
 from __future__ import annotations
@@ -80,13 +86,14 @@ def _warm_this_node(repos: list[tuple[str, str]]) -> str:
 
 def separable(better: list[float], worse: list[float],
               better_name: str = "coresident", worse_name: str = "serial") -> str:
-    """The verdict line, by the two rules in the module docstring. Returns text, not a bool.
+    """The verdict line, by the two rules in the module docstring.
 
-    Do not return a bool. UNSUPPORTED is neither "packing wins" nor "packing loses" -- it says
-    the runs cannot answer the question -- and a flag collapses the two.
+    Returns text because UNSUPPORTED is neither "packing wins" nor "packing loses": it says the
+    runs cannot answer the question, and a bool would fold it into one of the two.
 
-    The margin is `(min(better) - max(worse)) / max(worse)`, a lower bound. A ratio of the two
-    averages reads higher and three runs do not support it.
+    The margin is (worst run of the faster arm - best run of the slower arm) / best run of the
+    slower arm, a lower bound. The arms' order comes from the data, not the argument order. A
+    ratio of the two averages reads higher, and three runs do not support it.
     """
     if len(better) < 2 or len(worse) < 2:
         return (f"UNSUPPORTED  need >=2 timed runs per arm, have {len(better)} {better_name} "

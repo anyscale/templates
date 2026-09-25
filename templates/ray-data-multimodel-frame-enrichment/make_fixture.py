@@ -1,22 +1,20 @@
 #!/usr/bin/env python3
-"""Generate the frame fixture. No dataset licence, no download, no customer data.
+"""Generate the synthetic frame fixture: no download, no dataset licence.
 
     python make_fixture.py --out /mnt/cluster_storage/frames --frames 48 --files 4
-    python make_fixture.py --out ... --width 3848 --height 2168   # production geometry
+    python make_fixture.py --out ... --width 3848 --height 2168   # the production frame size
 
 WHY SYNTHETIC
 
-Public image sets are available and several are permissively licensed (Open Images V7 is
-CC-BY-4.0 both ways), but each adds a download, an attribution obligation and a licence to
-track. Generating the frames removes all three.
+Public image sets, even permissively licensed ones, add a download, an attribution obligation
+and a licence to track. Generating the frames removes all three.
 
 WHAT MAY SHRINK
 
-Frame count and frame geometry, for CI. Neither carries the lesson.
-
-Do not trim the resident-model count to fit a budget. CI does run two of the four, because
-two are gated on Hugging Face and licensed per account, so CI has no right to their weights;
-`pipeline.py --ungated-only` names the pair it ran. That is a licence, not a budget.
+Frame count and frame geometry, for CI. Neither carries the lesson. Do not trim the number of
+stages to fit a budget. CI runs two of the four only because the other two are gated on
+Hugging Face and licensed per account, so CI has no right to their weights;
+`pipeline.py --ungated-only` names the pair it ran.
 
 Each frame carries a few high-contrast shapes on a textured background, so a promptable
 detector has something to find. A pure-noise fixture returns zero detections and the
@@ -108,8 +106,8 @@ def main(argv: list[str] | None = None) -> int:
             truth[fid] = boxes
         table = pa.table({
             "frame_id": pa.array(ids, pa.string()),
-            # A fixed-size binary column: every row is the same multi-hundred-KB blob, so the
-            # Parquet file is a catalogue around a blob store.
+            # A fixed-size binary column: every row holds a blob of the same size (921,600
+            # bytes at 640x480), so the Parquet file is a catalogue around a blob store.
             "image": pa.array(blobs, pa.binary(frame_bytes)),
             "width": pa.array([args.width] * count, pa.int32()),
             "height": pa.array([args.height] * count, pa.int32()),
