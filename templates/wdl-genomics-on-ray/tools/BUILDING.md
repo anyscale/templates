@@ -89,6 +89,11 @@ run time, which is why it is the default here.
 
 ## `--container-runtime native`
 
+`--container-runtime` takes `none`, `native`, `ray`, or a container CLI (`podman`, `docker`,
+`apptainer`, `singularity`) that runs each task in its declared image where the platform allows
+nesting, which Anyscale does not. `auto`, the default, takes the first of those CLIs on the
+driver's node, else `none`.
+
 `native` has Ray supply each task's tools through a per-task `runtime_env` derived from the
 manifest, so a task gets only what its command invokes. It needs no image, but it needs a wheel
 source (`[ray] tool_wheel_dir`), so it inherits the staging problem above. `wdl_on_ray/envs.py`
