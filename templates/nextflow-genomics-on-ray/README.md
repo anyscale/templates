@@ -112,11 +112,11 @@ git clone https://github.com/anyscale/templates && cd templates/templates/nextfl
 the same processes with the same tools and resource requests; they differ in region size and in how
 many intervals and GPU shards the region is split into.
 
-| Scale | Region | Intervals | Runs as | Measured on prod, 2026-09-25 |
-|---|---|---|---|---|
-| `quick` | chr20:1,000,000-3,000,000 | 8 | CI, with `NF_ANNOTATE=false` | 81 tasks in 4m47s and 4m52s (two runs), 1.4 CPU h each, on 4 CPU workers |
-| `standard` (default) | chr20:1,000,000-11,000,000 | 24 | this notebook | 171 tasks in 13m22s, 4.6 CPU h, on 4 CPU workers and 2 L4 workers |
-| `full` | all of chr20 | 48 | `job.yaml` | 299 tasks in 44m07s, 25.1 CPU h, on at most 6 CPU workers and 2 L4 workers at a time |
+| Scale | Region | Intervals | GPU shards | Runs as | Measured on prod, 2026-09-25 |
+|---|---|---|---|---|---|
+| `quick` | chr20:1,000,000-3,000,000 | 8 | 4 | CI, with `NF_ANNOTATE=false` | 81 tasks in 4m47s and 4m52s (two runs), 1.4 CPU h each, on 4 CPU workers |
+| `standard` (default) | chr20:1,000,000-11,000,000 | 24 | 8 | this notebook | 171 tasks in 13m22s, 4.6 CPU h, on 4 CPU workers and 2 L4 workers |
+| `full` | all of chr20 | 48 | 16 | `job.yaml` | 299 tasks in 44m07s, 25.1 CPU h, on at most 6 CPU workers and 2 L4 workers at a time |
 
 Times are the pipeline's wall time and CPU hours are Nextflow's count, on the AWS compute config: an
 m5.2xlarge head with `CPU: 0`, r6i.4xlarge CPU workers and g6.2xlarge L4 workers.
