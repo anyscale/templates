@@ -35,13 +35,12 @@
 # is minutes instead of hours, no aligner in the loop, and no dependence on this
 # script's minimap2 version matching anything.
 #
-# The reads it emits are still *reference-selected*, and that is a real limitation
-# worth stating rather than hiding: a read is in the slice because it aligned to the
-# region, so reads from a divergent haplotype that failed to align are absent by
-# construction, and reads from paralogous sequence elsewhere in the genome are absent
-# too. An assembly of them is therefore easier than a whole-genome de novo assembly
-# and its contiguity and genome-fraction numbers are optimistic relative to one. It
-# is a demo of the pipeline, not a benchmark of the assembler.
+# The reads it emits are *reference-selected*: a read is in the slice because its primary
+# alignment falls in the region. Reads from a divergent haplotype that failed to align
+# are absent, and so are most reads from paralogous sequence elsewhere in the genome;
+# only those mismapped into the region remain. Assembling them is easier than a
+# whole-genome de novo assembly, so contiguity and genome fraction are optimistic. It is
+# a demo of the pipeline, not a benchmark of the assembler.
 #
 # Ultra-long reads overhang the slice edges by construction. That is fine: Flye never
 # sees the reference, and QUAST reports the overhang as unaligned contig ends.

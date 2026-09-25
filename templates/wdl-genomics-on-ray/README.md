@@ -345,14 +345,15 @@ QUAST against GRCh38 measures distance from the reference, not correctness:
 - A collapsed human assembly differs from GRCh38 at roughly 85-95 real SNVs per 100 kbp, so use the
   mismatch rate to compare a draft with its polished version, not as an error rate. Indels, ONT's
   main error class, have their own row.
-- The reads were selected by alignment to this reference, so reads too divergent to align are
-  missing and paralog mismaps are present. Genome fraction near 100% is expected, and contiguity is
-  optimistic.
+- The reads were selected by where their primary alignment to GRCh38 fell. Reads too divergent to
+  align are missing, and so are most reads from paralogs elsewhere in the genome, the repeats that
+  make whole-genome assembly hard; the few mismapped into the window are present. Genome fraction
+  near 100% is expected, and contiguity is optimistic.
 
 So don't rank samples on these columns. HG003 has the best NGA50 and fewest misassemblies at
 middling coverage (75x, against 89x and 59x) and the lowest read N50. HG002's agreement with its
-mother, HG004, within 1% on NGA50, genome fraction, mismatches and misassemblies reflects sequence
-the two share that differs from GRCh38 in this window.
+mother, HG004, within 1% on NGA50, genome fraction, mismatches and misassemblies is consistent
+with sequence the two share that differs from GRCh38 in this window.
 
 
 ```python
