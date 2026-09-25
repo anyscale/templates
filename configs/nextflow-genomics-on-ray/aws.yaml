@@ -5,19 +5,19 @@ head_node:
 worker_nodes:
 # 16 vCPU / 128 GiB. Read together with pipeline/conf/base.config's resourceLimits (16 CPU,
 # 80 GB) and pipeline/conf/ray.config's maxNode* (the same numbers): on Ray a resource request
-# that no node can satisfy is an indefinite wait, not an error, so the instance type and the
-# pipeline's ceiling are one decision, not two. test_config_agreement.py checks the three agree.
+# that no node can satisfy waits indefinitely instead of failing, so the instance type and the
+# pipeline's ceiling are one decision. test_config_agreement.py checks the three agree.
 #
-# Highmem because of what Ray schedules, not what the instance has. Ray 2.58.0 advertises about
-# 70% of a node's free memory as `memory` and keeps the rest for the object store, so this node
-# schedules roughly 85 GiB (derived from Ray's code, not yet measured here) and the 80 GB ceiling
-# sits under it. nf-core's process_high asks for 72 GB; on a 64 GiB m5.4xlarge, which schedules
-# about 42 GiB, it would never start.
+# Highmem because of what Ray schedules, which is less than the instance has. Ray 2.58.0
+# advertises about 70% of a node's free memory as `memory` and keeps the rest for the object
+# store, so this node schedules roughly 85 GiB (derived from Ray's code; it placed the 72 GB
+# process_high tasks in every 2026-09-25 prod run) and the 80 GB ceiling sits under it. A 64 GiB
+# m5.4xlarge schedules about 42 GiB and would never start process_high.
 #
 # min_nodes: 1 so the first task does not wait on a cold autoscale. max_nodes: 4 bounds the cost
 # of the scatter rather than matching it: HaplotypeCaller asks for 6 CPU / 36 GB, so two fit a
-# node, and `quick`'s 24 calling tasks run in three waves of eight. Not yet measured; tune it
-# after the first run.
+# node and `quick`'s 24 calling tasks run in three waves of eight. The quick and standard prod
+# runs (2026-09-25) both used all four.
 - name: cpu-worker
   instance_type: r6i.4xlarge
   min_nodes: 1

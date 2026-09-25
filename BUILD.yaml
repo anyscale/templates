@@ -822,10 +822,10 @@
   owner_team: general
   dir: templates/nextflow-genomics-on-ray
   cluster_env:
-    # Custom image, not a stock one: Nextflow processes run with no container runtime inside
-    # a Ray worker, so the toolchain has to be on every node before the first task dispatches,
-    # and a job's `requirements:` resolves before working_dir is staged. It also carries the
-    # nf-ray executor plugin and the scorer's model. See the template's Dockerfile.
+    # Custom image: processes run with no container runtime inside a Ray worker, so the bioconda
+    # toolchain (GATK, bwa-mem2, samtools, rtg-tools) and a JRE must be on every node before the
+    # first task, and pip `requirements:` cannot install them. It also carries the nf-ray
+    # executor plugin and the scorer's model. See the template's Dockerfile.
     byod:
       docker_image: us-docker.pkg.dev/anyscale-workspace-templates/workspace-templates/nextflow-genomics-on-ray:2.58.0
       ray_version: 2.58.0
@@ -833,13 +833,12 @@
     AWS: configs/nextflow-genomics-on-ray/aws.yaml
     GCP: configs/nextflow-genomics-on-ray/gce.yaml
   test:
-    # Offline unit checks; then the gate, main.nf end to end under -profile ray on a synthetic
-    # trio the test generates, asserting a perfect score; then the notebook at
-    # NF_DEMO_SCALE=quick, the one stage that needs the demo data staged. The GPU leg is off
-    # throughout (NF_ANNOTATE=false). Measured on prod, 2026-09-25, on the AWS config: the whole
-    # rayapp test passed in 12m42s, workspace start (1m53s), the gate (3m02s) and the notebook's
-    # quick pipeline (4m47s) included. 3600 is headroom. The Buildkite step is capped at 90 min
-    # for it.
+    # Offline unit checks, then the gate (main.nf end to end under -profile ray on a synthetic
+    # trio the test generates, asserting a perfect score), then the notebook at
+    # NF_DEMO_SCALE=quick, the only stage that needs the staged demo data. The GPU leg is off
+    # throughout (NF_ANNOTATE=false). Prod, 2026-09-25, AWS config: the whole rayapp test took
+    # 12m42s, including workspace start (1m53s), the gate (3m02s) and the notebook's pipeline
+    # (4m47s). 3600 is headroom; the Buildkite step is capped at 90 min.
     tests_path: tests/nextflow-genomics-on-ray/
     command: bash tests.sh
     timeout_in_sec: 3600

@@ -1,14 +1,10 @@
 # Pipeline provenance and divergences
 
-The pipeline is GATK Best Practices germline short-variant discovery, shaped the
-way [nf-core/sarek](https://nf-co.re/sarek) shapes it. The processes are adapted
-from [nf-core/modules](https://github.com/nf-core/modules) (MIT). This file records
-what came from where and — more usefully — every place this pipeline does something
-*different*, and why.
-
-Divergences are listed because an undeclared one is indistinguishable from a bug.
-If a number here disagrees with a number from sarek, the reason should be on this
-page.
+The pipeline is GATK germline short-variant discovery in the shape of the joint-germline mode of
+[nf-core/sarek](https://nf-co.re/sarek). The processes are adapted from
+[nf-core/modules](https://github.com/nf-core/modules) (MIT). This page records where each process
+came from and every place the pipeline differs, so that a number that disagrees with sarek's can be
+traced to a cause here.
 
 ## Upstream
 
@@ -18,101 +14,102 @@ page.
 | `BWAMEM2_INDEX`, `BWAMEM2_MEM` | `nf-core/modules/bwamem2/{index,mem}` | read group built inline |
 | `GATK4_MARKDUPLICATES` | `nf-core/modules/gatk4/markduplicates` | indexes with samtools rather than `--CREATE_INDEX` |
 | `GATK4_BASERECALIBRATOR`, `GATK4_APPLYBQSR` | `nf-core/modules/gatk4/{baserecalibrator,applybqsr}` | one known-sites resource, not three |
+| `SAMTOOLS_STATS` | `nf-core/modules/samtools/stats` | unchanged in shape |
 | `MAKE_INTERVALS` | `nf-core/modules/gatk4/intervallisttools` | `SplitIntervals` with `INTERVAL_SUBDIVISION` |
 | `GATK4_HAPLOTYPECALLER` | `nf-core/modules/gatk4/haplotypecaller` | `-ERC GVCF`, scattered by interval |
 | `GATK4_GENOMICSDBIMPORT`, `GATK4_GENOTYPEGVCFS` | `nf-core/modules/gatk4/*` | unchanged in shape |
-| `GATK4_MERGEVCFS` | `nf-core/modules/gatk4/mergevcfs` | sorted input list — see below |
-| `GATK4_VARIANTFILTRATION` | `nf-core/modules/gatk4/variantfiltration` | hard filters, not VQSR — see below |
+| `GATK4_MERGEVCFS` | `nf-core/modules/gatk4/mergevcfs` | sorted input list; see below |
+| `GATK4_VARIANTFILTRATION` | `nf-core/modules/gatk4/variantfiltration` | hard filters, SNP thresholds on every record; see below |
 | `RTG_FORMAT`, `RTG_VCFEVAL` | `nf-core/modules/rtgtools/*` | `--evaluation-regions`, split by variant type |
 | `MULTIQC` | `nf-core/modules/multiqc` | unchanged |
 
-No upstream counterpart, written for this template:
-`SPLIT_SAMPLE`, `SUBSET_VARIANT_TYPE`, `COLLECT_BENCHMARK`, `SHARD_VCF`,
-`ANNOTATE_VARIANTS`, `COLLECT_SCORES`, `COLLECT_PLACEMENT`, and `smoke.nf`.
+Written for this template, with no upstream counterpart: `SPLIT_SAMPLE`, `SUBSET_VARIANT_TYPE`,
+`COLLECT_BENCHMARK`, `SHARD_VCF`, `ANNOTATE_VARIANTS`, `COLLECT_SCORES`, `COLLECT_PLACEMENT` and
+`smoke.nf`.
 
 ## Divergences
 
 ### No `container` directives
 
-Every nf-core module carries `container 'quay.io/biocontainers/...'`. They are
-dropped here rather than kept as decoration.
+Every nf-core module declares `container 'quay.io/biocontainers/...'`, and this pipeline drops
+them. A Ray worker runs inside a container and cannot start another, so Nextflow would run the
+command against whatever is on `PATH` anyway, and the directive would only mislead. The tools are
+baked into the image instead (`tools/env.main.yml`).
 
-A Ray worker is already inside a container and cannot nest another, so a container
-directive would be a promise the executor cannot keep — Nextflow would ignore it
-and run the command against whatever is on `PATH`, which is exactly what happens
-now, only without the misleading declaration. The toolchain is baked into the
-image instead (`tools/env.main.yml`).
+This is the largest behavioural difference from upstream, because tool versions come from the image
+rather than from the pipeline. `-profile conda` is the alternative: Nextflow builds each process's
+declared environment, cached on shared storage so that each is built once per cluster.
 
-**This is the largest behavioural delta from upstream**, because it means tool
-versions come from the image rather than from the pipeline. `-profile conda` is the
-escape hatch: Nextflow builds each process its declared environment, cached on
-shared storage so it is built once per cluster.
+### Hard filters, with SNP thresholds on every record
 
-### Hard filters, not VQSR
+sarek's joint-germline mode filters with VQSR. GATK recommends VQSR for callsets of at least one
+whole genome or about 30 exomes; this pipeline's callsets cover one region of one chromosome, so it
+hard-filters, which is GATK's documented alternative for small callsets.
 
-sarek runs VariantRecalibrator genome-wide. This pipeline uses GATK's published
-hard-filter thresholds instead.
+`GATK4_VARIANTFILTRATION` applies one set of thresholds to every record: QD < 2, QUAL < 30, SOR > 3,
+FS > 60, MQ < 40, MQRankSum < -12.5 and ReadPosRankSum < -8. Those are GATK's recommendations for
+SNPs. For indels GATK recommends looser ones, FS > 200 and ReadPosRankSum < -20 with no MQ or
+MQRankSum filter, so every indel GATK's indel recipe would remove is removed here too, and indel
+recall can only be lower than that recipe gives. Selecting SNPs and indels and filtering each with
+its own thresholds would restore GATK's recipe.
 
-VQSR needs far more variants than one chromosome provides — it would either refuse
-to build a model or build a bad one — and hard filtering is GATK's own documented
-fallback for small callsets. **It costs precision**, and it is part of why the
-numbers here should not be compared to a published genome-wide sarek benchmark.
+Hard filters are also less discriminating than VQSR, which is part of why these numbers are not
+comparable to a published genome-wide sarek benchmark.
 
 ### One known-sites resource
 
-sarek passes dbSNP, Mills and 1000G indels to BQSR. This passes one, subset to
-chr20, to keep the staged demo data small. The recalibration is slightly less well
-informed as a result.
+sarek gives BQSR dbSNP, Mills and a known-indels set. This pipeline gives it dbSNP 138 alone, subset
+to chr20, to keep the staged data small, so the recalibration is slightly less well informed.
 
 ### `MergeVcfs` input is sorted
 
-`path vcfs` arrives in whatever order the channel emitted, which depends on which
-interval finished first. Without `LC_ALL=C sort`, the merged header's contig order
-can vary between runs of the same pipeline, and two runs stop being
-byte-comparable. Same reasoning in `COLLECT_SCORES`.
+`path vcfs` arrives in the order the intervals finished. The list is sorted with `LC_ALL=C sort` so
+that `MergeVcfs` sees its inputs in the same order on every run. `COLLECT_SCORES` sorts its shards
+for the same reason.
 
 ### `MAKE_INTERVALS` fails when the scatter collapses
 
-`SplitIntervals` on a single-contig reference with the wrong subdivision mode
-produces exactly one interval. The pipeline would still succeed — just serially,
-hours later, having demonstrated nothing. So it asserts it got more than one, and
-fails if not.
+On a single-contig reference, `SplitIntervals` with the wrong subdivision mode produces one
+interval, and the pipeline would still succeed, serially. `MAKE_INTERVALS` checks that it got at
+least two intervals and fails otherwise.
 
 ### Benchmarking is split by variant type
 
-vcfeval is run separately for SNPs and indels. A combined F1 hides which moved,
-and the two fail for different reasons: SNP F1 is dominated by sequencing error,
-indel F1 by alignment and local reassembly.
+vcfeval runs separately for SNPs and indels, because their error profiles differ and a combined F1
+hides which one moved.
 
-Both sides are split, the calls in `SUBSET_VARIANT_TYPE` and the truth set in
-`RTG_VCFEVAL`, after splitting multi-allelic records. Splitting only the calls
-counted the other type's truth variants as false negatives (measured on the
-synthetic trio: SNP recall 0.70, indel 0.30, with every planted variant called).
-Splitting before matching rather than stratifying after it is an approximation
-at complex sites, where one representation is an MNP and the other a SNP plus
-an indel; hap.py's stratified counts would be exact there.
+Both sides are split: the calls in `SUBSET_VARIANT_TYPE` and the truth set in `RTG_VCFEVAL`, each
+after splitting multi-allelic records. With only the calls split, every truth indel would count as
+a missed SNP and every truth SNP as a missed indel. Splitting before matching rather than
+stratifying after it is an approximation at complex sites, where one representation is an MNP and
+the other a SNP plus an indel; hap.py's stratified counts would be exact there.
 
-`--evaluation-regions` rather than `--bed-regions`: the former restricts *scoring*
-to the high-confidence set while still allowing calls just outside it to
-participate in haplotype matching. The latter truncates haplotypes and invents
-mismatches at every boundary.
+`--evaluation-regions` rather than `--bed-regions`: the former restricts scoring to the benchmark
+regions while still letting calls just outside them take part in haplotype matching. The latter
+truncates haplotypes and invents mismatches at the boundaries.
+
+vcfeval requires genotypes to match, its default, and the reported row is the unthresholded `None`
+row: a threshold chosen to maximise F-measure against the truth set being scored is fitted to the
+answer.
 
 ## Bounds on the numbers
 
-State these wherever the results are shown, not in a footnote.
-
-- **Reference-selected reads.** The demo FASTQs are derived by slicing an existing
-  chr20 alignment, so reads that would mismap *into* chr20 from elsewhere in the
-  genome are absent by construction. Precision therefore reads slightly high
-  relative to a real whole-genome run.
-- **Scored on an intersection.** chr20 ∩ the GIAB high-confidence BED ∩ the demo
-  slice. Outside it the truth set makes no claim.
-- **One chromosome, hard filters, one known-sites resource.** Not comparable to a
-  published genome-wide sarek benchmark.
-- **The annotation score is a proxy.** Embedding distance from a nucleotide
-  language model. It correlates with "this changes the sequence in a way the model
-  noticed" — it is not a pathogenicity score and is not comparable to SpliceAI or
-  CADD.
+- Reference-selected reads. The demo FASTQs are read pairs whose primary alignment in GIAB's
+  whole-genome GRCh38 BAM falls in the region, realigned here against chr20 alone. Reads from the
+  rest of the genome that a whole-genome run would misplace into chr20 are mostly absent, so
+  precision reads higher than it would in a whole-genome run.
+- Scored on an intersection: the region and each sample's GIAB v4.2.1 benchmark regions, from the
+  `_noinconsistent` BED, which also excludes regions around Mendelian inconsistencies in GIAB's
+  trio benchmark. Outside it the truth set makes no claim.
+- One region of one chromosome, hard filters with SNP thresholds on indels, and one known-sites
+  resource. Not comparable to a published genome-wide sarek benchmark.
+- No pedigree. The three samples are joint-genotyped without a pedigree file, and nothing checks
+  Mendelian consistency.
+- The GPU annotation is not a variant-effect score. It is the L2 distance between a DNA language
+  model's mean-pooled embeddings of the 1 kb reference window with and without the alternate
+  allele: zero-shot, uncalibrated, and not validated against pathogenicity, function or call
+  quality. The model reads 6-mer tokens, so an indel whose length is not a multiple of six scores
+  well above SNPs from the re-tokenization alone.
 
 ## The DAG
 
@@ -143,5 +140,5 @@ samplesheet ──> FASTP ──> BWAMEM2_MEM ──> MARKDUPLICATES ──> BQS
                    COLLECT_SCORES
 ```
 
-At `standard` scale: 3 samples, 24 intervals → 72 concurrent HaplotypeCaller
-tasks, 24 joint-genotyping tasks, 6 vcfeval comparisons, 8 GPU shards.
+At `standard`, 3 samples and 24 intervals give 72 independent HaplotypeCaller tasks, 24
+GenomicsDBImport and 24 GenotypeGVCFs tasks, 6 vcfeval comparisons and 8 GPU shards.
