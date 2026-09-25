@@ -2,6 +2,8 @@
 
 The notebook's steps, in order:
 
+- ``enable_hang_detection``   turn on Ray Data's hanging-execution detector
+- ``arm_driver_stack_dump``   one stack dump of the driver's threads, later
 - ``make_synthetic_frames``   today's rows and the keys already classified
 - ``anti_join_hash``          the usual approach: a hash-shuffle ``left_anti`` join
 - ``anti_join_probe``         the broadcast probe: ``prior_key_hashes``, then ``ProbeFilter``
@@ -9,8 +11,6 @@ The notebook's steps, in order:
 - ``split_for_actors``        enough blocks that every classifier actor has work
 - ``classify``                zero-shot classification with fractional GPUs
 - ``write_partitioned``       partitioned Parquet write with one root ``_SUCCESS``
-- ``enable_hang_detection``   turn on Ray Data's hanging-execution detector
-- ``arm_driver_stack_dump``   one stack dump of the driver's threads, later
 
 The rest support the notebook's comparisons.
 """
