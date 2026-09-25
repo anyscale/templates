@@ -5,7 +5,7 @@
   <a href="https://github.com/anyscale/templates/tree/main/templates/nextflow-genomics-on-ray" role="button"><img src="https://img.shields.io/static/v1?label=&message=View%20On%20GitHub&color=586069&logo=github&labelColor=2f363d"></a>&nbsp;
 </div>
 
-**⏱️ Time to complete**: 4m52s for the `quick` pipeline (prod, 2026-09-25); `standard`, the default, not yet timed. See Step 1
+**⏱️ Time to complete**: about 5 minutes for the `quick` pipeline (4m47s and 4m52s in two prod runs, 2026-09-25); `standard`, the default, not yet timed. See Step 1
 
 A Nextflow executor, `executor 'ray'`, that runs each process as a
 [Ray task](https://docs.ray.io/en/latest/ray-core/tasks.html) on an autoscaling cluster. The pipeline
@@ -88,11 +88,11 @@ region of chromosome 20 for each of three samples; `quick` does 2 Mbp and is wha
 `NF_DEMO_SCALE=quick` before launching Jupyter to use it. Only the region size differs: same
 tools, same DAG, same resource requests.
 
-Measured once, at `quick` only: prod, 2026-09-25, on the AWS compute config (an m5.2xlarge head
-with `CPU: 0`, r6i.4xlarge CPU workers, and the g6.2xlarge GPU group left unused because the run had
-`NF_ANNOTATE=false`). The Step 5 pipeline ran its 81 tasks in 4m52s, 1.4 CPU hours by Nextflow's
-count, and the Step 3 smoke run took 36 s with its eight shards on two nodes. `standard` has not
-been timed.
+Measured at `quick` only, in two prod runs on 2026-09-25, on the AWS compute config: an m5.2xlarge
+head with `CPU: 0`, r6i.4xlarge CPU workers, and the g6.2xlarge GPU group left unused because the
+runs had `NF_ANNOTATE=false`. The Step 5 pipeline ran its 81 tasks in 4m47s and 4m52s, 1.4 CPU hours
+by Nextflow's count each time, and the Step 3 smoke run took 36 s with its eight shards on two nodes.
+`standard` has not been timed.
 
 `NF_ANNOTATE=false` skips the GPU leg, both the Nextflow process and the Ray Data step in Step 7,
 for a cluster with no L4 to give it. CI sets it, so a test run never waits on L4 capacity.
@@ -285,7 +285,8 @@ sample and scored.
 
 That fan-out is what gives the autoscaler something to do. HaplotypeCaller asks for 6 CPUs and
 36 GB (`process_medium`), so two fit a 16-vCPU, ~85 GiB-schedulable worker, and the compute config
-lets the worker group grow to four. The GPU process asks for one L4 and lands on the GPU group,
+lets the worker group grow to four. At `quick` it did (prod, 2026-09-25, AWS config): the chart below
+drew 80 tasks on 4 nodes, 4.5 minutes from first submit to last finish. The GPU process asks for one L4 and lands on the GPU group,
 which starts from zero when the DAG reaches it.
 
 `--scale` picks the region and interval count from `main.nf`'s presets, which match what the
@@ -385,6 +386,17 @@ fitted to the answer.
 Read the numbers with the bounds they come with: one chromosome, hard filters instead of VQSR, one
 known-sites resource, reference-selected reads (Step 4), and scoring restricted to the region ∩ the
 high-confidence BED. They are not comparable to a published genome-wide benchmark.
+
+At `quick` (prod, 2026-09-25, AWS compute config), the cell below printed these, over
+chr20:1,000,000-3,000,000. The reads are reference-selected, so precision reads somewhat high
+against a whole-genome run; [`PIPELINE.md`](https://github.com/anyscale/templates/blob/main/templates/nextflow-genomics-on-ray/pipeline/PIPELINE.md#bounds-on-the-numbers)
+has the bounds.
+
+| sample | SNP precision | SNP recall | SNP F1 | indel precision | indel recall | indel F1 |
+|---|---|---|---|---|---|---|
+| HG002 | 0.9966 | 0.9872 | 0.9919 | 0.9561 | 0.9356 | 0.9457 |
+| HG003 | 0.9989 | 0.9872 | 0.9930 | 0.9548 | 0.9337 | 0.9441 |
+| HG004 | 0.9984 | 0.9707 | 0.9843 | 0.9591 | 0.9437 | 0.9514 |
 
 
 ```python
